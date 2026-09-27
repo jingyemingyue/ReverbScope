@@ -15,6 +15,8 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+from roomscope.i18n import diag
+
 FloatArray = npt.NDArray[np.float64]
 
 RESULT_SCHEMA_VERSION = 1
@@ -94,7 +96,7 @@ class DecayMetric:
 
 #: Time origin of all decay times (``edc_time_s``, ``onset_time_s``,
 #: ``truncation_time_s``).
-DECAY_TIME_ORIGIN = "direct sound (time 0 = the detected broadband direct sound)"
+DECAY_TIME_ORIGIN = diag("direct sound (time 0 = the detected broadband direct sound)")
 
 
 @dataclass(frozen=True)
@@ -206,7 +208,10 @@ class DecayResult:
             self,
             broadband=self.broadband.with_all_unreliable(reason),
             bands=tuple(b.with_all_unreliable(reason) for b in self.bands),
-            notes=(*self.notes, f"all decay metrics are marked unreliable: {reason}"),
+            notes=(
+                *self.notes,
+                diag("all decay metrics are marked unreliable: {reason}", reason=reason),
+            ),
         )
 
     def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
@@ -422,19 +427,23 @@ class PlaybackSpeed:
     def describe(self) -> str:
         """One English sentence for the result notes."""
         if self.kind == KIND_SAMPLE_RATE and self.played_rate_hz is not None:
-            return (
-                f"the sweep in the recording runs at {self.speed_ratio * 100.0:.1f} % of the "
-                f"speed it was generated at: a file generated at {self.generated_rate_hz} Hz was "
-                f"played at {self.played_rate_hz} Hz without sample-rate conversion (a DAW project "
+            return diag(
+                "the sweep in the recording runs at {percent:.1f} % of the "
+                "speed it was generated at: a file generated at {generated_hz} Hz was "
+                "played at {played_hz} Hz without sample-rate conversion (a DAW project "
                 "at another sample rate that did not convert the file on import). Generate the "
                 "sweep at the project's sample rate, or let the DAW convert it on import, and "
-                "measure again"
+                "measure again",
+                percent=self.speed_ratio * 100.0,
+                generated_hz=self.generated_rate_hz,
+                played_hz=self.played_rate_hz,
             )
-        return (
-            f"the sweep in the recording runs at {self.speed_ratio * 100.0:.1f} % of the speed "
+        return diag(
+            "the sweep in the recording runs at {percent:.1f} % of the speed "
             "it was generated at: the DAW time-stretched it (Warp, Flex Time, Follow Tempo, "
             "elastic audio or a stretch mode). Switch time-stretching off for the sweep clip "
-            "and measure again"
+            "and measure again",
+            percent=self.speed_ratio * 100.0,
         )
 
 
@@ -551,7 +560,7 @@ class FrequencyResponseResult:
     gated: bool = False
     #: Frequency range the excitation actually covered.
     excitation_band: ExcitationBand | None = None
-    reference: str = "relative dB (0 dB = flat loopback of the reference sweep)"
+    reference: str = diag("relative dB (0 dB = flat loopback of the reference sweep)")
 
     def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -607,7 +616,7 @@ class HumCandidate:
 
 
 #: Reference of :attr:`NoiseResult.psd_db`.
-PSD_REFERENCE = (
+PSD_REFERENCE = diag(
     "dB re (full-scale sine RMS)^2 per Hz: the power spectral density is scaled so that "
     "10*log10 of its integral is the reported AES17 RMS level in dBFS"
 )
@@ -638,7 +647,7 @@ class NoiseResult:
     #: Power spectral density in dB, see :data:`PSD_REFERENCE`.
     psd_db: FloatArray | None = field(repr=False)
     hum: tuple[HumCandidate, ...] = ()
-    calibration: str = "uncalibrated: levels are dBFS, not dB SPL"
+    calibration: str = diag("uncalibrated: levels are dBFS, not dB SPL")
     psd_reference: str = PSD_REFERENCE
     notes: tuple[str, ...] = ()
 
@@ -757,7 +766,7 @@ class ResonanceResult:
 
 #: Provenance of the speed of sound used by the placement geometry. Emitted in
 #: the JSON so that an exported result says which relation produced its metres.
-SPEED_OF_SOUND_REFERENCE = (
+SPEED_OF_SOUND_REFERENCE = diag(
     "c = 331.3 * sqrt(1 + T/273.15) m/s (adiabatic ideal-gas relation for dry air; "
     "343.2 m/s at 20 C, numerically equal to the ISO 9613-1 form c = 343.2 * sqrt(T/293.15))"
 )
@@ -765,7 +774,7 @@ SPEED_OF_SOUND_REFERENCE = (
 #: What RoomScope refuses to infer, and why, emitted verbatim in the JSON so
 #: that an exported result carries its own justification rather than relying on
 #: the reader having opened docs/MEASUREMENT_METHODOLOGY.md.
-PLACEMENT_COORDINATES_WITHHELD = (
+PLACEMENT_COORDINATES_WITHHELD = diag(
     "No coordinate, room length, room width or wall distance is reported. One "
     "omnidirectional microphone at one position measures path lengths, not directions, "
     "and the deconvolved time origin contains the interface round-trip latency, so there "
@@ -779,7 +788,7 @@ PLACEMENT_COORDINATES_WITHHELD = (
 )
 
 #: Why :attr:`PlacementLength.input_uncertainty_m` is not the total uncertainty.
-PLACEMENT_UNCERTAINTY_EXCLUDES = (
+PLACEMENT_UNCERTAINTY_EXCLUDES = diag(
     "propagated from the stated tape-measure, temperature and peak-location uncertainties "
     "only; it excludes model error (that the reflector is flat, rigid and large compared "
     "with the wavelength, that the arrival is a first-order specular reflection, and that "

@@ -11,6 +11,7 @@ import math
 import numpy as np
 
 from roomscope.core.filters import fractional_octave_smooth, iec_band
+from roomscope.i18n import diag
 from roomscope.models.comparison import (
     T_JND_PERCENT,
     CompareSettings,
@@ -56,11 +57,13 @@ def _common_band(
     b1 = baseline.excitation_band
     b2 = candidate.excitation_band
     if b1 is None or b2 is None:
-        return None, ("one or both results have no excitation band, so they cannot be compared",)
+        return None, (
+            diag("one or both results have no excitation band, so they cannot be compared"),
+        )
     low = max(b1.low_hz, b2.low_hz)
     high = min(b1.high_hz, b2.high_hz)
     if high <= low:
-        return None, ("the excitation bands do not overlap",)
+        return None, (diag("the excitation bands do not overlap"),)
     return (low, high), tuple(notes)
 
 
@@ -68,17 +71,33 @@ def _sweep_notes(baseline: AnalysisResult, candidate: AnalysisResult) -> list[st
     notes: list[str] = []
     if baseline.sample_rate != candidate.sample_rate:
         notes.append(
-            f"sample rates differ ({baseline.sample_rate} Hz vs {candidate.sample_rate} Hz); "
-            "comparison is still allowed"
+            diag(
+                "sample rates differ ({baseline_rate} Hz vs {candidate_rate} Hz); "
+                "comparison is still allowed",
+                baseline_rate=baseline.sample_rate,
+                candidate_rate=candidate.sample_rate,
+            )
         )
     dur_a = baseline.sweep_settings.get("duration_s")
     dur_b = candidate.sweep_settings.get("duration_s")
     if dur_a is not None and dur_b is not None and dur_a != dur_b:
-        notes.append(f"sweep durations differ ({dur_a} s vs {dur_b} s)")
+        notes.append(
+            diag(
+                "sweep durations differ ({baseline_s} s vs {candidate_s} s)",
+                baseline_s=dur_a,
+                candidate_s=dur_b,
+            )
+        )
     lvl_a = baseline.sweep_settings.get("level_dbfs")
     lvl_b = candidate.sweep_settings.get("level_dbfs")
     if lvl_a is not None and lvl_b is not None and lvl_a != lvl_b:
-        notes.append(f"sweep levels differ ({lvl_a} dBFS vs {lvl_b} dBFS)")
+        notes.append(
+            diag(
+                "sweep levels differ ({baseline_dbfs} dBFS vs {candidate_dbfs} dBFS)",
+                baseline_dbfs=lvl_a,
+                candidate_dbfs=lvl_b,
+            )
+        )
     return notes
 
 
@@ -92,7 +111,7 @@ def _delta_from_values(
     extra_reason: str | None = None,
 ) -> MetricDelta:
     if baseline is None or candidate is None:
-        reason = extra_reason or "one or both sides have no number"
+        reason = extra_reason or diag("one or both sides have no number")
         return MetricDelta(
             name=name,
             baseline=baseline,
@@ -116,25 +135,46 @@ def _delta_from_values(
     )
 
 
+def _side_reasons(
+    baseline: DecayMetric | PlacementLength, candidate: DecayMetric | PlacementLength
+) -> list[str]:
+    """Why each side that is not VALID cannot be compared, one sentence per side."""
+    reasons: list[str] = []
+    if baseline.validity is not Validity.VALID:
+        if baseline.reason:
+            reasons.append(
+                diag(
+                    "baseline {validity} ({reason})",
+                    validity=baseline.validity,
+                    reason=baseline.reason,
+                )
+            )
+        else:
+            reasons.append(diag("baseline {validity}", validity=baseline.validity))
+    if candidate.validity is not Validity.VALID:
+        if candidate.reason:
+            reasons.append(
+                diag(
+                    "candidate {validity} ({reason})",
+                    validity=candidate.validity,
+                    reason=candidate.reason,
+                )
+            )
+        else:
+            reasons.append(diag("candidate {validity}", validity=candidate.validity))
+    return reasons
+
+
 def _decay_metric_delta(name: str, baseline: DecayMetric, candidate: DecayMetric) -> MetricDelta:
     if baseline.validity is Validity.VALID and candidate.validity is Validity.VALID:
         return _delta_from_values(name, baseline.seconds, candidate.seconds, unit="s", time=True)
-    reasons = []
-    if baseline.validity is not Validity.VALID:
-        reasons.append(
-            f"baseline {baseline.validity}" + (f" ({baseline.reason})" if baseline.reason else "")
-        )
-    if candidate.validity is not Validity.VALID:
-        reasons.append(
-            f"candidate {candidate.validity}"
-            + (f" ({candidate.reason})" if candidate.reason else "")
-        )
+    reasons = _side_reasons(baseline, candidate)
     return MetricDelta(
         name=name,
         baseline=baseline.seconds,
         candidate=candidate.seconds,
         validity=Validity.NOT_COMPARABLE,
-        reason="; ".join(reasons) if reasons else "metrics are not both VALID",
+        reason="; ".join(reasons) if reasons else diag("metrics are not both VALID"),
         unit="s",
     )
 
@@ -150,7 +190,9 @@ def _band_decay_deltas(prefix: str, baseline: BandDecay, candidate: BandDecay) -
             candidate.rt60_estimate_s,
             unit="s",
             time=True,
-            extra_reason="RT60 estimate missing on one or both sides (never taken from an invalid metric)",
+            extra_reason=diag(
+                "RT60 estimate missing on one or both sides (never taken from an invalid metric)"
+            ),
         )
         if baseline.rt60_estimate_s is not None and candidate.rt60_estimate_s is not None
         else MetricDelta(
@@ -158,7 +200,9 @@ def _band_decay_deltas(prefix: str, baseline: BandDecay, candidate: BandDecay) -
             baseline=baseline.rt60_estimate_s,
             candidate=candidate.rt60_estimate_s,
             validity=Validity.NOT_COMPARABLE,
-            reason="RT60 estimate missing on one or both sides (never taken from an invalid metric)",
+            reason=diag(
+                "RT60 estimate missing on one or both sides (never taken from an invalid metric)"
+            ),
             unit="s",
         ),
     ]
@@ -178,7 +222,7 @@ def _compare_decay(baseline: AnalysisResult, candidate: AnalysisResult) -> tuple
                     baseline=band.rt60_estimate_s,
                     candidate=None,
                     validity=Validity.NOT_COMPARABLE,
-                    reason="band missing from the candidate",
+                    reason=diag("band missing from the candidate"),
                     unit="s",
                 )
             )
@@ -194,7 +238,7 @@ def _compare_decay(baseline: AnalysisResult, candidate: AnalysisResult) -> tuple
                 baseline=None,
                 candidate=band.rt60_estimate_s,
                 validity=Validity.NOT_COMPARABLE,
-                reason="band missing from the baseline",
+                reason=diag("band missing from the baseline"),
                 unit="s",
             )
         )
@@ -284,7 +328,9 @@ def _compare_frequency_response(
         difference_db=np.asarray(diff, dtype=np.float64),
         band_mad_db=tuple(mad),
         smoothing_fraction=fraction,
-        reference="candidate minus baseline (dB) on a shared log grid inside the common excitation band",
+        reference=diag(
+            "candidate minus baseline (dB) on a shared log grid inside the common excitation band"
+        ),
     )
 
 
@@ -296,9 +342,11 @@ def _match_reflections(
     conf_a = baseline.reflections.direct_sound_confidence
     conf_b = candidate.reflections.direct_sound_confidence
     if conf_a != "high" or conf_b != "high":
-        return (), (
+        return (), diag(
             "early reflections are not compared unless both sides have high direct-sound "
-            f"confidence (baseline {conf_a}, candidate {conf_b})"
+            "confidence (baseline {baseline_confidence}, candidate {candidate_confidence})",
+            baseline_confidence=conf_a,
+            candidate_confidence=conf_b,
         )
     left = list(baseline.reflections.reflections)
     right = list(candidate.reflections.reflections)
@@ -363,7 +411,7 @@ def _compare_noise(
     baseline: AnalysisResult, candidate: AnalysisResult, settings: CompareSettings
 ) -> tuple[MetricDelta, ...]:
     if not _quiet_ok(baseline) or not _quiet_ok(candidate):
-        reason = "one or both sessions have no verified quiet segment"
+        reason = diag("one or both sessions have no verified quiet segment")
         return (
             MetricDelta(
                 name="noise.rms_dbfs",
@@ -375,7 +423,7 @@ def _compare_noise(
             ),
         )
     if not settings.same_input_gain:
-        reason = "gain not declared equal"
+        reason = diag("gain not declared equal")
         return (
             MetricDelta(
                 name="noise.rms_dbfs",
@@ -466,22 +514,13 @@ def _placement_length_delta(
 ) -> MetricDelta:
     if baseline.validity is Validity.VALID and candidate.validity is Validity.VALID:
         return _delta_from_values(name, baseline.metres, candidate.metres, unit="m")
-    reasons = []
-    if baseline.validity is not Validity.VALID:
-        reasons.append(
-            f"baseline {baseline.validity}" + (f" ({baseline.reason})" if baseline.reason else "")
-        )
-    if candidate.validity is not Validity.VALID:
-        reasons.append(
-            f"candidate {candidate.validity}"
-            + (f" ({candidate.reason})" if candidate.reason else "")
-        )
+    reasons = _side_reasons(baseline, candidate)
     return MetricDelta(
         name=name,
         baseline=baseline.metres,
         candidate=candidate.metres,
         validity=Validity.NOT_COMPARABLE,
-        reason="; ".join(reasons) if reasons else "placement lengths are not both VALID",
+        reason="; ".join(reasons) if reasons else diag("placement lengths are not both VALID"),
         unit="m",
     )
 
@@ -492,7 +531,7 @@ def _compare_placement(
     a = baseline.placement
     b = candidate.placement
     if a is None or b is None or a.tier < 2 or b.tier < 2:
-        reason = "placement heights are compared only when both results are tier 2"
+        reason = diag("placement heights are compared only when both results are tier 2")
         return (
             MetricDelta(
                 name="placement.source_height_m",
@@ -535,7 +574,9 @@ def _compare_loopback(
                 baseline=None if a is None else a.path_delay_ms,
                 candidate=None if b is None else b.path_delay_ms,
                 validity=Validity.NOT_COMPARABLE,
-                reason="path delay is compared only when both results used a compensated loopback",
+                reason=diag(
+                    "path delay is compared only when both results used a compensated loopback"
+                ),
                 unit="ms",
             ),
         )
@@ -557,9 +598,12 @@ def compare(
     common, band_notes = _common_band(baseline, candidate)
     notes.extend(band_notes)
     notes.append(
-        f"ISO 3382-1 quotes a just-noticeable difference for reverberation time of about "
-        f"{T_JND_PERCENT:g} % (clause not verified against the standard text). A change is "
-        "not called significant from a single pair of positions."
+        diag(
+            "ISO 3382-1 quotes a just-noticeable difference for reverberation time of about "
+            "{jnd_percent:g} % (clause not verified against the standard text). A change is "
+            "not called significant from a single pair of positions.",
+            jnd_percent=T_JND_PERCENT,
+        )
     )
 
     comparable = False
@@ -570,8 +614,14 @@ def compare(
             comparable = True
         else:
             notes.append(
-                f"common excitation band {low:g}-{high:g} Hz is {octaves:.2f} octaves, "
-                f"narrower than the required {settings.min_common_band_octaves:g} octave"
+                diag(
+                    "common excitation band {low:g}-{high:g} Hz is {octaves:.2f} octaves, "
+                    "narrower than the required {required:g} octave",
+                    low=low,
+                    high=high,
+                    octaves=octaves,
+                    required=settings.min_common_band_octaves,
+                )
             )
             common = None
 
@@ -589,7 +639,9 @@ def compare(
     assert common is not None
     fr_delta = _compare_frequency_response(baseline, candidate, common, settings)
     if fr_delta is None:
-        notes.append("frequency-response curves are missing on one or both sides (--no-curves)")
+        notes.append(
+            diag("frequency-response curves are missing on one or both sides (--no-curves)")
+        )
     reflections, refl_note = _match_reflections(baseline, candidate, settings)
     if refl_note:
         notes.append(refl_note)
