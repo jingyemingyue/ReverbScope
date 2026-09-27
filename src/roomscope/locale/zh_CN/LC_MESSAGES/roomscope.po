@@ -2041,3 +2041,902 @@ msgstr "低于简易级"
 
 msgid "unknown project command {command}"
 msgstr "未知的项目命令 {command}"
+
+msgid "at least one input channel is required"
+msgstr "至少需要一个输入声道"
+
+msgid "input channels are 1-based and must be >= 1"
+msgstr "输入声道从 1 起编号，必须 >= 1"
+
+msgid "each input channel may be listed once"
+msgstr "每个输入声道只能列出一次"
+
+msgid "the loopback channel is 1-based and must be >= 1"
+msgstr "回送声道从 1 起编号，必须 >= 1"
+
+msgid "input {channel} cannot be both the microphone and the loopback; record the loopback on a different input"
+msgstr "输入 {channel} 不能同时用作话筒和回送；请把回送录到另一个输入上"
+
+msgid "playback level must be <= 0 dBFS"
+msgstr "播放电平必须 <= 0 dBFS"
+
+msgid "signal is silent"
+msgstr "信号为静音"
+
+msgid "latency must be 'low' or 'high'"
+msgstr "延迟必须是 'low' 或 'high'"
+
+msgid "unknown audio backend {name}; available: portaudio, fake"
+msgstr "未知的音频后端 {name}；可用：portaudio、fake"
+
+msgid "sample rate {rate} Hz is not in {supported}"
+msgstr "采样率 {rate} Hz 不在 {supported} 之中"
+
+msgid "kind must be 'input' or 'output'"
+msgstr "kind 必须是 'input' 或 'output'"
+
+msgid "fake backend has no device {device}"
+msgstr "模拟后端没有设备 {device}"
+
+msgid "fake backend only has device 0"
+msgstr "模拟后端只有设备 0"
+
+msgid "channels are 1-based and must be >= 1"
+msgstr "声道从 1 起编号，必须 >= 1"
+
+msgid "measurement stopped"
+msgstr "测量已停止"
+
+msgid "playback/recording timed out"
+msgstr "播放/录制超时"
+
+msgid "playback/recording failed: {error}"
+msgstr "播放/录制失败：{error}"
+
+msgid "playback/recording failed in the audio callback: {error}"
+msgstr "播放/录制在音频回调中失败：{error}"
+
+msgid "the audio stream ended after {done} of {total} frames"
+msgstr "音频流在 {total} 帧中只处理了 {done} 帧就结束了"
+
+msgctxt "diagnostic"
+msgid "the audio device reported {count} buffer problem(s) during the take ({flags}); the recording may contain dropouts"
+msgstr "音频设备在本次测量中报告了 {count} 次缓冲区问题（{flags}）；录音中可能有丢帧"
+
+msgid "the audio backend (sounddevice / PortAudio) is not available; Standalone Mode needs it, Universal DAW Mode does not"
+msgstr "音频后端（sounddevice / PortAudio）不可用；独立模式需要它，通用 DAW 模式不需要"
+
+msgid "cannot query audio devices: {error}"
+msgstr "无法查询音频设备：{error}"
+
+msgid "input device {device} does not support {rate} Hz: {error}"
+msgstr "输入设备 {device} 不支持 {rate} Hz：{error}"
+
+msgid "output device {device} does not support {rate} Hz: {error}"
+msgstr "输出设备 {device} 不支持 {rate} Hz：{error}"
+
+msgctxt "diagnostic"
+msgid "WASAPI: shared mode goes through the Windows audio engine and accepts only the device's Default Format rate; exclusive mode (--wasapi-exclusive) bypasses the engine at a rate the hardware supports"
+msgstr "WASAPI：共享模式经过 Windows 音频引擎，只接受设备“默认格式”的采样率；独占模式（--wasapi-exclusive）绕过音频引擎，以硬件支持的采样率运行"
+
+msgctxt "diagnostic"
+msgid "WDM kernel streaming: bypasses the Windows mixer; the device must support the rate"
+msgstr "WDM 内核流（WDM-KS）：绕过 Windows 混音器；设备必须支持该采样率"
+
+msgctxt "diagnostic"
+msgid "ASIO: direct driver path (not included in RoomScope's desktop bundles)"
+msgstr "ASIO：直接的驱动路径（RoomScope 桌面安装包未包含）"
+
+msgctxt "diagnostic"
+msgid "DirectSound: deprecated, runs on the Windows audio engine; resamples and mixes, and PortAudio does not check its rates (all look accepted); prefer WASAPI"
+msgstr "DirectSound：已弃用，运行在 Windows 音频引擎上；会重采样并混音，且 PortAudio 不检查它的采样率（看起来全部接受）；建议改用 WASAPI"
+
+msgctxt "diagnostic"
+msgid "MME: legacy path through the Windows audio engine; resamples and mixes, truncates device names; prefer WASAPI"
+msgstr "MME：经过 Windows 音频引擎的旧式路径；会重采样并混音，并截断设备名称；建议改用 WASAPI"
+
+msgctxt "diagnostic"
+msgid "Core Audio: the device runs at its nominal rate (Audio MIDI Setup) and PortAudio converts other rates, unless --coreaudio-set-rate sets the device rate and refuses to convert"
+msgstr "Core Audio：设备以其标称采样率运行（“音频 MIDI 设置”），PortAudio 会转换其他采样率；使用 --coreaudio-set-rate 时则改为设置设备采样率并拒绝转换"
+
+msgctxt "diagnostic"
+msgid "ALSA: a hw: device is direct; default, pulse, pipewire, dmix and plug devices may resample"
+msgstr "ALSA：hw: 设备是直接路径；default、pulse、pipewire、dmix 和 plug 设备可能重采样"
+
+msgctxt "diagnostic"
+msgid "JACK: runs at the JACK server's rate only"
+msgstr "JACK：只能以 JACK 服务器的采样率运行"
+
+msgctxt "diagnostic"
+msgid "OSS: legacy Linux interface"
+msgstr "OSS：旧式 Linux 接口"
+
+msgctxt "diagnostic"
+msgid "synthetic backend: nothing is played"
+msgstr "合成后端：不会播放任何声音"
+
+msgctxt "diagnostic"
+msgid "ALSA plugin or sound-server device: may resample and mix"
+msgstr "ALSA 插件或声音服务器设备：可能重采样并混音"
+
+msgctxt "diagnostic"
+msgid "accepts none of RoomScope's sample rates for recording"
+msgstr "录制时不接受 RoomScope 的任何采样率"
+
+msgctxt "diagnostic"
+msgid "accepts none of RoomScope's sample rates for playback"
+msgstr "播放时不接受 RoomScope 的任何采样率"
+
+msgctxt "diagnostic"
+msgid "no audio device found; Universal DAW Mode still works"
+msgstr "未找到音频设备；通用 DAW 模式仍然可用"
+
+msgid "playback ({output}) and recording ({input}) use different devices, which run on separate sample clocks; their drift smears the measurement. Use one interface for both, or an aggregate device with drift correction (macOS), and check the result with a loopback"
+msgstr "播放（{output}）和录制（{input}）使用不同的设备，它们各自运行在独立的采样时钟上，时钟漂移会抹平测量结果。请用同一个音频接口完成播放和录制，或使用带漂移校正的聚合设备（macOS），并用回送检查结果"
+
+msgid "input channel {channel} does not exist on {device} ({count} input channel(s))"
+msgstr "{device} 上没有输入声道 {channel}（共 {count} 个输入声道）"
+
+msgid "output channel {channel} does not exist on {device} ({count} output channel(s))"
+msgstr "{device} 上没有输出声道 {channel}（共 {count} 个输出声道）"
+
+msgid "there is no audio device {index}"
+msgstr "没有音频设备 {index}"
+
+msgid "input {input} ({input_api}) and output {output} ({output_api}) belong to different host APIs; PortAudio records and plays in one stream only within one host API. Choose both on the same host API"
+msgstr "输入 {input}（{input_api}）和输出 {output}（{output_api}）属于不同的主机 API；PortAudio 只能在同一个主机 API 内用一个流同时录制和播放。请在同一个主机 API 上选择输入和输出"
+
+msgid "{api} has no default input device; choose the input device on {api} as well"
+msgstr "{api} 没有默认输入设备；请同样在 {api} 上选择输入设备"
+
+msgid "{api} has no default output device; choose the output device on {api} as well"
+msgstr "{api} 没有默认输出设备；请同样在 {api} 上选择输出设备"
+
+msgid "WASAPI exclusive mode was requested, but {device} is a {api} device; choose a Windows WASAPI device or drop --wasapi-exclusive"
+msgstr "已请求 WASAPI 独占模式，但 {device} 是 {api} 设备；请选择 Windows WASAPI 设备，或去掉 --wasapi-exclusive"
+
+msgid "setting the Core Audio device rate was requested, but {device} is a {api} device; drop --coreaudio-set-rate"
+msgstr "已请求设置 Core Audio 设备的采样率，但 {device} 是 {api} 设备；请去掉 --coreaudio-set-rate"
+
+msgid "sample_rate must be positive"
+msgstr "sample_rate 必须为正数"
+
+msgid "samples must be 1-D (mono) or 2-D (frames, channels)"
+msgstr "samples 必须是一维（单声道）或二维（帧, 声道）数组"
+
+msgid "signal is empty"
+msgstr "信号为空"
+
+msgid "signal contains NaN or infinite samples"
+msgstr "信号包含 NaN 或无穷大的采样"
+
+msgid "channel {index} does not exist (signal has {count} channel(s))"
+msgstr "声道 {index} 不存在（信号共有 {count} 个声道）"
+
+msgctxt "diagnostic"
+msgid "recording has {count} channels; channel {chosen} (highest RMS) was analysed. Use the channel setting to choose explicitly."
+msgstr "录音有 {count} 个声道；已分析声道 {chosen}（RMS 最高）。可用声道设置明确指定。"
+
+msgid "sample_rate must be a positive integer"
+msgstr "sample_rate 必须是正整数"
+
+msgid "sample_rate {rate} is not supported; use one of {supported}"
+msgstr "不支持 sample_rate {rate}；请使用以下之一：{supported}"
+
+msgid "duration_s must be >= 0.5 s"
+msgstr "duration_s 必须 >= 0.5 s"
+
+msgid "duration_s must be <= 120 s"
+msgstr "duration_s 必须 <= 120 s"
+
+msgid "start_hz must be > 0"
+msgstr "start_hz 必须 > 0"
+
+msgid "end_hz must be greater than start_hz"
+msgstr "end_hz 必须大于 start_hz"
+
+msgid "end_hz must not exceed the Nyquist frequency"
+msgstr "end_hz 不能超过奈奎斯特频率"
+
+msgid "fades must be >= 0"
+msgstr "淡入淡出时长必须 >= 0"
+
+msgid "fades must be shorter than the sweep"
+msgstr "淡入淡出必须短于扫频"
+
+msgid "level_dbfs must be <= 0 dBFS"
+msgstr "level_dbfs 必须 <= 0 dBFS"
+
+msgid "level_dbfs below -80 dBFS is not a usable test signal"
+msgstr "level_dbfs 低于 -80 dBFS 时不是可用的测试信号"
+
+msgid "silences must be >= 0"
+msgstr "静音时长必须 >= 0"
+
+msgid "channel must be >= 0 or None"
+msgstr "channel 必须 >= 0 或为 None"
+
+msgid "ir_pre_delay_ms must be >= 0"
+msgstr "ir_pre_delay_ms 必须 >= 0"
+
+msgid "ir_max_length_s must be > 0.1 s"
+msgstr "ir_max_length_s 必须 > 0.1 s"
+
+msgid "at least one octave band is required"
+msgstr "至少需要一个倍频程频带"
+
+msgid "octave band frequencies must be > 0"
+msgstr "倍频程频带的频率必须 > 0"
+
+msgid "octave_bands_hz must be ascending"
+msgstr "octave_bands_hz 必须按升序排列"
+
+msgid "fr_window_s must be > 0"
+msgstr "fr_window_s 必须 > 0"
+
+msgid "fr_smoothing_fraction must be >= 0"
+msgstr "fr_smoothing_fraction 必须 >= 0"
+
+msgid "noise_min_segment_s must be > 0"
+msgstr "noise_min_segment_s 必须 > 0"
+
+msgid "reflection delay window is invalid"
+msgstr "反射延迟窗口无效"
+
+msgid "reflections_threshold_db must be negative"
+msgstr "reflections_threshold_db 必须为负数"
+
+msgid "reflections_prominence_db must be > 0"
+msgstr "reflections_prominence_db 必须 > 0"
+
+msgid "resonance_max_hz must be > 20 Hz"
+msgstr "resonance_max_hz 必须 > 20 Hz"
+
+msgid "resonance_min_prominence_db must be > 0"
+msgstr "resonance_min_prominence_db 必须 > 0"
+
+msgid "decay_noise_margin_db must be >= 0"
+msgstr "decay_noise_margin_db 必须 >= 0"
+
+msgid "placement_distance_m must be between 0.20 m and 15 m"
+msgstr "placement_distance_m 必须在 0.20 m 到 15 m 之间"
+
+msgid "placement_mic_height_m must be between 0.02 m and 5 m"
+msgstr "placement_mic_height_m 必须在 0.02 m 到 5 m 之间"
+
+msgid "placement_temperature_c must be between -20 C and 50 C"
+msgstr "placement_temperature_c 必须在 -20 °C 到 50 °C 之间"
+
+msgid "placement_mic_height_m needs placement_distance_m: a height on its own cannot be turned into geometry"
+msgstr "placement_mic_height_m 需要同时给出 placement_distance_m：仅有高度无法换算成几何位置"
+
+msgid "loopback_channel must be >= 0 or None"
+msgstr "loopback_channel 必须 >= 0 或为 None"
+
+msgctxt "file record"
+msgid "settings"
+msgstr "设置"
+
+msgctxt "file record"
+msgid "sweep settings"
+msgstr "扫频设置"
+
+msgctxt "file record"
+msgid "analysis settings"
+msgstr "分析设置"
+
+msgctxt "file record"
+msgid "calibration"
+msgstr "校准"
+
+msgctxt "file record"
+msgid "project"
+msgstr "项目"
+
+msgctxt "file record"
+msgid "position entry"
+msgstr "位置条目"
+
+msgctxt "file record"
+msgid "session"
+msgstr "会话"
+
+msgctxt "file record"
+msgid "recent sessions"
+msgstr "最近会话列表"
+
+msgctxt "file record"
+msgid "result"
+msgstr "结果"
+
+msgctxt "file record"
+msgid "comparison"
+msgstr "对比"
+
+msgctxt "file record"
+msgid "compare settings"
+msgstr "对比设置"
+
+msgctxt "file record"
+msgid "metric delta"
+msgstr "指标差值"
+
+msgctxt "file record"
+msgid "reflection match"
+msgstr "反射匹配"
+
+msgctxt "file record"
+msgid "resonance match"
+msgstr "共振匹配"
+
+msgctxt "file record"
+msgid "frequency-response delta"
+msgstr "频率响应差值"
+
+msgctxt "file record"
+msgid "sweep sidecar"
+msgstr "扫频附属"
+
+msgctxt "file record"
+msgid "decay"
+msgstr "衰减"
+
+msgctxt "file record"
+msgid "decay metric"
+msgstr "衰减指标"
+
+msgctxt "file record"
+msgid "band decay"
+msgstr "频带衰减"
+
+msgctxt "file record"
+msgid "excitation band"
+msgstr "激励频带"
+
+msgctxt "file record"
+msgid "harmonic distortion"
+msgstr "谐波失真"
+
+msgctxt "file record"
+msgid "aliased distortion"
+msgstr "混叠失真"
+
+msgctxt "file record"
+msgid "clipping"
+msgstr "削波检查"
+
+msgctxt "file record"
+msgid "loopback"
+msgstr "回送"
+
+msgctxt "file record"
+msgid "hum"
+msgstr "市电哼声"
+
+msgctxt "file record"
+msgid "noise"
+msgstr "噪声"
+
+msgctxt "file record"
+msgid "reflections"
+msgstr "反射"
+
+msgctxt "file record"
+msgid "resonances"
+msgstr "共振"
+
+msgctxt "file record"
+msgid "resonance candidate"
+msgstr "共振候选"
+
+msgctxt "file record"
+msgid "placement"
+msgstr "摆位"
+
+msgctxt "file record"
+msgid "placement length"
+msgstr "摆位长度"
+
+msgctxt "file record"
+msgid "boundary candidate"
+msgstr "边界候选"
+
+msgid "{kind} schema_version is not an integer"
+msgstr "{kind} 的 schema_version 不是整数"
+
+msgid "{kind} schema version {version} cannot be read by RoomScope {running}; this version reads schema {known} and below. Open the file in a newer RoomScope."
+msgstr "RoomScope {running} 无法读取格式版本为 {version} 的{kind}；此版本只能读取格式版本 {known} 及以下。请用更新版本的 RoomScope 打开该文件。"
+
+msgid "{kind} must be a JSON object"
+msgstr "{kind} 必须是 JSON 对象"
+
+msgid "invalid {kind} in file: {error}"
+msgstr "文件中的{kind}无效：{error}"
+
+msgid "expected a pair of numbers"
+msgstr "此处应为一对数字"
+
+msgid "unknown validity {value}"
+msgstr "未知的有效性 {value}"
+
+msgid "result.json is incomplete or invalid: {error}"
+msgstr "result.json 不完整或无效：{error}"
+
+msgid "settings data must be a JSON object"
+msgstr "设置数据必须是 JSON 对象"
+
+msgid "cannot read {path}: {error}"
+msgstr "无法读取 {path}：{error}"
+
+msgid "cannot write {path}: {error}"
+msgstr "无法写入 {path}：{error}"
+
+msgid "{name} is {size} bytes; {kind} files larger than {limit} bytes are refused"
+msgstr "{name} 大小为 {size} 字节；大于 {limit} 字节的{kind}文件会被拒绝"
+
+msgid "{name} nests {depth} levels; {kind} files deeper than {limit} are refused"
+msgstr "{name} 嵌套了 {depth} 层；嵌套超过 {limit} 层的{kind}文件会被拒绝"
+
+msgid "{path} is not a JSON object"
+msgstr "{path} 不是 JSON 对象"
+
+msgid "write the bundle outside the session folder (it would be inside {folder})"
+msgstr "请把压缩包写到会话文件夹之外（否则它会位于 {folder} 之内）"
+
+msgid "cannot write bundle {path}: {error}"
+msgstr "无法写入压缩包 {path}：{error}"
+
+msgid "cannot copy {source} to {target}: {error}"
+msgstr "无法把 {source} 复制到 {target}：{error}"
+
+msgid "RT60 {seconds:.2f} s"
+msgstr "RT60 {seconds:.2f} s"
+
+msgid "RT60 n/a"
+msgstr "RT60 无"
+
+msgid "result.json not found next to {path}"
+msgstr "在 {path} 旁边找不到 result.json"
+
+msgid "impulse_response.wav not found next to {path} and result.json has no IR samples"
+msgstr "在 {path} 旁边找不到 impulse_response.wav，且 result.json 中没有脉冲响应采样"
+
+msgid "not a directory: {path}"
+msgstr "不是文件夹：{path}"
+
+msgid "session file not found: {path}"
+msgstr "找不到会话文件：{path}"
+
+msgid "session.json names {name} at an absolute path ({path}); session files must stay inside the session folder"
+msgstr "session.json 以绝对路径（{path}）指定 {name}；会话文件必须位于会话文件夹之内"
+
+msgid "session.json names {name} outside the session folder ({path}); session files must stay inside the session folder"
+msgstr "session.json 指定的 {name} 位于会话文件夹之外（{path}）；会话文件必须位于会话文件夹之内"
+
+msgid "save_comparison expects a ComparisonResult"
+msgstr "save_comparison 需要一个 ComparisonResult"
+
+msgid "comparison file not found: {path}"
+msgstr "找不到对比文件：{path}"
+
+msgid "unknown exporter {name}; available: {available}"
+msgstr "未知的导出器 {name}；可用：{available}"
+
+msgid "the 'soundfile' package (libsndfile) is required for WAV I/O"
+msgstr "读写 WAV 需要 'soundfile' 软件包（libsndfile）"
+
+msgid "audio file not found: {path}"
+msgstr "找不到音频文件：{path}"
+
+msgid "cannot read audio file {name}: {error}"
+msgstr "无法读取音频文件 {name}：{error}"
+
+msgid "audio file is empty: {name}"
+msgstr "音频文件为空：{name}"
+
+msgid "samples must be a non-empty 1-D or 2-D array"
+msgstr "采样数据必须是非空的一维或二维数组"
+
+msgid "signal exceeds full scale; use subtype='FLOAT' or lower the level"
+msgstr "信号超过满刻度；请使用 subtype='FLOAT' 或降低电平"
+
+msgid "cannot write audio file {path}: {error}"
+msgstr "无法写入音频文件 {path}：{error}"
+
+msgid "{name} is larger than 1 MB; a sweep sidecar cannot be that large"
+msgstr "{name} 大于 1 MB；扫频附属文件不可能这么大"
+
+msgid "cannot read sweep sidecar {name}: {error}"
+msgstr "无法读取扫频附属文件 {name}：{error}"
+
+msgid "{name} is not a RoomScope sweep sidecar"
+msgstr "{name} 不是 RoomScope 扫频附属文件"
+
+msgid "{name} does not contain a sweep definition"
+msgstr "{name} 不包含扫频定义"
+
+msgid "Review before posting: device names can contain personal names; paths under your home folder are shown as ~."
+msgstr "发布前请检查：设备名称可能包含人名；主目录下的路径显示为 ~。"
+
+msgctxt "diagnostic"
+msgid "failed: {error}"
+msgstr "失败：{error}"
+
+msgctxt "diagnostic"
+msgid "failed: the callback returned {answer}"
+msgstr "失败：回调返回了 {answer}"
+
+msgctxt "sample rates"
+msgid "none"
+msgstr "无"
+
+msgctxt "edition"
+msgid "developer"
+msgstr "开发者版"
+
+msgctxt "edition"
+msgid "user"
+msgstr "安装包版"
+
+msgid "RoomScope {version} ({edition} edition)"
+msgstr "RoomScope {version}（{edition}）"
+
+msgid "RoomScope {version} ({edition} edition, desktop bundle)"
+msgstr "RoomScope {version}（{edition}，桌面打包程序）"
+
+msgid "Build: {commit}"
+msgstr "构建：{commit}"
+
+msgid "Build: no commit recorded (source or pip install)"
+msgstr "构建：未记录提交（源码或 pip 安装）"
+
+msgid "CI run: {url}"
+msgstr "CI 运行：{url}"
+
+msgid "Python {version} ({implementation}) on {platform} [{machine}]"
+msgstr "Python {version}（{implementation}），运行于 {platform} [{machine}]"
+
+msgid "Language: {language}"
+msgstr "语言：{language}"
+
+msgid "Packages:"
+msgstr "软件包："
+
+msgid "not installed"
+msgstr "未安装"
+
+msgid "Settings:"
+msgstr "设置："
+
+msgid "Paths:"
+msgstr "路径："
+
+msgid "Audio callbacks: ok"
+msgstr "音频回调：正常"
+
+msgid "Audio callbacks: not checked"
+msgstr "音频回调：未检查"
+
+msgid "Audio callbacks: {status}"
+msgstr "音频回调：{status}"
+
+msgid "Audio:"
+msgstr "音频："
+
+msgid "unavailable: {error}"
+msgstr "不可用：{error}"
+
+msgctxt "environment report"
+msgid "backend"
+msgstr "后端"
+
+msgctxt "environment report"
+msgid "host APIs"
+msgstr "主机 API"
+
+msgctxt "environment report"
+msgid "devices"
+msgstr "设备数"
+
+msgctxt "environment report"
+msgid "default input"
+msgstr "默认输入"
+
+msgctxt "environment report"
+msgid "default output"
+msgstr "默认输出"
+
+msgid "note: {note}"
+msgstr "注：{note}"
+
+msgid "Devices (* default; sample rates accepted for 1 channel, nothing was played):"
+msgstr "设备（* 为默认设备；列出单声道下接受的采样率，未播放任何声音）："
+
+msgid "Devices (* default; sample rates not probed, use roomscope doctor --probe):"
+msgstr "设备（* 为默认设备；未探测采样率，可用 roomscope doctor --probe 探测）："
+
+msgid "[{index:>2}] {name}{star} | {host_api} | in {inputs} / out {outputs} | default {rate:.0f} Hz"
+msgstr "[{index:>2}] {name}{star} | {host_api} | 输入 {inputs} / 输出 {outputs} | 默认 {rate:.0f} Hz"
+
+msgid "record {rates}"
+msgstr "录制 {rates}"
+
+msgid "play {rates}"
+msgstr "播放 {rates}"
+
+msgid "recommended input + output"
+msgstr "推荐输入 + 输出"
+
+msgctxt "diagnostic"
+msgid "reference sweep regenerated at the recording sample rate ({sample_rate} Hz); it was defined at {defined_rate} Hz"
+msgstr "参考扫频已按录音采样率（{sample_rate} Hz）重新生成；它原本定义为 {defined_rate} Hz"
+
+msgctxt "diagnostic"
+msgid "reference signal resampled from {from_rate} Hz to {to_rate} Hz"
+msgstr "参考信号已从 {from_rate} Hz 重采样到 {to_rate} Hz"
+
+msgctxt "diagnostic"
+msgid "the reference audio starts with {lead_s:.2f} s and ends with {tail_s:.2f} s of near-silence (below {threshold_db:g} dB re its peak); it was removed so that the reference is the sweep itself, and sweep positions refer to the sweep, not to the start of the file"
+msgstr "参考音频开头有 {lead_s:.2f} s、结尾有 {tail_s:.2f} s 近乎静音（低于其峰值 {threshold_db:g} dB）；这些部分已去除，使参考只包含扫频本身，扫频位置均相对于扫频起点，而非文件开头"
+
+msgctxt "diagnostic"
+msgid "reference given as an audio file without a RoomScope sweep definition; using regularised spectral division instead of the analytic inverse filter, and the excitation band is estimated from the reference spectrum"
+msgstr "参考以音频文件形式提供，没有 RoomScope 扫频定义；因此改用正则化频谱除法代替解析逆滤波器，激励频带由参考信号的频谱估计得出"
+
+msgctxt "diagnostic"
+msgid "the reference covers about {low_hz:.0f}-{high_hz:.0f} Hz (-3 dB); the outer 1/3 octave at each end is used for the regularisation roll-off and excluded"
+msgstr "参考信号约覆盖 {low_hz:.0f}-{high_hz:.0f} Hz（-3 dB）；两端各 1/3 倍频程用于正则化滚降，不计入分析"
+
+msgctxt "diagnostic"
+msgid "the recording starts {missing_ms:.0f} ms after the sweep began; the excitation band now starts at {new_low_hz:.0f} Hz instead of {old_low_hz:.0f} Hz"
+msgstr "录音在扫频开始后 {missing_ms:.0f} ms 才开始；激励频带下限因此从 {old_low_hz:.0f} Hz 改为 {new_low_hz:.0f} Hz"
+
+msgctxt "diagnostic"
+msgid "recording is silent (peak below {threshold_dbfs:g} dBFS); check the input routing and, on macOS, that the app has microphone access (System Settings > Privacy & Security > Microphone)"
+msgstr "录音无声（峰值低于 {threshold_dbfs:g} dBFS）；请检查输入路由；在 macOS 上还请确认本应用已获得麦克风权限（系统设置 > 隐私与安全性 > 麦克风）"
+
+msgctxt "diagnostic"
+msgid "recording has {runs} flat-topped peaks ({samples} samples) at {peak_dbfs:.1f} dBFS, its highest level: probable clipping before an export or a gain change, because the flat tops are below full scale; lower the playback or input level and measure again"
+msgstr "录音在其最高电平 {peak_dbfs:.1f} dBFS 处有 {runs} 个平顶峰（共 {samples} 个采样）：平顶低于满刻度，说明很可能在导出或增益调整之前就已削波；请降低播放或输入电平后重测"
+
+msgctxt "diagnostic"
+msgid "recording has {runs} flat-topped peaks ({samples} samples) at {peak_dbfs:.1f} dBFS, its highest level: probable clipping; lower the playback or input level and measure again"
+msgstr "录音在其最高电平 {peak_dbfs:.1f} dBFS 处有 {runs} 个平顶峰（共 {samples} 个采样）：很可能已削波；请降低播放或输入电平后重测"
+
+msgctxt "diagnostic"
+msgid "recording is shorter than one second"
+msgstr "录音短于 1 秒"
+
+msgctxt "diagnostic"
+msgid "the sweep was played at {speed_percent:.1f} % of the speed it was generated at, so the deconvolved response is not the room's impulse response"
+msgstr "扫频以生成时速度的 {speed_percent:.1f} % 播放，因此解卷积得到的响应不是房间的脉冲响应"
+
+msgctxt "diagnostic"
+msgid "direct-sound detection confidence is low (pre-peak margin not checkable): the recording may not contain the reference sweep"
+msgstr "直达声检测置信度低（峰前余量无法检查）：录音中可能不含该参考扫频"
+
+msgctxt "diagnostic"
+msgid "direct-sound detection confidence is low (pre-peak margin {margin_db:.1f} dB): the recording may not contain the reference sweep"
+msgstr "直达声检测置信度低（峰前余量 {margin_db:.1f} dB）：录音中可能不含该参考扫频"
+
+msgctxt "diagnostic"
+msgid "the recording clips, so the measurement chain was not linear and the deconvolved response is not the room's impulse response"
+msgstr "录音削波，测量链路并非线性，因此解卷积得到的响应不是房间的脉冲响应"
+
+msgctxt "diagnostic"
+msgid "aliased distortion (folded harmonic {orders} at {level_db:.0f} dB re the direct sound) spreads over the impulse response after the direct sound and imitates a decay"
+msgstr "混叠失真（折叠回来的 {orders} 次谐波，相对直达声 {level_db:.0f} dB）散布在直达声之后的脉冲响应中，看起来像衰减"
+
+msgctxt "diagnostic"
+msgid "recording has {count} channels; channel {channel} (highest RMS excluding loopback channel {loopback_channel}) was analysed"
+msgstr "录音有 {count} 个声道；已分析声道 {channel}（除回送声道 {loopback_channel} 外 RMS 最高）"
+
+msgctxt "diagnostic"
+msgid "the tape-measured loudspeaker distance ({distance_m:.2f} m) exceeds the loopback path-delay bound ({bound_m:.2f} m); the tape cannot be longer than what sound had time to travel"
+msgstr "卷尺测得的扬声器距离（{distance_m:.2f} m）超过了由回送路径延迟得出的上限（{bound_m:.2f} m）；卷尺量得的距离不可能比声音实际传播的距离更长"
+
+msgctxt "diagnostic"
+msgid "loopback compensation applied: the frequency response is relative to the interface return"
+msgstr "已应用回送补偿：频率响应以音频接口的回送信号为参考"
+
+msgctxt "diagnostic"
+msgid "the recording contains {passes} sweep passes (pulses within {pass_level_db:g} dB of the strongest); pass {order}, starting at {start_s:.2f} s, was analysed and the others were ignored. Record a single pass for a clean measurement"
+msgstr "录音中包含 {passes} 遍扫频（与最强脉冲相差不超过 {pass_level_db:g} dB 的脉冲）；已分析从 {start_s:.2f} s 开始的第 {order} 遍，其余均被忽略。只录一遍扫频才能得到干净的测量"
+
+msgctxt "diagnostic"
+msgid "the impulse response ends where the next sweep pass starts ({length_s:.2f} s after the direct sound)"
+msgstr "脉冲响应在下一遍扫频开始处截止（直达声之后 {length_s:.2f} s）"
+
+msgctxt "diagnostic"
+msgid "only {length_s:.2f} s of decay were recorded after the sweep; long reverberation times cannot be evaluated"
+msgstr "扫频之后只录到 {length_s:.2f} s 的衰减；无法评估较长的混响时间"
+
+msgctxt "diagnostic"
+msgid "there is no content before the direct sound to check the detection against; direct-sound detection confidence is low"
+msgstr "直达声之前没有可用于核对检测结果的内容；直达声检测置信度低"
+
+msgctxt "diagnostic"
+msgid "content before the direct sound is only {margin_db:.1f} dB below it (noise, pre-ringing or a wrong reference); direct-sound detection confidence is medium"
+msgstr "直达声之前的内容仅比直达声低 {margin_db:.1f} dB（噪声、预振铃或参考信号不对）；直达声检测置信度中等"
+
+msgctxt "diagnostic"
+msgid "content before the direct sound is only {margin_db:.1f} dB below it (noise, pre-ringing or a wrong reference); direct-sound detection confidence is low"
+msgstr "直达声之前的内容仅比直达声低 {margin_db:.1f} dB（噪声、预振铃或参考信号不对）；直达声检测置信度低"
+
+msgctxt "diagnostic"
+msgid "harmonic {orders} of the sweep was folded back below the Nyquist frequency ({level_db:.0f} dB re the direct sound): a nonlinearity in the digital domain (a playback bus or export that clipped, or a saturation plug-in without oversampling) distorted the signal before the converter. The folded products land after the direct sound and imitate a long decay, so the decay metrics cannot be trusted. Lower the level in the playback path and measure again"
+msgstr "扫频的 {orders} 次谐波被折叠回奈奎斯特频率以下（相对直达声 {level_db:.0f} dB）：数字域中的非线性（播放总线或导出发生削波，或未开过采样的饱和插件）在转换器之前就让信号失真了。折叠产物落在直达声之后，看起来像很长的衰减，因此衰减指标不可信。请降低播放链路中的电平后重测"
+
+msgctxt "diagnostic"
+msgid "the frequency response is gated to {window_ms:.0f} ms after the direct sound, so its resolution is {resolution_hz:.1f} Hz; the resonance search uses the ungated response"
+msgstr "频率响应被门控为直达声之后 {window_ms:.0f} ms，因此分辨率为 {resolution_hz:.1f} Hz；共振搜索使用未门控的响应"
+
+msgctxt "diagnostic"
+msgid "impulse response imported; deconvolution, sweep-position checks and distortion indicators were skipped"
+msgstr "已导入脉冲响应；跳过了解卷积、扫频位置检查和失真指标"
+
+msgctxt "diagnostic"
+msgid "excitation band was not declared; band metrics are not computed"
+msgstr "未声明激励频带；不计算频带指标"
+
+msgctxt "diagnostic"
+msgid "excitation band unknown (imported impulse response; declare --band)"
+msgstr "激励频带未知（导入的脉冲响应；请用 --band 声明）"
+
+msgctxt "diagnostic"
+msgid "no recording segment exists (imported impulse response)"
+msgstr "没有录音片段（导入的脉冲响应）"
+
+msgctxt "diagnostic"
+msgid "recording is shorter than the reference sweep; the file does not contain the full sweep"
+msgstr "录音比参考扫频短；该文件没有包含完整的扫频"
+
+msgctxt "diagnostic"
+msgid "deconvolved signal is empty"
+msgstr "解卷积后的信号为空"
+
+msgctxt "diagnostic"
+msgid "deconvolved signal has no usable peak (silent recording?)"
+msgstr "解卷积后的信号没有可用的峰值（录音是否无声？）"
+
+msgctxt "diagnostic"
+msgid "the next sweep pass starts right after this one; the room decay after the sweep was not recorded. Leave silence after each sweep (the generated test file contains it) or record a single pass"
+msgstr "下一遍扫频紧接着这一遍开始，扫频之后的房间衰减没有录到。请在每遍扫频之后留出静音（生成的测试文件已包含），或只录一遍"
+
+msgctxt "diagnostic"
+msgid "the direct sound was found at the very end of the recording; the recording does not contain the room decay after the sweep"
+msgstr "直达声出现在录音的最末尾；录音中没有扫频之后的房间衰减"
+
+msgctxt "diagnostic"
+msgid "the harmonic lies above the excitation band"
+msgstr "该谐波位于激励频带之上"
+
+msgctxt "diagnostic"
+msgid "the harmonic window lies outside the deconvolved signal"
+msgstr "谐波窗口超出了解卷积后信号的范围"
+
+msgctxt "diagnostic"
+msgid "the harmonic window is too short to resolve the common band"
+msgstr "谐波窗口太短，无法分辨共同频带"
+
+msgctxt "diagnostic"
+msgid "the linear response has no energy in the common band"
+msgstr "线性响应在共同频带内没有能量"
+
+msgctxt "diagnostic"
+msgid "no harmonic-free content before the direct sound to compare with"
+msgstr "直达声之前没有不含谐波的内容可供比较"
+
+msgctxt "diagnostic"
+msgid "not distinguishable from the floor (at most {level_db:.1f} dB, floor {floor_db:.1f} dB)"
+msgstr "与本底无法区分（至多 {level_db:.1f} dB，本底 {floor_db:.1f} dB）"
+
+msgctxt "diagnostic"
+msgid "harmonic {order} folds back to {low_khz:.1f}-{high_khz:.1f} kHz, outside the swept range, where the inverse filter has no gain: such products cannot reach the impulse response"
+msgstr "{order} 次谐波折叠到 {low_khz:.1f}-{high_khz:.1f} kHz，位于扫频范围之外，逆滤波器在那里没有增益：这类产物不会进入脉冲响应"
+
+msgctxt "diagnostic"
+msgid "no wide enough part of the folded trajectory of harmonic {order} can be separated from the sweep and its non-aliased harmonics"
+msgstr "{order} 次谐波的折叠轨迹中，没有足够宽的一段能与扫频本身及其未混叠的谐波分开"
+
+msgctxt "diagnostic"
+msgid "harmonic {order} of this sweep does not fold back into the swept range at {sample_rate} Hz"
+msgstr "在 {sample_rate} Hz 下，此扫频的 {order} 次谐波不会折叠回扫频范围内"
+
+msgctxt "diagnostic"
+msgid "the probe window lies outside the recording"
+msgstr "探测窗口超出了录音范围"
+
+msgctxt "diagnostic"
+msgid "the linear response has no energy in the probe band"
+msgstr "线性响应在探测频带内没有能量"
+
+msgctxt "diagnostic"
+msgid "no content before the probe window to compare with"
+msgstr "探测窗口之前没有可供比较的内容"
+
+msgctxt "diagnostic"
+msgid "relative dB (0 dB = the interface loopback)"
+msgstr "相对 dB（0 dB = 音频接口回送）"
+
+msgctxt "diagnostic"
+msgid "the loopback channel clips; compensation is not applied"
+msgstr "回送声道削波；未应用补偿"
+
+msgctxt "diagnostic"
+msgid "the loopback peak does not stand far enough above the content before it (confidence medium); the channel may be a microphone, not an electrical return. Compensation is not applied"
+msgstr "回送峰值没有明显高出其之前的内容（置信度中等）；该声道可能是话筒，而不是电信号回送。未应用补偿"
+
+msgctxt "diagnostic"
+msgid "the loopback peak does not stand far enough above the content before it (confidence low); the channel may be a microphone, not an electrical return. Compensation is not applied"
+msgstr "回送峰值没有明显高出其之前的内容（置信度低）；该声道可能是话筒，而不是电信号回送。未应用补偿"
+
+msgctxt "diagnostic"
+msgid "the loopback recording is too short after the peak to check that the return is electrical; compensation is not applied"
+msgstr "回送录音在峰值之后太短，无法确认回送是电信号；未应用补偿"
+
+msgctxt "diagnostic"
+msgid "the loopback still carries energy {settle_ms:.1f} ms after the peak (late peak {drop_db:.1f} dB down); that looks like a room, not a cable. Compensation is not applied"
+msgstr "回送在峰值之后 {settle_ms:.1f} ms 仍有能量（后续峰值仅低 {drop_db:.1f} dB）；这更像房间而不是线缆。未应用补偿"
+
+msgctxt "diagnostic"
+msgid "loopback settled in {settle_ms:.1f} ms (late peak {drop_db:.1f} dB down); using a {fir_samples}-sample interface FIR around the peak"
+msgstr "回送在 {settle_ms:.1f} ms 内稳定（后续峰值低 {drop_db:.1f} dB）；使用峰值附近 {fir_samples} 个采样的音频接口 FIR"
+
+msgctxt "diagnostic"
+msgid "the microphone peak precedes the loopback peak by {lead_ms:.2f} ms; the path-delay bound is not reported"
+msgstr "话筒峰值比回送峰值早 {lead_ms:.2f} ms；不报告路径延迟上限"
+
+msgid "recording is at {sample_rate} Hz but the sweep cannot be regenerated at that rate: {error}"
+msgstr "录音采样率为 {sample_rate} Hz，但扫频无法按该采样率重新生成：{error}"
+
+msgid "reference signal cannot be used: {error}"
+msgstr "参考信号无法使用：{error}"
+
+msgid "the recording starts about {missing_s:.2f} s after the sweep began, so frequencies below about {lost_hz:.0f} Hz were not recorded. Start the recording before playback (the test file begins with silence for this purpose) and export the whole take"
+msgstr "录音在扫频开始约 {missing_s:.2f} s 后才开始，因此约 {lost_hz:.0f} Hz 以下的频率没有录到。请在播放前开始录音（测试文件开头的静音正是为此准备的），并导出完整的一次录音"
+
+msgid "the recording starts about {missing_s:.2f} s after the reference sweep began, so the first part of the sweep (for a rising sweep: its lowest frequencies) was not recorded. Start the recording before playback and export the whole take"
+msgstr "录音在参考扫频开始约 {missing_s:.2f} s 后才开始，因此扫频的开头部分（对上升扫频而言即最低的频率）没有录到。请在播放前开始录音，并导出完整的一次录音"
+
+msgid "the recording starts after the swept range; no part of the sweep can be analysed"
+msgstr "录音在扫频范围结束之后才开始；扫频的任何部分都无法分析"
+
+msgid "the loopback file and the recording have different sample rates; export both from the same take"
+msgstr "回送文件与录音的采样率不同；请从同一次录音中导出两者"
+
+msgid "loopback_channel {channel} does not exist (recording has {count} channel(s))"
+msgstr "loopback_channel {channel} 不存在（录音只有 {count} 个声道）"
+
+msgid "loopback_channel must differ from the microphone channel"
+msgstr "loopback_channel 必须与话筒声道不同"
+
+msgid "the loopback file and the recording differ in length by more than {tolerance_ms:.0f} ms; export both from the same take"
+msgstr "回送文件与录音的长度相差超过 {tolerance_ms:.0f} ms；请从同一次录音中导出两者"
+
+msgid "impulse response is shorter than 50 ms"
+msgstr "脉冲响应短于 50 ms"
+
+msgid "excitation_band must be a (low_hz, high_hz) pair with high > low > 0"
+msgstr "excitation_band 必须是 (low_hz, high_hz) 数对，且 high > low > 0"
+
+msgid "this file cannot be analysed as an impulse response: its strongest sample is only {margin_db:.1f} dB above the content before it (at least {required_db:g} dB is required). It may be a recording (a recording of the test sweep is analysed with `roomscope analyze`), or an IR whose direct sound is weaker than a later arrival, which RoomScope cannot use as time zero. For a band-limited IR, declare its band with --band"
+msgstr "该文件无法作为脉冲响应分析：其最强采样只比之前的内容高 {margin_db:.1f} dB（至少需要 {required_db:g} dB）。它可能是一段录音（测试扫频的录音请用 `roomscope analyze` 分析），也可能是直达声弱于后到声音的脉冲响应，RoomScope 无法把它用作时间零点。对于带限脉冲响应，请用 --band 声明其频带"
+
+msgid "the frequency-response window ({window_ms:.1f} ms) is shorter than its {taper_ms:g} ms end taper plus {minimum_ms:g} ms: it would attenuate or exclude the direct sound. Use a longer window"
+msgstr "频率响应窗口（{window_ms:.1f} ms）短于其 {taper_ms:g} ms 末端渐变加 {minimum_ms:g} ms：这会衰减或排除直达声。请使用更长的窗口"
+
+msgid "reference signal must be a non-empty mono array"
+msgstr "参考信号必须是非空的单声道数组"
+
+msgid "reference signal is silent"
+msgstr "参考信号无声"
+
+msgid "reference signal must be a mono array with at least 16 samples"
+msgstr "参考信号必须是至少含 16 个采样的单声道数组"
+
+msgid "reference signal contains NaN or infinite samples"
+msgstr "参考信号包含 NaN 或无穷大采样"
+
+msgid "the reference signal only covers {low_hz:.0f}-{high_hz:.0f} Hz; that is too narrow for a sweep measurement"
+msgstr "参考信号只覆盖 {low_hz:.0f}-{high_hz:.0f} Hz；对扫频测量来说太窄了"

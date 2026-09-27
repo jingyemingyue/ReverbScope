@@ -190,7 +190,7 @@ class ComparePage(QWidget):
                 settings=CompareSettings(same_input_gain=self.same_gain.isChecked()),
             )
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot compare"), str(exc))
+            QMessageBox.critical(self, _("Cannot compare"), localize(str(exc)))
             return
         profile = right.session.recording_profile or "generic"
         try:
@@ -299,7 +299,7 @@ class ComparePage(QWidget):
         try:
             save_comparison(path, self._comparison)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot save"), str(exc))
+            QMessageBox.critical(self, _("Cannot save"), localize(str(exc)))
             return
         self.status.setText(_("Wrote {path}").format(path=path))
 

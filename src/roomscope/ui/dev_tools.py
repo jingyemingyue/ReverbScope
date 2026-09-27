@@ -106,7 +106,7 @@ class DeviceInspector(QDialog):
             self.inventory = build_inventory(get_backend(self._backend_name), probe_rates=probe)
         except RoomScopeError as exc:
             self.inventory = None
-            self.summary.setText(str(exc))
+            self.summary.setText(localize(str(exc)))
             self.table.setRowCount(0)
             return
         self.filter.blockSignals(True)

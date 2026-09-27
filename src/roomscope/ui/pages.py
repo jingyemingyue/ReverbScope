@@ -34,7 +34,7 @@ from roomscope.audio.playrec import (
 from roomscope.core.pipeline import Reference
 from roomscope.core.sweep import measurement_signal
 from roomscope.errors import AudioDeviceError, RoomScopeError
-from roomscope.i18n import N_, _
+from roomscope.i18n import N_, _, localize
 from roomscope.interpretation import available_profiles, interpret
 from roomscope.interpretation.profiles import profile_title
 from roomscope.io.wav import load_reference, read_wav, write_sweep_file
@@ -377,7 +377,7 @@ class DawModePage(QWidget):
             settings = self.current_sweep_settings()
             wav_path, sidecar = write_sweep_file(settings, path)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot write test signal"), str(exc))
+            QMessageBox.critical(self, _("Cannot write test signal"), localize(str(exc)))
             return
         self.state.sweep_settings = settings
         self.state.sweep_path = wav_path
@@ -410,7 +410,7 @@ class DawModePage(QWidget):
         try:
             recording = read_wav(path)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot read recording"), str(exc))
+            QMessageBox.critical(self, _("Cannot read recording"), localize(str(exc)))
             return
         self.state.recording = recording
         self.state.recording_path = path
@@ -445,7 +445,7 @@ class DawModePage(QWidget):
         try:
             self.state.reference = load_reference(path)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot read reference sweep"), str(exc))
+            QMessageBox.critical(self, _("Cannot read reference sweep"), localize(str(exc)))
             return
         self.state.sweep_path = path
         if self.state.reference.settings is not None:
@@ -683,7 +683,9 @@ class StandalonePage(QWidget):
             self._inventory = None
             self.host_api.clear()
             self._fill_device_lists()
-            self.status.setText(_("Audio backend unavailable: {error}").format(error=exc))
+            self.status.setText(
+                _("Audio backend unavailable: {error}").format(error=localize(str(exc)))
+            )
             self.run_button.setEnabled(False)
             return
         self._inventory = inventory
@@ -814,10 +816,10 @@ class StandalonePage(QWidget):
                 options=self.stream_options(),
             )
         except AudioDeviceError as exc:
-            QMessageBox.critical(self, _("Sample rate not supported"), str(exc))
+            QMessageBox.critical(self, _("Sample rate not supported"), localize(str(exc)))
             return None
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Invalid settings"), str(exc))
+            QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
             return None
         if plan.clock_warning:
             answer = QMessageBox.warning(
@@ -883,7 +885,7 @@ class StandalonePage(QWidget):
         try:
             settings = self.current_sweep_settings()
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Invalid settings"), str(exc))
+            QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
             return
         if settings.level_dbfs > SAFE_MAX_LEVEL_DBFS and not self.acknowledge.isChecked():
             QMessageBox.warning(
@@ -907,7 +909,7 @@ class StandalonePage(QWidget):
                 hardware_loopback if hardware_loopback > 0 else None,
             )
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Invalid settings"), str(exc))
+            QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
             return
         devices = self._preflight(list(plan.input_channels), settings.sample_rate)
         if devices is None:

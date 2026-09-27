@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from roomscope.errors import RoomScopeError
-from roomscope.i18n import _
+from roomscope.i18n import _, localize
 
 
 def _when(created_at: str) -> str:
@@ -107,7 +107,7 @@ class SessionBrowser(QWidget):
             try:
                 entries = list_project_sessions(root)
             except RoomScopeError as exc:
-                QMessageBox.warning(self, _("Cannot list sessions"), str(exc))
+                QMessageBox.warning(self, _("Cannot list sessions"), localize(str(exc)))
                 self.refresh_recent()
                 return
             for label, path in entries:
@@ -123,7 +123,7 @@ class SessionBrowser(QWidget):
         try:
             listings = list_sessions(root)
         except RoomScopeError as exc:
-            QMessageBox.warning(self, _("Cannot list sessions"), str(exc))
+            QMessageBox.warning(self, _("Cannot list sessions"), localize(str(exc)))
             self.refresh_recent()
             return
         for listing in listings:

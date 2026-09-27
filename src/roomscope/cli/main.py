@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, cast
 from roomscope import __version__
 from roomscope.cli.report import format_comparison_report, format_report
 from roomscope.errors import ConfigurationError, MeasurementCancelledError, RoomScopeError
-from roomscope.i18n import N_, _, activate
+from roomscope.i18n import N_, _, activate, localize
 from roomscope.interpretation import available_profiles
 from roomscope.interpretation.profiles import band_text
 from roomscope.labels import accuracy_class_text
@@ -670,7 +670,7 @@ def _print_inventory(backend: Any, args: argparse.Namespace) -> int:
             rank = "-" if api.rank is None else str(api.rank + 1)
             print(f"{api.index:>3}  {api.device_count:>7}  {rank:>4}  {api.name}")
             if api.note:
-                print(f"{'':>19}{api.note}")
+                print(f"{'':>19}{localize(api.note)}")
         return 0
     for probe in inventory.devices:
         d = probe.device
@@ -691,9 +691,9 @@ def _print_inventory(backend: Any, args: argparse.Namespace) -> int:
             rates = ", ".join(str(r) for r in probe.output_rates) or "-"
             print(f"      {_('play')}:   {rates}")
         for note in probe.notes:
-            print(f"      - {note}")
+            print(f"      - {localize(note)}")
     for note in inventory.notes:
-        print(note)
+        print(localize(note))
     return 0
 
 
@@ -1121,10 +1121,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         return COMMANDS[args.command](args)
     except MeasurementCancelledError as exc:
-        print(_("stopped: {message}").format(message=exc), file=sys.stderr)
+        print(_("stopped: {message}").format(message=localize(str(exc))), file=sys.stderr)
         return 130
     except RoomScopeError as exc:
-        print(_("error: {message}").format(message=exc), file=sys.stderr)
+        print(_("error: {message}").format(message=localize(str(exc))), file=sys.stderr)
         return 1
     except KeyboardInterrupt:
         print(_("interrupted"), file=sys.stderr)

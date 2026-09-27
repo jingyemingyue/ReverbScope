@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStackedWid
 
 from roomscope import __version__
 from roomscope.errors import RoomScopeError
-from roomscope.i18n import _
+from roomscope.i18n import _, localize
 from roomscope.interpretation import interpret
 from roomscope.io.recent import remember_session
 from roomscope.io.session_store import load_measurement
@@ -149,7 +149,7 @@ class MainWindow(QMainWindow):
         try:
             loaded = load_measurement(path)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot open session"), str(exc))
+            QMessageBox.critical(self, _("Cannot open session"), localize(str(exc)))
             return
         self.state.session = loaded.session
         self.state.result = loaded.result

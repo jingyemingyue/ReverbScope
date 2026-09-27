@@ -479,7 +479,7 @@ class ResultsPage(QWidget):
                 self.state.session.recording_path = str(path)
             session_path = save_measurement(directory, self.state.session, result)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot save session"), str(exc))
+            QMessageBox.critical(self, _("Cannot save session"), localize(str(exc)))
             return
         remember_session(directory)
         self.status.setText(_("Session saved to {path}").format(path=session_path.parent))
