@@ -167,7 +167,7 @@ def format_message(template: str, **params: Any) -> str:
 #: reasons) that :func:`localize` shows in the active language.
 DIAGNOSTIC_CONTEXT = "diagnostic"
 _FIELD = re.compile(r"\{(\w+)(![rsa])?(:[^{}]*)?\}")
-_diagnostic_patterns: tuple[int, list[tuple[re.Pattern[str], str]]] | None = None
+_diagnostic_patterns: tuple[int, list[tuple[re.Pattern[str], re.Pattern[str], str]]] | None = None
 
 
 def diag(template: str, **params: Any) -> str:
@@ -181,7 +181,7 @@ def diag(template: str, **params: Any) -> str:
     return template.format(**params) if params else template
 
 
-def _template_pattern(template: str) -> re.Pattern[str]:
+def _template_pattern(template: str, *, strict: bool = True) -> re.Pattern[str]:
     parts: list[str] = []
     seen: set[str] = set()
     for literal, field, _spec, _conversion in string.Formatter().parse(template):
@@ -192,28 +192,33 @@ def _template_pattern(template: str) -> re.Pattern[str]:
             parts.append(f"(?P={field})")
         else:
             seen.add(field)
-            # A value never spans the "; " that joins several diagnostics.
-            parts.append(f"(?P<{field}>(?:(?!; ).)+?)")
+            # Strict: a value never spans the "; " that joins several
+            # diagnostics. The loose form lets a value be a whole nested
+            # diagnostic that has a "; " of its own.
+            parts.append(f"(?P<{field}>(?:(?!; ).)+?)" if strict else f"(?P<{field}>.+?)")
     return re.compile("".join(parts), re.DOTALL)
 
 
-def _patterns() -> list[tuple[re.Pattern[str], str]]:
-    """(English pattern, translation without format specs), most specific first."""
+def _patterns() -> list[tuple[re.Pattern[str], re.Pattern[str], str]]:
+    """(strict and loose English patterns, translation without format specs),
+    most specific first."""
     global _diagnostic_patterns
     if _diagnostic_patterns is not None and _diagnostic_patterns[0] == id(_translation):
         return _diagnostic_patterns[1]
     catalog: dict[str, str] = getattr(_translation, "_catalog", {}) or {}
     prefix = f"{DIAGNOSTIC_CONTEXT}{_CONTEXT_SEPARATOR}"
-    entries: list[tuple[int, re.Pattern[str], str]] = []
+    entries: list[tuple[int, re.Pattern[str], re.Pattern[str], str]] = []
     for key, translated in catalog.items():
         if not isinstance(key, str) or not key.startswith(prefix) or not translated:
             continue
         template = key[len(prefix) :]
         literal = sum(len(text) for text, *_rest in string.Formatter().parse(template))
         plain = _FIELD.sub(lambda m: "{" + m.group(1) + "}", translated)
-        entries.append((literal, _template_pattern(template), plain))
+        strict = _template_pattern(template)
+        loose = _template_pattern(template, strict=False)
+        entries.append((literal, strict, loose, plain))
     entries.sort(key=lambda entry: -entry[0])
-    patterns = [(pattern, plain) for _literal, pattern, plain in entries]
+    patterns = [(strict, loose, plain) for _literal, strict, loose, plain in entries]
     _diagnostic_patterns = (id(_translation), patterns)
     return patterns
 
@@ -227,19 +232,31 @@ def localize(text: str, _depth: int = 0) -> str:
     """
     if not text or _current == DEFAULT_LANG or _depth > 2:
         return text
-    for pattern, translated in _patterns():
-        match = pattern.fullmatch(text)
-        if match is None:
-            continue
-        values = {k: _localize_value(v, _depth + 1) for k, v in match.groupdict().items()}
-        try:
-            return translated.format(**values)
-        except (KeyError, IndexError, ValueError):
-            return text
+    patterns = _patterns()
+    for strict, _loose, translated in patterns:
+        match = strict.fullmatch(text)
+        if match is not None:
+            return _fill(translated, match, text, _depth)
     if "; " in text:
+        # A nested diagnostic with a "; " of its own, recognised as a whole.
+        for _strict, loose, translated in patterns:
+            match = loose.fullmatch(text)
+            if match is not None and all(
+                "; " not in value or localize(value, _depth + 1) != value
+                for value in match.groupdict().values()
+            ):
+                return _fill(translated, match, text, _depth)
         parts = [localize(part, _depth) for part in text.split("; ")]
         return "；".join(parts)
     return text
+
+
+def _fill(translated: str, match: re.Match[str], text: str, depth: int) -> str:
+    values = {k: _localize_value(v, depth + 1) for k, v in match.groupdict().items()}
+    try:
+        return translated.format(**values)
+    except (KeyError, IndexError, ValueError):
+        return text
 
 
 def _localize_value(value: str, depth: int) -> str:
@@ -248,6 +265,13 @@ def _localize_value(value: str, depth: int) -> str:
     nested = localize(value, depth)
     if nested != value:
         return nested
+    if " or " in value:
+        # Alternatives listed in a stored sentence ("1.20 m or 1.35 m").
+        return (
+            _("{a} or {b}")
+            .format(a="", b="")
+            .join(_localize_value(part, depth) for part in value.split(" or "))
+        )
     for candidate in (value, value.replace("_", " ")):
         translated = _translation.gettext(candidate)
         if translated != candidate:

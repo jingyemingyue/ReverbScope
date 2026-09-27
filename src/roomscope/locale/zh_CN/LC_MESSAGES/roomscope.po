@@ -2940,3 +2940,385 @@ msgstr "参考信号包含 NaN 或无穷大采样"
 
 msgid "the reference signal only covers {low_hz:.0f}-{high_hz:.0f} Hz; that is too narrow for a sweep measurement"
 msgstr "参考信号只覆盖 {low_hz:.0f}-{high_hz:.0f} Hz；对扫频测量来说太窄了"
+
+msgctxt "diagnostic"
+msgid "no detected reflection can be read as coming from the horizontal plane the microphone height was measured from: {rejections}"
+msgstr "检测到的反射均无法解读为来自测量话筒高度所依据的水平面：{rejections}"
+
+msgctxt "diagnostic"
+msgid "no detected reflection can be read as coming from the horizontal plane the microphone height was measured from; none was detected at all"
+msgstr "没有反射可解读为来自测量话筒高度所依据的水平面；根本没有检测到任何反射"
+
+msgctxt "diagnostic"
+msgid "the plane the heights are measured from was not established, so nothing above it can be placed"
+msgstr "未能确定测量高度所依据的平面，因此无法确定其上方任何表面的位置"
+
+msgctxt "diagnostic"
+msgid "only the two horizontal planes are ever named. No wall is identified: one omnidirectional microphone gives no bearing, so naming one would be a guess"
+msgstr "只会标注两个水平面，不识别任何墙面：单只全指向话筒无法提供方位信息，指认墙面只能是猜测"
+
+msgctxt "diagnostic"
+msgid "reads {excess:.1f} dB above what a lossless point source mirrored in a rigid plane would give at that path length, so it is not treated as a first-order specular arrival (it may be two arrivals merged by the envelope peak-hold, a comb-filter artefact or a peak of the dense early tail)"
+msgstr "读数比无损点声源经刚性平面镜像后在该路径长度上应有的值高 {excess:.1f} dB，因此不视为一阶镜面反射到达（可能是被包络峰值保持合并的两次到达、梳状滤波伪影，或密集早期尾部中的一个峰）"
+
+msgctxt "diagnostic"
+msgid "the {delay:.1f} ms candidate reads {excess:.1f} dB above what a lossless point source mirrored in a rigid plane would give at that path length, so it is not treated as a first-order specular arrival (it may be two arrivals merged by the envelope peak-hold, a comb-filter artefact or a peak of the dense early tail)"
+msgstr "{delay:.1f} ms 处的候选反射读数比无损点声源经刚性平面镜像后在该路径长度上应有的值高 {excess:.1f} dB，因此不视为一阶镜面反射到达（可能是被包络峰值保持合并的两次到达、梳状滤波伪影，或密集早期尾部中的一个峰）"
+
+msgctxt "diagnostic"
+msgid "reads {attenuation:.1f} dB below that ceiling, more than the {limit:.0f} dB RoomScope treats as the limit for a discrete plane reflection, so it is not used to attribute a surface"
+msgstr "读数比该上限低 {attenuation:.1f} dB，超过了 RoomScope 视为离散平面反射极限的 {limit:.0f} dB，因此不用于判定反射面"
+
+msgctxt "diagnostic"
+msgid "the {delay:.1f} ms candidate reads {attenuation:.1f} dB below that ceiling, more than the {limit:.0f} dB RoomScope treats as the limit for a discrete plane reflection, so it is not used to attribute a surface"
+msgstr "{delay:.1f} ms 处的候选反射读数比该上限低 {attenuation:.1f} dB，超过了 RoomScope 视为离散平面反射极限的 {limit:.0f} dB，因此不用于判定反射面"
+
+msgctxt "diagnostic"
+msgid "the reflection search was cut short at {end:.1f} ms, and truncation does not drop arrivals at random: it drops the longest paths first, so any height derived from what remains is biased low"
+msgstr "反射搜索在 {end:.1f} ms 处被截断，而截断并不是随机丢弃到达声：它最先丢弃路径最长的反射，因此由剩余反射推算的任何高度都会偏低"
+
+msgctxt "diagnostic"
+msgid "no air temperature was supplied, so {temperature:.0f} C ({speed:.1f} m/s) was assumed; a 5 C error moves every distance by about 0.9 %"
+msgstr "未提供气温，因此假定为 {temperature:.0f} C（声速 {speed:.1f} m/s）；气温误差 5 C 会使每个距离偏差约 0.9 %"
+
+msgctxt "diagnostic"
+msgid "direct-sound detection confidence is low, so the time origin every delay is measured from was not established and no distance derived from it is reported"
+msgstr "直达声检测置信度为低，因此未能确立所有延迟的计时起点，不报告由此推算的任何距离"
+
+msgctxt "diagnostic"
+msgid "no detected reflection can be read as a plane above both devices: {rejections}; even the lowest plausible upper plane ({lowest:.1f} m) would arrive at about {delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window that could be searched, so absence here is not evidence of absence"
+msgstr "检测到的反射均无法解读为位于两台设备上方的平面：{rejections}；即使是最低的合理上方平面（{lowest:.1f} m），其反射也约在 {delay:.1f} ms 才到达，超出了可搜索的 {start:.1f}-{end:.1f} ms 窗口，因此此处没有找到并不代表不存在"
+
+msgctxt "diagnostic"
+msgid "more than one reflection could be the surface the height was measured from, and they disagree by more than {agreement_cm:.0f} cm: {values}. RoomScope does not choose between them. This is the expected outcome when the microphone sits near the vertical midpoint of the room, where the arrival from the surface below and the one from the surface above are interchangeable; moving the microphone 20-30 cm up or down and measuring again separates them"
+msgstr "有不止一个反射可能来自测量高度所依据的表面，且它们之间相差超过 {agreement_cm:.0f} cm：{values}。RoomScope 不会在其中做选择。话筒位于房间垂直方向中点附近时这是预期结果，因为来自下方表面和上方表面的到达声可以互换；将话筒上移或下移 20-30 cm 后重新测量即可将两者分开"
+
+msgctxt "diagnostic"
+msgid "inherited from the reflection search: {note}"
+msgstr "沿用自反射搜索：{note}"
+
+msgctxt "diagnostic"
+msgid "direct-sound detection confidence is medium, so the time origin every delay is measured from was not established and no distance derived from it is reported"
+msgstr "直达声检测置信度为中，因此未能确立所有延迟的计时起点，不报告由此推算的任何距离"
+
+msgctxt "diagnostic"
+msgid "direct-sound detection confidence is {confidence}, so the time origin every delay is measured from was not established and no distance derived from it is reported"
+msgstr "直达声检测置信度为 {confidence}，因此未能确立所有延迟的计时起点，不报告由此推算的任何距离"
+
+msgctxt "diagnostic"
+msgid "no loudspeaker-to-microphone distance was supplied; measure the straight line from the loudspeaker to the microphone capsule with a tape"
+msgstr "未提供扬声器到话筒的距离；请用卷尺测量扬声器到话筒振膜的直线距离"
+
+msgctxt "diagnostic"
+msgid "no microphone height was supplied, so no reflection can be attributed to a horizontal plane"
+msgstr "未提供话筒高度，因此无法将任何反射归属到水平面"
+
+msgctxt "diagnostic"
+msgid "the {delay:.1f} ms candidate implies a loudspeaker {height:.2f} m above the plane the height was measured from ({low:.2f}-{high:.2f} m is treated as plausible)"
+msgstr "{delay:.1f} ms 处的候选反射意味着扬声器位于测量高度所依据平面上方 {height:.2f} m 处（合理范围为 {low:.2f}-{high:.2f} m）"
+
+msgctxt "diagnostic"
+msgid "no detected reflection can be read as a plane above both devices: {rejections}"
+msgstr "检测到的反射均无法解读为位于两台设备上方的平面：{rejections}"
+
+msgctxt "diagnostic"
+msgid "the {delay:.1f} ms candidate implies a vertical separation of {separation:.2f} m, which the {distance:.2f} m straight-line distance cannot contain"
+msgstr "{delay:.1f} ms 处的候选反射意味着垂直间距为 {separation:.2f} m，而 {distance:.2f} m 的直线距离容纳不下这一间距"
+
+msgctxt "diagnostic"
+msgid "the {delay:.1f} ms candidate has no real solution for a plane above both devices"
+msgstr "{delay:.1f} ms 处的候选反射对于两台设备上方的平面没有实数解"
+
+msgctxt "diagnostic"
+msgid "the {delay:.1f} ms candidate implies an upper plane {height:.2f} m above the lower one ({low:.1f}-{high:.1f} m is treated as plausible)"
+msgstr "{delay:.1f} ms 处的候选反射意味着上方平面比下方平面高 {height:.2f} m（合理范围为 {low:.1f}-{high:.1f} m）"
+
+msgctxt "diagnostic"
+msgid "the {delay:.1f} ms candidate implies an upper plane {height:.2f} m up, less than {clearance:.2f} m above the higher of the two devices"
+msgstr "{delay:.1f} ms 处的候选反射意味着上方平面高 {height:.2f} m，比两台设备中较高者高出不到 {clearance:.2f} m"
+
+msgctxt "diagnostic"
+msgid "no detected reflection can be read as a plane above both devices; even the lowest plausible upper plane ({lowest:.1f} m) would arrive at about {delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window that could be searched, so absence here is not evidence of absence"
+msgstr "检测到的反射均无法解读为位于两台设备上方的平面；即使是最低的合理上方平面（{lowest:.1f} m），其反射也约在 {delay:.1f} ms 才到达，超出了可搜索的 {start:.1f}-{end:.1f} ms 窗口，因此此处没有找到并不代表不存在"
+
+msgctxt "diagnostic"
+msgid "no detected reflection can be read as a plane above both devices"
+msgstr "检测到的反射均无法解读为位于两台设备上方的平面"
+
+msgctxt "diagnostic"
+msgid "the {delay:.1f} ms candidate implies the loudspeaker is vertically above the microphone, which leaves no horizontal separation"
+msgstr "{delay:.1f} ms 处的候选反射意味着扬声器位于话筒正上方，两者之间没有水平间距"
+
+msgctxt "diagnostic"
+msgid "no separate arrival from a plane above the devices was found, and one as low as {lowest:.2f} m would arrive at {earliest:.1f} ms -- within the {resolution:.1f} ms the reflection search can resolve from the {used:.1f} ms arrival this height was solved from. That arrival may therefore be two arrivals merged into one peak, which would bias the height. Moving the microphone 20-30 cm up or down and measuring again separates them"
+msgstr "未找到来自设备上方平面的独立到达声，而低至 {lowest:.2f} m 的平面，其反射会在 {earliest:.1f} ms 到达——与求解该高度所用的 {used:.1f} ms 到达声相距不超过反射搜索的分辨能力 {resolution:.1f} ms。因此该到达声可能是合并为一个峰的两次到达，这会使高度产生偏差。将话筒上移或下移 20-30 cm 后重新测量即可将两者分开"
+
+msgctxt "diagnostic"
+msgid "the quiet segment is too short for the {bands} band filter(s); no level is reported for them"
+msgstr "安静段太短，不足以用于 {bands} 频带滤波器；这些频带不报告电平"
+
+msgctxt "diagnostic"
+msgid "No quiet segment found: add at least 1 s of silence before the sweep (the generated test signal already contains it) or record a longer tail."
+msgstr "未找到安静段：请在扫频前加入至少 1 s 的静音（生成的测试信号已包含），或录制更长的尾部。"
+
+msgctxt "diagnostic"
+msgid "the quiet segment is below {floor:g} dBFS ({level:.0f} dBFS): that is below the quantisation noise of a 24-bit file, so it is digital silence or numerical residue, not a measured noise floor"
+msgstr "安静段低于 {floor:g} dBFS（{level:.0f} dBFS）：这低于 24 位文件的量化噪声，因此是数字静音或数值残留，而不是实测的本底噪声"
+
+msgctxt "diagnostic"
+msgid "quiet segment is too short ({duration:.2f} s) for mains-hum detection"
+msgstr "安静段太短（{duration:.2f} s），无法检测电源嗡声"
+
+msgctxt "diagnostic"
+msgid "quiet segment taken from the end of the recording; it may contain late reverberation, so the noise floor may be overestimated"
+msgstr "安静段取自录音末尾；其中可能含有后期混响，因此本底噪声可能被高估"
+
+msgctxt "diagnostic"
+msgid "{dropped:.2f} s of exact digital zeros (an export that starts before the recorded region, or a gap between regions) were excluded from the pre-sweep segment"
+msgstr "扫频前片段中有 {dropped:.2f} s 精确为零的数字静音已被排除（导出范围从录音区域之前开始，或区域之间有空隙）"
+
+msgctxt "diagnostic"
+msgid "{dropped:.2f} s of exact digital zeros (an export that starts before the recorded region, or a gap between regions) were excluded from the tail segment"
+msgstr "末尾片段中有 {dropped:.2f} s 精确为零的数字静音已被排除（导出范围从录音区域之前开始，或区域之间有空隙）"
+
+msgctxt "diagnostic"
+msgid "{dropped:.2f} s of exact digital zeros (an export that starts before the recorded region, or a gap between regions) were excluded from the {source} segment"
+msgstr "{source} 片段中有 {dropped:.2f} s 精确为零的数字静音已被排除（导出范围从录音区域之前开始，或区域之间有空隙）"
+
+msgctxt "diagnostic"
+msgid "only {remaining:.2f} s of the pre-sweep segment are not digital silence, less than the {needed:.2f} s a level needs"
+msgstr "扫频前片段中只有 {remaining:.2f} s 不是数字静音，少于测量电平所需的 {needed:.2f} s"
+
+msgctxt "diagnostic"
+msgid "only {remaining:.2f} s of the tail segment are not digital silence, less than the {needed:.2f} s a level needs"
+msgstr "末尾片段中只有 {remaining:.2f} s 不是数字静音，少于测量电平所需的 {needed:.2f} s"
+
+msgctxt "diagnostic"
+msgid "only {remaining:.2f} s of the {source} segment are not digital silence, less than the {needed:.2f} s a level needs"
+msgstr "{source} 片段中只有 {remaining:.2f} s 不是数字静音，少于测量电平所需的 {needed:.2f} s"
+
+msgctxt "diagnostic"
+msgid "only {usable:.2f} s of the pre-sweep segment are usable instead of the {configured:.2f} s configured; the levels come from that shorter part"
+msgstr "扫频前片段中只有 {usable:.2f} s 可用，而不是设定的 {configured:.2f} s；电平来自这段较短的部分"
+
+msgctxt "diagnostic"
+msgid "only {usable:.2f} s of the tail segment are usable instead of the {configured:.2f} s configured; the levels come from that shorter part"
+msgstr "末尾片段中只有 {usable:.2f} s 可用，而不是设定的 {configured:.2f} s；电平来自这段较短的部分"
+
+msgctxt "diagnostic"
+msgid "only {usable:.2f} s of the {source} segment are usable instead of the {configured:.2f} s configured; the levels come from that shorter part"
+msgstr "{source} 片段中只有 {usable:.2f} s 可用，而不是设定的 {configured:.2f} s；电平来自这段较短的部分"
+
+msgctxt "diagnostic"
+msgid "the pre-sweep segment is only {below:.1f} dB below the level of the sweep ({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass without silence before it?)"
+msgstr "扫频前片段仅比扫频电平（{sweep:.1f} dBFS RMS）低 {below:.1f} dB：它不是本底噪声（扫频前没有留出静音？）"
+
+msgctxt "diagnostic"
+msgid "the tail segment is only {below:.1f} dB below the level of the sweep ({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass without silence before it?)"
+msgstr "末尾片段仅比扫频电平（{sweep:.1f} dBFS RMS）低 {below:.1f} dB：它不是本底噪声（扫频前没有留出静音？）"
+
+msgctxt "diagnostic"
+msgid "the {source} segment is only {below:.1f} dB below the level of the sweep ({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass without silence before it?)"
+msgstr "{source} 片段仅比扫频电平（{sweep:.1f} dBFS RMS）低 {below:.1f} dB：它不是本底噪声（扫频前没有留出静音？）"
+
+msgctxt "diagnostic"
+msgid "the pre-sweep segment is digital silence (exact zeros); the acoustic noise floor cannot be measured there"
+msgstr "扫频前片段是数字静音（精确为零）；无法在此测量声学本底噪声"
+
+msgctxt "diagnostic"
+msgid "the tail segment is digital silence (exact zeros); the acoustic noise floor cannot be measured there"
+msgstr "末尾片段是数字静音（精确为零）；无法在此测量声学本底噪声"
+
+msgctxt "diagnostic"
+msgid "the {source} segment is digital silence (exact zeros); the acoustic noise floor cannot be measured there"
+msgstr "{source} 片段是数字静音（精确为零）；无法在此测量声学本底噪声"
+
+msgctxt "diagnostic"
+msgid "the pre-sweep segment is not quiet: only {quiet:.2f} s of it stay within {excess:.0f} dB of its quietest blocks (another sweep pass or a noise event?)"
+msgstr "扫频前片段不够安静：其中只有 {quiet:.2f} s 保持在最安静块的 {excess:.0f} dB 以内（另一遍扫频，还是噪声事件？）"
+
+msgctxt "diagnostic"
+msgid "the tail segment is not quiet: only {quiet:.2f} s of it stay within {excess:.0f} dB of its quietest blocks (another sweep pass or a noise event?)"
+msgstr "末尾片段不够安静：其中只有 {quiet:.2f} s 保持在最安静块的 {excess:.0f} dB 以内（另一遍扫频，还是噪声事件？）"
+
+msgctxt "diagnostic"
+msgid "the {source} segment is not quiet: only {quiet:.2f} s of it stay within {excess:.0f} dB of its quietest blocks (another sweep pass or a noise event?)"
+msgstr "{source} 片段不够安静：其中只有 {quiet:.2f} s 保持在最安静块的 {excess:.0f} dB 以内（另一遍扫频，还是噪声事件？）"
+
+msgctxt "diagnostic"
+msgid "{excluded:.2f} s of the pre-sweep segment were more than {excess:.0f} dB above its quietest blocks (another sweep pass or a noise event?) and were excluded"
+msgstr "扫频前片段中有 {excluded:.2f} s 比其最安静的块高出 {excess:.0f} dB 以上（另一遍扫频，还是噪声事件？），已被排除"
+
+msgctxt "diagnostic"
+msgid "{excluded:.2f} s of the tail segment were more than {excess:.0f} dB above its quietest blocks (another sweep pass or a noise event?) and were excluded"
+msgstr "末尾片段中有 {excluded:.2f} s 比其最安静的块高出 {excess:.0f} dB 以上（另一遍扫频，还是噪声事件？），已被排除"
+
+msgctxt "diagnostic"
+msgid "{excluded:.2f} s of the {source} segment were more than {excess:.0f} dB above its quietest blocks (another sweep pass or a noise event?) and were excluded"
+msgstr "{source} 片段中有 {excluded:.2f} s 比其最安静的块高出 {excess:.0f} dB 以上（另一遍扫频，还是噪声事件？），已被排除"
+
+msgctxt "diagnostic"
+msgid "harmonics of {base:.0f} Hz were found as well, but {best:.0f} Hz explains more of them; a single mains supply has one fundamental"
+msgstr "也发现了 {base:.0f} Hz 的谐波，但 {best:.0f} Hz 能解释更多谐波；同一市电只有一个基频"
+
+msgctxt "diagnostic"
+msgid "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the excitation range ({low:.0f}-{high:.0f} Hz, {source}): it contains only leakage and noise, so no decay values are reported"
+msgstr "{band} 频带（{band_low:.0f}-{band_high:.0f} Hz）未完全位于激励范围（{low:.0f}-{high:.0f} Hz，{source}）内：其中只有泄漏和噪声，因此不报告衰减值"
+
+msgctxt "diagnostic"
+msgid "the Lundeby noise-floor iteration did not converge in {iterations} iteration(s)"
+msgstr "Lundeby 本底噪声迭代在 {iterations} 次迭代内未收敛"
+
+msgctxt "diagnostic"
+msgid "the decay curve drops {step:.1f} dB across the direct sound (it carries {share:.0f} % of the energy; limit {limit:g} dB): EDT describes the direct sound rather than the room at this position"
+msgstr "衰减曲线在直达声处下降了 {step:.1f} dB（直达声占能量的 {share:.0f} %；上限 {limit:g} dB）：EDT 描述的是直达声，而不是该位置的房间"
+
+msgctxt "diagnostic"
+msgid "the decay curve is not straight (curvature C = {curvature:.0f} %, limit {limit:.0f} %): possibly a double slope, coupled volumes or strong early reflections; no single reverberation time describes it"
+msgstr "衰减曲线不是直线（曲率 C = {curvature:.0f} %，上限 {limit:.0f} %）：可能是双斜率衰减、耦合空间或强烈的早期反射；无法用单一混响时间描述"
+
+msgctxt "diagnostic"
+msgid "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the excitation range ({low:.0f}-{high:.0f} Hz, sweep settings): it contains only leakage and noise, so no decay values are reported"
+msgstr "{band} 频带（{band_low:.0f}-{band_high:.0f} Hz）未完全位于激励范围（{low:.0f}-{high:.0f} Hz，扫频设置）内：其中只有泄漏和噪声，因此不报告衰减值"
+
+msgctxt "diagnostic"
+msgid "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the excitation range ({low:.0f}-{high:.0f} Hz, estimated from reference audio): it contains only leakage and noise, so no decay values are reported"
+msgstr "{band} 频带（{band_low:.0f}-{band_high:.0f} Hz）未完全位于激励范围（{low:.0f}-{high:.0f} Hz，由参考音频估算）内：其中只有泄漏和噪声，因此不报告衰减值"
+
+msgctxt "diagnostic"
+msgid "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the excitation range ({low:.0f}-{high:.0f} Hz, declared by the user): it contains only leakage and noise, so no decay values are reported"
+msgstr "{band} 频带（{band_low:.0f}-{band_high:.0f} Hz）未完全位于激励范围（{low:.0f}-{high:.0f} Hz，用户声明）内：其中只有泄漏和噪声，因此不报告衰减值"
+
+msgctxt "diagnostic"
+msgid "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the excitation range ({low:.0f}-{high:.0f} Hz, unknown): it contains only leakage and noise, so no decay values are reported"
+msgstr "{band} 频带（{band_low:.0f}-{band_high:.0f} Hz）未完全位于激励范围（{low:.0f}-{high:.0f} Hz，未知）内：其中只有泄漏和噪声，因此不报告衰减值"
+
+msgctxt "diagnostic"
+msgid "the late decay slope ({late:.1f} dB/s) is less than {ratio:g} times the early slope ({early:.1f} dB/s)"
+msgstr "后期衰减斜率（{late:.1f} dB/s）小于早期斜率（{early:.1f} dB/s）的 {ratio:g} 倍"
+
+msgctxt "diagnostic"
+msgid "the {metric} fit is not straight (xi = {xi:.0f} permille, limit {limit:.0f}): {metric} is not a reliable reverberation time here"
+msgstr "{metric} 拟合不是直线（xi = {xi:.0f} ‰，上限 {limit:.0f}）：此处 {metric} 不是可靠的混响时间"
+
+msgctxt "diagnostic"
+msgid "the noise truncation is not trustworthy ({problem}) and the result depends on it ({changes})"
+msgstr "噪声截断不可信（{problem}），而结果依赖于它（{changes}）"
+
+msgctxt "diagnostic"
+msgid "decay analysis: the {bands} band(s) are not fully inside the excitation range ({low:.0f}-{high:.0f} Hz); no decay values are reported for them"
+msgstr "衰减分析：{bands} 频带未完全位于激励范围（{low:.0f}-{high:.0f} Hz）内；这些频带不报告衰减值"
+
+msgctxt "diagnostic"
+msgid "the response is too short for a noise-floor estimate"
+msgstr "响应太短，无法估计本底噪声"
+
+msgctxt "diagnostic"
+msgid "no decay above the noise floor was found"
+msgstr "在本底噪声之上未发现衰减"
+
+msgctxt "diagnostic"
+msgid "the response does not decay"
+msgstr "响应没有衰减"
+
+msgctxt "diagnostic"
+msgid "Insufficient decay range: {available:.1f} dB available, {needed:.0f} dB needed ({range:.0f} dB range + {margin:.0f} dB above noise)"
+msgstr "衰减范围不足：可用 {available:.1f} dB，需要 {needed:.0f} dB（{range:.0f} dB 评估范围 + 高于噪声 {margin:.0f} dB）"
+
+msgctxt "diagnostic"
+msgid "Insufficient decay range: the decay curve does not reach the evaluation range"
+msgstr "衰减范围不足：衰减曲线未达到评估范围"
+
+msgctxt "diagnostic"
+msgid "Decay slope is not negative"
+msgstr "衰减斜率不为负"
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:.2f} s vs no value"
+msgstr "{metric} {seconds:.2f} s，对比无值"
+
+msgctxt "diagnostic"
+msgid "{metric} has no truncation-independent value"
+msgstr "{metric} 没有不受截断影响的值"
+
+msgctxt "diagnostic"
+msgid "B*T = {bt:.1f} < {minimum:g}: the band filter's own decay is comparable to the measured decay; values in this band are unreliable"
+msgstr "B*T = {bt:.1f} < {minimum:g}: 频带滤波器自身的衰减与实测衰减相当；此频带的数值不可靠"
+
+msgctxt "diagnostic"
+msgid "the noise crosspoint ({crosspoint:.2f} s after the onset) lies far beyond the first point where the decay reaches the noise floor ({reached:.2f} s)"
+msgstr "噪声交叉点（起始后 {crosspoint:.2f} s）远远晚于衰减首次达到本底噪声的时刻（{reached:.2f} s）"
+
+msgctxt "diagnostic"
+msgid "Evaluation range covers fewer than 3 samples after the direct sound"
+msgstr "评估范围在直达声之后覆盖的样本少于 3 个"
+
+msgctxt "diagnostic"
+msgid "Evaluation range covers fewer than 3 samples"
+msgstr "评估范围覆盖的样本少于 3 个"
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:.2f} s vs {other:.2f} s"
+msgstr "{metric} {seconds:.2f} s，对比 {other:.2f} s"
+
+msgctxt "diagnostic"
+msgid "decay analysis, broadband: {warning}"
+msgstr "衰减分析，宽带：{warning}"
+
+msgctxt "diagnostic"
+msgid "decay analysis, {band}: {warning}"
+msgstr "衰减分析，{band}：{warning}"
+
+msgid "{a} or {b}"
+msgstr "{a} 或 {b}"
+
+msgid "Name"
+msgstr "名称"
+
+msgid "Host API"
+msgstr "主机 API"
+
+msgid "In"
+msgstr "输入"
+
+msgid "Out"
+msgstr "输出"
+
+msgid "Default rate"
+msgstr "默认采样率"
+
+msgid "Record rates"
+msgstr "录制采样率"
+
+msgid "Play rates"
+msgstr "播放采样率"
+
+msgid "Latency low/high (ms)"
+msgstr "延迟 低/高（ms）"
+
+msgid "Recommended"
+msgstr "推荐"
+
+msgid "Notes"
+msgstr "说明"
+
+msgid "input"
+msgstr "输入"
+
+msgid "output"
+msgstr "输出"
+
+msgid "in {input}, out {output}"
+msgstr "输入 {input}，输出 {output}"
+
+msgid "in {rate:.0f} Hz"
+msgstr "输入 {rate:.0f} Hz"
+
+msgid "out {rate:.0f} Hz"
+msgstr "输出 {rate:.0f} Hz"
+
+msgid "{name} - {count} in"
+msgstr "{name} - {count} 路输入"
+
+msgid "{name} - {count} out"
+msgstr "{name} - {count} 路输出"

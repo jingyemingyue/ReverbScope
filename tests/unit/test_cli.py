@@ -334,12 +334,12 @@ def test_lang_zh_cn_translates_cli_help(capsys: pytest.CaptureFixture[str]) -> N
     out = capsys.readouterr().out
     assert "不依赖 DAW" in out
     assert "调试日志" in out
-    assert "分析用该扫描录下的录音" in out
+    assert "分析用该扫频录下的录音" in out
     with pytest.raises(SystemExit) as exc:
         main(["--lang", "zh_CN", "analyze", "--help"])
     assert exc.value.code == 0
     analyze = capsys.readouterr().out
-    assert "分析用该扫描录下的录音" in analyze
+    assert "分析用该扫频录下的录音" in analyze
     assert "不要裁切" in analyze
     assert "附属文件" in analyze
     assert "显示此帮助信息并退出" in out

@@ -49,7 +49,7 @@ def test_every_catalogued_diagnostic_is_recognised(zh: None) -> None:
     templates = _diagnostic_templates()
     assert templates, "no diagnostic templates in the catalog"
     for template in templates:
-        fields = {name for name in re.findall(r"\{(\w+)[^{}]*\}", template)}
+        fields = set(re.findall(r"\{(\w+)[^{}]*\}", template))
         values = {name: _sample(template, name) for name in fields}
         english = template.format(**values)
         shown = localize(english)

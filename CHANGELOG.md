@@ -143,6 +143,8 @@ Windows: no Authenticode).
   the other declared minimums (numpy 1.26, scipy 1.12, soundfile 0.12,
   sounddevice 0.4.6, PySide6_Essentials 6.6) the suite passes 522/522 on
   Python 3.12; with the newest releases it passes on 3.13 and 3.14.
+- The `dev` extra adds PyYAML (MIT; tests only) so the check that keeps each
+  English GitHub issue form and its Chinese counterpart in step runs in CI.
 - The `dev` extra lists `hatchling` (MIT; already the build backend) so the
   wheel build-hook test runs in CI (DEPENDENCIES.md §2).
 - `SECURITY.md` names the supported versions and how files received from

@@ -64,6 +64,7 @@ ALLOWED = frozenset(
         "Thunderbolt",
         "fake",
         "portaudio",
+        "pip",
         # DAWs and their feature names (menus stay in the vendors' language)
         "DAW",
         "Pro",

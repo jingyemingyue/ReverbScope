@@ -13,7 +13,7 @@ import pytest
 
 pytest.importorskip("PySide6")
 
-from PySide6.QtWidgets import (  # noqa: E402
+from PySide6.QtWidgets import (
     QAbstractButton,
     QApplication,
     QComboBox,
@@ -25,8 +25,8 @@ from PySide6.QtWidgets import (  # noqa: E402
     QWidget,
 )
 
-from roomscope.i18n import activate  # noqa: E402
-from tests.zh_tokens import english_words  # noqa: E402
+from roomscope.i18n import activate
+from tests.zh_tokens import english_words
 
 
 @pytest.fixture(scope="module")
@@ -144,7 +144,7 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
         settle()
         _check(_texts(window), page)
 
-    folder, result = saved[1]
+    _folder, result = saved[1]
     window.state.result = result
     window.state.findings = interpret(result, "vocal")
     window.state.session = MeasurementSession(room_name="房间B", measurement_position="1")

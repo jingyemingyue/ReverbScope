@@ -6,6 +6,23 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 28: 2026-09-27 — **a complete Simplified Chinese experience**
+(branch `claude/publication-ready-level-n3hkor`). Everything a user reads can
+be Simplified Chinese: GUI (with Qt's own dialogs), CLI help and argparse
+errors, text and environment reports, Device Inspector, charts, the Windows
+installer, README, SECURITY, the hardware test guide and the GitHub issue
+forms. Result files are unchanged: stored notes stay English (`diag`) and are
+translated when shown (`localize`); a run under `--lang zh_CN` writes no
+Chinese into `result.json`. The macOS Developer ID signing and notarization
+steps are in `release.yml`, off until six repository secrets exist, and have
+never run. Locally (Linux, Python 3.12): the full suite passes, including new
+zh_CN gates for the GUI pages, dialogs, reports, charts (no missing glyphs
+where a CJK font is installed) and every CLI help screen; ruff, mypy strict
+(with and without the gui extra), doc links (docs/ and root documents), the
+docs site and the sdist / wheel build are clean. **Not run:** any real audio
+interface or DAW, and the Chinese Windows installer on a Chinese Windows
+(CI compiles and installs it on an English runner).
+
 Snapshot 27: 2026-09-27 — **release hardening before the v0.4.1 pre-release**
 (same branch). A final review of the branch against `main` found no blocker
 in the code; fixed here:

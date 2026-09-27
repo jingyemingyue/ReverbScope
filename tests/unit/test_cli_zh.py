@@ -143,3 +143,30 @@ def test_reports_of_an_analysis_and_a_comparison_are_chinese(
         prose = "\n".join(line for line in text.splitlines() if str(tmp_path) not in line)
         found = english_words(prose)
         assert found == [], f"{name}: {sorted(set(found))}\n{text}"
+
+
+def test_files_written_in_chinese_stay_language_neutral(
+    zh_cli: None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Result files keep English notes whatever the interface language, so a
+    session reads the same everywhere and old readers still parse it."""
+    import json
+
+    from roomscope.io.wav import read_wav, write_wav
+
+    sweep = tmp_path / "sweep.wav"
+    assert main(["sweep", "--out", str(sweep), "--duration", "2", "--post-silence", "2"]) == 0
+    signal = read_wav(sweep)
+    ir = make_rir(signal.sample_rate, rt60_s=1.2, reflections=[(0.011, 0.8)])
+    rec = fftconvolve(signal.samples, ir)[: signal.n_samples + ir.shape[0]]
+    rec = rec + np.random.default_rng(5).normal(0.0, 3e-5, rec.shape[0])
+    recording = write_wav(tmp_path / "rec.wav", rec, signal.sample_rate, subtype="FLOAT")
+    out = tmp_path / "session"
+    args = ["--lang", "zh_CN", "analyze", "--recording", str(recording), "--sweep", str(sweep)]
+    assert main([*args, "--out", str(out), "--speaker-distance", "1.5"]) == 0
+    capsys.readouterr()
+    for name in ("result.json", "session.json"):
+        text = (out / name).read_text(encoding="utf-8")
+        cjk = re.findall(r"[　-〿一-鿿＀-￯]", text)
+        assert cjk == [], f"{name} stores Chinese text: {''.join(cjk[:40])}"
+        json.loads(text)
