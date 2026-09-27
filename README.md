@@ -1,3 +1,5 @@
+**English** | [简体中文](README.zh-CN.md)
+
 # RoomScope
 
 [![CI](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml)
