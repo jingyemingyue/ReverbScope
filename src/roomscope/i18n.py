@@ -22,6 +22,8 @@ import gettext
 import hashlib
 import locale as py_locale
 import os
+import re
+import string
 import struct
 from pathlib import Path
 from typing import Any
@@ -146,6 +148,80 @@ def ngettext(singular: str, plural: str, n: int) -> str:
 def format_message(template: str, **params: Any) -> str:
     """gettext + ``str.format`` with ASCII digits (never locale-aware numbers)."""
     return _(template).format(**params)
+
+
+#: Message context of the stored English diagnostics (notes, warnings,
+#: reasons) that :func:`localize` shows in the active language.
+DIAGNOSTIC_CONTEXT = "diagnostic"
+_FIELD = re.compile(r"\{(\w+)(![rsa])?(:[^{}]*)?\}")
+_diagnostic_patterns: tuple[int, list[tuple[re.Pattern[str], str]]] | None = None
+
+
+def diag(template: str, **params: Any) -> str:
+    """English text of a diagnostic that a result file stores.
+
+    Notes, warnings and reasons stay English in ``result.json`` so a file
+    reads the same in every language and keeps its schema. The ``template`` is
+    extracted into the catalog under the ``"diagnostic"`` context, and
+    :func:`localize` recognises the stored sentence when it is displayed.
+    """
+    return template.format(**params) if params else template
+
+
+def _template_pattern(template: str) -> re.Pattern[str]:
+    parts: list[str] = []
+    seen: set[str] = set()
+    for literal, field, _spec, _conversion in string.Formatter().parse(template):
+        parts.append(re.escape(literal))
+        if field is None:
+            continue
+        if field in seen:
+            parts.append(f"(?P={field})")
+        else:
+            seen.add(field)
+            parts.append(f"(?P<{field}>.+?)")
+    return re.compile("".join(parts), re.DOTALL)
+
+
+def _patterns() -> list[tuple[re.Pattern[str], str]]:
+    """(English pattern, translation without format specs), most specific first."""
+    global _diagnostic_patterns
+    if _diagnostic_patterns is not None and _diagnostic_patterns[0] == id(_translation):
+        return _diagnostic_patterns[1]
+    catalog: dict[str, str] = getattr(_translation, "_catalog", {}) or {}
+    prefix = f"{DIAGNOSTIC_CONTEXT}{_CONTEXT_SEPARATOR}"
+    entries: list[tuple[int, re.Pattern[str], str]] = []
+    for key, translated in catalog.items():
+        if not isinstance(key, str) or not key.startswith(prefix) or not translated:
+            continue
+        template = key[len(prefix) :]
+        literal = sum(len(text) for text, *_rest in string.Formatter().parse(template))
+        plain = _FIELD.sub(lambda m: "{" + m.group(1) + "}", translated)
+        entries.append((literal, _template_pattern(template), plain))
+    entries.sort(key=lambda entry: -entry[0])
+    patterns = [(pattern, plain) for _literal, pattern, plain in entries]
+    _diagnostic_patterns = (id(_translation), patterns)
+    return patterns
+
+
+def localize(text: str, _depth: int = 0) -> str:
+    """Show a stored English diagnostic in the active language.
+
+    Text that matches no catalogued template (a diagnostic from another
+    version, a file path, an OS error) is returned unchanged.
+    """
+    if not text or _current == DEFAULT_LANG or _depth > 2:
+        return text
+    for pattern, translated in _patterns():
+        match = pattern.fullmatch(text)
+        if match is None:
+            continue
+        values = {k: localize(v, _depth + 1) for k, v in match.groupdict().items()}
+        try:
+            return translated.format(**values)
+        except (KeyError, IndexError, ValueError):
+            return text
+    return text
 
 
 def parse_po(path: Path) -> dict[str, str]:

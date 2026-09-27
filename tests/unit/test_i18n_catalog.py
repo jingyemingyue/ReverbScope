@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.i18n import activate, parse_po
+from roomscope.i18n import DIAGNOSTIC_CONTEXT, activate, parse_po
 from roomscope.interpretation import available_profiles, get_profile
 from roomscope.interpretation.interpreter import Severity
 from roomscope.interpretation.profiles import (
@@ -103,6 +103,12 @@ def extract_messages() -> tuple[dict[str, list[str]], set[tuple[str, str]]]:
                     ids.append(text)
             elif name == "ngettext" and len(node.args) >= 2:
                 ids.extend(t for t in (_literal(node.args[0]), _literal(node.args[1])) if t)
+            elif name == "diag" and node.args:
+                text = _literal(node.args[0])
+                if text is not None:
+                    ids.append(f"{DIAGNOSTIC_CONTEXT}{CONTEXT_SEPARATOR}{text}")
+                else:
+                    dynamic.add((rel, ast.get_source_segment(source, node) or ""))
             elif name == "pgettext" and len(node.args) >= 2:
                 context, text = _literal(node.args[0]), _literal(node.args[1])
                 if context and text:

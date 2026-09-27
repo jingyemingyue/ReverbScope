@@ -267,11 +267,15 @@ jobs:
           ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
-          if (-not (Test-Path $iscc)) {
-            choco install innosetup --no-progress -y
+          # Simplified Chinese is an official translation from Inno Setup 6.5;
+          # an older preinstalled copy is upgraded rather than failing late.
+          $zh = Join-Path (Split-Path $iscc) 'Languages\ChineseSimplified.isl'
+          if (-not (Test-Path $iscc) -or -not (Test-Path $zh)) {
+            choco upgrade innosetup --no-progress -y
             if ($LASTEXITCODE -ne 0) { throw 'Inno Setup install failed' }
           }
           if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
+          if (-not (Test-Path $zh)) { throw "Simplified Chinese messages not found at $zh" }
           & $iscc "/DMyAppVersion=$env:ROOMSCOPE_VERSION" packaging\windows\roomscope.iss
           if ($LASTEXITCODE -ne 0) { throw "iscc failed ($LASTEXITCODE)" }
           if (-not (Test-Path dist\RoomScope-setup.exe)) { throw 'dist\RoomScope-setup.exe missing' }

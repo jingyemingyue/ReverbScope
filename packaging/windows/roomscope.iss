@@ -1,4 +1,4 @@
-; Inno Setup installer for the unsigned Windows one-directory bundle
+﻿; Inno Setup installer for the unsigned Windows one-directory bundle
 ; (ARCHITECTURE_V1.md §6.2). Signing is a maintainer decision.
 ;
 ; Build from the repository root after PyInstaller has produced dist\roomscope:
@@ -39,6 +39,11 @@ WizardStyle=modern
 LicenseFile=..\..\LICENSE
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
+; English and Simplified Chinese (an official Inno Setup translation, bundled
+; from Inno Setup 6.5). Setup picks the language of the Windows UI and asks
+; only when it is neither; the uninstaller keeps the language chosen here.
+LanguageDetectionMethod=uilanguage
+ShowLanguageDialog=auto
 ; Authenticode, once the maintainer has a code-signing certificate (not yet):
 ; sign dist\roomscope\*.exe first, then compile with
 ;   iscc "--signtool=signtool=signtool.exe sign /fd sha256 /tr <timestamp URL> /td sha256 $f"
@@ -52,6 +57,11 @@ SignedUninstaller=yes
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+
+[CustomMessages]
+english.ThirdPartyLicenses=Third-party licenses
+chinesesimplified.ThirdPartyLicenses=第三方许可证
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -65,8 +75,8 @@ Type: filesandordirs; Name: "{app}\_internal"
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\Third-party licenses"; Filename: "{app}\THIRD_PARTY_LICENSES"
-Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
+Name: "{group}\{cm:ThirdPartyLicenses}"; Filename: "{app}\THIRD_PARTY_LICENSES"
+Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
