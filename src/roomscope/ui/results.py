@@ -30,10 +30,11 @@ from PySide6.QtWidgets import (
 
 from roomscope.cli.report import format_report
 from roomscope.errors import RoomScopeError
-from roomscope.i18n import _
+from roomscope.i18n import _, localize
 from roomscope.io.recent import remember_session
 from roomscope.io.session_store import save_measurement
 from roomscope.io.wav import write_wav
+from roomscope.labels import severity_text, topic_text, validity_word
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
     confidence_text,
@@ -133,8 +134,8 @@ class _PlacementTab(QWidget):
                 value = f"{length.metres:.2f} m"
                 if length.input_uncertainty_m is not None:
                     value += f" +/-{length.input_uncertainty_m:.2f}"
-            note = length.reason or ""
-            for column, text in enumerate((caption, value, str(length.validity), note)):
+            note = localize(length.reason or "")
+            for column, text in enumerate((caption, value, validity_word(length.validity), note)):
                 item = QTableWidgetItem(text)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.table.setItem(index, column, item)
@@ -156,9 +157,9 @@ class _PlacementTab(QWidget):
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.candidates.setItem(index, column, item)
         self.candidates.resizeColumnsToContents()
-        notes = list(placement.notes)
+        notes = [localize(note) for note in placement.notes]
         if placement.coordinates_withheld:
-            notes.append(placement.coordinates_withheld)
+            notes.append(localize(placement.coordinates_withheld))
         self.notes.setPlainText("\n".join(notes))
 
 
@@ -184,33 +185,8 @@ def validity_text(validity: Validity) -> tuple[str, str]:
 
 
 def _validity_text(validity: Validity) -> tuple[str, str]:
-    word, tone = VALIDITY_DISPLAY.get(validity, (str(validity), "neutral"))
-    words = {
-        "valid": _("valid"),
-        "unreliable": _("unreliable"),
-        "insufficient range": _("insufficient range"),
-        "not computed": _("not computed"),
-        "outside the sweep's range": _("outside the sweep's range"),
-        "not comparable": _("not comparable"),
-    }
-    return words.get(word, word), tone
-
-
-def _severity_text(severity: str) -> str:
-    return {"warning": _("warning"), "notice": _("notice"), "info": _("info")}.get(
-        severity, severity
-    )
-
-
-def _topic_text(topic: str) -> str:
-    return {
-        "reverberation": _("reverberation"),
-        "noise": _("noise"),
-        "early_reflections": _("early reflections"),
-        "low_frequency": _("low frequency"),
-        "measurement": _("measurement"),
-        "comparison": _("comparison"),
-    }.get(topic, topic)
+    _word, tone = VALIDITY_DISPLAY.get(validity, (str(validity), "neutral"))
+    return validity_word(validity), tone
 
 
 class _Overview(QWidget):
@@ -367,9 +343,9 @@ class _Overview(QWidget):
             self.findings.addWidget(
                 FindingCard(
                     str(finding.severity),
-                    _topic_text(finding.topic),
+                    topic_text(finding.topic),
                     finding.message,
-                    severity_label=_severity_text(str(finding.severity)),
+                    severity_label=severity_text(str(finding.severity)),
                 )
             )
         if not findings:
@@ -429,7 +405,9 @@ class ResultsPage(QWidget):
         report_layout = QVBoxLayout(report)
         report_layout.setContentsMargins(14, 14, 14, 14)
         self.diagnostics_heading = label(
-            _("Warnings (core diagnostics, always English):"), "hint", wrap=True
+            _("The same report that roomscope analyze prints; warnings are at the end."),
+            "hint",
+            wrap=True,
         )
         report_layout.addWidget(self.diagnostics_heading)
         self.text = QPlainTextEdit()

@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, cast
 from roomscope import __version__
 from roomscope.cli.report import format_comparison_report, format_report
 from roomscope.errors import ConfigurationError, MeasurementCancelledError, RoomScopeError
-from roomscope.i18n import _, activate
+from roomscope.i18n import N_, _, activate
 from roomscope.interpretation import available_profiles
 from roomscope.logging_config import configure_logging
 from roomscope.models.configuration import (
@@ -33,6 +33,44 @@ if TYPE_CHECKING:
     from roomscope.audio.backend import ChannelPlan
 
 log = logging.getLogger("roomscope.cli")
+
+
+#: argparse's own texts. The standard library looks them up in gettext's
+#: "argparse" domain, which has no Chinese catalog; RoomScope's catalog
+#: translates the ones a user sees: the help layout and the parse errors.
+ARGPARSE_MESSAGES = frozenset(
+    {
+        N_("usage: "),
+        N_("positional arguments"),
+        N_("options"),
+        N_("%(heading)s:"),
+        N_(" (default: %(default)s)"),
+        N_("%(prog)s: error: %(message)s\n"),
+        N_("argument %(argument_name)s: %(message)s"),
+        N_("ambiguous option: %(option)s could match %(matches)s"),
+        N_("expected one argument"),
+        N_("expected at least one argument"),
+        N_("expected at most one argument"),
+        N_("invalid %(type)s value: %(value)r"),
+        N_("invalid choice: %(value)r (choose from %(choices)s)"),
+        N_("not allowed with argument %s"),
+        N_("one of the arguments %s is required"),
+        N_("the following arguments are required: %s"),
+        N_("unrecognized arguments: %s"),
+        N_("show this help message and exit"),
+        N_("show program's version number and exit"),
+        N_("can't open '%(filename)s': %(error)s"),
+    }
+)
+
+
+def _argparse_gettext(message: str) -> str:
+    return _(message) if message in ARGPARSE_MESSAGES else message
+
+
+def _translate_argparse() -> None:
+    """Route argparse's module-level ``_`` through RoomScope's catalog."""
+    setattr(argparse, "_", _argparse_gettext)  # noqa: B010 - a module attribute, not ours
 
 
 def _command(sub: object, name: str, text: str) -> argparse.ArgumentParser:
@@ -1073,6 +1111,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     _utf8_when_redirected()
     argv_list = list(sys.argv[1:] if argv is None else argv)
     activate(_peek_option(argv_list, ("--lang",)))
+    _translate_argparse()
     parser = build_parser()
     args = parser.parse_args(argv)
     configure_logging(logging.DEBUG if args.verbose else logging.WARNING)

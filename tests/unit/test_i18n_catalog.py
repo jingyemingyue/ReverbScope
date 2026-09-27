@@ -26,7 +26,9 @@ from roomscope.interpretation.profiles import (
     change_direction_text,
     decay_length_text,
     noise_segment_text,
+    profile_title,
 )
+from roomscope.labels import topic_text
 from roomscope.models.comparison import MetricDelta
 from roomscope.models.result import Reflection, ResonanceCandidate, Validity
 from tests.conftest import make_rir
@@ -42,6 +44,8 @@ DYNAMIC_CALLS = {
     ("i18n.py", "_(template)"),
     ("interpretation/interpreter.py", "_(template)"),
     ("cli/main.py", "_(SAFETY_MESSAGE)"),
+    # argparse's own texts, each extracted with N_() in ARGPARSE_MESSAGES.
+    ("cli/main.py", "_(message)"),
     ("ui/pages.py", "_(SAFETY_MESSAGE)"),
     ("ui/pages.py", "_(DAW_INSTRUCTIONS)"),
 }
@@ -300,17 +304,20 @@ def test_cli_zh_cn_analyze_prints_no_english_finding_text(
                 profile,
             ]
         )
+        title = profile_title(profile)
+        reverberation = topic_text("reverberation")
     finally:
         activate("en")
     assert code == 0
+    assert title != profile and reverberation == "混响"
     out = capsys.readouterr().out
-    header = f"解读（{profile} 配置）："
+    header = f"解读（{title}配置）："
     assert header in out
     section = out.split(header, 1)[1].strip().splitlines()
     findings = [line for line in section if line.startswith("  [")]
     assert findings, out
     topics = {line.split("] ", 1)[1].split(":", 1)[0] for line in findings}
-    assert "reverberation" in topics
+    assert reverberation in topics
     for line in findings:
         message = line.split(": ", 1)[1]
         assert _english_words(message) == [], line

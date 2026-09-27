@@ -2,9 +2,15 @@
 
 from __future__ import annotations
 
-from roomscope.i18n import _
+from roomscope.i18n import _, localize
 from roomscope.interpretation import Finding
-from roomscope.interpretation.profiles import band_text, confidence_text, noise_segment_text
+from roomscope.interpretation.profiles import (
+    band_text,
+    confidence_text,
+    noise_segment_text,
+    profile_title,
+)
+from roomscope.labels import metric_label, severity_text, topic_text, validity_word
 from roomscope.models.comparison import ComparisonResult
 from roomscope.models.result import (
     AnalysisResult,
@@ -13,6 +19,16 @@ from roomscope.models.result import (
     PlacementResult,
     Validity,
 )
+
+
+def _filter_note(warning: str | None) -> str:
+    """The short head of a band's filter warning, in the active language."""
+    if not warning:
+        return ""
+    text = localize(warning)
+    for separator in (":", "："):
+        text = text.split(separator, 1)[0]
+    return text
 
 
 def _metric(metric: DecayMetric) -> str:
@@ -38,7 +54,7 @@ def _length(label: str, length: PlacementLength) -> str:
             uncertainty=length.input_uncertainty_m
         )
     if length.validity is not Validity.VALID:
-        value += f"  [{length.validity}]"
+        value += f"  [{validity_word(length.validity)}]"
     return f"  {label:<26} {value}"
 
 
@@ -63,7 +79,7 @@ def _placement_section(placement: PlacementResult) -> list[str]:
         lines.append(_length(name, length))
     for name, length in figures:
         if length.reason:
-            lines.append(f"    {name}: {length.reason}")
+            lines.append(f"    {name}: {localize(length.reason)}")
     named = [c for c in placement.candidates if c.surface]
     if named:
         lines.append(_("  attributed arrivals:"))
@@ -73,7 +89,7 @@ def _placement_section(placement: PlacementResult) -> list[str]:
                 + _("excess path {path:.2f} m").format(path=candidate.excess_path_m)
             )
     for note in placement.notes:
-        lines.append(_("  note: {note}").format(note=note))
+        lines.append(_("  note: {note}").format(note=localize(note)))
     lines.append("")
     return lines
 
@@ -123,7 +139,9 @@ def format_report(
                 ).format(delay=delay, bound=bound)
             )
         elif lb.reason:
-            lines.append(_("Loopback: offered but not applied ({reason})").format(reason=lb.reason))
+            lines.append(
+                _("Loopback: offered but not applied ({reason})").format(reason=localize(lb.reason))
+            )
         else:
             lines.append(_("Loopback: offered but not applied."))
     lines.append("")
@@ -139,7 +157,7 @@ def format_report(
             if band.rt60_estimate_s is not None
             else "-"
         )
-        note = band.filter_warning.split(":")[0] if band.filter_warning else ""
+        note = _filter_note(band.filter_warning)
         lines.append(
             f"{band_text(band.band_label):>10}  {_metric(band.edt):>8}  {_metric(band.t20):>8}  {_metric(band.t30):>8}  "
             f"{rt60:>10}  {band.peak_to_noise_db:8.1f}  {note}"
@@ -156,7 +174,7 @@ def format_report(
                 duration=noise.segment_duration_s,
                 rms=noise.rms_dbfs,
                 peak=noise.peak_dbfs,
-                calibration=noise.calibration,
+                calibration=localize(noise.calibration),
             )
         )
         hums = [h for h in noise.hum if h.detected]
@@ -173,7 +191,7 @@ def format_report(
     else:
         lines.append(_("Background noise: no quiet segment available."))
     for note in noise.notes:
-        lines.append(_("  note: {note}").format(note=note))
+        lines.append(_("  note: {note}").format(note=localize(note)))
     lines.append("")
     refl = result.reflections
     lines.append(
@@ -223,14 +241,19 @@ def format_report(
         lines.append(_("  none"))
     if result.warnings:
         lines.append("")
-        lines.append(_("Warnings (core diagnostics, always English):"))
+        lines.append(_("Warnings:"))
         for warning in result.warnings:
-            lines.append(f"  - {warning}")
+            lines.append(f"  - {localize(warning)}")
     if findings:
         lines.append("")
-        lines.append(_("Interpretation ({profile} profile):").format(profile=profile_name))
+        lines.append(
+            _("Interpretation ({profile} profile):").format(profile=profile_title(profile_name))
+        )
         for finding in findings:
-            lines.append(f"  [{finding.severity}] {finding.topic}: {finding.message}")
+            lines.append(
+                f"  [{severity_text(str(finding.severity))}] {topic_text(finding.topic)}: "
+                f"{finding.message}"
+            )
     return "\n".join(lines)
 
 
@@ -248,7 +271,7 @@ def format_comparison_report(
         _("Comparable: {value}").format(value=_("yes") if comparison.comparable else _("no"))
     )
     for note in comparison.notes:
-        lines.append(_("  note: {note}").format(note=note))
+        lines.append(_("  note: {note}").format(note=localize(note)))
     lines.append("")
     lines.append(_("Decay deltas (VALID only when both sides are VALID):"))
     lines.append(
@@ -263,9 +286,12 @@ def format_comparison_report(
         else:
             delta = "—"
             pct = "—"
-        lines.append(f"{item.name:<32} {base:>8} {cand:>8} {delta:>10} {pct:>8}  {item.validity}")
+        lines.append(
+            f"{metric_label(item.name):<32} {base:>8} {cand:>8} {delta:>10} {pct:>8}  "
+            f"{validity_word(item.validity)}"
+        )
         if item.reason and item.validity is not Validity.VALID:
-            lines.append(f"    {item.reason}")
+            lines.append(f"    {localize(item.reason)}")
     if comparison.frequency_response is not None:
         lines.append("")
         lines.append(_("Frequency-response mean |Δ| per octave (dB):"))
@@ -294,17 +320,22 @@ def format_comparison_report(
         lines.append("")
         lines.append(_("Noise:"))
         for item in comparison.noise:
-            extra = f"  [{item.reason}]" if item.reason else ""
-            lines.append(f"  {item.name}: {item.validity}{extra}")
+            extra = f"  [{localize(item.reason)}]" if item.reason else ""
+            lines.append(f"  {metric_label(item.name)}: {validity_word(item.validity)}{extra}")
     if comparison.placement:
         lines.append("")
         lines.append(_("Placement:"))
         for item in comparison.placement:
-            extra = f"  [{item.reason}]" if item.reason else ""
-            lines.append(f"  {item.name}: {item.validity}{extra}")
+            extra = f"  [{localize(item.reason)}]" if item.reason else ""
+            lines.append(f"  {metric_label(item.name)}: {validity_word(item.validity)}{extra}")
     if findings:
         lines.append("")
-        lines.append(_("Interpretation ({profile} profile):").format(profile=profile_name))
+        lines.append(
+            _("Interpretation ({profile} profile):").format(profile=profile_title(profile_name))
+        )
         for finding in findings:
-            lines.append(f"  [{finding.severity}] {finding.topic}: {finding.message}")
+            lines.append(
+                f"  [{severity_text(str(finding.severity))}] {topic_text(finding.topic)}: "
+                f"{finding.message}"
+            )
     return "\n".join(lines)

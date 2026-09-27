@@ -21,7 +21,7 @@ msgid "Warnings (core diagnostics, always English):"
 msgstr "警告（核心诊断，始终为英文）："
 
 msgid "Interpretation ({profile} profile):"
-msgstr "解读（{profile} 配置）："
+msgstr "解读（{profile}配置）："
 
 msgid "RoomScope: an open-source, DAW-independent recording environment analyzer."
 msgstr "RoomScope：开源、不依赖 DAW 的录音环境分析器。"
@@ -219,22 +219,22 @@ msgid "Background noise went from {baseline_dbfs:.1f} dBFS to {candidate_dbfs:.1
 msgstr "在已声明输入增益不变的前提下，本底噪声从 {baseline_dbfs:.1f} dBFS 变为 {candidate_dbfs:.1f} dBFS（{delta_db:+.1f} dB）。"
 
 msgid "The direct sound could not be identified with confidence, so delays and levels of reflections may be off. Check that the correct reference sweep was used, lower the playback level if the loudspeaker distorts, and measure again."
-msgstr "无法可靠识别直达声，反射的延时和电平可能不准。请确认使用了正确的参考扫描信号；若扬声器失真请降低回放电平，然后重测。"
+msgstr "无法可靠识别直达声，反射的延时和电平可能不准。请确认使用了正确的参考扫频信号；若扬声器失真请降低播放电平，然后重测。"
 
 msgid "The sweep was generated at {generated_rate_hz} Hz but played at {played_rate_hz} Hz: the DAW project runs at another sample rate and did not convert the file. Generate the sweep at the project's sample rate, or let the DAW convert it on import, and measure again."
-msgstr "扫描信号按 {generated_rate_hz} Hz 生成，却以 {played_rate_hz} Hz 播放：DAW 工程的采样率不同，且没有对文件做采样率转换。请按工程采样率生成扫描信号，或让 DAW 在导入时转换采样率，然后重测。"
+msgstr "扫频信号按 {generated_rate_hz} Hz 生成，却以 {played_rate_hz} Hz 播放：DAW 工程的采样率不同，且没有对文件做采样率转换。请按工程采样率生成扫频信号，或让 DAW 在导入时转换采样率，然后重测。"
 
 msgid "The sweep was played at {speed_percent:.1f} % of its speed: the DAW time-stretched it (Warp, Flex Time, Follow Tempo, elastic audio or a stretch mode). Switch time-stretching off for the sweep clip and measure again."
-msgstr "扫描信号以原速度的 {speed_percent:.1f} % 播放：DAW 对它做了时间伸缩（Warp、Flex Time、Follow Tempo、Elastic Audio 或其他伸缩模式）。请关闭扫描片段的时间伸缩，然后重测。"
+msgstr "扫频信号以原速度的 {speed_percent:.1f} % 播放：DAW 对它做了时间伸缩（Warp、Flex Time、Follow Tempo、Elastic Audio 或其他伸缩模式）。请关闭扫频片段的时间伸缩，然后重测。"
 
 msgid "The recording clips. Lower the playback or input gain and measure again."
-msgstr "录音削波。请降低回放或输入增益后重测。"
+msgstr "录音削波。请降低播放或输入增益后重测。"
 
 msgid "The decay range is too small for a reliable reverberation time. A longer sweep, a slightly higher playback level or a quieter room increases it."
-msgstr "衰减动态范围太小，混响时间不可靠。加长扫描、略提高回放电平或换更安静的房间可以改善。"
+msgstr "衰减范围太小，混响时间不可靠。加长扫频、略提高播放电平或换一个更安静的房间可以改善。"
 
 msgid "The direct sound is only {direct_to_noise_db:.0f} dB above the noise floor in the quiet segment. Sources quieter than this will be recorded with audible noise; lower the noise at the source or increase the playback level within the headroom of the chain."
-msgstr "直达声只比安静段本底高 {direct_to_noise_db:.0f} dB。比这更轻的声源会带上可闻噪声；请从源头降噪，或在链路余量内提高回放电平。"
+msgstr "直达声只比安静段本底高 {direct_to_noise_db:.0f} dB。比这更轻的声源会带上可闻噪声；请从源头降噪，或在链路余量内提高播放电平。"
 
 msgid "A relatively strong early reflection is present approximately {delay_ms:.0f} ms after the direct sound ({relative_db:.1f} dB). For close vocal or instrument recording, try moving the microphone or the performer farther from nearby hard surfaces, or treat that surface, and measure again."
 msgstr "直达声后约 {delay_ms:.0f} ms 有一条较强的早期反射（{relative_db:.1f} dB）。近距离录人声或乐器时，请把话筒或演奏者移离附近硬表面，或处理该表面，然后重测。"
@@ -438,7 +438,7 @@ msgid "Input gain unchanged"
 msgstr "输入增益未变"
 
 msgid "Required for a VALID noise delta. Leave unchecked if the preamp gain may have changed."
-msgstr "噪声差值要为 VALID 必须勾选。若前置增益可能变过，请不要勾选。"
+msgstr "要让本底噪声差值有效，必须勾选此项。若话放增益可能变过，请不要勾选。"
 
 msgid "Compare"
 msgstr "对比"
@@ -543,7 +543,7 @@ msgid "Sample rate"
 msgstr "采样率"
 
 msgid "Sweep duration"
-msgstr "扫描时长"
+msgstr "扫频时长"
 
 msgid "Peak level"
 msgstr "峰值电平"
@@ -558,7 +558,7 @@ msgid "Step 2 - Record Through Your DAW"
 msgstr "步骤 2 — 在 DAW 中录音"
 
 msgid "1. Generate the test signal at your DAW project's sample rate (Step 1).\n2. Import it on a new track. Switch time-stretching off for that clip (Warp, Flex, Follow Tempo, elastic audio) and bypass plug-ins on its track and on the master bus, including room-correction plug-ins.\n3. Route that track to the one loudspeaker you want to test.\n4. Arm a second track with the measurement microphone (input monitoring off) and record while the test signal plays.\n5. Export the recorded track as WAV, AIFF, CAF or FLAC at the project sample rate, without normalising.\n   Do not trim it - RoomScope finds the sweep automatically.\nStart with a low monitor level; the sweep should be clearly audible but not loud.\nThe user guide has step-by-step notes for Pro Tools, Logic Pro, Cubase, Studio One, Ableton Live, REAPER, FL Studio and Bitwig Studio."
-msgstr "1. 按 DAW 工程的采样率生成测试信号（步骤 1）。\n2. 把它导入新轨道。关闭该片段的时间伸缩（Warp、Flex、Follow Tempo、Elastic Audio），并旁通该轨道和主输出总线上的插件，包括房间校正插件。\n3. 将该轨道只路由到要测的那一只扬声器。\n4. 用测量话筒武装第二条轨道（关闭输入监听），在测试信号播放时录音。\n5. 按工程采样率把录音轨导出为 WAV、AIFF、CAF 或 FLAC，不要做标准化。\n   不要裁切——RoomScope 会自动找到扫描。\n先把监听开低；扫描应清楚可闻，但不要很大声。\n用户指南里有 Pro Tools、Logic Pro、Cubase、Studio One、Ableton Live、REAPER、FL Studio 和 Bitwig Studio 的分步说明。"
+msgstr "1. 按 DAW 工程的采样率生成测试信号（步骤 1）。\n2. 把它导入新轨道。关闭该片段的时间伸缩（Warp、Flex、Follow Tempo、Elastic Audio），并旁通该轨道和主输出总线上的插件，包括房间校正插件。\n3. 将该轨道只路由到要测的那一只扬声器。\n4. 用测量话筒武装第二条轨道（关闭输入监听），在测试信号播放时录音。\n5. 按工程采样率把录音轨导出为 WAV、AIFF、CAF 或 FLAC，不要做标准化。\n   不要裁切——RoomScope 会自动找到扫频。\n先把监听开低；扫频应清楚可闻，但不要很大声。\n用户指南里有 Pro Tools、Logic Pro、Cubase、Studio One、Ableton Live、REAPER、FL Studio 和 Bitwig Studio 的分步说明。"
 
 msgid "Step 3 - Import Recording"
 msgstr "步骤 3 — 导入录音"
@@ -570,7 +570,7 @@ msgid "No recording selected."
 msgstr "尚未选择录音。"
 
 msgid "Choose Reference Sweep..."
-msgstr "选择参考扫描…"
+msgstr "选择参考扫频…"
 
 msgid "Reference: the test signal from Step 1 (or choose a file)."
 msgstr "参考：步骤 1 的测试信号（或另选文件）。"
@@ -585,7 +585,7 @@ msgid "Microphone channel"
 msgstr "话筒声道"
 
 msgid "Loopback channel"
-msgstr "loopback 声道"
+msgstr "回送（loopback）声道"
 
 msgid "Step 4 - Analyze"
 msgstr "步骤 4 — 分析"
@@ -627,13 +627,13 @@ msgid "{name}: {seconds:.1f} s, {rate} Hz, {channels} channel(s)"
 msgstr "{name}：{seconds:.1f} s，{rate} Hz，{channels} 声道"
 
 msgid "Choose reference sweep"
-msgstr "选择参考扫描"
+msgstr "选择参考扫频"
 
 msgid "Sweep files (*.wav *.json);;All files (*)"
-msgstr "扫描文件 (*.wav *.json);;所有文件 (*)"
+msgstr "扫频文件 (*.wav *.json);;所有文件 (*)"
 
 msgid "Cannot read reference sweep"
-msgstr "无法读取参考扫描"
+msgstr "无法读取参考扫频"
 
 msgid "No recording"
 msgstr "没有录音"
@@ -645,7 +645,7 @@ msgid "No reference"
 msgstr "没有参考"
 
 msgid "Generate the test signal (Step 1) or choose the sweep file."
-msgstr "请先生成测试信号（步骤 1）或选择扫描文件。"
+msgstr "请先生成测试信号（步骤 1）或选择扫频文件。"
 
 msgid "Analyzing..."
 msgstr "正在分析…"
@@ -663,7 +663,7 @@ msgid "Demo mode: the fake backend synthesises a room. Nothing is sent to a loud
 msgstr "演示模式：假后端合成一个房间。不会对扬声器发声。"
 
 msgid "Start with your monitor/interface output at a low level. RoomScope will play a sine sweep at a conservative digital level; raise the level gradually between measurements only if the recording is too quiet."
-msgstr "先把监听/接口输出开低。RoomScope 会以保守的数字电平播放正弦扫描；只有录音太轻时才在两次测量之间逐步提高电平。"
+msgstr "先把监听/接口输出开低。RoomScope 会以保守的数字电平播放正弦扫频；只有录音太轻时才在两次测量之间逐步提高电平。"
 
 msgid "Audio devices"
 msgstr "音频设备"
@@ -687,7 +687,7 @@ msgid "Input channel (mic)"
 msgstr "输入声道（话筒）"
 
 msgid "Loopback channel (1-based)"
-msgstr "loopback 声道（从 1 起）"
+msgstr "回送（loopback）声道（从 1 起）"
 
 msgid "Output channel (speaker)"
 msgstr "输出声道（扬声器）"
@@ -699,7 +699,7 @@ msgid "I have set the monitor level low (required above {level:g} dBFS)"
 msgstr "我已把监听开低（高于 {level:g} dBFS 必须勾选）"
 
 msgid "Playback level"
-msgstr "回放电平"
+msgstr "播放电平"
 
 msgid "Run Measurement"
 msgstr "开始测量"
@@ -738,7 +738,7 @@ msgid "Sample rate not supported"
 msgstr "不支持该采样率"
 
 msgid "Playing the sweep and recording..."
-msgstr "正在播放扫描并录音…"
+msgstr "正在播放扫频并录音…"
 
 msgid "Stopped."
 msgstr "已停止。"
@@ -759,7 +759,7 @@ msgid "RT60 estimate"
 msgstr "RT60 估计"
 
 msgid "Reverberation (extrapolated to 60 dB). 'insufficient range' means the decay is not clean enough for that metric."
-msgstr "混响（外推到 60 dB）。“动态范围不足”表示衰减对该指标不够干净。"
+msgstr "混响（外推到 60 dB）。“衰减范围不足”表示衰减对该指标不够干净。"
 
 msgid "Save Session..."
 msgstr "保存会话…"
@@ -785,13 +785,13 @@ msgid "sample rate (Hz)"
 msgstr "采样率（Hz）"
 
 msgid "sweep duration in seconds (default 10)"
-msgstr "扫描时长（秒，默认 10）"
+msgstr "扫频时长（秒，默认 10）"
 
 msgid "sweep start frequency (default 20)"
-msgstr "扫描起始频率（默认 20）"
+msgstr "扫频起始频率（默认 20）"
 
 msgid "sweep end frequency (default 20000)"
-msgstr "扫描结束频率（默认 20000）"
+msgstr "扫频结束频率（默认 20000）"
 
 msgid "fade-in in seconds (default 0.05)"
 msgstr "淡入时长（秒，默认 0.05）"
@@ -803,10 +803,10 @@ msgid "peak level in dBFS (default {level:g})"
 msgstr "峰值电平（dBFS，默认 {level:g}）"
 
 msgid "silence before the sweep (s)"
-msgstr "扫描前静音（秒）"
+msgstr "扫频前静音（秒）"
 
 msgid "silence after the sweep (s)"
-msgstr "扫描后静音（秒）"
+msgstr "扫频后静音（秒）"
 
 msgid "recording channel to analyse (0-based)"
 msgstr "要分析的录音声道（从 0 起）"
@@ -845,10 +845,10 @@ msgid "recording profile that shapes the interpretation (default: user settings)
 msgstr "影响解读的录音配置（默认：用户设置）"
 
 msgid "separate loopback WAV from the same take (same sample rate)"
-msgstr "同一次录音的单独 loopback WAV（相同采样率）"
+msgstr "同一次录音的单独回送（loopback）WAV（相同采样率）"
 
 msgid "0-based loopback channel of the recording (or of --loopback if it is multi-channel)"
-msgstr "录音（或多声道 --loopback）的 loopback 声道（从 0 起）"
+msgstr "录音（或多声道 --loopback 文件）中的回送声道（从 0 起）"
 
 msgid "debug logging"
 msgstr "调试日志"
@@ -860,13 +860,13 @@ msgid "output WAV path"
 msgstr "输出 WAV 路径"
 
 msgid "analyse a recording made with the sweep"
-msgstr "分析用该扫描录下的录音"
+msgstr "分析用该扫频录下的录音"
 
 msgid "recorded WAV (any length, untrimmed)"
 msgstr "录好的 WAV（任意长度，不要裁切）"
 
 msgid "sweep WAV or its .roomscope-sweep.json sidecar"
-msgstr "扫描 WAV 或其 .roomscope-sweep.json 附属文件"
+msgstr "扫频 WAV 或其 .roomscope-sweep.json 附属文件"
 
 msgid "directory for session.json, result.json, IR WAV"
 msgstr "session.json、result.json、IR WAV 的目录"
@@ -875,7 +875,7 @@ msgid "list audio devices (Standalone Mode)"
 msgstr "列出音频设备（独立模式）"
 
 msgid "Standalone Mode: play the sweep and record the microphone"
-msgstr "独立模式：播放扫描并录制话筒"
+msgstr "独立模式：播放扫频并录制话筒"
 
 msgid "session directory (created)"
 msgstr "会话目录（会创建）"
@@ -896,7 +896,7 @@ msgid "output channel, 1-based (default 1)"
 msgstr "输出声道，从 1 起（默认 1）"
 
 msgid "1-based loopback input channel (recorded with the microphone)"
-msgstr "从 1 起的 loopback 输入声道（与话筒一同录制）"
+msgstr "回送输入声道，从 1 起（与话筒一同录制）"
 
 msgid "required for levels above -12 dBFS; confirms the monitor level was set low first"
 msgstr "高于 -12 dBFS 必须使用；确认已先把监听开低"
@@ -929,7 +929,7 @@ msgid "write comparison.json here (file or directory)"
 msgstr "把 comparison.json 写到这里（文件或目录）"
 
 msgid "declare that the input gain was unchanged (required for a VALID noise delta)"
-msgstr "声明输入增益未变（噪声差值要为 VALID 必须声明）"
+msgstr "声明输入增益未变（要让本底噪声差值有效，必须声明）"
 
 msgid "recording profile for comparison findings (default: the candidate session's)"
 msgstr "对比解读所用的录音配置（默认：候选会话的配置）"
@@ -995,19 +995,19 @@ msgid "Impulse response: {seconds:.2f} s analysed, {decay:.2f} s of decay record
 msgstr "脉冲响应：分析 {seconds:.2f} s，记录衰减 {decay:.2f} s，直达声置信度 {confidence}（峰前裕量 {margin}）"
 
 msgid "Sweep found at {start:.2f} s in the recording."
-msgstr "在录音中 {start:.2f} s 处找到扫描。"
+msgstr "在录音中 {start:.2f} s 处找到扫频。"
 
 msgid "Loopback: compensated; electrical path delay {delay}; distance upper bound {bound}."
-msgstr "Loopback：已补偿；电通路延迟 {delay}；距离上界 {bound}。"
+msgstr "回送：已补偿；电路径延迟 {delay}；距离上限 {bound}。"
 
 msgid "Loopback: offered but not applied ({reason})"
-msgstr "Loopback：已提供但未应用（{reason}）"
+msgstr "回送：已提供但未使用（{reason}）"
 
 msgid "Loopback: offered but not applied."
-msgstr "Loopback：已提供但未应用。"
+msgstr "回送：已提供但未使用。"
 
 msgid "Reverberation (extrapolated to 60 dB; 'insuff.' = insufficient decay range)"
-msgstr "混响（外推到 60 dB；“不足”表示衰减动态不够）"
+msgstr "混响（外推到 60 dB；“不足”表示衰减范围不足）"
 
 msgid "band"
 msgstr "频带"
@@ -1070,7 +1070,7 @@ msgid "Comparable: {value}"
 msgstr "可对比：{value}"
 
 msgid "Decay deltas (VALID only when both sides are VALID):"
-msgstr "衰减差值（仅当两侧都为 VALID 时为有效）："
+msgstr "衰减差值（仅当两侧都有效时才有效）："
 
 msgid "metric"
 msgstr "指标"
@@ -1117,7 +1117,7 @@ msgid "show program's version number and exit"
 msgstr "显示程序版本号并退出"
 
 msgid "Wrote {wav} ({seconds:.1f} s at {rate} Hz, sweep {start:g}-{end:g} Hz, {duration:g} s, {level:g} dBFS)"
-msgstr "已写出 {wav}（{seconds:.1f} s，{rate} Hz，扫描 {start:g}-{end:g} Hz，{duration:g} s，{level:g} dBFS）"
+msgstr "已写出 {wav}（{seconds:.1f} s，{rate} Hz，扫频 {start:g}-{end:g} Hz，{duration:g} s，{level:g} dBFS）"
 
 msgid "Wrote {sidecar} (keep it next to the WAV)"
 msgstr "已写出 {sidecar}（请与 WAV 放在一起）"
@@ -1156,7 +1156,7 @@ msgid "Level {level:g} dBFS is above {max_level:g} dBFS. Set the monitor level l
 msgstr "电平 {level:g} dBFS 高于 {max_level:g} dBFS。请先把监听开低，并加上 --acknowledge-level 确认。"
 
 msgid "Playing sweep on output channel {output}, recording input channel(s) {channels} via {backend} ..."
-msgstr "正在输出声道 {output} 播放扫描，经 {backend} 录制输入声道 {channels} …"
+msgstr "正在输出声道 {output} 播放扫频，经 {backend} 录制输入声道 {channels} …"
 
 msgid "Recorded {seconds:.1f} s to {path}"
 msgstr "已录制 {seconds:.1f} s 到 {path}"
@@ -1215,7 +1215,7 @@ msgstr "变长"
 
 msgctxt "noise segment"
 msgid "pre-sweep"
-msgstr "扫描前"
+msgstr "扫频前"
 
 msgctxt "noise segment"
 msgid "tail"
@@ -1332,7 +1332,7 @@ msgid "Start in my DAW"
 msgstr "在我的 DAW 中开始"
 
 msgid "RoomScope plays the sweep and records the microphone through your audio interface."
-msgstr "RoomScope 通过你的音频接口播放扫描并录制话筒。"
+msgstr "RoomScope 通过你的音频接口播放扫频并录制话筒。"
 
 msgid "Measure now"
 msgstr "立即测量"
@@ -1353,7 +1353,7 @@ msgid "Four steps: generate the test signal, play and record it in your DAW, imp
 msgstr "四个步骤：生成测试信号、在 DAW 中播放并录音、导入录音、分析。RoomScope 从不与 DAW 通信。"
 
 msgid "RoomScope plays the sweep and records the microphone through your audio interface, then runs the same analysis as Universal DAW Mode."
-msgstr "RoomScope 通过你的音频接口播放扫描并录制话筒，然后运行与通用 DAW 模式相同的分析。"
+msgstr "RoomScope 通过你的音频接口播放扫频并录制话筒，然后运行与通用 DAW 模式相同的分析。"
 
 msgid "valid"
 msgstr "有效"
@@ -1362,7 +1362,7 @@ msgid "unreliable"
 msgstr "不可靠"
 
 msgid "insufficient range"
-msgstr "动态范围不足"
+msgstr "衰减范围不足"
 
 msgid "not computed"
 msgstr "未计算"
@@ -1446,7 +1446,7 @@ msgid "none above {threshold:g} dB"
 msgstr "没有高于 {threshold:g} dB 的反射"
 
 msgid "sweep played at {percent:.1f} % speed"
-msgstr "扫描以 {percent:.1f} % 速度播放"
+msgstr "扫频以 {percent:.1f} % 速度播放"
 
 msgid "hum {base:g} Hz"
 msgstr "工频干扰 {base:g} Hz"
@@ -1658,13 +1658,13 @@ msgid "Background noise, RMS"
 msgstr "本底噪声，RMS"
 
 msgid "Loopback path delay"
-msgstr "loopback 路径延迟"
+msgstr "回送路径延迟"
 
 msgid "Broadband"
 msgstr "宽带"
 
 msgid "outside the sweep's range"
-msgstr "超出扫描范围"
+msgstr "超出扫频范围"
 
 msgid "not comparable"
 msgstr "不可比较"
@@ -1694,7 +1694,7 @@ msgid "1/{fraction}-octave smoothed"
 msgstr "1/{fraction} 倍频程平滑"
 
 msgid "interface (loopback)"
-msgstr "音频接口（loopback）"
+msgstr "音频接口（回送）"
 
 msgid "Frequency (Hz)"
 msgstr "频率（Hz）"
@@ -1758,3 +1758,63 @@ msgstr "房间话筒"
 
 msgid "Choir / ensemble"
 msgstr "合唱 / 小型合奏"
+
+msgid "Warnings:"
+msgstr "警告："
+
+msgid "The same report that roomscope analyze prints; warnings are at the end."
+msgstr "与 roomscope analyze 输出的报告相同；警告列在末尾。"
+
+msgid "usage: "
+msgstr "用法："
+
+msgid "positional arguments"
+msgstr "位置参数"
+
+msgid "options"
+msgstr "选项"
+
+msgid "%(heading)s:"
+msgstr "%(heading)s："
+
+msgid " (default: %(default)s)"
+msgstr "（默认：%(default)s）"
+
+msgid "%(prog)s: error: %(message)s\n"
+msgstr "%(prog)s：错误：%(message)s\n"
+
+msgid "argument %(argument_name)s: %(message)s"
+msgstr "参数 %(argument_name)s：%(message)s"
+
+msgid "ambiguous option: %(option)s could match %(matches)s"
+msgstr "选项有歧义：%(option)s 可匹配 %(matches)s"
+
+msgid "expected one argument"
+msgstr "需要一个参数值"
+
+msgid "expected at least one argument"
+msgstr "至少需要一个参数值"
+
+msgid "expected at most one argument"
+msgstr "最多只能有一个参数值"
+
+msgid "invalid %(type)s value: %(value)r"
+msgstr "无效的 %(type)s 值：%(value)r"
+
+msgid "invalid choice: %(value)r (choose from %(choices)s)"
+msgstr "无效选项：%(value)r（可选：%(choices)s）"
+
+msgid "not allowed with argument %s"
+msgstr "不能与参数 %s 同时使用"
+
+msgid "one of the arguments %s is required"
+msgstr "参数 %s 中必须提供一个"
+
+msgid "the following arguments are required: %s"
+msgstr "缺少必需的参数：%s"
+
+msgid "unrecognized arguments: %s"
+msgstr "无法识别的参数：%s"
+
+msgid "can't open '%(filename)s': %(error)s"
+msgstr "无法打开“%(filename)s”：%(error)s"

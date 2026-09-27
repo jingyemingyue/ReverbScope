@@ -30,53 +30,15 @@ from PySide6.QtWidgets import (
 from roomscope.cli.report import format_comparison_report
 from roomscope.core.compare import compare
 from roomscope.errors import RoomScopeError
-from roomscope.i18n import _
+from roomscope.i18n import _, localize
 from roomscope.interpretation import interpret_comparison
 from roomscope.interpretation.interpreter import Finding
 from roomscope.io.session_store import load_measurement, save_comparison
 from roomscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
 from roomscope.ui.browser import SessionBrowser
-from roomscope.ui.results import validity_text
+from roomscope.labels import metric_label, status_text, validity_word
 from roomscope.ui.theme import style_figure
 from roomscope.ui.widgets import Card, PageHeader, label, primary
-
-
-_DECAY_METRICS = {"edt": "EDT", "t20": "T20", "t30": "T30"}
-
-
-def metric_label(name: str, unit: str = "") -> str:
-    """A readable, translated name for a comparison metric id ("band.63 Hz.t20")."""
-    fixed = {
-        "noise.rms_dbfs": _("Background noise, RMS"),
-        "placement.source_height_m": _("Loudspeaker height"),
-        "placement.ceiling_height_m": _("Plane above the devices"),
-        "placement.horizontal_separation_m": _("Horizontal separation"),
-        "loopback.path_delay_ms": _("Loopback path delay"),
-    }
-    text = fixed.get(name)
-    if text is None:
-        parts = name.split(".")
-        if parts[0] == "broadband":
-            where, rest = _("Broadband"), parts[1:]
-        elif parts[0] == "band" and len(parts) >= 2:
-            where, rest = parts[1], parts[2:]
-        else:
-            where, rest = name, []
-        metric = rest[0] if rest else ""
-        what = (
-            _("RT60 estimate") if metric == "rt60_estimate" else _DECAY_METRICS.get(metric, metric)
-        )
-        text = f"{where} {what}".strip()
-    return f"{text} ({unit})" if unit else text
-
-
-def status_text(status: str) -> str:
-    """Translated reflection / resonance match status."""
-    return {
-        "matched": _("matched"),
-        "appeared": _("appeared"),
-        "disappeared": _("disappeared"),
-    }.get(status, status)
 
 
 def _decay_flags(match: ResonanceMatch) -> str:
@@ -255,7 +217,7 @@ class ComparePage(QWidget):
                 "" if item.candidate is None else f"{item.candidate:.3f}",
                 "" if item.delta is None else f"{item.delta:+.3f}",
                 "" if item.delta_percent is None else f"{item.delta_percent:+.1f}",
-                validity_text(item.validity)[0],
+                validity_word(item.validity),
             ]
             for c, value in enumerate(values):
                 cell = QTableWidgetItem(value)
@@ -264,7 +226,7 @@ class ComparePage(QWidget):
                     cell.setToolTip(item.name)
                 if c == len(values) - 1 and item.reason:
                     # Why a delta is missing (core diagnostics, English).
-                    cell.setToolTip(item.reason)
+                    cell.setToolTip(localize(item.reason))
                 self.table.setItem(r, c, cell)
         self.table.resizeColumnsToContents()
         self.reflections.setRowCount(len(comparison.reflections))

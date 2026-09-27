@@ -130,7 +130,7 @@ def test_reopen_saved_session(
     assert window.state.result.decay.broadband.rt60_estimate_s == saved_rt60
     assert window.state.result.impulse_response.samples.size > 0
     assert "RoomScope analysis" in window.results.text.toPlainText()
-    assert "Interpretation (vocal profile):" in window.results.text.toPlainText()
+    assert "Interpretation (Vocals profile):" in window.results.text.toPlainText()
     window.close()
 
 
@@ -321,7 +321,7 @@ def test_standalone_shows_requested_and_device_rate(app: QApplication) -> None:
     window.close()
 
 
-def test_help_licenses_and_core_diagnostics_heading(app: QApplication) -> None:
+def test_help_licenses_and_report_heading(app: QApplication) -> None:
     from roomscope.ui.main_window import license_notice_path
 
     notice = license_notice_path()
@@ -334,8 +334,9 @@ def test_help_licenses_and_core_diagnostics_heading(app: QApplication) -> None:
         for action in menu.actions()
     ]
     assert any("license" in text.lower() or "许可" in text for text in texts)
-    heading = window.results.diagnostics_heading.text()
-    assert "English" in heading or "英文" in heading
+    # Diagnostics are shown in the interface language now; the heading names
+    # the CLI command that prints the same report.
+    assert "roomscope analyze" in window.results.diagnostics_heading.text()
     window.close()
 
 

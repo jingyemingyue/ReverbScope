@@ -20,10 +20,19 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from roomscope.i18n import _, activate, available_locales
+from roomscope.i18n import _, available_locales
 from roomscope.interpretation import available_profiles
 from roomscope.interpretation.profiles import profile_title
 from roomscope.settings import load_settings, save_settings
+from roomscope.ui.widgets import label
+
+#: Display names of the catalogs, each in its own language.
+LANGUAGE_NAMES = {"en": "English", "zh_CN": "简体中文"}
+#: Shown in both languages: the new language is not active until a restart.
+RESTART_FOR_LANGUAGE = (
+    "语言设置将在重新启动 RoomScope 后完全生效。\n"
+    "The language change takes full effect after RoomScope restarts."
+)
 
 
 class SettingsDialog(QDialog):
@@ -34,9 +43,11 @@ class SettingsDialog(QDialog):
         layout = QVBoxLayout(self)
         form = QFormLayout()
         self.language = QComboBox()
-        self.language.addItem(_("System / English fallback"), "")
+        # Language names are written in their own language, so a user can find
+        # theirs whatever the current interface language is.
+        self.language.addItem(_("Follow the system"), "")
         for tag in available_locales():
-            self.language.addItem(tag, tag)
+            self.language.addItem(LANGUAGE_NAMES.get(tag, tag), tag)
         index = self.language.findData(self._settings.language)
         self.language.setCurrentIndex(max(index, 0))
         self.profile = QComboBox()
@@ -68,6 +79,8 @@ class SettingsDialog(QDialog):
         )
         self.developer_tools.setChecked(self._settings.developer_tools)
         form.addRow(_("Language"), self.language)
+        self.language_hint = label(RESTART_FOR_LANGUAGE, "hint", wrap=True)
+        form.addRow(self.language_hint)
         form.addRow(_("Default profile"), self.profile)
         form.addRow(_("Audio backend"), self.backend)
         form.addRow(_("Default output folder"), folder_row)
@@ -108,10 +121,9 @@ class SettingsDialog(QDialog):
         app = QApplication.instance()
         if app is not None:
             apply_application_chrome(app)
-        if settings.language:
-            activate(settings.language)
-        else:
-            activate(None)
+        # The new language is used from the next start: every window keeps the
+        # language it was built in, and switching the translator now would
+        # leave the open ones half in the old language.
         super().accept()
 
     def selected_output_dir(self) -> Path | None:

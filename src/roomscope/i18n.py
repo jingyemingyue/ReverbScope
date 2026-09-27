@@ -26,6 +26,7 @@ import re
 import string
 import struct
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Any
 
 DOMAIN = "roomscope"
@@ -82,8 +83,16 @@ def normalize_lang(tag: str | None) -> str:
     return raw.lower()
 
 
-def resolve_language(explicit: str | None = None) -> str:
-    """Pick a language without activating it."""
+def resolve_language(
+    explicit: str | None = None, *, system_languages: Sequence[str] | None = None
+) -> str:
+    """Pick a language without activating it.
+
+    ``system_languages`` are the desktop's preferred UI languages (the GUI
+    passes Qt's ``QLocale.system().uiLanguages()``); they stand for the
+    system locale when no locale variable is set, as on macOS when the app is
+    opened from the Finder.
+    """
     if explicit:
         return normalize_lang(explicit)
     try:
@@ -97,16 +106,20 @@ def resolve_language(explicit: str | None = None) -> str:
     env = os.environ.get(ENV_LANG)
     if env:
         return normalize_lang(env)
-    return _system_language()
+    return _system_language(system_languages)
 
 
-def activate(lang: str | None = None) -> str:
+def activate(lang: str | None = None, *, system_languages: Sequence[str] | None = None) -> str:
     """Install the catalog for ``lang`` (resolved if omitted) and return it.
 
     ``lang is None`` follows the selection order. Pass ``"en"`` to force English.
     """
     global _current, _translation
-    chosen = resolve_language(None) if lang is None else normalize_lang(lang)
+    chosen = (
+        resolve_language(None, system_languages=system_languages)
+        if lang is None
+        else normalize_lang(lang)
+    )
     loaded = _load_translation(chosen)
     if chosen != DEFAULT_LANG and _is_null(loaded):
         chosen = DEFAULT_LANG
@@ -337,7 +350,7 @@ def compile_catalogs(root: Path | None = None, out_dir: Path | None = None) -> l
     return written
 
 
-def _system_language() -> str:
+def _system_language(system_languages: Sequence[str] | None = None) -> str:
     for candidate in (
         os.environ.get("LC_ALL"),
         os.environ.get("LC_MESSAGES"),
@@ -345,8 +358,16 @@ def _system_language() -> str:
     ):
         if candidate:
             tag = candidate.split(".", 1)[0]
-            if tag:
+            if tag and tag.upper() not in {"C", "POSIX"}:
                 return normalize_lang(tag)
+    if system_languages:
+        known = available_locales()
+        for tag in system_languages:
+            lang = normalize_lang(tag)
+            if lang in known:
+                return lang
+            if lang.split("_", 1)[0] == DEFAULT_LANG:
+                return DEFAULT_LANG
     windows = _windows_ui_language()
     if windows:
         return normalize_lang(windows)
