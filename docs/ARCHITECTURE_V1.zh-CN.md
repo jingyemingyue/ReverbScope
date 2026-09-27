@@ -1,5 +1,7 @@
 # RoomScope v1.0 架构设计（中文摘要）
 
+[English](ARCHITECTURE_V1.md) | **简体中文**
+
 > 状态：**提案，2026-09-22**，供维护者评审。本文是
 > [ARCHITECTURE_V1.md](ARCHITECTURE_V1.md) 的摘要而非逐字翻译；两者不一致时以英文版为准。
 > [ARCHITECTURE.md](ARCHITECTURE.md) 描述 v0.1 已有的东西，本文描述"开放给所有人"的

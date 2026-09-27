@@ -1,5 +1,7 @@
 # Contributing to RoomScope
 
+> 中文用户：欢迎在 issue 中用中文提问、报告问题和提交测试结果（中文表单见“New issue”页面）；本贡献指南只提供英文版。
+
 Thank you for helping build a measurement tool people can trust. The rules
 below exist so that every number RoomScope prints stays defensible.
 

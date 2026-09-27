@@ -1,5 +1,7 @@
 # RoomScope 发布计划（中文摘要）
 
+[English](RELEASE_PLAN.md) | **简体中文**
+
 英文版 [RELEASE_PLAN.md](RELEASE_PLAN.md) 为准，本文只是摘要。2026-09-24 采纳。
 
 没有日期：达到退出条件才发版（ARCHITECTURE_V1.md §10）。

@@ -1,5 +1,7 @@
 # Security Policy
 
+**English** | [简体中文](SECURITY.zh-CN.md)
+
 ## Supported versions
 
 RoomScope is a pre-release (0.4.x, see [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md)).

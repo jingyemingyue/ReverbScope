@@ -1,6 +1,6 @@
 # How RoomScope compares
 
-[简体中文](COMPARISON.zh-CN.md)
+**English** | [简体中文](COMPARISON.zh-CN.md)
 
 Last checked: 2026-09-24. Facts about other tools come from their own pages,
 manuals and repositories (see *Sources*). Prices, editions and platforms

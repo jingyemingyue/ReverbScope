@@ -1,5 +1,7 @@
 # Developer edition and installer edition
 
+**English** | [简体中文](EDITIONS.zh-CN.md)
+
 RoomScope is one code base with two defaults. Both run the same analysis
 (`roomscope.core.pipeline.analyze`), read and write the same session files and
 report the same numbers; they differ in what is shown around it. The Chinese

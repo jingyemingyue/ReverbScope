@@ -1,6 +1,6 @@
 # Audio devices and host APIs
 
-[简体中文](AUDIO_DEVICES.zh-CN.md)
+**English** | [简体中文](AUDIO_DEVICES.zh-CN.md)
 
 Last checked: 2026-09-24. This page covers **Standalone Mode**: RoomScope
 plays and records through PortAudio with python-sounddevice 0.5.6, whose

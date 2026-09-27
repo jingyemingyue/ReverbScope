@@ -1,5 +1,7 @@
 # Compatibility
 
+**English** | [简体中文](COMPATIBILITY.zh-CN.md)
+
 What RoomScope runs on and works with, and **what verified each row**. A row
 that says "not verified" is a claim nobody has checked yet. The Chinese
 translation is [COMPATIBILITY.zh-CN.md](COMPATIBILITY.zh-CN.md). Last reviewed

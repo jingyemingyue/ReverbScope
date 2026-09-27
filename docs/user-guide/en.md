@@ -1,5 +1,7 @@
 # RoomScope user guide
 
+**English** | [简体中文](zh-CN.md)
+
 RoomScope measures a recording room so you can hear what the room is doing to
 close-miked sources. It does not score the room and it does not correct it.
 

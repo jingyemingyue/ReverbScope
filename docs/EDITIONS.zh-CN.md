@@ -1,17 +1,17 @@
 # 开发者版与安装包版
 
-以英文版 [EDITIONS.md](EDITIONS.md) 为准。
+[English](EDITIONS.md) | **简体中文**
 
-RoomScope 只有一套代码，两种默认配置。两者运行同一套分析（`roomscope.core.pipeline.analyze`），读写同样的会话文件，给出同样的数字；区别只在于界面周围显示什么。
+RoomScope 只有一套代码，两种默认配置。两者运行同一套分析（`roomscope.core.pipeline.analyze`），读写同样的会话文件，给出同样的数字；区别只在于分析之外的界面显示什么。本文是 [EDITIONS.md](EDITIONS.md) 的简体中文翻译；两者不一致时以英文版为准。
 
 | | 开发者版 | 安装包版（推荐给用户） |
 | --- | --- | --- |
-| 获取方式 | `git clone` + `pip install -e ".[dev,gui]"`，或 `pip install roomscope-<版本>-py3-none-any.whl` | Releases 页面上的 `RoomScope-setup.exe`、`RoomScope-macos-<架构>.dmg`、`roomscope-linux-x86_64.tar.gz` |
+| 获取方式 | `git clone` + `pip install -e ".[dev,gui]"`，或 `pip install roomscope-<version>-py3-none-any.whl` | Releases 页面上的 `RoomScope-setup.exe`、`RoomScope-macos-<arch>.dmg`、`roomscope-linux-x86_64.tar.gz` |
 | 判断依据 | 不是打包后的程序（未设置 `sys.frozen`） | PyInstaller 打包程序 |
 | 帮助 ▸ 用于问题报告的环境报告（可探测采样率） | 有 | 有 |
 | 开发者菜单（音频设备检查器、打开数据文件夹） | 有 | 无，除非手动开启 |
 | 独立模式中的高级音频选项（延迟、WASAPI 独占、Core Audio 设置采样率） | 有 | 无，除非手动开启 |
-| 日常设置（语言、主题、默认配置、音频后端、输出文件夹） | 有 | 有 |
+| 日常设置（语言、主题、默认录音配置、音频后端、输出文件夹） | 有 | 有 |
 | 扩展 RoomScope | Python API、`roomscope.exporters` 入口点、测试、`scripts/build_release.py` | — |
 
 可用 `ROOMSCOPE_EDITION=developer` 或 `ROOMSCOPE_EDITION=user` 临时覆盖；已安装的 RoomScope 可在“设置 ▸ *显示开发者工具*”中永久开启开发者工具（重启后生效）。命令行工具在两个版本中相同：`roomscope devices --probe`、`roomscope doctor` 以及 `measure` 的 `--latency`、`--wasapi-exclusive`、`--coreaudio-set-rate` 选项始终可用。

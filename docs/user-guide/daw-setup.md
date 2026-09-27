@@ -1,5 +1,7 @@
 # Measuring through your DAW
 
+**English** | [简体中文](daw-setup.zh-CN.md)
+
 Universal DAW Mode is designed for any DAW that can play one WAV file and
 record another at the same time. RoomScope never talks to the DAW: it only needs the
 recording, exported whole. This page lists what every DAW has to get right,

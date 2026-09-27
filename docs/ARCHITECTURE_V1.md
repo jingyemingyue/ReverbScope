@@ -1,5 +1,7 @@
 # RoomScope v1.0 architecture (design)
 
+**English** | [简体中文](ARCHITECTURE_V1.zh-CN.md)
+
 Status: **proposal, 2026-09-22**, written for the maintainer's review.
 [ARCHITECTURE.md](ARCHITECTURE.md) describes what exists (the v0.1
 foundation). This document describes what v1.0 -- the first release that is

@@ -1,5 +1,7 @@
 # Hardware test matrix
 
+**English** | [简体中文](HARDWARE_TESTS.zh-CN.md)
+
 ARCHITECTURE_V1.md §7.3: executed at least once per platform before 1.0
 (M10) and recorded here with the date, the RoomScope version and build
 commit, the operating system and the interface.

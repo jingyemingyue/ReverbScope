@@ -1,5 +1,7 @@
 # RoomScope release plan
 
+**English** | [简体中文](RELEASE_PLAN.zh-CN.md)
+
 Status: adopted 2026-09-24. This document says which versions RoomScope
 will cut, what each one must prove before it is cut, and how a release is
 mechanically produced. It does not change the scope contract in
