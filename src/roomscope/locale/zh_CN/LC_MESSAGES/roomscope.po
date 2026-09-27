@@ -39,28 +39,28 @@ msgid "copy the raw recording into the session folder (default: user settings)"
 msgstr "把原始录音复制进会话文件夹（默认：用户设置）"
 
 msgid "start the desktop GUI (needs the 'gui' extra)"
-msgstr "启动桌面界面（需要 gui 额外依赖）"
+msgstr "启动桌面界面（需要安装 roomscope[gui]）"
 
 msgid "session folder tools"
 msgstr "会话文件夹工具"
 
 msgid "zip a session for a bug report"
-msgstr "将会话打成 zip 供缺陷报告使用"
+msgstr "将会话打包为 ZIP 文件，用于问题报告"
 
 msgid "session directory or session.json"
 msgstr "会话目录或 session.json"
 
 msgid "leave WAV files out of the zip"
-msgstr "zip 中不包含 WAV"
+msgstr "ZIP 文件中不包含 WAV 录音"
 
 msgid "zip path (file or directory)"
-msgstr "zip 路径（文件或目录）"
+msgstr "ZIP 文件路径（文件或目录）"
 
 msgid "export curves through an exporter"
 msgstr "通过导出器导出曲线"
 
 msgid "exporter name (default csv)"
-msgstr "导出器名称（默认 csv）"
+msgstr "导出器名称（默认 CSV）"
 
 msgid "output directory"
 msgstr "输出目录"
@@ -881,7 +881,7 @@ msgid "session directory (created)"
 msgstr "会话目录（会创建）"
 
 msgid "input device index (see 'devices')"
-msgstr "输入设备序号（见 devices）"
+msgstr "输入设备序号（见 roomscope devices）"
 
 msgid "output device index"
 msgstr "输出设备序号"
@@ -941,7 +941,7 @@ msgid "print a shipped JSON Schema"
 msgstr "打印随附的 JSON Schema"
 
 msgid "which schema to print"
-msgstr "要打印的 schema"
+msgstr "要打印哪个 JSON Schema"
 
 msgid "analyse an impulse-response WAV from another tool"
 msgstr "分析其他工具给出的脉冲响应 WAV"

@@ -102,12 +102,14 @@ include = [
   "packaging",
   "requirements",
   "README.md",
+  "README.zh-CN.md",
   "LICENSE",
   "NOTICE",
   "CONTRIBUTING.md",
   "CHANGELOG.md",
   "CODE_OF_CONDUCT.md",
   "SECURITY.md",
+  "SECURITY.zh-CN.md",
   "pyproject.toml",
 ]
 

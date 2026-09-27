@@ -22,6 +22,30 @@ bundles are not signed for distribution (macOS: ad hoc, not notarized;
 Windows: no Authenticode).
 
 ### Added
+- **Simplified Chinese throughout.** Everything a user reads can be in
+  Simplified Chinese: the GUI (Qt's own buttons and dialogs too, from Qt's
+  `qtbase` catalog), every CLI help screen and argparse's usage and error
+  texts, the text reports, the environment report, the Device Inspector,
+  chart titles, axes and legends (CJK font fallback in every chart), the
+  Windows installer and uninstaller (Inno Setup's official Simplified
+  Chinese, chosen from the Windows display language), `README.zh-CN.md`,
+  `SECURITY.zh-CN.md`, `docs/HARDWARE_TESTS.zh-CN.md`, a Chinese docs index,
+  and Chinese GitHub issue forms for bug, measurement, interface test, DAW
+  report and feature request with the same fields, evidence rules and
+  privacy notes as the English ones. Result files do not change: notes,
+  warnings and reasons stay English in `result.json` (`roomscope.i18n.diag`)
+  and are translated when shown (`localize`), so files read the same in every
+  language, the schemas are unchanged and sessions from earlier versions
+  open with their original text. Settings lists languages as 跟随系统 /
+  English / 简体中文; a change applies from the next start, so no window is
+  left half in one language. On macOS a Finder launch follows the system's
+  preferred languages. Terms are unified (扫频, 回送, 本底噪声, 衰减范围不足,
+  独立模式, 通用 DAW 模式). New gates: every extracted message, diagnostic
+  template and argparse text has a translation with the same placeholders;
+  the GUI pages, dialogs, reports, charts and CLI help in zh_CN show no
+  English beyond an explicit list of product, standard and DAW names; the
+  installer has both languages; README and each Chinese document link their
+  counterpart.
 - **Audio device inventory** (`roomscope.audio.inventory`, `roomscope devices
   --probe | --host-apis | --json`): every host API and device PortAudio sees,
   the sample rates each accepts for one channel (`Pa_IsFormatSupported`;

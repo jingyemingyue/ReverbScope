@@ -39,7 +39,9 @@ ALLOWED = frozenset(
         "RF64",
         "W64",
         "JSON",
+        "Schema",
         "CSV",
+        "ZIP",
         "UTF",
         # audio systems and platforms
         "API",
@@ -97,7 +99,7 @@ ALLOWED = frozenset(
 )
 
 _COMMAND = re.compile(r"roomscope(?:\s+[a-z][a-z-]*)?(?:\s+--?[\w-]+)*")
-_WORD = re.compile(r"(?<![\w./\\%{-])[A-Za-z][A-Za-z']{2,}(?![\w./\\}-])")
+_WORD = re.compile(r"(?<![\w./\\%{\[-])[A-Za-z][A-Za-z']{2,}(?![\w./\\}\]-])")
 
 
 def english_words(text: str, *, data: tuple[str, ...] = ()) -> list[str]:
