@@ -1,4 +1,4 @@
-name: Audio interface test report
+name: Audio interface test report (English)
 description: You ran RoomScope with a real sound card or audio interface. Works or fails, both help.
 title: "[hardware] <interface> on <OS>"
 labels: ["hardware-report"]
@@ -11,7 +11,8 @@ body:
         in [docs/HARDWARE_TESTS.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/HARDWARE_TESTS.md);
         do as many as you like. A failed check is as useful as a pass.
         Only results from a physical interface count: not the Demo mode, the
-        fake backend, or a virtual machine without a passed-through device.
+        fake backend, a CI runner, or a virtual machine without a passed-through
+        device.
   - type: input
     id: interface
     attributes:

@@ -1,0 +1,50 @@
+name: 测量问题（简体中文）
+description: RoomScope 输出的某个数值看起来不对，或某个有效性标记出乎意料。
+title: "[measurement] "
+labels: ["measurement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        RoomScope 是一个测量工具。要报告某个数值有误，需要附上产生该数值的文件。
+        参见 [CONTRIBUTING.md](https://github.com/jingyemingyue/RoomScope/blob/main/CONTRIBUTING.md)（英文）。
+  - type: textarea
+    id: claim
+    attributes:
+      label: 哪里看起来不对
+      description: 哪项指标、你看到的数值，以及你预期的数值（和理由）。
+    validations:
+      required: true
+  - type: input
+    id: chain
+    attributes:
+      label: 信号链
+      description: DAW 或独立模式、音频接口、采样率、话筒。
+      placeholder: "通用 DAW 模式 / REAPER / 48 kHz / 测量话筒接入音频接口输入 1"
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: 文件
+      description: |
+        可以的话请附上会话打包文件：
+        `roomscope session bundle <session> --out report.zip`
+        （`--no-audio` 可不含 WAV）。否则请附上：扫频附带的 JSON 文件
+        （`*.roomscope-sweep.json`）、录下的 WAV、`result.json`，以及
+        （如果还保留着）原始扫频 WAV。
+        未经许可，请勿上传包含他人演奏内容的文件。
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: 模式
+      options:
+        - 通用 DAW 模式
+        - 独立模式
+        - 用 CLI 分析已有录音
+        - Python API
+        - 合成信号 / 单元测试
+    validations:
+      required: true

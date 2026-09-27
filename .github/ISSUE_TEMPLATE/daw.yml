@@ -1,4 +1,4 @@
-name: DAW compatibility report
+name: DAW compatibility report (English)
 description: You measured through a DAW with Universal DAW Mode. Works or fails, both help.
 title: "[daw] <DAW and version> on <OS>"
 labels: ["daw-report"]
