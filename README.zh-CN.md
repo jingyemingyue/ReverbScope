@@ -2,15 +2,83 @@
 
 # RoomScope
 
+**用扫频测量你的录音房间，判断一个话筒位置能不能用——可以配合任何 DAW，也可以单独使用。**
+
+[![下载](https://img.shields.io/github/v/release/jingyemingyue/RoomScope?include_prereleases&label=download&color=1a7f8e)](https://github.com/jingyemingyue/RoomScope/releases)
 [![CI](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 
-**开源、不依赖任何 DAW 的录音环境分析工具。**
-
 > 本文是 [README.md](README.md) 的简体中文版本；两者不一致时，以英文版为准。
 
-RoomScope 回答录音师面对一个房间和一个话筒位置时会问的实际问题：
+![RoomScope 结果总览：RT60、本底噪声、早期反射、直达声和各倍频带混响](docs/images/results-overview.png)
+
+<sub>内置演示的结果页（合成房间，不需要音频接口；截图为英文界面，程序可切换为简体中文）。</sub>
+
+## 下载
+
+### **[→ 从 GitHub Releases 下载 RoomScope](https://github.com/jingyemingyue/RoomScope/releases)**
+
+免费、开源。在该页面最上方的最新版本里，展开 **Assets**，按你的电脑选择文件：
+
+| 你的电脑 | 下载哪个文件 | 然后 |
+| --- | --- | --- |
+| Apple 芯片（M1 及更新）的 **Mac**，macOS 14+ | `RoomScope-macos-arm64.dmg` | 打开 DMG，把 **RoomScope** 拖到 **Applications（应用程序）**，再从“应用程序”里打开 |
+| Intel 处理器的 **Mac**，macOS 14+ | `RoomScope-macos-x86_64.dmg` | 同上 |
+| **Windows** 10 / 11，64 位 | `RoomScope-setup.exe`（安装程序） | 运行它，然后从开始菜单打开 **RoomScope** |
+| | 或 `roomscope-windows-x64.zip`（免安装） | 右键 → **全部解压缩…**，打开解压出的文件夹，双击 **`roomscope-gui.exe`** |
+| **Linux** x86_64 | `roomscope-linux-x86_64.tar.gz` | 解压后运行 `roomscope/roomscope-gui` |
+
+不确定是哪种 Mac？苹果菜单 → **关于本机**：显示 *芯片 Apple M…* 的是 Apple 芯片，显示
+*处理器 Intel* 的是 Intel。
+
+> **当前构建是未签名的开发版 / 预发布版构建。** 它们没有经过 Apple 公证，也没有 Windows
+> Authenticode 签名，所以第一次打开时系统会警告：
+>
+> * **macOS** 会提示 Apple 无法验证 RoomScope。点 **完成**，打开 **系统设置 → 隐私与安全性**，
+>   向下滚动，在关于 RoomScope 的提示旁点 **仍要打开**，再确认一次。只需要做一次。
+>   不需要、也不应该关闭 Gatekeeper 或系统完整性保护（SIP）。
+> * **Windows** SmartScreen 可能提示“Windows 已保护你的电脑”：点 **更多信息 → 仍要运行**。
+>
+> 完整步骤（含校验和、更新、卸载和故障排查）：**[安装指南](docs/INSTALLATION.zh-CN.md)**。
+
+> **尚未经过任何真实硬件验证。** 目前没有记录过任何一次使用真实音频接口或真实 DAW 的检查；
+> 迄今为止的所有测试要么基于合成数据，要么运行在 CI 机器上。在 0.5.0 之前，请把所有数字视为
+> 未经验证，也欢迎[帮助测试](#帮助测试-04x-预发布版本)。
+
+### 开发者
+
+需要 Python 3.12 或更新版本。RoomScope 还没有发布到 PyPI，请从克隆的仓库安装：
+
+```bash
+git clone https://github.com/jingyemingyue/RoomScope.git
+cd RoomScope
+python3.12 -m venv .venv && source .venv/bin/activate   # Windows：.venv\Scripts\activate
+pip install -e ".[dev,gui]"
+roomscope --help
+roomscope gui
+```
+
+每个发布版本还附带 wheel（`roomscope-<version>-py3-none-any.whl`）和源码包，见
+[安装指南 → Python](docs/INSTALLATION.zh-CN.md#python-wheel-和源码包)。
+
+## 第一次测量
+
+1. 打开 RoomScope，点 **演示（无需音频接口）**：不播放任何声音，就能看到一份完整的合成房间结果。
+2. 先把监听音箱音量**调低**。RoomScope 不会改动系统音量。
+3. 正式测量，二选一：
+   * **独立模式**——选择你的音频接口，由 RoomScope 自己播放扫频并录制测量话筒。
+   * **通用 DAW 模式**——RoomScope 生成扫频 WAV；在 DAW 中播放并录音，导出录音后再载入
+     （[DAW 说明](docs/user-guide/daw-setup.zh-CN.md)）。
+4. 查看结果：混响（EDT / T20 / T30 / RT60）、频率响应、本底噪声、早期反射和低频共振，每一项都带
+   有效性标记。用 **对比** 比较两个话筒位置。
+
+[用户指南](docs/user-guide/zh-CN.md)（[English](docs/user-guide/en.md)）逐页说明各项功能。
+
+## 这是什么
+
+RoomScope 是一个开源、不依赖任何 DAW 的录音环境分析工具。它回答录音师面对一个房间和一个话筒位置
+时会问的实际问题：
 
 * 这个房间能不能用来录音？
 * 这个位置有哪些声学问题（强早期反射、衰减过长、低频堆积、电源哼声、本底噪声过高）？
@@ -19,44 +87,22 @@ RoomScope 回答录音师面对一个房间和一个话筒位置时会问的实�
 它用指数正弦扫频（ESS）测量房间，通过解卷积得到房间脉冲响应，并报告混响（EDT / T20 /
 T30 / 估算的 RT60）、频率响应、本底噪声、早期反射以及可能存在的低频共振。每个数字都带有单位、
 算法来源和有效性标记；数据质量不够时，RoomScope 会给出 *“衰减范围不足”*（*Insufficient decay
-range*），而不是编造一个数字。RoomScope 有意不提供任何“房间评分”。
+range*），而不是编造一个数字。RoomScope 有意不提供任何“房间评分”。界面、命令行和报告都有英文和
+简体中文。
 
-> **尚未经过任何真实硬件验证。** 目前没有记录过任何一次使用真实音频接口或真实 DAW 的检查；
-> 迄今为止的所有测试要么基于合成数据，要么运行在 CI 机器上。[帮助测试](#帮助测试-04x-预发布版本)。
->
-> 状态：**0.4.x 预发布版本**，正在向 1.0 推进
-> （[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
-> DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和桌面程序包都已实现，
-> 并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
-> （硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。在 0.5.0 之前，请把所有数字视为
-> 未经验证。当前可用功能的概况：[docs/STATUS.md](docs/STATUS.md)。
-
-## 下载
-
-预发布构建由维护者发布后附在
-[GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases) 页面上。如果那里还没有列出任何
-发布版本，请[从源码安装](#从源码安装)。
-
-| 系统 | 文件 |
-| --- | --- |
-| Windows 10/11 x64 | `RoomScope-setup.exe`（安装程序）或 `roomscope-windows-x64.zip` |
-| macOS 14+，Apple 芯片 | `RoomScope-macos-arm64.dmg` |
-| macOS 14+，Intel | `RoomScope-macos-x86_64.dmg` |
-| Linux x86_64 | `roomscope-linux-x86_64.tar.gz` |
-| 任何装有 Python 3.12+ 的系统 | `roomscope-<version>-py3-none-any.whl` |
-
-这些程序包**没有用于分发的签名**（macOS：只有临时签名（ad hoc），未经公证；Windows：没有
-Authenticode 签名），因此首次启动时 macOS Gatekeeper 和 Windows SmartScreen 会发出警告。如何打开
-程序、核对 `SHA256SUMS-*` 文件以及安装 wheel，见[用户指南](docs/user-guide/zh-CN.md#安装)
-（[English](docs/user-guide/en.md#install)）。
+状态：**0.4.x 预发布版本**，正在向 1.0 推进
+（[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
+DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和桌面程序包都已实现，
+并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
+（硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。当前可用功能的概况：
+[docs/STATUS.md](docs/STATUS.md)。
 
 ## 帮助测试 0.4.x 预发布版本
 
 发布 0.4.x 构建，是为了让手上有真实音频接口和 DAW 的人找出哪些地方能用、哪些不能用。检查失败和
 检查通过同样有价值。
 
-1. 安装一个构建（见[用户指南](docs/user-guide/zh-CN.md#安装)；上文提到的 Gatekeeper / SmartScreen
-   警告属于预期情况）。
+1. 安装一个构建（见[下载](#下载)；Gatekeeper / SmartScreen 警告属于预期情况）。
 2. 打开 RoomScope，先运行一次 **演示（无需音频接口）**（英文界面为 **Demo (no interface)**）：
    它不播放任何声音，只展示一份结果是什么样子。
 3. 先把监听音量调低，然后用你的音频接口和一支话筒运行 **独立模式**，或通过你的 DAW 运行
@@ -106,21 +152,10 @@ RoomScope 通过你选择的音频接口自己播放扫频并录制话筒（经 
 
 两种模式调用的是完全相同的分析流程（`roomscope.core.pipeline.analyze`）。
 
-## 从源码安装
+## 命令行
 
-需要 Python 3.12 或更新版本。**1.0 支持的平台：** macOS 14+（arm64、x86_64）、Windows 10/11 x64、
-glibc 版本不低于 CI 运行器的 Linux x86_64；wheel 支持 Python 3.12–3.14。其他环境也许能用，但未经测试。
-
-```bash
-git clone https://github.com/jingyemingyue/RoomScope.git
-cd RoomScope
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,gui]"
-```
-
-`gui` 会引入 PySide6（LGPL-3.0，体积较大）。不装它，CLI 和 Python API 也能完整使用。
-
-## 快速上手（CLI）
+同样的分析也可以用命令行完成。Python 安装和 Windows / Linux 程序包里的命令是 `roomscope`
+（与 `roomscope-gui` 在同一文件夹）；macOS 上是 `/Applications/RoomScope.app/Contents/MacOS/RoomScope`。
 
 ```bash
 # 1. 生成测试信号（48 kHz，20 Hz–20 kHz，10 s 扫频，-12 dBFS）
@@ -231,6 +266,7 @@ for r in result.reflections.reflections:
 
 | 文档 | 内容 |
 | --- | --- |
+| [docs/INSTALLATION.zh-CN.md](docs/INSTALLATION.zh-CN.md) | 在 macOS、Windows、Linux 上下载安装或用 Python 安装；更新、卸载、未签名构建的警告、故障排查；[English](docs/INSTALLATION.md) |
 | [docs/index.md](docs/index.md) | 文档索引 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 包结构、数据流、扩展点 |
 | [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回送、打包、国际化、验证关卡 |

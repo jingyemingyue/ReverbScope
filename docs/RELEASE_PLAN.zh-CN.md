@@ -9,7 +9,7 @@
 ## 1. 现状
 
 * `main` 已经包含 v0.1 基础 + 0.2（重开与对比）+ 0.3（信任测量链）+ 0.4（面向所有人）+ 1.0-rc 的纯软件部分。四个里程碑 PR（#5、#6、#7、#8）在 2026-09-24 审查后合并，审查发现记录为 issue #9–#16。
-* 还没有任何 tag 或已发布的 Release（v0.4.1 是草稿）。仓库已于 2026-09-24 公开。
+* 还没有任何 tag 或已发布的 Release（v0.4.1 是草稿）。仓库已于 2026-09-24 公开。**更新（2026-09-27）：** v0.4.1 已准备好作为第一个面向早期测试者的*公开*预发布版本：README 和 [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) 以下载为先，发布说明以“下载 / 可用功能 / 重要限制”开头，候选构建已核对（§3c）。维护者发布草稿后它才公开；这里的任何改动都不会发布它。
 * 需要人在真实房间完成的事情都没做：硬件矩阵（HARDWARE_TESTS.md）没有一格 PASS，验证活动（VALIDATION.md）没有跑。维护者近期没有测量设备，所以这些排在最后，也可以在开源之后由贡献者补。
 * 签名证书、PyPI 项目名与可信发布都是维护者决定，目前未定；仓库已于 2026-09-24 公开。
 
@@ -99,13 +99,38 @@ Windows：安装程序和可执行文件没有 Authenticode 签名，首次运�
 
 §3b 来源见英文版 [RELEASE_PLAN.md](RELEASE_PLAN.md) §3b 的 [A1]–[A16]、[W1]–[W3]。
 
+### 3c. 发布 v0.4.1：第一个公开预发布版本
+
+README 的 **下载** 按钮指向的就是 v0.4.1。在 `v0.4.1` 还没有 tag 之前，`main` 上的每次相关运行都会重建草稿，所以草稿里的
+文件总是来自最新 `main` 提交的同一次运行；由于这个版本号从未发布过，版本仍为 0.4.1。
+
+2026-09-27 在候选构建（Release 运行 #23，PR #21 head `b753e17`）上核对了：全部校验和；wheel 在全新虚拟环境中（非可编辑安装）
+的 CLI、假后端测量、中文输出和 GUI 冒烟；源码包能构建出相同的 wheel；`twine check`；两个 DMG 的内容、架构、Info.plist 和
+动态库路径（在 macOS 上的挂载、安装和启动由工作流在 macOS 26 / 15 运行器上完成，不是真人）；Windows ZIP 的结构（只有工作流在
+Windows 运行器上启动过）；Linux 包在空环境中的冒烟；密钥与私人路径扫描；各处版本号均为 0.4.1。详见英文版 §3c 和 STATUS 快照 29。
+
+**发布清单（维护者的操作）：**
+
+1. 把候选分支合并到 `main`，等该提交上的 **CI** 和 **Release** 都变绿；Release 会用该提交的 13 个文件和新的说明刷新 v0.4.1 草稿。
+2. 在草稿上核对：目标提交是那个绿色的 `main` 提交；13 个附件齐全；说明以 *RoomScope v0.4.1 — Early public pre-release for testing* 开头。
+3. 建议发布前：下载适合你的 Mac 的 DMG，按 [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) 安装并打开一次（包括 Gatekeeper 步骤）。这是任何工作流都做不到的一项检查。
+4. 保持勾选 **Set as a pre-release**，不要勾选 *Set as the latest release*，点 **Publish release**。发布会在目标提交上创建 tag `v0.4.1`；PyPI 仍然关闭（§3d）。
+5. 用无痕窗口打开 <https://github.com/jingyemingyue/RoomScope/releases>，确认能看到 v0.4.1 及其附件。README 链接的是这个页面而不是 `/releases/latest`，因为 GitHub 的 *latest* 永远不会指向预发布版本（只有预发布时会跳转到 `/releases`，API 返回 404）。
+
+### 3d. PyPI 就绪情况（2026-09-27 检查，未发布）
+
+0.4.x 不上传 PyPI；第一批公开测试者通过 GitHub Releases 获取。`roomscope` 这个名字在 2026-09-27 仍未被占用（未保留）；wheel 和
+源码包的元数据通过 `twine check`；可信发布已在 `release.yml` 中接好，但还缺 PyPI 端的 trusted publisher、带审批人的 `pypi` 环境和
+仓库变量；`pypa/gh-action-pypi-publish` 在可信发布下默认上传 PEP 740 证明。**尚未就绪：** `README.md` 里有 38 个相对链接和一张截图，在
+pypi.org 上会失效，首次上传前需要一份使用绝对链接的 README。在真正发布到 PyPI 之前，任何文档都不能让用户运行 `pip install roomscope`。
+
 ## 4. 每次发布都适用的门禁
 
 CI 全绿（lint、mypy、文档链接检查、文档站点构建、`check_src_safety.py`、schema、测试矩阵、`core`/`models` 85% 覆盖率、打包、已安装 Essentials 的 GPL 门禁）；发布工作流全绿（`--strip --require-licenses` 门禁、每个系统的冒烟测试）；DEPENDENCIES.md §6 没有影响所发二进制的 UNKNOWN / NEEDS REVIEW；STATUS 如实写明跑了什么、没跑什么，硬件格保持空白直到有人填上日期和声卡型号；CHANGELOG 有该版本段落，审查发现的夸大说法在同一版本里更正（0.4.0：中文目录只覆盖七个 profile 中的三个，见 #14，0.4.1 已补全）。
 
 ## 5. 仍待维护者决定
 
-公开仓库（已于 2026-09-24 公开；§9.1 清单中其余仓库设置未在此核对）；Apple Developer ID + 公证、Windows 签名，或明确决定不签名发 1.0；PyPI 注册 `roomscope`、配可信发布、建 `pypi` 环境、设 `ROOMSCOPE_PUBLISH_PYPI=true`；验证活动的房间、参考工具（REW 只作对比仪器）和执行人；是否要求 DCO 签署；Dependabot 的 #3 / #4 在它重新 rebase 到 SHA 固定的工作流并且 CI 绿之后合并。
+公开仓库（已于 2026-09-24 公开；§9.1 清单中其余仓库设置未在此核对）；Apple Developer ID + 公证、Windows 签名，或明确决定不签名发 1.0；PyPI 注册 `roomscope`、配可信发布、建 `pypi` 环境、设 `ROOMSCOPE_PUBLISH_PYPI=true`、为 PyPI 准备使用绝对链接的 README（§3d）；把 v0.4.1 草稿发布为第一个公开预发布版本（§3c，已就绪，未发布）；验证活动的房间、参考工具（REW 只作对比仪器）和执行人；是否要求 DCO 签署；Dependabot 的 #3 / #4 在它重新 rebase 到 SHA 固定的工作流并且 CI 绿之后合并。
 
 ## 6. 2026-09-24 审查后续（issue）
 

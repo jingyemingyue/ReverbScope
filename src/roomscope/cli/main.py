@@ -1059,15 +1059,13 @@ def cmd_project(args: argparse.Namespace) -> int:
 
 
 def cmd_gui(args: argparse.Namespace) -> int:
-    try:
-        from roomscope.ui.app import run_app
-    except ImportError as exc:
-        print(
-            _("The GUI needs PySide6 Essentials: pip install 'roomscope[gui]' ({error})").format(
-                error=exc
-            ),
-            file=sys.stderr,
-        )
+    from roomscope.ui.app import GUI_UNAVAILABLE, pyside6_import_error, run_app
+
+    # PySide6 is imported inside run_app, so check it first: without the gui
+    # extra (or the Qt system libraries) the user gets a sentence, not a traceback.
+    error = pyside6_import_error()
+    if error is not None:
+        print(_(GUI_UNAVAILABLE).format(error=error), file=sys.stderr)
         return 2
     return int(run_app(smoke=bool(getattr(args, "smoke", False))))
 

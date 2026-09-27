@@ -6,8 +6,29 @@ import os
 import sys
 from typing import TYPE_CHECKING
 
+from roomscope.i18n import N_
+
 if TYPE_CHECKING:
     from PySide6.QtCore import QCoreApplication
+
+
+#: Shown instead of a traceback when PySide6 cannot be imported: the wheel
+#: without the ``gui`` extra, or a Linux system without the Qt system libraries.
+GUI_UNAVAILABLE = N_(
+    "The desktop GUI cannot start because PySide6 could not be loaded ({error}). "
+    'Install it in this Python environment with: pip install "PySide6_Essentials>=6.6". '
+    "On Linux the OpenGL/EGL and XCB system libraries are also needed; see "
+    "docs/INSTALLATION.md. The command-line tool works without it."
+)
+
+
+def pyside6_import_error() -> str | None:
+    """Why PySide6 cannot be imported, or ``None`` when the GUI can start."""
+    try:
+        import PySide6.QtWidgets  # noqa: F401
+    except ImportError as exc:
+        return str(exc)
+    return None
 
 
 def run_app(argv: list[str] | None = None, *, smoke: bool = False) -> int:
@@ -60,4 +81,12 @@ def install_qt_translations(app: QCoreApplication) -> None:
 
 
 def main() -> None:
+    """``roomscope-gui`` entry point of a pip install."""
+    error = pyside6_import_error()
+    if error is not None:
+        from roomscope.i18n import _, activate
+
+        activate(None)
+        sys.stderr.write(_(GUI_UNAVAILABLE).format(error=error) + "\n")
+        raise SystemExit(2)
     raise SystemExit(run_app())

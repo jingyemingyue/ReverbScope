@@ -2,14 +2,96 @@
 
 # RoomScope
 
+**Measure your recording room with a sine sweep and find out whether a
+microphone position is usable — next to any DAW, or on its own.**
+
+[![Download](https://img.shields.io/github/v/release/jingyemingyue/RoomScope?include_prereleases&label=download&color=1a7f8e)](https://github.com/jingyemingyue/RoomScope/releases)
 [![CI](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 
-**An open-source, DAW-independent recording environment analyzer.**
+![RoomScope results overview: RT60, background noise, early reflections, direct sound and reverberation per octave band](docs/images/results-overview.png)
 
-RoomScope answers practical questions a recording engineer asks about a room
-and a microphone position:
+<sub>The results page of the built-in demo (a synthetic room; no interface needed).</sub>
+
+## Download
+
+### **[→ Download RoomScope from GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases)**
+
+Free and open source. Pick the file for your computer from the newest
+release at the top of that page (under **Assets**):
+
+| Your computer | File to download | Then |
+| --- | --- | --- |
+| **Mac** with Apple silicon (M1 or later), macOS 14+ | `RoomScope-macos-arm64.dmg` | Open the DMG, drag **RoomScope** onto **Applications**, open RoomScope from Applications |
+| **Mac** with an Intel processor, macOS 14+ | `RoomScope-macos-x86_64.dmg` | Same as above |
+| **Windows** 10 / 11, 64-bit | `RoomScope-setup.exe` (installer) | Run it, then Start menu → **RoomScope** |
+| | or `roomscope-windows-x64.zip` (no installer) | Right-click → **Extract All…**, open the extracted folder, double-click **`roomscope-gui.exe`** |
+| **Linux** x86_64 | `roomscope-linux-x86_64.tar.gz` | Extract, run `roomscope/roomscope-gui` |
+
+Not sure which Mac you have? Apple menu → **About This Mac**: *Chip: Apple M…*
+means Apple silicon, *Processor: Intel* means Intel.
+
+> **Current builds are unsigned development/pre-release builds.** They are
+> not notarized by Apple and carry no Windows Authenticode signature, so the
+> first launch shows a warning:
+>
+> * **macOS** says Apple could not verify RoomScope. Click **Done**, open
+>   **System Settings → Privacy & Security**, scroll down, click
+>   **Open Anyway** next to the RoomScope message and confirm. This is needed
+>   once. You do not need to turn off Gatekeeper or System Integrity
+>   Protection, and you should not.
+> * **Windows** SmartScreen may say *Windows protected your PC*: click
+>   **More info → Run anyway**.
+>
+> Step by step, with checksums, updating, uninstalling and troubleshooting:
+> **[Installation guide](docs/INSTALLATION.md)**.
+
+> **No real hardware validation yet.** No check with a real audio interface
+> or a real DAW has been recorded; every test so far is synthetic or runs on
+> CI machines. Treat the numbers as unvalidated until 0.5.0, and
+> [help test it](#help-test-the-04x-pre-release).
+
+### Developers
+
+Python 3.12 or newer. RoomScope is not on PyPI yet; install from a clone:
+
+```bash
+git clone https://github.com/jingyemingyue/RoomScope.git
+cd RoomScope
+python3.12 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[dev,gui]"
+roomscope --help
+roomscope gui
+```
+
+Each release also carries a wheel (`roomscope-<version>-py3-none-any.whl`)
+and a source archive; see [Installation → Python](docs/INSTALLATION.md#python-wheel-and-source).
+
+## First measurement
+
+1. Open RoomScope and click **Demo (no interface)**: it shows a complete
+   result from a synthetic room without playing anything.
+2. Turn your monitors **down**. RoomScope never changes system volume.
+3. Measure for real, either way:
+   * **Standalone Mode** — pick your audio interface; RoomScope plays the
+     sweep and records the measurement microphone itself.
+   * **Universal DAW Mode** — RoomScope writes a sweep WAV; play and record
+     it in your DAW, export the recording and load it back
+     ([DAW notes](docs/user-guide/daw-setup.md)).
+4. Read the result: reverberation (EDT / T20 / T30 / RT60), frequency
+   response, background noise, early reflections and low-frequency
+   resonances, each with a validity flag. Compare two microphone positions
+   with **Compare**.
+
+The [user guide](docs/user-guide/en.md) ([简体中文](docs/user-guide/zh-CN.md))
+explains every page.
+
+## What it is
+
+RoomScope is an open-source, DAW-independent recording environment analyzer.
+It answers practical questions a recording engineer asks about a room and a
+microphone position:
 
 * Is this room usable for recording?
 * What acoustic problems does this position have (strong early reflections,
@@ -22,48 +104,24 @@ T30 / estimated RT60), frequency response, background noise, early
 reflections and potential low-frequency resonances. Every number carries its
 unit, its algorithm source and a validity flag; when the data is not good
 enough, RoomScope says *"Insufficient decay range"* instead of inventing a
-figure. There is deliberately no "room score".
+figure. There is deliberately no "room score". The GUI, the command line and
+the reports are available in English and Simplified Chinese.
 
-> **No real hardware validation yet.** No check with a real audio interface
-> or a real DAW has been recorded; every test so far is synthetic or runs on
-> CI machines. [Help test it](#help-test-the-04x-pre-release).
->
-> Status: **0.4.x pre-release** on the way to 1.0
-> ([RELEASE_PLAN.md](docs/RELEASE_PLAN.md)). The DSP core, CLI, GUI, compare,
-> loopback, zh-CN catalog, session bundles and the desktop bundles exist and
-> are covered by synthetic tests on Linux, macOS and Windows. **Not yet:** any
-> result measured on real hardware (the hardware matrix and the validation
-> campaign are empty), signed bundles, a PyPI package. Treat the numbers as
-> unvalidated until 0.5.0. Snapshot of what works: [docs/STATUS.md](docs/STATUS.md).
-
-## Download
-
-Pre-release builds are attached to
-[GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases) when the
-maintainer publishes them. If no release is listed there yet,
-[install from source](#install-from-source).
-
-| System | File |
-| --- | --- |
-| Windows 10/11 x64 | `RoomScope-setup.exe` (installer) or `roomscope-windows-x64.zip` |
-| macOS 14+, Apple silicon | `RoomScope-macos-arm64.dmg` |
-| macOS 14+, Intel | `RoomScope-macos-x86_64.dmg` |
-| Linux x86_64 | `roomscope-linux-x86_64.tar.gz` |
-| Any OS with Python 3.12+ | `roomscope-<version>-py3-none-any.whl` |
-
-The bundles are **not signed for distribution** (macOS: ad hoc signature, not
-notarized; Windows: no Authenticode signature): macOS Gatekeeper and Windows
-SmartScreen warn on first launch. How to open them, check the `SHA256SUMS-*` files and install the
-wheel is in the [user guide](docs/user-guide/en.md#install)
-([简体中文](docs/user-guide/zh-CN.md#安装)).
+Status: **0.4.x pre-release** on the way to 1.0
+([RELEASE_PLAN.md](docs/RELEASE_PLAN.md)). The DSP core, CLI, GUI, compare,
+loopback, zh-CN catalog, session bundles and the desktop bundles exist and are
+covered by synthetic tests on Linux, macOS and Windows. **Not yet:** any result
+measured on real hardware (the hardware matrix and the validation campaign are
+empty), signed bundles, a PyPI package. Snapshot of what works:
+[docs/STATUS.md](docs/STATUS.md).
 
 ## Help test the 0.4.x pre-release
 
 The 0.4.x builds exist so that people with real interfaces and DAWs can find
 out what works. A failed check is as useful as a pass.
 
-1. Install a build ([user guide](docs/user-guide/en.md#install); the
-   Gatekeeper / SmartScreen warning above is expected).
+1. Install a build ([Download](#download); the Gatekeeper / SmartScreen
+   warning is expected).
 2. Open RoomScope and run **Demo (no interface)** once: it shows what a
    result looks like without playing anything.
 3. Turn the monitors down, then run **Standalone Mode** with your interface
@@ -122,24 +180,11 @@ macOS option that sets the device's sample rate, is described in
 Both modes call exactly the same analysis pipeline
 (`roomscope.core.pipeline.analyze`).
 
-## Install from source
+## Command line
 
-Requires Python 3.12 or newer. **Supported for 1.0:** macOS 14+ (arm64,
-x86_64), Windows 10/11 x64, Linux x86_64 with glibc of the CI runner or
-newer, Python 3.12–3.14 for the wheel. Anything else may work and is not
-tested.
-
-```bash
-git clone https://github.com/jingyemingyue/RoomScope.git
-cd RoomScope
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,gui]"
-```
-
-`gui` pulls in PySide6 (LGPL-3.0, large). Without it the CLI and the Python
-API work fully.
-
-## Quick start (CLI)
+The same analysis is a command-line tool. It is `roomscope` in a Python
+install and in the Windows / Linux bundles (next to `roomscope-gui`); on macOS
+it is `/Applications/RoomScope.app/Contents/MacOS/RoomScope`.
 
 ```bash
 # 1. Generate the test signal (48 kHz, 20 Hz–20 kHz, 10 s sweep, -12 dBFS)
@@ -266,6 +311,7 @@ A sourced comparison with other tools is in [docs/COMPARISON.md](docs/COMPARISON
 
 | Document | Content |
 | --- | --- |
+| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Download and install on macOS, Windows, Linux or with Python; updating, uninstalling, unsigned-build warnings, troubleshooting; [中文](docs/INSTALLATION.zh-CN.md) |
 | [docs/index.md](docs/index.md) | Documentation hub |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Package layout, data flow, extension points |
 | [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | v1.0 design being executed: API tiers, comparison, loopback, packaging, i18n, validation gates |

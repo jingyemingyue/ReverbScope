@@ -8,7 +8,7 @@ RoomScope 用来测量录音房间，让你听清房间对近距离拾音的声�
 
 ## 安装
 
-从项目的 [Releases 页面](https://github.com/jingyemingyue/RoomScope/releases)下载。每个 Release 都附有 `SHA256SUMS-*` 文件，请与下载文件的校验值比对（macOS / Linux：`shasum -a 256 <file>`；PowerShell：`Get-FileHash <file>`）。
+从项目的 [Releases 页面](https://github.com/jingyemingyue/RoomScope/releases)下载。各系统的分步说明、更新、卸载和故障排查见 [INSTALLATION.zh-CN.md](../INSTALLATION.zh-CN.md)，本节是简要版。每个 Release 都附有 `SHA256SUMS-*` 文件，请与下载文件的校验值比对（macOS / Linux：`shasum -a 256 <file>`；PowerShell：`Get-FileHash <file>`）。
 
 | 系统 | 文件 | 启动 RoomScope |
 | --- | --- | --- |
@@ -23,7 +23,7 @@ Windows 和 Linux 安装包含两个程序：桌面程序 `roomscope-gui` 和命
 
 * **macOS：** 先打开一次应用；macOS 提示无法验证时选“完成”，然后进入“系统设置 → 隐私与安全性”，点“仍要打开”（该按钮在第一次尝试打开之后才会出现）并确认。从 macOS 15 Sequoia 起，右键 → “打开”不再能绕过这一检查；在 macOS 14 上仍然可用（[Apple](https://developer.apple.com/news/?id=saqachfa)）。系统询问时请允许麦克风访问（安装包的 Info.plist 中声明了 `NSMicrophoneUsageDescription`）。打包的 NumPy 和 SciPy 需要 macOS 14 或更新版本；DMG 只在 macOS 15（Intel）和 macOS 26（Apple 芯片）的 CI 运行器上构建和启动过。
 * **Windows：** SmartScreen 可能发出警告，请选“更多信息”→“仍要运行”。安装程序只为当前用户安装，不需要管理员权限；可在“设置 → 应用”中卸载。
-* **Linux：** tar 包需要系统自带的 PortAudio、OpenGL/EGL 和 XCB 库（Debian / Ubuntu：`sudo apt install libportaudio2 libegl1 libxkbcommon-x11-0 libxcb-cursor0`）。`packaging/linux/roomscope.desktop` 是一个可以按需修改的桌面启动项。
+* **Linux：** tar 包需要系统自带的 PortAudio、OpenGL/EGL 和 XCB 库（Debian / Ubuntu：`sudo apt install libportaudio2 libegl1 libgl1 libxkbcommon-x11-0 libxcb-cursor0`）；图表中要显示中文，还需要中文字体，例如 `fonts-noto-cjk`。`packaging/linux/roomscope.desktop` 是一个可以按需修改的桌面启动项。
 
 **用 Python 安装。** RoomScope 还没有发布到 PyPI。使用 Python 3.12 或更新版本，把 Release 附带的 wheel 安装到虚拟环境中：
 

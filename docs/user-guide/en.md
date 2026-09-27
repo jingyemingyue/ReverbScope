@@ -11,7 +11,10 @@ This page is the English guide. The Chinese translation is
 ## Install
 
 Download from the project's
-[Releases page](https://github.com/jingyemingyue/RoomScope/releases). Each
+[Releases page](https://github.com/jingyemingyue/RoomScope/releases).
+Step-by-step instructions for every system, updating, uninstalling and
+troubleshooting are in [INSTALLATION.md](../INSTALLATION.md); this section is
+the short version. Each
 Release lists `SHA256SUMS-*` files; compare them with the file you
 downloaded (`shasum -a 256 <file>` on macOS / Linux,
 `Get-FileHash <file>` in PowerShell).
@@ -47,7 +50,8 @@ operating system warns the first time:
   uninstall from Settings → Apps.
 * **Linux:** the tarball needs the system's PortAudio, OpenGL/EGL and
   XCB libraries (on Debian / Ubuntu: `sudo apt install libportaudio2 libegl1
-  libxkbcommon-x11-0 libxcb-cursor0`). `packaging/linux/roomscope.desktop`
+  libgl1 libxkbcommon-x11-0 libxcb-cursor0`), and a CJK font such as
+  `fonts-noto-cjk` for Chinese text in charts. `packaging/linux/roomscope.desktop`
   is a desktop entry you can adapt.
 
 **From Python.** RoomScope is not on PyPI yet. With Python 3.12 or newer,

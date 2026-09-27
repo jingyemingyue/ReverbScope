@@ -23,6 +23,7 @@ the release plan and the v1.0 architecture have a Chinese digest.
 | Document / 文档 | English | 简体中文 |
 | --- | --- | --- |
 | Project overview / 项目简介 | [README.md](https://github.com/jingyemingyue/RoomScope/blob/main/README.md) | [README.zh-CN.md](https://github.com/jingyemingyue/RoomScope/blob/main/README.zh-CN.md) |
+| Installation / 安装 | [INSTALLATION.md](INSTALLATION.md) | [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) |
 | User guide / 用户指南 | [user-guide/en.md](user-guide/en.md) | [user-guide/zh-CN.md](user-guide/zh-CN.md) |
 | Measuring through your DAW / 用 DAW 测量 | [user-guide/daw-setup.md](user-guide/daw-setup.md) | [user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md) |
 | Compatibility / 兼容性 | [COMPATIBILITY.md](COMPATIBILITY.md) | [COMPATIBILITY.zh-CN.md](COMPATIBILITY.zh-CN.md) |
@@ -38,6 +39,7 @@ the release plan and the v1.0 architecture have a Chinese digest.
 
 ## For users
 
+- **[Download and install](INSTALLATION.md)** · [下载与安装](INSTALLATION.zh-CN.md)
 - [User guide (English)](user-guide/en.md)
 - [用户指南（中文）](user-guide/zh-CN.md)
 - [Measuring through your DAW](user-guide/daw-setup.md) · [用 DAW 测量](user-guide/daw-setup.zh-CN.md)

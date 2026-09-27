@@ -158,6 +158,14 @@ Windows: no Authenticode).
   90.20 % (87.74 % on 0.4.0); the run is recorded in `docs/STATUS.md`.
 
 ### Fixed
+- **`roomscope gui` without PySide6 printed a traceback.** The friendly
+  message in `cmd_gui` guarded only the import of `roomscope.ui.app`, which
+  does not import Qt, so a wheel installed without `[gui]` (or a Linux system
+  without the Qt libraries) crashed with `ModuleNotFoundError`. `roomscope gui`
+  and the `roomscope-gui` entry point now check PySide6 first and explain how
+  to add it (`pip install "PySide6_Essentials>=6.6"`, not `roomscope[gui]`,
+  which PyPI does not have), in English and Simplified Chinese. Found by
+  installing the release candidate's wheel in a clean environment.
 - **A complete take could be discarded by its progress display.** The last
   block reaches 100 % before PortAudio calls the finished callback (it
   drains the output first); a progress poll in that gap called the front
@@ -419,6 +427,27 @@ Windows: no Authenticode).
   (`THIRD_PARTY_LICENSES/soundfile/`, `_notices/libsndfile.txt`).
 
 ### Documentation
+- **Download first.** README and README.zh-CN open with a *Download* section
+  that links the stable
+  [Releases page](https://github.com/jingyemingyue/RoomScope/releases) (not
+  `/releases/latest`, which never shows a pre-release), a table of the real
+  file names per system, the first-launch steps for unsigned builds through
+  the normal macOS / Windows dialogs (no Gatekeeper or SIP changes), a
+  screenshot of the built-in demo and a *First measurement* section; the
+  developer install follows. New `docs/INSTALLATION.md` (+ zh-CN): macOS,
+  Windows (installer and ZIP), Linux and Python installs, checksums,
+  updating, uninstalling, unsigned-build warnings (Smart App Control
+  included), supported systems (glibc 2.39 for the Linux bundle) and
+  troubleshooting. The Linux notes name a CJK font for Chinese chart text.
+- **Release notes for testers.** `packaging/release-notes-header.md` now
+  opens with *RoomScope v<version> — Early public pre-release for testing*,
+  then *Download*, *What works* and *Important limitations*;
+  `tests/unit/test_release_notes.py` fails when a download file named there
+  or in the install documents is not one the Release carries.
+- RELEASE_PLAN §3c (publishing v0.4.1 as the first public pre-release: what
+  was checked on the release candidate and the publish checklist) and §3d
+  (PyPI readiness: name free, metadata passes `twine check`, trusted
+  publishing wired but off, README links not yet PyPI-ready).
 - `docs/HARDWARE_TESTS.md` ends with a step-by-step for testers: safety,
   install per system, what to do and what counts as a pass for each row of
   the interface form, buffer and latency settings, one DAW take, and what

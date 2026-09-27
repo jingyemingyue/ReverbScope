@@ -6,6 +6,41 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 29: 2026-09-27 — **download-first installation and the release
+candidate's files checked as a user gets them** (branch
+`claude/epic-meitner-x0t35f`, stacked on PR #21). README / README.zh-CN open
+with *Download* (the stable Releases page, real file names, first-launch
+steps for unsigned builds), new `docs/INSTALLATION.md` (+ zh-CN), release
+notes restructured for testers, RELEASE_PLAN §3c (publish checklist) and §3d
+(PyPI readiness). **What was run** (Linux x86_64, CPython 3.12.3), on the
+files of Release run #23 (PR #21 head `b753e17`, build commit `7cb1419`),
+downloaded from the run's artifacts: `sha256sum -c` of all five archives;
+the wheel in a fresh virtual environment (not editable): `--version`,
+`--help`, `--backend fake measure`, `sweep`, `analyze`, `show`,
+`--lang zh_CN show`, then with `[gui]` `gui --smoke` (offscreen) and
+`roomscope-gui` kept running; the sdist rebuilt into a wheel with the same
+90 files and installed with `[gui]`; `twine check` on both; both DMGs
+opened with 7-Zip (app, Applications link, Mach-O arm64 / x86_64,
+`Info.plist` 0.4.1 / `LSMinimumSystemVersion` 14.0, `build_info.json`,
+313 Mach-O files without an absolute non-system load path); the Windows ZIP's
+layout (`roomscope-gui.exe` PE32+ GUI, `roomscope.exe` console,
+`_internal`, `THIRD_PARTY_LICENSES`); the Linux bundle through
+`smoke_bundle.py --require-gui-launcher --expect-commit` in an empty
+environment (it needs glibc 2.39); a token / private-key scan of every
+bundle and the sdist (nothing but PEM header strings in Qt's TLS plug-ins).
+That found one bug, fixed here: `roomscope gui` without PySide6 printed a
+traceback (the wheel without `[gui]`); a wheel built from this branch now
+prints the install hint in English and Chinese and exits 2. On this branch:
+the full suite, **695 passed** (679 + 16 new), coverage of core + models
+90.28 %; ruff, ruff format, mypy strict, `check_doc_links.py`,
+`check_src_safety.py`, `build_docs_site.py`, `uv build` + `twine check`.
+`/releases/latest` was checked to redirect to `/releases` while no full
+release exists (the API answers 404), which is why the README links
+`/releases`. **Not run:** the DMGs on a Mac and the Windows files on a
+Windows PC by a person (the release workflow mounts, installs and launches
+them on GitHub's runners only), any audio interface or DAW, and the
+publication itself (the maintainer's click, RELEASE_PLAN §3c).
+
 Snapshot 28: 2026-09-27 — **a complete Simplified Chinese experience**
 (branch `claude/publication-ready-level-n3hkor`). Everything a user reads can
 be Simplified Chinese: GUI (with Qt's own dialogs), CLI help and argparse
@@ -580,7 +615,8 @@ were not copied. `packaging/licenses/` holds verbatim license *texts*
 ## Next recommended milestone
 
 See [RELEASE_PLAN.md](RELEASE_PLAN.md): v0.4.1 (a draft Release; #9–#17
-are closed on `main`) is published when the maintainer decides; this
+are closed on `main`) is published when the maintainer decides, as the first
+public pre-release for testers (checklist in RELEASE_PLAN.md §3c); this
 branch's work ships in it (CHANGELOG `[0.4.1]`). Then v0.5.0 once the hardware
 matrix has its first dated PASS rows, then 1.0.0rc1 when every MUST item of ARCHITECTURE_V1.md §3.1 is
 closed. API and schema versions stay unfrozen until then.

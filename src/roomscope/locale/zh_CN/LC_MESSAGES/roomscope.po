@@ -1179,8 +1179,16 @@ msgstr "ISO 3382-2 等级：{klass}（{sources} 个声源 × {mics} 个话筒，
 msgid "RT60"
 msgstr "RT60"
 
-msgid "The GUI needs PySide6 Essentials: pip install 'roomscope[gui]' ({error})"
-msgstr "桌面界面需要 PySide6 Essentials：pip install 'roomscope[gui]'（{error}）"
+msgid ""
+"The desktop GUI cannot start because PySide6 could not be loaded ({error}). "
+"Install it in this Python environment with: pip install "
+"\"PySide6_Essentials>=6.6\". On Linux the OpenGL/EGL and XCB system "
+"libraries are also needed; see docs/INSTALLATION.md. The command-line tool "
+"works without it."
+msgstr ""
+"无法启动桌面界面：无法加载 PySide6（{error}）。请在当前 Python 环境中安装："
+"pip install \"PySide6_Essentials>=6.6\"。在 Linux 上还需要系统的 OpenGL/EGL 和 "
+"XCB 库，见 docs/INSTALLATION.zh-CN.md。命令行工具不需要它也能使用。"
 
 msgid "stopped: {message}"
 msgstr "已停止：{message}"
