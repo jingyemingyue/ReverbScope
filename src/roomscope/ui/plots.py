@@ -14,7 +14,7 @@ from roomscope.core.reflections import reflection_envelope_db
 from roomscope.i18n import _
 from roomscope.interpretation.profiles import band_text, confidence_text, noise_segment_text
 from roomscope.models.result import AnalysisResult, Validity
-from roomscope.ui.theme import PLOT_SERIES, plot_colors, style_figure
+from roomscope.ui.theme import PLOT_SERIES, ensure_plot_fonts, plot_colors, style_figure
 
 _EPS = 1e-300
 
@@ -24,6 +24,7 @@ _LINESTYLES = ("-", "--", "-.", ":", (0, (3, 1, 1, 1)))
 
 def plot_impulse_response(fig: Figure, result: AnalysisResult) -> None:
     fig.clear()
+    ensure_plot_fonts()
     ir = result.impulse_response
     sr = ir.sample_rate
     t_ms = (np.arange(ir.samples.shape[0]) - ir.direct_sound_index) * 1000.0 / sr
@@ -49,6 +50,7 @@ def plot_impulse_response(fig: Figure, result: AnalysisResult) -> None:
 
 def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
     fig.clear()
+    ensure_plot_fonts()
     fr = result.frequency_response
     ax = fig.add_subplot(1, 1, 1)
     ax.semilogx(
@@ -99,6 +101,7 @@ def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
 
 def plot_decay(fig: Figure, result: AnalysisResult) -> None:
     fig.clear()
+    ensure_plot_fonts()
     ax = fig.add_subplot(1, 1, 1)
     bb = result.decay.broadband
     ax.plot(bb.edc_time_s, bb.edc_db, linewidth=2.4, linestyle="-", label=_("Broadband"))
@@ -127,6 +130,7 @@ def plot_decay(fig: Figure, result: AnalysisResult) -> None:
 
 def plot_noise(fig: Figure, result: AnalysisResult) -> None:
     fig.clear()
+    ensure_plot_fonts()
     noise = result.noise
     ax = fig.add_subplot(1, 1, 1)
     if noise.psd_frequencies_hz is None or noise.psd_db is None:
@@ -170,6 +174,7 @@ def plot_noise(fig: Figure, result: AnalysisResult) -> None:
 
 def plot_reflections(fig: Figure, result: AnalysisResult) -> None:
     fig.clear()
+    ensure_plot_fonts()
     ir = result.impulse_response
     sr = ir.sample_rate
     refl = result.reflections

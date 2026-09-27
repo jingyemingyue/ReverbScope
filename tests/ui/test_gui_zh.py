@@ -1,0 +1,219 @@
+"""The GUI in Simplified Chinese: every page, the results and comparison of
+real (synthetic) measurements, the settings dialog and the developer tools
+show no English beyond the names in tests/zh_tokens.py, and the charts draw
+their Chinese text with a CJK font (no empty boxes)."""
+
+from __future__ import annotations
+
+import warnings
+from collections.abc import Iterator
+from pathlib import Path
+
+import pytest
+
+pytest.importorskip("PySide6")
+
+from PySide6.QtWidgets import (  # noqa: E402
+    QAbstractButton,
+    QApplication,
+    QComboBox,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
+    QTableWidget,
+    QTabWidget,
+    QWidget,
+)
+
+from roomscope.i18n import activate  # noqa: E402
+from tests.zh_tokens import english_words  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def app() -> QApplication:
+    return QApplication.instance() or QApplication([])
+
+
+@pytest.fixture
+def zh(app: QApplication, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
+    from roomscope.ui.app import install_qt_translations
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("ROOMSCOPE_EDITION", "developer")
+    activate("zh_CN")
+    install_qt_translations(app)
+    try:
+        yield
+    finally:
+        activate("en")
+
+
+def _texts(root: QWidget) -> list[str]:
+    out: list[str] = []
+    for widget in [root, *root.findChildren(QWidget)]:
+        out += [widget.toolTip(), widget.windowTitle()]
+        if isinstance(widget, QLabel):
+            out.append(widget.text())
+        if isinstance(widget, QAbstractButton):
+            out.append(widget.text())
+        if isinstance(widget, QGroupBox):
+            out.append(widget.title())
+        if isinstance(widget, QTabWidget):
+            out += [widget.tabText(i) for i in range(widget.count())]
+        if isinstance(widget, QComboBox):
+            out += [widget.itemText(i) for i in range(widget.count())]
+        if isinstance(widget, QLineEdit):
+            out.append(widget.placeholderText())
+        if isinstance(widget, QTableWidget):
+            for column in range(widget.columnCount()):
+                header = widget.horizontalHeaderItem(column)
+                if header is not None:
+                    out.append(header.text())
+            for row in range(widget.rowCount()):
+                for column in range(widget.columnCount()):
+                    item = widget.item(row, column)
+                    if item is not None:
+                        out += [item.text(), item.toolTip()]
+    return [text.replace("&", "") for text in out if text]
+
+
+def _data_values() -> tuple[str, ...]:
+    from roomscope.audio.backend import get_backend
+    from roomscope.ui.settings_dialog import RESTART_FOR_LANGUAGE
+
+    devices = tuple(device.name for device in get_backend("fake").list_devices())
+    return (*devices, *RESTART_FOR_LANGUAGE.splitlines())
+
+
+def _check(texts: list[str], where: str) -> None:
+    data = _data_values()
+    found = {word: text for text in texts for word in english_words(text, data=data)}
+    assert found == {}, f"{where}: English in the Chinese interface: {found}"
+
+
+def _measurements(home: Path) -> list[tuple[Path, object]]:
+    from roomscope.core.pipeline import Reference, analyze, synthetic_recording
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.configuration import SweepSettings
+    from roomscope.models.session import MeasurementSession
+    from tests.conftest import make_rir
+
+    settings = SweepSettings(sample_rate=48000, duration_s=3.0)
+    saved = []
+    for name, rt60 in (("房间A", 0.35), ("房间B", 0.9)):
+        ir = make_rir(48000, rt60_s=rt60, reflections=[(0.01, 0.5)], length_s=1.5, seed=3)
+        recording = synthetic_recording(settings, ir, noise_rms=3e-4, gain=0.3, seed=3)
+        result = analyze(recording, Reference.from_settings(settings))
+        folder = home / name
+        save_measurement(
+            folder,
+            MeasurementSession(room_name=name, measurement_position="1", mode="universal_daw"),
+            result,
+        )
+        saved.append((folder, result))
+    return saved
+
+
+def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> None:
+    from roomscope.interpretation import interpret
+    from roomscope.models.session import MeasurementSession
+    from roomscope.ui.main_window import MainWindow
+
+    saved = _measurements(tmp_path)
+    window = MainWindow()
+    window.resize(1280, 860)
+    window.show()
+
+    def settle() -> None:
+        for _ in range(5):
+            app.processEvents()
+
+    menus = [
+        action.text()
+        for menu in (a.menu() for a in window.menuBar().actions() if a.menu())
+        for action in menu.actions()
+    ]
+    _check([text.replace("&", "") for text in menus], "menus")
+    for page, show in (
+        ("home", window.show_home),
+        ("daw", lambda: window.show_mode("universal_daw")),
+        ("standalone", lambda: window.show_mode("standalone")),
+        ("demo", lambda: window.show_mode("demo")),
+    ):
+        show()
+        settle()
+        _check(_texts(window), page)
+
+    folder, result = saved[1]
+    window.state.result = result
+    window.state.findings = interpret(result, "vocal")
+    window.state.session = MeasurementSession(room_name="房间B", measurement_position="1")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        window.show_results()
+        for index in range(window.results.tabs.count()):
+            window.results.tabs.setCurrentIndex(index)
+            settle()
+        window.show_compare()
+        window.compare.set_paths(saved[0][0], saved[1][0])
+        window.compare.run_compare()
+        window.compare.tabs.setCurrentIndex(1)
+        settle()
+        window.grab()
+    tofu = [w for w in caught if "missing from font" in str(w.message)]
+    _check(_texts(window.results), "results")
+    _check([window.results.text.toPlainText()], "full report")
+    _check(_texts(window.compare), "compare")
+    _check([window.compare.text.toPlainText()], "comparison report")
+    tabs = (
+        window.results.ir_tab,
+        window.results.fr_tab,
+        window.results.decay_tab,
+        window.results.noise_tab,
+        window.results.refl_tab,
+    )
+    for figure in [tab.figure for tab in tabs] + [window.compare.figure]:
+        chart_text = [t.get_text() for t in figure.findobj(lambda o: hasattr(o, "get_text"))]
+        _check([text for text in chart_text if text], "charts")
+    window.close()
+    if any(name for name in _cjk_fonts()):
+        assert tofu == [], [str(w.message) for w in tofu[:3]]
+
+
+def _cjk_fonts() -> list[str]:
+    from roomscope.ui.theme import font_families
+
+    return font_families()[1:]
+
+
+def test_settings_and_developer_tools_are_chinese(zh: None, app: QApplication) -> None:
+    from roomscope.ui.dev_tools import DeviceInspector, EnvironmentReport
+    from roomscope.ui.settings_dialog import SettingsDialog
+
+    dialog = SettingsDialog()
+    names = [dialog.language.itemText(i) for i in range(dialog.language.count())]
+    assert names == ["跟随系统", "English", "简体中文"]
+    assert [dialog.language.itemData(i) for i in range(dialog.language.count())] == [
+        "",
+        "en",
+        "zh_CN",
+    ]
+    _check(_texts(dialog), "settings")
+    for tool in (EnvironmentReport("fake"), DeviceInspector("fake")):
+        _check(_texts(tool), type(tool).__name__)
+        tool.close()
+    dialog.close()
+
+
+def test_choosing_a_language_does_not_switch_the_open_windows(zh: None, app: QApplication) -> None:
+    from roomscope.i18n import current_locale
+    from roomscope.settings import load_settings
+    from roomscope.ui.settings_dialog import SettingsDialog
+
+    dialog = SettingsDialog()
+    dialog.language.setCurrentIndex(dialog.language.findData("en"))
+    dialog.accept()
+    assert load_settings().language == "en"
+    # Saved for the next start; this session stays Chinese, never half and half.
+    assert current_locale() == "zh_CN"
+    assert "重新启动" in dialog.language_hint.text()

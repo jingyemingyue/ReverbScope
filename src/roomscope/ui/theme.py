@@ -8,6 +8,7 @@ overrides the system for tests (``dark`` or ``light``).
 
 from __future__ import annotations
 
+import functools
 import os
 from typing import Any
 
@@ -179,6 +180,26 @@ def font_families() -> list[str]:
 
     installed = {entry.name for entry in font_manager.fontManager.ttflist}
     return ["DejaVu Sans", *(name for name in CJK_FALLBACK_FONTS if name in installed)]
+
+
+def ensure_plot_fonts() -> None:
+    """Use :func:`font_families` for text drawn from now on.
+
+    Every RoomScope chart calls this before it writes a title, so Chinese
+    text never falls back to DejaVu Sans alone (empty boxes), even when a
+    chart is drawn before :func:`configure_matplotlib` ran (a script, a test,
+    an embedding application).
+    """
+    from matplotlib import rcParams
+
+    families = _cached_font_families()
+    if list(rcParams["font.family"]) != families:
+        rcParams["font.family"] = families
+
+
+@functools.cache
+def _cached_font_families() -> list[str]:
+    return font_families()
 
 
 def configure_matplotlib() -> None:

@@ -21,6 +21,8 @@ from roomscope.cli.report import format_comparison_report, format_report
 from roomscope.errors import ConfigurationError, MeasurementCancelledError, RoomScopeError
 from roomscope.i18n import N_, _, activate
 from roomscope.interpretation import available_profiles
+from roomscope.interpretation.profiles import band_text
+from roomscope.labels import accuracy_class_text
 from roomscope.logging_config import configure_logging
 from roomscope.models.configuration import (
     DEFAULT_SAMPLE_RATE,
@@ -1034,7 +1036,7 @@ def cmd_project(args: argparse.Namespace) -> int:
                     "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, "
                     "{combos} combinations)"
                 ).format(
-                    klass=averaged.iso_3382_2_class,
+                    klass=accuracy_class_text(averaged.iso_3382_2_class),
                     sources=averaged.n_source_positions,
                     mics=averaged.n_microphone_positions,
                     combos=averaged.n_combinations,
@@ -1049,10 +1051,11 @@ def cmd_project(args: argparse.Namespace) -> int:
                 t30 = f"{band.t30.seconds:.2f}" if band.t30.seconds is not None else "-"
                 rt = f"{band.rt60_estimate_s:.2f}" if band.rt60_estimate_s is not None else "-"
                 print(
-                    f"{band.band_label:>10}  {edt:>8}  {t20:>8}  {t30:>8}  {rt:>8}  {band.t20.count}"
+                    f"{band_text(band.band_label):>10}  {edt:>8}  {t20:>8}  {t30:>8}  {rt:>8}  "
+                    f"{band.t20.count}"
                 )
         return 0
-    raise RoomScopeError(f"unknown project command {command}")
+    raise RoomScopeError(_("unknown project command {command}").format(command=command))
 
 
 def cmd_gui(args: argparse.Namespace) -> int:

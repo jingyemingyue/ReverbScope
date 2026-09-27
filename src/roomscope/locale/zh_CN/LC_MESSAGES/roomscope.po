@@ -1622,7 +1622,7 @@ msgid "also ask every device which sample rates it accepts (nothing is played)"
 msgstr "同时询问每个设备接受哪些采样率（不会播放任何声音）"
 
 msgid "Paste this report into a GitHub issue so the problem can be reproduced. Nothing is sent automatically. Probing asks each device which sample rates it accepts; nothing is played. Device names can contain personal names: review the text before posting."
-msgstr "把这份报告粘贴到 GitHub issue 中，以便复现问题。RoomScope 不会自动发送任何内容。探测会询问每个设备接受哪些采样率，不会播放任何声音。设备名称可能包含个人姓名，发布前请检查文本。"
+msgstr "把这份报告粘贴到 GitHub Issue 中，以便复现问题。RoomScope 不会自动发送任何内容。探测会询问每个设备接受哪些采样率，不会播放任何声音。设备名称可能包含个人姓名，发布前请检查文本。"
 
 msgid "The log file and settings are in this folder."
 msgstr "日志文件和设置保存在此文件夹中。"
@@ -1818,3 +1818,226 @@ msgstr "无法识别的参数：%s"
 
 msgid "can't open '%(filename)s': %(error)s"
 msgstr "无法打开“%(filename)s”：%(error)s"
+
+msgid "DEMO"
+msgstr "演示"
+
+msgctxt "diagnostic"
+msgid "one or both sessions have no verified quiet segment"
+msgstr "一个或两个会话没有经过验证的安静段"
+
+msgctxt "diagnostic"
+msgid "gain not declared equal"
+msgstr "未声明两次的输入增益相同"
+
+msgctxt "diagnostic"
+msgid "placement heights are compared only when both results are tier 2"
+msgstr "只有两个结果都达到档位 2 时才比较摆位高度"
+
+msgctxt "diagnostic"
+msgid "ISO 3382-1 quotes a just-noticeable difference for reverberation time of about {jnd_percent:g} % (clause not verified against the standard text). A change is not called significant from a single pair of positions."
+msgstr "ISO 3382-1 给出的混响时间刚可察觉差约为 {jnd_percent:g} %（条款未对照标准原文核实）。仅凭一对位置不会把变化判定为显著。"
+
+msgctxt "diagnostic"
+msgid "sample rates differ ({baseline_rate} Hz vs {candidate_rate} Hz); comparison is still allowed"
+msgstr "采样率不同（{baseline_rate} Hz 对 {candidate_rate} Hz）；仍允许比较"
+
+msgctxt "diagnostic"
+msgid "sweep durations differ ({baseline_s} s vs {candidate_s} s)"
+msgstr "扫频时长不同（{baseline_s} s 对 {candidate_s} s）"
+
+msgctxt "diagnostic"
+msgid "sweep levels differ ({baseline_dbfs} dBFS vs {candidate_dbfs} dBFS)"
+msgstr "扫频电平不同（{baseline_dbfs} dBFS 对 {candidate_dbfs} dBFS）"
+
+msgctxt "diagnostic"
+msgid "one or both sides have no number"
+msgstr "一方或双方没有数值"
+
+msgctxt "diagnostic"
+msgid "candidate minus baseline (dB) on a shared log grid inside the common excitation band"
+msgstr "候选减基线（dB），在共同激励频带内的同一对数频率网格上计算"
+
+msgctxt "diagnostic"
+msgid "early reflections are not compared unless both sides have high direct-sound confidence (baseline {baseline_confidence}, candidate {candidate_confidence})"
+msgstr "只有两侧的直达声置信度都为高时才比较早期反射（基线 {baseline_confidence}，候选 {candidate_confidence}）"
+
+msgctxt "diagnostic"
+msgid "frequency-response curves are missing on one or both sides (--no-curves)"
+msgstr "一方或双方缺少频率响应曲线（--no-curves）"
+
+msgctxt "diagnostic"
+msgid "one or both results have no excitation band, so they cannot be compared"
+msgstr "一方或双方结果没有激励频带，因此无法比较"
+
+msgctxt "diagnostic"
+msgid "the excitation bands do not overlap"
+msgstr "两个结果的激励频带没有重叠"
+
+msgctxt "diagnostic"
+msgid "baseline {validity} ({reason})"
+msgstr "基线：{validity}（{reason}）"
+
+msgctxt "diagnostic"
+msgid "baseline {validity}"
+msgstr "基线：{validity}"
+
+msgctxt "diagnostic"
+msgid "candidate {validity} ({reason})"
+msgstr "候选：{validity}（{reason}）"
+
+msgctxt "diagnostic"
+msgid "candidate {validity}"
+msgstr "候选：{validity}"
+
+msgctxt "diagnostic"
+msgid "metrics are not both VALID"
+msgstr "两侧指标并非都有效（VALID）"
+
+msgctxt "diagnostic"
+msgid "placement lengths are not both VALID"
+msgstr "两侧摆位长度并非都有效（VALID）"
+
+msgctxt "diagnostic"
+msgid "common excitation band {low:g}-{high:g} Hz is {octaves:.2f} octaves, narrower than the required {required:g} octave"
+msgstr "共同激励频带 {low:g}-{high:g} Hz 只有 {octaves:.2f} 个倍频程，窄于要求的 {required:g} 个倍频程"
+
+msgctxt "diagnostic"
+msgid "RT60 estimate missing on one or both sides (never taken from an invalid metric)"
+msgstr "一方或双方缺少 RT60 估计值（RT60 估计值从不取自无效指标）"
+
+msgctxt "diagnostic"
+msgid "band missing from the baseline"
+msgstr "基线结果中没有该频带"
+
+msgctxt "diagnostic"
+msgid "path delay is compared only when both results used a compensated loopback"
+msgstr "只有两个结果都使用了经过补偿的回送（loopback）时才比较路径延迟"
+
+msgctxt "diagnostic"
+msgid "band missing from the candidate"
+msgstr "候选结果中没有该频带"
+
+msgctxt "diagnostic"
+msgid "ISO 3382-2:2008, 4.3.1, Table 1, read from the standard's preview pages (cdn.standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnotes not implemented"
+msgstr "ISO 3382-2:2008，4.3.1，表 1，于 2026-09-24 从该标准的预览页（cdn.standards.iteh.ai 上的 ISO 3382-2:2008 样章）读取；脚注未实现"
+
+msgctxt "diagnostic"
+msgid "Decay curves are never averaged; only VALID T values enter the mean."
+msgstr "衰减曲线从不参与平均；只有有效（VALID）的 T 值计入平均值。"
+
+msgctxt "diagnostic"
+msgid "ISO 3382-2 class {klass}: {n_source} source position(s), {n_mic} microphone position(s), {combos} source-microphone combination(s) against ISO 3382-2:2008, 4.3.1, Table 1, read from the standard's preview pages (cdn.standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnotes not implemented. The class is a label; the other clause 4 conditions (position spacing, distances from surfaces) are not checked."
+msgstr "ISO 3382-2 等级 {klass}：{n_source} 个声源位置、{n_mic} 个话筒位置、{combos} 个声源-话筒组合，对照 ISO 3382-2:2008，4.3.1，表 1（于 2026-09-24 从该标准的预览页读取，即 cdn.standards.iteh.ai 上的 ISO 3382-2:2008 样章；脚注未实现）。该等级只是一个标签；第 4 条的其他条件（位置间距、与界面的距离）未作检查。"
+
+msgctxt "diagnostic"
+msgid "no VALID values to average"
+msgstr "没有可平均的有效（VALID）值"
+
+msgctxt "diagnostic"
+msgid "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance, but room-mode identification is not attempted in v0.1."
+msgstr "仅为候选：低频响应中窄带衰减较长的峰可能是房间共振，但 v0.1 不尝试识别房间模式。"
+
+msgctxt "diagnostic"
+msgid "the analysed response is {length_s:.2f} s long, so its resolution is {resolution_hz:.1f} Hz and peaks below {low:.0f} Hz cannot be separated"
+msgstr "所分析的响应长 {length_s:.2f} s，因此分辨率为 {resolution_hz:.1f} Hz，低于 {low:.0f} Hz 的峰无法分开"
+
+msgctxt "diagnostic"
+msgid "no part of the resonance range was excited and resolved; no search was made"
+msgstr "共振搜索范围内没有既被激励又能分辨的部分；未进行搜索"
+
+msgctxt "diagnostic"
+msgid "frequency resolution is too coarse for the resonance search"
+msgstr "频率分辨率太粗，无法进行共振搜索"
+
+msgctxt "diagnostic"
+msgid "some candidates have too few measurable neighbouring bands for the surroundings comparison; their decay is not called distinguishable"
+msgstr "部分候选可测量的相邻频带太少，无法与周边频带比较；它们的衰减不判定为可区分"
+
+msgctxt "diagnostic"
+msgid "the search is limited to {low:.0f}-{high:.0f} Hz, the part of the range whose 1/3-octave band lies inside the excited {band_low:.0f}-{band_high:.0f} Hz"
+msgstr "搜索限于 {low:.0f}-{high:.0f} Hz，即 1/3 倍频程频带落在已激励的 {band_low:.0f}-{band_high:.0f} Hz 之内的那部分范围"
+
+msgctxt "diagnostic"
+msgid "candidates are envelope peaks standing above the local diffuse level; in a dense early tail some candidates may be statistical rather than discrete reflections"
+msgstr "候选是高出局部扩散声级的包络峰；在密集的早期尾部，部分候选可能是统计起伏，而不是离散的反射"
+
+msgctxt "diagnostic"
+msgid "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be searched"
+msgstr "脉冲响应在直达声之后 {analysed_ms:.1f} ms 就结束了，因此 {min_ms:.0f}-{max_ms:.0f} ms 窗口中只有这一部分得到搜索"
+
+msgctxt "diagnostic"
+msgid "impulse response is too short after the direct sound for reflection analysis"
+msgstr "直达声之后的脉冲响应太短，无法进行反射分析"
+
+msgctxt "diagnostic"
+msgid "only the {count} strongest reflections are listed"
+msgstr "只列出最强的 {count} 个反射"
+
+msgctxt "diagnostic"
+msgid "direct-sound detection confidence is low; reflection delays are relative to the strongest peak, which may not be the direct sound"
+msgstr "直达声检测置信度低；反射延迟以最强峰为参照，而该峰可能不是直达声"
+
+msgctxt "diagnostic"
+msgid "direct sound (time 0 = the detected broadband direct sound)"
+msgstr "直达声（时间 0 = 检测到的宽带直达声）"
+
+msgctxt "diagnostic"
+msgid "dB re (full-scale sine RMS)^2 per Hz: the power spectral density is scaled so that 10*log10 of its integral is the reported AES17 RMS level in dBFS"
+msgstr "dB re（满幅正弦 RMS）^2 每 Hz：功率谱密度经过缩放，使其积分的 10*log10 等于报告的 AES17 RMS 电平（dBFS）"
+
+msgctxt "diagnostic"
+msgid "c = 331.3 * sqrt(1 + T/273.15) m/s (adiabatic ideal-gas relation for dry air; 343.2 m/s at 20 C, numerically equal to the ISO 9613-1 form c = 343.2 * sqrt(T/293.15))"
+msgstr "c = 331.3 * sqrt(1 + T/273.15) m/s（干燥空气的绝热理想气体关系；20 C 时为 343.2 m/s，数值上与 ISO 9613-1 的形式 c = 343.2 * sqrt(T/293.15) 相同）"
+
+msgctxt "diagnostic"
+msgid "No coordinate, room length, room width or wall distance is reported. One omnidirectional microphone at one position measures path lengths, not directions, and the deconvolved time origin contains the interface round-trip latency, so there is no absolute time of flight: the four independent arrival equations constrain six unknowns, a deficit of three without a tape-measured loudspeaker-to-microphone distance and two with it. The remaining freedom is the direction of the loudspeaker-to-microphone vector, and every direction reproduces the measured arrival times exactly. Only quantities invariant over that family are reported: the product of the two perpendicular distances to a plane, and the vertical axis once one perpendicular distance is supplied by the user."
+msgstr "不报告任何坐标、房间长度、房间宽度或墙面距离。单个全指向话筒在一个位置上测得的是路径长度而不是方向，而且解卷积得到的时间原点包含音频接口的往返延迟，因此没有绝对传播时间：四个独立的到达方程约束六个未知量，没有用卷尺量出的扬声器到话筒距离时缺三个，有该距离时缺两个。剩下的自由度是扬声器到话筒矢量的方向，而每个方向都能精确重现测得的到达时间。只报告在这一族解上保持不变的量：到某个平面的两个垂直距离之积，以及在用户给出一个垂直距离之后的竖直方向。"
+
+msgctxt "diagnostic"
+msgid "propagated from the stated tape-measure, temperature and peak-location uncertainties only; it excludes model error (that the reflector is flat, rigid and large compared with the wavelength, that the arrival is a first-order specular reflection, and that the user measured to the plane that actually reflected), which is usually larger"
+msgstr "仅由所给的卷尺、温度和峰位置不确定度传播得出；不包括模型误差（反射面是否平整、刚性且远大于波长，该到达是否为一阶镜面反射，以及用户量的是否正是实际产生反射的那个平面），而模型误差通常更大"
+
+msgctxt "diagnostic"
+msgid "relative dB (0 dB = flat loopback of the reference sweep)"
+msgstr "相对 dB（0 dB = 参考扫频的平直回送）"
+
+msgctxt "diagnostic"
+msgid "uncalibrated: levels are dBFS, not dB SPL"
+msgstr "未校准：电平为 dBFS，不是 dB SPL"
+
+msgctxt "diagnostic"
+msgid "the sweep in the recording runs at {percent:.1f} % of the speed it was generated at: the DAW time-stretched it (Warp, Flex Time, Follow Tempo, elastic audio or a stretch mode). Switch time-stretching off for the sweep clip and measure again"
+msgstr "录音中扫频的速度是生成时的 {percent:.1f} %：DAW 对它做了时间伸缩（Warp、Flex Time、Follow Tempo、弹性音频或某种伸缩模式）。请关闭扫频片段的时间伸缩，然后重新测量"
+
+msgctxt "diagnostic"
+msgid "the sweep in the recording runs at {percent:.1f} % of the speed it was generated at: a file generated at {generated_hz} Hz was played at {played_hz} Hz without sample-rate conversion (a DAW project at another sample rate that did not convert the file on import). Generate the sweep at the project's sample rate, or let the DAW convert it on import, and measure again"
+msgstr "录音中扫频的速度是生成时的 {percent:.1f} %：以 {generated_hz} Hz 生成的文件未经采样率转换就以 {played_hz} Hz 播放（DAW 工程的采样率与文件不同，导入时没有转换该文件）。请按工程采样率生成扫频，或让 DAW 在导入时转换，然后重新测量"
+
+msgctxt "diagnostic"
+msgid "all decay metrics are marked unreliable: {reason}"
+msgstr "所有衰减指标都标记为不可靠：{reason}"
+
+msgid "sweep settings"
+msgstr "扫频设置"
+
+msgid "estimated from reference audio"
+msgstr "由参考音频估计"
+
+msgid "declared by the user"
+msgstr "用户声明"
+
+msgid "survey"
+msgstr "简易级"
+
+msgid "engineering"
+msgstr "工程级"
+
+msgid "precision"
+msgstr "精密级"
+
+msgid "below survey"
+msgstr "低于简易级"
+
+msgid "unknown project command {command}"
+msgstr "未知的项目命令 {command}"

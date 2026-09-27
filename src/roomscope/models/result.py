@@ -15,7 +15,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from roomscope.i18n import diag
+from roomscope.i18n import N_, diag
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -225,13 +225,13 @@ class DecayResult:
 
 
 #: ``ExcitationBand.source`` when the band follows from the sweep definition.
-EXCITATION_SOURCE_SETTINGS = "sweep settings"
+EXCITATION_SOURCE_SETTINGS = N_("sweep settings")
 #: ``ExcitationBand.source`` when the band was estimated from a reference WAV.
-EXCITATION_SOURCE_ESTIMATED = "estimated from reference audio"
+EXCITATION_SOURCE_ESTIMATED = N_("estimated from reference audio")
 #: ``ExcitationBand.source`` when the caller declared the band (imported IR).
-EXCITATION_SOURCE_DECLARED = "declared by the user"
+EXCITATION_SOURCE_DECLARED = N_("declared by the user")
 #: ``ExcitationBand.source`` when an imported IR has no declared band.
-EXCITATION_SOURCE_UNKNOWN = "unknown"
+EXCITATION_SOURCE_UNKNOWN = N_("unknown")
 
 
 @dataclass(frozen=True)

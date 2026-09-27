@@ -46,6 +46,8 @@ DYNAMIC_CALLS = {
     ("cli/main.py", "_(SAFETY_MESSAGE)"),
     # argparse's own texts, each extracted with N_() in ARGPARSE_MESSAGES.
     ("cli/main.py", "_(message)"),
+    # Device Inspector column headings, each extracted with N_() in COLUMNS.
+    ("ui/dev_tools.py", "_(column)"),
     ("ui/pages.py", "_(SAFETY_MESSAGE)"),
     ("ui/pages.py", "_(DAW_INSTRUCTIONS)"),
 }

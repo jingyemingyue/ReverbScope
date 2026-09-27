@@ -25,8 +25,8 @@ import os
 import re
 import string
 import struct
-from pathlib import Path
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Any
 
 DOMAIN = "roomscope"
@@ -192,7 +192,8 @@ def _template_pattern(template: str) -> re.Pattern[str]:
             parts.append(f"(?P={field})")
         else:
             seen.add(field)
-            parts.append(f"(?P<{field}>.+?)")
+            # A value never spans the "; " that joins several diagnostics.
+            parts.append(f"(?P<{field}>(?:(?!; ).)+?)")
     return re.compile("".join(parts), re.DOTALL)
 
 
@@ -220,8 +221,9 @@ def _patterns() -> list[tuple[re.Pattern[str], str]]:
 def localize(text: str, _depth: int = 0) -> str:
     """Show a stored English diagnostic in the active language.
 
-    Text that matches no catalogued template (a diagnostic from another
-    version, a file path, an OS error) is returned unchanged.
+    Several diagnostics joined with ``"; "`` are shown one by one. Text that
+    matches no catalogued template (a diagnostic from another version, a file
+    path, an OS error) is returned unchanged.
     """
     if not text or _current == DEFAULT_LANG or _depth > 2:
         return text
@@ -229,12 +231,28 @@ def localize(text: str, _depth: int = 0) -> str:
         match = pattern.fullmatch(text)
         if match is None:
             continue
-        values = {k: localize(v, _depth + 1) for k, v in match.groupdict().items()}
+        values = {k: _localize_value(v, _depth + 1) for k, v in match.groupdict().items()}
         try:
             return translated.format(**values)
         except (KeyError, IndexError, ValueError):
             return text
+    if "; " in text:
+        parts = [localize(part, _depth) for part in text.split("; ")]
+        return "；".join(parts)
     return text
+
+
+def _localize_value(value: str, depth: int) -> str:
+    """A value inside a diagnostic: a nested diagnostic, or a stored word
+    such as a validity (``not_computed``) or a confidence (``high``)."""
+    nested = localize(value, depth)
+    if nested != value:
+        return nested
+    for candidate in (value, value.replace("_", " ")):
+        translated = _translation.gettext(candidate)
+        if translated != candidate:
+            return translated
+    return value
 
 
 def parse_po(path: Path) -> dict[str, str]:

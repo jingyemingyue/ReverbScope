@@ -56,6 +56,8 @@ dev = [
   "jsonschema>=4.20",
   # The build backend; listed here so the wheel build-hook test runs in CI.
   "hatchling>=1.27",
+  # Reads the GitHub issue forms so the English and Chinese pairs stay in sync.
+  "pyyaml>=6.0",
 ]
 i18n-dev = ["babel>=2.15"]
 

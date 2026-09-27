@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from roomscope.errors import ConfigurationError
-from roomscope.i18n import diag
+from roomscope.i18n import N_, diag
 from roomscope.models.result import AnalysisResult, DecayMetric, Validity
 
 # ISO 3382-2:2008, 4.3.1, Table 1 "Minimum numbers of positions and
@@ -27,6 +27,9 @@ from roomscope.models.result import AnalysisResult, DecayMetric, Validity
 # rotating-boom footnote are not implemented. The class is a label, not a claim
 # of compliance: the standard also sets position spacing, distances from
 # surfaces and the other clause 4 conditions, which RoomScope does not check.
+#: The accuracy class names as shown to users; results store the English
+#: ids ("survey", ..., "below_survey") and front ends translate them.
+ACCURACY_CLASS_WORDS = (N_("survey"), N_("engineering"), N_("precision"), N_("below survey"))
 ISO_3382_2_TABLE1 = {
     "survey": {"n_source": 1, "n_microphone": 2, "n_combinations": 2},
     "engineering": {"n_source": 2, "n_microphone": 2, "n_combinations": 6},

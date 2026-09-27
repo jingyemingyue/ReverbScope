@@ -108,7 +108,7 @@ class HomePage(QWidget):
             _("Measure now"),
         )
         demo = ModeCard(
-            "DEMO",
+            _("DEMO"),
             _("Demo (no interface)"),
             _("Run Standalone Mode on the fake backend. Nothing is sent to a loudspeaker."),
             _("Try the demo"),
@@ -730,10 +730,20 @@ class StandalonePage(QWidget):
             label = f"[{d.index}] {d.name} ({d.host_api})"
             if d.is_input:
                 star = "★ " if probe.recommended_input else ""
-                self.input_device.addItem(f"{star}{label} - {d.max_input_channels} in", d.index)
+                self.input_device.addItem(
+                    _("{name} - {count} in").format(
+                        name=f"{star}{label}", count=d.max_input_channels
+                    ),
+                    d.index,
+                )
             if d.is_output:
                 star = "★ " if probe.recommended_output else ""
-                self.output_device.addItem(f"{star}{label} - {d.max_output_channels} out", d.index)
+                self.output_device.addItem(
+                    _("{name} - {count} out").format(
+                        name=f"{star}{label}", count=d.max_output_channels
+                    ),
+                    d.index,
+                )
         chosen = next(
             (a for a in (self._inventory.host_apis if self._inventory else ()) if a.name == api),
             None,
@@ -839,13 +849,13 @@ class StandalonePage(QWidget):
         out = self._device_for(self.output_device, kind="output")
         parts: list[str] = []
         if inp is not None:
-            parts.append(f"in {inp.default_sample_rate:.0f} Hz")
+            parts.append(_("in {rate:.0f} Hz").format(rate=inp.default_sample_rate))
         if out is not None and (
             inp is None
             or out.index != inp.index
             or abs(out.default_sample_rate - inp.default_sample_rate) > 0.5
         ):
-            parts.append(f"out {out.default_sample_rate:.0f} Hz")
+            parts.append(_("out {rate:.0f} Hz").format(rate=out.default_sample_rate))
         device_txt = ", ".join(parts) if parts else _("unknown")
         text = _("Device rate: {device}  (requested {requested} Hz)").format(
             device=device_txt, requested=requested_hz

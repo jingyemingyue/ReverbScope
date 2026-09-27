@@ -46,6 +46,7 @@ Apache-2.0 project with the redistribution obligations listed in §3.
 | mypy | 2.3.1 | https://github.com/python/mypy | MIT (+ PSF/Apache portions) | type checking | Yes |
 | jsonschema | 4.26.0 | https://github.com/python-jsonschema/jsonschema | MIT | validate `to_dict` writers against shipped schemas (tests only) | Yes |
 | hatchling | 1.32.4 | https://github.com/pypa/hatch | MIT | the build backend (`[build-system]`); also in `dev` so that `tests/unit/test_i18n.py` can exercise the wheel build hook (`hatch_build.py`) that compiles the `.mo` catalogs; not a runtime dependency | Yes |
+| PyYAML | 6.0.3 | https://github.com/yaml/pyyaml | MIT | reads `.github/ISSUE_TEMPLATE/*.yml` in `tests/unit/test_issue_forms.py`, which keeps each English form and its Simplified Chinese counterpart in step (same fields, requirements and labels); tests only, not a runtime dependency | Yes |
 | babel | (optional `i18n-dev`) | https://github.com/python-babel/babel | BSD-3-Clause | extract/compile gettext catalogs; not required at runtime | Yes |
 | pyinstaller | (release workflow) | https://github.com/pyinstaller/pyinstaller | GPL-2.0-or-later WITH Bootloader-exception | one-directory desktop bundles; not a runtime dependency | Yes* (the bootloader that PyInstaller embeds in every frozen executable is covered by the Bootloader-exception, which lets it be shipped with a program under any license; RoomScope does not import PyInstaller) |
 | build | (CI and release workflow) | https://github.com/pypa/build | MIT | builds the sdist and wheel; not a runtime dependency | Yes |

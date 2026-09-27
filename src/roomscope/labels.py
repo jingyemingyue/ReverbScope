@@ -79,3 +79,13 @@ def status_text(status: str) -> str:
         "appeared": _("appeared"),
         "disappeared": _("disappeared"),
     }.get(status, status)
+
+
+def accuracy_class_text(klass: str) -> str:
+    """Translated ISO 3382-2 accuracy class (``survey`` ... ``below_survey``)."""
+    return {
+        "survey": _("survey"),
+        "engineering": _("engineering"),
+        "precision": _("precision"),
+        "below_survey": _("below survey"),
+    }.get(klass, klass)

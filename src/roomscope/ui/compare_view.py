@@ -37,7 +37,7 @@ from roomscope.io.session_store import load_measurement, save_comparison
 from roomscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
 from roomscope.ui.browser import SessionBrowser
 from roomscope.labels import metric_label, status_text, validity_word
-from roomscope.ui.theme import style_figure
+from roomscope.ui.theme import ensure_plot_fonts, style_figure
 from roomscope.ui.widgets import Card, PageHeader, label, primary
 
 
@@ -264,6 +264,7 @@ class ComparePage(QWidget):
         self.resonances.resizeColumnsToContents()
         self.text.setPlainText(format_comparison_report(comparison, findings, profile))
         self.figure.clear()
+        ensure_plot_fonts()
         axes = self.figure.add_subplot(111)
         fr = comparison.frequency_response
         if fr is not None and fr.frequencies_hz.size:

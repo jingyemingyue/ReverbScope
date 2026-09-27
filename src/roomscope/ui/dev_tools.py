@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 
 from roomscope.audio.inventory import DeviceInventory, build_inventory
 from roomscope.errors import RoomScopeError
-from roomscope.i18n import _
+from roomscope.i18n import N_, _, localize
 from roomscope.ui.widgets import label
 
 #: Where the Environment Report sends the user (the issue-template chooser).
@@ -36,16 +36,16 @@ ISSUES_URL = "https://github.com/jingyemingyue/RoomScope/issues/new/choose"
 
 COLUMNS = (
     "#",
-    "Name",
-    "Host API",
-    "In",
-    "Out",
-    "Default rate",
-    "Record rates",
-    "Play rates",
-    "Latency low/high (ms)",
-    "Recommended",
-    "Notes",
+    N_("Name"),
+    N_("Host API"),
+    N_("In"),
+    N_("Out"),
+    N_("Default rate"),
+    N_("Record rates"),
+    N_("Play rates"),
+    N_("Latency low/high (ms)"),
+    N_("Recommended"),
+    N_("Notes"),
 )
 
 
@@ -90,7 +90,7 @@ class DeviceInspector(QDialog):
         self.summary = label("", "hint", wrap=True)
         layout.addWidget(self.summary)
         self.table = QTableWidget(0, len(COLUMNS))
-        self.table.setHorizontalHeaderLabels(list(COLUMNS))
+        self.table.setHorizontalHeaderLabels([_(column) for column in COLUMNS])
         self.table.verticalHeader().setVisible(False)
         self.table.setAlternatingRowColors(True)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -140,9 +140,9 @@ class DeviceInspector(QDialog):
             d = probe.device
             recommended = []
             if probe.recommended_input:
-                recommended.append("in")
+                recommended.append(_("input"))
             if probe.recommended_output:
-                recommended.append("out")
+                recommended.append(_("output"))
             latency_in = (
                 f"{_ms(d.default_low_input_latency_s)}/{_ms(d.default_high_input_latency_s)}"
             )
@@ -158,9 +158,9 @@ class DeviceInspector(QDialog):
                 f"{d.default_sample_rate:.0f}",
                 ", ".join(str(r) for r in probe.input_rates) if probed else "…",
                 ", ".join(str(r) for r in probe.output_rates) if probed else "…",
-                f"in {latency_in}, out {latency_out}",
+                _("in {input}, out {output}").format(input=latency_in, output=latency_out),
                 " + ".join(recommended),
-                "; ".join(probe.notes),
+                "; ".join(localize(note) for note in probe.notes),
             ]
             for column, text in enumerate(values):
                 item = QTableWidgetItem(text)
