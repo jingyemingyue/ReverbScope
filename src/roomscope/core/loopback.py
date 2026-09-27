@@ -40,6 +40,7 @@ from roomscope.core.sweep import (
     SPECTRAL_REG_TRANSITION_OCTAVES,
     _regularisation_shape_db,
 )
+from roomscope.i18n import diag
 from roomscope.models.audio import FloatArray
 from roomscope.models.result import ExcitationBand, LoopbackResult
 
@@ -64,7 +65,7 @@ MIN_LATE_PEAK_DROP_DB = 25.0
 LATE_PEAK_START_MS = 5.0
 LATE_PEAK_END_MS = 80.0
 #: Frequency-response reference string when compensation was applied.
-LOOPBACK_FR_REFERENCE = "relative dB (0 dB = the interface loopback)"
+LOOPBACK_FR_REFERENCE = diag("relative dB (0 dB = the interface loopback)")
 #: Stated acceptance for a synthetic interface response after compensation
 #: (median absolute error over the normalisation band).
 COMPENSATION_TOLERANCE_DB = 1.0
@@ -196,7 +197,7 @@ def assess_loopback(
     if clipped:
         return LoopbackAssessment(
             accepted=False,
-            reason="the loopback channel clips; compensation is not applied",
+            reason=diag("the loopback channel clips; compensation is not applied"),
             located=located,
             fir=None,
             settle_ms=None,
@@ -205,13 +206,21 @@ def assess_loopback(
         )
     confidence = confidence_label(located.pre_peak_margin_db)
     if confidence != "high":
+        if confidence == "medium":
+            reason = diag(
+                "the loopback peak does not stand far enough above the content before it "
+                "(confidence medium); the channel may be a microphone, not an "
+                "electrical return. Compensation is not applied"
+            )
+        else:
+            reason = diag(
+                "the loopback peak does not stand far enough above the content before it "
+                "(confidence low); the channel may be a microphone, not an "
+                "electrical return. Compensation is not applied"
+            )
         return LoopbackAssessment(
             accepted=False,
-            reason=(
-                "the loopback peak does not stand far enough above the content before it "
-                f"(confidence {confidence}); the channel may be a microphone, not an "
-                "electrical return. Compensation is not applied"
-            ),
+            reason=reason,
             located=located,
             fir=None,
             settle_ms=None,
@@ -224,7 +233,7 @@ def assess_loopback(
     if settle is None or drop is None:
         return LoopbackAssessment(
             accepted=False,
-            reason=(
+            reason=diag(
                 "the loopback recording is too short after the peak to check that the "
                 "return is electrical; compensation is not applied"
             ),
@@ -237,10 +246,12 @@ def assess_loopback(
     if settle > MAX_ELECTRICAL_SETTLE_MS or drop < MIN_LATE_PEAK_DROP_DB:
         return LoopbackAssessment(
             accepted=False,
-            reason=(
-                f"the loopback still carries energy {settle:.1f} ms after the peak "
-                f"(late peak {drop:.1f} dB down); that looks like a room, not a cable. "
-                "Compensation is not applied"
+            reason=diag(
+                "the loopback still carries energy {settle_ms:.1f} ms after the peak "
+                "(late peak {drop_db:.1f} dB down); that looks like a room, not a cable. "
+                "Compensation is not applied",
+                settle_ms=settle,
+                drop_db=drop,
             ),
             located=located,
             fir=None,
@@ -250,8 +261,13 @@ def assess_loopback(
         )
     fir, fir_peak = loopback_fir(h_full, located.peak_index, sample_rate)
     notes.append(
-        f"loopback settled in {settle:.1f} ms (late peak {drop:.1f} dB down); "
-        f"using a {fir.shape[0]}-sample interface FIR around the peak"
+        diag(
+            "loopback settled in {settle_ms:.1f} ms (late peak {drop_db:.1f} dB down); "
+            "using a {fir_samples}-sample interface FIR around the peak",
+            settle_ms=settle,
+            drop_db=drop,
+            fir_samples=fir.shape[0],
+        )
     )
     return LoopbackAssessment(
         accepted=True,
@@ -368,8 +384,11 @@ def make_loopback_result(
         )
         if delay_ms < 0.0:
             notes.append(
-                f"the microphone peak precedes the loopback peak by {-delay_ms:.2f} ms; "
-                "the path-delay bound is not reported"
+                diag(
+                    "the microphone peak precedes the loopback peak by {lead_ms:.2f} ms; "
+                    "the path-delay bound is not reported",
+                    lead_ms=-delay_ms,
+                )
             )
             bound = None
     if assessment.fir is not None and assessment.fir.shape[0] >= 16:

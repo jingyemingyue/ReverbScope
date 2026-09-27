@@ -29,6 +29,7 @@ from scipy.signal.windows import tukey
 
 from roomscope.core.sweep import normalisation_band_hz
 from roomscope.errors import AnalysisError, InvalidAudioError
+from roomscope.i18n import diag
 from roomscope.models.audio import FloatArray
 from roomscope.models.result import ExcitationBand, HarmonicDistortion
 
@@ -65,8 +66,12 @@ def deconvolve(recording: FloatArray, inverse: FloatArray) -> FloatArray:
     if recording.ndim != 1 or inverse.ndim != 1:
         raise InvalidAudioError("deconvolve expects mono arrays")
     if recording.shape[0] < inverse.shape[0]:
+        # diag(): on the loopback path this message is stored (LoopbackResult.reason).
         raise InvalidAudioError(
-            "recording is shorter than the reference sweep; the file does not contain the full sweep"
+            diag(
+                "recording is shorter than the reference sweep; the file does not contain "
+                "the full sweep"
+            )
         )
     return np.asarray(fftconvolve(recording, inverse, mode="full"), dtype=np.float64)
 
@@ -291,12 +296,12 @@ def locate_impulse_response(
     margin. ``None`` means there was nothing to compare with.
     """
     if h_full.ndim != 1 or h_full.shape[0] == 0:
-        raise AnalysisError("deconvolved signal is empty")
+        raise AnalysisError(diag("deconvolved signal is empty"))
     magnitude = np.abs(h_full)
     strongest = int(np.argmax(magnitude))
     strongest_value = float(h_full[strongest])
     if not np.isfinite(strongest_value) or strongest_value == 0.0:
-        raise AnalysisError("deconvolved signal has no usable peak (silent recording?)")
+        raise AnalysisError(diag("deconvolved signal has no usable peak (silent recording?)"))
 
     def windows_for(index: int) -> tuple[HarmonicWindow, ...]:
         if sweep_rate_s is None:
@@ -331,13 +336,17 @@ def locate_impulse_response(
     if valid_length <= 0:
         if truncated_by_next:
             raise AnalysisError(
-                "the next sweep pass starts right after this one; the room decay after the sweep "
-                "was not recorded. Leave silence after each sweep (the generated test file "
-                "contains it) or record a single pass"
+                diag(
+                    "the next sweep pass starts right after this one; the room decay after the "
+                    "sweep was not recorded. Leave silence after each sweep (the generated test "
+                    "file contains it) or record a single pass"
+                )
             )
         raise AnalysisError(
-            "the direct sound was found at the very end of the recording; "
-            "the recording does not contain the room decay after the sweep"
+            diag(
+                "the direct sound was found at the very end of the recording; "
+                "the recording does not contain the room decay after the sweep"
+            )
         )
     max_len = round(max_length_s * sample_rate)
     truncated = valid_length > max_len
@@ -462,7 +471,7 @@ def harmonic_distortion_levels(
                     level_db=None,
                     floor_db=None,
                     band_hz=None,
-                    reason="the harmonic lies above the excitation band",
+                    reason=diag("the harmonic lies above the excitation band"),
                 )
             )
             continue
@@ -470,9 +479,9 @@ def harmonic_distortion_levels(
         n = w.stop - w.start
         reason: str | None = None
         if w.start < 0 or peak + w.after + 1 > length:
-            reason = "the harmonic window lies outside the deconvolved signal"
+            reason = diag("the harmonic window lies outside the deconvolved signal")
         elif band[1] - band[0] < 4.0 * sample_rate / n:
-            reason = "the harmonic window is too short to resolve the common band"
+            reason = diag("the harmonic window is too short to resolve the common band")
         if reason is not None:
             results.append(
                 HarmonicDistortion(
@@ -489,9 +498,9 @@ def harmonic_distortion_levels(
         harmonic = _band_energy(h_full[w.start : w.stop], sample_rate, band)
         chunks = _floor_chunks(floor_segments, n, max_floor_chunks)
         if linear <= 0.0:
-            reason = "the linear response has no energy in the common band"
+            reason = diag("the linear response has no energy in the common band")
         elif not chunks:
-            reason = "no harmonic-free content before the direct sound to compare with"
+            reason = diag("no harmonic-free content before the direct sound to compare with")
         if reason is not None:
             results.append(
                 HarmonicDistortion(
@@ -518,9 +527,11 @@ def harmonic_distortion_levels(
                 band_hz=band,
                 reason=None
                 if detected
-                else (
-                    f"not distinguishable from the floor (at most {level_db:.1f} dB, "
-                    f"floor {floor_db:.1f} dB)"
+                else diag(
+                    "not distinguishable from the floor (at most {level_db:.1f} dB, "
+                    "floor {floor_db:.1f} dB)",
+                    level_db=level_db,
+                    floor_db=floor_db,
                 ),
             )
         )
