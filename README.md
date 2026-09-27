@@ -22,6 +22,10 @@ unit, its algorithm source and a validity flag; when the data is not good
 enough, RoomScope says *"Insufficient decay range"* instead of inventing a
 figure. There is deliberately no "room score".
 
+> **No real hardware validation yet.** No check with a real audio interface
+> or a real DAW has been recorded; every test so far is synthetic or runs on
+> CI machines. [Help test it](#help-test-the-04x-pre-release).
+>
 > Status: **0.4.x pre-release** on the way to 1.0
 > ([RELEASE_PLAN.md](docs/RELEASE_PLAN.md)). The DSP core, CLI, GUI, compare,
 > loopback, zh-CN catalog, session bundles and the desktop bundles exist and
@@ -32,10 +36,10 @@ figure. There is deliberately no "room score".
 
 ## Download
 
-No release has been published yet. When the maintainer publishes a
-pre-release, these files are attached to the
-[GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases); until
-then, [install from source](#install-from-source).
+Pre-release builds are attached to
+[GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases) when the
+maintainer publishes them. If no release is listed there yet,
+[install from source](#install-from-source).
 
 | System | File |
 | --- | --- |
@@ -50,6 +54,29 @@ notarized; Windows: no Authenticode signature): macOS Gatekeeper and Windows
 SmartScreen warn on first launch. How to open them, check the `SHA256SUMS-*` files and install the
 wheel is in the [user guide](docs/user-guide/en.md#install)
 ([简体中文](docs/user-guide/zh-CN.md#安装)).
+
+## Help test the 0.4.x pre-release
+
+The 0.4.x builds exist so that people with real interfaces and DAWs can find
+out what works. A failed check is as useful as a pass.
+
+1. Install a build ([user guide](docs/user-guide/en.md#install); the
+   Gatekeeper / SmartScreen warning above is expected).
+2. Open RoomScope and run **Demo (no interface)** once: it shows what a
+   result looks like without playing anything.
+3. Turn the monitors down, then run **Standalone Mode** with your interface
+   and a microphone, or **Universal DAW Mode** through your DAW
+   ([DAW notes](docs/user-guide/daw-setup.md)).
+4. Report what happened, with **Help → Environment Report for Bug Reports**
+   pasted in:
+   * [Audio interface test report](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml):
+     device list, full takes at 44.1 / 48 / 96 kHz, channels above 2,
+     loopback, Stop during playback, dropouts, unplugging during a take;
+   * [DAW compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml):
+     the same sweep recorded and exported through one DAW.
+
+Results go into [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md) with a link
+to the report. Only runs on a physical interface count there.
 
 ## Two workflows, one analysis core
 

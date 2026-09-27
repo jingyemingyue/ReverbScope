@@ -25,6 +25,14 @@ body:
     validations:
       required: true
   - type: input
+    id: interface
+    attributes:
+      label: Audio interface and driver
+      description: The interface the DAW played and recorded through.
+      placeholder: "RME Babyface Pro FS, USB, driver 1.246 (Core Audio)"
+    validations:
+      required: true
+  - type: input
     id: rates
     attributes:
       label: Project sample rate and sweep sample rate
@@ -53,10 +61,24 @@ body:
     attributes:
       label: Result
       description: |
-        Did RoomScope analyse the recording? Paste the validity line and any
-        finding about sample rate or playback speed. For a negative test (a
+        Did RoomScope analyse the recording? From the **Full report** tab (or
+        `roomscope show <session>`), paste the line that starts with
+        "Impulse response:" (it names the direct-sound confidence; a matrix
+        cell needs "high") and any finding about sample rate or playback
+        speed. For a negative test (a
         44.1 kHz project with a 48 kHz sweep, or stretching on), say whether
         RoomScope reported it.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment report
+      description: |
+        **Help → Environment Report for Bug Reports → Copy**, or `roomscope doctor`
+        in a terminal. It names the RoomScope version and build commit and the OS.
+        Review it before posting: device names can contain personal names.
+      render: text
     validations:
       required: true
   - type: textarea

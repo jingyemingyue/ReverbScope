@@ -30,6 +30,15 @@
 > 上的 `pyproject.toml`、工作流、`packaging/` 或 `scripts/smoke_bundle.py`
 > 一有变化，草稿就会被刷新。Windows 任务每次都会构建并安装
 > `RoomScope-setup.exe`。发布前核对 `main` 最新一次运行和草稿附件。
+>
+> **草稿如何刷新**（`scripts/release_draft.py`）：每次刷新都替换*全部*附件、
+> 正文、tag 名和目标提交，草稿里只有目标提交那一次成功运行产出的 13 个文件；
+> 旧工作流留下的、现在已不再产出的文件名（`RoomScope.dmg`、`SHA256SUMS-macOS`
+> 等）会被删掉。遇到以下情况任务直接失败、不做任何修改：`v<版本>` 已发布、
+> 有两个匹配的草稿、`v<版本>` tag 指向别的提交、草稿里有它不认识的文件（例如
+> 手动上传的文件：删掉它，或不再重跑工作流直接发布）。只改 `src/` 不会触发
+> Release 工作流；需要在 `main` 上手动运行（**Actions → Release → Run
+> workflow**），草稿才会按最新提交重建。
 
 1. **在 `main` 上准备发布提交**：把 `project.version` 改成新版本（不带 `.dev`），把 CHANGELOG 的 `[Unreleased]` 挪到 `## [版本] - 日期` 下，在 `docs/STATUS.md` 加一条写明“实际跑了什么”的快照，依赖版本有变时复查 DEPENDENCIES.md §3–§4。提交并推送。
 2. **CI 自动开草稿**：`pyproject.toml` 在 `main` 上变了、且还没有 `v<版本>` 这个 tag，工作流就会跑 lint/类型检查/测试，构建 sdist 和 wheel，在三个系统上构建未签名安装包（许可证包 → PyInstaller → 剥掉 GPL-only Qt 模块和 ASIO DLL → 门禁 → 冒烟测试 → 打包 → 校验和），生成 SBOM，然后开一个名为 `v<版本>` 的**草稿** Release，把 CHANGELOG 对应段落作正文、所有压缩包作附件。**此时还没有 tag。** 带 `.dev` 的版本不会开草稿。

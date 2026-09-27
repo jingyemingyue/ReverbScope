@@ -19,8 +19,7 @@ pre-flight, `roomscope doctor` and the environment report, the GUI redesign,
 and issue templates for hardware and DAW reports. Run-time dependency floor:
 **matplotlib ≥ 3.10** (was ≥ 3.8). Still no hardware or DAW result. The
 bundles are not signed for distribution (macOS: ad hoc, not notarized;
-Windows: no Authenticode). The repository is public; this version has not
-been published.
+Windows: no Authenticode).
 
 ### Added
 - **Audio device inventory** (`roomscope.audio.inventory`, `roomscope devices
@@ -56,9 +55,15 @@ been published.
   the issue-template chooser; nothing is sent automatically.
 - Issue templates for **audio interface test reports** and **DAW
   compatibility reports**, the only source of the cells in
-  `docs/HARDWARE_TESTS.md`; the bug template asks for the install type,
-  expected and actual behaviour and the environment report. Template links
-  are absolute (relative links in issue forms resolve against the issue URL).
+  `docs/HARDWARE_TESTS.md`. The interface report asks Pass / Fail / Not run
+  for each row of the hardware matrix (44.1, 48 and 96 kHz as separate takes,
+  channels above 2, loopback, Stop, dropouts, unplugging) and says where the
+  log is; the DAW report asks for the interface, the "Impulse response:" line
+  with its direct-sound confidence and the environment report. The bug
+  template asks for the install type, expected and actual behaviour and the
+  environment report. Template links are absolute (relative links in issue
+  forms resolve against the issue URL). The README has a short "Help test"
+  section linking both forms.
 - Developer and installer editions (`roomscope.edition`,
   `ROOMSCOPE_EDITION`): a source or pip install is the developer edition, a
   desktop bundle the user edition. The developer edition adds a Developer
@@ -271,6 +276,17 @@ been published.
   and Dokmanić et al. are now [20] / [21].
 - `mypy --strict` is also clean when the PySide6 6.11 typed stubs are
   installed.
+- **A Standalone or demo take is never blamed on a DAW.** The playback-speed
+  check (added in this version) ran on every take whose direct sound was not
+  identified, including takes RoomScope played itself; on a noisy or very
+  reverberant take its estimate is biased, and the report then advised
+  switching off a DAW's time-stretching that was never there. The check now
+  runs only on imported recordings.
+- **`--wasapi-exclusive` / `--coreaudio-set-rate` on another host API are
+  refused.** `roomscope measure --wasapi-exclusive` without a WASAPI device
+  (for example on the MME default) ran a shared-mode take without a word; the
+  pre-flight now stops with a message naming the device's host API. The GUI
+  already offered each option only for its host API.
 
 ### DAW workflow
 - **Wrong sweep speed is diagnosed.** A DAW that plays the test signal at the
@@ -344,6 +360,23 @@ been published.
   `RoomScope-macos-x86_64.dmg` (was `RoomScope.dmg`, Apple silicon only),
   each checked for its own architecture, and the checksum files are named per
   runner OS and architecture (`SHA256SUMS-macOS-ARM64`, ...).
+- **The draft Release holds exactly one run's files.** The draft job no
+  longer uses `softprops/action-gh-release`, which looks a release up by tag
+  and cannot see a draft: each run opened a second draft, fell back to the
+  older one, uploaded over same-named files and left renamed ones
+  (`RoomScope.dmg`, `SHA256SUMS-macOS`, ...) and the first run's notes in
+  place. `scripts/release_draft.py` now checks that the run produced exactly
+  the expected 13 files and that every `SHA256SUMS-*` matches its archives
+  (also on pull requests), then finds the single draft by tag or title,
+  refuses a published release, several drafts, a tag on another commit or an
+  asset it does not know, replaces all assets, notes, tag and target, and
+  reads the draft back (names, sizes, GitHub's SHA-256 digests, target,
+  draft, pre-release). Assets are deleted only from a release re-read as a
+  draft just before. The draft job also checks the commit is on `main` and
+  never runs twice at once.
+- The license bundle carries libsndfile's LGPL-2.1 text and the source notes
+  for the libraries inside it, which soundfile keeps outside its metadata
+  (`THIRD_PARTY_LICENSES/soundfile/`, `_notices/libsndfile.txt`).
 
 ### Documentation
 - `docs/COMPATIBILITY.md` (+ zh-CN): platforms, Python and dependency floors,

@@ -1,8 +1,35 @@
 # Status
 
-Snapshot: 2026-09-17, v0.1.0.dev1 (foundation). Everything below was
-verified by actually running it on macOS (Apple silicon, Python 3.12.14).
-Nothing is marked PASS that was not run.
+Snapshot 1 (2026-09-17, v0.1.0.dev1, foundation) was verified by running it
+on macOS (Apple silicon, Python 3.12.14); every later snapshot says where it
+ran. Nothing is marked PASS that was not run, and no snapshot includes a
+measurement through a real interface or a real DAW
+([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
+
+Snapshot 27: 2026-09-27 — **release hardening before the v0.4.1 pre-release**
+(same branch). A final review of the branch against `main` found no blocker
+in the code; fixed here:
+the draft-release job could not see its own draft (the release action looks
+a release up by tag, which misses drafts), so a refresh would have left
+`RoomScope.dmg`, `SHA256SUMS-{Linux,macOS,Windows}` and the first run's notes
+next to the new files; `scripts/release_draft.py` now stages and checks the
+exact 13-file set and the checksum files, refreshes the single draft and
+reads it back, and fails closed on a published release, two drafts, a tag on
+another commit or an unknown asset (38 tests with a fake API; a read-only
+`sync --dry-run` against the real v0.4.1 draft planned the removal of those
+four legacy files and replacement of the other six). Also: Standalone and
+demo takes skip the playback-speed check (a biased estimate on a noisy,
+reverberant take advised switching off a DAW's time-stretch); host-API
+options on another host API are refused; libsndfile's LGPL-2.1 text and
+source notes are in the license bundle; the interface report form asks
+Pass / Fail / Not run per matrix row; the DAW form asks for the interface,
+the direct-sound confidence and the environment report; the README says
+"No real hardware validation yet" first and links both forms. Run in this
+container (Linux x86_64, Python 3.12, PortAudio 19.6, no audio device):
+`ruff check`, `ruff format --check`, `mypy` (strict, 75 files), doc links,
+source safety, docs site, 625 tests, core/models branch coverage 90.62 %.
+**Not run:** anything on real hardware or in a DAW; the draft refresh
+itself (it runs only on `main` after the merge).
 
 Snapshot 26: 2026-09-24 — **software readiness for community testing**
 (branch `claude/publication-ready-level-n3hkor`, CHANGELOG `[0.4.1]`). A

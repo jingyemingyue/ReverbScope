@@ -12,6 +12,7 @@ on:
       - .github/workflows/release.yml
       - packaging/**
       - scripts/smoke_bundle.py
+      - scripts/release_draft.py
       - src/roomscope/__main__.py
   pull_request:
     paths:
@@ -20,8 +21,10 @@ on:
       - scripts/check_bundle_contents.py
       - scripts/check_macos_dmg.py
       - scripts/smoke_bundle.py
+      - scripts/release_draft.py
       - src/roomscope/__main__.py
       - tests/unit/test_desktop_entry.py
+      - tests/unit/test_release_draft.py
       - pyproject.toml
   workflow_dispatch:
 
@@ -303,15 +306,45 @@ jobs:
             generated-bundle.lock
           if-no-files-found: error
 
+  assets:
+    name: Check the release file set
+    # Runs on pull requests too, so the manifest and checksum checks are
+    # exercised on real bundles before anything reaches main.
+    needs: [prepare, package, bundle, sbom]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          path: artifacts
+      - name: Exact file set and SHA256SUMS
+        env:
+          ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          python scripts/release_draft.py stage --artifacts artifacts \
+            --out "$RUNNER_TEMP/release-assets" --version "$ROOMSCOPE_VERSION"
+
   draft-release:
     name: Draft GitHub Release (maintainer publishes)
-    needs: [prepare, quality, package, bundle, sbom]
+    needs: [prepare, quality, package, bundle, sbom, assets]
     if: needs.prepare.outputs.draft == 'true'
     runs-on: ubuntu-latest
+    # A main run and a hand-pushed tag run must not edit the draft together.
+    concurrency:
+      group: release-draft
+      cancel-in-progress: false
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: The tested commit is on main
+        run: |
+          git fetch --no-tags origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD
+      # Artifacts of this run only (download-artifact's default), so every
+      # file on the draft comes from the jobs above.
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: artifacts
@@ -333,55 +366,35 @@ jobs:
           Path('release-notes.md').write_text(header + '## Changes\n\n'
               + match.group(1).strip() + '\n', encoding='utf-8')
           PY
-      - name: Restore matching draft tag name if GitHub reset it
+      - name: Stage this run's files
+        env:
+          ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          python scripts/release_draft.py stage --artifacts artifacts \
+            --out release-assets --version "$ROOMSCOPE_VERSION"
+      # Finds the one draft v<version> (a draft is not returned by the
+      # releases/tags endpoint, so it is matched by tag or title), refuses a
+      # published release, several drafts, a tag on another commit or unknown
+      # assets, then sets tag, target, notes, draft and pre-release, removes
+      # every old asset (same name or a legacy name) and uploads this run's.
+      - name: Open or refresh the draft
         env:
           GH_TOKEN: ${{ github.token }}
           ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          release_ids="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" --paginate \
-            --jq ".[] | select(.draft and .name == \"v$ROOMSCOPE_VERSION\") | .id")"
-          if [[ -n "$release_ids" ]]; then
-            [[ "$release_ids" != *$'\n'* ]] || { echo 'Multiple matching drafts' >&2; exit 1; }
-            release="repos/$GITHUB_REPOSITORY/releases/$release_ids"
-            tag="$(gh api "$release" --jq '.tag_name')"
-            if [[ "$tag" == untagged-* ]]; then
-              gh api --method PATCH "$release" -f tag_name="v$ROOMSCOPE_VERSION" \
-                -f target_commitish="$GITHUB_SHA" >/dev/null
-              test "$(gh api "$release" --jq '.tag_name')" = "v$ROOMSCOPE_VERSION"
-            else
-              test "$tag" = "v$ROOMSCOPE_VERSION"
-            fi
-          fi
-      - name: Open or update draft
-        id: release
-        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
-        with:
-          tag_name: v${{ needs.prepare.outputs.version }}
-          target_commitish: ${{ github.sha }}
-          name: v${{ needs.prepare.outputs.version }}
-          draft: true
-          prerelease: true
-          body_path: release-notes.md
-          files: artifacts/**/*
-          fail_on_unmatched_files: true
-      - name: Point draft at tested commit
+          python scripts/release_draft.py sync --assets release-assets \
+            --version "$ROOMSCOPE_VERSION" --sha "$GITHUB_SHA" --notes release-notes.md
+      - name: Verify the draft
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_ID: ${{ steps.release.outputs.id }}
           ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
-          test -n "$RELEASE_ID"
-          release="repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"
-          test "$(gh api "$release" --jq '.draft')" = true
-          gh api --method PATCH "$release" -f tag_name="v$ROOMSCOPE_VERSION" \
-            -f target_commitish="$GITHUB_SHA" >/dev/null
-          test "$(gh api "$release" --jq '.target_commitish')" = "$GITHUB_SHA"
-          test "$(gh api "$release" --jq '.tag_name')" = "v$ROOMSCOPE_VERSION"
-          test "$(gh api "$release" --jq '.draft')" = true
+          python scripts/release_draft.py verify --assets release-assets \
+            --version "$ROOMSCOPE_VERSION" --sha "$GITHUB_SHA" --notes release-notes.md
 
   pypi:
     name: Publish to PyPI (explicit opt-in)
-    needs: [prepare, quality, package, bundle, sbom]
+    needs: [prepare, quality, package, bundle, sbom, assets]
     if: startsWith(github.ref, 'refs/tags/v') && vars.ROOMSCOPE_PUBLISH_PYPI == 'true' && !contains(needs.prepare.outputs.version, 'dev')
     runs-on: ubuntu-latest
     environment: pypi

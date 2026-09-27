@@ -409,14 +409,22 @@ def _decay_unreliable_reasons(
     return reasons
 
 
+#: ``AudioSignal.source`` of takes RoomScope played itself (Standalone Mode
+#: and the demo backend). No DAW sits between the generated sweep and the
+#: output there, so a speed estimate off 1.0 is estimation bias on a noisy or
+#: very reverberant take, not a sample-rate mismatch or a time-stretch.
+SELF_PLAYED_SOURCES = frozenset({"standalone", "fake"})
+
+
 def _playback_speed(
-    mono: FloatArray, sample_rate: int, reference: Reference
+    mono: FloatArray, sample_rate: int, reference: Reference, source: str | None
 ) -> PlaybackSpeed | None:
     """Diagnose a sweep played at the wrong speed (needs the sweep definition).
 
     A diagnosis only: if it cannot be computed, the analysis goes on without it.
+    Takes RoomScope played itself are not checked (:data:`SELF_PLAYED_SOURCES`).
     """
-    if reference.settings is None:
+    if reference.settings is None or source in SELF_PLAYED_SOURCES:
         return None
     try:
         return diagnose_playback_speed(mono, sample_rate, reference.settings)
@@ -425,7 +433,11 @@ def _playback_speed(
 
 
 def _explain_playback_speed(
-    exc: InvalidAudioError, mono: FloatArray, sample_rate: int, reference: Reference
+    exc: InvalidAudioError,
+    mono: FloatArray,
+    sample_rate: int,
+    reference: Reference,
+    source: str | None,
 ) -> None:
     """Append a wrong sweep speed, when there is one, to ``exc``'s message.
 
@@ -433,7 +445,7 @@ def _explain_playback_speed(
     seems to start late; the speed is the cause the user can fix. The
     exception keeps its type and attributes.
     """
-    speed = _playback_speed(mono, sample_rate, reference)
+    speed = _playback_speed(mono, sample_rate, reference, source)
     if speed is not None and exc.args:
         exc.args = (f"{exc.args[0]}. However, {speed.describe()}", *exc.args[1:])
 
@@ -592,7 +604,7 @@ def analyze(
     try:
         h_full = deconvolve(mono, prepared.inverse)
     except InvalidAudioError as exc:
-        _explain_playback_speed(exc, mono, sample_rate, reference)
+        _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
         raise
     located = _locate_pass(
         h_full,
@@ -663,7 +675,7 @@ def analyze(
             prepared, -located.sweep_start_raw_index, sample_rate
         )
     except InvalidAudioError as exc:
-        _explain_playback_speed(exc, mono, sample_rate, reference)
+        _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
         raise
     if start_note:
         ir_notes.append(start_note)
@@ -703,7 +715,11 @@ def analyze(
     # detection is checked: a sweep played even 2 % off leaves a pre-peak
     # margin of a few dB (low), and a medium margin means the generated sweep
     # did deconvolve the recording.
-    playback_speed = _playback_speed(mono, sample_rate, reference) if confidence == "low" else None
+    playback_speed = (
+        _playback_speed(mono, sample_rate, reference, recording.source)
+        if confidence == "low"
+        else None
+    )
     if playback_speed is not None:
         ir_notes.append(playback_speed.describe())
     warnings.extend(ir_notes)

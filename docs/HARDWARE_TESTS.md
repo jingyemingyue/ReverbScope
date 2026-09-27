@@ -13,10 +13,12 @@ cells are empty on purpose; no check has been run on real hardware yet.
 **Contributing a result.** Open an
 [Audio interface test report](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml)
 or a [DAW compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml)
-issue. Both ask for the environment report with probed sample rates
-(**Help → Environment Report for Bug Reports**, or `roomscope doctor --probe`),
-which names the version, build commit, OS, host APIs and devices. A
-maintainer copies the result into a cell below with a link to the issue.
+issue. Both ask for the environment report
+(**Help → Environment Report for Bug Reports**, or `roomscope doctor`; the
+interface report with probed sample rates, `roomscope doctor --probe`),
+which names the version, build commit, OS, host APIs and devices. The
+interface report asks Pass / Fail / Not run for each row of the table below.
+A maintainer copies the result into a cell below with a link to the issue.
 
 | Check | macOS | Windows | Linux |
 | --- | --- | --- | --- |

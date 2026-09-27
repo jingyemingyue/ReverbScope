@@ -16,6 +16,7 @@ from roomscope.audio.backend import DeviceInfo, StreamOptions
 from roomscope.audio.inventory import (
     build_inventory,
     check_channels,
+    check_host_api_options,
     physical_key,
     preflight,
     resolve_duplex,
@@ -415,3 +416,42 @@ def test_edition_follows_environment_and_bundle(monkeypatch: pytest.MonkeyPatch)
     assert edition() == USER
     monkeypatch.setenv("ROOMSCOPE_EDITION", "developer")
     assert edition() == DEVELOPER
+
+
+@pytest.mark.parametrize(
+    ("options", "device", "message"),
+    [
+        (StreamOptions(wasapi_exclusive=True), 0, "is a MME device"),
+        (StreamOptions(wasapi_exclusive=True), 8, "WASAPI exclusive mode was requested"),
+        (StreamOptions(coreaudio_change_device_rate=True), 5, "drop --coreaudio-set-rate"),
+    ],
+)
+def test_host_api_option_on_another_host_api_is_refused(
+    options: StreamOptions, device: int, message: str
+) -> None:
+    """Review finding: `measure --wasapi-exclusive` on the MME default ran a
+    shared-mode take without a word, and the tester reported it as exclusive."""
+    by_index = {d.index: d for d in _devices()}
+    with pytest.raises(ConfigurationError, match=message):
+        check_host_api_options(by_index[device], options)
+    check_host_api_options(by_index[device], StreamOptions())
+    check_host_api_options(by_index[device], None)
+
+
+def test_preflight_refuses_exclusive_mode_on_the_default_mme_device(
+    windows: WindowsBackend,
+) -> None:
+    inventory = build_inventory(windows, probe_rates=False, platform="win32")
+    backend = StreamCheckBackend()
+    with pytest.raises(ConfigurationError, match="WASAPI exclusive"):
+        preflight(
+            backend,
+            inventory,
+            input_device=None,
+            output_device=None,
+            input_channels=[1],
+            output_channel=1,
+            sample_rate=48000,
+            options=StreamOptions(wasapi_exclusive=True),
+        )
+    assert backend.checked == []

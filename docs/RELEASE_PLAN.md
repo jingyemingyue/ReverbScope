@@ -61,6 +61,19 @@ in `pyproject.toml`, and the maintainer keeps the last word.
 > `scripts/smoke_bundle.py` change on `main` while `v0.4.1` has no tag. The
 > Windows job builds and installs `RoomScope-setup.exe` on every run. Check
 > the latest `main` run and the draft's assets before publishing.
+>
+> **How the draft is refreshed** (`scripts/release_draft.py`, tested in
+> `tests/unit/test_release_draft.py`). Each refresh replaces *every* asset,
+> the notes, the tag name and the target commit, so the draft holds exactly
+> the 13 files of one successful run of the commit it targets. Files an older
+> workflow attached under names no longer produced (`RoomScope.dmg`,
+> `SHA256SUMS-macOS`, ...) are removed. The job stops without changing
+> anything when `v<version>` is already published, when two drafts match,
+> when a tag `v<version>` points at another commit, or when the draft holds
+> a file it does not know (for example one attached by hand: remove it, or
+> publish without re-running the workflow). A change under `src/` alone does
+> not start the Release workflow; run it by hand (**Actions → Release → Run
+> workflow** on `main`) so the draft is rebuilt from the newest commit.
 
 1. **Prepare the release commit on `main`.** Set `project.version` in
    `pyproject.toml` to the new version (no `.dev` suffix). Move the

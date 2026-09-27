@@ -23,9 +23,9 @@ body:
   - type: input
     id: setup
     attributes:
-      label: Host API, sample rate and channels
-      description: As chosen in Standalone Mode (or the roomscope measure options).
-      placeholder: "Windows WASAPI, 48000 Hz, input 1 -> output 1, latency default"
+      label: Host API, sample rates and channels
+      description: As chosen in Standalone Mode (or the roomscope measure options). List every rate you ran.
+      placeholder: "Windows WASAPI; 44100, 48000 and 96000 Hz; input 1 -> output 1, loopback input 2; latency default"
     validations:
       required: true
   - type: input
@@ -33,24 +33,152 @@ body:
     attributes:
       label: Microphone and loudspeaker (optional)
       placeholder: "Behringer ECM8000 into input 1; Genelec 8020 on output 1"
-  - type: checkboxes
-    id: checks
+  - type: markdown
     attributes:
-      label: What you ran
+      value: |
+        ### Checks
+        One answer per row of the matrix in docs/HARDWARE_TESTS.md. "Not run" is
+        fine; put details (messages, which channels or rates) in **Result**.
+  - type: dropdown
+    id: enumeration
+    attributes:
+      label: "Device list"
+      description: 'The interface appears in Standalone Mode / `roomscope devices` with the right number of input and output channels.'
       options:
-        - label: Device list (the device appears, with the right number of channels)
-        - label: Probe sample rates (Environment Report → Probe sample rates)
-        - label: A full Standalone measurement
-        - label: Stop pressed during playback
-        - label: Loopback (output cabled back to an input)
-        - label: The same sweep through a DAW (Universal DAW Mode)
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: rate_44k1
+    attributes:
+      label: "Full take at 44.1 kHz"
+      description: 'A Standalone measurement with the sample rate set to 44100 Hz (not only the probe).'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: rate_48k
+    attributes:
+      label: "Full take at 48 kHz"
+      description: 'A Standalone measurement with the sample rate set to 48000 Hz.'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: rate_96k
+    attributes:
+      label: "Full take at 96 kHz"
+      description: 'A Standalone measurement with the sample rate set to 96000 Hz, if the interface offers it.'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: channels
+    attributes:
+      label: "Channels beyond 1–2"
+      description: 'A take using an input or output above channel 2 (for example input 3 or output 4); say which channels in Result.'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: loopback
+    attributes:
+      label: "Loopback capture"
+      description: 'One output cabled back to one input and chosen as the loopback channel.'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: stop
+    attributes:
+      label: "Stop during playback"
+      description: 'Stop pressed while the sweep plays. Pass: the sound stops at once (no tail or stuck tone) and no result is saved.'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: xruns
+    attributes:
+      label: "Full take without a buffer under/overflow"
+      description: 'Pass: no "reported ... buffer problem(s) ... may contain dropouts" warning in the result or in `roomscope.log`. The log is in the data folder (`~/.roomscope/`, or Environment Report → Open Data Folder).'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: unplug
+    attributes:
+      label: "Interface unplugged during a take"
+      description: 'Unplug the USB/Thunderbolt cable while the sweep plays (turn the monitors down first). Pass: RoomScope reports an error and saves no result; it does not hang or crash.'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: standalone
+    attributes:
+      label: "Full Standalone measurement"
+      description: 'Microphone and loudspeaker in a room, a complete take with a result you could read.'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: daw
+    attributes:
+      label: "Same signal through one DAW"
+      description: 'The same interface used through a DAW with Universal DAW Mode (a DAW report with details is welcome too).'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
   - type: textarea
     id: result
     attributes:
       label: Result
       description: |
-        What worked and what did not, and any message RoomScope showed. Mention
-        clicks, dropouts, or a "buffer under/overflow" line in the log.
+        What worked and what did not, and any message RoomScope showed, for
+        each check you marked Pass or Fail. Mention clicks, dropouts, or a
+        "buffer problem(s)" line in `roomscope.log` (in `~/.roomscope/`).
     validations:
       required: true
   - type: textarea

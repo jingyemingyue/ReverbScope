@@ -558,7 +558,34 @@ def preflight(
             else next((d for d in devices if getattr(d, default_attr)), None)
         )
         if device is not None:
+            check_host_api_options(device, options)
             backend.check_sample_rate(
                 device.index, sample_rate, kind=kind, channels=channels, options=options
             )
     return DevicePlan(inp, out, separate_clocks_warning(devices, inp, out))
+
+
+def check_host_api_options(device: DeviceInfo, options: StreamOptions | None) -> None:
+    """Refuse a host-API option the stream would silently drop on ``device``.
+
+    The stream applies WASAPI exclusive mode only on a Windows WASAPI device
+    and the Core Audio rate change only on a Core Audio device
+    (:func:`roomscope.audio.portaudio.host_api_settings`); anywhere else the
+    take would run in the default shared mode while the user believes the
+    option was used. The GUI offers each option only for its host API.
+    """
+    from roomscope.errors import ConfigurationError
+
+    if options is None:
+        return
+    if options.wasapi_exclusive and device.host_api != "Windows WASAPI":
+        raise ConfigurationError(
+            f"WASAPI exclusive mode was requested, but {device.name!r} is a "
+            f"{device.host_api} device; choose a Windows WASAPI device or drop "
+            "--wasapi-exclusive"
+        )
+    if options.coreaudio_change_device_rate and device.host_api != "Core Audio":
+        raise ConfigurationError(
+            f"setting the Core Audio device rate was requested, but {device.name!r} is a "
+            f"{device.host_api} device; drop --coreaudio-set-rate"
+        )

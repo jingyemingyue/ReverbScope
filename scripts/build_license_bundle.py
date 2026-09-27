@@ -2,8 +2,9 @@
 
 Copies license files from installed distributions, adds the license texts
 that the wheels omit (LGPL-3.0 and GPL-3.0 for Qt / PySide6, the PortAudio
-license) from ``packaging/licenses/``, adds short notices (FreeType, Qhull,
-Agg), and fails if a required package still has no license text or if
+license) from ``packaging/licenses/``, copies the libsndfile LGPL-2.1 text and
+source notes that soundfile keeps outside its metadata, adds short notices
+(libsndfile, FreeType, Qhull, Agg), and fails if a required package still has no license text or if
 PySide6 is installed but the LGPL / GPL texts are missing. matplotlib's old
 ``ttconv`` module is treated as resolved: matplotlib 3.10+ (which RoomScope
 requires) no longer contains it.
@@ -44,10 +45,30 @@ TEXTS_DIR = Path(__file__).resolve().parents[1] / "packaging" / "licenses"
 TEXTS = ("LGPL-3.0.txt", "GPL-3.0.txt", "PortAudio-LICENSE.txt")
 QT_TEXTS = ("LGPL-3.0.txt", "GPL-3.0.txt")
 
+# License files a wheel keeps outside its .dist-info folder. soundfile's
+# wheels bundle libsndfile (LGPL-2.1-or-later, text in _soundfile_data/COPYING)
+# and list the source of libsndfile's own components (mpg123, LAME, FLAC, Ogg,
+# Vorbis, Opus) in licensing/license_notes.md (DEPENDENCIES.md §3).
+# (path, required when the library is bundled)
+PACKAGE_LICENSE_FILES = {
+    "soundfile": (("_soundfile_data/COPYING", True), ("licensing/license_notes.md", False)),
+}
+#: Package files that mean a bundled library needs the files above.
+BUNDLED_LIBRARY_MARKERS = {"soundfile": "_soundfile_data/libsndfile"}
+
 KNOWN_NOTICES = {
     "portaudio": (
         "PortAudio (http://www.portaudio.com) is used through the sounddevice\n"
         "wheel. Its license text is in _texts/PortAudio-LICENSE.txt.\n"
+    ),
+    "libsndfile": (
+        "libsndfile (https://github.com/libsndfile/libsndfile) is bundled in the\n"
+        "soundfile wheel as a separate shared library under the GNU Lesser General\n"
+        "Public License 2.1 or later; it may be replaced by a compatible build.\n"
+        "The LGPL-2.1 text is soundfile/_soundfile_data_COPYING. Where the wheel\n"
+        "provides it, soundfile/licensing_license_notes.md names the source of\n"
+        "each library inside libsndfile (mpg123, LAME, FLAC, Ogg, Vorbis, Opus).\n"
+        "libsndfile source: https://github.com/libsndfile/libsndfile/releases\n"
     ),
     "freetype": (
         "This software uses FreeType (https://www.freetype.org/) under the\n"
@@ -115,6 +136,34 @@ def _license_files(name: str) -> list[tuple[str, bytes]]:
     return found
 
 
+def _package_license_files(name: str) -> tuple[list[tuple[str, bytes]], list[str]]:
+    """``PACKAGE_LICENSE_FILES`` of ``name`` and the ones that are missing.
+
+    A file counts as missing only when the wheel bundles the library it
+    covers (``BUNDLED_LIBRARY_MARKERS``); a build against a system library
+    carries neither.
+    """
+    try:
+        dist = distribution(name)
+    except PackageNotFoundError:
+        return [], []
+    files = {str(file): file for file in dist.files or []}
+    marker = BUNDLED_LIBRARY_MARKERS.get(name)
+    bundled = marker is not None and any(path.startswith(marker) for path in files)
+    found: list[tuple[str, bytes]] = []
+    missing: list[str] = []
+    for wanted, required in PACKAGE_LICENSE_FILES.get(name, ()):
+        file = files.get(wanted)
+        try:
+            if file is None:
+                raise OSError(wanted)
+            found.append((wanted.replace("/", "_"), Path(file.locate()).read_bytes()))
+        except OSError:
+            if bundled and required:
+                missing.append(f"{name}:{wanted}")
+    return found, missing
+
+
 def build(out: Path, *, texts_dir: Path = TEXTS_DIR) -> list[str]:
     """Write the bundle and return the names of unresolved items.
 
@@ -128,9 +177,11 @@ def build(out: Path, *, texts_dir: Path = TEXTS_DIR) -> list[str]:
         if not files:
             unresolved.append(name)
             continue
+        extra, missing = _package_license_files(name)
+        unresolved.extend(missing)
         dest = out / name
         dest.mkdir(exist_ok=True)
-        for filename, data in files:
+        for filename, data in [*files, *extra]:
             (dest / filename).write_bytes(data)
     qt_installed = False
     for name in OPTIONAL:

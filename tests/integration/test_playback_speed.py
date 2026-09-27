@@ -219,3 +219,36 @@ def test_the_tolerance_keeps_a_sample_rate_mismatch_detectable() -> None:
     assert speed_tolerance(10.0) == pytest.approx(0.0125)
     assert speed_tolerance(3.0) < 0.03  # the +/-3 % stretch tests above still fire
     assert speed_tolerance(1.0) < 1 - 44100 / 48000  # 44.1 vs 48 kHz is named from 1 s
+
+
+@pytest.mark.parametrize("source", ["standalone", "fake"])
+def test_self_played_take_is_never_blamed_on_a_daw(source: str) -> None:
+    """RoomScope played the sweep itself, so no DAW can have stretched it.
+
+    A correctly played 3 s sweep in a very reverberant, noisy room leaves a low
+    direct-sound confidence, and the speed estimate on such a take is biased
+    (about 9 % here). Imported from a file the take would be checked; played
+    by Standalone Mode or the demo backend it must not be.
+    """
+    ir = make_rir(48000, rt60_s=4.0, diffuse_level=0.3, seed=0)
+    sweep = measurement_signal(SWEEP)
+    wet = fftconvolve(sweep, ir)[: sweep.size + 48000]
+    take = wet / np.max(np.abs(wet)) * 0.5 + 0.1 * np.random.default_rng(0).standard_normal(
+        wet.size
+    )
+    result = analyze(AudioSignal(take, 48000, source=source), Reference.from_settings(SWEEP))
+    assert result.impulse_response.direct_sound_confidence == "low"
+    assert result.impulse_response.playback_speed is None
+    assert "speed it was generated at" not in (result.decay.broadband.t30.reason or "")
+    ids = [f.message_id for f in interpret(result)]
+    assert "measurement.playback_time_stretch" not in ids
+    assert "measurement.playback_sample_rate" not in ids
+
+
+def test_self_played_take_skips_the_check_even_when_stretched(sweep_signal: np.ndarray) -> None:
+    """The check is skipped by the take's source, not by its content."""
+    stretched = np.asarray(resample_poly(sweep_signal, 103, 100), dtype=np.float64)
+    recording = AudioSignal(_played(stretched, 48000), 48000, source="standalone")
+    assert (
+        analyze(recording, Reference.from_settings(SWEEP)).impulse_response.playback_speed is None
+    )
