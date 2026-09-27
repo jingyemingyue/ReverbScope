@@ -1120,7 +1120,7 @@ msgid "Wrote {wav} ({seconds:.1f} s at {rate} Hz, sweep {start:g}-{end:g} Hz, {d
 msgstr "已写出 {wav}（{seconds:.1f} s，{rate} Hz，扫频 {start:g}-{end:g} Hz，{duration:g} s，{level:g} dBFS）"
 
 msgid "Wrote {sidecar} (keep it next to the WAV)"
-msgstr "已写出 {sidecar}（请与 WAV 放在一起）"
+msgstr "已写入 {sidecar}（请与 WAV 放在一起）"
 
 msgid "Next: import the WAV into your DAW, play it through the monitors, record the measurement microphone,"
 msgstr "下一步：把 WAV 导入 DAW，经监听播放，用测量话筒录音，"
@@ -3322,3 +3322,386 @@ msgstr "{name} - {count} 路输入"
 
 msgid "{name} - {count} out"
 msgstr "{name} - {count} 路输出"
+
+# Command-line presentation (roomscope/cli/render.py, cli/main.py)
+
+msgid "(add {input})"
+msgstr "（需添加 {input}）"
+
+msgid "1. Import the WAV into your DAW, play it through the monitors and record the measurement microphone."
+msgstr "1. 把 WAV 导入 DAW，通过监听音箱播放，同时录制测量话筒。"
+
+msgid "2. Export the recording as WAV and analyse it:"
+msgstr "2. 把录音导出为 WAV，然后分析："
+
+msgid "20 dB decay"
+msgstr "20 dB 衰减"
+
+msgid "Above baseline"
+msgstr "高出基线"
+
+msgid "Analysed"
+msgstr "已分析"
+
+msgid "Architecture"
+msgstr "架构"
+
+msgid "Arrival"
+msgstr "到达时间"
+
+msgid "Audio"
+msgstr "音频"
+
+msgid "Audio systems (host APIs)"
+msgstr "音频系统（主机 API）"
+
+msgid "Build"
+msgstr "构建"
+
+msgid "CI run"
+msgstr "CI 运行"
+
+msgid "Calibration"
+msgstr "校准"
+
+msgid "Checks"
+msgstr "检查"
+
+msgid "Common band"
+msgstr "共同频带"
+
+msgid "Comparable"
+msgstr "可对比"
+
+msgid "Created"
+msgstr "创建时间"
+
+msgid "Decay range"
+msgstr "衰减范围"
+
+msgid "Default"
+msgstr "默认"
+
+msgid "Delay"
+msgstr "延迟"
+
+msgid "Desktop"
+msgstr "桌面"
+
+msgid "Device"
+msgstr "设备"
+
+msgid "Devices"
+msgstr "设备"
+
+msgid "Diagnostics"
+msgstr "诊断"
+
+msgid "Distinguishable"
+msgstr "可区分"
+
+msgid "Edition"
+msgstr "版本类型"
+
+msgid "Excess path"
+msgstr "额外路径"
+
+msgid "Filter ringing"
+msgstr "滤波器余振"
+
+msgid "Frequency"
+msgstr "频率"
+
+msgid "Frequency response"
+msgstr "频率响应"
+
+msgid "Impulse response"
+msgstr "脉冲响应"
+
+msgid "Info"
+msgstr "信息"
+
+msgid "Input"
+msgstr "输入"
+
+msgid "Input and output use one host API"
+msgstr "输入和输出属于同一个主机 API"
+
+msgid "Interpretation ({profile} profile)"
+msgstr "解读（{profile}配置）"
+
+msgid "Length"
+msgstr "长度"
+
+msgid "Level"
+msgstr "电平"
+
+msgid "Level above {max_level:g} dBFS, confirmed with --acknowledge-level"
+msgstr "电平高于 {max_level:g} dBFS，已用 --acknowledge-level 确认"
+
+msgid "Level at or below {max_level:g} dBFS"
+msgstr "电平不高于 {max_level:g} dBFS"
+
+msgid "Libraries"
+msgstr "依赖库"
+
+msgid "Loopback"
+msgstr "回送"
+
+msgid "Low-frequency resonances"
+msgstr "低频共振"
+
+msgid "Mean |Δ|"
+msgstr "平均 |Δ|"
+
+msgid "Measurement"
+msgstr "测量"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "Next"
+msgstr "下一步"
+
+msgid "No audio device found."
+msgstr "未找到音频设备。"
+
+msgid "No mains hum detected (50/60 Hz harmonics)."
+msgstr "未检测到市电哼声（50/60 Hz 谐波）。"
+
+msgid "No quiet segment was available."
+msgstr "没有可用的安静片段。"
+
+msgid "None above the threshold."
+msgstr "没有高于阈值的反射。"
+
+msgid "None found."
+msgstr "未发现。"
+
+msgid "Nothing was played."
+msgstr "没有播放任何声音。"
+
+msgid "Nothing was sent anywhere: this report is only printed."
+msgstr "没有发送任何内容：本报告只在这里打印。"
+
+msgid "Notice"
+msgstr "提示"
+
+msgid "Output"
+msgstr "输出"
+
+msgid "Paths"
+msgstr "路径"
+
+msgid "Platform"
+msgstr "平台"
+
+msgid "Play"
+msgstr "播放"
+
+msgid "Playing the sweep and recording"
+msgstr "正在播放扫频并录音"
+
+msgid "Potential mains hum at multiples of {base:.0f} Hz: {harmonics}"
+msgstr "可能的市电哼声，基频 {base:.0f} Hz 的倍频：{harmonics}"
+
+msgid "Preference"
+msgstr "优先顺序"
+
+msgid "Privacy"
+msgstr "隐私"
+
+msgid "Project"
+msgstr "项目"
+
+msgid "Rate"
+msgstr "采样率"
+
+msgid "Record"
+msgstr "录音"
+
+msgid "Recording"
+msgstr "录音"
+
+msgid "Reverberation"
+msgstr "混响"
+
+msgid "RoomScope environment report"
+msgstr "RoomScope 环境报告"
+
+msgid "RoomScope standalone measurement"
+msgstr "RoomScope 独立测量"
+
+msgid "RoomScope test signal"
+msgstr "RoomScope 测试信号"
+
+msgid "Run a command with --help for its options, for example: roomscope measure --help"
+msgstr "在命令后加 --help 查看它的选项，例如：roomscope measure --help"
+
+msgid "Segment"
+msgstr "片段"
+
+msgid "Self-check"
+msgstr "自检"
+
+msgid "Session"
+msgstr "会话"
+
+msgid "Sessions"
+msgstr "会话"
+
+msgid "Speed of sound"
+msgstr "声速"
+
+msgid "Stream"
+msgstr "音频流"
+
+msgid "Summary"
+msgstr "概要"
+
+msgid "Sweep"
+msgstr "扫频"
+
+msgid "Sweep found"
+msgstr "扫频位置"
+
+msgid "System"
+msgstr "系统"
+
+msgid "The input device accepts {rate}"
+msgstr "输入设备支持 {rate}"
+
+msgid "The output device accepts {rate}"
+msgstr "输出设备支持 {rate}"
+
+msgid "The selected channels exist"
+msgstr "所选声道存在"
+
+msgid "Use the number with --input-device / --output-device."
+msgstr "在 --input-device / --output-device 中填写这里的编号。"
+
+msgid "Version"
+msgstr "版本"
+
+msgid "WASAPI exclusive mode"
+msgstr "WASAPI 独占模式"
+
+msgid "Warning"
+msgstr "警告"
+
+msgid "Warnings"
+msgstr "警告"
+
+msgid "a delta is valid only when both sides are valid"
+msgstr "只有两侧都有效时差值才有效"
+
+msgid "broadband"
+msgstr "宽带"
+
+msgid "candidates below {max_hz:.0f} Hz"
+msgstr "{max_hz:.0f} Hz 以下的候选"
+
+msgid "colour in the terminal: auto (default; off for pipes, files and NO_COLOR), always, never"
+msgstr "终端颜色：默认自动（输出到管道、文件或设置了 NO_COLOR 时不着色），也可以始终着色或从不着色"
+
+msgid "commands"
+msgstr "命令"
+
+msgid "compensated{sep}path delay {delay}{sep}distance at most {bound}"
+msgstr "已补偿{sep}电路径延迟 {delay}{sep}距离上限 {bound}"
+
+msgid "confidence {confidence}{sep}pre-peak margin {margin}"
+msgstr "置信度 {confidence}{sep}峰前裕量 {margin}"
+
+msgid "default {rate}"
+msgstr "默认 {rate}"
+
+msgid "desktop bundle"
+msgstr "桌面打包程序"
+
+msgid "examples"
+msgstr "示例"
+
+msgid "extrapolated to 60 dB"
+msgstr "外推到 60 dB"
+
+msgid "impulse-response file"
+msgstr "脉冲响应文件"
+
+msgid "input {channels}"
+msgstr "输入 {channels}"
+
+msgid "latency {latency}"
+msgstr "延迟 {latency}"
+
+msgid "loopback on input {channel}"
+msgstr "回送在输入 {channel}"
+
+msgid "mean |Δ| per octave"
+msgstr "每倍频程平均 |Δ|"
+
+msgid "no commit recorded (source or pip install)"
+msgstr "未记录提交（源码或 pip 安装）"
+
+msgid "none"
+msgstr "无"
+
+msgid "none above the threshold"
+msgstr "没有高于阈值的反射"
+
+msgid "not applied: {reason}"
+msgstr "未使用：{reason}"
+
+msgid "nothing has been played yet"
+msgstr "尚未播放任何声音"
+
+msgid "offered but not applied"
+msgstr "已提供但未使用"
+
+msgid "output {channel}"
+msgstr "输出 {channel}"
+
+msgid "sample rates accepted for 1 channel; nothing was played"
+msgstr "按 1 个声道探测的可用采样率；没有播放任何声音"
+
+msgid "sample rates not probed; run roomscope doctor --probe"
+msgstr "未探测采样率；运行 roomscope doctor --probe"
+
+msgid "sets the Core Audio device rate"
+msgstr "由 RoomScope 设置 Core Audio 设备采样率"
+
+msgid "system default"
+msgstr "系统默认"
+
+msgid "tier {tier}; no coordinates are derived (see the JSON)"
+msgstr "档位 {tier}；不推算坐标（见 JSON）"
+
+msgid "your home folder is shown as ~"
+msgstr "主文件夹显示为 ~"
+
+msgid "{count} found{sep}strongest {delay:.1f} ms, {level:.1f} dB"
+msgstr "找到 {count} 个{sep}最强 {delay:.1f} ms，{level:.1f} dB"
+
+msgid "{inputs} in / {outputs} out"
+msgstr "{inputs} 入 / {outputs} 出"
+
+msgid "{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB"
+msgstr "{lo:.0f}–{hi:.0f} ms，高于 {threshold:.0f} dB"
+
+msgid "{n} more in result.json"
+msgstr "另有 {n} 个，见 result.json"
+
+msgid "{rms:.1f} dBFS RMS{sep}peak {peak}"
+msgstr "{rms:.1f} dBFS RMS{sep}峰值 {peak}"
+
+msgid "{seconds:.1f} s at {rate}"
+msgstr "{seconds:.1f} s，{rate}"
+
+msgid "{seconds:.2f} s, of which {decay:.2f} s is decay"
+msgstr "{seconds:.2f} s，其中衰减 {decay:.2f} s"
+
+msgid "{start:.2f} s into the recording"
+msgstr "录音中第 {start:.2f} s"
+
+msgid "±{uncertainty:.2f} m from the stated inputs only"
+msgstr "±{uncertainty:.2f} m（仅来自所填数值）"

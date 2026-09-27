@@ -188,7 +188,13 @@ curves, and names the ISO 3382-2 class the position counts reach.
 `--lang zh_CN` (or Settings → Language, or `ROOMSCOPE_LANG`) translates
 findings, the text-report labels, the GUI and CLI help (`roomscope --help`
 and every subcommand). Units stay untranslated; digits stay ASCII.
-Core diagnostic strings from `roomscope.core` stay English.
+Diagnostic notes and warnings are stored in English in `result.json` and
+shown translated.
+
+In a terminal the command line uses colour and the symbols ✓ ! ×; piped into
+a file or another program it writes plain text. `--color never` or the
+`NO_COLOR` environment variable turns colour off, `--color always` keeps it
+in a pipe.
 
 ## Troubleshooting
 

@@ -46,6 +46,10 @@ DYNAMIC_CALLS = {
     ("cli/main.py", "_(SAFETY_MESSAGE)"),
     # argparse's own texts, each extracted with N_() in ARGPARSE_MESSAGES.
     ("cli/main.py", "_(message)"),
+    # Root-help command groups (COMMAND_GROUPS) and session modes
+    # (SESSION_MODES), each extracted with N_().
+    ("cli/main.py", "_(group)"),
+    ("cli/main.py", "_(mode)"),
     # Device Inspector column headings, each extracted with N_() in COLUMNS.
     ("ui/dev_tools.py", "_(column)"),
     ("ui/pages.py", "_(SAFETY_MESSAGE)"),
@@ -313,13 +317,21 @@ def test_cli_zh_cn_analyze_prints_no_english_finding_text(
     assert code == 0
     assert title != profile and reverberation == "混响"
     out = capsys.readouterr().out
-    header = f"解读（{title}配置）："
+    header = f"解读（{title}配置）"
     assert header in out
-    section = out.split(header, 1)[1].strip().splitlines()
-    findings = [line for line in section if line.startswith("  [")]
+    section = out.split(header, 1)[1].splitlines()
+    # Each finding: "  <symbol> <severity> · <topic>", then its message
+    # indented by four spaces (wrapped over as many lines as it needs).
+    findings: list[tuple[str, str]] = []
+    for line in section:
+        head = re.match(r"^  \S+ (.+?) · (.+)$", line)
+        if head:
+            findings.append((head.group(2), ""))
+        elif line.startswith("    ") and findings:
+            topic, message = findings[-1]
+            findings[-1] = (topic, message + line.strip())
     assert findings, out
-    topics = {line.split("] ", 1)[1].split(":", 1)[0] for line in findings}
-    assert reverberation in topics
-    for line in findings:
-        message = line.split(": ", 1)[1]
-        assert _english_words(message) == [], line
+    assert reverberation in {topic for topic, _message in findings}
+    for topic, message in findings:
+        assert message, topic
+        assert _english_words(message) == [], (topic, message)

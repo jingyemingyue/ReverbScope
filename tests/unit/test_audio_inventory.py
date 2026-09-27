@@ -396,12 +396,12 @@ def test_cli_devices_probe_and_doctor(capsys: pytest.CaptureFixture[str]) -> Non
 
     assert main(["--backend", "fake", "devices", "--probe"]) == 0
     out = capsys.readouterr().out
-    assert "recommended input" in out and "48000" in out
+    assert "recommended input" in out and "44.1 · 48 · 88.2 · 96" in out
     assert main(["--backend", "fake", "devices", "--json"]) == 0
     assert '"devices"' in capsys.readouterr().out
     assert main(["--backend", "fake", "doctor"]) == 0
     report = capsys.readouterr().out
-    assert "RoomScope" in report and "numpy" in report and "Audio:" in report
+    assert "RoomScope" in report and "numpy" in report and "\nAudio\n" in report
 
 
 def test_edition_follows_environment_and_bundle(monkeypatch: pytest.MonkeyPatch) -> None:

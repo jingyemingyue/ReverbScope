@@ -6,6 +6,19 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 29: 2026-09-27 — **command-line presentation** (branch
+`claude/publication-ready-level-n3hkor`). One renderer for the terminal
+(`cli/console.py`: colour policy with `--color` / `NO_COLOR` / `TERM=dumb`,
+status symbols with ASCII fallbacks, display-width-aware wrapping and tables
+that turn into blocks on a narrow terminal, a progress line that is a single
+stage line in a file) and the command renderers (`cli/render.py`) for
+analyze, show, compare, doctor, devices, sweep, measure and errors; grouped
+`--help` with examples. The GUI's plain-text reports are unchanged. Found on
+the way: `--format json measure` wrote status lines into its JSON stdout, and
+`doctor` / `devices` ignored `--format json` (both fixed, with tests). No
+new dependency; JSON, schemas, stored files and exit codes unchanged. No
+hardware or DAW result (still none).
+
 Snapshot 28: 2026-09-27 — **a complete Simplified Chinese experience**
 (branch `claude/publication-ready-level-n3hkor`). Everything a user reads can
 be Simplified Chinese: GUI (with Qt's own dialogs), CLI help and argparse

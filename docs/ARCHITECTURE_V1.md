@@ -519,13 +519,26 @@ class AudioBackend(Protocol):
 | `export <session> --format csv [--out]` | curves and tables through an exporter | S4 |
 | `schema result\|session\|comparison\|project\|sidecar` | print the JSON Schema | M2 |
 | `measure --input-channels 1,2 --loopback-channel 2`, `analyze --loopback-channel 1` / `--loopback <wav>` | loopback | M5 |
-| global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording` | global options | M7, M6, M8 |
+| global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never` | global options | M7, M6, M8 |
 
 Exit codes: 0 success; 1 a `RoomScopeError` (message on stderr); 2 usage
 error or a safety refusal (the level acknowledgement); 130 interrupted.
 `--format json` writes exactly the `result.json` payload plus `findings` to
 stdout and nothing else there; all diagnostics go to stderr. `--json` stays
 as an alias for one minor release, then is removed with a warning.
+
+Text output is laid out by `roomscope/cli/console.py` (styles, status
+symbols, display-width-aware wrapping and tables) and `roomscope/cli/render.py`;
+no other module writes escape sequences. Colour follows `--color`, then
+`NO_COLOR`, then `TERM=dumb`, and in `auto` appears only on a terminal: a pipe
+or a file never receives an escape sequence or a carriage return. Every status
+carries a symbol and a word (`✓` / `!` / `×`, or `[OK]` / `[WARN]` /
+`[ERROR]` where the stream cannot encode them), so colour is never the only
+signal. Widths count a CJK character as two columns. `measure` prints its
+device plan and checks on stdout and its progress on stderr (one redrawn line
+on a terminal, one stage line otherwise; drawn by the waiting thread, never by
+the audio callback). The text layout is not a Tier 1 interface; the GUI keeps
+its own plain-text reports (`cli/report.py`, `diagnostics.format_environment_report`).
 
 ### 5.8 GUI
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -106,7 +107,7 @@ def test_cli_doctor_probe(capsys: pytest.CaptureFixture[str]) -> None:
     from roomscope.cli.main import main
 
     assert main(["--backend", "fake", "doctor", "--probe"]) == 0
-    assert "record 44100" in capsys.readouterr().out
+    assert re.search(r"Record\s+44\.1 · 48 · 88\.2", capsys.readouterr().out)
     assert main(["--backend", "fake", "doctor", "--probe", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
     assert data["audio"]["devices"][0]["input_rates"]
