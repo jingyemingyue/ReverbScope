@@ -71,20 +71,31 @@
 
 `entitlements.plist`（Developer ID 使用的文件）只含前两个键，永远不含公证会拒绝的 `get-task-allow` [A9]。
 
-**有了 Developer ID Application 证书之后**（维护者决定，§5），按顺序执行以下步骤；目前都还没有运行过：
+**有了 Developer ID Application 证书之后**（维护者决定，§5）。发布工作流里已经写好这些步骤；只有下表六个仓库 secret 全部存在时才执行，所以社区和 fork 构建仍是临时签名。它们从不在拉取请求上运行；只设置了部分 secret 会让构建失败，而不是悄悄发出临时签名的 DMG。**目前都还没有运行过**：还没有证书。
 
-1. 在运行器上用仓库 secrets 把证书导入临时钥匙串（尚未编写；目前工作流不读取任何签名 secret，因此社区构建永远不需要它）。
-2. `sh packaging/macos/sign_app.sh dist/RoomScope.app --identity "Developer ID Application: NAME (TEAMID)"`：顺序相同，每一项加 `--timestamp`，应用本身加 `--options runtime` 和 `entitlements.plist` [A2][A9]。
-3. 构建 DMG（`make_dmg.sh`），用同一身份加 `--timestamp` 签名 [A10]。
-4. `xcrun notarytool submit RoomScope-macos-<arch>.dmg --wait`，使用 App Store Connect API 密钥（`--key`、`--key-id`、`--issuer`）或 Apple ID、团队 ID 与 App 专用密码；即使成功也要查看 `notarytool log` [A11][A12]。
-5. 对 DMG 执行 `xcrun stapler staple`，然后对 DMG 用 `spctl -a -t open -vvv --context context:primary-signature`、对挂载后的应用用 `spctl -a -t exec -vvv` 检查 [A12][A13]。
-6. 在 staple 之后再计算 SHA-256（staple 会改变 DMG）。
+1. `packaging/macos/import_certificate.sh` 把 `.p12` 导入临时钥匙串，只接受 `Developer ID Application` 身份；作业结束时（包括失败时）删除该钥匙串。
+2. `sign_app.sh dist/RoomScope.app --identity "$MACOS_SIGNING_IDENTITY"` 重新签名：顺序相同，每一项加 `--timestamp`，应用本身加 `--options runtime` 和 `entitlements.plist` [A2][A9]；随后检查 runtime 标志、Developer ID 签发者和时间戳，并对签名后的应用做冒烟测试。
+3. `packaging/macos/notarize_dmg.sh` 用 `--timestamp` 签署 DMG [A10]；
+4. 用 App Store Connect API 密钥执行 `xcrun notarytool submit --wait`，即使成功也打印 `notarytool log`，状态不是 `Accepted` 就失败 [A11][A12]；
+5. staple 公证票据（`stapler staple`、`stapler validate`），再对 DMG 执行 `spctl -a -t open --context context:primary-signature`、对挂载后的应用执行 `spctl -a -t exec` [A12][A13]。
+6. SHA-256 在 staple 之后计算（staple 会改变 DMG）。
+
+| 仓库 secret | 内容 | 来源 |
+| --- | --- | --- |
+| `MACOS_CERTIFICATE_P12_BASE64` | 含私钥的 Developer ID Application 证书，导出为 `.p12` 后做 base64 编码 | Apple Developer 账户 ▸ Certificates ▸ `+` ▸ Developer ID Application（仅 Account Holder 可建），再用“钥匙串访问”导出 `.p12` [A14] |
+| `MACOS_CERTIFICATE_PASSWORD` | 导出 `.p12` 时设置的密码 | 你自己 |
+| `MACOS_SIGNING_IDENTITY` | 身份名称，例如 `Developer ID Application: Jane Doe (AB12CD34EF)` | 导入证书后运行 `security find-identity -v -p codesigning` |
+| `APPLE_API_KEY_P8_BASE64` | App Store Connect API 密钥（`AuthKey_<id>.p8`），base64 编码 | App Store Connect ▸ 用户和访问 ▸ 集成 ▸ 团队密钥 ▸ `+`（`.p8` 只能下载一次）[A15] |
+| `APPLE_API_KEY_ID` | 该密钥的 Key ID | 同一页面 |
+| `APPLE_API_ISSUER_ID` | 密钥列表上方的 Issuer ID | 同一页面 |
+
+**为什么是两个 DMG 而不是一个 Universal 应用。** PyInstaller 只有在所有收集到的二进制文件本身都是 universal2 时才能构建可用的 `universal2` 应用 [A16]。`requirements/bundle.lock` 固定的版本（2026-09-27 在 PyPI 核对）中，NumPy 2.5.3、SciPy 1.18.1、matplotlib 3.11.2、Pillow 12.3.0、contourpy 1.4.0、cffi 2.1.1 和 soundfile 0.14.0 只发布分开的 `arm64` 与 `x86_64` macOS wheel，所以每个架构各发一个 DMG，并在该架构的运行器上构建和测试。
 
 没有证书时 CI 无法证明的内容：Developer ID 签名、共享 Team ID 下的库验证、安全时间戳、公证、staple、Gatekeeper 放行，以及话筒权限提示。
 
 Windows：安装程序和可执行文件没有 Authenticode 签名，首次运行时 SmartScreen 会警告（见用户指南）。这是 0.x 预发布版本的已知限制，不是错误；是否签名属于同一个 §5 决定。有证书后：先用 `signtool sign /fd sha256 /tr <时间戳 URL> /td sha256` 签署 `dist\roomscope\*.exe`，再用 `iscc "--signtool=signtool=signtool.exe sign … $f" /DSignToolName=signtool` 编译安装程序，让 Inno Setup 签署安装程序及其卸载程序（[W1][W2][W3]；`packaging/windows/roomscope.iss`）。尚未运行过。
 
-§3b 来源（访问于 2026-09-24）见英文版 [RELEASE_PLAN.md](RELEASE_PLAN.md) §3b 的 [A1]–[A13]、[W1]–[W3]。
+§3b 来源见英文版 [RELEASE_PLAN.md](RELEASE_PLAN.md) §3b 的 [A1]–[A16]、[W1]–[W3]。
 
 ## 4. 每次发布都适用的门禁
 

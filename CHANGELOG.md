@@ -324,6 +324,17 @@ Windows: no Authenticode).
   checking them. The GUI's Step 2 text names those rules.
 
 ### Packaging
+- **Developer ID signing and notarization, ready but off.** The bundle job
+  has the steps for a Developer ID Application certificate: a temporary
+  keychain (`packaging/macos/import_certificate.sh`), inside-out signing
+  with the hardened runtime and a secure timestamp, then a signed DMG
+  submitted to `notarytool`, stapled and checked with `spctl`
+  (`packaging/macos/notarize_dmg.sh`). They run only when all six
+  repository secrets exist and never on pull requests; with none set the
+  build stays ad hoc as before, and a partial set fails the build.
+  Nothing has been signed with a Developer ID or notarized yet. The bundle
+  job is now named `Bundle (<os>)`. `docs/RELEASE_PLAN.md` §3b lists the
+  secrets and why there are two DMGs rather than one Universal app.
 - **macOS app opens the GUI.** `RoomScope.app` has its own windowed
   executable, so a Finder launch without arguments opens the GUI; the DMG is
   mounted, copied and launched in the release workflow
@@ -379,6 +390,10 @@ Windows: no Authenticode).
   (`THIRD_PARTY_LICENSES/soundfile/`, `_notices/libsndfile.txt`).
 
 ### Documentation
+- `docs/HARDWARE_TESTS.md` ends with a step-by-step for testers: safety,
+  install per system, what to do and what counts as a pass for each row of
+  the interface form, buffer and latency settings, one DAW take, and what
+  to attach.
 - `docs/COMPATIBILITY.md` (+ zh-CN): platforms, Python and dependency floors,
   DAW export formats, host APIs and cross-platform behaviour, each with what
   verified it (CI job, local build, test module) and what is not verified.

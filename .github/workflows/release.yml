@@ -127,7 +127,7 @@ jobs:
           if-no-files-found: error
 
   bundle:
-    name: Unsigned bundle (${{ matrix.os }})
+    name: Bundle (${{ matrix.os }})
     needs: [prepare, quality]
     runs-on: ${{ matrix.os }}
     strategy:
@@ -161,6 +161,39 @@ jobs:
         run: |
           cp -R THIRD_PARTY_LICENSES dist/roomscope/THIRD_PARTY_LICENSES
           python scripts/check_bundle_contents.py --root dist/roomscope --strip --require-licenses
+      - name: Developer ID signing configured?
+        # Signing and notarization run only when all six secrets exist
+        # (docs/RELEASE_PLAN.md §3b) and never on pull requests: forks have no
+        # secrets, and a notarization per push would cost minutes for nothing.
+        # With no secret set the build is ad hoc, as today; a partial set is a
+        # configuration error and fails here.
+        id: devid
+        if: runner.os == 'macOS'
+        shell: bash
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: |
+          set_count=0
+          for name in MACOS_CERTIFICATE_P12_BASE64 MACOS_CERTIFICATE_PASSWORD MACOS_SIGNING_IDENTITY \
+                      APPLE_API_KEY_P8_BASE64 APPLE_API_KEY_ID APPLE_API_ISSUER_ID; do
+            if [ -n "${!name}" ]; then set_count=$((set_count + 1)); else echo "not set: $name"; fi
+          done
+          if [ "$set_count" -eq 0 ]; then
+            enabled=false; echo "No Developer ID secrets: ad hoc signature."
+          elif [ "$set_count" -ne 6 ]; then
+            echo "::error::$set_count of 6 Developer ID secrets are set; set all six or none (docs/RELEASE_PLAN.md §3b)."
+            exit 1
+          elif [ "$GITHUB_EVENT_NAME" = pull_request ]; then
+            enabled=false; echo "Pull request: ad hoc signature; Developer ID signing runs on main, tags and manual runs."
+          else
+            enabled=true; echo "Developer ID signing, notarization and stapling."
+          fi
+          echo "enabled=$enabled" >> "$GITHUB_OUTPUT"
       - name: Check macOS .app and its licenses
         if: runner.os == 'macOS'
         shell: bash
@@ -169,7 +202,8 @@ jobs:
           cp -R THIRD_PARTY_LICENSES dist/RoomScope.app/Contents/Resources/THIRD_PARTY_LICENSES
           python scripts/check_bundle_contents.py --root dist/RoomScope.app --strip
           python scripts/check_bundle_contents.py --root dist/RoomScope.app/Contents/Resources --require-licenses
-          # Inside-out ad hoc signature (no Developer ID yet); verifies with --deep --strict.
+          # Inside-out ad hoc signature; verifies with --deep --strict. With a
+          # Developer ID the step "Developer ID signature" re-signs it below.
           sh packaging/macos/sign_app.sh dist/RoomScope.app
       - name: Smoke frozen binary
         shell: bash
@@ -185,8 +219,9 @@ jobs:
       - name: Rehearse the Developer ID layout (hardened runtime, ad hoc)
         # What a Developer ID build changes, minus the certificate: hardened
         # runtime and entitlements on a copy of the app, which must still start,
-        # load its libraries and create PortAudio's cffi callbacks. The released
-        # DMG keeps the plain ad hoc signature (docs/RELEASE_PLAN.md §3b).
+        # load its libraries and create PortAudio's cffi callbacks. Without the
+        # signing secrets the released DMG keeps the plain ad hoc signature
+        # (docs/RELEASE_PLAN.md §3b).
         if: runner.os == 'macOS'
         shell: bash
         run: |
@@ -204,6 +239,23 @@ jobs:
           grep -q com.apple.security.device.audio-input "$dir/entitlements.xml"
           python scripts/smoke_bundle.py --roomscope "$dir/RoomScope.app/Contents/MacOS/RoomScope" \
             --out "$dir/smoke" --expect-commit "$GITHUB_SHA"
+      - name: Developer ID signature
+        if: steps.devid.outputs.enabled == 'true'
+        shell: bash
+        env:
+          MACOS_CERTIFICATE_P12_BASE64: ${{ secrets.MACOS_CERTIFICATE_P12_BASE64 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        run: |
+          sh packaging/macos/import_certificate.sh
+          sh packaging/macos/sign_app.sh dist/RoomScope.app --identity "$MACOS_SIGNING_IDENTITY"
+          codesign -dvv dist/RoomScope.app > "$RUNNER_TEMP/devid.txt" 2>&1
+          cat "$RUNNER_TEMP/devid.txt"
+          grep -q 'flags=.*runtime' "$RUNNER_TEMP/devid.txt"
+          grep -q 'Authority=Developer ID Application' "$RUNNER_TEMP/devid.txt"
+          grep -q '^Timestamp=' "$RUNNER_TEMP/devid.txt"
+          python scripts/smoke_bundle.py --roomscope dist/RoomScope.app/Contents/MacOS/RoomScope \
+            --out "$RUNNER_TEMP/devid-smoke" --expect-commit "$GITHUB_SHA"
       - name: Windows zip
         if: runner.os == 'Windows'
         shell: bash
@@ -247,10 +299,23 @@ jobs:
           Write-Output "uninstalled: $dir removed"
       - name: macOS disk image
         if: runner.os == 'macOS'
+        run: bash packaging/macos/make_dmg.sh dist/RoomScope.app "dist/RoomScope-macos-$(uname -m).dmg"
+      - name: Notarize and staple the disk image
+        if: steps.devid.outputs.enabled == 'true'
+        env:
+          MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+          APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
+        run: sh packaging/macos/notarize_dmg.sh "dist/RoomScope-macos-$(uname -m).dmg"
+      - name: Check macOS disk image
+        if: runner.os == 'macOS'
+        run: python scripts/check_macos_dmg.py "dist/RoomScope-macos-$(uname -m).dmg"
+      - name: Remove the signing keychain
+        if: always() && steps.devid.outputs.enabled == 'true'
         run: |
-          dmg="dist/RoomScope-macos-$(uname -m).dmg"
-          bash packaging/macos/make_dmg.sh dist/RoomScope.app "$dmg"
-          python scripts/check_macos_dmg.py "$dmg"
+          keychain="$RUNNER_TEMP/roomscope-signing.keychain-db"
+          if [ -f "$keychain" ]; then security delete-keychain "$keychain"; fi
       - name: Linux archive
         if: runner.os == 'Linux'
         run: tar -C dist -czf dist/roomscope-linux-x86_64.tar.gz roomscope

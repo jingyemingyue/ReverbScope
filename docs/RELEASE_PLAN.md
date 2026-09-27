@@ -173,25 +173,51 @@ key:
 `entitlements.plist` (the Developer ID file) has the first two keys and never
 `get-task-allow`, which notarization rejects [A9].
 
-**With a Developer ID Application certificate** (maintainer decision, §5), the
-steps are, in order, and none has been run yet:
+**With a Developer ID Application certificate** (maintainer decision, §5).
+The release workflow already contains these steps; they are skipped until
+all six repository secrets below exist, so community and fork builds stay
+ad hoc. They never run on pull requests, and a partial set of secrets fails
+the build instead of silently shipping an ad hoc DMG. **None of them has run
+yet**: no certificate exists.
 
-1. Import the certificate into a temporary keychain on the runner from
-   repository secrets (not written yet; nothing in the workflow reads a
-   signing secret today, so community builds never need one).
-2. `sh packaging/macos/sign_app.sh dist/RoomScope.app --identity "Developer ID Application: NAME (TEAMID)"`:
-   the same order, plus `--timestamp` on every item and `--options runtime`
-   with `entitlements.plist` on the app [A2][A9].
-3. Build the DMG (`make_dmg.sh`), sign it with the same identity and
-   `--timestamp` [A10].
-4. `xcrun notarytool submit RoomScope-macos-<arch>.dmg --wait` with an App
-   Store Connect API key (`--key`, `--key-id`, `--issuer`) or Apple ID,
-   team ID and app-specific password; read `notarytool log` even on success
-   [A11][A12].
-5. `xcrun stapler staple` the DMG, then check with
-   `spctl -a -t open -vvv --context context:primary-signature` on the DMG and
-   `spctl -a -t exec -vvv` on the mounted app [A12][A13].
-6. Compute the SHA-256 sums after stapling (stapling changes the DMG).
+1. `packaging/macos/import_certificate.sh` imports the `.p12` into a
+   temporary keychain and refuses anything but a `Developer ID Application`
+   identity; the job deletes the keychain at the end, even on failure.
+2. `sign_app.sh dist/RoomScope.app --identity "$MACOS_SIGNING_IDENTITY"`
+   re-signs the app: the same inside-out order, `--timestamp` on every item,
+   `--options runtime` with `entitlements.plist` on the app [A2][A9]. The
+   step checks the runtime flag, the Developer ID authority and a timestamp,
+   then smoke-tests the signed app.
+3. `packaging/macos/notarize_dmg.sh` signs the DMG with `--timestamp` [A10];
+4. submits it with `xcrun notarytool submit --wait` using an App Store
+   Connect API key, prints `notarytool log` even on success and fails unless
+   the status is `Accepted` [A11][A12];
+5. staples the ticket (`stapler staple`, `stapler validate`), then checks
+   `spctl -a -t open --context context:primary-signature` on the DMG and
+   `spctl -a -t exec` on the mounted app [A12][A13].
+6. The SHA-256 sums are computed after stapling (stapling changes the DMG).
+
+| Repository secret | What it holds | Where it comes from |
+| --- | --- | --- |
+| `MACOS_CERTIFICATE_P12_BASE64` | The Developer ID Application certificate with its private key, exported as `.p12`, base64-encoded (`base64 -i cert.p12 \| pbcopy`) | Apple Developer account ▸ Certificates ▸ `+` ▸ Developer ID Application (Account Holder only); then Keychain Access ▸ export as `.p12` [A14] |
+| `MACOS_CERTIFICATE_PASSWORD` | The password chosen for that export | You |
+| `MACOS_SIGNING_IDENTITY` | The identity name, e.g. `Developer ID Application: Jane Doe (AB12CD34EF)` | `security find-identity -v -p codesigning` after importing the certificate |
+| `APPLE_API_KEY_P8_BASE64` | An App Store Connect API key (`AuthKey_<id>.p8`), base64-encoded | App Store Connect ▸ Users and Access ▸ Integrations ▸ Team Keys ▸ `+` (the `.p8` downloads once) [A15] |
+| `APPLE_API_KEY_ID` | That key's Key ID | Same page |
+| `APPLE_API_ISSUER_ID` | The Issuer ID shown above the key list | Same page |
+
+A signed and notarized DMG keeps its file name; the release notes, README and
+user guide must then drop the Gatekeeper "Open Anyway" steps for that
+release (not before a notarized build has been downloaded and opened on a
+Mac that never saw it).
+
+**Why two DMGs, not one Universal app.** PyInstaller builds a `universal2`
+app only when every collected binary is itself universal2 [A16]. For the
+versions pinned in `requirements/bundle.lock` (checked on PyPI 2026-09-27),
+NumPy 2.5.3, SciPy 1.18.1, matplotlib 3.11.2, Pillow 12.3.0, contourpy 1.4.0,
+cffi 2.1.1 and soundfile 0.14.0 publish only separate `arm64` and `x86_64`
+macOS wheels, so the release keeps one DMG per architecture, each built and
+tested on a runner of that architecture.
 
 What CI cannot show without the certificate: a Developer ID signature,
 library validation with a shared Team ID, secure timestamps, notarization,
@@ -221,6 +247,9 @@ Sources for §3b (accessed 2026-09-24):
 * [A11] Apple, TN3147 "Migrating to the latest notarization tool": https://developer.apple.com/documentation/technotes/tn3147-migrating-to-the-latest-notarization-tool
 * [A12] Apple, "Customizing the notarization workflow": https://developer.apple.com/documentation/security/customizing-the-notarization-workflow
 * [A13] Apple Developer Forums (DTS), "Testing a Notarised Product": https://developer.apple.com/forums/thread/130560
+* [A14] Apple, "Create Developer ID certificates": https://developer.apple.com/help/account/certificates/create-developer-id-certificates/
+* [A15] Apple, "Creating API keys for App Store Connect API": https://developer.apple.com/documentation/appstoreconnectapi/creating-api-keys-for-app-store-connect-api
+* [A16] PyInstaller manual, "macOS multi-arch support": https://pyinstaller.org/en/stable/feature-notes.html#macos-multi-arch-support
 * [W1] Inno Setup Help, `[Setup]: SignTool`: https://jrsoftware.org/ishelp/topic_setup_signtool.htm (and `SignedUninstaller`: https://jrsoftware.org/ishelp/topic_setup_signeduninstaller.htm)
 * [W2] Inno Setup Help, Compiler Command-Line Parameters (`--signtool=<name>=<command>`): https://jrsoftware.org/ishelp/topic_compilercmdline.htm
 * [W3] Microsoft Learn, SignTool.exe: https://learn.microsoft.com/en-us/dotnet/framework/tools/signtool-exe

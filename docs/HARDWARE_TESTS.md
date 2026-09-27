@@ -82,3 +82,74 @@ for `sounddevice` (progress from the waiting thread, callback exceptions,
 early stream end, Stop, status flags). Neither touches PortAudio or an
 interface, so neither fills a cell above; the Stop test in particular sets
 the cancel flag itself (#13).
+
+## Step by step for testers
+
+About an hour for one interface on one computer; any subset helps. Report
+what happened, including failures and checks you skipped: a "Fail" or "Not
+run" with a reason is as useful as a "Pass".
+
+**Before you start**
+
+1. Turn the monitors or headphones **down**. The test signal is a sine sweep
+   from 20 Hz to 20 kHz; start low and raise it until the sweep is clearly
+   audible at the microphone, never loud. RoomScope refuses levels above
+   −12 dBFS unless you confirm it.
+2. Install RoomScope from the latest release (the
+   [user guide](user-guide/en.md#install) has the steps per system). The
+   builds are not signed yet: on macOS open it once with **System Settings ▸
+   Privacy & Security ▸ Open Anyway**; on Windows click **More info ▸ Run
+   anyway** in SmartScreen; on Linux install `libportaudio2` first. On macOS,
+   allow microphone access when asked (**System Settings ▸ Privacy &
+   Security ▸ Microphone**).
+3. Connect the interface, set it up in its own control panel as you
+   normally use it, and write down the driver version and the buffer size
+   set there.
+4. Copy **Help ▸ Environment Report for Bug Reports** after pressing **Probe
+   sample rates** (or run `roomscope doctor --probe`). Nothing is played.
+   Paste it into the report; it names the version, build commit, OS, audio
+   systems and devices, with your home folder shown as `~`.
+
+**Interface checks** (one answer per row of the form)
+
+| Row | What to do | Pass when |
+| --- | --- | --- |
+| Device list | Open Standalone Mode (or run `roomscope devices`) | The interface is listed with the right number of inputs and outputs |
+| Full take at 44.1 / 48 / 96 kHz | Standalone Mode, pick the interface for input and output, set the rate, press Start; repeat per rate the interface offers | A result opens, the direct-sound confidence is not "low", and no warning says the rate is unsupported or that the recording has dropouts |
+| Channels beyond 1–2 | Choose an input or output above channel 2 | The sweep comes out of, and is recorded from, the channels you chose |
+| Loopback capture | Cable one output back to one input and choose it as the loopback channel | The result says the loopback was compensated |
+| Stop during playback | Press Stop while the sweep plays | The sound stops at once, no tone keeps playing, no result is saved |
+| No buffer under/overflow | A full take at your usual settings | No "buffer problem(s) … may contain dropouts" warning in the result or in `roomscope.log` |
+| Interface unplugged | Monitors down; unplug the cable during a take | RoomScope reports an error and saves nothing; it does not hang or crash |
+| Full Standalone measurement | Microphone and loudspeaker in a room | You get a result you can read |
+| Same signal through one DAW | Universal DAW Mode with the same interface | See the DAW steps below |
+
+Buffer and latency: RoomScope uses the interface's driver settings. If a
+take reports dropouts, raise the buffer size in the interface's control
+panel, close other audio programs, and try again; say both settings in the
+report. The developer edition (a source install, or **File ▸ Settings ▸ Show
+developer tools** and a restart) also offers **Latency: Low / High** and, per system, WASAPI
+exclusive mode (Windows) or letting RoomScope set the device rate (macOS);
+record them if you change them. ASIO is not used by the bundles.
+
+**DAW check** (one DAW, one take)
+
+1. Follow [user-guide/daw-setup.md](user-guide/daw-setup.md) for your DAW
+   exactly as written; note any menu that differs in your version.
+2. Generate the sweep at the project's sample rate, play it through the
+   loudspeaker, record the microphone, export the recording, and analyse it
+   in Universal DAW Mode.
+3. Pass when the direct-sound confidence is "high" and no sample-rate or
+   time-stretch finding appears. Then, if you can, the two negative checks in
+   the DAW matrix above: they pass when RoomScope names the problem.
+
+**What to send**
+
+* The form: [audio interface test report](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml)
+  or [DAW compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml).
+* The environment report (step 4 above).
+* For any failure, `roomscope.log` from the data folder (`~/.roomscope/`, or
+  **Environment Report ▸ Open Data Folder**), and if a result was saved, a
+  session bundle made with `roomscope session bundle <session folder>
+  --no-audio` (leave out `--no-audio` only if you are happy to share the
+  recording of your room).
