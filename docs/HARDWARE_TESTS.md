@@ -2,8 +2,10 @@
 
 ARCHITECTURE_V1.md §7.3: executed at least once per platform before 1.0
 (M10) and recorded here with the date, the RoomScope version and the
-interface. Community results are accepted through the measurement issue
-template with a bundle attached.
+interface. Community results are accepted through the
+[Hardware compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml)
+issue form, ideally with a session bundle attached. How to take part is in
+[HARDWARE_TESTING.md](HARDWARE_TESTING.md).
 
 Nothing below is marked PASS that was not run on real hardware. This file
 is the started matrix for milestone 0.3; the cells are empty on purpose.

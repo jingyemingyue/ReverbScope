@@ -95,9 +95,6 @@ msgstr "对有效 T 值做空间平均"
 msgid "number of source positions"
 msgstr "声源位置数量"
 
-msgid "print JSON instead of a table"
-msgstr "打印 JSON 而不是表格"
-
 msgid "list positions and sessions"
 msgstr "列出位置与会话"
 
@@ -823,9 +820,6 @@ msgstr "备注（元数据）"
 msgid "omit curves from result.json"
 msgstr "不把曲线写入 result.json"
 
-msgid "print the result as JSON instead of a report"
-msgstr "以 JSON 打印结果而不是报告"
-
 msgid "straight line from the loudspeaker to the microphone capsule (m), measured with a tape. Without it no geometry can be derived from the reflections"
 msgstr "扬声器到话筒振膜的直线距离（米），用卷尺测量。没有它就无法从反射推导几何"
 
@@ -927,9 +921,6 @@ msgstr "声明输入增益未变（噪声差值要为 VALID 必须声明）"
 
 msgid "recording profile for comparison findings (default: the candidate session's)"
 msgstr "对比解读所用的录音配置（默认：候选会话的配置）"
-
-msgid "print comparison.json instead of a report"
-msgstr "打印 comparison.json 而不是报告"
 
 msgid "print a shipped JSON Schema"
 msgstr "打印随附的 JSON Schema"
@@ -1057,35 +1048,11 @@ msgstr "20 dB 衰减 {decay}（滤波器 {ring}）  {flag}"
 msgid "  none"
 msgstr "  无"
 
-msgid "Common excitation band: {low:g}–{high:g} Hz"
-msgstr "共同激励频带：{low:g}–{high:g} Hz"
-
 msgid "Comparable: {value}"
 msgstr "可对比：{value}"
 
-msgid "Decay deltas (VALID only when both sides are VALID):"
-msgstr "衰减差值（仅当两侧都为 VALID 时为有效）："
-
-msgid "metric"
-msgstr "指标"
-
-msgid "base"
-msgstr "基线"
-
-msgid "cand"
-msgstr "候选"
-
-msgid "delta"
-msgstr "差值"
-
-msgid "validity"
-msgstr "有效性"
-
 msgid "Frequency-response mean |Δ| per octave (dB):"
 msgstr "频率响应每倍频程平均 |Δ|（dB）："
-
-msgid "Early reflections:"
-msgstr "早期反射："
 
 msgid "matched"
 msgstr "匹配"
@@ -1095,9 +1062,6 @@ msgstr "出现"
 
 msgid "disappeared"
 msgstr "消失"
-
-msgid "Noise:"
-msgstr "噪声："
 
 msgid "Placement:"
 msgstr "摆位："
@@ -1115,12 +1079,6 @@ msgstr "已写出 {wav}（{seconds:.1f} s，{rate} Hz，扫描 {start:g}-{end:g}
 
 msgid "Wrote {sidecar} (keep it next to the WAV)"
 msgstr "已写出 {sidecar}（请与 WAV 放在一起）"
-
-msgid "Next: import the WAV into your DAW, play it through the monitors, record the measurement microphone,"
-msgstr "下一步：把 WAV 导入 DAW，经监听播放，用测量话筒录音，"
-
-msgid "export the recording as WAV and run: roomscope analyze --recording <file> --sweep {wav}"
-msgstr "导出为 WAV 后运行：roomscope analyze --recording <file> --sweep {wav}"
 
 msgid "warning: --json is deprecated; use --format json (--json will be removed in a future minor release)"
 msgstr "警告：--json 已弃用；请用 --format json（--json 将在后续次要版本中移除）"
@@ -1172,9 +1130,6 @@ msgstr "ISO 3382-2 等级：{klass}（{sources} 个声源 × {mics} 个话筒，
 
 msgid "RT60"
 msgstr "RT60"
-
-msgid "The GUI needs PySide6 Essentials: pip install 'roomscope[gui]' ({error})"
-msgstr "桌面界面需要 PySide6 Essentials：pip install 'roomscope[gui]'（{error}）"
 
 msgid "stopped: {message}"
 msgstr "已停止：{message}"
@@ -1306,3 +1261,296 @@ msgstr "宽带衰减{text}（估计 RT60 {rt:.2f} s，来自 {basis}）。对合
 
 msgid "Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs {mid_mean:.2f} s), which makes the ensemble bottom-heavy and muddies diction. Bass trapping or a different position helps."
 msgstr "低频比中频衰减更慢（{low_max:.2f} s 对 {mid_mean:.2f} s），会让合唱整体偏重低频、咬字发浑。低音陷阱或换位置会有帮助。"
+
+# CLI presentation, demo and summaries (0.4.2)
+
+msgid "SYNTHETIC DATA: a simulated room. No audio hardware is used and nothing is played; the numbers below describe the simulation, not a real room."
+msgstr "合成数据：这是一个模拟房间。没有使用任何音频硬件，也不会播放声音；下面的数字描述的是模拟结果，而不是真实房间。"
+
+msgid "test signal"
+msgstr "测试信号"
+
+msgid "analysis"
+msgstr "分析"
+
+msgid "session notes (stored in session.json)"
+msgstr "会话备注（保存在 session.json 中）"
+
+msgid "placement (optional tape measurements)"
+msgstr "摆位（可选的卷尺测量值）"
+
+msgid "output"
+msgstr "输出"
+
+msgid "loopback (optional)"
+msgstr "回环（可选）"
+
+msgid "try RoomScope without audio hardware: simulate, analyse and compare two positions"
+msgstr "无需音频硬件试用 RoomScope：模拟、分析并对比两个位置"
+
+msgid "audio interface"
+msgstr "音频接口"
+
+msgid "  2. Record the measurement microphone on another track (same sample rate)."
+msgstr "  2. 在另一条音轨上录制测量话筒（采样率相同）。"
+
+msgid "  3. Export that track as WAV (no trimming needed) and run:"
+msgstr "  3. 将该音轨导出为 WAV（无需裁切），然后运行："
+
+msgid "recording"
+msgstr "录音中"
+
+msgid "Simulating and analysing two microphone positions ..."
+msgstr "正在模拟并分析两个话筒位置……"
+
+msgid "(default: %(default)s)"
+msgstr "（默认：%(default)s）"
+
+msgid "Quick start:"
+msgstr "快速开始："
+
+msgid "Run 'roomscope <command> --help' for the options of one command."
+msgstr "运行 'roomscope <命令> --help' 查看某个命令的选项。"
+
+msgid "deprecated: use --format json"
+msgstr "已弃用：请使用 --format json"
+
+msgid "plain text only (colour is also off when NO_COLOR is set or output is not a terminal)"
+msgstr "仅输出纯文本（设置了 NO_COLOR 或输出不是终端时也会关闭颜色）"
+
+msgid "commands"
+msgstr "命令"
+
+msgid "folder for the demo files (created)"
+msgstr "存放演示文件的文件夹（自动创建）"
+
+msgid "recording profile used to interpret the demo"
+msgstr "用于解读演示结果的录音配置"
+
+msgid "Next steps"
+msgstr "下一步"
+
+msgid "Start with the monitor level low and raise it between takes if needed."
+msgstr "先把监听音量调低，如有需要再在两次测量之间逐步调高。"
+
+msgid "No audio devices found."
+msgstr "未找到音频设备。"
+
+msgid "* = system default. Pass the idx to measure: roomscope measure --input-device <idx> --output-device <idx> --out <folder>"
+msgstr "* = 系统默认设备。把 idx 传给 measure：roomscope measure --input-device <idx> --output-device <idx> --out <folder>"
+
+msgid "RoomScope demo"
+msgstr "RoomScope 演示"
+
+msgid "1. Test signal"
+msgstr "1. 测试信号"
+
+msgid "2. Simulated recordings (what your DAW would export)"
+msgstr "2. 模拟录音（相当于 DAW 导出的文件）"
+
+msgid "full report for position A"
+msgstr "位置 A 的完整报告"
+
+msgid "full comparison"
+msgstr "完整对比"
+
+msgid "open the sessions in the desktop app (needs the 'gui' extra)"
+msgstr "在桌面程序中打开这些会话（需要安装 'gui' 附加组件）"
+
+msgid "start a real measurement with your DAW"
+msgstr "用你的 DAW 开始一次真实测量"
+
+msgid "try RoomScope without audio hardware (synthetic data)"
+msgstr "无需音频硬件试用 RoomScope（合成数据）"
+
+msgid "1. write the test signal; play it and record the mic in your DAW"
+msgstr "1. 生成测试信号；在 DAW 中播放并录制话筒"
+
+msgid "2. analyse the exported recording"
+msgstr "2. 分析导出的录音"
+
+msgid "3. compare two microphone positions"
+msgstr "3. 对比两个话筒位置"
+
+msgid "  1. Import {wav} into your DAW and play it through your monitors."
+msgstr "  1. 将 {wav} 导入 DAW，并通过监听音箱播放。"
+
+msgid "Documentation: {url}"
+msgstr "文档：{url}"
+
+msgid "Measure reverberation (RT60), early reflections, frequency response, noise floor and low-frequency resonances, and compare microphone positions. WAV in, WAV out."
+msgstr "测量混响（RT60）、早期反射、频率响应、本底噪声和低频共振，并对比不同话筒位置。输入 WAV，输出 WAV。"
+
+msgid "{path}  ({rate} Hz, {start:g}-{end:g} Hz, {duration:g} s sweep)"
+msgstr "{path}  （{rate} Hz，{start:g}-{end:g} Hz，{duration:g} s 扫频）"
+
+msgid "3. Analysis ({profile} profile)"
+msgstr "3. 分析（{profile} 配置）"
+
+msgid "4. Comparison {a} -> {b}"
+msgstr "4. 对比 {a} -> {b}"
+
+msgid "{path}  position {label}: {description}"
+msgstr "{path}  位置 {label}：{description}"
+
+msgid "Position {label}: {description}"
+msgstr "位置 {label}：{description}"
+
+msgid "  (+{n} more in the full report: roomscope show {path})"
+msgstr "  （完整报告中还有 {n} 条：roomscope show {path}）"
+
+msgid "no quiet segment in the recording"
+msgstr "录音中没有安静片段"
+
+msgid "none above the threshold on either side"
+msgstr "两侧均无超过阈值的反射"
+
+msgid "no quiet segment on one or both sides"
+msgstr "一侧或两侧没有安静片段"
+
+msgid "At a glance"
+msgstr "概览"
+
+msgid "no reliable broadband RT60 (see the table below)"
+msgstr "没有可靠的宽带 RT60（见下表）"
+
+msgid "Reverberation"
+msgstr "混响"
+
+msgid "Early reflections"
+msgstr "早期反射"
+
+msgid "Low end"
+msgstr "低频"
+
+msgid "Noise floor"
+msgstr "本底噪声"
+
+msgid "direct-sound confidence {confidence}, core warnings: {count}"
+msgstr "直达声置信度 {confidence}，核心警告：{count}"
+
+msgid "Measurement"
+msgstr "测量"
+
+msgid "  not determined"
+msgstr "  无法确定"
+
+msgid "Reverberation: baseline -> candidate (change only when both are VALID)"
+msgstr "混响：基准 -> 候选（仅当两侧均为 VALID 时给出变化）"
+
+msgid "broadband RT60 not comparable (see the table below)"
+msgstr "宽带 RT60 不可比较（见下表）"
+
+msgid "Loopback:"
+msgstr "回环："
+
+msgid "RT60 {value:.2f} s (broadband, from {basis})"
+msgstr "RT60 {value:.2f} s（宽带，取自 {basis}）"
+
+msgid "strongest at {delay:.1f} ms: {level:.1f} dB re direct ({count} above {threshold:.0f} dB)"
+msgstr "最强在 {delay:.1f} ms：相对直达声 {level:.1f} dB（{count} 个高于 {threshold:.0f} dB）"
+
+msgid "none above {threshold:.0f} dB"
+msgstr "没有高于 {threshold:.0f} dB 的反射"
+
+msgid "potential resonances: {listed}"
+msgstr "可能的共振：{listed}"
+
+msgid "no potential resonance below {max_hz:.0f} Hz"
+msgstr "{max_hz:.0f} Hz 以下没有可能的共振"
+
+msgid "{rms:.1f} dBFS RMS (uncalibrated)"
+msgstr "{rms:.1f} dBFS RMS（未校准）"
+
+msgid "CLIPPING in the recording"
+msgstr "录音中有削波"
+
+msgid "RT60 base"
+msgstr "RT60 基准"
+
+msgid "RT60 cand"
+msgstr "RT60 候选"
+
+msgid "change"
+msgstr "变化"
+
+msgid "  — = not compared:"
+msgstr "  — = 未比较："
+
+msgid "RT60 {base:.2f} s -> {cand:.2f} s ({percent:+.1f} %)"
+msgstr "RT60 {base:.2f} s -> {cand:.2f} s（{percent:+.1f} %）"
+
+msgid "{gone} gone, {new} new, {kept} at both"
+msgstr "消失 {gone} 个，新增 {new} 个，两侧都有 {kept} 个"
+
+msgid "no potential resonance"
+msgstr "没有可能的共振"
+
+msgid "Frequency response"
+msgstr "频率响应"
+
+msgid "Early reflections (delay, level re direct sound):"
+msgstr "早期反射（延迟，相对直达声电平）："
+
+msgid "Potential low-frequency resonances:"
+msgstr "可能的低频共振："
+
+msgid "Noise (baseline, candidate, change):"
+msgstr "噪声（基准、候选、变化）："
+
+msgid "RMS"
+msgstr "RMS"
+
+msgid "  not determined -- add {input} to derive heights from the reflections"
+msgstr "  无法确定 -- 添加 {input} 即可从反射推算高度"
+
+msgid "both sides {state}"
+msgstr "两侧均为 {state}"
+
+msgid "at both: {list}"
+msgstr "两侧都有：{list}"
+
+msgid "gone: {list}"
+msgstr "消失：{list}"
+
+msgid "new: {list}"
+msgstr "新增：{list}"
+
+msgid "{base:.1f} -> {cand:.1f} dBFS ({delta:+.1f} dB)"
+msgstr "{base:.1f} -> {cand:.1f} dBFS（{delta:+.1f} dB）"
+
+msgid "{base:.1f} -> {cand:.1f} dBFS, not compared ({validity})"
+msgstr "{base:.1f} -> {cand:.1f} dBFS，未比较（{validity}）"
+
+msgid "Baseline:  {path}"
+msgstr "基准：  {path}"
+
+msgid "Candidate: {path}"
+msgstr "候选：  {path}"
+
+msgid "Common excitation band: {low:.0f}–{high:.0f} Hz"
+msgstr "共同激励频带：{low:.0f}–{high:.0f} Hz"
+
+msgid ", mains hum at {base:.0f} Hz"
+msgstr "，{base:.0f} Hz 电源哼声"
+
+msgid "largest change in the {band} octave ({mad:.1f} dB mean |Δ|)"
+msgstr "{band} 倍频程变化最大（平均 |Δ| {mad:.1f} dB）"
+
+msgid "close to the desk and the side wall"
+msgstr "靠近桌面和侧墙"
+
+msgid "moved 1 m back from the desk"
+msgstr "从桌面向后移开 1 m"
+
+msgid "Data quality"
+msgstr "数据质量"
+
+msgid " -- add --same-input-gain if the gain was unchanged"
+msgstr " -- 如果增益未变，请加上 --same-input-gain"
+
+msgid "Full report (the core diagnostics in it are always in English):"
+msgstr "完整报告（其中的核心诊断始终为英文）："
+
+msgid "The desktop app needs the 'gui' extra (PySide6 Essentials). Install it with: pip install \"PySide6_Essentials>=6.6\" ({error})"
+msgstr "桌面程序需要 'gui' 附加组件（PySide6 Essentials）。安装方法：pip install \"PySide6_Essentials>=6.6\"（{error}）"

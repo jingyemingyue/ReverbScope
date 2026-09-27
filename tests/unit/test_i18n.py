@@ -71,9 +71,8 @@ def test_cli_help_and_report_labels_are_in_the_chinese_catalog() -> None:
     ).startswith("混响")
     assert _("Comparable: {value}").startswith("可对比")
     assert _("show this help message and exit") == "显示此帮助信息并退出"
-    assert _(
-        "Next: import the WAV into your DAW, play it through the monitors, record the measurement microphone,"
-    ).startswith("下一步")
+    assert _("Next steps") == "下一步"
+    assert _("At a glance") == "概览"
     activate("en")
 
 

@@ -6,15 +6,32 @@ RoomScope 用来测量录音房间，让你听到房间对近距离拾音声源�
 
 ## 安装
 
-**用 Python（pipx）。** `pipx install "roomscope[gui]"` 会装好 `roomscope` 命令。从源码开发请用 `pip install -e ".[gui]"`。
+**用 Python。** RoomScope 尚未发布到 PyPI，请从 GitHub 安装到虚拟环境（需要 Python 3.12 或更高）：
 
-**未签名桌面包。** `release.yml` 会为 macOS、Windows、Linux 打出一目录布局的包。在维护者持有签名证书之前，这些包都是**未签名**的：
+```bash
+python3 -m venv roomscope-env
+source roomscope-env/bin/activate          # Windows: roomscope-env\Scripts\activate
+pip install "roomscope[gui] @ git+https://github.com/jingyemingyue/RoomScope.git"
+```
+
+只用命令行可去掉 `[gui]`。使用 pipx：`pipx install git+https://github.com/jingyemingyue/RoomScope.git`。
+从源码开发请用 `pip install -e ".[dev,gui]"`（见 CONTRIBUTING.md）。`pip install roomscope` 是计划中的功能，目前还不可用。
+
+**未签名桌面包。** `release.yml` 会为 macOS、Windows、Linux 打出一目录布局的包，维护者发布 Release 后会出现在 Releases 页面（目前尚未发布）。在维护者持有签名证书之前，这些包都是**未签名**的：
 
 * **macOS：** 右键打开，或在“隐私与安全性”里放行。系统询问麦克风权限时请允许。
 * **Windows：** SmartScreen 可能拦截，选“更多信息”→“仍要运行”。
 * **Linux：** 解压目录后运行 `roomscope`。
 
 关于对话框和 `THIRD_PARTY_LICENSES/` 列出了 Qt、libsndfile 等许可证。
+
+## 无需硬件先试用
+
+```bash
+roomscope --lang zh_CN demo
+```
+
+演示会生成扫频信号和同一个模拟房间里两个位置的**模拟录音**（一个靠近桌面和侧墙，一个向后移开），分别分析并对比。不使用任何音频设备，也不播放声音。文件保存在 `roomscope-demo/`；每个会话都标记为 `"mode": "synthetic_demo"`，不会被误认为真实测量。可以用 `roomscope show roomscope-demo/position-a`、`roomscope compare roomscope-demo/position-a roomscope-demo/position-b --same-input-gain` 或桌面程序打开。
 
 ## 通用 DAW 模式
 
@@ -30,7 +47,7 @@ RoomScope 用来测量录音房间，让你听到房间对近距离拾音声源�
 
 先把监听开低。超过 −12 dBFS 每次都要 `--acknowledge-level`；该确认永不保存。
 
-**演示**（界面或 `roomscope --backend fake measure`）在合成房间上走同一流程，不会对扬声器发声。
+**演示**（界面、`roomscope demo` 或 `roomscope --backend fake measure`）在合成房间上走同一流程，不会对扬声器发声。
 
 ## 读结果
 

@@ -8,7 +8,8 @@ body:
       value: |
         Thanks for taking the time. If the bug is a **wrong measurement number**,
         please use the *Measurement problem* template instead and attach the
-        sweep sidecar + recording.
+        sweep sidecar + recording. If you are reporting how RoomScope worked
+        with your audio interface, use *Hardware compatibility report*.
   - type: textarea
     id: what
     attributes:
@@ -20,7 +21,7 @@ body:
     id: version
     attributes:
       label: RoomScope version
-      placeholder: "0.1.0.dev1 (git SHA …)"
+      placeholder: "roomscope 0.4.1 (output of roomscope --version)"
     validations:
       required: true
   - type: input

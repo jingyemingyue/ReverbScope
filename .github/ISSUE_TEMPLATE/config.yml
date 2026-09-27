@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Hardware testing guide
+    url: https://github.com/jingyemingyue/RoomScope/blob/main/docs/HARDWARE_TESTING.md
+    about: What to run on your audio interface before filing a hardware compatibility report.
   - name: Measurement methodology
     url: https://github.com/jingyemingyue/RoomScope/blob/main/docs/MEASUREMENT_METHODOLOGY.md
     about: How each metric is computed, which units it uses, and when it is marked invalid.

@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         RoomScope is a measurement tool. A report that a figure is wrong needs
-        the files that produced it. See [CONTRIBUTING.md](../../CONTRIBUTING.md).
+        the files that produced it. See [CONTRIBUTING.md](https://github.com/jingyemingyue/RoomScope/blob/main/CONTRIBUTING.md).
   - type: textarea
     id: claim
     attributes:

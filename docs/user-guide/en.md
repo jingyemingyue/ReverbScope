@@ -8,13 +8,24 @@ This page is the English guide. The Chinese translation is
 
 ## Install
 
-**From Python (pipx).** `pipx install "roomscope[gui]"` gives you the `roomscope`
-command without a virtual environment you have to manage. `pip install -e ".[gui]"`
-is the developer install from a clone.
+**From Python.** RoomScope is not on PyPI yet, so install it from GitHub into
+a virtual environment (Python 3.12 or newer):
+
+```bash
+python3 -m venv roomscope-env
+source roomscope-env/bin/activate          # Windows: roomscope-env\Scripts\activate
+pip install "roomscope[gui] @ git+https://github.com/jingyemingyue/RoomScope.git"
+```
+
+Leave out `[gui]` for the command line only. With pipx:
+`pipx install git+https://github.com/jingyemingyue/RoomScope.git`.
+`pip install -e ".[dev,gui]"` is the developer install from a clone
+(CONTRIBUTING.md). `pip install roomscope` from PyPI is planned, not available yet.
 
 **Unsigned desktop bundle.** The `release.yml` workflow builds one-directory
-bundles for macOS, Windows and Linux. Until the maintainer holds signing
-identities they are **unsigned**:
+bundles for macOS, Windows and Linux; they appear on the Releases page once
+the maintainer publishes a release (none has been published yet). Until the
+maintainer holds signing identities they are **unsigned**:
 
 * **macOS:** right-click the app → Open, or System Settings → Privacy & Security
   after Gatekeeper blocks it. Grant microphone access when asked
@@ -24,6 +35,21 @@ identities they are **unsigned**:
 
 The About dialog and `THIRD_PARTY_LICENSES/` list Qt, libsndfile and the other
 bundled licenses.
+
+## Try it without hardware
+
+```bash
+roomscope demo
+```
+
+The demo writes a sweep and two **simulated** recordings of one made-up room
+(a position close to a desk and a side wall, and one moved back), analyses
+both and compares them. It uses no audio device and plays nothing. The files
+land in `roomscope-demo/`; every saved session is marked
+`"mode": "synthetic_demo"` so it cannot be mistaken for a measurement. Open
+them with `roomscope show roomscope-demo/position-a`,
+`roomscope compare roomscope-demo/position-a roomscope-demo/position-b --same-input-gain`
+or in the desktop app.
 
 ## Universal DAW Mode
 
@@ -47,8 +73,8 @@ electrical return on input 2.
 Start at a low monitor level. Levels above −12 dBFS need `--acknowledge-level`
 every time; that confirmation is never saved.
 
-**Demo** (GUI or `roomscope --backend fake measure`) runs the same flow on a
-synthetic room. Nothing is sent to a loudspeaker.
+**Demo** (GUI, `roomscope demo`, or `roomscope --backend fake measure`) runs
+the same flow on a synthetic room. Nothing is sent to a loudspeaker.
 
 ## Reading a result
 

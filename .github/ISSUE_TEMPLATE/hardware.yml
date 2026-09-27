@@ -1,0 +1,91 @@
+name: Hardware compatibility report
+description: You ran RoomScope with a real audio interface. Tell us how it went (success or failure).
+title: "[hardware] <interface> on <OS>"
+labels: ["hardware-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! Real-hardware reports are the most useful contribution
+        RoomScope can get right now. A failure is as valuable as a success.
+        The tests to run are in [docs/HARDWARE_TESTING.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/HARDWARE_TESTING.md).
+        Leave a field as "unknown" if you are not sure.
+  - type: input
+    id: version
+    attributes:
+      label: RoomScope version
+      description: Output of `roomscope --version`.
+      placeholder: "roomscope 0.4.1"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15.1 (Apple silicon) / Windows 11 23H2 / Ubuntu 24.04"
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.12.7 (or: desktop bundle)"
+  - type: input
+    id: interface
+    attributes:
+      label: Audio interface and driver / host API
+      description: The host API is shown in brackets by `roomscope devices`.
+      placeholder: "Focusrite Scarlett 2i2 4th gen, Core Audio"
+    validations:
+      required: true
+  - type: input
+    id: microphone
+    attributes:
+      label: Microphone
+      placeholder: "Behringer ECM8000 (measurement mic)"
+  - type: input
+    id: daw
+    attributes:
+      label: DAW (if you tested Universal DAW Mode)
+      placeholder: "REAPER 7.2 / none"
+  - type: input
+    id: settings
+    attributes:
+      label: Sample rate and buffer size
+      placeholder: "48 kHz / 256 samples"
+  - type: dropdown
+    id: loopback
+    attributes:
+      label: Loopback cable used?
+      options:
+        - "No"
+        - "Yes"
+  - type: checkboxes
+    id: tests
+    attributes:
+      label: What did you run?
+      options:
+        - label: "`roomscope devices` lists the interface correctly"
+        - label: "Standalone measurement (`roomscope -v measure`) completed"
+        - label: "Universal DAW Mode round trip (`sweep` → DAW → `analyze`) completed"
+        - label: "Stop during a sweep (desktop app Stop button or Ctrl+C) silenced the output quickly"
+        - label: "Desktop app (`roomscope gui`) measured successfully"
+  - type: dropdown
+    id: result
+    attributes:
+      label: Overall result
+      options:
+        - Everything I ran worked
+        - Partly worked (details below)
+        - Did not work (details below)
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details and logs
+      description: |
+        What happened, and the output of the `-v` run or any error message.
+        Attach a session bundle if you can:
+        `roomscope session bundle <session> --no-audio --out report.zip`.
+      render: text

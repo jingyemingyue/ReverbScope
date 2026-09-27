@@ -11,6 +11,7 @@ ensure_pyside6()
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFontDatabase
 from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -135,6 +136,7 @@ class ComparePage(QWidget):
         layout.addWidget(self.band_mad)
 
         self.text = QPlainTextEdit()
+        self.text.setFont(QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont))
         self.text.setReadOnly(True)
         layout.addWidget(self.text, 1)
         self.status = QLabel("")

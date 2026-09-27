@@ -1,229 +1,305 @@
 # RoomScope
 
+**Open-source room acoustics analysis for recording engineers.**
+Measure a room with your own DAW and audio interface, then see what a
+microphone position is really picking up: reverberation (RT60), early
+reflections, frequency response, noise floor and low-frequency resonances.
+Compare two positions before you commit to a take.
+
 [![CI](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
+[![Platforms](https://img.shields.io/badge/platforms-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey.svg)](#supported-platforms)
+[![Status: alpha](https://img.shields.io/badge/status-alpha%20%28v0.4.1%29-orange.svg)](docs/STATUS.md)
 
-**An open-source, DAW-independent recording environment analyzer.**
+[中文说明](README.zh-CN.md) · [User guide](docs/user-guide/en.md) ·
+[Try it without hardware](#try-it-in-60-seconds-no-audio-hardware) ·
+[Help test on real hardware](docs/HARDWARE_TESTING.md)
 
-RoomScope answers practical questions a recording engineer asks about a room
-and a microphone position:
+> **Status: alpha.** The analysis runs end to end and the synthetic test suite
+> passes on Linux, macOS and Windows. Real-world hardware validation is in
+> progress: no interface or room result has been confirmed yet, and
+> [testers are welcome](docs/HARDWARE_TESTING.md). Not on PyPI yet.
 
-* Is this room usable for recording?
-* What acoustic problems does this position have (strong early reflections,
-  long decay, low-frequency build-up, mains hum, high noise floor)?
-* Did moving the microphone or the performer improve things?
+## What can RoomScope tell me?
 
-It measures the room with an exponential sine sweep (ESS), derives the room
-impulse response by deconvolution, and reports reverberation (EDT / T20 /
-T30 / estimated RT60), frequency response, background noise, early
-reflections and potential low-frequency resonances. Every number carries its
-unit, its algorithm source and a validity flag; when the data is not good
-enough, RoomScope says *"Insufficient decay range"* instead of inventing a
-figure. There is deliberately no "room score".
+* **Is this microphone position usable?** One report with the reverberation
+  time, the strongest early reflection, the noise floor and any low-frequency
+  build-up at that spot.
+* **Are early reflections hurting the recording?** A desk or wall bounce a few
+  milliseconds after the direct sound colours a close-miked vocal. RoomScope
+  lists each reflection's delay and level.
+* **Is the low end building up here?** Potential room resonances below 300 Hz,
+  and whether low frequencies decay more slowly than the mids.
+* **Is the room too reverberant for this source?** EDT, T20, T30 and an RT60
+  estimate per octave band, read against a recording profile (vocal,
+  voice-over, acoustic guitar, drums, room mic, choir).
+* **Did moving the microphone actually help?** Compare two saved positions.
+  Each change is reported only when both measurements are valid.
 
-> Status: **1.0-rc software in progress** ([ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md)).
-> The DSP core, CLI, GUI, compare, loopback, zh-CN catalog, session bundles
-> and the unsigned-bundle workflow exist and are covered by synthetic tests.
-> There is no numbered GitHub Release and no PyPI publish yet. Hardware-matrix
-> cells and the validation campaign are empty. Developers can clone, install
-> in editable mode and run the suite; see [CONTRIBUTING.md](CONTRIBUTING.md).
-> Snapshot of what works: [docs/STATUS.md](docs/STATUS.md).
+When the data is not good enough, RoomScope says so ("insufficient decay
+range") instead of printing a plausible-looking number. There is no single
+"room score".
 
-## Two workflows, one analysis core
+## See it in action
 
-### Universal DAW Mode
+All images below come from `roomscope demo`, a **synthetic demo** (a
+simulated room, not a measurement).
 
-Works with any DAW that can import, play, record and export WAV files
-(Cubase / Nuendo, Pro Tools, Logic Pro, Studio One, Ableton Live, REAPER,
-FL Studio, Bitwig, Digital Performer, ...). RoomScope never talks to the DAW.
+<p align="center">
+  <img src="docs/assets/gui-results.png" alt="RoomScope desktop app: results overview for a synthetic demo position, showing reverberation per octave band and the text report" width="820">
+</p>
 
-1. **Generate Test Signal** – RoomScope writes a sweep WAV (plus a small JSON
-   sidecar with the exact sweep definition).
-2. **Record Through Your DAW** – import the WAV on a track, play it through
-   your interface and monitors, record the measurement microphone on another
-   track.
-3. **Import Recording** – export the recorded track as WAV (same sample rate
-   as the project; any length, no trimming needed).
-4. **Analyze** – RoomScope finds the sweep automatically, deconvolves it and
-   produces the report.
+<details>
+<summary><b>CLI: <code>roomscope demo</code></b> (terminal output, synthetic data)</summary>
+<p align="center">
+  <img src="docs/assets/cli-demo.svg" alt="Terminal output of roomscope demo: two simulated microphone positions analysed and compared" width="720">
+</p>
+</details>
 
-### Standalone Mode
+<details>
+<summary><b>Compare two microphone positions</b> (desktop app, synthetic data)</summary>
+<p align="center">
+  <img src="docs/assets/gui-compare.png" alt="RoomScope compare view: reverberation deltas, early reflections that disappeared, matched low-frequency resonance and the frequency-response difference" width="820">
+</p>
+</details>
 
-RoomScope plays the sweep and records the microphone itself through the
-audio interface you select (PortAudio via `sounddevice`). Start with the
-monitor level low: the default sweep level is conservative and RoomScope
-never touches system volume or audio settings.
+<details>
+<summary><b>Frequency response</b> (desktop app, synthetic data)</summary>
+<p align="center">
+  <img src="docs/assets/gui-frequency-response.png" alt="Frequency response plot of a synthetic position with a room mode near 110 Hz" width="820">
+</p>
+</details>
 
-Both modes call exactly the same analysis pipeline
-(`roomscope.core.pipeline.analyze`).
+## Who it is for
 
-## Install (development)
+* **Recording and mixing engineers** choosing where to put a microphone,
+  a performer or a vocal booth.
+* **Home- and project-studio owners** checking whether treatment changed
+  anything measurable.
+* **Podcasters and voice-over artists** looking for the quietest, driest spot
+  in a room.
+* **Audio-engineering and acoustics students** who want to see an impulse
+  response, a decay curve and the numbers derived from them.
+* **Developers** who want a scriptable measurement: every command can print
+  JSON, and each saved result follows a published JSON Schema.
 
-Requires Python 3.12 or newer. **Supported for 1.0:** macOS 13+ (arm64,
-x86_64), Windows 10/11 x64, Linux x86_64 with glibc of the CI runner or
-newer, Python 3.12–3.14 for the wheel. Anything else may work and is not
-tested.
+## Why RoomScope?
+
+RoomScope is not trying to replace every acoustics tool. It is built for one
+job: helping someone who records decide where to record.
+
+* **DAW-independent.** It writes a test-signal WAV and reads the recording
+  back. It works with any DAW that can play and record WAV files (Cubase,
+  Pro Tools, Logic Pro, Studio One, Ableton Live, REAPER, FL Studio, Bitwig,
+  ...). RoomScope never talks to the DAW, so your recording setup stays as it is.
+* **Focused on recording decisions.** Reports are organised around
+  microphone positions and comparisons, with advice worded for the kind of
+  source you are recording.
+* **Honest validity reporting.** Every number carries its unit, its method and
+  a validity flag. Levels are dBFS unless you calibrate; nothing is presented
+  as dB SPL.
+* **Open and scriptable.** Apache-2.0, a CLI, a desktop app and a Python API
+  that share one analysis pipeline.
+
+How it relates to tools you may already use:
+
+| Tool | What it is best at | Where RoomScope differs |
+| --- | --- | --- |
+| [REW (Room EQ Wizard)](https://www.roomeqwizard.com/) | A mature, free, full-featured measurement suite (measurement, EQ, many analysis views) | RoomScope is open source, narrower, and built around the DAW-as-recorder workflow and position comparison |
+| [pyroomacoustics](https://github.com/LCAV/pyroomacoustics) | Simulating rooms and microphone arrays in Python | RoomScope measures real rooms from a recording; it does not simulate them |
+| Spectrum analyzers / DAW plug-ins | Showing the spectrum of the signal playing right now | RoomScope measures the room's impulse response, decay and reflections, not just a signal's spectrum |
+
+## Install
+
+RoomScope needs **Python 3.12 or newer**. It is not on PyPI yet, so install it
+from GitHub. `pip install roomscope` is **planned**; it does not work yet.
 
 ```bash
-git clone https://github.com/jingyemingyue/RoomScope.git
-cd RoomScope
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,gui]"
+python3 -m venv roomscope-env
+source roomscope-env/bin/activate          # Windows: roomscope-env\Scripts\activate
+pip install "roomscope[gui] @ git+https://github.com/jingyemingyue/RoomScope.git"
+roomscope --version
 ```
 
-`gui` pulls in PySide6 (LGPL-3.0, large). Without it the CLI and the Python
-API work fully.
+Drop `[gui]` for the command line only (the desktop app pulls in PySide6,
+which is large). With [pipx](https://pipx.pypa.io/):
+`pipx install git+https://github.com/jingyemingyue/RoomScope.git`.
 
-## Quick start (CLI)
+On Linux, measuring directly through an interface (Standalone Mode) needs
+PortAudio: `sudo apt install libportaudio2`.
+
+**Development install** (to run the tests or change the code): see
+[CONTRIBUTING.md](CONTRIBUTING.md).
+
+**Desktop bundles.** The release workflow builds unsigned bundles for macOS,
+Windows and Linux. None has been published yet; see
+[Releases](https://github.com/jingyemingyue/RoomScope/releases) and
+[docs/STATUS.md](docs/STATUS.md).
+
+## Try it in 60 seconds (no audio hardware)
 
 ```bash
-# 1. Generate the test signal (48 kHz, 20 Hz–20 kHz, 10 s sweep, -12 dBFS)
-roomscope sweep --out sweep_48k.wav
-
-# 2. Play it through your DAW, record the mic, export recording.wav
-
-# 3. Analyze
-roomscope analyze --recording recording.wav --sweep sweep_48k.wav --out results/
-
-# Optional: two tape measurements unlock the vertical geometry
-roomscope analyze --recording recording.wav --sweep sweep_48k.wav \
-  --speaker-distance 1.65 --mic-height 0.40 --temperature 21
-
-# Optional: interpret for a kind of recording (generic | vocal | voiceover |
-# acoustic_guitar | drums | room_mic | choir)
-roomscope analyze --recording recording.wav --sweep sweep_48k.wav --profile voiceover
-
-# Re-open a saved session (same report; --profile overrides the stored one)
-roomscope show results/
-roomscope show results/ --list
-
-# Compare two saved sessions (every delta carries a validity)
-roomscope compare results/ position-b/ --same-input-gain
-roomscope schema result
-
-# Two-channel DAW export: microphone + electrical loopback
-roomscope analyze --recording take.wav --sweep sweep_48k.wav --channel 0 --loopback-channel 1
-
-# Standalone: list devices, then measure (optional loopback on input 2)
-roomscope devices
-roomscope measure --out session1/ --input-device 2 --output-device 3 \
-  --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
-
-# Demo / CI: no interface
-roomscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
-
-# Language, bundle, CSV, project
-roomscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav
-roomscope session bundle session1/ --no-audio --out report.zip
-roomscope export session1/ --format csv --out curves/
-roomscope project init --out room/ --name Booth
-roomscope project add room/ session1/ --position desk
-roomscope project average room/
-
-# GUI (needs the gui extra)
-roomscope gui
+roomscope demo
 ```
 
-`--speaker-distance` is the straight line from the loudspeaker to the
-microphone capsule; `--mic-height` is the capsule above the first solid
-horizontal surface below it. With both, RoomScope reports the loudspeaker
-height, the plane above the devices and the horizontal separation. It reports
-**no coordinates, no room length or width, and never names a wall**: one
-omnidirectional microphone at one position measures path lengths, not
-directions, which leaves the geometry underdetermined by two even with the
-distance supplied. The result JSON carries that argument with it.
+The demo writes a sweep and two **simulated** recordings of the same made-up
+room, one with the microphone close to a desk and a side wall and one moved
+back from both. It analyses both and compares them. Everything lands in
+`roomscope-demo/`, so you can continue with the real commands:
 
-`--profile` chooses how the measured numbers are turned into advice
-(`generic` by default; `vocal`, `voiceover`, `acoustic_guitar`, `drums`,
-`room_mic` and `choir` have per-recording thresholds and wording). The report
-prints the profile name next to `Interpretation` so the advice is never
-mistaken for room-agnostic truth. The GUI offers the same selector in both
-measurement modes.
+```bash
+roomscope show roomscope-demo/position-a                     # full report
+roomscope compare roomscope-demo/position-a roomscope-demo/position-b --same-input-gain
+roomscope gui                                                # both sessions are in the Recent list
+```
 
-`results/` receives `result.json` (all metrics and curves),
-`impulse_response.wav` (raw IR, float32) and `session.json` (measurement
-metadata). Raw recordings are never modified. `roomscope show` and the GUI
-**Open Session** / Home session list reopen that directory; the IR WAV is
-the authoritative sample record (`result.json` stores metrics, not IR
-samples). Recently opened or saved sessions are remembered under
-`$ROOMSCOPE_HOME` (default `~/.roomscope`).
+## Measure your room (Universal DAW Mode)
+
+You need a loudspeaker (your monitors), a microphone (ideally an
+omnidirectional measurement microphone) and any DAW.
+
+```bash
+# 1. Write the test signal (48 kHz, 20 Hz–20 kHz, 10 s sweep, -12 dBFS peak)
+roomscope sweep --out sweep.wav
+
+# 2. In your DAW: import sweep.wav, play it through the monitors (start quiet),
+#    record the microphone on another track, export that track as recording.wav
+
+# 3. Analyse it and save a session folder
+roomscope analyze --recording recording.wav --sweep sweep.wav --out desk-position/ --profile vocal
+```
+
+The report starts with an **At a glance** block, followed by the details:
+
+```text
+At a glance
+  Reverberation       RT60 0.70 s (broadband, from T30)
+  Early reflections   strongest at 2.4 ms: -3.1 dB re direct (2 above -20 dB)
+  Low end             potential resonances: 110 Hz (+11.3 dB)
+  Noise floor         -69.2 dBFS RMS (uncalibrated), mains hum at 50 Hz
+  Data quality        direct-sound confidence high, core warnings: 0
+```
+
+<sub>Values from the synthetic demo, position A.</sub>
+
+No DAW handy? **Standalone Mode** plays and records through your interface
+directly: `roomscope devices`, then
+`roomscope measure --out desk-position/ --input-device <idx> --output-device <idx>`.
+The default level is conservative and RoomScope never changes system volume.
+
+## Compare positions
+
+Measure a second position with the same sweep and the same input gain, then:
+
+```bash
+roomscope compare desk-position/ back-position/ --same-input-gain --out comparison.json
+```
+
+```text
+At a glance
+  Reverberation       RT60 0.70 s -> 0.51 s (-27.3 %)
+  Early reflections   2 gone, 1 new, 0 at both
+  Low end             at both: 110 Hz
+  Noise floor         -69.2 -> -87.1 dBFS (-17.9 dB)
+```
+
+<sub>Synthetic demo, position A -> B.</sub>
+
+A resonance found at both positions usually belongs to the room; a reflection
+that disappears belonged to the position. For a whole room, group sessions in
+a project and average them: `roomscope project init | add | average`.
+
+## Desktop app
+
+`roomscope gui` (or `roomscope-gui`) opens the desktop app: Universal DAW
+Mode, Standalone Mode, a hardware-free Demo, results with plots (impulse
+response, frequency response, decay, noise, reflections), Compare, and a
+session browser. English and Simplified Chinese (`--lang zh_CN` or Settings).
+
+## Supported platforms
+
+| Platform | Automated tests (CI) | Real audio hardware |
+| --- | --- | --- |
+| Linux x86_64 | Python 3.12, 3.13, 3.14 | Not tested yet |
+| macOS 13+ | Python 3.12 | Not tested yet |
+| Windows 10/11 x64 | Python 3.12 | Not tested yet |
+
+Anything else may work but is not tested. Have an interface and ten minutes?
+The [hardware testing guide](docs/HARDWARE_TESTING.md) says what to run and
+how to report it.
+
+## Current limitations
+
+* **No confirmed hardware results yet.** Synthetic tests pass; real-world
+  validation is in progress ([HARDWARE_TESTING.md](docs/HARDWARE_TESTING.md),
+  [VALIDATION.md](docs/VALIDATION.md)).
+* **Not on PyPI, no published release yet.** Desktop bundles are unsigned
+  (macOS Gatekeeper / Windows SmartScreen will warn).
+* **Levels are digital (dBFS)** unless you supply a calibration. RoomScope
+  never reports dB SPL from an uncalibrated microphone.
+* **One microphone position cannot locate walls.** Reflections come with
+  delays and path lengths; with two tape measurements RoomScope derives
+  vertical heights, but never room dimensions or which wall caused a reflection.
+* **Not a room simulator, not an EQ or room-correction tool, not a real-time
+  analyzer.**
+* **Before 1.0** the Python API and the JSON schemas may still change.
 
 ## Python API
 
 ```python
-from roomscope import analyze, compare, interpret_comparison
+from roomscope import analyze
 from roomscope.io.wav import read_wav, load_reference
-from roomscope.core import Reference
 
-recording = read_wav("recording.wav")
-reference = load_reference("sweep_48k.wav")  # uses the JSON sidecar if present
-result = analyze(recording, reference)
+result = analyze(read_wav("recording.wav"), load_reference("sweep.wav"))
 print(result.decay.broadband.rt60_estimate_s, result.decay.broadband.rt60_basis)
 for r in result.reflections.reflections:
     print(f"{r.delay_ms:.1f} ms  {r.relative_db:.1f} dB")
 ```
 
-## Design principles
+## Technical details
 
-* **DAW-independent** – no DAW SDKs, ever. WAV in, WAV out.
-* **Core-first** – DSP functions are pure NumPy/SciPy functions with no GUI,
-  device or file-format dependencies, so a CLI, a desktop app, a plug-in or
-  a Python API can share them.
-* **Scientific correctness over features** – algorithms come from published
-  papers and standards (Farina 2000, Schroeder 1965, Lundeby 1995,
-  ISO 3382-1/-2, ...); see [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md).
-* **Honest numbers** – dBFS unless calibrated, validity flags on every metric,
-  no pseudo-scientific room score.
-* **Clean-room implementation and license hygiene** – no third-party source is
-  vendored ([docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)); every dependency and
-  every reference repository is audited
-  ([docs/DEPENDENCIES.md](docs/DEPENDENCIES.md),
-  [docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md)).
+* **Measurement:** exponential sine sweep (Farina 2000) and deconvolution to
+  the room impulse response; the sweep is found automatically in an untrimmed
+  recording. Optional electrical loopback compensates the interface latency
+  and response.
+* **Reverberation:** Schroeder backward integration with Lundeby noise
+  truncation, EDT / T20 / T30 per octave band (ISO 3382-1/-2 definitions),
+  curvature and filter-ringing checks. RT60 is only ever estimated from a
+  VALID metric.
+* **Everything else:** smoothed frequency response, background-noise level
+  and mains-hum detection, early-reflection search, low-frequency resonance
+  candidates with decay-vs-filter-ringing checks, optional vertical placement
+  geometry, recording profiles, spatial averaging with ISO 3382-2 classes.
+* **Outputs:** `result.json`, `session.json`, `comparison.json` (each with a
+  shipped JSON Schema: `roomscope schema result`), the impulse response as a
+  float WAV, CSV export, and zipped session bundles for bug reports.
+
+Every algorithm, unit, validity rule and reference is in
+[docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md).
+The package layout and extension points are in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Documentation
 
-| Document | Content |
+| Document | For |
 | --- | --- |
-| [docs/index.md](docs/index.md) | Documentation hub |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Package layout, data flow, extension points |
-| [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | v1.0 design being executed: API tiers, comparison, loopback, packaging, i18n, validation gates |
-| [docs/ARCHITECTURE_V1.zh-CN.md](docs/ARCHITECTURE_V1.zh-CN.md) | Chinese digest of the v1.0 design |
-| [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) | Algorithms, units, validity rules, references |
-| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | Every runtime/dev dependency with license and purpose |
-| [docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md) | Audit of external repositories that were studied |
-| [docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md) | Provenance of any adapted or copied code (currently none) |
-| [docs/LICENSE_DECISION.md](docs/LICENSE_DECISION.md) | Why RoomScope is Apache-2.0 |
-| [docs/STATUS.md](docs/STATUS.md) | Implemented / tested / known limitations / next milestone |
-| [docs/user-guide/en.md](docs/user-guide/en.md) | User guide (English): install, measure, read, compare, bundle |
-| [docs/user-guide/zh-CN.md](docs/user-guide/zh-CN.md) | 用户指南（简体中文） |
-| [docs/PROJECT_BRIEF.zh-CN.md](docs/PROJECT_BRIEF.zh-CN.md) | Original project brief (Chinese) |
+| [User guide](docs/user-guide/en.md) · [用户指南](docs/user-guide/zh-CN.md) | Measuring, reading results, comparing, troubleshooting |
+| [Hardware testing](docs/HARDWARE_TESTING.md) | Trying RoomScope on your interface and reporting the result |
+| [Measurement methodology](docs/MEASUREMENT_METHODOLOGY.md) | Algorithms, units, validity rules, references |
+| [Status](docs/STATUS.md) · [Changelog](CHANGELOG.md) | What works, what was verified, what changed |
+| [Documentation hub](docs/index.md) | Architecture, release plan, dependencies, licences |
 
 ## Contributing
 
-This is the version intended for other developers to read, clone and review.
-Pull requests are welcome once you have run the checks in
-[CONTRIBUTING.md](CONTRIBUTING.md). Please also read the
-[code of conduct](CODE_OF_CONDUCT.md).
-
-Useful starting points:
-
-* [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — package layout and the one
-  analysis entry point (`roomscope.core.pipeline.analyze`)
-* [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) — every
-  metric's algorithm, units and validity rules
-* [docs/STATUS.md](docs/STATUS.md) — implemented / tested / next milestone
-* `examples/synthetic_measurement.py` — end-to-end run with no hardware
-
-```bash
-pytest
-ruff check . && ruff format --check .
-mypy
-```
-
-CI (pytest on Ubuntu 3.12–3.14 plus macOS/Windows 3.12, ruff, mypy,
-sdist/wheel) runs on every push and pull request.
+Bug reports, hardware test reports, DAW-specific notes and pull requests are
+all welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) (setup, tests and
+what a good pull request looks like) and the
+[code of conduct](CODE_OF_CONDUCT.md). Security issues go through
+[SECURITY.md](SECURITY.md).
 
 ## License
 
-Apache License 2.0 – see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0; see [LICENSE](LICENSE) and [NOTICE](NOTICE). The desktop
+app uses Qt through PySide6 under the LGPL-3.0; every dependency is listed in
+[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md).

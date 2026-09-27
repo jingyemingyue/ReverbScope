@@ -11,6 +11,7 @@ ensure_pyside6()
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QFontDatabase
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -169,6 +170,8 @@ class ResultsPage(QWidget):
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.text = QPlainTextEdit()
         self.text.setReadOnly(True)
+        # The report is a column layout: a proportional font breaks its tables.
+        self.text.setFont(QFontDatabase.systemFont(QFontDatabase.SystemFont.FixedFont))
         ov_layout.addWidget(
             QLabel(
                 _(
@@ -178,7 +181,9 @@ class ResultsPage(QWidget):
             )
         )
         ov_layout.addWidget(self.table, 1)
-        self.diagnostics_heading = QLabel(_("Warnings (core diagnostics, always English):"))
+        self.diagnostics_heading = QLabel(
+            _("Full report (the core diagnostics in it are always in English):")
+        )
         self.diagnostics_heading.setWordWrap(True)
         ov_layout.addWidget(self.diagnostics_heading)
         ov_layout.addWidget(self.text, 2)

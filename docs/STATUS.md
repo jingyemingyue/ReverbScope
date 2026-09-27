@@ -4,6 +4,24 @@ Snapshot: 2026-09-17, v0.1.0.dev1 (foundation). Everything below was
 verified by actually running it on macOS (Apple silicon, Python 3.12.14).
 Nothing is marked PASS that was not run.
 
+Snapshot 24: 2026-09-27 — **presentation and first run** (CHANGELOG
+`[Unreleased]`): `roomscope demo`, "At a glance" summaries, CLI help /
+progress / colour, README and README.zh-CN rewritten, hardware-testing
+guide and issue form, README screenshots from the synthetic demo. No change
+to `roomscope.core`, the schemas or the runtime dependencies. **What was run
+for this snapshot** (Linux x86_64, CPython 3.12.3, `dev` + `gui` extras,
+PySide6_Essentials offscreen): the full suite, **487 passed**; the CLI,
+i18n and catalog tests (53) also on CPython 3.13.12 and 3.14.0rc2; branch
+coverage of `core` + `models` 90 %; `ruff check`, `ruff format --check`,
+`mypy` (strict, 71 files), `check_src_safety.py`, `check_doc_links.py` and
+a link check of the root Markdown files; `uv build` of sdist and wheel and
+`twine check` (both PASSED); a fresh CLI-only install of that wheel ran
+`roomscope demo` in English and `--lang zh_CN`, and `roomscope gui` printed
+the install hint (it raised a traceback before this change). **What was not
+run here:** CI on macOS / Windows, the full suite on Python 3.13 / 3.14,
+any bundle build, any hardware cell. The hardware matrix and the validation campaign are
+still empty.
+
 Snapshot 23: 2026-09-24 — **v0.4.1 workflow verification on PR #18**,
 commit `ec9a6b7406e5788830dbe68931899671df0d94d4`.
 GitHub Actions CI #43 completed successfully (Ubuntu Python 3.12/3.13/3.14,

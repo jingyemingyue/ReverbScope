@@ -3,8 +3,8 @@
 ## Supported versions
 
 RoomScope is a pre-release (0.4.x, see [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md)).
-Only `main` and the newest 0.4.x version are maintained; no version has been
-published outside the private repository yet.
+Only `main` and the newest 0.4.x version are maintained. The repository is
+public; no version has been published as a GitHub Release or on PyPI yet.
 
 ## Reporting a vulnerability
 
