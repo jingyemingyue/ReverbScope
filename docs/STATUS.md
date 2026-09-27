@@ -6,7 +6,7 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
-Snapshot 29: 2026-09-27 — **download-first installation and the release
+Snapshot 30: 2026-09-27 — **download-first installation and the release
 candidate's files checked as a user gets them** (branch
 `claude/epic-meitner-x0t35f`, stacked on PR #21). README / README.zh-CN open
 with *Download* (the stable Releases page, real file names, first-launch
@@ -40,6 +40,19 @@ release exists (the API answers 404), which is why the README links
 Windows PC by a person (the release workflow mounts, installs and launches
 them on GitHub's runners only), any audio interface or DAW, and the
 publication itself (the maintainer's click, RELEASE_PLAN §3c).
+
+Snapshot 29: 2026-09-27 — **command-line presentation** (branch
+`claude/publication-ready-level-n3hkor`). One renderer for the terminal
+(`cli/console.py`: colour policy with `--color` / `NO_COLOR` / `TERM=dumb`,
+status symbols with ASCII fallbacks, display-width-aware wrapping and tables
+that turn into blocks on a narrow terminal, a progress line that is a single
+stage line in a file) and the command renderers (`cli/render.py`) for
+analyze, show, compare, doctor, devices, sweep, measure and errors; grouped
+`--help` with examples. The GUI's plain-text reports are unchanged. Found on
+the way: `--format json measure` wrote status lines into its JSON stdout, and
+`doctor` / `devices` ignored `--format json` (both fixed, with tests). No
+new dependency; JSON, schemas, stored files and exit codes unchanged. No
+hardware or DAW result (still none).
 
 Snapshot 28: 2026-09-27 — **a complete Simplified Chinese experience**
 (branch `claude/publication-ready-level-n3hkor`). Everything a user reads can

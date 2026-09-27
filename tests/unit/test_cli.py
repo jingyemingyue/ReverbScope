@@ -98,7 +98,7 @@ def test_analyze_accepts_recording_profile(
         )
         == 0
     )
-    assert "Interpretation (Vocals profile):" in capsys.readouterr().out
+    assert "Interpretation (Vocals profile)" in capsys.readouterr().out
 
     with pytest.raises(SystemExit):
         main(
@@ -147,7 +147,7 @@ def test_show_prints_saved_session_and_lists_folder(
     assert main(["show", str(session)]) == 0
     shown = capsys.readouterr().out
     assert "RoomScope analysis" in shown
-    assert "Interpretation (Vocals profile):" in shown
+    assert "Interpretation (Vocals profile)" in shown
     assert str(session) in shown
 
     assert main(["show", str(session), "--json", "--no-curves"]) == 0

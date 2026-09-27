@@ -22,6 +22,24 @@ bundles are not signed for distribution (macOS: ad hoc, not notarized;
 Windows: no Authenticode).
 
 ### Added
+- **Command-line presentation.** `roomscope analyze`, `show`, `compare`,
+  `doctor`, `devices`, `sweep` and `measure` print sectioned reports with
+  aligned fields and tables, a summary of the broadband results, and a
+  symbol and a word with every status (`✓` / `!` / `×`; `[OK]` / `[WARN]` /
+  `[ERROR]` where the terminal cannot show them). Widths are display widths,
+  so Chinese tables line up; long notes wrap under themselves (paths and URLs
+  are never split, so they can be copied); a table that
+  does not fit a narrow terminal becomes one block per row. `measure` shows
+  the devices, channels and rate it will use and the pre-flight checks that
+  passed before anything plays, then one progress line (redrawn on a
+  terminal; a single stage line in a log file) instead of about seventy
+  percentage lines. Errors say when nothing was played. `--help` groups the
+  commands and gives a few examples. New global option
+  `--color auto|always|never`; `NO_COLOR` and `TERM=dumb` are honoured; pipes
+  and files never receive escape sequences. One internal renderer
+  (`cli/console.py`, standard library only); no new dependency. JSON output,
+  schemas, stored files and exit codes are unchanged; the GUI keeps its own
+  reports.
 - **Simplified Chinese throughout.** Everything a user reads can be in
   Simplified Chinese: the GUI (Qt's own buttons and dialogs too, from Qt's
   `qtbase` catalog), every CLI help screen and argparse's usage and error
@@ -166,6 +184,10 @@ Windows: no Authenticode).
   to add it (`pip install "PySide6_Essentials>=6.6"`, not `roomscope[gui]`,
   which PyPI does not have), in English and Simplified Chinese. Found by
   installing the release candidate's wheel in a clean environment.
+- `roomscope --format json measure` printed the safety note and the status
+  lines on stdout before the JSON document, so the output could not be
+  parsed; they now go to stderr. `doctor` and `devices` ignored the global
+  `--format json` and printed text; they now print JSON.
 - **A complete take could be discarded by its progress display.** The last
   block reaches 100 % before PortAudio calls the finished callback (it
   drains the output first); a progress poll in that gap called the front

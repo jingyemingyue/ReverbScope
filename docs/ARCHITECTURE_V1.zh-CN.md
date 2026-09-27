@@ -117,6 +117,8 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 
 退出码：0 成功；1 `RoomScopeError`；2 用法错误或安全拒绝（电平确认）；130 中断。`--format json` 在 stdout 只输出 `result.json` 载荷加 `findings`，诊断全部走 stderr；`--json` 保留一个次版本作为别名后移除。
 
+文本输出由 `roomscope/cli/console.py`（样式、状态符号、按显示宽度换行与制表）和 `roomscope/cli/render.py` 排版，其他模块不写转义序列。颜色依次由 `--color`、`NO_COLOR`、`TERM=dumb` 决定，`auto` 只在终端上着色：管道和文件永远收不到转义序列或回车符。每个状态都同时带符号和文字（`✓` / `!` / `×`；流无法编码这些符号时用 `[OK]` / `[WARN]` / `[ERROR]`），颜色从不单独表达信息。宽度计算中一个中日韩字符占两列。`measure` 把设备方案和检查结果写到 stdout，进度写到 stderr（终端上是一行原地刷新，否则只有一行阶段提示；由等待线程绘制，从不在音频回调里）。文本版式不属于 Tier 1 接口；图形界面仍使用自己的纯文本报告（`cli/report.py`、`diagnostics.format_environment_report`）。
+
 ### 5.8 存储
 
 会话文件夹在现有三个文件之外，总是复制 `sweep.roomscope-sweep.json`，按需（GUI 默认开）复制 `recording.wav`。项目文件夹 `project.json` 只是索引，会话仍可独立打开。`roomscope session bundle` 打包会话供 bug 报告，`--no-audio` 可排除录音。`ROOMSCOPE_HOME`（默认 `~/.roomscope`，PR #2 引入）存放最近会话、设置与日志。电平确认永不持久化。

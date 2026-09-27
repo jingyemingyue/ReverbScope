@@ -70,7 +70,7 @@ def test_every_help_screen_is_chinese(zh_cli: None) -> None:
         found = english_words(_prose(text))
         assert found == [], f"{path}: {found}"
     root = texts["roomscope"]
-    assert "位置参数" in root and "选项" in root and "显示此帮助信息并退出" in root
+    assert "命令：" in root and "选项" in root and "显示此帮助信息并退出" in root
 
 
 def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture[str]) -> None:
@@ -210,5 +210,5 @@ def test_an_english_session_is_shown_in_chinese_and_left_untouched(
     capsys.readouterr()
     assert main(["--lang", "zh_CN", "show", str(session)]) == 0
     shown = capsys.readouterr().out
-    assert "说明：" in shown or "警告：" in shown
+    assert "解读（" in shown
     assert {p.name: p.read_bytes() for p in session.glob("*.json")} == before

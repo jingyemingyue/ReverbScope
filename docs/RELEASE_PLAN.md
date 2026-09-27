@@ -270,7 +270,7 @@ touched the Release workflow's paths; the version stays 0.4.1 because
 nothing with that number has been published.
 
 **What was checked on the release candidate (2026-09-27, Release run #23,
-PR #21 head `b753e17`, build commit `7cb1419`; STATUS snapshot 29):**
+PR #21 head `b753e17`, build commit `7cb1419`; STATUS snapshot 30):**
 
 | File | Check | Result |
 | --- | --- | --- |
@@ -284,6 +284,12 @@ PR #21 head `b753e17`, build commit `7cb1419`; STATUS snapshot 29):**
 | `roomscope-linux-x86_64.tar.gz` | `smoke_bundle.py --require-gui-launcher --expect-commit 7cb1419…` in an empty environment (no virtualenv on `PATH`) | OK; needs glibc 2.39 |
 | Secrets and private paths | token / private-key patterns in the bundles and the sdist (only PEM header strings inside Qt's TLS plug-ins); home-directory paths in the sdist are test fixtures (`/home/me`, `/home/anna`) | none found |
 | Version | `pyproject.toml`, `roomscope --version`, wheel / sdist names, `Info.plist`, `build_info.json` | all 0.4.1 |
+
+These checks cover the files built from `b753e17`. Commits added to the
+release candidate after it (the command-line presentation, `0f5418e` /
+`f5eb961`) are covered by CI and by the Release workflow's own bundle smoke
+tests on each platform, not by this download check: repeat the wheel check
+and step 3 below on the draft's files before publishing.
 
 Known and harmless: the bundles carry `roomscope-0.4.1.dist-info/direct_url.json`
 with the CI runner's checkout path (`file:///Users/runner/work/...`), because
