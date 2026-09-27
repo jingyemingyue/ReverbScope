@@ -68,6 +68,7 @@ import math
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 
+from roomscope.i18n import diag
 from roomscope.models.result import (
     SPEED_OF_SOUND_REFERENCE,
     BoundaryCandidate,
@@ -230,14 +231,16 @@ def _resolve(
         PlacementLength(
             metres=None,
             validity=_NOT_COMPUTED,
-            reason=(
+            reason=diag(
                 "more than one reflection could be the surface the height was measured "
-                f"from, and they disagree by more than {agreement_m * 100:.0f} cm: {listed}. "
+                "from, and they disagree by more than {agreement_cm:.0f} cm: {values}. "
                 "RoomScope does not choose between them. This is the expected outcome when "
                 "the microphone sits near the vertical midpoint of the room, where the "
                 "arrival from the surface below and the one from the surface above are "
                 "interchangeable; moving the microphone 20-30 cm up or down and measuring "
-                "again separates them"
+                "again separates them",
+                agreement_cm=agreement_m * 100,
+                values=listed,
             ),
             alternatives_m=tuple(values),
         ),
@@ -277,9 +280,11 @@ def _tier1_candidate(
 
 def _screen_level(
     candidate: BoundaryCandidate, max_attenuation_db: float
-) -> tuple[bool, str | None]:
-    """Tier-3 level screen. Returns (usable, reason_when_not).
+) -> tuple[bool, str | None, str | None]:
+    """Tier-3 level screen. Returns (usable, reason_when_not, rejection_when_not).
 
+    ``reason_when_not`` is stored on the candidate; ``rejection_when_not`` is
+    the same statement with the candidate named, for the refusal reason.
     Never asserts what a candidate *is*; only whether it is treated as a
     first-order specular arrival from a flat plane.
     """
@@ -287,19 +292,45 @@ def _screen_level(
     assert ceiling is not None
     excess_db = candidate.relative_db - ceiling
     if excess_db > SPECULAR_EXCESS_TOLERANCE_DB:
-        return False, (
-            f"reads {excess_db:.1f} dB above what a lossless point source mirrored in a "
-            "rigid plane would give at that path length, so it is not treated as a "
-            "first-order specular arrival (it may be two arrivals merged by the envelope "
-            "peak-hold, a comb-filter artefact or a peak of the dense early tail)"
+        return (
+            False,
+            diag(
+                "reads {excess:.1f} dB above what a lossless point source mirrored in a "
+                "rigid plane would give at that path length, so it is not treated as a "
+                "first-order specular arrival (it may be two arrivals merged by the envelope "
+                "peak-hold, a comb-filter artefact or a peak of the dense early tail)",
+                excess=excess_db,
+            ),
+            diag(
+                "the {delay:.1f} ms candidate reads {excess:.1f} dB above what a lossless "
+                "point source mirrored in a rigid plane would give at that path length, so it "
+                "is not treated as a first-order specular arrival (it may be two arrivals "
+                "merged by the envelope peak-hold, a comb-filter artefact or a peak of the "
+                "dense early tail)",
+                delay=candidate.delay_ms,
+                excess=excess_db,
+            ),
         )
     if excess_db < -max_attenuation_db:
-        return False, (
-            f"reads {-excess_db:.1f} dB below that ceiling, more than the "
-            f"{max_attenuation_db:.0f} dB RoomScope treats as the limit for a discrete "
-            "plane reflection, so it is not used to attribute a surface"
+        return (
+            False,
+            diag(
+                "reads {attenuation:.1f} dB below that ceiling, more than the "
+                "{limit:.0f} dB RoomScope treats as the limit for a discrete "
+                "plane reflection, so it is not used to attribute a surface",
+                attenuation=-excess_db,
+                limit=max_attenuation_db,
+            ),
+            diag(
+                "the {delay:.1f} ms candidate reads {attenuation:.1f} dB below that ceiling, "
+                "more than the {limit:.0f} dB RoomScope treats as the limit for a discrete "
+                "plane reflection, so it is not used to attribute a surface",
+                delay=candidate.delay_ms,
+                attenuation=-excess_db,
+                limit=max_attenuation_db,
+            ),
         )
-    return True, None
+    return True, None, None
 
 
 def _no_geometry(
@@ -340,13 +371,15 @@ def _inherited_notes(reflections: ReflectionsResult) -> list[str]:
     notes: list[str] = []
     for note in reflections.notes:
         if "statistical" in note or "20 strongest" in note or "too short" in note:
-            notes.append(f"inherited from the reflection search: {note}")
+            notes.append(diag("inherited from the reflection search: {note}", note=note))
     if reflections.window_truncated and reflections.analysed_window_ms is not None:
         notes.append(
-            "the reflection search was cut short at "
-            f"{reflections.analysed_window_ms[1]:.1f} ms, and truncation does not drop "
-            "arrivals at random: it drops the longest paths first, so any height derived "
-            "from what remains is biased low"
+            diag(
+                "the reflection search was cut short at {end:.1f} ms, and truncation does "
+                "not drop arrivals at random: it drops the longest paths first, so any "
+                "height derived from what remains is biased low",
+                end=reflections.analysed_window_ms[1],
+            )
         )
     return notes
 
@@ -375,13 +408,36 @@ def estimate_placement(
     notes = _inherited_notes(reflections)
     if temperature_assumed:
         notes.append(
-            f"no air temperature was supplied, so {DEFAULT_TEMPERATURE_C:.0f} C "
-            f"({speed:.1f} m/s) was assumed; a 5 C error moves every distance by about 0.9 %"
+            diag(
+                "no air temperature was supplied, so {temperature:.0f} C ({speed:.1f} m/s) "
+                "was assumed; a 5 C error moves every distance by about 0.9 %",
+                temperature=DEFAULT_TEMPERATURE_C,
+                speed=speed,
+            )
         )
 
     # R1: every delay is relative to the detected direct sound. If that origin
     # was not established, no metre derived from it means anything.
     if reflections.direct_sound_confidence != "high":
+        confidence = reflections.direct_sound_confidence
+        if confidence == "low":
+            origin_reason = diag(
+                "direct-sound detection confidence is low, so the time origin every delay is "
+                "measured from was not established and no distance derived from it is reported"
+            )
+        elif confidence == "medium":
+            origin_reason = diag(
+                "direct-sound detection confidence is medium, so the time origin every delay "
+                "is measured from was not established and no distance derived from it is "
+                "reported"
+            )
+        else:
+            origin_reason = diag(
+                "direct-sound detection confidence is {confidence}, so the time origin every "
+                "delay is measured from was not established and no distance derived from it "
+                "is reported",
+                confidence=confidence,
+            )
         return _no_geometry(
             candidates=(),
             tier=0,
@@ -392,12 +448,7 @@ def estimate_placement(
             mic_height_m=mic_height_m,
             reflections=reflections,
             notes=notes,
-            reason=(
-                "direct-sound detection confidence is "
-                f"{reflections.direct_sound_confidence}, so the time origin every delay is "
-                "measured from was not established and no distance derived from it is "
-                "reported"
-            ),
+            reason=origin_reason,
         )
 
     if distance_m is None:
@@ -412,7 +463,7 @@ def estimate_placement(
             mic_height_m=mic_height_m,
             reflections=reflections,
             notes=notes,
-            reason=(
+            reason=diag(
                 "no loudspeaker-to-microphone distance was supplied; measure the straight "
                 "line from the loudspeaker to the microphone capsule with a tape"
             ),
@@ -432,7 +483,7 @@ def estimate_placement(
             mic_height_m=None,
             reflections=reflections,
             notes=notes,
-            reason=(
+            reason=diag(
                 "no microphone height was supplied, so no reflection can be attributed to "
                 "a horizontal plane"
             ),
@@ -449,10 +500,11 @@ def estimate_placement(
         if index >= MAX_HYPOTHESIS_CANDIDATES:
             screened.append(candidate)
             continue
-        usable, why = _screen_level(candidate, max_surface_attenuation_db)
+        usable, why, rejection = _screen_level(candidate, max_surface_attenuation_db)
         if not usable:
+            assert rejection is not None
             screened.append(replace(candidate, interpretable_as_plane=False, excluded_reason=why))
-            rejections.append(f"the {candidate.delay_ms:.1f} ms candidate {why}")
+            rejections.append(rejection)
             continue
         assert candidate.product_m2 is not None
         # Passing the level screen only says this may be a specular reflection
@@ -463,32 +515,51 @@ def estimate_placement(
         separation = source_height - height
         if not MIN_SOURCE_HEIGHT_M <= source_height <= MAX_SOURCE_HEIGHT_M:
             rejections.append(
-                f"the {candidate.delay_ms:.1f} ms candidate implies a loudspeaker "
-                f"{source_height:.2f} m above the plane the height was measured from "
-                f"({MIN_SOURCE_HEIGHT_M:.2f}-{MAX_SOURCE_HEIGHT_M:.2f} m is treated as "
-                "plausible)"
+                diag(
+                    "the {delay:.1f} ms candidate implies a loudspeaker {height:.2f} m above "
+                    "the plane the height was measured from ({low:.2f}-{high:.2f} m is "
+                    "treated as plausible)",
+                    delay=candidate.delay_ms,
+                    height=source_height,
+                    low=MIN_SOURCE_HEIGHT_M,
+                    high=MAX_SOURCE_HEIGHT_M,
+                )
             )
         elif abs(separation) > distance_m - DISTANCE_SLACK_M:
             rejections.append(
-                f"the {candidate.delay_ms:.1f} ms candidate implies a vertical separation "
-                f"of {abs(separation):.2f} m, which the {distance_m:.2f} m straight-line "
-                "distance cannot contain"
+                diag(
+                    "the {delay:.1f} ms candidate implies a vertical separation of "
+                    "{separation:.2f} m, which the {distance:.2f} m straight-line distance "
+                    "cannot contain",
+                    delay=candidate.delay_ms,
+                    separation=abs(separation),
+                    distance=distance_m,
+                )
             )
         elif math.sqrt(max(distance_m**2 - separation**2, 0.0)) < MIN_HORIZONTAL_SEPARATION_M:
             rejections.append(
-                f"the {candidate.delay_ms:.1f} ms candidate implies the loudspeaker is "
-                "vertically above the microphone, which leaves no horizontal separation"
+                diag(
+                    "the {delay:.1f} ms candidate implies the loudspeaker is vertically above "
+                    "the microphone, which leaves no horizontal separation",
+                    delay=candidate.delay_ms,
+                )
             )
         else:
             lower.append(
                 _Hypothesis(index=index, delay_ms=candidate.delay_ms, metres=source_height)
             )
 
-    empty_reason = (
-        "no detected reflection can be read as coming from the horizontal plane the "
-        "microphone height was measured from"
-        + (": " + "; ".join(rejections) if rejections else "; none was detected at all")
-    )
+    if rejections:
+        empty_reason = diag(
+            "no detected reflection can be read as coming from the horizontal plane the "
+            "microphone height was measured from: {rejections}",
+            rejections="; ".join(rejections),
+        )
+    else:
+        empty_reason = diag(
+            "no detected reflection can be read as coming from the horizontal plane the "
+            "microphone height was measured from; none was detected at all"
+        )
 
     def _source_height(distance: float, delay: float, temperature_arg: float, mic: float) -> float:
         c = speed_of_sound_m_s(temperature_arg)
@@ -515,8 +586,10 @@ def estimate_placement(
     )
 
     ceiling_length = _refused(
-        "the plane the heights are measured from was not established, so nothing above it "
-        "can be placed"
+        diag(
+            "the plane the heights are measured from was not established, so nothing above "
+            "it can be placed"
+        )
     )
     horizontal_length = ceiling_length
 
@@ -540,28 +613,40 @@ def estimate_placement(
             inner = candidate.mirror_path_m**2 - distance_m**2 + v_z**2
             if inner < 0.0:
                 upper_rejections.append(
-                    f"the {candidate.delay_ms:.1f} ms candidate has no real solution for a "
-                    "plane above both devices"
+                    diag(
+                        "the {delay:.1f} ms candidate has no real solution for a plane above "
+                        "both devices",
+                        delay=candidate.delay_ms,
+                    )
                 )
                 continue
             upper_height = (u_z + math.sqrt(inner)) / 2.0
             if not MIN_CEILING_M <= upper_height <= MAX_CEILING_M:
                 upper_rejections.append(
-                    f"the {candidate.delay_ms:.1f} ms candidate implies an upper plane "
-                    f"{upper_height:.2f} m above the lower one "
-                    f"({MIN_CEILING_M:.1f}-{MAX_CEILING_M:.1f} m is treated as plausible)"
+                    diag(
+                        "the {delay:.1f} ms candidate implies an upper plane {height:.2f} m "
+                        "above the lower one ({low:.1f}-{high:.1f} m is treated as plausible)",
+                        delay=candidate.delay_ms,
+                        height=upper_height,
+                        low=MIN_CEILING_M,
+                        high=MAX_CEILING_M,
+                    )
                 )
                 continue
             if upper_height < max(source_height_value, height) + MIN_CEILING_CLEARANCE_M:
                 upper_rejections.append(
-                    f"the {candidate.delay_ms:.1f} ms candidate implies an upper plane "
-                    f"{upper_height:.2f} m up, less than {MIN_CEILING_CLEARANCE_M:.2f} m "
-                    "above the higher of the two devices"
+                    diag(
+                        "the {delay:.1f} ms candidate implies an upper plane {height:.2f} m up, "
+                        "less than {clearance:.2f} m above the higher of the two devices",
+                        delay=candidate.delay_ms,
+                        height=upper_height,
+                        clearance=MIN_CEILING_CLEARANCE_M,
+                    )
                 )
                 continue
             upper.append(_Hypothesis(index=index, delay_ms=candidate.delay_ms, metres=upper_height))
         window = reflections.analysed_window_ms
-        window_note = ""
+        beyond_window: dict[str, float] | None = None
         if window is not None:
             # Image of the source in a plane at height H is at 2H - s_z, so the
             # arrival travels sqrt((2H - u_z)^2 + q^2) against the direct d.
@@ -571,20 +656,42 @@ def estimate_placement(
                 * 1000.0
             )
             if lowest_upper_delay > window[1]:
-                window_note = (
-                    f"; even the lowest plausible upper plane ({MIN_CEILING_M:.1f} m) would "
-                    f"arrive at about {lowest_upper_delay:.1f} ms, beyond the "
-                    f"{window[0]:.1f}-{window[1]:.1f} ms window that could be searched, so "
-                    "absence here is not evidence of absence"
-                )
+                beyond_window = {
+                    "lowest": MIN_CEILING_M,
+                    "delay": lowest_upper_delay,
+                    "start": window[0],
+                    "end": window[1],
+                }
+        if upper_rejections and beyond_window is not None:
+            upper_empty_reason = diag(
+                "no detected reflection can be read as a plane above both devices: "
+                "{rejections}; even the lowest plausible upper plane ({lowest:.1f} m) would "
+                "arrive at about {delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window "
+                "that could be searched, so absence here is not evidence of absence",
+                rejections="; ".join(upper_rejections),
+                **beyond_window,
+            )
+        elif upper_rejections:
+            upper_empty_reason = diag(
+                "no detected reflection can be read as a plane above both devices: {rejections}",
+                rejections="; ".join(upper_rejections),
+            )
+        elif beyond_window is not None:
+            upper_empty_reason = diag(
+                "no detected reflection can be read as a plane above both devices; even the "
+                "lowest plausible upper plane ({lowest:.1f} m) would arrive at about "
+                "{delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window that could be "
+                "searched, so absence here is not evidence of absence",
+                **beyond_window,
+            )
+        else:
+            upper_empty_reason = diag(
+                "no detected reflection can be read as a plane above both devices"
+            )
         ceiling_length, ceiling_index = _resolve(
             upper,
             ceiling_agreement_m,
-            empty_reason=(
-                "no detected reflection can be read as a plane above both devices"
-                + (": " + "; ".join(upper_rejections) if upper_rejections else "")
-                + window_note
-            ),
+            empty_reason=upper_empty_reason,
             uncertainty_m=height_sigma,
         )
         # A height solved from a single arrival is only as good as that arrival
@@ -604,15 +711,18 @@ def estimate_placement(
                 source_length = replace(
                     source_length,
                     validity=Validity.UNRELIABLE,
-                    reason=(
+                    reason=diag(
                         "no separate arrival from a plane above the devices was found, and one "
-                        f"as low as {lowest_upper:.2f} m would arrive at "
-                        f"{earliest_upper_ms:.1f} ms -- within the "
-                        f"{MERGE_RESOLUTION_MS:.1f} ms the reflection search can resolve from "
-                        f"the {used_delay:.1f} ms arrival this height was solved from. That "
-                        "arrival may therefore be two arrivals merged into one peak, which "
-                        "would bias the height. Moving the microphone 20-30 cm up or down and "
-                        "measuring again separates them"
+                        "as low as {lowest:.2f} m would arrive at {earliest:.1f} ms -- within "
+                        "the {resolution:.1f} ms the reflection search can resolve from the "
+                        "{used:.1f} ms arrival this height was solved from. That arrival may "
+                        "therefore be two arrivals merged into one peak, which would bias the "
+                        "height. Moving the microphone 20-30 cm up or down and measuring again "
+                        "separates them",
+                        lowest=lowest_upper,
+                        earliest=earliest_upper_ms,
+                        resolution=MERGE_RESOLUTION_MS,
+                        used=used_delay,
                     ),
                 )
                 horizontal_length = replace(
@@ -631,8 +741,10 @@ def estimate_placement(
         screened = named
 
     notes.append(
-        "only the two horizontal planes are ever named. No wall is identified: one "
-        "omnidirectional microphone gives no bearing, so naming one would be a guess"
+        diag(
+            "only the two horizontal planes are ever named. No wall is identified: one "
+            "omnidirectional microphone gives no bearing, so naming one would be a guess"
+        )
     )
     return PlacementResult(
         tier=2,
