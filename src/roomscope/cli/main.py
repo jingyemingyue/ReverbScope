@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from roomscope import __version__
-from roomscope.cli.console import COLOR_MODES, Console, ProgressLine
+from roomscope.cli.console import COLOR_MODES, Console, ProgressLine, Verbatim
 from roomscope.cli.render import (
     render_analysis,
     render_comparison,
@@ -145,9 +145,10 @@ def _command(
 
 def _commands_block(helps: dict[str, str]) -> str:
     """The root help's command list, grouped and aligned (display width aware)."""
-    from roomscope.cli.console import terminal_width, wrap
+    from roomscope.cli.console import is_terminal, terminal_width, wrap
 
-    width = terminal_width(sys.stdout, sys.stdout.isatty(), os.environ)
+    # sys.stdout is None in a windowed bundle (roomscope-gui); never touch it directly.
+    width = terminal_width(sys.stdout, is_terminal(sys.stdout), os.environ)
     name_width = max(len(name) for name in helps) + 2
     lines = [_heading(_("commands"))]
     listed: set[str] = set()
@@ -763,14 +764,21 @@ def _run_analysis(
         print(render_analysis(console, result, findings, profile, inputs=inputs))
         if out_dir is not None:
             print()
-            print(render_status(console, "ok", _("Saved session to {path}").format(path=out_dir)))
+            print(
+                render_status(
+                    console, "ok", _("Saved session to {path}").format(path=out_dir), keep=True
+                )
+            )
     return 0
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
-    inputs = [(_("Recording"), str(args.recording)), (_("Sweep"), str(args.sweep))]
+    inputs = [
+        (_("Recording"), Verbatim(str(args.recording))),
+        (_("Sweep"), Verbatim(str(args.sweep))),
+    ]
     if getattr(args, "loopback", None) is not None:
-        inputs.append((_("Loopback"), str(args.loopback)))
+        inputs.append((_("Loopback"), Verbatim(str(args.loopback))))
     return _run_analysis(args.recording, args.sweep, args, out_dir=args.out, inputs=inputs)
 
 
@@ -958,6 +966,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
             _("Recorded {seconds:.1f} s to {path}").format(
                 seconds=recording.duration_s, path=recording_path
             ),
+            keep=True,
         ),
         file=status_stream,
     )
@@ -973,7 +982,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
         hardware=plan,
         output_channel=int(args.output_channel),
         device_warnings=recording.device_warnings,
-        inputs=[(_("Recording"), str(recording_path))],
+        inputs=[(_("Recording"), Verbatim(str(recording_path)))],
     )
 
 
@@ -1042,7 +1051,7 @@ SESSION_MODES = {
 
 def _session_inputs(session: Any, directory: Path) -> list[tuple[str, str]]:
     """The saved session's folder and the names the user gave it, as entered."""
-    rows = [(_("Session"), str(directory))]
+    rows: list[tuple[str, str]] = [(_("Session"), Verbatim(str(directory)))]
     mode = SESSION_MODES.get(str(session.mode))
     if mode:
         rows.append((_("Mode"), _(mode)))
@@ -1086,7 +1095,9 @@ def cmd_compare(args: argparse.Namespace) -> int:
         if args.out is not None:
             print()
             print(
-                render_status(console, "ok", _("Wrote comparison to {path}").format(path=args.out))
+                render_status(
+                    console, "ok", _("Wrote comparison to {path}").format(path=args.out), keep=True
+                )
             )
     return 0
 
@@ -1139,12 +1150,20 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
         console = _console(args)
         print(
             render_analysis(
-                console, result, findings, profile, inputs=[(_("Impulse response"), str(args.ir))]
+                console,
+                result,
+                findings,
+                profile,
+                inputs=[(_("Impulse response"), Verbatim(str(args.ir)))],
             )
         )
         if args.out is not None:
             print()
-            print(render_status(console, "ok", _("Saved session to {path}").format(path=args.out)))
+            print(
+                render_status(
+                    console, "ok", _("Saved session to {path}").format(path=args.out), keep=True
+                )
+            )
     return 0
 
 
@@ -1153,7 +1172,7 @@ def cmd_session(args: argparse.Namespace) -> int:
 
     if args.session_command == "bundle":
         path = bundle_session(args.session, args.out, include_audio=not args.no_audio)
-        print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path)))
+        print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path), keep=True))
         return 0
     raise RoomScopeError(f"unknown session command {args.session_command}")
 
@@ -1186,7 +1205,7 @@ def cmd_project(args: argparse.Namespace) -> int:
     if command == "init":
         project = Project(name=args.name or args.out.name, notes=args.notes)
         path = save_project(args.out, project)
-        print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path)))
+        print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path), keep=True))
         return 0
     if command == "add":
         project = add_session(args.project, args.session, position=args.position)

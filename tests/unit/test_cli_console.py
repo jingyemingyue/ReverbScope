@@ -86,6 +86,14 @@ def test_wrap_breaks_chinese_between_characters_and_never_starts_with_punctuatio
         assert "".join(line.strip() for line in lines).replace(" ", "") == text.replace(" ", "")
 
 
+def test_wrap_never_splits_a_path_or_url() -> None:
+    path = "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\pytest-of-runneradmin\\session"
+    url = "https://github.com/jingyemingyue/RoomScope/actions/runs/36321028824"
+    for token in (path, url, "/Users/me/Music/RoomScope/2026-09-27/a-long-session-folder"):
+        lines = wrap(f"Saved session to {token}", 30)
+        assert token in lines, lines
+
+
 def test_wrap_splits_a_word_longer_than_the_line() -> None:
     lines = wrap("a-very-long-file-name-without-any-spaces.wav", 12, first="", rest="")
     assert all(cell_width(line) <= 12 for line in lines)
@@ -107,7 +115,12 @@ def test_wrap_splits_a_word_longer_than_the_line() -> None:
         (True, "always", {"NO_COLOR": "1"}, True),  # an explicit flag wins
     ],
 )
-def test_colour_policy(tty: bool, mode: str, env: dict[str, str], expected: bool) -> None:
+def test_colour_policy(
+    tty: bool, mode: str, env: dict[str, str], expected: bool, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The policy only; on Windows the console call would refuse an in-memory
+    # stream (a real console is asked in _enable_windows_vt).
+    monkeypatch.setattr("roomscope.cli.console._enable_windows_vt", lambda _stream: True)
     assert use_color(_Stream(tty=tty), mode, env) is expected  # type: ignore[arg-type]
 
 
@@ -211,6 +224,13 @@ def test_progress_on_a_terminal_redraws_one_line() -> None:
     assert text.count("\n") == 1 and text.endswith("\n")
     assert text.count("\r") >= 10
     assert "100%" in text and "00:09 / 00:09" in text
+
+
+def test_progress_without_a_stream_is_silent() -> None:
+    progress = ProgressLine(Console(interactive=True), None, "Recording", 9.0)
+    for step in range(11):
+        progress.update(step / 10)
+    progress.finish()
 
 
 def test_progress_is_throttled() -> None:
@@ -423,3 +443,43 @@ def test_help_fits_the_terminal_in_both_languages(
             if "{acoustic_guitar," in line:
                 continue  # argparse cannot break one option's choice list
             assert cell_width(line) <= 80, (path, line)
+
+
+def test_a_long_session_path_is_printed_whole(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A Windows temp path is longer than the report width; it must stay one
+    piece so it can be copied (it was split across lines once)."""
+    deep = home / ("a-very-long-folder-name-" * 5) / "session"
+    recording, sweep = _take(home)
+    capsys.readouterr()
+    assert (
+        main(["analyze", "--recording", str(recording), "--sweep", str(sweep), "--out", str(deep)])
+        == 0
+    )
+    analysed = capsys.readouterr().out
+    assert main(["show", str(deep)]) == 0
+    shown = capsys.readouterr().out
+    assert len(str(deep)) > 100
+    assert str(deep) in shown
+    assert f"Saved session to {deep}" in analysed
+
+
+def test_the_windowed_bundle_has_no_stdout_and_still_runs(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """roomscope-gui (PyInstaller, windowed) runs with sys.stdout and
+    sys.stderr set to None; building the parser once touched sys.stdout and
+    the unhandled error left a modal dialog open (Release #24, Windows)."""
+    import sys
+
+    monkeypatch.setattr(sys, "stdout", None)
+    monkeypatch.setattr(sys, "stderr", None)
+    from roomscope.cli.main import build_parser
+
+    build_parser()
+    assert main(["--backend", "fake", "devices"]) == 0
+    assert main(["--backend", "fake", "doctor"]) == 0
+    with pytest.raises(SystemExit) as exc:
+        main(["--help"])
+    assert exc.value.code == 0

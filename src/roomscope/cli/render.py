@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from roomscope.cli.console import Console, Status
+from roomscope.cli.console import Console, Status, Verbatim
 from roomscope.i18n import _, localize, pgettext
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
@@ -484,11 +484,11 @@ def render_comparison(
     c = console
     lines = c.title(_("RoomScope comparison"))
     lines += c.section(_("Sessions"))
-    rows = []
+    rows: list[tuple[str, str]] = []
     if comparison.baseline_session:
-        rows.append((_("Baseline"), comparison.baseline_session))
+        rows.append((_("Baseline"), Verbatim(comparison.baseline_session)))
     if comparison.candidate_session:
-        rows.append((_("Candidate"), comparison.candidate_session))
+        rows.append((_("Candidate"), Verbatim(comparison.candidate_session)))
     if comparison.common_band is not None:
         low, high = comparison.common_band
         rows.append((_("Common band"), f"{frequency_text(low)} – {frequency_text(high)}"))
@@ -612,7 +612,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         ),
     ]
     if build.get("ci_run"):
-        rows.append((_("CI run"), build["ci_run"]))
+        rows.append((_("CI run"), Verbatim(build["ci_run"])))
     lines += c.section("RoomScope") + c.fields(rows)
 
     lines += c.section(_("System"))
@@ -636,7 +636,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         for key, value in report.get("settings", {}).items()
     )
     lines += c.section(_("Paths"), _("your home folder is shown as ~"))
-    lines += c.fields((key, str(value)) for key, value in report["paths"].items())
+    lines += c.fields((key, Verbatim(str(value))) for key, value in report["paths"].items())
 
     lines += c.section(_("Self-check"))
     callbacks = report.get("audio_callbacks")
@@ -852,7 +852,7 @@ def render_sweep_written(
     c = console
     lines = c.title(_("RoomScope test signal"))
     lines.append("")
-    lines += c.status("ok", _("Wrote {path}").format(path=wav_path))
+    lines += c.status("ok", Verbatim(_("Wrote {path}").format(path=wav_path)))
     lines += c.fields(
         [
             (
@@ -870,7 +870,9 @@ def render_sweep_written(
         ],
         indent=4,
     )
-    lines += c.status("ok", _("Wrote {sidecar} (keep it next to the WAV)").format(sidecar=sidecar))
+    lines += c.status(
+        "ok", Verbatim(_("Wrote {sidecar} (keep it next to the WAV)").format(sidecar=sidecar))
+    )
     lines += c.section(_("Next"))
     lines += c.paragraph(
         _(
@@ -989,8 +991,15 @@ def render_error(console: Console, message: str, *, detail: str = "") -> str:
     return "\n".join(console.status("error", text, indent=0, detail=detail, style=("red", "bold")))
 
 
-def render_status(console: Console, kind: Status, text: str) -> str:
-    """One status line at the left margin (warnings, stops, saved files)."""
+def render_status(console: Console, kind: Status, text: str, *, keep: bool = False) -> str:
+    """One status line at the left margin (warnings, stops, saved files).
+
+    ``keep`` prints the line whole (it names a path the user may copy).
+    """
+    if keep:
+        text = Verbatim(text)
     if not console.unicode and kind in ("warn", "error"):
+        if keep:
+            return text
         return "\n".join(console.paragraph(text, indent=0))
     return "\n".join(console.status(kind, text, indent=0))

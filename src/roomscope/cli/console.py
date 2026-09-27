@@ -84,6 +84,20 @@ MIN_WIDTH = 20
 MAX_WIDTH = 110
 
 
+class Verbatim(str):
+    """Text printed exactly as it is, on one line: never wrapped or split.
+
+    For paths, URLs and commands, which must survive copy and paste; on a
+    narrow terminal they run past the edge (the terminal folds them) rather
+    than being cut into pieces.
+    """
+
+
+def _unbreakable(token: str) -> bool:
+    """A path or URL: never split inside, even when longer than a line."""
+    return "/" in token or "\\" in token or "://" in token
+
+
 # --- Display width ---------------------------------------------------------
 
 
@@ -190,7 +204,7 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
             piece = carry.lstrip() + token
             # A single token wider than the line is split where it must be.
             room = max(1, width - cell_width(prefix))
-            while cell_width(piece) > room and len(piece) > 1:
+            while cell_width(piece) > room and len(piece) > 1 and not _unbreakable(piece):
                 head = truncate(piece, room, ellipsis="")
                 if not head:
                     break
@@ -235,11 +249,19 @@ def _enable_windows_vt(stream: TextIO) -> bool:
     return True
 
 
-def _isatty(stream: TextIO) -> bool:
+def is_terminal(stream: TextIO | None) -> bool:
+    """True for a terminal; False for a pipe, a file, a closed stream or none.
+
+    A windowed desktop bundle (``roomscope-gui``) runs with ``sys.stdout``
+    and ``sys.stderr`` set to ``None``.
+    """
     try:
-        return bool(stream.isatty())
+        return bool(stream.isatty())  # type: ignore[union-attr]
     except (AttributeError, ValueError, OSError):
         return False
+
+
+_isatty = is_terminal
 
 
 def _unicode_ok(stream: TextIO, interactive: bool, environ: Mapping[str, str]) -> bool:
@@ -383,15 +405,17 @@ class Console:
         """``✓ text`` wrapped under itself; ``detail`` follows on its own lines.
 
         ``text`` is plain; ``style`` is applied after wrapping, so an escape
-        sequence is never split.
+        sequence is never split. :class:`Verbatim` text stays on one line.
         """
         glyph = self.symbol(kind)
         margin = " " * indent
         hang = margin + " " * (cell_width(glyph) + 1)
-        out = [
-            hang + self.style(line[len(hang) :], *style)
-            for line in wrap(text, self.width, first=hang, rest=hang)
-        ]
+        lines = (
+            [hang + text]
+            if isinstance(text, Verbatim)
+            else wrap(text, self.width, first=hang, rest=hang)
+        )
+        out = [hang + self.style(line[len(hang) :], *style) for line in lines]
         out[0] = margin + glyph + " " + out[0][len(hang) :]
         if detail:
             out += self.paragraph(detail, indent=cell_width(hang))
@@ -483,7 +507,12 @@ class Console:
 
 
 def _styled_wrap(value: str, plain: str, styled: bool, width: int, prefix: str) -> list[str]:
-    """Wrap a value after ``prefix``; a styled value is kept whole when it fits."""
+    """Wrap a value after ``prefix``; a styled value is kept whole when it fits.
+
+    A :class:`Verbatim` value (a path, a URL) is never wrapped.
+    """
+    if isinstance(value, Verbatim):
+        return [prefix + value]
     if styled and cell_width(prefix) + cell_width(plain) <= width:
         return [prefix + value]
     return wrap(plain, width, first=prefix, rest=prefix)
@@ -509,7 +538,7 @@ class ProgressLine:
     def __init__(
         self,
         console: Console,
-        stream: TextIO,
+        stream: TextIO | None,
         label: str,
         total_s: float,
         *,
@@ -530,6 +559,9 @@ class ProgressLine:
         if self._started:
             return
         self._started = True
+        if self.stream is None:  # a windowed bundle has no stderr
+            self.console = Console()
+            return
         if not self.console.interactive:
             self.stream.write(
                 self.label + " …\n" if self.console.unicode else self.label + " ...\n"
@@ -538,7 +570,7 @@ class ProgressLine:
 
     def update(self, fraction: float) -> None:
         self.start()
-        if not self.console.interactive:
+        if not self.console.interactive or self.stream is None:
             return
         moment = self._now()
         if fraction < 1.0 and self._last >= 0 and moment - self._last < self.interval:
@@ -547,6 +579,8 @@ class ProgressLine:
         self._draw(min(1.0, max(0.0, fraction)))
 
     def _draw(self, fraction: float) -> None:
+        if self.stream is None:
+            return
         width = shutil.get_terminal_size((self.console.width, 24)).columns
         width = max(MIN_WIDTH, min(MAX_WIDTH, width)) - 1
         percent = f"{fraction * 100:3.0f}%"
@@ -567,7 +601,7 @@ class ProgressLine:
 
     def finish(self) -> None:
         """End the line (terminal) so later output starts on its own row."""
-        if self.console.interactive and self._drawn:
+        if self.console.interactive and self._drawn and self.stream is not None:
             self._draw(1.0)
             self.stream.write("\n")
             self.stream.flush()

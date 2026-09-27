@@ -27,7 +27,8 @@ Windows: no Authenticode).
   aligned fields and tables, a summary of the broadband results, and a
   symbol and a word with every status (`✓` / `!` / `×`; `[OK]` / `[WARN]` /
   `[ERROR]` where the terminal cannot show them). Widths are display widths,
-  so Chinese tables line up; long notes wrap under themselves; a table that
+  so Chinese tables line up; long notes wrap under themselves (paths and URLs
+  are never split, so they can be copied); a table that
   does not fit a narrow terminal becomes one block per row. `measure` shows
   the devices, channels and rate it will use and the pre-flight checks that
   passed before anything plays, then one progress line (redrawn on a
