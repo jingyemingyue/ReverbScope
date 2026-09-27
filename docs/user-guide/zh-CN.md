@@ -121,7 +121,7 @@ roomscope-env/bin/roomscope gui
 
 ## 报告问题
 
-**帮助 ▸ 用于问题报告的环境报告**显示维护者首先需要的信息：RoomScope 版本和构建提交、操作系统、库版本、设置和音频设备（*探测采样率*会加上每个设备接受的采样率；不会播放任何声音）。用*复制*把它粘贴到 issue 中；*打开 Issue 页面*会打开模板选择页。在终端中，同样的报告是 `roomscope doctor`（`--probe`、`--json`）。RoomScope 不会自动发送任何内容；发布之前请通读文本，因为设备名称中可能包含个人姓名。
+**帮助 ▸ 用于问题报告的环境报告**显示维护者首先需要的信息：RoomScope 版本和构建提交、操作系统、库版本、设置和音频设备（*探测采样率*会加上每个设备接受的采样率；不会播放任何声音）。用*复制*把它粘贴到 issue 中；*打开 GitHub Issue 页面*会打开模板选择页。在终端中，同样的报告是 `roomscope doctor`（`--probe`、`--json`）。RoomScope 不会自动发送任何内容；发布之前请通读文本，因为设备名称中可能包含个人姓名。
 
 `roomscope session bundle session/ --out report.zip` 把会话文件夹打包为 zip。如果不想分享房间录音，用 `--no-audio` 去掉 WAV 文件。把 zip 附在测量问题（measurement）类 issue 上。设置和滚动日志保存在 `$ROOMSCOPE_HOME`（默认为 `~/.roomscope`）下；环境报告中的*打开数据文件夹*按钮会打开它。
 

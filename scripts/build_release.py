@@ -240,7 +240,24 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
         def windows_installer() -> None:
             assert iscc is not None
             (DIST / "RoomScope-setup.exe").unlink(missing_ok=True)
-            _run(iscc, f"/DMyAppVersion={project_version()}", "packaging/windows/roomscope.iss")
+            # Released Inno Setup keeps the Chinese messages unofficial (not installed).
+            chinese = subprocess.run(
+                [
+                    sys.executable,
+                    "scripts/inno_chinese_messages.py",
+                    *("--iscc", str(iscc), "--out", str(work)),
+                ],
+                check=True,
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+            ).stdout.strip()
+            _run(
+                iscc,
+                f"/DMyAppVersion={project_version()}",
+                f"/DChineseMessages={chinese}",
+                "packaging/windows/roomscope.iss",
+            )
 
         steps.append(
             Step(

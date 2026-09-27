@@ -6,6 +6,7 @@ tests/zh_tokens.py."""
 from __future__ import annotations
 
 import argparse
+import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
@@ -150,8 +151,6 @@ def test_files_written_in_chinese_stay_language_neutral(
 ) -> None:
     """Result files keep English notes whatever the interface language, so a
     session reads the same everywhere and old readers still parse it."""
-    import json
-
     from roomscope.io.wav import read_wav, write_wav
 
     sweep = tmp_path / "sweep.wav"
@@ -170,3 +169,46 @@ def test_files_written_in_chinese_stay_language_neutral(
         cjk = re.findall(r"[　-〿一-鿿＀-￯]", text)
         assert cjk == [], f"{name} stores Chinese text: {''.join(cjk[:40])}"
         json.loads(text)
+
+
+def _cjk(text: str) -> list[str]:
+    return re.findall(r"[　-〿一-鿿＀-￯]", text)
+
+
+def test_comparison_and_project_files_stay_language_neutral(
+    zh_cli: None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    first = _take(tmp_path, 0.4, "a")
+    second = _take(tmp_path, 1.1, "b")
+    comparison = tmp_path / "comparison.json"
+    project = tmp_path / "project"
+    zh = ["--lang", "zh_CN"]
+    assert main([*zh, "compare", str(first), str(second), "--out", str(comparison)]) == 0
+    assert main([*zh, "project", "init", "--out", str(project), "--name", "Room"]) == 0
+    for session, position in ((first, "P1"), (second, "P2")):
+        assert (
+            main([*zh, "project", "add", str(project), str(session), "--position", position]) == 0
+        )
+    assert main([*zh, "project", "average", str(project)]) == 0
+    capsys.readouterr()
+    files = [comparison, *sorted(project.rglob("*.json"))]
+    assert len(files) >= 2
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        assert _cjk(text) == [], f"{path.name} stores Chinese text"
+
+
+def test_an_english_session_is_shown_in_chinese_and_left_untouched(
+    zh_cli: None, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Sessions written in English (by this or an earlier version) open in the
+    Chinese interface with translated notes; nothing is written back."""
+    session = _take(tmp_path, 1.1, "english")
+    before = {p.name: p.read_bytes() for p in session.glob("*.json")}
+    stored = json.loads((session / "result.json").read_text(encoding="utf-8"))
+    assert _cjk(json.dumps(stored, ensure_ascii=False)) == []
+    capsys.readouterr()
+    assert main(["--lang", "zh_CN", "show", str(session)]) == 0
+    shown = capsys.readouterr().out
+    assert "说明：" in shown or "警告：" in shown
+    assert {p.name: p.read_bytes() for p in session.glob("*.json")} == before

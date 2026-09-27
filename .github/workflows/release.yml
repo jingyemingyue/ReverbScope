@@ -13,6 +13,7 @@ on:
       - packaging/**
       - scripts/smoke_bundle.py
       - scripts/release_draft.py
+      - scripts/inno_chinese_messages.py
       - src/roomscope/__main__.py
   pull_request:
     paths:
@@ -22,6 +23,7 @@ on:
       - scripts/check_macos_dmg.py
       - scripts/smoke_bundle.py
       - scripts/release_draft.py
+      - scripts/inno_chinese_messages.py
       - src/roomscope/__main__.py
       - tests/unit/test_desktop_entry.py
       - tests/unit/test_release_draft.py
@@ -267,16 +269,17 @@ jobs:
           ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
-          # Simplified Chinese is an official translation from Inno Setup 6.5;
-          # an older preinstalled copy is upgraded rather than failing late.
-          $zh = Join-Path (Split-Path $iscc) 'Languages\ChineseSimplified.isl'
-          if (-not (Test-Path $iscc) -or -not (Test-Path $zh)) {
-            choco upgrade innosetup --no-progress -y
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup --no-progress -y
             if ($LASTEXITCODE -ne 0) { throw 'Inno Setup install failed' }
           }
           if (-not (Test-Path $iscc)) { throw "ISCC.exe not found at $iscc" }
-          if (-not (Test-Path $zh)) { throw "Simplified Chinese messages not found at $zh" }
-          & $iscc "/DMyAppVersion=$env:ROOMSCOPE_VERSION" packaging\windows\roomscope.iss
+          # The compiler's Simplified Chinese messages, or the pinned file from
+          # the Inno Setup repository (checked against its SHA-256).
+          $zh = python scripts/inno_chinese_messages.py --iscc $iscc --out $env:RUNNER_TEMP
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path $zh)) { throw 'Simplified Chinese messages unavailable' }
+          Write-Output "Simplified Chinese messages: $zh"
+          & $iscc "/DMyAppVersion=$env:ROOMSCOPE_VERSION" "/DChineseMessages=$zh" packaging\windows\roomscope.iss
           if ($LASTEXITCODE -ne 0) { throw "iscc failed ($LASTEXITCODE)" }
           if (-not (Test-Path dist\RoomScope-setup.exe)) { throw 'dist\RoomScope-setup.exe missing' }
       - name: Install, smoke and uninstall the Windows installer

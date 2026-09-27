@@ -39,9 +39,11 @@ WizardStyle=modern
 LicenseFile=..\..\LICENSE
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
-; English and Simplified Chinese (an official Inno Setup translation, bundled
-; from Inno Setup 6.5). Setup picks the language of the Windows UI and asks
-; only when it is neither; the uninstaller keeps the language chosen here.
+; English and Simplified Chinese. Setup picks the language of the Windows UI
+; and asks only when it is neither; the uninstaller keeps the language chosen
+; here. Released Inno Setup versions up to 6.7 do not install the Chinese
+; messages (an unofficial translation there): the release workflow passes
+; /DChineseMessages=<path> from scripts/inno_chinese_messages.py.
 LanguageDetectionMethod=uilanguage
 ShowLanguageDialog=auto
 ; Authenticode, once the maintainer has a code-signing certificate (not yet):
@@ -55,9 +57,13 @@ SignTool={#SignToolName}
 SignedUninstaller=yes
 #endif
 
+#ifndef ChineseMessages
+  #define ChineseMessages "compiler:Languages\ChineseSimplified.isl"
+#endif
+
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
-Name: "chinesesimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+Name: "chinesesimplified"; MessagesFile: "{#ChineseMessages}"
 
 [CustomMessages]
 english.ThirdPartyLicenses=Third-party licenses

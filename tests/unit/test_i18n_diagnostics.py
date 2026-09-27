@@ -97,3 +97,81 @@ def test_diagnostic_contexts_are_consistent() -> None:
     for template, translated in _diagnostic_templates().items():
         plain = catalog.get(template)
         assert plain is None or plain == translated, template
+
+
+# --- Template matching: a wrong translation is worse than stable English ----
+
+REFLECTION_NOTE = (
+    "candidates are envelope peaks standing above the local diffuse level; in a "
+    "dense early tail some candidates may be statistical rather than discrete reflections"
+)
+
+
+def _english_left(text: str) -> list[str]:
+    return re.findall(r"[A-Za-z]{4,}", text)
+
+
+def test_joined_reasons_keep_their_own_parts(zh: None) -> None:
+    """Two compare reasons joined with "; ", each with a nested reason: every
+    part keeps its own meaning (the second reason never ends up in the first)."""
+    text = (
+        "baseline unreliable (the response does not decay); "
+        "candidate unreliable (Decay slope is not negative)"
+    )
+    assert localize(text) == "基线：不可靠（响应没有衰减）；候选：不可靠（衰减斜率不为负）"
+
+
+def test_a_nested_diagnostic_with_its_own_semicolon_is_one_value(zh: None) -> None:
+    shown = localize(f"inherited from the reflection search: {REFLECTION_NOTE}")
+    assert shown.startswith("沿用自反射搜索：")
+    assert _english_left(shown) == []
+
+
+def test_number_fields_never_take_words(zh: None) -> None:
+    assert localize("T20 1.20 s vs 1.35 s") != "T20 1.20 s vs 1.35 s"
+    assert localize("T20 fast s vs slow s") == "T20 fast s vs slow s"
+
+
+def test_names_and_unknown_text_stay_as_they_are(zh: None) -> None:
+    for text in (
+        "Studio One Output (Core Audio)",
+        "MacBook Pro Microphone",
+        "baseline",
+        "failed",
+        "a note that no template knows; and another one",
+        "[Errno 2] No such file or directory: '/Users/me/room.wav'",
+    ):
+        assert localize(text) == text
+
+
+def test_stored_words_inside_a_sentence_are_translated(zh: None) -> None:
+    assert localize("baseline not_computed") == "基线：未计算"
+    assert localize("candidate unreliable") == "候选：不可靠"
+
+
+def test_deep_nesting_ends(zh: None) -> None:
+    text = "decay analysis, broadband: " * 40 + "the response does not decay"
+    shown = localize(text)
+    assert isinstance(shown, str) and shown
+
+
+def test_a_failed_loopback_stores_an_english_reason_in_chinese(
+    zh: None, short_sweep: object
+) -> None:
+    """The loopback path stores the text of the exception it catches; under
+    zh_CN it must still be the English diagnostic (shown translated later)."""
+    import numpy as np
+
+    from roomscope.core.pipeline import Reference, analyze, synthetic_recording
+    from roomscope.models.audio import AudioSignal
+    from tests.conftest import make_rir
+
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.4)  # type: ignore[attr-defined]
+    mic = synthetic_recording(short_sweep, ir, noise_rms=1e-5)  # type: ignore[arg-type]
+    silent = AudioSignal(np.zeros_like(mic.samples), mic.sample_rate)
+    result = analyze(mic, Reference.from_settings(short_sweep), loopback=silent)  # type: ignore[arg-type]
+    loopback = result.impulse_response.loopback
+    assert loopback is not None and not loopback.compensation_applied
+    assert loopback.reason and loopback.reason.isascii(), loopback.reason
+    assert all(text.isascii() for text in result.warnings)
+    assert localize(loopback.reason) != loopback.reason

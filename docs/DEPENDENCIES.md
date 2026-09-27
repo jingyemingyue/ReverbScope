@@ -52,6 +52,7 @@ Apache-2.0 project with the redistribution obligations listed in §3.
 | build | (CI and release workflow) | https://github.com/pypa/build | MIT | builds the sdist and wheel; not a runtime dependency | Yes |
 | cyclonedx-bom | (release workflow on `v*` tags) | https://github.com/CycloneDX/cyclonedx-python | Apache-2.0 | SBOM attached to a draft Release; not a runtime dependency | Yes |
 | Inno Setup | (Windows bundle job, when `iscc` is installed) | https://jrsoftware.org/isinfo.php | Inno Setup License (permissive, similar to modified BSD) | optional Windows installer around the one-directory zip; not imported by RoomScope | Yes* (tool only) |
+| Inno Setup Simplified Chinese messages (`ChineseSimplified.isl`, maintainer Zhenghan Yang) | Inno Setup repository tag `is-6_7_1`, `Files/Languages/Unofficial/`, SHA-256 pinned in `scripts/inno_chinese_messages.py` | https://github.com/jrsoftware/issrc | part of the Inno Setup source repository, whose `license.txt` (Inno Setup License, permissive) covers its files "except where otherwise noted"; the translation names its maintainer and states no other license | the installer's Chinese texts; fetched at build time (released Inno Setup up to 6.7 does not install it), compiled into `RoomScope-setup.exe`, not stored in this repository | Yes* (tool only) |
 
 Evaluated and **not** adopted: `hypothesis` (MPL-2.0, file-level copyleft;
 dev-only would be acceptable but it is not needed), `pytest-qt` (MIT; the

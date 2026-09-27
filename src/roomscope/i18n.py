@@ -167,6 +167,9 @@ def format_message(template: str, **params: Any) -> str:
 #: reasons) that :func:`localize` shows in the active language.
 DIAGNOSTIC_CONTEXT = "diagnostic"
 _FIELD = re.compile(r"\{(\w+)(![rsa])?(:[^{}]*)?\}")
+#: Format types whose value is a number; such a field matches only a number.
+_NUMERIC_TYPES = frozenset("bcdeEfFgGnoxX%")
+_NUMBER = r" *(?:[-+]?(?:\d[\d,_]*(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?|[-+]?(?:nan|inf))%?"
 _diagnostic_patterns: tuple[int, list[tuple[re.Pattern[str], re.Pattern[str], str]]] | None = None
 
 
@@ -184,12 +187,16 @@ def diag(template: str, **params: Any) -> str:
 def _template_pattern(template: str, *, strict: bool = True) -> re.Pattern[str]:
     parts: list[str] = []
     seen: set[str] = set()
-    for literal, field, _spec, _conversion in string.Formatter().parse(template):
+    for literal, field, spec, _conversion in string.Formatter().parse(template):
         parts.append(re.escape(literal))
         if field is None:
             continue
         if field in seen:
             parts.append(f"(?P={field})")
+        elif spec and spec[-1] in _NUMERIC_TYPES:
+            # A number formatted as the template says: text never fills it.
+            seen.add(field)
+            parts.append(f"(?P<{field}>{_NUMBER})")
         else:
             seen.add(field)
             # Strict: a value never spans the "; " that joins several
@@ -238,17 +245,32 @@ def localize(text: str, _depth: int = 0) -> str:
         if match is not None:
             return _fill(translated, match, text, _depth)
     if "; " in text:
-        # A nested diagnostic with a "; " of its own, recognised as a whole.
+        # A nested diagnostic with a "; " of its own, recognised as a whole
+        # (never a value that is only a join of several diagnostics: the
+        # "; " would then belong to the outer text).
         for _strict, loose, translated in patterns:
             match = loose.fullmatch(text)
             if match is not None and all(
-                "; " not in value or localize(value, _depth + 1) != value
+                "; " not in value or _whole(value, _depth + 1) is not None
                 for value in match.groupdict().values()
             ):
                 return _fill(translated, match, text, _depth)
-        parts = [localize(part, _depth) for part in text.split("; ")]
-        return "；".join(parts)
+        pieces = text.split("; ")
+        parts = [localize(part, _depth) for part in pieces]
+        # Nothing recognised: the stored text as it is, separators included.
+        return text if parts == pieces else "；".join(parts)
     return text
+
+
+def _whole(text: str, depth: int) -> str | None:
+    """The translation of ``text`` when one template matches all of it."""
+    if depth > 2:
+        return None
+    for strict, _loose, translated in _patterns():
+        match = strict.fullmatch(text)
+        if match is not None:
+            return _fill(translated, match, text, depth)
+    return None
 
 
 def _fill(translated: str, match: re.Match[str], text: str, depth: int) -> str:

@@ -27,8 +27,11 @@ Windows: no Authenticode).
   `qtbase` catalog), every CLI help screen and argparse's usage and error
   texts, the text reports, the environment report, the Device Inspector,
   chart titles, axes and legends (CJK font fallback in every chart), the
-  Windows installer and uninstaller (Inno Setup's official Simplified
-  Chinese, chosen from the Windows display language), `README.zh-CN.md`,
+  Windows installer and uninstaller (Simplified Chinese chosen from the
+  Windows display language; released Inno Setup up to 6.7 does not install
+  its Chinese messages, so the build fetches the maintained
+  `ChineseSimplified.isl` from the Inno Setup repository at tag `is-6_7_1`
+  and checks its SHA-256, `scripts/inno_chinese_messages.py`), `README.zh-CN.md`,
   `SECURITY.zh-CN.md`, `docs/HARDWARE_TESTS.zh-CN.md`, a Chinese docs index,
   and Chinese GitHub issue forms for bug, measurement, interface test, DAW
   report and feature request with the same fields, evidence rules and

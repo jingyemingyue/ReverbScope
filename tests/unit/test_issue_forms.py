@@ -129,3 +129,31 @@ def test_config_parses_and_offers_both_languages() -> None:
     for link in config["contact_links"]:
         assert link["url"].startswith("https://"), link
         assert link["about"], link
+
+
+#: Evidence and privacy rules: when the English form says it, the Chinese
+#: form must say it too (the Chinese words are those the forms use).
+_RULES = (
+    ("CI", "CI"),
+    ("fake", "fake"),
+    ("Demo", "演示"),
+    ("personal", "个人"),
+    ("roomscope doctor", "roomscope doctor"),
+)
+
+
+def _code_spans(text: str) -> set[str]:
+    """Inline code: commands, flags, file names; the same in every language."""
+    return {s for s in re.findall(r"`([^`\n]+)`", text) if re.match(r"[\w./\[-]", s)}
+
+
+@pytest.mark.parametrize("stem", _english_forms())
+def test_chinese_form_keeps_every_command_and_evidence_rule(stem: str) -> None:
+    english = (FORMS / f"{stem}.yml").read_text(encoding="utf-8")
+    chinese = (FORMS / f"{stem}{ZH_SUFFIX}.yml").read_text(encoding="utf-8")
+    assert _code_spans(english) <= _code_spans(chinese), sorted(
+        _code_spans(english) - _code_spans(chinese)
+    )
+    for english_word, chinese_word in _RULES:
+        if english_word in english:
+            assert chinese_word in chinese, f"{stem}: {chinese_word!r} missing"

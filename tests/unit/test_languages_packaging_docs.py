@@ -6,6 +6,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 ISS = Path("packaging/windows/roomscope.iss")
 ROOT = Path(".")
 
@@ -21,7 +23,10 @@ def test_installer_offers_english_and_simplified_chinese() -> None:
     iss = _iss()
     languages = re.findall(r'^Name: "(\w+)"; MessagesFile: "([^"]+)"', iss, re.MULTILINE)
     assert ("english", "compiler:Default.isl") in languages
-    assert ("chinesesimplified", "compiler:Languages\\ChineseSimplified.isl") in languages
+    assert ("chinesesimplified", "{#ChineseMessages}") in languages
+    # The compiler's own file when it ships one; the release workflow passes
+    # the pinned file otherwise.
+    assert '#define ChineseMessages "compiler:Languages\\ChineseSimplified.isl"' in iss
     # The Windows UI language picks the installer language; the dialog only
     # appears when it is neither.
     assert "LanguageDetectionMethod=uilanguage" in iss
@@ -52,9 +57,51 @@ def test_installer_texts_are_localized_messages() -> None:
         assert visible in {"", "RoomScope"}, line
 
 
-def test_release_workflow_requires_the_chinese_installer_messages() -> None:
+def test_release_workflow_compiles_with_the_chinese_messages() -> None:
     workflow = Path(".github/workflows/release.yml").read_text(encoding="utf-8")
-    assert "Languages\\ChineseSimplified.isl" in workflow
+    assert "scripts/inno_chinese_messages.py --iscc $iscc" in workflow
+    assert '"/DChineseMessages=$zh"' in workflow
+    assert "Simplified Chinese messages unavailable" in workflow
+    build = Path("scripts/build_release.py").read_text(encoding="utf-8")
+    assert "scripts/inno_chinese_messages.py" in build and "/DChineseMessages=" in build
+
+
+def _inno_messages():  # type: ignore[no-untyped-def]
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "inno_chinese_messages", Path("scripts/inno_chinese_messages.py")
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_chinese_messages_prefer_the_compilers_own_file(tmp_path: Path) -> None:
+    module = _inno_messages()
+    iscc = tmp_path / "Inno Setup 6" / "ISCC.exe"
+    (iscc.parent / "Languages").mkdir(parents=True)
+    own = iscc.parent / "Languages" / "ChineseSimplified.isl"
+    own.write_text("; bundled", encoding="utf-8")
+    assert module.messages_path(iscc, tmp_path / "out") == own
+
+
+def test_chinese_messages_are_pinned_and_checked(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import io
+
+    module = _inno_messages()
+    # A release tag, the translation's path there, and a full SHA-256.
+    assert re.fullmatch(r"is-\d+_\d+_\d+", module.TAG)
+    assert module.URL.startswith("https://raw.githubusercontent.com/jrsoftware/issrc/")
+    assert f"/{module.TAG}/" in module.URL
+    assert re.fullmatch(r"[0-9a-f]{64}", module.SHA256)
+    monkeypatch.setattr(module.urllib.request, "urlopen", lambda *_a, **_k: io.BytesIO(b"tampered"))
+    with pytest.raises(SystemExit, match="SHA-256"):
+        module.messages_path(tmp_path / "ISCC.exe", tmp_path / "out")
+    assert not (tmp_path / "out" / "ChineseSimplified.isl").exists()
 
 
 def test_readmes_switch_language_at_the_top() -> None:

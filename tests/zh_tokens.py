@@ -39,7 +39,6 @@ ALLOWED = frozenset(
         "RF64",
         "W64",
         "JSON",
-        "Schema",
         "CSV",
         "ZIP",
         "UTF",
@@ -51,8 +50,6 @@ ALLOWED = frozenset(
         "MME",
         "DirectSound",
         "WDM",
-        "Core",
-        "Audio",
         "ALSA",
         "JACK",
         "PipeWire",
@@ -67,38 +64,42 @@ ALLOWED = frozenset(
         "pip",
         # DAWs and their feature names (menus stay in the vendors' language)
         "DAW",
-        "Pro",
-        "Tools",
         "Logic",
         "GarageBand",
         "Cubase",
         "Nuendo",
-        "Studio",
-        "One",
-        "Fender",
         "Ableton",
-        "Live",
         "REAPER",
         "Bitwig",
-        "Digital",
-        "Performer",
         "Audacity",
         "Ardour",
         "Cakewalk",
         "Warp",
         "Flex",
-        "Time",
-        "Follow",
-        "Tempo",
-        "Elastic",
         # GitHub, where test reports go; language names
         "GitHub",
-        "Issue",
-        "English",
-        "https",
     }
 )
 
+#: Names of more than one word, removed as a whole so that their single words
+#: ("One", "Live", "Time", "Core") are not allowed on their own.
+PHRASES = (
+    "Fender Studio Pro",
+    "Pro Tools",
+    "Logic Pro",
+    "Studio One",
+    "FL Studio",
+    "Bitwig Studio",
+    "Ableton Live",
+    "Digital Performer",
+    "Core Audio",
+    "Flex Time",
+    "Follow Tempo",
+    "Elastic Audio",
+    "JSON Schema",
+    "GitHub Issue",
+)
+_URL = re.compile(r"https?://\S+")
 _COMMAND = re.compile(r"roomscope(?:\s+[a-z][a-z-]*)?(?:\s+--?[\w-]+)*")
 _WORD = re.compile(r"(?<![\w./\\%{\[-])[A-Za-z][A-Za-z']{2,}(?![\w./\\}\]-])")
 
@@ -112,6 +113,9 @@ def english_words(text: str, *, data: tuple[str, ...] = ()) -> list[str]:
     for value in data:
         if value:
             text = text.replace(value, " ")
+    text = _URL.sub(" ", text)
+    for phrase in PHRASES:
+        text = text.replace(phrase, " ")
     # The English term glossed once after the Chinese one: 回送（loopback）.
     text = text.replace("（loopback）", "")
     text = _COMMAND.sub(" ", text)

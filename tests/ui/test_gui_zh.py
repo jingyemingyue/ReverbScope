@@ -40,6 +40,9 @@ def zh(app: QApplication, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> It
 
     monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
     monkeypatch.setenv("ROOMSCOPE_EDITION", "developer")
+    # The synthetic backend: device names are the user's data, and a CI runner
+    # (macOS lists "Apple Virtual Sound Device") must not decide the result.
+    monkeypatch.setenv("ROOMSCOPE_AUDIO_BACKEND", "fake")
     activate("zh_CN")
     install_qt_translations(app)
     try:
@@ -79,10 +82,11 @@ def _texts(root: QWidget) -> list[str]:
 
 def _data_values() -> tuple[str, ...]:
     from roomscope.audio.backend import get_backend
-    from roomscope.ui.settings_dialog import RESTART_FOR_LANGUAGE
+    from roomscope.ui.settings_dialog import LANGUAGE_NAMES, RESTART_FOR_LANGUAGE
 
     devices = tuple(device.name for device in get_backend("fake").list_devices())
-    return (*devices, *RESTART_FOR_LANGUAGE.splitlines())
+    # Language names are written in their own language on purpose.
+    return (*devices, *RESTART_FOR_LANGUAGE.splitlines(), *LANGUAGE_NAMES.values())
 
 
 def _check(texts: list[str], where: str) -> None:

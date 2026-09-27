@@ -1628,7 +1628,7 @@ msgid "The log file and settings are in this folder."
 msgstr "日志文件和设置保存在此文件夹中。"
 
 msgid "Open Issue Page"
-msgstr "打开 Issue 页面"
+msgstr "打开 GitHub Issue 页面"
 
 msgid "&Environment Report for Bug Reports..."
 msgstr "用于问题报告的环境报告(&E)…"
