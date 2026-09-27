@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Protocol
 
 from roomscope.errors import ConfigurationError
+from roomscope.i18n import _
 from roomscope.models.result import AnalysisResult
 
 log = logging.getLogger("roomscope.exporters")
@@ -67,5 +68,7 @@ def get_exporter(name: str) -> ResultExporter:
         return table[name]
     except KeyError as exc:
         raise ConfigurationError(
-            f"unknown exporter {name!r}; available: {available_exporters()}"
+            _("unknown exporter {name}; available: {available}").format(
+                name=repr(name), available=available_exporters()
+            )
         ) from exc

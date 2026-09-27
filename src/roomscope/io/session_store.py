@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from roomscope.models.comparison import ComparisonResult
 
 from roomscope.errors import SessionError
+from roomscope.i18n import _
 from roomscope.io.wav import read_wav, write_wav
 from roomscope.models.result import AnalysisResult, Validity
 from roomscope.models.session import MeasurementSession
@@ -118,7 +119,9 @@ def save_measurement(
             json.dumps(result.to_dict(include_curves), indent=1), encoding="utf-8"
         )
     except (OSError, TypeError, ValueError) as exc:
-        raise SessionError(f"cannot write {result_path}: {exc}") from exc
+        raise SessionError(
+            _("cannot write {path}: {error}").format(path=result_path, error=exc)
+        ) from exc
     _copy_sidecar(original_sweep, base)
     if copy_recording:
         copied = _copy_recording(original_recording, base)
@@ -134,7 +137,9 @@ def save_measurement(
     try:
         session_path.write_text(json.dumps(session.to_dict(), indent=2), encoding="utf-8")
     except (OSError, TypeError, ValueError) as exc:
-        raise SessionError(f"cannot write {session_path}: {exc}") from exc
+        raise SessionError(
+            _("cannot write {path}: {error}").format(path=session_path, error=exc)
+        ) from exc
     return session_path
 
 
@@ -157,7 +162,9 @@ def bundle_session(
     else:
         # The archive would contain itself and grow without end.
         raise SessionError(
-            f"write the bundle outside the session folder (it would be inside {base})"
+            _("write the bundle outside the session folder (it would be inside {folder})").format(
+                folder=base
+            )
         )
     target.parent.mkdir(parents=True, exist_ok=True)
     inside = base.resolve()
@@ -175,7 +182,9 @@ def bundle_session(
                     continue
                 archive.write(path, path.relative_to(base).as_posix())
     except OSError as exc:
-        raise SessionError(f"cannot write bundle {target}: {exc}") from exc
+        raise SessionError(
+            _("cannot write bundle {path}: {error}").format(path=target, error=exc)
+        ) from exc
     return target
 
 
@@ -190,7 +199,11 @@ def _copy_into(src: Path, dest: Path) -> Path | None:
             return dest
         shutil.copy2(src, dest)
     except OSError as exc:
-        raise SessionError(f"cannot copy {src} to {dest}: {exc}") from exc
+        raise SessionError(
+            _("cannot copy {source} to {target}: {error}").format(
+                source=src, target=dest, error=exc
+            )
+        ) from exc
     return dest
 
 
@@ -249,10 +262,14 @@ class SessionListing:
 
     @property
     def label(self) -> str:
-        room = self.session.room_name or "(unnamed room)"
+        room = self.session.room_name or _("(unnamed room)")
         created = self.session.created_at
         rt60 = self.session.analysis_summary.get("broadband_rt60_estimate_s")
-        rt60_text = f"RT60 {rt60:.2f} s" if isinstance(rt60, (int, float)) else "RT60 n/a"
+        rt60_text = (
+            _("RT60 {seconds:.2f} s").format(seconds=rt60)
+            if isinstance(rt60, (int, float))
+            else _("RT60 n/a")
+        )
         return f"{room}  ·  {created}  ·  {rt60_text}"
 
 
@@ -263,7 +280,7 @@ def load_measurement(path: str | Path) -> LoadedMeasurement:
     session = MeasurementSession.from_dict(_read_json(session_file))
     result_path = _resolve_member(directory, session.result_path, RESULT_FILE)
     if not result_path.is_file():
-        raise SessionError(f"result.json not found next to {session_file}")
+        raise SessionError(_("result.json not found next to {path}").format(path=session_file))
     result = load_result(result_path)
     ir_path = _resolve_member(directory, session.impulse_response_path, IR_FILE)
     if ir_path.is_file():
@@ -277,8 +294,9 @@ def load_measurement(path: str | Path) -> LoadedMeasurement:
         )
     elif result.impulse_response.samples.size == 0:
         raise SessionError(
-            f"impulse_response.wav not found next to {session_file} and result.json "
-            "has no IR samples"
+            _(
+                "impulse_response.wav not found next to {path} and result.json has no IR samples"
+            ).format(path=session_file)
         )
     return LoadedMeasurement(directory=directory, session=session, result=result)
 
@@ -287,7 +305,7 @@ def list_sessions(root: str | Path, *, max_depth: int = 2) -> list[SessionListin
     """Find ``session.json`` files under ``root``, newest ``created_at`` first."""
     base = Path(root)
     if not base.is_dir():
-        raise SessionError(f"not a directory: {base}")
+        raise SessionError(_("not a directory: {path}").format(path=base))
     found: list[SessionListing] = []
     for candidate in base.rglob(SESSION_FILE):
         try:
@@ -311,7 +329,7 @@ def _session_file(path: str | Path) -> Path:
     if p.is_dir():
         p = p / SESSION_FILE
     if not p.is_file():
-        raise SessionError(f"session file not found: {p}")
+        raise SessionError(_("session file not found: {path}").format(path=p))
     return p
 
 
@@ -335,15 +353,19 @@ def _resolve_member(directory: Path, stored: str | None, default_name: str) -> P
     candidate = Path(stored)
     if candidate.is_absolute() or candidate.drive or candidate.root:
         raise SessionError(
-            f"session.json names {default_name} at an absolute path ({stored}); "
-            "session files must stay inside the session folder"
+            _(
+                "session.json names {name} at an absolute path ({path}); "
+                "session files must stay inside the session folder"
+            ).format(name=default_name, path=stored)
         )
     base = directory.resolve()
     resolved = (base / candidate).resolve()
     if resolved != base and base not in resolved.parents:
         raise SessionError(
-            f"session.json names {default_name} outside the session folder ({stored}); "
-            "session files must stay inside the session folder"
+            _(
+                "session.json names {name} outside the session folder ({path}); "
+                "session files must stay inside the session folder"
+            ).format(name=default_name, path=stored)
         )
     return resolved
 
@@ -353,7 +375,7 @@ def save_comparison(path: str | Path, comparison: object) -> Path:
     from roomscope.models.comparison import ComparisonResult
 
     if not isinstance(comparison, ComparisonResult):
-        raise SessionError("save_comparison expects a ComparisonResult")
+        raise SessionError(_("save_comparison expects a ComparisonResult"))
     target = Path(path)
     if target.suffix.lower() != ".json":
         target = target / COMPARISON_FILE
@@ -361,7 +383,9 @@ def save_comparison(path: str | Path, comparison: object) -> Path:
     try:
         target.write_text(json.dumps(comparison.to_dict(), indent=1), encoding="utf-8")
     except (OSError, TypeError, ValueError) as exc:
-        raise SessionError(f"cannot write {target}: {exc}") from exc
+        raise SessionError(
+            _("cannot write {path}: {error}").format(path=target, error=exc)
+        ) from exc
     return target
 
 
@@ -373,5 +397,5 @@ def load_comparison(path: str | Path) -> ComparisonResult:
     if target.is_dir():
         target = target / COMPARISON_FILE
     if not target.is_file():
-        raise SessionError(f"comparison file not found: {target}")
+        raise SessionError(_("comparison file not found: {path}").format(path=target))
     return ComparisonResult.from_dict(_read_json(target, kind="comparison"))

@@ -8,6 +8,7 @@ import numpy as np
 import numpy.typing as npt
 
 from roomscope.errors import InvalidAudioError
+from roomscope.i18n import _, diag
 
 FloatArray = npt.NDArray[np.float64]
 
@@ -26,13 +27,13 @@ class AudioSignal:
 
     def __post_init__(self) -> None:
         if self.sample_rate <= 0:
-            raise InvalidAudioError("sample_rate must be positive")
+            raise InvalidAudioError(_("sample_rate must be positive"))
         if self.samples.ndim not in (1, 2):
-            raise InvalidAudioError("samples must be 1-D (mono) or 2-D (frames, channels)")
+            raise InvalidAudioError(_("samples must be 1-D (mono) or 2-D (frames, channels)"))
         if self.samples.shape[0] == 0:
-            raise InvalidAudioError("signal is empty")
+            raise InvalidAudioError(_("signal is empty"))
         if not np.all(np.isfinite(self.samples)):
-            raise InvalidAudioError("signal contains NaN or infinite samples")
+            raise InvalidAudioError(_("signal contains NaN or infinite samples"))
 
     @property
     def n_samples(self) -> int:
@@ -49,7 +50,9 @@ class AudioSignal:
     def channel(self, index: int) -> FloatArray:
         if index < 0 or index >= self.n_channels:
             raise InvalidAudioError(
-                f"channel {index} does not exist (signal has {self.n_channels} channel(s))"
+                _("channel {index} does not exist (signal has {count} channel(s))").format(
+                    index=index, count=self.n_channels
+                )
             )
         if self.samples.ndim == 1:
             return self.samples
@@ -68,8 +71,10 @@ class AudioSignal:
             return self.channel(index), index, None
         rms = np.sqrt(np.mean(self.samples.astype(np.float64) ** 2, axis=0))
         chosen = int(np.argmax(rms))
-        warning = (
-            f"recording has {self.n_channels} channels; channel {chosen} (highest RMS) "
-            "was analysed. Use the channel setting to choose explicitly."
+        warning = diag(
+            "recording has {count} channels; channel {chosen} (highest RMS) "
+            "was analysed. Use the channel setting to choose explicitly.",
+            count=self.n_channels,
+            chosen=chosen,
         )
         return self.channel(chosen), chosen, warning

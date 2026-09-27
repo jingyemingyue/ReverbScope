@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Any
 
 from roomscope.errors import SessionError
+from roomscope.i18n import _
+from roomscope.models.loadutil import record_name
 
 #: Refused before ``json.loads``. 32 MiB is well above a result with curves.
 MAX_JSON_BYTES = 32 * 1024 * 1024
@@ -46,26 +48,28 @@ def read_json_object(path: Path, *, kind: str = "JSON") -> dict[str, Any]:
     try:
         size = path.stat().st_size
     except OSError as exc:
-        raise SessionError(f"cannot read {path}: {exc}") from exc
+        raise SessionError(_("cannot read {path}: {error}").format(path=path, error=exc)) from exc
     if size > MAX_JSON_BYTES:
         raise SessionError(
-            f"{path.name} is {size} bytes; {kind} files larger than "
-            f"{MAX_JSON_BYTES} bytes are refused"
+            _("{name} is {size} bytes; {kind} files larger than {limit} bytes are refused").format(
+                name=path.name, size=size, kind=record_name(kind), limit=MAX_JSON_BYTES
+            )
         )
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as exc:
-        raise SessionError(f"cannot read {path}: {exc}") from exc
+        raise SessionError(_("cannot read {path}: {error}").format(path=path, error=exc)) from exc
     depth = json_nesting_depth(text)
     if depth > MAX_JSON_DEPTH:
         raise SessionError(
-            f"{path.name} nests {depth} levels; {kind} files deeper than "
-            f"{MAX_JSON_DEPTH} are refused"
+            _("{name} nests {depth} levels; {kind} files deeper than {limit} are refused").format(
+                name=path.name, depth=depth, kind=record_name(kind), limit=MAX_JSON_DEPTH
+            )
         )
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
-        raise SessionError(f"cannot read {path}: {exc}") from exc
+        raise SessionError(_("cannot read {path}: {error}").format(path=path, error=exc)) from exc
     if not isinstance(data, dict):
-        raise SessionError(f"{path} is not a JSON object")
+        raise SessionError(_("{path} is not a JSON object").format(path=path))
     return data

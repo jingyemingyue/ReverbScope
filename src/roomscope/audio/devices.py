@@ -10,6 +10,7 @@ from typing import Any
 
 from roomscope.audio.backend import DeviceInfo
 from roomscope.errors import AudioBackendUnavailableError, AudioDeviceError
+from roomscope.i18n import _
 
 
 def sounddevice_module() -> Any:
@@ -17,8 +18,10 @@ def sounddevice_module() -> Any:
         import sounddevice
     except (ImportError, OSError) as exc:
         raise AudioBackendUnavailableError(
-            "the audio backend (sounddevice / PortAudio) is not available; "
-            "Standalone Mode needs it, Universal DAW Mode does not"
+            _(
+                "the audio backend (sounddevice / PortAudio) is not available; "
+                "Standalone Mode needs it, Universal DAW Mode does not"
+            )
         ) from exc
     return sounddevice
 
@@ -30,7 +33,7 @@ def list_devices() -> list[DeviceInfo]:
         host_apis = sd.query_hostapis()
         defaults = sd.default.device
     except Exception as exc:
-        raise AudioDeviceError(f"cannot query audio devices: {exc}") from exc
+        raise AudioDeviceError(_("cannot query audio devices: {error}").format(error=exc)) from exc
     # sounddevice returns an _InputOutputPair (indexable, not a tuple); -1 is
     # PortAudio's paNoDevice.
     try:
@@ -101,6 +104,11 @@ def check_sample_rate(
                 extra_settings=extra_settings,
             )
     except Exception as exc:
+        template = (
+            _("input device {device} does not support {rate} Hz: {error}")
+            if kind == "input"
+            else _("output device {device} does not support {rate} Hz: {error}")
+        )
         raise AudioDeviceError(
-            f"{kind} device {device_index} does not support {sample_rate} Hz: {exc}"
+            template.format(device=device_index, rate=sample_rate, error=exc)
         ) from exc

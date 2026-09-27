@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 from roomscope.errors import SessionError
+from roomscope.i18n import _
 from roomscope.io.jsonutil import read_json_object
 from roomscope.io.session_store import SESSION_FILE, list_sessions
 from roomscope.models.project import PositionEntry, Project
@@ -33,7 +34,9 @@ def save_project(directory: str | Path, project: Project) -> Path:
     try:
         target.write_text(json.dumps(project.to_dict(), indent=2) + "\n", encoding="utf-8")
     except (OSError, TypeError, ValueError) as exc:
-        raise SessionError(f"cannot write {target}: {exc}") from exc
+        raise SessionError(
+            _("cannot write {path}: {error}").format(path=target, error=exc)
+        ) from exc
     return target
 
 

@@ -23,6 +23,7 @@ from roomscope.audio.backend import (
     supported_sample_rate,
 )
 from roomscope.errors import AudioDeviceError, ConfigurationError, MeasurementCancelledError
+from roomscope.i18n import _
 from roomscope.models.audio import AudioSignal, FloatArray
 
 DECAY_CONSTANT = 3.0 * np.log(10.0) * 2.0
@@ -104,9 +105,9 @@ class FakeBackend:
     ) -> None:
         del channels, options
         if kind not in {"input", "output"}:
-            raise ConfigurationError("kind must be 'input' or 'output'")
+            raise ConfigurationError(_("kind must be 'input' or 'output'"))
         if device != 0:
-            raise AudioDeviceError(f"fake backend has no device {device}")
+            raise AudioDeviceError(_("fake backend has no device {device}").format(device=device))
         supported_sample_rate(sample_rate)
 
     def play_and_record(
@@ -126,11 +127,11 @@ class FakeBackend:
     ) -> AudioSignal:
         del options  # the synthetic backend has no host API
         if not input_channels:
-            raise ConfigurationError("at least one input channel is required")
+            raise ConfigurationError(_("at least one input channel is required"))
         if any(ch < 1 for ch in input_channels) or output_channel < 1:
-            raise ConfigurationError("channels are 1-based and must be >= 1")
+            raise ConfigurationError(_("channels are 1-based and must be >= 1"))
         if input_device not in (None, 0) or output_device not in (None, 0):
-            raise AudioDeviceError("fake backend only has device 0")
+            raise AudioDeviceError(_("fake backend only has device 0"))
         supported_sample_rate(sample_rate)
         signal = prepare_playback(playback, sample_rate, level_dbfs, extra_record_s)
         room = (
@@ -166,7 +167,7 @@ class FakeBackend:
             if cancel is not None and cancel.is_set():
                 self.last_output_block = np.zeros(min(CALLBACK_BLOCK, n - start), dtype=np.float64)
                 self.cancelled = True
-                raise MeasurementCancelledError("measurement stopped")
+                raise MeasurementCancelledError(_("measurement stopped"))
             self.last_output_block = np.asarray(
                 signal[start : start + CALLBACK_BLOCK], dtype=np.float64
             )

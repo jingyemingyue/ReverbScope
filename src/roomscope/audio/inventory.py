@@ -30,6 +30,7 @@ from typing import Any
 
 from roomscope.audio.backend import AudioBackend, DeviceInfo, StreamOptions
 from roomscope.errors import RoomScopeError
+from roomscope.i18n import _, diag
 from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
 #: PortAudio host API names (as PortAudio reports them) -> short kind.
@@ -55,32 +56,38 @@ HOST_API_PREFERENCE: dict[str, tuple[str, ...]] = {
     "linux": ("alsa", "jack", "oss"),
 }
 
-#: One sentence per host API on what matters for a measurement.
+#: One sentence per host API on what matters for a measurement. Stored in the
+#: JSON reports in English (:func:`~roomscope.i18n.diag`); shown with
+#: :func:`~roomscope.i18n.localize`.
 HOST_API_NOTES: dict[str, str] = {
-    "wasapi": (
+    "wasapi": diag(
         "WASAPI: shared mode goes through the Windows audio engine and accepts only the "
         "device's Default Format rate; exclusive mode (--wasapi-exclusive) bypasses the "
         "engine at a rate the hardware supports"
     ),
-    "wdmks": "WDM kernel streaming: bypasses the Windows mixer; the device must support the rate",
-    "asio": "ASIO: direct driver path (not included in RoomScope's desktop bundles)",
-    "directsound": (
+    "wdmks": diag(
+        "WDM kernel streaming: bypasses the Windows mixer; the device must support the rate"
+    ),
+    "asio": diag("ASIO: direct driver path (not included in RoomScope's desktop bundles)"),
+    "directsound": diag(
         "DirectSound: deprecated, runs on the Windows audio engine; resamples and mixes, "
         "and PortAudio does not check its rates (all look accepted); prefer WASAPI"
     ),
-    "mme": (
+    "mme": diag(
         "MME: legacy path through the Windows audio engine; resamples and mixes, truncates "
         "device names; prefer WASAPI"
     ),
-    "coreaudio": (
+    "coreaudio": diag(
         "Core Audio: the device runs at its nominal rate (Audio MIDI Setup) and PortAudio "
         "converts other rates, unless --coreaudio-set-rate sets the device rate and refuses "
         "to convert"
     ),
-    "alsa": "ALSA: a hw: device is direct; default, pulse, pipewire, dmix and plug devices may resample",
-    "jack": "JACK: runs at the JACK server's rate only",
-    "oss": "OSS: legacy Linux interface",
-    "fake": "synthetic backend: nothing is played",
+    "alsa": diag(
+        "ALSA: a hw: device is direct; default, pulse, pipewire, dmix and plug devices may resample"
+    ),
+    "jack": diag("JACK: runs at the JACK server's rate only"),
+    "oss": diag("OSS: legacy Linux interface"),
+    "fake": diag("synthetic backend: nothing is played"),
 }
 
 #: ALSA device names that are plugins or sound servers rather than hardware.
@@ -264,7 +271,7 @@ def build_inventory(
         if note:
             notes.append(note)
         if kind == "alsa" and _ALSA_VIRTUAL.match(device.name):
-            notes.append("ALSA plugin or sound-server device: may resample and mix")
+            notes.append(diag("ALSA plugin or sound-server device: may resample and mix"))
         input_rates = (
             _supported(backend, device, rates, "input") if probe_rates and device.is_input else ()
         )
@@ -272,9 +279,9 @@ def build_inventory(
             _supported(backend, device, rates, "output") if probe_rates and device.is_output else ()
         )
         if probe_rates and device.is_input and not input_rates:
-            notes.append("accepts none of RoomScope's sample rates for recording")
+            notes.append(diag("accepts none of RoomScope's sample rates for recording"))
         if probe_rates and device.is_output and not output_rates:
-            notes.append("accepts none of RoomScope's sample rates for playback")
+            notes.append(diag("accepts none of RoomScope's sample rates for playback"))
         probes.append(
             DeviceProbe(
                 device=device,
@@ -289,7 +296,7 @@ def build_inventory(
     probes = _mark_recommended(probes, platform, probe_rates)
     inventory_notes: list[str] = []
     if not probes:
-        inventory_notes.append("no audio device found; Universal DAW Mode still works")
+        inventory_notes.append(diag("no audio device found; Universal DAW Mode still works"))
     return DeviceInventory(
         platform=platform,
         backend=getattr(backend, "name", "unknown"),
@@ -413,12 +420,12 @@ def separate_clocks_warning(
         return None
     if same_adapter(inp, out):
         return None
-    return (
-        f"playback ({out.name}) and recording ({inp.name}) use different devices, which run on "
+    return _(
+        "playback ({output}) and recording ({input}) use different devices, which run on "
         "separate sample clocks; their drift smears the measurement. Use one interface for both, "
         "or an aggregate device with drift correction (macOS), and check the result with a "
         "loopback"
-    )
+    ).format(output=out.name, input=inp.name)
 
 
 def check_channels(
@@ -443,13 +450,15 @@ def check_channels(
     out = pick(output_device, "is_default_output")
     if inp is not None and input_channels and max(input_channels) > inp.max_input_channels:
         raise ConfigurationError(
-            f"input channel {max(input_channels)} does not exist on {inp.name} "
-            f"({inp.max_input_channels} input channel(s))"
+            _(
+                "input channel {channel} does not exist on {device} ({count} input channel(s))"
+            ).format(channel=max(input_channels), device=inp.name, count=inp.max_input_channels)
         )
     if out is not None and output_channel > out.max_output_channels:
         raise ConfigurationError(
-            f"output channel {output_channel} does not exist on {out.name} "
-            f"({out.max_output_channels} output channel(s))"
+            _(
+                "output channel {channel} does not exist on {device} ({count} output channel(s))"
+            ).format(channel=output_channel, device=out.name, count=out.max_output_channels)
         )
 
 
@@ -475,16 +484,22 @@ def resolve_duplex(
     by_index = {device.index: device for device in devices}
     for index in (input_device, output_device):
         if index is not None and index not in by_index:
-            raise ConfigurationError(f"there is no audio device {index}")
+            raise ConfigurationError(_("there is no audio device {index}").format(index=index))
     chosen_in = by_index.get(input_device) if input_device is not None else None
     chosen_out = by_index.get(output_device) if output_device is not None else None
     if chosen_in is not None and chosen_out is not None:
         if chosen_in.host_api != chosen_out.host_api:
             raise ConfigurationError(
-                f"input {chosen_in.name!r} ({chosen_in.host_api}) and output "
-                f"{chosen_out.name!r} ({chosen_out.host_api}) belong to different host APIs; "
-                "PortAudio records and plays in one stream only within one host API. "
-                "Choose both on the same host API"
+                _(
+                    "input {input} ({input_api}) and output {output} ({output_api}) belong to "
+                    "different host APIs; PortAudio records and plays in one stream only within "
+                    "one host API. Choose both on the same host API"
+                ).format(
+                    input=repr(chosen_in.name),
+                    input_api=chosen_in.host_api,
+                    output=repr(chosen_out.name),
+                    output_api=chosen_out.host_api,
+                )
             )
         return input_device, output_device
     anchor = chosen_in or chosen_out
@@ -492,15 +507,12 @@ def resolve_duplex(
     api = next((a for a in host_apis if a.name == anchor.host_api), None)
     if chosen_in is None:
         other = api.default_input if api is not None else None
-        kind = "input"
+        missing = _("{api} has no default input device; choose the input device on {api} as well")
     else:
         other = api.default_output if api is not None else None
-        kind = "output"
+        missing = _("{api} has no default output device; choose the output device on {api} as well")
     if other is None or other not in by_index:
-        raise ConfigurationError(
-            f"{anchor.host_api} has no default {kind} device; choose the {kind} device "
-            f"on {anchor.host_api} as well"
-        )
+        raise ConfigurationError(missing.format(api=anchor.host_api))
     return (other, output_device) if chosen_in is None else (input_device, other)
 
 
@@ -580,12 +592,15 @@ def check_host_api_options(device: DeviceInfo, options: StreamOptions | None) ->
         return
     if options.wasapi_exclusive and device.host_api != "Windows WASAPI":
         raise ConfigurationError(
-            f"WASAPI exclusive mode was requested, but {device.name!r} is a "
-            f"{device.host_api} device; choose a Windows WASAPI device or drop "
-            "--wasapi-exclusive"
+            _(
+                "WASAPI exclusive mode was requested, but {device} is a {api} device; "
+                "choose a Windows WASAPI device or drop --wasapi-exclusive"
+            ).format(device=repr(device.name), api=device.host_api)
         )
     if options.coreaudio_change_device_rate and device.host_api != "Core Audio":
         raise ConfigurationError(
-            f"setting the Core Audio device rate was requested, but {device.name!r} is a "
-            f"{device.host_api} device; drop --coreaudio-set-rate"
+            _(
+                "setting the Core Audio device rate was requested, but {device} is a {api} "
+                "device; drop --coreaudio-set-rate"
+            ).format(device=repr(device.name), api=device.host_api)
         )

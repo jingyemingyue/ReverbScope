@@ -22,6 +22,7 @@ import numpy as np
 from roomscope.audio.backend import CALLBACK_BLOCK, DeviceInfo, StreamOptions, prepare_playback
 from roomscope.audio.devices import check_sample_rate, list_devices, sounddevice_module
 from roomscope.errors import AudioDeviceError, ConfigurationError, MeasurementCancelledError
+from roomscope.i18n import _, diag
 from roomscope.models.audio import AudioSignal, FloatArray
 
 log = logging.getLogger(__name__)
@@ -109,9 +110,9 @@ class PortAudioBackend:
         options: StreamOptions | None = None,
     ) -> AudioSignal:
         if not input_channels:
-            raise ConfigurationError("at least one input channel is required")
+            raise ConfigurationError(_("at least one input channel is required"))
         if any(ch < 1 for ch in input_channels) or output_channel < 1:
-            raise ConfigurationError("channels are 1-based and must be >= 1")
+            raise ConfigurationError(_("channels are 1-based and must be >= 1"))
         sd = sounddevice_module()
         signal = prepare_playback(playback, sample_rate, level_dbfs, extra_record_s)
         n_in = max(input_channels)
@@ -212,28 +213,34 @@ class PortAudioBackend:
                         # has stalled and no callback comes, stop waiting.
                         cancelled_at = now if cancelled_at is None else cancelled_at
                         if now - cancelled_at > CANCEL_GRACE_S:
-                            raise MeasurementCancelledError("measurement stopped")
+                            raise MeasurementCancelledError(_("measurement stopped"))
                     if now > deadline:
-                        raise AudioDeviceError("playback/recording timed out")
+                        raise AudioDeviceError(_("playback/recording timed out"))
         except MeasurementCancelledError:
             raise
         except AudioDeviceError:
             if cancel is not None and cancel.is_set():
-                raise MeasurementCancelledError("measurement stopped") from None
+                raise MeasurementCancelledError(_("measurement stopped")) from None
             raise
         except Exception as exc:
             if cancel is not None and cancel.is_set():
-                raise MeasurementCancelledError("measurement stopped") from exc
-            raise AudioDeviceError(f"playback/recording failed: {exc}") from exc
+                raise MeasurementCancelledError(_("measurement stopped")) from exc
+            raise AudioDeviceError(
+                _("playback/recording failed: {error}").format(error=exc)
+            ) from exc
         if callback_error:
             raise AudioDeviceError(
-                f"playback/recording failed in the audio callback: {callback_error[0]!r}"
+                _("playback/recording failed in the audio callback: {error}").format(
+                    error=repr(callback_error[0])
+                )
             ) from callback_error[0]
         if cancel is not None and cancel.is_set():
-            raise MeasurementCancelledError("measurement stopped")
+            raise MeasurementCancelledError(_("measurement stopped"))
         if position[0] < frames_total:
             raise AudioDeviceError(
-                f"the audio stream ended after {position[0]} of {frames_total} frames"
+                _("the audio stream ended after {done} of {total} frames").format(
+                    done=position[0], total=frames_total
+                )
             )
         device_warnings: tuple[str, ...] = ()
         if xruns:
@@ -241,8 +248,12 @@ class PortAudioBackend:
             # samples, an output underflow inserts a gap in the sweep. Either
             # breaks the sweep's timing that deconvolution relies on.
             device_warnings = (
-                f"the audio device reported {len(xruns)} buffer problem(s) during the take "
-                f"({'; '.join(sorted(set(xruns)))}); the recording may contain dropouts",
+                diag(
+                    "the audio device reported {count} buffer problem(s) during the take "
+                    "({flags}); the recording may contain dropouts",
+                    count=len(xruns),
+                    flags="; ".join(sorted(set(xruns))),
+                ),
             )
             log.warning("%s; measure again if the result looks wrong", device_warnings[0])
         report(1.0)

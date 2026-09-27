@@ -19,6 +19,7 @@ from roomscope import __version__
 from roomscope.core.pipeline import Reference
 from roomscope.core.sweep import measurement_signal
 from roomscope.errors import ConfigurationError, InvalidAudioError, SessionError
+from roomscope.i18n import _
 from roomscope.io.jsonutil import read_json_object
 from roomscope.models.audio import AudioSignal, FloatArray
 from roomscope.models.configuration import SweepSettings
@@ -32,7 +33,7 @@ def _soundfile() -> Any:
         import soundfile
     except ImportError as exc:  # pragma: no cover - depends on the environment
         raise InvalidAudioError(
-            "the 'soundfile' package (libsndfile) is required for WAV I/O"
+            _("the 'soundfile' package (libsndfile) is required for WAV I/O")
         ) from exc
     return soundfile
 
@@ -42,14 +43,16 @@ def read_wav(path: str | Path) -> AudioSignal:
     sf = _soundfile()
     file_path = Path(path)
     if not file_path.is_file():
-        raise InvalidAudioError(f"audio file not found: {file_path}")
+        raise InvalidAudioError(_("audio file not found: {path}").format(path=file_path))
     try:
         data, sample_rate = sf.read(str(file_path), dtype="float64", always_2d=True)
     except Exception as exc:  # libsndfile raises RuntimeError / soundfile.LibsndfileError
-        raise InvalidAudioError(f"cannot read audio file {file_path.name}: {exc}") from exc
+        raise InvalidAudioError(
+            _("cannot read audio file {name}: {error}").format(name=file_path.name, error=exc)
+        ) from exc
     samples = np.asarray(data, dtype=np.float64)
     if samples.shape[0] == 0:
-        raise InvalidAudioError(f"audio file is empty: {file_path.name}")
+        raise InvalidAudioError(_("audio file is empty: {name}").format(name=file_path.name))
     if samples.shape[1] == 1:
         samples = np.ascontiguousarray(samples[:, 0])
     return AudioSignal(samples=samples, sample_rate=int(sample_rate), source=str(file_path))
@@ -71,16 +74,18 @@ def write_wav(
     file_path = Path(path)
     data = np.asarray(samples, dtype=np.float64)
     if data.ndim not in (1, 2) or data.shape[0] == 0:
-        raise InvalidAudioError("samples must be a non-empty 1-D or 2-D array")
+        raise InvalidAudioError(_("samples must be a non-empty 1-D or 2-D array"))
     if subtype.startswith("PCM") and float(np.max(np.abs(data))) > 1.0:
         raise ConfigurationError(
-            "signal exceeds full scale; use subtype='FLOAT' or lower the level"
+            _("signal exceeds full scale; use subtype='FLOAT' or lower the level")
         )
     file_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         sf.write(str(file_path), data, sample_rate, subtype=subtype)
     except Exception as exc:
-        raise InvalidAudioError(f"cannot write audio file {file_path}: {exc}") from exc
+        raise InvalidAudioError(
+            _("cannot write audio file {path}: {error}").format(path=file_path, error=exc)
+        ) from exc
     return file_path
 
 
@@ -122,13 +127,19 @@ def read_sweep_sidecar(path: str | Path) -> SweepSettings | None:
     try:
         if side.stat().st_size > 1_000_000:
             raise ConfigurationError(
-                f"{side.name} is larger than 1 MB; a sweep sidecar cannot be that large"
+                _("{name} is larger than 1 MB; a sweep sidecar cannot be that large").format(
+                    name=side.name
+                )
             )
         payload = read_json_object(side, kind="sweep sidecar")
     except (OSError, SessionError) as exc:
-        raise ConfigurationError(f"cannot read sweep sidecar {side.name}: {exc}") from exc
+        raise ConfigurationError(
+            _("cannot read sweep sidecar {name}: {error}").format(name=side.name, error=exc)
+        ) from exc
     if SIDECAR_KEY not in payload:
-        raise ConfigurationError(f"{side.name} is not a RoomScope sweep sidecar")
+        raise ConfigurationError(
+            _("{name} is not a RoomScope sweep sidecar").format(name=side.name)
+        )
     return SweepSettings.from_dict(payload[SIDECAR_KEY])
 
 
@@ -140,6 +151,8 @@ def load_reference(path: str | Path) -> Reference:
         return Reference.from_settings(settings)
     p = Path(path)
     if p.suffix == ".json":
-        raise ConfigurationError(f"{p.name} does not contain a sweep definition")
+        raise ConfigurationError(
+            _("{name} does not contain a sweep definition").format(name=p.name)
+        )
     signal = read_wav(p)
     return Reference.from_signal(signal.samples, signal.sample_rate)

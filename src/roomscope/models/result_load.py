@@ -12,7 +12,8 @@ from typing import Any
 import numpy as np
 
 from roomscope.errors import SessionError
-from roomscope.models.loadutil import read_schema_version
+from roomscope.i18n import _
+from roomscope.models.loadutil import read_schema_version, record_name
 from roomscope.models.result import (
     RESULT_SCHEMA_VERSION,
     AliasedDistortion,
@@ -43,7 +44,7 @@ from roomscope.models.result import (
 
 def _obj(data: Any, name: str) -> dict[str, Any]:
     if not isinstance(data, dict):
-        raise SessionError(f"{name} must be a JSON object")
+        raise SessionError(_("{kind} must be a JSON object").format(kind=record_name(name)))
     return data
 
 
@@ -57,7 +58,7 @@ def _pair(values: Any) -> tuple[float, float] | None:
     if values is None:
         return None
     if not isinstance(values, (list, tuple)) or len(values) != 2:
-        raise SessionError("expected a pair of numbers")
+        raise SessionError(_("expected a pair of numbers"))
     return (float(values[0]), float(values[1]))
 
 
@@ -71,7 +72,7 @@ def _validity(value: Any) -> Validity:
     try:
         return Validity(str(value))
     except ValueError as exc:
-        raise SessionError(f"unknown validity {value!r}") from exc
+        raise SessionError(_("unknown validity {value}").format(value=repr(value))) from exc
 
 
 def decay_metric_from_dict(data: Any) -> DecayMetric:
@@ -407,4 +408,6 @@ def analysis_result_from_dict(data: Any) -> AnalysisResult:
             roomscope_version=str(payload.get("roomscope_version", "")),
         )
     except (KeyError, TypeError, ValueError) as exc:
-        raise SessionError(f"result.json is incomplete or invalid: {exc}") from exc
+        raise SessionError(
+            _("result.json is incomplete or invalid: {error}").format(error=exc)
+        ) from exc

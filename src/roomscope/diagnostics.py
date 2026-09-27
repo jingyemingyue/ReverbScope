@@ -20,9 +20,12 @@ from __future__ import annotations
 import json
 import platform
 import sys
+import unicodedata
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
+
+from roomscope.i18n import N_, _, diag, localize, pgettext
 
 #: Distribution name -> import name. A desktop bundle usually carries no
 #: package metadata (PyInstaller copies it only when a hook asks), so the
@@ -40,7 +43,8 @@ PACKAGES = {
 #: Written next to this module by packaging/roomscope.spec (desktop bundles only).
 BUILD_INFO_FILENAME = "build_info.json"
 
-PRIVACY_NOTE = (
+#: The last line of the report (English); :func:`privacy_note` translates it.
+PRIVACY_NOTE = N_(
     "Review before posting: device names can contain personal names; "
     "paths under your home folder are shown as ~."
 )
@@ -159,8 +163,10 @@ def audio_callback_check() -> str:
         callback = ffi.callback("int(*)(int)", lambda value: value + 1)
         answer = callback(41)
     except Exception as exc:  # MemoryError: "Cannot allocate write+execute memory"
-        return f"failed: {exc!r}"
-    return "ok" if answer == 42 else f"failed: the callback returned {answer!r}"
+        return diag("failed: {error}", error=repr(exc))
+    if answer == 42:
+        return "ok"
+    return diag("failed: the callback returned {answer}", answer=repr(answer))
 
 
 def _settings_summary() -> dict[str, Any]:
@@ -218,74 +224,119 @@ def environment_report(
     return report
 
 
+def privacy_note() -> str:
+    """:data:`PRIVACY_NOTE` in the active language."""
+    return _(
+        "Review before posting: device names can contain personal names; "
+        "paths under your home folder are shown as ~."
+    )
+
+
 def _rates(rates: list[int]) -> str:
-    return ", ".join(str(rate) for rate in rates) or "none"
+    return ", ".join(str(rate) for rate in rates) or pgettext("sample rates", "none")
+
+
+def _edition_name(edition: str) -> str:
+    if edition == "developer":
+        return pgettext("edition", "developer")
+    if edition == "user":
+        return pgettext("edition", "user")
+    return edition
 
 
 def _format_devices(audio: dict[str, Any]) -> list[str]:
     probed = bool(audio.get("rates_probed"))
     lines = [
-        "Devices (* default; sample rates accepted for 1 channel, nothing was played):"
+        _("Devices (* default; sample rates accepted for 1 channel, nothing was played):")
         if probed
-        else "Devices (* default; sample rates not probed, use roomscope doctor --probe):"
+        else _("Devices (* default; sample rates not probed, use roomscope doctor --probe):")
     ]
     for probe in audio.get("devices", []):
         device = probe["device"]
         star = " *" if device.get("is_default_input") or device.get("is_default_output") else ""
-        lines.append(
-            f"  [{device['index']:>2}] {device['name']}{star} | {device['host_api']} | "
-            f"in {device['max_input_channels']} / out {device['max_output_channels']} | "
-            f"default {device['default_sample_rate']:.0f} Hz"
+        row = _(
+            "[{index:>2}] {name}{star} | {host_api} | in {inputs} / out {outputs} | "
+            "default {rate:.0f} Hz"
+        ).format(
+            index=device["index"],
+            name=device["name"],
+            star=star,
+            host_api=device["host_api"],
+            inputs=device["max_input_channels"],
+            outputs=device["max_output_channels"],
+            rate=device["default_sample_rate"],
         )
+        lines.append("  " + row)
         details = []
         if probed and device["max_input_channels"] > 0:
-            details.append(f"record {_rates(probe['input_rates'])}")
+            details.append(_("record {rates}").format(rates=_rates(probe["input_rates"])))
         if probed and device["max_output_channels"] > 0:
-            details.append(f"play {_rates(probe['output_rates'])}")
-        recommended = [
-            name
-            for name, flag in (
-                ("input", probe.get("recommended_input")),
-                ("output", probe.get("recommended_output")),
-            )
-            if flag
-        ]
-        if recommended:
-            details.append("recommended " + " + ".join(recommended))
+            details.append(_("play {rates}").format(rates=_rates(probe["output_rates"])))
+        recommended_input = bool(probe.get("recommended_input"))
+        recommended_output = bool(probe.get("recommended_output"))
+        if recommended_input and recommended_output:
+            details.append(_("recommended input + output"))
+        elif recommended_input:
+            details.append(_("recommended input"))
+        elif recommended_output:
+            details.append(_("recommended output"))
         if details:
             lines.append("       " + "; ".join(details))
     return lines
 
 
+def _field(label: str, value: object) -> str:
+    """``label`` padded to 20 terminal columns (a CJK character takes two)."""
+    width = sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in label)
+    return f"  {label}{' ' * max(1, 21 - width)}{value}"
+
+
 def format_environment_report(report: dict[str, Any]) -> str:
+    """The report as text in the active language (the JSON stays English)."""
     build = report.get("build") or {}
+    heading = (
+        _("RoomScope {version} ({edition} edition, desktop bundle)")
+        if report.get("frozen_bundle")
+        else _("RoomScope {version} ({edition} edition)")
+    )
     lines = [
-        f"RoomScope {report['roomscope']} ({report['edition']} edition"
-        + (", desktop bundle)" if report.get("frozen_bundle") else ")"),
-        f"Build: {build.get('commit') or 'no commit recorded (source or pip install)'}",
+        heading.format(version=report["roomscope"], edition=_edition_name(report["edition"])),
+        _("Build: {commit}").format(commit=build["commit"])
+        if build.get("commit")
+        else _("Build: no commit recorded (source or pip install)"),
     ]
     if build.get("ci_run"):
-        lines.append(f"CI run: {build['ci_run']}")
+        lines.append(_("CI run: {url}").format(url=build["ci_run"]))
     lines += [
-        f"Python {report['python']} ({report['implementation']}) on {report['platform']} "
-        f"[{report['machine']}]",
-        f"Language: {report['language']}",
-        "Packages:",
+        _("Python {version} ({implementation}) on {platform} [{machine}]").format(
+            version=report["python"],
+            implementation=report["implementation"],
+            platform=report["platform"],
+            machine=report["machine"],
+        ),
+        _("Language: {language}").format(language=report["language"]),
+        _("Packages:"),
     ]
     for name, found in report["packages"].items():
-        lines.append(f"  {name:<20} {found or 'not installed'}")
-    lines.append(f"  {'libsndfile':<20} {report.get('libsndfile') or 'unknown'}")
-    lines.append("Settings:")
+        lines.append(_field(name, found or _("not installed")))
+    lines.append(_field("libsndfile", report.get("libsndfile") or _("unknown")))
+    lines.append(_("Settings:"))
     for key, value in report.get("settings", {}).items():
-        lines.append(f"  {key:<20} {'-' if value in ('', None) else value}")
-    lines.append("Paths:")
+        lines.append(_field(key, "-" if value in ("", None) else value))
+    lines.append(_("Paths:"))
     for key, value in report["paths"].items():
-        lines.append(f"  {key:<20} {value}")
+        lines.append(_field(key, value))
     audio = report.get("audio", {})
-    lines.append(f"Audio callbacks: {report.get('audio_callbacks', 'not checked')}")
-    lines.append("Audio:")
+    callbacks = report.get("audio_callbacks")
+    if callbacks is None:
+        lines.append(_("Audio callbacks: not checked"))
+    elif callbacks == "ok":
+        lines.append(_("Audio callbacks: ok"))
+    else:
+        lines.append(_("Audio callbacks: {status}").format(status=localize(str(callbacks))))
+    lines.append(_("Audio:"))
     if "error" in audio:
-        lines.append(f"  unavailable: {audio['error']}")
+        lines.append("  " + _("unavailable: {error}").format(error=localize(str(audio["error"]))))
     else:
         devices = audio.get("devices", [])
         default_in = next(
@@ -297,15 +348,15 @@ def format_environment_report(report: dict[str, Any]) -> str:
         apis = ", ".join(
             f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
         )
-        lines.append(f"  backend              {audio.get('backend')}")
-        lines.append(f"  PortAudio            {audio.get('portaudio_version') or '-'}")
-        lines.append(f"  host APIs            {apis or '-'}")
-        lines.append(f"  devices              {len(devices)}")
-        lines.append(f"  default input        {default_in or '-'}")
-        lines.append(f"  default output       {default_out or '-'}")
+        lines.append(_field(pgettext("environment report", "backend"), audio.get("backend")))
+        lines.append(_field("PortAudio", audio.get("portaudio_version") or "-"))
+        lines.append(_field(pgettext("environment report", "host APIs"), apis or "-"))
+        lines.append(_field(pgettext("environment report", "devices"), len(devices)))
+        lines.append(_field(pgettext("environment report", "default input"), default_in or "-"))
+        lines.append(_field(pgettext("environment report", "default output"), default_out or "-"))
         for note in audio.get("notes", []):
-            lines.append(f"  note: {note}")
+            lines.append("  " + _("note: {note}").format(note=localize(note)))
         lines.extend(_format_devices(audio))
     lines.append("")
-    lines.append(PRIVACY_NOTE)
+    lines.append(privacy_note())
     return "\n".join(lines)

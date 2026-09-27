@@ -12,6 +12,7 @@ from dataclasses import asdict, dataclass, fields
 from typing import Any
 
 from roomscope.errors import ConfigurationError
+from roomscope.i18n import _
 from roomscope.models.calibration import CalibrationRecord
 from roomscope.models.loadutil import settings_payload
 
@@ -62,32 +63,39 @@ class SweepSettings:
     def __post_init__(self) -> None:
         _require(
             isinstance(self.sample_rate, int) and self.sample_rate > 0,
-            "sample_rate must be a positive integer",
+            _("sample_rate must be a positive integer"),
         )
         _require(
             self.sample_rate in SUPPORTED_SAMPLE_RATES,
-            f"sample_rate {self.sample_rate} is not supported; use one of {SUPPORTED_SAMPLE_RATES}",
+            _("sample_rate {rate} is not supported; use one of {supported}").format(
+                rate=self.sample_rate, supported=SUPPORTED_SAMPLE_RATES
+            ),
         )
         _require(
-            math.isfinite(self.duration_s) and self.duration_s >= 0.5, "duration_s must be >= 0.5 s"
+            math.isfinite(self.duration_s) and self.duration_s >= 0.5,
+            _("duration_s must be >= 0.5 s"),
         )
-        _require(self.duration_s <= 120.0, "duration_s must be <= 120 s")
-        _require(self.start_hz > 0.0, "start_hz must be > 0")
-        _require(self.end_hz > self.start_hz, "end_hz must be greater than start_hz")
+        _require(self.duration_s <= 120.0, _("duration_s must be <= 120 s"))
+        _require(self.start_hz > 0.0, _("start_hz must be > 0"))
+        _require(self.end_hz > self.start_hz, _("end_hz must be greater than start_hz"))
         _require(
-            self.end_hz <= self.sample_rate / 2.0, "end_hz must not exceed the Nyquist frequency"
+            self.end_hz <= self.sample_rate / 2.0, _("end_hz must not exceed the Nyquist frequency")
         )
-        _require(self.fade_in_s >= 0.0 and self.fade_out_s >= 0.0, "fades must be >= 0")
+        _require(self.fade_in_s >= 0.0 and self.fade_out_s >= 0.0, _("fades must be >= 0"))
         _require(
             self.fade_in_s + self.fade_out_s < self.duration_s,
-            "fades must be shorter than the sweep",
+            _("fades must be shorter than the sweep"),
         )
         _require(
             math.isfinite(self.level_dbfs) and self.level_dbfs <= 0.0,
-            "level_dbfs must be <= 0 dBFS",
+            _("level_dbfs must be <= 0 dBFS"),
         )
-        _require(self.level_dbfs >= -80.0, "level_dbfs below -80 dBFS is not a usable test signal")
-        _require(self.pre_silence_s >= 0.0 and self.post_silence_s >= 0.0, "silences must be >= 0")
+        _require(
+            self.level_dbfs >= -80.0, _("level_dbfs below -80 dBFS is not a usable test signal")
+        )
+        _require(
+            self.pre_silence_s >= 0.0 and self.post_silence_s >= 0.0, _("silences must be >= 0")
+        )
 
     @property
     def amplitude(self) -> float:
@@ -172,47 +180,53 @@ class AnalysisSettings:
     calibration: CalibrationRecord | None = None
 
     def __post_init__(self) -> None:
-        _require(self.channel is None or self.channel >= 0, "channel must be >= 0 or None")
-        _require(self.ir_pre_delay_ms >= 0.0, "ir_pre_delay_ms must be >= 0")
-        _require(self.ir_max_length_s > 0.1, "ir_max_length_s must be > 0.1 s")
-        _require(len(self.octave_bands_hz) > 0, "at least one octave band is required")
-        _require(all(f > 0 for f in self.octave_bands_hz), "octave band frequencies must be > 0")
+        _require(self.channel is None or self.channel >= 0, _("channel must be >= 0 or None"))
+        _require(self.ir_pre_delay_ms >= 0.0, _("ir_pre_delay_ms must be >= 0"))
+        _require(self.ir_max_length_s > 0.1, _("ir_max_length_s must be > 0.1 s"))
+        _require(len(self.octave_bands_hz) > 0, _("at least one octave band is required"))
+        _require(all(f > 0 for f in self.octave_bands_hz), _("octave band frequencies must be > 0"))
         _require(
             list(self.octave_bands_hz) == sorted(self.octave_bands_hz),
-            "octave_bands_hz must be ascending",
+            _("octave_bands_hz must be ascending"),
         )
-        _require(self.fr_window_s is None or self.fr_window_s > 0.0, "fr_window_s must be > 0")
-        _require(self.fr_smoothing_fraction >= 0, "fr_smoothing_fraction must be >= 0")
-        _require(self.noise_min_segment_s > 0.0, "noise_min_segment_s must be > 0")
+        _require(self.fr_window_s is None or self.fr_window_s > 0.0, _("fr_window_s must be > 0"))
+        _require(self.fr_smoothing_fraction >= 0, _("fr_smoothing_fraction must be >= 0"))
+        _require(self.noise_min_segment_s > 0.0, _("noise_min_segment_s must be > 0"))
         _require(
             0.0 <= self.reflections_min_delay_ms < self.reflections_max_delay_ms,
-            "reflection delay window is invalid",
+            _("reflection delay window is invalid"),
         )
-        _require(self.reflections_threshold_db < 0.0, "reflections_threshold_db must be negative")
-        _require(self.reflections_prominence_db > 0.0, "reflections_prominence_db must be > 0")
-        _require(self.resonance_max_hz > 20.0, "resonance_max_hz must be > 20 Hz")
-        _require(self.resonance_min_prominence_db > 0.0, "resonance_min_prominence_db must be > 0")
-        _require(self.decay_noise_margin_db >= 0.0, "decay_noise_margin_db must be >= 0")
+        _require(
+            self.reflections_threshold_db < 0.0, _("reflections_threshold_db must be negative")
+        )
+        _require(self.reflections_prominence_db > 0.0, _("reflections_prominence_db must be > 0"))
+        _require(self.resonance_max_hz > 20.0, _("resonance_max_hz must be > 20 Hz"))
+        _require(
+            self.resonance_min_prominence_db > 0.0, _("resonance_min_prominence_db must be > 0")
+        )
+        _require(self.decay_noise_margin_db >= 0.0, _("decay_noise_margin_db must be >= 0"))
         _require(
             self.placement_distance_m is None or 0.20 <= self.placement_distance_m <= 15.0,
-            "placement_distance_m must be between 0.20 m and 15 m",
+            _("placement_distance_m must be between 0.20 m and 15 m"),
         )
         _require(
             self.placement_mic_height_m is None or 0.02 <= self.placement_mic_height_m <= 5.0,
-            "placement_mic_height_m must be between 0.02 m and 5 m",
+            _("placement_mic_height_m must be between 0.02 m and 5 m"),
         )
         _require(
             self.placement_temperature_c is None or -20.0 <= self.placement_temperature_c <= 50.0,
-            "placement_temperature_c must be between -20 C and 50 C",
+            _("placement_temperature_c must be between -20 C and 50 C"),
         )
         _require(
             self.placement_mic_height_m is None or self.placement_distance_m is not None,
-            "placement_mic_height_m needs placement_distance_m: a height on its own "
-            "cannot be turned into geometry",
+            _(
+                "placement_mic_height_m needs placement_distance_m: a height on its own "
+                "cannot be turned into geometry"
+            ),
         )
         _require(
             self.loopback_channel is None or self.loopback_channel >= 0,
-            "loopback_channel must be >= 0 or None",
+            _("loopback_channel must be >= 0 or None"),
         )
 
     def to_dict(self) -> dict[str, Any]:

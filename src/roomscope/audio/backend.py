@@ -15,7 +15,7 @@ from typing import Protocol
 import numpy as np
 
 from roomscope.errors import ConfigurationError
-from roomscope.i18n import N_
+from roomscope.i18n import N_, _
 from roomscope.models.audio import AudioSignal, FloatArray
 from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
@@ -83,7 +83,7 @@ class StreamOptions:
 
     def __post_init__(self) -> None:
         if self.latency not in (None, "low", "high"):
-            raise ConfigurationError("latency must be 'low' or 'high'")
+            raise ConfigurationError(_("latency must be 'low' or 'high'"))
 
     @property
     def is_default(self) -> bool:
@@ -159,22 +159,24 @@ def plan_input_channels(
     """
     requested = [int(ch) for ch in channels]
     if not requested:
-        raise ConfigurationError("at least one input channel is required")
+        raise ConfigurationError(_("at least one input channel is required"))
     if any(ch < 1 for ch in requested):
-        raise ConfigurationError("input channels are 1-based and must be >= 1")
+        raise ConfigurationError(_("input channels are 1-based and must be >= 1"))
     if len(set(requested)) != len(requested):
-        raise ConfigurationError("each input channel may be listed once")
+        raise ConfigurationError(_("each input channel may be listed once"))
     if loopback_channel is not None:
         loopback_channel = int(loopback_channel)
         if loopback_channel < 1:
-            raise ConfigurationError("the loopback channel is 1-based and must be >= 1")
+            raise ConfigurationError(_("the loopback channel is 1-based and must be >= 1"))
         if loopback_channel not in requested:
             requested.append(loopback_channel)
     microphones = [ch for ch in requested if ch != loopback_channel]
     if not microphones:
         raise ConfigurationError(
-            f"input {loopback_channel} cannot be both the microphone and the loopback; "
-            "record the loopback on a different input"
+            _(
+                "input {channel} cannot be both the microphone and the loopback; "
+                "record the loopback on a different input"
+            ).format(channel=loopback_channel)
         )
     microphone = microphones[0]
     return ChannelPlan(
@@ -191,10 +193,10 @@ def plan_input_channels(
 def scale_to_level(signal: FloatArray, level_dbfs: float) -> FloatArray:
     """Return ``signal`` peak-normalised to ``level_dbfs``."""
     if level_dbfs > 0.0:
-        raise ConfigurationError("playback level must be <= 0 dBFS")
+        raise ConfigurationError(_("playback level must be <= 0 dBFS"))
     peak = float(np.max(np.abs(signal)))
     if peak <= 0.0:
-        raise ConfigurationError("signal is silent")
+        raise ConfigurationError(_("signal is silent"))
     scale = float(10.0 ** (level_dbfs / 20.0) / peak)
     return np.asarray(np.asarray(signal, dtype=np.float64) * scale, dtype=np.float64)
 
@@ -230,9 +232,15 @@ def get_backend(name: str | None = None) -> AudioBackend:
         from roomscope.audio.portaudio import PortAudioBackend
 
         return PortAudioBackend()
-    raise ConfigurationError(f"unknown audio backend {chosen!r}; available: portaudio, fake")
+    raise ConfigurationError(
+        _("unknown audio backend {name}; available: portaudio, fake").format(name=repr(chosen))
+    )
 
 
 def supported_sample_rate(sample_rate: int) -> None:
     if sample_rate not in SUPPORTED_SAMPLE_RATES:
-        raise ConfigurationError(f"sample rate {sample_rate} Hz is not in {SUPPORTED_SAMPLE_RATES}")
+        raise ConfigurationError(
+            _("sample rate {rate} Hz is not in {supported}").format(
+                rate=sample_rate, supported=SUPPORTED_SAMPLE_RATES
+            )
+        )
