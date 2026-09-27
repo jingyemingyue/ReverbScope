@@ -198,7 +198,7 @@ def test_narrow_console_encoding_does_not_crash(
     from roomscope.cli.main import _tolerate_narrow_encodings
 
     raw = io.BytesIO()
-    narrow = io.TextIOWrapper(raw, encoding="cp1252")
+    narrow = io.TextIOWrapper(raw, encoding="cp1252", newline="\n")
     monkeypatch.setattr(sys, "stdout", narrow)
     _tolerate_narrow_encodings()
     sys.stdout.write("mean |Δ| 2.4→9.3 ms —\n")
