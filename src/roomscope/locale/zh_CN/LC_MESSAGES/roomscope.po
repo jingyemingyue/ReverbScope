@@ -32,9 +32,6 @@ msgstr "标准输出为文本报告或 JSON（诊断信息仍走标准错误）"
 msgid "copy the raw recording into the session folder (default: user settings)"
 msgstr "把原始录音复制进会话文件夹（默认：用户设置）"
 
-msgid "start the desktop GUI (needs the 'gui' extra)"
-msgstr "启动桌面界面（需要安装 roomscope[gui]）"
-
 msgid "session folder tools"
 msgstr "会话文件夹工具"
 
@@ -3782,3 +3779,6 @@ msgstr "所有频带的 RT60 都由 {basis} 外推"
 
 msgid "Keep it next to the WAV: the analysis rebuilds the exact sweep from it."
 msgstr "请把它和 WAV 放在一起：分析时会用它重建完全相同的扫频。"
+
+msgid "start the desktop GUI (needs PySide6; the desktop download includes it)"
+msgstr "启动桌面界面（需要 PySide6；桌面版下载包已包含）"

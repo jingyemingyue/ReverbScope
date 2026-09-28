@@ -453,7 +453,12 @@ def _shorten_usage(parser: argparse.ArgumentParser) -> None:
 
 def _required(parser: argparse.ArgumentParser) -> Any:
     """The group for the options a command cannot run without (listed first)."""
-    return parser.add_argument_group(_("required"))
+    group = parser.add_argument_group(_("required"))
+    # argparse lists its own groups (positionals, options) first; after the
+    # positionals, what the command cannot run without comes next.
+    parser._action_groups.remove(group)
+    parser._action_groups.insert(1, group)
+    return group
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -538,7 +543,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_gui = _command(
         sub,
         "gui",
-        _("start the desktop GUI (needs the 'gui' extra)"),
+        _("start the desktop GUI (needs PySide6; the desktop download includes it)"),
         examples=("roomscope gui",),
     )
     p_gui.add_argument(
