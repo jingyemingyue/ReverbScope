@@ -7,12 +7,15 @@ text through a :class:`Console`; no other module writes escape sequences.
 Rules the rest of the CLI relies on:
 
 * **Colour** follows ``--color`` (``auto`` / ``always`` / ``never``), then the
-  ``NO_COLOR`` convention (https://no-color.org), then ``TERM=dumb``, and in
-  ``auto`` mode appears only on a terminal. A pipe or a file never receives an
-  escape sequence or a carriage return.
+  ``NO_COLOR`` convention (https://no-color.org), then ``FORCE_COLOR``, then
+  ``TERM=dumb``, and in ``auto`` mode appears only on a terminal. A pipe or a
+  file never receives an escape sequence or a carriage return unless colour
+  was asked for.
 * **Colour is never the only signal**: every status carries a symbol and a
-  word (``✓`` / ``!`` / ``×``), with ASCII forms (``[OK]`` / ``[WARN]`` /
-  ``[ERROR]``) where the terminal cannot show the symbols.
+  word (``✓`` / ``!`` / ``×`` / ``→``), with ASCII forms (``[OK]`` /
+  ``[WARN]`` / ``[ERROR]`` / ``->``) where the stream cannot show the symbols;
+  :meth:`Console.fit` turns the remaining typographic signs (``Δ``, ``→``,
+  ``–``) into ASCII for such a stream as well.
 * **Widths are display widths**: a CJK or full-width character takes two
   columns, a combining mark none (:func:`cell_width`); ``len()`` is never used
   to align text.
@@ -35,9 +38,10 @@ ColorMode = Literal["auto", "always", "never"]
 COLOR_MODES: tuple[ColorMode, ...] = ("auto", "always", "never")
 
 #: Status kinds; each has a symbol, an ASCII fallback and a colour.
-Status = Literal["ok", "warn", "error", "info", "skip", "unsure"]
+Status = Literal["ok", "warn", "error", "info", "skip", "unsure", "next"]
 
 _SYMBOLS: dict[str, tuple[str, str]] = {
+    "next": ("→", "->"),
     "ok": ("✓", "[OK]"),
     "warn": ("!", "[WARN]"),
     "error": ("×", "[ERROR]"),
@@ -65,7 +69,33 @@ _STATUS_STYLE: dict[str, tuple[str, ...]] = {
     "info": ("cyan",),
     "skip": ("dim",),
     "unsure": ("yellow",),
+    "next": ("cyan",),
 }
+
+#: ASCII stand-ins for the typographic signs the reports use, for a stream
+#: whose encoding cannot write them (a cp1252 pipe, a Latin-1 terminal).
+_ASCII_SIGNS = str.maketrans(
+    {
+        "–": "-",
+        "—": "-",
+        "─": "-",
+        "━": "#",
+        "→": "->",
+        "←": "<-",
+        "Δ": "d",
+        "±": "+/-",
+        "·": "|",
+        "…": "...",
+        "×": "x",
+        "✓": "[OK]",
+        "≤": "<=",
+        "≥": ">=",
+        "“": '"',
+        "”": '"',
+        "‘": "'",
+        "’": "'",
+    }
+)
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -81,7 +111,8 @@ _UNICODE_PROBE = "✓×–─━·…"
 #: text), and the bounds for a terminal's width.
 PIPE_WIDTH = 100
 MIN_WIDTH = 20
-MAX_WIDTH = 110
+#: Wider terminals keep this width: longer lines are harder to read.
+MAX_WIDTH = 100
 
 
 class Verbatim(str):
@@ -289,6 +320,9 @@ def use_color(
         return True
     if env.get("NO_COLOR"):
         return False
+    if env.get("FORCE_COLOR", "0") not in ("", "0"):
+        _enable_windows_vt(stream)  # best effort, as for --color always
+        return True
     if env.get("TERM") == "dumb":
         return False
     if not _isatty(stream):
@@ -361,6 +395,18 @@ class Console:
         glyph, ascii_form = _SYMBOLS[status]
         return self.style(glyph if self.unicode else ascii_form, *_STATUS_STYLE[status])
 
+    def fit(self, text: str) -> str:
+        """``text`` as this stream can write it: typographic signs become ASCII
+        where the encoding cannot hold them (see :data:`_ASCII_SIGNS`)."""
+        return text if self.unicode else text.translate(_ASCII_SIGNS)
+
+    def arrow(self) -> str:
+        return "→" if self.unicode else "->"
+
+    def command(self, text: str) -> str:
+        """A command to copy: accented, and never wrapped."""
+        return self.style(text, "cyan")
+
     def rule_char(self) -> str:
         return "─" if self.unicode else "-"
 
@@ -421,6 +467,43 @@ class Console:
             out += self.paragraph(detail, indent=cell_width(hang))
         return out
 
+    def steps(self, items: Sequence[tuple[str, str]], indent: int = 2) -> list[str]:
+        """Numbered steps: ``1. what`` wrapped, then the command to run on its own line.
+
+        A step without a command is text only. Commands are kept whole.
+        """
+        margin = " " * indent
+        out: list[str] = []
+        for number, (text, command) in enumerate(items, start=1):
+            head = f"{number}. "
+            hang = margin + " " * len(head)
+            out += [
+                margin + head + line[len(hang) :] if index == 0 else line
+                for index, line in enumerate(wrap(text, self.width, first=hang, rest=hang))
+            ]
+            if command:
+                out.append(hang + self.command(command))
+        return out
+
+    def commands(self, items: Sequence[tuple[str, str]], indent: int = 2) -> list[str]:
+        """``command   what it does`` rows; the description wraps under itself,
+        or goes below the command on a narrow terminal."""
+        if not items:
+            return []
+        margin = " " * indent
+        column = indent + max(cell_width(command) for command, _text in items) + 3
+        stacked = self.width - column < 28
+        out: list[str] = []
+        for command, text in items:
+            if stacked:
+                out.append(margin + self.command(command))
+                out += [self.muted(line) for line in wrap(text, self.width, first=margin + "  ")]
+                continue
+            lines = wrap(text, self.width, first=" " * column)
+            first = margin + pad(self.command(command), column - indent) + lines[0][column:]
+            out += [first, *lines[1:]]
+        return out
+
     def fields(
         self, pairs: Iterable[tuple[str, str]], indent: int = 2, *, max_label: int = 28
     ) -> list[str]:
@@ -452,6 +535,21 @@ class Console:
             out += body[1:]
         return out
 
+    def fits(
+        self,
+        headers: Sequence[str],
+        rows: Sequence[Sequence[str]],
+        *,
+        indent: int = 2,
+        gap: int = 3,
+    ) -> bool:
+        """Whether :meth:`table` would lay these rows out as a table (not blocks)."""
+        widths = [cell_width(header) for header in headers]
+        for row in rows:
+            for index, cell in enumerate(row):
+                widths[index] = max(widths[index], cell_width(cell))
+        return indent + sum(widths) + gap * (len(headers) - 1) <= self.width
+
     def table(
         self,
         headers: Sequence[str],
@@ -474,14 +572,19 @@ class Console:
         for row in rows:
             for index, cell in enumerate(row):
                 widths[index] = max(widths[index], cell_width(cell))
-        total = indent + sum(widths) + gap * (columns - 1)
         margin = " " * indent
-        if total > self.width:
+        if not self.fits(headers, rows, indent=indent, gap=gap):
             out: list[str] = []
+            titles = [""] * title_columns
             for number, row in enumerate(rows):
                 if number:
                     out.append("")
-                heading = " ".join(strip_ansi(cell) for cell in row[:title_columns] if cell)
+                # A grouped table leaves a repeated title cell empty; a block
+                # needs it back.
+                titles = [
+                    strip_ansi(cell) or titles[i] for i, cell in enumerate(row[:title_columns])
+                ]
+                heading = " ".join(cell for cell in titles if cell)
                 out += [
                     self.bold(line) for line in wrap(heading, self.width, first=margin, rest=margin)
                 ]
@@ -599,10 +702,15 @@ class ProgressLine:
         self.stream.flush()
         self._drawn = visible
 
-    def finish(self) -> None:
-        """End the line (terminal) so later output starts on its own row."""
+    def finish(self, completed: bool = True) -> None:
+        """End the line (terminal) so later output starts on its own row.
+
+        ``completed`` draws the bar full first; a take that stopped early
+        keeps the last position it reached.
+        """
         if self.console.interactive and self._drawn and self.stream is not None:
-            self._draw(1.0)
+            if completed:
+                self._draw(1.0)
             self.stream.write("\n")
             self.stream.flush()
             self._drawn = 0

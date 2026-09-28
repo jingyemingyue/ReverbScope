@@ -321,7 +321,7 @@ def test_lang_zh_cn_translates_report(tmp_path: Path, capsys: pytest.CaptureFixt
     out = capsys.readouterr().out
     assert "RoomScope 分析" in out
     assert "混响" in out
-    assert "脉冲响应" in out
+    assert "概览" in out and "诊断" in out
     from roomscope.i18n import activate
 
     activate("en")

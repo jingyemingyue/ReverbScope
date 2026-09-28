@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from roomscope.cli.report import format_report
+from roomscope.cli.render import REPORT_CONSOLE, render_analysis
 from roomscope.errors import RoomScopeError
 from roomscope.i18n import _, localize
 from roomscope.io.recent import remember_session
@@ -448,7 +448,9 @@ class ResultsPage(QWidget):
         self.header.subtitle.setText("  ·  ".join(parts))
         self.header.subtitle.setVisible(True)
         self.overview.show_result(result, list(self.state.findings), self.state.profile)
-        self.text.setPlainText(format_report(result, self.state.findings, self.state.profile))
+        self.text.setPlainText(
+            render_analysis(REPORT_CONSOLE, result, self.state.findings, self.state.profile)
+        )
         plot_impulse_response(self.ir_tab.figure, result)
         plot_frequency_response(self.fr_tab.figure, result)
         plot_decay(self.decay_tab.figure, result)

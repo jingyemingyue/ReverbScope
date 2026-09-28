@@ -3713,3 +3713,270 @@ msgstr "录音中第 {start:.2f} s"
 
 msgid "±{uncertainty:.2f} m from the stated inputs only"
 msgstr "±{uncertainty:.2f} m（仅来自所填数值）"
+
+msgid "Get started"
+msgstr "入门"
+
+msgid "test signal"
+msgstr "测试信号"
+
+msgid "analysis"
+msgstr "分析"
+
+msgid "session notes (stored in session.json)"
+msgstr "会话备注（保存在 session.json 中）"
+
+msgid "placement (optional tape measurements)"
+msgstr "摆位（可选，卷尺测量值）"
+
+msgid "loopback (optional)"
+msgstr "回送（可选）"
+
+msgid "required"
+msgstr "必需参数"
+
+msgid "try RoomScope without audio hardware: simulate, analyse and compare two positions"
+msgstr "无需音频硬件体验 RoomScope：模拟、分析并对比两个位置"
+
+msgid "audio interface"
+msgstr "音频接口"
+
+msgid "Simulating and analysing two microphone positions …"
+msgstr "正在模拟并分析两个话筒位置…"
+
+msgid "deprecated: use roomscope --format json"
+msgstr "已弃用：请使用 roomscope --format json"
+
+msgid "debug logging, and tracebacks on errors"
+msgstr "调试日志，出错时显示回溯信息"
+
+msgid "recording profile used to interpret the demo (default vocal)"
+msgstr "用于解读演示结果的录音配置（默认 vocal）"
+
+msgid "the demo prints a walkthrough, not JSON"
+msgstr "演示输出的是导览文字，不是 JSON"
+
+msgid "Nothing was changed. Choose an empty or new folder for the demo."
+msgstr "没有做任何改动。请为演示选择一个空文件夹或新文件夹。"
+
+msgid "{reason}: {path}"
+msgstr "{reason}：{path}"
+
+msgid "sample rate (Hz): {rates}"
+msgstr "采样率（Hz）：{rates}"
+
+msgid "recording profile that shapes the interpretation: {names} (default: user settings)"
+msgstr "决定解读方式的录音配置：{names}（默认：用户设置）"
+
+msgid "folder for the demo files, created or replaced (default {folder})"
+msgstr "演示文件所在的文件夹，会新建或覆盖（默认 {folder}）"
+
+msgid "{path} already exists and was not written by roomscope demo"
+msgstr "{path} 已存在，且不是由 roomscope demo 创建的"
+
+msgid "<folder>"
+msgstr "<文件夹>"
+
+msgid "This is a bug in RoomScope. Run the command again with --verbose for the details and include them, with the environment report, in a bug report."
+msgstr "这是 RoomScope 的程序缺陷。请加上 --verbose 重新运行该命令查看详细信息，并将其与环境报告一起附在缺陷报告中。"
+
+msgid "<new-folder>"
+msgstr "<新文件夹>"
+
+msgid "unexpected {kind}: {message}"
+msgstr "意外错误 {kind}：{message}"
+
+msgid "Data quality"
+msgstr "数据质量"
+
+msgid "dBFS RMS; a change needs the same input gain"
+msgstr "dBFS RMS；变化量要求输入增益相同"
+
+msgid "Low end"
+msgstr "低频"
+
+msgid "Next steps"
+msgstr "下一步"
+
+msgid "Start with the monitors turned down and raise them between takes if needed."
+msgstr "先把监听音量调低，如有需要再在两次录制之间逐步调高。"
+
+msgid "Measure and compare the rooms you record in: reverberation, early reflections, low-frequency resonances and noise, from any DAW."
+msgstr "测量并对比你录音的房间：混响、早期反射、低频共振和噪声，适用于任何 DAW。"
+
+msgid "RoomScope demo"
+msgstr "RoomScope 演示"
+
+msgid "Synthetic data: a simulated room, not a measurement."
+msgstr "合成数据：这是模拟的房间，不是实际测量。"
+
+msgid "What the demo shows"
+msgstr "演示说明了什么"
+
+msgid "A strong desk reflection at 2.4 ms at position A is gone at position B."
+msgstr "位置 A 在 2.4 ms 处有一个很强的桌面反射，在位置 B 已经消失。"
+
+msgid "The 110 Hz room mode stays at both positions: it belongs to the room, not the spot."
+msgstr "110 Hz 的房间模式在两个位置都存在：它属于房间本身，而不是某个位置。"
+
+msgid "Mains hum at 50 Hz is clearly lower at position B."
+msgstr "50 Hz 市电哼声在位置 B 明显更低。"
+
+msgid "no reliable broadband RT60 (see Reverberation)"
+msgstr "没有可靠的宽带 RT60（见“混响”）"
+
+msgid "Noise floor"
+msgstr "本底噪声"
+
+msgid "no quiet segment in the recording"
+msgstr "录音中没有安静段"
+
+msgid "direct sound: confidence {confidence}"
+msgstr "直达声：置信度 {confidence}"
+
+msgid "no warnings"
+msgstr "无警告"
+
+msgid "the recording clipped"
+msgstr "录音已削波"
+
+msgid "At a glance"
+msgstr "概览"
+
+msgid "broadband RT60 not comparable (see Reverberation)"
+msgstr "宽带 RT60 无法比较（见“混响”）"
+
+msgid "none above the threshold on either side"
+msgstr "两侧都没有高于阈值的反射"
+
+msgid "at both: {list}"
+msgstr "两侧都有：{list}"
+
+msgid "gone: {list}"
+msgstr "消失：{list}"
+
+msgid "new: {list}"
+msgstr "新出现：{list}"
+
+msgid "no potential resonance"
+msgstr "没有可能的共振"
+
+msgid "no quiet segment on one or both sides"
+msgstr "一侧或两侧没有安静段"
+
+msgid "No audio device was used and nothing was played. The numbers below describe the simulation; every session is marked as a synthetic demo."
+msgstr "没有使用任何音频设备，也没有播放任何声音。下面的数值描述的是模拟结果；每个会话都标记为合成演示。"
+
+msgid "Comparison"
+msgstr "对比"
+
+msgid "Open the sessions in the desktop app:"
+msgstr "在桌面应用中打开这些会话："
+
+msgid "Open them in the desktop app (download it, or add PySide6 to this Python):"
+msgstr "在桌面应用中打开它们（下载桌面应用，或在当前环境中安装 PySide6）："
+
+msgid "{rms:.1f} dBFS RMS"
+msgstr "{rms:.1f} dBFS RMS"
+
+msgid "Record the measurement microphone on another track at the same sample rate."
+msgstr "在另一条音轨上以相同采样率录制测量话筒。"
+
+msgid "Export that track as WAV (no trimming needed) and analyse it:"
+msgstr "将该音轨导出为 WAV（无需裁剪），然后分析："
+
+msgid "Measure another position into a new folder, then compare the two:"
+msgstr "把另一个位置测量到新文件夹，然后对比两者："
+
+msgid "Open the session in the desktop app:"
+msgstr "在桌面应用中打开该会话："
+
+msgid "Try:"
+msgstr "可以尝试："
+
+msgid "Try it with synthetic data; no audio interface needed"
+msgstr "用合成数据体验，无需音频接口"
+
+msgid "Open the desktop app"
+msgstr "打开桌面应用"
+
+msgid "Write the test signal to play from your DAW"
+msgstr "写出测试信号，在 DAW 中播放"
+
+msgid "Run {command} for every command and option."
+msgstr "运行 {command} 查看所有命令和选项。"
+
+msgid "close to the desk and the side wall"
+msgstr "靠近桌面和侧墙"
+
+msgid "moved 1 m back from the desk"
+msgstr "从桌面向后移动 1 m"
+
+msgid "{duration:g} s sweep{sep}{start} – {end}{sep}{rate}"
+msgstr "{duration:g} s 扫频{sep}{start} – {end}{sep}{rate}"
+
+msgid "Position {label}"
+msgstr "位置 {label}"
+
+msgid "Read the full report of one position:"
+msgstr "查看一个位置的完整报告："
+
+msgid "See every delta between the two positions:"
+msgstr "查看两个位置之间的全部差值："
+
+msgid "Measure your own room: write the test signal for your DAW."
+msgstr "测量你自己的房间：为 DAW 写出测试信号。"
+
+msgid "strongest {level:.1f} dB at {delay:.1f} ms{sep}{count} above {threshold:.0f} dB"
+msgstr "最强 {level:.1f} dB，位于 {delay:.1f} ms{sep}{count} 个高于 {threshold:.0f} dB"
+
+msgid "none above {threshold:.0f} dB"
+msgstr "没有高于 {threshold:.0f} dB 的反射"
+
+msgid "potential resonances at {listed}"
+msgstr "可能的共振：{listed}"
+
+msgid "no potential resonance below {max_hz:.0f} Hz"
+msgstr "{max_hz:.0f} Hz 以下没有可能的共振"
+
+msgid "{n} warning(s), see Diagnostics"
+msgstr "{n} 条警告，见“诊断”"
+
+msgid "{gone} gone{sep}{new} new{sep}{kept} at both"
+msgstr "{gone} 个消失{sep}{new} 个新出现{sep}{kept} 个两侧都有"
+
+msgid "add --same-input-gain if the input gain was unchanged"
+msgstr "如果输入增益没有改变，请加上 --same-input-gain"
+
+msgid "largest change in the {band} octave, {mad:.1f} dB mean |Δ|"
+msgstr "变化最大的是 {band} 倍频程，平均 |Δ| {mad:.1f} dB"
+
+msgid "Comparison {a} {arrow} {b}"
+msgstr "对比 {a} {arrow} {b}"
+
+msgid "mains hum at {base:.0f} Hz"
+msgstr "{base:.0f} Hz 市电哼声"
+
+msgid "not compared: {validity}"
+msgstr "未比较：{validity}"
+
+msgid "Import {name} into your DAW and play it through the monitors."
+msgstr "将 {name} 导入 DAW，并通过监听音箱播放。"
+
+msgid "<take.wav>"
+msgstr "<录音.wav>"
+
+msgid "<session>"
+msgstr "<会话文件夹>"
+
+msgid "<other-session>"
+msgstr "<另一个会话>"
+
+msgid "Geometry"
+msgstr "几何"
+
+msgid "try RoomScope with synthetic data: no audio hardware needed"
+msgstr "用合成数据体验 RoomScope：无需音频硬件"
+
+msgid "recording profile used to interpret the demo (default: {profile})"
+msgstr "用于解读演示结果的录音配置（默认：{profile}）"

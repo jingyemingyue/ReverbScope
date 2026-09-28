@@ -1,16 +1,18 @@
 """What the command line prints, laid out through :mod:`roomscope.cli.console`.
 
-The GUI keeps its own plain-text reports (:mod:`roomscope.cli.report`,
-:func:`roomscope.diagnostics.format_environment_report`); these renderers read
-the same models and add structure for a terminal: sections, aligned fields,
-tables, and a symbol with every status. Stored diagnostics are shown with
-:func:`~roomscope.i18n.localize`; nothing here changes a stored value.
+Every command reads the same way: what ran and on what (title and context),
+the result (status lines, "At a glance"), the detail, then what to do next.
+The GUI shows the same analysis and comparison reports in its text panes
+(rendered with a plain :class:`Console`), so there is one report layout.
+Stored diagnostics are shown with :func:`~roomscope.i18n.localize`; nothing
+here changes a stored value.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 from datetime import datetime
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from roomscope.cli.console import Console, Status, Verbatim
@@ -23,7 +25,7 @@ from roomscope.interpretation.profiles import (
     profile_title,
 )
 from roomscope.labels import metric_label, topic_text, validity_word
-from roomscope.models.comparison import ComparisonResult
+from roomscope.models.comparison import ComparisonResult, MetricDelta
 from roomscope.models.result import (
     AnalysisResult,
     DecayMetric,
@@ -35,7 +37,13 @@ from roomscope.models.result import (
 if TYPE_CHECKING:
     from roomscope.audio.backend import DeviceInfo
     from roomscope.audio.inventory import DeviceInventory
+    from roomscope.demo import DemoRun
     from roomscope.models.configuration import SweepSettings
+
+
+#: The GUI's "Full report" panes: the same layout as the terminal, as plain
+#: text (no colour) in a fixed width that suits the pane's monospace font.
+REPORT_CONSOLE = Console(color=False, unicode=True, width=96)
 
 
 # --- Small formatters ----------------------------------------------------------
@@ -132,12 +140,11 @@ def render_analysis(
     *,
     inputs: Sequence[tuple[str, str]] = (),
 ) -> str:
-    """The report of one analysis: overview, results by topic, findings."""
+    """The report of one analysis: context, "At a glance", results by topic,
+    diagnostics, then the interpretation."""
     c = console
-    ir = result.impulse_response
     lines = c.title(_("RoomScope analysis"))
-
-    lines += c.section(_("Input"))
+    lines.append("")
     lines += c.fields(
         [
             *inputs,
@@ -145,10 +152,129 @@ def render_analysis(
             (_("Created"), created_text(result.created_at)),
         ]
     )
+    lines += at_a_glance(c, result, findings)
+    lines += _reverberation(c, result)
+    lines += _noise(c, result)
+    lines += _reflections(c, result)
+    if result.placement is not None:
+        lines += _placement(c, result.placement)
+    lines += _resonances(c, result)
+    lines += _diagnostics(c, result)
+    lines += _findings(c, findings, profile_name)
+    return c.fit("\n".join(lines))
 
-    lines += _summary(c, result)
 
-    lines += c.section(_("Impulse response"))
+def _topic_status(findings: Sequence[Finding], *topics: str) -> Status:
+    """``warn`` when the profile raised a warning or notice on one of ``topics``.
+
+    The thresholds are the recording profile's (see the interpretation); the
+    summary only repeats what it concluded.
+    """
+    for finding in findings:
+        if finding.topic in topics and str(finding.severity) in ("warning", "notice"):
+            return "warn"
+    return "ok"
+
+
+def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] = ()) -> list[str]:
+    """One line per question a recording engineer asks first.
+
+    Every value is copied from the result; the symbol follows the profile's
+    findings on that topic. The sections below hold the detail.
+    """
+    rows: list[tuple[str, str]] = []
+
+    def row(label: str, status: Status, text: str) -> None:
+        rows.append((label, f"{c.symbol(status)} {text}"))
+
+    broadband = result.decay.broadband
+    if broadband.rt60_estimate_s is not None:
+        text = _("RT60 {seconds:.2f} s").format(seconds=broadband.rt60_estimate_s)
+        if broadband.rt60_basis:
+            text += c.muted(f" ({broadband.rt60_basis})")
+        if broadband.edt.seconds is not None and broadband.edt.validity is Validity.VALID:
+            text += c.sep() + f"EDT {broadband.edt.seconds:.2f} s"
+        row(_("Reverberation"), _topic_status(findings, "reverberation"), text)
+    else:
+        row(_("Reverberation"), "unsure", _("no reliable broadband RT60 (see Reverberation)"))
+
+    refl = result.reflections
+    if refl.reflections:
+        strongest = max(refl.reflections, key=lambda r: r.relative_db)
+        row(
+            _("Early reflections"),
+            _topic_status(findings, "early_reflections"),
+            _(
+                "strongest {level:.1f} dB at {delay:.1f} ms{sep}{count} above {threshold:.0f} dB"
+            ).format(
+                level=strongest.relative_db,
+                delay=strongest.delay_ms,
+                sep=c.sep(),
+                count=len(refl.reflections),
+                threshold=refl.threshold_db,
+            ),
+        )
+    else:
+        row(
+            _("Early reflections"),
+            "ok",
+            _("none above {threshold:.0f} dB").format(threshold=refl.threshold_db),
+        )
+
+    res = result.resonances
+    if res.candidates:
+        strongest_modes = sorted(
+            res.candidates, key=lambda cand: cand.level_above_baseline_db, reverse=True
+        )[:3]
+        listed = ", ".join(
+            f"{cand.frequency_hz:.0f} Hz (+{cand.level_above_baseline_db:.1f} dB)"
+            for cand in strongest_modes
+        )
+        row(
+            _("Low end"),
+            _topic_status(findings, "low_frequency"),
+            _("potential resonances at {listed}").format(listed=listed),
+        )
+    else:
+        row(
+            _("Low end"),
+            "ok",
+            _("no potential resonance below {max_hz:.0f} Hz").format(max_hz=res.max_frequency_hz),
+        )
+
+    noise = result.noise
+    if noise.rms_dbfs is not None:
+        text = _("{rms:.1f} dBFS RMS").format(rms=noise.rms_dbfs)
+        hums = [hum for hum in noise.hum if hum.detected]
+        status = _topic_status(findings, "noise")
+        if hums:
+            text += c.sep() + _("mains hum at {base:.0f} Hz").format(base=hums[0].base_hz)
+            status = "warn"
+        row(_("Noise floor"), status, text)
+    else:
+        row(_("Noise floor"), "skip", _("no quiet segment in the recording"))
+
+    ir = result.impulse_response
+    quality = _("direct sound: confidence {confidence}").format(
+        confidence=confidence_text(ir.direct_sound_confidence)
+    )
+    status = _topic_status(findings, "measurement")
+    if result.warnings:
+        quality += c.sep() + _("{n} warning(s), see Diagnostics").format(n=len(result.warnings))
+        status = "warn"
+    else:
+        quality += c.sep() + _("no warnings")
+    if result.clipping is not None and result.clipping.clipped:
+        quality += c.sep() + _("the recording clipped")
+        status = "error"
+    row(_("Data quality"), status, quality)
+    return c.section(_("At a glance")) + c.fields(rows)
+
+
+def _diagnostics(c: Console, result: AnalysisResult) -> list[str]:
+    """How the impulse response was found, and the core's warnings."""
+    ir = result.impulse_response
+    lines = c.section(_("Diagnostics"))
     margin = f"{ir.pre_peak_margin_db:.1f} dB" if ir.pre_peak_margin_db is not None else c.dash()
     rows = [
         (
@@ -173,71 +299,11 @@ def render_analysis(
     if ir.loopback is not None:
         rows.append((_("Loopback"), _loopback_text(c, result)))
     lines += c.fields(rows)
-
-    lines += _reverberation(c, result)
-    lines += _noise(c, result)
-    lines += _reflections(c, result)
-    if result.placement is not None:
-        lines += _placement(c, result.placement)
-    lines += _resonances(c, result)
-
     if result.warnings:
-        lines += c.section(_("Warnings"))
+        lines.append("")
         for warning in result.warnings:
             lines += c.status("warn", localize(warning))
-    lines += _findings(c, findings, profile_name)
-    return "\n".join(lines)
-
-
-def _summary(c: Console, result: AnalysisResult) -> list[str]:
-    broadband = result.decay.broadband
-    rows: list[tuple[str, str]] = []
-    if broadband.rt60_estimate_s is not None:
-        rows.append(
-            (
-                _("RT60 estimate"),
-                f"{c.symbol('ok')} {broadband.rt60_estimate_s:.2f} s"
-                + c.muted(f"  ({broadband.rt60_basis})"),
-            )
-        )
-    else:
-        rows.append((_("RT60 estimate"), f"{c.symbol('skip')} {_('not computed')}"))
-    for name, metric in (("EDT", broadband.edt), ("T20", broadband.t20), ("T30", broadband.t30)):
-        if metric.seconds is not None and metric.validity is Validity.VALID:
-            value = f"{c.symbol('ok')} {metric.seconds:.2f} s"
-        elif metric.seconds is not None and metric.validity is Validity.UNRELIABLE:
-            value = f"{c.symbol('unsure')} {metric.seconds:.2f} s  {validity_word(metric.validity)}"
-        else:
-            value = validity_cell(c, metric.validity)
-        rows.append((name, value))
-    noise = result.noise
-    if noise.rms_dbfs is not None:
-        rows.append((_("Background noise"), f"{noise.rms_dbfs:.1f} dBFS RMS"))
-    reflections = result.reflections.reflections
-    if reflections:
-        strongest = max(reflections, key=lambda r: r.relative_db)
-        rows.append(
-            (
-                _("Early reflections"),
-                _("{count} found{sep}strongest {delay:.1f} ms, {level:.1f} dB").format(
-                    count=len(reflections),
-                    sep=c.sep(),
-                    delay=strongest.delay_ms,
-                    level=strongest.relative_db,
-                ),
-            )
-        )
-    else:
-        rows.append((_("Early reflections"), _("none above the threshold")))
-    rows.append(
-        (
-            _("Warnings"),
-            f"{c.symbol('warn')} {len(result.warnings)}"
-            if result.warnings
-            else f"{c.symbol('ok')} {_('none')}",
-        )
-    )
-    return c.section(_("Summary"), _("broadband")) + c.fields(rows)
+    return lines
 
 
 def _loopback_text(c: Console, result: AnalysisResult) -> str:
@@ -401,7 +467,11 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
                 + _("at {temp:.0f} C").format(temp=placement.temperature_c)
                 + assumed,
             ),
-            *((name, _length_text(c, length)) for name, length in figures),
+            *(
+                ((name, _length_text(c, length)) for name, length in figures)
+                if any(length.metres is not None for _name, length in figures)
+                else [(_("Geometry"), _length_text(c, figures[0][1]))]
+            ),
         ]
     )
     # The same reason often applies to every figure; say it once.
@@ -481,9 +551,10 @@ def render_comparison(
     findings: Sequence[Finding] = (),
     profile_name: str = "generic",
 ) -> str:
+    """Baseline against candidate: the sessions, "At a glance", every delta, findings."""
     c = console
     lines = c.title(_("RoomScope comparison"))
-    lines += c.section(_("Sessions"))
+    lines.append("")
     rows: list[tuple[str, str]] = []
     if comparison.baseline_session:
         rows.append((_("Baseline"), Verbatim(comparison.baseline_session)))
@@ -504,31 +575,9 @@ def render_comparison(
     for note in comparison.notes:
         lines += c.status("info", localize(note))
 
-    lines += c.section(_("Decay"), _("a delta is valid only when both sides are valid"))
-    table_rows = []
-    reasons: list[str] = []
-    for item in comparison.decay:
-        base = f"{item.baseline:.3f}" if item.baseline is not None else c.dash()
-        cand = f"{item.candidate:.3f}" if item.candidate is not None else c.dash()
-        if item.validity is Validity.VALID and item.delta is not None:
-            delta = f"{item.delta:+.3f}"
-            pct = f"{item.delta_percent:+.1f} %" if item.delta_percent is not None else c.dash()
-        else:
-            delta = pct = c.dash()
-        table_rows.append(
-            [metric_label(item.name), base, cand, delta, pct, validity_cell(c, item.validity)]
-        )
-        if item.reason and item.validity is not Validity.VALID:
-            reasons.append(f"{metric_label(item.name)}: {localize(item.reason)}")
-    lines += c.table(
-        [_("Metric"), _("Baseline"), _("Candidate"), "Δ", "Δ %", _("Validity")],
-        table_rows,
-        align="lrrrrl",
-    )
-    if reasons:
-        lines.append("")
-        for reason in reasons:
-            lines += c.status("skip", reason)
+    lines += comparison_at_a_glance(c, comparison)
+
+    lines += _decay_deltas(c, comparison.decay)
 
     if comparison.frequency_response is not None:
         lines += c.section(_("Frequency response"), _("mean |Δ| per octave"))
@@ -539,14 +588,16 @@ def render_comparison(
         )
     if comparison.reflections:
         lines += c.section(_("Early reflections"))
+        arrow = f" {c.arrow()} "
         rows_refl = []
         for match in comparison.reflections:
             if match.status == "matched":
                 rows_refl.append(
                     [
                         _("matched"),
-                        f"{match.baseline_delay_ms:.1f} → {match.candidate_delay_ms:.1f} ms",
-                        f"{match.baseline_relative_db:.1f} → {match.candidate_relative_db:.1f} dB",
+                        f"{match.baseline_delay_ms:.1f}{arrow}{match.candidate_delay_ms:.1f} ms",
+                        f"{match.baseline_relative_db:.1f}{arrow}"
+                        f"{match.candidate_relative_db:.1f} dB",
                     ]
                 )
             elif match.status == "appeared":
@@ -566,18 +617,264 @@ def render_comparison(
                     ]
                 )
         lines += c.table([_("Status"), _("Delay"), _("Level")], rows_refl, align="lrr")
-    for title, items in ((_("Noise"), comparison.noise), (_("Placement"), comparison.placement)):
+    if comparison.resonances:
+        lines += c.section(_("Low-frequency resonances"))
+        rows_res = []
+        for res in comparison.resonances:
+            base = f"{res.baseline_hz:.1f} Hz" if res.baseline_hz is not None else c.dash()
+            cand = f"{res.candidate_hz:.1f} Hz" if res.candidate_hz is not None else c.dash()
+            rows_res.append([_resonance_status(res.status), base, cand])
+        lines += c.table([_("Status"), _("Baseline"), _("Candidate")], rows_res, align="lrr")
+    if comparison.noise:
+        lines += _noise_deltas(c, comparison.noise)
+    for title, items in (
+        (_("Placement"), comparison.placement),
+        (_("Loopback"), comparison.loopback),
+    ):
         if not items:
             continue
         lines += c.section(title)
-        for item in items:
-            lines += c.status(
-                validity_status(item.validity),
-                f"{metric_label(item.name)}: {validity_word(item.validity)}",
-                detail=localize(item.reason) if item.reason else "",
-            )
+        lines += _delta_statuses(c, items)
     lines += _findings(c, findings, profile_name)
-    return "\n".join(lines)
+    return c.fit("\n".join(lines))
+
+
+#: Decay metrics of a comparison, in table order, with their short names.
+_DECAY_METRICS = (("edt", "EDT"), ("t20", "T20"), ("t30", "T30"), ("rt60_estimate", "RT60"))
+
+
+def _split_decay_name(name: str) -> tuple[str, str]:
+    """``band.63 Hz.t20`` -> (``63 Hz``, ``T20``); ``broadband.edt`` -> (Broadband, EDT)."""
+    for key, short in _DECAY_METRICS:
+        if name.endswith("." + key):
+            scope = name[: -len(key) - 1]
+            if scope == "broadband":
+                return band_text("broadband"), short
+            return scope.removeprefix("band."), short
+    return metric_label(name), ""
+
+
+def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
+    """Every decay delta, grouped by band: baseline, candidate, Δ, Δ % and a
+    validity symbol (explained in the legend); reasons follow, each once."""
+    lines = c.section(_("Reverberation"), _("a delta is valid only when both sides are valid"))
+    rows = []
+    seen: list[Validity] = []
+    previous = ""
+    for item in items:
+        band, metric = _split_decay_name(item.name)
+        base = f"{item.baseline:.3f}" if item.baseline is not None else c.dash()
+        cand = f"{item.candidate:.3f}" if item.candidate is not None else c.dash()
+        if item.validity is Validity.VALID and item.delta is not None:
+            delta = f"{item.delta:+.3f}"
+            pct = f"{item.delta_percent:+.1f} %" if item.delta_percent is not None else c.dash()
+        else:
+            delta = pct = c.dash()
+        if item.validity not in seen:
+            seen.append(item.validity)
+        rows.append(
+            [
+                "" if band == previous else band,
+                metric,
+                base,
+                cand,
+                delta,
+                pct,
+                c.symbol(validity_status(item.validity)),
+            ]
+        )
+        previous = band
+    headers = [_("Band"), _("Metric"), _("Baseline"), _("Candidate"), "Δ", "Δ %", ""]
+    align = "llrrrrl"
+    if not c.fits(headers, rows, gap=2):
+        # A narrow terminal drops the absolute delta (baseline and candidate
+        # are both shown) before the table has to fall apart into blocks.
+        headers, align = headers[:4] + headers[5:], align[:4] + align[5:]
+        rows = [row[:4] + row[5:] for row in rows]
+    lines += c.table(headers, rows, align=align, gap=2, title_columns=2)
+    if seen:
+        legend = [
+            f"{c.symbol(validity_status(v))} {validity_word(v)}"
+            for v in sorted(seen, key=list(Validity).index)
+        ]
+        lines.append("")
+        lines.append("  " + "   ".join(legend))
+    return lines + _reasons(c, items)
+
+
+def _resonance_status(status: str) -> str:
+    return {
+        "matched": _("matched"),
+        "appeared": _("appeared"),
+        "disappeared": _("disappeared"),
+    }.get(status, status)
+
+
+def _noise_label(name: str) -> str:
+    """``noise.rms_dbfs`` -> Broadband; ``noise.band.1000Hz`` -> ``1 kHz``."""
+    band = name.removeprefix("noise.band.")
+    if band != name and band.endswith("Hz"):
+        try:
+            return frequency_text(float(band[:-2]))
+        except ValueError:
+            return band
+    if name == "noise.rms_dbfs":
+        return band_text("broadband")
+    return metric_label(name)
+
+
+def _noise_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
+    """Background noise per band: baseline, candidate (dBFS) and the change (dB)."""
+    lines = c.section(_("Background noise"), _("dBFS RMS; a change needs the same input gain"))
+    rows = []
+    for item in items:
+        base = f"{item.baseline:.1f}" if item.baseline is not None else c.dash()
+        cand = f"{item.candidate:.1f}" if item.candidate is not None else c.dash()
+        delta = (
+            f"{item.delta:+.1f} dB"
+            if item.validity is Validity.VALID and item.delta is not None
+            else c.dash()
+        )
+        rows.append(
+            [
+                _noise_label(item.name),
+                base,
+                cand,
+                delta,
+                validity_cell(c, item.validity),
+            ]
+        )
+    lines += c.table(
+        [_("Band"), _("Baseline"), _("Candidate"), "Δ", _("Validity")], rows, align="lrrrl"
+    )
+    return lines + _reasons(c, items, label=_noise_label)
+
+
+def _reasons(c: Console, items: Sequence[MetricDelta], *, label: Any = metric_label) -> list[str]:
+    """Why deltas were not computed: each reason once, with the metrics it covers."""
+    grouped: dict[str, list[str]] = {}
+    for item in items:
+        if item.reason and item.validity is not Validity.VALID:
+            grouped.setdefault(localize(item.reason), []).append(label(item.name))
+    lines: list[str] = []
+    if grouped:
+        lines.append("")
+    for reason, names in grouped.items():
+        lines += c.status("skip", ", ".join(names), detail=reason)
+    return lines
+
+
+def _delta_statuses(c: Console, items: Sequence[MetricDelta]) -> list[str]:
+    """Deltas as status lines; metrics that share a validity and a reason share a line."""
+    grouped: dict[tuple[Validity, str], list[MetricDelta]] = {}
+    for item in items:
+        grouped.setdefault((item.validity, item.reason or ""), []).append(item)
+    lines: list[str] = []
+    for (validity, reason), members in grouped.items():
+        if validity is Validity.VALID:
+            for item in members:
+                lines += c.status("ok", _delta_text(c, item))
+            continue
+        names = ", ".join(metric_label(item.name) for item in members)
+        lines += c.status(
+            validity_status(validity),
+            f"{names}: {validity_word(validity)}",
+            detail=localize(reason) if reason else "",
+        )
+    return lines
+
+
+def _delta_text(c: Console, item: MetricDelta) -> str:
+    unit = f" {item.unit}" if item.unit else ""
+    base = f"{item.baseline:.2f}" if item.baseline is not None else c.dash()
+    cand = f"{item.candidate:.2f}" if item.candidate is not None else c.dash()
+    text = f"{metric_label(item.name)}: {base} {c.arrow()} {cand}{unit}"
+    if item.delta is not None:
+        text += f" ({item.delta:+.2f}{unit})"
+    return text
+
+
+def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
+    """Baseline against candidate, one line per topic; the symbol says whether
+    the topic could be compared, never whether the change is good."""
+    rows: list[tuple[str, str]] = []
+    arrow = f" {c.arrow()} "
+
+    def row(label: str, status: Status, text: str) -> None:
+        rows.append((label, f"{c.symbol(status)} {text}"))
+
+    rt = next((d for d in comparison.decay if d.name == "broadband.rt60_estimate"), None)
+    if (
+        rt is not None
+        and rt.validity is Validity.VALID
+        and rt.baseline is not None
+        and rt.candidate is not None
+    ):
+        text = f"RT60 {rt.baseline:.2f} s{arrow}{rt.candidate:.2f} s"
+        if rt.delta_percent is not None:
+            text += f" ({rt.delta_percent:+.1f} %)"
+        row(_("Reverberation"), "ok", text)
+    else:
+        row(_("Reverberation"), "unsure", _("broadband RT60 not comparable (see Reverberation)"))
+
+    if comparison.reflections:
+        counts = {"matched": 0, "appeared": 0, "disappeared": 0}
+        for match in comparison.reflections:
+            counts[match.status] = counts.get(match.status, 0) + 1
+        row(
+            _("Early reflections"),
+            "ok",
+            _("{gone} gone{sep}{new} new{sep}{kept} at both").format(
+                gone=counts["disappeared"],
+                new=counts["appeared"],
+                kept=counts["matched"],
+                sep=c.sep(),
+            ),
+        )
+    else:
+        row(_("Early reflections"), "ok", _("none above the threshold on either side"))
+
+    parts: list[str] = []
+    for status, label in (
+        ("matched", _("at both: {list}")),
+        ("disappeared", _("gone: {list}")),
+        ("appeared", _("new: {list}")),
+    ):
+        found = [
+            f"{(r.candidate_hz if r.candidate_hz is not None else r.baseline_hz):.0f} Hz"
+            for r in comparison.resonances
+            if r.status == status
+        ]
+        if found:
+            parts.append(label.format(list=", ".join(found)))
+    row(_("Low end"), "ok", "; ".join(parts) if parts else _("no potential resonance"))
+
+    rms = next((d for d in comparison.noise if d.name == "noise.rms_dbfs"), None)
+    if rms is not None and rms.baseline is not None and rms.candidate is not None:
+        text = f"{rms.baseline:.1f}{arrow}{rms.candidate:.1f} dBFS"
+        if rms.validity is Validity.VALID and rms.delta is not None:
+            row(_("Noise floor"), "ok", text + f" ({rms.delta:+.1f} dB)")
+        else:
+            text += c.sep() + _("not compared: {validity}").format(
+                validity=validity_word(rms.validity)
+            )
+            if not comparison.settings.get("same_input_gain", False):
+                text += c.sep() + _("add --same-input-gain if the input gain was unchanged")
+            row(_("Noise floor"), validity_status(rms.validity), text)
+    else:
+        row(_("Noise floor"), "skip", _("no quiet segment on one or both sides"))
+
+    fr = comparison.frequency_response
+    if fr is not None and fr.band_mad_db:
+        band, mad = max(fr.band_mad_db, key=lambda item: item[1])
+        row(
+            _("Frequency response"),
+            "ok",
+            _("largest change in the {band} octave, {mad:.1f} dB mean |Δ|").format(
+                band=band, mad=mad
+            ),
+        )
+    return c.section(_("At a glance")) + c.fields(rows)
 
 
 # --- Environment report -------------------------------------------------------------
@@ -690,7 +987,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
     lines += c.section(_("Privacy"))
     lines += c.status("ok", _("Nothing was sent anywhere: this report is only printed."))
     lines += c.status("warn", privacy_note())
-    return "\n".join(lines)
+    return c.fit("\n".join(lines))
 
 
 def _default_marks(device: dict[str, Any], *, short: bool = False) -> str:
@@ -797,7 +1094,7 @@ def render_devices(console: Console, devices: Sequence[DeviceInfo]) -> str:
     lines += console.paragraph(
         _("Use the number with --input-device / --output-device."), style=("dim",)
     )
-    return "\n".join(lines)
+    return console.fit("\n".join(lines))
 
 
 def render_inventory(console: Console, inventory: DeviceInventory) -> str:
@@ -816,7 +1113,7 @@ def render_inventory(console: Console, inventory: DeviceInventory) -> str:
     lines += _device_rows(console, data.get("devices", []), bool(data.get("rates_probed")))
     for note in inventory.notes:
         lines += console.status("info", localize(note))
-    return "\n".join(lines)
+    return console.fit("\n".join(lines))
 
 
 def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
@@ -840,7 +1137,7 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
     for api in inventory.host_apis:
         if api.note:
             lines += console.status("info", f"{api.name}: {localize(api.note)}")
-    return "\n".join(lines)
+    return console.fit("\n".join(lines))
 
 
 # --- Sweep -----------------------------------------------------------------------------
@@ -873,16 +1170,46 @@ def render_sweep_written(
     lines += c.status(
         "ok", Verbatim(_("Wrote {sidecar} (keep it next to the WAV)").format(sidecar=sidecar))
     )
-    lines += c.section(_("Next"))
-    lines += c.paragraph(
-        _(
-            "1. Import the WAV into your DAW, play it through the monitors and record "
-            "the measurement microphone."
-        )
+    lines += c.section(_("Next steps"))
+    lines += c.steps(
+        [
+            (
+                _("Import {name} into your DAW and play it through the monitors.").format(
+                    name=Path(str(wav_path)).name
+                ),
+                "",
+            ),
+            (_("Record the measurement microphone on another track at the same sample rate."), ""),
+            (
+                _("Export that track as WAV (no trimming needed) and analyse it:"),
+                "roomscope analyze --recording {take} --sweep {sweep} --out {session}".format(
+                    take=_("<take.wav>"), sweep=wav_path, session=_("<session>")
+                ),
+            ),
+        ]
     )
-    lines += c.paragraph(_("2. Export the recording as WAV and analyse it:"))
-    lines.append("     " + c.accent(f"roomscope analyze --recording <file> --sweep {wav_path}"))
-    return "\n".join(lines)
+    lines += c.paragraph(
+        _("Start with the monitors turned down and raise them between takes if needed."),
+        style=("dim",),
+    )
+    return c.fit("\n".join(lines))
+
+
+def render_saved_next_steps(console: Console, session: object) -> str:
+    """After a saved analysis: where the session is and what to do with it."""
+    c = console
+    lines = c.status("ok", Verbatim(_("Saved session to {path}").format(path=session)), indent=0)
+    lines += c.section(_("Next steps"))
+    lines += c.steps(
+        [
+            (
+                _("Measure another position into a new folder, then compare the two:"),
+                f"roomscope compare {session} {_('<other-session>')}",
+            ),
+            (_("Open the session in the desktop app:"), "roomscope gui"),
+        ]
+    )
+    return c.fit("\n".join(lines))
 
 
 # --- Measure ---------------------------------------------------------------------------
@@ -946,7 +1273,8 @@ def render_measure_plan(
         stream.append(_("sets the Core Audio device rate"))
     if stream:
         rows.append((_("Stream"), c.sep().join(stream)))
-    lines += c.section(_("Devices")) + c.fields(rows)
+    lines.append("")
+    lines += c.fields(rows)
 
     lines += c.section(_("Checks"), _("nothing has been played yet"))
     lines += c.status("ok", _("Input and output use one host API"))
@@ -974,21 +1302,37 @@ def render_measure_plan(
         )
     if clock_warning:
         lines += c.status("warn", localize(clock_warning))
-    return "\n".join(lines)
+    return c.fit("\n".join(lines))
 
 
 # --- Messages on stderr ------------------------------------------------------------------
 
 
-def render_error(console: Console, message: str, *, detail: str = "") -> str:
-    """``× error: message`` wrapped under itself, with an optional detail line."""
+def render_error(
+    console: Console, message: str, *, detail: str = "", hints: Sequence[str] = ()
+) -> str:
+    """``× error: message``, an optional explanation, and commands to try.
+
+    ::
+
+        × error: file not found: take.wav
+
+          Try:
+            roomscope analyze --help
+    """
+    c = console
     text = _("error: {message}").format(message=message)
-    if not console.unicode:
-        lines = console.paragraph(text, indent=0)
-        if detail:
-            lines += console.paragraph(detail, indent=2)
-        return "\n".join(lines)
-    return "\n".join(console.status("error", text, indent=0, detail=detail, style=("red", "bold")))
+    if c.unicode:
+        lines = c.status("error", text, indent=0, style=("red", "bold"))
+    else:  # "[ERROR] error:" would say it twice
+        lines = c.paragraph(text, indent=0)
+    if detail:
+        lines += c.paragraph(detail, indent=2)
+    if hints:
+        lines.append("")
+        lines.append("  " + _("Try:"))
+        lines += ["    " + c.command(hint) for hint in hints]
+    return c.fit("\n".join(lines))
 
 
 def render_status(console: Console, kind: Status, text: str, *, keep: bool = False) -> str:
@@ -999,7 +1343,146 @@ def render_status(console: Console, kind: Status, text: str, *, keep: bool = Fal
     if keep:
         text = Verbatim(text)
     if not console.unicode and kind in ("warn", "error"):
-        if keep:
-            return text
-        return "\n".join(console.paragraph(text, indent=0))
-    return "\n".join(console.status(kind, text, indent=0))
+        # The text starts with its own word ("warning:"); "[WARN]" would repeat it.
+        return text if keep else "\n".join(console.paragraph(text, indent=0))
+    return console.fit("\n".join(console.status(kind, text, indent=0)))
+
+
+# --- Home screen -------------------------------------------------------------------------
+
+
+def render_home(console: Console, version: str) -> str:
+    """Bare ``roomscope``: what it is, three ways in, and where the rest is."""
+    c = console
+    lines = [c.bold("RoomScope") + " " + c.muted(version)]
+    lines += c.paragraph(
+        _(
+            "Measure and compare the rooms you record in: reverberation, early reflections, "
+            "low-frequency resonances and noise, from any DAW."
+        ),
+        indent=0,
+    )
+    lines.append("")
+    lines += c.commands(
+        [
+            ("roomscope demo", _("Try it with synthetic data; no audio interface needed")),
+            ("roomscope gui", _("Open the desktop app")),
+            ("roomscope sweep --out sweep.wav", _("Write the test signal to play from your DAW")),
+        ]
+    )
+    lines.append("")
+    lines += c.paragraph(
+        _("Run {command} for every command and option.").format(command="roomscope --help"),
+        indent=0,
+        style=("dim",),
+    )
+    return c.fit("\n".join(lines))
+
+
+# --- Demo ----------------------------------------------------------------------------------
+
+
+def demo_position_text(key: str, fallback: str) -> str:
+    """A demo position's description in the active language (session.json keeps English)."""
+    return {
+        "position-a": _("close to the desk and the side wall"),
+        "position-b": _("moved 1 m back from the desk"),
+    }.get(key, fallback)
+
+
+def render_demo(
+    console: Console,
+    run: DemoRun,
+    findings: Sequence[Sequence[Finding]],
+    *,
+    gui_available: bool,
+) -> str:
+    """``roomscope demo``: what was simulated, what the analysis found, what next."""
+    c = console
+    settings = run.settings
+    lines = c.title(_("RoomScope demo"))
+    lines.append("")
+    lines += c.status(
+        "warn",
+        _("Synthetic data: a simulated room, not a measurement."),
+        style=("bold",),
+        detail=_(
+            "No audio device was used and nothing was played. The numbers below describe "
+            "the simulation; every session is marked as a synthetic demo."
+        ),
+    )
+
+    lines += c.section(_("Created"))
+    rows: list[tuple[str, str]] = [
+        (_("Test signal"), Verbatim(str(run.sweep_path))),
+    ]
+    for take in run.takes:
+        rows.append(
+            (
+                _("Position {label}").format(label=take.position.label),
+                Verbatim(str(take.session_dir)),
+            )
+        )
+    rows.append((_("Comparison"), Verbatim(str(run.comparison_path))))
+    lines += c.fields(rows)
+    lines += c.paragraph(
+        _("{duration:g} s sweep{sep}{start} – {end}{sep}{rate}").format(
+            duration=settings.duration_s,
+            sep=c.sep(),
+            start=frequency_text(settings.start_hz),
+            end=frequency_text(settings.end_hz),
+            rate=rate_text(settings.sample_rate),
+        ),
+        style=("dim",),
+    )
+
+    for take, take_findings in zip(run.takes, findings, strict=True):
+        glance = at_a_glance(c, take.result, take_findings)
+        title = _("Position {label}").format(label=take.position.label)
+        description = demo_position_text(take.position.key, take.position.description)
+        # The glance block's own heading is replaced by the position's.
+        lines += c.section(title, description) + glance[2:]
+
+    first, second = run.takes[0], run.takes[1]
+    glance = comparison_at_a_glance(c, run.comparison)
+    lines += (
+        c.section(
+            _("Comparison {a} {arrow} {b}").format(
+                a=first.position.label, b=second.position.label, arrow=c.arrow()
+            )
+        )
+        + glance[2:]
+    )
+
+    lines += c.section(_("What the demo shows"))
+    for text in (
+        _("A strong desk reflection at 2.4 ms at position A is gone at position B."),
+        _("The 110 Hz room mode stays at both positions: it belongs to the room, not the spot."),
+        _("Mains hum at 50 Hz is clearly lower at position B."),
+    ):
+        lines += c.status("info", text)
+
+    lines += c.section(_("Next steps"))
+    gui_step = (
+        (_("Open the sessions in the desktop app:"), "roomscope gui")
+        if gui_available
+        else (
+            _("Open them in the desktop app (download it, or add PySide6 to this Python):"),
+            'pip install "PySide6_Essentials>=6.6"',
+        )
+    )
+    lines += c.steps(
+        [
+            (_("Read the full report of one position:"), f"roomscope show {first.session_dir}"),
+            (
+                _("See every delta between the two positions:"),
+                f"roomscope compare {first.session_dir} {second.session_dir} --same-input-gain",
+            ),
+            gui_step,
+            (
+                _("Measure your own room: write the test signal for your DAW."),
+                "roomscope sweep --out sweep.wav",
+            ),
+        ]
+    )
+    return c.fit("\n".join(lines))
