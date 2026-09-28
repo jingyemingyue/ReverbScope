@@ -1123,6 +1123,12 @@ def cmd_measure(args: argparse.Namespace) -> int:
 
     settings = _sweep_settings(args)
     err = _console(args, sys.stderr)
+    if Path(args.out).exists() and not Path(args.out).is_dir():
+        refusal = ConfigurationError(
+            _("{path} is a file; --out needs a folder for the session").format(path=args.out)
+        )
+        refusal.cli_hints = [f"roomscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
+        raise refusal
     if settings.level_dbfs > SAFE_MAX_LEVEL_DBFS and not args.acknowledge_level:
         print(
             render_error(
@@ -1694,6 +1700,9 @@ def _prepare_streams() -> None:
 
 def _error_hints(exc: BaseException, command: str | None) -> list[str]:
     """What to try after each kind of error (the most specific class first)."""
+    chosen = getattr(exc, "cli_hints", None)
+    if chosen:
+        return list(chosen)
     here = f"roomscope {command} --help" if command else "roomscope --help"
     if isinstance(exc, AudioBackendUnavailableError):
         return ["roomscope doctor"]
@@ -1733,6 +1742,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(render_home(err, __version__), file=sys.stderr)
         return 2
 
+    def nothing_played() -> str:
+        # Before the stream starts nothing has reached the loudspeaker; say so.
+        if args.command == "measure" and not getattr(args, "playback_started", False):
+            return _("Nothing was played.")
+        return ""
+
     def trace() -> None:
         if args.verbose and sys.stderr is not None:
             traceback.print_exc(file=sys.stderr)
@@ -1750,12 +1765,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     except RoomScopeError as exc:
         trace()
-        # Before the stream starts nothing has reached the loudspeaker; say so.
-        detail = (
-            _("Nothing was played.")
-            if args.command == "measure" and not getattr(args, "playback_started", False)
-            else ""
-        )
+        detail = nothing_played()
         print(
             render_error(
                 err, localize(str(exc)), detail=detail, hints=_error_hints(exc, args.command)
@@ -1777,7 +1787,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         # user's to fix, not a bug.
         trace()
         print(
-            render_error(err, _os_error_text(exc), hints=[f"roomscope {args.command} --help"]),
+            render_error(
+                err,
+                _os_error_text(exc),
+                detail=nothing_played(),
+                hints=[f"roomscope {args.command} --help"],
+            ),
             file=sys.stderr,
         )
         return 1

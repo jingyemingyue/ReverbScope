@@ -25,3 +25,9 @@
 
   Try:
     roomscope show --list <folder>
+
+× error: sweep.wav is a file; --out needs a folder for the session
+  Nothing was played.
+
+  Try:
+    roomscope measure --out <new-folder>

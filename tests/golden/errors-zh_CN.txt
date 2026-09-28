@@ -24,3 +24,9 @@
 
   可以尝试：
     roomscope show --list <文件夹>
+
+× 错误：sweep.wav 是一个文件；--out 需要一个用来保存会话的文件夹
+  没有播放任何声音。
+
+  可以尝试：
+    roomscope measure --out <新文件夹>

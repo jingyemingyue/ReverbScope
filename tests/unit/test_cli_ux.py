@@ -236,8 +236,9 @@ def test_golden_errors(
     cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], lang: str
 ) -> None:
     """User errors: one block with commands to try, no traceback, the documented codes."""
-    _root, monkeypatch = cli
+    root, monkeypatch = cli
     monkeypatch.setenv("COLUMNS", "80")
+    (root / "sweep.wav").write_bytes(b"")
     blocks = []
     for argv, expected in (
         (["analyze", "--recording", "take.wav", "--sweep", "sweep.wav"], 1),
@@ -245,6 +246,7 @@ def test_golden_errors(
         (["sweep", "--out", "x.wav", "--duration", "long"], 2),
         (["--backend", "fake", "measure", "--out", "m", "--input-channel", "9"], 1),
         (["show", "missing-session"], 1),
+        (["--backend", "fake", "measure", "--out", "sweep.wav"], 1),  # a file, not a folder
     ):
         code, out, err = _run(["--lang", lang, *argv], capsys)
         assert code == expected, (argv, err)

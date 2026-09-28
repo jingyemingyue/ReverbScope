@@ -3782,3 +3782,6 @@ msgstr "请把它和 WAV 放在一起：分析时会用它重建完全相同的�
 
 msgid "start the desktop GUI (needs PySide6; the desktop download includes it)"
 msgstr "启动桌面界面（需要 PySide6；桌面版下载包已包含）"
+
+msgid "{path} is a file; --out needs a folder for the session"
+msgstr "{path} 是一个文件；--out 需要一个用来保存会话的文件夹"
