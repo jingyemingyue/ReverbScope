@@ -384,11 +384,14 @@ jobs:
           import hashlib
           import importlib.util
           import os
+          import sys
           from pathlib import Path
           # The file names come from the release manifest, so a renamed or
-          # missing download fails here and not on the draft.
+          # missing download fails here and not on the draft. The module is
+          # registered before it runs: its dataclasses look themselves up there.
           spec = importlib.util.spec_from_file_location('rd', 'scripts/release_draft.py')
           rd = importlib.util.module_from_spec(spec)
+          sys.modules['rd'] = rd
           spec.loader.exec_module(rd)
           sums_name = f'SHA256SUMS-{os.environ["RUNNER_OS"]}-{os.environ["RUNNER_ARCH"]}'
           names = rd.CHECKSUM_FILES[sums_name]
