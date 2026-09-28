@@ -1,0 +1,60 @@
+RoomScope demo
+──────────────
+
+  ! Synthetic data: a simulated room, not a measurement.
+    No audio device was used and nothing was played. The
+    numbers below describe the simulation; every session is
+    marked as a synthetic demo.
+
+Files written
+  Test signal  roomscope-demo/sweep.wav
+  Position A   roomscope-demo/position-a
+  Position B   roomscope-demo/position-b
+  Comparison   roomscope-demo/comparison.json
+  # s sweep · # Hz – # kHz · # kHz
+
+Position A  close to the desk and the side wall
+  Reverberation      ! RT60 # s (T30) · EDT # s
+  Early reflections  ! strongest # dB at # ms · # above
+                     # dB
+  Low end            ! potential resonances at # Hz
+                     (# dB)
+  Noise floor        ! # dBFS RMS · mains hum at # Hz
+  Data quality       ✓ direct sound: confidence high · no
+                     warnings
+
+Position B  moved # m back from the desk
+  Reverberation      ! RT60 # s (T30) · EDT # s
+  Early reflections  ✓ strongest # dB at # ms · #
+                     above # dB
+  Low end            ! potential resonances at # Hz
+                     (# dB)
+  Noise floor        ! # dBFS RMS · mains hum at # Hz
+  Data quality       ✓ direct sound: confidence high · no
+                     warnings
+
+Comparison A → B
+  Reverberation       ✓ RT60 # s → # s (# %)
+  Early reflections   ✓ # gone · # new · # at both
+  Low end             ✓ at both: # Hz
+  Noise floor         ✓ # → # dBFS (# dB)
+  Frequency response  ✓ largest change in the # Hz
+                      octave, # dB mean |Δ|
+
+What the demo shows
+  i A strong desk reflection at # ms at position A is gone
+    at position B.
+  i The # Hz room mode stays at both positions: it belongs
+    to the room, not the spot.
+  i Mains hum at # Hz is clearly lower at position B.
+
+Next steps
+  #. Read the full report of one position:
+     roomscope show roomscope-demo/position-a
+  #. See every delta between the two positions:
+     roomscope compare roomscope-demo/position-a roomscope-demo/position-b --same-input-gain
+  #. Open the sessions in the desktop app:
+     roomscope gui
+  #. Measure your own room: write the test signal for your
+     DAW.
+     roomscope sweep --out sweep.wav

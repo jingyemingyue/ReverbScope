@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from roomscope.cli.console import Console, Status, Verbatim
+from roomscope.cli.console import Console, Status, Verbatim, glue_units
 from roomscope.i18n import _, localize, pgettext
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
@@ -185,7 +185,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
     rows: list[tuple[str, str]] = []
 
     def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, f"{c.symbol(status)} {text}"))
+        rows.append((label, f"{c.symbol(status)} {glue_units(text)}"))
 
     broadband = result.decay.broadband
     if broadband.rt60_estimate_s is not None:
@@ -350,11 +350,20 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
         )
         if band.filter_warning:
             notes.append(f"{band_text(band.band_label)}: {localize(band.filter_warning)}")
-    lines += c.table(
-        [_("Band"), "EDT", "T20", "T30", "RT60", _("Decay range")],
-        rows,
-        align="lrrrrr",
-    )
+    headers = [_("Band"), "EDT", "T20", "T30", "RT60", _("Decay range")]
+    bases = {band.rt60_basis for band in (result.decay.broadband, *result.decay.bands)}
+    basis_note = ""
+    if not c.fits(headers, rows, gap=2) and len(bases - {None, ""}) == 1:
+        # A narrow terminal: every band's RT60 has the same basis; say it once
+        # instead of in every row, so the table still fits.
+        (basis,) = bases - {None, ""}
+        for row, band in zip(rows, (result.decay.broadband, *result.decay.bands), strict=True):
+            if band.rt60_estimate_s is not None:
+                row[4] = f"{band.rt60_estimate_s:.2f} s"
+        basis_note = _("RT60 extrapolated from {basis} in every band").format(basis=basis)
+    lines += c.table(headers, rows, align="lrrrrr")
+    if basis_note:
+        lines += c.paragraph(basis_note, style=("dim",))
     legend = [
         f"{c.symbol(validity_status(v))} {validity_word(v)}"
         for v in (
@@ -801,7 +810,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     arrow = f" {c.arrow()} "
 
     def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, f"{c.symbol(status)} {text}"))
+        rows.append((label, f"{c.symbol(status)} {glue_units(text)}"))
 
     rt = next((d for d in comparison.decay if d.name == "broadband.rt60_estimate"), None)
     if (
@@ -1168,7 +1177,9 @@ def render_sweep_written(
         indent=4,
     )
     lines += c.status(
-        "ok", Verbatim(_("Wrote {sidecar} (keep it next to the WAV)").format(sidecar=sidecar))
+        "ok",
+        Verbatim(_("Wrote {path}").format(path=sidecar)),
+        detail=_("Keep it next to the WAV: the analysis rebuilds the exact sweep from it."),
     )
     lines += c.section(_("Next steps"))
     lines += c.steps(
@@ -1412,7 +1423,7 @@ def render_demo(
         ),
     )
 
-    lines += c.section(_("Created"))
+    lines += c.section(_("Files written"))
     rows: list[tuple[str, str]] = [
         (_("Test signal"), Verbatim(str(run.sweep_path))),
     ]

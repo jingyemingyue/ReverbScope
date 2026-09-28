@@ -1,0 +1,10 @@
+RoomScope <version>
+Measure and compare the rooms you record in: reverberation, early reflections,
+low-frequency resonances and noise, from any DAW.
+
+  roomscope demo                    Try it with synthetic data; no audio
+                                    interface needed
+  roomscope gui                     Open the desktop app
+  roomscope sweep --out sweep.wav   Write the test signal to play from your DAW
+
+Run roomscope --help for every command and option.

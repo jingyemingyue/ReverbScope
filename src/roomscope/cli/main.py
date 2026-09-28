@@ -13,6 +13,7 @@ adds it). With ``--format json`` stdout carries the JSON document only.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import logging
 import os
@@ -166,13 +167,16 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
         default = action.default
         if (
             not action.option_strings
-            or default in (None, False, True, "", argparse.SUPPRESS)
+            or default is None
+            or isinstance(default, bool)  # a flag (1.0 == True: test the type, not the value)
+            or default in ("", argparse.SUPPRESS)
             or isinstance(action, argparse._HelpAction | argparse._VersionAction)
             or "default" in text
             or "默认" in text
         ):
             return action.help
-        return text + _(" (default: %(default)s)")
+        shown = f"{default:g}" if isinstance(default, float) else str(default)
+        return text + (_(" (default: %(default)s)") % {"default": shown}).replace("%", "%%")
 
 
 class _Parser(argparse.ArgumentParser):
@@ -417,6 +421,34 @@ def _analysis_settings(
         placement_temperature_c=args.temperature,
         loopback_channel=loopback_channel if loopback_channel is not None else channel,
     )
+
+
+def _shorten_usage(parser: argparse.ArgumentParser) -> None:
+    """``roomscope measure --out DIR [options]`` instead of every option.
+
+    Each leaf command's usage line names what it cannot run without; the
+    options are listed, grouped, below it.
+    """
+    for action in parser._actions:
+        if not isinstance(action, argparse._SubParsersAction):
+            continue
+        for sub in action.choices.values():
+            if any(isinstance(a, argparse._SubParsersAction) for a in sub._actions):
+                _shorten_usage(sub)
+                continue
+            parts = [sub.prog]
+            for item in sub._actions:
+                if not item.option_strings:
+                    if item.metavar is None and item.choices:
+                        parts.append("{" + ",".join(str(c) for c in item.choices) + "}")
+                    else:
+                        parts.append(str(item.metavar or item.dest))
+                elif item.required:
+                    metavar = item.metavar or item.dest.upper()
+                    shown = " ".join(metavar) if isinstance(metavar, tuple) else metavar
+                    parts.append(f"{item.option_strings[0]} {shown}")
+            parts.append(_("[options]"))
+            sub.usage = " ".join(parts)
 
 
 def _required(parser: argparse.ArgumentParser) -> Any:
@@ -846,6 +878,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["result", "session", "comparison", "project", "sidecar"],
         help=_("which schema to print"),
     )
+    _shorten_usage(parser)
     # The command list is printed grouped (below), so argparse's own list is
     # hidden; put the command placeholder back into the usage line.
     usage = parser.format_usage().strip()
@@ -1728,6 +1761,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     except KeyboardInterrupt:
         print(render_status(err, "warn", _("interrupted")), file=sys.stderr)
         return 130
+    except BrokenPipeError:
+        # The reader went away (``roomscope show … | head``): nothing to say.
+        # Point stdout at nothing so the interpreter's final flush is quiet.
+        with contextlib.suppress(OSError, ValueError, AttributeError):
+            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        return 1
     except OSError as exc:
         # A folder that cannot be created, a file that cannot be written: the
         # user's to fix, not a bug.

@@ -82,7 +82,7 @@ _ASCII_SIGNS = str.maketrans(
         "━": "#",
         "→": "->",
         "←": "<-",
-        "Δ": "d",
+        "Δ": "delta",
         "±": "+/-",
         "·": "|",
         "…": "...",
@@ -122,6 +122,17 @@ class Verbatim(str):
     narrow terminal they run past the edge (the terminal folds them) rather
     than being cut into pieces.
     """
+
+
+#: Joins a number to its unit inside the layout (``2.4<NBSP>ms``): wrapping
+#: never separates them, and :meth:`Console.fit` writes a plain space.
+GLUE = "\u00a0"
+_UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|%)(?![\w])")
+
+
+def glue_units(text: str) -> str:
+    """``110 Hz (+11.3 dB)`` with each number held to its unit."""
+    return _UNIT.sub(lambda match: match.group(1) + GLUE + match.group(2), text)
 
 
 def _unbreakable(token: str) -> bool:
@@ -178,7 +189,7 @@ def _tokens(text: str) -> Iterator[str]:
     """Spaces, Latin words and single wide characters, in order."""
     buffer, kind = "", ""
     for char in text:
-        if char.isspace():
+        if char.isspace() and char != GLUE:
             this = "space"
         elif char_width(char) == 2:
             if buffer:
@@ -398,6 +409,7 @@ class Console:
     def fit(self, text: str) -> str:
         """``text`` as this stream can write it: typographic signs become ASCII
         where the encoding cannot hold them (see :data:`_ASCII_SIGNS`)."""
+        text = text.replace(GLUE, " ")
         return text if self.unicode else text.translate(_ASCII_SIGNS)
 
     def arrow(self) -> str:
@@ -573,6 +585,8 @@ class Console:
             for index, cell in enumerate(row):
                 widths[index] = max(widths[index], cell_width(cell))
         margin = " " * indent
+        if gap > 2 and not self.fits(headers, rows, indent=indent, gap=gap):
+            gap = 2  # a little tighter before giving up the table
         if not self.fits(headers, rows, indent=indent, gap=gap):
             out: list[str] = []
             titles = [""] * title_columns
@@ -688,7 +702,7 @@ class ProgressLine:
         width = max(MIN_WIDTH, min(MAX_WIDTH, width)) - 1
         percent = f"{fraction * 100:3.0f}%"
         timing = f"{clock(fraction * self.total_s)} / {clock(self.total_s)}"
-        label = truncate(self.label, max(8, width // 3))
+        label = truncate(self.label, max(8, width // 2))
         room = width - cell_width(label) - len(percent) - len(timing) - 6
         bar = ""
         if room >= 10:

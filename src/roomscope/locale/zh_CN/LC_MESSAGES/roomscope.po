@@ -3980,3 +3980,15 @@ msgstr "用合成数据体验 RoomScope：无需音频硬件"
 
 msgid "recording profile used to interpret the demo (default: {profile})"
 msgstr "用于解读演示结果的录音配置（默认：{profile}）"
+
+msgid "[options]"
+msgstr "[选项]"
+
+msgid "Files written"
+msgstr "已写出的文件"
+
+msgid "RT60 extrapolated from {basis} in every band"
+msgstr "所有频带的 RT60 都由 {basis} 外推"
+
+msgid "Keep it next to the WAV: the analysis rebuilds the exact sweep from it."
+msgstr "请把它和 WAV 放在一起：分析时会用它重建完全相同的扫频。"
