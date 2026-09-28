@@ -368,6 +368,44 @@ def test_a_narrow_encoding_replaces_what_it_cannot_write(
     assert raw.getvalue() == b"??? ?\n"
 
 
+def test_a_frozen_bundle_still_honours_pythonioencoding(monkeypatch: pytest.MonkeyPatch) -> None:
+    """PyInstaller ignores PYTHONIOENCODING: the CLI applies it (the Windows bundle smoke)."""
+    import importlib
+
+    cli_main = importlib.import_module("roomscope.cli.main")
+
+    monkeypatch.setenv("PYTHONIOENCODING", "utf-8")
+    out_raw, err_raw = io.BytesIO(), io.BytesIO()
+    out = io.TextIOWrapper(out_raw, encoding="cp1252", errors="surrogateescape", newline="\n")
+    err = io.TextIOWrapper(err_raw, encoding="cp1252", errors="backslashreplace", newline="\n")
+    monkeypatch.setattr(sys, "stdout", out)
+    monkeypatch.setattr(sys, "stderr", err)
+    cli_main._prepare_streams()
+    for stream in (out, err):
+        stream.write("RoomScope 演示\n")
+        stream.flush()
+    assert out_raw.getvalue().decode("utf-8") == "RoomScope 演示\n"
+    assert err_raw.getvalue().decode("utf-8") == "RoomScope 演示\n"
+    assert err.errors == "backslashreplace"
+
+
+def test_a_narrow_stream_that_would_raise_is_made_to_replace(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import importlib
+
+    cli_main = importlib.import_module("roomscope.cli.main")
+
+    monkeypatch.setenv("PYTHONIOENCODING", "cp1252")
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252", errors="surrogateescape", newline="\n")
+    monkeypatch.setattr(sys, "stdout", stream)
+    cli_main._prepare_streams()
+    sys.stdout.write("RoomScope 演示\n")
+    stream.flush()
+    assert raw.getvalue() == b"RoomScope ??\n"
+
+
 def test_json_stdout_carries_nothing_but_json(
     cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
 ) -> None:

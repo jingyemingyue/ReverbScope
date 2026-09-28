@@ -76,6 +76,13 @@ All notable changes to RoomScope are documented here. The format follows
   `format_report` / `format_comparison_report` now return that layout as
   plain text.
 
+### Fixed
+
+- The desktop and terminal bundles honour `PYTHONIOENCODING`, which their
+  frozen interpreter ignores: `roomscope --lang zh_CN demo` piped with
+  `PYTHONIOENCODING=utf-8` on Windows failed with `UnicodeEncodeError`
+  instead of writing UTF-8.
+
 ## [0.4.1] - 2026-09-24
 
 First version meant for a draft pre-release (0.4.0 was never tagged, because

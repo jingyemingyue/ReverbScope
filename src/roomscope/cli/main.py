@@ -13,6 +13,7 @@ adds it). With ``--format json`` stdout carries the JSON document only.
 from __future__ import annotations
 
 import argparse
+import codecs
 import contextlib
 import json
 import logging
@@ -1688,6 +1689,12 @@ class _UsageError(Exception):
         self.hints = tuple(hints)
 
 
+#: Error handlers that write something for any character instead of raising.
+_SAFE_ERRORS = frozenset(
+    {"replace", "backslashreplace", "xmlcharrefreplace", "namereplace", "ignore"}
+)
+
+
 def _prepare_streams() -> None:
     """Make stdout and stderr safe to write any report to.
 
@@ -1698,8 +1705,13 @@ def _prepare_streams() -> None:
     encoding (a terminal, or ``PYTHONIOENCODING=cp1252``) replaces what it
     cannot write instead of failing; the console layer already writes ASCII
     symbols to such a stream.
+
+    A frozen bundle's interpreter ignores ``PYTHONIOENCODING`` (PyInstaller
+    runs it isolated from ``PYTHON*`` variables), so a stream still on
+    another encoding is switched to the one the variable asks for.
     """
-    chosen = bool(os.environ.get("PYTHONIOENCODING"))
+    chosen = os.environ.get("PYTHONIOENCODING", "")
+    wanted, _sep, wanted_errors = chosen.partition(":")
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         isatty = getattr(stream, "isatty", None)
@@ -1709,10 +1721,14 @@ def _prepare_streams() -> None:
             if not chosen and not isatty():
                 reconfigure(encoding="utf-8", errors="backslashreplace")
                 continue
-            encoding = (getattr(stream, "encoding", None) or "").lower().replace("-", "")
-            if encoding not in ("utf8", "utf_8") and getattr(stream, "errors", "") == "strict":
+            current = getattr(stream, "encoding", None) or "utf-8"
+            if wanted and codecs.lookup(wanted).name != codecs.lookup(current).name:
+                reconfigure(encoding=wanted, errors=wanted_errors or stream.errors)
+                current = wanted
+            narrow = codecs.lookup(current).name != "utf-8"
+            if narrow and getattr(stream, "errors", "strict") not in _SAFE_ERRORS:
                 reconfigure(errors="replace")
-        except (OSError, ValueError):
+        except (LookupError, OSError, ValueError):
             continue
 
 
