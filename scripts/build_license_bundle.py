@@ -38,6 +38,21 @@ REQUIRED = [
 
 OPTIONAL = ["PySide6_Essentials", "shiboken6", "PySide6"]
 
+#: What the Terminal Edition ships (``ROOMSCOPE_PACKAGE=terminal`` in
+#: packaging/roomscope.spec): the analysis and audio stack, without Qt and
+#: without matplotlib and its dependencies.
+TERMINAL_REQUIRED = [
+    "numpy",
+    "scipy",
+    "soundfile",
+    "sounddevice",
+    "cffi",
+    "pycparser",
+    "packaging",
+]
+#: Notices that concern only the GUI's libraries.
+GUI_NOTICES = ("freetype", "agg", "pyside6", "ttconv")
+
 # Verbatim license texts kept in the repository because the wheels omit them
 # (DEPENDENCIES.md §3-§4). Every bundle ships all of them; the LGPL / GPL
 # texts are additionally *required* whenever PySide6 is installed.
@@ -164,15 +179,16 @@ def _package_license_files(name: str) -> tuple[list[tuple[str, bytes]], list[str
     return found, missing
 
 
-def build(out: Path, *, texts_dir: Path = TEXTS_DIR) -> list[str]:
+def build(out: Path, *, texts_dir: Path = TEXTS_DIR, terminal: bool = False) -> list[str]:
     """Write the bundle and return the names of unresolved items.
 
     Unresolved items are required packages without a license file and, when
     PySide6 is installed, missing LGPL / GPL texts (reported as ``text:<name>``).
+    ``terminal`` writes the Terminal Edition's bundle: no Qt, no matplotlib.
     """
     out.mkdir(parents=True, exist_ok=True)
     unresolved: list[str] = []
-    for name in REQUIRED:
+    for name in TERMINAL_REQUIRED if terminal else REQUIRED:
         files = _license_files(name)
         if not files:
             unresolved.append(name)
@@ -184,7 +200,7 @@ def build(out: Path, *, texts_dir: Path = TEXTS_DIR) -> list[str]:
         for filename, data in [*files, *extra]:
             (dest / filename).write_bytes(data)
     qt_installed = False
-    for name in OPTIONAL:
+    for name in () if terminal else OPTIONAL:
         files = _license_files(name)
         dest = out / name.replace(" ", "_")
         dest.mkdir(exist_ok=True)
@@ -196,6 +212,8 @@ def build(out: Path, *, texts_dir: Path = TEXTS_DIR) -> list[str]:
     texts = out / "_texts"
     texts.mkdir(exist_ok=True)
     for filename in TEXTS:
+        if terminal and filename in QT_TEXTS:
+            continue
         src = texts_dir / filename
         if src.is_file():
             (texts / filename).write_bytes(src.read_bytes())
@@ -204,6 +222,8 @@ def build(out: Path, *, texts_dir: Path = TEXTS_DIR) -> list[str]:
     extras = out / "_notices"
     extras.mkdir(exist_ok=True)
     for key, text in KNOWN_NOTICES.items():
+        if terminal and key in GUI_NOTICES:
+            continue
         (extras / f"{key}.txt").write_text(text, encoding="utf-8")
     root = Path(__file__).resolve().parents[1]
     for name in ("LICENSE", "NOTICE"):
@@ -212,7 +232,9 @@ def build(out: Path, *, texts_dir: Path = TEXTS_DIR) -> list[str]:
             (out / name).write_bytes(src.read_bytes())
     summary = out / "INDEX.txt"
     qt_line = "PySide6 installed; LGPL-3.0 and GPL-3.0 texts in _texts/"
-    if not qt_installed:
+    if terminal:
+        qt_line = "not included (Terminal Edition)"
+    elif not qt_installed:
         qt_line = "PySide6 not installed"
     lines = [
         "RoomScope third-party license bundle",
@@ -228,8 +250,13 @@ def build(out: Path, *, texts_dir: Path = TEXTS_DIR) -> list[str]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True, help="THIRD_PARTY_LICENSES directory")
+    parser.add_argument(
+        "--terminal",
+        action="store_true",
+        help="the Terminal Edition's bundle (no Qt, no matplotlib)",
+    )
     args = parser.parse_args(argv)
-    unresolved = build(args.out)
+    unresolved = build(args.out, terminal=args.terminal)
     if unresolved:
         print("unresolved packages: " + ", ".join(unresolved), file=sys.stderr)
         return 1

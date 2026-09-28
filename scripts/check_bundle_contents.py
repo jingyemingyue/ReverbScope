@@ -1,4 +1,7 @@
-"""Fail a desktop bundle that contains GPL-only Qt modules or ASIO DLLs.
+"""Fail a bundle that contains GPL-only Qt modules or ASIO DLLs.
+
+``--terminal`` also fails a Terminal Edition bundle that contains any file of
+the GUI: PySide6, shiboken6, a Qt library, matplotlib or ``roomscope/ui``.
 
 ARCHITECTURE_V1.md §6.2: a frozen tree must not ship GPL-only Qt modules or
 ``*asio*.dll``. PySide6 Essentials wheels still contain ``.pyi`` stubs, a
@@ -210,11 +213,48 @@ def strip(root: Path) -> list[Path]:
     return removed
 
 
+#: What the Terminal Edition must not contain: the GUI package, Qt and the
+#: plotting stack. Matched against every path below the bundle except its
+#: license texts, case-insensitively.
+TERMINAL_FORBIDDEN = (
+    ("pyside6", "PySide6"),
+    ("shiboken6", "shiboken6"),
+    ("matplotlib", "matplotlib"),
+    ("roomscope/ui/", "roomscope.ui (the GUI)"),
+)
+
+
+def _is_qt_library(name: str) -> bool:
+    """``libQt6Core.so.6``, ``Qt6Core.dll``, ``QtCore.framework``, ``QtWidgets.abi3.so``."""
+    lowered = name.lower()
+    stem = lowered[3:] if lowered.startswith("lib") else lowered
+    return stem.startswith(("qt6", "qt5")) or (
+        stem.startswith("qt") and (".framework" in stem or ".abi3." in stem)
+    )
+
+
+def gui_files(root: Path) -> list[tuple[Path, str]]:
+    """Files of the GUI in a tree that must be the Terminal Edition."""
+    found: list[tuple[Path, str]] = []
+    for path in sorted(root.rglob("*")):
+        relative = path.relative_to(root).as_posix()
+        if relative.split("/", 1)[0] == "THIRD_PARTY_LICENSES" or not path.is_file():
+            continue
+        lowered = f"{relative.lower()}/"
+        hit = next((label for token, label in TERMINAL_FORBIDDEN if token in lowered), None)
+        if hit is None and any(_is_qt_library(part) for part in path.parts):
+            hit = "a Qt library"
+        if hit is not None:
+            found.append((path, hit))
+    return found
+
+
 def check(
     root: Path,
     *,
     require_licenses: bool = False,
     installed_essentials: bool = False,
+    terminal: bool = False,
 ) -> list[str]:
     errors: list[str] = []
     if not root.is_dir():
@@ -236,6 +276,8 @@ def check(
             f"imported QtQml): {tree}"
             for tree, count in qml_trees(root).items()
         )
+    if terminal:
+        errors.extend(f"Terminal Edition contains {what}: {path}" for path, what in gui_files(root))
     if require_licenses:
         licenses = root / "THIRD_PARTY_LICENSES"
         if not licenses.is_dir():
@@ -245,7 +287,10 @@ def check(
             if index.is_file() and "unresolved: none" not in index.read_text(encoding="utf-8"):
                 errors.append("THIRD_PARTY_LICENSES/INDEX.txt lists unresolved packages")
             texts = licenses / "_texts"
-            for filename in ("LGPL-3.0.txt", "GPL-3.0.txt", "PortAudio-LICENSE.txt"):
+            wanted = ("PortAudio-LICENSE.txt",)
+            if not terminal:
+                wanted = ("LGPL-3.0.txt", "GPL-3.0.txt", *wanted)
+            for filename in wanted:
                 if not (texts / filename).is_file():
                     errors.append(f"THIRD_PARTY_LICENSES/_texts/{filename} is missing")
     return errors
@@ -269,6 +314,11 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="delete GPL-only Qt modules and ASIO DLLs from a frozen tree, then gate it",
     )
+    parser.add_argument(
+        "--terminal",
+        action="store_true",
+        help="the Terminal Edition: fail on any PySide6, Qt, matplotlib or GUI file",
+    )
     args = parser.parse_args(argv)
     if args.strip:
         if args.installed_essentials:
@@ -279,11 +329,15 @@ def main(argv: list[str] | None = None) -> int:
         args.root,
         require_licenses=args.require_licenses,
         installed_essentials=args.installed_essentials,
+        terminal=args.terminal,
     )
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print(f"bundle gate passed for {args.root} ({ALLOWED_HINT})")
+    if args.terminal:
+        print(f"Terminal Edition gate passed for {args.root} (no PySide6, Qt, matplotlib or GUI)")
+    else:
+        print(f"bundle gate passed for {args.root} ({ALLOWED_HINT})")
     return 0
 
 

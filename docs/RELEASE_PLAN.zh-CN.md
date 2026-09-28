@@ -31,10 +31,10 @@
 > 上；v0.4.1 草稿 Release 就是由它创建的。只要 `v0.4.1` 还没有 tag，`main`
 > 上的 `pyproject.toml`、工作流、`packaging/` 或 `scripts/smoke_bundle.py`
 > 一有变化，草稿就会被刷新。Windows 任务每次都会构建并安装
-> `RoomScope-setup.exe`。发布前核对 `main` 最新一次运行和草稿附件。
+> `RoomScope-Desktop-Windows-x64-Setup.exe`，每个任务还会构建本平台的终端版。发布前核对 `main` 最新一次运行和草稿附件。
 >
 > **草稿如何刷新**（`scripts/release_draft.py`）：每次刷新都替换*全部*附件、
-> 正文、tag 名和目标提交，草稿里只有目标提交那一次成功运行产出的 13 个文件；
+> 正文、tag 名和目标提交，草稿里只有目标提交那一次成功运行产出的 14 个文件（两个版本的 9 个下载文件、wheel、sdist、一个 `SHA256SUMS`、SBOM 和锁定文件）；
 > 旧工作流留下的、现在已不再产出的文件名（`RoomScope.dmg`、`SHA256SUMS-macOS`
 > 等）会被删掉。遇到以下情况任务直接失败、不做任何修改：`v<版本>` 已发布、
 > 有两个匹配的草稿、`v<版本>` tag 指向别的提交、草稿里有它不认识的文件（例如
@@ -53,8 +53,8 @@
 
 私有仓库消耗自己的 Actions 分钟数，macOS 运行器按十倍计。额度用完后，任务会在几秒内失败且没有分配运行器（没有步骤、没有日志）。可选做法（从省钱到省事）：
 
-1. **本地构建。** `scripts/build_release.py` 在当前机器上执行与发布工作流 bundle 任务相同的步骤，并在 `dist/` 中生成相同的文件名。每个平台运行一次：Apple 芯片 Mac（`RoomScope-macos-arm64.dmg`）、有条件时 Intel Mac（`RoomScope-macos-x86_64.dmg`）、装有 Inno Setup 6 的 Windows（`roomscope-windows-x64.zip`、`RoomScope-setup.exe`）以及 Linux x86_64（`roomscope-linux-x86_64.tar.gz`）；在其中一台上加 `--python-dist` 生成 wheel 和 sdist。运行前按脚本文档安装 `requirements/bundle.lock`、`dev` 与 `gui` 附加依赖、`pyinstaller==6.22.3` 和 `build`；版本不一致时脚本会拒绝，除非加 `--allow-unlocked`。脚本会运行测试、许可证包、`--strip --require-licenses` 门禁和冒烟测试；在 macOS 上还会做临时签名，并从 DMG 挂载、复制和启动应用。在 Windows 上它只编译安装程序，不像工作流那样安装、冒烟测试和卸载（那会改变这台电脑）；发布本地构建的安装程序前请手动完成这三步。
-2. **手动发布。** 在 Releases 页面创建或编辑草稿 `v<version>`（tag 为 `main` 上发布提交的 `v<version>`，勾选 *pre-release*），粘贴说明（`packaging/release-notes-header.md` 中把 `{version}` 替换后，再接 CHANGELOG 对应段落），上传第 1 步的所有文件及每台机器的 `SHA256SUMS-*`，然后发布。PyPI 任务需要 Actions，没有它就不会上传 PyPI。
+1. **本地构建。** `scripts/build_release.py` 在当前机器上执行与发布工作流 bundle 任务相同的步骤，并在 `dist/` 中生成相同的文件名。每个平台运行一次：Apple 芯片 Mac（`RoomScope-Desktop-macOS-arm64.dmg`、`RoomScope-Terminal-macOS-arm64.tar.gz`）、有条件时 Intel Mac（`RoomScope-Desktop-macOS-x86_64.dmg`、`RoomScope-Terminal-macOS-x86_64.tar.gz`）、装有 Inno Setup 6 的 Windows（`RoomScope-Desktop-Windows-x64-Setup.exe`、`RoomScope-Desktop-Windows-x64.zip`、`RoomScope-Terminal-Windows-x64.zip`）以及 Linux x86_64（`RoomScope-Desktop-Linux-x86_64.tar.gz`、`RoomScope-Terminal-Linux-x86_64.tar.gz`）；在其中一台上加 `--python-dist` 生成 wheel 和 sdist。运行前按脚本文档安装 `requirements/bundle.lock`、`dev` 与 `gui` 附加依赖、`pyinstaller==6.22.3` 和 `build`；版本不一致时脚本会拒绝，除非加 `--allow-unlocked`。脚本会运行测试、许可证包、`--strip --require-licenses` 门禁和冒烟测试；在 macOS 上还会做临时签名，并从 DMG 挂载、复制和启动应用。在 Windows 上它只编译安装程序，不像工作流那样安装、冒烟测试和卸载（那会改变这台电脑）；发布本地构建的安装程序前请手动完成这三步。
+2. **手动发布。** 在 Releases 页面创建或编辑草稿 `v<version>`（tag 为 `main` 上发布提交的 `v<version>`，勾选 *pre-release*），粘贴说明（`packaging/release-notes-header.md` 中把 `{version}` 替换，并在 `{changes}` 处放入 CHANGELOG 对应段落），上传第 1 步的所有文件，以及由每台机器的 `SHA256SUMS-*` 各行合成的一个 `SHA256SUMS`，然后发布。PyPI 任务需要 Actions，没有它就不会上传 PyPI。
 3. **把仓库设为公开**（§5）：公开仓库使用 GitHub 托管的标准运行器是免费的，工作流即可照常运行。已于 2026-09-24 公开，此后工作流一直在 GitHub 运行器上运行。
 
 本地构建的版本只经过了该脚本在那台机器上执行的检查；`docs/STATUS.md` 记录哪台机器构建了哪些文件。
@@ -111,8 +111,8 @@ Windows 运行器上启动过）；Linux 包在空环境中的冒烟；密钥与
 
 **发布清单（维护者的操作）：**
 
-1. 把候选分支合并到 `main`，等该提交上的 **CI** 和 **Release** 都变绿；Release 会用该提交的 13 个文件和新的说明刷新 v0.4.1 草稿。
-2. 在草稿上核对：目标提交是那个绿色的 `main` 提交；13 个附件齐全；说明以 *RoomScope v0.4.1 — Early public pre-release for testing* 开头。
+1. 把候选分支合并到 `main`，等该提交上的 **CI** 和 **Release** 都变绿；Release 会用该提交的 14 个文件和新的说明刷新 v0.4.1 草稿。
+2. 在草稿上核对：目标提交是那个绿色的 `main` 提交；14 个附件齐全（桌面版 5 个、终端版 4 个、wheel、sdist、`SHA256SUMS`、SBOM 和锁定文件）；说明以 *RoomScope v0.4.1 — Early public pre-release for testing* 开头。
 3. 建议发布前：下载适合你的 Mac 的 DMG，按 [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) 安装并打开一次（包括 Gatekeeper 步骤）。这是任何工作流都做不到的一项检查。
 4. 保持勾选 **Set as a pre-release**，不要勾选 *Set as the latest release*，点 **Publish release**。发布会在目标提交上创建 tag `v0.4.1`；PyPI 仍然关闭（§3d）。
 5. 用无痕窗口打开 <https://github.com/jingyemingyue/RoomScope/releases>，确认能看到 v0.4.1 及其附件。README 链接的是这个页面而不是 `/releases/latest`，因为 GitHub 的 *latest* 永远不会指向预发布版本（只有预发布时会跳转到 `/releases`，API 返回 404）。

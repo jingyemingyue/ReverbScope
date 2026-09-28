@@ -22,10 +22,11 @@ body:
     attributes:
       label: RoomScope 的安装方式
       options:
-        - Windows 安装程序（RoomScope-setup.exe）
-        - Windows zip 压缩包
-        - macOS 磁盘映像（.dmg）
-        - Linux 压缩包（.tar.gz）
+        - 桌面版，Windows 安装程序（RoomScope-Desktop-Windows-x64-Setup.exe）
+        - 桌面版，Windows zip 压缩包
+        - 桌面版，macOS 磁盘映像（.dmg）
+        - 桌面版，Linux 压缩包（.tar.gz）
+        - 终端版（RoomScope-Terminal-…）
         - pip / 源码检出
         - 其他
     validations:

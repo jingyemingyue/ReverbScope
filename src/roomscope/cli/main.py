@@ -41,6 +41,7 @@ from roomscope.cli.render import (
     render_saved_next_steps,
     render_status,
     render_sweep_written,
+    render_terminal_edition_gui,
 )
 from roomscope.errors import (
     AudioBackendUnavailableError,
@@ -1575,6 +1576,12 @@ def cmd_project(args: argparse.Namespace) -> int:
 
 
 def cmd_gui(args: argparse.Namespace) -> int:
+    from roomscope.edition import is_terminal_package
+
+    if is_terminal_package():
+        # Built without Qt: say which download has the GUI, not that PySide6 is missing.
+        print(render_terminal_edition_gui(_console(args, sys.stderr)), file=sys.stderr)
+        return 2
     from roomscope.ui.app import GUI_UNAVAILABLE, pyside6_import_error, run_app
 
     # PySide6 is imported inside run_app, so check it first: without the gui
@@ -1606,9 +1613,9 @@ def _is_demo_folder(path: Path) -> bool:
 
 def cmd_demo(args: argparse.Namespace) -> int:
     from roomscope.demo import run_demo
+    from roomscope.edition import is_terminal_package
     from roomscope.interpretation import interpret
     from roomscope.io.recent import remember_session
-    from roomscope.ui.app import pyside6_import_error
 
     if _use_json(args):
         raise _UsageError(
@@ -1639,7 +1646,18 @@ def cmd_demo(args: argparse.Namespace) -> int:
     for take in run.takes:
         remember_session(take.session_dir)
     findings = [interpret(take.result, profile) for take in run.takes]
-    print(render_demo(_console(args), run, findings, gui_available=pyside6_import_error() is None))
+    terminal = is_terminal_package()
+    if terminal:
+        gui_available = False
+    else:
+        from roomscope.ui.app import pyside6_import_error
+
+        gui_available = pyside6_import_error() is None
+    print(
+        render_demo(
+            _console(args), run, findings, gui_available=gui_available, terminal_edition=terminal
+        )
+    )
     return 0
 
 
@@ -1739,7 +1757,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.command is None:
         # Bare ``roomscope``: a short home screen instead of argparse's error.
         # A command is still required, so the exit code stays the usage error's.
-        print(render_home(err, __version__), file=sys.stderr)
+        from roomscope.edition import is_terminal_package
+
+        print(
+            render_home(err, __version__, terminal_edition=is_terminal_package()), file=sys.stderr
+        )
         return 2
 
     def nothing_played() -> str:

@@ -5,8 +5,14 @@
 **Download page:** <https://github.com/jingyemingyue/RoomScope/releases>
 
 Open that page, take the newest release at the top, expand **Assets** and
-download the one file for your computer. You do not need Python, Git or a
-terminal for the macOS, Windows or Linux builds.
+download the one file for your computer. RoomScope comes in two editions;
+neither needs Python or Git:
+
+* **Desktop Edition** — the app with windows and charts, plus the command
+  line. For most people.
+* **Terminal Edition** — the command line only, built without the GUI (no
+  Qt), about half the size. For scripts, automation, servers and computers
+  without a desktop.
 
 RoomScope 0.4.x is an **early public pre-release for testing**. The builds are
 **unsigned** (see [Unsigned-build warnings](#unsigned-build-warnings)) and
@@ -15,37 +21,55 @@ RoomScope 0.4.x is an **early public pre-release for testing**. The builds are
 
 ## Which file do I need?
 
+**Desktop Edition** (GUI + command line):
+
 | Your computer | File | Section |
 | --- | --- | --- |
-| Mac with Apple silicon (M1 or later), macOS 14 or later | `RoomScope-macos-arm64.dmg` | [macOS](#macos) |
-| Mac with an Intel processor, macOS 14 or later | `RoomScope-macos-x86_64.dmg` | [macOS](#macos) |
-| Windows 10 or 11, 64-bit | `RoomScope-setup.exe` (installer) or `roomscope-windows-x64.zip` (no installer) | [Windows](#windows) |
-| Linux x86_64 (glibc 2.39 or newer, e.g. Ubuntu 24.04+) | `roomscope-linux-x86_64.tar.gz` | [Linux](#linux) |
-| Any system with Python 3.12–3.14 | `roomscope-<version>-py3-none-any.whl` or `roomscope-<version>.tar.gz` | [Python](#python-wheel-and-source) |
+| Mac with Apple silicon (M1 or later), macOS 14 or later | `RoomScope-Desktop-macOS-arm64.dmg` | [macOS](#macos) |
+| Mac with an Intel processor, macOS 14 or later | `RoomScope-Desktop-macOS-x86_64.dmg` | [macOS](#macos) |
+| Windows 10 or 11, 64-bit | `RoomScope-Desktop-Windows-x64-Setup.exe` (installer) or `RoomScope-Desktop-Windows-x64.zip` (no installer) | [Windows](#windows) |
+| Linux x86_64 (glibc 2.39 or newer, e.g. Ubuntu 24.04+) | `RoomScope-Desktop-Linux-x86_64.tar.gz` | [Linux](#linux) |
+
+**Terminal Edition** (command line only):
+
+| Your computer | File | Section |
+| --- | --- | --- |
+| Mac with Apple silicon, macOS 14 or later | `RoomScope-Terminal-macOS-arm64.tar.gz` | [Terminal Edition](#terminal-edition) |
+| Mac with an Intel processor, macOS 14 or later | `RoomScope-Terminal-macOS-x86_64.tar.gz` | [Terminal Edition](#terminal-edition) |
+| Windows 10 or 11, 64-bit | `RoomScope-Terminal-Windows-x64.zip` | [Terminal Edition](#terminal-edition) |
+| Linux x86_64 (glibc 2.39 or newer) | `RoomScope-Terminal-Linux-x86_64.tar.gz` | [Terminal Edition](#terminal-edition) |
+
+**Python developers** (any system with Python 3.12–3.14):
+`roomscope-<version>-py3-none-any.whl` or `roomscope-<version>.tar.gz`, see
+[Python](#python-wheel-and-source).
 
 The other files on the release are for checking and auditing:
-`SHA256SUMS-*` (checksums, see [Check the download](#check-the-download)),
-`cyclonedx.sbom.json` (software bill of materials) and `generated-bundle.lock`
-(the exact library versions inside the builds).
+`SHA256SUMS` (checksums of every download, see
+[Check the download](#check-the-download)), `cyclonedx.sbom.json` (software
+bill of materials) and `generated-bundle.lock` (the exact library versions
+inside the builds).
 
 ## Supported systems
 
 | System | Status |
 | --- | --- |
-| macOS 14 Sonoma or later, Apple silicon or Intel | Supported. The DMGs are built, mounted, installed and started on GitHub's macOS 26 (Apple silicon) and macOS 15 (Intel) runners. macOS 14 is the minimum of the bundled NumPy / SciPy; it has not been run yet. macOS 13 and older are not supported. |
-| Windows 10 / 11, x64 | Supported. The installer is built, installed silently, started and uninstalled on GitHub's Windows runner. No test on a personal Windows PC has been recorded yet. Windows on ARM and 32-bit Windows are not tested. |
-| Linux x86_64 | Supported with glibc 2.39 or newer. Built and smoke-tested on GitHub's Ubuntu runner. |
+| macOS 14 Sonoma or later, Apple silicon or Intel | Supported. The DMGs are built, mounted, installed and started, and the Terminal Edition built and run, on GitHub's macOS 26 (Apple silicon) and macOS 15 (Intel) runners. macOS 14 is the minimum of the bundled NumPy / SciPy; it has not been run yet. macOS 13 and older are not supported. |
+| Windows 10 / 11, x64 | Supported. The installer is built, installed silently, started and uninstalled, and the Terminal Edition built and run, on GitHub's Windows runner. No test on a personal Windows PC has been recorded yet. Windows on ARM and 32-bit Windows are not tested. |
+| Linux x86_64 | Supported with glibc 2.39 or newer. Both editions built and smoke-tested on GitHub's Ubuntu runner. |
 | Python | 3.12, 3.13, 3.14 (CI runs all three on Ubuntu, 3.12 on macOS and Windows). |
 
 More detail on what verified each row: [COMPATIBILITY.md](COMPATIBILITY.md).
 
 ## macOS
 
+This section is the **Desktop Edition**; the command-line-only download is
+under [Terminal Edition](#terminal-edition).
+
 ### Install
 
 1. On the [download page](https://github.com/jingyemingyue/RoomScope/releases),
-   download `RoomScope-macos-arm64.dmg` (Apple silicon) or
-   `RoomScope-macos-x86_64.dmg` (Intel). Not sure? Apple menu →
+   download `RoomScope-Desktop-macOS-arm64.dmg` (Apple silicon) or
+   `RoomScope-Desktop-macOS-x86_64.dmg` (Intel). Not sure? Apple menu →
    **About This Mac**: *Chip: Apple M…* is Apple silicon, *Processor: Intel*
    is Intel.
 2. Double-click the DMG in your Downloads folder. A window opens with
@@ -98,10 +122,13 @@ The app's executable is also the command-line tool:
 
 ## Windows
 
+This section is the **Desktop Edition**; the command-line-only download is
+under [Terminal Edition](#terminal-edition).
+
 ### Installer (recommended)
 
 1. On the [download page](https://github.com/jingyemingyue/RoomScope/releases),
-   download `RoomScope-setup.exe`.
+   download `RoomScope-Desktop-Windows-x64-Setup.exe`.
 2. Run it. If SmartScreen says *Windows protected your PC*, click
    **More info → Run anyway** (see [warnings](#unsigned-build-warnings)).
 3. If Setup asks whether to install for all users or only for you, choose
@@ -110,15 +137,16 @@ The app's executable is also the command-line tool:
    Simplified Chinese, following the Windows display language; you can tick
    *Create a desktop shortcut*.
 4. Start RoomScope from the **Start menu → RoomScope** (or leave *Launch
-   RoomScope* ticked on the last page).
+   RoomScope* ticked on the last page). The command-line tool is installed
+   next to it: `roomscope.exe` in the installation folder.
 
 ### ZIP (no installer)
 
-1. Download `roomscope-windows-x64.zip`.
+1. Download `RoomScope-Desktop-Windows-x64.zip`.
 2. Right-click it → **Extract All…** → **Extract**. Do not run anything from
    inside the ZIP without extracting it: the program needs the `_internal`
    folder next to it.
-3. Open the extracted folder `roomscope-windows-x64`. It contains:
+3. Open the extracted folder `RoomScope-Desktop-Windows-x64`. It contains:
 
    ```text
    roomscope-gui.exe        the desktop app (double-click this)
@@ -142,8 +170,11 @@ access your microphone* must be on.
 
 ## Linux
 
+The **Desktop Edition** (the command-line-only download is under
+[Terminal Edition](#terminal-edition)):
+
 ```bash
-tar xzf roomscope-linux-x86_64.tar.gz
+tar xzf RoomScope-Desktop-Linux-x86_64.tar.gz
 roomscope/roomscope-gui          # desktop app
 roomscope/roomscope --help       # command-line tool
 ```
@@ -159,6 +190,51 @@ sudo apt install fonts-noto-cjk   # only for Chinese text in charts
 `packaging/linux/roomscope.desktop` in the source tree is a desktop entry you
 can adapt. The bundle needs glibc 2.39 or newer (Ubuntu 24.04, Debian 13,
 Fedora 40 or later).
+
+## Terminal Edition
+
+The command line without the GUI: every `roomscope` command (`demo`, `sweep`,
+`analyze`, `measure`, `compare`, `devices`, `doctor`, `project`, `session`,
+`export`, …) in English and Chinese, with the same analysis as the Desktop
+Edition. It is built without Qt, PySide6 and the chart library, so it is
+about half the size, and `roomscope gui` only says which download has the
+GUI.
+
+**macOS** (`RoomScope-Terminal-macOS-arm64.tar.gz` for Apple silicon,
+`RoomScope-Terminal-macOS-x86_64.tar.gz` for Intel) and **Linux**
+(`RoomScope-Terminal-Linux-x86_64.tar.gz`):
+
+```bash
+tar xzf RoomScope-Terminal-macOS-arm64.tar.gz      # or the file you downloaded
+cd roomscope-terminal
+./roomscope demo                                    # try it: synthetic data, nothing is played
+./roomscope --help
+```
+
+Keep the `_internal` folder next to `roomscope`. To type `roomscope` from
+anywhere, add the folder to your `PATH` (for example
+`export PATH="$HOME/roomscope-terminal:$PATH"` in `~/.zshrc` or `~/.bashrc`).
+
+On **macOS**, a browser marks downloaded files, and macOS refuses to run an
+unsigned command-line program with that mark (*“roomscope” cannot be opened
+because the developer cannot be verified*). Clear the mark on this folder
+once, in the folder that contains `roomscope-terminal`:
+
+```bash
+xattr -dr com.apple.quarantine roomscope-terminal
+```
+
+This changes only these files; it does not turn off Gatekeeper, and you
+should not. A file downloaded with `curl` has no such mark. The Linux
+Terminal Edition needs `libportaudio2` for measurements
+(`sudo apt install libportaudio2`), not the graphics libraries.
+
+**Windows** (`RoomScope-Terminal-Windows-x64.zip`): right-click →
+**Extract All…**, open the extracted folder and double-click
+**`RoomScope Terminal.cmd`**. It opens a Command Prompt in that folder, ready
+for `roomscope.exe demo` or `roomscope.exe --help`. (Double-clicking
+`roomscope.exe` itself closes its window as soon as it has printed.) From
+PowerShell, `.\roomscope.exe demo` in the folder does the same.
 
 ## Python (wheel and source)
 
@@ -208,17 +284,17 @@ options that the desktop builds hide ([EDITIONS.md](EDITIONS.md)).
 
 ## Check the download
 
-Optional. Each release has one `SHA256SUMS-<system>-<arch>` file per build
-machine. Compute the checksum of your file and compare it with the line for
+Optional. Each release has one `SHA256SUMS` file with a line for every
+download. Compute the checksum of your file and compare it with the line for
 that file name:
 
 ```bash
-shasum -a 256 RoomScope-macos-arm64.dmg                 # macOS
-sha256sum roomscope-linux-x86_64.tar.gz                 # Linux
+shasum -a 256 RoomScope-Desktop-macOS-arm64.dmg          # macOS
+sha256sum RoomScope-Terminal-Linux-x86_64.tar.gz         # Linux
 ```
 
 ```powershell
-Get-FileHash .\RoomScope-setup.exe                      # Windows PowerShell (SHA256)
+Get-FileHash .\RoomScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell (SHA256)
 ```
 
 A match shows the file is the one attached to the release. It does not prove
@@ -251,9 +327,10 @@ Download the new file from the same page and:
 * **macOS:** quit RoomScope, open the new DMG and drag RoomScope onto
   Applications again; choose **Replace**. The first-launch warning can appear
   once more for the new build.
-* **Windows installer:** run the new `RoomScope-setup.exe`; it replaces the
-  installed version.
-* **Windows ZIP / Linux:** delete the old folder and extract the new archive.
+* **Windows installer:** run the new `RoomScope-Desktop-Windows-x64-Setup.exe`;
+  it replaces the installed version.
+* **Windows ZIP / Linux / Terminal Edition:** delete the old folder and
+  extract the new archive.
 * **Wheel:** `pip install --upgrade "./roomscope-<new version>-py3-none-any.whl[gui]"`
   in the same virtual environment.
 * **Developer install:** `git pull`, then `pip install -e ".[dev,gui]"` again.
@@ -267,7 +344,7 @@ and your saved session folders are never touched.
   Trash.
 * **Windows installer:** **Settings → Apps → Installed apps → RoomScope →
   Uninstall**, or Start menu → *Uninstall RoomScope*.
-* **Windows ZIP / Linux:** delete the extracted folder.
+* **Windows ZIP / Linux / Terminal Edition:** delete the extracted folder.
 * **Python:** `pip uninstall roomscope`, or delete the virtual environment
   folder.
 
@@ -289,6 +366,9 @@ saved them.
 | Windows: no *Run anyway* button | Smart App Control or a company policy blocks unsigned apps; see the [table above](#unsigned-build-warnings). |
 | Linux: `libEGL.so.1`, `libportaudio` or *xcb* plugin errors | Install the [system libraries](#linux). |
 | Linux: Chinese chart labels show empty boxes | `sudo apt install fonts-noto-cjk` |
+| `roomscope gui` says *This is the Terminal Edition* | The Terminal Edition has no GUI; download the Desktop Edition (the command line works in both). |
+| macOS: *“roomscope” cannot be opened because the developer cannot be verified* (Terminal Edition) | Clear the download mark once: `xattr -dr com.apple.quarantine roomscope-terminal` ([Terminal Edition](#terminal-edition)). |
+| Windows: `roomscope.exe` opens and closes at once | It is a command-line program: double-click `RoomScope Terminal.cmd` instead, or run it from a Command Prompt. |
 | `roomscope gui` says PySide6 could not be loaded | Install the GUI extra: `pip install "PySide6_Essentials>=6.6"` (or reinstall the wheel with `[gui]`). |
 | `pip install roomscope` finds nothing, or something else | RoomScope is not on PyPI yet; use the [wheel](#wheel-from-a-release). |
 | Anything else | Open a [bug report](https://github.com/jingyemingyue/RoomScope/issues/new?template=bug.yml) and paste **Help → Environment Report for Bug Reports** (or `roomscope doctor`). Nothing is sent automatically. |

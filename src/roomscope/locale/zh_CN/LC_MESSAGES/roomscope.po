@@ -3420,9 +3420,6 @@ msgstr "置信度 {confidence}{sep}峰前裕量 {margin}"
 msgid "default {rate}"
 msgstr "默认 {rate}"
 
-msgid "desktop bundle"
-msgstr "桌面打包程序"
-
 msgid "examples"
 msgstr "示例"
 
@@ -3785,3 +3782,48 @@ msgstr "启动桌面界面（需要 PySide6；桌面版下载包已包含）"
 
 msgid "{path} is a file; --out needs a folder for the session"
 msgstr "{path} 是一个文件；--out 需要一个用来保存会话的文件夹"
+
+msgid "This is the Terminal Edition of RoomScope. Install the Desktop Edition to use the GUI."
+msgstr "当前安装的是 RoomScope 终端版。如需图形界面，请安装桌面版。"
+
+msgid "Every command-line feature works here: roomscope --help lists them."
+msgstr "所有命令行功能在这里都可以使用：运行 roomscope --help 查看。"
+
+msgid "Download:"
+msgstr "下载："
+
+msgid "Terminal Edition"
+msgstr "终端版"
+
+msgid "To see them with charts, get RoomScope Desktop Edition:"
+msgstr "如需用图表查看，请下载 RoomScope 桌面版："
+
+msgid "Check this computer's audio setup"
+msgstr "检查这台电脑的音频设置"
+
+msgid "Terminal Edition bundle"
+msgstr "终端版程序包"
+
+msgid "Desktop Edition bundle"
+msgstr "桌面版程序包"
+
+msgid "not included (Terminal Edition)"
+msgstr "未包含（终端版）"
+
+msgid "To see it with charts, get RoomScope Desktop Edition:"
+msgstr "如需用图表查看，请下载 RoomScope 桌面版："
+
+msgid "shown"
+msgstr "显示"
+
+msgid "hidden"
+msgstr "隐藏"
+
+msgid "Desktop Edition"
+msgstr "桌面版"
+
+msgid "source or pip install"
+msgstr "源码或 pip 安装"
+
+msgid "Developer tools"
+msgstr "开发者工具"

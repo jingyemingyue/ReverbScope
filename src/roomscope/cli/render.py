@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from roomscope.cli.console import Console, Status, Verbatim, cell_width, glue_units
+from roomscope.edition import RELEASES_URL, is_terminal_package
 from roomscope.i18n import _, localize, pgettext
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
@@ -917,12 +918,18 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
     c = console
     lines = c.title(_("RoomScope environment report"))
     build = report.get("build") or {}
-    edition = _edition_name(report["edition"])
-    if report.get("frozen_bundle"):
-        edition += c.sep() + _("desktop bundle")
+    terminal = build.get("package") == "terminal"
+    if terminal:
+        edition = _("Terminal Edition")
+    elif build.get("package") == "desktop" or report.get("frozen_bundle"):
+        edition = _("Desktop Edition")
+    else:
+        edition = _("source or pip install")
+    tools = _("shown") if report["edition"] == "developer" else _("hidden")
     rows = [
         (_("Version"), str(report["roomscope"])),
         (_("Edition"), edition),
+        (_("Developer tools"), tools),
         (
             _("Build"),
             build["commit"]
@@ -945,7 +952,20 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
     )
 
     lines += c.section(_("Libraries"))
-    packages = [(name, found or _("not installed")) for name, found in report["packages"].items()]
+    # The Terminal Edition is built without the GUI and its charts.
+    gui_only = {"matplotlib", "PySide6_Essentials", "shiboken6"}
+    packages = [
+        (
+            name,
+            found
+            or (
+                _("not included (Terminal Edition)")
+                if terminal and name in gui_only
+                else _("not installed")
+            ),
+        )
+        for name, found in report["packages"].items()
+    ]
     packages.append(("libsndfile", report.get("libsndfile") or _("unknown")))
     lines += c.fields(packages)
 
@@ -1230,7 +1250,11 @@ def render_saved_next_steps(console: Console, session: object) -> str:
                 _("Measure another position into a new folder, then compare the two:"),
                 f"roomscope compare {session} {_('<other-session>')}",
             ),
-            (_("Open the session in the desktop app:"), "roomscope gui"),
+            (
+                (_("To see it with charts, get RoomScope Desktop Edition:"), RELEASES_URL)
+                if is_terminal_package()
+                else (_("Open the session in the desktop app:"), "roomscope gui")
+            ),
         ]
     )
     return c.fit("\n".join(lines))
@@ -1375,10 +1399,14 @@ def render_status(console: Console, kind: Status, text: str, *, keep: bool = Fal
 # --- Home screen -------------------------------------------------------------------------
 
 
-def render_home(console: Console, version: str) -> str:
-    """Bare ``roomscope``: what it is, three ways in, and where the rest is."""
+def render_home(console: Console, version: str, *, terminal_edition: bool = False) -> str:
+    """Bare ``roomscope``: what it is, three ways in, and where the rest is.
+
+    The Terminal Edition has no GUI, so it offers ``doctor`` instead of ``gui``.
+    """
     c = console
-    lines = [c.bold("RoomScope") + " " + c.muted(version)]
+    name = "RoomScope" + (" " + _("Terminal Edition") if terminal_edition else "")
+    lines = [c.bold(name) + " " + c.muted(version)]
     lines += c.paragraph(
         _(
             "Measure and compare the rooms you record in: reverberation, early reflections, "
@@ -1390,7 +1418,11 @@ def render_home(console: Console, version: str) -> str:
     lines += c.commands(
         [
             ("roomscope demo", _("Try it with synthetic data; no audio interface needed")),
-            ("roomscope gui", _("Open the desktop app")),
+            (
+                ("roomscope doctor", _("Check this computer's audio setup"))
+                if terminal_edition
+                else ("roomscope gui", _("Open the desktop app"))
+            ),
             ("roomscope sweep --out sweep.wav", _("Write the test signal to play from your DAW")),
         ]
     )
@@ -1420,6 +1452,7 @@ def render_demo(
     findings: Sequence[Sequence[Finding]],
     *,
     gui_available: bool,
+    terminal_edition: bool = False,
 ) -> str:
     """``roomscope demo``: what was simulated, what the analysis found, what next."""
     c = console
@@ -1487,14 +1520,15 @@ def render_demo(
         lines += c.status("info", text)
 
     lines += c.section(_("Next steps"))
-    gui_step = (
-        (_("Open the sessions in the desktop app:"), "roomscope gui")
-        if gui_available
-        else (
+    if gui_available:
+        gui_step = (_("Open the sessions in the desktop app:"), "roomscope gui")
+    elif terminal_edition:
+        gui_step = (_("To see them with charts, get RoomScope Desktop Edition:"), RELEASES_URL)
+    else:
+        gui_step = (
             _("Open them in the desktop app (download it, or add PySide6 to this Python):"),
             'pip install "PySide6_Essentials>=6.6"',
         )
-    )
     lines += c.steps(
         [
             (_("Read the full report of one position:"), f"roomscope show {first.session_dir}"),
@@ -1509,4 +1543,21 @@ def render_demo(
             ),
         ]
     )
+    return c.fit("\n".join(lines))
+
+
+def render_terminal_edition_gui(console: Console) -> str:
+    """``roomscope gui`` in the Terminal Edition: which download has the GUI."""
+    c = console
+    lines = c.status(
+        "info",
+        _("This is the Terminal Edition of RoomScope. Install the Desktop Edition to use the GUI."),
+        indent=0,
+    )
+    lines += c.paragraph(
+        _("Every command-line feature works here: roomscope --help lists them."), indent=2
+    )
+    lines.append("")
+    lines.append("  " + _("Download:"))
+    lines.append("    " + c.command(RELEASES_URL))
     return c.fit("\n".join(lines))

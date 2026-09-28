@@ -8,6 +8,26 @@ All notable changes to RoomScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Desktop Edition and Terminal Edition.** Every platform now has two
+  downloads, named for edition, system and CPU:
+  `RoomScope-Desktop-macOS-arm64.dmg`, `RoomScope-Desktop-macOS-x86_64.dmg`,
+  `RoomScope-Desktop-Windows-x64-Setup.exe`, `RoomScope-Desktop-Windows-x64.zip`,
+  `RoomScope-Desktop-Linux-x86_64.tar.gz` (GUI and command line), and
+  `RoomScope-Terminal-macOS-arm64.tar.gz`, `RoomScope-Terminal-macOS-x86_64.tar.gz`,
+  `RoomScope-Terminal-Windows-x64.zip`, `RoomScope-Terminal-Linux-x86_64.tar.gz`
+  (command line only). The Terminal Edition is built by the same release job
+  without Qt, PySide6 and matplotlib (about 60 MB against 150 MB on Linux);
+  `check_bundle_contents.py --terminal` fails a build that still contains
+  them, and `smoke_bundle.py --terminal` runs the demo in English and
+  Chinese, checks that `--format json` prints only JSON and that
+  `roomscope gui` answers *This is the Terminal Edition of RoomScope. Install
+  the Desktop Edition to use the GUI.* (in Chinese too) instead of a
+  traceback. Both smokes check the edition and the CPU architecture the
+  bundle reports; the Windows installer smoke also checks the Start menu
+  entry and that uninstalling removes it. The Windows Terminal Edition has a
+  `RoomScope Terminal.cmd` that opens a Command Prompt in its folder.
+- The Release carries one `SHA256SUMS` for every download instead of one
+  file per build machine; the draft refresh removes the earlier names.
 - **`roomscope demo`**: try the whole workflow without an interface or a
   microphone. It writes a sweep, simulates two microphone positions in a
   made-up room (a desk reflection at one, a 110 Hz room mode at both, mains
@@ -25,6 +45,13 @@ All notable changes to RoomScope are documented here. The format follows
   data", the social preview); see `docs/SCREENSHOT_PLAN.md`.
 
 ### Changed
+- **Download-first README and Release page.** Both READMEs open with the
+  download: a Desktop Edition table, a Terminal Edition table and a
+  comparison of the two, then a 30-second demo; the developer install and
+  the architecture moved below the user sections. The Release notes start
+  with *Choose your edition*, then known limitations, checksums, the
+  changelog and the technical information. `roomscope doctor` names the
+  edition and whether the developer tools are shown.
 - **Reports lead with "At a glance"**: reverberation, early reflections, low
   end, noise floor and data quality in one line each, with the symbol the
   recording profile's findings give that topic. The detail follows in the
@@ -447,7 +474,7 @@ Windows: no Authenticode).
   the console CLI, which printed its usage and exited, so a double-click
   never showed a window. With arguments both executables are the CLI.
 - **Windows installer.** The release workflow installs Inno Setup when the
-  runner lacks it and always builds `RoomScope-setup.exe` (per-user, no
+  runner lacks it and always builds `RoomScope-Desktop-Windows-x64-Setup.exe` (per-user, no
   administrator rights; Start-menu and optional desktop shortcuts to
   `roomscope-gui.exe`; upgrades replace the previous libraries). The
   installer is written to `dist/` (it went to `packaging/windows/Output`),
@@ -468,8 +495,8 @@ Windows: no Authenticode).
   guide's install section names every Release file, the checksums, the Linux
   system libraries and the wheel install (RoomScope is not on PyPI yet).
 - **Intel Macs.** The release workflow also builds on an Intel macOS runner;
-  the disk images are `RoomScope-macos-arm64.dmg` and
-  `RoomScope-macos-x86_64.dmg` (was `RoomScope.dmg`, Apple silicon only),
+  the disk images are `RoomScope-Desktop-macOS-arm64.dmg` and
+  `RoomScope-Desktop-macOS-x86_64.dmg` (was `RoomScope.dmg`, Apple silicon only),
   each checked for its own architecture, and the checksum files are named per
   runner OS and architecture (`SHA256SUMS-macOS-ARM64`, ...).
 - **The draft Release holds exactly one run's files.** The draft job no
@@ -478,7 +505,7 @@ Windows: no Authenticode).
   older one, uploaded over same-named files and left renamed ones
   (`RoomScope.dmg`, `SHA256SUMS-macOS`, ...) and the first run's notes in
   place. `scripts/release_draft.py` now checks that the run produced exactly
-  the expected 13 files and that every `SHA256SUMS-*` matches its archives
+  the expected files and that every runner's `SHA256SUMS-*` matches its archives
   (also on pull requests), then finds the single draft by tag or title,
   refuses a published release, several drafts, a tag on another commit or an
   asset it does not know, replaces all assets, notes, tag and target, and

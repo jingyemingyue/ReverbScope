@@ -1,4 +1,7 @@
 # Build unsigned bundles and prepare a draft Release for the version on main.
+# Every runner builds both editions of its platform in one job (no extra
+# runners): the Desktop Edition (GUI + command line) and the Terminal Edition
+# (command line only, built without Qt; ROOMSCOPE_PACKAGE=terminal).
 # A pull request that changes this workflow runs the same package gates without
 # creating a Release, tag, or PyPI upload.
 name: Release
@@ -19,6 +22,7 @@ on:
     paths:
       - .github/workflows/release.yml
       - packaging/**
+      - scripts/build_license_bundle.py
       - scripts/check_bundle_contents.py
       - scripts/check_macos_dmg.py
       - scripts/smoke_bundle.py
@@ -207,13 +211,14 @@ jobs:
           # Inside-out ad hoc signature; verifies with --deep --strict. With a
           # Developer ID the step "Developer ID signature" re-signs it below.
           sh packaging/macos/sign_app.sh dist/RoomScope.app
-      - name: Smoke frozen binary
+      - name: Smoke frozen binary (Desktop Edition)
         shell: bash
         run: |
           launcher=--require-gui-launcher
           [[ "$RUNNER_OS" != macOS ]] || launcher=
-          python scripts/smoke_bundle.py --root dist/roomscope --out "$RUNNER_TEMP/bundle-smoke" \
-            --expect-commit "$GITHUB_SHA" $launcher
+          cpu=x86_64; [[ "$RUNNER_ARCH" != ARM64 ]] || cpu=arm64
+          python scripts/smoke_bundle.py --root dist/roomscope --out "$RUNNER_TEMP/bundle-smoke/session" \
+            --expect-commit "$GITHUB_SHA" --expect-package desktop --expect-machine "$cpu" $launcher
       - name: Smoke macOS .app executable
         if: runner.os == 'macOS'
         shell: bash
@@ -240,7 +245,7 @@ jobs:
           grep -q 'flags=.*runtime' "$dir/codesign.txt"
           grep -q com.apple.security.device.audio-input "$dir/entitlements.xml"
           python scripts/smoke_bundle.py --roomscope "$dir/RoomScope.app/Contents/MacOS/RoomScope" \
-            --out "$dir/smoke" --expect-commit "$GITHUB_SHA"
+            --out "$dir/smoke" --expect-commit "$GITHUB_SHA" --skip-first-run
       - name: Developer ID signature
         if: steps.devid.outputs.enabled == 'true'
         shell: bash
@@ -257,11 +262,11 @@ jobs:
           grep -q 'Authority=Developer ID Application' "$RUNNER_TEMP/devid.txt"
           grep -q '^Timestamp=' "$RUNNER_TEMP/devid.txt"
           python scripts/smoke_bundle.py --roomscope dist/RoomScope.app/Contents/MacOS/RoomScope \
-            --out "$RUNNER_TEMP/devid-smoke" --expect-commit "$GITHUB_SHA"
-      - name: Windows zip
+            --out "$RUNNER_TEMP/devid-smoke" --expect-commit "$GITHUB_SHA" --skip-first-run
+      - name: Windows zip (Desktop Edition)
         if: runner.os == 'Windows'
         shell: bash
-        run: python -c "import shutil; shutil.make_archive('dist/roomscope-windows-x64', 'zip', 'dist/roomscope')"
+        run: python -c "import shutil; shutil.make_archive('dist/RoomScope-Desktop-Windows-x64', 'zip', 'dist/roomscope')"
       - name: Windows installer
         if: runner.os == 'Windows'
         shell: pwsh
@@ -281,18 +286,25 @@ jobs:
           Write-Output "Simplified Chinese messages: $zh"
           & $iscc "/DMyAppVersion=$env:ROOMSCOPE_VERSION" "/DChineseMessages=$zh" packaging\windows\roomscope.iss
           if ($LASTEXITCODE -ne 0) { throw "iscc failed ($LASTEXITCODE)" }
-          if (-not (Test-Path dist\RoomScope-setup.exe)) { throw 'dist\RoomScope-setup.exe missing' }
+          if (-not (Test-Path dist\RoomScope-Desktop-Windows-x64-Setup.exe)) { throw 'dist\RoomScope-Desktop-Windows-x64-Setup.exe missing' }
       - name: Install, smoke and uninstall the Windows installer
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $dir = Join-Path $env:RUNNER_TEMP 'RoomScope-installed'
-          $p = Start-Process dist\RoomScope-setup.exe -Wait -PassThru -ArgumentList @(
+          $p = Start-Process dist\RoomScope-Desktop-Windows-x64-Setup.exe -Wait -PassThru -ArgumentList @(
             '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', "/DIR=$dir")
           if ($p.ExitCode -ne 0) { throw "installer exited with $($p.ExitCode)" }
           if (-not (Test-Path (Join-Path $dir 'roomscope-gui.exe'))) { throw 'roomscope-gui.exe not installed' }
           if (-not (Test-Path (Join-Path $dir 'THIRD_PARTY_LICENSES'))) { throw 'licenses not installed' }
-          python scripts/smoke_bundle.py --root $dir --out (Join-Path $env:RUNNER_TEMP 'installed-smoke') --require-gui-launcher --expect-commit $env:GITHUB_SHA
+          if (-not (Test-Path (Join-Path $dir 'roomscope.exe'))) { throw 'roomscope.exe (command line) not installed' }
+          # /CURRENTUSER installs the Start menu entries for this account.
+          $menu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\RoomScope'
+          if (-not (Test-Path (Join-Path $menu 'RoomScope.lnk'))) {
+            Get-ChildItem -Recurse (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs') -Filter *.lnk | Select-Object -First 20 FullName
+            throw 'Start menu entry RoomScope.lnk missing'
+          }
+          python scripts/smoke_bundle.py --root $dir --out (Join-Path $env:RUNNER_TEMP 'installed-smoke\session') --require-gui-launcher --expect-commit $env:GITHUB_SHA --expect-package desktop --expect-machine x86_64
           if ($LASTEXITCODE -ne 0) { throw 'installed smoke failed' }
           $u = Start-Process (Join-Path $dir 'unins000.exe') -Wait -PassThru -ArgumentList @(
             '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART')
@@ -303,10 +315,11 @@ jobs:
             Get-ChildItem -Recurse $dir | Select-Object -First 20 FullName
             throw "uninstall left $dir behind"
           }
-          Write-Output "uninstalled: $dir removed"
+          if (Test-Path $menu) { throw "uninstall left the Start menu folder $menu behind" }
+          Write-Output "uninstalled: $dir and the Start menu entries removed"
       - name: macOS disk image
         if: runner.os == 'macOS'
-        run: bash packaging/macos/make_dmg.sh dist/RoomScope.app "dist/RoomScope-macos-$(uname -m).dmg"
+        run: bash packaging/macos/make_dmg.sh dist/RoomScope.app "dist/RoomScope-Desktop-macOS-$(uname -m).dmg"
       - name: Notarize and staple the disk image
         if: steps.devid.outputs.enabled == 'true'
         env:
@@ -314,45 +327,84 @@ jobs:
           APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
-        run: sh packaging/macos/notarize_dmg.sh "dist/RoomScope-macos-$(uname -m).dmg"
+        run: sh packaging/macos/notarize_dmg.sh "dist/RoomScope-Desktop-macOS-$(uname -m).dmg"
       - name: Check macOS disk image
         if: runner.os == 'macOS'
-        run: python scripts/check_macos_dmg.py "dist/RoomScope-macos-$(uname -m).dmg"
+        run: python scripts/check_macos_dmg.py "dist/RoomScope-Desktop-macOS-$(uname -m).dmg"
       - name: Remove the signing keychain
         if: always() && steps.devid.outputs.enabled == 'true'
         run: |
           keychain="$RUNNER_TEMP/roomscope-signing.keychain-db"
           if [ -f "$keychain" ]; then security delete-keychain "$keychain"; fi
-      - name: Linux archive
+      - name: Linux archive (Desktop Edition)
         if: runner.os == 'Linux'
-        run: tar -C dist -czf dist/roomscope-linux-x86_64.tar.gz roomscope
+        run: tar -C dist -czf dist/RoomScope-Desktop-Linux-x86_64.tar.gz roomscope
+      - name: Terminal Edition (command line only, no Qt)
+        # Same runner, same pinned environment: PyInstaller leaves PySide6,
+        # shiboken6, matplotlib and roomscope.ui out (packaging/roomscope.spec)
+        # and the --terminal gate fails the build if any file of them is left.
+        shell: bash
+        env:
+          ROOMSCOPE_PACKAGE: terminal
+        run: |
+          python scripts/build_license_bundle.py --terminal --out THIRD_PARTY_LICENSES-terminal
+          pyinstaller --noconfirm --clean --workpath build/terminal packaging/roomscope.spec
+          cp -R THIRD_PARTY_LICENSES-terminal dist/roomscope-terminal/THIRD_PARTY_LICENSES
+          python scripts/check_bundle_contents.py --root dist/roomscope-terminal --strip --require-licenses --terminal
+          if [[ "$RUNNER_OS" == Windows ]]; then
+            cp "packaging/windows/terminal/RoomScope Terminal.cmd" dist/roomscope-terminal/
+          fi
+      - name: Smoke Terminal Edition
+        shell: bash
+        run: |
+          cpu=x86_64; [[ "$RUNNER_ARCH" != ARM64 ]] || cpu=arm64
+          python scripts/smoke_bundle.py --root dist/roomscope-terminal \
+            --out "$RUNNER_TEMP/terminal-smoke/session" --terminal \
+            --expect-commit "$GITHUB_SHA" --expect-package terminal --expect-machine "$cpu"
+      - name: Terminal Edition archive
+        shell: bash
+        run: |
+          case "$RUNNER_OS" in
+            Linux) tar -C dist -czf dist/RoomScope-Terminal-Linux-x86_64.tar.gz roomscope-terminal ;;
+            macOS) tar -C dist -czf "dist/RoomScope-Terminal-macOS-$(uname -m).tar.gz" roomscope-terminal ;;
+            Windows) python -c "import shutil; shutil.make_archive('dist/RoomScope-Terminal-Windows-x64', 'zip', 'dist/roomscope-terminal')" ;;
+          esac
+      - name: Edition sizes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          for path in sorted(Path('dist').glob('RoomScope-*-*')):
+              print(f'{path.name:45} {path.stat().st_size / 1e6:8.1f} MB')
+          PY
       - name: Checksums of distributable files
         shell: bash
         run: |
           python - <<'PY'
           import hashlib
+          import importlib.util
           import os
           from pathlib import Path
-          names = ['roomscope-linux-x86_64.tar.gz', 'RoomScope-macos-arm64.dmg',
-                   'RoomScope-macos-x86_64.dmg', 'roomscope-windows-x64.zip',
-                   'RoomScope-setup.exe']
-          assets = [Path('dist') / name for name in names if (Path('dist') / name).is_file()]
-          if not assets:
-              raise SystemExit('No distributable archive found')
-          lines = [f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.name}'
-                   for path in assets]
-          suffix = f'{os.environ["RUNNER_OS"]}-{os.environ["RUNNER_ARCH"]}'
-          (Path('dist') / f'SHA256SUMS-{suffix}').write_text(
-              '\n'.join(lines) + '\n', encoding='utf-8')
+          # The file names come from the release manifest, so a renamed or
+          # missing download fails here and not on the draft.
+          spec = importlib.util.spec_from_file_location('rd', 'scripts/release_draft.py')
+          rd = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(rd)
+          sums_name = f'SHA256SUMS-{os.environ["RUNNER_OS"]}-{os.environ["RUNNER_ARCH"]}'
+          names = rd.CHECKSUM_FILES[sums_name]
+          missing = [name for name in names if not (Path('dist') / name).is_file()]
+          if missing:
+              raise SystemExit(f'missing release files: {missing}')
+          lines = [f'{hashlib.sha256((Path("dist") / name).read_bytes()).hexdigest()}  {name}'
+                   for name in names]
+          (Path('dist') / sums_name).write_text('\n'.join(lines) + '\n', encoding='utf-8')
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: bundle-${{ matrix.os }}
           path: |
-            dist/roomscope-linux-x86_64.tar.gz
-            dist/RoomScope-macos-*.dmg
-            dist/roomscope-windows-x64.zip
-            dist/RoomScope-setup.exe
+            dist/RoomScope-Desktop-*
+            dist/RoomScope-Terminal-*
             dist/SHA256SUMS-*
           if-no-files-found: error
 
@@ -435,8 +487,13 @@ jobs:
               raise SystemExit('CHANGELOG section missing for this version')
           header = Path('packaging/release-notes-header.md').read_text(encoding='utf-8')
           header = header.replace('{version}', os.environ['ROOMSCOPE_VERSION'])
-          Path('release-notes.md').write_text(header + '## Changes\n\n'
-              + match.group(1).strip() + '\n', encoding='utf-8')
+          # The changelog goes where the header says {changes}: after the
+          # downloads, limitations and checksums, before the technical part.
+          changes = re.sub(r'(?m)^### ', '#### ', match.group(1).strip())
+          notes = header.replace('{changes}', '### Changes in this version\n\n' + changes)
+          if notes == header:
+              raise SystemExit('packaging/release-notes-header.md has no {changes} marker')
+          Path('release-notes.md').write_text(notes, encoding='utf-8')
           PY
       - name: Stage this run's files
         env:
