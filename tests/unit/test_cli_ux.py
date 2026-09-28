@@ -431,3 +431,23 @@ def test_wide_terminals_keep_a_readable_width(
     lines = out.splitlines()
     assert all(cell_width(line) <= 100 for line in lines if "roomscope" not in line)
     assert any(set(line.strip()) <= {"─", " "} and line.count("─") > 20 for line in lines)
+
+
+def test_format_report_prints_on_a_cp1252_stdout(
+    demo_run: DemoRun, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Scripts print format_report(); on a Windows code page it must still encode."""
+    from roomscope.cli.report import format_comparison_report, format_report
+
+    stream = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
+    monkeypatch.setattr(sys, "stdout", stream)
+    for text in (
+        format_report(demo_run.takes[0].result),
+        format_comparison_report(demo_run.comparison),
+    ):
+        text.encode("cp1252")
+        assert "[OK]" in text or "[WARN]" in text
+    monkeypatch.setattr(sys, "stdout", io.StringIO())
+    assert "✓" in format_report(demo_run.takes[1].result) or "!" in format_report(
+        demo_run.takes[1].result
+    )
