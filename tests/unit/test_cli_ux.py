@@ -39,8 +39,10 @@ _DATE = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} [+-]\d{2}:\d{2}")
 
 
 def _normalise(text: str) -> str:
-    """Numbers and dates to ``#``; names with digits (T20, RT60, cp1252) stay."""
+    """Numbers and dates to ``#``; names with digits (T20, RT60, cp1252) stay;
+    Windows path separators as ``/``."""
     text = text.replace(__version__, "<version>")
+    text = re.sub(r"(?<=[\w.-])\\(?=[\w.-])", "/", text)
     text = _DATE.sub("<date>", text)
     return _NUMBER.sub("#", text)
 
@@ -197,7 +199,7 @@ def test_golden_sweep_next_steps(
     code, out, _err = _run(["--lang", lang, "sweep", "--out", "sweep.wav"], capsys)
     assert code == 0
     assert all(cell_width(line) <= columns for line in out.splitlines() if "roomscope " not in line)
-    _golden(f"sweep-{lang}-{columns}", out)
+    _golden(f"sweep-{lang}-{columns}", out.replace("\\", "/"))
 
 
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
@@ -248,7 +250,7 @@ def test_golden_errors(
         assert code == expected, (argv, err)
         assert out == "" and "Traceback" not in err
         blocks.append(err)
-    _golden(f"errors-{lang}", "\n".join(blocks))
+    _golden(f"errors-{lang}", "\n".join(blocks).replace("\\", "/"))
 
 
 def test_the_chinese_demo_and_home_show_no_english_prose(
@@ -285,6 +287,8 @@ def _demo_on(
     stream: io.StringIO, env: dict[str, str], monkeypatch: pytest.MonkeyPatch, *argv: str
 ) -> str:
     monkeypatch.setattr("roomscope.cli.console._enable_windows_vt", lambda _stream: True)
+    # On Windows a terminal shows the symbols only in Windows Terminal and alike.
+    monkeypatch.setenv("WT_SESSION", "1")
     for key, value in env.items():
         monkeypatch.setenv(key, value)
     monkeypatch.setattr(sys, "stdout", stream)
@@ -406,3 +410,22 @@ def test_commands_stack_on_a_narrow_terminal() -> None:
     narrow = Console(width=44).commands(items)
     assert len(wide) == 1
     assert narrow[0].strip() == "roomscope sweep --out sweep.wav" and len(narrow) >= 2
+
+
+@pytest.mark.parametrize("columns", [100, 120, 160])
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_wide_terminals_keep_a_readable_width(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    columns: int,
+    lang: str,
+) -> None:
+    """Text stops at 100 columns however wide the terminal; tables stay tables."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", str(columns))
+    assert _run(["demo"], capsys)[0] == 0
+    code, out, _err = _run(["--lang", lang, "show", "roomscope-demo/position-a"], capsys)
+    assert code == 0
+    lines = out.splitlines()
+    assert all(cell_width(line) <= 100 for line in lines if "roomscope" not in line)
+    assert any(set(line.strip()) <= {"─", " "} and line.count("─") > 20 for line in lines)

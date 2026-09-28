@@ -37,6 +37,16 @@ roomscope-env/bin/roomscope gui
 
 “关于”对话框和 `THIRD_PARTY_LICENSES/` 列出了 Qt、libsndfile 以及其他随包组件的许可证。
 
+## 先试一试：演示
+
+`roomscope demo` 不需要音频接口和话筒，就能演示完整的工作流程。它会写出扫频，模拟一个虚构房间里
+两个位置（一个靠近桌面和侧墙，一个向后移开）的话筒会录到什么，用与真实测量相同的代码分析这两个位置，
+并对比它们。输出的导览最后会给出查看完整报告、对比结果、打开桌面应用以及开始你自己第一次测量的命令。
+
+演示中的任何内容都不是测量结果：终端第一行就会说明这一点；每个保存的会话的模式都是
+`synthetic_demo`，并附有说明它是模拟数据的备注；演示也绝不会覆盖不是它自己写出的文件夹。
+用 `roomscope demo --out <文件夹>` 可以指定文件的位置。
+
 ## 通用 DAW 模式
 
 1. `roomscope sweep --sample-rate <project rate> --out sweep.wav`（或在界面的“通用 DAW 模式”中用“步骤 1 — 生成测试信号”生成，采样率选工程采样率）。把 `.roomscope-sweep.json` 配套文件和 WAV 放在一起。

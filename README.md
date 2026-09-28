@@ -186,6 +186,19 @@ The same analysis is a command-line tool. It is `roomscope` in a Python
 install and in the Windows / Linux bundles (next to `roomscope-gui`); on macOS
 it is `/Applications/RoomScope.app/Contents/MacOS/RoomScope`.
 
+Start with the demo. It needs no interface and plays nothing: it simulates a
+room at two microphone positions, runs the real analysis and comparison on
+them, and says what to do next. Every number it prints describes the
+simulation, and every session it saves is marked as a synthetic demo.
+
+```bash
+roomscope demo
+```
+
+![roomscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
+
+Then measure for real:
+
 ```bash
 # 1. Generate the test signal (48 kHz, 20 Hz–20 kHz, 10 s sweep, -12 dBFS)
 roomscope sweep --out sweep_48k.wav
@@ -220,7 +233,8 @@ roomscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
 # Demo / CI: no interface
-roomscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
+roomscope demo --out demo/
+roomscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
 # Language, bundle, CSV, project
 roomscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav

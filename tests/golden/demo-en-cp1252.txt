@@ -13,18 +13,18 @@ Files written
   # s sweep | # Hz - # kHz | # kHz
 
 Position A  close to the desk and the side wall
-  Reverberation      [WARN] RT60 # s (T30) | EDT # s
-  Early reflections  [WARN] strongest # dB at # ms | # above # dB
-  Low end            [WARN] potential resonances at # Hz (# dB)
-  Noise floor        [WARN] # dBFS RMS | mains hum at # Hz
-  Data quality       [OK] direct sound: confidence high | no warnings
+  Reverberation       [WARN] RT60 # s (T30) | EDT # s
+  Early reflections   [WARN] strongest # dB at # ms | # above # dB
+  Low end             [WARN] potential resonances at # Hz (# dB)
+  Noise floor         [WARN] # dBFS RMS | mains hum at # Hz
+  Data quality        [OK] direct sound: confidence high | no warnings
 
 Position B  moved # m back from the desk
-  Reverberation      [WARN] RT60 # s (T30) | EDT # s
-  Early reflections  [OK] strongest # dB at # ms | # above # dB
-  Low end            [WARN] potential resonances at # Hz (# dB)
-  Noise floor        [WARN] # dBFS RMS | mains hum at # Hz
-  Data quality       [OK] direct sound: confidence high | no warnings
+  Reverberation       [WARN] RT60 # s (T30) | EDT # s
+  Early reflections   [OK] strongest # dB at # ms | # above # dB
+  Low end             [WARN] potential resonances at # Hz (# dB)
+  Noise floor         [WARN] # dBFS RMS | mains hum at # Hz
+  Data quality        [OK] direct sound: confidence high | no warnings
 
 Comparison A -> B
   Reverberation       [OK] RT60 # s -> # s (# %)

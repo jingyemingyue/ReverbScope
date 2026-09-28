@@ -7,6 +7,48 @@ All notable changes to RoomScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **`roomscope demo`**: try the whole workflow without an interface or a
+  microphone. It writes a sweep, simulates two microphone positions in a
+  made-up room (a desk reflection at one, a 110 Hz room mode at both, mains
+  hum), analyses and compares them with the real pipeline, and ends with
+  numbered next steps. The terminal says first that the data is synthetic;
+  every session it saves has the mode `synthetic_demo` and a note saying so;
+  it never overwrites a folder it did not write. Works on a CLI-only install.
+- **Home screen**: bare `roomscope` shows the version, one sentence and the
+  three commands to start from instead of argparse's error (still exit
+  code 2, on stderr).
+- **Next steps** after `sweep`, after `analyze` / `measure` with `--out`, and
+  after the demo: numbered, with commands that can be copied whole.
+- `scripts/render_readme_assets.py` regenerates the README images from the
+  demo (`docs/images/cli-demo*.svg`, GUI screenshots stamped "synthetic demo
+  data", the social preview); see `docs/SCREENSHOT_PLAN.md`.
+
+### Changed
+- **Reports lead with "At a glance"**: reverberation, early reflections, low
+  end, noise floor and data quality in one line each, with the symbol the
+  recording profile's findings give that topic. The detail follows in the
+  order reverberation, noise, reflections, placement, resonances,
+  diagnostics, interpretation. Nothing was removed.
+- **Comparison report**: its own "At a glance"; the decay deltas grouped by
+  band in a table that fits 60 columns (each "not compared" reason listed
+  once); background noise per band in dB; resonance and loopback sections.
+- **Errors**: one block for every user error (`× error: …`, an explanation,
+  the commands to try), including argparse's usage errors, files and
+  folders that cannot be read or written, and unexpected failures; a
+  traceback only with `--verbose`. Exit codes unchanged.
+- **Help**: commands in workflow order, a short usage line per command,
+  required options listed first, options grouped, metavars that say what to
+  give (`WAV`, `DIR`, `HZ`, `DBFS`), a default only where it tells you
+  something, and examples on every core command.
+- The terminal layout honours `FORCE_COLOR`; a stream that cannot encode
+  `✓`, `→` or `Δ` gets ASCII forms; text is laid out for at most 100 columns;
+  numbers are never separated from their units by a line break.
+- The GUI's "Full report" panes show the same reports as the terminal:
+  `cli/render.py` is the one report layout, and `cli/report.py`'s
+  `format_report` / `format_comparison_report` now return that layout as
+  plain text.
+
 ## [0.4.1] - 2026-09-24
 
 First version meant for a draft pre-release (0.4.0 was never tagged, because

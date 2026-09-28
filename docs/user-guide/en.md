@@ -69,6 +69,20 @@ is the developer install from a clone.
 The About dialog and `THIRD_PARTY_LICENSES/` list Qt, libsndfile and the other
 bundled licenses.
 
+## Try it first: the demo
+
+`roomscope demo` shows the whole workflow without an interface or a
+microphone. It writes a sweep, simulates what a microphone would record at two
+positions in a made-up room (one close to a desk and a side wall, one moved
+back), analyses both with the same code as a real measurement, and compares
+them. The walkthrough it prints ends with the commands to open the full
+reports, the comparison, the desktop app, and your own first measurement.
+
+Nothing in the demo is a measurement: the terminal says so first, each saved
+session has the mode `synthetic_demo` and a note saying it was simulated, and
+the demo never overwrites a folder it did not write. `roomscope demo --out
+<folder>` chooses where the files go.
+
 ## Universal DAW Mode
 
 1. `roomscope sweep --sample-rate <project rate> --out sweep.wav` (or the GUI

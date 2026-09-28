@@ -157,6 +157,18 @@ RoomScope 通过你选择的音频接口自己播放扫频并录制话筒（经 
 同样的分析也可以用命令行完成。Python 安装和 Windows / Linux 程序包里的命令是 `roomscope`
 （与 `roomscope-gui` 在同一文件夹）；macOS 上是 `/Applications/RoomScope.app/Contents/MacOS/RoomScope`。
 
+先运行演示。它不需要音频接口，也不播放任何声音：它模拟一个房间里的两个话筒位置，
+用真实的分析和对比流程处理它们，并告诉你下一步做什么。它输出的每个数值都描述的是
+模拟结果，保存的每个会话都标记为合成演示。
+
+```bash
+roomscope --lang zh_CN demo
+```
+
+![终端中的 roomscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
+
+然后进行真实测量：
+
 ```bash
 # 1. 生成测试信号（48 kHz，20 Hz–20 kHz，10 s 扫频，-12 dBFS）
 roomscope sweep --out sweep_48k.wav
@@ -191,7 +203,8 @@ roomscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
 # 演示 / CI：不需要音频接口
-roomscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
+roomscope demo --out demo/
+roomscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
 # 语言、打包、CSV、项目
 roomscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav

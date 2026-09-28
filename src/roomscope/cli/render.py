@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from roomscope.cli.console import Console, Status, Verbatim, glue_units
+from roomscope.cli.console import Console, Status, Verbatim, cell_width, glue_units
 from roomscope.i18n import _, localize, pgettext
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
@@ -176,6 +176,19 @@ def _topic_status(findings: Sequence[Finding], *topics: str) -> Status:
     return "ok"
 
 
+def _glance_label_width() -> int:
+    """One label column for every "At a glance" block, so they line up when shown together."""
+    labels = (
+        _("Reverberation"),
+        _("Early reflections"),
+        _("Low end"),
+        _("Noise floor"),
+        _("Data quality"),
+        _("Frequency response"),
+    )
+    return max(cell_width(label) for label in labels)
+
+
 def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] = ()) -> list[str]:
     """One line per question a recording engineer asks first.
 
@@ -268,7 +281,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         quality += c.sep() + _("the recording clipped")
         status = "error"
     row(_("Data quality"), status, quality)
-    return c.section(_("At a glance")) + c.fields(rows)
+    return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
 
 
 def _diagnostics(c: Console, result: AnalysisResult) -> list[str]:
@@ -883,7 +896,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 band=band, mad=mad
             ),
         )
-    return c.section(_("At a glance")) + c.fields(rows)
+    return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
 
 
 # --- Environment report -------------------------------------------------------------

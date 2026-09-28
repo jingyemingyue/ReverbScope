@@ -14,14 +14,8 @@ msgstr "RoomScope 分析"
 msgid "RoomScope comparison"
 msgstr "RoomScope 对比"
 
-msgid "Sample rate: {rate} Hz    created: {created}"
-msgstr "采样率：{rate} Hz    创建时间：{created}"
-
 msgid "Warnings (core diagnostics, always English):"
 msgstr "警告（核心诊断，始终为英文）："
-
-msgid "Interpretation ({profile} profile):"
-msgstr "解读（{profile}配置）："
 
 msgid "RoomScope: an open-source, DAW-independent recording environment analyzer."
 msgstr "RoomScope：开源、不依赖 DAW 的录音环境分析器。"
@@ -94,9 +88,6 @@ msgstr "对有效 T 值做空间平均"
 
 msgid "number of source positions"
 msgstr "声源位置数量"
-
-msgid "print JSON instead of a table"
-msgstr "打印 JSON 而不是表格"
 
 msgid "list positions and sessions"
 msgstr "列出位置与会话"
@@ -781,9 +772,6 @@ msgstr "选择会话所在文件夹"
 
 # CLI help and text-report labels (ARCHITECTURE_V1.md §5.6)
 
-msgid "sample rate (Hz)"
-msgstr "采样率（Hz）"
-
 msgid "sweep duration in seconds (default 10)"
 msgstr "扫频时长（秒，默认 10）"
 
@@ -829,9 +817,6 @@ msgstr "备注（元数据）"
 msgid "omit curves from result.json"
 msgstr "不把曲线写入 result.json"
 
-msgid "print the result as JSON instead of a report"
-msgstr "以 JSON 打印结果而不是报告"
-
 msgid "straight line from the loudspeaker to the microphone capsule (m), measured with a tape. Without it no geometry can be derived from the reflections"
 msgstr "扬声器到话筒振膜的直线距离（米），用卷尺测量。没有它就无法从反射推导几何"
 
@@ -849,9 +834,6 @@ msgstr "同一次录音的单独回送（loopback）WAV（相同采样率）"
 
 msgid "0-based loopback channel of the recording (or of --loopback if it is multi-channel)"
 msgstr "录音（或多声道 --loopback 文件）中的回送声道（从 0 起）"
-
-msgid "debug logging"
-msgstr "调试日志"
 
 msgid "write the ESS test signal WAV (+ JSON sidecar)"
 msgstr "写出 ESS 测试信号 WAV（及 JSON 附属文件）"
@@ -934,9 +916,6 @@ msgstr "声明输入增益未变（要让本底噪声差值有效，必须声明
 msgid "recording profile for comparison findings (default: the candidate session's)"
 msgstr "对比解读所用的录音配置（默认：候选会话的配置）"
 
-msgid "print comparison.json instead of a report"
-msgstr "打印 comparison.json 而不是报告"
-
 msgid "print a shipped JSON Schema"
 msgstr "打印随附的 JSON Schema"
 
@@ -952,146 +931,11 @@ msgstr "脉冲响应 WAV"
 msgid "declared excitation band in Hz (required for band metrics)"
 msgstr "声明的激励频带（Hz；频带指标需要）"
 
-msgid "insuff."
-msgstr "不足"
-
 msgid "n/a"
 msgstr "无"
 
-msgid " (add {input})"
-msgstr "（需补 {input}）"
-
-msgid " +/-{uncertainty:.2f} from the stated inputs only"
-msgstr " +/-{uncertainty:.2f} 仅来自所给输入"
-
-msgid "Placement (tier {tier}; no coordinates are derived -- see the JSON):"
-msgstr "摆位（档位 {tier}；不推导坐标——见 JSON）："
-
-msgid "speed of sound"
-msgstr "声速"
-
 msgid "at {temp:.0f} C"
 msgstr "气温 {temp:.0f} C"
-
-msgid "loudspeaker height"
-msgstr "扬声器高度"
-
-msgid "plane above the devices"
-msgstr "设备上方平面"
-
-msgid "horizontal separation"
-msgstr "水平间距"
-
-msgid "  attributed arrivals:"
-msgstr "  已归属到达："
-
-msgid "excess path {path:.2f} m"
-msgstr "多余路径 {path:.2f} m"
-
-msgid "  note: {note}"
-msgstr "  说明：{note}"
-
-msgid "Impulse response: {seconds:.2f} s analysed, {decay:.2f} s of decay recorded, direct-sound confidence {confidence} (pre-peak margin {margin})"
-msgstr "脉冲响应：分析 {seconds:.2f} s，记录衰减 {decay:.2f} s，直达声置信度 {confidence}（峰前裕量 {margin}）"
-
-msgid "Sweep found at {start:.2f} s in the recording."
-msgstr "在录音中 {start:.2f} s 处找到扫频。"
-
-msgid "Loopback: compensated; electrical path delay {delay}; distance upper bound {bound}."
-msgstr "回送：已补偿；电路径延迟 {delay}；距离上限 {bound}。"
-
-msgid "Loopback: offered but not applied ({reason})"
-msgstr "回送：已提供但未使用（{reason}）"
-
-msgid "Loopback: offered but not applied."
-msgstr "回送：已提供但未使用。"
-
-msgid "Reverberation (extrapolated to 60 dB; 'insuff.' = insufficient decay range)"
-msgstr "混响（外推到 60 dB；“不足”表示衰减范围不足）"
-
-msgid "band"
-msgstr "频带"
-
-msgid "EDT"
-msgstr "EDT"
-
-msgid "T20"
-msgstr "T20"
-
-msgid "T30"
-msgstr "T30"
-
-msgid "RT60 est."
-msgstr "RT60 估计"
-
-msgid "range dB"
-msgstr "范围 dB"
-
-msgid "note"
-msgstr "说明"
-
-msgid "Background noise ({source}, {duration:.2f} s): {rms:.1f} dBFS RMS, peak {peak:.1f} dBFS  [{calibration}]"
-msgstr "本底噪声（{source}，{duration:.2f} s）：{rms:.1f} dBFS RMS，峰值 {peak:.1f} dBFS  [{calibration}]"
-
-msgid "  Potential mains hum at multiples of {base:.0f} Hz: {harmonics}"
-msgstr "  可能的市电哼声，基频 {base:.0f} Hz 的倍频：{harmonics}"
-
-msgid "  No mains hum detected (50/60 Hz harmonics)."
-msgstr "  未检测到市电哼声（50/60 Hz 谐波）。"
-
-msgid "Background noise: no quiet segment available."
-msgstr "本底噪声：没有可用的安静段。"
-
-msgid "Early reflections ({lo:.0f}-{hi:.0f} ms, above {threshold:.0f} dB):"
-msgstr "早期反射（{lo:.0f}-{hi:.0f} ms，高于 {threshold:.0f} dB）："
-
-msgid "  none above threshold"
-msgstr "  没有超过阈值的"
-
-msgid "Potential low-frequency resonances (< {max_hz:.0f} Hz):"
-msgstr "可能的低频共振（< {max_hz:.0f} Hz）："
-
-msgid "decay distinguishable from filter"
-msgstr "衰减可与滤波器区分"
-
-msgid "not distinguishable from filter ringing"
-msgstr "无法与滤波器振铃区分"
-
-msgid "20 dB decay {decay} (filter {ring})  {flag}"
-msgstr "20 dB 衰减 {decay}（滤波器 {ring}）  {flag}"
-
-msgid "  none"
-msgstr "  无"
-
-msgid "Common excitation band: {low:g}–{high:g} Hz"
-msgstr "共同激励频带：{low:g}–{high:g} Hz"
-
-msgid "Comparable: {value}"
-msgstr "可对比：{value}"
-
-msgid "Decay deltas (VALID only when both sides are VALID):"
-msgstr "衰减差值（仅当两侧都有效时才有效）："
-
-msgid "metric"
-msgstr "指标"
-
-msgid "base"
-msgstr "基线"
-
-msgid "cand"
-msgstr "候选"
-
-msgid "delta"
-msgstr "差值"
-
-msgid "validity"
-msgstr "有效性"
-
-msgid "Frequency-response mean |Δ| per octave (dB):"
-msgstr "频率响应每倍频程平均 |Δ|（dB）："
-
-msgid "Early reflections:"
-msgstr "早期反射："
 
 msgid "matched"
 msgstr "匹配"
@@ -1101,12 +945,6 @@ msgstr "出现"
 
 msgid "disappeared"
 msgstr "消失"
-
-msgid "Noise:"
-msgstr "噪声："
-
-msgid "Placement:"
-msgstr "摆位："
 
 # CLI user-facing output (ARCHITECTURE_V1.md §5.6 / M7)
 
@@ -1118,9 +956,6 @@ msgstr "显示程序版本号并退出"
 
 msgid "Wrote {wav} ({seconds:.1f} s at {rate} Hz, sweep {start:g}-{end:g} Hz, {duration:g} s, {level:g} dBFS)"
 msgstr "已写出 {wav}（{seconds:.1f} s，{rate} Hz，扫频 {start:g}-{end:g} Hz，{duration:g} s，{level:g} dBFS）"
-
-msgid "Wrote {sidecar} (keep it next to the WAV)"
-msgstr "已写入 {sidecar}（请与 WAV 放在一起）"
 
 msgid "Next: import the WAV into your DAW, play it through the monitors, record the measurement microphone,"
 msgstr "下一步：把 WAV 导入 DAW，经监听播放，用测量话筒录音，"
@@ -1495,12 +1330,6 @@ msgstr "同时检查每个设备接受哪些采样率，并标出每个物理设
 msgid "list the host APIs instead of devices"
 msgstr "列出主机 API 而不是设备"
 
-msgid "print the inventory as JSON"
-msgstr "以 JSON 格式打印设备清单"
-
-msgid "print the report as JSON"
-msgstr "以 JSON 格式打印报告"
-
 msgid "PortAudio latency class of the stream (default: PortAudio's high latency)"
 msgstr "音频流的 PortAudio 延迟等级（默认：PortAudio 的高延迟）"
 
@@ -1766,9 +1595,6 @@ msgstr "房间话筒"
 
 msgid "Choir / ensemble"
 msgstr "合唱 / 小型合奏"
-
-msgid "Warnings:"
-msgstr "警告："
 
 msgid "The same report that roomscope analyze prints; warnings are at the end."
 msgstr "与 roomscope analyze 输出的报告相同；警告列在末尾。"
@@ -3336,12 +3162,6 @@ msgstr "{name} - {count} 路输出"
 msgid "(add {input})"
 msgstr "（需添加 {input}）"
 
-msgid "1. Import the WAV into your DAW, play it through the monitors and record the measurement microphone."
-msgstr "1. 把 WAV 导入 DAW，通过监听音箱播放，同时录制测量话筒。"
-
-msgid "2. Export the recording as WAV and analyse it:"
-msgstr "2. 把录音导出为 WAV，然后分析："
-
 msgid "20 dB decay"
 msgstr "20 dB 衰减"
 
@@ -3392,9 +3212,6 @@ msgstr "默认"
 
 msgid "Delay"
 msgstr "延迟"
-
-msgid "Desktop"
-msgstr "桌面"
 
 msgid "Device"
 msgstr "设备"
@@ -3468,9 +3285,6 @@ msgstr "测量"
 msgid "Mode"
 msgstr "模式"
 
-msgid "Next"
-msgstr "下一步"
-
 msgid "No audio device found."
 msgstr "未找到音频设备。"
 
@@ -3519,9 +3333,6 @@ msgstr "优先顺序"
 msgid "Privacy"
 msgstr "隐私"
 
-msgid "Project"
-msgstr "项目"
-
 msgid "Rate"
 msgstr "采样率"
 
@@ -3555,17 +3366,11 @@ msgstr "自检"
 msgid "Session"
 msgstr "会话"
 
-msgid "Sessions"
-msgstr "会话"
-
 msgid "Speed of sound"
 msgstr "声速"
 
 msgid "Stream"
 msgstr "音频流"
-
-msgid "Summary"
-msgstr "概要"
 
 msgid "Sweep"
 msgstr "扫频"
@@ -3597,14 +3402,8 @@ msgstr "WASAPI 独占模式"
 msgid "Warning"
 msgstr "警告"
 
-msgid "Warnings"
-msgstr "警告"
-
 msgid "a delta is valid only when both sides are valid"
 msgstr "只有两侧都有效时差值才有效"
-
-msgid "broadband"
-msgstr "宽带"
 
 msgid "candidates below {max_hz:.0f} Hz"
 msgstr "{max_hz:.0f} Hz 以下的候选"
@@ -3651,12 +3450,6 @@ msgstr "每倍频程平均 |Δ|"
 msgid "no commit recorded (source or pip install)"
 msgstr "未记录提交（源码或 pip 安装）"
 
-msgid "none"
-msgstr "无"
-
-msgid "none above the threshold"
-msgstr "没有高于阈值的反射"
-
 msgid "not applied: {reason}"
 msgstr "未使用：{reason}"
 
@@ -3686,9 +3479,6 @@ msgstr "档位 {tier}；不推算坐标（见 JSON）"
 
 msgid "your home folder is shown as ~"
 msgstr "主文件夹显示为 ~"
-
-msgid "{count} found{sep}strongest {delay:.1f} ms, {level:.1f} dB"
-msgstr "找到 {count} 个{sep}最强 {delay:.1f} ms，{level:.1f} dB"
 
 msgid "{inputs} in / {outputs} out"
 msgstr "{inputs} 入 / {outputs} 出"

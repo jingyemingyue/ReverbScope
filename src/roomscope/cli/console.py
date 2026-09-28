@@ -307,7 +307,8 @@ _isatty = is_terminal
 
 
 def _unicode_ok(stream: TextIO, interactive: bool, environ: Mapping[str, str]) -> bool:
-    encoding = getattr(stream, "encoding", None) or "ascii"
+    # An in-memory text stream (io.StringIO) has no encoding and holds any character.
+    encoding = getattr(stream, "encoding", None) or "utf-8"
     try:
         _UNICODE_PROBE.encode(encoding)
     except (LookupError, UnicodeEncodeError):
@@ -517,7 +518,12 @@ class Console:
         return out
 
     def fields(
-        self, pairs: Iterable[tuple[str, str]], indent: int = 2, *, max_label: int = 28
+        self,
+        pairs: Iterable[tuple[str, str]],
+        indent: int = 2,
+        *,
+        max_label: int = 28,
+        min_label: int = 0,
     ) -> list[str]:
         """``label  value`` rows with the values aligned and wrapped under themselves.
 
@@ -526,7 +532,7 @@ class Console:
         items = [(label, value) for label, value in pairs]
         if not items:
             return []
-        label_width = min(max_label, max(cell_width(label) for label, _v in items))
+        label_width = min(max_label, max(min_label, *(cell_width(label) for label, _v in items)))
         margin = " " * indent
         value_column = indent + label_width + 2
         stacked = self.width - value_column < 24
