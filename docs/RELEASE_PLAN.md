@@ -22,9 +22,13 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
   repository has been public since 2026-09-24. **Update (2026-09-27):**
   v0.4.1 is prepared as the first *public* pre-release for early testers:
   README and [INSTALLATION.md](INSTALLATION.md) lead with the download, the
-  release notes open with *Download / What works / Important limitations*,
-  and the release-candidate artifacts were checked (§3c). It becomes public
-  when the maintainer publishes the draft; nothing here publishes it.
+  release notes open with *Choose your edition* and *Known limitations*,
+  and the release-candidate artifacts were checked (§3c). **Update
+  (2026-09-29):** every platform ships a Desktop Edition and a Terminal
+  Edition ([EDITIONS.md](EDITIONS.md)), and the `[Unreleased]` entries of
+  `CHANGELOG.md` are folded into `[0.4.1]`, so the draft's notes describe
+  everything the pre-release contains. It becomes public when the
+  maintainer publishes the draft; nothing here publishes it.
 * **Update (2026-09-24, later the same day):** the review follow-ups
   #9–#17 (#17, the QML part of the bundle gate, was found after this plan
   was written) are fixed on the branch `v0.4.1-review-followups`, which
@@ -64,8 +68,10 @@ in `pyproject.toml`, and the maintainer keeps the last word.
 
 > **Workflow status (2026-09-24).** The version-driven workflow has been on
 > `main` since PR #18; the v0.4.1 draft Release was opened from it and is
-> refreshed whenever `pyproject.toml`, the workflow, `packaging/` or
-> `scripts/smoke_bundle.py` change on `main` while `v0.4.1` has no tag. The
+> refreshed whenever `pyproject.toml`, the workflow, `packaging/`,
+> `scripts/smoke_bundle.py`, `scripts/release_draft.py`,
+> `scripts/inno_chinese_messages.py` or `src/roomscope/__main__.py` change
+> on `main` while `v0.4.1` has no tag. The
 > Windows job builds and installs `RoomScope-Desktop-Windows-x64-Setup.exe` on every run,
 > and every job also builds the Terminal Edition of its platform. Check
 > the latest `main` run and the draft's assets before publishing.
@@ -95,9 +101,11 @@ in `pyproject.toml`, and the maintainer keeps the last word.
    test suite, builds sdist and wheel, builds the unsigned bundles on the
    three OS runners (license bundle → PyInstaller → strip GPL-only Qt
    modules and ASIO DLLs → bundle gate → smoke test → archive → checksums),
-   produces the SBOM and lock file, and opens a **draft** GitHub Release
-   named `v<version>` with the CHANGELOG section as its body and every
-   archive attached. **No tag exists at this point.** A version containing
+   produces the SBOM and lock file, and opens or refreshes the **draft**
+   GitHub Release named `v<version>` with the release notes
+   (`packaging/release-notes-header.md` around the CHANGELOG section) as
+   its body and the 14 files attached. **No tag exists at this point.** A
+   version containing
    `.dev` never opens a draft.
 3. **The maintainer decides.** Download the bundles from the draft and try
    them on a real machine (the `docs/user-guide` Gatekeeper / SmartScreen

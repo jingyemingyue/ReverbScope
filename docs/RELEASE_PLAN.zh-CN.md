@@ -9,7 +9,7 @@
 ## 1. 现状
 
 * `main` 已经包含 v0.1 基础 + 0.2（重开与对比）+ 0.3（信任测量链）+ 0.4（面向所有人）+ 1.0-rc 的纯软件部分。四个里程碑 PR（#5、#6、#7、#8）在 2026-09-24 审查后合并，审查发现记录为 issue #9–#16。
-* 还没有任何 tag 或已发布的 Release（v0.4.1 是草稿）。仓库已于 2026-09-24 公开。**更新（2026-09-27）：** v0.4.1 已准备好作为第一个面向早期测试者的*公开*预发布版本：README 和 [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) 以下载为先，发布说明以“下载 / 可用功能 / 重要限制”开头，候选构建已核对（§3c）。维护者发布草稿后它才公开；这里的任何改动都不会发布它。
+* 还没有任何 tag 或已发布的 Release（v0.4.1 是草稿）。仓库已于 2026-09-24 公开。**更新（2026-09-27）：** v0.4.1 已准备好作为第一个面向早期测试者的*公开*预发布版本：README 和 [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) 以下载为先，发布说明以“选择版本（Choose your edition）”和“已知限制”开头，候选构建已核对（§3c）。**更新（2026-09-29）：** 每个平台都提供桌面版和终端版（[EDITIONS.zh-CN.md](EDITIONS.zh-CN.md)），`CHANGELOG.md` 的 `[Unreleased]` 条目已并入 `[0.4.1]`，草稿的说明因此涵盖这个预发布版本的全部内容。维护者发布草稿后它才公开；这里的任何改动都不会发布它。
 * 需要人在真实房间完成的事情都没做：硬件矩阵（HARDWARE_TESTS.md）没有一格 PASS，验证活动（VALIDATION.md）没有跑。维护者近期没有测量设备，所以这些排在最后，也可以在开源之后由贡献者补。
 * 签名证书、PyPI 项目名与可信发布都是维护者决定，目前未定；仓库已于 2026-09-24 公开。
 
@@ -29,8 +29,8 @@
 
 > **工作流状态（2026-09-24）**：按版本号发布的工作流自 PR #18 起已在 `main`
 > 上；v0.4.1 草稿 Release 就是由它创建的。只要 `v0.4.1` 还没有 tag，`main`
-> 上的 `pyproject.toml`、工作流、`packaging/` 或 `scripts/smoke_bundle.py`
-> 一有变化，草稿就会被刷新。Windows 任务每次都会构建并安装
+> 上的 `pyproject.toml`、工作流、`packaging/`、`scripts/smoke_bundle.py`、`scripts/release_draft.py`、
+> `scripts/inno_chinese_messages.py` 或 `src/roomscope/__main__.py` 一有变化，草稿就会被刷新。Windows 任务每次都会构建并安装
 > `RoomScope-Desktop-Windows-x64-Setup.exe`，每个任务还会构建本平台的终端版。发布前核对 `main` 最新一次运行和草稿附件。
 >
 > **草稿如何刷新**（`scripts/release_draft.py`）：每次刷新都替换*全部*附件、
@@ -43,7 +43,7 @@
 > workflow**），草稿才会按最新提交重建。
 
 1. **在 `main` 上准备发布提交**：把 `project.version` 改成新版本（不带 `.dev`），把 CHANGELOG 的 `[Unreleased]` 挪到 `## [版本] - 日期` 下，在 `docs/STATUS.md` 加一条写明“实际跑了什么”的快照，依赖版本有变时复查 DEPENDENCIES.md §3–§4。提交并推送。
-2. **CI 自动开草稿**：`pyproject.toml` 在 `main` 上变了、且还没有 `v<版本>` 这个 tag，工作流就会跑 lint/类型检查/测试，构建 sdist 和 wheel，在三个系统上构建未签名安装包（许可证包 → PyInstaller → 剥掉 GPL-only Qt 模块和 ASIO DLL → 门禁 → 冒烟测试 → 打包 → 校验和），生成 SBOM，然后开一个名为 `v<版本>` 的**草稿** Release，把 CHANGELOG 对应段落作正文、所有压缩包作附件。**此时还没有 tag。** 带 `.dev` 的版本不会开草稿。
+2. **CI 自动开草稿**：`pyproject.toml` 在 `main` 上变了、且还没有 `v<版本>` 这个 tag，工作流就会跑 lint/类型检查/测试，构建 sdist 和 wheel，在三个系统上构建未签名安装包（许可证包 → PyInstaller → 剥掉 GPL-only Qt 模块和 ASIO DLL → 门禁 → 冒烟测试 → 打包 → 校验和），生成 SBOM，然后打开或刷新名为 `v<版本>` 的**草稿** Release，正文是发布说明（`packaging/release-notes-header.md` 包着 CHANGELOG 对应段落），附件是那 14 个文件。**此时还没有 tag。** 带 `.dev` 的版本不会开草稿。
 3. **维护者决定**：从草稿下载安装包在真机上试；发布（publish）或删除草稿。发布这一下会在发布提交上创建 tag `v<版本>` —— 这就是项目简报里保留给维护者的“正式 Release”决定。
 4. **tag 触发的运行**：tag 被创建后再跑一遍质量门禁；只有当仓库变量 `ROOMSCOPE_PUBLISH_PYPI` 为 `true`、`pypi` 环境和 PyPI 可信发布都配好了，才会把 wheel 传到 PyPI。在此之前不会有任何东西到 PyPI。
 

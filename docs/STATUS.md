@@ -6,6 +6,58 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 31: 2026-09-29 — **v0.4.1 release close-out: one changelog section
+for the pre-release** (branch `claude/roomscope-cli-integration-84e5qc`, PR
+#24, stacked on #22 and #21). No code change. The `[Unreleased]` entries
+(Desktop and Terminal Editions, `roomscope demo`, the home screen, "At a
+glance", numbered next steps, the error block, workflow-ordered help, the
+one `SHA256SUMS`, the download-first README and Release page, the
+`PYTHONIOENCODING` fix) are folded into `[0.4.1]`, whose date is now
+2026-09-29 and whose introduction names the two editions; the draft
+Release's notes are taken from that section, so they now describe everything
+the pre-release contains. Stale wording fixed on the way: the release-notes
+order in RELEASE_PLAN §1 (+ zh-CN), the Release workflow's trigger paths in
+§3, the draft body in §3 step 2, the CHANGELOG's "GUI keeps its own reports"
+and "installer edition" sentences, the `RoomScope-setup.exe` comment in
+`packaging/windows/roomscope.iss`, and COMPATIBILITY's review date. **What
+was run** (this container: Linux x86_64, CPython 3.12.3, `dev` and `gui`
+extras, PortAudio 19.6, no audio device): `ruff check`, `ruff format
+--check`, `mypy` (strict, 79 files), `check_doc_links.py`,
+`check_src_safety.py`, `build_docs_site.py`; the CI coverage-gate command,
+**810 passed**, core + models branch coverage 90.48 %; the schema and
+public-API tests; `--backend fake devices` and `measure`;
+`examples/synthetic_measurement.py`. `scripts/build_release.py
+--python-dist` in a second environment pinned to `requirements/bundle.lock`
+(PyInstaller 6.22.3) built both Linux editions: tests skipped there (run
+separately, above), license bundles, PyInstaller, the `--strip
+--require-licenses` gate, the `--terminal` gate, both smoke tests,
+`RoomScope-Desktop-Linux-x86_64.tar.gz` (148.1 MB),
+`RoomScope-Terminal-Linux-x86_64.tar.gz` (57.4 MB), `SHA256SUMS-Linux-X64`
+(`sha256sum -c` OK), the wheel and the sdist; both `build_info.json` files
+name commit `f893cc7` and their edition; the Terminal archive, extracted
+into an empty folder and run under `env -i` (no virtual environment, no
+`PYTHON*` variables), printed `--version`, ran `demo` in English and
+Chinese, wrote nothing but JSON for `--format json doctor` (no matplotlib,
+PySide6 or shiboken6 reported, audio callbacks ok), answered `gui` with the
+Terminal Edition sentence and exit code 2 in both languages, and contains no
+PySide6, shiboken6, Qt, matplotlib or `roomscope/ui` file. On GitHub
+Actions, CI #76 and Release #29 on `f893cc7` (the commit before this one)
+are green on every job, the four `Bundle (<os>)` jobs and *Check the release
+file set* included; that check downloaded the 17 files of the run (nine
+archives, four `SHA256SUMS-<OS>-<ARCH>`, wheel, sdist, SBOM, lock) and
+staged the 14-file Release set. A read-only run of `release_draft.py`'s
+planner against the asset names main's last Release run (#10, `909f332`)
+attached to the v0.4.1 draft plans the removal of the seven earlier names
+(`RoomScope.dmg`, `RoomScope-setup.exe`, `roomscope-linux-x86_64.tar.gz`,
+`roomscope-windows-x64.zip`, `SHA256SUMS-{Linux,macOS,Windows}`) and the
+replacement of the four shared ones; a name it does not know stops it. **Not
+run:** the draft refresh itself (it runs on `main` after the merge); any
+real audio interface, microphone or DAW; a bundle on a person's own Mac,
+Windows PC or Linux desktop (the release workflow mounts, installs and
+launches them on GitHub's runners only); macOS 14; the Chinese installer on
+a Chinese Windows. The hardware and DAW matrices stay empty; a cell is
+filled only from a community report on real hardware.
+
 Snapshot 30: 2026-09-27 — **download-first installation and the release
 candidate's files checked as a user gets them** (branch
 `claude/epic-meitner-x0t35f`, stacked on PR #21). README / README.zh-CN open

@@ -7,6 +7,27 @@ All notable changes to RoomScope are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-09-29
+
+The first public pre-release, for early testers (0.4.0 was never tagged,
+because #17 had to be fixed before any bundle is published, RELEASE_PLAN.md
+§4). Every platform gets two downloads, a **Desktop Edition** (GUI and
+command line) and a **Terminal Edition** (command line only, built without
+Qt); `roomscope demo` tries the whole workflow without an interface; the
+command line has one presentation layer (home screen, "At a glance"
+reports, numbered next steps, one error block, help in workflow order), in
+English and Simplified Chinese. It closes the review follow-ups #9–#17, each
+with a synthetic test that fails on 0.4.0; makes the bundles and the DAW
+workflow usable by someone other than the maintainer; and adds what the
+software-readiness phase needs before community hardware tests
+(RELEASE_PLAN.md §2): the audio device inventory and pre-flight,
+`roomscope doctor` and the environment report, the GUI redesign, and issue
+templates for hardware and DAW reports. Run-time dependency floor:
+**matplotlib ≥ 3.10** (was ≥ 3.8). Still no hardware or DAW result: every
+cell of the hardware and DAW matrices stays *Not tested* until a community
+report fills it. The bundles are not signed for distribution (macOS: ad hoc,
+not notarized; Windows: no Authenticode), and nothing is on PyPI.
+
 ### Added
 - **Desktop Edition and Terminal Edition.** Every platform now has two
   downloads, named for edition, system and CPU:
@@ -26,8 +47,6 @@ All notable changes to RoomScope are documented here. The format follows
   bundle reports; the Windows installer smoke also checks the Start menu
   entry and that uninstalling removes it. The Windows Terminal Edition has a
   `RoomScope Terminal.cmd` that opens a Command Prompt in its folder.
-- The Release carries one `SHA256SUMS` for every download instead of one
-  file per build machine; the draft refresh removes the earlier names.
 - **`roomscope demo`**: try the whole workflow without an interface or a
   microphone. It writes a sweep, simulates two microphone positions in a
   made-up room (a desk reflection at one, a 110 Hz room mode at both, mains
@@ -40,64 +59,6 @@ All notable changes to RoomScope are documented here. The format follows
   code 2, on stderr).
 - **Next steps** after `sweep`, after `analyze` / `measure` with `--out`, and
   after the demo: numbered, with commands that can be copied whole.
-- `scripts/render_readme_assets.py` regenerates the README images from the
-  demo (`docs/images/cli-demo*.svg`, GUI screenshots stamped "synthetic demo
-  data", the social preview); see `docs/SCREENSHOT_PLAN.md`.
-
-### Changed
-- **Download-first README and Release page.** Both READMEs open with the
-  download: a Desktop Edition table, a Terminal Edition table and a
-  comparison of the two, then a 30-second demo; the developer install and
-  the architecture moved below the user sections. The Release notes start
-  with *Choose your edition*, then known limitations, checksums, the
-  changelog and the technical information. `roomscope doctor` names the
-  edition and whether the developer tools are shown.
-- **Reports lead with "At a glance"**: reverberation, early reflections, low
-  end, noise floor and data quality in one line each, with the symbol the
-  recording profile's findings give that topic. The detail follows in the
-  order reverberation, noise, reflections, placement, resonances,
-  diagnostics, interpretation. Nothing was removed.
-- **Comparison report**: its own "At a glance"; the decay deltas grouped by
-  band in a table that fits 60 columns (each "not compared" reason listed
-  once); background noise per band in dB; resonance and loopback sections.
-- **Errors**: one block for every user error (`× error: …`, an explanation,
-  the commands to try), including argparse's usage errors, files and
-  folders that cannot be read or written, and unexpected failures; a
-  traceback only with `--verbose`. Exit codes unchanged.
-- **Help**: commands in workflow order, a short usage line per command,
-  required options listed first, options grouped, metavars that say what to
-  give (`WAV`, `DIR`, `HZ`, `DBFS`), a default only where it tells you
-  something, and examples on every core command.
-- The terminal layout honours `FORCE_COLOR`; a stream that cannot encode
-  `✓`, `→` or `Δ` gets ASCII forms; text is laid out for at most 100 columns;
-  numbers are never separated from their units by a line break.
-- The GUI's "Full report" panes show the same reports as the terminal:
-  `cli/render.py` is the one report layout, and `cli/report.py`'s
-  `format_report` / `format_comparison_report` now return that layout as
-  plain text.
-
-### Fixed
-
-- The desktop and terminal bundles honour `PYTHONIOENCODING`, which their
-  frozen interpreter ignores: `roomscope --lang zh_CN demo` piped with
-  `PYTHONIOENCODING=utf-8` on Windows failed with `UnicodeEncodeError`
-  instead of writing UTF-8.
-
-## [0.4.1] - 2026-09-24
-
-First version meant for a draft pre-release (0.4.0 was never tagged, because
-#17 had to be fixed before any bundle is published, RELEASE_PLAN.md §4). It
-closes the review follow-ups #9–#17, each with a synthetic test that fails on
-0.4.0; makes the desktop bundles and the DAW workflow usable by someone other
-than the maintainer; and adds what the software-readiness phase needs before
-community hardware tests (RELEASE_PLAN.md §2): the audio device inventory and
-pre-flight, `roomscope doctor` and the environment report, the GUI redesign,
-and issue templates for hardware and DAW reports. Run-time dependency floor:
-**matplotlib ≥ 3.10** (was ≥ 3.8). Still no hardware or DAW result. The
-bundles are not signed for distribution (macOS: ad hoc, not notarized;
-Windows: no Authenticode).
-
-### Added
 - **Command-line presentation.** `roomscope analyze`, `show`, `compare`,
   `doctor`, `devices`, `sweep` and `measure` print sectioned reports with
   aligned fields and tables, a summary of the broadband results, and a
@@ -114,8 +75,8 @@ Windows: no Authenticode).
   `--color auto|always|never`; `NO_COLOR` and `TERM=dumb` are honoured; pipes
   and files never receive escape sequences. One internal renderer
   (`cli/console.py`, standard library only); no new dependency. JSON output,
-  schemas, stored files and exit codes are unchanged; the GUI keeps its own
-  reports.
+  schemas, stored files and exit codes are unchanged; the GUI's *Full report*
+  panes show the same layout (see Changed).
 - **Simplified Chinese throughout.** Everything a user reads can be in
   Simplified Chinese: the GUI (Qt's own buttons and dialogs too, from Qt's
   `qtbase` catalog), every CLI help screen and argparse's usage and error
@@ -185,9 +146,10 @@ Windows: no Authenticode).
   environment report. Template links are absolute (relative links in issue
   forms resolve against the issue URL). The README has a short "Help test"
   section linking both forms.
-- Developer and installer editions (`roomscope.edition`,
-  `ROOMSCOPE_EDITION`): a source or pip install is the developer edition, a
-  desktop bundle the user edition. The developer edition adds a Developer
+- Developer tools with two defaults (`roomscope.edition`,
+  `ROOMSCOPE_EDITION`): a source or pip install shows them (the developer
+  defaults), a bundle of either edition hides them (the installed defaults).
+  The developer defaults add a Developer
   menu (Audio Device Inspector with rate probing and JSON copy, Open Data
   Folder) and advanced audio options in Standalone Mode
   (latency, WASAPI exclusive, Core Audio set-rate). Settings gain *Theme*
@@ -198,6 +160,31 @@ Windows: no Authenticode).
   channels and separate clocks before playing.
 
 ### Changed
+- **Reports lead with "At a glance"**: reverberation, early reflections, low
+  end, noise floor and data quality in one line each, with the symbol the
+  recording profile's findings give that topic. The detail follows in the
+  order reverberation, noise, reflections, placement, resonances,
+  diagnostics, interpretation. Nothing was removed.
+- **Comparison report**: its own "At a glance"; the decay deltas grouped by
+  band in a table that fits 60 columns (each "not compared" reason listed
+  once); background noise per band in dB; resonance and loopback sections.
+- **Errors**: one block for every user error (`× error: …`, an explanation,
+  the commands to try), including argparse's usage errors, files and
+  folders that cannot be read or written, and unexpected failures; a
+  traceback only with `--verbose`. Exit codes unchanged.
+- **Help**: commands in workflow order, a short usage line per command,
+  required options listed first, options grouped, metavars that say what to
+  give (`WAV`, `DIR`, `HZ`, `DBFS`), a default only where it tells you
+  something, and examples on every core command.
+- The terminal layout honours `FORCE_COLOR`; a stream that cannot encode
+  `✓`, `→` or `Δ` gets ASCII forms; text is laid out for at most 100 columns;
+  numbers are never separated from their units by a line break.
+- The GUI's "Full report" panes show the same reports as the terminal:
+  `cli/render.py` is the one report layout, and `cli/report.py`'s
+  `format_report` / `format_comparison_report` now return that layout as
+  plain text.
+- `roomscope doctor` names the edition (Desktop or Terminal) and whether the
+  developer tools are shown.
 - **macOS signing prepared for a Developer ID** (none exists yet; releases
   stay ad hoc signed, not notarized). `packaging/macos/sign_app.sh` signs
   inside out (loose Mach-O files, nested frameworks deepest first, then the
@@ -252,6 +239,10 @@ Windows: no Authenticode).
   90.20 % (87.74 % on 0.4.0); the run is recorded in `docs/STATUS.md`.
 
 ### Fixed
+- The desktop and terminal bundles honour `PYTHONIOENCODING`, which their
+  frozen interpreter ignores: `roomscope --lang zh_CN demo` piped with
+  `PYTHONIOENCODING=utf-8` on Windows failed with `UnicodeEncodeError`
+  instead of writing UTF-8.
 - **`roomscope gui` without PySide6 printed a traceback.** The friendly
   message in `cmd_gui` guarded only the import of `roomscope.ui.app`, which
   does not import Qt, so a wheel installed without `[gui]` (or a Linux system
@@ -497,10 +488,8 @@ Windows: no Authenticode).
 - `scripts/smoke_bundle.py` also runs `gui --smoke` through the windowed
   launcher; `--require-gui-launcher` fails a Windows / Linux bundle without
   one.
-- Release notes open with a download table, the unsigned-bundle warning and
-  links to the user guide; the README has a Download section and the user
-  guide's install section names every Release file, the checksums, the Linux
-  system libraries and the wheel install (RoomScope is not on PyPI yet).
+- The Release carries one `SHA256SUMS` for every download instead of one
+  file per build machine; the draft refresh removes the earlier names.
 - **Intel Macs.** The release workflow also builds on an Intel macOS runner;
   the disk images are `RoomScope-Desktop-macOS-arm64.dmg` and
   `RoomScope-Desktop-macOS-x86_64.dmg` (was `RoomScope.dmg`, Apple silicon only),
@@ -525,23 +514,32 @@ Windows: no Authenticode).
   (`THIRD_PARTY_LICENSES/soundfile/`, `_notices/libsndfile.txt`).
 
 ### Documentation
-- **Download first.** README and README.zh-CN open with a *Download* section
-  that links the stable
-  [Releases page](https://github.com/jingyemingyue/RoomScope/releases) (not
-  `/releases/latest`, which never shows a pre-release), a table of the real
-  file names per system, the first-launch steps for unsigned builds through
-  the normal macOS / Windows dialogs (no Gatekeeper or SIP changes), a
-  screenshot of the built-in demo and a *First measurement* section; the
-  developer install follows. New `docs/INSTALLATION.md` (+ zh-CN): macOS,
-  Windows (installer and ZIP), Linux and Python installs, checksums,
-  updating, uninstalling, unsigned-build warnings (Smart App Control
-  included), supported systems (glibc 2.39 for the Linux bundle) and
-  troubleshooting. The Linux notes name a CJK font for Chinese chart text.
-- **Release notes for testers.** `packaging/release-notes-header.md` now
-  opens with *RoomScope v<version> — Early public pre-release for testing*,
-  then *Download*, *What works* and *Important limitations*;
-  `tests/unit/test_release_notes.py` fails when a download file named there
-  or in the install documents is not one the Release carries.
+- **Download first.** README and README.zh-CN open with the download: the
+  stable [Releases page](https://github.com/jingyemingyue/RoomScope/releases)
+  (not `/releases/latest`, which never shows a pre-release), a Desktop
+  Edition table, a Terminal Edition table and a comparison of the two, the
+  first-launch steps for unsigned builds through the normal macOS / Windows
+  dialogs (no Gatekeeper or SIP changes), then a 30-second demo; the
+  developer install and the architecture moved below the user sections. New
+  `docs/INSTALLATION.md` (+ zh-CN): macOS, Windows (installer and ZIP),
+  Linux, the Terminal Edition and the Python installs, checksums, updating,
+  uninstalling, unsigned-build warnings (Smart App Control included),
+  supported systems (glibc 2.39 for the Linux bundles) and troubleshooting;
+  the user guide's install section names every Release file, the Linux
+  system libraries and the wheel install (RoomScope is not on PyPI yet).
+  The Linux notes name a CJK font for Chinese chart text.
+- **Release notes for testers.** `packaging/release-notes-header.md` opens
+  with *RoomScope v<version> — Early public pre-release for testing*, then
+  *Choose your edition* (the Desktop table, then the Terminal table) with
+  the first-launch steps, *Known limitations*, *Checksums*, the changelog
+  (the draft job inserts this section there) and the technical information
+  (what works, wheel, SBOM, lock). `tests/unit/test_release_notes.py` fails when a
+  download file named there or in the user documents is not one the Release
+  carries, when an earlier file name remains, or when a README does not show
+  both editions before anything else.
+- `scripts/render_readme_assets.py` regenerates the README images from the
+  demo (`docs/images/cli-demo*.svg`, GUI screenshots stamped "synthetic demo
+  data", the social preview); see `docs/SCREENSHOT_PLAN.md`.
 - RELEASE_PLAN §3c (publishing v0.4.1 as the first public pre-release: what
   was checked on the release candidate and the publish checklist) and §3d
   (PyPI readiness: name free, metadata passes `twine check`, trusted
@@ -553,8 +551,9 @@ Windows: no Authenticode).
 - `docs/COMPATIBILITY.md` (+ zh-CN): platforms, Python and dependency floors,
   DAW export formats, host APIs and cross-platform behaviour, each with what
   verified it (CI job, local build, test module) and what is not verified.
-- `docs/EDITIONS.md` (+ zh-CN): the developer edition and the installer
-  edition, what each shows, and how to switch.
+- `docs/EDITIONS.md` (+ zh-CN): the Desktop and Terminal Editions, what each
+  contains, and the developer tools (developer and installed defaults, how
+  to switch).
 - `docs/user-guide/daw-setup.md` (+ zh-CN) rewritten from each vendor's
   current documentation, with a numbered source per step (a documented
   workflow; no step has been run in a DAW with RoomScope yet): Pro Tools
