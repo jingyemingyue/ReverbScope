@@ -187,7 +187,7 @@ cd roomscope-terminal
 xattr -dr com.apple.quarantine roomscope-terminal
 ```
 
-它只改动这些文件，不会关闭 Gatekeeper，也不应该关闭 Gatekeeper。用 `curl` 下载的文件没有这个标记。Linux 终端版
+它只改动这些文件，不会关闭 Gatekeeper，也不应该关闭 Gatekeeper。这是未签名预发布构建的临时办法；签名后的构建不需要这一步。用 `curl` 下载的文件没有这个标记。Linux 终端版
 做测量时需要 `libportaudio2`（`sudo apt install libportaudio2`），不需要图形库。
 
 **Windows**（`RoomScope-Terminal-Windows-x64.zip`）：右键 → **全部解压缩…**，打开解压出的文件夹，双击

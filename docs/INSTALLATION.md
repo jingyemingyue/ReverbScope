@@ -225,7 +225,8 @@ xattr -dr com.apple.quarantine roomscope-terminal
 ```
 
 This changes only these files; it does not turn off Gatekeeper, and you
-should not. A file downloaded with `curl` has no such mark. The Linux
+should not. It is a stop-gap for these unsigned pre-release builds; signed
+builds will not need it. A file downloaded with `curl` has no such mark. The Linux
 Terminal Edition needs `libportaudio2` for measurements
 (`sudo apt install libportaudio2`), not the graphics libraries.
 

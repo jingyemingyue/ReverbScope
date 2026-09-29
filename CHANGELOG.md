@@ -239,6 +239,12 @@ not notarized; Windows: no Authenticode), and nothing is on PyPI.
   90.20 % (87.74 % on 0.4.0); the run is recorded in `docs/STATUS.md`.
 
 ### Fixed
+- `roomscope export` no longer logs *ignoring third-party exporter 'csv';
+  name collides* on every run: `pyproject.toml` registers the built-in CSV
+  exporter under the `roomscope.exporters` entry-point group as well (the
+  documented extension point), and the registry took its own declaration
+  for a third-party one. A different exporter that reuses the name is still
+  reported and ignored.
 - The desktop and terminal bundles honour `PYTHONIOENCODING`, which their
   frozen interpreter ignores: `roomscope --lang zh_CN demo` piped with
   `PYTHONIOENCODING=utf-8` on Windows failed with `UnicodeEncodeError`
