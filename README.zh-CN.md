@@ -56,7 +56,7 @@ DAW 做过测量，请把所有数字视为未经验证（欢迎[帮助测试](#
 | **Linux**（glibc 2.39+） | [`RoomScope-Terminal-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/RoomScope/releases) | x86_64 | `roomscope-terminal/roomscope demo` |
 
 先解压（`tar xzf <文件>`；Windows 上用 **全部解压缩…**）。在 macOS 上，如果系统拒绝运行下载来的
-`roomscope`，请运行一次 `xattr -dr com.apple.quarantine roomscope-terminal`：它只清除这些文件上的下载标记。
+`roomscope`，请运行一次 `xattr -dr com.apple.quarantine roomscope-terminal`：它只清除这些文件上的下载标记，不会关闭 Gatekeeper。这是未签名预发布构建的临时办法。
 
 ### 该选哪个？
 

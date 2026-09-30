@@ -578,11 +578,11 @@ not notarized; Windows: no Authenticode), and nothing is on PyPI.
   no plug-ins on the microphone track; exporting at another rate is
   harmless; a small stretch is not named by the diagnosis.
 - **Speed diagnosis on short sweeps.** A correctly played short sweep in a
-  reverberant room measured up to 4.5 % off (1 s sweep) and was named a
-  time-stretch. The "as generated" band now follows the estimate's measured
-  spread, `max(1.25 %, 5.5 % / T^0.75)` for a `T`-second sweep (1.25 % at
-  10 s, 2.4 % at 3 s, 5.5 % at 1 s); a 44.1 / 48 kHz mismatch is still named
-  from about 0.6 s.
+  reverberant synthetic room measured up to 4.5 % off (1 s sweep) and was
+  named a time-stretch. The "as generated" band now follows the estimate's
+  measured spread, `max(1.25 %, 5.5 % / T^0.75)` for a `T`-second sweep
+  (1.25 % at 10 s, 2.4 % at 3 s, 5.5 % at 1 s); a 44.1 / 48 kHz mismatch is
+  still named from about 0.6 s.
 - A recording whose quiet part is exact digital silence gets a warning
   finding (`measurement.digital_silence`): the DAW's test-signal track
   exported instead of the microphone otherwise analysed as a near-perfect

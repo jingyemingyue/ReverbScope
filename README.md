@@ -65,7 +65,8 @@ size.
 Extract the archive first (`tar xzf <file>`; on Windows **Extract All…**). On
 macOS, if a downloaded `roomscope` is refused, run
 `xattr -dr com.apple.quarantine roomscope-terminal` once: it clears the
-download mark on those files only.
+download mark on those files only and does not turn off Gatekeeper. It is a
+stop-gap for these unsigned pre-release builds.
 
 ### Which one?
 

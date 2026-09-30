@@ -78,6 +78,10 @@ run `roomscope demo`.
   not been run in each DAW yet.
 * macOS 14 is the declared minimum, but the macOS builds have only run on
   macOS 15 (Intel) and macOS 26 (Apple silicon) CI machines so far.
+* So far the downloads have been installed and started only on GitHub's CI
+  machines, not yet on a tester's own Mac, Windows PC or Linux desktop, and
+  nobody has seen the Windows installer's Simplified Chinese screens on a
+  Chinese Windows yet.
 * Not on PyPI yet: `pip install roomscope` does not install this project.
 
 **Help test it:** a result from your interface or DAW — pass or fail — is the
