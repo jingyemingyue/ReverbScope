@@ -7,6 +7,20 @@ All notable changes to RoomScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- **Command line.** Root `--help`, subcommand descriptions and the epilog wrap
+  on a narrow terminal (they ran past 60 columns). `roomscope demo` clears its
+  progress line with spaces, not `ESC[2K`, so `--color never` and `NO_COLOR`
+  stay free of escape sequences. Next-step commands quote a path that contains
+  a space. `sweep`, `export` and `show --list` say so when `--format json` does
+  not apply instead of ignoring it. On a narrow encoding (`cp1252`), signs such
+  as `Δ` are widened before the line is wrapped, so a demo line no longer runs
+  past the terminal.
+- **Desktop app.** The home screen shows which keyboard shortcut opens each
+  mode (the same Ctrl+1 / Ctrl+2 / Ctrl+3 as the Measure menu). A status bar
+  names the version and the current page. Results can copy the full text
+  report to the clipboard.
+
 ## [0.4.1] - 2026-09-29
 
 The first public pre-release, for early testers (0.4.0 was never tagged,

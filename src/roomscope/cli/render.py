@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from roomscope.cli.console import Console, Status, Verbatim, cell_width, glue_units
+from roomscope.cli.console import Console, Status, Verbatim, cell_width, glue_units, shell_command
 from roomscope.edition import RELEASES_URL, is_terminal_package
 from roomscope.i18n import _, localize, pgettext
 from roomscope.interpretation import Finding
@@ -1226,8 +1226,17 @@ def render_sweep_written(
             (_("Record the measurement microphone on another track at the same sample rate."), ""),
             (
                 _("Export that track as WAV (no trimming needed) and analyse it:"),
-                "roomscope analyze --recording {take} --sweep {sweep} --out {session}".format(
-                    take=_("<take.wav>"), sweep=wav_path, session=_("<session>")
+                shell_command(
+                    [
+                        "roomscope",
+                        "analyze",
+                        "--recording",
+                        _("<take.wav>"),
+                        "--sweep",
+                        str(wav_path),
+                        "--out",
+                        _("<session>"),
+                    ]
                 ),
             ),
         ]
@@ -1248,7 +1257,7 @@ def render_saved_next_steps(console: Console, session: object) -> str:
         [
             (
                 _("Measure another position into a new folder, then compare the two:"),
-                f"roomscope compare {session} {_('<other-session>')}",
+                shell_command(["roomscope", "compare", str(session), _("<other-session>")]),
             ),
             (
                 (_("To see it with charts, get RoomScope Desktop Edition:"), RELEASES_URL)
@@ -1531,10 +1540,21 @@ def render_demo(
         )
     lines += c.steps(
         [
-            (_("Read the full report of one position:"), f"roomscope show {first.session_dir}"),
+            (
+                _("Read the full report of one position:"),
+                shell_command(["roomscope", "show", str(first.session_dir)]),
+            ),
             (
                 _("See every delta between the two positions:"),
-                f"roomscope compare {first.session_dir} {second.session_dir} --same-input-gain",
+                shell_command(
+                    [
+                        "roomscope",
+                        "compare",
+                        str(first.session_dir),
+                        str(second.session_dir),
+                        "--same-input-gain",
+                    ]
+                ),
             ),
             gui_step,
             (

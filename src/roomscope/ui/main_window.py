@@ -7,7 +7,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QUrl
 from PySide6.QtGui import QAction, QDesktopServices
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStackedWidget
+from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStackedWidget, QStatusBar
 
 from roomscope import __version__
 from roomscope.errors import RoomScopeError
@@ -128,12 +128,20 @@ class MainWindow(QMainWindow):
         help_menu.addSeparator()
         help_menu.addAction(about_action)
         help_menu.addAction(licenses_action)
+        self._status = QStatusBar()
+        self.setStatusBar(self._status)
         self.show_home()
+
+    def _set_place(self, place: str) -> None:
+        self._status.showMessage(
+            _("RoomScope {version}  ·  {place}").format(version=__version__, place=place)
+        )
 
     def show_home(self) -> None:
         self.state.reset()
         self.home.refresh_recent()
         self.stack.setCurrentWidget(self.home)
+        self._set_place(_("Home"))
 
     def choose_session(self) -> None:
         path, _filter = QFileDialog.getOpenFileName(
@@ -171,18 +179,22 @@ class MainWindow(QMainWindow):
             self.standalone.demo_mode = True
             self.standalone.refresh_devices()
             self.stack.setCurrentWidget(self.standalone)
+            self._set_place(_("Demo (no interface)"))
             return
         self.state.mode = mode
         self.standalone.demo_mode = False
         if mode == "standalone":
             self.standalone.refresh_devices()
             self.stack.setCurrentWidget(self.standalone)
+            self._set_place(_("Standalone Mode"))
         else:
             self.stack.setCurrentWidget(self.daw)
+            self._set_place(_("Universal DAW Mode"))
 
     def show_results(self) -> None:
         self.results.refresh()
         self.stack.setCurrentWidget(self.results)
+        self._set_place(_("Results"))
 
     def show_compare(self) -> None:
         self.compare.browser.refresh_recent()
@@ -190,6 +202,7 @@ class MainWindow(QMainWindow):
         if len(selected) == 2:
             self.compare.set_paths(selected[0], selected[1])
         self.stack.setCurrentWidget(self.compare)
+        self._set_place(_("Compare"))
 
     def show_settings(self) -> None:
         from roomscope.ui.settings_dialog import SettingsDialog

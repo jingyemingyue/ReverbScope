@@ -3827,3 +3827,24 @@ msgstr "源码或 pip 安装"
 
 msgid "Developer tools"
 msgstr "开发者工具"
+
+msgid "Home"
+msgstr "首页"
+
+msgid "RoomScope {version}  ·  {place}"
+msgstr "RoomScope {version}  ·  {place}"
+
+msgid "Copy report"
+msgstr "复制报告"
+
+msgid "Copy the full text report to the clipboard."
+msgstr "把完整文字报告复制到剪贴板。"
+
+msgid "Nothing to copy yet."
+msgstr "还没有可以复制的报告。"
+
+msgid "Report copied to the clipboard."
+msgstr "报告已复制到剪贴板。"
+
+msgid "warning: --format json does not apply to {command}; printing text"
+msgstr "警告：--format json 不适用于 {command}，仍输出文本"

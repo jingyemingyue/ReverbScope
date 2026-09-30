@@ -77,7 +77,14 @@ class ModeCard(Card):
     clicked = Signal()
 
     def __init__(
-        self, glyph: str, title: str, text: str, action: str, parent: QWidget | None = None
+        self,
+        glyph: str,
+        title: str,
+        text: str,
+        action: str,
+        parent: QWidget | None = None,
+        *,
+        shortcut: str = "",
     ) -> None:
         super().__init__(parent, spacing=6)
         self.setProperty("hover", True)
@@ -88,6 +95,9 @@ class ModeCard(Card):
         icon = label(glyph, "pill")
         top.addWidget(icon)
         top.addStretch(1)
+        if shortcut:
+            # The File menu already binds Ctrl+1/2/3; the badge shows which.
+            top.addWidget(label(shortcut, "badge"))
         self.body.addLayout(top)
         self.body.addWidget(label(title, "card-title", wrap=True))
         description = label(text, "hint", wrap=True)

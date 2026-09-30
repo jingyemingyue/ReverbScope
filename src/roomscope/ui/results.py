@@ -11,7 +11,7 @@ ensure_pyside6()
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QGuiApplication
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
@@ -388,10 +388,14 @@ class ResultsPage(QWidget):
         self.header = PageHeader(_("Results"))
         self.new_button = QPushButton(_("New Measurement"))
         self.new_button.clicked.connect(self.new_measurement.emit)
+        self.copy_button = QPushButton(_("Copy report"))
+        self.copy_button.setToolTip(_("Copy the full text report to the clipboard."))
+        self.copy_button.clicked.connect(self._copy_report)
         self.save_button = primary(QPushButton(_("Save Session...")))
         self.save_button.setShortcut("Ctrl+S")
         self.save_button.clicked.connect(self._choose_save_directory)
         self.header.action_row.addWidget(self.new_button)
+        self.header.action_row.addWidget(self.copy_button)
         self.header.action_row.addWidget(self.save_button)
         layout.addWidget(self.header)
 
@@ -432,6 +436,15 @@ class ResultsPage(QWidget):
 
         self.status = label("", "hint", wrap=True)
         layout.addWidget(self.status)
+
+    def _copy_report(self) -> None:
+        text = self.text.toPlainText().strip()
+        if not text:
+            self.status.setText(_("Nothing to copy yet."))
+            return
+        clipboard = QGuiApplication.clipboard()
+        clipboard.setText(self.text.toPlainText())
+        self.status.setText(_("Report copied to the clipboard."))
 
     def refresh(self) -> None:
         result = self.state.result
