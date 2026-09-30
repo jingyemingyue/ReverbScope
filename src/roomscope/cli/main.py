@@ -1,16 +1,26 @@
 """``roomscope`` command-line interface.
 
-Subcommands: ``sweep``, ``analyze``, ``show``, ``devices``, ``measure``, ``gui``,
-``compare``, ``schema``, ``analyze-ir``, ``session``, ``export``, ``project``.
+Subcommands, in the order of the workflow: ``demo``, ``gui``, ``sweep``,
+``analyze``, ``devices``, ``measure``, ``analyze-ir``, ``show``, ``compare``,
+``project``, ``export``, ``session``, ``doctor``, ``schema``.
+
+Reports go to stdout and diagnostics to stderr; all text is laid out by
+:mod:`roomscope.cli.render` through :mod:`roomscope.cli.console`. A user error
+is one ``× error:`` block with commands to try, never a traceback (``--verbose``
+adds it). With ``--format json`` stdout carries the JSON document only.
 """
 
 from __future__ import annotations
 
 import argparse
+import codecs
+import contextlib
 import json
 import logging
 import os
+import shlex
 import sys
+import traceback
 from collections.abc import Sequence
 from dataclasses import replace
 from pathlib import Path
@@ -21,19 +31,31 @@ from roomscope.cli.console import COLOR_MODES, Console, ProgressLine, Verbatim
 from roomscope.cli.render import (
     render_analysis,
     render_comparison,
+    render_demo,
     render_devices,
     render_environment,
     render_error,
+    render_home,
     render_host_apis,
     render_inventory,
     render_measure_plan,
+    render_saved_next_steps,
     render_status,
     render_sweep_written,
+    render_terminal_edition_gui,
 )
-from roomscope.errors import ConfigurationError, MeasurementCancelledError, RoomScopeError
+from roomscope.errors import (
+    AudioBackendUnavailableError,
+    AudioDeviceError,
+    ConfigurationError,
+    InvalidAudioError,
+    MeasurementCancelledError,
+    RoomScopeError,
+    SessionError,
+)
 from roomscope.i18n import N_, _, activate, localize
 from roomscope.interpretation import available_profiles
-from roomscope.interpretation.profiles import band_text
+from roomscope.interpretation.profiles import band_text, profile_title
 from roomscope.labels import accuracy_class_text
 from roomscope.logging_config import configure_logging
 from roomscope.models.configuration import (
@@ -87,21 +109,29 @@ def _translate_argparse() -> None:
     setattr(argparse, "_", _argparse_gettext)  # noqa: B010 - a module attribute, not ours
 
 
-#: The root help lists the commands in these groups, in this order.
+#: The root help lists the commands in these groups, in the order of the
+#: workflow: try it, measure, look at the results, then troubleshoot.
 COMMAND_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    (N_("Measurement"), ("sweep", "measure", "analyze", "analyze-ir")),
-    (N_("Results"), ("show", "compare", "export", "session")),
-    (N_("Project"), ("project",)),
-    (N_("Diagnostics"), ("devices", "doctor", "schema")),
-    (N_("Desktop"), ("gui",)),
+    (N_("Get started"), ("demo", "gui")),
+    (N_("Measurement"), ("sweep", "analyze", "devices", "measure", "analyze-ir")),
+    (N_("Results"), ("show", "compare", "project", "export", "session")),
+    (N_("Diagnostics"), ("doctor", "schema")),
 )
 
 #: A few commands to start from (every flag exists in the parser; a test runs them).
 ROOT_EXAMPLES = (
+    "roomscope demo",
     "roomscope sweep --out sweep.wav",
     "roomscope analyze --recording take.wav --sweep sweep.wav --out session-1",
-    "roomscope doctor --probe",
+    "roomscope compare session-1 session-2",
 )
+
+#: Where ``roomscope demo`` writes unless told otherwise.
+DEMO_FOLDER = "roomscope-demo"
+
+#: ``--color`` as given on the command line, for messages printed before the
+#: arguments are parsed (argparse's own errors).
+_COLOR_REQUEST: dict[str, str] = {"mode": "auto"}
 
 
 class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
@@ -116,6 +146,52 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
         from roomscope.cli.console import wrap
 
         return wrap(" ".join(text.split()), max(width, 11))
+
+    def _format_usage(self, usage: Any, actions: Any, groups: Any, prefix: Any) -> str:
+        # argparse measures the prefix with len(); "用法：" takes six columns, not three.
+        from roomscope.cli.console import cell_width
+
+        shown = _("usage: ") if prefix is None else prefix
+        extra = cell_width(shown) - len(shown)
+        self._width -= extra
+        try:
+            return super()._format_usage(usage, actions, groups, prefix)
+        finally:
+            self._width += extra
+
+    def _get_help_string(self, action: argparse.Action) -> str | None:
+        """The help, plus the default when it tells the reader something.
+
+        Nothing is added for flags, empty or computed defaults, positionals,
+        or a help text that already names its default.
+        """
+        text = action.help or ""
+        default = action.default
+        if (
+            not action.option_strings
+            or default is None
+            or isinstance(default, bool)  # a flag (1.0 == True: test the type, not the value)
+            or default in ("", argparse.SUPPRESS)
+            or isinstance(action, argparse._HelpAction | argparse._VersionAction)
+            or "default" in text
+            or "默认" in text
+        ):
+            return action.help
+        shown = f"{default:g}" if isinstance(default, float) else str(default)
+        return text + (_(" (default: %(default)s)") % {"default": shown}).replace("%", "%%")
+
+
+class _Parser(argparse.ArgumentParser):
+    """argparse with RoomScope's error block instead of the usage dump.
+
+    Exit code 2 and stderr as before; the message is argparse's (translated),
+    followed by the command's ``--help`` to try.
+    """
+
+    def error(self, message: str) -> Any:
+        console = Console.for_stream(sys.stderr, _COLOR_REQUEST["mode"])  # type: ignore[arg-type]
+        text = render_error(console, message, hints=[f"{self.prog} --help"])
+        self.exit(2, text + "\n")
 
 
 def _heading(text: str) -> str:
@@ -168,45 +244,72 @@ def _commands_block(helps: dict[str, str]) -> str:
 
 
 def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: float) -> None:
-    parser.add_argument(
+    group = parser.add_argument_group(_("test signal"))
+    group.add_argument(
         "--sample-rate",
         type=int,
         default=DEFAULT_SAMPLE_RATE,
         choices=SUPPORTED_SAMPLE_RATES,
-        help=_("sample rate (Hz)"),
+        metavar="HZ",
+        help=_("sample rate (Hz): {rates}").format(
+            rates=", ".join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
+        ),
     )
-    parser.add_argument(
+    group.add_argument(
         "--duration",
         type=float,
         default=10.0,
+        metavar="S",
         help=_("sweep duration in seconds (default 10)"),
     )
-    parser.add_argument(
-        "--start-hz", type=float, default=20.0, help=_("sweep start frequency (default 20)")
+    group.add_argument(
+        "--start-hz",
+        type=float,
+        default=20.0,
+        metavar="HZ",
+        help=_("sweep start frequency (default 20)"),
     )
-    parser.add_argument(
+    group.add_argument(
         "--end-hz",
         type=float,
         default=20000.0,
+        metavar="HZ",
         help=_("sweep end frequency (default 20000)"),
     )
-    parser.add_argument(
-        "--fade-in", type=float, default=0.05, help=_("fade-in in seconds (default 0.05)")
-    )
-    parser.add_argument(
-        "--fade-out", type=float, default=0.01, help=_("fade-out in seconds (default 0.01)")
-    )
-    parser.add_argument(
+    group.add_argument(
         "--level",
         type=float,
         default=default_level,
+        metavar="DBFS",
         help=_("peak level in dBFS (default {level:g})").format(level=default_level),
     )
-    parser.add_argument(
-        "--pre-silence", type=float, default=1.0, help=_("silence before the sweep (s)")
+    group.add_argument(
+        "--fade-in",
+        type=float,
+        default=0.05,
+        metavar="S",
+        help=_("fade-in in seconds (default 0.05)"),
     )
-    parser.add_argument(
-        "--post-silence", type=float, default=3.0, help=_("silence after the sweep (s)")
+    group.add_argument(
+        "--fade-out",
+        type=float,
+        default=0.01,
+        metavar="S",
+        help=_("fade-out in seconds (default 0.01)"),
+    )
+    group.add_argument(
+        "--pre-silence",
+        type=float,
+        default=1.0,
+        metavar="S",
+        help=_("silence before the sweep (s)"),
+    )
+    group.add_argument(
+        "--post-silence",
+        type=float,
+        default=3.0,
+        metavar="S",
+        help=_("silence after the sweep (s)"),
     )
 
 
@@ -225,24 +328,36 @@ def _sweep_settings(args: argparse.Namespace) -> SweepSettings:
 
 
 def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
-        "--channel", type=int, default=None, help=_("recording channel to analyse (0-based)")
+    analysis = parser.add_argument_group(_("analysis"))
+    analysis.add_argument(
+        "--channel",
+        type=int,
+        default=None,
+        metavar="N",
+        help=_("recording channel to analyse (0-based)"),
     )
-    parser.add_argument(
+    analysis.add_argument(
         "--smoothing",
         type=int,
         default=6,
+        metavar="N",
         help=_("fractional-octave smoothing 1/N (0 = off)"),
     )
-    parser.add_argument("--room", default="", help=_("room name (metadata)"))
-    parser.add_argument("--position", default="", help=_("measurement position (metadata)"))
-    parser.add_argument("--mic", default="", help=_("microphone name (metadata)"))
-    parser.add_argument("--notes", default="", help=_("free-text notes (metadata)"))
-    parser.add_argument("--no-curves", action="store_true", help=_("omit curves from result.json"))
-    parser.add_argument(
-        "--json", action="store_true", help=_("print the result as JSON instead of a report")
+    analysis.add_argument(
+        "--profile",
+        default=None,
+        choices=available_profiles(),
+        help=_("recording profile that shapes the interpretation (default: user settings)"),
     )
-    parser.add_argument(
+    notes = parser.add_argument_group(_("session notes (stored in session.json)"))
+    notes.add_argument("--room", default="", metavar="TEXT", help=_("room name (metadata)"))
+    notes.add_argument(
+        "--position", default="", metavar="TEXT", help=_("measurement position (metadata)")
+    )
+    notes.add_argument("--mic", default="", metavar="TEXT", help=_("microphone name (metadata)"))
+    notes.add_argument("--notes", default="", metavar="TEXT", help=_("free-text notes (metadata)"))
+    placement = parser.add_argument_group(_("placement (optional tape measurements)"))
+    placement.add_argument(
         "--speaker-distance",
         type=float,
         default=None,
@@ -252,7 +367,7 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
             "with a tape. Without it no geometry can be derived from the reflections"
         ),
     )
-    parser.add_argument(
+    placement.add_argument(
         "--mic-height",
         type=float,
         default=None,
@@ -262,32 +377,34 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
             "the desk top at a desk, otherwise the floor. Needs --speaker-distance"
         ),
     )
-    parser.add_argument(
+    placement.add_argument(
         "--temperature",
         type=float,
         default=None,
         metavar="C",
         help=_("air temperature (C); 20 C is assumed, and reported as assumed, without it"),
     )
-    parser.add_argument(
-        "--profile",
-        default=None,
-        choices=available_profiles(),
-        help=_("recording profile that shapes the interpretation (default: user settings)"),
+    output = parser.add_argument_group(_("output"))
+    output.add_argument("--no-curves", action="store_true", help=_("omit curves from result.json"))
+    output.add_argument(
+        "--json", action="store_true", help=_("deprecated: use roomscope --format json")
     )
 
 
 def _add_loopback_file_arguments(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument(
+    group = parser.add_argument_group(_("loopback (optional)"))
+    group.add_argument(
         "--loopback",
         type=Path,
         default=None,
+        metavar="WAV",
         help=_("separate loopback WAV from the same take (same sample rate)"),
     )
-    parser.add_argument(
+    group.add_argument(
         "--loopback-channel",
         type=int,
         default=None,
+        metavar="N",
         help=_(
             "0-based loopback channel of the recording (or of --loopback if it is multi-channel)"
         ),
@@ -308,8 +425,46 @@ def _analysis_settings(
     )
 
 
+def _shorten_usage(parser: argparse.ArgumentParser) -> None:
+    """``roomscope measure --out DIR [options]`` instead of every option.
+
+    Each leaf command's usage line names what it cannot run without; the
+    options are listed, grouped, below it.
+    """
+    for action in parser._actions:
+        if not isinstance(action, argparse._SubParsersAction):
+            continue
+        for sub in action.choices.values():
+            if any(isinstance(a, argparse._SubParsersAction) for a in sub._actions):
+                _shorten_usage(sub)
+                continue
+            parts = [sub.prog]
+            for item in sub._actions:
+                if not item.option_strings:
+                    if item.metavar is None and item.choices:
+                        parts.append("{" + ",".join(str(c) for c in item.choices) + "}")
+                    else:
+                        parts.append(str(item.metavar or item.dest))
+                elif item.required:
+                    metavar = item.metavar or item.dest.upper()
+                    shown = " ".join(metavar) if isinstance(metavar, tuple) else metavar
+                    parts.append(f"{item.option_strings[0]} {shown}")
+            parts.append(_("[options]"))
+            sub.usage = " ".join(parts)
+
+
+def _required(parser: argparse.ArgumentParser) -> Any:
+    """The group for the options a command cannot run without (listed first)."""
+    group = parser.add_argument_group(_("required"))
+    # argparse lists its own groups (positionals, options) first; after the
+    # positionals, what the command cannot run without comes next.
+    parser._action_groups.remove(group)
+    parser._action_groups.insert(1, group)
+    return group
+
+
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
+    parser = _Parser(
         prog="roomscope",
         description=_("RoomScope: an open-source, DAW-independent recording environment analyzer."),
         add_help=False,
@@ -322,15 +477,10 @@ def build_parser() -> argparse.ArgumentParser:
         version=f"roomscope {__version__}",
         help=_("show program's version number and exit"),
     )
-    parser.add_argument("-v", "--verbose", action="store_true", help=_("debug logging"))
-    parser.add_argument(
-        "--backend",
-        default=None,
-        help=_("audio backend for Standalone Mode: portaudio (default) or fake"),
-    )
     parser.add_argument(
         "--lang",
         default=None,
+        metavar="LANG",
         help=_("UI language (en, zh_CN). Overrides settings and ROOMSCOPE_LANG"),
     )
     parser.add_argument(
@@ -340,21 +490,68 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("text report or JSON on stdout (diagnostics stay on stderr)"),
     )
     parser.add_argument(
+        "--color",
+        choices=COLOR_MODES,
+        default="auto",
+        metavar="WHEN",
+        help=_(
+            "colour in the terminal: auto (default; off for pipes, files and NO_COLOR), always, never"
+        ),
+    )
+    parser.add_argument(
+        "--backend",
+        default=None,
+        metavar="NAME",
+        help=_("audio backend for Standalone Mode: portaudio (default) or fake"),
+    )
+    parser.add_argument(
         "--copy-recording",
         action=argparse.BooleanOptionalAction,
         default=None,
         help=_("copy the raw recording into the session folder (default: user settings)"),
     )
     parser.add_argument(
-        "--color",
-        choices=COLOR_MODES,
-        default="auto",
-        help=_(
-            "colour in the terminal: auto (default; off for pipes, files and NO_COLOR), always, never"
-        ),
+        "-v", "--verbose", action="store_true", help=_("debug logging, and tracebacks on errors")
     )
     sub = parser.add_subparsers(
-        dest="command", required=True, metavar="<command>", help=argparse.SUPPRESS
+        dest="command", required=False, metavar="<command>", help=argparse.SUPPRESS
+    )
+
+    # Registered in the order of the workflow; the root help groups them (COMMAND_GROUPS).
+    p_demo = _command(
+        sub,
+        "demo",
+        _("try RoomScope with synthetic data: no audio hardware needed"),
+        examples=("roomscope demo", "roomscope demo --out ~/roomscope-demo"),
+    )
+    p_demo.add_argument(
+        "--out",
+        type=Path,
+        default=Path(DEMO_FOLDER),
+        metavar="DIR",
+        help=_("folder for the demo files, created or replaced (default {folder})").format(
+            folder=DEMO_FOLDER
+        ),
+    )
+    p_demo.add_argument(
+        "--profile",
+        default="vocal",
+        choices=available_profiles(),
+        help=_("recording profile used to interpret the demo (default: {profile})").format(
+            profile=profile_title("vocal")
+        ),
+    )
+
+    p_gui = _command(
+        sub,
+        "gui",
+        _("start the desktop GUI (needs PySide6; the desktop download includes it)"),
+        examples=("roomscope gui",),
+    )
+    p_gui.add_argument(
+        "--smoke",
+        action="store_true",
+        help=_("construct the window offscreen and exit (bundle smoke; no loudspeaker)"),
     )
 
     p_sweep = _command(
@@ -366,7 +563,9 @@ def build_parser() -> argparse.ArgumentParser:
             "roomscope sweep --out sweep.wav --sample-rate 96000 --duration 15",
         ),
     )
-    p_sweep.add_argument("--out", required=True, type=Path, help=_("output WAV path"))
+    _required(p_sweep).add_argument(
+        "--out", required=True, type=Path, metavar="WAV", help=_("output WAV path")
+    )
     _add_sweep_arguments(p_sweep, default_level=-12.0)
 
     p_an = _command(
@@ -376,27 +575,40 @@ def build_parser() -> argparse.ArgumentParser:
         examples=(
             "roomscope analyze --recording take.wav --sweep sweep.wav",
             "roomscope analyze --recording take.wav --sweep sweep.wav --out session-1",
+            "roomscope analyze --recording take.wav --sweep sweep.wav --loopback-channel 1",
         ),
     )
-    p_an.add_argument(
-        "--recording", required=True, type=Path, help=_("recorded WAV (any length, untrimmed)")
+    required = _required(p_an)
+    required.add_argument(
+        "--recording",
+        required=True,
+        type=Path,
+        metavar="WAV",
+        help=_("recorded WAV (any length, untrimmed)"),
     )
-    p_an.add_argument(
+    required.add_argument(
         "--sweep",
         required=True,
         type=Path,
+        metavar="FILE",
         help=_("sweep WAV or its .roomscope-sweep.json sidecar"),
     )
     p_an.add_argument(
         "--out",
         type=Path,
         default=None,
+        metavar="DIR",
         help=_("directory for session.json, result.json, IR WAV"),
     )
     _add_analysis_arguments(p_an)
     _add_loopback_file_arguments(p_an)
 
-    p_dev = _command(sub, "devices", _("list audio devices (Standalone Mode)"))
+    p_dev = _command(
+        sub,
+        "devices",
+        _("list audio devices (Standalone Mode)"),
+        examples=("roomscope devices", "roomscope devices --probe"),
+    )
     p_dev.add_argument(
         "--probe",
         action="store_true",
@@ -408,19 +620,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_dev.add_argument(
         "--host-apis", action="store_true", help=_("list the host APIs instead of devices")
     )
-    p_dev.add_argument("--json", action="store_true", help=_("print the inventory as JSON"))
-
-    p_doc = _command(
-        sub,
-        "doctor",
-        _("print an environment report for bug reports and debugging"),
-        examples=("roomscope doctor", "roomscope doctor --probe"),
-    )
-    p_doc.add_argument("--json", action="store_true", help=_("print the report as JSON"))
-    p_doc.add_argument(
-        "--probe",
-        action="store_true",
-        help=_("also ask every device which sample rates it accepts (nothing is played)"),
+    p_dev.add_argument(
+        "--json", action="store_true", help=_("deprecated: use roomscope --format json")
     )
 
     p_me = _command(
@@ -430,48 +631,68 @@ def build_parser() -> argparse.ArgumentParser:
         examples=(
             "roomscope devices",
             "roomscope measure --out session-1 --input-device 2 --output-device 2",
+            "roomscope measure --out session-2 --input-channels 1,2 --loopback-channel 2",
         ),
     )
-    p_me.add_argument("--out", required=True, type=Path, help=_("session directory (created)"))
-    p_me.add_argument(
-        "--input-device", type=int, default=None, help=_("input device index (see 'devices')")
+    _required(p_me).add_argument(
+        "--out", required=True, type=Path, metavar="DIR", help=_("session directory (created)")
     )
-    p_me.add_argument("--output-device", type=int, default=None, help=_("output device index"))
-    p_me.add_argument(
-        "--input-channel", type=int, default=1, help=_("input channel, 1-based (default 1)")
+    iface = p_me.add_argument_group(_("audio interface"))
+    iface.add_argument(
+        "--input-device",
+        type=int,
+        default=None,
+        metavar="N",
+        help=_("input device index (see 'devices')"),
     )
-    p_me.add_argument(
+    iface.add_argument(
+        "--output-device", type=int, default=None, metavar="N", help=_("output device index")
+    )
+    iface.add_argument(
+        "--input-channel",
+        type=int,
+        default=1,
+        metavar="N",
+        help=_("input channel, 1-based (default 1)"),
+    )
+    iface.add_argument(
         "--input-channels",
         default=None,
+        metavar="LIST",
         help=_("1-based input channels, comma-separated (e.g. 1,2); overrides --input-channel"),
     )
-    p_me.add_argument(
-        "--output-channel", type=int, default=1, help=_("output channel, 1-based (default 1)")
+    iface.add_argument(
+        "--output-channel",
+        type=int,
+        default=1,
+        metavar="N",
+        help=_("output channel, 1-based (default 1)"),
     )
-    p_me.add_argument(
+    iface.add_argument(
         "--loopback-channel",
         type=int,
         default=None,
+        metavar="N",
         dest="measure_loopback_channel",
         help=_("1-based loopback input channel (recorded with the microphone)"),
     )
-    p_me.add_argument(
+    iface.add_argument(
         "--latency",
         choices=("low", "high"),
         default=None,
         help=_("PortAudio latency class of the stream (default: PortAudio's high latency)"),
     )
-    p_me.add_argument(
+    iface.add_argument(
         "--wasapi-exclusive",
         action="store_true",
         help=_("Windows WASAPI: open the device in exclusive mode (no mixer, no conversion)"),
     )
-    p_me.add_argument(
+    iface.add_argument(
         "--coreaudio-set-rate",
         action="store_true",
         help=_("macOS: let RoomScope set the device's sample rate instead of converting"),
     )
-    p_me.add_argument(
+    iface.add_argument(
         "--acknowledge-level",
         action="store_true",
         help=_("required for levels above -12 dBFS; confirms the monitor level was set low first"),
@@ -479,8 +700,31 @@ def build_parser() -> argparse.ArgumentParser:
     _add_sweep_arguments(p_me, default_level=-20.0)
     _add_analysis_arguments(p_me)
 
+    p_ir = _command(
+        sub,
+        "analyze-ir",
+        _("analyse an impulse-response WAV from another tool"),
+        examples=("roomscope analyze-ir --ir room.wav --band 20 20000 --out session-ir",),
+    )
+    _required(p_ir).add_argument(
+        "--ir", required=True, type=Path, metavar="WAV", help=_("impulse-response WAV")
+    )
+    p_ir.add_argument(
+        "--band",
+        nargs=2,
+        type=float,
+        metavar=("LO", "HI"),
+        default=None,
+        help=_("declared excitation band in Hz (required for band metrics)"),
+    )
+    p_ir.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("session directory"))
+    _add_analysis_arguments(p_ir)
+
     p_show = _command(
-        sub, "show", _("print a saved session or comparison.json report, or list sessions")
+        sub,
+        "show",
+        _("print a saved session or comparison.json report, or list sessions"),
+        examples=("roomscope show session-1", "roomscope show --list ."),
     )
     p_show.add_argument(
         "path",
@@ -499,7 +743,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("override the recording profile stored in the session"),
     )
     p_show.add_argument(
-        "--json", action="store_true", help=_("print the result as JSON instead of a report")
+        "--json", action="store_true", help=_("deprecated: use roomscope --format json")
     )
     p_show.add_argument("--no-curves", action="store_true", help=_("omit curves from JSON output"))
 
@@ -509,17 +753,24 @@ def build_parser() -> argparse.ArgumentParser:
         _("compare two saved sessions"),
         examples=(
             "roomscope compare session-1 session-2",
-            "roomscope compare session-1 session-2 --out comparison.json",
+            "roomscope compare session-1 session-2 --same-input-gain --out comparison.json",
         ),
     )
-    p_cmp.add_argument("baseline", type=Path, help=_("baseline session directory or session.json"))
     p_cmp.add_argument(
-        "candidate", type=Path, help=_("candidate session directory or session.json")
+        "baseline",
+        type=Path,
+        help=_("baseline session directory or session.json"),
+    )
+    p_cmp.add_argument(
+        "candidate",
+        type=Path,
+        help=_("candidate session directory or session.json"),
     )
     p_cmp.add_argument(
         "--out",
         type=Path,
         default=None,
+        metavar="PATH",
         help=_("write comparison.json here (file or directory)"),
     )
     p_cmp.add_argument(
@@ -534,73 +785,107 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("recording profile for comparison findings (default: the candidate session's)"),
     )
     p_cmp.add_argument(
-        "--json", action="store_true", help=_("print comparison.json instead of a report")
+        "--json", action="store_true", help=_("deprecated: use roomscope --format json")
     )
 
-    p_schema = _command(sub, "schema", _("print a shipped JSON Schema"))
-    p_schema.add_argument(
-        "name",
-        choices=["result", "session", "comparison", "project", "sidecar"],
-        help=_("which schema to print"),
+    p_proj = _command(sub, "project", _("project folders (one room, several positions)"))
+    proj_sub = p_proj.add_subparsers(dest="project_command", required=True)
+    p_init = _command(
+        proj_sub,
+        "init",
+        _("create a project.json"),
+        examples=("roomscope project init --out studio-a",),
     )
+    _required(p_init).add_argument(
+        "--out", required=True, type=Path, metavar="DIR", help=_("project directory")
+    )
+    p_init.add_argument("--name", default="", metavar="TEXT", help=_("room name"))
+    p_init.add_argument("--notes", default="", metavar="TEXT", help=_("free-text notes"))
+    p_add = _command(
+        proj_sub,
+        "add",
+        _("add a session to a position"),
+        examples=("roomscope project add studio-a session-1 --position A",),
+    )
+    p_add.add_argument("project", type=Path, help=_("project directory"))
+    p_add.add_argument("session", type=Path, help=_("session directory"))
+    _required(p_add).add_argument(
+        "--position", required=True, metavar="LABEL", help=_("position label")
+    )
+    p_avg = _command(
+        proj_sub,
+        "average",
+        _("spatial average of VALID T values"),
+        examples=("roomscope project average studio-a",),
+    )
+    p_avg.add_argument("project", type=Path, help=_("project directory"))
+    p_avg.add_argument(
+        "--sources", type=int, default=1, metavar="N", help=_("number of source positions")
+    )
+    p_avg.add_argument(
+        "--json", action="store_true", help=_("deprecated: use roomscope --format json")
+    )
+    p_show_proj = _command(proj_sub, "show", _("list positions and sessions"))
+    p_show_proj.add_argument("project", type=Path, help=_("project directory"))
 
-    p_ir = _command(sub, "analyze-ir", _("analyse an impulse-response WAV from another tool"))
-    p_ir.add_argument("--ir", required=True, type=Path, help=_("impulse-response WAV"))
-    p_ir.add_argument(
-        "--band",
-        nargs=2,
-        type=float,
-        metavar=("LO", "HI"),
-        default=None,
-        help=_("declared excitation band in Hz (required for band metrics)"),
+    p_ex = _command(
+        sub,
+        "export",
+        _("export curves through an exporter"),
+        examples=("roomscope export session-1 --out session-1/csv",),
     )
-    p_ir.add_argument("--out", type=Path, default=None, help=_("session directory"))
-    _add_analysis_arguments(p_ir)
-
-    p_gui = _command(sub, "gui", _("start the desktop GUI (needs the 'gui' extra)"))
-    p_gui.add_argument(
-        "--smoke",
-        action="store_true",
-        help=_("construct the window offscreen and exit (bundle smoke; no loudspeaker)"),
+    p_ex.add_argument("session", type=Path, help=_("session directory or session.json"))
+    p_ex.add_argument(
+        "--format",
+        dest="export_format",
+        default="csv",
+        metavar="NAME",
+        help=_("exporter name (default csv)"),
     )
+    p_ex.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("output directory"))
 
     p_sess = _command(sub, "session", _("session folder tools"))
     sess_sub = p_sess.add_subparsers(dest="session_command", required=True)
-    p_bundle = _command(sess_sub, "bundle", _("zip a session for a bug report"))
+    p_bundle = _command(
+        sess_sub,
+        "bundle",
+        _("zip a session for a bug report"),
+        examples=("roomscope session bundle session-1 --no-audio",),
+    )
     p_bundle.add_argument("session", type=Path, help=_("session directory or session.json"))
     p_bundle.add_argument(
         "--no-audio",
         action="store_true",
         help=_("leave WAV files out of the zip"),
     )
-    p_bundle.add_argument("--out", type=Path, default=None, help=_("zip path (file or directory)"))
-
-    p_ex = _command(sub, "export", _("export curves through an exporter"))
-    p_ex.add_argument("session", type=Path, help=_("session directory or session.json"))
-    p_ex.add_argument(
-        "--format",
-        dest="export_format",
-        default="csv",
-        help=_("exporter name (default csv)"),
+    p_bundle.add_argument(
+        "--out", type=Path, default=None, metavar="PATH", help=_("zip path (file or directory)")
     )
-    p_ex.add_argument("--out", type=Path, default=None, help=_("output directory"))
 
-    p_proj = _command(sub, "project", _("project folders (one room, several positions)"))
-    proj_sub = p_proj.add_subparsers(dest="project_command", required=True)
-    p_init = _command(proj_sub, "init", _("create a project.json"))
-    p_init.add_argument("--out", required=True, type=Path, help=_("project directory"))
-    p_init.add_argument("--name", default="", help=_("room name"))
-    p_init.add_argument("--notes", default="", help=_("free-text notes"))
-    p_add = _command(proj_sub, "add", _("add a session to a position"))
-    p_add.add_argument("project", type=Path, help=_("project directory"))
-    p_add.add_argument("session", type=Path, help=_("session directory"))
-    p_add.add_argument("--position", required=True, help=_("position label"))
-    p_avg = _command(proj_sub, "average", _("spatial average of VALID T values"))
-    p_avg.add_argument("project", type=Path, help=_("project directory"))
-    p_avg.add_argument("--sources", type=int, default=1, help=_("number of source positions"))
-    p_avg.add_argument("--json", action="store_true", help=_("print JSON instead of a table"))
-    p_show_proj = _command(proj_sub, "show", _("list positions and sessions"))
-    p_show_proj.add_argument("project", type=Path, help=_("project directory"))
+    p_doc = _command(
+        sub,
+        "doctor",
+        _("print an environment report for bug reports and debugging"),
+        examples=("roomscope doctor", "roomscope doctor --probe"),
+    )
+    p_doc.add_argument(
+        "--json", action="store_true", help=_("deprecated: use roomscope --format json")
+    )
+    p_doc.add_argument(
+        "--probe",
+        action="store_true",
+        help=_("also ask every device which sample rates it accepts (nothing is played)"),
+    )
+
+    p_schema = _command(
+        sub, "schema", _("print a shipped JSON Schema"), examples=("roomscope schema result",)
+    )
+    p_schema.add_argument(
+        "name",
+        choices=["result", "session", "comparison", "project", "sidecar"],
+        help=_("which schema to print"),
+    )
+    _shorten_usage(parser)
     # The command list is printed grouped (below), so argparse's own list is
     # hidden; put the command placeholder back into the usage line.
     usage = parser.format_usage().strip()
@@ -764,11 +1049,7 @@ def _run_analysis(
         print(render_analysis(console, result, findings, profile, inputs=inputs))
         if out_dir is not None:
             print()
-            print(
-                render_status(
-                    console, "ok", _("Saved session to {path}").format(path=out_dir), keep=True
-                )
-            )
+            print(render_saved_next_steps(console, out_dir))
     return 0
 
 
@@ -844,6 +1125,12 @@ def cmd_measure(args: argparse.Namespace) -> int:
 
     settings = _sweep_settings(args)
     err = _console(args, sys.stderr)
+    if Path(args.out).exists() and not Path(args.out).is_dir():
+        refusal = ConfigurationError(
+            _("{path} is a file; --out needs a folder for the session").format(path=args.out)
+        )
+        refusal.cli_hints = [f"roomscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
+        raise refusal
     if settings.level_dbfs > SAFE_MAX_LEVEL_DBFS and not args.acknowledge_level:
         print(
             render_error(
@@ -941,6 +1228,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
         )
     )
     args.playback_started = True
+    completed = False
     try:
         recording = backend.play_and_record(
             measurement_signal(settings),
@@ -953,9 +1241,10 @@ def cmd_measure(args: argparse.Namespace) -> int:
             progress=None if progress is None else progress.update,
             options=options,
         )
+        completed = True
     finally:
         if progress is not None:
-            progress.finish()
+            progress.finish(completed)
     recording_path = write_wav(
         out_dir / "recording.wav", recording.samples, settings.sample_rate, subtype="FLOAT"
     )
@@ -1159,11 +1448,7 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
         )
         if args.out is not None:
             print()
-            print(
-                render_status(
-                    console, "ok", _("Saved session to {path}").format(path=args.out), keep=True
-                )
-            )
+            print(render_saved_next_steps(console, args.out))
     return 0
 
 
@@ -1292,12 +1577,23 @@ def cmd_project(args: argparse.Namespace) -> int:
 
 
 def cmd_gui(args: argparse.Namespace) -> int:
-    try:
-        from roomscope.ui.app import run_app
-    except ImportError as exc:
+    from roomscope.edition import is_terminal_package
+
+    if is_terminal_package():
+        # Built without Qt: say which download has the GUI, not that PySide6 is missing.
+        print(render_terminal_edition_gui(_console(args, sys.stderr)), file=sys.stderr)
+        return 2
+    from roomscope.ui.app import GUI_UNAVAILABLE, pyside6_import_error, run_app
+
+    # PySide6 is imported inside run_app, so check it first: without the gui
+    # extra (or the Qt system libraries) the user gets a sentence, not a traceback.
+    error = pyside6_import_error()
+    if error is not None:
         print(
-            _("The GUI needs PySide6 Essentials: pip install 'roomscope[gui]' ({error})").format(
-                error=exc
+            render_error(
+                _console(args, sys.stderr),
+                _(GUI_UNAVAILABLE).format(error=error),
+                hints=['pip install "PySide6_Essentials>=6.6"'],
             ),
             file=sys.stderr,
         )
@@ -1305,7 +1601,69 @@ def cmd_gui(args: argparse.Namespace) -> int:
     return int(run_app(smoke=bool(getattr(args, "smoke", False))))
 
 
+def _is_demo_folder(path: Path) -> bool:
+    """True for a folder ``roomscope demo`` wrote (safe to write again)."""
+    from roomscope.demo import DEMO_MODE
+
+    try:
+        session = json.loads((path / "position-a" / "session.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return isinstance(session, dict) and session.get("mode") == DEMO_MODE
+
+
+def cmd_demo(args: argparse.Namespace) -> int:
+    from roomscope.demo import run_demo
+    from roomscope.edition import is_terminal_package
+    from roomscope.interpretation import interpret
+    from roomscope.io.recent import remember_session
+
+    if _use_json(args):
+        raise _UsageError(
+            _("the demo prints a walkthrough, not JSON"),
+            hints=[f"roomscope --format json show {Path(args.out) / 'position-a'}"],
+        )
+    out_dir: Path = args.out
+    occupied = out_dir.exists() and (not out_dir.is_dir() or any(out_dir.iterdir()))
+    if occupied and not _is_demo_folder(out_dir):
+        raise _UsageError(
+            _("{path} already exists and was not written by roomscope demo").format(path=out_dir),
+            detail=_("Nothing was changed. Choose an empty or new folder for the demo."),
+            hints=[f"roomscope demo --out {_('<new-folder>')}"],
+        )
+    profile = _resolve_profile(args)
+    err = _console(args, sys.stderr)
+    if err.interactive and sys.stderr is not None:
+        # A transient line while the two positions are simulated and analysed.
+        note = _("Simulating and analysing two microphone positions …")
+        sys.stderr.write(err.fit(note))
+        sys.stderr.flush()
+    try:
+        run = run_demo(out_dir, profile=profile)
+    finally:
+        if err.interactive and sys.stderr is not None:
+            sys.stderr.write("\r\x1b[2K")
+            sys.stderr.flush()
+    for take in run.takes:
+        remember_session(take.session_dir)
+    findings = [interpret(take.result, profile) for take in run.takes]
+    terminal = is_terminal_package()
+    if terminal:
+        gui_available = False
+    else:
+        from roomscope.ui.app import pyside6_import_error
+
+        gui_available = pyside6_import_error() is None
+    print(
+        render_demo(
+            _console(args), run, findings, gui_available=gui_available, terminal_edition=terminal
+        )
+    )
+    return 0
+
+
 COMMANDS = {
+    "demo": cmd_demo,
     "sweep": cmd_sweep,
     "analyze": cmd_analyze,
     "analyze-ir": cmd_analyze_ir,
@@ -1322,36 +1680,116 @@ COMMANDS = {
 }
 
 
-def _utf8_when_redirected() -> None:
-    """Write UTF-8 to a pipe or file unless the user chose an encoding.
+class _UsageError(Exception):
+    """A request the command cannot carry out as given (exit code 2)."""
+
+    def __init__(self, message: str, *, detail: str = "", hints: Sequence[str] = ()) -> None:
+        super().__init__(message)
+        self.detail = detail
+        self.hints = tuple(hints)
+
+
+#: Error handlers that write something for any character instead of raising.
+_SAFE_ERRORS = frozenset(
+    {"replace", "backslashreplace", "xmlcharrefreplace", "namereplace", "ignore"}
+)
+
+
+def _prepare_streams() -> None:
+    """Make stdout and stderr safe to write any report to.
 
     Redirected output uses the locale code page (cp1252, cp936 on Windows)
     with strict errors, so a report with Δ, → or a Chinese room name raised
-    UnicodeEncodeError after the work was done. A console is left alone.
+    UnicodeEncodeError after the work was done: a pipe or file gets UTF-8
+    unless the user chose an encoding. A stream that stays on a narrow
+    encoding (a terminal, or ``PYTHONIOENCODING=cp1252``) replaces what it
+    cannot write instead of failing; the console layer already writes ASCII
+    symbols to such a stream.
+
+    A frozen bundle's interpreter ignores ``PYTHONIOENCODING`` (PyInstaller
+    runs it isolated from ``PYTHON*`` variables), so a stream still on
+    another encoding is switched to the one the variable asks for.
     """
-    if os.environ.get("PYTHONIOENCODING"):
-        return
+    chosen = os.environ.get("PYTHONIOENCODING", "")
+    wanted, _sep, wanted_errors = chosen.partition(":")
     for stream in (sys.stdout, sys.stderr):
         reconfigure = getattr(stream, "reconfigure", None)
         isatty = getattr(stream, "isatty", None)
         if reconfigure is None or isatty is None:
             continue
         try:
-            if not isatty():
+            if not chosen and not isatty():
                 reconfigure(encoding="utf-8", errors="backslashreplace")
-        except (OSError, ValueError):
+                continue
+            current = getattr(stream, "encoding", None) or "utf-8"
+            if wanted and codecs.lookup(wanted).name != codecs.lookup(current).name:
+                reconfigure(encoding=wanted, errors=wanted_errors or stream.errors)
+                current = wanted
+            narrow = codecs.lookup(current).name != "utf-8"
+            if narrow and getattr(stream, "errors", "strict") not in _SAFE_ERRORS:
+                reconfigure(errors="replace")
+        except (LookupError, OSError, ValueError):
             continue
 
 
+def _error_hints(exc: BaseException, command: str | None) -> list[str]:
+    """What to try after each kind of error (the most specific class first)."""
+    chosen = getattr(exc, "cli_hints", None)
+    if chosen:
+        return list(chosen)
+    here = f"roomscope {command} --help" if command else "roomscope --help"
+    if isinstance(exc, AudioBackendUnavailableError):
+        return ["roomscope doctor"]
+    if isinstance(exc, AudioDeviceError) or (
+        command in ("measure", "devices") and isinstance(exc, ConfigurationError)
+    ):
+        return ["roomscope devices --probe", "roomscope doctor --probe"]
+    if isinstance(exc, InvalidAudioError | ConfigurationError):
+        return [here]
+    if isinstance(exc, SessionError):
+        return [f"roomscope show --list {_('<folder>')}"]
+    return []
+
+
+def _os_error_text(exc: OSError) -> str:
+    """``cannot write: …/folder (Permission denied)`` from an OSError."""
+    reason = exc.strerror or str(exc)
+    if exc.filename is not None:
+        return _("{reason}: {path}").format(reason=reason, path=exc.filename)
+    return reason
+
+
 def main(argv: Sequence[str] | None = None) -> int:
-    _utf8_when_redirected()
+    _prepare_streams()
     argv_list = list(sys.argv[1:] if argv is None else argv)
     activate(_peek_option(argv_list, ("--lang",)))
     _translate_argparse()
+    color = _peek_option(argv_list, ("--color",))
+    _COLOR_REQUEST["mode"] = color if color in COLOR_MODES else "auto"
     parser = build_parser()
     args = parser.parse_args(argv)
     configure_logging(logging.DEBUG if args.verbose else logging.WARNING)
     err = _console(args, sys.stderr)
+    if args.command is None:
+        # Bare ``roomscope``: a short home screen instead of argparse's error.
+        # A command is still required, so the exit code stays the usage error's.
+        from roomscope.edition import is_terminal_package
+
+        print(
+            render_home(err, __version__, terminal_edition=is_terminal_package()), file=sys.stderr
+        )
+        return 2
+
+    def nothing_played() -> str:
+        # Before the stream starts nothing has reached the loudspeaker; say so.
+        if args.command == "measure" and not getattr(args, "playback_started", False):
+            return _("Nothing was played.")
+        return ""
+
+    def trace() -> None:
+        if args.verbose and sys.stderr is not None:
+            traceback.print_exc(file=sys.stderr)
+
     try:
         return COMMANDS[args.command](args)
     except MeasurementCancelledError as exc:
@@ -1360,18 +1798,61 @@ def main(argv: Sequence[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 130
+    except _UsageError as exc:
+        print(render_error(err, str(exc), detail=exc.detail, hints=exc.hints), file=sys.stderr)
+        return 2
     except RoomScopeError as exc:
-        # Before the stream starts nothing has reached the loudspeaker; say so.
-        detail = (
-            _("Nothing was played.")
-            if args.command == "measure" and not getattr(args, "playback_started", False)
-            else ""
+        trace()
+        detail = nothing_played()
+        print(
+            render_error(
+                err, localize(str(exc)), detail=detail, hints=_error_hints(exc, args.command)
+            ),
+            file=sys.stderr,
         )
-        print(render_error(err, localize(str(exc)), detail=detail), file=sys.stderr)
         return 1
     except KeyboardInterrupt:
         print(render_status(err, "warn", _("interrupted")), file=sys.stderr)
         return 130
+    except BrokenPipeError:
+        # The reader went away (``roomscope show … | head``): nothing to say.
+        # Point stdout at nothing so the interpreter's final flush is quiet.
+        with contextlib.suppress(OSError, ValueError, AttributeError):
+            os.dup2(os.open(os.devnull, os.O_WRONLY), sys.stdout.fileno())
+        return 1
+    except OSError as exc:
+        # A folder that cannot be created, a file that cannot be written: the
+        # user's to fix, not a bug.
+        trace()
+        print(
+            render_error(
+                err,
+                _os_error_text(exc),
+                detail=nothing_played(),
+                hints=[f"roomscope {args.command} --help"],
+            ),
+            file=sys.stderr,
+        )
+        return 1
+    except Exception as exc:
+        if args.verbose:
+            raise
+        print(
+            render_error(
+                err,
+                _("unexpected {kind}: {message}").format(kind=type(exc).__name__, message=exc),
+                detail=_(
+                    "This is a bug in RoomScope. Run the command again with --verbose for the "
+                    "details and include them, with the environment report, in a bug report."
+                ),
+                hints=[
+                    shlex.join(["roomscope", "--verbose", *argv_list]),
+                    "roomscope doctor",
+                ],
+            ),
+            file=sys.stderr,
+        )
+        return 1
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -9,10 +9,11 @@ RoomScope 目前是预发布版本：还没有任何结果在真实硬件上测�
 ## 中文用户文档
 
 - [项目简介（README.zh-CN.md）](https://github.com/jingyemingyue/RoomScope/blob/main/README.zh-CN.md)
+- **[下载与安装](INSTALLATION.zh-CN.md)**：macOS、Windows、Linux 和 Python 的安装、更新、卸载、未签名构建的警告与故障排查
 - [用户指南](user-guide/zh-CN.md)：安装、通用 DAW 模式、独立模式、读懂结果、故障排查、报告问题
 - [用 DAW 测量](user-guide/daw-setup.zh-CN.md)：Pro Tools、Logic Pro / GarageBand、Cubase / Nuendo、Fender Studio Pro、Ableton Live、REAPER、FL Studio、Bitwig Studio、Digital Performer、Audacity 及其他 DAW
 - [兼容性](COMPATIBILITY.zh-CN.md)：支持的系统和文件格式，以及每一项的验证方式
-- [开发者版与安装包版](EDITIONS.zh-CN.md)
+- [桌面版、终端版与开发者工具](EDITIONS.zh-CN.md)
 - [与同类工具的比较](COMPARISON.zh-CN.md)
 - [音频设备与主机 API](AUDIO_DEVICES.zh-CN.md)
 - [硬件测试矩阵](HARDWARE_TESTS.zh-CN.md)：如何用你的音频接口或 DAW 帮忙测试

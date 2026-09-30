@@ -130,7 +130,7 @@ def test_reopen_saved_session(
     assert window.state.result.decay.broadband.rt60_estimate_s == saved_rt60
     assert window.state.result.impulse_response.samples.size > 0
     assert "RoomScope analysis" in window.results.text.toPlainText()
-    assert "Interpretation (Vocals profile):" in window.results.text.toPlainText()
+    assert "Interpretation (Vocals profile)" in window.results.text.toPlainText()
     window.close()
 
 

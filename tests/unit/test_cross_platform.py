@@ -273,7 +273,7 @@ def test_cli_output_to_a_pipe_is_utf8(tmp_path: Path, monkeypatch: pytest.Monkey
     stream = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")
     monkeypatch.delenv("PYTHONIOENCODING", raising=False)
     monkeypatch.setattr(sys, "stdout", stream)
-    cli._utf8_when_redirected()
+    cli._prepare_streams()
     sys.stdout.write("Δ → 录音棚\n")
     sys.stdout.flush()
     assert raw.getvalue().decode("utf-8").strip() == "Δ → 录音棚"

@@ -36,14 +36,30 @@ def _args(**overrides: bool) -> argparse.Namespace:
 @pytest.mark.parametrize(
     ("target", "archives", "checksums"),
     [
-        (("Linux", "X64", "x86_64"), ("roomscope-linux-x86_64.tar.gz",), "SHA256SUMS-Linux-X64"),
+        (
+            ("Linux", "X64", "x86_64"),
+            ("RoomScope-Desktop-Linux-x86_64.tar.gz", "RoomScope-Terminal-Linux-x86_64.tar.gz"),
+            "SHA256SUMS-Linux-X64",
+        ),
         (
             ("Windows", "X64", "AMD64"),
-            ("roomscope-windows-x64.zip", "RoomScope-setup.exe"),
+            (
+                "RoomScope-Desktop-Windows-x64-Setup.exe",
+                "RoomScope-Desktop-Windows-x64.zip",
+                "RoomScope-Terminal-Windows-x64.zip",
+            ),
             "SHA256SUMS-Windows-X64",
         ),
-        (("macOS", "ARM64", "arm64"), ("RoomScope-macos-arm64.dmg",), "SHA256SUMS-macOS-ARM64"),
-        (("macOS", "X64", "x86_64"), ("RoomScope-macos-x86_64.dmg",), "SHA256SUMS-macOS-X64"),
+        (
+            ("macOS", "ARM64", "arm64"),
+            ("RoomScope-Desktop-macOS-arm64.dmg", "RoomScope-Terminal-macOS-arm64.tar.gz"),
+            "SHA256SUMS-macOS-ARM64",
+        ),
+        (
+            ("macOS", "X64", "x86_64"),
+            ("RoomScope-Desktop-macOS-x86_64.dmg", "RoomScope-Terminal-macOS-x86_64.tar.gz"),
+            "SHA256SUMS-macOS-X64",
+        ),
     ],
 )
 def test_file_names_match_the_release_workflow(
@@ -52,16 +68,14 @@ def test_file_names_match_the_release_workflow(
     built = MODULE.Target(*target)
     assert built.archives == archives
     assert built.checksum_name == checksums
-    for name in archives:
-        # The workflow lists every distributable name in its checksum step.
-        assert f"'{name}'" in WORKFLOW
-    assert "SHA256SUMS-{suffix}" in WORKFLOW
+    # The workflow writes each runner's checksum file from the same manifest.
+    assert "rd.CHECKSUM_FILES[sums_name]" in WORKFLOW
 
 
 @pytest.mark.parametrize(
     ("target", "expected"),
     [
-        (("Linux", "X64", "x86_64"), "Linux archive"),
+        (("Linux", "X64", "x86_64"), "Linux archive (Desktop Edition)"),
         (("Windows", "X64", "AMD64"), "Windows installer"),
         (("macOS", "ARM64", "arm64"), "macOS disk image"),
     ],
@@ -75,15 +89,23 @@ def test_plan_follows_the_workflow_steps(
         "License bundle",
         "PyInstaller",
         "Copy licenses and remove disallowed modules",
-        "Smoke frozen binary",
+        "Smoke frozen binary (Desktop Edition)",
+        "Terminal Edition (command line only, no Qt)",
+        "Smoke Terminal Edition",
         expected,
+        "Terminal Edition archive",
         "Checksums of distributable files",
     ):
         assert name in names
         if name != "PyInstaller":
             # Same step names as the workflow, so the two stay comparable.
             assert f"name: {name}" in WORKFLOW
-    assert names.index("PyInstaller") < names.index("Smoke frozen binary") < names.index(expected)
+    assert (
+        names.index("PyInstaller")
+        < names.index("Smoke frozen binary (Desktop Edition)")
+        < names.index("Smoke Terminal Edition")
+        < names.index(expected)
+    )
     assert names[-1] == "Checksums of distributable files"
 
 

@@ -54,6 +54,9 @@ DYNAMIC_CALLS = {
     ("ui/dev_tools.py", "_(column)"),
     ("ui/pages.py", "_(SAFETY_MESSAGE)"),
     ("ui/pages.py", "_(DAW_INSTRUCTIONS)"),
+    # The "GUI cannot start" sentence, extracted with N_() in ui/app.py.
+    ("cli/main.py", "_(GUI_UNAVAILABLE)"),
+    ("ui/app.py", "_(GUI_UNAVAILABLE)"),
 }
 
 #: ASCII tokens a Chinese finding may legitimately contain: units, metric

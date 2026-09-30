@@ -6,6 +6,116 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 31: 2026-09-29 — **v0.4.1 release close-out: one changelog section
+for the pre-release** (branch `claude/roomscope-cli-integration-84e5qc`, PR
+#24, stacked on #22 and #21). One code fix: `roomscope export` logged
+*ignoring third-party exporter 'csv'; name collides* on every run in every
+install, because `pyproject.toml` declares the built-in CSV exporter under
+the `roomscope.exporters` entry-point group too; the registry now recognises
+its own declaration (a test covers both cases). The `[Unreleased]` entries
+(Desktop and Terminal Editions, `roomscope demo`, the home screen, "At a
+glance", numbered next steps, the error block, workflow-ordered help, the
+one `SHA256SUMS`, the download-first README and Release page, the
+`PYTHONIOENCODING` fix) are folded into `[0.4.1]`, whose date is now
+2026-09-29 and whose introduction names the two editions; the draft
+Release's notes are taken from that section, so they now describe everything
+the pre-release contains. Stale wording fixed on the way: the release-notes
+order in RELEASE_PLAN §1 (+ zh-CN), the Release workflow's trigger paths in
+§3, the draft body in §3 step 2, the CHANGELOG's "GUI keeps its own reports"
+and "installer edition" sentences, the `RoomScope-setup.exe` comment in
+`packaging/windows/roomscope.iss`, and COMPATIBILITY's review date;
+INSTALLATION (+ zh-CN) now says the `xattr` step for the macOS Terminal
+Edition is a stop-gap for the unsigned pre-release builds. A merge-readiness
+audit of the stack (PRs #21 → #22 → #24) found the three heads linear (each
+an ancestor of the next), both merge orders conflict-free with `main` ending
+on the tree of #24's head, PR #23 not part of the chain (21 conflicting
+files if merged after #24; superseded), and no second CLI presentation layer
+(`cli/report.py` is a 45-line wrapper over `cli/render.py`, no `style.py`).
+Release run #30 on `6d8c32e` (job logs): the Apple-silicon app is `Mach-O
+thin (arm64)`, the Intel app `Mach-O thin (x86_64)`, both ad hoc signed with
+the hardened-runtime rehearsal (`flags=0x10002(adhoc,runtime)`), both DMGs
+`hdiutil verify` VALID and mounted, copied and launched; the Windows
+installer installed, smoke-tested (`roomscope.exe`, `roomscope-gui.exe`,
+Start menu entry) and uninstalled with its folder and Start menu entries
+gone; every Terminal Edition passed the `--terminal` gate and smoke. A local
+`release_draft.py stage` on the Linux files plus stand-ins for the other
+runners produced exactly the 14-file set with one `SHA256SUMS`, and refused
+a stray file. A zh_CN pass over every command's output (the CLI gates'
+allowlist) found no untranslated prose; the three metadata fields the demo
+stores in English (room, position, microphone) are shown as stored when a
+demo session is reopened, by the language-neutral-files design. **What was
+run** (this container: Linux x86_64, CPython 3.12.3, `dev` and `gui` extras,
+PortAudio 19.6, no audio device): `ruff check`, `ruff format --check`,
+`mypy` (strict, 79 files), `check_doc_links.py`, `check_src_safety.py`,
+`build_docs_site.py`; the CI coverage-gate command, **810 passed**, core +
+models branch coverage 90.48 %; the schema and public-API tests; `--backend
+fake devices` and `measure`; `examples/synthetic_measurement.py`.
+`scripts/build_release.py --python-dist` in a second environment pinned to
+`requirements/bundle.lock` (PyInstaller 6.22.3) built both Linux editions:
+tests skipped there (run separately, above), license bundles, PyInstaller,
+the `--strip --require-licenses` gate, the `--terminal` gate, both smoke
+tests, `RoomScope-Desktop-Linux-x86_64.tar.gz` (148.1 MB),
+`RoomScope-Terminal-Linux-x86_64.tar.gz` (57.4 MB), `SHA256SUMS-Linux-X64`
+(`sha256sum -c` OK), the wheel and the sdist; both `build_info.json` files
+name commit `f893cc7` and their edition; the Terminal archive, extracted
+into an empty folder and run under `env -i` (no virtual environment, no
+`PYTHON*` variables), printed `--version`, ran `demo` in English and
+Chinese, wrote nothing but JSON for `--format json doctor` (no matplotlib,
+PySide6 or shiboken6 reported, audio callbacks ok), answered `gui` with the
+Terminal Edition sentence and exit code 2 in both languages, and contains no
+PySide6, shiboken6, Qt, matplotlib or `roomscope/ui` file. On GitHub
+Actions, CI #76 and Release #29 on `f893cc7` (the commit before this one)
+are green on every job, the four `Bundle (<os>)` jobs and *Check the release
+file set* included; that check downloaded the 17 files of the run (nine
+archives, four `SHA256SUMS-<OS>-<ARCH>`, wheel, sdist, SBOM, lock) and
+staged the 14-file Release set. A read-only run of `release_draft.py`'s
+planner against the asset names main's last Release run (#10, `909f332`)
+attached to the v0.4.1 draft plans the removal of the seven earlier names
+(`RoomScope.dmg`, `RoomScope-setup.exe`, `roomscope-linux-x86_64.tar.gz`,
+`roomscope-windows-x64.zip`, `SHA256SUMS-{Linux,macOS,Windows}`) and the
+replacement of the four shared ones; a name it does not know stops it. **Not
+run:** the draft refresh itself (it runs on `main` after the merge); any
+real audio interface, microphone or DAW; a bundle on a person's own Mac,
+Windows PC or Linux desktop (the release workflow mounts, installs and
+launches them on GitHub's runners only); macOS 14; the Chinese installer on
+a Chinese Windows. The hardware and DAW matrices stay empty; a cell is
+filled only from a community report on real hardware.
+
+Snapshot 30: 2026-09-27 — **download-first installation and the release
+candidate's files checked as a user gets them** (branch
+`claude/epic-meitner-x0t35f`, stacked on PR #21). README / README.zh-CN open
+with *Download* (the stable Releases page, real file names, first-launch
+steps for unsigned builds), new `docs/INSTALLATION.md` (+ zh-CN), release
+notes restructured for testers, RELEASE_PLAN §3c (publish checklist) and §3d
+(PyPI readiness). **What was run** (Linux x86_64, CPython 3.12.3), on the
+files of Release run #23 (PR #21 head `b753e17`, build commit `7cb1419`),
+downloaded from the run's artifacts: `sha256sum -c` of all five archives;
+the wheel in a fresh virtual environment (not editable): `--version`,
+`--help`, `--backend fake measure`, `sweep`, `analyze`, `show`,
+`--lang zh_CN show`, then with `[gui]` `gui --smoke` (offscreen) and
+`roomscope-gui` kept running; the sdist rebuilt into a wheel with the same
+90 files and installed with `[gui]`; `twine check` on both; both DMGs
+opened with 7-Zip (app, Applications link, Mach-O arm64 / x86_64,
+`Info.plist` 0.4.1 / `LSMinimumSystemVersion` 14.0, `build_info.json`,
+313 Mach-O files without an absolute non-system load path); the Windows ZIP's
+layout (`roomscope-gui.exe` PE32+ GUI, `roomscope.exe` console,
+`_internal`, `THIRD_PARTY_LICENSES`); the Linux bundle through
+`smoke_bundle.py --require-gui-launcher --expect-commit` in an empty
+environment (it needs glibc 2.39); a token / private-key scan of every
+bundle and the sdist (nothing but PEM header strings in Qt's TLS plug-ins).
+That found one bug, fixed here: `roomscope gui` without PySide6 printed a
+traceback (the wheel without `[gui]`); a wheel built from this branch now
+prints the install hint in English and Chinese and exits 2. On this branch:
+the full suite, **695 passed** (679 + 16 new), coverage of core + models
+90.28 %; ruff, ruff format, mypy strict, `check_doc_links.py`,
+`check_src_safety.py`, `build_docs_site.py`, `uv build` + `twine check`.
+`/releases/latest` was checked to redirect to `/releases` while no full
+release exists (the API answers 404), which is why the README links
+`/releases`. **Not run:** the DMGs on a Mac and the Windows files on a
+Windows PC by a person (the release workflow mounts, installs and launches
+them on GitHub's runners only), any audio interface or DAW, and the
+publication itself (the maintainer's click, RELEASE_PLAN §3c).
+
 Snapshot 29: 2026-09-27 — **command-line presentation** (branch
 `claude/publication-ready-level-n3hkor`). One renderer for the terminal
 (`cli/console.py`: colour policy with `--color` / `NO_COLOR` / `TERM=dumb`,
@@ -593,7 +703,8 @@ were not copied. `packaging/licenses/` holds verbatim license *texts*
 ## Next recommended milestone
 
 See [RELEASE_PLAN.md](RELEASE_PLAN.md): v0.4.1 (a draft Release; #9–#17
-are closed on `main`) is published when the maintainer decides; this
+are closed on `main`) is published when the maintainer decides, as the first
+public pre-release for testers (checklist in RELEASE_PLAN.md §3c); this
 branch's work ships in it (CHANGELOG `[0.4.1]`). Then v0.5.0 once the hardware
 matrix has its first dated PASS rows, then 1.0.0rc1 when every MUST item of ARCHITECTURE_V1.md §3.1 is
 closed. API and schema versions stay unfrozen until then.

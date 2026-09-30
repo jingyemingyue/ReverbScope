@@ -2,15 +2,101 @@
 
 # RoomScope
 
+**用扫频测量你的录音房间，判断一个话筒位置能不能用——可以配合任何 DAW，也可以单独使用。**
+
+[![最新预发布版](https://img.shields.io/github/v/release/jingyemingyue/RoomScope?include_prereleases&label=pre-release&color=1a7f8e)](https://github.com/jingyemingyue/RoomScope/releases)
 [![CI](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/RoomScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.12%2B-blue.svg)](https://www.python.org/)
 
-**开源、不依赖任何 DAW 的录音环境分析工具。**
+![RoomScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.png)
+
+<sub>内置演示房间的结果页。合成数据：没有测量任何真实房间（截图为英文界面，程序可切换为简体中文）。</sub>
 
 > 本文是 [README.md](README.md) 的简体中文版本；两者不一致时，以英文版为准。
 
-RoomScope 回答录音师面对一个房间和一个话筒位置时会问的实际问题：
+## 下载
+
+### **[→ 从 GitHub Releases 下载](https://github.com/jingyemingyue/RoomScope/releases)**
+
+**状态：0.4.x 预发布版**——免费、开源，供测试使用。**硬件验证仍在进行中：** 还没有通过任何真实音频接口或
+DAW 做过测量，请把所有数字视为未经验证（欢迎[帮助测试](#帮助测试-04x-预发布版本)）。两个版本都不需要安装 Python。
+
+先选**一个版本**，再在最新发布版本的 **Assets** 中选择适合你电脑的文件：
+
+### 🖥 桌面版（Desktop Edition）
+
+适合绝大多数用户：带窗口和图表的应用程序，同时包含 `roomscope` 命令行。
+
+| 平台 | 下载 | 架构 | 说明 |
+| --- | --- | --- | --- |
+| **macOS** 14+ | [`RoomScope-Desktop-macOS-arm64.dmg`](https://github.com/jingyemingyue/RoomScope/releases) | Apple 芯片（M1 及更新） | 打开 DMG，把 **RoomScope** 拖到 **Applications（应用程序）** |
+| **macOS** 14+ | [`RoomScope-Desktop-macOS-x86_64.dmg`](https://github.com/jingyemingyue/RoomScope/releases) | Intel | 同上 |
+| **Windows** 10 / 11 | [`RoomScope-Desktop-Windows-x64-Setup.exe`](https://github.com/jingyemingyue/RoomScope/releases) | x64 | 安装程序；装好后从开始菜单打开 **RoomScope** |
+| **Windows** 10 / 11 | [`RoomScope-Desktop-Windows-x64.zip`](https://github.com/jingyemingyue/RoomScope/releases) | x64 | 免安装：解压后双击 **`roomscope-gui.exe`** |
+| **Linux**（glibc 2.39+） | [`RoomScope-Desktop-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/RoomScope/releases) | x86_64 | 解压后运行 `roomscope/roomscope-gui` |
+
+**第一次打开。** 构建尚未签名（没有经过 Apple 公证，也没有 Windows Authenticode 签名），系统会警告一次：
+
+* **macOS：** 点 **完成**，再到 **系统设置 → 隐私与安全性 → 仍要打开**。不需要、也不应该关闭
+  Gatekeeper 或系统完整性保护（SIP）。
+* **Windows：** SmartScreen → **更多信息 → 仍要运行**。
+
+不确定是哪种 Mac？苹果菜单 → **关于本机**：显示 *芯片 Apple M…* 的是 Apple 芯片，显示
+*处理器 Intel* 的是 Intel。
+
+### ⌨️ 终端版（Terminal Edition）
+
+适合命令行、脚本和自动化、服务器以及没有图形桌面的电脑：同样的测量和分析，没有图形界面，体积约为桌面版的一半。
+
+| 平台 | 下载 | 架构 | 命令 |
+| --- | --- | --- | --- |
+| **macOS** 14+ | [`RoomScope-Terminal-macOS-arm64.tar.gz`](https://github.com/jingyemingyue/RoomScope/releases) | arm64（Apple 芯片） | `roomscope-terminal/roomscope demo` |
+| **macOS** 14+ | [`RoomScope-Terminal-macOS-x86_64.tar.gz`](https://github.com/jingyemingyue/RoomScope/releases) | x86_64（Intel） | `roomscope-terminal/roomscope demo` |
+| **Windows** 10 / 11 | [`RoomScope-Terminal-Windows-x64.zip`](https://github.com/jingyemingyue/RoomScope/releases) | x64 | 打开 **`RoomScope Terminal.cmd`**，再输入 `roomscope.exe demo` |
+| **Linux**（glibc 2.39+） | [`RoomScope-Terminal-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/RoomScope/releases) | x86_64 | `roomscope-terminal/roomscope demo` |
+
+先解压（`tar xzf <文件>`；Windows 上用 **全部解压缩…**）。在 macOS 上，如果系统拒绝运行下载来的
+`roomscope`，请运行一次 `xattr -dr com.apple.quarantine roomscope-terminal`：它只清除这些文件上的下载标记。
+
+### 该选哪个？
+
+| | 桌面版 | 终端版 |
+| --- | --- | --- |
+| 图形界面（窗口、图表） | ✅ | — |
+| 命令行（`roomscope`） | ✅ | ✅ |
+| 房间分析与对比 | ✅ | ✅ |
+| 独立模式测量（播放并录音） | ✅ | ✅ |
+| English / 简体中文 | ✅ | ✅ |
+| 需要 Python | 不需要 | 不需要 |
+| 适合 | 大多数用户 | 命令行、自动化、轻量或无图形界面的电脑 |
+
+拿不准？选**桌面版**：它也包含命令行。分步安装、校验和（`SHA256SUMS`）、更新和卸载：
+**[安装指南](docs/INSTALLATION.zh-CN.md)**（[English](docs/INSTALLATION.md)）。
+
+## 30 秒体验
+
+不需要话筒和音频接口，也不会播放任何声音。
+
+* **桌面版：** 打开 RoomScope，点 **演示（无需音频接口）**。
+* **任一版本，在终端中：**
+
+  ```bash
+  roomscope --lang zh_CN demo
+  ```
+
+![终端中的 roomscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
+
+演示会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步做什么。
+它显示的每个数值都描述的是模拟结果，保存的每个会话都标记为合成演示。
+
+**然后进行真实测量：** 先把监听音箱音量**调低**（RoomScope 不会改动系统音量），然后二选一：让
+RoomScope 通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW
+模式**）。[用户指南](docs/user-guide/zh-CN.md)（[English](docs/user-guide/en.md)）逐页说明各项功能。
+
+## 这是什么
+
+RoomScope 是一个开源、不依赖任何 DAW 的录音环境分析工具。它回答录音师面对一个房间和一个话筒位置
+时会问的实际问题：
 
 * 这个房间能不能用来录音？
 * 这个位置有哪些声学问题（强早期反射、衰减过长、低频堆积、电源哼声、本底噪声过高）？
@@ -19,44 +105,22 @@ RoomScope 回答录音师面对一个房间和一个话筒位置时会问的实�
 它用指数正弦扫频（ESS）测量房间，通过解卷积得到房间脉冲响应，并报告混响（EDT / T20 /
 T30 / 估算的 RT60）、频率响应、本底噪声、早期反射以及可能存在的低频共振。每个数字都带有单位、
 算法来源和有效性标记；数据质量不够时，RoomScope 会给出 *“衰减范围不足”*（*Insufficient decay
-range*），而不是编造一个数字。RoomScope 有意不提供任何“房间评分”。
+range*），而不是编造一个数字。RoomScope 有意不提供任何“房间评分”。界面、命令行和报告都有英文和
+简体中文。
 
-> **尚未经过任何真实硬件验证。** 目前没有记录过任何一次使用真实音频接口或真实 DAW 的检查；
-> 迄今为止的所有测试要么基于合成数据，要么运行在 CI 机器上。[帮助测试](#帮助测试-04x-预发布版本)。
->
-> 状态：**0.4.x 预发布版本**，正在向 1.0 推进
-> （[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
-> DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和桌面程序包都已实现，
-> 并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
-> （硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。在 0.5.0 之前，请把所有数字视为
-> 未经验证。当前可用功能的概况：[docs/STATUS.md](docs/STATUS.md)。
-
-## 下载
-
-预发布构建由维护者发布后附在
-[GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases) 页面上。如果那里还没有列出任何
-发布版本，请[从源码安装](#从源码安装)。
-
-| 系统 | 文件 |
-| --- | --- |
-| Windows 10/11 x64 | `RoomScope-setup.exe`（安装程序）或 `roomscope-windows-x64.zip` |
-| macOS 14+，Apple 芯片 | `RoomScope-macos-arm64.dmg` |
-| macOS 14+，Intel | `RoomScope-macos-x86_64.dmg` |
-| Linux x86_64 | `roomscope-linux-x86_64.tar.gz` |
-| 任何装有 Python 3.12+ 的系统 | `roomscope-<version>-py3-none-any.whl` |
-
-这些程序包**没有用于分发的签名**（macOS：只有临时签名（ad hoc），未经公证；Windows：没有
-Authenticode 签名），因此首次启动时 macOS Gatekeeper 和 Windows SmartScreen 会发出警告。如何打开
-程序、核对 `SHA256SUMS-*` 文件以及安装 wheel，见[用户指南](docs/user-guide/zh-CN.md#安装)
-（[English](docs/user-guide/en.md#install)）。
+状态：**0.4.x 预发布版本**，正在向 1.0 推进
+（[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
+DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
+并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
+（硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。当前可用功能的概况：
+[docs/STATUS.md](docs/STATUS.md)。
 
 ## 帮助测试 0.4.x 预发布版本
 
 发布 0.4.x 构建，是为了让手上有真实音频接口和 DAW 的人找出哪些地方能用、哪些不能用。检查失败和
 检查通过同样有价值。
 
-1. 安装一个构建（见[用户指南](docs/user-guide/zh-CN.md#安装)；上文提到的 Gatekeeper / SmartScreen
-   警告属于预期情况）。
+1. 安装一个构建（见[下载](#下载)；Gatekeeper / SmartScreen 警告属于预期情况）。
 2. 打开 RoomScope，先运行一次 **演示（无需音频接口）**（英文界面为 **Demo (no interface)**）：
    它不播放任何声音，只展示一份结果是什么样子。
 3. 先把监听音量调低，然后用你的音频接口和一支话筒运行 **独立模式**，或通过你的 DAW 运行
@@ -75,9 +139,7 @@ Authenticode 签名），因此首次启动时 macOS Gatekeeper 和 Windows Smar
 （英文版 [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md)）。只有在实体音频接口上完成的测试才会记入
 该表。
 
-## 两种工作流程，同一个分析核心
-
-### 通用 DAW 模式
+## DAW 工作流程（通用 DAW 模式）
 
 适用于任何能导入、播放、录制和导出 WAV 文件的 DAW。RoomScope 从不与 DAW 通信。它读取 DAW 导出的
 文件（Broadcast WAV、RF64、Wave64、AIFF、CAF、FLAC；16/24/32 位 PCM 或 32 位浮点；单声道或多声道）；
@@ -96,7 +158,7 @@ Audacity：[docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.
 3. **导入录音** —— 把录好的轨道导出为 WAV（采样率与工程相同；长度不限，无需裁切）。
 4. **分析** —— RoomScope 自动找到扫频，完成解卷积并生成报告。
 
-### 独立模式
+## 独立工作流程（独立模式）
 
 RoomScope 通过你选择的音频接口自己播放扫频并录制话筒（经 `sounddevice` 调用 PortAudio）。开始时请把
 监听音量调低：默认扫频电平比较保守，而且 RoomScope 不会改动系统音量或音频设置（唯一的例外需要用户
@@ -106,21 +168,10 @@ RoomScope 通过你选择的音频接口自己播放扫频并录制话筒（经 
 
 两种模式调用的是完全相同的分析流程（`roomscope.core.pipeline.analyze`）。
 
-## 从源码安装
+## 命令行
 
-需要 Python 3.12 或更新版本。**1.0 支持的平台：** macOS 14+（arm64、x86_64）、Windows 10/11 x64、
-glibc 版本不低于 CI 运行器的 Linux x86_64；wheel 支持 Python 3.12–3.14。其他环境也许能用，但未经测试。
-
-```bash
-git clone https://github.com/jingyemingyue/RoomScope.git
-cd RoomScope
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev,gui]"
-```
-
-`gui` 会引入 PySide6（LGPL-3.0，体积较大）。不装它，CLI 和 Python API 也能完整使用。
-
-## 快速上手（CLI）
+两个版本都包含命令行。在终端版、Windows / Linux 桌面版（与 `roomscope-gui` 在同一文件夹）和 Python
+安装中，命令是 `roomscope`；在 macOS 桌面版中是 `/Applications/RoomScope.app/Contents/MacOS/RoomScope`。
 
 ```bash
 # 1. 生成测试信号（48 kHz，20 Hz–20 kHz，10 s 扫频，-12 dBFS）
@@ -156,7 +207,8 @@ roomscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
 # 演示 / CI：不需要音频接口
-roomscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
+roomscope demo --out demo/
+roomscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
 # 语言、打包、CSV、项目
 roomscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav
@@ -166,7 +218,7 @@ roomscope project init --out room/ --name Booth
 roomscope project add room/ session1/ --position desk
 roomscope project average room/
 
-# GUI（需要 gui 附加依赖）
+# GUI（桌面版，或装了 gui 附加依赖的 Python 环境）
 roomscope gui
 ```
 
@@ -185,52 +237,11 @@ roomscope gui
 （`result.json` 保存的是指标，不保存脉冲响应的采样）。最近打开或保存过的会话记录在 `$ROOMSCOPE_HOME`
 下（默认为 `~/.roomscope`）。
 
-## Python API
-
-```python
-from roomscope import analyze, compare, interpret_comparison
-from roomscope.io.wav import read_wav, load_reference
-from roomscope.core import Reference
-
-recording = read_wav("recording.wav")
-reference = load_reference("sweep_48k.wav")  # 如果存在 JSON 附属文件，则使用它
-result = analyze(recording, reference)
-print(result.decay.broadband.rt60_estimate_s, result.decay.broadband.rt60_basis)
-for r in result.reflections.reflections:
-    print(f"{r.delay_ms:.1f} ms  {r.relative_db:.1f} dB")
-```
-
-## RoomScope 有什么不同
-
-* **它拒绝编造数字。** 每个指标都带有单位、算法来源和有效性标记；衰减太短、不足以计算 T30 时，
-  它给出 *衰减范围不足*，而不是一个数字。它不提供任何单一的“房间评分”。
-* **它在 DAW 旁边工作，而不是在 DAW 里面。** 它只需要一个能播放和录制 WAV 的 DAW；当 DAW 以错误的
-  速度播放扫频时，它会指出常见原因（采样率不匹配，或 Warp / Flex / Follow Tempo）。各 DAW 的操作步骤
-  已写成文档，但尚未在每个 DAW 中实际测试。
-* **它回答录音师真正关心的问题** —— “这个位置适合录人声、做鼓的房间话筒、录合唱吗？” —— 方式是带有
-  明确标签的解读配置；它还能对比两个位置，每个差值都带有有效性。
-* **它会说明一支话筒无法知道什么。** 摆位几何从不指认某一面墙，也不推导测量无法支撑的坐标。
-
-与其他工具的比较（附来源）见 [docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md)
-（英文版 [docs/COMPARISON.md](docs/COMPARISON.md)）。
-
-## 设计原则
-
-* **不依赖 DAW** —— 永远不使用任何 DAW SDK。输入 WAV，输出 WAV。
-* **核心优先** —— DSP 函数是纯 NumPy/SciPy 函数，不依赖 GUI、设备或文件格式，因此 CLI、桌面程序、
-  插件或 Python API 都可以共用它们。
-* **科学正确性优先于功能** —— 算法来自已发表的论文和标准（Farina 2000、Schroeder 1965、Lundeby 1995、
-  ISO 3382-1/-2 等）；见 [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md)。
-* **诚实的数字** —— 未经校准时一律使用 dBFS，每个指标都有有效性标记，不提供伪科学的房间评分。
-* **净室实现与许可证规范** —— 不内置任何第三方源代码（[docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)）；
-  每一项依赖和每一个参考过的代码仓库都经过审查
-  （[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)、
-  [docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md)）。
-
 ## 文档
 
 | 文档 | 内容 |
 | --- | --- |
+| [docs/INSTALLATION.zh-CN.md](docs/INSTALLATION.zh-CN.md) | 在 macOS、Windows、Linux 上下载安装或用 Python 安装；更新、卸载、未签名构建的警告、故障排查；[English](docs/INSTALLATION.md) |
 | [docs/index.md](docs/index.md) | 文档索引 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 包结构、数据流、扩展点 |
 | [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回送、打包、国际化、验证关卡 |
@@ -247,10 +258,71 @@ for r in result.reflections.reflections:
 | [docs/user-guide/en.md](docs/user-guide/en.md) | User guide (English) |
 | [docs/AUDIO_DEVICES.zh-CN.md](docs/AUDIO_DEVICES.zh-CN.md) | 音频系统（主机 API：WASAPI、WDM-KS、MME、Core Audio、ALSA、JACK 等），各自对测量有什么影响，以及 RoomScope 如何探测和选择设备，附来源；[English](docs/AUDIO_DEVICES.md) |
 | [docs/COMPATIBILITY.zh-CN.md](docs/COMPATIBILITY.zh-CN.md) | 平台、Python 与依赖的最低版本、DAW 导出格式、音频系统，以及每一项的验证方式；[English](docs/COMPATIBILITY.md) |
-| [docs/EDITIONS.zh-CN.md](docs/EDITIONS.zh-CN.md) | 开发者版与安装包版；[English](docs/EDITIONS.md) |
+| [docs/EDITIONS.zh-CN.md](docs/EDITIONS.zh-CN.md) | 桌面版与终端版，以及开发者工具；[English](docs/EDITIONS.md) |
 | [docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md) | RoomScope 与 REW、Open Sound Meter、ARTA、Smaart、SoundID 等工具的区别，以及什么情况下其他工具更合适；[English](docs/COMPARISON.md) |
 | [docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.md) | DAW 分步说明（Pro Tools、Logic、Cubase、Studio One、Live、REAPER、FL Studio、Bitwig、Audacity）；[English](docs/user-guide/daw-setup.md) |
 | [docs/PROJECT_BRIEF.zh-CN.md](docs/PROJECT_BRIEF.zh-CN.md) | 最初的项目简介（中文） |
+
+## 开发安装
+
+面向贡献者。需要 Python 3.12 或更新版本；RoomScope 还没有发布到 PyPI，请从克隆的仓库安装：
+
+```bash
+git clone https://github.com/jingyemingyue/RoomScope.git
+cd RoomScope
+python3.12 -m venv .venv && source .venv/bin/activate   # Windows：.venv\Scripts\activate
+pip install -e ".[dev,gui]"
+roomscope --help
+roomscope gui
+```
+
+每个发布版本还附带 wheel（`roomscope-<version>-py3-none-any.whl`）和源码包，见
+[安装指南 → Python](docs/INSTALLATION.zh-CN.md#python-wheel-和源码包)。`scripts/build_release.py`
+可以在本机构建当前平台的两个版本（[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md) §3a）。
+
+## 技术架构
+
+### Python API
+
+```python
+from roomscope import analyze, compare, interpret_comparison
+from roomscope.io.wav import read_wav, load_reference
+from roomscope.core import Reference
+
+recording = read_wav("recording.wav")
+reference = load_reference("sweep_48k.wav")  # 如果存在 JSON 附属文件，则使用它
+result = analyze(recording, reference)
+print(result.decay.broadband.rt60_estimate_s, result.decay.broadband.rt60_basis)
+for r in result.reflections.reflections:
+    print(f"{r.delay_ms:.1f} ms  {r.relative_db:.1f} dB")
+```
+
+### RoomScope 有什么不同
+
+* **它拒绝编造数字。** 每个指标都带有单位、算法来源和有效性标记；衰减太短、不足以计算 T30 时，
+  它给出 *衰减范围不足*，而不是一个数字。它不提供任何单一的“房间评分”。
+* **它在 DAW 旁边工作，而不是在 DAW 里面。** 它只需要一个能播放和录制 WAV 的 DAW；当 DAW 以错误的
+  速度播放扫频时，它会指出常见原因（采样率不匹配，或 Warp / Flex / Follow Tempo）。各 DAW 的操作步骤
+  已写成文档，但尚未在每个 DAW 中实际测试。
+* **它回答录音师真正关心的问题** —— “这个位置适合录人声、做鼓的房间话筒、录合唱吗？” —— 方式是带有
+  明确标签的解读配置；它还能对比两个位置，每个差值都带有有效性。
+* **它会说明一支话筒无法知道什么。** 摆位几何从不指认某一面墙，也不推导测量无法支撑的坐标。
+
+与其他工具的比较（附来源）见 [docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md)
+（英文版 [docs/COMPARISON.md](docs/COMPARISON.md)）。
+
+### 设计原则
+
+* **不依赖 DAW** —— 永远不使用任何 DAW SDK。输入 WAV，输出 WAV。
+* **核心优先** —— DSP 函数是纯 NumPy/SciPy 函数，不依赖 GUI、设备或文件格式，因此 CLI、桌面程序、
+  插件或 Python API 都可以共用它们。
+* **科学正确性优先于功能** —— 算法来自已发表的论文和标准（Farina 2000、Schroeder 1965、Lundeby 1995、
+  ISO 3382-1/-2 等）；见 [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md)。
+* **诚实的数字** —— 未经校准时一律使用 dBFS，每个指标都有有效性标记，不提供伪科学的房间评分。
+* **净室实现与许可证规范** —— 不内置任何第三方源代码（[docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)）；
+  每一项依赖和每一个参考过的代码仓库都经过审查
+  （[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)、
+  [docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md)）。
 
 ## 参与贡献
 

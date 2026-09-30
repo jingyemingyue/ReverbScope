@@ -19,7 +19,16 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
   scaffolding, robustness). They were reviewed and merged on 2026-09-24
   (PRs #5, #6, #7, #8); the review findings are GitHub issues #9–#16.
 * No tag and no published Release exist yet (v0.4.1 is a draft). The
-  repository has been public since 2026-09-24.
+  repository has been public since 2026-09-24. **Update (2026-09-27):**
+  v0.4.1 is prepared as the first *public* pre-release for early testers:
+  README and [INSTALLATION.md](INSTALLATION.md) lead with the download, the
+  release notes open with *Choose your edition* and *Known limitations*,
+  and the release-candidate artifacts were checked (§3c). **Update
+  (2026-09-29):** every platform ships a Desktop Edition and a Terminal
+  Edition ([EDITIONS.md](EDITIONS.md)), and the `[Unreleased]` entries of
+  `CHANGELOG.md` are folded into `[0.4.1]`, so the draft's notes describe
+  everything the pre-release contains. It becomes public when the
+  maintainer publishes the draft; nothing here publishes it.
 * **Update (2026-09-24, later the same day):** the review follow-ups
   #9–#17 (#17, the QML part of the bundle gate, was found after this plan
   was written) are fixed on the branch `v0.4.1-review-followups`, which
@@ -59,15 +68,19 @@ in `pyproject.toml`, and the maintainer keeps the last word.
 
 > **Workflow status (2026-09-24).** The version-driven workflow has been on
 > `main` since PR #18; the v0.4.1 draft Release was opened from it and is
-> refreshed whenever `pyproject.toml`, the workflow, `packaging/` or
-> `scripts/smoke_bundle.py` change on `main` while `v0.4.1` has no tag. The
-> Windows job builds and installs `RoomScope-setup.exe` on every run. Check
+> refreshed whenever `pyproject.toml`, the workflow, `packaging/`,
+> `scripts/smoke_bundle.py`, `scripts/release_draft.py`,
+> `scripts/inno_chinese_messages.py` or `src/roomscope/__main__.py` change
+> on `main` while `v0.4.1` has no tag. The
+> Windows job builds and installs `RoomScope-Desktop-Windows-x64-Setup.exe` on every run,
+> and every job also builds the Terminal Edition of its platform. Check
 > the latest `main` run and the draft's assets before publishing.
 >
 > **How the draft is refreshed** (`scripts/release_draft.py`, tested in
 > `tests/unit/test_release_draft.py`). Each refresh replaces *every* asset,
 > the notes, the tag name and the target commit, so the draft holds exactly
-> the 13 files of one successful run of the commit it targets. Files an older
+> the 14 files of one successful run of the commit it targets (nine downloads
+> of the two editions, wheel, sdist, one `SHA256SUMS`, the SBOM and the lock). Files an older
 > workflow attached under names no longer produced (`RoomScope.dmg`,
 > `SHA256SUMS-macOS`, ...) are removed. The job stops without changing
 > anything when `v<version>` is already published, when two drafts match,
@@ -88,9 +101,11 @@ in `pyproject.toml`, and the maintainer keeps the last word.
    test suite, builds sdist and wheel, builds the unsigned bundles on the
    three OS runners (license bundle → PyInstaller → strip GPL-only Qt
    modules and ASIO DLLs → bundle gate → smoke test → archive → checksums),
-   produces the SBOM and lock file, and opens a **draft** GitHub Release
-   named `v<version>` with the CHANGELOG section as its body and every
-   archive attached. **No tag exists at this point.** A version containing
+   produces the SBOM and lock file, and opens or refreshes the **draft**
+   GitHub Release named `v<version>` with the release notes
+   (`packaging/release-notes-header.md` around the CHANGELOG section) as
+   its body and the 14 files attached. **No tag exists at this point.** A
+   version containing
    `.dev` never opens a draft.
 3. **The maintainer decides.** Download the bundles from the draft and try
    them on a real machine (the `docs/user-guide` Gatekeeper / SmartScreen
@@ -121,10 +136,13 @@ step runs, no log). Three ways on, from cheapest:
 1. **Build locally.** `scripts/build_release.py` runs the release workflow's
    bundle job on the machine it is started on and writes the same file names
    to `dist/`. Run it once per platform: on a Mac with Apple silicon
-   (`RoomScope-macos-arm64.dmg`), an Intel Mac if available
-   (`RoomScope-macos-x86_64.dmg`), Windows with Inno Setup 6 installed
-   (`roomscope-windows-x64.zip`, `RoomScope-setup.exe`) and Linux x86_64
-   (`roomscope-linux-x86_64.tar.gz`); add `--python-dist` on one of them for
+   (`RoomScope-Desktop-macOS-arm64.dmg`, `RoomScope-Terminal-macOS-arm64.tar.gz`),
+   an Intel Mac if available (`RoomScope-Desktop-macOS-x86_64.dmg`,
+   `RoomScope-Terminal-macOS-x86_64.tar.gz`), Windows with Inno Setup 6
+   installed (`RoomScope-Desktop-Windows-x64-Setup.exe`,
+   `RoomScope-Desktop-Windows-x64.zip`, `RoomScope-Terminal-Windows-x64.zip`) and
+   Linux x86_64 (`RoomScope-Desktop-Linux-x86_64.tar.gz`,
+   `RoomScope-Terminal-Linux-x86_64.tar.gz`); add `--python-dist` on one of them for
    the wheel and sdist. The script installs nothing itself: install
    `requirements/bundle.lock`, the `dev` and `gui` extras, `pyinstaller==6.22.3`
    and `build` as the script's docstring shows; it refuses other versions
@@ -138,8 +156,9 @@ step runs, no log). Three ways on, from cheapest:
 2. **Publish by hand.** Create or edit the draft `v<version>` on the Releases
    page (tag `v<version>` on the release commit of `main`, *pre-release*),
    paste the notes (`packaging/release-notes-header.md` with `{version}`
-   replaced, then the CHANGELOG section), upload every file from step 1 and
-   each machine's `SHA256SUMS-*`, and publish. The PyPI job needs Actions;
+   replaced and the CHANGELOG section at `{changes}`), upload every file from
+   step 1 and one `SHA256SUMS` made from each machine's `SHA256SUMS-*` lines,
+   and publish. The PyPI job needs Actions;
    without it nothing reaches PyPI, as before.
 3. **Make the repository public** (§5): standard GitHub-hosted runners are
    free for public repositories, and the workflow then runs as written.
@@ -256,6 +275,95 @@ Sources for §3b (accessed 2026-09-24):
 * [W2] Inno Setup Help, Compiler Command-Line Parameters (`--signtool=<name>=<command>`): https://jrsoftware.org/ishelp/topic_compilercmdline.htm
 * [W3] Microsoft Learn, SignTool.exe: https://learn.microsoft.com/en-us/dotnet/framework/tools/signtool-exe
 
+### 3c. Publishing v0.4.1, the first public pre-release
+
+v0.4.1 is the version the README's **Download** button leads to. Its draft
+is rebuilt by every `main` run while `v0.4.1` has no tag (§3), so the files
+on the draft always come from one run of the newest `main` commit that
+touched the Release workflow's paths; the version stays 0.4.1 because
+nothing with that number has been published.
+
+**What was checked on the release candidate (2026-09-27, Release run #23,
+PR #21 head `b753e17`, build commit `7cb1419`; STATUS snapshot 30).** The file
+names are those of that run, before the Desktop and Terminal editions; the
+same builds now carry the names in the publish checklist below.
+
+| File | Check | Result |
+| --- | --- | --- |
+| All archives | `sha256sum -c` against each `SHA256SUMS-<OS>-<ARCH>` | OK (5 of 5) |
+| `roomscope-0.4.1-py3-none-any.whl` | fresh virtual environment, no editable install: `roomscope --version`, `--help`, `--backend fake measure`, `sweep`, `analyze`, `show`, `--lang zh_CN show`; with `[gui]`: `gui --smoke` offscreen, `roomscope-gui` stays running; without `[gui]`: `roomscope gui` (a traceback, fixed in this release) | OK |
+| `roomscope-0.4.1.tar.gz` | builds a wheel with the same 90 files; `pip install "./roomscope-0.4.1.tar.gz[gui]"` installs `roomscope` / `roomscope-gui` and the compiled zh_CN catalog | OK |
+| `twine check` | wheel and sdist metadata | PASSED |
+| `RoomScope-macos-arm64.dmg`, `RoomScope-macos-x86_64.dmg` | opened on Linux with 7-Zip: `RoomScope.app` + `Applications` link; Mach-O arm64 / x86_64; `Info.plist` 0.4.1, `LSMinimumSystemVersion` 14.0, microphone usage text; `build_info.json` names the build commit; 313 Mach-O files, no absolute load path outside `/usr/lib` / `/System` | OK; mount, install and launch on macOS were done by the workflow's `check_macos_dmg.py` on macOS 26 / 15 runners, not by a person |
+| `roomscope-windows-x64.zip` | top level `roomscope-gui.exe` (PE32+ GUI), `roomscope.exe` (PE32+ console), `_internal\`, `THIRD_PARTY_LICENSES\` | OK; launched only by the workflow on a Windows runner |
+| `RoomScope-setup.exe` | silently installed, smoke-tested and uninstalled by the workflow | OK (runner only) |
+| `roomscope-linux-x86_64.tar.gz` | `smoke_bundle.py --require-gui-launcher --expect-commit 7cb1419…` in an empty environment (no virtualenv on `PATH`) | OK; needs glibc 2.39 |
+| Secrets and private paths | token / private-key patterns in the bundles and the sdist (only PEM header strings inside Qt's TLS plug-ins); home-directory paths in the sdist are test fixtures (`/home/me`, `/home/anna`) | none found |
+| Version | `pyproject.toml`, `roomscope --version`, wheel / sdist names, `Info.plist`, `build_info.json` | all 0.4.1 |
+
+These checks cover the files built from `b753e17`. Commits added to the
+release candidate after it (the command-line presentation, `0f5418e` /
+`f5eb961`) are covered by CI and by the Release workflow's own bundle smoke
+tests on each platform, not by this download check: repeat the wheel check
+and step 3 below on the draft's files before publishing.
+
+Known and harmless: the bundles carry `roomscope-0.4.1.dist-info/direct_url.json`
+with the CI runner's checkout path (`file:///Users/runner/work/...`), because
+the bundle job installs RoomScope in editable mode; some third-party wheels
+contain their own build machines' paths in debug strings. Neither is a
+developer's machine or a secret.
+
+**Publish checklist (the maintainer's click):**
+
+1. Merge the release candidate into `main` and wait for **CI** and
+   **Release** to be green on that commit. The Release run refreshes the
+   v0.4.1 draft with that commit's 14 files and these notes.
+2. On the draft, check: target commit = the green `main` commit; the 14
+   assets (Desktop Edition: `RoomScope-Desktop-macOS-arm64.dmg`,
+   `RoomScope-Desktop-macOS-x86_64.dmg`, `RoomScope-Desktop-Windows-x64-Setup.exe`,
+   `RoomScope-Desktop-Windows-x64.zip`, `RoomScope-Desktop-Linux-x86_64.tar.gz`;
+   Terminal Edition: `RoomScope-Terminal-macOS-arm64.tar.gz`,
+   `RoomScope-Terminal-macOS-x86_64.tar.gz`, `RoomScope-Terminal-Windows-x64.zip`,
+   `RoomScope-Terminal-Linux-x86_64.tar.gz`; `roomscope-0.4.1-py3-none-any.whl`,
+   `roomscope-0.4.1.tar.gz`, `SHA256SUMS`, `cyclonedx.sbom.json`,
+   `generated-bundle.lock`); the notes start with *RoomScope v0.4.1 — Early
+   public pre-release for testing*.
+3. Recommended before publishing: download the DMG for your Mac, install it
+   as [INSTALLATION.md](INSTALLATION.md) says, and open it once (the
+   Gatekeeper steps included). This is the one check no workflow can make.
+4. Keep **Set as a pre-release** ticked, leave *Set as the latest release*
+   unticked, and click **Publish release**. Publishing creates the tag
+   `v0.4.1` on the target commit and starts the tag run; PyPI stays off
+   (§3d).
+5. Open <https://github.com/jingyemingyue/RoomScope/releases> in a private
+   window: v0.4.1 must be listed with its assets. The README links that page
+   rather than `/releases/latest`, because GitHub's *latest* never points at
+   a pre-release (with only pre-releases it redirects to `/releases`; the API
+   answers 404).
+
+Do not re-run the Release workflow on `main` after publishing to "refresh"
+anything: a published version is never turned back into a draft, and a
+fix ships as 0.4.2.
+
+### 3d. PyPI readiness (checked 2026-09-27, not published)
+
+RoomScope is **not** uploaded to PyPI in 0.4.x; GitHub Releases is the
+channel for the first public testers. What is ready and what is not:
+
+| Item | State |
+| --- | --- |
+| Name `roomscope` | Free on PyPI on 2026-09-27 (`/pypi/roomscope/json` answers 404). Not reserved; PyPI can still refuse a name at the first upload. |
+| Metadata | `twine check` passes for wheel and sdist; license expression `Apache-2.0` with `LICENSE` / `NOTICE`; `Requires-Python >=3.12`; project URLs set. The classifier still says *Pre-Alpha*. |
+| README on PyPI | **Not ready.** `readme = "README.md"` has 38 relative links and the screenshot, which break on pypi.org. Before the first upload, give PyPI a README with absolute links (or a short PyPI-specific description). |
+| Wheel / sdist | Pure-Python wheel, built by the Release workflow's `package` job; the sdist rebuilds the same wheel (§3c). |
+| Trusted Publishing | Wired in `release.yml` (`pypi` job: `environment: pypi`, `id-token: write`, `pypa/gh-action-pypi-publish` pinned by SHA), gated on a `v*` tag **and** `vars.ROOMSCOPE_PUBLISH_PYPI == 'true'`. Missing: the PyPI trusted publisher, the `pypi` environment with a required reviewer, the variable. |
+| Provenance | `pypa/gh-action-pypi-publish` uploads PEP 740 attestations by default under trusted publishing; nothing to add. |
+
+Until a version is on PyPI, no document may tell users to run
+`pip install roomscope`; INSTALLATION.md says so explicitly, and
+`roomscope gui` without PySide6 advises `pip install "PySide6_Essentials>=6.6"`
+instead of the extra of a package that is not on PyPI.
+
 ## 4. Gates that apply to every release
 
 * CI (`ci.yml`) green on the release commit: lint, mypy, docs link check,
@@ -281,7 +389,8 @@ Sources for §3b (accessed 2026-09-24):
 | --- | --- | --- |
 | Public flip of the repository (ARCHITECTURE_V1.md §9.1 checklist: description and topics, branch protection on `main`, CODEOWNERS present, private vulnerability reporting, labels, Discussions, pinned roadmap) | 1.0.0rc1 (recommended at the first candidate so it gets outside testing) | Repository public since 2026-09-24; CODEOWNERS is present; the other checklist items are repository settings not checked here (the issue templates use the labels `hardware-report` and `daw-report`, which GitHub adds only if they exist) |
 | Apple Developer ID + notarization, Windows Authenticode; or ship 1.0 unsigned with documentation | 1.0.0rc1 | Open; 0.x bundles are unsigned by design |
-| PyPI: register `roomscope`, configure trusted publishing, create the `pypi` environment with required reviewers, set `ROOMSCOPE_PUBLISH_PYPI=true` | First version the maintainer wants on PyPI (earliest 0.5.0) | Open; the workflow stays off until then |
+| PyPI: register `roomscope`, configure trusted publishing, create the `pypi` environment with required reviewers, set `ROOMSCOPE_PUBLISH_PYPI=true`; give PyPI a README with absolute links | First version the maintainer wants on PyPI (earliest 0.5.0) | Open; readiness in §3d; the workflow stays off until then |
+| Publish the v0.4.1 draft as the first public pre-release | Now | Ready for the maintainer's click (§3c); not published |
 | Validation campaign: rooms, reference instrument (REW as a comparison instrument only), who runs it | 1.0.0rc1 | Open; no hardware available near-term |
 | DCO sign-off requirement | Public flip | Open |
 | Dependabot PRs #3 / #4 (actions/checkout 4→7, actions/setup-python 5→7) | Any time | Merge when Dependabot has rebased them onto the SHA-pinned workflows and CI is green |

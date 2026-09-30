@@ -74,8 +74,11 @@ src/roomscope/
                          voiceover, acoustic_guitar, drums, room_mic, choir)
     registry.py          built-ins + roomscope.profiles entry points
   cli/
-    main.py              argparse subcommands
-    report.py            plain-text report shared with the GUI
+    main.py              argparse subcommands, errors, exit codes
+    console.py           terminal layout: colour policy, symbols, widths, tables, progress
+    render.py            every report and message (the GUI's "Full report" panes too)
+    report.py            format_report / format_comparison_report: render.py as plain text
+  demo.py                roomscope demo: two simulated positions through the real pipeline
   ui/                    optional (needs PySide6)
     app.py, main_window.py, pages.py, results.py, plots.py, workers.py, state.py
     browser.py           session list (Home and Compare); project.json folders

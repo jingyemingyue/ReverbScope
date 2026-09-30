@@ -22,10 +22,11 @@ body:
     attributes:
       label: How RoomScope was installed
       options:
-        - Windows installer (RoomScope-setup.exe)
-        - Windows zip
-        - macOS disk image (.dmg)
-        - Linux archive (.tar.gz)
+        - Desktop Edition, Windows installer (RoomScope-Desktop-Windows-x64-Setup.exe)
+        - Desktop Edition, Windows zip
+        - Desktop Edition, macOS disk image (.dmg)
+        - Desktop Edition, Linux archive (.tar.gz)
+        - Terminal Edition (RoomScope-Terminal-…)
         - pip / source checkout
         - Other
     validations:
