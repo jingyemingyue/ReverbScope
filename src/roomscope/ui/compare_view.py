@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from roomscope.cli.report import format_comparison_report
+from roomscope.cli.render import REPORT_CONSOLE, render_comparison
 from roomscope.core.compare import compare
 from roomscope.errors import RoomScopeError
 from roomscope.i18n import _, localize
@@ -262,7 +262,7 @@ class ComparePage(QWidget):
                 cell.setFlags(cell.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.resonances.setItem(r, c, cell)
         self.resonances.resizeColumnsToContents()
-        self.text.setPlainText(format_comparison_report(comparison, findings, profile))
+        self.text.setPlainText(render_comparison(REPORT_CONSOLE, comparison, findings, profile))
         self.figure.clear()
         ensure_plot_fonts()
         axes = self.figure.add_subplot(111)

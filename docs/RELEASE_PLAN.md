@@ -22,9 +22,13 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
   repository has been public since 2026-09-24. **Update (2026-09-27):**
   v0.4.1 is prepared as the first *public* pre-release for early testers:
   README and [INSTALLATION.md](INSTALLATION.md) lead with the download, the
-  release notes open with *Download / What works / Important limitations*,
-  and the release-candidate artifacts were checked (§3c). It becomes public
-  when the maintainer publishes the draft; nothing here publishes it.
+  release notes open with *Choose your edition* and *Known limitations*,
+  and the release-candidate artifacts were checked (§3c). **Update
+  (2026-09-29):** every platform ships a Desktop Edition and a Terminal
+  Edition ([EDITIONS.md](EDITIONS.md)), and the `[Unreleased]` entries of
+  `CHANGELOG.md` are folded into `[0.4.1]`, so the draft's notes describe
+  everything the pre-release contains. It becomes public when the
+  maintainer publishes the draft; nothing here publishes it.
 * **Update (2026-09-24, later the same day):** the review follow-ups
   #9–#17 (#17, the QML part of the bundle gate, was found after this plan
   was written) are fixed on the branch `v0.4.1-review-followups`, which
@@ -64,15 +68,19 @@ in `pyproject.toml`, and the maintainer keeps the last word.
 
 > **Workflow status (2026-09-24).** The version-driven workflow has been on
 > `main` since PR #18; the v0.4.1 draft Release was opened from it and is
-> refreshed whenever `pyproject.toml`, the workflow, `packaging/` or
-> `scripts/smoke_bundle.py` change on `main` while `v0.4.1` has no tag. The
-> Windows job builds and installs `RoomScope-setup.exe` on every run. Check
+> refreshed whenever `pyproject.toml`, the workflow, `packaging/`,
+> `scripts/smoke_bundle.py`, `scripts/release_draft.py`,
+> `scripts/inno_chinese_messages.py` or `src/roomscope/__main__.py` change
+> on `main` while `v0.4.1` has no tag. The
+> Windows job builds and installs `RoomScope-Desktop-Windows-x64-Setup.exe` on every run,
+> and every job also builds the Terminal Edition of its platform. Check
 > the latest `main` run and the draft's assets before publishing.
 >
 > **How the draft is refreshed** (`scripts/release_draft.py`, tested in
 > `tests/unit/test_release_draft.py`). Each refresh replaces *every* asset,
 > the notes, the tag name and the target commit, so the draft holds exactly
-> the 13 files of one successful run of the commit it targets. Files an older
+> the 14 files of one successful run of the commit it targets (nine downloads
+> of the two editions, wheel, sdist, one `SHA256SUMS`, the SBOM and the lock). Files an older
 > workflow attached under names no longer produced (`RoomScope.dmg`,
 > `SHA256SUMS-macOS`, ...) are removed. The job stops without changing
 > anything when `v<version>` is already published, when two drafts match,
@@ -93,9 +101,11 @@ in `pyproject.toml`, and the maintainer keeps the last word.
    test suite, builds sdist and wheel, builds the unsigned bundles on the
    three OS runners (license bundle → PyInstaller → strip GPL-only Qt
    modules and ASIO DLLs → bundle gate → smoke test → archive → checksums),
-   produces the SBOM and lock file, and opens a **draft** GitHub Release
-   named `v<version>` with the CHANGELOG section as its body and every
-   archive attached. **No tag exists at this point.** A version containing
+   produces the SBOM and lock file, and opens or refreshes the **draft**
+   GitHub Release named `v<version>` with the release notes
+   (`packaging/release-notes-header.md` around the CHANGELOG section) as
+   its body and the 14 files attached. **No tag exists at this point.** A
+   version containing
    `.dev` never opens a draft.
 3. **The maintainer decides.** Download the bundles from the draft and try
    them on a real machine (the `docs/user-guide` Gatekeeper / SmartScreen
@@ -126,10 +136,13 @@ step runs, no log). Three ways on, from cheapest:
 1. **Build locally.** `scripts/build_release.py` runs the release workflow's
    bundle job on the machine it is started on and writes the same file names
    to `dist/`. Run it once per platform: on a Mac with Apple silicon
-   (`RoomScope-macos-arm64.dmg`), an Intel Mac if available
-   (`RoomScope-macos-x86_64.dmg`), Windows with Inno Setup 6 installed
-   (`roomscope-windows-x64.zip`, `RoomScope-setup.exe`) and Linux x86_64
-   (`roomscope-linux-x86_64.tar.gz`); add `--python-dist` on one of them for
+   (`RoomScope-Desktop-macOS-arm64.dmg`, `RoomScope-Terminal-macOS-arm64.tar.gz`),
+   an Intel Mac if available (`RoomScope-Desktop-macOS-x86_64.dmg`,
+   `RoomScope-Terminal-macOS-x86_64.tar.gz`), Windows with Inno Setup 6
+   installed (`RoomScope-Desktop-Windows-x64-Setup.exe`,
+   `RoomScope-Desktop-Windows-x64.zip`, `RoomScope-Terminal-Windows-x64.zip`) and
+   Linux x86_64 (`RoomScope-Desktop-Linux-x86_64.tar.gz`,
+   `RoomScope-Terminal-Linux-x86_64.tar.gz`); add `--python-dist` on one of them for
    the wheel and sdist. The script installs nothing itself: install
    `requirements/bundle.lock`, the `dev` and `gui` extras, `pyinstaller==6.22.3`
    and `build` as the script's docstring shows; it refuses other versions
@@ -143,8 +156,9 @@ step runs, no log). Three ways on, from cheapest:
 2. **Publish by hand.** Create or edit the draft `v<version>` on the Releases
    page (tag `v<version>` on the release commit of `main`, *pre-release*),
    paste the notes (`packaging/release-notes-header.md` with `{version}`
-   replaced, then the CHANGELOG section), upload every file from step 1 and
-   each machine's `SHA256SUMS-*`, and publish. The PyPI job needs Actions;
+   replaced and the CHANGELOG section at `{changes}`), upload every file from
+   step 1 and one `SHA256SUMS` made from each machine's `SHA256SUMS-*` lines,
+   and publish. The PyPI job needs Actions;
    without it nothing reaches PyPI, as before.
 3. **Make the repository public** (§5): standard GitHub-hosted runners are
    free for public repositories, and the workflow then runs as written.
@@ -270,7 +284,9 @@ touched the Release workflow's paths; the version stays 0.4.1 because
 nothing with that number has been published.
 
 **What was checked on the release candidate (2026-09-27, Release run #23,
-PR #21 head `b753e17`, build commit `7cb1419`; STATUS snapshot 30):**
+PR #21 head `b753e17`, build commit `7cb1419`; STATUS snapshot 30).** The file
+names are those of that run, before the Desktop and Terminal editions; the
+same builds now carry the names in the publish checklist below.
 
 | File | Check | Result |
 | --- | --- | --- |
@@ -301,12 +317,15 @@ developer's machine or a secret.
 
 1. Merge the release candidate into `main` and wait for **CI** and
    **Release** to be green on that commit. The Release run refreshes the
-   v0.4.1 draft with that commit's 13 files and these notes.
-2. On the draft, check: target commit = the green `main` commit; the 13
-   assets (`RoomScope-macos-arm64.dmg`, `RoomScope-macos-x86_64.dmg`,
-   `RoomScope-setup.exe`, `roomscope-windows-x64.zip`,
-   `roomscope-linux-x86_64.tar.gz`, `roomscope-0.4.1-py3-none-any.whl`,
-   `roomscope-0.4.1.tar.gz`, four `SHA256SUMS-*`, `cyclonedx.sbom.json`,
+   v0.4.1 draft with that commit's 14 files and these notes.
+2. On the draft, check: target commit = the green `main` commit; the 14
+   assets (Desktop Edition: `RoomScope-Desktop-macOS-arm64.dmg`,
+   `RoomScope-Desktop-macOS-x86_64.dmg`, `RoomScope-Desktop-Windows-x64-Setup.exe`,
+   `RoomScope-Desktop-Windows-x64.zip`, `RoomScope-Desktop-Linux-x86_64.tar.gz`;
+   Terminal Edition: `RoomScope-Terminal-macOS-arm64.tar.gz`,
+   `RoomScope-Terminal-macOS-x86_64.tar.gz`, `RoomScope-Terminal-Windows-x64.zip`,
+   `RoomScope-Terminal-Linux-x86_64.tar.gz`; `roomscope-0.4.1-py3-none-any.whl`,
+   `roomscope-0.4.1.tar.gz`, `SHA256SUMS`, `cyclonedx.sbom.json`,
    `generated-bundle.lock`); the notes start with *RoomScope v0.4.1 — Early
    public pre-release for testing*.
 3. Recommended before publishing: download the DMG for your Mac, install it

@@ -1,5 +1,16 @@
 # PyInstaller one-directory spec (ARCHITECTURE_V1.md §6.2).
 # Builds are unsigned until the maintainer holds signing identities.
+#
+# Two editions from one spec (docs/EDITIONS.md):
+#
+#   ROOMSCOPE_PACKAGE=desktop (default)  GUI + CLI: dist/roomscope (and
+#                                        dist/RoomScope.app on macOS)
+#   ROOMSCOPE_PACKAGE=terminal           CLI only, no Qt / PySide6 and no
+#                                        matplotlib: dist/roomscope-terminal
+#
+# Build the terminal edition with its own work folder so the two builds do
+# not share PyInstaller's cache:
+#   ROOMSCOPE_PACKAGE=terminal pyinstaller --workpath build/terminal packaging/roomscope.spec
 # -*- mode: python ; coding: utf-8 -*-
 
 import json
@@ -11,6 +22,10 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(SPECPATH).resolve().parent  # noqa: F821
+PACKAGE = os.environ.get("ROOMSCOPE_PACKAGE", "desktop").strip().lower()
+if PACKAGE not in ("desktop", "terminal"):
+    raise SystemExit(f"ROOMSCOPE_PACKAGE must be desktop or terminal, not {PACKAGE!r}")
+TERMINAL = PACKAGE == "terminal"
 MACOS_INFO = plistlib.loads((ROOT / "packaging" / "macos" / "Info.plist").read_bytes())
 VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 MACOS_INFO["CFBundleShortVersionString"] = VERSION
@@ -32,7 +47,7 @@ def _commit():
 
 # roomscope doctor reports which commit a bundle came from (several draft
 # builds can carry the same version number).
-BUILD_INFO = {"version": VERSION, "commit": _commit()}
+BUILD_INFO = {"version": VERSION, "commit": _commit(), "package": PACKAGE}
 if os.environ.get("GITHUB_RUN_ID") and os.environ.get("GITHUB_REPOSITORY"):
     BUILD_INFO["ci_run"] = "{}/{}/actions/runs/{}".format(
         os.environ.get("GITHUB_SERVER_URL", "https://github.com"),
@@ -43,6 +58,34 @@ BUILD_INFO_FILE = Path(workpath) / "build_info.json"  # noqa: F821
 BUILD_INFO_FILE.parent.mkdir(parents=True, exist_ok=True)
 BUILD_INFO_FILE.write_text(json.dumps(BUILD_INFO, indent=1), encoding="utf-8")
 
+# The terminal edition: the command line and the analysis only. The GUI
+# package, Qt and the plotting stack (only the GUI draws charts) stay out;
+# ``roomscope gui`` then says it is the Terminal Edition.
+TERMINAL_EXCLUDES = [
+    "PySide6",
+    "shiboken6",
+    "roomscope.ui",
+    "matplotlib",
+    "PIL",
+    "kiwisolver",
+    "contourpy",
+    "fontTools",
+    "tkinter",
+    "_tkinter",
+    # Build tools a developer environment has installed; nothing at run time imports them.
+    "setuptools",
+    "pkg_resources",
+    "_distutils_hack",
+    "yaml",
+    # Test runners that NumPy's and SciPy's test helpers would pull in.
+    "pytest",
+    "_pytest",
+    "pluggy",
+    "iniconfig",
+    "pygments",
+    "py",
+]
+
 a = Analysis(
     [str(ROOT / "src" / "roomscope" / "__main__.py")],
     pathex=[str(ROOT / "src")],
@@ -52,11 +95,13 @@ a = Analysis(
         (str(ROOT / "src" / "roomscope" / "locale"), "roomscope/locale"),
         (str(BUILD_INFO_FILE), "roomscope"),
     ],
-    hiddenimports=["roomscope.cli.main", "roomscope.ui.app"],
+    hiddenimports=["roomscope.cli.main"] if TERMINAL else ["roomscope.cli.main", "roomscope.ui.app"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[
+    excludes=TERMINAL_EXCLUDES
+    if TERMINAL
+    else [
         "PySide6.QtCharts",
         "PySide6.QtDataVisualization",
         "PySide6.QtGraphs",
@@ -99,7 +144,7 @@ exe = EXE(
 # start it without arguments and ``roomscope.__main__.desktop_args`` opens the
 # GUI; the console ``roomscope`` keeps the CLI and never flashes a window.
 launchers = [exe]
-if sys.platform != "darwin":
+if sys.platform != "darwin" and not TERMINAL:
     launchers.append(
         EXE(
             pyz,
@@ -120,12 +165,12 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=False,
-    name="roomscope",
+    name="roomscope-terminal" if TERMINAL else "roomscope",
 )
 
 # Keep the console executable for CLI users. Finder needs a separate windowed
 # bootloader so the .app opens the GUI and receives normal macOS app events.
-if sys.platform == "darwin":
+if sys.platform == "darwin" and not TERMINAL:
     gui_exe = EXE(
         pyz,
         a.scripts,

@@ -3,7 +3,7 @@
 ;
 ; Build from the repository root after PyInstaller has produced dist\roomscope:
 ;   iscc /DMyAppVersion=<pyproject version> packaging\windows\roomscope.iss
-; The installer is written to dist\RoomScope-setup.exe.
+; The installer is written to dist\RoomScope-Desktop-Windows-x64-Setup.exe.
 #define MyAppName "RoomScope"
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0.dev0"
@@ -32,7 +32,7 @@ MinVersion=10.0
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputDir=..\..\dist
-OutputBaseFilename=RoomScope-setup
+OutputBaseFilename=RoomScope-Desktop-Windows-x64-Setup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

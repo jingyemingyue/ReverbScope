@@ -61,6 +61,8 @@ ALLOWED = frozenset(
         "Thunderbolt",
         "fake",
         "portaudio",
+        # the value of --format ("roomscope --format json")
+        "json",
         "pip",
         # DAWs and their feature names (menus stay in the vendors' language)
         "DAW",
@@ -100,7 +102,8 @@ PHRASES = (
     "GitHub Issue",
 )
 _URL = re.compile(r"https?://\S+")
-_COMMAND = re.compile(r"roomscope(?:\s+[a-z][a-z-]*)?(?:\s+--?[\w-]+)*")
+# A command and, for "project" and "session", its action ("roomscope project init").
+_COMMAND = re.compile(r"roomscope(?:[ \t]+[a-z][a-z-]*){0,2}(?:[ \t]+--?[\w-]+)*")
 _WORD = re.compile(r"(?<![\w./\\%{\[-])[A-Za-z][A-Za-z']{2,}(?![\w./\\}\]-])")
 
 

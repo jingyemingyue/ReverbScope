@@ -124,7 +124,7 @@ def build_info(path: Path | None = None) -> dict[str, str] | None:
         return None
     if not isinstance(data, dict):
         return None
-    info = {key: str(data[key]) for key in ("commit", "ci_run") if data.get(key)}
+    info = {key: str(data[key]) for key in ("commit", "ci_run", "package") if data.get(key)}
     return info or None
 
 

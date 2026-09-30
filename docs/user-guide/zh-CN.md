@@ -8,16 +8,26 @@ RoomScope 用来测量录音房间，让你听清房间对近距离拾音的声�
 
 ## 安装
 
-从项目的 [Releases 页面](https://github.com/jingyemingyue/RoomScope/releases)下载。各系统的分步说明、更新、卸载和故障排查见 [INSTALLATION.zh-CN.md](../INSTALLATION.zh-CN.md)，本节是简要版。每个 Release 都附有 `SHA256SUMS-*` 文件，请与下载文件的校验值比对（macOS / Linux：`shasum -a 256 <file>`；PowerShell：`Get-FileHash <file>`）。
+从项目的 [Releases 页面](https://github.com/jingyemingyue/RoomScope/releases)下载。各系统的分步说明、更新、卸载和故障排查见 [INSTALLATION.zh-CN.md](../INSTALLATION.zh-CN.md)，本节是简要版。每个 Release 都附有一个 `SHA256SUMS` 文件，请与下载文件的校验值比对（macOS / Linux：`shasum -a 256 <file>`；PowerShell：`Get-FileHash <file>`）。
 
-| 系统 | 文件 | 启动 RoomScope |
+RoomScope 有两个版本。**桌面版**就是本指南介绍的应用程序，同时包含命令行；**终端版**只有命令行（没有窗口和图表），
+适合脚本、服务器和没有图形桌面的电脑。
+
+| 系统 | 桌面版 | 启动 RoomScope |
 | --- | --- | --- |
-| Windows 10/11 x64 | `RoomScope-setup.exe`（安装程序）或 `roomscope-windows-x64.zip` | 开始菜单 → RoomScope，或运行 zip 中的 `roomscope-gui.exe` |
-| macOS 14+，Apple 芯片 | `RoomScope-macos-arm64.dmg` | 把 RoomScope 拖进“应用程序”文件夹，然后打开 |
-| macOS 14+，Intel | `RoomScope-macos-x86_64.dmg` | 把 RoomScope 拖进“应用程序”文件夹，然后打开 |
-| Linux x86_64 | `roomscope-linux-x86_64.tar.gz` | `tar xzf roomscope-linux-x86_64.tar.gz && roomscope/roomscope-gui` |
+| Windows 10/11 x64 | `RoomScope-Desktop-Windows-x64-Setup.exe`（安装程序）或 `RoomScope-Desktop-Windows-x64.zip` | 开始菜单 → RoomScope，或运行 zip 中的 `roomscope-gui.exe` |
+| macOS 14+，Apple 芯片 | `RoomScope-Desktop-macOS-arm64.dmg` | 把 RoomScope 拖进“应用程序”文件夹，然后打开 |
+| macOS 14+，Intel | `RoomScope-Desktop-macOS-x86_64.dmg` | 把 RoomScope 拖进“应用程序”文件夹，然后打开 |
+| Linux x86_64 | `RoomScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf RoomScope-Desktop-Linux-x86_64.tar.gz && roomscope/roomscope-gui` |
 
-Windows 和 Linux 安装包含两个程序：桌面程序 `roomscope-gui` 和命令行工具 `roomscope`（在终端运行 `roomscope --help`）。在 macOS 上，应用的可执行文件带参数运行时就是命令行工具：`/Applications/RoomScope.app/Contents/MacOS/RoomScope --help`。
+| 系统 | 终端版 | 启动 RoomScope |
+| --- | --- | --- |
+| Windows 10/11 x64 | `RoomScope-Terminal-Windows-x64.zip` | 解压后双击 `RoomScope Terminal.cmd`，输入 `roomscope.exe demo` |
+| macOS 14+，Apple 芯片 | `RoomScope-Terminal-macOS-arm64.tar.gz` | 用 `tar xzf` 解压，然后运行 `roomscope-terminal/roomscope demo` |
+| macOS 14+，Intel | `RoomScope-Terminal-macOS-x86_64.tar.gz` | 用 `tar xzf` 解压，然后运行 `roomscope-terminal/roomscope demo` |
+| Linux x86_64 | `RoomScope-Terminal-Linux-x86_64.tar.gz` | 用 `tar xzf` 解压，然后运行 `roomscope-terminal/roomscope demo` |
+
+Windows 和 Linux 的桌面版安装包含两个程序：桌面程序 `roomscope-gui` 和命令行工具 `roomscope`（在终端运行 `roomscope --help`）。在 macOS 上，应用的可执行文件带参数运行时就是命令行工具：`/Applications/RoomScope.app/Contents/MacOS/RoomScope --help`。
 
 在维护者取得签名证书之前，**这些安装包都没有用于分发的签名**（macOS 应用只有临时签名（ad hoc），未经公证；Windows 文件没有 Authenticode 签名），因此首次打开时操作系统会发出警告：
 
@@ -36,6 +46,16 @@ roomscope-env/bin/roomscope gui
 只需要命令行和 Python API 时去掉 `[gui]`。`pip install -e ".[gui]"` 是从克隆的源码进行的开发者安装。
 
 “关于”对话框和 `THIRD_PARTY_LICENSES/` 列出了 Qt、libsndfile 以及其他随包组件的许可证。
+
+## 先试一试：演示
+
+`roomscope demo` 不需要音频接口和话筒，就能演示完整的工作流程。它会写出扫频，模拟一个虚构房间里
+两个位置（一个靠近桌面和侧墙，一个向后移开）的话筒会录到什么，用与真实测量相同的代码分析这两个位置，
+并对比它们。输出的导览最后会给出查看完整报告、对比结果、打开桌面应用以及开始你自己第一次测量的命令。
+
+演示中的任何内容都不是测量结果：终端第一行就会说明这一点；每个保存的会话的模式都是
+`synthetic_demo`，并附有说明它是模拟数据的备注；演示也绝不会覆盖不是它自己写出的文件夹。
+用 `roomscope demo --out <文件夹>` 可以指定文件的位置。
 
 ## 通用 DAW 模式
 

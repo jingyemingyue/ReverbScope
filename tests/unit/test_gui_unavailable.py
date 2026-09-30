@@ -28,7 +28,7 @@ def test_roomscope_gui_without_pyside6_prints_a_sentence(
         assert main(["--lang", "en", "gui"]) == 2
     err = capsys.readouterr().err
     assert "Traceback" not in err
-    assert MISSING in err
+    assert MISSING in " ".join(err.split())  # the sentence is wrapped to the terminal
     assert 'pip install "PySide6_Essentials>=6.6"' in err
     # PyPI has no roomscope package yet: the advice must not send people there.
     assert "roomscope[gui]" not in err
@@ -55,8 +55,8 @@ def test_the_message_is_translated(capsys: pytest.CaptureFixture[str]) -> None:
     ):
         assert main(["--lang", "zh_CN", "gui"]) == 2
     err = capsys.readouterr().err
-    assert "无法启动桌面界面" in err
-    assert MISSING in err
+    assert "无法启动桌面界面" in "".join(err.split())  # wrapped between characters
+    assert MISSING in " ".join(err.split())
 
 
 def test_pyside6_import_error_is_none_when_qt_loads() -> None:

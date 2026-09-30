@@ -32,6 +32,7 @@ def _load() -> ModuleType:
 
 rd = _load()
 VERSION = "0.4.1"
+SETUP = "RoomScope-Desktop-Windows-x64-Setup.exe"
 TAG = "v0.4.1"
 SHA = "ab4e0573cf1208f6c74b673c866511fc89269aa9"
 OLD_SHA = "909f332838a896d76025f0dc2024ced5dbd48910"
@@ -46,10 +47,10 @@ def _write_run(folder: Path, version: str = VERSION) -> Path:
     layout = {
         "python-dist": rd.python_dist_files(version),
         "sbom": rd.SBOM_FILES,
-        "bundle-ubuntu-latest": ("roomscope-linux-x86_64.tar.gz",),
-        "bundle-macos-latest": ("RoomScope-macos-arm64.dmg",),
-        "bundle-macos-15-intel": ("RoomScope-macos-x86_64.dmg",),
-        "bundle-windows-latest": ("roomscope-windows-x64.zip", "RoomScope-setup.exe"),
+        "bundle-ubuntu-latest": rd.CHECKSUM_FILES["SHA256SUMS-Linux-X64"],
+        "bundle-macos-latest": rd.CHECKSUM_FILES["SHA256SUMS-macOS-ARM64"],
+        "bundle-macos-15-intel": rd.CHECKSUM_FILES["SHA256SUMS-macOS-X64"],
+        "bundle-windows-latest": rd.CHECKSUM_FILES["SHA256SUMS-Windows-X64"],
     }
     for artifact, names in layout.items():
         (folder / artifact).mkdir(parents=True)
@@ -183,30 +184,54 @@ OLD_DRAFT_NAMES = (
 
 def test_expected_manifest_is_exact() -> None:
     assert rd.expected_assets(VERSION) == {
+        # Desktop Edition (GUI + command line)
+        "RoomScope-Desktop-macOS-arm64.dmg",
+        "RoomScope-Desktop-macOS-x86_64.dmg",
+        "RoomScope-Desktop-Windows-x64-Setup.exe",
+        "RoomScope-Desktop-Windows-x64.zip",
+        "RoomScope-Desktop-Linux-x86_64.tar.gz",
+        # Terminal Edition (command line only)
+        "RoomScope-Terminal-macOS-arm64.tar.gz",
+        "RoomScope-Terminal-macOS-x86_64.tar.gz",
+        "RoomScope-Terminal-Windows-x64.zip",
+        "RoomScope-Terminal-Linux-x86_64.tar.gz",
+        # Python, checksums, SBOM
         "roomscope-0.4.1-py3-none-any.whl",
         "roomscope-0.4.1.tar.gz",
+        "SHA256SUMS",
         "cyclonedx.sbom.json",
         "generated-bundle.lock",
-        "roomscope-linux-x86_64.tar.gz",
-        "RoomScope-macos-arm64.dmg",
-        "RoomScope-macos-x86_64.dmg",
-        "roomscope-windows-x64.zip",
-        "RoomScope-setup.exe",
-        "SHA256SUMS-Linux-X64",
-        "SHA256SUMS-macOS-ARM64",
-        "SHA256SUMS-macOS-X64",
-        "SHA256SUMS-Windows-X64",
     }
     assert not rd.expected_assets(VERSION) & rd.LEGACY_ASSETS
+
+
+def test_every_download_name_says_edition_system_and_cpu() -> None:
+    pattern = re.compile(
+        r"RoomScope-(Desktop|Terminal)-(macOS-(arm64|x86_64)|Windows-x64|Linux-x86_64)"
+        r"(-Setup\.exe|\.dmg|\.zip|\.tar\.gz)"
+    )
+    archives = [name for names in rd.CHECKSUM_FILES.values() for name in names]
+    assert all(pattern.fullmatch(name) for name in archives), archives
+    for names in rd.CHECKSUM_FILES.values():
+        assert any("-Desktop-" in name for name in names)
+        assert sum("-Terminal-" in name for name in names) == 1
 
 
 def test_manifest_matches_the_workflow_and_local_builder() -> None:
     """The bundle job's upload list and checksum names produce this manifest."""
     for archives in rd.CHECKSUM_FILES.values():
         for archive in archives:
-            assert archive in WORKFLOW or archive.startswith("RoomScope-macos-")
-    assert "RoomScope-macos-*.dmg" in WORKFLOW
-    assert "SHA256SUMS-{suffix}" in WORKFLOW
+            # shutil.make_archive adds ".zip"; the macOS names use $(uname -m).
+            assert (
+                archive in WORKFLOW
+                or archive.removesuffix(".zip") in WORKFLOW
+                or archive.startswith(("RoomScope-Desktop-macOS-", "RoomScope-Terminal-macOS-"))
+            ), archive
+    assert "RoomScope-Desktop-macOS-$(uname -m).dmg" in WORKFLOW
+    assert "RoomScope-Terminal-macOS-$(uname -m).tar.gz" in WORKFLOW
+    assert "dist/RoomScope-Desktop-*" in WORKFLOW and "dist/RoomScope-Terminal-*" in WORKFLOW
+    # The runner's checksum file is written from the manifest, not a copied list.
+    assert "rd.CHECKSUM_FILES[sums_name]" in WORKFLOW
     matrix = re.search(r"os: \[(.*?)\]", WORKFLOW)
     assert matrix is not None
     assert len(matrix.group(1).split(",")) == len(rd.CHECKSUM_FILES)
@@ -263,7 +288,7 @@ def test_stage_rejects_a_missing_platform(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
     for path in (run / "bundle-macos-15-intel").iterdir():
         path.unlink()
-    with pytest.raises(rd.ReleaseError, match=re.escape("RoomScope-macos-x86_64.dmg")):
+    with pytest.raises(rd.ReleaseError, match=re.escape("RoomScope-Desktop-macOS-x86_64.dmg")):
         rd.stage(run, tmp_path / "out", VERSION)
 
 
@@ -275,15 +300,15 @@ def test_stage_rejects_a_wrong_version(tmp_path: Path) -> None:
 
 def test_stage_rejects_the_same_name_from_two_artifacts(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
-    (run / "sbom" / "roomscope-windows-x64.zip").write_bytes(b"x")
+    (run / "sbom" / "RoomScope-Terminal-Windows-x64.zip").write_bytes(b"x")
     with pytest.raises(rd.ReleaseError, match="two artifacts"):
         rd.stage(run, tmp_path / "out", VERSION)
 
 
 def test_stage_rejects_a_checksum_that_does_not_match(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
-    (run / "bundle-windows-latest" / "RoomScope-setup.exe").write_bytes(b"rebuilt later")
-    with pytest.raises(rd.ReleaseError, match=re.escape("RoomScope-setup.exe is")):
+    (run / "bundle-windows-latest" / SETUP).write_bytes(b"rebuilt later")
+    with pytest.raises(rd.ReleaseError, match=re.escape(f"{SETUP} is")):
         rd.stage(run, tmp_path / "out", VERSION)
 
 
@@ -360,9 +385,47 @@ def test_plan_detects_legacy_assets_on_the_current_draft() -> None:
         "SHA256SUMS-Linux",
         "SHA256SUMS-Windows",
         "SHA256SUMS-macOS",
+        "roomscope-linux-x86_64.tar.gz",
+        "roomscope-windows-x64.zip",
     )
-    assert "roomscope-windows-x64.zip" in plan.replace
+    assert "roomscope-0.4.1.tar.gz" in plan.replace
     assert "RoomScope.dmg" not in plan.replace
+
+
+def test_plan_removes_the_names_from_before_the_editions() -> None:
+    """The v0.4.1 draft as the workflow left it before Desktop / Terminal (Release #26)."""
+    names = (
+        "cyclonedx.sbom.json",
+        "generated-bundle.lock",
+        "roomscope-0.4.1-py3-none-any.whl",
+        "roomscope-0.4.1.tar.gz",
+        "roomscope-linux-x86_64.tar.gz",
+        "RoomScope-macos-arm64.dmg",
+        "RoomScope-macos-x86_64.dmg",
+        "roomscope-windows-x64.zip",
+        SETUP,
+        "SHA256SUMS-Linux-X64",
+        "SHA256SUMS-macOS-ARM64",
+        "SHA256SUMS-macOS-X64",
+        "SHA256SUMS-Windows-X64",
+    )
+    draft = _release(1, draft=True, names=names)
+    plan = rd.plan_sync([draft], draft, VERSION)
+    assert set(plan.obsolete) == set(names) - rd.expected_assets(VERSION)
+    assert set(plan.replace) == set(names) & rd.expected_assets(VERSION)
+
+
+def test_stage_writes_one_checksum_file_for_every_download(tmp_path: Path) -> None:
+    run = _write_run(tmp_path / "artifacts")
+    staged = rd.stage(run, tmp_path / "out", VERSION)
+    lines = staged["SHA256SUMS"].read_text(encoding="utf-8").splitlines()
+    assert [line.split("  ", 1)[1] for line in lines] == list(rd.downloads(VERSION))
+    assert not any(name.startswith("SHA256SUMS-") for name in staged)
+    staged["RoomScope-Terminal-Linux-x86_64.tar.gz"].write_bytes(b"changed after staging")
+    with pytest.raises(
+        rd.ReleaseError, match=re.escape("RoomScope-Terminal-Linux-x86_64.tar.gz is")
+    ):
+        rd.load_staged(tmp_path / "out", VERSION)
 
 
 def test_plan_ignores_other_versions() -> None:
@@ -443,7 +506,7 @@ def test_sync_refuses_a_tag_on_another_commit(staged: dict[str, Path]) -> None:
 def test_sync_dry_run_changes_nothing(staged: dict[str, Path]) -> None:
     client = FakeGitHub([_release(6, draft=True, names=OLD_DRAFT_NAMES)])
     plan = rd.sync(client, VERSION, SHA, staged, "notes", dry_run=True)
-    assert plan.release_id == 6 and len(plan.obsolete) == 4
+    assert plan.release_id == 6 and len(plan.obsolete) == 6
     assert client.log == []
 
 
@@ -459,17 +522,17 @@ def test_sync_is_idempotent(staged: dict[str, Path]) -> None:
 
 def test_sync_retries_a_failed_upload_without_leaving_a_partial(staged: dict[str, Path]) -> None:
     client = FakeGitHub([_release(9, draft=True)])
-    client.fail_uploads["RoomScope-setup.exe"] = 1
+    client.fail_uploads[SETUP] = 1
     rd.sync(client, VERSION, SHA, staged, "notes")
     states = {a["name"]: a["state"] for a in client.releases[9]["assets"]}
-    assert states["RoomScope-setup.exe"] == "uploaded"
+    assert states[SETUP] == "uploaded"
     assert set(states.values()) == {"uploaded"}
 
 
 def test_sync_gives_up_after_repeated_upload_failures(staged: dict[str, Path]) -> None:
     client = FakeGitHub([_release(10, draft=True)])
-    client.fail_uploads["RoomScope-setup.exe"] = 5
-    with pytest.raises(rd.ReleaseError, match=re.escape("upload of RoomScope-setup.exe failed")):
+    client.fail_uploads[SETUP] = 5
+    with pytest.raises(rd.ReleaseError, match=re.escape(f"upload of {SETUP} failed")):
         rd.sync(client, VERSION, SHA, staged, "notes")
 
 
@@ -486,7 +549,7 @@ def test_verify_checks_target_digest_and_names(staged: dict[str, Path]) -> None:
         rd.verify(client, 11, VERSION, SHA, staged, "notes")
     client.releases[11]["target_commitish"] = SHA
 
-    asset = next(a for a in client.releases[11]["assets"] if a["name"] == "RoomScope-setup.exe")
+    asset = next(a for a in client.releases[11]["assets"] if a["name"] == SETUP)
     asset["digest"] = "sha256:" + "0" * 64
     with pytest.raises(rd.ReleaseError, match="digest"):
         rd.verify(client, 11, VERSION, SHA, staged, "notes")
@@ -509,7 +572,7 @@ def test_main_stage_command(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
     run = _write_run(tmp_path / "artifacts")
     argv = ["stage", "--artifacts", str(run), "--out", str(tmp_path / "o"), "--version", VERSION]
     assert rd.main(argv) == 0
-    assert "RoomScope-setup.exe" in capsys.readouterr().out
+    assert SETUP in capsys.readouterr().out
     (run / "sbom" / "stray.txt").write_text("x", encoding="utf-8")
     argv[4] = str(tmp_path / "o2")
     assert rd.main(argv) == 1

@@ -15,19 +15,31 @@ Download from the project's
 Step-by-step instructions for every system, updating, uninstalling and
 troubleshooting are in [INSTALLATION.md](../INSTALLATION.md); this section is
 the short version. Each
-Release lists `SHA256SUMS-*` files; compare them with the file you
+Release lists a `SHA256SUMS` file; compare it with the file you
 downloaded (`shasum -a 256 <file>` on macOS / Linux,
 `Get-FileHash <file>` in PowerShell).
 
-| System | File | Start RoomScope |
-| --- | --- | --- |
-| Windows 10/11 x64 | `RoomScope-setup.exe` (installer) or `roomscope-windows-x64.zip` | Start menu → RoomScope, or `roomscope-gui.exe` in the zip |
-| macOS 14+, Apple silicon | `RoomScope-macos-arm64.dmg` | Drag RoomScope to Applications, then open it |
-| macOS 14+, Intel | `RoomScope-macos-x86_64.dmg` | Drag RoomScope to Applications, then open it |
-| Linux x86_64 | `roomscope-linux-x86_64.tar.gz` | `tar xzf roomscope-linux-x86_64.tar.gz && roomscope/roomscope-gui` |
+RoomScope comes in two editions. The **Desktop Edition** is the app this
+guide describes, with the command line included; the **Terminal Edition** is
+the command line only (no windows or charts), for scripts, servers and
+computers without a desktop.
 
-The Windows and Linux bundles carry two programs: the desktop app
-`roomscope-gui` and the command-line tool `roomscope` (run `roomscope --help`
+| System | Desktop Edition | Start RoomScope |
+| --- | --- | --- |
+| Windows 10/11 x64 | `RoomScope-Desktop-Windows-x64-Setup.exe` (installer) or `RoomScope-Desktop-Windows-x64.zip` | Start menu → RoomScope, or `roomscope-gui.exe` in the zip |
+| macOS 14+, Apple silicon | `RoomScope-Desktop-macOS-arm64.dmg` | Drag RoomScope to Applications, then open it |
+| macOS 14+, Intel | `RoomScope-Desktop-macOS-x86_64.dmg` | Drag RoomScope to Applications, then open it |
+| Linux x86_64 | `RoomScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf RoomScope-Desktop-Linux-x86_64.tar.gz && roomscope/roomscope-gui` |
+
+| System | Terminal Edition | Start RoomScope |
+| --- | --- | --- |
+| Windows 10/11 x64 | `RoomScope-Terminal-Windows-x64.zip` | Extract, double-click `RoomScope Terminal.cmd`, type `roomscope.exe demo` |
+| macOS 14+, Apple silicon | `RoomScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `roomscope-terminal/roomscope demo` |
+| macOS 14+, Intel | `RoomScope-Terminal-macOS-x86_64.tar.gz` | `tar xzf` it, then `roomscope-terminal/roomscope demo` |
+| Linux x86_64 | `RoomScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `roomscope-terminal/roomscope demo` |
+
+The Windows and Linux Desktop Edition bundles carry two programs: the desktop
+app `roomscope-gui` and the command-line tool `roomscope` (run `roomscope --help`
 in a terminal). On macOS the app's executable is also the CLI when it is given
 arguments: `/Applications/RoomScope.app/Contents/MacOS/RoomScope --help`.
 
@@ -68,6 +80,20 @@ is the developer install from a clone.
 
 The About dialog and `THIRD_PARTY_LICENSES/` list Qt, libsndfile and the other
 bundled licenses.
+
+## Try it first: the demo
+
+`roomscope demo` shows the whole workflow without an interface or a
+microphone. It writes a sweep, simulates what a microphone would record at two
+positions in a made-up room (one close to a desk and a side wall, one moved
+back), analyses both with the same code as a real measurement, and compares
+them. The walkthrough it prints ends with the commands to open the full
+reports, the comparison, the desktop app, and your own first measurement.
+
+Nothing in the demo is a measurement: the terminal says so first, each saved
+session has the mode `synthetic_demo` and a note saying it was simulated, and
+the demo never overwrites a folder it did not write. `roomscope demo --out
+<folder>` chooses where the files go.
 
 ## Universal DAW Mode
 

@@ -6,8 +6,9 @@ Used by the ``draft-release`` job of ``.github/workflows/release.yml``
 ``stage``
     Collect the artifacts that one workflow run downloaded, refuse anything
     that is not exactly the expected file set (:func:`expected_assets`),
-    check every ``SHA256SUMS-<OS>-<ARCH>`` file against the files it names,
-    and copy the set into one flat folder.
+    check every runner's ``SHA256SUMS-<OS>-<ARCH>`` file against the files it
+    names, and copy the set into one flat folder with one ``SHA256SUMS`` for
+    every download (the per-runner files stay workflow artifacts).
 
 ``sync``
     Open or refresh the single draft Release ``v<version>`` so that it holds
@@ -46,14 +47,31 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
-#: ``SHA256SUMS-<RUNNER_OS>-<RUNNER_ARCH>`` -> the archives that runner builds
-#: (the bundle matrix of release.yml and ``Target`` in build_release.py).
+#: ``SHA256SUMS-<RUNNER_OS>-<RUNNER_ARCH>`` -> the downloads that runner builds
+#: (the bundle matrix of release.yml and ``Target`` in build_release.py): the
+#: Desktop Edition (GUI + command line) and the Terminal Edition (command line
+#: only, no Qt) of each platform. The names say edition, system and CPU.
 CHECKSUM_FILES: Mapping[str, tuple[str, ...]] = {
-    "SHA256SUMS-Linux-X64": ("roomscope-linux-x86_64.tar.gz",),
-    "SHA256SUMS-macOS-ARM64": ("RoomScope-macos-arm64.dmg",),
-    "SHA256SUMS-macOS-X64": ("RoomScope-macos-x86_64.dmg",),
-    "SHA256SUMS-Windows-X64": ("roomscope-windows-x64.zip", "RoomScope-setup.exe"),
+    "SHA256SUMS-Linux-X64": (
+        "RoomScope-Desktop-Linux-x86_64.tar.gz",
+        "RoomScope-Terminal-Linux-x86_64.tar.gz",
+    ),
+    "SHA256SUMS-macOS-ARM64": (
+        "RoomScope-Desktop-macOS-arm64.dmg",
+        "RoomScope-Terminal-macOS-arm64.tar.gz",
+    ),
+    "SHA256SUMS-macOS-X64": (
+        "RoomScope-Desktop-macOS-x86_64.dmg",
+        "RoomScope-Terminal-macOS-x86_64.tar.gz",
+    ),
+    "SHA256SUMS-Windows-X64": (
+        "RoomScope-Desktop-Windows-x64-Setup.exe",
+        "RoomScope-Desktop-Windows-x64.zip",
+        "RoomScope-Terminal-Windows-x64.zip",
+    ),
 }
+#: One checksum file on the Release for every download it carries.
+RELEASE_CHECKSUMS = "SHA256SUMS"
 #: Produced by the sbom job.
 SBOM_FILES = ("cyclonedx.sbom.json", "generated-bundle.lock")
 #: Names earlier versions of release.yml attached to a draft. They are
@@ -61,10 +79,16 @@ SBOM_FILES = ("cyclonedx.sbom.json", "generated-bundle.lock")
 LEGACY_ASSETS = frozenset(
     {
         "RoomScope.dmg",
-        "SHA256SUMS",
         "SHA256SUMS-Linux",
         "SHA256SUMS-macOS",
         "SHA256SUMS-Windows",
+        # 0.4.1 drafts before the Desktop / Terminal editions
+        "roomscope-linux-x86_64.tar.gz",
+        "RoomScope-macos-arm64.dmg",
+        "RoomScope-macos-x86_64.dmg",
+        "roomscope-windows-x64.zip",
+        "RoomScope-setup.exe",
+        *CHECKSUM_FILES,
     }
 )
 _SHA = re.compile(r"[0-9a-f]{40}")
@@ -80,12 +104,20 @@ def python_dist_files(version: str) -> tuple[str, str]:
     return (f"roomscope-{version}-py3-none-any.whl", f"roomscope-{version}.tar.gz")
 
 
+def downloads(version: str) -> tuple[str, ...]:
+    """Every file a user may download: both editions, then the Python files."""
+    archives = tuple(name for names in CHECKSUM_FILES.values() for name in names)
+    return (*archives, *python_dist_files(version))
+
+
 def expected_assets(version: str) -> frozenset[str]:
     """Every file one successful run attaches to the draft, and nothing else."""
-    archives = {name for names in CHECKSUM_FILES.values() for name in names}
-    return frozenset(
-        {*python_dist_files(version), *SBOM_FILES, *CHECKSUM_FILES, *archives},
-    )
+    return frozenset({*downloads(version), *SBOM_FILES, RELEASE_CHECKSUMS})
+
+
+def run_files(version: str) -> frozenset[str]:
+    """What one workflow run downloads: the assets, with per-runner checksums."""
+    return (expected_assets(version) - {RELEASE_CHECKSUMS}) | set(CHECKSUM_FILES)
 
 
 def sha256_file(path: Path) -> str:
@@ -113,6 +145,24 @@ def parse_checksums(text: str, source: str) -> dict[str, str]:
             raise ReleaseError(f"{source}: {name} is listed twice")
         sums[name] = digest
     return sums
+
+
+def release_checksums(files: Mapping[str, Path], version: str) -> str:
+    """``sha256sum`` lines for every download, in :func:`downloads` order."""
+    return "".join(f"{sha256_file(files[name])}  {name}\n" for name in downloads(version))
+
+
+def verify_release_checksums(files: Mapping[str, Path], version: str) -> None:
+    """The Release's ``SHA256SUMS`` names every download once, with its digest."""
+    sums = parse_checksums(files[RELEASE_CHECKSUMS].read_text(encoding="utf-8"), RELEASE_CHECKSUMS)
+    if set(sums) != set(downloads(version)):
+        raise ReleaseError(
+            f"{RELEASE_CHECKSUMS} lists {sorted(sums)}, expected {sorted(downloads(version))}"
+        )
+    for name, digest in sums.items():
+        actual = sha256_file(files[name])
+        if actual != digest:
+            raise ReleaseError(f"{RELEASE_CHECKSUMS}: {name} is {actual}, the file says {digest}")
 
 
 def verify_checksums(files: Mapping[str, Path]) -> None:
@@ -144,7 +194,7 @@ def stage(artifacts: Path, out: Path, version: str) -> dict[str, Path]:
     if not artifacts.is_dir():
         raise ReleaseError(f"{artifacts} is not a folder")
     found = collect(artifacts)
-    expected = expected_assets(version)
+    expected = run_files(version)
     missing = sorted(expected - found.keys())
     unexpected = sorted(found.keys() - expected)
     if missing or unexpected:
@@ -155,8 +205,13 @@ def stage(artifacts: Path, out: Path, version: str) -> dict[str, Path]:
     out.mkdir(parents=True, exist_ok=True)
     staged = {}
     for name, path in sorted(found.items()):
+        if name in CHECKSUM_FILES:
+            continue  # checked above; the Release carries one SHA256SUMS instead
         staged[name] = out / name
         shutil.copy2(path, staged[name])
+    staged[RELEASE_CHECKSUMS] = out / RELEASE_CHECKSUMS
+    staged[RELEASE_CHECKSUMS].write_text(release_checksums(staged, version), encoding="utf-8")
+    verify_release_checksums(staged, version)
     return staged
 
 
@@ -165,7 +220,7 @@ def load_staged(folder: Path, version: str) -> dict[str, Path]:
     files = {path.name: path for path in folder.iterdir() if path.is_file()}
     if set(files) != expected_assets(version):
         raise ReleaseError(f"{folder} does not hold exactly the release files")
-    verify_checksums(files)
+    verify_release_checksums(files, version)
     return files
 
 

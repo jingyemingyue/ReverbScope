@@ -1,15 +1,44 @@
-# Developer edition and installer edition
+# Editions: Desktop, Terminal and developer tools
 
 **English** | [简体中文](EDITIONS.zh-CN.md)
 
-RoomScope is one code base with two defaults. Both run the same analysis
-(`roomscope.core.pipeline.analyze`), read and write the same session files and
-report the same numbers; they differ in what is shown around it. The Chinese
-translation is [EDITIONS.zh-CN.md](EDITIONS.zh-CN.md).
+RoomScope is one code base. It is downloaded in two **editions**, and any
+copy can show or hide the **developer tools**. Every variant runs the same
+analysis (`roomscope.core.pipeline.analyze`), reads and writes the same
+session files and reports the same numbers. The Chinese translation is
+[EDITIONS.zh-CN.md](EDITIONS.zh-CN.md).
 
-| | Developer edition | Installer edition (recommended for users) |
+## Desktop Edition and Terminal Edition
+
+| | Desktop Edition | Terminal Edition |
 | --- | --- | --- |
-| How you get it | `git clone` + `pip install -e ".[dev,gui]"`, or `pip install roomscope-<version>-py3-none-any.whl` | `RoomScope-setup.exe`, `RoomScope-macos-<arch>.dmg`, `roomscope-linux-x86_64.tar.gz` from the Releases page |
+| Downloads | `RoomScope-Desktop-macOS-arm64.dmg`, `RoomScope-Desktop-macOS-x86_64.dmg`, `RoomScope-Desktop-Windows-x64-Setup.exe`, `RoomScope-Desktop-Windows-x64.zip`, `RoomScope-Desktop-Linux-x86_64.tar.gz` | `RoomScope-Terminal-macOS-arm64.tar.gz`, `RoomScope-Terminal-macOS-x86_64.tar.gz`, `RoomScope-Terminal-Windows-x64.zip`, `RoomScope-Terminal-Linux-x86_64.tar.gz` |
+| GUI (windows, charts) | yes | no: `roomscope gui` says to install the Desktop Edition |
+| Command line (`roomscope`, every command) | yes | yes |
+| Analysis, comparison, Standalone measurement, English / Chinese | yes | yes |
+| Inside | Python runtime, NumPy, SciPy, soundfile, sounddevice, matplotlib, PySide6 Essentials (Qt) | Python runtime, NumPy, SciPy, soundfile, sounddevice; no Qt, PySide6 or matplotlib |
+| Python required | no | no |
+| Best for | most users | the command line, automation, servers and computers without a desktop |
+
+Both are built by the same job of the release workflow from one PyInstaller
+spec (`packaging/roomscope.spec`, `ROOMSCOPE_PACKAGE=desktop|terminal`). The
+Terminal Edition leaves `roomscope.ui`, PySide6, shiboken6 and matplotlib out;
+`scripts/check_bundle_contents.py --terminal` fails the build if any file of
+them is left, and `scripts/smoke_bundle.py --terminal` runs the demo in
+English and Chinese, checks that `--format json` prints only JSON and that
+`roomscope gui` refuses with a sentence, not a traceback. `build_info.json`
+records the edition (`"package"`), and `roomscope doctor` shows it. On
+Linux x86_64 the Terminal Edition is about 60 MB compressed against about
+150 MB for the Desktop Edition.
+
+## Developer tools
+
+The developer tools are a second, independent choice: two defaults of the
+same program.
+
+| | Developer defaults | Installed defaults (recommended for users) |
+| --- | --- | --- |
+| How you get it | `git clone` + `pip install -e ".[dev,gui]"`, or `pip install roomscope-<version>-py3-none-any.whl` | either edition from the Releases page |
 | Detected by | not a frozen bundle (`sys.frozen` unset) | a PyInstaller bundle |
 | Help ▸ Environment Report for Bug Reports (with sample-rate probe) | yes | yes |
 | Developer menu (Audio Device Inspector, Open Data Folder) | yes | no, unless switched on |
@@ -24,7 +53,7 @@ command-line tool is the same in both editions: `roomscope devices --probe`,
 `roomscope doctor` and the `measure` options `--latency`, `--wasapi-exclusive`
 and `--coreaudio-set-rate` are always available.
 
-## Developer edition: what it is for
+### Developer defaults: what they are for
 
 * **Debugging a device path.** Developer ▸ *Audio Device Inspector* lists every
   host API and device, probes the sample rates each accepts for one channel
@@ -39,12 +68,12 @@ and `--coreaudio-set-rate` are always available.
 * **Extending.** Exporters register under the `roomscope.exporters` entry point
   (see `roomscope.io.exporters`); the analysis is a plain Python API
   (README ▸ Python API). Contributions follow [CONTRIBUTING.md](../CONTRIBUTING.md).
-* **Building releases.** `scripts/build_release.py` builds the installer
-  edition of the current platform locally ([RELEASE_PLAN.md](RELEASE_PLAN.md) §3a).
+* **Building releases.** `scripts/build_release.py` builds both editions of
+  the current platform locally ([RELEASE_PLAN.md](RELEASE_PLAN.md) §3a).
 
-## Installer edition: what it keeps simple
+### Installed defaults: what they keep simple
 
-The installer edition opens on the Home page with the three workflows, and
+An installed Desktop Edition opens on the Home page with the three workflows, and
 its Settings dialog holds only what a user changes: language, theme (system,
 light, dark), default recording profile, audio backend, default output folder
 and whether the raw recording is copied into each session. Standalone Mode

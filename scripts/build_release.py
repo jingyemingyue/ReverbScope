@@ -7,17 +7,25 @@ below), and writes the same file names into
 Windows PC and a Linux PC and attach the results to the draft Release by
 hand (``docs/RELEASE_PLAN.md`` §3a):
 
-* license bundle -> PyInstaller -> ``--strip`` bundle gate -> smoke test
-  (CLI, fake-backend measurement, offscreen GUI, windowed launcher);
-* Linux: ``roomscope-linux-x86_64.tar.gz``;
-* Windows: ``roomscope-windows-x64.zip`` and, with Inno Setup installed,
-  ``RoomScope-setup.exe``. The installer is compiled but not installed,
-  smoke-tested and uninstalled as the workflow does, because that would
-  change this PC; run it by hand (``/VERYSILENT /CURRENTUSER /DIR=<folder>``,
-  ``smoke_bundle.py --root <folder>``, ``unins000.exe /VERYSILENT``) before
-  publishing a locally built installer;
-* macOS: ad-hoc signed ``RoomScope.app`` in ``RoomScope-macos-<arch>.dmg``,
-  mounted and launched by ``check_macos_dmg.py``;
+* Desktop Edition: license bundle -> PyInstaller -> ``--strip`` bundle gate
+  -> smoke test (CLI, demo, fake-backend measurement, offscreen GUI, windowed
+  launcher);
+* Terminal Edition: its license bundle -> PyInstaller with
+  ``ROOMSCOPE_PACKAGE=terminal`` -> the ``--terminal`` gate (no Qt, PySide6
+  or matplotlib) -> smoke test (CLI, demo in English and Chinese, JSON on
+  stdout, ``gui`` refused politely);
+* Linux: ``RoomScope-Desktop-Linux-x86_64.tar.gz`` and
+  ``RoomScope-Terminal-Linux-x86_64.tar.gz``;
+* Windows: ``RoomScope-Desktop-Windows-x64.zip``,
+  ``RoomScope-Terminal-Windows-x64.zip`` and, with Inno Setup installed,
+  ``RoomScope-Desktop-Windows-x64-Setup.exe``. The installer is compiled but
+  not installed, smoke-tested and uninstalled as the workflow does, because
+  that would change this PC; run it by hand (``/VERYSILENT /CURRENTUSER
+  /DIR=<folder>``, ``smoke_bundle.py --root <folder>``, ``unins000.exe
+  /VERYSILENT``) before publishing a locally built installer;
+* macOS: ad-hoc signed ``RoomScope.app`` in
+  ``RoomScope-Desktop-macOS-<arch>.dmg``, mounted and launched by
+  ``check_macos_dmg.py``, and ``RoomScope-Terminal-macOS-<arch>.tar.gz``;
 * ``SHA256SUMS-<OS>-<ARCH>``; with ``--python-dist`` also the wheel and sdist.
 
 Install the pinned runtime first (the script refuses a different one unless
@@ -47,6 +55,8 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+#: The Windows Terminal Edition's "open a prompt here" launcher.
+TERMINAL_CMD = "RoomScope Terminal.cmd"
 DIST = ROOT / "dist"
 PYINSTALLER_VERSION = "6.22.3"
 INNO_SETUP_DEFAULT = Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / (
@@ -68,11 +78,27 @@ class Target:
 
     @property
     def archives(self) -> tuple[str, ...]:
+        """Desktop Edition file(s), then the Terminal Edition's (release_draft.CHECKSUM_FILES)."""
         if self.system == "Linux":
-            return ("roomscope-linux-x86_64.tar.gz",)
+            return (
+                "RoomScope-Desktop-Linux-x86_64.tar.gz",
+                "RoomScope-Terminal-Linux-x86_64.tar.gz",
+            )
         if self.system == "Windows":
-            return ("roomscope-windows-x64.zip", "RoomScope-setup.exe")
-        return (f"RoomScope-macos-{self.machine}.dmg",)
+            return (
+                "RoomScope-Desktop-Windows-x64-Setup.exe",
+                "RoomScope-Desktop-Windows-x64.zip",
+                "RoomScope-Terminal-Windows-x64.zip",
+            )
+        return (
+            f"RoomScope-Desktop-macOS-{self.cpu}.dmg",
+            f"RoomScope-Terminal-macOS-{self.cpu}.tar.gz",
+        )
+
+    @property
+    def cpu(self) -> str:
+        """``arm64`` or ``x86_64``: the CPU in the file names and in the smoke test."""
+        return "arm64" if self.arch == "ARM64" else "x86_64"
 
 
 def current_target() -> Target:
@@ -215,31 +241,80 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
         steps.append(Step("Check macOS .app and its licenses", mac_app))
 
     def smoke() -> None:
-        out = work / "bundle-smoke"
+        out = work / "bundle-smoke" / "session"
         extra = [] if target.system == "macOS" else ["--require-gui-launcher"]
+        extra += ["--expect-package", "desktop", "--expect-machine", target.cpu]
         _python("scripts/smoke_bundle.py", "--root", bundle, "--out", out, *extra, env=offscreen)
         if target.system == "macOS":
             _run(app / "Contents" / "MacOS" / "RoomScope", "gui", "--smoke", env=offscreen)
 
-    steps.append(Step("Smoke frozen binary", smoke))
+    steps.append(Step("Smoke frozen binary (Desktop Edition)", smoke))
+
+    terminal = DIST / "roomscope-terminal"
+    terminal_licenses = work / "THIRD_PARTY_LICENSES-terminal"
+
+    def terminal_build() -> None:
+        shutil.rmtree(terminal, ignore_errors=True)
+        shutil.rmtree(terminal_licenses, ignore_errors=True)
+        _python("scripts/build_license_bundle.py", "--terminal", "--out", terminal_licenses)
+        _python(
+            "-m",
+            "PyInstaller",
+            "--noconfirm",
+            "--clean",
+            "--workpath",
+            ROOT / "build" / "terminal",
+            "packaging/roomscope.spec",
+            env={**os.environ, "ROOMSCOPE_PACKAGE": "terminal"},
+        )
+        shutil.copytree(terminal_licenses, terminal / "THIRD_PARTY_LICENSES", dirs_exist_ok=True)
+        _python(
+            "scripts/check_bundle_contents.py",
+            "--root",
+            terminal,
+            "--strip",
+            "--require-licenses",
+            "--terminal",
+        )
+        if target.system == "Windows":
+            shutil.copy2(ROOT / "packaging" / "windows" / "terminal" / TERMINAL_CMD, terminal)
+
+    steps.append(Step("Terminal Edition (command line only, no Qt)", terminal_build))
+
+    def terminal_smoke() -> None:
+        _python(
+            "scripts/smoke_bundle.py",
+            "--root",
+            terminal,
+            "--out",
+            work / "terminal-smoke" / "session",
+            "--terminal",
+            "--expect-package",
+            "terminal",
+            "--expect-machine",
+            target.cpu,
+        )
+
+    steps.append(Step("Smoke Terminal Edition", terminal_smoke))
+    desktop_name, *_rest = target.archives
 
     if target.system == "Linux":
 
         def linux_archive() -> None:
-            _run("tar", "-C", DIST, "-czf", DIST / "roomscope-linux-x86_64.tar.gz", "roomscope")
+            _run("tar", "-C", DIST, "-czf", DIST / desktop_name, "roomscope")
 
-        steps.append(Step("Linux archive", linux_archive))
+        steps.append(Step("Linux archive (Desktop Edition)", linux_archive))
     elif target.system == "Windows":
 
         def windows_zip() -> None:
-            shutil.make_archive(str(DIST / "roomscope-windows-x64"), "zip", bundle)
+            shutil.make_archive(str(DIST / "RoomScope-Desktop-Windows-x64"), "zip", bundle)
 
-        steps.append(Step("Windows zip", windows_zip))
+        steps.append(Step("Windows zip (Desktop Edition)", windows_zip))
         iscc = find_iscc()
 
         def windows_installer() -> None:
             assert iscc is not None
-            (DIST / "RoomScope-setup.exe").unlink(missing_ok=True)
+            (DIST / "RoomScope-Desktop-Windows-x64-Setup.exe").unlink(missing_ok=True)
             # Released Inno Setup keeps the Chinese messages unofficial (not installed).
             chinese = subprocess.run(
                 [
@@ -269,7 +344,7 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
             )
         )
     else:
-        dmg = DIST / f"RoomScope-macos-{target.machine}.dmg"
+        dmg = DIST / desktop_name
 
         def mac_dmg() -> None:
             _run("bash", "packaging/macos/make_dmg.sh", app, dmg)
@@ -277,10 +352,25 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
 
         steps.append(Step("macOS disk image", mac_dmg))
 
+    terminal_archive_name = target.archives[-1]
+
+    def terminal_archive() -> None:
+        if target.system == "Windows":
+            shutil.make_archive(
+                str(DIST / terminal_archive_name.removesuffix(".zip")), "zip", terminal
+            )
+        else:
+            _run("tar", "-C", DIST, "-czf", DIST / terminal_archive_name, "roomscope-terminal")
+
+    steps.append(Step("Terminal Edition archive", terminal_archive))
+
     def checksums() -> None:
         assets = [DIST / name for name in target.archives if (DIST / name).is_file()]
         if not assets:
             raise SystemExit("no distributable archive was produced")
+        missing = [name for name in target.archives if not (DIST / name).is_file()]
+        if missing and not (args.no_installer and missing == [target.archives[0]]):
+            raise SystemExit(f"missing release files: {', '.join(missing)}")
         (DIST / target.checksum_name).write_text(checksum_lines(assets), encoding="utf-8")
 
     steps.append(Step("Checksums of distributable files", checksums))
