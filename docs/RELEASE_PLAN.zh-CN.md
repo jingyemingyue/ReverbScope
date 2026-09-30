@@ -9,7 +9,7 @@
 ## 1. 现状
 
 * `main` 已经包含 v0.1 基础 + 0.2（重开与对比）+ 0.3（信任测量链）+ 0.4（面向所有人）+ 1.0-rc 的纯软件部分。四个里程碑 PR（#5、#6、#7、#8）在 2026-09-24 审查后合并，审查发现记录为 issue #9–#16。
-* 还没有任何 tag 或已发布的 Release（v0.4.1 是草稿）。仓库已于 2026-09-24 公开。**更新（2026-09-27）：** v0.4.1 已准备好作为第一个面向早期测试者的*公开*预发布版本：README 和 [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) 以下载为先，发布说明以“选择版本（Choose your edition）”和“已知限制”开头，候选构建已核对（§3c）。**更新（2026-09-29）：** 每个平台都提供桌面版和终端版（[EDITIONS.zh-CN.md](EDITIONS.zh-CN.md)），`CHANGELOG.md` 的 `[Unreleased]` 条目已并入 `[0.4.1]`，草稿的说明因此涵盖这个预发布版本的全部内容。维护者发布草稿后它才公开；这里的任何改动都不会发布它。**更新（2026-09-30）：** 候选版本已进入 `main`：按 PR #24 → #22 → #21 的顺序用合并提交合并（不 squash、不 rebase），`main` = `c5fe692`，其文件树与 #24 的 head 完全相同。该提交上 CI #81 和 Release #34 全绿，Release #34 用这个提交的 14 个文件刷新了 v0.4.1 草稿（STATUS 快照 32）。PR #23 已作为被 #24 取代而关闭。草稿仍未发布。
+* 还没有任何 tag 或已发布的 Release（v0.4.1 是草稿）。仓库已于 2026-09-24 公开。**更新（2026-09-27）：** v0.4.1 已准备好作为第一个面向早期测试者的*公开*预发布版本：README 和 [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) 以下载为先，发布说明以“选择版本（Choose your edition）”和“已知限制”开头，候选构建已核对（§3c）。**更新（2026-09-29）：** 每个平台都提供桌面版和终端版（[EDITIONS.zh-CN.md](EDITIONS.zh-CN.md)），`CHANGELOG.md` 的 `[Unreleased]` 条目已并入 `[0.4.1]`，草稿的说明因此涵盖这个预发布版本的全部内容。维护者发布草稿后它才公开；这里的任何改动都不会发布它。**更新（2026-09-30）：** 候选版本已进入 `main`：按 PR #24 → #22 → #21 的顺序用合并提交合并（不 squash、不 rebase），`main` = `c5fe692`，其文件树与 #24 的 head 完全相同。该提交上 CI #81 和 Release #34 全绿，Release #34 用这个提交的 14 个文件刷新了 v0.4.1 草稿（STATUS 快照 32）。PR #23 已作为被 #24 取代而关闭。草稿仍未发布。**收尾更新（2026-09-30）：** PR #25、#26 也已合并；`d97822a` 上的 CI #87 和 Release #38 全绿，同一个草稿已用该提交的 14 个文件和补全测试限制的说明刷新（STATUS 快照 33），仍未发布。
 * 需要人在真实房间完成的事情都没做：硬件矩阵（HARDWARE_TESTS.md）没有一格 PASS，验证活动（VALIDATION.md）没有跑。维护者近期没有测量设备，所以这些排在最后，也可以在开源之后由贡献者补。
 * 签名证书、PyPI 项目名与可信发布都是维护者决定，目前未定；仓库已于 2026-09-24 公开。
 
@@ -44,6 +44,8 @@
 > 第一次在 `main` 上执行这套刷新的是 `c5fe692` 上的 Release #34（2026-09-30）：它原地更新了已有草稿 395349087（替换 4 个文件、
 > 删除 6 个旧文件名、上传 14 个文件），*Verify the draft* 步骤通过。之后如果提交没有碰上面这些路径（例如只改 `docs/`），
 > 草稿仍停在 `c5fe692`，发布时 tag 打在 `c5fe692` 上，也就是构建这些文件的提交。
+> 后来 PR #26 修改了发布说明头，Release #38 已从 `d97822a` 刷新同一个草稿。之后仅修改文档的收尾记录不触发 Release，
+> 所以草稿目标仍为 `d97822a`，发布时 tag 会打在这个实际构建附件的提交上（STATUS 快照 33）。
 
 1. **在 `main` 上准备发布提交**：把 `project.version` 改成新版本（不带 `.dev`），把 CHANGELOG 的 `[Unreleased]` 挪到 `## [版本] - 日期` 下，在 `docs/STATUS.md` 加一条写明“实际跑了什么”的快照，依赖版本有变时复查 DEPENDENCIES.md §3–§4。提交并推送。
 2. **CI 自动开草稿**：`pyproject.toml` 在 `main` 上变了、且还没有 `v<版本>` 这个 tag，工作流就会跑 lint/类型检查/测试，构建 sdist 和 wheel，在三个系统上构建未签名安装包（许可证包 → PyInstaller → 剥掉 GPL-only Qt 模块和 ASIO DLL → 门禁 → 冒烟测试 → 打包 → 校验和），生成 SBOM，然后打开或刷新名为 `v<版本>` 的**草稿** Release，正文是发布说明（`packaging/release-notes-header.md` 包着 CHANGELOG 对应段落），附件是那 14 个文件。**此时还没有 tag。** 带 `.dev` 的版本不会开草稿。
@@ -117,7 +119,7 @@ Windows 运行器上启动过）；Linux 包在空环境中的冒烟；密钥与
 1. 把候选分支合并到 `main`，等该提交上的 **CI** 和 **Release** 都变绿；Release 会用该提交的 14 个文件和新的说明刷新 v0.4.1 草稿。
 2. 在草稿上核对：目标提交是那个绿色的 `main` 提交；14 个附件齐全（桌面版 5 个、终端版 4 个、wheel、sdist、`SHA256SUMS`、SBOM 和锁定文件）；说明以 *RoomScope v0.4.1 — Early public pre-release for testing* 开头。
 
-   **第 1、2 步已于 2026-09-30 完成**（STATUS 快照 32）：`main` = `c5fe692`，CI #81 和 Release #34 全绿；草稿目标提交是 `c5fe692`，附件正好是上面 14 个，工作流的 *Verify the draft* 步骤已把说明、文件大小和摘要与本次运行的文件逐一比对。第 3 到 5 步由维护者完成。
+   **第 1、2 步在 PR #25、#26 合并后于 2026-09-30 重新核验**（STATUS 快照 33）：发布提交为 `d97822a`，CI #87 和 Release #38 全绿；草稿目标为 `d97822a`，附件正好是上面 14 个，说明与该提交修正后的发布说明头和 CHANGELOG 一致，工作流的 *Verify the draft* 步骤已把文件名、大小和摘要与本次运行的文件逐一比对。之后仅修改文档的提交不会改变草稿目标。第 3 到 5 步由维护者完成。
 3. 建议发布前：下载适合你的 Mac 的 DMG，按 [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) 安装并打开一次（包括 Gatekeeper 步骤）。这是任何工作流都做不到的一项检查。
 4. 保持勾选 **Set as a pre-release**，不要勾选 *Set as the latest release*，点 **Publish release**。发布会在目标提交上创建 tag `v0.4.1`；PyPI 仍然关闭（§3d）。
 5. 用无痕窗口打开 <https://github.com/jingyemingyue/RoomScope/releases>，确认能看到 v0.4.1 及其附件。README 链接的是这个页面而不是 `/releases/latest`，因为 GitHub 的 *latest* 永远不会指向预发布版本（只有预发布时会跳转到 `/releases`，API 返回 404）。
@@ -135,7 +137,7 @@ CI 全绿（lint、mypy、文档链接检查、文档站点构建、`check_src_s
 
 ## 5. 仍待维护者决定
 
-公开仓库（已于 2026-09-24 公开；§9.1 清单中其余仓库设置未在此核对）；Apple Developer ID + 公证、Windows 签名，或明确决定不签名发 1.0；PyPI 注册 `roomscope`、配可信发布、建 `pypi` 环境、设 `ROOMSCOPE_PUBLISH_PYPI=true`、为 PyPI 准备使用绝对链接的 README（§3d）；把 v0.4.1 草稿发布为第一个公开预发布版本（§3c，已就绪，2026-09-30 由 Release #34 从 `main` 的 `c5fe692` 刷新，未发布）；验证活动的房间、参考工具（REW 只作对比仪器）和执行人；是否要求 DCO 签署；Dependabot 的 #3 / #4 等 v0.4.1 发布之后再处理（收尾期间不升级 GitHub Actions 的大版本），届时在它重新 rebase 到 SHA 固定的工作流并且 CI 绿之后合并。
+公开仓库（已于 2026-09-24 公开；§9.1 清单中其余仓库设置未在此核对）；Apple Developer ID + 公证、Windows 签名，或明确决定不签名发 1.0；PyPI 注册 `roomscope`、配可信发布、建 `pypi` 环境、设 `ROOMSCOPE_PUBLISH_PYPI=true`、为 PyPI 准备使用绝对链接的 README（§3d）；把 v0.4.1 草稿发布为第一个公开预发布版本（§3c，已就绪，2026-09-30 由 Release #38 从 `d97822a` 刷新，STATUS 快照 33，未发布）；验证活动的房间、参考工具（REW 只作对比仪器）和执行人；是否要求 DCO 签署；Dependabot 的 #3 / #4 等 v0.4.1 发布之后再处理（收尾期间不升级 GitHub Actions 的大版本），届时在它重新 rebase 到 SHA 固定的工作流并且 CI 绿之后合并。
 
 ## 6. 2026-09-24 审查后续（issue）
 

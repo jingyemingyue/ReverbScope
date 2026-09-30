@@ -6,6 +6,48 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 33: 2026-09-30 — **v0.4.1 final merge close-out; the draft
+contains the testing limitations from PR #26.** PR #25 (`90c316b`) was
+merged as `932885e`, then PR #26 (`4f91e62`) as
+**`d97822afb4d6f77e81c04e95b040f56680f00cf7`**, using merge commits and
+pinning each PR head. Both PRs had green CI and no unresolved review
+threads; #26 also had a green Release #37 before merging. The combined
+diff against `c5fe692` changes only README, CHANGELOG, the release-notes
+header and release/status documentation; no source, tests, dependencies or
+workflow changed.
+
+**Checks on the release commit `d97822a`:**
+[CI #87](https://github.com/jingyemingyue/RoomScope/actions/runs/36667088717)
+and [Release #38](https://github.com/jingyemingyue/RoomScope/actions/runs/36667088841)
+completed successfully. CI includes the Ubuntu Python 3.12 / 3.13 / 3.14,
+macOS Python 3.12 and Windows Python 3.12 test jobs, lint/types, JSON
+Schemas, Python distributions and the license/GPL-module gate. The Release
+quality job reports **810 passed, 1 skipped** (the runner has no CJK font),
+with core + models coverage **90.48 %** (required: 85 %), plus seven
+schema/public-API tests passed.
+Release
+includes the Apple silicon and Intel macOS, Windows and Linux builds of
+both editions, the release-file/checksum gate and the draft verification;
+PyPI was skipped.
+
+**Draft read-back:** release 395349087 is still the one unpublished
+v0.4.1 draft, marked pre-release, targeting `d97822a`. It contains exactly
+the 14 expected assets, all uploaded with nonzero sizes and SHA-256 digests.
+Its body matches the release notes rendered from this commit's header and
+CHANGELOG, including the own-machine-install and Chinese-Windows-installer
+limitations and the synthetic-room qualifier. The workflow's *Verify the
+draft* step passed. No tag `v0.4.1` exists. A later docs-only close-out
+commit does not trigger Release: publishing this draft will tag
+`d97822a`, the commit its files were built from.
+
+**Remaining work:** publish the draft using RELEASE_PLAN §3c; real
+interface/microphone/DAW and own-machine install testing, including macOS
+14 and the Chinese installer screens, remains unperformed. The minor CLI
+issues listed in snapshot 32 remain; its two release-wording issues are
+fixed by #26. Dependabot #3 / #4 remain open until after v0.4.1 is
+published, as the release freeze requires. No local test or real hardware
+measurement is claimed by this snapshot.
+
 Snapshot 32: 2026-09-30 — **the v0.4.1 release candidate is on `main`; the
 draft Release is refreshed from it and waits for the maintainer.** No code
 change in this snapshot; it records the merge and what was run.
