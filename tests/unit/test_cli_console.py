@@ -429,6 +429,29 @@ def test_a_next_step_quotes_a_path_that_contains_a_space() -> None:
     assert shlex.split(line)[2:] == [session, "<other-session>"]
 
 
+def test_a_windows_path_is_quoted_only_when_it_has_a_space(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A backslash is a separator on Windows, not a reason to add quotes."""
+    from roomscope.cli import console as console_module
+
+    monkeypatch.setattr(console_module.os, "name", "nt")
+    show = console_module.shell_command(["roomscope", "show", r"roomscope-demo\position-a"])
+    assert show == r"roomscope show roomscope-demo\position-a"
+    compare = console_module.shell_command(["roomscope", "compare", r"My Room\take 1", "<other>"])
+    assert compare == r'roomscope compare "My Room\take 1" <other>'
+    # The placeholder is an instruction, not a path, so it stays bare.
+    assert "<other>" in compare and "'<other>'" not in compare and '"<other>"' not in compare
+
+
+def test_a_posix_shell_quotes_a_backslash(monkeypatch: pytest.MonkeyPatch) -> None:
+    from roomscope.cli import console as console_module
+
+    monkeypatch.setattr(console_module.os, "name", "posix")
+    shown = console_module.shell_command(["roomscope", "show", r"odd\name"])
+    assert shown == "roomscope show 'odd\\name'"
+
+
 def test_every_help_example_is_a_valid_command(home: Path) -> None:
     import shlex
 

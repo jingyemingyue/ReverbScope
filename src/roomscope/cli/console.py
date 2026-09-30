@@ -28,6 +28,7 @@ import os
 import re
 import shlex
 import shutil
+import subprocess
 import sys
 import time
 import unicodedata
@@ -140,15 +141,25 @@ def shell_command(argv: Iterable[str]) -> str:
     """One copy-paste command. An argument with a space or a quote is quoted.
 
     Placeholders such as ``<take.wav>`` stay bare: they are instructions, not
-    a path, and quoting them would hide that.
+    a path, and quoting them would hide that. A backslash is quoted only for
+    a POSIX shell, where it is an escape; on Windows it is a path separator
+    (``roomscope-demo\\position-a``) and must stay unquoted.
     """
+    windows = os.name == "nt"
+    # POSIX also quotes a backslash. Windows quotes with the cmd rules, and
+    # only when the argument actually needs it.
     parts: list[str] = []
     for part in argv:
         text = str(part)
-        if any(char.isspace() for char in text) or any(char in text for char in "\"'\\"):
-            parts.append(shlex.quote(text))
-        else:
+        needs_quotes = any(char.isspace() for char in text) or '"' in text or "'" in text
+        if not windows and "\\" in text:
+            needs_quotes = True
+        if not needs_quotes:
             parts.append(text)
+        elif windows:
+            parts.append(subprocess.list2cmdline([text]))
+        else:
+            parts.append(shlex.quote(text))
     return " ".join(parts)
 
 

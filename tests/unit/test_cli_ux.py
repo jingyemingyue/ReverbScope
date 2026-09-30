@@ -119,7 +119,13 @@ def test_ascii_demo_lines_fit_when_signs_expand(demo_run: DemoRun) -> None:
             gui_available=True,
         )
         for line in text.splitlines():
-            if "roomscope " in line or "http" in line or "pip install" in line or "/" in line:
+            if (
+                "roomscope " in line
+                or "http" in line
+                or "pip install" in line
+                or "/" in line
+                or "\\" in line
+            ):
                 continue
             assert cell_width(line) <= width, (width, line)
 
