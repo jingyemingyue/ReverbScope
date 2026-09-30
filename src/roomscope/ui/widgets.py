@@ -10,7 +10,16 @@ from __future__ import annotations
 import math
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QIcon, QMouseEvent, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import (
+    QColor,
+    QIcon,
+    QKeySequence,
+    QMouseEvent,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -96,8 +105,10 @@ class ModeCard(Card):
         top.addWidget(icon)
         top.addStretch(1)
         if shortcut:
-            # The File menu already binds Ctrl+1/2/3; the badge shows which.
-            top.addWidget(label(shortcut, "badge"))
+            # Same sequence as the Measure menu. Native text is Ctrl+1 on
+            # Windows and Linux, and the command glyph on macOS.
+            shown = QKeySequence(shortcut).toString(QKeySequence.SequenceFormat.NativeText)
+            top.addWidget(label(shown, "badge"))
         self.body.addLayout(top)
         self.body.addWidget(label(title, "card-title", wrap=True))
         description = label(text, "hint", wrap=True)

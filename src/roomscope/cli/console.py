@@ -28,7 +28,6 @@ import os
 import re
 import shlex
 import shutil
-import subprocess
 import sys
 import time
 import unicodedata
@@ -137,27 +136,61 @@ def glue_units(text: str) -> str:
     return _UNIT.sub(lambda match: match.group(1) + GLUE + match.group(2), text)
 
 
+def _windows_cmdline_arg(text: str) -> str:
+    """One argv element quoted the way ``cmd.exe`` parses it.
+
+    Same rules as ``subprocess.list2cmdline`` for a single argument. Inlined
+    because ``src/`` may not import ``subprocess`` (that module is for
+    launching processes; this only prints a command the user can copy).
+    """
+    # A space, a tab, or an empty argument needs quotes. A quote is escaped
+    # either way.
+    needs_quotes = (not text) or any(char in text for char in " \t")
+    out: list[str] = ['"'] if needs_quotes else []
+    backslashes: list[str] = []
+    for char in text:
+        if char == "\\":
+            backslashes.append(char)
+            continue
+        if char == '"':
+            out.append("\\" * (len(backslashes) * 2))
+            backslashes = []
+            out.append('\\"')
+            continue
+        if backslashes:
+            out.extend(backslashes)
+            backslashes = []
+        out.append(char)
+    if backslashes:
+        out.extend(backslashes)
+    if needs_quotes:
+        # Trailing backslashes sit before the closing quote, so they are escaped.
+        out.extend(backslashes)
+        out.append('"')
+    return "".join(out)
+
+
 def shell_command(argv: Iterable[str]) -> str:
     """One copy-paste command. An argument with a space or a quote is quoted.
 
     Placeholders such as ``<take.wav>`` stay bare: they are instructions, not
-    a path, and quoting them would hide that. A backslash is quoted only for
-    a POSIX shell, where it is an escape; on Windows it is a path separator
-    (``roomscope-demo\\position-a``) and must stay unquoted.
+    a path, and quoting them would hide that. On Windows a backslash is
+    rewritten to a slash before quoting. cmd, PowerShell and Git Bash all
+    open that form, and a POSIX-style split (the demo replays its own next
+    steps that way) no longer eats the separator. A POSIX shell still quotes
+    a backslash, because there it is an escape.
     """
     windows = os.name == "nt"
-    # POSIX also quotes a backslash. Windows quotes with the cmd rules, and
-    # only when the argument actually needs it.
     parts: list[str] = []
     for part in argv:
-        text = str(part)
+        text = str(part).replace("\\", "/") if windows else str(part)
         needs_quotes = any(char.isspace() for char in text) or '"' in text or "'" in text
         if not windows and "\\" in text:
             needs_quotes = True
         if not needs_quotes:
             parts.append(text)
         elif windows:
-            parts.append(subprocess.list2cmdline([text]))
+            parts.append(_windows_cmdline_arg(text))
         else:
             parts.append(shlex.quote(text))
     return " ".join(parts)

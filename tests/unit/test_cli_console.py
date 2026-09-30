@@ -429,17 +429,26 @@ def test_a_next_step_quotes_a_path_that_contains_a_space() -> None:
     assert shlex.split(line)[2:] == [session, "<other-session>"]
 
 
-def test_a_windows_path_is_quoted_only_when_it_has_a_space(
+def test_a_windows_path_uses_slashes_so_any_shell_can_replay_it(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """A backslash is a separator on Windows, not a reason to add quotes."""
+    """A backslash is a separator on Windows and an escape everywhere else.
+
+    Next-step lines are replayed with a POSIX split (see the demo
+    walkthrough). Printing the path with slashes keeps that split, cmd and
+    PowerShell on the same string, without quoting a path that has no space.
+    """
+    import shlex
+
     from roomscope.cli import console as console_module
 
     monkeypatch.setattr(console_module.os, "name", "nt")
     show = console_module.shell_command(["roomscope", "show", r"roomscope-demo\position-a"])
-    assert show == r"roomscope show roomscope-demo\position-a"
+    assert show == "roomscope show roomscope-demo/position-a"
+    assert shlex.split(show) == ["roomscope", "show", "roomscope-demo/position-a"]
     compare = console_module.shell_command(["roomscope", "compare", r"My Room\take 1", "<other>"])
-    assert compare == r'roomscope compare "My Room\take 1" <other>'
+    assert compare == 'roomscope compare "My Room/take 1" <other>'
+    assert shlex.split(compare)[2:] == ["My Room/take 1", "<other>"]
     # The placeholder is an instruction, not a path, so it stays bare.
     assert "<other>" in compare and "'<other>'" not in compare and '"<other>"' not in compare
 

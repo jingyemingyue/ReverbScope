@@ -15,12 +15,14 @@ All notable changes to RoomScope are documented here. The format follows
   a space. `sweep`, `export` and `show --list` say so when `--format json` does
   not apply instead of ignoring it. On a narrow encoding (`cp1252`), signs such
   as `Δ` are widened before the line is wrapped, so a demo line no longer runs
-  past the terminal. On Windows a backslash in a path does not by itself add
-  quotes (it is a separator there; a POSIX shell still quotes it).
+  past the terminal. On Windows a next-step path is printed with slashes, so
+  the same line pastes into cmd, PowerShell and Git Bash; a space is still
+  quoted, and a POSIX shell still quotes a backslash.
 - **Desktop app.** The home screen shows which keyboard shortcut opens each
-  mode (the same Ctrl+1 / Ctrl+2 / Ctrl+3 as the Measure menu). A status bar
-  names the version and the current page. Results can copy the full text
-  report to the clipboard.
+  mode, using the same Ctrl+1 / Ctrl+2 / Ctrl+3 as the Measure menu (the
+  platform's own shortcut text, not a bare digit). A status bar names the
+  version and the current page. Results can copy the full text report to
+  the clipboard.
 
 ## [0.4.1] - 2026-09-29
 
