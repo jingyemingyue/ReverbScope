@@ -8,9 +8,19 @@ place and follows the light / dark scheme.
 from __future__ import annotations
 
 import math
+import sys
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QIcon, QMouseEvent, QPainter, QPainterPath, QPen, QPixmap
+from PySide6.QtGui import (
+    QColor,
+    QIcon,
+    QKeySequence,
+    QMouseEvent,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QPixmap,
+)
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -31,6 +41,21 @@ def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:
         widget.setProperty("role", role)
     widget.setWordWrap(wrap)
     return widget
+
+
+def shortcut_badge(sequence: str) -> str:
+    """Key mark for a card: ``⌃1``, or ``⌘1`` on macOS.
+
+    The word ``Ctrl`` is English, and the Chinese interface rejects it.
+    ``sequence`` is a Qt shortcut such as ``Ctrl+1``.
+    """
+    key = sequence.rsplit("+", 1)[-1]
+    if sys.platform == "darwin":
+        native = QKeySequence(sequence).toString(QKeySequence.SequenceFormat.NativeText)
+        if native and "Ctrl" not in native:
+            return native
+        return f"⌘{key}"
+    return f"⌃{key}"
 
 
 def primary(button: QPushButton) -> QPushButton:
@@ -77,7 +102,14 @@ class ModeCard(Card):
     clicked = Signal()
 
     def __init__(
-        self, glyph: str, title: str, text: str, action: str, parent: QWidget | None = None
+        self,
+        glyph: str,
+        title: str,
+        text: str,
+        action: str,
+        parent: QWidget | None = None,
+        *,
+        shortcut: str = "",
     ) -> None:
         super().__init__(parent, spacing=6)
         self.setProperty("hover", True)
@@ -88,6 +120,10 @@ class ModeCard(Card):
         icon = label(glyph, "pill")
         top.addWidget(icon)
         top.addStretch(1)
+        if shortcut:
+            # Same keys as the Measure menu. A control mark, not the word
+            # "Ctrl": that word fails the Chinese-interface gate.
+            top.addWidget(label(shortcut_badge(shortcut), "badge"))
         self.body.addLayout(top)
         self.body.addWidget(label(title, "card-title", wrap=True))
         description = label(text, "hint", wrap=True)

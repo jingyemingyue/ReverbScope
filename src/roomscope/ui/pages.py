@@ -100,18 +100,21 @@ class HomePage(QWidget):
             _("Universal DAW Mode"),
             _("Generate a test signal, play and record it in any DAW, import the recording."),
             _("Start in my DAW"),
+            shortcut="Ctrl+1",
         )
         standalone = ModeCard(
             "I/O",
             _("Standalone Mode"),
             _("RoomScope plays the sweep and records the microphone through your audio interface."),
             _("Measure now"),
+            shortcut="Ctrl+2",
         )
         demo = ModeCard(
             _("DEMO"),
             _("Demo (no interface)"),
             _("Run Standalone Mode on the fake backend. Nothing is sent to a loudspeaker."),
             _("Try the demo"),
+            shortcut="Ctrl+3",
         )
         daw.clicked.connect(lambda: self.choose_mode.emit("universal_daw"))
         standalone.clicked.connect(lambda: self.choose_mode.emit("standalone"))

@@ -37,7 +37,10 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
   still unpublished. **Close-out update (2026-09-30):** PRs #25 and #26
   are also merged. CI #87 and Release #38 passed on `d97822a`, and the same
   draft was refreshed with that commit's 14 files and corrected testing
-  limitations (STATUS snapshot 33). It remains unpublished.
+  limitations (STATUS snapshot 33). It remains unpublished. **Published
+  (2026-09-30):** the draft was published as a pre-release, not as the latest
+  release. Tag `v0.4.1` points at `d97822a` and the 14 assets stayed. An
+  install on a person's own computer (checklist step 3) is still open.
 * **Update (2026-09-24, later the same day):** the review follow-ups
   #9–#17 (#17, the QML part of the bundle gate, was found after this plan
   was written) are fixed on the branch `v0.4.1-review-followups`, which
@@ -421,7 +424,7 @@ instead of the extra of a package that is not on PyPI.
 | Public flip of the repository (ARCHITECTURE_V1.md §9.1 checklist: description and topics, branch protection on `main`, CODEOWNERS present, private vulnerability reporting, labels, Discussions, pinned roadmap) | 1.0.0rc1 (recommended at the first candidate so it gets outside testing) | Repository public since 2026-09-24; CODEOWNERS is present; the other checklist items are repository settings not checked here (the issue templates use the labels `hardware-report` and `daw-report`, which GitHub adds only if they exist) |
 | Apple Developer ID + notarization, Windows Authenticode; or ship 1.0 unsigned with documentation | 1.0.0rc1 | Open; 0.x bundles are unsigned by design |
 | PyPI: register `roomscope`, configure trusted publishing, create the `pypi` environment with required reviewers, set `ROOMSCOPE_PUBLISH_PYPI=true`; give PyPI a README with absolute links | First version the maintainer wants on PyPI (earliest 0.5.0) | Open; readiness in §3d; the workflow stays off until then |
-| Publish the v0.4.1 draft as the first public pre-release | Now | Ready for the maintainer's click (§3c); refreshed from `d97822a` by Release #38 on 2026-09-30 (STATUS snapshot 33); not published |
+| Publish the v0.4.1 draft as the first public pre-release | Done | Published 2026-09-30 as a pre-release (not latest), tag `v0.4.1` on `d97822a`, 14 assets. Own-machine install (checklist step 3) is still open |
 | Validation campaign: rooms, reference instrument (REW as a comparison instrument only), who runs it | 1.0.0rc1 | Open; no hardware available near-term |
 | DCO sign-off requirement | Public flip | Open |
 | Dependabot PRs #3 / #4 (actions/checkout 4→7, actions/setup-python 5→7) | After v0.4.1 is published | Left alone while v0.4.1 is being finished, so the release workflow does not change major versions under it; then merge when Dependabot has rebased them onto the SHA-pinned workflows and CI is green |

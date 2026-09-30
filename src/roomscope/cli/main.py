@@ -27,7 +27,14 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
 
 from roomscope import __version__
-from roomscope.cli.console import COLOR_MODES, Console, ProgressLine, Verbatim
+from roomscope.cli.console import (
+    COLOR_MODES,
+    Console,
+    ProgressLine,
+    Verbatim,
+    cell_width,
+    shell_command,
+)
 from roomscope.cli.render import (
     render_analysis,
     render_comparison,
@@ -139,13 +146,39 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
 
     argparse wraps with :mod:`textwrap`, which counts a Chinese character as
     one column, so a translated help line ran past the terminal's edge.
-    Descriptions and epilogs stay as written (they are laid out already).
+    Indented blocks (the command list, examples) stay as written; a plain
+    description or epilog is wrapped by display width.
     """
 
     def _split_lines(self, text: str, width: int) -> list[str]:
         from roomscope.cli.console import wrap
 
         return wrap(" ".join(text.split()), max(width, 11))
+
+    def _fill_text(self, text: str, width: int, indent: str) -> str:
+        """Wrap plain paragraphs; leave preformatted blocks (commands) whole.
+
+        The formatter is raw so the grouped command list and the examples stay
+        aligned, but a description or epilog that is one sentence must still
+        fit a narrow terminal. An example line stays one line so it can be
+        copied.
+        """
+        from roomscope.cli.console import cell_width, wrap
+
+        rendered: list[str] = []
+        for block in text.split("\n\n"):
+            lines = block.split("\n")
+            preformatted = any(line.startswith((" ", "\t")) for line in lines)
+            if preformatted:
+                for line in lines:
+                    if line.startswith((" ", "\t")) or cell_width(line) <= width:
+                        rendered.append(indent + line)
+                    else:
+                        rendered.extend(indent + part for part in wrap(line, max(width, 11)))
+                continue
+            paragraph = " ".join(line.strip() for line in lines if line.strip())
+            rendered.extend(indent + part for part in wrap(paragraph, max(width, 11)))
+        return "\n".join(rendered)
 
     def _format_usage(self, usage: Any, actions: Any, groups: Any, prefix: Any) -> str:
         # argparse measures the prefix with len(); "用法：" takes six columns, not three.
@@ -912,6 +945,7 @@ def build_parser() -> argparse.ArgumentParser:
 def cmd_sweep(args: argparse.Namespace) -> int:
     from roomscope.io.wav import write_sweep_file
 
+    _warn_ignored_json(args, "sweep")
     settings = _sweep_settings(args)
     wav_path, sidecar = write_sweep_file(settings, args.out)
     print(render_sweep_written(_console(args), settings, wav_path, sidecar))
@@ -932,6 +966,22 @@ def _peek_option(argv: Sequence[str], names: tuple[str, ...]) -> str | None:
 def _console(args: argparse.Namespace, stream: Any = None) -> Console:
     """How to lay out text for ``stream`` (stdout by default) under ``--color``."""
     return Console.for_stream(stream or sys.stdout, getattr(args, "color", None) or "auto")
+
+
+def _warn_ignored_json(args: argparse.Namespace, command: str) -> None:
+    """Say so when ``--format json`` does not apply, instead of ignoring it."""
+    if getattr(args, "format", None) != "json":
+        return
+    print(
+        render_status(
+            _console(args, sys.stderr),
+            "warn",
+            _("warning: --format json does not apply to {command}; printing text").format(
+                command=command
+            ),
+        ),
+        file=sys.stderr,
+    )
 
 
 def _use_json(args: argparse.Namespace) -> bool:
@@ -1289,6 +1339,7 @@ def cmd_show(args: argparse.Namespace) -> int:
     from roomscope.io.session_store import list_sessions, load_comparison, load_measurement
 
     if args.list:
+        _warn_ignored_json(args, "show --list")
         listings = list_sessions(args.path)
         if not listings:
             print(_("No session.json files under {root}").format(root=args.path))
@@ -1466,6 +1517,7 @@ def cmd_export(args: argparse.Namespace) -> int:
     from roomscope.io.exporters import get_exporter
     from roomscope.io.session_store import load_measurement
 
+    _warn_ignored_json(args, "export")
     loaded = load_measurement(args.session)
     out = args.out if args.out is not None else loaded.directory / "export"
     written = get_exporter(args.export_format).export(loaded.result, out)
@@ -1621,7 +1673,17 @@ def cmd_demo(args: argparse.Namespace) -> int:
     if _use_json(args):
         raise _UsageError(
             _("the demo prints a walkthrough, not JSON"),
-            hints=[f"roomscope --format json show {Path(args.out) / 'position-a'}"],
+            hints=[
+                shell_command(
+                    [
+                        "roomscope",
+                        "--format",
+                        "json",
+                        "show",
+                        str(Path(args.out) / "position-a"),
+                    ]
+                )
+            ],
         )
     out_dir: Path = args.out
     occupied = out_dir.exists() and (not out_dir.is_dir() or any(out_dir.iterdir()))
@@ -1633,16 +1695,19 @@ def cmd_demo(args: argparse.Namespace) -> int:
         )
     profile = _resolve_profile(args)
     err = _console(args, sys.stderr)
+    note = ""
     if err.interactive and sys.stderr is not None:
         # A transient line while the two positions are simulated and analysed.
-        note = _("Simulating and analysing two microphone positions …")
-        sys.stderr.write(err.fit(note))
+        # Cleared with spaces, never an escape sequence: --color never and
+        # NO_COLOR must not write ESC[2K.
+        note = err.fit(_("Simulating and analysing two microphone positions …"))
+        sys.stderr.write(note)
         sys.stderr.flush()
     try:
         run = run_demo(out_dir, profile=profile)
     finally:
-        if err.interactive and sys.stderr is not None:
-            sys.stderr.write("\r\x1b[2K")
+        if note and sys.stderr is not None:
+            sys.stderr.write("\r" + (" " * cell_width(note)) + "\r")
             sys.stderr.flush()
     for take in run.takes:
         remember_session(take.session_dir)

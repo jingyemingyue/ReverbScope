@@ -105,6 +105,31 @@ def test_the_demo_finds_the_problems_it_says_it_shows(demo_run: DemoRun) -> None
     assert "matched" in {m.status for m in demo_run.comparison.resonances}
 
 
+def test_ascii_demo_lines_fit_when_signs_expand(demo_run: DemoRun) -> None:
+    """cp1252 turns Δ into delta after layout used to run past 80–82 columns."""
+    from roomscope.cli.render import render_demo
+    from roomscope.interpretation import interpret
+
+    findings = [interpret(take.result, "vocal") for take in demo_run.takes]
+    for width in (60, 80, 81, 82):
+        text = render_demo(
+            Console(width=width, unicode=False, color=False),
+            demo_run,
+            findings,
+            gui_available=True,
+        )
+        for line in text.splitlines():
+            if (
+                "roomscope " in line
+                or "http" in line
+                or "pip install" in line
+                or "/" in line
+                or "\\" in line
+            ):
+                continue
+            assert cell_width(line) <= width, (width, line)
+
+
 def test_demo_sessions_are_marked_synthetic(demo_run: DemoRun) -> None:
     for take in demo_run.takes:
         session = json.loads((take.session_dir / "session.json").read_text(encoding="utf-8"))
@@ -123,11 +148,13 @@ def test_demo_walkthrough_and_its_next_steps_work(
     assert "Synthetic data" in out and "not a measurement" in out
     assert "Comparison A → B" in out and "What the demo shows" in out
     assert ESC not in out and "\r" not in out and err == ""
-    # The commands it suggests run as printed.
+    # The commands it suggests run as printed (quoted paths included).
+    import shlex
+
     for line in out.splitlines():
         command = line.strip()
         if command.startswith(("roomscope show", "roomscope compare")):
-            code, shown, _err = _run(command.split()[1:], capsys)
+            code, shown, _err = _run(shlex.split(command)[1:], capsys)
             assert code == 0, command
             assert "At a glance" in shown
     # Running it again replaces its own folder.
@@ -296,6 +323,31 @@ def _demo_on(
     monkeypatch.setattr(sys, "stdout", stream)
     assert main([*argv, "demo"]) == 0
     return stream.getvalue()
+
+
+def test_format_json_is_not_silently_ignored(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, _monkeypatch = cli
+    code, out, err = _run(["--format", "json", "sweep", "--out", str(root / "sweep.wav")], capsys)
+    assert code == 0 and out
+    assert "does not apply to sweep" in err
+    assert "\x1b[" not in err
+    code, out, err = _run(["--format", "json", "show", "--list", str(root)], capsys)
+    assert code == 0
+    assert "does not apply to show --list" in err
+    assert out == "" or "No session" in out
+
+
+def test_demo_progress_line_uses_no_escape_when_color_is_off(
+    cli: tuple[Path, pytest.MonkeyPatch], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A terminal with NO_COLOR used to clear the demo line with ESC[2K."""
+    out, err = _Tty(), _Tty()
+    monkeypatch.setattr(sys, "stderr", err)
+    text = _demo_on(out, {"NO_COLOR": "1"}, monkeypatch)
+    assert "\x1b" not in text
+    assert "\x1b" not in err.getvalue()
 
 
 def test_a_terminal_gets_colour(cli: tuple[Path, pytest.MonkeyPatch]) -> None:

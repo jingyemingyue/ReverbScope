@@ -244,6 +244,8 @@ QMenuBar::item:selected {{ background: {t["accent_soft"]}; border-radius: 4px; }
 QMenu {{ background: {t["surface"]}; border: 1px solid {t["border"]}; padding: 4px; }}
 QMenu::item {{ padding: 5px 22px 5px 14px; border-radius: 4px; }}
 QMenu::item:selected {{ background: {t["accent_soft"]}; color: {t["text"]}; }}
+QStatusBar {{ background: {t["surface"]}; color: {t["muted"]}; border-top: 1px solid {t["border"]}; }}
+QStatusBar::item {{ border: none; }}
 QToolTip {{ background: {t["surface"]}; color: {t["text"]}; border: 1px solid {t["border"]};
     padding: 4px 6px; }}
 

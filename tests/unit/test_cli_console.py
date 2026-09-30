@@ -416,6 +416,51 @@ def _help_screens() -> dict[str, str]:
     return screens
 
 
+def test_a_next_step_quotes_a_path_that_contains_a_space() -> None:
+    import shlex
+
+    from roomscope.cli.console import shell_command
+    from roomscope.cli.render import render_saved_next_steps
+
+    session = "My Room/take 1"
+    text = render_saved_next_steps(Console(width=100, unicode=True), session)
+    line = next(line.strip() for line in text.splitlines() if "roomscope compare" in line)
+    assert line == shell_command(["roomscope", "compare", session, "<other-session>"])
+    assert shlex.split(line)[2:] == [session, "<other-session>"]
+
+
+def test_a_windows_path_uses_slashes_so_any_shell_can_replay_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A backslash is a separator on Windows and an escape everywhere else.
+
+    Next-step lines are replayed with a POSIX split (see the demo
+    walkthrough). Printing the path with slashes keeps that split, cmd and
+    PowerShell on the same string, without quoting a path that has no space.
+    """
+    import shlex
+
+    from roomscope.cli import console as console_module
+
+    monkeypatch.setattr(console_module.os, "name", "nt")
+    show = console_module.shell_command(["roomscope", "show", r"roomscope-demo\position-a"])
+    assert show == "roomscope show roomscope-demo/position-a"
+    assert shlex.split(show) == ["roomscope", "show", "roomscope-demo/position-a"]
+    compare = console_module.shell_command(["roomscope", "compare", r"My Room\take 1", "<other>"])
+    assert compare == 'roomscope compare "My Room/take 1" <other>'
+    assert shlex.split(compare)[2:] == ["My Room/take 1", "<other>"]
+    # The placeholder is an instruction, not a path, so it stays bare.
+    assert "<other>" in compare and "'<other>'" not in compare and '"<other>"' not in compare
+
+
+def test_a_posix_shell_quotes_a_backslash(monkeypatch: pytest.MonkeyPatch) -> None:
+    from roomscope.cli import console as console_module
+
+    monkeypatch.setattr(console_module.os, "name", "posix")
+    shown = console_module.shell_command(["roomscope", "show", r"odd\name"])
+    assert shown == "roomscope show 'odd\\name'"
+
+
 def test_every_help_example_is_a_valid_command(home: Path) -> None:
     import shlex
 
@@ -433,16 +478,22 @@ def test_every_help_example_is_a_valid_command(home: Path) -> None:
 
 
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
+@pytest.mark.parametrize("columns", [80, 60])
 def test_help_fits_the_terminal_in_both_languages(
-    home: Path, monkeypatch: pytest.MonkeyPatch, lang: str
+    home: Path, monkeypatch: pytest.MonkeyPatch, lang: str, columns: int
 ) -> None:
-    monkeypatch.setenv("COLUMNS", "80")
+    monkeypatch.setenv("COLUMNS", str(columns))
     activate(lang)
     for path, text in _help_screens().items():
         for line in text.splitlines():
             if "{acoustic_guitar," in line:
                 continue  # argparse cannot break one option's choice list
-            assert cell_width(line) <= 80, (path, line)
+            if line.startswith("  roomscope "):
+                continue  # an example stays one line so it can be copied
+            stripped = line.lstrip()
+            if stripped.startswith(("usage:", "用法")):
+                continue  # the synopsis stays one line; argparse will not wrap it
+            assert cell_width(line) <= columns, (path, columns, line)
 
 
 def test_a_long_session_path_is_printed_whole(

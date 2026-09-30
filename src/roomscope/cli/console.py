@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import os
 import re
+import shlex
 import shutil
 import sys
 import time
@@ -133,6 +134,66 @@ _UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|%)(?![\w])")
 def glue_units(text: str) -> str:
     """``110 Hz (+11.3 dB)`` with each number held to its unit."""
     return _UNIT.sub(lambda match: match.group(1) + GLUE + match.group(2), text)
+
+
+def _windows_cmdline_arg(text: str) -> str:
+    """One argv element quoted the way ``cmd.exe`` parses it.
+
+    Same rules as ``subprocess.list2cmdline`` for a single argument. Inlined
+    because ``src/`` may not import ``subprocess`` (that module is for
+    launching processes; this only prints a command the user can copy).
+    """
+    # A space, a tab, or an empty argument needs quotes. A quote is escaped
+    # either way.
+    needs_quotes = (not text) or any(char in text for char in " \t")
+    out: list[str] = ['"'] if needs_quotes else []
+    backslashes: list[str] = []
+    for char in text:
+        if char == "\\":
+            backslashes.append(char)
+            continue
+        if char == '"':
+            out.append("\\" * (len(backslashes) * 2))
+            backslashes = []
+            out.append('\\"')
+            continue
+        if backslashes:
+            out.extend(backslashes)
+            backslashes = []
+        out.append(char)
+    if backslashes:
+        out.extend(backslashes)
+    if needs_quotes:
+        # Trailing backslashes sit before the closing quote, so they are escaped.
+        out.extend(backslashes)
+        out.append('"')
+    return "".join(out)
+
+
+def shell_command(argv: Iterable[str]) -> str:
+    """One copy-paste command. An argument with a space or a quote is quoted.
+
+    Placeholders such as ``<take.wav>`` stay bare: they are instructions, not
+    a path, and quoting them would hide that. On Windows a backslash is
+    rewritten to a slash before quoting. cmd, PowerShell and Git Bash all
+    open that form, and a POSIX-style split (the demo replays its own next
+    steps that way) no longer eats the separator. A POSIX shell still quotes
+    a backslash, because there it is an escape.
+    """
+    windows = os.name == "nt"
+    parts: list[str] = []
+    for part in argv:
+        text = str(part).replace("\\", "/") if windows else str(part)
+        needs_quotes = any(char.isspace() for char in text) or '"' in text or "'" in text
+        if not windows and "\\" in text:
+            needs_quotes = True
+        if not needs_quotes:
+            parts.append(text)
+        elif windows:
+            parts.append(_windows_cmdline_arg(text))
+        else:
+            parts.append(shlex.quote(text))
+    return " ".join(parts)
 
 
 def _unbreakable(token: str) -> bool:
@@ -386,6 +447,18 @@ class Console:
             interactive=interactive,
         )
 
+    def readable(self, text: str) -> str:
+        """Text as this stream will show it, before its width is measured.
+
+        :meth:`fit` still translates anything left. Doing it here keeps a
+        narrow encoding (``Δ`` becomes ``delta``) from running past the width
+        the line was wrapped to.
+        """
+        if self.unicode or not text:
+            return text
+        shown = str(text).translate(_ASCII_SIGNS)
+        return Verbatim(shown) if isinstance(text, Verbatim) else shown
+
     # Styles -----------------------------------------------------------------
 
     def style(self, text: str, *names: str) -> str:
@@ -435,10 +508,13 @@ class Console:
 
     def title(self, text: str) -> list[str]:
         """A command's heading: the title and a rule as wide as it."""
+        text = self.readable(text)
         return [self.bold(text), self.muted(self.rule_char() * cell_width(text))]
 
     def section(self, text: str, note: str = "") -> list[str]:
         """A blank line and a section heading, with an optional muted note."""
+        text = self.readable(text)
+        note = self.readable(note) if note else ""
         head = self.style(text, "bold", "cyan")
         if not note:
             return ["", head]
@@ -448,6 +524,7 @@ class Console:
 
     def paragraph(self, text: str, indent: int = 2, *, style: tuple[str, ...] = ()) -> list[str]:
         """Plain ``text`` wrapped at ``indent``; ``style`` is applied per line."""
+        text = self.readable(text)
         margin = " " * indent
         lines = wrap(text, self.width, first=margin, rest=margin)
         return [margin + self.style(line[indent:], *style) for line in lines]
@@ -466,6 +543,9 @@ class Console:
         ``text`` is plain; ``style`` is applied after wrapping, so an escape
         sequence is never split. :class:`Verbatim` text stays on one line.
         """
+        text = self.readable(text)
+        if detail:
+            detail = self.readable(detail)
         glyph = self.symbol(kind)
         margin = " " * indent
         hang = margin + " " * (cell_width(glyph) + 1)
@@ -488,6 +568,8 @@ class Console:
         margin = " " * indent
         out: list[str] = []
         for number, (text, command) in enumerate(items, start=1):
+            text = self.readable(text)
+            command = self.readable(command) if command else command
             head = f"{number}. "
             hang = margin + " " * len(head)
             out += [
@@ -503,6 +585,7 @@ class Console:
         or goes below the command on a narrow terminal."""
         if not items:
             return []
+        items = [(self.readable(command), self.readable(text)) for command, text in items]
         margin = " " * indent
         column = indent + max(cell_width(command) for command, _text in items) + 3
         stacked = self.width - column < 28
@@ -529,7 +612,7 @@ class Console:
 
         On a narrow terminal each value goes on its own line under its label.
         """
-        items = [(label, value) for label, value in pairs]
+        items = [(self.readable(label), self.readable(value)) for label, value in pairs]
         if not items:
             return []
         label_width = min(max_label, max(min_label, *(cell_width(label) for label, _v in items)))
@@ -585,6 +668,8 @@ class Console:
         then ``header value`` pairs), so nothing runs off the right edge.
         """
         columns = len(headers)
+        headers = [self.readable(header) for header in headers]
+        rows = [[self.readable(cell) for cell in row] for row in rows]
         align = (align or "l" * columns).ljust(columns, "l")
         widths = [cell_width(header) for header in headers]
         for row in rows:
