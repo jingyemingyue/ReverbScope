@@ -46,11 +46,13 @@ Apache-2.0 project with the redistribution obligations listed in §3.
 | mypy | 2.3.1 | https://github.com/python/mypy | MIT (+ PSF/Apache portions) | type checking | Yes |
 | jsonschema | 4.26.0 | https://github.com/python-jsonschema/jsonschema | MIT | validate `to_dict` writers against shipped schemas (tests only) | Yes |
 | hatchling | 1.32.4 | https://github.com/pypa/hatch | MIT | the build backend (`[build-system]`); also in `dev` so that `tests/unit/test_i18n.py` can exercise the wheel build hook (`hatch_build.py`) that compiles the `.mo` catalogs; not a runtime dependency | Yes |
+| PyYAML | 6.0.3 | https://github.com/yaml/pyyaml | MIT | reads `.github/ISSUE_TEMPLATE/*.yml` in `tests/unit/test_issue_forms.py`, which keeps each English form and its Simplified Chinese counterpart in step (same fields, requirements and labels); tests only, not a runtime dependency | Yes |
 | babel | (optional `i18n-dev`) | https://github.com/python-babel/babel | BSD-3-Clause | extract/compile gettext catalogs; not required at runtime | Yes |
 | pyinstaller | (release workflow) | https://github.com/pyinstaller/pyinstaller | GPL-2.0-or-later WITH Bootloader-exception | one-directory desktop bundles; not a runtime dependency | Yes* (the bootloader that PyInstaller embeds in every frozen executable is covered by the Bootloader-exception, which lets it be shipped with a program under any license; RoomScope does not import PyInstaller) |
 | build | (CI and release workflow) | https://github.com/pypa/build | MIT | builds the sdist and wheel; not a runtime dependency | Yes |
 | cyclonedx-bom | (release workflow on `v*` tags) | https://github.com/CycloneDX/cyclonedx-python | Apache-2.0 | SBOM attached to a draft Release; not a runtime dependency | Yes |
 | Inno Setup | (Windows bundle job, when `iscc` is installed) | https://jrsoftware.org/isinfo.php | Inno Setup License (permissive, similar to modified BSD) | optional Windows installer around the one-directory zip; not imported by RoomScope | Yes* (tool only) |
+| Inno Setup Simplified Chinese messages (`ChineseSimplified.isl`, maintainer Zhenghan Yang) | Inno Setup repository tag `is-6_7_1`, `Files/Languages/Unofficial/`, SHA-256 pinned in `scripts/inno_chinese_messages.py` | https://github.com/jrsoftware/issrc | part of the Inno Setup source repository, whose `license.txt` (Inno Setup License, permissive) covers its files "except where otherwise noted"; the translation names its maintainer and states no other license | the installer's Chinese texts; fetched at build time (released Inno Setup up to 6.7 does not install it), compiled into `RoomScope-Desktop-Windows-x64-Setup.exe`, not stored in this repository | Yes* (tool only) |
 
 Evaluated and **not** adopted: `hypothesis` (MPL-2.0, file-level copyleft;
 dev-only would be acceptable but it is not needed), `pytest-qt` (MIT; the
@@ -116,8 +118,13 @@ the wheels, and must be checked again at packaging time:
 
 ## 6. Items marked UNKNOWN / NEEDS REVIEW
 
-matplotlib's historical `ttconv` converter is **resolved**: it is not present
-in matplotlib 3.8+, which RoomScope requires; fonttools is used instead.
+matplotlib's historical `ttconv` converter is **resolved**: matplotlib 3.10.0
+is the first release whose wheels do not contain the `_ttconv` extension
+(the cp312 wheels of 3.8.0, 3.9.0 and 3.9.4 still ship
+`matplotlib/_ttconv.*.so`; checked 2026-09-24 by opening the wheels), so
+RoomScope requires matplotlib>=3.10; fonttools is used instead. Until
+2026-09-24 this section said "3.8+", which was wrong: an environment with
+matplotlib 3.8 or 3.9 contained ttconv.
 `scripts/audit_wheel_contents.py` lists bundled shared libraries and license
 files of the installed distributions (and of a downloaded `.whl`).
 

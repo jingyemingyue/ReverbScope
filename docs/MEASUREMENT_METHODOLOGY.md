@@ -109,6 +109,48 @@ imported path reproduces its RT60 (±1 %), band T values (±2 %), reflection
 delay (±0.05 ms) and level (±0.2 dB) and its resonance candidates
 (`tests/integration/test_analyze_ir.py`).
 
+## 2b. Was the sweep played at the speed it was generated at?
+
+A DAW can play the test file at the wrong speed: a file generated at one
+sample rate placed in a project at another without conversion (a 48 kHz
+sweep in a 44.1 kHz project runs at 91.9 %), or a time-stretch (Warp, Flex
+Time, Follow Tempo, elastic audio). Exporting the recording at another rate
+than the project ran at is not a cause: the DAW converts on export, and the
+reference sweep is regenerated at the recording's rate. The inverse filter of the generated sweep then no longer
+collapses the recording to an impulse; the pre-peak margin collapses and all
+the pipeline could say before 0.4.1 was that the direct sound is not
+identified.
+
+When direct-sound detection confidence is low (a sweep played even 2 % off
+leaves a pre-peak margin of a few dB, while a medium margin means the
+generated sweep did deconvolve the recording) and the sweep definition is
+known, `roomscope.core.playback_speed` measures the sweep rate
+in the recording itself. An ESS passes frequency `f` at
+`t(f) = L · ln(f / f1)` [1], a straight line of slope `L` against `ln f`.
+In a short-time spectrum of the recording (Hann window of about 40 ms, 87.5 %
+overlap), each frequency bin between 200 Hz and min(16 kHz, 0.85 · Nyquist)
+is loudest in the frame where the sweep passed it — reverberation only adds
+later and weaker energy — and bins whose maximum is at least 20 dB above
+their median over time are kept. A Theil–Sen line [23, 24] through
+`(ln f, t)` of at least 12 such bins spanning at least 1.5 octaves gives the
+measured `L'`, and `speed = L / L'`. A speed within the estimate's own
+spread of 1 is "as generated": `max(1.25 %, 5.5 % / T^0.75)` for a sweep of
+`T` seconds (9.3 % at 0.5 s, 5.5 % at 1 s, 2.4 % at 3 s, 1.6 % at 5 s,
+1.25 % from about 9 s). Otherwise, when `speed × generated rate` is within
+2.5 % of a common sample rate (22.05 to 192 kHz; ratios between them differ
+by at least 8 %), the result names a sample-rate mismatch and the rate the
+file was played at, else a time-stretch.
+
+The spread was measured on correctly played sweeps in synthetic rooms (RT60
+1–4 s, diffuse level 0.05–0.3, 72 rooms per sweep length): worst case 8.2 %
+at 0.5 s, 4.5 % at 1 s, 1.9 % at 3 s, 1.4 % at 5 s and 0.9 % at 10 s, with
+either sign; the tolerance stays about 20 % above it
+(`tests/integration/test_playback_speed.py`). A smaller stretch is not
+named. The estimate is a diagnosis only: it
+explains a failed measurement, marks the decay unreliable and is stored in
+`impulse_response.playback_speed`, but RoomScope never re-analyses with the
+measured speed. Tests: `tests/integration/test_playback_speed.py`.
+
 ## 2a. Loopback reference channel
 
 An optional electrical return of the same interface output that drives the
@@ -551,6 +593,8 @@ loopback compensation.
 20. J. B. Allen and D. A. Berkley, "Image method for efficiently simulating small-room acoustics," J. Acoust. Soc. Am. 65(4), 943-950, 1979. (confirmed, primary text) — forward image-source model; cited as the origin of the construction, not as a method for the inverse problem. (Numbered [17] before v0.4.1, which collided with Hak et al.)
 21. I. Dokmanić, R. Parhizkar, A. Walther, Y. M. Lu and M. Vetterli, "Acoustic echoes reveal room shape," PNAS 110(30), 12186-12191, 2013. (confirmed, primary text) — the canonical published route to full room geometry from echoes; named here because RoomScope declines it, see §9. (Numbered [18] before v0.4.1, which collided with AES17.)
 22. O. Kirkeby, P. A. Nelson, H. Hamada and F. Orduña-Bustamante, "Fast deconvolution of multichannel systems using regularization," IEEE Trans. Speech and Audio Processing 6(2), 189–194, 1998. (bibliographic record; the regularised-inversion form `conj(H) / (|H|² + ε(f))` used in §2 and §2a is the one Farina 2007 [2] §3.1 quotes from it; the primary text was not re-read for v0.4.1)
+23. H. Theil, "A rank-invariant method of linear and polynomial regression analysis," Proc. Koninklijke Nederlandse Akademie van Wetenschappen 53, 386–392, 521–525, 1397–1412, 1950. (bibliographic record; used through `scipy.stats.theilslopes`)
+24. P. K. Sen, "Estimates of the regression coefficient based on Kendall's tau," J. Am. Stat. Assoc. 63(324), 1379–1389, 1968. (bibliographic record; used through `scipy.stats.theilslopes`)
 
 Additional supporting references (A. Mäkivirta et al. 2003; G. Defrance et
 al. 2008; J. Usher 2010; M. Guski & M. Vorländer 2014; C. L. Christensen et

@@ -50,6 +50,7 @@ import numpy as np
 from scipy.signal import welch
 
 from roomscope.core.filters import band_fits, band_level_samples, bandpass_sos, iec_band
+from roomscope.i18n import diag
 from roomscope.models.audio import FloatArray
 from roomscope.models.result import HumCandidate, NoiseResult
 
@@ -103,6 +104,19 @@ def _measurable(level_dbfs: float) -> float | None:
     return level_dbfs if level_dbfs > NOISE_FLOOR_DBFS else None
 
 
+PRE_SWEEP_SOURCE = "pre-sweep"
+TAIL_SOURCE = "tail"
+
+
+def _by_source(source: str, *, pre_sweep: str, tail: str, other: str) -> str:
+    """The note written for ``source``: each variant is a complete sentence."""
+    if source == PRE_SWEEP_SOURCE:
+        return pre_sweep
+    if source == TAIL_SOURCE:
+        return tail
+    return other
+
+
 @dataclass(frozen=True)
 class QuietSegment:
     """Part of the recording ``[start, end)`` that may hold background noise."""
@@ -137,15 +151,15 @@ def quiet_segment_candidates(
     candidates: list[QuietSegment] = []
     pre_end = first_sweep_start_index - guard
     if pre_end - head >= min_len:
-        candidates.append(QuietSegment(start=head, end=pre_end, source="pre-sweep"))
+        candidates.append(QuietSegment(start=head, end=pre_end, source=PRE_SWEEP_SOURCE))
     tail_start = last_sweep_end_index + round(expected_decay_s * sample_rate)
     if recording_length - tail_start >= min_len:
         candidates.append(
             QuietSegment(
                 start=tail_start,
                 end=recording_length,
-                source="tail",
-                note=(
+                source=TAIL_SOURCE,
+                note=diag(
                     "quiet segment taken from the end of the recording; it may contain late "
                     "reverberation, so the noise floor may be overestimated"
                 ),
@@ -216,14 +230,28 @@ def select_quiet_part(
     """
     x = np.asarray(recording[candidate.start : candidate.end], dtype=np.float64)
     min_len = max(1, round(min(min_segment_s, MEASURABLE_SEGMENT_S) * sample_rate))
-    where = f"the {candidate.source} segment"
+    source = candidate.source
     pieces = _nonzero_pieces(x, max(1, round(ZERO_RUN_S * sample_rate)))
     if not pieces:
         return QuietSelection(
             None,
             (
-                f"{where} is digital silence (exact zeros); the acoustic noise floor cannot be "
-                "measured there",
+                _by_source(
+                    source,
+                    pre_sweep=diag(
+                        "the pre-sweep segment is digital silence (exact zeros); the acoustic "
+                        "noise floor cannot be measured there"
+                    ),
+                    tail=diag(
+                        "the tail segment is digital silence (exact zeros); the acoustic noise "
+                        "floor cannot be measured there"
+                    ),
+                    other=diag(
+                        "the {source} segment is digital silence (exact zeros); the acoustic "
+                        "noise floor cannot be measured there",
+                        source=source,
+                    ),
+                ),
             ),
         )
     notes: list[str] = []
@@ -231,13 +259,51 @@ def select_quiet_part(
     dropped = (x.shape[0] - (stop - start)) / sample_rate
     if dropped > ZERO_RUN_S:
         notes.append(
-            f"{dropped:.2f} s of exact digital zeros (an export that starts before the recorded "
-            f"region, or a gap between regions) were excluded from {where}"
+            _by_source(
+                source,
+                pre_sweep=diag(
+                    "{dropped:.2f} s of exact digital zeros (an export that starts before the "
+                    "recorded region, or a gap between regions) were excluded from the "
+                    "pre-sweep segment",
+                    dropped=dropped,
+                ),
+                tail=diag(
+                    "{dropped:.2f} s of exact digital zeros (an export that starts before the "
+                    "recorded region, or a gap between regions) were excluded from the tail "
+                    "segment",
+                    dropped=dropped,
+                ),
+                other=diag(
+                    "{dropped:.2f} s of exact digital zeros (an export that starts before the "
+                    "recorded region, or a gap between regions) were excluded from the "
+                    "{source} segment",
+                    dropped=dropped,
+                    source=source,
+                ),
+            )
         )
     if stop - start < min_len:
+        remaining = {"remaining": (stop - start) / sample_rate, "needed": min_len / sample_rate}
         notes.append(
-            f"only {(stop - start) / sample_rate:.2f} s of {where} are not digital silence, "
-            f"less than the {min_len / sample_rate:.2f} s a level needs"
+            _by_source(
+                source,
+                pre_sweep=diag(
+                    "only {remaining:.2f} s of the pre-sweep segment are not digital silence, "
+                    "less than the {needed:.2f} s a level needs",
+                    **remaining,
+                ),
+                tail=diag(
+                    "only {remaining:.2f} s of the tail segment are not digital silence, less "
+                    "than the {needed:.2f} s a level needs",
+                    **remaining,
+                ),
+                other=diag(
+                    "only {remaining:.2f} s of the {source} segment are not digital silence, "
+                    "less than the {needed:.2f} s a level needs",
+                    source=source,
+                    **remaining,
+                ),
+            )
         )
         return QuietSelection(None, tuple(notes))
 
@@ -250,30 +316,109 @@ def select_quiet_part(
         first, last = _longest_run(quiet)
         excluded = (levels.shape[0] - (last - first)) * block / sample_rate
         if (last - first) * block < min_len:
+            quiet_part = {"quiet": (last - first) * block / sample_rate, "excess": QUIET_EXCESS_DB}
             notes.append(
-                f"{where} is not quiet: only {(last - first) * block / sample_rate:.2f} s of it "
-                f"stay within {QUIET_EXCESS_DB:.0f} dB of its quietest blocks (another sweep pass "
-                "or a noise event?)"
+                _by_source(
+                    source,
+                    pre_sweep=diag(
+                        "the pre-sweep segment is not quiet: only {quiet:.2f} s of it stay "
+                        "within {excess:.0f} dB of its quietest blocks (another sweep pass or a "
+                        "noise event?)",
+                        **quiet_part,
+                    ),
+                    tail=diag(
+                        "the tail segment is not quiet: only {quiet:.2f} s of it stay within "
+                        "{excess:.0f} dB of its quietest blocks (another sweep pass or a noise "
+                        "event?)",
+                        **quiet_part,
+                    ),
+                    other=diag(
+                        "the {source} segment is not quiet: only {quiet:.2f} s of it stay "
+                        "within {excess:.0f} dB of its quietest blocks (another sweep pass or a "
+                        "noise event?)",
+                        source=source,
+                        **quiet_part,
+                    ),
+                )
             )
             return QuietSelection(None, tuple(notes))
         if excluded > QUIET_BLOCK_S:
+            loud_part = {"excluded": excluded, "excess": QUIET_EXCESS_DB}
             notes.append(
-                f"{excluded:.2f} s of {where} were more than {QUIET_EXCESS_DB:.0f} dB above its "
-                "quietest blocks (another sweep pass or a noise event?) and were excluded"
+                _by_source(
+                    source,
+                    pre_sweep=diag(
+                        "{excluded:.2f} s of the pre-sweep segment were more than {excess:.0f} dB "
+                        "above its quietest blocks (another sweep pass or a noise event?) and "
+                        "were excluded",
+                        **loud_part,
+                    ),
+                    tail=diag(
+                        "{excluded:.2f} s of the tail segment were more than {excess:.0f} dB "
+                        "above its quietest blocks (another sweep pass or a noise event?) and "
+                        "were excluded",
+                        **loud_part,
+                    ),
+                    other=diag(
+                        "{excluded:.2f} s of the {source} segment were more than {excess:.0f} dB "
+                        "above its quietest blocks (another sweep pass or a noise event?) and "
+                        "were excluded",
+                        source=source,
+                        **loud_part,
+                    ),
+                )
             )
         start, stop = start + first * block, start + last * block
 
     if stop - start < round(min_segment_s * sample_rate):
+        usable = {"usable": (stop - start) / sample_rate, "configured": min_segment_s}
         notes.append(
-            f"only {(stop - start) / sample_rate:.2f} s of {where} are usable instead of the "
-            f"{min_segment_s:.2f} s configured; the levels come from that shorter part"
+            _by_source(
+                source,
+                pre_sweep=diag(
+                    "only {usable:.2f} s of the pre-sweep segment are usable instead of the "
+                    "{configured:.2f} s configured; the levels come from that shorter part",
+                    **usable,
+                ),
+                tail=diag(
+                    "only {usable:.2f} s of the tail segment are usable instead of the "
+                    "{configured:.2f} s configured; the levels come from that shorter part",
+                    **usable,
+                ),
+                other=diag(
+                    "only {usable:.2f} s of the {source} segment are usable instead of the "
+                    "{configured:.2f} s configured; the levels come from that shorter part",
+                    source=source,
+                    **usable,
+                ),
+            )
         )
     level = rms_dbfs(x[start:stop])
     if sweep_level_dbfs is not None and level > sweep_level_dbfs - QUIET_MIN_BELOW_SWEEP_DB:
+        margin = {"below": sweep_level_dbfs - level, "sweep": sweep_level_dbfs}
         notes.append(
-            f"{where} is only {sweep_level_dbfs - level:.1f} dB below the level of the sweep "
-            f"({sweep_level_dbfs:.1f} dBFS RMS): it is not background noise (a sweep pass without "
-            "silence before it?)"
+            _by_source(
+                source,
+                pre_sweep=diag(
+                    "the pre-sweep segment is only {below:.1f} dB below the level of the sweep "
+                    "({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass without "
+                    "silence before it?)",
+                    **margin,
+                ),
+                tail=diag(
+                    "the tail segment is only {below:.1f} dB below the level of the sweep "
+                    "({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass without "
+                    "silence before it?)",
+                    **margin,
+                ),
+                other=diag(
+                    "the {source} segment is only {below:.1f} dB below the level of the sweep "
+                    "({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass without "
+                    "silence before it?)",
+                    source=source,
+                    **margin,
+                ),
+            )
         )
         return QuietSelection(None, tuple(notes))
     return QuietSelection(
@@ -366,9 +511,11 @@ def hum_candidates(
         else replace(
             c,
             detected=False,
-            note=(
-                f"harmonics of {c.base_hz:.0f} Hz were found as well, but {best.base_hz:.0f} Hz "
-                "explains more of them; a single mains supply has one fundamental"
+            note=diag(
+                "harmonics of {base:.0f} Hz were found as well, but {best:.0f} Hz explains more "
+                "of them; a single mains supply has one fundamental",
+                base=c.base_hz,
+                best=best.base_hz,
             ),
         )
         for c in candidates
@@ -394,8 +541,11 @@ def _band_levels(
     notes: list[str] = []
     if too_short:
         notes.append(
-            "the quiet segment is too short for the "
-            f"{', '.join(too_short)} band filter(s); no level is reported for them"
+            diag(
+                "the quiet segment is too short for the {bands} band filter(s); no level is "
+                "reported for them",
+                bands=", ".join(too_short),
+            )
         )
     return levels, notes
 
@@ -451,8 +601,10 @@ def analyze_noise(
             break
     if verified is None:
         notes.append(
-            "No quiet segment found: add at least 1 s of silence before the sweep "
-            "(the generated test signal already contains it) or record a longer tail."
+            diag(
+                "No quiet segment found: add at least 1 s of silence before the sweep "
+                "(the generated test signal already contains it) or record a longer tail."
+            )
         )
         return _unmeasured(None, tuple(notes))
 
@@ -462,9 +614,13 @@ def analyze_noise(
     level = rms_dbfs(x)
     if level <= NOISE_FLOOR_DBFS:
         notes.append(
-            f"the quiet segment is below {NOISE_FLOOR_DBFS:g} dBFS ({level:.0f} dBFS): that is "
-            "below the quantisation noise of a 24-bit file, so it is digital silence or "
-            "numerical residue, not a measured noise floor"
+            diag(
+                "the quiet segment is below {floor:g} dBFS ({level:.0f} dBFS): that is below the "
+                "quantisation noise of a 24-bit file, so it is digital silence or numerical "
+                "residue, not a measured noise floor",
+                floor=NOISE_FLOOR_DBFS,
+                level=level,
+            )
         )
         return _unmeasured(verified.source, tuple(notes))
 
@@ -485,7 +641,10 @@ def analyze_noise(
         hum = hum_candidates(freqs, psd_db, sample_rate / 2.0)
     else:
         notes.append(
-            f"quiet segment is too short ({x.shape[0] / sample_rate:.2f} s) for mains-hum detection"
+            diag(
+                "quiet segment is too short ({duration:.2f} s) for mains-hum detection",
+                duration=x.shape[0] / sample_rate,
+            )
         )
 
     return NoiseResult(

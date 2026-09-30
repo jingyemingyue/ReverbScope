@@ -18,7 +18,21 @@ from PySide6.QtWidgets import (
 )
 
 from roomscope.errors import RoomScopeError
-from roomscope.i18n import _
+from roomscope.i18n import _, localize
+
+
+def _when(created_at: str) -> str:
+    """``2026-09-24 17:13`` in local time from an ISO timestamp (as stored if unparsable)."""
+    from datetime import datetime
+
+    try:
+        moment = datetime.fromisoformat(created_at)
+        if moment.tzinfo is not None:
+            # Windows' localtime refuses dates before 1970 or far in the future.
+            moment = moment.astimezone()
+        return moment.strftime("%Y-%m-%d %H:%M")
+    except (TypeError, ValueError, OSError, OverflowError):
+        return str(created_at)
 
 
 class SessionBrowser(QWidget):
@@ -36,8 +50,9 @@ class SessionBrowser(QWidget):
         browse.clicked.connect(self._browse_folder)
         recent = QPushButton(_("Recent"))
         recent.clicked.connect(self.refresh_recent)
-        row.addWidget(browse)
+        row.addStretch(1)
         row.addWidget(recent)
+        row.addWidget(browse)
         layout.addLayout(row)
         self.list = QListWidget()
         self.list.setMinimumHeight(120)
@@ -67,9 +82,15 @@ class SessionBrowser(QWidget):
             except RoomScopeError:
                 label = str(path)
             else:
-                room = session.room_name or "(unnamed room)"
-                label = f"{room}  —  {session.created_at}  —  {path}"
+                room = session.room_name or _("(unnamed room)")
+                details = [
+                    part
+                    for part in (session.measurement_position, _when(session.created_at))
+                    if part
+                ]
+                label = f"{room}   ·   {'   ·   '.join(details)}\n{path}"
             item = QListWidgetItem(label)
+            item.setToolTip(str(path))
             item.setData(Qt.ItemDataRole.UserRole, str(path))
             self.list.addItem(item)
         if self.list.count() == 0:
@@ -86,7 +107,7 @@ class SessionBrowser(QWidget):
             try:
                 entries = list_project_sessions(root)
             except RoomScopeError as exc:
-                QMessageBox.warning(self, _("Cannot list sessions"), str(exc))
+                QMessageBox.warning(self, _("Cannot list sessions"), localize(str(exc)))
                 self.refresh_recent()
                 return
             for label, path in entries:
@@ -102,7 +123,7 @@ class SessionBrowser(QWidget):
         try:
             listings = list_sessions(root)
         except RoomScopeError as exc:
-            QMessageBox.warning(self, _("Cannot list sessions"), str(exc))
+            QMessageBox.warning(self, _("Cannot list sessions"), localize(str(exc)))
             self.refresh_recent()
             return
         for listing in listings:

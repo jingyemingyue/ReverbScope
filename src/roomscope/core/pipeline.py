@@ -46,6 +46,7 @@ from roomscope.core.loopback import (
 )
 from roomscope.core.noise import analyze_noise, quiet_segment_candidates, sweep_level_dbfs
 from roomscope.core.placement import estimate_placement
+from roomscope.core.playback_speed import diagnose_playback_speed
 from roomscope.core.reflections import detect_early_reflections
 from roomscope.core.resonance import detect_potential_resonances
 from roomscope.core.sweep import (
@@ -63,6 +64,7 @@ from roomscope.errors import (
     InvalidAudioError,
     SampleRateMismatchError,
 )
+from roomscope.i18n import _, diag
 from roomscope.models.audio import AudioSignal, FloatArray
 from roomscope.models.configuration import AnalysisSettings, SweepSettings
 from roomscope.models.result import (
@@ -81,6 +83,7 @@ from roomscope.models.result import (
     NoiseResult,
     PlacementLength,
     PlacementResult,
+    PlaybackSpeed,
     Validity,
 )
 from roomscope.version import __version__
@@ -155,11 +158,18 @@ def _prepare_reference(reference: Reference, sample_rate: int) -> _PreparedRefer
                 settings = settings.with_sample_rate(sample_rate)
             except ConfigurationError as exc:
                 raise SampleRateMismatchError(
-                    f"recording is at {sample_rate} Hz but the sweep cannot be regenerated at that rate: {exc}"
+                    _(
+                        "recording is at {sample_rate} Hz but the sweep cannot be regenerated "
+                        "at that rate: {error}"
+                    ).format(sample_rate=sample_rate, error=exc)
                 ) from exc
             warnings.append(
-                f"reference sweep regenerated at the recording sample rate ({sample_rate} Hz); "
-                f"it was defined at {reference.settings.sample_rate} Hz"
+                diag(
+                    "reference sweep regenerated at the recording sample rate ({sample_rate} Hz); "
+                    "it was defined at {defined_rate} Hz",
+                    sample_rate=sample_rate,
+                    defined_rate=reference.settings.sample_rate,
+                )
             )
         low, high = excitation_band_hz(settings)
         return _PreparedReference(
@@ -182,30 +192,45 @@ def _prepare_reference(reference: Reference, sample_rate: int) -> _PreparedRefer
             dtype=np.float64,
         )
         warnings.append(
-            f"reference signal resampled from {reference.sample_rate} Hz to {sample_rate} Hz"
+            diag(
+                "reference signal resampled from {from_rate} Hz to {to_rate} Hz",
+                from_rate=reference.sample_rate,
+                to_rate=sample_rate,
+            )
         )
     try:
         first, stop = active_region(signal)
     except ConfigurationError as exc:
-        raise InvalidAudioError(f"reference signal cannot be used: {exc}") from exc
+        raise InvalidAudioError(
+            _("reference signal cannot be used: {error}").format(error=exc)
+        ) from exc
     lead, tail = first, signal.shape[0] - stop
     trimmed = np.ascontiguousarray(signal[first:stop])
     if lead / sample_rate > REFERENCE_TRIM_NOTE_S or tail / sample_rate > REFERENCE_TRIM_NOTE_S:
         warnings.append(
-            f"the reference audio starts with {lead / sample_rate:.2f} s and ends with "
-            f"{tail / sample_rate:.2f} s of near-silence (below {REFERENCE_SILENCE_THRESHOLD_DB:g} dB "
-            "re its peak); it was removed so that the reference is the sweep itself, and "
-            "sweep positions refer to the sweep, not to the start of the file"
+            diag(
+                "the reference audio starts with {lead_s:.2f} s and ends with {tail_s:.2f} s of "
+                "near-silence (below {threshold_db:g} dB re its peak); it was removed so that "
+                "the reference is the sweep itself, and sweep positions refer to the sweep, "
+                "not to the start of the file",
+                lead_s=lead / sample_rate,
+                tail_s=tail / sample_rate,
+                threshold_db=REFERENCE_SILENCE_THRESHOLD_DB,
+            )
         )
     warnings.append(
-        "reference given as an audio file without a RoomScope sweep definition; "
-        "using regularised spectral division instead of the analytic inverse filter, "
-        "and the excitation band is estimated from the reference spectrum"
+        diag(
+            "reference given as an audio file without a RoomScope sweep definition; "
+            "using regularised spectral division instead of the analytic inverse filter, "
+            "and the excitation band is estimated from the reference spectrum"
+        )
     )
     try:
         design = design_spectral_inverse(trimmed, sample_rate)
     except ConfigurationError as exc:
-        raise InvalidAudioError(f"reference signal cannot be used: {exc}") from exc
+        raise InvalidAudioError(
+            _("reference signal cannot be used: {error}").format(error=exc)
+        ) from exc
     return _PreparedReference(
         inverse=design.inverse,
         reference_length=trimmed.shape[0],
@@ -215,10 +240,11 @@ def _prepare_reference(reference: Reference, sample_rate: int) -> _PreparedRefer
             low_hz=design.band_low_hz,
             high_hz=design.band_high_hz,
             source=EXCITATION_SOURCE_ESTIMATED,
-            note=(
-                f"the reference covers about {design.reference_low_hz:.0f}-"
-                f"{design.reference_high_hz:.0f} Hz (-3 dB); the outer 1/3 octave at each end is "
-                "used for the regularisation roll-off and excluded"
+            note=diag(
+                "the reference covers about {low_hz:.0f}-{high_hz:.0f} Hz (-3 dB); the outer "
+                "1/3 octave at each end is used for the regularisation roll-off and excluded",
+                low_hz=design.reference_low_hz,
+                high_hz=design.reference_high_hz,
             ),
         ),
         sweep_rate_s=None,
@@ -246,10 +272,12 @@ def _check_recording_start(
         lost_hz = frequency_at_sweep_time(settings, missing_s)
         if missing > tolerance:
             raise InvalidAudioError(
-                f"the recording starts about {missing_s:.2f} s after the sweep began, so frequencies "
-                f"below about {lost_hz:.0f} Hz were not recorded. Start the recording before "
-                "playback (the test file begins with silence for this purpose) and export the "
-                "whole take"
+                _(
+                    "the recording starts about {missing_s:.2f} s after the sweep began, so "
+                    "frequencies below about {lost_hz:.0f} Hz were not recorded. Start the "
+                    "recording before playback (the test file begins with silence for this "
+                    "purpose) and export the whole take"
+                ).format(missing_s=missing_s, lost_hz=lost_hz)
             )
         if lost_hz <= band.low_hz:
             return band, None
@@ -257,9 +285,12 @@ def _check_recording_start(
     else:
         if missing > tolerance:
             raise InvalidAudioError(
-                f"the recording starts about {missing_s:.2f} s after the reference sweep began, so "
-                "the first part of the sweep (for a rising sweep: its lowest frequencies) was not "
-                "recorded. Start the recording before playback and export the whole take"
+                _(
+                    "the recording starts about {missing_s:.2f} s after the reference sweep "
+                    "began, so the first part of the sweep (for a rising sweep: its lowest "
+                    "frequencies) was not recorded. Start the recording before playback and "
+                    "export the whole take"
+                ).format(missing_s=missing_s)
             )
         assert prepared.trimmed_signal is not None
         recorded_part = prepared.trimmed_signal[missing:]
@@ -271,11 +302,14 @@ def _check_recording_start(
             return band, None
     if new_low >= band.high_hz:
         raise InvalidAudioError(
-            "the recording starts after the swept range; no part of the sweep can be analysed"
+            _("the recording starts after the swept range; no part of the sweep can be analysed")
         )
-    note = (
-        f"the recording starts {missing_s * 1000.0:.0f} ms after the sweep began; the excitation "
-        f"band now starts at {new_low:.0f} Hz instead of {band.low_hz:.0f} Hz"
+    note = diag(
+        "the recording starts {missing_ms:.0f} ms after the sweep began; the excitation "
+        "band now starts at {new_low_hz:.0f} Hz instead of {old_low_hz:.0f} Hz",
+        missing_ms=missing_s * 1000.0,
+        new_low_hz=new_low,
+        old_low_hz=band.low_hz,
     )
     return (
         ExcitationBand(low_hz=new_low, high_hz=band.high_hz, source=band.source, note=note),
@@ -288,23 +322,42 @@ def _validate_recording(mono: FloatArray, sample_rate: int) -> tuple[ClippingChe
     warnings: list[str] = []
     peak = float(np.max(np.abs(mono)))
     if peak <= 0.0 or 20.0 * np.log10(peak) < SILENCE_THRESHOLD_DBFS:
+        # diag(): on the loopback path this message is stored (LoopbackResult.reason).
         raise InvalidAudioError(
-            f"recording is silent (peak below {SILENCE_THRESHOLD_DBFS:g} dBFS); check the input routing"
+            diag(
+                "recording is silent (peak below {threshold_dbfs:g} dBFS); check the input "
+                "routing and, on macOS, that the app has microphone access (System Settings > "
+                "Privacy & Security > Microphone)",
+                threshold_dbfs=SILENCE_THRESHOLD_DBFS,
+            )
         )
     clipping = detect_clipping(mono)
     if clipping.clipped:
-        warnings.append(
-            f"recording has {clipping.runs} flat-topped peaks ({clipping.samples} samples) at "
-            f"{clipping.peak_dbfs:.1f} dBFS, its highest level: probable clipping"
-            + (
-                " before an export or a gain change, because the flat tops are below full scale"
-                if clipping.peak_dbfs < -0.1
-                else ""
+        if clipping.peak_dbfs < -0.1:
+            warnings.append(
+                diag(
+                    "recording has {runs} flat-topped peaks ({samples} samples) at "
+                    "{peak_dbfs:.1f} dBFS, its highest level: probable clipping before an "
+                    "export or a gain change, because the flat tops are below full scale; "
+                    "lower the playback or input level and measure again",
+                    runs=clipping.runs,
+                    samples=clipping.samples,
+                    peak_dbfs=clipping.peak_dbfs,
+                )
             )
-            + "; lower the playback or input level and measure again"
-        )
+        else:
+            warnings.append(
+                diag(
+                    "recording has {runs} flat-topped peaks ({samples} samples) at "
+                    "{peak_dbfs:.1f} dBFS, its highest level: probable clipping; lower the "
+                    "playback or input level and measure again",
+                    runs=clipping.runs,
+                    samples=clipping.samples,
+                    peak_dbfs=clipping.peak_dbfs,
+                )
+            )
     if mono.shape[0] < sample_rate:
-        raise InvalidAudioError("recording is shorter than one second")
+        raise InvalidAudioError(diag("recording is shorter than one second"))
     return clipping, warnings
 
 
@@ -374,29 +427,96 @@ def _decay_unreliable_reasons(
     margin_db: float | None,
     clipped: bool,
     aliased: tuple[AliasedDistortion, ...] = (),
+    playback_speed: PlaybackSpeed | None = None,
 ) -> list[str]:
     """Measurement-level reasons why no decay metric may be reported as valid."""
     reasons: list[str] = []
-    if confidence == "low":
-        margin = "not checkable" if margin_db is None else f"{margin_db:.1f} dB"
+    if playback_speed is not None:
         reasons.append(
-            f"direct-sound detection confidence is low (pre-peak margin {margin}): the "
-            "recording may not contain the reference sweep"
+            diag(
+                "the sweep was played at {speed_percent:.1f} % of the speed it was generated "
+                "at, so the deconvolved response is not the room's impulse response",
+                speed_percent=playback_speed.speed_ratio * 100.0,
+            )
         )
+    if confidence == "low":
+        if margin_db is None:
+            reasons.append(
+                diag(
+                    "direct-sound detection confidence is low (pre-peak margin not checkable): "
+                    "the recording may not contain the reference sweep"
+                )
+            )
+        else:
+            reasons.append(
+                diag(
+                    "direct-sound detection confidence is low (pre-peak margin "
+                    "{margin_db:.1f} dB): the recording may not contain the reference sweep",
+                    margin_db=margin_db,
+                )
+            )
     if clipped:
         reasons.append(
-            "the recording clips, so the measurement chain was not linear and the "
-            "deconvolved response is not the room's impulse response"
+            diag(
+                "the recording clips, so the measurement chain was not linear and the "
+                "deconvolved response is not the room's impulse response"
+            )
         )
     significant = [a for a in aliased if a.significant]
     if significant:
         orders = ", ".join(str(a.order) for a in significant)
         level = max(a.level_db or -math.inf for a in significant)
         reasons.append(
-            f"aliased distortion (folded harmonic {orders} at {level:.0f} dB re the direct sound) "
-            "spreads over the impulse response after the direct sound and imitates a decay"
+            diag(
+                "aliased distortion (folded harmonic {orders} at {level_db:.0f} dB re the direct "
+                "sound) spreads over the impulse response after the direct sound and imitates "
+                "a decay",
+                orders=orders,
+                level_db=level,
+            )
         )
     return reasons
+
+
+#: ``AudioSignal.source`` of takes RoomScope played itself (Standalone Mode
+#: and the demo backend). No DAW sits between the generated sweep and the
+#: output there, so a speed estimate off 1.0 is estimation bias on a noisy or
+#: very reverberant take, not a sample-rate mismatch or a time-stretch.
+SELF_PLAYED_SOURCES = frozenset({"standalone", "fake"})
+
+
+def _playback_speed(
+    mono: FloatArray, sample_rate: int, reference: Reference, source: str | None
+) -> PlaybackSpeed | None:
+    """Diagnose a sweep played at the wrong speed (needs the sweep definition).
+
+    A diagnosis only: if it cannot be computed, the analysis goes on without it.
+    Takes RoomScope played itself are not checked (:data:`SELF_PLAYED_SOURCES`).
+    """
+    if reference.settings is None or source in SELF_PLAYED_SOURCES:
+        return None
+    try:
+        return diagnose_playback_speed(mono, sample_rate, reference.settings)
+    except (ValueError, FloatingPointError, np.linalg.LinAlgError):
+        return None
+
+
+def _explain_playback_speed(
+    exc: InvalidAudioError,
+    mono: FloatArray,
+    sample_rate: int,
+    reference: Reference,
+    source: str | None,
+) -> None:
+    """Append a wrong sweep speed, when there is one, to ``exc``'s message.
+
+    A sweep played faster than generated is shorter than the reference and
+    seems to start late; the speed is the cause the user can fix. The
+    exception keeps its type and attributes.
+    """
+    speed = _playback_speed(mono, sample_rate, reference, source)
+    if speed is not None and exc.args:
+        exc.args = (f"{exc.args[0]}. However, {speed.describe()}", *exc.args[1:])
 
 
 def _select_mic_and_loopback(
@@ -413,16 +533,19 @@ def _select_mic_and_loopback(
     lb_channel = settings.loopback_channel
     if loopback is not None and recording.sample_rate != loopback.sample_rate:
         raise SampleRateMismatchError(
-            "the loopback file and the recording have different sample rates; "
-            "export both from the same take"
+            _(
+                "the loopback file and the recording have different sample rates; "
+                "export both from the same take"
+            )
         )
     if lb_channel is not None and lb_channel >= recording.n_channels:
         raise InvalidAudioError(
-            f"loopback_channel {lb_channel} does not exist "
-            f"(recording has {recording.n_channels} channel(s))"
+            _(
+                "loopback_channel {channel} does not exist (recording has {count} channel(s))"
+            ).format(channel=lb_channel, count=recording.n_channels)
         )
     if lb_channel is not None and settings.channel is not None and lb_channel == settings.channel:
-        raise ConfigurationError("loopback_channel must differ from the microphone channel")
+        raise ConfigurationError(_("loopback_channel must differ from the microphone channel"))
 
     warning: str | None
     if settings.channel is None and lb_channel is not None and recording.n_channels > 1:
@@ -430,9 +553,12 @@ def _select_mic_and_loopback(
         scores = rms.copy()
         scores[lb_channel] = -1.0
         channel = int(np.argmax(scores))
-        warning = (
-            f"recording has {recording.n_channels} channels; channel {channel} (highest RMS "
-            f"excluding loopback channel {lb_channel}) was analysed"
+        warning = diag(
+            "recording has {count} channels; channel {channel} (highest RMS excluding loopback "
+            "channel {loopback_channel}) was analysed",
+            count=recording.n_channels,
+            channel=channel,
+            loopback_channel=lb_channel,
         )
         mono = recording.channel(channel)
     else:
@@ -452,8 +578,10 @@ def _select_mic_and_loopback(
         tol = round(RECORDING_START_TOLERANCE_S * recording.sample_rate)
         if abs(lb_samples.shape[0] - mono.shape[0]) > tol:
             raise InvalidAudioError(
-                "the loopback file and the recording differ in length by more than "
-                f"{RECORDING_START_TOLERANCE_S * 1000.0:.0f} ms; export both from the same take"
+                _(
+                    "the loopback file and the recording differ in length by more than "
+                    "{tolerance_ms:.0f} ms; export both from the same take"
+                ).format(tolerance_ms=RECORDING_START_TOLERANCE_S * 1000.0)
             )
         if lb_samples.shape[0] < mono.shape[0]:
             lb_samples = np.pad(lb_samples, (0, mono.shape[0] - lb_samples.shape[0]))
@@ -502,10 +630,12 @@ def _placement_against_loopback_bound(
         return placement
     from dataclasses import replace
 
-    reason = (
-        f"the tape-measured loudspeaker distance ({distance_m:.2f} m) exceeds the "
-        f"loopback path-delay bound ({bound:.2f} m); the tape cannot be longer than "
-        "what sound had time to travel"
+    reason = diag(
+        "the tape-measured loudspeaker distance ({distance_m:.2f} m) exceeds the "
+        "loopback path-delay bound ({bound_m:.2f} m); the tape cannot be longer than "
+        "what sound had time to travel",
+        distance_m=distance_m,
+        bound_m=bound,
     )
 
     def mark(length: PlacementLength) -> PlacementLength:
@@ -537,7 +667,7 @@ def analyze(
     """
     settings = settings or AnalysisSettings()
     sample_rate = recording.sample_rate
-    warnings: list[str] = []
+    warnings: list[str] = list(recording.device_warnings)
 
     mono, channel, channel_warning, lb_samples, lb_channel = _select_mic_and_loopback(
         recording, settings, loopback
@@ -550,7 +680,11 @@ def analyze(
     prepared = _prepare_reference(reference, sample_rate)
     warnings.extend(prepared.warnings)
 
-    h_full = deconvolve(mono, prepared.inverse)
+    try:
+        h_full = deconvolve(mono, prepared.inverse)
+    except InvalidAudioError as exc:
+        _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
+        raise
     located = _locate_pass(
         h_full,
         recording_length=mono.shape[0],
@@ -605,8 +739,10 @@ def analyze(
             )
         if loopback_result.compensation_applied:
             warnings.append(
-                "loopback compensation applied: the frequency response is relative to "
-                "the interface return"
+                diag(
+                    "loopback compensation applied: the frequency response is relative to "
+                    "the interface return"
+                )
             )
         elif loopback_result.reason:
             warnings.append(loopback_result.reason)
@@ -615,39 +751,82 @@ def analyze(
     ir_notes: list[str] = []
     # The excitation band is what later stages (decay, frequency response,
     # resonances) must respect: impulse.excitation_band / result.excitation_band.
-    band, start_note = _check_recording_start(prepared, -located.sweep_start_raw_index, sample_rate)
+    try:
+        band, start_note = _check_recording_start(
+            prepared, -located.sweep_start_raw_index, sample_rate
+        )
+    except InvalidAudioError as exc:
+        _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
+        raise
     if start_note:
         ir_notes.append(start_note)
     if located.sweep_passes > 1:
         order = located.pass_peak_indices.index(located.peak_index) + 1
         ir_notes.append(
-            f"the recording contains {located.sweep_passes} sweep passes (pulses within "
-            f"{PASS_LEVEL_DB:g} dB of the strongest); pass {order}, starting at "
-            f"{located.sweep_start_index_in_recording / sample_rate:.2f} s, was analysed and the "
-            "others were ignored. Record a single pass for a clean measurement"
+            diag(
+                "the recording contains {passes} sweep passes (pulses within {pass_level_db:g} dB "
+                "of the strongest); pass {order}, starting at {start_s:.2f} s, was analysed and "
+                "the others were ignored. Record a single pass for a clean measurement",
+                passes=located.sweep_passes,
+                pass_level_db=PASS_LEVEL_DB,
+                order=order,
+                start_s=located.sweep_start_index_in_recording / sample_rate,
+            )
         )
     if located.truncated_by_next_pass:
         ir_notes.append(
-            "the impulse response ends where the next sweep pass starts "
-            f"({located.valid_length_samples / sample_rate:.2f} s after the direct sound)"
+            diag(
+                "the impulse response ends where the next sweep pass starts "
+                "({length_s:.2f} s after the direct sound)",
+                length_s=located.valid_length_samples / sample_rate,
+            )
         )
     if located.valid_length_samples / sample_rate < 1.0:
         ir_notes.append(
-            f"only {located.valid_length_samples / sample_rate:.2f} s of decay were recorded after the "
-            "sweep; long reverberation times cannot be evaluated"
+            diag(
+                "only {length_s:.2f} s of decay were recorded after the sweep; long "
+                "reverberation times cannot be evaluated",
+                length_s=located.valid_length_samples / sample_rate,
+            )
         )
     confidence = confidence_label(located.pre_peak_margin_db)
     if located.pre_peak_margin_db is None:
+        # confidence_label(None) is always "low".
         ir_notes.append(
-            "there is no content before the direct sound to check the detection against; "
-            f"direct-sound detection confidence is {confidence}"
+            diag(
+                "there is no content before the direct sound to check the detection against; "
+                "direct-sound detection confidence is low"
+            )
+        )
+    elif confidence == "medium":
+        ir_notes.append(
+            diag(
+                "content before the direct sound is only {margin_db:.1f} dB below it (noise, "
+                "pre-ringing or a wrong reference); direct-sound detection confidence is medium",
+                margin_db=located.pre_peak_margin_db,
+            )
         )
     elif confidence != "high":
         ir_notes.append(
-            f"content before the direct sound is only {located.pre_peak_margin_db:.1f} dB below it "
-            "(noise, pre-ringing or a wrong reference); direct-sound detection confidence is "
-            f"{confidence}"
+            diag(
+                "content before the direct sound is only {margin_db:.1f} dB below it (noise, "
+                "pre-ringing or a wrong reference); direct-sound detection confidence is low",
+                margin_db=located.pre_peak_margin_db,
+            )
         )
+    # A sweep played at the wrong speed (a DAW sample-rate mismatch or
+    # time-stretch) is one cause of an unidentifiable direct sound that the
+    # user can fix; the check costs one short-time spectrum. Only a failed
+    # detection is checked: a sweep played even 2 % off leaves a pre-peak
+    # margin of a few dB (low), and a medium margin means the generated sweep
+    # did deconvolve the recording.
+    playback_speed = (
+        _playback_speed(mono, sample_rate, reference, recording.source)
+        if confidence == "low"
+        else None
+    )
+    if playback_speed is not None:
+        ir_notes.append(playback_speed.describe())
     warnings.extend(ir_notes)
 
     harmonics: tuple[HarmonicDistortion, ...] = ()
@@ -671,13 +850,15 @@ def analyze(
         if significant:
             orders = ", ".join(str(a.order) for a in significant)
             level = max(a.level_db or -math.inf for a in significant)
-            note = (
-                f"harmonic {orders} of the sweep was folded back below the Nyquist frequency "
-                f"({level:.0f} dB re the direct sound): a nonlinearity in the digital domain (a "
+            note = diag(
+                "harmonic {orders} of the sweep was folded back below the Nyquist frequency "
+                "({level_db:.0f} dB re the direct sound): a nonlinearity in the digital domain (a "
                 "playback bus or export that clipped, or a saturation plug-in without "
                 "oversampling) distorted the signal before the converter. The folded products "
                 "land after the direct sound and imitate a long decay, so the decay metrics "
-                "cannot be trusted. Lower the level in the playback path and measure again"
+                "cannot be trusted. Lower the level in the playback path and measure again",
+                orders=orders,
+                level_db=level,
             )
             ir_notes.append(note)
             warnings.append(note)
@@ -699,11 +880,12 @@ def analyze(
         harmonic_distortion=harmonics,
         aliased_distortion=aliased,
         loopback=loopback_result,
+        playback_speed=playback_speed,
     )
 
     decay = _analyze_decay_of_pass(h_full, located, sample_rate, settings, band)
     unreliable = _decay_unreliable_reasons(
-        confidence, located.pre_peak_margin_db, clipping.clipped, aliased
+        confidence, located.pre_peak_margin_db, clipping.clipped, aliased, playback_speed
     )
     if unreliable:
         decay = decay.with_all_unreliable("; ".join(unreliable))
@@ -744,9 +926,13 @@ def analyze(
     )
     if response.gated:
         warnings.append(
-            f"the frequency response is gated to {response.window_s * 1000.0:.0f} ms after the "
-            f"direct sound, so its resolution is {response.resolution_hz:.1f} Hz; the resonance "
-            "search uses the ungated response"
+            diag(
+                "the frequency response is gated to {window_ms:.0f} ms after the direct sound, "
+                "so its resolution is {resolution_hz:.1f} Hz; the resonance search uses the "
+                "ungated response",
+                window_ms=response.window_s * 1000.0,
+                resolution_hz=response.resolution_hz,
+            )
         )
 
     last_pass = located.pass_peak_indices[-1] if located.pass_peak_indices else located.peak_index
@@ -901,21 +1087,23 @@ def analyze_impulse_response(
 
     settings = settings or AnalysisSettings()
     warnings: list[str] = [
-        "impulse response imported; deconvolution, sweep-position checks and "
-        "distortion indicators were skipped"
+        diag(
+            "impulse response imported; deconvolution, sweep-position checks and "
+            "distortion indicators were skipped"
+        )
     ]
     mono, channel, channel_warning = ir.select_channel(settings.channel)
     if channel_warning:
         warnings.append(channel_warning)
     sample_rate = ir.sample_rate
     if mono.shape[0] < round(0.05 * sample_rate):
-        raise InvalidAudioError("impulse response is shorter than 50 ms")
+        raise InvalidAudioError(_("impulse response is shorter than 50 ms"))
 
     if excitation_band is not None:
         low, high = excitation_band
         if not (low > 0.0 and high > low):
             raise ConfigurationError(
-                "excitation_band must be a (low_hz, high_hz) pair with high > low > 0"
+                _("excitation_band must be a (low_hz, high_hz) pair with high > low > 0")
             )
     # A band-limited direct sound rises over about two periods of its upper
     # band edge before it peaks (a sub-woofer IR low-passed at 80 Hz takes
@@ -934,12 +1122,14 @@ def analyze_impulse_response(
     margin = located.pre_peak_margin_db
     if margin is not None and margin < IMPORTED_IR_MIN_MARGIN_DB:
         raise AnalysisError(
-            f"this file cannot be analysed as an impulse response: its strongest sample is "
-            f"only {margin:.1f} dB above the content before it (at least "
-            f"{IMPORTED_IR_MIN_MARGIN_DB:g} dB is required). It may be a recording (a "
-            "recording of the test sweep is analysed with `roomscope analyze`), or an IR "
-            "whose direct sound is weaker than a later arrival, which RoomScope cannot use "
-            "as time zero. For a band-limited IR, declare its band with --band"
+            _(
+                "this file cannot be analysed as an impulse response: its strongest sample is "
+                "only {margin_db:.1f} dB above the content before it (at least "
+                "{required_db:g} dB is required). It may be a recording (a recording of the "
+                "test sweep is analysed with `roomscope analyze`), or an IR whose direct sound "
+                "is weaker than a later arrival, which RoomScope cannot use as time zero. For "
+                "a band-limited IR, declare its band with --band"
+            ).format(margin_db=margin, required_db=IMPORTED_IR_MIN_MARGIN_DB)
         )
     declared: ExcitationBand | None
     if excitation_band is None:
@@ -947,7 +1137,7 @@ def analyze_impulse_response(
             low_hz=20.0,
             high_hz=min(20000.0, sample_rate / 2.0),
             source=EXCITATION_SOURCE_UNKNOWN,
-            note="excitation band was not declared; band metrics are not computed",
+            note=diag("excitation band was not declared; band metrics are not computed"),
         )
     else:
         low, high = excitation_band
@@ -976,7 +1166,7 @@ def analyze_impulse_response(
     )
     if declared.source == EXCITATION_SOURCE_UNKNOWN:
         decay = _mark_decay_not_computed(
-            decay, "excitation band unknown (imported impulse response; declare --band)"
+            decay, diag("excitation band unknown (imported impulse response; declare --band)")
         )
     fr_segment, fr_direct = _segment_around_pass(
         np.asarray(mono, dtype=np.float64),
@@ -1038,7 +1228,7 @@ def analyze_impulse_response(
         impulse_response=impulse,
         decay=decay,
         frequency_response=response,
-        noise=_blank_noise(note="no recording segment exists (imported impulse response)"),
+        noise=_blank_noise(note=diag("no recording segment exists (imported impulse response)")),
         reflections=reflections,
         resonances=resonances,
         clipping=None,

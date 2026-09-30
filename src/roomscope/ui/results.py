@@ -11,13 +11,16 @@ ensure_pyside6()
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
@@ -25,13 +28,20 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from roomscope.cli.report import format_report
+from roomscope.cli.render import REPORT_CONSOLE, render_analysis
 from roomscope.errors import RoomScopeError
-from roomscope.i18n import _
+from roomscope.i18n import _, localize
 from roomscope.io.recent import remember_session
 from roomscope.io.session_store import save_measurement
 from roomscope.io.wav import write_wav
-from roomscope.models.result import PlacementResult
+from roomscope.labels import severity_text, topic_text, validity_word
+from roomscope.interpretation import Finding
+from roomscope.interpretation.profiles import (
+    confidence_text,
+    noise_segment_text,
+    profile_title,
+)
+from roomscope.models.result import AnalysisResult, PlacementResult, Validity
 from roomscope.ui.plots import (
     decay_table_rows,
     plot_decay,
@@ -41,6 +51,19 @@ from roomscope.ui.plots import (
     plot_reflections,
 )
 from roomscope.ui.state import MeasurementState
+from roomscope.ui.theme import tokens
+from roomscope.ui.widgets import Card, FindingCard, PageHeader, StatTile, label, primary
+
+#: Display word and chip tone of a metric validity.
+VALIDITY_DISPLAY = {
+    Validity.VALID: ("valid", "good"),
+    Validity.UNRELIABLE: ("unreliable", "warn"),
+    Validity.INSUFFICIENT_RANGE: ("insufficient range", "warn"),
+    Validity.NOT_COMPUTED: ("not computed", "neutral"),
+    Validity.OUTSIDE_EXCITATION: ("outside the sweep's range", "neutral"),
+    Validity.NOT_COMPARABLE: ("not comparable", "warn"),
+}
+CONFIDENCE_TONE = {"high": "good", "medium": "info", "low": "bad"}
 
 
 class _PlacementTab(QWidget):
@@ -102,7 +125,7 @@ class _PlacementTab(QWidget):
             (_("Horizontal separation"), placement.horizontal_separation_m),
         ]
         self.table.setRowCount(len(rows))
-        for index, (label, length) in enumerate(rows):
+        for index, (caption, length) in enumerate(rows):
             if length.metres is None:
                 value = _("not determined")
                 if length.missing_input:
@@ -111,8 +134,8 @@ class _PlacementTab(QWidget):
                 value = f"{length.metres:.2f} m"
                 if length.input_uncertainty_m is not None:
                     value += f" +/-{length.input_uncertainty_m:.2f}"
-            note = length.reason or ""
-            for column, text in enumerate((label, value, str(length.validity), note)):
+            note = localize(length.reason or "")
+            for column, text in enumerate((caption, value, validity_word(length.validity), note)):
                 item = QTableWidgetItem(text)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.table.setItem(index, column, item)
@@ -134,9 +157,9 @@ class _PlacementTab(QWidget):
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.candidates.setItem(index, column, item)
         self.candidates.resizeColumnsToContents()
-        notes = list(placement.notes)
+        notes = [localize(note) for note in placement.notes]
         if placement.coordinates_withheld:
-            notes.append(placement.coordinates_withheld)
+            notes.append(localize(placement.coordinates_withheld))
         self.notes.setPlainText("\n".join(notes))
 
 
@@ -149,7 +172,206 @@ class _PlotTab(QWidget):
         layout.addWidget(self.canvas)
 
     def redraw(self) -> None:
+        # The plot functions lay the figure out once, for the size it has then;
+        # the tight layout engine repeats that at every draw, so the axis labels
+        # still fit once the tab is shown or the window is resized.
+        self.figure.set_layout_engine("tight")
         self.canvas.draw_idle()
+
+
+def validity_text(validity: Validity) -> tuple[str, str]:
+    """The translated word and colour tone shown for a validity."""
+    return _validity_text(validity)
+
+
+def _validity_text(validity: Validity) -> tuple[str, str]:
+    _word, tone = VALIDITY_DISPLAY.get(validity, (str(validity), "neutral"))
+    return validity_word(validity), tone
+
+
+class _Overview(QWidget):
+    """Key figures with their trust level, the findings, and the decay table."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setProperty("page", True)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        body = QWidget()
+        body.setProperty("page", True)
+        layout = QVBoxLayout(body)
+        layout.setContentsMargins(14, 14, 14, 14)
+        layout.setSpacing(12)
+        scroll.setWidget(body)
+        outer.addWidget(scroll)
+
+        tiles = QHBoxLayout()
+        tiles.setSpacing(10)
+        self.rt60 = StatTile(_("Reverberation (RT60)"))
+        self.noise = StatTile(_("Background noise"))
+        self.reflections = StatTile(_("Early reflections"))
+        self.direct = StatTile(_("Direct sound"))
+        for tile in (self.rt60, self.noise, self.reflections, self.direct):
+            tiles.addWidget(tile)
+        layout.addLayout(tiles)
+
+        self.findings_title = label("", "section")
+        layout.addWidget(self.findings_title)
+        self.findings = QVBoxLayout()
+        self.findings.setSpacing(6)
+        layout.addLayout(self.findings)
+
+        decay = Card()
+        decay.body.addWidget(label(_("REVERBERATION BY BAND"), "section"))
+        decay.body.addWidget(
+            label(
+                _(
+                    "Reverberation (extrapolated to 60 dB). 'insufficient range' means "
+                    "the decay is not clean enough for that metric."
+                ),
+                "hint",
+                wrap=True,
+            )
+        )
+        self.table = QTableWidget(0, 5)
+        self.table.setHorizontalHeaderLabels([_("Band"), "EDT", "T20", "T30", _("RT60 estimate")])
+        self.table.horizontalHeader().setStretchLastSection(True)
+        self.table.verticalHeader().setVisible(False)
+        self.table.setAlternatingRowColors(True)
+        self.table.setShowGrid(False)
+        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        decay.body.addWidget(self.table)
+        layout.addWidget(decay)
+        layout.addStretch(1)
+
+    def show_result(self, result: AnalysisResult, findings: list[Finding], profile: str) -> None:
+        broadband = result.decay.broadband
+        if broadband.rt60_estimate_s is not None:
+            word, tone = _validity_text(broadband.t30.validity)
+            if broadband.rt60_basis and broadband.rt60_basis != "T30":
+                word, tone = _validity_text(
+                    broadband.t20.validity
+                    if broadband.rt60_basis == "T20"
+                    else broadband.edt.validity
+                )
+            self.rt60.show_value(
+                f"{broadband.rt60_estimate_s:.2f} s",
+                _("broadband, estimated from {basis}").format(basis=broadband.rt60_basis),
+                word,
+                tone,
+            )
+        else:
+            word, tone = _validity_text(broadband.t30.validity)
+            self.rt60.show_value("-", _("no reverberation time could be reported"), word, tone)
+
+        noise = result.noise
+        if noise.rms_dbfs is not None:
+            hum = next((h for h in noise.hum if h.detected), None)
+            chip, tone = (
+                (_("hum {base:g} Hz").format(base=hum.base_hz), "warn")
+                if hum is not None
+                else (_("no hum"), "good")
+            )
+            self.noise.show_value(
+                f"{noise.rms_dbfs:.1f} dBFS",
+                _("RMS, {segment} segment, uncalibrated").format(
+                    segment=noise_segment_text(noise.segment_source)
+                ),
+                chip,
+                tone,
+            )
+        else:
+            self.noise.show_value("-", _("no quiet segment to measure"), _("not computed"))
+
+        refl = result.reflections
+        if refl.reflections:
+            strongest = max(refl.reflections, key=lambda r: r.relative_db)
+            self.reflections.show_value(
+                str(len(refl.reflections)),
+                _("strongest at {delay:.1f} ms, {level:.1f} dB").format(
+                    delay=strongest.delay_ms, level=strongest.relative_db
+                ),
+                _("above {threshold:g} dB").format(threshold=refl.threshold_db),
+                "info",
+            )
+        else:
+            self.reflections.show_value(
+                "0",
+                _("none above {threshold:g} dB").format(threshold=refl.threshold_db),
+                _("clean"),
+                "good",
+            )
+
+        ir = result.impulse_response
+        margin = (
+            _("pre-peak margin {margin:.1f} dB").format(margin=ir.pre_peak_margin_db)
+            if ir.pre_peak_margin_db is not None
+            else _("pre-peak margin not checkable")
+        )
+        if ir.playback_speed is not None:
+            self.direct.show_value(
+                confidence_text(ir.direct_sound_confidence),
+                _("sweep played at {percent:.1f} % speed").format(
+                    percent=ir.playback_speed.speed_ratio * 100.0
+                ),
+                _("wrong speed"),
+                "bad",
+            )
+        else:
+            confidence = ir.direct_sound_confidence
+            self.direct.show_value(
+                confidence_text(confidence),
+                margin,
+                _("confidence"),
+                CONFIDENCE_TONE.get(confidence, "neutral"),
+            )
+
+        while self.findings.count():
+            entry = self.findings.takeAt(0)
+            widget = entry.widget() if entry is not None else None
+            if widget is not None:
+                widget.deleteLater()
+        self.findings_title.setText(
+            _("INTERPRETATION ({profile} PROFILE)").format(profile=profile_title(profile).upper())
+        )
+        for finding in findings:
+            self.findings.addWidget(
+                FindingCard(
+                    str(finding.severity),
+                    topic_text(finding.topic),
+                    finding.message,
+                    severity_label=severity_text(str(finding.severity)),
+                )
+            )
+        if not findings:
+            self.findings.addWidget(label(_("No findings."), "hint"))
+
+        rows = decay_table_rows(result)
+        colours = tokens()
+        self.table.setRowCount(len(rows))
+        for r, row in enumerate(rows):
+            for c, value in enumerate(row):
+                item = QTableWidgetItem(value)
+                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                if c > 0 and (value.startswith("(") or value == _("insufficient range")):
+                    item.setForeground(QColor(colours["warn"]))
+                elif c > 0 and value in {_("n/a"), "-"}:
+                    item.setForeground(QColor(colours["muted"]))
+                if r == 0:
+                    font = item.font()
+                    font.setBold(True)
+                    item.setFont(font)
+                self.table.setItem(r, c, item)
+        # The whole table is shown; the page scrolls, not the table.
+        self.table.resizeRowsToContents()
+        height = self.table.horizontalHeader().height() + 2 * self.table.frameWidth()
+        height += sum(self.table.rowHeight(r) for r in range(self.table.rowCount()))
+        self.table.setFixedHeight(height + 2)
 
 
 class ResultsPage(QWidget):
@@ -158,31 +380,41 @@ class ResultsPage(QWidget):
     def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.state = state
+        self.setProperty("page", True)
         layout = QVBoxLayout(self)
-        self.tabs = QTabWidget()
+        layout.setContentsMargins(28, 20, 28, 14)
+        layout.setSpacing(10)
 
-        overview = QWidget()
-        ov_layout = QVBoxLayout(overview)
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels([_("Band"), "EDT", "T20", "T30", _("RT60 estimate")])
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.header = PageHeader(_("Results"))
+        self.new_button = QPushButton(_("New Measurement"))
+        self.new_button.clicked.connect(self.new_measurement.emit)
+        self.save_button = primary(QPushButton(_("Save Session...")))
+        self.save_button.setShortcut("Ctrl+S")
+        self.save_button.clicked.connect(self._choose_save_directory)
+        self.header.action_row.addWidget(self.new_button)
+        self.header.action_row.addWidget(self.save_button)
+        layout.addWidget(self.header)
+
+        self.tabs = QTabWidget()
+        self.tabs.setDocumentMode(False)
+        self.overview = _Overview()
+        self.table = self.overview.table
+        self.tabs.addTab(self.overview, _("Overview"))
+
+        report = QWidget()
+        report_layout = QVBoxLayout(report)
+        report_layout.setContentsMargins(14, 14, 14, 14)
+        self.diagnostics_heading = label(
+            _("The same report that roomscope analyze prints; warnings are at the end."),
+            "hint",
+            wrap=True,
+        )
+        report_layout.addWidget(self.diagnostics_heading)
         self.text = QPlainTextEdit()
         self.text.setReadOnly(True)
-        ov_layout.addWidget(
-            QLabel(
-                _(
-                    "Reverberation (extrapolated to 60 dB). 'insufficient range' means "
-                    "the decay is not clean enough for that metric."
-                )
-            )
-        )
-        ov_layout.addWidget(self.table, 1)
-        self.diagnostics_heading = QLabel(_("Warnings (core diagnostics, always English):"))
-        self.diagnostics_heading.setWordWrap(True)
-        ov_layout.addWidget(self.diagnostics_heading)
-        ov_layout.addWidget(self.text, 2)
-        self.tabs.addTab(overview, _("Overview"))
+        self.text.setProperty("report", True)
+        report_layout.addWidget(self.text, 1)
+        self.tabs.addTab(report, _("Full report"))
 
         self.ir_tab = _PlotTab()
         self.fr_tab = _PlotTab()
@@ -198,33 +430,27 @@ class ResultsPage(QWidget):
         self.tabs.addTab(self.place_tab, _("Placement"))
         layout.addWidget(self.tabs, 1)
 
-        row = QHBoxLayout()
-        self.new_button = QPushButton(_("New Measurement"))
-        self.new_button.clicked.connect(self.new_measurement.emit)
-        self.save_button = QPushButton(_("Save Session..."))
-        self.save_button.setShortcut("Ctrl+S")
-        self.save_button.clicked.connect(self._choose_save_directory)
-        row.addWidget(self.new_button)
-        row.addStretch(1)
-        row.addWidget(self.save_button)
-        layout.addLayout(row)
-        self.status = QLabel("")
-        self.status.setWordWrap(True)
+        self.status = label("", "hint", wrap=True)
         layout.addWidget(self.status)
 
     def refresh(self) -> None:
         result = self.state.result
         if result is None:
             return
-        rows = decay_table_rows(result)
-        self.table.setRowCount(len(rows))
-        for r, row in enumerate(rows):
-            for c, value in enumerate(row):
-                item = QTableWidgetItem(value)
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
-                self.table.setItem(r, c, item)
-        self.table.resizeColumnsToContents()
-        self.text.setPlainText(format_report(result, self.state.findings, self.state.profile))
+        session = self.state.session
+        parts = [
+            part
+            for part in (session.room_name, session.measurement_position, session.microphone_name)
+            if part
+        ]
+        parts.append(_("{profile} profile").format(profile=profile_title(self.state.profile)))
+        parts.append(f"{result.sample_rate} Hz")
+        self.header.subtitle.setText("  ·  ".join(parts))
+        self.header.subtitle.setVisible(True)
+        self.overview.show_result(result, list(self.state.findings), self.state.profile)
+        self.text.setPlainText(
+            render_analysis(REPORT_CONSOLE, result, self.state.findings, self.state.profile)
+        )
         plot_impulse_response(self.ir_tab.figure, result)
         plot_frequency_response(self.fr_tab.figure, result)
         plot_decay(self.decay_tab.figure, result)
@@ -255,7 +481,7 @@ class ResultsPage(QWidget):
                 self.state.session.recording_path = str(path)
             session_path = save_measurement(directory, self.state.session, result)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot save session"), str(exc))
+            QMessageBox.critical(self, _("Cannot save session"), localize(str(exc)))
             return
         remember_session(directory)
         self.status.setText(_("Session saved to {path}").format(path=session_path.parent))

@@ -81,6 +81,7 @@ from scipy.signal import fftconvolve
 
 from roomscope.core.filters import fractional_octave_smooth
 from roomscope.errors import ConfigurationError
+from roomscope.i18n import _
 from roomscope.models.audio import FloatArray
 from roomscope.models.configuration import SweepSettings
 
@@ -231,11 +232,11 @@ def active_region(
     considered silence (e.g. the silences of a RoomScope test file).
     """
     if signal.ndim != 1 or signal.shape[0] == 0:
-        raise ConfigurationError("reference signal must be a non-empty mono array")
+        raise ConfigurationError(_("reference signal must be a non-empty mono array"))
     magnitude = np.abs(signal)
     peak = float(np.max(magnitude))
     if not math.isfinite(peak) or peak <= 0.0:
-        raise ConfigurationError("reference signal is silent")
+        raise ConfigurationError(_("reference signal is silent"))
     above = np.flatnonzero(magnitude >= peak * 10.0 ** (threshold_db / 20.0))
     return int(above[0]), int(above[-1]) + 1
 
@@ -294,12 +295,14 @@ def estimate_reference_band_hz(reference: FloatArray, sample_rate: int) -> tuple
     inverse is exact is narrower (:func:`design_spectral_inverse`).
     """
     if reference.ndim != 1 or reference.shape[0] < 16:
-        raise ConfigurationError("reference signal must be a mono array with at least 16 samples")
+        raise ConfigurationError(
+            _("reference signal must be a mono array with at least 16 samples")
+        )
     nfft = int(sfft.next_fast_len(reference.shape[0], real=True))
     freqs, spectrum = _reference_spectrum(reference, nfft, sample_rate)
     power = np.abs(spectrum[1:]) ** 2
     if float(np.max(power)) <= 0.0:
-        raise ConfigurationError("reference signal is silent")
+        raise ConfigurationError(_("reference signal is silent"))
     band = _reference_band_from_power(freqs[1:], power)
     return band.low_hz, band.high_hz
 
@@ -345,22 +348,26 @@ def design_spectral_inverse(reference: FloatArray, sample_rate: int) -> Spectral
     (:func:`active_region`), otherwise it counts as part of the sweep.
     """
     if reference.ndim != 1 or reference.shape[0] < 16:
-        raise ConfigurationError("reference signal must be a mono array with at least 16 samples")
+        raise ConfigurationError(
+            _("reference signal must be a mono array with at least 16 samples")
+        )
     if not np.all(np.isfinite(reference)):
-        raise ConfigurationError("reference signal contains NaN or infinite samples")
+        raise ConfigurationError(_("reference signal contains NaN or infinite samples"))
     n = reference.shape[0]
     nfft = int(sfft.next_fast_len(2 * n - 1, real=True))
     freqs, spectrum = _reference_spectrum(reference, nfft, sample_rate)
     power = np.abs(spectrum) ** 2
     if float(np.max(power[1:])) <= 0.0:
-        raise ConfigurationError("reference signal is silent")
+        raise ConfigurationError(_("reference signal is silent"))
     ref_band = _reference_band_from_power(freqs[1:], power[1:])
     ratio = 2.0**SPECTRAL_REG_TRANSITION_OCTAVES
     band = (ref_band.low_hz * ratio, ref_band.high_hz / ratio)
     if band[0] >= band[1]:
         raise ConfigurationError(
-            f"the reference signal only covers {ref_band.low_hz:.0f}-{ref_band.high_hz:.0f} Hz; "
-            "that is too narrow for a sweep measurement"
+            _(
+                "the reference signal only covers {low_hz:.0f}-{high_hz:.0f} Hz; "
+                "that is too narrow for a sweep measurement"
+            ).format(low_hz=ref_band.low_hz, high_hz=ref_band.high_hz)
         )
     shape_db = _regularisation_shape_db(freqs, band, (ref_band.low_hz, ref_band.high_hz))
     pink = ref_band.plateau / np.maximum(freqs, freqs[1])

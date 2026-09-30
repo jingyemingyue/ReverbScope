@@ -113,10 +113,15 @@ from roomscope.core.filters import (
     bandpass_sos,
     iec_band,
 )
+from roomscope.i18n import diag
 from roomscope.models.audio import FloatArray
 from roomscope.models.configuration import AnalysisSettings
 from roomscope.models.result import (
     DECAY_TIME_ORIGIN,
+    EXCITATION_SOURCE_DECLARED,
+    EXCITATION_SOURCE_ESTIMATED,
+    EXCITATION_SOURCE_SETTINGS,
+    EXCITATION_SOURCE_UNKNOWN,
     BandDecay,
     DecayMetric,
     DecayResult,
@@ -303,7 +308,7 @@ def estimate_truncation(
             None,
             False,
             0,
-            problem="the response is too short for a noise-floor estimate",
+            problem=diag("the response is too short for a noise-floor estimate"),
         )
 
     # 1. First local averages (about 20 ms blocks).
@@ -332,7 +337,7 @@ def estimate_truncation(
             None,
             False,
             0,
-            problem="no decay above the noise floor was found",
+            problem=diag("no decay above the noise floor was found"),
         )
     stop_block = start_block + int(usable[-1]) + 1
     t = centres[start_block:stop_block] / sample_rate
@@ -346,7 +351,7 @@ def estimate_truncation(
             None,
             False,
             0,
-            problem="the response does not decay",
+            problem=diag("the response does not decay"),
         )
     cross_t = (noise_db - intercept) / slope
     preliminary = (cross_t, slope, noise_db)
@@ -393,11 +398,17 @@ def estimate_truncation(
 
     problem: str | None = None
     if not converged:
-        problem = f"the Lundeby noise-floor iteration did not converge in {iterations} iteration(s)"
+        problem = diag(
+            "the Lundeby noise-floor iteration did not converge in {iterations} iteration(s)",
+            iterations=iterations,
+        )
     elif abs(late_slope) < LUNDEBY_MIN_SLOPE_RATIO * abs(preliminary[1]):
-        problem = (
-            f"the late decay slope ({late_slope:.1f} dB/s) is less than "
-            f"{LUNDEBY_MIN_SLOPE_RATIO:g} times the early slope ({preliminary[1]:.1f} dB/s)"
+        problem = diag(
+            "the late decay slope ({late:.1f} dB/s) is less than {ratio:g} times the early "
+            "slope ({early:.1f} dB/s)",
+            late=late_slope,
+            ratio=LUNDEBY_MIN_SLOPE_RATIO,
+            early=preliminary[1],
         )
     else:
         reached = np.nonzero((level_db <= noise_db + _NOISE_REACHED_DB) & (times >= start_t))[0]
@@ -406,9 +417,11 @@ def estimate_truncation(
             allowance = LUNDEBY_CROSSPOINT_ALLOWANCE_DB / abs(preliminary[1])
             allowance += 2.0 * block / sample_rate
             if cross_t > first_reached_t + allowance:
-                problem = (
-                    f"the noise crosspoint ({cross_t:.2f} s after the onset) lies far beyond the "
-                    f"first point where the decay reaches the noise floor ({first_reached_t:.2f} s)"
+                problem = diag(
+                    "the noise crosspoint ({crosspoint:.2f} s after the onset) lies far beyond "
+                    "the first point where the decay reaches the noise floor ({reached:.2f} s)",
+                    crosspoint=cross_t,
+                    reached=first_reached_t,
                 )
 
     def index_of(t_s: float) -> int:
@@ -579,9 +592,13 @@ def fit_decay_metric(
             seconds=None,
             validity=Validity.INSUFFICIENT_RANGE,
             evaluation_range_db=evaluation_range_db,
-            reason=(
-                f"Insufficient decay range: {available:.1f} dB available, "
-                f"{needed:.0f} dB needed ({abs(lower):.0f} dB range + {noise_margin_db:.0f} dB above noise)"
+            reason=diag(
+                "Insufficient decay range: {available:.1f} dB available, {needed:.0f} dB needed "
+                "({range:.0f} dB range + {margin:.0f} dB above noise)",
+                available=available,
+                needed=needed,
+                range=abs(lower),
+                margin=noise_margin_db,
             ),
         )
     edc = curve.edc_db
@@ -593,7 +610,9 @@ def fit_decay_metric(
             seconds=None,
             validity=Validity.INSUFFICIENT_RANGE,
             evaluation_range_db=evaluation_range_db,
-            reason="Insufficient decay range: the decay curve does not reach the evaluation range",
+            reason=diag(
+                "Insufficient decay range: the decay curve does not reach the evaluation range"
+            ),
         )
     i0 = max(int(below_upper[0]), first_index)
     i1 = int(below_lower[0])
@@ -604,9 +623,9 @@ def fit_decay_metric(
             validity=Validity.UNRELIABLE,
             evaluation_range_db=evaluation_range_db,
             reason=(
-                "Evaluation range covers fewer than 3 samples after the direct sound"
+                diag("Evaluation range covers fewer than 3 samples after the direct sound")
                 if first_index > int(below_upper[0])
-                else "Evaluation range covers fewer than 3 samples"
+                else diag("Evaluation range covers fewer than 3 samples")
             ),
         )
     slope, _, r2 = _linear_fit(curve.time_s[i0 : i1 + 1], edc[i0 : i1 + 1])
@@ -616,7 +635,7 @@ def fit_decay_metric(
             seconds=None,
             validity=Validity.UNRELIABLE,
             evaluation_range_db=evaluation_range_db,
-            reason="Decay slope is not negative",
+            reason=diag("Decay slope is not negative"),
         )
     seconds = -60.0 / slope
     nonlinearity = 1000.0 * (1.0 - r2)
@@ -661,9 +680,22 @@ def _truncation_sensitivity(
         if metric.validity is not Validity.VALID or metric.seconds is None:
             continue
         if other.seconds is None:
-            changes.append(f"{metric.name} {metric.seconds:.2f} s vs no value")
+            changes.append(
+                diag(
+                    "{metric} {seconds:.2f} s vs no value",
+                    metric=metric.name,
+                    seconds=metric.seconds,
+                )
+            )
         elif abs(metric.seconds / other.seconds - 1.0) > TRUNCATION_SENSITIVITY:
-            changes.append(f"{metric.name} {metric.seconds:.2f} s vs {other.seconds:.2f} s")
+            changes.append(
+                diag(
+                    "{metric} {seconds:.2f} s vs {other:.2f} s",
+                    metric=metric.name,
+                    seconds=metric.seconds,
+                    other=other.seconds,
+                )
+            )
     return changes
 
 
@@ -673,9 +705,14 @@ def _edt_direct_check(edt: DecayMetric, direct_step_db: float | None) -> DecayMe
         return edt
     share = 100.0 * (1.0 - 10.0 ** (-direct_step_db / 10.0))
     return edt.marked_unreliable(
-        f"the decay curve drops {direct_step_db:.1f} dB across the direct sound (it carries "
-        f"{share:.0f} % of the energy; limit {EDT_MAX_DIRECT_STEP_DB:g} dB): EDT describes the "
-        "direct sound rather than the room at this position"
+        diag(
+            "the decay curve drops {step:.1f} dB across the direct sound (it carries "
+            "{share:.0f} % of the energy; limit {limit:g} dB): EDT describes the direct sound "
+            "rather than the room at this position",
+            step=direct_step_db,
+            share=share,
+            limit=EDT_MAX_DIRECT_STEP_DB,
+        )
     )
 
 
@@ -705,10 +742,12 @@ def _straightness_check(
     max_curvature, max_xi = straightness_limits(bandwidth_hz, t30.seconds)
     warnings: list[str] = []
     if abs(curvature) > max_curvature:
-        warning = (
-            f"the decay curve is not straight (curvature C = {curvature:.0f} %, limit "
-            f"{max_curvature:.0f} %): possibly a double slope, coupled volumes or strong early "
-            "reflections; no single reverberation time describes it"
+        warning = diag(
+            "the decay curve is not straight (curvature C = {curvature:.0f} %, limit "
+            "{limit:.0f} %): possibly a double slope, coupled volumes or strong early "
+            "reflections; no single reverberation time describes it",
+            curvature=curvature,
+            limit=max_curvature,
         )
         warnings.append(warning)
         t20 = t20.marked_unreliable(warning)
@@ -717,9 +756,12 @@ def _straightness_check(
     for metric in (t20, t30):
         xi = metric.nonlinearity_permille
         if metric.validity is Validity.VALID and xi is not None and xi > max_xi:
-            warning = (
-                f"the {metric.name} fit is not straight (xi = {xi:.0f} permille, limit "
-                f"{max_xi:.0f}): {metric.name} is not a reliable reverberation time here"
+            warning = diag(
+                "the {metric} fit is not straight (xi = {xi:.0f} permille, limit "
+                "{limit:.0f}): {metric} is not a reliable reverberation time here",
+                metric=metric.name,
+                xi=xi,
+                limit=max_xi,
             )
             warnings.append(warning)
             metric = metric.marked_unreliable(warning)
@@ -787,7 +829,7 @@ def analyze_band(
         rejected = trunc.rejected_estimate()
         if rejected is None:
             changes = [
-                f"{m.name} has no truncation-independent value"
+                diag("{metric} has no truncation-independent value", metric=m.name)
                 for m in (edt, t20, t30)
                 if m.validity is Validity.VALID
             ]
@@ -799,9 +841,11 @@ def analyze_band(
                 (edt, t20, t30), _fit_all(alternative, noise_margin_db, first_index)
             )
         if changes:
-            reason = (
-                f"the noise truncation is not trustworthy ({trunc.problem}) and the result "
-                f"depends on it ({'; '.join(changes)})"
+            reason = diag(
+                "the noise truncation is not trustworthy ({problem}) and the result depends "
+                "on it ({changes})",
+                problem=trunc.problem,
+                changes="; ".join(changes),
             )
             warnings.append(reason)
             edt = edt.marked_unreliable(reason)
@@ -815,9 +859,11 @@ def analyze_band(
         if reference_t is not None:
             bt_product = band.bandwidth_hz * reference_t
             if bt_product < MIN_BT_PRODUCT:
-                filter_warning = (
-                    f"B*T = {bt_product:.1f} < {MIN_BT_PRODUCT:g}: the band filter's own decay is "
-                    "comparable to the measured decay; values in this band are unreliable"
+                filter_warning = diag(
+                    "B*T = {bt:.1f} < {minimum:g}: the band filter's own decay is comparable "
+                    "to the measured decay; values in this band are unreliable",
+                    bt=bt_product,
+                    minimum=MIN_BT_PRODUCT,
                 )
                 edt = edt.marked_unreliable(filter_warning)
                 t20 = t20.marked_unreliable(filter_warning)
@@ -861,12 +907,55 @@ def analyze_band(
     )
 
 
-def _outside_excitation_band(band: Band, excitation: ExcitationBand) -> BandDecay:
-    reason = (
-        f"the {band.label} band ({band.low_hz:.0f}-{band.high_hz:.0f} Hz) is not fully inside "
-        f"the excitation range ({excitation.low_hz:.0f}-{excitation.high_hz:.0f} Hz, "
-        f"{excitation.source}): it contains only leakage and noise, so no decay values are reported"
+def _outside_excitation_reason(band: Band, excitation: ExcitationBand) -> str:
+    """Why ``band`` has no decay values; one sentence per excitation source."""
+    params = {
+        "band": band.label,
+        "band_low": band.low_hz,
+        "band_high": band.high_hz,
+        "low": excitation.low_hz,
+        "high": excitation.high_hz,
+    }
+    source = excitation.source
+    if source == EXCITATION_SOURCE_SETTINGS:
+        return diag(
+            "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the "
+            "excitation range ({low:.0f}-{high:.0f} Hz, sweep settings): it contains only "
+            "leakage and noise, so no decay values are reported",
+            **params,
+        )
+    if source == EXCITATION_SOURCE_ESTIMATED:
+        return diag(
+            "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the "
+            "excitation range ({low:.0f}-{high:.0f} Hz, estimated from reference audio): it "
+            "contains only leakage and noise, so no decay values are reported",
+            **params,
+        )
+    if source == EXCITATION_SOURCE_DECLARED:
+        return diag(
+            "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the "
+            "excitation range ({low:.0f}-{high:.0f} Hz, declared by the user): it contains "
+            "only leakage and noise, so no decay values are reported",
+            **params,
+        )
+    if source == EXCITATION_SOURCE_UNKNOWN:
+        return diag(
+            "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the "
+            "excitation range ({low:.0f}-{high:.0f} Hz, unknown): it contains only leakage "
+            "and noise, so no decay values are reported",
+            **params,
+        )
+    return diag(
+        "the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside the "
+        "excitation range ({low:.0f}-{high:.0f} Hz, {source}): it contains only leakage and "
+        "noise, so no decay values are reported",
+        source=source,
+        **params,
     )
+
+
+def _outside_excitation_band(band: Band, excitation: ExcitationBand) -> BandDecay:
+    reason = _outside_excitation_reason(band, excitation)
 
     def withheld(name: str, evaluation_range: tuple[float, float]) -> DecayMetric:
         return DecayMetric(
@@ -911,14 +1000,28 @@ def _result_notes(
     if outside and excitation is not None:
         labels = ", ".join(b.band_label for b in outside)
         notes.append(
-            f"decay analysis: the {labels} band(s) are not fully inside the excitation range "
-            f"({excitation.low_hz:.0f}-{excitation.high_hz:.0f} Hz); no decay values are "
-            "reported for them"
+            diag(
+                "decay analysis: the {bands} band(s) are not fully inside the excitation range "
+                "({low:.0f}-{high:.0f} Hz); no decay values are reported for them",
+                bands=labels,
+                low=excitation.low_hz,
+                high=excitation.high_hz,
+            )
         )
     for band in (broadband, *bands):
         if band.t30.validity is Validity.OUTSIDE_EXCITATION:
             continue
-        notes.extend(f"decay analysis, {band.band_label}: {w}" for w in band.warnings)
+        for warning in band.warnings:
+            if band.band_label == "broadband":
+                notes.append(diag("decay analysis, broadband: {warning}", warning=warning))
+            else:
+                notes.append(
+                    diag(
+                        "decay analysis, {band}: {warning}",
+                        band=band.band_label,
+                        warning=warning,
+                    )
+                )
     return tuple(notes)
 
 

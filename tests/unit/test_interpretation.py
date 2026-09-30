@@ -17,6 +17,7 @@ from roomscope.interpretation.profiles import (
     RoomMicProfile,
     VocalProfile,
     VoiceOverProfile,
+    profile_title,
 )
 from roomscope.models.configuration import SweepSettings
 from roomscope.models.result import Reflection
@@ -57,6 +58,13 @@ def test_generic_profile_reports_reflection_and_hum(short_sweep: SweepSettings) 
 
 def test_available_profiles_are_listed() -> None:
     assert available_profiles() == ALL_PROFILES
+
+
+def test_every_profile_has_a_display_name() -> None:
+    # The GUI lists profiles by name; the id stays in files and on the command line.
+    titles = [profile_title(name) for name in available_profiles()]
+    assert all(title != name for title, name in zip(titles, available_profiles(), strict=True))
+    assert len(set(titles)) == len(titles)
 
 
 def test_unknown_profile_rejected(short_sweep: SweepSettings) -> None:

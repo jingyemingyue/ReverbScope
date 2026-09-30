@@ -2,7 +2,7 @@
 Type=Application
 Name=RoomScope
 Comment=DAW-independent recording environment analyzer
-Exec=roomscope
+Exec=roomscope-gui
 Icon=roomscope
 Terminal=false
 Categories=AudioVideo;Audio;

@@ -1,5 +1,10 @@
 #!/bin/sh
 # AppImage entry point for the one-directory bundle (ARCHITECTURE_V1.md §6.2).
+# Without arguments (double-click, desktop file) open the GUI; with arguments
+# behave like the console `roomscope`.
 HERE="$(dirname "$(readlink -f "$0")")"
 export PATH="$HERE:$PATH"
+if [ "$#" -eq 0 ]; then
+  exec "$HERE/roomscope-gui"
+fi
 exec "$HERE/roomscope" "$@"

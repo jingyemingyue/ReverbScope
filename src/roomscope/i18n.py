@@ -22,7 +22,10 @@ import gettext
 import hashlib
 import locale as py_locale
 import os
+import re
+import string
 import struct
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -68,7 +71,11 @@ def normalize_lang(tag: str | None) -> str:
     lower = raw.lower()
     if lower in {"c", "posix"}:
         return DEFAULT_LANG
-    if lower in {"zh", "zh_cn", "zh_hans", "zh_sg", "zh_chs"}:
+    # zh, zh_CN, zh-Hans, zh-Hans-CN (macOS / Qt uiLanguages), zh_CHS, zh_SG and
+    # Windows' getlocale() form "Chinese (Simplified)_China" all mean Simplified.
+    if lower in {"zh", "zh_cn", "zh_hans", "zh_sg", "zh_chs"} or lower.startswith(
+        ("zh_hans", "chinese (simplified)", "chinese_simplified")
+    ):
         return "zh_CN"
     if "_" in raw:
         lang, _, region = raw.partition("_")
@@ -76,8 +83,16 @@ def normalize_lang(tag: str | None) -> str:
     return raw.lower()
 
 
-def resolve_language(explicit: str | None = None) -> str:
-    """Pick a language without activating it."""
+def resolve_language(
+    explicit: str | None = None, *, system_languages: Sequence[str] | None = None
+) -> str:
+    """Pick a language without activating it.
+
+    ``system_languages`` are the desktop's preferred UI languages (the GUI
+    passes Qt's ``QLocale.system().uiLanguages()``); they stand for the
+    system locale when no locale variable is set, as on macOS when the app is
+    opened from the Finder.
+    """
     if explicit:
         return normalize_lang(explicit)
     try:
@@ -91,16 +106,20 @@ def resolve_language(explicit: str | None = None) -> str:
     env = os.environ.get(ENV_LANG)
     if env:
         return normalize_lang(env)
-    return _system_language()
+    return _system_language(system_languages)
 
 
-def activate(lang: str | None = None) -> str:
+def activate(lang: str | None = None, *, system_languages: Sequence[str] | None = None) -> str:
     """Install the catalog for ``lang`` (resolved if omitted) and return it.
 
     ``lang is None`` follows the selection order. Pass ``"en"`` to force English.
     """
     global _current, _translation
-    chosen = resolve_language(None) if lang is None else normalize_lang(lang)
+    chosen = (
+        resolve_language(None, system_languages=system_languages)
+        if lang is None
+        else normalize_lang(lang)
+    )
     loaded = _load_translation(chosen)
     if chosen != DEFAULT_LANG and _is_null(loaded):
         chosen = DEFAULT_LANG
@@ -142,6 +161,144 @@ def ngettext(singular: str, plural: str, n: int) -> str:
 def format_message(template: str, **params: Any) -> str:
     """gettext + ``str.format`` with ASCII digits (never locale-aware numbers)."""
     return _(template).format(**params)
+
+
+#: Message context of the stored English diagnostics (notes, warnings,
+#: reasons) that :func:`localize` shows in the active language.
+DIAGNOSTIC_CONTEXT = "diagnostic"
+_FIELD = re.compile(r"\{(\w+)(![rsa])?(:[^{}]*)?\}")
+#: Format types whose value is a number; such a field matches only a number.
+_NUMERIC_TYPES = frozenset("bcdeEfFgGnoxX%")
+_NUMBER = r" *(?:[-+]?(?:\d[\d,_]*(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?|[-+]?(?:nan|inf))%?"
+_diagnostic_patterns: tuple[int, list[tuple[re.Pattern[str], re.Pattern[str], str]]] | None = None
+
+
+def diag(template: str, **params: Any) -> str:
+    """English text of a diagnostic that a result file stores.
+
+    Notes, warnings and reasons stay English in ``result.json`` so a file
+    reads the same in every language and keeps its schema. The ``template`` is
+    extracted into the catalog under the ``"diagnostic"`` context, and
+    :func:`localize` recognises the stored sentence when it is displayed.
+    """
+    return template.format(**params) if params else template
+
+
+def _template_pattern(template: str, *, strict: bool = True) -> re.Pattern[str]:
+    parts: list[str] = []
+    seen: set[str] = set()
+    for literal, field, spec, _conversion in string.Formatter().parse(template):
+        parts.append(re.escape(literal))
+        if field is None:
+            continue
+        if field in seen:
+            parts.append(f"(?P={field})")
+        elif spec and spec[-1] in _NUMERIC_TYPES:
+            # A number formatted as the template says: text never fills it.
+            seen.add(field)
+            parts.append(f"(?P<{field}>{_NUMBER})")
+        else:
+            seen.add(field)
+            # Strict: a value never spans the "; " that joins several
+            # diagnostics. The loose form lets a value be a whole nested
+            # diagnostic that has a "; " of its own.
+            parts.append(f"(?P<{field}>(?:(?!; ).)+?)" if strict else f"(?P<{field}>.+?)")
+    return re.compile("".join(parts), re.DOTALL)
+
+
+def _patterns() -> list[tuple[re.Pattern[str], re.Pattern[str], str]]:
+    """(strict and loose English patterns, translation without format specs),
+    most specific first."""
+    global _diagnostic_patterns
+    if _diagnostic_patterns is not None and _diagnostic_patterns[0] == id(_translation):
+        return _diagnostic_patterns[1]
+    catalog: dict[str, str] = getattr(_translation, "_catalog", {}) or {}
+    prefix = f"{DIAGNOSTIC_CONTEXT}{_CONTEXT_SEPARATOR}"
+    entries: list[tuple[int, re.Pattern[str], re.Pattern[str], str]] = []
+    for key, translated in catalog.items():
+        if not isinstance(key, str) or not key.startswith(prefix) or not translated:
+            continue
+        template = key[len(prefix) :]
+        literal = sum(len(text) for text, *_rest in string.Formatter().parse(template))
+        plain = _FIELD.sub(lambda m: "{" + m.group(1) + "}", translated)
+        strict = _template_pattern(template)
+        loose = _template_pattern(template, strict=False)
+        entries.append((literal, strict, loose, plain))
+    entries.sort(key=lambda entry: -entry[0])
+    patterns = [(strict, loose, plain) for _literal, strict, loose, plain in entries]
+    _diagnostic_patterns = (id(_translation), patterns)
+    return patterns
+
+
+def localize(text: str, _depth: int = 0) -> str:
+    """Show a stored English diagnostic in the active language.
+
+    Several diagnostics joined with ``"; "`` are shown one by one. Text that
+    matches no catalogued template (a diagnostic from another version, a file
+    path, an OS error) is returned unchanged.
+    """
+    if not text or _current == DEFAULT_LANG or _depth > 2:
+        return text
+    patterns = _patterns()
+    for strict, _loose, translated in patterns:
+        match = strict.fullmatch(text)
+        if match is not None:
+            return _fill(translated, match, text, _depth)
+    if "; " in text:
+        # A nested diagnostic with a "; " of its own, recognised as a whole
+        # (never a value that is only a join of several diagnostics: the
+        # "; " would then belong to the outer text).
+        for _strict, loose, translated in patterns:
+            match = loose.fullmatch(text)
+            if match is not None and all(
+                "; " not in value or _whole(value, _depth + 1) is not None
+                for value in match.groupdict().values()
+            ):
+                return _fill(translated, match, text, _depth)
+        pieces = text.split("; ")
+        parts = [localize(part, _depth) for part in pieces]
+        # Nothing recognised: the stored text as it is, separators included.
+        return text if parts == pieces else "；".join(parts)
+    return text
+
+
+def _whole(text: str, depth: int) -> str | None:
+    """The translation of ``text`` when one template matches all of it."""
+    if depth > 2:
+        return None
+    for strict, _loose, translated in _patterns():
+        match = strict.fullmatch(text)
+        if match is not None:
+            return _fill(translated, match, text, depth)
+    return None
+
+
+def _fill(translated: str, match: re.Match[str], text: str, depth: int) -> str:
+    values = {k: _localize_value(v, depth + 1) for k, v in match.groupdict().items()}
+    try:
+        return translated.format(**values)
+    except (KeyError, IndexError, ValueError):
+        return text
+
+
+def _localize_value(value: str, depth: int) -> str:
+    """A value inside a diagnostic: a nested diagnostic, or a stored word
+    such as a validity (``not_computed``) or a confidence (``high``)."""
+    nested = localize(value, depth)
+    if nested != value:
+        return nested
+    if " or " in value:
+        # Alternatives listed in a stored sentence ("1.20 m or 1.35 m").
+        return (
+            _("{a} or {b}")
+            .format(a="", b="")
+            .join(_localize_value(part, depth) for part in value.split(" or "))
+        )
+    for candidate in (value, value.replace("_", " ")):
+        translated = _translation.gettext(candidate)
+        if translated != candidate:
+            return translated
+    return value
 
 
 def parse_po(path: Path) -> dict[str, str]:
@@ -257,7 +414,7 @@ def compile_catalogs(root: Path | None = None, out_dir: Path | None = None) -> l
     return written
 
 
-def _system_language() -> str:
+def _system_language(system_languages: Sequence[str] | None = None) -> str:
     for candidate in (
         os.environ.get("LC_ALL"),
         os.environ.get("LC_MESSAGES"),
@@ -265,8 +422,19 @@ def _system_language() -> str:
     ):
         if candidate:
             tag = candidate.split(".", 1)[0]
-            if tag:
+            if tag and tag.upper() not in {"C", "POSIX"}:
                 return normalize_lang(tag)
+    if system_languages:
+        known = available_locales()
+        for tag in system_languages:
+            lang = normalize_lang(tag)
+            if lang in known:
+                return lang
+            if lang.split("_", 1)[0] == DEFAULT_LANG:
+                return DEFAULT_LANG
+    windows = _windows_ui_language()
+    if windows:
+        return normalize_lang(windows)
     try:
         detected = py_locale.getlocale()[0]
     except (ValueError, TypeError):
@@ -274,6 +442,26 @@ def _system_language() -> str:
     if detected:
         return normalize_lang(detected)
     return DEFAULT_LANG
+
+
+def _windows_ui_language() -> str | None:
+    """The Windows display language (``GetUserDefaultUILanguage``), e.g. ``zh_CN``.
+
+    Windows sets no ``LANG``; the display language is the user's choice, and
+    ``locale.windows_locale`` maps its language identifier to a locale name.
+    ``ctypes.windll`` exists on Windows only.
+    """
+    try:
+        import ctypes
+
+        windll = getattr(ctypes, "windll", None)
+        if windll is None:
+            return None
+        lang_id = int(windll.kernel32.GetUserDefaultUILanguage())
+    except (AttributeError, OSError, ValueError):
+        return None
+    name = py_locale.windows_locale.get(lang_id)
+    return str(name) if name else None
 
 
 def _load_translation(lang: str) -> gettext.NullTranslations:

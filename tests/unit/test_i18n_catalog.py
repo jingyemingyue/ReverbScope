@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.i18n import activate, parse_po
+from roomscope.i18n import DIAGNOSTIC_CONTEXT, activate, parse_po
 from roomscope.interpretation import available_profiles, get_profile
 from roomscope.interpretation.interpreter import Severity
 from roomscope.interpretation.profiles import (
@@ -26,7 +26,9 @@ from roomscope.interpretation.profiles import (
     change_direction_text,
     decay_length_text,
     noise_segment_text,
+    profile_title,
 )
+from roomscope.labels import topic_text
 from roomscope.models.comparison import MetricDelta
 from roomscope.models.result import Reflection, ResonanceCandidate, Validity
 from tests.conftest import make_rir
@@ -42,8 +44,19 @@ DYNAMIC_CALLS = {
     ("i18n.py", "_(template)"),
     ("interpretation/interpreter.py", "_(template)"),
     ("cli/main.py", "_(SAFETY_MESSAGE)"),
+    # argparse's own texts, each extracted with N_() in ARGPARSE_MESSAGES.
+    ("cli/main.py", "_(message)"),
+    # Root-help command groups (COMMAND_GROUPS) and session modes
+    # (SESSION_MODES), each extracted with N_().
+    ("cli/main.py", "_(group)"),
+    ("cli/main.py", "_(mode)"),
+    # Device Inspector column headings, each extracted with N_() in COLUMNS.
+    ("ui/dev_tools.py", "_(column)"),
     ("ui/pages.py", "_(SAFETY_MESSAGE)"),
     ("ui/pages.py", "_(DAW_INSTRUCTIONS)"),
+    # The "GUI cannot start" sentence, extracted with N_() in ui/app.py.
+    ("cli/main.py", "_(GUI_UNAVAILABLE)"),
+    ("ui/app.py", "_(GUI_UNAVAILABLE)"),
 }
 
 #: ASCII tokens a Chinese finding may legitimately contain: units, metric
@@ -103,6 +116,12 @@ def extract_messages() -> tuple[dict[str, list[str]], set[tuple[str, str]]]:
                     ids.append(text)
             elif name == "ngettext" and len(node.args) >= 2:
                 ids.extend(t for t in (_literal(node.args[0]), _literal(node.args[1])) if t)
+            elif name == "diag" and node.args:
+                text = _literal(node.args[0])
+                if text is not None:
+                    ids.append(f"{DIAGNOSTIC_CONTEXT}{CONTEXT_SEPARATOR}{text}")
+                else:
+                    dynamic.add((rel, ast.get_source_segment(source, node) or ""))
             elif name == "pgettext" and len(node.args) >= 2:
                 context, text = _literal(node.args[0]), _literal(node.args[1])
                 if context and text:
@@ -294,17 +313,28 @@ def test_cli_zh_cn_analyze_prints_no_english_finding_text(
                 profile,
             ]
         )
+        title = profile_title(profile)
+        reverberation = topic_text("reverberation")
     finally:
         activate("en")
     assert code == 0
+    assert title != profile and reverberation == "混响"
     out = capsys.readouterr().out
-    header = f"解读（{profile} 配置）："
+    header = f"解读（{title}配置）"
     assert header in out
-    section = out.split(header, 1)[1].strip().splitlines()
-    findings = [line for line in section if line.startswith("  [")]
+    section = out.split(header, 1)[1].splitlines()
+    # Each finding: "  <symbol> <severity> · <topic>", then its message
+    # indented by four spaces (wrapped over as many lines as it needs).
+    findings: list[tuple[str, str]] = []
+    for line in section:
+        head = re.match(r"^  \S+ (.+?) · (.+)$", line)
+        if head:
+            findings.append((head.group(2), ""))
+        elif line.startswith("    ") and findings:
+            topic, message = findings[-1]
+            findings[-1] = (topic, message + line.strip())
     assert findings, out
-    topics = {line.split("] ", 1)[1].split(":", 1)[0] for line in findings}
-    assert "reverberation" in topics
-    for line in findings:
-        message = line.split(": ", 1)[1]
-        assert _english_words(message) == [], line
+    assert reverberation in {topic for topic, _message in findings}
+    for topic, message in findings:
+        assert message, topic
+        assert _english_words(message) == [], (topic, message)

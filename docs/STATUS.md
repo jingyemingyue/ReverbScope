@@ -1,8 +1,288 @@
 # Status
 
-Snapshot: 2026-09-17, v0.1.0.dev1 (foundation). Everything below was
-verified by actually running it on macOS (Apple silicon, Python 3.12.14).
-Nothing is marked PASS that was not run.
+Snapshot 1 (2026-09-17, v0.1.0.dev1, foundation) was verified by running it
+on macOS (Apple silicon, Python 3.12.14); every later snapshot says where it
+ran. Nothing is marked PASS that was not run, and no snapshot includes a
+measurement through a real interface or a real DAW
+([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
+
+Snapshot 31: 2026-09-29 — **v0.4.1 release close-out: one changelog section
+for the pre-release** (branch `claude/roomscope-cli-integration-84e5qc`, PR
+#24, stacked on #22 and #21). One code fix: `roomscope export` logged
+*ignoring third-party exporter 'csv'; name collides* on every run in every
+install, because `pyproject.toml` declares the built-in CSV exporter under
+the `roomscope.exporters` entry-point group too; the registry now recognises
+its own declaration (a test covers both cases). The `[Unreleased]` entries
+(Desktop and Terminal Editions, `roomscope demo`, the home screen, "At a
+glance", numbered next steps, the error block, workflow-ordered help, the
+one `SHA256SUMS`, the download-first README and Release page, the
+`PYTHONIOENCODING` fix) are folded into `[0.4.1]`, whose date is now
+2026-09-29 and whose introduction names the two editions; the draft
+Release's notes are taken from that section, so they now describe everything
+the pre-release contains. Stale wording fixed on the way: the release-notes
+order in RELEASE_PLAN §1 (+ zh-CN), the Release workflow's trigger paths in
+§3, the draft body in §3 step 2, the CHANGELOG's "GUI keeps its own reports"
+and "installer edition" sentences, the `RoomScope-setup.exe` comment in
+`packaging/windows/roomscope.iss`, and COMPATIBILITY's review date;
+INSTALLATION (+ zh-CN) now says the `xattr` step for the macOS Terminal
+Edition is a stop-gap for the unsigned pre-release builds. A merge-readiness
+audit of the stack (PRs #21 → #22 → #24) found the three heads linear (each
+an ancestor of the next), both merge orders conflict-free with `main` ending
+on the tree of #24's head, PR #23 not part of the chain (21 conflicting
+files if merged after #24; superseded), and no second CLI presentation layer
+(`cli/report.py` is a 45-line wrapper over `cli/render.py`, no `style.py`).
+Release run #30 on `6d8c32e` (job logs): the Apple-silicon app is `Mach-O
+thin (arm64)`, the Intel app `Mach-O thin (x86_64)`, both ad hoc signed with
+the hardened-runtime rehearsal (`flags=0x10002(adhoc,runtime)`), both DMGs
+`hdiutil verify` VALID and mounted, copied and launched; the Windows
+installer installed, smoke-tested (`roomscope.exe`, `roomscope-gui.exe`,
+Start menu entry) and uninstalled with its folder and Start menu entries
+gone; every Terminal Edition passed the `--terminal` gate and smoke. A local
+`release_draft.py stage` on the Linux files plus stand-ins for the other
+runners produced exactly the 14-file set with one `SHA256SUMS`, and refused
+a stray file. A zh_CN pass over every command's output (the CLI gates'
+allowlist) found no untranslated prose; the three metadata fields the demo
+stores in English (room, position, microphone) are shown as stored when a
+demo session is reopened, by the language-neutral-files design. **What was
+run** (this container: Linux x86_64, CPython 3.12.3, `dev` and `gui` extras,
+PortAudio 19.6, no audio device): `ruff check`, `ruff format --check`,
+`mypy` (strict, 79 files), `check_doc_links.py`, `check_src_safety.py`,
+`build_docs_site.py`; the CI coverage-gate command, **810 passed**, core +
+models branch coverage 90.48 %; the schema and public-API tests; `--backend
+fake devices` and `measure`; `examples/synthetic_measurement.py`.
+`scripts/build_release.py --python-dist` in a second environment pinned to
+`requirements/bundle.lock` (PyInstaller 6.22.3) built both Linux editions:
+tests skipped there (run separately, above), license bundles, PyInstaller,
+the `--strip --require-licenses` gate, the `--terminal` gate, both smoke
+tests, `RoomScope-Desktop-Linux-x86_64.tar.gz` (148.1 MB),
+`RoomScope-Terminal-Linux-x86_64.tar.gz` (57.4 MB), `SHA256SUMS-Linux-X64`
+(`sha256sum -c` OK), the wheel and the sdist; both `build_info.json` files
+name commit `f893cc7` and their edition; the Terminal archive, extracted
+into an empty folder and run under `env -i` (no virtual environment, no
+`PYTHON*` variables), printed `--version`, ran `demo` in English and
+Chinese, wrote nothing but JSON for `--format json doctor` (no matplotlib,
+PySide6 or shiboken6 reported, audio callbacks ok), answered `gui` with the
+Terminal Edition sentence and exit code 2 in both languages, and contains no
+PySide6, shiboken6, Qt, matplotlib or `roomscope/ui` file. On GitHub
+Actions, CI #76 and Release #29 on `f893cc7` (the commit before this one)
+are green on every job, the four `Bundle (<os>)` jobs and *Check the release
+file set* included; that check downloaded the 17 files of the run (nine
+archives, four `SHA256SUMS-<OS>-<ARCH>`, wheel, sdist, SBOM, lock) and
+staged the 14-file Release set. A read-only run of `release_draft.py`'s
+planner against the asset names main's last Release run (#10, `909f332`)
+attached to the v0.4.1 draft plans the removal of the seven earlier names
+(`RoomScope.dmg`, `RoomScope-setup.exe`, `roomscope-linux-x86_64.tar.gz`,
+`roomscope-windows-x64.zip`, `SHA256SUMS-{Linux,macOS,Windows}`) and the
+replacement of the four shared ones; a name it does not know stops it. **Not
+run:** the draft refresh itself (it runs on `main` after the merge); any
+real audio interface, microphone or DAW; a bundle on a person's own Mac,
+Windows PC or Linux desktop (the release workflow mounts, installs and
+launches them on GitHub's runners only); macOS 14; the Chinese installer on
+a Chinese Windows. The hardware and DAW matrices stay empty; a cell is
+filled only from a community report on real hardware.
+
+Snapshot 30: 2026-09-27 — **download-first installation and the release
+candidate's files checked as a user gets them** (branch
+`claude/epic-meitner-x0t35f`, stacked on PR #21). README / README.zh-CN open
+with *Download* (the stable Releases page, real file names, first-launch
+steps for unsigned builds), new `docs/INSTALLATION.md` (+ zh-CN), release
+notes restructured for testers, RELEASE_PLAN §3c (publish checklist) and §3d
+(PyPI readiness). **What was run** (Linux x86_64, CPython 3.12.3), on the
+files of Release run #23 (PR #21 head `b753e17`, build commit `7cb1419`),
+downloaded from the run's artifacts: `sha256sum -c` of all five archives;
+the wheel in a fresh virtual environment (not editable): `--version`,
+`--help`, `--backend fake measure`, `sweep`, `analyze`, `show`,
+`--lang zh_CN show`, then with `[gui]` `gui --smoke` (offscreen) and
+`roomscope-gui` kept running; the sdist rebuilt into a wheel with the same
+90 files and installed with `[gui]`; `twine check` on both; both DMGs
+opened with 7-Zip (app, Applications link, Mach-O arm64 / x86_64,
+`Info.plist` 0.4.1 / `LSMinimumSystemVersion` 14.0, `build_info.json`,
+313 Mach-O files without an absolute non-system load path); the Windows ZIP's
+layout (`roomscope-gui.exe` PE32+ GUI, `roomscope.exe` console,
+`_internal`, `THIRD_PARTY_LICENSES`); the Linux bundle through
+`smoke_bundle.py --require-gui-launcher --expect-commit` in an empty
+environment (it needs glibc 2.39); a token / private-key scan of every
+bundle and the sdist (nothing but PEM header strings in Qt's TLS plug-ins).
+That found one bug, fixed here: `roomscope gui` without PySide6 printed a
+traceback (the wheel without `[gui]`); a wheel built from this branch now
+prints the install hint in English and Chinese and exits 2. On this branch:
+the full suite, **695 passed** (679 + 16 new), coverage of core + models
+90.28 %; ruff, ruff format, mypy strict, `check_doc_links.py`,
+`check_src_safety.py`, `build_docs_site.py`, `uv build` + `twine check`.
+`/releases/latest` was checked to redirect to `/releases` while no full
+release exists (the API answers 404), which is why the README links
+`/releases`. **Not run:** the DMGs on a Mac and the Windows files on a
+Windows PC by a person (the release workflow mounts, installs and launches
+them on GitHub's runners only), any audio interface or DAW, and the
+publication itself (the maintainer's click, RELEASE_PLAN §3c).
+
+Snapshot 29: 2026-09-27 — **command-line presentation** (branch
+`claude/publication-ready-level-n3hkor`). One renderer for the terminal
+(`cli/console.py`: colour policy with `--color` / `NO_COLOR` / `TERM=dumb`,
+status symbols with ASCII fallbacks, display-width-aware wrapping and tables
+that turn into blocks on a narrow terminal, a progress line that is a single
+stage line in a file) and the command renderers (`cli/render.py`) for
+analyze, show, compare, doctor, devices, sweep, measure and errors; grouped
+`--help` with examples. The GUI's plain-text reports are unchanged. Found on
+the way: `--format json measure` wrote status lines into its JSON stdout, and
+`doctor` / `devices` ignored `--format json` (both fixed, with tests). No
+new dependency; JSON, schemas, stored files and exit codes unchanged. No
+hardware or DAW result (still none).
+
+Snapshot 28: 2026-09-27 — **a complete Simplified Chinese experience**
+(branch `claude/publication-ready-level-n3hkor`). Everything a user reads can
+be Simplified Chinese: GUI (with Qt's own dialogs), CLI help and argparse
+errors, text and environment reports, Device Inspector, charts, the Windows
+installer, README, SECURITY, the hardware test guide and the GitHub issue
+forms. Result files are unchanged: stored notes stay English (`diag`) and are
+translated when shown (`localize`); a run under `--lang zh_CN` writes no
+Chinese into `result.json`. The macOS Developer ID signing and notarization
+steps are in `release.yml`, off until six repository secrets exist, and have
+never run. Locally (Linux, Python 3.12): the full suite passes, including new
+zh_CN gates for the GUI pages, dialogs, reports, charts (no missing glyphs
+where a CJK font is installed) and every CLI help screen; ruff, mypy strict
+(with and without the gui extra), doc links (docs/ and root documents), the
+docs site and the sdist / wheel build are clean. **Not run:** any real audio
+interface or DAW, and the Chinese Windows installer on a Chinese Windows
+(CI compiles and installs it on an English runner).
+
+Snapshot 27: 2026-09-27 — **release hardening before the v0.4.1 pre-release**
+(same branch). A final review of the branch against `main` found no blocker
+in the code; fixed here:
+the draft-release job could not see its own draft (the release action looks
+a release up by tag, which misses drafts), so a refresh would have left
+`RoomScope.dmg`, `SHA256SUMS-{Linux,macOS,Windows}` and the first run's notes
+next to the new files; `scripts/release_draft.py` now stages and checks the
+exact 13-file set and the checksum files, refreshes the single draft and
+reads it back, and fails closed on a published release, two drafts, a tag on
+another commit or an unknown asset (38 tests with a fake API; a read-only
+`sync --dry-run` against the real v0.4.1 draft planned the removal of those
+four legacy files and replacement of the other six). Also: Standalone and
+demo takes skip the playback-speed check (a biased estimate on a noisy,
+reverberant take advised switching off a DAW's time-stretch); host-API
+options on another host API are refused; libsndfile's LGPL-2.1 text and
+source notes are in the license bundle; the interface report form asks
+Pass / Fail / Not run per matrix row; the DAW form asks for the interface,
+the direct-sound confidence and the environment report; the README says
+"No real hardware validation yet" first and links both forms. Run in this
+container (Linux x86_64, Python 3.12, PortAudio 19.6, no audio device):
+`ruff check`, `ruff format --check`, `mypy` (strict, 75 files), doc links,
+source safety, docs site, 625 tests, core/models branch coverage 90.62 %.
+**Not run:** anything on real hardware or in a DAW; the draft refresh
+itself (it runs only on `main` after the merge).
+
+Snapshot 26: 2026-09-24 — **software readiness for community testing**
+(branch `claude/publication-ready-level-n3hkor`, CHANGELOG `[0.4.1]`). A
+seven-part review of the branch against `main` (packaging, Windows
+installer, macOS app and DMG, DAW guide, claims, code, community), each
+finding checked by an independent verifier, reported 35 findings: 31
+confirmed (several found by more than one reviewer) and all fixed, 4
+refuted as not defects (three of those were improved anyway). Since snapshot 25: Help ▸ Environment Report for every
+edition (`roomscope doctor --probe`: build commit, settings, home folder as
+`~`, probed rates, an audio-callback self-check); issue forms for audio
+interface and DAW reports; one Standalone pre-flight shared by the GUI and
+`roomscope measure` (rate asked of the devices the stream opens, with its
+channels and host-API options); the GUI keeps the system's default devices;
+device buffer under/overflows reach the result as a finding; a recording
+of exact digital silence (the sweep track exported instead of the
+microphone) is flagged; the speed diagnosis follows the estimate's measured
+spread; session bundles leave out links out of the folder; inside-out
+macOS signing with a hardened-runtime rehearsal; the Linux tarball uses the
+system PortAudio; matplotlib's cache survives launches; macOS 14+ declared
+(`LSMinimumSystemVersion`); a Digital Performer section and corrected
+sources in the DAW guide, labelled "documented workflow, not yet tested in
+a DAW"; translated chart text with a CJK font fallback, metric names instead
+of ids on the Compare page, and profiles listed by name.
+
+Evidence on GitHub Actions: CI #56 (`f7c92f1`) green on Ubuntu 3.12–3.14,
+macOS and Windows (551 / 552 tests; the same-file copy test ran on APFS and
+NTFS). CI #57 (`ad969b0`) failed only in "Lint and type-check" (mypy: no
+`shiboken6` without the gui extra), fixed in `e1bc2e5`. Release #15
+(`ad969b0`) passed all four bundle jobs: macOS 26.6.2 arm64 and macOS
+15.7.9 x86_64 (inside-out ad hoc signature valid; hardened-runtime copy
+`flags=0x10002(adhoc,runtime)` started, `doctor` found every library
+version, the built commit and working audio callbacks; DMG mounted, copied
+and launched with `LSMinimumSystemVersion` 14.0; the font cache built once
+per job instead of at every launch), Windows (installer compiled,
+installed, installed copy smoke-tested, uninstaller removed the whole
+folder) and Linux (system PortAudio, bundle gate, smoke). CI #58
+(`e1bc2e5`) failed once on macOS in a progress-callback test: a real race
+(a poll between the last block and PortAudio's finished callback could
+discard a complete take), reproduced deterministically and fixed in
+`65febe5`. Release #16 (`e1bc2e5`) passed all four bundle jobs again with
+the reworked checks (entitlements, inert Authenticode hook compiled). CI #59
+(`65febe5`) green on every job: Ubuntu 3.12 / 3.13 / 3.14 and macOS 576
+passed, Windows 575 passed and 1 skipped (a QML check that does not apply
+to that PySide6 build), coverage 90.48 %. CI #61 and Release #18
+(`38c4878`, the chart and compare-label translations) green on every job,
+the four bundle jobs included.
+Locally (Linux, Python 3.12): **579 passed**, coverage gate 90.48 %;
+ruff, mypy strict (with and without the gui extra), doc links clean; a
+local PyInstaller 6.22.3 Linux bundle loaded `/lib/x86_64-linux-gnu`
+PortAudio, ALSA and JACK (LD_DEBUG) and passed the license gate. **Not
+run:** any real audio interface or DAW; the hardware and DAW matrices in
+HARDWARE_TESTS.md stay empty; nothing was signed with a Developer ID or
+Authenticode certificate or notarized.
+
+Snapshot 25: 2026-09-24 — **first all-platform green CI run on this
+branch** (the repository is public, so hosted runners are available; `main`
+had green CI runs before, e.g. #43). On this branch, CI run #54 (commit `2b54157`) passed every job: Ubuntu
+Python 3.12 / 3.13 / 3.14, macOS Python 3.12, Windows Python 3.12 (pytest,
+fake-backend Standalone flow, example script), lint + mypy + doc links +
+docs site + source safety, JSON schemas, sdist / wheel, license bundle and
+installed-Essentials gate. The run before it (#53) had failed on macOS and
+Windows only in `test_copy_onto_the_same_file_is_a_no_op`, whose Linux
+emulation (a hard link) cannot be created where the file system is
+case-insensitive: real evidence for the audit finding, fixed in the test.
+Release run #13 (commit `d0895b8`, `workflow_dispatch`, no draft) passed
+all four bundle jobs: Linux, macOS arm64, **macOS x86_64 on `macos-15-intel`**
+(the Intel DMG built, mounted, copied and launched for the first time) and
+Windows (installer built, installed, smoke-tested, uninstalled), plus sdist /
+wheel and the SBOM. Since snapshot 24: GUI redesign, audio device inventory
+and host-API-safe Standalone takes, `roomscope doctor`, developer / installer
+editions, sourced DAW guide, `docs/AUDIO_DEVICES.md`, `docs/COMPARISON.md`,
+`docs/COMPATIBILITY.md`, matplotlib>=3.10 and the cross-platform fixes
+(then CHANGELOG `[Unreleased]`, since folded into `[0.4.1]`). Locally (Linux, Python 3.12): **549 passed**,
+coverage gate 90.47 %. **Not run:** any real audio interface or DAW; the
+hardware and DAW matrices in HARDWARE_TESTS.md stay empty.
+
+Snapshot 24: 2026-09-24 — **v0.4.1 release readiness: desktop launch on
+three platforms, Windows installer, Intel macOS, DAW workflow** (branch
+`claude/publication-ready-level-n3hkor`; see CHANGELOG `[0.4.1]` DAW
+workflow and Packaging). The Windows and Linux bundles gain a windowed
+`roomscope-gui` launcher that opens the GUI without arguments (the Start-menu
+shortcut, Explorer double-click, desktop file and AppImage `AppRun` all ran
+the console CLI before, which printed its usage and exited); the release
+workflow always builds `RoomScope-setup.exe`, installs it silently,
+smoke-tests the installed copy and uninstalls it, and builds an Intel
+macOS DMG next to the Apple-silicon one. A sweep the DAW played at the wrong
+speed (sample-rate mismatch or time-stretch) is diagnosed; DAW export
+containers are tested; a per-DAW guide covers ten DAWs.
+**What was run for this snapshot** (Linux x86_64, Ubuntu, CPython 3.12,
+the `dev`, `gui` and `i18n-dev` extras): the full suite, **522 passed**; the
+CI coverage gate command, **90.47 %**; `ruff check`, `ruff format --check`,
+`mypy` (strict, 70 files), `check_doc_links.py`, `check_src_safety.py`,
+`build_docs_site.py`; `uv build` of sdist and wheel; a Linux PyInstaller
+6.22.3 one-directory build with `roomscope` and `roomscope-gui` over one
+`_internal/`, which passes `check_bundle_contents.py --strip
+--require-licenses` and `smoke_bundle.py --require-gui-launcher`;
+`roomscope-gui` without arguments entered the Qt event loop (offscreen).
+On GitHub Actions, the release workflow run #11 on this branch (commit
+`3876f21`, `workflow_dispatch`, no draft) passed on Linux, macOS arm64 and
+Windows: the Windows job built `RoomScope-setup.exe` with Inno Setup,
+installed it per-user, ran `smoke_bundle.py --require-gui-launcher` on the
+installed copy (CLI, fake measurement, offscreen GUI through
+`roomscope-gui.exe`) and uninstalled it. Release run #12 (the Intel macOS job) never started: the
+repository's Actions minutes were used up, and every job failed within
+seconds without a runner. `scripts/build_release.py` (RELEASE_PLAN.md §3a)
+was then run on this Linux machine from `requirements/bundle.lock` with
+`--python-dist`: tests, wheel and sdist, license bundle, PyInstaller, gate,
+smoke test (CLI, fake measurement, offscreen GUI, `roomscope-gui`),
+`roomscope-linux-x86_64.tar.gz` and `SHA256SUMS-Linux-X64`, about 4 minutes.
+**What was not run:** the Intel macOS build (neither in Actions nor on a
+Mac), `build_release.py` on macOS or Windows, and any DAW or hardware cell —
+the DAW notes come from the DAWs' documentation and the new DAW matrix in
+HARDWARE_TESTS.md is empty.
 
 Snapshot 23: 2026-09-24 — **v0.4.1 workflow verification on PR #18**,
 commit `ec9a6b7406e5788830dbe68931899671df0d94d4`.
@@ -193,7 +473,7 @@ discovery follows files under `.dist-info/licenses/`; macOS
 | i18n | stdlib gettext with `pgettext` contexts; `zh_CN` catalog for report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles (a test requires a translation with matching placeholders for every extracted message); wheel ships a hashed `.mo`, nothing is written at run time; `--lang` / settings / `ROOMSCOPE_LANG` |
 | GUI | PySide6 window: Home, Universal DAW Mode, Standalone Mode, Results (including Placement), session save/open, Compare (difference curve, matched reflections and resonances, loopback deltas), Demo, Stop, Settings, project-folder browser, tape-measure fields, dark-mode plot chrome, device rate vs requested rate, `gui --smoke` |
 | Standalone Mode | Device enumeration and play+record through the selected backend with safety defaults |
-| Bundles | `scripts/build_license_bundle.py` (verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts from `packaging/licenses/`), `scripts/check_bundle_contents.py` (`--strip`, `--require-licenses`, `--installed-essentials`; GPL-only QML module directories matched, any `qml/` tree in a frozen bundle fails), `packaging/roomscope.spec`, `release.yml` (the version-driven workflow that opens a draft Release is delivered to the maintainer for installation, see RELEASE_PLAN.md §3; the committed workflow is still the earlier tag-only one), `scripts/smoke_bundle.py` |
+| Bundles | `scripts/build_license_bundle.py` (verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts from `packaging/licenses/`), `scripts/check_bundle_contents.py` (`--strip`, `--require-licenses`, `--installed-essentials`; GPL-only QML module directories matched, any `qml/` tree in a frozen bundle fails), `packaging/roomscope.spec`, `release.yml` (the version-driven workflow on `main` since PR #18; it opened the v0.4.1 draft and refreshes it while `v0.4.1` has no tag, see RELEASE_PLAN.md §3), `scripts/smoke_bundle.py` |
 | Documentation | Hub at `docs/index.md`; themed HTML site from `scripts/build_docs_site.py` (S7); release plan in `docs/RELEASE_PLAN.md` |
 
 ## Tested (all PASS on 2026-09-17 on macOS; profile work re-verified 2026-09-22;
@@ -331,9 +611,10 @@ algebra and the refusals, not the acoustics of any real surface.
   conditions are not checked). Decay curves are never averaged.
 * Direct sound = strongest deconvolved sample; a reflection stronger than the
   direct sound would be mis-identified (confidence margin does not catch it).
-* PortAudio buffer under/overflows are logged, not refused; whether a real
-  interface reports them, and whether Stop and an unplugged device behave
-  as the scripted stand-in does, is unverified (hardware matrix).
+* PortAudio buffer under/overflows are reported (result warning and a
+  "measure again" finding), not refused; whether a real interface reports
+  them, and whether Stop and an unplugged device behave as the scripted
+  stand-in does, is unverified (hardware matrix).
 * Loopback validation and compensation have synthetic evidence only.
 * An imported impulse response that starts at its peak cannot be checked
   for being an IR and is analysed with direct-sound confidence "low".
@@ -421,11 +702,14 @@ were not copied. `packaging/licenses/` holds verbatim license *texts*
 
 ## Next recommended milestone
 
-See [RELEASE_PLAN.md](RELEASE_PLAN.md): v0.4.1 closes #9–#17 once its
-pull request is merged with CI green; then v0.5.0 once the hardware
+See [RELEASE_PLAN.md](RELEASE_PLAN.md): v0.4.1 (a draft Release; #9–#17
+are closed on `main`) is published when the maintainer decides, as the first
+public pre-release for testers (checklist in RELEASE_PLAN.md §3c); this
+branch's work ships in it (CHANGELOG `[0.4.1]`). Then v0.5.0 once the hardware
 matrix has its first dated PASS rows, then 1.0.0rc1 when every MUST item of ARCHITECTURE_V1.md §3.1 is
 closed. API and schema versions stay unfrozen until then.
 
-Maintainer-only actions that this work does not do: public visibility flip,
-publishing a GitHub Release (which creates the tag), a license change, or
-rewriting published history.
+Maintainer-only actions that this work does not do: publishing a GitHub
+Release (which creates the tag), a PyPI upload, signing, a license change,
+or rewriting published history. (The repository was made public by the
+maintainer on 2026-09-24.)

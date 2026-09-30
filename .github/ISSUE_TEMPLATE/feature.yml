@@ -1,4 +1,4 @@
-name: Feature request
+name: Feature request (English)
 description: A change to the measurement, CLI, GUI, or docs.
 title: "[feature] "
 labels: ["enhancement"]
@@ -8,8 +8,8 @@ body:
       value: |
         RoomScope prefers **correctness over features**. Requests that would
         invent a "room score", auto-EQ a room, or copy another project's source
-        will be declined. See [docs/STATUS.md](../../docs/STATUS.md) for what is
-        deliberately out of scope for v0.1.
+        will be declined. See [docs/STATUS.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/STATUS.md)
+        for what is deliberately out of scope.
   - type: textarea
     id: problem
     attributes:

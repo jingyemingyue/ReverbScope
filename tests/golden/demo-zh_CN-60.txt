@@ -1,0 +1,51 @@
+RoomScope 演示
+──────────────
+
+  ! 合成数据：这是模拟的房间，不是实际测量。
+    没有使用任何音频设备，也没有播放任何声音。下面的数值描述
+    的是模拟结果；每个会话都标记为合成演示。
+
+已写出的文件
+  测试信号  roomscope-demo/sweep.wav
+  位置 A    roomscope-demo/position-a
+  位置 B    roomscope-demo/position-b
+  对比      roomscope-demo/comparison.json
+  # s 扫频 · # Hz – # kHz · # kHz
+
+位置 A  靠近桌面和侧墙
+  混响      ! RT60 # s (T30) · EDT # s
+  早期反射  ! 最强 # dB，位于 # ms · # 个高于 # dB
+  低频      ! 可能的共振：# Hz (# dB)
+  本底噪声  ! # dBFS RMS · # Hz 市电哼声
+  数据质量  ✓ 直达声：置信度 高 · 无警告
+
+位置 B  从桌面向后移动 # m
+  混响      ! RT60 # s (T30) · EDT # s
+  早期反射  ✓ 最强 # dB，位于 # ms · # 个高于 # dB
+  低频      ! 可能的共振：# Hz (# dB)
+  本底噪声  ! # dBFS RMS · # Hz 市电哼声
+  数据质量  ✓ 直达声：置信度 高 · 无警告
+
+对比 A → B
+  混响      ✓ RT60 # s → # s (# %)
+  早期反射  ✓ # 个消失 · # 个新出现 · # 个两侧都有
+  低频      ✓ 两侧都有：# Hz
+  本底噪声  ✓ # → # dBFS (# dB)
+  频率响应  ✓ 变化最大的是 # Hz 倍频程，平均 |Δ| # dB
+
+演示说明了什么
+  i 位置 A 在 # ms 处有一个很强的桌面反射，在位置 B 已经消
+    失。
+  i # Hz 的房间模式在两个位置都存在：它属于房间本身，而不
+    是某个位置。
+  i # Hz 市电哼声在位置 B 明显更低。
+
+下一步
+  #. 查看一个位置的完整报告：
+     roomscope show roomscope-demo/position-a
+  #. 查看两个位置之间的全部差值：
+     roomscope compare roomscope-demo/position-a roomscope-demo/position-b --same-input-gain
+  #. 在桌面应用中打开这些会话：
+     roomscope gui
+  #. 测量你自己的房间：为 DAW 写出测试信号。
+     roomscope sweep --out sweep.wav

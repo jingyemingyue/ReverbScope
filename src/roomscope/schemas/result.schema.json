@@ -103,6 +103,7 @@
         "harmonic_distortion": { "type": "array", "items": { "type": "object" } },
         "aliased_distortion": { "type": "array", "items": { "type": "object" } },
         "loopback": { "oneOf": [{ "type": "null" }, { "type": "object" }] },
+        "playback_speed": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/playback_speed" }] },
         "notes": { "type": "array", "items": { "type": "string" } },
         "samples": { "type": "array", "items": { "type": "number" } }
       }
@@ -207,6 +208,16 @@
         },
         "candidates": { "type": "array", "items": { "type": "object" } },
         "notes": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "playback_speed": {
+      "type": "object",
+      "required": ["speed_ratio", "kind", "generated_rate_hz"],
+      "properties": {
+        "speed_ratio": { "type": "number" },
+        "kind": { "enum": ["sample_rate_mismatch", "time_stretch"] },
+        "generated_rate_hz": { "type": "integer" },
+        "played_rate_hz": { "oneOf": [{ "type": "null" }, { "type": "integer" }] }
       }
     },
     "clipping": {

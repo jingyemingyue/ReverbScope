@@ -1,45 +1,87 @@
-name: Bug report
-description: Something in RoomScope is wrong or crashes.
+name: Bug report (English)
+description: RoomScope crashes, shows an error, or does something it should not.
 title: "[bug] "
 labels: ["bug"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time. If the bug is a **wrong measurement number**,
-        please use the *Measurement problem* template instead and attach the
-        sweep sidecar + recording.
-  - type: textarea
-    id: what
-    attributes:
-      label: What happened
-      description: What you did, what you expected, and what you got.
-    validations:
-      required: true
+        Thanks for taking the time. If a **measurement number** looks wrong, use
+        the *Measurement problem* template instead. Sound-card and DAW test
+        results have their own templates.
   - type: input
     id: version
     attributes:
       label: RoomScope version
-      placeholder: "0.1.0.dev1 (git SHA …)"
+      description: The first two lines of the environment report (version and build).
+      placeholder: "0.4.1, build 1a2b3c4"
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How RoomScope was installed
+      options:
+        - Desktop Edition, Windows installer (RoomScope-Desktop-Windows-x64-Setup.exe)
+        - Desktop Edition, Windows zip
+        - Desktop Edition, macOS disk image (.dmg)
+        - Desktop Edition, Linux archive (.tar.gz)
+        - Terminal Edition (RoomScope-Terminal-…)
+        - pip / source checkout
+        - Other
     validations:
       required: true
   - type: input
-    id: env
+    id: os
     attributes:
-      label: Environment
-      description: OS, Python version, audio interface if relevant.
-      placeholder: "macOS 15 / Python 3.12 / Scarlett 2i2"
+      label: Operating system
+      placeholder: "macOS 15.5 (Apple silicon) / Windows 11 24H2 / Ubuntu 24.04"
+    validations:
+      required: true
   - type: textarea
     id: repro
     attributes:
-      label: How to reproduce
+      label: Steps to reproduce
+      description: GUI steps or commands. Synthetic inputs (Demo mode, the fake backend) are ideal.
+      placeholder: |
+        1. Open Standalone Mode
+        2. Choose ... as the input
+        3. Press Measure
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead
+      description: The message RoomScope showed, word for word if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment report
       description: |
-        Commands, GUI steps, or a short script. Synthetic inputs are ideal.
-        A session bundle (`roomscope session bundle <session>`) is welcome.
+        In the app: **Help → Environment Report for Bug Reports → Copy**
+        (press *Probe sample rates* first when the problem involves an audio
+        device). From a terminal: `roomscope doctor` (add `--probe` for device
+        problems). Review it before posting: device names can contain personal
+        names.
+      render: text
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
-      label: Logs, traceback, or result.json excerpt
+      label: Log or traceback (optional)
+      description: |
+        The log file is `roomscope.log` in the data folder the report names
+        (Environment Report → Open Data Folder). Paste the lines around the
+        error. A session bundle (`roomscope session bundle <session> --out
+        report.zip`) is welcome when a session misbehaves.
       render: text

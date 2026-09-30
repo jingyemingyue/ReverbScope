@@ -63,6 +63,7 @@ from scipy import fft as sfft
 from scipy.signal import fftconvolve
 
 from roomscope.core.sweep import sweep_time_axis
+from roomscope.i18n import diag
 from roomscope.models.audio import FloatArray
 from roomscope.models.configuration import SweepSettings
 from roomscope.models.result import AliasedDistortion, ClippingCheck, ExcitationBand
@@ -266,11 +267,13 @@ def _analysis_band(
     low = max(trajectory.low_hz, band.low_hz)
     high = min(trajectory.high_hz, band.high_hz, ALIAS_MAX_NYQUIST_FRACTION * sample_rate)
     if high <= low:
-        return None, (
-            f"harmonic {trajectory.order} folds back to "
-            f"{trajectory.low_hz / 1000.0:.1f}-{trajectory.high_hz / 1000.0:.1f} kHz, outside the "
+        return None, diag(
+            "harmonic {order} folds back to {low_khz:.1f}-{high_khz:.1f} kHz, outside the "
             "swept range, where the inverse filter has no gain: such products cannot reach the "
-            "impulse response"
+            "impulse response",
+            order=trajectory.order,
+            low_khz=trajectory.low_hz / 1000.0,
+            high_khz=trajectory.high_hz / 1000.0,
         )
     edges = [(low, high)]
     for other in range(1, trajectory.order):
@@ -310,9 +313,10 @@ def _analysis_band(
         edges = pieces
     wide = [p for p in edges if p[1] - p[0] >= ALIAS_MIN_BAND_BINS * window_bins_hz]
     if not wide:
-        return None, (
-            f"no wide enough part of the folded trajectory of harmonic {trajectory.order} can be "
-            "separated from the sweep and its non-aliased harmonics"
+        return None, diag(
+            "no wide enough part of the folded trajectory of harmonic {order} can be "
+            "separated from the sweep and its non-aliased harmonics",
+            order=trajectory.order,
         )
     return max(wide, key=lambda p: p[1]), None
 
@@ -414,8 +418,12 @@ def aliased_distortion_levels(
             results.append(
                 _not_measured(
                     order,
-                    f"harmonic {order} of this sweep does not fold back into the swept range at "
-                    f"{sample_rate} Hz",
+                    diag(
+                        "harmonic {order} of this sweep does not fold back into the swept range "
+                        "at {sample_rate} Hz",
+                        order=order,
+                        sample_rate=sample_rate,
+                    ),
                     None,
                 )
             )
@@ -435,7 +443,7 @@ def aliased_distortion_levels(
         hi = target + half + 1
         if lo < 0 or hi > recording.shape[0] or peak_index + half + 1 > h_full.shape[0]:
             results.append(
-                _not_measured(order, "the probe window lies outside the recording", band)
+                _not_measured(order, diag("the probe window lies outside the recording"), band)
             )
             continue
         probe = np.asarray(fftconvolve(recording[lo:hi], inverse), dtype=np.float64)
@@ -447,7 +455,9 @@ def aliased_distortion_levels(
         linear = _band_energy(h_full[peak_index - half : peak_index + half + 1], sample_rate, band)
         if linear <= 0.0:
             results.append(
-                _not_measured(order, "the linear response has no energy in the probe band", band)
+                _not_measured(
+                    order, diag("the linear response has no energy in the probe band"), band
+                )
             )
             continue
         level = _band_energy(at(target), sample_rate, band)
@@ -457,7 +467,9 @@ def aliased_distortion_levels(
             centres = centres[picks.round().astype(int)]
         if centres.shape[0] == 0:
             results.append(
-                _not_measured(order, "no content before the probe window to compare with", band)
+                _not_measured(
+                    order, diag("no content before the probe window to compare with"), band
+                )
             )
             continue
         floor = max(_band_energy(at(int(c)), sample_rate, band) for c in centres)
@@ -473,9 +485,11 @@ def aliased_distortion_levels(
                 significant=detected and level_db >= ALIAS_SIGNIFICANT_DB,
                 reason=None
                 if detected
-                else (
-                    f"not distinguishable from the floor (at most {level_db:.1f} dB, "
-                    f"floor {floor_db:.1f} dB)"
+                else diag(
+                    "not distinguishable from the floor (at most {level_db:.1f} dB, "
+                    "floor {floor_db:.1f} dB)",
+                    level_db=level_db,
+                    floor_db=floor_db,
                 ),
             )
         )

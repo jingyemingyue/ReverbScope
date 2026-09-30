@@ -15,6 +15,8 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
+from roomscope.i18n import N_, diag
+
 FloatArray = npt.NDArray[np.float64]
 
 RESULT_SCHEMA_VERSION = 1
@@ -94,7 +96,7 @@ class DecayMetric:
 
 #: Time origin of all decay times (``edc_time_s``, ``onset_time_s``,
 #: ``truncation_time_s``).
-DECAY_TIME_ORIGIN = "direct sound (time 0 = the detected broadband direct sound)"
+DECAY_TIME_ORIGIN = diag("direct sound (time 0 = the detected broadband direct sound)")
 
 
 @dataclass(frozen=True)
@@ -206,7 +208,10 @@ class DecayResult:
             self,
             broadband=self.broadband.with_all_unreliable(reason),
             bands=tuple(b.with_all_unreliable(reason) for b in self.bands),
-            notes=(*self.notes, f"all decay metrics are marked unreliable: {reason}"),
+            notes=(
+                *self.notes,
+                diag("all decay metrics are marked unreliable: {reason}", reason=reason),
+            ),
         )
 
     def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
@@ -220,13 +225,13 @@ class DecayResult:
 
 
 #: ``ExcitationBand.source`` when the band follows from the sweep definition.
-EXCITATION_SOURCE_SETTINGS = "sweep settings"
+EXCITATION_SOURCE_SETTINGS = N_("sweep settings")
 #: ``ExcitationBand.source`` when the band was estimated from a reference WAV.
-EXCITATION_SOURCE_ESTIMATED = "estimated from reference audio"
+EXCITATION_SOURCE_ESTIMATED = N_("estimated from reference audio")
 #: ``ExcitationBand.source`` when the caller declared the band (imported IR).
-EXCITATION_SOURCE_DECLARED = "declared by the user"
+EXCITATION_SOURCE_DECLARED = N_("declared by the user")
 #: ``ExcitationBand.source`` when an imported IR has no declared band.
-EXCITATION_SOURCE_UNKNOWN = "unknown"
+EXCITATION_SOURCE_UNKNOWN = N_("unknown")
 
 
 @dataclass(frozen=True)
@@ -391,6 +396,57 @@ class LoopbackResult:
         return data
 
 
+#: Kinds of :class:`PlaybackSpeed` (see ``roomscope.core.playback_speed``).
+KIND_SAMPLE_RATE = "sample_rate_mismatch"
+KIND_TIME_STRETCH = "time_stretch"
+
+
+@dataclass(frozen=True)
+class PlaybackSpeed:
+    """The sweep speed measured in a recording, relative to the generated sweep."""
+
+    #: Speed the sweep was played at relative to the generated sweep: the
+    #: generated ``L`` over the ``L`` measured in the recording (1.0: as
+    #: generated; 0.919: a 48 kHz file played at 44.1 kHz, 8.1 % slow).
+    speed_ratio: float
+    #: :data:`KIND_SAMPLE_RATE` or :data:`KIND_TIME_STRETCH`.
+    kind: str
+    #: Sample rate the sweep file was generated at (Hz).
+    generated_rate_hz: int
+    #: For a sample-rate mismatch: the common rate the file was played at (Hz).
+    played_rate_hz: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "speed_ratio": self.speed_ratio,
+            "kind": self.kind,
+            "generated_rate_hz": self.generated_rate_hz,
+            "played_rate_hz": self.played_rate_hz,
+        }
+
+    def describe(self) -> str:
+        """One English sentence for the result notes."""
+        if self.kind == KIND_SAMPLE_RATE and self.played_rate_hz is not None:
+            return diag(
+                "the sweep in the recording runs at {percent:.1f} % of the "
+                "speed it was generated at: a file generated at {generated_hz} Hz was "
+                "played at {played_hz} Hz without sample-rate conversion (a DAW project "
+                "at another sample rate that did not convert the file on import). Generate the "
+                "sweep at the project's sample rate, or let the DAW convert it on import, and "
+                "measure again",
+                percent=self.speed_ratio * 100.0,
+                generated_hz=self.generated_rate_hz,
+                played_hz=self.played_rate_hz,
+            )
+        return diag(
+            "the sweep in the recording runs at {percent:.1f} % of the speed "
+            "it was generated at: the DAW time-stretched it (Warp, Flex Time, Follow Tempo, "
+            "elastic audio or a stretch mode). Switch time-stretching off for the sweep clip "
+            "and measure again",
+            percent=self.speed_ratio * 100.0,
+        )
+
+
 @dataclass(frozen=True)
 class ImpulseResponseResult:
     sample_rate: int
@@ -436,6 +492,10 @@ class ImpulseResponseResult:
     #: Electrical reference channel used to compensate the interface (``None``
     #: when the measurement had no loopback).
     loopback: LoopbackResult | None = None
+    #: The sweep was not played at the speed it was generated at (a DAW
+    #: sample-rate mismatch or time-stretch). Only checked, and only set, when
+    #: direct-sound detection confidence is low.
+    playback_speed: PlaybackSpeed | None = None
 
     @property
     def direct_sound_time_s(self) -> float:
@@ -461,6 +521,9 @@ class ImpulseResponseResult:
             "harmonic_distortion": [h.to_dict() for h in self.harmonic_distortion],
             "aliased_distortion": [a.to_dict() for a in self.aliased_distortion],
             "loopback": self.loopback.to_dict() if self.loopback is not None else None,
+            "playback_speed": (
+                self.playback_speed.to_dict() if self.playback_speed is not None else None
+            ),
             "notes": list(self.notes),
         }
         if include_curves:
@@ -497,7 +560,7 @@ class FrequencyResponseResult:
     gated: bool = False
     #: Frequency range the excitation actually covered.
     excitation_band: ExcitationBand | None = None
-    reference: str = "relative dB (0 dB = flat loopback of the reference sweep)"
+    reference: str = diag("relative dB (0 dB = flat loopback of the reference sweep)")
 
     def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
         data: dict[str, Any] = {
@@ -553,7 +616,7 @@ class HumCandidate:
 
 
 #: Reference of :attr:`NoiseResult.psd_db`.
-PSD_REFERENCE = (
+PSD_REFERENCE = diag(
     "dB re (full-scale sine RMS)^2 per Hz: the power spectral density is scaled so that "
     "10*log10 of its integral is the reported AES17 RMS level in dBFS"
 )
@@ -584,7 +647,7 @@ class NoiseResult:
     #: Power spectral density in dB, see :data:`PSD_REFERENCE`.
     psd_db: FloatArray | None = field(repr=False)
     hum: tuple[HumCandidate, ...] = ()
-    calibration: str = "uncalibrated: levels are dBFS, not dB SPL"
+    calibration: str = diag("uncalibrated: levels are dBFS, not dB SPL")
     psd_reference: str = PSD_REFERENCE
     notes: tuple[str, ...] = ()
 
@@ -703,7 +766,7 @@ class ResonanceResult:
 
 #: Provenance of the speed of sound used by the placement geometry. Emitted in
 #: the JSON so that an exported result says which relation produced its metres.
-SPEED_OF_SOUND_REFERENCE = (
+SPEED_OF_SOUND_REFERENCE = diag(
     "c = 331.3 * sqrt(1 + T/273.15) m/s (adiabatic ideal-gas relation for dry air; "
     "343.2 m/s at 20 C, numerically equal to the ISO 9613-1 form c = 343.2 * sqrt(T/293.15))"
 )
@@ -711,7 +774,7 @@ SPEED_OF_SOUND_REFERENCE = (
 #: What RoomScope refuses to infer, and why, emitted verbatim in the JSON so
 #: that an exported result carries its own justification rather than relying on
 #: the reader having opened docs/MEASUREMENT_METHODOLOGY.md.
-PLACEMENT_COORDINATES_WITHHELD = (
+PLACEMENT_COORDINATES_WITHHELD = diag(
     "No coordinate, room length, room width or wall distance is reported. One "
     "omnidirectional microphone at one position measures path lengths, not directions, "
     "and the deconvolved time origin contains the interface round-trip latency, so there "
@@ -725,7 +788,7 @@ PLACEMENT_COORDINATES_WITHHELD = (
 )
 
 #: Why :attr:`PlacementLength.input_uncertainty_m` is not the total uncertainty.
-PLACEMENT_UNCERTAINTY_EXCLUDES = (
+PLACEMENT_UNCERTAINTY_EXCLUDES = diag(
     "propagated from the stated tape-measure, temperature and peak-location uncertainties "
     "only; it excludes model error (that the reflector is flat, rigid and large compared "
     "with the wavelength, that the arrival is a first-order specular reflection, and that "

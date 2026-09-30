@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -18,12 +18,14 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
-from roomscope.audio.backend import ChannelPlan, DeviceInfo, plan_input_channels
+from roomscope.audio.backend import ChannelPlan, DeviceInfo, StreamOptions, plan_input_channels
+from roomscope.audio.inventory import DeviceInventory
 from roomscope.audio.playrec import (
     DEFAULT_STANDALONE_LEVEL_DBFS,
     SAFE_MAX_LEVEL_DBFS,
@@ -31,9 +33,10 @@ from roomscope.audio.playrec import (
 )
 from roomscope.core.pipeline import Reference
 from roomscope.core.sweep import measurement_signal
-from roomscope.errors import RoomScopeError
-from roomscope.i18n import N_, _
+from roomscope.errors import AudioDeviceError, RoomScopeError
+from roomscope.i18n import N_, _, localize
 from roomscope.interpretation import available_profiles, interpret
+from roomscope.interpretation.profiles import profile_title
 from roomscope.io.wav import load_reference, read_wav, write_sweep_file
 from roomscope.models.audio import AudioSignal
 from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES, AnalysisSettings, SweepSettings
@@ -41,15 +44,18 @@ from roomscope.models.result import AnalysisResult
 from roomscope.models.session import MeasurementSession
 from roomscope.ui.browser import SessionBrowser
 from roomscope.ui.state import MeasurementState
+from roomscope.ui.widgets import Card, ModeCard, PageHeader, label, primary
 from roomscope.ui.workers import AnalysisWorker, MeasureWorker
 
 DAW_INSTRUCTIONS = N_(
-    "1. Import the test-signal WAV on a new track of your DAW project.\n"
-    "2. Route that track to the monitors (or the loudspeaker you want to test).\n"
-    "3. Arm a second track with the measurement microphone and record while the test signal plays.\n"
-    "4. Export / bounce the recorded track as a WAV file at the project sample rate.\n"
+    "1. Generate the test signal at your DAW project's sample rate (Step 1).\n"
+    "2. Import it on a new track. Switch time-stretching off for that clip (Warp, Flex, Follow Tempo, elastic audio) and bypass plug-ins on its track and on the master bus, including room-correction plug-ins.\n"
+    "3. Route that track to the one loudspeaker you want to test.\n"
+    "4. Arm a second track with the measurement microphone (input monitoring off) and record while the test signal plays.\n"
+    "5. Export the recorded track as WAV, AIFF, CAF or FLAC at the project sample rate, without normalising.\n"
     "   Do not trim it - RoomScope finds the sweep automatically.\n"
-    "Start with a low monitor level; the sweep should be clearly audible but not loud."
+    "Start with a low monitor level; the sweep should be clearly audible but not loud.\n"
+    "The user guide has step-by-step notes for Pro Tools, Logic Pro, Cubase, Studio One, Ableton Live, REAPER, FL Studio and Bitwig Studio."
 )
 
 
@@ -61,54 +67,106 @@ class HomePage(QWidget):
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setProperty("page", True)
         layout = QVBoxLayout(self)
-        title = QLabel("RoomScope")
-        title.setStyleSheet("font-size: 22px; font-weight: bold;")
-        subtitle = QLabel(_("An open-source, DAW-independent recording environment analyzer"))
-        layout.addWidget(title)
-        layout.addWidget(subtitle)
-        layout.addSpacing(16)
-        layout.addWidget(QLabel(_("New Measurement")))
-        daw = QPushButton(_("Universal DAW Mode"))
-        daw.setToolTip(
-            "Generate a test signal, play and record it in any DAW, import the recording."
+        layout.setContentsMargins(28, 22, 28, 22)
+        layout.setSpacing(14)
+
+        layout.addWidget(label("RoomScope", "title"))
+        layout.addWidget(
+            label(
+                _("An open-source, DAW-independent recording environment analyzer"),
+                "subtitle",
+                wrap=True,
+            )
         )
-        standalone = QPushButton(_("Standalone Mode"))
-        standalone.setToolTip(
-            "RoomScope plays the sweep and records the microphone through your audio interface."
+        pills = QHBoxLayout()
+        pills.setSpacing(8)
+        for text in (
+            _("A validity flag on every number"),
+            _("Any DAW: WAV in, WAV out"),
+            _("No room score, no invented figures"),
+        ):
+            pills.addWidget(label(text, "pill"))
+        pills.addStretch(1)
+        layout.addLayout(pills)
+        layout.addSpacing(6)
+
+        layout.addWidget(label(_("New Measurement").upper(), "section"))
+        cards = QHBoxLayout()
+        cards.setSpacing(12)
+        daw = ModeCard(
+            "DAW",
+            _("Universal DAW Mode"),
+            _("Generate a test signal, play and record it in any DAW, import the recording."),
+            _("Start in my DAW"),
         )
-        demo = QPushButton(_("Demo (no interface)"))
-        demo.setToolTip(
-            "Run Standalone Mode on the fake backend. Nothing is sent to a loudspeaker."
+        standalone = ModeCard(
+            "I/O",
+            _("Standalone Mode"),
+            _("RoomScope plays the sweep and records the microphone through your audio interface."),
+            _("Measure now"),
+        )
+        demo = ModeCard(
+            _("DEMO"),
+            _("Demo (no interface)"),
+            _("Run Standalone Mode on the fake backend. Nothing is sent to a loudspeaker."),
+            _("Try the demo"),
         )
         daw.clicked.connect(lambda: self.choose_mode.emit("universal_daw"))
         standalone.clicked.connect(lambda: self.choose_mode.emit("standalone"))
         demo.clicked.connect(lambda: self.choose_mode.emit("demo"))
-        layout.addWidget(daw)
-        layout.addWidget(standalone)
-        layout.addWidget(demo)
-        layout.addSpacing(16)
-        layout.addWidget(QLabel(_("Saved sessions")))
-        session_row = QHBoxLayout()
+        self.mode_cards = (daw, standalone, demo)
+        for card in self.mode_cards:
+            cards.addWidget(card)
+        layout.addLayout(cards)
+        layout.addSpacing(6)
+
+        sessions = Card()
+        header = QHBoxLayout()
+        header.addWidget(label(_("Saved sessions").upper(), "section"))
+        header.addStretch(1)
         open_button = QPushButton(_("Open Session..."))
-        open_button.setToolTip("Open a session.json or a folder that contains one.")
+        open_button.setToolTip(_("Open a session.json or a folder that contains one."))
         open_button.clicked.connect(self.open_session.emit)
         compare_button = QPushButton(_("Compare two sessions..."))
-        compare_button.setToolTip("Pick two saved sessions and compare their metrics.")
+        compare_button.setToolTip(_("Pick two saved sessions and compare their metrics."))
         compare_button.clicked.connect(self.compare_requested.emit)
-        session_row.addWidget(open_button)
-        session_row.addWidget(compare_button)
-        layout.addLayout(session_row)
+        header.addWidget(open_button)
+        header.addWidget(compare_button)
+        sessions.body.addLayout(header)
         self.browser = SessionBrowser()
         self.browser.open_session.connect(self.open_recent.emit)
         self.recent = self.browser.list
-        layout.addWidget(self.browser, 1)
+        sessions.body.addWidget(self.browser, 1)
+        layout.addWidget(sessions, 1)
 
     def refresh_recent(self) -> None:
         self.browser.refresh_recent()
 
     def list_folder(self, root: Path) -> None:
         self.browser.list_folder(root)
+
+
+def _scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
+    """Give ``page`` a fixed header and a scrolling body; return the body layout."""
+    page.setProperty("page", True)
+    outer = QVBoxLayout(page)
+    outer.setContentsMargins(28, 20, 28, 12)
+    outer.setSpacing(8)
+    outer.addWidget(header)
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    body = QWidget()
+    body.setProperty("page", True)
+    layout = QVBoxLayout(body)
+    layout.setContentsMargins(0, 0, 8, 8)
+    layout.setSpacing(12)
+    scroll.setWidget(body)
+    outer.addWidget(scroll, 1)
+    return layout
 
 
 def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLineEdit, QLineEdit]:
@@ -126,8 +184,8 @@ def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLine
 def _profile_combo(state: MeasurementState) -> QComboBox:
     combo = QComboBox()
     for name in available_profiles():
-        combo.addItem(name, name)
-    combo.setCurrentText(state.profile)
+        combo.addItem(profile_title(name), name)
+    combo.setCurrentIndex(max(combo.findData(state.profile), 0))
     return combo
 
 
@@ -197,7 +255,16 @@ class DawModePage(QWidget):
         super().__init__(parent)
         self.state = state
         self._worker: AnalysisWorker | None = None
-        layout = QVBoxLayout(self)
+        layout = _scroll_page(
+            self,
+            PageHeader(
+                _("Universal DAW Mode"),
+                _(
+                    "Four steps: generate the test signal, play and record it in your DAW, "
+                    "import the recording, analyse. RoomScope never talks to the DAW."
+                ),
+            ),
+        )
 
         # Step 1
         step1 = QGroupBox(_("Step 1 - Generate Test Signal"))
@@ -219,7 +286,7 @@ class DawModePage(QWidget):
         form1.addRow(_("Sample rate"), self.sample_rate)
         form1.addRow(_("Sweep duration"), self.duration)
         form1.addRow(_("Peak level"), self.level)
-        self.save_sweep_button = QPushButton(_("Save Test Signal WAV..."))
+        self.save_sweep_button = primary(QPushButton(_("Save Test Signal WAV...")))
         self.save_sweep_button.clicked.connect(self._choose_sweep_target)
         self.sweep_label = QLabel(_("No test signal written yet."))
         self.sweep_label.setWordWrap(True)
@@ -232,13 +299,14 @@ class DawModePage(QWidget):
         v2 = QVBoxLayout(step2)
         instructions = QLabel(_(DAW_INSTRUCTIONS))
         instructions.setWordWrap(True)
+        instructions.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         v2.addWidget(instructions)
         layout.addWidget(step2)
 
         # Step 3
         step3 = QGroupBox(_("Step 3 - Import Recording"))
         form3 = QFormLayout(step3)
-        self.recording_button = QPushButton(_("Choose Recording WAV..."))
+        self.recording_button = QPushButton(_("Choose Recording..."))
         self.recording_button.clicked.connect(self._choose_recording)
         self.recording_label = QLabel(_("No recording selected."))
         self.recording_label.setWordWrap(True)
@@ -270,7 +338,7 @@ class DawModePage(QWidget):
         profile_form.addRow(_("Recording profile"), self.profile)
         v4.addLayout(profile_form)
         row = QHBoxLayout()
-        self.analyze_button = QPushButton(_("Analyze"))
+        self.analyze_button = primary(QPushButton(_("Analyze")))
         self.analyze_button.setShortcut("Ctrl+Return")
         self.analyze_button.clicked.connect(self.start_analysis)
         self.back_button = QPushButton(_("Back"))
@@ -309,7 +377,7 @@ class DawModePage(QWidget):
             settings = self.current_sweep_settings()
             wav_path, sidecar = write_sweep_file(settings, path)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot write test signal"), str(exc))
+            QMessageBox.critical(self, _("Cannot write test signal"), localize(str(exc)))
             return
         self.state.sweep_settings = settings
         self.state.sweep_path = wav_path
@@ -327,7 +395,13 @@ class DawModePage(QWidget):
             self,
             _("Choose recording"),
             "",
-            _("Audio files (*.wav *.flac *.aif *.aiff)"),
+            # Every container libsndfile reads that a DAW exports: Broadcast WAV,
+            # RF64 and Wave64 for long takes, AIFF(-C) from Logic Pro / Pro Tools,
+            # CAF from Logic Pro's recordings, FLAC.
+            _(
+                "Audio files (*.wav *.wave *.bwf *.rf64 *.w64 *.aif *.aiff *.aifc *.caf *.flac);;"
+                "All files (*)"
+            ),
         )
         if path:
             self.set_recording(Path(path))
@@ -336,7 +410,7 @@ class DawModePage(QWidget):
         try:
             recording = read_wav(path)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot read recording"), str(exc))
+            QMessageBox.critical(self, _("Cannot read recording"), localize(str(exc)))
             return
         self.state.recording = recording
         self.state.recording_path = path
@@ -371,7 +445,7 @@ class DawModePage(QWidget):
         try:
             self.state.reference = load_reference(path)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot read reference sweep"), str(exc))
+            QMessageBox.critical(self, _("Cannot read reference sweep"), localize(str(exc)))
             return
         self.state.sweep_path = path
         if self.state.reference.settings is not None:
@@ -453,23 +527,43 @@ class StandalonePage(QWidget):
         self._measure_worker: MeasureWorker | None = None
         self._analysis_worker: AnalysisWorker | None = None
         self._channel_plan: ChannelPlan | None = None
-        layout = QVBoxLayout(self)
+        self._inventory: DeviceInventory | None = None
+        layout = _scroll_page(
+            self,
+            PageHeader(
+                _("Standalone Mode"),
+                _(
+                    "RoomScope plays the sweep and records the microphone through your audio "
+                    "interface, then runs the same analysis as Universal DAW Mode."
+                ),
+            ),
+        )
 
         self.demo_banner = QLabel(
             _("Demo mode: the fake backend synthesises a room. Nothing is sent to a loudspeaker.")
         )
         self.demo_banner.setWordWrap(True)
-        self.demo_banner.setStyleSheet("font-weight: bold;")
+        self.demo_banner.setProperty("banner", "info")
         self.demo_banner.hide()
         layout.addWidget(self.demo_banner)
 
         safety = QLabel(_(SAFETY_MESSAGE))
         safety.setWordWrap(True)
-        safety.setStyleSheet("font-weight: bold;")
+        safety.setProperty("banner", "warn")
         layout.addWidget(safety)
 
         devices = QGroupBox(_("Audio devices"))
         form = QFormLayout(devices)
+        self.host_api = QComboBox()
+        self.host_api.setToolTip(
+            _(
+                "How RoomScope talks to your interface: WASAPI, ASIO, WDM-KS, DirectSound or "
+                "MME on Windows, Core Audio on macOS, ALSA or JACK on Linux. Input and output "
+                'must use the same one. "System default" uses the devices your system '
+                "uses; a star marks the entry recommended for each device."
+            )
+        )
+        self.host_api.currentIndexChanged.connect(self._fill_device_lists)
         self.input_device = QComboBox()
         self.output_device = QComboBox()
         self.refresh_button = QPushButton(_("Refresh devices"))
@@ -492,6 +586,7 @@ class StandalonePage(QWidget):
         self.input_device.currentIndexChanged.connect(self._update_device_rate)
         self.output_device.currentIndexChanged.connect(self._update_device_rate)
         self.sample_rate.currentIndexChanged.connect(self._update_device_rate)
+        form.addRow(_("Audio system (host API)"), self.host_api)
         form.addRow(_("Input device"), self.input_device)
         form.addRow(_("Output device"), self.output_device)
         form.addRow(self.refresh_button)
@@ -524,6 +619,26 @@ class StandalonePage(QWidget):
         form2.addRow(_("Recording profile"), self.profile)
         layout.addWidget(sweep)
 
+        from roomscope.edition import is_developer
+
+        self.advanced = QGroupBox(_("Advanced audio options (developer edition)"))
+        adv = QFormLayout(self.advanced)
+        self.latency = QComboBox()
+        self.latency.addItem(_("PortAudio default (high)"), None)
+        self.latency.addItem(_("Low"), "low")
+        self.latency.addItem(_("High"), "high")
+        self.wasapi_exclusive = QCheckBox(
+            _("WASAPI exclusive mode (bypasses the Windows audio engine)")
+        )
+        self.coreaudio_set_rate = QCheckBox(
+            _("Core Audio: set the device to the requested rate, never convert")
+        )
+        adv.addRow(_("Latency"), self.latency)
+        adv.addRow(self.wasapi_exclusive)
+        adv.addRow(self.coreaudio_set_rate)
+        self.advanced.setVisible(is_developer())
+        layout.addWidget(self.advanced)
+
         meta, self.room, self.position, self.mic = _metadata_form(state)
         layout.addWidget(meta)
         self.placement = PlacementInputs()
@@ -532,10 +647,11 @@ class StandalonePage(QWidget):
         row = QHBoxLayout()
         self.back_button = QPushButton(_("Back"))
         self.back_button.clicked.connect(self.back.emit)
-        self.run_button = QPushButton(_("Run Measurement"))
+        self.run_button = primary(QPushButton(_("Run Measurement")))
         self.run_button.setShortcut("Ctrl+Return")
         self.run_button.clicked.connect(self.start_measurement)
         self.stop_button = QPushButton(_("Stop"))
+        self.stop_button.setProperty("danger", True)
         self.stop_button.setShortcut("Esc")
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.stop_measurement)
@@ -556,34 +672,165 @@ class StandalonePage(QWidget):
 
     def refresh_devices(self) -> None:
         from roomscope.audio.backend import get_backend
+        from roomscope.audio.inventory import build_inventory
 
         self.demo_banner.setVisible(self.demo_mode)
-        self.input_device.clear()
-        self.output_device.clear()
-        self.input_device.addItem(_("System default"), None)
-        self.output_device.addItem(_("System default"), None)
         try:
             backend = get_backend("fake" if self.demo_mode else None)
-            devices = backend.list_devices()
+            inventory = build_inventory(backend, probe_rates=False)
         except RoomScopeError as exc:
             self._devices = []
-            self._update_device_rate()
-            self.status.setText(f"Audio backend unavailable: {exc}")
+            self._inventory = None
+            self.host_api.clear()
+            self._fill_device_lists()
+            self.status.setText(
+                _("Audio backend unavailable: {error}").format(error=localize(str(exc)))
+            )
             self.run_button.setEnabled(False)
             return
-        self._devices = list(devices)
-        for d in devices:
-            label = f"[{d.index}] {d.name} ({d.host_api})"
-            if d.is_input:
-                self.input_device.addItem(label + f" - {d.max_input_channels} in", d.index)
-            if d.is_output:
-                self.output_device.addItem(label + f" - {d.max_output_channels} out", d.index)
-        self._update_device_rate()
+        self._inventory = inventory
+        self._devices = [probe.device for probe in inventory.devices]
+        self.host_api.blockSignals(True)
+        self.host_api.clear()
+        self.host_api.addItem(_("System default"), None)
+        used = [api for api in inventory.host_apis if api.device_count > 0]
+        for api in sorted(used, key=lambda a: (a.rank is None, a.rank or 0, a.index)):
+            self.host_api.addItem(api.name, api.name)
+        # Preselect the best-ranked host API that has devices (WASAPI before
+        # MME on Windows); a single-API system keeps "System default".
+        if len(used) > 1:
+            self.host_api.setCurrentIndex(1)
+        self.host_api.blockSignals(False)
+        self._fill_device_lists()
         self.run_button.setEnabled(True)
         if self.demo_mode:
             self.status.setText(_("Demo mode: fake backend, no loudspeaker."))
         else:
-            self.status.setText(_("{n} audio device(s) found.").format(n=len(devices)))
+            self.status.setText(_("{n} audio device(s) found.").format(n=len(self._devices)))
+
+    def _fill_device_lists(self) -> None:
+        """Devices of the chosen host API; the recommended entries are starred.
+
+        The preselection is the system's choice, not RoomScope's: "System
+        default" under "System default", else the host API's own default
+        device, and the first starred entry only when the host API has none.
+        A star is a hint (on macOS every Core Audio device, virtual ones
+        included, is its own recommended entry).
+        """
+        api = self.host_api.currentData() if self.host_api.count() else None
+        probes = self._inventory.devices if self._inventory is not None else ()
+        for combo in (self.input_device, self.output_device):
+            combo.blockSignals(True)
+            combo.clear()
+        if api is None:
+            self.input_device.addItem(_("System default"), None)
+            self.output_device.addItem(_("System default"), None)
+        for probe in probes:
+            d = probe.device
+            if api is not None and d.host_api != api:
+                continue
+            label = f"[{d.index}] {d.name} ({d.host_api})"
+            if d.is_input:
+                star = "★ " if probe.recommended_input else ""
+                self.input_device.addItem(
+                    _("{name} - {count} in").format(
+                        name=f"{star}{label}", count=d.max_input_channels
+                    ),
+                    d.index,
+                )
+            if d.is_output:
+                star = "★ " if probe.recommended_output else ""
+                self.output_device.addItem(
+                    _("{name} - {count} out").format(
+                        name=f"{star}{label}", count=d.max_output_channels
+                    ),
+                    d.index,
+                )
+        chosen = next(
+            (a for a in (self._inventory.host_apis if self._inventory else ()) if a.name == api),
+            None,
+        )
+        for combo, default, attr in (
+            (self.input_device, chosen.default_input if chosen else None, "recommended_input"),
+            (self.output_device, chosen.default_output if chosen else None, "recommended_output"),
+        ):
+            row = combo.findData(default) if default is not None else -1
+            if row < 0 and api is not None:
+                row = next(
+                    (
+                        r
+                        for r in range(combo.count())
+                        if any(
+                            p.device.index == combo.itemData(r) and getattr(p, attr) for p in probes
+                        )
+                    ),
+                    -1,
+                )
+            if row >= 0:
+                combo.setCurrentIndex(row)
+            combo.blockSignals(False)
+        kind = next(
+            (
+                a.kind
+                for a in (self._inventory.host_apis if self._inventory else ())
+                if a.name == api
+            ),
+            "",
+        )
+        self.wasapi_exclusive.setEnabled(kind == "wasapi")
+        self.coreaudio_set_rate.setEnabled(kind == "coreaudio")
+        self._update_device_rate()
+
+    def stream_options(self) -> StreamOptions:
+        return StreamOptions(
+            latency=self.latency.currentData(),
+            wasapi_exclusive=self.wasapi_exclusive.isEnabled()
+            and self.wasapi_exclusive.isChecked(),
+            coreaudio_change_device_rate=self.coreaudio_set_rate.isEnabled()
+            and self.coreaudio_set_rate.isChecked(),
+        )
+
+    def _preflight(
+        self, input_channels: list[int], sample_rate: int
+    ) -> tuple[int | None, int | None] | None:
+        """The checks the CLI makes too (``inventory.preflight``), before playing."""
+        from roomscope.audio.backend import get_backend
+        from roomscope.audio.inventory import preflight
+
+        if self._inventory is None:
+            QMessageBox.critical(
+                self,
+                _("Audio backend unavailable"),
+                _("No audio device list is available; Universal DAW Mode still works."),
+            )
+            return None
+        try:
+            plan = preflight(
+                get_backend("fake" if self.demo_mode else None),
+                self._inventory,
+                input_device=self.input_device.currentData(),
+                output_device=self.output_device.currentData(),
+                input_channels=input_channels,
+                output_channel=int(self.output_channel.value()),
+                sample_rate=sample_rate,
+                options=self.stream_options(),
+            )
+        except AudioDeviceError as exc:
+            QMessageBox.critical(self, _("Sample rate not supported"), localize(str(exc)))
+            return None
+        except RoomScopeError as exc:
+            QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
+            return None
+        if plan.clock_warning:
+            answer = QMessageBox.warning(
+                self,
+                _("Two devices, two clocks"),
+                plan.clock_warning + "\n\n" + _("Measure anyway?"),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return None
+        return plan.input_device, plan.output_device
 
     def _device_for(self, combo: QComboBox, *, kind: str) -> DeviceInfo | None:
         index = combo.currentData()
@@ -604,13 +851,13 @@ class StandalonePage(QWidget):
         out = self._device_for(self.output_device, kind="output")
         parts: list[str] = []
         if inp is not None:
-            parts.append(f"in {inp.default_sample_rate:.0f} Hz")
+            parts.append(_("in {rate:.0f} Hz").format(rate=inp.default_sample_rate))
         if out is not None and (
             inp is None
             or out.index != inp.index
             or abs(out.default_sample_rate - inp.default_sample_rate) > 0.5
         ):
-            parts.append(f"out {out.default_sample_rate:.0f} Hz")
+            parts.append(_("out {rate:.0f} Hz").format(rate=out.default_sample_rate))
         device_txt = ", ".join(parts) if parts else _("unknown")
         text = _("Device rate: {device}  (requested {requested} Hz)").format(
             device=device_txt, requested=requested_hz
@@ -627,15 +874,6 @@ class StandalonePage(QWidget):
             text += _(" — rates differ; the interface may resample")
         self.device_rate.setText(text)
 
-    def _check_selected_rates(self, sample_rate: int) -> None:
-        from roomscope.audio.backend import get_backend
-
-        backend = get_backend("fake" if self.demo_mode else None)
-        for kind, combo in (("input", self.input_device), ("output", self.output_device)):
-            device = self._device_for(combo, kind=kind)
-            if device is not None:
-                backend.check_sample_rate(device.index, sample_rate, kind=kind)
-
     def current_sweep_settings(self) -> SweepSettings:
         return SweepSettings(
             sample_rate=int(self.sample_rate.currentData()),
@@ -647,7 +885,7 @@ class StandalonePage(QWidget):
         try:
             settings = self.current_sweep_settings()
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Invalid settings"), str(exc))
+            QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
             return
         if settings.level_dbfs > SAFE_MAX_LEVEL_DBFS and not self.acknowledge.isChecked():
             QMessageBox.warning(
@@ -658,11 +896,6 @@ class StandalonePage(QWidget):
                     "Set the monitor level low first."
                 ).format(level=SAFE_MAX_LEVEL_DBFS),
             )
-            return
-        try:
-            self._check_selected_rates(settings.sample_rate)
-        except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Sample rate not supported"), str(exc))
             return
         self.state.mode = "standalone"
         self.state.sweep_settings = settings
@@ -676,8 +909,12 @@ class StandalonePage(QWidget):
                 hardware_loopback if hardware_loopback > 0 else None,
             )
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Invalid settings"), str(exc))
+            QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
             return
+        devices = self._preflight(list(plan.input_channels), settings.sample_rate)
+        if devices is None:
+            return
+        input_device, output_device = devices
         self._channel_plan = plan
         place = self.placement.analysis_kwargs()
         self.state.analysis_settings = AnalysisSettings(
@@ -692,12 +929,13 @@ class StandalonePage(QWidget):
         self._measure_worker = MeasureWorker(
             measurement_signal(settings),
             settings.sample_rate,
-            input_device=self.input_device.currentData(),
-            output_device=self.output_device.currentData(),
+            input_device=input_device,
+            output_device=output_device,
             input_channels=list(plan.input_channels),
             output_channel=int(self.output_channel.value()),
             level_dbfs=settings.level_dbfs,
             backend="fake" if self.demo_mode else None,
+            options=self.stream_options(),
         )
         self._measure_worker.succeeded.connect(self._on_recorded)
         self._measure_worker.failed.connect(self._on_failure)

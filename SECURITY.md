@@ -1,10 +1,13 @@
 # Security Policy
 
+**English** | [简体中文](SECURITY.zh-CN.md)
+
 ## Supported versions
 
 RoomScope is a pre-release (0.4.x, see [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md)).
-Only `main` and the newest 0.4.x version are maintained; no version has been
-published outside the private repository yet.
+Only `main` and the newest 0.4.x version are maintained. The repository is
+public; releases are pre-releases on GitHub Releases, and nothing is on
+PyPI.
 
 ## Reporting a vulnerability
 
@@ -31,7 +34,10 @@ evaluates them, caps JSON size and nesting, is meant to turn malformed content
 into a `RoomScopeError` rather than a crash (`tests/robustness/`), and reads a
 session's `result.json` and
 `impulse_response.wav` only from inside that session's folder (a path in
-`session.json` that is absolute or leads out of the folder is refused). A
+`session.json` that is absolute or leads out of the folder is refused).
+`roomscope session bundle` leaves out any file that links out of the session
+folder, so a session from someone else cannot put one of your files into the
+zip you attach to a public issue. A
 `project.json` is different by design: it lists session folders, which may
 live anywhere, so opening someone else's project opens the session folders it
 names — look at it first. Apart from that, a way to make RoomScope read or
@@ -40,6 +46,12 @@ write outside the files you opened is a security issue.
 ## Safety of Standalone Mode
 
 RoomScope plays a test sweep through a loudspeaker. Defaults stay conservative
-(−20 dBFS in Standalone Mode; −12 dBFS for generated sweep files). Nothing in
-this project changes system volume, audio-device configuration, or DAW
-settings. Please report any change that would do so as a security issue.
+(−20 dBFS in Standalone Mode; −12 dBFS for generated sweep files). By default
+nothing in this project changes system volume, audio-device configuration, or
+DAW settings. The one opt-in exception is `roomscope measure
+--coreaudio-set-rate` (the matching Standalone checkbox in the developer
+edition): it lets PortAudio set the selected macOS device's nominal sample
+rate for the take, which can disturb other programs using that device.
+Whether the previous rate is restored afterwards has not been checked; Audio
+MIDI Setup shows the device's rate. Please report any other change as a
+security issue.

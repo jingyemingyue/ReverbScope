@@ -5,10 +5,14 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
 
 from roomscope.errors import ConfigurationError
+from roomscope.i18n import _
 from roomscope.models.result import AnalysisResult
+
+if TYPE_CHECKING:
+    from importlib.metadata import EntryPoint
 
 log = logging.getLogger("roomscope.exporters")
 
@@ -34,6 +38,17 @@ def _builtin() -> dict[str, ResultExporter]:
     return {"csv": CsvExporter()}
 
 
+def _declares_builtin(item: EntryPoint, exporter: ResultExporter) -> bool:
+    """``item`` names the class of the built-in ``exporter``.
+
+    RoomScope's own ``pyproject.toml`` registers the built-in CSV exporter
+    under ``roomscope.exporters`` as well (the documented extension point),
+    so every install sees it there; it is not a third-party exporter.
+    """
+    cls = type(exporter)
+    return (item.module, item.attr) == (cls.__module__, cls.__qualname__)
+
+
 def _entry_points() -> dict[str, ResultExporter]:
     found: dict[str, ResultExporter] = {}
     try:
@@ -41,8 +56,11 @@ def _entry_points() -> dict[str, ResultExporter]:
     except ImportError:  # pragma: no cover
         return found
     selected = entry_points().select(group="roomscope.exporters")
+    builtin = _builtin()
     for item in selected:
-        if item.name in found or item.name in _builtin():
+        if item.name in builtin and _declares_builtin(item, builtin[item.name]):
+            continue
+        if item.name in found or item.name in builtin:
             log.warning("ignoring third-party exporter %r; name collides", item.name)
             continue
         try:
@@ -67,5 +85,7 @@ def get_exporter(name: str) -> ResultExporter:
         return table[name]
     except KeyError as exc:
         raise ConfigurationError(
-            f"unknown exporter {name!r}; available: {available_exporters()}"
+            _("unknown exporter {name}; available: {available}").format(
+                name=repr(name), available=available_exporters()
+            )
         ) from exc

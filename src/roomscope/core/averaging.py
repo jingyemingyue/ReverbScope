@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from roomscope.errors import ConfigurationError
+from roomscope.i18n import N_, diag
 from roomscope.models.result import AnalysisResult, DecayMetric, Validity
 
 # ISO 3382-2:2008, 4.3.1, Table 1 "Minimum numbers of positions and
@@ -26,12 +27,15 @@ from roomscope.models.result import AnalysisResult, DecayMetric, Validity
 # rotating-boom footnote are not implemented. The class is a label, not a claim
 # of compliance: the standard also sets position spacing, distances from
 # surfaces and the other clause 4 conditions, which RoomScope does not check.
+#: The accuracy class names as shown to users; results store the English
+#: ids ("survey", ..., "below_survey") and front ends translate them.
+ACCURACY_CLASS_WORDS = (N_("survey"), N_("engineering"), N_("precision"), N_("below survey"))
 ISO_3382_2_TABLE1 = {
     "survey": {"n_source": 1, "n_microphone": 2, "n_combinations": 2},
     "engineering": {"n_source": 2, "n_microphone": 2, "n_combinations": 6},
     "precision": {"n_source": 2, "n_microphone": 3, "n_combinations": 12},
 }
-ISO_3382_2_TABLE1_SOURCE = (
+ISO_3382_2_TABLE1_SOURCE = diag(
     "ISO 3382-2:2008, 4.3.1, Table 1, read from the standard's preview pages "
     "(cdn.standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnotes not implemented"
 )
@@ -170,13 +174,21 @@ def average_decay(
 
     band_labels = _band_labels(results)
     bands = tuple(_average_band(results, labels, band_label) for band_label in band_labels)
+    # The table source is spelled out in the template (it must equal
+    # ISO_3382_2_TABLE1_SOURCE) so that no English sentence hides in a parameter.
     notes = [
-        "Decay curves are never averaged; only VALID T values enter the mean.",
-        (
-            f"ISO 3382-2 class {klass}: {n_source} source position(s), {n_mic} microphone "
-            f"position(s), {combos} source-microphone combination(s) against "
-            f"{ISO_3382_2_TABLE1_SOURCE}. The class is a label; the other clause 4 "
-            "conditions (position spacing, distances from surfaces) are not checked."
+        diag("Decay curves are never averaged; only VALID T values enter the mean."),
+        diag(
+            "ISO 3382-2 class {klass}: {n_source} source position(s), {n_mic} microphone "
+            "position(s), {combos} source-microphone combination(s) against "
+            "ISO 3382-2:2008, 4.3.1, Table 1, read from the standard's preview pages "
+            "(cdn.standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnotes not "
+            "implemented. The class is a label; the other clause 4 "
+            "conditions (position spacing, distances from surfaces) are not checked.",
+            klass=klass,
+            n_source=n_source,
+            n_mic=n_mic,
+            combos=combos,
         ),
     ]
     return AveragedDecay(
@@ -246,7 +258,7 @@ def _average_metric(
             spread_s=None,
             contributing=(),
             validity=Validity.NOT_COMPUTED,
-            reason="no VALID values to average",
+            reason=diag("no VALID values to average"),
         )
     mean = statistics.fmean(values)
     spread = max(values) - min(values) if len(values) > 1 else 0.0

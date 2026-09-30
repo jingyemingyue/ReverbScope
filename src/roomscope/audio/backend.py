@@ -15,7 +15,7 @@ from typing import Protocol
 import numpy as np
 
 from roomscope.errors import ConfigurationError
-from roomscope.i18n import N_
+from roomscope.i18n import N_, _
 from roomscope.models.audio import AudioSignal, FloatArray
 from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
@@ -44,6 +44,13 @@ class DeviceInfo:
     default_sample_rate: float
     is_default_input: bool
     is_default_output: bool
+    #: PortAudio's host API index (``None`` for backends without host APIs).
+    host_api_index: int | None = None
+    #: PortAudio's default latencies (s) for interactive / robust streams.
+    default_low_input_latency_s: float | None = None
+    default_high_input_latency_s: float | None = None
+    default_low_output_latency_s: float | None = None
+    default_high_output_latency_s: float | None = None
 
     @property
     def is_input(self) -> bool:
@@ -54,6 +61,35 @@ class DeviceInfo:
         return self.max_output_channels > 0
 
 
+@dataclass(frozen=True)
+class StreamOptions:
+    """Host-API options for a Standalone take (docs/AUDIO_DEVICES.md).
+
+    The defaults leave PortAudio's choices alone. ``latency`` is ``"low"`` or
+    ``"high"`` (PortAudio's default low / high latency of the device; high is
+    sounddevice's default and "typically more robust"). ``wasapi_exclusive``
+    opens a Windows WASAPI device in exclusive mode: no audio engine, no
+    mixing or conversion, the requested rate or a refusal.
+    ``coreaudio_change_device_rate`` lets PortAudio set a macOS device's
+    nominal rate and refuse to convert instead. Options that do not match the
+    selected device's host API are ignored. WASAPI's auto-convert flag is
+    deliberately not offered: it inserts the engine's sample-rate converter,
+    which a measurement path must not contain (docs/AUDIO_DEVICES.md).
+    """
+
+    latency: str | None = None
+    wasapi_exclusive: bool = False
+    coreaudio_change_device_rate: bool = False
+
+    def __post_init__(self) -> None:
+        if self.latency not in (None, "low", "high"):
+            raise ConfigurationError(_("latency must be 'low' or 'high'"))
+
+    @property
+    def is_default(self) -> bool:
+        return self == StreamOptions()
+
+
 class AudioBackend(Protocol):
     """Play a sweep and record one or more input channels."""
 
@@ -61,7 +97,15 @@ class AudioBackend(Protocol):
 
     def list_devices(self) -> list[DeviceInfo]: ...
 
-    def check_sample_rate(self, device: int, sample_rate: int, *, kind: str) -> None: ...
+    def check_sample_rate(
+        self,
+        device: int,
+        sample_rate: int,
+        *,
+        kind: str,
+        channels: int | None = None,
+        options: StreamOptions | None = None,
+    ) -> None: ...
 
     def play_and_record(
         self,
@@ -76,6 +120,7 @@ class AudioBackend(Protocol):
         extra_record_s: float = 0.0,
         progress: Callable[[float], None] | None = None,
         cancel: threading.Event | None = None,
+        options: StreamOptions | None = None,
     ) -> AudioSignal: ...
 
 
@@ -114,22 +159,24 @@ def plan_input_channels(
     """
     requested = [int(ch) for ch in channels]
     if not requested:
-        raise ConfigurationError("at least one input channel is required")
+        raise ConfigurationError(_("at least one input channel is required"))
     if any(ch < 1 for ch in requested):
-        raise ConfigurationError("input channels are 1-based and must be >= 1")
+        raise ConfigurationError(_("input channels are 1-based and must be >= 1"))
     if len(set(requested)) != len(requested):
-        raise ConfigurationError("each input channel may be listed once")
+        raise ConfigurationError(_("each input channel may be listed once"))
     if loopback_channel is not None:
         loopback_channel = int(loopback_channel)
         if loopback_channel < 1:
-            raise ConfigurationError("the loopback channel is 1-based and must be >= 1")
+            raise ConfigurationError(_("the loopback channel is 1-based and must be >= 1"))
         if loopback_channel not in requested:
             requested.append(loopback_channel)
     microphones = [ch for ch in requested if ch != loopback_channel]
     if not microphones:
         raise ConfigurationError(
-            f"input {loopback_channel} cannot be both the microphone and the loopback; "
-            "record the loopback on a different input"
+            _(
+                "input {channel} cannot be both the microphone and the loopback; "
+                "record the loopback on a different input"
+            ).format(channel=loopback_channel)
         )
     microphone = microphones[0]
     return ChannelPlan(
@@ -146,10 +193,10 @@ def plan_input_channels(
 def scale_to_level(signal: FloatArray, level_dbfs: float) -> FloatArray:
     """Return ``signal`` peak-normalised to ``level_dbfs``."""
     if level_dbfs > 0.0:
-        raise ConfigurationError("playback level must be <= 0 dBFS")
+        raise ConfigurationError(_("playback level must be <= 0 dBFS"))
     peak = float(np.max(np.abs(signal)))
     if peak <= 0.0:
-        raise ConfigurationError("signal is silent")
+        raise ConfigurationError(_("signal is silent"))
     scale = float(10.0 ** (level_dbfs / 20.0) / peak)
     return np.asarray(np.asarray(signal, dtype=np.float64) * scale, dtype=np.float64)
 
@@ -185,9 +232,15 @@ def get_backend(name: str | None = None) -> AudioBackend:
         from roomscope.audio.portaudio import PortAudioBackend
 
         return PortAudioBackend()
-    raise ConfigurationError(f"unknown audio backend {chosen!r}; available: portaudio, fake")
+    raise ConfigurationError(
+        _("unknown audio backend {name}; available: portaudio, fake").format(name=repr(chosen))
+    )
 
 
 def supported_sample_rate(sample_rate: int) -> None:
     if sample_rate not in SUPPORTED_SAMPLE_RATES:
-        raise ConfigurationError(f"sample rate {sample_rate} Hz is not in {SUPPORTED_SAMPLE_RATES}")
+        raise ConfigurationError(
+            _("sample rate {rate} Hz is not in {supported}").format(
+                rate=sample_rate, supported=SUPPORTED_SAMPLE_RATES
+            )
+        )

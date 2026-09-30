@@ -1,5 +1,7 @@
 # RoomScope v1.0 architecture (design)
 
+**English** | [简体中文](ARCHITECTURE_V1.zh-CN.md)
+
 Status: **proposal, 2026-09-22**, written for the maintainer's review.
 [ARCHITECTURE.md](ARCHITECTURE.md) describes what exists (the v0.1
 foundation). This document describes what v1.0 -- the first release that is
@@ -200,7 +202,9 @@ src/roomscope/
     registry.py          + built-ins + entry-point group "roomscope.profiles"
   cli/
     main.py              ~ + analyze-ir, compare, session, export, --format, --lang
-    report.py            ~ localised labels; comparison report
+    console.py           + terminal layout: colour policy, symbols, widths, tables, progress
+    render.py            + every report and message (also the GUI's "Full report" panes)
+    report.py            ~ plain-text wrappers over render.py (kept for existing imports)
   ui/
     app.py, main_window.py, pages.py, results.py, plots.py, workers.py, state.py, qt.py
     browser.py             (in PR #2) session browser
@@ -251,7 +255,7 @@ save_measurement, load_measurement, load_session, list_sessions   # io.session_s
 RoomScopeError and its subclasses                        # errors
 ```
 
-The text report (`cli/report.py`) is *not* an interface: its wording is
+The text report (`cli/render.py`) is *not* an interface: its wording is
 localised and may change in any release. A test asserts that the Tier 1 list
 in `__init__.py` and the list in this document match, and a second test that
 `roomscope.__version__` equals the `pyproject.toml` version.
@@ -517,13 +521,37 @@ class AudioBackend(Protocol):
 | `export <session> --format csv [--out]` | curves and tables through an exporter | S4 |
 | `schema result\|session\|comparison\|project\|sidecar` | print the JSON Schema | M2 |
 | `measure --input-channels 1,2 --loopback-channel 2`, `analyze --loopback-channel 1` / `--loopback <wav>` | loopback | M5 |
-| global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording` | global options | M7, M6, M8 |
+| global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never` | global options | M7, M6, M8 |
 
 Exit codes: 0 success; 1 a `RoomScopeError` (message on stderr); 2 usage
 error or a safety refusal (the level acknowledgement); 130 interrupted.
 `--format json` writes exactly the `result.json` payload plus `findings` to
 stdout and nothing else there; all diagnostics go to stderr. `--json` stays
 as an alias for one minor release, then is removed with a warning.
+
+Text output is laid out by `roomscope/cli/console.py` (styles, status
+symbols, display-width-aware wrapping and tables) and `roomscope/cli/render.py`;
+no other module writes escape sequences. Colour follows `--color`, then
+`NO_COLOR`, then `FORCE_COLOR`, then `TERM=dumb`, and in `auto` appears only
+on a terminal: a pipe or a file never receives an escape sequence or a
+carriage return. Every status carries a symbol and a word (`✓` / `!` / `×` /
+`→`, or `[OK]` / `[WARN]` / `[ERROR]` / `->` where the stream cannot encode
+them), so colour is never the only signal; on such a stream the other signs
+(`Δ`, `→`, `–`) are written in ASCII too, and a narrow terminal encoding
+replaces what it cannot show instead of failing. Widths count a CJK character
+as two columns; text is laid out for at most 100 columns.
+
+Every command reads the same way: title and context, the result ("At a
+glance" first in an analysis or a comparison), the detail, then numbered
+next steps. A user error is one block (`× error: …`, an explanation, the
+commands to try) with the documented exit code; a traceback appears only with
+`--verbose`. Bare `roomscope` prints a short home screen on stderr and keeps
+the usage error's exit code 2. `measure` prints its device plan and checks on
+stdout and its progress on stderr (one redrawn line on a terminal, one stage
+line otherwise; drawn by the waiting thread, never by the audio callback). The
+text layout is not a Tier 1 interface. The GUI's "Full report" panes show the
+same `render.py` reports as plain text; the environment report in the
+developer tools keeps `diagnostics.format_environment_report`.
 
 ### 5.8 GUI
 

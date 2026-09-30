@@ -246,3 +246,20 @@ def test_bundle_gate_strict_mode_covers_the_installed_essentials_qml_tree() -> N
     # The installed-Essentials mode keeps ignoring the stock tree.
     reported_installed = {path for path, _ in gate.offending(root, installed_essentials=True)}
     assert not (expected & reported_installed)
+
+
+def test_license_bundle_carries_the_bundled_libsndfile_lgpl_text(tmp_path: Path) -> None:
+    """soundfile's wheel bundles libsndfile (LGPL-2.1) and keeps its license text
+    and source notes outside .dist-info, where the metadata scan did not look."""
+    bundle_mod = _load("build_license_bundle")
+    dest = tmp_path / "THIRD_PARTY_LICENSES"
+    unresolved = bundle_mod.build(dest)
+    found, missing = bundle_mod._package_license_files("soundfile")
+    assert missing == [] and not [item for item in unresolved if item.startswith("soundfile:")]
+    notice = (dest / "_notices" / "libsndfile.txt").read_text(encoding="utf-8")
+    assert "LGPL" in notice or "Lesser General Public License" in notice
+    if not found:  # soundfile built against a system libsndfile: nothing bundled
+        return
+    copying = (dest / "soundfile" / "_soundfile_data_COPYING").read_text(encoding="utf-8")
+    assert "GNU LESSER GENERAL PUBLIC LICENSE" in copying and "Version 2.1" in copying
+    assert "soundfile/_soundfile_data_COPYING" in notice

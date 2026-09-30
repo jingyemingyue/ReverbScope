@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import os
+import platform
 import plistlib
 import subprocess
 import sys
@@ -17,10 +19,14 @@ def check_app(app: Path, version: str) -> Path:
     assert info["CFBundleShortVersionString"] == version
     assert info["CFBundleVersion"] == version
     assert info["NSMicrophoneUsageDescription"]
+    # The bundled NumPy / SciPy wheels are built for macOS 14 (macosx_14_0).
+    assert info["LSMinimumSystemVersion"] == "14.0", info.get("LSMinimumSystemVersion")
     executable = app / "Contents" / "MacOS" / info["CFBundleExecutable"]
     assert executable.is_file(), executable
+    # The app is built for the runner's architecture: arm64 on Apple silicon,
+    # x86_64 on an Intel runner.
     archs = subprocess.check_output(["lipo", "-archs", str(executable)], text=True)
-    assert "arm64" in archs.split(), archs
+    assert platform.machine() in archs.split(), (platform.machine(), archs)
     subprocess.run(["codesign", "--verify", "--deep", "--strict", str(app)], check=True)
     return executable
 
@@ -53,6 +59,23 @@ def main() -> None:
         executable = check_app(installed, version)
         env = os.environ.copy()
         env["QT_QPA_PLATFORM"] = "offscreen"
+        # The report a bug reporter pastes, from the copied app: library
+        # versions and (in CI) the commit the app was built from.
+        doctor = subprocess.run(
+            [str(executable), "--backend", "fake", "doctor", "--json"],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env,
+            timeout=120,
+        )
+        report = json.loads(doctor.stdout)
+        assert all(report["packages"].values()), report["packages"]
+        assert report["audio_callbacks"] == "ok", report["audio_callbacks"]
+        if os.environ.get("GITHUB_SHA"):
+            assert (report["build"] or {}).get("commit") == os.environ["GITHUB_SHA"], report[
+                "build"
+            ]
         subprocess.run([str(executable), "gui", "--smoke"], check=True, env=env, timeout=120)
         with subprocess.Popen([str(executable)], env=env) as process:
             time.sleep(6)

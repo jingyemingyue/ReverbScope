@@ -19,7 +19,14 @@ from typing import Protocol, runtime_checkable
 from roomscope.i18n import _, current_locale, pgettext
 from roomscope.interpretation.interpreter import Finding, Severity, finding
 from roomscope.models.comparison import T_JND_PERCENT, ComparisonResult, MetricDelta
-from roomscope.models.result import AnalysisResult, Reflection, ResonanceCandidate, Validity
+from roomscope.models.result import (
+    KIND_SAMPLE_RATE,
+    KIND_TIME_STRETCH,
+    AnalysisResult,
+    Reflection,
+    ResonanceCandidate,
+    Validity,
+)
 
 
 def decay_length_text(label: str) -> str:
@@ -34,6 +41,34 @@ def decay_length_text(label: str) -> str:
         "long": pgettext("decay length", "long"),
     }
     return words.get(label, label)
+
+
+def confidence_text(confidence: str) -> str:
+    """Translated direct-sound confidence (``"high"``, ``"medium"``, ``"low"``)."""
+    words = {"high": _("high"), "medium": _("medium"), "low": _("low")}
+    return words.get(confidence, confidence)
+
+
+def band_text(label: str) -> str:
+    """Translated band label: the broadband row has a name, octave bands are numbers."""
+    return _("Broadband") if label == "broadband" else label
+
+
+def profile_title(name: str) -> str:
+    """Translated display name of a profile.
+
+    Files, JSON and the command line keep the profile id (``--profile room_mic``).
+    """
+    titles = {
+        "generic": _("General"),
+        "vocal": _("Vocals"),
+        "voiceover": _("Voice-over"),
+        "acoustic_guitar": _("Acoustic guitar"),
+        "drums": _("Drums"),
+        "room_mic": _("Room microphone"),
+        "choir": _("Choir / ensemble"),
+    }
+    return titles.get(name, name)
 
 
 def change_direction_text(direction: str) -> str:
@@ -338,7 +373,36 @@ class ProfileBase:
     def _data_quality(self, result: AnalysisResult) -> list[Finding]:
         findings: list[Finding] = []
         ir = result.impulse_response
-        if ir.direct_sound_confidence != "high":
+        speed = ir.playback_speed
+        if speed is not None and speed.kind == KIND_SAMPLE_RATE and speed.played_rate_hz:
+            findings.append(
+                finding(
+                    "measurement",
+                    Severity.WARNING,
+                    "measurement.playback_sample_rate",
+                    "The sweep was generated at {generated_rate_hz} Hz but played at "
+                    "{played_rate_hz} Hz: the DAW project runs at another sample rate and did not "
+                    "convert the file. Generate the sweep at the project's sample rate, or let the "
+                    "DAW convert it on import, and measure again.",
+                    evidence=speed.to_dict(),
+                    generated_rate_hz=speed.generated_rate_hz,
+                    played_rate_hz=speed.played_rate_hz,
+                )
+            )
+        elif speed is not None and speed.kind == KIND_TIME_STRETCH:
+            findings.append(
+                finding(
+                    "measurement",
+                    Severity.WARNING,
+                    "measurement.playback_time_stretch",
+                    "The sweep was played at {speed_percent:.1f} % of its speed: the DAW "
+                    "time-stretched it (Warp, Flex Time, Follow Tempo, elastic audio or a stretch "
+                    "mode). Switch time-stretching off for the sweep clip and measure again.",
+                    evidence=speed.to_dict(),
+                    speed_percent=speed.speed_ratio * 100.0,
+                )
+            )
+        elif ir.direct_sound_confidence != "high":
             findings.append(
                 finding(
                     "measurement",
@@ -352,7 +416,43 @@ class ProfileBase:
                     pre_peak_margin_db=ir.pre_peak_margin_db,
                 )
             )
+        noise = result.noise
+        if (
+            noise is not None
+            and noise.rms_dbfs is None
+            and any("digital silence (exact zeros)" in note for note in noise.notes)
+        ):
+            # A microphone always records some noise. Exact zeros where the
+            # room should be heard mean a digital source: typically the DAW's
+            # test-signal track exported instead of the microphone take, which
+            # otherwise analyses as a near-perfect "room" with RT60 ~ 0.
+            findings.append(
+                finding(
+                    "measurement",
+                    Severity.WARNING,
+                    "measurement.digital_silence",
+                    "The recording has no background noise at all: its quiet part is exact "
+                    "digital silence, which a microphone never records. Check that you exported "
+                    "the microphone track, not the test-signal track, and that no gate or noise "
+                    "reduction is on the microphone track. The room figures are not reliable "
+                    "until then.",
+                    evidence={"notes": list(noise.notes)},
+                )
+            )
         for warning in result.warnings:
+            if "buffer problem" in warning:
+                findings.append(
+                    finding(
+                        "measurement",
+                        Severity.WARNING,
+                        "measurement.dropouts",
+                        "The audio device reported dropped or late buffers during the take, so "
+                        "samples may be missing and the result may be smeared. Close other audio "
+                        "programs, choose a higher latency or buffer size, and measure again.",
+                        evidence={"warning": warning},
+                        warning=warning,
+                    )
+                )
             if "clipping" in warning:
                 findings.append(
                     finding(

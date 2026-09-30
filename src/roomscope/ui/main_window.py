@@ -11,7 +11,7 @@ from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStackedWid
 
 from roomscope import __version__
 from roomscope.errors import RoomScopeError
-from roomscope.i18n import _
+from roomscope.i18n import _, localize
 from roomscope.interpretation import interpret
 from roomscope.io.recent import remember_session
 from roomscope.io.session_store import load_measurement
@@ -19,6 +19,7 @@ from roomscope.ui.compare_view import ComparePage
 from roomscope.ui.pages import DawModePage, HomePage, StandalonePage
 from roomscope.ui.results import ResultsPage
 from roomscope.ui.state import MeasurementState
+from roomscope.ui.widgets import app_icon
 
 ABOUT_TEXT = (
     f"<b>RoomScope {__version__}</b><br>"
@@ -39,7 +40,9 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle(f"RoomScope {__version__}")
-        self.resize(900, 720)
+        self.setWindowIcon(app_icon())
+        self.setMinimumSize(960, 640)
+        self.resize(1180, 800)
         self.state = MeasurementState()
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
@@ -101,11 +104,28 @@ class MainWindow(QMainWindow):
         measure_menu.addAction(standalone_action)
         measure_menu.addAction(demo_action)
 
+        from roomscope.edition import is_developer
+
+        self.developer_menu = None
+        if is_developer():
+            self.developer_menu = self.menuBar().addMenu(_("&Developer"))
+            inspector_action = QAction(_("Audio Device &Inspector..."), self)
+            inspector_action.setShortcut("Ctrl+Shift+D")
+            inspector_action.triggered.connect(self.show_device_inspector)
+            folder_action = QAction(_("Open &Data Folder"), self)
+            folder_action.triggered.connect(self._open_data_folder)
+            for action in (inspector_action, folder_action):
+                self.developer_menu.addAction(action)
+
         help_menu = self.menuBar().addMenu(_("&Help"))
         about_action = QAction(_("&About RoomScope"), self)
         about_action.triggered.connect(self._about)
         licenses_action = QAction(_("&Third-party licenses..."), self)
         licenses_action.triggered.connect(self._open_licenses)
+        self.report_action = QAction(_("&Environment Report for Bug Reports..."), self)
+        self.report_action.triggered.connect(self.show_environment_report)
+        help_menu.addAction(self.report_action)
+        help_menu.addSeparator()
         help_menu.addAction(about_action)
         help_menu.addAction(licenses_action)
         self.show_home()
@@ -129,7 +149,7 @@ class MainWindow(QMainWindow):
         try:
             loaded = load_measurement(path)
         except RoomScopeError as exc:
-            QMessageBox.critical(self, _("Cannot open session"), str(exc))
+            QMessageBox.critical(self, _("Cannot open session"), localize(str(exc)))
             return
         self.state.session = loaded.session
         self.state.result = loaded.result
@@ -175,6 +195,25 @@ class MainWindow(QMainWindow):
         from roomscope.ui.settings_dialog import SettingsDialog
 
         SettingsDialog(self).exec()
+
+    def show_device_inspector(self) -> None:
+        from roomscope.ui.dev_tools import DeviceInspector
+
+        backend = "fake" if self.standalone.demo_mode else None
+        DeviceInspector(backend, self).exec()
+
+    def show_environment_report(self) -> None:
+        from roomscope.ui.dev_tools import EnvironmentReport
+
+        backend = "fake" if self.standalone.demo_mode else None
+        EnvironmentReport(backend, self).exec()
+
+    def _open_data_folder(self) -> None:
+        from roomscope.io.recent import roomscope_home
+
+        home = roomscope_home()
+        home.mkdir(parents=True, exist_ok=True)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(str(home)))
 
     def _about(self) -> None:
         QMessageBox.about(self, _("About RoomScope"), ABOUT_TEXT)

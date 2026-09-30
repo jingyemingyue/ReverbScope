@@ -28,6 +28,7 @@ from scipy.ndimage import maximum_filter1d, uniform_filter1d
 from scipy.signal import find_peaks
 
 from roomscope.core.impulse import envelope
+from roomscope.i18n import diag
 from roomscope.models.audio import FloatArray
 from roomscope.models.result import Reflection, ReflectionsResult
 
@@ -76,11 +77,18 @@ def detect_early_reflections(
     notes: list[str] = []
     if truncated:
         notes.append(
-            f"the impulse response ends {analysed_max_ms:.1f} ms after the direct sound, so only "
-            f"that part of the {min_delay_ms:.0f}-{max_delay_ms:.0f} ms window could be searched"
+            diag(
+                "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only "
+                "that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be searched",
+                analysed_ms=analysed_max_ms,
+                min_ms=min_delay_ms,
+                max_ms=max_delay_ms,
+            )
         )
     if stop - start < 3:
-        notes.append("impulse response is too short after the direct sound for reflection analysis")
+        notes.append(
+            diag("impulse response is too short after the direct sound for reflection analysis")
+        )
         return ReflectionsResult(
             direct_sound_time_s=direct_index / sample_rate,
             direct_sound_confidence=direct_sound_confidence,
@@ -109,16 +117,25 @@ def detect_early_reflections(
     if len(found) > MAX_REPORTED_REFLECTIONS:
         found.sort(key=lambda r: r.relative_db, reverse=True)
         found = found[:MAX_REPORTED_REFLECTIONS]
-        notes.append(f"only the {MAX_REPORTED_REFLECTIONS} strongest reflections are listed")
+        notes.append(
+            diag(
+                "only the {count} strongest reflections are listed",
+                count=MAX_REPORTED_REFLECTIONS,
+            )
+        )
     found.sort(key=lambda r: r.delay_ms)
     notes.append(
-        "candidates are envelope peaks standing above the local diffuse level; in a dense "
-        "early tail some candidates may be statistical rather than discrete reflections"
+        diag(
+            "candidates are envelope peaks standing above the local diffuse level; in a dense "
+            "early tail some candidates may be statistical rather than discrete reflections"
+        )
     )
     if direct_sound_confidence == "low":
         notes.append(
-            "direct-sound detection confidence is low; reflection delays are relative to the "
-            "strongest peak, which may not be the direct sound"
+            diag(
+                "direct-sound detection confidence is low; reflection delays are relative to "
+                "the strongest peak, which may not be the direct sound"
+            )
         )
     return ReflectionsResult(
         direct_sound_time_s=direct_index / sample_rate,

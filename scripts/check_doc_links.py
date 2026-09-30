@@ -1,4 +1,5 @@
-"""Check relative Markdown links under docs/ (ARCHITECTURE_V1.md §7.1)."""
+"""Check relative Markdown links under docs/ and in the repository root's own
+Markdown files (README, README.zh-CN, SECURITY, ...) (ARCHITECTURE_V1.md §7.1)."""
 
 from __future__ import annotations
 
@@ -26,9 +27,14 @@ def _targets(markdown: str) -> list[str]:
     return found
 
 
-def check(root: Path) -> list[str]:
+def check(root: Path, extra: list[Path] | None = None) -> list[str]:
+    """Links of every ``*.md`` under ``root`` and of the ``extra`` files.
+
+    A link may point anywhere inside the repository, which is ``root``'s
+    parent (the default ``root`` is ``docs``).
+    """
     errors: list[str] = []
-    for path in sorted(root.rglob("*.md")):
+    for path in [*sorted(root.rglob("*.md")), *(extra or [])]:
         text = path.read_text(encoding="utf-8")
         for href in _targets(text):
             target = (path.parent / href).resolve()
@@ -46,11 +52,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("docs"), help="docs directory")
     args = parser.parse_args(argv)
-    errors = check(args.root)
+    # The repository root's own documents (README, README.zh-CN, SECURITY...).
+    extra = sorted(args.root.resolve().parent.glob("*.md"))
+    errors = check(args.root, extra)
     if errors:
         print("\n".join(errors), file=sys.stderr)
         return 1
-    print(f"doc links ok under {args.root}")
+    print(f"doc links ok under {args.root} and in {len(extra)} root documents")
     return 0
 
 

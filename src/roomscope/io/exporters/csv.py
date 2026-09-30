@@ -6,6 +6,7 @@ import csv
 from pathlib import Path
 
 from roomscope.errors import SessionError
+from roomscope.i18n import _
 from roomscope.models.result import AnalysisResult, BandDecay
 
 
@@ -37,7 +38,7 @@ def _write(path: Path, header: list[str], rows: list[list[object]]) -> Path:
             writer.writerow(header)
             writer.writerows(rows)
     except OSError as exc:
-        raise SessionError(f"cannot write {path}: {exc}") from exc
+        raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
     return path
 
 

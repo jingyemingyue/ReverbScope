@@ -1,0 +1,96 @@
+name: DAW compatibility report (English)
+description: You measured through a DAW with Universal DAW Mode. Works or fails, both help.
+title: "[daw] <DAW and version> on <OS>"
+labels: ["daw-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The DAW steps in [docs/user-guide/daw-setup.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/user-guide/daw-setup.md)
+        are written from each vendor's manual; none has been confirmed in the
+        DAW itself yet. Your run is that confirmation, or a correction.
+        If a menu name or step in the guide is wrong for your version, say which.
+  - type: input
+    id: daw
+    attributes:
+      label: DAW and version
+      placeholder: "REAPER 7.42 / Ableton Live 12.2 / Logic Pro 11.2"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and RoomScope version
+      placeholder: "macOS 15.5 (Apple silicon), RoomScope 0.4.1 build 1a2b3c4"
+    validations:
+      required: true
+  - type: input
+    id: interface
+    attributes:
+      label: Audio interface and driver
+      description: The interface the DAW played and recorded through.
+      placeholder: "RME Babyface Pro FS, USB, driver 1.246 (Core Audio)"
+    validations:
+      required: true
+  - type: input
+    id: rates
+    attributes:
+      label: Project sample rate and sweep sample rate
+      placeholder: "project 48 kHz, sweep generated at 48 kHz"
+    validations:
+      required: true
+  - type: input
+    id: export
+    attributes:
+      label: Export format of the recording
+      placeholder: "WAV, 24-bit PCM, mono, no normalization, no dither, whole take"
+    validations:
+      required: true
+  - type: dropdown
+    id: stretch
+    attributes:
+      label: Time-stretch / warp / tempo-follow on the sweep clip
+      options:
+        - Off (checked in the DAW)
+        - On (a deliberate negative test)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Result
+      description: |
+        Did RoomScope analyse the recording? From the **Full report** tab (or
+        `roomscope show <session>`), paste the line that starts with
+        "Impulse response:" (it names the direct-sound confidence; a matrix
+        cell needs "high") and any finding about sample rate or playback
+        speed. For a negative test (a
+        44.1 kHz project with a 48 kHz sweep, or stretching on), say whether
+        RoomScope reported it.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment report
+      description: |
+        **Help → Environment Report for Bug Reports → Copy**, or `roomscope doctor`
+        in a terminal. It names the RoomScope version and build commit and the OS.
+        Review it before posting: device names can contain personal names.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: guide
+    attributes:
+      label: Corrections to the DAW guide (optional)
+      description: Menu names, defaults, or steps that differ in your version.
+  - type: textarea
+    id: files
+    attributes:
+      label: Session bundle (optional)
+      description: |
+        `roomscope session bundle <session> --out report.zip` (`--no-audio`
+        leaves the recordings out). The sweep sidecar JSON and the exported
+        recording are the most useful files.

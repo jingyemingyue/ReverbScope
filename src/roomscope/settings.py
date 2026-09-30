@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from roomscope.errors import SessionError
+from roomscope.i18n import _
 from roomscope.io.jsonutil import read_json_object
 from roomscope.io.recent import roomscope_home
 from roomscope.models.loadutil import drop_unknown, read_schema_version
@@ -38,6 +39,10 @@ class UserSettings:
     audio_backend: str = ""
     output_dir: str = ""
     copy_recording: bool = True
+    #: "" follows the system, or "light" / "dark".
+    theme: str = ""
+    #: Show the developer tools in an installed (user-edition) RoomScope.
+    developer_tools: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -45,12 +50,15 @@ class UserSettings:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> UserSettings:
         if not isinstance(data, dict):
-            raise SessionError("settings data must be a JSON object")
+            raise SessionError(_("settings data must be a JSON object"))
         version = read_schema_version(data, SETTINGS_SCHEMA_VERSION, "settings")
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="settings")
         payload["schema_version"] = version
-        if "copy_recording" in payload:
-            payload["copy_recording"] = bool(payload["copy_recording"])
+        for flag in ("copy_recording", "developer_tools"):
+            if flag in payload:
+                payload[flag] = bool(payload[flag])
+        if payload.get("theme") not in (None, "", "light", "dark"):
+            payload["theme"] = ""
         return cls(**payload)
 
 
@@ -84,5 +92,5 @@ def save_settings(settings: UserSettings) -> Path:
     try:
         path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
     except OSError as exc:
-        raise SessionError(f"cannot write {path}: {exc}") from exc
+        raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
     return path

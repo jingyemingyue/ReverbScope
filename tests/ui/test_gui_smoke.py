@@ -102,7 +102,8 @@ def test_reopen_saved_session(
     )
     page.set_recording(rec_path)
     page.room.setText("Booth A")
-    page.profile.setCurrentText("vocal")
+    page.profile.setCurrentIndex(page.profile.findData("vocal"))
+    assert page.profile.currentText() == "Vocals"
     page.start_analysis(blocking=True)
     app.processEvents()
     out = tmp_path / "session"
@@ -129,7 +130,7 @@ def test_reopen_saved_session(
     assert window.state.result.decay.broadband.rt60_estimate_s == saved_rt60
     assert window.state.result.impulse_response.samples.size > 0
     assert "RoomScope analysis" in window.results.text.toPlainText()
-    assert "Interpretation (vocal profile):" in window.results.text.toPlainText()
+    assert "Interpretation (Vocals profile)" in window.results.text.toPlainText()
     window.close()
 
 
@@ -314,11 +315,13 @@ def test_standalone_shows_requested_and_device_rate(app: QApplication) -> None:
     assert "44100" in label
     assert "48000" in label
     assert "requested" in label
-    page._check_selected_rates(48000)
+    # The same pre-flight as roomscope measure: resolved devices, real channels.
+    # "System default" stays selected: PortAudio's default devices are used.
+    assert page._preflight([1], 48000) == (None, None)
     window.close()
 
 
-def test_help_licenses_and_core_diagnostics_heading(app: QApplication) -> None:
+def test_help_licenses_and_report_heading(app: QApplication) -> None:
     from roomscope.ui.main_window import license_notice_path
 
     notice = license_notice_path()
@@ -331,8 +334,9 @@ def test_help_licenses_and_core_diagnostics_heading(app: QApplication) -> None:
         for action in menu.actions()
     ]
     assert any("license" in text.lower() or "许可" in text for text in texts)
-    heading = window.results.diagnostics_heading.text()
-    assert "English" in heading or "英文" in heading
+    # Diagnostics are shown in the interface language now; the heading names
+    # the CLI command that prints the same report.
+    assert "roomscope analyze" in window.results.diagnostics_heading.text()
     window.close()
 
 
@@ -342,3 +346,135 @@ def test_gui_smoke_flag_constructs_and_exits(app: QApplication) -> None:
 
     assert run_app(smoke=True) == 0
     assert main(["gui", "--smoke"]) == 0
+
+
+def test_developer_menu_and_device_inspector(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ROOMSCOPE_EDITION", "developer")
+    from roomscope.ui.dev_tools import DeviceInspector, EnvironmentReport
+
+    window = MainWindow()
+    assert window.developer_menu is not None
+    assert not window.standalone.advanced.isHidden() or not window.isVisible()
+    inspector = DeviceInspector("fake", window)
+    assert inspector.table.rowCount() == 1
+    inspector.refresh(probe=True)
+    assert "48000" in inspector.table.item(0, 6).text()
+    inspector.copy_json()
+    report = EnvironmentReport("fake", window)
+    assert "RoomScope" in report.text.toPlainText()
+    assert "not probed" in report.text.toPlainText()
+    report.refresh(probe=True)
+    assert "record 44100, 48000" in report.text.toPlainText()
+    window.close()
+
+
+def test_user_edition_hides_developer_tools(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ROOMSCOPE_EDITION", "user")
+    window = MainWindow()
+    assert window.developer_menu is None
+    assert window.standalone.advanced.isHidden()
+    # The environment report is for everyone who files a bug.
+    assert window.report_action.isEnabled()
+    window.close()
+
+
+def test_standalone_host_api_filter_and_options(app: QApplication) -> None:
+    window = MainWindow()
+    window.show_mode("demo")
+    page = window.standalone
+    assert page.host_api.count() >= 1
+    # The fake interface is the recommended input and output.
+    assert page.input_device.currentText().startswith("★") or page.host_api.currentData() is None
+    options = page.stream_options()
+    assert options.is_default
+    window.close()
+
+
+def test_standalone_preselects_the_system_default_devices(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review finding: on a Mac every Core Audio device is its own starred
+    entry, so the page preselected the lowest index, a virtual BlackHole
+    device, instead of the microphone and speakers the system uses."""
+    from roomscope.audio import backend as backend_module
+    from roomscope.audio import inventory as inventory_module
+    from roomscope.audio.backend import DeviceInfo
+
+    devices = [
+        DeviceInfo(0, "BlackHole 2ch", "Core Audio", 2, 2, 48000.0, False, False),
+        DeviceInfo(1, "MacBook Pro Microphone", "Core Audio", 1, 0, 48000.0, True, False),
+        DeviceInfo(2, "MacBook Pro Speakers", "Core Audio", 0, 2, 48000.0, False, True),
+    ]
+
+    class Mac:
+        name = "test"
+
+        def list_devices(self) -> list[DeviceInfo]:
+            return devices
+
+        def check_sample_rate(self, *args: object, **kwargs: object) -> None:
+            return None
+
+    real_build = inventory_module.build_inventory
+    monkeypatch.setattr(backend_module, "get_backend", lambda name=None: Mac())
+    monkeypatch.setattr(
+        inventory_module,
+        "build_inventory",
+        lambda backend, **kwargs: real_build(backend, probe_rates=False, platform="darwin"),
+    )
+    window = MainWindow()
+    page = window.standalone
+    page.refresh_devices()
+    assert page.host_api.currentData() is None
+    assert page.input_device.currentData() is None
+    assert page.output_device.currentData() is None
+    # Choosing the host API preselects its default devices, not the first star.
+    page.host_api.setCurrentIndex(page.host_api.findData("Core Audio"))
+    assert page.input_device.currentData() == 1
+    assert page.output_device.currentData() == 2
+    window.close()
+
+
+def test_charts_draw_chinese_text_with_an_installed_cjk_font() -> None:
+    """Chart titles are translated; DejaVu Sans alone has no Chinese glyphs
+    and matplotlib drew them as empty boxes (seen in the zh-CN compare page)."""
+    import warnings
+
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    from matplotlib.figure import Figure
+
+    from roomscope.ui.theme import CJK_FALLBACK_FONTS, configure_matplotlib, font_families
+
+    families = font_families()
+    assert families[0] == "DejaVu Sans"
+    if len(families) == 1:
+        pytest.skip(f"none of {CJK_FALLBACK_FONTS} is installed on this machine")
+    configure_matplotlib()
+    figure = Figure()
+    FigureCanvasAgg(figure)  # a bare Figure's canvas does not render
+    figure.add_subplot(111).set_title("频率响应差异（候选 − 基线）")
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        figure.canvas.draw()
+    assert not [w for w in caught if "missing from font" in str(w.message)]
+
+
+def test_compare_metrics_have_readable_names() -> None:
+    """The compare table showed ids such as ``band.63 Hz.t20`` and ``not_comparable``."""
+    from roomscope.models.result import Validity
+    from roomscope.ui.compare_view import metric_label, status_text
+    from roomscope.ui.results import validity_text
+
+    assert metric_label("broadband.t30", "s") == "Broadband T30 (s)"
+    assert metric_label("band.63 Hz.rt60_estimate", "s") == "63 Hz RT60 estimate (s)"
+    assert metric_label("band.63 Hz") == "63 Hz"
+    assert metric_label("noise.rms_dbfs", "dBFS") == "Background noise, RMS (dBFS)"
+    assert metric_label("loopback.path_delay_ms", "ms") == "Loopback path delay (ms)"
+    assert metric_label("something.new") == "something.new"
+    assert status_text("appeared") == "appeared"
+    assert validity_text(Validity.NOT_COMPARABLE) == ("not comparable", "warn")
+    assert validity_text(Validity.OUTSIDE_EXCITATION)[0] == "outside the sweep's range"

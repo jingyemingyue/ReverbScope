@@ -1,5 +1,7 @@
 # RoomScope v1.0 架构设计（中文摘要）
 
+[English](ARCHITECTURE_V1.md) | **简体中文**
+
 > 状态：**提案，2026-09-22**，供维护者评审。本文是
 > [ARCHITECTURE_V1.md](ARCHITECTURE_V1.md) 的摘要而非逐字翻译；两者不一致时以英文版为准。
 > [ARCHITECTURE.md](ARCHITECTURE.md) 描述 v0.1 已有的东西，本文描述"开放给所有人"的
@@ -114,6 +116,10 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 ### 5.7 CLI 契约
 
 退出码：0 成功；1 `RoomScopeError`；2 用法错误或安全拒绝（电平确认）；130 中断。`--format json` 在 stdout 只输出 `result.json` 载荷加 `findings`，诊断全部走 stderr；`--json` 保留一个次版本作为别名后移除。
+
+文本输出由 `roomscope/cli/console.py`（样式、状态符号、按显示宽度换行与制表）和 `roomscope/cli/render.py` 排版，其他模块不写转义序列。颜色依次由 `--color`、`NO_COLOR`、`FORCE_COLOR`、`TERM=dumb` 决定，`auto` 只在终端上着色：管道和文件永远收不到转义序列或回车符。每个状态都同时带符号和文字（`✓` / `!` / `×` / `→`；流无法编码这些符号时用 `[OK]` / `[WARN]` / `[ERROR]` / `->`），颜色从不单独表达信息；在这样的流上，`Δ`、`→`、`–` 等符号也改用 ASCII，编码较窄的终端会替换无法显示的字符而不会报错。宽度计算中一个中日韩字符占两列；排版最宽 100 列。
+
+每个命令的输出结构相同：标题与上下文、结果（分析和对比先给“概览”）、细节，最后是编号的下一步。普通用户错误只显示一个错误块（`× 错误：…`、说明和可以尝试的命令），退出码按文档约定；只有加 `--verbose` 才显示回溯。直接运行 `roomscope` 会在 stderr 上显示简短的首页，退出码仍是用法错误的 2。`measure` 把设备方案和检查结果写到 stdout，进度写到 stderr（终端上是一行原地刷新，否则只有一行阶段提示；由等待线程绘制，从不在音频回调里）。文本版式不属于 Tier 1 接口。图形界面的“完整报告”面板以纯文本显示同样的 `render.py` 报告；开发者工具里的环境报告仍使用 `diagnostics.format_environment_report`。
 
 ### 5.8 存储
 

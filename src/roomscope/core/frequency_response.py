@@ -30,10 +30,11 @@ import numpy as np
 
 from roomscope.core.filters import fractional_octave_smooth
 from roomscope.errors import ConfigurationError
+from roomscope.i18n import _, diag
 from roomscope.models.audio import FloatArray
 from roomscope.models.result import ExcitationBand, FrequencyResponseResult
 
-DEFAULT_FR_REFERENCE = "relative dB (0 dB = flat loopback of the reference sweep)"
+DEFAULT_FR_REFERENCE = diag("relative dB (0 dB = flat loopback of the reference sweep)")
 
 _EPS = 1e-300
 
@@ -83,9 +84,15 @@ def frequency_response(
     if window_s is not None:
         if window_s < taper_s + MIN_DIRECT_SOUND_S:
             raise ConfigurationError(
-                f"the frequency-response window ({window_s * 1000.0:.1f} ms) is shorter than its "
-                f"{end_taper_ms:g} ms end taper plus {MIN_DIRECT_SOUND_S * 1000.0:g} ms: it would "
-                "attenuate or exclude the direct sound. Use a longer window"
+                _(
+                    "the frequency-response window ({window_ms:.1f} ms) is shorter than its "
+                    "{taper_ms:g} ms end taper plus {minimum_ms:g} ms: it would attenuate or "
+                    "exclude the direct sound. Use a longer window"
+                ).format(
+                    window_ms=window_s * 1000.0,
+                    taper_ms=end_taper_ms,
+                    minimum_ms=MIN_DIRECT_SOUND_S * 1000.0,
+                )
             )
         stop = min(ir.shape[0], direct_index + max(2, round(window_s * sample_rate)) + 1)
         segment = _taper_end(ir[:stop], sample_rate, end_taper_ms)

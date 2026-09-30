@@ -51,6 +51,7 @@ from roomscope.core.filters import (
     fractional_octave_smooth,
 )
 from roomscope.core.impulse import envelope_db
+from roomscope.i18n import diag
 from roomscope.models.audio import FloatArray
 from roomscope.models.result import (
     ExcitationBand,
@@ -182,17 +183,27 @@ def _search_range(
         if band_low > low or band_high < high:
             low, high = max(low, band_low), min(high, band_high)
             notes.append(
-                f"the search is limited to {low:.0f}-{high:.0f} Hz, the part of the range whose "
-                f"1/3-octave band lies inside the excited {excitation_band.low_hz:.0f}-"
-                f"{excitation_band.high_hz:.0f} Hz"
+                diag(
+                    "the search is limited to {low:.0f}-{high:.0f} Hz, the part of the range "
+                    "whose 1/3-octave band lies inside the excited {band_low:.0f}-"
+                    "{band_high:.0f} Hz",
+                    low=low,
+                    high=high,
+                    band_low=excitation_band.low_hz,
+                    band_high=excitation_band.high_hz,
+                )
             )
     resolvable = response.resolution_hz / _FINE_RELATIVE_WIDTH
     if resolvable > low:
         low = resolvable
         notes.append(
-            f"the analysed response is {1.0 / response.resolution_hz:.2f} s long, so its "
-            f"resolution is {response.resolution_hz:.1f} Hz and peaks below {low:.0f} Hz cannot "
-            "be separated"
+            diag(
+                "the analysed response is {length_s:.2f} s long, so its resolution is "
+                "{resolution_hz:.1f} Hz and peaks below {low:.0f} Hz cannot be separated",
+                length_s=1.0 / response.resolution_hz,
+                resolution_hz=response.resolution_hz,
+                low=low,
+            )
         )
     return low, high, notes
 
@@ -217,8 +228,11 @@ def detect_potential_resonances(
     freqs = response.frequencies_hz
     raw = response.magnitude_db_raw
     notes = [
-        "Candidates only: a peak in the low-frequency response with a long narrow-band decay "
-        "may be a room resonance, but room-mode identification is not attempted in v0.1.",
+        diag(
+            "Candidates only: a peak in the low-frequency response with a long narrow-band "
+            "decay may be a room resonance, but room-mode identification is not attempted in "
+            "v0.1."
+        ),
     ]
     low_hz, high_hz, range_notes = _search_range(
         response, max_hz=max_hz, excitation_band=excitation_band
@@ -234,7 +248,9 @@ def detect_potential_resonances(
         )
 
     if high_hz <= low_hz:
-        notes.append("no part of the resonance range was excited and resolved; no search was made")
+        notes.append(
+            diag("no part of the resonance range was excited and resolved; no search was made")
+        )
         return nothing_found()
     # The baseline and the fine curve are smoothed over the excited part only,
     # so that the roll-off outside it cannot create a peak at the band edge.
@@ -242,7 +258,7 @@ def detect_potential_resonances(
     if excitation_band is not None:
         mask &= (freqs >= excitation_band.low_hz) & (freqs <= excitation_band.high_hz)
     if int(np.count_nonzero(mask)) < 8:
-        notes.append("frequency resolution is too coarse for the resonance search")
+        notes.append(diag("frequency resolution is too coarse for the resonance search"))
         return nothing_found()
 
     f = freqs[mask]
@@ -288,8 +304,10 @@ def detect_potential_resonances(
         )
     if any(c.surroundings_decay_20db_s is None for c in candidates):
         notes.append(
-            "some candidates have too few measurable neighbouring bands for the surroundings "
-            "comparison; their decay is not called distinguishable"
+            diag(
+                "some candidates have too few measurable neighbouring bands for the "
+                "surroundings comparison; their decay is not called distinguishable"
+            )
         )
     return ResonanceResult(
         max_frequency_hz=max_hz,

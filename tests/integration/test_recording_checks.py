@@ -168,3 +168,41 @@ def test_weaker_earlier_pass_is_not_measured_as_background_noise(
     assert result.noise.segment_source == "pre-sweep"
     assert result.noise.rms_dbfs == pytest.approx(-75.0, abs=1.0)
     assert any("above its quietest blocks" in n for n in result.noise.notes)
+
+
+def test_device_buffer_problems_reach_the_result_and_a_finding(
+    short_sweep: SweepSettings,
+) -> None:
+    """A take whose device reported an input overflow is analysed, but the
+    result and the findings say so (the log line alone reached no GUI user)."""
+    sr = short_sweep.sample_rate
+    samples = _room_recording(short_sweep)
+    warning = (
+        "the audio device reported 1 buffer problem(s) during the take (input overflow); "
+        "the recording may contain dropouts"
+    )
+    take = AudioSignal(samples, sr, source="standalone", device_warnings=(warning,))
+    result = analyze(take, Reference.from_settings(short_sweep))
+    assert warning in result.warnings
+    dropouts = [f for f in interpret(result) if f.message_id == "measurement.dropouts"]
+    assert len(dropouts) == 1 and dropouts[0].evidence == {"warning": warning}
+    clean = analyze(AudioSignal(samples, sr), Reference.from_settings(short_sweep))
+    assert not any(f.message_id == "measurement.dropouts" for f in interpret(clean))
+
+
+def test_the_test_signal_exported_instead_of_the_microphone_is_flagged(
+    short_sweep: SweepSettings,
+) -> None:
+    """Review finding: the sweep track analysed as the recording gave a
+    confident, room-like result (T30 of a few hundredths of a second) whose
+    only hint was a note about digital silence."""
+    sr = short_sweep.sample_rate
+    sweep_only = measurement_signal(short_sweep)
+    result = analyze(AudioSignal(sweep_only, sr), Reference.from_settings(short_sweep))
+    ids = [f.message_id for f in interpret(result)]
+    assert "measurement.digital_silence" in ids
+    # A microphone take (room noise before the sweep) is not flagged.
+    take = analyze(
+        AudioSignal(_room_recording(short_sweep), sr), Reference.from_settings(short_sweep)
+    )
+    assert "measurement.digital_silence" not in [f.message_id for f in interpret(take)]

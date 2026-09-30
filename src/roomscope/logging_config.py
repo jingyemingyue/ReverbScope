@@ -28,6 +28,22 @@ def get_logger(name: str | None = None) -> logging.Logger:
     return logging.getLogger(f"{LOGGER_NAME}.{name}")
 
 
+class _SharedRotatingFileHandler(RotatingFileHandler):
+    """Rotating log that keeps appending when another process holds the file.
+
+    Windows refuses to rename an open file (WinError 32), so a second RoomScope
+    process (the CLI next to the GUI) would make every later record fail. The
+    rotation is skipped until the file can be renamed.
+    """
+
+    def doRollover(self) -> None:  # noqa: N802 - logging API
+        try:
+            super().doRollover()
+        except PermissionError:
+            if self.stream is None:
+                self.stream = self._open()
+
+
 def configure_logging(
     level: int | str = logging.INFO,
     stream: IO[str] | None = None,
@@ -55,7 +71,7 @@ def configure_logging(
 
             path = roomscope_home() / LOG_FILENAME
             path.parent.mkdir(parents=True, exist_ok=True)
-            file_handler = RotatingFileHandler(
+            file_handler = _SharedRotatingFileHandler(
                 path, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUPS, encoding="utf-8"
             )
             file_handler.setFormatter(logging.Formatter(fmt))
