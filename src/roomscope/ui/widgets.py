@@ -8,6 +8,7 @@ place and follows the light / dark scheme.
 from __future__ import annotations
 
 import math
+import sys
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import (
@@ -40,6 +41,21 @@ def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:
         widget.setProperty("role", role)
     widget.setWordWrap(wrap)
     return widget
+
+
+def shortcut_badge(sequence: str) -> str:
+    """Key mark for a card: ``⌃1``, or ``⌘1`` on macOS.
+
+    The word ``Ctrl`` is English, and the Chinese interface rejects it.
+    ``sequence`` is a Qt shortcut such as ``Ctrl+1``.
+    """
+    key = sequence.rsplit("+", 1)[-1]
+    if sys.platform == "darwin":
+        native = QKeySequence(sequence).toString(QKeySequence.SequenceFormat.NativeText)
+        if native and "Ctrl" not in native:
+            return native
+        return f"⌘{key}"
+    return f"⌃{key}"
 
 
 def primary(button: QPushButton) -> QPushButton:
@@ -105,10 +121,9 @@ class ModeCard(Card):
         top.addWidget(icon)
         top.addStretch(1)
         if shortcut:
-            # Same sequence as the Measure menu. Native text is Ctrl+1 on
-            # Windows and Linux, and the command glyph on macOS.
-            shown = QKeySequence(shortcut).toString(QKeySequence.SequenceFormat.NativeText)
-            top.addWidget(label(shown, "badge"))
+            # Same keys as the Measure menu. A control mark, not the word
+            # "Ctrl": that word fails the Chinese-interface gate.
+            top.addWidget(label(shortcut_badge(shortcut), "badge"))
         self.body.addLayout(top)
         self.body.addWidget(label(title, "card-title", wrap=True))
         description = label(text, "hint", wrap=True)

@@ -19,10 +19,9 @@ All notable changes to RoomScope are documented here. The format follows
   the same line pastes into cmd, PowerShell and Git Bash; a space is still
   quoted, and a POSIX shell still quotes a backslash.
 - **Desktop app.** The home screen shows which keyboard shortcut opens each
-  mode, using the same Ctrl+1 / Ctrl+2 / Ctrl+3 as the Measure menu (the
-  platform's own shortcut text, not a bare digit). A status bar names the
-  version and the current page. Results can copy the full text report to
-  the clipboard.
+  mode: ⌃1 / ⌃2 / ⌃3 (⌘1 / ⌘2 / ⌘3 on macOS), the same keys as the Measure
+  menu. A status bar names the version and the current page. Results can
+  copy the full text report to the clipboard.
 
 ## [0.4.1] - 2026-09-29
 

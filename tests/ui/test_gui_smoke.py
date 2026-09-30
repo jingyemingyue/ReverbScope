@@ -148,18 +148,16 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
     }
     for needed in ("Ctrl+N", "Ctrl+O", "Ctrl+Shift+C", "Ctrl+,", "Ctrl+1", "Ctrl+2", "Ctrl+3"):
         assert needed in shortcuts, shortcuts
-    from PySide6.QtGui import QKeySequence
     from PySide6.QtWidgets import QLabel
+
+    from roomscope.ui.widgets import shortcut_badge
 
     badges = sorted(
         child.text()
         for child in window.home.findChildren(QLabel)
         if child.property("role") == "badge"
     )
-    expected = sorted(
-        QKeySequence(sequence).toString(QKeySequence.SequenceFormat.NativeText)
-        for sequence in ("Ctrl+1", "Ctrl+2", "Ctrl+3")
-    )
+    expected = sorted(shortcut_badge(sequence) for sequence in ("Ctrl+1", "Ctrl+2", "Ctrl+3"))
     assert badges == expected
     assert "Home" in window.statusBar().currentMessage()
     assert window.daw.analyze_button.shortcut().toString() == "Ctrl+Return"
