@@ -6,6 +6,99 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 32: 2026-09-30 — **the v0.4.1 release candidate is on `main`; the
+draft Release is refreshed from it and waits for the maintainer.** No code
+change in this snapshot; it records the merge and what was run.
+**Merges** (GitHub merge commits, no squash, no rebase, each with the head
+SHA pinned): PR #24 (`cf27b30`) into `claude/epic-meitner-x0t35f` →
+`eda86c7`; CI #79 and Release #32 green on `eda86c7`, then PR #22 marked
+ready for review and merged into `claude/publication-ready-level-n3hkor` →
+`12fd83e`; CI #80 and Release #33 green on `12fd83e`, then PR #21 merged
+into `main` → **`c5fe692`**. The three heads were linear (each an ancestor
+of the next), every merge was conflict-free, no file was deleted against
+`main`, and `main`'s tree is byte-identical to #24's head (`431cb82`): the
+tree that CI #78 and Release #31 had already passed. PR #23 was closed
+unmerged as superseded by #24 (its first-run UX lives in `cli/console.py` +
+`cli/render.py`; no `cli/style.py`, `cli/report.py` is the 45-line
+wrapper). **On `main` (`c5fe692`):** CI #81 green on every job (lint and
+type-check, tests on Ubuntu 3.12 / 3.13 / 3.14, macOS 3.12 and Windows
+3.12, JSON Schemas, sdist and wheel, license bundle and GPL-module gate);
+Release #34 green on every job (validate, lint and test, sdist and wheel,
+CycloneDX SBOM, the four `Bundle (<os>)` jobs with both editions, *Check the
+release file set*, *Draft GitHub Release*; PyPI skipped, as it runs only on
+a tag). Without signing secrets the macOS jobs kept the ad hoc signature;
+the hardened-runtime rehearsal, the DMG check and the Windows installer's
+install / smoke / uninstall ran on the runners. This was the first run of
+`release_draft.py sync` against GitHub: it found the existing draft
+395349087, replaced `cyclonedx.sbom.json`, `generated-bundle.lock`, the
+wheel and the sdist, removed the six earlier names the draft still held
+(`RoomScope.dmg`, `SHA256SUMS-{Linux,macOS,Windows}`,
+`roomscope-linux-x86_64.tar.gz`, `roomscope-windows-x64.zip`; snapshot 31
+expected seven, but that draft never had a `RoomScope-setup.exe`), uploaded
+the 14 files and printed *draft 395349087 holds 14 files from commit
+c5fe692d37152c55b768147c7c0753694b5cb25d*; `release_draft.py verify` then
+passed (draft, pre-release, tag name and title `v0.4.1`, target commit
+`c5fe692`, body equal to the rendered notes, exactly the 14 names, sizes and
+digests). The repository lists one Release (that draft) and no tag
+`v0.4.1`. The 14 assets: `RoomScope-Desktop-macOS-arm64.dmg`,
+`RoomScope-Desktop-macOS-x86_64.dmg`,
+`RoomScope-Desktop-Windows-x64-Setup.exe`,
+`RoomScope-Desktop-Windows-x64.zip`,
+`RoomScope-Desktop-Linux-x86_64.tar.gz`,
+`RoomScope-Terminal-macOS-arm64.tar.gz`,
+`RoomScope-Terminal-macOS-x86_64.tar.gz`,
+`RoomScope-Terminal-Windows-x64.zip`,
+`RoomScope-Terminal-Linux-x86_64.tar.gz`,
+`roomscope-0.4.1-py3-none-any.whl`, `roomscope-0.4.1.tar.gz`,
+`SHA256SUMS`, `cyclonedx.sbom.json`, `generated-bundle.lock`.
+**What was run on the final tree** (this container: Linux x86_64, CPython
+3.12.3, `dev` and `gui` extras, no audio device; the GUI tests with EGL /
+XCB libraries unpacked into a scratch folder, not installed): the CI
+coverage-gate command, **811 passed**, core + models 90.48 %; `ruff check`,
+`ruff format --check`, `mypy` (strict, 79 files), `check_doc_links.py`,
+`check_src_safety.py`, `build_docs_site.py`, the schema tests; the license
+bundle and the Essentials-only check. The command line, run as a user would
+(bare `roomscope`, `--help`, `demo`, `doctor`, `export`, `show`, `compare`,
+`gui --smoke`) in English and `--lang zh_CN`, at 60 and 80 columns and to a
+pipe, with `PYTHONIOENCODING` cp1252 / ascii, the C locale and a pty: no
+traceback, exit codes as documented, no escape sequence in a pipe or file,
+paths and commands never split, zh_CN output Chinese apart from identifiers
+and stored data; `--format json` stdout parses as JSON for `doctor`,
+`devices`, `show`, `analyze`, `analyze-ir`, `compare` and `schema`; the
+demo's stored files under `--lang zh_CN` contain no Chinese. `gui --smoke`
+here prints *The desktop GUI cannot start because PySide6 could not be
+loaded (libEGL.so.1 …)* and exits 2 (this container has no EGL); the GUI
+itself started only in the GUI tests and on the Release runners. `roomscope
+export`, with and without `-v`, in the editable install and in a fresh
+wheel install without `[gui]`: no *name collides* message (`909f332`'s code
+prints it on every run; a genuinely colliding third-party exporter is still
+reported). In that wheel install `roomscope gui` prints the install hint in
+English and Chinese and exits 2. README, INSTALLATION, EDITIONS, the user
+guides and the rendered Release notes name only the 14 real assets
+(case-sensitive), no earlier name as a download, Download first, the two
+editions separate, no Python needed, and never suggest turning off
+Gatekeeper or SIP (156 doc / release / editions tests pass; 60 in-page
+anchors resolve). **Known, not blocking, not changed for 0.4.1** (found by
+this check, each reproduced independently): at 60 columns the root
+`--help` tagline and epilog and the `show` / `gui` descriptions are no
+longer wrapped (the only difference from `909f332`; 80 columns is fine);
+`demo` clears its progress line with `ESC[2K` on a terminal even under
+`--color never` / `NO_COLOR`; suggested next-step commands do not quote a
+path that contains a space; `--format json` is ignored without a message by
+`export`, `sweep` and `show --list` (as on `909f332`); with cp1252 output at
+exactly 80–82 columns one demo line runs two to four cells past the width;
+the Release notes list the Windows installer under *English and Simplified
+Chinese throughout* without saying its Chinese screens have not been seen
+on a Chinese Windows, and CHANGELOG `[0.4.1]` says a short sweep "in a
+reverberant room measured up to 4.5 % off" without saying the room was
+synthetic. **Not run:** any real audio interface, microphone or DAW; a
+bundle on a person's own Mac, Windows PC or Linux desktop (the workflow
+installs and launches them on GitHub's runners only); macOS 14; the
+Chinese installer on a Chinese Windows. These stay open for community
+hardware testing; the hardware and DAW matrices stay empty. Publishing the
+draft (which creates the tag `v0.4.1` on `c5fe692`) is the maintainer's
+click (RELEASE_PLAN §3c, steps 3–5).
+
 Snapshot 31: 2026-09-29 — **v0.4.1 release close-out: one changelog section
 for the pre-release** (branch `claude/roomscope-cli-integration-84e5qc`, PR
 #24, stacked on #22 and #21). One code fix: `roomscope export` logged
@@ -704,8 +797,9 @@ were not copied. `packaging/licenses/` holds verbatim license *texts*
 
 See [RELEASE_PLAN.md](RELEASE_PLAN.md): v0.4.1 (a draft Release; #9–#17
 are closed on `main`) is published when the maintainer decides, as the first
-public pre-release for testers (checklist in RELEASE_PLAN.md §3c); this
-branch's work ships in it (CHANGELOG `[0.4.1]`). Then v0.5.0 once the hardware
+public pre-release for testers (checklist in RELEASE_PLAN.md §3c); the
+release candidate (PRs #21, #22, #24) is on `main` since 2026-09-30
+(`c5fe692`, snapshot 32) and ships in it (CHANGELOG `[0.4.1]`). Then v0.5.0 once the hardware
 matrix has its first dated PASS rows, then 1.0.0rc1 when every MUST item of ARCHITECTURE_V1.md §3.1 is
 closed. API and schema versions stay unfrozen until then.
 

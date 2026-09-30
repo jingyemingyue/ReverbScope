@@ -28,7 +28,13 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
   Edition ([EDITIONS.md](EDITIONS.md)), and the `[Unreleased]` entries of
   `CHANGELOG.md` are folded into `[0.4.1]`, so the draft's notes describe
   everything the pre-release contains. It becomes public when the
-  maintainer publishes the draft; nothing here publishes it.
+  maintainer publishes the draft; nothing here publishes it. **Update
+  (2026-09-30):** the release candidate is on `main`: PR #24 → #22 → #21,
+  merged with merge commits (no squash, no rebase), `main` = `c5fe692`,
+  whose tree is #24's head. CI #81 and Release #34 are green on it, and
+  Release #34 refreshed the v0.4.1 draft with that commit's 14 files
+  (STATUS snapshot 32). PR #23 was closed as superseded by #24. The draft is
+  still unpublished.
 * **Update (2026-09-24, later the same day):** the review follow-ups
   #9–#17 (#17, the QML part of the bundle gate, was found after this plan
   was written) are fixed on the branch `v0.4.1-review-followups`, which
@@ -89,6 +95,12 @@ in `pyproject.toml`, and the maintainer keeps the last word.
 > publish without re-running the workflow). A change under `src/` alone does
 > not start the Release workflow; run it by hand (**Actions → Release → Run
 > workflow** on `main`) so the draft is rebuilt from the newest commit.
+> The first `main` run of this refresh was Release #34 on `c5fe692`
+> (2026-09-30): it updated the existing draft 395349087 in place (four files
+> replaced, the six earlier names removed, 14 files uploaded) and its
+> *Verify the draft* step passed. A later commit that touches none of the
+> paths above (for example `docs/` only) leaves the draft on `c5fe692`, and
+> publishing then tags `c5fe692`, the commit the files were built from.
 
 1. **Prepare the release commit on `main`.** Set `project.version` in
    `pyproject.toml` to the new version (no `.dev` suffix). Move the
@@ -285,8 +297,9 @@ nothing with that number has been published.
 
 **What was checked on the release candidate (2026-09-27, Release run #23,
 PR #21 head `b753e17`, build commit `7cb1419`; STATUS snapshot 30).** The file
-names are those of that run, before the Desktop and Terminal editions; the
-same builds now carry the names in the publish checklist below.
+names are those of that run, before the Desktop and Terminal editions. Later
+builds, made from the changed packaging, carry the names in the publish
+checklist below; the Terminal Edition archives did not exist at that run.
 
 | File | Check | Result |
 | --- | --- | --- |
@@ -301,11 +314,15 @@ same builds now carry the names in the publish checklist below.
 | Secrets and private paths | token / private-key patterns in the bundles and the sdist (only PEM header strings inside Qt's TLS plug-ins); home-directory paths in the sdist are test fixtures (`/home/me`, `/home/anna`) | none found |
 | Version | `pyproject.toml`, `roomscope --version`, wheel / sdist names, `Info.plist`, `build_info.json` | all 0.4.1 |
 
-These checks cover the files built from `b753e17`. Commits added to the
-release candidate after it (the command-line presentation, `0f5418e` /
-`f5eb961`) are covered by CI and by the Release workflow's own bundle smoke
-tests on each platform, not by this download check: repeat the wheel check
-and step 3 below on the draft's files before publishing.
+These checks cover the files built from `b753e17`. The 14 commits added to
+the release candidate after it, up to #24's head `cf27b30` (among them the
+command-line presentation `0f5418e` / `f5eb961`, #23's first-run UX folded
+in by `cd45bf9`, the Desktop / Terminal split `bcea79a`, the release-file
+fixes `cccc682` / `f893cc7` and the exporter fix in `cf27b30`), are covered
+by CI and by the Release workflow's own bundle smoke tests on each platform
+(last: Release #34 on `c5fe692`, STATUS snapshot 32), not by this download
+check: repeat the wheel check and step 3 below on the draft's files before
+publishing.
 
 Known and harmless: the bundles carry `roomscope-0.4.1.dist-info/direct_url.json`
 with the CI runner's checkout path (`file:///Users/runner/work/...`), because
@@ -328,6 +345,12 @@ developer's machine or a secret.
    `roomscope-0.4.1.tar.gz`, `SHA256SUMS`, `cyclonedx.sbom.json`,
    `generated-bundle.lock`); the notes start with *RoomScope v0.4.1 — Early
    public pre-release for testing*.
+
+   **Steps 1 and 2 were done on 2026-09-30** (STATUS snapshot 32): `main` =
+   `c5fe692`, CI #81 and Release #34 green; the draft's target is `c5fe692`,
+   it holds exactly the 14 files above, and the workflow's *Verify the
+   draft* step compared its notes, sizes and digests with the run's files.
+   Steps 3 to 5 are the maintainer's.
 3. Recommended before publishing: download the DMG for your Mac, install it
    as [INSTALLATION.md](INSTALLATION.md) says, and open it once (the
    Gatekeeper steps included). This is the one check no workflow can make.
@@ -390,10 +413,10 @@ instead of the extra of a package that is not on PyPI.
 | Public flip of the repository (ARCHITECTURE_V1.md §9.1 checklist: description and topics, branch protection on `main`, CODEOWNERS present, private vulnerability reporting, labels, Discussions, pinned roadmap) | 1.0.0rc1 (recommended at the first candidate so it gets outside testing) | Repository public since 2026-09-24; CODEOWNERS is present; the other checklist items are repository settings not checked here (the issue templates use the labels `hardware-report` and `daw-report`, which GitHub adds only if they exist) |
 | Apple Developer ID + notarization, Windows Authenticode; or ship 1.0 unsigned with documentation | 1.0.0rc1 | Open; 0.x bundles are unsigned by design |
 | PyPI: register `roomscope`, configure trusted publishing, create the `pypi` environment with required reviewers, set `ROOMSCOPE_PUBLISH_PYPI=true`; give PyPI a README with absolute links | First version the maintainer wants on PyPI (earliest 0.5.0) | Open; readiness in §3d; the workflow stays off until then |
-| Publish the v0.4.1 draft as the first public pre-release | Now | Ready for the maintainer's click (§3c); not published |
+| Publish the v0.4.1 draft as the first public pre-release | Now | Ready for the maintainer's click (§3c); refreshed from `main` `c5fe692` by Release #34 on 2026-09-30; not published |
 | Validation campaign: rooms, reference instrument (REW as a comparison instrument only), who runs it | 1.0.0rc1 | Open; no hardware available near-term |
 | DCO sign-off requirement | Public flip | Open |
-| Dependabot PRs #3 / #4 (actions/checkout 4→7, actions/setup-python 5→7) | Any time | Merge when Dependabot has rebased them onto the SHA-pinned workflows and CI is green |
+| Dependabot PRs #3 / #4 (actions/checkout 4→7, actions/setup-python 5→7) | After v0.4.1 is published | Left alone while v0.4.1 is being finished, so the release workflow does not change major versions under it; then merge when Dependabot has rebased them onto the SHA-pinned workflows and CI is green |
 
 ## 6. Review follow-ups (2026-09-24)
 
