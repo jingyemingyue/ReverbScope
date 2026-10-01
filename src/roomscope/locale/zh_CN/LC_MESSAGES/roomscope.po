@@ -3958,7 +3958,7 @@ msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {thresho
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
 msgctxt "diagnostic"
-msgid "the audio device reported timing problems in this take; its decay and energy metrics are unreliable. Check the stream settings and repeat the measurement"
+msgid "the audio device reported timing problems in this take, so its decay and energy metrics are unreliable. Check the stream settings and repeat the measurement"
 msgstr "音频设备报告本次录音存在时序问题，衰减和能量指标不可靠。请检查音频流设置，然后重新测量"
 
 msgctxt "diagnostic"

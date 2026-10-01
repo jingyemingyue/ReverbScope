@@ -436,7 +436,7 @@ def _decay_unreliable_reasons(
     if device_timing_problems:
         reasons.append(
             diag(
-                "the audio device reported timing problems in this take; its decay and energy "
+                "the audio device reported timing problems in this take, so its decay and energy "
                 "metrics are unreliable. Check the stream settings and repeat the measurement"
             )
         )

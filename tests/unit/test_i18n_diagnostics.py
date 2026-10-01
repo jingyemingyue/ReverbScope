@@ -44,6 +44,17 @@ def test_english_display_is_the_stored_text() -> None:
         assert localize(template) == template
 
 
+def test_device_timing_reason_stays_chinese_when_joined_with_other_faults(zh: None) -> None:
+    from roomscope.core.pipeline import _decay_unreliable_reasons
+
+    reasons = _decay_unreliable_reasons("low", 2.0, True, device_timing_problems=True)
+    shown = localize("; ".join(reasons))
+    assert shown.startswith("音频设备报告本次录音")
+    assert "直达声检测置信度低" in shown
+    assert "录音削波" in shown
+    assert _english_left(shown) == []
+
+
 def test_every_catalogued_diagnostic_is_recognised(zh: None) -> None:
     """Each template, filled with plausible values, comes back in Chinese."""
     templates = _diagnostic_templates()
