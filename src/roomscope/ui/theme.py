@@ -135,6 +135,15 @@ def style_figure(fig: Figure) -> None:
                 tick.gridline.set_alpha(0.45)
         for text in ax.texts:
             text.set_color(fg)
+        zaxis = getattr(ax, "zaxis", None)
+        if zaxis is not None:
+            zaxis.label.set_color(fg)
+            zaxis.set_tick_params(colors=fg)
+            for name in ("xaxis", "yaxis", "zaxis"):
+                pane = getattr(getattr(ax, name), "pane", None)
+                if pane is not None:
+                    pane.set_facecolor(bg)
+                    pane.set_edgecolor(muted)
         legend = ax.get_legend()
         if legend is not None:
             legend.get_frame().set_facecolor(bg)

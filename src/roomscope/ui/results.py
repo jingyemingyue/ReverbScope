@@ -48,6 +48,7 @@ from roomscope.ui.plots import (
     plot_frequency_response,
     plot_impulse_response,
     plot_noise,
+    plot_placement_result,
     plot_reflections,
 )
 from roomscope.ui.state import MeasurementState
@@ -75,6 +76,13 @@ class _PlacementTab(QWidget):
         self.summary = QLabel("")
         self.summary.setWordWrap(True)
         layout.addWidget(self.summary)
+        self.figure = Figure(figsize=(7.2, 3.6), dpi=100)
+        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.canvas.setMinimumHeight(260)
+        self.scene_hint = QLabel("")
+        self.scene_hint.setWordWrap(True)
+        layout.addWidget(self.canvas, 2)
+        layout.addWidget(self.scene_hint)
         self.table = QTableWidget(0, 4)
         self.table.setHorizontalHeaderLabels([_("Figure"), _("Value"), _("Validity"), _("Note")])
         self.table.horizontalHeader().setStretchLastSection(True)
@@ -105,6 +113,8 @@ class _PlacementTab(QWidget):
             self.table.setRowCount(0)
             self.candidates.setRowCount(0)
             self.notes.setPlainText("")
+            self.scene_hint.setText(plot_placement_result(self.figure, None))
+            self.canvas.draw_idle()
             return
         assumed = _(" (assumed)") if placement.temperature_assumed else ""
         self.summary.setText(
@@ -161,6 +171,8 @@ class _PlacementTab(QWidget):
         if placement.coordinates_withheld:
             notes.append(localize(placement.coordinates_withheld))
         self.notes.setPlainText("\n".join(notes))
+        self.scene_hint.setText(plot_placement_result(self.figure, placement))
+        self.canvas.draw_idle()
 
 
 class _PlotTab(QWidget):

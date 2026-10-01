@@ -22,6 +22,64 @@ def test_stylesheet_keeps_chinese_section_labels_and_shortcut_badges() -> None:
     assert "font-family" not in report
 
 
+def test_placement_picture_is_a_schematic_not_a_room() -> None:
+    """The 3D picture may show the tapes and, once solved, the position ring.
+
+    It must not invent a room. In Chinese, the labels stay in Chinese.
+    """
+    import numpy as np
+    from matplotlib.figure import Figure
+
+    from roomscope.i18n import activate
+    from roomscope.models.result import PlacementLength, PlacementResult, Validity
+    from roomscope.ui.plots import plot_placement_illustration, plot_placement_result
+    from tests.zh_tokens import english_words
+
+    fig = Figure()
+    hint = plot_placement_illustration(fig, distance_m=None, mic_height_m=None)
+    assert "not your room" in hint
+    assert fig.axes and fig.axes[0].name == "3d"
+
+    measured = PlacementResult(
+        tier=2,
+        candidates=(),
+        source_height_m=PlacementLength(1.2, Validity.VALID),
+        ceiling_height_m=PlacementLength(3.1, Validity.VALID),
+        horizontal_separation_m=PlacementLength(1.5, Validity.VALID),
+        speed_of_sound_m_s=343.0,
+        temperature_c=20.0,
+        temperature_assumed=False,
+        distance_m=1.8,
+        mic_height_m=0.4,
+    )
+    fig = Figure()
+    hint = plot_placement_result(fig, measured)
+    assert "ring" in hint and "No wall" in hint
+    rings = []
+    for line in fig.axes[0].lines:
+        _x, _y, z = line.get_data_3d()
+        if len(_x) > 40 and abs(float(np.mean(z)) - 1.2) < 1e-6:
+            rings.append(line)
+    assert len(rings) == 1
+
+    activate("zh_CN")
+    try:
+        fig = Figure()
+        hints = [
+            plot_placement_illustration(fig, distance_m=None, mic_height_m=None),
+            plot_placement_illustration(fig, distance_m=2.0, mic_height_m=None),
+            plot_placement_illustration(fig, distance_m=2.0, mic_height_m=1.1),
+            plot_placement_result(fig, measured),
+            plot_placement_result(fig, None),
+        ]
+        texts = [t.get_text() for t in fig.findobj(lambda o: hasattr(o, "get_text"))]
+        texts = [text for text in [*texts, *hints] if text]
+        found = [word for text in texts for word in english_words(text)]
+        assert found == [], found
+    finally:
+        activate("en")
+
+
 def test_decay_and_fr_plots_use_linestyle_not_only_colour(short_sweep) -> None:
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)])
     recording = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
