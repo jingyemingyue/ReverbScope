@@ -6,6 +6,30 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 34: 2026-10-01 — **software beta 0.5.0b1 prepared.** This is not
+0.5.0. The release plan's 0.5.0 still needs a dated hardware-matrix PASS, and
+every cell is still empty. v0.4.1 stays the published pre-release at
+`d97822a`; this snapshot does not republish it.
+
+**What the beta contains, on top of 0.4.1** (CHANGELOG `[0.5.0b1]`): ISO
+3382-1 C50, C80, D50 and centre time from the same decay truncation; one
+profile notice when broadband C50 or C80 is a poor fit for that recording
+(not a grade); the rotatable placement picture; GUI failures, About and the
+two-clock warning in the interface language; command-line wrapping, quoting
+and colour fixes.
+
+**What was run** (this container: Linux x86_64, CPython 3.12.14, the `dev`
+and `gui` extras, no audio device): `ruff check`, `ruff format --check`,
+`mypy` (strict, 79 files), `check_doc_links.py`, `check_src_safety.py`.
+Pytest of everything except `tests/ui` (this container has no `libEGL.so.1`,
+so PySide6 does not import): core + models branch coverage **90%** (required
+85%). Five golden demo checks and two PySide6 import checks failed only
+because Qt cannot load here; the demo diff starts at the "install PySide6"
+next-step line, which CI (where Qt loads) does not print. The GUI suite was
+not run in this container. **Not run:** any real audio interface, microphone
+or DAW; a bundle on a person's own computer; publishing the `v0.5.0b1` draft
+(that is the maintainer's click after CI and Release are green).
+
 Snapshot 33: 2026-09-30 — **v0.4.1 final merge close-out; the draft
 contains the testing limitations from PR #26.** PR #25 (`90c316b`) was
 merged as `932885e`, then PR #26 (`4f91e62`) as
@@ -747,6 +771,9 @@ algebra and the refusals, not the acoustics of any real surface.
   D50 and centre time are single-position energy ratios from the same
   truncation as the decay (methodology §3b); they are not spatially averaged
   and they are not a room score. They are withheld below 20 dB of decay range.
+  A recording profile may add one notice from broadband C50 or C80
+  (methodology §8). That threshold is an engineering choice for the recording,
+  not an ISO limit and not a grade.
 * Direct sound = strongest deconvolved sample; a reflection stronger than the
   direct sound would be mis-identified (confidence margin does not catch it).
 * PortAudio buffer under/overflows are reported (result warning and a
@@ -840,13 +867,12 @@ were not copied. `packaging/licenses/` holds verbatim license *texts*
 
 ## Next recommended milestone
 
-See [RELEASE_PLAN.md](RELEASE_PLAN.md): v0.4.1 (a draft Release; #9–#17
-are closed on `main`) is published when the maintainer decides, as the first
-public pre-release for testers (checklist in RELEASE_PLAN.md §3c); the
-release candidate (PRs #21, #22, #24) is on `main` since 2026-09-30
-(`c5fe692`, snapshot 32) and ships in it (CHANGELOG `[0.4.1]`). Then v0.5.0 once the hardware
-matrix has its first dated PASS rows, then 1.0.0rc1 when every MUST item of ARCHITECTURE_V1.md §3.1 is
-closed. API and schema versions stay unfrozen until then.
+See [RELEASE_PLAN.md](RELEASE_PLAN.md): **0.5.0b1** is the software beta
+(early/late energy, profile clarity notices, the placement picture). It does
+not meet the 0.5.0 exit criteria. **0.5.0** is still the first version with
+dated hardware-matrix PASS rows. Then 1.0.0rc1 when every MUST item of
+ARCHITECTURE_V1.md §3.1 is closed. API and schema versions stay unfrozen
+until then.
 
 Maintainer-only actions that this work does not do: publishing a GitHub
 Release (which creates the tag), a PyPI upload, signing, a license change,

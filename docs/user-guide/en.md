@@ -158,7 +158,9 @@ synthetic room. Nothing is sent to a loudspeaker.
 ## Reading a result
 
 Each metric has a validity flag. `insufficient_decay_range` means the number is
-withheld, not that it is zero. There is no single score.
+withheld, not that it is zero. There is no single score. A recording profile
+may add one notice when broadband C50 or C80 is a poor fit for that kind of
+recording; the threshold is an engineering choice for the profile, not a grade.
 
 Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The UI shows them

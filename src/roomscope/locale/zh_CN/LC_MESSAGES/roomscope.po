@@ -2,7 +2,7 @@
 # English is the source language. Numbers stay ASCII; units are not translated.
 msgid ""
 msgstr ""
-"Project-Id-Version: roomscope 0.4.1\n"
+"Project-Id-Version: roomscope 0.5.0b1\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -1302,6 +1302,9 @@ msgstr "信息"
 
 msgid "reverberation"
 msgstr "混响"
+
+msgid "clarity"
+msgstr "清晰度"
 
 msgid "noise"
 msgstr "噪声"
@@ -3932,4 +3935,25 @@ msgstr "{metric} {value:.1f} %，对比 {other:.1f} %"
 msgctxt "diagnostic"
 msgid "{metric} {seconds:.3f} s vs {other:.3f} s"
 msgstr "{metric} {seconds:.3f} s，对比 {other:.3f} s"
+
+msgid "Early sound is not clearly ahead of the later room sound (C50 {value:.1f} dB, below {threshold:.0f} dB). For close-miked recording this can blur the source; move the microphone closer or add absorption, then measure again. This is one position, not a room grade."
+msgstr "早期声没有明显压过后面的房间声（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。近距离拾音时声源可能发糊；把话筒移近，或增加吸声后再测一次。这是一个位置的结果，不是房间评分。"
+
+msgid "Late room sound is weak (C80 {value:.1f} dB, above {threshold:.0f} dB). This is one position, not a room grade."
+msgstr "后期房间声偏少（C80 {value:.1f} dB，高于 {threshold:.0f} dB）。这是一个位置的结果，不是房间评分。"
+
+msgid "Speech clarity is low for close vocals (C50 {value:.1f} dB, below {threshold:.0f} dB). Diction may blur between words; move the microphone closer or add absorption. This is one position, not a room grade."
+msgstr "对人声近距离拾音来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。字与字之间可能发糊；把话筒移近，或增加吸声。这是一个位置的结果，不是房间评分。"
+
+msgid "Speech clarity is low for voice-over (C50 {value:.1f} dB, below {threshold:.0f} dB). Narration usually wants the first 50 ms to hold more of the energy; move the microphone closer or add absorption. This is one position, not a room grade."
+msgstr "对旁白来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。旁白通常希望前 50 毫秒占更多能量；把话筒移近，或增加吸声。这是一个位置的结果，不是房间评分。"
+
+msgid "Musical clarity is low for acoustic guitar (C80 {value:.1f} dB, below {threshold:.0f} dB). The note may sit in the room rather than in the instrument; move the microphone closer or add absorption. This is one position, not a room grade."
+msgstr "对原声吉他来说，音乐清晰度偏低（C80 {value:.1f} dB，低于 {threshold:.0f} dB）。音符可能落在房间里而不是乐器上；把话筒移近，或增加吸声。这是一个位置的结果，不是房间评分。"
+
+msgid "Late room sound is weak for a room microphone (C80 {value:.1f} dB, above {threshold:.0f} dB). A room microphone usually wants more of the room after 80 ms; move it farther from the source or into a livelier part of the room. This is one position, not a room grade."
+msgstr "作为房间话筒，后期房间声偏少（C80 {value:.1f} dB，高于 {threshold:.0f} dB）。房间话筒通常希望 80 毫秒之后还有更多房间声；把话筒移离声源，或换到更活的位置。这是一个位置的结果，不是房间评分。"
+
+msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {threshold:.0f} dB). Some late sound suits a choir, but this much will blur diction. This is one position, not a room grade."
+msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 

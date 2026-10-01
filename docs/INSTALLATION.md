@@ -250,7 +250,7 @@ Python 3.12 or newer. Download `roomscope-<version>-py3-none-any.whl`, then:
 ```bash
 python3 -m venv roomscope-env
 source roomscope-env/bin/activate          # Windows: roomscope-env\Scripts\activate
-pip install "./roomscope-0.4.1-py3-none-any.whl[gui]"
+pip install "./roomscope-0.5.0b1-py3-none-any.whl[gui]"
 roomscope --help
 roomscope gui                              # or: roomscope-gui
 ```
@@ -265,7 +265,7 @@ roomscope show demo/
 ```
 
 `roomscope-<version>.tar.gz` is the source archive: `pip install
-"./roomscope-0.4.1.tar.gz[gui]"` builds the same wheel locally.
+"./roomscope-0.5.0b1.tar.gz[gui]"` builds the same wheel locally.
 
 ### Developer install (from Git)
 

@@ -20,7 +20,7 @@ from roomscope.interpretation.profiles import (
     profile_title,
 )
 from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import Reflection
+from roomscope.models.result import EnergyMetric, Reflection, Validity
 from tests.conftest import make_rir
 
 ALL_PROFILES = [
@@ -150,6 +150,54 @@ def test_profile_messages_name_their_recording_kind() -> None:
     assert "ensemble" in messages["choir"].lower()
     # The measured value is the same, but the advice differs per source.
     assert len(set(messages.values())) == 6
+
+
+def test_clarity_notice_follows_the_profile_and_ignores_an_invalid_ratio(
+    short_sweep: SweepSettings,
+) -> None:
+    """C50/C80 advice is a recording choice, not a grade, and only a VALID ratio counts."""
+    from dataclasses import replace
+
+    sr = short_sweep.sample_rate
+    ir = make_rir(sr, rt60_s=0.4, diffuse_level=0.02)
+    rec = synthetic_recording(short_sweep, ir, noise_rms=2e-5)
+    result = analyze(rec, Reference.from_settings(short_sweep))
+
+    def with_energy(**fields: EnergyMetric):
+        band = replace(result.decay.broadband, **fields)
+        return replace(result, decay=replace(result.decay, broadband=band))
+
+    low = EnergyMetric("c50", -1.0, "dB", Validity.VALID)
+    between = EnergyMetric("c50", 3.0, "dB", Validity.VALID)
+    high_c80 = EnergyMetric("c80", 10.0, "dB", Validity.VALID)
+    withheld = EnergyMetric("c50", None, "dB", Validity.INSUFFICIENT_RANGE, reason="short")
+
+    voiced = with_energy(c50=low)
+    voice = [f for f in interpret(voiced, "voiceover") if f.topic == "clarity"]
+    vocal = [f for f in interpret(voiced, "vocal") if f.topic == "clarity"]
+    generic = [f for f in interpret(voiced, "generic") if f.topic == "clarity"]
+    drums = [f for f in interpret(voiced, "drums") if f.topic == "clarity"]
+    assert voice and voice[0].message_id == "clarity.low"
+    assert voice[0].evidence["threshold_db"] == 4.0
+    assert "voice-over" in voice[0].message.lower()
+    assert "not a room grade" in voice[0].message
+    assert vocal and vocal[0].evidence["threshold_db"] == 2.0
+    assert generic and generic[0].evidence["threshold_db"] == 0.0
+    assert drums == []
+
+    middling = with_energy(c50=between)
+    assert any(f.topic == "clarity" for f in interpret(middling, "voiceover"))
+    assert not any(f.topic == "clarity" for f in interpret(middling, "vocal"))
+    assert not any(f.topic == "clarity" for f in interpret(middling, "generic"))
+
+    dry = with_energy(c80=high_c80)
+    room = [f for f in interpret(dry, "room_mic") if f.topic == "clarity"]
+    assert room and room[0].message_id == "clarity.high"
+    assert "room microphone" in room[0].message.lower()
+    assert not any(f.topic == "clarity" for f in interpret(dry, "drums"))
+
+    quiet = with_energy(c50=withheld)
+    assert not any(f.topic == "clarity" for f in interpret(quiet, "voiceover"))
 
 
 def test_profile_decay_messages_differ(short_sweep: SweepSettings) -> None:

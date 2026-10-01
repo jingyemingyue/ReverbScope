@@ -41,6 +41,11 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
   (2026-09-30):** the draft was published as a pre-release, not as the latest
   release. Tag `v0.4.1` points at `d97822a` and the 14 assets stayed. An
   install on a person's own computer (checklist step 3) is still open.
+* **Software beta (2026-10-01):** `0.5.0b1` packages what landed after 0.4.1
+  (early/late energy, profile clarity notices, the placement picture, the
+  desktop and command-line polish). It does **not** meet the 0.5.0 row:
+  no hardware cell is PASS, so 0.5.0 itself is not cut. Publishing
+  `v0.5.0b1` does not republish `v0.4.1`.
 * **Update (2026-09-24, later the same day):** the review follow-ups
   #9–#17 (#17, the QML part of the bundle gate, was found after this plan
   was written) are fixed on the branch `v0.4.1-review-followups`, which
@@ -64,6 +69,7 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
 | --- | --- | --- | --- |
 | **0.4.0** | First pre-release: everything on `main` today, as a draft Release with unsigned bundles for the maintainer's own testing | CI green on Linux / macOS / Windows and Python 3.12–3.14; `ruff`, `mypy`, the schema job and the bundle gates pass; the license bundle carries the verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts; `CHANGELOG.md` has a `[0.4.0]` section; `docs/STATUS.md` has a dated snapshot | Any hardware result; a person installing a bundle on macOS / Windows; PyPI; public availability |
 | **0.4.x** | Software readiness before community hardware validation (the maintainer's phase definition, 2026-09-24): the review follow-ups #9–#17 (all closed in 0.4.1), packaging, device diagnostics, the GUI, the DAW guide and the community report templates | CI and the Release workflow green on the release commit; every new behaviour has a synthetic or scripted test; `CHANGELOG.md` names what changed; no hardware or DAW claim | Any hardware or DAW result; signing; PyPI |
+| **0.5.0b1** | Software beta: ship the single-microphone algorithm and the desktop presentation that landed after 0.4.1, still without a hardware claim | CI and the Release workflow green on the release commit; every new behaviour has a synthetic test; CHANGELOG names the version; the notes say this is not 0.5.0 | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI |
 | **0.5.0** | "Trusted by a human": the first version whose Standalone Mode and DAW workflow were run on real hardware at least once | One dated PASS row per cell of the hardware matrix on at least one platform (device enumeration, sample-rate negotiation, channel mapping, loopback capture, Stop during playback, a full Standalone measurement, the same signal through one DAW); #12 and #13 (loopback time origin, real-time callback) closed; #14 (zh-CN catalog complete, safety warning translated) closed; #15 (ISO 3382-2 table source) closed | The validation campaign; API / schema freeze; signing |
 | **1.0.0rc1** | Freeze and prove (ARCHITECTURE_V1.md §10, row 1.0-rc) | No open MUST item of §3.1: hardware matrix executed at least once per platform (M10); validation campaign published with its data (M11); signed bundles or an explicit maintainer decision to ship unsigned (M9); public-repository checklist executed (M13, §9.1); API and schema integers frozen; SECURITY / CONTRIBUTING / STATUS updated for the freeze; PyPI pre-release if trusted publishing is configured | — |
 | **1.0.0** | Release | Fixes from the candidate only; release notes name the validation results and the known limitations | — |

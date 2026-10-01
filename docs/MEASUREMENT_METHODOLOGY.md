@@ -507,21 +507,23 @@ v0.1 so profiles can be added without touching the DSP; every profile shares
 the measurement-integrity checks — low direct-sound confidence, clipping,
 insufficient decay range — and the low-band / mid-band imbalance rule
 (low bands decaying > 1.5× slower than mid bands), and keeps its own
-thresholds and wording for reflections, decay, noise and resonances.
-Thresholds are coarse engineering choices and are stated in each finding's
-evidence.
+thresholds and wording for reflections, decay, clarity (C50 or C80), noise
+and resonances. Thresholds are coarse engineering choices and are stated in
+each finding's evidence. A clarity notice is not a room grade and not an
+ISO limit: it fires only when that ratio is VALID, and it says what the
+number means for the chosen kind of recording.
 
 The seven profiles and their section thresholds:
 
-| Profile | Reflection (≥ dB re direct, ≤ ms) | RT60 notice / warning (s) | Notes |
-| --- | --- | --- | --- |
-| generic | −10 / 30 | 0.6 / 1.0 | Default; any close-miked recording |
-| vocal | −12 / 25 | 0.5 / 0.8 | Close-miked lead or backing vocals; noise advice assumes compression |
-| voiceover | −14 / 20 | 0.4 / 0.7 | Voice-over, narration, audiobook; flags the weakest reflections |
-| acoustic_guitar | −10 / 30 | 0.7 / 1.1 | Comb filtering from early reflections |
-| drums | −6 / 20 | 0.8 / 1.2 | Only a hard slap is reported; noise findings skipped (the kit masks the floor) |
-| room_mic | −5 / 40 | 0.9 / 1.4 | The room is the instrument; long decay is not automatically a defect |
-| choir | −12 / 30 | 0.8 / 1.3 | Ensembles: decay helps ambience but blurs diction |
+| Profile | Reflection (≥ dB re direct, ≤ ms) | RT60 notice / warning (s) | Clarity notice | Notes |
+| --- | --- | --- | --- | --- |
+| generic | −10 / 30 | 0.6 / 1.0 | C50 < 0 dB | Default; any close-miked recording |
+| vocal | −12 / 25 | 0.5 / 0.8 | C50 < 2 dB | Close-miked lead or backing vocals; noise advice assumes compression |
+| voiceover | −14 / 20 | 0.4 / 0.7 | C50 < 4 dB | Voice-over, narration, audiobook; flags the weakest reflections |
+| acoustic_guitar | −10 / 30 | 0.7 / 1.1 | C80 < 0 dB | Comb filtering from early reflections |
+| drums | −6 / 20 | 0.8 / 1.2 | none | Only a hard slap is reported; noise and clarity findings skipped (the kit wants the room) |
+| room_mic | −5 / 40 | 0.9 / 1.4 | C80 > 8 dB | The room is the instrument; long decay is not a defect; a very dry ratio is |
+| choir | −12 / 30 | 0.8 / 1.3 | C50 < −2 dB | Ensembles: decay helps ambience but blurs diction |
 
 The default is `generic`; `roomscope analyze --profile vocal` and the GUI
 profile selector pick another. The report prints the profile name

@@ -36,6 +36,7 @@ def topic_text(topic: str) -> str:
     """Translated finding topic."""
     return {
         "reverberation": _("reverberation"),
+        "clarity": _("clarity"),
         "noise": _("noise"),
         "early_reflections": _("early reflections"),
         "low_frequency": _("low frequency"),
