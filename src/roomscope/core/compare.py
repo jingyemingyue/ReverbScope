@@ -25,6 +25,7 @@ from roomscope.models.result import (
     AnalysisResult,
     BandDecay,
     DecayMetric,
+    EnergyMetric,
     FrequencyResponseResult,
     PlacementLength,
     Validity,
@@ -136,7 +137,8 @@ def _delta_from_values(
 
 
 def _side_reasons(
-    baseline: DecayMetric | PlacementLength, candidate: DecayMetric | PlacementLength
+    baseline: DecayMetric | EnergyMetric | PlacementLength,
+    candidate: DecayMetric | EnergyMetric | PlacementLength,
 ) -> list[str]:
     """Why each side that is not VALID cannot be compared, one sentence per side."""
     reasons: list[str] = []
@@ -179,6 +181,27 @@ def _decay_metric_delta(name: str, baseline: DecayMetric, candidate: DecayMetric
     )
 
 
+def _energy_metric_delta(name: str, baseline: EnergyMetric, candidate: EnergyMetric) -> MetricDelta:
+    """A clarity, definition or centre-time delta. Valid only when both sides are."""
+    if baseline.validity is Validity.VALID and candidate.validity is Validity.VALID:
+        return _delta_from_values(
+            name,
+            baseline.value,
+            candidate.value,
+            unit=baseline.unit,
+            time=baseline.unit == "s",
+        )
+    reasons = _side_reasons(baseline, candidate)
+    return MetricDelta(
+        name=name,
+        baseline=baseline.value,
+        candidate=candidate.value,
+        validity=Validity.NOT_COMPARABLE,
+        reason="; ".join(reasons) if reasons else diag("metrics are not both VALID"),
+        unit=baseline.unit,
+    )
+
+
 def _band_decay_deltas(prefix: str, baseline: BandDecay, candidate: BandDecay) -> list[MetricDelta]:
     return [
         _decay_metric_delta(f"{prefix}.edt", baseline.edt, candidate.edt),
@@ -210,8 +233,23 @@ def _band_decay_deltas(prefix: str, baseline: BandDecay, candidate: BandDecay) -
 
 def _compare_decay(baseline: AnalysisResult, candidate: AnalysisResult) -> tuple[MetricDelta, ...]:
     """Broadband and per-band deltas; a band present on one side only is reported
-    as ``not_comparable`` whichever side lacks it (#9)."""
-    items = _band_decay_deltas("broadband", baseline.decay.broadband, candidate.decay.broadband)
+    as ``not_comparable`` whichever side lacks it (#9).
+
+    Early/late energy is compared on the broadband response only. Per-band
+    ratios stay in each result; averaging them into this table would mix a
+    speech ratio with a band the excitation may barely cover.
+    """
+    left = baseline.decay.broadband
+    right = candidate.decay.broadband
+    items = _band_decay_deltas("broadband", left, right)
+    items.extend(
+        [
+            _energy_metric_delta("broadband.c50", left.c50, right.c50),
+            _energy_metric_delta("broadband.c80", left.c80, right.c80),
+            _energy_metric_delta("broadband.d50", left.d50, right.d50),
+            _energy_metric_delta("broadband.centre_time", left.centre_time, right.centre_time),
+        ]
+    )
     by_label = {band.band_label: band for band in candidate.decay.bands}
     for band in baseline.decay.bands:
         other = by_label.get(band.band_label)

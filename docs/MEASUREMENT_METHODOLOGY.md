@@ -308,6 +308,49 @@ standard's other clause 4 conditions (distances between positions and from
 surfaces, source height and so on) are not checked.
 Multi-position *placement* stays out of 1.0 (MEASUREMENT_METHODOLOGY.md §7a).
 
+### 3b. Early and late energy: C50, C80, D50, centre time
+
+**Source.** ISO 3382-1:2009 [9] defines clarity, definition and centre time from
+one impulse response (clause numbers were not read from the standard text;
+the formulas below are the ones the room-acoustics literature restates).
+Sound strength G is not computed: it needs a calibrated source power, which
+RoomScope does not have. Lateral energy fractions and IACC need a
+figure-of-eight or a dummy head. STI is not computed.
+
+**Procedure** (`core/decay.py`, on the same squared response, onset, Lundeby
+truncation and late-decay compensation as the Schroeder curve). Time zero is
+the detected direct-sound sample. Energy from the onset up to that sample
+(the rise, and for a band the time-reversed filter's pre-ringing of the
+direct sound) is counted at time zero. With `E_early` the energy before the
+split and `E_late` the energy from the split through the truncation plus the
+compensated tail:
+
+* `C50 = 10·log10(E_early / E_late)` at 50 ms, `C80` at 80 ms (dB).
+* `D50 = 100 · E_early / (E_early + E_late)` at 50 ms (percent).
+* Centre time `Ts` is the energy-weighted mean time (seconds), including the
+  first moment of the compensated tail.
+
+**Validity.** A ratio is reported only when the decay range (loudest block
+to the noise floor) is at least 20 dB, the same floor EDT already uses.
+Hak et al. [17] publish a per-parameter impulse-to-noise table; that table
+was not re-read, so it is not copied here. If the truncation point is not
+after the early window, that ratio is `not_computed` and the reason says the
+late energy was not measured. A rejected Lundeby estimate that moves C50 or
+C80 by more than 1 dB, D50 by more than 5 percentage points, or `Ts` by more
+than 10 ms marks that parameter unreliable. Those three numbers are the
+just-noticeable differences commonly quoted for the parameters; the clauses
+were not read from the standard, and RoomScope uses them only as a
+truncation-sensitivity gate, never to call a change significant. The B·T
+filter warning marks the band's ratios unreliable for the same reason it
+marks T. A non-straight T20/T30 does **not** withdraw a ratio: curvature is
+a statement about the reverberation-time fit.
+
+**What is not claimed.** The numbers are ratios of energy. They are not a
+room score, not speech intelligibility, and not spatially averaged.
+`average_decay` still averages VALID T values only. A comparison reports
+broadband C50, C80, D50 and `Ts` only when both sides are VALID; per-band
+ratios stay in each result.
+
 ## 4. Frequency response
 
 **Source.** Standard FFT of the impulse response; fractional-octave
@@ -492,7 +535,9 @@ room-mode identification, no plug-in hosting. Spatial averaging of T values
 is offered as a SHOULD (`average_decay`); it never averages decay curves.
 
 No room geometry beyond the vertical axis of §7a: no coordinates, no room
-length or width, and no wall is ever named. The published method for the full
+length or width, and no wall is ever named. No speech-intelligibility index,
+no sound strength, and no room score: C50, C80, D50 and centre time (§3b)
+are energy ratios from one position. The published method for the full
 problem — room shape from echoes / echo sorting, Dokmanić et al. (2013) [21] —
 needs a microphone array or several measurement positions, which RoomScope
 does not require of its users. Two microphone positions with a fixed
@@ -536,6 +581,11 @@ just-noticeable difference for T that ISO 3382-1 gives (about 5 %; clause
 not verified against the standard text) and never calls a change
 "significant" on its own: single-position repeatability is not established
 by one pair.
+
+Early/late energy. Broadband C50, C80, D50 and centre time are compared
+with the same rule (both sides VALID, otherwise `not_comparable`). Per-band
+ratios are not differenced. The 1 dB / 5 percentage-point / 10 ms figures
+in §3b are truncation gates, not a judgement of the pair.
 
 Frequency response. Each raw magnitude curve is first smoothed on its own
 (linear, sub-hertz) frequency grid with the coarser of the two

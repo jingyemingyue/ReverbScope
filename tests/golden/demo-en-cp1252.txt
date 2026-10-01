@@ -14,6 +14,7 @@ Files written
 
 Position A  close to the desk and the side wall
   Reverberation       [WARN] RT60 # s (T30) | EDT # s
+  Clarity             [OK] C50 # dB | C80 # dB | D50 # %
   Early reflections   [WARN] strongest # dB at # ms | # above # dB
   Low end             [WARN] potential resonances at # Hz (# dB)
   Noise floor         [WARN] # dBFS RMS | mains hum at # Hz
@@ -21,6 +22,7 @@ Position A  close to the desk and the side wall
 
 Position B  moved # m back from the desk
   Reverberation       [WARN] RT60 # s (T30) | EDT # s
+  Clarity             [OK] C50 # dB | C80 # dB | D50 # %
   Early reflections   [OK] strongest # dB at # ms | # above # dB
   Low end             [WARN] potential resonances at # Hz (# dB)
   Noise floor         [WARN] # dBFS RMS | mains hum at # Hz
@@ -28,6 +30,7 @@ Position B  moved # m back from the desk
 
 Comparison A -> B
   Reverberation       [OK] RT60 # s -> # s (# %)
+  Clarity             [OK] C50 # dB -> # dB | C80 # dB -> # dB
   Early reflections   [OK] # gone | # new | # at both
   Low end             [OK] at both: # Hz
   Noise floor         [OK] # -> # dBFS (# dB)

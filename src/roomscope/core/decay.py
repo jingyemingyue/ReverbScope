@@ -96,6 +96,20 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
      (:meth:`~roomscope.models.result.DecayResult.with_all_unreliable`), e.g.
      for a low direct-sound confidence or a clipped recording.
 
+7. **Early/late energy** (ISO 3382-1 clarity, definition and centre time; the
+   clause numbers were not read from the standard text). From the same onset,
+   truncation and late-decay compensation as the Schroeder curve:
+   ``C50`` and ``C80`` are ``10 log10(E_early / E_late)`` at 50 ms and 80 ms
+   after the direct sound, ``D50`` is ``100 * E_early / (E_early + E_late)``
+   at 50 ms (percent), and centre time ``Ts`` is the energy-weighted mean
+   time. Energy before the direct-sound sample is counted at time zero (it is
+   the rise, or a band filter's pre-ringing of the direct sound). A parameter
+   is reported only when the decay range is at least
+   ``ENERGY_MIN_DECAY_RANGE_DB`` (20 dB, the same floor as EDT) and the
+   truncation point is after the early window. Sound strength ``G`` is not
+   computed: it needs a calibrated source. These are ratios, not a room score,
+   and ``average_decay`` does not average them.
+
    The estimated RT60 is the VALID T30, else the VALID T20, else none.
 """
 
@@ -125,6 +139,7 @@ from roomscope.models.result import (
     BandDecay,
     DecayMetric,
     DecayResult,
+    EnergyMetric,
     ExcitationBand,
     Validity,
 )
@@ -167,6 +182,19 @@ _NOISE_REACHED_DB = 5.0
 #: With a rejected Lundeby estimate, metrics that change by more than this
 #: fraction between the preliminary and the rejected truncation are unreliable.
 TRUNCATION_SENSITIVITY = 0.05
+#: Early/late ratios need the tail, so they are withheld below the same decay
+#: range EDT already requires. Not Hak et al.'s per-parameter INR table [17],
+#: which was not re-read; 20 dB is the floor already used for EDT.
+ENERGY_MIN_DECAY_RANGE_DB = 20.0
+C50_SPLIT_S = 0.050
+C80_SPLIT_S = 0.080
+#: Truncation-sensitivity gates, not a claim that a change is audible. The
+#: numbers are the just-noticeable differences commonly quoted for C80 (1 dB),
+#: D50 (5 percentage points) and centre time (10 ms). The clauses were not
+#: read from ISO 3382-1; a single pair of sessions is never called significant.
+ENERGY_C_SENSITIVITY_DB = 1.0
+ENERGY_D50_SENSITIVITY_PERCENT = 5.0
+ENERGY_TS_SENSITIVITY_S = 0.010
 #: Non-straight decay (ISO 3382-2:2008 Annex B measures). T20 and T30 are
 #: both marked unreliable when |C| exceeds
 #: ``max(MAX_CURVATURE_PERCENT, CURVATURE_SPREAD_PERCENT / sqrt(B * T30))``;
@@ -203,8 +231,9 @@ DECAY_METHOD = (
     "ISO 3382-1 onset (-20 dB) per band; Schroeder backward integration with Lundeby "
     "noise truncation (plausibility-checked) and late-decay compensation; EDT/T20/T30 by "
     "least-squares fit per ISO 3382-1, fits starting after the direct sound; straightness "
-    "check with xi and C (ISO 3382-2 Annex B); time-reversed Butterworth IEC 61260-1 "
-    "base-10 octave-band filtering"
+    "check with xi and C (ISO 3382-2 Annex B); C50, C80, D50 and centre time from the "
+    "same truncated energy; time-reversed Butterworth IEC 61260-1 base-10 octave-band "
+    "filtering"
 )
 
 
@@ -769,6 +798,226 @@ def _straightness_check(
     return checked[0], checked[1], curvature, warnings
 
 
+def _tail_compensation(trunc: TruncationEstimate, sample_rate: int) -> tuple[float, float]:
+    """Energy and first moment of the extrapolated tail, in sample-power units.
+
+    The moment is ``∫ u p(u) du`` from the truncation instant, times the sample
+    rate, so it is added to ``Σ t·h²`` after ``energy * t_truncation``. Same
+    exponential as the Schroeder compensation. ``(0, 0)`` when there is no
+    negative late slope.
+    """
+    slope = trunc.late_slope_db_per_s
+    if slope is None or not np.isfinite(slope) or slope >= 0.0:
+        return 0.0, 0.0
+    if not np.isfinite(trunc.noise_floor_db):
+        return 0.0, 0.0
+    p_c = 10.0 ** (trunc.noise_floor_db / 10.0)
+    beta = slope * np.log(10.0) / 10.0
+    energy = p_c * (-1.0 / beta) * sample_rate
+    moment = p_c * sample_rate / (beta * beta)
+    if not np.isfinite(energy) or not np.isfinite(moment) or energy < 0.0:
+        return 0.0, 0.0
+    return float(energy), float(moment)
+
+
+def _insufficient_energy(available_db: float) -> tuple[EnergyMetric, ...]:
+    reason = diag(
+        "Insufficient decay range for an early/late energy ratio: {available:.1f} dB "
+        "available, {needed:.0f} dB needed",
+        available=available_db,
+        needed=ENERGY_MIN_DECAY_RANGE_DB,
+    )
+    specs = (("C50", "dB"), ("C80", "dB"), ("D50", "%"), ("Ts", "s"))
+    return tuple(
+        EnergyMetric(name, None, unit, Validity.INSUFFICIENT_RANGE, reason) for name, unit in specs
+    )
+
+
+def _split_index(origin: int, split_s: float, sample_rate: int) -> int:
+    """First sample at or after ``split_s`` measured from ``origin``."""
+    return origin + int(np.round(split_s * sample_rate))
+
+
+def _early_late(
+    power: FloatArray,
+    onset: int,
+    trunc_abs: int,
+    split: int,
+    compensation: float,
+) -> tuple[float, float] | None:
+    """``(early, late)`` sample-power sums, or ``None`` when the split is unusable."""
+    if split <= onset or split >= trunc_abs:
+        return None
+    early = float(np.sum(power[onset:split]))
+    late = float(np.sum(power[split:trunc_abs])) + compensation
+    if early <= 0.0 or late <= 0.0 or not np.isfinite(early + late):
+        return None
+    return early, late
+
+
+def _window_missed(name: str, truncation_s: float, split_s: float) -> EnergyMetric:
+    unit = {"C50": "dB", "C80": "dB", "D50": "%"}[name]
+    return EnergyMetric(
+        name=name,
+        value=None,
+        unit=unit,
+        validity=Validity.NOT_COMPUTED,
+        reason=diag(
+            "the noise truncation ({truncation_s:.3f} s) is not after the {split_ms:.0f} ms "
+            "early window, so the late energy is not measured",
+            truncation_s=truncation_s,
+            split_ms=split_s * 1000.0,
+        ),
+    )
+
+
+def _energy_metrics(
+    power: FloatArray,
+    sample_rate: int,
+    onset: int,
+    trunc: TruncationEstimate,
+    origin: int,
+) -> tuple[EnergyMetric, EnergyMetric, EnergyMetric, EnergyMetric]:
+    """C50, C80, D50 (percent) and centre time from one truncated squared response."""
+    available = float(trunc.peak_db - trunc.noise_floor_db)
+    if not np.isfinite(available) or available < ENERGY_MIN_DECAY_RANGE_DB:
+        c50, c80, d50, centre = _insufficient_energy(available if np.isfinite(available) else 0.0)
+        return c50, c80, d50, centre
+
+    trunc_abs = min(power.shape[0], onset + trunc.truncation_index)
+    compensation, tail_moment = (
+        _tail_compensation(trunc, sample_rate) if trunc_abs < power.shape[0] else (0.0, 0.0)
+    )
+    truncation_s = (trunc_abs - origin) / sample_rate
+
+    def clarity(name: str, split_s: float) -> EnergyMetric:
+        split = _split_index(origin, split_s, sample_rate)
+        parts = _early_late(power, onset, trunc_abs, split, compensation)
+        if parts is None:
+            return _window_missed(name, truncation_s, split_s)
+        early, late = parts
+        return EnergyMetric(
+            name=name,
+            value=float(10.0 * np.log10(early / late)),
+            unit="dB",
+            validity=Validity.VALID,
+        )
+
+    def definition(split_s: float) -> EnergyMetric:
+        split = _split_index(origin, split_s, sample_rate)
+        parts = _early_late(power, onset, trunc_abs, split, compensation)
+        if parts is None:
+            return _window_missed("D50", truncation_s, split_s)
+        early, late = parts
+        return EnergyMetric(
+            name="D50",
+            value=float(100.0 * early / (early + late)),
+            unit="%",
+            validity=Validity.VALID,
+        )
+
+    c50 = clarity("C50", C50_SPLIT_S)
+    c80 = clarity("C80", C80_SPLIT_S)
+    d50 = definition(C50_SPLIT_S)
+
+    start = min(max(origin, onset), trunc_abs)
+    if trunc_abs <= onset:
+        centre = EnergyMetric(
+            name="Ts",
+            value=None,
+            unit="s",
+            validity=Validity.NOT_COMPUTED,
+            reason=diag("the response is too short for a centre time"),
+        )
+    else:
+        idx = np.arange(start, trunc_abs)
+        times = (idx - origin) / sample_rate
+        moment = float(np.sum(times * power[start:trunc_abs]))
+        energy = float(np.sum(power[onset:trunc_abs])) + compensation
+        moment += compensation * truncation_s + tail_moment
+        if energy <= 0.0 or not np.isfinite(moment) or not np.isfinite(energy):
+            centre = EnergyMetric(
+                name="Ts",
+                value=None,
+                unit="s",
+                validity=Validity.NOT_COMPUTED,
+                reason=diag("the response is too short for a centre time"),
+            )
+        else:
+            centre = EnergyMetric(
+                name="Ts", value=float(moment / energy), unit="s", validity=Validity.VALID
+            )
+    return c50, c80, d50, centre
+
+
+def _energy_truncation_changes(
+    chosen: tuple[EnergyMetric, EnergyMetric, EnergyMetric, EnergyMetric],
+    alternative: tuple[EnergyMetric, EnergyMetric, EnergyMetric, EnergyMetric],
+) -> list[tuple[str, str]]:
+    """``(name, sentence)`` for energy parameters that move under the other truncation."""
+    limits = {
+        "C50": ENERGY_C_SENSITIVITY_DB,
+        "C80": ENERGY_C_SENSITIVITY_DB,
+        "D50": ENERGY_D50_SENSITIVITY_PERCENT,
+        "Ts": ENERGY_TS_SENSITIVITY_S,
+    }
+    changes: list[tuple[str, str]] = []
+    for metric, other in zip(chosen, alternative, strict=True):
+        if metric.validity is not Validity.VALID or metric.value is None:
+            continue
+        if other.value is None:
+            changes.append(
+                (
+                    metric.name,
+                    diag(
+                        "{metric} has no truncation-independent value",
+                        metric=metric.name,
+                    ),
+                )
+            )
+            continue
+        if abs(metric.value - other.value) <= limits[metric.name]:
+            continue
+        if metric.unit == "dB":
+            text = diag(
+                "{metric} {value:.1f} dB vs {other:.1f} dB",
+                metric=metric.name,
+                value=metric.value,
+                other=other.value,
+            )
+        elif metric.unit == "%":
+            text = diag(
+                "{metric} {value:.1f} % vs {other:.1f} %",
+                metric=metric.name,
+                value=metric.value,
+                other=other.value,
+            )
+        else:
+            text = diag(
+                "{metric} {seconds:.3f} s vs {other:.3f} s",
+                metric=metric.name,
+                seconds=metric.value,
+                other=other.value,
+            )
+        changes.append((metric.name, text))
+    return changes
+
+
+def _mark_energy_unreliable(
+    metrics: tuple[EnergyMetric, EnergyMetric, EnergyMetric, EnergyMetric],
+    reason: str,
+    names: set[str] | None = None,
+) -> tuple[EnergyMetric, EnergyMetric, EnergyMetric, EnergyMetric]:
+    """Mark every VALID energy parameter in ``names`` (default: all of them)."""
+    marked: list[EnergyMetric] = []
+    for metric in metrics:
+        if names is None or metric.name in names:
+            marked.append(metric.marked_unreliable(reason))
+        else:
+            marked.append(metric)
+    return marked[0], marked[1], marked[2], marked[3]
+
+
 def analyze_band(
     band_ir: FloatArray,
     sample_rate: int,
@@ -824,6 +1073,7 @@ def analyze_band(
     if direct_index is not None and first_index < curve.edc_db.shape[0]:
         direct_step_db = float(-curve.edc_db[first_index])
     edt = _edt_direct_check(edt, direct_step_db)
+    c50, c80, d50, centre = _energy_metrics(power, sample_rate, onset, trunc, origin)
 
     if trunc.problem is not None:
         rejected = trunc.rejected_estimate()
@@ -833,12 +1083,24 @@ def analyze_band(
                 for m in (edt, t20, t30)
                 if m.validity is Validity.VALID
             ]
+            energy_changes = [
+                (
+                    m.name,
+                    diag("{metric} has no truncation-independent value", metric=m.name),
+                )
+                for m in (c50, c80, d50, centre)
+                if m.validity is Validity.VALID
+            ]
         else:
             alternative = _curve_from_truncation(
                 power, sample_rate, onset, rejected, compensate=True, time_origin_index=origin
             )
             changes = _truncation_sensitivity(
                 (edt, t20, t30), _fit_all(alternative, noise_margin_db, first_index)
+            )
+            energy_changes = _energy_truncation_changes(
+                (c50, c80, d50, centre),
+                _energy_metrics(power, sample_rate, onset, rejected, origin),
             )
         if changes:
             reason = diag(
@@ -851,6 +1113,20 @@ def analyze_band(
             edt = edt.marked_unreliable(reason)
             t20 = t20.marked_unreliable(reason)
             t30 = t30.marked_unreliable(reason)
+        if energy_changes:
+            energy_reason = diag(
+                "the noise truncation is not trustworthy ({problem}) and the result depends "
+                "on it ({changes})",
+                problem=trunc.problem,
+                changes="; ".join(text for _name, text in energy_changes),
+            )
+            if energy_reason not in warnings:
+                warnings.append(energy_reason)
+            c50, c80, d50, centre = _mark_energy_unreliable(
+                (c50, c80, d50, centre),
+                energy_reason,
+                {name for name, _text in energy_changes},
+            )
 
     bt_product: float | None = None
     filter_warning: str | None = None
@@ -868,6 +1144,9 @@ def analyze_band(
                 edt = edt.marked_unreliable(filter_warning)
                 t20 = t20.marked_unreliable(filter_warning)
                 t30 = t30.marked_unreliable(filter_warning)
+                c50, c80, d50, centre = _mark_energy_unreliable(
+                    (c50, c80, d50, centre), filter_warning
+                )
 
     t20, t30, curvature, straightness_warnings = _straightness_check(
         t20, t30, band.bandwidth_hz if band is not None else broadband_bandwidth_hz
@@ -904,6 +1183,10 @@ def analyze_band(
         onset_time_s=float((onset - origin) / sample_rate),
         mid_band_hz=band.center_hz if band is not None else None,
         warnings=tuple(warnings),
+        c50=c50,
+        c80=c80,
+        d50=d50,
+        centre_time=centre,
     )
 
 
@@ -987,6 +1270,10 @@ def _outside_excitation_band(band: Band, excitation: ExcitationBand) -> BandDeca
         onset_time_s=None,
         mid_band_hz=band.center_hz,
         warnings=(reason,),
+        c50=EnergyMetric("C50", None, "dB", Validity.OUTSIDE_EXCITATION, reason),
+        c80=EnergyMetric("C80", None, "dB", Validity.OUTSIDE_EXCITATION, reason),
+        d50=EnergyMetric("D50", None, "%", Validity.OUTSIDE_EXCITATION, reason),
+        centre_time=EnergyMetric("Ts", None, "s", Validity.OUTSIDE_EXCITATION, reason),
     )
 
 

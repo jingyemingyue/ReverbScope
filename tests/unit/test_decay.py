@@ -26,6 +26,7 @@ from roomscope.models.result import (
     ExcitationBand,
     Validity,
 )
+from roomscope.models.result_load import band_decay_from_dict
 from tests.conftest import DECAY_CONSTANT, exponential_decay_ir, make_rir
 
 
@@ -431,12 +432,17 @@ def test_bands_outside_the_excitation_are_withheld(sample_rate: int) -> None:
             assert metric.validity is Validity.OUTSIDE_EXCITATION
             assert metric.seconds is None
             assert "excitation range" in (metric.reason or "")
+        assert band.c50.validity is Validity.OUTSIDE_EXCITATION
+        assert band.c80.value is None and band.d50.value is None
+        assert band.centre_time.validity is Validity.OUTSIDE_EXCITATION
+        assert "excitation range" in (band.c50.reason or "")
         assert band.rt60_estimate_s is None and band.curvature_percent is None
         assert band.peak_to_noise_db is None and band.noise_floor_db is None
         assert band.truncation_time_s is None and band.onset_time_s is None
         assert band.filter_bt_product is None and band.edc_db.shape == (0,)
     for label in ("500 Hz", "1 kHz", "2 kHz"):
         assert by_label[label].t30.validity is Validity.VALID
+        assert by_label[label].c50.validity is Validity.VALID
     assert any(", ".join(withheld) in note for note in result.notes)
     assert str(Validity.OUTSIDE_EXCITATION) == "outside_excitation_range"
     json.dumps(result.to_dict(), allow_nan=False)
@@ -454,6 +460,7 @@ def test_with_all_unreliable_marks_every_metric(sample_rate: int) -> None:
     before = [m for b in (result.broadband, *result.bands) for m in _metrics(b)]
     assert any(m.validity is Validity.VALID for m in before)
     assert any(m.validity is Validity.INSUFFICIENT_RANGE for m in before)
+    assert result.broadband.c50.validity is Validity.VALID
     marked = result.with_all_unreliable("the recording clips")
     after = [m for b in (marked.broadband, *marked.bands) for m in _metrics(b)]
     for old, new in zip(before, after, strict=True):
@@ -469,7 +476,103 @@ def test_with_all_unreliable_marks_every_metric(sample_rate: int) -> None:
     for band in (marked.broadband, *marked.bands):
         assert band.rt60_estimate_s is None and band.rt60_basis is None
         assert band.curvature_percent is None
+    assert marked.broadband.c50.validity is Validity.UNRELIABLE
+    assert marked.broadband.c50.value == result.broadband.c50.value
+    assert "the recording clips" in (marked.broadband.c50.reason or "")
     assert marked.notes[-1].endswith("the recording clips")
     # Idempotent reason handling.
     again = marked.with_all_unreliable("the recording clips")
     assert again.broadband.t30.reason == marked.broadband.t30.reason
+
+
+def _expected_clarity_db(split_s: float, rt60: float) -> float:
+    """C_te of an infinite exponential whose power falls 60 dB in ``rt60``."""
+    tau = rt60 / DECAY_CONSTANT
+    return float(10.0 * np.log10(np.exp(split_s / tau) - 1.0))
+
+
+def test_exact_exponential_has_iso_energy_ratios(sample_rate: int) -> None:
+    """C50, C80, D50 and centre time of a pure exponential match the closed form."""
+    rt60 = 0.5
+    band = analyze_band(
+        _alternating_exponential(sample_rate, rt60, 1.2),
+        sample_rate,
+        None,
+        noise_margin_db=10.0,
+    )
+    tau = rt60 / DECAY_CONSTANT
+    assert band.c50.validity is Validity.VALID
+    assert band.c80.validity is Validity.VALID
+    assert band.d50.validity is Validity.VALID
+    assert band.centre_time.validity is Validity.VALID
+    assert band.c50.value == pytest.approx(_expected_clarity_db(0.05, rt60), abs=0.4)
+    assert band.c80.value == pytest.approx(_expected_clarity_db(0.08, rt60), abs=0.4)
+    assert band.d50.value == pytest.approx(100.0 * (1.0 - np.exp(-0.05 / tau)), abs=1.0)
+    assert band.centre_time.value == pytest.approx(tau, abs=0.002)
+    assert band.c50.unit == "dB" and band.d50.unit == "%" and band.centre_time.unit == "s"
+
+
+def test_energy_ratios_follow_the_direct_sound_not_the_file_start(sample_rate: int) -> None:
+    rt60 = 0.5
+    ir = _alternating_exponential(sample_rate, rt60, 1.2)
+    pre = 1000
+    plain = analyze_band(ir, sample_rate, None, noise_margin_db=10.0, direct_index=0)
+    shifted = analyze_band(
+        np.concatenate([np.zeros(pre), ir]),
+        sample_rate,
+        None,
+        noise_margin_db=10.0,
+        direct_index=pre,
+    )
+    assert shifted.c50.value == pytest.approx(plain.c50.value, abs=0.05)
+    assert shifted.c80.value == pytest.approx(plain.c80.value, abs=0.05)
+    assert shifted.d50.value == pytest.approx(plain.d50.value, abs=0.2)
+    assert shifted.centre_time.value == pytest.approx(plain.centre_time.value, abs=0.001)
+
+
+def test_energy_ratios_need_twenty_db_of_decay(sample_rate: int) -> None:
+    ir = exponential_decay_ir(sample_rate, 0.4, length_s=1.0)
+    rng = np.random.default_rng(1)
+    ir = ir + rng.normal(0.0, 10 ** (-12 / 20), ir.shape[0])
+    band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0)
+    assert band.peak_to_noise_db is not None and band.peak_to_noise_db < 20.0
+    assert band.c50.validity is Validity.INSUFFICIENT_RANGE
+    assert band.c80.value is None and band.d50.value is None and band.centre_time.value is None
+    assert "early/late energy ratio" in (band.c50.reason or "")
+
+
+def test_an_arrival_inside_50_ms_raises_c50(sample_rate: int) -> None:
+    """A copy of the direct sound inside 50 ms raises C50; the same copy at 120 ms lowers it."""
+    tail = 0.05 * _alternating_exponential(sample_rate, 0.6, 1.5)
+    early = tail.copy()
+    late = tail.copy()
+    early[0] = 1.0
+    late[0] = 1.0
+    early[round(0.012 * sample_rate)] += 1.0
+    late[round(0.120 * sample_rate)] += 1.0
+    early_band = analyze_band(early, sample_rate, None, noise_margin_db=10.0, direct_index=0)
+    late_band = analyze_band(late, sample_rate, None, noise_margin_db=10.0, direct_index=0)
+    assert early_band.c50.validity is Validity.VALID
+    assert late_band.c50.validity is Validity.VALID
+    assert early_band.c50.value is not None and late_band.c50.value is not None
+    assert early_band.c50.value > late_band.c50.value + 3.0
+
+
+def test_energy_parameters_round_trip_and_older_files_omit_them(sample_rate: int) -> None:
+    band = analyze_band(
+        _alternating_exponential(sample_rate, 0.4, 1.0),
+        sample_rate,
+        None,
+        noise_margin_db=10.0,
+    )
+    again = band_decay_from_dict(band.to_dict())
+    assert again.c50.value == pytest.approx(band.c50.value)
+    assert again.centre_time.value == pytest.approx(band.centre_time.value)
+    payload = band.to_dict()
+    for key in ("c50", "c80", "d50", "centre_time"):
+        del payload[key]
+    old = band_decay_from_dict(payload)
+    assert old.c50.validity is Validity.NOT_COMPUTED
+    assert old.c50.value is None
+    assert old.centre_time.validity is Validity.NOT_COMPUTED
+    assert old.edt.seconds == pytest.approx(band.edt.seconds)

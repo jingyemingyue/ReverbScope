@@ -24,10 +24,13 @@ def test_csv_exporter_writes_every_curve(tmp_path: Path, short_sweep: SweepSetti
     written = get_exporter("csv").export(result, tmp_path)
     names = {path.name for path in written}
     assert "decay_metrics.csv" in names
+    assert "energy_metrics.csv" in names
     assert "frequency_response.csv" in names
     assert "reflections.csv" in names
     metrics = (tmp_path / "decay_metrics.csv").read_text(encoding="utf-8")
     assert "T20" in metrics
+    energy = (tmp_path / "energy_metrics.csv").read_text(encoding="utf-8")
+    assert "C50" in energy and "Ts" in energy
     again = export_csv(result, tmp_path / "copy")
     assert again
 

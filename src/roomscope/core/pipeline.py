@@ -1028,10 +1028,13 @@ def _blank_noise(*, note: str) -> NoiseResult:
 def _mark_decay_not_computed(decay: DecayResult, reason: str) -> DecayResult:
     from dataclasses import replace
 
-    from roomscope.models.result import BandDecay, DecayMetric, Validity
+    from roomscope.models.result import BandDecay, DecayMetric, EnergyMetric, Validity
 
     def blank(metric: DecayMetric) -> DecayMetric:
         return replace(metric, seconds=None, validity=Validity.NOT_COMPUTED, reason=reason)
+
+    def blank_energy(metric: EnergyMetric) -> EnergyMetric:
+        return replace(metric, value=None, validity=Validity.NOT_COMPUTED, reason=reason)
 
     def blank_band(band: BandDecay) -> BandDecay:
         return replace(
@@ -1039,6 +1042,10 @@ def _mark_decay_not_computed(decay: DecayResult, reason: str) -> DecayResult:
             edt=blank(band.edt),
             t20=blank(band.t20),
             t30=blank(band.t30),
+            c50=blank_energy(band.c50),
+            c80=blank_energy(band.c80),
+            d50=blank_energy(band.d50),
+            centre_time=blank_energy(band.centre_time),
             rt60_estimate_s=None,
             rt60_basis=None,
             curvature_percent=None,

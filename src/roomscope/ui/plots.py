@@ -16,7 +16,7 @@ from matplotlib.figure import Figure
 from roomscope.core.reflections import reflection_envelope_db
 from roomscope.i18n import _
 from roomscope.interpretation.profiles import band_text, confidence_text, noise_segment_text
-from roomscope.models.result import AnalysisResult, PlacementResult, Validity
+from roomscope.models.result import AnalysisResult, EnergyMetric, PlacementResult, Validity
 from roomscope.ui.theme import PLOT_SERIES, ensure_plot_fonts, plot_colors, style_figure, tokens
 
 _EPS = 1e-300
@@ -458,6 +458,42 @@ def decay_table_rows(result: AnalysisResult) -> list[tuple[str, str, str, str, s
                 fmt(band.t20.seconds, band.t20.validity),
                 fmt(band.t30.seconds, band.t30.validity),
                 rt,
+            )
+        )
+    return rows
+
+
+def energy_table_rows(result: AnalysisResult) -> list[tuple[str, str, str, str, str]]:
+    """Rows (band, C50, C80, D50, centre time). Ratios, not a room score."""
+
+    def fmt(metric: EnergyMetric) -> str:
+        if metric.value is None:
+            if metric.validity is Validity.INSUFFICIENT_RANGE:
+                return _("insufficient range")
+            return _("n/a")
+        if metric.unit == "dB":
+            text = f"{metric.value:+.1f} dB"
+        elif metric.unit == "%":
+            text = f"{metric.value:.0f} %"
+        else:
+            text = f"{metric.value * 1000:.0f} ms"
+        if metric.validity is Validity.VALID:
+            return text
+        if metric.validity is Validity.UNRELIABLE:
+            return f"({text})"
+        if metric.validity is Validity.INSUFFICIENT_RANGE:
+            return _("insufficient range")
+        return _("n/a")
+
+    rows: list[tuple[str, str, str, str, str]] = []
+    for band in (result.decay.broadband, *result.decay.bands):
+        rows.append(
+            (
+                band_text(band.band_label),
+                fmt(band.c50),
+                fmt(band.c80),
+                fmt(band.d50),
+                fmt(band.centre_time),
             )
         )
     return rows

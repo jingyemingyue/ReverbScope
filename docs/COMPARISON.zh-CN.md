@@ -51,7 +51,7 @@ RoomScope 目前是**预发布版（0.4.x）**。它的 DSP 在 Linux、macOS �
 - **设计 EQ 和房间校正滤波器、瀑布图、房间模拟。** REW 能自动找出响应峰值，为多种硬件和软件均衡器分配并优化 EQ 滤波器，并绘制瀑布图和声谱图；它还有房间模拟器。RoomScope 不设计任何滤波器。
 - **校正监听系统。** SoundID Reference、ARC X 和 Dirac Live 的测量是为了校正；HouseCurve 为高保真和家庭系统生成滤波器。RoomScope 只测量。如果要用 RoomScope 测量校正后的系统，请有意把校正保留在回放链路中（[user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md) 第 3 条）。
 - **现场扩声和实时传递函数。** Smaart 和 Open Sound Meter 可以用节目素材实时显示双通道 FFT 结果和相干。RoomScope 是离线工作的，一次一个扫频。
-- **清晰度、STI 和更完整的 ISO 3382 参数。** REW Pro（STI）、Smaart Suite（STI、清晰度）、ARTA 和 AURORA 报告清晰度、明晰度（definition）或 STI；RoomScope 报告 EDT、T20、T30、估计 RT60、频率响应、噪声、早期反射和可能的低频共振。
+- **STI、强度和 ISO 3382 的其余参数。** REW Pro（STI）、Smaart Suite（STI、清晰度）、ARTA 和 AURORA 报告语言传输指数、声音强度或侧向能量。RoomScope 报告 EDT、T20、T30、估计 RT60，以及单点能量比 C50、C80、D50 和重心时间（方法文档 §3b）。它不报告 STI，也不报告强度 G，这些比值也不是房间评分。
 - **校准后的 SPL 或经认证的测量。** RoomScope 只报告 dBFS；它的频带滤波器未经 IEC 61260 1 级认证，一个声源加一个话筒位置也达不到 ISO 3382-2 的简易（survey）等级（方法文档 §3）。ARTA 配合校准话筒可作为虚拟 IEC 1 级声级计，Smaart 也有 SPL 模式。
 - **房间模拟和研究脚本。** pyroomacoustics 用于模拟房间；pyrato 和 ITA-Toolbox 可在 Python 或 MATLAB 中计算房间参数。
 - **今天就需要经过实地验证的结果。** RoomScope 还没有硬件验证。在 0.5.0 之前，请把它的数字视为未经验证。
