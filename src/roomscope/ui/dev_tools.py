@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 from roomscope.audio.inventory import DeviceInventory, build_inventory
 from roomscope.errors import RoomScopeError
 from roomscope.i18n import N_, _, localize
+from roomscope.ui.theme import apply_report_font
 from roomscope.ui.widgets import label
 
 #: Where the Environment Report sends the user (the issue-template chooser).
@@ -206,6 +207,7 @@ class EnvironmentReport(QDialog):
         self.text = QPlainTextEdit()
         self.text.setReadOnly(True)
         self.text.setProperty("report", True)
+        apply_report_font(self.text)
         layout.addWidget(self.text, 1)
         row = QHBoxLayout()
         self.probe_button = QPushButton(_("Probe sample rates"))

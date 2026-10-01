@@ -5,9 +5,16 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QAction, QDesktopServices
-from PySide6.QtWidgets import QFileDialog, QMainWindow, QMessageBox, QStackedWidget, QStatusBar
+from PySide6.QtWidgets import (
+    QFileDialog,
+    QMainWindow,
+    QMessageBox,
+    QStackedWidget,
+    QStatusBar,
+    QWidget,
+)
 
 from roomscope import __version__
 from roomscope.errors import RoomScopeError
@@ -21,19 +28,35 @@ from roomscope.ui.results import ResultsPage
 from roomscope.ui.state import MeasurementState
 from roomscope.ui.widgets import app_icon
 
-ABOUT_TEXT = (
-    f"<b>RoomScope {__version__}</b><br>"
-    "An open-source, DAW-independent recording environment analyzer.<br><br>"
-    "Licensed under the Apache License, Version 2.0.<br>"
-    "This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the "
-    "GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries "
-    "and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile "
-    "(libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses.<br><br>"
-    "A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the "
-    "executable (and inside <code>RoomScope.app</code> on macOS). From a source checkout "
-    "see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; "
-    "RoomScope never reports dB SPL."
-)
+
+def about_html() -> str:
+    """About box body, translated when it is shown (not when this module loads)."""
+    return _(
+        "<b>RoomScope {version}</b><br>"
+        "An open-source, DAW-independent recording environment analyzer.<br><br>"
+        "Licensed under the Apache License, Version 2.0.<br>"
+        "This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) "
+        "under the GNU Lesser General Public License v3; the Qt libraries are loaded as "
+        "separate shared libraries and may be replaced by interface-compatible versions. "
+        "NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice "
+        "(PortAudio) are used under their respective licenses.<br><br>"
+        "A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the "
+        "executable (and inside <code>RoomScope.app</code> on macOS). From a source checkout "
+        "see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; "
+        "RoomScope never reports dB SPL."
+    ).format(version=__version__)
+
+
+def about_box(parent: QWidget | None = None) -> QMessageBox:
+    """The About dialog. The button is ours, so it does not depend on Qt's catalog."""
+    box = QMessageBox(parent)
+    box.setWindowTitle(_("About RoomScope"))
+    box.setWindowIcon(app_icon())
+    box.setIconPixmap(app_icon().pixmap(64, 64))
+    box.setTextFormat(Qt.TextFormat.RichText)
+    box.setText(about_html())
+    box.addButton(_("OK"), QMessageBox.ButtonRole.AcceptRole)
+    return box
 
 
 class MainWindow(QMainWindow):
@@ -229,7 +252,7 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(home)))
 
     def _about(self) -> None:
-        QMessageBox.about(self, _("About RoomScope"), ABOUT_TEXT)
+        about_box(self).exec()
 
     def _open_licenses(self) -> None:
         target = license_notice_path()

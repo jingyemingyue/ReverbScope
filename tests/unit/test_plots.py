@@ -9,6 +9,19 @@ from roomscope.ui.theme import color_scheme, plot_colors, style_figure
 from tests.conftest import make_rir
 
 
+def test_stylesheet_keeps_chinese_section_labels_and_shortcut_badges() -> None:
+    """Letter-spacing pulls Chinese characters apart, and a 22px badge clips ⌃1."""
+    from roomscope.ui.theme import stylesheet
+
+    css = stylesheet()
+    assert "letter-spacing" not in css
+    badge = css.split('QLabel[role="badge"]', 1)[1].split("}", 1)[0]
+    assert "max-width" not in badge
+    assert "min-height: 22px" in badge
+    report = css.split('QPlainTextEdit[report="true"]', 1)[1].split("}", 1)[0]
+    assert "font-family" not in report
+
+
 def test_decay_and_fr_plots_use_linestyle_not_only_colour(short_sweep) -> None:
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)])
     recording = synthetic_recording(short_sweep, ir, noise_rms=1e-5)

@@ -44,8 +44,40 @@ from roomscope.models.result import AnalysisResult
 from roomscope.models.session import MeasurementSession
 from roomscope.ui.browser import SessionBrowser
 from roomscope.ui.state import MeasurementState
-from roomscope.ui.widgets import Card, ModeCard, PageHeader, label, primary
+from roomscope.ui.widgets import (
+    Card,
+    ModeCard,
+    PageHeader,
+    error_box,
+    label,
+    primary,
+    set_banner_text,
+)
 from roomscope.ui.workers import AnalysisWorker, MeasureWorker
+
+
+def separate_clocks_box(parent: QWidget, warning: str) -> QMessageBox:
+    """Two devices, two clocks. The safe button is the default: do not measure."""
+    box = QMessageBox(parent)
+    box.setIcon(QMessageBox.Icon.Warning)
+    box.setWindowTitle(_("Two devices, two clocks"))
+    box.setText(localize(warning))
+    box.setInformativeText(_("Measure anyway?"))
+    box.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+    box.addButton(_("Measure anyway"), QMessageBox.ButtonRole.AcceptRole)
+    cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
+    box.setDefaultButton(cancel)
+    box.setEscapeButton(cancel)
+    return box
+
+
+def ask_separate_clocks(parent: QWidget, warning: str) -> bool:
+    box = separate_clocks_box(parent, warning)
+    measure = _("Measure anyway")
+    box.exec()
+    clicked = box.clickedButton()
+    return clicked is not None and clicked.text() == measure
+
 
 DAW_INSTRUCTIONS = N_(
     "1. Generate the test signal at your DAW project's sample rate (Step 1).\n"
@@ -502,10 +534,10 @@ class DawModePage(QWidget):
         else:
             self._worker.start()
 
-    def _set_busy(self, busy: bool, text: str = "") -> None:
+    def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         self.analyze_button.setEnabled(not busy)
         self.progress.setVisible(busy)
-        self.status.setText(text)
+        set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
         self.state.result = result
@@ -514,8 +546,8 @@ class DawModePage(QWidget):
         self.analysis_finished.emit()
 
     def _on_failure(self, message: str) -> None:
-        self._set_busy(False, _("Analysis failed: {message}").format(message=message))
-        QMessageBox.critical(self, _("Analysis failed"), message)
+        self._set_busy(False, _("Analysis failed: {message}").format(message=message), tone="warn")
+        error_box(self, _("Analysis failed"), message)
 
 
 class StandalonePage(QWidget):
@@ -686,8 +718,10 @@ class StandalonePage(QWidget):
             self._inventory = None
             self.host_api.clear()
             self._fill_device_lists()
-            self.status.setText(
-                _("Audio backend unavailable: {error}").format(error=localize(str(exc)))
+            set_banner_text(
+                self.status,
+                _("Audio backend unavailable: {error}").format(error=localize(str(exc))),
+                "warn",
             )
             self.run_button.setEnabled(False)
             return
@@ -707,9 +741,11 @@ class StandalonePage(QWidget):
         self._fill_device_lists()
         self.run_button.setEnabled(True)
         if self.demo_mode:
-            self.status.setText(_("Demo mode: fake backend, no loudspeaker."))
+            set_banner_text(self.status, _("Demo mode: fake backend, no loudspeaker."))
         else:
-            self.status.setText(_("{n} audio device(s) found.").format(n=len(self._devices)))
+            set_banner_text(
+                self.status, _("{n} audio device(s) found.").format(n=len(self._devices))
+            )
 
     def _fill_device_lists(self) -> None:
         """Devices of the chosen host API; the recommended entries are starred.
@@ -824,15 +860,8 @@ class StandalonePage(QWidget):
         except RoomScopeError as exc:
             QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
             return None
-        if plan.clock_warning:
-            answer = QMessageBox.warning(
-                self,
-                _("Two devices, two clocks"),
-                plan.clock_warning + "\n\n" + _("Measure anyway?"),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            )
-            if answer != QMessageBox.StandardButton.Yes:
-                return None
+        if plan.clock_warning and not ask_separate_clocks(self, plan.clock_warning):
+            return None
         return plan.input_device, plan.output_device
 
     def _device_for(self, combo: QComboBox, *, kind: str) -> DeviceInfo | None:
@@ -975,7 +1004,7 @@ class StandalonePage(QWidget):
             recording_profile=self.state.profile,
         )
         assert self.state.reference is not None
-        self.status.setText(_("Recorded. Analyzing..."))
+        set_banner_text(self.status, _("Recorded. Analyzing..."))
         self._analysis_worker = AnalysisWorker(
             recording, self.state.reference, self.state.analysis_settings
         )
@@ -983,14 +1012,14 @@ class StandalonePage(QWidget):
         self._analysis_worker.failed.connect(self._on_failure)
         self._analysis_worker.start()
 
-    def _set_busy(self, busy: bool, text: str = "") -> None:
+    def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         self.run_button.setEnabled(not busy)
         if hasattr(self, "stop_button"):
             self.stop_button.setEnabled(busy)
         self.progress.setVisible(busy)
         if not busy and hasattr(self, "progress") and self.progress.maximum() == 100:
             self.progress.setValue(0)
-        self.status.setText(text)
+        set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
         self.state.result = result
@@ -999,5 +1028,7 @@ class StandalonePage(QWidget):
         self.analysis_finished.emit()
 
     def _on_failure(self, message: str) -> None:
-        self._set_busy(False, _("Measurement failed: {message}").format(message=message))
-        QMessageBox.critical(self, _("Measurement failed"), message)
+        self._set_busy(
+            False, _("Measurement failed: {message}").format(message=message), tone="warn"
+        )
+        error_box(self, _("Measurement failed"), message)

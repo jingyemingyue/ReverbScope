@@ -252,16 +252,16 @@ QToolTip {{ background: {t["surface"]}; color: {t["text"]}; border: 1px solid {t
 QLabel[role="title"] {{ font-size: 24px; font-weight: 700; }}
 QLabel[role="page-title"] {{ font-size: 19px; font-weight: 700; }}
 QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 13px; }}
-QLabel[role="section"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 700;
-    letter-spacing: 1px; }}
+QLabel[role="section"] {{ color: {t["muted"]}; font-size: 12px; font-weight: 700; }}
 QLabel[role="hint"] {{ color: {t["muted"]}; }}
 QLabel[role="kpi-label"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 600; }}
 QLabel[role="kpi-value"] {{ font-size: 22px; font-weight: 700; }}
 QLabel[role="kpi-sub"] {{ color: {t["muted"]}; font-size: 11px; }}
 QLabel[role="card-title"] {{ font-size: 15px; font-weight: 700; }}
 QLabel[role="badge"] {{ background: {t["accent"]}; color: {t["accent_text"]};
-    border-radius: 11px; min-width: 22px; max-width: 22px; min-height: 22px;
-    max-height: 22px; font-weight: 700; qproperty-alignment: AlignCenter; }}
+    border-radius: 11px; min-width: 22px; min-height: 22px; max-height: 22px;
+    padding: 0 7px; font-size: 12px; font-weight: 700;
+    qproperty-alignment: AlignCenter; }}
 QLabel[role="pill"] {{ background: {t["accent_soft"]}; color: {t["text"]};
     border: 1px solid {t["accent_soft"]}; border-radius: 11px; padding: 3px 10px;
     font-size: 12px; }}
@@ -313,8 +313,7 @@ QComboBox::drop-down {{ subcontrol-origin: padding; subcontrol-position: center 
 QComboBox::down-arrow {{ {arrow_down} width: 10px; height: 10px; }}
 QComboBox QAbstractItemView {{ background: {t["surface"]}; border: 1px solid {t["border"]};
     selection-background-color: {t["accent_soft"]}; selection-color: {t["text"]}; }}
-QPlainTextEdit[report="true"] {{ font-family: "Menlo", "Consolas", "DejaVu Sans Mono",
-    monospace; font-size: 12px; background: {t["surface_alt"]}; }}
+QPlainTextEdit[report="true"] {{ background: {t["surface_alt"]}; }}
 QCheckBox::indicator:checked {{ background: {t["accent"]}; border: 1px solid {t["accent"]};
     border-radius: 3px; }}
 
@@ -395,6 +394,57 @@ def _arrow_images(color: str) -> tuple[str, str] | None:
     return paths[0], paths[1]
 
 
+def install_cjk_ui_font(app: Any) -> None:
+    """Keep the platform UI font, and fall back per glyph to a Chinese face.
+
+    Qt's fontconfig fallback usually does this already. A style sheet that
+    names one family, or a machine whose fallback list has no Chinese, does
+    not: labels then draw empty boxes. ``QFont.setFamilies`` asks for the
+    next face only for a glyph the first one lacks.
+    """
+    from PySide6.QtGui import QFontDatabase
+
+    font = app.font()
+    installed = set(QFontDatabase.families())
+    primary = font.family()
+    families = [primary] if primary else []
+    for name in CJK_FALLBACK_FONTS:
+        if name in installed and name not in families:
+            families.append(name)
+    if len(families) > 1:
+        font.setFamilies(families)
+        app.setFont(font)
+
+
+def apply_report_font(widget: Any) -> None:
+    """Monospace for a report, with a Chinese face for the glyphs it lacks.
+
+    A style sheet ``font-family`` picks one face for the whole widget, so a
+    Latin monospace font draws Chinese as empty boxes. Set the families on
+    the widget instead, and do not override them from the style sheet.
+    """
+    from PySide6.QtGui import QFont, QFontDatabase
+
+    installed = set(QFontDatabase.families())
+    cjk_mono = (
+        "Sarasa Mono SC",
+        "Noto Sans Mono CJK SC",
+        "Noto Sans Mono CJK JP",
+        "Source Han Mono SC",
+    )
+    latin_mono = ("DejaVu Sans Mono", "Menlo", "Consolas", "Liberation Mono")
+    families = [name for name in (*cjk_mono, *latin_mono) if name in installed]
+    families.extend(
+        name for name in CJK_FALLBACK_FONTS if name in installed and name not in families
+    )
+    font = QFont()
+    font.setStyleHint(QFont.StyleHint.Monospace)
+    if families:
+        font.setFamilies(families)
+    font.setPixelSize(13)
+    widget.setFont(font)
+
+
 def apply_application_chrome(app: Any) -> None:
     """Give the whole application RoomScope's look in the current colour scheme.
 
@@ -426,4 +476,5 @@ def apply_application_chrome(app: Any) -> None:
     palette.setColor(roles.Link, QColor(t["accent"]))
     app.setPalette(palette)
     app.setStyleSheet(stylesheet(t))
+    install_cjk_ui_font(app)
     configure_matplotlib()
