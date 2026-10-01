@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
+from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -230,7 +233,8 @@ class PlacementInputs(QGroupBox):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setTitle(_("Tape measurements (optional)"))
-        form = QFormLayout(self)
+        row = QHBoxLayout(self)
+        form = QFormLayout()
         self.distance = QDoubleSpinBox()
         self.distance.setRange(0.0, 15.0)
         self.distance.setDecimals(2)
@@ -259,15 +263,42 @@ class PlacementInputs(QGroupBox):
         self.temperature_measured = QCheckBox(_("air temperature measured"))
         self.temperature_measured.toggled.connect(self.temperature.setEnabled)
         self.distance.valueChanged.connect(self._sync_height)
+        self.distance.valueChanged.connect(self._redraw_scene)
+        self.mic_height.valueChanged.connect(self._redraw_scene)
         form.addRow(_("Loudspeaker distance"), self.distance)
         form.addRow(_("Microphone height"), self.mic_height)
         form.addRow(self.temperature_measured, self.temperature)
+        row.addLayout(form, 1)
+        scene = QVBoxLayout()
+        self.figure = Figure(figsize=(5.6, 3.3), dpi=100)
+        self.canvas: Any = cast(Any, FigureCanvasQTAgg)(self.figure)
+        self.canvas.setMinimumHeight(240)
+        self.scene_hint = QLabel("")
+        self.scene_hint.setWordWrap(True)
+        self.scene_hint.setProperty("role", "hint")
+        scene.addWidget(self.canvas, 1)
+        scene.addWidget(self.scene_hint)
+        row.addLayout(scene, 2)
+        self._redraw_scene()
 
     def _sync_height(self, value: float) -> None:
         allowed = value >= 0.20
         self.mic_height.setEnabled(allowed)
         if not allowed:
             self.mic_height.setValue(0.0)
+
+    def _redraw_scene(self, _value: float | None = None) -> None:
+        from roomscope.ui.plots import plot_placement_illustration
+
+        distance = self.distance.value()
+        height = self.mic_height.value()
+        hint = plot_placement_illustration(
+            self.figure,
+            distance_m=distance if distance >= 0.20 else None,
+            mic_height_m=height if self.mic_height.isEnabled() and height >= 0.02 else None,
+        )
+        self.scene_hint.setText(hint)
+        self.canvas.draw_idle()
 
     def analysis_kwargs(self) -> dict[str, float | None]:
         distance = self.distance.value()

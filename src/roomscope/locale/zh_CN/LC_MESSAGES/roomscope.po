@@ -3863,3 +3863,30 @@ msgstr "发生了意外错误。这是 RoomScope 的程序缺陷。详细信息�
 
 msgid "<b>RoomScope {version}</b><br>An open-source, DAW-independent recording environment analyzer.<br><br>Licensed under the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses.<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the executable (and inside <code>RoomScope.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; RoomScope never reports dB SPL."
 msgstr "<b>RoomScope {version}</b><br>开源、不依赖 DAW 的录音环境分析器。<br><br>采用 Apache 许可证 2.0。<br>本程序使用 Qt 与 PySide6（版权归 Qt 公司及其贡献者所有），遵循 GNU LGPL 第 3 版；Qt 库以独立共享库加载，可以替换为接口兼容的版本。NumPy、SciPy、matplotlib、soundfile（libsndfile，LGPL-2.1）和 sounddevice（PortAudio）按其各自的许可证使用。<br><br>桌面安装包在可执行文件旁边附带 <code>THIRD_PARTY_LICENSES/</code> 目录（在 macOS 上则位于 <code>RoomScope.app</code> 内）。从源码目录查看 docs/DEPENDENCIES.md。电平是数字电平（dBFS），除非提供了校准；RoomScope 从不报告 dB SPL。"
+
+msgid "Nothing has been entered. This picture shows where the two tape measures go. It is not your room, and no wall is drawn."
+msgstr "还没有填入数据。这张图说明两根卷尺量的是哪里。它不是你的房间，也没有画墙。"
+
+msgid "The ring is every loudspeaker position this measurement allows. The cabinet is one of them, drawn so the direct path can be seen. No wall is drawn."
+msgstr "这个环是本次测量允许的每一个扬声器位置。箱子是其中之一，画出来是为了看见直达声。没有画墙。"
+
+msgid "The line is the loudspeaker distance you entered, and the stand is the microphone height you entered. The loudspeaker is drawn at that same height only so the tape can be seen; its real height comes from a measurement. No room and no wall are drawn."
+msgstr "这条线是你填入的扬声器距离，立杆是你填入的话筒高度。扬声器画在同一高度，只是为了看见这根卷尺；它的真实高度要等测量之后才知道。没有画房间，也没有画墙。"
+
+msgid "The line is the loudspeaker distance you entered. Both heights in this picture are an example. No room and no wall are drawn."
+msgstr "这条线是你填入的扬声器距离。图中两个高度都只是示例。没有画房间，也没有画墙。"
+
+msgid "reference plane"
+msgstr "参考平面"
+
+msgid "Loudspeaker"
+msgstr "扬声器"
+
+msgid "Placement picture. Drag to rotate."
+msgstr "摆放示意。拖动可旋转。"
+
+msgid "Measured geometry. Drag to rotate."
+msgstr "测得的几何。拖动可旋转。"
+
+msgid "possible positions"
+msgstr "可能的位置"

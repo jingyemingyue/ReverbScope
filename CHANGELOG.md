@@ -27,7 +27,10 @@ All notable changes to RoomScope are documented here. The format follows
   uses translated buttons and does not measure unless you ask it to. The
   About box is translated. Shortcut marks fit their badges. Section headings
   are not letter-spaced, so Chinese is not spread out. Reports use a font
-  that can draw Chinese.
+  that can draw Chinese. The tape-measure form and the Placement page show a
+  rotatable picture of the microphone, the loudspeaker and the two tapes.
+  When a measurement solves the vertical axis, a ring marks every loudspeaker
+  position that result allows. The picture does not draw a room or a wall.
 
 ## [0.4.1] - 2026-09-29
 
