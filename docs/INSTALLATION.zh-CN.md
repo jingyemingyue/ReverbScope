@@ -207,7 +207,7 @@ RoomScope **还没有发布到 PyPI**，所以 `pip install roomscope` 装不到
 ```bash
 python3 -m venv roomscope-env
 source roomscope-env/bin/activate          # Windows：roomscope-env\Scripts\activate
-pip install "./roomscope-0.4.1-py3-none-any.whl[gui]"
+pip install "./roomscope-0.5.0b1-py3-none-any.whl[gui]"
 roomscope --help
 roomscope gui                              # 或者：roomscope-gui
 ```
@@ -220,7 +220,7 @@ roomscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
 roomscope show demo/
 ```
 
-`roomscope-<version>.tar.gz` 是源码包：`pip install "./roomscope-0.4.1.tar.gz[gui]"` 会在本地构建出同样的 wheel。
+`roomscope-<version>.tar.gz` 是源码包：`pip install "./roomscope-0.5.0b1.tar.gz[gui]"` 会在本地构建出同样的 wheel。
 
 ### 开发者安装（从 Git）
 

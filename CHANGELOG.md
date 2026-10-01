@@ -5,7 +5,13 @@ All notable changes to RoomScope are documented here. The format follows
 [Semantic Versioning](https://semver.org/). How a version is cut is in
 `docs/RELEASE_PLAN.md`.
 
-## [Unreleased]
+## [0.5.0b1] - 2026-10-01
+
+Software beta 1. This is **not** 0.5.0: the release plan's 0.5.0 still
+requires a dated hardware-matrix PASS, and none exists. No signed bundles,
+no PyPI upload, and no claim that a real interface or DAW has been measured.
+What this beta adds on top of 0.4.1 is the rest of the single-microphone
+algorithm the methodology already allowed, and the desktop presentation of it.
 
 ### Added
 - **Early and late energy.** Each band now reports ISO 3382-1 clarity,
@@ -16,6 +22,13 @@ All notable changes to RoomScope are documented here. The format follows
   The command line, the results page and `energy_metrics.csv` show them.
   A comparison differenced the broadband values only when both sides are
   valid.
+- **Clarity advice follows the recording profile.** A profile may add one
+  notice when broadband C50 or C80 is a poor fit for that kind of recording
+  (voice-over is the strictest; drums do not judge clarity; a room microphone
+  is flagged when the ratio is too dry, not when it is low). The threshold
+  is an engineering choice, stated in the finding, and the sentence says it
+  is one position, not a room grade. An invalid ratio produces no notice.
+  The "Clarity" line in "At a glance" uses the same conclusion.
 
 ### Changed
 - **Command line.** Root `--help`, subcommand descriptions and the epilog wrap
@@ -788,6 +801,7 @@ repository is still private. Review follow-ups are tracked as issues
   inverse filters were changed to unit *in-band* gain. They now compare
   against `reference_pulse()`. Methodology docs matched the implementation.
 
-[Unreleased]: https://github.com/jingyemingyue/RoomScope/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/jingyemingyue/RoomScope/compare/v0.5.0b1...HEAD
+[0.5.0b1]: https://github.com/jingyemingyue/RoomScope/compare/v0.4.1...v0.5.0b1
 [0.4.1]: https://github.com/jingyemingyue/RoomScope/releases/tag/v0.4.1
 [0.4.0]: https://github.com/jingyemingyue/RoomScope/releases/tag/v0.4.0

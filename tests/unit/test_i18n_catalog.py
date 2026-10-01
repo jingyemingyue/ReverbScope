@@ -75,6 +75,8 @@ ALLOWED_ASCII = {
     "EDT",
     "ISO",
     "T",
+    "C50",
+    "C80",
 }
 
 
@@ -216,6 +218,8 @@ def _all_profile_sentences(profile: ProfileBase) -> list[str]:
             sentences.append(profile.decay_message(0.8, severity, decay_length_text(label), basis))
     for source in (None, "pre-sweep", "tail"):
         sentences.append(profile.noise_floor_message(-72.0, noise_segment_text(source)))
+    sentences.append(profile.clarity_low_message(-1.5, profile.clarity_low_db or 0.0))
+    sentences.append(profile.clarity_high_message(9.0, profile.clarity_high_db or 8.0))
     return sentences
 
 

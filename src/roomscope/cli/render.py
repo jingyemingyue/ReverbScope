@@ -217,7 +217,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
 
     clarity = _clarity_glance(c, broadband)
     if clarity is not None:
-        row(_("Clarity"), "ok", clarity)
+        row(_("Clarity"), _topic_status(findings, "clarity"), clarity)
 
     refl = result.reflections
     if refl.reflections:

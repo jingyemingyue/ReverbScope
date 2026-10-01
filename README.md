@@ -17,10 +17,10 @@ microphone position is usable — next to any DAW, or on its own.**
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases)**
 
-**Status: 0.4.x pre-release** — free, open source, for testing. **Hardware
-validation is still in progress:** nothing has been measured through a real
-audio interface or DAW yet, so treat the numbers as unvalidated
-([help test it](#help-test-the-04x-pre-release)). Neither edition needs Python.
+**Status: 0.5.0 beta 1 (pre-release)** — free, open source, for testing. **This is not
+the hardware release:** nothing has been measured through a real audio
+interface or DAW yet, so treat the numbers as unvalidated
+([help test it](#help-test-beta-1)). Neither edition needs Python.
 
 Choose **one edition**, then the file for your computer under **Assets** on
 the newest release:
@@ -121,24 +121,28 @@ microphone position:
 
 It measures the room with an exponential sine sweep (ESS), derives the room
 impulse response by deconvolution, and reports reverberation (EDT / T20 /
-T30 / estimated RT60), frequency response, background noise, early
-reflections and potential low-frequency resonances. Every number carries its
-unit, its algorithm source and a validity flag; when the data is not good
-enough, RoomScope says *"Insufficient decay range"* instead of inventing a
-figure. There is deliberately no "room score". The GUI, the command line and
-the reports are available in English and Simplified Chinese.
+T30 / estimated RT60), early/late energy (C50, C80, D50, centre time),
+frequency response, background noise, early reflections and potential
+low-frequency resonances. Every number carries its unit, its algorithm
+source and a validity flag; when the data is not good enough, RoomScope
+says *"Insufficient decay range"* instead of inventing a figure. There is
+deliberately no "room score". A recording profile may add one notice when
+C50 or C80 is a poor fit for that kind of recording; the threshold is an
+engineering choice, not a grade. The GUI, the command line and the reports
+are available in English and Simplified Chinese.
 
-Status: **0.4.x pre-release** on the way to 1.0
+Status: **0.5.0 beta 1 (pre-release)** on the way to 1.0
 ([RELEASE_PLAN.md](docs/RELEASE_PLAN.md)). The DSP core, CLI, GUI, compare,
 loopback, zh-CN catalog, session bundles and both editions' bundles exist and are
 covered by synthetic tests on Linux, macOS and Windows. **Not yet:** any result
 measured on real hardware (the hardware matrix and the validation campaign are
-empty), signed bundles, a PyPI package. Snapshot of what works:
+empty), signed bundles, a PyPI package. Beta 1 does not meet the 0.5.0 exit
+criteria in the release plan. Snapshot of what works:
 [docs/STATUS.md](docs/STATUS.md).
 
-## Help test the 0.4.x pre-release
+## Help test beta 1
 
-The 0.4.x builds exist so that people with real interfaces and DAWs can find
+The beta 1 builds exist so that people with real interfaces and DAWs can find
 out what works. A failed check is as useful as a pass.
 
 1. Install a build ([Download](#download); the Gatekeeper / SmartScreen

@@ -105,7 +105,7 @@ class ProfileBase:
 
     Measurement-integrity checks (direct-sound confidence, clipping,
     insufficient decay range) are identical for every profile and live here.
-    The four profile sections — reflections, decay, noise, resonances — use
+    The profile sections — reflections, decay, clarity, noise, resonances — use
     class-level thresholds plus per-profile message methods, so each profile
     keeps its own wording while sharing the surrounding logic.
     """
@@ -130,12 +130,20 @@ class ProfileBase:
     #: Bands between these centre frequencies count as "mid".
     mid_band_min_hz = 500.0
     mid_band_max_hz = 2000.0
+    #: Early/late ratio this profile comments on (``"c50"`` for speech, ``"c80"``
+    #: for music). ``None`` means the profile does not judge clarity.
+    clarity_metric: str | None = "c50"
+    #: Notice when that ratio (dB) is below this. ``None`` does not flag a low ratio.
+    clarity_low_db: float | None = 0.0
+    #: Notice when that ratio (dB) is above this (the room is too dry for the use).
+    clarity_high_db: float | None = None
 
     def interpret(self, result: AnalysisResult) -> list[Finding]:
         findings: list[Finding] = []
         findings.extend(self._data_quality(result))
         findings.extend(self._reflections(result))
         findings.extend(self._decay(result))
+        findings.extend(self._clarity(result))
         findings.extend(self._noise(result))
         findings.extend(self._resonances(result))
         return findings
@@ -546,6 +554,64 @@ class ProfileBase:
             )
         return findings
 
+    def _clarity(self, result: AnalysisResult) -> list[Finding]:
+        """One notice when early/late energy is a poor fit for this recording.
+
+        Only a VALID ratio is quoted. The threshold is an engineering choice
+        for the recording, stated in the evidence, not a room grade and not
+        an ISO limit.
+        """
+        name = self.clarity_metric
+        if name not in ("c50", "c80"):
+            return []
+        metric = getattr(result.decay.broadband, name)
+        if metric.validity is not Validity.VALID or metric.value is None:
+            return []
+        value = float(metric.value)
+        if self.clarity_low_db is not None and value < self.clarity_low_db:
+            return [
+                Finding(
+                    topic="clarity",
+                    severity=Severity.NOTICE,
+                    message=self.clarity_low_message(value, self.clarity_low_db),
+                    evidence={
+                        "metric": name,
+                        "value_db": value,
+                        "threshold_db": self.clarity_low_db,
+                        "side": "low",
+                    },
+                    message_id="clarity.low",
+                    params={
+                        "metric": name,
+                        "value_db": value,
+                        "threshold_db": self.clarity_low_db,
+                    },
+                    locale=current_locale(),
+                )
+            ]
+        if self.clarity_high_db is not None and value > self.clarity_high_db:
+            return [
+                Finding(
+                    topic="clarity",
+                    severity=Severity.NOTICE,
+                    message=self.clarity_high_message(value, self.clarity_high_db),
+                    evidence={
+                        "metric": name,
+                        "value_db": value,
+                        "threshold_db": self.clarity_high_db,
+                        "side": "high",
+                    },
+                    message_id="clarity.high",
+                    params={
+                        "metric": name,
+                        "value_db": value,
+                        "threshold_db": self.clarity_high_db,
+                    },
+                    locale=current_locale(),
+                )
+            ]
+        return []
+
     def _noise(self, result: AnalysisResult) -> list[Finding]:
         findings: list[Finding] = []
         noise = result.noise
@@ -685,6 +751,20 @@ class ProfileBase:
             "positions to see whether they follow the room or the position."
         ).format(listed=listed)
 
+    def clarity_low_message(self, value_db: float, threshold_db: float) -> str:
+        return _(
+            "Early sound is not clearly ahead of the later room sound "
+            "(C50 {value:.1f} dB, below {threshold:.0f} dB). For close-miked recording "
+            "this can blur the source; move the microphone closer or add absorption, "
+            "then measure again. This is one position, not a room grade."
+        ).format(value=value_db, threshold=threshold_db)
+
+    def clarity_high_message(self, value_db: float, threshold_db: float) -> str:
+        return _(
+            "Late room sound is weak (C80 {value:.1f} dB, above {threshold:.0f} dB). "
+            "This is one position, not a room grade."
+        ).format(value=value_db, threshold=threshold_db)
+
 
 class GenericProfile(ProfileBase):
     """Profile-independent observations that apply to any close-miked recording."""
@@ -703,6 +783,7 @@ class VocalProfile(ProfileBase):
     strong_reflection_window_ms = 25.0
     long_decay_s = 0.5
     very_long_decay_s = 0.8
+    clarity_low_db = 2.0
 
     def reflection_message(self, r: Reflection) -> str:
         return _(
@@ -750,6 +831,13 @@ class VocalProfile(ProfileBase):
             "which brings this noise up; compare it with your chain's noise at the same gain."
         ).format(segment=segment, rms_dbfs=rms_dbfs)
 
+    def clarity_low_message(self, value_db: float, threshold_db: float) -> str:
+        return _(
+            "Speech clarity is low for close vocals (C50 {value:.1f} dB, below "
+            "{threshold:.0f} dB). Diction may blur between words; move the microphone "
+            "closer or add absorption. This is one position, not a room grade."
+        ).format(value=value_db, threshold=threshold_db)
+
 
 class VoiceOverProfile(ProfileBase):
     """Voice-over, narration and audiobook."""
@@ -761,6 +849,7 @@ class VoiceOverProfile(ProfileBase):
     strong_reflection_window_ms = 20.0
     long_decay_s = 0.4
     very_long_decay_s = 0.7
+    clarity_low_db = 4.0
 
     def reflection_message(self, r: Reflection) -> str:
         return _(
@@ -816,6 +905,14 @@ class VoiceOverProfile(ProfileBase):
             "dialogue. Move the microphone or treat the affected corner, then measure again."
         ).format(listed=listed)
 
+    def clarity_low_message(self, value_db: float, threshold_db: float) -> str:
+        return _(
+            "Speech clarity is low for voice-over (C50 {value:.1f} dB, below "
+            "{threshold:.0f} dB). Narration usually wants the first 50 ms to hold more "
+            "of the energy; move the microphone closer or add absorption. This is one "
+            "position, not a room grade."
+        ).format(value=value_db, threshold=threshold_db)
+
 
 class AcousticGuitarProfile(ProfileBase):
     """Acoustic guitar, single microphone or close pair."""
@@ -827,6 +924,8 @@ class AcousticGuitarProfile(ProfileBase):
     strong_reflection_window_ms = 30.0
     long_decay_s = 0.7
     very_long_decay_s = 1.1
+    clarity_metric = "c80"
+    clarity_low_db = 0.0
 
     def reflection_message(self, r: Reflection) -> str:
         return _(
@@ -866,6 +965,14 @@ class AcousticGuitarProfile(ProfileBase):
             "this position. Bass trapping or a different position helps."
         ).format(low_max=low_max, mid_mean=mid_mean)
 
+    def clarity_low_message(self, value_db: float, threshold_db: float) -> str:
+        return _(
+            "Musical clarity is low for acoustic guitar (C80 {value:.1f} dB, below "
+            "{threshold:.0f} dB). The note may sit in the room rather than in the "
+            "instrument; move the microphone closer or add absorption. This is one "
+            "position, not a room grade."
+        ).format(value=value_db, threshold=threshold_db)
+
 
 class DrumsProfile(ProfileBase):
     """Drums, close mics (kick, snare, toms) with or without overheads."""
@@ -878,6 +985,9 @@ class DrumsProfile(ProfileBase):
     strong_reflection_window_ms = 20.0
     long_decay_s = 0.8
     very_long_decay_s = 1.2
+    # The kit wants the room; a low clarity ratio is not a defect here.
+    clarity_metric = None
+    clarity_low_db = None
 
     def reflection_message(self, r: Reflection) -> str:
         return _(
@@ -933,6 +1043,10 @@ class RoomMicProfile(ProfileBase):
     strong_reflection_window_ms = 40.0
     long_decay_s = 0.9
     very_long_decay_s = 1.4
+    # A room microphone wants late energy. Flag a ratio that is too dry, not one that is low.
+    clarity_metric = "c80"
+    clarity_low_db = None
+    clarity_high_db = 8.0
 
     def reflection_message(self, r: Reflection) -> str:
         return _(
@@ -1004,6 +1118,14 @@ class RoomMicProfile(ProfileBase):
             "two other positions to see whether they follow the room."
         ).format(listed=listed)
 
+    def clarity_high_message(self, value_db: float, threshold_db: float) -> str:
+        return _(
+            "Late room sound is weak for a room microphone (C80 {value:.1f} dB, above "
+            "{threshold:.0f} dB). A room microphone usually wants more of the room after "
+            "80 ms; move it farther from the source or into a livelier part of the room. "
+            "This is one position, not a room grade."
+        ).format(value=value_db, threshold=threshold_db)
+
 
 class ChoirProfile(ProfileBase):
     """Choir or small ensemble, one or more microphones."""
@@ -1015,6 +1137,7 @@ class ChoirProfile(ProfileBase):
     strong_reflection_window_ms = 30.0
     long_decay_s = 0.8
     very_long_decay_s = 1.3
+    clarity_low_db = -2.0
 
     def reflection_message(self, r: Reflection) -> str:
         return _(
@@ -1053,6 +1176,13 @@ class ChoirProfile(ProfileBase):
             "({low_max:.2f} s vs {mid_mean:.2f} s), which makes the ensemble bottom-heavy "
             "and muddies diction. Bass trapping or a different position helps."
         ).format(low_max=low_max, mid_mean=mid_mean)
+
+    def clarity_low_message(self, value_db: float, threshold_db: float) -> str:
+        return _(
+            "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below "
+            "{threshold:.0f} dB). Some late sound suits a choir, but this much will blur "
+            "diction. This is one position, not a room grade."
+        ).format(value=value_db, threshold=threshold_db)
 
 
 def available_profiles() -> list[str]:

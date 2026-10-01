@@ -1,13 +1,13 @@
 ## RoomScope v{version}
 
-**Early public pre-release for testing.** RoomScope measures a recording room
+**Beta 1, for testing.** RoomScope measures a recording room
 with a sine sweep and tells you whether a microphone position is usable —
 next to any DAW, or on its own. Free and open source (Apache-2.0).
 
-> **Current builds are unsigned development/pre-release builds**, and
-> **hardware validation is still in progress**: nothing has been measured
-> through a real audio interface or a real DAW yet. Please read
-> *Known limitations* below.
+> **This is beta 1 of the software, not the 0.5.0 hardware release.**
+> Current builds are unsigned, and **hardware validation has not started**:
+> nothing has been measured through a real audio interface or a real DAW yet.
+> Please read *Known limitations* below.
 
 ### Choose your edition
 
@@ -62,8 +62,10 @@ run `roomscope demo`.
 
 ### Known limitations
 
-* **This is a pre-release** for early testers, not a finished product.
-* **Hardware validation is still in progress.** No measurement through a real
+* **This is beta 1**, not a finished product, and **not 0.5.0**. In the
+  release plan, 0.5.0 means a person has run the hardware matrix. No cell
+  is PASS yet.
+* **Hardware validation has not started.** No measurement through a real
   audio interface, microphone or DAW has been recorded yet; the hardware
   matrix and the validation campaign are empty. **Measurement accuracy
   should not yet be treated as hardware-validated**: use the numbers to
