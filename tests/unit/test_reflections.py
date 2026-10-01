@@ -104,3 +104,47 @@ def test_full_window_is_not_reported_as_truncated(sample_rate: int) -> None:
     assert res.analysed_window_ms == pytest.approx((0.8, 80.0))
     assert not res.window_truncated
     assert not any("only that part" in n for n in res.notes)
+
+
+@pytest.mark.parametrize("delay_ms", [5.0, 80.0])
+@pytest.mark.parametrize("sample_rate", [44100, 48000, 96000])
+@pytest.mark.parametrize("hold_ms", [0.0, 0.1])
+def test_reflection_at_a_search_boundary_is_found(
+    sample_rate: int, delay_ms: float, hold_ms: float
+) -> None:
+    """Cropping before peak detection must not remove a real peak's neighbour."""
+    direct = round(0.010 * sample_rate)
+    ir = np.zeros(round(0.15 * sample_rate))
+    ir[direct] = 1.0
+    ir[direct + round(delay_ms * sample_rate / 1000.0)] = 0.3
+    result = detect_early_reflections(
+        ir,
+        sample_rate,
+        direct,
+        min_delay_ms=5.0,
+        max_delay_ms=80.0,
+        threshold_db=-20.0,
+        prominence_db=6.0,
+        direct_sound_confidence="high",
+        hold_ms=hold_ms,
+    )
+    assert [r.delay_ms for r in result.reflections] == pytest.approx([delay_ms], abs=0.1)
+
+
+def test_peaks_outside_the_window_are_not_reported(sample_rate: int) -> None:
+    direct = round(0.010 * sample_rate)
+    ir = np.zeros(round(0.15 * sample_rate))
+    ir[direct] = 1.0
+    for delay_ms, amplitude in [(4.0, 0.5), (5.0, 0.3), (80.0, 0.3), (81.0, 0.5)]:
+        ir[direct + round(delay_ms * sample_rate / 1000.0)] = amplitude
+    result = detect_early_reflections(
+        ir,
+        sample_rate,
+        direct,
+        min_delay_ms=5.0,
+        max_delay_ms=80.0,
+        threshold_db=-20.0,
+        prominence_db=6.0,
+        direct_sound_confidence="high",
+    )
+    assert [r.delay_ms for r in result.reflections] == pytest.approx([5.0, 80.0], abs=0.1)

@@ -11,8 +11,9 @@ Method
    trend is used as its prominence.
 4. Peaks between ``min_delay_ms`` and ``max_delay_ms`` after the direct sound
    that are above ``threshold_db`` (relative to the direct sound) and have an
-   excess of at least ``prominence_db`` are reported. When the impulse
-   response ends before ``max_delay_ms``, the window that was actually
+   excess of at least ``prominence_db`` are reported. Neighbours outside the
+   inclusive delay window are kept when detecting a peak at either boundary.
+   When the impulse response ends before ``max_delay_ms``, the window that was actually
    analysed is reported (``analysed_window_ms``, ``window_truncated``): a
    shorter search must not look like "no reflections found".
 
@@ -103,16 +104,25 @@ def detect_early_reflections(
     trend_len = max(3, round(trend_ms * sample_rate / 1000.0))
     trend = uniform_filter1d(rel_db, size=trend_len, mode="nearest")
     excess = rel_db - trend
-    region = rel_db[start:stop]
+    # A peak needs both neighbours; cropping exactly to the delay window
+    # silently removes arrivals on its boundaries. Keep enough context for
+    # the peak-hold plateau, but exclude out-of-window peaks by height BEFORE
+    # the distance rule, so they cannot suppress an in-window arrival.
+    context = max(1, int(np.ceil(hold_ms * sample_rate / 1000.0)))
+    region_start = max(0, start - context)
+    region_stop = min(rel_db.shape[0], stop + context)
+    region = rel_db[region_start:region_stop]
+    height = np.full(region.shape, np.inf)
+    height[start - region_start : stop - region_start] = threshold_db
     min_distance = max(1, round(0.3e-3 * sample_rate))
-    peaks, _ = find_peaks(region, height=threshold_db, distance=min_distance)
+    peaks, _ = find_peaks(region, height=height, distance=min_distance)
     found = [
         Reflection(
-            delay_ms=float((start + p - direct_index) * 1000.0 / sample_rate),
+            delay_ms=float((region_start + p - direct_index) * 1000.0 / sample_rate),
             relative_db=float(region[p]),
         )
         for p in peaks
-        if excess[start + p] >= prominence_db
+        if excess[region_start + p] >= prominence_db
     ]
     if len(found) > MAX_REPORTED_REFLECTIONS:
         found.sort(key=lambda r: r.relative_db, reverse=True)
