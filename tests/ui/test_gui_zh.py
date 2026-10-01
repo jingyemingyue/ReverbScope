@@ -182,6 +182,42 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
     window.close()
     if any(name for name in _cjk_fonts()):
         assert tofu == [], [str(w.message) for w in tofu[:3]]
+    _check_about_and_clocks(window)
+
+
+def _check_about_and_clocks(window: QWidget) -> None:
+    import re
+
+    from roomscope.ui.main_window import about_box
+    from roomscope.ui.pages import separate_clocks_box
+    from roomscope.ui.workers import unexpected_error_text
+
+    about = about_box(window)
+    plain = re.sub(r"<[^>]+>", " ", about.text())
+    _check([plain, about.windowTitle(), *[button.text() for button in about.buttons()]], "about")
+    about.close()
+    clocks = separate_clocks_box(window, "播放和录音不在同一台设备上")
+    labels = [
+        clocks.windowTitle(),
+        clocks.text(),
+        clocks.informativeText(),
+        *[button.text() for button in clocks.buttons()],
+    ]
+    _check(labels, "two clocks")
+    from roomscope.i18n import _
+
+    default = clocks.defaultButton()
+    assert default is not None and default.text() == _("Cancel")
+    clocks.close()
+    _check([unexpected_error_text()], "unexpected error")
+    from PySide6.QtGui import QFontDatabase
+
+    from roomscope.ui.theme import CJK_FALLBACK_FONTS
+
+    present = [name for name in CJK_FALLBACK_FONTS if name in set(QFontDatabase.families())]
+    if present:
+        families = window.results.text.font().families()
+        assert any(name in families for name in present), families
 
 
 def _cjk_fonts() -> list[str]:

@@ -51,7 +51,7 @@ from roomscope.ui.plots import (
     plot_reflections,
 )
 from roomscope.ui.state import MeasurementState
-from roomscope.ui.theme import tokens
+from roomscope.ui.theme import apply_report_font, tokens
 from roomscope.ui.widgets import Card, FindingCard, PageHeader, StatTile, label, primary
 
 #: Display word and chip tone of a metric validity.
@@ -417,6 +417,7 @@ class ResultsPage(QWidget):
         self.text = QPlainTextEdit()
         self.text.setReadOnly(True)
         self.text.setProperty("report", True)
+        apply_report_font(self.text)
         report_layout.addWidget(self.text, 1)
         self.tabs.addTab(report, _("Full report"))
 

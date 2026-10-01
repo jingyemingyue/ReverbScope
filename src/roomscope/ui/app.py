@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
+from collections.abc import Callable
+from types import TracebackType
 from typing import TYPE_CHECKING
 
 from roomscope.i18n import N_
@@ -37,9 +40,14 @@ def run_app(argv: list[str] | None = None, *, smoke: bool = False) -> int:
     from PySide6.QtWidgets import QApplication
 
     from roomscope.i18n import activate
+    from roomscope.logging_config import configure_logging
     from roomscope.ui.main_window import MainWindow
     from roomscope.ui.theme import apply_application_chrome
 
+    # Warnings and unexpected failures go to $ROOMSCOPE_HOME/roomscope.log.
+    # The desktop launcher does not pass through the command line, which is
+    # where logging would otherwise be configured.
+    configure_logging(logging.WARNING)
     if smoke:
         os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     QApplication.setHighDpiScaleFactorRoundingPolicy(
@@ -61,7 +69,51 @@ def run_app(argv: list[str] | None = None, *, smoke: bool = False) -> int:
         app.processEvents()
         window.close()
         return 0
-    return int(app.exec())
+    previous = sys.excepthook
+    sys.excepthook = _gui_excepthook(previous)
+    try:
+        return int(app.exec())
+    finally:
+        sys.excepthook = previous
+
+
+_Hook = Callable[[type[BaseException], BaseException, TracebackType | None], object]
+
+
+def _gui_excepthook(previous: _Hook) -> _Hook:
+    """Show one dialog for a bug on the GUI thread, and keep the traceback in the log.
+
+    Installed only while ``run_app`` is in its event loop, so a test that
+    builds a window never gets a modal dialog from an assertion.
+    """
+    showing = False
+
+    def hook(
+        exc_type: type[BaseException],
+        exc: BaseException,
+        tb: TracebackType | None,
+    ) -> None:
+        nonlocal showing
+        if issubclass(exc_type, (KeyboardInterrupt, SystemExit)):
+            previous(exc_type, exc, tb)
+            return
+        logging.getLogger("roomscope.ui").error("unhandled exception", exc_info=(exc_type, exc, tb))
+        if showing:
+            return
+        showing = True
+        try:
+            from PySide6.QtWidgets import QApplication
+
+            from roomscope.ui.widgets import error_box
+            from roomscope.ui.workers import gui_failure_text
+
+            error_box(QApplication.activeWindow(), "RoomScope", gui_failure_text(exc))
+        except Exception:
+            previous(exc_type, exc, tb)
+        finally:
+            showing = False
+
+    return hook
 
 
 def install_qt_translations(app: QCoreApplication) -> None:

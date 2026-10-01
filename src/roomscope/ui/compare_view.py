@@ -37,7 +37,7 @@ from roomscope.io.session_store import load_measurement, save_comparison
 from roomscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
 from roomscope.ui.browser import SessionBrowser
 from roomscope.labels import metric_label, status_text, validity_word
-from roomscope.ui.theme import ensure_plot_fonts, style_figure
+from roomscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
 from roomscope.ui.widgets import Card, PageHeader, label, primary
 
 
@@ -158,6 +158,7 @@ class ComparePage(QWidget):
         self.text = QPlainTextEdit()
         self.text.setReadOnly(True)
         self.text.setProperty("report", True)
+        apply_report_font(self.text)
         self.tabs.addTab(self.table, _("Metrics"))
         self.tabs.addTab(chart, _("Frequency response difference"))
         self.tabs.addTab(self.reflections, _("Early Reflections"))

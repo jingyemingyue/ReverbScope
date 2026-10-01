@@ -21,7 +21,13 @@ All notable changes to RoomScope are documented here. The format follows
 - **Desktop app.** The home screen shows which keyboard shortcut opens each
   mode: ⌃1 / ⌃2 / ⌃3 (⌘1 / ⌘2 / ⌘3 on macOS), the same keys as the Measure
   menu. A status bar names the version and the current page. Results can
-  copy the full text report to the clipboard.
+  copy the full text report to the clipboard. An unexpected failure is
+  explained in the interface language (the traceback goes to the log, not
+  the dialog); the text can be selected and copied. The two-clock warning
+  uses translated buttons and does not measure unless you ask it to. The
+  About box is translated. Shortcut marks fit their badges. Section headings
+  are not letter-spaced, so Chinese is not spread out. Reports use a font
+  that can draw Chinese.
 
 ## [0.4.1] - 2026-09-29
 

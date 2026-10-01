@@ -3848,3 +3848,18 @@ msgstr "报告已复制到剪贴板。"
 
 msgid "warning: --format json does not apply to {command}; printing text"
 msgstr "警告：--format json 不适用于 {command}，仍输出文本"
+
+msgid "OK"
+msgstr "确定"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Measure anyway"
+msgstr "仍要测量"
+
+msgid "Something unexpected went wrong. This is a bug in RoomScope. The details were written to the log; the environment report in the Help menu shows where that log is. Include both in a bug report."
+msgstr "发生了意外错误。这是 RoomScope 的程序缺陷。详细信息已写入日志；帮助菜单中的环境报告会标出日志位置。请把日志和环境报告一起附在缺陷报告中。"
+
+msgid "<b>RoomScope {version}</b><br>An open-source, DAW-independent recording environment analyzer.<br><br>Licensed under the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses.<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the executable (and inside <code>RoomScope.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; RoomScope never reports dB SPL."
+msgstr "<b>RoomScope {version}</b><br>开源、不依赖 DAW 的录音环境分析器。<br><br>采用 Apache 许可证 2.0。<br>本程序使用 Qt 与 PySide6（版权归 Qt 公司及其贡献者所有），遵循 GNU LGPL 第 3 版；Qt 库以独立共享库加载，可以替换为接口兼容的版本。NumPy、SciPy、matplotlib、soundfile（libsndfile，LGPL-2.1）和 sounddevice（PortAudio）按其各自的许可证使用。<br><br>桌面安装包在可执行文件旁边附带 <code>THIRD_PARTY_LICENSES/</code> 目录（在 macOS 上则位于 <code>RoomScope.app</code> 内）。从源码目录查看 docs/DEPENDENCIES.md。电平是数字电平（dBFS），除非提供了校准；RoomScope 从不报告 dB SPL。"

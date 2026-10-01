@@ -80,6 +80,16 @@ ALLOWED = frozenset(
         "Flex",
         # GitHub, where test reports go; language names
         "GitHub",
+        # License and library names kept in Latin in the About box.
+        "Apache",
+        "GNU",
+        "LGPL",
+        "NumPy",
+        "SciPy",
+        "matplotlib",
+        "soundfile",
+        "libsndfile",
+        "sounddevice",
     }
 )
 

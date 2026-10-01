@@ -31,7 +31,33 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from roomscope.i18n import _
 from roomscope.ui.theme import LIGHT_TOKENS, tokens, tone_color
+
+
+def set_banner_text(widget: QLabel, text: str, tone: str = "") -> None:
+    """Show ``text`` on a label, as a ``warn`` or ``info`` banner when ``tone`` is set.
+
+    A dynamic property is read when the style is polished, so changing it
+    after the widget is shown does nothing until the style is reapplied.
+    """
+    widget.setText(text)
+    widget.setProperty("banner", tone)
+    widget.style().unpolish(widget)
+    widget.style().polish(widget)
+
+
+def error_box(parent: QWidget | None, title: str, message: str) -> None:
+    """A critical dialog: selectable text, and a button we translate ourselves."""
+    from PySide6.QtWidgets import QMessageBox
+
+    box = QMessageBox(parent)
+    box.setIcon(QMessageBox.Icon.Critical)
+    box.setWindowTitle(title)
+    box.setText(message)
+    box.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+    box.addButton(_("OK"), QMessageBox.ButtonRole.AcceptRole)
+    box.exec()
 
 
 def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:
