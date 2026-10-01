@@ -94,6 +94,52 @@ class DecayMetric:
         }
 
 
+@dataclass(frozen=True)
+class EnergyMetric:
+    """One early/late energy parameter (C50, C80, D50 or centre time).
+
+    ``value`` is in ``unit`` (``dB``, ``%`` or ``s``). It is ``None`` unless
+    the validity is :attr:`Validity.VALID` or :attr:`Validity.UNRELIABLE`.
+    """
+
+    name: str
+    value: float | None
+    unit: str
+    validity: Validity
+    reason: str | None = None
+
+    def marked_unreliable(self, reason: str) -> EnergyMetric:
+        """This metric marked UNRELIABLE with ``reason``.
+
+        Same rule as :meth:`DecayMetric.marked_unreliable`: a number that was
+        VALID is kept and marked UNRELIABLE; a metric that already has no
+        number is left as it is.
+        """
+        if self.validity not in (Validity.VALID, Validity.UNRELIABLE):
+            return self
+        return replace(
+            self,
+            validity=Validity.UNRELIABLE,
+            reason=_join_reasons(
+                self.reason if self.validity is Validity.UNRELIABLE else None, reason
+            ),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "value": self.value,
+            "unit": self.unit,
+            "validity": str(self.validity),
+            "reason": self.reason,
+        }
+
+
+def _not_computed_energy(name: str, unit: str) -> EnergyMetric:
+    """An energy parameter an older result file did not store."""
+    return EnergyMetric(name=name, value=None, unit=unit, validity=Validity.NOT_COMPUTED)
+
+
 #: Time origin of all decay times (``edc_time_s``, ``onset_time_s``,
 #: ``truncation_time_s``).
 DECAY_TIME_ORIGIN = diag("direct sound (time 0 = the detected broadband direct sound)")
@@ -149,6 +195,14 @@ class BandDecay:
     #: Why values of this band are withheld or unreliable (non-straight decay,
     #: implausible noise truncation, outside the excitation range, ...).
     warnings: tuple[str, ...] = ()
+    #: Early/late energy at 50 ms (speech clarity), same truncation as the decay.
+    c50: EnergyMetric = field(default_factory=lambda: _not_computed_energy("C50", "dB"))
+    #: Early/late energy at 80 ms (music clarity).
+    c80: EnergyMetric = field(default_factory=lambda: _not_computed_energy("C80", "dB"))
+    #: Share of energy in the first 50 ms, in percent.
+    d50: EnergyMetric = field(default_factory=lambda: _not_computed_energy("D50", "%"))
+    #: Energy-weighted centre time, in seconds.
+    centre_time: EnergyMetric = field(default_factory=lambda: _not_computed_energy("Ts", "s"))
 
     def with_all_unreliable(self, reason: str) -> BandDecay:
         """All metrics marked UNRELIABLE with ``reason``; no RT60 estimate and
@@ -158,6 +212,10 @@ class BandDecay:
             edt=self.edt.marked_unreliable(reason),
             t20=self.t20.marked_unreliable(reason),
             t30=self.t30.marked_unreliable(reason),
+            c50=self.c50.marked_unreliable(reason),
+            c80=self.c80.marked_unreliable(reason),
+            d50=self.d50.marked_unreliable(reason),
+            centre_time=self.centre_time.marked_unreliable(reason),
             rt60_estimate_s=None,
             rt60_basis=None,
             curvature_percent=None,
@@ -183,6 +241,10 @@ class BandDecay:
             "filter_bt_product": self.filter_bt_product,
             "filter_warning": self.filter_warning,
             "warnings": list(self.warnings),
+            "c50": self.c50.to_dict(),
+            "c80": self.c80.to_dict(),
+            "d50": self.d50.to_dict(),
+            "centre_time": self.centre_time.to_dict(),
         }
         if include_curves:
             data["edc_time_s"] = _array_to_list(self.edc_time_s)

@@ -125,10 +125,12 @@ correction products, the column says where the correction runs.
 - **Live sound and real-time transfer functions.** Smaart and Open Sound
   Meter show live dual-channel FFT results with program material and
   coherence. RoomScope works offline, one sweep at a time.
-- **Clarity, STI and the wider ISO 3382 set.** REW Pro (STI), Smaart Suite
-  (STI, clarity), ARTA and AURORA report clarity, definition or STI; RoomScope
-  reports EDT, T20, T30, estimated RT60, frequency response, noise, early
-  reflections and potential low-frequency resonances.
+- **STI, strength and the rest of the ISO 3382 set.** REW Pro (STI), Smaart
+  Suite (STI, clarity), ARTA and AURORA report speech transmission index,
+  sound strength or lateral fractions. RoomScope reports EDT, T20, T30,
+  estimated RT60, and the single-position energy ratios C50, C80, D50 and
+  centre time (methodology §3b). It does not report STI or strength G, and
+  the ratios are not a room score.
 - **Calibrated SPL or certified measurements.** RoomScope reports dBFS only;
   its band filters are not certified IEC 61260 class 1, and one source and one
   microphone position do not reach the ISO 3382-2 survey class (methodology

@@ -29,7 +29,9 @@ from roomscope.labels import metric_label, topic_text, validity_word
 from roomscope.models.comparison import ComparisonResult, MetricDelta
 from roomscope.models.result import (
     AnalysisResult,
+    BandDecay,
     DecayMetric,
+    EnergyMetric,
     PlacementLength,
     PlacementResult,
     Validity,
@@ -181,6 +183,7 @@ def _glance_label_width() -> int:
     """One label column for every "At a glance" block, so they line up when shown together."""
     labels = (
         _("Reverberation"),
+        _("Clarity"),
         _("Early reflections"),
         _("Low end"),
         _("Noise floor"),
@@ -211,6 +214,10 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         row(_("Reverberation"), _topic_status(findings, "reverberation"), text)
     else:
         row(_("Reverberation"), "unsure", _("no reliable broadband RT60 (see Reverberation)"))
+
+    clarity = _clarity_glance(c, broadband)
+    if clarity is not None:
+        row(_("Clarity"), "ok", clarity)
 
     refl = result.reflections
     if refl.reflections:
@@ -393,6 +400,76 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
         lines.append("  " + "   ".join(legend))
     for note in notes:
         lines += c.status("info", note)
+    lines += _energy(c, result)
+    return lines
+
+
+def _clarity_glance(c: Console, band: BandDecay) -> str | None:
+    """C50 / C80 / D50 for the at-a-glance line, or ``None`` when none is valid."""
+    parts: list[str] = []
+    if band.c50.validity is Validity.VALID and band.c50.value is not None:
+        parts.append(f"C50 {band.c50.value:+.1f} dB")
+    if band.c80.validity is Validity.VALID and band.c80.value is not None:
+        parts.append(f"C80 {band.c80.value:+.1f} dB")
+    if band.d50.validity is Validity.VALID and band.d50.value is not None:
+        parts.append(f"D50 {band.d50.value:.0f} %")
+    if not parts:
+        return None
+    return c.sep().join(parts)
+
+
+def _energy_number(metric: EnergyMetric) -> str | None:
+    if metric.value is None:
+        return None
+    if metric.unit == "dB":
+        return f"{metric.value:+.1f} dB"
+    if metric.unit == "%":
+        return f"{metric.value:.0f} %"
+    return f"{metric.value * 1000:.0f} ms"
+
+
+def _energy_cell(c: Console, metric: EnergyMetric) -> str:
+    number = _energy_number(metric)
+    if number is not None and metric.validity is Validity.VALID:
+        return number
+    if number is not None and metric.validity is Validity.UNRELIABLE:
+        return c.style(number, "yellow") + " " + c.symbol("unsure")
+    if metric.validity is Validity.INSUFFICIENT_RANGE:
+        return c.symbol("warn")
+    return c.symbol("skip")
+
+
+def _energy(c: Console, result: AnalysisResult) -> list[str]:
+    """C50, C80, D50 and centre time. Ratios, not a judgement of the room."""
+    lines = c.section(
+        _("Early and late energy"),
+        _("ratios from the same truncation as the decay; not a room score"),
+    )
+    lines += c.paragraph(
+        _(
+            "C50 is early energy over late energy at 50 ms (speech). C80 is the same "
+            "at 80 ms (music). D50 is the share of energy in the first 50 ms. Centre "
+            "time is the energy-weighted average time. Time zero is the detected "
+            "direct sound. A ratio is reported only when the decay range is at least "
+            "20 dB, and it is not a room score."
+        )
+    )
+    rows = []
+    for band in (result.decay.broadband, *result.decay.bands):
+        rows.append(
+            [
+                band_text(band.band_label),
+                _energy_cell(c, band.c50),
+                _energy_cell(c, band.c80),
+                _energy_cell(c, band.d50),
+                _energy_cell(c, band.centre_time),
+            ]
+        )
+    lines += c.table(
+        [_("Band"), "C50", "C80", "D50", _("Centre time")],
+        rows,
+        align="lrrrr",
+    )
     return lines
 
 
@@ -663,7 +740,16 @@ def render_comparison(
 
 
 #: Decay metrics of a comparison, in table order, with their short names.
-_DECAY_METRICS = (("edt", "EDT"), ("t20", "T20"), ("t30", "T30"), ("rt60_estimate", "RT60"))
+_DECAY_METRICS = (
+    ("edt", "EDT"),
+    ("t20", "T20"),
+    ("t30", "T30"),
+    ("rt60_estimate", "RT60"),
+    ("c50", "C50"),
+    ("c80", "C80"),
+    ("d50", "D50"),
+    ("centre_time", "Ts"),
+)
 
 
 def _split_decay_name(name: str) -> tuple[str, str]:
@@ -839,6 +925,24 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         row(_("Reverberation"), "ok", text)
     else:
         row(_("Reverberation"), "unsure", _("broadband RT60 not comparable (see Reverberation)"))
+
+    c50 = next((d for d in comparison.decay if d.name == "broadband.c50"), None)
+    c80 = next((d for d in comparison.decay if d.name == "broadband.c80"), None)
+    if (
+        c50 is not None
+        and c50.validity is Validity.VALID
+        and c50.baseline is not None
+        and c50.candidate is not None
+    ):
+        text = f"C50 {c50.baseline:+.1f} dB{arrow}{c50.candidate:+.1f} dB"
+        if (
+            c80 is not None
+            and c80.validity is Validity.VALID
+            and c80.baseline is not None
+            and c80.candidate is not None
+        ):
+            text += c.sep() + f"C80 {c80.baseline:+.1f} dB{arrow}{c80.candidate:+.1f} dB"
+        row(_("Clarity"), "ok", text)
 
     if comparison.reflections:
         counts = {"matched": 0, "appeared": 0, "disappeared": 0}

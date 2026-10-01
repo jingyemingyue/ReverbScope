@@ -18,6 +18,7 @@ class CsvExporter:
         base.mkdir(parents=True, exist_ok=True)
         written = [
             _write_decay_metrics(base / "decay_metrics.csv", result),
+            _write_energy_metrics(base / "energy_metrics.csv", result),
             _write_decay_edc(base / "decay_edc.csv", result),
             _write_frequency_response(base / "frequency_response.csv", result),
             _write_noise_psd(base / "noise_psd.csv", result),
@@ -63,6 +64,22 @@ def _write_decay_metrics(path: Path, result: AnalysisResult) -> Path:
             ]
         )
     return _write(path, ["band", "metric", "seconds", "validity_or_basis"], rows)
+
+
+def _write_energy_metrics(path: Path, result: AnalysisResult) -> Path:
+    rows: list[list[object]] = []
+    for band in (result.decay.broadband, *result.decay.bands):
+        for metric in (band.c50, band.c80, band.d50, band.centre_time):
+            rows.append(
+                [
+                    band.band_label,
+                    metric.name,
+                    "" if metric.value is None else metric.value,
+                    metric.unit,
+                    str(metric.validity),
+                ]
+            )
+    return _write(path, ["band", "metric", "value", "unit", "validity"], rows)
 
 
 def _write_decay_edc(path: Path, result: AnalysisResult) -> Path | None:

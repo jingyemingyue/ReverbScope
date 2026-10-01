@@ -11,8 +11,6 @@ from __future__ import annotations
 from roomscope.i18n import _
 from roomscope.models.result import Validity
 
-_DECAY_METRICS = {"edt": "EDT", "t20": "T20", "t30": "T30"}
-
 
 def validity_word(validity: Validity) -> str:
     """Translated word for a metric validity."""
@@ -65,9 +63,16 @@ def metric_label(name: str, unit: str = "") -> str:
         else:
             where, rest = name, []
         metric = rest[0] if rest else ""
-        what = (
-            _("RT60 estimate") if metric == "rt60_estimate" else _DECAY_METRICS.get(metric, metric)
-        )
+        what = {
+            "rt60_estimate": _("RT60 estimate"),
+            "edt": "EDT",
+            "t20": "T20",
+            "t30": "T30",
+            "c50": "C50",
+            "c80": "C80",
+            "d50": "D50",
+            "centre_time": _("Centre time"),
+        }.get(metric, metric)
         text = f"{where} {what}".strip()
     return f"{text} ({unit})" if unit else text
 

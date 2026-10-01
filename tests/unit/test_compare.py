@@ -37,6 +37,9 @@ def test_compare_two_synthetic_positions(short_sweep: SweepSettings) -> None:
     assert rt.validity is Validity.VALID
     assert rt.delta_s is not None and rt.delta_s > 0.0
     assert rt.delta_percent is not None
+    c50 = next(item for item in comparison.decay if item.name == "broadband.c50")
+    assert c50.validity is Validity.VALID
+    assert c50.unit == "dB" and c50.delta is not None
     matched = [m for m in comparison.reflections if m.status == "matched"]
     assert matched
     assert matched[0].level_delta_db is not None

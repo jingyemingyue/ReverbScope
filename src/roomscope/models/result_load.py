@@ -23,6 +23,7 @@ from roomscope.models.result import (
     ClippingCheck,
     DecayMetric,
     DecayResult,
+    EnergyMetric,
     ExcitationBand,
     FloatArray,
     FrequencyResponseResult,
@@ -88,6 +89,20 @@ def decay_metric_from_dict(data: Any) -> DecayMetric:
     )
 
 
+def energy_metric_from_dict(data: Any, name: str, unit: str) -> EnergyMetric:
+    """An energy parameter; a missing object is an older file that has none."""
+    if not isinstance(data, dict):
+        return EnergyMetric(name=name, value=None, unit=unit, validity=Validity.NOT_COMPUTED)
+    value = data.get("value")
+    return EnergyMetric(
+        name=str(data.get("name", name)),
+        value=None if value is None else float(value),
+        unit=str(data.get("unit", unit)),
+        validity=_validity(data.get("validity", Validity.NOT_COMPUTED)),
+        reason=data.get("reason"),
+    )
+
+
 def band_decay_from_dict(data: Any) -> BandDecay:
     payload = _obj(data, "band decay")
     return BandDecay(
@@ -111,6 +126,10 @@ def band_decay_from_dict(data: Any) -> BandDecay:
         onset_time_s=payload.get("onset_time_s"),
         mid_band_hz=payload.get("mid_band_hz"),
         warnings=_str_tuple(payload.get("warnings")),
+        c50=energy_metric_from_dict(payload.get("c50"), "C50", "dB"),
+        c80=energy_metric_from_dict(payload.get("c80"), "C80", "dB"),
+        d50=energy_metric_from_dict(payload.get("d50"), "D50", "%"),
+        centre_time=energy_metric_from_dict(payload.get("centre_time"), "Ts", "s"),
     )
 
 

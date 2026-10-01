@@ -3890,3 +3890,46 @@ msgstr "测得的几何。拖动可旋转。"
 
 msgid "possible positions"
 msgstr "可能的位置"
+
+msgid "Clarity"
+msgstr "清晰度"
+
+msgid "Early and late energy"
+msgstr "早期与后期能量"
+
+msgid "ratios from the same truncation as the decay; not a room score"
+msgstr "与衰减使用同一次噪声截断的比值；不是房间评分"
+
+msgid "C50 is early energy over late energy at 50 ms (speech). C80 is the same at 80 ms (music). D50 is the share of energy in the first 50 ms. Centre time is the energy-weighted average time. Time zero is the detected direct sound. A ratio is reported only when the decay range is at least 20 dB, and it is not a room score."
+msgstr "C50 是 50 ms 处的早期能量除以后期能量（语言）。C80 是 80 ms 处的同一比值（音乐）。D50 是前 50 ms 能量占总能量的份额。重心时间是按能量加权的平均时间。时间零点是测得的直达声。只有衰减范围至少有 20 dB 时才给出比值，而且它不是房间评分。"
+
+msgid "Centre time"
+msgstr "重心时间"
+
+msgid "EARLY AND LATE ENERGY"
+msgstr "早期与后期能量"
+
+msgctxt "diagnostic"
+msgid "Insufficient decay range for an early/late energy ratio: {available:.1f} dB available, {needed:.0f} dB needed"
+msgstr "早期/后期能量比的衰减范围不够：现有 {available:.1f} dB，需要 {needed:.0f} dB"
+
+msgctxt "diagnostic"
+msgid "the noise truncation ({truncation_s:.3f} s) is not after the {split_ms:.0f} ms early window, so the late energy is not measured"
+msgstr "噪声截断点（{truncation_s:.3f} s）不在 {split_ms:.0f} ms 早期窗之后，因此没有测到后期能量"
+
+msgctxt "diagnostic"
+msgid "{metric} {value:.1f} dB vs {other:.1f} dB"
+msgstr "{metric} {value:.1f} dB，对比 {other:.1f} dB"
+
+msgctxt "diagnostic"
+msgid "the response is too short for a centre time"
+msgstr "响应太短，无法计算重心时间"
+
+msgctxt "diagnostic"
+msgid "{metric} {value:.1f} % vs {other:.1f} %"
+msgstr "{metric} {value:.1f} %，对比 {other:.1f} %"
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:.3f} s vs {other:.3f} s"
+msgstr "{metric} {seconds:.3f} s，对比 {other:.3f} s"
+

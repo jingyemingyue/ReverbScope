@@ -168,7 +168,7 @@ The Results page has seven tabs:
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | Broadband and octave-band EDT / T20 / T30 / RT60 with validity; the text report; core diagnostics (always English). |
+| Overview | Broadband and octave-band EDT / T20 / T30 / RT60, plus C50 / C80 / D50 / centre time, each with validity; the text report; core diagnostics (always English). |
 | Impulse Response | The deconvolved IR. The peak is the direct sound; it is not normalised to 1.0. |
 | Frequency Response | Raw (dotted) and smoothed (solid) magnitude. A dashed curve is the electrical loopback when compensation ran. 0 dB is the interface, not “flat in the room”. |
 | Decay | Schroeder / energy-decay curves. Broadband is a solid line; octave bands use changing dash patterns so colour is not the only cue. |

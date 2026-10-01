@@ -743,7 +743,10 @@ algebra and the refusals, not the acoustics of any real surface.
   needs two microphone positions). `average_decay` means VALID T values
   across a project's positions and names the Table 1 class (read from the
   standard's preview pages; its footnotes and the other clause 4
-  conditions are not checked). Decay curves are never averaged.
+  conditions are not checked). Decay curves are never averaged. C50, C80,
+  D50 and centre time are single-position energy ratios from the same
+  truncation as the decay (methodology §3b); they are not spatially averaged
+  and they are not a room score. They are withheld below 20 dB of decay range.
 * Direct sound = strongest deconvolved sample; a reflection stronger than the
   direct sound would be mis-identified (confidence margin does not catch it).
 * PortAudio buffer under/overflows are reported (result warning and a

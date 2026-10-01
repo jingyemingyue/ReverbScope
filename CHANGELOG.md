@@ -7,6 +7,16 @@ All notable changes to RoomScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Early and late energy.** Each band now reports ISO 3382-1 clarity,
+  definition and centre time from the same noise truncation as the decay:
+  C50 (50 ms, speech), C80 (80 ms, music), D50 (percent of energy in the
+  first 50 ms) and centre time. A ratio is withheld below 20 dB of decay
+  range. They are not a room score, not STI, and not spatially averaged.
+  The command line, the results page and `energy_metrics.csv` show them.
+  A comparison differenced the broadband values only when both sides are
+  valid.
+
 ### Changed
 - **Command line.** Root `--help`, subcommand descriptions and the epilog wrap
   on a narrow terminal (they ran past 60 columns). `roomscope demo` clears its

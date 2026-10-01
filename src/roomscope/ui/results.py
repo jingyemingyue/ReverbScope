@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 from roomscope.ui.qt import ensure_pyside6
@@ -44,6 +45,7 @@ from roomscope.interpretation.profiles import (
 from roomscope.models.result import AnalysisResult, PlacementResult, Validity
 from roomscope.ui.plots import (
     decay_table_rows,
+    energy_table_rows,
     plot_decay,
     plot_frequency_response,
     plot_impulse_response,
@@ -259,6 +261,35 @@ class _Overview(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         decay.body.addWidget(self.table)
         layout.addWidget(decay)
+
+        energy = Card()
+        energy.body.addWidget(label(_("EARLY AND LATE ENERGY"), "section"))
+        energy.body.addWidget(
+            label(
+                _(
+                    "C50 is early energy over late energy at 50 ms (speech). C80 is the same "
+                    "at 80 ms (music). D50 is the share of energy in the first 50 ms. Centre "
+                    "time is the energy-weighted average time. Time zero is the detected "
+                    "direct sound. A ratio is reported only when the decay range is at least "
+                    "20 dB, and it is not a room score."
+                ),
+                "hint",
+                wrap=True,
+            )
+        )
+        self.energy_table = QTableWidget(0, 5)
+        self.energy_table.setHorizontalHeaderLabels(
+            [_("Band"), "C50", "C80", "D50", _("Centre time")]
+        )
+        self.energy_table.horizontalHeader().setStretchLastSection(True)
+        self.energy_table.verticalHeader().setVisible(False)
+        self.energy_table.setAlternatingRowColors(True)
+        self.energy_table.setShowGrid(False)
+        self.energy_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        self.energy_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.energy_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        energy.body.addWidget(self.energy_table)
+        layout.addWidget(energy)
         layout.addStretch(1)
 
     def show_result(self, result: AnalysisResult, findings: list[Finding], profile: str) -> None:
@@ -364,8 +395,12 @@ class _Overview(QWidget):
             self.findings.addWidget(label(_("No findings."), "hint"))
 
         rows = decay_table_rows(result)
+        self._fill_metric_table(self.table, rows)
+        self._fill_metric_table(self.energy_table, energy_table_rows(result))
+
+    def _fill_metric_table(self, table: QTableWidget, rows: Sequence[tuple[str, ...]]) -> None:
         colours = tokens()
-        self.table.setRowCount(len(rows))
+        table.setRowCount(len(rows))
         for r, row in enumerate(rows):
             for c, value in enumerate(row):
                 item = QTableWidgetItem(value)
@@ -378,12 +413,11 @@ class _Overview(QWidget):
                     font = item.font()
                     font.setBold(True)
                     item.setFont(font)
-                self.table.setItem(r, c, item)
-        # The whole table is shown; the page scrolls, not the table.
-        self.table.resizeRowsToContents()
-        height = self.table.horizontalHeader().height() + 2 * self.table.frameWidth()
-        height += sum(self.table.rowHeight(r) for r in range(self.table.rowCount()))
-        self.table.setFixedHeight(height + 2)
+                table.setItem(r, c, item)
+        table.resizeRowsToContents()
+        height = table.horizontalHeader().height() + 2 * table.frameWidth()
+        height += sum(table.rowHeight(r) for r in range(table.rowCount()))
+        table.setFixedHeight(height + 2)
 
 
 class ResultsPage(QWidget):
