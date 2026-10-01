@@ -244,6 +244,13 @@ time-reversed filtering.
    for T30 (ISO 3382: the evaluation range must lie ≥ 10 dB above the noise
    [9][10], restated by Hak et al. 2012 [17]). Otherwise the metric is
    `insufficient_decay_range` with the numbers in `reason`.
+   A take carrying device timing warnings (buffer under/overflows or a
+   reported stream-rate mismatch) marks all otherwise VALID decay and
+   early/late energy metrics `unreliable`; no estimated RT60 is selected.
+   Missing/insufficient-range metrics keep their existing status. This is a
+   measurement-quality gate, not an attempt to repair dropped samples.
+   A faulty separate loopback is refused for compensation while the clean
+   microphone recording can still be evaluated without that compensation.
 6. **B·T check.** With time-reversed filtering the bandwidth × reverberation
    time product should exceed about 4 (about 16 with forward filtering) [6];
    below 4 the band's metrics are marked `unreliable` and a warning explains
@@ -398,6 +405,14 @@ average of the dB envelope models the local diffuse level; peaks between
 0.8 ms and 80 ms after the direct sound, above −20 dB re direct and at least
 6 dB above the local trend, are reported as candidates `(delay_ms,
 relative_db)`.
+The delay bounds are inclusive. Peak detection retains neighbouring samples
+on both sides, including enough context for the peak-hold plateau; an
+out-of-window peak is excluded by the height mask before the minimum-distance
+rule. This follows `scipy.signal.find_peaks`' neighbour/plateau definition
+([SciPy API](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html));
+it changes neither the amplitude/prominence thresholds nor the 0.3 ms minimum
+spacing. The impulse response's actual endpoints still have no neighbour
+beyond the recording, and a truncated search window is reported as before.
 
 **Limitations.** Candidates, not identified surfaces. In a dense early
 diffuse tail some candidates are statistical. Delays are relative to the

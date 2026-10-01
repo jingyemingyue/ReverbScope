@@ -147,6 +147,18 @@ record them if you change them. ASIO is not used by the bundles.
 
 **What to send**
 
+The `audio stream:` line in `roomscope.log` records the settings of the
+opened stream: device IDs, requested/reported Hz, channel counts, block size
+and input/output latency in seconds. Attach that line together with any
+buffer warning. The reported latency can differ from the requested low/high
+class. The reported rate is PortAudio's value, not an independent clock
+measurement: when the host cannot report the hardware rate, it repeats the
+requested rate ([sounddevice stream properties](https://python-sounddevice.readthedocs.io/en/0.5.6/api/streams.html)).
+A difference greater than 0.5 Hz is flagged because WAV/session rates are
+integer Hz. Takes with timing warnings retain diagnostic numbers but mark
+their decay/energy metrics unreliable and withhold the estimated RT60;
+resolve the device problem and repeat the measurement.
+
 * The form: [audio interface test report](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml)
   or [DAW compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml).
 * The environment report (step 4 above).

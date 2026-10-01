@@ -53,6 +53,8 @@ def configure_logging(
 ) -> logging.Logger:
     """Configure the ``roomscope`` logger with a stream handler and a log file.
 
+    ``level`` controls the console. The file also keeps INFO diagnostics
+    when the console shows warnings only; verbose mode keeps DEBUG too.
     The rotating file lives under ``$ROOMSCOPE_HOME/roomscope.log``. Calling
     this more than once replaces the previous RoomScope handlers instead of
     stacking them.
@@ -62,6 +64,7 @@ def configure_logging(
         if getattr(handler, "_roomscope_handler", False):
             logger.removeHandler(handler)
     handler = logging.StreamHandler(stream or sys.stderr)
+    handler.setLevel(level)
     handler.setFormatter(logging.Formatter(fmt))
     handler._roomscope_handler = True  # type: ignore[attr-defined]
     logger.addHandler(handler)
@@ -79,6 +82,9 @@ def configure_logging(
             logger.addHandler(file_handler)
         except OSError:
             pass
-    logger.setLevel(level)
+    # Do not filter out stream settings before the file handler sees them.
+    # Keep the console at the requested level so JSON/quiet CLI output stays
+    # unchanged and GUI launches do not print routine diagnostics.
+    logger.setLevel(min(handler.level, logging.INFO) if log_file else handler.level)
     logger.propagate = False
     return logger

@@ -10,6 +10,7 @@ evidence (docs/HARDWARE_TESTS.md).
 
 from __future__ import annotations
 
+import io
 import logging
 import threading
 import time
@@ -52,6 +53,8 @@ class _Script:
     #: Delay between the last callback and the finished callback (PortAudio
     #: drains the output buffers first).
     finish_delay_s: float = 0.0
+    reported_rate_hz: float | None = None
+    latency_s: tuple[float, float] = (0.02, 0.03)
     outputs: list[np.ndarray] = field(default_factory=list)
     stream_thread: list[int] = field(default_factory=list)
     aborted: list[bool] = field(default_factory=list)
@@ -77,7 +80,12 @@ def _fake_sounddevice(script: _Script) -> SimpleNamespace:
             callback: Callable[..., None],
             finished_callback: Callable[[], None],
         ) -> None:
-            del samplerate, dtype, device
+            del dtype
+            self.samplerate = (
+                samplerate if script.reported_rate_hz is None else script.reported_rate_hz
+            )
+            self.latency = script.latency_s
+            self.device = device
             self.n_in, self.n_out = channels
             self.blocksize = blocksize
             self.callback = callback
@@ -286,6 +294,58 @@ def test_buffer_problems_are_logged_and_kept_with_the_take(
 
 
 def test_a_clean_take_has_no_device_warnings(script: _Script) -> None:
+    assert _take().device_warnings == ()
+
+
+def test_opened_stream_settings_are_logged_outside_the_callback(
+    script: _Script, caplog: pytest.LogCaptureFixture
+) -> None:
+    script.latency_s = (0.035, 0.045)
+    caplog.set_level(logging.INFO, logger="roomscope.audio.portaudio")
+    _take()
+    entry = next(r for r in caplog.records if r.getMessage().startswith("audio stream:"))
+    assert entry.thread == threading.get_ident()
+    assert "reported_rate_hz=48000" in entry.getMessage()
+    assert "latency_s=(0.035, 0.045)" in entry.getMessage()
+
+
+def test_default_log_keeps_stream_settings_without_printing_them(
+    script: _Script, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The real CLI/GUI configure a WARNING console, but a useful file log."""
+    from roomscope.logging_config import configure_logging
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
+    parent = logging.getLogger("roomscope")
+    saved = (list(parent.handlers), parent.level, parent.propagate)
+    console = io.StringIO()
+    try:
+        configure_logging(logging.WARNING, stream=console)
+        _take()
+        assert "audio stream:" in (tmp_path / "roomscope.log").read_text(encoding="utf-8")
+        assert console.getvalue() == ""
+    finally:
+        for handler in list(parent.handlers):
+            parent.removeHandler(handler)
+            if handler not in saved[0]:
+                handler.close()
+        for handler in saved[0]:
+            parent.addHandler(handler)
+        parent.setLevel(saved[1])
+        parent.propagate = saved[2]
+
+
+def test_a_reported_stream_rate_mismatch_stays_with_the_take(script: _Script) -> None:
+    script.reported_rate_hz = 47900.0
+    recording = _take()
+    assert recording.sample_rate == 48000
+    (warning,) = recording.device_warnings
+    assert "47900 Hz" in warning and "48000 Hz" in warning
+    assert "time scale cannot be trusted" in warning
+
+
+def test_rate_rounding_does_not_flag_a_sub_hertz_difference(script: _Script) -> None:
+    script.reported_rate_hz = 48000.1
     assert _take().device_warnings == ()
 
 

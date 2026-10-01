@@ -8,11 +8,17 @@ import pytest
 from scipy.signal import fftconvolve
 
 from roomscope.core.noise import NOISE_FLOOR_DBFS
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
+from roomscope.core.pipeline import (
+    Reference,
+    analyze,
+    analyze_impulse_response,
+    synthetic_recording,
+)
 from roomscope.core.sweep import measurement_signal
 from roomscope.interpretation import interpret
 from roomscope.models.audio import AudioSignal
 from roomscope.models.configuration import AnalysisSettings, SweepSettings
+from roomscope.models.result import Validity
 from tests.conftest import make_rir
 
 
@@ -188,6 +194,75 @@ def test_device_buffer_problems_reach_the_result_and_a_finding(
     assert len(dropouts) == 1 and dropouts[0].evidence == {"warning": warning}
     clean = analyze(AudioSignal(samples, sr), Reference.from_settings(short_sweep))
     assert not any(f.message_id == "measurement.dropouts" for f in interpret(clean))
+    assert clean.decay.broadband.t30.validity is Validity.VALID
+    assert clean.decay.broadband.c50.validity is Validity.VALID
+    for band in (result.decay.broadband, *result.decay.bands):
+        assert band.rt60_estimate_s is None
+        for metric in (
+            band.edt,
+            band.t20,
+            band.t30,
+            band.c50,
+            band.c80,
+            band.d50,
+            band.centre_time,
+        ):
+            assert metric is not None
+            assert metric.validity is not Validity.VALID
+            if metric.validity is Validity.UNRELIABLE:
+                assert "timing problems" in (metric.reason or "")
+
+
+def test_a_device_rate_warning_blocks_valid_clarity_advice(short_sweep: SweepSettings) -> None:
+    sr = short_sweep.sample_rate
+    samples = _room_recording(short_sweep)
+    warning = (
+        "the audio stream reported 47900 Hz instead of the requested 48000 Hz; "
+        "the recording's time scale cannot be trusted"
+    )
+    result = analyze(
+        AudioSignal(samples, sr, source="standalone", device_warnings=(warning,)),
+        Reference.from_settings(short_sweep),
+    )
+    assert warning in result.warnings
+    assert result.decay.broadband.c50.validity is Validity.UNRELIABLE
+    assert result.decay.broadband.c80.validity is Validity.UNRELIABLE
+    assert result.decay.broadband.rt60_estimate_s is None
+    clean = analyze(AudioSignal(samples, sr), Reference.from_settings(short_sweep))
+    assert any(f.message_id == "clarity.high" for f in interpret(clean, "room_mic"))
+    assert not any(f.topic == "clarity" for f in interpret(result, "room_mic"))
+
+
+def test_a_faulty_separate_loopback_is_not_used_to_compensate(
+    short_sweep: SweepSettings,
+) -> None:
+    sr = short_sweep.sample_rate
+    samples = _room_recording(short_sweep)
+    return_samples = np.pad(
+        measurement_signal(short_sweep), (0, samples.shape[0] - short_sweep.total_samples)
+    )
+    warning = "the loopback device reported an input overflow"
+    result = analyze(
+        AudioSignal(samples, sr),
+        Reference.from_settings(short_sweep),
+        loopback=AudioSignal(return_samples, sr, device_warnings=(warning,)),
+    )
+    returned = result.impulse_response.loopback
+    assert returned is not None and not returned.compensation_applied
+    assert "timing problems" in (returned.reason or "")
+    assert warning in result.warnings
+    assert result.decay.broadband.t30.validity is Validity.VALID
+
+
+def test_imported_ir_keeps_device_warnings_and_marks_energy_unreliable(sample_rate: int) -> None:
+    ir = np.pad(make_rir(sample_rate, rt60_s=0.4), (round(0.01 * sample_rate), 0))
+    result = analyze_impulse_response(
+        AudioSignal(ir, sample_rate, device_warnings=("input overflow",)),
+        excitation_band=(20.0, 20000.0),
+    )
+    assert "input overflow" in result.warnings
+    assert result.decay.broadband.c50.validity is Validity.UNRELIABLE
+    assert result.decay.broadband.rt60_estimate_s is None
 
 
 def test_the_test_signal_exported_instead_of_the_microphone_is_flagged(

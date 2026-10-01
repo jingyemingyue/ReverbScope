@@ -8,8 +8,8 @@ recording + reference sweep
     -> linearity checks (flat-topped peaks, folded/aliased distortion products)
     -> decay analysis (broadband + octave bands, on h_full with a fixed lead-in;
        bands outside the excitation band withheld; all metrics unreliable when
-       the direct sound is unverified, the recording clips or it contains
-       aliased distortion)
+       the direct sound is unverified, the recording clips, it contains
+       aliased distortion or the device reported timing problems)
     -> frequency response (gated from the direct sound, with a lead-in)
     -> background noise (a quiet segment of the recording, verified quiet)
     -> early reflections
@@ -428,9 +428,18 @@ def _decay_unreliable_reasons(
     clipped: bool,
     aliased: tuple[AliasedDistortion, ...] = (),
     playback_speed: PlaybackSpeed | None = None,
+    *,
+    device_timing_problems: bool = False,
 ) -> list[str]:
     """Measurement-level reasons why no decay metric may be reported as valid."""
     reasons: list[str] = []
+    if device_timing_problems:
+        reasons.append(
+            diag(
+                "the audio device reported timing problems in this take; its decay and energy "
+                "metrics are unreliable. Check the stream settings and repeat the measurement"
+            )
+        )
     if playback_speed is not None:
         reasons.append(
             diag(
@@ -695,6 +704,14 @@ def analyze(
     loopback_result: LoopbackResult | None = None
     if lb_samples is not None:
         try:
+            if loopback is not None and loopback.device_warnings:
+                warnings.extend(loopback.device_warnings)
+                raise AnalysisError(
+                    diag(
+                        "the separate loopback recording has device timing problems; "
+                        "loopback compensation was not applied"
+                    )
+                )
             lb_clipping, _lb_notes = _validate_recording(lb_samples, sample_rate)
             h_lb = deconvolve(lb_samples, prepared.inverse)
             lb_located = _locate_pass(
@@ -885,7 +902,12 @@ def analyze(
 
     decay = _analyze_decay_of_pass(h_full, located, sample_rate, settings, band)
     unreliable = _decay_unreliable_reasons(
-        confidence, located.pre_peak_margin_db, clipping.clipped, aliased, playback_speed
+        confidence,
+        located.pre_peak_margin_db,
+        clipping.clipped,
+        aliased,
+        playback_speed,
+        device_timing_problems=bool(recording.device_warnings),
     )
     if unreliable:
         decay = decay.with_all_unreliable("; ".join(unreliable))
@@ -1094,10 +1116,11 @@ def analyze_impulse_response(
 
     settings = settings or AnalysisSettings()
     warnings: list[str] = [
+        *ir.device_warnings,
         diag(
             "impulse response imported; deconvolution, sweep-position checks and "
             "distortion indicators were skipped"
-        )
+        ),
     ]
     mono, channel, channel_warning = ir.select_channel(settings.channel)
     if channel_warning:
@@ -1175,6 +1198,13 @@ def analyze_impulse_response(
         decay = _mark_decay_not_computed(
             decay, diag("excitation band unknown (imported impulse response; declare --band)")
         )
+    if ir.device_warnings:
+        decay = decay.with_all_unreliable(
+            "; ".join(
+                _decay_unreliable_reasons(confidence, margin, False, device_timing_problems=True)
+            )
+        )
+        warnings.extend(decay.notes)
     fr_segment, fr_direct = _segment_around_pass(
         np.asarray(mono, dtype=np.float64),
         located,

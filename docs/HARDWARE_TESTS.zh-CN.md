@@ -83,6 +83,15 @@
 
 **需要提交什么**
 
+`roomscope.log` 中的 `audio stream:` 行会记录已打开音频流的设备编号、请求与报告的
+采样率、声道数、块大小和输入/输出延迟（秒）。请同时附上这一行和任何缓冲区警告。
+报告的延迟可能不同于请求的“低/高”档。采样率是 PortAudio 报告的值，并非独立的时钟
+测量：主机无法报告硬件实际采样率时，这个值仍等于请求值
+（[sounddevice 音频流属性](https://python-sounddevice.readthedocs.io/en/0.5.6/api/streams.html)）。
+由于 WAV/会话的采样率为整数 Hz，超过 0.5 Hz 的差异会触发警告。存在时序警告的
+录音会保留诊断数字，但将衰减/能量指标标为“不可靠”，不再给出估计 RT60；请解决
+设备问题后重新测量。
+
 * 表单：[音频接口测试报告（中文表单）](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware-zh-CN.yml)或 [DAW 兼容性报告（中文表单）](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw-zh-CN.yml)；英文表单为 [audio interface test report](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml) 和 [DAW compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml)。
 * 环境报告（上面第 4 步）。
 * 任何失败都请附上数据文件夹（`~/.roomscope/`，或 **环境报告 ▸ 打开数据文件夹**）中的 `roomscope.log`；如果保存了结果，再附上用 `roomscope session bundle <session folder> --no-audio` 生成的会话打包文件（只有在你愿意分享房间录音时才去掉 `--no-audio`）。

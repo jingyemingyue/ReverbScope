@@ -5,6 +5,24 @@ All notable changes to RoomScope are documented here. The format follows
 [Semantic Versioning](https://semver.org/). How a version is cut is in
 `docs/RELEASE_PLAN.md`.
 
+## [Unreleased]
+
+### Fixed
+- Early reflections exactly on either end of the delay window are detected
+  with their neighbouring samples intact; peaks outside the window cannot
+  suppress a candidate inside it.
+- Device buffer faults and reported stream-rate mismatches mark decay and
+  early/late energy metrics unreliable and withhold the estimated RT60.
+  A separate loopback recording with device faults is not used for compensation.
+  Imported impulse responses also retain device warnings when supplied in memory.
+
+### Added
+- PortAudio logs the opened stream's device IDs, requested and reported sample
+  rates, channel counts, block size and input/output latency from the waiting
+  thread. A reported rate more than 0.5 Hz from the requested integer rate is
+  kept as a warning with the take; the recording is not silently relabelled.
+- Simplified Chinese translations for the new device timing diagnostics.
+
 ## [0.5.0b1] - 2026-10-01
 
 Software beta 1. This is **not** 0.5.0: the release plan's 0.5.0 still

@@ -21,8 +21,8 @@ class AudioSignal:
     sample_rate: int
     source: str | None = None
     #: Problems the audio device reported while recording this take (buffer
-    #: under/overflows); :func:`roomscope.core.pipeline.analyze` carries them
-    #: into the result's warnings.
+    #: under/overflows or a reported stream-rate mismatch). Analysis carries
+    #: them into the result and marks decay/energy metrics unreliable.
     device_warnings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:

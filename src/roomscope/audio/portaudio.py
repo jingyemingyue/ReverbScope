@@ -125,6 +125,7 @@ class PortAudioBackend:
         finished = threading.Event()
         callback_error: list[BaseException] = []
         xruns: list[str] = []
+        device_warnings: list[str] = []
 
         def callback(
             indata: np.ndarray,
@@ -202,7 +203,34 @@ class PortAudioBackend:
                 callback=callback,
                 finished_callback=on_finished,
                 **stream_kwargs,
-            ):
+            ) as stream:
+                # Query and log from the waiting thread, never the audio
+                # callback. These are the opened stream's reported settings,
+                # which can differ from the requested/default latency and rate.
+                reported_rate = getattr(stream, "samplerate", None)
+                log.info(
+                    "audio stream: devices=%s, requested_rate_hz=%s, reported_rate_hz=%s, "
+                    "channels=%s, blocksize=%s, latency_s=%s",
+                    getattr(stream, "device", (input_device, output_device)),
+                    sample_rate,
+                    reported_rate,
+                    (n_in, n_out),
+                    getattr(stream, "blocksize", CALLBACK_BLOCK),
+                    getattr(stream, "latency", None),
+                )
+                # WAV/session rates are integer Hz. Do not silently label a
+                # stream at a different rate as the requested sweep rate.
+                if reported_rate is not None and not np.isclose(
+                    reported_rate, sample_rate, rtol=0.0, atol=0.5
+                ):
+                    warning = diag(
+                        "the audio stream reported {actual:g} Hz instead of the requested "
+                        "{requested:g} Hz; the recording's time scale cannot be trusted",
+                        actual=float(reported_rate),
+                        requested=sample_rate,
+                    )
+                    device_warnings.append(warning)
+                    log.warning("%s", warning)
                 deadline = time.monotonic() + frames_total / max(sample_rate, 1) + TIMEOUT_MARGIN_S
                 cancelled_at: float | None = None
                 while not finished.wait(timeout=PROGRESS_POLL_S):
@@ -242,25 +270,23 @@ class PortAudioBackend:
                     done=position[0], total=frames_total
                 )
             )
-        device_warnings: tuple[str, ...] = ()
         if xruns:
             # PortAudio's status flags: an input overflow drops recorded
             # samples, an output underflow inserts a gap in the sweep. Either
             # breaks the sweep's timing that deconvolution relies on.
-            device_warnings = (
-                diag(
-                    "the audio device reported {count} buffer problem(s) during the take "
-                    "({flags}); the recording may contain dropouts",
-                    count=len(xruns),
-                    flags="; ".join(sorted(set(xruns))),
-                ),
+            warning = diag(
+                "the audio device reported {count} buffer problem(s) during the take "
+                "({flags}); the recording may contain dropouts",
+                count=len(xruns),
+                flags="; ".join(sorted(set(xruns))),
             )
-            log.warning("%s; measure again if the result looks wrong", device_warnings[0])
+            device_warnings.append(warning)
+            log.warning("%s; check the stream settings and measure again", warning)
         report(1.0)
         samples = recorded[:, 0] if len(input_channels) == 1 else recorded
         return AudioSignal(
             samples=np.ascontiguousarray(samples),
             sample_rate=sample_rate,
             source="standalone",
-            device_warnings=device_warnings,
+            device_warnings=tuple(device_warnings),
         )
