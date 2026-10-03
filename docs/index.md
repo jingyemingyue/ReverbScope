@@ -10,6 +10,14 @@ python scripts/build_docs_site.py --out site
 ```
 
 The generator uses only the standard library. Open `site/index.html`.
+Each page gets a title, a description, a canonical URL, and Open Graph
+title/description. The build also writes `site/sitemap.xml` and
+`site/robots.txt` (crawlers are allowed). The repo has **no public docs
+host yet**; canonical URLs use the placeholder
+`https://docs.example.invalid/roomscope/` until you pass
+`--base-url https://your.host/path/`. Copy the `site/` folder to any
+static host. This repository does not submit the site to Google, buy a
+domain, or enable a host account.
 
 ## Languages / 语言
 

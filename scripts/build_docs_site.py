@@ -3,6 +3,10 @@
 No extra runtime dependency: a small Markdown subset (headings, lists,
 tables, fenced code, links, emphasis) is rendered with the standard library.
 GitHub still renders the Markdown; this generator is for a browsable site.
+
+The repo has no public docs host yet. Canonical URLs, Open Graph ``og:url``,
+``sitemap.xml`` and ``robots.txt`` use :data:`PLACEHOLDER_BASE_URL` unless
+``--base-url`` is passed. This script does not submit the site to Google.
 """
 
 from __future__ import annotations
@@ -13,6 +17,12 @@ import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
+from urllib.parse import urljoin
+from xml.sax.saxutils import escape as xml_escape
+
+#: No public docs URL is configured. Replace when a real host exists.
+PLACEHOLDER_BASE_URL = "https://docs.example.invalid/roomscope/"
+DESCRIPTION_LIMIT = 160
 
 HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
 UL_ITEM = re.compile(r"^[-*]\s+(.*)$")
@@ -320,12 +330,30 @@ def _sidebar(items: list[NavItem], current: str, css_prefix: str) -> str:
     return "\n".join(blocks)
 
 
-def _page(title: str, body: str, sidebar: str, css_href: str) -> str:
+def _page(
+    title: str,
+    body: str,
+    sidebar: str,
+    css_href: str,
+    *,
+    description: str,
+    canonical: str,
+    lang: str,
+) -> str:
+    page_title = f"{title} — RoomScope"
+    desc = html.escape(description, quote=True)
+    canon = html.escape(canonical, quote=True)
     return (
-        '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
+        f'<!DOCTYPE html>\n<html lang="{html.escape(lang, quote=True)}">\n<head>\n'
         '<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        f"<title>{html.escape(title)} — RoomScope</title>\n"
+        f'<meta name="description" content="{desc}">\n'
+        f'<link rel="canonical" href="{canon}">\n'
+        f"<title>{html.escape(page_title)}</title>\n"
+        f'<meta property="og:title" content="{html.escape(page_title, quote=True)}">\n'
+        f'<meta property="og:description" content="{desc}">\n'
+        '<meta property="og:type" content="website">\n'
+        f'<meta property="og:url" content="{canon}">\n'
         f'<link rel="stylesheet" href="{html.escape(css_href)}">\n'
         '</head>\n<body>\n<div class="layout">\n'
         f'<nav class="sidebar">{sidebar}</nav>\n'
@@ -340,8 +368,89 @@ def _first_heading(markdown: str, fallback: str) -> str:
     for line in markdown.splitlines():
         match = HEADING.match(line)
         if match:
-            return match.group(2).strip()
+            return _plain_text(match.group(2).strip())
     return fallback
+
+
+def _plain_text(text: str) -> str:
+    """Drop Markdown markers so a title or description is readable prose."""
+    text = LINK.sub(r"\1", text)
+    text = INLINE_CODE.sub(r"\1", text)
+    text = BOLD.sub(r"\1", text)
+    text = ITALIC.sub(r"\1", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def page_description(markdown: str, *, fallback: str) -> str:
+    """First real paragraph, trimmed to a search-snippet length."""
+    for raw in markdown.replace("\r\n", "\n").split("\n\n"):
+        block = raw.strip()
+        if not block or block.startswith("#") or block.startswith("```"):
+            continue
+        if block.startswith("|") or block.startswith(">") or block.startswith("```"):
+            continue
+        if UL_ITEM.match(block.splitlines()[0]) or OL_ITEM.match(block.splitlines()[0]):
+            continue
+        # Language-switcher lines ("**English** | [简体中文](...)").
+        if block.startswith("**English**") or block.startswith("[English]"):
+            continue
+        text = _plain_text(block.splitlines()[0] if block.startswith("**") else block)
+        if len(text) < 24:
+            continue
+        if len(text) > DESCRIPTION_LIMIT:
+            clipped = text[: DESCRIPTION_LIMIT - 1].rsplit(" ", 1)[0]
+            text = clipped.rstrip(".,;:") + "…"
+        return text
+    return fallback
+
+
+def page_lang(relative: Path) -> str:
+    name = relative.as_posix()
+    if "zh-CN" in name or name.endswith("zh-CN.md") or "/zh-CN." in f"/{name}":
+        return "zh-CN"
+    return "en"
+
+
+def normalize_base_url(base: str) -> str:
+    text = base.strip()
+    if not text:
+        return PLACEHOLDER_BASE_URL
+    return text if text.endswith("/") else text + "/"
+
+
+def page_canonical(base: str, relative_html: str) -> str:
+    return urljoin(normalize_base_url(base), relative_html)
+
+
+def write_robots_txt(dest: Path, base: str) -> Path:
+    sitemap = urljoin(normalize_base_url(base), "sitemap.xml")
+    text = (
+        "# Public RoomScope docs. This file allows crawlers; nothing was submitted\n"
+        "# to Google from the generator.\n"
+        "User-agent: *\n"
+        "Allow: /\n"
+        f"Sitemap: {sitemap}\n"
+    )
+    path = dest / "robots.txt"
+    path.write_text(text, encoding="utf-8")
+    return path
+
+
+def write_sitemap(dest: Path, pages: list[Path], base: str) -> Path:
+    locs = []
+    root = dest.resolve()
+    for page in pages:
+        rel = page.resolve().relative_to(root).as_posix()
+        locs.append(f"  <url><loc>{xml_escape(page_canonical(base, rel))}</loc></url>")
+    body = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        + "\n".join(locs)
+        + "\n</urlset>\n"
+    )
+    path = dest / "sitemap.xml"
+    path.write_text(body, encoding="utf-8")
+    return path
 
 
 def rel_prefix(relative: Path) -> str:
@@ -349,7 +458,7 @@ def rel_prefix(relative: Path) -> str:
     return "" if depth == 0 else "../" * depth
 
 
-def build_site(docs: Path, dest: Path) -> list[Path]:
+def build_site(docs: Path, dest: Path, *, base_url: str = PLACEHOLDER_BASE_URL) -> list[Path]:
     """Render every Markdown file under ``docs`` into ``dest``. Returns HTML paths."""
     if dest.exists():
         shutil.rmtree(dest)
@@ -366,14 +475,22 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
         title = _first_heading(markdown, source.stem)
         prefix = rel_prefix(relative)
         current = relative.with_suffix(".html").as_posix()
+        description = page_description(
+            markdown, fallback=f"{title} — RoomScope documentation."
+        )
         page = _page(
             title,
             markdown_to_html(markdown),
             _sidebar(items, current, prefix),
             prefix + "assets/theme.css",
+            description=description,
+            canonical=page_canonical(base_url, current),
+            lang=page_lang(relative),
         )
         target.write_text(page, encoding="utf-8")
         written.append(target)
+    write_sitemap(dest, written, base_url)
+    write_robots_txt(dest, base_url)
     return written
 
 
@@ -381,8 +498,16 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--docs", type=Path, default=Path("docs"), help="Markdown source")
     parser.add_argument("--out", type=Path, default=Path("site"), help="HTML output directory")
+    parser.add_argument(
+        "--base-url",
+        default=PLACEHOLDER_BASE_URL,
+        help=(
+            "public origin for canonical URLs and the sitemap "
+            f"(placeholder {PLACEHOLDER_BASE_URL} until a host exists)"
+        ),
+    )
     args = parser.parse_args(argv)
-    written = build_site(args.docs, args.out)
+    written = build_site(args.docs, args.out, base_url=args.base_url)
     print(f"wrote {len(written)} pages under {args.out}")
     return 0
 

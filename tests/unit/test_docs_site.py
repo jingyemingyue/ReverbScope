@@ -52,3 +52,58 @@ def test_build_site_writes_themed_pages(tmp_path: Path) -> None:
     assert (dest / "user-guide" / "en.html").is_file()
     nested = (dest / "user-guide" / "en.html").read_text(encoding="utf-8")
     assert 'href="../assets/theme.css"' in nested
+    assert 'name="description"' in index_html
+    assert 'rel="canonical"' in index_html
+    assert 'property="og:title"' in index_html
+    assert 'property="og:description"' in index_html
+    assert site.PLACEHOLDER_BASE_URL in index_html
+    assert (dest / "robots.txt").is_file()
+    assert (dest / "sitemap.xml").is_file()
+
+
+def test_site_seo_files_use_placeholder_and_allow_indexing(tmp_path: Path) -> None:
+    site = _load()
+    dest = tmp_path / "site"
+    site.build_site(Path("docs"), dest, base_url=site.PLACEHOLDER_BASE_URL)
+    robots = (dest / "robots.txt").read_text(encoding="utf-8")
+    assert "User-agent: *" in robots
+    assert "Allow: /" in robots
+    assert "Disallow:" not in robots
+    assert f"Sitemap: {site.PLACEHOLDER_BASE_URL}sitemap.xml" in robots
+    assert "submitted" in robots.lower() or "not submit" in robots.lower() or "nothing was submitted" in robots.lower()
+
+    sitemap = (dest / "sitemap.xml").read_text(encoding="utf-8")
+    assert 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' in sitemap
+    assert f"{site.PLACEHOLDER_BASE_URL}index.html" in sitemap
+    assert f"{site.PLACEHOLDER_BASE_URL}user-guide/en.html" in sitemap
+    assert f"{site.PLACEHOLDER_BASE_URL}user-guide/zh-CN.html" in sitemap
+
+    index_html = (dest / "index.html").read_text(encoding="utf-8")
+    assert 'lang="en"' in index_html
+    assert "<title>" in index_html and "RoomScope" in index_html
+    assert 'content="' in index_html
+    zh = (dest / "index.zh-CN.html").read_text(encoding="utf-8")
+    assert 'lang="zh-CN"' in zh
+    assert 'rel="canonical"' in zh
+    assert 'property="og:url"' in zh
+
+
+def test_build_site_honours_custom_base_url(tmp_path: Path) -> None:
+    site = _load()
+    dest = tmp_path / "site"
+    site.build_site(Path("docs"), dest, base_url="https://example.com/docs")
+    html = (dest / "index.html").read_text(encoding="utf-8")
+    assert 'href="https://example.com/docs/index.html"' in html
+    robots = (dest / "robots.txt").read_text(encoding="utf-8")
+    assert "Sitemap: https://example.com/docs/sitemap.xml" in robots
+
+
+def test_page_description_skips_language_switcher() -> None:
+    site = _load()
+    text = (
+        "# Title\n\n**English** | [简体中文](index.zh-CN.md)\n\n"
+        "This is the documentation hub for measuring rooms with RoomScope.\n"
+    )
+    desc = site.page_description(text, fallback="fallback")
+    assert "documentation hub" in desc
+    assert "English" not in desc

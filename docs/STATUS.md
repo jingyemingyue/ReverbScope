@@ -636,7 +636,7 @@ discovery follows files under `.dist-info/licenses/`; macOS
 | GUI | PySide6 window: Home, Universal DAW Mode, Standalone Mode, Results (including Spectrum and Placement), session save/open, Compare (difference curve, matched reflections and resonances, loopback deltas), Demo, Stop, Settings, project-folder browser, tape-measure fields, optional imported scan, dark-mode plot chrome, device rate vs requested rate, `gui --smoke` |
 | Standalone Mode | Device enumeration and play+record through the selected backend with safety defaults |
 | Bundles | `scripts/build_license_bundle.py` (verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts from `packaging/licenses/`), `scripts/check_bundle_contents.py` (`--strip`, `--require-licenses`, `--installed-essentials`; GPL-only QML module directories matched, any `qml/` tree in a frozen bundle fails), `packaging/roomscope.spec`, `release.yml` (the version-driven workflow on `main` since PR #18; it opened the v0.4.1 draft and refreshes it while `v0.4.1` has no tag, see RELEASE_PLAN.md §3), `scripts/smoke_bundle.py` |
-| Documentation | Hub at `docs/index.md`; themed HTML site from `scripts/build_docs_site.py` (S7); release plan in `docs/RELEASE_PLAN.md` |
+| Documentation | Hub at `docs/index.md`; themed HTML site from `scripts/build_docs_site.py` (S7) with per-page title/description, canonical + Open Graph tags, `sitemap.xml`, and `robots.txt` (placeholder base URL; nothing submitted to Google); release plan in `docs/RELEASE_PLAN.md` |
 
 ## Tested (all PASS on 2026-09-17 on macOS; profile work re-verified 2026-09-22;
 Linux x86_64 re-verified 2026-09-24 for v0.4.1, snapshot 22)

@@ -711,7 +711,10 @@ by users, Standalone Mode and the loopback cable, reading each result tab
 positions, troubleshooting (clipping, wrong reference, multiple passes,
 device rates), and how to send a bug-report bundle. A generated site (S7)
 is built by `scripts/build_docs_site.py` (stdlib Markdown subset, dark-mode
-CSS); GitHub still renders the Markdown.
+CSS, per-page title/description, canonical and Open Graph tags,
+`sitemap.xml`, `robots.txt`); GitHub still renders the Markdown. The
+repo has no public docs host yet; the generator uses a placeholder
+base URL and does not submit the site to Google.
 
 ## 7. Quality gates (M10, M11)
 
