@@ -125,7 +125,7 @@ roomscope-env/bin/roomscope gui
 ## 导出与语言
 
 `roomscope export session/ --format csv --out curves/` 导出每一条曲线。
-`--lang zh_CN`（或“设置 → 语言”，或 `ROOMSCOPE_LANG`）会翻译解读、文本报告的标签、图形界面和命令行帮助（`roomscope --help` 及每个子命令）。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
+`--lang zh_CN`（或 `zh_TW`、`ja`、`ko`、`es`、`fr`、`de`；或“设置 → 语言”，或 `ROOMSCOPE_LANG`）会翻译解读、文本报告的标签、图形界面和命令行帮助（`roomscope --help` 及每个子命令）。用户文档仍为英文和简体中文。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
 
 在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
 

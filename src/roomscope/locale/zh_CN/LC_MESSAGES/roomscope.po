@@ -23,8 +23,8 @@ msgstr "RoomScope：开源、不依赖 DAW 的录音环境分析器。"
 msgid "audio backend for Standalone Mode: portaudio (default) or fake"
 msgstr "独立模式的音频后端：portaudio（默认）或 fake"
 
-msgid "UI language (en, zh_CN). Overrides settings and ROOMSCOPE_LANG"
-msgstr "界面语言（en、zh_CN）。覆盖设置与 ROOMSCOPE_LANG"
+msgid "UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). Overrides settings and ROOMSCOPE_LANG"
+msgstr "界面语言（en、zh_CN、zh_TW、ja、ko、es、fr、de）。覆盖设置与 ROOMSCOPE_LANG"
 
 msgid "text report or JSON on stdout (diagnostics stay on stderr)"
 msgstr "标准输出为文本报告或 JSON（诊断信息仍走标准错误）"

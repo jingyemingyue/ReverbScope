@@ -24,8 +24,16 @@ All notable changes to RoomScope are documented here. The format follows
   audio devices still reports the catalog; its device list stays empty.
   Standalone sessions store the same parameters in `audio_interface` and
   `bit_depth` (`32-bit float`). This is not a hardware-matrix result.
+- **GUI and CLI languages.** Besides English and Simplified Chinese, the
+  interface catalogs now include Traditional Chinese, Japanese, Korean,
+  Spanish, French and German (`--lang zh_TW` / `ja` / `ko` / `es` / `fr` /
+  `de`, and Settings → Language). License and legal sentences stay in
+  English. User-facing docs remain English and Simplified Chinese.
 
 ### Changed
+- **Desktop chrome.** Shared page margins, form column alignment, card
+  padding, and a slightly larger type scale so Home, measure, results and
+  compare line up. The measurement steps are unchanged.
 - **Chu noise-power subtraction on the Schroeder integral.** After Lundeby
   finds a floor, RoomScope subtracts that mean-square estimate from `h²`
   (clipping negatives) before backward integration and the early/late

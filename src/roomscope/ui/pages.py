@@ -48,6 +48,8 @@ from roomscope.models.session import STANDALONE_BIT_DEPTH, MeasurementSession
 from roomscope.ui.browser import SessionBrowser
 from roomscope.ui.state import MeasurementState
 from roomscope.ui.widgets import (
+    PAGE_MARGINS,
+    PAGE_SPACING,
     Card,
     ModeCard,
     PageHeader,
@@ -55,6 +57,7 @@ from roomscope.ui.widgets import (
     label,
     primary,
     set_banner_text,
+    tidy_form,
 )
 from roomscope.ui.workers import AnalysisWorker, MeasureWorker
 
@@ -104,8 +107,8 @@ class HomePage(QWidget):
         super().__init__(parent)
         self.setProperty("page", True)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 22, 28, 22)
-        layout.setSpacing(14)
+        layout.setContentsMargins(*PAGE_MARGINS)
+        layout.setSpacing(PAGE_SPACING)
 
         layout.addWidget(label("RoomScope", "title"))
         layout.addWidget(
@@ -190,8 +193,8 @@ def _scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
     """Give ``page`` a fixed header and a scrolling body; return the body layout."""
     page.setProperty("page", True)
     outer = QVBoxLayout(page)
-    outer.setContentsMargins(28, 20, 28, 12)
-    outer.setSpacing(8)
+    outer.setContentsMargins(*PAGE_MARGINS)
+    outer.setSpacing(12)
     outer.addWidget(header)
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
@@ -209,7 +212,7 @@ def _scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
 
 def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLineEdit, QLineEdit]:
     box = QGroupBox(_("Measurement metadata (optional)"))
-    form = QFormLayout(box)
+    form = tidy_form(QFormLayout(box))
     room = QLineEdit(state.session.room_name)
     position = QLineEdit(state.session.measurement_position)
     mic = QLineEdit(state.session.microphone_name)
@@ -234,7 +237,7 @@ class PlacementInputs(QGroupBox):
         super().__init__(parent)
         self.setTitle(_("Tape measurements (optional)"))
         row = QHBoxLayout(self)
-        form = QFormLayout()
+        form = tidy_form(QFormLayout())
         self.distance = QDoubleSpinBox()
         self.distance.setRange(0.0, 15.0)
         self.distance.setDecimals(2)
@@ -334,7 +337,7 @@ class DawModePage(QWidget):
 
         # Step 1
         step1 = QGroupBox(_("Step 1 - Generate Test Signal"))
-        form1 = QFormLayout(step1)
+        form1 = tidy_form(QFormLayout(step1))
         self.sample_rate = QComboBox()
         for sr in SUPPORTED_SAMPLE_RATES:
             self.sample_rate.addItem(f"{sr} Hz", sr)
@@ -371,7 +374,7 @@ class DawModePage(QWidget):
 
         # Step 3
         step3 = QGroupBox(_("Step 3 - Import Recording"))
-        form3 = QFormLayout(step3)
+        form3 = tidy_form(QFormLayout(step3))
         self.recording_button = QPushButton(_("Choose Recording..."))
         self.recording_button.clicked.connect(self._choose_recording)
         self.recording_label = QLabel(_("No recording selected."))
@@ -399,7 +402,7 @@ class DawModePage(QWidget):
         v4.addWidget(meta)
         self.placement = PlacementInputs()
         v4.addWidget(self.placement)
-        profile_form = QFormLayout()
+        profile_form = tidy_form(QFormLayout())
         self.profile = _profile_combo(state)
         profile_form.addRow(_("Recording profile"), self.profile)
         v4.addLayout(profile_form)
@@ -619,7 +622,7 @@ class StandalonePage(QWidget):
         layout.addWidget(safety)
 
         devices = QGroupBox(_("Audio devices"))
-        form = QFormLayout(devices)
+        form = tidy_form(QFormLayout(devices))
         self.host_api = QComboBox()
         self.host_api.setToolTip(
             _(
@@ -669,7 +672,7 @@ class StandalonePage(QWidget):
         layout.addWidget(devices)
 
         sweep = QGroupBox(_("Test signal"))
-        form2 = QFormLayout(sweep)
+        form2 = tidy_form(QFormLayout(sweep))
         self.duration = QDoubleSpinBox()
         self.duration.setRange(1.0, 60.0)
         self.duration.setValue(state.sweep_settings.duration_s)
@@ -693,7 +696,7 @@ class StandalonePage(QWidget):
         from roomscope.edition import is_developer
 
         self.advanced = QGroupBox(_("Advanced audio options (developer edition)"))
-        adv = QFormLayout(self.advanced)
+        adv = tidy_form(QFormLayout(self.advanced))
         self.latency = QComboBox()
         self.latency.addItem(_("PortAudio default (high)"), None)
         self.latency.addItem(_("Low"), "low")

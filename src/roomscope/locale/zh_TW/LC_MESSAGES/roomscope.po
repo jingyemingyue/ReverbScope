@@ -1,0 +1,5217 @@
+# RoomScope Traditional Chinese catalog.
+# English is the source language. Numbers stay ASCII; units are not translated.
+# License and legal sentences stay in English.
+msgid ""
+msgstr ""
+"Project-Id-Version: roomscope 0.5.0b1\n"
+"Language: zh_TW\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "RoomScope analysis"
+msgstr "RoomScope 分析"
+
+msgid "RoomScope comparison"
+msgstr "RoomScope 對比"
+
+msgid "Warnings (core diagnostics, always English):"
+msgstr "警告（核心診斷，始終為英文）："
+
+msgid ""
+"RoomScope: an open-source, DAW-independent recording environment analyze"
+"r."
+msgstr "RoomScope：開源、不依賴 DAW 的錄音環境分析器。"
+
+msgid "audio backend for Standalone Mode: portaudio (default) or fake"
+msgstr "獨立模式的音頻後端：portaudio（預設）或 fake"
+
+msgid "UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). Overrides settings and ROOMSCOPE_LANG"
+msgstr "介面語言（en、zh_CN、zh_TW、ja、ko、es、fr、de）。覆蓋設定與 ROOMSCOPE_LANG"
+
+msgid "text report or JSON on stdout (diagnostics stay on stderr)"
+msgstr "標準輸出為文本報告或 JSON（診斷資訊仍走標準錯誤）"
+
+msgid "copy the raw recording into the session folder (default: user settings)"
+msgstr "把原始錄音復制進會話資料夾（預設：使用者設定）"
+
+msgid "session folder tools"
+msgstr "會話資料夾工具"
+
+msgid "zip a session for a bug report"
+msgstr "將會話打包為 ZIP 檔案，用於問題報告"
+
+msgid "session directory or session.json"
+msgstr "會話目錄或 session.json"
+
+msgid "leave WAV files out of the zip"
+msgstr "ZIP 檔案中不包含 WAV 錄音"
+
+msgid "zip path (file or directory)"
+msgstr "ZIP 檔案路徑（檔案或目錄）"
+
+msgid "export curves through an exporter"
+msgstr "通過導出器導出曲線"
+
+msgid "exporter name (default csv)"
+msgstr "導出器名稱（預設 CSV）"
+
+msgid "output directory"
+msgstr "輸出目錄"
+
+msgid "project folders (one room, several positions)"
+msgstr "項目資料夾（一個房間、多個位置）"
+
+msgid "create a project.json"
+msgstr "創建 project.json"
+
+msgid "project directory"
+msgstr "項目目錄"
+
+msgid "room name"
+msgstr "房間名稱"
+
+msgid "free-text notes"
+msgstr "備註"
+
+msgid "add a session to a position"
+msgstr "把會話加到某個位置"
+
+msgid "session directory"
+msgstr "會話目錄"
+
+msgid "position label"
+msgstr "位置標簽"
+
+msgid "spatial average of VALID T values"
+msgstr "對有效 T 值做空間平均"
+
+msgid "number of source positions"
+msgstr "聲源位置數量"
+
+msgid "list positions and sessions"
+msgstr "列出位置與會話"
+
+msgid "Settings"
+msgstr "設定"
+
+msgid "System / English fallback"
+msgstr "系統 / 回退到英文"
+
+msgid "Default (PortAudio)"
+msgstr "預設（PortAudio）"
+
+msgid "Browse..."
+msgstr "瀏覽…"
+
+msgid "Copy the raw recording into every session"
+msgstr "把原始錄音復制進每個會話"
+
+msgid "Language"
+msgstr "語言"
+
+msgid "Default profile"
+msgstr "預設配置"
+
+msgid "Audio backend"
+msgstr "音頻後端"
+
+msgid "Default output folder"
+msgstr "預設輸出資料夾"
+
+msgid "&Measure"
+msgstr "測量(&M)"
+
+msgid "&File"
+msgstr "檔案(&F)"
+
+msgid "&New Measurement"
+msgstr "新測量(&N)"
+
+msgid "&Open Session..."
+msgstr "打開會話(&O)…"
+
+msgid "&Compare Sessions..."
+msgstr "對比會話(&C)…"
+
+msgid "&Settings..."
+msgstr "設定(&S)…"
+
+msgid "&Quit"
+msgstr "退出(&Q)"
+
+msgid "&Help"
+msgstr "說明(&H)"
+
+msgid "&About RoomScope"
+msgstr "關於 RoomScope(&A)"
+
+msgid "About RoomScope"
+msgstr "關於 RoomScope"
+
+msgid "Browse Folder..."
+msgstr "瀏覽資料夾…"
+
+msgid "Recent"
+msgstr "最近"
+
+msgid "No recent sessions yet. Save a measurement to see it here."
+msgstr "還沒有最近會話。保存一次測量後會出現在這裡。"
+
+msgid "Cannot list sessions"
+msgstr "無法列出會話"
+
+msgid "No sessions in this project"
+msgstr "此項目中沒有會話"
+
+msgid "No session.json files under {root}"
+msgstr "{root} 下沒有 session.json"
+
+msgid "An open-source, DAW-independent recording environment analyzer"
+msgstr "開源、不依賴 DAW 的錄音環境分析器"
+
+msgid "New Measurement"
+msgstr "新測量"
+
+msgid "Universal DAW Mode"
+msgstr "通用 DAW 模式"
+
+msgid "Standalone Mode"
+msgstr "獨立模式"
+
+msgid "Demo (no interface)"
+msgstr "演示（無需音頻介面）"
+
+msgid "Saved sessions"
+msgstr "已保存的會話"
+
+msgid "Open Session..."
+msgstr "打開會話…"
+
+msgid "Compare two sessions..."
+msgstr "對比两個會話…"
+
+msgid "These two sessions cannot be compared: {notes}"
+msgstr "這两個會話無法對比：{notes}"
+
+msgid ""
+"Broadband estimated RT60 went from {baseline_s:.2f} s to {candidate_s:.2"
+"f} s ({delta_percent:+.1f} % of the baseline, {direction}). ISO 3382-1 q"
+"uotes a just-noticeable difference for T of about {jnd_percent:g} %; a s"
+"ingle pair of positions is not enough to call the change significant."
+msgstr ""
+"寬帶估計 RT60 從 {baseline_s:.2f} s 變為 {candidate_s:.2f} s（相對基線 {delta_percen"
+"t:+.1f} %，{direction}）。ISO 3382-1 給出的 T 的剛可察覺差約為 {jnd_percent:g} %；僅一對位置"
+"不足以把該變化稱為顯著。"
+
+msgid ""
+"Against this profile's decay thresholds the broadband RT60 moved from '{"
+"before}' ({baseline_s:.2f} s) to '{after}' ({candidate_s:.2f} s)."
+msgstr ""
+"按此配置的衰減閾值，寬帶 RT60 從“{before}”（{baseline_s:.2f} s）變為“{after}”（{candidate_"
+"s:.2f} s）。"
+
+msgid ""
+"A reflection appeared at {delay_ms:.1f} ms ({relative_db:.1f} dB) inside"
+" this profile's {window_ms:g} ms window."
+msgstr ""
+"在此配置的 {window_ms:g} ms 窗口內出現了 {delay_ms:.1f} ms（{relative_db:.1f} dB）的反射"
+"。"
+
+msgid ""
+"The strongest reflection within {window_ms:g} ms went from {baseline_rel"
+"ative_db:.1f} dB at {baseline_delay_ms:.1f} ms to {candidate_relative_db"
+":.1f} dB at {candidate_delay_ms:.1f} ms (threshold {threshold_db:.1f} dB"
+" for this profile)."
+msgstr ""
+"{window_ms:g} ms 內最強反射從 {baseline_delay_ms:.1f} ms 的 {baseline_relative_"
+"db:.1f} dB 變為 {candidate_delay_ms:.1f} ms 的 {candidate_relative_db:.1f} "
+"dB（此配置閾值 {threshold_db:.1f} dB）。"
+
+msgid ""
+"Background noise went from {baseline_dbfs:.1f} dBFS to {candidate_dbfs:."
+"1f} dBFS ({delta_db:+.1f} dB) at the declared-equal input gain."
+msgstr ""
+"在已聲明輸入增益不變的前提下，本底噪聲從 {baseline_dbfs:.1f} dBFS 變為 {candidate_dbfs:.1f} dB"
+"FS（{delta_db:+.1f} dB）。"
+
+msgid ""
+"The direct sound could not be identified with confidence, so delays and "
+"levels of reflections may be off. Check that the correct reference sweep"
+" was used, lower the playback level if the loudspeaker distorts, and mea"
+"sure again."
+msgstr "無法可靠識別直達聲，反射的延時和電平可能不準。請確認使用了正確的參考掃頻信号；若揚聲器失真請降低播放電平，然後重測。"
+
+msgid ""
+"The sweep was generated at {generated_rate_hz} Hz but played at {played_"
+"rate_hz} Hz: the DAW project runs at another sample rate and did not con"
+"vert the file. Generate the sweep at the project's sample rate, or let t"
+"he DAW convert it on import, and measure again."
+msgstr ""
+"掃頻信号按 {generated_rate_hz} Hz 生成，卻以 {played_rate_hz} Hz 播放：DAW 工程的采樣率不同，且"
+"沒有對檔案做采樣率轉換。請按工程采樣率生成掃頻信号，或讓 DAW 在導入時轉換采樣率，然後重測。"
+
+msgid ""
+"The sweep was played at {speed_percent:.1f} % of its speed: the DAW time"
+"-stretched it (Warp, Flex Time, Follow Tempo, elastic audio or a stretch"
+" mode). Switch time-stretching off for the sweep clip and measure again."
+msgstr ""
+"掃頻信号以原速度的 {speed_percent:.1f} % 播放：DAW 對它做了時間伸縮（Warp、Flex Time、Follow Te"
+"mpo、Elastic Audio 或其他伸縮模式）。請關閉掃頻片段的時間伸縮，然後重測。"
+
+msgid "The recording clips. Lower the playback or input gain and measure again."
+msgstr "錄音削波。請降低播放或輸入增益後重測。"
+
+msgid ""
+"The decay range is too small for a reliable reverberation time. A longer"
+" sweep, a slightly higher playback level or a quieter room increases it."
+msgstr "衰減范圍太小，混響時間不可靠。加長掃頻、略提高播放電平或換一個更安靜的房間可以改善。"
+
+msgid ""
+"The direct sound is only {direct_to_noise_db:.0f} dB above the noise flo"
+"or in the quiet segment. Sources quieter than this will be recorded with"
+" audible noise; lower the noise at the source or increase the playback l"
+"evel within the headroom of the chain."
+msgstr ""
+"直達聲只比安靜段本底高 {direct_to_noise_db:.0f} dB。比這更輕的聲源會帶上可聞噪聲；請從源頭降噪，或在鏈路餘量內提高播"
+"放電平。"
+
+msgid ""
+"A relatively strong early reflection is present approximately {delay_ms:"
+".0f} ms after the direct sound ({relative_db:.1f} dB). For close vocal o"
+"r instrument recording, try moving the microphone or the performer farth"
+"er from nearby hard surfaces, or treat that surface, and measure again."
+msgstr ""
+"直達聲後約 {delay_ms:.0f} ms 有一條較強的早期反射（{relative_db:.1f} dB）。近距離錄人聲或樂器時，請把話筒"
+"或演奏者移離附近硬表面，或處理該表面，然後重測。"
+
+msgid ""
+"A strong early reflection is present approximately {delay_ms:.0f} ms aft"
+"er the direct sound ({relative_db:.1f} dB). Close-miked vocals are colou"
+"red by reflections this early; move the microphone closer to the singer "
+"and farther from the nearest hard surface, or treat that surface, then m"
+"easure again."
+msgstr ""
+"直達聲後約 {delay_ms:.0f} ms 有一條強早期反射（{relative_db:.1f} dB）。近距離人聲會被這樣早的反射染色；把"
+"話筒靠近歌手並遠離最近的硬表面，或處理該表面，然後重測。"
+
+msgid ""
+"An early reflection is present approximately {delay_ms:.0f} ms after the"
+" direct sound ({relative_db:.1f} dB). Voice-over is usually close-miked "
+"and heavily processed, so even a reflection this weak colours the voice;"
+" move the microphone closer to the talent and farther from the nearest h"
+"ard surface, or treat the surface."
+msgstr ""
+"直達聲後約 {delay_ms:.0f} ms 有一條早期反射（{relative_db:.1f} dB）。旁白通常近距離拾音且處理很重，即使這"
+"樣弱的反射也會染色；把話筒靠近講者並遠離最近的硬表面，或處理該表面。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). This is typica"
+"l of a treated or small, well-damped room."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s）。這常見於經過處理或較小、阻尼較好的房間。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). T"
+"his is typical of a treated or small, well-damped room."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s，來自 {basis}）。這常見於經過處理或較小、阻尼較好的房間。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). Dry close-mik"
+"ed recordings will pick up audible room sound; consider absorption or a "
+"closer microphone position."
+msgstr "寬帶衰減{text}（估計 RT60 {rt:.2f} s）。幹的近距離錄音仍會拾到可聞的房間聲；可考慮吸聲或更近的話筒位置。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"Dry close-miked recordings will pick up audible room sound; consider abs"
+"orption or a closer microphone position."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s，來自 {basis}）。幹的近距離錄音仍會拾到可聞的房間聲；可考慮吸聲或更近的話筒位"
+"置。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). A dry room lik"
+"e this suits close vocal recording."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s）。這樣的幹房間适合近距離人聲錄音。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). A"
+" dry room like this suits close vocal recording."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s，來自 {basis}）。這樣的幹房間适合近距離人聲錄音。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). A vocal that "
+"is this live picks up room colour between phrases; add absorption or mov"
+"e to a drier position."
+msgstr "寬帶衰減{text}（估計 RT60 {rt:.2f} s）。這樣活的人聲會在樂句之間拾到房間染色；請增加吸聲或換到更幹的位置。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"A vocal that is this live picks up room colour between phrases; add abso"
+"rption or move to a drier position."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s，來自 {basis}）。這樣活的人聲會在樂句之間拾到房間染色；請增加吸聲或換到更幹的"
+"位置。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). This suits voi"
+"ce-over: the narration stays dry and close."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s）。适合旁白：敘述保持幹、近。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). T"
+"his suits voice-over: the narration stays dry and close."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s，來自 {basis}）。适合旁白：敘述保持幹、近。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). Voice-over ne"
+"eds a dry room; room tone of this length will sit under the narration. A"
+"dd absorption or move to a drier position."
+msgstr "寬帶衰減{text}（估計 RT60 {rt:.2f} s）。旁白需要幹房間；這麼長的房間聲會墊在敘述下面。請增加吸聲或換到更幹的位置。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"Voice-over needs a dry room; room tone of this length will sit under the"
+" narration. Add absorption or move to a drier position."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s，來自 {basis}）。旁白需要幹房間；這麼長的房間聲會墊在敘述下面。請增加吸聲或換"
+"到更幹的位置。"
+
+msgid ""
+"Low frequencies decay clearly more slowly than the mid range ({low_max:."
+"2f} s vs {mid_mean:.2f} s), which usually makes bass-heavy sources sound"
+" boomy at this position. Bass trapping or a different position helps."
+msgstr ""
+"低頻明顯比中頻衰減更慢（{low_max:.2f} s 對 {mid_mean:.2f} s），在此位置通常會讓偏重低音的聲源發轟。低音陷阱或換"
+"位置會有說明。"
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), which makes vocals sound boxy at this position. Bass"
+" trapping or a different position helps."
+msgstr "低頻比中頻衰減更慢（{low_max:.2f} s 對 {mid_mean:.2f} s），在此位置會讓人聲發悶。低音陷阱或換位置會有說明。"
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), which makes voice-over sound muddy. Bass trapping or"
+" a different position helps."
+msgstr "低頻比中頻衰減更慢（{low_max:.2f} s 對 {mid_mean:.2f} s），會讓旁白發渾。低音陷阱或換位置會有說明。"
+
+msgid ""
+"Mains hum components at multiples of {base_hz:.0f} Hz were detected in t"
+"he quiet part of the recording. Check grounding, cables, dimmers and pow"
+"er supplies before treating the room."
+msgstr "在錄音的安靜段檢測到 {base_hz:.0f} Hz 倍頻的市電哼聲。處理房間之前先檢查接地、線材、調光器和電源。"
+
+msgid ""
+"Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (un"
+"calibrated digital level, not dB SPL). Compare it with the level of the "
+"sources you record at the same gain."
+msgstr ""
+"{segment}段的本底噪聲為 {rms_dbfs:.1f} dBFS RMS（未校準的數字電平，不是 dB SPL）。請與同一增益下要錄的聲"
+"源電平比較。"
+
+msgid ""
+"Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (un"
+"calibrated digital level, not dB SPL). Vocal tracks are often compressed"
+", which brings this noise up; compare it with your chain's noise at the "
+"same gain."
+msgstr ""
+"{segment}段的本底噪聲為 {rms_dbfs:.1f} dBFS RMS（未校準的數字電平，不是 dB SPL）。人聲軌道常被壓縮，會把"
+"這層噪聲抬上來；請與同一增益下鏈路噪聲比較。"
+
+msgid ""
+"Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (un"
+"calibrated digital level, not dB SPL). Voice-over is usually quiet and c"
+"lose-miked, so this floor will be audible under the narration."
+msgstr ""
+"{segment}段的本底噪聲為 {rms_dbfs:.1f} dBFS RMS（未校準的數字電平，不是 dB SPL）。旁白通常輕聲近麥，這層"
+"底噪會在敘述下面可聞。"
+
+msgid ""
+"Potential low-frequency resonances around {listed}: these frequencies st"
+"and out in the response and ring longer than their surroundings. Measure"
+" one or two other positions to see whether they follow the room or the p"
+"osition."
+msgstr "可能的低頻共振約在 {listed}：這些頻率在響應中突出，餘振也比周圍更長。再測一两個位置，看它們跟房間走還是跟位置走。"
+
+msgid ""
+"Potential low-frequency resonances around {listed}: these frequencies st"
+"and out in the response and ring longer than their surroundings, which c"
+"olours voice and dialogue. Move the microphone or treat the affected cor"
+"ner, then measure again."
+msgstr "可能的低頻共振約在 {listed}：這些頻率在響應中突出，餘振也比周圍更長，會給人聲和對白染色。移動話筒或處理該角落，然後重測。"
+
+msgid "Tape measurements (optional)"
+msgstr "卷尺測量（可選）"
+
+msgid "not measured"
+msgstr "未測量"
+
+msgid "Straight line from the loudspeaker to the microphone capsule."
+msgstr "揚聲器到話筒振膜的直線距離。"
+
+msgid ""
+"Capsule above the first solid horizontal surface below it. Needs the dis"
+"tance."
+msgstr "振膜到其下方第一塊水平固體表面的高度。需要先填距離。"
+
+msgid "air temperature measured"
+msgstr "已測量氣溫"
+
+msgid "Loudspeaker distance"
+msgstr "揚聲器距離"
+
+msgid "Microphone height"
+msgstr "話筒高度"
+
+msgid "Overview"
+msgstr "總覽"
+
+msgid "Impulse Response"
+msgstr "脈衝響應"
+
+msgid "Frequency Response"
+msgstr "頻率響應"
+
+msgid "Decay"
+msgstr "衰減"
+
+msgid "Noise"
+msgstr "噪聲"
+
+msgid "Early Reflections"
+msgstr "早期反射"
+
+msgid "Placement"
+msgstr "擺位"
+
+msgid "Figure"
+msgstr "量"
+
+msgid "Value"
+msgstr "數值"
+
+msgid "Validity"
+msgstr "有效性"
+
+msgid "Note"
+msgstr "說明"
+
+msgid "Delay (ms)"
+msgstr "延遲（ms）"
+
+msgid "Level (dB)"
+msgstr "電平（dB）"
+
+msgid "Excess path (m)"
+msgstr "多餘路徑（m）"
+
+msgid "Surface"
+msgstr "表面"
+
+msgid "Plane?"
+msgstr "平面？"
+
+msgid "No placement result. Add a loudspeaker distance to raise the tier."
+msgstr "沒有擺位結果。補上揚聲器距離可提高檔位。"
+
+msgid ""
+"Placement tier {tier}. No coordinates, room length, room width or named "
+"wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} C{assumed"
+"}."
+msgstr "擺位檔位 {tier}。不推導坐標、房間長寬或具名牆面。聲速 {speed:.1f} m/s，氣溫 {temp:.0f} C{assumed}。"
+
+msgid " (assumed)"
+msgstr "（假定）"
+
+msgid "Loudspeaker height"
+msgstr "揚聲器高度"
+
+msgid "Plane above the devices"
+msgstr "設備上方平面"
+
+msgid "Horizontal separation"
+msgstr "水平間距"
+
+msgid "not determined"
+msgstr "未確定"
+
+msgid "yes"
+msgstr "是"
+
+msgid "no"
+msgstr "否"
+
+msgid "untested"
+msgstr "未檢驗"
+
+msgid "&Third-party licenses..."
+msgstr "第三方許可證(&T)..."
+
+msgid "Third-party licenses"
+msgstr "第三方許可證"
+
+msgid ""
+"No THIRD_PARTY_LICENSES directory was found next to this executable. See"
+" docs/DEPENDENCIES.md in the source tree."
+msgstr "可執行檔案旁沒有 THIRD_PARTY_LICENSES 目錄。源碼樹中見 docs/DEPENDENCIES.md。"
+
+msgid "construct the window offscreen and exit (bundle smoke; no loudspeaker)"
+msgstr "離屏構建窗口後退出（打包冒煙測試；不對揚聲器發聲）"
+
+msgid "Compare two sessions. Select two rows, or pick each path."
+msgstr "對比两個會話。選中两行，或分別填寫路徑。"
+
+msgid "Baseline session"
+msgstr "基線會話"
+
+msgid "Candidate session"
+msgstr "候選會話"
+
+msgid "Baseline..."
+msgstr "基線…"
+
+msgid "Candidate..."
+msgstr "候選…"
+
+msgid "Input gain unchanged"
+msgstr "輸入增益未變"
+
+msgid ""
+"Required for a VALID noise delta. Leave unchecked if the preamp gain may"
+" have changed."
+msgstr "要讓本底噪聲差值有效，必須勾選此項。若話放增益可能變過，請不要勾選。"
+
+msgid "Compare"
+msgstr "對比"
+
+msgid "Save comparison.json..."
+msgstr "保存 comparison.json…"
+
+msgid "Back"
+msgstr "返回"
+
+msgid "Metric"
+msgstr "指標"
+
+msgid "Baseline"
+msgstr "基線"
+
+msgid "Candidate"
+msgstr "候選"
+
+msgid "Delta"
+msgstr "差值"
+
+msgid "Validity"
+msgstr "有效性"
+
+msgid "Status"
+msgstr "狀態"
+
+msgid "Baseline (ms / dB)"
+msgstr "基線（ms / dB）"
+
+msgid "Candidate (ms / dB)"
+msgstr "候選（ms / dB）"
+
+msgid "Δ level (dB)"
+msgstr "電平差（dB）"
+
+msgid "Baseline (Hz)"
+msgstr "基線（Hz）"
+
+msgid "Candidate (Hz)"
+msgstr "候選（Hz）"
+
+msgid "Decay distinguishable"
+msgstr "衰減可區分"
+
+msgid "Choose two sessions first."
+msgstr "請先選擇两個會話。"
+
+msgid "Cannot compare"
+msgstr "無法對比"
+
+msgid "Frequency-response difference (candidate − baseline)"
+msgstr "頻率響應差值（候選 − 基線）"
+
+msgid "Mean absolute difference per octave: {bits}"
+msgstr "每個倍頻程的平均絕對差：{bits}"
+
+msgid "No difference curve"
+msgstr "沒有差值曲線"
+
+msgid "Save comparison"
+msgstr "保存對比"
+
+msgid "Run a comparison first."
+msgstr "請先運行一次對比。"
+
+msgid "Save comparison.json"
+msgstr "保存 comparison.json"
+
+msgid "JSON files (*.json)"
+msgstr "JSON 檔案 (*.json)"
+
+msgid "Cannot save"
+msgstr "無法保存"
+
+msgid "Wrote {path}"
+msgstr "已寫入 {path}"
+
+msgid "Open session"
+msgstr "打開會話"
+
+msgid "Session files (session.json);;JSON files (*.json);;All files (*)"
+msgstr "會話檔案 (session.json);;JSON 檔案 (*.json);;所有檔案 (*)"
+
+msgid "Measurement metadata (optional)"
+msgstr "測量元資料（可選）"
+
+msgid "Room"
+msgstr "房間"
+
+msgid "Position"
+msgstr "位置"
+
+msgid "Microphone"
+msgstr "話筒"
+
+msgid "Step 1 - Generate Test Signal"
+msgstr "步驟 1 — 生成測試信号"
+
+msgid "Sample rate"
+msgstr "采樣率"
+
+msgid "Sweep duration"
+msgstr "掃頻時長"
+
+msgid "Peak level"
+msgstr "峰值電平"
+
+msgid "Save Test Signal WAV..."
+msgstr "保存測試信号 WAV…"
+
+msgid "No test signal written yet."
+msgstr "尚未寫出測試信号。"
+
+msgid "Step 2 - Record Through Your DAW"
+msgstr "步驟 2 — 在 DAW 中錄音"
+
+msgid ""
+"1. Generate the test signal at your DAW project's sample rate (Step 1).\n"
+"2. Import it on a new track. Switch time-stretching off for that clip (W"
+"arp, Flex, Follow Tempo, elastic audio) and bypass plug-ins on its track"
+" and on the master bus, including room-correction plug-ins.\n3. Route tha"
+"t track to the one loudspeaker you want to test.\n4. Arm a second track w"
+"ith the measurement microphone (input monitoring off) and record while t"
+"he test signal plays.\n5. Export the recorded track as WAV, AIFF, CAF or "
+"FLAC at the project sample rate, without normalising.\n   Do not trim it "
+"- RoomScope finds the sweep automatically.\nStart with a low monitor leve"
+"l; the sweep should be clearly audible but not loud.\nThe user guide has "
+"step-by-step notes for Pro Tools, Logic Pro, Cubase, Studio One, Ableton"
+" Live, REAPER, FL Studio and Bitwig Studio."
+msgstr ""
+"1. 按 DAW 工程的采樣率生成測試信号（步驟 1）。\n2. 把它導入新軌道。關閉該片段的時間伸縮（Warp、Flex、Follow Temp"
+"o、Elastic Audio），並旁通該軌道和主輸出總線上的插件，包括房間校正插件。\n3. 將該軌道只路由到要測的那一只揚聲器。\n4. 用測量"
+"話筒武裝第二條軌道（關閉輸入監聽），在測試信号播放時錄音。\n5. 按工程采樣率把錄音軌導出為 WAV、AIFF、CAF 或 FLAC，不要做標準"
+"化。\n   不要裁切——RoomScope 會自動找到掃頻。\n先把監聽開低；掃頻應清楚可聞，但不要很大聲。\n使用者指南裡有 Pro Tools、"
+"Logic Pro、Cubase、Studio One、Ableton Live、REAPER、FL Studio 和 Bitwig Studi"
+"o 的分步說明。"
+
+msgid "Step 3 - Import Recording"
+msgstr "步驟 3 — 導入錄音"
+
+msgid "Choose Recording..."
+msgstr "選擇錄音…"
+
+msgid "No recording selected."
+msgstr "尚未選擇錄音。"
+
+msgid "Choose Reference Sweep..."
+msgstr "選擇參考掃頻…"
+
+msgid "Reference: the test signal from Step 1 (or choose a file)."
+msgstr "參考：步驟 1 的測試信号（或另選檔案）。"
+
+msgid "Auto (highest level)"
+msgstr "自動（電平最高）"
+
+msgid "None"
+msgstr "無"
+
+msgid "Microphone channel"
+msgstr "話筒聲道"
+
+msgid "Loopback channel"
+msgstr "回送（loopback）聲道"
+
+msgid "Step 4 - Analyze"
+msgstr "步驟 4 — 分析"
+
+msgid "Recording profile"
+msgstr "錄音配置"
+
+msgid "Analyze"
+msgstr "分析"
+
+msgid "Save test signal"
+msgstr "保存測試信号"
+
+msgid "WAV files (*.wav)"
+msgstr "WAV 檔案 (*.wav)"
+
+msgid "Cannot write test signal"
+msgstr "無法寫出測試信号"
+
+msgid "Written: {wav} (+ {sidecar}). Keep both files together."
+msgstr "已寫出：{wav}（+ {sidecar}）。請把两個檔案放在一起。"
+
+msgid "Reference: {name}"
+msgstr "參考：{name}"
+
+msgid "Choose recording"
+msgstr "選擇錄音"
+
+msgid ""
+"Audio files (*.wav *.wave *.bwf *.rf64 *.w64 *.aif *.aiff *.aifc *.caf *"
+".flac);;All files (*)"
+msgstr ""
+"音頻檔案 (*.wav *.wave *.bwf *.rf64 *.w64 *.aif *.aiff *.aifc *.caf *.flac);"
+";所有檔案 (*)"
+
+msgid "Cannot read recording"
+msgstr "無法讀取錄音"
+
+msgid "Channel {n}"
+msgstr "聲道 {n}"
+
+msgid "{name}: {seconds:.1f} s, {rate} Hz, {channels} channel(s)"
+msgstr "{name}：{seconds:.1f} s，{rate} Hz，{channels} 聲道"
+
+msgid "Choose reference sweep"
+msgstr "選擇參考掃頻"
+
+msgid "Sweep files (*.wav *.json);;All files (*)"
+msgstr "掃頻檔案 (*.wav *.json);;所有檔案 (*)"
+
+msgid "Cannot read reference sweep"
+msgstr "無法讀取參考掃頻"
+
+msgid "No recording"
+msgstr "沒有錄音"
+
+msgid "Choose the recorded WAV file first (Step 3)."
+msgstr "請先選擇錄好的 WAV（步驟 3）。"
+
+msgid "No reference"
+msgstr "沒有參考"
+
+msgid "Generate the test signal (Step 1) or choose the sweep file."
+msgstr "請先生成測試信号（步驟 1）或選擇掃頻檔案。"
+
+msgid "Analyzing..."
+msgstr "正在分析…"
+
+msgid "Done."
+msgstr "完成。"
+
+msgid "Analysis failed: {message}"
+msgstr "分析失敗：{message}"
+
+msgid "Analysis failed"
+msgstr "分析失敗"
+
+msgid ""
+"Demo mode: the fake backend synthesises a room. Nothing is sent to a lou"
+"dspeaker."
+msgstr "演示模式：假後端合成一個房間。不會對揚聲器發聲。"
+
+msgid ""
+"Start with your monitor/interface output at a low level. RoomScope will "
+"play a sine sweep at a conservative digital level; raise the level gradu"
+"ally between measurements only if the recording is too quiet."
+msgstr "先把監聽/介面輸出開低。RoomScope 會以保守的數字電平播放正弦掃頻；只有錄音太輕時才在两次測量之間逐步提高電平。"
+
+msgid "Audio devices"
+msgstr "音頻設備"
+
+msgid "Refresh devices"
+msgstr "刷新設備"
+
+msgid "unused"
+msgstr "未使用"
+
+msgid "Device rate: unknown"
+msgstr "設備采樣率：未知"
+
+msgid "Input device"
+msgstr "輸入設備"
+
+msgid "Output device"
+msgstr "輸出設備"
+
+msgid "Input channel (mic)"
+msgstr "輸入聲道（話筒）"
+
+msgid "Loopback channel (1-based)"
+msgstr "回送（loopback）聲道（從 1 起）"
+
+msgid "Output channel (speaker)"
+msgstr "輸出聲道（揚聲器）"
+
+msgid "Test signal"
+msgstr "測試信号"
+
+msgid "I have set the monitor level low (required above {level:g} dBFS)"
+msgstr "我已把監聽開低（高於 {level:g} dBFS 必須勾選）"
+
+msgid "Playback level"
+msgstr "播放電平"
+
+msgid "Run Measurement"
+msgstr "開始測量"
+
+msgid "Stop"
+msgstr "停止"
+
+msgid "System default"
+msgstr "系統預設"
+
+msgid "Demo mode: fake backend, no loudspeaker."
+msgstr "演示模式：假後端，不對揚聲器發聲。"
+
+msgid "{n} audio device(s) found."
+msgstr "找到 {n} 個音頻設備。"
+
+msgid "unknown"
+msgstr "未知"
+
+msgid "Device rate: {device}  (requested {requested} Hz)"
+msgstr "設備采樣率：{device}  （請求 {requested} Hz）"
+
+msgid " — rates differ; the interface may resample"
+msgstr " — 采樣率不一致；介面可能會重采樣"
+
+msgid "Invalid settings"
+msgstr "設定無效"
+
+msgid "Level too high"
+msgstr "電平過高"
+
+msgid ""
+"Levels above {level:g} dBFS need the acknowledgement checkbox. Set the m"
+"onitor level low first."
+msgstr "高於 {level:g} dBFS 需要勾選確認。請先把監聽開低。"
+
+msgid "Sample rate not supported"
+msgstr "不支援該采樣率"
+
+msgid "Playing the sweep and recording..."
+msgstr "正在播放掃頻並錄音…"
+
+msgid "Stopped."
+msgstr "已停止。"
+
+msgid "Recorded. Analyzing..."
+msgstr "已錄音。正在分析…"
+
+msgid "Measurement failed: {message}"
+msgstr "測量失敗：{message}"
+
+msgid "Measurement failed"
+msgstr "測量失敗"
+
+msgid "Band"
+msgstr "頻帶"
+
+msgid "RT60 estimate"
+msgstr "RT60 估計"
+
+msgid ""
+"Reverberation (extrapolated to 60 dB). 'insufficient range' means the de"
+"cay is not clean enough for that metric."
+msgstr "混響（外推到 60 dB）。“衰減范圍不足”表示衰減對該指標不够幹淨。"
+
+msgid "Save Session..."
+msgstr "保存會話…"
+
+msgid "Choose a folder for the session"
+msgstr "選擇會話資料夾"
+
+msgid "Cannot save session"
+msgstr "無法保存會話"
+
+msgid "Session saved to {path}"
+msgstr "會話已保存到 {path}"
+
+msgid "Cannot open session"
+msgstr "無法打開會話"
+
+msgid "Choose a folder of sessions"
+msgstr "選擇會話所在資料夾"
+
+msgid "sweep duration in seconds (default 10)"
+msgstr "掃頻時長（秒，預設 10）"
+
+msgid "sweep start frequency (default 20)"
+msgstr "掃頻起始頻率（預設 20）"
+
+msgid "sweep end frequency (default 20000)"
+msgstr "掃頻結束頻率（預設 20000）"
+
+msgid "fade-in in seconds (default 0.05)"
+msgstr "淡入時長（秒，預設 0.05）"
+
+msgid "fade-out in seconds (default 0.01)"
+msgstr "淡出時長（秒，預設 0.01）"
+
+msgid "peak level in dBFS (default {level:g})"
+msgstr "峰值電平（dBFS，預設 {level:g}）"
+
+msgid "silence before the sweep (s)"
+msgstr "掃頻前靜音（秒）"
+
+msgid "silence after the sweep (s)"
+msgstr "掃頻後靜音（秒）"
+
+msgid "recording channel to analyse (0-based)"
+msgstr "要分析的錄音聲道（從 0 起）"
+
+msgid "fractional-octave smoothing 1/N (0 = off)"
+msgstr "分數倍頻程平滑 1/N（0 = 關閉）"
+
+msgid "room name (metadata)"
+msgstr "房間名稱（元資料）"
+
+msgid "measurement position (metadata)"
+msgstr "測量位置（元資料）"
+
+msgid "microphone name (metadata)"
+msgstr "話筒名稱（元資料）"
+
+msgid "free-text notes (metadata)"
+msgstr "備註（元資料）"
+
+msgid "omit curves from result.json"
+msgstr "不把曲線寫入 result.json"
+
+msgid ""
+"straight line from the loudspeaker to the microphone capsule (m), measur"
+"ed with a tape. Without it no geometry can be derived from the reflectio"
+"ns"
+msgstr "揚聲器到話筒振膜的直線距離（米），用卷尺測量。沒有它就無法從反射推導幾何"
+
+msgid ""
+"microphone capsule above the first solid horizontal surface below it (m)"
+" -- the desk top at a desk, otherwise the floor. Needs --speaker-distanc"
+"e"
+msgstr "話筒振膜到其下方第一塊水平固體表面的高度（米）——桌上是桌面，否則是地板。需要 --speaker-distance"
+
+msgid ""
+"air temperature (C); 20 C is assumed, and reported as assumed, without i"
+"t"
+msgstr "氣溫（C）；未提供時假定 20 C，並報告為假定"
+
+msgid ""
+"recording profile that shapes the interpretation (default: user settings"
+")"
+msgstr "影響解讀的錄音配置（預設：使用者設定）"
+
+msgid "separate loopback WAV from the same take (same sample rate)"
+msgstr "同一次錄音的單獨回送（loopback）WAV（相同采樣率）"
+
+msgid ""
+"0-based loopback channel of the recording (or of --loopback if it is mul"
+"ti-channel)"
+msgstr "錄音（或多聲道 --loopback 檔案）中的回送聲道（從 0 起）"
+
+msgid "write the ESS test signal WAV (+ JSON sidecar)"
+msgstr "寫出 ESS 測試信号 WAV（及 JSON 附屬檔案）"
+
+msgid "output WAV path"
+msgstr "輸出 WAV 路徑"
+
+msgid "analyse a recording made with the sweep"
+msgstr "分析用該掃頻錄下的錄音"
+
+msgid "recorded WAV (any length, untrimmed)"
+msgstr "錄好的 WAV（任意長度，不要裁切）"
+
+msgid "sweep WAV or its .roomscope-sweep.json sidecar"
+msgstr "掃頻 WAV 或其 .roomscope-sweep.json 附屬檔案"
+
+msgid "directory for session.json, result.json, IR WAV"
+msgstr "session.json、result.json、IR WAV 的目錄"
+
+msgid "list audio devices (Standalone Mode)"
+msgstr "列出音頻設備（獨立模式）"
+
+msgid "Standalone Mode: play the sweep and record the microphone"
+msgstr "獨立模式：播放掃頻並錄制話筒"
+
+msgid "session directory (created)"
+msgstr "會話目錄（會創建）"
+
+msgid "input device index (see 'devices')"
+msgstr "輸入設備序号（見 roomscope devices）"
+
+msgid "output device index"
+msgstr "輸出設備序号"
+
+msgid "input channel, 1-based (default 1)"
+msgstr "輸入聲道，從 1 起（預設 1）"
+
+msgid ""
+"1-based input channels, comma-separated (e.g. 1,2); overrides --input-ch"
+"annel"
+msgstr "從 1 起的輸入聲道，逗号分隔（如 1,2）；覆蓋 --input-channel"
+
+msgid "output channel, 1-based (default 1)"
+msgstr "輸出聲道，從 1 起（預設 1）"
+
+msgid "1-based loopback input channel (recorded with the microphone)"
+msgstr "回送輸入聲道，從 1 起（與話筒一同錄制）"
+
+msgid ""
+"required for levels above -12 dBFS; confirms the monitor level was set l"
+"ow first"
+msgstr "高於 -12 dBFS 必須使用；確認已先把監聽開低"
+
+msgid "print a saved session or comparison.json report, or list sessions"
+msgstr "打印已保存會話或 comparison.json 報告，或列出會話"
+
+msgid "session directory, session.json, comparison.json, or folder to list"
+msgstr "會話目錄、session.json、comparison.json，或要列出的資料夾"
+
+msgid "list session.json files under path instead of opening one session"
+msgstr "列出路徑下的 session.json，而不是打開單個會話"
+
+msgid "override the recording profile stored in the session"
+msgstr "覆蓋會話中存儲的錄音配置"
+
+msgid "omit curves from JSON output"
+msgstr "JSON 輸出中省略曲線"
+
+msgid "compare two saved sessions"
+msgstr "對比两個已保存的會話"
+
+msgid "baseline session directory or session.json"
+msgstr "基線會話目錄或 session.json"
+
+msgid "candidate session directory or session.json"
+msgstr "候選會話目錄或 session.json"
+
+msgid "write comparison.json here (file or directory)"
+msgstr "把 comparison.json 寫到這裡（檔案或目錄）"
+
+msgid ""
+"declare that the input gain was unchanged (required for a VALID noise de"
+"lta)"
+msgstr "聲明輸入增益未變（要讓本底噪聲差值有效，必須聲明）"
+
+msgid ""
+"recording profile for comparison findings (default: the candidate sessio"
+"n's)"
+msgstr "對比解讀所用的錄音配置（預設：候選會話的配置）"
+
+msgid "print a shipped JSON Schema"
+msgstr "打印隨附的 JSON Schema"
+
+msgid "which schema to print"
+msgstr "要打印哪個 JSON Schema"
+
+msgid "analyse an impulse-response WAV from another tool"
+msgstr "分析其他工具給出的脈衝響應 WAV"
+
+msgid "impulse-response WAV"
+msgstr "脈衝響應 WAV"
+
+msgid "declared excitation band in Hz (required for band metrics)"
+msgstr "聲明的激勵頻帶（Hz；頻帶指標需要）"
+
+msgid "n/a"
+msgstr "無"
+
+msgid "at {temp:.0f} C"
+msgstr "氣溫 {temp:.0f} C"
+
+msgid "matched"
+msgstr "匹配"
+
+msgid "appeared"
+msgstr "出現"
+
+msgid "disappeared"
+msgstr "消失"
+
+msgid "show this help message and exit"
+msgstr "顯示此說明資訊並退出"
+
+msgid "show program's version number and exit"
+msgstr "顯示程式版本号並退出"
+
+msgid ""
+"Wrote {wav} ({seconds:.1f} s at {rate} Hz, sweep {start:g}-{end:g} Hz, {"
+"duration:g} s, {level:g} dBFS)"
+msgstr ""
+"已寫出 {wav}（{seconds:.1f} s，{rate} Hz，掃頻 {start:g}-{end:g} Hz，{duration:g}"
+" s，{level:g} dBFS）"
+
+msgid ""
+"Next: import the WAV into your DAW, play it through the monitors, record"
+" the measurement microphone,"
+msgstr "下一步：把 WAV 導入 DAW，經監聽播放，用測量話筒錄音，"
+
+msgid ""
+"export the recording as WAV and run: roomscope analyze --recording <file"
+"> --sweep {wav}"
+msgstr "導出為 WAV 後運行：roomscope analyze --recording <file> --sweep {wav}"
+
+msgid ""
+"warning: --json is deprecated; use --format json (--json will be removed"
+" in a future minor release)"
+msgstr "警告：--json 已棄用；請用 --format json（--json 將在後續次要版本中移除）"
+
+msgid "Saved session to {path}"
+msgstr "會話已保存到 {path}"
+
+msgid "idx"
+msgstr "序号"
+
+msgid "in"
+msgstr "入"
+
+msgid "out"
+msgstr "出"
+
+msgid "rate"
+msgstr "采樣率"
+
+msgid "name"
+msgstr "名稱"
+
+msgid "host API"
+msgstr "主機 API"
+
+msgid ""
+"Level {level:g} dBFS is above {max_level:g} dBFS. Set the monitor level "
+"low first and pass --acknowledge-level to confirm."
+msgstr ""
+"電平 {level:g} dBFS 高於 {max_level:g} dBFS。請先把監聽開低，並加上 --acknowledge-level "
+"確認。"
+
+msgid ""
+"Playing sweep on output channel {output}, recording input channel(s) {ch"
+"annels} via {backend} ..."
+msgstr "正在輸出聲道 {output} 播放掃頻，經 {backend} 錄制輸入聲道 {channels} …"
+
+msgid "Recorded {seconds:.1f} s to {path}"
+msgstr "已錄制 {seconds:.1f} s 到 {path}"
+
+msgid "Session: {path}"
+msgstr "會話：{path}"
+
+msgid "Wrote comparison to {path}"
+msgstr "已將對比寫入 {path}"
+
+msgid "{n} position(s) in {path}"
+msgstr "{path} 中有 {n} 個位置"
+
+msgid "(unlisted)"
+msgstr "（未列出）"
+
+msgid ""
+"ISO 3382-2 class: {klass} ({sources} source × {mics} mic, {combos} combi"
+"nations)"
+msgstr "ISO 3382-2 等級：{klass}（{sources} 個聲源 × {mics} 個話筒，{combos} 個組合）"
+
+msgid "RT60"
+msgstr "RT60"
+
+msgid ""
+"The desktop GUI cannot start because PySide6 could not be loaded ({error"
+"}). Install it in this Python environment with: pip install \"PySide6_Ess"
+"entials>=6.6\". On Linux the OpenGL/EGL and XCB system libraries are also"
+" needed; see docs/INSTALLATION.md. The command-line tool works without i"
+"t."
+msgstr ""
+"無法啟動桌面界面：無法加載 PySide6（{error}）。請在當前 Python 環境中安裝：pip install \"PySide6_Es"
+"sentials>=6.6\"。在 Linux 上還需要系統的 OpenGL/EGL 和 XCB 庫，見 docs/INSTALLATION.zh"
+"-CN.md。命令行工具不需要它也能使用。"
+
+msgid "stopped: {message}"
+msgstr "已停止：{message}"
+
+msgid "error: {message}"
+msgstr "錯誤：{message}"
+
+msgid "interrupted"
+msgstr "已中斷"
+
+msgctxt "decay length"
+msgid "short"
+msgstr "較短"
+
+msgctxt "decay length"
+msgid "noticeable"
+msgstr "偏長"
+
+msgctxt "decay length"
+msgid "long"
+msgstr "很長"
+
+msgctxt "RT60 change"
+msgid "shorter"
+msgstr "變短"
+
+msgctxt "RT60 change"
+msgid "longer"
+msgstr "變長"
+
+msgctxt "noise segment"
+msgid "pre-sweep"
+msgstr "掃頻前"
+
+msgctxt "noise segment"
+msgid "tail"
+msgstr "錄音末尾"
+
+msgctxt "noise segment"
+msgid "quiet"
+msgstr "安靜"
+
+msgid ""
+"A strong early reflection is present approximately {delay_ms:.0f} ms aft"
+"er the direct sound ({relative_db:.1f} dB). Acoustic guitar is vulnerabl"
+"e to comb filtering from early reflections; move the microphone or the i"
+"nstrument farther from the nearest hard surface, or treat it, then measu"
+"re again."
+msgstr ""
+"直達聲後約 {delay_ms:.0f} ms 有一條強早期反射（{relative_db:.1f} dB）。木吉他容易受早期反射造成的梳狀濾波"
+"影響；把話筒或樂器移離最近的硬表面，或處理該表面，然後重測。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). Acoustic guita"
+"r keeps its transients and body in a room like this."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s）。在這樣的房間裡，木吉他能保留瞬態和琴體的聲音。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). A"
+"coustic guitar keeps its transients and body in a room like this."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s，來自 {basis}）。在這樣的房間裡，木吉他能保留瞬態和琴體的聲音。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). For acoustic "
+"guitar, a decay this long clouds transients and adds boom; a position wi"
+"th absorption behind the performer helps."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s）。對木吉他來說，這麼長的衰減會讓瞬態發糊並帶來轟鳴；換到演奏者身後有吸聲的位置會有說"
+"明。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"For acoustic guitar, a decay this long clouds transients and adds boom; "
+"a position with absorption behind the performer helps."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s，來自 {basis}）。對木吉他來說，這麼長的衰減會讓瞬態發糊並帶來轟鳴；換到演奏者"
+"身後有吸聲的位置會有說明。"
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), which makes the guitar sound boomy at this position."
+" Bass trapping or a different position helps."
+msgstr "低頻比中頻衰減更慢（{low_max:.2f} s 對 {mid_mean:.2f} s），在此位置會讓吉他發轟。低音陷阱或換位置會有說明。"
+
+msgid ""
+"A very strong early reflection is present approximately {delay_ms:.0f} m"
+"s after the direct sound ({relative_db:.1f} dB). Drums mask most reflect"
+"ions, but a slap this strong will smear transients; move the kit or the "
+"overheads, or hang absorption at the reflection point."
+msgstr ""
+"直達聲後約 {delay_ms:.0f} ms 有一條很強的早期反射（{relative_db:.1f} dB）。鼓聲能掩蓋大多數反射，但這麼強"
+"的硬反射會把瞬態抹糊；移動鼓組或頂部話筒，或在反射點掛吸聲材料。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). The kit will s"
+"tay tight in a room like this."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s）。在這樣的房間裡，鼓組會保持緊實。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). T"
+"he kit will stay tight in a room like this."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s，來自 {basis}）。在這樣的房間裡，鼓組會保持緊實。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). A room this l"
+"ive rings under the kit; for a tighter drum sound add absorption or move"
+" the kit."
+msgstr "寬帶衰減{text}（估計 RT60 {rt:.2f} s）。這麼活的房間會在鼓組下面持續鳴響；想要更緊的鼓聲，請增加吸聲或移動鼓組。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"A room this live rings under the kit; for a tighter drum sound add absor"
+"ption or move the kit."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s，來自 {basis}）。這麼活的房間會在鼓組下面持續鳴響；想要更緊的鼓聲，請增加吸聲"
+"或移動鼓組。"
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), so the kick and low toms will boom at this position."
+" Bass trapping or a different kit position helps."
+msgstr ""
+"低頻比中頻衰減更慢（{low_max:.2f} s 對 {mid_mean:.2f} s），在此位置底鼓和低音通鼓會發轟。低音陷阱或換一個鼓組位"
+"置會有說明。"
+
+msgid ""
+"A very strong early reflection is present approximately {delay_ms:.0f} m"
+"s after the direct sound ({relative_db:.1f} dB). For a room microphone t"
+"his is a hard slap that will sit under everything; reposition the microp"
+"hone or add absorption at the reflection point."
+msgstr ""
+"直達聲後約 {delay_ms:.0f} ms 有一條很強的早期反射（{relative_db:.1f} dB）。對房間話筒來說，這是一條會墊在"
+"所有聲音下面的硬反射；請重新擺放話筒，或在反射點增加吸聲。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). A room microph"
+"one in a room this dry records mostly direct sound; if you want ambience"
+", the microphone needs to be farther from the source."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s）。在這麼幹的房間裡，房間話筒錄到的主要是直達聲；如果想要氛圍聲，話筒需要離聲源更遠。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). A"
+" room microphone in a room this dry records mostly direct sound; if you "
+"want ambience, the microphone needs to be farther from the source."
+msgstr ""
+"寬帶衰減較短（估計 RT60 {rt:.2f} s，來自 {basis}）。在這麼幹的房間裡，房間話筒錄到的主要是直達聲；如果想要氛圍聲，話筒需"
+"要離聲源更遠。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). For a room mi"
+"crophone this is a long room tone that may swamp the source; check wheth"
+"er the ambience stays usable, and consider absorption or a closer microp"
+"hone position."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s）。對房間話筒來說，這是很長的房間聲，可能會淹沒聲源；請確認氛圍聲是否仍然可用，並考慮"
+"吸聲或更近的話筒位置。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"For a room microphone this is a long room tone that may swamp the source"
+"; check whether the ambience stays usable, and consider absorption or a "
+"closer microphone position."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s，來自 {basis}）。對房間話筒來說，這是很長的房間聲，可能會淹沒聲源；請確認氛圍"
+"聲是否仍然可用，並考慮吸聲或更近的話筒位置。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). For a room mi"
+"crophone this is usable ambience; keep the microphone position and liste"
+"n for how it sits under the source."
+msgstr "寬帶衰減{text}（估計 RT60 {rt:.2f} s）。對房間話筒來說，這是可用的氛圍聲；保持話筒位置，聽聽它墊在聲源下面的效果。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"For a room microphone this is usable ambience; keep the microphone posit"
+"ion and listen for how it sits under the source."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s，來自 {basis}）。對房間話筒來說，這是可用的氛圍聲；保持話筒位置，聽聽它墊在聲"
+"源下面的效果。"
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), so the room sound will be bass-heavy at this positio"
+"n. Bass trapping or a different microphone position helps."
+msgstr ""
+"低頻比中頻衰減更慢（{low_max:.2f} s 對 {mid_mean:.2f} s），在此位置房間聲會偏重低頻。低音陷阱或換一個話筒位置會"
+"有說明。"
+
+msgid ""
+"Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (un"
+"calibrated digital level, not dB SPL). A room microphone captures everyt"
+"hing, so this floor is part of what you record; it is audible whenever t"
+"he source pauses."
+msgstr ""
+"{segment}段的本底噪聲為 {rms_dbfs:.1f} dBFS RMS（未校準的數字電平，不是 dB SPL）。房間話筒什麼都會拾到，"
+"這層底噪就是錄音的一部分；聲源一停頓就能聽到。"
+
+msgid ""
+"Potential low-frequency resonances around {listed}: these frequencies ri"
+"ng longer than their surroundings, so the room sound will be uneven ther"
+"e. Measure one or two other positions to see whether they follow the roo"
+"m."
+msgstr "可能的低頻共振約在 {listed}：這些頻率的餘振比周圍更長，房間聲在這些頻率上會不均勻。再測一两個位置，看它們是否跟房間走。"
+
+msgid ""
+"An early reflection is present approximately {delay_ms:.0f} ms after the"
+" direct sound ({relative_db:.1f} dB). For an ensemble, early reflections"
+" smear diction; move the microphones away from the nearest hard surface "
+"or treat it, and measure again."
+msgstr ""
+"直達聲後約 {delay_ms:.0f} ms 有一條早期反射（{relative_db:.1f} dB）。對合唱或小型組合來說，早期反射會讓咬"
+"字發糊；把話筒移離最近的硬表面或處理該表面，然後重測。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). An ensemble ke"
+"eps its diction in a room like this."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s）。在這樣的房間裡，合唱或小型組合能保持清晰的咬字。"
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). A"
+"n ensemble keeps its diction in a room like this."
+msgstr "寬帶衰減較短（估計 RT60 {rt:.2f} s，來自 {basis}）。在這樣的房間裡，合唱或小型組合能保持清晰的咬字。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). For a choir, "
+"decay this long gives ambience but blurs diction; absorption behind the "
+"ensemble or a different microphone position helps."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s）。對合唱來說，這麼長的衰減能帶來氛圍，但會讓咬字發糊；在合唱團身後吸聲或換一個話筒位"
+"置會有說明。"
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"For a choir, decay this long gives ambience but blurs diction; absorptio"
+"n behind the ensemble or a different microphone position helps."
+msgstr ""
+"寬帶衰減{text}（估計 RT60 {rt:.2f} s，來自 {basis}）。對合唱來說，這麼長的衰減能帶來氛圍，但會讓咬字發糊；在合唱團"
+"身後吸聲或換一個話筒位置會有說明。"
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), which makes the ensemble bottom-heavy and muddies di"
+"ction. Bass trapping or a different position helps."
+msgstr ""
+"低頻比中頻衰減更慢（{low_max:.2f} s 對 {mid_mean:.2f} s），會讓合唱整體偏重低頻、咬字發渾。低音陷阱或換位置會有"
+"說明。"
+
+msgid "(unnamed room)"
+msgstr "（未命名房間）"
+
+msgid "A validity flag on every number"
+msgstr "每個數字都帶有效性標記"
+
+msgid "Any DAW: WAV in, WAV out"
+msgstr "任意 DAW：WAV 進，WAV 出"
+
+msgid "No room score, no invented figures"
+msgstr "不打總分，不編造數字"
+
+msgid ""
+"Generate a test signal, play and record it in any DAW, import the record"
+"ing."
+msgstr "生成測試信号，在任意 DAW 中播放並錄音，再導入錄音。"
+
+msgid "Start in my DAW"
+msgstr "在我的 DAW 中開始"
+
+msgid ""
+"RoomScope plays the sweep and records the microphone through your audio "
+"interface."
+msgstr "RoomScope 通過你的音頻介面播放掃頻並錄制話筒。"
+
+msgid "Measure now"
+msgstr "立即測量"
+
+msgid ""
+"Run Standalone Mode on the fake backend. Nothing is sent to a loudspeake"
+"r."
+msgstr "在模擬後端上運行獨立模式，不會向揚聲器發送任何信号。"
+
+msgid "Try the demo"
+msgstr "試用演示"
+
+msgid "Open a session.json or a folder that contains one."
+msgstr "打開 session.json，或包含它的資料夾。"
+
+msgid "Pick two saved sessions and compare their metrics."
+msgstr "選擇两個已保存的會話並比較其指標。"
+
+msgid ""
+"Four steps: generate the test signal, play and record it in your DAW, im"
+"port the recording, analyse. RoomScope never talks to the DAW."
+msgstr "四個步驟：生成測試信号、在 DAW 中播放並錄音、導入錄音、分析。RoomScope 從不與 DAW 通信。"
+
+msgid ""
+"RoomScope plays the sweep and records the microphone through your audio "
+"interface, then runs the same analysis as Universal DAW Mode."
+msgstr "RoomScope 通過你的音頻介面播放掃頻並錄制話筒，然後運行與通用 DAW 模式相同的分析。"
+
+msgid "valid"
+msgstr "有效"
+
+msgid "unreliable"
+msgstr "不可靠"
+
+msgid "insufficient range"
+msgstr "衰減范圍不足"
+
+msgid "not computed"
+msgstr "未計算"
+
+msgid "Reverberation (RT60)"
+msgstr "混響（RT60）"
+
+msgid "Background noise"
+msgstr "本底噪聲"
+
+msgid "Early reflections"
+msgstr "早期反射"
+
+msgid "Direct sound"
+msgstr "直達聲"
+
+msgid "pre-peak margin not checkable"
+msgstr "峰前餘量無法檢查"
+
+msgid "Results"
+msgstr "結果"
+
+msgid "Full report"
+msgstr "完整報告"
+
+msgid "high"
+msgstr "高"
+
+msgid "medium"
+msgstr "中"
+
+msgid "low"
+msgstr "低"
+
+msgid "REVERBERATION BY BAND"
+msgstr "分頻帶混響"
+
+msgid "no reverberation time could be reported"
+msgstr "無法給出混響時間"
+
+msgid "no quiet segment to measure"
+msgstr "沒有可測量的安靜片段"
+
+msgid "clean"
+msgstr "無明顯反射"
+
+msgid "wrong speed"
+msgstr "速度錯誤"
+
+msgid "confidence"
+msgstr "置信度"
+
+msgid "no hum"
+msgstr "無工頻幹擾"
+
+msgid "pre-peak margin {margin:.1f} dB"
+msgstr "峰前餘量 {margin:.1f} dB"
+
+msgid "INTERPRETATION ({profile} PROFILE)"
+msgstr "解讀（{profile}配置）"
+
+msgid "No findings."
+msgstr "沒有發現。"
+
+msgid "{profile} profile"
+msgstr "{profile}配置"
+
+msgid "broadband, estimated from {basis}"
+msgstr "寬帶，由 {basis} 估算"
+
+msgid "RMS, {segment} segment, uncalibrated"
+msgstr "RMS，{segment}片段，未校準"
+
+msgid "strongest at {delay:.1f} ms, {level:.1f} dB"
+msgstr "最強在 {delay:.1f} ms，{level:.1f} dB"
+
+msgid "above {threshold:g} dB"
+msgstr "高於 {threshold:g} dB"
+
+msgid "none above {threshold:g} dB"
+msgstr "沒有高於 {threshold:g} dB 的反射"
+
+msgid "sweep played at {percent:.1f} % speed"
+msgstr "掃頻以 {percent:.1f} % 速度播放"
+
+msgid "hum {base:g} Hz"
+msgstr "工頻幹擾 {base:g} Hz"
+
+msgid "warning"
+msgstr "警告"
+
+msgid "notice"
+msgstr "提示"
+
+msgid "info"
+msgstr "資訊"
+
+msgid "reverberation"
+msgstr "混響"
+
+msgid "clarity"
+msgstr "清晰度"
+
+msgid "noise"
+msgstr "噪聲"
+
+msgid "early reflections"
+msgstr "早期反射"
+
+msgid "low frequency"
+msgstr "低頻"
+
+msgid "measurement"
+msgstr "測量"
+
+msgid "comparison"
+msgstr "比較"
+
+msgid "print an environment report for bug reports and debugging"
+msgstr "打印用於問題報告和調試的環境報告"
+
+msgid ""
+"also check which sample rates each device accepts and mark the recommend"
+"ed entry of each physical device (nothing is played)"
+msgstr "同時檢查每個設備接受哪些采樣率，並標出每個物理設備的推薦條目（不會播放任何聲音）"
+
+msgid "list the host APIs instead of devices"
+msgstr "列出主機 API 而不是設備"
+
+msgid ""
+"PortAudio latency class of the stream (default: PortAudio's high latency"
+")"
+msgstr "音頻流的 PortAudio 延遲等級（預設：PortAudio 的高延遲）"
+
+msgid ""
+"Windows WASAPI: open the device in exclusive mode (no mixer, no conversi"
+"on)"
+msgstr "Windows WASAPI：以獨占模式打開設備（不經混音器，不轉換采樣率）"
+
+msgid "macOS: let RoomScope set the device's sample rate instead of converting"
+msgstr "macOS：由 RoomScope 設定設備采樣率，而不是做轉換"
+
+msgid "recommended input"
+msgstr "推薦輸入"
+
+msgid "recommended output"
+msgstr "推薦輸出"
+
+msgid "devices"
+msgstr "設備數"
+
+msgid "rank"
+msgstr "排序"
+
+msgid "Warning: {message}"
+msgstr "警告：{message}"
+
+msgid "record"
+msgstr "錄音"
+
+msgid "play"
+msgstr "播放"
+
+msgid "Audio Device Inspector"
+msgstr "音頻設備檢查器"
+
+msgid "All host APIs"
+msgstr "所有主機 API"
+
+msgid "Probe sample rates"
+msgstr "探測采樣率"
+
+msgid "Copy as JSON"
+msgstr "復制為 JSON"
+
+msgid "Environment Report"
+msgstr "環境報告"
+
+msgid "Copy"
+msgstr "復制"
+
+msgid ""
+"Every host API and device PortAudio reports. Probing asks each device wh"
+"ich sample rates it accepts for one channel; nothing is played. See docs"
+"/AUDIO_DEVICES.md for what each host API does to the signal."
+msgstr ""
+"PortAudio 報告的所有主機 API 和設備。探測會詢問每個設備在單聲道下接受哪些采樣率，不會播放任何聲音。各主機 API 對信号的影響見"
+" docs/AUDIO_DEVICES.md。"
+
+msgid "Backend {backend}; {version}; host APIs: {apis}; {n} device(s)."
+msgstr "後端 {backend}；{version}；主機 API：{apis}；{n} 個設備。"
+
+msgid "&Developer"
+msgstr "開發者(&D)"
+
+msgid "Audio Device &Inspector..."
+msgstr "音頻設備檢查器(&I)…"
+
+msgid "Open &Data Folder"
+msgstr "打開資料資料夾(&D)"
+
+msgid ""
+"How RoomScope talks to your interface: WASAPI, ASIO, WDM-KS, DirectSound"
+" or MME on Windows, Core Audio on macOS, ALSA or JACK on Linux. Input an"
+"d output must use the same one. \"System default\" uses the devices your s"
+"ystem uses; a star marks the entry recommended for each device."
+msgstr ""
+"RoomScope 與聲卡通信的方式：Windows 上為 WASAPI、ASIO、WDM-KS、DirectSound 或 MME，macOS"
+" 上為 Core Audio，Linux 上為 ALSA 或 JACK。輸入和輸出必須使用同一種。“系統預設”使用系統當前的設備；星号標出每個設"
+"備的推薦條目。"
+
+msgid "Advanced audio options (developer edition)"
+msgstr "高級音頻選項（開發者版）"
+
+msgid "PortAudio default (high)"
+msgstr "PortAudio 預設（高）"
+
+msgid "Low"
+msgstr "低"
+
+msgid "High"
+msgstr "高"
+
+msgid "WASAPI exclusive mode (bypasses the Windows audio engine)"
+msgstr "WASAPI 獨占模式（繞過 Windows 音頻引擎）"
+
+msgid "Core Audio: set the device to the requested rate, never convert"
+msgstr "Core Audio：把設備設為請求的采樣率，絕不轉換"
+
+msgid "Latency"
+msgstr "延遲"
+
+msgid "Two devices, two clocks"
+msgstr "两個設備，两個時鐘"
+
+msgid "Measure anyway?"
+msgstr "仍要測量嗎？"
+
+msgid "Follow the system"
+msgstr "跟隨系統"
+
+msgid "Light"
+msgstr "淺色"
+
+msgid "Dark"
+msgstr "深色"
+
+msgid ""
+"Show developer tools (Developer menu, advanced audio options; after a re"
+"start)"
+msgstr "顯示開發者工具（開發者菜單、高級音頻選項；重啟後生效）"
+
+msgid "Theme"
+msgstr "主題"
+
+msgid "Compare two sessions"
+msgstr "比較两個會話"
+
+msgid ""
+"Every difference carries a validity: RoomScope says when two takes canno"
+"t be compared rather than printing a delta."
+msgstr "每個差值都帶有有效性：两次測量無法比較時，RoomScope 會明確說明，而不是給出一個差值。"
+
+msgid "Metrics"
+msgstr "指標"
+
+msgid "Frequency response difference"
+msgstr "頻率響應差異"
+
+msgid "Resonances"
+msgstr "共振"
+
+msgid "also ask every device which sample rates it accepts (nothing is played)"
+msgstr "同時詢問每個設備接受哪些采樣率（不會播放任何聲音）"
+
+msgid ""
+"Paste this report into a GitHub issue so the problem can be reproduced. "
+"Nothing is sent automatically. Probing asks each device which sample rat"
+"es it accepts; nothing is played. Device names can contain personal name"
+"s: review the text before posting."
+msgstr ""
+"把這份報告粘貼到 GitHub Issue 中，以便復現問題。RoomScope 不會自動發送任何內容。探測會詢問每個設備接受哪些采樣率，不會播"
+"放任何聲音。設備名稱可能包含個人姓名，發布前請檢查文本。"
+
+msgid "The log file and settings are in this folder."
+msgstr "日志檔案和設定保存在此資料夾中。"
+
+msgid "Open Issue Page"
+msgstr "打開 GitHub Issue 頁面"
+
+msgid "&Environment Report for Bug Reports..."
+msgstr "用於問題報告的環境報告(&E)…"
+
+msgid "Open Data Folder"
+msgstr "打開資料資料夾"
+
+msgid "Audio backend unavailable"
+msgstr "音頻後端不可用"
+
+msgid "No audio device list is available; Universal DAW Mode still works."
+msgstr "無法獲取音頻設備列表；通用 DAW 模式仍然可用。"
+
+msgid "Audio backend unavailable: {error}"
+msgstr "音頻後端不可用：{error}"
+
+msgid ""
+"The audio device reported dropped or late buffers during the take, so sa"
+"mples may be missing and the result may be smeared. Close other audio pr"
+"ograms, choose a higher latency or buffer size, and measure again."
+msgstr ""
+"音頻設備在本次測量中報告了丟失或延遲的緩衝區，錄音中可能缺少采樣，結果可能因此被抹平。請關閉其他音頻程式，選擇更高的延遲或緩衝區大小，然後重新測"
+"量。"
+
+msgid ""
+"The recording has no background noise at all: its quiet part is exact di"
+"gital silence, which a microphone never records. Check that you exported"
+" the microphone track, not the test-signal track, and that no gate or no"
+"ise reduction is on the microphone track. The room figures are not relia"
+"ble until then."
+msgstr ""
+"這段錄音完全沒有背景噪聲：其安靜部分是精確的數字靜音，而話筒永遠會錄到一些噪聲。請確認導出的是話筒音軌而不是測試信号音軌，並確認話筒音軌上沒有門"
+"限或降噪處理。在此之前，房間相關數值都不可靠。"
+
+msgid "Audio system (host API)"
+msgstr "音頻系統（主機 API）"
+
+msgid "Background noise, RMS"
+msgstr "本底噪聲，RMS"
+
+msgid "Loopback path delay"
+msgstr "回送路徑延遲"
+
+msgid "Broadband"
+msgstr "寬帶"
+
+msgid "outside the sweep's range"
+msgstr "超出掃頻范圍"
+
+msgid "not comparable"
+msgstr "不可比較"
+
+msgid "Time after direct sound (ms)"
+msgstr "直達聲之後的時間（ms）"
+
+msgid "Time after direct sound (s)"
+msgstr "直達聲之後的時間（s）"
+
+msgid "Amplitude (relative)"
+msgstr "幅度（相對）"
+
+msgid "Impulse response, first 100 ms"
+msgstr "脈衝響應，前 100 ms"
+
+msgid "Envelope (dB re direct)"
+msgstr "包絡（dB，相對直達聲）"
+
+msgid "Energy-time curve"
+msgstr "能量-時間曲線"
+
+msgid "raw"
+msgstr "原始"
+
+msgid "1/{fraction}-octave smoothed"
+msgstr "1/{fraction} 倍頻程平滑"
+
+msgid "interface (loopback)"
+msgstr "音頻介面（回送）"
+
+msgid "Frequency (Hz)"
+msgstr "頻率（Hz）"
+
+msgid "Magnitude (dB, relative)"
+msgstr "幅度（dB，相對）"
+
+msgid "Frequency response ({window:.2f} s window)"
+msgstr "頻率響應（{window:.2f} s 窗）"
+
+msgid "Time (s)"
+msgstr "時間（s）"
+
+msgid "Schroeder decay (dB)"
+msgstr "Schroeder 衰減（dB）"
+
+msgid "Energy decay curves (Lundeby-truncated)"
+msgstr "能量衰減曲線（Lundeby 截斷）"
+
+msgid "No quiet segment available"
+msgstr "沒有可用的安靜段"
+
+msgid "PSD (dB re FS^2/Hz)"
+msgstr "功率譜密度（dB re FS^2/Hz）"
+
+msgid "Background noise: {rms:.1f} dBFS RMS ({segment}), uncalibrated"
+msgstr "本底噪聲：{rms:.1f} dBFS RMS（{segment}段），未校準"
+
+msgid "envelope"
+msgstr "包絡"
+
+msgid "candidate reflections"
+msgstr "候選反射"
+
+msgid "threshold"
+msgstr "閾值"
+
+msgid "Level re direct sound (dB)"
+msgstr "相對直達聲的電平（dB）"
+
+msgid "Early reflections (direct-sound confidence: {confidence})"
+msgstr "早期反射（直達聲置信度：{confidence}）"
+
+msgid "General"
+msgstr "通用"
+
+msgid "Vocals"
+msgstr "人聲"
+
+msgid "Voice-over"
+msgstr "配音與旁白"
+
+msgid "Acoustic guitar"
+msgstr "原聲吉他"
+
+msgid "Drums"
+msgstr "鼓"
+
+msgid "Room microphone"
+msgstr "房間話筒"
+
+msgid "Choir / ensemble"
+msgstr "合唱 / 小型合奏"
+
+msgid "The same report that roomscope analyze prints; warnings are at the end."
+msgstr "與 roomscope analyze 輸出的報告相同；警告列在末尾。"
+
+msgid "usage: "
+msgstr "用法："
+
+msgid "positional arguments"
+msgstr "位置參數"
+
+msgid "options"
+msgstr "選項"
+
+msgid "%(heading)s:"
+msgstr "%(heading)s："
+
+msgid " (default: %(default)s)"
+msgstr "（預設：%(default)s）"
+
+msgid ""
+"%(prog)s: error: %(message)s\n"
+msgstr ""
+"%(prog)s：錯誤：%(message)s\n"
+
+msgid "argument %(argument_name)s: %(message)s"
+msgstr "參數 %(argument_name)s：%(message)s"
+
+msgid "ambiguous option: %(option)s could match %(matches)s"
+msgstr "選項有歧義：%(option)s 可匹配 %(matches)s"
+
+msgid "expected one argument"
+msgstr "需要一個參數值"
+
+msgid "expected at least one argument"
+msgstr "至少需要一個參數值"
+
+msgid "expected at most one argument"
+msgstr "最多只能有一個參數值"
+
+msgid "invalid %(type)s value: %(value)r"
+msgstr "無效的 %(type)s 值：%(value)r"
+
+msgid "invalid choice: %(value)r (choose from %(choices)s)"
+msgstr "無效選項：%(value)r（可選：%(choices)s）"
+
+msgid "not allowed with argument %s"
+msgstr "不能與參數 %s 同時使用"
+
+msgid "one of the arguments %s is required"
+msgstr "參數 %s 中必須提供一個"
+
+msgid "the following arguments are required: %s"
+msgstr "缺少必需的參數：%s"
+
+msgid "unrecognized arguments: %s"
+msgstr "無法識別的參數：%s"
+
+msgid "can't open '%(filename)s': %(error)s"
+msgstr "無法打開“%(filename)s”：%(error)s"
+
+msgid "DEMO"
+msgstr "演示"
+
+msgctxt "diagnostic"
+msgid "one or both sessions have no verified quiet segment"
+msgstr "一個或两個會話沒有經過驗證的安靜段"
+
+msgctxt "diagnostic"
+msgid "gain not declared equal"
+msgstr "未聲明两次的輸入增益相同"
+
+msgctxt "diagnostic"
+msgid "placement heights are compared only when both results are tier 2"
+msgstr "只有两個結果都達到檔位 2 時才比較擺位高度"
+
+msgctxt "diagnostic"
+msgid ""
+"ISO 3382-1 quotes a just-noticeable difference for reverberation time of"
+" about {jnd_percent:g} % (clause not verified against the standard text)"
+". A change is not called significant from a single pair of positions."
+msgstr ""
+"ISO 3382-1 給出的混響時間剛可察覺差約為 {jnd_percent:g} %（條款未對照標準原文核實）。僅憑一對位置不會把變化判定為顯"
+"著。"
+
+msgctxt "diagnostic"
+msgid ""
+"sample rates differ ({baseline_rate} Hz vs {candidate_rate} Hz); compari"
+"son is still allowed"
+msgstr "采樣率不同（{baseline_rate} Hz 對 {candidate_rate} Hz）；仍允許比較"
+
+msgctxt "diagnostic"
+msgid "sweep durations differ ({baseline_s} s vs {candidate_s} s)"
+msgstr "掃頻時長不同（{baseline_s} s 對 {candidate_s} s）"
+
+msgctxt "diagnostic"
+msgid "sweep levels differ ({baseline_dbfs} dBFS vs {candidate_dbfs} dBFS)"
+msgstr "掃頻電平不同（{baseline_dbfs} dBFS 對 {candidate_dbfs} dBFS）"
+
+msgctxt "diagnostic"
+msgid "one or both sides have no number"
+msgstr "一方或雙方沒有數值"
+
+msgctxt "diagnostic"
+msgid ""
+"candidate minus baseline (dB) on a shared log grid inside the common exc"
+"itation band"
+msgstr "候選減基線（dB），在共同激勵頻帶內的同一對數頻率網格上計算"
+
+msgctxt "diagnostic"
+msgid ""
+"early reflections are not compared unless both sides have high direct-so"
+"und confidence (baseline {baseline_confidence}, candidate {candidate_con"
+"fidence})"
+msgstr ""
+"只有两側的直達聲置信度都為高時才比較早期反射（基線 {baseline_confidence}，候選 {candidate_confidence"
+"}）"
+
+msgctxt "diagnostic"
+msgid "frequency-response curves are missing on one or both sides (--no-curves)"
+msgstr "一方或雙方缺少頻率響應曲線（--no-curves）"
+
+msgctxt "diagnostic"
+msgid "one or both results have no excitation band, so they cannot be compared"
+msgstr "一方或雙方結果沒有激勵頻帶，因此無法比較"
+
+msgctxt "diagnostic"
+msgid "the excitation bands do not overlap"
+msgstr "两個結果的激勵頻帶沒有重疊"
+
+msgctxt "diagnostic"
+msgid "baseline {validity} ({reason})"
+msgstr "基線：{validity}（{reason}）"
+
+msgctxt "diagnostic"
+msgid "baseline {validity}"
+msgstr "基線：{validity}"
+
+msgctxt "diagnostic"
+msgid "candidate {validity} ({reason})"
+msgstr "候選：{validity}（{reason}）"
+
+msgctxt "diagnostic"
+msgid "candidate {validity}"
+msgstr "候選：{validity}"
+
+msgctxt "diagnostic"
+msgid "metrics are not both VALID"
+msgstr "两側指標並非都有效（VALID）"
+
+msgctxt "diagnostic"
+msgid "placement lengths are not both VALID"
+msgstr "两側擺位長度並非都有效（VALID）"
+
+msgctxt "diagnostic"
+msgid ""
+"common excitation band {low:g}-{high:g} Hz is {octaves:.2f} octaves, nar"
+"rower than the required {required:g} octave"
+msgstr "共同激勵頻帶 {low:g}-{high:g} Hz 只有 {octaves:.2f} 個倍頻程，窄於要求的 {required:g} 個倍頻程"
+
+msgctxt "diagnostic"
+msgid ""
+"RT60 estimate missing on one or both sides (never taken from an invalid "
+"metric)"
+msgstr "一方或雙方缺少 RT60 估計值（RT60 估計值從不取自無效指標）"
+
+msgctxt "diagnostic"
+msgid "band missing from the baseline"
+msgstr "基線結果中沒有該頻帶"
+
+msgctxt "diagnostic"
+msgid ""
+"path delay is compared only when both results used a compensated loopbac"
+"k"
+msgstr "只有两個結果都使用了經過補償的回送（loopback）時才比較路徑延遲"
+
+msgctxt "diagnostic"
+msgid "band missing from the candidate"
+msgstr "候選結果中沒有該頻帶"
+
+msgctxt "diagnostic"
+msgid ""
+"ISO 3382-2:2008, 4.3.1, Table 1, read from the standard's preview pages "
+"(cdn.standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnot"
+"es not implemented"
+msgstr ""
+"ISO 3382-2:2008，4.3.1，表 1，於 2026-09-24 從該標準的預覽頁（cdn.standards.iteh.ai 上的"
+" ISO 3382-2:2008 樣章）讀取；腳註未實現"
+
+msgctxt "diagnostic"
+msgid "Decay curves are never averaged; only VALID T values enter the mean."
+msgstr "衰減曲線從不參與平均；只有有效（VALID）的 T 值計入平均值。"
+
+msgctxt "diagnostic"
+msgid ""
+"ISO 3382-2 class {klass}: {n_source} source position(s), {n_mic} microph"
+"one position(s), {combos} source-microphone combination(s) against ISO 3"
+"382-2:2008, 4.3.1, Table 1, read from the standard's preview pages (cdn."
+"standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnotes no"
+"t implemented. The class is a label; the other clause 4 conditions (posi"
+"tion spacing, distances from surfaces) are not checked."
+msgstr ""
+"ISO 3382-2 等級 {klass}：{n_source} 個聲源位置、{n_mic} 個話筒位置、{combos} 個聲源-話筒組合，對"
+"照 ISO 3382-2:2008，4.3.1，表 1（於 2026-09-24 從該標準的預覽頁讀取，即 cdn.standards.iteh"
+".ai 上的 ISO 3382-2:2008 樣章；腳註未實現）。該等級只是一個標簽；第 4 條的其他條件（位置間距、與界面的距離）未作檢查。"
+
+msgctxt "diagnostic"
+msgid "no VALID values to average"
+msgstr "沒有可平均的有效（VALID）值"
+
+msgctxt "diagnostic"
+msgid ""
+"Candidates only: a peak in the low-frequency response with a long narrow"
+"-band decay may be a room resonance, but room-mode identification is not"
+" attempted in v0.1."
+msgstr "僅為候選：低頻響應中窄帶衰減較長的峰可能是房間共振，但 v0.1 不嘗試識別房間模式。"
+
+msgctxt "diagnostic"
+msgid ""
+"the analysed response is {length_s:.2f} s long, so its resolution is {re"
+"solution_hz:.1f} Hz and peaks below {low:.0f} Hz cannot be separated"
+msgstr ""
+"所分析的響應長 {length_s:.2f} s，因此分辨率為 {resolution_hz:.1f} Hz，低於 {low:.0f} Hz 的"
+"峰無法分開"
+
+msgctxt "diagnostic"
+msgid ""
+"no part of the resonance range was excited and resolved; no search was m"
+"ade"
+msgstr "共振搜索范圍內沒有既被激勵又能分辨的部分；未進行搜索"
+
+msgctxt "diagnostic"
+msgid "frequency resolution is too coarse for the resonance search"
+msgstr "頻率分辨率太粗，無法進行共振搜索"
+
+msgctxt "diagnostic"
+msgid ""
+"some candidates have too few measurable neighbouring bands for the surro"
+"undings comparison; their decay is not called distinguishable"
+msgstr "部分候選可測量的相鄰頻帶太少，無法與周邊頻帶比較；它們的衰減不判定為可區分"
+
+msgctxt "diagnostic"
+msgid ""
+"the search is limited to {low:.0f}-{high:.0f} Hz, the part of the range "
+"whose 1/3-octave band lies inside the excited {band_low:.0f}-{band_high:"
+".0f} Hz"
+msgstr ""
+"搜索限於 {low:.0f}-{high:.0f} Hz，即 1/3 倍頻程頻帶落在已激勵的 {band_low:.0f}-{band_high"
+":.0f} Hz 之內的那部分范圍"
+
+msgctxt "diagnostic"
+msgid ""
+"candidates are envelope peaks standing above the local diffuse level; in"
+" a dense early tail some candidates may be statistical rather than discr"
+"ete reflections"
+msgstr "候選是高出局部擴散聲級的包絡峰；在密集的早期尾部，部分候選可能是統計起伏，而不是離散的反射"
+
+msgctxt "diagnostic"
+msgid ""
+"the impulse response ends {analysed_ms:.1f} ms after the direct sound, s"
+"o only that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be sea"
+"rched"
+msgstr ""
+"脈衝響應在直達聲之後 {analysed_ms:.1f} ms 就結束了，因此 {min_ms:.0f}-{max_ms:.0f} ms 窗口中"
+"只有這一部分得到搜索"
+
+msgctxt "diagnostic"
+msgid ""
+"impulse response is too short after the direct sound for reflection anal"
+"ysis"
+msgstr "直達聲之後的脈衝響應太短，無法進行反射分析"
+
+msgctxt "diagnostic"
+msgid "only the {count} strongest reflections are listed"
+msgstr "只列出最強的 {count} 個反射"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is low; reflection delays are relative"
+" to the strongest peak, which may not be the direct sound"
+msgstr "直達聲檢測置信度低；反射延遲以最強峰為參照，而該峰可能不是直達聲"
+
+msgctxt "diagnostic"
+msgid "direct sound (time 0 = the detected broadband direct sound)"
+msgstr "直達聲（時間 0 = 檢測到的寬帶直達聲）"
+
+msgctxt "diagnostic"
+msgid ""
+"dB re (full-scale sine RMS)^2 per Hz: the power spectral density is scal"
+"ed so that 10*log10 of its integral is the reported AES17 RMS level in d"
+"BFS"
+msgstr "dB re（滿幅正弦 RMS）^2 每 Hz：功率譜密度經過縮放，使其積分的 10*log10 等於報告的 AES17 RMS 電平（dBFS）"
+
+msgctxt "diagnostic"
+msgid ""
+"c = 331.3 * sqrt(1 + T/273.15) m/s (adiabatic ideal-gas relation for dry"
+" air; 343.2 m/s at 20 C, numerically equal to the ISO 9613-1 form c = 34"
+"3.2 * sqrt(T/293.15))"
+msgstr ""
+"c = 331.3 * sqrt(1 + T/273.15) m/s（幹燥空氣的絕熱理想氣體關系；20 C 時為 343.2 m/s，數值上與 "
+"ISO 9613-1 的形式 c = 343.2 * sqrt(T/293.15) 相同）"
+
+msgctxt "diagnostic"
+msgid ""
+"No coordinate, room length, room width or wall distance is reported. One"
+" omnidirectional microphone at one position measures path lengths, not d"
+"irections, and the deconvolved time origin contains the interface round-"
+"trip latency, so there is no absolute time of flight: the four independe"
+"nt arrival equations constrain six unknowns, a deficit of three without "
+"a tape-measured loudspeaker-to-microphone distance and two with it. The "
+"remaining freedom is the direction of the loudspeaker-to-microphone vect"
+"or, and every direction reproduces the measured arrival times exactly. O"
+"nly quantities invariant over that family are reported: the product of t"
+"he two perpendicular distances to a plane, and the vertical axis once on"
+"e perpendicular distance is supplied by the user."
+msgstr ""
+"不報告任何坐標、房間長度、房間寬度或牆面距離。單個全指向話筒在一個位置上測得的是路徑長度而不是方向，而且解卷積得到的時間原點包含音頻介面的往返延"
+"遲，因此沒有絕對傳播時間：四個獨立的到達方程約束六個未知量，沒有用卷尺量出的揚聲器到話筒距離時缺三個，有該距離時缺两個。剩下的自由度是揚聲器到話"
+"筒矢量的方向，而每個方向都能精確重現測得的到達時間。只報告在這一族解上保持不變的量：到某個平面的两個垂直距離之積，以及在使用者給出一個垂直距離之"
+"後的豎直方向。"
+
+msgctxt "diagnostic"
+msgid ""
+"propagated from the stated tape-measure, temperature and peak-location u"
+"ncertainties only; it excludes model error (that the reflector is flat, "
+"rigid and large compared with the wavelength, that the arrival is a firs"
+"t-order specular reflection, and that the user measured to the plane tha"
+"t actually reflected), which is usually larger"
+msgstr ""
+"僅由所給的卷尺、溫度和峰位置不確定度傳播得出；不包括模型誤差（反射面是否平整、剛性且遠大於波長，該到達是否為一階鏡面反射，以及使用者量的是否正是"
+"實際產生反射的那個平面），而模型誤差通常更大"
+
+msgctxt "diagnostic"
+msgid "relative dB (0 dB = flat loopback of the reference sweep)"
+msgstr "相對 dB（0 dB = 參考掃頻的平直回送）"
+
+msgctxt "diagnostic"
+msgid "uncalibrated: levels are dBFS, not dB SPL"
+msgstr "未校準：電平為 dBFS，不是 dB SPL"
+
+msgctxt "diagnostic"
+msgid ""
+"the sweep in the recording runs at {percent:.1f} % of the speed it was g"
+"enerated at: the DAW time-stretched it (Warp, Flex Time, Follow Tempo, e"
+"lastic audio or a stretch mode). Switch time-stretching off for the swee"
+"p clip and measure again"
+msgstr ""
+"錄音中掃頻的速度是生成時的 {percent:.1f} %：DAW 對它做了時間伸縮（Warp、Flex Time、Follow Tempo、彈"
+"性音頻或某種伸縮模式）。請關閉掃頻片段的時間伸縮，然後重新測量"
+
+msgctxt "diagnostic"
+msgid ""
+"the sweep in the recording runs at {percent:.1f} % of the speed it was g"
+"enerated at: a file generated at {generated_hz} Hz was played at {played"
+"_hz} Hz without sample-rate conversion (a DAW project at another sample "
+"rate that did not convert the file on import). Generate the sweep at the"
+" project's sample rate, or let the DAW convert it on import, and measure"
+" again"
+msgstr ""
+"錄音中掃頻的速度是生成時的 {percent:.1f} %：以 {generated_hz} Hz 生成的檔案未經采樣率轉換就以 {played"
+"_hz} Hz 播放（DAW 工程的采樣率與檔案不同，導入時沒有轉換該檔案）。請按工程采樣率生成掃頻，或讓 DAW 在導入時轉換，然後重新測量"
+
+msgctxt "diagnostic"
+msgid "all decay metrics are marked unreliable: {reason}"
+msgstr "所有衰減指標都標記為不可靠：{reason}"
+
+msgid "sweep settings"
+msgstr "掃頻設定"
+
+msgid "estimated from reference audio"
+msgstr "由參考音頻估計"
+
+msgid "declared by the user"
+msgstr "使用者聲明"
+
+msgid "survey"
+msgstr "簡易級"
+
+msgid "engineering"
+msgstr "工程級"
+
+msgid "precision"
+msgstr "精密級"
+
+msgid "below survey"
+msgstr "低於簡易級"
+
+msgid "unknown project command {command}"
+msgstr "未知的項目命令 {command}"
+
+msgid "at least one input channel is required"
+msgstr "至少需要一個輸入聲道"
+
+msgid "input channels are 1-based and must be >= 1"
+msgstr "輸入聲道從 1 起編号，必須 >= 1"
+
+msgid "each input channel may be listed once"
+msgstr "每個輸入聲道只能列出一次"
+
+msgid "the loopback channel is 1-based and must be >= 1"
+msgstr "回送聲道從 1 起編号，必須 >= 1"
+
+msgid ""
+"input {channel} cannot be both the microphone and the loopback; record t"
+"he loopback on a different input"
+msgstr "輸入 {channel} 不能同時用作話筒和回送；請把回送錄到另一個輸入上"
+
+msgid "playback level must be <= 0 dBFS"
+msgstr "播放電平必須 <= 0 dBFS"
+
+msgid "signal is silent"
+msgstr "信号為靜音"
+
+msgid "latency must be 'low' or 'high'"
+msgstr "延遲必須是 'low' 或 'high'"
+
+msgid "unknown audio backend {name}; available: portaudio, fake"
+msgstr "未知的音頻後端 {name}；可用：portaudio、fake"
+
+msgid "sample rate {rate} Hz is not in {supported}"
+msgstr "采樣率 {rate} Hz 不在 {supported} 之中"
+
+msgid "kind must be 'input' or 'output'"
+msgstr "kind 必須是 'input' 或 'output'"
+
+msgid "fake backend has no device {device}"
+msgstr "模擬後端沒有設備 {device}"
+
+msgid "fake backend only has device 0"
+msgstr "模擬後端只有設備 0"
+
+msgid "channels are 1-based and must be >= 1"
+msgstr "聲道從 1 起編号，必須 >= 1"
+
+msgid "measurement stopped"
+msgstr "測量已停止"
+
+msgid "playback/recording timed out"
+msgstr "播放/錄制超時"
+
+msgid "playback/recording failed: {error}"
+msgstr "播放/錄制失敗：{error}"
+
+msgid "playback/recording failed in the audio callback: {error}"
+msgstr "播放/錄制在音頻回調中失敗：{error}"
+
+msgid "the audio stream ended after {done} of {total} frames"
+msgstr "音頻流在 {total} 幀中只處理了 {done} 幀就結束了"
+
+msgctxt "diagnostic"
+msgid ""
+"the audio device reported {count} buffer problem(s) during the take ({fl"
+"ags}); the recording may contain dropouts"
+msgstr "音頻設備在本次測量中報告了 {count} 次緩衝區問題（{flags}）；錄音中可能有丟幀"
+
+msgid ""
+"the audio backend (sounddevice / PortAudio) is not available; Standalone"
+" Mode needs it, Universal DAW Mode does not"
+msgstr "音頻後端（sounddevice / PortAudio）不可用；獨立模式需要它，通用 DAW 模式不需要"
+
+msgid "cannot query audio devices: {error}"
+msgstr "無法查詢音頻設備：{error}"
+
+msgid "input device {device} does not support {rate} Hz: {error}"
+msgstr "輸入設備 {device} 不支援 {rate} Hz：{error}"
+
+msgid "output device {device} does not support {rate} Hz: {error}"
+msgstr "輸出設備 {device} 不支援 {rate} Hz：{error}"
+
+msgctxt "diagnostic"
+msgid ""
+"WASAPI: shared mode goes through the Windows audio engine and accepts on"
+"ly the device's Default Format rate; exclusive mode (--wasapi-exclusive)"
+" bypasses the engine at a rate the hardware supports"
+msgstr ""
+"WASAPI：共享模式經過 Windows 音頻引擎，只接受設備“預設格式”的采樣率；獨占模式（--wasapi-exclusive）繞過音頻引"
+"擎，以硬件支援的采樣率運行"
+
+msgctxt "diagnostic"
+msgid ""
+"WDM kernel streaming: bypasses the Windows mixer; the device must suppor"
+"t the rate"
+msgstr "WDM 內核流（WDM-KS）：繞過 Windows 混音器；設備必須支援該采樣率"
+
+msgctxt "diagnostic"
+msgid "ASIO: direct driver path (not included in RoomScope's desktop bundles)"
+msgstr "ASIO：直接的驅動路徑（RoomScope 桌面安裝包未包含）"
+
+msgctxt "diagnostic"
+msgid ""
+"DirectSound: deprecated, runs on the Windows audio engine; resamples and"
+" mixes, and PortAudio does not check its rates (all look accepted); pref"
+"er WASAPI"
+msgstr ""
+"DirectSound：已棄用，運行在 Windows 音頻引擎上；會重采樣並混音，且 PortAudio 不檢查它的采樣率（看起來全部接受）；"
+"建議改用 WASAPI"
+
+msgctxt "diagnostic"
+msgid ""
+"MME: legacy path through the Windows audio engine; resamples and mixes, "
+"truncates device names; prefer WASAPI"
+msgstr "MME：經過 Windows 音頻引擎的舊式路徑；會重采樣並混音，並截斷設備名稱；建議改用 WASAPI"
+
+msgctxt "diagnostic"
+msgid ""
+"Core Audio: the device runs at its nominal rate (Audio MIDI Setup) and P"
+"ortAudio converts other rates, unless --coreaudio-set-rate sets the devi"
+"ce rate and refuses to convert"
+msgstr ""
+"Core Audio：設備以其標稱采樣率運行（“音頻 MIDI 設定”），PortAudio 會轉換其他采樣率；使用 --coreaudio-s"
+"et-rate 時則改為設定設備采樣率並拒絕轉換"
+
+msgctxt "diagnostic"
+msgid ""
+"ALSA: a hw: device is direct; default, pulse, pipewire, dmix and plug de"
+"vices may resample"
+msgstr "ALSA：hw: 設備是直接路徑；default、pulse、pipewire、dmix 和 plug 設備可能重采樣"
+
+msgctxt "diagnostic"
+msgid "JACK: runs at the JACK server's rate only"
+msgstr "JACK：只能以 JACK 服務器的采樣率運行"
+
+msgctxt "diagnostic"
+msgid "OSS: legacy Linux interface"
+msgstr "OSS：舊式 Linux 介面"
+
+msgctxt "diagnostic"
+msgid "synthetic backend: nothing is played"
+msgstr "合成後端：不會播放任何聲音"
+
+msgctxt "diagnostic"
+msgid ""
+"shared-mode engine buffer default 10 ms; exclusive uses the device perio"
+"d"
+msgstr "共享模式引擎緩衝預設 10 ms；獨占模式使用設備周期"
+
+msgctxt "diagnostic"
+msgid "WaveRT compiled defaults 10 / 40 ms (WaveCyclic 10 / 85 ms)"
+msgstr "WaveRT 編譯預設值 10 / 40 ms（WaveCyclic 為 10 / 85 ms）"
+
+msgctxt "diagnostic"
+msgid "preferred / maximum driver buffer"
+msgstr "首選 / 最大驅動緩衝"
+
+msgctxt "diagnostic"
+msgid "PortAudio compiled defaults 120 / 240 ms"
+msgstr "PortAudio 編譯預設值 120 / 240 ms"
+
+msgctxt "diagnostic"
+msgid "PortAudio compiled defaults 90 / 180 ms"
+msgstr "PortAudio 編譯預設值 90 / 180 ms"
+
+msgctxt "diagnostic"
+msgid "fallback 10 / 100 ms when the device latency is unreadable"
+msgstr "設備延遲不可讀時回退為 10 / 100 ms"
+
+msgctxt "diagnostic"
+msgid ""
+"compiled default (512-128)/fs / (2048-512)/fs: 8 / 32 ms at 48 kHz if ha"
+"rdware allows"
+msgstr "編譯預設值 (512-128)/fs / (2048-512)/fs：硬件允許時在 48 kHz 下為 8 / 32 ms"
+
+msgctxt "diagnostic"
+msgid "port latency divided by the JACK server rate"
+msgstr "端口延遲除以 JACK 服務器采樣率"
+
+msgctxt "diagnostic"
+msgid "not assessed"
+msgstr "未評估"
+
+msgctxt "diagnostic"
+msgid ""
+"requested 4 fragments × 128 frames; low=(nfrags-1)*frag/fs (8 / 32 ms at"
+" 48 kHz if the driver keeps those sizes)"
+msgstr ""
+"請求 4 個片段 × 每片段 128 幀；低延遲=(nfrags-1)*frag/fs（若驅動保持該大小，48 kHz 下為 8 / 32 ms"
+"）"
+
+msgctxt "diagnostic"
+msgid "PortAudio host-API name on a given OS"
+msgstr "給定操作系統上的 PortAudio 主機 API 名稱"
+
+msgctxt "diagnostic"
+msgid "measured round-trip latency"
+msgstr "測得的往返延遲"
+
+msgctxt "diagnostic"
+msgid "whether Windows/Core Audio expose loopback as extra channels"
+msgstr "Windows/Core Audio 是否把回送顯示為額外聲道"
+
+msgctxt "diagnostic"
+msgid "analogue line-output count"
+msgstr "模擬線路輸出數量"
+
+msgctxt "diagnostic"
+msgid "PortAudio channel count including ADAT at each rate"
+msgstr "各采樣率下含 ADAT 的 PortAudio 聲道數"
+
+msgctxt "diagnostic"
+msgid "discrete sample-rate list (only a 28–200 kHz range is stated)"
+msgstr "離散采樣率列表（來源只給出 28–200 kHz 范圍）"
+
+msgctxt "diagnostic"
+msgid ""
+"This machine's PortAudio device list (ALSA 0 devices, OSS 0 devices): no"
+" physical interface"
+msgstr "本機 PortAudio 設備列表（ALSA 0 個設備，OSS 0 個設備）：沒有實體介面"
+
+msgctxt "diagnostic"
+msgid "Measured full-duplex round-trip latency on any interface"
+msgstr "任何介面上測得的全雙工往返延遲"
+
+msgctxt "diagnostic"
+msgid ""
+"Pa_IsFormatSupported results on a physical interface (sample-rate negoti"
+"ation)"
+msgstr "實體介面上的 Pa_IsFormatSupported 結果（采樣率協商）"
+
+msgctxt "diagnostic"
+msgid ""
+"ASIO compiled numeric default latency (PortAudio stores the driver's buf"
+"fer only)"
+msgstr "ASIO 的編譯預設數值延遲（PortAudio 只保存驅動緩衝）"
+
+msgctxt "diagnostic"
+msgid ""
+"JACK compiled numeric default latency (only jack_port_get_latency / serv"
+"er rate)"
+msgstr "JACK 的編譯預設數值延遲（只有 jack_port_get_latency / 服務器采樣率）"
+
+msgctxt "diagnostic"
+msgid ""
+"Core Audio device-specific latency (only the 10 / 100 ms fallback is sou"
+"rced)"
+msgstr "Core Audio 設備特定延遲（只有 10 / 100 ms 回退值有來源）"
+
+msgctxt "diagnostic"
+msgid ""
+"Scarlett 18i20 4th Gen analogue line-output count (spec page did not yie"
+"ld a clear figure)"
+msgstr "Scarlett 18i20 第四代模擬線路輸出數量（規格頁未給出明確數字）"
+
+msgctxt "diagnostic"
+msgid ""
+"USB Audio Class 1.0 / 2.0 discrete rate tables (USB-IF PDFs were not re-"
+"read)"
+msgstr "USB Audio Class 1.0 / 2.0 離散采樣率表（未重讀 USB-IF PDF）"
+
+msgctxt "diagnostic"
+msgid ""
+"Hardware bit depth of a PortAudio stream (RoomScope writes 32-bit float;"
+" manufacturer pages above state 24-bit converters)"
+msgstr "PortAudio 流的硬件位深度（RoomScope 寫出 32-bit float；上述廠商頁面寫的是 24-bit 轉換器）"
+
+msgctxt "diagnostic"
+msgid "ALSA plugin or sound-server device: may resample and mix"
+msgstr "ALSA 插件或聲音服務器設備：可能重采樣並混音"
+
+msgctxt "diagnostic"
+msgid "accepts none of RoomScope's sample rates for recording"
+msgstr "錄制時不接受 RoomScope 的任何采樣率"
+
+msgctxt "diagnostic"
+msgid "accepts none of RoomScope's sample rates for playback"
+msgstr "播放時不接受 RoomScope 的任何采樣率"
+
+msgctxt "diagnostic"
+msgid "no audio device found; Universal DAW Mode still works"
+msgstr "未找到音頻設備；通用 DAW 模式仍然可用"
+
+msgid ""
+"playback ({output}) and recording ({input}) use different devices, which"
+" run on separate sample clocks; their drift smears the measurement. Use "
+"one interface for both, or an aggregate device with drift correction (ma"
+"cOS), and check the result with a loopback"
+msgstr ""
+"播放（{output}）和錄制（{input}）使用不同的設備，它們各自運行在獨立的采樣時鐘上，時鐘漂移會抹平測量結果。請用同一個音頻介面完成播"
+"放和錄制，或使用帶漂移校正的聚合設備（macOS），並用回送檢查結果"
+
+msgid ""
+"input channel {channel} does not exist on {device} ({count} input channe"
+"l(s))"
+msgstr "{device} 上沒有輸入聲道 {channel}（共 {count} 個輸入聲道）"
+
+msgid ""
+"output channel {channel} does not exist on {device} ({count} output chan"
+"nel(s))"
+msgstr "{device} 上沒有輸出聲道 {channel}（共 {count} 個輸出聲道）"
+
+msgid "there is no audio device {index}"
+msgstr "沒有音頻設備 {index}"
+
+msgid ""
+"input {input} ({input_api}) and output {output} ({output_api}) belong to"
+" different host APIs; PortAudio records and plays in one stream only wit"
+"hin one host API. Choose both on the same host API"
+msgstr ""
+"輸入 {input}（{input_api}）和輸出 {output}（{output_api}）屬於不同的主機 API；PortAudio 只"
+"能在同一個主機 API 內用一個流同時錄制和播放。請在同一個主機 API 上選擇輸入和輸出"
+
+msgid ""
+"{api} has no default input device; choose the input device on {api} as w"
+"ell"
+msgstr "{api} 沒有預設輸入設備；請同樣在 {api} 上選擇輸入設備"
+
+msgid ""
+"{api} has no default output device; choose the output device on {api} as"
+" well"
+msgstr "{api} 沒有預設輸出設備；請同樣在 {api} 上選擇輸出設備"
+
+msgid ""
+"WASAPI exclusive mode was requested, but {device} is a {api} device; cho"
+"ose a Windows WASAPI device or drop --wasapi-exclusive"
+msgstr ""
+"已請求 WASAPI 獨占模式，但 {device} 是 {api} 設備；請選擇 Windows WASAPI 設備，或去掉 --wasapi"
+"-exclusive"
+
+msgid ""
+"setting the Core Audio device rate was requested, but {device} is a {api"
+"} device; drop --coreaudio-set-rate"
+msgstr "已請求設定 Core Audio 設備的采樣率，但 {device} 是 {api} 設備；請去掉 --coreaudio-set-rate"
+
+msgid "sample_rate must be positive"
+msgstr "sample_rate 必須為正數"
+
+msgid "samples must be 1-D (mono) or 2-D (frames, channels)"
+msgstr "samples 必須是一維（單聲道）或二維（幀, 聲道）數組"
+
+msgid "signal is empty"
+msgstr "信号為空"
+
+msgid "signal contains NaN or infinite samples"
+msgstr "信号包含 NaN 或無窮大的采樣"
+
+msgid "channel {index} does not exist (signal has {count} channel(s))"
+msgstr "聲道 {index} 不存在（信号共有 {count} 個聲道）"
+
+msgctxt "diagnostic"
+msgid ""
+"recording has {count} channels; channel {chosen} (highest RMS) was analy"
+"sed. Use the channel setting to choose explicitly."
+msgstr "錄音有 {count} 個聲道；已分析聲道 {chosen}（RMS 最高）。可用聲道設定明確指定。"
+
+msgid "sample_rate must be a positive integer"
+msgstr "sample_rate 必須是正整數"
+
+msgid "sample_rate {rate} is not supported; use one of {supported}"
+msgstr "不支援 sample_rate {rate}；請使用以下之一：{supported}"
+
+msgid "duration_s must be >= 0.5 s"
+msgstr "duration_s 必須 >= 0.5 s"
+
+msgid "duration_s must be <= 120 s"
+msgstr "duration_s 必須 <= 120 s"
+
+msgid "start_hz must be > 0"
+msgstr "start_hz 必須 > 0"
+
+msgid "end_hz must be greater than start_hz"
+msgstr "end_hz 必須大於 start_hz"
+
+msgid "end_hz must not exceed the Nyquist frequency"
+msgstr "end_hz 不能超過奈奎斯特頻率"
+
+msgid "fades must be >= 0"
+msgstr "淡入淡出時長必須 >= 0"
+
+msgid "fades must be shorter than the sweep"
+msgstr "淡入淡出必須短於掃頻"
+
+msgid "level_dbfs must be <= 0 dBFS"
+msgstr "level_dbfs 必須 <= 0 dBFS"
+
+msgid "level_dbfs below -80 dBFS is not a usable test signal"
+msgstr "level_dbfs 低於 -80 dBFS 時不是可用的測試信号"
+
+msgid "silences must be >= 0"
+msgstr "靜音時長必須 >= 0"
+
+msgid "channel must be >= 0 or None"
+msgstr "channel 必須 >= 0 或為 None"
+
+msgid "ir_pre_delay_ms must be >= 0"
+msgstr "ir_pre_delay_ms 必須 >= 0"
+
+msgid "ir_max_length_s must be > 0.1 s"
+msgstr "ir_max_length_s 必須 > 0.1 s"
+
+msgid "at least one octave band is required"
+msgstr "至少需要一個倍頻程頻帶"
+
+msgid "octave band frequencies must be > 0"
+msgstr "倍頻程頻帶的頻率必須 > 0"
+
+msgid "octave_bands_hz must be ascending"
+msgstr "octave_bands_hz 必須按升序排列"
+
+msgid "fr_window_s must be > 0"
+msgstr "fr_window_s 必須 > 0"
+
+msgid "fr_smoothing_fraction must be >= 0"
+msgstr "fr_smoothing_fraction 必須 >= 0"
+
+msgid "noise_min_segment_s must be > 0"
+msgstr "noise_min_segment_s 必須 > 0"
+
+msgid "reflection delay window is invalid"
+msgstr "反射延遲窗口無效"
+
+msgid "reflections_threshold_db must be negative"
+msgstr "reflections_threshold_db 必須為負數"
+
+msgid "reflections_prominence_db must be > 0"
+msgstr "reflections_prominence_db 必須 > 0"
+
+msgid "resonance_max_hz must be > 20 Hz"
+msgstr "resonance_max_hz 必須 > 20 Hz"
+
+msgid "resonance_min_prominence_db must be > 0"
+msgstr "resonance_min_prominence_db 必須 > 0"
+
+msgid "decay_noise_margin_db must be >= 0"
+msgstr "decay_noise_margin_db 必須 >= 0"
+
+msgid "placement_distance_m must be between 0.20 m and 15 m"
+msgstr "placement_distance_m 必須在 0.20 m 到 15 m 之間"
+
+msgid "placement_mic_height_m must be between 0.02 m and 5 m"
+msgstr "placement_mic_height_m 必須在 0.02 m 到 5 m 之間"
+
+msgid "placement_temperature_c must be between -20 C and 50 C"
+msgstr "placement_temperature_c 必須在 -20 °C 到 50 °C 之間"
+
+msgid ""
+"placement_mic_height_m needs placement_distance_m: a height on its own c"
+"annot be turned into geometry"
+msgstr "placement_mic_height_m 需要同時給出 placement_distance_m：僅有高度無法換算成幾何位置"
+
+msgid "loopback_channel must be >= 0 or None"
+msgstr "loopback_channel 必須 >= 0 或為 None"
+
+msgctxt "file record"
+msgid "settings"
+msgstr "設定"
+
+msgctxt "file record"
+msgid "sweep settings"
+msgstr "掃頻設定"
+
+msgctxt "file record"
+msgid "analysis settings"
+msgstr "分析設定"
+
+msgctxt "file record"
+msgid "calibration"
+msgstr "校準"
+
+msgctxt "file record"
+msgid "project"
+msgstr "項目"
+
+msgctxt "file record"
+msgid "position entry"
+msgstr "位置條目"
+
+msgctxt "file record"
+msgid "session"
+msgstr "會話"
+
+msgctxt "file record"
+msgid "recent sessions"
+msgstr "最近會話列表"
+
+msgctxt "file record"
+msgid "result"
+msgstr "結果"
+
+msgctxt "file record"
+msgid "comparison"
+msgstr "對比"
+
+msgctxt "file record"
+msgid "compare settings"
+msgstr "對比設定"
+
+msgctxt "file record"
+msgid "metric delta"
+msgstr "指標差值"
+
+msgctxt "file record"
+msgid "reflection match"
+msgstr "反射匹配"
+
+msgctxt "file record"
+msgid "resonance match"
+msgstr "共振匹配"
+
+msgctxt "file record"
+msgid "frequency-response delta"
+msgstr "頻率響應差值"
+
+msgctxt "file record"
+msgid "sweep sidecar"
+msgstr "掃頻附屬"
+
+msgctxt "file record"
+msgid "decay"
+msgstr "衰減"
+
+msgctxt "file record"
+msgid "decay metric"
+msgstr "衰減指標"
+
+msgctxt "file record"
+msgid "band decay"
+msgstr "頻帶衰減"
+
+msgctxt "file record"
+msgid "excitation band"
+msgstr "激勵頻帶"
+
+msgctxt "file record"
+msgid "harmonic distortion"
+msgstr "諧波失真"
+
+msgctxt "file record"
+msgid "aliased distortion"
+msgstr "混疊失真"
+
+msgctxt "file record"
+msgid "clipping"
+msgstr "削波檢查"
+
+msgctxt "file record"
+msgid "loopback"
+msgstr "回送"
+
+msgctxt "file record"
+msgid "hum"
+msgstr "市電哼聲"
+
+msgctxt "file record"
+msgid "noise"
+msgstr "噪聲"
+
+msgctxt "file record"
+msgid "reflections"
+msgstr "反射"
+
+msgctxt "file record"
+msgid "resonances"
+msgstr "共振"
+
+msgctxt "file record"
+msgid "resonance candidate"
+msgstr "共振候選"
+
+msgctxt "file record"
+msgid "placement"
+msgstr "擺位"
+
+msgctxt "file record"
+msgid "placement length"
+msgstr "擺位長度"
+
+msgctxt "file record"
+msgid "boundary candidate"
+msgstr "邊界候選"
+
+msgid "{kind} schema_version is not an integer"
+msgstr "{kind} 的 schema_version 不是整數"
+
+msgid ""
+"{kind} schema version {version} cannot be read by RoomScope {running}; t"
+"his version reads schema {known} and below. Open the file in a newer Roo"
+"mScope."
+msgstr ""
+"RoomScope {running} 無法讀取格式版本為 {version} 的{kind}；此版本只能讀取格式版本 {known} 及以下。"
+"請用更新版本的 RoomScope 打開該檔案。"
+
+msgid "{kind} must be a JSON object"
+msgstr "{kind} 必須是 JSON 對象"
+
+msgid "invalid {kind} in file: {error}"
+msgstr "檔案中的{kind}無效：{error}"
+
+msgid "expected a pair of numbers"
+msgstr "此處應為一對數字"
+
+msgid "unknown validity {value}"
+msgstr "未知的有效性 {value}"
+
+msgid "result.json is incomplete or invalid: {error}"
+msgstr "result.json 不完整或無效：{error}"
+
+msgid "settings data must be a JSON object"
+msgstr "設定資料必須是 JSON 對象"
+
+msgid "cannot read {path}: {error}"
+msgstr "無法讀取 {path}：{error}"
+
+msgid "cannot write {path}: {error}"
+msgstr "無法寫入 {path}：{error}"
+
+msgid ""
+"{name} is {size} bytes; {kind} files larger than {limit} bytes are refus"
+"ed"
+msgstr "{name} 大小為 {size} 字節；大於 {limit} 字節的{kind}檔案會被拒絕"
+
+msgid ""
+"{name} nests {depth} levels; {kind} files deeper than {limit} are refuse"
+"d"
+msgstr "{name} 嵌套了 {depth} 層；嵌套超過 {limit} 層的{kind}檔案會被拒絕"
+
+msgid "{path} is not a JSON object"
+msgstr "{path} 不是 JSON 對象"
+
+msgid ""
+"write the bundle outside the session folder (it would be inside {folder}"
+")"
+msgstr "請把壓縮包寫到會話資料夾之外（否則它會位於 {folder} 之內）"
+
+msgid "cannot write bundle {path}: {error}"
+msgstr "無法寫入壓縮包 {path}：{error}"
+
+msgid "cannot copy {source} to {target}: {error}"
+msgstr "無法把 {source} 復制到 {target}：{error}"
+
+msgid "RT60 {seconds:.2f} s"
+msgstr "RT60 {seconds:.2f} s"
+
+msgid "RT60 n/a"
+msgstr "RT60 無"
+
+msgid "result.json not found next to {path}"
+msgstr "在 {path} 旁邊找不到 result.json"
+
+msgid ""
+"impulse_response.wav not found next to {path} and result.json has no IR "
+"samples"
+msgstr "在 {path} 旁邊找不到 impulse_response.wav，且 result.json 中沒有脈衝響應采樣"
+
+msgid "not a directory: {path}"
+msgstr "不是資料夾：{path}"
+
+msgid "session file not found: {path}"
+msgstr "找不到會話檔案：{path}"
+
+msgid ""
+"session.json names {name} at an absolute path ({path}); session files mu"
+"st stay inside the session folder"
+msgstr "session.json 以絕對路徑（{path}）指定 {name}；會話檔案必須位於會話資料夾之內"
+
+msgid ""
+"session.json names {name} outside the session folder ({path}); session f"
+"iles must stay inside the session folder"
+msgstr "session.json 指定的 {name} 位於會話資料夾之外（{path}）；會話檔案必須位於會話資料夾之內"
+
+msgid "save_comparison expects a ComparisonResult"
+msgstr "save_comparison 需要一個 ComparisonResult"
+
+msgid "comparison file not found: {path}"
+msgstr "找不到對比檔案：{path}"
+
+msgid "unknown exporter {name}; available: {available}"
+msgstr "未知的導出器 {name}；可用：{available}"
+
+msgid "the 'soundfile' package (libsndfile) is required for WAV I/O"
+msgstr "讀寫 WAV 需要 'soundfile' 軟體包（libsndfile）"
+
+msgid "audio file not found: {path}"
+msgstr "找不到音頻檔案：{path}"
+
+msgid "cannot read audio file {name}: {error}"
+msgstr "無法讀取音頻檔案 {name}：{error}"
+
+msgid "audio file is empty: {name}"
+msgstr "音頻檔案為空：{name}"
+
+msgid "samples must be a non-empty 1-D or 2-D array"
+msgstr "采樣資料必須是非空的一維或二維數組"
+
+msgid "signal exceeds full scale; use subtype='FLOAT' or lower the level"
+msgstr "信号超過滿刻度；請使用 subtype='FLOAT' 或降低電平"
+
+msgid "cannot write audio file {path}: {error}"
+msgstr "無法寫入音頻檔案 {path}：{error}"
+
+msgid "{name} is larger than 1 MB; a sweep sidecar cannot be that large"
+msgstr "{name} 大於 1 MB；掃頻附屬檔案不可能這麼大"
+
+msgid "cannot read sweep sidecar {name}: {error}"
+msgstr "無法讀取掃頻附屬檔案 {name}：{error}"
+
+msgid "{name} is not a RoomScope sweep sidecar"
+msgstr "{name} 不是 RoomScope 掃頻附屬檔案"
+
+msgid "{name} does not contain a sweep definition"
+msgstr "{name} 不包含掃頻定義"
+
+msgid ""
+"Review before posting: device names can contain personal names; paths un"
+"der your home folder are shown as ~."
+msgstr "發布前請檢查：設備名稱可能包含人名；主目錄下的路徑顯示為 ~。"
+
+msgctxt "diagnostic"
+msgid "failed: {error}"
+msgstr "失敗：{error}"
+
+msgctxt "diagnostic"
+msgid "failed: the callback returned {answer}"
+msgstr "失敗：回調返回了 {answer}"
+
+msgctxt "sample rates"
+msgid "none"
+msgstr "無"
+
+msgctxt "edition"
+msgid "developer"
+msgstr "開發者版"
+
+msgctxt "edition"
+msgid "user"
+msgstr "安裝包版"
+
+msgid "RoomScope {version} ({edition} edition)"
+msgstr "RoomScope {version}（{edition}）"
+
+msgid "RoomScope {version} ({edition} edition, desktop bundle)"
+msgstr "RoomScope {version}（{edition}，桌面打包程式）"
+
+msgid "Build: {commit}"
+msgstr "構建：{commit}"
+
+msgid "Build: no commit recorded (source or pip install)"
+msgstr "構建：未記錄提交（源碼或 pip 安裝）"
+
+msgid "CI run: {url}"
+msgstr "CI 運行：{url}"
+
+msgid "Python {version} ({implementation}) on {platform} [{machine}]"
+msgstr "Python {version}（{implementation}），運行於 {platform} [{machine}]"
+
+msgid "Language: {language}"
+msgstr "語言：{language}"
+
+msgid "Packages:"
+msgstr "軟體包："
+
+msgid "not installed"
+msgstr "未安裝"
+
+msgid "Settings:"
+msgstr "設定："
+
+msgid "Paths:"
+msgstr "路徑："
+
+msgid "Audio callbacks: ok"
+msgstr "音頻回調：正常"
+
+msgid "Audio callbacks: not checked"
+msgstr "音頻回調：未檢查"
+
+msgid "Audio callbacks: {status}"
+msgstr "音頻回調：{status}"
+
+msgid "Audio:"
+msgstr "音頻："
+
+msgid "unavailable: {error}"
+msgstr "不可用：{error}"
+
+msgctxt "environment report"
+msgid "backend"
+msgstr "後端"
+
+msgctxt "environment report"
+msgid "host APIs"
+msgstr "主機 API"
+
+msgctxt "environment report"
+msgid "devices"
+msgstr "設備數"
+
+msgctxt "environment report"
+msgid "default input"
+msgstr "預設輸入"
+
+msgctxt "environment report"
+msgid "default output"
+msgstr "預設輸出"
+
+msgctxt "environment report"
+msgid "measurement rates"
+msgstr "測量采樣率"
+
+msgid "Documented latency"
+msgstr "文檔中的延遲"
+
+msgid ""
+"Referenced manufacturer specs: roomscope devices --referenced (not a har"
+"dware result)"
+msgstr "引用的廠商規格：roomscope devices --referenced（不是硬件結果）"
+
+msgid "show manufacturer and repo specs (not a hardware result)"
+msgstr "顯示廠商和倉庫規格（不是硬件結果）"
+
+msgid "Referenced device data (not measured)"
+msgstr "引用的設備資料（未經測量）"
+
+msgid ""
+"Public sources only. Not a RoomScope measurement and not a HARDWARE_TEST"
+"S.md PASS."
+msgstr "僅來自公開來源。不是 RoomScope 測量，也不是 HARDWARE_TESTS.md 的 PASS。"
+
+msgid "Interface"
+msgstr "介面"
+
+msgid "Bit depth"
+msgstr "位深度"
+
+msgid "Mixer default"
+msgstr "混音器預設值"
+
+msgid "Channels"
+msgstr "聲道"
+
+msgid "Gaps with no citable source"
+msgstr "尚無可靠來源的空缺"
+
+msgid "Accepted rates: {rates}"
+msgstr "可接受采樣率：{rates}"
+
+msgid "RoomScope measurement rates: {rates}"
+msgstr "RoomScope 測量采樣率：{rates}"
+
+msgid "note: {note}"
+msgstr "註：{note}"
+
+msgid ""
+"Devices (* default; sample rates accepted for 1 channel, nothing was pla"
+"yed):"
+msgstr "設備（* 為預設設備；列出單聲道下接受的采樣率，未播放任何聲音）："
+
+msgid ""
+"Devices (* default; sample rates not probed, use roomscope doctor --prob"
+"e):"
+msgstr "設備（* 為預設設備；未探測采樣率，可用 roomscope doctor --probe 探測）："
+
+msgid ""
+"[{index:>2}] {name}{star} | {host_api} | in {inputs} / out {outputs} | d"
+"efault {rate:.0f} Hz"
+msgstr ""
+"[{index:>2}] {name}{star} | {host_api} | 輸入 {inputs} / 輸出 {outputs} | 預設"
+" {rate:.0f} Hz"
+
+msgid "record {rates}"
+msgstr "錄制 {rates}"
+
+msgid "play {rates}"
+msgstr "播放 {rates}"
+
+msgid "recommended input + output"
+msgstr "推薦輸入 + 輸出"
+
+msgctxt "diagnostic"
+msgid ""
+"reference sweep regenerated at the recording sample rate ({sample_rate} "
+"Hz); it was defined at {defined_rate} Hz"
+msgstr "參考掃頻已按錄音采樣率（{sample_rate} Hz）重新生成；它原本定義為 {defined_rate} Hz"
+
+msgctxt "diagnostic"
+msgid "reference signal resampled from {from_rate} Hz to {to_rate} Hz"
+msgstr "參考信号已從 {from_rate} Hz 重采樣到 {to_rate} Hz"
+
+msgctxt "diagnostic"
+msgid ""
+"the reference audio starts with {lead_s:.2f} s and ends with {tail_s:.2f"
+"} s of near-silence (below {threshold_db:g} dB re its peak); it was remo"
+"ved so that the reference is the sweep itself, and sweep positions refer"
+" to the sweep, not to the start of the file"
+msgstr ""
+"參考音頻開頭有 {lead_s:.2f} s、結尾有 {tail_s:.2f} s 近乎靜音（低於其峰值 {threshold_db:g} dB"
+"）；這些部分已去除，使參考只包含掃頻本身，掃頻位置均相對於掃頻起點，而非檔案開頭"
+
+msgctxt "diagnostic"
+msgid ""
+"reference given as an audio file without a RoomScope sweep definition; u"
+"sing regularised spectral division instead of the analytic inverse filte"
+"r, and the excitation band is estimated from the reference spectrum"
+msgstr "參考以音頻檔案形式提供，沒有 RoomScope 掃頻定義；因此改用正則化頻譜除法代替解析逆濾波器，激勵頻帶由參考信号的頻譜估計得出"
+
+msgctxt "diagnostic"
+msgid ""
+"the reference covers about {low_hz:.0f}-{high_hz:.0f} Hz (-3 dB); the ou"
+"ter 1/3 octave at each end is used for the regularisation roll-off and e"
+"xcluded"
+msgstr "參考信号約覆蓋 {low_hz:.0f}-{high_hz:.0f} Hz（-3 dB）；两端各 1/3 倍頻程用於正則化滾降，不計入分析"
+
+msgctxt "diagnostic"
+msgid ""
+"the recording starts {missing_ms:.0f} ms after the sweep began; the exci"
+"tation band now starts at {new_low_hz:.0f} Hz instead of {old_low_hz:.0f"
+"} Hz"
+msgstr ""
+"錄音在掃頻開始後 {missing_ms:.0f} ms 才開始；激勵頻帶下限因此從 {old_low_hz:.0f} Hz 改為 {new_l"
+"ow_hz:.0f} Hz"
+
+msgctxt "diagnostic"
+msgid ""
+"recording is silent (peak below {threshold_dbfs:g} dBFS); check the inpu"
+"t routing and, on macOS, that the app has microphone access (System Sett"
+"ings > Privacy & Security > Microphone)"
+msgstr ""
+"錄音無聲（峰值低於 {threshold_dbfs:g} dBFS）；請檢查輸入路由；在 macOS 上還請確認本應用已獲得麥克風權限（系統設定"
+" > 隱私與安全性 > 麥克風）"
+
+msgctxt "diagnostic"
+msgid ""
+"recording has {runs} flat-topped peaks ({samples} samples) at {peak_dbfs"
+":.1f} dBFS, its highest level: probable clipping before an export or a g"
+"ain change, because the flat tops are below full scale; lower the playba"
+"ck or input level and measure again"
+msgstr ""
+"錄音在其最高電平 {peak_dbfs:.1f} dBFS 處有 {runs} 個平頂峰（共 {samples} 個采樣）：平頂低於滿刻度，說明"
+"很可能在導出或增益調整之前就已削波；請降低播放或輸入電平後重測"
+
+msgctxt "diagnostic"
+msgid ""
+"recording has {runs} flat-topped peaks ({samples} samples) at {peak_dbfs"
+":.1f} dBFS, its highest level: probable clipping; lower the playback or "
+"input level and measure again"
+msgstr ""
+"錄音在其最高電平 {peak_dbfs:.1f} dBFS 處有 {runs} 個平頂峰（共 {samples} 個采樣）：很可能已削波；請降低"
+"播放或輸入電平後重測"
+
+msgctxt "diagnostic"
+msgid "recording is shorter than one second"
+msgstr "錄音短於 1 秒"
+
+msgctxt "diagnostic"
+msgid ""
+"the sweep was played at {speed_percent:.1f} % of the speed it was genera"
+"ted at, so the deconvolved response is not the room's impulse response"
+msgstr "掃頻以生成時速度的 {speed_percent:.1f} % 播放，因此解卷積得到的響應不是房間的脈衝響應"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is low (pre-peak margin not checkable)"
+": the recording may not contain the reference sweep"
+msgstr "直達聲檢測置信度低（峰前餘量無法檢查）：錄音中可能不含該參考掃頻"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is low (pre-peak margin {margin_db:.1f"
+"} dB): the recording may not contain the reference sweep"
+msgstr "直達聲檢測置信度低（峰前餘量 {margin_db:.1f} dB）：錄音中可能不含該參考掃頻"
+
+msgctxt "diagnostic"
+msgid ""
+"the recording clips, so the measurement chain was not linear and the dec"
+"onvolved response is not the room's impulse response"
+msgstr "錄音削波，測量鏈路並非線性，因此解卷積得到的響應不是房間的脈衝響應"
+
+msgctxt "diagnostic"
+msgid ""
+"aliased distortion (folded harmonic {orders} at {level_db:.0f} dB re the"
+" direct sound) spreads over the impulse response after the direct sound "
+"and imitates a decay"
+msgstr "混疊失真（折疊回來的 {orders} 次諧波，相對直達聲 {level_db:.0f} dB）散布在直達聲之後的脈衝響應中，看起來像衰減"
+
+msgctxt "diagnostic"
+msgid ""
+"recording has {count} channels; channel {channel} (highest RMS excluding"
+" loopback channel {loopback_channel}) was analysed"
+msgstr "錄音有 {count} 個聲道；已分析聲道 {channel}（除回送聲道 {loopback_channel} 外 RMS 最高）"
+
+msgctxt "diagnostic"
+msgid ""
+"the tape-measured loudspeaker distance ({distance_m:.2f} m) exceeds the "
+"loopback path-delay bound ({bound_m:.2f} m); the tape cannot be longer t"
+"han what sound had time to travel"
+msgstr ""
+"卷尺測得的揚聲器距離（{distance_m:.2f} m）超過了由回送路徑延遲得出的上限（{bound_m:.2f} m）；卷尺量得的距離不可"
+"能比聲音實際傳播的距離更長"
+
+msgctxt "diagnostic"
+msgid ""
+"loopback compensation applied: the frequency response is relative to the"
+" interface return"
+msgstr "已應用回送補償：頻率響應以音頻介面的回送信号為參考"
+
+msgctxt "diagnostic"
+msgid ""
+"the recording contains {passes} sweep passes (pulses within {pass_level_"
+"db:g} dB of the strongest); pass {order}, starting at {start_s:.2f} s, w"
+"as analysed and the others were ignored. Record a single pass for a clea"
+"n measurement"
+msgstr ""
+"錄音中包含 {passes} 遍掃頻（與最強脈衝相差不超過 {pass_level_db:g} dB 的脈衝）；已分析從 {start_s:.2"
+"f} s 開始的第 {order} 遍，其餘均被忽略。只錄一遍掃頻才能得到幹淨的測量"
+
+msgctxt "diagnostic"
+msgid ""
+"the impulse response ends where the next sweep pass starts ({length_s:.2"
+"f} s after the direct sound)"
+msgstr "脈衝響應在下一遍掃頻開始處截止（直達聲之後 {length_s:.2f} s）"
+
+msgctxt "diagnostic"
+msgid ""
+"only {length_s:.2f} s of decay were recorded after the sweep; long rever"
+"beration times cannot be evaluated"
+msgstr "掃頻之後只錄到 {length_s:.2f} s 的衰減；無法評估較長的混響時間"
+
+msgctxt "diagnostic"
+msgid ""
+"there is no content before the direct sound to check the detection again"
+"st; direct-sound detection confidence is low"
+msgstr "直達聲之前沒有可用於核對檢測結果的內容；直達聲檢測置信度低"
+
+msgctxt "diagnostic"
+msgid ""
+"content before the direct sound is only {margin_db:.1f} dB below it (noi"
+"se, pre-ringing or a wrong reference); direct-sound detection confidence"
+" is medium"
+msgstr "直達聲之前的內容僅比直達聲低 {margin_db:.1f} dB（噪聲、預振鈴或參考信号不對）；直達聲檢測置信度中等"
+
+msgctxt "diagnostic"
+msgid ""
+"content before the direct sound is only {margin_db:.1f} dB below it (noi"
+"se, pre-ringing or a wrong reference); direct-sound detection confidence"
+" is low"
+msgstr "直達聲之前的內容僅比直達聲低 {margin_db:.1f} dB（噪聲、預振鈴或參考信号不對）；直達聲檢測置信度低"
+
+msgctxt "diagnostic"
+msgid ""
+"harmonic {orders} of the sweep was folded back below the Nyquist frequen"
+"cy ({level_db:.0f} dB re the direct sound): a nonlinearity in the digita"
+"l domain (a playback bus or export that clipped, or a saturation plug-in"
+" without oversampling) distorted the signal before the converter. The fo"
+"lded products land after the direct sound and imitate a long decay, so t"
+"he decay metrics cannot be trusted. Lower the level in the playback path"
+" and measure again"
+msgstr ""
+"掃頻的 {orders} 次諧波被折疊回奈奎斯特頻率以下（相對直達聲 {level_db:.0f} dB）：數字域中的非線性（播放總線或導出發生"
+"削波，或未開過采樣的飽和插件）在轉換器之前就讓信号失真了。折疊產物落在直達聲之後，看起來像很長的衰減，因此衰減指標不可信。請降低播放鏈路中的電平"
+"後重測"
+
+msgctxt "diagnostic"
+msgid ""
+"the frequency response is gated to {window_ms:.0f} ms after the direct s"
+"ound, so its resolution is {resolution_hz:.1f} Hz; the resonance search "
+"uses the ungated response"
+msgstr ""
+"頻率響應被門控為直達聲之後 {window_ms:.0f} ms，因此分辨率為 {resolution_hz:.1f} Hz；共振搜索使用未門控"
+"的響應"
+
+msgctxt "diagnostic"
+msgid ""
+"impulse response imported; deconvolution, sweep-position checks and dist"
+"ortion indicators were skipped"
+msgstr "已導入脈衝響應；跳過了解卷積、掃頻位置檢查和失真指標"
+
+msgctxt "diagnostic"
+msgid "excitation band was not declared; band metrics are not computed"
+msgstr "未聲明激勵頻帶；不計算頻帶指標"
+
+msgctxt "diagnostic"
+msgid "excitation band unknown (imported impulse response; declare --band)"
+msgstr "激勵頻帶未知（導入的脈衝響應；請用 --band 聲明）"
+
+msgctxt "diagnostic"
+msgid "no recording segment exists (imported impulse response)"
+msgstr "沒有錄音片段（導入的脈衝響應）"
+
+msgctxt "diagnostic"
+msgid ""
+"recording is shorter than the reference sweep; the file does not contain"
+" the full sweep"
+msgstr "錄音比參考掃頻短；該檔案沒有包含完整的掃頻"
+
+msgctxt "diagnostic"
+msgid "deconvolved signal is empty"
+msgstr "解卷積後的信号為空"
+
+msgctxt "diagnostic"
+msgid "deconvolved signal has no usable peak (silent recording?)"
+msgstr "解卷積後的信号沒有可用的峰值（錄音是否無聲？）"
+
+msgctxt "diagnostic"
+msgid ""
+"the next sweep pass starts right after this one; the room decay after th"
+"e sweep was not recorded. Leave silence after each sweep (the generated "
+"test file contains it) or record a single pass"
+msgstr "下一遍掃頻緊接著這一遍開始，掃頻之後的房間衰減沒有錄到。請在每遍掃頻之後留出靜音（生成的測試檔案已包含），或只錄一遍"
+
+msgctxt "diagnostic"
+msgid ""
+"the direct sound was found at the very end of the recording; the recordi"
+"ng does not contain the room decay after the sweep"
+msgstr "直達聲出現在錄音的最末尾；錄音中沒有掃頻之後的房間衰減"
+
+msgctxt "diagnostic"
+msgid "the harmonic lies above the excitation band"
+msgstr "該諧波位於激勵頻帶之上"
+
+msgctxt "diagnostic"
+msgid "the harmonic window lies outside the deconvolved signal"
+msgstr "諧波窗口超出了解卷積後信号的范圍"
+
+msgctxt "diagnostic"
+msgid "the harmonic window is too short to resolve the common band"
+msgstr "諧波窗口太短，無法分辨共同頻帶"
+
+msgctxt "diagnostic"
+msgid "the linear response has no energy in the common band"
+msgstr "線性響應在共同頻帶內沒有能量"
+
+msgctxt "diagnostic"
+msgid "no harmonic-free content before the direct sound to compare with"
+msgstr "直達聲之前沒有不含諧波的內容可供比較"
+
+msgctxt "diagnostic"
+msgid ""
+"not distinguishable from the floor (at most {level_db:.1f} dB, floor {fl"
+"oor_db:.1f} dB)"
+msgstr "與本底無法區分（至多 {level_db:.1f} dB，本底 {floor_db:.1f} dB）"
+
+msgctxt "diagnostic"
+msgid ""
+"harmonic {order} folds back to {low_khz:.1f}-{high_khz:.1f} kHz, outside"
+" the swept range, where the inverse filter has no gain: such products ca"
+"nnot reach the impulse response"
+msgstr ""
+"{order} 次諧波折疊到 {low_khz:.1f}-{high_khz:.1f} kHz，位於掃頻范圍之外，逆濾波器在那裡沒有增益：這類產"
+"物不會進入脈衝響應"
+
+msgctxt "diagnostic"
+msgid ""
+"no wide enough part of the folded trajectory of harmonic {order} can be "
+"separated from the sweep and its non-aliased harmonics"
+msgstr "{order} 次諧波的折疊軌跡中，沒有足够寬的一段能與掃頻本身及其未混疊的諧波分開"
+
+msgctxt "diagnostic"
+msgid ""
+"harmonic {order} of this sweep does not fold back into the swept range a"
+"t {sample_rate} Hz"
+msgstr "在 {sample_rate} Hz 下，此掃頻的 {order} 次諧波不會折疊回掃頻范圍內"
+
+msgctxt "diagnostic"
+msgid "the probe window lies outside the recording"
+msgstr "探測窗口超出了錄音范圍"
+
+msgctxt "diagnostic"
+msgid "the linear response has no energy in the probe band"
+msgstr "線性響應在探測頻帶內沒有能量"
+
+msgctxt "diagnostic"
+msgid "no content before the probe window to compare with"
+msgstr "探測窗口之前沒有可供比較的內容"
+
+msgctxt "diagnostic"
+msgid "relative dB (0 dB = the interface loopback)"
+msgstr "相對 dB（0 dB = 音頻介面回送）"
+
+msgctxt "diagnostic"
+msgid "the loopback channel clips; compensation is not applied"
+msgstr "回送聲道削波；未應用補償"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback peak does not stand far enough above the content before it "
+"(confidence medium); the channel may be a microphone, not an electrical "
+"return. Compensation is not applied"
+msgstr "回送峰值沒有明顯高出其之前的內容（置信度中等）；該聲道可能是話筒，而不是電信号回送。未應用補償"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback peak does not stand far enough above the content before it "
+"(confidence low); the channel may be a microphone, not an electrical ret"
+"urn. Compensation is not applied"
+msgstr "回送峰值沒有明顯高出其之前的內容（置信度低）；該聲道可能是話筒，而不是電信号回送。未應用補償"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback recording is too short after the peak to check that the ret"
+"urn is electrical; compensation is not applied"
+msgstr "回送錄音在峰值之後太短，無法確認回送是電信号；未應用補償"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback still carries energy {settle_ms:.1f} ms after the peak (lat"
+"e peak {drop_db:.1f} dB down); that looks like a room, not a cable. Comp"
+"ensation is not applied"
+msgstr ""
+"回送在峰值之後 {settle_ms:.1f} ms 仍有能量（後續峰值僅低 {drop_db:.1f} dB）；這更像房間而不是線纜。未應用補"
+"償"
+
+msgctxt "diagnostic"
+msgid ""
+"loopback settled in {settle_ms:.1f} ms (late peak {drop_db:.1f} dB down)"
+"; using a {fir_samples}-sample interface FIR around the peak"
+msgstr ""
+"回送在 {settle_ms:.1f} ms 內穩定（後續峰值低 {drop_db:.1f} dB）；使用峰值附近 {fir_samples} "
+"個采樣的音頻介面 FIR"
+
+msgctxt "diagnostic"
+msgid ""
+"the microphone peak precedes the loopback peak by {lead_ms:.2f} ms; the "
+"path-delay bound is not reported"
+msgstr "話筒峰值比回送峰值早 {lead_ms:.2f} ms；不報告路徑延遲上限"
+
+msgid ""
+"recording is at {sample_rate} Hz but the sweep cannot be regenerated at "
+"that rate: {error}"
+msgstr "錄音采樣率為 {sample_rate} Hz，但掃頻無法按該采樣率重新生成：{error}"
+
+msgid "reference signal cannot be used: {error}"
+msgstr "參考信号無法使用：{error}"
+
+msgid ""
+"the recording starts about {missing_s:.2f} s after the sweep began, so f"
+"requencies below about {lost_hz:.0f} Hz were not recorded. Start the rec"
+"ording before playback (the test file begins with silence for this purpo"
+"se) and export the whole take"
+msgstr ""
+"錄音在掃頻開始約 {missing_s:.2f} s 後才開始，因此約 {lost_hz:.0f} Hz 以下的頻率沒有錄到。請在播放前開始錄音"
+"（測試檔案開頭的靜音正是為此準備的），並導出完整的一次錄音"
+
+msgid ""
+"the recording starts about {missing_s:.2f} s after the reference sweep b"
+"egan, so the first part of the sweep (for a rising sweep: its lowest fre"
+"quencies) was not recorded. Start the recording before playback and expo"
+"rt the whole take"
+msgstr ""
+"錄音在參考掃頻開始約 {missing_s:.2f} s 後才開始，因此掃頻的開頭部分（對上升掃頻而言即最低的頻率）沒有錄到。請在播放前開始錄音"
+"，並導出完整的一次錄音"
+
+msgid ""
+"the recording starts after the swept range; no part of the sweep can be "
+"analysed"
+msgstr "錄音在掃頻范圍結束之後才開始；掃頻的任何部分都無法分析"
+
+msgid ""
+"the loopback file and the recording have different sample rates; export "
+"both from the same take"
+msgstr "回送檔案與錄音的采樣率不同；請從同一次錄音中導出两者"
+
+msgid ""
+"loopback_channel {channel} does not exist (recording has {count} channel"
+"(s))"
+msgstr "loopback_channel {channel} 不存在（錄音只有 {count} 個聲道）"
+
+msgid "loopback_channel must differ from the microphone channel"
+msgstr "loopback_channel 必須與話筒聲道不同"
+
+msgid ""
+"the loopback file and the recording differ in length by more than {toler"
+"ance_ms:.0f} ms; export both from the same take"
+msgstr "回送檔案與錄音的長度相差超過 {tolerance_ms:.0f} ms；請從同一次錄音中導出两者"
+
+msgid "impulse response is shorter than 50 ms"
+msgstr "脈衝響應短於 50 ms"
+
+msgid "excitation_band must be a (low_hz, high_hz) pair with high > low > 0"
+msgstr "excitation_band 必須是 (low_hz, high_hz) 數對，且 high > low > 0"
+
+msgid ""
+"this file cannot be analysed as an impulse response: its strongest sampl"
+"e is only {margin_db:.1f} dB above the content before it (at least {requ"
+"ired_db:g} dB is required). It may be a recording (a recording of the te"
+"st sweep is analysed with `roomscope analyze`), or an IR whose direct so"
+"und is weaker than a later arrival, which RoomScope cannot use as time z"
+"ero. For a band-limited IR, declare its band with --band"
+msgstr ""
+"該檔案無法作為脈衝響應分析：其最強采樣只比之前的內容高 {margin_db:.1f} dB（至少需要 {required_db:g} dB）。"
+"它可能是一段錄音（測試掃頻的錄音請用 `roomscope analyze` 分析），也可能是直達聲弱於後到聲音的脈衝響應，RoomScope "
+"無法把它用作時間零點。對於帶限脈衝響應，請用 --band 聲明其頻帶"
+
+msgid ""
+"the frequency-response window ({window_ms:.1f} ms) is shorter than its {"
+"taper_ms:g} ms end taper plus {minimum_ms:g} ms: it would attenuate or e"
+"xclude the direct sound. Use a longer window"
+msgstr ""
+"頻率響應窗口（{window_ms:.1f} ms）短於其 {taper_ms:g} ms 末端漸變加 {minimum_ms:g} ms：這會"
+"衰減或排除直達聲。請使用更長的窗口"
+
+msgid "reference signal must be a non-empty mono array"
+msgstr "參考信号必須是非空的單聲道數組"
+
+msgid "reference signal is silent"
+msgstr "參考信号無聲"
+
+msgid "reference signal must be a mono array with at least 16 samples"
+msgstr "參考信号必須是至少含 16 個采樣的單聲道數組"
+
+msgid "reference signal contains NaN or infinite samples"
+msgstr "參考信号包含 NaN 或無窮大采樣"
+
+msgid ""
+"the reference signal only covers {low_hz:.0f}-{high_hz:.0f} Hz; that is "
+"too narrow for a sweep measurement"
+msgstr "參考信号只覆蓋 {low_hz:.0f}-{high_hz:.0f} Hz；對掃頻測量來說太窄了"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as coming from the horizontal plane t"
+"he microphone height was measured from: {rejections}"
+msgstr "檢測到的反射均無法解讀為來自測量話筒高度所依據的水平面：{rejections}"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as coming from the horizontal plane t"
+"he microphone height was measured from; none was detected at all"
+msgstr "沒有反射可解讀為來自測量話筒高度所依據的水平面；根本沒有檢測到任何反射"
+
+msgctxt "diagnostic"
+msgid ""
+"the plane the heights are measured from was not established, so nothing "
+"above it can be placed"
+msgstr "未能確定測量高度所依據的平面，因此無法確定其上方任何表面的位置"
+
+msgctxt "diagnostic"
+msgid ""
+"only the two horizontal planes are ever named. No wall is identified: on"
+"e omnidirectional microphone gives no bearing, so naming one would be a "
+"guess"
+msgstr "只會標註两個水平面，不識別任何牆面：單只全指向話筒無法提供方位資訊，指認牆面只能是猜測"
+
+msgctxt "diagnostic"
+msgid ""
+"reads {excess:.1f} dB above what a lossless point source mirrored in a r"
+"igid plane would give at that path length, so it is not treated as a fir"
+"st-order specular arrival (it may be two arrivals merged by the envelope"
+" peak-hold, a comb-filter artefact or a peak of the dense early tail)"
+msgstr ""
+"讀數比無損點聲源經剛性平面鏡像後在該路徑長度上應有的值高 {excess:.1f} dB，因此不視為一階鏡面反射到達（可能是被包絡峰值保持合並的"
+"两次到達、梳狀濾波偽影，或密集早期尾部中的一個峰）"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate reads {excess:.1f} dB above what a lossless"
+" point source mirrored in a rigid plane would give at that path length, "
+"so it is not treated as a first-order specular arrival (it may be two ar"
+"rivals merged by the envelope peak-hold, a comb-filter artefact or a pea"
+"k of the dense early tail)"
+msgstr ""
+"{delay:.1f} ms 處的候選反射讀數比無損點聲源經剛性平面鏡像後在該路徑長度上應有的值高 {excess:.1f} dB，因此不視為一"
+"階鏡面反射到達（可能是被包絡峰值保持合並的两次到達、梳狀濾波偽影，或密集早期尾部中的一個峰）"
+
+msgctxt "diagnostic"
+msgid ""
+"reads {attenuation:.1f} dB below that ceiling, more than the {limit:.0f}"
+" dB RoomScope treats as the limit for a discrete plane reflection, so it"
+" is not used to attribute a surface"
+msgstr ""
+"讀數比該上限低 {attenuation:.1f} dB，超過了 RoomScope 視為離散平面反射極限的 {limit:.0f} dB，因此"
+"不用於判定反射面"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate reads {attenuation:.1f} dB below that ceili"
+"ng, more than the {limit:.0f} dB RoomScope treats as the limit for a dis"
+"crete plane reflection, so it is not used to attribute a surface"
+msgstr ""
+"{delay:.1f} ms 處的候選反射讀數比該上限低 {attenuation:.1f} dB，超過了 RoomScope 視為離散平面反射"
+"極限的 {limit:.0f} dB，因此不用於判定反射面"
+
+msgctxt "diagnostic"
+msgid ""
+"the reflection search was cut short at {end:.1f} ms, and truncation does"
+" not drop arrivals at random: it drops the longest paths first, so any h"
+"eight derived from what remains is biased low"
+msgstr "反射搜索在 {end:.1f} ms 處被截斷，而截斷並不是隨機丟棄到達聲：它最先丟棄路徑最長的反射，因此由剩餘反射推算的任何高度都會偏低"
+
+msgctxt "diagnostic"
+msgid ""
+"no air temperature was supplied, so {temperature:.0f} C ({speed:.1f} m/s"
+") was assumed; a 5 C error moves every distance by about 0.9 %"
+msgstr ""
+"未提供氣溫，因此假定為 {temperature:.0f} C（聲速 {speed:.1f} m/s）；氣溫誤差 5 C 會使每個距離偏差約 0"
+".9 %"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is low, so the time origin every delay"
+" is measured from was not established and no distance derived from it is"
+" reported"
+msgstr "直達聲檢測置信度為低，因此未能確立所有延遲的計時起點，不報告由此推算的任何距離"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as a plane above both devices: {rejec"
+"tions}; even the lowest plausible upper plane ({lowest:.1f} m) would arr"
+"ive at about {delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window "
+"that could be searched, so absence here is not evidence of absence"
+msgstr ""
+"檢測到的反射均無法解讀為位於两臺設備上方的平面：{rejections}；即使是最低的合理上方平面（{lowest:.1f} m），其反射也約在"
+" {delay:.1f} ms 才到達，超出了可搜索的 {start:.1f}-{end:.1f} ms 窗口，因此此處沒有找到並不代表不存在"
+
+msgctxt "diagnostic"
+msgid ""
+"more than one reflection could be the surface the height was measured fr"
+"om, and they disagree by more than {agreement_cm:.0f} cm: {values}. Room"
+"Scope does not choose between them. This is the expected outcome when th"
+"e microphone sits near the vertical midpoint of the room, where the arri"
+"val from the surface below and the one from the surface above are interc"
+"hangeable; moving the microphone 20-30 cm up or down and measuring again"
+" separates them"
+msgstr ""
+"有不止一個反射可能來自測量高度所依據的表面，且它們之間相差超過 {agreement_cm:.0f} cm：{values}。RoomScope"
+" 不會在其中做選擇。話筒位於房間垂直方向中點附近時這是預期結果，因為來自下方表面和上方表面的到達聲可以互換；將話筒上移或下移 20-30 cm "
+"後重新測量即可將两者分開"
+
+msgctxt "diagnostic"
+msgid "inherited from the reflection search: {note}"
+msgstr "沿用自反射搜索：{note}"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is medium, so the time origin every de"
+"lay is measured from was not established and no distance derived from it"
+" is reported"
+msgstr "直達聲檢測置信度為中，因此未能確立所有延遲的計時起點，不報告由此推算的任何距離"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is {confidence}, so the time origin ev"
+"ery delay is measured from was not established and no distance derived f"
+"rom it is reported"
+msgstr "直達聲檢測置信度為 {confidence}，因此未能確立所有延遲的計時起點，不報告由此推算的任何距離"
+
+msgctxt "diagnostic"
+msgid ""
+"no loudspeaker-to-microphone distance was supplied; measure the straight"
+" line from the loudspeaker to the microphone capsule with a tape"
+msgstr "未提供揚聲器到話筒的距離；請用卷尺測量揚聲器到話筒振膜的直線距離"
+
+msgctxt "diagnostic"
+msgid ""
+"no microphone height was supplied, so no reflection can be attributed to"
+" a horizontal plane"
+msgstr "未提供話筒高度，因此無法將任何反射歸屬到水平面"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies a loudspeaker {height:.2f} m above "
+"the plane the height was measured from ({low:.2f}-{high:.2f} m is treate"
+"d as plausible)"
+msgstr ""
+"{delay:.1f} ms 處的候選反射意味著揚聲器位於測量高度所依據平面上方 {height:.2f} m 處（合理范圍為 {low:.2f"
+"}-{high:.2f} m）"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as a plane above both devices: {rejec"
+"tions}"
+msgstr "檢測到的反射均無法解讀為位於两臺設備上方的平面：{rejections}"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies a vertical separation of {separatio"
+"n:.2f} m, which the {distance:.2f} m straight-line distance cannot conta"
+"in"
+msgstr ""
+"{delay:.1f} ms 處的候選反射意味著垂直間距為 {separation:.2f} m，而 {distance:.2f} m 的直線距"
+"離容納不下這一間距"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate has no real solution for a plane above both"
+" devices"
+msgstr "{delay:.1f} ms 處的候選反射對於两臺設備上方的平面沒有實數解"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies an upper plane {height:.2f} m above"
+" the lower one ({low:.1f}-{high:.1f} m is treated as plausible)"
+msgstr ""
+"{delay:.1f} ms 處的候選反射意味著上方平面比下方平面高 {height:.2f} m（合理范圍為 {low:.1f}-{high:"
+".1f} m）"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies an upper plane {height:.2f} m up, l"
+"ess than {clearance:.2f} m above the higher of the two devices"
+msgstr ""
+"{delay:.1f} ms 處的候選反射意味著上方平面高 {height:.2f} m，比两臺設備中較高者高出不到 {clearance:.2"
+"f} m"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as a plane above both devices; even t"
+"he lowest plausible upper plane ({lowest:.1f} m) would arrive at about {"
+"delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window that could be "
+"searched, so absence here is not evidence of absence"
+msgstr ""
+"檢測到的反射均無法解讀為位於两臺設備上方的平面；即使是最低的合理上方平面（{lowest:.1f} m），其反射也約在 {delay:.1f} "
+"ms 才到達，超出了可搜索的 {start:.1f}-{end:.1f} ms 窗口，因此此處沒有找到並不代表不存在"
+
+msgctxt "diagnostic"
+msgid "no detected reflection can be read as a plane above both devices"
+msgstr "檢測到的反射均無法解讀為位於两臺設備上方的平面"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies the loudspeaker is vertically above"
+" the microphone, which leaves no horizontal separation"
+msgstr "{delay:.1f} ms 處的候選反射意味著揚聲器位於話筒正上方，两者之間沒有水平間距"
+
+msgctxt "diagnostic"
+msgid ""
+"no separate arrival from a plane above the devices was found, and one as"
+" low as {lowest:.2f} m would arrive at {earliest:.1f} ms -- within the {"
+"resolution:.1f} ms the reflection search can resolve from the {used:.1f}"
+" ms arrival this height was solved from. That arrival may therefore be t"
+"wo arrivals merged into one peak, which would bias the height. Moving th"
+"e microphone 20-30 cm up or down and measuring again separates them"
+msgstr ""
+"未找到來自設備上方平面的獨立到達聲，而低至 {lowest:.2f} m 的平面，其反射會在 {earliest:.1f} ms 到達——與求解"
+"該高度所用的 {used:.1f} ms 到達聲相距不超過反射搜索的分辨能力 {resolution:.1f} ms。因此該到達聲可能是合並為一"
+"個峰的两次到達，這會使高度產生偏差。將話筒上移或下移 20-30 cm 後重新測量即可將两者分開"
+
+msgctxt "diagnostic"
+msgid ""
+"the quiet segment is too short for the {bands} band filter(s); no level "
+"is reported for them"
+msgstr "安靜段太短，不足以用於 {bands} 頻帶濾波器；這些頻帶不報告電平"
+
+msgctxt "diagnostic"
+msgid ""
+"No quiet segment found: add at least 1 s of silence before the sweep (th"
+"e generated test signal already contains it) or record a longer tail."
+msgstr "未找到安靜段：請在掃頻前加入至少 1 s 的靜音（生成的測試信号已包含），或錄制更長的尾部。"
+
+msgctxt "diagnostic"
+msgid ""
+"the quiet segment is below {floor:g} dBFS ({level:.0f} dBFS): that is be"
+"low the quantisation noise of a 24-bit file, so it is digital silence or"
+" numerical residue, not a measured noise floor"
+msgstr ""
+"安靜段低於 {floor:g} dBFS（{level:.0f} dBFS）：這低於 24 位檔案的量化噪聲，因此是數字靜音或數值殘留，而不是實"
+"測的本底噪聲"
+
+msgctxt "diagnostic"
+msgid "quiet segment is too short ({duration:.2f} s) for mains-hum detection"
+msgstr "安靜段太短（{duration:.2f} s），無法檢測電源嗡聲"
+
+msgctxt "diagnostic"
+msgid ""
+"quiet segment taken from the end of the recording; it may contain late r"
+"everberation, so the noise floor may be overestimated"
+msgstr "安靜段取自錄音末尾；其中可能含有後期混響，因此本底噪聲可能被高估"
+
+msgctxt "diagnostic"
+msgid ""
+"{dropped:.2f} s of exact digital zeros (an export that starts before the"
+" recorded region, or a gap between regions) were excluded from the pre-s"
+"weep segment"
+msgstr "掃頻前片段中有 {dropped:.2f} s 精確為零的數字靜音已被排除（導出范圍從錄音區域之前開始，或區域之間有空隙）"
+
+msgctxt "diagnostic"
+msgid ""
+"{dropped:.2f} s of exact digital zeros (an export that starts before the"
+" recorded region, or a gap between regions) were excluded from the tail "
+"segment"
+msgstr "末尾片段中有 {dropped:.2f} s 精確為零的數字靜音已被排除（導出范圍從錄音區域之前開始，或區域之間有空隙）"
+
+msgctxt "diagnostic"
+msgid ""
+"{dropped:.2f} s of exact digital zeros (an export that starts before the"
+" recorded region, or a gap between regions) were excluded from the {sour"
+"ce} segment"
+msgstr "{source} 片段中有 {dropped:.2f} s 精確為零的數字靜音已被排除（導出范圍從錄音區域之前開始，或區域之間有空隙）"
+
+msgctxt "diagnostic"
+msgid ""
+"only {remaining:.2f} s of the pre-sweep segment are not digital silence,"
+" less than the {needed:.2f} s a level needs"
+msgstr "掃頻前片段中只有 {remaining:.2f} s 不是數字靜音，少於測量電平所需的 {needed:.2f} s"
+
+msgctxt "diagnostic"
+msgid ""
+"only {remaining:.2f} s of the tail segment are not digital silence, less"
+" than the {needed:.2f} s a level needs"
+msgstr "末尾片段中只有 {remaining:.2f} s 不是數字靜音，少於測量電平所需的 {needed:.2f} s"
+
+msgctxt "diagnostic"
+msgid ""
+"only {remaining:.2f} s of the {source} segment are not digital silence, "
+"less than the {needed:.2f} s a level needs"
+msgstr "{source} 片段中只有 {remaining:.2f} s 不是數字靜音，少於測量電平所需的 {needed:.2f} s"
+
+msgctxt "diagnostic"
+msgid ""
+"only {usable:.2f} s of the pre-sweep segment are usable instead of the {"
+"configured:.2f} s configured; the levels come from that shorter part"
+msgstr "掃頻前片段中只有 {usable:.2f} s 可用，而不是設定的 {configured:.2f} s；電平來自這段較短的部分"
+
+msgctxt "diagnostic"
+msgid ""
+"only {usable:.2f} s of the tail segment are usable instead of the {confi"
+"gured:.2f} s configured; the levels come from that shorter part"
+msgstr "末尾片段中只有 {usable:.2f} s 可用，而不是設定的 {configured:.2f} s；電平來自這段較短的部分"
+
+msgctxt "diagnostic"
+msgid ""
+"only {usable:.2f} s of the {source} segment are usable instead of the {c"
+"onfigured:.2f} s configured; the levels come from that shorter part"
+msgstr "{source} 片段中只有 {usable:.2f} s 可用，而不是設定的 {configured:.2f} s；電平來自這段較短的部分"
+
+msgctxt "diagnostic"
+msgid ""
+"the pre-sweep segment is only {below:.1f} dB below the level of the swee"
+"p ({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass witho"
+"ut silence before it?)"
+msgstr "掃頻前片段僅比掃頻電平（{sweep:.1f} dBFS RMS）低 {below:.1f} dB：它不是本底噪聲（掃頻前沒有留出靜音？）"
+
+msgctxt "diagnostic"
+msgid ""
+"the tail segment is only {below:.1f} dB below the level of the sweep ({s"
+"weep:.1f} dBFS RMS): it is not background noise (a sweep pass without si"
+"lence before it?)"
+msgstr "末尾片段僅比掃頻電平（{sweep:.1f} dBFS RMS）低 {below:.1f} dB：它不是本底噪聲（掃頻前沒有留出靜音？）"
+
+msgctxt "diagnostic"
+msgid ""
+"the {source} segment is only {below:.1f} dB below the level of the sweep"
+" ({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass withou"
+"t silence before it?)"
+msgstr ""
+"{source} 片段僅比掃頻電平（{sweep:.1f} dBFS RMS）低 {below:.1f} dB：它不是本底噪聲（掃頻前沒有留出靜"
+"音？）"
+
+msgctxt "diagnostic"
+msgid ""
+"the pre-sweep segment is digital silence (exact zeros); the acoustic noi"
+"se floor cannot be measured there"
+msgstr "掃頻前片段是數字靜音（精確為零）；無法在此測量聲學本底噪聲"
+
+msgctxt "diagnostic"
+msgid ""
+"the tail segment is digital silence (exact zeros); the acoustic noise fl"
+"oor cannot be measured there"
+msgstr "末尾片段是數字靜音（精確為零）；無法在此測量聲學本底噪聲"
+
+msgctxt "diagnostic"
+msgid ""
+"the {source} segment is digital silence (exact zeros); the acoustic nois"
+"e floor cannot be measured there"
+msgstr "{source} 片段是數字靜音（精確為零）；無法在此測量聲學本底噪聲"
+
+msgctxt "diagnostic"
+msgid ""
+"the pre-sweep segment is not quiet: only {quiet:.2f} s of it stay within"
+" {excess:.0f} dB of its quietest blocks (another sweep pass or a noise e"
+"vent?)"
+msgstr "掃頻前片段不够安靜：其中只有 {quiet:.2f} s 保持在最安靜塊的 {excess:.0f} dB 以內（另一遍掃頻，還是噪聲事件？）"
+
+msgctxt "diagnostic"
+msgid ""
+"the tail segment is not quiet: only {quiet:.2f} s of it stay within {exc"
+"ess:.0f} dB of its quietest blocks (another sweep pass or a noise event?"
+")"
+msgstr "末尾片段不够安靜：其中只有 {quiet:.2f} s 保持在最安靜塊的 {excess:.0f} dB 以內（另一遍掃頻，還是噪聲事件？）"
+
+msgctxt "diagnostic"
+msgid ""
+"the {source} segment is not quiet: only {quiet:.2f} s of it stay within "
+"{excess:.0f} dB of its quietest blocks (another sweep pass or a noise ev"
+"ent?)"
+msgstr ""
+"{source} 片段不够安靜：其中只有 {quiet:.2f} s 保持在最安靜塊的 {excess:.0f} dB 以內（另一遍掃頻，還是噪"
+"聲事件？）"
+
+msgctxt "diagnostic"
+msgid ""
+"{excluded:.2f} s of the pre-sweep segment were more than {excess:.0f} dB"
+" above its quietest blocks (another sweep pass or a noise event?) and we"
+"re excluded"
+msgstr ""
+"掃頻前片段中有 {excluded:.2f} s 比其最安靜的塊高出 {excess:.0f} dB 以上（另一遍掃頻，還是噪聲事件？），已被排"
+"除"
+
+msgctxt "diagnostic"
+msgid ""
+"{excluded:.2f} s of the tail segment were more than {excess:.0f} dB abov"
+"e its quietest blocks (another sweep pass or a noise event?) and were ex"
+"cluded"
+msgstr "末尾片段中有 {excluded:.2f} s 比其最安靜的塊高出 {excess:.0f} dB 以上（另一遍掃頻，還是噪聲事件？），已被排除"
+
+msgctxt "diagnostic"
+msgid ""
+"{excluded:.2f} s of the {source} segment were more than {excess:.0f} dB "
+"above its quietest blocks (another sweep pass or a noise event?) and wer"
+"e excluded"
+msgstr ""
+"{source} 片段中有 {excluded:.2f} s 比其最安靜的塊高出 {excess:.0f} dB 以上（另一遍掃頻，還是噪聲事件"
+"？），已被排除"
+
+msgctxt "diagnostic"
+msgid ""
+"harmonics of {base:.0f} Hz were found as well, but {best:.0f} Hz explain"
+"s more of them; a single mains supply has one fundamental"
+msgstr "也發現了 {base:.0f} Hz 的諧波，但 {best:.0f} Hz 能解釋更多諧波；同一市電只有一個基頻"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, {source}): it contains on"
+"ly leakage and noise, so no decay values are reported"
+msgstr ""
+"{band} 頻帶（{band_low:.0f}-{band_high:.0f} Hz）未完全位於激勵范圍（{low:.0f}-{high:.0"
+"f} Hz，{source}）內：其中只有泄漏和噪聲，因此不報告衰減值"
+
+msgctxt "diagnostic"
+msgid ""
+"the Lundeby noise-floor iteration did not converge in {iterations} itera"
+"tion(s)"
+msgstr "Lundeby 本底噪聲迭代在 {iterations} 次迭代內未收斂"
+
+msgctxt "diagnostic"
+msgid ""
+"the decay curve drops {step:.1f} dB across the direct sound (it carries "
+"{share:.0f} % of the energy; limit {limit:g} dB): EDT describes the dire"
+"ct sound rather than the room at this position"
+msgstr ""
+"衰減曲線在直達聲處下降了 {step:.1f} dB（直達聲占能量的 {share:.0f} %；上限 {limit:g} dB）：EDT 描述"
+"的是直達聲，而不是該位置的房間"
+
+msgctxt "diagnostic"
+msgid ""
+"the decay curve is not straight (curvature C = {curvature:.0f} %, limit "
+"{limit:.0f} %): possibly a double slope, coupled volumes or strong early"
+" reflections; no single reverberation time describes it"
+msgstr ""
+"衰減曲線不是直線（曲率 C = {curvature:.0f} %，上限 {limit:.0f} %）：可能是雙斜率衰減、耦合空間或強烈的早期反"
+"射；無法用單一混響時間描述"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, sweep settings): it conta"
+"ins only leakage and noise, so no decay values are reported"
+msgstr ""
+"{band} 頻帶（{band_low:.0f}-{band_high:.0f} Hz）未完全位於激勵范圍（{low:.0f}-{high:.0"
+"f} Hz，掃頻設定）內：其中只有泄漏和噪聲，因此不報告衰減值"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, estimated from reference "
+"audio): it contains only leakage and noise, so no decay values are repor"
+"ted"
+msgstr ""
+"{band} 頻帶（{band_low:.0f}-{band_high:.0f} Hz）未完全位於激勵范圍（{low:.0f}-{high:.0"
+"f} Hz，由參考音頻估算）內：其中只有泄漏和噪聲，因此不報告衰減值"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, declared by the user): it"
+" contains only leakage and noise, so no decay values are reported"
+msgstr ""
+"{band} 頻帶（{band_low:.0f}-{band_high:.0f} Hz）未完全位於激勵范圍（{low:.0f}-{high:.0"
+"f} Hz，使用者聲明）內：其中只有泄漏和噪聲，因此不報告衰減值"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, unknown): it contains onl"
+"y leakage and noise, so no decay values are reported"
+msgstr ""
+"{band} 頻帶（{band_low:.0f}-{band_high:.0f} Hz）未完全位於激勵范圍（{low:.0f}-{high:.0"
+"f} Hz，未知）內：其中只有泄漏和噪聲，因此不報告衰減值"
+
+msgctxt "diagnostic"
+msgid ""
+"the late decay slope ({late:.1f} dB/s) is less than {ratio:g} times the "
+"early slope ({early:.1f} dB/s)"
+msgstr "後期衰減斜率（{late:.1f} dB/s）小於早期斜率（{early:.1f} dB/s）的 {ratio:g} 倍"
+
+msgctxt "diagnostic"
+msgid ""
+"the {metric} fit is not straight (xi = {xi:.0f} permille, limit {limit:."
+"0f}): {metric} is not a reliable reverberation time here"
+msgstr "{metric} 擬合不是直線（xi = {xi:.0f} ‰，上限 {limit:.0f}）：此處 {metric} 不是可靠的混響時間"
+
+msgctxt "diagnostic"
+msgid ""
+"the noise truncation is not trustworthy ({problem}) and the result depen"
+"ds on it ({changes})"
+msgstr "噪聲截斷不可信（{problem}），而結果依賴於它（{changes}）"
+
+msgctxt "diagnostic"
+msgid ""
+"decay analysis: the {bands} band(s) are not fully inside the excitation "
+"range ({low:.0f}-{high:.0f} Hz); no decay values are reported for them"
+msgstr "衰減分析：{bands} 頻帶未完全位於激勵范圍（{low:.0f}-{high:.0f} Hz）內；這些頻帶不報告衰減值"
+
+msgctxt "diagnostic"
+msgid "the response is too short for a noise-floor estimate"
+msgstr "響應太短，無法估計本底噪聲"
+
+msgctxt "diagnostic"
+msgid "no decay above the noise floor was found"
+msgstr "在本底噪聲之上未發現衰減"
+
+msgctxt "diagnostic"
+msgid "the response does not decay"
+msgstr "響應沒有衰減"
+
+msgctxt "diagnostic"
+msgid ""
+"Insufficient decay range: {available:.1f} dB available, {needed:.0f} dB "
+"needed ({range:.0f} dB range + {margin:.0f} dB above noise)"
+msgstr ""
+"衰減范圍不足：可用 {available:.1f} dB，需要 {needed:.0f} dB（{range:.0f} dB 評估范圍 + 高於"
+"噪聲 {margin:.0f} dB）"
+
+msgctxt "diagnostic"
+msgid ""
+"Insufficient decay range: the decay curve does not reach the evaluation "
+"range"
+msgstr "衰減范圍不足：衰減曲線未達到評估范圍"
+
+msgctxt "diagnostic"
+msgid "Decay slope is not negative"
+msgstr "衰減斜率不為負"
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:.2f} s vs no value"
+msgstr "{metric} {seconds:.2f} s，對比無值"
+
+msgctxt "diagnostic"
+msgid "{metric} has no truncation-independent value"
+msgstr "{metric} 沒有不受截斷影響的值"
+
+msgctxt "diagnostic"
+msgid ""
+"B*T = {bt:.1f} < {minimum:g}: the band filter's own decay is comparable "
+"to the measured decay; values in this band are unreliable"
+msgstr "B*T = {bt:.1f} < {minimum:g}: 頻帶濾波器自身的衰減與實測衰減相當；此頻帶的數值不可靠"
+
+msgctxt "diagnostic"
+msgid ""
+"the noise crosspoint ({crosspoint:.2f} s after the onset) lies far beyon"
+"d the first point where the decay reaches the noise floor ({reached:.2f}"
+" s)"
+msgstr "噪聲交叉點（起始後 {crosspoint:.2f} s）遠遠晚於衰減首次達到本底噪聲的時刻（{reached:.2f} s）"
+
+msgctxt "diagnostic"
+msgid "Evaluation range covers fewer than 3 samples after the direct sound"
+msgstr "評估范圍在直達聲之後覆蓋的樣本少於 3 個"
+
+msgctxt "diagnostic"
+msgid "Evaluation range covers fewer than 3 samples"
+msgstr "評估范圍覆蓋的樣本少於 3 個"
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:.2f} s vs {other:.2f} s"
+msgstr "{metric} {seconds:.2f} s，對比 {other:.2f} s"
+
+msgctxt "diagnostic"
+msgid "decay analysis, broadband: {warning}"
+msgstr "衰減分析，寬帶：{warning}"
+
+msgctxt "diagnostic"
+msgid "decay analysis, {band}: {warning}"
+msgstr "衰減分析，{band}：{warning}"
+
+msgid "{a} or {b}"
+msgstr "{a} 或 {b}"
+
+msgid "Name"
+msgstr "名稱"
+
+msgid "Host API"
+msgstr "主機 API"
+
+msgid "In"
+msgstr "輸入"
+
+msgid "Out"
+msgstr "輸出"
+
+msgid "Default rate"
+msgstr "預設采樣率"
+
+msgid "Record rates"
+msgstr "錄制采樣率"
+
+msgid "Play rates"
+msgstr "播放采樣率"
+
+msgid "Latency low/high (ms)"
+msgstr "延遲 低/高（ms）"
+
+msgid "Recommended"
+msgstr "推薦"
+
+msgid "Notes"
+msgstr "說明"
+
+msgid "input"
+msgstr "輸入"
+
+msgid "output"
+msgstr "輸出"
+
+msgid "in {input}, out {output}"
+msgstr "輸入 {input}，輸出 {output}"
+
+msgid "in {rate:.0f} Hz"
+msgstr "輸入 {rate:.0f} Hz"
+
+msgid "out {rate:.0f} Hz"
+msgstr "輸出 {rate:.0f} Hz"
+
+msgid "{name} - {count} in"
+msgstr "{name} - {count} 路輸入"
+
+msgid "{name} - {count} out"
+msgstr "{name} - {count} 路輸出"
+
+msgid "(add {input})"
+msgstr "（需添加 {input}）"
+
+msgid "20 dB decay"
+msgstr "20 dB 衰減"
+
+msgid "Above baseline"
+msgstr "高出基線"
+
+msgid "Analysed"
+msgstr "已分析"
+
+msgid "Architecture"
+msgstr "架構"
+
+msgid "Arrival"
+msgstr "到達時間"
+
+msgid "Audio"
+msgstr "音頻"
+
+msgid "Audio systems (host APIs)"
+msgstr "音頻系統（主機 API）"
+
+msgid "Build"
+msgstr "構建"
+
+msgid "CI run"
+msgstr "CI 運行"
+
+msgid "Calibration"
+msgstr "校準"
+
+msgid "Checks"
+msgstr "檢查"
+
+msgid "Common band"
+msgstr "共同頻帶"
+
+msgid "Comparable"
+msgstr "可對比"
+
+msgid "Created"
+msgstr "創建時間"
+
+msgid "Decay range"
+msgstr "衰減范圍"
+
+msgid "Default"
+msgstr "預設"
+
+msgid "Delay"
+msgstr "延遲"
+
+msgid "Device"
+msgstr "設備"
+
+msgid "Devices"
+msgstr "設備"
+
+msgid "Diagnostics"
+msgstr "診斷"
+
+msgid "Distinguishable"
+msgstr "可區分"
+
+msgid "Edition"
+msgstr "版本類型"
+
+msgid "Excess path"
+msgstr "額外路徑"
+
+msgid "Filter ringing"
+msgstr "濾波器餘振"
+
+msgid "Frequency"
+msgstr "頻率"
+
+msgid "Frequency response"
+msgstr "頻率響應"
+
+msgid "Impulse response"
+msgstr "脈衝響應"
+
+msgid "Info"
+msgstr "資訊"
+
+msgid "Input"
+msgstr "輸入"
+
+msgid "Input and output use one host API"
+msgstr "輸入和輸出屬於同一個主機 API"
+
+msgid "Interpretation ({profile} profile)"
+msgstr "解讀（{profile}配置）"
+
+msgid "Length"
+msgstr "長度"
+
+msgid "Level"
+msgstr "電平"
+
+msgid "Level above {max_level:g} dBFS, confirmed with --acknowledge-level"
+msgstr "電平高於 {max_level:g} dBFS，已用 --acknowledge-level 確認"
+
+msgid "Level at or below {max_level:g} dBFS"
+msgstr "電平不高於 {max_level:g} dBFS"
+
+msgid "Libraries"
+msgstr "依賴庫"
+
+msgid "Loopback"
+msgstr "回送"
+
+msgid "Low-frequency resonances"
+msgstr "低頻共振"
+
+msgid "Mean |Δ|"
+msgstr "平均 |Δ|"
+
+msgid "Measurement"
+msgstr "測量"
+
+msgid "Mode"
+msgstr "模式"
+
+msgid "No audio device found."
+msgstr "未找到音頻設備。"
+
+msgid "No mains hum detected (50/60 Hz harmonics)."
+msgstr "未檢測到市電哼聲（50/60 Hz 諧波）。"
+
+msgid "No quiet segment was available."
+msgstr "沒有可用的安靜片段。"
+
+msgid "None above the threshold."
+msgstr "沒有高於閾值的反射。"
+
+msgid "None found."
+msgstr "未發現。"
+
+msgid "Nothing was played."
+msgstr "沒有播放任何聲音。"
+
+msgid "Nothing was sent anywhere: this report is only printed."
+msgstr "沒有發送任何內容：本報告只在這裡打印。"
+
+msgid "Notice"
+msgstr "提示"
+
+msgid "Output"
+msgstr "輸出"
+
+msgid "Paths"
+msgstr "路徑"
+
+msgid "Platform"
+msgstr "平臺"
+
+msgid "Play"
+msgstr "播放"
+
+msgid "Playing the sweep and recording"
+msgstr "正在播放掃頻並錄音"
+
+msgid "Potential mains hum at multiples of {base:.0f} Hz: {harmonics}"
+msgstr "可能的市電哼聲，基頻 {base:.0f} Hz 的倍頻：{harmonics}"
+
+msgid "Preference"
+msgstr "優先順序"
+
+msgid "Privacy"
+msgstr "隱私"
+
+msgid "Rate"
+msgstr "采樣率"
+
+msgid "Record"
+msgstr "錄音"
+
+msgid "Recording"
+msgstr "錄音"
+
+msgid "Reverberation"
+msgstr "混響"
+
+msgid "RoomScope environment report"
+msgstr "RoomScope 環境報告"
+
+msgid "RoomScope standalone measurement"
+msgstr "RoomScope 獨立測量"
+
+msgid "RoomScope test signal"
+msgstr "RoomScope 測試信号"
+
+msgid ""
+"Run a command with --help for its options, for example: roomscope measur"
+"e --help"
+msgstr "在命令後加 --help 查看它的選項，例如：roomscope measure --help"
+
+msgid "Segment"
+msgstr "片段"
+
+msgid "Self-check"
+msgstr "自檢"
+
+msgid "Session"
+msgstr "會話"
+
+msgid "Speed of sound"
+msgstr "聲速"
+
+msgid "Stream"
+msgstr "音頻流"
+
+msgid "Sweep"
+msgstr "掃頻"
+
+msgid "Sweep found"
+msgstr "掃頻位置"
+
+msgid "System"
+msgstr "系統"
+
+msgid "The input device accepts {rate}"
+msgstr "輸入設備支援 {rate}"
+
+msgid "The output device accepts {rate}"
+msgstr "輸出設備支援 {rate}"
+
+msgid "The selected channels exist"
+msgstr "所選聲道存在"
+
+msgid "Use the number with --input-device / --output-device."
+msgstr "在 --input-device / --output-device 中填寫這裡的編号。"
+
+msgid "Version"
+msgstr "版本"
+
+msgid "WASAPI exclusive mode"
+msgstr "WASAPI 獨占模式"
+
+msgid "Warning"
+msgstr "警告"
+
+msgid "a delta is valid only when both sides are valid"
+msgstr "只有两側都有效時差值才有效"
+
+msgid "candidates below {max_hz:.0f} Hz"
+msgstr "{max_hz:.0f} Hz 以下的候選"
+
+msgid ""
+"colour in the terminal: auto (default; off for pipes, files and NO_COLOR"
+"), always, never"
+msgstr "終端顏色：預設自動（輸出到管道、檔案或設定了 NO_COLOR 時不著色），也可以始終著色或從不著色"
+
+msgid "commands"
+msgstr "命令"
+
+msgid "compensated{sep}path delay {delay}{sep}distance at most {bound}"
+msgstr "已補償{sep}電路徑延遲 {delay}{sep}距離上限 {bound}"
+
+msgid "confidence {confidence}{sep}pre-peak margin {margin}"
+msgstr "置信度 {confidence}{sep}峰前裕量 {margin}"
+
+msgid "default {rate}"
+msgstr "預設 {rate}"
+
+msgid "examples"
+msgstr "示例"
+
+msgid "extrapolated to 60 dB"
+msgstr "外推到 60 dB"
+
+msgid "impulse-response file"
+msgstr "脈衝響應檔案"
+
+msgid "input {channels}"
+msgstr "輸入 {channels}"
+
+msgid "latency {latency}"
+msgstr "延遲 {latency}"
+
+msgid "loopback on input {channel}"
+msgstr "回送在輸入 {channel}"
+
+msgid "mean |Δ| per octave"
+msgstr "每倍頻程平均 |Δ|"
+
+msgid "no commit recorded (source or pip install)"
+msgstr "未記錄提交（源碼或 pip 安裝）"
+
+msgid "not applied: {reason}"
+msgstr "未使用：{reason}"
+
+msgid "nothing has been played yet"
+msgstr "尚未播放任何聲音"
+
+msgid "offered but not applied"
+msgstr "已提供但未使用"
+
+msgid "output {channel}"
+msgstr "輸出 {channel}"
+
+msgid "sample rates accepted for 1 channel; nothing was played"
+msgstr "按 1 個聲道探測的可用采樣率；沒有播放任何聲音"
+
+msgid "sample rates not probed; run roomscope doctor --probe"
+msgstr "未探測采樣率；運行 roomscope doctor --probe"
+
+msgid "sets the Core Audio device rate"
+msgstr "由 RoomScope 設定 Core Audio 設備采樣率"
+
+msgid "system default"
+msgstr "系統預設"
+
+msgid "tier {tier}; no coordinates are derived (see the JSON)"
+msgstr "檔位 {tier}；不推算坐標（見 JSON）"
+
+msgid "your home folder is shown as ~"
+msgstr "主資料夾顯示為 ~"
+
+msgid "{inputs} in / {outputs} out"
+msgstr "{inputs} 入 / {outputs} 出"
+
+msgid "{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB"
+msgstr "{lo:.0f}–{hi:.0f} ms，高於 {threshold:.0f} dB"
+
+msgid "{n} more in result.json"
+msgstr "另有 {n} 個，見 result.json"
+
+msgid "{rms:.1f} dBFS RMS{sep}peak {peak}"
+msgstr "{rms:.1f} dBFS RMS{sep}峰值 {peak}"
+
+msgid "{seconds:.1f} s at {rate}"
+msgstr "{seconds:.1f} s，{rate}"
+
+msgid "{seconds:.2f} s, of which {decay:.2f} s is decay"
+msgstr "{seconds:.2f} s，其中衰減 {decay:.2f} s"
+
+msgid "{start:.2f} s into the recording"
+msgstr "錄音中第 {start:.2f} s"
+
+msgid "±{uncertainty:.2f} m from the stated inputs only"
+msgstr "±{uncertainty:.2f} m（僅來自所填數值）"
+
+msgid "Get started"
+msgstr "入門"
+
+msgid "test signal"
+msgstr "測試信号"
+
+msgid "analysis"
+msgstr "分析"
+
+msgid "session notes (stored in session.json)"
+msgstr "會話備註（保存在 session.json 中）"
+
+msgid "placement (optional tape measurements)"
+msgstr "擺位（可選，卷尺測量值）"
+
+msgid "loopback (optional)"
+msgstr "回送（可選）"
+
+msgid "required"
+msgstr "必需參數"
+
+msgid ""
+"try RoomScope without audio hardware: simulate, analyse and compare two "
+"positions"
+msgstr "無需音頻硬件體驗 RoomScope：模擬、分析並對比两個位置"
+
+msgid "audio interface"
+msgstr "音頻介面"
+
+msgid "Simulating and analysing two microphone positions …"
+msgstr "正在模擬並分析两個話筒位置…"
+
+msgid "deprecated: use roomscope --format json"
+msgstr "已棄用：請使用 roomscope --format json"
+
+msgid "debug logging, and tracebacks on errors"
+msgstr "調試日志，出錯時顯示回溯資訊"
+
+msgid "recording profile used to interpret the demo (default vocal)"
+msgstr "用於解讀演示結果的錄音配置（預設 vocal）"
+
+msgid "the demo prints a walkthrough, not JSON"
+msgstr "演示輸出的是導覽文字，不是 JSON"
+
+msgid "Nothing was changed. Choose an empty or new folder for the demo."
+msgstr "沒有做任何改動。請為演示選擇一個空資料夾或新資料夾。"
+
+msgid "{reason}: {path}"
+msgstr "{reason}：{path}"
+
+msgid "sample rate (Hz): {rates}"
+msgstr "采樣率（Hz）：{rates}"
+
+msgid ""
+"recording profile that shapes the interpretation: {names} (default: user"
+" settings)"
+msgstr "決定解讀方式的錄音配置：{names}（預設：使用者設定）"
+
+msgid "folder for the demo files, created or replaced (default {folder})"
+msgstr "演示檔案所在的資料夾，會新建或覆蓋（預設 {folder}）"
+
+msgid "{path} already exists and was not written by roomscope demo"
+msgstr "{path} 已存在，且不是由 roomscope demo 創建的"
+
+msgid "<folder>"
+msgstr "<資料夾>"
+
+msgid ""
+"This is a bug in RoomScope. Run the command again with --verbose for the"
+" details and include them, with the environment report, in a bug report."
+msgstr "這是 RoomScope 的程式缺陷。請加上 --verbose 重新運行該命令查看詳細資訊，並將其與環境報告一起附在缺陷報告中。"
+
+msgid "<new-folder>"
+msgstr "<新資料夾>"
+
+msgid "unexpected {kind}: {message}"
+msgstr "意外錯誤 {kind}：{message}"
+
+msgid "Data quality"
+msgstr "資料質量"
+
+msgid "dBFS RMS; a change needs the same input gain"
+msgstr "dBFS RMS；變化量要求輸入增益相同"
+
+msgid "Low end"
+msgstr "低頻"
+
+msgid "Next steps"
+msgstr "下一步"
+
+msgid ""
+"Start with the monitors turned down and raise them between takes if need"
+"ed."
+msgstr "先把監聽音量調低，如有需要再在两次錄制之間逐步調高。"
+
+msgid ""
+"Measure and compare the rooms you record in: reverberation, early reflec"
+"tions, low-frequency resonances and noise, from any DAW."
+msgstr "測量並對比你錄音的房間：混響、早期反射、低頻共振和噪聲，适用於任何 DAW。"
+
+msgid "RoomScope demo"
+msgstr "RoomScope 演示"
+
+msgid "Synthetic data: a simulated room, not a measurement."
+msgstr "合成資料：這是模擬的房間，不是實際測量。"
+
+msgid "What the demo shows"
+msgstr "演示說明了什麼"
+
+msgid "A strong desk reflection at 2.4 ms at position A is gone at position B."
+msgstr "位置 A 在 2.4 ms 處有一個很強的桌面反射，在位置 B 已經消失。"
+
+msgid ""
+"The 110 Hz room mode stays at both positions: it belongs to the room, no"
+"t the spot."
+msgstr "110 Hz 的房間模式在两個位置都存在：它屬於房間本身，而不是某個位置。"
+
+msgid "Mains hum at 50 Hz is clearly lower at position B."
+msgstr "50 Hz 市電哼聲在位置 B 明顯更低。"
+
+msgid "no reliable broadband RT60 (see Reverberation)"
+msgstr "沒有可靠的寬帶 RT60（見“混響”）"
+
+msgid "Noise floor"
+msgstr "本底噪聲"
+
+msgid "no quiet segment in the recording"
+msgstr "錄音中沒有安靜段"
+
+msgid "direct sound: confidence {confidence}"
+msgstr "直達聲：置信度 {confidence}"
+
+msgid "no warnings"
+msgstr "無警告"
+
+msgid "the recording clipped"
+msgstr "錄音已削波"
+
+msgid "At a glance"
+msgstr "概覽"
+
+msgid "broadband RT60 not comparable (see Reverberation)"
+msgstr "寬帶 RT60 無法比較（見“混響”）"
+
+msgid "none above the threshold on either side"
+msgstr "两側都沒有高於閾值的反射"
+
+msgid "at both: {list}"
+msgstr "两側都有：{list}"
+
+msgid "gone: {list}"
+msgstr "消失：{list}"
+
+msgid "new: {list}"
+msgstr "新出現：{list}"
+
+msgid "no potential resonance"
+msgstr "沒有可能的共振"
+
+msgid "no quiet segment on one or both sides"
+msgstr "一側或两側沒有安靜段"
+
+msgid ""
+"No audio device was used and nothing was played. The numbers below descr"
+"ibe the simulation; every session is marked as a synthetic demo."
+msgstr "沒有使用任何音頻設備，也沒有播放任何聲音。下面的數值描述的是模擬結果；每個會話都標記為合成演示。"
+
+msgid "Comparison"
+msgstr "對比"
+
+msgid "Open the sessions in the desktop app:"
+msgstr "在桌面應用中打開這些會話："
+
+msgid ""
+"Open them in the desktop app (download it, or add PySide6 to this Python"
+"):"
+msgstr "在桌面應用中打開它們（下載桌面應用，或在當前環境中安裝 PySide6）："
+
+msgid "{rms:.1f} dBFS RMS"
+msgstr "{rms:.1f} dBFS RMS"
+
+msgid ""
+"Record the measurement microphone on another track at the same sample ra"
+"te."
+msgstr "在另一條音軌上以相同采樣率錄制測量話筒。"
+
+msgid "Export that track as WAV (no trimming needed) and analyse it:"
+msgstr "將該音軌導出為 WAV（無需裁剪），然後分析："
+
+msgid "Measure another position into a new folder, then compare the two:"
+msgstr "把另一個位置測量到新資料夾，然後對比两者："
+
+msgid "Open the session in the desktop app:"
+msgstr "在桌面應用中打開該會話："
+
+msgid "Try:"
+msgstr "可以嘗試："
+
+msgid "Try it with synthetic data; no audio interface needed"
+msgstr "用合成資料體驗，無需音頻介面"
+
+msgid "Open the desktop app"
+msgstr "打開桌面應用"
+
+msgid "Write the test signal to play from your DAW"
+msgstr "寫出測試信号，在 DAW 中播放"
+
+msgid "Run {command} for every command and option."
+msgstr "運行 {command} 查看所有命令和選項。"
+
+msgid "close to the desk and the side wall"
+msgstr "靠近桌面和側牆"
+
+msgid "moved 1 m back from the desk"
+msgstr "從桌面向後移動 1 m"
+
+msgid "{duration:g} s sweep{sep}{start} – {end}{sep}{rate}"
+msgstr "{duration:g} s 掃頻{sep}{start} – {end}{sep}{rate}"
+
+msgid "Position {label}"
+msgstr "位置 {label}"
+
+msgid "Read the full report of one position:"
+msgstr "查看一個位置的完整報告："
+
+msgid "See every delta between the two positions:"
+msgstr "查看两個位置之間的全部差值："
+
+msgid "Measure your own room: write the test signal for your DAW."
+msgstr "測量你自己的房間：為 DAW 寫出測試信号。"
+
+msgid ""
+"strongest {level:.1f} dB at {delay:.1f} ms{sep}{count} above {threshold:"
+".0f} dB"
+msgstr "最強 {level:.1f} dB，位於 {delay:.1f} ms{sep}{count} 個高於 {threshold:.0f} dB"
+
+msgid "none above {threshold:.0f} dB"
+msgstr "沒有高於 {threshold:.0f} dB 的反射"
+
+msgid "potential resonances at {listed}"
+msgstr "可能的共振：{listed}"
+
+msgid "no potential resonance below {max_hz:.0f} Hz"
+msgstr "{max_hz:.0f} Hz 以下沒有可能的共振"
+
+msgid "{n} warning(s), see Diagnostics"
+msgstr "{n} 條警告，見“診斷”"
+
+msgid "{gone} gone{sep}{new} new{sep}{kept} at both"
+msgstr "{gone} 個消失{sep}{new} 個新出現{sep}{kept} 個两側都有"
+
+msgid "add --same-input-gain if the input gain was unchanged"
+msgstr "如果輸入增益沒有改變，請加上 --same-input-gain"
+
+msgid "largest change in the {band} octave, {mad:.1f} dB mean |Δ|"
+msgstr "變化最大的是 {band} 倍頻程，平均 |Δ| {mad:.1f} dB"
+
+msgid "Comparison {a} {arrow} {b}"
+msgstr "對比 {a} {arrow} {b}"
+
+msgid "mains hum at {base:.0f} Hz"
+msgstr "{base:.0f} Hz 市電哼聲"
+
+msgid "not compared: {validity}"
+msgstr "未比較：{validity}"
+
+msgid "Import {name} into your DAW and play it through the monitors."
+msgstr "將 {name} 導入 DAW，並通過監聽音箱播放。"
+
+msgid "<take.wav>"
+msgstr "<錄音.wav>"
+
+msgid "<session>"
+msgstr "<會話資料夾>"
+
+msgid "<other-session>"
+msgstr "<另一個會話>"
+
+msgid "Geometry"
+msgstr "幾何"
+
+msgid "try RoomScope with synthetic data: no audio hardware needed"
+msgstr "用合成資料體驗 RoomScope：無需音頻硬件"
+
+msgid "recording profile used to interpret the demo (default: {profile})"
+msgstr "用於解讀演示結果的錄音配置（預設：{profile}）"
+
+msgid "[options]"
+msgstr "[選項]"
+
+msgid "Files written"
+msgstr "已寫出的檔案"
+
+msgid "RT60 extrapolated from {basis} in every band"
+msgstr "所有頻帶的 RT60 都由 {basis} 外推"
+
+msgid "Keep it next to the WAV: the analysis rebuilds the exact sweep from it."
+msgstr "請把它和 WAV 放在一起：分析時會用它重建完全相同的掃頻。"
+
+msgid "start the desktop GUI (needs PySide6; the desktop download includes it)"
+msgstr "啟動桌面界面（需要 PySide6；桌面版下載包已包含）"
+
+msgid "{path} is a file; --out needs a folder for the session"
+msgstr "{path} 是一個檔案；--out 需要一個用來保存會話的資料夾"
+
+msgid ""
+"This is the Terminal Edition of RoomScope. Install the Desktop Edition t"
+"o use the GUI."
+msgstr "當前安裝的是 RoomScope 終端版。如需圖形界面，請安裝桌面版。"
+
+msgid "Every command-line feature works here: roomscope --help lists them."
+msgstr "所有命令行功能在這裡都可以使用：運行 roomscope --help 查看。"
+
+msgid "Download:"
+msgstr "下載："
+
+msgid "Terminal Edition"
+msgstr "終端版"
+
+msgid "To see them with charts, get RoomScope Desktop Edition:"
+msgstr "如需用圖表查看，請下載 RoomScope 桌面版："
+
+msgid "Check this computer's audio setup"
+msgstr "檢查這臺電腦的音頻設定"
+
+msgid "Terminal Edition bundle"
+msgstr "終端版程式包"
+
+msgid "Desktop Edition bundle"
+msgstr "桌面版程式包"
+
+msgid "not included (Terminal Edition)"
+msgstr "未包含（終端版）"
+
+msgid "To see it with charts, get RoomScope Desktop Edition:"
+msgstr "如需用圖表查看，請下載 RoomScope 桌面版："
+
+msgid "shown"
+msgstr "顯示"
+
+msgid "hidden"
+msgstr "隱藏"
+
+msgid "Desktop Edition"
+msgstr "桌面版"
+
+msgid "source or pip install"
+msgstr "源碼或 pip 安裝"
+
+msgid "Developer tools"
+msgstr "開發者工具"
+
+msgid "Home"
+msgstr "首頁"
+
+msgid "RoomScope {version}  ·  {place}"
+msgstr "RoomScope {version}  ·  {place}"
+
+msgid "Copy report"
+msgstr "復制報告"
+
+msgid "Copy the full text report to the clipboard."
+msgstr "把完整文字報告復制到剪貼板。"
+
+msgid "Nothing to copy yet."
+msgstr "還沒有可以復制的報告。"
+
+msgid "Report copied to the clipboard."
+msgstr "報告已復制到剪貼板。"
+
+msgid "warning: --format json does not apply to {command}; printing text"
+msgstr "警告：--format json 不适用於 {command}，仍輸出文本"
+
+msgid "OK"
+msgstr "確定"
+
+msgid "Cancel"
+msgstr "取消"
+
+msgid "Measure anyway"
+msgstr "仍要測量"
+
+msgid ""
+"Something unexpected went wrong. This is a bug in RoomScope. The details"
+" were written to the log; the environment report in the Help menu shows "
+"where that log is. Include both in a bug report."
+msgstr ""
+"發生了意外錯誤。這是 RoomScope 的程式缺陷。詳細資訊已寫入日志；說明菜單中的環境報告會標出日志位置。請把日志和環境報告一起附在缺陷報告"
+"中。"
+
+msgid ""
+"<b>RoomScope {version}</b><br>An open-source, DAW-independent recording "
+"environment analyzer.<br><br>Licensed under the Apache License, Version "
+"2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. "
+"and contributors) under the GNU Lesser General Public License v3; the Qt"
+" libraries are loaded as separate shared libraries and may be replaced b"
+"y interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (li"
+"bsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their res"
+"pective licenses.<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICE"
+"NSES/</code> directory next to the executable (and inside <code>RoomScop"
+"e.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md."
+" Levels are digital (dBFS) unless a calibration is provided; RoomScope n"
+"ever reports dB SPL."
+msgstr ""
+"<b>RoomScope {version}</b><br>開源、不依賴 DAW 的錄音環境分析器。<br><br>Licensed under "
+"the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyri"
+"ght The Qt Company Ltd. and contributors) under the GNU Lesser General Publi"
+"c License v3; the Qt libraries are loaded as separate shared libraries and m"
+"ay be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, s"
+"oundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under t"
+"heir respective licenses.<br><br>A desktop bundle ships a <code>THIRD_PARTY_"
+"LICENSES/</code> directory next to the executable (and inside <code>RoomScop"
+"e.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md. Lev"
+"els are digital (dBFS) unless a calibration is provided; RoomScope never rep"
+"orts dB SPL."
+
+msgid ""
+"Nothing has been entered. This picture shows where the two tape measures"
+" go. It is not your room, and no wall is drawn."
+msgstr "還沒有填入資料。這張圖說明两根卷尺量的是哪裡。它不是你的房間，也沒有畫牆。"
+
+msgid ""
+"The ring is every loudspeaker position this measurement allows. The cabi"
+"net is one of them, drawn so the direct path can be seen. No wall is dra"
+"wn."
+msgstr "這個環是本次測量允許的每一個揚聲器位置。箱子是其中之一，畫出來是為了看見直達聲。沒有畫牆。"
+
+msgid ""
+"The line is the loudspeaker distance you entered, and the stand is the m"
+"icrophone height you entered. The loudspeaker is drawn at that same heig"
+"ht only so the tape can be seen; its real height comes from a measuremen"
+"t. No room and no wall are drawn."
+msgstr ""
+"這條線是你填入的揚聲器距離，立桿是你填入的話筒高度。揚聲器畫在同一高度，只是為了看見這根卷尺；它的真實高度要等測量之後才知道。沒有畫房間，也沒有"
+"畫牆。"
+
+msgid ""
+"The line is the loudspeaker distance you entered. Both heights in this p"
+"icture are an example. No room and no wall are drawn."
+msgstr "這條線是你填入的揚聲器距離。圖中两個高度都只是示例。沒有畫房間，也沒有畫牆。"
+
+msgid "reference plane"
+msgstr "參考平面"
+
+msgid "Loudspeaker"
+msgstr "揚聲器"
+
+msgid "Placement picture. Drag to rotate."
+msgstr "擺放示意。拖動可旋轉。"
+
+msgid "Measured geometry. Drag to rotate."
+msgstr "測得的幾何。拖動可旋轉。"
+
+msgid "possible positions"
+msgstr "可能的位置"
+
+msgid "Clarity"
+msgstr "清晰度"
+
+msgid "Early and late energy"
+msgstr "早期與後期能量"
+
+msgid "ratios from the same truncation as the decay; not a room score"
+msgstr "與衰減使用同一次噪聲截斷的比值；不是房間評分"
+
+msgid ""
+"C50 is early energy over late energy at 50 ms (speech). C80 is the same "
+"at 80 ms (music). D50 is the share of energy in the first 50 ms. Centre "
+"time is the energy-weighted average time. Time zero is the detected dire"
+"ct sound. A ratio is reported only when the decay range is at least 20 d"
+"B, and it is not a room score."
+msgstr ""
+"C50 是 50 ms 處的早期能量除以後期能量（語言）。C80 是 80 ms 處的同一比值（音樂）。D50 是前 50 ms 能量占總能量的"
+"份額。重心時間是按能量加權的平均時間。時間零點是測得的直達聲。只有衰減范圍至少有 20 dB 時才給出比值，而且它不是房間評分。"
+
+msgid "Centre time"
+msgstr "重心時間"
+
+msgid "EARLY AND LATE ENERGY"
+msgstr "早期與後期能量"
+
+msgctxt "diagnostic"
+msgid ""
+"Insufficient decay range for an early/late energy ratio: {available:.1f}"
+" dB available, {needed:.0f} dB needed"
+msgstr "早期/後期能量比的衰減范圍不够：現有 {available:.1f} dB，需要 {needed:.0f} dB"
+
+msgctxt "diagnostic"
+msgid ""
+"the noise truncation ({truncation_s:.3f} s) is not after the {split_ms:."
+"0f} ms early window, so the late energy is not measured"
+msgstr "噪聲截斷點（{truncation_s:.3f} s）不在 {split_ms:.0f} ms 早期窗之後，因此沒有測到後期能量"
+
+msgctxt "diagnostic"
+msgid "{metric} {value:.1f} dB vs {other:.1f} dB"
+msgstr "{metric} {value:.1f} dB，對比 {other:.1f} dB"
+
+msgctxt "diagnostic"
+msgid "the response is too short for a centre time"
+msgstr "響應太短，無法計算重心時間"
+
+msgctxt "diagnostic"
+msgid "{metric} {value:.1f} % vs {other:.1f} %"
+msgstr "{metric} {value:.1f} %，對比 {other:.1f} %"
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:.3f} s vs {other:.3f} s"
+msgstr "{metric} {seconds:.3f} s，對比 {other:.3f} s"
+
+msgid ""
+"Early sound is not clearly ahead of the later room sound (C50 {value:.1f"
+"} dB, below {threshold:.0f} dB). For close-miked recording this can blur"
+" the source; move the microphone closer or add absorption, then measure "
+"again. This is one position, not a room grade."
+msgstr ""
+"早期聲沒有明顯壓過後面的房間聲（C50 {value:.1f} dB，低於 {threshold:.0f} dB）。近距離拾音時聲源可能發糊；把"
+"話筒移近，或增加吸聲後再測一次。這是一個位置的結果，不是房間評分。"
+
+msgid ""
+"Late room sound is weak (C80 {value:.1f} dB, above {threshold:.0f} dB). "
+"This is one position, not a room grade."
+msgstr "後期房間聲偏少（C80 {value:.1f} dB，高於 {threshold:.0f} dB）。這是一個位置的結果，不是房間評分。"
+
+msgid ""
+"Speech clarity is low for close vocals (C50 {value:.1f} dB, below {thres"
+"hold:.0f} dB). Diction may blur between words; move the microphone close"
+"r or add absorption. This is one position, not a room grade."
+msgstr ""
+"對人聲近距離拾音來說，語言清晰度偏低（C50 {value:.1f} dB，低於 {threshold:.0f} dB）。字與字之間可能發糊；把"
+"話筒移近，或增加吸聲。這是一個位置的結果，不是房間評分。"
+
+msgid ""
+"Speech clarity is low for voice-over (C50 {value:.1f} dB, below {thresho"
+"ld:.0f} dB). Narration usually wants the first 50 ms to hold more of the"
+" energy; move the microphone closer or add absorption. This is one posit"
+"ion, not a room grade."
+msgstr ""
+"對旁白來說，語言清晰度偏低（C50 {value:.1f} dB，低於 {threshold:.0f} dB）。旁白通常希望前 50 毫秒占更多"
+"能量；把話筒移近，或增加吸聲。這是一個位置的結果，不是房間評分。"
+
+msgid ""
+"Musical clarity is low for acoustic guitar (C80 {value:.1f} dB, below {t"
+"hreshold:.0f} dB). The note may sit in the room rather than in the instr"
+"ument; move the microphone closer or add absorption. This is one positio"
+"n, not a room grade."
+msgstr ""
+"對原聲吉他來說，音樂清晰度偏低（C80 {value:.1f} dB，低於 {threshold:.0f} dB）。音符可能落在房間裡而不是樂器"
+"上；把話筒移近，或增加吸聲。這是一個位置的結果，不是房間評分。"
+
+msgid ""
+"Late room sound is weak for a room microphone (C80 {value:.1f} dB, above"
+" {threshold:.0f} dB). A room microphone usually wants more of the room a"
+"fter 80 ms; move it farther from the source or into a livelier part of t"
+"he room. This is one position, not a room grade."
+msgstr ""
+"作為房間話筒，後期房間聲偏少（C80 {value:.1f} dB，高於 {threshold:.0f} dB）。房間話筒通常希望 80 毫秒之"
+"後還有更多房間聲；把話筒移離聲源，或換到更活的位置。這是一個位置的結果，不是房間評分。"
+
+msgid ""
+"Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {thresh"
+"old:.0f} dB). Some late sound suits a choir, but this much will blur dic"
+"tion. This is one position, not a room grade."
+msgstr ""
+"對合唱來說，語言清晰度偏低（C50 {value:.1f} dB，低於 {threshold:.0f} dB）。合奏可以保留一些後期聲，但到這個"
+"程度吐字會糊。這是一個位置的結果，不是房間評分。"
+

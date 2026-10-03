@@ -141,6 +141,37 @@ def _placeholders(text: str) -> list[tuple[str, str]]:
     )
 
 
+def test_every_catalog_covers_extracted_messages() -> None:
+    """GUI/CLI languages besides English must cover every extracted msgid."""
+    messages, _dynamic = extract_messages()
+    locale_root = SRC / "locale"
+    langs = ("zh_CN", "zh_TW", "ja", "ko", "es", "fr", "de")
+    for lang in langs:
+        catalog = parse_po(locale_root / lang / "LC_MESSAGES" / "roomscope.po")
+        missing = {
+            msgid.replace(CONTEXT_SEPARATOR, " | "): places
+            for msgid, places in messages.items()
+            if not catalog.get(msgid, "").strip()
+        }
+        assert missing == {}, lang
+        mismatched = {
+            msgid: (msgstr, _placeholders(msgid), _placeholders(msgstr))
+            for msgid, msgstr in catalog.items()
+            if _placeholders(msgid.split(CONTEXT_SEPARATOR)[-1]) != _placeholders(msgstr)
+        }
+        assert mismatched == {}, lang
+
+
+def test_new_catalogs_keep_about_license_in_english() -> None:
+    """License sentences stay English in catalogs added after zh_CN."""
+    marker = "Licensed under the Apache License, Version 2.0."
+    about_key = next(key for key in parse_po(CATALOG) if key.startswith("<b>RoomScope {version}"))
+    locale_root = SRC / "locale"
+    for lang in ("zh_TW", "ja", "ko", "es", "fr", "de"):
+        msgstr = parse_po(locale_root / lang / "LC_MESSAGES" / "roomscope.po")[about_key]
+        assert marker in msgstr, lang
+
+
 def test_every_extracted_message_has_a_zh_cn_translation() -> None:
     messages, _dynamic = extract_messages()
     catalog = parse_po(CATALOG)

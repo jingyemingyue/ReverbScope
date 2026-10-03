@@ -88,6 +88,12 @@ packages = ["src/roomscope"]
 "src/roomscope/schemas/project.schema.json" = "roomscope/schemas/project.schema.json"
 "src/roomscope/schemas/sweep-sidecar.schema.json" = "roomscope/schemas/sweep-sidecar.schema.json"
 "src/roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po" = "roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po"
+"src/roomscope/locale/zh_TW/LC_MESSAGES/roomscope.po" = "roomscope/locale/zh_TW/LC_MESSAGES/roomscope.po"
+"src/roomscope/locale/ja/LC_MESSAGES/roomscope.po" = "roomscope/locale/ja/LC_MESSAGES/roomscope.po"
+"src/roomscope/locale/ko/LC_MESSAGES/roomscope.po" = "roomscope/locale/ko/LC_MESSAGES/roomscope.po"
+"src/roomscope/locale/es/LC_MESSAGES/roomscope.po" = "roomscope/locale/es/LC_MESSAGES/roomscope.po"
+"src/roomscope/locale/fr/LC_MESSAGES/roomscope.po" = "roomscope/locale/fr/LC_MESSAGES/roomscope.po"
+"src/roomscope/locale/de/LC_MESSAGES/roomscope.po" = "roomscope/locale/de/LC_MESSAGES/roomscope.po"
 
 [tool.hatch.build.hooks.custom]
 path = "hatch_build.py"

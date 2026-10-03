@@ -15,11 +15,35 @@ from roomscope.models.configuration import SweepSettings
 from tests.conftest import make_rir
 
 
+def test_new_catalogs_load_and_translate_analyze() -> None:
+    samples = {
+        "zh_TW": "分析",
+        "ja": "解析",
+        "ko": "분석",
+        "es": "Analizar",
+        "fr": "Analyser",
+        "de": "Analysieren",
+    }
+    for lang, label in samples.items():
+        try:
+            assert activate(lang) == lang
+            assert _("Analyze") == label
+        finally:
+            activate("en")
+
+
 def test_normalize_and_available_locales() -> None:
     assert normalize_lang("zh-CN") == "zh_CN"
     assert normalize_lang("zh") == "zh_CN"
-    assert "en" in available_locales()
-    assert "zh_CN" in available_locales()
+    assert normalize_lang("zh-TW") == "zh_TW"
+    assert normalize_lang("zh-Hant-TW") == "zh_TW"
+    assert normalize_lang("ja-JP") == "ja"
+    assert normalize_lang("ko") == "ko"
+    assert normalize_lang("es-MX") == "es"
+    assert normalize_lang("fr-FR") == "fr"
+    assert normalize_lang("de-DE") == "de"
+    found = set(available_locales())
+    assert {"en", "zh_CN", "zh_TW", "ja", "ko", "es", "fr", "de"} <= found
 
 
 def test_english_is_source_and_chinese_translates_findings(
@@ -197,9 +221,13 @@ def test_wheel_build_hook_compiles_into_a_temporary_directory(tmp_path) -> None:
     src_messages = Path(locale_dir()) / "zh_CN" / "LC_MESSAGES"
     before = sorted(p.name for p in src_messages.iterdir())
     include = hook.compiled_catalogs(tmp_path)
-    assert list(include.values()) == ["roomscope/locale/zh_CN/LC_MESSAGES/roomscope.mo"]
-    mo = Path(next(iter(include)))
-    assert mo == tmp_path / "zh_CN" / "LC_MESSAGES" / "roomscope.mo"
+    expected = {
+        f"roomscope/locale/{lang}/LC_MESSAGES/roomscope.mo"
+        for lang in ("de", "es", "fr", "ja", "ko", "zh_CN", "zh_TW")
+    }
+    assert set(include.values()) == expected
+    mo = tmp_path / "zh_CN" / "LC_MESSAGES" / "roomscope.mo"
+    assert mo in {Path(path) for path in include}
     with mo.open("rb") as handle:
         compiled = gettext.GNUTranslations(handle)
     assert compiled.info()[SOURCE_HASH_HEADER.lower()] == source_hash(src_messages / "roomscope.po")

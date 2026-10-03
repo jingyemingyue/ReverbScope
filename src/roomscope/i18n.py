@@ -38,6 +38,9 @@ _LOCALE_DIR = Path(__file__).resolve().parent / "locale"
 SOURCE_HASH_HEADER = "X-RoomScope-Source-SHA256"
 #: gettext's separator between a message context and its msgid.
 _CONTEXT_SEPARATOR = "\x04"
+#: Catalog directory names other than English and the two Chinese variants.
+#: Regional tags (``ja_JP``, ``es_MX``) map onto these.
+_LANGUAGE_CATALOGS = frozenset({"de", "es", "fr", "ja", "ko"})
 _current = DEFAULT_LANG
 _translation: gettext.NullTranslations = gettext.NullTranslations()
 
@@ -77,9 +80,19 @@ def normalize_lang(tag: str | None) -> str:
         ("zh_hans", "chinese (simplified)", "chinese_simplified")
     ):
         return "zh_CN"
+    # zh_TW, zh-Hant, zh_HK, zh_MO and Windows "Chinese (Traditional)" → zh_TW.
+    if lower in {"zh_tw", "zh_hk", "zh_mo", "zh_hant", "zh_cht"} or lower.startswith(
+        ("zh_hant", "chinese (traditional)", "chinese_traditional")
+    ):
+        return "zh_TW"
     if "_" in raw:
         lang, _, region = raw.partition("_")
-        return f"{lang.lower()}_{region.upper()}" if region else lang.lower()
+        lang = lang.lower()
+        if lang in _LANGUAGE_CATALOGS:
+            return lang
+        return f"{lang}_{region.upper()}" if region else lang
+    if lower in _LANGUAGE_CATALOGS:
+        return lower
     return raw.lower()
 
 

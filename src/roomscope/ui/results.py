@@ -55,7 +55,16 @@ from roomscope.ui.plots import (
 )
 from roomscope.ui.state import MeasurementState
 from roomscope.ui.theme import apply_report_font, tokens
-from roomscope.ui.widgets import Card, FindingCard, PageHeader, StatTile, label, primary
+from roomscope.ui.widgets import (
+    PAGE_MARGINS,
+    PAGE_SPACING,
+    Card,
+    FindingCard,
+    PageHeader,
+    StatTile,
+    label,
+    primary,
+)
 
 #: Display word and chip tone of a metric validity.
 VALIDITY_DISPLAY = {
@@ -217,8 +226,8 @@ class _Overview(QWidget):
         body = QWidget()
         body.setProperty("page", True)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(12)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(14)
         scroll.setWidget(body)
         outer.addWidget(scroll)
 
@@ -428,8 +437,8 @@ class ResultsPage(QWidget):
         self.state = state
         self.setProperty("page", True)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 20, 28, 14)
-        layout.setSpacing(10)
+        layout.setContentsMargins(*PAGE_MARGINS)
+        layout.setSpacing(PAGE_SPACING)
 
         self.header = PageHeader(_("Results"))
         self.new_button = QPushButton(_("New Measurement"))

@@ -516,7 +516,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--lang",
         default=None,
         metavar="LANG",
-        help=_("UI language (en, zh_CN). Overrides settings and ROOMSCOPE_LANG"),
+        help=_(
+            "UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). "
+            "Overrides settings and ROOMSCOPE_LANG"
+        ),
     )
     parser.add_argument(
         "--format",

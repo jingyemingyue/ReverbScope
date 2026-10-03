@@ -29,7 +29,7 @@ src/roomscope/
   logging_config.py      rotating log under $ROOMSCOPE_HOME
   settings.py            user settings (language, profile, backend, folders)
   i18n.py                gettext setup, locale selection, `_()`
-  locale/                zh_CN/LC_MESSAGES/roomscope.po
+  locale/                zh_CN, zh_TW, ja, ko, es, fr, de catalogs
   models/                data only, no algorithms
     audio.py             AudioSignal (samples, sample_rate, channel selection)
     configuration.py     SweepSettings, AnalysisSettings (validated, immutable)

@@ -22,6 +22,7 @@ from PySide6.QtGui import (
     QPixmap,
 )
 from PySide6.QtWidgets import (
+    QFormLayout,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -33,6 +34,10 @@ from PySide6.QtWidgets import (
 
 from roomscope.i18n import _
 from roomscope.ui.theme import LIGHT_TOKENS, tokens, tone_color
+
+#: Shared page chrome so Home, measure, results and compare line up.
+PAGE_MARGINS = (32, 28, 32, 24)
+PAGE_SPACING = 16
 
 
 def set_banner_text(widget: QLabel, text: str, tone: str = "") -> None:
@@ -58,6 +63,16 @@ def error_box(parent: QWidget | None, title: str, message: str) -> None:
     box.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
     box.addButton(_("OK"), QMessageBox.ButtonRole.AcceptRole)
     box.exec()
+
+
+def tidy_form(form: QFormLayout) -> QFormLayout:
+    """Even label/field columns and the same vertical rhythm on every form."""
+    form.setHorizontalSpacing(16)
+    form.setVerticalSpacing(10)
+    form.setFormAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+    form.setLabelAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+    form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+    return form
 
 
 def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:
@@ -98,7 +113,7 @@ class Card(QFrame):
         super().__init__(parent)
         self.setProperty("card", True)
         self.body = QVBoxLayout(self)
-        self.body.setContentsMargins(16, 14, 16, 14)
+        self.body.setContentsMargins(20, 18, 20, 18)
         self.body.setSpacing(spacing)
 
 
@@ -108,9 +123,9 @@ class PageHeader(QWidget):
     def __init__(self, title: str, subtitle: str = "", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         row = QHBoxLayout(self)
-        row.setContentsMargins(0, 0, 0, 4)
+        row.setContentsMargins(0, 0, 0, 8)
         text = QVBoxLayout()
-        text.setSpacing(2)
+        text.setSpacing(4)
         self.title = label(title, "page-title")
         text.addWidget(self.title)
         self.subtitle = label(subtitle, "subtitle", wrap=True)
@@ -137,11 +152,12 @@ class ModeCard(Card):
         *,
         shortcut: str = "",
     ) -> None:
-        super().__init__(parent, spacing=6)
+        super().__init__(parent, spacing=8)
         self.setProperty("hover", True)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.setMinimumWidth(220)
+        self.setMinimumHeight(196)
         top = QHBoxLayout()
         icon = label(glyph, "pill")
         top.addWidget(icon)
@@ -153,7 +169,7 @@ class ModeCard(Card):
         self.body.addLayout(top)
         self.body.addWidget(label(title, "card-title", wrap=True))
         description = label(text, "hint", wrap=True)
-        description.setMinimumHeight(48)
+        description.setMinimumHeight(56)
         self.body.addWidget(description, 1)
         self.button = primary(QPushButton(action))
         self.button.clicked.connect(self.clicked.emit)
@@ -234,8 +250,8 @@ class FindingCard(QFrame):
             " border-radius: 6px; }"
         )
         row = QHBoxLayout(self)
-        row.setContentsMargins(12, 8, 12, 8)
-        row.setSpacing(10)
+        row.setContentsMargins(14, 10, 14, 10)
+        row.setSpacing(12)
         chip = Chip((severity_label or severity).upper(), tone)
         chip.setFixedWidth(82)
         row.addWidget(chip, 0, Qt.AlignmentFlag.AlignTop)

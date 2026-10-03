@@ -76,7 +76,7 @@ stop-gap for these unsigned pre-release builds.
 | Command line (`roomscope`) | ✅ | ✅ |
 | Room analysis and comparison | ✅ | ✅ |
 | Standalone measurement (plays and records) | ✅ | ✅ |
-| English / 简体中文 | ✅ | ✅ |
+| English / 简体中文 / 繁體中文 / 日本語 / 한국어 / Español / Français / Deutsch | ✅ | ✅ |
 | Python required | No | No |
 | Best for | Most users | Command line, automation, lightweight or headless computers |
 
