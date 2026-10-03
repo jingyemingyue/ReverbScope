@@ -157,8 +157,12 @@ class DeviceInspector(QDialog):
                 str(d.max_input_channels),
                 str(d.max_output_channels),
                 f"{d.default_sample_rate:.0f}",
-                ", ".join(str(r) for r in probe.input_rates) if probed else "…",
-                ", ".join(str(r) for r in probe.output_rates) if probed else "…",
+                ", ".join(str(r) for r in probe.input_rates)
+                if probed or probe.input_rates
+                else "…",
+                ", ".join(str(r) for r in probe.output_rates)
+                if probed or probe.output_rates
+                else "…",
                 _("in {input}, out {output}").format(input=latency_in, output=latency_out),
                 " + ".join(recommended),
                 "; ".join(localize(note) for note in probe.notes),

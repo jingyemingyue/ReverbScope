@@ -155,6 +155,28 @@ Core Audio 用两个回调之间的环形缓冲连接两个设备 [11]。两个�
 * **测量本身：** 一个全双工 `sd.Stream`：float32、256 帧块、设备的默认高延迟，
   “typically more robust” [14]（`portaudio.py`）；`--latency low` 改用默认低延迟。
 
+## 4a. 软件能力目录（不是硬件结果）
+
+这些是 RoomScope 自己的参数和 PortAudio 文档中的默认值。它们补全产品自带的
+设备列表、声道数、测量采样率和主机 API 表。它们**不会**填入
+[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)。
+
+| 来源 | 补全的内容 |
+| --- | --- |
+| `SUPPORTED_SAMPLE_RATES`（`models/configuration.py`） | 44100、48000、88200、96000、176400、192000 Hz：RoomScope 会向 `Pa_IsFormatSupported` 询问的全部采样率 |
+| `FakeBackend.list_devices` | 一台合成设备：**8 入 / 2 出**，默认 48 kHz，上述全部六种采样率。不会播放任何声音。 |
+| `HOST_API_PREFERENCE` / `HOST_API_NOTES`（`audio/inventory.py`） | Windows、macOS、Linux 上每个主机 API 的优先级和测量说明 |
+| `HOST_API_DOCUMENTED_LATENCY` | §2 中 PortAudio 编译默认的低/高延迟（不是测得的往返延迟） |
+
+`roomscope devices --json` 和 `roomscope doctor --json` 每次都会带上
+`supported_sample_rates` 和 `host_api_catalog`。没有 PortAudio 设备的机器
+仍然报告该目录和这六种采样率；在出现接口之前，`devices` 数组保持为空。
+
+独立模式会话现在把同样的参数写入 `session.audio_interface`（名称、主机 API、
+声道数、已公布的采样率）和 `session.bit_depth`（`32-bit float`，即
+`roomscope measure` 写出的 FLOAT 文件）。通用 DAW 模式把这些字段留空：设备链
+由 DAW 掌管。
+
 ## 5. 参考文献
 
 访问日期 2026-09-24。另见 [research/literature.md](research/literature.md)。文献条目保留原文。

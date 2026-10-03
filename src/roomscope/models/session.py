@@ -20,6 +20,8 @@ from roomscope.models.loadutil import drop_unknown, read_schema_version
 from roomscope.version import __version__
 
 SESSION_SCHEMA_VERSION = 1
+#: libsndfile subtype RoomScope writes for Standalone recordings (FLOAT).
+STANDALONE_BIT_DEPTH = "32-bit float"
 
 
 def utc_now_iso() -> str:

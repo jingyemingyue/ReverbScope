@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from roomscope.audio.backend import ChannelPlan, DeviceInfo, StreamOptions, plan_input_channels
-from roomscope.audio.inventory import DeviceInventory
+from roomscope.audio.inventory import DeviceInventory, session_audio_interface
 from roomscope.audio.playrec import (
     DEFAULT_STANDALONE_LEVEL_DBFS,
     SAFE_MAX_LEVEL_DBFS,
@@ -44,7 +44,7 @@ from roomscope.io.wav import load_reference, read_wav, write_sweep_file
 from roomscope.models.audio import AudioSignal
 from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES, AnalysisSettings, SweepSettings
 from roomscope.models.result import AnalysisResult
-from roomscope.models.session import MeasurementSession
+from roomscope.models.session import STANDALONE_BIT_DEPTH, MeasurementSession
 from roomscope.ui.browser import SessionBrowser
 from roomscope.ui.state import MeasurementState
 from roomscope.ui.widgets import (
@@ -649,15 +649,20 @@ class StandalonePage(QWidget):
         self.output_channel.setRange(1, 64)
         self.device_rate = QLabel(_("Device rate: unknown"))
         self.device_rate.setWordWrap(True)
+        self.device_rates = QLabel("")
+        self.device_rates.setWordWrap(True)
         self.input_device.currentIndexChanged.connect(self._update_device_rate)
         self.output_device.currentIndexChanged.connect(self._update_device_rate)
         self.sample_rate.currentIndexChanged.connect(self._update_device_rate)
+        self.input_device.currentIndexChanged.connect(self._update_channel_limits)
+        self.output_device.currentIndexChanged.connect(self._update_channel_limits)
         form.addRow(_("Audio system (host API)"), self.host_api)
         form.addRow(_("Input device"), self.input_device)
         form.addRow(_("Output device"), self.output_device)
         form.addRow(self.refresh_button)
         form.addRow(_("Sample rate"), self.sample_rate)
         form.addRow(self.device_rate)
+        form.addRow(self.device_rates)
         form.addRow(_("Input channel (mic)"), self.input_channel)
         form.addRow(_("Loopback channel (1-based)"), self.loopback_channel)
         form.addRow(_("Output channel (speaker)"), self.output_channel)
@@ -850,6 +855,7 @@ class StandalonePage(QWidget):
         self.wasapi_exclusive.setEnabled(kind == "wasapi")
         self.coreaudio_set_rate.setEnabled(kind == "coreaudio")
         self._update_device_rate()
+        self._update_channel_limits()
 
     def stream_options(self) -> StreamOptions:
         return StreamOptions(
@@ -936,6 +942,34 @@ class StandalonePage(QWidget):
         if mismatch:
             text += _(" — rates differ; the interface may resample")
         self.device_rate.setText(text)
+        rate_sets = [device.supported_sample_rates for device in (inp, out) if device is not None]
+        advertised = next((rates for rates in rate_sets if rates), ())
+        if advertised:
+            self.device_rates.setText(
+                _("Accepted rates: {rates}").format(
+                    rates=", ".join(f"{rate / 1000:g} kHz" for rate in advertised)
+                )
+            )
+        elif self._inventory is not None:
+            self.device_rates.setText(
+                _("RoomScope measurement rates: {rates}").format(
+                    rates=", ".join(
+                        f"{rate / 1000:g} kHz" for rate in self._inventory.supported_sample_rates
+                    )
+                )
+            )
+        else:
+            self.device_rates.setText("")
+
+    def _update_channel_limits(self) -> None:
+        """Spin-box maxima come from the selected device's channel counts."""
+        inp = self._device_for(self.input_device, kind="input")
+        out = self._device_for(self.output_device, kind="output")
+        in_max = inp.max_input_channels if inp is not None and inp.max_input_channels > 0 else 64
+        out_max = out.max_output_channels if out is not None and out.max_output_channels > 0 else 64
+        self.input_channel.setRange(1, in_max)
+        self.loopback_channel.setRange(0, in_max)
+        self.output_channel.setRange(1, out_max)
 
     def current_sweep_settings(self) -> SweepSettings:
         return SweepSettings(
@@ -1030,6 +1064,13 @@ class StandalonePage(QWidget):
             input_channel=plan.microphone_channel,
             loopback_channel=plan.loopback_channel,
             output_channel=int(self.output_channel.value()),
+            audio_interface=session_audio_interface(
+                self._devices,
+                self.input_device.currentData(),
+                self.output_device.currentData(),
+            ),
+            bit_depth=STANDALONE_BIT_DEPTH,
+            sample_rate=self.state.sweep_settings.sample_rate,
             sweep_settings=self.state.sweep_settings,
             analysis_settings=self.state.analysis_settings,
             recording_profile=self.state.profile,

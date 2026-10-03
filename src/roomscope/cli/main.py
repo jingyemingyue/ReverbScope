@@ -71,6 +71,7 @@ from roomscope.models.configuration import (
     AnalysisSettings,
     SweepSettings,
 )
+from roomscope.models.session import STANDALONE_BIT_DEPTH
 
 if TYPE_CHECKING:
     from roomscope.audio.backend import ChannelPlan
@@ -1029,6 +1030,8 @@ def _run_analysis(
     out_dir: Path | None = None,
     hardware: ChannelPlan | None = None,
     output_channel: int | None = None,
+    audio_interface: str = "",
+    bit_depth: str | None = None,
     device_warnings: tuple[str, ...] = (),
     inputs: Sequence[tuple[str, str]] = (),
 ) -> int:
@@ -1078,6 +1081,8 @@ def _run_analysis(
             input_channel=None if hardware is None else hardware.microphone_channel,
             output_channel=output_channel if hardware is not None else None,
             loopback_channel=None if hardware is None else hardware.loopback_channel,
+            audio_interface=audio_interface,
+            bit_depth=bit_depth,
             recording_profile=profile,
         )
         session_path = save_measurement(
@@ -1214,7 +1219,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
     # Device pre-flight, shared with the GUI: one host API for both
     # directions, channels that exist, the rate on the devices the stream will
     # open, and a warning for two devices on two clocks (docs/AUDIO_DEVICES.md).
-    from roomscope.audio.inventory import build_inventory, preflight
+    from roomscope.audio.inventory import build_inventory, preflight, session_audio_interface
 
     inventory = build_inventory(backend, probe_rates=False)
     device_plan = preflight(
@@ -1320,6 +1325,12 @@ def cmd_measure(args: argparse.Namespace) -> int:
         out_dir=out_dir,
         hardware=plan,
         output_channel=int(args.output_channel),
+        audio_interface=session_audio_interface(
+            [probe.device for probe in inventory.devices],
+            device_plan.input_device,
+            device_plan.output_device,
+        ),
+        bit_depth=STANDALONE_BIT_DEPTH,
         device_warnings=recording.device_warnings,
         inputs=[(_("Recording"), Verbatim(str(recording_path)))],
     )

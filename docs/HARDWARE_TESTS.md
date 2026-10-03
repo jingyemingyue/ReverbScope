@@ -40,6 +40,17 @@ Record a cell as `PASS YYYY-MM-DD, RoomScope x.y.z (commit), <OS version>,
 <interface and driver>, #issue` or `FAIL ... #issue`. Do not fill a cell from
 the fake backend, a CI runner or a test.
 
+A cloud VM is not a physical interface. On 2026-10-03 a Linux x86_64 Cursor
+cloud VM ran PortAudio V19.6.0-devel (`libportaudio2` 19.6.0) and listed
+**ALSA (0 devices)** and **OSS (0 devices)**. That is not device
+enumeration of an interface, not sample-rate negotiation, and not a PASS.
+Each empty cell above is still missing a physical machine, a physical
+interface and its real driver. Software parameters that *are* complete
+(and are not hardware results) live in
+[AUDIO_DEVICES.md](AUDIO_DEVICES.md) §4a: RoomScope's six measurement
+rates, the fake backend's 8-in / 2-out device, and the host-API catalog
+with PortAudio's documented default latencies.
+
 ## DAW matrix
 
 One Universal DAW Mode measurement per DAW, following

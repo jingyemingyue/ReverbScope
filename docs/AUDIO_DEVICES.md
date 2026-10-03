@@ -199,6 +199,31 @@ illustration, 50 ppm over 10 s is 0.5 ms, 24 samples at 48 kHz).
   device's default high latency, "typically more robust" [14] (`portaudio.py`);
   `--latency low` selects the default low latency instead.
 
+## 4a. Software capability catalog (not hardware results)
+
+These values are RoomScope's own parameters and PortAudio's documented
+defaults. They fill the device list, channel counts, measurement rates and
+host-API table the product ships. They do **not** fill
+[HARDWARE_TESTS.md](HARDWARE_TESTS.md).
+
+| Source | What it completes |
+| --- | --- |
+| `SUPPORTED_SAMPLE_RATES` (`models/configuration.py`) | 44100, 48000, 88200, 96000, 176400, 192000 Hz — every rate RoomScope will ask `Pa_IsFormatSupported` |
+| `FakeBackend.list_devices` | One synthetic device: **8 in / 2 out**, default 48 kHz, all six rates above. Nothing is played. |
+| `HOST_API_PREFERENCE` / `HOST_API_NOTES` (`audio/inventory.py`) | Rank and measurement note per host API on Windows, macOS and Linux |
+| `HOST_API_DOCUMENTED_LATENCY` | PortAudio compiled default low/high latency from §2 (not a measured round trip) |
+
+`roomscope devices --json` and `roomscope doctor --json` include
+`supported_sample_rates` and `host_api_catalog` on every run. A machine
+with no PortAudio devices still reports the catalog and the six rates;
+its `devices` array stays empty until an interface appears.
+
+Standalone sessions now store the same parameters in
+`session.audio_interface` (name, host API, channel counts, advertised
+rates) and `session.bit_depth` (`32-bit float`, the FLOAT files
+`roomscope measure` writes). Universal DAW Mode leaves those fields empty:
+the DAW owns the device path.
+
 ## 5. References
 
 Accessed 2026-09-24. See also [research/literature.md](research/literature.md).

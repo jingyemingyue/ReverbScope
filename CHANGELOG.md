@@ -5,6 +5,26 @@ All notable changes to RoomScope are documented here. The format follows
 [Semantic Versioning](https://semver.org/). How a version is cut is in
 `docs/RELEASE_PLAN.md`.
 
+## [Unreleased]
+
+### Added
+- **Device capability catalog.** `roomscope devices --json` and
+  `roomscope doctor` now always include RoomScope's six measurement rates
+  (`SUPPORTED_SAMPLE_RATES`) and a host-API catalog built from
+  `HOST_API_KINDS`, `HOST_API_PREFERENCE`, `HOST_API_NOTES` and PortAudio's
+  documented default latencies. The fake backend advertises 8 inputs, 2
+  outputs and those six rates without a PortAudio probe. A machine with no
+  audio devices still reports the catalog; its device list stays empty.
+  Standalone sessions store the same parameters in `audio_interface` and
+  `bit_depth` (`32-bit float`). This is not a hardware-matrix result.
+
+### Changed
+- **Noise-band filter settling.** `settling_samples` grows a short impulse
+  until the unused tail is below the 0.001 energy remainder, then caches
+  the length. Octave-band results match a full 4 s impulse. On this Linux
+  VM, eight bands × three repeats fell from 1.30 s to 0.014 s; a 2 s
+  synthetic `analyze` fell from 0.56 s to 0.12 s (cached) / 0.15 s (cold).
+
 ## [0.5.0b1] - 2026-10-01
 
 Software beta 1. This is **not** 0.5.0: the release plan's 0.5.0 still

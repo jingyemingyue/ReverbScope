@@ -354,6 +354,13 @@ def format_environment_report(report: dict[str, Any]) -> str:
         lines.append(_field(pgettext("environment report", "devices"), len(devices)))
         lines.append(_field(pgettext("environment report", "default input"), default_in or "-"))
         lines.append(_field(pgettext("environment report", "default output"), default_out or "-"))
+        rates = audio.get("supported_sample_rates") or ()
+        lines.append(
+            _field(
+                pgettext("environment report", "measurement rates"),
+                _rates(list(rates)) if rates else "-",
+            )
+        )
         for note in audio.get("notes", []):
             lines.append("  " + _("note: {note}").format(note=localize(note)))
         lines.extend(_format_devices(audio))

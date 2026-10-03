@@ -171,6 +171,10 @@ def apply_bandpass(x: FloatArray, sos: FloatArray, *, time_reversed: bool = True
     return np.asarray(sosfilt(sos, x), dtype=np.float64)
 
 
+#: ``(sample_rate, energy_fraction, max_s, sos.tobytes())`` -> settling length.
+_SETTLING_CACHE: dict[tuple[int, float, float, bytes], int] = {}
+
+
 def settling_samples(
     sos: FloatArray,
     sample_rate: int,
@@ -185,15 +189,36 @@ def settling_samples(
     own impulse response has delivered ``energy_fraction`` of its energy. The
     remaining fraction biases a measured level by
     ``10*log10(energy_fraction)`` at most (0.004 dB at the default 0.999).
+
+    The impulse is grown from a short seed until the second half of the
+    computed response holds less than ``1 - energy_fraction`` of the energy
+    (or ``max_s`` is reached), then the result is cached. The 0.999 crossing
+    matches a full ``max_s`` impulse on the octave-band filters RoomScope uses.
     """
-    n = max(16, round(max_s * sample_rate))
-    impulse = np.zeros(n, dtype=np.float64)
-    impulse[0] = 1.0
-    energy = np.cumsum(np.asarray(sosfilt(sos, impulse), dtype=np.float64) ** 2)
-    total = float(energy[-1])
-    if total <= 0.0:
-        return 0
-    return int(np.searchsorted(energy, energy_fraction * total)) + 1
+    sections = np.asarray(sos, dtype=np.float64)
+    key = (sample_rate, float(energy_fraction), float(max_s), sections.tobytes())
+    cached = _SETTLING_CACHE.get(key)
+    if cached is not None:
+        return cached
+    max_n = max(16, round(max_s * sample_rate))
+    n = max(16, min(max_n, round(0.125 * sample_rate)))
+    result = 0
+    while True:
+        impulse = np.zeros(n, dtype=np.float64)
+        impulse[0] = 1.0
+        energy = np.cumsum(np.asarray(sosfilt(sections, impulse), dtype=np.float64) ** 2)
+        total = float(energy[-1])
+        if total <= 0.0:
+            result = 0
+            break
+        half = n // 2
+        tail = total - float(energy[half - 1]) if half else total
+        if tail <= (1.0 - energy_fraction) * total or n >= max_n:
+            result = int(np.searchsorted(energy, energy_fraction * total)) + 1
+            break
+        n = min(max_n, n * 2)
+    _SETTLING_CACHE[key] = result
+    return result
 
 
 def band_level_samples(

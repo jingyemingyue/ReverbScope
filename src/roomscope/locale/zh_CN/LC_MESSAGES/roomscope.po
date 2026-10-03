@@ -2480,6 +2480,19 @@ msgctxt "environment report"
 msgid "default output"
 msgstr "默认输出"
 
+msgctxt "environment report"
+msgid "measurement rates"
+msgstr "测量采样率"
+
+msgid "Documented latency"
+msgstr "文档中的延迟"
+
+msgid "Accepted rates: {rates}"
+msgstr "可接受采样率：{rates}"
+
+msgid "RoomScope measurement rates: {rates}"
+msgstr "RoomScope 测量采样率：{rates}"
+
 msgid "note: {note}"
 msgstr "注：{note}"
 

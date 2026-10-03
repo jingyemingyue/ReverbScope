@@ -158,3 +158,33 @@ def test_fractional_octave_smooth_preserves_constant_and_reduces_spike() -> None
 def test_fractional_octave_smooth_shape_mismatch() -> None:
     with pytest.raises(ConfigurationError):
         fractional_octave_smooth(np.arange(10.0), np.arange(9.0), 3)
+
+
+def _settling_full_impulse(
+    sos: np.ndarray, sample_rate: int, *, energy_fraction: float = 0.999, max_s: float = 4.0
+) -> int:
+    """The previous implementation: a single ``max_s`` impulse, no cache."""
+    from scipy.signal import sosfilt
+
+    n = max(16, round(max_s * sample_rate))
+    impulse = np.zeros(n, dtype=np.float64)
+    impulse[0] = 1.0
+    energy = np.cumsum(np.asarray(sosfilt(sos, impulse), dtype=np.float64) ** 2)
+    total = float(energy[-1])
+    if total <= 0.0:
+        return 0
+    return int(np.searchsorted(energy, energy_fraction * total)) + 1
+
+
+def test_settling_samples_matches_a_full_max_s_impulse() -> None:
+    from roomscope.core.filters import _SETTLING_CACHE
+    from roomscope.models.configuration import DEFAULT_OCTAVE_BANDS_HZ
+
+    _SETTLING_CACHE.clear()
+    for sample_rate in (44100, 48000):
+        for center in DEFAULT_OCTAVE_BANDS_HZ:
+            sos = bandpass_sos(iec_band(center, 1), sample_rate)
+            assert settling_samples(sos, sample_rate) == _settling_full_impulse(sos, sample_rate)
+    # A second pass hits the cache and must stay identical.
+    sos = bandpass_sos(iec_band(1000.0, 1), 48000)
+    assert settling_samples(sos, 48000) == _settling_full_impulse(sos, 48000)

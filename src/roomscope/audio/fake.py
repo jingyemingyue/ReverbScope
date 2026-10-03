@@ -25,6 +25,7 @@ from roomscope.audio.backend import (
 from roomscope.errors import AudioDeviceError, ConfigurationError, MeasurementCancelledError
 from roomscope.i18n import _
 from roomscope.models.audio import AudioSignal, FloatArray
+from roomscope.models.configuration import DEFAULT_SAMPLE_RATE, SUPPORTED_SAMPLE_RATES
 
 DECAY_CONSTANT = 3.0 * np.log(10.0) * 2.0
 
@@ -88,9 +89,11 @@ class FakeBackend:
                 host_api="fake",
                 max_input_channels=8,
                 max_output_channels=2,
-                default_sample_rate=48000.0,
+                default_sample_rate=float(DEFAULT_SAMPLE_RATE),
                 is_default_input=True,
                 is_default_output=True,
+                host_api_index=0,
+                supported_sample_rates=SUPPORTED_SAMPLE_RATES,
             )
         ]
 

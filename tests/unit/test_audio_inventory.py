@@ -21,8 +21,11 @@ from roomscope.audio.inventory import (
     preflight,
     resolve_duplex,
     separate_clocks_warning,
+    session_audio_interface,
 )
 from roomscope.errors import AudioDeviceError, ConfigurationError
+from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES
+from roomscope.models.session import STANDALONE_BIT_DEPTH
 
 HOST_APIS = [
     {"name": "MME", "devices": [0, 1, 2], "default_input_device": 0, "default_output_device": 1},
@@ -331,6 +334,13 @@ def test_fake_backend_default_devices_resolve(tmp_path: Any) -> None:
     measure = ["--backend", "fake", "measure", "--input-device", "0", "--out", str(tmp_path)]
     code = main([*measure, "--duration", "1", "--post-silence", "1"])
     assert code == 0
+    import json
+
+    session = json.loads((tmp_path / "session.json").read_text(encoding="utf-8"))
+    assert "RoomScope fake interface" in session["audio_interface"]
+    assert "8 in / 2 out" in session["audio_interface"]
+    assert "44100" in session["audio_interface"]
+    assert session["bit_depth"] == STANDALONE_BIT_DEPTH
 
 
 def test_separate_clocks_are_warned() -> None:
@@ -340,6 +350,35 @@ def test_separate_clocks_are_warned() -> None:
     assert separate_clocks_warning(devices, 0, 4) is None
     warning = separate_clocks_warning(devices, 5, 7)
     assert warning is not None and "separate sample clocks" in warning
+
+
+def test_inventory_includes_software_capability_catalog(windows: WindowsBackend) -> None:
+    inventory = build_inventory(windows, platform="win32", probe_rates=False)
+    assert inventory.supported_sample_rates == SUPPORTED_SAMPLE_RATES
+    kinds = {entry.kind for entry in inventory.host_api_catalog}
+    assert {"wasapi", "coreaudio", "alsa", "fake", "mme"}.issubset(kinds)
+    wasapi = next(entry for entry in inventory.host_api_catalog if entry.kind == "wasapi")
+    assert wasapi.present is True
+    assert wasapi.documented_low_latency_s == 0.010
+    coreaudio = next(entry for entry in inventory.host_api_catalog if entry.kind == "coreaudio")
+    assert coreaudio.present is False
+    data = inventory.to_dict()
+    assert data["supported_sample_rates"] == list(SUPPORTED_SAMPLE_RATES)
+    assert any(entry["kind"] == "alsa" for entry in data["host_api_catalog"])
+
+
+def test_fake_device_advertises_supported_rates_without_probing() -> None:
+    from roomscope.audio.fake import FakeBackend
+
+    inventory = build_inventory(FakeBackend(), probe_rates=False)
+    probe = inventory.devices[0]
+    assert probe.device.max_input_channels == 8
+    assert probe.device.max_output_channels == 2
+    assert probe.device.supported_sample_rates == SUPPORTED_SAMPLE_RATES
+    assert probe.input_rates == SUPPORTED_SAMPLE_RATES
+    assert probe.output_rates == SUPPORTED_SAMPLE_RATES
+    assert inventory.rates_probed == ()
+    assert session_audio_interface([probe.device], 0, 0).startswith("RoomScope fake interface")
 
 
 def test_json_inventory_round_trips(windows: WindowsBackend) -> None:

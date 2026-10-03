@@ -1117,6 +1117,10 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
                 (pgettext("environment report", "devices"), str(len(devices))),
                 (pgettext("environment report", "default input"), default_in or c.dash()),
                 (pgettext("environment report", "default output"), default_out or c.dash()),
+                (
+                    pgettext("environment report", "measurement rates"),
+                    rates_text(audio.get("supported_sample_rates") or (), c),
+                ),
             ]
         )
         for note in audio.get("notes", []):
@@ -1157,6 +1161,20 @@ def _recommended(probe: dict[str, Any]) -> str:
     return ""
 
 
+def _device_rate_cell(c: Console, device: dict[str, Any], probe: dict[str, Any]) -> str:
+    """Default rate, plus backend-advertised or probed rates when they exist."""
+    default = rate_text(float(device.get("default_sample_rate") or 0.0))
+    advertised = tuple(int(rate) for rate in device.get("supported_sample_rates") or ())
+    known = tuple(int(rate) for rate in probe.get("input_rates") or probe.get("output_rates") or ())
+    extra = advertised or known
+    if not extra:
+        return default
+    listed = rates_text(extra, c)
+    if listed == default or default in listed:
+        return listed
+    return f"{default}; {listed}"
+
+
 def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> list[str]:
     """Devices as a table, or one block per device when the rates were probed."""
     if not probes:
@@ -1172,7 +1190,7 @@ def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> 
                     device["host_api"],
                     str(device["max_input_channels"] or c.dash()),
                     str(device["max_output_channels"] or c.dash()),
-                    rate_text(device["default_sample_rate"]),
+                    _device_rate_cell(c, device, probe),
                     _default_marks(device, short=True),
                 ]
             )
@@ -1196,7 +1214,7 @@ def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> 
             _("{inputs} in / {outputs} out").format(
                 inputs=device["max_input_channels"], outputs=device["max_output_channels"]
             ),
-            _("default {rate}").format(rate=rate_text(device["default_sample_rate"])),
+            _("default {rate}").format(rate=_device_rate_cell(c, device, probe)),
         ]
         marks = _default_marks(device)
         if marks:
@@ -1229,6 +1247,7 @@ def render_devices(console: Console, devices: Sequence[DeviceInfo]) -> str:
                 "default_sample_rate": d.default_sample_rate,
                 "is_default_input": d.is_default_input,
                 "is_default_output": d.is_default_output,
+                "supported_sample_rates": list(d.supported_sample_rates),
             }
         }
         for d in devices
@@ -1250,6 +1269,14 @@ def render_inventory(console: Console, inventory: DeviceInventory) -> str:
     if inventory.portaudio_version:
         lines.append("")
         lines += console.fields([("PortAudio", inventory.portaudio_version)])
+    lines += console.fields(
+        [
+            (
+                pgettext("environment report", "measurement rates"),
+                rates_text(data.get("supported_sample_rates") or (), console),
+            )
+        ]
+    )
     lines += console.section(
         _("Devices"),
         _("sample rates accepted for 1 channel; nothing was played")
@@ -1283,7 +1310,34 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
     for api in inventory.host_apis:
         if api.note:
             lines += console.status("info", f"{api.name}: {localize(api.note)}")
+    if inventory.host_api_catalog:
+        lines.append("")
+        rows = [
+            [
+                entry.name,
+                console.dash() if entry.rank is None else str(entry.rank + 1),
+                _catalog_latency(console, entry),
+            ]
+            for entry in inventory.host_api_catalog
+        ]
+        lines += console.table(
+            [_("Host API"), _("Preference"), _("Documented latency")],
+            rows,
+            align="llr",
+            title_columns=1,
+        )
     return console.fit("\n".join(lines))
+
+
+def _catalog_latency(console: Console, entry: Any) -> str:
+    low, high = entry.documented_low_latency_s, entry.documented_high_latency_s
+    if low is None and high is None:
+        return entry.documented_latency_note or console.dash()
+
+    def _ms(value: float | None) -> str:
+        return console.dash() if value is None else f"{value * 1000:g} ms"
+
+    return f"{_ms(low)} / {_ms(high)}"
 
 
 # --- Sweep -----------------------------------------------------------------------------

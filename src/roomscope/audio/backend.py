@@ -51,6 +51,10 @@ class DeviceInfo:
     default_high_input_latency_s: float | None = None
     default_low_output_latency_s: float | None = None
     default_high_output_latency_s: float | None = None
+    #: Rates this backend already knows the device accepts (Hz). Empty means
+    #: "unknown until ``check_sample_rate`` / ``Pa_IsFormatSupported``".
+    #: The fake backend fills this from :data:`SUPPORTED_SAMPLE_RATES`.
+    supported_sample_rates: tuple[int, ...] = ()
 
     @property
     def is_input(self) -> bool:
