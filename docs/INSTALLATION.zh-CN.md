@@ -4,9 +4,14 @@
 
 > 本文是 [INSTALLATION.md](INSTALLATION.md) 的简体中文版本；两者不一致时，以英文版为准。
 
-**下载页面：** <https://github.com/jingyemingyue/RoomScope/releases>
+**下载页面（稳定 beta）：** <https://github.com/jingyemingyue/RoomScope/releases>
 
-打开这个页面，选最上方的最新版本，展开 **Assets**，只下载适合你电脑的那一个文件。RoomScope 有两个版本，
+RoomScope 提供**两条 beta**。两条都还是 beta，都不是硬件验证版本。
+
+* **稳定 beta** — 更少缺陷、功能面更窄。该页上最近一次已发布的预发布（`0.5.0b1`）。除非有人请你试预览，否则用这一条。
+* **预览 beta** — 功能更强，可能不稳定。本 pull request（跟随 DAW、导入扫描、脉冲响应频谱、文档站 SEO）留在预览线路。**没有发布预览版 GitHub Release。**
+
+打开下载页面，选最上方的最新**稳定**预发布，展开 **Assets**，只下载适合你电脑的那一个文件。RoomScope 有两个版本，
 都不需要 Python 或 Git：
 
 * **桌面版（Desktop Edition）**——带窗口和图表的应用程序，同时包含命令行。适合大多数人。

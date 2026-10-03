@@ -8,6 +8,11 @@ All notable changes to RoomScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Two download betas.** The README and installation pages offer a
+  **stable beta** (fewer bugs, narrower feature set: last published
+  pre-release `0.5.0b1`) and a **preview beta** (stronger features, may
+  be unstable: this development line). Both are still beta. No GitHub
+  Release was published for the preview track.
 - **Docs site SEO files.** `scripts/build_docs_site.py` writes a title,
   meta description, canonical URL, and Open Graph title/description on
   every page, plus `sitemap.xml` and a `robots.txt` that allows

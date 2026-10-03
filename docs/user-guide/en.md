@@ -10,7 +10,12 @@ This page is the English guide. The Chinese translation is
 
 ## Install
 
-Download from the project's
+RoomScope is offered as **two betas** (both still beta). **Stable beta**
+is the last published pre-release (fewer bugs, narrower features).
+**Preview beta** is this development line (stronger features, may be
+unstable); no preview Release was published.
+
+Download the **stable beta** from the project's
 [Releases page](https://github.com/jingyemingyue/RoomScope/releases).
 Step-by-step instructions for every system, updating, uninstalling and
 troubleshooting are in [INSTALLATION.md](../INSTALLATION.md); this section is

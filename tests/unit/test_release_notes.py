@@ -176,6 +176,20 @@ def test_the_windows_program_names_come_from_the_bundle_spec() -> None:
     assert "GUI_LAUNCHER_STEM" in spec or '"roomscope-gui"' in spec
 
 
+@pytest.mark.parametrize("doc", DOWNLOAD_DOCS, ids=lambda p: p.name)
+def test_download_docs_offer_stable_and_preview_betas(doc: Path) -> None:
+    text = doc.read_text(encoding="utf-8")
+    if "zh-CN" in doc.name:
+        assert "稳定 beta" in text and "预览 beta" in text
+        assert "两条" in text and "beta" in text
+        assert "没有发布" in text
+    else:
+        assert "Stable beta" in text and "Preview beta" in text
+        assert "two betas" in text
+        assert "No preview Release was published" in text
+    assert "beta" in text.lower()
+
+
 def test_readme_offers_the_download_before_the_developer_install() -> None:
     for name in ("README.md", "README.zh-CN.md"):
         text = (ROOT / name).read_text(encoding="utf-8")

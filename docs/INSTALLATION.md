@@ -2,11 +2,21 @@
 
 **English** | [简体中文](INSTALLATION.zh-CN.md)
 
-**Download page:** <https://github.com/jingyemingyue/RoomScope/releases>
+**Download page (stable beta):** <https://github.com/jingyemingyue/RoomScope/releases>
 
-Open that page, take the newest release at the top, expand **Assets** and
-download the one file for your computer. RoomScope comes in two editions;
-neither needs Python or Git:
+RoomScope is offered as **two betas**. Both are still beta. Neither is
+the hardware release.
+
+* **Stable beta** — fewer bugs, narrower feature set. The last published
+  pre-release on that page (`0.5.0b1`). Use this unless you were asked
+  to try preview.
+* **Preview beta** — stronger features, may be unstable. This pull
+  request (DAW follow, scan import, IR spectrum, docs-site SEO) stays
+  on the preview line. **No preview Release was published.**
+
+Open the download page, take the newest **stable** pre-release at the
+top, expand **Assets** and download the one file for your computer.
+RoomScope comes in two editions; neither needs Python or Git:
 
 * **Desktop Edition** — the app with windows and charts, plus the command
   line. For most people.

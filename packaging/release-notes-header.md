@@ -3,6 +3,11 @@
 **Beta 1, for testing.** RoomScope measures a recording room
 with a sine sweep and tells you whether a microphone position is usable —
 next to any DAW, or on its own. Free and open source (Apache-2.0).
+RoomScope is offered as **two betas** (both still beta): this published
+pre-release is the **stable beta** (fewer bugs, narrower feature set).
+The **preview beta** (stronger features, may be unstable) is the
+development line and is not this file unless the release title says
+Preview.
 
 > **This is beta 1 of the software, not the 0.5.0 hardware release.**
 > Current builds are unsigned, and **hardware validation has not started**:

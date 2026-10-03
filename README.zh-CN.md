@@ -16,13 +16,20 @@
 
 ## 下载
 
-### **[→ 从 GitHub Releases 下载](https://github.com/jingyemingyue/RoomScope/releases)**
+RoomScope 提供**两条 beta**。两条都还是 beta，都不是硬件验证版本。
 
-**状态：0.5.0 beta 1（预发布）**——免费、开源，供测试使用。**这不是硬件验证版本：**
+| 线路 | 你会得到什么 | 从哪里来 |
+| --- | --- | --- |
+| **稳定 beta** | 更少缺陷、功能面更窄。最近一次已发布的预发布（`0.5.0b1`）。 | [GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases) |
+| **预览 beta** | 功能更强，可能不稳定。本 pull request（跟随 DAW、导入扫描、脉冲响应频谱、文档站 SEO）。 | 本分支 / PR。**没有发布预览版 GitHub Release。** |
+
+### **[→ 从 GitHub Releases 下载稳定 beta](https://github.com/jingyemingyue/RoomScope/releases)**
+
+**状态：两条线路都是 beta。** 稳定线路是该页上的 **0.5.0 beta 1**。预览线路是当前开发线，尚未作为 GitHub Release 发布。**这不是硬件验证版本：**
 还没有通过任何真实音频接口或 DAW 做过测量，请把所有数字视为未经验证
 （欢迎[帮助测试](#帮助测试-beta-1)）。两个版本都不需要安装 Python。
 
-先选**一个版本**，再在最新发布版本的 **Assets** 中选择适合你电脑的文件：
+先选**一个版本**，再在最新**稳定**预发布的 **Assets** 中选择适合你电脑的文件：
 
 ### 🖥 桌面版（Desktop Edition）
 

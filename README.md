@@ -15,15 +15,25 @@ microphone position is usable — next to any DAW, or on its own.**
 
 ## Download
 
-### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases)**
+RoomScope is offered as **two betas**. Both are still beta. Neither is
+the hardware release.
 
-**Status: 0.5.0 beta 1 (pre-release)** — free, open source, for testing. **This is not
-the hardware release:** nothing has been measured through a real audio
-interface or DAW yet, so treat the numbers as unvalidated
-([help test it](#help-test-beta-1)). Neither edition needs Python.
+| Track | What you get | Where |
+| --- | --- | --- |
+| **Stable beta** | Fewer bugs, narrower feature set. Last published pre-release (`0.5.0b1`). | [GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases) |
+| **Preview beta** | Stronger features, may be unstable. This pull request (DAW follow, scan import, IR spectrum, docs-site SEO). | This branch / PR. **No preview Release was published.** |
+
+### **[→ Download the stable beta from GitHub Releases](https://github.com/jingyemingyue/RoomScope/releases)**
+
+**Status: both tracks are beta.** Stable is **0.5.0 beta 1** on that page.
+Preview is this development line; it has not been published as a GitHub
+Release. **This is not the hardware release:** nothing has been measured
+through a real audio interface or DAW yet, so treat the numbers as
+unvalidated ([help test it](#help-test-beta-1)). Neither edition needs
+Python.
 
 Choose **one edition**, then the file for your computer under **Assets** on
-the newest release:
+the newest **stable** pre-release:
 
 ### 🖥 Desktop Edition
 

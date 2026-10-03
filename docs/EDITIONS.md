@@ -8,6 +8,13 @@ analysis (`roomscope.core.pipeline.analyze`), reads and writes the same
 session files and reports the same numbers. The Chinese translation is
 [EDITIONS.zh-CN.md](EDITIONS.zh-CN.md).
 
+Downloads are also offered as **two betas** (both still beta): a
+**stable beta** (fewer bugs, narrower feature set) on the published
+[Releases page](https://github.com/jingyemingyue/RoomScope/releases), and
+a **preview beta** (stronger features, may be unstable) on this
+development line. No preview Release was published. See
+[INSTALLATION.md](INSTALLATION.md).
+
 ## Desktop Edition and Terminal Edition
 
 | | Desktop Edition | Terminal Edition |

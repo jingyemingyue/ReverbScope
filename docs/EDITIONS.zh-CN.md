@@ -4,6 +4,8 @@
 
 RoomScope 只有一套代码。它提供两个可下载的**版本**，而且任何一份都可以显示或隐藏**开发者工具**。所有形式运行同一套分析（`roomscope.core.pipeline.analyze`），读写同样的会话文件，给出同样的数字。本文是 [EDITIONS.md](EDITIONS.md) 的简体中文翻译；两者不一致时以英文版为准。
 
+下载也分成**两条 beta**（都还是 beta）：[Releases 页面](https://github.com/jingyemingyue/RoomScope/releases)上的**稳定 beta**（更少缺陷、功能面更窄），以及当前开发线上的**预览 beta**（功能更强，可能不稳定）。没有发布预览版 GitHub Release。见 [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md)。
+
 ## 桌面版与终端版
 
 | | 桌面版（Desktop Edition） | 终端版（Terminal Edition） |

@@ -8,7 +8,9 @@ RoomScope 用来测量录音房间，让你听清房间对近距离拾音的声�
 
 ## 安装
 
-从项目的 [Releases 页面](https://github.com/jingyemingyue/RoomScope/releases)下载。各系统的分步说明、更新、卸载和故障排查见 [INSTALLATION.zh-CN.md](../INSTALLATION.zh-CN.md)，本节是简要版。每个 Release 都附有一个 `SHA256SUMS` 文件，请与下载文件的校验值比对（macOS / Linux：`shasum -a 256 <file>`；PowerShell：`Get-FileHash <file>`）。
+RoomScope 提供**两条 beta**（都还是 beta）。**稳定 beta** 是最近一次已发布的预发布（更少缺陷、功能面更窄）。**预览 beta** 是当前开发线（功能更强，可能不稳定）；没有发布预览版 GitHub Release。
+
+从项目的 [Releases 页面](https://github.com/jingyemingyue/RoomScope/releases)下载**稳定 beta**。各系统的分步说明、更新、卸载和故障排查见 [INSTALLATION.zh-CN.md](../INSTALLATION.zh-CN.md)，本节是简要版。每个 Release 都附有一个 `SHA256SUMS` 文件，请与下载文件的校验值比对（macOS / Linux：`shasum -a 256 <file>`；PowerShell：`Get-FileHash <file>`）。
 
 RoomScope 有两个版本。**桌面版**就是本指南介绍的应用程序，同时包含命令行；**终端版**只有命令行（没有窗口和图表），
 适合脚本、服务器和没有图形桌面的电脑。
