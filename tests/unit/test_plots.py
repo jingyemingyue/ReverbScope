@@ -107,3 +107,34 @@ def test_plot_chrome_follows_color_scheme(short_sweep, monkeypatch) -> None:
     monkeypatch.setenv("ROOMSCOPE_COLOR_SCHEME", "light")
     style_figure(fig)
     assert to_hex(fig.patch.get_facecolor()[:3]) == plot_colors()["bg"]
+
+
+def test_decay_legend_gives_the_reason_a_band_has_no_rt60() -> None:
+    """Every band without an RT60 was labelled "insufficient range", also the
+    ones outside the sweep (the table said n/a)."""
+    from roomscope.models.configuration import SweepSettings
+
+    sweep = SweepSettings(duration_s=2.0, post_silence_s=1.5, start_hz=300.0)
+    result = analyze(
+        synthetic_recording(sweep, make_rir(48000, rt60_s=0.4), noise_rms=1e-5),
+        Reference.from_settings(sweep),
+    )
+    fig = Figure()
+    plot_decay(fig, result)
+    labels = fig.axes[0].get_legend_handles_labels()[1]
+    low = next(label for label in labels if label.startswith("63 Hz"))
+    assert "outside the sweep's range" in low
+
+
+def test_placement_surfaces_have_names_not_ids() -> None:
+    from roomscope.i18n import activate
+    from roomscope.labels import surface_text
+
+    assert surface_text("lower_plane") == "Reference plane"
+    assert surface_text("upper_plane") == "Plane above the devices"
+    assert surface_text(None) == ""
+    activate("zh_CN")
+    try:
+        assert surface_text("lower_plane") == "参考平面"
+    finally:
+        activate("en")

@@ -446,6 +446,10 @@ def check_channels(
             return by_index.get(index)
         return next((d for d in devices if getattr(d, default_attr)), None)
 
+    if output_channel < 1 or any(channel < 1 for channel in input_channels):
+        # Otherwise only the stream (after the sweep file is written and the
+        # take has begun) would notice.
+        raise ConfigurationError(_("channels are 1-based and must be >= 1"))
     inp = pick(input_device, "is_default_input")
     out = pick(output_device, "is_default_output")
     if inp is not None and input_channels and max(input_channels) > inp.max_input_channels:

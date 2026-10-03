@@ -305,35 +305,48 @@ def parse_po(path: Path) -> dict[str, str]:
     """Parse a gettext ``.po`` file into msgid → msgstr (empty msgstr skipped).
 
     An entry with a ``msgctxt`` is keyed ``"<context>\\x04<msgid>"``, the
-    form :meth:`gettext.GNUTranslations.pgettext` looks up.
+    form :meth:`gettext.GNUTranslations.pgettext` looks up. An entry flagged
+    ``#, fuzzy`` is skipped, as ``msgfmt`` skips it.
     """
     catalog: dict[str, str] = {}
     msgctxt = ""
     msgid = ""
     msgstr = ""
     collecting: str | None = None
+    started = False
+    fuzzy = False
 
     def _commit() -> None:
-        nonlocal msgctxt, msgid, msgstr
-        if msgid and msgstr:
+        nonlocal msgctxt, msgid, msgstr, started, fuzzy
+        if msgid and msgstr and not fuzzy:
             key = f"{msgctxt}{_CONTEXT_SEPARATOR}{msgid}" if msgctxt else msgid
             catalog[key] = msgstr
+        if started:
+            fuzzy = False
+        started = False
         msgctxt = ""
         msgid = ""
         msgstr = ""
 
     for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
-        if not line or line.startswith("#"):
+        if not line:
+            continue
+        if line.startswith("#"):
+            if line.startswith("#,") and "fuzzy" in line:
+                _commit()  # the entry above is complete; the flag is for the next
+                fuzzy = True
             continue
         if line.startswith("msgctxt "):
             _commit()
+            started = True
             collecting = "ctxt"
             msgctxt = _unquote(line[8:])
             continue
         if line.startswith("msgid "):
             if collecting != "ctxt":
                 _commit()
+            started = True
             collecting = "id"
             msgid = _unquote(line[6:])
             msgstr = ""
@@ -492,11 +505,15 @@ def _is_null(translation: gettext.NullTranslations) -> bool:
     return translation.__class__ is gettext.NullTranslations
 
 
+_ESCAPES = {"n": "\n", "t": "\t", '"': '"', "\\": "\\"}
+
+
 def _unquote(fragment: str) -> str:
     text = fragment.strip()
     if text.startswith('"') and text.endswith('"'):
         text = text[1:-1]
-    return text.replace(r"\n", "\n").replace(r"\t", "\t").replace(r"\"", '"').replace(r"\\", "\\")
+    # One pass, so that "\\n" (a backslash, then n) is not read as a newline.
+    return re.sub(r"\\(.)", lambda m: _ESCAPES.get(m[1], m[0]), text)
 
 
 class _PoTranslations(gettext.NullTranslations):

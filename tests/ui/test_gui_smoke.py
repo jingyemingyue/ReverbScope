@@ -493,3 +493,93 @@ def test_compare_metrics_have_readable_names() -> None:
     assert status_text("appeared") == "appeared"
     assert validity_text(Validity.NOT_COMPARABLE) == ("not comparable", "warn")
     assert validity_text(Validity.OUTSIDE_EXCITATION)[0] == "outside the sweep's range"
+
+
+@pytest.fixture
+def held_take(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
+    """The fake interface plays until the test releases it (or Stop is pressed)."""
+    import threading
+
+    from roomscope.audio.fake import FakeBackend
+    from roomscope.errors import MeasurementCancelledError
+
+    release = threading.Event()
+    real = FakeBackend.play_and_record
+
+    def held(self, *args, cancel=None, **kwargs):  # type: ignore[no-untyped-def]
+        while not release.wait(0.01):
+            if cancel is not None and cancel.is_set():
+                raise MeasurementCancelledError("stopped")
+        return real(self, *args, cancel=cancel, **kwargs)
+
+    monkeypatch.setattr(FakeBackend, "play_and_record", held)
+    return release
+
+
+def test_a_running_take_cannot_be_replaced_and_closing_waits_for_it(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, held_take
+) -> None:
+    """Refresh devices (button, Ctrl+2, Back -> Demo) re-enabled Run during a
+    take; a second Run dropped the only reference to the running QThread and
+    the process aborted. Closing the window mid-take aborted it too."""
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    page.run_button.click()
+    first = page._measure_worker
+    assert first is not None and first.isRunning()
+    assert not page.back_button.isEnabled()
+    page.refresh_devices()
+    assert not page.run_button.isEnabled()
+    page.start_measurement()  # the Run shortcut while busy
+    assert page._measure_worker is first
+    window.close()
+    assert not first.isRunning()
+
+
+def test_opening_a_session_forgets_the_previous_take(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
+) -> None:
+    """Saving the opened session wrote the earlier take as its recording.wav."""
+    import numpy as np
+
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.audio import AudioSignal
+    from roomscope.models.session import MeasurementSession
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    recording = synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5)
+    result = analyze(recording, Reference.from_settings(short_sweep))
+    folder = tmp_path / "studio-a"
+    save_measurement(folder, MeasurementSession(room_name="Studio A"), result, copy_recording=False)
+    window = MainWindow()
+    window.show()
+    window.state.recording = AudioSignal(np.full(4800, 0.1), 48000)
+    window.open_session_path(folder)
+    assert window.state.recording is None
+    assert window.state.session.room_name == "Studio A"
+    window.close()
+
+
+def test_home_selects_two_sessions_for_compare_and_settings_reach_the_gui(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from PySide6.QtWidgets import QAbstractItemView
+
+    from roomscope.settings import UserSettings, save_settings
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    save_settings(UserSettings(default_profile="vocal"))
+    window = MainWindow()
+    assert (
+        window.home.browser.list.selectionMode()
+        is QAbstractItemView.SelectionMode.ExtendedSelection
+    )
+    assert window.daw.profile.currentData() == "vocal"
+    assert window.standalone.profile.currentData() == "vocal"
+    window.close()

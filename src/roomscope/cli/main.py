@@ -360,15 +360,17 @@ def _sweep_settings(args: argparse.Namespace) -> SweepSettings:
     )
 
 
-def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
+def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = True) -> None:
     analysis = parser.add_argument_group(_("analysis"))
-    analysis.add_argument(
-        "--channel",
-        type=int,
-        default=None,
-        metavar="N",
-        help=_("recording channel to analyse (0-based)"),
-    )
+    if channel:
+        # Not for measure: there the analysed column follows --input-channel(s).
+        analysis.add_argument(
+            "--channel",
+            type=int,
+            default=None,
+            metavar="N",
+            help=_("recording channel to analyse (0-based)"),
+        )
     analysis.add_argument(
         "--smoothing",
         type=int,
@@ -690,6 +692,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     iface.add_argument(
         "--input-channels",
+        type=_channel_list,
         default=None,
         metavar="LIST",
         help=_("1-based input channels, comma-separated (e.g. 1,2); overrides --input-channel"),
@@ -731,7 +734,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("required for levels above -12 dBFS; confirms the monitor level was set low first"),
     )
     _add_sweep_arguments(p_me, default_level=-20.0)
-    _add_analysis_arguments(p_me)
+    _add_analysis_arguments(p_me, channel=False)
 
     p_ir = _command(
         sub,
@@ -1200,12 +1203,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
     # note and the status lines go to stderr.
     status_stream = sys.stderr if as_json else sys.stdout
     backend = get_backend(args.backend)
-    if args.input_channels:
-        requested = [
-            int(part.strip()) for part in str(args.input_channels).split(",") if part.strip()
-        ]
-    else:
-        requested = [int(args.input_channel)]
+    requested = list(args.input_channels or [int(args.input_channel)])
     # Hardware inputs are 1-based, recording columns 0-based; validate the
     # mapping before anything is played (#13).
     plan = plan_input_channels(requested, getattr(args, "measure_loopback_channel", None))
@@ -1325,10 +1323,37 @@ def cmd_measure(args: argparse.Namespace) -> int:
     )
 
 
+def _channel_list(text: str) -> list[int]:
+    """argparse type of ``--input-channels``: ``"1,2"`` -> ``[1, 2]``."""
+    try:
+        channels = [int(part) for part in text.split(",") if part.strip()]
+    except ValueError:
+        channels = []
+    if not channels:
+        raise argparse.ArgumentTypeError(
+            _("{value} is not a comma-separated list of channel numbers (e.g. 1,2)").format(
+                value=repr(text)
+            )
+        )
+    return channels
+
+
 def _is_comparison_path(path: Path) -> bool:
-    """True when ``path`` is ``comparison.json`` or a folder that holds only that file."""
+    """True when ``path`` is a comparison file or a folder that holds only
+    ``comparison.json``. ``compare --out ab.json`` writes any name, so a JSON
+    file other than ``session.json`` is recognised by its content."""
     if path.is_file():
-        return path.name == "comparison.json"
+        if path.name == "comparison.json":
+            return True
+        if path.suffix.lower() != ".json" or path.name == "session.json":
+            return False
+        from roomscope.io.jsonutil import read_json_object
+
+        try:
+            data = read_json_object(path, kind="comparison")
+        except RoomScopeError:
+            return False
+        return "comparable" in data and "common_band" in data
     if path.is_dir():
         return (path / "comparison.json").is_file() and not (path / "session.json").is_file()
     return False
@@ -1507,6 +1532,7 @@ def cmd_session(args: argparse.Namespace) -> int:
     from roomscope.io.session_store import bundle_session
 
     if args.session_command == "bundle":
+        _warn_ignored_json(args, "session bundle")
         path = bundle_session(args.session, args.out, include_audio=not args.no_audio)
         print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path), keep=True))
         return 0
@@ -1539,6 +1565,8 @@ def cmd_project(args: argparse.Namespace) -> int:
     from roomscope.models.project import Project
 
     command = args.project_command
+    if command in ("init", "add", "show"):
+        _warn_ignored_json(args, f"project {command}")
     if command == "init":
         project = Project(name=args.name or args.out.name, notes=args.notes)
         path = save_project(args.out, project)
@@ -1556,7 +1584,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         return 0
     if command == "show":
         if not is_project(args.project):
-            raise RoomScopeError(f"no project.json in {args.project}")
+            raise RoomScopeError(_("no project.json in {path}").format(path=args.project))
         project = load_project(args.project)
         print(f"{project.name or args.project}")
         for label, path in list_project_sessions(args.project):
@@ -1565,10 +1593,10 @@ def cmd_project(args: argparse.Namespace) -> int:
         return 0
     if command == "average":
         if not is_project(args.project):
-            raise RoomScopeError(f"no project.json in {args.project}")
+            raise RoomScopeError(_("no project.json in {path}").format(path=args.project))
         items = list_project_sessions(args.project)
         if not items:
-            raise RoomScopeError(f"no sessions in {args.project}")
+            raise RoomScopeError(_("no sessions in {path}").format(path=args.project))
         loaded = [load_measurement(path) for _label, path in items]
         # A position label is one microphone position; repeated takes there
         # add sessions, not positions (#15). Sessions not assigned to a
@@ -1577,7 +1605,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         n_mic = max(1, len(set(labelled)))
         sources = int(args.sources)
         if sources < 1:
-            raise ConfigurationError("--sources must be at least 1")
+            raise ConfigurationError(_("--sources must be at least 1"))
         averaged = average_decay(
             [item.result for item in loaded],
             n_source_positions=sources,

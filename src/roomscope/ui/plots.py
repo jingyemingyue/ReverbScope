@@ -16,6 +16,7 @@ from matplotlib.figure import Figure
 from roomscope.core.reflections import reflection_envelope_db
 from roomscope.i18n import _
 from roomscope.interpretation.profiles import band_text, confidence_text, noise_segment_text
+from roomscope.labels import validity_word
 from roomscope.models.result import AnalysisResult, EnergyMetric, PlacementResult, Validity
 from roomscope.ui.theme import PLOT_SERIES, ensure_plot_fonts, plot_colors, style_figure, tokens
 
@@ -110,8 +111,10 @@ def plot_decay(fig: Figure, result: AnalysisResult) -> None:
     ax.plot(bb.edc_time_s, bb.edc_db, linewidth=2.4, linestyle="-", label=_("Broadband"))
     for index, band in enumerate(result.decay.bands):
         rt = band.rt60_estimate_s
+        # Without an RT60 say why (outside the sweep, unreliable, ...), as the
+        # table does, rather than always "insufficient range".
         label = band.band_label + (
-            f"  RT60~{rt:.2f} s" if rt is not None else "  ({})".format(_("insufficient range"))
+            f"  RT60~{rt:.2f} s" if rt is not None else f"  ({validity_word(band.t30.validity)})"
         )
         ax.plot(
             band.edc_time_s,
@@ -140,7 +143,10 @@ def plot_noise(fig: Figure, result: AnalysisResult) -> None:
         ax.text(
             0.5,
             0.5,
-            _("No quiet segment available"),
+            # A session saved without curves has a level but no spectrum.
+            _("No quiet segment available")
+            if noise.rms_dbfs is None
+            else _("No noise spectrum stored with this session"),
             ha="center",
             va="center",
             transform=ax.transAxes,

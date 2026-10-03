@@ -252,7 +252,8 @@ class PortAudioBackend:
                     "the audio device reported {count} buffer problem(s) during the take "
                     "({flags}); the recording may contain dropouts",
                     count=len(xruns),
-                    flags="; ".join(sorted(set(xruns))),
+                    # Not "; ": that separates whole diagnostics for localize().
+                    flags=", ".join(sorted(set(xruns))),
                 ),
             )
             log.warning("%s; measure again if the result looks wrong", device_warnings[0])

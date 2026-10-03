@@ -35,7 +35,7 @@ from roomscope.i18n import _, localize
 from roomscope.io.recent import remember_session
 from roomscope.io.session_store import save_measurement
 from roomscope.io.wav import write_wav
-from roomscope.labels import severity_text, topic_text, validity_word
+from roomscope.labels import severity_text, surface_text, topic_text, validity_word
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
     confidence_text,
@@ -43,6 +43,7 @@ from roomscope.interpretation.profiles import (
     profile_title,
 )
 from roomscope.models.result import AnalysisResult, PlacementResult, Validity
+from roomscope.settings import load_settings
 from roomscope.ui.plots import (
     decay_table_rows,
     energy_table_rows,
@@ -141,7 +142,12 @@ class _PlacementTab(QWidget):
             if length.metres is None:
                 value = _("not determined")
                 if length.missing_input:
-                    value += f" ({length.missing_input})"
+                    # The core names the CLI option; here, the field to fill in.
+                    fields = {
+                        "--speaker-distance": _("Loudspeaker distance"),
+                        "--mic-height": _("Microphone height"),
+                    }
+                    value += f" ({fields.get(length.missing_input, length.missing_input)})"
             else:
                 value = f"{length.metres:.2f} m"
                 if length.input_uncertainty_m is not None:
@@ -161,7 +167,7 @@ class _PlacementTab(QWidget):
                 f"{candidate.delay_ms:.2f}",
                 f"{candidate.relative_db:.1f}",
                 f"{candidate.excess_path_m:.2f}",
-                candidate.surface or "",
+                surface_text(candidate.surface),
                 plane,
             ]
             for column, text in enumerate(values):
@@ -522,7 +528,9 @@ class ResultsPage(QWidget):
         self.status.setText("")
 
     def _choose_save_directory(self) -> None:
-        directory = QFileDialog.getExistingDirectory(self, _("Choose a folder for the session"))
+        directory = QFileDialog.getExistingDirectory(
+            self, _("Choose a folder for the session"), load_settings().output_dir
+        )
         if directory:
             self.save_to(Path(directory))
 

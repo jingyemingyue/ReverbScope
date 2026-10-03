@@ -25,7 +25,7 @@ from roomscope.interpretation.profiles import (
     noise_segment_text,
     profile_title,
 )
-from roomscope.labels import metric_label, topic_text, validity_word
+from roomscope.labels import metric_label, surface_text, topic_text, validity_word
 from roomscope.models.comparison import ComparisonResult, MetricDelta
 from roomscope.models.result import (
     AnalysisResult,
@@ -65,7 +65,8 @@ def rates_text(rates: Sequence[int], console: Console) -> str:
 
 
 def frequency_text(hz: float) -> str:
-    return f"{hz / 1000:.3g} kHz" if hz >= 1000 else f"{hz:.3g} Hz"
+    # 999.5 Hz and up round to 1000 at three digits: "1 kHz", not "1e+03 Hz".
+    return f"{hz / 1000:.3g} kHz" if hz >= 999.5 else f"{hz:.3g} Hz"
 
 
 def created_text(created: str) -> str:
@@ -588,7 +589,11 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         lines += c.table(
             [_("Arrival"), _("Surface"), _("Excess path")],
             [
-                [f"{cand.delay_ms:.1f} ms", str(cand.surface), f"{cand.excess_path_m:.2f} m"]
+                [
+                    f"{cand.delay_ms:.1f} ms",
+                    surface_text(cand.surface),
+                    f"{cand.excess_path_m:.2f} m",
+                ]
                 for cand in named
             ],
             align="rlr",
@@ -772,6 +777,9 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
     previous = ""
     for item in items:
         band, metric = _split_decay_name(item.name)
+        if metric and item.unit and item.unit != "s":
+            # C50 (dB) and D50 (%) share the column with times in seconds.
+            metric = f"{metric} ({item.unit})"
         base = f"{item.baseline:.3f}" if item.baseline is not None else c.dash()
         cand = f"{item.candidate:.3f}" if item.candidate is not None else c.dash()
         if item.validity is Validity.VALID and item.delta is not None:

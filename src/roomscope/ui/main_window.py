@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QAction, QDesktopServices
+from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices
 from PySide6.QtWidgets import (
     QFileDialog,
     QMainWindow,
@@ -19,9 +19,10 @@ from PySide6.QtWidgets import (
 from roomscope import __version__
 from roomscope.errors import RoomScopeError
 from roomscope.i18n import _, localize
-from roomscope.interpretation import interpret
+from roomscope.interpretation import available_profiles, interpret
 from roomscope.io.recent import remember_session
 from roomscope.io.session_store import load_measurement
+from roomscope.settings import load_settings
 from roomscope.ui.compare_view import ComparePage
 from roomscope.ui.pages import DawModePage, HomePage, StandalonePage
 from roomscope.ui.results import ResultsPage
@@ -67,6 +68,10 @@ class MainWindow(QMainWindow):
         self.setMinimumSize(960, 640)
         self.resize(1180, 800)
         self.state = MeasurementState()
+        # The default profile chosen in Settings, as the CLI reads it.
+        default_profile = load_settings().default_profile
+        if default_profile in available_profiles():
+            self.state.profile = default_profile
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
@@ -155,6 +160,13 @@ class MainWindow(QMainWindow):
         self.setStatusBar(self._status)
         self.show_home()
 
+    def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt override
+        # A QThread destroyed while it runs aborts the process (Ctrl+Q during a
+        # take or an analysis): stop the take and let the workers finish.
+        self.standalone.shutdown_workers()
+        self.daw.shutdown_workers()
+        super().closeEvent(event)
+
     def _set_place(self, place: str) -> None:
         self._status.showMessage(
             _("RoomScope {version}  ·  {place}").format(version=__version__, place=place)
@@ -162,6 +174,10 @@ class MainWindow(QMainWindow):
 
     def show_home(self) -> None:
         self.state.reset()
+        self.daw.clear_recording()
+        # Home's environment report and device inspector describe the real
+        # interface, not the demo's fake one.
+        self.standalone.demo_mode = False
         self.home.refresh_recent()
         self.stack.setCurrentWidget(self.home)
         self._set_place(_("Home"))
@@ -182,6 +198,10 @@ class MainWindow(QMainWindow):
         except RoomScopeError as exc:
             QMessageBox.critical(self, _("Cannot open session"), localize(str(exc)))
             return
+        # Drop the previous take: saving the opened session must not write
+        # that recording into it.
+        self.state.reset()
+        self.daw.clear_recording()
         self.state.session = loaded.session
         self.state.result = loaded.result
         self.state.mode = loaded.session.mode

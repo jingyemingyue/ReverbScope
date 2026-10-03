@@ -8,6 +8,7 @@ import, so RoomScope can be embedded without side effects.
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from typing import IO
@@ -37,6 +38,22 @@ class _SharedRotatingFileHandler(RotatingFileHandler):
     """
 
     def doRollover(self) -> None:  # noqa: N802 - logging API
+        # Find out whether the file can be renamed *before* the backups move:
+        # the stdlib shifts .1 -> .2 -> .3 first and renames the live file
+        # last, so a rename that fails (again on every later record) would push
+        # the old logs out one by one. Our own handle must be closed to try.
+        if self.stream:
+            self.stream.close()
+            self.stream = None
+        probe = self.baseFilename + ".rotating"
+        try:
+            os.replace(self.baseFilename, probe)
+            os.replace(probe, self.baseFilename)
+        except FileNotFoundError:
+            pass
+        except PermissionError:
+            self.stream = self._open()
+            return
         try:
             super().doRollover()
         except PermissionError:
@@ -61,6 +78,8 @@ def configure_logging(
     for handler in list(logger.handlers):
         if getattr(handler, "_roomscope_handler", False):
             logger.removeHandler(handler)
+            # Releases the log file; a StreamHandler leaves its stream open.
+            handler.close()
     handler = logging.StreamHandler(stream or sys.stderr)
     handler.setFormatter(logging.Formatter(fmt))
     handler._roomscope_handler = True  # type: ignore[attr-defined]

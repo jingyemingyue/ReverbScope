@@ -297,12 +297,15 @@ class ComparePage(QWidget):
         )
         if not path:
             return
+        if not path.lower().endswith(".json"):
+            # Without the extension save_comparison takes the name for a folder.
+            path += ".json"
         try:
-            save_comparison(path, self._comparison)
+            written = save_comparison(path, self._comparison)
         except RoomScopeError as exc:
             QMessageBox.critical(self, _("Cannot save"), localize(str(exc)))
             return
-        self.status.setText(_("Wrote {path}").format(path=path))
+        self.status.setText(_("Wrote {path}").format(path=written))
 
     def _pick_into(self, field: QLineEdit) -> None:
         path, _filter = QFileDialog.getOpenFileName(

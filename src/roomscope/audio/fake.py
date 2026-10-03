@@ -132,6 +132,25 @@ class FakeBackend:
             raise ConfigurationError(_("channels are 1-based and must be >= 1"))
         if input_device not in (None, 0) or output_device not in (None, 0):
             raise AudioDeviceError(_("fake backend only has device 0"))
+        # The channels it advertises, as a real device would check them.
+        device = self.list_devices()[0]
+        for channel in input_channels:
+            if channel > device.max_input_channels:
+                raise AudioDeviceError(
+                    _(
+                        "input channel {channel} does not exist on {device} "
+                        "({count} input channel(s))"
+                    ).format(channel=channel, device=device.name, count=device.max_input_channels)
+                )
+        if output_channel > device.max_output_channels:
+            raise AudioDeviceError(
+                _(
+                    "output channel {channel} does not exist on {device} "
+                    "({count} output channel(s))"
+                ).format(
+                    channel=output_channel, device=device.name, count=device.max_output_channels
+                )
+            )
         supported_sample_rate(sample_rate)
         signal = prepare_playback(playback, sample_rate, level_dbfs, extra_record_s)
         room = (

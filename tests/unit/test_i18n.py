@@ -205,3 +205,42 @@ def test_wheel_build_hook_compiles_into_a_temporary_directory(tmp_path) -> None:
     assert compiled.info()[SOURCE_HASH_HEADER.lower()] == source_hash(src_messages / "roomscope.po")
     assert compiled.gettext("Analyze") == "分析"
     assert sorted(p.name for p in src_messages.iterdir()) == before
+
+
+def test_parse_po_unescapes_in_one_pass_and_skips_fuzzy(tmp_path) -> None:
+    """``\\\\n`` (a backslash, then n) became a newline; fuzzy entries were used."""
+    from roomscope.i18n import parse_po
+
+    po = tmp_path / "x.po"
+    po.write_text(
+        'msgid "path"\nmsgstr "C:\\\\new\\\\table"\n\n'
+        '#, fuzzy\nmsgid "draft"\nmsgstr "not yet"\n\n'
+        'msgid "after"\nmsgstr "kept"\n\n'
+        '#, fuzzy\nmsgctxt "diagnostic"\nmsgid "ctx draft"\nmsgstr "no"\n\n'
+        'msgctxt "diagnostic"\nmsgid "ctx"\nmsgstr "a \\"b\\"\\n"\n',
+        encoding="utf-8",
+    )
+    assert parse_po(po) == {
+        "path": "C:\\new\\table",
+        "after": "kept",
+        "diagnostic\x04ctx": 'a "b"\n',
+    }
+
+
+def test_the_catalog_has_no_duplicate_entries() -> None:
+    """GNU msgfmt refuses a catalog with a duplicate msgid."""
+    import re
+    from collections import Counter
+    from pathlib import Path
+
+    text = Path("src/roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po").read_text(encoding="utf-8")
+    keys = re.findall(r'(?:msgctxt "((?:[^"\\]|\\.)*)"\n)?msgid "((?:[^"\\]|\\.)+)"\n', text)
+    assert [key for key, count in Counter(keys).items() if count > 1] == []
+
+
+def test_metric_labels_split_from_the_right() -> None:
+    from roomscope.labels import metric_label
+
+    assert metric_label("band.31.5 Hz.t20") == "31.5 Hz T20"
+    assert metric_label("band.2.5 kHz.edt", "s") == "2.5 kHz EDT (s)"
+    assert metric_label("band.63 Hz") == "63 Hz"
