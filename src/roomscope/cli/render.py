@@ -1332,7 +1332,7 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
 def _catalog_latency(console: Console, entry: Any) -> str:
     low, high = entry.documented_low_latency_s, entry.documented_high_latency_s
     if low is None and high is None:
-        return entry.documented_latency_note or console.dash()
+        return localize(entry.documented_latency_note) or console.dash()
 
     def _ms(value: float | None) -> str:
         return console.dash() if value is None else f"{value * 1000:g} ms"

@@ -1990,6 +1990,42 @@ msgid "synthetic backend: nothing is played"
 msgstr "合成后端：不会播放任何声音"
 
 msgctxt "diagnostic"
+msgid "shared-mode engine buffer default 10 ms; exclusive uses the device period"
+msgstr "共享模式引擎缓冲默认 10 ms；独占模式使用设备周期"
+
+msgctxt "diagnostic"
+msgid "WaveRT compiled defaults 10 / 40 ms (WaveCyclic 10 / 85 ms)"
+msgstr "WaveRT 编译默认值 10 / 40 ms（WaveCyclic 为 10 / 85 ms）"
+
+msgctxt "diagnostic"
+msgid "preferred / maximum driver buffer"
+msgstr "首选 / 最大驱动缓冲"
+
+msgctxt "diagnostic"
+msgid "PortAudio compiled defaults 120 / 240 ms"
+msgstr "PortAudio 编译默认值 120 / 240 ms"
+
+msgctxt "diagnostic"
+msgid "PortAudio compiled defaults 90 / 180 ms"
+msgstr "PortAudio 编译默认值 90 / 180 ms"
+
+msgctxt "diagnostic"
+msgid "fallback 10 / 100 ms when the device latency is unreadable"
+msgstr "设备延迟不可读时回退为 10 / 100 ms"
+
+msgctxt "diagnostic"
+msgid "compiled default (512-128)/fs / (2048-512)/fs: 8 / 32 ms at 48 kHz if hardware allows"
+msgstr "编译默认值 (512-128)/fs / (2048-512)/fs：硬件允许时在 48 kHz 下为 8 / 32 ms"
+
+msgctxt "diagnostic"
+msgid "port latency divided by the JACK server rate"
+msgstr "端口延迟除以 JACK 服务器采样率"
+
+msgctxt "diagnostic"
+msgid "not assessed"
+msgstr "未评估"
+
+msgctxt "diagnostic"
 msgid "ALSA plugin or sound-server device: may resample and mix"
 msgstr "ALSA 插件或声音服务器设备：可能重采样并混音"
 

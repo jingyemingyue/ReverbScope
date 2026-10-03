@@ -92,25 +92,36 @@ HOST_API_NOTES: dict[str, str] = {
 
 #: PortAudio compiled default latencies (seconds) from docs/AUDIO_DEVICES.md §2.
 #: These are documentation, not measured round-trips on a physical interface.
+#: Notes stay English in JSON (:func:`~roomscope.i18n.diag`); the CLI localizes them.
 HOST_API_DOCUMENTED_LATENCY: dict[str, tuple[float | None, float | None, str]] = {
     "wasapi": (
         0.010,
         0.010,
-        "shared-mode engine buffer default 10 ms; exclusive uses the device period",
+        diag("shared-mode engine buffer default 10 ms; exclusive uses the device period"),
     ),
-    "wdmks": (0.010, 0.040, "WaveRT compiled defaults 10 / 40 ms (WaveCyclic 10 / 85 ms)"),
-    "asio": (None, None, "preferred / maximum driver buffer"),
-    "directsound": (0.120, 0.240, "PortAudio compiled defaults 120 / 240 ms"),
-    "mme": (0.090, 0.180, "PortAudio compiled defaults 90 / 180 ms"),
-    "coreaudio": (0.010, 0.100, "fallback 10 / 100 ms when the device latency is unreadable"),
+    "wdmks": (
+        0.010,
+        0.040,
+        diag("WaveRT compiled defaults 10 / 40 ms (WaveCyclic 10 / 85 ms)"),
+    ),
+    "asio": (None, None, diag("preferred / maximum driver buffer")),
+    "directsound": (0.120, 0.240, diag("PortAudio compiled defaults 120 / 240 ms")),
+    "mme": (0.090, 0.180, diag("PortAudio compiled defaults 90 / 180 ms")),
+    "coreaudio": (
+        0.010,
+        0.100,
+        diag("fallback 10 / 100 ms when the device latency is unreadable"),
+    ),
     "alsa": (
         0.008,
         0.032,
-        "compiled default (512-128)/fs / (2048-512)/fs: 8 / 32 ms at 48 kHz if hardware allows",
+        diag(
+            "compiled default (512-128)/fs / (2048-512)/fs: 8 / 32 ms at 48 kHz if hardware allows"
+        ),
     ),
-    "jack": (None, None, "port latency divided by the JACK server rate"),
-    "oss": (None, None, "not assessed"),
-    "fake": (None, None, "synthetic backend; nothing is played"),
+    "jack": (None, None, diag("port latency divided by the JACK server rate")),
+    "oss": (None, None, diag("not assessed")),
+    "fake": (None, None, diag("synthetic backend: nothing is played")),
 }
 
 #: PortAudio name for each known kind (the inverse of :data:`HOST_API_KINDS`).
