@@ -2,8 +2,12 @@
 
 **English** | [简体中文](index.zh-CN.md)
 
-This is the documentation hub. GitHub renders the Markdown. A themed HTML
-site (S7) is generated from these files:
+RoomScope measures a recording room so you can hear what the room is doing
+to close-miked sources. This hub is the existing docs site: installation,
+the sweep workflow, DAW follow, and the analysis report.
+
+GitHub renders the Markdown. A themed HTML site (S7) is generated from
+these files:
 
 ```bash
 python scripts/build_docs_site.py --out site

@@ -86,10 +86,18 @@ def test_site_seo_files_use_placeholder_and_allow_indexing(tmp_path: Path) -> No
     assert 'lang="en"' in index_html
     assert "<title>" in index_html and "RoomScope" in index_html
     assert 'content="' in index_html
+    index_desc = index_html.split('name="description" content="', 1)[1].split('"', 1)[0]
+    assert "recording room" in index_desc
+    install = (dest / "INSTALLATION.html").read_text(encoding="utf-8")
+    install_desc = install.split('name="description" content="', 1)[1].split('"', 1)[0]
+    assert "two betas" in install_desc
+    assert "github.com" not in install_desc.casefold()
     zh = (dest / "index.zh-CN.html").read_text(encoding="utf-8")
     assert 'lang="zh-CN"' in zh
     assert 'rel="canonical"' in zh
     assert 'property="og:url"' in zh
+    zh_desc = zh.split('name="description" content="', 1)[1].split('"', 1)[0]
+    assert "录音房间" in zh_desc
 
 
 def test_build_site_honours_custom_base_url(tmp_path: Path) -> None:
@@ -111,3 +119,15 @@ def test_page_description_skips_language_switcher() -> None:
     desc = site.page_description(text, fallback="fallback")
     assert "documentation hub" in desc
     assert "English" not in desc
+
+
+def test_page_description_skips_download_url_line() -> None:
+    site = _load()
+    text = (
+        "# Installing RoomScope\n\n"
+        "**Download page (stable beta):** <https://github.com/jingyemingyue/RoomScope/releases>\n\n"
+        "RoomScope is offered as two betas. Both are still beta.\n"
+    )
+    desc = site.page_description(text, fallback="fallback")
+    assert "two betas" in desc
+    assert "github.com" not in desc.casefold()

@@ -2,6 +2,8 @@
 
 [English](index.md) | **简体中文**
 
+RoomScope 用来测量录音房间，让你听清房间对近距离拾音的声源做了什么。本页是仓库里已有的文档站：安装、扫频流程、跟随 DAW、以及分析报告。
+
 RoomScope 目前是预发布版本：还没有任何结果在真实硬件上测量并与参考仪器对照过，安装包没有用于分发的签名，通用 DAW 模式的各 DAW 步骤是按厂商文档编写、尚未在 DAW 中实测的流程。RoomScope 不给房间打分。
 
 HTML 文档站由 `python scripts/build_docs_site.py --out site` 从本目录生成（每页标题与摘要、规范网址、Open Graph、`sitemap.xml`、`robots.txt`）。仓库还没有公开的文档主机；规范网址使用占位符 `https://docs.example.invalid/roomscope/`，可用 `--base-url` 替换。把 `site/` 拷到静态主机即可。本仓库不会向 Google 提交站点、也不会购买域名或开通主机账号。

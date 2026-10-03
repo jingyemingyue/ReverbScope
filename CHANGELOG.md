@@ -16,7 +16,9 @@ All notable changes to RoomScope are documented here. The format follows
 - **Docs site SEO files.** `scripts/build_docs_site.py` writes a title,
   meta description, canonical URL, and Open Graph title/description on
   every page, plus `sitemap.xml` and a `robots.txt` that allows
-  indexing. No public docs host is configured; URLs use the placeholder
+  indexing. Descriptions skip language switchers and download-URL lines
+  so the hub and install pages get a real search snippet. No public
+  docs host is configured; URLs use the placeholder
   `https://docs.example.invalid/roomscope/` until `--base-url` is set.
   This change does not submit the site to Google.
 - **Follow the DAW in play.** The sweep sample rate is the only session

@@ -381,6 +381,19 @@ def _plain_text(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
+def _skip_description_block(block: str, text: str) -> bool:
+    """True for switchers, download-URL lines, and other non-snippet prose."""
+    if block.startswith(("**English**", "[English]")):
+        return True
+    lowered = text.casefold()
+    if lowered.startswith(("download page", "下载页面")):
+        return True
+    without_urls = re.sub(r"https?://\S+", "", text).strip(" <>:.-")
+    if ("http://" in lowered or "https://" in lowered) and len(without_urls) < 24:
+        return True
+    return False
+
+
 def page_description(markdown: str, *, fallback: str) -> str:
     """First real paragraph, trimmed to a search-snippet length."""
     for raw in markdown.replace("\r\n", "\n").split("\n\n"):
@@ -391,10 +404,9 @@ def page_description(markdown: str, *, fallback: str) -> str:
             continue
         if UL_ITEM.match(block.splitlines()[0]) or OL_ITEM.match(block.splitlines()[0]):
             continue
-        # Language-switcher lines ("**English** | [简体中文](...)").
-        if block.startswith(("**English**", "[English]")):
-            continue
         text = _plain_text(block.splitlines()[0] if block.startswith("**") else block)
+        if _skip_description_block(block, text):
+            continue
         if len(text) < 24:
             continue
         if len(text) > DESCRIPTION_LIMIT:
