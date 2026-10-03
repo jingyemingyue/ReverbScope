@@ -6,9 +6,24 @@ from dataclasses import dataclass, fields
 from typing import Any
 
 from roomscope.errors import SessionError
-from roomscope.models.loadutil import drop_unknown, read_schema_version
+from roomscope.i18n import _
+from roomscope.models.loadutil import drop_unknown, read_schema_version, record_name
 
 PROJECT_SCHEMA_VERSION = 1
+
+
+def _list(value: Any, kind: str, name: str) -> list[Any]:
+    """A JSON array from a project file. A string would otherwise be read as
+    one folder per character, and a number would raise ``TypeError``."""
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise SessionError(
+            _("invalid {kind} in file: {error}").format(
+                kind=record_name(kind), error=f"{name} must be a list"
+            )
+        )
+    return value
 
 
 @dataclass(frozen=True)
@@ -24,7 +39,7 @@ class PositionEntry:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PositionEntry:
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="position entry")
-        dirs = payload.get("session_dirs") or ()
+        dirs = _list(payload.get("session_dirs"), "position entry", "session_dirs")
         return cls(label=str(payload.get("label", "")), session_dirs=tuple(str(p) for p in dirs))
 
 
@@ -57,7 +72,7 @@ class Project:
             PositionEntry.from_dict(item)
             if isinstance(item, dict)
             else PositionEntry(label=str(item))
-            for item in payload.get("positions") or ()
+            for item in _list(payload.get("positions"), "project", "positions")
         )
         return cls(
             name=str(payload.get("name", "")),

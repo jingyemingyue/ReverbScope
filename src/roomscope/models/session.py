@@ -15,11 +15,21 @@ from datetime import UTC, datetime
 from typing import Any
 
 from roomscope.errors import SessionError
+from roomscope.i18n import _
 from roomscope.models.configuration import AnalysisSettings, SweepSettings
-from roomscope.models.loadutil import drop_unknown, read_schema_version
+from roomscope.models.loadutil import drop_unknown, read_schema_version, record_name
 from roomscope.version import __version__
 
 SESSION_SCHEMA_VERSION = 1
+
+#: JSON types accepted for the plain fields of a session read from a file,
+#: keyed by the field's annotation.
+_FIELD_TYPES: dict[str, tuple[type, ...]] = {
+    "str": (str,),
+    "str | None": (str, type(None)),
+    "int | None": (int, type(None)),
+    "dict[str, Any]": (dict,),
+}
 
 
 def utc_now_iso() -> str:
@@ -80,6 +90,16 @@ class MeasurementSession:
             raise SessionError("session data must be a JSON object")
         version = read_schema_version(data, SESSION_SCHEMA_VERSION, "session")
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="session")
+        for f in fields(cls):
+            expected = _FIELD_TYPES.get(str(f.type))
+            if f.name in payload and expected and not isinstance(payload[f.name], expected):
+                # Listings sort by created_at and read analysis_summary; a
+                # wrong type there would fail later instead of here (#11).
+                raise SessionError(
+                    _("invalid {kind} in file: {error}").format(
+                        kind=record_name("session"), error=f"{f.name} has the wrong type"
+                    )
+                )
         if "sweep_settings" in payload:
             payload["sweep_settings"] = SweepSettings.from_dict(payload["sweep_settings"])
         if "analysis_settings" in payload:

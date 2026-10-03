@@ -62,3 +62,13 @@ def test_comparison_and_project_to_dict_validate(short_sweep) -> None:
     loaded = ComparisonResult.from_dict({**comparison.to_dict(), "future_field": True})
     assert loaded.comparable == comparison.comparable
     _validate("project", Project(name="Room", notes="").to_dict())
+
+
+def test_the_schema_requires_what_the_loader_requires() -> None:
+    """A schema-valid result.json without these was refused by the loader."""
+    from roomscope.schemas import load_schema
+
+    schema = load_schema("result")
+    required = schema["$defs"]["impulse_response"]["required"]
+    for field in ("direct_sound_index", "pre_delay_samples", "peak_value", "valid_length_s"):
+        assert field in required

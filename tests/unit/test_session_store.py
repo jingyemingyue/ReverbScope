@@ -140,3 +140,96 @@ def test_save_and_load_comparison_does_not_store_findings(
     assert loaded.schema_version == comparison.schema_version
     again = load_comparison(written)
     assert again.common_band == comparison.common_band
+
+
+@pytest.fixture
+def analysed(short_sweep: SweepSettings):  # type: ignore[no-untyped-def]
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    rec = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
+    return rec, analyze(rec, Reference.from_settings(short_sweep))
+
+
+def test_saving_one_session_twice_keeps_the_recording(
+    tmp_path: Path, short_sweep: SweepSettings, analysed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The GUI saves state.session again (a second folder, or an opened
+    session elsewhere). save_measurement rewrote the caller's paths relative
+    to the first folder, so the second save looked for recording.wav in the
+    working directory and stored a path that does not exist."""
+    from roomscope.io.wav import write_wav
+
+    recording, result = analysed
+    take = write_wav(tmp_path / "in" / "take.wav", recording.samples, 48000, subtype="FLOAT")
+    monkeypatch.chdir(tmp_path)  # neither session folder
+    session = MeasurementSession(sweep_settings=short_sweep, recording_path=str(take))
+    save_measurement(tmp_path / "A", session, result, copy_recording=True)
+    save_measurement(tmp_path / "B", session, result, copy_recording=True)
+    assert session.recording_path == str(take)
+    loaded = load_measurement(tmp_path / "A")
+    save_measurement(tmp_path / "C", loaded.session, loaded.result, copy_recording=True)
+    for name in ("A", "B", "C"):
+        stored = json.loads((tmp_path / name / SESSION_FILE).read_text(encoding="utf-8"))
+        assert stored["recording_path"] == "recording.wav", name
+        assert (tmp_path / name / "recording.wav").read_bytes() == take.read_bytes(), name
+
+
+def test_list_sessions_skips_refused_and_mistyped_sessions(tmp_path: Path, analysed) -> None:
+    _recording, result = analysed
+    good = tmp_path / "good"
+    save_measurement(good, MeasurementSession(room_name="Good"), result, include_curves=False)
+    for name, change in (
+        ("rate", {"sweep_settings": {"sample_rate": 12345}}),  # ConfigurationError
+        ("created", {"created_at": None}),  # would break the sort
+        ("summary", {"analysis_summary": []}),  # would break the label
+    ):
+        folder = tmp_path / name
+        save_measurement(folder, MeasurementSession(), result, include_curves=False)
+        data = json.loads((folder / SESSION_FILE).read_text(encoding="utf-8"))
+        data.update(change)
+        (folder / SESSION_FILE).write_text(json.dumps(data), encoding="utf-8")
+    listings = list_sessions(tmp_path)
+    assert [item.session.room_name for item in listings] == ["Good"]
+    assert listings[0].label
+
+
+def test_bundle_the_folder_you_are_in(
+    tmp_path: Path, analysed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``roomscope session bundle .`` failed: Path('.') has no name."""
+    from roomscope.io.session_store import bundle_session
+
+    _recording, result = analysed
+    folder = tmp_path / "booth"
+    save_measurement(folder, MeasurementSession(), result, include_curves=False)
+    monkeypatch.chdir(folder)
+    assert bundle_session(".") == tmp_path / "booth.zip"
+    (tmp_path / "out").mkdir()
+    assert bundle_session(SESSION_FILE, tmp_path / "out") == tmp_path / "out" / "booth.zip"
+
+
+def test_a_failed_write_keeps_the_previous_session(
+    tmp_path: Path, analysed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """write_text truncated session.json and result.json first, so a full
+    disk half-way through destroyed the session being replaced."""
+    import os
+
+    from roomscope.io import jsonutil
+
+    _recording, result = analysed
+    folder = tmp_path / "s"
+    save_measurement(folder, MeasurementSession(room_name="First"), result, include_curves=False)
+    before = {name: (folder / name).read_bytes() for name in (SESSION_FILE, RESULT_FILE)}
+
+    def disk_full(_fd: int) -> None:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(jsonutil.os, "fsync", disk_full)
+    with pytest.raises(SessionError, match="No space left"):
+        save_measurement(
+            folder, MeasurementSession(room_name="Second"), result, include_curves=False
+        )
+    monkeypatch.setattr(jsonutil.os, "fsync", os.fsync)
+    assert {name: (folder / name).read_bytes() for name in before} == before
+    assert load_measurement(folder).session.room_name == "First"
+    assert not list(folder.glob(".*.tmp"))

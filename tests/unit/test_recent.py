@@ -51,3 +51,15 @@ def test_recent_store_ignores_corrupt_json(tmp_path: Path, monkeypatch: pytest.M
         json.dumps({"sessions": [1, None]}), encoding="utf-8"
     )
     assert recent_session_paths() == []
+
+
+def test_an_unwritable_recent_list_does_not_fail_the_save(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """The session is already saved; the list is a convenience."""
+    blocker = tmp_path / "not-a-folder"
+    blocker.write_text("", encoding="utf-8")
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(blocker / "home"))
+    with caplog.at_level("WARNING", logger="roomscope.io.recent"):
+        remember_session(tmp_path)
+    assert any("recent-sessions list" in record.getMessage() for record in caplog.records)

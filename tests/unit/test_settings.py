@@ -39,3 +39,45 @@ def test_settings_ignore_unknown_and_unreadable(tmp_path: Path, monkeypatch) -> 
     settings_path().parent.mkdir(parents=True, exist_ok=True)
     settings_path().write_text("not json", encoding="utf-8")
     assert load_settings().language == ""
+
+
+def test_mistyped_settings_fall_back_to_the_defaults(tmp_path: Path, monkeypatch) -> None:
+    """``"language": 1`` stopped every command; ``"developer_tools": "false"``
+    read as True."""
+    import json
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
+    settings_path().write_text(
+        json.dumps(
+            {
+                "language": 1,
+                "audio_backend": ["fake"],
+                "developer_tools": "false",
+                "copy_recording": False,
+                "default_profile": "vocal",
+            }
+        ),
+        encoding="utf-8",
+    )
+    loaded = load_settings()
+    assert loaded == UserSettings(copy_recording=False, default_profile="vocal")
+
+
+def test_a_failed_settings_write_keeps_the_old_file(tmp_path: Path, monkeypatch) -> None:
+    import pytest
+
+    from roomscope.errors import SessionError
+    from roomscope.io import jsonutil
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
+    save_settings(UserSettings(language="zh_CN"))
+
+    def disk_full(_fd: int) -> None:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(jsonutil.os, "fsync", disk_full)
+    with pytest.raises(SessionError):
+        save_settings(UserSettings(language="en"))
+    monkeypatch.undo()
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
+    assert load_settings().language == "zh_CN"

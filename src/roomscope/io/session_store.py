@@ -25,8 +25,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from roomscope.models.comparison import ComparisonResult
 
-from roomscope.errors import SessionError
+from roomscope.errors import RoomScopeError, SessionError
 from roomscope.i18n import _
+from roomscope.io.jsonutil import write_text_atomic
 from roomscope.io.wav import read_wav, write_wav
 from roomscope.models.result import AnalysisResult, Validity
 from roomscope.models.session import MeasurementSession
@@ -108,6 +109,10 @@ def save_measurement(
         from roomscope.settings import load_settings
 
         copy_recording = load_settings().copy_recording
+    # The paths below are rewritten relative to ``base``. Rewrite a copy: the
+    # caller's session keeps paths that still resolve, so saving it again into
+    # another folder (the GUI's Save button, twice) still finds the recording.
+    session = replace(session)
     original_sweep = session.sweep_path
     original_recording = session.recording_path
     ir_path = write_wav(
@@ -115,9 +120,7 @@ def save_measurement(
     )
     result_path = base / RESULT_FILE
     try:
-        result_path.write_text(
-            json.dumps(result.to_dict(include_curves), indent=1), encoding="utf-8"
-        )
+        write_text_atomic(result_path, json.dumps(result.to_dict(include_curves), indent=1))
     except (OSError, TypeError, ValueError) as exc:
         raise SessionError(
             _("cannot write {path}: {error}").format(path=result_path, error=exc)
@@ -135,7 +138,7 @@ def save_measurement(
     session.analysis_summary = result_summary(result)
     session_path = base / SESSION_FILE
     try:
-        session_path.write_text(json.dumps(session.to_dict(), indent=2), encoding="utf-8")
+        write_text_atomic(session_path, json.dumps(session.to_dict(), indent=2))
     except (OSError, TypeError, ValueError) as exc:
         raise SessionError(
             _("cannot write {path}: {error}").format(path=session_path, error=exc)
@@ -151,7 +154,9 @@ def bundle_session(
 ) -> Path:
     """Zip a session folder for a bug report. ``include_audio=False`` drops WAVs."""
     session_file = _session_file(directory)
-    base = session_file.parent
+    # Absolute, so that "." (bundling the folder you are in) has a name; not
+    # resolved, so that a linked folder keeps its own name for the zip.
+    base = Path(os.path.abspath(session_file.parent))
     target = Path(dest) if dest is not None else base.with_name(base.name + ".zip")
     if target.is_dir():
         target = target / f"{base.name}.zip"
@@ -278,6 +283,13 @@ def load_measurement(path: str | Path) -> LoadedMeasurement:
     session_file = _session_file(path)
     directory = session_file.parent
     session = MeasurementSession.from_dict(_read_json(session_file))
+    # A relative sweep or recording path is relative to the session folder
+    # (see save_measurement). Anchor it there, so that saving the opened
+    # session into another folder copies the files instead of losing them.
+    for name in ("sweep_path", "recording_path"):
+        stored = getattr(session, name)
+        if stored and not Path(stored).is_absolute():
+            setattr(session, name, str(directory / stored))
     result_path = _resolve_member(directory, session.result_path, RESULT_FILE)
     if not result_path.is_file():
         raise SessionError(_("result.json not found next to {path}").format(path=session_file))
@@ -318,7 +330,9 @@ def list_sessions(root: str | Path, *, max_depth: int = 2) -> list[SessionListin
             continue
         try:
             found.append(SessionListing(path=candidate.parent, session=load_session(candidate)))
-        except SessionError:
+        except RoomScopeError:
+            # Unreadable, or settings this version refuses (ConfigurationError):
+            # one bad folder must not hide the others.
             continue
     found.sort(key=lambda item: item.session.created_at, reverse=True)
     return found
@@ -348,15 +362,14 @@ def _resolve_member(directory: Path, stored: str | None, default_name: str) -> P
     or crafted file, e.g. a received bug-report bundle. It is refused rather
     than read (#11).
     """
-    if not stored:
-        return directory / default_name
-    candidate = Path(stored)
+    # The default name is checked too: it can itself be a link out of the folder.
+    candidate = Path(stored or default_name)
     if candidate.is_absolute() or candidate.drive or candidate.root:
         raise SessionError(
             _(
                 "session.json names {name} at an absolute path ({path}); "
                 "session files must stay inside the session folder"
-            ).format(name=default_name, path=stored)
+            ).format(name=default_name, path=candidate)
         )
     base = directory.resolve()
     resolved = (base / candidate).resolve()
@@ -365,7 +378,7 @@ def _resolve_member(directory: Path, stored: str | None, default_name: str) -> P
             _(
                 "session.json names {name} outside the session folder ({path}); "
                 "session files must stay inside the session folder"
-            ).format(name=default_name, path=stored)
+            ).format(name=default_name, path=candidate)
         )
     return resolved
 
@@ -381,7 +394,7 @@ def save_comparison(path: str | Path, comparison: object) -> Path:
         target = target / COMPARISON_FILE
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
-        target.write_text(json.dumps(comparison.to_dict(), indent=1), encoding="utf-8")
+        write_text_atomic(target, json.dumps(comparison.to_dict(), indent=1))
     except (OSError, TypeError, ValueError) as exc:
         raise SessionError(
             _("cannot write {path}: {error}").format(path=target, error=exc)

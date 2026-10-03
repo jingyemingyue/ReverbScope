@@ -116,3 +116,30 @@ def test_project_index_and_positions(tmp_path: Path, short_sweep: SweepSettings)
     items = list_project_sessions(project_dir)
     assert items[0][0] == "desk"
     assert items[0][1].resolve() == first.resolve()
+
+
+def test_one_session_is_listed_once_however_it_was_added(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """``dir`` and ``dir/session.json`` were stored as two entries, and the
+    session was counted twice by ``project average``; a stale
+    ``.../session.json`` entry was still listed."""
+    import json
+
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    result = analyze(
+        synthetic_recording(short_sweep, ir, noise_rms=1e-5), Reference.from_settings(short_sweep)
+    )
+    project = tmp_path / "room"
+    save_project(project, Project(name="room"))
+    session = project / "sessions" / "a"
+    save_measurement(session, MeasurementSession(), result, include_curves=False)
+    add_session(project, session, position="desk")
+    add_session(project, session / "session.json", position="desk")
+    stored = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    assert stored["positions"] == [{"label": "desk", "session_dirs": ["sessions/a"]}]
+    assert list_project_sessions(project) == [("desk", session)]
+
+    stored["positions"][0]["session_dirs"] += ["sessions/a/session.json", "gone/session.json"]
+    (project / "project.json").write_text(json.dumps(stored), encoding="utf-8")
+    assert list_project_sessions(project) == [("desk", session)]

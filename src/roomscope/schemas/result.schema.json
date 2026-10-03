@@ -82,6 +82,9 @@
         "sample_rate",
         "length_samples",
         "direct_sound_index",
+        "pre_delay_samples",
+        "peak_value",
+        "valid_length_s",
         "direct_sound_confidence"
       ],
       "properties": {

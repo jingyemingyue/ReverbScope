@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -43,6 +44,24 @@ def json_nesting_depth(text: str) -> int:
     return deepest
 
 
+def write_text_atomic(path: Path, text: str) -> None:
+    """Replace ``path`` with ``text`` so that a failed write keeps the old file.
+
+    ``Path.write_text`` truncates first: a full disk half-way through would
+    leave a cut-off session, project or settings file in place of the old one.
+    Raises ``OSError`` like ``write_text``.
+    """
+    temporary = path.with_name(f".{path.name}.tmp")
+    try:
+        with temporary.open("w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
 def read_json_object(path: Path, *, kind: str = "JSON") -> dict[str, Any]:
     """Read a JSON object, refusing oversized, over-deep or non-object files."""
     try:
@@ -68,7 +87,7 @@ def read_json_object(path: Path, *, kind: str = "JSON") -> dict[str, Any]:
         )
     try:
         data = json.loads(text)
-    except json.JSONDecodeError as exc:
+    except ValueError as exc:  # JSONDecodeError, or an integer longer than 4300 digits
         raise SessionError(_("cannot read {path}: {error}").format(path=path, error=exc)) from exc
     if not isinstance(data, dict):
         raise SessionError(_("{path} is not a JSON object").format(path=path))
