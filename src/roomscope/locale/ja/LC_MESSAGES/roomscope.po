@@ -5327,3 +5327,14 @@ msgstr ""
 "アンサンブルとしては音声明瞭度が低いです（C50 {value:.1f} dB、{threshold:.0f} dB 未満）。合唱には後期の音も"
 "ある程度要りますが、これだけあるとディクションがぼけます。これは 1 位置であり、部屋の評点ではありません。"
 
+msgid "Image source"
+msgstr "鏡像音源"
+
+msgid "Specular bounce"
+msgstr "鏡面反射"
+
+msgid ""
+"The hollow mark is the first-order image source of that loudspeaker; the"
+" dashed path is the specular bounce off the plane above."
+msgstr "中空の印はそのスピーカーの一次鏡像音源です。破線は上方平面での鏡面反射経路です。"
+

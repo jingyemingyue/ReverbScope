@@ -31,6 +31,14 @@ All notable changes to RoomScope are documented here. The format follows
   English. User-facing docs remain English and Simplified Chinese.
 
 ### Changed
+- **Placement picture shows the first-order image source.** When the
+  vertical axis is solved, the rotatable 3D schematic draws the hollow
+  image of the loudspeaker through the plane above and the dashed
+  specular bounce, the way pyroomacoustics' documented `Room.plot`
+  shows sources, microphones and images. The construction is
+  Allen & Berkley (1979), implemented clean-room in
+  `horizontal_plane_image_path` (CODE_PROVENANCE.md). No wall or room
+  is invented; the measurement steps are unchanged.
 - **Desktop chrome.** Shared page margins, form column alignment, card
   padding, and a slightly larger type scale so Home, measure, results and
   compare line up. The measurement steps are unchanged.

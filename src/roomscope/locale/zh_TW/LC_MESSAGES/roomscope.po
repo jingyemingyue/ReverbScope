@@ -5215,3 +5215,14 @@ msgstr ""
 "對合唱來說，語言清晰度偏低（C50 {value:.1f} dB，低於 {threshold:.0f} dB）。合奏可以保留一些後期聲，但到這個"
 "程度吐字會糊。這是一個位置的結果，不是房間評分。"
 
+msgid "Image source"
+msgstr "鏡像聲源"
+
+msgid "Specular bounce"
+msgstr "鏡面反射點"
+
+msgid ""
+"The hollow mark is the first-order image source of that loudspeaker; the"
+" dashed path is the specular bounce off the plane above."
+msgstr "空心標記是該揚聲器的一階鏡像聲源；虛線是上方平面上的鏡面反射路徑。"
+

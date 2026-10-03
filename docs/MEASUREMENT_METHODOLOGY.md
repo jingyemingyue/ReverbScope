@@ -500,6 +500,15 @@ loudest is wrong whenever the lower plane is carpeted. Nothing at all is
 reported when direct-sound confidence is not `high`, because every delay is
 measured from that origin.
 
+**Picture.** The results Placement tab already draws a rotatable schematic
+of the microphone, one cabinet on the allowed ring, and the two known
+planes. When the upper plane is valid it also draws the first-order
+image of that cabinet through the plane and the specular bounce, the
+construction Allen & Berkley use and the one pyroomacoustics documents
+for `Room.plot` (sources, microphones and images). No wall is drawn;
+the image is a construction, not a second loudspeaker. The arithmetic
+is `horizontal_plane_image_path` in `core/placement.py`.
+
 **Limitations.** The reported `input_uncertainty_m` propagates the stated
 tape, temperature and peak-location uncertainties **only**; model error
 (flatness, rigidity, first-order specularity, and the user having measured to

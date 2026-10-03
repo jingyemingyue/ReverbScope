@@ -48,7 +48,7 @@ src/roomscope/
     frequency_response.py
     noise.py             quiet segment, dBFS, PSD, mains-hum detection
     reflections.py       early-reflection candidates
-    placement.py         vertical geometry from reflections + tape measurements
+    placement.py         vertical geometry from reflections + tape measurements; first-order image path
     resonance.py         potential low-frequency resonance candidates
     compare.py           validity-aware comparison of two AnalysisResults
     loopback.py          electrical-return validation and regularised compensation

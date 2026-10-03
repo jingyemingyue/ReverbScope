@@ -5361,3 +5361,14 @@ msgstr ""
 "앙상블로는 말 명료도가 낮습니다(C50 {value:.1f} dB, {threshold:.0f} dB 미만). 합창에는 늦은 소리"
 "도 어느 정도 맞지만, 이 정도면 딕션이 흐려집니다. 위치 하나이지 방 등급이 아닙니다."
 
+msgid "Image source"
+msgstr "허상 음원"
+
+msgid "Specular bounce"
+msgstr "정반사"
+
+msgid ""
+"The hollow mark is the first-order image source of that loudspeaker; the"
+" dashed path is the specular bounce off the plane above."
+msgstr "빈 표시는 그 스피커의 1차 허상 음원입니다. 점선은 위쪽 평면에서의 정반사 경로입니다."
+

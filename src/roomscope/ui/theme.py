@@ -270,13 +270,13 @@ QStatusBar::item {{ border: none; }}
 QToolTip {{ background: {t["surface"]}; color: {t["text"]}; border: 1px solid {t["border"]};
     padding: 6px 8px; }}
 
-QLabel[role="title"] {{ font-size: 28px; font-weight: 700; letter-spacing: -0.3px; }}
-QLabel[role="page-title"] {{ font-size: 20px; font-weight: 700; letter-spacing: -0.2px; }}
+QLabel[role="title"] {{ font-size: 28px; font-weight: 700; }}
+QLabel[role="page-title"] {{ font-size: 20px; font-weight: 700; }}
 QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 13px; }}
 QLabel[role="section"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 700; }}
 QLabel[role="hint"] {{ color: {t["muted"]}; font-size: 12px; }}
 QLabel[role="kpi-label"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 600; }}
-QLabel[role="kpi-value"] {{ font-size: 24px; font-weight: 700; letter-spacing: -0.3px; }}
+QLabel[role="kpi-value"] {{ font-size: 24px; font-weight: 700; }}
 QLabel[role="kpi-sub"] {{ color: {t["muted"]}; font-size: 11px; }}
 QLabel[role="card-title"] {{ font-size: 15px; font-weight: 700; }}
 QLabel[role="badge"] {{ background: {t["accent"]}; color: {t["accent_text"]};

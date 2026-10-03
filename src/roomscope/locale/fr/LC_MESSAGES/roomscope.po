@@ -6040,3 +6040,16 @@ msgstr ""
 "langue de l'interface (en, zh_CN, zh_TW, ja, ko, es, fr, de). Remplace l"
 "es réglages et ROOMSCOPE_LANG"
 
+msgid "Image source"
+msgstr "Source image"
+
+msgid "Specular bounce"
+msgstr "Rebond spéculaire"
+
+msgid ""
+"The hollow mark is the first-order image source of that loudspeaker; the"
+" dashed path is the specular bounce off the plane above."
+msgstr ""
+"Le marqueur creux est la source image du premier ordre de ce haut-parleu"
+"r ; le trait discontinu est le rebond spéculaire sur le plan supérieur."
+

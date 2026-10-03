@@ -89,6 +89,16 @@ room-shape-from-echoes / echo sorting (Dokmanić et al., 2013); it is cited in
 MEASUREMENT_METHODOLOGY.md §9 as the published method the project declines,
 and no implementation of it was consulted.
 
+The placement picture in `ui/plots.py` now draws that first-order image
+and the specular bounce on the plane the measurement already solved
+(`horizontal_plane_image_path` in `core/placement.py`). The *idea* of
+showing the image source next to the real source and microphone is the
+documented behaviour of pyroomacoustics `Room.plot`
+(https://pyroomacoustics.readthedocs.io/en/pypi-release/pyroomacoustics.room.html:
+"Plots the room with its walls, microphones, sources and images").
+RoomScope still draws no wall: only the planes the tape and the
+reflections identify. **No pyroomacoustics source was read or copied.**
+
 The Chu noise-power subtraction in `core/decay.py` (subtract the Lundeby
 mean-square noise estimate from `h²` before Schroeder integration, clip
 negatives to zero, keep Lundeby truncation and late-decay compensation)

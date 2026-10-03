@@ -5995,3 +5995,16 @@ msgstr ""
 "idioma de la interfaz (en, zh_CN, zh_TW, ja, ko, es, fr, de). Tiene prio"
 "ridad sobre los ajustes y ROOMSCOPE_LANG"
 
+msgid "Image source"
+msgstr "Fuente imagen"
+
+msgid "Specular bounce"
+msgstr "Rebote especular"
+
+msgid ""
+"The hollow mark is the first-order image source of that loudspeaker; the"
+" dashed path is the specular bounce off the plane above."
+msgstr ""
+"La marca hueca es la fuente imagen de primer orden de ese altavoz; la lí"
+"nea discontinua es el rebote especular en el plano superior."
+

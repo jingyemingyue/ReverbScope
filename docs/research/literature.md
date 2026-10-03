@@ -154,6 +154,10 @@ Playback/record clocks need not be locked; small mismatch leaves the IR clean, l
 - Hum detection: report the level of spectral peaks at 50/60 Hz and harmonics relative to the surrounding noise floor (dB re noise floor) and relative to full scale (dB FS). No standard defines this analysis; it is straightforward spectral peak detection (Welch PSD) and needs no citation beyond the PSD method (Welch 1967, IEEE Trans. Audio Electroacoust. 15(2):70–73, DOI 10.1109/TAU.1967.1161901 — DOI not re-verified in this session).
 - ISO 3382-2 requires the background noise to be measured (for the 10 dB / 35–45 dB rules) — in RoomScope this is the noise floor of the *deconvolved* IR per band (Lundeby estimate) plus the raw recording's noise, both in dB FS.
 
+### B.8 Image-source picture (visualization only)
+
+pyroomacoustics documents `Room.plot` as plotting "the room with its walls, microphones, sources and images" (https://pyroomacoustics.readthedocs.io/en/pypi-release/pyroomacoustics.room.html). RoomScope's placement picture already showed the microphone, one cabinet and the known planes. It now also draws the first-order image through the upper plane and the specular bounce (`horizontal_plane_image_path`), from Allen & Berkley 1979 [20]. No wall is invented. The pyroomacoustics page is the idea source; **no source was copied.**
+
 ---
 
 ## C. Patent search summary

@@ -5955,3 +5955,17 @@ msgstr ""
 "Oberflächensprache (en, zh_CN, zh_TW, ja, ko, es, fr, de). Hat Vorrang v"
 "or den Einstellungen und ROOMSCOPE_LANG"
 
+msgid "Image source"
+msgstr "Spiegelquelle"
+
+msgid "Specular bounce"
+msgstr "Spiegelreflexion"
+
+msgid ""
+"The hollow mark is the first-order image source of that loudspeaker; the"
+" dashed path is the specular bounce off the plane above."
+msgstr ""
+"Die hohle Markierung ist die Spiegelquelle erster Ordnung dieses Lautspr"
+"echers; die gestrichelte Linie ist der Spiegelreflexionsweg an der Ebene"
+" darüber."
+

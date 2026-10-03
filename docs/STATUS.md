@@ -810,7 +810,8 @@ algebra and the refusals, not the acoustics of any real surface.
 ## Not implemented (by design for v0.1 or deferred)
 
 VST3/AU/AAX plug-ins, room score, auto-EQ/correction, cloud/accounts, 3D
-room modelling, absorption material calculators, dB SPL, room-mode
+room modelling (the placement picture is a schematic with the first-order
+image source, not a room model), absorption material calculators, dB SPL, room-mode
 identification, phase display, signed desktop installers. A themed
 documentation site is generated from `docs/` (`scripts/build_docs_site.py`).
 Unsigned bundles are built by `release.yml` when the version changes;

@@ -11,6 +11,7 @@ from roomscope.core.placement import (
     UPPER_PLANE,
     boundary_product_m2,
     estimate_placement,
+    horizontal_plane_image_path,
     mirror_path_m,
     specular_ceiling_db,
     speed_of_sound_m_s,
@@ -66,6 +67,24 @@ def test_speed_of_sound_matches_the_iso_form() -> None:
     for t in (-10.0, 0.0, 20.0, 35.0):
         iso = 343.2 * math.sqrt((t + 273.15) / 293.15)
         assert speed_of_sound_m_s(t) == pytest.approx(iso, rel=1e-4)
+
+
+def test_horizontal_plane_image_path_matches_unfolded_length() -> None:
+    """Image-source path equals the physical bounce (Allen & Berkley)."""
+    source = (1.5, 0.4, 1.2)
+    receiver = (0.0, 0.0, 0.4)
+    plane_z = 3.1
+    image, bounce = horizontal_plane_image_path(source, receiver, plane_z)
+    assert image == (1.5, 0.4, 2.0 * plane_z - 1.2)
+    assert bounce[2] == pytest.approx(plane_z)
+    unfolded = math.dist(image, receiver)
+    bounced = math.dist(source, bounce) + math.dist(bounce, receiver)
+    assert bounced == pytest.approx(unfolded, rel=1e-12)
+    # A source already on the plane mirrors onto itself; the bounce is that point.
+    on_plane = (1.0, 0.0, plane_z)
+    image_on, bounce_on = horizontal_plane_image_path(on_plane, receiver, plane_z)
+    assert image_on == on_plane
+    assert bounce_on == pytest.approx(on_plane)
 
 
 def test_boundary_product_equals_the_product_of_perpendicular_distances() -> None:

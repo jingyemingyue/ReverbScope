@@ -55,12 +55,27 @@ def test_placement_picture_is_a_schematic_not_a_room() -> None:
     fig = Figure()
     hint = plot_placement_result(fig, measured)
     assert "ring" in hint and "No wall" in hint
+    assert "image source" in hint.lower() and "specular bounce" in hint.lower()
     rings = []
+    bounce_paths = []
     for line in fig.axes[0].lines:
         _x, _y, z = line.get_data_3d()
         if len(_x) > 40 and abs(float(np.mean(z)) - 1.2) < 1e-6:
             rings.append(line)
+        if len(z) == 3 and abs(float(z[1]) - 3.1) < 1e-6:
+            bounce_paths.append(line)
     assert len(rings) == 1
+    assert len(bounce_paths) == 1
+    collections = getattr(fig.axes[0], "collections", ())
+    image_marks = []
+    for collection in collections:
+        offsets = getattr(collection, "_offsets3d", None)
+        if offsets is None:
+            continue
+        _xs, _ys, zs = offsets
+        if len(zs) == 1 and abs(float(zs[0]) - (2.0 * 3.1 - 1.2)) < 1e-6:
+            image_marks.append(collection)
+    assert image_marks, "first-order image source marker missing"
 
     activate("zh_CN")
     try:

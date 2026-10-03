@@ -4097,3 +4097,14 @@ msgstr "作为房间话筒，后期房间声偏少（C80 {value:.1f} dB，高于
 msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {threshold:.0f} dB). Some late sound suits a choir, but this much will blur diction. This is one position, not a room grade."
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
+msgid "Image source"
+msgstr "镜像声源"
+
+msgid "Specular bounce"
+msgstr "镜面反射点"
+
+msgid ""
+"The hollow mark is the first-order image source of that loudspeaker; the"
+" dashed path is the specular bounce off the plane above."
+msgstr "空心标记是该扬声器的一阶镜像声源；虚线是上方平面上的镜面反射路径。"
+

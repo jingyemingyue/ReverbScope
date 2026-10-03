@@ -13,6 +13,7 @@ import mpl_toolkits.mplot3d  # noqa: F401  registers the 3d projection
 import numpy as np
 from matplotlib.figure import Figure
 
+from roomscope.core.placement import horizontal_plane_image_path
 from roomscope.core.reflections import reflection_envelope_db
 from roomscope.i18n import _
 from roomscope.interpretation.profiles import band_text, confidence_text, noise_segment_text
@@ -289,10 +290,16 @@ def plot_placement_result(fig: Figure, placement: PlacementResult | None) -> str
         ring=True,
         title=_("Measured geometry. Drag to rotate."),
     )
-    return _(
+    hint = _(
         "The ring is every loudspeaker position this measurement allows. The cabinet "
         "is one of them, drawn so the direct path can be seen. No wall is drawn."
     )
+    if ceiling is not None:
+        hint += " " + _(
+            "The hollow mark is the first-order image source of that loudspeaker; "
+            "the dashed path is the specular bounce off the plane above."
+        )
+    return hint
 
 
 def _placement_axis_known(placement: PlacementResult) -> bool:
@@ -366,11 +373,39 @@ def _draw_placement(
     ax.plot([0.0, sx], [0.0, sy], [mic_z, source_z], color=colors["fg"], linewidth=1.4)
     mid_z = (mic_z + source_z) * 0.5 + 0.16
     ax.text(sx * 0.42, sy * 0.42, mid_z, _("Direct sound"), fontsize=8)
+    image_z = None
+    if ceiling_z is not None:
+        image, bounce = horizontal_plane_image_path(
+            (sx, sy, source_z), (0.0, 0.0, mic_z), ceiling_z
+        )
+        image_z = image[2]
+        bounce_color = PLOT_SERIES[2]
+        ax.plot(
+            [sx, bounce[0], 0.0],
+            [sy, bounce[1], 0.0],
+            [source_z, bounce[2], mic_z],
+            color=bounce_color,
+            linestyle="--",
+            linewidth=1.3,
+        )
+        ax.scatter(
+            [image[0]],
+            [image[1]],
+            [image[2]],
+            s=42,
+            facecolors="none",
+            edgecolors=speaker,
+            linewidths=1.4,
+        )
+        ax.text(image[0] + 0.16, image[1] + 0.08, image[2], _("Image source"), fontsize=8)
+        ax.text(
+            bounce[0] + 0.12, bounce[1] + 0.08, bounce[2] + 0.06, _("Specular bounce"), fontsize=8
+        )
     scale = 1.0 if radius >= 1.4 else 0.5
     edge = -radius * 0.72
     ax.plot([edge, edge + scale], [edge, edge], [0.0, 0.0], color=colors["fg"], linewidth=2.0)
     ax.text(edge + scale * 0.5, edge, 0.05, f"{scale:g} m", fontsize=8)
-    zlim = top * 1.15
+    zlim = max(top, image_z or 0.0) * 1.15
     ax.set_xlim(-radius, radius)
     ax.set_ylim(-radius, radius)
     ax.set_zlim(0.0, zlim)
