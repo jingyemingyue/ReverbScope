@@ -34,6 +34,7 @@ architecture ideas) or as ordinary dependencies. See CODE_PROVENANCE.md.
 | pengowray/sweep (JavaScript) | (GitHub search result) | MIT | no | no | Conceptual reference only. |
 | ESS gists (akashrajkn; a Farina-formula gist) | GitHub gists | **none** | unknown | unknown | **License unclear — no source code copied.** |
 | python-sounddevice (+ examples) | https://github.com/spatialaudio/python-sounddevice | MIT (PortAudio MIT-style; Windows ASIO DLLs carry Steinberg SDK terms) | no | no | Dependency (public API only). |
+| PortAudio v19.7.0 (compiled host-API defaults only) | https://github.com/PortAudio/portaudio/tree/v19.7.0 | MIT | no | no | Numbers cited in `audio/referenced.py` (MME/DirectSound/WDM-KS/ALSA/OSS/Core Audio macros). **No source copied.** |
 | python-soundfile | https://github.com/bastibe/python-soundfile | BSD-3-Clause (bundled libsndfile LGPL-2.1+, dynamic) | no | no as a pip dependency | Dependency (public API only). |
 
 ## Rules applied

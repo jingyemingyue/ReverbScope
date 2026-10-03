@@ -8,6 +8,13 @@ All notable changes to RoomScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Referenced interface specs.** `roomscope devices --referenced` and the
+  inventory JSON `referenced` object cite PortAudio v19.7.0 compiled
+  defaults (including the OSS 4×128-frame request), alsa-lib dmix
+  48 kHz / 2 ch, PipeWire `default.clock.rate` 48 kHz, Focusrite Scarlett
+  2i2 / 18i20 4th Gen user-guide figures, and the RME Babyface Pro FS
+  product page. Empty cells stay empty when the source does not state a
+  number. None of this is a HARDWARE_TESTS.md PASS.
 - **Device capability catalog.** `roomscope devices --json` and
   `roomscope doctor` now always include RoomScope's six measurement rates
   (`SUPPORTED_SAMPLE_RATES`) and a host-API catalog built from

@@ -51,6 +51,12 @@ interface and its real driver. Software parameters that *are* complete
 rates, the fake backend's 8-in / 2-out device, and the host-API catalog
 with PortAudio's documented default latencies.
 
+Referenced manufacturer and repository specs (Scarlett 2i2 / 18i20, Babyface
+Pro FS, PortAudio compiled defaults, ALSA dmix, PipeWire graph rate) live in
+[AUDIO_DEVICES.md](AUDIO_DEVICES.md) §4b and `roomscope devices --referenced`.
+They are borrowed published numbers, not a RoomScope measurement, and they
+do **not** mark any cell above PASS.
+
 ## DAW matrix
 
 One Universal DAW Mode measurement per DAW, following

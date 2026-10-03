@@ -29,6 +29,11 @@ from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 
 from roomscope.audio.backend import AudioBackend, DeviceInfo, StreamOptions
+from roomscope.audio.referenced import (
+    HOST_API_DOCUMENTED_LATENCY,
+    REFERENCED_HOST_API_LATENCY,
+    referenced_catalog_dict,
+)
 from roomscope.errors import RoomScopeError
 from roomscope.i18n import _, diag
 from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES
@@ -88,40 +93,6 @@ HOST_API_NOTES: dict[str, str] = {
     "jack": diag("JACK: runs at the JACK server's rate only"),
     "oss": diag("OSS: legacy Linux interface"),
     "fake": diag("synthetic backend: nothing is played"),
-}
-
-#: PortAudio compiled default latencies (seconds) from docs/AUDIO_DEVICES.md §2.
-#: These are documentation, not measured round-trips on a physical interface.
-#: Notes stay English in JSON (:func:`~roomscope.i18n.diag`); the CLI localizes them.
-HOST_API_DOCUMENTED_LATENCY: dict[str, tuple[float | None, float | None, str]] = {
-    "wasapi": (
-        0.010,
-        0.010,
-        diag("shared-mode engine buffer default 10 ms; exclusive uses the device period"),
-    ),
-    "wdmks": (
-        0.010,
-        0.040,
-        diag("WaveRT compiled defaults 10 / 40 ms (WaveCyclic 10 / 85 ms)"),
-    ),
-    "asio": (None, None, diag("preferred / maximum driver buffer")),
-    "directsound": (0.120, 0.240, diag("PortAudio compiled defaults 120 / 240 ms")),
-    "mme": (0.090, 0.180, diag("PortAudio compiled defaults 90 / 180 ms")),
-    "coreaudio": (
-        0.010,
-        0.100,
-        diag("fallback 10 / 100 ms when the device latency is unreadable"),
-    ),
-    "alsa": (
-        0.008,
-        0.032,
-        diag(
-            "compiled default (512-128)/fs / (2048-512)/fs: 8 / 32 ms at 48 kHz if hardware allows"
-        ),
-    ),
-    "jack": (None, None, diag("port latency divided by the JACK server rate")),
-    "oss": (None, None, diag("not assessed")),
-    "fake": (None, None, diag("synthetic backend: nothing is played")),
 }
 
 #: PortAudio name for each known kind (the inverse of :data:`HOST_API_KINDS`).
@@ -243,6 +214,8 @@ class HostApiCatalogEntry:
     documented_high_latency_s: float | None
     documented_latency_note: str
     note: str
+    documented_latency_source_url: str = ""
+    documented_latency_source_locator: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -261,6 +234,8 @@ class DeviceInventory:
     supported_sample_rates: tuple[int, ...] = SUPPORTED_SAMPLE_RATES
     #: Every host API RoomScope knows, including ones absent on this machine.
     host_api_catalog: tuple[HostApiCatalogEntry, ...] = ()
+    #: Manufacturer / repo specs. Not a hardware-matrix result.
+    referenced: dict[str, Any] = field(default_factory=referenced_catalog_dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -273,6 +248,7 @@ class DeviceInventory:
             "host_api_catalog": [entry.to_dict() for entry in self.host_api_catalog],
             "devices": [probe.to_dict() for probe in self.devices],
             "notes": list(self.notes),
+            "referenced": self.referenced,
         }
 
     def recommended(self, kind: str) -> list[DeviceProbe]:
@@ -296,6 +272,7 @@ def _host_api_catalog(present: Sequence[HostApiInfo], platform: str) -> list[Hos
     catalog: list[HostApiCatalogEntry] = []
     for kind in kinds:
         low, high, latency_note = HOST_API_DOCUMENTED_LATENCY.get(kind, (None, None, ""))
+        sourced = REFERENCED_HOST_API_LATENCY.get(kind)
         found = by_kind.get(kind)
         catalog.append(
             HostApiCatalogEntry(
@@ -307,6 +284,8 @@ def _host_api_catalog(present: Sequence[HostApiInfo], platform: str) -> list[Hos
                 documented_low_latency_s=low,
                 documented_high_latency_s=high,
                 documented_latency_note=latency_note,
+                documented_latency_source_url=sourced.citation.url if sourced else "",
+                documented_latency_source_locator=sourced.citation.locator if sourced else "",
                 note=HOST_API_NOTES.get(kind, ""),
             )
         )

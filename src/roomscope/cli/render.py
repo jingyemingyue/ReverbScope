@@ -1326,6 +1326,82 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
             align="llr",
             title_columns=1,
         )
+        lines += console.status(
+            "info",
+            _(
+                "Referenced manufacturer specs: roomscope devices --referenced (not a hardware result)"
+            ),
+        )
+    return console.fit("\n".join(lines))
+
+
+def render_referenced(console: Console, inventory: DeviceInventory) -> str:
+    """Manufacturer / repo specs. Not a HARDWARE_TESTS.md result."""
+    data = inventory.referenced
+    lines = console.title(_("Referenced device data (not measured)"))
+    lines += console.status(
+        "info",
+        _("Public sources only. Not a RoomScope measurement and not a HARDWARE_TESTS.md PASS."),
+    )
+    rows = []
+    for entry in data.get("interfaces", []):
+        rates_hz = entry.get("sample_rates_hz") or ()
+        lo, hi = entry.get("sample_rate_min_hz"), entry.get("sample_rate_max_hz")
+        if rates_hz:
+            rates = rates_text(rates_hz, console)
+        elif lo and hi:
+            rates = f"{lo / 1000:g}–{hi / 1000:g} kHz"
+        else:
+            rates = console.dash()
+        rows.append(
+            [
+                entry["name"],
+                console.dash()
+                if entry.get("analog_inputs") is None
+                else str(entry["analog_inputs"]),
+                console.dash()
+                if entry.get("analog_outputs") is None
+                else str(entry["analog_outputs"]),
+                rates,
+                entry.get("bit_depth") or console.dash(),
+            ]
+        )
+    lines.append("")
+    lines += console.table(
+        [_("Interface"), _("In"), _("Out"), _("Rate"), _("Bit depth")],
+        rows,
+        align="llrrr",
+        title_columns=1,
+    )
+    for entry in data.get("interfaces", []):
+        citation = entry.get("citation") or {}
+        lines += console.status("info", f"{entry['name']}: {citation.get('url', '')}")
+        for missing in entry.get("not_stated", []):
+            lines += console.status("skip", f"{entry['name']}: {localize(missing)}")
+    lines.append("")
+    mix_rows = [
+        [
+            entry["name"],
+            console.dash()
+            if entry.get("sample_rate_hz") is None
+            else rate_text(float(entry["sample_rate_hz"])),
+            console.dash() if entry.get("channels") is None else str(entry["channels"]),
+        ]
+        for entry in data.get("mixer_defaults", [])
+    ]
+    lines += console.table(
+        [_("Mixer default"), _("Rate"), _("Channels")],
+        mix_rows,
+        align="llr",
+        title_columns=1,
+    )
+    for entry in data.get("mixer_defaults", []):
+        citation = entry.get("citation") or {}
+        lines += console.status("info", f"{entry['name']}: {citation.get('url', '')}")
+    lines.append("")
+    lines += console.section(_("Gaps with no citable source"))
+    for gap in data.get("gaps", []):
+        lines += console.status("skip", localize(gap))
     return console.fit("\n".join(lines))
 
 

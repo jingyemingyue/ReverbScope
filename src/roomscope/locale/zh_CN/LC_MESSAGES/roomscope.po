@@ -2026,6 +2026,70 @@ msgid "not assessed"
 msgstr "未评估"
 
 msgctxt "diagnostic"
+msgid "requested 4 fragments × 128 frames; low=(nfrags-1)*frag/fs (8 / 32 ms at 48 kHz if the driver keeps those sizes)"
+msgstr "请求 4 个片段 × 每片段 128 帧；低延迟=(nfrags-1)*frag/fs（若驱动保持该大小，48 kHz 下为 8 / 32 ms）"
+
+msgctxt "diagnostic"
+msgid "PortAudio host-API name on a given OS"
+msgstr "给定操作系统上的 PortAudio 主机 API 名称"
+
+msgctxt "diagnostic"
+msgid "measured round-trip latency"
+msgstr "测得的往返延迟"
+
+msgctxt "diagnostic"
+msgid "whether Windows/Core Audio expose loopback as extra channels"
+msgstr "Windows/Core Audio 是否把回送显示为额外声道"
+
+msgctxt "diagnostic"
+msgid "analogue line-output count"
+msgstr "模拟线路输出数量"
+
+msgctxt "diagnostic"
+msgid "PortAudio channel count including ADAT at each rate"
+msgstr "各采样率下含 ADAT 的 PortAudio 声道数"
+
+msgctxt "diagnostic"
+msgid "discrete sample-rate list (only a 28–200 kHz range is stated)"
+msgstr "离散采样率列表（来源只给出 28–200 kHz 范围）"
+
+msgctxt "diagnostic"
+msgid "This machine's PortAudio device list (ALSA 0 devices, OSS 0 devices): no physical interface"
+msgstr "本机 PortAudio 设备列表（ALSA 0 个设备，OSS 0 个设备）：没有实体接口"
+
+msgctxt "diagnostic"
+msgid "Measured full-duplex round-trip latency on any interface"
+msgstr "任何接口上测得的全双工往返延迟"
+
+msgctxt "diagnostic"
+msgid "Pa_IsFormatSupported results on a physical interface (sample-rate negotiation)"
+msgstr "实体接口上的 Pa_IsFormatSupported 结果（采样率协商）"
+
+msgctxt "diagnostic"
+msgid "ASIO compiled numeric default latency (PortAudio stores the driver's buffer only)"
+msgstr "ASIO 的编译默认数值延迟（PortAudio 只保存驱动缓冲）"
+
+msgctxt "diagnostic"
+msgid "JACK compiled numeric default latency (only jack_port_get_latency / server rate)"
+msgstr "JACK 的编译默认数值延迟（只有 jack_port_get_latency / 服务器采样率）"
+
+msgctxt "diagnostic"
+msgid "Core Audio device-specific latency (only the 10 / 100 ms fallback is sourced)"
+msgstr "Core Audio 设备特定延迟（只有 10 / 100 ms 回退值有来源）"
+
+msgctxt "diagnostic"
+msgid "Scarlett 18i20 4th Gen analogue line-output count (spec page did not yield a clear figure)"
+msgstr "Scarlett 18i20 第四代模拟线路输出数量（规格页未给出明确数字）"
+
+msgctxt "diagnostic"
+msgid "USB Audio Class 1.0 / 2.0 discrete rate tables (USB-IF PDFs were not re-read)"
+msgstr "USB Audio Class 1.0 / 2.0 离散采样率表（未重读 USB-IF PDF）"
+
+msgctxt "diagnostic"
+msgid "Hardware bit depth of a PortAudio stream (RoomScope writes 32-bit float; manufacturer pages above state 24-bit converters)"
+msgstr "PortAudio 流的硬件位深度（RoomScope 写出 32-bit float；上述厂商页面写的是 24-bit 转换器）"
+
+msgctxt "diagnostic"
 msgid "ALSA plugin or sound-server device: may resample and mix"
 msgstr "ALSA 插件或声音服务器设备：可能重采样并混音"
 
@@ -2522,6 +2586,33 @@ msgstr "测量采样率"
 
 msgid "Documented latency"
 msgstr "文档中的延迟"
+
+msgid "Referenced manufacturer specs: roomscope devices --referenced (not a hardware result)"
+msgstr "引用的厂商规格：roomscope devices --referenced（不是硬件结果）"
+
+msgid "show manufacturer and repo specs (not a hardware result)"
+msgstr "显示厂商和仓库规格（不是硬件结果）"
+
+msgid "Referenced device data (not measured)"
+msgstr "引用的设备数据（未经测量）"
+
+msgid "Public sources only. Not a RoomScope measurement and not a HARDWARE_TESTS.md PASS."
+msgstr "仅来自公开来源。不是 RoomScope 测量，也不是 HARDWARE_TESTS.md 的 PASS。"
+
+msgid "Interface"
+msgstr "接口"
+
+msgid "Bit depth"
+msgstr "位深度"
+
+msgid "Mixer default"
+msgstr "混音器默认值"
+
+msgid "Channels"
+msgstr "声道"
+
+msgid "Gaps with no citable source"
+msgstr "尚无可靠来源的空缺"
 
 msgid "Accepted rates: {rates}"
 msgstr "可接受采样率：{rates}"

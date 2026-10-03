@@ -46,6 +46,7 @@ from roomscope.cli.render import (
     render_host_apis,
     render_inventory,
     render_measure_plan,
+    render_referenced,
     render_saved_next_steps,
     render_status,
     render_sweep_written,
@@ -655,6 +656,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--host-apis", action="store_true", help=_("list the host APIs instead of devices")
     )
     p_dev.add_argument(
+        "--referenced",
+        action="store_true",
+        help=_("show manufacturer and repo specs (not a hardware result)"),
+    )
+    p_dev.add_argument(
         "--json", action="store_true", help=_("deprecated: use roomscope --format json")
     )
 
@@ -1125,6 +1131,7 @@ def cmd_devices(args: argparse.Namespace) -> int:
     if (
         getattr(args, "probe", False)
         or getattr(args, "host_apis", False)
+        or getattr(args, "referenced", False)
         or getattr(args, "json", False)
         or getattr(args, "format", None) == "json"
     ):
@@ -1142,8 +1149,11 @@ def _print_inventory(backend: Any, args: argparse.Namespace) -> int:
         return 0
     if getattr(args, "host_apis", False):
         print(render_host_apis(_console(args), inventory))
-    else:
-        print(render_inventory(_console(args), inventory))
+        return 0
+    if getattr(args, "referenced", False):
+        print(render_referenced(_console(args), inventory))
+        return 0
+    print(render_inventory(_console(args), inventory))
     return 0
 
 

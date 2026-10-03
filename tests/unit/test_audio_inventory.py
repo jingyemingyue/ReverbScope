@@ -365,6 +365,44 @@ def test_inventory_includes_software_capability_catalog(windows: WindowsBackend)
     data = inventory.to_dict()
     assert data["supported_sample_rates"] == list(SUPPORTED_SAMPLE_RATES)
     assert any(entry["kind"] == "alsa" for entry in data["host_api_catalog"])
+    oss = next(entry for entry in inventory.host_api_catalog if entry.kind == "oss")
+    assert oss.documented_low_latency_s == 0.008
+    assert oss.documented_high_latency_s == 0.032
+    assert "pa_unix_oss.c" in oss.documented_latency_source_url
+    assert "HARDWARE_TESTS.md PASS" in data["referenced"]["disclaimer"]
+
+
+def test_referenced_catalog_cites_sources_and_leaves_gaps() -> None:
+    from roomscope.audio.referenced import (
+        REFERENCED_GAPS,
+        REFERENCED_HOST_API_LATENCY,
+        REFERENCED_INTERFACES,
+        REFERENCED_MIXER_DEFAULTS,
+        referenced_catalog_dict,
+    )
+
+    for entry in REFERENCED_HOST_API_LATENCY.values():
+        assert entry.citation.url.startswith("http")
+        assert entry.citation.locator
+    two_i_two = next(item for item in REFERENCED_INTERFACES if "2i2" in item.name)
+    assert two_i_two.analog_inputs == 2 and two_i_two.analog_outputs == 2
+    assert two_i_two.sample_rates_hz == (44100, 48000, 88200, 96000, 176400, 192000)
+    assert two_i_two.bit_depth == "24-bit"
+    assert "userguides.focusrite.com" in two_i_two.citation.url
+    eighteen = next(item for item in REFERENCED_INTERFACES if "18i20" in item.name)
+    assert eighteen.analog_inputs == 8
+    assert eighteen.analog_outputs is None
+    babyface = next(item for item in REFERENCED_INTERFACES if "Babyface" in item.name)
+    assert babyface.analog_inputs == 4 and babyface.analog_outputs == 4
+    assert babyface.sample_rates_hz == ()
+    assert babyface.sample_rate_min_hz == 28000
+    dmix = next(item for item in REFERENCED_MIXER_DEFAULTS if item.name == "ALSA dmix")
+    assert dmix.sample_rate_hz == 48000 and dmix.channels == 2
+    assert "alsa-lib" in dmix.citation.url
+    assert any("USB Audio Class" in gap for gap in REFERENCED_GAPS)
+    catalog = referenced_catalog_dict()
+    assert catalog["gaps"]
+    assert "Not a RoomScope measurement" in catalog["disclaimer"]
 
 
 def test_fake_device_advertises_supported_rates_without_probing() -> None:
@@ -441,6 +479,10 @@ def test_cli_devices_probe_and_doctor(capsys: pytest.CaptureFixture[str]) -> Non
     assert main(["--backend", "fake", "doctor"]) == 0
     report = capsys.readouterr().out
     assert "RoomScope" in report and "numpy" in report and "\nAudio\n" in report
+    assert main(["--backend", "fake", "devices", "--referenced"]) == 0
+    referenced = capsys.readouterr().out
+    assert "Scarlett 2i2" in referenced and "not a HARDWARE_TESTS.md PASS" in referenced
+    assert "Babyface Pro FS" in referenced and "Gaps with no citable source" in referenced
 
 
 def test_edition_follows_environment_and_bundle(monkeypatch: pytest.MonkeyPatch) -> None:

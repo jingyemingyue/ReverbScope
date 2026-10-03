@@ -26,7 +26,7 @@
 
 单元格记录格式为 `PASS YYYY-MM-DD, RoomScope x.y.z (commit), <OS version>, <interface and driver>, #issue` 或 `FAIL ... #issue`。不要根据 fake 后端、CI 运行器或测试结果填写单元格。
 
-云虚拟机不是实体音频接口。2026-10-03 一台 Linux x86_64 Cursor 云虚拟机运行了 PortAudio V19.6.0-devel（`libportaudio2` 19.6.0），列出的是 **ALSA（0 个设备）** 和 **OSS（0 个设备）**。这不是接口枚举，不是采样率协商，也不是 PASS。上表每个空单元格仍然缺少一台实体电脑、一个实体接口及其实际驱动。已经补全、且**不是**硬件结果的软件参数见 [AUDIO_DEVICES.md](AUDIO_DEVICES.md) §4a：RoomScope 的六种测量采样率、fake 后端的 8 入 / 2 出设备，以及带 PortAudio 文档默认延迟的主机 API 目录。
+云虚拟机不是实体音频接口。2026-10-03 一台 Linux x86_64 Cursor 云虚拟机运行了 PortAudio V19.6.0-devel（`libportaudio2` 19.6.0），列出的是 **ALSA（0 个设备）** 和 **OSS（0 个设备）**。这不是接口枚举，不是采样率协商，也不是 PASS。上表每个空单元格仍然缺少一台实体电脑、一个实体接口及其实际驱动。已经补全、且**不是**硬件结果的软件参数见 [AUDIO_DEVICES.md](AUDIO_DEVICES.md) §4a：RoomScope 的六种测量采样率、fake 后端的 8 入 / 2 出设备，以及带 PortAudio 文档默认延迟的主机 API 目录。厂商和仓库的**引用规格**见 [AUDIO_DEVICES.md](AUDIO_DEVICES.md) §4b 和 `roomscope devices --referenced`；它们是借来的公开数字，不是 RoomScope 测量，也**不会**把上表任何单元格标为 PASS。
 
 ## DAW 矩阵
 

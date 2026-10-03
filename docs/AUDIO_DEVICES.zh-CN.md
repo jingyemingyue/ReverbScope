@@ -177,6 +177,17 @@ Core Audio 用两个回调之间的环形缓冲连接两个设备 [11]。两个�
 `roomscope measure` 写出的 FLOAT 文件）。通用 DAW 模式把这些字段留空：设备链
 由 DAW 掌管。
 
+## 4b. 引用的目录（不是 RoomScope 测量）
+
+这些行来自公开的厂商页面和开源仓库。它们补全本机无法探测的声道数、采样率、
+位深度和主机 API 编译默认值。它们**不是**实体接口测试，也**不会**填入
+[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)。
+
+`roomscope devices --referenced` 和 `roomscope devices --json` 的 `referenced`
+对象打印同一张表。每个值带有来源 URL 和定位（`src/roomscope/audio/referenced.py`）。
+
+来源与空缺的英文对照见 [AUDIO_DEVICES.md](AUDIO_DEVICES.md) §4b。
+
 ## 5. 参考文献
 
 访问日期 2026-09-24。另见 [research/literature.md](research/literature.md)。文献条目保留原文。
