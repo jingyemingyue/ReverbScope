@@ -385,14 +385,14 @@ def page_description(markdown: str, *, fallback: str) -> str:
     """First real paragraph, trimmed to a search-snippet length."""
     for raw in markdown.replace("\r\n", "\n").split("\n\n"):
         block = raw.strip()
-        if not block or block.startswith("#") or block.startswith("```"):
+        if not block or block.startswith(("#", "```")):
             continue
-        if block.startswith("|") or block.startswith(">") or block.startswith("```"):
+        if block.startswith(("|", ">", "```")):
             continue
         if UL_ITEM.match(block.splitlines()[0]) or OL_ITEM.match(block.splitlines()[0]):
             continue
         # Language-switcher lines ("**English** | [简体中文](...)").
-        if block.startswith("**English**") or block.startswith("[English]"):
+        if block.startswith(("**English**", "[English]")):
             continue
         text = _plain_text(block.splitlines()[0] if block.startswith("**") else block)
         if len(text) < 24:
@@ -475,9 +475,7 @@ def build_site(docs: Path, dest: Path, *, base_url: str = PLACEHOLDER_BASE_URL) 
         title = _first_heading(markdown, source.stem)
         prefix = rel_prefix(relative)
         current = relative.with_suffix(".html").as_posix()
-        description = page_description(
-            markdown, fallback=f"{title} — RoomScope documentation."
-        )
+        description = page_description(markdown, fallback=f"{title} — RoomScope documentation.")
         page = _page(
             title,
             markdown_to_html(markdown),

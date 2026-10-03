@@ -669,7 +669,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_sweep_arguments(p_sweep, default_level=-12.0)
     _add_daw_follow_arguments(p_sweep)
 
-    p_daw = _command(
+    _command(
         sub,
         "daw",
         _("list open DAW projects, or say that none were found"),

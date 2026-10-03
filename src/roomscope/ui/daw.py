@@ -8,7 +8,7 @@ ensure_pyside6()
 
 from PySide6.QtWidgets import QInputDialog, QWidget
 
-from roomscope.daw import DawProject, SOURCE_DECLARED
+from roomscope.daw import SOURCE_DECLARED, DawProject
 from roomscope.i18n import _
 from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES
 

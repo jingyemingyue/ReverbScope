@@ -166,6 +166,7 @@ ignore = [
 "src/roomscope/cli/*" = ["T20"]
 "src/roomscope/ui/results.py" = ["E402", "I001"]
 "src/roomscope/ui/compare_view.py" = ["E402", "I001"]
+"src/roomscope/ui/daw.py" = ["E402", "I001"]
 "examples/*" = ["T20"]
 "scripts/*" = ["T20"]
 "packaging/*" = ["F821"]

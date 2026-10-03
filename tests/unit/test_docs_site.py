@@ -70,7 +70,11 @@ def test_site_seo_files_use_placeholder_and_allow_indexing(tmp_path: Path) -> No
     assert "Allow: /" in robots
     assert "Disallow:" not in robots
     assert f"Sitemap: {site.PLACEHOLDER_BASE_URL}sitemap.xml" in robots
-    assert "submitted" in robots.lower() or "not submit" in robots.lower() or "nothing was submitted" in robots.lower()
+    assert (
+        "submitted" in robots.lower()
+        or "not submit" in robots.lower()
+        or "nothing was submitted" in robots.lower()
+    )
 
     sitemap = (dest / "sitemap.xml").read_text(encoding="utf-8")
     assert 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"' in sitemap

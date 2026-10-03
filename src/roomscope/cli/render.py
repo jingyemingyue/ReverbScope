@@ -1546,7 +1546,7 @@ def render_sweep_written(
 
 def render_daw_projects(console: Console, projects: Sequence[object]) -> str:
     """Open / declared DAW projects, or the ask when none or several are in play."""
-    from roomscope.daw import DawProject, FOLLOWED_SETTINGS
+    from roomscope.daw import FOLLOWED_SETTINGS, DawProject
 
     c = console
     lines = c.title(_("DAW to follow"))

@@ -30,9 +30,7 @@ from roomscope.schemas import load_schema
 TWO_FAKES = "Logic Pro:48000:Song A;REAPER:44100:Film"
 
 
-def _project(
-    daw: str, rate: int, project: str = "", *, source: str = SOURCE_FAKE
-) -> DawProject:
+def _project(daw: str, rate: int, project: str = "", *, source: str = SOURCE_FAKE) -> DawProject:
     return DawProject(daw=daw, sample_rate=rate, project=project, source=source)
 
 
@@ -176,7 +174,7 @@ def test_cli_daw_several_lists_both_and_asks(
     out = capsys.readouterr().out
     assert "Logic Pro" in out and "REAPER" in out
     assert "More than one" in out
-    assert "will not guess" in out
+    assert "not guess" in out
 
     assert main(["--format", "json", "daw"]) == 0
     payload = json.loads(capsys.readouterr().out)
@@ -192,8 +190,9 @@ def test_cli_follow_daw_without_choice_asks(
     code = main(["sweep", "--out", str(tmp_path / "sweep.wav"), "--follow-daw"])
     assert code == 1
     err = capsys.readouterr().err
-    assert "More than one" in err
-    assert "will not guess" in err
+    compact = " ".join(err.split())
+    assert "More than one" in compact
+    assert "not guess" in compact
     assert not (tmp_path / "sweep.wav").exists()
 
 

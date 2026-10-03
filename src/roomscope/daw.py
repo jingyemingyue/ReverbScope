@@ -30,7 +30,7 @@ SOURCE_FAKE = "fake"
 SOURCE_DECLARED = "declared"
 
 
-class DawChoiceNeeded(ConfigurationError):
+class DawChoiceNeeded(ConfigurationError):  # noqa: N818 — a needed choice, not a crash
     """Zero or several DAW projects are in play; the user must choose."""
 
     def __init__(
@@ -71,11 +71,9 @@ class DawProject:
 
     def matches(self, daw: str | None, project: str | None) -> bool:
         """Exact name match, ignoring letter case and extra spaces. No prefixes."""
-        if daw and _norm(daw) != _norm(self.daw):
-            return False
-        if project and _norm(project) != _norm(self.project):
-            return False
-        return True
+        daw_ok = not daw or _norm(daw) == _norm(self.daw)
+        project_ok = not project or _norm(project) == _norm(self.project)
+        return daw_ok and project_ok
 
     def to_dict(self) -> dict[str, str | int]:
         return {
@@ -102,7 +100,7 @@ def parse_fake_daws(text: str) -> tuple[DawProject, ...]:
             raise ConfigurationError(
                 _("fake DAW entry {item} must be Name:rate or Name:rate:project").format(item=item)
             )
-        rate_text, _, project = rest.partition(":")
+        rate_text, _rate_sep, project = rest.partition(":")
         try:
             rate = int(rate_text)
         except ValueError as exc:
