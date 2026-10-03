@@ -22,8 +22,10 @@ All notable changes to RoomScope are documented here. The format follows
 - **Noise-band filter settling.** `settling_samples` grows a short impulse
   until the unused tail is below the 0.001 energy remainder, then caches
   the length. Octave-band results match a full 4 s impulse. On this Linux
-  VM, eight bands × three repeats fell from 1.30 s to 0.014 s; a 2 s
-  synthetic `analyze` fell from 0.56 s to 0.12 s (cached) / 0.15 s (cold).
+  VM the old 4 s impulse took 1.24 s for eight bands × three repeats;
+  the new length is cached after 0.002 s. A 2 s synthetic `analyze` that
+  measures octave-band noise fell from 0.54 s to 0.13 s (4×); broadband
+  T30 and the eight band levels were identical.
 
 ## [0.5.0b1] - 2026-10-01
 
