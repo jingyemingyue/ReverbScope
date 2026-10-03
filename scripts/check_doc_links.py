@@ -33,9 +33,20 @@ def check(root: Path, extra: list[Path] | None = None) -> list[str]:
     A link may point anywhere inside the repository, which is ``root``'s
     parent (the default ``root`` is ``docs``).
     """
+    if not root.is_dir():
+        return [
+            f"{root}: documentation directory not found; run from the repository root or pass --root"
+        ]
+    paths = [*sorted(root.rglob("*.md")), *(extra or [])]
+    if not paths:
+        return [f"{root}: no Markdown documents found"]
     errors: list[str] = []
-    for path in [*sorted(root.rglob("*.md")), *(extra or [])]:
-        text = path.read_text(encoding="utf-8")
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            errors.append(f"{path}: cannot read Markdown: {exc}")
+            continue
         for href in _targets(text):
             target = (path.parent / href).resolve()
             try:

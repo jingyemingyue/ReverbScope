@@ -35,6 +35,8 @@ jobs:
         run: mypy
       - name: Documentation links
         run: python scripts/check_doc_links.py
+      - name: Documentation CLI examples (parse only; no devices)
+        run: python scripts/check_cli_docs.py
       - name: Themed documentation site
         run: |
           python scripts/build_docs_site.py --out /tmp/roomscope-site

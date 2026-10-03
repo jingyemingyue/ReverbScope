@@ -5,6 +5,28 @@ All notable changes to RoomScope are documented here. The format follows
 [Semantic Versioning](https://semver.org/). How a version is cut is in
 `docs/RELEASE_PLAN.md`.
 
+## [Unreleased]
+
+### Added
+- A documentation CLI gate parses complete commands in Markdown shell
+  fences with the current parser, reporting stale arguments by file and
+  line without running any command. CI runs it alongside the link check.
+- A documented offline workflow is executed by an integration test using
+  only synthetic data and the fake backend. It checks JSON schemas,
+  CSV exports, a no-audio session bundle and unchanged source files.
+  `docs/OFFLINE_CHECKS.md` lists the physical-interface, DAW and real-room
+  checks that remain pending; hardware matrices are unchanged.
+
+### Fixed
+- Documentation and source checks fail on missing directories, empty
+  scans, unreadable inputs and invalid Python instead of reporting a
+  false success or an unlocated traceback.
+- Release smoke subprocess failures name the command, exit code or
+  timeout/start error and retain stdout/stderr. Invalid JSON and doctor
+  metadata have readable failures. Every subprocess uses UTF-8, a timeout
+  and an isolated RoomScope home. `--no-gui` also permits the optional Qt
+  packages to be absent in a CLI-only source or wheel install, as documented.
+
 ## [0.5.0b1] - 2026-10-01
 
 Software beta 1. This is **not** 0.5.0: the release plan's 0.5.0 still

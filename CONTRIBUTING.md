@@ -42,9 +42,12 @@ go through [SECURITY.md](SECURITY.md), not public issues.
 ```bash
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev,gui]"
-pytest                    # unit + integration + offscreen GUI smoke tests
+QT_QPA_PLATFORM=offscreen pytest   # unit + integration + offscreen GUI smoke tests
 ruff check . && ruff format --check .
 mypy
+python scripts/check_doc_links.py
+python scripts/check_cli_docs.py   # parse documentation examples; no commands run
+python scripts/check_src_safety.py
 python scripts/build_docs_site.py --out site   # themed docs (S7)
 python scripts/smoke_bundle.py --no-gui --out /tmp/smoke-session   # fake measure
 # add --no-gui only for a CLI-only install; bundles run gui --smoke offscreen
@@ -60,6 +63,11 @@ sudo apt-get install -y libportaudio2 libegl1 libgl1 libxkbcommon0 libxcb-cursor
 All three of pytest / ruff / mypy must pass before a pull request is opened.
 GitHub Actions repeats them on Python 3.12, 3.13 and 3.14. Tests that need audio
 hardware are not part of the suite; synthetic signals are used instead.
+
+See [Checks without hardware](docs/OFFLINE_CHECKS.md) for a runnable fake
+workflow, the scope of each gate and the evidence that still needs a
+physical interface or DAW. Report skipped checks explicitly; offline
+results never fill the hardware matrix.
 
 The `gui` extra installs **PySide6_Essentials** (LGPL-3.0), not the PySide6
 meta-package, so GPL-only Qt modules never land in a developer environment.

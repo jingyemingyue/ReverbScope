@@ -53,6 +53,7 @@ the release plan and the v1.0 architecture have a Chinese digest.
 
 ## For developers
 
+- [Checks without hardware](OFFLINE_CHECKS.md)
 - [Release plan](RELEASE_PLAN.md)
 - [Release plan (中文摘要)](RELEASE_PLAN.zh-CN.md)
 - [Architecture (v0.1)](ARCHITECTURE.md)

@@ -169,9 +169,19 @@ def _check_file(path: Path, root: Path) -> list[str]:
 
 
 def check(root: Path) -> list[str]:
+    if not root.is_dir():
+        return [f"{root}: source directory not found; run from the repository root or pass --root"]
+    paths = sorted(root.rglob("*.py"))
+    if not paths:
+        return [f"{root}: no Python sources found"]
     bad: list[str] = []
-    for path in sorted(root.rglob("*.py")):
-        bad.extend(_check_file(path, root))
+    for path in paths:
+        try:
+            bad.extend(_check_file(path, root))
+        except SyntaxError as exc:
+            bad.append(f"{path}:{exc.lineno}: cannot parse Python: {exc.msg}")
+        except (OSError, UnicodeError) as exc:
+            bad.append(f"{path}: cannot read Python source: {exc}")
     return bad
 
 
