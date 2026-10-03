@@ -5,6 +5,75 @@ All notable changes to RoomScope are documented here. The format follows
 [Semantic Versioning](https://semver.org/). How a version is cut is in
 `docs/RELEASE_PLAN.md`.
 
+## [Unreleased]
+
+### Fixed
+- **Measurement.** With a loopback whose return is not at unity gain, the
+  folded-distortion probe was biased by that gain (a −20 dB return hid
+  folded products and left T30 valid); it now uses the response before
+  compensation. A separate `--loopback` file's channel is read from that
+  file, not checked against the recording, and a mono recording can no
+  longer be its own loopback. A loopback found on another sweep pass than
+  the microphone is refused instead of reporting a path delay of seconds.
+  Digital silence after an imported impulse response is no longer taken for
+  the noise floor (T30 read up to 16 % long). Smoothed frequency responses
+  above the sweep no longer read −3000 dB. A gated response reports the
+  resolution of its gate (50 Hz for 20 ms, not 2 Hz), and a gate longer than
+  the response no longer fades the direct sound. A DC offset no longer counts
+  as background noise, and a short quiet segment no longer reports mains hum
+  from one unaveraged spectrum. The reflection window is no longer called
+  truncated when it only rounds to a sample. Without a direct sound, C50, C80,
+  D50 and centre time are timed from the onset.
+- **Placement.** The 2 cm tape slack was subtracted instead of allowed, so a
+  steep but possible geometry was refused. The ceiling height and the
+  horizontal separation reported the loudspeaker height's uncertainty; each now
+  carries its own.
+- **Comparison and advice.** C50, C80, D50 and noise changes are no longer given
+  in percent (−2 → −1 dB read −50 %). An imported IR without `--band` is no
+  longer compared over a band nothing excited. A refused comparison names its
+  reason, in the interface language. The direct-to-noise notice now includes
+  the playback level, so raising the level changes it. A 0 dB reflection is
+  ranked strongest.
+- **Files.** Saving a session twice, or saving an opened session elsewhere, no
+  longer loses `recording.wav`. JSON files are replaced atomically, so a full
+  disk keeps the previous session, project or settings. Wrongly typed values in
+  session, result, comparison, project, sidecar and settings files are refused
+  with a RoomScope error (or ignored, for settings) instead of a crash; `"false"`
+  no longer turns developer tools on. One unreadable session no longer hides a
+  folder's others. A symlinked `result.json` is checked even when
+  `session.json` does not name it. `session bundle .` works. A newer sweep
+  sidecar is refused. NaN samples are refused by `write_wav`. An exporter
+  registered as a class is instantiated. A project lists a session once
+  however it was added. The result schema requires the fields the loader
+  needs.
+- **Command line.** A malformed `--input-channels` and an output channel of 0
+  are refused before anything is played. `measure` no longer accepts a
+  `--channel` it ignored. `show` opens a comparison saved under any name.
+  `session bundle` and `project init/add/show` say so when `--format json`
+  does not apply. Project errors are translated. Placement surfaces are named,
+  not shown as `lower_plane`. 999.7 Hz prints as 1 kHz, not `1e+03 Hz`.
+- **Desktop app.** A second take could start while one was running (after
+  Refresh devices), and closing the window during a take or an analysis
+  aborted the process; both are fixed, and leaving the page stops the take.
+  A late result no longer replaces a session opened meanwhile. Saving an
+  opened session no longer writes the previous take into it. Save dialogs add
+  `.wav` / `.json`. Home can select two sessions for Compare. The default
+  profile and output folder from Settings are used. The decay legend and the
+  noise tab give the right reason when data is missing.
+- **Packaging.** The Desktop Edition no longer freezes pytest, setuptools,
+  pygments, yaml or readline. typing_extensions' licence is in
+  `THIRD_PARTY_LICENSES`. The SBOM lists the bundle's packages, not the SBOM
+  tool's. Lock and gate-script changes run the release checks. The check
+  scripts fail instead of passing when they checked nothing. `build_release.py`
+  says up front that Inno Setup is missing, keeps other platforms' archives on
+  Windows and writes `SHA256SUMS` with LF. `build_docs_site.py --out docs`
+  refuses instead of deleting the documentation.
+- **Other.** A failed log rotation on Windows no longer pushes the backups out.
+  The `.po` reader unescapes in one pass and skips fuzzy entries; a duplicate
+  catalog entry was removed. `docs/MEASUREMENT_METHODOLOGY.md` now describes
+  the band edges, the Lundeby convergence, the decay start, the noise and hum
+  parameters and the resonance test the code uses.
+
 ## [0.5.0b1] - 2026-10-01
 
 Software beta 1. This is **not** 0.5.0: the release plan's 0.5.0 still
