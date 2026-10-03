@@ -220,19 +220,21 @@ time-reversed filtering.
 **Procedure** (`core/decay.py`):
 
 1. Band filtering: Butterworth band-pass (3 poles per skirt, second-order
-   sections) for octave bands 63 Hz–8 kHz (base-2 edges `fc·2^(±1/2)`,
-   IEC 61260-1 [12]), applied *time-reversed* so that the filter's own decay
-   precedes the room decay. The filters are not certified IEC 61260 class 1.
+   sections) for octave bands 63 Hz–8 kHz (base-10 exact mid-band frequencies
+   and edges `fm·G^(±1/2)` with `G = 10^(3/10)`, IEC 61260-1 [12]), applied
+   *time-reversed* so that the filter's own decay precedes the room decay.
+   The filters are not certified IEC 61260 class 1.
 2. Lundeby truncation (iterative, max 6 passes): 20 ms local averages, noise
    from the last 10 %, regression from the peak to noise + 10 dB, cross-point,
    new interval (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated
    from 7.5 dB of decay after the cross-point (at least the last 10 %), late
    slope over 15 dB starting 7.5 dB above noise, repeat until the cross-point
-   moves < 1 ms. These parameter values are RoomScope's choices within the
-   ranges published by Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB;
-   10–20 dB).
-3. Schroeder curve: `EDC(t) = Σ_{τ≥t} h²(τ)` from the decay start (peak of the
-   smoothed energy) to the truncation point, plus the late-decay
+   moves less than max(1 ms, the time the late slope takes to fall 1 dB).
+   These parameter values are RoomScope's choices within the ranges published
+   by Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB; 10–20 dB).
+3. Schroeder curve: `EDC(t) = Σ_{τ≥t} h²(τ)` from the decay start (the first
+   sample within 20 dB of the energy maximum, searched from shortly before the
+   direct sound) to the truncation point, plus the late-decay
    compensation `C = p(t_c)·(−10 / (slope·ln 10))` (energy of the extrapolated
    exponential tail). Normalised to 0 dB at the start.
 4. Least-squares line fits over the ISO 3382-1 ranges and extrapolation to
@@ -375,11 +377,14 @@ full-scale sine); Welch (1967) for the PSD estimate.
 **Procedure** (`core/noise.py`). Quiet segment = recording from 50 ms after
 the start to 100 ms before the detected sweep start (≥ 0.5 s), else the file
 tail 3 s after the sweep end (flagged as possibly containing reverberation),
-else none. Reported: RMS in dBFS (sine reference), peak dBFS, octave-band RMS
-levels (zero-phase filtered), Welch PSD (Hann, 2 Hz resolution), and mains
-hum candidates: for 50 Hz and 60 Hz, harmonics up to 1 kHz whose PSD peak
-(±2 Hz) exceeds the median of the ±15 % neighbourhood by ≥ 10 dB; "detected"
-means ≥ 2 such harmonics.
+else none. Reported: RMS in dBFS (sine reference, DC offset removed), peak
+dBFS, octave-band RMS levels (one forward filter pass, start transient
+discarded), Welch PSD (Hann, 2 Hz resolution, at least two averaged
+segments; a segment shorter than 0.75 s gets coarser bins), and mains hum
+candidates: for 50 Hz and 60 Hz, harmonics up to the 12th and at most 1 kHz
+whose PSD peak (±max(2 Hz, 1.5 bins)) exceeds the median of the
+±max(10 Hz, 15 %) neighbourhood by ≥ 10 dB; "detected" means ≥ 2 such
+harmonics not shared with the other mains frequency.
 
 **Units.** dBFS and dB re FS²/Hz. **Never dB SPL** without calibration, which
 v0.1 does not support.
@@ -413,8 +418,10 @@ Genelec patent US 7,742,607 expired in 2022 (see §10).
 smoothed response that stand ≥ 6 dB above the 1-octave smoothed baseline are
 candidates. For each, a 1/3-octave band-pass (2 poles per skirt,
 time-reversed) is applied and the time for the band envelope to fall 20 dB
-is compared with the same measure for the filter alone; the decay is called
-distinguishable only when it is ≥ 2× the filter ringing.
+is compared with the same measure for the filter alone and for the
+neighbouring 1/3-octave bands (with the candidate's own third notched out);
+the decay is called distinguishable only when it is ≥ 2× the filter ringing
+and ≥ 2× the surroundings.
 
 **Limitations.** "Potential resonance" only. Identifying a room mode needs
 room dimensions and several positions; RoomScope does not claim it.

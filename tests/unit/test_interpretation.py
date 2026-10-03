@@ -212,3 +212,55 @@ def test_profile_decay_messages_differ(short_sweep: SweepSettings) -> None:
     assert "vocal" in messages["vocal"].lower()
     assert "voice-over" in messages["voiceover"].lower()
     assert "room microphone" in messages["room_mic"].lower()
+
+
+def test_direct_to_noise_margin_follows_the_playback_level() -> None:
+    """The IR peak is the chain gain alone (the inverse filter has unit gain
+    for the level-scaled sweep), so the margin ignored the playback level and
+    "increase the playback level" could never change it."""
+    margins = []
+    for level in (-3.0, -40.0):
+        settings = SweepSettings(duration_s=2.0, post_silence_s=1.5, level_dbfs=level)
+        rec = synthetic_recording(settings, make_rir(48000, rt60_s=0.4) * 0.2, noise_rms=1e-4)
+        findings = interpret(analyze(rec, Reference.from_settings(settings)))
+        margins.append(
+            next(
+                f.evidence["direct_to_noise_db"]
+                for f in findings
+                if f.message_id == "noise.direct_to_noise"
+            )
+        )
+    assert margins[0] - margins[1] == pytest.approx(37.0, abs=1.0)
+
+
+def test_a_reflection_as_loud_as_the_direct_sound_is_the_strongest() -> None:
+    """``level or -99.0`` ranked a 0.0 dB reflection below a -15 dB one."""
+    from roomscope.interpretation import interpret_comparison
+    from roomscope.models.comparison import ComparisonResult, ReflectionMatch
+
+    matches = tuple(
+        ReflectionMatch(
+            status="matched",
+            baseline_delay_ms=delay,
+            candidate_delay_ms=delay,
+            baseline_relative_db=level,
+            candidate_relative_db=level - 3.0,
+        )
+        for delay, level in ((2.0, -15.0), (4.0, 0.0))
+    )
+    comparison = ComparisonResult(comparable=True, common_band=(20.0, 20000.0), reflections=matches)
+    finding = next(
+        f
+        for f in interpret_comparison(comparison)
+        if f.message_id == "comparison.reflection_change"
+    )
+    assert finding.params["baseline_delay_ms"] == 4.0
+    # A match read leniently from a file without the candidate delay is skipped, not a crash.
+    partial = ComparisonResult(
+        comparable=True,
+        common_band=(20.0, 20000.0),
+        reflections=(
+            ReflectionMatch(status="matched", baseline_delay_ms=2.0, baseline_relative_db=-6.0),
+        ),
+    )
+    assert interpret_comparison(partial) is not None

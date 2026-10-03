@@ -435,6 +435,8 @@ class LoopbackResult:
     channel: int | None
     compensation_applied: bool
     reason: str | None = None
+    #: Start of the sweep in the loopback recording (samples): the interface
+    #: I/O delay plus whatever preceded the sweep (pre-silence, DAW placement).
     latency_samples: int | None = None
     path_delay_ms: float | None = None
     distance_upper_bound_m: float | None = None

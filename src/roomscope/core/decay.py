@@ -327,6 +327,12 @@ def estimate_truncation(
     difference is the usable dynamic range). See the module docstring for the
     conditions under which the preliminary estimate replaces the iterative one.
     """
+    # Digital silence after the response (an imported IR padded or gated with
+    # zeros) is not a noise floor: read as one it is -3000 dB, the iteration
+    # never converges and the real floor before it is integrated as decay.
+    nonzero = np.flatnonzero(power > 0.0)
+    if nonzero.shape[0] > 0:
+        power = power[: int(nonzero[-1]) + 1]
     n = power.shape[0]
     if n < 16:
         return TruncationEstimate(
@@ -1073,7 +1079,10 @@ def analyze_band(
     if direct_index is not None and first_index < curve.edc_db.shape[0]:
         direct_step_db = float(-curve.edc_db[first_index])
     edt = _edt_direct_check(edt, direct_step_db)
-    c50, c80, d50, centre = _energy_metrics(power, sample_rate, onset, trunc, origin)
+    # Early/late energy is timed from the direct sound; without one, from the
+    # onset -- not from the first sample, or leading silence would move it.
+    energy_origin = origin if direct_index is not None else max(origin, onset)
+    c50, c80, d50, centre = _energy_metrics(power, sample_rate, onset, trunc, energy_origin)
 
     if trunc.problem is not None:
         rejected = trunc.rejected_estimate()
@@ -1100,7 +1109,7 @@ def analyze_band(
             )
             energy_changes = _energy_truncation_changes(
                 (c50, c80, d50, centre),
-                _energy_metrics(power, sample_rate, onset, rejected, origin),
+                _energy_metrics(power, sample_rate, onset, rejected, energy_origin),
             )
         if changes:
             reason = diag(

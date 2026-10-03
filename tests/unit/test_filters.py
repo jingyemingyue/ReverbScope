@@ -158,3 +158,18 @@ def test_fractional_octave_smooth_preserves_constant_and_reduces_spike() -> None
 def test_fractional_octave_smooth_shape_mismatch() -> None:
     with pytest.raises(ConfigurationError):
         fractional_octave_smooth(np.arange(10.0), np.arange(9.0), 3)
+
+
+def test_smoothing_keeps_levels_far_below_the_running_total() -> None:
+    """A difference of forward running sums lost everything 150 dB below them:
+    above the sweep band every default analysis stored -3000 dB."""
+    from roomscope.core.filters import fractional_octave_smooth
+
+    freqs = np.arange(1.0, 24001.0)
+    magnitude = np.where(freqs < 20000.0, 0.0, -150.0 - freqs / 1000.0)
+    smoothed = fractional_octave_smooth(freqs, magnitude, 6)
+    half = 2.0 ** (1.0 / 12.0)
+    for f in (500.0, 19000.0, 21000.0, 23000.0, 24000.0):
+        window = (freqs >= f / half) & (freqs <= f * half)
+        direct = 10.0 * np.log10(np.mean(10.0 ** (magnitude[window] / 10.0)))
+        assert smoothed[int(f) - 1] == pytest.approx(direct, abs=1e-6), f

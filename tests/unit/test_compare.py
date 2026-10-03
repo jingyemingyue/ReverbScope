@@ -278,3 +278,42 @@ def test_loopback_path_delay_is_compared_only_when_both_were_compensated(
     assert refused[0].delta is None
     absent = compare(result, with_loopback(7.5, True)).loopback
     assert absent[0].validity is Validity.NOT_COMPARABLE
+
+
+def test_percent_change_only_for_ratio_scale_units() -> None:
+    """In percent of a level in dB the sign followed the baseline's: C50 going
+    from -2 to -1 dB read -50 %."""
+    from roomscope.core.compare import _delta_from_values
+
+    assert _delta_from_values("broadband.c50", -2.0, -1.0, unit="dB").delta_percent is None
+    assert _delta_from_values("noise.rms_dbfs", -75.0, -70.0, unit="dBFS").delta_percent is None
+    assert _delta_from_values("broadband.d50", 90.0, 95.0, unit="%").delta_percent is None
+    assert _delta_from_values("broadband.t30", 0.5, 0.55, unit="s").delta_percent == (
+        pytest.approx(10.0)
+    )
+
+
+def test_an_undeclared_imported_band_is_not_compared(short_sweep: SweepSettings) -> None:
+    """The 20 Hz-20 kHz placeholder of an imported IR without --band was used
+    as a measured band (octave differences of 60 dB where nothing was excited)."""
+    from roomscope.core.pipeline import analyze_impulse_response
+    from roomscope.models.audio import AudioSignal
+
+    swept = _result(short_sweep, rt60_s=0.4, reflections=[])
+    imported = analyze_impulse_response(AudioSignal(make_rir(48000, rt60_s=0.4), 48000))
+    comparison = compare(swept, imported)
+    assert not comparison.comparable
+    assert "no excitation band" in comparison.notes[0]
+
+
+def test_a_refused_pair_names_its_reason_first(short_sweep: SweepSettings) -> None:
+    """The finding quoted notes[0], which was a sweep-difference or the ISO note."""
+    low = replace(short_sweep, start_hz=20.0, end_hz=1000.0)
+    high = replace(short_sweep, start_hz=700.0, end_hz=20000.0, sample_rate=96000)
+    comparison = compare(
+        _result(low, rt60_s=0.4, reflections=[]), _result(high, rt60_s=0.4, reflections=[])
+    )
+    assert not comparison.comparable
+    assert "narrower than the required" in comparison.notes[0]
+    finding = interpret_comparison(comparison)[0]
+    assert "narrower than the required" in finding.message

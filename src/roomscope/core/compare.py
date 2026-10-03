@@ -22,6 +22,7 @@ from roomscope.models.comparison import (
     ResonanceMatch,
 )
 from roomscope.models.result import (
+    EXCITATION_SOURCE_UNKNOWN,
     AnalysisResult,
     BandDecay,
     DecayMetric,
@@ -57,7 +58,9 @@ def _common_band(
     notes: list[str] = []
     b1 = baseline.excitation_band
     b2 = candidate.excitation_band
-    if b1 is None or b2 is None:
+    # An imported IR without --band carries a 20 Hz-20 kHz placeholder (source
+    # "unknown") that the analysis itself never treats as measured.
+    if b1 is None or b2 is None or EXCITATION_SOURCE_UNKNOWN in (b1.source, b2.source):
         return None, (
             diag("one or both results have no excitation band, so they cannot be compared"),
         )
@@ -102,6 +105,12 @@ def _sweep_notes(baseline: AnalysisResult, candidate: AnalysisResult) -> list[st
     return notes
 
 
+#: Units on a ratio scale, where a change in percent of the baseline means
+#: something. In percent of a level in dB (or of D50, itself a percentage) it
+#: does not, and it flips sign with a negative baseline (C50 -2 -> -1 dB).
+_PERCENT_UNITS = frozenset({"s", "ms", "m"})
+
+
 def _delta_from_values(
     name: str,
     baseline: float | None,
@@ -122,7 +131,7 @@ def _delta_from_values(
             unit=unit,
         )
     delta = candidate - baseline
-    percent = None if baseline == 0.0 else 100.0 * delta / baseline
+    percent = None if baseline == 0.0 or unit not in _PERCENT_UNITS else 100.0 * delta / baseline
     return MetricDelta(
         name=name,
         baseline=baseline,
@@ -633,8 +642,8 @@ def compare(
     settings = settings or CompareSettings()
     notes: list[str] = []
     notes.extend(_sweep_notes(baseline, candidate))
-    common, band_notes = _common_band(baseline, candidate)
-    notes.extend(band_notes)
+    # Why the pair is refused, if it is; empty when the bands overlap.
+    common, refusal = _common_band(baseline, candidate)
     notes.append(
         diag(
             "ISO 3382-1 quotes a just-noticeable difference for reverberation time of about "
@@ -651,7 +660,7 @@ def compare(
         if octaves + 1e-12 >= settings.min_common_band_octaves:
             comparable = True
         else:
-            notes.append(
+            refusal = (
                 diag(
                     "common excitation band {low:g}-{high:g} Hz is {octaves:.2f} octaves, "
                     "narrower than the required {required:g} octave",
@@ -659,7 +668,7 @@ def compare(
                     high=high,
                     octaves=octaves,
                     required=settings.min_common_band_octaves,
-                )
+                ),
             )
             common = None
 
@@ -667,7 +676,8 @@ def compare(
         return ComparisonResult(
             comparable=False,
             common_band=common,
-            notes=tuple(notes),
+            # The reason comes first: it is the note a refusal quotes.
+            notes=(*refusal, *notes),
             baseline_created_at=baseline.created_at,
             candidate_created_at=candidate.created_at,
             roomscope_version=__version__,

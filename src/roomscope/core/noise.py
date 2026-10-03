@@ -611,7 +611,9 @@ def analyze_noise(
     x = np.asarray(recording[verified.start : verified.end], dtype=np.float64)
     if verified.note:
         notes.append(verified.note)
-    level = rms_dbfs(x)
+    # A DC offset is not background noise; the PSD (detrended) and the band
+    # levels exclude it, and the PSD must integrate to this level.
+    level = rms_dbfs(x - float(np.mean(x)))
     if level <= NOISE_FLOOR_DBFS:
         notes.append(
             diag(
@@ -628,9 +630,11 @@ def analyze_noise(
     notes.extend(band_notes)
 
     # 2 Hz resolution with several averaged segments (Welch) keeps random
-    # spectral peaks small enough for the hum detector. The density is scaled
-    # to the AES17 full-scale sine so that its integral is the RMS level.
-    nperseg = int(min(x.shape[0], sample_rate // 2))
+    # spectral peaks small enough for the hum detector; a segment shorter than
+    # 0.75 s gets coarser bins but still two half-overlapping segments (one raw
+    # periodogram reads random peaks as hum). The density is scaled to the
+    # AES17 full-scale sine so that its integral is the RMS level.
+    nperseg = int(min((2 * x.shape[0]) // 3, sample_rate // 2))
     freqs, psd = welch(x, fs=sample_rate, window="hann", nperseg=nperseg, scaling="density")
     freqs = np.asarray(freqs, dtype=np.float64)
     psd_db = np.asarray(10.0 * np.log10(np.maximum(2.0 * psd, _EPS)), dtype=np.float64)

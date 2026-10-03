@@ -237,9 +237,18 @@ def fractional_octave_smooth(
         raise ConfigurationError("frequency and magnitude arrays must have the same shape")
     half = 2.0 ** (1.0 / (2.0 * fraction))
     power = 10.0 ** (np.asarray(magnitude_db, dtype=np.float64) / 10.0)
-    cumulative = np.concatenate([[0.0], np.cumsum(power)])
     lo = np.searchsorted(frequencies_hz, frequencies_hz / half, side="left")
     hi = np.searchsorted(frequencies_hz, frequencies_hz * half, side="right")
     hi = np.maximum(hi, lo + 1)
-    mean_power = (cumulative[hi] - cumulative[lo]) / (hi - lo)
+    # Window sums from running sums. A difference of two running sums loses
+    # everything below their own size times the float epsilon, so the sum is
+    # taken from whichever end (low or high frequencies) has accumulated less:
+    # above the excitation band the response lies 150 dB under the running
+    # total from below, and a forward-only sum read it as zero (-3000 dB).
+    forward = np.concatenate([[0.0], np.cumsum(power)])
+    backward = np.concatenate([np.cumsum(power[::-1])[::-1], [0.0]])
+    window_sum = np.where(
+        forward[hi] <= backward[lo], forward[hi] - forward[lo], backward[lo] - backward[hi]
+    )
+    mean_power = window_sum / (hi - lo)
     return np.asarray(10.0 * np.log10(np.maximum(mean_power, 1e-300)), dtype=np.float64)

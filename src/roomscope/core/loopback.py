@@ -345,9 +345,12 @@ def path_metrics(
 ) -> tuple[int, float, float]:
     """``(latency_samples, path_delay_ms, distance_upper_bound_m)``.
 
-    ``latency_samples`` is the loopback peak relative to ``len(reference) - 1``
-    (the electrical I/O delay of the interface). ``path_delay_ms`` is the
-    microphone peak relative to the loopback peak.
+    ``latency_samples`` is the loopback peak relative to ``len(reference) - 1``:
+    where the sweep starts in the loopback recording. That is the interface's
+    I/O delay only when the recording started exactly as the sweep did; a
+    RoomScope take adds its pre-silence, a DAW take wherever the sweep was
+    placed. ``path_delay_ms`` is the microphone peak relative to the loopback
+    peak, which needs no such start.
     """
     latency = int(loopback_peak_index - (reference_length - 1))
     path_delay_ms = (mic_peak_index - loopback_peak_index) / sample_rate * 1000.0

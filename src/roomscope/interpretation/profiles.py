@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 from typing import Protocol, runtime_checkable
 
-from roomscope.i18n import _, current_locale, pgettext
+from roomscope.i18n import _, current_locale, localize, pgettext
 from roomscope.interpretation.interpreter import Finding, Severity, finding
 from roomscope.models.comparison import T_JND_PERCENT, ComparisonResult, MetricDelta
 from roomscope.models.result import (
@@ -88,6 +88,11 @@ def noise_segment_text(source: str | None) -> str:
         "quiet": pgettext("noise segment", "quiet"),
     }
     return words.get(source or "quiet", source or "quiet")
+
+
+def _db_or_floor(value: float | None) -> float:
+    """A level for ranking; ``or -99.0`` would rank a 0.0 dB reflection last."""
+    return value if value is not None else -99.0
 
 
 @runtime_checkable
@@ -164,6 +169,7 @@ class ProfileBase:
                     "comparison.not_comparable",
                     "These two sessions cannot be compared: {notes}",
                     evidence={"notes": list(comparison.notes)},
+                    display={"notes": localize(notes)},
                     notes=notes,
                 )
             )
@@ -254,6 +260,7 @@ class ProfileBase:
             for m in matched
             if m.baseline_delay_ms is not None
             and m.baseline_delay_ms <= self.strong_reflection_window_ms
+            and m.candidate_delay_ms is not None
             and m.baseline_relative_db is not None
             and m.candidate_relative_db is not None
         ]
@@ -268,7 +275,7 @@ class ProfileBase:
                 and m.candidate_relative_db >= self.strong_reflection_db
             ]
             if appeared:
-                first = max(appeared, key=lambda m: m.candidate_relative_db or -99.0)
+                first = max(appeared, key=lambda m: _db_or_floor(m.candidate_relative_db))
                 return [
                     finding(
                         "early_reflections",
@@ -288,7 +295,7 @@ class ProfileBase:
                     )
                 ]
             return []
-        strongest = max(in_window, key=lambda m: m.baseline_relative_db or -99.0)
+        strongest = max(in_window, key=lambda m: _db_or_floor(m.baseline_relative_db))
         return [
             finding(
                 "early_reflections",
@@ -633,6 +640,12 @@ class ProfileBase:
                 )
         if noise.rms_dbfs is not None:
             peak_db = 20.0 * math.log10(max(abs(result.impulse_response.peak_value), 1e-12))
+            # The inverse filter has unit gain for the sweep *at its level*, so
+            # the IR peak is the chain gain alone. The direct sound in the
+            # recording, in dBFS like the noise, is that gain plus the level the
+            # sweep was played at -- unknown for an arbitrary reference WAV.
+            level = result.sweep_settings.get("level_dbfs")
+            direct_dbfs = peak_db + float(level) if isinstance(level, int | float) else None
             findings.append(
                 Finding(
                     topic="noise",
@@ -650,8 +663,11 @@ class ProfileBase:
                     locale=current_locale(),
                 )
             )
-            if peak_db - noise.rms_dbfs < self.quiet_noise_margin_db:
-                margin = peak_db - noise.rms_dbfs
+            if (
+                direct_dbfs is not None
+                and direct_dbfs - noise.rms_dbfs < self.quiet_noise_margin_db
+            ):
+                margin = direct_dbfs - noise.rms_dbfs
                 findings.append(
                     finding(
                         "noise",

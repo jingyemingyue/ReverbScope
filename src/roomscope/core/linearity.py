@@ -351,7 +351,9 @@ def _probe_inverse(
     """
     reference = _harmonic_reference(settings, trajectory)
     t = sweep_time_axis(settings)[trajectory.start : trajectory.stop]
-    inverse = reference[::-1] * np.exp(t / settings.sweep_rate)
+    # Weight in the reference's own time, then reverse: weighting the reversed
+    # signal with exp(t/L) would apply 1/f(t) instead and tilt |R I|.
+    inverse = (reference * np.exp(t / settings.sweep_rate))[::-1]
     n = reference.shape[0]
     nfft = int(sfft.next_fast_len(n, real=True))
     freqs = np.fft.rfftfreq(nfft, 1.0 / settings.sample_rate)

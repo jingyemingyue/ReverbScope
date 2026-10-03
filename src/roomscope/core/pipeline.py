@@ -527,8 +527,9 @@ def _select_mic_and_loopback(
     """Return ``(mic, mic_channel, warning, loopback_samples, loopback_channel)``.
 
     ``loopback`` is a separate file; ``settings.loopback_channel`` is a 0-based
-    channel of ``recording``. They must not name the same samples as the
-    microphone. A two-channel DAW export uses the channel setting.
+    channel of that file when it is given, otherwise of ``recording``. The
+    loopback must not name the same samples as the microphone. A two-channel
+    DAW export uses the channel setting.
     """
     lb_channel = settings.loopback_channel
     if loopback is not None and recording.sample_rate != loopback.sample_rate:
@@ -538,17 +539,33 @@ def _select_mic_and_loopback(
                 "export both from the same take"
             )
         )
-    if lb_channel is not None and lb_channel >= recording.n_channels:
+    # With a separate loopback file the channel is a column of that file and
+    # every channel of the recording stays available to the microphone.
+    # Without one it is a column of the recording, never the microphone's.
+    in_recording = loopback is None and lb_channel is not None
+    if loopback is not None and lb_channel is not None and lb_channel >= loopback.n_channels:
+        raise InvalidAudioError(
+            _(
+                "loopback_channel {channel} does not exist (the loopback file has {count} "
+                "channel(s))"
+            ).format(channel=lb_channel, count=loopback.n_channels)
+        )
+    if in_recording and lb_channel is not None and lb_channel >= recording.n_channels:
         raise InvalidAudioError(
             _(
                 "loopback_channel {channel} does not exist (recording has {count} channel(s))"
             ).format(channel=lb_channel, count=recording.n_channels)
         )
-    if lb_channel is not None and settings.channel is not None and lb_channel == settings.channel:
+    if in_recording and settings.channel is not None and lb_channel == settings.channel:
         raise ConfigurationError(_("loopback_channel must differ from the microphone channel"))
 
     warning: str | None
-    if settings.channel is None and lb_channel is not None and recording.n_channels > 1:
+    if (
+        in_recording
+        and lb_channel is not None
+        and settings.channel is None
+        and (recording.n_channels > 1)
+    ):
         rms = np.sqrt(np.mean(recording.samples.astype(np.float64) ** 2, axis=0))
         scores = rms.copy()
         scores[lb_channel] = -1.0
@@ -563,18 +580,18 @@ def _select_mic_and_loopback(
         mono = recording.channel(channel)
     else:
         mono, channel, warning = recording.select_channel(settings.channel)
+    if in_recording and lb_channel == channel:
+        # A mono recording: the only channel cannot be its own loopback.
+        raise ConfigurationError(_("loopback_channel must differ from the microphone channel"))
 
     lb_samples: FloatArray | None = None
     reported_channel: int | None = None
     if loopback is not None:
-        if loopback.n_channels == 1:
-            lb_samples = loopback.channel(0)
-        elif lb_channel is not None and lb_channel < loopback.n_channels:
+        if lb_channel is not None:
             lb_samples = loopback.channel(lb_channel)
             reported_channel = lb_channel
         else:
             lb_samples = loopback.channel(0)
-        reported_channel = reported_channel if reported_channel is not None else None
         tol = round(RECORDING_START_TOLERANCE_S * recording.sample_rate)
         if abs(lb_samples.shape[0] - mono.shape[0]) > tol:
             raise InvalidAudioError(
@@ -693,6 +710,10 @@ def analyze(
         sample_rate=sample_rate,
     )
     loopback_result: LoopbackResult | None = None
+    # The folded-product probe below runs on the raw recording, so its linear
+    # reference must be the response before the loopback is divided out:
+    # compensation rescales h_full by the return gain of the loopback.
+    h_uncompensated, peak_uncompensated = h_full, located.peak_index
     if lb_samples is not None:
         try:
             lb_clipping, _lb_notes = _validate_recording(lb_samples, sample_rate)
@@ -704,6 +725,15 @@ def analyze(
                 settings=settings,
                 sample_rate=sample_rate,
             )
+            if abs(lb_located.peak_index - located.peak_index) > prepared.reference_length // 2:
+                # Each signal picks its own strongest pass; a path delay across
+                # two passes would be seconds long and defeat the tape check.
+                raise AnalysisError(
+                    diag(
+                        "the loopback and the microphone were located on different sweep "
+                        "passes; compensation is not applied"
+                    )
+                )
             assessment = assess_loopback(lb_located, h_lb, sample_rate, clipped=lb_clipping.clipped)
         except (InvalidAudioError, AnalysisError) as exc:
             loopback_result = LoopbackResult(
@@ -839,11 +869,11 @@ def analyze(
         # harmonic windows and the pre-peak margin cannot see them.
         aliased = aliased_distortion_levels(
             mono,
-            h_full,
+            h_uncompensated,
             sample_rate=sample_rate,
             settings=prepared.sweep_settings,
             excitation_band=band,
-            peak_index=located.peak_index,
+            peak_index=peak_uncompensated,
             reference_length=prepared.reference_length,
         )
         significant = [a for a in aliased if a.significant]
@@ -1175,6 +1205,8 @@ def analyze_impulse_response(
         decay = _mark_decay_not_computed(
             decay, diag("excitation band unknown (imported impulse response; declare --band)")
         )
+    # As in analyze(): e.g. bands not fully inside the declared band.
+    warnings.extend(decay.notes)
     fr_segment, fr_direct = _segment_around_pass(
         np.asarray(mono, dtype=np.float64),
         located,

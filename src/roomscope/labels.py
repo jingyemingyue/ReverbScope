@@ -56,15 +56,7 @@ def metric_label(name: str, unit: str = "") -> str:
     }
     text = fixed.get(name)
     if text is None:
-        parts = name.split(".")
-        if parts[0] == "broadband":
-            where, rest = _("Broadband"), parts[1:]
-        elif parts[0] == "band" and len(parts) >= 2:
-            where, rest = parts[1], parts[2:]
-        else:
-            where, rest = name, []
-        metric = rest[0] if rest else ""
-        what = {
+        metrics = {
             "rt60_estimate": _("RT60 estimate"),
             "edt": "EDT",
             "t20": "T20",
@@ -73,9 +65,29 @@ def metric_label(name: str, unit: str = "") -> str:
             "c80": "C80",
             "d50": "D50",
             "centre_time": _("Centre time"),
-        }.get(metric, metric)
-        text = f"{where} {what}".strip()
+        }
+        scope, _dot, metric = name.rpartition(".")
+        if metric not in metrics:
+            # "band.63 Hz" (a band missing on one side) has no metric part.
+            scope, metric = name, ""
+        if scope == "broadband":
+            where = _("Broadband")
+        elif scope.startswith("band."):
+            # Split from the right: a label such as "31.5 Hz" has a dot too.
+            where = scope.removeprefix("band.")
+        else:
+            where = scope
+        text = f"{where} {metrics.get(metric, metric)}".strip()
     return f"{text} ({unit})" if unit else text
+
+
+def surface_text(surface: str | None) -> str:
+    """Translated name of a placement surface id (``lower_plane`` / ``upper_plane``)."""
+    names = {
+        "lower_plane": _("Reference plane"),
+        "upper_plane": _("Plane above the devices"),
+    }
+    return names.get(surface or "", surface or "")
 
 
 def status_text(status: str) -> str:

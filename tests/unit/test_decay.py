@@ -576,3 +576,22 @@ def test_energy_parameters_round_trip_and_older_files_omit_them(sample_rate: int
     assert old.c50.value is None
     assert old.centre_time.validity is Validity.NOT_COMPUTED
     assert old.edt.seconds == pytest.approx(band.edt.seconds)
+
+
+def test_energy_ratios_without_a_direct_sound_are_timed_from_the_onset() -> None:
+    """Without direct_index, C50 and Ts were timed from the first sample, so
+    leading silence changed them while T30 stayed put."""
+    from roomscope.core.decay import analyze_band
+
+    sample_rate = 48000
+    t = np.arange(sample_rate) / sample_rate
+    decay = np.exp(-3.0 * np.log(10.0) * t / 0.5) * np.random.default_rng(1).normal(size=t.shape)
+    values = []
+    for lead_ms in (0, 20, 60):
+        ir = np.concatenate([np.zeros(round(lead_ms * sample_rate / 1000)), decay])
+        band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0)
+        values.append((band.c50.value, band.centre_time.value))
+    assert values[0][0] is not None
+    for c50, centre in values[1:]:
+        assert c50 == pytest.approx(values[0][0], abs=0.05)
+        assert centre == pytest.approx(values[0][1], abs=0.002)

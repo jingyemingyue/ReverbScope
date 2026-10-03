@@ -374,3 +374,76 @@ def test_export_never_contains_a_horizontal_claim() -> None:
     )
     assert "underdetermined by two" not in payload["coordinates_withheld"]  # it says the counts
     assert "deficit of three" in payload["coordinates_withheld"]
+
+
+def test_a_steep_but_possible_geometry_is_not_refused() -> None:
+    """The tape slack was subtracted instead of allowed: with d = 1.5 m every
+    geometry under ~0.24 m horizontal separation was refused as impossible."""
+    source_height, mic_height, horizontal, ceiling = 1.8866, 0.40, 0.20, 3.0
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    upper_ms = _plane_arrival(distance, ceiling - source_height, ceiling - mic_height, horizontal)
+    result = estimate_placement(
+        _reflections(
+            [(lower_ms, _lossy(distance, lower_ms)), (upper_ms, _lossy(distance, upper_ms))]
+        ),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    assert result.source_height_m.validity is Validity.VALID
+    assert result.source_height_m.metres == pytest.approx(source_height, abs=0.005)
+    assert result.horizontal_separation_m.metres == pytest.approx(horizontal, abs=0.005)
+
+
+@pytest.mark.parametrize(
+    ("source_height", "mic_height", "horizontal", "ceiling"),
+    [(1.20, 0.40, 1.44, 3.20), (1.80, 0.30, 0.45, 3.20), (1.60, 0.40, 0.50, 3.00)],
+)
+def test_each_length_carries_its_own_input_uncertainty(
+    source_height: float, mic_height: float, horizontal: float, ceiling: float
+) -> None:
+    """Ceiling and horizontal separation reported the loudspeaker height's
+    sigma; the horizontal one was understated up to 3.5 times."""
+    from roomscope.core.placement import (
+        DISTANCE_SIGMA_M,
+        HEIGHT_SIGMA_M,
+        PEAK_LOCATION_SIGMA_MS,
+    )
+
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    upper_ms = _plane_arrival(distance, ceiling - source_height, ceiling - mic_height, horizontal)
+    result = estimate_placement(
+        _reflections(
+            [(lower_ms, _lossy(distance, lower_ms)), (upper_ms, _lossy(distance, upper_ms))]
+        ),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+
+    def lengths(
+        d: float, low: float, up: float, temperature: float, h: float
+    ) -> tuple[float, float]:
+        speed = speed_of_sound_m_s(temperature)
+        s = boundary_product_m2(d, low, speed) / h
+        mirror = d + speed * up / 1000.0
+        return math.sqrt(d**2 - (s - h) ** 2), (
+            s + h + math.sqrt(mirror**2 - d**2 + (s - h) ** 2)
+        ) / 2
+
+    nominal = (distance, lower_ms, upper_ms, DEFAULT_TEMPERATURE_C, mic_height)
+    sigmas = (DISTANCE_SIGMA_M, PEAK_LOCATION_SIGMA_MS, PEAK_LOCATION_SIGMA_MS, 1.0, HEIGHT_SIGMA_M)
+    variance = np.zeros(2)
+    for index, sigma in enumerate(sigmas):
+        step = max(abs(nominal[index]) * 1e-6, 1e-9)
+        moved = list(nominal)
+        moved[index] += step
+        slope = (np.array(lengths(*moved)) - np.array(lengths(*nominal))) / step
+        variance += (slope * sigma) ** 2
+    expected = np.sqrt(variance)
+    assert result.horizontal_separation_m.input_uncertainty_m == pytest.approx(
+        expected[0], rel=0.01
+    )
+    assert result.ceiling_height_m.input_uncertainty_m == pytest.approx(expected[1], rel=0.01)

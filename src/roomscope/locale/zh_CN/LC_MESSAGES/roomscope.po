@@ -449,9 +449,6 @@ msgstr "候选"
 msgid "Delta"
 msgstr "差值"
 
-msgid "Validity"
-msgstr "有效性"
-
 msgid "Status"
 msgstr "状态"
 
@@ -3957,3 +3954,31 @@ msgstr "作为房间话筒，后期房间声偏少（C80 {value:.1f} dB，高于
 msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {threshold:.0f} dB). Some late sound suits a choir, but this much will blur diction. This is one position, not a room grade."
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
+
+msgid "loopback_channel {channel} does not exist (the loopback file has {count} channel(s))"
+msgstr "loopback_channel {channel} 不存在（回送文件只有 {count} 个声道）"
+
+msgctxt "diagnostic"
+msgid "the loopback and the microphone were located on different sweep passes; compensation is not applied"
+msgstr "回送与话筒定位到了不同遍的扫频上；未应用补偿"
+
+msgid "unknown recording profile {name}; available: {available}"
+msgstr "未知的录音配置 {name}；可用：{available}"
+
+msgid "{value} is not a comma-separated list of channel numbers (e.g. 1,2)"
+msgstr "{value} 不是以逗号分隔的声道编号列表（例如 1,2）"
+
+msgid "no project.json in {path}"
+msgstr "{path} 中没有 project.json"
+
+msgid "no sessions in {path}"
+msgstr "{path} 中没有会话"
+
+msgid "--sources must be at least 1"
+msgstr "--sources 至少为 1"
+
+msgid "Reference plane"
+msgstr "参考平面"
+
+msgid "No noise spectrum stored with this session"
+msgstr "此会话未保存噪声频谱"

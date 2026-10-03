@@ -18,7 +18,7 @@ from roomscope.core.loopback import (
 )
 from roomscope.core.pipeline import Reference, analyze, synthetic_recording
 from roomscope.core.sweep import inverse_filter, measurement_signal, normalisation_band_hz
-from roomscope.errors import ConfigurationError, SampleRateMismatchError
+from roomscope.errors import ConfigurationError, InvalidAudioError, SampleRateMismatchError
 from roomscope.models.audio import AudioSignal
 from roomscope.models.configuration import AnalysisSettings, SweepSettings
 from roomscope.models.result import Validity
@@ -316,3 +316,88 @@ def test_noise_is_estimated_inside_the_valid_record() -> None:
     truth = float(np.mean(h[end - 24000 : end] ** 2))
     assert inside == pytest.approx(truth, rel=0.1)
     assert everything < 0.5 * truth
+
+
+def test_folded_distortion_does_not_depend_on_the_loopback_gain() -> None:
+    """The alias probe took its linear reference from the compensated response
+    (scaled by 1/loopback gain) but its products from the raw recording: a
+    -20 dB return hid folded products and left T30 VALID."""
+    settings = SweepSettings(duration_s=2.0, pre_silence_s=1.0, post_silence_s=1.5)
+    fs = settings.sample_rate
+    over = 1.08  # a playback bus that clips slightly
+    played = np.clip(measurement_signal(settings) * over, -settings.amplitude, settings.amplitude)
+    played = played / over
+    ir = make_rir(fs, rt60_s=0.3, diffuse_level=0.02, length_s=0.6)
+    rng = np.random.default_rng(0)
+    mic = np.asarray(fftconvolve(played, ir))[: played.shape[0] + ir.shape[0] - 1] * 0.5
+    mic = mic + rng.normal(0.0, 1e-6, mic.shape[0])
+    reference = Reference.from_settings(settings)
+    levels = []
+    for gain in (1.0, 0.1):
+        loop = _pad_to(played * gain, mic.shape[0]) + rng.normal(0.0, 1e-7, mic.shape[0])
+        result = analyze(AudioSignal(mic, fs), reference, loopback=AudioSignal(loop, fs))
+        assert result.impulse_response.loopback is not None
+        assert result.impulse_response.loopback.compensation_applied
+        aliased = {a.order: a for a in result.impulse_response.aliased_distortion}
+        assert aliased[3].significant
+        assert result.decay.broadband.t30.validity is Validity.UNRELIABLE
+        levels.append(aliased[3].level_db)
+    assert levels[1] == pytest.approx(levels[0], abs=0.5)
+
+
+def test_loopback_channel_of_a_separate_file_names_a_column_of_that_file(
+    short_sweep: SweepSettings,
+) -> None:
+    """It was checked against the recording and excluded from the recording's
+    automatic microphone choice."""
+    from roomscope.core.pipeline import _select_mic_and_loopback
+
+    fs = short_sweep.sample_rate
+    n = fs
+    rng = np.random.default_rng(1)
+    quiet, mic = rng.normal(0, 0.01, n), rng.normal(0, 0.1, n)
+    loop_file = AudioSignal(np.stack([np.zeros(n), rng.normal(0, 0.1, n)], axis=1), fs)
+    stereo = AudioSignal(np.stack([quiet, mic], axis=1), fs)
+    _mono, channel, _warning, loop, reported = _select_mic_and_loopback(
+        stereo, AnalysisSettings(loopback_channel=1), loop_file
+    )
+    assert channel == 1  # the louder column of the recording
+    assert reported == 1 and np.array_equal(loop, loop_file.channel(1))
+    mono = AudioSignal(mic, fs)
+    _mono, channel, _warning, loop, reported = _select_mic_and_loopback(
+        mono, AnalysisSettings(loopback_channel=1), loop_file
+    )
+    assert channel == 0 and reported == 1
+    with pytest.raises(InvalidAudioError, match="loopback file has 2"):
+        _select_mic_and_loopback(mono, AnalysisSettings(loopback_channel=2), loop_file)
+
+
+def test_a_mono_recording_cannot_be_its_own_loopback(short_sweep: SweepSettings) -> None:
+    """The only channel was used as microphone and loopback: compensation
+    divided the room out of itself and reported a flat response."""
+    rec = synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3))
+    with pytest.raises(ConfigurationError, match="differ"):
+        analyze(rec, Reference.from_settings(short_sweep), AnalysisSettings(loopback_channel=0))
+
+
+def test_microphone_and_loopback_on_different_passes_are_not_compensated(
+    short_sweep: SweepSettings,
+) -> None:
+    """Each signal picked its own strongest pass: the path delay spanned a
+    whole pass (+5.5 s) and the distance bound grew to 1889 m."""
+    fs = short_sweep.sample_rate
+    x = measurement_signal(short_sweep)
+    room = make_rir(fs, rt60_s=0.3, diffuse_level=0.01, start_delay_s=0.005)
+    rng = np.random.default_rng(1)
+    mic = np.concatenate([np.asarray(fftconvolve(x, room)) * g for g in (0.9, 1.0)])
+    loop = np.concatenate([np.pad(x, (0, room.shape[0] - 1)) * g for g in (1.0, 0.9)])
+    result = analyze(
+        AudioSignal(mic + rng.normal(0, 1e-5, mic.shape[0]), fs),
+        Reference.from_settings(short_sweep),
+        loopback=AudioSignal(loop + rng.normal(0, 1e-6, loop.shape[0]), fs),
+    )
+    loopback = result.impulse_response.loopback
+    assert loopback is not None
+    assert not loopback.compensation_applied
+    assert loopback.path_delay_ms is None
+    assert "different sweep passes" in (loopback.reason or "")

@@ -251,3 +251,35 @@ def test_cli_analyze_ir_refuses_a_recording(
     path = write_wav(tmp_path / "noise.wav", samples, 48000, subtype="FLOAT")
     assert main(["analyze-ir", "--ir", str(path)]) == 1
     assert "cannot be analysed as an impulse response" in capsys.readouterr().err
+
+
+def test_digital_silence_after_an_imported_ir_is_not_a_noise_floor() -> None:
+    """Zeros after the response read as a -3000 dB floor: Lundeby never
+    converged, the real floor was integrated as decay (63 Hz T30 +16 %) and
+    the reported peak-to-noise ratio was about 2970 dB."""
+    from roomscope.core.pipeline import analyze_impulse_response
+
+    rir = make_rir(48000, rt60_s=0.5, diffuse_level=0.03, length_s=2.0, seed=2, start_delay_s=0.01)
+    ir = rir + np.random.default_rng(5).normal(0.0, 1e-4, rir.shape[0])
+    padded = ir.copy()
+    padded[48000:] = 0.0
+    clean = analyze_impulse_response(AudioSignal(ir[:48000], 48000), excitation_band=(20, 20000))
+    zeros = analyze_impulse_response(AudioSignal(padded, 48000), excitation_band=(20, 20000))
+    assert zeros.decay.broadband.peak_to_noise_db is not None
+    assert zeros.decay.broadband.peak_to_noise_db < 100.0
+    for a, b in zip(
+        (clean.decay.broadband, *clean.decay.bands),
+        (zeros.decay.broadband, *zeros.decay.bands),
+        strict=True,
+    ):
+        if a.t30.seconds is not None and b.t30.seconds is not None:
+            assert b.t30.seconds == pytest.approx(a.t30.seconds, rel=0.03), a.band_label
+
+
+def test_decay_notes_of_an_imported_ir_reach_the_warnings() -> None:
+    from roomscope.core.pipeline import analyze_impulse_response
+
+    rir = make_rir(48000, rt60_s=0.4, length_s=1.0, start_delay_s=0.01)
+    result = analyze_impulse_response(AudioSignal(rir, 48000), excitation_band=(100, 10000))
+    assert result.decay.notes
+    assert set(result.decay.notes) <= set(result.warnings)
