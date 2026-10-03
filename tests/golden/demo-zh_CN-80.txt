@@ -1,4 +1,4 @@
-RoomScope 演示
+ReverbScope 演示
 ──────────────
 
   ! 合成数据：这是模拟的房间，不是实际测量。
@@ -6,10 +6,10 @@ RoomScope 演示
     话都标记为合成演示。
 
 已写出的文件
-  测试信号  roomscope-demo/sweep.wav
-  位置 A    roomscope-demo/position-a
-  位置 B    roomscope-demo/position-b
-  对比      roomscope-demo/comparison.json
+  测试信号  reverbscope-demo/sweep.wav
+  位置 A    reverbscope-demo/position-a
+  位置 B    reverbscope-demo/position-b
+  对比      reverbscope-demo/comparison.json
   # s 扫频 · # Hz – # kHz · # kHz
 
 位置 A  靠近桌面和侧墙
@@ -43,10 +43,10 @@ RoomScope 演示
 
 下一步
   #. 查看一个位置的完整报告：
-     roomscope show roomscope-demo/position-a
+     reverbscope show reverbscope-demo/position-a
   #. 查看两个位置之间的全部差值：
-     roomscope compare roomscope-demo/position-a roomscope-demo/position-b --same-input-gain
+     reverbscope compare reverbscope-demo/position-a reverbscope-demo/position-b --same-input-gain
   #. 在桌面应用中打开这些会话：
-     roomscope gui
+     reverbscope gui
   #. 测量你自己的房间：为 DAW 写出测试信号。
-     roomscope sweep --out sweep.wav
+     reverbscope sweep --out sweep.wav

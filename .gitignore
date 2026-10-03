@@ -53,8 +53,8 @@ secrets.*
 *.p12
 *.token
 credentials*
-.roomscope/
-roomscope.local.toml
+.reverbscope/
+reverbscope.local.toml
 
 # --- Measurement data (raw audio is user data, not source) ---
 *.wav

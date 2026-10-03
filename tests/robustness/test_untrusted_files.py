@@ -1,4 +1,4 @@
-"""Untrusted session, sidecar and WAV files raise RoomScopeError only."""
+"""Untrusted session, sidecar and WAV files raise ReverbScopeError only."""
 
 from __future__ import annotations
 
@@ -8,18 +8,18 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import InvalidAudioError, RoomScopeError, SessionError
-from roomscope.io.jsonutil import MAX_JSON_BYTES, MAX_JSON_DEPTH, read_json_object
-from roomscope.io.project_store import load_project
-from roomscope.io.session_store import load_comparison, load_measurement, load_session
-from roomscope.io.wav import read_sweep_sidecar, read_wav
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import SweepSettings
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import InvalidAudioError, ReverbScopeError, SessionError
+from reverbscope.io.jsonutil import MAX_JSON_BYTES, MAX_JSON_DEPTH, read_json_object
+from reverbscope.io.project_store import load_project
+from reverbscope.io.session_store import load_comparison, load_measurement, load_session
+from reverbscope.io.wav import read_sweep_sidecar, read_wav
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import SweepSettings
 from tests.conftest import make_rir
 
 
-def test_malformed_session_json_is_roomscope_error(tmp_path: Path) -> None:
+def test_malformed_session_json_is_reverbscope_error(tmp_path: Path) -> None:
     path = tmp_path / "session.json"
     path.write_text("{not json", encoding="utf-8")
     with pytest.raises(SessionError):
@@ -53,9 +53,9 @@ def test_nan_audio_is_invalid() -> None:
 
 
 def test_sidecar_must_be_an_object(tmp_path: Path) -> None:
-    path = tmp_path / "sweep.roomscope-sweep.json"
+    path = tmp_path / "sweep.reverbscope-sweep.json"
     path.write_text("[]", encoding="utf-8")
-    with pytest.raises(RoomScopeError):
+    with pytest.raises(ReverbScopeError):
         read_sweep_sidecar(path)
 
 
@@ -95,9 +95,9 @@ def test_garbage_wav_is_invalid_audio(tmp_path: Path) -> None:
 
 
 def test_oversized_sidecar_is_refused(tmp_path: Path) -> None:
-    path = tmp_path / "sweep.roomscope-sweep.json"
+    path = tmp_path / "sweep.reverbscope-sweep.json"
     path.write_bytes(b"{" + b" " * 1_000_001 + b"}")
-    with pytest.raises(RoomScopeError):
+    with pytest.raises(ReverbScopeError):
         read_sweep_sidecar(path)
 
 
@@ -174,8 +174,8 @@ def test_src_does_not_use_pickle_eval_or_shell() -> None:
 @pytest.fixture(scope="module")
 def saved_session(tmp_path_factory: pytest.TempPathFactory) -> Path:
     """A real session folder written by ``save_measurement``."""
-    from roomscope.io.session_store import save_measurement
-    from roomscope.models.session import MeasurementSession
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
 
     sweep = SweepSettings(sample_rate=48000, duration_s=2.0, post_silence_s=1.5)
     result = analyze(
@@ -277,8 +277,8 @@ def test_incomplete_comparison_records_are_session_errors(
 
 
 def test_invalid_compare_settings_and_calibration_are_session_errors() -> None:
-    from roomscope.models.calibration import CalibrationRecord
-    from roomscope.models.comparison import CompareSettings
+    from reverbscope.models.calibration import CalibrationRecord
+    from reverbscope.models.comparison import CompareSettings
 
     with pytest.raises(SessionError, match="compare settings"):
         CompareSettings.from_dict({"min_common_band_octaves": -1.0})

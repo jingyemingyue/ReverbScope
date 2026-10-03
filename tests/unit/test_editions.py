@@ -1,7 +1,7 @@
 """Desktop Edition and Terminal Edition (docs/EDITIONS.md).
 
 The Terminal Edition is the same program built without Qt, PySide6 and
-matplotlib (``ROOMSCOPE_PACKAGE=terminal`` in packaging/roomscope.spec). These
+matplotlib (``REVERBSCOPE_PACKAGE=terminal`` in packaging/reverbscope.spec). These
 tests cover what that build relies on without building it: the edition
 marker in ``build_info.json``, the command line's behaviour when the GUI is
 absent, the gate that fails a Terminal bundle with GUI files in it, and the
@@ -20,15 +20,15 @@ from types import ModuleType
 
 import pytest
 
-from roomscope import edition
-from roomscope.cli.main import main
-from roomscope.i18n import activate
+from reverbscope import edition
+from reverbscope.cli.main import main
+from reverbscope.i18n import activate
 
 ROOT = Path(__file__).resolve().parents[2]
 TERMINAL_SENTENCE = (
-    "This is the Terminal Edition of RoomScope. Install the Desktop Edition to use the GUI."
+    "This is the Terminal Edition of ReverbScope. Install the Desktop Edition to use the GUI."
 )
-TERMINAL_SENTENCE_ZH = "当前安装的是 RoomScope 终端版。如需图形界面，请安装桌面版。"
+TERMINAL_SENTENCE_ZH = "当前安装的是 ReverbScope 终端版。如需图形界面，请安装桌面版。"
 
 
 def _script(name: str) -> ModuleType:
@@ -44,7 +44,7 @@ def _script(name: str) -> ModuleType:
 @pytest.fixture
 def terminal(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
     """This process behaves as the Terminal Edition bundle."""
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     monkeypatch.setattr(edition, "package", lambda build_info=None: edition.TERMINAL_PACKAGE)
     monkeypatch.chdir(tmp_path)
     try:
@@ -72,7 +72,7 @@ def _run(argv: list[str], capsys: pytest.CaptureFixture[str]) -> tuple[int, str,
         ({"version": "0.4.1", "commit": "abc", "package": "terminal"}, "terminal"),
         ({"version": "0.4.1", "commit": "abc", "package": "desktop"}, "desktop"),
         ({"version": "0.4.1", "commit": "abc"}, None),  # a bundle from before the editions
-        ({"package": "server"}, None),  # not an edition RoomScope knows
+        ({"package": "server"}, None),  # not an edition ReverbScope knows
         ([], None),
     ],
 )
@@ -88,15 +88,15 @@ def test_a_source_checkout_is_neither_edition() -> None:
 
 
 def test_the_spec_builds_both_editions_and_leaves_the_gui_out_of_one() -> None:
-    spec = (ROOT / "packaging" / "roomscope.spec").read_text(encoding="utf-8")
-    assert 'os.environ.get("ROOMSCOPE_PACKAGE", "desktop")' in spec
+    spec = (ROOT / "packaging" / "reverbscope.spec").read_text(encoding="utf-8")
+    assert 'os.environ.get("REVERBSCOPE_PACKAGE", "desktop")' in spec
     assert '"package": PACKAGE' in spec  # build_info.json records it
     excludes = spec[
         spec.index("TERMINAL_EXCLUDES = [") : spec.index("]", spec.index("TERMINAL_EXCLUDES"))
     ]
-    for module in ("PySide6", "shiboken6", "roomscope.ui", "matplotlib"):
+    for module in ("PySide6", "shiboken6", "reverbscope.ui", "matplotlib"):
         assert f'"{module}"' in excludes, module
-    assert 'name="roomscope-terminal" if TERMINAL else "roomscope"' in spec
+    assert 'name="reverbscope-terminal" if TERMINAL else "reverbscope"' in spec
     assert 'if sys.platform != "darwin" and not TERMINAL:' in spec  # no windowed launcher
     assert 'if sys.platform == "darwin" and not TERMINAL:' in spec  # no .app
 
@@ -121,11 +121,11 @@ def test_gui_in_the_terminal_edition_is_a_sentence_not_a_traceback(
 def test_the_terminal_edition_never_imports_the_gui(
     terminal: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """roomscope.ui is not in the bundle: an import of it would be a crash."""
+    """reverbscope.ui is not in the bundle: an import of it would be a crash."""
     for name in list(sys.modules):
-        if name == "roomscope.ui" or name.startswith("roomscope.ui."):
+        if name == "reverbscope.ui" or name.startswith("reverbscope.ui."):
             monkeypatch.delitem(sys.modules, name)
-    monkeypatch.setitem(sys.modules, "roomscope.ui", None)
+    monkeypatch.setitem(sys.modules, "reverbscope.ui", None)
     for argv in (["gui"], ["demo"], [], ["--backend", "fake", "doctor"]):
         code, _out, err = _run(argv, capsys)
         assert "Traceback" not in err, argv
@@ -136,12 +136,12 @@ def test_home_and_demo_point_the_terminal_edition_at_the_desktop_download(
     terminal: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     _code, _out, home = _run([], capsys)
-    assert "RoomScope Terminal Edition" in home
-    assert "roomscope doctor" in home and "roomscope gui" not in home
+    assert "ReverbScope Terminal Edition" in home
+    assert "reverbscope doctor" in home and "reverbscope gui" not in home
     code, demo, _err = _run(["demo"], capsys)
     assert code == 0
     assert "Desktop Edition" in demo and edition.RELEASES_URL in demo
-    assert "roomscope gui" not in demo and "pip install" not in demo
+    assert "reverbscope gui" not in demo and "pip install" not in demo
 
 
 def test_saved_next_steps_in_the_terminal_edition(
@@ -153,13 +153,13 @@ def test_saved_next_steps_in_the_terminal_edition(
     )
     assert code == 0
     steps = out[out.index("Next steps") :]
-    assert edition.RELEASES_URL in steps and "roomscope gui" not in steps
+    assert edition.RELEASES_URL in steps and "reverbscope gui" not in steps
 
 
 def test_doctor_names_the_edition_and_the_missing_gui_libraries(
     terminal: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import roomscope.diagnostics as diagnostics
+    import reverbscope.diagnostics as diagnostics
 
     monkeypatch.setattr(
         diagnostics, "build_info", lambda path=None: {"commit": "abc", "package": "terminal"}
@@ -193,9 +193,9 @@ def _tree(root: Path, files: list[str]) -> Path:
 def test_the_terminal_gate_finds_every_kind_of_gui_file(tmp_path: Path) -> None:
     gate = _script("check_bundle_contents")
     root = _tree(
-        tmp_path / "roomscope-terminal",
+        tmp_path / "reverbscope-terminal",
         [
-            "roomscope",
+            "reverbscope",
             "_internal/numpy/core/_multiarray_umath.so",
             "_internal/PySide6/QtCore.abi3.so",
             "_internal/shiboken6/libshiboken6.abi3.so.6.11",
@@ -203,7 +203,7 @@ def test_the_terminal_gate_finds_every_kind_of_gui_file(tmp_path: Path) -> None:
             "_internal/Qt6Gui.dll",
             "_internal/QtWidgets.framework/Versions/A/QtWidgets",
             "_internal/matplotlib/mpl-data/matplotlibrc",
-            "_internal/roomscope/ui/results.pyc",
+            "_internal/reverbscope/ui/results.pyc",
             # License texts may name Qt; they are not the library.
             "THIRD_PARTY_LICENSES/PySide6_Essentials/LICENSE",
         ],
@@ -216,7 +216,7 @@ def test_the_terminal_gate_finds_every_kind_of_gui_file(tmp_path: Path) -> None:
         "_internal/Qt6Gui.dll",
         "_internal/QtWidgets.framework/Versions/A/QtWidgets",
         "_internal/matplotlib/mpl-data/matplotlibrc",
-        "_internal/roomscope/ui/results.pyc",
+        "_internal/reverbscope/ui/results.pyc",
     }
     assert gate.check(root, terminal=True)
     assert gate.main(["--root", str(root), "--terminal"]) == 1
@@ -225,8 +225,8 @@ def test_the_terminal_gate_finds_every_kind_of_gui_file(tmp_path: Path) -> None:
 def test_a_clean_terminal_tree_passes_with_its_license_bundle(tmp_path: Path) -> None:
     gate = _script("check_bundle_contents")
     root = _tree(
-        tmp_path / "roomscope-terminal",
-        ["roomscope", "_internal/numpy/__init__.pyc", "_internal/libportaudio.so"],
+        tmp_path / "reverbscope-terminal",
+        ["reverbscope", "_internal/numpy/__init__.pyc", "_internal/libportaudio.so"],
     )
     licenses = root / "THIRD_PARTY_LICENSES"
     (licenses / "_texts").mkdir(parents=True)
@@ -250,7 +250,7 @@ def test_the_terminal_license_bundle_has_no_qt(tmp_path: Path) -> None:
 
 
 def test_the_windows_terminal_launcher_opens_a_prompt_in_its_folder() -> None:
-    launcher = ROOT / "packaging" / "windows" / "terminal" / "RoomScope Terminal.cmd"
+    launcher = ROOT / "packaging" / "windows" / "terminal" / "ReverbScope Terminal.cmd"
     text = launcher.read_bytes().decode("ascii")
-    assert 'cd /d "%~dp0"' in text and "cmd /k roomscope.exe" in text
+    assert 'cd /d "%~dp0"' in text and "cmd /k reverbscope.exe" in text
     assert "*.cmd text eol=crlf" in (ROOT / ".gitattributes").read_text(encoding="utf-8")

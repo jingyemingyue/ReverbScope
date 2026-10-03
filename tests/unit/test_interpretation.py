@@ -3,14 +3,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import ConfigurationError
-from roomscope.interpretation import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import ConfigurationError
+from reverbscope.interpretation import (
     Severity,
     available_profiles,
     interpret,
 )
-from roomscope.interpretation.profiles import (
+from reverbscope.interpretation.profiles import (
     AcousticGuitarProfile,
     ChoirProfile,
     DrumsProfile,
@@ -19,8 +19,8 @@ from roomscope.interpretation.profiles import (
     VoiceOverProfile,
     profile_title,
 )
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import EnergyMetric, Reflection, Validity
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import EnergyMetric, Reflection, Validity
 from tests.conftest import make_rir
 
 ALL_PROFILES = [

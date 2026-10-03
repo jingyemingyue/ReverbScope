@@ -53,21 +53,21 @@ from typing import Any, Protocol
 #: only, no Qt) of each platform. The names say edition, system and CPU.
 CHECKSUM_FILES: Mapping[str, tuple[str, ...]] = {
     "SHA256SUMS-Linux-X64": (
-        "RoomScope-Desktop-Linux-x86_64.tar.gz",
-        "RoomScope-Terminal-Linux-x86_64.tar.gz",
+        "ReverbScope-Desktop-Linux-x86_64.tar.gz",
+        "ReverbScope-Terminal-Linux-x86_64.tar.gz",
     ),
     "SHA256SUMS-macOS-ARM64": (
-        "RoomScope-Desktop-macOS-arm64.dmg",
-        "RoomScope-Terminal-macOS-arm64.tar.gz",
+        "ReverbScope-Desktop-macOS-arm64.dmg",
+        "ReverbScope-Terminal-macOS-arm64.tar.gz",
     ),
     "SHA256SUMS-macOS-X64": (
-        "RoomScope-Desktop-macOS-x86_64.dmg",
-        "RoomScope-Terminal-macOS-x86_64.tar.gz",
+        "ReverbScope-Desktop-macOS-x86_64.dmg",
+        "ReverbScope-Terminal-macOS-x86_64.tar.gz",
     ),
     "SHA256SUMS-Windows-X64": (
-        "RoomScope-Desktop-Windows-x64-Setup.exe",
-        "RoomScope-Desktop-Windows-x64.zip",
-        "RoomScope-Terminal-Windows-x64.zip",
+        "ReverbScope-Desktop-Windows-x64-Setup.exe",
+        "ReverbScope-Desktop-Windows-x64.zip",
+        "ReverbScope-Terminal-Windows-x64.zip",
     ),
 }
 #: One checksum file on the Release for every download it carries.
@@ -78,16 +78,16 @@ SBOM_FILES = ("cyclonedx.sbom.json", "generated-bundle.lock")
 #: removed from the draft; any other unknown name stops the refresh.
 LEGACY_ASSETS = frozenset(
     {
-        "RoomScope.dmg",
+        "ReverbScope.dmg",
         "SHA256SUMS-Linux",
         "SHA256SUMS-macOS",
         "SHA256SUMS-Windows",
         # 0.4.1 drafts before the Desktop / Terminal editions
-        "roomscope-linux-x86_64.tar.gz",
-        "RoomScope-macos-arm64.dmg",
-        "RoomScope-macos-x86_64.dmg",
-        "roomscope-windows-x64.zip",
-        "RoomScope-setup.exe",
+        "reverbscope-linux-x86_64.tar.gz",
+        "ReverbScope-macos-arm64.dmg",
+        "ReverbScope-macos-x86_64.dmg",
+        "reverbscope-windows-x64.zip",
+        "ReverbScope-setup.exe",
         *CHECKSUM_FILES,
     }
 )
@@ -100,8 +100,8 @@ class ReleaseError(RuntimeError):
 
 
 def python_dist_files(version: str) -> tuple[str, str]:
-    """The wheel and sdist names hatchling gives ``roomscope`` at *version*."""
-    return (f"roomscope-{version}-py3-none-any.whl", f"roomscope-{version}.tar.gz")
+    """The wheel and sdist names hatchling gives ``reverbscope`` at *version*."""
+    return (f"reverbscope-{version}-py3-none-any.whl", f"reverbscope-{version}.tar.gz")
 
 
 def downloads(version: str) -> tuple[str, ...]:
@@ -272,7 +272,7 @@ class GitHubClient:
             "Accept": "application/vnd.github+json",
             "Authorization": f"Bearer {self._token}",
             "X-GitHub-Api-Version": "2022-11-28",
-            "User-Agent": "roomscope-release-draft",
+            "User-Agent": "reverbscope-release-draft",
         }
         if body is not None:
             data = json.dumps(body).encode("utf-8")

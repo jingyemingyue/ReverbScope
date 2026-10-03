@@ -12,8 +12,8 @@ from typing import Any
 
 import pytest
 
-from roomscope.audio.backend import DeviceInfo, StreamOptions
-from roomscope.audio.inventory import (
+from reverbscope.audio.backend import DeviceInfo, StreamOptions
+from reverbscope.audio.inventory import (
     build_inventory,
     check_channels,
     check_host_api_options,
@@ -22,7 +22,7 @@ from roomscope.audio.inventory import (
     resolve_duplex,
     separate_clocks_warning,
 )
-from roomscope.errors import AudioDeviceError, ConfigurationError
+from reverbscope.errors import AudioDeviceError, ConfigurationError
 
 HOST_APIS = [
     {"name": "MME", "devices": [0, 1, 2], "default_input_device": 0, "default_output_device": 1},
@@ -109,7 +109,7 @@ class WindowsBackend:
 
 @pytest.fixture
 def windows(monkeypatch: pytest.MonkeyPatch) -> WindowsBackend:
-    from roomscope.audio import inventory
+    from reverbscope.audio import inventory
 
     monkeypatch.setattr(inventory, "_query_host_apis", lambda backend: HOST_APIS)
     monkeypatch.setattr(inventory, "_portaudio_version", lambda backend: "PortAudio V19.7.0")
@@ -297,7 +297,7 @@ def test_exclusive_mode_rate_is_checked_in_exclusive_mode(monkeypatch: pytest.Mo
     """Review finding: --wasapi-exclusive at 96 kHz was refused by a shared-mode
     check (shared mode accepts only the engine rate), before the exclusive
     stream that would have run at 96 kHz was ever opened."""
-    from roomscope.audio import devices, portaudio
+    from reverbscope.audio import devices, portaudio
 
     class SharedOrExclusiveSd(_FakeSd):
         @staticmethod
@@ -320,9 +320,9 @@ def test_exclusive_mode_rate_is_checked_in_exclusive_mode(monkeypatch: pytest.Mo
 
 def test_fake_backend_default_devices_resolve(tmp_path: Any) -> None:
     """Review finding: with only one fake device chosen, the other side had no
-    host-API default and roomscope measure refused the take."""
-    from roomscope.audio.fake import FakeBackend
-    from roomscope.cli.main import main
+    host-API default and reverbscope measure refused the take."""
+    from reverbscope.audio.fake import FakeBackend
+    from reverbscope.cli.main import main
 
     inventory = build_inventory(FakeBackend(), probe_rates=False)
     devices = [probe.device for probe in inventory.devices]
@@ -373,7 +373,7 @@ class _FakeSd:
 
 
 def test_stream_options_map_to_the_device_host_api() -> None:
-    from roomscope.audio.portaudio import host_api_settings
+    from reverbscope.audio.portaudio import host_api_settings
 
     exclusive = StreamOptions(wasapi_exclusive=True)
     setting = host_api_settings(_FakeSd, 5, "input", exclusive)
@@ -392,7 +392,7 @@ def test_stream_options_are_validated() -> None:
 
 
 def test_cli_devices_probe_and_doctor(capsys: pytest.CaptureFixture[str]) -> None:
-    from roomscope.cli.main import main
+    from reverbscope.cli.main import main
 
     assert main(["--backend", "fake", "devices", "--probe"]) == 0
     out = capsys.readouterr().out
@@ -401,20 +401,20 @@ def test_cli_devices_probe_and_doctor(capsys: pytest.CaptureFixture[str]) -> Non
     assert '"devices"' in capsys.readouterr().out
     assert main(["--backend", "fake", "doctor"]) == 0
     report = capsys.readouterr().out
-    assert "RoomScope" in report and "numpy" in report and "\nAudio\n" in report
+    assert "ReverbScope" in report and "numpy" in report and "\nAudio\n" in report
 
 
 def test_edition_follows_environment_and_bundle(monkeypatch: pytest.MonkeyPatch) -> None:
     import sys
 
-    from roomscope.edition import DEVELOPER, USER, edition
+    from reverbscope.edition import DEVELOPER, USER, edition
 
-    monkeypatch.delenv("ROOMSCOPE_EDITION", raising=False)
+    monkeypatch.delenv("REVERBSCOPE_EDITION", raising=False)
     monkeypatch.delattr(sys, "frozen", raising=False)
     assert edition() == DEVELOPER
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     assert edition() == USER
-    monkeypatch.setenv("ROOMSCOPE_EDITION", "developer")
+    monkeypatch.setenv("REVERBSCOPE_EDITION", "developer")
     assert edition() == DEVELOPER
 
 

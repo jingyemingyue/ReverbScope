@@ -1,8 +1,8 @@
-RoomScope standalone measurement
+ReverbScope standalone measurement
 ────────────────────────────────
 
-  Input        [#] RoomScope fake interface · input #
-  Output       [#] RoomScope fake interface · output #
+  Input        [#] ReverbScope fake interface · input #
+  Output       [#] ReverbScope fake interface · output #
   Host API     fake
   Sample rate  # kHz
   Level        # dBFS
@@ -15,7 +15,7 @@ Checks  nothing has been played yet
   ✓ The output device accepts # kHz
   ✓ Level at or below # dBFS
 
-! Start with your monitor/interface output at a low level. RoomScope will play a
+! Start with your monitor/interface output at a low level. ReverbScope will play a
   sine sweep at a conservative digital level; raise the level gradually between
   measurements only if the recording is too quiet.
 

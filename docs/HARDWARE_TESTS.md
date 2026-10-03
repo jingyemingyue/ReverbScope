@@ -3,7 +3,7 @@
 **English** | [简体中文](HARDWARE_TESTS.zh-CN.md)
 
 ARCHITECTURE_V1.md §7.3: executed at least once per platform before 1.0
-(M10) and recorded here with the date, the RoomScope version and build
+(M10) and recorded here with the date, the ReverbScope version and build
 commit, the operating system and the interface.
 
 Nothing below is marked PASS that was not run on real hardware: a physical
@@ -13,11 +13,11 @@ synthetic and scripted-PortAudio tests, and CI runners do not count. The
 cells are empty on purpose; no check has been run on real hardware yet.
 
 **Contributing a result.** Open an
-[Audio interface test report](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml)
-or a [DAW compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml)
+[Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)
+or a [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)
 issue. Both ask for the environment report
-(**Help → Environment Report for Bug Reports**, or `roomscope doctor`; the
-interface report with probed sample rates, `roomscope doctor --probe`),
+(**Help → Environment Report for Bug Reports**, or `reverbscope doctor`; the
+interface report with probed sample rates, `reverbscope doctor --probe`),
 which names the version, build commit, OS, host APIs and devices. The
 interface report asks Pass / Fail / Not run for each row of the table below.
 A maintainer copies the result into a cell below with a link to the issue.
@@ -31,12 +31,12 @@ A maintainer copies the result into a cell below with a link to the issue.
 | Channel mapping beyond 1–2 | | | |
 | Loopback capture | | | |
 | Stop during playback (output silent within one callback) | | | |
-| Full take without a logged buffer under/overflow (`roomscope -v measure`) | | | |
+| Full take without a logged buffer under/overflow (`reverbscope -v measure`) | | | |
 | Device unplugged during a take is reported as a failure, not a recording | | | |
 | Full Standalone measurement | | | |
 | Same signal through one DAW (Universal DAW Mode) | | | |
 
-Record a cell as `PASS YYYY-MM-DD, RoomScope x.y.z (commit), <OS version>,
+Record a cell as `PASS YYYY-MM-DD, ReverbScope x.y.z (commit), <OS version>,
 <interface and driver>, #issue` or `FAIL ... #issue`. Do not fill a cell from
 the fake backend, a CI runner or a test.
 
@@ -95,9 +95,9 @@ run" with a reason is as useful as a "Pass".
 
 1. Turn the monitors or headphones **down**. The test signal is a sine sweep
    from 20 Hz to 20 kHz; start low and raise it until the sweep is clearly
-   audible at the microphone, never loud. RoomScope refuses levels above
+   audible at the microphone, never loud. ReverbScope refuses levels above
    −12 dBFS unless you confirm it.
-2. Install RoomScope from the latest release (the
+2. Install ReverbScope from the latest release (the
    [user guide](user-guide/en.md#install) has the steps per system). The
    builds are not signed yet: on macOS open it once with **System Settings ▸
    Privacy & Security ▸ Open Anyway**; on Windows click **More info ▸ Run
@@ -108,7 +108,7 @@ run" with a reason is as useful as a "Pass".
    normally use it, and write down the driver version and the buffer size
    set there.
 4. Copy **Help ▸ Environment Report for Bug Reports** after pressing **Probe
-   sample rates** (or run `roomscope doctor --probe`). Nothing is played.
+   sample rates** (or run `reverbscope doctor --probe`). Nothing is played.
    Paste it into the report; it names the version, build commit, OS, audio
    systems and devices, with your home folder shown as `~`.
 
@@ -116,22 +116,22 @@ run" with a reason is as useful as a "Pass".
 
 | Row | What to do | Pass when |
 | --- | --- | --- |
-| Device list | Open Standalone Mode (or run `roomscope devices`) | The interface is listed with the right number of inputs and outputs |
+| Device list | Open Standalone Mode (or run `reverbscope devices`) | The interface is listed with the right number of inputs and outputs |
 | Full take at 44.1 / 48 / 96 kHz | Standalone Mode, pick the interface for input and output, set the rate, press Start; repeat per rate the interface offers | A result opens, the direct-sound confidence is not "low", and no warning says the rate is unsupported or that the recording has dropouts |
 | Channels beyond 1–2 | Choose an input or output above channel 2 | The sweep comes out of, and is recorded from, the channels you chose |
 | Loopback capture | Cable one output back to one input and choose it as the loopback channel | The result says the loopback was compensated |
 | Stop during playback | Press Stop while the sweep plays | The sound stops at once, no tone keeps playing, no result is saved |
-| No buffer under/overflow | A full take at your usual settings | No "buffer problem(s) … may contain dropouts" warning in the result or in `roomscope.log` |
-| Interface unplugged | Monitors down; unplug the cable during a take | RoomScope reports an error and saves nothing; it does not hang or crash |
+| No buffer under/overflow | A full take at your usual settings | No "buffer problem(s) … may contain dropouts" warning in the result or in `reverbscope.log` |
+| Interface unplugged | Monitors down; unplug the cable during a take | ReverbScope reports an error and saves nothing; it does not hang or crash |
 | Full Standalone measurement | Microphone and loudspeaker in a room | You get a result you can read |
 | Same signal through one DAW | Universal DAW Mode with the same interface | See the DAW steps below |
 
-Buffer and latency: RoomScope uses the interface's driver settings. If a
+Buffer and latency: ReverbScope uses the interface's driver settings. If a
 take reports dropouts, raise the buffer size in the interface's control
 panel, close other audio programs, and try again; say both settings in the
 report. The developer edition (a source install, or **File ▸ Settings ▸ Show
 developer tools** and a restart) also offers **Latency: Low / High** and, per system, WASAPI
-exclusive mode (Windows) or letting RoomScope set the device rate (macOS);
+exclusive mode (Windows) or letting ReverbScope set the device rate (macOS);
 record them if you change them. ASIO is not used by the bundles.
 
 **DAW check** (one DAW, one take)
@@ -143,15 +143,15 @@ record them if you change them. ASIO is not used by the bundles.
    in Universal DAW Mode.
 3. Pass when the direct-sound confidence is "high" and no sample-rate or
    time-stretch finding appears. Then, if you can, the two negative checks in
-   the DAW matrix above: they pass when RoomScope names the problem.
+   the DAW matrix above: they pass when ReverbScope names the problem.
 
 **What to send**
 
-* The form: [audio interface test report](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml)
-  or [DAW compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml).
+* The form: [audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)
+  or [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml).
 * The environment report (step 4 above).
-* For any failure, `roomscope.log` from the data folder (`~/.roomscope/`, or
+* For any failure, `reverbscope.log` from the data folder (`~/.reverbscope/`, or
   **Environment Report ▸ Open Data Folder**), and if a result was saved, a
-  session bundle made with `roomscope session bundle <session folder>
+  session bundle made with `reverbscope session bundle <session folder>
   --no-audio` (leave out `--no-audio` only if you are happy to share the
   recording of your room).

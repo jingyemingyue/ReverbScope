@@ -1,6 +1,6 @@
 """First-run experience and the look of the command line, pinned by golden files.
 
-``roomscope demo`` (synthetic data through the real pipeline), the home
+``reverbscope demo`` (synthetic data through the real pipeline), the home
 screen, next steps, the error block, and the terminal matrix: English and
 Chinese at 80 and 60 columns, NO_COLOR, TERM=dumb, redirected stdout, a
 cp1252 stream and JSON on stdout.
@@ -8,7 +8,7 @@ cp1252 stream and JSON on stdout.
 Golden files live in ``tests/golden``. Measured numbers are replaced by ``#``
 before the comparison, so a last-digit difference between platforms (numpy
 on Accelerate or OpenBLAS) does not fail the layout test. Regenerate with
-``ROOMSCOPE_UPDATE_GOLDEN=1 pytest tests/unit/test_cli_ux.py`` and review the
+``REVERBSCOPE_UPDATE_GOLDEN=1 pytest tests/unit/test_cli_ux.py`` and review the
 diff like code.
 """
 
@@ -24,15 +24,15 @@ from pathlib import Path
 
 import pytest
 
-from roomscope import __version__
-from roomscope.cli.console import Console, cell_width
-from roomscope.cli.main import main
-from roomscope.demo import DEMO_MODE, DemoRun, run_demo
-from roomscope.i18n import activate
+from reverbscope import __version__
+from reverbscope.cli.console import Console, cell_width
+from reverbscope.cli.main import main
+from reverbscope.demo import DEMO_MODE, DemoRun, run_demo
+from reverbscope.i18n import activate
 from tests.zh_tokens import english_words
 
 GOLDEN = Path(__file__).resolve().parent.parent / "golden"
-UPDATE = bool(os.environ.get("ROOMSCOPE_UPDATE_GOLDEN"))
+UPDATE = bool(os.environ.get("REVERBSCOPE_UPDATE_GOLDEN"))
 ESC = "\x1b["
 _NUMBER = re.compile(r"(?<![A-Za-z0-9.])[-+]?\d+(?:\.\d+)?")
 _DATE = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} [+-]\d{2}:\d{2}")
@@ -53,9 +53,9 @@ def _golden(name: str, text: str) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(text, encoding="utf-8", newline="\n")
         return
-    assert path.is_file(), f"missing {path}; run with ROOMSCOPE_UPDATE_GOLDEN=1"
+    assert path.is_file(), f"missing {path}; run with REVERBSCOPE_UPDATE_GOLDEN=1"
     expected = path.read_text(encoding="utf-8")
-    assert text == expected, f"{name} changed; run with ROOMSCOPE_UPDATE_GOLDEN=1 and review"
+    assert text == expected, f"{name} changed; run with REVERBSCOPE_UPDATE_GOLDEN=1 and review"
 
 
 @pytest.fixture
@@ -63,7 +63,7 @@ def cli(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> Iterator[tuple[Path, pytest.MonkeyPatch]]:
     """A clean terminal: its own home, no colour overrides, relative paths."""
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     for name in ("NO_COLOR", "FORCE_COLOR", "TERM", "COLUMNS", "PYTHONIOENCODING"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.chdir(tmp_path)
@@ -107,8 +107,8 @@ def test_the_demo_finds_the_problems_it_says_it_shows(demo_run: DemoRun) -> None
 
 def test_ascii_demo_lines_fit_when_signs_expand(demo_run: DemoRun) -> None:
     """cp1252 turns Δ into delta after layout used to run past 80–82 columns."""
-    from roomscope.cli.render import render_demo
-    from roomscope.interpretation import interpret
+    from reverbscope.cli.render import render_demo
+    from reverbscope.interpretation import interpret
 
     findings = [interpret(take.result, "vocal") for take in demo_run.takes]
     for width in (60, 80, 81, 82):
@@ -120,7 +120,7 @@ def test_ascii_demo_lines_fit_when_signs_expand(demo_run: DemoRun) -> None:
         )
         for line in text.splitlines():
             if (
-                "roomscope " in line
+                "reverbscope " in line
                 or "http" in line
                 or "pip install" in line
                 or "/" in line
@@ -153,7 +153,7 @@ def test_demo_walkthrough_and_its_next_steps_work(
 
     for line in out.splitlines():
         command = line.strip()
-        if command.startswith(("roomscope show", "roomscope compare")):
+        if command.startswith(("reverbscope show", "reverbscope compare")):
             code, shown, _err = _run(shlex.split(command)[1:], capsys)
             assert code == 0, command
             assert "At a glance" in shown
@@ -165,7 +165,7 @@ def test_demo_never_overwrites_a_folder_it_did_not_write(
     cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
 ) -> None:
     root, _mp = cli
-    mine = root / "roomscope-demo"
+    mine = root / "reverbscope-demo"
     mine.mkdir()
     (mine / "notes.txt").write_text("mine", encoding="utf-8")
     code, out, err = _run(["demo"], capsys)
@@ -187,11 +187,11 @@ def test_demo_on_a_cli_only_install(
 ) -> None:
     """Without PySide6 the demo runs and points at the desktop app instead of `gui`."""
     _root, monkeypatch = cli
-    monkeypatch.setattr("roomscope.ui.app.pyside6_import_error", lambda: "no PySide6")
+    monkeypatch.setattr("reverbscope.ui.app.pyside6_import_error", lambda: "no PySide6")
     code, out, _err = _run(["demo"], capsys)
     assert code == 0
     assert 'pip install "PySide6_Essentials>=6.6"' in out
-    assert "     roomscope gui" not in out
+    assert "     reverbscope gui" not in out
 
 
 # --- Golden files: English and Chinese, 80 and 60 columns -------------------------------
@@ -209,7 +209,7 @@ def test_golden_demo(
     monkeypatch.setenv("COLUMNS", str(columns))
     code, out, _err = _run(["--lang", lang, "demo"], capsys)
     assert code == 0
-    assert all(cell_width(line) <= columns for line in out.splitlines() if "roomscope " not in line)
+    assert all(cell_width(line) <= columns for line in out.splitlines() if "reverbscope " not in line)
     _golden(f"demo-{lang}-{columns}", _normalise(out))
 
 
@@ -225,7 +225,7 @@ def test_golden_sweep_next_steps(
     monkeypatch.setenv("COLUMNS", str(columns))
     code, out, _err = _run(["--lang", lang, "sweep", "--out", "sweep.wav"], capsys)
     assert code == 0
-    assert all(cell_width(line) <= columns for line in out.splitlines() if "roomscope " not in line)
+    assert all(cell_width(line) <= columns for line in out.splitlines() if "reverbscope " not in line)
     _golden(f"sweep-{lang}-{columns}", out.replace("\\", "/"))
 
 
@@ -233,12 +233,12 @@ def test_golden_sweep_next_steps(
 def test_golden_home_screen(
     cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], lang: str
 ) -> None:
-    """Bare ``roomscope``: a short home screen; still the usage error's exit code."""
+    """Bare ``reverbscope``: a short home screen; still the usage error's exit code."""
     _root, monkeypatch = cli
     monkeypatch.setenv("COLUMNS", "80")
     code, out, err = _run(["--lang", lang], capsys)
     assert code == 2 and out == ""
-    assert "roomscope demo" in err and "roomscope --help" in err
+    assert "reverbscope demo" in err and "reverbscope --help" in err
     assert len(err.splitlines()) <= 10
     _golden(f"home-{lang}", _normalise(err))
 
@@ -253,7 +253,7 @@ def test_golden_measure_plan_with_the_fake_interface(
     code, out, err = _run([*argv, "--duration", "1", "--post-silence", "1"], capsys)
     assert code == 0
     # The plan, the checks, the safety note and the take; the report follows.
-    head = out[: out.index("RoomScope " + ("analysis" if lang == "en" else "分析"))]
+    head = out[: out.index("ReverbScope " + ("analysis" if lang == "en" else "分析"))]
     assert len(err.strip().splitlines()) == 1  # one milestone in a log, no percentages
     _golden(f"measure-plan-{lang}", _normalise(head))
 
@@ -291,7 +291,7 @@ def test_the_chinese_demo_and_home_show_no_english_prose(
             line
             for line in (out + err).splitlines()
             # Paths and the pip command are data the user types, not prose.
-            if "roomscope-demo" not in line and "pip install" not in line
+            if "reverbscope-demo" not in line and "pip install" not in line
         )
         assert english_words(text) == [], (argv, text)
 
@@ -315,7 +315,7 @@ class _Tty(io.StringIO):
 def _demo_on(
     stream: io.StringIO, env: dict[str, str], monkeypatch: pytest.MonkeyPatch, *argv: str
 ) -> str:
-    monkeypatch.setattr("roomscope.cli.console._enable_windows_vt", lambda _stream: True)
+    monkeypatch.setattr("reverbscope.cli.console._enable_windows_vt", lambda _stream: True)
     # On Windows a terminal shows the symbols only in Windows Terminal and alike.
     monkeypatch.setenv("WT_SESSION", "1")
     for key, value in env.items():
@@ -377,7 +377,7 @@ def test_redirected_output_is_plain_and_stable(cli: tuple[Path, pytest.MonkeyPat
     _root, monkeypatch = cli
     text = _demo_on(io.StringIO(), {}, monkeypatch)
     assert ESC not in text and "\r" not in text
-    assert all(cell_width(line) <= 100 for line in text.splitlines() if "roomscope " not in line)
+    assert all(cell_width(line) <= 100 for line in text.splitlines() if "reverbscope " not in line)
 
 
 def test_a_cp1252_stream_gets_ascii_symbols_and_never_fails(
@@ -403,7 +403,7 @@ def test_a_narrow_encoding_replaces_what_it_cannot_write(
     """Chinese text on a cp1252 terminal: replaced, never a crash after the work."""
     import importlib
 
-    cli_main = importlib.import_module("roomscope.cli.main")
+    cli_main = importlib.import_module("reverbscope.cli.main")
 
     monkeypatch.delenv("PYTHONIOENCODING", raising=False)
     raw = io.BytesIO()
@@ -424,7 +424,7 @@ def test_a_frozen_bundle_still_honours_pythonioencoding(monkeypatch: pytest.Monk
     """PyInstaller ignores PYTHONIOENCODING: the CLI applies it (the Windows bundle smoke)."""
     import importlib
 
-    cli_main = importlib.import_module("roomscope.cli.main")
+    cli_main = importlib.import_module("reverbscope.cli.main")
 
     monkeypatch.setenv("PYTHONIOENCODING", "utf-8")
     out_raw, err_raw = io.BytesIO(), io.BytesIO()
@@ -434,10 +434,10 @@ def test_a_frozen_bundle_still_honours_pythonioencoding(monkeypatch: pytest.Monk
     monkeypatch.setattr(sys, "stderr", err)
     cli_main._prepare_streams()
     for stream in (out, err):
-        stream.write("RoomScope 演示\n")
+        stream.write("ReverbScope 演示\n")
         stream.flush()
-    assert out_raw.getvalue().decode("utf-8") == "RoomScope 演示\n"
-    assert err_raw.getvalue().decode("utf-8") == "RoomScope 演示\n"
+    assert out_raw.getvalue().decode("utf-8") == "ReverbScope 演示\n"
+    assert err_raw.getvalue().decode("utf-8") == "ReverbScope 演示\n"
     assert err.errors == "backslashreplace"
 
 
@@ -446,16 +446,16 @@ def test_a_narrow_stream_that_would_raise_is_made_to_replace(
 ) -> None:
     import importlib
 
-    cli_main = importlib.import_module("roomscope.cli.main")
+    cli_main = importlib.import_module("reverbscope.cli.main")
 
     monkeypatch.setenv("PYTHONIOENCODING", "cp1252")
     raw = io.BytesIO()
     stream = io.TextIOWrapper(raw, encoding="cp1252", errors="surrogateescape", newline="\n")
     monkeypatch.setattr(sys, "stdout", stream)
     cli_main._prepare_streams()
-    sys.stdout.write("RoomScope 演示\n")
+    sys.stdout.write("ReverbScope 演示\n")
     stream.flush()
-    assert raw.getvalue() == b"RoomScope ??\n"
+    assert raw.getvalue() == b"ReverbScope ??\n"
 
 
 def test_json_stdout_carries_nothing_but_json(
@@ -465,8 +465,8 @@ def test_json_stdout_carries_nothing_but_json(
     assert _run(["demo"], capsys)[0] == 0
     monkeypatch.setenv("FORCE_COLOR", "1")  # even when colour is forced
     for argv in (
-        ["--format", "json", "show", "roomscope-demo/position-a"],
-        ["--format", "json", "compare", "roomscope-demo/position-a", "roomscope-demo/position-b"],
+        ["--format", "json", "show", "reverbscope-demo/position-a"],
+        ["--format", "json", "compare", "reverbscope-demo/position-a", "reverbscope-demo/position-b"],
         ["--format", "json", "--backend", "fake", "devices"],
         ["--format", "json", "--backend", "fake", "measure", "--out", "m", "--duration", "1",
          "--post-silence", "1"],
@@ -484,24 +484,24 @@ def test_steps_keep_commands_whole_and_number_the_text() -> None:
     console = Console(width=40)
     lines = console.steps(
         [
-            ("Compare this session with another position measured later:", "roomscope "
+            ("Compare this session with another position measured later:", "reverbscope "
              "compare /a/very/long/path/to/session-1 /another/long/path/session-2"),
-            ("Open the desktop app:", "roomscope gui"),
+            ("Open the desktop app:", "reverbscope gui"),
         ]
     )  # fmt: skip
     assert lines[0].startswith("  1. ")
     assert any(line.strip().startswith("2. ") for line in lines)
-    long = "roomscope compare /a/very/long/path/to/session-1 /another/long/path/session-2"
+    long = "reverbscope compare /a/very/long/path/to/session-1 /another/long/path/session-2"
     assert "     " + long in lines
-    assert all(cell_width(line) <= 40 for line in lines if "roomscope" not in line)
+    assert all(cell_width(line) <= 40 for line in lines if "reverbscope" not in line)
 
 
 def test_commands_stack_on_a_narrow_terminal() -> None:
-    items = [("roomscope sweep --out sweep.wav", "Write the test signal to play from your DAW")]
+    items = [("reverbscope sweep --out sweep.wav", "Write the test signal to play from your DAW")]
     wide = Console(width=100).commands(items)
     narrow = Console(width=44).commands(items)
     assert len(wide) == 1
-    assert narrow[0].strip() == "roomscope sweep --out sweep.wav" and len(narrow) >= 2
+    assert narrow[0].strip() == "reverbscope sweep --out sweep.wav" and len(narrow) >= 2
 
 
 @pytest.mark.parametrize("columns", [100, 120, 160])
@@ -516,10 +516,10 @@ def test_wide_terminals_keep_a_readable_width(
     _root, monkeypatch = cli
     monkeypatch.setenv("COLUMNS", str(columns))
     assert _run(["demo"], capsys)[0] == 0
-    code, out, _err = _run(["--lang", lang, "show", "roomscope-demo/position-a"], capsys)
+    code, out, _err = _run(["--lang", lang, "show", "reverbscope-demo/position-a"], capsys)
     assert code == 0
     lines = out.splitlines()
-    assert all(cell_width(line) <= 100 for line in lines if "roomscope" not in line)
+    assert all(cell_width(line) <= 100 for line in lines if "reverbscope" not in line)
     assert any(set(line.strip()) <= {"─", " "} and line.count("─") > 20 for line in lines)
 
 
@@ -527,7 +527,7 @@ def test_format_report_prints_on_a_cp1252_stdout(
     demo_run: DemoRun, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Scripts print format_report(); on a Windows code page it must still encode."""
-    from roomscope.cli.report import format_comparison_report, format_report
+    from reverbscope.cli.report import format_comparison_report, format_report
 
     stream = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="strict")
     monkeypatch.setattr(sys, "stdout", stream)

@@ -1,8 +1,8 @@
-RoomScope <version>
+ReverbScope <version>
 测量并对比你录音的房间：混响、早期反射、低频共振和噪声，适用于任何 DAW。
 
-  roomscope demo                    用合成数据体验，无需音频接口
-  roomscope gui                     打开桌面应用
-  roomscope sweep --out sweep.wav   写出测试信号，在 DAW 中播放
+  reverbscope demo                    用合成数据体验，无需音频接口
+  reverbscope gui                     打开桌面应用
+  reverbscope sweep --out sweep.wav   写出测试信号，在 DAW 中播放
 
-运行 roomscope --help 查看所有命令和选项。
+运行 reverbscope --help 查看所有命令和选项。

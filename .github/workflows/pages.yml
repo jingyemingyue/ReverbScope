@@ -1,0 +1,38 @@
+# Deploy the ReverbScope marketing site to GitHub Pages.
+# Source: the site/ directory on main. Enable in
+# Settings -> Pages -> Source: GitHub Actions.
+name: Deploy site to Pages
+
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632bad36f7ad217195b0d45c49 # v3
+        with:
+          path: site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90100687cd14c0b8c27b0d7b104d0d63bbba # v4

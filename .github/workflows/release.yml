@@ -1,7 +1,7 @@
 # Build unsigned bundles and prepare a draft Release for the version on main.
 # Every runner builds both editions of its platform in one job (no extra
 # runners): the Desktop Edition (GUI + command line) and the Terminal Edition
-# (command line only, built without Qt; ROOMSCOPE_PACKAGE=terminal).
+# (command line only, built without Qt; REVERBSCOPE_PACKAGE=terminal).
 # A pull request that changes this workflow runs the same package gates without
 # creating a Release, tag, or PyPI upload.
 name: Release
@@ -17,7 +17,7 @@ on:
       - scripts/smoke_bundle.py
       - scripts/release_draft.py
       - scripts/inno_chinese_messages.py
-      - src/roomscope/__main__.py
+      - src/reverbscope/__main__.py
   pull_request:
     paths:
       - .github/workflows/release.yml
@@ -28,7 +28,7 @@ on:
       - scripts/smoke_bundle.py
       - scripts/release_draft.py
       - scripts/inno_chinese_messages.py
-      - src/roomscope/__main__.py
+      - src/reverbscope/__main__.py
       - tests/unit/test_desktop_entry.py
       - tests/unit/test_release_draft.py
       - pyproject.toml
@@ -109,8 +109,8 @@ jobs:
       - run: ruff check . && ruff format --check .
       - run: mypy
       - run: python scripts/check_doc_links.py && python scripts/check_src_safety.py
-      - run: python scripts/build_docs_site.py --out "$RUNNER_TEMP/roomscope-site"
-      - run: pytest --cov=roomscope.core --cov=roomscope.models --cov-fail-under=85
+      - run: python scripts/build_docs_site.py --out "$RUNNER_TEMP/reverbscope-site"
+      - run: pytest --cov=reverbscope.core --cov=reverbscope.models --cov-fail-under=85
       - run: pytest tests/unit/test_schemas.py tests/unit/test_public_api.py
 
   package:
@@ -125,7 +125,7 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - run: pip install build && python -m build
-      - run: pip install dist/*.whl && roomscope --version
+      - run: pip install dist/*.whl && reverbscope --version
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: python-dist
@@ -161,12 +161,12 @@ jobs:
       - name: License bundle
         run: python scripts/build_license_bundle.py --out THIRD_PARTY_LICENSES
       - name: PyInstaller
-        run: pyinstaller --noconfirm --clean packaging/roomscope.spec
+        run: pyinstaller --noconfirm --clean packaging/reverbscope.spec
       - name: Copy licenses and remove disallowed modules
         shell: bash
         run: |
-          cp -R THIRD_PARTY_LICENSES dist/roomscope/THIRD_PARTY_LICENSES
-          python scripts/check_bundle_contents.py --root dist/roomscope --strip --require-licenses
+          cp -R THIRD_PARTY_LICENSES dist/reverbscope/THIRD_PARTY_LICENSES
+          python scripts/check_bundle_contents.py --root dist/reverbscope --strip --require-licenses
       - name: Developer ID signing configured?
         # Signing and notarization run only when all six secrets exist
         # (docs/RELEASE_PLAN.md §3b) and never on pull requests: forks have no
@@ -204,25 +204,25 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: |
-          mkdir -p dist/RoomScope.app/Contents/Resources
-          cp -R THIRD_PARTY_LICENSES dist/RoomScope.app/Contents/Resources/THIRD_PARTY_LICENSES
-          python scripts/check_bundle_contents.py --root dist/RoomScope.app --strip
-          python scripts/check_bundle_contents.py --root dist/RoomScope.app/Contents/Resources --require-licenses
+          mkdir -p dist/ReverbScope.app/Contents/Resources
+          cp -R THIRD_PARTY_LICENSES dist/ReverbScope.app/Contents/Resources/THIRD_PARTY_LICENSES
+          python scripts/check_bundle_contents.py --root dist/ReverbScope.app --strip
+          python scripts/check_bundle_contents.py --root dist/ReverbScope.app/Contents/Resources --require-licenses
           # Inside-out ad hoc signature; verifies with --deep --strict. With a
           # Developer ID the step "Developer ID signature" re-signs it below.
-          sh packaging/macos/sign_app.sh dist/RoomScope.app
+          sh packaging/macos/sign_app.sh dist/ReverbScope.app
       - name: Smoke frozen binary (Desktop Edition)
         shell: bash
         run: |
           launcher=--require-gui-launcher
           [[ "$RUNNER_OS" != macOS ]] || launcher=
           cpu=x86_64; [[ "$RUNNER_ARCH" != ARM64 ]] || cpu=arm64
-          python scripts/smoke_bundle.py --root dist/roomscope --out "$RUNNER_TEMP/bundle-smoke/session" \
+          python scripts/smoke_bundle.py --root dist/reverbscope --out "$RUNNER_TEMP/bundle-smoke/session" \
             --expect-commit "$GITHUB_SHA" --expect-package desktop --expect-machine "$cpu" $launcher
       - name: Smoke macOS .app executable
         if: runner.os == 'macOS'
         shell: bash
-        run: QT_QPA_PLATFORM=offscreen dist/RoomScope.app/Contents/MacOS/RoomScope gui --smoke
+        run: QT_QPA_PLATFORM=offscreen dist/ReverbScope.app/Contents/MacOS/ReverbScope gui --smoke
       - name: Rehearse the Developer ID layout (hardened runtime, ad hoc)
         # What a Developer ID build changes, minus the certificate: hardened
         # runtime and entitlements on a copy of the app, which must still start,
@@ -237,14 +237,14 @@ jobs:
           if grep -q get-task-allow packaging/macos/entitlements.plist; then exit 1; fi
           dir="$RUNNER_TEMP/rehearsal"
           mkdir -p "$dir"
-          ditto dist/RoomScope.app "$dir/RoomScope.app"
-          sh packaging/macos/sign_app.sh "$dir/RoomScope.app" --runtime
-          codesign -dvv "$dir/RoomScope.app" > "$dir/codesign.txt" 2>&1
-          codesign -d --entitlements - --xml "$dir/RoomScope.app" > "$dir/entitlements.xml"
+          ditto dist/ReverbScope.app "$dir/ReverbScope.app"
+          sh packaging/macos/sign_app.sh "$dir/ReverbScope.app" --runtime
+          codesign -dvv "$dir/ReverbScope.app" > "$dir/codesign.txt" 2>&1
+          codesign -d --entitlements - --xml "$dir/ReverbScope.app" > "$dir/entitlements.xml"
           cat "$dir/codesign.txt"
           grep -q 'flags=.*runtime' "$dir/codesign.txt"
           grep -q com.apple.security.device.audio-input "$dir/entitlements.xml"
-          python scripts/smoke_bundle.py --roomscope "$dir/RoomScope.app/Contents/MacOS/RoomScope" \
+          python scripts/smoke_bundle.py --reverbscope "$dir/ReverbScope.app/Contents/MacOS/ReverbScope" \
             --out "$dir/smoke" --expect-commit "$GITHUB_SHA" --skip-first-run
       - name: Developer ID signature
         if: steps.devid.outputs.enabled == 'true'
@@ -255,23 +255,23 @@ jobs:
           MACOS_SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
         run: |
           sh packaging/macos/import_certificate.sh
-          sh packaging/macos/sign_app.sh dist/RoomScope.app --identity "$MACOS_SIGNING_IDENTITY"
-          codesign -dvv dist/RoomScope.app > "$RUNNER_TEMP/devid.txt" 2>&1
+          sh packaging/macos/sign_app.sh dist/ReverbScope.app --identity "$MACOS_SIGNING_IDENTITY"
+          codesign -dvv dist/ReverbScope.app > "$RUNNER_TEMP/devid.txt" 2>&1
           cat "$RUNNER_TEMP/devid.txt"
           grep -q 'flags=.*runtime' "$RUNNER_TEMP/devid.txt"
           grep -q 'Authority=Developer ID Application' "$RUNNER_TEMP/devid.txt"
           grep -q '^Timestamp=' "$RUNNER_TEMP/devid.txt"
-          python scripts/smoke_bundle.py --roomscope dist/RoomScope.app/Contents/MacOS/RoomScope \
+          python scripts/smoke_bundle.py --reverbscope dist/ReverbScope.app/Contents/MacOS/ReverbScope \
             --out "$RUNNER_TEMP/devid-smoke" --expect-commit "$GITHUB_SHA" --skip-first-run
       - name: Windows zip (Desktop Edition)
         if: runner.os == 'Windows'
         shell: bash
-        run: python -c "import shutil; shutil.make_archive('dist/RoomScope-Desktop-Windows-x64', 'zip', 'dist/roomscope')"
+        run: python -c "import shutil; shutil.make_archive('dist/ReverbScope-Desktop-Windows-x64', 'zip', 'dist/reverbscope')"
       - name: Windows installer
         if: runner.os == 'Windows'
         shell: pwsh
         env:
-          ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
+          REVERBSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
           if (-not (Test-Path $iscc)) {
@@ -284,25 +284,25 @@ jobs:
           $zh = python scripts/inno_chinese_messages.py --iscc $iscc --out $env:RUNNER_TEMP
           if ($LASTEXITCODE -ne 0 -or -not (Test-Path $zh)) { throw 'Simplified Chinese messages unavailable' }
           Write-Output "Simplified Chinese messages: $zh"
-          & $iscc "/DMyAppVersion=$env:ROOMSCOPE_VERSION" "/DChineseMessages=$zh" packaging\windows\roomscope.iss
+          & $iscc "/DMyAppVersion=$env:REVERBSCOPE_VERSION" "/DChineseMessages=$zh" packaging\windows\reverbscope.iss
           if ($LASTEXITCODE -ne 0) { throw "iscc failed ($LASTEXITCODE)" }
-          if (-not (Test-Path dist\RoomScope-Desktop-Windows-x64-Setup.exe)) { throw 'dist\RoomScope-Desktop-Windows-x64-Setup.exe missing' }
+          if (-not (Test-Path dist\ReverbScope-Desktop-Windows-x64-Setup.exe)) { throw 'dist\ReverbScope-Desktop-Windows-x64-Setup.exe missing' }
       - name: Install, smoke and uninstall the Windows installer
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $dir = Join-Path $env:RUNNER_TEMP 'RoomScope-installed'
-          $p = Start-Process dist\RoomScope-Desktop-Windows-x64-Setup.exe -Wait -PassThru -ArgumentList @(
+          $dir = Join-Path $env:RUNNER_TEMP 'ReverbScope-installed'
+          $p = Start-Process dist\ReverbScope-Desktop-Windows-x64-Setup.exe -Wait -PassThru -ArgumentList @(
             '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', "/DIR=$dir")
           if ($p.ExitCode -ne 0) { throw "installer exited with $($p.ExitCode)" }
-          if (-not (Test-Path (Join-Path $dir 'roomscope-gui.exe'))) { throw 'roomscope-gui.exe not installed' }
+          if (-not (Test-Path (Join-Path $dir 'reverbscope-gui.exe'))) { throw 'reverbscope-gui.exe not installed' }
           if (-not (Test-Path (Join-Path $dir 'THIRD_PARTY_LICENSES'))) { throw 'licenses not installed' }
-          if (-not (Test-Path (Join-Path $dir 'roomscope.exe'))) { throw 'roomscope.exe (command line) not installed' }
+          if (-not (Test-Path (Join-Path $dir 'reverbscope.exe'))) { throw 'reverbscope.exe (command line) not installed' }
           # /CURRENTUSER installs the Start menu entries for this account.
-          $menu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\RoomScope'
-          if (-not (Test-Path (Join-Path $menu 'RoomScope.lnk'))) {
+          $menu = Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs\ReverbScope'
+          if (-not (Test-Path (Join-Path $menu 'ReverbScope.lnk'))) {
             Get-ChildItem -Recurse (Join-Path $env:APPDATA 'Microsoft\Windows\Start Menu\Programs') -Filter *.lnk | Select-Object -First 20 FullName
-            throw 'Start menu entry RoomScope.lnk missing'
+            throw 'Start menu entry ReverbScope.lnk missing'
           }
           python scripts/smoke_bundle.py --root $dir --out (Join-Path $env:RUNNER_TEMP 'installed-smoke\session') --require-gui-launcher --expect-commit $env:GITHUB_SHA --expect-package desktop --expect-machine x86_64
           if ($LASTEXITCODE -ne 0) { throw 'installed smoke failed' }
@@ -319,7 +319,7 @@ jobs:
           Write-Output "uninstalled: $dir and the Start menu entries removed"
       - name: macOS disk image
         if: runner.os == 'macOS'
-        run: bash packaging/macos/make_dmg.sh dist/RoomScope.app "dist/RoomScope-Desktop-macOS-$(uname -m).dmg"
+        run: bash packaging/macos/make_dmg.sh dist/ReverbScope.app "dist/ReverbScope-Desktop-macOS-$(uname -m).dmg"
       - name: Notarize and staple the disk image
         if: steps.devid.outputs.enabled == 'true'
         env:
@@ -327,54 +327,54 @@ jobs:
           APPLE_API_KEY_P8_BASE64: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
-        run: sh packaging/macos/notarize_dmg.sh "dist/RoomScope-Desktop-macOS-$(uname -m).dmg"
+        run: sh packaging/macos/notarize_dmg.sh "dist/ReverbScope-Desktop-macOS-$(uname -m).dmg"
       - name: Check macOS disk image
         if: runner.os == 'macOS'
-        run: python scripts/check_macos_dmg.py "dist/RoomScope-Desktop-macOS-$(uname -m).dmg"
+        run: python scripts/check_macos_dmg.py "dist/ReverbScope-Desktop-macOS-$(uname -m).dmg"
       - name: Remove the signing keychain
         if: always() && steps.devid.outputs.enabled == 'true'
         run: |
-          keychain="$RUNNER_TEMP/roomscope-signing.keychain-db"
+          keychain="$RUNNER_TEMP/reverbscope-signing.keychain-db"
           if [ -f "$keychain" ]; then security delete-keychain "$keychain"; fi
       - name: Linux archive (Desktop Edition)
         if: runner.os == 'Linux'
-        run: tar -C dist -czf dist/RoomScope-Desktop-Linux-x86_64.tar.gz roomscope
+        run: tar -C dist -czf dist/ReverbScope-Desktop-Linux-x86_64.tar.gz reverbscope
       - name: Terminal Edition (command line only, no Qt)
         # Same runner, same pinned environment: PyInstaller leaves PySide6,
-        # shiboken6, matplotlib and roomscope.ui out (packaging/roomscope.spec)
+        # shiboken6, matplotlib and reverbscope.ui out (packaging/reverbscope.spec)
         # and the --terminal gate fails the build if any file of them is left.
         shell: bash
         env:
-          ROOMSCOPE_PACKAGE: terminal
+          REVERBSCOPE_PACKAGE: terminal
         run: |
           python scripts/build_license_bundle.py --terminal --out THIRD_PARTY_LICENSES-terminal
-          pyinstaller --noconfirm --clean --workpath build/terminal packaging/roomscope.spec
-          cp -R THIRD_PARTY_LICENSES-terminal dist/roomscope-terminal/THIRD_PARTY_LICENSES
-          python scripts/check_bundle_contents.py --root dist/roomscope-terminal --strip --require-licenses --terminal
+          pyinstaller --noconfirm --clean --workpath build/terminal packaging/reverbscope.spec
+          cp -R THIRD_PARTY_LICENSES-terminal dist/reverbscope-terminal/THIRD_PARTY_LICENSES
+          python scripts/check_bundle_contents.py --root dist/reverbscope-terminal --strip --require-licenses --terminal
           if [[ "$RUNNER_OS" == Windows ]]; then
-            cp "packaging/windows/terminal/RoomScope Terminal.cmd" dist/roomscope-terminal/
+            cp "packaging/windows/terminal/ReverbScope Terminal.cmd" dist/reverbscope-terminal/
           fi
       - name: Smoke Terminal Edition
         shell: bash
         run: |
           cpu=x86_64; [[ "$RUNNER_ARCH" != ARM64 ]] || cpu=arm64
-          python scripts/smoke_bundle.py --root dist/roomscope-terminal \
+          python scripts/smoke_bundle.py --root dist/reverbscope-terminal \
             --out "$RUNNER_TEMP/terminal-smoke/session" --terminal \
             --expect-commit "$GITHUB_SHA" --expect-package terminal --expect-machine "$cpu"
       - name: Terminal Edition archive
         shell: bash
         run: |
           case "$RUNNER_OS" in
-            Linux) tar -C dist -czf dist/RoomScope-Terminal-Linux-x86_64.tar.gz roomscope-terminal ;;
-            macOS) tar -C dist -czf "dist/RoomScope-Terminal-macOS-$(uname -m).tar.gz" roomscope-terminal ;;
-            Windows) python -c "import shutil; shutil.make_archive('dist/RoomScope-Terminal-Windows-x64', 'zip', 'dist/roomscope-terminal')" ;;
+            Linux) tar -C dist -czf dist/ReverbScope-Terminal-Linux-x86_64.tar.gz reverbscope-terminal ;;
+            macOS) tar -C dist -czf "dist/ReverbScope-Terminal-macOS-$(uname -m).tar.gz" reverbscope-terminal ;;
+            Windows) python -c "import shutil; shutil.make_archive('dist/ReverbScope-Terminal-Windows-x64', 'zip', 'dist/reverbscope-terminal')" ;;
           esac
       - name: Edition sizes
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          for path in sorted(Path('dist').glob('RoomScope-*-*')):
+          for path in sorted(Path('dist').glob('ReverbScope-*-*')):
               print(f'{path.name:45} {path.stat().st_size / 1e6:8.1f} MB')
           PY
       - name: Checksums of distributable files
@@ -406,8 +406,8 @@ jobs:
         with:
           name: bundle-${{ matrix.os }}
           path: |
-            dist/RoomScope-Desktop-*
-            dist/RoomScope-Terminal-*
+            dist/ReverbScope-Desktop-*
+            dist/ReverbScope-Terminal-*
             dist/SHA256SUMS-*
           if-no-files-found: error
 
@@ -446,10 +446,10 @@ jobs:
           path: artifacts
       - name: Exact file set and SHA256SUMS
         env:
-          ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
+          REVERBSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           python scripts/release_draft.py stage --artifacts artifacts \
-            --out "$RUNNER_TEMP/release-assets" --version "$ROOMSCOPE_VERSION"
+            --out "$RUNNER_TEMP/release-assets" --version "$REVERBSCOPE_VERSION"
 
   draft-release:
     name: Draft GitHub Release (maintainer publishes)
@@ -477,19 +477,19 @@ jobs:
           path: artifacts
       - name: Extract version notes
         env:
-          ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
+          REVERBSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           python - <<'PY'
           import os
           import re
           from pathlib import Path
-          version = re.escape(os.environ['ROOMSCOPE_VERSION'])
+          version = re.escape(os.environ['REVERBSCOPE_VERSION'])
           changelog = Path('CHANGELOG.md').read_text(encoding='utf-8')
           match = re.search(r'(?ms)^## \[' + version + r'\].*?\n(.*?)(?=^## \[|\Z)', changelog)
           if match is None:
               raise SystemExit('CHANGELOG section missing for this version')
           header = Path('packaging/release-notes-header.md').read_text(encoding='utf-8')
-          header = header.replace('{version}', os.environ['ROOMSCOPE_VERSION'])
+          header = header.replace('{version}', os.environ['REVERBSCOPE_VERSION'])
           # The changelog goes where the header says {changes}: after the
           # downloads, limitations and checksums, before the technical part.
           changes = re.sub(r'(?m)^### ', '#### ', match.group(1).strip())
@@ -500,10 +500,10 @@ jobs:
           PY
       - name: Stage this run's files
         env:
-          ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
+          REVERBSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           python scripts/release_draft.py stage --artifacts artifacts \
-            --out release-assets --version "$ROOMSCOPE_VERSION"
+            --out release-assets --version "$REVERBSCOPE_VERSION"
       # Finds the one draft v<version> (a draft is not returned by the
       # releases/tags endpoint, so it is matched by tag or title), refuses a
       # published release, several drafts, a tag on another commit or unknown
@@ -512,22 +512,22 @@ jobs:
       - name: Open or refresh the draft
         env:
           GH_TOKEN: ${{ github.token }}
-          ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
+          REVERBSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           python scripts/release_draft.py sync --assets release-assets \
-            --version "$ROOMSCOPE_VERSION" --sha "$GITHUB_SHA" --notes release-notes.md
+            --version "$REVERBSCOPE_VERSION" --sha "$GITHUB_SHA" --notes release-notes.md
       - name: Verify the draft
         env:
           GH_TOKEN: ${{ github.token }}
-          ROOMSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
+          REVERBSCOPE_VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           python scripts/release_draft.py verify --assets release-assets \
-            --version "$ROOMSCOPE_VERSION" --sha "$GITHUB_SHA" --notes release-notes.md
+            --version "$REVERBSCOPE_VERSION" --sha "$GITHUB_SHA" --notes release-notes.md
 
   pypi:
     name: Publish to PyPI (explicit opt-in)
     needs: [prepare, quality, package, bundle, sbom, assets]
-    if: startsWith(github.ref, 'refs/tags/v') && vars.ROOMSCOPE_PUBLISH_PYPI == 'true' && !contains(needs.prepare.outputs.version, 'dev')
+    if: startsWith(github.ref, 'refs/tags/v') && vars.REVERBSCOPE_PUBLISH_PYPI == 'true' && !contains(needs.prepare.outputs.version, 'dev')
     runs-on: ubuntu-latest
     environment: pypi
     permissions:

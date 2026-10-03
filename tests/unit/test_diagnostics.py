@@ -1,4 +1,4 @@
-"""The environment report (``roomscope doctor``): build, settings, privacy."""
+"""The environment report (``reverbscope doctor``): build, settings, privacy."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.diagnostics import (
+from reverbscope.diagnostics import (
     PRIVACY_NOTE,
     build_info,
     environment_report,
@@ -19,14 +19,14 @@ from roomscope.diagnostics import (
 
 def test_home_folder_is_redacted_on_posix_and_windows() -> None:
     home = "/home/anna"  # strings, not Path: Path("/home/anna") is \home\anna on Windows
-    assert redact_home("/home/anna/.roomscope/roomscope.log", home) == "~/.roomscope/roomscope.log"
+    assert redact_home("/home/anna/.reverbscope/reverbscope.log", home) == "~/.reverbscope/reverbscope.log"
     assert redact_home("/home/anna", home) == "~"
     # A sibling whose name starts with the account name is not the home folder.
     assert redact_home("/home/annabel/x", home) == "/home/annabel/x"
-    assert redact_home("/opt/roomscope", home) == "/opt/roomscope"
+    assert redact_home("/opt/reverbscope", home) == "/opt/reverbscope"
     windows_home = "C:\\Users\\Anna"
-    assert redact_home("c:\\users\\anna\\.roomscope\\settings.json", windows_home) == (
-        "~\\.roomscope\\settings.json"
+    assert redact_home("c:\\users\\anna\\.reverbscope\\settings.json", windows_home) == (
+        "~\\.reverbscope\\settings.json"
     )
 
 
@@ -44,7 +44,7 @@ def test_build_info_is_read_from_the_bundle_file(tmp_path: Path) -> None:
 def test_report_keeps_output_folder_private(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
     secret = tmp_path / "Clients" / "Private Project"
     (tmp_path / "settings.json").write_text(
         json.dumps({"schema_version": 1, "output_dir": str(secret), "theme": "dark"}),
@@ -61,7 +61,7 @@ def test_report_keeps_output_folder_private(
 def test_report_survives_a_broken_settings_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
     (tmp_path / "settings.json").write_text("{", encoding="utf-8")
     report = environment_report("fake")
     assert "Settings:" in format_environment_report(report)
@@ -77,7 +77,7 @@ def test_report_lists_devices_and_probes_on_request() -> None:
 
 
 def test_report_without_audio_backend_still_prints(monkeypatch: pytest.MonkeyPatch) -> None:
-    from roomscope.audio import backend
+    from reverbscope.audio import backend
 
     def unavailable(name: str | None = None) -> None:
         raise OSError("PortAudio library not found")
@@ -88,7 +88,7 @@ def test_report_without_audio_backend_still_prints(monkeypatch: pytest.MonkeyPat
 
 
 def test_audio_callbacks_are_checked(monkeypatch: pytest.MonkeyPatch) -> None:
-    from roomscope import diagnostics
+    from reverbscope import diagnostics
 
     assert diagnostics.audio_callback_check() == "ok"
     assert "Audio callbacks: ok" in format_environment_report(environment_report("fake"))
@@ -104,7 +104,7 @@ def test_audio_callbacks_are_checked(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_cli_doctor_probe(capsys: pytest.CaptureFixture[str]) -> None:
-    from roomscope.cli.main import main
+    from reverbscope.cli.main import main
 
     assert main(["--backend", "fake", "doctor", "--probe"]) == 0
     assert re.search(r"Record\s+44\.1 · 48 · 88\.2", capsys.readouterr().out)
@@ -117,7 +117,7 @@ def test_package_versions_fall_back_to_the_module(monkeypatch: pytest.MonkeyPatc
     """A PyInstaller bundle has no dist-info; __version__ still names the version."""
     import numpy
 
-    from roomscope import diagnostics
+    from reverbscope import diagnostics
 
     def no_metadata(name: str) -> str:
         raise diagnostics.PackageNotFoundError(name)

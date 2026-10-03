@@ -1,4 +1,4 @@
-# RoomScope v1.0 架构设计（中文摘要）
+# ReverbScope v1.0 架构设计（中文摘要）
 
 [English](ARCHITECTURE_V1.md) | **简体中文**
 
@@ -16,7 +16,7 @@ v0.1 用合成房间证明了测量链路，并给开发者一个可以 clone、
 | 受众 | v1.0 提供 | 他们永远不需要 |
 | --- | --- | --- |
 | 录音师、学生、家庭录音用户 | 签名的桌面应用；DAW 四步流程与 Standalone 模式；中英文用户指南；两个位置的对比；可以直接发给别人求助的会话文件夹 | Python、终端、账号、联网、校准麦克风 |
-| 集成者与研究者 | `pip install roomscope`；带稳定性承诺的公开 API；`result.json` / `session.json` / `comparison.json` 及其 JSON Schema；曲线 CSV 导出；`roomscope analyze-ir` 分析其他工具产出的脉冲响应 | 逆向 JSON 结构；导入私有模块 |
+| 集成者与研究者 | `pip install reverbscope`；带稳定性承诺的公开 API；`result.json` / `session.json` / `comparison.json` 及其 JSON Schema；曲线 CSV 导出；`reverbscope analyze-ir` 分析其他工具产出的脉冲响应 | 逆向 JSON 结构；导入私有模块 |
 | 贡献者、翻译者 | 不碰 DSP 就能加 Recording Profile、导出器和翻译；跨平台 CI；记录"为什么"的 ADR；作为回归证据的真实房间验证数据 | DSP 背景；改 Python 才能翻译 |
 
 ## 2. 原则
@@ -38,7 +38,7 @@ v1.0 新增四条：
 
 | # | 条目 |
 | --- | --- |
-| M1 | 公开 API 分层与 `roomscope` 顶层导出（§5.1） |
+| M1 | 公开 API 分层与 `reverbscope` 顶层导出（§5.1） |
 | M2 | result / session / comparison / sidecar 的 JSON Schema；宽松读取；`AnalysisResult.from_dict`（PR #2 中） |
 | M3 | 重新打开会话与会话浏览器（PR #2 中） |
 | M4 | 两次会话的对比（core、CLI、GUI、解释层）——回答需求书的第三个问题"换位置以后有没有改善" |
@@ -69,15 +69,15 @@ CI 加入 Python 3.14；由 `docs/` 生成的文档站（`scripts/build_docs_sit
 
 ## 4. 包布局变化要点
 
-`roomscope.core` 仍只有一个入口 `pipeline.analyze`，新增三个纯函数：
+`reverbscope.core` 仍只有一个入口 `pipeline.analyze`，新增三个纯函数：
 `loopback.compensate`、`compare.compare`、`averaging.average_decay`，规则不变：
 NumPy 进、dataclass 出，无 I/O、无 Qt。其他新增：
 
-* `roomscope/__init__.py` 惰性导出 Tier 1 API；`__main__.py` 供桌面包使用；`settings.py`；`i18n.py`；`locale/`；`schemas/`。
-* `models/`：`comparison.py`、`project.py`、`calibration.py`；`result.py` 加 `LoopbackResult` 与 `roomscope_version`。
+* `reverbscope/__init__.py` 惰性导出 Tier 1 API；`__main__.py` 供桌面包使用；`settings.py`；`i18n.py`；`locale/`；`schemas/`。
+* `models/`：`comparison.py`、`project.py`、`calibration.py`；`result.py` 加 `LoopbackResult` 与 `reverbscope_version`。
 * `io/`：`project_store.py`、`exporters/`；`session_store` 支持复制录音、打包。
 * `audio/`：`backend.py`（协议）、`portaudio.py`（现有代码改为回调流，支持进度与取消）、`fake.py`。
-* `interpretation/registry.py`：内置 Profile + entry point 组 `roomscope.profiles`。
+* `interpretation/registry.py`：内置 Profile + entry point 组 `reverbscope.profiles`。
 * `cli/`：新增 `analyze-ir`、`compare`、`session`、`export`、`schema`；全局 `--format`、`--lang`、`--backend`。
 * `ui/`：`compare_view.py`、`settings_dialog.py`；PR #2 的 `browser.py`。
 
@@ -87,7 +87,7 @@ NumPy 进、dataclass 出，无 I/O、无 Qt。其他新增：
 
 ### 5.1 公开 API 分层
 
-* **Tier 1（公开，SemVer 承诺）：** `roomscope` 顶层导出的名字、JSON 文件及其 Schema、`--format json` 输出、CLI 退出码。删除或改义需要主版本号；弃用提前一个次版本用 `DeprecationWarning` 通告。
+* **Tier 1（公开，SemVer 承诺）：** `reverbscope` 顶层导出的名字、JSON 文件及其 Schema、`--format json` 输出、CLI 退出码。删除或改义需要主版本号；弃用提前一个次版本用 `DeprecationWarning` 通告。
 * **Tier 2（有文档）：** MEASUREMENT_METHODOLOGY.md 点名的 `core` 函数、`AudioBackend`、`RecordingProfile`、entry point 组。可以加带默认值的关键字参数，变更写进 CHANGELOG。
 * **Tier 3（内部）：** `ui`、`cli` 内部、下划线开头的一切。
 
@@ -103,7 +103,7 @@ NumPy 进、dataclass 出，无 I/O、无 Qt。其他新增：
 
 ### 5.4 会话对比（M4）
 
-`compare(baseline, candidate)` 纯函数，只在**双方都 VALID** 时给出差值，否则 `NOT_COMPARABLE` 并附两边的原因。频响在公共激励频带内插值到同一对数网格后相减；早期反射按 ±0.5 ms 配对；低频共振按 1/6 倍频程配对；噪声差值只有在双方都有已验证的安静段且用户明确声明"输入增益未变"时才有效；报告引用 ISO 3382-1 给出的 T 的可觉察差（约 5 %，条款待核对），但从不自行宣称"显著"。解释层新增 `interpret_comparison`，复用各 Profile 自己的阈值。结果存为 `comparison.json`（不写入 findings）；`roomscope show comparison.json` 重新生成解读。GUI 对比页列出配对反射与共振。
+`compare(baseline, candidate)` 纯函数，只在**双方都 VALID** 时给出差值，否则 `NOT_COMPARABLE` 并附两边的原因。频响在公共激励频带内插值到同一对数网格后相减；早期反射按 ±0.5 ms 配对；低频共振按 1/6 倍频程配对；噪声差值只有在双方都有已验证的安静段且用户明确声明"输入增益未变"时才有效；报告引用 ISO 3382-1 给出的 T 的可觉察差（约 5 %，条款待核对），但从不自行宣称"显著"。解释层新增 `interpret_comparison`，复用各 Profile 自己的阈值。结果存为 `comparison.json`（不写入 findings）；`reverbscope show comparison.json` 重新生成解读。GUI 对比页列出配对反射与共振。
 
 ### 5.5 音频后端（M6）
 
@@ -115,19 +115,19 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 
 ### 5.7 CLI 契约
 
-退出码：0 成功；1 `RoomScopeError`；2 用法错误或安全拒绝（电平确认）；130 中断。`--format json` 在 stdout 只输出 `result.json` 载荷加 `findings`，诊断全部走 stderr；`--json` 保留一个次版本作为别名后移除。
+退出码：0 成功；1 `ReverbScopeError`；2 用法错误或安全拒绝（电平确认）；130 中断。`--format json` 在 stdout 只输出 `result.json` 载荷加 `findings`，诊断全部走 stderr；`--json` 保留一个次版本作为别名后移除。
 
-文本输出由 `roomscope/cli/console.py`（样式、状态符号、按显示宽度换行与制表）和 `roomscope/cli/render.py` 排版，其他模块不写转义序列。颜色依次由 `--color`、`NO_COLOR`、`FORCE_COLOR`、`TERM=dumb` 决定，`auto` 只在终端上着色：管道和文件永远收不到转义序列或回车符。每个状态都同时带符号和文字（`✓` / `!` / `×` / `→`；流无法编码这些符号时用 `[OK]` / `[WARN]` / `[ERROR]` / `->`），颜色从不单独表达信息；在这样的流上，`Δ`、`→`、`–` 等符号也改用 ASCII，编码较窄的终端会替换无法显示的字符而不会报错。宽度计算中一个中日韩字符占两列；排版最宽 100 列。
+文本输出由 `reverbscope/cli/console.py`（样式、状态符号、按显示宽度换行与制表）和 `reverbscope/cli/render.py` 排版，其他模块不写转义序列。颜色依次由 `--color`、`NO_COLOR`、`FORCE_COLOR`、`TERM=dumb` 决定，`auto` 只在终端上着色：管道和文件永远收不到转义序列或回车符。每个状态都同时带符号和文字（`✓` / `!` / `×` / `→`；流无法编码这些符号时用 `[OK]` / `[WARN]` / `[ERROR]` / `->`），颜色从不单独表达信息；在这样的流上，`Δ`、`→`、`–` 等符号也改用 ASCII，编码较窄的终端会替换无法显示的字符而不会报错。宽度计算中一个中日韩字符占两列；排版最宽 100 列。
 
-每个命令的输出结构相同：标题与上下文、结果（分析和对比先给“概览”）、细节，最后是编号的下一步。普通用户错误只显示一个错误块（`× 错误：…`、说明和可以尝试的命令），退出码按文档约定；只有加 `--verbose` 才显示回溯。直接运行 `roomscope` 会在 stderr 上显示简短的首页，退出码仍是用法错误的 2。`measure` 把设备方案和检查结果写到 stdout，进度写到 stderr（终端上是一行原地刷新，否则只有一行阶段提示；由等待线程绘制，从不在音频回调里）。文本版式不属于 Tier 1 接口。图形界面的“完整报告”面板以纯文本显示同样的 `render.py` 报告；开发者工具里的环境报告仍使用 `diagnostics.format_environment_report`。
+每个命令的输出结构相同：标题与上下文、结果（分析和对比先给“概览”）、细节，最后是编号的下一步。普通用户错误只显示一个错误块（`× 错误：…`、说明和可以尝试的命令），退出码按文档约定；只有加 `--verbose` 才显示回溯。直接运行 `reverbscope` 会在 stderr 上显示简短的首页，退出码仍是用法错误的 2。`measure` 把设备方案和检查结果写到 stdout，进度写到 stderr（终端上是一行原地刷新，否则只有一行阶段提示；由等待线程绘制，从不在音频回调里）。文本版式不属于 Tier 1 接口。图形界面的“完整报告”面板以纯文本显示同样的 `render.py` 报告；开发者工具里的环境报告仍使用 `diagnostics.format_environment_report`。
 
 ### 5.8 存储
 
-会话文件夹在现有三个文件之外，总是复制 `sweep.roomscope-sweep.json`，按需（GUI 默认开）复制 `recording.wav`。项目文件夹 `project.json` 只是索引，会话仍可独立打开。`roomscope session bundle` 打包会话供 bug 报告，`--no-audio` 可排除录音。`ROOMSCOPE_HOME`（默认 `~/.roomscope`，PR #2 引入）存放最近会话、设置与日志。电平确认永不持久化。
+会话文件夹在现有三个文件之外，总是复制 `sweep.reverbscope-sweep.json`，按需（GUI 默认开）复制 `recording.wav`。项目文件夹 `project.json` 只是索引，会话仍可独立打开。`reverbscope session bundle` 打包会话供 bug 报告，`--no-audio` 可排除录音。`REVERBSCOPE_HOME`（默认 `~/.reverbscope`，PR #2 引入）存放最近会话、设置与日志。电平确认永不持久化。
 
 ## 6. 分发（M9）
 
-* **PyPI：** `roomscope` 名称 2026-09-22 核实可用，应在第一个预发布前注册（**维护者决定**）。纯 Python wheel + sdist，trusted publishing（OIDC，无长期 token），发布环境需维护者批准。`pipx install "roomscope[gui]"` 是有 Python 的用户的推荐路径；`gui-scripts` 提供 Windows 无控制台启动器。
+* **PyPI：** `reverbscope` 名称 2026-09-22 核实可用，应在第一个预发布前注册（**维护者决定**）。纯 Python wheel + sdist，trusted publishing（OIDC，无长期 token），发布环境需维护者批准。`pipx install "reverbscope[gui]"` 是有 Python 的用户的推荐路径；`gui-scripts` 提供 Windows 无控制台启动器。
 * **桌面包：** PyInstaller one-dir（macOS `.app` 装入 `.dmg`；Windows zip + Inno Setup；Linux AppImage 在最旧受支持 Ubuntu LTS 上构建），保持 Qt、libsndfile、libquadmath 为可替换的共享库以满足 LGPL。macOS 分 arm64 / x86_64 两个包。
 * **打包门禁（CI 阻断）：** 包内不得含 GPL-only Qt 模块（白名单 QtCore / QtGui / QtWidgets / Linux 上的 QtDBus）、不得含 `*asio*.dll`、必须含 `scripts/build_license_bundle.py` 生成的 `THIRD_PARTY_LICENSES/`（含 LGPL/GPL 文本、Qt 与 PySide6 源码指针、FreeType 致谢、PortAudio 许可证等）。DEPENDENCIES.md §6 中 UNKNOWN / NEEDS REVIEW 的条目必须在第一个包发布前解决。
 * **签名：** macOS 需 `NSMicrophoneUsageDescription`、hardened runtime、audio-input entitlement、Developer ID 签名与公证；Windows 需 Authenticode。身份只能由维护者持有（**维护者决定**）；未签名的包明确标注并在用户指南里给出绕过步骤。
@@ -136,8 +136,8 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 ## 7. 质量门槛（M10、M11）
 
 * CI：lint 加无网络 import 门禁与 Tier 1 导出测试；测试矩阵 Ubuntu / macOS / Windows × 3.12，Ubuntu 另跑 3.13 / 3.14；Schema 校验作业；wheel 干净安装；打包作业。
-* 测试层级：合成单元与集成（新增 loopback 补偿、对比、平均）；离屏 GUI；**健壮性**（畸形 WAV / JSON / sidecar / 会话文件只能抛 `RoomScopeError`）；**真实 fixture**（几秒钟的真实录音，CC0，只作回归证据，不作唯一证据）；手动硬件矩阵（`docs/HARDWARE_TESTS.md`）。
-* **验证活动：** 至少两个房间（处理过 / 未处理）× 两个位置，同一个录音 WAV 分别用 RoomScope 与参考仪器（REW 只作比较仪器，或许可证清晰的开源工具箱）分析，按频带比较 T20 / T30、EDT、最强早期反射延迟、loopback 补偿后的频响；容差在测量前写下；不达标则阻断 1.0，但结果照样发布。摆位几何用卷尺核对 `source_height_m` 与 `ceiling_height_m`。
+* 测试层级：合成单元与集成（新增 loopback 补偿、对比、平均）；离屏 GUI；**健壮性**（畸形 WAV / JSON / sidecar / 会话文件只能抛 `ReverbScopeError`）；**真实 fixture**（几秒钟的真实录音，CC0，只作回归证据，不作唯一证据）；手动硬件矩阵（`docs/HARDWARE_TESTS.md`）。
+* **验证活动：** 至少两个房间（处理过 / 未处理）× 两个位置，同一个录音 WAV 分别用 ReverbScope 与参考仪器（REW 只作比较仪器，或许可证清晰的开源工具箱）分析，按频带比较 T20 / T30、EDT、最强早期反射延迟、loopback 补偿后的频响；容差在测量前写下；不达标则阻断 1.0，但结果照样发布。摆位几何用卷尺核对 `source_height_m` 与 `ceiling_height_m`。
 
 ## 8. 安全与隐私
 
@@ -154,7 +154,7 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 
 | 版本 | 主题 | 内容 | 退出标准 |
 | --- | --- | --- | --- |
-| 0.2 | 重新打开与对比 | PR #2；`compare` 全链路；宽松读取；Schema 与 Schema CI；Tier 1 导出 | 任何 v0.1 会话能重新打开；两次会话可对比且每个差值带有效性；`roomscope schema` 与随包文件一致 |
+| 0.2 | 重新打开与对比 | PR #2；`compare` 全链路；宽松读取；Schema 与 Schema CI；Tier 1 导出 | 任何 v0.1 会话能重新打开；两次会话可对比且每个差值带有效性；`reverbscope schema` 与随包文件一致 |
 | 0.3 | 信任链路 | Loopback；`AudioBackend` + 假后端 + 进度 + 停止；`analyze-ir`；跨平台 CI；健壮性测试；硬件矩阵开始 | 合成声卡响应在既定容差内被去除；真机上"停止"在一个回调周期内静音；Standalone 流程在三平台 CI 上运行 |
 | 0.4 | 给所有人 | i18n + zh-CN；自包含会话、打包、设置；演示模式；项目与平均（SHOULD）；CSV 导出；用户指南；三平台未签名包与许可证包、GPL 门禁 | 没有 Python 的人装上包，用中文或英文完成演示与一次 DAW 测量；许可证包没有未解决的条目 |
 | 1.0-rc | 冻结与证明 | API 与 Schema 冻结；验证活动发布；硬件矩阵完成；签名包或明确的维护者决定；仓库公开；PyPI 预发布 | 无未完成 MUST；§6–§7 所有门禁在 tag 上全绿 |
@@ -165,7 +165,7 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 
 1. 仓库公开的时机：1.0-rc（建议）还是 1.0？
 2. 签名身份与预算：Apple Developer Program、Windows 代码签名证书；或 1.0 明确以未签名形式发布？
-3. PyPI 名称 `roomscope` 的注册、账号归属、trusted publishing 设置。
+3. PyPI 名称 `reverbscope` 的注册、账号归属、trusted publishing 设置。
 4. 验证活动：参考仪器、房间、执行人；是否允许把 REW 当作比较仪器（其 EULA 允许使用，不允许再分发或逆向）。
 5. 是否要求 DCO 签署。
 6. 语言顺序：简体中文之后是繁体中文、日语、德语，还是看译者来源？
@@ -173,11 +173,11 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 
 ## 12. 对现有代码的影响（改动面）
 
-`MeasurementSession.from_dict` 改为宽松；`AnalysisResult` 加 `roomscope_version` 与 `loopback`；
+`MeasurementSession.from_dict` 改为宽松；`AnalysisResult` 加 `reverbscope_version` 与 `loopback`；
 `AnalysisSettings` 加 `loopback_channel`、`calibration`；`Finding` 加 `message_id` / `params` / `locale`；
 `RecordingProfile` 加 `interpret_comparison`，`_PROFILES` 移入 `registry.py`；
 `audio/devices.py` + `playrec.py` 合并为 `audio/portaudio.py` 并实现 `AudioBackend`；
-CLI 新增参数与子命令，`--json` 弃用；`roomscope/__init__.py` 惰性导出；
+CLI 新增参数与子命令，`--json` 弃用；`reverbscope/__init__.py` 惰性导出；
 `save_measurement` 总是复制 sidecar、按需复制录音；`tests/conftest.py` 的合成房间助手搬到 `audio/fake.py`；
 CI 加 OS 矩阵、Schema 作业、无网络门禁、打包作业与 `release.yml`；
 文档新增方法学 §11（对比）、§2a（loopback）、§3a（平均），DEPENDENCIES.md 加 `jsonschema`、Babel、`cyclonedx-bom`、PyInstaller、Inno Setup 行，以及 `docs/adr/`、`docs/user-guide/`、`docs/VALIDATION.md`、`docs/HARDWARE_TESTS.md`。

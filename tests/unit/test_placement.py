@@ -5,7 +5,7 @@ import math
 import numpy as np
 import pytest
 
-from roomscope.core.placement import (
+from reverbscope.core.placement import (
     DEFAULT_TEMPERATURE_C,
     LOWER_PLANE,
     UPPER_PLANE,
@@ -15,7 +15,7 @@ from roomscope.core.placement import (
     specular_ceiling_db,
     speed_of_sound_m_s,
 )
-from roomscope.models.result import Reflection, ReflectionsResult, Validity
+from reverbscope.models.result import Reflection, ReflectionsResult, Validity
 
 C20 = speed_of_sound_m_s(DEFAULT_TEMPERATURE_C)
 

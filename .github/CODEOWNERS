@@ -1,7 +1,7 @@
 # ARCHITECTURE_V1.md §9.1. The maintainer reviews DSP, methodology and license
 # documents. Paths are repository-relative.
 
-/src/roomscope/core/ @jingyemingyue
+/src/reverbscope/core/ @jingyemingyue
 /docs/MEASUREMENT_METHODOLOGY.md @jingyemingyue
 /docs/LICENSE_DECISION.md @jingyemingyue
 /LICENSE @jingyemingyue

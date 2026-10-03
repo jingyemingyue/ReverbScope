@@ -3,7 +3,7 @@
 A wheel installed without the ``gui`` extra (or a Linux system without the Qt
 system libraries) used to reach ``from PySide6...`` inside ``run_app`` and
 print an ImportError traceback: the friendly message in ``cmd_gui`` only
-guarded the import of ``roomscope.ui.app``, which does not import Qt.
+guarded the import of ``reverbscope.ui.app``, which does not import Qt.
 """
 
 from __future__ import annotations
@@ -12,13 +12,13 @@ from unittest.mock import patch
 
 import pytest
 
-from roomscope.cli.main import main
-from roomscope.ui import app
+from reverbscope.cli.main import main
+from reverbscope.ui import app
 
 MISSING = "No module named 'PySide6'"
 
 
-def test_roomscope_gui_without_pyside6_prints_a_sentence(
+def test_reverbscope_gui_without_pyside6_prints_a_sentence(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     with (
@@ -30,15 +30,15 @@ def test_roomscope_gui_without_pyside6_prints_a_sentence(
     assert "Traceback" not in err
     assert MISSING in " ".join(err.split())  # the sentence is wrapped to the terminal
     assert 'pip install "PySide6_Essentials>=6.6"' in err
-    # PyPI has no roomscope package yet: the advice must not send people there.
-    assert "roomscope[gui]" not in err
+    # PyPI has no reverbscope package yet: the advice must not send people there.
+    assert "reverbscope[gui]" not in err
 
 
-def test_roomscope_gui_entry_point_without_pyside6(capsys: pytest.CaptureFixture[str]) -> None:
+def test_reverbscope_gui_entry_point_without_pyside6(capsys: pytest.CaptureFixture[str]) -> None:
     with (
         patch.object(app, "pyside6_import_error", return_value=MISSING),
         patch.object(app, "run_app", side_effect=AssertionError("must not start")),
-        patch.dict("os.environ", {"ROOMSCOPE_LANG": "en"}),
+        patch.dict("os.environ", {"REVERBSCOPE_LANG": "en"}),
         pytest.raises(SystemExit) as stop,
     ):
         app.main()

@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.i18n import DIAGNOSTIC_CONTEXT, activate, diag, localize, parse_po
+from reverbscope.i18n import DIAGNOSTIC_CONTEXT, activate, diag, localize, parse_po
 
-CATALOG = Path("src/roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po")
+CATALOG = Path("src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po")
 PREFIX = f"{DIAGNOSTIC_CONTEXT}\x04"
 
 
@@ -76,7 +76,7 @@ def _strip(template: str) -> str:
 
 
 def test_unknown_or_legacy_text_is_shown_unchanged(zh: None) -> None:
-    legacy = "a note written by RoomScope 0.1 that no template matches"
+    legacy = "a note written by ReverbScope 0.1 that no template matches"
     assert localize(legacy) == legacy
     assert localize("") == ""
     assert localize("/Users/someone/room.wav") == "/Users/someone/room.wav"
@@ -162,8 +162,8 @@ def test_a_failed_loopback_stores_an_english_reason_in_chinese(
     zh_CN it must still be the English diagnostic (shown translated later)."""
     import numpy as np
 
-    from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-    from roomscope.models.audio import AudioSignal
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.models.audio import AudioSignal
     from tests.conftest import make_rir
 
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.4)  # type: ignore[attr-defined]

@@ -1,4 +1,4 @@
-# Continuous integration for RoomScope.
+# Continuous integration for ReverbScope.
 # DSP correctness is the product: a green run means the synthetic suite, the
 # linters and the type checker all passed on this revision.
 name: CI
@@ -37,9 +37,9 @@ jobs:
         run: python scripts/check_doc_links.py
       - name: Themed documentation site
         run: |
-          python scripts/build_docs_site.py --out /tmp/roomscope-site
-          test -f /tmp/roomscope-site/index.html
-          test -f /tmp/roomscope-site/assets/theme.css
+          python scripts/build_docs_site.py --out /tmp/reverbscope-site
+          test -f /tmp/reverbscope-site/index.html
+          test -f /tmp/reverbscope-site/assets/theme.css
       - name: No-network imports and no shell-outs under src/
         run: python scripts/check_src_safety.py
 
@@ -57,12 +57,12 @@ jobs:
         run: pip install -e ".[dev]"
       - name: Schema tests
         run: pytest tests/unit/test_schemas.py tests/unit/test_public_api.py
-      - name: roomscope schema matches shipped files
+      - name: reverbscope schema matches shipped files
         run: |
           for name in result session comparison project sidecar; do
-            python -c "from roomscope.schemas import schema_text, SCHEMA_FILES; from importlib.resources import files; import sys; data=schema_text('$name'); shipped=files('roomscope.schemas').joinpath(SCHEMA_FILES['$name']).read_text(encoding='utf-8'); sys.exit(0 if data==shipped else 1)"
-            roomscope schema "$name" > /tmp/schema.out
-            python -c "from roomscope.schemas import schema_text; import pathlib, sys; sys.exit(0 if pathlib.Path('/tmp/schema.out').read_text(encoding='utf-8')==schema_text('$name') else 1)"
+            python -c "from reverbscope.schemas import schema_text, SCHEMA_FILES; from importlib.resources import files; import sys; data=schema_text('$name'); shipped=files('reverbscope.schemas').joinpath(SCHEMA_FILES['$name']).read_text(encoding='utf-8'); sys.exit(0 if data==shipped else 1)"
+            reverbscope schema "$name" > /tmp/schema.out
+            python -c "from reverbscope.schemas import schema_text; import pathlib, sys; sys.exit(0 if pathlib.Path('/tmp/schema.out').read_text(encoding='utf-8')==schema_text('$name') else 1)"
           done
 
   test:
@@ -115,14 +115,14 @@ jobs:
         run: |
           extra=()
           if [ "${{ runner.os }}" = "Linux" ] && [ "${{ matrix.python-version }}" = "3.12" ]; then
-            extra=(--cov=roomscope.core --cov=roomscope.models --cov-fail-under=85 --cov-report=term)
+            extra=(--cov=reverbscope.core --cov=reverbscope.models --cov-fail-under=85 --cov-report=term)
           fi
           pytest "${extra[@]}"
       - name: Standalone flow on the fake backend
         shell: bash
         run: |
-          roomscope --backend fake devices
-          roomscope --backend fake measure --out "$RUNNER_TEMP/standalone" \
+          reverbscope --backend fake devices
+          reverbscope --backend fake measure --out "$RUNNER_TEMP/standalone" \
             --duration 2 --post-silence 1.5 --level -20
       - name: Example script
         shell: bash
@@ -143,8 +143,8 @@ jobs:
           pip install build
           python -m build
           pip install dist/*.whl
-          python -c "import roomscope; roomscope.analyze; print(roomscope.__version__)"
-          roomscope --help
+          python -c "import reverbscope; reverbscope.analyze; print(reverbscope.__version__)"
+          reverbscope --help
 
   bundle-gates:
     name: License bundle and GPL-module gate

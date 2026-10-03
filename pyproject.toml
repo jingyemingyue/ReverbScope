@@ -3,14 +3,14 @@ requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
-name = "roomscope"
+name = "reverbscope"
 version = "0.5.0b1"
 description = "An open-source, DAW-independent recording environment analyzer."
 readme = "README.md"
 requires-python = ">=3.12"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
-authors = [{ name = "RoomScope contributors" }]
+authors = [{ name = "ReverbScope contributors" }]
 keywords = [
   "acoustics",
   "room acoustics",
@@ -45,7 +45,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # Qt GUI. Depend on Essentials only (LGPL-3.0). The PySide6 meta-package also
-# pulls PySide6_Addons, which ships GPL-only modules RoomScope must not import
+# pulls PySide6_Addons, which ships GPL-only modules ReverbScope must not import
 # (QtCharts, QtGraphs, …). See docs/DEPENDENCIES.md and CONTRIBUTING.md.
 gui = ["PySide6_Essentials>=6.6"]
 dev = [
@@ -62,39 +62,39 @@ dev = [
 i18n-dev = ["babel>=2.15"]
 
 [project.scripts]
-roomscope = "roomscope.cli.main:main"
+reverbscope = "reverbscope.cli.main:main"
 
 [project.gui-scripts]
-roomscope-gui = "roomscope.ui.app:main"
+reverbscope-gui = "reverbscope.ui.app:main"
 
-[project.entry-points."roomscope.exporters"]
-csv = "roomscope.io.exporters.csv:CsvExporter"
+[project.entry-points."reverbscope.exporters"]
+csv = "reverbscope.io.exporters.csv:CsvExporter"
 
 [project.urls]
-Homepage = "https://github.com/jingyemingyue/RoomScope"
-Repository = "https://github.com/jingyemingyue/RoomScope"
-Issues = "https://github.com/jingyemingyue/RoomScope/issues"
+Homepage = "https://github.com/jingyemingyue/ReverbScope"
+Repository = "https://github.com/jingyemingyue/ReverbScope"
+Issues = "https://github.com/jingyemingyue/ReverbScope/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/roomscope"]
+packages = ["src/reverbscope"]
 
 # JSON files are not picked up by the default Python-package walker.
 # Include each schema file, not the directory: force-including
-# src/roomscope/schemas would add __init__.py twice and fail the wheel.
+# src/reverbscope/schemas would add __init__.py twice and fail the wheel.
 [tool.hatch.build.targets.wheel.force-include]
-"src/roomscope/schemas/result.schema.json" = "roomscope/schemas/result.schema.json"
-"src/roomscope/schemas/session.schema.json" = "roomscope/schemas/session.schema.json"
-"src/roomscope/schemas/comparison.schema.json" = "roomscope/schemas/comparison.schema.json"
-"src/roomscope/schemas/project.schema.json" = "roomscope/schemas/project.schema.json"
-"src/roomscope/schemas/sweep-sidecar.schema.json" = "roomscope/schemas/sweep-sidecar.schema.json"
-"src/roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po" = "roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po"
+"src/reverbscope/schemas/result.schema.json" = "reverbscope/schemas/result.schema.json"
+"src/reverbscope/schemas/session.schema.json" = "reverbscope/schemas/session.schema.json"
+"src/reverbscope/schemas/comparison.schema.json" = "reverbscope/schemas/comparison.schema.json"
+"src/reverbscope/schemas/project.schema.json" = "reverbscope/schemas/project.schema.json"
+"src/reverbscope/schemas/sweep-sidecar.schema.json" = "reverbscope/schemas/sweep-sidecar.schema.json"
+"src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po"
 
 [tool.hatch.build.hooks.custom]
 path = "hatch_build.py"
 
 [tool.hatch.build.targets.sdist]
 include = [
-  "src/roomscope",
+  "src/reverbscope",
   "tests",
   "docs",
   "examples",
@@ -121,11 +121,11 @@ markers = [
   "slow: tests that take more than a few seconds",
 ]
 filterwarnings = [
-  "error::DeprecationWarning:roomscope",
+  "error::DeprecationWarning:reverbscope",
 ]
 
 [tool.coverage.run]
-source = ["roomscope"]
+source = ["reverbscope"]
 branch = true
 
 [tool.ruff]
@@ -157,9 +157,9 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"src/roomscope/cli/*" = ["T20"]
-"src/roomscope/ui/results.py" = ["E402", "I001"]
-"src/roomscope/ui/compare_view.py" = ["E402", "I001"]
+"src/reverbscope/cli/*" = ["T20"]
+"src/reverbscope/ui/results.py" = ["E402", "I001"]
+"src/reverbscope/ui/compare_view.py" = ["E402", "I001"]
 "examples/*" = ["T20"]
 "scripts/*" = ["T20"]
 "packaging/*" = ["F821"]
@@ -171,7 +171,7 @@ quote-style = "double"
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src/roomscope"]
+files = ["src/reverbscope"]
 strict = true
 warn_unreachable = true
 pretty = true
@@ -179,13 +179,13 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 # matplotlib's Qt canvas is not fully typed; the GUI results page only wraps it.
-module = ["roomscope.ui.results", "roomscope.ui.compare_view"]
+module = ["reverbscope.ui.results", "reverbscope.ui.compare_view"]
 disallow_untyped_calls = false
 
 [[tool.mypy.overrides]]
 # PySide6_Essentials ships the widgets we import but no py.typed marker.
-# Subclassing those untyped Qt types is expected in roomscope.ui.
-module = ["roomscope.ui.*"]
+# Subclassing those untyped Qt types is expected in reverbscope.ui.
+module = ["reverbscope.ui.*"]
 disable_error_code = ["misc", "import-untyped"]
 
 [[tool.mypy.overrides]]

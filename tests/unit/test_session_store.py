@@ -6,10 +6,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from roomscope.core.compare import compare
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import SessionError
-from roomscope.io.session_store import (
+from reverbscope.core.compare import compare
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import SessionError
+from reverbscope.io.session_store import (
     COMPARISON_FILE,
     IR_FILE,
     RESULT_FILE,
@@ -21,9 +21,9 @@ from roomscope.io.session_store import (
     save_comparison,
     save_measurement,
 )
-from roomscope.io.wav import read_wav
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.session import MeasurementSession
+from reverbscope.io.wav import read_wav
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
 

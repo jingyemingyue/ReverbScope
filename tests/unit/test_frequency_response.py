@@ -3,9 +3,9 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.frequency_response import frequency_response
-from roomscope.errors import ConfigurationError
-from roomscope.models.result import ExcitationBand
+from reverbscope.core.frequency_response import frequency_response
+from reverbscope.errors import ConfigurationError
+from reverbscope.models.result import ExcitationBand
 
 
 def test_delta_is_flat_zero_db(sample_rate: int) -> None:

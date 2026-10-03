@@ -2,27 +2,27 @@
 
 [English](daw-setup.md) | **简体中文**
 
-通用 DAW 模式面向任何能在播放一个 WAV 的同时录制另一个的 DAW。RoomScope 从不与 DAW 通信，它只需要完整导出的录音。本页先列出每个 DAW 都必须做对的事，再给出多数录音棚常用 DAW 的具体步骤。英文原文见 [daw-setup.md](daw-setup.md)；两者不一致时以英文版为准。
+通用 DAW 模式面向任何能在播放一个 WAV 的同时录制另一个的 DAW。ReverbScope 从不与 DAW 通信，它只需要完整导出的录音。本页先列出每个 DAW 都必须做对的事，再给出多数录音棚常用 DAW 的具体步骤。英文原文见 [daw-setup.md](daw-setup.md)；两者不一致时以英文版为准。
 
-> **按文档编写的流程，尚未在 DAW 中实测。** 下面的步骤和菜单名称依据各厂商当前的官方文档编写，每一步都标有编号来源（少数第三方来源已注明）。其中没有任何一步已经在真实 DAW 中配合 RoomScope 运行过：[HARDWARE_TESTS.zh-CN.md](../HARDWARE_TESTS.zh-CN.md) 中的 DAW 矩阵是空的。如果你实际跑过，或者你的版本与此不同，请提交 [DAW 兼容性报告（中文表单）](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw-zh-CN.yml)或英文的 [DAW compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml)。
+> **按文档编写的流程，尚未在 DAW 中实测。** 下面的步骤和菜单名称依据各厂商当前的官方文档编写，每一步都标有编号来源（少数第三方来源已注明）。其中没有任何一步已经在真实 DAW 中配合 ReverbScope 运行过：[HARDWARE_TESTS.zh-CN.md](../HARDWARE_TESTS.zh-CN.md) 中的 DAW 矩阵是空的。如果你实际跑过，或者你的版本与此不同，请提交 [DAW 兼容性报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)或英文的 [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)。
 >
 > 菜单名称保留各 DAW 英文界面中的写法，便于对照官方手册；中文界面的 DAW 请按对应位置查找。
 
 ## 每个 DAW 都必须做到
 
-1. **采样率一致。** 按工程采样率生成测试信号：`roomscope sweep --sample-rate 44100 --out sweep_44k.wav`，或在界面步骤 1 中选择采样率。48 kHz 的文件在 44.1 kHz 工程里未经转换直接播放会慢 8 %，无法反卷积；只要 `.roomscope-sweep.json` 与 WAV 放在一起（请保持这样），这时 RoomScope 会报告 *“a file generated at 48000 Hz was played at 44100 Hz”*。以另一种采样率导出录音不会有问题：DAW 在导出时会转换，RoomScope 会按文件的采样率处理。
-2. **不做时间伸缩。** 测试信号片段必须关闭 Warp、Flex Time、Follow Tempo、Elastic Audio 及各种伸缩模式，导入后也不要再改速度。扫频速度偏差超过估计本身的离散范围（默认 10 秒扫频约 1.3 %，3 秒约 2.4 %，1 秒约 5.5 %）且使用了附带的 JSON 文件时，RoomScope 会报告 *“the DAW time-stretched it”*；更小的伸缩同样会毁掉测量（直达声置信度低、衰减不可靠），但不会被点名，所以请检查片段设置，不要只依赖报告。
+1. **采样率一致。** 按工程采样率生成测试信号：`reverbscope sweep --sample-rate 44100 --out sweep_44k.wav`，或在界面步骤 1 中选择采样率。48 kHz 的文件在 44.1 kHz 工程里未经转换直接播放会慢 8 %，无法反卷积；只要 `.reverbscope-sweep.json` 与 WAV 放在一起（请保持这样），这时 ReverbScope 会报告 *“a file generated at 48000 Hz was played at 44100 Hz”*。以另一种采样率导出录音不会有问题：DAW 在导出时会转换，ReverbScope 会按文件的采样率处理。
+2. **不做时间伸缩。** 测试信号片段必须关闭 Warp、Flex Time、Follow Tempo、Elastic Audio 及各种伸缩模式，导入后也不要再改速度。扫频速度偏差超过估计本身的离散范围（默认 10 秒扫频约 1.3 %，3 秒约 2.4 %，1 秒约 5.5 %）且使用了附带的 JSON 文件时，ReverbScope 会报告 *“the DAW time-stretched it”*；更小的伸缩同样会毁掉测量（直达声置信度低、衰减不可靠），但不会被点名，所以请检查片段设置，不要只依赖报告。
 3. **干净的回放链路。** 旁通测试信号轨道、它经过的总线以及主输出上的所有插件：限幅器、削波器、“响度”或磁带插件，以及**房间校正**插件（SoundID Reference、ARC 等）——除非你就是要测校正后的系统。测试信号上不要有淡入淡出、片段增益或自动化。推子或片段增益低于 0 dB 没有关系。
 4. **只用一只扬声器。** 把测试信号轨道路由到要测的那一只扬声器（声像打到底或用单声道输出）。两只扬声器播放同一扫频会相互干涉，结果哪一只都不代表。
 5. **在单独的单声道轨道上录话筒**，关闭输入监听（否则话筒会经扬声器回授），轨道上不要有插件、发送或门限。在测试信号开始前开始录音，或一次录完整个片段：文件开头的一秒静音就是为此准备的。只录一遍：关闭循环录音。如果为了静音监听把话筒通道推子拉到底，在经过该通道渲染的导出（分轨或轨道导出）之前，请把推子恢复到 0 dB。
-6. **完整导出录音轨或片段**，采用工程采样率，格式为 WAV（Broadcast WAV、RF64、Wave64 均可）、AIFF、CAF 或 FLAC，24 位或 32 位浮点，**不要标准化**（标准化会掩盖你在不同录音之间比较的本底噪声电平）。单声道或立体声都可以；立体声文件请在界面中或用 `--channel` 选择话筒声道。不要裁切：RoomScope 会自己找到扫频，扫频之后的静音就是衰减。
-7. **延迟无关紧要。** RoomScope 会在录音中任何位置找到扫频，插件延迟补偿和音频接口延迟都无需设置。
+6. **完整导出录音轨或片段**，采用工程采样率，格式为 WAV（Broadcast WAV、RF64、Wave64 均可）、AIFF、CAF 或 FLAC，24 位或 32 位浮点，**不要标准化**（标准化会掩盖你在不同录音之间比较的本底噪声电平）。单声道或立体声都可以；立体声文件请在界面中或用 `--channel` 选择话筒声道。不要裁切：ReverbScope 会自己找到扫频，扫频之后的静音就是衰减。
+7. **延迟无关紧要。** ReverbScope 会在录音中任何位置找到扫频，插件延迟补偿和音频接口延迟都无需设置。
 8. **可选回送（loopback）。** 在同一遍录音中用第二条轨道录下音频接口的电回送（一路输出用线接回一个空闲输入）。把两条轨道导出为一个双声道文件（`--channel 0 --loopback-channel 1`），或两个文件（`--loopback return.wav`）。
 
 然后分析：
 
 ```bash
-roomscope analyze --recording "Mic_01.wav" --sweep sweep_44k.wav --out session/
+reverbscope analyze --recording "Mic_01.wav" --sweep sweep_44k.wav --out session/
 ```
 
 或在界面的通用 DAW 模式中选择这些文件。
@@ -33,7 +33,7 @@ roomscope analyze --recording "Mic_01.wav" --sweep sweep_44k.wav --out session/
 * **导入：** File ▸ Import ▸ Audio [P1，第 641 页]。若 Import Audio 对话框的备注栏提示文件采样率与工程不同 [P1，第 643 页]，请按工程采样率重新生成扫频，而不是勾选 *Apply SRC*。
 * **时间伸缩：** 保持 Elastic Audio 关闭：轨道的 Elastic Audio 选择器显示 *None – Disable Elastic Audio* [P1，第 1317 页]。请用 File ▸ Import 导入而不要从桌面拖入，或把偏好设置 *Drag and Drop From Desktop Conforms to Session Tempo* 设为 *None*：设为 *All Files* 时，拖入的文件会成为跟随工程速度的 tick 型 Elastic Audio [P1，第 647 页]。
 * **录音：** 新建单声道音频轨，输入为话筒，开启录音待命。关闭 TrackInput 时轨道处于 Auto Input 模式，录音期间仍会监听输入 [P1，第 768–769 页]：请把话筒轨推子拉到底（推子不影响录音）。清空扫频轨道和主推子上的插入效果。
-* **导出：** 选中录好的片段，在 Clip List 菜单中使用 *Export Clips as Files* [P1，第 649 页]：WAV、单声道、工程采样率与位深（32 位浮点转 24 位会加抖动）。Pro Tools 写出的是 Broadcast WAV，RoomScope 可直接读取。
+* **导出：** 选中录好的片段，在 Clip List 菜单中使用 *Export Clips as Files* [P1，第 649 页]：WAV、单声道、工程采样率与位深（32 位浮点转 24 位会加抖动）。Pro Tools 写出的是 Broadcast WAV，ReverbScope 可直接读取。
 
 ## Apple Logic Pro 与 GarageBand
 
@@ -102,7 +102,7 @@ Studio One 自第 8 版（2026 年 1 月）起更名为 Fender Studio Pro，“S
 * **导入：** File ▸ Import Audio，或把 WAV 拖到单声道音频轨上 [M1，第 40–42 页]。DP 不会以错误的速度播放采样率不同的文件：该片段在 Soundbites 窗口中带有“X”且不能播放 [M1，第 43、50 页]；或者在开启 *Enable Automatic Conversions* 且 *Convert sample rate* 设为 *On import*（Preferences ▸ Automatic Conversions）时，DP 会在导入时转换 [M1，第 97 页]。按工程采样率生成扫频即可避免这两种情况。片段增益保持 0 dB，不要添加片段音量自动化 [M1，第 400 页]。
 * **时间伸缩：** 在扫频轨和话筒轨的 Track Settings 菜单中取消勾选 *Stretch*；取消后不会自动伸缩 [M1，第 170 页]（Preferences ▸ Pitch and Stretch 为新轨道设置此项 [M1，第 104 页]）。带有内嵌速度信息的 WAV 会适配序列速度 [M1，第 44 页]，录下的 take 会带着录音时的速度映射 [M1，第 713 页]，所以录音后不要改速度，也不要使用 Audio ▸ Soundbite Tempo ▸ *Adjust Soundbites to Sequence Tempo*；把片段的 *Time Compress/Expand* 设为 *Don't Time Scale* 可让该命令不作用于它 [M1，第 399、717 页]。
 * **录音：** Project ▸ Add Track ▸ 单声道音频轨 [M1，第 140 页]，输入为话筒，开启录音待命 [M1，第 260 页]。开启录音待命会打开输入监听，与监听按钮显示无关 [M1，第 265 页]：请把 Studio ▸ Audio Patch Thru 设为 *Off* [M1，第 266 页]。保持 *Memory Cycle* 和 *Overdub* 关闭，只录一遍 [M1，第 273 页]。旁通扫频轨和主输出上的插入效果。
-* **导出：** take 是工程 *Audio Files* 文件夹中以轨道名和 take 编号命名的文件 [M1，第 261 页]；直接把它载入 RoomScope：它就是录音本身，不含推子、插入效果或自动化。或者选中从扫频之前到衰减结束的这段录音，用 File ▸ Bounce to Disk [M1，第 1017 页]，*Source* 选话筒轨 [M1，第 1021 页]，*Channels* 选 *Match Track Format*（单声道轨得到单声道文件），*Sample Format* 选 *Project Default*、24 位或 32 位浮点 [M1，第 1020–1021 页]。导出会包含该轨的音量自动化、静音/独奏状态和启用的插入效果 [M1，第 1017–1018 页]；其设置中没有采样率、标准化或抖动选项 [M1，第 1018–1021 页]。
+* **导出：** take 是工程 *Audio Files* 文件夹中以轨道名和 take 编号命名的文件 [M1，第 261 页]；直接把它载入 ReverbScope：它就是录音本身，不含推子、插入效果或自动化。或者选中从扫频之前到衰减结束的这段录音，用 File ▸ Bounce to Disk [M1，第 1017 页]，*Source* 选话筒轨 [M1，第 1021 页]，*Channels* 选 *Match Track Format*（单声道轨得到单声道文件），*Sample Format* 选 *Project Default*、24 位或 32 位浮点 [M1，第 1020–1021 页]。导出会包含该轨的音量自动化、静音/独奏状态和启用的插入效果 [M1，第 1017–1018 页]；其设置中没有采样率、标准化或抖动选项 [M1，第 1018–1021 页]。
 
 ## Audacity
 
@@ -130,7 +130,7 @@ Studio One 自第 8 版（2026 年 1 月）起更名为 Fender Studio Pro，“S
 
 下表引用的是英文原文。界面语言为简体中文时，部分提示会以中文显示，措辞与下表的英文不完全对应；核心诊断保持英文。
 
-| RoomScope 提示 | DAW 里发生了什么 | 解决办法 |
+| ReverbScope 提示 | DAW 里发生了什么 | 解决办法 |
 | --- | --- | --- |
 | *“a file generated at 48000 Hz was played at 44100 Hz”* | 工程采样率与扫频不同，且播放时未转换 | 按工程采样率生成扫频 |
 | *“the DAW time-stretched it”* | 扫频片段开启了 Warp / Flex / Follow Tempo / 伸缩，或导入后改了速度 | 关闭该片段的时间伸缩 |
@@ -144,7 +144,7 @@ Studio One 自第 8 版（2026 年 1 月）起更名为 Fender Studio Pro，“S
 
 ## 来源
 
-以上菜单名称和默认值读自以下页面（2026-09）；其中任何一步都还没有在 DAW 中配合 RoomScope 实际运行过。条目保留原文：
+以上菜单名称和默认值读自以下页面（2026-09）；其中任何一步都还没有在 DAW 中配合 ReverbScope 实际运行过。条目保留原文：
 
 * [P1] Avid, Pro Tools Reference Guide 2026.4 — https://resources.avid.com/SupportFiles/PT/Pro_Tools_Reference_Guide_2026.4.pdf
 * [G1] Apple, Logic Pro User Guide, Set the project sample rate — https://support.apple.com/guide/logicpro/set-the-project-sample-rate-lgcpce0958b8/mac

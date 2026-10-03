@@ -4,7 +4,7 @@
 
 > 本文是 [AUDIO_DEVICES.md](AUDIO_DEVICES.md) 的简体中文翻译；两者不一致时以英文版为准。
 
-最后核对：2026-09-24。本文针对**独立模式**：RoomScope 通过 python-sounddevice
+最后核对：2026-09-24。本文针对**独立模式**：ReverbScope 通过 python-sounddevice
 0.5.6 调用 PortAudio 自己播放并录音。sounddevice 的 Windows 和 macOS wheel
 内置 PortAudio v19.7.0；在 Linux 上它加载发行版的 `libportaudio2` [14][15]。
 文中 PortAudio 的行为依据 v19.7.0 源码 [9]–[12]。通用 DAW 模式下设备链路由 DAW
@@ -27,11 +27,11 @@
   以及混入输出的其他应用的声音 [18]，都会进入结果。限幅器或 AGC 是非线性环节，
   而扫频无法把所有失真伪影都移出响应的因果部分 [3]。
 * **电平不被改变。** 任何环节都不应缩放信号。扫频的峰值因数为 3.01 dB，可以接近
-  满刻度运行，而 MLS 需要 5–8 dB 余量 [2, §2.2]；为保护扬声器，RoomScope 仍从
+  满刻度运行，而 MLS 需要 5–8 dB 余量 [2, §2.2]；为保护扬声器，ReverbScope 仍从
   −20 dBFS 起步（`audio/backend.py`）。
 * **延迟稳定、没有丢帧。** 反卷积得到的时间原点包含往返延迟；只有回送（loopback）能给出
   电气时间零点（[MEASUREMENT_METHODOLOGY.md](MEASUREMENT_METHODOLOGY.md)
-  §2a）。输出缓冲区欠载会插入空隙，输入缓冲区溢出会丢弃样本 [9]；RoomScope 会统计这些标志并
+  §2a）。输出缓冲区欠载会插入空隙，输入缓冲区溢出会丢弃样本 [9]；ReverbScope 会统计这些标志并
   随测量保存：它们出现在结果的警告中，并生成一条“请重新测量”的提示
   （`audio/portaudio.py`、`AudioSignal.device_warnings`）。在真实音频接口证明某些主机 API
   是否会误报之前，这类测量仍会被分析，而不是直接拒绝。
@@ -39,7 +39,7 @@
 ## 2. 各平台的主机 API
 
 每个 PortAudio 设备只属于一种主机 API [9][13]，因此一个音频接口可经由几种主机 API 访问，
-就会出现几次（`roomscope devices` 在方括号中显示主机 API）。排名 1 为最佳。“默认延迟”是 PortAudio 的默认建议值（低 / 高），
+就会出现几次（`reverbscope devices` 在方括号中显示主机 API）。排名 1 为最佳。“默认延迟”是 PortAudio 的默认建议值（低 / 高），
 不是实测的往返延迟。
 
 ### Windows
@@ -53,17 +53,17 @@
 | 5 | `Windows DirectSound` | 自动转换 [16] | 音频引擎 [19]；已弃用的 API [22] | 120 / 240 ms [12] |
 | 6 | `MME` | 自动转换 [16] | 音频引擎 [19] | 90 / 180 ms [12] |
 
-* **WASAPI 共享模式**是 RoomScope 的默认打开方式（不带主机专用设置，
-  `audio/portaudio.py`）；`roomscope measure --wasapi-exclusive` 改用独占模式（见下）。引擎以“声音”控制面板中选定的共享模式格式运行（设备 ▸
+* **WASAPI 共享模式**是 ReverbScope 的默认打开方式（不带主机专用设置，
+  `audio/portaudio.py`）；`reverbscope measure --wasapi-exclusive` 改用独占模式（见下）。引擎以“声音”控制面板中选定的共享模式格式运行（设备 ▸
   属性 ▸ 高级 ▸ *默认格式*）[16]；PortAudio 把该采样率报告为默认值，拒绝其他采样率
   [10]。`WasapiSettings(auto_convert=True)` 会插入声道矩阵和采样率转换器
-  （`AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM`）[14][20]；因此 RoomScope 不提供该选项。把默认格式设为
+  （`AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM`）[14][20]；因此 ReverbScope 不提供该选项。把默认格式设为
   测量采样率，并关闭增强（“增强”选项卡或“高级”选项卡）[24]。端点效果即使对 raw
   流也会生效 [21]，编解码器或 DSP 也可能在硬件中处理信号 [22]。
-* **WASAPI 独占模式**（`WasapiSettings(exclusive=True)` [14]；RoomScope：`--wasapi-exclusive`）需要勾选*允许应用程序
+* **WASAPI 独占模式**（`WasapiSettings(exclusive=True)` [14]；ReverbScope：`--wasapi-exclusive`）需要勾选*允许应用程序
   独占控制该设备*（默认开启），并会让其他应用静音 [17]；PortAudio 给出的数字约为
   3 ms，共享模式不低于 20 ms [10]。
-* **ASIO** DLL 因许可原因已从 RoomScope 安装包中移除（[DEPENDENCIES.md](DEPENDENCIES.md)
+* **ASIO** DLL 因许可原因已从 ReverbScope 安装包中移除（[DEPENDENCIES.md](DEPENDENCIES.md)
   §3）；sounddevice 只有在设置 `SD_ENABLE_ASIO` 时才加载其 ASIO DLL [14]。一台 ASIO
   设备同时负责两个方向 [12]。
 * **麦克风隐私：** 设置 ▸ 隐私和安全性 ▸ 麦克风 ▸ 打开*麦克风访问权限*和*允许桌面
@@ -80,14 +80,14 @@ Core Audio 是唯一的主机 API（排名 1）。使用一块设为测量采样
   AudioConverter 转换输入，采用最高质量，而不改动设备 [11]。
   `CoreAudioSettings(change_device_parameters=True)` 允许 PortAudio 设置标称采样率
   （可能干扰正在使用该设备的其他程序，即使只是查询）；再加
-  `fail_if_conversion_required=True` 则拒绝任何转换 [11][14]。RoomScope 默认不传
+  `fail_if_conversion_required=True` 则拒绝任何转换 [11][14]。ReverbScope 默认不传
   CoreAudioSettings：请在“音频 MIDI 设置”中设定采样率；界面会标出与请求不一致的
-  设备采样率（`ui/pages.py`）。`roomscope measure --coreaudio-set-rate` 会传入
+  设备采样率（`ui/pages.py`）。`reverbscope measure --coreaudio-set-rate` 会传入
   `change_device_parameters=True, fail_if_conversion_required=True`，测量要么以请求的采样率运行，要么失败，而不会转换。
 * **延迟。** 默认低延迟 = 设备固定延迟 + 64 帧；高延迟 = 固定延迟 + 当前缓冲大小；
   读不到时为 10 / 100 ms [11]。
 * **麦克风权限：** 系统设置 ▸ 隐私与安全性 ▸ 麦克风 [30]；打包的应用必须声明
-  `NSMicrophoneUsageDescription` [31]。没有权限时 RoomScope 报告
+  `NSMicrophoneUsageDescription` [31]。没有权限时 ReverbScope 报告
   *“recording is silent”*（[用户指南](user-guide/zh-CN.md)）。
 
 ### Linux
@@ -120,7 +120,7 @@ Core Audio 用两个回调之间的环形缓冲连接两个设备 [11]。两个�
   滤波器沿扫频的频率轨迹变化，群延迟与扫频长度成正比 [6]。由扫频速率决定位置的
   谐波响应 [4] 也会移动；平均 [7] 和 MLS [5] 同样受影响。
 * **校正**需要知道漂移速率（来自回送或重复激励），再做重采样或补偿滤波
-  [6][7]，或者使用基于参考测量的逆滤波器或拉长的逆扫频 [1, §3.4]。RoomScope 不估计
+  [6][7]，或者使用基于参考测量的逆滤波器或拉长的逆扫频 [1, §3.4]。ReverbScope 不估计
   漂移（`core/loopback.py`）。
 * **建议。** 播放和录音使用同一个音频接口。在 macOS 上若必须使用两个设备，就建立聚合
   设备，把时钟最可靠的设备设为时钟（同步）源，并对其他设备开启漂移校正（即重采样），
@@ -128,11 +128,11 @@ Core Audio 用两个回调之间的环形缓冲连接两个设备 [11]。两个�
   `kAudioSubDevicePropertyDriftCompensation` [29]）。非 Pro Audio 配置下的 PipeWire
   会把设备重采样到其图时钟 [35]：漂移被隐藏，代价是重采样。
 * **回送能暴露漂移。** 把输出设备回送到输入设备的第二个输入；回送会显示
-  同样的倾斜。RoomScope 会拒绝峰值后 10 ms 内能量不足 99 % 的回送，其补偿窗口
+  同样的倾斜。ReverbScope 会拒绝峰值后 10 ms 内能量不足 99 % 的回送，其补偿窗口
   只覆盖峰值前 5 ms 到峰值后 15 ms（`core/loopback.py`），因此无法吸收更大的倾斜。
-  播放和录音是不同物理设备时 RoomScope 会给出警告（`audio/inventory.py`）。
+  播放和录音是不同物理设备时 ReverbScope 会给出警告（`audio/inventory.py`）。
 
-## 4. RoomScope 如何探测设备
+## 4. ReverbScope 如何探测设备
 
 * **列举：** `sd.query_devices()`、`sd.query_hostapis()` [14]。默认采样率是
   PortAudio 的 `defaultSampleRate`：WASAPI 上是混音格式采样率 [10]，Core Audio 上是
@@ -151,7 +151,7 @@ Core Audio 用两个回调之间的环形缓冲连接两个设备 [11]。两个�
   `default`、`pulse` 和 `pipewire` 会转换 [32][35]；ALSA 和 OSS 接受 1 % 以内的
   采样率 [12]。只有 `hw:`、WDM-KS、WASAPI 独占、ASIO 和 JACK 反映硬件或服务器实际
   运行的采样率。
-* **一次测量只用一个主机 API。** 全双工流要求两个设备属于同一主机 API，否则 `Pa_OpenStream` 以 `paBadIODeviceCombination` 失败 [9]。RoomScope 在播放前检查这一点；只选了一个设备时，另一方向使用同一主机 API 的默认设备（`audio/inventory.py` 的 `resolve_duplex`）；在 Windows 上系统默认设备属于 MME，与 WASAPI 选择不匹配。超出设备声道数的声道会在播放前被拒绝（`check_channels`），之后才向流实际要打开的设备、按流实际打开的声道数询问采样率（`Pa_IsFormatSupported`）。图形界面和 `roomscope measure` 执行同一个 `preflight`。
+* **一次测量只用一个主机 API。** 全双工流要求两个设备属于同一主机 API，否则 `Pa_OpenStream` 以 `paBadIODeviceCombination` 失败 [9]。ReverbScope 在播放前检查这一点；只选了一个设备时，另一方向使用同一主机 API 的默认设备（`audio/inventory.py` 的 `resolve_duplex`）；在 Windows 上系统默认设备属于 MME，与 WASAPI 选择不匹配。超出设备声道数的声道会在播放前被拒绝（`check_channels`），之后才向流实际要打开的设备、按流实际打开的声道数询问采样率（`Pa_IsFormatSupported`）。图形界面和 `reverbscope measure` 执行同一个 `preflight`。
 * **测量本身：** 一个全双工 `sd.Stream`：float32、256 帧块、设备的默认高延迟，
   “typically more robust” [14]（`portaudio.py`）；`--latency low` 改用默认低延迟。
 

@@ -5,18 +5,18 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.io.project_store import add_session, is_project, list_project_sessions, save_project
-from roomscope.io.session_store import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.io.project_store import add_session, is_project, list_project_sessions, save_project
+from reverbscope.io.session_store import (
     RECORDING_FILE,
     SWEEP_SIDECAR_NAME,
     bundle_session,
     save_measurement,
 )
-from roomscope.io.wav import write_sweep_file, write_wav
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.project import Project
-from roomscope.models.session import MeasurementSession
+from reverbscope.io.wav import write_sweep_file, write_wav
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.project import Project
+from reverbscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
 

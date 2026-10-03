@@ -2,7 +2,7 @@
 
 **English** | [简体中文](COMPATIBILITY.zh-CN.md)
 
-What RoomScope runs on and works with, and **what verified each row**. A row
+What ReverbScope runs on and works with, and **what verified each row**. A row
 that says "not verified" is a claim nobody has checked yet. The Chinese
 translation is [COMPATIBILITY.zh-CN.md](COMPATIBILITY.zh-CN.md). Last reviewed
 2026-09-29.
@@ -11,10 +11,10 @@ translation is [COMPATIBILITY.zh-CN.md](COMPATIBILITY.zh-CN.md). Last reviewed
 
 | Platform | Deliverable | Verified by |
 | --- | --- | --- |
-| Windows 10/11 x64 | Desktop: `RoomScope-Desktop-Windows-x64-Setup.exe`, `RoomScope-Desktop-Windows-x64.zip`; Terminal: `RoomScope-Terminal-Windows-x64.zip` | Release workflow on `windows-latest`: frozen bundle smoke (CLI, demo in English and Chinese, JSON on stdout, fake measurement, offscreen GUI, windowed launcher started without arguments), installer built with Inno Setup, installed per-user, Start menu entry checked, smoke-tested from the install folder, uninstalled with its Start menu entries; Terminal Edition gated for no Qt / PySide6 / matplotlib and smoke-tested (demo, JSON, `gui` refused politely); CI test suite on Windows / Python 3.12 |
-| macOS 14+, Apple silicon | Desktop: `RoomScope-Desktop-macOS-arm64.dmg`; Terminal: `RoomScope-Terminal-macOS-arm64.tar.gz` | Release workflow on `macos-latest` (macOS 26): DMG mounted, app copied, `gui --smoke`, Finder-style launch kept running, ad-hoc signature verified, `lipo` architecture arm64, a hardened-runtime copy started; both editions report `arm64` from `roomscope doctor`; Terminal Edition gated for no Qt and smoke-tested; CI test suite on macOS / Python 3.12. macOS 14 is the minimum of the bundled NumPy / SciPy wheels (`macosx_14_0`, `LSMinimumSystemVersion` 14.0) and has not been run |
-| macOS 14+, Intel | Desktop: `RoomScope-Desktop-macOS-x86_64.dmg`; Terminal: `RoomScope-Terminal-macOS-x86_64.tar.gz` | Release workflow on `macos-15-intel` (macOS 15): the same checks, architecture x86_64 |
-| Linux x86_64 (glibc of the CI runner or newer) | Desktop: `RoomScope-Desktop-Linux-x86_64.tar.gz`; Terminal: `RoomScope-Terminal-Linux-x86_64.tar.gz` | Release workflow on `ubuntu-latest` and a local build (`scripts/build_release.py`): bundle gates, smoke of both editions, `roomscope-gui` launch; CI tests on Ubuntu / Python 3.12–3.14 |
+| Windows 10/11 x64 | Desktop: `ReverbScope-Desktop-Windows-x64-Setup.exe`, `ReverbScope-Desktop-Windows-x64.zip`; Terminal: `ReverbScope-Terminal-Windows-x64.zip` | Release workflow on `windows-latest`: frozen bundle smoke (CLI, demo in English and Chinese, JSON on stdout, fake measurement, offscreen GUI, windowed launcher started without arguments), installer built with Inno Setup, installed per-user, Start menu entry checked, smoke-tested from the install folder, uninstalled with its Start menu entries; Terminal Edition gated for no Qt / PySide6 / matplotlib and smoke-tested (demo, JSON, `gui` refused politely); CI test suite on Windows / Python 3.12 |
+| macOS 14+, Apple silicon | Desktop: `ReverbScope-Desktop-macOS-arm64.dmg`; Terminal: `ReverbScope-Terminal-macOS-arm64.tar.gz` | Release workflow on `macos-latest` (macOS 26): DMG mounted, app copied, `gui --smoke`, Finder-style launch kept running, ad-hoc signature verified, `lipo` architecture arm64, a hardened-runtime copy started; both editions report `arm64` from `reverbscope doctor`; Terminal Edition gated for no Qt and smoke-tested; CI test suite on macOS / Python 3.12. macOS 14 is the minimum of the bundled NumPy / SciPy wheels (`macosx_14_0`, `LSMinimumSystemVersion` 14.0) and has not been run |
+| macOS 14+, Intel | Desktop: `ReverbScope-Desktop-macOS-x86_64.dmg`; Terminal: `ReverbScope-Terminal-macOS-x86_64.tar.gz` | Release workflow on `macos-15-intel` (macOS 15): the same checks, architecture x86_64 |
+| Linux x86_64 (glibc of the CI runner or newer) | Desktop: `ReverbScope-Desktop-Linux-x86_64.tar.gz`; Terminal: `ReverbScope-Terminal-Linux-x86_64.tar.gz` | Release workflow on `ubuntu-latest` and a local build (`scripts/build_release.py`): bundle gates, smoke of both editions, `reverbscope-gui` launch; CI tests on Ubuntu / Python 3.12–3.14 |
 | Anything else (ARM Windows / Linux, older macOS) | wheel only | not verified; `scripts/build_release.py` refuses to name an ARM build as x86_64 |
 
 No bundle has been used on a person's own machine with real audio hardware
@@ -60,12 +60,12 @@ Studio, Digital Performer and Audacity, plus a checklist for any other DAW,
 are in [user-guide/daw-setup.md](user-guide/daw-setup.md). They are written
 from each vendor's documentation, with a source per step (a few third-party
 sources are marked): a documented workflow. **No DAW has been run with
-RoomScope on real hardware yet**; the per-DAW matrix in
+ReverbScope on real hardware yet**; the per-DAW matrix in
 [HARDWARE_TESTS.md](HARDWARE_TESTS.md) is empty.
 
 ## Audio host APIs (Standalone Mode)
 
-Every host API PortAudio offers is listed and probed (`roomscope devices
+Every host API PortAudio offers is listed and probed (`reverbscope devices
 --probe`): MME, DirectSound, WASAPI (shared, or exclusive with
 `--wasapi-exclusive`), WDM-KS and ASIO where present on Windows; Core Audio on
 macOS (`--coreaudio-set-rate` to avoid conversion); ALSA (`hw:` and plugin

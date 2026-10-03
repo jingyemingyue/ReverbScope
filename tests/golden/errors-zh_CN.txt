@@ -1,32 +1,32 @@
 × 错误：找不到音频文件：take.wav
 
   可以尝试：
-    roomscope analyze --help
+    reverbscope analyze --help
 
 × 错误：缺少必需的参数：--out
 
   可以尝试：
-    roomscope sweep --help
+    reverbscope sweep --help
 
 × 错误：参数 --duration：无效的 float 值：'long'
 
   可以尝试：
-    roomscope sweep --help
+    reverbscope sweep --help
 
-× 错误：RoomScope fake interface 上没有输入声道 9（共 8 个输入声道）
+× 错误：ReverbScope fake interface 上没有输入声道 9（共 8 个输入声道）
   没有播放任何声音。
 
   可以尝试：
-    roomscope devices --probe
-    roomscope doctor --probe
+    reverbscope devices --probe
+    reverbscope doctor --probe
 
 × 错误：找不到会话文件：missing-session
 
   可以尝试：
-    roomscope show --list <文件夹>
+    reverbscope show --list <文件夹>
 
 × 错误：sweep.wav 是一个文件；--out 需要一个用来保存会话的文件夹
   没有播放任何声音。
 
   可以尝试：
-    roomscope measure --out <新文件夹>
+    reverbscope measure --out <新文件夹>

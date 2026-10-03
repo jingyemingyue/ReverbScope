@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-ISS = Path("packaging/windows/roomscope.iss")
+ISS = Path("packaging/windows/reverbscope.iss")
 ROOT = Path(".")
 
 
@@ -54,7 +54,7 @@ def test_installer_texts_are_localized_messages() -> None:
         assert name is not None
         # Shortcut names are the app name, a {cm:...} message or a constant.
         visible = re.sub(r"\{[^{}]*(\{[^{}]*\})?[^{}]*\}", "", name.group(1)).strip("\\ ")
-        assert visible in {"", "RoomScope"}, line
+        assert visible in {"", "ReverbScope"}, line
 
 
 def test_release_workflow_compiles_with_the_chinese_messages() -> None:
@@ -115,7 +115,7 @@ def test_readme_zh_cn_keeps_the_limits() -> None:
     text = (ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
     for fact in ("硬件验证", "预发布", "公证", "Authenticode"):
         assert fact in text, fact
-    assert "评分" in text  # RoomScope gives no room score
+    assert "评分" in text  # ReverbScope gives no room score
     assert "DAW" in text
 
 

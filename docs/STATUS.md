@@ -41,8 +41,8 @@ header and release/status documentation; no source, tests, dependencies or
 workflow changed.
 
 **Checks on the release commit `d97822a`:**
-[CI #87](https://github.com/jingyemingyue/RoomScope/actions/runs/36667088717)
-and [Release #38](https://github.com/jingyemingyue/RoomScope/actions/runs/36667088841)
+[CI #87](https://github.com/jingyemingyue/ReverbScope/actions/runs/36667088717)
+and [Release #38](https://github.com/jingyemingyue/ReverbScope/actions/runs/36667088841)
 completed successfully. CI includes the Ubuntu Python 3.12 / 3.13 / 3.14,
 macOS Python 3.12 and Windows Python 3.12 test jobs, lint/types, JSON
 Schemas, Python distributions and the license/GPL-module gate. The Release
@@ -98,24 +98,24 @@ install / smoke / uninstall ran on the runners. This was the first run of
 `release_draft.py sync` against GitHub: it found the existing draft
 395349087, replaced `cyclonedx.sbom.json`, `generated-bundle.lock`, the
 wheel and the sdist, removed the six earlier names the draft still held
-(`RoomScope.dmg`, `SHA256SUMS-{Linux,macOS,Windows}`,
-`roomscope-linux-x86_64.tar.gz`, `roomscope-windows-x64.zip`; snapshot 31
-expected seven, but that draft never had a `RoomScope-setup.exe`), uploaded
+(`ReverbScope.dmg`, `SHA256SUMS-{Linux,macOS,Windows}`,
+`reverbscope-linux-x86_64.tar.gz`, `reverbscope-windows-x64.zip`; snapshot 31
+expected seven, but that draft never had a `ReverbScope-setup.exe`), uploaded
 the 14 files and printed *draft 395349087 holds 14 files from commit
 c5fe692d37152c55b768147c7c0753694b5cb25d*; `release_draft.py verify` then
 passed (draft, pre-release, tag name and title `v0.4.1`, target commit
 `c5fe692`, body equal to the rendered notes, exactly the 14 names, sizes and
 digests). The repository lists one Release (that draft) and no tag
-`v0.4.1`. The 14 assets: `RoomScope-Desktop-macOS-arm64.dmg`,
-`RoomScope-Desktop-macOS-x86_64.dmg`,
-`RoomScope-Desktop-Windows-x64-Setup.exe`,
-`RoomScope-Desktop-Windows-x64.zip`,
-`RoomScope-Desktop-Linux-x86_64.tar.gz`,
-`RoomScope-Terminal-macOS-arm64.tar.gz`,
-`RoomScope-Terminal-macOS-x86_64.tar.gz`,
-`RoomScope-Terminal-Windows-x64.zip`,
-`RoomScope-Terminal-Linux-x86_64.tar.gz`,
-`roomscope-0.4.1-py3-none-any.whl`, `roomscope-0.4.1.tar.gz`,
+`v0.4.1`. The 14 assets: `ReverbScope-Desktop-macOS-arm64.dmg`,
+`ReverbScope-Desktop-macOS-x86_64.dmg`,
+`ReverbScope-Desktop-Windows-x64-Setup.exe`,
+`ReverbScope-Desktop-Windows-x64.zip`,
+`ReverbScope-Desktop-Linux-x86_64.tar.gz`,
+`ReverbScope-Terminal-macOS-arm64.tar.gz`,
+`ReverbScope-Terminal-macOS-x86_64.tar.gz`,
+`ReverbScope-Terminal-Windows-x64.zip`,
+`ReverbScope-Terminal-Linux-x86_64.tar.gz`,
+`reverbscope-0.4.1-py3-none-any.whl`, `reverbscope-0.4.1.tar.gz`,
 `SHA256SUMS`, `cyclonedx.sbom.json`, `generated-bundle.lock`.
 **What was run on the final tree** (this container: Linux x86_64, CPython
 3.12.3, `dev` and `gui` extras, no audio device; the GUI tests with EGL /
@@ -124,7 +124,7 @@ coverage-gate command, **811 passed**, core + models 90.48 %; `ruff check`,
 `ruff format --check`, `mypy` (strict, 79 files), `check_doc_links.py`,
 `check_src_safety.py`, `build_docs_site.py`, the schema tests; the license
 bundle and the Essentials-only check. The command line, run as a user would
-(bare `roomscope`, `--help`, `demo`, `doctor`, `export`, `show`, `compare`,
+(bare `reverbscope`, `--help`, `demo`, `doctor`, `export`, `show`, `compare`,
 `gui --smoke`) in English and `--lang zh_CN`, at 60 and 80 columns and to a
 pipe, with `PYTHONIOENCODING` cp1252 / ascii, the C locale and a pty: no
 traceback, exit codes as documented, no escape sequence in a pipe or file,
@@ -134,11 +134,11 @@ and stored data; `--format json` stdout parses as JSON for `doctor`,
 demo's stored files under `--lang zh_CN` contain no Chinese. `gui --smoke`
 here prints *The desktop GUI cannot start because PySide6 could not be
 loaded (libEGL.so.1 …)* and exits 2 (this container has no EGL); the GUI
-itself started only in the GUI tests and on the Release runners. `roomscope
+itself started only in the GUI tests and on the Release runners. `reverbscope
 export`, with and without `-v`, in the editable install and in a fresh
 wheel install without `[gui]`: no *name collides* message (`909f332`'s code
 prints it on every run; a genuinely colliding third-party exporter is still
-reported). In that wheel install `roomscope gui` prints the install hint in
+reported). In that wheel install `reverbscope gui` prints the install hint in
 English and Chinese and exits 2. README, INSTALLATION, EDITIONS, the user
 guides and the rendered Release notes name only the 14 real assets
 (case-sensitive), no earlier name as a download, Download first, the two
@@ -166,13 +166,13 @@ draft (which creates the tag `v0.4.1` on `c5fe692`) is the maintainer's
 click (RELEASE_PLAN §3c, steps 3–5).
 
 Snapshot 31: 2026-09-29 — **v0.4.1 release close-out: one changelog section
-for the pre-release** (branch `claude/roomscope-cli-integration-84e5qc`, PR
-#24, stacked on #22 and #21). One code fix: `roomscope export` logged
+for the pre-release** (branch `claude/reverbscope-cli-integration-84e5qc`, PR
+#24, stacked on #22 and #21). One code fix: `reverbscope export` logged
 *ignoring third-party exporter 'csv'; name collides* on every run in every
 install, because `pyproject.toml` declares the built-in CSV exporter under
-the `roomscope.exporters` entry-point group too; the registry now recognises
+the `reverbscope.exporters` entry-point group too; the registry now recognises
 its own declaration (a test covers both cases). The `[Unreleased]` entries
-(Desktop and Terminal Editions, `roomscope demo`, the home screen, "At a
+(Desktop and Terminal Editions, `reverbscope demo`, the home screen, "At a
 glance", numbered next steps, the error block, workflow-ordered help, the
 one `SHA256SUMS`, the download-first README and Release page, the
 `PYTHONIOENCODING` fix) are folded into `[0.4.1]`, whose date is now
@@ -181,8 +181,8 @@ Release's notes are taken from that section, so they now describe everything
 the pre-release contains. Stale wording fixed on the way: the release-notes
 order in RELEASE_PLAN §1 (+ zh-CN), the Release workflow's trigger paths in
 §3, the draft body in §3 step 2, the CHANGELOG's "GUI keeps its own reports"
-and "installer edition" sentences, the `RoomScope-setup.exe` comment in
-`packaging/windows/roomscope.iss`, and COMPATIBILITY's review date;
+and "installer edition" sentences, the `ReverbScope-setup.exe` comment in
+`packaging/windows/reverbscope.iss`, and COMPATIBILITY's review date;
 INSTALLATION (+ zh-CN) now says the `xattr` step for the macOS Terminal
 Edition is a stop-gap for the unsigned pre-release builds. A merge-readiness
 audit of the stack (PRs #21 → #22 → #24) found the three heads linear (each
@@ -194,7 +194,7 @@ Release run #30 on `6d8c32e` (job logs): the Apple-silicon app is `Mach-O
 thin (arm64)`, the Intel app `Mach-O thin (x86_64)`, both ad hoc signed with
 the hardened-runtime rehearsal (`flags=0x10002(adhoc,runtime)`), both DMGs
 `hdiutil verify` VALID and mounted, copied and launched; the Windows
-installer installed, smoke-tested (`roomscope.exe`, `roomscope-gui.exe`,
+installer installed, smoke-tested (`reverbscope.exe`, `reverbscope-gui.exe`,
 Start menu entry) and uninstalled with its folder and Start menu entries
 gone; every Terminal Edition passed the `--terminal` gate and smoke. A local
 `release_draft.py stage` on the Linux files plus stand-ins for the other
@@ -213,8 +213,8 @@ fake devices` and `measure`; `examples/synthetic_measurement.py`.
 `requirements/bundle.lock` (PyInstaller 6.22.3) built both Linux editions:
 tests skipped there (run separately, above), license bundles, PyInstaller,
 the `--strip --require-licenses` gate, the `--terminal` gate, both smoke
-tests, `RoomScope-Desktop-Linux-x86_64.tar.gz` (148.1 MB),
-`RoomScope-Terminal-Linux-x86_64.tar.gz` (57.4 MB), `SHA256SUMS-Linux-X64`
+tests, `ReverbScope-Desktop-Linux-x86_64.tar.gz` (148.1 MB),
+`ReverbScope-Terminal-Linux-x86_64.tar.gz` (57.4 MB), `SHA256SUMS-Linux-X64`
 (`sha256sum -c` OK), the wheel and the sdist; both `build_info.json` files
 name commit `f893cc7` and their edition; the Terminal archive, extracted
 into an empty folder and run under `env -i` (no virtual environment, no
@@ -222,7 +222,7 @@ into an empty folder and run under `env -i` (no virtual environment, no
 Chinese, wrote nothing but JSON for `--format json doctor` (no matplotlib,
 PySide6 or shiboken6 reported, audio callbacks ok), answered `gui` with the
 Terminal Edition sentence and exit code 2 in both languages, and contains no
-PySide6, shiboken6, Qt, matplotlib or `roomscope/ui` file. On GitHub
+PySide6, shiboken6, Qt, matplotlib or `reverbscope/ui` file. On GitHub
 Actions, CI #76 and Release #29 on `f893cc7` (the commit before this one)
 are green on every job, the four `Bundle (<os>)` jobs and *Check the release
 file set* included; that check downloaded the 17 files of the run (nine
@@ -230,8 +230,8 @@ archives, four `SHA256SUMS-<OS>-<ARCH>`, wheel, sdist, SBOM, lock) and
 staged the 14-file Release set. A read-only run of `release_draft.py`'s
 planner against the asset names main's last Release run (#10, `909f332`)
 attached to the v0.4.1 draft plans the removal of the seven earlier names
-(`RoomScope.dmg`, `RoomScope-setup.exe`, `roomscope-linux-x86_64.tar.gz`,
-`roomscope-windows-x64.zip`, `SHA256SUMS-{Linux,macOS,Windows}`) and the
+(`ReverbScope.dmg`, `ReverbScope-setup.exe`, `reverbscope-linux-x86_64.tar.gz`,
+`reverbscope-windows-x64.zip`, `SHA256SUMS-{Linux,macOS,Windows}`) and the
 replacement of the four shared ones; a name it does not know stops it. **Not
 run:** the draft refresh itself (it runs on `main` after the merge); any
 real audio interface, microphone or DAW; a bundle on a person's own Mac,
@@ -252,17 +252,17 @@ downloaded from the run's artifacts: `sha256sum -c` of all five archives;
 the wheel in a fresh virtual environment (not editable): `--version`,
 `--help`, `--backend fake measure`, `sweep`, `analyze`, `show`,
 `--lang zh_CN show`, then with `[gui]` `gui --smoke` (offscreen) and
-`roomscope-gui` kept running; the sdist rebuilt into a wheel with the same
+`reverbscope-gui` kept running; the sdist rebuilt into a wheel with the same
 90 files and installed with `[gui]`; `twine check` on both; both DMGs
 opened with 7-Zip (app, Applications link, Mach-O arm64 / x86_64,
 `Info.plist` 0.4.1 / `LSMinimumSystemVersion` 14.0, `build_info.json`,
 313 Mach-O files without an absolute non-system load path); the Windows ZIP's
-layout (`roomscope-gui.exe` PE32+ GUI, `roomscope.exe` console,
+layout (`reverbscope-gui.exe` PE32+ GUI, `reverbscope.exe` console,
 `_internal`, `THIRD_PARTY_LICENSES`); the Linux bundle through
 `smoke_bundle.py --require-gui-launcher --expect-commit` in an empty
 environment (it needs glibc 2.39); a token / private-key scan of every
 bundle and the sdist (nothing but PEM header strings in Qt's TLS plug-ins).
-That found one bug, fixed here: `roomscope gui` without PySide6 printed a
+That found one bug, fixed here: `reverbscope gui` without PySide6 printed a
 traceback (the wheel without `[gui]`); a wheel built from this branch now
 prints the install hint in English and Chinese and exits 2. On this branch:
 the full suite, **695 passed** (679 + 16 new), coverage of core + models
@@ -310,7 +310,7 @@ Snapshot 27: 2026-09-27 — **release hardening before the v0.4.1 pre-release**
 in the code; fixed here:
 the draft-release job could not see its own draft (the release action looks
 a release up by tag, which misses drafts), so a refresh would have left
-`RoomScope.dmg`, `SHA256SUMS-{Linux,macOS,Windows}` and the first run's notes
+`ReverbScope.dmg`, `SHA256SUMS-{Linux,macOS,Windows}` and the first run's notes
 next to the new files; `scripts/release_draft.py` now stages and checks the
 exact 13-file set and the checksum files, refreshes the single draft and
 reads it back, and fails closed on a published release, two drafts, a tag on
@@ -337,10 +337,10 @@ installer, macOS app and DMG, DAW guide, claims, code, community), each
 finding checked by an independent verifier, reported 35 findings: 31
 confirmed (several found by more than one reviewer) and all fixed, 4
 refuted as not defects (three of those were improved anyway). Since snapshot 25: Help ▸ Environment Report for every
-edition (`roomscope doctor --probe`: build commit, settings, home folder as
+edition (`reverbscope doctor --probe`: build commit, settings, home folder as
 `~`, probed rates, an audio-callback self-check); issue forms for audio
 interface and DAW reports; one Standalone pre-flight shared by the GUI and
-`roomscope measure` (rate asked of the devices the stream opens, with its
+`reverbscope measure` (rate asked of the devices the stream opens, with its
 channels and host-API options); the GUI keeps the system's default devices;
 device buffer under/overflows reach the result as a finding; a recording
 of exact digital silence (the sweep track exported instead of the
@@ -398,7 +398,7 @@ all four bundle jobs: Linux, macOS arm64, **macOS x86_64 on `macos-15-intel`**
 (the Intel DMG built, mounted, copied and launched for the first time) and
 Windows (installer built, installed, smoke-tested, uninstalled), plus sdist /
 wheel and the SBOM. Since snapshot 24: GUI redesign, audio device inventory
-and host-API-safe Standalone takes, `roomscope doctor`, developer / installer
+and host-API-safe Standalone takes, `reverbscope doctor`, developer / installer
 editions, sourced DAW guide, `docs/AUDIO_DEVICES.md`, `docs/COMPARISON.md`,
 `docs/COMPATIBILITY.md`, matplotlib>=3.10 and the cross-platform fixes
 (then CHANGELOG `[Unreleased]`, since folded into `[0.4.1]`). Locally (Linux, Python 3.12): **549 passed**,
@@ -409,10 +409,10 @@ Snapshot 24: 2026-09-24 — **v0.4.1 release readiness: desktop launch on
 three platforms, Windows installer, Intel macOS, DAW workflow** (branch
 `claude/publication-ready-level-n3hkor`; see CHANGELOG `[0.4.1]` DAW
 workflow and Packaging). The Windows and Linux bundles gain a windowed
-`roomscope-gui` launcher that opens the GUI without arguments (the Start-menu
+`reverbscope-gui` launcher that opens the GUI without arguments (the Start-menu
 shortcut, Explorer double-click, desktop file and AppImage `AppRun` all ran
 the console CLI before, which printed its usage and exited); the release
-workflow always builds `RoomScope-setup.exe`, installs it silently,
+workflow always builds `ReverbScope-setup.exe`, installs it silently,
 smoke-tests the installed copy and uninstalls it, and builds an Intel
 macOS DMG next to the Apple-silicon one. A sweep the DAW played at the wrong
 speed (sample-rate mismatch or time-stretch) is diagnosed; DAW export
@@ -422,22 +422,22 @@ the `dev`, `gui` and `i18n-dev` extras): the full suite, **522 passed**; the
 CI coverage gate command, **90.47 %**; `ruff check`, `ruff format --check`,
 `mypy` (strict, 70 files), `check_doc_links.py`, `check_src_safety.py`,
 `build_docs_site.py`; `uv build` of sdist and wheel; a Linux PyInstaller
-6.22.3 one-directory build with `roomscope` and `roomscope-gui` over one
+6.22.3 one-directory build with `reverbscope` and `reverbscope-gui` over one
 `_internal/`, which passes `check_bundle_contents.py --strip
 --require-licenses` and `smoke_bundle.py --require-gui-launcher`;
-`roomscope-gui` without arguments entered the Qt event loop (offscreen).
+`reverbscope-gui` without arguments entered the Qt event loop (offscreen).
 On GitHub Actions, the release workflow run #11 on this branch (commit
 `3876f21`, `workflow_dispatch`, no draft) passed on Linux, macOS arm64 and
-Windows: the Windows job built `RoomScope-setup.exe` with Inno Setup,
+Windows: the Windows job built `ReverbScope-setup.exe` with Inno Setup,
 installed it per-user, ran `smoke_bundle.py --require-gui-launcher` on the
 installed copy (CLI, fake measurement, offscreen GUI through
-`roomscope-gui.exe`) and uninstalled it. Release run #12 (the Intel macOS job) never started: the
+`reverbscope-gui.exe`) and uninstalled it. Release run #12 (the Intel macOS job) never started: the
 repository's Actions minutes were used up, and every job failed within
 seconds without a runner. `scripts/build_release.py` (RELEASE_PLAN.md §3a)
 was then run on this Linux machine from `requirements/bundle.lock` with
 `--python-dist`: tests, wheel and sdist, license bundle, PyInstaller, gate,
-smoke test (CLI, fake measurement, offscreen GUI, `roomscope-gui`),
-`roomscope-linux-x86_64.tar.gz` and `SHA256SUMS-Linux-X64`, about 4 minutes.
+smoke test (CLI, fake measurement, offscreen GUI, `reverbscope-gui`),
+`reverbscope-linux-x86_64.tar.gz` and `SHA256SUMS-Linux-X64`, about 4 minutes.
 **What was not run:** the Intel macOS build (neither in Actions nor on a
 Mac), `build_release.py` on macOS or Windows, and any DAW or hardware cell —
 the DAW notes come from the DAWs' documentation and the new DAW matrix in
@@ -467,7 +467,7 @@ CPython 3.12.3, the `dev`, `gui` and `i18n-dev` extras, PySide6_Essentials
 6.11.2, numpy 2.5.3, scipy 1.18.1): the full suite, **470 passed**
 (tests/unit 366, tests/integration 54, tests/ui 12 offscreen,
 tests/robustness 38), and again on CPython 3.13.13; the CI coverage gate
-command (`--cov=roomscope.core --cov=roomscope.models`, branch coverage):
+command (`--cov=reverbscope.core --cov=reverbscope.models`, branch coverage):
 **90.20 %** (0.4.0 on the same machine: 87.74 %, 345 tests); `ruff check`,
 `ruff format --check`, `mypy` (strict, 69 files, with and without the
 PySide6 stubs), `check_src_safety.py`, `check_doc_links.py`,
@@ -520,7 +520,7 @@ comparison findings. Hardware validation is still not claimed.
 Snapshot 6: 2026-09-22 — 0.2 follow-up after CI on `0ad2a4e`: the
 comparison test now requires the ISO 3382-1 "not significant" disclaimer
 instead of forbidding the word "significant", and the wheel `force-include`
-lists each schema JSON file so `roomscope/schemas/__init__.py` is not
+lists each schema JSON file so `reverbscope/schemas/__init__.py` is not
 added twice. Re-verified on Linux x86_64 (Ubuntu, Python 3.12.3).
 
 Snapshot 7: 2026-09-22 — v0.3 trust the chain: loopback compensation,
@@ -568,12 +568,12 @@ gate). DAW/Standalone/Results chrome goes through gettext.
 API/schema not frozen. Hardware cells empty.
 
 Snapshot 15: 2026-09-22 — 1.0-rc compare / robustness / guide:
-`load_comparison` (findings re-derived on `roomscope show
+`load_comparison` (findings re-derived on `reverbscope show
 comparison.json`); Compare GUI lists matched resonances; user
 guide names every Results tab plus wrong-reference and
 multiple-pass troubleshooting; robustness covers comparison.json,
 more WAV/sidecar cases, and a microphone used as loopback;
-`roomscope gui --smoke` is the §6.2 offscreen bundle smoke.
+`reverbscope gui --smoke` is the §6.2 offscreen bundle smoke.
 API/schema not frozen. Hardware cells empty.
 
 Snapshot 14: 2026-09-22 — 1.0-rc §8 / M9 packaging remainder:
@@ -621,18 +621,18 @@ discovery follows files under `.dist-info/licenses/`; macOS
 | Early reflections | ETC peak candidates (delay ms, level dB re direct) with local-trend prominence |
 | Placement geometry | Excess path per candidate; with a tape-measured loudspeaker distance the exact product of perpendicular distances and its two-sided bracket; with a microphone height the vertical axis (loudspeaker height, plane above the devices, horizontal separation). No coordinates, no room length or width, no wall named |
 | Low-frequency resonances | Candidate peaks (< 300 Hz) with narrow-band decay vs. filter ringing comparison |
-| Models & storage | Validated settings; result model with JSON export and `from_dict` load; MeasurementSession; self-contained session directory (session.json, result.json, IR WAV, optional recording.wav, always-copied sweep sidecar); `load_measurement` / `load_comparison` / `list_sessions` / `bundle_session`; recent list and `settings.json` under `$ROOMSCOPE_HOME`; shipped JSON Schemas; `comparison.json` (findings not stored); `project.json` |
+| Models & storage | Validated settings; result model with JSON export and `from_dict` load; MeasurementSession; self-contained session directory (session.json, result.json, IR WAV, optional recording.wav, always-copied sweep sidecar); `load_measurement` / `load_comparison` / `list_sessions` / `bundle_session`; recent list and `settings.json` under `$REVERBSCOPE_HOME`; shipped JSON Schemas; `comparison.json` (findings not stored); `project.json` |
 | Interpretation | Finding model (`message_id` / `params` / `locale`); messages through gettext `_()`; RecordingProfile registry + entry points; seven profiles; `interpret_comparison` |
-| CLI | `roomscope sweep / analyze / analyze-ir / show / compare / schema / devices / measure / gui / session bundle / export / project`; global `--lang`, `--format`, `--backend`, `--copy-recording` |
-| Public API | Lazy Tier 1 exports from `import roomscope` (ARCHITECTURE_V1.md §5.1) |
+| CLI | `reverbscope sweep / analyze / analyze-ir / show / compare / schema / devices / measure / gui / session bundle / export / project`; global `--lang`, `--format`, `--backend`, `--copy-recording` |
+| Public API | Lazy Tier 1 exports from `import reverbscope` (ARCHITECTURE_V1.md §5.1) |
 | Loopback | Optional electrical return: pulse validation (99 % energy settling over the valid record, net of noise), regularised compensation with the FIR peak as time origin and linear division, path-delay bound; refused room-like or clipped channels leave the analysis uncompensated |
 | Audio backends | `AudioBackend` protocol; PortAudio callback stream (progress polled from the waiting thread, Stop, callback errors and early stream end fail the take, buffer problems logged); `plan_input_channels` (1-based inputs → 0-based columns, validated before playback); fake backend for CI and Demo |
 | Averaging | `average_decay`: VALID T values only; ISO 3382-2 class from 4.3.1 Table 1 (combinations, source and microphone positions all checked); `project average` counts distinct position labels |
-| Export | CSV exporter for decay, FR, noise PSD, reflections, resonances; `roomscope.exporters` entry points |
-| i18n | stdlib gettext with `pgettext` contexts; `zh_CN` catalog for report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles (a test requires a translation with matching placeholders for every extracted message); wheel ships a hashed `.mo`, nothing is written at run time; `--lang` / settings / `ROOMSCOPE_LANG` |
+| Export | CSV exporter for decay, FR, noise PSD, reflections, resonances; `reverbscope.exporters` entry points |
+| i18n | stdlib gettext with `pgettext` contexts; `zh_CN` catalog for report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles (a test requires a translation with matching placeholders for every extracted message); wheel ships a hashed `.mo`, nothing is written at run time; `--lang` / settings / `REVERBSCOPE_LANG` |
 | GUI | PySide6 window: Home, Universal DAW Mode, Standalone Mode, Results (including Placement), session save/open, Compare (difference curve, matched reflections and resonances, loopback deltas), Demo, Stop, Settings, project-folder browser, tape-measure fields, dark-mode plot chrome, device rate vs requested rate, `gui --smoke` |
 | Standalone Mode | Device enumeration and play+record through the selected backend with safety defaults |
-| Bundles | `scripts/build_license_bundle.py` (verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts from `packaging/licenses/`), `scripts/check_bundle_contents.py` (`--strip`, `--require-licenses`, `--installed-essentials`; GPL-only QML module directories matched, any `qml/` tree in a frozen bundle fails), `packaging/roomscope.spec`, `release.yml` (the version-driven workflow on `main` since PR #18; it opened the v0.4.1 draft and refreshes it while `v0.4.1` has no tag, see RELEASE_PLAN.md §3), `scripts/smoke_bundle.py` |
+| Bundles | `scripts/build_license_bundle.py` (verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts from `packaging/licenses/`), `scripts/check_bundle_contents.py` (`--strip`, `--require-licenses`, `--installed-essentials`; GPL-only QML module directories matched, any `qml/` tree in a frozen bundle fails), `packaging/reverbscope.spec`, `release.yml` (the version-driven workflow on `main` since PR #18; it opened the v0.4.1 draft and refreshes it while `v0.4.1` has no tag, see RELEASE_PLAN.md §3), `scripts/smoke_bundle.py` |
 | Documentation | Hub at `docs/index.md`; themed HTML site from `scripts/build_docs_site.py` (S7); release plan in `docs/RELEASE_PLAN.md` |
 
 ## Tested (all PASS on 2026-09-17 on macOS; profile work re-verified 2026-09-22;
@@ -640,7 +640,7 @@ Linux x86_64 re-verified 2026-09-24 for v0.4.1, snapshot 22)
 
 ```
 pytest      470 passed  (tests/unit 366, tests/integration 54, tests/ui 12 offscreen, tests/robustness 38)
-coverage    90.20 % of roomscope.core + roomscope.models (branch; gate 85 %)
+coverage    90.20 % of reverbscope.core + reverbscope.models (branch; gate 85 %)
 ruff check  All checks passed  (src, tests, examples, scripts)
 ruff format files already formatted
 mypy        Success: no issues found in 69 source files (strict)
@@ -654,7 +654,7 @@ The 2026-09-17 macOS log recorded 256 tests. Later DSP work replaced a
 peak-normalised inverse with unit in-band gain and consolidated some
 assertions; the two loopback tests that still expected a time-domain peak
 of 1.0 were updated on 2026-09-22 and pass on Linux. Session-reopen tests
-(result `from_dict`, `load_measurement`, recent list, `roomscope show`,
+(result `from_dict`, `load_measurement`, recent list, `reverbscope show`,
 GUI re-open) plus the 0.2 compare / schema / Tier 1 lock tests brought
 the suite to 259. 0.3 added loopback, the backend protocol and robustness
 tests (283). 0.4 adds i18n, settings, bundles, averaging, CSV, license
@@ -709,13 +709,13 @@ as evidence):
   selection; WAV-only reference (spectral inverse) and resampled reference;
   loudspeaker distortion (2nd/3rd order) leaves the linear IR clean; CLI
   round trip incl. JSON; session save/load/re-open (`load_measurement`,
-  `roomscope show`, GUI File → Open and Home recent/browse); two synthetic
+  `reverbscope show`, GUI File → Open and Home recent/browse); two synthetic
   positions compare with a validity on every decay delta and a noise delta
-  that stays UNRELIABLE until `same_input_gain` is declared; `roomscope
+  that stays UNRELIABLE until `same_input_gain` is declared; `reverbscope
   schema` matches the shipped files; the Tier 1 export list matches
   ARCHITECTURE_V1.md §5.1; a synthetic interface FIR is removed to within
   1.0 dB median in-band error; a room-like loopback is refused; Stop on
-  the fake backend zeroes the next callback block; `roomscope --backend
+  the fake backend zeroes the next callback block; `reverbscope --backend
   fake measure` completes a Standalone session; GUI DAW-mode, Demo and
   pick-two compare offscreen.
 * Bundle gates (2026-09-24): the GPL gate rejects `QtCharts.abi3.so`,
@@ -750,8 +750,8 @@ as evidence):
   folder, absolute or via symlink, are refused (#11); the ISO 3382-2 class
   matrix and the project position count follow Table 1 (#15); the safety
   script catches aliases and dynamic imports (#16).
-* macOS basic run: `roomscope sweep`, `roomscope analyze`,
-  `roomscope devices` (12 Core Audio devices listed), the example script,
+* macOS basic run: `reverbscope sweep`, `reverbscope analyze`,
+  `reverbscope devices` (12 Core Audio devices listed), the example script,
   and the GUI (offscreen) ran successfully. **Not run:** a real Standalone
   measurement through loudspeakers/microphone (needs a person in the room to
   set levels) and the on-screen GUI on a display.
@@ -789,7 +789,7 @@ algebra and the refusals, not the acoustics of any real surface.
 * Band filters are Butterworth, not certified IEC 61260 class 1; short
   decays in the 63/125 Hz bands are limited by B·T and are flagged.
 * Lundeby parameters (20 ms initial blocks, 5 intervals/10 dB, 7.5 dB
-  margins) are RoomScope's choices within the published ranges; other tools
+  margins) are ReverbScope's choices within the published ranges; other tools
   will differ slightly.
 * Reflection and resonance outputs are candidates; in dense diffuse tails
   some reflection candidates are statistical; room modes are not identified.
@@ -826,9 +826,9 @@ test). Full table with licenses: DEPENDENCIES.md.
 
 ## License status
 
-RoomScope: Apache-2.0 (LICENSE verbatim from apache.org, NOTICE present;
+ReverbScope: Apache-2.0 (LICENSE verbatim from apache.org, NOTICE present;
 rationale in LICENSE_DECISION.md). All runtime dependencies are permissive
-or LGPL used dynamically; no copyleft obligation reaches RoomScope's source.
+or LGPL used dynamically; no copyleft obligation reaches ReverbScope's source.
 Obligations that apply to a *binary* distribution (Qt LGPL texts and
 notices, libsndfile LGPL, FreeType credit, PortAudio/Qhull/Agg notices,
 Windows ASIO DLL removal, GPL-only Qt module removal) are listed in
@@ -851,7 +851,7 @@ were not copied. `packaging/licenses/` holds verbatim license *texts*
   Qt stays a set of replaceable shared libraries.
 * PySide6_Essentials 6.9+ wheels ship GPL-only Qt libraries
   (`libQt6QuickTimeline.so.6`, the virtual-keyboard and timeline QML
-  plugins) that RoomScope never imports; the release workflow strips them
+  plugins) that ReverbScope never imports; the release workflow strips them
   from every bundle and the gate fails if one survives, or if a frozen
   bundle contains a QML tree at all (#17). A local Linux PyInstaller build
   contained none of them.

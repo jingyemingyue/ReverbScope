@@ -7,12 +7,12 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.core.noise import NOISE_FLOOR_DBFS
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.core.sweep import measurement_signal
-from roomscope.interpretation import interpret
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import AnalysisSettings, SweepSettings
+from reverbscope.core.noise import NOISE_FLOOR_DBFS
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.core.sweep import measurement_signal
+from reverbscope.interpretation import interpret
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import AnalysisSettings, SweepSettings
 from tests.conftest import make_rir
 
 

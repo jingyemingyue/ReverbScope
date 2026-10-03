@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.i18n import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.i18n import (
     _,
     activate,
     available_locales,
@@ -10,8 +10,8 @@ from roomscope.i18n import (
     normalize_lang,
     parse_po,
 )
-from roomscope.interpretation import interpret
-from roomscope.models.configuration import SweepSettings
+from reverbscope.interpretation import interpret
+from reverbscope.models.configuration import SweepSettings
 from tests.conftest import make_rir
 
 
@@ -27,7 +27,7 @@ def test_english_is_source_and_chinese_translates_findings(
 ) -> None:
     activate("en")
     assert current_locale() == "en"
-    assert _("RoomScope analysis") == "RoomScope analysis"
+    assert _("ReverbScope analysis") == "ReverbScope analysis"
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.4)])
     rec = synthetic_recording(short_sweep, ir, noise_rms=2e-5)
     result = analyze(rec, Reference.from_settings(short_sweep))
@@ -36,7 +36,7 @@ def test_english_is_source_and_chinese_translates_findings(
     assert all(item.locale == "en" for item in english)
     activate("zh_CN")
     assert current_locale() == "zh_CN"
-    assert _("RoomScope analysis") == "RoomScope 分析"
+    assert _("ReverbScope analysis") == "ReverbScope 分析"
     chinese = interpret(result, "generic")
     assert chinese
     assert all(item.locale == "zh_CN" for item in chinese)
@@ -76,13 +76,13 @@ def test_cli_help_and_report_labels_are_in_the_chinese_catalog() -> None:
 def test_parse_po_round_trip(tmp_path) -> None:
     import gettext
 
-    from roomscope.i18n import write_mo
+    from reverbscope.i18n import write_mo
 
-    po = tmp_path / "roomscope.po"
+    po = tmp_path / "reverbscope.po"
     po.write_text('msgid "Hello"\nmsgstr "你好"\n', encoding="utf-8")
     catalog = parse_po(po)
     assert catalog["Hello"] == "你好"
-    mo = tmp_path / "roomscope.mo"
+    mo = tmp_path / "reverbscope.mo"
     write_mo(catalog, mo)
     with mo.open("rb") as handle:
         trans = gettext.GNUTranslations(handle)
@@ -93,18 +93,18 @@ def _copy_catalog(tmp_path) -> tuple[object, object]:
     import shutil
     from pathlib import Path
 
-    from roomscope.i18n import locale_dir
+    from reverbscope.i18n import locale_dir
 
     base = Path(tmp_path) / "locale"
     messages = base / "zh_CN" / "LC_MESSAGES"
     messages.mkdir(parents=True)
-    shutil.copy(Path(locale_dir()) / "zh_CN" / "LC_MESSAGES" / "roomscope.po", messages)
+    shutil.copy(Path(locale_dir()) / "zh_CN" / "LC_MESSAGES" / "reverbscope.po", messages)
     return base, messages
 
 
 def test_loading_a_catalog_never_writes_to_the_package_tree(tmp_path, monkeypatch) -> None:
     """#14: an installed tree or a frozen bundle may be read-only; no .mo is written."""
-    from roomscope import i18n
+    from reverbscope import i18n
 
     base, messages = _copy_catalog(tmp_path)
     monkeypatch.setattr(i18n, "_LOCALE_DIR", base)
@@ -114,25 +114,25 @@ def test_loading_a_catalog_never_writes_to_the_package_tree(tmp_path, monkeypatc
         assert _("Analyze") == "分析"
     finally:
         activate("en")
-    assert sorted(p.name for p in messages.iterdir()) == before == ["roomscope.po"]
+    assert sorted(p.name for p in messages.iterdir()) == before == ["reverbscope.po"]
 
 
 def test_compiled_mo_is_used_only_while_it_matches_the_po(tmp_path, monkeypatch) -> None:
     import gettext
 
-    from roomscope import i18n
+    from reverbscope import i18n
 
     base, messages = _copy_catalog(tmp_path)
     monkeypatch.setattr(i18n, "_LOCALE_DIR", base)
     written = i18n.compile_catalogs(base)
-    assert written == [messages / "roomscope.mo"]
+    assert written == [messages / "reverbscope.mo"]
     loaded = i18n._load_translation("zh_CN")
     assert isinstance(loaded, gettext.GNUTranslations)
     assert loaded.info()[i18n.SOURCE_HASH_HEADER.lower()] == i18n.source_hash(
-        messages / "roomscope.po"
+        messages / "reverbscope.po"
     )
     # Edit the .po after compiling: the stale .mo must not win.
-    po = messages / "roomscope.po"
+    po = messages / "reverbscope.po"
     po.write_text(
         po.read_text(encoding="utf-8").replace('msgstr "分析"', 'msgstr "分析（新）"', 1),
         encoding="utf-8",
@@ -145,16 +145,16 @@ def test_compiled_mo_is_used_only_while_it_matches_the_po(tmp_path, monkeypatch)
     assert i18n._load_translation("zh_CN").gettext("Analyze") == "分析"
     # A .mo compiled before the hash header existed is ignored when a .po exists.
     po.write_text('msgid "Analyze"\nmsgstr "分析"\n', encoding="utf-8")
-    i18n.write_mo({"Analyze": "旧"}, messages / "roomscope.mo")
+    i18n.write_mo({"Analyze": "旧"}, messages / "reverbscope.mo")
     assert i18n._load_translation("zh_CN").gettext("Analyze") == "分析"
 
 
 def test_msgctxt_entries_round_trip_through_po_and_mo(tmp_path) -> None:
     import gettext
 
-    from roomscope.i18n import _PoTranslations, write_mo
+    from reverbscope.i18n import _PoTranslations, write_mo
 
-    po = tmp_path / "roomscope.po"
+    po = tmp_path / "reverbscope.po"
     po.write_text(
         'msgctxt "decay length"\nmsgid "long"\nmsgstr "很长"\n\n'
         'msgid "long"\nmsgstr "长"\n\n'
@@ -171,7 +171,7 @@ def test_msgctxt_entries_round_trip_through_po_and_mo(tmp_path) -> None:
     assert in_memory.pgettext("decay length", "long") == "很长"
     assert in_memory.gettext("long") == "长"
     assert in_memory.pgettext("RT60 change", "long") == "long"
-    mo = tmp_path / "roomscope.mo"
+    mo = tmp_path / "reverbscope.mo"
     write_mo(catalog, mo)
     with mo.open("rb") as handle:
         compiled = gettext.GNUTranslations(handle)
@@ -188,7 +188,7 @@ def test_wheel_build_hook_compiles_into_a_temporary_directory(tmp_path) -> None:
     import pytest
 
     pytest.importorskip("hatchling")
-    from roomscope.i18n import SOURCE_HASH_HEADER, locale_dir, source_hash
+    from reverbscope.i18n import SOURCE_HASH_HEADER, locale_dir, source_hash
 
     spec = importlib.util.spec_from_file_location("hatch_build", Path("hatch_build.py"))
     assert spec is not None and spec.loader is not None
@@ -197,11 +197,11 @@ def test_wheel_build_hook_compiles_into_a_temporary_directory(tmp_path) -> None:
     src_messages = Path(locale_dir()) / "zh_CN" / "LC_MESSAGES"
     before = sorted(p.name for p in src_messages.iterdir())
     include = hook.compiled_catalogs(tmp_path)
-    assert list(include.values()) == ["roomscope/locale/zh_CN/LC_MESSAGES/roomscope.mo"]
+    assert list(include.values()) == ["reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.mo"]
     mo = Path(next(iter(include)))
-    assert mo == tmp_path / "zh_CN" / "LC_MESSAGES" / "roomscope.mo"
+    assert mo == tmp_path / "zh_CN" / "LC_MESSAGES" / "reverbscope.mo"
     with mo.open("rb") as handle:
         compiled = gettext.GNUTranslations(handle)
-    assert compiled.info()[SOURCE_HASH_HEADER.lower()] == source_hash(src_messages / "roomscope.po")
+    assert compiled.info()[SOURCE_HASH_HEADER.lower()] == source_hash(src_messages / "reverbscope.po")
     assert compiled.gettext("Analyze") == "分析"
     assert sorted(p.name for p in src_messages.iterdir()) == before

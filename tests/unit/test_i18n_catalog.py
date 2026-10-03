@@ -2,7 +2,7 @@
 
 Every literal handed to ``_()``, ``N_()``, ``pgettext()``, ``ngettext()``,
 ``format_message()`` or used as a ``finding()`` template anywhere under
-``src/roomscope`` must have a non-empty Simplified Chinese translation whose
+``src/reverbscope`` must have a non-empty Simplified Chinese translation whose
 placeholders match the English ones. Finding sentences must not carry English
 words once the catalog is active.
 """
@@ -18,23 +18,23 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.i18n import DIAGNOSTIC_CONTEXT, activate, parse_po
-from roomscope.interpretation import available_profiles, get_profile
-from roomscope.interpretation.interpreter import Severity
-from roomscope.interpretation.profiles import (
+from reverbscope.i18n import DIAGNOSTIC_CONTEXT, activate, parse_po
+from reverbscope.interpretation import available_profiles, get_profile
+from reverbscope.interpretation.interpreter import Severity
+from reverbscope.interpretation.profiles import (
     ProfileBase,
     change_direction_text,
     decay_length_text,
     noise_segment_text,
     profile_title,
 )
-from roomscope.labels import topic_text
-from roomscope.models.comparison import MetricDelta
-from roomscope.models.result import Reflection, ResonanceCandidate, Validity
+from reverbscope.labels import topic_text
+from reverbscope.models.comparison import MetricDelta
+from reverbscope.models.result import Reflection, ResonanceCandidate, Validity
 from tests.conftest import make_rir
 
-SRC = Path("src/roomscope")
-CATALOG = SRC / "locale" / "zh_CN" / "LC_MESSAGES" / "roomscope.po"
+SRC = Path("src/reverbscope")
+CATALOG = SRC / "locale" / "zh_CN" / "LC_MESSAGES" / "reverbscope.po"
 CONTEXT_SEPARATOR = "\x04"
 
 #: ``_()`` calls whose argument is not a literal. Each one translates a value
@@ -171,8 +171,8 @@ def test_translations_keep_the_english_placeholders() -> None:
 
 
 def test_safety_warning_and_level_refusal_are_translated() -> None:
-    from roomscope.audio.backend import SAFETY_MESSAGE
-    from roomscope.i18n import _
+    from reverbscope.audio.backend import SAFETY_MESSAGE
+    from reverbscope.i18n import _
 
     activate("zh_CN")
     try:
@@ -264,8 +264,8 @@ def test_comparison_words_are_translated_but_params_stay_english() -> None:
 
 
 def test_findings_keep_english_labels_in_params(short_sweep) -> None:
-    from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-    from roomscope.interpretation import interpret
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.interpretation import interpret
 
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.9, diffuse_level=0.05)
     result = analyze(
@@ -290,8 +290,8 @@ def test_findings_keep_english_labels_in_params(short_sweep) -> None:
 def test_cli_zh_cn_analyze_prints_no_english_finding_text(
     tmp_path: Path, capsys: pytest.CaptureFixture[str], profile: str
 ) -> None:
-    from roomscope.cli.main import main
-    from roomscope.io.wav import read_wav, write_wav
+    from reverbscope.cli.main import main
+    from reverbscope.io.wav import read_wav, write_wav
 
     sweep = tmp_path / "sweep.wav"
     assert main(["sweep", "--out", str(sweep), "--duration", "2", "--post-silence", "2.0"]) == 0

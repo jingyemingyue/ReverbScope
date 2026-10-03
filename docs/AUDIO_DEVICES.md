@@ -2,7 +2,7 @@
 
 **English** | [简体中文](AUDIO_DEVICES.zh-CN.md)
 
-Last checked: 2026-09-24. This page covers **Standalone Mode**: RoomScope
+Last checked: 2026-09-24. This page covers **Standalone Mode**: ReverbScope
 plays and records through PortAudio with python-sounddevice 0.5.6, whose
 Windows and macOS wheels bundle PortAudio v19.7.0; on Linux it loads the
 distribution's `libportaudio2` [14][15]. PortAudio behaviour was read in the
@@ -31,12 +31,12 @@ adds is measured as if it were the room.
   causal part of the response [3].
 * **Unchanged level.** Nothing should rescale the signal. A sweep's crest
   factor is 3.01 dB, so it can run near full scale where MLS needs 5–8 dB of
-  headroom [2, §2.2]; RoomScope still starts at −20 dBFS to protect the
+  headroom [2, §2.2]; ReverbScope still starts at −20 dBFS to protect the
   loudspeaker (`audio/backend.py`).
 * **Stable latency, no dropouts.** The deconvolved time origin includes the
   round-trip latency; only a loopback gives electrical time zero
   ([MEASUREMENT_METHODOLOGY.md](MEASUREMENT_METHODOLOGY.md) §2a). An output
-  underflow inserts a gap, an input overflow discards samples [9]; RoomScope
+  underflow inserts a gap, an input overflow discards samples [9]; ReverbScope
   counts these flags and keeps them with the take: they appear in the
   result's warnings and as a "measure again" finding (`audio/portaudio.py`,
   `AudioSignal.device_warnings`). The take is analysed, not refused, until
@@ -45,7 +45,7 @@ adds is measured as if it were the room.
 ## 2. Host APIs per platform
 
 Each PortAudio device belongs to one host API [9][13], so an interface
-appears once per host API it is reachable through (`roomscope devices` shows
+appears once per host API it is reachable through (`reverbscope devices` shows
 the host API in brackets). Rank 1 is best. "Default latency" is PortAudio's
 default suggestion (low / high), not a measured round trip.
 
@@ -60,23 +60,23 @@ default suggestion (low / high), not a measured round trip.
 | 5 | `Windows DirectSound` | automatic [16] | audio engine [19]; deprecated API [22] | 120 / 240 ms [12] |
 | 6 | `MME` | automatic [16] | audio engine [19] | 90 / 180 ms [12] |
 
-* **WASAPI shared** is what RoomScope opens by default (no host-specific
-  settings, `audio/portaudio.py`); `roomscope measure --wasapi-exclusive`
+* **WASAPI shared** is what ReverbScope opens by default (no host-specific
+  settings, `audio/portaudio.py`); `reverbscope measure --wasapi-exclusive`
   opens exclusive mode instead (below). The engine runs at the shared-mode format
   chosen in the Sound control panel (device ▸ Properties ▸ Advanced ▸
   *Default Format*) [16]; PortAudio reports that rate as the default and
   refuses others [10]. `WasapiSettings(auto_convert=True)` would insert a
   channel matrixer and sample-rate converter
-  (`AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM`) [14][20]; RoomScope therefore does
+  (`AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM`) [14][20]; ReverbScope therefore does
   not offer it. Set the
   Default Format to the measurement rate and disable enhancements
   (Enhancements tab, or Advanced tab) [24]. Endpoint effects apply even to
   raw streams [21], and the codec or a DSP may process in hardware [22].
-* **WASAPI exclusive** (`WasapiSettings(exclusive=True)` [14]; RoomScope:
+* **WASAPI exclusive** (`WasapiSettings(exclusive=True)` [14]; ReverbScope:
   `--wasapi-exclusive`) needs *Allow
   applications to take exclusive control of this device* (on by default) and
   silences other applications [17]; PortAudio quotes ~3 ms, shared ≥ 20 ms [10].
-* **ASIO** DLLs are removed from RoomScope's bundles for licensing
+* **ASIO** DLLs are removed from ReverbScope's bundles for licensing
   ([DEPENDENCIES.md](DEPENDENCIES.md) §3); sounddevice loads its ASIO DLL only
   with `SD_ENABLE_ASIO` set [14]. One ASIO device serves both directions [12].
 * **Microphone privacy:** Settings ▸ Privacy & security ▸ Microphone ▸
@@ -95,16 +95,16 @@ measurement rate, or an aggregate device (§3).
   changing the device [11]. `CoreAudioSettings(change_device_parameters=True)`
   lets PortAudio set the nominal rate (possibly disrupting other programs,
   even when only querying); `fail_if_conversion_required=True` then refuses
-  any conversion [11][14]. RoomScope passes no CoreAudioSettings by default:
+  any conversion [11][14]. ReverbScope passes no CoreAudioSettings by default:
   set the rate in Audio MIDI Setup; the GUI flags a device rate that differs
-  (`ui/pages.py`). `roomscope measure --coreaudio-set-rate` passes
+  (`ui/pages.py`). `reverbscope measure --coreaudio-set-rate` passes
   `change_device_parameters=True, fail_if_conversion_required=True`, so the
   take runs at the requested rate or fails instead of converting.
 * **Latency.** Default low = the device's fixed latency + 64 frames; high =
   fixed latency + current buffer size; 10 / 100 ms if unreadable [11].
 * **Microphone permission:** System Settings ▸ Privacy & Security ▸
   Microphone [30]; a packaged app must declare `NSMicrophoneUsageDescription`
-  [31]. Without it RoomScope reports *"recording is silent"*
+  [31]. Without it ReverbScope reports *"recording is silent"*
   ([user guide](user-guide/en.md)).
 
 ### Linux
@@ -144,7 +144,7 @@ illustration, 50 ppm over 10 s is 0.5 ms, 24 samples at 48 kHz).
 * **Correction** needs the drift rate (from a loopback or repeated
   excitation), then resampling or a compensation filter [6][7], or a
   reference-based inverse filter or a stretched inverse sweep [1, §3.4].
-  RoomScope does not estimate drift (`core/loopback.py`).
+  ReverbScope does not estimate drift (`core/loopback.py`).
 * **Recommendation.** Use one interface for both directions. On macOS, if
   two devices are unavoidable, build an aggregate device, make the device
   with the most reliable clock the clock (sync) source and enable drift
@@ -153,13 +153,13 @@ illustration, 50 ppm over 10 s is 0.5 ms, 24 samples at 48 kHz).
   [29]). PipeWire outside the Pro Audio profile resamples devices to its graph
   clock [35]: drift is hidden, at the cost of resampling.
 * **A loopback shows it.** Feed the output device into a second input of the
-  input device; the loopback shows the same skew. RoomScope refuses a
+  input device; the loopback shows the same skew. ReverbScope refuses a
   loopback with less than 99 % of its energy within 10 ms after the peak, and
   its compensation window spans 5 ms before to 15 ms after the peak
-  (`core/loopback.py`), so it cannot absorb a larger skew. RoomScope warns if
+  (`core/loopback.py`), so it cannot absorb a larger skew. ReverbScope warns if
   playback and recording are different physical devices (`audio/inventory.py`).
 
-## 4. How RoomScope probes devices
+## 4. How ReverbScope probes devices
 
 * **Listing:** `sd.query_devices()`, `sd.query_hostapis()` [14]. The default
   rate is PortAudio's `defaultSampleRate`: the mix rate on WASAPI [10], the
@@ -187,14 +187,14 @@ illustration, 50 ppm over 10 s is 0.5 ms, 24 samples at 48 kHz).
   answer for the rate the hardware or server actually runs at.
 * **One host API per take.** A full-duplex stream needs both devices on one
   host API; `Pa_OpenStream` otherwise fails with `paBadIODeviceCombination`
-  [9]. RoomScope checks this before playing and, when only one device is
+  [9]. ReverbScope checks this before playing and, when only one device is
   chosen, uses that host API's default device for the other direction
   (`resolve_duplex` in `audio/inventory.py`); on Windows the system default
   is MME's, which would not match a WASAPI choice. Channels beyond the
   device's count are refused before playing (`check_channels`), and only
   then is the sample rate asked of the devices the stream will open, with
   the channel counts it opens (`Pa_IsFormatSupported`). The GUI and
-  `roomscope measure` run the same `preflight`.
+  `reverbscope measure` run the same `preflight`.
 * **The take:** one full-duplex `sd.Stream`: float32, 256-frame blocks, the
   device's default high latency, "typically more robust" [14] (`portaudio.py`);
   `--latency low` selects the default low latency instead.

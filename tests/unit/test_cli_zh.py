@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.cli.main import build_parser, main
-from roomscope.i18n import activate
+from reverbscope.cli.main import build_parser, main
+from reverbscope.i18n import activate
 from tests.conftest import make_rir
 from tests.zh_tokens import english_words
 
 
 @pytest.fixture
 def zh_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     try:
         yield
     finally:
@@ -31,7 +31,7 @@ def zh_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
 
 
 def _help_texts() -> dict[str, str]:
-    from roomscope.cli.main import _translate_argparse
+    from reverbscope.cli.main import _translate_argparse
 
     activate("zh_CN")
     _translate_argparse()
@@ -44,7 +44,7 @@ def _help_texts() -> dict[str, str]:
                 for name, sub in action.choices.items():
                     walk(sub, f"{path} {name}")
 
-    walk(build_parser(), "roomscope")
+    walk(build_parser(), "reverbscope")
     return texts
 
 
@@ -69,7 +69,7 @@ def test_every_help_screen_is_chinese(zh_cli: None) -> None:
         assert text.startswith("用法："), path
         found = english_words(_prose(text))
         assert found == [], f"{path}: {found}"
-    root = texts["roomscope"]
+    root = texts["reverbscope"]
     assert "命令：" in root and "选项" in root and "显示此帮助信息并退出" in root
 
 
@@ -85,7 +85,7 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
 
 
 def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixture[str]) -> None:
-    from roomscope.audio.backend import get_backend
+    from reverbscope.audio.backend import get_backend
 
     assert main(["--lang", "zh_CN", "--backend", "fake", "doctor"]) == 0
     out = capsys.readouterr().out
@@ -100,7 +100,7 @@ def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixtu
 
 
 def _take(tmp_path: Path, rt60_s: float, name: str) -> Path:
-    from roomscope.io.wav import read_wav, write_wav
+    from reverbscope.io.wav import read_wav, write_wav
 
     sweep = tmp_path / "sweep.wav"
     if not sweep.exists():
@@ -151,7 +151,7 @@ def test_files_written_in_chinese_stay_language_neutral(
 ) -> None:
     """Result files keep English notes whatever the interface language, so a
     session reads the same everywhere and old readers still parse it."""
-    from roomscope.io.wav import read_wav, write_wav
+    from reverbscope.io.wav import read_wav, write_wav
 
     sweep = tmp_path / "sweep.wav"
     assert main(["sweep", "--out", str(sweep), "--duration", "2", "--post-silence", "2"]) == 0

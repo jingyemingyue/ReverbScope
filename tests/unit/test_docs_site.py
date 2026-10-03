@@ -44,7 +44,7 @@ def test_build_site_writes_themed_pages(tmp_path: Path) -> None:
     assert any(path.name == "en.html" for path in written)
     index_html = index.read_text(encoding="utf-8")
     css_text = css.read_text(encoding="utf-8")
-    assert "RoomScope" in index_html
+    assert "ReverbScope" in index_html
     assert "user-guide/en.html" in index_html
     assert "prefers-color-scheme: dark" in css_text
     assert 'class="sidebar"' in index_html

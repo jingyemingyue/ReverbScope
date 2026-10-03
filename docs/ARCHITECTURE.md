@@ -1,4 +1,4 @@
-# RoomScope architecture
+# ReverbScope architecture
 
 Status: v0.1 foundation (2026-09). This document describes what exists and the
 extension points that later milestones (plug-ins, more profiles, calibrated
@@ -15,7 +15,7 @@ are unchanged.
 | Goal | Consequence |
 | --- | --- |
 | DAW-independent | The only interface to a DAW is a WAV file in each direction. No DAW SDK, ever. |
-| Core-first | `roomscope.core` is pure NumPy/SciPy. GUI, CLI, devices and file formats are separate packages that only *call* the core. |
+| Core-first | `reverbscope.core` is pure NumPy/SciPy. GUI, CLI, devices and file formats are separate packages that only *call* the core. |
 | Scientific correctness | Every algorithm is implemented from a published method; every metric carries a validity flag. |
 | Honest numbers | Levels are dBFS unless calibrated; metrics are `None` + reason when the data is insufficient. |
 | Legal clarity | No vendored third-party code; dependencies and reference repositories are audited (see the other docs). |
@@ -23,13 +23,13 @@ are unchanged.
 ## 2. Package layout
 
 ```
-src/roomscope/
+src/reverbscope/
   __init__.py            version + lazy Tier 1 re-exports
-  errors.py              exception hierarchy (RoomScopeError -> ...)
-  logging_config.py      rotating log under $ROOMSCOPE_HOME
+  errors.py              exception hierarchy (ReverbScopeError -> ...)
+  logging_config.py      rotating log under $REVERBSCOPE_HOME
   settings.py            user settings (language, profile, backend, folders)
   i18n.py                gettext setup, locale selection, `_()`
-  locale/                zh_CN/LC_MESSAGES/roomscope.po
+  locale/                zh_CN/LC_MESSAGES/reverbscope.po
   models/                data only, no algorithms
     audio.py             AudioSignal (samples, sample_rate, channel selection)
     configuration.py     SweepSettings, AnalysisSettings (validated, immutable)
@@ -57,10 +57,10 @@ src/roomscope/
   io/
     wav.py               soundfile-based read/write, sweep sidecar, load_reference
     session_store.py     save_measurement / load_session / load_measurement / list_sessions / bundle_session / save_comparison
-    recent.py            recent session paths under $ROOMSCOPE_HOME
+    recent.py            recent session paths under $REVERBSCOPE_HOME
     jsonutil.py          size-capped JSON object reads
     project_store.py     project.json index
-    exporters/           csv.py + roomscope.exporters entry points
+    exporters/           csv.py + reverbscope.exporters entry points
   schemas/               result / session / comparison / project / sidecar JSON Schemas
   audio/                 optional (needs PortAudio); Standalone Mode only
     backend.py           AudioBackend protocol, DeviceInfo, get_backend()
@@ -72,13 +72,13 @@ src/roomscope/
     interpreter.py       Finding, Severity, interpret(), interpret_comparison()
     profiles.py          RecordingProfile protocol; seven profiles (generic, vocal,
                          voiceover, acoustic_guitar, drums, room_mic, choir)
-    registry.py          built-ins + roomscope.profiles entry points
+    registry.py          built-ins + reverbscope.profiles entry points
   cli/
     main.py              argparse subcommands, errors, exit codes
     console.py           terminal layout: colour policy, symbols, widths, tables, progress
     render.py            every report and message (the GUI's "Full report" panes too)
     report.py            format_report / format_comparison_report: render.py as plain text
-  demo.py                roomscope demo: two simulated positions through the real pipeline
+  demo.py                reverbscope demo: two simulated positions through the real pipeline
   ui/                    optional (needs PySide6)
     app.py, main_window.py, pages.py, results.py, plots.py, workers.py, state.py
     browser.py           session list (Home and Compare); project.json folders
@@ -102,7 +102,7 @@ from the rest of the package except `errors`.
 ## 3. Data flow
 
 ```
-SweepSettings ──generate_ess──▶ sweep WAV (+ .roomscope-sweep.json sidecar)
+SweepSettings ──generate_ess──▶ sweep WAV (+ .reverbscope-sweep.json sidecar)
                                      │  played by a DAW or by audio.playrec
                                      ▼
 recording WAV ──read_wav──▶ AudioSignal ──select_channel──▶ mono float64
@@ -180,7 +180,7 @@ Key decisions:
 
 ## 6. Error model
 
-`RoomScopeError` is the base. Front ends catch it and show the message;
+`ReverbScopeError` is the base. Front ends catch it and show the message;
 anything else is a bug. Subclasses: `ConfigurationError` (also a
 `ValueError`), `InvalidAudioError` / `SampleRateMismatchError`,
 `AnalysisError` / `InsufficientDataError`, `AudioDeviceError` /

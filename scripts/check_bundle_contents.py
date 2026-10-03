@@ -1,7 +1,7 @@
 """Fail a bundle that contains GPL-only Qt modules or ASIO DLLs.
 
 ``--terminal`` also fails a Terminal Edition bundle that contains any file of
-the GUI: PySide6, shiboken6, a Qt library, matplotlib or ``roomscope/ui``.
+the GUI: PySide6, shiboken6, a Qt library, matplotlib or ``reverbscope/ui``.
 
 ARCHITECTURE_V1.md §6.2: a frozen tree must not ship GPL-only Qt modules or
 ``*asio*.dll``. PySide6 Essentials wheels still contain ``.pyi`` stubs, a
@@ -20,7 +20,7 @@ Library file names carry the Qt major version (``Qt6QuickTimeline.dll``,
 QML plugins do not carry the module name at all
 (``qml/QtQuick/VirtualKeyboard/Plugins/Pinyin/libqtvkbpinyinplugin.so``), so a
 frozen tree is also checked by directory: every file below a GPL-only QML
-module directory is an offender (and is removed by ``--strip``). RoomScope has
+module directory is an offender (and is removed by ``--strip``). ReverbScope has
 no QML UI and PyInstaller collects QML only when something imports QtQml, so a
 frozen tree that still contains any file below a ``qml/`` directory fails the
 gate as well; ``--strip`` does not hide that, because it means the import
@@ -128,7 +128,7 @@ def _qml_dir_hit(path: Path, root: Path) -> str | None:
 def qml_trees(root: Path) -> dict[Path, int]:
     """``qml/`` directories of a frozen tree that hold files, with their file counts.
 
-    RoomScope has no QML UI; PyInstaller collects a QML tree only when
+    ReverbScope has no QML UI; PyInstaller collects a QML tree only when
     something imports QtQml. Only the outermost ``qml`` directory of each
     file is counted, so one collected tree is reported once.
     """
@@ -147,7 +147,7 @@ def qml_trees(root: Path) -> dict[Path, int]:
 
 
 def _under_essentials_qt_tree(path: Path, root: Path) -> bool:
-    """Stock wheel content that Essentials ships and RoomScope never imports."""
+    """Stock wheel content that Essentials ships and ReverbScope never imports."""
     try:
         relative = path.relative_to(root).as_posix().lower()
     except ValueError:
@@ -220,7 +220,7 @@ TERMINAL_FORBIDDEN = (
     ("pyside6", "PySide6"),
     ("shiboken6", "shiboken6"),
     ("matplotlib", "matplotlib"),
-    ("roomscope/ui/", "roomscope.ui (the GUI)"),
+    ("reverbscope/ui/", "reverbscope.ui (the GUI)"),
 )
 
 
@@ -265,14 +265,14 @@ def check(
         except PackageNotFoundError:
             pass
         else:
-            errors.append("PySide6_Addons is installed; RoomScope must use PySide6_Essentials only")
+            errors.append("PySide6_Addons is installed; ReverbScope must use PySide6_Essentials only")
     errors.extend(
         f"{reason}: {path}"
         for path, reason in offending(root, installed_essentials=installed_essentials)
     )
     if not installed_essentials:
         errors.extend(
-            f"QML tree present ({count} files; RoomScope has no QML UI, so something "
+            f"QML tree present ({count} files; ReverbScope has no QML UI, so something "
             f"imported QtQml): {tree}"
             for tree, count in qml_trees(root).items()
         )

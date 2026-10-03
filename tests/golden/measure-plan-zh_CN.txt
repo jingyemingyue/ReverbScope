@@ -1,8 +1,8 @@
-RoomScope 独立测量
+ReverbScope 独立测量
 ──────────────────
 
-  输入      [#] RoomScope fake interface · 输入 #
-  输出      [#] RoomScope fake interface · 输出 #
+  输入      [#] ReverbScope fake interface · 输入 #
+  输出      [#] ReverbScope fake interface · 输出 #
   主机 API  fake
   采样率    # kHz
   电平      # dBFS
@@ -15,7 +15,7 @@ RoomScope 独立测量
   ✓ 输出设备支持 # kHz
   ✓ 电平不高于 # dBFS
 
-! 先把监听/接口输出开低。RoomScope 会以保守的数字电平播放正弦扫频；只有录音太轻
+! 先把监听/接口输出开低。ReverbScope 会以保守的数字电平播放正弦扫频；只有录音太轻
   时才在两次测量之间逐步提高电平。
 
 ✓ 已录制 # s 到 m/recording.wav

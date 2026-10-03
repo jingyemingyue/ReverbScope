@@ -128,17 +128,17 @@ def test_src_safety_leaves_look_alikes_alone(tmp_path: Path) -> None:
         "importlib.import_module('json')\n",
         encoding="utf-8",
     )
-    # The one computed import RoomScope makes is allowed by file, with a reason,
-    # whether the scan starts at src/ or at src/roomscope/.
-    (tmp_path / "roomscope").mkdir()
-    (tmp_path / "roomscope" / "__init__.py").write_text(
-        "from importlib import import_module\nname = 'roomscope.core'\nimport_module(name)\n",
+    # The one computed import ReverbScope makes is allowed by file, with a reason,
+    # whether the scan starts at src/ or at src/reverbscope/.
+    (tmp_path / "reverbscope").mkdir()
+    (tmp_path / "reverbscope" / "__init__.py").write_text(
+        "from importlib import import_module\nname = 'reverbscope.core'\nimport_module(name)\n",
         encoding="utf-8",
     )
     assert module.check(tmp_path) == []
-    assert module.check(tmp_path / "roomscope") == []
+    assert module.check(tmp_path / "reverbscope") == []
     # The allowance is for that file only, not for any __init__.py below it.
-    nested = tmp_path / "pkg" / "roomscope"
+    nested = tmp_path / "pkg" / "reverbscope"
     nested.mkdir(parents=True)
     (nested / "__init__.py").write_text(
         "from importlib import import_module\nimport_module(name)\n", encoding="utf-8"
@@ -147,46 +147,46 @@ def test_src_safety_leaves_look_alikes_alone(tmp_path: Path) -> None:
 
 
 def test_inno_setup_and_linux_desktop_files_exist() -> None:
-    iss = Path("packaging/windows/roomscope.iss").read_text(encoding="utf-8")
-    assert "roomscope.exe" in iss
-    assert "dist\\roomscope" in iss or "dist/roomscope" in iss
+    iss = Path("packaging/windows/reverbscope.iss").read_text(encoding="utf-8")
+    assert "reverbscope.exe" in iss
+    assert "dist\\reverbscope" in iss or "dist/reverbscope" in iss
     # Shortcuts start the windowed launcher, which opens the GUI without
-    # arguments; the console roomscope.exe would only print CLI help.
-    assert '#define MyAppExeName "roomscope-gui.exe"' in iss
+    # arguments; the console reverbscope.exe would only print CLI help.
+    assert '#define MyAppExeName "reverbscope-gui.exe"' in iss
     assert 'Name: "{group}\\{#MyAppName}"; Filename: "{app}\\{#MyAppExeName}"' in iss
     assert "OutputDir=..\\..\\dist" in iss
-    desktop = Path("packaging/linux/roomscope.desktop").read_text(encoding="utf-8")
-    assert "Exec=roomscope-gui" in desktop
+    desktop = Path("packaging/linux/reverbscope.desktop").read_text(encoding="utf-8")
+    assert "Exec=reverbscope-gui" in desktop
     apprun = Path("packaging/linux/AppRun").read_text(encoding="utf-8")
-    assert '"$HERE/roomscope-gui"' in apprun
-    assert '"$HERE/roomscope" "$@"' in apprun
-    spec = Path("packaging/roomscope.spec").read_text(encoding="utf-8")
-    assert 'name="roomscope-gui"' in spec
+    assert '"$HERE/reverbscope-gui"' in apprun
+    assert '"$HERE/reverbscope" "$@"' in apprun
+    spec = Path("packaging/reverbscope.spec").read_text(encoding="utf-8")
+    assert 'name="reverbscope-gui"' in spec
     dmg = Path("packaging/macos/make_dmg.sh").read_text(encoding="utf-8")
     assert "hdiutil" in dmg
 
 
 def test_smoke_bundle_finds_explicit_binary(tmp_path: Path) -> None:
     module = _load("smoke_bundle", Path("scripts") / "smoke_bundle.py")
-    fake = tmp_path / "roomscope"
+    fake = tmp_path / "reverbscope"
     fake.write_text("#!/bin/sh\n", encoding="utf-8")
     assert module.find_binary(tmp_path, None) == fake
     assert module.find_binary(None, fake) == fake
     assert module.smoke_gui_argv(fake) == [str(fake), "gui", "--smoke"]
     assert module.find_gui_launcher(fake) is None
-    launcher = tmp_path / "roomscope-gui.exe"
+    launcher = tmp_path / "reverbscope-gui.exe"
     launcher.write_text("", encoding="utf-8")
-    # A pip install's roomscope-gui script ignores "gui --smoke": not a launcher.
+    # A pip install's reverbscope-gui script ignores "gui --smoke": not a launcher.
     assert module.find_gui_launcher(fake) is None
     (tmp_path / "_internal").mkdir()
     assert module.find_gui_launcher(fake) == launcher
 
 
 def test_settings_refuse_deep_json_and_fall_back(tmp_path: Path, monkeypatch) -> None:
-    from roomscope.io.jsonutil import MAX_JSON_DEPTH
-    from roomscope.settings import load_settings, settings_path
+    from reverbscope.io.jsonutil import MAX_JSON_DEPTH
+    from reverbscope.settings import load_settings, settings_path
 
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     settings_path().parent.mkdir(parents=True, exist_ok=True)
     depth = MAX_JSON_DEPTH + 3
     settings_path().write_text("{" * depth + "}" * depth, encoding="utf-8")
@@ -221,13 +221,13 @@ def test_smoke_checks_the_doctor_report(monkeypatch: pytest.MonkeyPatch) -> None
         return subprocess.CompletedProcess(argv, 0, json.dumps(report), "")
 
     monkeypatch.setattr(module.subprocess, "run", run)
-    assert module.check_doctor(Path("roomscope"), "abc") == report
+    assert module.check_doctor(Path("reverbscope"), "abc") == report
     with pytest.raises(SystemExit, match="expected 'def'"):
-        module.check_doctor(Path("roomscope"), "def")
+        module.check_doctor(Path("reverbscope"), "def")
     report["audio_callbacks"] = "failed: MemoryError()"
     with pytest.raises(SystemExit, match="audio callbacks"):
-        module.check_doctor(Path("roomscope"))
+        module.check_doctor(Path("reverbscope"))
     report["audio_callbacks"] = "ok"
     report["packages"]["scipy"] = None
     with pytest.raises(SystemExit, match="no version for: scipy"):
-        module.check_doctor(Path("roomscope"))
+        module.check_doctor(Path("reverbscope"))

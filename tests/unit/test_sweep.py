@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve, hilbert
 
-from roomscope.core.sweep import (
+from reverbscope.core.sweep import (
     active_region,
     design_spectral_inverse,
     estimate_reference_band_hz,
@@ -20,8 +20,8 @@ from roomscope.core.sweep import (
     reference_pulse,
     sweep_time_axis,
 )
-from roomscope.errors import ConfigurationError
-from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES, SweepSettings
+from reverbscope.errors import ConfigurationError
+from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES, SweepSettings
 
 
 def test_sweep_length_and_level(short_sweep: SweepSettings) -> None:

@@ -306,7 +306,7 @@ def nav_items(index_text: str) -> list[NavItem]:
 
 def _sidebar(items: list[NavItem], current: str, css_prefix: str) -> str:
     blocks = [
-        f'<h1><a href="{html.escape(css_prefix + "index.html")}">RoomScope</a></h1>',
+        f'<h1><a href="{html.escape(css_prefix + "index.html")}">ReverbScope</a></h1>',
         '<p class="tag">Documentation</p>',
     ]
     last = ""
@@ -325,7 +325,7 @@ def _page(title: str, body: str, sidebar: str, css_href: str) -> str:
         '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
         '<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        f"<title>{html.escape(title)} — RoomScope</title>\n"
+        f"<title>{html.escape(title)} — ReverbScope</title>\n"
         f'<link rel="stylesheet" href="{html.escape(css_href)}">\n'
         '</head>\n<body>\n<div class="layout">\n'
         f'<nav class="sidebar">{sidebar}</nav>\n'

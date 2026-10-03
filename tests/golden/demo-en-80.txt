@@ -1,4 +1,4 @@
-RoomScope demo
+ReverbScope demo
 ──────────────
 
   ! Synthetic data: a simulated room, not a measurement.
@@ -6,10 +6,10 @@ RoomScope demo
     the simulation; every session is marked as a synthetic demo.
 
 Files written
-  Test signal  roomscope-demo/sweep.wav
-  Position A   roomscope-demo/position-a
-  Position B   roomscope-demo/position-b
-  Comparison   roomscope-demo/comparison.json
+  Test signal  reverbscope-demo/sweep.wav
+  Position A   reverbscope-demo/position-a
+  Position B   reverbscope-demo/position-b
+  Comparison   reverbscope-demo/comparison.json
   # s sweep · # Hz – # kHz · # kHz
 
 Position A  close to the desk and the side wall
@@ -44,10 +44,10 @@ What the demo shows
 
 Next steps
   #. Read the full report of one position:
-     roomscope show roomscope-demo/position-a
+     reverbscope show reverbscope-demo/position-a
   #. See every delta between the two positions:
-     roomscope compare roomscope-demo/position-a roomscope-demo/position-b --same-input-gain
+     reverbscope compare reverbscope-demo/position-a reverbscope-demo/position-b --same-input-gain
   #. Open the sessions in the desktop app:
-     roomscope gui
+     reverbscope gui
   #. Measure your own room: write the test signal for your DAW.
-     roomscope sweep --out sweep.wav
+     reverbscope sweep --out sweep.wav

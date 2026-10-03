@@ -1,6 +1,6 @@
-## RoomScope v{version}
+## ReverbScope v{version}
 
-**Beta 1, for testing.** RoomScope measures a recording room
+**Beta 1, for testing.** ReverbScope measures a recording room
 with a sine sweep and tells you whether a microphone position is usable —
 next to any DAW, or on its own. Free and open source (Apache-2.0).
 
@@ -16,49 +16,49 @@ page. Neither edition needs Python.
 
 #### 🖥 Desktop Edition — for most people
 
-The app with windows, charts and buttons, plus the `roomscope` command line.
+The app with windows, charts and buttons, plus the `reverbscope` command line.
 
 | Your computer | Download | Then |
 | --- | --- | --- |
-| **macOS** 14+, Apple silicon (M1 or later) | `RoomScope-Desktop-macOS-arm64.dmg` | Open the DMG, drag **RoomScope** onto **Applications**, open it from Applications |
-| **macOS** 14+, Intel | `RoomScope-Desktop-macOS-x86_64.dmg` | Same as above |
-| **Windows** 10 / 11, 64-bit | `RoomScope-Desktop-Windows-x64-Setup.exe` (installer) | Run it, then Start menu → **RoomScope** |
-| | or `RoomScope-Desktop-Windows-x64.zip` (no installer) | **Extract All…**, open the folder, double-click **`roomscope-gui.exe`** |
-| **Linux** x86_64 (glibc 2.39+) | `RoomScope-Desktop-Linux-x86_64.tar.gz` | Extract, run `roomscope/roomscope-gui` |
+| **macOS** 14+, Apple silicon (M1 or later) | `ReverbScope-Desktop-macOS-arm64.dmg` | Open the DMG, drag **ReverbScope** onto **Applications**, open it from Applications |
+| **macOS** 14+, Intel | `ReverbScope-Desktop-macOS-x86_64.dmg` | Same as above |
+| **Windows** 10 / 11, 64-bit | `ReverbScope-Desktop-Windows-x64-Setup.exe` (installer) | Run it, then Start menu → **ReverbScope** |
+| | or `ReverbScope-Desktop-Windows-x64.zip` (no installer) | **Extract All…**, open the folder, double-click **`reverbscope-gui.exe`** |
+| **Linux** x86_64 (glibc 2.39+) | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | Extract, run `reverbscope/reverbscope-gui` |
 
 #### ⌨️ Terminal Edition — command line only
 
 For the command line, scripts, servers and computers without a desktop. No
 windows or charts, and about half the download size: the same measurement
-and analysis, `roomscope demo`, English and Chinese.
+and analysis, `reverbscope demo`, English and Chinese.
 
 | Your computer | Download | Then |
 | --- | --- | --- |
-| **macOS** 14+, Apple silicon | `RoomScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `roomscope-terminal/roomscope demo` |
-| **macOS** 14+, Intel | `RoomScope-Terminal-macOS-x86_64.tar.gz` | Same as above |
-| **Windows** 10 / 11, 64-bit | `RoomScope-Terminal-Windows-x64.zip` | **Extract All…**, double-click **`RoomScope Terminal.cmd`**, type `roomscope demo` |
-| **Linux** x86_64 (glibc 2.39+) | `RoomScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `roomscope-terminal/roomscope demo` |
+| **macOS** 14+, Apple silicon | `ReverbScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
+| **macOS** 14+, Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | Same as above |
+| **Windows** 10 / 11, 64-bit | `ReverbScope-Terminal-Windows-x64.zip` | **Extract All…**, double-click **`ReverbScope Terminal.cmd`**, type `reverbscope demo` |
+| **Linux** x86_64 (glibc 2.39+) | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
 
 Not sure? Take the **Desktop Edition**: it contains the command line too.
 
 **First launch of an unsigned build**
 
-* **macOS app:** macOS says Apple could not verify RoomScope. Click **Done**,
+* **macOS app:** macOS says Apple could not verify ReverbScope. Click **Done**,
   then **System Settings → Privacy & Security → Open Anyway** and confirm.
   Needed once. Do not turn off Gatekeeper or System Integrity Protection; it
   is not necessary.
-* **macOS Terminal Edition:** if macOS refuses to run `roomscope` from a
+* **macOS Terminal Edition:** if macOS refuses to run `reverbscope` from a
   folder your browser downloaded, run
-  `xattr -dr com.apple.quarantine roomscope-terminal` once in that folder
+  `xattr -dr com.apple.quarantine reverbscope-terminal` once in that folder
   (it clears the download mark on these files only).
 * **Windows:** if SmartScreen says *Windows protected your PC*, click
   **More info → Run anyway**.
 
 Full steps, checksums, updating, uninstalling and troubleshooting:
-[Installation guide](https://github.com/jingyemingyue/RoomScope/blob/v{version}/docs/INSTALLATION.md)
-([简体中文](https://github.com/jingyemingyue/RoomScope/blob/v{version}/docs/INSTALLATION.zh-CN.md)).
+[Installation guide](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.md)
+([简体中文](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.zh-CN.md)).
 Then try it without a microphone: click **Demo (no interface)** in the app, or
-run `roomscope demo`.
+run `reverbscope demo`.
 
 ### Known limitations
 
@@ -84,13 +84,13 @@ run `roomscope demo`.
   machines, not yet on a tester's own Mac, Windows PC or Linux desktop, and
   nobody has seen the Windows installer's Simplified Chinese screens on a
   Chinese Windows yet.
-* Not on PyPI yet: `pip install roomscope` does not install this project.
+* Not on PyPI yet: `pip install reverbscope` does not install this project.
 
 **Help test it:** a result from your interface or DAW — pass or fail — is the
 most useful contribution right now:
-[interface report](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml) ·
-[DAW report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml) ·
-[bug report](https://github.com/jingyemingyue/RoomScope/issues/new?template=bug.yml).
+[interface report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml) ·
+[DAW report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml) ·
+[bug report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug.yml).
 
 ### Checksums
 
@@ -105,14 +105,14 @@ file you downloaded: `shasum -a 256 <file>` (macOS, Linux) or
 **What works** — implemented, and tested on synthetic rooms on Linux, macOS
 and Windows CI machines:
 
-* **Universal DAW Mode** (DAW-independent): RoomScope writes an exponential
+* **Universal DAW Mode** (DAW-independent): ReverbScope writes an exponential
   sine sweep (ESS) WAV; you play and record it in any DAW and load the
   recording back. Reads WAV / BWF / RF64 / W64 / AIFF / CAF / FLAC exports and
   names a DAW that played the sweep at the wrong speed.
-* **Standalone Mode**: RoomScope plays the sweep and records the microphone
+* **Standalone Mode**: ReverbScope plays the sweep and records the microphone
   through the audio interface you choose, with an optional loopback channel.
 * **Room impulse response analysis**: deconvolution of the sweep, or
-  `roomscope analyze-ir` for an impulse response from another tool.
+  `reverbscope analyze-ir` for an impulse response from another tool.
 * **Reverberation**: EDT, T20, T30 and an estimated RT60, broadband and per
   octave band, each with a validity flag (*insufficient decay range* instead
   of an invented number).
@@ -125,12 +125,12 @@ and Windows CI machines:
   room mic, choir); no "room score".
 * **English and Simplified Chinese** throughout: GUI, command line, reports,
   Windows installer.
-* **Help → Environment Report for Bug Reports** (`roomscope doctor`) for
+* **Help → Environment Report for Bug Reports** (`reverbscope doctor`) for
   issue reports; nothing is sent automatically.
 
-**For Python developers** (3.12+): `roomscope-{version}-py3-none-any.whl`
-(wheel) or `roomscope-{version}.tar.gz` (source), then
-`pip install "./roomscope-{version}-py3-none-any.whl[gui]"` and `roomscope gui`.
+**For Python developers** (3.12+): `reverbscope-{version}-py3-none-any.whl`
+(wheel) or `reverbscope-{version}.tar.gz` (source), then
+`pip install "./reverbscope-{version}-py3-none-any.whl[gui]"` and `reverbscope gui`.
 
 **Also attached:** a CycloneDX SBOM (`cyclonedx.sbom.json`) and the pinned
 bundle lock (`generated-bundle.lock`) the builds used.

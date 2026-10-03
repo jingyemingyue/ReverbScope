@@ -37,7 +37,7 @@ def main() -> None:
         "version"
     ]
     subprocess.run(["hdiutil", "verify", str(dmg)], check=True)
-    with tempfile.TemporaryDirectory(prefix="roomscope-dmg-") as directory:
+    with tempfile.TemporaryDirectory(prefix="reverbscope-dmg-") as directory:
         root = Path(directory)
         mount = root / "mounted"
         mount.mkdir()
@@ -48,9 +48,9 @@ def main() -> None:
         try:
             assert (mount / "Applications").is_symlink()
             assert os.readlink(mount / "Applications") == "/Applications"
-            app = mount / "RoomScope.app"
+            app = mount / "ReverbScope.app"
             check_app(app, version)
-            installed = root / "Applications" / "RoomScope.app"
+            installed = root / "Applications" / "ReverbScope.app"
             installed.parent.mkdir()
             subprocess.run(["ditto", str(app), str(installed)], check=True)
         finally:

@@ -1,8 +1,8 @@
-# RoomScope user guide
+# ReverbScope user guide
 
 **English** | [简体中文](zh-CN.md)
 
-RoomScope measures a recording room so you can hear what the room is doing to
+ReverbScope measures a recording room so you can hear what the room is doing to
 close-miked sources. It does not score the room and it does not correct it.
 
 This page is the English guide. The Chinese translation is
@@ -11,7 +11,7 @@ This page is the English guide. The Chinese translation is
 ## Install
 
 Download from the project's
-[Releases page](https://github.com/jingyemingyue/RoomScope/releases).
+[Releases page](https://github.com/jingyemingyue/ReverbScope/releases).
 Step-by-step instructions for every system, updating, uninstalling and
 troubleshooting are in [INSTALLATION.md](../INSTALLATION.md); this section is
 the short version. Each
@@ -19,29 +19,29 @@ Release lists a `SHA256SUMS` file; compare it with the file you
 downloaded (`shasum -a 256 <file>` on macOS / Linux,
 `Get-FileHash <file>` in PowerShell).
 
-RoomScope comes in two editions. The **Desktop Edition** is the app this
+ReverbScope comes in two editions. The **Desktop Edition** is the app this
 guide describes, with the command line included; the **Terminal Edition** is
 the command line only (no windows or charts), for scripts, servers and
 computers without a desktop.
 
-| System | Desktop Edition | Start RoomScope |
+| System | Desktop Edition | Start ReverbScope |
 | --- | --- | --- |
-| Windows 10/11 x64 | `RoomScope-Desktop-Windows-x64-Setup.exe` (installer) or `RoomScope-Desktop-Windows-x64.zip` | Start menu → RoomScope, or `roomscope-gui.exe` in the zip |
-| macOS 14+, Apple silicon | `RoomScope-Desktop-macOS-arm64.dmg` | Drag RoomScope to Applications, then open it |
-| macOS 14+, Intel | `RoomScope-Desktop-macOS-x86_64.dmg` | Drag RoomScope to Applications, then open it |
-| Linux x86_64 | `RoomScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf RoomScope-Desktop-Linux-x86_64.tar.gz && roomscope/roomscope-gui` |
+| Windows 10/11 x64 | `ReverbScope-Desktop-Windows-x64-Setup.exe` (installer) or `ReverbScope-Desktop-Windows-x64.zip` | Start menu → ReverbScope, or `reverbscope-gui.exe` in the zip |
+| macOS 14+, Apple silicon | `ReverbScope-Desktop-macOS-arm64.dmg` | Drag ReverbScope to Applications, then open it |
+| macOS 14+, Intel | `ReverbScope-Desktop-macOS-x86_64.dmg` | Drag ReverbScope to Applications, then open it |
+| Linux x86_64 | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf ReverbScope-Desktop-Linux-x86_64.tar.gz && reverbscope/reverbscope-gui` |
 
-| System | Terminal Edition | Start RoomScope |
+| System | Terminal Edition | Start ReverbScope |
 | --- | --- | --- |
-| Windows 10/11 x64 | `RoomScope-Terminal-Windows-x64.zip` | Extract, double-click `RoomScope Terminal.cmd`, type `roomscope.exe demo` |
-| macOS 14+, Apple silicon | `RoomScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `roomscope-terminal/roomscope demo` |
-| macOS 14+, Intel | `RoomScope-Terminal-macOS-x86_64.tar.gz` | `tar xzf` it, then `roomscope-terminal/roomscope demo` |
-| Linux x86_64 | `RoomScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `roomscope-terminal/roomscope demo` |
+| Windows 10/11 x64 | `ReverbScope-Terminal-Windows-x64.zip` | Extract, double-click `ReverbScope Terminal.cmd`, type `reverbscope.exe demo` |
+| macOS 14+, Apple silicon | `ReverbScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
+| macOS 14+, Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
+| Linux x86_64 | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
 
 The Windows and Linux Desktop Edition bundles carry two programs: the desktop
-app `roomscope-gui` and the command-line tool `roomscope` (run `roomscope --help`
+app `reverbscope-gui` and the command-line tool `reverbscope` (run `reverbscope --help`
 in a terminal). On macOS the app's executable is also the CLI when it is given
-arguments: `/Applications/RoomScope.app/Contents/MacOS/RoomScope --help`.
+arguments: `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope --help`.
 
 **The bundles are not signed for distribution** until the maintainer holds
 signing identities (the macOS app has an ad hoc signature and is not
@@ -63,16 +63,16 @@ operating system warns the first time:
 * **Linux:** the tarball needs the system's PortAudio, OpenGL/EGL and
   XCB libraries (on Debian / Ubuntu: `sudo apt install libportaudio2 libegl1
   libgl1 libxkbcommon-x11-0 libxcb-cursor0`), and a CJK font such as
-  `fonts-noto-cjk` for Chinese text in charts. `packaging/linux/roomscope.desktop`
+  `fonts-noto-cjk` for Chinese text in charts. `packaging/linux/reverbscope.desktop`
   is a desktop entry you can adapt.
 
-**From Python.** RoomScope is not on PyPI yet. With Python 3.12 or newer,
+**From Python.** ReverbScope is not on PyPI yet. With Python 3.12 or newer,
 install the wheel attached to the Release into a virtual environment:
 
 ```bash
-python3 -m venv roomscope-env
-roomscope-env/bin/pip install "./roomscope-<version>-py3-none-any.whl[gui]"
-roomscope-env/bin/roomscope gui
+python3 -m venv reverbscope-env
+reverbscope-env/bin/pip install "./reverbscope-<version>-py3-none-any.whl[gui]"
+reverbscope-env/bin/reverbscope gui
 ```
 
 Leave out `[gui]` for the CLI and the Python API only. `pip install -e ".[gui]"`
@@ -83,7 +83,7 @@ bundled licenses.
 
 ## Try it first: the demo
 
-`roomscope demo` shows the whole workflow without an interface or a
+`reverbscope demo` shows the whole workflow without an interface or a
 microphone. It writes a sweep, simulates what a microphone would record at two
 positions in a made-up room (one close to a desk and a side wall, one moved
 back), analyses both with the same code as a real measurement, and compares
@@ -92,14 +92,14 @@ reports, the comparison, the desktop app, and your own first measurement.
 
 Nothing in the demo is a measurement: the terminal says so first, each saved
 session has the mode `synthetic_demo` and a note saying it was simulated, and
-the demo never overwrites a folder it did not write. `roomscope demo --out
+the demo never overwrites a folder it did not write. `reverbscope demo --out
 <folder>` chooses where the files go.
 
 ## Universal DAW Mode
 
-1. `roomscope sweep --sample-rate <project rate> --out sweep.wav` (or the GUI
+1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav` (or the GUI
    “Universal DAW Mode” generate button, with the project's sample rate).
-   Keep the `.roomscope-sweep.json` sidecar next to the WAV.
+   Keep the `.reverbscope-sweep.json` sidecar next to the WAV.
 2. Import the WAV on a new DAW track, with time-stretching (Warp, Flex,
    Follow Tempo) off and no plug-in on its path. Route it to one loudspeaker.
 3. Arm a second track with the measurement microphone, input monitoring off,
@@ -107,7 +107,7 @@ the demo never overwrites a folder it did not write. `roomscope demo --out
    trimming or normalising.
 4. Optional loopback: bounce a two-channel export (microphone + electrical
    return) and pass `--channel 0 --loopback-channel 1`.
-5. `roomscope analyze --recording take.wav --sweep sweep.wav --out session/`
+5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`
    or drop the files in the GUI.
 
 **Step-by-step notes for Pro Tools, Logic Pro / GarageBand, Cubase / Nuendo,
@@ -117,19 +117,19 @@ what each report message means in DAW terms:
 
 ## Standalone Mode and the loopback cable
 
-`roomscope devices` lists interfaces. `roomscope measure --out session/` plays
+`reverbscope devices` lists interfaces. `reverbscope measure --out session/` plays
 the sweep and records. `--input-channels 1,2 --loopback-channel 2` records an
 electrical return on input 2.
 
 Start at a low monitor level. Levels above −12 dBFS need `--acknowledge-level`
 every time; that confirmation is never saved.
 
-**Demo** (GUI or `roomscope --backend fake measure`) runs the same flow on a
+**Demo** (GUI or `reverbscope --backend fake measure`) runs the same flow on a
 synthetic room. Nothing is sent to a loudspeaker.
 
 ### Per platform
 
-`roomscope devices` prints each device with its host API in brackets.
+`reverbscope devices` prints each device with its host API in brackets.
 
 * **Windows.** Every interface is listed once per host API. Prefer
   `[Windows WASAPI]` (or `[Windows WDM-KS]`); avoid `[MME]` and
@@ -144,14 +144,14 @@ synthetic room. Nothing is sent to a loudspeaker.
   support (the ASIO DLLs are built with Steinberg's proprietary SDK and are
   removed, DEPENDENCIES.md §3); an interface that only works through ASIO is
   measured in Universal DAW Mode.
-* **macOS.** Core Audio. Allow RoomScope in System Settings ▸ Privacy &
+* **macOS.** Core Audio. Allow ReverbScope in System Settings ▸ Privacy &
   Security ▸ Microphone; without that permission the recording is silent and
-  RoomScope reports *"recording is silent"*. Set the interface's rate in Audio
+  ReverbScope reports *"recording is silent"*. Set the interface's rate in Audio
   MIDI Setup, and combine separate input and output devices into an
   aggregate device there if needed.
 * **Linux.** ALSA through the system PortAudio (`libportaudio2`). A `hw:`
   device gives the interface's own rates; `pipewire`, `pulse` or `default`
-  go through the sound server, which may resample: RoomScope shows the
+  go through the sound server, which may resample: ReverbScope shows the
   device rate next to the requested one before measuring. Your user may need
   to be in the `audio` group.
 
@@ -179,12 +179,12 @@ The Results page has seven tabs:
 | Placement | Excess path, and — only with a tape-measured loudspeaker distance — loudspeaker height, the plane above both devices, and horizontal separation. No wall is named. |
 
 Low-frequency resonance candidates stay in the Overview text report (and in
-`resonances.csv` after `roomscope export`). They are not a separate tab.
+`resonances.csv` after `reverbscope export`). They are not a separate tab.
 
 ## Placement
 
 The Results page has a Placement tab. Without a tape-measured loudspeaker
-distance RoomScope only reports each arrival's excess path. With the
+distance ReverbScope only reports each arrival's excess path. With the
 distance (and, for the vertical axis, the microphone height) it reports
 loudspeaker height, the plane above both devices and the horizontal
 separation. It never names a wall or gives room length or width.
@@ -195,30 +195,30 @@ on the CLI.
 
 ## Comparing two positions
 
-`roomscope compare baseline/ candidate/ --same-input-gain` (or the GUI Compare
+`reverbscope compare baseline/ candidate/ --same-input-gain` (or the GUI Compare
 page). A decay delta is only VALID when both sides are VALID. The noise delta
 needs an explicit “input gain unchanged” declaration. A change is never called
 significant; ISO 3382-1’s just-noticeable difference for T is quoted as context.
 
 The Compare page lists matched early reflections (delay ±0.5 ms) and
 low-frequency resonances (within 1/6 octave, with decay-distinguishable
-flags). `roomscope compare … --out comparison.json` writes the numbers only;
-`roomscope show comparison.json` prints the report again and **re-derives**
+flags). `reverbscope compare … --out comparison.json` writes the numbers only;
+`reverbscope show comparison.json` prints the report again and **re-derives**
 findings (they are never stored in the file).
 
 ## Projects and averaging
 
 A project folder holds `project.json` and ordinary session folders.
-`roomscope project init --out room/ --name Booth` then
-`roomscope project add room/ session/ --position desk`.
-`roomscope project average room/` averages VALID T values only, never decay
+`reverbscope project init --out room/ --name Booth` then
+`reverbscope project add room/ session/ --position desk`.
+`reverbscope project average room/` averages VALID T values only, never decay
 curves, and names the ISO 3382-2 class the position counts reach.
 
 ## Export and language
 
-`roomscope export session/ --format csv --out curves/` writes every curve.
-`--lang zh_CN` (or Settings → Language, or `ROOMSCOPE_LANG`) translates
-findings, the text-report labels, the GUI and CLI help (`roomscope --help`
+`reverbscope export session/ --format csv --out curves/` writes every curve.
+`--lang zh_CN` (or Settings → Language, or `REVERBSCOPE_LANG`) translates
+findings, the text-report labels, the GUI and CLI help (`reverbscope --help`
 and every subcommand). Units stay untranslated; digits stay ASCII.
 Diagnostic notes and warnings are stored in English in `result.json` and
 shown translated.
@@ -233,8 +233,8 @@ in a pipe.
 | Symptom | What to check |
 | --- | --- |
 | Direct-sound confidence not high | Wrong sweep sidecar; loudspeaker distortion; trim the recording? Do not trim. |
-| Wrong reference | The `.roomscope-sweep.json` next to the WAV must be the file RoomScope wrote for *this* sweep (same duration, band and fades). A sweep from another session, or the recording used as the reference, will mis-locate the IR. |
-| Multiple passes in one bounce | Play the sweep once. Two passes in the same WAV look like two IRs; RoomScope keeps the strongest peak and the rest becomes “room”. Bounce a single take. |
+| Wrong reference | The `.reverbscope-sweep.json` next to the WAV must be the file ReverbScope wrote for *this* sweep (same duration, band and fades). A sweep from another session, or the recording used as the reference, will mis-locate the IR. |
+| Multiple passes in one bounce | Play the sweep once. Two passes in the same WAV look like two IRs; ReverbScope keeps the strongest peak and the rest becomes “room”. Bounce a single take. |
 | Clipping warning | Lower playback or input gain. |
 | Insufficient decay range | Longer sweep, slightly louder playback, or a quieter room. |
 | Device rate mismatch | The GUI shows the device rate next to the requested one; pick a supported rate. |
@@ -243,19 +243,19 @@ in a pipe.
 ## Reporting a problem
 
 **Help ▸ Environment Report for Bug Reports** shows what a maintainer needs
-first: the RoomScope version and build commit, the OS, library versions,
+first: the ReverbScope version and build commit, the OS, library versions,
 settings and audio devices (*Probe sample rates* adds the rates each device
 accepts; nothing is played). *Copy* it into the issue; *Open Issue Page*
 opens the template chooser. From a terminal the same report is
-`roomscope doctor` (`--probe`, `--json`). Nothing is sent automatically;
+`reverbscope doctor` (`--probe`, `--json`). Nothing is sent automatically;
 read the text before posting, since device names can contain personal names.
 
-`roomscope session bundle session/ --out report.zip` zips a session folder.
+`reverbscope session bundle session/ --out report.zip` zips a session folder.
 `--no-audio` leaves the WAVs out if you do not want to share a recording of
 the room. Attach the zip to a measurement issue. Settings and the rotating
-log live under `$ROOMSCOPE_HOME` (`~/.roomscope` by default); the report's
+log live under `$REVERBSCOPE_HOME` (`~/.reverbscope` by default); the report's
 *Open Data Folder* button opens it.
 
-Ran RoomScope with a real interface or through a DAW? The *Audio interface
+Ran ReverbScope with a real interface or through a DAW? The *Audio interface
 test report* and *DAW compatibility report* templates record it; those runs
 are the only source of [HARDWARE_TESTS.md](../HARDWARE_TESTS.md).

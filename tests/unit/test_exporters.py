@@ -4,10 +4,10 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.io.exporters import available_exporters, get_exporter
-from roomscope.io.exporters.csv import export_csv
-from roomscope.models.configuration import SweepSettings
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.io.exporters import available_exporters, get_exporter
+from reverbscope.io.exporters.csv import export_csv
+from reverbscope.models.configuration import SweepSettings
 from tests.conftest import make_rir
 
 
@@ -35,16 +35,16 @@ def test_csv_exporter_writes_every_curve(tmp_path: Path, short_sweep: SweepSetti
     assert again
 
 
-def test_roomscopes_own_csv_entry_point_is_not_a_third_party_collision(
+def test_reverbscopes_own_csv_entry_point_is_not_a_third_party_collision(
     monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     """pyproject.toml registers the built-in CSV exporter under the entry-point
     group too; every install saw it there and logged a false "third-party ...
-    collides" warning on each ``roomscope export``."""
+    collides" warning on each ``reverbscope export``."""
     import importlib.metadata as metadata
     import logging
 
-    from roomscope.io.exporters import registry
+    from reverbscope.io.exporters import registry
 
     class Points:
         def __init__(self, items: list[metadata.EntryPoint]) -> None:
@@ -54,16 +54,16 @@ def test_roomscopes_own_csv_entry_point_is_not_a_third_party_collision(
             return [item for item in self._items if item.group == group]
 
     own = metadata.EntryPoint(
-        "csv", "roomscope.io.exporters.csv:CsvExporter", "roomscope.exporters"
+        "csv", "reverbscope.io.exporters.csv:CsvExporter", "reverbscope.exporters"
     )
-    other = metadata.EntryPoint("csv", "somewhere.else:CsvExporter", "roomscope.exporters")
+    other = metadata.EntryPoint("csv", "somewhere.else:CsvExporter", "reverbscope.exporters")
 
     monkeypatch.setattr(metadata, "entry_points", lambda: Points([own]))
-    with caplog.at_level(logging.WARNING, logger="roomscope.exporters"):
+    with caplog.at_level(logging.WARNING, logger="reverbscope.exporters"):
         assert registry.available_exporters() == ["csv"]
     assert not caplog.records
 
     monkeypatch.setattr(metadata, "entry_points", lambda: Points([other]))
-    with caplog.at_level(logging.WARNING, logger="roomscope.exporters"):
+    with caplog.at_level(logging.WARNING, logger="reverbscope.exporters"):
         assert registry.available_exporters() == ["csv"]
     assert any("collides" in record.getMessage() for record in caplog.records)

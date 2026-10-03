@@ -1,15 +1,15 @@
-RoomScope test signal
+ReverbScope test signal
 ─────────────────────
 
   ✓ Wrote sweep.wav
     Length  14.0 s at 48 kHz
     Sweep   20 Hz – 20 kHz · 10 s · -12 dBFS
-  ✓ Wrote sweep.roomscope-sweep.json
+  ✓ Wrote sweep.reverbscope-sweep.json
     Keep it next to the WAV: the analysis rebuilds the exact sweep from it.
 
 Next steps
   1. Import sweep.wav into your DAW and play it through the monitors.
   2. Record the measurement microphone on another track at the same sample rate.
   3. Export that track as WAV (no trimming needed) and analyse it:
-     roomscope analyze --recording <take.wav> --sweep sweep.wav --out <session>
+     reverbscope analyze --recording <take.wav> --sweep sweep.wav --out <session>
   Start with the monitors turned down and raise them between takes if needed.

@@ -1,15 +1,15 @@
-RoomScope 测试信号
+ReverbScope 测试信号
 ──────────────────
 
   ✓ 已写入 sweep.wav
     长度  14.0 s，48 kHz
     扫频  20 Hz – 20 kHz · 10 s · -12 dBFS
-  ✓ 已写入 sweep.roomscope-sweep.json
+  ✓ 已写入 sweep.reverbscope-sweep.json
     请把它和 WAV 放在一起：分析时会用它重建完全相同的扫频。
 
 下一步
   1. 将 sweep.wav 导入 DAW，并通过监听音箱播放。
   2. 在另一条音轨上以相同采样率录制测量话筒。
   3. 将该音轨导出为 WAV（无需裁剪），然后分析：
-     roomscope analyze --recording <录音.wav> --sweep sweep.wav --out <会话文件夹>
+     reverbscope analyze --recording <录音.wav> --sweep sweep.wav --out <会话文件夹>
   先把监听音量调低，如有需要再在两次录制之间逐步调高。

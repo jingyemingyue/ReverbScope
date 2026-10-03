@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve, firwin
 
-from roomscope.core.reflections import detect_early_reflections
+from reverbscope.core.reflections import detect_early_reflections
 from tests.conftest import make_rir
 
 
