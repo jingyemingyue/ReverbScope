@@ -44,7 +44,7 @@ src/roomscope/
     deconvolution.py     whole-recording deconvolution, IR location, confidence
     impulse.py           envelopes, dB helpers
     filters.py           octave bands, Butterworth SOS, time-reversed filtering, smoothing
-    decay.py             Schroeder integration, Lundeby truncation, EDT/T20/T30
+    decay.py             Schroeder integration, Lundeby truncation, Chu subtraction, EDT/T20/T30
     frequency_response.py
     noise.py             quiet segment, dBFS, PSD, mains-hum detection
     reflections.py       early-reflection candidates

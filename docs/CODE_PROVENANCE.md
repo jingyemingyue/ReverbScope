@@ -1,7 +1,8 @@
 # Code provenance
 
 Last reviewed: 2026-10-03 (referenced device parameters added to
-`src/roomscope/audio/referenced.py`; no third-party source was copied).
+`src/roomscope/audio/referenced.py`; Chu noise-power subtraction added to
+`core/decay.py` from the published method; no third-party source was copied).
 
 ## Vendored or adapted third-party source files
 
@@ -87,6 +88,16 @@ evaluated and not adopted — adopting it would also bring its Eigen
 room-shape-from-echoes / echo sorting (Dokmanić et al., 2013); it is cited in
 MEASUREMENT_METHODOLOGY.md §9 as the published method the project declines,
 and no implementation of it was consulted.
+
+The Chu noise-power subtraction in `core/decay.py` (subtract the Lundeby
+mean-square noise estimate from `h²` before Schroeder integration, clip
+negatives to zero, keep Lundeby truncation and late-decay compensation)
+was implemented clean-room from Chu (1978) as restated by Karjalainen et
+al. (2002) and compared by Guski & Vorländer (2014), cited in
+MEASUREMENT_METHODOLOGY.md §3 [25]. pyrato's documented
+`energy_decay_curve_chu_lundeby` (https://pyrato.readthedocs.io/en/latest/modules/pyrato.edc.html)
+was the conceptual prompt for combining the two published steps; **no
+pyrato source was read or copied.**
 
 ## How to update this file
 

@@ -50,12 +50,22 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
    few blocks and oscillates without affecting the metrics.) The energy of
    the decay after the truncation point is estimated from the slope and added
    back (late-decay compensation).
-4. **Schroeder curve** ``EDC(t) = sum_{tau >= t} h^2(tau)`` from the onset to
-   the truncation point (Schroeder 1965), normalised to 0 dB at the onset.
+4. **Chu noise-power subtraction** (Chu 1978; the combination with Lundeby is
+   the documented approach of pyrato, used here as a conceptual reference —
+   no source was copied). When the Lundeby estimate found a floor *after*
+   the decay (truncation before the end of the response), the estimated
+   mean-square noise is subtracted from ``h²`` and negative samples are
+   clipped to zero *before* the backward integral and the early/late energy
+   sums. Lundeby itself still runs on the raw squared response. A clean IR
+   that never reaches a noise floor is left unsubtracted, so an exact
+   exponential stays exact. ``subtract_noise=False`` restores the
+   Lundeby-only integral.
+5. **Schroeder curve** ``EDC(t) = sum_{tau >= t} h_sub²(tau)`` from the onset
+   to the truncation point (Schroeder 1965), normalised to 0 dB at the onset.
    All times (curve, onset, truncation) are measured from the direct sound
    (from the start of the signal when no direct sound is given; see
    ``DecayResult.time_origin``).
-5. **Fits.** EDT, T20 and T30 are least-squares line fits over 0..-10 dB,
+6. **Fits.** EDT, T20 and T30 are least-squares line fits over 0..-10 dB,
    -5..-25 dB and -5..-35 dB, extrapolated to 60 dB (ISO 3382-1). A fit
    never starts before the end of the direct sound (the direct sound plus
    the excitation pulse spread ``4/B_exc + 0.5 ms``): before it, a
@@ -65,7 +75,7 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
    the EDC at time 0; for the broadband curve it changes nothing. The degree
    of non-linearity ``xi = 1000 * (1 - r^2)`` and the curvature
    ``C = 100 * (T30 / T20 - 1)`` are defined in ISO 3382-2:2008, Annex B.
-6. **Validity** (a metric is only VALID when none of these applies):
+7. **Validity** (a metric is only VALID when none of these applies):
 
    * *insufficient decay range*: the range from the loudest block to the
      noise floor is less than ``|lower limit| + noise_margin_db`` (ISO 3382:
@@ -96,9 +106,9 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
      (:meth:`~roomscope.models.result.DecayResult.with_all_unreliable`), e.g.
      for a low direct-sound confidence or a clipped recording.
 
-7. **Early/late energy** (ISO 3382-1 clarity, definition and centre time; the
+8. **Early/late energy** (ISO 3382-1 clarity, definition and centre time; the
    clause numbers were not read from the standard text). From the same onset,
-   truncation and late-decay compensation as the Schroeder curve:
+   truncation, Chu subtraction and late-decay compensation as the Schroeder curve:
    ``C50`` and ``C80`` are ``10 log10(E_early / E_late)`` at 50 ms and 80 ms
    after the direct sound, ``D50`` is ``100 * E_early / (E_early + E_late)``
    at 50 ms (percent), and centre time ``Ts`` is the energy-weighted mean
@@ -229,12 +239,67 @@ NONLINEARITY_SPREAD_PERMILLE = 1000.0
 
 DECAY_METHOD = (
     "ISO 3382-1 onset (-20 dB) per band; Schroeder backward integration with Lundeby "
-    "noise truncation (plausibility-checked) and late-decay compensation; EDT/T20/T30 by "
+    "noise truncation (plausibility-checked), Chu (1978) noise-power subtraction when a "
+    "floor is found, and late-decay compensation; EDT/T20/T30 by "
     "least-squares fit per ISO 3382-1, fits starting after the direct sound; straightness "
     "check with xi and C (ISO 3382-2 Annex B); C50, C80, D50 and centre time from the "
     "same truncated energy; time-reversed Butterworth IEC 61260-1 base-10 octave-band "
     "filtering"
 )
+
+
+def subtract_noise_power(power: FloatArray, noise_power: float) -> FloatArray:
+    """Chu (1978): subtract estimated mean-square noise from ``h²`` before
+    backward integration.
+
+    Implemented from the published method (subtract a constant noise-power
+    estimate; clip negatives so the integral stays non-negative). The
+    combination with Lundeby truncation is the documented Chu–Lundeby
+    approach of pyrato
+    (https://pyrato.readthedocs.io/en/latest/modules/pyrato.edc.html);
+    no pyrato source was copied. ``noise_power`` is linear mean-square
+    (the Lundeby floor already estimated on the raw squared response).
+    """
+    work = np.asarray(power, dtype=np.float64)
+    if not np.isfinite(noise_power) or noise_power <= 0.0:
+        return work
+    return np.maximum(work - noise_power, 0.0)
+
+
+def _chu_noise_power(power: FloatArray, onset: int, trunc: TruncationEstimate) -> float | None:
+    """Linear noise power to subtract, or ``None`` when subtraction must not run.
+
+    Lundeby is estimated on the raw squared response. Subtraction runs only
+    when that estimate found a floor after the decay (truncation before the
+    end of ``power``). A clean IR that never reaches a noise floor keeps the
+    unsubtracted integral, so an exact exponential stays exact.
+    """
+    if trunc.late_slope_db_per_s is None:
+        return None
+    if onset + trunc.truncation_index >= power.shape[0]:
+        return None
+    if not np.isfinite(trunc.noise_floor_db):
+        return None
+    noise = 10.0 ** (trunc.noise_floor_db / 10.0)
+    if not np.isfinite(noise) or noise <= 0.0:
+        return None
+    return float(noise)
+
+
+def _power_for_integration(
+    power: FloatArray,
+    onset: int,
+    trunc: TruncationEstimate,
+    *,
+    subtract_noise: bool,
+) -> FloatArray:
+    """Squared response used for the Schroeder integral and energy ratios."""
+    if not subtract_noise:
+        return power
+    noise = _chu_noise_power(power, onset, trunc)
+    if noise is None:
+        return power
+    return subtract_noise_power(power, noise)
 
 
 def _to_db(power: FloatArray) -> FloatArray:
@@ -542,8 +607,10 @@ def _curve_from_truncation(
     *,
     compensate: bool,
     time_origin_index: int,
+    subtract_noise: bool = True,
 ) -> SchroederCurve:
-    segment = power[onset : onset + trunc.truncation_index]
+    work = _power_for_integration(power, onset, trunc, subtract_noise=subtract_noise)
+    segment = work[onset : onset + trunc.truncation_index]
     if segment.shape[0] == 0:
         segment = power[onset : onset + 1]
     compensation = 0.0
@@ -579,11 +646,15 @@ def schroeder_curve(
     compensate: bool = True,
     onset_index: int | None = None,
     time_origin_index: int = 0,
+    subtract_noise: bool = True,
 ) -> SchroederCurve:
     """Energy decay curve (dB, 0 dB at the onset) with noise truncation.
 
     ``onset_index`` defaults to :func:`find_onset` over the whole signal;
-    ``time_s`` is measured from ``time_origin_index``.
+    ``time_s`` is measured from ``time_origin_index``. When
+    ``subtract_noise`` is true and Lundeby found a floor after the decay,
+    the estimated noise power is subtracted from ``h²`` before integration
+    (Chu 1978).
     """
     power = np.asarray(band_ir, dtype=np.float64) ** 2
     onset = find_onset(power) if onset_index is None else int(onset_index)
@@ -595,6 +666,7 @@ def schroeder_curve(
         trunc,
         compensate=compensate,
         time_origin_index=time_origin_index,
+        subtract_noise=subtract_noise,
     )
 
 
@@ -1029,6 +1101,7 @@ def analyze_band(
     onset_search_start: int | None = None,
     direct_spread_s: float = DIRECT_SOUND_MARGIN_S,
     broadband_bandwidth_hz: float | None = None,
+    subtract_noise: bool = True,
 ) -> BandDecay:
     """Decay analysis of one (band-filtered) response.
 
@@ -1040,7 +1113,9 @@ def analyze_band(
     before a given ``direct_index``, else 0) is where the onset search begins.
     ``direct_spread_s`` is how long the direct sound lasts after its peak.
     ``broadband_bandwidth_hz`` (default: Nyquist) is the bandwidth used for
-    the straightness limits when ``band`` is ``None``.
+    the straightness limits when ``band`` is ``None``. ``subtract_noise``
+    applies Chu (1978) noise-power subtraction after Lundeby (see the
+    module docstring).
     """
     signal = np.asarray(band_ir, dtype=np.float64)
     power = signal**2
@@ -1059,8 +1134,15 @@ def analyze_band(
     onset = find_onset(power, search_start=search_start)
     trunc = estimate_truncation(power[onset:], sample_rate)
     curve = _curve_from_truncation(
-        power, sample_rate, onset, trunc, compensate=True, time_origin_index=origin
+        power,
+        sample_rate,
+        onset,
+        trunc,
+        compensate=True,
+        time_origin_index=origin,
+        subtract_noise=subtract_noise,
     )
+    analysis_power = _power_for_integration(power, onset, trunc, subtract_noise=subtract_noise)
     # First curve sample after the direct sound (and its pulse spread); without
     # a known direct sound the plain ISO ranges are used.
     first_index = 0
@@ -1073,7 +1155,7 @@ def analyze_band(
     if direct_index is not None and first_index < curve.edc_db.shape[0]:
         direct_step_db = float(-curve.edc_db[first_index])
     edt = _edt_direct_check(edt, direct_step_db)
-    c50, c80, d50, centre = _energy_metrics(power, sample_rate, onset, trunc, origin)
+    c50, c80, d50, centre = _energy_metrics(analysis_power, sample_rate, onset, trunc, origin)
 
     if trunc.problem is not None:
         rejected = trunc.rejected_estimate()
@@ -1093,14 +1175,26 @@ def analyze_band(
             ]
         else:
             alternative = _curve_from_truncation(
-                power, sample_rate, onset, rejected, compensate=True, time_origin_index=origin
+                power,
+                sample_rate,
+                onset,
+                rejected,
+                compensate=True,
+                time_origin_index=origin,
+                subtract_noise=subtract_noise,
             )
             changes = _truncation_sensitivity(
                 (edt, t20, t30), _fit_all(alternative, noise_margin_db, first_index)
             )
             energy_changes = _energy_truncation_changes(
                 (c50, c80, d50, centre),
-                _energy_metrics(power, sample_rate, onset, rejected, origin),
+                _energy_metrics(
+                    _power_for_integration(power, onset, rejected, subtract_noise=subtract_noise),
+                    sample_rate,
+                    onset,
+                    rejected,
+                    origin,
+                ),
             )
         if changes:
             reason = diag(
@@ -1358,6 +1452,7 @@ def analyze_decay(
         onset_search_start=search_start(excitation_bw),
         direct_spread_s=spread_s,
         broadband_bandwidth_hz=excitation_bw,
+        subtract_noise=settings.decay_subtract_noise,
     )
     bands: list[BandDecay] = []
     for center in settings.octave_bands_hz:
@@ -1378,6 +1473,7 @@ def analyze_decay(
                 time_origin_index=origin,
                 onset_search_start=search_start(band.bandwidth_hz),
                 direct_spread_s=spread_s,
+                subtract_noise=settings.decay_subtract_noise,
             )
         )
     return DecayResult(

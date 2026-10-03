@@ -26,6 +26,19 @@ All notable changes to RoomScope are documented here. The format follows
   `bit_depth` (`32-bit float`). This is not a hardware-matrix result.
 
 ### Changed
+- **Chu noise-power subtraction on the Schroeder integral.** After Lundeby
+  finds a floor, RoomScope subtracts that mean-square estimate from `h²`
+  (clipping negatives) before backward integration and the early/late
+  energy sums. The idea is Chu (1978), combined with the existing Lundeby
+  truncation the way pyrato documents `energy_decay_curve_chu_lundeby`;
+  the step is a clean-room reimplementation (CODE_PROVENANCE.md).
+  `AnalysisSettings.decay_subtract_noise` (default on) turns it off.
+  On a 0.5 s exponential plus a −50 dB floor (48 kHz, 2 s, seed 11):
+  Lundeby-only T30 0.5485 s → Chu–Lundeby 0.5404 s (true 0.500;
+  error 9.7 % → 8.1 %, a 17 % relative error cut). A clean alternating
+  exponential stays within 0.04 % (0.500000 → 0.499813 s). Broadband
+  `analyze_band` on that noisy IR: 1.80 ms → 2.03 ms. The settling-cache
+  path is unchanged.
 - **Noise-band filter settling.** `settling_samples` grows a short impulse
   until the unused tail is below the 0.001 energy remainder, then caches
   the length. Octave-band results match a full 4 s impulse. On this Linux

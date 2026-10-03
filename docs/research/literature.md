@@ -78,6 +78,8 @@ No ISO/IEC standard defines room-mode detection from a measured response; the Bo
 
 17d. **C. L. Christensen, G. Koutsouris, J. H. Rindel, "The ISO 3382 parameters: Can we simulate them? Can we measure them?," Proc. International Symposium on Room Acoustics (ISRA) 2013, Toronto, 2013 June 9–11.** — **CONFIRMED** (primary PDF read: https://www.odeon.dk/pdf/ISRA2013_Paper_The%20ISO%203382%20parameters_Can%20we%20simulate%20them_Can%20we%20measure%20them_24July2013.pdf). Explains T20/T30 regression ranges, truncation compensation constant C, and noise-floor subtraction in practice.
 
+17e. **W. T. Chu, "Comparison of reverberation measurements using Schroeder's impulse method and decay-curve averaging method," J. Acoust. Soc. Am., vol. 63, no. 5, pp. 1444–1450, 1978 May. DOI 10.1121/1.381875.** — **CONFIRMED** via Crossref (https://api.crossref.org/works/10.1121/1.381875). *Contribution:* subtract the estimated average noise power from the squared impulse response before Schroeder backward integration, so the late EDC is not flattened by a stationary floor. Combined with Lundeby truncation in RoomScope (`core/decay.py`); the combination is also the documented approach of pyrato (`energy_decay_curve_chu_lundeby`), used as a conceptual reference — no source copied.
+
 ### A.6 Digital level reference
 
 18. **AES17-2020, "AES standard method for digital audio engineering — Measurement of digital audio equipment"** (revision of AES17-2015; earlier editions 1991, 1998). — **CONFIRMED** (https://www.aes.org/publications/standards/search.cfm?docID=21; AES Standards blog on the 2020 revision http://www.aes.org/standards/blog/2020/12/aes17-revision-to-clarify-0dbfs). Defines full scale and **0 dB FS as the RMS level of a full-scale sine wave** (a sine whose peaks just reach the largest positive code), so a full-scale square wave reads +3.01 dB FS. The 2020 revision only clarifies this definition. "dB FS"/"dBFS" is the correct unit for uncalibrated digital levels.
@@ -119,7 +121,7 @@ No ISO/IEC standard defines room-mode detection from a measured response; the Bo
   8. Re-estimate the late-decay slope over a **10–20 dB** range starting **5–10 dB above** the noise level.
   9. Find a new cross-point. **Iterate steps 7–9 until the cross-point converges (max. 5 iterations).**
   10. Truncate the IR at the cross-point and add the compensation energy C from the extrapolated late-decay line (as in the previous bullet).
-- Alternative/complementary: **Chu's noise subtraction** — subtract the mean-square noise estimate from h² before integrating (cited by Karjalainen 2002 as Chu [15]; compared in Guski & Vorländer 2014). ODEON (Christensen 2013) does both truncation and subtraction. RoomScope: implement Lundeby truncation + compensation as default, expose noise subtraction as an option.
+- Alternative/complementary: **Chu's noise subtraction** — subtract the mean-square noise estimate from h² before integrating (Chu 1978, restated by Karjalainen 2002; compared in Guski & Vorländer 2014). ODEON (Christensen 2013) and pyrato's documented Chu–Lundeby curve do both truncation and subtraction. RoomScope: Lundeby truncation + compensation remains the noise-floor estimator; Chu subtraction is then applied to `h²` before the integral when a floor is found (`AnalysisSettings.decay_subtract_noise`, default on). Clean-room implementation; no third-party source copied.
 
 ### B.3 Filter bandwidth × reverberation-time limits (B·T)
 

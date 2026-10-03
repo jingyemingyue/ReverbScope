@@ -615,7 +615,7 @@ discovery follows files under `.dist-info/licenses/`; macOS
 | Excitation | ESS generation (Farina), fades, level, silences; WAV + JSON sidecar; 44.1–192 kHz |
 | Inverse filters | Analytic (time-reversed, −6 dB/oct) and regularised spectral division |
 | Deconvolution | Whole-recording linear convolution; automatic IR location; pre-peak margin / confidence; sweep-start estimate |
-| Reverberation | Schroeder integration, Lundeby truncation + compensation, EDT/T20/T30 with ISO 3382-1 ranges, validity flags, non-linearity, curvature, B·T check; broadband + octave bands 63 Hz–8 kHz (time-reversed Butterworth) |
+| Reverberation | Schroeder integration, Lundeby truncation + compensation, Chu (1978) noise-power subtraction when a floor is found, EDT/T20/T30 with ISO 3382-1 ranges, validity flags, non-linearity, curvature, B·T check; broadband + octave bands 63 Hz–8 kHz (time-reversed Butterworth) |
 | Frequency response | FFT with optional gating; raw kept; configurable fractional-octave smoothing |
 | Background noise | Quiet-segment selection (pre-sweep / tail), RMS + peak dBFS (AES17), octave-band levels, Welch PSD, 50/60 Hz hum candidates |
 | Early reflections | ETC peak candidates (delay ms, level dB re direct) with local-trend prominence |

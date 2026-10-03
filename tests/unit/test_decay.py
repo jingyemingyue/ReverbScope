@@ -15,6 +15,7 @@ from roomscope.core.decay import (
     fit_decay_metric,
     schroeder_curve,
     straightness_limits,
+    subtract_noise_power,
 )
 from roomscope.core.filters import iec_band
 from roomscope.models.audio import FloatArray
@@ -83,6 +84,67 @@ def test_truncation_point_near_noise_crossing(sample_rate: int) -> None:
     assert trunc.truncation_index / sample_rate == pytest.approx(expected, rel=0.25)
     assert trunc.late_slope_db_per_s is not None and trunc.late_slope_db_per_s < 0.0
     assert trunc.noise_floor_db == pytest.approx(-40.0 + 10 * np.log10(1.0), abs=3.0)
+
+
+def test_subtract_noise_power_clips_negatives() -> None:
+    power = np.array([4.0, 1.5, 0.4, 0.1], dtype=np.float64)
+    cleaned = subtract_noise_power(power, 0.5)
+    assert cleaned.tolist() == [3.5, 1.0, 0.0, 0.0]
+    assert subtract_noise_power(power, 0.0).tolist() == power.tolist()
+    assert subtract_noise_power(power, float("nan")).tolist() == power.tolist()
+
+
+def test_chu_subtraction_matches_lundeby_on_clean_exponential(sample_rate: int) -> None:
+    """Without a reached noise floor the Chu step is skipped; T30 stays exact."""
+    rt60 = 0.5
+    ir = _alternating_exponential(sample_rate, rt60, 1.2 * rt60)
+    without = analyze_band(ir, sample_rate, None, noise_margin_db=10.0, subtract_noise=False)
+    with_chu = analyze_band(ir, sample_rate, None, noise_margin_db=10.0, subtract_noise=True)
+    assert without.t30.validity is Validity.VALID
+    assert with_chu.t30.validity is Validity.VALID
+    assert without.t30.seconds == pytest.approx(rt60, rel=0.01)
+    assert with_chu.t30.seconds == pytest.approx(without.t30.seconds, rel=0.001)
+
+
+def test_chu_subtraction_reduces_t30_error_on_noisy_synthetic(sample_rate: int) -> None:
+    """Chu (1978) vs Lundeby-only on a known RT60 plus a -50 dB floor.
+
+    T30 stays VALID (needs 45 dB). Integrated noise lengthens the Lundeby-only
+    T30; subtracting the floor before the integral cuts the error. Timing of
+    the two paths is recorded so the changelog can quote this VM.
+    """
+    import time
+
+    rt60 = 0.5
+    ir = exponential_decay_ir(sample_rate, rt60, length_s=2.0, seed=11)
+    rng = np.random.default_rng(11)
+    ir = ir + rng.normal(0.0, 10 ** (-50 / 20), ir.shape[0])
+
+    without = analyze_band(ir, sample_rate, None, noise_margin_db=10.0, subtract_noise=False)
+    with_chu = analyze_band(ir, sample_rate, None, noise_margin_db=10.0, subtract_noise=True)
+    assert without.t30.validity is Validity.VALID
+    assert with_chu.t30.validity is Validity.VALID
+    assert without.t30.seconds is not None and with_chu.t30.seconds is not None
+    err_without = abs(without.t30.seconds - rt60)
+    err_with = abs(with_chu.t30.seconds - rt60)
+    assert err_with < err_without
+    # Lundeby already truncates; Chu removes the remaining integrated-floor
+    # bias. On this fixture the T30 error drops by more than 10 % relative.
+    assert (err_without - err_with) / err_without > 0.10
+
+    repeats = 8
+    started = time.perf_counter()
+    for _ in range(repeats):
+        analyze_band(ir, sample_rate, None, noise_margin_db=10.0, subtract_noise=False)
+    without_s = (time.perf_counter() - started) / repeats
+    started = time.perf_counter()
+    for _ in range(repeats):
+        analyze_band(ir, sample_rate, None, noise_margin_db=10.0, subtract_noise=True)
+    with_s = (time.perf_counter() - started) / repeats
+    # Subtraction is one vector subtract; it must not dominate analyze_band.
+    assert with_s < without_s * 2.0
+    assert without.t30.seconds == pytest.approx(0.5485, rel=0.02)
+    assert with_chu.t30.seconds == pytest.approx(0.5404, rel=0.02)
 
 
 def test_schroeder_curve_is_monotonic_and_starts_at_zero(sample_rate: int) -> None:
