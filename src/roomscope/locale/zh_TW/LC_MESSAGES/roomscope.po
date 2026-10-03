@@ -5226,3 +5226,117 @@ msgid ""
 " dashed path is the specular bounce off the plane above."
 msgstr "空心標記是該揚聲器的一階鏡像聲源；虛線是上方平面上的鏡面反射路徑。"
 
+
+msgid ""
+"imported room scan (ASCII PLY point cloud or Wavefront OBJ). Not a "
+"lidar attached to this computer"
+msgstr "匯入的房間掃描（ASCII PLY 點雲或 Wavefront OBJ）。不是接在本機上的光達"
+
+msgid "Spectrum"
+msgstr "頻譜"
+
+msgid "of the impulse response"
+msgstr "脈衝響應的"
+
+msgid "Imported scan"
+msgstr "匯入的掃描"
+
+msgid "No spectrum available"
+msgstr "沒有頻譜"
+
+msgid "Peak"
+msgstr "峰值"
+
+msgid "Source"
+msgstr "來源"
+
+msgid "impulse response"
+msgstr "脈衝響應"
+
+msgid "Window length"
+msgstr "窗長"
+
+msgid "File"
+msgstr "檔案"
+
+msgid "Points"
+msgstr "點數"
+
+msgid "Extent"
+msgstr "範圍"
+
+msgid "peak {hz:.0f} Hz ({level:.1f} dB)"
+msgstr "峰值 {hz:.0f} Hz（{level:.1f} dB）"
+
+msgctxt "diagnostic"
+msgid "imported PLY scan; coordinates are file units treated as metres"
+msgstr "已匯入 PLY 掃描；座標按檔案單位當作公尺"
+
+msgctxt "diagnostic"
+msgid "no lidar was attached; this is a file the user already had"
+msgstr "未連接光達；這是使用者已有的檔案"
+
+msgctxt "diagnostic"
+msgid "imported OBJ mesh; coordinates are file units treated as metres"
+msgstr "已匯入 OBJ 網格；座標按檔案單位當作公尺"
+
+msgctxt "diagnostic"
+msgid "imported scan was downsampled from {count} to {kept} points for the picture"
+msgstr "匯入的掃描已從 {count} 個點降採樣到 {kept} 個點，用於畫面"
+
+msgid "scan file not found: {path}"
+msgstr "找不到掃描檔案：{path}"
+
+msgid "scan file has fewer than three vertices: {path}"
+msgstr "掃描檔案頂點少於三個：{path}"
+
+msgid "not a PLY file: {path}"
+msgstr "不是 PLY 檔案：{path}"
+
+msgid "PLY header is incomplete: {path}"
+msgstr "PLY 檔案頭不完整：{path}"
+
+msgid "PLY file has no end_header: {path}"
+msgstr "PLY 檔案缺少檔案頭結束行：{path}"
+
+msgid "binary PLY is not read; export ASCII 1.0 PLY from the scanner: {path}"
+msgstr "不讀取二進位 PLY；請從掃描器匯出 ASCII 1.0 PLY：{path}"
+
+msgid "PLY vertex list is short: {path}"
+msgstr "PLY 頂點清單過短：{path}"
+
+msgid "OBJ file has no vertices: {path}"
+msgstr "OBJ 檔案沒有頂點：{path}"
+
+msgid "scan file must be a .ply or .obj file, not {name}"
+msgstr "掃描檔案必須是 .ply 或 .obj，不能是 {name}"
+
+msgid "PLY vertices need x, y and z properties: {path}"
+msgstr "PLY 頂點需要 x、y 和 z 屬性：{path}"
+
+msgid "PLY vertex {row} is short: {path}"
+msgstr "PLY 第 {row} 個頂點過短：{path}"
+
+msgctxt "diagnostic"
+msgid ""
+"Welch (1967) periodogram, Hann window, density scaling; 10*log10(2*psd) "
+"so the integral matches AES17 RMS dBFS"
+msgstr "Welch（1967）週期圖，Hann 窗，密度標定；10*log10(2*psd) 使積分與 AES17 RMS dBFS 一致"
+
+msgid "ASCII PLY or OBJ (optional)"
+msgstr "ASCII PLY 或 OBJ（可選）"
+
+msgid "Open scan"
+msgstr "開啟掃描"
+
+msgid "Scan files (*.ply *.obj);;All files (*)"
+msgstr "掃描檔案 (*.ply *.obj);;所有檔案 (*)"
+
+msgid "Spectrum (impulse response)"
+msgstr "頻譜（脈衝響應）"
+
+msgid ""
+"The faint points are an imported scan ({name}), not a RoomScope "
+"measurement and not a lidar attached to this computer."
+msgstr "淡色點是匯入的掃描（{name}），不是 RoomScope 的量測，也不是接在本機上的光達。"
+

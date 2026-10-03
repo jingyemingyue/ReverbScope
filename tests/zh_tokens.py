@@ -27,6 +27,7 @@ ALLOWED = frozenset(
         "Lundeby",
         "Schroeder",
         "Hann",
+        "Welch",
         "ESS",
         "PSD",
         "IR",
@@ -41,6 +42,10 @@ ALLOWED = frozenset(
         "JSON",
         "CSV",
         "ZIP",
+        "PLY",
+        "OBJ",
+        "ASCII",
+        "Wavefront",
         "UTF",
         # audio systems and platforms
         "API",

@@ -68,6 +68,8 @@ class MeasurementSession:
     platform: str = field(default_factory=lambda: f"{py_platform.system()} {py_platform.release()}")
     #: 1-based interface input of the electrical loopback (see ``input_channel``).
     loopback_channel: int | None = None
+    #: Optional imported PLY/OBJ scan path (not a lidar attached to this machine).
+    scan_path: str | None = None
     schema_version: int = SESSION_SCHEMA_VERSION
 
     def to_dict(self) -> dict[str, Any]:

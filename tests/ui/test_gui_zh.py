@@ -174,6 +174,7 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
     tabs = (
         window.results.ir_tab,
         window.results.fr_tab,
+        window.results.spectrum_tab,
         window.results.decay_tab,
         window.results.noise_tab,
         window.results.refl_tab,

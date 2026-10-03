@@ -6053,3 +6053,117 @@ msgstr ""
 "Le marqueur creux est la source image du premier ordre de ce haut-parleu"
 "r ; le trait discontinu est le rebond spéculaire sur le plan supérieur."
 
+
+msgid ""
+"imported room scan (ASCII PLY point cloud or Wavefront OBJ). Not a "
+"lidar attached to this computer"
+msgstr "scan de salle importé (nuage de points PLY ASCII ou OBJ Wavefront). Ce n'est pas un lidar branché sur cet ordinateur"
+
+msgid "Spectrum"
+msgstr "Spectre"
+
+msgid "of the impulse response"
+msgstr "de la réponse impulsionnelle"
+
+msgid "Imported scan"
+msgstr "Scan importé"
+
+msgid "No spectrum available"
+msgstr "Aucun spectre"
+
+msgid "Peak"
+msgstr "Pic"
+
+msgid "Source"
+msgstr "Origine"
+
+msgid "impulse response"
+msgstr "réponse impulsionnelle"
+
+msgid "Window length"
+msgstr "Longueur de fenêtre"
+
+msgid "File"
+msgstr "Fichier"
+
+msgid "Points"
+msgstr "Points"
+
+msgid "Extent"
+msgstr "Étendue"
+
+msgid "peak {hz:.0f} Hz ({level:.1f} dB)"
+msgstr "pic {hz:.0f} Hz ({level:.1f} dB)"
+
+msgctxt "diagnostic"
+msgid "imported PLY scan; coordinates are file units treated as metres"
+msgstr "scan PLY importé ; les coordonnées du fichier sont traitées comme des mètres"
+
+msgctxt "diagnostic"
+msgid "no lidar was attached; this is a file the user already had"
+msgstr "aucun lidar n'était branché ; c'est un fichier que l'utilisateur avait déjà"
+
+msgctxt "diagnostic"
+msgid "imported OBJ mesh; coordinates are file units treated as metres"
+msgstr "maillage OBJ importé ; les coordonnées du fichier sont traitées comme des mètres"
+
+msgctxt "diagnostic"
+msgid "imported scan was downsampled from {count} to {kept} points for the picture"
+msgstr "le scan importé a été sous-échantillonné de {count} à {kept} points pour le dessin"
+
+msgid "scan file not found: {path}"
+msgstr "fichier de scan introuvable : {path}"
+
+msgid "scan file has fewer than three vertices: {path}"
+msgstr "le fichier de scan a moins de trois sommets : {path}"
+
+msgid "not a PLY file: {path}"
+msgstr "ce n'est pas un fichier PLY : {path}"
+
+msgid "PLY header is incomplete: {path}"
+msgstr "l'en-tête PLY est incomplet : {path}"
+
+msgid "PLY file has no end_header: {path}"
+msgstr "le fichier PLY n'a pas de end_header : {path}"
+
+msgid "binary PLY is not read; export ASCII 1.0 PLY from the scanner: {path}"
+msgstr "le PLY binaire n'est pas lu ; exportez un PLY ASCII 1.0 depuis le scanner : {path}"
+
+msgid "PLY vertex list is short: {path}"
+msgstr "la liste de sommets PLY est trop courte : {path}"
+
+msgid "OBJ file has no vertices: {path}"
+msgstr "le fichier OBJ n'a aucun sommet : {path}"
+
+msgid "scan file must be a .ply or .obj file, not {name}"
+msgstr "le fichier de scan doit être un .ply ou un .obj, pas {name}"
+
+msgid "PLY vertices need x, y and z properties: {path}"
+msgstr "les sommets PLY ont besoin des propriétés x, y et z : {path}"
+
+msgid "PLY vertex {row} is short: {path}"
+msgstr "le sommet PLY {row} est trop court : {path}"
+
+msgctxt "diagnostic"
+msgid ""
+"Welch (1967) periodogram, Hann window, density scaling; 10*log10(2*psd) "
+"so the integral matches AES17 RMS dBFS"
+msgstr "périodogramme de Welch (1967), fenêtre de Hann, échelle de densité ; 10*log10(2*psd) pour que l'intégrale corresponde au RMS dBFS AES17"
+
+msgid "ASCII PLY or OBJ (optional)"
+msgstr "PLY ASCII ou OBJ (facultatif)"
+
+msgid "Open scan"
+msgstr "Ouvrir un scan"
+
+msgid "Scan files (*.ply *.obj);;All files (*)"
+msgstr "Fichiers de scan (*.ply *.obj);;Tous les fichiers (*)"
+
+msgid "Spectrum (impulse response)"
+msgstr "Spectre (réponse impulsionnelle)"
+
+msgid ""
+"The faint points are an imported scan ({name}), not a RoomScope "
+"measurement and not a lidar attached to this computer."
+msgstr "Les points pâles sont un scan importé ({name}), pas une mesure RoomScope ni un lidar branché sur cet ordinateur."
+

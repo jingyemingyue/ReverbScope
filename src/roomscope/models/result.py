@@ -1021,6 +1021,81 @@ class PlacementResult:
         }
 
 
+#: Welch PSD of the impulse response (AES17 density), same scaling as noise.
+SPECTRUM_METHOD = diag(
+    "Welch (1967) periodogram, Hann window, density scaling; "
+    "10*log10(2*psd) so the integral matches AES17 RMS dBFS"
+)
+SPECTRUM_SOURCE = "impulse_response"
+
+
+@dataclass(frozen=True)
+class SpectrumResult:
+    """Power spectrum of the deconvolved impulse response.
+
+    Distinct from :class:`FrequencyResponseResult` (gated FFT magnitude of the
+    IR) and from :class:`NoiseResult` (Welch PSD of a quiet recording segment).
+    This is the energy spectrum of RoomScope's own IR, the product of the
+    sweep path.
+    """
+
+    frequencies_hz: FloatArray = field(repr=False)
+    level_db: FloatArray = field(repr=False)
+    peak_hz: float | None
+    peak_db: float | None
+    nperseg: int
+    method: str = SPECTRUM_METHOD
+    source: str = SPECTRUM_SOURCE
+    reference: str = PSD_REFERENCE
+
+    def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
+        data: dict[str, Any] = {
+            "peak_hz": self.peak_hz,
+            "peak_db": self.peak_db,
+            "nperseg": self.nperseg,
+            "method": self.method,
+            "source": self.source,
+            "reference": self.reference,
+            "points": int(self.frequencies_hz.shape[0]),
+        }
+        if include_curves:
+            data["frequencies_hz"] = _array_to_list(self.frequencies_hz, 3)
+            data["level_db"] = _array_to_list(self.level_db, 2)
+        return data
+
+
+@dataclass(frozen=True)
+class RoomScan:
+    """An imported lidar / photogrammetry scan used as a room-model overlay.
+
+    Coordinates are the file's, treated as metres. RoomScope does not align
+    them to the microphone and does not claim a lidar was attached.
+    """
+
+    format: str
+    source_name: str
+    points_m: FloatArray = field(repr=False)
+    faces: tuple[tuple[int, int, int], ...] = ()
+    bounds_min_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    bounds_max_m: tuple[float, float, float] = (0.0, 0.0, 0.0)
+    point_count: int = 0
+    format_reference: str = ""
+    notes: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "format": self.format,
+            "source_name": self.source_name,
+            "points_m": [list(map(float, row)) for row in self.points_m],
+            "faces": [list(face) for face in self.faces],
+            "bounds_min_m": list(self.bounds_min_m),
+            "bounds_max_m": list(self.bounds_max_m),
+            "point_count": self.point_count,
+            "format_reference": self.format_reference,
+            "notes": list(self.notes),
+        }
+
+
 @dataclass(frozen=True)
 class AnalysisResult:
     """Complete output of :func:`roomscope.core.pipeline.analyze`."""
@@ -1041,6 +1116,10 @@ class AnalysisResult:
     #: Vertical geometry from the early reflections (``None`` when the
     #: placement inputs were not supplied and no tier could be produced).
     placement: PlacementResult | None = None
+    #: Welch spectrum of the impulse response (always computed on a new analysis).
+    spectrum: SpectrumResult | None = None
+    #: Optional imported PLY/OBJ scan; overlay only, never a hardware PASS.
+    room_scan: RoomScan | None = None
     schema_version: int = RESULT_SCHEMA_VERSION
     roomscope_version: str = ""
 
@@ -1065,6 +1144,10 @@ class AnalysisResult:
             "resonances": self.resonances.to_dict(),
             "clipping": self.clipping.to_dict() if self.clipping is not None else None,
             "placement": self.placement.to_dict() if self.placement is not None else None,
+            "spectrum": self.spectrum.to_dict(include_curves)
+            if self.spectrum is not None
+            else None,
+            "room_scan": self.room_scan.to_dict() if self.room_scan is not None else None,
             "warnings": list(self.warnings),
         }
 

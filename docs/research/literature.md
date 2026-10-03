@@ -158,6 +158,14 @@ Playback/record clocks need not be locked; small mismatch leaves the IR clean, l
 
 pyroomacoustics documents `Room.plot` as plotting "the room with its walls, microphones, sources and images" (https://pyroomacoustics.readthedocs.io/en/pypi-release/pyroomacoustics.room.html). RoomScope's placement picture already showed the microphone, one cabinet and the known planes. It now also draws the first-order image through the upper plane and the specular bounce (`horizontal_plane_image_path`), from Allen & Berkley 1979 [20]. No wall is invented. The pyroomacoustics page is the idea source; **no source was copied.**
 
+### B.9 External lidar / mesh scan (file import only)
+
+RoomScope does not talk to a lidar. A user who already has a scan can import ASCII PLY (Stanford Triangle Format, Greg Turk; http://paulbourke.net/dataformats/ply/) or Wavefront OBJ (Library of Congress FDD000507). The readers in `io/scan.py` follow those public layouts only; binary PLY is refused. Coordinates are file units treated as metres and are drawn as an overlay. **No Open3D, trimesh or CloudCompare source was copied.** The checked-in fixture is a synthetic shoebox, not a capture.
+
+### B.10 Impulse-response spectrum
+
+The frequency-response tab is a gated FFT of a window around the direct sound. The noise tab is a Welch PSD of a quiet recording segment. Alongside those, RoomScope now reports a Welch (1967) PSD of the deconvolved IR itself (`core/spectrum.py`), with the same AES17 density scaling as B.7 (`10*log10(2*psd)`). SciPy's public `welch` is used; no third-party measurement program's spectrum code was copied. This VM shows it on synthetic recordings and the fake backend, not on a physical analyser.
+
 ---
 
 ## C. Patent search summary

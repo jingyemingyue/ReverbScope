@@ -271,6 +271,16 @@ class PlacementInputs(QGroupBox):
         form.addRow(_("Loudspeaker distance"), self.distance)
         form.addRow(_("Microphone height"), self.mic_height)
         form.addRow(self.temperature_measured, self.temperature)
+        scan_row = QHBoxLayout()
+        self.scan_path = QLineEdit()
+        self.scan_path.setPlaceholderText(_("ASCII PLY or OBJ (optional)"))
+        self.scan_path.setClearButtonEnabled(True)
+        browse_scan = QPushButton(_("Browse..."))
+        browse_scan.clicked.connect(self._browse_scan)
+        scan_row.addWidget(self.scan_path)
+        scan_row.addWidget(browse_scan)
+        form.addRow(_("Imported scan"), scan_row)
+        self.scan_path.textChanged.connect(self._redraw_scene)
         row.addLayout(form, 1)
         scene = QVBoxLayout()
         self.figure = Figure(figsize=(5.6, 3.3), dpi=100)
@@ -290,15 +300,38 @@ class PlacementInputs(QGroupBox):
         if not allowed:
             self.mic_height.setValue(0.0)
 
-    def _redraw_scene(self, _value: float | None = None) -> None:
+    def _browse_scan(self) -> None:
+        path, _filter = QFileDialog.getOpenFileName(
+            self,
+            _("Open scan"),
+            "",
+            _("Scan files (*.ply *.obj);;All files (*)"),
+        )
+        if path:
+            self.scan_path.setText(path)
+
+    def scan_file(self) -> Path | None:
+        text = self.scan_path.text().strip()
+        return Path(text) if text else None
+
+    def _redraw_scene(self, _value: float | str | None = None) -> None:
+        from roomscope.io.scan import ScanError, load_scan_optional
         from roomscope.ui.plots import plot_placement_illustration
 
         distance = self.distance.value()
         height = self.mic_height.value()
+        scan = None
+        try:
+            scan = load_scan_optional(self.scan_file())
+        except ScanError as exc:
+            self.scene_hint.setText(str(exc))
+            self.canvas.draw_idle()
+            return
         hint = plot_placement_illustration(
             self.figure,
             distance_m=distance if distance >= 0.20 else None,
             mic_height_m=height if self.mic_height.isEnabled() and height >= 0.02 else None,
+            scan=scan,
         )
         self.scene_hint.setText(hint)
         self.canvas.draw_idle()
@@ -556,6 +589,7 @@ class DawModePage(QWidget):
             sweep_path=str(self.state.sweep_path) if self.state.sweep_path else None,
             recording_path=str(self.state.recording_path) if self.state.recording_path else None,
             recording_profile=self.state.profile,
+            scan_path=str(self.placement.scan_file()) if self.placement.scan_file() else None,
         )
         self._set_busy(True, _("Analyzing..."))
         self._worker = AnalysisWorker(
@@ -574,6 +608,13 @@ class DawModePage(QWidget):
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
+        from roomscope.io.scan import ScanError, attach_room_scan
+
+        try:
+            result = attach_room_scan(result, self.placement.scan_file())
+        except ScanError as exc:
+            self._on_failure(str(exc))
+            return
         self.state.result = result
         self.state.findings = interpret(result, self.state.profile)
         self._set_busy(False, _("Done."))
@@ -1077,6 +1118,7 @@ class StandalonePage(QWidget):
             sweep_settings=self.state.sweep_settings,
             analysis_settings=self.state.analysis_settings,
             recording_profile=self.state.profile,
+            scan_path=str(self.placement.scan_file()) if self.placement.scan_file() else None,
         )
         assert self.state.reference is not None
         set_banner_text(self.status, _("Recorded. Analyzing..."))
@@ -1097,6 +1139,13 @@ class StandalonePage(QWidget):
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
+        from roomscope.io.scan import ScanError, attach_room_scan
+
+        try:
+            result = attach_room_scan(result, self.placement.scan_file())
+        except ScanError as exc:
+            self._on_failure(str(exc))
+            return
         self.state.result = result
         self.state.findings = interpret(result, self.state.profile)
         self._set_busy(False, _("Done."))

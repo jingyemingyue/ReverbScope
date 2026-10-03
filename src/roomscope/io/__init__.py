@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from roomscope.io.recent import recent_session_paths, remember_session
+from roomscope.io.scan import attach_room_scan, load_scan, load_scan_optional
 from roomscope.io.session_store import (
     LoadedMeasurement,
     SessionListing,
@@ -18,11 +19,14 @@ from roomscope.io.wav import load_reference, read_wav, write_sweep_file, write_w
 __all__ = [
     "LoadedMeasurement",
     "SessionListing",
+    "attach_room_scan",
     "bundle_session",
     "list_sessions",
     "load_measurement",
     "load_reference",
     "load_result",
+    "load_scan",
+    "load_scan_optional",
     "load_session",
     "read_wav",
     "recent_session_paths",

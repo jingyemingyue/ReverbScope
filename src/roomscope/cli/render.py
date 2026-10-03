@@ -161,6 +161,9 @@ def render_analysis(
     lines += _reflections(c, result)
     if result.placement is not None:
         lines += _placement(c, result.placement)
+    if result.room_scan is not None:
+        lines += _room_scan(c, result)
+    lines += _spectrum(c, result)
     lines += _resonances(c, result)
     lines += _diagnostics(c, result)
     lines += _findings(c, findings, profile_name)
@@ -189,6 +192,7 @@ def _glance_label_width() -> int:
         _("Noise floor"),
         _("Data quality"),
         _("Frequency response"),
+        _("Spectrum"),
     )
     return max(cell_width(label) for label in labels)
 
@@ -289,6 +293,15 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         quality += c.sep() + _("the recording clipped")
         status = "error"
     row(_("Data quality"), status, quality)
+    spectrum = result.spectrum
+    if spectrum is not None and spectrum.peak_hz is not None and spectrum.peak_db is not None:
+        row(
+            _("Spectrum"),
+            "ok",
+            _("peak {hz:.0f} Hz ({level:.1f} dB)").format(
+                hz=spectrum.peak_hz, level=spectrum.peak_db
+            ),
+        )
     return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
 
 
@@ -594,6 +607,49 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
             align="rlr",
         )
     for note in placement.notes:
+        lines += c.status("info", localize(note))
+    return lines
+
+
+def _spectrum(c: Console, result: AnalysisResult) -> list[str]:
+    spectrum = result.spectrum
+    lines = c.section(_("Spectrum"), _("of the impulse response"))
+    if spectrum is None or spectrum.peak_hz is None:
+        return lines + c.status("skip", _("No spectrum available"))
+    lines += c.fields(
+        [
+            (
+                _("Peak"),
+                f"{spectrum.peak_hz:.1f} Hz"
+                + (f" ({spectrum.peak_db:.1f} dB)" if spectrum.peak_db is not None else ""),
+            ),
+            (_("Source"), _("impulse response")),
+            (_("Window length"), str(spectrum.nperseg)),
+        ]
+    )
+    return lines
+
+
+def _room_scan(c: Console, result: AnalysisResult) -> list[str]:
+    scan = result.room_scan
+    assert scan is not None
+    lines = c.section(_("Imported scan"), scan.format.upper())
+    extent = (
+        scan.bounds_max_m[0] - scan.bounds_min_m[0],
+        scan.bounds_max_m[1] - scan.bounds_min_m[1],
+        scan.bounds_max_m[2] - scan.bounds_min_m[2],
+    )
+    lines += c.fields(
+        [
+            (_("File"), scan.source_name),
+            (_("Points"), str(scan.point_count)),
+            (
+                _("Extent"),
+                f"{extent[0]:.2f} × {extent[1]:.2f} × {extent[2]:.2f} m",
+            ),
+        ]
+    )
+    for note in scan.notes:
         lines += c.status("info", localize(note))
     return lines
 

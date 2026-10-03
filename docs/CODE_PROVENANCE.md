@@ -2,7 +2,9 @@
 
 Last reviewed: 2026-10-03 (referenced device parameters added to
 `src/roomscope/audio/referenced.py`; Chu noise-power subtraction added to
-`core/decay.py` from the published method; no third-party source was copied).
+`core/decay.py` from the published method; ASCII PLY / OBJ scan import
+and Welch IR spectrum added from published formats and methods; no
+third-party source was copied).
 
 ## Vendored or adapted third-party source files
 
@@ -108,6 +110,22 @@ MEASUREMENT_METHODOLOGY.md §3 [25]. pyrato's documented
 `energy_decay_curve_chu_lundeby` (https://pyrato.readthedocs.io/en/latest/modules/pyrato.edc.html)
 was the conceptual prompt for combining the two published steps; **no
 pyrato source was read or copied.**
+
+The scan importer in `io/scan.py` is a clean-room reader of two public
+layouts: Stanford Triangle Format / PLY ASCII 1.0 (Greg Turk;
+http://paulbourke.net/dataformats/ply/) and Wavefront OBJ vertex/face
+records (Library of Congress FDD000507). Binary PLY is refused.
+**No Open3D, trimesh, CloudCompare or other scanner-library source was
+read or copied.** Coordinates are the file's, treated as metres;
+RoomScope does not align them to the microphone and does not talk to a
+lidar. The checked-in `tests/fixtures/synthetic_room.ply` is a synthetic
+shoebox written for tests, not a capture.
+
+The impulse-response spectrum in `core/spectrum.py` calls SciPy's public
+`scipy.signal.welch` (already a dependency) with the same AES17 density
+scaling already used in `core/noise.py` (Welch 1967). It is RoomScope's
+own IR, not a hardware RTA. **No third-party measurement program's
+spectrum code was read or copied.**
 
 ## How to update this file
 

@@ -32,6 +32,8 @@
     "resonances": { "$ref": "#/$defs/resonances" },
     "clipping": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/clipping" }] },
     "placement": { "oneOf": [{ "type": "null" }, { "type": "object" }] },
+    "spectrum": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/spectrum" }] },
+    "room_scan": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/room_scan" }] },
     "warnings": { "type": "array", "items": { "type": "string" } }
   },
   "$defs": {
@@ -218,6 +220,44 @@
         "kind": { "enum": ["sample_rate_mismatch", "time_stretch"] },
         "generated_rate_hz": { "type": "integer" },
         "played_rate_hz": { "oneOf": [{ "type": "null" }, { "type": "integer" }] }
+      }
+    },
+    "spectrum": {
+      "type": "object",
+      "required": ["nperseg", "source"],
+      "properties": {
+        "peak_hz": { "$ref": "#/$defs/number_or_null" },
+        "peak_db": { "$ref": "#/$defs/number_or_null" },
+        "nperseg": { "type": "integer" },
+        "method": { "type": "string" },
+        "source": { "type": "string" },
+        "reference": { "type": "string" },
+        "points": { "type": "integer" },
+        "frequencies_hz": { "type": "array", "items": { "type": "number" } },
+        "level_db": { "type": "array", "items": { "type": "number" } }
+      }
+    },
+    "room_scan": {
+      "type": "object",
+      "required": ["format", "source_name", "point_count"],
+      "properties": {
+        "format": { "type": "string" },
+        "source_name": { "type": "string" },
+        "points_m": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "faces": { "type": "array", "items": { "type": "array", "items": { "type": "integer" } } },
+        "bounds_min_m": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+        "bounds_max_m": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
+        "point_count": { "type": "integer" },
+        "format_reference": { "type": "string" },
+        "notes": { "type": "array", "items": { "type": "string" } }
       }
     },
     "clipping": {

@@ -419,6 +419,16 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
         metavar="C",
         help=_("air temperature (C); 20 C is assumed, and reported as assumed, without it"),
     )
+    placement.add_argument(
+        "--scan",
+        type=Path,
+        default=None,
+        metavar="FILE",
+        help=_(
+            "imported room scan (ASCII PLY point cloud or Wavefront OBJ). "
+            "Not a lidar attached to this computer"
+        ),
+    )
     output = parser.add_argument_group(_("output"))
     output.add_argument("--no-curves", action="store_true", help=_("omit curves from result.json"))
     output.add_argument(
@@ -1073,6 +1083,9 @@ def _run_analysis(
     if getattr(args, "loopback", None) is not None:
         loopback_signal = read_wav(args.loopback)
     result = analyze(recording, reference, settings, loopback=loopback_signal)
+    from roomscope.io.scan import attach_room_scan
+
+    result = attach_room_scan(result, getattr(args, "scan", None))
     profile = _resolve_profile(args)
     findings = interpret(result, profile)
 
@@ -1093,6 +1106,7 @@ def _run_analysis(
             audio_interface=audio_interface,
             bit_depth=bit_depth,
             recording_profile=profile,
+            scan_path=str(args.scan) if getattr(args, "scan", None) else None,
         )
         session_path = save_measurement(
             out_dir,
@@ -1485,6 +1499,9 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
     settings = _analysis_settings(args)
     band = (float(args.band[0]), float(args.band[1])) if args.band else None
     result = analyze_impulse_response(ir, settings, excitation_band=band)
+    from roomscope.io.scan import attach_room_scan
+
+    result = attach_room_scan(result, getattr(args, "scan", None))
     profile = _resolve_profile(args)
     findings = interpret(result, profile)
     if args.out is not None:
@@ -1497,6 +1514,7 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
             analysis_settings=settings,
             recording_path=str(args.ir),
             recording_profile=profile,
+            scan_path=str(args.scan) if getattr(args, "scan", None) else None,
         )
         save_measurement(
             args.out,

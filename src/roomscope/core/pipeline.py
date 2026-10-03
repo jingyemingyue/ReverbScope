@@ -16,6 +16,7 @@ recording + reference sweep
     -> potential low-frequency resonances
     -> placement geometry (only what the supplied tape measurements make
        identifiable; nothing horizontal is ever derived)
+    -> spectrum of the deconvolved impulse response (Welch / AES17 density)
 """
 
 from __future__ import annotations
@@ -49,6 +50,7 @@ from roomscope.core.placement import estimate_placement
 from roomscope.core.playback_speed import diagnose_playback_speed
 from roomscope.core.reflections import detect_early_reflections
 from roomscope.core.resonance import detect_potential_resonances
+from roomscope.core.spectrum import measure_spectrum
 from roomscope.core.sweep import (
     REFERENCE_SILENCE_THRESHOLD_DB,
     active_region,
@@ -1006,6 +1008,7 @@ def analyze(
         resonances=resonances,
         clipping=clipping,
         placement=placement,
+        spectrum=measure_spectrum(impulse.samples, sample_rate),
         warnings=tuple(warnings),
         roomscope_version=__version__,
     )
@@ -1240,6 +1243,7 @@ def analyze_impulse_response(
         resonances=resonances,
         clipping=None,
         placement=placement,
+        spectrum=measure_spectrum(impulse.samples, sample_rate),
         warnings=tuple(warnings),
         roomscope_version=__version__,
     )

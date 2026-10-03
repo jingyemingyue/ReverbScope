@@ -5338,3 +5338,117 @@ msgid ""
 " dashed path is the specular bounce off the plane above."
 msgstr "中空の印はそのスピーカーの一次鏡像音源です。破線は上方平面での鏡面反射経路です。"
 
+
+msgid ""
+"imported room scan (ASCII PLY point cloud or Wavefront OBJ). Not a "
+"lidar attached to this computer"
+msgstr "インポートしたルームスキャン（ASCII PLY 点群または Wavefront OBJ）。このコンピュータに接続したライダーではありません"
+
+msgid "Spectrum"
+msgstr "スペクトル"
+
+msgid "of the impulse response"
+msgstr "インパルス応答の"
+
+msgid "Imported scan"
+msgstr "インポートしたスキャン"
+
+msgid "No spectrum available"
+msgstr "スペクトルはありません"
+
+msgid "Peak"
+msgstr "ピーク"
+
+msgid "Source"
+msgstr "ソース"
+
+msgid "impulse response"
+msgstr "インパルス応答"
+
+msgid "Window length"
+msgstr "窓長"
+
+msgid "File"
+msgstr "ファイル"
+
+msgid "Points"
+msgstr "点数"
+
+msgid "Extent"
+msgstr "範囲"
+
+msgid "peak {hz:.0f} Hz ({level:.1f} dB)"
+msgstr "ピーク {hz:.0f} Hz（{level:.1f} dB）"
+
+msgctxt "diagnostic"
+msgid "imported PLY scan; coordinates are file units treated as metres"
+msgstr "PLY スキャンを読み込みました。座標はファイル単位をメートルとして扱います"
+
+msgctxt "diagnostic"
+msgid "no lidar was attached; this is a file the user already had"
+msgstr "ライダーは接続されていません。ユーザーが既に持っていたファイルです"
+
+msgctxt "diagnostic"
+msgid "imported OBJ mesh; coordinates are file units treated as metres"
+msgstr "OBJ メッシュを読み込みました。座標はファイル単位をメートルとして扱います"
+
+msgctxt "diagnostic"
+msgid "imported scan was downsampled from {count} to {kept} points for the picture"
+msgstr "インポートしたスキャンを画面用に {count} 点から {kept} 点へ間引きました"
+
+msgid "scan file not found: {path}"
+msgstr "スキャンファイルが見つかりません: {path}"
+
+msgid "scan file has fewer than three vertices: {path}"
+msgstr "スキャンファイルの頂点が 3 未満です: {path}"
+
+msgid "not a PLY file: {path}"
+msgstr "PLY ファイルではありません: {path}"
+
+msgid "PLY header is incomplete: {path}"
+msgstr "PLY ヘッダーが不完全です: {path}"
+
+msgid "PLY file has no end_header: {path}"
+msgstr "PLY ファイルにヘッダー終端がありません: {path}"
+
+msgid "binary PLY is not read; export ASCII 1.0 PLY from the scanner: {path}"
+msgstr "バイナリ PLY は読みません。スキャナから ASCII 1.0 PLY を書き出してください: {path}"
+
+msgid "PLY vertex list is short: {path}"
+msgstr "PLY 頂点リストが短すぎます: {path}"
+
+msgid "OBJ file has no vertices: {path}"
+msgstr "OBJ ファイルに頂点がありません: {path}"
+
+msgid "scan file must be a .ply or .obj file, not {name}"
+msgstr "スキャンファイルは .ply または .obj である必要があります（{name} ではありません）"
+
+msgid "PLY vertices need x, y and z properties: {path}"
+msgstr "PLY 頂点には x、y、z 属性が必要です: {path}"
+
+msgid "PLY vertex {row} is short: {path}"
+msgstr "PLY 頂点 {row} が短すぎます: {path}"
+
+msgctxt "diagnostic"
+msgid ""
+"Welch (1967) periodogram, Hann window, density scaling; 10*log10(2*psd) "
+"so the integral matches AES17 RMS dBFS"
+msgstr "Welch（1967）ピリオドグラム、Hann 窓、密度スケーリング。10*log10(2*psd) で積分が AES17 RMS dBFS と一致"
+
+msgid "ASCII PLY or OBJ (optional)"
+msgstr "ASCII PLY または OBJ（任意）"
+
+msgid "Open scan"
+msgstr "スキャンを開く"
+
+msgid "Scan files (*.ply *.obj);;All files (*)"
+msgstr "スキャンファイル (*.ply *.obj);;すべてのファイル (*)"
+
+msgid "Spectrum (impulse response)"
+msgstr "スペクトル（インパルス応答）"
+
+msgid ""
+"The faint points are an imported scan ({name}), not a RoomScope "
+"measurement and not a lidar attached to this computer."
+msgstr "薄い点はインポートしたスキャン（{name}）であり、RoomScope の測定でも、このコンピュータに接続したライダーでもありません。"
+

@@ -46,6 +46,7 @@ src/roomscope/
     filters.py           octave bands, Butterworth SOS, time-reversed filtering, smoothing
     decay.py             Schroeder integration, Lundeby truncation, Chu subtraction, EDT/T20/T30
     frequency_response.py
+    spectrum.py          Welch PSD of the deconvolved IR (AES17 density)
     noise.py             quiet segment, dBFS, PSD, mains-hum detection
     reflections.py       early-reflection candidates
     placement.py         vertical geometry from reflections + tape measurements; first-order image path
@@ -56,6 +57,7 @@ src/roomscope/
     pipeline.py          Reference + analyze() + analyze_impulse_response()
   io/
     wav.py               soundfile-based read/write, sweep sidecar, load_reference
+    scan.py              ASCII PLY / Wavefront OBJ import (overlay only; no lidar)
     session_store.py     save_measurement / load_session / load_measurement / list_sessions / bundle_session / save_comparison
     recent.py            recent session paths under $ROOMSCOPE_HOME
     jsonutil.py          size-capped JSON object reads

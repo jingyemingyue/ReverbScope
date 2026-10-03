@@ -8,6 +8,22 @@ All notable changes to RoomScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Imported room scan.** `roomscope analyze --scan FILE` (and the
+  Placement page) reads an ASCII PLY point cloud or Wavefront OBJ the
+  user already has. Coordinates stay in file units, treated as metres,
+  and are drawn as faint points on the placement picture. Binary PLY is
+  refused. RoomScope does not talk to a lidar; the checked-in sample is
+  `tests/fixtures/synthetic_room.ply` (a 4×3×2.5 m shoebox, not a
+  capture). Formats: Stanford Triangle Format / Greg Turk
+  (http://paulbourke.net/dataformats/ply/) and Library of Congress
+  FDD000507 (Wavefront OBJ). Clean-room readers; no Open3D, trimesh or
+  CloudCompare source.
+- **Impulse-response spectrum.** `analyze` and `analyze-ir` now store a
+  Welch (1967) PSD of the deconvolved IR (`core/spectrum.py`), with the
+  same AES17 density scaling as the noise tab (`10*log10(2*psd)`). It is
+  a separate tab and `spectrum.csv`, not a gated frequency response and
+  not a quiet-segment noise PSD. Shown on the synthetic path and the
+  fake backend; this VM has no analyser and no claim of one.
 - **Referenced interface specs.** `roomscope devices --referenced` and the
   inventory JSON `referenced` object cite PortAudio v19.7.0 compiled
   defaults (including the OSS 4×128-frame request), alsa-lib dmix

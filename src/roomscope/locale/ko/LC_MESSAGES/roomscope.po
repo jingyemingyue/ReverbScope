@@ -5372,3 +5372,117 @@ msgid ""
 " dashed path is the specular bounce off the plane above."
 msgstr "빈 표시는 그 스피커의 1차 허상 음원입니다. 점선은 위쪽 평면에서의 정반사 경로입니다."
 
+
+msgid ""
+"imported room scan (ASCII PLY point cloud or Wavefront OBJ). Not a "
+"lidar attached to this computer"
+msgstr "가져온 룸 스캔(ASCII PLY 포인트 클라우드 또는 Wavefront OBJ). 이 컴퓨터에 연결된 라이다가 아닙니다"
+
+msgid "Spectrum"
+msgstr "스펙트럼"
+
+msgid "of the impulse response"
+msgstr "임펄스 응답의"
+
+msgid "Imported scan"
+msgstr "가져온 스캔"
+
+msgid "No spectrum available"
+msgstr "스펙트럼 없음"
+
+msgid "Peak"
+msgstr "피크"
+
+msgid "Source"
+msgstr "소스"
+
+msgid "impulse response"
+msgstr "임펄스 응답"
+
+msgid "Window length"
+msgstr "창 길이"
+
+msgid "File"
+msgstr "파일"
+
+msgid "Points"
+msgstr "점 수"
+
+msgid "Extent"
+msgstr "범위"
+
+msgid "peak {hz:.0f} Hz ({level:.1f} dB)"
+msgstr "피크 {hz:.0f} Hz ({level:.1f} dB)"
+
+msgctxt "diagnostic"
+msgid "imported PLY scan; coordinates are file units treated as metres"
+msgstr "PLY 스캔을 가져왔습니다. 좌표는 파일 단위를 미터로 취급합니다"
+
+msgctxt "diagnostic"
+msgid "no lidar was attached; this is a file the user already had"
+msgstr "라이다는 연결되지 않았습니다. 사용자가 이미 가지고 있던 파일입니다"
+
+msgctxt "diagnostic"
+msgid "imported OBJ mesh; coordinates are file units treated as metres"
+msgstr "OBJ 메시를 가져왔습니다. 좌표는 파일 단위를 미터로 취급합니다"
+
+msgctxt "diagnostic"
+msgid "imported scan was downsampled from {count} to {kept} points for the picture"
+msgstr "가져온 스캔을 그림용으로 {count}개에서 {kept}개로 줄였습니다"
+
+msgid "scan file not found: {path}"
+msgstr "스캔 파일을 찾을 수 없음: {path}"
+
+msgid "scan file has fewer than three vertices: {path}"
+msgstr "스캔 파일의 꼭짓점이 3개 미만입니다: {path}"
+
+msgid "not a PLY file: {path}"
+msgstr "PLY 파일이 아닙니다: {path}"
+
+msgid "PLY header is incomplete: {path}"
+msgstr "PLY 헤더가 불완전합니다: {path}"
+
+msgid "PLY file has no end_header: {path}"
+msgstr "PLY 파일에 헤더 종료 표시가 없습니다: {path}"
+
+msgid "binary PLY is not read; export ASCII 1.0 PLY from the scanner: {path}"
+msgstr "바이너리 PLY는 읽지 않습니다. 스캐너에서 ASCII 1.0 PLY를 내보내십시오: {path}"
+
+msgid "PLY vertex list is short: {path}"
+msgstr "PLY 꼭짓점 목록이 너무 짧습니다: {path}"
+
+msgid "OBJ file has no vertices: {path}"
+msgstr "OBJ 파일에 꼭짓점이 없습니다: {path}"
+
+msgid "scan file must be a .ply or .obj file, not {name}"
+msgstr "스캔 파일은 .ply 또는 .obj여야 하며 {name}이(가) 아닙니다"
+
+msgid "PLY vertices need x, y and z properties: {path}"
+msgstr "PLY 꼭짓점에는 x, y, z 속성이 필요합니다: {path}"
+
+msgid "PLY vertex {row} is short: {path}"
+msgstr "PLY 꼭짓점 {row}이(가) 너무 짧습니다: {path}"
+
+msgctxt "diagnostic"
+msgid ""
+"Welch (1967) periodogram, Hann window, density scaling; 10*log10(2*psd) "
+"so the integral matches AES17 RMS dBFS"
+msgstr "Welch(1967) 주기그램, Hann 창, 밀도 스케일. 10*log10(2*psd)로 적분이 AES17 RMS dBFS와 맞습니다"
+
+msgid "ASCII PLY or OBJ (optional)"
+msgstr "ASCII PLY 또는 OBJ(선택)"
+
+msgid "Open scan"
+msgstr "스캔 열기"
+
+msgid "Scan files (*.ply *.obj);;All files (*)"
+msgstr "스캔 파일 (*.ply *.obj);;모든 파일 (*)"
+
+msgid "Spectrum (impulse response)"
+msgstr "스펙트럼(임펄스 응답)"
+
+msgid ""
+"The faint points are an imported scan ({name}), not a RoomScope "
+"measurement and not a lidar attached to this computer."
+msgstr "흐린 점은 가져온 스캔({name})이며 RoomScope 측정이 아니고 이 컴퓨터에 연결된 라이다도 아닙니다."
+

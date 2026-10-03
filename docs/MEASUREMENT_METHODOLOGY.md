@@ -381,6 +381,23 @@ separately and labelled.
 **Limitations.** Relative dB only; the absolute gain of loudspeaker, mic and
 preamp is included. No phase display in v0.1.
 
+## 4a. Impulse-response spectrum
+
+**Source.** Welch (1967) periodogram, the same density estimator and AES17
+scaling already used for the quiet-segment noise PSD in §5
+(`10*log10(2*psd)` so the integral matches AES17 RMS dBFS). This is the
+energy spectrum of RoomScope's own deconvolved impulse response, not a
+gated frequency-response magnitude and not a hardware RTA.
+
+**Procedure** (`core/spectrum.py`). `scipy.signal.welch` on the IR samples,
+Hann window, `nperseg` at most half a second. Peak frequency and level
+are the loudest bin above 0 Hz. Always computed by `analyze` and
+`analyze-ir`. Exported as `spectrum.csv` and shown on the Spectrum tab.
+
+**Limitations.** Relative dBFS density only. No analyser, no calibrated
+SPL, no claim that a physical interface produced the curve. This VM
+shows it on synthetic recordings and the fake backend.
+
 ## 5. Background noise
 
 **Source.** AES17-2020 [18] for the dBFS definition (0 dBFS = RMS of a
@@ -508,6 +525,15 @@ construction Allen & Berkley use and the one pyroomacoustics documents
 for `Room.plot` (sources, microphones and images). No wall is drawn;
 the image is a construction, not a second loudspeaker. The arithmetic
 is `horizontal_plane_image_path` in `core/placement.py`.
+
+An optional imported scan (`--scan`, or the Placement page file field)
+overlays faint points from an ASCII PLY or Wavefront OBJ the user already
+has (`io/scan.py`). The layouts are the public Stanford Triangle Format
+(http://paulbourke.net/dataformats/ply/) and LoC FDD000507. Coordinates
+are file units treated as metres. The scan is not aligned to the
+microphone, does not invent walls, and is not a lidar attached to this
+computer. Binary PLY is refused. The checked-in sample is a synthetic
+shoebox, not a capture.
 
 **Limitations.** The reported `input_uncertainty_m` propagates the stated
 tape, temperature and peak-location uncertainties **only**; model error

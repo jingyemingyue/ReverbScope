@@ -57,6 +57,13 @@ Pro FS, PortAudio compiled defaults, ALSA dmix, PipeWire graph rate) live in
 They are borrowed published numbers, not a RoomScope measurement, and they
 do **not** mark any cell above PASS.
 
+No lidar was attached to this VM. The scan path reads a file the user
+already has (ASCII PLY or OBJ); the checked-in sample is a synthetic
+shoebox (`tests/fixtures/synthetic_room.ply`), not a capture. The IR
+spectrum is produced from RoomScope's own deconvolution on synthetic
+recordings and the fake backend. Neither is a physical lidar, analyser
+or interface result, and neither marks a cell above PASS.
+
 ## DAW matrix
 
 One Universal DAW Mode measurement per DAW, following

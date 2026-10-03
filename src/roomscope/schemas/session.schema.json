@@ -31,6 +31,7 @@
     "recording_profile": { "type": "string" },
     "roomscope_version": { "type": "string" },
     "platform": { "type": "string" },
-    "loopback_channel": { "type": ["integer", "null"] }
+    "loopback_channel": { "type": ["integer", "null"] },
+    "scan_path": { "type": ["string", "null"] }
   }
 }

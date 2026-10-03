@@ -39,6 +39,8 @@ from roomscope.models.result import (
     ReflectionsResult,
     ResonanceCandidate,
     ResonanceResult,
+    RoomScan,
+    SpectrumResult,
     Validity,
 )
 
@@ -405,6 +407,47 @@ def placement_from_dict(data: Any) -> PlacementResult | None:
     )
 
 
+def spectrum_from_dict(data: Any) -> SpectrumResult | None:
+    if data is None:
+        return None
+    payload = _obj(data, "spectrum")
+    return SpectrumResult(
+        frequencies_hz=_array(payload.get("frequencies_hz")),
+        level_db=_array(payload.get("level_db")),
+        peak_hz=payload.get("peak_hz"),
+        peak_db=payload.get("peak_db"),
+        nperseg=int(payload.get("nperseg", 0)),
+        method=str(payload.get("method", "")),
+        source=str(payload.get("source", "")),
+        reference=str(payload.get("reference", "")),
+    )
+
+
+def room_scan_from_dict(data: Any) -> RoomScan | None:
+    if data is None:
+        return None
+    payload = _obj(data, "room_scan")
+    points = np.asarray(payload.get("points_m") or (), dtype=np.float64)
+    if points.size == 0:
+        points = np.zeros((0, 3), dtype=np.float64)
+    elif points.ndim == 1:
+        points = points.reshape(-1, 3)
+    faces = tuple(tuple(int(i) for i in face) for face in payload.get("faces") or ())
+    mins = payload.get("bounds_min_m") or [0.0, 0.0, 0.0]
+    maxs = payload.get("bounds_max_m") or [0.0, 0.0, 0.0]
+    return RoomScan(
+        format=str(payload.get("format", "")),
+        source_name=str(payload.get("source_name", "")),
+        points_m=points,
+        faces=tuple((face[0], face[1], face[2]) for face in faces if len(face) >= 3),
+        bounds_min_m=(float(mins[0]), float(mins[1]), float(mins[2])),
+        bounds_max_m=(float(maxs[0]), float(maxs[1]), float(maxs[2])),
+        point_count=int(payload.get("point_count", points.shape[0])),
+        format_reference=str(payload.get("format_reference", "")),
+        notes=_str_tuple(payload.get("notes")),
+    )
+
+
 def analysis_result_from_dict(data: Any) -> AnalysisResult:
     payload = _obj(data, "result")
     version = read_schema_version(payload, RESULT_SCHEMA_VERSION, "result")
@@ -423,6 +466,8 @@ def analysis_result_from_dict(data: Any) -> AnalysisResult:
             warnings=_str_tuple(payload.get("warnings")),
             clipping=clipping_from_dict(payload.get("clipping")),
             placement=placement_from_dict(payload.get("placement")),
+            spectrum=spectrum_from_dict(payload.get("spectrum")),
+            room_scan=room_scan_from_dict(payload.get("room_scan")),
             schema_version=version,
             roomscope_version=str(payload.get("roomscope_version", "")),
         )

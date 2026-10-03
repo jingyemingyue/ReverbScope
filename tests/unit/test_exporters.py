@@ -26,6 +26,7 @@ def test_csv_exporter_writes_every_curve(tmp_path: Path, short_sweep: SweepSetti
     assert "decay_metrics.csv" in names
     assert "energy_metrics.csv" in names
     assert "frequency_response.csv" in names
+    assert "spectrum.csv" in names
     assert "reflections.csv" in names
     metrics = (tmp_path / "decay_metrics.csv").read_text(encoding="utf-8")
     assert "T20" in metrics

@@ -166,17 +166,18 @@ Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The UI shows them
 verbatim under a heading that says so.
 
-The Results page has seven tabs:
+The Results page has eight tabs:
 
 | Tab | What it shows |
 | --- | --- |
 | Overview | Broadband and octave-band EDT / T20 / T30 / RT60, plus C50 / C80 / D50 / centre time, each with validity; the text report; core diagnostics (always English). |
 | Impulse Response | The deconvolved IR. The peak is the direct sound; it is not normalised to 1.0. |
 | Frequency Response | Raw (dotted) and smoothed (solid) magnitude. A dashed curve is the electrical loopback when compensation ran. 0 dB is the interface, not “flat in the room”. |
+| Spectrum | Welch power spectrum of that same impulse response (AES17 density). Not the gated frequency-response tab and not the quiet-segment noise PSD. |
 | Decay | Schroeder / energy-decay curves. Broadband is a solid line; octave bands use changing dash patterns so colour is not the only cue. |
 | Noise | Quiet-segment spectrum and 50/60 Hz hum candidates. |
 | Early Reflections | ETC peaks (delay ms, level dB re direct). Open markers for candidates. |
-| Placement | Excess path, and — only with a tape-measured loudspeaker distance — loudspeaker height, the plane above both devices, and horizontal separation. No wall is named. |
+| Placement | Excess path, and — only with a tape-measured loudspeaker distance — loudspeaker height, the plane above both devices, and horizontal separation. No wall is named. An imported ASCII PLY or OBJ scan, if you already have one, is drawn as faint points. |
 
 Low-frequency resonance candidates stay in the Overview text report (and in
 `resonances.csv` after `roomscope export`). They are not a separate tab.
@@ -191,7 +192,10 @@ separation. It never names a wall or gives room length or width.
 
 Enter the tape numbers in Universal DAW Mode or Standalone Mode before
 Analyze, or pass `--speaker-distance` / `--mic-height` / `--temperature`
-on the CLI.
+on the CLI. To overlay a scan you already have, choose an ASCII PLY or
+OBJ on the Placement page or pass `--scan FILE`. RoomScope does not
+talk to a lidar; binary PLY is refused; coordinates stay as stored
+(treated as metres) and are not aligned to the microphone.
 
 ## Comparing two positions
 

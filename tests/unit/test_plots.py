@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from matplotlib.colors import to_hex
 from matplotlib.figure import Figure
 
 from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.ui.plots import plot_decay, plot_frequency_response
+from roomscope.io.scan import load_scan
+from roomscope.ui.plots import plot_decay, plot_frequency_response, plot_spectrum
 from roomscope.ui.theme import color_scheme, plot_colors, style_figure
 from tests.conftest import make_rir
 
@@ -122,3 +125,37 @@ def test_plot_chrome_follows_color_scheme(short_sweep, monkeypatch) -> None:
     monkeypatch.setenv("ROOMSCOPE_COLOR_SCHEME", "light")
     style_figure(fig)
     assert to_hex(fig.patch.get_facecolor()[:3]) == plot_colors()["bg"]
+
+
+def test_placement_picture_overlays_imported_scan_points() -> None:
+    from roomscope.ui.plots import plot_placement_illustration
+
+    scan = load_scan(Path("tests/fixtures/synthetic_room.ply"))
+    fig = Figure()
+    hint = plot_placement_illustration(fig, distance_m=2.0, mic_height_m=1.1, scan=scan)
+    assert "imported scan" in hint
+    assert "synthetic_room.ply" in hint
+    clouds = []
+    for collection in getattr(fig.axes[0], "collections", ()):
+        offsets = getattr(collection, "_offsets3d", None)
+        if offsets is None:
+            continue
+        _xs, _ys, zs = offsets
+        if len(zs) > 8:
+            clouds.append(collection)
+    assert clouds, "imported scan scatter missing"
+
+
+def test_spectrum_plot_draws_the_impulse_response_psd(short_sweep) -> None:
+    result = analyze(
+        synthetic_recording(
+            short_sweep,
+            make_rir(short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)]),
+            noise_rms=1e-5,
+        ),
+        Reference.from_settings(short_sweep),
+    )
+    fig = Figure()
+    plot_spectrum(fig, result)
+    assert fig.axes
+    assert any(line.get_xdata().size > 8 for line in fig.axes[0].lines)
