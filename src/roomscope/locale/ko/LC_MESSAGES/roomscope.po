@@ -5486,3 +5486,137 @@ msgid ""
 "measurement and not a lidar attached to this computer."
 msgstr "흐린 점은 가져온 스캔({name})이며 RoomScope 측정이 아니고 이 컴퓨터에 연결된 라이다도 아닙니다."
 
+msgid "DAW to follow"
+msgstr "따를 DAW"
+
+msgid "list open DAW projects, or say that none were found"
+msgstr "열려 있는 DAW 프로젝트를 나열하거나, 없음을 알림"
+
+msgid ""
+"No running DAW was queried. An empty list means none was declared (this "
+"VM has no DAW). The sweep sample rate follows the chosen project."
+msgstr ""
+"실행 중인 DAW를 조회하지 않았습니다. 빈 목록은 선언된 항목이 없음을 뜻합니다(이 가상 머신에는 DAW가 없습니다). 스윕 "
+"샘플 레이트는 선택한 프로젝트를 따릅니다."
+
+msgid ""
+"follow the open DAW project's sample rate. If none or more than one is "
+"in play, ask; do not guess"
+msgstr "열려 있는 DAW 프로젝트의 샘플 레이트를 따름.없거나 둘 이상이면 묻고, 추측하지 않음"
+
+msgid "DAW to follow when more than one is in play (exact name, not a guess)"
+msgstr "둘 이상일 때 따를 DAW(정확한 이름, 추측 아님)"
+
+msgid "project title when that DAW has more than one session open"
+msgstr "해당 DAW에 세션이 둘 이상 열려 있을 때의 프로젝트 제목"
+
+msgid "No DAW project was found. This computer was not treated as running a DAW."
+msgstr "DAW 프로젝트를 찾지 못했습니다. 이 컴퓨터는 DAW가 실행 중인 것으로 취급하지 않았습니다."
+
+msgid ""
+"Say which project to follow before generating a sweep. RoomScope will "
+"not guess the sample rate."
+msgstr "스윕을 만들기 전에 따를 프로젝트를 지정하세요. RoomScope는 샘플 레이트를 추측하지 않습니다."
+
+msgid "DAW"
+msgstr "DAW"
+
+msgid "Project"
+msgstr "프로젝트"
+
+msgid "One project is in play. RoomScope will follow it."
+msgstr "프로젝트가 하나뿐입니다. RoomScope가 그것을 따릅니다."
+
+msgid ""
+"More than one DAW project is in play. Say which one to follow with --daw "
+"NAME. RoomScope will not guess."
+msgstr "DAW 프로젝트가 둘 이상입니다. --daw 이름으로 따를 항목을 지정하세요. RoomScope는 추측하지 않습니다."
+
+msgid "Following"
+msgstr "따름"
+
+msgid "Settings that follow the chosen DAW"
+msgstr "선택한 DAW를 따르는 설정"
+
+msgid ""
+"No DAW project was found. This computer was not treated as running a "
+"DAW. Say which project RoomScope should follow (name and sample rate). "
+"The sweep sample rate must match that project. RoomScope will not guess."
+msgstr ""
+"DAW 프로젝트를 찾지 못했습니다. 이 컴퓨터는 DAW가 실행 중인 것으로 취급하지 않았습니다. RoomScope가 따를 "
+"프로젝트(이름과 샘플 레이트)를 지정하세요. 스윕 샘플 레이트는 그 프로젝트와 같아야 합니다. RoomScope는 추측하지 "
+"않습니다."
+
+msgctxt "diagnostic"
+msgid "following {label}; sweep sample rate matches that DAW project"
+msgstr "{label}을(를) 따름; 스윕 샘플 레이트가 해당 DAW 프로젝트와 일치"
+
+msgid ""
+"More than one DAW project is in play. Say which one RoomScope should "
+"follow; it will not guess. The sweep sample rate follows the chosen "
+"project."
+msgstr ""
+"DAW 프로젝트가 둘 이상입니다. RoomScope가 따를 항목을 지정하세요. 추측하지 않습니다. 스윕 샘플 레이트는 선택한 "
+"프로젝트를 따릅니다."
+
+msgid "Use --daw NAME and, if that name is shared, --daw-project TITLE."
+msgstr "--daw 이름을 쓰고, 그 이름이 겹치면 --daw-project 제목도 지정하세요."
+
+msgid "DAW name is required"
+msgstr "DAW 이름이 필요합니다"
+
+msgid "none of the open DAW projects is {name}. RoomScope will not guess"
+msgstr "열려 있는 DAW 프로젝트 중에 {name}이(가) 없습니다. RoomScope는 추측하지 않습니다"
+
+msgid "fake DAW entry {item} must be Name:rate or Name:rate:project"
+msgstr "가짜 DAW 항목 {item}은 이름:레이트 또는 이름:레이트:프로젝트 형식이어야 합니다"
+
+msgid ""
+"the chosen DAW project is {rate} Hz; --sample-rate {declared} Hz does "
+"not match. RoomScope will not guess"
+msgstr ""
+"선택한 DAW 프로젝트는 {rate} Hz입니다. --sample-rate {declared} Hz와 일치하지 않습니다. "
+"RoomScope는 추측하지 않습니다"
+
+msgid "fake DAW entry {item} has no sample rate"
+msgstr "가짜 DAW 항목 {item}에 샘플 레이트가 없습니다"
+
+msgid "Which DAW should RoomScope follow?"
+msgstr "RoomScope가 따를 DAW는 무엇입니까?"
+
+msgid ""
+"No DAW project was found. Type the DAW you are using. RoomScope will not "
+"guess a sample rate."
+msgstr "DAW 프로젝트를 찾지 못했습니다. 사용 중인 DAW를 입력하세요. RoomScope는 샘플 레이트를 추측하지 않습니다."
+
+msgid "Which project?"
+msgstr "어떤 프로젝트입니까?"
+
+msgid "Project title (optional). Needed when that DAW has more than one session open."
+msgstr "프로젝트 제목(선택). 해당 DAW에 세션이 둘 이상 열려 있을 때 필요합니다."
+
+msgid "Project sample rate"
+msgstr "프로젝트 샘플 레이트"
+
+msgid "The sweep must be generated at this rate."
+msgstr "스윕은 이 레이트로 만들어야 합니다."
+
+msgid "Which DAW project should RoomScope follow?"
+msgstr "RoomScope가 따를 DAW 프로젝트는 무엇입니까?"
+
+msgid ""
+"More than one DAW project is in play. Choose one. The sweep sample rate "
+"will match it. RoomScope will not guess."
+msgstr "DAW 프로젝트가 둘 이상입니다. 하나를 선택하세요. 스윕 샘플 레이트는 그것과 맞춥니다. RoomScope는 추측하지 않습니다."
+
+msgid "No DAW is being followed yet. Choose which project the sweep must match."
+msgstr "아직 따르는 DAW가 없습니다. 스윕이 맞춰야 할 프로젝트를 선택하세요."
+
+msgid "Choose DAW to follow..."
+msgstr "따를 DAW 선택..."
+
+msgid "Follow DAW"
+msgstr "DAW 따르기"
+
+msgid "Following {label}. The sweep sample rate matches that project."
+msgstr "{label}을(를) 따르는 중입니다. 스윕 샘플 레이트가 해당 프로젝트와 일치합니다."

@@ -121,6 +121,12 @@ RoomScope does not align them to the microphone and does not talk to a
 lidar. The checked-in `tests/fixtures/synthetic_room.ply` is a synthetic
 shoebox written for tests, not a capture.
 
+DAW follow in `daw.py` is RoomScope's own resolve/ask policy. Running
+hosts are not inspected and no DAW SDK is used. On a machine with no
+DAW — including this VM — the candidate list is empty unless tests
+inject entries or `ROOMSCOPE_FAKE_DAWS` is set. **No host-application
+source was read or copied.**
+
 The impulse-response spectrum in `core/spectrum.py` calls SciPy's public
 `scipy.signal.welch` (already a dependency) with the same AES17 density
 scaling already used in `core/noise.py` (Welch 1967). It is RoomScope's

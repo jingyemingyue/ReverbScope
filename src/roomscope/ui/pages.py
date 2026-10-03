@@ -377,6 +377,15 @@ class DawModePage(QWidget):
         self.sample_rate.setCurrentIndex(
             list(SUPPORTED_SAMPLE_RATES).index(state.sweep_settings.sample_rate)
         )
+        self.follow_label = QLabel(
+            _("No DAW is being followed yet. Choose which project the sweep must match.")
+        )
+        self.follow_label.setWordWrap(True)
+        self.follow_label.setProperty("role", "hint")
+        self.follow_button = QPushButton(_("Choose DAW to follow..."))
+        self.follow_button.clicked.connect(self.ensure_daw_follow)
+        form1.addRow(_("Follow DAW"), self.follow_button)
+        form1.addRow(self.follow_label)
         self.duration = QDoubleSpinBox()
         self.duration.setRange(1.0, 60.0)
         self.duration.setValue(state.sweep_settings.duration_s)
@@ -468,15 +477,55 @@ class DawModePage(QWidget):
         )
 
     def _choose_sweep_target(self) -> None:
+        if not self.ensure_daw_follow():
+            return
         path, _filter = QFileDialog.getSaveFileName(
             self, _("Save test signal"), "roomscope_sweep.wav", _("WAV files (*.wav)")
         )
         if path:
             self.generate_sweep_to(Path(path))
 
+    def ensure_daw_follow(self) -> bool:
+        """Resolve or ask which DAW project the sweep must follow. Never guess."""
+        from roomscope.daw import DawChoiceNeeded, open_daw_projects, resolve_daw_follow
+        from roomscope.ui.daw import ask_daw_project
+
+        if self.state.followed_daw is not None:
+            self._show_followed_daw()
+            return True
+        try:
+            self.state.followed_daw = resolve_daw_follow(open_daw_projects())
+        except DawChoiceNeeded as exc:
+            chosen = ask_daw_project(self, exc.candidates, reason=exc.reason)
+            if chosen is None:
+                return False
+            self.state.followed_daw = chosen
+        self._show_followed_daw()
+        return True
+
+    def _show_followed_daw(self) -> None:
+        from roomscope.daw import apply_daw_follow
+
+        project = self.state.followed_daw
+        if project is None:
+            return
+        settings = apply_daw_follow(self.current_sweep_settings(), project)
+        index = self.sample_rate.findData(settings.sample_rate)
+        if index >= 0:
+            self.sample_rate.setCurrentIndex(index)
+        self.follow_label.setText(
+            _("Following {label}. The sweep sample rate matches that project.").format(
+                label=project.label()
+            )
+        )
+
     def generate_sweep_to(self, path: Path) -> None:
         try:
             settings = self.current_sweep_settings()
+            if self.state.followed_daw is not None:
+                from roomscope.daw import apply_daw_follow
+
+                settings = apply_daw_follow(settings, self.state.followed_daw)
             wav_path, sidecar = write_sweep_file(settings, path)
         except RoomScopeError as exc:
             QMessageBox.critical(self, _("Cannot write test signal"), localize(str(exc)))
@@ -590,6 +639,8 @@ class DawModePage(QWidget):
             recording_path=str(self.state.recording_path) if self.state.recording_path else None,
             recording_profile=self.state.profile,
             scan_path=str(self.placement.scan_file()) if self.placement.scan_file() else None,
+            daw_name=self.state.followed_daw.daw if self.state.followed_daw else None,
+            daw_project=self.state.followed_daw.project if self.state.followed_daw else None,
         )
         self._set_busy(True, _("Analyzing..."))
         self._worker = AnalysisWorker(

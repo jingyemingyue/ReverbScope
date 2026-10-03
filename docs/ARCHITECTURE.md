@@ -35,7 +35,7 @@ src/roomscope/
     configuration.py     SweepSettings, AnalysisSettings (validated, immutable)
     result.py            AnalysisResult and sub-results, Validity enum, JSON export
     result_load.py       JSON → AnalysisResult (unknown keys ignored)
-    session.py           MeasurementSession (metadata, paths, summary)
+    session.py           MeasurementSession (metadata, paths, summary; optional daw_name / daw_project)
     comparison.py        ComparisonResult, MetricDelta, CompareSettings
     project.py           Project index (SHOULD)
     calibration.py       reserved CalibrationRecord
@@ -80,9 +80,11 @@ src/roomscope/
     console.py           terminal layout: colour policy, symbols, widths, tables, progress
     render.py            every report and message (the GUI's "Full report" panes too)
     report.py            format_report / format_comparison_report: render.py as plain text
+  daw.py                 follow a named / fake DAW project (sample rate only; never guess)
   demo.py                roomscope demo: two simulated positions through the real pipeline
   ui/                    optional (needs PySide6)
     app.py, main_window.py, pages.py, results.py, plots.py, workers.py, state.py
+    daw.py               ask which DAW project to follow (none / several)
     browser.py           session list (Home and Compare); project.json folders
     compare_view.py      two-session comparison
     settings_dialog.py   language, profile, backend, copy-recording

@@ -32,6 +32,8 @@
     "roomscope_version": { "type": "string" },
     "platform": { "type": "string" },
     "loopback_channel": { "type": ["integer", "null"] },
-    "scan_path": { "type": ["string", "null"] }
+    "scan_path": { "type": ["string", "null"] },
+    "daw_name": { "type": ["string", "null"] },
+    "daw_project": { "type": ["string", "null"] }
   }
 }

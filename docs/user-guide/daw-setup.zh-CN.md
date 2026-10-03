@@ -10,7 +10,7 @@
 
 ## 每个 DAW 都必须做到
 
-1. **采样率一致。** 按工程采样率生成测试信号：`roomscope sweep --sample-rate 44100 --out sweep_44k.wav`，或在界面步骤 1 中选择采样率。48 kHz 的文件在 44.1 kHz 工程里未经转换直接播放会慢 8 %，无法反卷积；只要 `.roomscope-sweep.json` 与 WAV 放在一起（请保持这样），这时 RoomScope 会报告 *“a file generated at 48000 Hz was played at 44100 Hz”*。以另一种采样率导出录音不会有问题：DAW 在导出时会转换，RoomScope 会按文件的采样率处理。
+1. **采样率一致。** 扫频采样率是 RoomScope 必须跟随你正在使用的 DAW 工程的唯一会话设置。`roomscope daw` 列出已声明或伪工程；若未找到或同时有多个，RoomScope 会询问，不会猜测。`roomscope sweep --follow-daw --daw REAPER`（未检测到工程时用 `--daw 名称 --sample-rate`）按该工程的采样率写扫频。界面里，在保存测试信号之前使用 **选择要跟随的 DAW...**。你也可以自己指定采样率：`roomscope sweep --sample-rate 44100 --out sweep_44k.wav`，或在界面步骤 1 中选择采样率。48 kHz 的文件在 44.1 kHz 工程里未经转换直接播放会慢 8 %，无法反卷积；只要 `.roomscope-sweep.json` 与 WAV 放在一起（请保持这样），这时 RoomScope 会报告 *“a file generated at 48000 Hz was played at 44100 Hz”*。以另一种采样率导出录音不会有问题：DAW 在导出时会转换，RoomScope 会按文件的采样率处理。RoomScope 不查询正在运行的宿主；编写本文档的虚拟机没有 DAW。
 2. **不做时间伸缩。** 测试信号片段必须关闭 Warp、Flex Time、Follow Tempo、Elastic Audio 及各种伸缩模式，导入后也不要再改速度。扫频速度偏差超过估计本身的离散范围（默认 10 秒扫频约 1.3 %，3 秒约 2.4 %，1 秒约 5.5 %）且使用了附带的 JSON 文件时，RoomScope 会报告 *“the DAW time-stretched it”*；更小的伸缩同样会毁掉测量（直达声置信度低、衰减不可靠），但不会被点名，所以请检查片段设置，不要只依赖报告。
 3. **干净的回放链路。** 旁通测试信号轨道、它经过的总线以及主输出上的所有插件：限幅器、削波器、“响度”或磁带插件，以及**房间校正**插件（SoundID Reference、ARC 等）——除非你就是要测校正后的系统。测试信号上不要有淡入淡出、片段增益或自动化。推子或片段增益低于 0 dB 没有关系。
 4. **只用一只扬声器。** 把测试信号轨道路由到要测的那一只扬声器（声像打到底或用单声道输出）。两只扬声器播放同一扫频会相互干涉，结果哪一只都不代表。

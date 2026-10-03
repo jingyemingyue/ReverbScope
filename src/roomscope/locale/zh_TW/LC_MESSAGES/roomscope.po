@@ -5340,3 +5340,130 @@ msgid ""
 "measurement and not a lidar attached to this computer."
 msgstr "淡色點是匯入的掃描（{name}），不是 RoomScope 的量測，也不是接在本機上的光達。"
 
+msgid "DAW to follow"
+msgstr "要跟隨的 DAW"
+
+msgid "list open DAW projects, or say that none were found"
+msgstr "列出已開啟的 DAW 工程，或說明未找到"
+
+msgid ""
+"No running DAW was queried. An empty list means none was declared (this "
+"VM has no DAW). The sweep sample rate follows the chosen project."
+msgstr "未查詢正在執行的 DAW。空清單表示未宣告任何工程（本虛擬機沒有 DAW）。掃頻取樣率跟隨所選工程。"
+
+msgid ""
+"follow the open DAW project's sample rate. If none or more than one is "
+"in play, ask; do not guess"
+msgstr "跟隨已開啟 DAW 工程的取樣率。若未找到或不止一個，則詢問，不要猜測"
+
+msgid "DAW to follow when more than one is in play (exact name, not a guess)"
+msgstr "同時有多個 DAW 時要跟隨的那一個（須用確切名稱，不是猜測）"
+
+msgid "project title when that DAW has more than one session open"
+msgstr "同一 DAW 開啟了多個工程時的工程標題"
+
+msgid "No DAW project was found. This computer was not treated as running a DAW."
+msgstr "未找到 DAW 工程。本機未被當作正在執行 DAW。"
+
+msgid ""
+"Say which project to follow before generating a sweep. RoomScope will "
+"not guess the sample rate."
+msgstr "產生掃頻前請指明要跟隨的工程。RoomScope 不會猜測取樣率。"
+
+msgid "DAW"
+msgstr "DAW"
+
+msgid "Project"
+msgstr "工程"
+
+msgid "One project is in play. RoomScope will follow it."
+msgstr "目前只有一個工程。RoomScope 將跟隨它。"
+
+msgid ""
+"More than one DAW project is in play. Say which one to follow with --daw "
+"NAME. RoomScope will not guess."
+msgstr "同時有多個 DAW 工程。請用 --daw 名稱 指明要跟隨的那個。RoomScope 不會猜測。"
+
+msgid "Following"
+msgstr "跟隨"
+
+msgid "Settings that follow the chosen DAW"
+msgstr "跟隨所選 DAW 的設定"
+
+msgid ""
+"No DAW project was found. This computer was not treated as running a "
+"DAW. Say which project RoomScope should follow (name and sample rate). "
+"The sweep sample rate must match that project. RoomScope will not guess."
+msgstr ""
+"未找到 DAW 工程。本機未被當作正在執行 DAW。請指明 RoomScope "
+"應跟隨的工程（名稱和取樣率）。掃頻取樣率必須與該工程一致。RoomScope 不會猜測。"
+
+msgctxt "diagnostic"
+msgid "following {label}; sweep sample rate matches that DAW project"
+msgstr "跟隨 {label}；掃頻取樣率與該 DAW 工程一致"
+
+msgid ""
+"More than one DAW project is in play. Say which one RoomScope should "
+"follow; it will not guess. The sweep sample rate follows the chosen "
+"project."
+msgstr "同時有多個 DAW 工程。請指明 RoomScope 應跟隨哪一個；它不會猜測。掃頻取樣率跟隨所選工程。"
+
+msgid "Use --daw NAME and, if that name is shared, --daw-project TITLE."
+msgstr "請使用 --daw 名稱；若該名稱對應多個工程，再加 --daw-project 標題。"
+
+msgid "DAW name is required"
+msgstr "必須填寫 DAW 名稱"
+
+msgid "none of the open DAW projects is {name}. RoomScope will not guess"
+msgstr "已開啟的 DAW 工程中沒有 {name}。RoomScope 不會猜測"
+
+msgid "fake DAW entry {item} must be Name:rate or Name:rate:project"
+msgstr "偽 DAW 條目 {item} 必須是 名稱:取樣率 或 名稱:取樣率:工程"
+
+msgid ""
+"the chosen DAW project is {rate} Hz; --sample-rate {declared} Hz does "
+"not match. RoomScope will not guess"
+msgstr "所選 DAW 工程為 {rate} Hz；--sample-rate {declared} Hz 與之不符。RoomScope 不會猜測"
+
+msgid "fake DAW entry {item} has no sample rate"
+msgstr "偽 DAW 條目 {item} 沒有取樣率"
+
+msgid "Which DAW should RoomScope follow?"
+msgstr "RoomScope 應跟隨哪一個 DAW？"
+
+msgid ""
+"No DAW project was found. Type the DAW you are using. RoomScope will not "
+"guess a sample rate."
+msgstr "未找到 DAW 工程。請輸入你正在使用的 DAW。RoomScope 不會猜測取樣率。"
+
+msgid "Which project?"
+msgstr "哪個工程？"
+
+msgid "Project title (optional). Needed when that DAW has more than one session open."
+msgstr "工程標題（可選）。同一 DAW 開啟了多個工作階段時需要填寫。"
+
+msgid "Project sample rate"
+msgstr "工程取樣率"
+
+msgid "The sweep must be generated at this rate."
+msgstr "掃頻必須按此取樣率產生。"
+
+msgid "Which DAW project should RoomScope follow?"
+msgstr "RoomScope 應跟隨哪一個 DAW 工程？"
+
+msgid ""
+"More than one DAW project is in play. Choose one. The sweep sample rate "
+"will match it. RoomScope will not guess."
+msgstr "同時有多個 DAW 工程。請選擇一個。掃頻取樣率將與之相符。RoomScope 不會猜測。"
+
+msgid "No DAW is being followed yet. Choose which project the sweep must match."
+msgstr "尚未跟隨任何 DAW。請選擇掃頻必須相符的工程。"
+
+msgid "Choose DAW to follow..."
+msgstr "選擇要跟隨的 DAW..."
+
+msgid "Follow DAW"
+msgstr "跟隨 DAW"
+
+msgid "Following {label}. The sweep sample rate matches that project."
+msgstr "正在跟隨 {label}。掃頻取樣率與該工程一致。"

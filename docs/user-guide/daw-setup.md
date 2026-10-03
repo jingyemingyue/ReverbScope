@@ -18,14 +18,22 @@ then the steps in the DAWs most studios use. The Chinese translation is
 
 ## What every DAW must do
 
-1. **Same sample rate.** Generate the test signal at the project's sample
-   rate: `roomscope sweep --sample-rate 44100 --out sweep_44k.wav`, or pick
+1. **Same sample rate.** The sweep sample rate is the only RoomScope
+   session setting that must follow the DAW project you are using.
+   `roomscope daw` lists declared or fake projects; if none or more than
+   one is in play, RoomScope asks and will not guess.
+   `roomscope sweep --follow-daw --daw REAPER` (or `--daw NAME --sample-rate`
+   when none is detected) writes the sweep at that project's rate. In the
+   GUI, use **Choose DAW to follow...** before saving the test signal.
+   You can still set the rate yourself:
+   `roomscope sweep --sample-rate 44100 --out sweep_44k.wav`, or pick
    the rate in the GUI's Step 1. A 48 kHz file played unconverted in a
    44.1 kHz project runs 8 % slow and cannot be deconvolved; RoomScope reports
    *"a file generated at 48000 Hz was played at 44100 Hz"* when that happens,
    provided the `.roomscope-sweep.json` sidecar is next to the WAV (keep it
    there). Exporting the recording at another rate is harmless: the DAW
-   converts on export and RoomScope follows the file's rate.
+   converts on export and RoomScope follows the file's rate. RoomScope
+   does not query a running host; this documentation VM has no DAW.
 2. **No time-stretching.** Warp, Flex Time, Follow Tempo, elastic audio and
    stretch modes must be off for the test-signal clip, and the tempo must not
    change after import. RoomScope reports *"the DAW time-stretched it"* when

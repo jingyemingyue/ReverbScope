@@ -30,6 +30,8 @@
 
 这台虚拟机没有连接激光雷达。扫描路径读取的是用户已有的文件（ASCII PLY 或 OBJ）；仓库里的样例是合成的鞋盒（`tests/fixtures/synthetic_room.ply`），不是实采。脉冲响应频谱来自 RoomScope 自己的反卷积，用的是合成录音和 fake 后端。两者都不是实体激光雷达、分析仪或音频接口的结果，也**不会**把上表任何单元格标为 PASS。
 
+这台虚拟机没有安装、也没有运行任何 DAW。`roomscope daw` 和 `--follow-daw` 只走了伪路径（`ROOMSCOPE_FAKE_DAWS` / 测试注入）。那不是经过宿主的通用 DAW 模式测量，也**不会**把 DAW 矩阵的任何单元格标为 PASS。
+
 ## DAW 矩阵
 
 每个 DAW 做一次通用 DAW 模式测量，严格按照 [user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md)（英文版 [user-guide/daw-setup.md](user-guide/daw-setup.md)）操作：按工程采样率生成扫频，用文中列出的菜单录音和导出，分析结果的 `direct_sound_confidence` 为 high（高）。一个单元格同时也检验说明对该 DAW 版本是否正确；不正确时，请在同一个 pull request 中修正指南。每个 DAW 再做两项反向检查，确认诊断有效：一是在 44.1 kHz 工程中使用 48 kHz 扫频，并关闭 DAW 的导入转换（预期出现采样率提示；在播放时重采样的 DAW，如 Live 或 REAPER，应当给出有效结果，而 Digital Performer 会拒绝播放该文件：请记录实际发生了什么）；二是对会做时间伸缩的 DAW，把片段伸缩（例如到 97 %）或在导入后改变速度（预期出现时间伸缩提示）。

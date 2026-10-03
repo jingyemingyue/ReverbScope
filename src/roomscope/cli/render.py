@@ -1476,29 +1476,35 @@ def _catalog_latency(console: Console, entry: Any) -> str:
 
 
 def render_sweep_written(
-    console: Console, settings: SweepSettings, wav_path: object, sidecar: object
+    console: Console,
+    settings: SweepSettings,
+    wav_path: object,
+    sidecar: object,
+    *,
+    followed: object | None = None,
 ) -> str:
     c = console
     lines = c.title(_("RoomScope test signal"))
     lines.append("")
     lines += c.status("ok", Verbatim(_("Wrote {path}").format(path=wav_path)))
-    lines += c.fields(
-        [
-            (
-                _("Length"),
-                _("{seconds:.1f} s at {rate}").format(
-                    seconds=settings.total_samples / settings.sample_rate,
-                    rate=rate_text(settings.sample_rate),
-                ),
+    fields = [
+        (
+            _("Length"),
+            _("{seconds:.1f} s at {rate}").format(
+                seconds=settings.total_samples / settings.sample_rate,
+                rate=rate_text(settings.sample_rate),
             ),
-            (
-                _("Sweep"),
-                f"{frequency_text(settings.start_hz)} – {frequency_text(settings.end_hz)}"
-                f"{c.sep()}{settings.duration_s:g} s{c.sep()}{settings.level_dbfs:g} dBFS",
-            ),
-        ],
-        indent=4,
-    )
+        ),
+        (
+            _("Sweep"),
+            f"{frequency_text(settings.start_hz)} – {frequency_text(settings.end_hz)}"
+            f"{c.sep()}{settings.duration_s:g} s{c.sep()}{settings.level_dbfs:g} dBFS",
+        ),
+    ]
+    if followed is not None:
+        label = getattr(followed, "label", None)
+        fields.append((_("Following"), label() if callable(label) else str(followed)))
+    lines += c.fields(fields, indent=4)
     lines += c.status(
         "ok",
         Verbatim(_("Wrote {path}").format(path=sidecar)),
@@ -1535,6 +1541,57 @@ def render_sweep_written(
         _("Start with the monitors turned down and raise them between takes if needed."),
         style=("dim",),
     )
+    return c.fit("\n".join(lines))
+
+
+def render_daw_projects(console: Console, projects: Sequence[object]) -> str:
+    """Open / declared DAW projects, or the ask when none or several are in play."""
+    from roomscope.daw import DawProject, FOLLOWED_SETTINGS
+
+    c = console
+    lines = c.title(_("DAW to follow"))
+    lines.append("")
+    lines += c.fields(
+        [
+            (
+                _("Settings that follow the chosen DAW"),
+                ", ".join(
+                    _("Sample rate") if name == "sample_rate" else name
+                    for name in FOLLOWED_SETTINGS
+                ),
+            )
+        ]
+    )
+    if not projects:
+        lines += c.status(
+            "warn",
+            _("No DAW project was found. This computer was not treated as running a DAW."),
+        )
+        lines += c.status(
+            "info",
+            _(
+                "Say which project to follow before generating a sweep. "
+                "RoomScope will not guess the sample rate."
+            ),
+        )
+        return c.fit("\n".join(lines))
+    rows = []
+    for item in projects:
+        project = item if isinstance(item, DawProject) else None
+        if project is None:
+            continue
+        rows.append([project.daw, project.project or c.dash(), rate_text(project.sample_rate)])
+    lines += c.table([_("DAW"), _("Project"), _("Sample rate")], rows, align="llr")
+    if len(projects) == 1:
+        lines += c.status("ok", _("One project is in play. RoomScope will follow it."))
+    else:
+        lines += c.status(
+            "warn",
+            _(
+                "More than one DAW project is in play. Say which one to follow "
+                "with --daw NAME. RoomScope will not guess."
+            ),
+        )
     return c.fit("\n".join(lines))
 
 

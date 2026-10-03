@@ -166,6 +166,10 @@ RoomScope does not talk to a lidar. A user who already has a scan can import ASC
 
 The frequency-response tab is a gated FFT of a window around the direct sound. The noise tab is a Welch PSD of a quiet recording segment. Alongside those, RoomScope now reports a Welch (1967) PSD of the deconvolved IR itself (`core/spectrum.py`), with the same AES17 density scaling as B.7 (`10*log10(2*psd)`). SciPy's public `welch` is used; no third-party measurement program's spectrum code was copied. This VM shows it on synthetic recordings and the fake backend, not on a physical analyser.
 
+### B.11 Follow the DAW in play (no host query)
+
+The sweep must be generated at the project sample rate (daw-setup.md). RoomScope already treated that rate as DAW-dependent; it does not copy export bit depth or time-stretch from a host. `daw.py` resolves a named or fake project and asks when none or several are in play. This VM has no DAW; the path is `ROOMSCOPE_FAKE_DAWS` / injected entries only. No DAW SDK and no process scan.
+
 ---
 
 ## C. Patent search summary

@@ -64,6 +64,12 @@ spectrum is produced from RoomScope's own deconvolution on synthetic
 recordings and the fake backend. Neither is a physical lidar, analyser
 or interface result, and neither marks a cell above PASS.
 
+No DAW was installed or running on this VM. `roomscope daw` and
+`--follow-daw` were exercised with the fake path
+(`ROOMSCOPE_FAKE_DAWS` / injected entries) only. That is not a
+Universal DAW Mode measurement through a host, and it does **not**
+mark any DAW-matrix cell PASS.
+
 ## DAW matrix
 
 One Universal DAW Mode measurement per DAW, following

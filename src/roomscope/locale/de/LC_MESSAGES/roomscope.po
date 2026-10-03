@@ -6083,3 +6083,157 @@ msgid ""
 "measurement and not a lidar attached to this computer."
 msgstr "Die blassen Punkte sind ein importierter Scan ({name}), keine RoomScope-Messung und kein an diesem Rechner angeschlossenes Lidar."
 
+msgid "DAW to follow"
+msgstr "Zu folgende DAW"
+
+msgid "list open DAW projects, or say that none were found"
+msgstr "offene DAW-Projekte auflisten oder sagen, dass keines gefunden wurde"
+
+msgid ""
+"No running DAW was queried. An empty list means none was declared (this "
+"VM has no DAW). The sweep sample rate follows the chosen project."
+msgstr ""
+"Es wurde kein laufendes DAW abgefragt. Eine leere Liste heißt, dass "
+"keines angegeben wurde (diese virtuelle Maschine hat kein DAW). Die "
+"Abtastrate des Sweeps folgt dem gewählten Projekt."
+
+msgid ""
+"follow the open DAW project's sample rate. If none or more than one is "
+"in play, ask; do not guess"
+msgstr ""
+"der Abtastrate des offenen DAW-Projekts folgen. Wenn keines oder mehrere "
+"vorliegen, nachfragen; nicht raten"
+
+msgid "DAW to follow when more than one is in play (exact name, not a guess)"
+msgstr "Zu folgende DAW, wenn mehrere vorliegen (exakter Name, kein Raten)"
+
+msgid "project title when that DAW has more than one session open"
+msgstr "Projekttitel, wenn in diesem DAW mehr als eine Sitzung offen ist"
+
+msgid "No DAW project was found. This computer was not treated as running a DAW."
+msgstr ""
+"Kein DAW-Projekt gefunden. Dieser Rechner wurde nicht als laufendes DAW "
+"behandelt."
+
+msgid ""
+"Say which project to follow before generating a sweep. RoomScope will "
+"not guess the sample rate."
+msgstr ""
+"Sagen Sie vor dem Sweep, welchem Projekt gefolgt werden soll. RoomScope "
+"rät die Abtastrate nicht."
+
+msgid "DAW"
+msgstr "DAW"
+
+msgid "Project"
+msgstr "Projekt"
+
+msgid "One project is in play. RoomScope will follow it."
+msgstr "Ein Projekt liegt vor. RoomScope folgt ihm."
+
+msgid ""
+"More than one DAW project is in play. Say which one to follow with --daw "
+"NAME. RoomScope will not guess."
+msgstr ""
+"Es liegen mehrere DAW-Projekte vor. Sagen Sie mit --daw NAME, welchem "
+"gefolgt werden soll. RoomScope rät nicht."
+
+msgid "Following"
+msgstr "Folgt"
+
+msgid "Settings that follow the chosen DAW"
+msgstr "Einstellungen, die der gewählten DAW folgen"
+
+msgid ""
+"No DAW project was found. This computer was not treated as running a "
+"DAW. Say which project RoomScope should follow (name and sample rate). "
+"The sweep sample rate must match that project. RoomScope will not guess."
+msgstr ""
+"Kein DAW-Projekt gefunden. Dieser Rechner wurde nicht als laufendes DAW "
+"behandelt. Sagen Sie, welchem Projekt RoomScope folgen soll (Name und "
+"Abtastrate). Die Sweep-Abtastrate muss zu diesem Projekt passen. "
+"RoomScope rät nicht."
+
+msgctxt "diagnostic"
+msgid "following {label}; sweep sample rate matches that DAW project"
+msgstr "folgt {label}; Sweep-Abtastrate entspricht diesem DAW-Projekt"
+
+msgid ""
+"More than one DAW project is in play. Say which one RoomScope should "
+"follow; it will not guess. The sweep sample rate follows the chosen "
+"project."
+msgstr ""
+"Es liegen mehrere DAW-Projekte vor. Sagen Sie, welchem RoomScope folgen "
+"soll; es rät nicht. Die Sweep-Abtastrate folgt dem gewählten Projekt."
+
+msgid "Use --daw NAME and, if that name is shared, --daw-project TITLE."
+msgstr ""
+"Verwenden Sie --daw NAME und, wenn der Name mehrfach vorkommt, "
+"--daw-project TITEL."
+
+msgid "DAW name is required"
+msgstr "DAW-Name ist erforderlich"
+
+msgid "none of the open DAW projects is {name}. RoomScope will not guess"
+msgstr "keines der offenen DAW-Projekte ist {name}. RoomScope rät nicht"
+
+msgid "fake DAW entry {item} must be Name:rate or Name:rate:project"
+msgstr "der fingierte DAW-Eintrag {item} muss Name:Rate oder Name:Rate:Projekt sein"
+
+msgid ""
+"the chosen DAW project is {rate} Hz; --sample-rate {declared} Hz does "
+"not match. RoomScope will not guess"
+msgstr ""
+"das gewählte DAW-Projekt ist {rate} Hz; --sample-rate {declared} Hz "
+"passt nicht. RoomScope rät nicht"
+
+msgid "fake DAW entry {item} has no sample rate"
+msgstr "der fingierte DAW-Eintrag {item} hat keine Abtastrate"
+
+msgid "Which DAW should RoomScope follow?"
+msgstr "Welcher DAW soll RoomScope folgen?"
+
+msgid ""
+"No DAW project was found. Type the DAW you are using. RoomScope will not "
+"guess a sample rate."
+msgstr ""
+"Kein DAW-Projekt gefunden. Geben Sie das verwendete DAW ein. RoomScope "
+"rät keine Abtastrate."
+
+msgid "Which project?"
+msgstr "Welches Projekt?"
+
+msgid "Project title (optional). Needed when that DAW has more than one session open."
+msgstr ""
+"Projekttitel (optional). Nötig, wenn in diesem DAW mehr als eine Sitzung "
+"offen ist."
+
+msgid "Project sample rate"
+msgstr "Projekt-Abtastrate"
+
+msgid "The sweep must be generated at this rate."
+msgstr "Der Sweep muss mit dieser Rate erzeugt werden."
+
+msgid "Which DAW project should RoomScope follow?"
+msgstr "Welchem DAW-Projekt soll RoomScope folgen?"
+
+msgid ""
+"More than one DAW project is in play. Choose one. The sweep sample rate "
+"will match it. RoomScope will not guess."
+msgstr ""
+"Es liegen mehrere DAW-Projekte vor. Wählen Sie eines. Die "
+"Sweep-Abtastrate folgt ihm. RoomScope rät nicht."
+
+msgid "No DAW is being followed yet. Choose which project the sweep must match."
+msgstr ""
+"Es wird noch keinem DAW gefolgt. Wählen Sie das Projekt, zu dem der "
+"Sweep passen muss."
+
+msgid "Choose DAW to follow..."
+msgstr "DAW zum Folgen wählen…"
+
+msgid "Follow DAW"
+msgstr "DAW folgen"
+
+msgid "Following {label}. The sweep sample rate matches that project."
+msgstr "Folgt {label}. Die Sweep-Abtastrate entspricht diesem Projekt."

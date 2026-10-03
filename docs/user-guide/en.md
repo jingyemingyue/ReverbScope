@@ -97,8 +97,27 @@ the demo never overwrites a folder it did not write. `roomscope demo --out
 
 ## Universal DAW Mode
 
-1. `roomscope sweep --sample-rate <project rate> --out sweep.wav` (or the GUI
-   “Universal DAW Mode” generate button, with the project's sample rate).
+The **sweep sample rate** must match the DAW project you are actually
+using. That is the only session setting RoomScope already treats as
+DAW-dependent (export bit depth and time-stretch are your instructions,
+not values copied from a host). RoomScope does not talk to a DAW and
+does not scan running programs.
+
+- `roomscope daw` lists declared or fake projects, or says that none
+  were found. This computer is not treated as running a DAW unless you
+  set `ROOMSCOPE_FAKE_DAWS` (test / demo only: `Name:rate` or
+  `Name:rate:project`, separated by `;`).
+- If none or more than one project is in play, RoomScope **asks** which
+  one to follow. It will not guess. CLI: `--follow-daw --daw NAME` and,
+  when that name is shared, `--daw-project TITLE`. With no detected
+  project, `--daw NAME --sample-rate HZ` is the declared answer.
+- In the GUI, **Choose DAW to follow...** on Universal DAW Mode Step 1
+  (before Save Test Signal). Several fakes are a pick list; none means
+  you type a name and a rate.
+
+1. `roomscope sweep --follow-daw --daw <name> --out sweep.wav` (or
+   `roomscope sweep --sample-rate <project rate> --out sweep.wav`, or the
+   GUI “Universal DAW Mode” generate button after choosing the DAW).
    Keep the `.roomscope-sweep.json` sidecar next to the WAV.
 2. Import the WAV on a new DAW track, with time-stretching (Warp, Flex,
    Follow Tempo) off and no plug-in on its path. Route it to one loudspeaker.

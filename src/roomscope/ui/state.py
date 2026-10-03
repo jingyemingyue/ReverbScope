@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from roomscope.core.pipeline import Reference
+from roomscope.daw import DawProject
 from roomscope.interpretation import Finding
 from roomscope.models.audio import AudioSignal
 from roomscope.models.configuration import AnalysisSettings, SweepSettings
@@ -26,6 +27,7 @@ class MeasurementState:
     result: AnalysisResult | None = None
     findings: list[Finding] = field(default_factory=list)
     session: MeasurementSession = field(default_factory=MeasurementSession)
+    followed_daw: DawProject | None = None
 
     def reset(self) -> None:
         self.recording_path = None
@@ -33,3 +35,4 @@ class MeasurementState:
         self.result = None
         self.findings = []
         self.session = MeasurementSession(mode=self.mode)
+        self.followed_daw = None

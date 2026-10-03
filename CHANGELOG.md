@@ -8,6 +8,16 @@ All notable changes to RoomScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Follow the DAW in play.** The sweep sample rate is the only session
+  setting RoomScope already treats as DAW-dependent; it must match the
+  chosen project. `roomscope daw` lists declared / fake projects (this
+  VM has no DAW and does not query hosts). Zero or several candidates
+  raise an ask (`DawChoiceNeeded`); RoomScope does not guess. CLI:
+  `roomscope sweep --follow-daw --daw NAME [--daw-project TITLE]`.
+  GUI Universal DAW Mode: **Choose DAW to follow...** before Save Test
+  Signal. Fake path: `ROOMSCOPE_FAKE_DAWS=Name:rate[:project]`,
+  `;`-separated. A plain `roomscope sweep --out` still uses 48 kHz so
+  existing goldens stay valid. No real DAW was running.
 - **Imported room scan.** `roomscope analyze --scan FILE` (and the
   Placement page) reads an ASCII PLY point cloud or Wavefront OBJ the
   user already has. Coordinates stay in file units, treated as metres,

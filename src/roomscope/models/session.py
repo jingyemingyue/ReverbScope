@@ -70,6 +70,9 @@ class MeasurementSession:
     loopback_channel: int | None = None
     #: Optional imported PLY/OBJ scan path (not a lidar attached to this machine).
     scan_path: str | None = None
+    #: DAW the sweep followed (name only; not a claim that a host was queried).
+    daw_name: str | None = None
+    daw_project: str | None = None
     schema_version: int = SESSION_SCHEMA_VERSION
 
     def to_dict(self) -> dict[str, Any]:

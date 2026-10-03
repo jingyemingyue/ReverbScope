@@ -59,7 +59,13 @@ roomscope-env/bin/roomscope gui
 
 ## 通用 DAW 模式
 
-1. `roomscope sweep --sample-rate <project rate> --out sweep.wav`（或在界面的“通用 DAW 模式”中用“步骤 1 — 生成测试信号”生成，采样率选工程采样率）。把 `.roomscope-sweep.json` 配套文件和 WAV 放在一起。
+**扫频采样率**必须与你正在使用的 DAW 工程一致。这是 RoomScope 已经当作依赖 DAW 的唯一会话设置（导出位深和时间伸缩是你的操作说明，不是从宿主抄来的值）。RoomScope 不连接 DAW，也不扫描正在运行的程序。
+
+- `roomscope daw` 列出已声明或伪（fake）工程，或说明未找到。除非设置了 `ROOMSCOPE_FAKE_DAWS`（仅测试 / 演示：`名称:采样率` 或 `名称:采样率:工程`，用 `;` 分隔），本机不会被当作正在运行 DAW。
+- 若未找到或同时有多个工程，RoomScope **会询问**要跟随哪一个，不会猜测。命令行：`--follow-daw --daw 名称`；同一名称有多个工程时再加 `--daw-project 标题`。未检测到工程时，`--daw 名称 --sample-rate 采样率` 就是你给出的答案。
+- 界面里，通用 DAW 模式步骤 1 的 **选择要跟随的 DAW...**（在“保存测试信号”之前）。多个伪工程是选择列表；一个都没有时，请输入名称和采样率。
+
+1. `roomscope sweep --follow-daw --daw <名称> --out sweep.wav`（或 `roomscope sweep --sample-rate <工程采样率> --out sweep.wav`，或在界面的“通用 DAW 模式”中先选择 DAW 再生成）。把 `.roomscope-sweep.json` 配套文件和 WAV 放在一起。
 2. 把 WAV 导入 DAW 的一条新轨道，关闭时间伸缩（Warp、Flex、Follow Tempo），信号通路上不要有插件。把它路由到一只扬声器。
 3. 在第二条轨道上接入测量话筒并开启录音待命，关闭输入监听，在扫频播放的同时录音。完整导出录音轨，不要裁切，也不要标准化。
 4. 可选回送（loopback）：导出双声道文件（话筒 + 电回送），并使用 `--channel 0 --loopback-channel 1`。

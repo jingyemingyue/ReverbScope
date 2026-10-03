@@ -355,6 +355,53 @@ def test_help_licenses_and_report_heading(app: QApplication) -> None:
     window.close()
 
 
+def test_daw_follow_asks_when_several_fakes_are_in_play(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Several fake DAW projects: the GUI asks and does not guess."""
+    from roomscope.daw import DawProject
+    from roomscope.io.wav import read_wav
+
+    monkeypatch.setenv("ROOMSCOPE_FAKE_DAWS", "Logic Pro:48000:Song A;REAPER:44100:Film")
+    asked: list[str] = []
+
+    def _choose(parent, candidates, *, reason):
+        asked.append(reason)
+        assert reason == "several"
+        assert len(candidates) == 2
+        return candidates[1]
+
+    monkeypatch.setattr("roomscope.ui.daw.ask_daw_project", _choose)
+    window = MainWindow()
+    window.show_mode("universal_daw")
+    page = window.daw
+    assert page.ensure_daw_follow() is True
+    assert asked == ["several"]
+    assert page.state.followed_daw is not None
+    assert page.state.followed_daw.daw == "REAPER"
+    page.generate_sweep_to(tmp_path / "sweep.wav")
+    assert read_wav(tmp_path / "sweep.wav").sample_rate == 44100
+    window.close()
+
+    asked.clear()
+    monkeypatch.delenv("ROOMSCOPE_FAKE_DAWS")
+
+    def _declare(parent, candidates, *, reason):
+        asked.append(reason)
+        assert reason == "none"
+        assert candidates == ()
+        return DawProject(daw="Bitwig Studio", sample_rate=96000, project="Demo")
+
+    monkeypatch.setattr("roomscope.ui.daw.ask_daw_project", _declare)
+    empty = MainWindow()
+    empty.show_mode("universal_daw")
+    assert empty.daw.ensure_daw_follow() is True
+    assert asked == ["none"]
+    assert empty.daw.state.followed_daw is not None
+    assert empty.daw.state.followed_daw.sample_rate == 96000
+    empty.close()
+
+
 def test_gui_smoke_flag_constructs_and_exits(app: QApplication) -> None:
     from roomscope.cli.main import main
     from roomscope.ui.app import run_app
