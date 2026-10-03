@@ -242,7 +242,8 @@ def gui_files(root: Path) -> list[tuple[Path, str]]:
             continue
         lowered = f"{relative.lower()}/"
         hit = next((label for token, label in TERMINAL_FORBIDDEN if token in lowered), None)
-        if hit is None and any(_is_qt_library(part) for part in path.parts):
+        # Inside the bundle only: a folder above it ("Qt6Projects") is no Qt library.
+        if hit is None and any(_is_qt_library(part) for part in path.relative_to(root).parts):
             hit = "a Qt library"
         if hit is not None:
             found.append((path, hit))
@@ -284,7 +285,9 @@ def check(
             errors.append("THIRD_PARTY_LICENSES/ is missing")
         else:
             index = licenses / "INDEX.txt"
-            if index.is_file() and "unresolved: none" not in index.read_text(encoding="utf-8"):
+            if not index.is_file():
+                errors.append("THIRD_PARTY_LICENSES/INDEX.txt is missing")
+            elif "unresolved: none" not in index.read_text(encoding="utf-8"):
                 errors.append("THIRD_PARTY_LICENSES/INDEX.txt lists unresolved packages")
             texts = licenses / "_texts"
             wanted = ("PortAudio-LICENSE.txt",)

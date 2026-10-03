@@ -58,6 +58,26 @@ BUILD_INFO_FILE = Path(workpath) / "build_info.json"  # noqa: F821
 BUILD_INFO_FILE.parent.mkdir(parents=True, exist_ok=True)
 BUILD_INFO_FILE.write_text(json.dumps(BUILD_INFO, indent=1), encoding="utf-8")
 
+# Both editions. Nothing at run time imports these, but NumPy's and SciPy's
+# test helpers (and cffi's distutils shim) pull them into the analysis; they
+# would ship without their licence texts in THIRD_PARTY_LICENSES.
+DEV_ONLY_EXCLUDES = [
+    # Build tools a developer environment has installed.
+    "setuptools",
+    "pkg_resources",
+    "_distutils_hack",
+    "yaml",
+    # Test runners.
+    "pytest",
+    "_pytest",
+    "pluggy",
+    "iniconfig",
+    "pygments",
+    "py",
+    # Optional for pdb/cmd/code; on Linux it would bring GNU libreadline (GPL).
+    "readline",
+]
+
 # The terminal edition: the command line and the analysis only. The GUI
 # package, Qt and the plotting stack (only the GUI draws charts) stay out;
 # ``roomscope gui`` then says it is the Terminal Edition.
@@ -72,18 +92,7 @@ TERMINAL_EXCLUDES = [
     "fontTools",
     "tkinter",
     "_tkinter",
-    # Build tools a developer environment has installed; nothing at run time imports them.
-    "setuptools",
-    "pkg_resources",
-    "_distutils_hack",
-    "yaml",
-    # Test runners that NumPy's and SciPy's test helpers would pull in.
-    "pytest",
-    "_pytest",
-    "pluggy",
-    "iniconfig",
-    "pygments",
-    "py",
+    *DEV_ONLY_EXCLUDES,
 ]
 
 a = Analysis(
@@ -102,6 +111,7 @@ a = Analysis(
     excludes=TERMINAL_EXCLUDES
     if TERMINAL
     else [
+        *DEV_ONLY_EXCLUDES,
         "PySide6.QtCharts",
         "PySide6.QtDataVisualization",
         "PySide6.QtGraphs",

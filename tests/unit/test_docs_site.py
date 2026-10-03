@@ -52,3 +52,17 @@ def test_build_site_writes_themed_pages(tmp_path: Path) -> None:
     assert (dest / "user-guide" / "en.html").is_file()
     nested = (dest / "user-guide" / "en.html").read_text(encoding="utf-8")
     assert 'href="../assets/theme.css"' in nested
+
+
+def test_the_site_is_never_written_over_the_documentation(tmp_path: Path) -> None:
+    """``--out docs`` deleted the sources before reading them."""
+    import pytest
+
+    site = _load()
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "index.md").write_text("# Index\n", encoding="utf-8")
+    for dest in (docs, tmp_path):
+        with pytest.raises(SystemExit):
+            site.build_site(docs, dest)
+    assert (docs / "index.md").is_file()

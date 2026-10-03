@@ -179,6 +179,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("src"), help="Python tree to scan")
     args = parser.parse_args(argv)
+    if not args.root.is_dir():
+        # A mistyped root would scan nothing and report success.
+        parser.error(f"{args.root} is not a directory")
     errors = check(args.root)
     if errors:
         print("\n".join(errors), file=sys.stderr)

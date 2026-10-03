@@ -188,9 +188,11 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
     steps.append(Step("Test suite", tests, skipped="--skip-tests" if args.skip_tests else None))
 
     def python_dist() -> None:
-        for old in DIST.glob("roomscope-*.whl"):
+        # case_sensitive: Windows globs ignore case by default, and
+        # RoomScope-Terminal-Linux-*.tar.gz of another runner must survive.
+        for old in DIST.glob("roomscope-*.whl", case_sensitive=True):
             old.unlink()
-        for old in DIST.glob("roomscope-*.tar.gz"):
+        for old in DIST.glob("roomscope-*.tar.gz", case_sensitive=True):
             if not old.name.startswith("roomscope-linux"):
                 old.unlink()
         _python("-m", "build", "--outdir", DIST)
@@ -371,7 +373,10 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
         missing = [name for name in target.archives if not (DIST / name).is_file()]
         if missing and not (args.no_installer and missing == [target.archives[0]]):
             raise SystemExit(f"missing release files: {', '.join(missing)}")
-        (DIST / target.checksum_name).write_text(checksum_lines(assets), encoding="utf-8")
+        # LF on every OS: a merged SHA256SUMS with CRLF lines fails `shasum -c`.
+        (DIST / target.checksum_name).write_text(
+            checksum_lines(assets), encoding="utf-8", newline="\n"
+        )
 
     steps.append(Step("Checksums of distributable files", checksums))
     return steps
@@ -421,12 +426,15 @@ def main(argv: list[str] | None = None) -> int:
         (DIST / name).unlink(missing_ok=True)
     with tempfile.TemporaryDirectory(prefix="roomscope-release-") as directory:
         steps = plan(target, args, Path(directory))
+        # Say so before the tests and both PyInstaller builds, not after them.
+        for step in steps:
+            if step.name == "Windows installer" and step.skipped and not args.no_installer:
+                print(f"Windows installer: {step.skipped}")
+                print("install Inno Setup 6 or pass --no-installer")
+                return 1
         for index, step in enumerate(steps, 1):
             if step.skipped:
                 print(f"[{index}/{len(steps)}] {step.name}: skipped ({step.skipped})")
-                if step.name == "Windows installer" and not args.no_installer:
-                    print("install Inno Setup 6 or pass --no-installer")
-                    return 1
                 continue
             print(f"[{index}/{len(steps)}] {step.name}", flush=True)
             step.run()

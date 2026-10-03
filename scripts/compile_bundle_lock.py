@@ -9,6 +9,7 @@ network.
 from __future__ import annotations
 
 import argparse
+import re
 from importlib.metadata import PackageNotFoundError, distribution, requires
 from pathlib import Path
 
@@ -28,10 +29,9 @@ def _requirement_name(entry: str) -> str | None:
     item = entry.split(";")[0].strip()
     if not item or item.startswith("#"):
         return None
-    for separator in ("[", " ", "<", ">", "=", "!"):
-        if separator in item:
-            item = item.split(separator, 1)[0]
-    return item.strip() or None
+    # The PEP 508 name, whatever follows it ("~=4.0", "===1", "@ url", "(>=1)").
+    match = re.match(r"[A-Za-z0-9][A-Za-z0-9._-]*", item)
+    return match.group(0) if match else None
 
 
 def _walk(name: str, seen: dict[str, str]) -> None:
@@ -44,7 +44,7 @@ def _walk(name: str, seen: dict[str, str]) -> None:
         return
     seen[key] = f"{dist.metadata['Name']}=={dist.version}"
     for extra in requires(name) or []:
-        if "extra ==" in extra:
+        if re.search(r"\bextra\s*==", extra):
             continue
         child = _requirement_name(extra)
         if child:
