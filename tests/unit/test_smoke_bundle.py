@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import shlex
 import subprocess
 from pathlib import Path
 from types import ModuleType
@@ -52,7 +53,7 @@ def test_subprocess_failure_retains_the_command_and_both_streams(
         smoke.check_doctor(BINARY)
     message = str(failure.value)
     assert "exit 7, expected 0" in message
-    assert "'a bundle/roomscope' --backend fake doctor --json" in message
+    assert f"{shlex.quote(str(BINARY))} --backend fake doctor --json" in message
     assert "stdout:\npartial output" in message and "stderr:\n具体原因" in message
     assert "Traceback" not in message
 
