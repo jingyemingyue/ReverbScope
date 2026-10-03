@@ -24,6 +24,7 @@ Position A  close to the desk and the side wall
   Noise floor         ! # dBFS RMS · mains hum at # Hz
   Data quality        ✓ direct sound: confidence high · no
                       warnings
+  Spectrum            ✓ peak # Hz (# dB)
 
 Position B  moved # m back from the desk
   Reverberation       ! RT60 # s (T30) · EDT # s
@@ -36,6 +37,7 @@ Position B  moved # m back from the desk
   Noise floor         ! # dBFS RMS · mains hum at # Hz
   Data quality        ✓ direct sound: confidence high · no
                       warnings
+  Spectrum            ✓ peak # Hz (# dB)
 
 Comparison A → B
   Reverberation       ✓ RT60 # s → # s (# %)

@@ -112,7 +112,7 @@ def _write_spectrum(path: Path, result: AnalysisResult) -> Path | None:
     spectrum = result.spectrum
     if spectrum is None or spectrum.frequencies_hz.size == 0:
         return None
-    rows = [
+    rows: list[list[object]] = [
         [float(freq), float(level)]
         for freq, level in zip(spectrum.frequencies_hz, spectrum.level_db, strict=False)
     ]
