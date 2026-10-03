@@ -389,9 +389,7 @@ def _skip_description_block(block: str, text: str) -> bool:
     if lowered.startswith(("download page", "下载页面")):
         return True
     without_urls = re.sub(r"https?://\S+", "", text).strip(" <>:.-")
-    if ("http://" in lowered or "https://" in lowered) and len(without_urls) < 24:
-        return True
-    return False
+    return ("http://" in lowered or "https://" in lowered) and len(without_urls) < 24
 
 
 def page_description(markdown: str, *, fallback: str) -> str:
