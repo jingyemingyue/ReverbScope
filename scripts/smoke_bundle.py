@@ -348,6 +348,12 @@ def smoke(
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Child pipes are UTF-8; redirected Windows logs may otherwise use cp1252.
+    # Configure both streams before argparse or a SystemExit can write a failure.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="backslashreplace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, help="bundle directory (dist/roomscope)")
     parser.add_argument("--roomscope", type=Path, help="path to the roomscope binary")

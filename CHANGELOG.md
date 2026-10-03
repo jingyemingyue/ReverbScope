@@ -26,6 +26,9 @@ All notable changes to RoomScope are documented here. The format follows
   metadata have readable failures. Every subprocess uses UTF-8, a timeout
   and an isolated RoomScope home. `--no-gui` also permits the optional Qt
   packages to be absent in a CLI-only source or wheel install, as documented.
+- Release smoke writes its own stdout/stderr as UTF-8, so forwarding
+  measurement output or a failure containing Chinese or Unicode symbols
+  does not crash in redirected Windows cp1252 logs.
 
 ## [0.5.0b1] - 2026-10-01
 

@@ -77,9 +77,10 @@ to be absent in a CLI-only source or wheel install; a frozen Terminal Edition us
 Each smoke subprocess has a timeout. A failure names the command and exit
 code, or the timeout/start error, and retains captured stdout and stderr.
 Malformed JSON and malformed doctor metadata fail with a readable reason.
-The smoke uses its own RoomScope home and UTF-8 output, so developer
-settings cannot change the run. None of these results validate a physical
-driver or interface.
+The smoke uses its own RoomScope home and UTF-8 for both child pipes and
+its own stdout/stderr, including redirected Windows logs that otherwise
+use cp1252. Developer settings cannot change the run. None of these
+results validate a physical driver or interface.
 
 ## Evidence that still needs hardware
 

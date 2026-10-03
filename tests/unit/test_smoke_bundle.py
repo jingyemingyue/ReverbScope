@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import shlex
 import subprocess
+import sys
+import textwrap
 from pathlib import Path
 from types import ModuleType
 from typing import Any
@@ -270,3 +273,74 @@ def test_cli_smoke_is_bounded_isolated_and_always_uses_fake_acquisition(
     monkeypatch.setattr(smoke.subprocess, "run", run)
     smoke.smoke(BINARY, out, gui=False, first_run=False)
     assert len(calls) == 3
+
+
+@pytest.mark.parametrize("failed", [False, True], ids=["success", "failure"])
+def test_smoke_logs_and_uncaught_failures_survive_a_narrow_parent_encoding(
+    tmp_path: Path, failed: bool
+) -> None:
+    """Exercise interpreter-rendered SystemExit too, using only subprocess stand-ins."""
+    binary = tmp_path / "中文 bundle" / "roomscope"
+    out = tmp_path / "合成 session"
+    harness = textwrap.dedent(
+        """
+        import importlib.util
+        import json
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        spec = importlib.util.spec_from_file_location("smoke_bundle", sys.argv[1])
+        smoke = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(smoke)
+        binary, out, failed = sys.argv[2:]
+
+        def fake_run(argv, **kwargs):
+            if "--version" in argv:
+                return subprocess.CompletedProcess(argv, 0, "roomscope 0.5.0b1", "")
+            if "doctor" in argv:
+                report = {"packages": {"numpy": "2.5.3"}, "audio_callbacks": "ok"}
+                return subprocess.CompletedProcess(argv, 0, json.dumps(report), "")
+            assert argv[1:4] == ["--backend", "fake", "measure"]
+            if failed == "true":
+                return subprocess.CompletedProcess(argv, 7, "部分结果 Δ\\n", "测量失败 Δ\\n")
+            (Path(out) / "session.json").write_text("{}", encoding="utf-8")
+            return subprocess.CompletedProcess(argv, 0, "已保存 Δ\\n", "合成警告 Δ\\n")
+
+        smoke.subprocess.run = fake_run
+        raise SystemExit(smoke.main([
+            "--roomscope", binary, "--out", out, "--no-gui", "--skip-first-run"
+        ]))
+        """
+    )
+    env = os.environ.copy()
+    env["PYTHONIOENCODING"] = "cp1252:strict"
+    done = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            harness,
+            str(ROOT / "scripts" / "smoke_bundle.py"),
+            str(binary),
+            str(out),
+            "true" if failed else "false",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=30,
+    )
+    assert "Traceback" not in done.stderr and "UnicodeEncodeError" not in done.stderr
+    if failed:
+        assert done.returncode == 1
+        assert "exit 7, expected 0" in done.stderr
+        assert str(binary) in done.stderr and str(out) in done.stderr
+        assert "stdout:\n部分结果 Δ" in done.stderr
+        assert "stderr:\n测量失败 Δ" in done.stderr
+        assert not (out / "session.json").exists()
+    else:
+        assert done.returncode == 0
+        assert f"已保存 Δ\nsmoke ok: {binary}\n" == done.stdout
+        assert done.stderr == "合成警告 Δ\n"
+        assert (out / "session.json").is_file()
