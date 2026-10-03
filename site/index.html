@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReverbScope – Free Open-Source Room Acoustics Measurement Tool</title>
+<meta name="description" content="ReverbScope is a free, open-source room acoustics measurement tool. Measure reverberation time (RT60) with an exponential sine sweep, derive the room impulse response, and check whether a microphone position is usable — next to any DAW or on its own. A free REW alternative for the recording studio.">
+<meta name="keywords" content="room acoustics measurement, reverberation time, RT60, sine sweep, impulse response, free REW alternative, recording studio acoustics, room analyzer, open source audio measurement">
+<link rel="canonical" href="https://jingyemingyue.github.io/ReverbScope/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="ReverbScope">
+<meta property="og:title" content="ReverbScope – Free Open-Source Room Acoustics Measurement Tool">
+<meta property="og:description" content="Measure your recording room with a sine sweep: reverberation time (RT60), early reflections, background noise and direct sound. Free, open source, DAW-independent.">
+<meta property="og:url" content="https://jingyemingyue.github.io/ReverbScope/">
+<meta property="og:image" content="https://raw.githubusercontent.com/jingyemingyue/ReverbScope/main/docs/images/gui-results.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ReverbScope – Free Open-Source Room Acoustics Measurement Tool">
+<meta name="twitter:description" content="Free, open-source room acoustics measurement: sine sweep, impulse response, RT60 reverberation time. A free REW alternative for the recording studio.">
+<meta name="twitter:image" content="https://raw.githubusercontent.com/jingyemingyue/ReverbScope/main/docs/images/gui-results.png">
+<style>
+:root{
+  --bg:#0b0e13; --bg2:#11161e; --card:#151c26; --line:#232d3b;
+  --text:#e8eef5; --muted:#9aa7b8; --accent:#1a7f8e; --accent2:#37c4d6;
+  --warm:#e0a458;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,"PingFang SC","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--text);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+a{color:var(--accent2)}
+/* nav */
+nav{position:sticky;top:0;z-index:50;background:rgba(11,14,19,.88);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+.brand{font-weight:800;font-size:1.15em;letter-spacing:.5px;color:var(--text);text-decoration:none}
+.brand span{color:var(--accent2)}
+nav ul{display:flex;gap:22px;list-style:none}
+nav ul a{color:var(--muted);text-decoration:none;font-size:.92em}
+nav ul a:hover{color:var(--text)}
+@media(max-width:720px){nav ul{display:none}}
+/* hero */
+.hero{position:relative;overflow:hidden;text-align:center;padding:96px 0 72px;
+  background:radial-gradient(700px 340px at 50% -60px,rgba(26,127,142,.28),transparent 70%)}
+.hero .kicker{display:inline-block;font-size:.8em;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent2);
+  border:1px solid var(--line);border-radius:999px;padding:6px 16px;margin-bottom:22px;background:rgba(26,127,142,.08)}
+.hero h1{font-size:clamp(2.6em,7vw,4.2em);font-weight:800;letter-spacing:-1px;line-height:1.05}
+.hero h1 .scope{color:var(--accent2)}
+.hero p.lede{max-width:660px;margin:20px auto 34px;color:var(--muted);font-size:1.12em}
+.btn{display:inline-block;text-decoration:none;font-weight:700;padding:.8em 1.9em;border-radius:10px;margin:.3em;
+  background:linear-gradient(180deg,var(--accent2),var(--accent));color:#04222a!important;
+  box-shadow:0 6px 24px rgba(55,196,214,.25);transition:transform .15s}
+.btn:hover{transform:translateY(-2px)}
+.btn.ghost{background:transparent;color:var(--text)!important;border:1.5px solid var(--line);box-shadow:none}
+.btn.ghost:hover{border-color:var(--accent2)}
+.hero .meta{margin-top:26px;color:var(--muted);font-size:.85em}
+/* sections */
+section{padding:64px 0}
+section h2{font-size:1.9em;letter-spacing:-.5px;margin-bottom:8px;text-align:center}
+section .sub{text-align:center;color:var(--muted);max-width:640px;margin:0 auto 40px}
+/* features */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;transition:border-color .2s,transform .2s}
+.card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.card .icon{font-size:1.5em;margin-bottom:10px}
+.card h3{font-size:1.05em;margin-bottom:8px}
+.card p{color:var(--muted);font-size:.93em}
+/* screenshot */
+.shot{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg2);
+  box-shadow:0 20px 60px rgba(0,0,0,.45)}
+.shot img{display:block;width:100%;height:auto}
+.shot figcaption{padding:12px 18px;color:var(--muted);font-size:.85em;border-top:1px solid var(--line)}
+/* download */
+.dl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.dl{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;text-align:center}
+.dl h3{margin-bottom:6px}
+.dl p{color:var(--muted);font-size:.9em;margin-bottom:14px;min-height:3.2em}
+.dl a{color:var(--accent2);font-weight:600;text-decoration:none}
+pre{background:#070a0e;border:1px solid var(--line);border-radius:10px;padding:16px;overflow-x:auto;
+  margin-top:26px;font-size:.92em}
+pre code{color:#c9e8ec;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+/* docs */
+.docs{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.docs a{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 22px;
+  color:var(--text);text-decoration:none;font-weight:600}
+.docs a:hover{border-color:var(--accent2)}
+/* faq */
+.faq{max-width:760px;margin:0 auto}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:12px;padding:18px 22px}
+.faq summary{font-weight:700;cursor:pointer;list-style:none}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";float:right;color:var(--accent2);font-size:1.2em}
+.faq details[open] summary::after{content:"–"}
+.faq p{color:var(--muted);margin-top:10px;font-size:.95em}
+/* footer */
+footer{border-top:1px solid var(--line);padding:40px 0 56px;text-align:center;color:var(--muted);font-size:.9em}
+footer a{color:var(--accent2);text-decoration:none;margin:0 10px}
+footer .fine{margin-top:14px;font-size:.82em;color:#5c6a7d}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#">Reverb<span>Scope</span></a>
+    <ul>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#screenshot">Screenshot</a></li>
+      <li><a href="#download">Download</a></li>
+      <li><a href="#docs">Docs</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">Free · Open Source · Apache-2.0</div>
+    <h1>Reverb<span class="scope">Scope</span></h1>
+    <p class="lede"><strong>Free, open-source room acoustics measurement.</strong>
+      Play an exponential sine sweep, capture the room impulse response, and find out
+      whether a microphone position is usable — reverberation time (RT60), early
+      reflections, background noise and direct sound, next to any DAW or on its own.</p>
+    <p>
+      <a class="btn" href="https://github.com/jingyemingyue/ReverbScope/releases">Download</a>
+      <a class="btn ghost" href="https://github.com/jingyemingyue/ReverbScope">View on GitHub</a>
+    </p>
+    <p class="meta">macOS · Windows · Linux · Python &nbsp;|&nbsp; English / 简体中文</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+<section id="features">
+  <h2>Measure what matters</h2>
+  <p class="sub">A room acoustics measurement tool built around one practical question:
+    <em>is this microphone position usable?</em></p>
+  <div class="grid">
+    <div class="card"><div class="icon">📡</div><h3>Exponential sine sweep</h3>
+      <p>Probe the room with a log sine sweep and derive the room impulse response by deconvolution — the same method the pros use.</p></div>
+    <div class="card"><div class="icon">⏱️</div><h3>RT60 · EDT · T20 · T30</h3>
+      <p>Reverberation time from the decay curve, each value carrying its decay range and a validity flag.</p></div>
+    <div class="card"><div class="icon">🌊</div><h3>Early reflections</h3>
+      <p>Reflection timing and level relative to the direct sound, so you can see what the room adds to the microphone.</p></div>
+    <div class="card"><div class="icon">🔇</div><h3>Background noise</h3>
+      <p>Noise-floor analysis with mains-hum detection — know your room's quietest moment.</p></div>
+    <div class="card"><div class="icon">🎯</div><h3>C50 · C80 · D50</h3>
+      <p>ISO 3382-1 clarity, definition and centre time for speech and music. Labelled recording profiles interpret them for vocals, drums, voiceover and more.</p></div>
+    <div class="card"><div class="icon">🎛️</div><h3>DAW-independent</h3>
+      <p>Standalone mode measures through your interface directly; Universal DAW Mode works with any DAW that exports WAV. No DAW SDKs, ever.</p></div>
+    <div class="card"><div class="icon">🌐</div><h3>English / 简体中文</h3>
+      <p>GUI, command line and reports fully bilingual — the same measurement, in your language.</p></div>
+    <div class="card"><div class="icon">🛡️</div><h3>Honest numbers</h3>
+      <p>Every metric carries its unit, algorithm source and validity flag. When the data is not good enough, ReverbScope says <em>insufficient range</em> instead of inventing a figure. No pseudo-scientific room score.</p></div>
+  </div>
+</section>
+
+<section id="screenshot">
+  <h2>See it in action</h2>
+  <p class="sub">The results page: reverberation, background noise, early reflections and direct sound for one microphone position.</p>
+  <figure class="shot">
+    <img src="https://raw.githubusercontent.com/jingyemingyue/ReverbScope/main/docs/images/gui-results.png" alt="ReverbScope results page showing room acoustics measurement: reverberation time RT60, background noise with mains hum, early reflections and direct sound" loading="lazy">
+    <figcaption>ReverbScope results page (synthetic demo data — no real room was measured).</figcaption>
+  </figure>
+</section>
+
+<section id="download">
+  <h2>Download</h2>
+  <p class="sub">Free forever. Pick your platform on the
+    <a href="https://github.com/jingyemingyue/ReverbScope/releases">releases page</a>:</p>
+  <div class="dl-grid">
+    <div class="dl"><h3>🍎 macOS</h3>
+      <p>Desktop app (.dmg) for Apple silicon and Intel, macOS 14+.</p>
+      <a href="https://github.com/jingyemingyue/ReverbScope/releases">Get for macOS →</a></div>
+    <div class="dl"><h3>🪟 Windows</h3>
+      <p>Installer or portable .zip, Windows 10 / 11 x64.</p>
+      <a href="https://github.com/jingyemingyue/ReverbScope/releases">Get for Windows →</a></div>
+    <div class="dl"><h3>🐧 Linux</h3>
+      <p>Portable tarball for glibc-based distros, x86_64.</p>
+      <a href="https://github.com/jingyemingyue/ReverbScope/releases">Get for Linux →</a></div>
+    <div class="dl"><h3>⌨️ Terminal edition</h3>
+      <p>Command line only — scripts, automation and headless machines.</p>
+      <a href="https://github.com/jingyemingyue/ReverbScope/releases">Get terminal edition →</a></div>
+  </div>
+  <pre><code># No microphone needed — try the demo in 30 seconds
+reverbscope demo</code></pre>
+  <p class="sub" style="margin-top:18px">Developers:
+    <a href="https://github.com/jingyemingyue/ReverbScope">clone from GitHub</a>
+    — Python 3.12+, <code>pip install -e ".[dev,gui]"</code>.</p>
+</section>
+
+<section id="docs">
+  <h2>Documentation</h2>
+  <p class="sub">User guides, measurement methodology, architecture notes and the release plan.</p>
+  <div class="docs">
+    <a href="https://github.com/jingyemingyue/ReverbScope/tree/main/docs">📚 Browse the docs</a>
+    <a href="https://github.com/jingyemingyue/ReverbScope/blob/main/docs/user-guide/en.md">📖 User guide (EN)</a>
+    <a href="https://github.com/jingyemingyue/ReverbScope/blob/main/docs/user-guide/zh-CN.md">📖 用户指南（中文）</a>
+    <a href="https://github.com/jingyemingyue/ReverbScope/blob/main/docs/MEASUREMENT_METHODOLOGY.md">🔬 Methodology</a>
+  </div>
+</section>
+
+<section id="faq">
+  <h2>FAQ</h2>
+  <div class="faq">
+    <details>
+      <summary>Is ReverbScope a free REW alternative?</summary>
+      <p>Yes — ReverbScope is a free, open-source alternative to Room EQ Wizard (REW) for room acoustics measurement. It measures reverberation time (RT60), early reflections, background noise and clarity metrics (C50/C80/D50) from an exponential sine sweep, runs next to any DAW instead of inside it, and costs nothing: Apache-2.0 licensed, no paid tiers, no feature gates.</p>
+    </details>
+    <details>
+      <summary>What is room acoustics measurement, and what does RT60 mean?</summary>
+      <p>Room acoustics measurement characterizes how a room changes sound. ReverbScope plays an exponential sine sweep, derives the room impulse response, and reports reverberation time — RT60 (the time for sound to decay 60 dB), plus EDT, T20 and T30 — along with early reflections, frequency response and background noise.</p>
+    </details>
+    <details>
+      <summary>Do I need a DAW or special hardware?</summary>
+      <p>No. In standalone mode ReverbScope plays and records through your audio interface itself — all you need is a microphone. In Universal DAW Mode you can play the sweep through any DAW that imports, plays, records and exports WAV files.</p>
+    </details>
+    <details>
+      <summary>How is ReverbScope different from other analyzers?</summary>
+      <p>Three things: it is DAW-independent by design (WAV in, WAV out, no DAW SDKs); it refuses to invent a number (validity flags on every metric, no room score); and it answers the practical question — <em>is this position usable for a vocal, drums, or voiceover?</em> — through labelled recording profiles instead of raw graphs alone.</p>
+    </details>
+  </div>
+</section>
+
+</div><!-- /wrap -->
+
+<footer>
+  <div class="wrap">
+    <p>
+      <a href="https://github.com/jingyemingyue/ReverbScope">GitHub</a>
+      <a href="https://github.com/jingyemingyue/ReverbScope/releases">Releases</a>
+      <a href="https://github.com/jingyemingyue/ReverbScope/blob/main/CONTRIBUTING.md">Contributing</a>
+      <a href="https://github.com/jingyemingyue/ReverbScope/blob/main/LICENSE">License</a>
+    </p>
+    <p class="fine">ReverbScope is free, open-source software under the Apache License 2.0.</p>
+  </div>
+</footer>
+
+</body>
+</html>
