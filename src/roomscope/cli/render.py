@@ -242,6 +242,15 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
                 threshold=refl.threshold_db,
             ),
         )
+    elif refl.window_truncated and refl.analysed_window_ms is not None:
+        # The response ended before the window did: later arrivals were not seen.
+        row(
+            _("Early reflections"),
+            "unsure",
+            _("none above {threshold:.0f} dB in the {end:.1f} ms that could be searched").format(
+                threshold=refl.threshold_db, end=refl.analysed_window_ms[1]
+            ),
+        )
     else:
         row(
             _("Early reflections"),
@@ -543,19 +552,27 @@ def _noise(c: Console, result: AnalysisResult) -> list[str]:
 
 def _reflections(c: Console, result: AnalysisResult) -> list[str]:
     refl = result.reflections
+    low, high = refl.window_ms
+    if refl.window_truncated and refl.analysed_window_ms is not None:
+        # The response ended first: only this much of the window was searched.
+        high = refl.analysed_window_ms[1]
     lines = c.section(
         _("Early reflections"),
-        _("{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB").format(
-            lo=refl.window_ms[0], hi=refl.window_ms[1], threshold=refl.threshold_db
+        # 0.8 ms, not "1": the table below can list arrivals before 1 ms.
+        _("{lo:g}–{hi:g} ms, above {threshold:.0f} dB").format(
+            lo=round(low, 1), hi=round(high, 1), threshold=refl.threshold_db
         ),
     )
     if not refl.reflections:
-        return lines + c.status("skip", _("None above the threshold."))
-    rows = [[f"{r.delay_ms:.1f} ms", f"{r.relative_db:.1f} dB"] for r in refl.reflections[:10]]
-    lines += c.table([_("Delay"), _("Level")], rows, align="rr")
-    hidden = len(refl.reflections) - 10
-    if hidden > 0:
-        lines += c.paragraph(_("{n} more in result.json").format(n=hidden), style=("dim",))
+        lines += c.status("skip", _("None above the threshold."))
+    else:
+        rows = [[f"{r.delay_ms:.1f} ms", f"{r.relative_db:.1f} dB"] for r in refl.reflections[:10]]
+        lines += c.table([_("Delay"), _("Level")], rows, align="rr")
+        hidden = len(refl.reflections) - 10
+        if hidden > 0:
+            lines += c.paragraph(_("{n} more in result.json").format(n=hidden), style=("dim",))
+    for note in refl.notes:
+        lines += c.status("info", localize(note))
     return lines
 
 

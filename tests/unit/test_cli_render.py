@@ -8,6 +8,7 @@ from roomscope.cli.console import Console, cell_width
 from roomscope.cli.render import (
     REPORT_CONSOLE,
     _decay_deltas,
+    _reflections,
     _resonances,
     at_a_glance,
     comparison_at_a_glance,
@@ -155,3 +156,33 @@ def test_a_narrowed_resonance_search_names_its_range(short_sweep: SweepSettings)
 def _analysed(sweep: SweepSettings) -> AnalysisResult:
     ir = make_rir(sweep.sample_rate, rt60_s=0.3)
     return analyze(synthetic_recording(sweep, ir, noise_rms=1e-5), Reference.from_settings(sweep))
+
+
+def _imported(length_s: float, **kwargs: object) -> AnalysisResult:
+    from roomscope.core.pipeline import analyze_impulse_response
+    from roomscope.models.audio import AudioSignal
+
+    ir = make_rir(48000, rt60_s=0.05, length_s=length_s, start_delay_s=0.01, **kwargs)  # type: ignore[arg-type]
+    return analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 20000.0))
+
+
+def test_the_reflection_window_starts_at_its_real_start() -> None:
+    """#83: the heading said "1–80 ms" for the 0.8 ms default start."""
+    result = _imported(0.5, reflections=[(0.00085, 0.5)])
+    lines = WIDE.fit("\n".join(_reflections(WIDE, result))).splitlines()
+    assert "0.8–80 ms" in lines[1], lines
+    assert any(line.strip().startswith("0.9 ms") for line in lines), lines
+
+
+def test_a_truncated_reflection_search_says_how_far_it_got() -> None:
+    """#67: an IR 50 ms long after the direct sound was reported as the whole
+    1-80 ms window, "none above -20 dB"."""
+    result = _imported(0.06)
+    assert result.reflections.window_truncated
+    lines = WIDE.fit("\n".join(_reflections(WIDE, result))).splitlines()
+    assert "–80 ms" not in lines[1] and "0.8–50 ms" in lines[1], lines
+    flat = " ".join(" ".join(lines).split())
+    assert "only that part of the 0.8-80 ms window could be searched" in flat, lines
+    glance = next(line for line in at_a_glance(WIDE, result, []) if "Early reflections" in line)
+    assert "50.0 ms that could be searched" in WIDE.fit(glance), glance
+    assert WIDE.symbol("unsure") in glance

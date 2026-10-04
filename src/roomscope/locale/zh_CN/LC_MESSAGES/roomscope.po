@@ -1794,8 +1794,8 @@ msgid "candidates are envelope peaks standing above the local diffuse level; in 
 msgstr "候选是高出局部扩散声级的包络峰；在密集的早期尾部，部分候选可能是统计起伏，而不是离散的反射"
 
 msgctxt "diagnostic"
-msgid "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be searched"
-msgstr "脉冲响应在直达声之后 {analysed_ms:.1f} ms 就结束了，因此 {min_ms:.0f}-{max_ms:.0f} ms 窗口中只有这一部分得到搜索"
+msgid "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only that part of the {min_ms:g}-{max_ms:g} ms window could be searched"
+msgstr "脉冲响应在直达声之后 {analysed_ms:.1f} ms 就结束了，因此 {min_ms:g}-{max_ms:g} ms 窗口中只有这一部分得到搜索"
 
 msgctxt "diagnostic"
 msgid "impulse response is too short after the direct sound for reflection analysis"
@@ -3477,8 +3477,8 @@ msgstr "主文件夹显示为 ~"
 msgid "{inputs} in / {outputs} out"
 msgstr "{inputs} 入 / {outputs} 出"
 
-msgid "{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB"
-msgstr "{lo:.0f}–{hi:.0f} ms，高于 {threshold:.0f} dB"
+msgid "{lo:g}–{hi:g} ms, above {threshold:.0f} dB"
+msgstr "{lo:g}–{hi:g} ms，高于 {threshold:.0f} dB"
 
 msgid "{n} more in result.json"
 msgstr "另有 {n} 个，见 result.json"
@@ -4033,3 +4033,6 @@ msgstr "未搜索：{max_hz:.0f} Hz 以下没有既被激励又能分辨的部�
 
 msgid "Not searched."
 msgstr "未搜索。"
+
+msgid "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
+msgstr "在可搜索的 {end:.1f} ms 内没有高于 {threshold:.0f} dB 的反射"

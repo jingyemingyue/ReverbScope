@@ -82,7 +82,7 @@ def detect_early_reflections(
         notes.append(
             diag(
                 "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only "
-                "that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be searched",
+                "that part of the {min_ms:g}-{max_ms:g} ms window could be searched",
                 analysed_ms=analysed_max_ms,
                 min_ms=min_delay_ms,
                 max_ms=max_delay_ms,
