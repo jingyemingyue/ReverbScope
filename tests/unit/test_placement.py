@@ -15,7 +15,7 @@ from roomscope.core.placement import (
     specular_ceiling_db,
     speed_of_sound_m_s,
 )
-from roomscope.models.result import Reflection, ReflectionsResult, Validity
+from roomscope.models.result import PlacementLength, Reflection, ReflectionsResult, Validity
 
 C20 = speed_of_sound_m_s(DEFAULT_TEMPERATURE_C)
 
@@ -447,3 +447,29 @@ def test_each_length_carries_its_own_input_uncertainty(
         expected[0], rel=0.01
     )
     assert result.ceiling_height_m.input_uncertainty_m == pytest.approx(expected[1], rel=0.01)
+
+
+def test_height_uncertainty_is_taken_at_the_arrival_the_height_came_from() -> None:
+    """Agreeing lower-plane arrivals report their median, but the height's
+    input uncertainty was propagated at the earliest of them: detecting
+    other agreeing arrivals moved the sigma of the same reported height."""
+    h, d = 0.40, math.hypot(0.8, 1.0)
+
+    def delay(source: float) -> float:
+        # s * h = c * delta * (2 d + c * delta) / 4, solved for delta.
+        return (-d + math.sqrt(d * d + 4 * source * h)) / C20 * 1000.0
+
+    ceiling = _plane_arrival(d, 2.5 - 1.21, 2.5 - h, math.sqrt(d * d - (1.21 - h) ** 2))
+
+    def source_height(sources: tuple[float, ...]) -> PlacementLength:
+        arrivals = sorted([delay(s) for s in sources] + [ceiling])
+        reflections = _reflections([(a, _lossy(d, a)) for a in arrivals])
+        return estimate_placement(
+            reflections, distance_m=d, mic_height_m=h, temperature_c=20.0
+        ).source_height_m
+
+    alone = source_height((1.21,))
+    agreed = source_height((1.18, 1.21, 1.25))
+    assert alone.validity is Validity.VALID and agreed.validity is Validity.VALID
+    assert agreed.metres == pytest.approx(alone.metres)
+    assert agreed.input_uncertainty_m == pytest.approx(alone.input_uncertainty_m, rel=1e-9)

@@ -584,19 +584,8 @@ def estimate_placement(
         "mic": HEIGHT_SIGMA_M,
     }
 
-    chosen_delay = lower[0].delay_ms if lower else 0.0
-    height_sigma = _propagate(
-        _source_height,
-        {
-            "distance": distance_m,
-            "delay": chosen_delay,
-            "temperature_arg": temperature,
-            "mic": height,
-        },
-        input_sigmas,
-    )
     source_length, source_index = _resolve(
-        lower, height_agreement_m, empty_reason=empty_reason, uncertainty_m=height_sigma
+        lower, height_agreement_m, empty_reason=empty_reason, uncertainty_m=None
     )
 
     ceiling_length = _refused(
@@ -622,6 +611,12 @@ def estimate_placement(
             "temperature_arg": temperature,
             "mic": height,
         }
+        # At the arrival the reported height came from (the median of agreeing
+        # hypotheses), not the earliest one.
+        source_length = replace(
+            source_length,
+            input_uncertainty_m=_propagate(_source_height, source_nominal, input_sigmas),
+        )
         horizontal_length = PlacementLength(
             metres=horizontal,
             validity=Validity.VALID,
