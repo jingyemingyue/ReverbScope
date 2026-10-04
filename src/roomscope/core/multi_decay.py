@@ -53,6 +53,12 @@ def _fit(
     lower = np.log([1e-10] * count + [duration / 4.0] * count + [1e-300])
     upper = np.log([100.0] * count + [6.0 * span] * count + [2.0])
     observed = np.log(np.maximum(power, 1e-300))
+    # BIC estimates residual variance. Below the relative floating-point
+    # resolution of squared log levels, its logarithmic ratio measures solver
+    # and rounding differences rather than evidence for another component.
+    # Only the BIC variance is bounded; reported residuals and uncertainties
+    # retain the actual errors.
+    variance_resolution = np.finfo(np.float64).eps * max(1.0, float(np.mean(observed**2)))
 
     def residual(log_values: FloatArray) -> FloatArray:
         values = np.exp(log_values)
@@ -64,17 +70,18 @@ def _fit(
         initial = np.clip(np.log(np.maximum(seed, 1e-300)), lower + 1e-8, upper - 1e-8)
         fitted = least_squares(residual, initial, bounds=(lower, upper), max_nfev=150)
         errors = np.asarray(fitted.fun, dtype=np.float64)
-        rss = max(float(errors @ errors), 1e-30)
+        rss = float(errors @ errors)
+        bic_variance = max(rss / len(power), variance_resolution)
         candidate = _Candidate(
             values=np.asarray(np.exp(fitted.x), dtype=np.float64),
             predicted_components=_prediction(np.exp(fitted.x), times, duration, count),
             rms_db=float(np.sqrt(rss / len(power)) * 10.0 / np.log(10.0)),
-            bic=float(len(power) * np.log(rss / len(power)) + (2 * count + 1) * np.log(len(power))),
+            bic=float(len(power) * np.log(bic_variance) + (2 * count + 1) * np.log(len(power))),
             jacobian=np.asarray(fitted.jac, dtype=np.float64),
             residuals=errors,
             converged=bool(fitted.success),
         )
-        if best is None or candidate.bic < best.bic:
+        if best is None or candidate.rms_db < best.rms_db:
             best = candidate
     assert best is not None
     return best

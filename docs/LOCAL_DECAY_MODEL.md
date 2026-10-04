@@ -57,6 +57,12 @@ physical decay processes. Adjacent blocks of a filtered response can be
 correlated, so the usual independent-observation interpretation is only
 an approximation.
 
+For nearly exact fits, the residual variance used only by BIC has a
+data-scaled floating-point resolution floor. This prevents solver and
+rounding differences from inventing evidence for a second component.
+Reported residuals and conditional standard deviations retain their
+actual values.
+
 The reported uncertainty is conditional on the selected model and its
 noise assumptions. It is not an uncertainty budget for microphone
 calibration, source position, room variability, filtering, or departures
@@ -92,6 +98,10 @@ inference does not deserialize executable objects. Results record the
 model identity, parameter count and artifact SHA-256 so another run can
 identify the weights used. No third-party source, pretrained model or
 measured dataset was imported.
+
+Git preserves LF line endings for the model JSON on every platform, and
+the wheel test checks the documented hash so Windows checkout conversion
+cannot silently change the artifact fingerprint.
 
 Synthetic training and held-out tests establish behaviour within the
 generated examples. They do not establish the real-room performance

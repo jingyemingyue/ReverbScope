@@ -77,6 +77,35 @@ def test_noiseless_exponential_does_not_require_a_noise_floor() -> None:
     assert fitted.components[0].rt60_s == pytest.approx(0.6, rel=0.002)
 
 
+@pytest.mark.parametrize("rt", [0.1, 0.3, 0.6, 1.2])
+@pytest.mark.parametrize("gain", [1e-120, 1.0, 1e150])
+@pytest.mark.parametrize("perturbation", [0.0, 1e-12, 1e-9])
+def test_nearly_exact_single_decay_does_not_invent_evidence_for_two_components(
+    rt: float, gain: float, perturbation: float
+) -> None:
+    signal = _signal((rt,), (1.0,), noise=0.0, duration=5.0 * rt, rate=8000, random=False)
+    signal *= gain * (1.0 + np.random.default_rng(701).normal(0.0, perturbation, signal.size))
+    fitted = fit_multi_decay(signal, 8000)
+    assert fitted.validity is Validity.VALID, fitted.reason
+    assert len(fitted.components) == 1
+    assert fitted.components[0].rt60_s == pytest.approx(rt, rel=1e-6)
+    assert fitted.bic_difference is not None and fitted.bic_difference < 0.0
+    # The model-selection safeguard must not replace the actual residual
+    # with its variance floor in the exported measurement diagnostics.
+    assert fitted.residual_rms_db is not None and fitted.residual_rms_db < 1e-6
+
+
+@pytest.mark.parametrize("noise", [0.0, 1e-9])
+def test_numerical_safeguard_preserves_a_measurable_weak_second_decay(noise: float) -> None:
+    signal = _signal((0.3, 2.0), (1.0, 1e-4), noise=noise, duration=5.0, random=False)
+    fitted = fit_multi_decay(signal, RATE)
+    assert fitted.validity is Validity.VALID, fitted.reason
+    assert [component.rt60_s for component in fitted.components] == pytest.approx(
+        [0.3, 2.0], rel=0.005
+    )
+    assert fitted.bic_difference is not None and fitted.bic_difference > 10.0
+
+
 @pytest.mark.parametrize("rate", [8000, 96000])
 def test_time_constants_are_independent_of_sample_rate(rate: int) -> None:
     fitted = fit_multi_decay(_signal(rate=rate, random=False), rate)

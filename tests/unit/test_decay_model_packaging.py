@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import runpy
 import sys
 import zipfile
@@ -14,12 +15,15 @@ from hatchling.build import build_wheel
 
 ROOT = Path(__file__).resolve().parents[2]
 RESOURCE = "roomscope/model_data/decay_initializer_v1.json"
+SHIPPED_SHA256 = "2ba0004247ce90ff70e92fb0e97ae14f59d12d92e6029732224c853fecc12234"
 
 
 def test_built_wheel_contains_the_exact_local_model(tmp_path: Path) -> None:
     name = build_wheel(str(tmp_path))
     with zipfile.ZipFile(tmp_path / name) as wheel:
-        assert wheel.read(RESOURCE) == (ROOT / "src" / RESOURCE).read_bytes()
+        model = wheel.read(RESOURCE)
+        assert model == (ROOT / "src" / RESOURCE).read_bytes()
+        assert hashlib.sha256(model).hexdigest() == SHIPPED_SHA256
 
 
 @pytest.mark.parametrize("edition", ["desktop", "terminal"])
