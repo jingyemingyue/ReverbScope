@@ -245,7 +245,7 @@ class AnalysisSettings:
                 if not isinstance(bands, list | tuple):
                     raise TypeError("octave_bands_hz must be a list of numbers")
                 payload["octave_bands_hz"] = tuple(float(f) for f in bands)
-            except (TypeError, ValueError) as exc:
+            except (TypeError, ValueError, OverflowError) as exc:
                 raise ConfigurationError(
                     _("invalid {kind} in file: {error}").format(
                         kind=record_name("analysis settings"), error=exc

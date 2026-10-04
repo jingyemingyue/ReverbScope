@@ -319,6 +319,7 @@ def _set(path: tuple[str, ...], value: object):  # type: ignore[no-untyped-def]
         ("session.json", ("analysis_settings", "channel"), "0"),
         ("session.json", ("analysis_settings", "octave_bands_hz"), 5),
         ("session.json", ("analysis_settings", "octave_bands_hz"), "125"),
+        ("session.json", ("analysis_settings", "octave_bands_hz"), [10**400]),
         ("session.json", ("result_path",), 5),
         ("session.json", ("created_at",), None),
         ("session.json", ("analysis_summary",), []),
@@ -329,7 +330,7 @@ def _set(path: tuple[str, ...], value: object):  # type: ignore[no-untyped-def]
         ("result.json", ("noise", "rms_dbfs"), [1]),
         ("result.json", ("impulse_response", "sample_rate"), 1e400),
     ],
-    ids=lambda value: repr(value),
+    ids=lambda value: repr(value)[:50],
 )
 def test_wrong_types_in_a_session_are_roomscope_errors(
     saved_session: Path, tmp_path: Path, file: str, path: tuple[str, ...], value: object
