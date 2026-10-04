@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from roomscope.cli.console import Console
+from roomscope.cli.console import Console, cell_width
 from roomscope.cli.render import _decay_deltas, comparison_at_a_glance
 from roomscope.interpretation import interpret_comparison
 from roomscope.labels import signed_number
@@ -52,3 +52,27 @@ def test_unchanged_metrics_never_read_negative_zero() -> None:
     messages = " ".join(item.message for item in interpret_comparison(comparison, "generic"))
     assert "+0.0 % of the baseline" in messages and "(+0.0 dB)" in messages, messages
     assert "-0.0" not in messages, messages
+
+
+def test_a_narrow_table_keeps_the_change_of_db_metrics() -> None:
+    """#28: below about 62 columns, C50/C80/D50 rows showed only a dash."""
+    items = [
+        MetricDelta(
+            "broadband.t20",
+            0.5,
+            0.6,
+            Validity.VALID,
+            delta_s=0.1,
+            delta_percent=20.0,
+            delta=0.1,
+            unit="s",
+        ),
+        MetricDelta("broadband.c50", 9.0, 10.0, Validity.VALID, delta=1.0, unit="dB"),
+    ]
+    narrow = Console(color=False, unicode=True, width=58)
+    lines = _decay_deltas(narrow, items)
+    assert all(cell_width(line) <= 58 for line in lines), lines
+    c50 = next(line for line in lines if "C50" in line)
+    assert "+1.000" in c50, lines
+    t20 = next(line for line in lines if "T20" in line)
+    assert "+0.100" in t20, lines

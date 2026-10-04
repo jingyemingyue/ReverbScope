@@ -824,10 +824,11 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
     headers = [_("Band"), _("Metric"), _("Baseline"), _("Candidate"), "Δ", "Δ %", ""]
     align = "llrrrrl"
     if not c.fits(headers, rows, gap=2):
-        # A narrow terminal drops the absolute delta (baseline and candidate
-        # are both shown) before the table has to fall apart into blocks.
-        headers, align = headers[:4] + headers[5:], align[:4] + align[5:]
-        rows = [row[:4] + row[5:] for row in rows]
+        # A narrow terminal drops the percentage before the table has to fall
+        # apart into blocks: it follows from baseline and Δ, and C50, C80 and
+        # D50 have none, so without Δ their change would not be shown at all.
+        headers, align = headers[:5] + headers[6:], align[:5] + align[6:]
+        rows = [row[:5] + row[6:] for row in rows]
     lines += c.table(headers, rows, align=align, gap=2, title_columns=2)
     if seen:
         legend = [
