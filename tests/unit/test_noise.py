@@ -22,13 +22,8 @@ def _whole(x: np.ndarray, source: str = "pre-sweep") -> QuietSegment:
 
 
 def _analyze(x: np.ndarray, sample_rate: int, **kwargs: object):  # type: ignore[no-untyped-def]
-    return analyze_noise(
-        x,
-        sample_rate,
-        _whole(x),
-        octave_bands_hz=DEFAULT_OCTAVE_BANDS_HZ,
-        **kwargs,  # type: ignore[arg-type]
-    )
+    kwargs.setdefault("octave_bands_hz", DEFAULT_OCTAVE_BANDS_HZ)
+    return analyze_noise(x, sample_rate, _whole(x), **kwargs)  # type: ignore[arg-type]
 
 
 def test_full_scale_sine_is_zero_dbfs_rms(sample_rate: int) -> None:
@@ -310,15 +305,18 @@ def test_a_dc_offset_is_not_background_noise(sample_rate: int) -> None:
 
 def test_a_short_quiet_segment_is_averaged_before_the_hum_search(sample_rate: int) -> None:
     """Below about 0.75 s Welch got a single raw periodogram, and white noise
-    was reported as mains hum in about 2 % of 0.25-0.6 s segments."""
+    was reported as mains hum in about 2 % of 0.25-0.6 s segments.
+
+    The octave-band levels play no part in the hum search and cost almost all
+    of the run time, so they are left out here."""
     false_hum = 0
     for seed in range(60):
         x = np.random.default_rng(seed).normal(0.0, 1e-4, round(0.45 * sample_rate))
-        result = _analyze(x, sample_rate, min_segment_s=0.2)
+        result = _analyze(x, sample_rate, octave_bands_hz=(), min_segment_s=0.2)
         false_hum += any(h.detected for h in result.hum)
     assert false_hum == 0
     t = np.arange(round(0.45 * sample_rate)) / sample_rate
     hum = sum(3e-4 / k * np.sin(2 * np.pi * 50.0 * k * t + k) for k in range(1, 7))
     noisy = hum + np.random.default_rng(0).normal(0.0, 1e-4, t.shape[0])
-    detected = _analyze(noisy, sample_rate, min_segment_s=0.2).hum
+    detected = _analyze(noisy, sample_rate, octave_bands_hz=(), min_segment_s=0.2).hum
     assert any(h.detected and h.base_hz == 50.0 for h in detected)
