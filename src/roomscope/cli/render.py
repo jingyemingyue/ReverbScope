@@ -696,9 +696,11 @@ def render_comparison(
     for note in comparison.notes:
         lines += c.status("info", localize(note))
 
-    lines += comparison_at_a_glance(c, comparison)
-
-    lines += _decay_deltas(c, comparison.decay)
+    if comparison.comparable:
+        # A refused pair compared nothing: its empty lists are not findings
+        # ("no potential resonance"); the notes say why it was refused.
+        lines += comparison_at_a_glance(c, comparison)
+        lines += _decay_deltas(c, comparison.decay)
 
     if comparison.frequency_response is not None:
         lines += c.section(_("Frequency response"), _("mean |Δ| per octave"))
@@ -929,6 +931,10 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
     return text
 
 
+#: The stored note of a comparison whose reflections were not matched.
+_REFLECTIONS_NOT_COMPARED = "early reflections are not compared unless"
+
+
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
     """Baseline against candidate, one line per topic; the symbol says whether
     the topic could be compared, never whether the change is good."""
@@ -985,6 +991,12 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 kept=counts["matched"],
                 sep=c.sep(),
             ),
+        )
+    elif any(note.startswith(_REFLECTIONS_NOT_COMPARED) for note in comparison.notes):
+        row(
+            _("Early reflections"),
+            "skip",
+            _("not compared: the direct-sound confidence is not high on both sides"),
         )
     else:
         row(_("Early reflections"), "ok", _("none above the threshold on either side"))

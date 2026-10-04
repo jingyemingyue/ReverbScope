@@ -76,3 +76,38 @@ def test_a_narrow_table_keeps_the_change_of_db_metrics() -> None:
     assert "+1.000" in c50, lines
     t20 = next(line for line in lines if "T20" in line)
     assert "+0.100" in t20, lines
+
+
+def test_a_refused_comparison_reports_no_findings() -> None:
+    """#64: a refused pair said "none above the threshold on either side",
+    "no potential resonance" and "no quiet segment" although nothing was
+    compared."""
+    from roomscope.cli.render import REPORT_CONSOLE, render_comparison
+
+    refused = ComparisonResult(
+        comparable=False, common_band=None, notes=("the excitation bands do not overlap",)
+    )
+    text = render_comparison(REPORT_CONSOLE, refused)
+    assert "the excitation bands do not overlap" in text
+    for claim in (
+        "none above the threshold on either side",
+        "no potential resonance",
+        "no quiet segment",
+        "Reverberation",
+    ):
+        assert claim not in text, text
+
+
+def test_reflections_skipped_for_confidence_are_not_called_absent() -> None:
+    from roomscope.i18n import diag
+
+    note = diag(
+        "early reflections are not compared unless both sides have high direct-sound "
+        "confidence (baseline {baseline_confidence}, candidate {candidate_confidence})",
+        baseline_confidence="high",
+        candidate_confidence="low",
+    )
+    comparison = ComparisonResult(comparable=True, common_band=(100.0, 5000.0), notes=(note,))
+    text = "\n".join(comparison_at_a_glance(WIDE, comparison))
+    assert "none above the threshold" not in text
+    assert "not compared" in text

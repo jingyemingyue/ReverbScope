@@ -4024,3 +4024,6 @@ msgid "No reflection was detected inside this profile's {window_ms:g} ms window 
 msgstr "候选中，此配置的 {window_ms:g} ms 窗口内未检测到反射；基线中最强的反射为 {delay_ms:.1f} ms 的 {relative_db:.1f} dB。"
 msgid "Background noise, {band}"
 msgstr "本底噪声，{band}"
+
+msgid "not compared: the direct-sound confidence is not high on both sides"
+msgstr "未比较：两侧的直达声置信度并非都为高"
