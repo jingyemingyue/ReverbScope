@@ -95,6 +95,11 @@ DAW_INSTRUCTIONS = N_(
 )
 
 
+def late_result_text() -> str:
+    """Shown on a mode page whose take or analysis ended after the user left it."""
+    return _("The result was discarded because you left this page before it was ready.")
+
+
 class HomePage(QWidget):
     choose_mode = Signal(str)
     open_session = Signal()
@@ -323,6 +328,8 @@ class DawModePage(QWidget):
         super().__init__(parent)
         self.state = state
         self._worker: AnalysisWorker | None = None
+        # The state generation the running analysis belongs to.
+        self._generation = -1
         layout = _scroll_page(
             self,
             PageHeader(
@@ -557,6 +564,7 @@ class DawModePage(QWidget):
             recording_profile=self.state.profile,
         )
         self._set_busy(True, _("Analyzing..."))
+        self._generation = self.state.generation
         self._worker = AnalysisWorker(
             self.state.recording, self.state.reference, self.state.analysis_settings
         )
@@ -591,10 +599,12 @@ class DawModePage(QWidget):
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
-        if not self.isVisible():
+        if self._generation != self.state.generation or not self.isVisible():
             # The user went elsewhere (a menu action) while this ran; the
-            # shared state now belongs to that page.
-            self._set_busy(False)
+            # shared state now belongs to that page. Coming back to wait does
+            # not help after New Measurement or Open Session: the state was
+            # reset, and the result would join that other session.
+            self._set_busy(False, late_result_text(), tone="warn")
             return
         self.state.result = result
         self.state.findings = interpret(result, self.state.profile)
@@ -619,6 +629,8 @@ class StandalonePage(QWidget):
         self._analysis_worker: AnalysisWorker | None = None
         self._channel_plan: ChannelPlan | None = None
         self._inventory: DeviceInventory | None = None
+        # The state generation the running take belongs to.
+        self._generation = -1
         layout = _scroll_page(
             self,
             PageHeader(
@@ -1040,6 +1052,7 @@ class StandalonePage(QWidget):
         )
         self.state.profile = str(self.profile.currentData())
         self._set_busy(True, _("Playing the sweep and recording..."))
+        self._generation = self.state.generation
         self._measure_worker = MeasureWorker(
             measurement_signal(settings),
             settings.sample_rate,
@@ -1068,8 +1081,9 @@ class StandalonePage(QWidget):
         self._set_busy(False, _("Stopped."))
 
     def _on_recorded(self, recording: AudioSignal) -> None:
-        if not self.isVisible():
-            self._set_busy(False)
+        if self._generation != self.state.generation or not self.isVisible():
+            # As in DawModePage._on_success.
+            self._set_busy(False, late_result_text(), tone="warn")
             return
         self.state.recording = recording
         self.state.recording_path = None
@@ -1113,8 +1127,8 @@ class StandalonePage(QWidget):
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
-        if not self.isVisible():
-            self._set_busy(False)
+        if self._generation != self.state.generation or not self.isVisible():
+            self._set_busy(False, late_result_text(), tone="warn")
             return
         self.state.result = result
         self.state.findings = interpret(result, self.state.profile)

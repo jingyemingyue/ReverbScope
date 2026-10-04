@@ -26,8 +26,13 @@ class MeasurementState:
     result: AnalysisResult | None = None
     findings: list[Finding] = field(default_factory=list)
     session: MeasurementSession = field(default_factory=MeasurementSession)
+    #: Bumped by every reset (New Measurement, Open Session). A take or an
+    #: analysis that started under another generation belongs to a session
+    #: that is gone, and its late result is dropped.
+    generation: int = 0
 
     def reset(self) -> None:
+        self.generation += 1
         self.recording_path = None
         self.recording = None
         self.result = None

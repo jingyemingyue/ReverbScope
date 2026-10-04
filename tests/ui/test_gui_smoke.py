@@ -643,3 +643,107 @@ def test_home_selects_two_sessions_for_compare_and_settings_reach_the_gui(
     assert window.daw.profile.currentData() == "vocal"
     assert window.standalone.profile.currentData() == "vocal"
     window.close()
+
+
+def _settle(app: QApplication, *workers: object) -> None:
+    """Wait for the workers, then deliver their queued signals."""
+    import time
+
+    for worker in workers:
+        if worker is not None:
+            worker.wait()  # type: ignore[attr-defined]
+    for _ in range(10):
+        app.processEvents()
+        time.sleep(0.01)
+
+
+@pytest.fixture
+def held_analysis(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
+    """The GUI's analysis waits until the test releases it."""
+    import threading
+
+    from roomscope.ui import workers
+
+    gate = threading.Event()
+    real = workers.analyze
+
+    def held(*args, **kwargs):  # type: ignore[no-untyped-def]
+        gate.wait(30)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(workers, "analyze", held)
+    yield gate
+    gate.set()
+
+
+def test_a_late_analysis_never_joins_a_session_opened_meanwhile(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings, held_analysis
+) -> None:
+    """The page only checked that it was visible when the result arrived.
+    Ctrl+O then Ctrl+1 to wait for the analysis put the new take's result
+    under the opened session's room, settings and recording."""
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.session import MeasurementSession
+
+    rate = short_sweep.sample_rate
+    opened = analyze(
+        synthetic_recording(short_sweep, make_rir(rate, rt60_s=0.8), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    folder = tmp_path / "studio-x"
+    save_measurement(folder, MeasurementSession(room_name="Studio X"), opened, copy_recording=False)
+    window = MainWindow()
+    window.show()
+    window.show_mode("universal_daw")
+    page = window.daw
+    page.sample_rate.setCurrentIndex(page.sample_rate.findData(rate))
+    page.duration.setValue(short_sweep.duration_s)
+    page.generate_sweep_to(tmp_path / "sweep.wav")
+    take = synthetic_recording(window.state.sweep_settings, make_rir(rate, rt60_s=0.3))
+    page.set_recording(
+        write_wav(tmp_path / "take.wav", take.samples, take.sample_rate, subtype="FLOAT")
+    )
+    page.room.setText("Booth A")
+    try:
+        page.start_analysis()
+        window.open_session_path(folder)  # Ctrl+O while it runs
+        studio_x = window.state.result
+        window.show_mode("universal_daw")  # back to the page to wait for it
+    finally:
+        held_analysis.set()
+        _settle(app, page._worker)
+    assert window.stack.currentWidget() is page
+    assert window.state.session.room_name == "Studio X"
+    assert window.state.result is studio_x
+    assert "discarded" in page.status.text()
+    assert page.analyze_button.isEnabled()
+    window.close()
+
+
+def test_a_late_standalone_analysis_is_not_shown_after_new_measurement(
+    app: QApplication, held_analysis
+) -> None:
+    """Ctrl+N then Ctrl+3 during the analysis showed the take under a blank
+    session without its recording, so Save wrote no recording.wav."""
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    page.room.setText("Live room")
+    try:
+        page.run_button.click()
+        _settle(app, page._measure_worker)
+        assert page._analysis_worker is not None and page._analysis_worker.isRunning()
+        window.show_home()  # Ctrl+N
+        window.show_mode("demo")  # Ctrl+3: back to wait for it
+    finally:
+        held_analysis.set()
+        _settle(app, page._analysis_worker)
+    assert window.stack.currentWidget() is page
+    assert window.state.result is None
+    assert "discarded" in page.status.text()
+    assert page.run_button.isEnabled()
+    window.close()
