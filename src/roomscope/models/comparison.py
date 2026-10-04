@@ -123,7 +123,7 @@ class MetricDelta:
         try:
             payload["validity"] = Validity(str(validity))
         except ValueError as exc:
-            raise SessionError(f"unknown comparison validity {validity!r}") from exc
+            raise SessionError(_("unknown validity {value}").format(value=repr(validity))) from exc
         return build_record(cls, payload, kind="metric delta")
 
 
@@ -232,7 +232,11 @@ class FrequencyResponseDelta:
                 reference=str(payload.get("reference", "")),
             )
         except (TypeError, ValueError, OverflowError) as exc:  # Overflow: int(Infinity)
-            raise SessionError(f"invalid frequency-response delta in file: {exc}") from exc
+            raise SessionError(
+                _("invalid {kind} in file: {error}").format(
+                    kind=record_name("frequency-response delta"), error=exc
+                )
+            ) from exc
 
 
 @dataclass(frozen=True)
@@ -283,14 +287,20 @@ class ComparisonResult:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ComparisonResult:
         if not isinstance(data, dict):
-            raise SessionError("comparison data must be a JSON object")
+            raise SessionError(
+                _("{kind} must be a JSON object").format(kind=record_name("comparison"))
+            )
         version = read_schema_version(data, COMPARISON_SCHEMA_VERSION, "comparison")
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="comparison")
         try:
             return cls._from_payload(payload, version)
         except (TypeError, ValueError, IndexError, KeyError, OverflowError) as exc:
             # OverflowError: float() of an integer with hundreds of digits.
-            raise SessionError(f"invalid comparison file: {exc}") from exc
+            raise SessionError(
+                _("invalid {kind} in file: {error}").format(
+                    kind=record_name("comparison"), error=exc
+                )
+            ) from exc
 
     @classmethod
     def _from_payload(cls, payload: dict[str, Any], version: int) -> ComparisonResult:

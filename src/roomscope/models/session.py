@@ -87,7 +87,9 @@ class MeasurementSession:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> MeasurementSession:
         if not isinstance(data, dict):
-            raise SessionError("session data must be a JSON object")
+            raise SessionError(
+                _("{kind} must be a JSON object").format(kind=record_name("session"))
+            )
         version = read_schema_version(data, SESSION_SCHEMA_VERSION, "session")
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="session")
         for f in fields(cls):
@@ -97,7 +99,8 @@ class MeasurementSession:
                 # wrong type there would fail later instead of here (#11).
                 raise SessionError(
                     _("invalid {kind} in file: {error}").format(
-                        kind=record_name("session"), error=f"{f.name} has the wrong type"
+                        kind=record_name("session"),
+                        error=_("{field} has the wrong type").format(field=f.name),
                     )
                 )
         if "sweep_settings" in payload:

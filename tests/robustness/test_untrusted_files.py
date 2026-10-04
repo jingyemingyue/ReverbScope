@@ -263,7 +263,7 @@ def test_member_in_a_subfolder_still_loads(saved_session: Path, tmp_path: Path) 
         ({"reflections": [{"baseline_delay_ms": 3.0}]}, "reflection match"),
         ({"resonances": [{"baseline_hz": 50.0}]}, "resonance match"),
         ({"frequency_response": {"band_mad_db": [["1 kHz"]]}}, "frequency-response delta"),
-        ({"common_band": [20.0]}, "invalid comparison file"),
+        ({"common_band": [20.0]}, "invalid comparison in file"),
     ],
     ids=["delta-missing-name", "delta-not-object", "reflection", "resonance", "fr", "band"],
 )
@@ -331,6 +331,70 @@ def test_one_sided_reflection_matches_load(tmp_path: Path) -> None:
     loaded = load_comparison(path)
     assert [m.status for m in loaded.reflections] == ["appeared", "disappeared"]
     assert loaded.comparable is False
+
+
+@pytest.mark.parametrize(
+    ("file", "text", "expected"),
+    [
+        ("session.json", '{"created_at": 5}', "文件中的会话无效：created_at 的类型不正确"),
+        ("project.json", '{"positions": "abc"}', "文件中的项目无效：positions 必须是列表"),
+        (
+            "session.json",
+            '{"analysis_settings": {"octave_bands_hz": 5}}',
+            "octave_bands_hz 必须是数字列表",
+        ),
+        ("comparison.json", '{"comparable": true, "settings": [1, 2]}', "文件中的对比无效："),
+        (
+            "comparison.json",
+            '{"comparable": true, "decay": [{"name": "x", "validity": "bogus"}]}',
+            "未知的有效性 'bogus'",
+        ),
+        (
+            "comparison.json",
+            '{"comparable": true, "frequency_response": {"band_mad_db": [["a"]]}}',
+            "文件中的频率响应差值无效：",
+        ),
+        (
+            "comparison.json",
+            '{"resonances": [{"status": "matched", "baseline_decay_distinguishable": 1}]}',
+            "baseline_decay_distinguishable 必须是 true 或 false",
+        ),
+    ],
+    ids=["session", "project", "bands", "comparison", "validity", "fr-delta", "flag"],
+)
+def test_load_errors_are_translated(tmp_path: Path, file: str, text: str, expected: str) -> None:
+    """RoomScope's own words in a load error were English in a Chinese message."""
+    from roomscope.i18n import activate
+
+    (tmp_path / file).write_text(text, encoding="utf-8")
+    load = {
+        "session.json": lambda: load_session(tmp_path / file),
+        "project.json": lambda: load_project(tmp_path),
+        "comparison.json": lambda: load_comparison(tmp_path / file),
+    }[file]
+    activate("zh_CN")
+    try:
+        with pytest.raises(RoomScopeError) as info:
+            load()
+    finally:
+        activate("en")
+    assert expected in str(info.value)
+
+
+@pytest.mark.parametrize("kind", ["session", "project", "comparison"])
+def test_a_record_that_is_not_an_object_is_refused_in_chinese(kind: str) -> None:
+    from roomscope.i18n import activate
+    from roomscope.models.comparison import ComparisonResult
+    from roomscope.models.project import Project
+    from roomscope.models.session import MeasurementSession
+
+    cls = {"session": MeasurementSession, "project": Project, "comparison": ComparisonResult}
+    activate("zh_CN")
+    try:
+        with pytest.raises(SessionError, match="必须是 JSON 对象"):
+            cls[kind].from_dict([])  # type: ignore[arg-type]
+    finally:
+        activate("en")
 
 
 def test_invalid_compare_settings_and_calibration_are_session_errors() -> None:

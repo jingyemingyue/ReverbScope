@@ -243,7 +243,9 @@ class AnalysisSettings:
             bands = payload["octave_bands_hz"]
             try:
                 if not isinstance(bands, list | tuple):
-                    raise TypeError("octave_bands_hz must be a list of numbers")
+                    raise TypeError(
+                        _("{field} must be a list of numbers").format(field="octave_bands_hz")
+                    )
                 payload["octave_bands_hz"] = tuple(float(f) for f in bands)
             except (TypeError, ValueError, OverflowError) as exc:
                 raise ConfigurationError(

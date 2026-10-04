@@ -20,7 +20,7 @@ def _list(value: Any, kind: str, name: str) -> list[Any]:
     if not isinstance(value, list):
         raise SessionError(
             _("invalid {kind} in file: {error}").format(
-                kind=record_name(kind), error=f"{name} must be a list"
+                kind=record_name(kind), error=_("{field} must be a list").format(field=name)
             )
         )
     return value
@@ -65,7 +65,9 @@ class Project:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Project:
         if not isinstance(data, dict):
-            raise SessionError("project data must be a JSON object")
+            raise SessionError(
+                _("{kind} must be a JSON object").format(kind=record_name("project"))
+            )
         version = read_schema_version(data, PROJECT_SCHEMA_VERSION, "project")
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="project")
         positions = tuple(
