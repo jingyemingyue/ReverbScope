@@ -38,7 +38,7 @@ from roomscope.models.comparison import CompareSettings, ComparisonResult, Reson
 from roomscope.ui.browser import SessionBrowser
 from roomscope.labels import metric_label, signed_number, status_text, validity_word
 from roomscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
-from roomscope.ui.widgets import Card, PageHeader, label, primary
+from roomscope.ui.widgets import Card, PageHeader, ask_save_path, label, primary
 
 
 def _decay_flags(match: ResonanceMatch) -> str:
@@ -292,11 +292,12 @@ class ComparePage(QWidget):
         if self._comparison is None:
             QMessageBox.information(self, _("Save comparison"), _("Run a comparison first."))
             return
-        path, _filter = QFileDialog.getSaveFileName(
+        target = ask_save_path(
             self, _("Save comparison.json"), "comparison.json", _("JSON files (*.json)")
         )
-        if not path:
+        if target is None:
             return
+        path = str(target)
         if not path.lower().endswith(".json"):
             # Without the extension save_comparison takes the name for a folder.
             path += ".json"

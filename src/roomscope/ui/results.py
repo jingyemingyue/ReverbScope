@@ -33,7 +33,7 @@ from roomscope.cli.render import REPORT_CONSOLE, render_analysis
 from roomscope.errors import RoomScopeError
 from roomscope.i18n import _, localize
 from roomscope.io.recent import remember_session
-from roomscope.io.session_store import save_measurement
+from roomscope.io.session_store import SESSION_FILE, save_measurement
 from roomscope.labels import severity_text, surface_text, topic_text, validity_word
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
@@ -206,6 +206,27 @@ def validity_text(validity: Validity) -> tuple[str, str]:
 def _validity_text(validity: Validity) -> tuple[str, str]:
     _word, tone = VALIDITY_DISPLAY.get(validity, (str(validity), "neutral"))
     return validity_word(validity), tone
+
+
+def replace_session_box(parent: QWidget, directory: str) -> QMessageBox:
+    """The chosen folder already holds a session. The safe button is the default: keep it."""
+    box = QMessageBox(parent)
+    box.setIcon(QMessageBox.Icon.Warning)
+    box.setWindowTitle(_("Replace session?"))
+    box.setText(_("{path} already holds a saved session. Replace it?").format(path=directory))
+    box.addButton(_("Replace"), QMessageBox.ButtonRole.AcceptRole)
+    cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
+    box.setDefaultButton(cancel)
+    box.setEscapeButton(cancel)
+    return box
+
+
+def ask_replace_session(parent: QWidget, directory: str) -> bool:
+    box = replace_session_box(parent, directory)
+    box.exec()
+    clicked = box.clickedButton()
+    # By role, not by label, as in pages.ask_separate_clocks.
+    return clicked is not None and box.buttonRole(clicked) == QMessageBox.ButtonRole.AcceptRole
 
 
 class _Overview(QWidget):
@@ -530,8 +551,13 @@ class ResultsPage(QWidget):
         directory = QFileDialog.getExistingDirectory(
             self, _("Choose a folder for the session"), load_settings().output_dir
         )
-        if directory:
-            self.save_to(Path(directory))
+        if not directory:
+            return
+        # The dialog opens at the default output folder: accepting it twice
+        # as offered would replace the first session without a word.
+        if (Path(directory) / SESSION_FILE).exists() and not ask_replace_session(self, directory):
+            return
+        self.save_to(Path(directory))
 
     def save_to(self, directory: Path) -> None:
         result = self.state.result

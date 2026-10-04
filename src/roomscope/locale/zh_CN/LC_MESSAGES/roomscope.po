@@ -4041,3 +4041,12 @@ msgstr "结果完成前你离开了此页面，因此结果已丢弃。"
 
 msgid "Synthetic demo"
 msgstr "合成演示"
+
+msgid "Replace session?"
+msgstr "替换会话？"
+
+msgid "{path} already holds a saved session. Replace it?"
+msgstr "{path} 中已有一个保存的会话。要替换它吗？"
+
+msgid "Replace"
+msgstr "替换"

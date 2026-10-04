@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import sys
+from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import (
@@ -58,6 +59,29 @@ def error_box(parent: QWidget | None, title: str, message: str) -> None:
     box.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
     box.addButton(_("OK"), QMessageBox.ButtonRole.AcceptRole)
     box.exec()
+
+
+def ask_save_path(parent: QWidget, title: str, name: str, file_filter: str) -> Path | None:
+    """Ask where to save ``name``; ``None`` when the user cancels.
+
+    The dialog adds ``name``'s extension to a name typed without one before
+    it asks about replacing a file. The static ``getSaveFileName`` has no
+    such default: Qt's own dialog (Linux) checked the name as typed, and the
+    extension added after it closed silently replaced an existing file.
+    """
+    from PySide6.QtWidgets import QFileDialog
+
+    dialog = QFileDialog(parent, title, "", file_filter)
+    dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+    dialog.setDefaultSuffix(Path(name).suffix.lstrip("."))
+    dialog.selectFile(name)
+    try:
+        if not dialog.exec():
+            return None
+        chosen = dialog.selectedFiles()
+    finally:
+        dialog.deleteLater()
+    return Path(chosen[0]) if chosen else None
 
 
 def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:

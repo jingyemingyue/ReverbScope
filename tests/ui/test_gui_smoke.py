@@ -900,3 +900,126 @@ def test_two_selected_sessions_compare_oldest_first(
     assert Path(page.baseline_path.text()).name == "before"
     assert Path(page.candidate_path.text()).name == "after"
     window.close()
+
+
+def _type_name_and_refuse_to_replace(app: QApplication, folder: Path, name: str) -> list[str]:
+    """Drive the next save dialog: type ``name`` in ``folder``, answer No to
+    a replace question, then cancel. Returns the questions asked."""
+    from PySide6.QtCore import QTimer
+    from PySide6.QtWidgets import QFileDialog, QLineEdit, QMessageBox
+
+    questions: list[str] = []
+
+    def visible(kind: type) -> list:  # type: ignore[type-arg]
+        return [w for w in app.topLevelWidgets() if isinstance(w, kind) and w.isVisible()]
+
+    def answer() -> None:
+        boxes = visible(QMessageBox)
+        if boxes:
+            questions.append(boxes[0].text())
+            boxes[0].done(QMessageBox.StandardButton.No)
+        for dialog in visible(QFileDialog):
+            dialog.reject()
+
+    def type_name(attempts: int = 250) -> None:
+        dialogs = visible(QFileDialog)
+        if not dialogs:
+            if attempts:
+                QTimer.singleShot(20, lambda: type_name(attempts - 1))
+            return
+        dialogs[0].setDirectory(str(folder))
+        dialogs[0].findChild(QLineEdit, "fileNameEdit").setText(name)
+        QTimer.singleShot(100, answer)
+        dialogs[0].accept()
+
+    QTimer.singleShot(20, type_name)
+    return questions
+
+
+def test_saving_a_file_asks_before_replacing_it_when_the_extension_is_added(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """The extension was added after the save dialog closed: typing
+    "roomscope_sweep" silently replaced roomscope_sweep.wav (and its
+    sidecar), and "comparison" an existing comparison.json."""
+    from roomscope.core.compare import compare
+    from roomscope.core.pipeline import Reference, analyze
+
+    window = MainWindow()
+    window.show()
+    window.show_mode("universal_daw")
+    page = window.daw
+    page.generate_sweep_to(tmp_path / "roomscope_sweep.wav")
+    sweep = (tmp_path / "roomscope_sweep.wav").read_bytes()
+    page.duration.setValue(3.0)
+    questions = _type_name_and_refuse_to_replace(app, tmp_path, "roomscope_sweep")
+    page._choose_sweep_target()
+    assert questions and "roomscope_sweep.wav" in questions[0]
+    assert (tmp_path / "roomscope_sweep.wav").read_bytes() == sweep
+
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    (tmp_path / "comparison.json").write_text("{}", encoding="utf-8")
+    window.compare._comparison = compare(result, result)
+    questions = _type_name_and_refuse_to_replace(app, tmp_path, "comparison")
+    window.compare._save()
+    assert questions and "comparison.json" in questions[0]
+    assert (tmp_path / "comparison.json").read_text(encoding="utf-8") == "{}"
+    window.close()
+
+
+def test_saving_over_a_saved_session_asks_first(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
+) -> None:
+    """Save Session opens at the default output folder; accepting it twice
+    as offered replaced the first session's files without a word."""
+    import json
+
+    from PySide6.QtWidgets import QFileDialog, QMessageBox
+
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.interpretation import interpret
+    from roomscope.models.session import MeasurementSession
+
+    folder = tmp_path / "RoomScope Sessions"
+    monkeypatch.setattr(
+        QFileDialog, "getExistingDirectory", staticmethod(lambda *_a, **_k: str(folder))
+    )
+    asked: list[str] = []
+    answer = {"replace": False}
+
+    def exec_(box: QMessageBox) -> int:
+        asked.append(box.text())
+        if answer["replace"]:
+            next(
+                button
+                for button in box.buttons()
+                if box.buttonRole(button) == QMessageBox.ButtonRole.AcceptRole
+            ).click()
+        return 0
+
+    monkeypatch.setattr(QMessageBox, "exec", exec_)
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    window = MainWindow()
+
+    def save(room: str) -> str:
+        window.state.session = MeasurementSession(room_name=room)
+        window.state.result = result
+        window.state.findings = interpret(result, "generic")
+        window.show_results()
+        window.results._choose_save_directory()
+        saved = json.loads((folder / "session.json").read_text(encoding="utf-8"))
+        return str(saved["room_name"])
+
+    assert save("Room A") == "Room A"
+    assert asked == []
+    assert save("Room B") == "Room A"
+    assert len(asked) == 1 and str(folder) in asked[0]
+    answer["replace"] = True
+    assert save("Room C") == "Room C"
+    window.close()

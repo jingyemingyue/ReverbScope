@@ -53,6 +53,7 @@ from roomscope.ui.widgets import (
     Card,
     ModeCard,
     PageHeader,
+    ask_save_path,
     error_box,
     label,
     primary,
@@ -441,12 +442,11 @@ class DawModePage(QWidget):
         )
 
     def _choose_sweep_target(self) -> None:
-        path, _filter = QFileDialog.getSaveFileName(
+        target = ask_save_path(
             self, _("Save test signal"), "roomscope_sweep.wav", _("WAV files (*.wav)")
         )
-        if path:
-            # Qt's own dialog does not append the filter's extension.
-            target = Path(path)
+        if target is not None:
+            # A name typed with another extension ("take.v2") still gets one.
             if target.suffix.lower() != ".wav":
                 target = target.with_name(target.name + ".wav")
             self.generate_sweep_to(target)
