@@ -1359,6 +1359,28 @@ def _is_comparison_path(path: Path) -> bool:
     return False
 
 
+def _candidate_profile(candidate_session: object) -> str | None:
+    """The profile ``compare`` interpreted with: the candidate session's.
+
+    ``comparison.json`` does not store it. When the candidate session can no
+    longer be read (it moved, or its path is relative to where compare ran),
+    the settings' default profile applies, as for a session without one.
+    """
+    from roomscope.io.session_store import load_session
+
+    # compare stores the session folder; nothing else is opened for it.
+    if (
+        not isinstance(candidate_session, str)
+        or not candidate_session
+        or not Path(candidate_session).is_dir()
+    ):
+        return None
+    try:
+        return load_session(candidate_session).recording_profile or None
+    except (RoomScopeError, OSError):
+        return None
+
+
 def cmd_show(args: argparse.Namespace) -> int:
     from roomscope.interpretation import interpret, interpret_comparison
     from roomscope.io.session_store import (
@@ -1380,7 +1402,7 @@ def cmd_show(args: argparse.Namespace) -> int:
 
     if _is_comparison_path(args.path):
         comparison = load_comparison(args.path)
-        profile = _resolve_profile(args, "generic")
+        profile = _resolve_profile(args, _candidate_profile(comparison.candidate_session))
         findings = interpret_comparison(comparison, profile)
         if _use_json(args):
             payload = comparison.to_dict()

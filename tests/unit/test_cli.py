@@ -426,3 +426,26 @@ def test_fake_backend_devices_and_measure(
     assert (out / "session.json").is_file()
     assert (out / "recording.wav").is_file()
     assert "Loopback" in captured.out or "loopback" in captured.out.lower()
+
+
+def test_show_comparison_interprets_with_the_candidates_profile(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`show comparison.json` used the General profile, not the candidate
+    session's profile that `compare` used, and ignored the default profile."""
+    from roomscope.settings import UserSettings, save_settings
+
+    for name, rt60 in (("a", 0.7), ("b", 0.4)):
+        ir = write_wav(tmp_path / f"{name}.wav", make_rir(48000, rt60_s=rt60) * 0.5, 48000)
+        argv = ["analyze-ir", "--ir", str(ir), "--band", "100", "8000", "--profile", "vocal"]
+        assert main([*argv, "--out", str(tmp_path / name)]) == 0
+    saved = tmp_path / "ab.json"
+    assert main(["compare", str(tmp_path / "a"), str(tmp_path / "b"), "--out", str(saved)]) == 0
+    assert "Vocals profile" in capsys.readouterr().out
+    assert main(["show", str(saved)]) == 0
+    assert "Vocals profile" in capsys.readouterr().out
+    # Without the candidate session, the default profile applies.
+    (tmp_path / "b").rename(tmp_path / "moved")
+    save_settings(UserSettings(default_profile="choir"))
+    assert main(["show", str(saved)]) == 0
+    assert "Choir / ensemble profile" in capsys.readouterr().out
