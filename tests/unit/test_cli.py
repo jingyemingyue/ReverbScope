@@ -482,3 +482,32 @@ def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
     capsys.readouterr()
     assert main(["show", str(out)]) == 0
     assert "Synthetic demo" in capsys.readouterr().out
+
+
+def test_measure_refuses_a_test_signal_too_short_to_analyse_before_playing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A 0.9 s signal was played and recorded, then always refused by the
+    analysis ("recording is shorter than one second")."""
+    out = tmp_path / "m_short"
+    code = main(
+        [
+            "--backend",
+            "fake",
+            "measure",
+            "--duration",
+            "0.5",
+            "--pre-silence",
+            "0.1",
+            "--post-silence",
+            "0.3",
+            "--out",
+            str(out),
+        ]
+    )
+    err = capsys.readouterr().err
+    assert code == 1
+    assert "0.90 s" in err and "--post-silence" in err
+    assert "Nothing was played." in err
+    assert "devices --probe" not in err
+    assert not (out / "recording.wav").exists()

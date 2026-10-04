@@ -1188,6 +1188,18 @@ def cmd_measure(args: argparse.Namespace) -> int:
         )
         refusal.cli_hints = [f"roomscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
         raise refusal
+    if settings.total_samples < settings.sample_rate:
+        # The analysis refuses a recording shorter than one second: say so
+        # before the take, not after it was played and recorded for nothing.
+        refusal = ConfigurationError(
+            _(
+                "the test signal lasts {seconds:.2f} s, but a recording must last at least "
+                "1 s to be analysed; lengthen the silence after the sweep (--post-silence)"
+            ).format(seconds=settings.total_samples / settings.sample_rate)
+        )
+        # The settings are at fault, not the devices.
+        refusal.cli_hints = ["roomscope measure --help"]  # type: ignore[attr-defined]
+        raise refusal
     if settings.level_dbfs > SAFE_MAX_LEVEL_DBFS and not args.acknowledge_level:
         print(
             render_error(
