@@ -1,1 +1,3 @@
 *.cmd text eol=crlf
+# Keep the documented model fingerprint identical on every checkout platform.
+src/roomscope/model_data/*.json text eol=lf

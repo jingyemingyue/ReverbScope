@@ -382,6 +382,13 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
         choices=available_profiles(),
         help=_("recording profile that shapes the interpretation (default: user settings)"),
     )
+    analysis.add_argument(
+        "--decay-fit",
+        choices=("off", "physical", "neural"),
+        default="off",
+        metavar="MODE",
+        help=_("optional multi-exponential power fit with physical or local-model initial guesses"),
+    )
     notes = parser.add_argument_group(_("session notes (stored in session.json)"))
     notes.add_argument("--room", default="", metavar="TEXT", help=_("room name (metadata)"))
     notes.add_argument(
@@ -455,6 +462,7 @@ def _analysis_settings(
         placement_mic_height_m=args.mic_height,
         placement_temperature_c=args.temperature,
         loopback_channel=loopback_channel if loopback_channel is not None else channel,
+        decay_fit=getattr(args, "decay_fit", "off"),
     )
 
 

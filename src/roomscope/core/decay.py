@@ -1029,6 +1029,7 @@ def analyze_band(
     onset_search_start: int | None = None,
     direct_spread_s: float = DIRECT_SOUND_MARGIN_S,
     broadband_bandwidth_hz: float | None = None,
+    decay_fit: str = "off",
 ) -> BandDecay:
     """Decay analysis of one (band-filtered) response.
 
@@ -1162,6 +1163,30 @@ def analyze_band(
             break
 
     edc_time, edc_db = _decimate_curve(curve, sample_rate)
+    multi_decay = None
+    if decay_fit != "off":
+        from roomscope.core.multi_decay import fit_multi_decay
+
+        multi_decay = fit_multi_decay(
+            signal,
+            sample_rate,
+            start_index=onset + first_index,
+            time_origin_index=origin,
+            initializer=decay_fit,
+        )
+        if trunc.problem is not None:
+            multi_decay = multi_decay.marked_unreliable(
+                f"noise floor/truncation check is untrustworthy: {trunc.problem}"
+            )
+        if filter_warning:
+            multi_decay = multi_decay.marked_unreliable(filter_warning)
+        elif band is not None and multi_decay.components:
+            model_bt = band.bandwidth_hz * min(c.rt60_s for c in multi_decay.components)
+            if model_bt < MIN_BT_PRODUCT:
+                multi_decay = multi_decay.marked_unreliable(
+                    f"B*T = {model_bt:.1f} < {MIN_BT_PRODUCT:g}: the band filter's own "
+                    "decay is comparable to the fitted decay; components are unreliable"
+                )
     return BandDecay(
         band_label=band.label if band is not None else "broadband",
         center_hz=band.label_hz if band is not None else None,
@@ -1187,6 +1212,7 @@ def analyze_band(
         c80=c80,
         d50=d50,
         centre_time=centre,
+        multi_decay=multi_decay,
     )
 
 
@@ -1358,6 +1384,7 @@ def analyze_decay(
         onset_search_start=search_start(excitation_bw),
         direct_spread_s=spread_s,
         broadband_bandwidth_hz=excitation_bw,
+        decay_fit=settings.decay_fit,
     )
     bands: list[BandDecay] = []
     for center in settings.octave_bands_hz:
@@ -1378,6 +1405,7 @@ def analyze_decay(
                 time_origin_index=origin,
                 onset_search_start=search_start(band.bandwidth_hz),
                 direct_spread_s=spread_s,
+                decay_fit=settings.decay_fit,
             )
         )
     return DecayResult(

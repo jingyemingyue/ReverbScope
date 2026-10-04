@@ -74,6 +74,7 @@ from roomscope.models.result import (
     EXCITATION_SOURCE_UNKNOWN,
     AliasedDistortion,
     AnalysisResult,
+    BandDecay,
     ClippingCheck,
     DecayResult,
     ExcitationBand,
@@ -1028,7 +1029,7 @@ def _blank_noise(*, note: str) -> NoiseResult:
 def _mark_decay_not_computed(decay: DecayResult, reason: str) -> DecayResult:
     from dataclasses import replace
 
-    from roomscope.models.result import BandDecay, DecayMetric, EnergyMetric, Validity
+    from roomscope.models.result import DecayMetric, EnergyMetric, Validity
 
     def blank(metric: DecayMetric) -> DecayMetric:
         return replace(metric, seconds=None, validity=Validity.NOT_COMPUTED, reason=reason)
@@ -1049,6 +1050,7 @@ def _mark_decay_not_computed(decay: DecayResult, reason: str) -> DecayResult:
             rt60_estimate_s=None,
             rt60_basis=None,
             curvature_percent=None,
+            multi_decay=band.multi_decay.not_computed(reason) if band.multi_decay else None,
         )
 
     return replace(
@@ -1174,6 +1176,27 @@ def analyze_impulse_response(
     if declared.source == EXCITATION_SOURCE_UNKNOWN:
         decay = _mark_decay_not_computed(
             decay, diag("excitation band unknown (imported impulse response; declare --band)")
+        )
+    elif confidence == "low" and settings.decay_fit != "off":
+        from dataclasses import replace
+
+        reason = (
+            "direct-sound detection confidence is low: the imported impulse response's "
+            "time zero is unverified"
+        )
+
+        def distrust_model(band: BandDecay) -> BandDecay:
+            return replace(
+                band,
+                multi_decay=band.multi_decay.marked_unreliable(reason)
+                if band.multi_decay
+                else None,
+            )
+
+        decay = replace(
+            decay,
+            broadband=distrust_model(decay.broadband),
+            bands=tuple(distrust_model(band) for band in decay.bands),
         )
     fr_segment, fr_direct = _segment_around_pass(
         np.asarray(mono, dtype=np.float64),

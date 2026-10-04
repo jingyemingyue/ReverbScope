@@ -8,6 +8,7 @@ arrays in memory; :meth:`AnalysisResult.to_dict` converts them for JSON export.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field, replace
 from enum import StrEnum
 from typing import Any
@@ -49,6 +50,143 @@ def _join_reasons(existing: str | None, reason: str) -> str:
     if reason in existing:
         return existing
     return f"{existing}; {reason}"
+
+
+@dataclass(frozen=True)
+class DecayComponent:
+    """A fitted exponential power component, separate from ISO decay metrics."""
+
+    rt60_s: float
+    relative_power: float
+    #: Local least-squares standard deviation; not a calibrated confidence interval.
+    rt60_std_s: float | None = None
+
+    def __post_init__(self) -> None:
+        if not math.isfinite(self.rt60_s) or self.rt60_s <= 0:
+            raise ValueError("component rt60_s must be finite and positive")
+        if not math.isfinite(self.relative_power) or not 0 <= self.relative_power <= 1:
+            raise ValueError("component relative_power must be between 0 and 1")
+        if self.rt60_std_s is not None and (
+            not math.isfinite(self.rt60_std_s) or self.rt60_std_s < 0
+        ):
+            raise ValueError("component rt60_std_s must be finite and non-negative or null")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "rt60_s": self.rt60_s,
+            "relative_power": self.relative_power,
+            "rt60_std_s": self.rt60_std_s,
+        }
+
+
+@dataclass(frozen=True)
+class MultiDecayFit:
+    """Optional physical decay fit; neural inference only supplies its initial guess."""
+
+    method: str
+    validity: Validity
+    components: tuple[DecayComponent, ...] = ()
+    noise_relative_power: float | None = None
+    residual_rms_db: float | None = None
+    bic_difference: float | None = None
+    fit_start_s: float = 0.0
+    fit_end_s: float = 0.0
+    initializer: str = "physical"
+    initializer_model: str | None = None
+    initializer_parameters: int | None = None
+    initializer_sha256: str | None = None
+    reason: str | None = None
+
+    def __post_init__(self) -> None:
+        if not self.method:
+            raise ValueError("decay fit method must be non-empty")
+        if self.initializer not in ("physical", "neural"):
+            raise ValueError("decay fit initializer must be physical or neural")
+        if not math.isfinite(self.fit_start_s) or not math.isfinite(self.fit_end_s):
+            raise ValueError("decay fit times must be finite")
+        if self.fit_end_s < self.fit_start_s:
+            raise ValueError("decay fit end must not precede its start")
+        for name, value in (
+            ("noise_relative_power", self.noise_relative_power),
+            ("residual_rms_db", self.residual_rms_db),
+            ("bic_difference", self.bic_difference),
+        ):
+            if value is not None and not math.isfinite(value):
+                raise ValueError(f"decay fit {name} must be finite or null")
+        if self.noise_relative_power is not None and self.noise_relative_power < 0:
+            raise ValueError("decay fit noise_relative_power must be non-negative")
+        if self.residual_rms_db is not None and self.residual_rms_db < 0:
+            raise ValueError("decay fit residual_rms_db must be non-negative")
+        if self.initializer_parameters is not None and (
+            isinstance(self.initializer_parameters, bool)
+            or not isinstance(self.initializer_parameters, int)
+            or self.initializer_parameters < 0
+        ):
+            raise ValueError("initializer_parameters must be a non-negative integer or null")
+        if self.validity is Validity.VALID and not self.components:
+            raise ValueError("a valid decay fit needs at least one component")
+        if len(self.components) > 2:
+            raise ValueError("a decay fit supports at most two components")
+        if self.validity is Validity.VALID:
+            times = [component.rt60_s for component in self.components]
+            if times != sorted(times):
+                raise ValueError("valid decay components must be ordered by rt60_s")
+            if not math.isclose(sum(c.relative_power for c in self.components), 1.0, rel_tol=1e-6):
+                raise ValueError("valid decay component powers must sum to one")
+        if (
+            self.validity
+            in (
+                Validity.NOT_COMPUTED,
+                Validity.OUTSIDE_EXCITATION,
+                Validity.INSUFFICIENT_RANGE,
+            )
+            and self.components
+        ):
+            raise ValueError("withheld decay fits must not contain component parameters")
+        if self.initializer_sha256 is not None and (
+            len(self.initializer_sha256) != 64
+            or any(character not in "0123456789abcdef" for character in self.initializer_sha256)
+        ):
+            raise ValueError("initializer_sha256 must be a lowercase SHA-256 digest or null")
+
+    def marked_unreliable(self, reason: str) -> MultiDecayFit:
+        """Keep diagnostic parameters while recording measurement distrust."""
+        if self.validity not in (Validity.VALID, Validity.UNRELIABLE):
+            return self
+        return replace(
+            self,
+            validity=Validity.UNRELIABLE,
+            reason=_join_reasons(self.reason, reason),
+        )
+
+    def not_computed(self, reason: str) -> MultiDecayFit:
+        """Withhold parameters when the measurement does not identify a decay."""
+        return replace(
+            self,
+            validity=Validity.NOT_COMPUTED,
+            components=(),
+            noise_relative_power=None,
+            residual_rms_db=None,
+            bic_difference=None,
+            reason=_join_reasons(self.reason, reason),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "method": self.method,
+            "validity": str(self.validity),
+            "components": [component.to_dict() for component in self.components],
+            "noise_relative_power": self.noise_relative_power,
+            "residual_rms_db": self.residual_rms_db,
+            "bic_difference": self.bic_difference,
+            "fit_start_s": self.fit_start_s,
+            "fit_end_s": self.fit_end_s,
+            "initializer": self.initializer,
+            "initializer_model": self.initializer_model,
+            "initializer_parameters": self.initializer_parameters,
+            "initializer_sha256": self.initializer_sha256,
+            "reason": self.reason,
+        }
 
 
 @dataclass(frozen=True)
@@ -203,6 +341,8 @@ class BandDecay:
     d50: EnergyMetric = field(default_factory=lambda: _not_computed_energy("D50", "%"))
     #: Energy-weighted centre time, in seconds.
     centre_time: EnergyMetric = field(default_factory=lambda: _not_computed_energy("Ts", "s"))
+    #: Optional multi-exponential power fit; never substitutes an ISO decay metric.
+    multi_decay: MultiDecayFit | None = None
 
     def with_all_unreliable(self, reason: str) -> BandDecay:
         """All metrics marked UNRELIABLE with ``reason``; no RT60 estimate and
@@ -219,6 +359,7 @@ class BandDecay:
             rt60_estimate_s=None,
             rt60_basis=None,
             curvature_percent=None,
+            multi_decay=self.multi_decay.marked_unreliable(reason) if self.multi_decay else None,
         )
 
     def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
@@ -249,6 +390,8 @@ class BandDecay:
         if include_curves:
             data["edc_time_s"] = _array_to_list(self.edc_time_s)
             data["edc_db"] = _array_to_list(self.edc_db, 2)
+        if self.multi_decay is not None:
+            data["multi_decay"] = self.multi_decay.to_dict()
         return data
 
 
