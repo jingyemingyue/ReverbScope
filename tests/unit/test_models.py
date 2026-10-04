@@ -85,6 +85,15 @@ def test_audio_signal_validation_and_channel_selection() -> None:
         stereo.channel(2)
 
 
+def test_a_channel_a_mono_signal_does_not_have_is_refused() -> None:
+    """``analyze --channel 5`` on a mono file analysed channel 0 and stored 5."""
+    mono = AudioSignal(np.ones(16), 48000)
+    with pytest.raises(InvalidAudioError, match="channel 1 does not exist"):
+        mono.select_channel(1)
+    assert mono.select_channel(0)[1:] == (0, None)
+    assert mono.select_channel(None)[1:] == (0, None)
+
+
 def test_session_round_trip_and_schema_check() -> None:
     session = MeasurementSession(room_name="A", sweep_settings=SweepSettings(duration_s=2.0))
     data = json.loads(json.dumps(session.to_dict()))
