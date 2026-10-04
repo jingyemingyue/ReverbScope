@@ -248,3 +248,38 @@ def test_of_equal_passes_with_short_gaps_the_last_one_is_analysed() -> None:
     assert result.impulse_response.sweep_passes == 3
     assert result.impulse_response.sweep_start_in_recording_s == pytest.approx(8.0, abs=0.01)
     assert result.decay.broadband.t30.validity is Validity.VALID
+
+
+def _quiet_take() -> tuple[SweepSettings, np.ndarray]:
+    """A take peaking at about -30 dBFS over a -87 dBFS noise floor."""
+    settings = SweepSettings(duration_s=3.0, post_silence_s=2.0)
+    ir = make_rir(settings.sample_rate, rt60_s=0.4, start_delay_s=0.003)
+    take = synthetic_recording(settings, ir, noise_rms=3e-5, gain=10 ** (-28 / 20))
+    return settings, take.samples[: settings.total_samples].copy()
+
+
+def test_a_dc_offset_does_not_reject_the_quiet_segment() -> None:
+    """With a DC offset at -46 dBFS the silence looked only 5.8 dB below the
+    sweep, so no noise level was measured and the note blamed "a sweep pass
+    without silence before it"."""
+    settings, take = _quiet_take()
+    reference = Reference.from_settings(settings)
+    clean = analyze(AudioSignal(take, settings.sample_rate, source="file"), reference).noise
+    offset = analyze(AudioSignal(take + 0.005, settings.sample_rate, source="file"), reference)
+    assert clean.rms_dbfs is not None
+    assert offset.noise.rms_dbfs == pytest.approx(clean.rms_dbfs, abs=0.1)
+    assert not any("not background noise" in n for n in offset.noise.notes)
+
+
+def test_a_dc_offset_does_not_hide_a_noise_event() -> None:
+    """A DC offset lifted every block of the pre-sweep segment to its own
+    level, so a noise burst was no longer excluded and the reported noise
+    level was 14 dB too high, without a note."""
+    settings, take = _quiet_take()
+    take[20000:30000] += np.random.default_rng(9).normal(0.0, 3e-4, 10000)
+    reference = Reference.from_settings(settings)
+    clean = analyze(AudioSignal(take, settings.sample_rate, source="file"), reference).noise
+    offset = analyze(AudioSignal(take + 0.002, settings.sample_rate, source="file"), reference)
+    assert clean.rms_dbfs is not None
+    assert offset.noise.rms_dbfs == pytest.approx(clean.rms_dbfs, abs=0.1)
+    assert any("above its quietest blocks" in n for n in offset.noise.notes)
