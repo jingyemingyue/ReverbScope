@@ -44,8 +44,8 @@ msgstr "会话目录或 session.json"
 msgid "leave WAV files out of the zip"
 msgstr "ZIP 文件中不包含 WAV 录音"
 
-msgid "zip path (file or directory)"
-msgstr "ZIP 文件路径（文件或目录）"
+msgid "zip file (.zip) or folder"
+msgstr "ZIP 文件（.zip）或文件夹"
 
 msgid "export curves through an exporter"
 msgstr "通过导出器导出曲线"

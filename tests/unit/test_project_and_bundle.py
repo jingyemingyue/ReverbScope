@@ -143,3 +143,19 @@ def test_one_session_is_listed_once_however_it_was_added(
     stored["positions"][0]["session_dirs"] += ["sessions/a/session.json", "gone/session.json"]
     (project / "project.json").write_text(json.dumps(stored), encoding="utf-8")
     assert list_project_sessions(project) == [("desk", session)]
+
+
+def test_bundle_out_without_zip_suffix_is_a_folder(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """``--out bundles/`` (a folder that does not exist yet) wrote a zip
+    file called ``bundles`` with no extension."""
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    rec = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
+    result = analyze(rec, Reference.from_settings(short_sweep))
+    booth = tmp_path / "booth"
+    save_measurement(booth, MeasurementSession(), result, include_curves=False)
+    written = bundle_session(booth, tmp_path / "bundles", include_audio=False)
+    assert written == tmp_path / "bundles" / "booth.zip"
+    assert zipfile.is_zipfile(written)
+    assert bundle_session(booth, tmp_path / "named.ZIP") == tmp_path / "named.ZIP"

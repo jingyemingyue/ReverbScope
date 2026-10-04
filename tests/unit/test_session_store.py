@@ -421,6 +421,21 @@ def test_resaving_an_opened_session_keeps_its_sweep_sidecar(
     ).read_bytes()
 
 
+def test_bundle_of_a_session_at_a_volume_root_fails_cleanly(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A session saved at E:\\ has no folder name: ``with_name('.zip')``
+    raised ValueError, reported as a bug in RoomScope."""
+    import os
+
+    from roomscope.io import session_store
+
+    root = Path(os.path.abspath(os.sep))
+    monkeypatch.setattr(session_store, "_session_file", lambda _path: root / SESSION_FILE)
+    with pytest.raises(SessionError, match="outside the session folder"):
+        session_store.bundle_session(root)
+
+
 def test_a_192k_six_second_result_reopens(tmp_path: Path, analysed) -> None:
     """At 192 kHz an impulse response longer than about 5.5 s stores 2**20
     frequency-response bins: result.json is about 40 MB, over the 32 MiB cap,

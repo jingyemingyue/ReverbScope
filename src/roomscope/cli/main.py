@@ -895,7 +895,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("leave WAV files out of the zip"),
     )
     p_bundle.add_argument(
-        "--out", type=Path, default=None, metavar="PATH", help=_("zip path (file or directory)")
+        "--out", type=Path, default=None, metavar="PATH", help=_("zip file (.zip) or folder")
     )
 
     p_doc = _command(

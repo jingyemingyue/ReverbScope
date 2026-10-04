@@ -212,9 +212,13 @@ def bundle_session(
     # Absolute, so that "." (bundling the folder you are in) has a name; not
     # resolved, so that a linked folder keeps its own name for the zip.
     base = Path(os.path.abspath(session_file.parent))
-    target = Path(dest) if dest is not None else base.with_name(base.name + ".zip")
-    if target.is_dir():
-        target = target / f"{base.name}.zip"
+    # A folder at a drive or volume root (a recorder's USB stick) has no name.
+    name = base.name or "session"
+    target = Path(dest) if dest is not None else base.parent / f"{name}.zip"
+    # Like ``compare --out``: anything that is not a .zip file is a folder,
+    # also when it does not exist yet ("--out bundles/" loses its slash).
+    if target.is_dir() or target.suffix.lower() != ".zip":
+        target = target / f"{name}.zip"
     try:
         target.resolve().relative_to(base.resolve())
     except ValueError:
@@ -226,9 +230,9 @@ def bundle_session(
                 folder=base
             )
         )
-    target.parent.mkdir(parents=True, exist_ok=True)
     inside = base.resolve()
     try:
+        target.parent.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
             for path in sorted(base.rglob("*")):
                 if not path.is_file():
