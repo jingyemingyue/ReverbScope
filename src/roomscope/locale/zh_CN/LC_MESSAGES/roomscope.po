@@ -3720,8 +3720,8 @@ msgstr "没有高于 {threshold:.0f} dB 的反射"
 msgid "potential resonances at {listed}"
 msgstr "可能的共振：{listed}"
 
-msgid "no potential resonance below {max_hz:.0f} Hz"
-msgstr "{max_hz:.0f} Hz 以下没有可能的共振"
+msgid "no potential resonance at {low:.0f}–{high:.0f} Hz"
+msgstr "{low:.0f}–{high:.0f} Hz 内没有可能的共振"
 
 msgid "{n} warning(s), see Diagnostics"
 msgstr "{n} 条警告，见“诊断”"
@@ -4027,3 +4027,9 @@ msgstr "本底噪声，{band}"
 
 msgid "not compared: the direct-sound confidence is not high on both sides"
 msgstr "未比较：两侧的直达声置信度并非都为高"
+
+msgid "not searched: nothing below {max_hz:.0f} Hz was excited and resolved"
+msgstr "未搜索：{max_hz:.0f} Hz 以下没有既被激励又能分辨的部分"
+
+msgid "Not searched."
+msgstr "未搜索。"

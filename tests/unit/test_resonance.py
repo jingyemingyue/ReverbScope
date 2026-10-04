@@ -153,5 +153,19 @@ def test_short_response_cannot_resolve_low_peaks(sample_rate: int) -> None:
     """B7: the resolution check counted zero-padded bins, so it never fired."""
     ir = make_rir(sample_rate, rt60_s=0.1, length_s=0.05, diffuse_level=0.02)
     res = _detect(ir, sample_rate)
-    assert res.searched_range_hz is not None and res.searched_range_hz[0] > 100.0
+    # Nothing below 300 Hz can be resolved, so no search was made at all.
+    assert res.searched_range_hz is None
     assert any("resolution" in n for n in res.notes)
+    assert any("no search was made" in n for n in res.notes)
+
+
+def test_a_band_that_misses_the_range_stores_no_searched_range(sample_rate: int) -> None:
+    """#65: a sweep from 400 Hz stored the range (495, 300) and the note
+    "the search is limited to 495-300 Hz"."""
+    ir = make_rir(sample_rate, rt60_s=0.3, length_s=2.0, diffuse_level=0.01)
+    band = ExcitationBand(low_hz=400.0, high_hz=18000.0, source="sweep settings")
+    res = _detect(ir, sample_rate, excitation_band=band)
+    assert res.candidates == ()
+    assert res.searched_range_hz is None
+    assert not any("limited to" in n for n in res.notes), res.notes
+    assert any("no search was made" in n for n in res.notes)

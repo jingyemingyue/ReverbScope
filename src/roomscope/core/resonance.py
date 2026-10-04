@@ -182,17 +182,20 @@ def _search_range(
         band_low, band_high = excitation_band.low_hz * edge, excitation_band.high_hz / edge
         if band_low > low or band_high < high:
             low, high = max(low, band_low), min(high, band_high)
-            notes.append(
-                diag(
-                    "the search is limited to {low:.0f}-{high:.0f} Hz, the part of the range "
-                    "whose 1/3-octave band lies inside the excited {band_low:.0f}-"
-                    "{band_high:.0f} Hz",
-                    low=low,
-                    high=high,
-                    band_low=excitation_band.low_hz,
-                    band_high=excitation_band.high_hz,
+            # A band that misses the range leaves nothing to limit it to
+            # (not "495-300 Hz"); the "no search was made" note says so.
+            if low < high:
+                notes.append(
+                    diag(
+                        "the search is limited to {low:.0f}-{high:.0f} Hz, the part of the "
+                        "range whose 1/3-octave band lies inside the excited {band_low:.0f}-"
+                        "{band_high:.0f} Hz",
+                        low=low,
+                        high=high,
+                        band_low=excitation_band.low_hz,
+                        band_high=excitation_band.high_hz,
+                    )
                 )
-            )
     resolvable = response.resolution_hz / _FINE_RELATIVE_WIDTH
     if resolvable > low:
         low = resolvable
@@ -239,19 +242,21 @@ def detect_potential_resonances(
     )
     notes.extend(range_notes)
 
-    def nothing_found() -> ResonanceResult:
+    def nothing_found(*, searched: bool = True) -> ResonanceResult:
         return ResonanceResult(
             max_frequency_hz=max_hz,
             candidates=(),
             notes=tuple(notes),
-            searched_range_hz=(low_hz, high_hz),
+            # No range at all when no search was made: an empty or inverted
+            # one would read as a low end that was searched and is clean.
+            searched_range_hz=(low_hz, high_hz) if searched else None,
         )
 
     if high_hz <= low_hz:
         notes.append(
             diag("no part of the resonance range was excited and resolved; no search was made")
         )
-        return nothing_found()
+        return nothing_found(searched=False)
     # The baseline and the fine curve are smoothed over the excited part only,
     # so that the roll-off outside it cannot create a peak at the band edge.
     mask = (freqs >= low_hz / OCTAVE_RATIO) & (freqs <= high_hz * OCTAVE_RATIO)
@@ -259,7 +264,7 @@ def detect_potential_resonances(
         mask &= (freqs >= excitation_band.low_hz) & (freqs <= excitation_band.high_hz)
     if int(np.count_nonzero(mask)) < 8:
         notes.append(diag("frequency resolution is too coarse for the resonance search"))
-        return nothing_found()
+        return nothing_found(searched=False)
 
     f = freqs[mask]
     fine = fractional_octave_smooth(f, raw[mask], _FINE_FRACTION)

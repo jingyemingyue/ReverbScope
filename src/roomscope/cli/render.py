@@ -44,6 +44,7 @@ from roomscope.models.result import (
     EnergyMetric,
     PlacementLength,
     PlacementResult,
+    ResonanceResult,
     Validity,
 )
 
@@ -262,11 +263,23 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             _topic_status(findings, "low_frequency"),
             _("potential resonances at {listed}").format(listed=listed),
         )
-    else:
+    elif (searched := _resonance_range(res)) is not None:
+        # The range actually searched: a sweep that starts high, or a short
+        # response, leaves part of the low end unexamined.
         row(
             _("Low end"),
             "ok",
-            _("no potential resonance below {max_hz:.0f} Hz").format(max_hz=res.max_frequency_hz),
+            _("no potential resonance at {low:.0f}–{high:.0f} Hz").format(
+                low=searched[0], high=searched[1]
+            ),
+        )
+    else:
+        row(
+            _("Low end"),
+            "skip",
+            _("not searched: nothing below {max_hz:.0f} Hz was excited and resolved").format(
+                max_hz=res.max_frequency_hz
+            ),
         )
 
     noise = result.noise
@@ -619,6 +632,15 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
     return lines
 
 
+def _resonance_range(res: ResonanceResult) -> tuple[float, float] | None:
+    """The range the resonance search covered; ``None`` when it did not run
+    (older files stored that as an inverted range, "495-300 Hz")."""
+    searched = res.searched_range_hz
+    if searched is None or searched[1] <= searched[0]:
+        return None
+    return searched
+
+
 def _resonances(c: Console, result: AnalysisResult) -> list[str]:
     res = result.resonances
     lines = c.section(
@@ -626,7 +648,16 @@ def _resonances(c: Console, result: AnalysisResult) -> list[str]:
         _("candidates below {max_hz:.0f} Hz").format(max_hz=res.max_frequency_hz),
     )
     if not res.candidates:
-        return lines + c.status("skip", _("None found."))
+        searched = _resonance_range(res) is not None
+        lines += c.status("skip", _("None found.") if searched else _("Not searched."))
+    else:
+        lines += _resonance_table(c, res)
+    for note in res.notes:
+        lines += c.status("info", localize(note))
+    return lines
+
+
+def _resonance_table(c: Console, res: ResonanceResult) -> list[str]:
     rows = []
     for cand in res.candidates:
         decay = (
@@ -650,7 +681,7 @@ def _resonances(c: Console, result: AnalysisResult) -> list[str]:
                 else f"{c.symbol('skip')} {_('no')}",
             ]
         )
-    return lines + c.table(
+    return c.table(
         [
             _("Frequency"),
             _("Above baseline"),

@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from roomscope.cli.console import Console, cell_width
-from roomscope.cli.render import _decay_deltas, comparison_at_a_glance
-from roomscope.interpretation import interpret_comparison
+from roomscope.cli.render import (
+    REPORT_CONSOLE,
+    _decay_deltas,
+    _resonances,
+    at_a_glance,
+    comparison_at_a_glance,
+    render_analysis,
+)
+from roomscope.core.pipeline import Reference, analyze, synthetic_recording
+from roomscope.interpretation import interpret, interpret_comparison
 from roomscope.labels import signed_number
 from roomscope.models.comparison import ComparisonResult, MetricDelta
-from roomscope.models.result import Validity
+from roomscope.models.configuration import SweepSettings
+from roomscope.models.result import AnalysisResult, ResonanceResult, Validity
+from tests.conftest import make_rir
 
 WIDE = Console(color=False, unicode=True, width=100)
 
@@ -82,7 +94,7 @@ def test_a_refused_comparison_reports_no_findings() -> None:
     """#64: a refused pair said "none above the threshold on either side",
     "no potential resonance" and "no quiet segment" although nothing was
     compared."""
-    from roomscope.cli.render import REPORT_CONSOLE, render_comparison
+    from roomscope.cli.render import render_comparison
 
     refused = ComparisonResult(
         comparable=False, common_band=None, notes=("the excitation bands do not overlap",)
@@ -111,3 +123,35 @@ def test_reflections_skipped_for_confidence_are_not_called_absent() -> None:
     text = "\n".join(comparison_at_a_glance(WIDE, comparison))
     assert "none above the threshold" not in text
     assert "not compared" in text
+
+
+def test_a_resonance_search_that_did_not_run_is_not_called_clean(
+    short_sweep: SweepSettings,
+) -> None:
+    """#65: a sweep from 400 Hz printed "no potential resonance below 300 Hz"."""
+    result = _analysed(replace(short_sweep, start_hz=400.0))
+    searched = result.resonances.searched_range_hz
+    assert searched is None or searched[0] < searched[1], searched
+    text = render_analysis(REPORT_CONSOLE, result, interpret(result))
+    assert "no potential resonance" not in text, text
+    assert "not searched" in text and "Not searched." in text
+
+
+def test_a_narrowed_resonance_search_names_its_range(short_sweep: SweepSettings) -> None:
+    result = _analysed(short_sweep)
+
+    def low_end(searched: tuple[float, float]) -> list[str]:
+        res = ResonanceResult(max_frequency_hz=300.0, candidates=(), searched_range_hz=searched)
+        shown = replace(result, resonances=res)
+        return [line for line in at_a_glance(WIDE, shown, []) if "Low end" in line] + _resonances(
+            WIDE, shown
+        )
+
+    assert "243–300 Hz" in WIDE.fit("\n".join(low_end((243.0, 300.0))))
+    # Older files stored a search that did not run as an inverted range.
+    assert "Not searched." in "\n".join(low_end((495.0, 300.0)))
+
+
+def _analysed(sweep: SweepSettings) -> AnalysisResult:
+    ir = make_rir(sweep.sample_rate, rt60_s=0.3)
+    return analyze(synthetic_recording(sweep, ir, noise_rms=1e-5), Reference.from_settings(sweep))
