@@ -1091,7 +1091,9 @@ def _mark_decay_not_computed(decay: DecayResult, reason: str) -> DecayResult:
         decay,
         broadband=blank_band(decay.broadband),
         bands=tuple(blank_band(b) for b in decay.bands),
-        notes=(*decay.notes, reason),
+        # The notes of the analysis describe metrics that are no longer
+        # reported (e.g. C50 values of a noise-truncation check).
+        notes=(reason,),
     )
 
 
@@ -1144,7 +1146,9 @@ def analyze_impulse_response(
 
     if excitation_band is not None:
         low, high = excitation_band
-        if not (low > 0.0 and high > low):
+        # An infinite upper edge is not a band: it would be stored as the
+        # non-JSON token Infinity in result.json.
+        if not (low > 0.0 and high > low and math.isfinite(high)):
             raise ConfigurationError(
                 _("excitation_band must be a (low_hz, high_hz) pair with high > low > 0")
             )

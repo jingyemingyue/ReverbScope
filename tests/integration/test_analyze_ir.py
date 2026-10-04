@@ -22,7 +22,7 @@ from roomscope.core.pipeline import (
     synthetic_recording,
 )
 from roomscope.core.sweep import measurement_signal
-from roomscope.errors import AnalysisError
+from roomscope.errors import AnalysisError, ConfigurationError
 from roomscope.io.wav import write_wav
 from roomscope.models.audio import AudioSignal
 from roomscope.models.configuration import AnalysisSettings, SweepSettings
@@ -283,3 +283,27 @@ def test_decay_notes_of_an_imported_ir_reach_the_warnings() -> None:
     result = analyze_impulse_response(AudioSignal(rir, 48000), excitation_band=(100, 10000))
     assert result.decay.notes
     assert set(result.decay.notes) <= set(result.warnings)
+
+
+def test_an_undeclared_band_quotes_no_metric_it_does_not_report() -> None:
+    """Without --band every metric is not computed, yet the warnings quoted
+    the hidden per-band notes ("... the result depends on it (C50 31.4 dB vs
+    22.3 dB)")."""
+    rir = make_rir(48000, rt60_s=0.15, length_s=1.0, start_delay_s=0.01)
+    ir = rir + np.random.default_rng(0).normal(0.0, 1e-3, rir.shape[0])
+    result = analyze_impulse_response(AudioSignal(ir, 48000))
+    assert result.decay.broadband.c50.value is None
+    assert not [w for w in result.warnings if w.startswith("decay analysis,")]
+    assert result.decay.notes == (
+        "excitation band unknown (imported impulse response; declare --band)",
+    )
+
+
+@pytest.mark.parametrize("high_hz", [float("inf"), float("nan")])
+def test_a_band_without_a_finite_upper_edge_is_refused(high_hz: float) -> None:
+    """``--band 20 inf`` was accepted and stored "high_hz": Infinity, which
+    is not JSON."""
+    ir = np.zeros(48000)
+    ir[100] = 1.0
+    with pytest.raises(ConfigurationError, match="high > low > 0"):
+        analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, high_hz))
