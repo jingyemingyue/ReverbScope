@@ -1177,6 +1177,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
         plan_input_channels,
     )
     from roomscope.core.sweep import measurement_signal
+    from roomscope.demo import DEMO_MODE, FAKE_BACKEND_NOTES
     from roomscope.io.wav import write_sweep_file, write_wav
 
     settings = _sweep_settings(args)
@@ -1206,6 +1207,11 @@ def cmd_measure(args: argparse.Namespace) -> int:
     # note and the status lines go to stderr.
     status_stream = sys.stderr if as_json else sys.stdout
     backend = get_backend(args.backend)
+    # The fake backend (--backend fake, settings or ROOMSCOPE_AUDIO_BACKEND)
+    # simulates the room: the session is marked like roomscope demo's.
+    synthetic = backend.name == "fake"
+    if synthetic:
+        args.notes = "\n".join(part for part in (FAKE_BACKEND_NOTES, args.notes) if part)
     requested = list(args.input_channels or [int(args.input_channel)])
     # Hardware inputs are 1-based, recording columns 0-based; validate the
     # mapping before anything is played (#13).
@@ -1317,7 +1323,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
         sweep_path,
         args,
         sweep_settings=settings,
-        mode="standalone",
+        mode=DEMO_MODE if synthetic else "standalone",
         out_dir=out_dir,
         hardware=plan,
         output_channel=int(args.output_channel),
@@ -1446,6 +1452,7 @@ SESSION_MODES = {
     "standalone": N_("Standalone Mode"),
     "universal_daw": N_("Universal DAW Mode"),
     "analyze_ir": N_("impulse-response file"),
+    "synthetic_demo": N_("Synthetic demo"),
 }
 
 

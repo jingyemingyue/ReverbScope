@@ -4038,3 +4038,6 @@ msgid "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
 msgstr "在可搜索的 {end:.1f} ms 内没有高于 {threshold:.0f} dB 的反射"
 msgid "The result was discarded because you left this page before it was ready."
 msgstr "结果完成前你离开了此页面，因此结果已丢弃。"
+
+msgid "Synthetic demo"
+msgstr "合成演示"

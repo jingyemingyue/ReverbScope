@@ -777,3 +777,34 @@ def test_the_measure_menu_does_not_switch_backend_under_a_running_take(
     assert window.stack.currentWidget() is window.results
     assert window.state.session.output_channel == 1
     window.close()
+
+
+@pytest.mark.parametrize("mode", ["demo", "standalone"])
+def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    """The desktop Demo (or Standalone Mode with the fake backend chosen in
+    Settings) saved an ordinary Standalone session: nothing in its files
+    said that no audio hardware was used."""
+    import json
+
+    from roomscope.demo import DEMO_MODE
+
+    if mode == "standalone":
+        # The backend Settings or ROOMSCOPE_AUDIO_BACKEND chose: no demo banner.
+        monkeypatch.setenv("ROOMSCOPE_AUDIO_BACKEND", "fake")
+    window = MainWindow()
+    window.show()
+    window.show_mode(mode)
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    page.run_button.click()
+    _settle(app, page._measure_worker)
+    _settle(app, page._analysis_worker)
+    assert window.stack.currentWidget() is window.results
+    window.results.save_to(tmp_path / "take")
+    saved = json.loads((tmp_path / "take" / "session.json").read_text(encoding="utf-8"))
+    assert saved["mode"] == DEMO_MODE
+    assert saved["notes"].startswith("SYNTHETIC DEMO")
+    window.close()

@@ -449,3 +449,36 @@ def test_show_comparison_interprets_with_the_candidates_profile(
     save_settings(UserSettings(default_profile="choir"))
     assert main(["show", str(saved)]) == 0
     assert "Choir / ensemble profile" in capsys.readouterr().out
+
+
+def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """roomscope --backend fake measure saved an ordinary Standalone session,
+    indistinguishable from a take on real hardware."""
+    from roomscope.demo import DEMO_MODE
+
+    out = tmp_path / "fake-take"
+    code = main(
+        [
+            "--backend",
+            "fake",
+            "measure",
+            "--out",
+            str(out),
+            "--duration",
+            "1",
+            "--post-silence",
+            "1",
+            "--notes",
+            "first try",
+        ]
+    )
+    assert code == 0, capsys.readouterr().err
+    saved = json.loads((out / "session.json").read_text(encoding="utf-8"))
+    assert saved["mode"] == DEMO_MODE
+    assert saved["notes"].startswith("SYNTHETIC DEMO")
+    assert saved["notes"].endswith("first try")
+    capsys.readouterr()
+    assert main(["show", str(out)]) == 0
+    assert "Synthetic demo" in capsys.readouterr().out

@@ -37,6 +37,7 @@ from roomscope.audio.playrec import (
 )
 from roomscope.core.pipeline import Reference
 from roomscope.core.sweep import measurement_signal
+from roomscope.demo import DEMO_MODE, FAKE_BACKEND_NOTES
 from roomscope.errors import AudioDeviceError, RoomScopeError
 from roomscope.i18n import N_, _, localize
 from roomscope.interpretation import available_profiles, interpret
@@ -630,6 +631,8 @@ class StandalonePage(QWidget):
         self._channel_plan: ChannelPlan | None = None
         # The output channel the take plays on: the spin box stays editable.
         self._take_output_channel = 1
+        # The take runs on the fake backend: its session is a synthetic demo.
+        self._take_synthetic = False
         self._inventory: DeviceInventory | None = None
         # The state generation the running take belongs to.
         self._generation = -1
@@ -1008,6 +1011,8 @@ class StandalonePage(QWidget):
         super().hideEvent(event)
 
     def start_measurement(self) -> None:
+        from roomscope.audio.backend import get_backend
+
         if self.is_busy():
             return
         try:
@@ -1043,6 +1048,10 @@ class StandalonePage(QWidget):
         if devices is None:
             return
         input_device, output_device = devices
+        # Resolved once, for the take and for its session: Settings or
+        # ROOMSCOPE_AUDIO_BACKEND can choose the fake backend outside Demo too.
+        backend = get_backend("fake" if self.demo_mode else None).name
+        self._take_synthetic = backend == "fake"
         self._channel_plan = plan
         self._take_output_channel = int(self.output_channel.value())
         place = self.placement.analysis_kwargs()
@@ -1064,7 +1073,7 @@ class StandalonePage(QWidget):
             input_channels=list(plan.input_channels),
             output_channel=self._take_output_channel,
             level_dbfs=settings.level_dbfs,
-            backend="fake" if self.demo_mode else None,
+            backend=backend,
             options=self.stream_options(),
         )
         self._measure_worker.succeeded.connect(self._on_recorded)
@@ -1092,12 +1101,15 @@ class StandalonePage(QWidget):
         self.state.recording_path = None
         plan = self._channel_plan
         assert plan is not None
-        # The session stores the 1-based interface channels of the take.
+        # The session stores the 1-based interface channels of the take. A
+        # take on the fake backend is marked like `roomscope demo`'s sessions,
+        # so it is never mistaken for a measurement of a real room.
         self.state.session = MeasurementSession(
-            mode="standalone",
+            mode=DEMO_MODE if self._take_synthetic else "standalone",
             room_name=self.room.text(),
             measurement_position=self.position.text(),
             microphone_name=self.mic.text(),
+            notes=FAKE_BACKEND_NOTES if self._take_synthetic else "",
             input_channel=plan.microphone_channel,
             loopback_channel=plan.loopback_channel,
             output_channel=self._take_output_channel,
