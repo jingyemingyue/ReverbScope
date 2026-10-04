@@ -95,6 +95,26 @@ def _db_or_floor(value: float | None) -> float:
     return value if value is not None else -99.0
 
 
+def _direct_level_dbfs(result: AnalysisResult, peak_db: float) -> float | None:
+    """Level of the direct sound in the recording (dBFS, like the noise floor).
+
+    The analysis stores it from the response before any loopback compensation
+    (a compensated IR peak also carries the inverse of the return gain). A
+    file without it (0.5.0b1 and earlier) falls back to the IR peak, which is
+    the chain gain alone, plus the level the sweep was played at; that level
+    is unknown for an analysis against a reference WAV.
+    """
+    stored = result.impulse_response.direct_level_dbfs
+    if stored is not None and math.isfinite(stored):
+        return stored
+    level = result.sweep_settings.get("level_dbfs")
+    # Only a level a sweep accepts: float() of a 400-digit integer in a
+    # crafted file raises OverflowError.
+    if isinstance(level, int | float) and not isinstance(level, bool) and -80.0 <= level <= 0.0:
+        return peak_db + float(level)
+    return None
+
+
 @runtime_checkable
 class RecordingProfile(Protocol):
     name: str
@@ -640,12 +660,7 @@ class ProfileBase:
                 )
         if noise.rms_dbfs is not None:
             peak_db = 20.0 * math.log10(max(abs(result.impulse_response.peak_value), 1e-12))
-            # The inverse filter has unit gain for the sweep *at its level*, so
-            # the IR peak is the chain gain alone. The direct sound in the
-            # recording, in dBFS like the noise, is that gain plus the level the
-            # sweep was played at -- unknown for an arbitrary reference WAV.
-            level = result.sweep_settings.get("level_dbfs")
-            direct_dbfs = peak_db + float(level) if isinstance(level, int | float) else None
+            direct_dbfs = _direct_level_dbfs(result, peak_db)
             findings.append(
                 Finding(
                     topic="noise",

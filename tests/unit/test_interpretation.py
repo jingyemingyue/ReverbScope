@@ -264,3 +264,99 @@ def test_a_reflection_as_loud_as_the_direct_sound_is_the_strongest() -> None:
         ),
     )
     assert interpret_comparison(partial) is not None
+
+
+def _noisy_take(*, loopback_db: float | None = None, noise_dbfs: float = -75.0):
+    """A -12 dBFS sweep, the direct sound about 50 dB above -75 dBFS noise (the
+    generic profile's notice fires below 60 dB), and optionally a loopback
+    whose return is ``loopback_db`` from unity gain."""
+    from roomscope.core.sweep import measurement_signal
+    from roomscope.models.audio import AudioSignal
+
+    settings = SweepSettings(duration_s=1.0, pre_silence_s=1.0, post_silence_s=1.0)
+    room = make_rir(48000, rt60_s=0.3, start_delay_s=0.002) * 0.3
+    rec = synthetic_recording(settings, room, noise_rms=10 ** (noise_dbfs / 20), seed=1)
+    if loopback_db is None:
+        return settings, rec, None
+    excitation = measurement_signal(settings) * 10 ** (loopback_db / 20)
+    lb = np.pad(excitation, (0, rec.n_samples - excitation.shape[0]))
+    lb = lb + np.random.default_rng(2).normal(0.0, 1e-6, lb.shape[0])
+    return settings, rec, AudioSignal(lb, rec.sample_rate)
+
+
+def _direct_to_noise_db(result) -> float | None:
+    return next(
+        (
+            f.params["direct_to_noise_db"]
+            for f in interpret(result)
+            if f.message_id == "noise.direct_to_noise"
+        ),
+        None,
+    )
+
+
+@pytest.mark.parametrize("loopback_db", [-20.0, 10.0])
+def test_direct_to_noise_ignores_the_loopback_return_gain(loopback_db: float) -> None:
+    """Compensation divides the IR by the loopback's return gain, while the
+    noise is measured on the raw recording: a -20 dB return read the direct
+    sound 20 dB too loud and suppressed the notice."""
+    settings, rec, loopback = _noisy_take(loopback_db=loopback_db)
+    plain = analyze(rec, Reference.from_settings(settings))
+    compensated = analyze(rec, Reference.from_settings(settings), loopback=loopback)
+    assert compensated.impulse_response.loopback is not None
+    assert compensated.impulse_response.loopback.compensation_applied
+    expected = _direct_to_noise_db(plain)
+    assert expected is not None
+    assert _direct_to_noise_db(compensated) == pytest.approx(expected, abs=1.0)
+
+
+def test_direct_to_noise_with_a_reference_wav() -> None:
+    """A reference WAV without its sidecar has no sweep settings; its own peak
+    is the level it was played at, so the notice is still given."""
+    from roomscope.core.sweep import measurement_signal
+
+    settings, rec, _ = _noisy_take()
+    expected = _direct_to_noise_db(analyze(rec, Reference.from_settings(settings)))
+    result = analyze(rec, Reference.from_signal(measurement_signal(settings), rec.sample_rate))
+    assert result.sweep_settings == {}
+    assert expected is not None
+    assert _direct_to_noise_db(result) == pytest.approx(expected, abs=1.5)
+
+
+def _saved_without_direct_level(noise_dbfs: float = -75.0, **sweep_settings: object):
+    """The take as a 0.5.0b1 ``result.json`` (no ``direct_level_dbfs``)."""
+    settings, rec, _ = _noisy_take(noise_dbfs=noise_dbfs)
+    data = analyze(rec, Reference.from_settings(settings)).to_dict(include_curves=False)
+    data["impulse_response"].pop("direct_level_dbfs", None)
+    data["sweep_settings"].update(sweep_settings)
+    return data
+
+
+def test_direct_level_survives_a_save_and_old_files_fall_back() -> None:
+    from roomscope.models.result import AnalysisResult
+
+    settings, rec, _ = _noisy_take()
+    result = analyze(rec, Reference.from_settings(settings))
+    level = result.impulse_response.direct_level_dbfs
+    assert level is not None
+    reloaded = AnalysisResult.from_dict(result.to_dict(include_curves=False))
+    assert reloaded.impulse_response.direct_level_dbfs == pytest.approx(level)
+    # An older file: the IR peak plus the sweep level.
+    old = AnalysisResult.from_dict(_saved_without_direct_level())
+    assert old.impulse_response.direct_level_dbfs is None
+    assert _direct_to_noise_db(old) == pytest.approx(_direct_to_noise_db(result), abs=0.5)
+
+
+@pytest.mark.parametrize(
+    "level",
+    [10**400, float("nan"), True, "-12", 3.0],
+    ids=["400 digits", "nan", "bool", "string", "above full scale"],
+)
+def test_a_crafted_sweep_level_is_an_unknown_level(level: object) -> None:
+    """float() of a 400-digit integer raised OverflowError inside interpret();
+    a level no sweep can have is not used either."""
+    from roomscope.models.result import AnalysisResult
+
+    # Noisy enough that any level up to +20 dBFS would give the notice.
+    data = _saved_without_direct_level(noise_dbfs=-45.0, level_dbfs=level)
+    assert _direct_to_noise_db(AnalysisResult.from_dict(data)) is None

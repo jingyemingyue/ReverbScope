@@ -561,6 +561,12 @@ class ImpulseResponseResult:
     #: sample-rate mismatch or time-stretch). Only checked, and only set, when
     #: direct-sound detection confidence is low.
     playback_speed: PlaybackSpeed | None = None
+    #: Approximate level of the direct sound in the analysed recording (dBFS,
+    #: like the noise floor): the IR peak *before* loopback compensation
+    #: (roughly the chain gain, see ``peak_value``) plus the peak level of the
+    #: reference. Only the direct-to-noise notice uses it. ``None`` for an
+    #: imported impulse response and in files written by 0.5.0b1 and earlier.
+    direct_level_dbfs: float | None = None
 
     @property
     def direct_sound_time_s(self) -> float:
@@ -574,6 +580,7 @@ class ImpulseResponseResult:
             "direct_sound_time_s": self.direct_sound_time_s,
             "pre_delay_samples": self.pre_delay_samples,
             "peak_value": self.peak_value,
+            "direct_level_dbfs": self.direct_level_dbfs,
             "valid_length_s": self.valid_length_s,
             "pre_peak_margin_db": self.pre_peak_margin_db,
             "direct_sound_confidence": self.direct_sound_confidence,

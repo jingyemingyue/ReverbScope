@@ -137,6 +137,7 @@
         "direct_sound_time_s": { "type": "number" },
         "pre_delay_samples": { "$ref": "#/$defs/count" },
         "peak_value": { "type": "number" },
+        "direct_level_dbfs": { "$ref": "#/$defs/number_or_null" },
         "valid_length_s": { "type": "number" },
         "pre_peak_margin_db": { "$ref": "#/$defs/number_or_null" },
         "direct_sound_confidence": { "type": "string" },

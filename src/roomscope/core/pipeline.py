@@ -638,6 +638,23 @@ def _locate_pass(
     )
 
 
+def _direct_level_dbfs(peak_value: float, prepared: _PreparedReference) -> float:
+    """Level of the direct sound in the recording (dBFS).
+
+    The inverse filter has unit in-band gain for the reference at its own
+    level, so the IR peak is the gain of the chain alone; the direct sound is
+    that gain plus the peak level of the reference (the sweep's
+    ``level_dbfs``, or the peak of a reference audio file).
+    """
+    if prepared.sweep_settings is not None:
+        reference_dbfs = prepared.sweep_settings.level_dbfs
+    else:
+        assert prepared.trimmed_signal is not None
+        reference_peak = float(np.max(np.abs(prepared.trimmed_signal)))
+        reference_dbfs = 20.0 * math.log10(max(reference_peak, 1e-12))
+    return 20.0 * math.log10(max(abs(peak_value), 1e-12)) + reference_dbfs
+
+
 def _placement_against_loopback_bound(
     placement: PlacementResult,
     loopback: LoopbackResult,
@@ -721,6 +738,9 @@ def analyze(
     # reference must be the response before the loopback is divided out:
     # compensation rescales h_full by the return gain of the loopback.
     h_uncompensated, peak_uncompensated = h_full, located.peak_index
+    # The noise floor is measured on the raw recording too, so the direct
+    # level is taken before compensation divides out the return gain.
+    direct_level_dbfs = _direct_level_dbfs(located.peak_value, prepared)
     if lb_samples is not None:
         try:
             lb_clipping, _lb_notes = _validate_recording(lb_samples, sample_rate)
@@ -939,6 +959,7 @@ def analyze(
         aliased_distortion=aliased,
         loopback=loopback_result,
         playback_speed=playback_speed,
+        direct_level_dbfs=direct_level_dbfs,
     )
 
     decay = _analyze_decay_of_pass(h_full, located, sample_rate, settings, band)

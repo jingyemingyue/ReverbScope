@@ -255,6 +255,7 @@ def impulse_from_dict(data: Any) -> ImpulseResponseResult:
         ),
         loopback=loopback_from_dict(payload.get("loopback")),
         playback_speed=playback_speed_from_dict(payload.get("playback_speed")),
+        direct_level_dbfs=_opt_float(payload.get("direct_level_dbfs")),
     )
 
 
