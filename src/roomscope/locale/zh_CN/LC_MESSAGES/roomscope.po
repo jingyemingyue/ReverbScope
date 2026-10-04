@@ -4008,3 +4008,6 @@ msgstr "{field} 必须是数字列表"
 
 msgid "{field} is out of range"
 msgstr "{field} 超出范围"
+
+msgid "silences must be <= 60 s"
+msgstr "静音时长必须 <= 60 s"

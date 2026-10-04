@@ -96,6 +96,12 @@ class SweepSettings:
         _require(
             self.pre_silence_s >= 0.0 and self.post_silence_s >= 0.0, _("silences must be >= 0")
         )
+        # Infinity (or 1e9 s) would fail as an OverflowError or MemoryError
+        # when the test signal is built.
+        _require(
+            self.pre_silence_s <= 60.0 and self.post_silence_s <= 60.0,
+            _("silences must be <= 60 s"),
+        )
 
     @property
     def amplitude(self) -> float:
