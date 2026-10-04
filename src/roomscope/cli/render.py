@@ -28,6 +28,8 @@ from roomscope.interpretation.profiles import (
 from roomscope.labels import metric_label, surface_text, topic_text, validity_word
 from roomscope.models.comparison import ComparisonResult, MetricDelta
 from roomscope.models.result import (
+    EXCITATION_SOURCE_DECLARED,
+    EXCITATION_SOURCE_UNKNOWN,
     AnalysisResult,
     BandDecay,
     DecayMetric,
@@ -298,15 +300,26 @@ def _diagnostics(c: Console, result: AnalysisResult) -> list[str]:
     ir = result.impulse_response
     lines = c.section(_("Diagnostics"))
     margin = f"{ir.pre_peak_margin_db:.1f} dB" if ir.pre_peak_margin_db is not None else c.dash()
-    rows = [
-        (
-            _("Sweep found"),
-            _("{start:.2f} s into the recording").format(start=ir.sweep_start_in_recording_s),
-        ),
+    rows: list[tuple[str, str]] = []
+    # An imported impulse response (analyze-ir, the only source of a declared
+    # or unknown band) had no sweep and no recording to find it in.
+    band = ir.excitation_band
+    if band is None or band.source not in (EXCITATION_SOURCE_DECLARED, EXCITATION_SOURCE_UNKNOWN):
+        rows.append(
+            (
+                _("Sweep found"),
+                _("{start:.2f} s into the recording").format(start=ir.sweep_start_in_recording_s),
+            )
+        )
+    # valid_length_s is all the recording after the direct sound; only the
+    # part up to ir_max_length_s was analysed.
+    after_direct_s = (ir.samples.shape[0] - ir.direct_sound_index) / result.sample_rate
+    rows += [
         (
             _("Analysed"),
             _("{seconds:.2f} s, of which {decay:.2f} s is decay").format(
-                seconds=ir.samples.shape[0] / result.sample_rate, decay=ir.valid_length_s
+                seconds=ir.samples.shape[0] / result.sample_rate,
+                decay=min(ir.valid_length_s, after_direct_s),
             ),
         ),
         (

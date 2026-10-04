@@ -26,7 +26,7 @@ from roomscope.errors import AnalysisError, ConfigurationError
 from roomscope.io.wav import write_wav
 from roomscope.models.audio import AudioSignal
 from roomscope.models.configuration import AnalysisSettings, SweepSettings
-from roomscope.models.result import Validity
+from roomscope.models.result import AnalysisResult, Validity
 from tests.conftest import make_rir
 
 RT60_S = 0.45
@@ -307,3 +307,42 @@ def test_a_band_without_a_finite_upper_edge_is_refused(high_hz: float) -> None:
     ir[100] = 1.0
     with pytest.raises(ConfigurationError, match="high > low > 0"):
         analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, high_hz))
+
+
+def _diagnostics_text(result: AnalysisResult) -> str:
+    from roomscope.cli.console import Console
+    from roomscope.cli.render import _diagnostics
+
+    return "\n".join(_diagnostics(Console(width=100), result))
+
+
+def test_an_imported_ir_report_does_not_claim_a_sweep_was_found() -> None:
+    """The Diagnostics said "Sweep found 0.00 s into the recording" next to
+    the warning that the file had neither a sweep nor a recording."""
+    ir = make_rir(48000, rt60_s=0.05, length_s=0.5, start_delay_s=0.01)
+    declared = analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 20000.0))
+    assert "Sweep found" not in _diagnostics_text(declared)
+    assert "Sweep found" not in _diagnostics_text(analyze_impulse_response(AudioSignal(ir, 48000)))
+
+
+def test_the_decay_shown_is_never_longer_than_the_analysed_response(
+    short_sweep: SweepSettings,
+) -> None:
+    """A take that kept recording long after the sweep printed "Analysed
+    6.01 s, of which 19.00 s is decay": the recording after the direct sound,
+    not the part of it that was analysed."""
+    import re
+
+    recording = synthetic_recording(
+        short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3), noise_rms=1e-5
+    )
+    result = analyze(
+        recording, Reference.from_settings(short_sweep), AnalysisSettings(ir_max_length_s=1.0)
+    )
+    assert result.impulse_response.valid_length_s > 1.2
+    text = _diagnostics_text(result)
+    assert "Sweep found" in text  # a measured take still has the row
+    line = next(line for line in text.splitlines() if "of which" in line)
+    analysed, decay = (float(value) for value in re.findall(r"(\d+\.\d+) s", line))
+    assert decay <= analysed
+    assert decay == pytest.approx(1.0, abs=0.01)
