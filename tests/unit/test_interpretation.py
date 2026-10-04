@@ -411,3 +411,46 @@ def test_a_refusal_without_notes_is_translated() -> None:
     (finding,) = interpret_comparison(comparison)
     assert "excitation" not in finding.message
     assert "激励频带" in finding.message
+
+
+def _reflection_findings(*matches):
+    from roomscope.interpretation import interpret_comparison
+    from roomscope.models.comparison import ComparisonResult
+
+    comparison = ComparisonResult(comparable=True, common_band=(20.0, 20000.0), reflections=matches)
+    return [f for f in interpret_comparison(comparison, "vocal") if f.topic == "early_reflections"]
+
+
+def test_the_strongest_reflection_counts_unmatched_ones() -> None:
+    """Only matched pairs were ranked: a dominant reflection that disappeared,
+    or a strong new one, hid behind a weaker matched pair ("went from -9.2 dB
+    at 7.1 ms to -9.2 dB at 7.1 ms")."""
+    from roomscope.models.comparison import ReflectionMatch
+
+    weak = ReflectionMatch("matched", 7.1, 7.1, -9.2, -9.5)
+    (gone,) = _reflection_findings(
+        ReflectionMatch("disappeared", baseline_delay_ms=2.4, baseline_relative_db=-3.2), weak
+    )
+    assert gone.message_id == "comparison.reflection_change"
+    assert (gone.params["baseline_delay_ms"], gone.params["baseline_relative_db"]) == (2.4, -3.2)
+    assert (gone.params["candidate_delay_ms"], gone.params["candidate_relative_db"]) == (7.1, -9.5)
+    (new,) = _reflection_findings(
+        weak, ReflectionMatch("appeared", candidate_delay_ms=3.0, candidate_relative_db=-2.0)
+    )
+    assert (new.params["baseline_delay_ms"], new.params["baseline_relative_db"]) == (7.1, -9.2)
+    assert (new.params["candidate_delay_ms"], new.params["candidate_relative_db"]) == (3.0, -2.0)
+
+
+def test_a_strong_reflection_that_disappeared_is_reported() -> None:
+    from roomscope.models.comparison import ReflectionMatch
+
+    (finding,) = _reflection_findings(
+        ReflectionMatch("disappeared", baseline_delay_ms=2.4, baseline_relative_db=-3.2),
+        # Outside the vocal profile's 25 ms window.
+        ReflectionMatch("matched", 40.0, 40.0, -6.0, -6.0),
+    )
+    assert finding.message_id == "comparison.reflection_disappeared"
+    assert (finding.params["delay_ms"], finding.params["relative_db"]) == (2.4, -3.2)
+    # A weak one (below the profile's -12 dB) is not worth a finding, as for "appeared".
+    weak = ReflectionMatch("disappeared", baseline_delay_ms=2.4, baseline_relative_db=-20.0)
+    assert _reflection_findings(weak) == []

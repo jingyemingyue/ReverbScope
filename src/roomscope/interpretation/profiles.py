@@ -23,6 +23,7 @@ from roomscope.models.comparison import (
     T_JND_PERCENT,
     ComparisonResult,
     MetricDelta,
+    ReflectionMatch,
 )
 from roomscope.models.result import (
     KIND_SAMPLE_RATE,
@@ -98,6 +99,16 @@ def noise_segment_text(source: str | None) -> str:
 def _db_or_floor(value: float | None) -> float:
     """A level for ranking; ``or -99.0`` would rank a 0.0 dB reflection last."""
     return value if value is not None else -99.0
+
+
+def _complete(match: ReflectionMatch) -> bool:
+    """Both delays and both levels of a pair (a lenient load can lack one)."""
+    return None not in (
+        match.baseline_delay_ms,
+        match.candidate_delay_ms,
+        match.baseline_relative_db,
+        match.candidate_relative_db,
+    )
 
 
 def _refusal_note(notes: tuple[str, ...]) -> str:
@@ -291,75 +302,106 @@ class ProfileBase:
         return "short"
 
     def _comparison_reflections(self, comparison: ComparisonResult) -> list[Finding]:
-        matched = [m for m in comparison.reflections if m.status == "matched"]
-        in_window = [
+        # The strongest reflection inside the window on each side, matched or
+        # not: moving the microphone often shifts a reflection by more than the
+        # match tolerance, so a dominant one that disappeared (or a strong new
+        # one) must not hide behind a weaker matched pair.
+        window = self.strong_reflection_window_ms
+        usable = [m for m in comparison.reflections if m.status != "matched" or _complete(m)]
+        before = [
             m
-            for m in matched
-            if m.baseline_delay_ms is not None
-            and m.baseline_delay_ms <= self.strong_reflection_window_ms
-            and m.candidate_delay_ms is not None
+            for m in usable
+            if m.status in ("matched", "disappeared")
+            and m.baseline_delay_ms is not None
+            and m.baseline_delay_ms <= window
             and m.baseline_relative_db is not None
+        ]
+        after = [
+            m
+            for m in usable
+            if m.status in ("matched", "appeared")
+            and m.candidate_delay_ms is not None
+            and m.candidate_delay_ms <= window
             and m.candidate_relative_db is not None
         ]
-        if not in_window:
-            appeared = [
-                m
-                for m in comparison.reflections
-                if m.status == "appeared"
-                and m.candidate_delay_ms is not None
-                and m.candidate_delay_ms <= self.strong_reflection_window_ms
-                and m.candidate_relative_db is not None
-                and m.candidate_relative_db >= self.strong_reflection_db
+        baseline = max(before, key=lambda m: _db_or_floor(m.baseline_relative_db), default=None)
+        candidate = max(after, key=lambda m: _db_or_floor(m.candidate_relative_db), default=None)
+        if baseline is not None and candidate is not None:
+            return [
+                finding(
+                    "early_reflections",
+                    Severity.NOTICE,
+                    "comparison.reflection_change",
+                    "The strongest reflection within {window_ms:g} ms "
+                    "went from {baseline_relative_db:.1f} dB at "
+                    "{baseline_delay_ms:.1f} ms to "
+                    "{candidate_relative_db:.1f} dB at "
+                    "{candidate_delay_ms:.1f} ms "
+                    "(threshold {threshold_db:.1f} dB for this profile).",
+                    evidence={
+                        "baseline_delay_ms": baseline.baseline_delay_ms,
+                        "candidate_delay_ms": candidate.candidate_delay_ms,
+                        "baseline_relative_db": baseline.baseline_relative_db,
+                        "candidate_relative_db": candidate.candidate_relative_db,
+                        "threshold_db": self.strong_reflection_db,
+                        "window_ms": window,
+                    },
+                    window_ms=window,
+                    baseline_relative_db=baseline.baseline_relative_db,
+                    baseline_delay_ms=baseline.baseline_delay_ms,
+                    candidate_relative_db=candidate.candidate_relative_db,
+                    candidate_delay_ms=candidate.candidate_delay_ms,
+                    threshold_db=self.strong_reflection_db,
+                )
             ]
-            if appeared:
-                first = max(appeared, key=lambda m: _db_or_floor(m.candidate_relative_db))
-                return [
-                    finding(
-                        "early_reflections",
-                        Severity.NOTICE,
-                        "comparison.reflection_appeared",
-                        "A reflection appeared at {delay_ms:.1f} ms "
-                        "({relative_db:.1f} dB) inside this profile's "
-                        "{window_ms:g} ms window.",
-                        evidence={
-                            "delay_ms": first.candidate_delay_ms,
-                            "relative_db": first.candidate_relative_db,
-                            "window_ms": self.strong_reflection_window_ms,
-                        },
-                        delay_ms=first.candidate_delay_ms,
-                        relative_db=first.candidate_relative_db,
-                        window_ms=self.strong_reflection_window_ms,
-                    )
-                ]
-            return []
-        strongest = max(in_window, key=lambda m: _db_or_floor(m.baseline_relative_db))
-        return [
-            finding(
-                "early_reflections",
-                Severity.NOTICE,
-                "comparison.reflection_change",
-                "The strongest reflection within {window_ms:g} ms "
-                "went from {baseline_relative_db:.1f} dB at "
-                "{baseline_delay_ms:.1f} ms to "
-                "{candidate_relative_db:.1f} dB at "
-                "{candidate_delay_ms:.1f} ms "
-                "(threshold {threshold_db:.1f} dB for this profile).",
-                evidence={
-                    "baseline_delay_ms": strongest.baseline_delay_ms,
-                    "candidate_delay_ms": strongest.candidate_delay_ms,
-                    "baseline_relative_db": strongest.baseline_relative_db,
-                    "candidate_relative_db": strongest.candidate_relative_db,
-                    "threshold_db": self.strong_reflection_db,
-                    "window_ms": self.strong_reflection_window_ms,
-                },
-                window_ms=self.strong_reflection_window_ms,
-                baseline_relative_db=strongest.baseline_relative_db,
-                baseline_delay_ms=strongest.baseline_delay_ms,
-                candidate_relative_db=strongest.candidate_relative_db,
-                candidate_delay_ms=strongest.candidate_delay_ms,
-                threshold_db=self.strong_reflection_db,
-            )
-        ]
+        if (
+            candidate is not None
+            and candidate.candidate_relative_db is not None
+            and candidate.candidate_relative_db >= self.strong_reflection_db
+        ):
+            return [
+                finding(
+                    "early_reflections",
+                    Severity.NOTICE,
+                    "comparison.reflection_appeared",
+                    "A reflection appeared at {delay_ms:.1f} ms "
+                    "({relative_db:.1f} dB) inside this profile's "
+                    "{window_ms:g} ms window.",
+                    evidence={
+                        "delay_ms": candidate.candidate_delay_ms,
+                        "relative_db": candidate.candidate_relative_db,
+                        "window_ms": window,
+                    },
+                    delay_ms=candidate.candidate_delay_ms,
+                    relative_db=candidate.candidate_relative_db,
+                    window_ms=window,
+                )
+            ]
+        if (
+            baseline is not None
+            and baseline.baseline_relative_db is not None
+            and baseline.baseline_relative_db >= self.strong_reflection_db
+        ):
+            return [
+                finding(
+                    "early_reflections",
+                    Severity.NOTICE,
+                    "comparison.reflection_disappeared",
+                    "No reflection was detected inside this profile's {window_ms:g} ms "
+                    "window in the candidate; the strongest in the baseline was "
+                    "{relative_db:.1f} dB at {delay_ms:.1f} ms.",
+                    evidence={
+                        "delay_ms": baseline.baseline_delay_ms,
+                        "relative_db": baseline.baseline_relative_db,
+                        "threshold_db": self.strong_reflection_db,
+                        "window_ms": window,
+                    },
+                    delay_ms=baseline.baseline_delay_ms,
+                    relative_db=baseline.baseline_relative_db,
+                    window_ms=window,
+                )
+            ]
+        return []
 
     def _comparison_noise(self, comparison: ComparisonResult) -> list[Finding]:
         rms = next((item for item in comparison.noise if item.name == "noise.rms_dbfs"), None)

@@ -614,6 +614,10 @@ recovered within 0.3 dB (`tests/unit/test_compare.py`).
 Early reflections. Matched by delay within ±0.5 ms
 (`CompareSettings.reflection_match_ms`). Unmatched arrivals are listed as
 appeared or disappeared. Both sides must have high direct-sound confidence.
+The profile's finding compares the strongest reflection inside its window on
+each side, matched or not, so a dominant reflection that moved more than the
+tolerance is not hidden behind a weaker matched pair; when only one side has
+one, it is named if it reaches the profile's reflection threshold.
 
 Noise. RMS and band deltas are VALID only if both sessions have a verified
 quiet segment *and* the caller declares the input gain unchanged
