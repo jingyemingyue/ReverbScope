@@ -826,8 +826,8 @@ msgstr "影响解读的录音配置（默认：用户设置）"
 msgid "separate loopback WAV from the same take (same sample rate)"
 msgstr "同一次录音的单独回送（loopback）WAV（相同采样率）"
 
-msgid "0-based loopback channel of the recording (or of --loopback if it is multi-channel)"
-msgstr "录音（或多声道 --loopback 文件）中的回送声道（从 0 起）"
+msgid "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
+msgstr "回送声道（从 0 起）：给出 --loopback 时指该文件中的声道，否则指录音中的声道"
 
 msgid "write the ESS test signal WAV (+ JSON sidecar)"
 msgstr "写出 ESS 测试信号 WAV（及 JSON 附属文件）"
@@ -922,8 +922,8 @@ msgstr "分析其他工具给出的脉冲响应 WAV"
 msgid "impulse-response WAV"
 msgstr "脉冲响应 WAV"
 
-msgid "declared excitation band in Hz (required for band metrics)"
-msgstr "声明的激励频带（Hz；频带指标需要）"
+msgid "declared excitation band in Hz (required for every decay and clarity metric, broadband included)"
+msgstr "声明的激励频带（Hz；所有衰减与清晰度指标都需要，包括宽带）"
 
 msgid "n/a"
 msgstr "无"

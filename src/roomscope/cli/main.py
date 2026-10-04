@@ -441,7 +441,7 @@ def _add_loopback_file_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         metavar="N",
         help=_(
-            "0-based loopback channel of the recording (or of --loopback if it is multi-channel)"
+            "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
         ),
     )
 
@@ -751,7 +751,10 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         metavar=("LO", "HI"),
         default=None,
-        help=_("declared excitation band in Hz (required for band metrics)"),
+        help=_(
+            "declared excitation band in Hz (required for every decay and clarity metric, "
+            "broadband included)"
+        ),
     )
     p_ir.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("session directory"))
     _add_analysis_arguments(p_ir)

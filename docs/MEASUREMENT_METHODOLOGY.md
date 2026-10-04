@@ -102,12 +102,12 @@ recording, music, noise, or an IR whose direct sound is weaker than a later
 arrival, which cannot serve as time zero — is refused rather than analysed.
 A file that starts at its peak cannot be checked and is analysed with
 confidence "low".
-Band metrics are computed only inside an excitation band the caller
-declares (`--band LO HI`); without one they are `not_computed`. Fed the
-`impulse_response.wav` of a sweep analysis with that analysis's band, the
-imported path reproduces its RT60 (±1 %), band T values (±2 %), reflection
-delay (±0.05 ms) and level (±0.2 dB) and its resonance candidates
-(`tests/integration/test_analyze_ir.py`).
+Decay and energy metrics, broadband and per band, are computed only inside
+an excitation band the caller declares (`--band LO HI`); without one they are
+all `not_computed`. Fed the `impulse_response.wav` of a sweep analysis with
+that analysis's band, the imported path reproduces its RT60 (±1 %), band T
+values (±2 %), reflection delay (±0.05 ms) and level (±0.2 dB) and its
+resonance candidates (`tests/integration/test_analyze_ir.py`).
 
 ## 2b. Was the sweep played at the speed it was generated at?
 

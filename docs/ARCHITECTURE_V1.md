@@ -314,7 +314,8 @@ stream. Nothing changes for users without a loopback: every step below is
 skipped and the result says `"loopback": null`.
 
 *Inputs.* `AnalysisSettings.loopback_channel: int | None` (0-based channel of
-the recording) or `analyze(..., loopback=AudioSignal)` for a separate file.
+the recording) or `analyze(..., loopback=AudioSignal)` for a separate file;
+with a separate file, `loopback_channel` names a channel of that file instead.
 The two signals must have the same sample rate and, for a separate file, the
 same length within the recording-start tolerance; otherwise
 `InvalidAudioError`.
@@ -402,8 +403,9 @@ sweep-position checks and distortion indicators, and runs decay, frequency
 response, reflections, resonances and placement on the given response. The
 excitation band is what the caller declares (`--band 20 20000`), recorded
 with `source = "declared by the user"`; without a declaration the band is
-marked unknown and every band metric is `NOT_COMPUTED` with that reason. The
-noise section is `None` with the note that no recording segment exists.
+marked unknown and every decay and energy metric, broadband included, is
+`NOT_COMPUTED` with that reason. The noise section is `None` with the note
+that no recording segment exists.
 CLI `roomscope analyze-ir --ir <wav>`.
 
 #### 5.3.4 Spatial averaging (S2)

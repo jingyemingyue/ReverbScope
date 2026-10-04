@@ -248,3 +248,27 @@ def test_listing_and_project_lines_follow_the_stream_encoding(
     assert all(line.count("\t") == 1 for line in listing.splitlines()), listing
     average = run(["project", "average", str(project)])
     assert "(1 source x 2 mic, 2 combinations)" in average, average
+
+
+def _subcommand_help(name: str) -> str:
+    import argparse
+
+    from roomscope.cli.main import build_parser
+
+    parser = build_parser()
+    action = next(a for a in parser._actions if isinstance(a, argparse._SubParsersAction))
+    return " ".join(action.choices[name].format_help().split())
+
+
+def test_loopback_channel_help_names_the_separate_file_first() -> None:
+    """#14: a separate --loopback file's channel is read from that file."""
+    text = _subcommand_help("analyze")
+    assert "of the recording (or of --loopback if it is multi-channel)" not in text
+    assert "of --loopback when it is given, otherwise of the recording" in text
+
+
+def test_analyze_ir_band_help_covers_broadband_metrics() -> None:
+    """#90: without --band, broadband EDT/T20/T30/C50... are not computed either."""
+    text = _subcommand_help("analyze-ir")
+    assert "required for band metrics" not in text
+    assert "required for every decay and clarity metric, broadband included" in text
