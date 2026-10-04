@@ -357,3 +357,30 @@ def test_a_refused_pair_names_its_reason_first(short_sweep: SweepSettings) -> No
     assert "narrower than the required" in comparison.notes[0]
     finding = interpret_comparison(comparison)[0]
     assert "narrower than the required" in finding.message
+
+
+def test_every_refusal_starts_with_a_known_prefix(short_sweep: SweepSettings) -> None:
+    """``show`` finds the reason of a refused comparison saved by 0.5.0b1 (where
+    it was not the first note) by these prefixes; a reworded refusal must
+    update them."""
+    from roomscope.models.comparison import REFUSAL_NOTE_PREFIXES
+
+    base = _result(short_sweep, rt60_s=0.4, reflections=[])
+    band = base.impulse_response.excitation_band
+    assert band is not None
+
+    def banded(low_hz: float | None, high_hz: float = 20000.0):
+        new_band = None if low_hz is None else replace(band, low_hz=low_hz, high_hz=high_hz)
+        return replace(
+            base, impulse_response=replace(base.impulse_response, excitation_band=new_band)
+        )
+
+    for baseline, candidate in (
+        (banded(None), base),
+        (banded(20.0, 100.0), banded(200.0)),
+        (banded(100.0, 150.0), base),
+    ):
+        comparison = compare(baseline, candidate)
+        assert not comparison.comparable
+        refusals = [n for n in comparison.notes if n.startswith(REFUSAL_NOTE_PREFIXES)]
+        assert refusals == [comparison.notes[0]]

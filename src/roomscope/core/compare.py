@@ -56,6 +56,8 @@ def _octave_ratio(octaves: float) -> float:
 def _common_band(
     baseline: AnalysisResult, candidate: AnalysisResult
 ) -> tuple[tuple[float, float] | None, tuple[str, ...]]:
+    # Every refusal note here and in compare() starts with one of
+    # REFUSAL_NOTE_PREFIXES (models/comparison.py): readers find it by them.
     notes: list[str] = []
     b1 = baseline.excitation_band
     b2 = candidate.excitation_band

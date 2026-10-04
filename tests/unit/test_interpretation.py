@@ -360,3 +360,54 @@ def test_a_crafted_sweep_level_is_an_unknown_level(level: object) -> None:
     # Noisy enough that any level up to +20 dBFS would give the notice.
     data = _saved_without_direct_level(noise_dbfs=-45.0, level_dbfs=level)
     assert _direct_to_noise_db(AnalysisResult.from_dict(data)) is None
+
+
+_ISO_NOTE = (
+    "ISO 3382-1 quotes a just-noticeable difference for reverberation time of about 5 % "
+    "(clause not verified against the standard text). A change is not called significant "
+    "from a single pair of positions."
+)
+
+
+_NARROW_NOTE = (
+    "common excitation band 100-150 Hz is 0.58 octaves, narrower than the required 1 octave"
+)
+_SWEEP_NOTE = "sample rates differ (48000 Hz vs 96000 Hz); comparison is still allowed"
+
+
+@pytest.mark.parametrize(
+    ("notes", "reason"),
+    [
+        ((_ISO_NOTE, _NARROW_NOTE), _NARROW_NOTE),
+        (
+            (_SWEEP_NOTE, "the excitation bands do not overlap", _ISO_NOTE),
+            "the excitation bands do not overlap",
+        ),
+    ],
+    ids=["narrow band last", "sweep note first"],
+)
+def test_a_refusal_saved_by_an_older_version_names_its_reason(
+    notes: tuple[str, ...], reason: str
+) -> None:
+    """0.5.0b1 saved the refusal after the sweep and ISO notes, and ``show``
+    quoted notes[0]: "cannot be compared: ISO 3382-1 quotes ..."."""
+    from roomscope.interpretation import interpret_comparison
+    from roomscope.models.comparison import ComparisonResult
+
+    comparison = ComparisonResult(comparable=False, common_band=None, notes=notes)
+    (finding,) = interpret_comparison(comparison)
+    assert finding.message == f"These two sessions cannot be compared: {reason}"
+    assert finding.params["notes"] == reason
+
+
+def test_a_refusal_without_notes_is_translated() -> None:
+    """A file without notes fell back to an English literal outside the catalog."""
+    from roomscope.i18n import activate
+    from roomscope.interpretation import interpret_comparison
+    from roomscope.models.comparison import ComparisonResult
+
+    comparison = ComparisonResult.from_dict({"comparable": False, "common_band": None})
+    activate("zh_CN")
+    (finding,) = interpret_comparison(comparison)
+    assert "excitation" not in finding.message
+    assert "激励频带" in finding.message

@@ -16,9 +16,14 @@ from __future__ import annotations
 import math
 from typing import Protocol, runtime_checkable
 
-from roomscope.i18n import _, current_locale, localize, pgettext
+from roomscope.i18n import _, current_locale, diag, localize, pgettext
 from roomscope.interpretation.interpreter import Finding, Severity, finding
-from roomscope.models.comparison import T_JND_PERCENT, ComparisonResult, MetricDelta
+from roomscope.models.comparison import (
+    REFUSAL_NOTE_PREFIXES,
+    T_JND_PERCENT,
+    ComparisonResult,
+    MetricDelta,
+)
 from roomscope.models.result import (
     KIND_SAMPLE_RATE,
     KIND_TIME_STRETCH,
@@ -93,6 +98,18 @@ def noise_segment_text(source: str | None) -> str:
 def _db_or_floor(value: float | None) -> float:
     """A level for ranking; ``or -99.0`` would rank a 0.0 dB reflection last."""
     return value if value is not None else -99.0
+
+
+def _refusal_note(notes: tuple[str, ...]) -> str:
+    """The note that says why a pair cannot be compared.
+
+    A comparison saved by 0.5.0b1 or earlier lists the reason after the sweep
+    and ISO notes, so it is looked up rather than taken as the first note.
+    """
+    reason = next((note for note in notes if note.startswith(REFUSAL_NOTE_PREFIXES)), None)
+    if reason is not None:
+        return reason
+    return notes[0] if notes else diag("no common excitation band")
 
 
 def _direct_level_dbfs(result: AnalysisResult, peak_db: float) -> float | None:
@@ -181,7 +198,7 @@ class ProfileBase:
         """
         findings: list[Finding] = []
         if not comparison.comparable:
-            notes = comparison.notes[0] if comparison.notes else "no common excitation band"
+            notes = _refusal_note(comparison.notes)
             findings.append(
                 finding(
                     "comparison",

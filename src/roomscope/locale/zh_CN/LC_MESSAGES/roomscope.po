@@ -4016,3 +4016,6 @@ msgstr "{error}。不过，{explanation}"
 
 msgid "the reference sweep was not found in the recording: no response stands out from the noise. Check that the right input channel was recorded, that playback reached the loudspeaker, and that the reference is the sweep that was played"
 msgstr "录音中找不到参考扫频：没有任何响应高出噪声。请检查录制的输入声道是否正确、回放信号是否到达了扬声器，以及参考扫频是否就是实际播放的那一个"
+msgctxt "diagnostic"
+msgid "no common excitation band"
+msgstr "没有共同激励频带"

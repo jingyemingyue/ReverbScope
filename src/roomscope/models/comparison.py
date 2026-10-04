@@ -44,6 +44,17 @@ def percent_applies(unit: str, baseline: float | None) -> bool:
     return unit in PERCENT_UNITS and baseline is not None and baseline > 0.0
 
 
+#: How each note that refuses a pair begins (see ``_common_band`` and the
+#: narrow-band check in :func:`roomscope.core.compare.compare`). A new
+#: comparison lists its refusal first; one saved by 0.5.0b1 or earlier lists
+#: it after the sweep and ISO notes, so a reader looks for these.
+REFUSAL_NOTE_PREFIXES: tuple[str, ...] = (
+    "one or both results have no excitation band",
+    "the excitation bands do not overlap",
+    "common excitation band ",
+)
+
+
 def _array_to_list(values: FloatArray | None, decimals: int = 4) -> list[float] | None:
     if values is None:
         return None
