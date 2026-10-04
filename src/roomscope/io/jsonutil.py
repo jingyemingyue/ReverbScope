@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import secrets
+import stat
 from pathlib import Path
 from typing import Any
 
@@ -44,20 +46,55 @@ def json_nesting_depth(text: str) -> int:
     return deepest
 
 
-def write_text_atomic(path: Path, text: str) -> None:
+def _create_beside(target: Path, suffix: str) -> tuple[Path, int]:
+    temporary = target.with_name(f".{target.stem}.{os.getpid()}-{secrets.token_hex(4)}{suffix}")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+    return temporary, os.open(temporary, flags, 0o666)
+
+
+def temporary_beside(target: Path, suffix: str) -> Path:
+    """Create an empty file next to ``target`` under a name no one else uses.
+
+    The name is unique per writer, so two programs saving the same file never
+    share (or delete) each other's temporary, and the file is created with
+    ``O_EXCL``, so a link planted under a guessable name in a folder from
+    someone else is never followed. ``suffix`` ends the name (soundfile reads
+    the format from it). Raises ``OSError``.
+    """
+    temporary, descriptor = _create_beside(target, suffix)
+    os.close(descriptor)
+    return temporary
+
+
+def keep_mode(temporary: Path, target: Path) -> None:
+    """Give ``temporary`` the permissions of the regular file it will replace."""
+    try:
+        status = os.lstat(target)
+    except OSError:
+        return
+    if stat.S_ISREG(status.st_mode):
+        os.chmod(temporary, stat.S_IMODE(status.st_mode))
+
+
+def write_text_atomic(path: Path, text: str, *, follow_symlinks: bool = False) -> None:
     """Replace ``path`` with ``text`` so that a failed write keeps the old file.
 
     ``Path.write_text`` truncates first: a full disk half-way through would
     leave a cut-off session, project or settings file in place of the old one.
-    Raises ``OSError`` like ``write_text``.
+    The file keeps its permissions. ``follow_symlinks`` writes through a link
+    (the user's own settings kept in a dotfiles folder); without it a link is
+    replaced, so that a link in a folder from someone else cannot redirect
+    the write. Raises ``OSError`` like ``write_text``.
     """
-    temporary = path.with_name(f".{path.name}.tmp")
+    target = Path(os.path.realpath(path)) if follow_symlinks else path
+    temporary, descriptor = _create_beside(target, f"{target.suffix}.tmp")
     try:
-        with temporary.open("w", encoding="utf-8") as handle:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
             handle.write(text)
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, path)
+        keep_mode(temporary, target)
+        os.replace(temporary, target)
     finally:
         temporary.unlink(missing_ok=True)
 

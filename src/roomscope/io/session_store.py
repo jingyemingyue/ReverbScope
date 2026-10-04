@@ -28,7 +28,11 @@ if TYPE_CHECKING:
 
 from roomscope.errors import RoomScopeError, SessionError
 from roomscope.i18n import _
-from roomscope.io.jsonutil import write_text_atomic
+from roomscope.io.jsonutil import (
+    keep_mode,
+    temporary_beside,
+    write_text_atomic,
+)
 from roomscope.io.wav import read_wav, write_wav
 from roomscope.models.audio import AudioSignal
 from roomscope.models.result import AnalysisResult, Validity
@@ -129,8 +133,15 @@ def save_measurement(
 
     def stage(name: str) -> Path:
         final = base / name
-        # The real suffix stays last: soundfile picks the format from it.
-        temporary = final.with_name(f".{final.stem}.saving{final.suffix}")
+        # A fresh name, created here: a link planted under a guessable name
+        # in a folder from someone else is never written through. The real
+        # suffix stays last: soundfile picks the format from it.
+        try:
+            temporary = temporary_beside(final, f".saving{final.suffix}")
+        except OSError as exc:
+            raise SessionError(
+                _("cannot write {path}: {error}").format(path=final, error=exc)
+            ) from exc
         staged.append((temporary, final))
         return temporary
 
@@ -166,6 +177,7 @@ def save_measurement(
         )
         for temporary, final in staged:
             try:
+                keep_mode(temporary, final)
                 os.replace(temporary, final)
             except OSError as exc:
                 raise SessionError(

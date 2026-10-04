@@ -43,7 +43,11 @@ def remember_session(directory: str | Path) -> None:
     store = recent_store_path()
     try:
         store.parent.mkdir(parents=True, exist_ok=True)
-        write_text_atomic(store, json.dumps({"sessions": entries[:RECENT_LIMIT]}, indent=2))
+        write_text_atomic(
+            store,
+            json.dumps({"sessions": entries[:RECENT_LIMIT]}, indent=2),
+            follow_symlinks=True,
+        )
     except OSError as exc:
         # The list is a convenience: the session itself was saved already.
         log.warning("cannot update the recent-sessions list %s: %s", store, exc)

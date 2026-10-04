@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import stat
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -269,3 +271,36 @@ def test_a_failed_save_keeps_the_previous_take_whole(
     assert {name: (folder / name).read_bytes() for name in members} == before
     assert load_measurement(folder).session.room_name == "First"
     assert not [path.name for path in folder.iterdir() if path.name.startswith(".")]
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="symbolic links need a privilege")
+def test_saving_into_a_received_folder_does_not_follow_planted_links(
+    tmp_path: Path, analysed
+) -> None:
+    """Every member was staged under a fixed name (``.session.saving.json``)
+    and opened without O_EXCL: a link under that name in a session folder
+    from someone else made the save overwrite the file it pointed at."""
+    _recording, result = analysed
+    folder = tmp_path / "received"
+    save_measurement(folder, MeasurementSession(room_name="Theirs"), result, include_curves=False)
+    victims = []
+    for planted in (".session.saving.json", ".result.saving.json", ".impulse_response.saving.wav"):
+        victim = tmp_path / f"victim-{planted.strip('.')}"
+        victim.write_bytes(b"keep me")
+        (folder / planted).symlink_to(victim)
+        victims.append(victim)
+    save_measurement(folder, MeasurementSession(room_name="Mine"), result, include_curves=False)
+    assert [victim.read_bytes() for victim in victims] == [b"keep me"] * len(victims)
+    for name in (SESSION_FILE, RESULT_FILE, IR_FILE):
+        assert not (folder / name).is_symlink(), name
+    assert load_measurement(folder).session.room_name == "Mine"
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX permissions")
+def test_saving_again_keeps_the_permissions_of_the_session_files(tmp_path: Path, analysed) -> None:
+    _recording, result = analysed
+    folder = tmp_path / "private"
+    save_measurement(folder, MeasurementSession(), result, include_curves=False)
+    (folder / SESSION_FILE).chmod(0o600)
+    save_measurement(folder, MeasurementSession(room_name="Again"), result, include_curves=False)
+    assert stat.S_IMODE((folder / SESSION_FILE).stat().st_mode) == 0o600

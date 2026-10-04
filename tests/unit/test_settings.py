@@ -81,3 +81,28 @@ def test_a_failed_settings_write_keeps_the_old_file(tmp_path: Path, monkeypatch)
     monkeypatch.undo()
     monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
     assert load_settings().language == "zh_CN"
+
+
+def test_saving_settings_keeps_a_symlinked_settings_file(tmp_path: Path, monkeypatch) -> None:
+    """settings.json kept as a link into a dotfiles folder became a plain
+    0644 file on the first save, and the dotfile kept the old settings."""
+    import json
+    import stat
+    import sys
+    from dataclasses import replace
+
+    import pytest
+
+    if sys.platform == "win32":
+        pytest.skip("symbolic links need a privilege on Windows")
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    real = tmp_path / "dotfiles" / "roomscope-settings.json"
+    real.parent.mkdir()
+    real.write_text(json.dumps({"language": "zh_CN"}), encoding="utf-8")
+    real.chmod(0o600)
+    settings_path().parent.mkdir()
+    settings_path().symlink_to(real)
+    save_settings(replace(load_settings(), language="en"))
+    assert settings_path().is_symlink()
+    assert json.loads(real.read_text(encoding="utf-8"))["language"] == "en"
+    assert stat.S_IMODE(real.stat().st_mode) == 0o600

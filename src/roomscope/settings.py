@@ -97,7 +97,8 @@ def save_settings(settings: UserSettings) -> Path:
     payload = settings.to_dict()
     payload.pop("acknowledge_level", None)
     try:
-        write_text_atomic(path, json.dumps(payload, indent=2) + "\n")
+        # A settings.json kept as a link (a dotfiles folder) stays a link.
+        write_text_atomic(path, json.dumps(payload, indent=2) + "\n", follow_symlinks=True)
     except OSError as exc:
         raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
     return path
