@@ -1361,7 +1361,12 @@ def _is_comparison_path(path: Path) -> bool:
 
 def cmd_show(args: argparse.Namespace) -> int:
     from roomscope.interpretation import interpret, interpret_comparison
-    from roomscope.io.session_store import list_sessions, load_comparison, load_measurement
+    from roomscope.io.session_store import (
+        list_sessions,
+        load_comparison,
+        load_measurement,
+        load_session,
+    )
 
     if args.list:
         _warn_ignored_json(args, "show --list")
@@ -1391,7 +1396,9 @@ def cmd_show(args: argparse.Namespace) -> int:
     if _use_json(args):
         payload = loaded.result.to_dict(include_curves=not args.no_curves)
         payload["findings"] = [f.to_dict() for f in findings]
-        payload["session"] = loaded.session.to_dict()
+        # As session.json stores it: load_measurement resolves the sweep and
+        # recording paths for a later save, or drops them when they lead out.
+        payload["session"] = load_session(args.path).to_dict()
         print(json.dumps(payload, indent=1))
     else:
         print(

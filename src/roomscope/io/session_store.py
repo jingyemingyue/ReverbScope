@@ -265,11 +265,8 @@ def _copy_into(src: Path, dest: Path, *, stage: Callable[[str], Path] | None = N
     return dest
 
 
-def _copy_sidecar(
-    sweep_path: str | None, base: Path, *, stage: Callable[[str], Path] | None = None
-) -> Path | None:
-    if not sweep_path:
-        return None
+def _sidecar_source(sweep_path: str | Path) -> Path | None:
+    """The sweep sidecar that belongs to ``sweep_path`` (a sidecar or a sweep WAV)."""
     from roomscope.io.wav import SIDECAR_SUFFIX, sidecar_path
 
     src = Path(sweep_path)
@@ -281,8 +278,19 @@ def _copy_sidecar(
         candidates.append(src.with_name(SWEEP_SIDECAR_NAME))
     for candidate in candidates:
         if candidate.is_file():
-            return _copy_into(candidate, base / SWEEP_SIDECAR_NAME, stage=stage)
+            return candidate
     return None
+
+
+def _copy_sidecar(
+    sweep_path: str | None, base: Path, *, stage: Callable[[str], Path] | None = None
+) -> Path | None:
+    if not sweep_path:
+        return None
+    source = _sidecar_source(sweep_path)
+    if source is None:
+        return None
+    return _copy_into(source, base / SWEEP_SIDECAR_NAME, stage=stage)
 
 
 def _copy_recording(
@@ -340,13 +348,7 @@ def load_measurement(path: str | Path) -> LoadedMeasurement:
     session_file = _session_file(path)
     directory = session_file.parent
     session = MeasurementSession.from_dict(_read_json(session_file))
-    # A relative sweep or recording path is relative to the session folder
-    # (see save_measurement). Anchor it there, so that saving the opened
-    # session into another folder copies the files instead of losing them.
-    for name in ("sweep_path", "recording_path"):
-        stored = getattr(session, name)
-        if stored and not Path(stored).is_absolute():
-            setattr(session, name, str(directory / stored))
+    _anchor_copied_files(session, directory)
     result_path = _resolve_member(directory, session.result_path, RESULT_FILE)
     if not result_path.is_file():
         raise SessionError(_("result.json not found next to {path}").format(path=session_file))
@@ -368,6 +370,31 @@ def load_measurement(path: str | Path) -> LoadedMeasurement:
             ).format(path=session_file)
         )
     return LoadedMeasurement(directory=directory, session=session, result=result)
+
+
+def _anchor_copied_files(session: MeasurementSession, directory: Path) -> None:
+    """Point the sweep and recording paths of an opened session into its folder.
+
+    Saving the opened session into another folder (the GUI's Save button)
+    copies the sweep sidecar and the recording named here. Only files inside
+    the session folder are kept: a session from someone else must not make
+    RoomScope copy one of your files (``../../.ssh/id_rsa``, or an absolute
+    path) into a new session, and from there into a bug-report bundle. A path
+    outside, such as the working sweep WAV, is dropped, and the folder's own
+    copy of the sweep sidecar takes its place.
+    """
+    recording = _inside(directory, session.recording_path)
+    session.recording_path = None if recording is None else str(recording)
+    sweep = _inside(directory, session.sweep_path)
+    sidecar = None if sweep is None else _sidecar_source(sweep)
+    if sidecar is not None and not _contains(directory.resolve(), sidecar.resolve()):
+        # A link next to the sweep that leads out of the folder.
+        sweep = sidecar = None
+    if sidecar is None:
+        own = _inside(directory, SWEEP_SIDECAR_NAME)
+        if own is not None and own.is_file():
+            sweep = own
+    session.sweep_path = None if sweep is None else str(sweep)
 
 
 def list_sessions(root: str | Path, *, max_depth: int = 2) -> list[SessionListing]:
@@ -428,9 +455,8 @@ def _resolve_member(directory: Path, stored: str | None, default_name: str) -> P
                 "session files must stay inside the session folder"
             ).format(name=default_name, path=candidate)
         )
-    base = directory.resolve()
-    resolved = (base / candidate).resolve()
-    if resolved != base and base not in resolved.parents:
+    resolved = _inside(directory, candidate)
+    if resolved is None:
         raise SessionError(
             _(
                 "session.json names {name} outside the session folder ({path}); "
@@ -438,6 +464,30 @@ def _resolve_member(directory: Path, stored: str | None, default_name: str) -> P
             ).format(name=default_name, path=candidate)
         )
     return resolved
+
+
+def _inside(directory: Path, stored: str | Path | None) -> Path | None:
+    """``stored`` resolved inside ``directory``, or None when it is not there.
+
+    The rule of :func:`_resolve_member` without the error: an absolute path,
+    one that leads out of the folder (``..``, or a link to elsewhere), or
+    one that cannot be resolved (a NUL byte, a link loop) gives None.
+    """
+    if not stored:
+        return None
+    candidate = Path(stored)
+    if candidate.is_absolute() or candidate.drive or candidate.root:
+        return None
+    base = directory.resolve()
+    try:
+        resolved = (base / candidate).resolve()
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return resolved if _contains(base, resolved) else None
+
+
+def _contains(base: Path, resolved: Path) -> bool:
+    return resolved == base or base in resolved.parents
 
 
 def save_comparison(path: str | Path, comparison: object) -> Path:

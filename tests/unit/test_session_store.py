@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import stat
 import sys
+import zipfile
 from pathlib import Path
 
 import numpy as np
@@ -25,6 +26,7 @@ from roomscope.io.session_store import (
 )
 from roomscope.io.wav import read_wav
 from roomscope.models.configuration import SweepSettings
+from roomscope.models.result import AnalysisResult
 from roomscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
@@ -304,3 +306,116 @@ def test_saving_again_keeps_the_permissions_of_the_session_files(tmp_path: Path,
     (folder / SESSION_FILE).chmod(0o600)
     save_measurement(folder, MeasurementSession(room_name="Again"), result, include_curves=False)
     assert stat.S_IMODE((folder / SESSION_FILE).stat().st_mode) == 0o600
+
+
+def _received_session(tmp_path: Path, result: AnalysisResult, change: dict[str, str]) -> Path:
+    """A session folder as it arrives from someone else, two levels below tmp_path."""
+    received = tmp_path / "inbox" / "received"
+    save_measurement(received, MeasurementSession(), result, copy_recording=False)
+    data = json.loads((received / SESSION_FILE).read_text(encoding="utf-8"))
+    data.update(change)
+    (received / SESSION_FILE).write_text(json.dumps(data), encoding="utf-8")
+    return received
+
+
+@pytest.mark.parametrize("variant", ["relative sweep", "relative recording", "linked sidecar"])
+def test_an_opened_session_cannot_copy_outside_files_into_a_new_session(
+    tmp_path: Path, analysed, variant: str
+) -> None:
+    """A received session named ``../../config.json`` or an absolute path as
+    its sweep or recording. Saving it again (the GUI's Save button after
+    Open) copied that file into the new folder as the sweep sidecar or
+    recording.wav, and ``session bundle`` then put it into the zip."""
+    from roomscope.io.session_store import bundle_session
+
+    _recording, result = analysed
+    config = tmp_path / "config.json"
+    config.write_text(json.dumps({"token": "s3cret"}), encoding="utf-8")
+    key = tmp_path / "id_key"
+    key.write_bytes(b"PRIVATE KEY")
+    if variant == "relative sweep":
+        change = {"sweep_path": "../../config.json", "recording_path": str(key)}
+    elif variant == "relative recording":
+        change = {"sweep_path": str(config), "recording_path": "../../id_key"}
+    else:
+        change = {"sweep_path": "sweep.wav", "recording_path": str(key)}
+    received = _received_session(tmp_path, result, change)
+    if variant == "linked sidecar":
+        try:
+            (received / "sweep.roomscope-sweep.json").symlink_to(config)
+        except OSError as exc:  # Windows without the symlink privilege
+            pytest.skip(f"this system cannot create symbolic links: {exc}")
+
+    loaded = load_measurement(received)
+    resaved = tmp_path / "resaved"
+    save_measurement(resaved, loaded.session, loaded.result, copy_recording=True)
+    for path in resaved.iterdir():
+        content = path.read_bytes()
+        assert b"s3cret" not in content and b"PRIVATE KEY" not in content, path.name
+    stored = json.loads((resaved / SESSION_FILE).read_text(encoding="utf-8"))
+    assert str(tmp_path) not in json.dumps(
+        {key: stored[key] for key in ("sweep_path", "recording_path")}
+    )
+    with zipfile.ZipFile(bundle_session(resaved, tmp_path / "out.zip")) as archive:
+        for name in archive.namelist():
+            content = archive.read(name)
+            assert b"s3cret" not in content and b"PRIVATE KEY" not in content, name
+
+
+@pytest.mark.parametrize("field", ["sweep_path", "recording_path", "result_path"])
+def test_a_nul_byte_in_a_stored_path_is_a_roomscope_error(
+    tmp_path: Path, analysed, field: str
+) -> None:
+    """Resolving a path with a NUL byte raises ValueError, which escaped the
+    loader as a bug in RoomScope."""
+    _recording, result = analysed
+    received = _received_session(tmp_path, result, {field: "a\u0000b.json"})
+    if field == "result_path":
+        with pytest.raises(SessionError):
+            load_measurement(received)
+    else:
+        assert getattr(load_measurement(received).session, field) is None
+
+
+def test_an_opened_session_still_copies_its_own_recording(tmp_path: Path, analysed) -> None:
+    from roomscope.io.session_store import RECORDING_FILE
+    from roomscope.io.wav import write_wav
+
+    recording, result = analysed
+    take = write_wav(tmp_path / "take.wav", recording.samples, 48000, subtype="FLOAT")
+    received = tmp_path / "received"
+    save_measurement(
+        received, MeasurementSession(recording_path=str(take)), result, copy_recording=True
+    )
+    take.unlink()
+    loaded = load_measurement(received)
+    assert loaded.session.recording_path == str((received / RECORDING_FILE).resolve())
+    save_measurement(tmp_path / "again", loaded.session, loaded.result, copy_recording=True)
+    assert (tmp_path / "again" / RECORDING_FILE).read_bytes() == (
+        received / RECORDING_FILE
+    ).read_bytes()
+
+
+def test_resaving_an_opened_session_keeps_its_sweep_sidecar(
+    tmp_path: Path, short_sweep: SweepSettings, analysed
+) -> None:
+    """Only the sidecar next to the working sweep WAV was copied: once that
+    WAV was moved or deleted (or the session came from someone else), saving
+    the opened session elsewhere dropped the folder's own sidecar."""
+    import shutil
+
+    from roomscope.io.session_store import SWEEP_SIDECAR_NAME
+    from roomscope.io.wav import write_sweep_file
+
+    _recording, result = analysed
+    sweep, _sidecar = write_sweep_file(short_sweep, tmp_path / "work" / "sweep.wav")
+    save_measurement(
+        tmp_path / "A", MeasurementSession(sweep_path=str(sweep)), result, copy_recording=False
+    )
+    assert (tmp_path / "A" / SWEEP_SIDECAR_NAME).is_file()
+    shutil.rmtree(tmp_path / "work")
+    loaded = load_measurement(tmp_path / "A")
+    save_measurement(tmp_path / "B", loaded.session, loaded.result, copy_recording=False)
+    assert (tmp_path / "B" / SWEEP_SIDECAR_NAME).read_bytes() == (
+        tmp_path / "A" / SWEEP_SIDECAR_NAME
+    ).read_bytes()

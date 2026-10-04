@@ -9,6 +9,7 @@ from scipy.signal import fftconvolve
 
 from roomscope.cli.main import main
 from roomscope.io.wav import read_wav, write_wav
+from roomscope.models.configuration import SweepSettings
 from tests.conftest import make_rir
 
 
@@ -248,6 +249,37 @@ def test_measure_refuses_loud_level_without_acknowledgement(
     code = main(["measure", "--out", str(tmp_path / "m"), "--level", "-3"])
     assert code == 2
     assert "acknowledge" in capsys.readouterr().err
+
+
+def test_show_json_reports_session_paths_as_stored(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    short_sweep: SweepSettings,
+) -> None:
+    """``show --format json`` printed the recording as ``sess/recording.wav``
+    (relative to where you ran it) while session.json says ``recording.wav``
+    (relative to the session folder, like the other members)."""
+    from roomscope.core.pipeline import Reference, analyze, synthetic_recording
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.session import MeasurementSession
+
+    rec = synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3))
+    result = analyze(rec, Reference.from_settings(short_sweep))
+    take = write_wav(tmp_path / "take.wav", rec.samples, rec.sample_rate, subtype="FLOAT")
+    save_measurement(
+        tmp_path / "sess",
+        MeasurementSession(recording_path=str(take)),
+        result,
+        include_curves=False,
+        copy_recording=True,
+    )
+    monkeypatch.chdir(tmp_path)
+    capsys.readouterr()
+    assert main(["--format", "json", "show", "sess", "--no-curves"]) == 0
+    session = json.loads(capsys.readouterr().out)["session"]
+    assert session["recording_path"] == "recording.wav"
+    assert session["impulse_response_path"] == "impulse_response.wav"
 
 
 def test_session_bundle_export_and_project(
