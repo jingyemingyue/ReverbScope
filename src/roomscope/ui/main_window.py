@@ -217,6 +217,15 @@ class MainWindow(QMainWindow):
         self.show_results()
 
     def show_mode(self, mode: str) -> None:
+        if (
+            mode in ("demo", "standalone")
+            and self.stack.currentWidget() is self.standalone
+            and self.standalone.is_busy()
+        ):
+            # Ctrl+2 / Ctrl+3 on the page of a running take: switching the
+            # backend under it would show the demo banner over a real sweep
+            # (or the reverse). Leaving the page (Ctrl+1, Home) stops the take.
+            return
         if mode == "demo":
             self.state.mode = "standalone"
             self.standalone.demo_mode = True

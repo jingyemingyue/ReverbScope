@@ -747,3 +747,33 @@ def test_a_late_standalone_analysis_is_not_shown_after_new_measurement(
     assert "discarded" in page.status.text()
     assert page.run_button.isEnabled()
     window.close()
+
+
+def test_the_measure_menu_does_not_switch_backend_under_a_running_take(
+    app: QApplication, held_take
+) -> None:
+    """Ctrl+2 / Ctrl+3 on the page of a running take re-listed the devices
+    and put the demo banner over a real sweep (or the reverse); the output
+    channel edited during the take was saved as the one it used."""
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    page.output_channel.setValue(1)
+    try:
+        page.run_button.click()
+        assert page.is_busy()
+        window.show_mode("standalone")  # Ctrl+2 during the demo take
+        assert page.demo_mode is True
+        assert page.status.text() == "Playing the sweep and recording..."
+        assert not page.run_button.isEnabled()
+        page.output_channel.setValue(2)  # edited while the sweep plays
+    finally:
+        held_take.set()
+        _settle(app, page._measure_worker)
+        _settle(app, page._analysis_worker)
+    assert window.stack.currentWidget() is window.results
+    assert window.state.session.output_channel == 1
+    window.close()

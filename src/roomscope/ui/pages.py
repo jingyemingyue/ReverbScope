@@ -628,6 +628,8 @@ class StandalonePage(QWidget):
         self._measure_worker: MeasureWorker | None = None
         self._analysis_worker: AnalysisWorker | None = None
         self._channel_plan: ChannelPlan | None = None
+        # The output channel the take plays on: the spin box stays editable.
+        self._take_output_channel = 1
         self._inventory: DeviceInventory | None = None
         # The state generation the running take belongs to.
         self._generation = -1
@@ -809,7 +811,7 @@ class StandalonePage(QWidget):
         self._fill_device_lists()
         # Refresh (button, Ctrl+2, Back -> Demo) can run during a take; Run
         # must stay off then, or a second take replaces the running thread.
-        self.run_button.setEnabled(not self._busy())
+        self.run_button.setEnabled(not self.is_busy())
         if self.demo_mode:
             set_banner_text(self.status, _("Demo mode: fake backend, no loudspeaker."))
         else:
@@ -983,7 +985,7 @@ class StandalonePage(QWidget):
             level_dbfs=float(self.level.value()),
         )
 
-    def _busy(self) -> bool:
+    def is_busy(self) -> bool:
         """A take or its analysis is still running."""
         return any(
             worker is not None and worker.isRunning()
@@ -1006,7 +1008,7 @@ class StandalonePage(QWidget):
         super().hideEvent(event)
 
     def start_measurement(self) -> None:
-        if self._busy():
+        if self.is_busy():
             return
         try:
             settings = self.current_sweep_settings()
@@ -1042,6 +1044,7 @@ class StandalonePage(QWidget):
             return
         input_device, output_device = devices
         self._channel_plan = plan
+        self._take_output_channel = int(self.output_channel.value())
         place = self.placement.analysis_kwargs()
         self.state.analysis_settings = AnalysisSettings(
             channel=plan.analysis_channel,
@@ -1059,7 +1062,7 @@ class StandalonePage(QWidget):
             input_device=input_device,
             output_device=output_device,
             input_channels=list(plan.input_channels),
-            output_channel=int(self.output_channel.value()),
+            output_channel=self._take_output_channel,
             level_dbfs=settings.level_dbfs,
             backend="fake" if self.demo_mode else None,
             options=self.stream_options(),
@@ -1097,7 +1100,7 @@ class StandalonePage(QWidget):
             microphone_name=self.mic.text(),
             input_channel=plan.microphone_channel,
             loopback_channel=plan.loopback_channel,
-            output_channel=int(self.output_channel.value()),
+            output_channel=self._take_output_channel,
             sweep_settings=self.state.sweep_settings,
             analysis_settings=self.state.analysis_settings,
             recording_profile=self.state.profile,
