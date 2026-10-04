@@ -259,7 +259,15 @@ class MainWindow(QMainWindow):
     def show_settings(self) -> None:
         from roomscope.ui.settings_dialog import SettingsDialog
 
-        SettingsDialog(self).exec()
+        before = load_settings().default_profile
+        if not SettingsDialog(self).exec():
+            return
+        profile = load_settings().default_profile
+        if profile != before and profile in available_profiles():
+            # A new default profile applies now, as the output folder does.
+            # Only the combos: a running take keeps the profile it started with.
+            for combo in (self.daw.profile, self.standalone.profile):
+                combo.setCurrentIndex(max(combo.findData(profile), 0))
 
     def show_device_inspector(self) -> None:
         from roomscope.ui.dev_tools import DeviceInspector

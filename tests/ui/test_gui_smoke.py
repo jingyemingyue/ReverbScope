@@ -832,3 +832,30 @@ def test_the_lang_option_reaches_the_gui(
     monkeypatch.setattr(app_module, "install_qt_translations", lambda _app: None)
     assert main(["--lang", "zh_CN", "gui", "--smoke"]) == 0
     assert seen == ["zh_CN"]
+
+
+def test_a_new_default_profile_applies_without_a_restart(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MainWindow read the default profile once at startup: after Settings
+    the mode pages kept the old one until RoomScope restarted."""
+    from PySide6.QtWidgets import QDialog
+
+    from roomscope.ui import settings_dialog
+
+    def accept_with_profile(self: settings_dialog.SettingsDialog) -> int:
+        self.profile.setCurrentIndex(self.profile.findData("vocal"))
+        self.accept()
+        return QDialog.DialogCode.Accepted.value
+
+    monkeypatch.setattr(settings_dialog.SettingsDialog, "exec", accept_with_profile)
+    window = MainWindow()
+    assert window.daw.profile.currentData() == "generic"
+    window.show_settings()
+    assert window.daw.profile.currentData() == "vocal"
+    assert window.standalone.profile.currentData() == "vocal"
+    # Settings accepted again without a new default keep this measurement's choice.
+    window.daw.profile.setCurrentIndex(window.daw.profile.findData("generic"))
+    window.show_settings()
+    assert window.daw.profile.currentData() == "generic"
+    window.close()
