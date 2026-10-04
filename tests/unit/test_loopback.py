@@ -449,3 +449,27 @@ def test_a_loopback_without_a_pulse_keeps_the_assessment_reason(
     assert loopback is not None and not loopback.compensation_applied
     assert "different sweep passes" not in (loopback.reason or "")
     assert "electrical return" in (loopback.reason or "")
+
+
+@pytest.mark.parametrize("band_hz", [(1.0, 20000.0), (20.0, 48000 / 2 - 1.0)])
+def test_compensation_with_a_band_edge_at_its_clamp_is_silent(
+    band_hz: tuple[float, float],
+) -> None:
+    """A sweep from 1 Hz (or up to Nyquist - 1 Hz) without a fade left a
+    regularisation transition of zero width: NumPy printed "divide by zero
+    encountered" on the user's terminal."""
+    import warnings
+
+    from roomscope.core.loopback import compensate
+    from roomscope.models.result import ExcitationBand
+
+    h = np.zeros(4800)
+    h[100] = 1.0
+    fir = np.zeros(64)
+    fir[8] = 1.0
+    band = ExcitationBand(low_hz=band_hz[0], high_hz=band_hz[1], source="settings")
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        out = compensate(h, fir, 48000, band, fir_peak_index=8)
+    assert np.all(np.isfinite(out))
+    assert int(np.argmax(np.abs(out))) == 100
