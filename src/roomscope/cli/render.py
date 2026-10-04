@@ -425,7 +425,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
     if basis_note:
         lines += c.paragraph(basis_note, style=("dim",))
     legend = [
-        f"{c.symbol(validity_status(v))} {validity_word(v)}"
+        v
         for v in (
             Validity.UNRELIABLE,
             Validity.INSUFFICIENT_RANGE,
@@ -436,11 +436,26 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
     ]
     if legend:
         lines.append("")
-        lines.append("  " + "   ".join(legend))
+        lines += _legend(c, legend)
     for note in notes:
         lines += c.status("info", note)
     lines += _energy(c, result)
     return lines
+
+
+def _legend(c: Console, validities: Sequence[Validity]) -> list[str]:
+    """``? unreliable   – outside the sweep's range``: what each symbol means,
+    as many entries per line as the width holds (an entry is never split)."""
+    lines: list[str] = []
+    line = ""
+    for validity in validities:
+        entry = f"{c.symbol(validity_status(validity))} {c.readable(validity_word(validity))}"
+        joined = f"{line}   {entry}" if line else entry
+        if line and cell_width("  " + joined) > c.width:
+            lines.append("  " + line)
+            joined = entry
+        line = joined
+    return [*lines, "  " + line]
 
 
 def _clarity_glance(c: Console, band: BandDecay) -> str | None:
@@ -881,12 +896,8 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         rows = [row[:5] + row[6:] for row in rows]
     lines += c.table(headers, rows, align=align, gap=2, title_columns=2)
     if seen:
-        legend = [
-            f"{c.symbol(validity_status(v))} {validity_word(v)}"
-            for v in sorted(seen, key=list(Validity).index)
-        ]
         lines.append("")
-        lines.append("  " + "   ".join(legend))
+        lines += _legend(c, sorted(seen, key=list(Validity).index))
     return lines + _reasons(c, items)
 
 

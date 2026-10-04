@@ -1396,8 +1396,11 @@ def cmd_show(args: argparse.Namespace) -> int:
         if not listings:
             print(_("No session.json files under {root}").format(root=args.path))
             return 0
+        console = _console(args)
         for item in listings:
-            print(f"{item.path}\t{item.label}")
+            # Tab-separated for scripts: never wrapped, but "·" becomes "|"
+            # where the stream's encoding has no "·".
+            print(f"{item.path}\t{console.fit(item.label)}")
         return 0
 
     if _is_comparison_path(args.path):
@@ -1645,18 +1648,16 @@ def cmd_project(args: argparse.Namespace) -> int:
         if _use_json(args) or args.json:
             print(json.dumps(averaged.to_dict(), indent=1))
         else:
-            print(
-                _(
-                    "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, "
-                    "{combos} combinations)"
-                ).format(
-                    klass=accuracy_class_text(averaged.iso_3382_2_class),
-                    sources=averaged.n_source_positions,
-                    mics=averaged.n_microphone_positions,
-                    combos=averaged.n_combinations,
-                )
-            )
             console = _console(args)
+            iso_class = _(
+                "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, {combos} combinations)"
+            ).format(
+                klass=accuracy_class_text(averaged.iso_3382_2_class),
+                sources=averaged.n_source_positions,
+                mics=averaged.n_microphone_positions,
+                combos=averaged.n_combinations,
+            )
+            print("\n".join(console.paragraph(iso_class, indent=0)))
             dash = console.dash()
 
             def seconds(value: float | None) -> str:

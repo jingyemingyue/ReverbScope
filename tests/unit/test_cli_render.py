@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from pathlib import Path
+
+import pytest
 
 from roomscope.cli.console import Console, cell_width
 from roomscope.cli.render import (
@@ -186,3 +189,62 @@ def test_a_truncated_reflection_search_says_how_far_it_got() -> None:
     glance = next(line for line in at_a_glance(WIDE, result, []) if "Early reflections" in line)
     assert "50.0 ms that could be searched" in WIDE.fit(glance), glance
     assert WIDE.symbol("unsure") in glance
+
+
+def test_the_validity_legend_wraps_between_entries() -> None:
+    """#71: the legend was one line, 44 cells on a 40-column terminal."""
+    from roomscope.cli.render import _legend
+
+    narrow = Console(color=False, unicode=True, width=40)
+    every = [
+        Validity.UNRELIABLE,
+        Validity.INSUFFICIENT_RANGE,
+        Validity.NOT_COMPUTED,
+        Validity.OUTSIDE_EXCITATION,
+    ]
+    lines = _legend(narrow, every)
+    assert len(lines) > 1 and all(cell_width(line) <= 40 for line in lines), lines
+    assert "– outside the sweep's range" in lines[-1], lines
+    assert _legend(WIDE, every) == [
+        "  ? unreliable   ! insufficient range   – not computed   – outside the sweep's range"
+    ]
+
+
+def test_listing_and_project_lines_follow_the_stream_encoding(
+    tmp_path: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#71: "show --list" and "project average" printed "·" and "×" as "?"
+    on an ASCII stream instead of the console's "|" and "x"."""
+    import io
+    import sys
+
+    from roomscope.cli.main import main
+    from roomscope.io.project_store import add_session, save_project
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.project import Project
+    from roomscope.models.session import MeasurementSession
+
+    result = _analysed(short_sweep)
+    project = tmp_path / "room"
+    save_project(project, Project(name="room"))
+    for name in ("desk", "sofa"):
+        folder = project / name
+        save_measurement(
+            folder, MeasurementSession(sweep_settings=short_sweep), result, copy_recording=False
+        )
+        add_session(project, folder, position=name)
+
+    def run(argv: list[str]) -> str:
+        raw = io.BytesIO()
+        stream = io.TextIOWrapper(raw, encoding="ascii", errors="replace", newline="\n")
+        monkeypatch.setenv("PYTHONIOENCODING", "ascii")
+        monkeypatch.setattr(sys, "stdout", stream)
+        assert main(argv) == 0
+        stream.flush()
+        return raw.getvalue().decode("ascii")
+
+    listing = run(["show", "--list", str(project)])
+    assert "?" not in listing and " | " in listing, listing
+    assert all(line.count("\t") == 1 for line in listing.splitlines()), listing
+    average = run(["project", "average", str(project)])
+    assert "(1 source x 2 mic, 2 combinations)" in average, average
