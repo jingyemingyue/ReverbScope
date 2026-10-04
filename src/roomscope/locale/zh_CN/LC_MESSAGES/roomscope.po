@@ -4022,3 +4022,5 @@ msgstr "没有共同激励频带"
 
 msgid "No reflection was detected inside this profile's {window_ms:g} ms window in the candidate; the strongest in the baseline was {relative_db:.1f} dB at {delay_ms:.1f} ms."
 msgstr "候选中，此配置的 {window_ms:g} ms 窗口内未检测到反射；基线中最强的反射为 {delay_ms:.1f} ms 的 {relative_db:.1f} dB。"
+msgid "Background noise, {band}"
+msgstr "本底噪声，{band}"

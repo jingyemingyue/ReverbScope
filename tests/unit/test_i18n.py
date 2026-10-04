@@ -397,3 +397,17 @@ def test_comparison_reasons_name_the_validity_in_words() -> None:
     # A reason stored with the ids by an earlier version.
     stored = "baseline insufficient_decay_range; candidate outside_excitation_range"
     assert _shown_in_chinese(stored) == "基线：衰减范围不足；候选：超出扫频范围"
+
+
+def test_noise_band_metric_labels() -> None:
+    """#23: the GUI compare table showed "noise.band.1000Hz (dBFS)"."""
+    from roomscope.labels import metric_label
+
+    assert metric_label("noise.band.1000Hz", "dBFS") == "Background noise, 1 kHz (dBFS)"
+    assert metric_label("noise.band.31.5Hz") == "Background noise, 31.5 Hz"
+    assert metric_label("noise.rms_dbfs") == "Background noise, RMS"
+    activate("zh_CN")
+    try:
+        assert metric_label("noise.band.63Hz", "dBFS") == "本底噪声，63 Hz (dBFS)"
+    finally:
+        activate("en")

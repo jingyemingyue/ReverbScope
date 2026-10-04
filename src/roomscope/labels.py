@@ -50,6 +50,23 @@ def topic_text(topic: str) -> str:
     }.get(topic, topic)
 
 
+def frequency_text(hz: float) -> str:
+    """1000 -> ``1 kHz``, 31.5 -> ``31.5 Hz``."""
+    # 999.5 Hz and up round to 1000 at three digits: "1 kHz", not "1e+03 Hz".
+    return f"{hz / 1000:.3g} kHz" if hz >= 999.5 else f"{hz:.3g} Hz"
+
+
+def noise_band_hz(name: str) -> float | None:
+    """The centre of a noise band metric id (``noise.band.31.5Hz`` -> 31.5)."""
+    band = name.removeprefix("noise.band.")
+    if band == name or not band.endswith("Hz"):
+        return None
+    try:
+        return float(band[:-2])
+    except ValueError:
+        return None
+
+
 def metric_label(name: str, unit: str = "") -> str:
     """A readable, translated name for a comparison metric id ("band.63 Hz.t20")."""
     fixed = {
@@ -60,6 +77,9 @@ def metric_label(name: str, unit: str = "") -> str:
         "loopback.path_delay_ms": _("Loopback path delay"),
     }
     text = fixed.get(name)
+    noise_hz = noise_band_hz(name)
+    if text is None and noise_hz is not None:
+        text = _("Background noise, {band}").format(band=frequency_text(noise_hz))
     if text is None:
         metrics = {
             "rt60_estimate": _("RT60 estimate"),

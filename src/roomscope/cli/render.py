@@ -25,7 +25,14 @@ from roomscope.interpretation.profiles import (
     noise_segment_text,
     profile_title,
 )
-from roomscope.labels import metric_label, surface_text, topic_text, validity_word
+from roomscope.labels import (
+    frequency_text,
+    metric_label,
+    noise_band_hz,
+    surface_text,
+    topic_text,
+    validity_word,
+)
 from roomscope.models.comparison import ComparisonResult, MetricDelta
 from roomscope.models.result import (
     EXCITATION_SOURCE_DECLARED,
@@ -64,11 +71,6 @@ def rates_text(rates: Sequence[int], console: Console) -> str:
     if not rates:
         return pgettext("sample rates", "none")
     return console.sep().join(f"{rate / 1000:g}" for rate in rates) + " kHz"
-
-
-def frequency_text(hz: float) -> str:
-    # 999.5 Hz and up round to 1000 at three digits: "1 kHz", not "1e+03 Hz".
-    return f"{hz / 1000:.3g} kHz" if hz >= 999.5 else f"{hz:.3g} Hz"
 
 
 def created_text(created: str) -> str:
@@ -842,12 +844,9 @@ def _resonance_status(status: str) -> str:
 
 def _noise_label(name: str) -> str:
     """``noise.rms_dbfs`` -> Broadband; ``noise.band.1000Hz`` -> ``1 kHz``."""
-    band = name.removeprefix("noise.band.")
-    if band != name and band.endswith("Hz"):
-        try:
-            return frequency_text(float(band[:-2]))
-        except ValueError:
-            return band
+    hz = noise_band_hz(name)
+    if hz is not None:
+        return frequency_text(hz)
     if name == "noise.rms_dbfs":
         return band_text("broadband")
     return metric_label(name)
