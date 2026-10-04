@@ -63,7 +63,7 @@ roomscope-env/bin/roomscope gui
 2. 把 WAV 导入 DAW 的一条新轨道，关闭时间伸缩（Warp、Flex、Follow Tempo），信号通路上不要有插件。把它路由到一只扬声器。
 3. 在第二条轨道上接入测量话筒并开启录音待命，关闭输入监听，在扫频播放的同时录音。完整导出录音轨，不要裁切，也不要标准化。
 4. 可选回送（loopback）：导出双声道文件（话筒 + 电回送），并使用 `--channel 0 --loopback-channel 1`。
-5. `roomscope analyze --recording take.wav --sweep sweep.wav --out session/`，或把这些文件拖进界面。
+5. `roomscope analyze --recording take.wav --sweep sweep.wav --out session/`，或在界面的“通用 DAW 模式”中用“选择录音…”和“选择参考扫频…”选择这些文件。
 
 **Pro Tools、Logic Pro / GarageBand、Cubase / Nuendo、Studio One、Ableton Live、REAPER、FL Studio、Bitwig Studio 和 Audacity 的分步说明，以及报告中各条提示在 DAW 里对应的原因，见 [daw-setup.zh-CN.md](daw-setup.zh-CN.md)。**
 
@@ -87,13 +87,14 @@ roomscope-env/bin/roomscope gui
 
 每个指标都有有效性标记。`insufficient_decay_range`（衰减范围不足）表示数值被扣下不报，而不是等于零。没有单一总分。录音配置可能在宽带 C50 或 C80 不适合该类录音时给出一条提示；阈值是该配置的工程选择，不是评分。
 
-核心诊断（`warnings`、`notes`、`reason`）在 `result.json` 中保持英文，便于跨语言对照问题报告。界面会在注明这一点的标题下原样显示它们。
+核心诊断（`warnings`、`notes`、`reason`）在 `result.json` 中保持英文，便于跨语言对照问题报告。界面和文本报告按界面语言显示它们。
 
-结果页有七个标签页：
+结果页有八个标签页：
 
 | 标签页 | 显示内容 |
 | --- | --- |
-| 总览 | 宽带与倍频程频带的 EDT / T20 / T30 / RT60，以及 C50 / C80 / D50 / 重心时间，各自带有效性；文本报告；核心诊断（始终为英文）。 |
+| 总览 | 关键数值（混响、本底噪声、早期反射、直达声）及其可信程度、解读，以及宽带与倍频程频带的 EDT / T20 / T30 / RT60 和 C50 / C80 / D50 / 重心时间表格，各自带有效性。 |
+| 完整报告 | 与 `roomscope analyze` 输出的文本报告相同，警告列在末尾。“复制报告”可复制全文。 |
 | 脉冲响应 | 反卷积得到的脉冲响应（IR）。峰值是直达声；不会归一化到 1.0。 |
 | 频率响应 | 原始（点线）与平滑（实线）幅度。进行了回送补偿时，虚线是电回送。0 dB 指音频接口，而不是“房间里是平直的”。 |
 | 衰减 | Schroeder / 能量衰减曲线。宽带为实线；各倍频程频带使用不同的虚线样式，不只靠颜色区分。 |
@@ -101,7 +102,7 @@ roomscope-env/bin/roomscope gui
 | 早期反射 | ETC 峰值（延时 ms，相对直达声的 dB）。候选用空心标记表示。 |
 | 摆位 | 多余路径；只有在输入了卷尺实测的扬声器距离时，才给出扬声器高度、两个设备上方的平面以及水平间距。不指明任何墙面。 |
 
-低频共振候选保留在总览的文本报告中（以及 `roomscope export` 之后的 `resonances.csv`），没有单独的标签页。
+低频共振候选列在“完整报告”中（以及 `roomscope export` 之后的 `resonances.csv`），没有单独的标签页。
 
 ## 摆位
 
