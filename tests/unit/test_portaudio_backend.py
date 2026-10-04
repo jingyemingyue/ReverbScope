@@ -285,6 +285,16 @@ def test_buffer_problems_are_logged_and_kept_with_the_take(
     assert "2 buffer problem(s)" in warning and "input overflow" in warning
 
 
+def test_each_buffer_problem_flag_is_named_once(script: _Script) -> None:
+    """A block's status already joins its flags with ", ", so joining the
+    distinct blocks listed "input overflow" twice."""
+    script.status = {2: "input overflow", 7: "input overflow, output underflow"}
+    (warning,) = _take().device_warnings
+    assert "2 buffer problem(s)" in warning
+    assert warning.count("input overflow") == 1
+    assert "(input overflow, output underflow)" in warning
+
+
 def test_a_clean_take_has_no_device_warnings(script: _Script) -> None:
     assert _take().device_warnings == ()
 
