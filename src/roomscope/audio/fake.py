@@ -73,6 +73,11 @@ class FakeBackend:
     rir: FloatArray | None = None
     interface_ir: FloatArray | None = None
     loopback_delay_s: float = 0.002
+    #: Loudspeaker-to-microphone delay of the default room (about 1.4 m). The
+    #: microphone also goes through the interface, so it hears the sweep
+    #: ``loopback_delay_s + acoustic_delay_s`` after it was played, never
+    #: before the loopback does. An explicit ``rir`` keeps its own timing.
+    acoustic_delay_s: float = 0.004
     noise_rms: float = 1e-5
     rt60_s: float = 0.4
     seed: int = 0
@@ -156,7 +161,12 @@ class FakeBackend:
         room = (
             self.rir
             if self.rir is not None
-            else make_rir(sample_rate, rt60_s=self.rt60_s, seed=self.seed)
+            else make_rir(
+                sample_rate,
+                rt60_s=self.rt60_s,
+                seed=self.seed,
+                start_delay_s=self.loopback_delay_s + self.acoustic_delay_s,
+            )
         )
         mic = np.asarray(
             fftconvolve(signal, room, mode="full")[: signal.shape[0]], dtype=np.float64
