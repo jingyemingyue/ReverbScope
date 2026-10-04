@@ -138,3 +138,21 @@ def test_placement_surfaces_have_names_not_ids() -> None:
         assert surface_text("lower_plane") == "参考平面"
     finally:
         activate("en")
+
+
+def test_every_octave_band_has_its_own_dash_pattern(short_sweep) -> None:
+    """The user guide: octave bands use changing dash patterns so colour is
+    not the only cue. Five styles for eight bands repeated three of them, and
+    1 kHz was solid like Broadband."""
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.35)),
+        Reference.from_settings(short_sweep),
+    )
+    fig = Figure()
+    plot_decay(fig, result)
+    lines = fig.axes[0].lines
+    assert len(lines) == 1 + len(result.decay.bands) >= 9
+    patterns = [tuple(line._unscaled_dash_pattern[1] or ()) for line in lines]
+    assert patterns[0] == ()  # Broadband is solid
+    assert all(patterns[1:]), "a band is drawn solid like Broadband"
+    assert len(set(patterns[1:])) == len(patterns) - 1

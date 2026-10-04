@@ -22,8 +22,21 @@ from roomscope.ui.theme import PLOT_SERIES, ensure_plot_fonts, plot_colors, styl
 
 _EPS = 1e-300
 
-# Linestyles so a plot is readable when colour is not (ARCHITECTURE_V1 §5.8).
-_LINESTYLES = ("-", "--", "-.", ":", (0, (3, 1, 1, 1)))
+# Dash patterns so a plot is readable when colour is not (ARCHITECTURE_V1 §5.8):
+# one per octave band, none solid like Broadband. The palette has six colours,
+# so with the eight default bands the dashes are what tells repeats apart.
+_BAND_DASHES = (
+    (0, (5, 2)),
+    (0, (1, 1.5)),
+    (0, (6, 2, 1.5, 2)),
+    (0, (3, 1, 1, 1, 1, 1)),
+    (0, (9, 3)),
+    (0, (2, 3)),
+    (0, (8, 2, 1.5, 2, 1.5, 2)),
+    (0, (4, 4)),
+    (0, (1, 3)),
+    (0, (12, 2, 3, 2)),
+)
 
 
 def plot_impulse_response(fig: Figure, result: AnalysisResult) -> None:
@@ -121,7 +134,7 @@ def plot_decay(fig: Figure, result: AnalysisResult) -> None:
             band.edc_db,
             linewidth=0.9,
             alpha=0.8,
-            linestyle=_LINESTYLES[(index + 1) % len(_LINESTYLES)],
+            linestyle=_BAND_DASHES[index % len(_BAND_DASHES)],
             label=label,
         )
     ax.set_ylim(-70.0, 5.0)
