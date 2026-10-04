@@ -500,20 +500,33 @@ def held_take(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
     """The fake interface plays until the test releases it (or Stop is pressed)."""
     import threading
 
+    from PySide6.QtCore import QThread
+
     from roomscope.audio.fake import FakeBackend
     from roomscope.errors import MeasurementCancelledError
 
     release = threading.Event()
     real = FakeBackend.play_and_record
+    takes: list[tuple[QThread, threading.Event | None]] = []
 
     def held(self, *args, cancel=None, **kwargs):  # type: ignore[no-untyped-def]
+        takes.append((QThread.currentThread(), cancel))
         while not release.wait(0.01):
             if cancel is not None and cancel.is_set():
                 raise MeasurementCancelledError("stopped")
         return real(self, *args, cancel=cancel, **kwargs)
 
     monkeypatch.setattr(FakeBackend, "play_and_record", held)
-    return release
+    yield release
+    # A test that fails mid-take never reaches window.close(): stop the take
+    # and wait for it, or Qt aborts the whole run on a QThread destroyed
+    # while it is still running.
+    for thread, cancel in takes:
+        if cancel is not None:
+            cancel.set()
+        else:
+            release.set()
+        thread.wait()
 
 
 def test_a_running_take_cannot_be_replaced_and_closing_waits_for_it(
