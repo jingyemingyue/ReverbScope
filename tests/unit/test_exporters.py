@@ -102,3 +102,44 @@ def test_a_third_party_exporter_registered_as_a_class_is_instantiated(
     exporter = registry.get_exporter("jsonl")
     assert isinstance(exporter, JsonLines)
     assert exporter.export(object(), tmp_path) == [tmp_path / "out.jsonl"]  # type: ignore[arg-type]
+
+
+def _loopback_result(sweep: SweepSettings):
+    """An analysis with a compensated loopback and its interface curve."""
+    from dataclasses import replace
+
+    import numpy as np
+
+    from roomscope.models.result import LoopbackResult
+
+    result = analyze(
+        synthetic_recording(sweep, make_rir(sweep.sample_rate, rt60_s=0.35), noise_rms=1e-5),
+        Reference.from_settings(sweep),
+    )
+    loopback = LoopbackResult(
+        channel=1,
+        compensation_applied=True,
+        interface_response_hz=np.array([100.0, 1000.0, 10000.0]),
+        interface_response_db=np.array([-0.5, 0.0, -1.0]),
+    )
+    return replace(result, impulse_response=replace(result.impulse_response, loopback=loopback))
+
+
+def test_no_curves_leaves_out_the_interface_curve_and_keeps_the_point_count(
+    short_sweep: SweepSettings,
+) -> None:
+    """--no-curves still wrote the interface response (2 x 2048 values), and a
+    reloaded --no-curves result reported frequency_response.points 0."""
+    from roomscope.models.result import AnalysisResult
+
+    result = _loopback_result(short_sweep)
+    full = result.to_dict(include_curves=True)
+    assert full["impulse_response"]["loopback"]["interface_response_hz"] == [100.0, 1000.0, 10000.0]
+    slim = result.to_dict(include_curves=False)
+    assert "interface_response_hz" not in slim["impulse_response"]["loopback"]
+    points = slim["frequency_response"]["points"]
+    assert points == result.frequency_response.frequencies_hz.shape[0] > 0
+    reloaded = AnalysisResult.from_dict(slim)
+    assert reloaded.frequency_response.frequencies_hz.size == 0
+    assert reloaded.to_dict(include_curves=False)["frequency_response"]["points"] == points
+    assert reloaded.to_dict(include_curves=True)["frequency_response"]["points"] == points

@@ -308,6 +308,12 @@ def frequency_response_from_dict(data: Any) -> FrequencyResponseResult:
         gated=read_flag(payload.get("gated", False), "gated"),
         excitation_band=excitation_band_from_dict(payload.get("excitation_band")),
         reference=str(payload.get("reference", "")),
+        # A --no-curves file keeps only the count.
+        stored_points=(
+            _opt_int(payload.get("points"), "points")
+            if payload.get("frequencies_hz") is None
+            else None
+        ),
     )
 
 

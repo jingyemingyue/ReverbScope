@@ -572,7 +572,9 @@ class ImpulseResponseResult:
     def direct_sound_time_s(self) -> float:
         return self.direct_sound_index / self.sample_rate
 
-    def to_dict(self, include_curves: bool = False) -> dict[str, Any]:
+    def to_dict(self, include_curves: bool = False, loopback_curves: bool = True) -> dict[str, Any]:
+        """``include_curves`` adds the IR samples (``impulse_response.wav`` holds
+        them in a session); ``loopback_curves`` the interface response."""
         data: dict[str, Any] = {
             "sample_rate": self.sample_rate,
             "length_samples": int(self.samples.shape[0]),
@@ -592,7 +594,11 @@ class ImpulseResponseResult:
             ),
             "harmonic_distortion": [h.to_dict() for h in self.harmonic_distortion],
             "aliased_distortion": [a.to_dict() for a in self.aliased_distortion],
-            "loopback": self.loopback.to_dict() if self.loopback is not None else None,
+            "loopback": (
+                self.loopback.to_dict(include_curves=loopback_curves)
+                if self.loopback is not None
+                else None
+            ),
             "playback_speed": (
                 self.playback_speed.to_dict() if self.playback_speed is not None else None
             ),
@@ -633,8 +639,14 @@ class FrequencyResponseResult:
     #: Frequency range the excitation actually covered.
     excitation_band: ExcitationBand | None = None
     reference: str = diag("relative dB (0 dB = flat loopback of the reference sweep)")
+    #: ``points`` of a file saved without its curves (``--no-curves``), so a
+    #: reloaded response still reports how many points it had.
+    stored_points: int | None = field(default=None, compare=False)
 
     def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
+        points = int(self.frequencies_hz.shape[0])
+        if points == 0 and self.stored_points is not None:
+            points = self.stored_points
         data: dict[str, Any] = {
             "smoothing_fraction": self.smoothing_fraction,
             "window_s": self.window_s,
@@ -646,7 +658,7 @@ class FrequencyResponseResult:
                 self.excitation_band.to_dict() if self.excitation_band is not None else None
             ),
             "reference": self.reference,
-            "points": int(self.frequencies_hz.shape[0]),
+            "points": points,
         }
         if include_curves:
             data["frequencies_hz"] = _array_to_list(self.frequencies_hz, 3)
@@ -1067,7 +1079,9 @@ class AnalysisResult:
             "sample_rate": self.sample_rate,
             "sweep_settings": self.sweep_settings,
             "analysis_settings": self.analysis_settings,
-            "impulse_response": self.impulse_response.to_dict(include_curves=False),
+            "impulse_response": self.impulse_response.to_dict(
+                include_curves=False, loopback_curves=include_curves
+            ),
             "decay": self.decay.to_dict(include_curves),
             "frequency_response": self.frequency_response.to_dict(include_curves),
             "noise": self.noise.to_dict(include_curves),
