@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import shutil
 import zipfile
@@ -344,13 +345,22 @@ class SessionListing:
     def label(self) -> str:
         room = self.session.room_name or _("(unnamed room)")
         created = self.session.created_at
-        rt60 = self.session.analysis_summary.get("broadband_rt60_estimate_s")
+        rt60 = _finite(self.session.analysis_summary.get("broadband_rt60_estimate_s"))
         rt60_text = (
-            _("RT60 {seconds:.2f} s").format(seconds=rt60)
-            if isinstance(rt60, (int, float))
-            else _("RT60 n/a")
+            _("RT60 {seconds:.2f} s").format(seconds=rt60) if rt60 is not None else _("RT60 n/a")
         )
         return f"{room}  ·  {created}  ·  {rt60_text}"
+
+
+def _finite(value: object) -> float | None:
+    """A number from session.json, or None (a crafted 400-digit integer too)."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    try:
+        number = float(value)
+    except OverflowError:
+        return None
+    return number if math.isfinite(number) else None
 
 
 def load_measurement(path: str | Path) -> LoadedMeasurement:

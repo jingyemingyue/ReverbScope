@@ -436,6 +436,21 @@ def test_bundle_of_a_session_at_a_volume_root_fails_cleanly(
         session_store.bundle_session(root)
 
 
+def test_a_listing_with_a_huge_rt60_in_its_summary_still_has_a_label(
+    tmp_path: Path, analysed
+) -> None:
+    """``{seconds:.2f}`` of a 401-digit integer raised OverflowError in
+    ``show --list`` and in the GUI's session browser."""
+    _recording, result = analysed
+    folder = tmp_path / "s"
+    save_measurement(folder, MeasurementSession(room_name="Big"), result, include_curves=False)
+    data = json.loads((folder / SESSION_FILE).read_text(encoding="utf-8"))
+    data["analysis_summary"]["broadband_rt60_estimate_s"] = 10**400
+    (folder / SESSION_FILE).write_text(json.dumps(data), encoding="utf-8")
+    (listing,) = list_sessions(tmp_path)
+    assert "RT60" in listing.label and "Big" in listing.label
+
+
 def test_a_192k_six_second_result_reopens(tmp_path: Path, analysed) -> None:
     """At 192 kHz an impulse response longer than about 5.5 s stores 2**20
     frequency-response bins: result.json is about 40 MB, over the 32 MiB cap,
