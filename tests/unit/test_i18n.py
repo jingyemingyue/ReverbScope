@@ -244,3 +244,137 @@ def test_metric_labels_split_from_the_right() -> None:
     assert metric_label("band.31.5 Hz.t20") == "31.5 Hz T20"
     assert metric_label("band.2.5 kHz.edt", "s") == "2.5 kHz EDT (s)"
     assert metric_label("band.63 Hz") == "63 Hz"
+
+
+# --- Diagnostics joined with "; " (localize) ---------------------------------
+
+EDT_STEP = (
+    "the decay curve drops 15.7 dB across the direct sound (it carries 97 % of the energy; "
+    "limit 5 dB): EDT describes the direct sound rather than the room at this position"
+)
+FILTER_BT = (
+    "B*T = 3.8 < 4: the band filter's own decay is comparable to the measured decay; "
+    "values in this band are unreliable"
+)
+TRUNCATION = (
+    "the noise truncation is not trustworthy ({problem}) and the result depends on it ({changes})"
+)
+
+
+def _english_left(text: str) -> list[str]:
+    import re
+
+    return re.findall(r"[A-Za-z]{4,}", text)
+
+
+def _shown_in_chinese(text: str) -> str:
+    from roomscope.i18n import localize
+
+    activate("zh_CN")
+    try:
+        return localize(text)
+    finally:
+        activate("en")
+
+
+def test_joined_diagnostics_with_their_own_semicolons() -> None:
+    """A template whose literal text has a "; " (EDT step, B*T) was cut there."""
+    edt, bt = _shown_in_chinese(EDT_STEP), _shown_in_chinese(FILTER_BT)
+    assert _english_left(edt) == _english_left(bt) == []
+    assert _shown_in_chinese(EDT_STEP + "; " + FILTER_BT) == edt + "；" + bt
+
+
+def test_a_value_that_joins_several_diagnostics() -> None:
+    """The truncation warning lists every changed metric, joined with "; "."""
+    from roomscope.i18n import diag
+
+    text = diag(
+        TRUNCATION,
+        problem="the late decay slope (-3.3 dB/s) is less than 0.5 times the early slope "
+        "(-115.2 dB/s)",
+        changes="T20 0.51 s vs 0.54 s; T30 0.53 s vs 9.81 s",
+    )
+    assert _english_left(_shown_in_chinese(text)) == []
+    warning = diag("decay analysis, {band}: {warning}", band="500 Hz", warning=text)
+    assert _english_left(_shown_in_chinese(warning)) == []
+
+
+def test_upper_plane_rejections_joined_before_a_literal_semicolon() -> None:
+    from roomscope.i18n import diag
+
+    rejections = "; ".join(
+        diag(
+            "the {delay:.1f} ms candidate has no real solution for a plane above both devices",
+            delay=delay,
+        )
+        for delay in (5.1, 6.3)
+    )
+    text = diag(
+        "no detected reflection can be read as a plane above both devices: "
+        "{rejections}; even the lowest plausible upper plane ({lowest:.1f} m) would "
+        "arrive at about {delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window "
+        "that could be searched, so absence here is not evidence of absence",
+        rejections=rejections,
+        lowest=2.1,
+        delay=9.0,
+        start=0.8,
+        end=8.0,
+    )
+    shown = _shown_in_chinese(text)
+    assert _english_left(shown) == [], shown
+
+
+def test_comparison_reasons_that_nest_joined_reasons() -> None:
+    from roomscope.i18n import diag
+
+    text = (
+        diag("baseline {validity} ({reason})", validity="unreliable", reason=EDT_STEP)
+        + "; "
+        + diag(
+            "candidate {validity} ({reason})",
+            validity="unreliable",
+            reason=EDT_STEP + "; " + FILTER_BT,
+        )
+    )
+    shown = _shown_in_chinese(text)
+    assert _english_left(shown) == [], shown
+    # One inside each EDT sentence and inside B*T, one before B*T and one
+    # between the two sides.
+    assert shown.count("；") == 5, shown
+
+
+def test_a_joined_metric_reason_inside_a_comparison_reason() -> None:
+    """#43: low confidence and clipping, joined by with_all_unreliable()."""
+    from roomscope.core.compare import _decay_metric_delta
+    from roomscope.i18n import diag
+    from roomscope.models.result import DecayMetric, Validity
+
+    low_confidence = diag(
+        "direct-sound detection confidence is low (pre-peak margin {margin_db:.1f} dB): "
+        "the recording may not contain the reference sweep",
+        margin_db=3.0,
+    )
+    clipping = diag(
+        "the recording clips, so the measurement chain was not linear and the "
+        "deconvolved response is not the room's impulse response"
+    )
+    bad = DecayMetric(
+        "t30", 0.5, Validity.UNRELIABLE, 30.0, reason=low_confidence + "; " + clipping
+    )
+    good = DecayMetric("t30", 0.5, Validity.VALID, 30.0)
+    reason = _decay_metric_delta("broadband.t30", bad, good).reason
+    assert reason is not None
+    shown = _shown_in_chinese(reason)
+    assert _english_left(shown) == [], shown
+
+
+def test_plain_joins_and_unknown_pieces_still_work() -> None:
+    assert _shown_in_chinese("baseline not_computed; candidate unreliable") == (
+        "基线：未计算；候选：不可靠"
+    )
+    # An unknown piece stays English next to a translated one.
+    shown = _shown_in_chinese("a note that no template knows; candidate unreliable")
+    assert shown == "a note that no template knows；候选：不可靠"
+    # Nothing recognised: the text as stored, separators included.
+    unknown = "a note that no template knows; and (another; one)"
+    assert _shown_in_chinese(unknown) == unknown
