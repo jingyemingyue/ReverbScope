@@ -36,7 +36,7 @@ from roomscope.interpretation.interpreter import Finding
 from roomscope.io.session_store import load_measurement, save_comparison
 from roomscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
 from roomscope.ui.browser import SessionBrowser
-from roomscope.labels import metric_label, status_text, validity_word
+from roomscope.labels import metric_label, signed_number, status_text, validity_word
 from roomscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
 from roomscope.ui.widgets import Card, PageHeader, label, primary
 
@@ -216,8 +216,8 @@ class ComparePage(QWidget):
                 metric_label(item.name, item.unit),
                 "" if item.baseline is None else f"{item.baseline:.3f}",
                 "" if item.candidate is None else f"{item.candidate:.3f}",
-                "" if item.delta is None else f"{item.delta:+.3f}",
-                "" if item.delta_percent is None else f"{item.delta_percent:+.1f}",
+                "" if item.delta is None else signed_number(item.delta, 3),
+                "" if item.delta_percent is None else signed_number(item.delta_percent, 1),
                 validity_word(item.validity),
             ]
             for c, value in enumerate(values):
@@ -242,7 +242,7 @@ class ComparePage(QWidget):
         for r, match in enumerate(comparison.reflections):
             baseline = _pair(match.baseline_delay_ms, match.baseline_relative_db)
             candidate = _pair(match.candidate_delay_ms, match.candidate_relative_db)
-            delta = "" if match.level_delta_db is None else f"{match.level_delta_db:+.1f}"
+            delta = "" if match.level_delta_db is None else signed_number(match.level_delta_db, 1)
             for c, value in enumerate((status_text(match.status), baseline, candidate, delta)):
                 cell = QTableWidgetItem(value)
                 cell.setFlags(cell.flags() & ~Qt.ItemFlag.ItemIsEditable)

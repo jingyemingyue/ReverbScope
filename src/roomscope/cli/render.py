@@ -29,6 +29,7 @@ from roomscope.labels import (
     frequency_text,
     metric_label,
     noise_band_hz,
+    signed_number,
     surface_text,
     topic_text,
     validity_word,
@@ -424,9 +425,9 @@ def _clarity_glance(c: Console, band: BandDecay) -> str | None:
     """C50 / C80 / D50 for the at-a-glance line, or ``None`` when none is valid."""
     parts: list[str] = []
     if band.c50.validity is Validity.VALID and band.c50.value is not None:
-        parts.append(f"C50 {band.c50.value:+.1f} dB")
+        parts.append(f"C50 {signed_number(band.c50.value, 1)} dB")
     if band.c80.validity is Validity.VALID and band.c80.value is not None:
-        parts.append(f"C80 {band.c80.value:+.1f} dB")
+        parts.append(f"C80 {signed_number(band.c80.value, 1)} dB")
     if band.d50.validity is Validity.VALID and band.d50.value is not None:
         parts.append(f"D50 {band.d50.value:.0f} %")
     if not parts:
@@ -438,7 +439,7 @@ def _energy_number(metric: EnergyMetric) -> str | None:
     if metric.value is None:
         return None
     if metric.unit == "dB":
-        return f"{metric.value:+.1f} dB"
+        return f"{signed_number(metric.value, 1)} dB"
     if metric.unit == "%":
         return f"{metric.value:.0f} %"
     return f"{metric.value * 1000:.0f} ms"
@@ -798,8 +799,12 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         base = f"{item.baseline:.3f}" if item.baseline is not None else c.dash()
         cand = f"{item.candidate:.3f}" if item.candidate is not None else c.dash()
         if item.validity is Validity.VALID and item.delta is not None:
-            delta = f"{item.delta:+.3f}"
-            pct = f"{item.delta_percent:+.1f} %" if item.delta_percent is not None else c.dash()
+            delta = signed_number(item.delta, 3)
+            pct = (
+                f"{signed_number(item.delta_percent, 1)} %"
+                if item.delta_percent is not None
+                else c.dash()
+            )
         else:
             delta = pct = c.dash()
         if item.validity not in seen:
@@ -860,7 +865,7 @@ def _noise_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         base = f"{item.baseline:.1f}" if item.baseline is not None else c.dash()
         cand = f"{item.candidate:.1f}" if item.candidate is not None else c.dash()
         delta = (
-            f"{item.delta:+.1f} dB"
+            f"{signed_number(item.delta, 1)} dB"
             if item.validity is Validity.VALID and item.delta is not None
             else c.dash()
         )
@@ -919,7 +924,7 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
     cand = f"{item.candidate:.2f}" if item.candidate is not None else c.dash()
     text = f"{metric_label(item.name)}: {base} {c.arrow()} {cand}{unit}"
     if item.delta is not None:
-        text += f" ({item.delta:+.2f}{unit})"
+        text += f" ({signed_number(item.delta, 2)}{unit})"
     return text
 
 
@@ -941,7 +946,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     ):
         text = f"RT60 {rt.baseline:.2f} s{arrow}{rt.candidate:.2f} s"
         if rt.delta_percent is not None:
-            text += f" ({rt.delta_percent:+.1f} %)"
+            text += f" ({signed_number(rt.delta_percent, 1)} %)"
         row(_("Reverberation"), "ok", text)
     else:
         row(_("Reverberation"), "unsure", _("broadband RT60 not comparable (see Reverberation)"))
@@ -954,14 +959,16 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         and c50.baseline is not None
         and c50.candidate is not None
     ):
-        text = f"C50 {c50.baseline:+.1f} dB{arrow}{c50.candidate:+.1f} dB"
+        text = f"C50 {signed_number(c50.baseline, 1)} dB{arrow}{signed_number(c50.candidate, 1)} dB"
         if (
             c80 is not None
             and c80.validity is Validity.VALID
             and c80.baseline is not None
             and c80.candidate is not None
         ):
-            text += c.sep() + f"C80 {c80.baseline:+.1f} dB{arrow}{c80.candidate:+.1f} dB"
+            text += c.sep() + (
+                f"C80 {signed_number(c80.baseline, 1)} dB{arrow}{signed_number(c80.candidate, 1)} dB"
+            )
         row(_("Clarity"), "ok", text)
 
     if comparison.reflections:
@@ -1000,7 +1007,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     if rms is not None and rms.baseline is not None and rms.candidate is not None:
         text = f"{rms.baseline:.1f}{arrow}{rms.candidate:.1f} dBFS"
         if rms.validity is Validity.VALID and rms.delta is not None:
-            row(_("Noise floor"), "ok", text + f" ({rms.delta:+.1f} dB)")
+            row(_("Noise floor"), "ok", text + f" ({signed_number(rms.delta, 1)} dB)")
         else:
             text += c.sep() + _("not compared: {validity}").format(
                 validity=validity_word(rms.validity)

@@ -50,6 +50,14 @@ def topic_text(topic: str) -> str:
     }.get(topic, topic)
 
 
+def signed_number(value: float, digits: int) -> str:
+    """``value`` with its sign at ``digits`` decimals: ``+0.0``, never ``-0.0``.
+
+    A change that rounds to zero (a difference of -1e-12 s) is no change.
+    """
+    return f"{round(value, digits) + 0.0:+.{digits}f}"
+
+
 def frequency_text(hz: float) -> str:
     """1000 -> ``1 kHz``, 31.5 -> ``31.5 Hz``."""
     # 999.5 Hz and up round to 1000 at three digits: "1 kHz", not "1e+03 Hz".

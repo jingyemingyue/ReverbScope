@@ -258,7 +258,7 @@ class ProfileBase:
                     display={"direction": change_direction_text(direction)},
                     baseline_s=rt.baseline,
                     candidate_s=rt.candidate,
-                    delta_percent=percent,
+                    delta_percent=round(percent, 1) + 0.0,  # never "-0.0 %"
                     direction=direction,
                     jnd_percent=T_JND_PERCENT,
                 )
@@ -423,7 +423,7 @@ class ProfileBase:
                 },
                 baseline_dbfs=rms.baseline,
                 candidate_dbfs=rms.candidate,
-                delta_db=rms.delta,
+                delta_db=round(rms.delta, 1) + 0.0,  # never "-0.0 dB"
             )
         ]
 
