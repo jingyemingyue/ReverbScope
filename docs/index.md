@@ -59,6 +59,7 @@ the release plan and the v1.0 architecture have a Chinese digest.
 - [Architecture v1.0](ARCHITECTURE_V1.md)
 - [Architecture v1.0 (中文摘要)](ARCHITECTURE_V1.zh-CN.md)
 - [Measurement methodology](MEASUREMENT_METHODOLOGY.md)
+- [Optional local decay model](LOCAL_DECAY_MODEL.md)
 - [Status](STATUS.md)
 - [ADR 0001 — v1 architecture decisions](adr/0001-v1-architecture-decisions.md)
 - [Project brief (中文)](PROJECT_BRIEF.zh-CN.md)

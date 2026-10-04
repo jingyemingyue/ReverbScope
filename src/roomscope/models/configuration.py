@@ -178,6 +178,8 @@ class AnalysisSettings:
     loopback_channel: int | None = None
     #: Reserved. Stored and ignored by the analysis in 1.0.
     calibration: CalibrationRecord | None = None
+    #: Additional power-decay fit; the local model only initializes the physical optimizer.
+    decay_fit: str = "off"
 
     def __post_init__(self) -> None:
         _require(self.channel is None or self.channel >= 0, _("channel must be >= 0 or None"))
@@ -228,12 +230,18 @@ class AnalysisSettings:
             self.loopback_channel is None or self.loopback_channel >= 0,
             _("loopback_channel must be >= 0 or None"),
         )
+        _require(
+            self.decay_fit in ("off", "physical", "neural"),
+            "decay_fit must be off, physical or neural",
+        )
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         data["octave_bands_hz"] = list(self.octave_bands_hz)
         if self.calibration is not None:
             data["calibration"] = self.calibration.to_dict()
+        if self.decay_fit == "off":
+            data.pop("decay_fit")
         return data
 
     @classmethod

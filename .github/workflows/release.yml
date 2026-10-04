@@ -15,6 +15,8 @@ on:
       - .github/workflows/release.yml
       - packaging/**
       - scripts/smoke_bundle.py
+      - scripts/smoke_decay_model.py
+      - src/roomscope/model_data/**
       - scripts/release_draft.py
       - scripts/inno_chinese_messages.py
       - src/roomscope/__main__.py
@@ -26,6 +28,8 @@ on:
       - scripts/check_bundle_contents.py
       - scripts/check_macos_dmg.py
       - scripts/smoke_bundle.py
+      - scripts/smoke_decay_model.py
+      - src/roomscope/model_data/**
       - scripts/release_draft.py
       - scripts/inno_chinese_messages.py
       - src/roomscope/__main__.py
@@ -223,6 +227,9 @@ jobs:
         if: runner.os == 'macOS'
         shell: bash
         run: QT_QPA_PLATFORM=offscreen dist/RoomScope.app/Contents/MacOS/RoomScope gui --smoke
+      - name: Smoke local decay model (Desktop Edition)
+        shell: bash
+        run: python scripts/smoke_decay_model.py --root dist/roomscope --out "$RUNNER_TEMP/desktop-model-smoke"
       - name: Rehearse the Developer ID layout (hardened runtime, ad hoc)
         # What a Developer ID build changes, minus the certificate: hardened
         # runtime and entitlements on a copy of the app, which must still start,
@@ -361,6 +368,9 @@ jobs:
           python scripts/smoke_bundle.py --root dist/roomscope-terminal \
             --out "$RUNNER_TEMP/terminal-smoke/session" --terminal \
             --expect-commit "$GITHUB_SHA" --expect-package terminal --expect-machine "$cpu"
+      - name: Smoke local decay model (Terminal Edition)
+        shell: bash
+        run: python scripts/smoke_decay_model.py --root dist/roomscope-terminal --out "$RUNNER_TEMP/terminal-model-smoke"
       - name: Terminal Edition archive
         shell: bash
         run: |

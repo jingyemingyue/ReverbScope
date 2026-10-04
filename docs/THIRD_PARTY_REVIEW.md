@@ -2,10 +2,12 @@
 
 Audit date: 2026-09-17. Every repository that was studied while designing
 RoomScope is registered here with the result of its license check. The full
-records (repository URL, author, commit/tag, verbatim license header,
+records of the original audit (repository URL, author, commit/tag, verbatim license header,
 multiple-license check, file headers, vendored code, NOTICE/COPYRIGHT/AUTHORS
 files, patent statements, obligations, and the URL of every fact) are in
 [research/reference_repos.md](research/reference_repos.md).
+The limited documentation-only review on 2026-10-04 is recorded separately
+below; it does not extend the original source-file audit.
 
 **Result: no source code was copied or adapted from any repository.** All of
 them were used as *conceptual references* (feature design, algorithm names,
@@ -35,6 +37,35 @@ architecture ideas) or as ordinary dependencies. See CODE_PROVENANCE.md.
 | ESS gists (akashrajkn; a Farina-formula gist) | GitHub gists | **none** | unknown | unknown | **License unclear — no source code copied.** |
 | python-sounddevice (+ examples) | https://github.com/spatialaudio/python-sounddevice | MIT (PortAudio MIT-style; Windows ASIO DLLs carry Steinberg SDK terms) | no | no | Dependency (public API only). |
 | python-soundfile | https://github.com/bastibe/python-soundfile | BSD-3-Clause (bundled libsndfile LGPL-2.1+, dynamic) | no | no as a pip dependency | Dependency (public API only). |
+
+## Local decay model: documentation-only review, 2026-10-04
+
+The following versions are conceptual references for the optional local
+decay model. Repository metadata, README, LICENSE and the named
+documentation were inspected. No source implementation, pretrained weight
+file or training dataset was read, copied or imported.
+
+| Project and pinned commit | License and notice in inspected LICENSE | Reviewed material and purpose | Adoption |
+| --- | --- | --- | --- |
+| [DecayFitNet](https://github.com/georg-goetz/DecayFitNet/tree/01daf3e7bbfd637aa1269bbca0cab7f445db0d5d), `01daf3e7bbfd637aa1269bbca0cab7f445db0d5d` (2023-12-14) | [MIT](https://github.com/georg-goetz/DecayFitNet/blob/01daf3e7bbfd637aa1269bbca0cab7f445db0d5d/LICENSE); copyright 2021 Georg Götz | [README](https://github.com/georg-goetz/DecayFitNet/blob/01daf3e7bbfd637aa1269bbca0cab7f445db0d5d/README.md) and its linked Götz et al. 2022 paper: synthetic training for exponential-decay parameter estimation | Concept only. No original network, source or weights; no dependency. |
+| [pyrato](https://github.com/pyfar/pyrato/tree/034c8604d4d94915e72cf9091e790d6c1dd64580), `034c8604d4d94915e72cf9091e790d6c1dd64580` (2026-08-30) | [MIT](https://github.com/pyfar/pyrato/blob/034c8604d4d94915e72cf9091e790d6c1dd64580/LICENSE); copyright 2021–2023 Marco Berzborn / Institute of Technical Acoustics; 2023 the pyfar developers | README and [API reference](https://github.com/pyfar/pyrato/blob/034c8604d4d94915e72cf9091e790d6c1dd64580/docs/api_reference.rst), including documentation headings for `edc`, `parameters` and `parametric`: room-acoustics API organization | Documentation comparison only; no dependency or copied source. |
+| [pyroomacoustics](https://github.com/LCAV/pyroomacoustics/tree/ff7d61f219e4eb41489963c4bb5f57bea5bc2c69), `ff7d61f219e4eb41489963c4bb5f57bea5bc2c69` (2026-07-17) | [MIT](https://github.com/LCAV/pyroomacoustics/blob/ff7d61f219e4eb41489963c4bb5f57bea5bc2c69/LICENSE); copyright 2014–2017 EPFL-LCAV | README and [RT60 Measurement Routine documentation](https://github.com/LCAV/pyroomacoustics/blob/ff7d61f219e4eb41489963c4bb5f57bea5bc2c69/docs/pyroomacoustics.experimental.rt60.rst): synthetic RIR / classical measurement comparison ideas | Documentation comparison only; remains not a dependency. |
+
+The linked primary paper is Götz, Falcón Pérez, Schlecht and Pulkki,
+[*Neural network for multi-exponential sound energy decay analysis*,
+JASA 152(2), 942–953 (2022)](https://doi.org/10.1121/10.0013416).
+Its public text was read through [arXiv:2205.09644](https://arxiv.org/abs/2205.09644);
+the publisher's article is CC BY 4.0 according to its
+[Crossref license metadata](https://api.crossref.org/works/10.1121/10.0013416).
+Only the method concept is used. The project's own 2,245-parameter network,
+synthetic generator and JSON weights are Apache-2.0 project material.
+
+This limited review does not establish the licenses of all files,
+dependencies or pretrained weights in the external projects and includes
+no new patent search. Those materials are not shipped. A future source or
+weight import would require its own full review and provenance entry.
+Implementation and real-room validation limits are in
+[LOCAL_DECAY_MODEL.md](LOCAL_DECAY_MODEL.md).
 
 ## Rules applied
 

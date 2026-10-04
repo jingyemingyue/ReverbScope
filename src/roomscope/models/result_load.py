@@ -7,6 +7,7 @@ JSON copy of the IR is optional. Missing curve arrays become empty so a
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 import numpy as np
@@ -21,6 +22,7 @@ from roomscope.models.result import (
     BandDecay,
     BoundaryCandidate,
     ClippingCheck,
+    DecayComponent,
     DecayMetric,
     DecayResult,
     EnergyMetric,
@@ -31,6 +33,7 @@ from roomscope.models.result import (
     HumCandidate,
     ImpulseResponseResult,
     LoopbackResult,
+    MultiDecayFit,
     NoiseResult,
     PlacementLength,
     PlacementResult,
@@ -103,6 +106,77 @@ def energy_metric_from_dict(data: Any, name: str, unit: str) -> EnergyMetric:
     )
 
 
+def _multi_decay_number(
+    data: dict[str, Any], name: str, default: float | None = None
+) -> float | None:
+    value = data.get(name, default)
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise SessionError(f"multi-decay {name} must be a finite number or null")
+    try:
+        found = float(value)
+    except OverflowError as exc:
+        raise SessionError(f"multi-decay {name} must be a finite number or null") from exc
+    if not math.isfinite(found):
+        raise SessionError(f"multi-decay {name} must be a finite number or null")
+    return found
+
+
+def _multi_decay_text(data: dict[str, Any], name: str, default: str | None = None) -> str | None:
+    value = data.get(name, default)
+    if value is not None and not isinstance(value, str):
+        raise SessionError(f"multi-decay {name} must be a string or null")
+    return value
+
+
+def multi_decay_fit_from_dict(data: Any) -> MultiDecayFit | None:
+    """Optional additive result; reject malformed parameters rather than invent values."""
+    if data is None:
+        return None
+    payload = _obj(data, "multi-decay fit")
+    components_data = payload.get("components", [])
+    if not isinstance(components_data, list):
+        raise SessionError("multi-decay components must be an array")
+    try:
+        components: list[DecayComponent] = []
+        for data_component in components_data:
+            component = _obj(data_component, "decay component")
+            rt60 = _multi_decay_number(component, "rt60_s")
+            relative_power = _multi_decay_number(component, "relative_power")
+            if rt60 is None or relative_power is None:
+                raise SessionError("decay component needs rt60_s and relative_power")
+            components.append(
+                DecayComponent(rt60, relative_power, _multi_decay_number(component, "rt60_std_s"))
+            )
+        method = _multi_decay_text(payload, "method")
+        initializer = _multi_decay_text(payload, "initializer", "physical")
+        start = _multi_decay_number(payload, "fit_start_s", 0.0)
+        end = _multi_decay_number(payload, "fit_end_s", 0.0)
+        if method is None or initializer is None or start is None or end is None:
+            raise SessionError("multi-decay method, initializer and fit times must not be null")
+        count = payload.get("initializer_parameters")
+        if count is not None and (isinstance(count, bool) or not isinstance(count, int)):
+            raise SessionError("multi-decay initializer_parameters must be an integer or null")
+        return MultiDecayFit(
+            method=method,
+            validity=_validity(payload.get("validity", Validity.NOT_COMPUTED)),
+            components=tuple(components),
+            noise_relative_power=_multi_decay_number(payload, "noise_relative_power"),
+            residual_rms_db=_multi_decay_number(payload, "residual_rms_db"),
+            bic_difference=_multi_decay_number(payload, "bic_difference"),
+            fit_start_s=start,
+            fit_end_s=end,
+            initializer=initializer,
+            initializer_model=_multi_decay_text(payload, "initializer_model"),
+            initializer_parameters=count,
+            initializer_sha256=_multi_decay_text(payload, "initializer_sha256"),
+            reason=_multi_decay_text(payload, "reason"),
+        )
+    except (TypeError, ValueError) as exc:
+        raise SessionError(f"invalid multi-decay fit: {exc}") from exc
+
+
 def band_decay_from_dict(data: Any) -> BandDecay:
     payload = _obj(data, "band decay")
     return BandDecay(
@@ -130,6 +204,7 @@ def band_decay_from_dict(data: Any) -> BandDecay:
         c80=energy_metric_from_dict(payload.get("c80"), "C80", "dB"),
         d50=energy_metric_from_dict(payload.get("d50"), "D50", "%"),
         centre_time=energy_metric_from_dict(payload.get("centre_time"), "Ts", "s"),
+        multi_decay=multi_decay_fit_from_dict(payload.get("multi_decay")),
     )
 
 

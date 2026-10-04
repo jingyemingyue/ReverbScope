@@ -3,6 +3,10 @@
 Last reviewed: 2026-09-24 (v0.4.1; re-checked for the files that release changes —
 no third-party source was added).
 
+Additional review: 2026-10-04 for the optional local decay fitter and its
+synthetic-trained model. No third-party source, weights or training data
+were added; the scope and pinned conceptual references are recorded below.
+
 ## Vendored or adapted third-party source files
 
 **No third-party source files currently vendored.**
@@ -61,6 +65,39 @@ evaluated and not adopted — adopting it would also bring its Eigen
 room-shape-from-echoes / echo sorting (Dokmanić et al., 2013); it is cited in
 MEASUREMENT_METHODOLOGY.md §9 as the published method the project declines,
 and no implementation of it was consulted.
+
+The optional local decay fitter and its 64-input, 32-hidden-unit,
+5-output model (2,245 weights and biases) are independently implemented.
+Training uses only the project's own analytic synthetic block-power curves
+and Gaussian noise. The packaged JSON weights are produced by that local
+training procedure, not copied from DecayFitNet or another model. No
+external dataset or unknown pretrained weight file is used. The runtime
+records the artifact's SHA-256, identity and parameter count.
+
+The reviewed artifact is
+`src/roomscope/model_data/decay_initializer_v1.json`, model
+`roomscope-decay-initializer-v1`, 51,257 bytes, SHA-256
+`2ba0004247ce90ff70e92fb0e97ae14f59d12d92e6029732224c853fecc12234`.
+Its own training metadata records 12,000 generated examples, 120 epochs,
+seed `20261004` and a distinct 1,000-example evaluation seed `20261005`.
+The weights and synthetic generator are Apache-2.0 project material.
+Raw initializer errors and final physical-fit benchmark results are kept
+separate in LOCAL_DECAY_MODEL.md; the benchmark shows no demonstrated
+accuracy or speed advantage from the neural seed.
+
+Götz et al. (2022), *Neural network for multi-exponential sound energy
+decay analysis*, DOI [10.1121/10.0013416](https://doi.org/10.1121/10.0013416),
+is a conceptual reference for synthetic training and exponential decay
+parameter estimation. DecayFitNet's README and MIT LICENSE were inspected
+at commit `01daf3e7bbfd637aa1269bbca0cab7f445db0d5d`; no implementation
+source or network weights were read or imported. Its finite-window
+Schroeder-integrated EDF model and approximately 677,000-parameter network
+are not the model used here: RoomScope fits exact block averages of raw
+power with a stationary floor, then uses a constrained physical optimizer
+to refine initial values. Repository documentation from pyrato and
+pyroomacoustics was also reviewed as recorded in THIRD_PARTY_REVIEW.md,
+without source adoption. Details and limits are in
+[LOCAL_DECAY_MODEL.md](LOCAL_DECAY_MODEL.md).
 
 ## How to update this file
 

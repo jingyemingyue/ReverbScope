@@ -5,6 +5,24 @@ All notable changes to RoomScope are documented here. The format follows
 [Semantic Versioning](https://semver.org/). How a version is cut is in
 `docs/RELEASE_PLAN.md`.
 
+## [Unreleased]
+
+### Added
+- Optional one/two-exponential decay and stationary-noise fitting, separate
+  from EDT/T20/T30 and their existing validity checks. `--decay-fit physical`
+  uses deterministic initial guesses; `--decay-fit neural` also considers
+  an independently trained local 2,245-parameter NumPy network. The default
+  remains `off`. Results preserve component times, conditional uncertainty,
+  residuals, rejection reasons and the initializer artifact fingerprint.
+- Reproducible synthetic training and a 60-case physical/neural benchmark.
+  Both modes accepted 56 cases with correct component counts and withheld
+  four; the benchmark shows no accuracy or speed advantage for neural
+  initialization. Raw network predictions are never reported as measurements.
+- The 51 KB JSON model ships with the wheel and both frozen editions. Release
+  checks exercise the model inside each bundle using a synthetic IR. The
+  model guide records conceptual sources and the real-room validation still
+  required; no third-party source, weights or datasets were copied.
+
 ## [0.5.0b1] - 2026-10-01
 
 Software beta 1. This is **not** 0.5.0: the release plan's 0.5.0 still

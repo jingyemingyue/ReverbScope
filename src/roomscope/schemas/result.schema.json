@@ -114,10 +114,60 @@
       "properties": {
         "method": { "type": "string" },
         "time_origin": { "type": "string" },
-        "broadband": { "type": "object" },
-        "bands": { "type": "array", "items": { "type": "object" } },
+        "broadband": { "$ref": "#/$defs/band_decay" },
+        "bands": { "type": "array", "items": { "$ref": "#/$defs/band_decay" } },
         "notes": { "type": "array", "items": { "type": "string" } }
       }
+    },
+    "band_decay": {
+      "type": "object",
+      "properties": {
+        "multi_decay": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/multi_decay" }] }
+      }
+    },
+    "decay_component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rt60_s", "relative_power"],
+      "properties": {
+        "rt60_s": { "type": "number", "exclusiveMinimum": 0 },
+        "relative_power": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rt60_std_s": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "multi_decay": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "validity", "components"],
+      "properties": {
+        "method": { "type": "string", "minLength": 1 },
+        "validity": { "$ref": "#/$defs/validity" },
+        "components": { "type": "array", "maxItems": 2, "items": { "$ref": "#/$defs/decay_component" } },
+        "noise_relative_power": { "type": ["number", "null"], "minimum": 0 },
+        "residual_rms_db": { "type": ["number", "null"], "minimum": 0 },
+        "bic_difference": { "$ref": "#/$defs/number_or_null" },
+        "fit_start_s": { "type": "number" },
+        "fit_end_s": { "type": "number" },
+        "initializer": { "type": "string", "enum": ["physical", "neural"] },
+        "initializer_model": { "$ref": "#/$defs/string_or_null" },
+        "initializer_parameters": { "type": ["integer", "null"], "minimum": 0 },
+        "initializer_sha256": { "type": ["string", "null"], "pattern": "^[0-9a-f]{64}$" },
+        "reason": { "$ref": "#/$defs/string_or_null" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "validity": { "const": "valid" } } },
+          "then": { "properties": { "components": { "minItems": 1 } } }
+        },
+        {
+          "if": {
+            "properties": {
+              "validity": { "enum": ["not_computed", "outside_excitation_range", "insufficient_decay_range"] }
+            }
+          },
+          "then": { "properties": { "components": { "maxItems": 0 } } }
+        }
+      ]
     },
     "frequency_response": {
       "type": "object",

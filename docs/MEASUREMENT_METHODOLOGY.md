@@ -623,6 +623,89 @@ otherwise the placement deltas are `not_comparable`.
 Loopback. `path_delay_ms` is compared only when both results applied
 loopback compensation.
 
+## 12. Optional raw-power multi-exponential decay fit
+
+**Scope and source.** `--decay-fit physical` or `--decay-fit neural` adds
+an experimental result to `BandDecay.multi_decay`; the default is `off`.
+Götz et al. (2022) [25] is the conceptual reference for learning decay
+parameters from synthetic exponential mixtures. RoomScope independently
+implements a smaller initializer and a constrained physical optimizer.
+No source or weights from the accompanying DecayFitNet repository are
+used. The paper's Schroeder-integrated EDF model is not the raw-power model
+fitted here.
+
+**Physical model.** A response is squared and averaged in complete,
+non-overlapping blocks. For one or two exponential components,
+
+```text
+p(t) = N + sum_i A_i * exp(-beta_i*t)
+beta_i = 6*ln(10) / T_i
+
+mean_p(t, w) = N + sum_i A_i * exp(-beta_i*t)
+                              * (-expm1(-beta_i*w)) / (beta_i*w)
+```
+
+`t` is the start of a block relative to the beginning of this fit, `w` is
+its width in seconds, `N` is stationary noise power, and `A_i` is a
+non-negative instantaneous component power. `T_i`, in seconds, is the
+time for that component's energy to fall by 60 dB. The exact continuous
+block average avoids the centre-sample approximation for short decays.
+The data remain raw power; this procedure does not change the Lundeby
+truncation, tail compensation or ISO regression windows of §3.
+
+**Estimation and model selection.** A constrained least-squares fit
+compares one-component and two-component candidates using residual
+diagnostics and a BIC-difference heuristic. A selected component's time
+and relative power are separate parameters, not replacements for EDT,
+T20, T30 or the existing estimated RT60. Filtered power blocks need not be
+independent, so BIC is a model-selection heuristic rather than a calibrated
+posterior probability of a second physical process.
+
+**Optional neural initialization.** A bundled 64→32→5 network with 2,245
+weights and biases supplies candidate initial values for `T_fast`,
+`T_slow`, `A_fast`, `A_slow` and `N`; NumPy evaluates it locally. Its
+normalized log-power features and duration-normalized parameters are
+trained using the project's own analytic block averages and fluctuations
+from squared independent Gaussian pressure. Deterministic initial values
+remain available to the physical fit. The JSON result records the
+initializer's identity, parameter count and artifact SHA-256. The
+approximately 677,000-parameter DecayFitNet architecture is not reproduced.
+An `initializer` value of `neural` records participation of the neural
+candidate among multiple initial values, not that its optimization basin
+won. The independent synthetic benchmark in LOCAL_DECAY_MODEL.md shows
+no accuracy or speed advantage over deterministic initialization.
+
+**Validity and uncertainty.** The separate result includes component
+times, relative powers and local least-squares standard deviations;
+noise power; residual RMS in dB; BIC difference; the fit interval;
+initializer metadata; validity and a reason. Standard deviations are
+conditional on the fitted model and its local residual assumptions, not
+calibrated measurement uncertainty. Noise, insufficient range, bad fits
+and unidentifiable components are rejected or marked unreliable.
+The implementation requires each component to have at least four visible
+blocks spanning 10 dB of decay, while at least 10 dB above the floor and
+contributing at least 0.2 times the other components. A two-component
+model needs a time ratio of at least 1.5; singular local Jacobians or time
+standard deviations exceeding 25% of the fitted time are rejected.
+The 1.5 dB residual and BIC-difference > 10 cutoffs are heuristics. When
+BIC favours a second component that fails these observability checks, the
+result is withheld rather than replaced by a biased single-component fit.
+Clipping, questionable direct-sound timing, wrong playback speed and
+other measurement-integrity problems propagate to this result. An
+undeclared imported excitation band is `not_computed`, and outside-band
+data are not fitted. A two-component fit does not change an ISO result's
+validity; in particular, it cannot rescue a curved decay's T20 or T30.
+
+**Known limits.** Distinct exponential components can become
+unidentifiable when their times are similar, their relative amplitude is
+too small, or the floor masks a component. A small residual is not enough
+to identify the times. Transient noise, sparse late reflections and
+narrow-band modal beating can violate the stationary exponential model.
+Synthetic training and tests do not verify real rooms or real devices.
+No hardware test status is advanced by this feature. CLI use, the exact
+training domain, reproducibility and pending checks are documented in
+[LOCAL_DECAY_MODEL.md](LOCAL_DECAY_MODEL.md).
+
 ## References
 
 1. A. Farina, "Simultaneous Measurement of Impulse Response and Distortion with a Swept-Sine Technique," AES 108th Convention, Paris, 2000, preprint 5093. (confirmed, primary text)
@@ -647,6 +730,7 @@ loopback compensation.
 22. O. Kirkeby, P. A. Nelson, H. Hamada and F. Orduña-Bustamante, "Fast deconvolution of multichannel systems using regularization," IEEE Trans. Speech and Audio Processing 6(2), 189–194, 1998. (bibliographic record; the regularised-inversion form `conj(H) / (|H|² + ε(f))` used in §2 and §2a is the one Farina 2007 [2] §3.1 quotes from it; the primary text was not re-read for v0.4.1)
 23. H. Theil, "A rank-invariant method of linear and polynomial regression analysis," Proc. Koninklijke Nederlandse Akademie van Wetenschappen 53, 386–392, 521–525, 1397–1412, 1950. (bibliographic record; used through `scipy.stats.theilslopes`)
 24. P. K. Sen, "Estimates of the regression coefficient based on Kendall's tau," J. Am. Stat. Assoc. 63(324), 1379–1389, 1968. (bibliographic record; used through `scipy.stats.theilslopes`)
+25. G. Götz, R. Falcón Pérez, S. J. Schlecht and V. Pulkki, "Neural network for multi-exponential sound energy decay analysis," J. Acoust. Soc. Am. 152(2), 942–953, 2022. [doi:10.1121/10.0013416](https://doi.org/10.1121/10.0013416), public text [arXiv:2205.09644](https://arxiv.org/abs/2205.09644). (bibliographic record and public primary text inspected 2026-10-04; conceptual reference for synthetic learning and exponential mixtures, not a copied implementation or evidence for RoomScope's real-room accuracy)
 
 Additional supporting references (A. Mäkivirta et al. 2003; G. Defrance et
 al. 2008; J. Usher 2010; M. Guski & M. Vorländer 2014; C. L. Christensen et

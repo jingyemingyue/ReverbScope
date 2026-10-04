@@ -826,6 +826,9 @@ msgstr "气温（C）；未提供时假定 20 C，并报告为假定"
 msgid "recording profile that shapes the interpretation (default: user settings)"
 msgstr "影响解读的录音配置（默认：用户设置）"
 
+msgid "optional multi-exponential power fit with physical or local-model initial guesses"
+msgstr "可选的多指数功率拟合，使用物理或本地模型初值（默认关闭）"
+
 msgid "separate loopback WAV from the same take (same sample rate)"
 msgstr "同一次录音的单独回送（loopback）WAV（相同采样率）"
 

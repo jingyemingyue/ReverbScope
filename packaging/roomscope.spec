@@ -93,6 +93,10 @@ a = Analysis(
     datas=[
         (str(ROOT / "src" / "roomscope" / "schemas"), "roomscope/schemas"),
         (str(ROOT / "src" / "roomscope" / "locale"), "roomscope/locale"),
+        (
+            str(ROOT / "src" / "roomscope" / "model_data" / "decay_initializer_v1.json"),
+            "roomscope/model_data",
+        ),
         (str(BUILD_INFO_FILE), "roomscope"),
     ],
     hiddenimports=["roomscope.cli.main"] if TERMINAL else ["roomscope.cli.main", "roomscope.ui.app"],
