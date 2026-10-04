@@ -283,3 +283,24 @@ def test_a_dc_offset_does_not_hide_a_noise_event() -> None:
     assert clean.rms_dbfs is not None
     assert offset.noise.rms_dbfs == pytest.approx(clean.rms_dbfs, abs=0.1)
     assert any("above its quietest blocks" in n for n in offset.noise.notes)
+
+
+def test_a_take_without_the_sweep_is_not_blamed_on_a_late_start() -> None:
+    """Mains hum only (wrong input channel, muted monitors): the strongest
+    deconvolved sample sits anywhere, and the take was refused with "the
+    recording starts about 0.21 s after the sweep began ... Start the
+    recording before playback", which re-recording cannot fix."""
+    from roomscope.errors import InvalidAudioError
+
+    settings = SweepSettings(duration_s=2.0, pre_silence_s=1.0, post_silence_s=1.5)
+    n = measurement_signal(settings).shape[0]
+    t = np.arange(n) / settings.sample_rate
+    hum = 3e-3 * np.sin(2 * np.pi * 50 * t) + 1e-3 * np.sin(2 * np.pi * 150 * t)
+    take = hum + np.random.default_rng(0).normal(0.0, 1e-5, n)
+    with pytest.raises(InvalidAudioError) as info:
+        analyze(
+            AudioSignal(take, settings.sample_rate, source="file"),
+            Reference.from_settings(settings),
+        )
+    assert "after the sweep began" not in str(info.value)
+    assert "reference sweep was not found" in str(info.value)

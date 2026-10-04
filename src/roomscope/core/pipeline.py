@@ -64,7 +64,7 @@ from roomscope.errors import (
     InvalidAudioError,
     SampleRateMismatchError,
 )
-from roomscope.i18n import _, diag
+from roomscope.i18n import _, diag, localize
 from roomscope.models.audio import AudioSignal, FloatArray
 from roomscope.models.configuration import AnalysisSettings, SweepSettings
 from roomscope.models.result import (
@@ -512,11 +512,18 @@ def _explain_playback_speed(
 
     A sweep played faster than generated is shorter than the reference and
     seems to start late; the speed is the cause the user can fix. The
-    exception keeps its type and attributes.
+    exception keeps its type and attributes. Both parts are shown in the
+    active language: the joined text matches no catalogued diagnostic, so it
+    could not be localised later.
     """
     speed = _playback_speed(mono, sample_rate, reference, source)
     if speed is not None and exc.args:
-        exc.args = (f"{exc.args[0]}. However, {speed.describe()}", *exc.args[1:])
+        exc.args = (
+            _("{error}. However, {explanation}").format(
+                error=localize(str(exc.args[0])), explanation=localize(speed.describe())
+            ),
+            *exc.args[1:],
+        )
 
 
 def _select_mic_and_loopback(
@@ -792,8 +799,23 @@ def analyze(
             prepared, -located.sweep_start_raw_index, sample_rate
         )
     except InvalidAudioError as exc:
-        _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
-        raise
+        if confidence_label(located.pre_peak_margin_db) != "low":
+            _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
+            raise
+        # Nothing stands out of the deconvolved signal (no sweep in the take,
+        # or one played at the wrong speed), so the position of its strongest
+        # sample says nothing about when the recording started.
+        speed = _playback_speed(mono, sample_rate, reference, recording.source)
+        if speed is not None:
+            raise InvalidAudioError(localize(speed.describe())) from exc
+        raise InvalidAudioError(
+            _(
+                "the reference sweep was not found in the recording: no response stands out "
+                "from the noise. Check that the right input channel was recorded, that "
+                "playback reached the loudspeaker, and that the reference is the sweep that "
+                "was played"
+            )
+        ) from exc
     if start_note:
         ir_notes.append(start_note)
     if located.sweep_passes > 1:
