@@ -1718,7 +1718,9 @@ def cmd_gui(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
-    return int(run_app(smoke=bool(getattr(args, "smoke", False))))
+    # --lang was activated for the command line; the GUI resolves its
+    # language again and would otherwise drop it for settings or the system's.
+    return int(run_app(smoke=bool(getattr(args, "smoke", False)), lang=getattr(args, "lang", None)))
 
 
 def _is_demo_folder(path: Path) -> bool:

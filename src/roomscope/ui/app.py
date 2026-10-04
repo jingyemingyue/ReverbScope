@@ -34,7 +34,8 @@ def pyside6_import_error() -> str | None:
     return None
 
 
-def run_app(argv: list[str] | None = None, *, smoke: bool = False) -> int:
+def run_app(argv: list[str] | None = None, *, smoke: bool = False, lang: str | None = None) -> int:
+    """Start the desktop app; ``lang`` is ``roomscope --lang`` (else settings, then the system)."""
     from PySide6.QtCore import QLocale, Qt
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtWidgets import QApplication
@@ -56,7 +57,7 @@ def run_app(argv: list[str] | None = None, *, smoke: bool = False) -> int:
     app = QApplication.instance() or QApplication(argv if argv is not None else sys.argv)
     # --lang, settings and ROOMSCOPE_LANG first; then the locale variables, and
     # the desktop's UI languages when none is set (a Finder launch on macOS).
-    activate(None, system_languages=QLocale.system().uiLanguages())
+    activate(lang or None, system_languages=QLocale.system().uiLanguages())
     install_qt_translations(app)
     QGuiApplication.setDesktopFileName("roomscope")
     apply_application_chrome(app)

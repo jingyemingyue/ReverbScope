@@ -808,3 +808,27 @@ def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
     assert saved["mode"] == DEMO_MODE
     assert saved["notes"].startswith("SYNTHETIC DEMO")
     window.close()
+
+
+def test_the_lang_option_reaches_the_gui(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """run_app resolved the language again from settings, ROOMSCOPE_LANG and
+    the system, so `roomscope --lang zh_CN gui` opened in English."""
+    from roomscope.cli.main import main
+    from roomscope.i18n import current_locale
+    from roomscope.ui import app as app_module
+    from roomscope.ui import main_window
+
+    seen: list[str] = []
+
+    class Spy(main_window.MainWindow):
+        def __init__(self) -> None:
+            super().__init__()
+            seen.append(current_locale())
+
+    monkeypatch.setattr(main_window, "MainWindow", Spy)
+    # Qt's own catalog would stay installed for the tests that follow.
+    monkeypatch.setattr(app_module, "install_qt_translations", lambda _app: None)
+    assert main(["--lang", "zh_CN", "gui", "--smoke"]) == 0
+    assert seen == ["zh_CN"]
