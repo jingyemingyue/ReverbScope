@@ -30,14 +30,17 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
    normalised at the onset, so a band's 0 dB includes all of its
    direct-sound energy.
 3. **Noise truncation** (Lundeby et al. 1995, steps as summarised by
-   Karjalainen et al. 2002) on the squared response from the onset: 20 ms
-   block averages, preliminary regression from the loudest block to the first
-   block at noise + 10 dB (noise from the last 10 %), then iterated block length / noise / late-slope estimates
-   until the crosspoint moves by less than ``LUNDEBY_CONVERGENCE_DB`` (1 dB)
-   of decay at the late slope (at least 1 ms). The iterative estimate is
-   rejected, and the preliminary crosspoint, slope and noise level are used
-   instead, when the iteration does not converge within 6 passes, when the
-   late slope is less than ``LUNDEBY_MIN_SLOPE_RATIO`` (0.5) times the
+   Karjalainen et al. 2002) on the squared response from the onset. Trailing
+   digital silence (exact zeros, e.g. an imported response padded with zeros)
+   is removed first: it is not a noise floor, and "the last 10 %" below is the
+   last 10 % before it. 20 ms block averages, preliminary regression from the
+   loudest block to the first block at noise + 10 dB (noise from the last
+   10 %), then iterated block length / noise / late-slope estimates until the
+   crosspoint moves by less than ``LUNDEBY_CONVERGENCE_DB`` (1 dB) of decay at
+   the late slope (at least 1 ms). The iterative estimate is rejected, and the
+   preliminary crosspoint, slope and noise level are used instead, when the
+   iteration does not converge within 6 passes, when the late slope is less
+   than ``LUNDEBY_MIN_SLOPE_RATIO`` (0.5) times the
    preliminary slope, or when the crosspoint lies more than
    ``10 dB / |preliminary slope|`` plus two blocks after the first block at
    noise + 5 dB (a stationary tonal floor such as mains hum drags the late
@@ -54,7 +57,8 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
    the truncation point (Schroeder 1965), normalised to 0 dB at the onset.
    All times (curve, onset, truncation) are measured from the direct sound
    (from the start of the signal when no direct sound is given; see
-   ``DecayResult.time_origin``).
+   ``DecayResult.time_origin``). Without a direct sound, the energy
+   parameters of item 7 are the exception.
 5. **Fits.** EDT, T20 and T30 are least-squares line fits over 0..-10 dB,
    -5..-25 dB and -5..-35 dB, extrapolated to 60 dB (ISO 3382-1). A fit
    never starts before the end of the direct sound (the direct sound plus
@@ -103,7 +107,10 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
    after the direct sound, ``D50`` is ``100 * E_early / (E_early + E_late)``
    at 50 ms (percent), and centre time ``Ts`` is the energy-weighted mean
    time. Energy before the direct-sound sample is counted at time zero (it is
-   the rise, or a band filter's pre-ringing of the direct sound). A parameter
+   the rise, or a band filter's pre-ringing of the direct sound). Without a
+   known direct sound they are timed from each curve's onset (item 2), not
+   from ``DecayResult.time_origin``, so leading silence does not move them;
+   ``Ts`` is then not on the result's time axis. A parameter
    is reported only when the decay range is at least
    ``ENERGY_MIN_DECAY_RANGE_DB`` (20 dB, the same floor as EDT) and the
    truncation point is after the early window. Sound strength ``G`` is not
@@ -144,7 +151,8 @@ from roomscope.models.result import (
     Validity,
 )
 
-#: ``DecayResult.time_origin`` when no direct sound was given.
+#: ``DecayResult.time_origin`` when no direct sound was given. C50, C80, D50
+#: and ``Ts`` are then timed from each curve's onset instead.
 TIME_ORIGIN_SIGNAL_START = "start of the analysed signal (no direct sound given)"
 _EPS = 1e-300
 _EDT_RANGE = (0.0, -10.0)
@@ -1039,9 +1047,11 @@ def analyze_band(
     """Decay analysis of one (band-filtered) response.
 
     ``direct_index`` is the broadband direct sound in ``band_ir``. When it is
-    ``None`` the plain ISO ranges are fitted from the onset and the EDT
-    direct-sound check is skipped. ``time_origin_index`` (default:
-    ``direct_index`` if given, else 0) is time 0 of all reported times.
+    ``None`` the plain ISO ranges are fitted from the onset, the EDT
+    direct-sound check is skipped and the early/late energy parameters are
+    timed from the onset (when it is later than ``time_origin_index``).
+    ``time_origin_index`` (default: ``direct_index`` if given, else 0) is
+    time 0 of all other reported times.
     ``onset_search_start`` (default: :func:`onset_search_window_s` of the band
     before a given ``direct_index``, else 0) is where the onset search begins.
     ``direct_spread_s`` is how long the direct sound lasts after its peak.
@@ -1334,9 +1344,11 @@ def analyze_decay(
     ``ir`` should contain :func:`decay_lead_in_s` of signal before the direct
     sound at ``direct_index`` (missing lead-in is zero-padded). Without
     ``direct_index`` the onset search starts at the beginning of ``ir``, the
-    plain ISO ranges are fitted and times are measured from its first sample. Bands that are not fully inside ``excitation_band`` are
-    returned with ``Validity.OUTSIDE_EXCITATION`` and no numbers; bands above
-    0.9 * Nyquist are skipped.
+    plain ISO ranges are fitted and times are measured from its first sample,
+    except C50, C80, D50 and ``Ts``, which are timed from each curve's onset.
+    Bands that are not fully inside ``excitation_band`` are returned with
+    ``Validity.OUTSIDE_EXCITATION`` and no numbers; bands above 0.9 * Nyquist
+    are skipped.
     """
     signal = np.asarray(ir, dtype=np.float64)
     known = direct_index is not None

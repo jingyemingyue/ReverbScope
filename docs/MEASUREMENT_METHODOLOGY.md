@@ -224,35 +224,88 @@ time-reversed filtering.
    and edges `fm·G^(±1/2)` with `G = 10^(3/10)`, IEC 61260-1 [12]), applied
    *time-reversed* so that the filter's own decay precedes the room decay.
    The filters are not certified IEC 61260 class 1.
-2. Lundeby truncation (iterative, max 6 passes): 20 ms local averages, noise
-   from the last 10 %, regression from the peak to noise + 10 dB, cross-point,
-   new interval (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated
-   from 7.5 dB of decay after the cross-point (at least the last 10 %), late
-   slope over 15 dB starting 7.5 dB above noise, repeat until the cross-point
-   moves less than max(1 ms, the time the late slope takes to fall 1 dB).
-   These parameter values are RoomScope's choices within the ranges published
-   by Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB; 10–20 dB).
+2. Lundeby truncation (iterative, max 6 passes) on the squared response from
+   the decay start (step 3). Trailing digital silence (exact zeros, for
+   example an imported response padded or gated with zeros) is removed
+   first: it is not a noise floor, so "the last 10 %" below means the last
+   10 % before it. 20 ms local averages, noise from the last 10 %,
+   regression from the peak to noise + 10 dB, cross-point, new interval
+   (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated from 7.5 dB
+   of decay after the cross-point (at least the last 10 %), late slope over
+   15 dB starting 7.5 dB above noise, repeat until the cross-point moves
+   less than max(1 ms, the time the late slope takes to fall 1 dB). These
+   parameter values are RoomScope's choices within the ranges published by
+   Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB; 10–20 dB). The
+   iterative estimate is rejected, and the preliminary cross-point, slope
+   and noise level are used instead, when it does not converge within 6
+   passes, when the late slope is less than half the preliminary slope, or
+   when the cross-point lies more than `10 dB / |preliminary slope|` plus
+   two intervals after the first interval at noise + 5 dB (a stationary
+   tonal floor such as mains hum drags the late slope towards zero and the
+   cross-point to the end of the response). Step 8 says when that makes the
+   metrics unreliable.
 3. Schroeder curve: `EDC(t) = Σ_{τ≥t} h²(τ)` from the decay start (the first
    sample within 20 dB of the energy maximum, searched from shortly before the
    direct sound) to the truncation point, plus the late-decay
    compensation `C = p(t_c)·(−10 / (slope·ln 10))` (energy of the extrapolated
    exponential tail). Normalised to 0 dB at the start.
 4. Least-squares line fits over the ISO 3382-1 ranges and extrapolation to
-   60 dB: EDT 0…−10 dB (×6), T20 −5…−25 dB (×3), T30 −5…−35 dB (×2). The
-   ISO "degree of non-linearity" `ξ = 1000·(1 − r²)` (‰) is reported.
-5. **Validity.** A metric is reported only when the available decay range
-   (peak level of the smoothed energy minus the estimated noise floor, in dB)
-   is at least `|lower limit| + 10 dB`: 20 dB for EDT, 35 dB for T20, 45 dB
-   for T30 (ISO 3382: the evaluation range must lie ≥ 10 dB above the noise
-   [9][10], restated by Hak et al. 2012 [17]). Otherwise the metric is
-   `insufficient_decay_range` with the numbers in `reason`.
-6. **B·T check.** With time-reversed filtering the bandwidth × reverberation
+   60 dB: EDT 0…−10 dB (×6), T20 −5…−25 dB (×3), T30 −5…−35 dB (×2). A fit
+   never starts before the end of the direct sound: the detected
+   direct-sound sample plus the excitation pulse spread `4/B_exc + 0.5 ms`
+   (`B_exc` the excitation bandwidth). Before it, a time-reversed band
+   response holds only the band filter's pre-ringing of the direct sound,
+   not room decay; the fit then gives what an ideal, non-smearing band filter
+   would give, where the direct sound is a step of the curve at time 0. For
+   the broadband curve it changes nothing. The ISO "degree of non-linearity"
+   `ξ = 1000·(1 − r²)` (‰) is reported for each fit and checked in step 7.
+5. **Validity: decay range.** A metric is reported only when the available
+   decay range (peak level of the smoothed energy minus the estimated noise
+   floor, in dB) is at least `|lower limit| + 10 dB`: 20 dB for EDT, 35 dB
+   for T20, 45 dB for T30 (ISO 3382: the evaluation range must lie ≥ 10 dB
+   above the noise [9][10], restated by Hak et al. 2012 [17]). Otherwise the
+   metric is `insufficient_decay_range` with the numbers in `reason`. Steps
+   6–9 mark a metric that has a number `unreliable`, with a warning that
+   says why.
+6. **Validity: EDT and the direct sound.** EDT is unreliable when the
+   Schroeder curve drops more than 5 dB across the direct sound, i.e. the
+   direct sound carries more than about 70 % of the band's energy. Less than
+   half of the 0…−10 dB range is then room decay, and EDT describes the
+   direct sound rather than the room at that position.
+7. **Validity: straight decay.** ISO 3382-2:2008 Annex B [10] introduces `ξ`
+   and the curvature `C = 100·(T30/T20 − 1)` % to warn that a single
+   reverberation time does not describe the decay (for example a double
+   slope). When `|C|` exceeds `max(10 %, 500 / √(B·T30))`, T20 and T30 are
+   both marked unreliable and no RT60 is estimated; when the `ξ` of one fit
+   exceeds `max(15 ‰, 1000 / √(B·T30))`, that metric is marked unreliable
+   (`B` the band's bandwidth in Hz, or the excitation bandwidth for the
+   broadband curve; `T30` in seconds). The limits are RoomScope's choice;
+   the numerical guidance of Annex B was not verified against the standard
+   text. 10 % is the value the Annex is commonly cited with. The `ξ` floor is
+   15 ‰ rather than the commonly cited 10 ‰: in simulations of single-slope
+   rooms with strong early reflections the median T30 error stayed below
+   10 % up to about 15 ‰ and exceeded it above. The `1/√(B·T30)` terms
+   follow the scatter of band-limited noise decays, which falls with the
+   number of degrees of freedom `B·T`. The constants were set with a Monte
+   Carlo of single-slope decays so that fewer than 1 % of them are flagged
+   (at most about 2 % in any band), while a double slope of 0.3 s and 2.0 s
+   with the slow part 25 dB down is flagged in every run for the broadband
+   curve and the 250 Hz–8 kHz bands, and in 60–90 % of the runs at 63 and
+   125 Hz, where a single decay already scatters that much.
+8. **Validity: truncation sensitivity.** When the Lundeby estimate was
+   rejected (step 2), EDT, T20 and T30 are fitted again with the rejected
+   estimate. If a VALID one changes by more than 5 % or has no value with
+   it, or if the iteration left no estimate to compare with, the band's EDT,
+   T20 and T30 are all marked unreliable. Marking every rejected estimate
+   unreliable would flag most bands of clean measurements with more than
+   about 100 dB of range, where the late slope is fitted to a few intervals
+   and oscillates without affecting the metrics.
+9. **B·T check.** With time-reversed filtering the bandwidth × reverberation
    time product should exceed about 4 (about 16 with forward filtering) [6];
    below 4 the band's metrics are marked `unreliable` and a warning explains
    why. The numbers 16 / 4 are confirmed only through works citing [6].
-7. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
-   always reported. Curvature `C = 100·(T30/T20 − 1)` % is given when both
-   exist.
+10. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
+    always reported. Curvature `C` (step 7) is given when both exist.
 
 **Units.** Seconds; the Schroeder curve in dB relative to its start.
 
@@ -323,9 +376,13 @@ figure-of-eight or a dummy head. STI is not computed.
 truncation and late-decay compensation as the Schroeder curve). Time zero is
 the detected direct-sound sample. Energy from the onset up to that sample
 (the rise, and for a band the time-reversed filter's pre-ringing of the
-direct sound) is counted at time zero. With `E_early` the energy before the
-split and `E_late` the energy from the split through the truncation plus the
-compensated tail:
+direct sound) is counted at time zero. Without a known direct sound (only
+through the library, `analyze_decay` without `direct_index`; the command line
+and the desktop app always pass one), time zero is each curve's onset
+instead, so leading silence does not move the ratios or `Ts`. `Ts` is then
+not on the result's `time_origin` axis, which starts at the first sample of
+the analysed signal. With `E_early` the energy before the split and `E_late`
+the energy from the split through the truncation plus the compensated tail:
 
 * `C50 = 10·log10(E_early / E_late)` at 50 ms, `C80` at 80 ms (dB).
 * `D50 = 100 · E_early / (E_early + E_late)` at 50 ms (percent).
