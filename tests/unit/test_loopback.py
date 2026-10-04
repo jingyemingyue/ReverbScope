@@ -401,3 +401,49 @@ def test_microphone_and_loopback_on_different_passes_are_not_compensated(
     assert not loopback.compensation_applied
     assert loopback.path_delay_ms is None
     assert "different sweep passes" in (loopback.reason or "")
+
+
+def test_a_single_pass_with_a_long_playback_latency_is_compensated() -> None:
+    """A 0.3 s loudspeaker latency (wireless, AVR, network DSP) on a 0.5 s
+    sweep is one pass, not two: it was refused as "located on different
+    sweep passes"."""
+    sweep = SweepSettings(sample_rate=48000, duration_s=0.5, pre_silence_s=0.5, post_silence_s=1.5)
+    fs = sweep.sample_rate
+    x = measurement_signal(sweep)
+    room = make_rir(fs, rt60_s=0.3, diffuse_level=0.01, start_delay_s=0.005)
+    mic = np.concatenate([np.zeros(round(0.3 * fs)), fftconvolve(x, room)])
+    loop = _pad_to(x, mic.shape[0])
+    rng = np.random.default_rng(1)
+    result = analyze(
+        AudioSignal(mic + rng.normal(0, 1e-5, mic.shape[0]), fs),
+        Reference.from_settings(sweep),
+        loopback=AudioSignal(loop + rng.normal(0, 1e-6, loop.shape[0]), fs),
+    )
+    loopback = result.impulse_response.loopback
+    assert loopback is not None and loopback.compensation_applied, loopback
+    assert loopback.path_delay_ms == pytest.approx(305.0, abs=1.0)
+
+
+def test_a_loopback_without_a_pulse_keeps_the_assessment_reason(
+    short_sweep: SweepSettings,
+) -> None:
+    """A return that only picks up mains hum has its peak anywhere; it was
+    refused as "located on different sweep passes" instead of being named as
+    a channel that is not an electrical return."""
+    fs = short_sweep.sample_rate
+    mic = fftconvolve(
+        measurement_signal(short_sweep),
+        make_rir(fs, rt60_s=0.3, diffuse_level=0.01, start_delay_s=0.005),
+    )
+    t = np.arange(mic.shape[0]) / fs
+    rng = np.random.default_rng(0)
+    loop = 3e-3 * np.sin(2 * np.pi * 50 * t) + rng.normal(0, 1e-4, mic.shape[0])
+    result = analyze(
+        AudioSignal(mic + rng.normal(0, 1e-5, mic.shape[0]), fs),
+        Reference.from_settings(short_sweep),
+        loopback=AudioSignal(loop, fs),
+    )
+    loopback = result.impulse_response.loopback
+    assert loopback is not None and not loopback.compensation_applied
+    assert "different sweep passes" not in (loopback.reason or "")
+    assert "electrical return" in (loopback.reason or "")

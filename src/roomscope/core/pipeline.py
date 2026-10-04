@@ -725,16 +725,22 @@ def analyze(
                 settings=settings,
                 sample_rate=sample_rate,
             )
-            if abs(lb_located.peak_index - located.peak_index) > prepared.reference_length // 2:
-                # Each signal picks its own strongest pass; a path delay across
-                # two passes would be seconds long and defeat the tape check.
+            assessment = assess_loopback(lb_located, h_lb, sample_rate, clipped=lb_clipping.clipped)
+            # Each signal picks its own pass; a path delay across two passes
+            # would be seconds long and defeat the tape check. With a single
+            # pass a long delay is real playback latency, and a loopback that
+            # holds no pulse keeps the assessment's reason.
+            if (
+                assessment.accepted
+                and (located.sweep_passes > 1 or lb_located.sweep_passes > 1)
+                and abs(lb_located.peak_index - located.peak_index) > prepared.reference_length // 2
+            ):
                 raise AnalysisError(
                     diag(
                         "the loopback and the microphone were located on different sweep "
                         "passes; compensation is not applied"
                     )
                 )
-            assessment = assess_loopback(lb_located, h_lb, sample_rate, clipped=lb_clipping.clipped)
         except (InvalidAudioError, AnalysisError) as exc:
             loopback_result = LoopbackResult(
                 channel=lb_channel,
