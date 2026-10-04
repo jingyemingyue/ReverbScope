@@ -293,6 +293,46 @@ def test_percent_change_only_for_ratio_scale_units() -> None:
     )
 
 
+def test_no_percent_change_of_a_negative_baseline() -> None:
+    """A loopback path delay going from -0.50 to -0.25 ms read -50 %."""
+    from roomscope.core.compare import _delta_from_values
+
+    delta = _delta_from_values("loopback.path_delay_ms", -0.5, -0.25, unit="ms")
+    assert delta.delta_percent is None
+    assert delta.delta == pytest.approx(0.25)
+
+
+def test_a_stored_percent_of_a_level_is_dropped_on_load() -> None:
+    """Comparisons saved by 0.5.0b1 stored a percent for every unit, and
+    ``roomscope show`` printed "C50 (dB) ... +3.4 %"."""
+    import io
+
+    from roomscope.cli.console import Console
+    from roomscope.cli.render import render_comparison
+    from roomscope.models.comparison import ComparisonResult
+
+    payload = ComparisonResult(comparable=True, common_band=(20.0, 20000.0)).to_dict()
+    common = {"validity": "valid", "reason": None}
+    payload["decay"] = [
+        {"name": "broadband.c50", "baseline": 9.814, "candidate": 10.146, "delta": 0.332}
+        | {"delta_percent": 3.38, "unit": "dB"}
+        | common,
+        {"name": "broadband.t30", "baseline": 0.5, "candidate": 0.55, "delta": 0.05}
+        | {"delta_s": 0.05, "delta_percent": 10.0, "unit": "s"}
+        | common,
+    ]
+    payload["loopback"] = [
+        {"name": "loopback.path_delay_ms", "baseline": -0.5, "candidate": -0.25}
+        | {"delta": 0.25, "delta_percent": -50.0, "unit": "ms"}
+        | common,
+    ]
+    loaded = ComparisonResult.from_dict(payload)
+    assert [d.delta_percent for d in loaded.decay] == [None, 10.0]
+    assert loaded.loopback[0].delta_percent is None
+    text = render_comparison(Console.for_stream(io.StringIO(), "never"), loaded)
+    assert "+3.4 %" not in text
+
+
 def test_an_undeclared_imported_band_is_not_compared(short_sweep: SweepSettings) -> None:
     """The 20 Hz-20 kHz placeholder of an imported IR without --band was used
     as a measured band (octave differences of 60 dB where nothing was excited)."""

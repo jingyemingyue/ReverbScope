@@ -20,6 +20,7 @@ from roomscope.models.comparison import (
     MetricDelta,
     ReflectionMatch,
     ResonanceMatch,
+    percent_applies,
 )
 from roomscope.models.result import (
     EXCITATION_SOURCE_UNKNOWN,
@@ -105,12 +106,6 @@ def _sweep_notes(baseline: AnalysisResult, candidate: AnalysisResult) -> list[st
     return notes
 
 
-#: Units on a ratio scale, where a change in percent of the baseline means
-#: something. In percent of a level in dB (or of D50, itself a percentage) it
-#: does not, and it flips sign with a negative baseline (C50 -2 -> -1 dB).
-_PERCENT_UNITS = frozenset({"s", "ms", "m"})
-
-
 def _delta_from_values(
     name: str,
     baseline: float | None,
@@ -131,7 +126,7 @@ def _delta_from_values(
             unit=unit,
         )
     delta = candidate - baseline
-    percent = None if baseline == 0.0 or unit not in _PERCENT_UNITS else 100.0 * delta / baseline
+    percent = 100.0 * delta / baseline if percent_applies(unit, baseline) else None
     return MetricDelta(
         name=name,
         baseline=baseline,

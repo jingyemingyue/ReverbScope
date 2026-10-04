@@ -6,7 +6,7 @@ changes either. Findings are not stored here; they are re-derived on load.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
 from typing import Any
 
 import numpy as np
@@ -30,6 +30,18 @@ COMPARISON_SCHEMA_VERSION = 1
 #: (clause not verified against the standard text; quoted, never used to call
 #: a change "significant" from a single pair of positions).
 T_JND_PERCENT = 5.0
+
+#: Units on a ratio scale, where a change in percent of a positive baseline
+#: means something. In percent of a level in dB (or of D50, itself a
+#: percentage) it does not, and it flips sign with a negative baseline: C50
+#: going from -2 to -1 dB, or a loopback path delay from -0.50 to -0.25 ms,
+#: read -50 %.
+PERCENT_UNITS = frozenset({"s", "ms", "m"})
+
+
+def percent_applies(unit: str, baseline: float | None) -> bool:
+    """Whether a change of a ``unit`` value can be given in percent of ``baseline``."""
+    return unit in PERCENT_UNITS and baseline is not None and baseline > 0.0
 
 
 def _array_to_list(values: FloatArray | None, decimals: int = 4) -> list[float] | None:
@@ -124,7 +136,12 @@ class MetricDelta:
             payload["validity"] = Validity(str(validity))
         except ValueError as exc:
             raise SessionError(_("unknown validity {value}").format(value=repr(validity))) from exc
-        return build_record(cls, payload, kind="metric delta")
+        record = build_record(cls, payload, kind="metric delta")
+        if record.delta_percent is not None and not percent_applies(record.unit, record.baseline):
+            # Files written by 0.5.0b1 and earlier gave a percent for every
+            # unit, which ``show`` would print ("C50 (dB) ... +3.4 %").
+            record = replace(record, delta_percent=None)
+        return record
 
 
 @dataclass(frozen=True)
