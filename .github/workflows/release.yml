@@ -16,6 +16,7 @@ on:
       - .github/workflows/release.yml
       - packaging/**
       - scripts/build_license_bundle.py
+      - scripts/compile_bundle_lock.py
       - scripts/check_bundle_contents.py
       - scripts/check_macos_dmg.py
       - scripts/smoke_bundle.py
@@ -28,6 +29,7 @@ on:
       - .github/workflows/release.yml
       - packaging/**
       - scripts/build_license_bundle.py
+      - scripts/compile_bundle_lock.py
       - scripts/check_bundle_contents.py
       - scripts/check_macos_dmg.py
       - scripts/smoke_bundle.py

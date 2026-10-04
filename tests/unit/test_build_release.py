@@ -218,3 +218,20 @@ def test_checksums_are_written_with_lf_and_allow_a_missing_installer(
     (tmp_path / archives[0]).unlink()
     with pytest.raises(SystemExit, match="missing release files"):
         step.run()
+
+
+def test_every_script_only_the_release_workflow_runs_triggers_it() -> None:
+    """compile_bundle_lock.py (the sbom job) was missing from the path
+    filters, so a pull request that broke it did not run the workflow."""
+    import re
+
+    import yaml
+
+    release = yaml.safe_load(WORKFLOW)
+    ci = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    run_by_release = set(re.findall(r"scripts/\w+\.py", yaml.safe_dump(release["jobs"])))
+    only_release = run_by_release - set(re.findall(r"scripts/\w+\.py", ci))
+    assert "scripts/compile_bundle_lock.py" in only_release
+    triggers = release[True]  # YAML 1.1 reads the key "on" as True
+    for event in ("push", "pull_request"):
+        assert only_release <= set(triggers[event]["paths"]), event
