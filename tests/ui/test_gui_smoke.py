@@ -859,3 +859,44 @@ def test_a_new_default_profile_applies_without_a_restart(
     window.show_settings()
     assert window.daw.profile.currentData() == "generic"
     window.close()
+
+
+def test_two_selected_sessions_compare_oldest_first(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """The selection came in click order and the recent list is newest
+    first: top row then shift-click the next made the later take the
+    baseline, so every delta had the wrong sign."""
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.io.recent import remember_session
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.session import MeasurementSession
+
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    # One date without a zone: it cannot be compared with an aware one as is.
+    for room, created in (("before", "2026-01-01T00:00:00+00:00"), ("after", "2026-02-01")):
+        session = MeasurementSession(room_name=room, created_at=created)
+        save_measurement(tmp_path / room, session, result, copy_recording=False)
+        remember_session(tmp_path / room)
+    window = MainWindow()
+    home = window.home.recent
+    assert "after" in home.item(0).text() and "before" in home.item(1).text()
+    home.item(0).setSelected(True)
+    home.item(1).setSelected(True)
+    window.show_compare()
+    assert Path(window.compare.baseline_path.text()).name == "before"
+    assert Path(window.compare.candidate_path.text()).name == "after"
+
+    # The Compare page's own list, with both path fields empty.
+    page = window.compare
+    page.baseline_path.clear()
+    page.candidate_path.clear()
+    page.browser.list.item(0).setSelected(True)
+    page.browser.list.item(1).setSelected(True)
+    page.run_compare()
+    assert Path(page.baseline_path.text()).name == "before"
+    assert Path(page.candidate_path.text()).name == "after"
+    window.close()

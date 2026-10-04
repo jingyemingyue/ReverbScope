@@ -250,9 +250,9 @@ class MainWindow(QMainWindow):
 
     def show_compare(self) -> None:
         self.compare.browser.refresh_recent()
-        selected = self.home.browser.selected_paths()
-        if len(selected) == 2:
-            self.compare.set_paths(selected[0], selected[1])
+        selected = self.home.browser.selected_pair()
+        if selected is not None:
+            self.compare.set_paths(*selected)
         self.stack.setCurrentWidget(self.compare)
         self._set_place(_("Compare"))
 

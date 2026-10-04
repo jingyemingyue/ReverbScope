@@ -71,6 +71,33 @@ class SessionBrowser(QWidget):
                 paths.append(Path(str(data)))
         return paths
 
+    def selected_pair(self) -> tuple[Path, Path] | None:
+        """Two selected sessions as (baseline, candidate): the older one first.
+
+        The selection comes in click order, and the recent list is newest
+        first: clicking the top row and shift-clicking the next made the
+        later take the baseline and reversed every delta. Sessions without a
+        readable date keep the click order.
+        """
+        from datetime import datetime
+
+        from roomscope.io.session_store import load_session
+
+        def created(path: Path) -> datetime:
+            # A time without a zone is local, as _when shows it.
+            return datetime.fromisoformat(load_session(path).created_at).astimezone()
+
+        paths = self.selected_paths()
+        if len(paths) != 2:
+            return None
+        first, second = paths
+        try:
+            if created(second) < created(first):
+                first, second = second, first
+        except (RoomScopeError, TypeError, ValueError, OSError, OverflowError):
+            pass
+        return first, second
+
     def refresh_recent(self) -> None:
         from roomscope.io.recent import recent_session_paths
         from roomscope.io.session_store import load_session

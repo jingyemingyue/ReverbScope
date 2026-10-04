@@ -173,12 +173,12 @@ class ComparePage(QWidget):
         self.candidate_path.setText(str(candidate))
 
     def run_compare(self) -> None:
-        selected = self.browser.selected_paths()
         baseline = self.baseline_path.text().strip()
         candidate = self.candidate_path.text().strip()
-        if (not baseline or not candidate) and len(selected) == 2:
+        selected = self.browser.selected_pair() if not baseline or not candidate else None
+        if selected is not None:
             baseline, candidate = str(selected[0]), str(selected[1])
-            self.set_paths(Path(baseline), Path(candidate))
+            self.set_paths(*selected)
         if not baseline or not candidate:
             QMessageBox.information(self, _("Compare"), _("Choose two sessions first."))
             return
