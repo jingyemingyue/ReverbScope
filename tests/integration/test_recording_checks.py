@@ -206,3 +206,45 @@ def test_the_test_signal_exported_instead_of_the_microphone_is_flagged(
         AudioSignal(_room_recording(short_sweep), sr), Reference.from_settings(short_sweep)
     )
     assert "measurement.digital_silence" not in [f.message_id for f in interpret(take)]
+
+
+@pytest.mark.parametrize("seed", [1, 4])
+def test_equal_passes_analyse_the_one_followed_by_a_recorded_decay(seed: int) -> None:
+    """Two identical passes back to back: the first has no decay recorded
+    after it, the second has 3 s. Which one is louder is down to noise, and
+    when the first won the take was refused ("the next sweep pass starts
+    right after this one")."""
+    from roomscope.core.sweep import generate_ess
+    from roomscope.models.result import Validity
+
+    sr = 48000
+    settings = SweepSettings(sample_rate=sr, duration_s=5.0, pre_silence_s=0.0, post_silence_s=0.0)
+    sweep = generate_ess(settings)
+    played = np.concatenate([np.zeros(sr), sweep, sweep, np.zeros(3 * sr)])
+    ir = make_rir(sr, rt60_s=0.5, start_delay_s=0.003, diffuse_level=0.03, seed=seed)
+    recording = np.asarray(fftconvolve(played, ir))
+    recording = recording + np.random.default_rng(seed).normal(0.0, 1e-5, recording.shape[0])
+    result = analyze(AudioSignal(recording, sr, source="file"), Reference.from_settings(settings))
+    assert result.impulse_response.sweep_passes == 2
+    assert result.impulse_response.sweep_start_in_recording_s == pytest.approx(6.0, abs=0.01)
+    assert result.decay.broadband.t30.validity is Validity.VALID
+
+
+def test_of_equal_passes_with_short_gaps_the_last_one_is_analysed() -> None:
+    """Three passes with 0.5 s gaps and a 1 s reverberation time: the pass
+    picked by its level had 0.5 s of decay after it, so T30 was not
+    computable, although the last pass has 5 s of recorded decay."""
+    from roomscope.core.sweep import generate_ess
+    from roomscope.models.result import Validity
+
+    sr = 48000
+    settings = SweepSettings(sample_rate=sr, duration_s=3.0, pre_silence_s=0.0, post_silence_s=0.0)
+    sweep, gap = generate_ess(settings), np.zeros(sr // 2)
+    played = np.concatenate([np.zeros(sr), sweep, gap, sweep, gap, sweep, np.zeros(3 * sr)])
+    ir = make_rir(sr, rt60_s=1.0, start_delay_s=0.003, diffuse_level=0.03, length_s=2.0)
+    recording = np.asarray(fftconvolve(played, ir))
+    recording = recording + np.random.default_rng(0).normal(0.0, 1e-5, recording.shape[0])
+    result = analyze(AudioSignal(recording, sr, source="file"), Reference.from_settings(settings))
+    assert result.impulse_response.sweep_passes == 3
+    assert result.impulse_response.sweep_start_in_recording_s == pytest.approx(8.0, abs=0.01)
+    assert result.decay.broadband.t30.validity is Validity.VALID

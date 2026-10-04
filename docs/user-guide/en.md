@@ -234,7 +234,7 @@ in a pipe.
 | --- | --- |
 | Direct-sound confidence not high | Wrong sweep sidecar; loudspeaker distortion; trim the recording? Do not trim. |
 | Wrong reference | The `.roomscope-sweep.json` next to the WAV must be the file RoomScope wrote for *this* sweep (same duration, band and fades). A sweep from another session, or the recording used as the reference, will mis-locate the IR. |
-| Multiple passes in one bounce | Play the sweep once. Two passes in the same WAV look like two IRs; RoomScope keeps the strongest peak and the rest becomes “room”. Bounce a single take. |
+| Multiple passes in one bounce | Play the sweep once. With several passes in the same WAV, RoomScope analyses one of them (of the passes about as loud as the loudest, the one followed by the longest recorded decay, usually the last), ignores the others, ends the IR where the next pass starts and warns. Bounce a single take. |
 | Clipping warning | Lower playback or input gain. |
 | Insufficient decay range | Longer sweep, slightly louder playback, or a quieter room. |
 | Device rate mismatch | The GUI shows the device rate next to the requested one; pick a supported rate. |

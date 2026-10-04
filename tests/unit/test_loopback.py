@@ -384,13 +384,15 @@ def test_microphone_and_loopback_on_different_passes_are_not_compensated(
     short_sweep: SweepSettings,
 ) -> None:
     """Each signal picked its own strongest pass: the path delay spanned a
-    whole pass (+5.5 s) and the distance bound grew to 1889 m."""
+    whole pass (+5.5 s) and the distance bound grew to 1889 m. The passes
+    differ by 6 dB, more than PASS_EQUAL_DB, so the louder one is analysed
+    in each signal."""
     fs = short_sweep.sample_rate
     x = measurement_signal(short_sweep)
     room = make_rir(fs, rt60_s=0.3, diffuse_level=0.01, start_delay_s=0.005)
     rng = np.random.default_rng(1)
-    mic = np.concatenate([np.asarray(fftconvolve(x, room)) * g for g in (0.9, 1.0)])
-    loop = np.concatenate([np.pad(x, (0, room.shape[0] - 1)) * g for g in (1.0, 0.9)])
+    mic = np.concatenate([np.asarray(fftconvolve(x, room)) * g for g in (0.5, 1.0)])
+    loop = np.concatenate([np.pad(x, (0, room.shape[0] - 1)) * g for g in (1.0, 0.5)])
     result = analyze(
         AudioSignal(mic + rng.normal(0, 1e-5, mic.shape[0]), fs),
         Reference.from_settings(short_sweep),

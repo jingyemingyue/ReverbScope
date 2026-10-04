@@ -542,7 +542,8 @@ class ImpulseResponseResult:
     notes: tuple[str, ...] = ()
     #: Frequency range that the excitation actually covered.
     excitation_band: ExcitationBand | None = None
-    #: Number of sweep passes found in the recording (the strongest is analysed).
+    #: Number of sweep passes found in the recording (one is analysed; see
+    #: :func:`~roomscope.core.deconvolution.locate_impulse_response`).
     sweep_passes: int = 1
     #: Start of the first sweep pass in the recording (s); equals
     #: ``sweep_start_in_recording_s`` for a single pass. ``None`` if unknown.
