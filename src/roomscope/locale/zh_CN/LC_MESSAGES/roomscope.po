@@ -4005,3 +4005,6 @@ msgstr "{field} 必须是列表"
 
 msgid "{field} must be a list of numbers"
 msgstr "{field} 必须是数字列表"
+
+msgid "{field} is out of range"
+msgstr "{field} 超出范围"

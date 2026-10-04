@@ -450,6 +450,13 @@ def _set(path: tuple[str, ...], value: object):  # type: ignore[no-untyped-def]
         ("result.json", ("decay", "broadband", "rt60_estimate_s"), "slow"),
         ("result.json", ("noise", "rms_dbfs"), [1]),
         ("result.json", ("impulse_response", "sample_rate"), 1e400),
+        ("result.json", ("sample_rate",), 10**400),
+        ("result.json", ("sample_rate",), 0),
+        ("result.json", ("impulse_response", "direct_sound_index"), 10**400),
+        ("result.json", ("decay", "broadband", "edc_db"), 5),
+        ("result.json", ("frequency_response", "frequencies_hz"), 5),
+        ("result.json", ("clipping", "clipped"), "false"),
+        ("result.json", ("frequency_response", "gated"), "false"),
     ],
     ids=lambda value: repr(value)[:50],
 )
@@ -457,7 +464,8 @@ def test_wrong_types_in_a_session_are_roomscope_errors(
     saved_session: Path, tmp_path: Path, file: str, path: tuple[str, ...], value: object
 ) -> None:
     """Each of these used to escape as TypeError, IndexError or OverflowError,
-    or to load and fail later in a listing, a comparison or a report (#11)."""
+    or to load and fail later in a listing, a comparison, a report or
+    ``show --format json`` (#11); "false" was read as true."""
     folder = _edited(saved_session, tmp_path, file, _set(path, value))
     with pytest.raises(RoomScopeError):
         load_measurement(folder)

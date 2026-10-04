@@ -13,7 +13,7 @@ import numpy as np
 
 from roomscope.errors import SessionError
 from roomscope.i18n import _
-from roomscope.models.loadutil import read_schema_version, record_name
+from roomscope.models.loadutil import read_flag, read_schema_version, record_name
 from roomscope.models.result import (
     RESULT_SCHEMA_VERSION,
     AliasedDistortion,
@@ -42,6 +42,10 @@ from roomscope.models.result import (
     Validity,
 )
 
+#: Largest count, index or sample rate read from a file. Every integer up to
+#: it is exactly a float, so the times and rates derived from it stay finite.
+_MAX_COUNT = 2**53
+
 
 def _obj(data: Any, name: str) -> dict[str, Any]:
     if not isinstance(data, dict):
@@ -52,7 +56,20 @@ def _obj(data: Any, name: str) -> dict[str, Any]:
 def _array(values: Any) -> FloatArray:
     if values is None:
         return np.zeros(0, dtype=np.float64)
-    return np.asarray(values, dtype=np.float64)
+    curve = np.asarray(values, dtype=np.float64)
+    if curve.ndim != 1:
+        # A single number loads as a 0-d array that to_dict cannot list.
+        raise TypeError(_("expected a list of numbers"))
+    return curve
+
+
+def _int(value: Any, name: str, low: int = 0) -> int:
+    """An integer field. ``int()`` takes a 400-digit number, which then fails
+    in a float conversion in the report or in ``to_dict``."""
+    number = int(value)
+    if not low <= number <= _MAX_COUNT:
+        raise ValueError(_("{field} is out of range").format(field=name))
+    return number
 
 
 def _pair(values: Any) -> tuple[float, float] | None:
@@ -69,16 +86,16 @@ def _opt_float(value: Any) -> float | None:
     return None if value is None else float(value)
 
 
-def _opt_int(value: Any) -> int | None:
-    return None if value is None else int(value)
+def _opt_int(value: Any, name: str, low: int = 0) -> int | None:
+    return None if value is None else _int(value, name, low)
 
 
 def _opt_str(value: Any) -> str | None:
     return None if value is None else str(value)
 
 
-def _opt_bool(value: Any) -> bool | None:
-    return None if value is None else bool(value)
+def _opt_bool(value: Any, name: str) -> bool | None:
+    return None if value is None else read_flag(value, name)
 
 
 def _str_tuple(values: Any) -> tuple[str, ...]:
@@ -178,7 +195,7 @@ def harmonic_from_dict(data: Any) -> HarmonicDistortion:
     payload = _obj(data, "harmonic distortion")
     band = payload.get("band_hz")
     return HarmonicDistortion(
-        order=int(payload["order"]),
+        order=_int(payload["order"], "order"),
         offset_s=float(payload["offset_s"]),
         level_db=_opt_float(payload.get("level_db")),
         floor_db=_opt_float(payload.get("floor_db")),
@@ -190,11 +207,11 @@ def harmonic_from_dict(data: Any) -> HarmonicDistortion:
 def aliased_from_dict(data: Any) -> AliasedDistortion:
     payload = _obj(data, "aliased distortion")
     return AliasedDistortion(
-        order=int(payload["order"]),
+        order=_int(payload["order"], "order"),
         band_hz=_pair(payload.get("band_hz")),
         level_db=_opt_float(payload.get("level_db")),
         floor_db=_opt_float(payload.get("floor_db")),
-        significant=bool(payload.get("significant", False)),
+        significant=read_flag(payload.get("significant", False), "significant"),
         reason=_opt_str(payload.get("reason")),
     )
 
@@ -205,9 +222,9 @@ def clipping_from_dict(data: Any) -> ClippingCheck | None:
     payload = _obj(data, "clipping")
     return ClippingCheck(
         peak_dbfs=float(payload["peak_dbfs"]),
-        runs=int(payload["runs"]),
-        samples=int(payload["samples"]),
-        clipped=bool(payload["clipped"]),
+        runs=_int(payload["runs"], "runs"),
+        samples=_int(payload["samples"], "samples"),
+        clipped=read_flag(payload["clipped"], "clipped"),
         quantisation_step=_opt_float(payload.get("quantisation_step")),
     )
 
@@ -215,10 +232,10 @@ def clipping_from_dict(data: Any) -> ClippingCheck | None:
 def impulse_from_dict(data: Any) -> ImpulseResponseResult:
     payload = _obj(data, "impulse_response")
     return ImpulseResponseResult(
-        sample_rate=int(payload["sample_rate"]),
+        sample_rate=_int(payload["sample_rate"], "sample_rate", low=1),
         samples=_array(payload.get("samples")),
-        direct_sound_index=int(payload["direct_sound_index"]),
-        pre_delay_samples=int(payload["pre_delay_samples"]),
+        direct_sound_index=_int(payload["direct_sound_index"], "direct_sound_index"),
+        pre_delay_samples=_int(payload["pre_delay_samples"], "pre_delay_samples"),
         peak_value=float(payload["peak_value"]),
         valid_length_s=float(payload["valid_length_s"]),
         pre_peak_margin_db=_opt_float(payload.get("pre_peak_margin_db")),
@@ -226,7 +243,7 @@ def impulse_from_dict(data: Any) -> ImpulseResponseResult:
         sweep_start_in_recording_s=float(payload.get("sweep_start_in_recording_s", 0.0)),
         notes=_str_tuple(payload.get("notes")),
         excitation_band=excitation_band_from_dict(payload.get("excitation_band")),
-        sweep_passes=int(payload.get("sweep_passes", 1)),
+        sweep_passes=_int(payload.get("sweep_passes", 1), "sweep_passes", low=1),
         first_sweep_start_in_recording_s=_opt_float(
             payload.get("first_sweep_start_in_recording_s")
         ),
@@ -248,10 +265,12 @@ def loopback_from_dict(data: Any) -> LoopbackResult | None:
     hz = payload.get("interface_response_hz")
     db = payload.get("interface_response_db")
     return LoopbackResult(
-        channel=_opt_int(payload.get("channel")),
-        compensation_applied=bool(payload.get("compensation_applied", False)),
+        channel=_opt_int(payload.get("channel"), "channel"),
+        compensation_applied=read_flag(
+            payload.get("compensation_applied", False), "compensation_applied"
+        ),
         reason=_opt_str(payload.get("reason")),
-        latency_samples=_opt_int(payload.get("latency_samples")),
+        latency_samples=_opt_int(payload.get("latency_samples"), "latency_samples", -_MAX_COUNT),
         path_delay_ms=_opt_float(payload.get("path_delay_ms")),
         distance_upper_bound_m=_opt_float(payload.get("distance_upper_bound_m")),
         interface_response_hz=None if hz is None else _array(hz),
@@ -268,8 +287,8 @@ def playback_speed_from_dict(data: Any) -> PlaybackSpeed | None:
     return PlaybackSpeed(
         speed_ratio=float(payload["speed_ratio"]),
         kind=str(payload["kind"]),
-        generated_rate_hz=int(payload["generated_rate_hz"]),
-        played_rate_hz=None if played is None else int(played),
+        generated_rate_hz=_int(payload["generated_rate_hz"], "generated_rate_hz", low=1),
+        played_rate_hz=_opt_int(played, "played_rate_hz", low=1),
     )
 
 
@@ -280,12 +299,12 @@ def frequency_response_from_dict(data: Any) -> FrequencyResponseResult:
         frequencies_hz=_array(payload.get("frequencies_hz")),
         magnitude_db_raw=_array(payload.get("magnitude_db_raw")),
         magnitude_db_smoothed=None if smoothed is None else _array(smoothed),
-        smoothing_fraction=int(payload.get("smoothing_fraction", 0)),
+        smoothing_fraction=_int(payload.get("smoothing_fraction", 0), "smoothing_fraction"),
         window_s=float(payload.get("window_s", 0.0)),
         lead_in_s=float(payload.get("lead_in_s", 0.0)),
         resolution_hz=float(payload.get("resolution_hz", float("inf"))),
         bin_spacing_hz=float(payload.get("bin_spacing_hz", float("inf"))),
-        gated=bool(payload.get("gated", False)),
+        gated=read_flag(payload.get("gated", False), "gated"),
         excitation_band=excitation_band_from_dict(payload.get("excitation_band")),
         reference=str(payload.get("reference", "")),
     )
@@ -298,7 +317,7 @@ def hum_from_dict(data: Any) -> HumCandidate:
         base_hz=float(payload["base_hz"]),
         harmonics=harmonics,
         strongest_prominence_db=_opt_float(payload.get("strongest_prominence_db")),
-        detected=bool(payload.get("detected", False)),
+        detected=read_flag(payload.get("detected", False), "detected"),
         distinct_harmonics_hz=tuple(float(x) for x in payload.get("distinct_harmonics_hz") or ()),
         note=_opt_str(payload.get("note")),
     )
@@ -343,7 +362,7 @@ def reflections_from_dict(data: Any) -> ReflectionsResult:
         ),
         notes=_str_tuple(payload.get("notes")),
         analysed_window_ms=_pair(analysed),
-        window_truncated=bool(payload.get("window_truncated", False)),
+        window_truncated=read_flag(payload.get("window_truncated", False), "window_truncated"),
     )
 
 
@@ -358,7 +377,9 @@ def resonances_from_dict(data: Any) -> ResonanceResult:
                 level_above_baseline_db=float(row["level_above_baseline_db"]),
                 narrowband_decay_20db_s=_opt_float(row.get("narrowband_decay_20db_s")),
                 filter_ringing_20db_s=_opt_float(row.get("filter_ringing_20db_s")),
-                decay_distinguishable=bool(row.get("decay_distinguishable", False)),
+                decay_distinguishable=read_flag(
+                    row.get("decay_distinguishable", False), "decay_distinguishable"
+                ),
                 surroundings_decay_20db_s=_opt_float(row.get("surroundings_decay_20db_s")),
             )
         )
@@ -395,7 +416,9 @@ def boundary_from_dict(data: Any) -> BoundaryCandidate:
         mean_distance_bracket_m=_pair(payload.get("mean_distance_bracket_m")),
         specular_ceiling_db=_opt_float(payload.get("specular_ceiling_db")),
         surface=_opt_str(payload.get("surface")),
-        interpretable_as_plane=_opt_bool(payload.get("interpretable_as_plane")),
+        interpretable_as_plane=_opt_bool(
+            payload.get("interpretable_as_plane"), "interpretable_as_plane"
+        ),
         excluded_reason=_opt_str(payload.get("excluded_reason")),
     )
 
@@ -405,7 +428,7 @@ def placement_from_dict(data: Any) -> PlacementResult | None:
         return None
     payload = _obj(data, "placement")
     return PlacementResult(
-        tier=int(payload.get("tier", 0)),
+        tier=_int(payload.get("tier", 0), "tier"),
         candidates=tuple(boundary_from_dict(c) for c in payload.get("candidates") or ()),
         source_height_m=placement_length_from_dict(payload.get("source_height_m", {})),
         ceiling_height_m=placement_length_from_dict(payload.get("ceiling_height_m", {})),
@@ -414,11 +437,13 @@ def placement_from_dict(data: Any) -> PlacementResult | None:
         ),
         speed_of_sound_m_s=float(payload.get("speed_of_sound_m_s", 0.0)),
         temperature_c=float(payload.get("temperature_c", 20.0)),
-        temperature_assumed=bool(payload.get("temperature_assumed", True)),
+        temperature_assumed=read_flag(
+            payload.get("temperature_assumed", True), "temperature_assumed"
+        ),
         distance_m=_opt_float(payload.get("distance_m")),
         mic_height_m=_opt_float(payload.get("mic_height_m")),
         analysed_window_ms=_pair(payload.get("analysed_window_ms")),
-        window_truncated=bool(payload.get("window_truncated", False)),
+        window_truncated=read_flag(payload.get("window_truncated", False), "window_truncated"),
         notes=_str_tuple(payload.get("notes")),
         speed_of_sound_reference=str(payload.get("speed_of_sound_reference", "")),
         coordinates_withheld=str(payload.get("coordinates_withheld", "")),
@@ -431,7 +456,7 @@ def analysis_result_from_dict(data: Any) -> AnalysisResult:
     try:
         return AnalysisResult(
             created_at=str(payload.get("created_at", "")),
-            sample_rate=int(payload["sample_rate"]),
+            sample_rate=_int(payload["sample_rate"], "sample_rate", low=1),
             sweep_settings=dict(payload.get("sweep_settings") or {}),
             analysis_settings=dict(payload.get("analysis_settings") or {}),
             impulse_response=impulse_from_dict(payload.get("impulse_response")),
