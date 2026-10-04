@@ -143,3 +143,21 @@ def test_no_curves_leaves_out_the_interface_curve_and_keeps_the_point_count(
     assert reloaded.frequency_response.frequencies_hz.size == 0
     assert reloaded.to_dict(include_curves=False)["frequency_response"]["points"] == points
     assert reloaded.to_dict(include_curves=True)["frequency_response"]["points"] == points
+
+
+def test_csv_export_includes_the_interface_curve_and_resonance_decays(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    names = {path.name for path in export_csv(_loopback_result(short_sweep), tmp_path)}
+    assert "interface_response.csv" in names
+    lines = (tmp_path / "interface_response.csv").read_text(encoding="utf-8").splitlines()
+    assert lines == ["frequency_hz,magnitude_db", "100.0,-0.5", "1000.0,0.0", "10000.0,-1.0"]
+    header = (tmp_path / "resonances.csv").read_text(encoding="utf-8").splitlines()[0]
+    assert header.split(",") == [
+        "frequency_hz",
+        "level_above_baseline_db",
+        "narrowband_decay_20db_s",
+        "decay_distinguishable",
+        "filter_ringing_20db_s",
+        "surroundings_decay_20db_s",
+    ]
