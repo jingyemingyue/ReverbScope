@@ -566,6 +566,53 @@ def test_opening_a_session_forgets_the_previous_take(
     window.close()
 
 
+def test_a_live_take_is_saved_with_its_session(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
+) -> None:
+    """The live take was written to recording.wav before the rest of the
+    session: a save that then failed (a full disk) had already replaced the
+    recording of the session in that folder."""
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.io.session_store import RECORDING_FILE, load_session
+    from roomscope.io.wav import read_wav
+    from roomscope.ui import results
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    errors: list[str] = []
+    monkeypatch.setattr(
+        results.QMessageBox, "critical", lambda _parent, _title, text: errors.append(text)
+    )
+    rate = short_sweep.sample_rate
+    window = MainWindow()
+    window.show()
+    takes = []
+    for rt60 in (0.3, 0.8):
+        recording = synthetic_recording(short_sweep, make_rir(rate, rt60_s=rt60), noise_rms=1e-5)
+        takes.append((recording, analyze(recording, Reference.from_settings(short_sweep))))
+
+    folder = tmp_path / "studio"
+    window.state.recording, window.state.result = takes[0]
+    window.state.recording_path = None
+    window.results.save_to(folder)
+    assert load_session(folder).recording_path == RECORDING_FILE
+    before = (folder / RECORDING_FILE).read_bytes()
+
+    def disk_full(_fd: int) -> None:
+        raise OSError(28, "No space left on device")
+
+    window.state.recording, window.state.result = takes[1]
+    monkeypatch.setattr(os, "fsync", disk_full)
+    window.results.save_to(folder)
+    monkeypatch.undo()
+    assert errors and "No space left" in errors[0]
+    assert (folder / RECORDING_FILE).read_bytes() == before
+
+    elsewhere = tmp_path / "elsewhere"
+    window.results.save_to(elsewhere)
+    assert len(read_wav(elsewhere / RECORDING_FILE).samples) == len(takes[1][0].samples)
+    window.close()
+
+
 def test_home_selects_two_sessions_for_compare_and_settings_reach_the_gui(
     app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

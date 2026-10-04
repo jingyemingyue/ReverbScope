@@ -18,6 +18,7 @@ import logging
 import os
 import shutil
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -29,6 +30,7 @@ from roomscope.errors import RoomScopeError, SessionError
 from roomscope.i18n import _
 from roomscope.io.jsonutil import write_text_atomic
 from roomscope.io.wav import read_wav, write_wav
+from roomscope.models.audio import AudioSignal
 from roomscope.models.result import AnalysisResult, Validity
 from roomscope.models.session import MeasurementSession
 
@@ -96,12 +98,17 @@ def save_measurement(
     *,
     include_curves: bool = True,
     copy_recording: bool | None = None,
+    recording: AudioSignal | None = None,
 ) -> Path:
     """Write session.json, result.json and impulse_response.wav into ``directory``.
 
     The sweep sidecar is always copied when one can be found. The raw recording
     is copied when ``copy_recording`` is true, or when it is omitted and the
-    user settings default to copying (the GUI default).
+    user settings default to copying (the GUI default). ``recording`` is a take
+    that has no file yet (a live GUI take): it is written as recording.wav.
+
+    Nothing in ``directory`` is replaced until every file has been written, so
+    a failed save keeps the session that was there whole.
     """
     base = Path(directory)
     base.mkdir(parents=True, exist_ok=True)
@@ -115,35 +122,69 @@ def save_measurement(
     session = replace(session)
     original_sweep = session.sweep_path
     original_recording = session.recording_path
-    ir_path = write_wav(
-        base / IR_FILE, result.impulse_response.samples, result.sample_rate, subtype="FLOAT"
-    )
+    # Every member is written under a temporary name first and only renamed
+    # into place once all of them have been written: a full disk half-way
+    # through keeps the previous take whole instead of mixing two takes.
+    staged: list[tuple[Path, Path]] = []
+
+    def stage(name: str) -> Path:
+        final = base / name
+        # The real suffix stays last: soundfile picks the format from it.
+        temporary = final.with_name(f".{final.stem}.saving{final.suffix}")
+        staged.append((temporary, final))
+        return temporary
+
+    ir_path = base / IR_FILE
     result_path = base / RESULT_FILE
-    try:
-        write_text_atomic(result_path, json.dumps(result.to_dict(include_curves), indent=1))
-    except (OSError, TypeError, ValueError) as exc:
-        raise SessionError(
-            _("cannot write {path}: {error}").format(path=result_path, error=exc)
-        ) from exc
-    _copy_sidecar(original_sweep, base)
-    if copy_recording:
-        copied = _copy_recording(original_recording, base)
-        if copied is not None:
-            session.recording_path = str(copied)
-    session.sample_rate = result.sample_rate
-    session.impulse_response_path = _relative(ir_path, base)
-    session.result_path = _relative(result_path, base)
-    session.sweep_path = _relative(session.sweep_path, base)
-    session.recording_path = _relative(session.recording_path, base)
-    session.analysis_summary = result_summary(result)
     session_path = base / SESSION_FILE
     try:
-        write_text_atomic(session_path, json.dumps(session.to_dict(), indent=2))
-    except (OSError, TypeError, ValueError) as exc:
-        raise SessionError(
-            _("cannot write {path}: {error}").format(path=session_path, error=exc)
-        ) from exc
+        if recording is not None:
+            write_wav(
+                stage(RECORDING_FILE), recording.samples, recording.sample_rate, subtype="FLOAT"
+            )
+            session.recording_path = str(base / RECORDING_FILE)
+        write_wav(
+            stage(IR_FILE), result.impulse_response.samples, result.sample_rate, subtype="FLOAT"
+        )
+        _write_staged_text(
+            stage(RESULT_FILE), result_path, json.dumps(result.to_dict(include_curves), indent=1)
+        )
+        _copy_sidecar(original_sweep, base, stage=stage)
+        if copy_recording and recording is None:
+            copied = _copy_recording(original_recording, base, stage=stage)
+            if copied is not None:
+                session.recording_path = str(copied)
+        session.sample_rate = result.sample_rate
+        session.impulse_response_path = _relative(ir_path, base)
+        session.result_path = _relative(result_path, base)
+        session.sweep_path = _relative(session.sweep_path, base)
+        session.recording_path = _relative(session.recording_path, base)
+        session.analysis_summary = result_summary(result)
+        # session.json is renamed last, after the files it describes.
+        _write_staged_text(
+            stage(SESSION_FILE), session_path, json.dumps(session.to_dict(), indent=2)
+        )
+        for temporary, final in staged:
+            try:
+                os.replace(temporary, final)
+            except OSError as exc:
+                raise SessionError(
+                    _("cannot write {path}: {error}").format(path=final, error=exc)
+                ) from exc
+    finally:
+        for temporary, _final in staged:
+            temporary.unlink(missing_ok=True)
     return session_path
+
+
+def _write_staged_text(temporary: Path, final: Path, text: str) -> None:
+    try:
+        with temporary.open("w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except (OSError, TypeError, ValueError) as exc:
+        raise SessionError(_("cannot write {path}: {error}").format(path=final, error=exc)) from exc
 
 
 def bundle_session(
@@ -193,7 +234,7 @@ def bundle_session(
     return target
 
 
-def _copy_into(src: Path, dest: Path) -> Path | None:
+def _copy_into(src: Path, dest: Path, *, stage: Callable[[str], Path] | None = None) -> Path | None:
     if not src.is_file():
         return None
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -202,7 +243,7 @@ def _copy_into(src: Path, dest: Path) -> Path | None:
         # where Recording.wav and recording.wav are one file.
         if dest.exists() and os.path.samefile(src, dest):
             return dest
-        shutil.copy2(src, dest)
+        shutil.copy2(src, dest if stage is None else stage(dest.name))
     except OSError as exc:
         raise SessionError(
             _("cannot copy {source} to {target}: {error}").format(
@@ -212,7 +253,9 @@ def _copy_into(src: Path, dest: Path) -> Path | None:
     return dest
 
 
-def _copy_sidecar(sweep_path: str | None, base: Path) -> Path | None:
+def _copy_sidecar(
+    sweep_path: str | None, base: Path, *, stage: Callable[[str], Path] | None = None
+) -> Path | None:
     if not sweep_path:
         return None
     from roomscope.io.wav import SIDECAR_SUFFIX, sidecar_path
@@ -226,17 +269,19 @@ def _copy_sidecar(sweep_path: str | None, base: Path) -> Path | None:
         candidates.append(src.with_name(SWEEP_SIDECAR_NAME))
     for candidate in candidates:
         if candidate.is_file():
-            return _copy_into(candidate, base / SWEEP_SIDECAR_NAME)
+            return _copy_into(candidate, base / SWEEP_SIDECAR_NAME, stage=stage)
     return None
 
 
-def _copy_recording(recording_path: str | None, base: Path) -> Path | None:
+def _copy_recording(
+    recording_path: str | None, base: Path, *, stage: Callable[[str], Path] | None = None
+) -> Path | None:
     if not recording_path:
         return None
     src = Path(recording_path)
     if not src.is_file() and not src.is_absolute():
         src = base / src
-    return _copy_into(src, base / RECORDING_FILE)
+    return _copy_into(src, base / RECORDING_FILE, stage=stage)
 
 
 def load_session(path: str | Path) -> MeasurementSession:

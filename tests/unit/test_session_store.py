@@ -207,29 +207,65 @@ def test_bundle_the_folder_you_are_in(
     assert bundle_session(SESSION_FILE, tmp_path / "out") == tmp_path / "out" / "booth.zip"
 
 
-def test_a_failed_write_keeps_the_previous_session(
-    tmp_path: Path, analysed, monkeypatch: pytest.MonkeyPatch
+@pytest.mark.parametrize("failure", ["json", "recording"])
+def test_a_failed_save_keeps_the_previous_take_whole(
+    tmp_path: Path,
+    short_sweep: SweepSettings,
+    analysed,
+    monkeypatch: pytest.MonkeyPatch,
+    failure: str,
 ) -> None:
-    """write_text truncated session.json and result.json first, so a full
-    disk half-way through destroyed the session being replaced."""
+    """A full disk half-way through a save into an existing session folder
+    left impulse_response.wav (and recording.wav) of the new take beside the
+    JSON of the old one, or a cut-off WAV that no longer opened."""
     import os
+    import shutil
 
-    from roomscope.io import jsonutil
+    from roomscope.io import session_store
+    from roomscope.io.session_store import RECORDING_FILE
+    from roomscope.io.wav import write_wav
 
-    _recording, result = analysed
+    first_rec, first = analysed
+    second_rec = synthetic_recording(
+        short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.8), noise_rms=1e-5
+    )
+    second = analyze(second_rec, Reference.from_settings(short_sweep))
+    rate = short_sweep.sample_rate
+    takes = tmp_path / "takes"
+    one = write_wav(takes / "one.wav", first_rec.samples, rate, subtype="FLOAT")
+    two = write_wav(takes / "two.wav", second_rec.samples, rate, subtype="FLOAT")
     folder = tmp_path / "s"
-    save_measurement(folder, MeasurementSession(room_name="First"), result, include_curves=False)
-    before = {name: (folder / name).read_bytes() for name in (SESSION_FILE, RESULT_FILE)}
+    save_measurement(
+        folder,
+        MeasurementSession(room_name="First", recording_path=str(one)),
+        first,
+        include_curves=False,
+        copy_recording=True,
+    )
+    members = (SESSION_FILE, RESULT_FILE, IR_FILE, RECORDING_FILE)
+    before = {name: (folder / name).read_bytes() for name in members}
 
-    def disk_full(_fd: int) -> None:
+    def disk_full(*_args: object, **_kwargs: object) -> None:
         raise OSError(28, "No space left on device")
 
-    monkeypatch.setattr(jsonutil.os, "fsync", disk_full)
+    def cut_off_copy(src: str, dst: str, **_kwargs: object) -> None:
+        Path(dst).write_bytes(Path(src).read_bytes()[:1000])
+        disk_full()
+
+    if failure == "json":
+        monkeypatch.setattr(os, "fsync", disk_full)
+    else:
+        monkeypatch.setattr(session_store.shutil, "copy2", cut_off_copy)
     with pytest.raises(SessionError, match="No space left"):
         save_measurement(
-            folder, MeasurementSession(room_name="Second"), result, include_curves=False
+            folder,
+            MeasurementSession(room_name="Second", recording_path=str(two)),
+            second,
+            include_curves=False,
+            copy_recording=True,
         )
-    monkeypatch.setattr(jsonutil.os, "fsync", os.fsync)
-    assert {name: (folder / name).read_bytes() for name in before} == before
+    monkeypatch.setattr(os, "fsync", os.fsync)
+    monkeypatch.setattr(session_store.shutil, "copy2", shutil.copy2)
+    assert {name: (folder / name).read_bytes() for name in members} == before
     assert load_measurement(folder).session.room_name == "First"
-    assert not list(folder.glob(".*.tmp"))
+    assert not [path.name for path in folder.iterdir() if path.name.startswith(".")]

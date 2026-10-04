@@ -34,7 +34,6 @@ from roomscope.errors import RoomScopeError
 from roomscope.i18n import _, localize
 from roomscope.io.recent import remember_session
 from roomscope.io.session_store import save_measurement
-from roomscope.io.wav import write_wav
 from roomscope.labels import severity_text, surface_text, topic_text, validity_word
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
@@ -539,15 +538,14 @@ class ResultsPage(QWidget):
         if result is None:
             return
         try:
-            if self.state.recording is not None and self.state.recording_path is None:
-                path = write_wav(
-                    directory / "recording.wav",
-                    self.state.recording.samples,
-                    result.sample_rate,
-                    subtype="FLOAT",
-                )
-                self.state.session.recording_path = str(path)
-            session_path = save_measurement(directory, self.state.session, result)
+            # A live take has no file yet: it is written with the rest of the
+            # session, so a failed save cannot overwrite the previous take.
+            unsaved = self.state.recording if self.state.recording_path is None else None
+            session_path = save_measurement(
+                directory, self.state.session, result, recording=unsaved
+            )
+            if unsaved is not None:
+                self.state.session.recording_path = str(directory / "recording.wav")
         except RoomScopeError as exc:
             QMessageBox.critical(self, _("Cannot save session"), localize(str(exc)))
             return

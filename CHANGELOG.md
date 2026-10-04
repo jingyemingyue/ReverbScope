@@ -35,8 +35,9 @@ All notable changes to RoomScope are documented here. The format follows
   the playback level, so raising the level changes it. A 0 dB reflection is
   ranked strongest.
 - **Files.** Saving a session twice, or saving an opened session elsewhere, no
-  longer loses `recording.wav`. JSON files are replaced atomically, so a full
-  disk keeps the previous session, project or settings. Wrongly typed values in
+  longer loses `recording.wav`. Files are replaced only once everything has
+  been written, so a full disk keeps the previous session (its audio too),
+  project or settings. Wrongly typed values in
   session, result, comparison, project, sidecar and settings files are refused
   with a RoomScope error (or ignored, for settings) instead of a crash; `"false"`
   no longer turns developer tools on. One unreadable session no longer hides a
