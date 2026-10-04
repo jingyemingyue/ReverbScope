@@ -57,6 +57,8 @@ DYNAMIC_CALLS = {
     # The "GUI cannot start" sentence, extracted with N_() in ui/app.py.
     ("cli/main.py", "_(GUI_UNAVAILABLE)"),
     ("ui/app.py", "_(GUI_UNAVAILABLE)"),
+    # Validity words, each extracted with N_() in VALIDITY_WORDS.
+    ("labels.py", "_(word)"),
 }
 
 #: ASCII tokens a Chinese finding may legitimately contain: units, metric

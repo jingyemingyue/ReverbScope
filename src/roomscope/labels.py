@@ -8,21 +8,26 @@ language.
 
 from __future__ import annotations
 
-from roomscope.i18n import _
+from roomscope.i18n import N_, _
 from roomscope.models.result import Validity
+
+#: The English word for each validity: what :func:`validity_word` translates,
+#: and what a stored comparison reason says ("baseline insufficient range"),
+#: so that :func:`~roomscope.i18n.localize` can show it translated too.
+VALIDITY_WORDS: dict[Validity, str] = {
+    Validity.VALID: N_("valid"),
+    Validity.UNRELIABLE: N_("unreliable"),
+    Validity.INSUFFICIENT_RANGE: N_("insufficient range"),
+    Validity.NOT_COMPUTED: N_("not computed"),
+    Validity.OUTSIDE_EXCITATION: N_("outside the sweep's range"),
+    Validity.NOT_COMPARABLE: N_("not comparable"),
+}
 
 
 def validity_word(validity: Validity) -> str:
     """Translated word for a metric validity."""
-    words = {
-        Validity.VALID: _("valid"),
-        Validity.UNRELIABLE: _("unreliable"),
-        Validity.INSUFFICIENT_RANGE: _("insufficient range"),
-        Validity.NOT_COMPUTED: _("not computed"),
-        Validity.OUTSIDE_EXCITATION: _("outside the sweep's range"),
-        Validity.NOT_COMPARABLE: _("not comparable"),
-    }
-    return words.get(validity, str(validity))
+    word = VALIDITY_WORDS.get(validity)
+    return _(word) if word is not None else str(validity)
 
 
 def severity_text(severity: str) -> str:

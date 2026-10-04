@@ -12,6 +12,7 @@ import numpy as np
 
 from roomscope.core.filters import fractional_octave_smooth, iec_band
 from roomscope.i18n import diag
+from roomscope.labels import VALIDITY_WORDS
 from roomscope.models.comparison import (
     T_JND_PERCENT,
     CompareSettings,
@@ -146,30 +147,36 @@ def _side_reasons(
     baseline: DecayMetric | EnergyMetric | PlacementLength,
     candidate: DecayMetric | EnergyMetric | PlacementLength,
 ) -> list[str]:
-    """Why each side that is not VALID cannot be compared, one sentence per side."""
+    """Why each side that is not VALID cannot be compared, one sentence per side.
+
+    The validity is written as its word ("insufficient range"), not its id,
+    so the stored English reads well and is shown translated.
+    """
     reasons: list[str] = []
     if baseline.validity is not Validity.VALID:
         if baseline.reason:
             reasons.append(
                 diag(
                     "baseline {validity} ({reason})",
-                    validity=baseline.validity,
+                    validity=VALIDITY_WORDS[baseline.validity],
                     reason=baseline.reason,
                 )
             )
         else:
-            reasons.append(diag("baseline {validity}", validity=baseline.validity))
+            reasons.append(diag("baseline {validity}", validity=VALIDITY_WORDS[baseline.validity]))
     if candidate.validity is not Validity.VALID:
         if candidate.reason:
             reasons.append(
                 diag(
                     "candidate {validity} ({reason})",
-                    validity=candidate.validity,
+                    validity=VALIDITY_WORDS[candidate.validity],
                     reason=candidate.reason,
                 )
             )
         else:
-            reasons.append(diag("candidate {validity}", validity=candidate.validity))
+            reasons.append(
+                diag("candidate {validity}", validity=VALIDITY_WORDS[candidate.validity])
+            )
     return reasons
 
 

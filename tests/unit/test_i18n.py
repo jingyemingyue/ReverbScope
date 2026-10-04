@@ -378,3 +378,22 @@ def test_plain_joins_and_unknown_pieces_still_work() -> None:
     # Nothing recognised: the text as stored, separators included.
     unknown = "a note that no template knows; and (another; one)"
     assert _shown_in_chinese(unknown) == unknown
+
+
+def test_comparison_reasons_name_the_validity_in_words() -> None:
+    """#66: "candidate outside_excitation_range" stayed an id, also in zh_CN."""
+    from roomscope.core.compare import _decay_metric_delta
+    from roomscope.models.result import DecayMetric, Validity
+
+    reason = _decay_metric_delta(
+        "band.4 kHz.t30",
+        DecayMetric("t30", None, Validity.INSUFFICIENT_RANGE, None, reason="too little decay"),
+        DecayMetric("t30", None, Validity.OUTSIDE_EXCITATION, None),
+    ).reason
+    assert reason == (
+        "baseline insufficient range (too little decay); candidate outside the sweep's range"
+    )
+    assert _shown_in_chinese(reason) == "基线：衰减范围不足（too little decay）；候选：超出扫频范围"
+    # A reason stored with the ids by an earlier version.
+    stored = "baseline insufficient_decay_range; candidate outside_excitation_range"
+    assert _shown_in_chinese(stored) == "基线：衰减范围不足；候选：超出扫频范围"

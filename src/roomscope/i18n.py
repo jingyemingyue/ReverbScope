@@ -365,11 +365,19 @@ def _localize_value(value: str, depth: int) -> str:
             .format(a="", b="")
             .join(_localize_value(part, depth) for part in value.split(" or "))
         )
-    for candidate in (value, value.replace("_", " ")):
+    for candidate in (value, _STORED_WORDS.get(value, value.replace("_", " "))):
         translated = _translation.gettext(candidate)
         if translated != candidate:
             return translated
     return value
+
+
+#: Validity ids whose display word is worded differently. Comparison reasons
+#: written by earlier versions held the id ("baseline outside_excitation_range").
+_STORED_WORDS = {
+    "insufficient_decay_range": N_("insufficient range"),
+    "outside_excitation_range": N_("outside the sweep's range"),
+}
 
 
 def parse_po(path: Path) -> dict[str, str]:
