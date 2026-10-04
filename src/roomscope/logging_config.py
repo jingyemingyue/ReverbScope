@@ -18,6 +18,8 @@ _FORMAT = "%(asctime)s %(levelname)-7s %(name)s: %(message)s"
 LOG_FILENAME = "roomscope.log"
 LOG_MAX_BYTES = 1_000_000
 LOG_BACKUPS = 3
+# Windows refuses to rename a file another process has open; POSIX renames it.
+_RENAME_FAILS_WHILE_OPEN = sys.platform == "win32"
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
@@ -42,18 +44,22 @@ class _SharedRotatingFileHandler(RotatingFileHandler):
         # the stdlib shifts .1 -> .2 -> .3 first and renames the live file
         # last, so a rename that fails (again on every later record) would push
         # the old logs out one by one. Our own handle must be closed to try.
-        if self.stream:
-            self.stream.close()
-            self.stream = None
-        probe = self.baseFilename + ".rotating"
-        try:
-            os.replace(self.baseFilename, probe)
-            os.replace(probe, self.baseFilename)
-        except FileNotFoundError:
-            pass
-        except PermissionError:
-            self.stream = self._open()
-            return
+        # Only where that rename can fail: the probe leaves the log name vacant
+        # for a moment, and on POSIX another process that opened the log then
+        # would go on writing to a deleted file.
+        if _RENAME_FAILS_WHILE_OPEN:
+            if self.stream:
+                self.stream.close()
+                self.stream = None
+            probe = self.baseFilename + ".rotating"
+            try:
+                os.replace(self.baseFilename, probe)
+                os.replace(probe, self.baseFilename)
+            except FileNotFoundError:
+                pass
+            except PermissionError:
+                self.stream = self._open()
+                return
         try:
             super().doRollover()
         except PermissionError:

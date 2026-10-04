@@ -213,6 +213,40 @@ def test_log_rotation_keeps_logging_when_the_file_is_locked(
     assert "record 4" in (tmp_path / "roomscope.log").read_text(encoding="utf-8")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="the rename probe is for Windows")
+def test_log_rotation_never_vacates_the_log_name_on_posix(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The Windows rename probe ran everywhere: on POSIX, another process that
+    opened roomscope.log between its two renames lost its records to a
+    deleted file."""
+    from roomscope import logging_config
+    from roomscope.logging_config import _SharedRotatingFileHandler
+
+    renames: list[tuple[str, str]] = []
+    real_replace = os.replace
+
+    def recording_replace(source: object, target: object) -> None:
+        renames.append((os.fspath(source), os.fspath(target)))  # type: ignore[arg-type]
+        real_replace(source, target)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(logging_config.os, "replace", recording_replace)
+    base = tmp_path / "roomscope.log"
+    handler = _SharedRotatingFileHandler(base, maxBytes=10, backupCount=1)
+    logger = logging.getLogger("roomscope-test-posix-rotation")
+    logger.propagate = False
+    logger.addHandler(handler)
+    try:
+        for index in range(2):
+            logger.warning("record %d is longer than the limit", index)
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+    assert not [target for _, target in renames if target.endswith(".rotating")]
+    assert "record 0" in Path(f"{base}.1").read_text(encoding="utf-8")
+    assert "record 1" in base.read_text(encoding="utf-8")
+
+
 def test_default_devices_are_marked(monkeypatch: pytest.MonkeyPatch) -> None:
     """sounddevice returns the defaults as an indexable _InputOutputPair."""
     from roomscope.audio import devices
@@ -299,6 +333,7 @@ def test_a_locked_log_keeps_its_backups(tmp_path: Path, monkeypatch: pytest.Monk
             raise PermissionError(32, "The process cannot access the file")
         real_replace(source, target)  # type: ignore[arg-type]
 
+    monkeypatch.setattr(logging_config, "_RENAME_FAILS_WHILE_OPEN", True)
     monkeypatch.setattr(logging_config.os, "replace", locked_replace)
     monkeypatch.setattr(handler, "rotate", locked_replace)
     logger = logging.getLogger("roomscope-test-backups")
