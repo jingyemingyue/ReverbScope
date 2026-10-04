@@ -3982,3 +3982,6 @@ msgstr "参考平面"
 
 msgid "No noise spectrum stored with this session"
 msgstr "此会话未保存噪声频谱"
+
+msgid "{session} is already listed under position '{label}'"
+msgstr "{session} 已列在位置“{label}”下"

@@ -8,7 +8,7 @@ from pathlib import Path
 from roomscope.errors import SessionError
 from roomscope.i18n import _
 from roomscope.io.jsonutil import read_json_object, write_text_atomic
-from roomscope.io.session_store import SESSION_FILE, list_sessions
+from roomscope.io.session_store import SESSION_FILE, list_sessions, load_session
 from roomscope.models.project import PositionEntry, Project
 from roomscope.version import __version__
 
@@ -57,13 +57,26 @@ def add_session(
     if session.name == SESSION_FILE:
         # One session, one entry: "dir" and "dir/session.json" are the same take.
         session = session.parent
+    # A typo would be stored and then skipped by every listing without a word.
+    load_session(session)
     stored = _relative(session, base)
+    target = _resolve(base, stored).resolve()
+    for entry in project.positions:
+        if entry.label != position and any(
+            _resolve(base, d).resolve() == target for d in entry.session_dirs
+        ):
+            # One take is one position; the listing would keep the first label.
+            raise SessionError(
+                _("{session} is already listed under position '{label}'").format(
+                    session=session, label=entry.label
+                )
+            )
     positions = list(project.positions)
     for index, entry in enumerate(positions):
         if entry.label == position:
             dirs = list(entry.session_dirs)
             known = {_resolve(base, d).resolve() for d in dirs}
-            if _resolve(base, stored).resolve() not in known:
+            if target not in known:
                 dirs.append(stored)
             positions[index] = PositionEntry(label=position, session_dirs=tuple(dirs))
             break
