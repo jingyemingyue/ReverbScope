@@ -3985,3 +3985,14 @@ msgstr "此会话未保存噪声频谱"
 
 msgid "{session} is already listed under position '{label}'"
 msgstr "{session} 已列在位置“{label}”下"
+msgid "{field} must be true or false"
+msgstr "{field} 必须是 true 或 false"
+
+msgid "{field} must not be null"
+msgstr "{field} 不能为 null"
+
+msgid "{field} must be text"
+msgstr "{field} 必须是文本"
+
+msgid "expected a list of numbers"
+msgstr "此处应为数字列表"

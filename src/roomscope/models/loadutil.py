@@ -126,26 +126,46 @@ def record_payload(data: object, known: set[str], *, kind: str) -> dict[str, Any
     return drop_unknown(data, known, kind=kind)
 
 
+def read_flag(value: object, name: str) -> bool:
+    """A flag read from a file: JSON ``true`` or ``false`` only.
+
+    ``bool()`` would read the text ``"false"`` (or any non-empty list) as
+    true. Raises ``TypeError``, which the loaders turn into
+    :class:`SessionError`.
+    """
+    if not isinstance(value, bool):
+        raise TypeError(_("{field} must be true or false").format(field=name))
+    return value
+
+
 def _typed(cls: type, payload: Mapping[str, Any]) -> dict[str, Any]:
     """``payload`` with numbers converted to the dataclass field's annotation.
 
     Raises ``TypeError`` / ``ValueError`` for a value that is not a number
-    (or, for a flag, not ``true`` / ``false``).
+    (or, for a flag, not ``true`` / ``false``; for text, not a string), and
+    for ``null`` in a field that is not optional: a name or a status that is
+    a number or ``null`` would load and fail later, in the report.
     """
     typed = dict(payload)
     if not is_dataclass(cls):
         return typed
     for item in fields(cls):
-        value = typed.get(item.name)
-        if value is None:
+        if item.name not in typed:
             continue
+        value = typed[item.name]
         annotation = str(item.type)
+        if value is None:
+            if annotation in ("float", "int", "bool", "str"):
+                raise TypeError(_("{field} must not be null").format(field=item.name))
+            continue
         if annotation in ("float", "float | None"):
             typed[item.name] = float(value)
         elif annotation in ("int", "int | None"):
             typed[item.name] = int(value)
-        elif annotation in ("bool", "bool | None") and not isinstance(value, bool):
-            raise TypeError(f"{item.name} must be true or false")
+        elif annotation in ("bool", "bool | None"):
+            read_flag(value, item.name)
+        elif annotation in ("str", "str | None") and not isinstance(value, str):
+            raise TypeError(_("{field} must be text").format(field=item.name))
     return typed
 
 
@@ -155,8 +175,9 @@ def build_record[T](cls: type[T], payload: Mapping[str, Any], *, kind: str) -> T
     A missing required field (``TypeError``) or a value the class rejects
     (``ValueError``) becomes :class:`SessionError`, so an untrusted file never
     surfaces a bare Python exception (#11). Numbers and flags are converted
-    here too: text or a list in a ``float`` field would otherwise load and
-    fail later, in a comparison or a format string.
+    here too: text or a list in a ``float`` field (or a number in a ``str``
+    one) would otherwise load and fail later, in a comparison or a format
+    string.
     """
     try:
         return cls(**_typed(cls, payload))

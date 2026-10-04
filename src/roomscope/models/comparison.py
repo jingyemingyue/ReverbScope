@@ -12,10 +12,13 @@ from typing import Any
 import numpy as np
 
 from roomscope.errors import SessionError
+from roomscope.i18n import _
 from roomscope.models.loadutil import (
     build_record,
     drop_unknown,
+    read_flag,
     read_schema_version,
+    record_name,
     record_payload,
 )
 from roomscope.models.result import FloatArray, Validity
@@ -33,6 +36,15 @@ def _array_to_list(values: FloatArray | None, decimals: int = 4) -> list[float] 
     if values is None:
         return None
     return [float(v) for v in np.round(values, decimals)]
+
+
+def _curve(values: Any) -> FloatArray:
+    """A curve read from a file. A single number would load as a 0-d array
+    that ``to_dict`` cannot turn back into a list."""
+    curve = np.asarray(values, dtype=np.float64)
+    if curve.ndim != 1:
+        raise TypeError(_("expected a list of numbers"))
+    return curve
 
 
 @dataclass(frozen=True)
@@ -141,7 +153,20 @@ class ReflectionMatch:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ReflectionMatch:
         payload = record_payload(data, {f.name for f in fields(cls)}, kind="reflection match")
-        return build_record(cls, payload, kind="reflection match")
+        record = build_record(cls, payload, kind="reflection match")
+        # The report prints the delay and level of the side(s) the status
+        # names; any other status is shown with the baseline's.
+        sides = {"matched": ("baseline", "candidate"), "appeared": ("candidate",)}
+        for side in sides.get(record.status, ("baseline",)):
+            for name in (f"{side}_delay_ms", f"{side}_relative_db"):
+                if getattr(record, name) is None:
+                    raise SessionError(
+                        _("invalid {kind} in file: {error}").format(
+                            kind=record_name("reflection match"),
+                            error=_("{field} must not be null").format(field=name),
+                        )
+                    )
+        return record
 
 
 @dataclass(frozen=True)
@@ -200,13 +225,13 @@ class FrequencyResponseDelta:
         mad = payload.get("band_mad_db") or ()
         try:
             return cls(
-                frequencies_hz=np.asarray(freq, dtype=np.float64),
-                difference_db=np.asarray(diff, dtype=np.float64),
+                frequencies_hz=_curve(freq),
+                difference_db=_curve(diff),
                 band_mad_db=tuple((str(a), float(b)) for a, b in mad),
                 smoothing_fraction=int(payload.get("smoothing_fraction", 0)),
                 reference=str(payload.get("reference", "")),
             )
-        except (TypeError, ValueError) as exc:
+        except (TypeError, ValueError, OverflowError) as exc:  # Overflow: int(Infinity)
             raise SessionError(f"invalid frequency-response delta in file: {exc}") from exc
 
 
@@ -263,7 +288,8 @@ class ComparisonResult:
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="comparison")
         try:
             return cls._from_payload(payload, version)
-        except (TypeError, ValueError, IndexError, KeyError) as exc:
+        except (TypeError, ValueError, IndexError, KeyError, OverflowError) as exc:
+            # OverflowError: float() of an integer with hundreds of digits.
             raise SessionError(f"invalid comparison file: {exc}") from exc
 
     @classmethod
@@ -272,7 +298,7 @@ class ComparisonResult:
         common_band = None if common is None else (float(common[0]), float(common[1]))
         notes = payload.get("notes") or ()
         return cls(
-            comparable=bool(payload.get("comparable", False)),
+            comparable=read_flag(payload.get("comparable", False), "comparable"),
             common_band=common_band,
             notes=tuple(str(n) for n in notes),
             decay=tuple(MetricDelta.from_dict(item) for item in payload.get("decay") or ()),

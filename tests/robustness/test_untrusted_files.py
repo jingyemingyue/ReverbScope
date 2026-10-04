@@ -276,6 +276,63 @@ def test_incomplete_comparison_records_are_session_errors(
         load_comparison(path)
 
 
+_DELTA = {"name": "broadband.t30", "baseline": 1.0, "candidate": 1.1, "validity": "valid"}
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"frequency_response": {"smoothing_fraction": float("inf")}},
+        {"frequency_response": {"band_mad_db": [["1 kHz", 10**400]]}},
+        {"frequency_response": {"frequencies_hz": [10**400]}},
+        {"common_band": [10**400, 2.0]},
+        {"frequency_response": {"frequencies_hz": 5, "difference_db": 5}},
+        {"decay": [{**_DELTA, "name": 5}]},
+        {"decay": [{**_DELTA, "name": None}]},
+        {"noise": [{**_DELTA, "validity": "not_comparable", "reason": 5}]},
+        {"resonances": [{"status": 5}]},
+        {"reflections": [{"status": None}]},
+        {"reflections": [{"status": "matched", "baseline_delay_ms": 3.0}]},
+        {"comparable": "false"},
+    ],
+    ids=[
+        "smoothing-inf",
+        "band-mad-huge",
+        "frequency-huge",
+        "common-band-huge",
+        "curves-scalar",
+        "name-number",
+        "name-null",
+        "reason-number",
+        "status-number",
+        "status-null",
+        "matched-without-candidate",
+        "comparable-text",
+    ],
+)
+def test_wrongly_typed_comparison_values_are_session_errors(tmp_path: Path, payload: dict) -> None:
+    """Each of these escaped as OverflowError, or loaded and then crashed
+    ``roomscope show`` as "a bug in RoomScope"; "false" read as comparable."""
+    path = tmp_path / "comparison.json"
+    path.write_text(
+        json.dumps({"comparable": True, "common_band": None, **payload}), encoding="utf-8"
+    )
+    with pytest.raises(SessionError):
+        load_comparison(path)
+
+
+def test_one_sided_reflection_matches_load(tmp_path: Path) -> None:
+    path = tmp_path / "comparison.json"
+    reflections = [
+        {"status": "appeared", "candidate_delay_ms": 3.0, "candidate_relative_db": -6.0},
+        {"status": "disappeared", "baseline_delay_ms": 4.0, "baseline_relative_db": -9.0},
+    ]
+    path.write_text(json.dumps({"comparable": False, "reflections": reflections}), encoding="utf-8")
+    loaded = load_comparison(path)
+    assert [m.status for m in loaded.reflections] == ["appeared", "disappeared"]
+    assert loaded.comparable is False
+
+
 def test_invalid_compare_settings_and_calibration_are_session_errors() -> None:
     from roomscope.models.calibration import CalibrationRecord
     from roomscope.models.comparison import CompareSettings
