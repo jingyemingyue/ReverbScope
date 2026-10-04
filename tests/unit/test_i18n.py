@@ -227,15 +227,51 @@ def test_parse_po_unescapes_in_one_pass_and_skips_fuzzy(tmp_path) -> None:
     }
 
 
-def test_the_catalog_has_no_duplicate_entries() -> None:
-    """GNU msgfmt refuses a catalog with a duplicate msgid."""
-    import re
+def _duplicate_po_entries(text: str) -> list[tuple[str, str]]:
+    """``(msgctxt, msgid)`` keys that occur more than once in a ``.po`` text.
+
+    Continuation lines are joined, so a msgid written as ``msgid ""`` followed
+    by ``"..."`` lines counts too. The header (an empty msgid) and obsolete
+    ``#~`` entries are left out.
+    """
     from collections import Counter
+
+    fields: list[list[str]] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith('"') and fields:
+            fields[-1][1] += line[1:-1]
+        elif line.startswith("msg"):
+            keyword, _sep, value = line.partition(" ")
+            fields.append([keyword, value.strip()[1:-1]])
+    keys: list[tuple[str, str]] = []
+    context = ""
+    for keyword, value in fields:
+        if keyword == "msgctxt":
+            context = value
+        elif keyword == "msgid":
+            if value or context:
+                keys.append((context, value))
+            context = ""
+    return [key for key, count in Counter(keys).items() if count > 1]
+
+
+def test_the_catalog_has_no_duplicate_entries() -> None:
+    """GNU msgfmt refuses a catalog with a duplicate msgid. The check missed
+    entries whose msgid spans several lines."""
     from pathlib import Path
 
-    text = Path("src/roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po").read_text(encoding="utf-8")
-    keys = re.findall(r'(?:msgctxt "((?:[^"\\]|\\.)*)"\n)?msgid "((?:[^"\\]|\\.)+)"\n', text)
-    assert [key for key, count in Counter(keys).items() if count > 1] == []
+    path = Path("src/roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po")
+    text = path.read_text(encoding="utf-8") + "\n"
+    assert _duplicate_po_entries(text) == []
+    long_entry = 'msgid ""\n"The first line, "\n"and the second."\nmsgstr "x"\n\n'
+    other_ending = 'msgid ""\n"The first line, "\n"and another."\nmsgstr "y"\n\n'
+    in_context = 'msgctxt "diagnostic"\nmsgid "Cancel"\nmsgstr "z"\n\n'
+    assert _duplicate_po_entries(text + long_entry + other_ending) == []
+    assert _duplicate_po_entries(text + long_entry + long_entry) == [
+        ("", "The first line, and the second.")
+    ]
+    assert _duplicate_po_entries(text + in_context + in_context) == [("diagnostic", "Cancel")]
 
 
 def test_metric_labels_split_from_the_right() -> None:
