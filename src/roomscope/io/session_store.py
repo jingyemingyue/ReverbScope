@@ -29,6 +29,8 @@ if TYPE_CHECKING:
 from roomscope.errors import RoomScopeError, SessionError
 from roomscope.i18n import _
 from roomscope.io.jsonutil import (
+    MAX_JSON_BYTES,
+    MAX_RESULT_JSON_BYTES,
     keep_mode,
     temporary_beside,
     write_text_atomic,
@@ -311,7 +313,11 @@ def load_session(path: str | Path) -> MeasurementSession:
 
 def load_result(path: str | Path) -> AnalysisResult:
     """Load an :class:`AnalysisResult` from ``result.json``."""
-    return AnalysisResult.from_dict(_read_json(Path(path), kind="result"))
+    # Every frequency-response bin is stored: a 192 kHz take is larger than
+    # the cap on the other JSON files.
+    return AnalysisResult.from_dict(
+        _read_json(Path(path), kind="result", max_bytes=MAX_RESULT_JSON_BYTES)
+    )
 
 
 @dataclass(frozen=True)
@@ -431,10 +437,12 @@ def _session_file(path: str | Path) -> Path:
     return p
 
 
-def _read_json(path: Path, *, kind: str = "session") -> dict[str, Any]:
+def _read_json(
+    path: Path, *, kind: str = "session", max_bytes: int = MAX_JSON_BYTES
+) -> dict[str, Any]:
     from roomscope.io.jsonutil import read_json_object
 
-    return read_json_object(path, kind=kind)
+    return read_json_object(path, kind=kind, max_bytes=max_bytes)
 
 
 def _resolve_member(directory: Path, stored: str | None, default_name: str) -> Path:

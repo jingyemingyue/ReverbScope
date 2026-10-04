@@ -13,8 +13,11 @@ from roomscope.errors import SessionError
 from roomscope.i18n import _
 from roomscope.models.loadutil import record_name
 
-#: Refused before ``json.loads``. 32 MiB is well above a result with curves.
+#: Refused before ``json.loads``: sessions, projects, settings, comparisons.
 MAX_JSON_BYTES = 32 * 1024 * 1024
+#: ``result.json`` stores every frequency-response bin: at 192 kHz with a 6 s
+#: impulse response (the default ``ir_max_length_s``) that is about 40 MB.
+MAX_RESULT_JSON_BYTES = 128 * 1024 * 1024
 #: Nesting of ``{`` / ``[`` outside strings. RoomScope schemas are shallow.
 MAX_JSON_DEPTH = 32
 
@@ -99,16 +102,18 @@ def write_text_atomic(path: Path, text: str, *, follow_symlinks: bool = False) -
         temporary.unlink(missing_ok=True)
 
 
-def read_json_object(path: Path, *, kind: str = "JSON") -> dict[str, Any]:
+def read_json_object(
+    path: Path, *, kind: str = "JSON", max_bytes: int = MAX_JSON_BYTES
+) -> dict[str, Any]:
     """Read a JSON object, refusing oversized, over-deep or non-object files."""
     try:
         size = path.stat().st_size
     except OSError as exc:
         raise SessionError(_("cannot read {path}: {error}").format(path=path, error=exc)) from exc
-    if size > MAX_JSON_BYTES:
+    if size > max_bytes:
         raise SessionError(
             _("{name} is {size} bytes; {kind} files larger than {limit} bytes are refused").format(
-                name=path.name, size=size, kind=record_name(kind), limit=MAX_JSON_BYTES
+                name=path.name, size=size, kind=record_name(kind), limit=max_bytes
             )
         )
     try:

@@ -419,3 +419,31 @@ def test_resaving_an_opened_session_keeps_its_sweep_sidecar(
     assert (tmp_path / "B" / SWEEP_SIDECAR_NAME).read_bytes() == (
         tmp_path / "A" / SWEEP_SIDECAR_NAME
     ).read_bytes()
+
+
+def test_a_192k_six_second_result_reopens(tmp_path: Path, analysed) -> None:
+    """At 192 kHz an impulse response longer than about 5.5 s stores 2**20
+    frequency-response bins: result.json is about 40 MB, over the 32 MiB cap,
+    so RoomScope refused to reopen a session it had just saved."""
+    from dataclasses import replace
+
+    from roomscope.io.jsonutil import MAX_JSON_BYTES
+
+    _recording, result = analysed
+    bins = 2**20
+    freqs = np.arange(1, bins + 1) * 192000 / 2**21
+    level = np.linspace(-90.0, 0.0, bins)
+    big = replace(
+        result,
+        frequency_response=replace(
+            result.frequency_response,
+            frequencies_hz=freqs,
+            magnitude_db_raw=level,
+            magnitude_db_smoothed=level + 0.123456789,
+        ),
+    )
+    folder = tmp_path / "s192"
+    save_measurement(folder, MeasurementSession(), big)
+    assert (folder / RESULT_FILE).stat().st_size > MAX_JSON_BYTES
+    reopened = load_measurement(folder)
+    assert reopened.result.frequency_response.frequencies_hz.shape == (bins,)
