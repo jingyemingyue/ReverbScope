@@ -86,6 +86,27 @@ def test_wrap_breaks_chinese_between_characters_and_never_starts_with_punctuatio
         assert "".join(line.strip() for line in lines).replace(" ", "") == text.replace(" ", "")
 
 
+OPENING = "（「『“‘《〈【〔([{"
+
+
+def test_wrap_never_ends_a_line_with_an_opening_bracket() -> None:
+    """ "…voiceover 或 auto（" then "generic）": the bracket went with the line
+    before what it opens."""
+    texts = (
+        "acoustic_guitar、choir、drums、generic、room_mic、vocal、voiceover 或 auto（generic）",
+        "列出音频设备，并标出每个物理设备的推荐条目（不会播放任何声音）" * 2,
+        "《设置》「语言」【中文】“引号”‘单引号’〈书名〉〔注〕『双引号』" * 3,
+    )
+    for text in texts:
+        for width in range(12, 70):
+            lines = wrap(text, width, first="  ", rest="  ")
+            assert not any(line.rstrip()[-1:] in OPENING for line in lines), (width, lines)
+            assert "".join("".join(line.split()) for line in lines) == "".join(text.split())
+    assert wrap(texts[0], 60, first="  ", rest="  ")[-1] == "  voiceover 或 auto（generic）"
+    # The space after an opening bracket goes down with it.
+    assert wrap("see ( the thing ) here", 8) == ["see", "( the", "thing )", "here"]
+
+
 def test_wrap_never_splits_a_path_or_url() -> None:
     path = "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\pytest-of-runneradmin\\session"
     url = "https://github.com/jingyemingyue/RoomScope/actions/runs/36321028824"

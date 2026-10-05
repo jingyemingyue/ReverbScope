@@ -107,6 +107,9 @@ _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 #: Characters a line should not start with (closing punctuation, CJK and
 #: Latin); a wrap lets them hang one step past the margin instead.
 _NO_LINE_START = frozenset("，。、；：！？）」』”’》〉】〕,.;:!?)]}%")
+#: Characters a line should not end with (opening brackets and quotes); a
+#: wrap carries them down with what they open.
+_NO_LINE_END = frozenset("（「『“‘《〈【〔([{")
 
 #: Symbols and rules that must survive the stream's encoding for the
 #: Unicode forms to be used.
@@ -305,6 +308,10 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                 # Closing punctuation does not start a line: the character
                 # before it moves down with it.
                 carry = parts.pop()
+            # An opening bracket does not end a line: it moves down with
+            # what it opens (and with the space after it, if any).
+            while len(parts) > 1 and parts[-1][-1] in _NO_LINE_END:
+                carry = parts.pop() + (carry or joiner)
             if parts:
                 lines.append(prefix + "".join(parts))
                 prefix = rest
