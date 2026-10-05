@@ -234,7 +234,14 @@ time-reversed filtering.
    example an imported response padded or gated with zeros) is removed
    first: it is not a noise floor, so "the last 10 %" below means the last
    10 % before it. 20 ms local averages, noise from the last 10 %,
-   regression from the peak to noise + 10 dB, cross-point, new interval
+   regression from the peak to noise + 10 dB (when fewer than two 20 ms
+   averages lie above that level, as for a decay with an RT below about
+   0.08 s and 30 dB of range that reaches the floor within one of them,
+   5 ms and then 1 ms averages are tried first, shorter than Lundeby's
+   range but used only when 20 ms cannot resolve the decay; only when those
+   show no decay either is the response said to have none, and the
+   integration then ends at the first 20 ms average at the noise floor
+   instead of integrating the noise to the end), cross-point, new interval
    (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated from 7.5 dB
    of decay after the cross-point (at least the last 10 %), late slope over
    15 dB starting 7.5 dB above noise, repeat until the cross-point moves

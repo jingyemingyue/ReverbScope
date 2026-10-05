@@ -493,6 +493,38 @@ def test_running_out_of_passes_is_called_unconverged(sample_rate: int) -> None:
     assert trunc.problem == "the Lundeby noise-floor iteration did not converge in 1 iteration(s)"
 
 
+def test_a_decay_within_one_block_is_found(sample_rate: int) -> None:
+    """R3-1: a decay that reached the floor within one 20 ms block (RT 0.05 s,
+    30 dB of range) was reported as "no decay above the noise floor", the noise
+    was integrated to the end and EDT read 16 s and the centre time 368 ms."""
+    rng = np.random.default_rng(0)
+    n = 2 * sample_rate
+    t = np.arange(n) / sample_rate
+    ir = rng.standard_normal(n) * 10 ** (-3 * t / 0.05)
+    ir += 10 ** (-30 / 20) * rng.standard_normal(n)
+    band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0, direct_index=0)
+    assert not band.warnings
+    assert band.edt.validity is Validity.VALID
+    assert band.edt.seconds == pytest.approx(0.05, rel=0.15)
+    assert band.truncation_time_s is not None and band.truncation_time_s < 0.06
+    assert band.centre_time.value is not None and band.centre_time.value < 0.01
+    assert band.peak_to_noise_db is not None and band.peak_to_noise_db > 25.0
+
+
+def test_a_response_without_a_decay_is_not_integrated_to_the_end(sample_rate: int) -> None:
+    """R3-1: with no decay found, the Schroeder integration ran to the end of
+    the response and turned the noise floor into C50 and centre-time values."""
+    rng = np.random.default_rng(1)
+    ir = 1e-3 * rng.standard_normal(sample_rate)
+    ir[100] = 1.0  # an impulse with nothing after it but the floor
+    trunc = estimate_truncation(ir[100:] ** 2, sample_rate)
+    assert trunc.problem == "no decay above the noise floor was found"
+    assert trunc.truncation_index / sample_rate < 0.05
+    band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0, direct_index=100)
+    assert band.truncation_time_s is not None and band.truncation_time_s < 0.05
+    assert band.c50.value is None and band.c80.value is None
+
+
 @pytest.mark.parametrize("rate", [48000, 192000])
 def test_preliminary_regression_stops_where_the_decay_reaches_the_floor(rate: int) -> None:
     """E1: a slowly modulated floor rose above noise + 10 dB after the decay; the

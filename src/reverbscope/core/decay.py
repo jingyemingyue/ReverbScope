@@ -35,9 +35,13 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
    is removed first: it is not a noise floor, and "the last 10 %" below is the
    last 10 % before it. 20 ms block averages, preliminary regression from the
    loudest block to the first block at noise + 10 dB (noise from the last
-   10 %), then iterated block length / noise / late-slope estimates until the
-   crosspoint moves by less than ``LUNDEBY_CONVERGENCE_DB`` (1 dB) of decay at
-   the late slope (at least 1 ms). The late slope is fitted to the decay from
+   10 %; when fewer than two blocks lie above that level, as for a decay
+   that reaches the floor within 20 ms, 5 ms and then 1 ms blocks are tried
+   before the response is said to have no decay, and the integration then
+   ends at the first 20 ms block at the noise floor), then iterated block
+   length / noise / late-slope estimates until the crosspoint moves by less
+   than ``LUNDEBY_CONVERGENCE_DB`` (1 dB) of decay at the late slope (at
+   least 1 ms). The late slope is fitted to the decay from
    its first block at or below noise + 22.5 dB to the last one before it
    falls below noise + 7.5 dB, never to floor blocks after it that rise into
    that level window again (in a narrow band the floor in short blocks swings
@@ -187,6 +191,9 @@ EDT_MAX_DIRECT_STEP_DB = 5.0
 #: much decay (dB at the late slope), or by less than 1 ms.
 LUNDEBY_CONVERGENCE_DB = 1.0
 LUNDEBY_MAX_ITERATIONS = 6
+#: Lundeby first block lengths (s): 20 ms, then shorter ones for a decay that
+#: reaches the noise floor within one 20 ms block.
+LUNDEBY_FIRST_BLOCKS_S = (0.02, 0.005, 0.001)
 #: Lundeby late slope: fitted to the decay from this many dB above the noise ...
 LUNDEBY_LATE_FIT_LOWER_DB = 7.5
 #: ... up to this many dB higher.
@@ -297,7 +304,8 @@ class TruncationEstimate:
     the preliminary values and the ``iterative_*`` fields the rejected ones.
     """
 
-    #: Start of the loudest 20 ms block (the preliminary regression starts there).
+    #: Start of the loudest first block (20 ms; 5 or 1 ms for a decay that
+    #: reaches the floor within 20 ms). The preliminary regression starts there.
     start_index: int
     truncation_index: int
     noise_floor_db: float
@@ -364,35 +372,51 @@ def estimate_truncation(
             problem=diag("the response is too short for a noise-floor estimate"),
         )
 
-    # 1. First local averages (about 20 ms blocks).
-    block = max(1, round(0.02 * sample_rate))
-    centres, means = _local_average(power, block)
-    level_db = _to_db(means)
-    start_block = int(np.argmax(level_db))
-    peak_db = float(level_db[start_block])
-    start_index = int(min(n - 1, max(0, centres[start_block] - block / 2.0)))
-    start_t = start_index / sample_rate
-
     # 2. Noise from the last 10 %.
     noise_db = _level_db(power[int(0.9 * n) :])
 
-    # 3. Preliminary slope from the peak down to noise + 10 dB: the blocks
-    #    before the first one at or below that level (a fluctuating floor may
-    #    rise above it again later; that is not part of the decay).
-    reached = np.flatnonzero(level_db[start_block:] <= noise_db + 10.0)
-    usable = np.arange(reached[0] if reached.shape[0] else level_db.shape[0] - start_block)
-    if usable.shape[0] < 2:
+    # 1. First local averages (about 20 ms blocks), and 3. the preliminary
+    #    slope from the peak down to noise + 10 dB: the blocks before the
+    #    first one at or below that level (a fluctuating floor may rise above
+    #    it again later; that is not part of the decay). A decay that reaches
+    #    the floor within one 20 ms block (RT below about 0.08 s with 30 dB of
+    #    range) leaves fewer than two blocks above that level, so shorter
+    #    blocks are tried before concluding that there is no decay.
+    tried: list[tuple[int, FloatArray, FloatArray, int]] = []
+    for block_s in LUNDEBY_FIRST_BLOCKS_S:
+        block = max(1, round(block_s * sample_rate))
+        centres, means = _local_average(power, block)
+        level_db = _to_db(means)
+        start_block = int(np.argmax(level_db))
+        tried.append((block, centres, level_db, start_block))
+        reached = np.flatnonzero(level_db[start_block:] <= noise_db + 10.0)
+        above = int(reached[0]) if reached.shape[0] else level_db.shape[0] - start_block
+        if above >= 2:
+            break
+    else:
+        # No decay even in the shortest blocks: report the 20 ms blocks as
+        # before, but end the integration where they first reach the noise
+        # floor, not at the end, so the noise is not integrated as decay.
+        block, centres, level_db, start_block = tried[0]
+        start_index = int(min(n - 1, max(0, centres[start_block] - block / 2.0)))
+        at_floor = np.flatnonzero(level_db[start_block + 1 :] <= noise_db)
+        truncation_index = n
+        if at_floor.shape[0] > 0:
+            truncation_index = int(centres[start_block + 1 + int(at_floor[0])] - block / 2.0)
         return TruncationEstimate(
             start_index,
-            n,
+            truncation_index,
             noise_db,
-            peak_db,
+            float(level_db[start_block]),
             None,
             False,
             0,
             problem=diag("no decay above the noise floor was found"),
         )
-    stop_block = start_block + int(usable[-1]) + 1
+    peak_db = float(level_db[start_block])
+    start_index = int(min(n - 1, max(0, centres[start_block] - block / 2.0)))
+    start_t = start_index / sample_rate
+    stop_block = start_block + above
     t = centres[start_block:stop_block] / sample_rate
     slope, intercept, _ = _linear_fit(t, level_db[start_block:stop_block])
     if not np.isfinite(slope) or slope >= 0.0:

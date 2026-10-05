@@ -161,7 +161,8 @@ class BandDecay:
     #: Band edges (IEC 61260-1 base-10, around :attr:`mid_band_hz`).
     low_hz: float | None
     high_hz: float | None
-    #: Level of the noise floor relative to the loudest 20 ms block after the onset (dB).
+    #: Level of the noise floor relative to the loudest 20 ms block after the
+    #: onset (dB); 5 or 1 ms blocks for a decay that reaches the floor within 20 ms.
     noise_floor_db: float | None
     #: Dynamic range available for decay evaluation (dB above the noise floor).
     peak_to_noise_db: float | None

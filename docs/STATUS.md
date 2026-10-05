@@ -788,7 +788,8 @@ algebra and the refusals, not the acoustics of any real surface.
   realisations of the same synthetic room), not a change of treatment.
 * Band filters are Butterworth, not certified IEC 61260 class 1; short
   decays in the 63/125 Hz bands are limited by B·T and are flagged.
-* Lundeby parameters (20 ms initial blocks, 5 intervals/10 dB, 7.5 dB
+* Lundeby parameters (20 ms initial blocks, 5 or 1 ms for a decay that
+  reaches the floor within one of them, 5 intervals/10 dB, 7.5 dB
   margins) are ReverbScope's choices within the published ranges; other tools
   will differ slightly.
 * Reflection and resonance outputs are candidates; in dense diffuse tails
