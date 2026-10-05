@@ -1069,8 +1069,14 @@ class SpectrumResult:
     method: str = SPECTRUM_METHOD
     source: str = SPECTRUM_SOURCE
     reference: str = PSD_REFERENCE
+    #: ``points`` of a file saved without its curves (``--no-curves``), as
+    #: :attr:`FrequencyResponseResult.stored_points`.
+    stored_points: int | None = field(default=None, compare=False)
 
     def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
+        points = int(self.frequencies_hz.shape[0])
+        if points == 0 and self.stored_points is not None:
+            points = self.stored_points
         data: dict[str, Any] = {
             "peak_hz": self.peak_hz,
             "peak_db": self.peak_db,
@@ -1078,7 +1084,7 @@ class SpectrumResult:
             "method": self.method,
             "source": self.source,
             "reference": self.reference,
-            "points": int(self.frequencies_hz.shape[0]),
+            "points": points,
         }
         if include_curves:
             data["frequencies_hz"] = _array_to_list(self.frequencies_hz, 3)

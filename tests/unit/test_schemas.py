@@ -106,6 +106,10 @@ def full_result(short_sweep) -> dict:  # type: ignore[no-untyped-def]
     return result.to_dict(include_curves=True)
 
 
+#: The smallest room scan the loader and the schema accept.
+_SCAN = {"format": "ply", "source_name": "a.ply", "point_count": 1, "points_m": [[0.0, 0.0, 0.0]]}
+
+
 def test_every_record_of_a_full_result_validates(full_result: dict) -> None:
     _validate("result", full_result)
 
@@ -125,6 +129,14 @@ def test_every_record_of_a_full_result_validates(full_result: dict) -> None:
         (("decay", "broadband", "edc_db"), 5),
         (("sample_rate",), 0),
         (("impulse_response", "direct_sound_index"), 2**60),
+        (("spectrum", "peak_hz"), "1 kHz"),
+        (("spectrum", "nperseg"), 2**60),
+        (("spectrum", "level_db"), 5),
+        (("room_scan",), {"format": "ply", "source_name": "a.ply", "point_count": -1}),
+        (("room_scan",), {**_SCAN, "points_m": [[1.0, 2.0]]}),
+        (("room_scan",), {**_SCAN, "points_m": 5}),
+        (("room_scan",), {**_SCAN, "bounds_min_m": [0.0, 1.0]}),
+        (("room_scan",), {**_SCAN, "faces": [[0, 1, -2]]}),
     ],
     ids=lambda value: repr(value)[:40],
 )

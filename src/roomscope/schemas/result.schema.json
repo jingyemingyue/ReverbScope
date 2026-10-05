@@ -289,11 +289,11 @@
       "properties": {
         "peak_hz": { "$ref": "#/$defs/number_or_null" },
         "peak_db": { "$ref": "#/$defs/number_or_null" },
-        "nperseg": { "type": "integer" },
+        "nperseg": { "$ref": "#/$defs/count" },
         "method": { "type": "string" },
         "source": { "type": "string" },
         "reference": { "type": "string" },
-        "points": { "type": "integer" },
+        "points": { "$ref": "#/$defs/count" },
         "frequencies_hz": { "type": "array", "items": { "type": "number" } },
         "level_db": { "type": "array", "items": { "type": "number" } }
       }
@@ -313,10 +313,10 @@
             "maxItems": 3
           }
         },
-        "faces": { "type": "array", "items": { "type": "array", "items": { "type": "integer" } } },
+        "faces": { "type": "array", "items": { "type": "array", "items": { "$ref": "#/$defs/count" } } },
         "bounds_min_m": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
         "bounds_max_m": { "type": "array", "items": { "type": "number" }, "minItems": 3, "maxItems": 3 },
-        "point_count": { "type": "integer" },
+        "point_count": { "$ref": "#/$defs/count" },
         "format_reference": { "type": "string" },
         "notes": { "type": "array", "items": { "type": "string" } }
       }

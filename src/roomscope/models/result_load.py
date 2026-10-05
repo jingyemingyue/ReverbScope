@@ -466,35 +466,58 @@ def spectrum_from_dict(data: Any) -> SpectrumResult | None:
     return SpectrumResult(
         frequencies_hz=_array(payload.get("frequencies_hz")),
         level_db=_array(payload.get("level_db")),
-        peak_hz=payload.get("peak_hz"),
-        peak_db=payload.get("peak_db"),
-        nperseg=int(payload.get("nperseg", 0)),
+        peak_hz=_opt_float(payload.get("peak_hz")),
+        peak_db=_opt_float(payload.get("peak_db")),
+        nperseg=_int(payload.get("nperseg", 0), "nperseg"),
         method=str(payload.get("method", "")),
         source=str(payload.get("source", "")),
         reference=str(payload.get("reference", "")),
+        # A --no-curves file keeps only the count.
+        stored_points=(
+            _opt_int(payload.get("points"), "points")
+            if payload.get("frequencies_hz") is None
+            else None
+        ),
     )
+
+
+def _triple(values: Any, name: str) -> tuple[float, float, float]:
+    if not isinstance(values, (list, tuple)) or len(values) != 3:
+        raise ValueError(_("{field} has the wrong type").format(field=name))
+    return (float(values[0]), float(values[1]), float(values[2]))
 
 
 def room_scan_from_dict(data: Any) -> RoomScan | None:
     if data is None:
         return None
     payload = _obj(data, "room_scan")
-    points = np.asarray(payload.get("points_m") or (), dtype=np.float64)
+    raw_points = payload.get("points_m")
+    if raw_points is not None and not isinstance(raw_points, list):
+        raise TypeError(_("{field} must be a list").format(field="points_m"))
+    points: FloatArray = np.asarray(raw_points or (), dtype=np.float64)
     if points.size == 0:
         points = np.zeros((0, 3), dtype=np.float64)
-    elif points.ndim == 1:
+    elif points.ndim == 1 and points.size % 3 == 0:
         points = points.reshape(-1, 3)
-    faces = tuple(tuple(int(i) for i in face) for face in payload.get("faces") or ())
-    mins = payload.get("bounds_min_m") or [0.0, 0.0, 0.0]
-    maxs = payload.get("bounds_max_m") or [0.0, 0.0, 0.0]
+    if points.ndim != 2 or points.shape[1] != 3:
+        # The placement picture reads x, y and z of every point.
+        raise ValueError(_("{field} has the wrong type").format(field="points_m"))
+    faces: list[tuple[int, int, int]] = []
+    for face in payload.get("faces") or ():
+        if not isinstance(face, (list, tuple)):
+            raise TypeError(_("{field} must be a list").format(field="faces"))
+        if len(face) >= 3:
+            indices = [_int(i, "faces") for i in face[:3]]
+            faces.append((indices[0], indices[1], indices[2]))
+    zero = [0.0, 0.0, 0.0]
     return RoomScan(
         format=str(payload.get("format", "")),
         source_name=str(payload.get("source_name", "")),
         points_m=points,
-        faces=tuple((face[0], face[1], face[2]) for face in faces if len(face) >= 3),
-        bounds_min_m=(float(mins[0]), float(mins[1]), float(mins[2])),
-        bounds_max_m=(float(maxs[0]), float(maxs[1]), float(maxs[2])),
-        point_count=int(payload.get("point_count", points.shape[0])),
+        faces=tuple(faces),
+        bounds_min_m=_triple(payload.get("bounds_min_m") or zero, "bounds_min_m"),
+        bounds_max_m=_triple(payload.get("bounds_max_m") or zero, "bounds_max_m"),
+        point_count=_int(payload.get("point_count", points.shape[0]), "point_count"),
         format_reference=str(payload.get("format_reference", "")),
         notes=_str_tuple(payload.get("notes")),
     )

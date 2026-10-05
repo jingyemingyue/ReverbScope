@@ -119,3 +119,23 @@ def test_cli_analyze_imports_scan_and_reports_spectrum(
     assert payload["spectrum"]["peak_hz"] is not None
     session = json.loads((out / "session.json").read_text(encoding="utf-8"))
     assert session["scan_path"] == str(SCAN)
+
+
+def test_a_reloaded_no_curves_result_keeps_the_spectrum_point_count(short_sweep) -> None:
+    """As frequency_response.points: a --no-curves result.json stores only the
+    spectrum's point count, which read 0 once the file was loaded again (in
+    `show --format json` and in a re-saved session)."""
+    from roomscope.models.result import AnalysisResult
+
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3)),
+        Reference.from_settings(short_sweep),
+    )
+    assert result.spectrum is not None
+    slim = result.to_dict(include_curves=False)
+    points = slim["spectrum"]["points"]
+    assert "level_db" not in slim["spectrum"]
+    assert points == result.spectrum.frequencies_hz.shape[0] > 0
+    reloaded = AnalysisResult.from_dict(slim)
+    assert reloaded.spectrum is not None and reloaded.spectrum.frequencies_hz.size == 0
+    assert reloaded.to_dict(include_curves=False)["spectrum"]["points"] == points
