@@ -149,7 +149,11 @@ All notable changes to RoomScope are documented here. The format follows
   names its room, position and microphone in Chinese. Temperatures read
   `20 °C` (also on a cp1252 or GBK code page and in the classic Windows
   console; `20 C` where the encoding has no degree sign), and the
-  resonance note no longer cites "v0.1".
+  resonance note no longer cites "v0.1". Traditional Chinese, Japanese,
+  Korean, Spanish, French and German translate the same placeholders
+  (`--out 目錄`, `--out ディレクトリ`, `--out VERZEICHNIS`), argparse
+  messages and `roomscope config` screens, and the preview's own
+  `--daw`, `--daw-project` and `--scan` placeholders are translated too.
 
 ### Fixed
 - **Measurement.** With a loopback whose return is not at unity gain, the
