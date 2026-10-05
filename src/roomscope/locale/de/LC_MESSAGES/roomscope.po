@@ -6772,3 +6772,264 @@ msgstr ", "
 
 msgid "invalid JSON at line {line}, column {column}"
 msgstr "ungültiges JSON in Zeile {line}, Spalte {column}"
+
+msgid "choose a task from a numbered menu that asks for what it needs"
+msgstr "eine Aufgabe in einem nummerierten Menü wählen, das nach allem Nötigen fragt"
+
+msgid ""
+"On a terminal, roomscope without a command opens this menu too; set "
+"ROOMSCOPE_NO_MENU=1 to get the short overview instead."
+msgstr "Im Terminal öffnet roomscope ohne Befehl ebenfalls dieses Menü; setze ROOMSCOPE_NO_MENU=1, um stattdessen die kurze Übersicht zu erhalten."
+
+msgid "the menu prints text, not JSON"
+msgstr "das Menü gibt Text aus, kein JSON"
+
+msgid ""
+"the menu needs a terminal to type the answers in; run the commands "
+"themselves instead (roomscope --help lists them)"
+msgstr "das Menü braucht ein Terminal, in das die Antworten getippt werden; führe stattdessen die Befehle selbst aus (roomscope --help listet sie auf)"
+
+msgid "Type an answer, or press Ctrl+C to go back to the menu."
+msgstr "Gib eine Antwort ein oder drücke Strg+C, um zum Menü zurückzukehren."
+
+msgid "{path} is a folder; type the path of a file."
+msgstr "{path} ist ein Ordner; gib den Pfad einer Datei ein."
+
+msgid "{path} was not found; check the path and type it again."
+msgstr "{path} wurde nicht gefunden; prüfe den Pfad und gib ihn erneut ein."
+
+msgid "{path} is a file; type a folder."
+msgstr "{path} ist eine Datei; gib einen Ordner ein."
+
+msgid "{path} is not an existing folder."
+msgstr "{path} ist kein vorhandener Ordner."
+
+msgid "Type a number from {low} to {high}."
+msgstr "Gib eine Zahl von {low} bis {high} ein."
+
+msgid "Type one of these sample rates: {rates}."
+msgstr "Gib eine dieser Sampleraten ein: {rates}."
+
+msgid "Type a duration from {low:g} to {high:g} s."
+msgstr "Gib eine Dauer von {low:g} bis {high:g} s ein."
+
+msgid "Type a level from {low:g} to {high:g} dBFS."
+msgstr "Gib einen Pegel von {low:g} bis {high:g} dBFS ein."
+
+msgctxt "answers meaning yes"
+msgid "y yes"
+msgstr "y yes j ja"
+
+msgid "{question}: "
+msgstr "{question}: "
+
+msgid "{question} [{default}]: "
+msgstr "{question} [{default}]: "
+
+msgid "{question} [y/N]: "
+msgstr "{question} [y/N]: "
+
+msgid "Press Enter to return to the menu"
+msgstr "Drücke die Eingabetaste, um zum Menü zurückzukehren"
+
+msgid "Same as the command: {command}"
+msgstr "Entspricht dem Befehl: {command}"
+
+msgid "it could not run as asked"
+msgstr "er konnte nicht wie verlangt laufen"
+
+msgid "it was interrupted"
+msgstr "er wurde unterbrochen"
+
+msgid "an error stopped it"
+msgstr "ein Fehler hat ihn gestoppt"
+
+msgid "The command did not succeed: {reason} (exit status {code})."
+msgstr "Der Befehl war nicht erfolgreich: {reason} (Exit-Status {code})."
+
+msgctxt "menu"
+msgid "Try the demo"
+msgstr "Demo ausprobieren"
+
+msgid "synthetic data, no audio interface needed"
+msgstr "synthetische Daten, kein Audio-Interface nötig"
+
+msgid "Write the test signal"
+msgstr "Testsignal schreiben"
+
+msgid "a sweep WAV to play and record in your DAW"
+msgstr "ein Sweep-WAV zum Abspielen und Aufnehmen im DAW"
+
+msgid "Analyse a recording"
+msgstr "Eine Aufnahme analysieren"
+
+msgid "a WAV recorded while the sweep played"
+msgstr "ein WAV, aufgenommen während der Sweep lief"
+
+msgid "Measure with your interface"
+msgstr "Mit dem Interface messen"
+
+msgid "RoomScope plays the sweep and records"
+msgstr "RoomScope spielt den Sweep und nimmt auf"
+
+msgid "View results"
+msgstr "Ergebnisse ansehen"
+
+msgid "a saved session or comparison"
+msgstr "eine gespeicherte Sitzung oder ein Vergleich"
+
+msgid "Compare two positions"
+msgstr "Zwei Positionen vergleichen"
+
+msgid "what changed between two sessions"
+msgstr "was sich zwischen zwei Sitzungen geändert hat"
+
+msgid "the results with charts"
+msgstr "die Ergebnisse mit Diagrammen"
+
+msgid "language, profile, backend, output folder"
+msgstr "Sprache, Profil, Backend, Ausgabeordner"
+
+msgid "Environment report"
+msgstr "Umgebungsbericht"
+
+msgid "for bug reports"
+msgstr "für Fehlerberichte"
+
+msgid "Settings and diagnostics"
+msgstr "Einstellungen und Diagnose"
+
+msgid "Quit"
+msgstr "Beenden"
+
+msgid "or type q"
+msgstr "oder q eingeben"
+
+msgid "RoomScope menu"
+msgstr "RoomScope-Menü"
+
+msgid ""
+"Type a number and press Enter. Each step shows the command it runs, "
+"so you can type it yourself next time."
+msgstr "Gib eine Nummer ein und drücke die Eingabetaste. Jeder Schritt zeigt den Befehl, den er ausführt, damit du ihn beim nächsten Mal selbst eingeben kannst."
+
+msgid "Choose a number: "
+msgstr "Wähle eine Nummer: "
+
+msgid "There is no item {choice} in the menu; type one of the numbers shown."
+msgstr "Im Menü gibt es keinen Eintrag {choice}; gib eine der angezeigten Nummern ein."
+
+msgid "{path} holds a saved session. Replace it?"
+msgstr "{path} enthält eine gespeicherte Sitzung. Ersetzen?"
+
+msgid "Folder for the demo files"
+msgstr "Ordner für die Demodateien"
+
+msgid "{path} holds an earlier demo. Replace it?"
+msgstr "{path} enthält eine frühere Demo. Ersetzen?"
+
+msgid ""
+"{path} already exists and was not written by roomscope demo; choose "
+"another folder."
+msgstr "{path} existiert bereits und wurde nicht von roomscope demo geschrieben; wähle einen anderen Ordner."
+
+msgid "File for the test signal"
+msgstr "Datei für das Testsignal"
+
+msgid "{path} already exists. Replace it?"
+msgstr "{path} existiert bereits. Ersetzen?"
+
+msgid "Sample rate in Hz ({rates})"
+msgstr "Samplerate in Hz ({rates})"
+
+msgid "Length of the sweep in seconds"
+msgstr "Länge des Sweeps in Sekunden"
+
+msgid "Recording (a WAV file; you can drag it into this window)"
+msgstr "Aufnahme (eine WAV-Datei; du kannst sie in dieses Fenster ziehen)"
+
+msgid "Test signal played for it"
+msgstr "Dabei abgespieltes Testsignal"
+
+msgid "Folder for the results"
+msgstr "Ordner für die Ergebnisse"
+
+msgid "Input device (the microphone)"
+msgstr "Eingabegerät (das Mikrofon)"
+
+msgid "Type one of these input devices: {devices}, or press Enter."
+msgstr "Gib eines dieser Eingabegeräte ein: {devices}, oder drücke die Eingabetaste."
+
+msgid "Output device (the loudspeakers)"
+msgstr "Ausgabegerät (die Lautsprecher)"
+
+msgid "Type one of these output devices: {devices}, or press Enter."
+msgstr "Gib eines dieser Ausgabegeräte ein: {devices}, oder drücke die Eingabetaste."
+
+msgid "Input channel of the microphone"
+msgstr "Eingangskanal des Mikrofons"
+
+msgid "Level of the sweep in dBFS"
+msgstr "Pegel des Sweeps in dBFS"
+
+msgid ""
+"{level:g} dBFS is above {max_level:g} dBFS. Is the monitor level "
+"already turned down?"
+msgstr "{level:g} dBFS liegt über {max_level:g} dBFS. Ist die Abhörlautstärke schon heruntergedreht?"
+
+msgid "Folder for the session"
+msgstr "Ordner für die Sitzung"
+
+msgid "Measurement plan"
+msgstr "Messplan"
+
+msgid "Save to"
+msgstr "Speichern in"
+
+msgid "Type y to play the sweep now"
+msgstr "Gib y ein, um den Sweep jetzt abzuspielen"
+
+msgid "No saved sessions were found in this folder or in the output folder."
+msgstr "In diesem Ordner und im Ausgabeordner wurden keine gespeicherten Sitzungen gefunden."
+
+msgid "No."
+msgstr "Nr."
+
+msgid "The {count} newest are listed; type a path for an older one."
+msgstr "Die {count} neuesten sind aufgelistet; gib für eine ältere einen Pfad ein."
+
+msgid "Type the path of a session folder."
+msgstr "Gib den Pfad eines Sitzungsordners ein."
+
+msgid "That is the baseline; choose another session."
+msgstr "Das ist die Referenz; wähle eine andere Sitzung."
+
+msgid "Session number, or the path of a session or comparison"
+msgstr "Sitzungsnummer oder der Pfad einer Sitzung oder eines Vergleichs"
+
+msgid "Path of a session folder or comparison.json"
+msgstr "Pfad eines Sitzungsordners oder von comparison.json"
+
+msgid "Baseline (before): number or path"
+msgstr "Referenz (vorher): Nummer oder Pfad"
+
+msgid "Candidate (after): number or path"
+msgstr "Kandidat (nachher): Nummer oder Pfad"
+
+msgid "Output folder"
+msgstr "Ausgabeordner"
+
+msgid "Back to the menu"
+msgstr "Zurück zum Menü"
+
+msgid "Choose a number"
+msgstr "Wähle eine Nummer"
+
+msgid "current setting"
+msgstr "aktuelle Einstellung"
+
+msgid "the audio interfaces of this computer"
+msgstr "die Audio-Interfaces dieses Rechners"
+
+msgid "Default output folder (auto clears it)"
+msgstr "Standard-Ausgabeordner (auto entfernt ihn)"

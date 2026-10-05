@@ -6120,3 +6120,264 @@ msgstr "、"
 
 msgid "invalid JSON at line {line}, column {column}"
 msgstr "{line} 行 {column} 列が有効な JSON ではありません"
+
+msgid "choose a task from a numbered menu that asks for what it needs"
+msgstr "番号付きメニューから作業を選ぶ。必要なことはメニューが尋ねる"
+
+msgid ""
+"On a terminal, roomscope without a command opens this menu too; set "
+"ROOMSCOPE_NO_MENU=1 to get the short overview instead."
+msgstr "端末でコマンドなしの roomscope を実行してもこのメニューが開きます。代わりに短い概要を出すには ROOMSCOPE_NO_MENU=1 を設定してください。"
+
+msgid "the menu prints text, not JSON"
+msgstr "メニューはテキストを出し、JSON は出しません"
+
+msgid ""
+"the menu needs a terminal to type the answers in; run the commands "
+"themselves instead (roomscope --help lists them)"
+msgstr "メニューには回答を入力する端末が必要です。代わりにコマンドを直接実行してください（一覧は roomscope --help）"
+
+msgid "Type an answer, or press Ctrl+C to go back to the menu."
+msgstr "回答を入力するか、Ctrl+C でメニューに戻ってください。"
+
+msgid "{path} is a folder; type the path of a file."
+msgstr "{path} はフォルダーです。ファイルのパスを入力してください。"
+
+msgid "{path} was not found; check the path and type it again."
+msgstr "{path} が見つかりません。パスを確認して入力し直してください。"
+
+msgid "{path} is a file; type a folder."
+msgstr "{path} はファイルです。フォルダーを入力してください。"
+
+msgid "{path} is not an existing folder."
+msgstr "{path} は既存のフォルダーではありません。"
+
+msgid "Type a number from {low} to {high}."
+msgstr "{low} から {high} までの数字を入力してください。"
+
+msgid "Type one of these sample rates: {rates}."
+msgstr "次のサンプルレートのどれかを入力してください: {rates}。"
+
+msgid "Type a duration from {low:g} to {high:g} s."
+msgstr "{low:g} から {high:g} 秒までの長さを入力してください。"
+
+msgid "Type a level from {low:g} to {high:g} dBFS."
+msgstr "{low:g} から {high:g} dBFS までのレベルを入力してください。"
+
+msgctxt "answers meaning yes"
+msgid "y yes"
+msgstr "y yes はい"
+
+msgid "{question}: "
+msgstr "{question}: "
+
+msgid "{question} [{default}]: "
+msgstr "{question} [{default}]: "
+
+msgid "{question} [y/N]: "
+msgstr "{question} [y/N]: "
+
+msgid "Press Enter to return to the menu"
+msgstr "Enter キーでメニューに戻ります"
+
+msgid "Same as the command: {command}"
+msgstr "同じコマンド: {command}"
+
+msgid "it could not run as asked"
+msgstr "指定どおりに実行できませんでした"
+
+msgid "it was interrupted"
+msgstr "中断されました"
+
+msgid "an error stopped it"
+msgstr "エラーで止まりました"
+
+msgid "The command did not succeed: {reason} (exit status {code})."
+msgstr "コマンドは成功しませんでした: {reason}（終了ステータス {code}）。"
+
+msgctxt "menu"
+msgid "Try the demo"
+msgstr "デモを試す"
+
+msgid "synthetic data, no audio interface needed"
+msgstr "合成データ。オーディオインターフェース不要"
+
+msgid "Write the test signal"
+msgstr "テスト信号を書き出す"
+
+msgid "a sweep WAV to play and record in your DAW"
+msgstr "DAW で再生して録音するスイープ WAV"
+
+msgid "Analyse a recording"
+msgstr "録音を解析する"
+
+msgid "a WAV recorded while the sweep played"
+msgstr "スイープ再生中に録った WAV"
+
+msgid "Measure with your interface"
+msgstr "インターフェースで直接測定する"
+
+msgid "RoomScope plays the sweep and records"
+msgstr "RoomScope がスイープを再生して録音"
+
+msgid "View results"
+msgstr "結果を見る"
+
+msgid "a saved session or comparison"
+msgstr "保存済みのセッションまたは比較"
+
+msgid "Compare two positions"
+msgstr "2 つの位置を比較する"
+
+msgid "what changed between two sessions"
+msgstr "2 つのセッションの間で何が変わったか"
+
+msgid "the results with charts"
+msgstr "グラフ付きで結果を見る"
+
+msgid "language, profile, backend, output folder"
+msgstr "言語、プロファイル、バックエンド、出力フォルダー"
+
+msgid "Environment report"
+msgstr "環境報告"
+
+msgid "for bug reports"
+msgstr "問題報告に添える"
+
+msgid "Settings and diagnostics"
+msgstr "設定と診断"
+
+msgid "Quit"
+msgstr "終了"
+
+msgid "or type q"
+msgstr "q でも終了"
+
+msgid "RoomScope menu"
+msgstr "RoomScope メニュー"
+
+msgid ""
+"Type a number and press Enter. Each step shows the command it runs, "
+"so you can type it yourself next time."
+msgstr "番号を入力して Enter を押してください。各手順は実行するコマンドを表示するので、次回は自分で入力できます。"
+
+msgid "Choose a number: "
+msgstr "番号を選んでください: "
+
+msgid "There is no item {choice} in the menu; type one of the numbers shown."
+msgstr "メニューに {choice} という項目はありません。表示された番号を入力してください。"
+
+msgid "{path} holds a saved session. Replace it?"
+msgstr "{path} には保存済みのセッションがあります。置き換えますか？"
+
+msgid "Folder for the demo files"
+msgstr "デモファイルのフォルダー"
+
+msgid "{path} holds an earlier demo. Replace it?"
+msgstr "{path} には以前のデモがあります。置き換えますか？"
+
+msgid ""
+"{path} already exists and was not written by roomscope demo; choose "
+"another folder."
+msgstr "{path} は既にあり、roomscope demo が書いたものではありません。別のフォルダーを選んでください。"
+
+msgid "File for the test signal"
+msgstr "テスト信号のファイル"
+
+msgid "{path} already exists. Replace it?"
+msgstr "{path} は既にあります。置き換えますか？"
+
+msgid "Sample rate in Hz ({rates})"
+msgstr "サンプルレート Hz（{rates}）"
+
+msgid "Length of the sweep in seconds"
+msgstr "スイープの長さ（秒）"
+
+msgid "Recording (a WAV file; you can drag it into this window)"
+msgstr "録音（WAV ファイル。このウィンドウにドラッグできます）"
+
+msgid "Test signal played for it"
+msgstr "録音時に再生したテスト信号"
+
+msgid "Folder for the results"
+msgstr "結果のフォルダー"
+
+msgid "Input device (the microphone)"
+msgstr "入力デバイス（マイク）"
+
+msgid "Type one of these input devices: {devices}, or press Enter."
+msgstr "次の入力デバイスのどれかを入力するか、Enter を押してください: {devices}。"
+
+msgid "Output device (the loudspeakers)"
+msgstr "出力デバイス（スピーカー）"
+
+msgid "Type one of these output devices: {devices}, or press Enter."
+msgstr "次の出力デバイスのどれかを入力するか、Enter を押してください: {devices}。"
+
+msgid "Input channel of the microphone"
+msgstr "マイクの入力チャンネル"
+
+msgid "Level of the sweep in dBFS"
+msgstr "スイープのレベル（dBFS）"
+
+msgid ""
+"{level:g} dBFS is above {max_level:g} dBFS. Is the monitor level "
+"already turned down?"
+msgstr "{level:g} dBFS は {max_level:g} dBFS を超えています。モニター音量は下げてありますか？"
+
+msgid "Folder for the session"
+msgstr "セッションのフォルダー"
+
+msgid "Measurement plan"
+msgstr "測定の計画"
+
+msgid "Save to"
+msgstr "保存先"
+
+msgid "Type y to play the sweep now"
+msgstr "今すぐスイープを再生するには y を入力"
+
+msgid "No saved sessions were found in this folder or in the output folder."
+msgstr "このフォルダーにも出力フォルダーにも保存済みのセッションはありません。"
+
+msgid "No."
+msgstr "番号"
+
+msgid "The {count} newest are listed; type a path for an older one."
+msgstr "新しい {count} 件を表示しています。それより古いものはパスを入力してください。"
+
+msgid "Type the path of a session folder."
+msgstr "セッションフォルダーのパスを入力してください。"
+
+msgid "That is the baseline; choose another session."
+msgstr "それは基準です。別のセッションを選んでください。"
+
+msgid "Session number, or the path of a session or comparison"
+msgstr "セッション番号、またはセッションか比較のパス"
+
+msgid "Path of a session folder or comparison.json"
+msgstr "セッションフォルダーまたは comparison.json のパス"
+
+msgid "Baseline (before): number or path"
+msgstr "基準（前）: 番号またはパス"
+
+msgid "Candidate (after): number or path"
+msgstr "比較対象（後）: 番号またはパス"
+
+msgid "Output folder"
+msgstr "出力フォルダー"
+
+msgid "Back to the menu"
+msgstr "メニューに戻る"
+
+msgid "Choose a number"
+msgstr "番号を選んでください"
+
+msgid "current setting"
+msgstr "現在の設定"
+
+msgid "the audio interfaces of this computer"
+msgstr "このコンピュータのオーディオインターフェース"
+
+msgid "Default output folder (auto clears it)"
+msgstr "既定の出力フォルダー（auto で解除）"
