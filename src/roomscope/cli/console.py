@@ -77,7 +77,6 @@ _STATUS_STYLE: dict[str, tuple[str, ...]] = {
 #: whose encoding cannot write them (a cp1252 pipe, a Latin-1 terminal).
 _ASCII_SIGNS = str.maketrans(
     {
-        "°": "",  # 20 °C as 20 C
         "–": "-",
         "—": "-",
         "─": "-",
@@ -98,6 +97,10 @@ _ASCII_SIGNS = str.maketrans(
         "’": "'",
     }
 )
+
+#: Kept wherever the encoding can write it (cp1252, GBK, the classic Windows
+#: console), even when the other signs are not; dropped otherwise: 20 C.
+_DEGREE = "°"
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -473,8 +476,15 @@ class Console:
         """
         if self.unicode or not text:
             return text
-        shown = str(text).translate(_ASCII_SIGNS)
+        shown = self._ascii(str(text))
         return Verbatim(shown) if isinstance(text, Verbatim) else shown
+
+    def _ascii(self, text: str) -> str:
+        """``text`` with the signs this stream cannot show in ASCII."""
+        text = text.translate(_ASCII_SIGNS)
+        if _DEGREE in text and not self.can_write(_DEGREE):
+            text = text.replace(_DEGREE, "")
+        return text
 
     # Styles -----------------------------------------------------------------
 
@@ -501,7 +511,7 @@ class Console:
         """``text`` as this stream can write it: typographic signs become ASCII
         where the encoding cannot hold them (see :data:`_ASCII_SIGNS`)."""
         text = text.replace(GLUE, " ")
-        return text if self.unicode else text.translate(_ASCII_SIGNS)
+        return text if self.unicode else self._ascii(text)
 
     def arrow(self) -> str:
         return "→" if self.unicode else "->"

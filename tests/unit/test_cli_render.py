@@ -288,10 +288,21 @@ def test_the_air_temperature_is_shown_in_degrees_celsius(
     activate(lang)
     try:
         shown = "\n".join(_placement(WIDE, result.placement))
-        ascii_only = Console(color=False, unicode=False, width=100)
+        ascii_only = Console(color=False, unicode=False, width=100, encoding="ascii")
         fallback = ascii_only.fit("\n".join(_placement(ascii_only, result.placement)))
+        # cp1252 and GBK cannot write ✓, so the other signs are ASCII there,
+        # but they hold the degree sign.
+        legacy = {
+            encoding: console.fit("\n".join(_placement(console, result.placement)))
+            for encoding in ("cp1252", "gbk")
+            for console in [Console(color=False, unicode=False, width=100, encoding=encoding)]
+        }
     finally:
         activate("en")
+    for encoding, text in legacy.items():
+        assert "20 °C" in text and not re.search(r"\d C\b", text), (encoding, text)
+        if lang == "en" or encoding == "gbk":
+            text.encode(encoding)
     speed = next(line for line in shown.splitlines() if "343.2 m/s" in line)
     assert "20 °C" in speed, speed
     assert "5 °C" in shown, shown

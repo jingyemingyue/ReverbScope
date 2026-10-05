@@ -144,6 +144,34 @@ def test_symbols_fall_back_to_ascii_words_where_unicode_cannot_be_written() -> N
     text.encode("ascii")
 
 
+@pytest.mark.parametrize(
+    ("encoding", "shown"),
+    [("cp1252", "20 °C"), ("gbk", "20 °C"), ("latin-1", "20 °C"), ("ascii", "20 C")],
+)
+def test_the_degree_sign_is_dropped_only_where_the_encoding_lacks_it(
+    encoding: str, shown: str
+) -> None:
+    """cp1252 and GBK (a Chinese Windows code page) cannot write ✓, so the
+    other signs become ASCII there, but they hold the degree sign."""
+    console = Console.for_stream(_Stream(tty=False, encoding=encoding), "auto", {})
+    assert not console.unicode
+    line = "343.2 m/s at 20 °C – assumed"
+    for text in (console.fit(line), console.readable(line), *console.paragraph(line)):
+        assert shown in text and "–" not in text, text
+        text.encode(encoding)
+
+
+def test_the_classic_windows_console_keeps_the_degree_sign(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Its fonts lack ✓ (so the ASCII signs are used) but have °."""
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr("roomscope.cli.console._enable_windows_vt", lambda stream: False)
+    console = Console.for_stream(_Stream(tty=True, encoding="utf-8"), "auto", {})
+    assert not console.unicode
+    assert console.fit("20 °C – 5 °C") == "20 °C - 5 °C"
+
+
 @pytest.mark.parametrize("unicode", [True, False])
 def test_validity_is_never_colour_alone(unicode: bool) -> None:
     console = Console(color=True, unicode=unicode)
