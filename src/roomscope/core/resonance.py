@@ -1,6 +1,6 @@
 """Potential low-frequency resonance detection.
 
-v0.1 deliberately reports *candidates* only:
+RoomScope deliberately reports *candidates* only:
 
 * a candidate is a peak of the finely smoothed (1/24-octave) magnitude
   response that stands ``min_prominence_db`` above the 1-octave smoothed
@@ -233,8 +233,7 @@ def detect_potential_resonances(
     notes = [
         diag(
             "Candidates only: a peak in the low-frequency response with a long narrow-band "
-            "decay may be a room resonance, but room-mode identification is not attempted in "
-            "v0.1."
+            "decay may be a room resonance; RoomScope does not identify room modes."
         ),
     ]
     low_hz, high_hz, range_notes = _search_range(

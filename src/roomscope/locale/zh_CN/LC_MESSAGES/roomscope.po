@@ -1899,8 +1899,13 @@ msgid "no VALID values to average"
 msgstr "没有可平均的有效（VALID）值"
 
 msgctxt "diagnostic"
+msgid "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance; RoomScope does not identify room modes."
+msgstr "仅为候选：低频响应中窄带衰减较长的峰可能是房间共振；RoomScope 不识别房间模式。"
+
+# Stored by RoomScope 0.5 and earlier in result.json; still shown translated.
+msgctxt "diagnostic"
 msgid "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance, but room-mode identification is not attempted in v0.1."
-msgstr "仅为候选：低频响应中窄带衰减较长的峰可能是房间共振，但 v0.1 不尝试识别房间模式。"
+msgstr "仅为候选：低频响应中窄带衰减较长的峰可能是房间共振；RoomScope 不识别房间模式。"
 
 msgctxt "diagnostic"
 msgid "the analysed response is {length_s:.2f} s long, so its resolution is {resolution_hz:.1f} Hz and peaks below {low:.0f} Hz cannot be separated"

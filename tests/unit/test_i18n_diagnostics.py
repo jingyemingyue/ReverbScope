@@ -175,3 +175,24 @@ def test_a_failed_loopback_stores_an_english_reason_in_chinese(
     assert loopback.reason and loopback.reason.isascii(), loopback.reason
     assert all(text.isascii() for text in result.warnings)
     assert localize(loopback.reason) != loopback.reason
+
+
+def test_the_resonance_note_names_no_version_and_old_files_still_read_in_chinese(
+    zh: None,
+) -> None:
+    """The note said "v0.1 不尝试识别房间模式" in a 0.5 release. Results written
+    by those versions keep the old sentence; it is still shown translated."""
+    current = (
+        "Candidates only: a peak in the low-frequency response with a long narrow-band "
+        "decay may be a room resonance; RoomScope does not identify room modes."
+    )
+    stored_by_0_5 = (
+        "Candidates only: a peak in the low-frequency response with a long narrow-band "
+        "decay may be a room resonance, but room-mode identification is not attempted in "
+        "v0.1."
+    )
+    source = Path("src/roomscope/core/resonance.py").read_text(encoding="utf-8")
+    assert "v0.1" not in source
+    for text in (current, stored_by_0_5):
+        shown = localize(text)
+        assert shown.startswith("仅为候选") and "v0.1" not in shown, shown
