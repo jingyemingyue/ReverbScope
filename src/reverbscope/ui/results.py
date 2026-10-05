@@ -533,10 +533,23 @@ class ResultsPage(QWidget):
         parts.append(f"{result.sample_rate} Hz")
         self.header.subtitle.setText("  ·  ".join(parts))
         self.header.subtitle.setVisible(True)
-        self.overview.show_result(result, list(self.state.findings), self.state.profile)
         self.text.setPlainText(
             render_analysis(REPORT_CONSOLE, result, self.state.findings, self.state.profile)
         )
+        self._draw(result)
+        self.status.setText("")
+
+    def restyle(self) -> None:
+        """Draw the result again in the colour scheme now in force.
+
+        The cards, the table colours and the charts take the scheme's colours
+        when they are drawn; the application style sheet does not reach them.
+        """
+        if self.state.result is not None:
+            self._draw(self.state.result)
+
+    def _draw(self, result: AnalysisResult) -> None:
+        self.overview.show_result(result, list(self.state.findings), self.state.profile)
         plot_impulse_response(self.ir_tab.figure, result)
         plot_frequency_response(self.fr_tab.figure, result)
         plot_decay(self.decay_tab.figure, result)
@@ -545,7 +558,6 @@ class ResultsPage(QWidget):
         self.place_tab.show_placement(result.placement)
         for tab in (self.ir_tab, self.fr_tab, self.decay_tab, self.noise_tab, self.refl_tab):
             tab.redraw()
-        self.status.setText("")
 
     def _choose_save_directory(self) -> None:
         directory = QFileDialog.getExistingDirectory(

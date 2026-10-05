@@ -57,6 +57,8 @@ class ComparePage(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._comparison: ComparisonResult | None = None
+        # What the tabs show, to draw it again in another colour scheme.
+        self._shown: tuple[ComparisonResult, list[Finding], str] | None = None
         self.setProperty("page", True)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(28, 20, 28, 14)
@@ -214,7 +216,16 @@ class ComparePage(QWidget):
             )
         )
 
+    def restyle(self) -> None:
+        """Draw the comparison again in the colour scheme now in force."""
+        if self._shown is not None:
+            self._show(*self._shown)
+        else:
+            style_figure(self.figure)
+            self.canvas.draw_idle()
+
     def _show(self, comparison: ComparisonResult, findings: list[Finding], profile: str) -> None:
+        self._shown = (comparison, findings, profile)
         rows = (
             list(comparison.decay)
             + list(comparison.noise)

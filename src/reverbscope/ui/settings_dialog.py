@@ -118,13 +118,8 @@ class SettingsDialog(QDialog):
             developer_tools=self.developer_tools.isChecked(),
         )
         save_settings(settings)
-        from PySide6.QtWidgets import QApplication
-
-        from reverbscope.ui.theme import apply_application_chrome
-
-        app = QApplication.instance()
-        if app is not None:
-            apply_application_chrome(app)
+        # A new theme is applied by the main window, which draws its cards
+        # and charts again (MainWindow.restyle).
         # The new language is used from the next start: every window keeps the
         # language it was built in, and switching the translator now would
         # leave the open ones half in the old language.

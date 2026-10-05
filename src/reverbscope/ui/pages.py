@@ -303,6 +303,10 @@ class PlacementInputs(QGroupBox):
         if not allowed:
             self.mic_height.setValue(0.0)
 
+    def redraw(self) -> None:
+        """Draw the picture again (in a new colour scheme)."""
+        self._redraw_scene()
+
     def _redraw_scene(self, _value: float | None = None) -> None:
         from reverbscope.ui.plots import plot_placement_illustration
 

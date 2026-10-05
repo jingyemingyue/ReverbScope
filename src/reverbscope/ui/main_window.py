@@ -8,6 +8,7 @@ from pathlib import Path
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices
 from PySide6.QtWidgets import (
+    QApplication,
     QFileDialog,
     QMainWindow,
     QMessageBox,
@@ -27,6 +28,7 @@ from reverbscope.ui.compare_view import ComparePage
 from reverbscope.ui.pages import DawModePage, HomePage, StandalonePage
 from reverbscope.ui.results import ResultsPage
 from reverbscope.ui.state import MeasurementState
+from reverbscope.ui.theme import apply_application_chrome, color_scheme
 from reverbscope.ui.widgets import app_icon
 
 
@@ -163,6 +165,8 @@ class MainWindow(QMainWindow):
         # returns there. Going Home instead reset the state, so an unsaved
         # result (the only copy of a live take) was gone.
         self._before_compare: tuple[QWidget, str] = (self.home, "")
+        # The colour scheme the window was last drawn in.
+        self._scheme = color_scheme()
         self.show_home()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt override
@@ -281,6 +285,8 @@ class MainWindow(QMainWindow):
         before = load_settings()
         if not SettingsDialog(self).exec():
             return
+        if color_scheme() != self._scheme:
+            self.restyle()
         settings = load_settings()
         profile = settings.default_profile
         if profile != before.default_profile and profile in available_profiles():
@@ -294,6 +300,23 @@ class MainWindow(QMainWindow):
             # chosen from the old list. A running take keeps its list, and
             # the page makes it again before the next one.
             self.standalone.refresh_devices()
+
+    def restyle(self) -> None:
+        """Apply the colour scheme now in force to the whole window.
+
+        The application style sheet and palette reach every widget; the
+        finding cards, chips, table colours and charts keep the colours they
+        were drawn with, so they are drawn again. Without that a switch to
+        Dark left pale cards under light text, and white charts.
+        """
+        app = QApplication.instance()
+        if app is not None:
+            apply_application_chrome(app)
+        self._scheme = color_scheme()
+        self.results.restyle()
+        self.compare.restyle()
+        for page in (self.daw, self.standalone):
+            page.placement.redraw()
 
     def _tools_backend(self) -> str | None:
         """The backend the device inspector and the environment report describe.

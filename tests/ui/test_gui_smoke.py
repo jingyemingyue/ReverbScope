@@ -1431,3 +1431,80 @@ def test_saving_a_name_with_a_dot_asks_before_replacing_the_file_written(
     assert (tmp_path / "take.v2.wav").is_file()
     assert (tmp_path / "take.v2.reverbscope-sweep.json").is_file()
     window.close()
+
+
+@pytest.fixture
+def restore_chrome(app: QApplication):  # type: ignore[no-untyped-def]
+    """Put the application's style sheet and palette back after a theme test."""
+    sheet, palette = app.styleSheet(), app.palette()
+    yield
+    app.setStyleSheet(sheet)
+    app.setPalette(palette)
+
+
+def _theme_colours(window: MainWindow) -> dict[str, str]:
+    """The colours each part of the window was last drawn with."""
+    from matplotlib.colors import to_hex
+
+    from reverbscope.ui.widgets import FindingCard
+
+    cards = window.results.findChildren(FindingCard)
+    assert cards
+    return {
+        "results chart": to_hex(window.results.ir_tab.figure.get_facecolor()),
+        "compare chart": to_hex(window.compare.figure.get_facecolor()),
+        "placement picture": to_hex(window.daw.placement.figure.get_facecolor()),
+        "finding card": cards[-1].styleSheet(),
+        "chip": window.results.overview.rt60.chip.styleSheet(),
+    }
+
+
+def test_a_new_theme_in_settings_redraws_cards_and_charts(
+    app: QApplication,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    short_sweep: SweepSettings,
+    restore_chrome: None,
+) -> None:
+    """Settings switched the application style sheet only: finding cards,
+    chips, table colours and charts kept the old scheme, so after Light to
+    Dark the findings were light text on pale cards and the charts white."""
+    from PySide6.QtWidgets import QDialog
+
+    from reverbscope.core.compare import compare
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.interpretation import interpret
+    from reverbscope.settings import UserSettings, save_settings
+    from reverbscope.ui import settings_dialog
+    from reverbscope.ui.theme import DARK_TOKENS, LIGHT_TOKENS, apply_application_chrome
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.delenv("REVERBSCOPE_COLOR_SCHEME", raising=False)
+    save_settings(UserSettings(theme="light"))
+    apply_application_chrome(app)
+
+    def accept_with_theme(self: settings_dialog.SettingsDialog) -> int:
+        self.theme.setCurrentIndex(self.theme.findData("dark"))
+        self.accept()
+        return QDialog.DialogCode.Accepted.value
+
+    monkeypatch.setattr(settings_dialog.SettingsDialog, "exec", accept_with_theme)
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    window = MainWindow()
+    window.state.result = result
+    window.state.findings = interpret(result, "generic")
+    window.show_results()
+    window.compare._show(compare(result, result), [], "generic")
+    before = _theme_colours(window)
+    assert before["results chart"] == LIGHT_TOKENS["surface"]
+    window.show_settings()
+    after = _theme_colours(window)
+    assert DARK_TOKENS["bg"] in app.styleSheet()
+    for part in ("results chart", "compare chart", "placement picture"):
+        assert after[part] == DARK_TOKENS["surface"], part
+    assert any(DARK_TOKENS[f"{tone}_soft"] in after["finding card"] for tone in ("info", "good"))
+    assert after["chip"] != before["chip"]
+    window.close()
