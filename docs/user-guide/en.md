@@ -212,7 +212,9 @@ findings (they are never stored in the file).
 
 A project folder holds `project.json` and ordinary session folders.
 `reverbscope project init --out room/ --name Booth` then
-`reverbscope project add room/ session/ --position desk`.
+`reverbscope project add room/ session/ --position desk`. Running `project init`
+again on a folder that has a `project.json` is refused; `--force` starts the
+project over, without its positions.
 `reverbscope project average room/` averages VALID T values only, never decay
 curves, and names the ISO 3382-2 class the position counts reach.
 

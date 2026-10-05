@@ -1124,6 +1124,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_init.add_argument(
         "--notes", default="", metavar=pgettext("metavar", "TEXT"), help=_("free-text notes")
     )
+    p_init.add_argument(
+        "--force",
+        action="store_true",
+        help=_("replace an existing project.json (its positions and notes are lost)"),
+    )
     p_add = _command(
         proj_sub,
         "add",
@@ -2054,6 +2059,7 @@ def cmd_export(args: argparse.Namespace) -> int:
 def cmd_project(args: argparse.Namespace) -> int:
     from reverbscope.core.averaging import average_decay
     from reverbscope.io.project_store import (
+        PROJECT_FILE,
         add_session,
         is_project,
         list_project_sessions,
@@ -2067,6 +2073,14 @@ def cmd_project(args: argparse.Namespace) -> int:
     if command in ("init", "add", "show"):
         _warn_ignored_json(args, f"project {command}")
     if command == "init":
+        if (args.out / PROJECT_FILE).is_file() and not args.force:
+            # A fresh project.json lists no positions: run again by mistake
+            # (or to set a name), init would drop every position label.
+            raise ReverbScopeError(
+                _("{path} already contains a project.json; use --force to replace it").format(
+                    path=args.out
+                )
+            )
         project = Project(name=args.name or args.out.name, notes=args.notes)
         path = save_project(args.out, project)
         print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path), keep=True))

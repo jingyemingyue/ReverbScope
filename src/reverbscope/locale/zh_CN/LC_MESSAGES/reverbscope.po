@@ -4476,3 +4476,11 @@ msgstr "、"
 
 msgid "invalid JSON at line {line}, column {column}"
 msgstr "第 {line} 行第 {column} 列不是有效的 JSON"
+
+# reverbscope project init: an existing project
+
+msgid "replace an existing project.json (its positions and notes are lost)"
+msgstr "替换已有的 project.json（其中的位置和备注会丢失）"
+
+msgid "{path} already contains a project.json; use --force to replace it"
+msgstr "{path} 中已有 project.json；如要替换，请使用 --force"

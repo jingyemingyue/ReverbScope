@@ -370,6 +370,8 @@ options:
   -h, --help    show this help message and exit
   --name TEXT   room name
   --notes TEXT  free-text notes
+  --force       replace an existing project.json (its positions and notes are
+                lost)
 
 examples:
   reverbscope project init --out studio-a

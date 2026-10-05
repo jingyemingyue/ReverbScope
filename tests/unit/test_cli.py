@@ -511,3 +511,28 @@ def test_measure_refuses_a_test_signal_too_short_to_analyse_before_playing(
     assert "Nothing was played." in err
     assert "devices --probe" not in err
     assert not (out / "recording.wav").exists()
+
+
+def test_project_init_keeps_an_existing_project(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Running init again (shell history, or to set a name) must not drop the
+    positions: a fresh project.json lists none."""
+    project = tmp_path / "room"
+    assert main(["project", "init", "--out", str(project), "--name", "Studio"]) == 0
+    stored = (
+        (project / "project.json")
+        .read_text(encoding="utf-8")
+        .replace('"positions": []', '"positions": [{"label": "A", "session_dirs": ["position-a"]}]')
+    )
+    (project / "project.json").write_text(stored, encoding="utf-8")
+    capsys.readouterr()
+
+    assert main(["project", "init", "--out", str(project)]) == 1
+    err = " ".join(capsys.readouterr().err.split())
+    assert "already contains a project.json; use --force to replace it" in err
+    assert (project / "project.json").read_text(encoding="utf-8") == stored
+
+    assert main(["project", "init", "--out", str(project), "--force"]) == 0
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    assert payload["name"] == "room" and payload["positions"] == []
