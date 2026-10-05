@@ -168,6 +168,8 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
     _check(_texts(window.results), "results")
     _check([window.results.text.toPlainText()], "full report")
     _check(_texts(window.compare), "compare")
+    # Two-letter words pass the English gate: "vs" between the two paths did.
+    assert window.compare.status.text() == f"{saved[0][0]}  对  {saved[1][0]}"
     _check([window.compare.text.toPlainText()], "comparison report")
     tabs = (
         window.results.ir_tab,

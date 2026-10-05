@@ -4562,3 +4562,8 @@ msgstr "设置中的音频后端已更改，设备列表已重新生成。请检
 
 msgid "No audio device found; Universal DAW Mode still works."
 msgstr "未找到音频设备；通用 DAW 模式仍然可用。"
+
+# Compare page: the two sessions compared, under the tabs
+
+msgid "{baseline}  vs  {candidate}"
+msgstr "{baseline}  对  {candidate}"

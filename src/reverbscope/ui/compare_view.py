@@ -201,7 +201,11 @@ class ComparePage(QWidget):
             profile = "generic"
         self._comparison = comparison
         self._show(comparison, findings, profile)
-        self.status.setText(f"{left.directory}  vs  {right.directory}")
+        self.status.setText(
+            _("{baseline}  vs  {candidate}").format(
+                baseline=left.directory, candidate=right.directory
+            )
+        )
 
     def _show(self, comparison: ComparisonResult, findings: list[Finding], profile: str) -> None:
         rows = (
