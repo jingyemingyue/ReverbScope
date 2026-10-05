@@ -792,3 +792,23 @@ def test_compare_names_the_file_it_wrote_in_an_out_folder(
     written = out / "comparison.json"
     assert written.is_file()
     assert f"Wrote comparison to {written}" in capsys.readouterr().out
+
+
+def test_a_path_that_starts_with_a_tilde_is_in_the_home_folder(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """cmd.exe and Windows PowerShell pass "~" unexpanded: the demo help's
+    "--out ~/reverbscope-demo" made a folder named "~" in the current one."""
+    home = tmp_path / "home"
+    work = tmp_path / "work"
+    home.mkdir()
+    work.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.chdir(work)
+    assert main(["sweep", "--out", "~/sweep.wav", "--duration", "1"]) == 0
+    assert (home / "sweep.wav").is_file()
+    write_wav(home / "ir.wav", make_rir(48000, rt60_s=0.4) * 0.5, 48000)
+    assert main(["analyze-ir", "--ir", "~/ir.wav", "--band", "100", "8000"]) == 0
+    assert str(home / "ir.wav") in capsys.readouterr().out
+    assert not (work / "~").exists()

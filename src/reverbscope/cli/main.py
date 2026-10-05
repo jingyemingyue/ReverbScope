@@ -349,15 +349,25 @@ class _Parser(argparse.ArgumentParser):
     """
 
     def _get_value(self, action: argparse.Action, arg_string: str) -> Any:
-        """argparse's conversion; the type is named in words ("整数"), not as int."""
+        """argparse's conversion; the type is named in words ("整数"), not as int.
+
+        A path that starts with ``~`` is in the home folder: cmd.exe and
+        Windows PowerShell pass ``~`` to a program unexpanded (so does a POSIX
+        shell when it is quoted), and ``--out ~/reverbscope-demo`` made a folder
+        named ``~`` in the current one.
+        """
         try:
-            return super()._get_value(action, arg_string)
+            value = super()._get_value(action, arg_string)
         except argparse.ArgumentError:
             name = _type_name(action.type)
             if name is None:
                 raise
             message = _("invalid %(type)s value: %(value)r") % {"type": name, "value": arg_string}
             raise argparse.ArgumentError(action, message) from None
+        if isinstance(value, Path):
+            with contextlib.suppress(RuntimeError):  # no home folder to expand to
+                return value.expanduser()
+        return value
 
     def error(self, message: str) -> Any:
         console = Console.for_stream(sys.stderr, _COLOR_REQUEST["mode"])  # type: ignore[arg-type]
