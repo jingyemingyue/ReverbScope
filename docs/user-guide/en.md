@@ -100,6 +100,65 @@ session has the mode `synthetic_demo` and a note saying it was simulated, and
 the demo never overwrites a folder it did not write. `roomscope demo --out
 <folder>` chooses where the files go.
 
+## The interactive menu
+
+Run `roomscope` without a command in a terminal and RoomScope shows a
+numbered menu, in the interface language:
+
+```text
+Measurement
+  1  Try the demo                  synthetic data, no audio interface needed
+  2  Write the test signal         a sweep WAV to play and record in your DAW
+  3  Analyse a recording           a WAV recorded while the sweep played
+  4  Measure with your interface   RoomScope plays the sweep and records
+
+Results
+  5  View results                  a saved session or comparison
+  6  Compare two positions         what changed between two sessions
+  7  Open the desktop app          the results with charts
+
+Settings and diagnostics
+  8  Settings                      language, profile, backend, output folder
+  9  Environment report            for bug reports
+
+  0  Quit                          or type q
+```
+
+The Terminal Edition has no item 7.
+
+Type a number and press Enter. Each item asks only for what it needs, with a
+default in brackets that Enter accepts: the demo folder, where to write the
+sweep and at which sample rate, the recording and its sweep (`sweep.wav` next
+to it is found by itself), the session folder (the first free `session-N`, in
+the output folder when one is set). A path can be typed, pasted in quotes or
+dragged into the window; `~` and Chinese folder names work. A file that does
+not exist or a number out of range is explained and asked again.
+
+Before it runs anything the menu prints the command it stands for, for
+example `Same as the command: roomscope analyze --recording take.wav --sweep
+sweep.wav --out session-1`, so you can type it yourself next time. The
+command then runs exactly as typed would; when it fails, the menu says so in
+words and waits for Enter.
+
+**Measure with your interface** lists the devices as `roomscope devices`
+does, asks for the input and output device (Enter keeps the system's), the
+microphone's input channel, the level (-20 dBFS unless you change it; above
+-12 dBFS it asks whether the monitors are turned down) and the folder, then
+shows the plan and plays nothing until you type `y`. **View results** and
+**Compare two positions** list the sessions in the current folder and the
+output folder, newest first; choose by number or type a path. **Settings**
+changes the language (简体中文, English, the other interface languages or
+the system's), the default profile, the audio backend and the output folder
+with `roomscope config`.
+
+Ctrl+C at a question goes back to the menu; at the menu it leaves. Ctrl+D
+(Ctrl+Z then Enter on Windows) leaves from anywhere. `roomscope menu` opens
+the menu explicitly. In a pipe, a file or a script, with `--format json`, or
+with `ROOMSCOPE_NO_MENU=1` set, bare `roomscope` prints the short overview
+instead. `roomscope menu` does not look at `ROOMSCOPE_NO_MENU`, but where
+nobody can type the answers, or with `--format json`, it refuses with exit
+code 2.
+
 ## Universal DAW Mode
 
 The **sweep sample rate** must match the DAW project you are actually
@@ -265,8 +324,8 @@ The other interface languages are `zh_TW` (Traditional Chinese), `ja`,
 language in effect and says why. The desktop app's Settings → Language
 writes the same setting. `--lang zh_CN` picks a language for one command
 and `ROOMSCOPE_LANG` for a shell; the order is `--lang`, the stored
-setting, `ROOMSCOPE_LANG`, the system. The home screen (bare `roomscope`)
-and `roomscope --help` end with the command for another language, written
+setting, `ROOMSCOPE_LANG`, the system. The menu and the home screen (bare
+`roomscope`) and `roomscope --help` end with the command for another language, written
 in that language.
 
 Every interface language translates findings, the text-report labels, the
