@@ -165,8 +165,9 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
         """
         from roomscope.cli.console import cell_width, wrap
 
-        rendered: list[str] = []
+        blocks: list[str] = []
         for block in text.split("\n\n"):
+            rendered: list[str] = []
             lines = block.split("\n")
             preformatted = any(line.startswith((" ", "\t")) for line in lines)
             if preformatted:
@@ -175,10 +176,12 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
                         rendered.append(indent + line)
                     else:
                         rendered.extend(indent + part for part in wrap(line, max(width, 11)))
-                continue
-            paragraph = " ".join(line.strip() for line in lines if line.strip())
-            rendered.extend(indent + part for part in wrap(paragraph, max(width, 11)))
-        return "\n".join(rendered)
+            else:
+                paragraph = " ".join(line.strip() for line in lines if line.strip())
+                rendered.extend(indent + part for part in wrap(paragraph, max(width, 11)))
+            blocks.append("\n".join(rendered))
+        # A blank line between paragraphs, as they were written.
+        return "\n\n".join(block for block in blocks if block)
 
     def _format_usage(self, usage: Any, actions: Any, groups: Any, prefix: Any) -> str:
         # argparse measures the prefix with len(); "用法：" takes six columns, not three.

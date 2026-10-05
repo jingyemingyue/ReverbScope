@@ -478,6 +478,20 @@ def test_every_help_example_is_a_valid_command(home: Path) -> None:
 
 
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_help_paragraphs_keep_their_blank_line(home: Path, lang: str) -> None:
+    """The description, the command list, the examples and the closing
+    sentence ran together: the blank lines between them were dropped."""
+    activate(lang)
+    root = _help_screens()["roomscope"]
+    heading = "commands:" if lang == "en" else "命令："
+    examples = "examples:" if lang == "en" else "示例："
+    assert f"\n\n{heading}\n" in root
+    assert f"\n\n{examples}\n" in root
+    tail = root.split(examples, 1)[1]
+    assert "\n\n" in tail.strip(), tail
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
 @pytest.mark.parametrize("columns", [80, 60])
 def test_help_fits_the_terminal_in_both_languages(
     home: Path, monkeypatch: pytest.MonkeyPatch, lang: str, columns: int
