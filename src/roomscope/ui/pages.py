@@ -727,6 +727,9 @@ class StandalonePage(QWidget):
         self._channel_plan: ChannelPlan | None = None
         # The output channel the take plays on: the spin box stays editable.
         self._take_output_channel = 1
+        # The devices the take opened, as the session names them: the device
+        # lists stay editable during the take too.
+        self._take_audio_interface = ""
         # The take runs on the fake backend: its session is a synthetic demo.
         self._take_synthetic = False
         self._inventory: DeviceInventory | None = None
@@ -1184,6 +1187,9 @@ class StandalonePage(QWidget):
         self._take_synthetic = backend == "fake"
         self._channel_plan = plan
         self._take_output_channel = int(self.output_channel.value())
+        self._take_audio_interface = session_audio_interface(
+            self._devices, input_device, output_device
+        )
         place = self.placement.analysis_kwargs()
         self.state.analysis_settings = AnalysisSettings(
             channel=plan.analysis_channel,
@@ -1243,11 +1249,7 @@ class StandalonePage(QWidget):
             input_channel=plan.microphone_channel,
             loopback_channel=plan.loopback_channel,
             output_channel=self._take_output_channel,
-            audio_interface=session_audio_interface(
-                self._devices,
-                self.input_device.currentData(),
-                self.output_device.currentData(),
-            ),
+            audio_interface=self._take_audio_interface,
             bit_depth=STANDALONE_BIT_DEPTH,
             sample_rate=self.state.sweep_settings.sample_rate,
             sweep_settings=self.state.sweep_settings,

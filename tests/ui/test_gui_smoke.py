@@ -826,6 +826,44 @@ def test_the_measure_menu_does_not_switch_backend_under_a_running_take(
     window.close()
 
 
+def test_the_saved_audio_interface_is_the_one_the_take_used(app: QApplication, held_take) -> None:
+    """The session named the devices selected in the lists when the take
+    ended, not the ones it played and recorded through (the lists stay
+    editable during a take, like the output channel)."""
+    from roomscope.audio.backend import DeviceInfo
+
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    other = DeviceInfo(
+        index=7,
+        name="Other interface",
+        host_api="fake",
+        max_input_channels=2,
+        max_output_channels=2,
+        default_sample_rate=48000.0,
+        is_default_input=False,
+        is_default_output=False,
+    )
+    try:
+        page.run_button.click()
+        assert page.is_busy()
+        page._devices.append(other)
+        page.input_device.addItem(other.name, other.index)
+        page.input_device.setCurrentIndex(page.input_device.count() - 1)
+    finally:
+        held_take.set()
+        _settle(app, page._measure_worker)
+        _settle(app, page._analysis_worker)
+    assert window.stack.currentWidget() is window.results
+    saved = window.state.session.audio_interface
+    assert saved and "Other interface" not in saved
+    window.close()
+
+
 @pytest.mark.parametrize("mode", ["demo", "standalone"])
 def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
     app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
