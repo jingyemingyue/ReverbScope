@@ -4635,3 +4635,8 @@ msgstr "{metric} {seconds:#.3g} s，对比 {other:#.3g} s"
 msgctxt "diagnostic"
 msgid "the loopback channel is silent (peak below {threshold_dbfs:g} dBFS); compensation is not applied"
 msgstr "回送声道无声（峰值低于 {threshold_dbfs:g} dBFS）；未应用补偿"
+
+# reverbscope analyze-ir: a declared band above the Nyquist frequency
+
+msgid "the declared band ends at {high_hz:g} Hz, but a {sample_rate} Hz impulse response contains nothing above {nyquist_hz:g} Hz (half its sample rate)"
+msgstr "声明的频带上限为 {high_hz:g} Hz，但采样率为 {sample_rate} Hz 的脉冲响应不含 {nyquist_hz:g} Hz（采样率的一半）以上的内容"

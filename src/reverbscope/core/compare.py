@@ -69,7 +69,9 @@ def _common_band(
             diag("one or both results have no excitation band, so they cannot be compared"),
         )
     low = max(b1.low_hz, b2.low_hz)
-    high = min(b1.high_hz, b2.high_hz)
+    # An imported IR could declare a band above its Nyquist frequency before
+    # that was refused; its curve ends there, and nothing above is compared.
+    high = min(b1.high_hz, b2.high_hz, baseline.sample_rate / 2.0, candidate.sample_rate / 2.0)
     if high <= low:
         return None, (diag("the excitation bands do not overlap"),)
     return (low, high), tuple(notes)

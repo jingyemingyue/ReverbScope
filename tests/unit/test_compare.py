@@ -346,6 +346,31 @@ def test_an_undeclared_imported_band_is_not_compared(short_sweep: SweepSettings)
     assert "no excitation band" in comparison.notes[0]
 
 
+def test_a_stored_band_above_the_nyquist_frequency_is_not_compared(
+    short_sweep: SweepSettings,
+) -> None:
+    """R3-21: an imported 48 kHz IR saved with --band 20 30000 was compared
+    with a 96 kHz session up to 30 kHz, from its curve clamped at 24 kHz."""
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
+    from reverbscope.models.result import EXCITATION_SOURCE_DECLARED, ExcitationBand
+
+    rir = make_rir(48000, rt60_s=0.4, diffuse_level=0.02, start_delay_s=0.05)
+    imported = analyze_impulse_response(AudioSignal(rir, 48000), excitation_band=(20.0, 20000.0))
+    # As an older version stored it, before the band was checked.
+    beyond = ExcitationBand(low_hz=20.0, high_hz=30000.0, source=EXCITATION_SOURCE_DECLARED)
+    imported = replace(
+        imported, impulse_response=replace(imported.impulse_response, excitation_band=beyond)
+    )
+    fast = replace(short_sweep, sample_rate=96000, end_hz=40000.0)
+    comparison = compare(imported, _result(fast, rt60_s=0.4, reflections=[]))
+    assert comparison.comparable
+    assert comparison.common_band is not None
+    assert comparison.common_band[1] == pytest.approx(24000.0)
+    assert comparison.frequency_response is not None
+    assert comparison.frequency_response.frequencies_hz.max() <= 24000.0 + 1e-6
+
+
 def test_a_refused_pair_names_its_reason_first(short_sweep: SweepSettings) -> None:
     """The finding quoted notes[0], which was a sweep-difference or the ISO note."""
     low = replace(short_sweep, start_hz=20.0, end_hz=1000.0)

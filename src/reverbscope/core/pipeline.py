@@ -1215,6 +1215,16 @@ def analyze_impulse_response(
             raise ConfigurationError(
                 _("excitation_band must be a (low_hz, high_hz) pair with high > low > 0")
             )
+        # A band beyond the Nyquist frequency is not in the file: compared
+        # with a session at a higher rate, the difference above it was made
+        # up from the last bin of this response.
+        if high > sample_rate / 2.0:
+            raise ConfigurationError(
+                _(
+                    "the declared band ends at {high_hz:g} Hz, but a {sample_rate} Hz impulse "
+                    "response contains nothing above {nyquist_hz:g} Hz (half its sample rate)"
+                ).format(high_hz=high, sample_rate=sample_rate, nyquist_hz=sample_rate / 2.0)
+            )
     # A band-limited direct sound rises over about two periods of its upper
     # band edge before it peaks (a sub-woofer IR low-passed at 80 Hz takes
     # ~25 ms); that rise must not count as "content before the direct sound".

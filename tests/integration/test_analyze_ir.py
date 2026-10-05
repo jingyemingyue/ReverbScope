@@ -309,6 +309,33 @@ def test_a_band_without_a_finite_upper_edge_is_refused(high_hz: float) -> None:
         analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, high_hz))
 
 
+def test_a_band_above_the_nyquist_frequency_is_refused() -> None:
+    """R3-21: ``--band 20 30000`` on a 48 kHz IR was stored as a 20 Hz-30 kHz
+    band that the file cannot contain."""
+    from reverbscope.i18n import activate
+
+    ir = np.zeros(48000)
+    ir[100] = 1.0
+    with pytest.raises(ConfigurationError) as refused:
+        analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 30000.0))
+    assert str(refused.value) == (
+        "the declared band ends at 30000 Hz, but a 48000 Hz impulse response contains "
+        "nothing above 24000 Hz (half its sample rate)"
+    )
+    activate("zh_CN")
+    with pytest.raises(ConfigurationError) as refused:
+        analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 30000.0))
+    assert str(refused.value) == (
+        "声明的频带上限为 30000 Hz，但采样率为 48000 Hz 的脉冲响应不含 24000 Hz"
+        "（采样率的一半）以上的内容"
+    )
+    # Up to the Nyquist frequency itself is a band the file can hold.
+    activate("en")
+    result = analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 24000.0))
+    assert result.excitation_band is not None
+    assert result.excitation_band.high_hz == 24000.0
+
+
 def _diagnostics_text(result: AnalysisResult) -> str:
     from reverbscope.cli.console import Console
     from reverbscope.cli.render import _diagnostics

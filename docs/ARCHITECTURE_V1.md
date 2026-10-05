@@ -402,7 +402,8 @@ tuple[float, float] | None = None) -> AnalysisResult` skips deconvolution,
 sweep-position checks and distortion indicators, and runs decay, frequency
 response, reflections, resonances and placement on the given response. The
 excitation band is what the caller declares (`--band 20 20000`), recorded
-with `source = "declared by the user"`; without a declaration the band is
+with `source = "declared by the user"` (a band above half the file's sample
+rate is refused with `ConfigurationError`); without a declaration the band is
 marked unknown and every decay and energy metric, broadband included, is
 `NOT_COMPUTED` with that reason. The noise section is `None` with the note
 that no recording segment exists.

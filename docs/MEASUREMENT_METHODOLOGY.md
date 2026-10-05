@@ -104,7 +104,10 @@ A file that starts at its peak cannot be checked and is analysed with
 confidence "low".
 Decay and energy metrics, broadband and per band, are computed only inside
 an excitation band the caller declares (`--band LO HI`); without one they are
-all `not_computed`. Fed the `impulse_response.wav` of a sweep analysis with
+all `not_computed`. A declared band that ends above half the file's sample
+rate is refused: the file holds nothing there, and a comparison with a
+session at a higher rate would read a difference made up from the last bin
+of this response. Fed the `impulse_response.wav` of a sweep analysis with
 that analysis's band, the imported path reproduces its RT60 (±1 %), band T
 values (±2 %), reflection delay (±0.05 ms) and level (±0.2 dB) and its
 resonance candidates (`tests/integration/test_analyze_ir.py`).
