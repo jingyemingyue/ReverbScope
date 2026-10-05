@@ -1,6 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="804" height="962" viewBox="0 0 804 962" role="img" aria-label="reverbscope demo（合成数据）">
+<svg xmlns="http://www.w3.org/2000/svg" width="804" height="1016" viewBox="0 0 804 1016" role="img" aria-label="reverbscope demo（合成数据）">
 <title>reverbscope demo（合成数据）</title>
-<rect width="804" height="962" rx="8" fill="#1d1f23"/>
+<rect width="804" height="1016" rx="8" fill="#1d1f23"/>
 <rect width="804" height="30" rx="8" fill="#2b2e33"/>
 <rect y="22" width="804" height="8" fill="#2b2e33"/>
 <circle cx="18" cy="15" r="6" fill="#ff5f57"/>
@@ -25,38 +25,41 @@
 <text x="16" y="312" xml:space="preserve"></text>
 <text x="16" y="330" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">位置</tspan><tspan x="49.6" font-weight="bold" fill="#6cc4d9"> A</tspan><tspan x="66.4">  </tspan><tspan x="83.2" opacity="0.62">靠近桌面和侧墙</tspan></text>
 <text x="16" y="348" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">混响</tspan><tspan x="66.4">      </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> RT60 0.70 s</tspan><tspan x="226.0" opacity="0.62"> (T30)</tspan><tspan x="276.4"> · EDT 0.45 s</tspan></text>
-<text x="16" y="366" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">早期反射</tspan><tspan x="100.0">  </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> </tspan><tspan x="133.6">最强</tspan><tspan x="167.2"> -3.1 dB</tspan><tspan x="234.4">，位于</tspan><tspan x="284.8"> 2.4 ms · 2 </tspan><tspan x="385.6">个高于</tspan><tspan x="436.0"> -20 dB</tspan></text>
-<text x="16" y="384" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">低频</tspan><tspan x="66.4">      </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> </tspan><tspan x="133.6">可能的共振：</tspan><tspan x="234.4">110 Hz (+11.3 dB)</tspan></text>
-<text x="16" y="402" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">本底噪声</tspan><tspan x="100.0">  </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> -69.2 dBFS RMS · 50 Hz </tspan><tspan x="326.8">市电哼声</tspan></text>
-<text x="16" y="420" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">数据质量</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">直达声：置信度</tspan><tspan x="251.2"> </tspan><tspan x="259.6">高</tspan><tspan x="276.4"> · </tspan><tspan x="301.6">无警告</tspan></text>
-<text x="16" y="438" xml:space="preserve"></text>
-<text x="16" y="456" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">位置</tspan><tspan x="49.6" font-weight="bold" fill="#6cc4d9"> B</tspan><tspan x="66.4">  </tspan><tspan x="83.2" opacity="0.62">从桌面向后移动</tspan><tspan x="200.8" opacity="0.62"> 1 m</tspan></text>
-<text x="16" y="474" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">混响</tspan><tspan x="66.4">      </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> RT60 0.51 s</tspan><tspan x="226.0" opacity="0.62"> (T30)</tspan><tspan x="276.4"> · EDT 0.43 s</tspan></text>
-<text x="16" y="492" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">早期反射</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">最强</tspan><tspan x="167.2"> -14.5 dB</tspan><tspan x="242.8">，位于</tspan><tspan x="293.2"> 9.3 ms · 1 </tspan><tspan x="394.0">个高于</tspan><tspan x="444.4"> -20 dB</tspan></text>
-<text x="16" y="510" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">低频</tspan><tspan x="66.4">      </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> </tspan><tspan x="133.6">可能的共振：</tspan><tspan x="234.4">110 Hz (+10.7 dB)</tspan></text>
-<text x="16" y="528" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">本底噪声</tspan><tspan x="100.0">  </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> -87.1 dBFS RMS · 50 Hz </tspan><tspan x="326.8">市电哼声</tspan></text>
-<text x="16" y="546" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">数据质量</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">直达声：置信度</tspan><tspan x="251.2"> </tspan><tspan x="259.6">高</tspan><tspan x="276.4"> · </tspan><tspan x="301.6">无警告</tspan></text>
-<text x="16" y="564" xml:space="preserve"></text>
-<text x="16" y="582" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">对比</tspan><tspan x="49.6" font-weight="bold" fill="#6cc4d9"> A → B</tspan></text>
-<text x="16" y="600" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">混响</tspan><tspan x="66.4">      </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> RT60 0.70 s → 0.51 s (-27.3 %)</tspan></text>
-<text x="16" y="618" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">早期反射</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> 2 </tspan><tspan x="150.4">个消失</tspan><tspan x="200.8"> · 1 </tspan><tspan x="242.8">个新出现</tspan><tspan x="310.0"> · 0 </tspan><tspan x="352.0">个两侧都有</tspan></text>
-<text x="16" y="636" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">低频</tspan><tspan x="66.4">      </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">两侧都有：</tspan><tspan x="217.6">110 Hz</tspan></text>
-<text x="16" y="654" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">本底噪声</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> -69.2 → -87.1 dBFS (-17.9 dB)</tspan></text>
-<text x="16" y="672" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">频率响应</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">变化最大的是</tspan><tspan x="234.4"> 31.5 Hz </tspan><tspan x="310.0">倍频程，平均</tspan><tspan x="410.8"> |Δ| 7.8 dB</tspan></text>
-<text x="16" y="690" xml:space="preserve"></text>
-<text x="16" y="708" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">演示说明了什么</tspan></text>
-<text x="16" y="726" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" fill="#6cc4d9">i</tspan><tspan x="41.2"> </tspan><tspan x="49.6">位置</tspan><tspan x="83.2"> A </tspan><tspan x="108.4">在</tspan><tspan x="125.2"> 2.4 ms </tspan><tspan x="192.4">处有一个很强的桌面反射，在位置</tspan><tspan x="444.4"> B </tspan><tspan x="469.6">已经消失。</tspan></text>
-<text x="16" y="744" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" fill="#6cc4d9">i</tspan><tspan x="41.2"> 110 Hz </tspan><tspan x="108.4">的房间模式在两个位置都存在：它属于房间本身，而不是某个位置。</tspan></text>
-<text x="16" y="762" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" fill="#6cc4d9">i</tspan><tspan x="41.2"> 50 Hz </tspan><tspan x="100.0">市电哼声在位置</tspan><tspan x="217.6"> B </tspan><tspan x="242.8">明显更低。</tspan></text>
-<text x="16" y="780" xml:space="preserve"></text>
-<text x="16" y="798" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">下一步</tspan></text>
-<text x="16" y="816" xml:space="preserve"><tspan x="16.0">  1. </tspan><tspan x="58.0">查看一个位置的完整报告：</tspan></text>
-<text x="16" y="834" xml:space="preserve"><tspan x="16.0">     </tspan><tspan x="58.0" fill="#6cc4d9">reverbscope show reverbscope-demo/position-a</tspan></text>
-<text x="16" y="852" xml:space="preserve"><tspan x="16.0">  2. </tspan><tspan x="58.0">查看两个位置之间的全部差值：</tspan></text>
-<text x="16" y="870" xml:space="preserve"><tspan x="16.0">     </tspan><tspan x="58.0" fill="#6cc4d9">reverbscope compare reverbscope-demo/position-a reverbscope-demo/position-b --same-input-gain</tspan></text>
-<text x="16" y="888" xml:space="preserve"><tspan x="16.0">  3. </tspan><tspan x="58.0">在桌面应用中打开这些会话：</tspan></text>
-<text x="16" y="906" xml:space="preserve"><tspan x="16.0">     </tspan><tspan x="58.0" fill="#6cc4d9">reverbscope gui</tspan></text>
-<text x="16" y="924" xml:space="preserve"><tspan x="16.0">  4. </tspan><tspan x="58.0">测量你自己的房间：为</tspan><tspan x="226.0"> DAW </tspan><tspan x="268.0">写出测试信号。</tspan></text>
-<text x="16" y="942" xml:space="preserve"><tspan x="16.0">     </tspan><tspan x="58.0" fill="#6cc4d9">reverbscope sweep --out sweep.wav</tspan></text>
+<text x="16" y="366" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">清晰度</tspan><tspan x="83.2">    </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> C50 +9.8 dB · C80 +12.9 dB · D50 91 %</tspan></text>
+<text x="16" y="384" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">早期反射</tspan><tspan x="100.0">  </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> </tspan><tspan x="133.6">最强</tspan><tspan x="167.2"> -3.1 dB</tspan><tspan x="234.4">，位于</tspan><tspan x="284.8"> 2.4 ms · 2 </tspan><tspan x="385.6">个高于</tspan><tspan x="436.0"> -20 dB</tspan></text>
+<text x="16" y="402" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">低频</tspan><tspan x="66.4">      </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> </tspan><tspan x="133.6">可能的共振：</tspan><tspan x="234.4">110 Hz (+11.3 dB)</tspan></text>
+<text x="16" y="420" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">本底噪声</tspan><tspan x="100.0">  </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> -69.2 dBFS RMS · 50 Hz </tspan><tspan x="326.8">市电哼声</tspan></text>
+<text x="16" y="438" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">数据质量</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">直达声：置信度</tspan><tspan x="251.2"> </tspan><tspan x="259.6">高</tspan><tspan x="276.4"> · </tspan><tspan x="301.6">无警告</tspan></text>
+<text x="16" y="456" xml:space="preserve"></text>
+<text x="16" y="474" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">位置</tspan><tspan x="49.6" font-weight="bold" fill="#6cc4d9"> B</tspan><tspan x="66.4">  </tspan><tspan x="83.2" opacity="0.62">从桌面向后移动</tspan><tspan x="200.8" opacity="0.62"> 1 m</tspan></text>
+<text x="16" y="492" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">混响</tspan><tspan x="66.4">      </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> RT60 0.51 s</tspan><tspan x="226.0" opacity="0.62"> (T30)</tspan><tspan x="276.4"> · EDT 0.43 s</tspan></text>
+<text x="16" y="510" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">清晰度</tspan><tspan x="83.2">    </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> C50 +10.1 dB · C80 +14.3 dB · D50 91 %</tspan></text>
+<text x="16" y="528" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">早期反射</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">最强</tspan><tspan x="167.2"> -14.5 dB</tspan><tspan x="242.8">，位于</tspan><tspan x="293.2"> 9.3 ms · 1 </tspan><tspan x="394.0">个高于</tspan><tspan x="444.4"> -20 dB</tspan></text>
+<text x="16" y="546" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">低频</tspan><tspan x="66.4">      </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> </tspan><tspan x="133.6">可能的共振：</tspan><tspan x="234.4">110 Hz (+10.7 dB)</tspan></text>
+<text x="16" y="564" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">本底噪声</tspan><tspan x="100.0">  </tspan><tspan x="116.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="125.2"> -87.1 dBFS RMS · 50 Hz </tspan><tspan x="326.8">市电哼声</tspan></text>
+<text x="16" y="582" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">数据质量</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">直达声：置信度</tspan><tspan x="251.2"> </tspan><tspan x="259.6">高</tspan><tspan x="276.4"> · </tspan><tspan x="301.6">无警告</tspan></text>
+<text x="16" y="600" xml:space="preserve"></text>
+<text x="16" y="618" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">对比</tspan><tspan x="49.6" font-weight="bold" fill="#6cc4d9"> A → B</tspan></text>
+<text x="16" y="636" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">混响</tspan><tspan x="66.4">      </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> RT60 0.70 s → 0.51 s (-27.3 %)</tspan></text>
+<text x="16" y="654" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">清晰度</tspan><tspan x="83.2">    </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> C50 +9.8 dB → +10.1 dB · C80 +12.9 dB → +14.3 dB</tspan></text>
+<text x="16" y="672" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">早期反射</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> 2 </tspan><tspan x="150.4">个消失</tspan><tspan x="200.8"> · 1 </tspan><tspan x="242.8">个新出现</tspan><tspan x="310.0"> · 0 </tspan><tspan x="352.0">个两侧都有</tspan></text>
+<text x="16" y="690" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">低频</tspan><tspan x="66.4">      </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">两侧都有：</tspan><tspan x="217.6">110 Hz</tspan></text>
+<text x="16" y="708" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">本底噪声</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> -69.2 → -87.1 dBFS (-17.9 dB)</tspan></text>
+<text x="16" y="726" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">频率响应</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">变化最大的是</tspan><tspan x="234.4"> 31.5 Hz </tspan><tspan x="310.0">倍频程，平均</tspan><tspan x="410.8"> |Δ| 7.8 dB</tspan></text>
+<text x="16" y="744" xml:space="preserve"></text>
+<text x="16" y="762" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">演示说明了什么</tspan></text>
+<text x="16" y="780" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" fill="#6cc4d9">i</tspan><tspan x="41.2"> </tspan><tspan x="49.6">位置</tspan><tspan x="83.2"> A </tspan><tspan x="108.4">在</tspan><tspan x="125.2"> 2.4 ms </tspan><tspan x="192.4">处有一个很强的桌面反射，在位置</tspan><tspan x="444.4"> B </tspan><tspan x="469.6">已经消失。</tspan></text>
+<text x="16" y="798" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" fill="#6cc4d9">i</tspan><tspan x="41.2"> 110 Hz </tspan><tspan x="108.4">的房间模式在两个位置都存在：它属于房间本身，而不是某个位置。</tspan></text>
+<text x="16" y="816" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" fill="#6cc4d9">i</tspan><tspan x="41.2"> 50 Hz </tspan><tspan x="100.0">市电哼声在位置</tspan><tspan x="217.6"> B </tspan><tspan x="242.8">明显更低。</tspan></text>
+<text x="16" y="834" xml:space="preserve"></text>
+<text x="16" y="852" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">下一步</tspan></text>
+<text x="16" y="870" xml:space="preserve"><tspan x="16.0">  1. </tspan><tspan x="58.0">查看一个位置的完整报告：</tspan></text>
+<text x="16" y="888" xml:space="preserve"><tspan x="16.0">     </tspan><tspan x="58.0" fill="#6cc4d9">reverbscope show reverbscope-demo/position-a</tspan></text>
+<text x="16" y="906" xml:space="preserve"><tspan x="16.0">  2. </tspan><tspan x="58.0">查看两个位置之间的全部差值：</tspan></text>
+<text x="16" y="924" xml:space="preserve"><tspan x="16.0">     </tspan><tspan x="58.0" fill="#6cc4d9">reverbscope compare reverbscope-demo/position-a reverbscope-demo/position-b --same-input-gain</tspan></text>
+<text x="16" y="942" xml:space="preserve"><tspan x="16.0">  3. </tspan><tspan x="58.0">在桌面应用中打开这些会话：</tspan></text>
+<text x="16" y="960" xml:space="preserve"><tspan x="16.0">     </tspan><tspan x="58.0" fill="#6cc4d9">reverbscope gui</tspan></text>
+<text x="16" y="978" xml:space="preserve"><tspan x="16.0">  4. </tspan><tspan x="58.0">测量你自己的房间：为</tspan><tspan x="226.0"> DAW </tspan><tspan x="268.0">写出测试信号。</tspan></text>
+<text x="16" y="996" xml:space="preserve"><tspan x="16.0">     </tspan><tspan x="58.0" fill="#6cc4d9">reverbscope sweep --out sweep.wav</tspan></text>
 </g>
 </svg>

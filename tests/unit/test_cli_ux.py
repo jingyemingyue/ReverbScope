@@ -215,6 +215,36 @@ def test_golden_demo(
     _golden(f"demo-{lang}-{columns}", _normalise(out))
 
 
+_SVG_ROW = re.compile(r'<text x="[^"]*" y="[^"]*" xml:space="preserve">(.*?)</text>')
+
+
+@pytest.mark.parametrize(
+    ("svg", "lang", "command"),
+    [
+        ("cli-demo.svg", "en", "reverbscope demo"),
+        ("cli-demo.zh-CN.svg", "zh_CN", "reverbscope --lang zh_CN demo"),
+    ],
+)
+def test_readme_demo_screenshots_show_what_the_demo_prints(
+    svg: str, lang: str, command: str
+) -> None:
+    """README.md and README.zh-CN.md present these SVGs as the output of
+    ``reverbscope demo``; they still lacked the Clarity rows of 0.5.0b1. When
+    the demo golden changes, run ``python scripts/render_readme_assets.py``
+    (``--cli-only`` is enough here) and commit docs/images with the change."""
+    import html
+
+    path = Path(__file__).resolve().parents[2] / "docs" / "images" / svg
+    rows = [
+        html.unescape(re.sub(r"<[^>]+>", "", row))
+        for row in _SVG_ROW.findall(path.read_text(encoding="utf-8"))
+    ]
+    assert rows[0] == f"$ {command}"
+    expected = (GOLDEN / f"demo-{lang}-80.txt").read_text(encoding="utf-8")
+    shown = _normalise("\n".join(rows[1:]) + "\n")
+    assert shown == expected, f"docs/images/{svg} is out of date: rerun render_readme_assets.py"
+
+
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
 @pytest.mark.parametrize("columns", [80, 60])
 def test_golden_sweep_next_steps(
