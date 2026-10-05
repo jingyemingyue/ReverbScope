@@ -34,6 +34,13 @@ DEMO_NOTES = (
     "SYNTHETIC DEMO: simulated with `roomscope demo`. No audio hardware was used; "
     "this is not a measurement of a real room."
 )
+#: Notes of a take recorded on the fake audio backend (the desktop Demo,
+#: ``roomscope --backend fake measure``). Its session is marked
+#: :data:`DEMO_MODE` too: the "room" is simulated just the same.
+FAKE_BACKEND_NOTES = (
+    "SYNTHETIC DEMO: recorded with the fake audio backend. No audio hardware was used; "
+    "this is not a measurement of a real room."
+)
 DEMO_PROFILE = "vocal"
 
 

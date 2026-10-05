@@ -14,7 +14,7 @@ from typing import Any
 from roomscope.errors import ConfigurationError
 from roomscope.i18n import _
 from roomscope.models.calibration import CalibrationRecord
-from roomscope.models.loadutil import settings_payload
+from roomscope.models.loadutil import build_settings, record_name, settings_payload
 
 SUPPORTED_SAMPLE_RATES: tuple[int, ...] = (44100, 48000, 88200, 96000, 176400, 192000)
 DEFAULT_SAMPLE_RATE = 48000
@@ -96,6 +96,12 @@ class SweepSettings:
         _require(
             self.pre_silence_s >= 0.0 and self.post_silence_s >= 0.0, _("silences must be >= 0")
         )
+        # Infinity (or 1e9 s) would fail as an OverflowError or MemoryError
+        # when the test signal is built.
+        _require(
+            self.pre_silence_s <= 60.0 and self.post_silence_s <= 60.0,
+            _("silences must be <= 60 s"),
+        )
 
     @property
     def amplitude(self) -> float:
@@ -125,7 +131,7 @@ class SweepSettings:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SweepSettings:
         payload = settings_payload(data, {f.name for f in fields(cls)}, kind="sweep settings")
-        return cls(**payload)
+        return build_settings(cls, payload, kind="sweep settings")
 
     def with_sample_rate(self, sample_rate: int) -> SweepSettings:
         """Return the same sweep definition at another sample rate."""
@@ -145,7 +151,7 @@ class AnalysisSettings:
     #: Maximum impulse response length analysed (s).
     ir_max_length_s: float = 6.0
     octave_bands_hz: tuple[float, ...] = DEFAULT_OCTAVE_BANDS_HZ
-    #: Frequency-response window length (s) starting at the IR start. ``None``
+    #: Frequency-response window length (s) after the direct sound. ``None``
     #: uses the whole valid impulse response.
     fr_window_s: float | None = None
     #: Fractional-octave smoothing denominator (6 -> 1/6 octave). 0 disables.
@@ -244,7 +250,19 @@ class AnalysisSettings:
     def from_dict(cls, data: dict[str, Any]) -> AnalysisSettings:
         payload = settings_payload(data, {f.name for f in fields(cls)}, kind="analysis settings")
         if "octave_bands_hz" in payload:
-            payload["octave_bands_hz"] = tuple(float(f) for f in payload["octave_bands_hz"])
+            bands = payload["octave_bands_hz"]
+            try:
+                if not isinstance(bands, list | tuple):
+                    raise TypeError(
+                        _("{field} must be a list of numbers").format(field="octave_bands_hz")
+                    )
+                payload["octave_bands_hz"] = tuple(float(f) for f in bands)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ConfigurationError(
+                    _("invalid {kind} in file: {error}").format(
+                        kind=record_name("analysis settings"), error=exc
+                    )
+                ) from exc
         if payload.get("calibration") is not None:
             payload["calibration"] = CalibrationRecord.from_dict(payload["calibration"])
-        return cls(**payload)
+        return build_settings(cls, payload, kind="analysis settings")

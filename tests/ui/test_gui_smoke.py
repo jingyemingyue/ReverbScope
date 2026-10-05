@@ -540,3 +540,533 @@ def test_compare_metrics_have_readable_names() -> None:
     assert status_text("appeared") == "appeared"
     assert validity_text(Validity.NOT_COMPARABLE) == ("not comparable", "warn")
     assert validity_text(Validity.OUTSIDE_EXCITATION)[0] == "outside the sweep's range"
+
+
+@pytest.fixture
+def held_take(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
+    """The fake interface plays until the test releases it (or Stop is pressed)."""
+    import threading
+
+    from PySide6.QtCore import QThread
+
+    from roomscope.audio.fake import FakeBackend
+    from roomscope.errors import MeasurementCancelledError
+
+    release = threading.Event()
+    real = FakeBackend.play_and_record
+    takes: list[tuple[QThread, threading.Event | None]] = []
+
+    def held(self, *args, cancel=None, **kwargs):  # type: ignore[no-untyped-def]
+        takes.append((QThread.currentThread(), cancel))
+        while not release.wait(0.01):
+            if cancel is not None and cancel.is_set():
+                raise MeasurementCancelledError("stopped")
+        return real(self, *args, cancel=cancel, **kwargs)
+
+    monkeypatch.setattr(FakeBackend, "play_and_record", held)
+    yield release
+    # A test that fails mid-take never reaches window.close(): stop the take
+    # and wait for it, or Qt aborts the whole run on a QThread destroyed
+    # while it is still running.
+    for thread, cancel in takes:
+        if cancel is not None:
+            cancel.set()
+        else:
+            release.set()
+        thread.wait()
+
+
+def test_a_running_take_cannot_be_replaced_and_closing_waits_for_it(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, held_take
+) -> None:
+    """Refresh devices (button, Ctrl+2, Back -> Demo) re-enabled Run during a
+    take; a second Run dropped the only reference to the running QThread and
+    the process aborted. Closing the window mid-take aborted it too."""
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    page.run_button.click()
+    first = page._measure_worker
+    assert first is not None and first.isRunning()
+    assert not page.back_button.isEnabled()
+    page.refresh_devices()
+    assert not page.run_button.isEnabled()
+    page.start_measurement()  # the Run shortcut while busy
+    assert page._measure_worker is first
+    window.close()
+    assert not first.isRunning()
+
+
+def test_opening_a_session_forgets_the_previous_take(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
+) -> None:
+    """Saving the opened session wrote the earlier take as its recording.wav."""
+    import numpy as np
+
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.audio import AudioSignal
+    from roomscope.models.session import MeasurementSession
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    recording = synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5)
+    result = analyze(recording, Reference.from_settings(short_sweep))
+    folder = tmp_path / "studio-a"
+    save_measurement(folder, MeasurementSession(room_name="Studio A"), result, copy_recording=False)
+    window = MainWindow()
+    window.show()
+    window.state.recording = AudioSignal(np.full(4800, 0.1), 48000)
+    window.open_session_path(folder)
+    assert window.state.recording is None
+    assert window.state.session.room_name == "Studio A"
+    window.close()
+
+
+def test_a_live_take_is_saved_with_its_session(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
+) -> None:
+    """The live take was written to recording.wav before the rest of the
+    session: a save that then failed (a full disk) had already replaced the
+    recording of the session in that folder."""
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.io.session_store import RECORDING_FILE, load_session
+    from roomscope.io.wav import read_wav
+    from roomscope.ui import results
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    errors: list[str] = []
+    monkeypatch.setattr(
+        results.QMessageBox, "critical", lambda _parent, _title, text: errors.append(text)
+    )
+    rate = short_sweep.sample_rate
+    window = MainWindow()
+    window.show()
+    takes = []
+    for rt60 in (0.3, 0.8):
+        recording = synthetic_recording(short_sweep, make_rir(rate, rt60_s=rt60), noise_rms=1e-5)
+        takes.append((recording, analyze(recording, Reference.from_settings(short_sweep))))
+
+    folder = tmp_path / "studio"
+    window.state.recording, window.state.result = takes[0]
+    window.state.recording_path = None
+    window.results.save_to(folder)
+    assert load_session(folder).recording_path == RECORDING_FILE
+    before = (folder / RECORDING_FILE).read_bytes()
+
+    def disk_full(_fd: int) -> None:
+        raise OSError(28, "No space left on device")
+
+    window.state.recording, window.state.result = takes[1]
+    monkeypatch.setattr(os, "fsync", disk_full)
+    window.results.save_to(folder)
+    monkeypatch.undo()
+    assert errors and "No space left" in errors[0]
+    assert (folder / RECORDING_FILE).read_bytes() == before
+
+    elsewhere = tmp_path / "elsewhere"
+    window.results.save_to(elsewhere)
+    assert len(read_wav(elsewhere / RECORDING_FILE).samples) == len(takes[1][0].samples)
+    window.close()
+
+
+def test_home_selects_two_sessions_for_compare_and_settings_reach_the_gui(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from PySide6.QtWidgets import QAbstractItemView
+
+    from roomscope.settings import UserSettings, save_settings
+
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    save_settings(UserSettings(default_profile="vocal"))
+    window = MainWindow()
+    assert (
+        window.home.browser.list.selectionMode()
+        is QAbstractItemView.SelectionMode.ExtendedSelection
+    )
+    assert window.daw.profile.currentData() == "vocal"
+    assert window.standalone.profile.currentData() == "vocal"
+    window.close()
+
+
+def _settle(app: QApplication, *workers: object) -> None:
+    """Wait for the workers, then deliver their queued signals."""
+    import time
+
+    for worker in workers:
+        if worker is not None:
+            worker.wait()  # type: ignore[attr-defined]
+    for _ in range(10):
+        app.processEvents()
+        time.sleep(0.01)
+
+
+@pytest.fixture
+def held_analysis(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
+    """The GUI's analysis waits until the test releases it."""
+    import threading
+
+    from roomscope.ui import workers
+
+    gate = threading.Event()
+    real = workers.analyze
+
+    def held(*args, **kwargs):  # type: ignore[no-untyped-def]
+        gate.wait(30)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(workers, "analyze", held)
+    yield gate
+    gate.set()
+
+
+def test_a_late_analysis_never_joins_a_session_opened_meanwhile(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings, held_analysis
+) -> None:
+    """The page only checked that it was visible when the result arrived.
+    Ctrl+O then Ctrl+1 to wait for the analysis put the new take's result
+    under the opened session's room, settings and recording."""
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.session import MeasurementSession
+
+    rate = short_sweep.sample_rate
+    opened = analyze(
+        synthetic_recording(short_sweep, make_rir(rate, rt60_s=0.8), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    folder = tmp_path / "studio-x"
+    save_measurement(folder, MeasurementSession(room_name="Studio X"), opened, copy_recording=False)
+    window = MainWindow()
+    window.show()
+    window.show_mode("universal_daw")
+    page = window.daw
+    page.sample_rate.setCurrentIndex(page.sample_rate.findData(rate))
+    page.duration.setValue(short_sweep.duration_s)
+    page.generate_sweep_to(tmp_path / "sweep.wav")
+    take = synthetic_recording(window.state.sweep_settings, make_rir(rate, rt60_s=0.3))
+    page.set_recording(
+        write_wav(tmp_path / "take.wav", take.samples, take.sample_rate, subtype="FLOAT")
+    )
+    page.room.setText("Booth A")
+    try:
+        page.start_analysis()
+        window.open_session_path(folder)  # Ctrl+O while it runs
+        studio_x = window.state.result
+        window.show_mode("universal_daw")  # back to the page to wait for it
+    finally:
+        held_analysis.set()
+        _settle(app, page._worker)
+    assert window.stack.currentWidget() is page
+    assert window.state.session.room_name == "Studio X"
+    assert window.state.result is studio_x
+    assert "discarded" in page.status.text()
+    assert page.analyze_button.isEnabled()
+    window.close()
+
+
+def test_a_late_standalone_analysis_is_not_shown_after_new_measurement(
+    app: QApplication, held_analysis
+) -> None:
+    """Ctrl+N then Ctrl+3 during the analysis showed the take under a blank
+    session without its recording, so Save wrote no recording.wav."""
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    page.room.setText("Live room")
+    try:
+        page.run_button.click()
+        _settle(app, page._measure_worker)
+        assert page._analysis_worker is not None and page._analysis_worker.isRunning()
+        window.show_home()  # Ctrl+N
+        window.show_mode("demo")  # Ctrl+3: back to wait for it
+    finally:
+        held_analysis.set()
+        _settle(app, page._analysis_worker)
+    assert window.stack.currentWidget() is page
+    assert window.state.result is None
+    assert "discarded" in page.status.text()
+    assert page.run_button.isEnabled()
+    window.close()
+
+
+def test_the_measure_menu_does_not_switch_backend_under_a_running_take(
+    app: QApplication, held_take
+) -> None:
+    """Ctrl+2 / Ctrl+3 on the page of a running take re-listed the devices
+    and put the demo banner over a real sweep (or the reverse); the output
+    channel edited during the take was saved as the one it used."""
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    page.output_channel.setValue(1)
+    try:
+        page.run_button.click()
+        assert page.is_busy()
+        window.show_mode("standalone")  # Ctrl+2 during the demo take
+        assert page.demo_mode is True
+        assert page.status.text() == "Playing the sweep and recording..."
+        assert not page.run_button.isEnabled()
+        page.output_channel.setValue(2)  # edited while the sweep plays
+    finally:
+        held_take.set()
+        _settle(app, page._measure_worker)
+        _settle(app, page._analysis_worker)
+    assert window.stack.currentWidget() is window.results
+    assert window.state.session.output_channel == 1
+    window.close()
+
+
+@pytest.mark.parametrize("mode", ["demo", "standalone"])
+def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mode: str
+) -> None:
+    """The desktop Demo (or Standalone Mode with the fake backend chosen in
+    Settings) saved an ordinary Standalone session: nothing in its files
+    said that no audio hardware was used."""
+    import json
+
+    from roomscope.demo import DEMO_MODE
+
+    if mode == "standalone":
+        # The backend Settings or ROOMSCOPE_AUDIO_BACKEND chose: no demo banner.
+        monkeypatch.setenv("ROOMSCOPE_AUDIO_BACKEND", "fake")
+    window = MainWindow()
+    window.show()
+    window.show_mode(mode)
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+    page.run_button.click()
+    _settle(app, page._measure_worker)
+    _settle(app, page._analysis_worker)
+    assert window.stack.currentWidget() is window.results
+    window.results.save_to(tmp_path / "take")
+    saved = json.loads((tmp_path / "take" / "session.json").read_text(encoding="utf-8"))
+    assert saved["mode"] == DEMO_MODE
+    assert saved["notes"].startswith("SYNTHETIC DEMO")
+    window.close()
+
+
+def test_the_lang_option_reaches_the_gui(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """run_app resolved the language again from settings, ROOMSCOPE_LANG and
+    the system, so `roomscope --lang zh_CN gui` opened in English."""
+    from roomscope.cli.main import main
+    from roomscope.i18n import current_locale
+    from roomscope.ui import app as app_module
+    from roomscope.ui import main_window
+
+    seen: list[str] = []
+
+    class Spy(main_window.MainWindow):
+        def __init__(self) -> None:
+            super().__init__()
+            seen.append(current_locale())
+
+    monkeypatch.setattr(main_window, "MainWindow", Spy)
+    # Qt's own catalog would stay installed for the tests that follow.
+    monkeypatch.setattr(app_module, "install_qt_translations", lambda _app: None)
+    assert main(["--lang", "zh_CN", "gui", "--smoke"]) == 0
+    assert seen == ["zh_CN"]
+
+
+def test_a_new_default_profile_applies_without_a_restart(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MainWindow read the default profile once at startup: after Settings
+    the mode pages kept the old one until RoomScope restarted."""
+    from PySide6.QtWidgets import QDialog
+
+    from roomscope.ui import settings_dialog
+
+    def accept_with_profile(self: settings_dialog.SettingsDialog) -> int:
+        self.profile.setCurrentIndex(self.profile.findData("vocal"))
+        self.accept()
+        return QDialog.DialogCode.Accepted.value
+
+    monkeypatch.setattr(settings_dialog.SettingsDialog, "exec", accept_with_profile)
+    window = MainWindow()
+    assert window.daw.profile.currentData() == "generic"
+    window.show_settings()
+    assert window.daw.profile.currentData() == "vocal"
+    assert window.standalone.profile.currentData() == "vocal"
+    # Settings accepted again without a new default keep this measurement's choice.
+    window.daw.profile.setCurrentIndex(window.daw.profile.findData("generic"))
+    window.show_settings()
+    assert window.daw.profile.currentData() == "generic"
+    window.close()
+
+
+def test_two_selected_sessions_compare_oldest_first(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """The selection came in click order and the recent list is newest
+    first: top row then shift-click the next made the later take the
+    baseline, so every delta had the wrong sign."""
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.io.recent import remember_session
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.session import MeasurementSession
+
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    # One date without a zone: it cannot be compared with an aware one as is.
+    for room, created in (("before", "2026-01-01T00:00:00+00:00"), ("after", "2026-02-01")):
+        session = MeasurementSession(room_name=room, created_at=created)
+        save_measurement(tmp_path / room, session, result, copy_recording=False)
+        remember_session(tmp_path / room)
+    window = MainWindow()
+    home = window.home.recent
+    assert "after" in home.item(0).text() and "before" in home.item(1).text()
+    home.item(0).setSelected(True)
+    home.item(1).setSelected(True)
+    window.show_compare()
+    assert Path(window.compare.baseline_path.text()).name == "before"
+    assert Path(window.compare.candidate_path.text()).name == "after"
+
+    # The Compare page's own list, with both path fields empty.
+    page = window.compare
+    page.baseline_path.clear()
+    page.candidate_path.clear()
+    page.browser.list.item(0).setSelected(True)
+    page.browser.list.item(1).setSelected(True)
+    page.run_compare()
+    assert Path(page.baseline_path.text()).name == "before"
+    assert Path(page.candidate_path.text()).name == "after"
+    window.close()
+
+
+def _type_name_and_refuse_to_replace(app: QApplication, folder: Path, name: str) -> list[str]:
+    """Drive the next save dialog: type ``name`` in ``folder``, answer No to
+    a replace question, then cancel. Returns the questions asked."""
+    from PySide6.QtCore import QTimer
+    from PySide6.QtWidgets import QFileDialog, QLineEdit, QMessageBox
+
+    questions: list[str] = []
+
+    def visible(kind: type) -> list:  # type: ignore[type-arg]
+        return [w for w in app.topLevelWidgets() if isinstance(w, kind) and w.isVisible()]
+
+    def answer() -> None:
+        boxes = visible(QMessageBox)
+        if boxes:
+            questions.append(boxes[0].text())
+            boxes[0].done(QMessageBox.StandardButton.No)
+        for dialog in visible(QFileDialog):
+            dialog.reject()
+
+    def type_name(attempts: int = 250) -> None:
+        dialogs = visible(QFileDialog)
+        if not dialogs:
+            if attempts:
+                QTimer.singleShot(20, lambda: type_name(attempts - 1))
+            return
+        dialogs[0].setDirectory(str(folder))
+        dialogs[0].findChild(QLineEdit, "fileNameEdit").setText(name)
+        QTimer.singleShot(100, answer)
+        dialogs[0].accept()
+
+    QTimer.singleShot(20, type_name)
+    return questions
+
+
+def test_saving_a_file_asks_before_replacing_it_when_the_extension_is_added(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """The extension was added after the save dialog closed: typing
+    "roomscope_sweep" silently replaced roomscope_sweep.wav (and its
+    sidecar), and "comparison" an existing comparison.json."""
+    from roomscope.core.compare import compare
+    from roomscope.core.pipeline import Reference, analyze
+
+    window = MainWindow()
+    window.show()
+    window.show_mode("universal_daw")
+    page = window.daw
+    page.generate_sweep_to(tmp_path / "roomscope_sweep.wav")
+    sweep = (tmp_path / "roomscope_sweep.wav").read_bytes()
+    page.duration.setValue(3.0)
+    questions = _type_name_and_refuse_to_replace(app, tmp_path, "roomscope_sweep")
+    page._choose_sweep_target()
+    assert questions and "roomscope_sweep.wav" in questions[0]
+    assert (tmp_path / "roomscope_sweep.wav").read_bytes() == sweep
+
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    (tmp_path / "comparison.json").write_text("{}", encoding="utf-8")
+    window.compare._comparison = compare(result, result)
+    questions = _type_name_and_refuse_to_replace(app, tmp_path, "comparison")
+    window.compare._save()
+    assert questions and "comparison.json" in questions[0]
+    assert (tmp_path / "comparison.json").read_text(encoding="utf-8") == "{}"
+    window.close()
+
+
+def test_saving_over_a_saved_session_asks_first(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
+) -> None:
+    """Save Session opens at the default output folder; accepting it twice
+    as offered replaced the first session's files without a word."""
+    import json
+
+    from PySide6.QtWidgets import QFileDialog, QMessageBox
+
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.interpretation import interpret
+    from roomscope.models.session import MeasurementSession
+
+    folder = tmp_path / "RoomScope Sessions"
+    monkeypatch.setattr(
+        QFileDialog, "getExistingDirectory", staticmethod(lambda *_a, **_k: str(folder))
+    )
+    asked: list[str] = []
+    answer = {"replace": False}
+
+    def exec_(box: QMessageBox) -> int:
+        asked.append(box.text())
+        if answer["replace"]:
+            next(
+                button
+                for button in box.buttons()
+                if box.buttonRole(button) == QMessageBox.ButtonRole.AcceptRole
+            ).click()
+        return 0
+
+    monkeypatch.setattr(QMessageBox, "exec", exec_)
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    window = MainWindow()
+
+    def save(room: str) -> str:
+        window.state.session = MeasurementSession(room_name=room)
+        window.state.result = result
+        window.state.findings = interpret(result, "generic")
+        window.show_results()
+        window.results._choose_save_directory()
+        saved = json.loads((folder / "session.json").read_text(encoding="utf-8"))
+        return str(saved["room_name"])
+
+    assert save("Room A") == "Room A"
+    assert asked == []
+    assert save("Room B") == "Room A"
+    assert len(asked) == 1 and str(folder) in asked[0]
+    answer["replace"] = True
+    assert save("Room C") == "Room C"
+    window.close()

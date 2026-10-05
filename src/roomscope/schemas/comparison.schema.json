@@ -30,9 +30,9 @@
     "frequency_response": {
       "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/frequency_response_delta" }]
     },
-    "reflections": { "type": "array", "items": { "type": "object" } },
+    "reflections": { "type": "array", "items": { "$ref": "#/$defs/reflection_match" } },
     "noise": { "type": "array", "items": { "$ref": "#/$defs/metric_delta" } },
-    "resonances": { "type": "array", "items": { "type": "object" } },
+    "resonances": { "type": "array", "items": { "$ref": "#/$defs/resonance_match" } },
     "placement": { "type": "array", "items": { "$ref": "#/$defs/metric_delta" } },
     "loopback": { "type": "array", "items": { "$ref": "#/$defs/metric_delta" } },
     "baseline_created_at": { "type": "string" },
@@ -55,7 +55,7 @@
     },
     "metric_delta": {
       "type": "object",
-      "required": ["name", "validity"],
+      "required": ["name", "baseline", "candidate", "validity"],
       "properties": {
         "name": { "type": "string" },
         "baseline": { "type": ["number", "null"] },
@@ -73,9 +73,65 @@
       "properties": {
         "frequencies_hz": { "type": "array", "items": { "type": "number" } },
         "difference_db": { "type": "array", "items": { "type": "number" } },
-        "band_mad_db": { "type": "array" },
+        "band_mad_db": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "prefixItems": [{ "type": "string" }, { "type": "number" }],
+            "minItems": 2,
+            "maxItems": 2
+          }
+        },
         "smoothing_fraction": { "type": "integer" },
         "reference": { "type": "string" }
+      }
+    },
+    "reflection_match": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string" },
+        "baseline_delay_ms": { "type": ["number", "null"] },
+        "candidate_delay_ms": { "type": ["number", "null"] },
+        "baseline_relative_db": { "type": ["number", "null"] },
+        "candidate_relative_db": { "type": ["number", "null"] },
+        "delay_delta_ms": { "type": ["number", "null"] },
+        "level_delta_db": { "type": ["number", "null"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "enum": ["matched", "appeared"] } } },
+          "then": { "$ref": "#/$defs/candidate_reflection" }
+        },
+        {
+          "if": { "properties": { "status": { "const": "appeared" } } },
+          "else": { "$ref": "#/$defs/baseline_reflection" }
+        }
+      ]
+    },
+    "baseline_reflection": {
+      "required": ["baseline_delay_ms", "baseline_relative_db"],
+      "properties": {
+        "baseline_delay_ms": { "type": "number" },
+        "baseline_relative_db": { "type": "number" }
+      }
+    },
+    "candidate_reflection": {
+      "required": ["candidate_delay_ms", "candidate_relative_db"],
+      "properties": {
+        "candidate_delay_ms": { "type": "number" },
+        "candidate_relative_db": { "type": "number" }
+      }
+    },
+    "resonance_match": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string" },
+        "baseline_hz": { "type": ["number", "null"] },
+        "candidate_hz": { "type": ["number", "null"] },
+        "baseline_decay_distinguishable": { "type": ["boolean", "null"] },
+        "candidate_decay_distinguishable": { "type": ["boolean", "null"] }
       }
     }
   }

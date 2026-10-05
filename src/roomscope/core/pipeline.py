@@ -66,7 +66,7 @@ from roomscope.errors import (
     InvalidAudioError,
     SampleRateMismatchError,
 )
-from roomscope.i18n import _, diag
+from roomscope.i18n import _, diag, localize
 from roomscope.models.audio import AudioSignal, FloatArray
 from roomscope.models.configuration import AnalysisSettings, SweepSettings
 from roomscope.models.result import (
@@ -514,11 +514,18 @@ def _explain_playback_speed(
 
     A sweep played faster than generated is shorter than the reference and
     seems to start late; the speed is the cause the user can fix. The
-    exception keeps its type and attributes.
+    exception keeps its type and attributes. Both parts are shown in the
+    active language: the joined text matches no catalogued diagnostic, so it
+    could not be localised later.
     """
     speed = _playback_speed(mono, sample_rate, reference, source)
     if speed is not None and exc.args:
-        exc.args = (f"{exc.args[0]}. However, {speed.describe()}", *exc.args[1:])
+        exc.args = (
+            _("{error}. However, {explanation}").format(
+                error=localize(str(exc.args[0])), explanation=localize(speed.describe())
+            ),
+            *exc.args[1:],
+        )
 
 
 def _select_mic_and_loopback(
@@ -529,8 +536,9 @@ def _select_mic_and_loopback(
     """Return ``(mic, mic_channel, warning, loopback_samples, loopback_channel)``.
 
     ``loopback`` is a separate file; ``settings.loopback_channel`` is a 0-based
-    channel of ``recording``. They must not name the same samples as the
-    microphone. A two-channel DAW export uses the channel setting.
+    channel of that file when it is given, otherwise of ``recording``. The
+    loopback must not name the same samples as the microphone. A two-channel
+    DAW export uses the channel setting.
     """
     lb_channel = settings.loopback_channel
     if loopback is not None and recording.sample_rate != loopback.sample_rate:
@@ -540,17 +548,33 @@ def _select_mic_and_loopback(
                 "export both from the same take"
             )
         )
-    if lb_channel is not None and lb_channel >= recording.n_channels:
+    # With a separate loopback file the channel is a column of that file and
+    # every channel of the recording stays available to the microphone.
+    # Without one it is a column of the recording, never the microphone's.
+    in_recording = loopback is None and lb_channel is not None
+    if loopback is not None and lb_channel is not None and lb_channel >= loopback.n_channels:
+        raise InvalidAudioError(
+            _(
+                "loopback_channel {channel} does not exist (the loopback file has {count} "
+                "channel(s))"
+            ).format(channel=lb_channel, count=loopback.n_channels)
+        )
+    if in_recording and lb_channel is not None and lb_channel >= recording.n_channels:
         raise InvalidAudioError(
             _(
                 "loopback_channel {channel} does not exist (recording has {count} channel(s))"
             ).format(channel=lb_channel, count=recording.n_channels)
         )
-    if lb_channel is not None and settings.channel is not None and lb_channel == settings.channel:
+    if in_recording and settings.channel is not None and lb_channel == settings.channel:
         raise ConfigurationError(_("loopback_channel must differ from the microphone channel"))
 
     warning: str | None
-    if settings.channel is None and lb_channel is not None and recording.n_channels > 1:
+    if (
+        in_recording
+        and lb_channel is not None
+        and settings.channel is None
+        and (recording.n_channels > 1)
+    ):
         rms = np.sqrt(np.mean(recording.samples.astype(np.float64) ** 2, axis=0))
         scores = rms.copy()
         scores[lb_channel] = -1.0
@@ -565,18 +589,18 @@ def _select_mic_and_loopback(
         mono = recording.channel(channel)
     else:
         mono, channel, warning = recording.select_channel(settings.channel)
+    if in_recording and lb_channel == channel:
+        # A mono recording: the only channel cannot be its own loopback.
+        raise ConfigurationError(_("loopback_channel must differ from the microphone channel"))
 
     lb_samples: FloatArray | None = None
     reported_channel: int | None = None
     if loopback is not None:
-        if loopback.n_channels == 1:
-            lb_samples = loopback.channel(0)
-        elif lb_channel is not None and lb_channel < loopback.n_channels:
+        if lb_channel is not None:
             lb_samples = loopback.channel(lb_channel)
             reported_channel = lb_channel
         else:
             lb_samples = loopback.channel(0)
-        reported_channel = reported_channel if reported_channel is not None else None
         tol = round(RECORDING_START_TOLERANCE_S * recording.sample_rate)
         if abs(lb_samples.shape[0] - mono.shape[0]) > tol:
             raise InvalidAudioError(
@@ -614,6 +638,23 @@ def _locate_pass(
         sweep_rate_s=prepared.sweep_rate_s,
         start_tolerance_samples=round((fade_in_s + RECORDING_START_TOLERANCE_S) * sample_rate),
     )
+
+
+def _direct_level_dbfs(peak_value: float, prepared: _PreparedReference) -> float:
+    """Level of the direct sound in the recording (dBFS).
+
+    The inverse filter has unit in-band gain for the reference at its own
+    level, so the IR peak is the gain of the chain alone; the direct sound is
+    that gain plus the peak level of the reference (the sweep's
+    ``level_dbfs``, or the peak of a reference audio file).
+    """
+    if prepared.sweep_settings is not None:
+        reference_dbfs = prepared.sweep_settings.level_dbfs
+    else:
+        assert prepared.trimmed_signal is not None
+        reference_peak = float(np.max(np.abs(prepared.trimmed_signal)))
+        reference_dbfs = 20.0 * math.log10(max(reference_peak, 1e-12))
+    return 20.0 * math.log10(max(abs(peak_value), 1e-12)) + reference_dbfs
 
 
 def _placement_against_loopback_bound(
@@ -695,6 +736,13 @@ def analyze(
         sample_rate=sample_rate,
     )
     loopback_result: LoopbackResult | None = None
+    # The folded-product probe below runs on the raw recording, so its linear
+    # reference must be the response before the loopback is divided out:
+    # compensation rescales h_full by the return gain of the loopback.
+    h_uncompensated, peak_uncompensated = h_full, located.peak_index
+    # The noise floor is measured on the raw recording too, so the direct
+    # level is taken before compensation divides out the return gain.
+    direct_level_dbfs = _direct_level_dbfs(located.peak_value, prepared)
     if lb_samples is not None:
         try:
             lb_clipping, _lb_notes = _validate_recording(lb_samples, sample_rate)
@@ -707,6 +755,21 @@ def analyze(
                 sample_rate=sample_rate,
             )
             assessment = assess_loopback(lb_located, h_lb, sample_rate, clipped=lb_clipping.clipped)
+            # Each signal picks its own pass; a path delay across two passes
+            # would be seconds long and defeat the tape check. With a single
+            # pass a long delay is real playback latency, and a loopback that
+            # holds no pulse keeps the assessment's reason.
+            if (
+                assessment.accepted
+                and (located.sweep_passes > 1 or lb_located.sweep_passes > 1)
+                and abs(lb_located.peak_index - located.peak_index) > prepared.reference_length // 2
+            ):
+                raise AnalysisError(
+                    diag(
+                        "the loopback and the microphone were located on different sweep "
+                        "passes; compensation is not applied"
+                    )
+                )
         except (InvalidAudioError, AnalysisError) as exc:
             loopback_result = LoopbackResult(
                 channel=lb_channel,
@@ -758,8 +821,23 @@ def analyze(
             prepared, -located.sweep_start_raw_index, sample_rate
         )
     except InvalidAudioError as exc:
-        _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
-        raise
+        if confidence_label(located.pre_peak_margin_db) != "low":
+            _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
+            raise
+        # Nothing stands out of the deconvolved signal (no sweep in the take,
+        # or one played at the wrong speed), so the position of its strongest
+        # sample says nothing about when the recording started.
+        speed = _playback_speed(mono, sample_rate, reference, recording.source)
+        if speed is not None:
+            raise InvalidAudioError(localize(speed.describe())) from exc
+        raise InvalidAudioError(
+            _(
+                "the reference sweep was not found in the recording: no response stands out "
+                "from the noise. Check that the right input channel was recorded, that "
+                "playback reached the loudspeaker, and that the reference is the sweep that "
+                "was played"
+            )
+        ) from exc
     if start_note:
         ir_notes.append(start_note)
     if located.sweep_passes > 1:
@@ -841,11 +919,11 @@ def analyze(
         # harmonic windows and the pre-peak margin cannot see them.
         aliased = aliased_distortion_levels(
             mono,
-            h_full,
+            h_uncompensated,
             sample_rate=sample_rate,
             settings=prepared.sweep_settings,
             excitation_band=band,
-            peak_index=located.peak_index,
+            peak_index=peak_uncompensated,
             reference_length=prepared.reference_length,
         )
         significant = [a for a in aliased if a.significant]
@@ -883,6 +961,7 @@ def analyze(
         aliased_distortion=aliased,
         loopback=loopback_result,
         playback_speed=playback_speed,
+        direct_level_dbfs=direct_level_dbfs,
     )
 
     decay = _analyze_decay_of_pass(h_full, located, sample_rate, settings, band)
@@ -1058,7 +1137,9 @@ def _mark_decay_not_computed(decay: DecayResult, reason: str) -> DecayResult:
         decay,
         broadband=blank_band(decay.broadband),
         bands=tuple(blank_band(b) for b in decay.bands),
-        notes=(*decay.notes, reason),
+        # The notes of the analysis describe metrics that are no longer
+        # reported (e.g. C50 values of a noise-truncation check).
+        notes=(reason,),
     )
 
 
@@ -1111,7 +1192,9 @@ def analyze_impulse_response(
 
     if excitation_band is not None:
         low, high = excitation_band
-        if not (low > 0.0 and high > low):
+        # An infinite upper edge is not a band: it would be stored as the
+        # non-JSON token Infinity in result.json.
+        if not (low > 0.0 and high > low and math.isfinite(high)):
             raise ConfigurationError(
                 _("excitation_band must be a (low_hz, high_hz) pair with high > low > 0")
             )
@@ -1178,6 +1261,8 @@ def analyze_impulse_response(
         decay = _mark_decay_not_computed(
             decay, diag("excitation band unknown (imported impulse response; declare --band)")
         )
+    # As in analyze(): e.g. bands not fully inside the declared band.
+    warnings.extend(decay.notes)
     fr_segment, fr_direct = _segment_around_pass(
         np.asarray(mono, dtype=np.float64),
         located,

@@ -34,6 +34,8 @@ REQUIRED = [
     "pyparsing",
     "python-dateutil",
     "six",
+    # soundfile imports it at run time (DEPENDENCIES.md).
+    "typing-extensions",
 ]
 
 OPTIONAL = ["PySide6_Essentials", "shiboken6", "PySide6"]
@@ -49,6 +51,7 @@ TERMINAL_REQUIRED = [
     "cffi",
     "pycparser",
     "packaging",
+    "typing-extensions",
 ]
 #: Notices that concern only the GUI's libraries.
 GUI_NOTICES = ("freetype", "agg", "pyside6", "ttconv")

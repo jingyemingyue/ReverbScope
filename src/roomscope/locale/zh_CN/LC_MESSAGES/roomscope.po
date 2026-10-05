@@ -44,8 +44,8 @@ msgstr "会话目录或 session.json"
 msgid "leave WAV files out of the zip"
 msgstr "ZIP 文件中不包含 WAV 录音"
 
-msgid "zip path (file or directory)"
-msgstr "ZIP 文件路径（文件或目录）"
+msgid "zip file (.zip) or folder"
+msgstr "ZIP 文件（.zip）或文件夹"
 
 msgid "export curves through an exporter"
 msgstr "通过导出器导出曲线"
@@ -449,9 +449,6 @@ msgstr "候选"
 msgid "Delta"
 msgstr "差值"
 
-msgid "Validity"
-msgstr "有效性"
-
 msgid "Status"
 msgstr "状态"
 
@@ -829,8 +826,8 @@ msgstr "影响解读的录音配置（默认：用户设置）"
 msgid "separate loopback WAV from the same take (same sample rate)"
 msgstr "同一次录音的单独回送（loopback）WAV（相同采样率）"
 
-msgid "0-based loopback channel of the recording (or of --loopback if it is multi-channel)"
-msgstr "录音（或多声道 --loopback 文件）中的回送声道（从 0 起）"
+msgid "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
+msgstr "回送声道（从 0 起）：给出 --loopback 时指该文件中的声道，否则指录音中的声道"
 
 msgid "write the ESS test signal WAV (+ JSON sidecar)"
 msgstr "写出 ESS 测试信号 WAV（及 JSON 附属文件）"
@@ -925,8 +922,8 @@ msgstr "分析其他工具给出的脉冲响应 WAV"
 msgid "impulse-response WAV"
 msgstr "脉冲响应 WAV"
 
-msgid "declared excitation band in Hz (required for band metrics)"
-msgstr "声明的激励频带（Hz；频带指标需要）"
+msgid "declared excitation band in Hz (required for every decay and clarity metric, broadband included)"
+msgstr "声明的激励频带（Hz；所有衰减与清晰度指标都需要，包括宽带）"
 
 msgid "n/a"
 msgstr "无"
@@ -1390,13 +1387,11 @@ msgstr "开发者(&D)"
 msgid "Audio Device &Inspector..."
 msgstr "音频设备检查器(&I)…"
 
-
 msgid "Open &Data Folder"
 msgstr "打开数据文件夹(&D)"
 
 msgid "How RoomScope talks to your interface: WASAPI, ASIO, WDM-KS, DirectSound or MME on Windows, Core Audio on macOS, ALSA or JACK on Linux. Input and output must use the same one. \"System default\" uses the devices your system uses; a star marks the entry recommended for each device."
 msgstr "RoomScope 与声卡通信的方式：Windows 上为 WASAPI、ASIO、WDM-KS、DirectSound 或 MME，macOS 上为 Core Audio，Linux 上为 ALSA 或 JACK。输入和输出必须使用同一种。“系统默认”使用系统当前的设备；星号标出每个设备的推荐条目。"
-
 
 msgid "Advanced audio options (developer edition)"
 msgstr "高级音频选项（开发者版）"
@@ -1797,8 +1792,8 @@ msgid "candidates are envelope peaks standing above the local diffuse level; in 
 msgstr "候选是高出局部扩散声级的包络峰；在密集的早期尾部，部分候选可能是统计起伏，而不是离散的反射"
 
 msgctxt "diagnostic"
-msgid "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be searched"
-msgstr "脉冲响应在直达声之后 {analysed_ms:.1f} ms 就结束了，因此 {min_ms:.0f}-{max_ms:.0f} ms 窗口中只有这一部分得到搜索"
+msgid "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only that part of the {min_ms:g}-{max_ms:g} ms window could be searched"
+msgstr "脉冲响应在直达声之后 {analysed_ms:.1f} ms 就结束了，因此 {min_ms:g}-{max_ms:g} ms 窗口中只有这一部分得到搜索"
 
 msgctxt "diagnostic"
 msgid "impulse response is too short after the direct sound for reflection analysis"
@@ -3620,8 +3615,8 @@ msgstr "主文件夹显示为 ~"
 msgid "{inputs} in / {outputs} out"
 msgstr "{inputs} 入 / {outputs} 出"
 
-msgid "{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB"
-msgstr "{lo:.0f}–{hi:.0f} ms，高于 {threshold:.0f} dB"
+msgid "{lo:g}–{hi:g} ms, above {threshold:.0f} dB"
+msgstr "{lo:g}–{hi:g} ms，高于 {threshold:.0f} dB"
 
 msgid "{n} more in result.json"
 msgstr "另有 {n} 个，见 result.json"
@@ -3863,8 +3858,8 @@ msgstr "没有高于 {threshold:.0f} dB 的反射"
 msgid "potential resonances at {listed}"
 msgstr "可能的共振：{listed}"
 
-msgid "no potential resonance below {max_hz:.0f} Hz"
-msgstr "{max_hz:.0f} Hz 以下没有可能的共振"
+msgid "no potential resonance at {low:.0f}–{high:.0f} Hz"
+msgstr "{low:.0f}–{high:.0f} Hz 内没有可能的共振"
 
 msgid "{n} warning(s), see Diagnostics"
 msgstr "{n} 条警告，见“诊断”"
@@ -4108,7 +4103,6 @@ msgid ""
 " dashed path is the specular bounce off the plane above."
 msgstr "空心标记是该扬声器的一阶镜像声源；虚线是上方平面上的镜面反射路径。"
 
-
 msgid ""
 "imported room scan (ASCII PLY point cloud or Wavefront OBJ). Not a "
 "lidar attached to this computer"
@@ -4349,3 +4343,102 @@ msgstr "跟随 DAW"
 
 msgid "Following {label}. The sweep sample rate matches that project."
 msgstr "正在跟随 {label}。扫频采样率与该工程一致。"
+
+msgid "loopback_channel {channel} does not exist (the loopback file has {count} channel(s))"
+msgstr "loopback_channel {channel} 不存在（回送文件只有 {count} 个声道）"
+
+msgctxt "diagnostic"
+msgid "the loopback and the microphone were located on different sweep passes; compensation is not applied"
+msgstr "回送与话筒定位到了不同遍的扫频上；未应用补偿"
+
+msgid "unknown recording profile {name}; available: {available}"
+msgstr "未知的录音配置 {name}；可用：{available}"
+
+msgid "{value} is not a comma-separated list of channel numbers (e.g. 1,2)"
+msgstr "{value} 不是以逗号分隔的声道编号列表（例如 1,2）"
+
+msgid "no project.json in {path}"
+msgstr "{path} 中没有 project.json"
+
+msgid "no sessions in {path}"
+msgstr "{path} 中没有会话"
+
+msgid "--sources must be at least 1"
+msgstr "--sources 至少为 1"
+
+msgid "Reference plane"
+msgstr "参考平面"
+
+msgid "No noise spectrum stored with this session"
+msgstr "此会话未保存噪声频谱"
+
+msgid "{session} is already listed under position '{label}'"
+msgstr "{session} 已列在位置“{label}”下"
+msgid "{field} must be true or false"
+msgstr "{field} 必须是 true 或 false"
+
+msgid "{field} must not be null"
+msgstr "{field} 不能为 null"
+
+msgid "{field} must be text"
+msgstr "{field} 必须是文本"
+
+msgid "expected a list of numbers"
+msgstr "此处应为数字列表"
+
+msgid "{field} has the wrong type"
+msgstr "{field} 的类型不正确"
+
+msgid "{field} must be a list"
+msgstr "{field} 必须是列表"
+
+msgid "{field} must be a list of numbers"
+msgstr "{field} 必须是数字列表"
+
+msgid "{field} is out of range"
+msgstr "{field} 超出范围"
+
+msgid "silences must be <= 60 s"
+msgstr "静音时长必须 <= 60 s"
+msgid "{error}. However, {explanation}"
+msgstr "{error}。不过，{explanation}"
+
+msgid "the reference sweep was not found in the recording: no response stands out from the noise. Check that the right input channel was recorded, that playback reached the loudspeaker, and that the reference is the sweep that was played"
+msgstr "录音中找不到参考扫频：没有任何响应高出噪声。请检查录制的输入声道是否正确、回放信号是否到达了扬声器，以及参考扫频是否就是实际播放的那一个"
+msgctxt "diagnostic"
+msgid "no common excitation band"
+msgstr "没有共同激励频带"
+
+msgid "No reflection was detected inside this profile's {window_ms:g} ms window in the candidate; the strongest in the baseline was {relative_db:.1f} dB at {delay_ms:.1f} ms."
+msgstr "候选中，此配置的 {window_ms:g} ms 窗口内未检测到反射；基线中最强的反射为 {delay_ms:.1f} ms 的 {relative_db:.1f} dB。"
+msgid "Background noise, {band}"
+msgstr "本底噪声，{band}"
+
+msgid "not compared: the direct-sound confidence is not high on both sides"
+msgstr "未比较：两侧的直达声置信度并非都为高"
+
+msgid "not searched: nothing below {max_hz:.0f} Hz was excited and resolved"
+msgstr "未搜索：{max_hz:.0f} Hz 以下没有既被激励又能分辨的部分"
+
+msgid "Not searched."
+msgstr "未搜索。"
+
+msgid "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
+msgstr "在可搜索的 {end:.1f} ms 内没有高于 {threshold:.0f} dB 的反射"
+msgid "The result was discarded because you left this page before it was ready."
+msgstr "结果完成前你离开了此页面，因此结果已丢弃。"
+
+msgid "Synthetic demo"
+msgstr "合成演示"
+
+msgid "Replace session?"
+msgstr "替换会话？"
+
+msgid "{path} already holds a saved session. Replace it?"
+msgstr "{path} 中已有一个保存的会话。要替换它吗？"
+
+msgid "Replace"
+msgstr "替换"
+
+msgid "the test signal lasts {seconds:.2f} s, but a recording must last at least 1 s to be analysed; lengthen the silence after the sweep (--post-silence)"
+msgstr "测试信号只有 {seconds:.2f} 秒，而录音至少要 1 秒才能分析；请加长扫频后的静音（--post-silence）"

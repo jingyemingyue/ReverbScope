@@ -206,3 +206,101 @@ def test_the_test_signal_exported_instead_of_the_microphone_is_flagged(
         AudioSignal(_room_recording(short_sweep), sr), Reference.from_settings(short_sweep)
     )
     assert "measurement.digital_silence" not in [f.message_id for f in interpret(take)]
+
+
+@pytest.mark.parametrize("seed", [1, 4])
+def test_equal_passes_analyse_the_one_followed_by_a_recorded_decay(seed: int) -> None:
+    """Two identical passes back to back: the first has no decay recorded
+    after it, the second has 3 s. Which one is louder is down to noise, and
+    when the first won the take was refused ("the next sweep pass starts
+    right after this one")."""
+    from roomscope.core.sweep import generate_ess
+    from roomscope.models.result import Validity
+
+    sr = 48000
+    settings = SweepSettings(sample_rate=sr, duration_s=5.0, pre_silence_s=0.0, post_silence_s=0.0)
+    sweep = generate_ess(settings)
+    played = np.concatenate([np.zeros(sr), sweep, sweep, np.zeros(3 * sr)])
+    ir = make_rir(sr, rt60_s=0.5, start_delay_s=0.003, diffuse_level=0.03, seed=seed)
+    recording = np.asarray(fftconvolve(played, ir))
+    recording = recording + np.random.default_rng(seed).normal(0.0, 1e-5, recording.shape[0])
+    result = analyze(AudioSignal(recording, sr, source="file"), Reference.from_settings(settings))
+    assert result.impulse_response.sweep_passes == 2
+    assert result.impulse_response.sweep_start_in_recording_s == pytest.approx(6.0, abs=0.01)
+    assert result.decay.broadband.t30.validity is Validity.VALID
+
+
+def test_of_equal_passes_with_short_gaps_the_last_one_is_analysed() -> None:
+    """Three passes with 0.5 s gaps and a 1 s reverberation time: the pass
+    picked by its level had 0.5 s of decay after it, so T30 was not
+    computable, although the last pass has 5 s of recorded decay."""
+    from roomscope.core.sweep import generate_ess
+    from roomscope.models.result import Validity
+
+    sr = 48000
+    settings = SweepSettings(sample_rate=sr, duration_s=3.0, pre_silence_s=0.0, post_silence_s=0.0)
+    sweep, gap = generate_ess(settings), np.zeros(sr // 2)
+    played = np.concatenate([np.zeros(sr), sweep, gap, sweep, gap, sweep, np.zeros(3 * sr)])
+    ir = make_rir(sr, rt60_s=1.0, start_delay_s=0.003, diffuse_level=0.03, length_s=2.0)
+    recording = np.asarray(fftconvolve(played, ir))
+    recording = recording + np.random.default_rng(0).normal(0.0, 1e-5, recording.shape[0])
+    result = analyze(AudioSignal(recording, sr, source="file"), Reference.from_settings(settings))
+    assert result.impulse_response.sweep_passes == 3
+    assert result.impulse_response.sweep_start_in_recording_s == pytest.approx(8.0, abs=0.01)
+    assert result.decay.broadband.t30.validity is Validity.VALID
+
+
+def _quiet_take() -> tuple[SweepSettings, np.ndarray]:
+    """A take peaking at about -30 dBFS over a -87 dBFS noise floor."""
+    settings = SweepSettings(duration_s=3.0, post_silence_s=2.0)
+    ir = make_rir(settings.sample_rate, rt60_s=0.4, start_delay_s=0.003)
+    take = synthetic_recording(settings, ir, noise_rms=3e-5, gain=10 ** (-28 / 20))
+    return settings, take.samples[: settings.total_samples].copy()
+
+
+def test_a_dc_offset_does_not_reject_the_quiet_segment() -> None:
+    """With a DC offset at -46 dBFS the silence looked only 5.8 dB below the
+    sweep, so no noise level was measured and the note blamed "a sweep pass
+    without silence before it"."""
+    settings, take = _quiet_take()
+    reference = Reference.from_settings(settings)
+    clean = analyze(AudioSignal(take, settings.sample_rate, source="file"), reference).noise
+    offset = analyze(AudioSignal(take + 0.005, settings.sample_rate, source="file"), reference)
+    assert clean.rms_dbfs is not None
+    assert offset.noise.rms_dbfs == pytest.approx(clean.rms_dbfs, abs=0.1)
+    assert not any("not background noise" in n for n in offset.noise.notes)
+
+
+def test_a_dc_offset_does_not_hide_a_noise_event() -> None:
+    """A DC offset lifted every block of the pre-sweep segment to its own
+    level, so a noise burst was no longer excluded and the reported noise
+    level was 14 dB too high, without a note."""
+    settings, take = _quiet_take()
+    take[20000:30000] += np.random.default_rng(9).normal(0.0, 3e-4, 10000)
+    reference = Reference.from_settings(settings)
+    clean = analyze(AudioSignal(take, settings.sample_rate, source="file"), reference).noise
+    offset = analyze(AudioSignal(take + 0.002, settings.sample_rate, source="file"), reference)
+    assert clean.rms_dbfs is not None
+    assert offset.noise.rms_dbfs == pytest.approx(clean.rms_dbfs, abs=0.1)
+    assert any("above its quietest blocks" in n for n in offset.noise.notes)
+
+
+def test_a_take_without_the_sweep_is_not_blamed_on_a_late_start() -> None:
+    """Mains hum only (wrong input channel, muted monitors): the strongest
+    deconvolved sample sits anywhere, and the take was refused with "the
+    recording starts about 0.21 s after the sweep began ... Start the
+    recording before playback", which re-recording cannot fix."""
+    from roomscope.errors import InvalidAudioError
+
+    settings = SweepSettings(duration_s=2.0, pre_silence_s=1.0, post_silence_s=1.5)
+    n = measurement_signal(settings).shape[0]
+    t = np.arange(n) / settings.sample_rate
+    hum = 3e-3 * np.sin(2 * np.pi * 50 * t) + 1e-3 * np.sin(2 * np.pi * 150 * t)
+    take = hum + np.random.default_rng(0).normal(0.0, 1e-5, n)
+    with pytest.raises(InvalidAudioError) as info:
+        analyze(
+            AudioSignal(take, settings.sample_rate, source="file"),
+            Reference.from_settings(settings),
+        )
+    assert "after the sweep began" not in str(info.value)
+    assert "reference sweep was not found" in str(info.value)

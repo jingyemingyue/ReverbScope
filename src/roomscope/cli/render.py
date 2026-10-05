@@ -25,15 +25,26 @@ from roomscope.interpretation.profiles import (
     noise_segment_text,
     profile_title,
 )
-from roomscope.labels import metric_label, topic_text, validity_word
+from roomscope.labels import (
+    frequency_text,
+    metric_label,
+    noise_band_hz,
+    signed_number,
+    surface_text,
+    topic_text,
+    validity_word,
+)
 from roomscope.models.comparison import ComparisonResult, MetricDelta
 from roomscope.models.result import (
+    EXCITATION_SOURCE_DECLARED,
+    EXCITATION_SOURCE_UNKNOWN,
     AnalysisResult,
     BandDecay,
     DecayMetric,
     EnergyMetric,
     PlacementLength,
     PlacementResult,
+    ResonanceResult,
     Validity,
 )
 
@@ -62,10 +73,6 @@ def rates_text(rates: Sequence[int], console: Console) -> str:
     if not rates:
         return pgettext("sample rates", "none")
     return console.sep().join(f"{rate / 1000:g}" for rate in rates) + " kHz"
-
-
-def frequency_text(hz: float) -> str:
-    return f"{hz / 1000:.3g} kHz" if hz >= 1000 else f"{hz:.3g} Hz"
 
 
 def created_text(created: str) -> str:
@@ -239,6 +246,15 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
                 threshold=refl.threshold_db,
             ),
         )
+    elif refl.window_truncated and refl.analysed_window_ms is not None:
+        # The response ended before the window did: later arrivals were not seen.
+        row(
+            _("Early reflections"),
+            "unsure",
+            _("none above {threshold:.0f} dB in the {end:.1f} ms that could be searched").format(
+                threshold=refl.threshold_db, end=refl.analysed_window_ms[1]
+            ),
+        )
     else:
         row(
             _("Early reflections"),
@@ -260,11 +276,23 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             _topic_status(findings, "low_frequency"),
             _("potential resonances at {listed}").format(listed=listed),
         )
-    else:
+    elif (searched := _resonance_range(res)) is not None:
+        # The range actually searched: a sweep that starts high, or a short
+        # response, leaves part of the low end unexamined.
         row(
             _("Low end"),
             "ok",
-            _("no potential resonance below {max_hz:.0f} Hz").format(max_hz=res.max_frequency_hz),
+            _("no potential resonance at {low:.0f}–{high:.0f} Hz").format(
+                low=searched[0], high=searched[1]
+            ),
+        )
+    else:
+        row(
+            _("Low end"),
+            "skip",
+            _("not searched: nothing below {max_hz:.0f} Hz was excited and resolved").format(
+                max_hz=res.max_frequency_hz
+            ),
         )
 
     noise = result.noise
@@ -310,15 +338,26 @@ def _diagnostics(c: Console, result: AnalysisResult) -> list[str]:
     ir = result.impulse_response
     lines = c.section(_("Diagnostics"))
     margin = f"{ir.pre_peak_margin_db:.1f} dB" if ir.pre_peak_margin_db is not None else c.dash()
-    rows = [
-        (
-            _("Sweep found"),
-            _("{start:.2f} s into the recording").format(start=ir.sweep_start_in_recording_s),
-        ),
+    rows: list[tuple[str, str]] = []
+    # An imported impulse response (analyze-ir, the only source of a declared
+    # or unknown band) had no sweep and no recording to find it in.
+    band = ir.excitation_band
+    if band is None or band.source not in (EXCITATION_SOURCE_DECLARED, EXCITATION_SOURCE_UNKNOWN):
+        rows.append(
+            (
+                _("Sweep found"),
+                _("{start:.2f} s into the recording").format(start=ir.sweep_start_in_recording_s),
+            )
+        )
+    # valid_length_s is all the recording after the direct sound; only the
+    # part up to ir_max_length_s was analysed.
+    after_direct_s = (ir.samples.shape[0] - ir.direct_sound_index) / result.sample_rate
+    rows += [
         (
             _("Analysed"),
             _("{seconds:.2f} s, of which {decay:.2f} s is decay").format(
-                seconds=ir.samples.shape[0] / result.sample_rate, decay=ir.valid_length_s
+                seconds=ir.samples.shape[0] / result.sample_rate,
+                decay=min(ir.valid_length_s, after_direct_s),
             ),
         ),
         (
@@ -399,7 +438,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
     if basis_note:
         lines += c.paragraph(basis_note, style=("dim",))
     legend = [
-        f"{c.symbol(validity_status(v))} {validity_word(v)}"
+        v
         for v in (
             Validity.UNRELIABLE,
             Validity.INSUFFICIENT_RANGE,
@@ -410,20 +449,35 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
     ]
     if legend:
         lines.append("")
-        lines.append("  " + "   ".join(legend))
+        lines += _legend(c, legend)
     for note in notes:
         lines += c.status("info", note)
     lines += _energy(c, result)
     return lines
 
 
+def _legend(c: Console, validities: Sequence[Validity]) -> list[str]:
+    """``? unreliable   – outside the sweep's range``: what each symbol means,
+    as many entries per line as the width holds (an entry is never split)."""
+    lines: list[str] = []
+    line = ""
+    for validity in validities:
+        entry = f"{c.symbol(validity_status(validity))} {c.readable(validity_word(validity))}"
+        joined = f"{line}   {entry}" if line else entry
+        if line and cell_width("  " + joined) > c.width:
+            lines.append("  " + line)
+            joined = entry
+        line = joined
+    return [*lines, "  " + line]
+
+
 def _clarity_glance(c: Console, band: BandDecay) -> str | None:
     """C50 / C80 / D50 for the at-a-glance line, or ``None`` when none is valid."""
     parts: list[str] = []
     if band.c50.validity is Validity.VALID and band.c50.value is not None:
-        parts.append(f"C50 {band.c50.value:+.1f} dB")
+        parts.append(f"C50 {signed_number(band.c50.value, 1)} dB")
     if band.c80.validity is Validity.VALID and band.c80.value is not None:
-        parts.append(f"C80 {band.c80.value:+.1f} dB")
+        parts.append(f"C80 {signed_number(band.c80.value, 1)} dB")
     if band.d50.validity is Validity.VALID and band.d50.value is not None:
         parts.append(f"D50 {band.d50.value:.0f} %")
     if not parts:
@@ -435,7 +489,7 @@ def _energy_number(metric: EnergyMetric) -> str | None:
     if metric.value is None:
         return None
     if metric.unit == "dB":
-        return f"{metric.value:+.1f} dB"
+        return f"{signed_number(metric.value, 1)} dB"
     if metric.unit == "%":
         return f"{metric.value:.0f} %"
     return f"{metric.value * 1000:.0f} ms"
@@ -526,19 +580,27 @@ def _noise(c: Console, result: AnalysisResult) -> list[str]:
 
 def _reflections(c: Console, result: AnalysisResult) -> list[str]:
     refl = result.reflections
+    low, high = refl.window_ms
+    if refl.window_truncated and refl.analysed_window_ms is not None:
+        # The response ended first: only this much of the window was searched.
+        high = refl.analysed_window_ms[1]
     lines = c.section(
         _("Early reflections"),
-        _("{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB").format(
-            lo=refl.window_ms[0], hi=refl.window_ms[1], threshold=refl.threshold_db
+        # 0.8 ms, not "1": the table below can list arrivals before 1 ms.
+        _("{lo:g}–{hi:g} ms, above {threshold:.0f} dB").format(
+            lo=round(low, 1), hi=round(high, 1), threshold=refl.threshold_db
         ),
     )
     if not refl.reflections:
-        return lines + c.status("skip", _("None above the threshold."))
-    rows = [[f"{r.delay_ms:.1f} ms", f"{r.relative_db:.1f} dB"] for r in refl.reflections[:10]]
-    lines += c.table([_("Delay"), _("Level")], rows, align="rr")
-    hidden = len(refl.reflections) - 10
-    if hidden > 0:
-        lines += c.paragraph(_("{n} more in result.json").format(n=hidden), style=("dim",))
+        lines += c.status("skip", _("None above the threshold."))
+    else:
+        rows = [[f"{r.delay_ms:.1f} ms", f"{r.relative_db:.1f} dB"] for r in refl.reflections[:10]]
+        lines += c.table([_("Delay"), _("Level")], rows, align="rr")
+        hidden = len(refl.reflections) - 10
+        if hidden > 0:
+            lines += c.paragraph(_("{n} more in result.json").format(n=hidden), style=("dim",))
+    for note in refl.notes:
+        lines += c.status("info", localize(note))
     return lines
 
 
@@ -601,7 +663,11 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         lines += c.table(
             [_("Arrival"), _("Surface"), _("Excess path")],
             [
-                [f"{cand.delay_ms:.1f} ms", str(cand.surface), f"{cand.excess_path_m:.2f} m"]
+                [
+                    f"{cand.delay_ms:.1f} ms",
+                    surface_text(cand.surface),
+                    f"{cand.excess_path_m:.2f} m",
+                ]
                 for cand in named
             ],
             align="rlr",
@@ -654,6 +720,15 @@ def _room_scan(c: Console, result: AnalysisResult) -> list[str]:
     return lines
 
 
+def _resonance_range(res: ResonanceResult) -> tuple[float, float] | None:
+    """The range the resonance search covered; ``None`` when it did not run
+    (older files stored that as an inverted range, "495-300 Hz")."""
+    searched = res.searched_range_hz
+    if searched is None or searched[1] <= searched[0]:
+        return None
+    return searched
+
+
 def _resonances(c: Console, result: AnalysisResult) -> list[str]:
     res = result.resonances
     lines = c.section(
@@ -661,7 +736,16 @@ def _resonances(c: Console, result: AnalysisResult) -> list[str]:
         _("candidates below {max_hz:.0f} Hz").format(max_hz=res.max_frequency_hz),
     )
     if not res.candidates:
-        return lines + c.status("skip", _("None found."))
+        searched = _resonance_range(res) is not None
+        lines += c.status("skip", _("None found.") if searched else _("Not searched."))
+    else:
+        lines += _resonance_table(c, res)
+    for note in res.notes:
+        lines += c.status("info", localize(note))
+    return lines
+
+
+def _resonance_table(c: Console, res: ResonanceResult) -> list[str]:
     rows = []
     for cand in res.candidates:
         decay = (
@@ -685,7 +769,7 @@ def _resonances(c: Console, result: AnalysisResult) -> list[str]:
                 else f"{c.symbol('skip')} {_('no')}",
             ]
         )
-    return lines + c.table(
+    return c.table(
         [
             _("Frequency"),
             _("Above baseline"),
@@ -731,9 +815,11 @@ def render_comparison(
     for note in comparison.notes:
         lines += c.status("info", localize(note))
 
-    lines += comparison_at_a_glance(c, comparison)
-
-    lines += _decay_deltas(c, comparison.decay)
+    if comparison.comparable:
+        # A refused pair compared nothing: its empty lists are not findings
+        # ("no potential resonance"); the notes say why it was refused.
+        lines += comparison_at_a_glance(c, comparison)
+        lines += _decay_deltas(c, comparison.decay)
 
     if comparison.frequency_response is not None:
         lines += c.section(_("Frequency response"), _("mean |Δ| per octave"))
@@ -828,11 +914,18 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
     previous = ""
     for item in items:
         band, metric = _split_decay_name(item.name)
+        if metric and item.unit and item.unit != "s":
+            # C50 (dB) and D50 (%) share the column with times in seconds.
+            metric = f"{metric} ({item.unit})"
         base = f"{item.baseline:.3f}" if item.baseline is not None else c.dash()
         cand = f"{item.candidate:.3f}" if item.candidate is not None else c.dash()
         if item.validity is Validity.VALID and item.delta is not None:
-            delta = f"{item.delta:+.3f}"
-            pct = f"{item.delta_percent:+.1f} %" if item.delta_percent is not None else c.dash()
+            delta = signed_number(item.delta, 3)
+            pct = (
+                f"{signed_number(item.delta_percent, 1)} %"
+                if item.delta_percent is not None
+                else c.dash()
+            )
         else:
             delta = pct = c.dash()
         if item.validity not in seen:
@@ -852,18 +945,15 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
     headers = [_("Band"), _("Metric"), _("Baseline"), _("Candidate"), "Δ", "Δ %", ""]
     align = "llrrrrl"
     if not c.fits(headers, rows, gap=2):
-        # A narrow terminal drops the absolute delta (baseline and candidate
-        # are both shown) before the table has to fall apart into blocks.
-        headers, align = headers[:4] + headers[5:], align[:4] + align[5:]
-        rows = [row[:4] + row[5:] for row in rows]
+        # A narrow terminal drops the percentage before the table has to fall
+        # apart into blocks: it follows from baseline and Δ, and C50, C80 and
+        # D50 have none, so without Δ their change would not be shown at all.
+        headers, align = headers[:5] + headers[6:], align[:5] + align[6:]
+        rows = [row[:5] + row[6:] for row in rows]
     lines += c.table(headers, rows, align=align, gap=2, title_columns=2)
     if seen:
-        legend = [
-            f"{c.symbol(validity_status(v))} {validity_word(v)}"
-            for v in sorted(seen, key=list(Validity).index)
-        ]
         lines.append("")
-        lines.append("  " + "   ".join(legend))
+        lines += _legend(c, sorted(seen, key=list(Validity).index))
     return lines + _reasons(c, items)
 
 
@@ -877,12 +967,9 @@ def _resonance_status(status: str) -> str:
 
 def _noise_label(name: str) -> str:
     """``noise.rms_dbfs`` -> Broadband; ``noise.band.1000Hz`` -> ``1 kHz``."""
-    band = name.removeprefix("noise.band.")
-    if band != name and band.endswith("Hz"):
-        try:
-            return frequency_text(float(band[:-2]))
-        except ValueError:
-            return band
+    hz = noise_band_hz(name)
+    if hz is not None:
+        return frequency_text(hz)
     if name == "noise.rms_dbfs":
         return band_text("broadband")
     return metric_label(name)
@@ -896,7 +983,7 @@ def _noise_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         base = f"{item.baseline:.1f}" if item.baseline is not None else c.dash()
         cand = f"{item.candidate:.1f}" if item.candidate is not None else c.dash()
         delta = (
-            f"{item.delta:+.1f} dB"
+            f"{signed_number(item.delta, 1)} dB"
             if item.validity is Validity.VALID and item.delta is not None
             else c.dash()
         )
@@ -955,8 +1042,12 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
     cand = f"{item.candidate:.2f}" if item.candidate is not None else c.dash()
     text = f"{metric_label(item.name)}: {base} {c.arrow()} {cand}{unit}"
     if item.delta is not None:
-        text += f" ({item.delta:+.2f}{unit})"
+        text += f" ({signed_number(item.delta, 2)}{unit})"
     return text
+
+
+#: The stored note of a comparison whose reflections were not matched.
+_REFLECTIONS_NOT_COMPARED = "early reflections are not compared unless"
 
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
@@ -977,7 +1068,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     ):
         text = f"RT60 {rt.baseline:.2f} s{arrow}{rt.candidate:.2f} s"
         if rt.delta_percent is not None:
-            text += f" ({rt.delta_percent:+.1f} %)"
+            text += f" ({signed_number(rt.delta_percent, 1)} %)"
         row(_("Reverberation"), "ok", text)
     else:
         row(_("Reverberation"), "unsure", _("broadband RT60 not comparable (see Reverberation)"))
@@ -990,14 +1081,16 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         and c50.baseline is not None
         and c50.candidate is not None
     ):
-        text = f"C50 {c50.baseline:+.1f} dB{arrow}{c50.candidate:+.1f} dB"
+        text = f"C50 {signed_number(c50.baseline, 1)} dB{arrow}{signed_number(c50.candidate, 1)} dB"
         if (
             c80 is not None
             and c80.validity is Validity.VALID
             and c80.baseline is not None
             and c80.candidate is not None
         ):
-            text += c.sep() + f"C80 {c80.baseline:+.1f} dB{arrow}{c80.candidate:+.1f} dB"
+            text += c.sep() + (
+                f"C80 {signed_number(c80.baseline, 1)} dB{arrow}{signed_number(c80.candidate, 1)} dB"
+            )
         row(_("Clarity"), "ok", text)
 
     if comparison.reflections:
@@ -1013,6 +1106,12 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 kept=counts["matched"],
                 sep=c.sep(),
             ),
+        )
+    elif any(note.startswith(_REFLECTIONS_NOT_COMPARED) for note in comparison.notes):
+        row(
+            _("Early reflections"),
+            "skip",
+            _("not compared: the direct-sound confidence is not high on both sides"),
         )
     else:
         row(_("Early reflections"), "ok", _("none above the threshold on either side"))
@@ -1036,7 +1135,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     if rms is not None and rms.baseline is not None and rms.candidate is not None:
         text = f"{rms.baseline:.1f}{arrow}{rms.candidate:.1f} dBFS"
         if rms.validity is Validity.VALID and rms.delta is not None:
-            row(_("Noise floor"), "ok", text + f" ({rms.delta:+.1f} dB)")
+            row(_("Noise floor"), "ok", text + f" ({signed_number(rms.delta, 1)} dB)")
         else:
             text += c.sep() + _("not compared: {validity}").format(
                 validity=validity_word(rms.validity)

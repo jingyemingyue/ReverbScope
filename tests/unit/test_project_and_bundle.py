@@ -116,3 +116,84 @@ def test_project_index_and_positions(tmp_path: Path, short_sweep: SweepSettings)
     items = list_project_sessions(project_dir)
     assert items[0][0] == "desk"
     assert items[0][1].resolve() == first.resolve()
+
+
+def test_one_session_is_listed_once_however_it_was_added(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """``dir`` and ``dir/session.json`` were stored as two entries, and the
+    session was counted twice by ``project average``; a stale
+    ``.../session.json`` entry was still listed."""
+    import json
+
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    result = analyze(
+        synthetic_recording(short_sweep, ir, noise_rms=1e-5), Reference.from_settings(short_sweep)
+    )
+    project = tmp_path / "room"
+    save_project(project, Project(name="room"))
+    session = project / "sessions" / "a"
+    save_measurement(session, MeasurementSession(), result, include_curves=False)
+    add_session(project, session, position="desk")
+    add_session(project, session / "session.json", position="desk")
+    stored = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    assert stored["positions"] == [{"label": "desk", "session_dirs": ["sessions/a"]}]
+    assert list_project_sessions(project) == [("desk", session)]
+
+    stored["positions"][0]["session_dirs"] += ["sessions/a/session.json", "gone/session.json"]
+    (project / "project.json").write_text(json.dumps(stored), encoding="utf-8")
+    assert list_project_sessions(project) == [("desk", session)]
+
+
+def test_bundle_out_without_zip_suffix_is_a_folder(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """``--out bundles/`` (a folder that does not exist yet) wrote a zip
+    file called ``bundles`` with no extension."""
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    rec = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
+    result = analyze(rec, Reference.from_settings(short_sweep))
+    booth = tmp_path / "booth"
+    save_measurement(booth, MeasurementSession(), result, include_curves=False)
+    written = bundle_session(booth, tmp_path / "bundles", include_audio=False)
+    assert written == tmp_path / "bundles" / "booth.zip"
+    assert zipfile.is_zipfile(written)
+    assert bundle_session(booth, tmp_path / "named.ZIP") == tmp_path / "named.ZIP"
+
+
+def test_project_add_refuses_a_folder_without_a_session(tmp_path: Path) -> None:
+    """A typo was stored, reported as success, and silently skipped later:
+    ``project average`` then failed with 'no sessions in ...'."""
+    from roomscope.errors import SessionError
+
+    room = tmp_path / "room"
+    save_project(room, Project(name="room"))
+    with pytest.raises(SessionError, match="session file not found"):
+        add_session(room, tmp_path / "sesion1", position="desk")
+    assert list_project_sessions(room) == []
+
+
+def test_a_session_cannot_be_listed_under_a_second_position(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """The second label was stored and reported, but the listing kept only
+    the first one, so the correction had no effect."""
+    import json
+
+    from roomscope.errors import SessionError
+
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    result = analyze(
+        synthetic_recording(short_sweep, ir, noise_rms=1e-5), Reference.from_settings(short_sweep)
+    )
+    project = tmp_path / "room"
+    save_project(project, Project(name="room"))
+    session = project / "sessions" / "a"
+    save_measurement(session, MeasurementSession(), result, include_curves=False)
+    add_session(project, session, position="sofa")
+    with pytest.raises(SessionError, match="sofa"):
+        add_session(project, session / "session.json", position="desk")
+    add_session(project, session, position="sofa")
+    stored = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    assert stored["positions"] == [{"label": "sofa", "session_dirs": ["sessions/a"]}]
+    assert [label for label, _folder in list_project_sessions(project)] == ["sofa"]

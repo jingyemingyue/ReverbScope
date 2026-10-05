@@ -15,7 +15,7 @@ from typing import Any
 
 from roomscope.errors import SessionError
 from roomscope.i18n import _
-from roomscope.io.jsonutil import read_json_object
+from roomscope.io.jsonutil import read_json_object, write_text_atomic
 from roomscope.io.recent import roomscope_home
 from roomscope.models.loadutil import drop_unknown, read_schema_version
 
@@ -54,9 +54,16 @@ class UserSettings:
         version = read_schema_version(data, SETTINGS_SCHEMA_VERSION, "settings")
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="settings")
         payload["schema_version"] = version
-        for flag in ("copy_recording", "developer_tools"):
-            if flag in payload:
-                payload[flag] = bool(payload[flag])
+        defaults = cls()
+        for item in fields(cls):
+            if item.name == "schema_version" or item.name not in payload:
+                continue
+            expected = type(getattr(defaults, item.name))
+            if not isinstance(payload[item.name], expected):
+                # A hand-edited file: "false" must not read as True, and a
+                # number for the language must not stop every command.
+                log.info("ignoring settings field %s: not a %s", item.name, expected.__name__)
+                del payload[item.name]
         if payload.get("theme") not in (None, "", "light", "dark"):
             payload["theme"] = ""
         return cls(**payload)
@@ -90,7 +97,8 @@ def save_settings(settings: UserSettings) -> Path:
     payload = settings.to_dict()
     payload.pop("acknowledge_level", None)
     try:
-        path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        # A settings.json kept as a link (a dotfiles folder) stays a link.
+        write_text_atomic(path, json.dumps(payload, indent=2) + "\n", follow_symlinks=True)
     except OSError as exc:
         raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
     return path

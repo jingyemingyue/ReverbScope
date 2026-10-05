@@ -36,9 +36,17 @@ from roomscope.interpretation.interpreter import Finding
 from roomscope.io.session_store import load_measurement, save_comparison
 from roomscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
 from roomscope.ui.browser import SessionBrowser
-from roomscope.labels import metric_label, status_text, validity_word
+from roomscope.labels import metric_label, signed_number, status_text, validity_word
 from roomscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
-from roomscope.ui.widgets import PAGE_MARGINS, PAGE_SPACING, Card, PageHeader, label, primary
+from roomscope.ui.widgets import (
+    PAGE_MARGINS,
+    PAGE_SPACING,
+    Card,
+    PageHeader,
+    ask_save_path,
+    label,
+    primary,
+)
 
 
 def _decay_flags(match: ResonanceMatch) -> str:
@@ -173,12 +181,12 @@ class ComparePage(QWidget):
         self.candidate_path.setText(str(candidate))
 
     def run_compare(self) -> None:
-        selected = self.browser.selected_paths()
         baseline = self.baseline_path.text().strip()
         candidate = self.candidate_path.text().strip()
-        if (not baseline or not candidate) and len(selected) == 2:
+        selected = self.browser.selected_pair() if not baseline or not candidate else None
+        if selected is not None:
             baseline, candidate = str(selected[0]), str(selected[1])
-            self.set_paths(Path(baseline), Path(candidate))
+            self.set_paths(*selected)
         if not baseline or not candidate:
             QMessageBox.information(self, _("Compare"), _("Choose two sessions first."))
             return
@@ -216,8 +224,8 @@ class ComparePage(QWidget):
                 metric_label(item.name, item.unit),
                 "" if item.baseline is None else f"{item.baseline:.3f}",
                 "" if item.candidate is None else f"{item.candidate:.3f}",
-                "" if item.delta is None else f"{item.delta:+.3f}",
-                "" if item.delta_percent is None else f"{item.delta_percent:+.1f}",
+                "" if item.delta is None else signed_number(item.delta, 3),
+                "" if item.delta_percent is None else signed_number(item.delta_percent, 1),
                 validity_word(item.validity),
             ]
             for c, value in enumerate(values):
@@ -242,7 +250,7 @@ class ComparePage(QWidget):
         for r, match in enumerate(comparison.reflections):
             baseline = _pair(match.baseline_delay_ms, match.baseline_relative_db)
             candidate = _pair(match.candidate_delay_ms, match.candidate_relative_db)
-            delta = "" if match.level_delta_db is None else f"{match.level_delta_db:+.1f}"
+            delta = "" if match.level_delta_db is None else signed_number(match.level_delta_db, 1)
             for c, value in enumerate((status_text(match.status), baseline, candidate, delta)):
                 cell = QTableWidgetItem(value)
                 cell.setFlags(cell.flags() & ~Qt.ItemFlag.ItemIsEditable)
@@ -292,17 +300,21 @@ class ComparePage(QWidget):
         if self._comparison is None:
             QMessageBox.information(self, _("Save comparison"), _("Run a comparison first."))
             return
-        path, _filter = QFileDialog.getSaveFileName(
+        target = ask_save_path(
             self, _("Save comparison.json"), "comparison.json", _("JSON files (*.json)")
         )
-        if not path:
+        if target is None:
             return
+        path = str(target)
+        if not path.lower().endswith(".json"):
+            # Without the extension save_comparison takes the name for a folder.
+            path += ".json"
         try:
-            save_comparison(path, self._comparison)
+            written = save_comparison(path, self._comparison)
         except RoomScopeError as exc:
             QMessageBox.critical(self, _("Cannot save"), localize(str(exc)))
             return
-        self.status.setText(_("Wrote {path}").format(path=path))
+        self.status.setText(_("Wrote {path}").format(path=written))
 
     def _pick_into(self, field: QLineEdit) -> None:
         path, _filter = QFileDialog.getOpenFileName(

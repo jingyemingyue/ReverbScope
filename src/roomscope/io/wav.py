@@ -20,12 +20,14 @@ from roomscope.core.pipeline import Reference
 from roomscope.core.sweep import measurement_signal
 from roomscope.errors import ConfigurationError, InvalidAudioError, SessionError
 from roomscope.i18n import _
-from roomscope.io.jsonutil import read_json_object
+from roomscope.io.jsonutil import read_json_object, write_text_atomic
 from roomscope.models.audio import AudioSignal, FloatArray
 from roomscope.models.configuration import SweepSettings
+from roomscope.models.loadutil import read_schema_version
 
 SIDECAR_SUFFIX = ".roomscope-sweep.json"
 SIDECAR_KEY = "roomscope_sweep"
+SIDECAR_SCHEMA_VERSION = 1
 
 
 def _soundfile() -> Any:
@@ -75,6 +77,9 @@ def write_wav(
     data = np.asarray(samples, dtype=np.float64)
     if data.ndim not in (1, 2) or data.shape[0] == 0:
         raise InvalidAudioError(_("samples must be a non-empty 1-D or 2-D array"))
+    if not np.all(np.isfinite(data)):
+        # NaN passes the full-scale test below and is written as a -1.0 click.
+        raise InvalidAudioError(_("signal contains NaN or infinite samples"))
     if subtype.startswith("PCM") and float(np.max(np.abs(data))) > 1.0:
         raise ConfigurationError(
             _("signal exceeds full scale; use subtype='FLOAT' or lower the level")
@@ -103,7 +108,7 @@ def write_sweep_file(settings: SweepSettings, path: str | Path) -> tuple[Path, P
     signal = measurement_signal(settings)
     wav_path = write_wav(path, signal, settings.sample_rate, subtype="PCM_24")
     payload = {
-        "schema_version": 1,
+        "schema_version": SIDECAR_SCHEMA_VERSION,
         SIDECAR_KEY: settings.to_dict(),
         "roomscope_version": __version__,
         "wav_file": wav_path.name,
@@ -114,7 +119,7 @@ def write_sweep_file(settings: SweepSettings, path: str | Path) -> tuple[Path, P
         ),
     }
     side = sidecar_path(wav_path)
-    side.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    write_text_atomic(side, json.dumps(payload, indent=2))
     return wav_path, side
 
 
@@ -132,6 +137,7 @@ def read_sweep_sidecar(path: str | Path) -> SweepSettings | None:
                 )
             )
         payload = read_json_object(side, kind="sweep sidecar")
+        read_schema_version(payload, SIDECAR_SCHEMA_VERSION, "sweep sidecar")
     except (OSError, SessionError) as exc:
         raise ConfigurationError(
             _("cannot read sweep sidecar {name}: {error}").format(name=side.name, error=exc)

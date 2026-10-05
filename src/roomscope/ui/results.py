@@ -33,9 +33,8 @@ from roomscope.cli.render import REPORT_CONSOLE, render_analysis
 from roomscope.errors import RoomScopeError
 from roomscope.i18n import _, localize
 from roomscope.io.recent import remember_session
-from roomscope.io.session_store import save_measurement
-from roomscope.io.wav import write_wav
-from roomscope.labels import severity_text, topic_text, validity_word
+from roomscope.io.session_store import SESSION_FILE, save_measurement
+from roomscope.labels import severity_text, surface_text, topic_text, validity_word
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
     confidence_text,
@@ -43,6 +42,7 @@ from roomscope.interpretation.profiles import (
     profile_title,
 )
 from roomscope.models.result import AnalysisResult, PlacementResult, Validity
+from roomscope.settings import load_settings
 from roomscope.ui.plots import (
     decay_table_rows,
     energy_table_rows,
@@ -154,7 +154,12 @@ class _PlacementTab(QWidget):
             if length.metres is None:
                 value = _("not determined")
                 if length.missing_input:
-                    value += f" ({length.missing_input})"
+                    # The core names the CLI option; here, the field to fill in.
+                    fields = {
+                        "--speaker-distance": _("Loudspeaker distance"),
+                        "--mic-height": _("Microphone height"),
+                    }
+                    value += f" ({fields.get(length.missing_input, length.missing_input)})"
             else:
                 value = f"{length.metres:.2f} m"
                 if length.input_uncertainty_m is not None:
@@ -174,7 +179,7 @@ class _PlacementTab(QWidget):
                 f"{candidate.delay_ms:.2f}",
                 f"{candidate.relative_db:.1f}",
                 f"{candidate.excess_path_m:.2f}",
-                candidate.surface or "",
+                surface_text(candidate.surface),
                 plane,
             ]
             for column, text in enumerate(values):
@@ -214,6 +219,27 @@ def validity_text(validity: Validity) -> tuple[str, str]:
 def _validity_text(validity: Validity) -> tuple[str, str]:
     _word, tone = VALIDITY_DISPLAY.get(validity, (str(validity), "neutral"))
     return validity_word(validity), tone
+
+
+def replace_session_box(parent: QWidget, directory: str) -> QMessageBox:
+    """The chosen folder already holds a session. The safe button is the default: keep it."""
+    box = QMessageBox(parent)
+    box.setIcon(QMessageBox.Icon.Warning)
+    box.setWindowTitle(_("Replace session?"))
+    box.setText(_("{path} already holds a saved session. Replace it?").format(path=directory))
+    box.addButton(_("Replace"), QMessageBox.ButtonRole.AcceptRole)
+    cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
+    box.setDefaultButton(cancel)
+    box.setEscapeButton(cancel)
+    return box
+
+
+def ask_replace_session(parent: QWidget, directory: str) -> bool:
+    box = replace_session_box(parent, directory)
+    box.exec()
+    clicked = box.clickedButton()
+    # By role, not by label, as in pages.ask_separate_clocks.
+    return clicked is not None and box.buttonRole(clicked) == QMessageBox.ButtonRole.AcceptRole
 
 
 class _Overview(QWidget):
@@ -545,24 +571,30 @@ class ResultsPage(QWidget):
         self.status.setText("")
 
     def _choose_save_directory(self) -> None:
-        directory = QFileDialog.getExistingDirectory(self, _("Choose a folder for the session"))
-        if directory:
-            self.save_to(Path(directory))
+        directory = QFileDialog.getExistingDirectory(
+            self, _("Choose a folder for the session"), load_settings().output_dir
+        )
+        if not directory:
+            return
+        # The dialog opens at the default output folder: accepting it twice
+        # as offered would replace the first session without a word.
+        if (Path(directory) / SESSION_FILE).exists() and not ask_replace_session(self, directory):
+            return
+        self.save_to(Path(directory))
 
     def save_to(self, directory: Path) -> None:
         result = self.state.result
         if result is None:
             return
         try:
-            if self.state.recording is not None and self.state.recording_path is None:
-                path = write_wav(
-                    directory / "recording.wav",
-                    self.state.recording.samples,
-                    result.sample_rate,
-                    subtype="FLOAT",
-                )
-                self.state.session.recording_path = str(path)
-            session_path = save_measurement(directory, self.state.session, result)
+            # A live take has no file yet: it is written with the rest of the
+            # session, so a failed save cannot overwrite the previous take.
+            unsaved = self.state.recording if self.state.recording_path is None else None
+            session_path = save_measurement(
+                directory, self.state.session, result, recording=unsaved
+            )
+            if unsaved is not None:
+                self.state.session.recording_path = str(directory / "recording.wav")
         except RoomScopeError as exc:
             QMessageBox.critical(self, _("Cannot save session"), localize(str(exc)))
             return

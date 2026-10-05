@@ -35,6 +35,8 @@ into a `RoomScopeError` rather than a crash (`tests/robustness/`), and reads a
 session's `result.json` and
 `impulse_response.wav` only from inside that session's folder (a path in
 `session.json` that is absolute or leads out of the folder is refused).
+Saving an opened session into another folder copies its sweep sidecar and
+recording only from inside its own folder.
 `roomscope session bundle` leaves out any file that links out of the session
 folder, so a session from someone else cannot put one of your files into the
 zip you attach to a public issue. A

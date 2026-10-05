@@ -220,6 +220,40 @@ def test_log_rotation_keeps_logging_when_the_file_is_locked(
     assert "record 4" in (tmp_path / "roomscope.log").read_text(encoding="utf-8")
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="the rename probe is for Windows")
+def test_log_rotation_never_vacates_the_log_name_on_posix(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The Windows rename probe ran everywhere: on POSIX, another process that
+    opened roomscope.log between its two renames lost its records to a
+    deleted file."""
+    from roomscope import logging_config
+    from roomscope.logging_config import _SharedRotatingFileHandler
+
+    renames: list[tuple[str, str]] = []
+    real_replace = os.replace
+
+    def recording_replace(source: object, target: object) -> None:
+        renames.append((os.fspath(source), os.fspath(target)))  # type: ignore[arg-type]
+        real_replace(source, target)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(logging_config.os, "replace", recording_replace)
+    base = tmp_path / "roomscope.log"
+    handler = _SharedRotatingFileHandler(base, maxBytes=10, backupCount=1)
+    logger = logging.getLogger("roomscope-test-posix-rotation")
+    logger.propagate = False
+    logger.addHandler(handler)
+    try:
+        for index in range(2):
+            logger.warning("record %d is longer than the limit", index)
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+    assert not [target for _, target in renames if target.endswith(".rotating")]
+    assert "record 0" in Path(f"{base}.1").read_text(encoding="utf-8")
+    assert "record 1" in base.read_text(encoding="utf-8")
+
+
 def test_default_devices_are_marked(monkeypatch: pytest.MonkeyPatch) -> None:
     """sounddevice returns the defaults as an indexable _InputOutputPair."""
     from roomscope.audio import devices
@@ -284,3 +318,40 @@ def test_cli_output_to_a_pipe_is_utf8(tmp_path: Path, monkeypatch: pytest.Monkey
     sys.stdout.write("Δ → 录音棚\n")
     sys.stdout.flush()
     assert raw.getvalue().decode("utf-8").strip() == "Δ → 录音棚"
+
+
+def test_a_locked_log_keeps_its_backups(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The stdlib shifts .1 -> .2 -> .3 before it renames the live file; when
+    that rename failed (Windows, another RoomScope process) every record
+    pushed one more backup out."""
+    import os
+
+    from roomscope import logging_config
+    from roomscope.logging_config import _SharedRotatingFileHandler
+
+    base = tmp_path / "roomscope.log"
+    for index in (1, 2, 3):
+        Path(f"{base}.{index}").write_text(f"backup {index}", encoding="utf-8")
+    handler = _SharedRotatingFileHandler(base, maxBytes=10, backupCount=3)
+    real_replace = os.replace
+
+    def locked_replace(source: object, target: object) -> None:
+        if os.fspath(source) == handler.baseFilename:  # type: ignore[arg-type]
+            raise PermissionError(32, "The process cannot access the file")
+        real_replace(source, target)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(logging_config, "_RENAME_FAILS_WHILE_OPEN", True)
+    monkeypatch.setattr(logging_config.os, "replace", locked_replace)
+    monkeypatch.setattr(handler, "rotate", locked_replace)
+    logger = logging.getLogger("roomscope-test-backups")
+    logger.propagate = False
+    logger.addHandler(handler)
+    try:
+        for index in range(4):
+            logger.warning("record %d is longer than the limit", index)
+    finally:
+        logger.removeHandler(handler)
+        handler.close()
+    backups = [Path(f"{base}.{index}").read_text(encoding="utf-8") for index in (1, 2, 3)]
+    assert backups == ["backup 1", "backup 2", "backup 3"]
+    assert "record 3" in base.read_text(encoding="utf-8")

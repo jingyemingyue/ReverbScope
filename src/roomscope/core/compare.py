@@ -12,6 +12,7 @@ import numpy as np
 
 from roomscope.core.filters import fractional_octave_smooth, iec_band
 from roomscope.i18n import diag
+from roomscope.labels import VALIDITY_WORDS
 from roomscope.models.comparison import (
     T_JND_PERCENT,
     CompareSettings,
@@ -20,8 +21,10 @@ from roomscope.models.comparison import (
     MetricDelta,
     ReflectionMatch,
     ResonanceMatch,
+    percent_applies,
 )
 from roomscope.models.result import (
+    EXCITATION_SOURCE_UNKNOWN,
     AnalysisResult,
     BandDecay,
     DecayMetric,
@@ -54,10 +57,14 @@ def _octave_ratio(octaves: float) -> float:
 def _common_band(
     baseline: AnalysisResult, candidate: AnalysisResult
 ) -> tuple[tuple[float, float] | None, tuple[str, ...]]:
+    # Every refusal note here and in compare() starts with one of
+    # REFUSAL_NOTE_PREFIXES (models/comparison.py): readers find it by them.
     notes: list[str] = []
     b1 = baseline.excitation_band
     b2 = candidate.excitation_band
-    if b1 is None or b2 is None:
+    # An imported IR without --band carries a 20 Hz-20 kHz placeholder (source
+    # "unknown") that the analysis itself never treats as measured.
+    if b1 is None or b2 is None or EXCITATION_SOURCE_UNKNOWN in (b1.source, b2.source):
         return None, (
             diag("one or both results have no excitation band, so they cannot be compared"),
         )
@@ -122,7 +129,7 @@ def _delta_from_values(
             unit=unit,
         )
     delta = candidate - baseline
-    percent = None if baseline == 0.0 else 100.0 * delta / baseline
+    percent = 100.0 * delta / baseline if percent_applies(unit, baseline) else None
     return MetricDelta(
         name=name,
         baseline=baseline,
@@ -140,30 +147,36 @@ def _side_reasons(
     baseline: DecayMetric | EnergyMetric | PlacementLength,
     candidate: DecayMetric | EnergyMetric | PlacementLength,
 ) -> list[str]:
-    """Why each side that is not VALID cannot be compared, one sentence per side."""
+    """Why each side that is not VALID cannot be compared, one sentence per side.
+
+    The validity is written as its word ("insufficient range"), not its id,
+    so the stored English reads well and is shown translated.
+    """
     reasons: list[str] = []
     if baseline.validity is not Validity.VALID:
         if baseline.reason:
             reasons.append(
                 diag(
                     "baseline {validity} ({reason})",
-                    validity=baseline.validity,
+                    validity=VALIDITY_WORDS[baseline.validity],
                     reason=baseline.reason,
                 )
             )
         else:
-            reasons.append(diag("baseline {validity}", validity=baseline.validity))
+            reasons.append(diag("baseline {validity}", validity=VALIDITY_WORDS[baseline.validity]))
     if candidate.validity is not Validity.VALID:
         if candidate.reason:
             reasons.append(
                 diag(
                     "candidate {validity} ({reason})",
-                    validity=candidate.validity,
+                    validity=VALIDITY_WORDS[candidate.validity],
                     reason=candidate.reason,
                 )
             )
         else:
-            reasons.append(diag("candidate {validity}", validity=candidate.validity))
+            reasons.append(
+                diag("candidate {validity}", validity=VALIDITY_WORDS[candidate.validity])
+            )
     return reasons
 
 
@@ -633,8 +646,8 @@ def compare(
     settings = settings or CompareSettings()
     notes: list[str] = []
     notes.extend(_sweep_notes(baseline, candidate))
-    common, band_notes = _common_band(baseline, candidate)
-    notes.extend(band_notes)
+    # Why the pair is refused, if it is; empty when the bands overlap.
+    common, refusal = _common_band(baseline, candidate)
     notes.append(
         diag(
             "ISO 3382-1 quotes a just-noticeable difference for reverberation time of about "
@@ -651,7 +664,7 @@ def compare(
         if octaves + 1e-12 >= settings.min_common_band_octaves:
             comparable = True
         else:
-            notes.append(
+            refusal = (
                 diag(
                     "common excitation band {low:g}-{high:g} Hz is {octaves:.2f} octaves, "
                     "narrower than the required {required:g} octave",
@@ -659,7 +672,7 @@ def compare(
                     high=high,
                     octaves=octaves,
                     required=settings.min_common_band_octaves,
-                )
+                ),
             )
             common = None
 
@@ -667,7 +680,8 @@ def compare(
         return ComparisonResult(
             comparable=False,
             common_band=common,
-            notes=tuple(notes),
+            # The reason comes first: it is the note a refusal quotes.
+            notes=(*refusal, *notes),
             baseline_created_at=baseline.created_at,
             candidate_created_at=candidate.created_at,
             roomscope_version=__version__,

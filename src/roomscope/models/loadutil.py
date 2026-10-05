@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Mapping
+from dataclasses import fields, is_dataclass
 from typing import Any
 
 from roomscope.errors import ConfigurationError, SessionError
@@ -68,7 +69,7 @@ def read_schema_version(data: Mapping[str, Any], known: int, kind: str) -> int:
     raw = data.get("schema_version", known)
     try:
         version = int(raw)
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, OverflowError) as exc:  # Overflow: Infinity
         raise SessionError(
             _("{kind} schema_version is not an integer").format(kind=record_name(kind))
         ) from exc
@@ -97,6 +98,24 @@ def settings_payload(data: Mapping[str, Any], known: set[str], *, kind: str) -> 
     return drop_unknown(data, known, kind=kind)
 
 
+def build_settings[T](cls: type[T], payload: Mapping[str, Any], *, kind: str) -> T:
+    """``cls(**payload)`` for a settings dataclass read from a file.
+
+    ``__post_init__`` rejects out-of-range values with
+    :class:`ConfigurationError`; a value of the wrong JSON type (``"10"`` for
+    a duration, ``null`` for a frequency) fails a comparison there with a bare
+    ``TypeError`` instead, which is turned into the same error here (#11).
+    """
+    try:
+        return cls(**payload)
+    except ConfigurationError:
+        raise
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ConfigurationError(
+            _("invalid {kind} in file: {error}").format(kind=record_name(kind), error=exc)
+        ) from exc
+
+
 def record_payload(data: object, known: set[str], *, kind: str) -> dict[str, Any]:
     """:func:`drop_unknown` for a nested record read from a file.
 
@@ -107,18 +126,64 @@ def record_payload(data: object, known: set[str], *, kind: str) -> dict[str, Any
     return drop_unknown(data, known, kind=kind)
 
 
+def read_flag(value: object, name: str) -> bool:
+    """A flag read from a file: JSON ``true`` or ``false`` only.
+
+    ``bool()`` would read the text ``"false"`` (or any non-empty list) as
+    true. Raises ``TypeError``, which the loaders turn into
+    :class:`SessionError`.
+    """
+    if not isinstance(value, bool):
+        raise TypeError(_("{field} must be true or false").format(field=name))
+    return value
+
+
+def _typed(cls: type, payload: Mapping[str, Any]) -> dict[str, Any]:
+    """``payload`` with numbers converted to the dataclass field's annotation.
+
+    Raises ``TypeError`` / ``ValueError`` for a value that is not a number
+    (or, for a flag, not ``true`` / ``false``; for text, not a string), and
+    for ``null`` in a field that is not optional: a name or a status that is
+    a number or ``null`` would load and fail later, in the report.
+    """
+    typed = dict(payload)
+    if not is_dataclass(cls):
+        return typed
+    for item in fields(cls):
+        if item.name not in typed:
+            continue
+        value = typed[item.name]
+        annotation = str(item.type)
+        if value is None:
+            if annotation in ("float", "int", "bool", "str"):
+                raise TypeError(_("{field} must not be null").format(field=item.name))
+            continue
+        if annotation in ("float", "float | None"):
+            typed[item.name] = float(value)
+        elif annotation in ("int", "int | None"):
+            typed[item.name] = int(value)
+        elif annotation in ("bool", "bool | None"):
+            read_flag(value, item.name)
+        elif annotation in ("str", "str | None") and not isinstance(value, str):
+            raise TypeError(_("{field} must be text").format(field=item.name))
+    return typed
+
+
 def build_record[T](cls: type[T], payload: Mapping[str, Any], *, kind: str) -> T:
     """``cls(**payload)`` for data read from a file.
 
     A missing required field (``TypeError``) or a value the class rejects
     (``ValueError``) becomes :class:`SessionError`, so an untrusted file never
-    surfaces a bare Python exception (#11).
+    surfaces a bare Python exception (#11). Numbers and flags are converted
+    here too: text or a list in a ``float`` field (or a number in a ``str``
+    one) would otherwise load and fail later, in a comparison or a format
+    string.
     """
     try:
-        return cls(**payload)
+        return cls(**_typed(cls, payload))
     except SessionError:
         raise
-    except (TypeError, ValueError) as exc:
+    except (TypeError, ValueError, OverflowError) as exc:
         raise SessionError(
             _("invalid {kind} in file: {error}").format(kind=record_name(kind), error=exc)
         ) from exc

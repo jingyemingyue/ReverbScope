@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 
 from roomscope.errors import ConfigurationError
+from roomscope.i18n import _
 from roomscope.interpretation.profiles import (
     AcousticGuitarProfile,
     ChoirProfile,
@@ -65,5 +66,7 @@ def get_profile(name: str) -> RecordingProfile:
         return table[name]
     except KeyError as exc:
         raise ConfigurationError(
-            f"unknown recording profile '{name}'; available: {available_profiles()}"
+            _("unknown recording profile {name}; available: {available}").format(
+                name=repr(name), available=available_profiles()
+            )
         ) from exc

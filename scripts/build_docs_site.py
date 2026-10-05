@@ -470,6 +470,14 @@ def rel_prefix(relative: Path) -> str:
 
 def build_site(docs: Path, dest: Path, *, base_url: str = PLACEHOLDER_BASE_URL) -> list[Path]:
     """Render every Markdown file under ``docs`` into ``dest``. Returns HTML paths."""
+    resolved = dest.resolve()
+    sources = docs.resolve()
+    if resolved.is_relative_to(sources) or sources.is_relative_to(resolved):
+        # dest is removed first: "--out docs", "--out ." or "--out docs/images"
+        # would delete the sources.
+        raise SystemExit(
+            f"refusing to write the site into {dest}: it holds or is inside the documentation"
+        )
     if dest.exists():
         shutil.rmtree(dest)
     (dest / "assets").mkdir(parents=True)

@@ -252,3 +252,39 @@ def test_self_played_take_skips_the_check_even_when_stretched(sweep_signal: np.n
     assert (
         analyze(recording, Reference.from_settings(SWEEP)).impulse_response.playback_speed is None
     )
+
+
+def test_a_wrong_speed_is_the_message_when_no_response_stands_out(
+    sweep_signal: np.ndarray,
+) -> None:
+    """Played at twice the speed, the take seemed to start late; the speed
+    is the cause, not a late start."""
+    recording = AudioSignal(_played(sweep_signal, 96000)[: 96000 * 3], 96000)
+    with pytest.raises(InvalidAudioError) as info:
+        analyze(recording, Reference.from_settings(SWEEP))
+    assert "after the sweep began" not in str(info.value)
+    assert "runs at 200" in str(info.value)
+
+
+def test_the_speed_explanation_is_shown_in_the_active_language(
+    sweep_signal: np.ndarray,
+) -> None:
+    """The explanation was glued to the error as ". However, " and the
+    English speed sentence, so a Chinese user read half the error in
+    English."""
+    from roomscope.i18n import activate, localize
+
+    # Cut shorter than the reference: refused before the impulse response is
+    # located, with the speed appended.
+    recording = AudioSignal(_played(sweep_signal, 96000)[: 96000 * 2], 96000)
+    activate("zh_CN")
+    try:
+        with pytest.raises(InvalidAudioError) as info:
+            analyze(recording, Reference.from_settings(SWEEP))
+        shown = localize(str(info.value))
+    finally:
+        activate("en")
+    assert "However" not in shown and "the sweep" not in shown
+    assert "不过，录音中扫频的速度是生成时的 200" in shown
+    with pytest.raises(InvalidAudioError, match=r"full sweep\. However, the sweep in the"):
+        analyze(recording, Reference.from_settings(SWEEP))

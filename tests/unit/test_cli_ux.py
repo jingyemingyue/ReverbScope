@@ -541,3 +541,85 @@ def test_format_report_prints_on_a_cp1252_stdout(
     assert "✓" in format_report(demo_run.takes[1].result) or "!" in format_report(
         demo_run.takes[1].result
     )
+
+
+# --- Input checks and less common files ---------------------------------------------
+
+
+@pytest.mark.parametrize("value", ["a,b", "1;2", ","])
+def test_a_malformed_channel_list_is_a_usage_error(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], value: str
+) -> None:
+    """It escaped as "unexpected ValueError ... This is a bug in RoomScope"."""
+    code, out, err = _run(
+        ["--backend", "fake", "measure", "--out", "m", "--input-channels", value], capsys
+    )
+    assert code == 2 and out == ""
+    assert "comma-separated list of channel numbers" in err
+    assert "bug" not in err
+
+
+def test_output_channel_zero_is_refused_before_the_take(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The pre-flight passed it; the take then failed after sweep.wav was written."""
+    root, _monkeypatch = cli
+    code, _out, err = _run(
+        ["--backend", "fake", "measure", "--out", "m", "--output-channel", "0"], capsys
+    )
+    assert code == 1
+    assert "1-based" in err and "Nothing was played" in err
+    assert not (root / "m" / "sweep.wav").exists()
+
+
+def test_measure_has_no_channel_option_it_would_ignore(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    code, _out, err = _run(["--backend", "fake", "measure", "--out", "m", "--channel", "1"], capsys)
+    assert code == 2 and "--channel" in err
+
+
+def test_a_comparison_saved_under_any_name_can_be_shown(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``compare --out ab.json`` wrote it; ``show ab.json`` looked for result.json."""
+    for name in ("a", "b"):
+        argv = ["--backend", "fake", "measure", "--out", name, "--duration", "1"]
+        assert _run([*argv, "--post-silence", "1"], capsys)[0] == 0
+    assert _run(["compare", "a", "b", "--out", "ab.json"], capsys)[0] == 0
+    code, out, err = _run(["show", "ab.json"], capsys)
+    assert code == 0, err
+    assert "RoomScope comparison" in out
+
+
+def test_commands_without_json_output_say_so(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, _monkeypatch = cli
+    argv = ["--backend", "fake", "measure", "--out", "s", "--duration", "1"]
+    assert _run([*argv, "--post-silence", "1"], capsys)[0] == 0
+    for command in (
+        ["session", "bundle", "s", "--out", "s.zip"],
+        ["project", "init", "--out", "p"],
+    ):
+        code, _out, err = _run(["--format", "json", *command], capsys)
+        assert code == 0
+        assert "--format json does not apply" in err, command
+    assert (root / "s.zip").is_file()
+
+
+def test_project_errors_are_translated(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, _monkeypatch = cli
+    (root / "empty").mkdir()
+    code, _out, err = _run(["--lang", "zh_CN", "project", "show", "empty"], capsys)
+    assert code == 1
+    assert "中没有 project.json" in err
+
+
+def test_frequencies_just_below_one_kilohertz_read_as_kilohertz() -> None:
+    from roomscope.cli.render import frequency_text
+
+    assert frequency_text(999.7) == "1 kHz"
+    assert frequency_text(999.4) == "999 Hz"

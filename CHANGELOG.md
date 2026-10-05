@@ -102,6 +102,132 @@ All notable changes to RoomScope are documented here. The format follows
   measures octave-band noise fell from 0.54 s to 0.13 s (4×); broadband
   T30 and the eight band levels were identical.
 
+### Fixed
+- **Measurement.** With a loopback whose return is not at unity gain, the
+  folded-distortion probe was biased by that gain (a −20 dB return hid
+  folded products and left T30 valid); it now uses the response before
+  compensation. A separate `--loopback` file's channel is read from that
+  file, not checked against the recording, and a mono recording can no
+  longer be its own loopback. A loopback found on another sweep pass than
+  the microphone is refused instead of reporting a path delay of seconds;
+  a single-pass take with a long latency is no longer refused that way.
+  Of several sweep passes about as loud as the loudest, the one followed by
+  a recorded decay is analysed, instead of a random one that could leave
+  the take refused or T30 insufficient. A recording with no sweep in it is
+  refused as such, not as a late start, and a wrong playback speed is named
+  in the interface language. Digital silence after an imported impulse
+  response is no longer taken for the noise floor (T30 read up to 16 %
+  long), and `analyze-ir` without `--band` no longer quotes the hidden
+  analysis' values in its warnings; `--band 20 inf` is refused. Smoothed
+  frequency responses above the sweep no longer read −3000 dB. A gated
+  response reports the resolution of its gate (50 Hz for 20 ms, not 2 Hz),
+  and a gate longer than the response no longer fades the direct sound. A
+  DC offset no longer counts as background noise, no longer stops the noise
+  from being measured and no longer hides a noise burst (14 dB too high);
+  a short quiet segment no longer reports mains hum from one unaveraged
+  spectrum. When nothing below 300 Hz was excited, the report says the
+  resonance search did not run instead of "no potential resonance". The
+  reflection window is no longer called truncated when it only rounds to a
+  sample, its heading shows its real start (0.8 ms) and a search cut short
+  by a short IR says so. Without a direct sound, C50, C80, D50 and centre
+  time are timed from the onset. A `measure` signal shorter than 1 s is
+  refused before playing. Loopback compensation no longer prints a NumPy
+  warning for a sweep starting at 1 Hz. The fake backend's room no longer
+  hears the sweep before its loopback (a path delay of −2 ms).
+- **Placement.** The 2 cm tape slack was subtracted instead of allowed, so a
+  steep but possible geometry was refused. The ceiling height and the
+  horizontal separation reported the loudspeaker height's uncertainty; each now
+  carries its own, and the height's is taken at the arrival it reports.
+- **Comparison and advice.** C50, C80, D50, noise and negative path-delay
+  changes are no longer given in percent (−2 → −1 dB read −50 %), also when
+  `show` reads a comparison saved by 0.5.0b1. An imported IR without
+  `--band` is no longer compared over a band nothing excited. A refused
+  comparison names its reason, in the interface language, also from a file
+  saved by 0.5.0b1, and no longer reports "none above the threshold" or "no
+  potential resonance" for what it never compared. Reasons name validities
+  in words. The direct-to-noise notice now includes the playback level, is
+  measured before loopback compensation (a −20 dB return hid it) and is
+  given again for a reference WAV without its sidecar. A 0 dB reflection is
+  ranked strongest, and the reflection finding weighs the strongest
+  reflection on each side, so one that disappeared is reported. Two
+  selected sessions are compared with the older one as the baseline, and
+  `show comparison.json` uses the candidate's profile. A change that rounds
+  to zero reads +0.0, not −0.0; a narrow table keeps the change column.
+- **Files.** Saving a session twice, or saving an opened session elsewhere, no
+  longer loses `recording.wav` or the sweep sidecar. Files are written under
+  unique temporary names and replaced only once everything has been written,
+  so a full disk keeps the previous session (its audio too), project or
+  settings, two programs saving at once no longer fail, a file keeps its
+  permissions and a linked `settings.json` stays a link. Saving an opened
+  session copies its recording and sidecar only from inside its own folder:
+  a received session could name `../../.ssh/id_rsa` and put it into the new
+  session and its bundle. Wrongly typed values in session, result,
+  comparison, project, sidecar and settings files are refused with a
+  translated RoomScope error (or ignored, for settings) instead of a crash;
+  `"false"` is no longer true, and a 400-digit number, an infinite silence
+  or a number where a curve belongs no longer crashes `show`. One unreadable
+  session no longer hides a folder's others. A symlinked `result.json` is
+  checked even when `session.json` does not name it. A 192 kHz session with
+  a long post-roll (a result.json over 32 MiB) opens again. `session bundle
+  .` works, a session at a drive root and `--out folder/` are named
+  properly. A newer sweep sidecar is refused. NaN samples are refused by
+  `write_wav`. An exporter registered as a class is instantiated, and the
+  CSV export adds the interface response and the resonance decay times.
+  `--no-curves` leaves out the interface curve and keeps the point count. A
+  project lists a session once however it was added, and `project add`
+  refuses a folder without a session or one already under another
+  position. The result and comparison schemas require what the loaders
+  need.
+- **Command line.** A malformed `--input-channels` and an output channel of 0
+  are refused before anything is played. `measure` no longer accepts a
+  `--channel` it ignored, and `analyze --channel` refuses a channel a mono
+  file does not have. `show` opens a comparison saved under any name, and
+  `show --format json` prints paths as `session.json` stores them.
+  `session bundle` and `project init/add/show` say so when `--format json`
+  does not apply. Project errors are translated. Placement surfaces are named,
+  not shown as `lower_plane`. 999.7 Hz prints as 1 kHz, not `1e+03 Hz`.
+  `--backend fake measure` saves a session marked as a synthetic demo.
+  `--lang` applies to `gui`. The `--loopback-channel` and `analyze-ir
+  --band` help describe what the options do. Plain lines use the console's
+  ASCII signs on an ASCII-only stream.
+- **Desktop app.** A second take could start while one was running (after
+  Refresh devices), and closing the window during a take or an analysis
+  aborted the process; both are fixed, and leaving the page stops the take.
+  A late result no longer replaces a session opened meanwhile, also when you
+  went back to the page to wait. Ctrl+2/Ctrl+3 no longer switch the backend
+  under a running take, and the saved output channel is the one played.
+  Demo takes are saved marked as synthetic. Saving an opened session no
+  longer writes the previous take into it, and a live take's recording is
+  written with the rest of the session. Save dialogs add `.wav` / `.json`
+  and ask before replacing a file or a saved session. Home can select two
+  sessions for Compare. The default profile and output folder from Settings
+  are used, a new default profile without a restart. The decay legend and
+  the noise tab give the right reason when data is missing; every band has
+  its own dash pattern. The Compare table names noise bands.
+- **Packaging.** Neither edition freezes GNU readline any more (the 0.5.0b1
+  Linux bundles shipped libreadline, GPL-3.0, without its licence text); the
+  Desktop Edition also no longer freezes pytest, setuptools, pygments or
+  yaml. typing_extensions' licence is in `THIRD_PARTY_LICENSES`. The SBOM
+  lists the bundle's packages, not the SBOM tool's. Lock and gate-script
+  changes, `compile_bundle_lock.py` included, run the release checks. The
+  check scripts fail instead of passing when they checked nothing.
+  `compile_bundle_lock.py` refuses to write a lock without a runtime package
+  and keeps a dependency named `*-extra`. `build_release.py` says up front
+  that Inno Setup is missing, before deleting anything, keeps other
+  platforms' archives on Windows and writes `SHA256SUMS` with LF.
+  `build_docs_site.py --out docs` (or a folder inside it) refuses instead of
+  deleting the documentation.
+- **Other.** A failed log rotation on Windows no longer pushes the backups out,
+  and rotation elsewhere no longer renames the log away. A device warning
+  names each buffer flag once. In Chinese, joined diagnostics and ones with
+  their own semicolon are fully translated. The `.po` reader unescapes in one
+  pass and skips fuzzy entries; a duplicate catalog entry was removed.
+  `docs/MEASUREMENT_METHODOLOGY.md` now describes the band edges, the
+  Lundeby convergence, the decay start, the noise and hum parameters, the
+  resonance test and every rule that marks EDT, T20 or T30 unreliable. The
+  user guides describe the Results page and the DAW file choice as the app
+  has them.
+
 ## [0.5.0b1] - 2026-10-01
 
 Software beta 1. This is **not** 0.5.0: the release plan's 0.5.0 still

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -33,11 +34,29 @@ def test_sweep_settings_round_trip_and_resample() -> None:
         {"fade_in_s": 5.0, "fade_out_s": 6.0},
         {"level_dbfs": -100.0},
         {"pre_silence_s": -1.0},
+        {"pre_silence_s": float("inf")},
+        {"post_silence_s": float("inf")},
+        {"pre_silence_s": 1e9},
+        {"post_silence_s": 60.5},
     ],
 )
 def test_sweep_settings_validation(kwargs: dict[str, float]) -> None:
     with pytest.raises(ConfigurationError):
         SweepSettings(**kwargs)
+
+
+def test_an_infinite_silence_is_a_clean_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``sweep --pre-silence inf`` failed as "unexpected OverflowError"."""
+    from roomscope.cli.main import main
+
+    for flag in ("--pre-silence", "--post-silence"):
+        assert main(["sweep", "--out", str(tmp_path / "s.wav"), flag, "inf"]) == 1
+        err = capsys.readouterr().err
+        assert "silences must be <= 60 s" in err
+        assert "This is a bug" not in err
+    assert SweepSettings(pre_silence_s=60.0, post_silence_s=60.0).post_silence_s == 60.0
 
 
 def test_analysis_settings_validation_and_round_trip() -> None:
@@ -64,6 +83,15 @@ def test_audio_signal_validation_and_channel_selection() -> None:
     assert idx0 == 0 and warning0 is None and np.all(mono0 == 0.1)
     with pytest.raises(InvalidAudioError):
         stereo.channel(2)
+
+
+def test_a_channel_a_mono_signal_does_not_have_is_refused() -> None:
+    """``analyze --channel 5`` on a mono file analysed channel 0 and stored 5."""
+    mono = AudioSignal(np.ones(16), 48000)
+    with pytest.raises(InvalidAudioError, match="channel 1 does not exist"):
+        mono.select_channel(1)
+    assert mono.select_channel(0)[1:] == (0, None)
+    assert mono.select_channel(None)[1:] == (0, None)
 
 
 def test_session_round_trip_and_schema_check() -> None:

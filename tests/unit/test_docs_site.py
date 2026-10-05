@@ -131,3 +131,21 @@ def test_page_description_skips_download_url_line() -> None:
     desc = site.page_description(text, fallback="fallback")
     assert "two betas" in desc
     assert "github.com" not in desc.casefold()
+
+
+def test_the_site_is_never_written_over_the_documentation(tmp_path: Path) -> None:
+    """``--out docs`` deleted the sources before reading them, and ``--out
+    docs/user-guide`` still deleted that folder."""
+    import pytest
+
+    site = _load()
+    docs = tmp_path / "docs"
+    (docs / "user-guide").mkdir(parents=True)
+    (docs / "index.md").write_text("# Index\n", encoding="utf-8")
+    (docs / "user-guide" / "en.md").write_text("# Guide\n", encoding="utf-8")
+    for dest in (docs, tmp_path, docs / "user-guide", docs / "new-folder"):
+        with pytest.raises(SystemExit):
+            site.build_site(docs, dest)
+    assert (docs / "index.md").is_file()
+    assert (docs / "user-guide" / "en.md").is_file()
+    assert not (docs / "new-folder").exists()

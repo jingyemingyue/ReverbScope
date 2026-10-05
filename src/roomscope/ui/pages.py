@@ -8,6 +8,7 @@ from typing import Any, cast
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QHideEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -36,6 +37,7 @@ from roomscope.audio.playrec import (
 )
 from roomscope.core.pipeline import Reference
 from roomscope.core.sweep import measurement_signal
+from roomscope.demo import DEMO_MODE, FAKE_BACKEND_NOTES
 from roomscope.errors import AudioDeviceError, RoomScopeError
 from roomscope.i18n import N_, _, localize
 from roomscope.interpretation import available_profiles, interpret
@@ -53,6 +55,7 @@ from roomscope.ui.widgets import (
     Card,
     ModeCard,
     PageHeader,
+    ask_save_path,
     error_box,
     label,
     primary,
@@ -79,10 +82,10 @@ def separate_clocks_box(parent: QWidget, warning: str) -> QMessageBox:
 
 def ask_separate_clocks(parent: QWidget, warning: str) -> bool:
     box = separate_clocks_box(parent, warning)
-    measure = _("Measure anyway")
     box.exec()
     clicked = box.clickedButton()
-    return clicked is not None and clicked.text() == measure
+    # By role, not by label: some desktops insert "&" accelerators into it.
+    return clicked is not None and box.buttonRole(clicked) == QMessageBox.ButtonRole.AcceptRole
 
 
 DAW_INSTRUCTIONS = N_(
@@ -95,6 +98,11 @@ DAW_INSTRUCTIONS = N_(
     "Start with a low monitor level; the sweep should be clearly audible but not loud.\n"
     "The user guide has step-by-step notes for Pro Tools, Logic Pro, Cubase, Studio One, Ableton Live, REAPER, FL Studio and Bitwig Studio."
 )
+
+
+def late_result_text() -> str:
+    """Shown on a mode page whose take or analysis ended after the user left it."""
+    return _("The result was discarded because you left this page before it was ready.")
 
 
 class HomePage(QWidget):
@@ -176,7 +184,8 @@ class HomePage(QWidget):
         header.addWidget(open_button)
         header.addWidget(compare_button)
         sessions.body.addLayout(header)
-        self.browser = SessionBrowser()
+        # Two selected rows go straight into Compare (MainWindow.show_compare).
+        self.browser = SessionBrowser(multi_select=True)
         self.browser.open_session.connect(self.open_recent.emit)
         self.recent = self.browser.list
         sessions.body.addWidget(self.browser, 1)
@@ -357,6 +366,8 @@ class DawModePage(QWidget):
         super().__init__(parent)
         self.state = state
         self._worker: AnalysisWorker | None = None
+        # The state generation the running analysis belongs to.
+        self._generation = -1
         layout = _scroll_page(
             self,
             PageHeader(
@@ -428,9 +439,8 @@ class DawModePage(QWidget):
         )
         self.reference_label.setWordWrap(True)
         self.channel = QComboBox()
-        self.channel.addItem(_("Auto (highest level)"), None)
         self.loopback_channel = QComboBox()
-        self.loopback_channel.addItem(_("None"), None)
+        self._reset_channel_lists()
         form3.addRow(self.recording_button, self.recording_label)
         form3.addRow(self.reference_button, self.reference_label)
         form3.addRow(_("Microphone channel"), self.channel)
@@ -479,11 +489,14 @@ class DawModePage(QWidget):
     def _choose_sweep_target(self) -> None:
         if not self.ensure_daw_follow():
             return
-        path, _filter = QFileDialog.getSaveFileName(
+        target = ask_save_path(
             self, _("Save test signal"), "roomscope_sweep.wav", _("WAV files (*.wav)")
         )
-        if path:
-            self.generate_sweep_to(Path(path))
+        if target is not None:
+            # A name typed with another extension ("take.v2") still gets one.
+            if target.suffix.lower() != ".wav":
+                target = target.with_name(target.name + ".wav")
+            self.generate_sweep_to(target)
 
     def ensure_daw_follow(self) -> bool:
         """Resolve or ask which DAW project the sweep must follow. Never guess."""
@@ -565,10 +578,7 @@ class DawModePage(QWidget):
             return
         self.state.recording = recording
         self.state.recording_path = path
-        self.channel.clear()
-        self.channel.addItem(_("Auto (highest level)"), None)
-        self.loopback_channel.clear()
-        self.loopback_channel.addItem(_("None"), None)
+        self._reset_channel_lists()
         for index in range(recording.n_channels):
             label = _("Channel {n}").format(n=index + 1)
             self.channel.addItem(label, index)
@@ -643,6 +653,7 @@ class DawModePage(QWidget):
             daw_project=self.state.followed_daw.project if self.state.followed_daw else None,
         )
         self._set_busy(True, _("Analyzing..."))
+        self._generation = self.state.generation
         self._worker = AnalysisWorker(
             self.state.recording, self.state.reference, self.state.analysis_settings
         )
@@ -653,12 +664,38 @@ class DawModePage(QWidget):
         else:
             self._worker.start()
 
+    def _reset_channel_lists(self) -> None:
+        self.channel.clear()
+        self.channel.addItem(_("Auto (highest level)"), None)
+        self.loopback_channel.clear()
+        self.loopback_channel.addItem(_("None"), None)
+
+    def clear_recording(self) -> None:
+        """Forget the imported take; the shared state's recording was reset."""
+        self.recording_label.setText(_("No recording selected."))
+        self._reset_channel_lists()
+
+    def shutdown_workers(self) -> None:
+        """Let a running analysis finish: a QThread destroyed while it runs aborts."""
+        if self._worker is not None:
+            self._worker.wait()
+
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         self.analyze_button.setEnabled(not busy)
+        # Leaving mid-analysis would let the late result replace another session.
+        self.back_button.setEnabled(not busy)
         self.progress.setVisible(busy)
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
+        if self._generation != self.state.generation or not self.isVisible():
+            # The user went elsewhere (a menu action) while this ran; the
+            # shared state now belongs to that page. Coming back to wait does
+            # not help after New Measurement or Open Session: the state was
+            # reset, and the result would join that other session.
+            self._set_busy(False, late_result_text(), tone="warn")
+            return
+
         from roomscope.io.scan import ScanError, attach_room_scan
 
         try:
@@ -688,7 +725,13 @@ class StandalonePage(QWidget):
         self._measure_worker: MeasureWorker | None = None
         self._analysis_worker: AnalysisWorker | None = None
         self._channel_plan: ChannelPlan | None = None
+        # The output channel the take plays on: the spin box stays editable.
+        self._take_output_channel = 1
+        # The take runs on the fake backend: its session is a synthetic demo.
+        self._take_synthetic = False
         self._inventory: DeviceInventory | None = None
+        # The state generation the running take belongs to.
+        self._generation = -1
         layout = _scroll_page(
             self,
             PageHeader(
@@ -870,7 +913,9 @@ class StandalonePage(QWidget):
             self.host_api.setCurrentIndex(1)
         self.host_api.blockSignals(False)
         self._fill_device_lists()
-        self.run_button.setEnabled(True)
+        # Refresh (button, Ctrl+2, Back -> Demo) can run during a take; Run
+        # must stay off then, or a second take replaces the running thread.
+        self.run_button.setEnabled(not self.is_busy())
         if self.demo_mode:
             set_banner_text(self.status, _("Demo mode: fake backend, no loudspeaker."))
         else:
@@ -1073,7 +1118,33 @@ class StandalonePage(QWidget):
             level_dbfs=float(self.level.value()),
         )
 
+    def is_busy(self) -> bool:
+        """A take or its analysis is still running."""
+        return any(
+            worker is not None and worker.isRunning()
+            for worker in (self._measure_worker, self._analysis_worker)
+        )
+
+    def shutdown_workers(self) -> None:
+        """Stop a take (silencing the output) and let both workers finish."""
+        if self._measure_worker is not None:
+            self._measure_worker.request_stop()
+        for worker in (self._measure_worker, self._analysis_worker):
+            if worker is not None:
+                worker.wait()
+
+    def hideEvent(self, event: QHideEvent) -> None:  # noqa: N802 - Qt override
+        # Leaving the page (not minimising the window) stops a take: Stop and
+        # Esc live on this page, so the sweep must not go on playing unseen.
+        if not event.spontaneous() and self._measure_worker is not None:
+            self._measure_worker.request_stop()
+        super().hideEvent(event)
+
     def start_measurement(self) -> None:
+        from roomscope.audio.backend import get_backend
+
+        if self.is_busy():
+            return
         try:
             settings = self.current_sweep_settings()
         except RoomScopeError as exc:
@@ -1107,7 +1178,12 @@ class StandalonePage(QWidget):
         if devices is None:
             return
         input_device, output_device = devices
+        # Resolved once, for the take and for its session: Settings or
+        # ROOMSCOPE_AUDIO_BACKEND can choose the fake backend outside Demo too.
+        backend = get_backend("fake" if self.demo_mode else None).name
+        self._take_synthetic = backend == "fake"
         self._channel_plan = plan
+        self._take_output_channel = int(self.output_channel.value())
         place = self.placement.analysis_kwargs()
         self.state.analysis_settings = AnalysisSettings(
             channel=plan.analysis_channel,
@@ -1118,15 +1194,16 @@ class StandalonePage(QWidget):
         )
         self.state.profile = str(self.profile.currentData())
         self._set_busy(True, _("Playing the sweep and recording..."))
+        self._generation = self.state.generation
         self._measure_worker = MeasureWorker(
             measurement_signal(settings),
             settings.sample_rate,
             input_device=input_device,
             output_device=output_device,
             input_channels=list(plan.input_channels),
-            output_channel=int(self.output_channel.value()),
+            output_channel=self._take_output_channel,
             level_dbfs=settings.level_dbfs,
-            backend="fake" if self.demo_mode else None,
+            backend=backend,
             options=self.stream_options(),
         )
         self._measure_worker.succeeded.connect(self._on_recorded)
@@ -1146,19 +1223,26 @@ class StandalonePage(QWidget):
         self._set_busy(False, _("Stopped."))
 
     def _on_recorded(self, recording: AudioSignal) -> None:
+        if self._generation != self.state.generation or not self.isVisible():
+            # As in DawModePage._on_success.
+            self._set_busy(False, late_result_text(), tone="warn")
+            return
         self.state.recording = recording
         self.state.recording_path = None
         plan = self._channel_plan
         assert plan is not None
-        # The session stores the 1-based interface channels of the take.
+        # The session stores the 1-based interface channels of the take. A
+        # take on the fake backend is marked like `roomscope demo`'s sessions,
+        # so it is never mistaken for a measurement of a real room.
         self.state.session = MeasurementSession(
-            mode="standalone",
+            mode=DEMO_MODE if self._take_synthetic else "standalone",
             room_name=self.room.text(),
             measurement_position=self.position.text(),
             microphone_name=self.mic.text(),
+            notes=FAKE_BACKEND_NOTES if self._take_synthetic else "",
             input_channel=plan.microphone_channel,
             loopback_channel=plan.loopback_channel,
-            output_channel=int(self.output_channel.value()),
+            output_channel=self._take_output_channel,
             audio_interface=session_audio_interface(
                 self._devices,
                 self.input_device.currentData(),
@@ -1179,17 +1263,27 @@ class StandalonePage(QWidget):
         self._analysis_worker.succeeded.connect(self._on_success)
         self._analysis_worker.failed.connect(self._on_failure)
         self._analysis_worker.start()
+        # The take is over; Stop cannot cancel the analysis.
+        self.stop_button.setEnabled(False)
 
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         self.run_button.setEnabled(not busy)
         if hasattr(self, "stop_button"):
             self.stop_button.setEnabled(busy)
+        if hasattr(self, "back_button"):
+            self.back_button.setEnabled(not busy)
+        if hasattr(self, "refresh_button"):
+            self.refresh_button.setEnabled(not busy)
         self.progress.setVisible(busy)
         if not busy and hasattr(self, "progress") and self.progress.maximum() == 100:
             self.progress.setValue(0)
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
+        if self._generation != self.state.generation or not self.isVisible():
+            self._set_busy(False, late_result_text(), tone="warn")
+            return
+
         from roomscope.io.scan import ScanError, attach_room_scan
 
         try:

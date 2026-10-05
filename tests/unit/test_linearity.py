@@ -103,3 +103,33 @@ def test_long_sweeps_in_16_bit_are_not_flagged(sample_rate: int, duration_s: flo
     for signal in (sweep, sweep / np.max(np.abs(sweep))):
         assert not detect_clipping(_quantise(signal, 16)).clipped
         assert not detect_clipping(_quantise(signal, 16, dither=1.0)).clipped
+
+
+def test_alias_probe_inverse_is_flat_over_the_folded_band() -> None:
+    """The exp(t/L) weight was applied to the reversed reference, i.e. as
+    1/f(t): |R I| tilted by -4 / +5 dB across the folded band."""
+    from scipy import fft as sfft
+
+    from roomscope.core.linearity import (
+        _alias_trajectory,
+        _harmonic_reference,
+        _probe_inverse,
+    )
+    from roomscope.core.sweep import excitation_band_hz
+    from roomscope.models.result import ExcitationBand
+
+    settings = SweepSettings(duration_s=2.0)
+    low, high = excitation_band_hz(settings)
+    band = ExcitationBand(low_hz=low, high_hz=high, source="settings")
+    trajectory = _alias_trajectory(settings, 3, band)
+    assert trajectory is not None
+    folded = (trajectory.low_hz + 200.0, min(trajectory.high_hz, 0.45 * 48000) - 200.0)
+    reference = _harmonic_reference(settings, trajectory)
+    inverse = _probe_inverse(settings, trajectory, folded)
+    nfft = int(sfft.next_fast_len(2 * reference.shape[0], real=True))
+    freqs = np.fft.rfftfreq(nfft, 1.0 / 48000)
+    select = (freqs >= folded[0]) & (freqs <= folded[1])
+    magnitude = np.abs(sfft.rfft(reference, nfft) * sfft.rfft(inverse, nfft))[select]
+    tenth = magnitude.shape[0] // 10
+    ends = 20.0 * np.log10([np.median(magnitude[:tenth]), np.median(magnitude[-tenth:])])
+    assert np.all(np.abs(ends) < 0.2)

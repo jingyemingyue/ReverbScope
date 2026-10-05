@@ -551,7 +551,7 @@ def estimate_placement(
                     high=MAX_SOURCE_HEIGHT_M,
                 )
             )
-        elif abs(separation) > distance_m - DISTANCE_SLACK_M:
+        elif abs(separation) > distance_m + DISTANCE_SLACK_M:
             rejections.append(
                 diag(
                     "the {delay:.1f} ms candidate implies a vertical separation of "
@@ -591,24 +591,27 @@ def estimate_placement(
         c = speed_of_sound_m_s(temperature_arg)
         return boundary_product_m2(distance, delay, c) / mic
 
-    chosen_delay = lower[0].delay_ms if lower else 0.0
-    height_sigma = _propagate(
-        _source_height,
-        {
-            "distance": distance_m,
-            "delay": chosen_delay,
-            "temperature_arg": temperature,
-            "mic": height,
-        },
-        {
-            "distance": DISTANCE_SIGMA_M,
-            "delay": PEAK_LOCATION_SIGMA_MS,
-            "temperature_arg": TEMPERATURE_SIGMA_C if temperature_assumed else 1.0,
-            "mic": HEIGHT_SIGMA_M,
-        },
-    )
+    def _horizontal(distance: float, delay: float, temperature_arg: float, mic: float) -> float:
+        lift = _source_height(distance, delay, temperature_arg, mic) - mic
+        return math.sqrt(distance**2 - lift**2)
+
+    def _upper_plane(
+        distance: float, delay: float, upper_delay: float, temperature_arg: float, mic: float
+    ) -> float:
+        source = _source_height(distance, delay, temperature_arg, mic)
+        mirror = distance + speed_of_sound_m_s(temperature_arg) * upper_delay / 1000.0
+        return (source + mic + math.sqrt(mirror**2 - distance**2 + (source - mic) ** 2)) / 2.0
+
+    input_sigmas = {
+        "distance": DISTANCE_SIGMA_M,
+        "delay": PEAK_LOCATION_SIGMA_MS,
+        "upper_delay": PEAK_LOCATION_SIGMA_MS,
+        "temperature_arg": TEMPERATURE_SIGMA_C if temperature_assumed else 1.0,
+        "mic": HEIGHT_SIGMA_M,
+    }
+
     source_length, source_index = _resolve(
-        lower, height_agreement_m, empty_reason=empty_reason, uncertainty_m=height_sigma
+        lower, height_agreement_m, empty_reason=empty_reason, uncertainty_m=None
     )
 
     ceiling_length = _refused(
@@ -625,10 +628,25 @@ def estimate_placement(
         u_z = source_height_value + height
         v_z = source_height_value - height
         horizontal = math.sqrt(max(distance_m**2 - v_z**2, 0.0))
+        # Each length gets its own propagation: q and the upper plane depend on
+        # the inputs differently from the loudspeaker height (q's sensitivity
+        # to the height grows as the devices approach the vertical).
+        source_nominal = {
+            "distance": distance_m,
+            "delay": tier1[source_index].delay_ms,
+            "temperature_arg": temperature,
+            "mic": height,
+        }
+        # At the arrival the reported height came from (the median of agreeing
+        # hypotheses), not the earliest one.
+        source_length = replace(
+            source_length,
+            input_uncertainty_m=_propagate(_source_height, source_nominal, input_sigmas),
+        )
         horizontal_length = PlacementLength(
             metres=horizontal,
             validity=Validity.VALID,
-            input_uncertainty_m=height_sigma,
+            input_uncertainty_m=_propagate(_horizontal, source_nominal, input_sigmas),
         )
         upper: list[_Hypothesis] = []
         upper_rejections: list[str] = []
@@ -718,8 +736,17 @@ def estimate_placement(
             upper,
             ceiling_agreement_m,
             empty_reason=upper_empty_reason,
-            uncertainty_m=height_sigma,
+            uncertainty_m=None,
         )
+        if ceiling_index is not None:
+            ceiling_length = replace(
+                ceiling_length,
+                input_uncertainty_m=_propagate(
+                    _upper_plane,
+                    {**source_nominal, "upper_delay": tier1[ceiling_index].delay_ms},
+                    input_sigmas,
+                ),
+            )
         # A height solved from a single arrival is only as good as that arrival
         # being ONE arrival. When no upper plane was established and a plausible
         # one would land within the detector's resolution of the arrival used

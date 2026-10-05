@@ -330,10 +330,12 @@ def _regularisation_shape_db(
     b_in, b_out = SPECTRAL_REG_IN_BAND_DB, SPECTRAL_REG_OUT_OF_BAND_DB
     safe = np.maximum(freqs, _TINY)
     x = np.zeros(freqs.shape[0], dtype=np.float64)
+    # A transition of zero width (a band edge at its clamp, e.g. a sweep from
+    # 1 Hz) is a step; dividing by log2(1) printed NumPy's RuntimeWarning.
     low_side = safe < lo
-    x[low_side] = np.log2(lo / safe[low_side]) / math.log2(lo / ref_lo)
+    x[low_side] = np.log2(lo / safe[low_side]) / math.log2(lo / ref_lo) if ref_lo < lo else 1.0
     high_side = safe > hi
-    x[high_side] = np.log2(safe[high_side] / hi) / math.log2(ref_hi / hi)
+    x[high_side] = np.log2(safe[high_side] / hi) / math.log2(ref_hi / hi) if ref_hi > hi else 1.0
     x = np.clip(x, 0.0, 1.0)
     return np.asarray(b_in + (b_out - b_in) * np.sin(0.5 * np.pi * x) ** 2, dtype=np.float64)
 

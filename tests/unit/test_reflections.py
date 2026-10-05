@@ -104,3 +104,35 @@ def test_full_window_is_not_reported_as_truncated(sample_rate: int) -> None:
     assert res.analysed_window_ms == pytest.approx((0.8, 80.0))
     assert not res.window_truncated
     assert not any("only that part" in n for n in res.notes)
+
+
+def test_a_window_that_rounds_to_half_a_sample_is_not_truncated() -> None:
+    """25 ms at 44.1 kHz is 1102.5 samples; rounding down was reported as an
+    impulse response that ends early (and placement called itself biased)."""
+    from roomscope.core.reflections import detect_early_reflections
+
+    sample_rate = 44100
+    ir = np.zeros(sample_rate // 2)
+    ir[100] = 1.0
+    result = detect_early_reflections(
+        ir,
+        sample_rate,
+        100,
+        min_delay_ms=0.8,
+        max_delay_ms=25.0,
+        threshold_db=-20.0,
+        prominence_db=6.0,
+        direct_sound_confidence="high",
+    )
+    assert not result.window_truncated
+    short = detect_early_reflections(
+        ir[:400],
+        sample_rate,
+        100,
+        min_delay_ms=0.8,
+        max_delay_ms=25.0,
+        threshold_db=-20.0,
+        prominence_db=6.0,
+        direct_sound_confidence="high",
+    )
+    assert short.window_truncated

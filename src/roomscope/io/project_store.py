@@ -7,8 +7,8 @@ from pathlib import Path
 
 from roomscope.errors import SessionError
 from roomscope.i18n import _
-from roomscope.io.jsonutil import read_json_object
-from roomscope.io.session_store import SESSION_FILE, list_sessions
+from roomscope.io.jsonutil import read_json_object, write_text_atomic
+from roomscope.io.session_store import SESSION_FILE, list_sessions, load_session
 from roomscope.models.project import PositionEntry, Project
 from roomscope.version import __version__
 
@@ -32,7 +32,7 @@ def save_project(directory: str | Path, project: Project) -> Path:
         project.roomscope_version = __version__
     target = base / PROJECT_FILE
     try:
-        target.write_text(json.dumps(project.to_dict(), indent=2) + "\n", encoding="utf-8")
+        write_text_atomic(target, json.dumps(project.to_dict(), indent=2) + "\n")
     except (OSError, TypeError, ValueError) as exc:
         raise SessionError(
             _("cannot write {path}: {error}").format(path=target, error=exc)
@@ -54,13 +54,29 @@ def add_session(
     base = Path(directory)
     project = load_project(base) if is_project(base) else Project(name=base.name)
     session = Path(session_dir)
+    if session.name == SESSION_FILE:
+        # One session, one entry: "dir" and "dir/session.json" are the same take.
+        session = session.parent
+    # A typo would be stored and then skipped by every listing without a word.
+    load_session(session)
     stored = _relative(session, base)
+    target = _resolve(base, stored).resolve()
+    for entry in project.positions:
+        if entry.label != position and any(
+            _resolve(base, d).resolve() == target for d in entry.session_dirs
+        ):
+            # One take is one position; the listing would keep the first label.
+            raise SessionError(
+                _("{session} is already listed under position '{label}'").format(
+                    session=session, label=entry.label
+                )
+            )
     positions = list(project.positions)
     for index, entry in enumerate(positions):
         if entry.label == position:
             dirs = list(entry.session_dirs)
             known = {_resolve(base, d).resolve() for d in dirs}
-            if _resolve(base, stored).resolve() not in known:
+            if target not in known:
                 dirs.append(stored)
             positions[index] = PositionEntry(label=position, session_dirs=tuple(dirs))
             break
@@ -80,8 +96,13 @@ def list_project_sessions(path: str | Path) -> list[tuple[str, Path]]:
     for entry in project.positions:
         for stored in entry.session_dirs:
             candidate = _resolve(base, stored)
-            if (candidate / SESSION_FILE).is_file() or candidate.name == SESSION_FILE:
+            if (candidate / SESSION_FILE).is_file() or (
+                candidate.name == SESSION_FILE and candidate.is_file()
+            ):
                 folder = candidate if candidate.is_dir() else candidate.parent
+                if folder.resolve() in seen:
+                    # Listed twice (or under two positions): average it once.
+                    continue
                 items.append((entry.label, folder))
                 seen.add(folder.resolve())
     for listing in list_sessions(base):

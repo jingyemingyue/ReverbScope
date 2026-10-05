@@ -9,6 +9,7 @@ from scipy.signal import fftconvolve
 
 from roomscope.cli.main import main
 from roomscope.io.wav import read_wav, write_wav
+from roomscope.models.configuration import SweepSettings
 from tests.conftest import make_rir
 
 
@@ -250,6 +251,37 @@ def test_measure_refuses_loud_level_without_acknowledgement(
     assert "acknowledge" in capsys.readouterr().err
 
 
+def test_show_json_reports_session_paths_as_stored(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    short_sweep: SweepSettings,
+) -> None:
+    """``show --format json`` printed the recording as ``sess/recording.wav``
+    (relative to where you ran it) while session.json says ``recording.wav``
+    (relative to the session folder, like the other members)."""
+    from roomscope.core.pipeline import Reference, analyze, synthetic_recording
+    from roomscope.io.session_store import save_measurement
+    from roomscope.models.session import MeasurementSession
+
+    rec = synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3))
+    result = analyze(rec, Reference.from_settings(short_sweep))
+    take = write_wav(tmp_path / "take.wav", rec.samples, rec.sample_rate, subtype="FLOAT")
+    save_measurement(
+        tmp_path / "sess",
+        MeasurementSession(recording_path=str(take)),
+        result,
+        include_curves=False,
+        copy_recording=True,
+    )
+    monkeypatch.chdir(tmp_path)
+    capsys.readouterr()
+    assert main(["--format", "json", "show", "sess", "--no-curves"]) == 0
+    session = json.loads(capsys.readouterr().out)["session"]
+    assert session["recording_path"] == "recording.wav"
+    assert session["impulse_response_path"] == "impulse_response.wav"
+
+
 def test_session_bundle_export_and_project(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -394,3 +426,88 @@ def test_fake_backend_devices_and_measure(
     assert (out / "session.json").is_file()
     assert (out / "recording.wav").is_file()
     assert "Loopback" in captured.out or "loopback" in captured.out.lower()
+
+
+def test_show_comparison_interprets_with_the_candidates_profile(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`show comparison.json` used the General profile, not the candidate
+    session's profile that `compare` used, and ignored the default profile."""
+    from roomscope.settings import UserSettings, save_settings
+
+    for name, rt60 in (("a", 0.7), ("b", 0.4)):
+        ir = write_wav(tmp_path / f"{name}.wav", make_rir(48000, rt60_s=rt60) * 0.5, 48000)
+        argv = ["analyze-ir", "--ir", str(ir), "--band", "100", "8000", "--profile", "vocal"]
+        assert main([*argv, "--out", str(tmp_path / name)]) == 0
+    saved = tmp_path / "ab.json"
+    assert main(["compare", str(tmp_path / "a"), str(tmp_path / "b"), "--out", str(saved)]) == 0
+    assert "Vocals profile" in capsys.readouterr().out
+    assert main(["show", str(saved)]) == 0
+    assert "Vocals profile" in capsys.readouterr().out
+    # Without the candidate session, the default profile applies.
+    (tmp_path / "b").rename(tmp_path / "moved")
+    save_settings(UserSettings(default_profile="choir"))
+    assert main(["show", str(saved)]) == 0
+    assert "Choir / ensemble profile" in capsys.readouterr().out
+
+
+def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """roomscope --backend fake measure saved an ordinary Standalone session,
+    indistinguishable from a take on real hardware."""
+    from roomscope.demo import DEMO_MODE
+
+    out = tmp_path / "fake-take"
+    code = main(
+        [
+            "--backend",
+            "fake",
+            "measure",
+            "--out",
+            str(out),
+            "--duration",
+            "1",
+            "--post-silence",
+            "1",
+            "--notes",
+            "first try",
+        ]
+    )
+    assert code == 0, capsys.readouterr().err
+    saved = json.loads((out / "session.json").read_text(encoding="utf-8"))
+    assert saved["mode"] == DEMO_MODE
+    assert saved["notes"].startswith("SYNTHETIC DEMO")
+    assert saved["notes"].endswith("first try")
+    capsys.readouterr()
+    assert main(["show", str(out)]) == 0
+    assert "Synthetic demo" in capsys.readouterr().out
+
+
+def test_measure_refuses_a_test_signal_too_short_to_analyse_before_playing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A 0.9 s signal was played and recorded, then always refused by the
+    analysis ("recording is shorter than one second")."""
+    out = tmp_path / "m_short"
+    code = main(
+        [
+            "--backend",
+            "fake",
+            "measure",
+            "--duration",
+            "0.5",
+            "--pre-silence",
+            "0.1",
+            "--post-silence",
+            "0.3",
+            "--out",
+            str(out),
+        ]
+    )
+    err = capsys.readouterr().err
+    assert code == 1
+    assert "0.90 s" in err and "--post-silence" in err
+    assert "Nothing was played." in err
+    assert "devices --probe" not in err
+    assert not (out / "recording.wav").exists()

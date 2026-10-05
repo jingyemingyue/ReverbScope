@@ -278,3 +278,109 @@ def test_loopback_path_delay_is_compared_only_when_both_were_compensated(
     assert refused[0].delta is None
     absent = compare(result, with_loopback(7.5, True)).loopback
     assert absent[0].validity is Validity.NOT_COMPARABLE
+
+
+def test_percent_change_only_for_ratio_scale_units() -> None:
+    """In percent of a level in dB the sign followed the baseline's: C50 going
+    from -2 to -1 dB read -50 %."""
+    from roomscope.core.compare import _delta_from_values
+
+    assert _delta_from_values("broadband.c50", -2.0, -1.0, unit="dB").delta_percent is None
+    assert _delta_from_values("noise.rms_dbfs", -75.0, -70.0, unit="dBFS").delta_percent is None
+    assert _delta_from_values("broadband.d50", 90.0, 95.0, unit="%").delta_percent is None
+    assert _delta_from_values("broadband.t30", 0.5, 0.55, unit="s").delta_percent == (
+        pytest.approx(10.0)
+    )
+
+
+def test_no_percent_change_of_a_negative_baseline() -> None:
+    """A loopback path delay going from -0.50 to -0.25 ms read -50 %."""
+    from roomscope.core.compare import _delta_from_values
+
+    delta = _delta_from_values("loopback.path_delay_ms", -0.5, -0.25, unit="ms")
+    assert delta.delta_percent is None
+    assert delta.delta == pytest.approx(0.25)
+
+
+def test_a_stored_percent_of_a_level_is_dropped_on_load() -> None:
+    """Comparisons saved by 0.5.0b1 stored a percent for every unit, and
+    ``roomscope show`` printed "C50 (dB) ... +3.4 %"."""
+    import io
+
+    from roomscope.cli.console import Console
+    from roomscope.cli.render import render_comparison
+    from roomscope.models.comparison import ComparisonResult
+
+    payload = ComparisonResult(comparable=True, common_band=(20.0, 20000.0)).to_dict()
+    common = {"validity": "valid", "reason": None}
+    payload["decay"] = [
+        {"name": "broadband.c50", "baseline": 9.814, "candidate": 10.146, "delta": 0.332}
+        | {"delta_percent": 3.38, "unit": "dB"}
+        | common,
+        {"name": "broadband.t30", "baseline": 0.5, "candidate": 0.55, "delta": 0.05}
+        | {"delta_s": 0.05, "delta_percent": 10.0, "unit": "s"}
+        | common,
+    ]
+    payload["loopback"] = [
+        {"name": "loopback.path_delay_ms", "baseline": -0.5, "candidate": -0.25}
+        | {"delta": 0.25, "delta_percent": -50.0, "unit": "ms"}
+        | common,
+    ]
+    loaded = ComparisonResult.from_dict(payload)
+    assert [d.delta_percent for d in loaded.decay] == [None, 10.0]
+    assert loaded.loopback[0].delta_percent is None
+    text = render_comparison(Console.for_stream(io.StringIO(), "never"), loaded)
+    assert "+3.4 %" not in text
+
+
+def test_an_undeclared_imported_band_is_not_compared(short_sweep: SweepSettings) -> None:
+    """The 20 Hz-20 kHz placeholder of an imported IR without --band was used
+    as a measured band (octave differences of 60 dB where nothing was excited)."""
+    from roomscope.core.pipeline import analyze_impulse_response
+    from roomscope.models.audio import AudioSignal
+
+    swept = _result(short_sweep, rt60_s=0.4, reflections=[])
+    imported = analyze_impulse_response(AudioSignal(make_rir(48000, rt60_s=0.4), 48000))
+    comparison = compare(swept, imported)
+    assert not comparison.comparable
+    assert "no excitation band" in comparison.notes[0]
+
+
+def test_a_refused_pair_names_its_reason_first(short_sweep: SweepSettings) -> None:
+    """The finding quoted notes[0], which was a sweep-difference or the ISO note."""
+    low = replace(short_sweep, start_hz=20.0, end_hz=1000.0)
+    high = replace(short_sweep, start_hz=700.0, end_hz=20000.0, sample_rate=96000)
+    comparison = compare(
+        _result(low, rt60_s=0.4, reflections=[]), _result(high, rt60_s=0.4, reflections=[])
+    )
+    assert not comparison.comparable
+    assert "narrower than the required" in comparison.notes[0]
+    finding = interpret_comparison(comparison)[0]
+    assert "narrower than the required" in finding.message
+
+
+def test_every_refusal_starts_with_a_known_prefix(short_sweep: SweepSettings) -> None:
+    """``show`` finds the reason of a refused comparison saved by 0.5.0b1 (where
+    it was not the first note) by these prefixes; a reworded refusal must
+    update them."""
+    from roomscope.models.comparison import REFUSAL_NOTE_PREFIXES
+
+    base = _result(short_sweep, rt60_s=0.4, reflections=[])
+    band = base.impulse_response.excitation_band
+    assert band is not None
+
+    def banded(low_hz: float | None, high_hz: float = 20000.0):
+        new_band = None if low_hz is None else replace(band, low_hz=low_hz, high_hz=high_hz)
+        return replace(
+            base, impulse_response=replace(base.impulse_response, excitation_band=new_band)
+        )
+
+    for baseline, candidate in (
+        (banded(None), base),
+        (banded(20.0, 100.0), banded(200.0)),
+        (banded(100.0, 150.0), base),
+    ):
+        comparison = compare(baseline, candidate)
+        assert not comparison.comparable
+        refusals = [n for n in comparison.notes if n.startswith(REFUSAL_NOTE_PREFIXES)]
+        assert refusals == [comparison.notes[0]]

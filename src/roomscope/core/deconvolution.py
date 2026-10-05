@@ -53,6 +53,9 @@ PASS_MIN_SEPARATION = 0.95
 #: samples of a reverberant tail, which are never far above what precedes them.
 PASS_PULSE_MARGIN_DB = 10.0
 PASS_PULSE_WINDOW_S = 0.1
+#: Passes within this many dB of the loudest complete pass count as equal; of
+#: those, the one followed by the most recorded decay is analysed.
+PASS_EQUAL_DB = 3.0
 #: Content around other sweep passes that is excluded from the margin window.
 _PASS_EXCLUDE_BEFORE_S = 0.005
 _PASS_EXCLUDE_AFTER_S = 0.050
@@ -282,9 +285,11 @@ def locate_impulse_response(
 
     The direct sound is the strongest sample of ``|h_full|``. Other sweep
     passes are searched with :func:`find_sweep_passes`; when there are several,
-    the strongest pass whose sweep starts no more than
-    ``start_tolerance_samples`` before the recording is analysed, and its IR
-    ends where the next pass starts.
+    only passes whose sweep starts no more than ``start_tolerance_samples``
+    before the recording are considered. Of those within ``PASS_EQUAL_DB`` of
+    the loudest, the one followed by the most recorded decay (up to
+    ``max_length_s``) is analysed, the louder one on a tie; its IR ends where
+    the next pass starts.
 
     The *pre-peak margin* compares the direct sound with the strongest content
     in ``[peak - margin_far_s, peak - margin_near_ms]``. When ``sweep_rate_s``
@@ -317,11 +322,25 @@ def locate_impulse_response(
         excluded=tuple((w.start, w.stop) for w in windows_for(strongest)),
     )
     offset = reference_length - 1
+    max_len = round(max_length_s * sample_rate)
+
+    def decay_after(index: int) -> int:
+        """Samples after ``index`` before the recording ends or the next pass starts."""
+        later_starts = [p - offset for p in passes if p > index]
+        return min([recording_length, *later_starts]) - 1 - index
+
     peak = strongest
-    if len(passes) > 1 and strongest - offset < -start_tolerance_samples:
-        complete = [p for p in passes if p - offset >= -start_tolerance_samples]
-        if complete:
-            peak = max(complete, key=lambda p: float(magnitude[p]))
+    complete = [p for p in passes if p - offset >= -start_tolerance_samples]
+    if len(passes) > 1 and complete:
+        # Passes of about the same level differ only by noise, so the loudest
+        # one is a random pick; the one with a recorded decay after it is the
+        # one worth analysing (usually the last).
+        loudest = max(float(magnitude[p]) for p in complete)
+        floor = loudest * 10.0 ** (-PASS_EQUAL_DB / 20.0)
+        peak = max(
+            (p for p in complete if float(magnitude[p]) >= floor),
+            key=lambda p: (min(decay_after(p), max_len), float(magnitude[p])),
+        )
     peak_value = float(h_full[peak])
 
     later = [p for p in passes if p > peak]
@@ -348,7 +367,6 @@ def locate_impulse_response(
                 "the recording does not contain the room decay after the sweep"
             )
         )
-    max_len = round(max_length_s * sample_rate)
     truncated = valid_length > max_len
     length_after_peak = min(valid_length, max_len)
 

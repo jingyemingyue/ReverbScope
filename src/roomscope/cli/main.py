@@ -414,15 +414,17 @@ def _followed_daw(args: argparse.Namespace) -> DawProject | None:
     )
 
 
-def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
+def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = True) -> None:
     analysis = parser.add_argument_group(_("analysis"))
-    analysis.add_argument(
-        "--channel",
-        type=int,
-        default=None,
-        metavar="N",
-        help=_("recording channel to analyse (0-based)"),
-    )
+    if channel:
+        # Not for measure: there the analysed column follows --input-channel(s).
+        analysis.add_argument(
+            "--channel",
+            type=int,
+            default=None,
+            metavar="N",
+            help=_("recording channel to analyse (0-based)"),
+        )
     analysis.add_argument(
         "--smoothing",
         type=int,
@@ -503,7 +505,7 @@ def _add_loopback_file_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         metavar="N",
         help=_(
-            "0-based loopback channel of the recording (or of --loopback if it is multi-channel)"
+            "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
         ),
     )
 
@@ -774,6 +776,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     iface.add_argument(
         "--input-channels",
+        type=_channel_list,
         default=None,
         metavar="LIST",
         help=_("1-based input channels, comma-separated (e.g. 1,2); overrides --input-channel"),
@@ -815,7 +818,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("required for levels above -12 dBFS; confirms the monitor level was set low first"),
     )
     _add_sweep_arguments(p_me, default_level=-20.0)
-    _add_analysis_arguments(p_me)
+    _add_analysis_arguments(p_me, channel=False)
 
     p_ir = _command(
         sub,
@@ -832,7 +835,10 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         metavar=("LO", "HI"),
         default=None,
-        help=_("declared excitation band in Hz (required for band metrics)"),
+        help=_(
+            "declared excitation band in Hz (required for every decay and clarity metric, "
+            "broadband included)"
+        ),
     )
     p_ir.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("session directory"))
     _add_analysis_arguments(p_ir)
@@ -976,7 +982,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("leave WAV files out of the zip"),
     )
     p_bundle.add_argument(
-        "--out", type=Path, default=None, metavar="PATH", help=_("zip path (file or directory)")
+        "--out", type=Path, default=None, metavar="PATH", help=_("zip file (.zip) or folder")
     )
 
     p_doc = _command(
@@ -1299,6 +1305,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
         plan_input_channels,
     )
     from roomscope.core.sweep import measurement_signal
+    from roomscope.demo import DEMO_MODE, FAKE_BACKEND_NOTES
     from roomscope.io.wav import write_sweep_file, write_wav
 
     settings = _sweep_settings(args)
@@ -1308,6 +1315,18 @@ def cmd_measure(args: argparse.Namespace) -> int:
             _("{path} is a file; --out needs a folder for the session").format(path=args.out)
         )
         refusal.cli_hints = [f"roomscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
+        raise refusal
+    if settings.total_samples < settings.sample_rate:
+        # The analysis refuses a recording shorter than one second: say so
+        # before the take, not after it was played and recorded for nothing.
+        refusal = ConfigurationError(
+            _(
+                "the test signal lasts {seconds:.2f} s, but a recording must last at least "
+                "1 s to be analysed; lengthen the silence after the sweep (--post-silence)"
+            ).format(seconds=settings.total_samples / settings.sample_rate)
+        )
+        # The settings are at fault, not the devices.
+        refusal.cli_hints = ["roomscope measure --help"]  # type: ignore[attr-defined]
         raise refusal
     if settings.level_dbfs > SAFE_MAX_LEVEL_DBFS and not args.acknowledge_level:
         print(
@@ -1328,12 +1347,12 @@ def cmd_measure(args: argparse.Namespace) -> int:
     # note and the status lines go to stderr.
     status_stream = sys.stderr if as_json else sys.stdout
     backend = get_backend(args.backend)
-    if args.input_channels:
-        requested = [
-            int(part.strip()) for part in str(args.input_channels).split(",") if part.strip()
-        ]
-    else:
-        requested = [int(args.input_channel)]
+    # The fake backend (--backend fake, settings or ROOMSCOPE_AUDIO_BACKEND)
+    # simulates the room: the session is marked like roomscope demo's.
+    synthetic = backend.name == "fake"
+    if synthetic:
+        args.notes = "\n".join(part for part in (FAKE_BACKEND_NOTES, args.notes) if part)
+    requested = list(args.input_channels or [int(args.input_channel)])
     # Hardware inputs are 1-based, recording columns 0-based; validate the
     # mapping before anything is played (#13).
     plan = plan_input_channels(requested, getattr(args, "measure_loopback_channel", None))
@@ -1444,7 +1463,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
         sweep_path,
         args,
         sweep_settings=settings,
-        mode="standalone",
+        mode=DEMO_MODE if synthetic else "standalone",
         out_dir=out_dir,
         hardware=plan,
         output_channel=int(args.output_channel),
@@ -1459,18 +1478,72 @@ def cmd_measure(args: argparse.Namespace) -> int:
     )
 
 
+def _channel_list(text: str) -> list[int]:
+    """argparse type of ``--input-channels``: ``"1,2"`` -> ``[1, 2]``."""
+    try:
+        channels = [int(part) for part in text.split(",") if part.strip()]
+    except ValueError:
+        channels = []
+    if not channels:
+        raise argparse.ArgumentTypeError(
+            _("{value} is not a comma-separated list of channel numbers (e.g. 1,2)").format(
+                value=repr(text)
+            )
+        )
+    return channels
+
+
 def _is_comparison_path(path: Path) -> bool:
-    """True when ``path`` is ``comparison.json`` or a folder that holds only that file."""
+    """True when ``path`` is a comparison file or a folder that holds only
+    ``comparison.json``. ``compare --out ab.json`` writes any name, so a JSON
+    file other than ``session.json`` is recognised by its content."""
     if path.is_file():
-        return path.name == "comparison.json"
+        if path.name == "comparison.json":
+            return True
+        if path.suffix.lower() != ".json" or path.name == "session.json":
+            return False
+        from roomscope.io.jsonutil import read_json_object
+
+        try:
+            data = read_json_object(path, kind="comparison")
+        except RoomScopeError:
+            return False
+        return "comparable" in data and "common_band" in data
     if path.is_dir():
         return (path / "comparison.json").is_file() and not (path / "session.json").is_file()
     return False
 
 
+def _candidate_profile(candidate_session: object) -> str | None:
+    """The profile ``compare`` interpreted with: the candidate session's.
+
+    ``comparison.json`` does not store it. When the candidate session can no
+    longer be read (it moved, or its path is relative to where compare ran),
+    the settings' default profile applies, as for a session without one.
+    """
+    from roomscope.io.session_store import load_session
+
+    # compare stores the session folder; nothing else is opened for it.
+    if (
+        not isinstance(candidate_session, str)
+        or not candidate_session
+        or not Path(candidate_session).is_dir()
+    ):
+        return None
+    try:
+        return load_session(candidate_session).recording_profile or None
+    except (RoomScopeError, OSError):
+        return None
+
+
 def cmd_show(args: argparse.Namespace) -> int:
     from roomscope.interpretation import interpret, interpret_comparison
-    from roomscope.io.session_store import list_sessions, load_comparison, load_measurement
+    from roomscope.io.session_store import (
+        list_sessions,
+        load_comparison,
+        load_measurement,
+        load_session,
+    )
 
     if args.list:
         _warn_ignored_json(args, "show --list")
@@ -1478,13 +1551,16 @@ def cmd_show(args: argparse.Namespace) -> int:
         if not listings:
             print(_("No session.json files under {root}").format(root=args.path))
             return 0
+        console = _console(args)
         for item in listings:
-            print(f"{item.path}\t{item.label}")
+            # Tab-separated for scripts: never wrapped, but "·" becomes "|"
+            # where the stream's encoding has no "·".
+            print(f"{item.path}\t{console.fit(item.label)}")
         return 0
 
     if _is_comparison_path(args.path):
         comparison = load_comparison(args.path)
-        profile = _resolve_profile(args, "generic")
+        profile = _resolve_profile(args, _candidate_profile(comparison.candidate_session))
         findings = interpret_comparison(comparison, profile)
         if _use_json(args):
             payload = comparison.to_dict()
@@ -1500,7 +1576,9 @@ def cmd_show(args: argparse.Namespace) -> int:
     if _use_json(args):
         payload = loaded.result.to_dict(include_curves=not args.no_curves)
         payload["findings"] = [f.to_dict() for f in findings]
-        payload["session"] = loaded.session.to_dict()
+        # As session.json stores it: load_measurement resolves the sweep and
+        # recording paths for a later save, or drops them when they lead out.
+        payload["session"] = load_session(args.path).to_dict()
         print(json.dumps(payload, indent=1))
     else:
         print(
@@ -1520,6 +1598,7 @@ SESSION_MODES = {
     "standalone": N_("Standalone Mode"),
     "universal_daw": N_("Universal DAW Mode"),
     "analyze_ir": N_("impulse-response file"),
+    "synthetic_demo": N_("Synthetic demo"),
 }
 
 
@@ -1645,6 +1724,7 @@ def cmd_session(args: argparse.Namespace) -> int:
     from roomscope.io.session_store import bundle_session
 
     if args.session_command == "bundle":
+        _warn_ignored_json(args, "session bundle")
         path = bundle_session(args.session, args.out, include_audio=not args.no_audio)
         print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path), keep=True))
         return 0
@@ -1677,6 +1757,8 @@ def cmd_project(args: argparse.Namespace) -> int:
     from roomscope.models.project import Project
 
     command = args.project_command
+    if command in ("init", "add", "show"):
+        _warn_ignored_json(args, f"project {command}")
     if command == "init":
         project = Project(name=args.name or args.out.name, notes=args.notes)
         path = save_project(args.out, project)
@@ -1694,7 +1776,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         return 0
     if command == "show":
         if not is_project(args.project):
-            raise RoomScopeError(f"no project.json in {args.project}")
+            raise RoomScopeError(_("no project.json in {path}").format(path=args.project))
         project = load_project(args.project)
         print(f"{project.name or args.project}")
         for label, path in list_project_sessions(args.project):
@@ -1703,10 +1785,10 @@ def cmd_project(args: argparse.Namespace) -> int:
         return 0
     if command == "average":
         if not is_project(args.project):
-            raise RoomScopeError(f"no project.json in {args.project}")
+            raise RoomScopeError(_("no project.json in {path}").format(path=args.project))
         items = list_project_sessions(args.project)
         if not items:
-            raise RoomScopeError(f"no sessions in {args.project}")
+            raise RoomScopeError(_("no sessions in {path}").format(path=args.project))
         loaded = [load_measurement(path) for _label, path in items]
         # A position label is one microphone position; repeated takes there
         # add sessions, not positions (#15). Sessions not assigned to a
@@ -1715,7 +1797,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         n_mic = max(1, len(set(labelled)))
         sources = int(args.sources)
         if sources < 1:
-            raise ConfigurationError("--sources must be at least 1")
+            raise ConfigurationError(_("--sources must be at least 1"))
         averaged = average_decay(
             [item.result for item in loaded],
             n_source_positions=sources,
@@ -1726,18 +1808,16 @@ def cmd_project(args: argparse.Namespace) -> int:
         if _use_json(args) or args.json:
             print(json.dumps(averaged.to_dict(), indent=1))
         else:
-            print(
-                _(
-                    "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, "
-                    "{combos} combinations)"
-                ).format(
-                    klass=accuracy_class_text(averaged.iso_3382_2_class),
-                    sources=averaged.n_source_positions,
-                    mics=averaged.n_microphone_positions,
-                    combos=averaged.n_combinations,
-                )
-            )
             console = _console(args)
+            iso_class = _(
+                "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, {combos} combinations)"
+            ).format(
+                klass=accuracy_class_text(averaged.iso_3382_2_class),
+                sources=averaged.n_source_positions,
+                mics=averaged.n_microphone_positions,
+                combos=averaged.n_combinations,
+            )
+            print("\n".join(console.paragraph(iso_class, indent=0)))
             dash = console.dash()
 
             def seconds(value: float | None) -> str:
@@ -1788,7 +1868,9 @@ def cmd_gui(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
-    return int(run_app(smoke=bool(getattr(args, "smoke", False))))
+    # --lang was activated for the command line; the GUI resolves its
+    # language again and would otherwise drop it for settings or the system's.
+    return int(run_app(smoke=bool(getattr(args, "smoke", False)), lang=getattr(args, "lang", None)))
 
 
 def _is_demo_folder(path: Path) -> bool:

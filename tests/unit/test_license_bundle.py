@@ -263,3 +263,63 @@ def test_license_bundle_carries_the_bundled_libsndfile_lgpl_text(tmp_path: Path)
     copying = (dest / "soundfile" / "_soundfile_data_COPYING").read_text(encoding="utf-8")
     assert "GNU LESSER GENERAL PUBLIC LICENSE" in copying and "Version 2.1" in copying
     assert "soundfile/_soundfile_data_COPYING" in notice
+
+
+def test_runtime_imports_of_the_bundles_have_licence_texts() -> None:
+    """soundfile imports typing_extensions at run time; both editions froze it
+    without its licence text."""
+    module = _load("build_license_bundle")
+    assert "typing-extensions" in module.REQUIRED
+    assert "typing-extensions" in module.TERMINAL_REQUIRED
+
+
+def test_the_licence_gate_needs_the_index(tmp_path: Path) -> None:
+    gate = _load("check_bundle_contents")
+    texts = tmp_path / "THIRD_PARTY_LICENSES" / "_texts"
+    texts.mkdir(parents=True)
+    for name in ("LGPL-3.0.txt", "GPL-3.0.txt", "PortAudio-LICENSE.txt"):
+        (texts / name).write_text("text", encoding="utf-8")
+    errors = gate.check(tmp_path, require_licenses=True)
+    assert "THIRD_PARTY_LICENSES/INDEX.txt is missing" in errors
+
+
+def test_a_folder_above_the_bundle_is_not_a_qt_library(tmp_path: Path) -> None:
+    """Parts of the absolute path were tested: a bundle under Qt6Projects/
+    failed the Terminal Edition gate on every file."""
+    gate = _load("check_bundle_contents")
+    root = tmp_path / "Qt6Projects" / "roomscope-terminal"
+    (root / "_internal").mkdir(parents=True)
+    (root / "_internal" / "_cffi_backend.so").write_bytes(b"\0")
+    assert gate.gui_files(root) == []
+    (root / "_internal" / "libQt6Core.so.6").write_bytes(b"\0")
+    assert [what for _path, what in gate.gui_files(root)] == ["a Qt library"]
+
+
+def test_both_editions_leave_the_developer_tools_out() -> None:
+    """The desktop excludes named only the GPL Qt modules: pytest, setuptools,
+    pygments and yaml were frozen into it."""
+    spec = Path("packaging/roomscope.spec").read_text(encoding="utf-8")
+    dev = spec[
+        spec.index("DEV_ONLY_EXCLUDES = [") : spec.index("]", spec.index("DEV_ONLY_EXCLUDES"))
+    ]
+    for module in ("setuptools", "pytest", "pygments", "yaml", "readline"):
+        assert f'"{module}"' in dev, module
+    desktop = spec[spec.index("    else [") :]
+    assert desktop.split("]", 1)[0].count("*DEV_ONLY_EXCLUDES") == 1
+
+
+def test_check_scripts_refuse_a_root_that_is_not_a_folder(tmp_path: Path) -> None:
+    import pytest
+
+    for name in ("check_src_safety", "check_doc_links"):
+        with pytest.raises(SystemExit) as stop:
+            _load(name).main(["--root", str(tmp_path / "missing")])
+        assert stop.value.code == 2, name
+
+
+def test_lock_names_are_read_from_any_specifier() -> None:
+    lock = _load("compile_bundle_lock")
+    assert lock._requirement_name("typing-extensions~=4.0") == "typing-extensions"
+    assert lock._requirement_name("x===1") == "x"
+    assert lock._requirement_name("name @ https://example.org/x.whl") == "name"
+    assert lock._requirement_name("zope.interface (>=5)") == "zope.interface"

@@ -139,6 +139,7 @@ def activate(lang: str | None = None, *, system_languages: Sequence[str] | None 
         loaded = gettext.NullTranslations()
     _translation = loaded
     _current = chosen
+    _shown.clear()
     return _current
 
 
@@ -252,38 +253,108 @@ def localize(text: str, _depth: int = 0) -> str:
     """
     if not text or _current == DEFAULT_LANG or _depth > 2:
         return text
+    shown = _join(text, _depth, complete=False)
+    # Nothing recognised: the stored text as it is, separators included.
+    return text if shown is None else shown
+
+
+def _segments(text: str) -> list[str]:
+    """``text`` cut at each ``"; "`` outside parentheses.
+
+    A ``"; "`` inside parentheses belongs to a nested value ("baseline
+    unreliable (A; B)"), never to the join around it.
+    """
+    pieces: list[str] = []
+    depth = start = 0
+    for index, char in enumerate(text):
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+        elif char == ";" and depth == 0 and text.startswith("; ", index):
+            pieces.append(text[start:index])
+            start = index + 2
+    pieces.append(text[start:])
+    return pieces
+
+
+def _balanced(text: str) -> bool:
+    depth = 0
+    for char in text:
+        depth += (char == "(") - (char == ")")
+        if depth < 0:
+            return False
+    return depth == 0
+
+
+def _join(text: str, depth: int, *, complete: bool) -> str | None:
+    """``text`` as diagnostics joined with ``"; "``, each shown translated.
+
+    A template's own literal text may hold a ``"; "`` too ("...of the energy;
+    limit 5 dB..."), so the longest run of pieces that one template matches
+    wins. A piece that nothing matches stays English, or, when ``complete``,
+    makes the whole text unrecognised. ``None`` when nothing was recognised.
+    """
+    pieces = _segments(text)
+    shown: list[str] = []
+    recognised = False
+    start = 0
+    while start < len(pieces):
+        for stop in range(len(pieces), start, -1):
+            translated = _one("; ".join(pieces[start:stop]), depth)
+            if translated is not None:
+                shown.append(translated)
+                recognised = True
+                start = stop
+                break
+        else:
+            if complete:
+                return None
+            shown.append(pieces[start])
+            start += 1
+    return "；".join(shown) if recognised else None
+
+
+#: Translations of whole diagnostics, per (text, depth), for the catalog
+#: that :func:`activate` installed: long joined reasons are matched piece by
+#: piece and every report shows the same reasons many times.
+_shown: dict[tuple[str, int], str | None] = {}
+_SHOWN_LIMIT = 4096
+
+
+def _one(text: str, depth: int) -> str | None:
+    """The translation of ``text`` when one template matches all of it."""
+    if depth > 2:
+        return None
+    key = (text, depth)
+    if key in _shown:
+        return _shown[key]
+    shown: str | None = None
     patterns = _patterns()
     for strict, _loose, translated in patterns:
         match = strict.fullmatch(text)
         if match is not None:
-            return _fill(translated, match, text, _depth)
-    if "; " in text:
-        # A nested diagnostic with a "; " of its own, recognised as a whole
-        # (never a value that is only a join of several diagnostics: the
-        # "; " would then belong to the outer text).
-        for _strict, loose, translated in patterns:
-            match = loose.fullmatch(text)
-            if match is not None and all(
-                "; " not in value or _whole(value, _depth + 1) is not None
-                for value in match.groupdict().values()
-            ):
-                return _fill(translated, match, text, _depth)
-        pieces = text.split("; ")
-        parts = [localize(part, _depth) for part in pieces]
-        # Nothing recognised: the stored text as it is, separators included.
-        return text if parts == pieces else "；".join(parts)
-    return text
-
-
-def _whole(text: str, depth: int) -> str | None:
-    """The translation of ``text`` when one template matches all of it."""
-    if depth > 2:
-        return None
-    for strict, _loose, translated in _patterns():
-        match = strict.fullmatch(text)
-        if match is not None:
-            return _fill(translated, match, text, depth)
-    return None
+            shown = _fill(translated, match, text, depth)
+            break
+    else:
+        if "; " in text:
+            # A template whose value has a "; " of its own: a nested
+            # diagnostic, or several joined, every one of them recognised.
+            # An unbalanced value would take the "; " that joins the outer
+            # text ("baseline unreliable (A); candidate ...").
+            for _strict, loose, translated in patterns:
+                match = loose.fullmatch(text)
+                if match is not None and all(
+                    "; " not in value
+                    or (_balanced(value) and _join(value, depth + 1, complete=True) is not None)
+                    for value in match.groupdict().values()
+                ):
+                    shown = _fill(translated, match, text, depth)
+                    break
+    if len(_shown) >= _SHOWN_LIMIT:
+        _shown.clear()
+    _shown[key] = shown
+    return shown
 
 
 def _fill(translated: str, match: re.Match[str], text: str, depth: int) -> str:
@@ -307,46 +378,67 @@ def _localize_value(value: str, depth: int) -> str:
             .format(a="", b="")
             .join(_localize_value(part, depth) for part in value.split(" or "))
         )
-    for candidate in (value, value.replace("_", " ")):
+    for candidate in (value, _STORED_WORDS.get(value, value.replace("_", " "))):
         translated = _translation.gettext(candidate)
         if translated != candidate:
             return translated
     return value
 
 
+#: Validity ids whose display word is worded differently. Comparison reasons
+#: written by earlier versions held the id ("baseline outside_excitation_range").
+_STORED_WORDS = {
+    "insufficient_decay_range": N_("insufficient range"),
+    "outside_excitation_range": N_("outside the sweep's range"),
+}
+
+
 def parse_po(path: Path) -> dict[str, str]:
     """Parse a gettext ``.po`` file into msgid → msgstr (empty msgstr skipped).
 
     An entry with a ``msgctxt`` is keyed ``"<context>\\x04<msgid>"``, the
-    form :meth:`gettext.GNUTranslations.pgettext` looks up.
+    form :meth:`gettext.GNUTranslations.pgettext` looks up. An entry flagged
+    ``#, fuzzy`` is skipped, as ``msgfmt`` skips it.
     """
     catalog: dict[str, str] = {}
     msgctxt = ""
     msgid = ""
     msgstr = ""
     collecting: str | None = None
+    started = False
+    fuzzy = False
 
     def _commit() -> None:
-        nonlocal msgctxt, msgid, msgstr
-        if msgid and msgstr:
+        nonlocal msgctxt, msgid, msgstr, started, fuzzy
+        if msgid and msgstr and not fuzzy:
             key = f"{msgctxt}{_CONTEXT_SEPARATOR}{msgid}" if msgctxt else msgid
             catalog[key] = msgstr
+        if started:
+            fuzzy = False
+        started = False
         msgctxt = ""
         msgid = ""
         msgstr = ""
 
     for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.strip()
-        if not line or line.startswith("#"):
+        if not line:
+            continue
+        if line.startswith("#"):
+            if line.startswith("#,") and "fuzzy" in line:
+                _commit()  # the entry above is complete; the flag is for the next
+                fuzzy = True
             continue
         if line.startswith("msgctxt "):
             _commit()
+            started = True
             collecting = "ctxt"
             msgctxt = _unquote(line[8:])
             continue
         if line.startswith("msgid "):
             if collecting != "ctxt":
                 _commit()
+            started = True
             collecting = "id"
             msgid = _unquote(line[6:])
             msgstr = ""
@@ -505,11 +597,15 @@ def _is_null(translation: gettext.NullTranslations) -> bool:
     return translation.__class__ is gettext.NullTranslations
 
 
+_ESCAPES = {"n": "\n", "t": "\t", '"': '"', "\\": "\\"}
+
+
 def _unquote(fragment: str) -> str:
     text = fragment.strip()
     if text.startswith('"') and text.endswith('"'):
         text = text[1:-1]
-    return text.replace(r"\n", "\n").replace(r"\t", "\t").replace(r"\"", '"').replace(r"\\", "\\")
+    # One pass, so that "\\n" (a backslash, then n) is not read as a newline.
+    return re.sub(r"\\(.)", lambda m: _ESCAPES.get(m[1], m[0]), text)
 
 
 class _PoTranslations(gettext.NullTranslations):

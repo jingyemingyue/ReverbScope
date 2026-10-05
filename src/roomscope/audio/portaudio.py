@@ -246,13 +246,17 @@ class PortAudioBackend:
         if xruns:
             # PortAudio's status flags: an input overflow drops recorded
             # samples, an output underflow inserts a gap in the sweep. Either
-            # breaks the sweep's timing that deconvolution relies on.
+            # breaks the sweep's timing that deconvolution relies on. Each
+            # entry is one block's flags, already joined with ", ".
+            flag_names = {name.strip() for entry in xruns for name in entry.split(",")}
+            flag_names.discard("")
             device_warnings = (
                 diag(
                     "the audio device reported {count} buffer problem(s) during the take "
                     "({flags}); the recording may contain dropouts",
                     count=len(xruns),
-                    flags="; ".join(sorted(set(xruns))),
+                    # Not "; ": that separates whole diagnostics for localize().
+                    flags=", ".join(sorted(flag_names)),
                 ),
             )
             log.warning("%s; measure again if the result looks wrong", device_warnings[0])

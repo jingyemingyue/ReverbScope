@@ -6,16 +6,19 @@ changes either. Findings are not stored here; they are re-derived on load.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field, fields, replace
 from typing import Any
 
 import numpy as np
 
 from roomscope.errors import SessionError
+from roomscope.i18n import _
 from roomscope.models.loadutil import (
     build_record,
     drop_unknown,
+    read_flag,
     read_schema_version,
+    record_name,
     record_payload,
 )
 from roomscope.models.result import FloatArray, Validity
@@ -28,11 +31,43 @@ COMPARISON_SCHEMA_VERSION = 1
 #: a change "significant" from a single pair of positions).
 T_JND_PERCENT = 5.0
 
+#: Units on a ratio scale, where a change in percent of a positive baseline
+#: means something. In percent of a level in dB (or of D50, itself a
+#: percentage) it does not, and it flips sign with a negative baseline: C50
+#: going from -2 to -1 dB, or a loopback path delay from -0.50 to -0.25 ms,
+#: read -50 %.
+PERCENT_UNITS = frozenset({"s", "ms", "m"})
+
+
+def percent_applies(unit: str, baseline: float | None) -> bool:
+    """Whether a change of a ``unit`` value can be given in percent of ``baseline``."""
+    return unit in PERCENT_UNITS and baseline is not None and baseline > 0.0
+
+
+#: How each note that refuses a pair begins (see ``_common_band`` and the
+#: narrow-band check in :func:`roomscope.core.compare.compare`). A new
+#: comparison lists its refusal first; one saved by 0.5.0b1 or earlier lists
+#: it after the sweep and ISO notes, so a reader looks for these.
+REFUSAL_NOTE_PREFIXES: tuple[str, ...] = (
+    "one or both results have no excitation band",
+    "the excitation bands do not overlap",
+    "common excitation band ",
+)
+
 
 def _array_to_list(values: FloatArray | None, decimals: int = 4) -> list[float] | None:
     if values is None:
         return None
     return [float(v) for v in np.round(values, decimals)]
+
+
+def _curve(values: Any) -> FloatArray:
+    """A curve read from a file. A single number would load as a 0-d array
+    that ``to_dict`` cannot turn back into a list."""
+    curve = np.asarray(values, dtype=np.float64)
+    if curve.ndim != 1:
+        raise TypeError(_("expected a list of numbers"))
+    return curve
 
 
 @dataclass(frozen=True)
@@ -111,8 +146,13 @@ class MetricDelta:
         try:
             payload["validity"] = Validity(str(validity))
         except ValueError as exc:
-            raise SessionError(f"unknown comparison validity {validity!r}") from exc
-        return build_record(cls, payload, kind="metric delta")
+            raise SessionError(_("unknown validity {value}").format(value=repr(validity))) from exc
+        record = build_record(cls, payload, kind="metric delta")
+        if record.delta_percent is not None and not percent_applies(record.unit, record.baseline):
+            # Files written by 0.5.0b1 and earlier gave a percent for every
+            # unit, which ``show`` would print ("C50 (dB) ... +3.4 %").
+            record = replace(record, delta_percent=None)
+        return record
 
 
 @dataclass(frozen=True)
@@ -141,7 +181,20 @@ class ReflectionMatch:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ReflectionMatch:
         payload = record_payload(data, {f.name for f in fields(cls)}, kind="reflection match")
-        return build_record(cls, payload, kind="reflection match")
+        record = build_record(cls, payload, kind="reflection match")
+        # The report prints the delay and level of the side(s) the status
+        # names; any other status is shown with the baseline's.
+        sides = {"matched": ("baseline", "candidate"), "appeared": ("candidate",)}
+        for side in sides.get(record.status, ("baseline",)):
+            for name in (f"{side}_delay_ms", f"{side}_relative_db"):
+                if getattr(record, name) is None:
+                    raise SessionError(
+                        _("invalid {kind} in file: {error}").format(
+                            kind=record_name("reflection match"),
+                            error=_("{field} must not be null").format(field=name),
+                        )
+                    )
+        return record
 
 
 @dataclass(frozen=True)
@@ -200,14 +253,18 @@ class FrequencyResponseDelta:
         mad = payload.get("band_mad_db") or ()
         try:
             return cls(
-                frequencies_hz=np.asarray(freq, dtype=np.float64),
-                difference_db=np.asarray(diff, dtype=np.float64),
+                frequencies_hz=_curve(freq),
+                difference_db=_curve(diff),
                 band_mad_db=tuple((str(a), float(b)) for a, b in mad),
                 smoothing_fraction=int(payload.get("smoothing_fraction", 0)),
                 reference=str(payload.get("reference", "")),
             )
-        except (TypeError, ValueError) as exc:
-            raise SessionError(f"invalid frequency-response delta in file: {exc}") from exc
+        except (TypeError, ValueError, OverflowError) as exc:  # Overflow: int(Infinity)
+            raise SessionError(
+                _("invalid {kind} in file: {error}").format(
+                    kind=record_name("frequency-response delta"), error=exc
+                )
+            ) from exc
 
 
 @dataclass(frozen=True)
@@ -258,13 +315,20 @@ class ComparisonResult:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ComparisonResult:
         if not isinstance(data, dict):
-            raise SessionError("comparison data must be a JSON object")
+            raise SessionError(
+                _("{kind} must be a JSON object").format(kind=record_name("comparison"))
+            )
         version = read_schema_version(data, COMPARISON_SCHEMA_VERSION, "comparison")
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="comparison")
         try:
             return cls._from_payload(payload, version)
-        except (TypeError, ValueError, IndexError, KeyError) as exc:
-            raise SessionError(f"invalid comparison file: {exc}") from exc
+        except (TypeError, ValueError, IndexError, KeyError, OverflowError) as exc:
+            # OverflowError: float() of an integer with hundreds of digits.
+            raise SessionError(
+                _("invalid {kind} in file: {error}").format(
+                    kind=record_name("comparison"), error=exc
+                )
+            ) from exc
 
     @classmethod
     def _from_payload(cls, payload: dict[str, Any], version: int) -> ComparisonResult:
@@ -272,7 +336,7 @@ class ComparisonResult:
         common_band = None if common is None else (float(common[0]), float(common[1]))
         notes = payload.get("notes") or ()
         return cls(
-            comparable=bool(payload.get("comparable", False)),
+            comparable=read_flag(payload.get("comparable", False), "comparable"),
             common_band=common_band,
             notes=tuple(str(n) for n in notes),
             decay=tuple(MetricDelta.from_dict(item) for item in payload.get("decay") or ()),

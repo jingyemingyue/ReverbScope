@@ -17,6 +17,7 @@ from roomscope.core.placement import horizontal_plane_image_path
 from roomscope.core.reflections import reflection_envelope_db
 from roomscope.i18n import _
 from roomscope.interpretation.profiles import band_text, confidence_text, noise_segment_text
+from roomscope.labels import validity_word
 from roomscope.models.result import (
     AnalysisResult,
     EnergyMetric,
@@ -28,8 +29,21 @@ from roomscope.ui.theme import PLOT_SERIES, ensure_plot_fonts, plot_colors, styl
 
 _EPS = 1e-300
 
-# Linestyles so a plot is readable when colour is not (ARCHITECTURE_V1 §5.8).
-_LINESTYLES = ("-", "--", "-.", ":", (0, (3, 1, 1, 1)))
+# Dash patterns so a plot is readable when colour is not (ARCHITECTURE_V1 §5.8):
+# one per octave band, none solid like Broadband. The palette has six colours,
+# so with the eight default bands the dashes are what tells repeats apart.
+_BAND_DASHES = (
+    (0, (5, 2)),
+    (0, (1, 1.5)),
+    (0, (6, 2, 1.5, 2)),
+    (0, (3, 1, 1, 1, 1, 1)),
+    (0, (9, 3)),
+    (0, (2, 3)),
+    (0, (8, 2, 1.5, 2, 1.5, 2)),
+    (0, (4, 4)),
+    (0, (1, 3)),
+    (0, (12, 2, 3, 2)),
+)
 
 
 def plot_impulse_response(fig: Figure, result: AnalysisResult) -> None:
@@ -117,15 +131,17 @@ def plot_decay(fig: Figure, result: AnalysisResult) -> None:
     ax.plot(bb.edc_time_s, bb.edc_db, linewidth=2.4, linestyle="-", label=_("Broadband"))
     for index, band in enumerate(result.decay.bands):
         rt = band.rt60_estimate_s
+        # Without an RT60 say why (outside the sweep, unreliable, ...), as the
+        # table does, rather than always "insufficient range".
         label = band.band_label + (
-            f"  RT60~{rt:.2f} s" if rt is not None else "  ({})".format(_("insufficient range"))
+            f"  RT60~{rt:.2f} s" if rt is not None else f"  ({validity_word(band.t30.validity)})"
         )
         ax.plot(
             band.edc_time_s,
             band.edc_db,
             linewidth=0.9,
             alpha=0.8,
-            linestyle=_LINESTYLES[(index + 1) % len(_LINESTYLES)],
+            linestyle=_BAND_DASHES[index % len(_BAND_DASHES)],
             label=label,
         )
     ax.set_ylim(-70.0, 5.0)
@@ -147,7 +163,10 @@ def plot_noise(fig: Figure, result: AnalysisResult) -> None:
         ax.text(
             0.5,
             0.5,
-            _("No quiet segment available"),
+            # A session saved without curves has a level but no spectrum.
+            _("No quiet segment available")
+            if noise.rms_dbfs is None
+            else _("No noise spectrum stored with this session"),
             ha="center",
             va="center",
             transform=ax.transAxes,

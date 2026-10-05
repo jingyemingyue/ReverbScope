@@ -7,11 +7,14 @@ Paths are stored under ``$ROOMSCOPE_HOME/recent_sessions.json``
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 
 from roomscope.errors import SessionError
-from roomscope.io.jsonutil import read_json_object
+from roomscope.io.jsonutil import read_json_object, write_text_atomic
+
+log = logging.getLogger(__name__)
 
 RECENT_LIMIT = 12
 RECENT_FILENAME = "recent_sessions.json"
@@ -38,8 +41,16 @@ def remember_session(directory: str | Path) -> None:
         if existing != path:
             entries.append(str(existing))
     store = recent_store_path()
-    store.parent.mkdir(parents=True, exist_ok=True)
-    store.write_text(json.dumps({"sessions": entries[:RECENT_LIMIT]}, indent=2), encoding="utf-8")
+    try:
+        store.parent.mkdir(parents=True, exist_ok=True)
+        write_text_atomic(
+            store,
+            json.dumps({"sessions": entries[:RECENT_LIMIT]}, indent=2),
+            follow_symlinks=True,
+        )
+    except OSError as exc:
+        # The list is a convenience: the session itself was saved already.
+        log.warning("cannot update the recent-sessions list %s: %s", store, exc)
 
 
 def recent_session_paths(*, limit: int = RECENT_LIMIT) -> list[Path]:

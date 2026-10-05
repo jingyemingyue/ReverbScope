@@ -74,6 +74,11 @@ class FakeBackend:
     rir: FloatArray | None = None
     interface_ir: FloatArray | None = None
     loopback_delay_s: float = 0.002
+    #: Loudspeaker-to-microphone delay of the default room (about 1.4 m). The
+    #: microphone also goes through the interface, so it hears the sweep
+    #: ``loopback_delay_s + acoustic_delay_s`` after it was played, never
+    #: before the loopback does. An explicit ``rir`` keeps its own timing.
+    acoustic_delay_s: float = 0.004
     noise_rms: float = 1e-5
     rt60_s: float = 0.4
     seed: int = 0
@@ -135,12 +140,36 @@ class FakeBackend:
             raise ConfigurationError(_("channels are 1-based and must be >= 1"))
         if input_device not in (None, 0) or output_device not in (None, 0):
             raise AudioDeviceError(_("fake backend only has device 0"))
+        # The channels it advertises, as a real device would check them.
+        device = self.list_devices()[0]
+        for channel in input_channels:
+            if channel > device.max_input_channels:
+                raise AudioDeviceError(
+                    _(
+                        "input channel {channel} does not exist on {device} "
+                        "({count} input channel(s))"
+                    ).format(channel=channel, device=device.name, count=device.max_input_channels)
+                )
+        if output_channel > device.max_output_channels:
+            raise AudioDeviceError(
+                _(
+                    "output channel {channel} does not exist on {device} "
+                    "({count} output channel(s))"
+                ).format(
+                    channel=output_channel, device=device.name, count=device.max_output_channels
+                )
+            )
         supported_sample_rate(sample_rate)
         signal = prepare_playback(playback, sample_rate, level_dbfs, extra_record_s)
         room = (
             self.rir
             if self.rir is not None
-            else make_rir(sample_rate, rt60_s=self.rt60_s, seed=self.seed)
+            else make_rir(
+                sample_rate,
+                rt60_s=self.rt60_s,
+                seed=self.seed,
+                start_delay_s=self.loopback_delay_s + self.acoustic_delay_s,
+            )
         )
         mic = np.asarray(
             fftconvolve(signal, room, mode="full")[: signal.shape[0]], dtype=np.float64

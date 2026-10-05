@@ -310,7 +310,9 @@ def select_quiet_part(
     piece = x[start:stop]
     block = max(1, round(QUIET_BLOCK_S * sample_rate))
     if piece.shape[0] >= 3 * block:
-        levels = _block_levels(piece, block)
+        # A DC offset is not background noise (see analyze_noise): it would
+        # lift every block to its own level and hide a noise event.
+        levels = _block_levels(piece - float(np.mean(piece)), block)
         reference = float(np.percentile(levels, QUIET_REFERENCE_PERCENTILE))
         quiet = levels <= reference + QUIET_EXCESS_DB
         first, last = _longest_run(quiet)
@@ -393,7 +395,11 @@ def select_quiet_part(
                 ),
             )
         )
-    level = rms_dbfs(x[start:stop])
+    # Without its DC offset, like the level analyze_noise reports and like
+    # sweep_level_dbfs: a modest offset on a quiet take must not make the
+    # silence look as loud as the sweep.
+    segment = x[start:stop]
+    level = rms_dbfs(segment - float(np.mean(segment)))
     if sweep_level_dbfs is not None and level > sweep_level_dbfs - QUIET_MIN_BELOW_SWEEP_DB:
         margin = {"below": sweep_level_dbfs - level, "sweep": sweep_level_dbfs}
         notes.append(
@@ -611,7 +617,9 @@ def analyze_noise(
     x = np.asarray(recording[verified.start : verified.end], dtype=np.float64)
     if verified.note:
         notes.append(verified.note)
-    level = rms_dbfs(x)
+    # A DC offset is not background noise; the PSD (detrended) and the band
+    # levels exclude it, and the PSD must integrate to this level.
+    level = rms_dbfs(x - float(np.mean(x)))
     if level <= NOISE_FLOOR_DBFS:
         notes.append(
             diag(
@@ -628,9 +636,11 @@ def analyze_noise(
     notes.extend(band_notes)
 
     # 2 Hz resolution with several averaged segments (Welch) keeps random
-    # spectral peaks small enough for the hum detector. The density is scaled
-    # to the AES17 full-scale sine so that its integral is the RMS level.
-    nperseg = int(min(x.shape[0], sample_rate // 2))
+    # spectral peaks small enough for the hum detector; a segment shorter than
+    # 0.75 s gets coarser bins but still two half-overlapping segments (one raw
+    # periodogram reads random peaks as hum). The density is scaled to the
+    # AES17 full-scale sine so that its integral is the RMS level.
+    nperseg = int(min((2 * x.shape[0]) // 3, sample_rate // 2))
     freqs, psd = welch(x, fs=sample_rate, window="hann", nperseg=nperseg, scaling="density")
     freqs = np.asarray(freqs, dtype=np.float64)
     psd_db = np.asarray(10.0 * np.log10(np.maximum(2.0 * psd, _EPS)), dtype=np.float64)
@@ -674,5 +684,7 @@ def sweep_level_dbfs(
     lo, hi = max(0, start), min(recording.shape[0], start + length)
     if hi - lo < max(1, round(0.1 * sample_rate)):
         return None
-    level = rms_dbfs(recording[lo:hi])
+    sweeping = np.asarray(recording[lo:hi], dtype=np.float64)
+    # Without a DC offset, like the noise levels it is compared with.
+    level = rms_dbfs(sweeping - float(np.mean(sweeping)))
     return level if math.isfinite(level) else None

@@ -20,7 +20,7 @@ RT60 数值错误、出乎意料的有效性标记、界面布局缺陷，以及
 
 ## 来自他人的文件
 
-会话文件夹、打包文件、`comparison.json`、`project.json`、扫频配套文件和 WAV 文件都被当作不可信数据处理。RoomScope 从不对它们做反序列化（unpickle）或求值，限制 JSON 的大小和嵌套深度，其设计目标是把格式错误的内容变成 `RoomScopeError` 而不是崩溃（`tests/robustness/`），并且只在会话自身的文件夹内读取该会话的 `result.json` 和 `impulse_response.wav`（`session.json` 中的绝对路径或指向文件夹之外的路径会被拒绝）。`roomscope session bundle` 会略去任何链接到会话文件夹之外的文件，因此别人的会话无法把你的某个文件塞进你附到公开 issue 上的 zip 中。`project.json` 在设计上有所不同：它列出的会话文件夹可以位于任何位置，所以打开别人的项目就会打开其中指名的会话文件夹——请先查看它的内容。除此之外，任何能让 RoomScope 读写你所打开的文件之外内容的方法，都属于安全问题。
+会话文件夹、打包文件、`comparison.json`、`project.json`、扫频配套文件和 WAV 文件都被当作不可信数据处理。RoomScope 从不对它们做反序列化（unpickle）或求值，限制 JSON 的大小和嵌套深度，其设计目标是把格式错误的内容变成 `RoomScopeError` 而不是崩溃（`tests/robustness/`），并且只在会话自身的文件夹内读取该会话的 `result.json` 和 `impulse_response.wav`（`session.json` 中的绝对路径或指向文件夹之外的路径会被拒绝）。把打开的会话另存到其他文件夹时，只会从该会话自身的文件夹内复制扫频配套文件和录音。`roomscope session bundle` 会略去任何链接到会话文件夹之外的文件，因此别人的会话无法把你的某个文件塞进你附到公开 issue 上的 zip 中。`project.json` 在设计上有所不同：它列出的会话文件夹可以位于任何位置，所以打开别人的项目就会打开其中指名的会话文件夹——请先查看它的内容。除此之外，任何能让 RoomScope 读写你所打开的文件之外内容的方法，都属于安全问题。
 
 ## 独立模式的安全性
 

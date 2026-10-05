@@ -94,3 +94,65 @@ def test_fake_two_channel_loopback_capture(short_sweep: SweepSettings) -> None:
     # The electrical return is much shorter than the room channel.
     assert float(np.max(np.abs(loop))) > 0.0
     assert float(np.sqrt(np.mean(mic**2))) != pytest.approx(float(np.sqrt(np.mean(loop**2))))
+
+
+def test_the_fake_loopback_arrives_before_the_microphone(short_sweep: SweepSettings) -> None:
+    """The default room had its direct sound at t = 0 while the loopback was
+    delayed by the interface: every Demo take with a loopback reported
+    "path delay -2.00 ms", which no electrical return can produce."""
+    from roomscope.core.pipeline import Reference, analyze
+    from roomscope.models.configuration import AnalysisSettings
+
+    take = FakeBackend().play_and_record(
+        measurement_signal(short_sweep),
+        short_sweep.sample_rate,
+        input_device=0,
+        output_device=0,
+        input_channels=[1, 2],
+        output_channel=1,
+        level_dbfs=-12.0,
+    )
+    result = analyze(
+        take, Reference.from_settings(short_sweep), AnalysisSettings(loopback_channel=1)
+    )
+    loopback = result.impulse_response.loopback
+    assert loopback is not None and loopback.compensation_applied
+    assert loopback.path_delay_ms == pytest.approx(4.0, abs=0.1)
+    assert loopback.distance_upper_bound_m is not None
+
+
+def test_a_nan_level_is_refused_before_playback() -> None:
+    from roomscope.audio.backend import scale_to_level
+
+    with pytest.raises(ConfigurationError):
+        scale_to_level(np.ones(8), float("nan"))
+    with pytest.raises(ConfigurationError):
+        scale_to_level(np.array([0.0, np.nan]), -12.0)
+
+
+@pytest.mark.parametrize(("inputs", "output"), [([9], 1), ([1], 3)])
+def test_the_fake_device_has_the_channels_it_advertises(
+    short_sweep: SweepSettings, inputs: list[int], output: int
+) -> None:
+    from roomscope.errors import AudioDeviceError
+
+    with pytest.raises(AudioDeviceError, match="does not exist"):
+        FakeBackend().play_and_record(
+            measurement_signal(short_sweep),
+            short_sweep.sample_rate,
+            input_device=0,
+            output_device=0,
+            input_channels=inputs,
+            output_channel=output,
+            level_dbfs=-20.0,
+        )
+
+
+def test_preflight_refuses_channel_zero_before_anything_is_played() -> None:
+    from roomscope.audio.inventory import check_channels
+
+    devices = FakeBackend().list_devices()
+    with pytest.raises(ConfigurationError, match="1-based"):
+        check_channels(
+            devices, input_device=0, output_device=0, input_channels=[1], output_channel=0
+        )

@@ -233,3 +233,245 @@ def test_wheel_build_hook_compiles_into_a_temporary_directory(tmp_path) -> None:
     assert compiled.info()[SOURCE_HASH_HEADER.lower()] == source_hash(src_messages / "roomscope.po")
     assert compiled.gettext("Analyze") == "分析"
     assert sorted(p.name for p in src_messages.iterdir()) == before
+
+
+def test_parse_po_unescapes_in_one_pass_and_skips_fuzzy(tmp_path) -> None:
+    """``\\\\n`` (a backslash, then n) became a newline; fuzzy entries were used."""
+    from roomscope.i18n import parse_po
+
+    po = tmp_path / "x.po"
+    po.write_text(
+        'msgid "path"\nmsgstr "C:\\\\new\\\\table"\n\n'
+        '#, fuzzy\nmsgid "draft"\nmsgstr "not yet"\n\n'
+        'msgid "after"\nmsgstr "kept"\n\n'
+        '#, fuzzy\nmsgctxt "diagnostic"\nmsgid "ctx draft"\nmsgstr "no"\n\n'
+        'msgctxt "diagnostic"\nmsgid "ctx"\nmsgstr "a \\"b\\"\\n"\n',
+        encoding="utf-8",
+    )
+    assert parse_po(po) == {
+        "path": "C:\\new\\table",
+        "after": "kept",
+        "diagnostic\x04ctx": 'a "b"\n',
+    }
+
+
+def _duplicate_po_entries(text: str) -> list[tuple[str, str]]:
+    """``(msgctxt, msgid)`` keys that occur more than once in a ``.po`` text.
+
+    Continuation lines are joined, so a msgid written as ``msgid ""`` followed
+    by ``"..."`` lines counts too. The header (an empty msgid) and obsolete
+    ``#~`` entries are left out.
+    """
+    from collections import Counter
+
+    fields: list[list[str]] = []
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.startswith('"') and fields:
+            fields[-1][1] += line[1:-1]
+        elif line.startswith("msg"):
+            keyword, _sep, value = line.partition(" ")
+            fields.append([keyword, value.strip()[1:-1]])
+    keys: list[tuple[str, str]] = []
+    context = ""
+    for keyword, value in fields:
+        if keyword == "msgctxt":
+            context = value
+        elif keyword == "msgid":
+            if value or context:
+                keys.append((context, value))
+            context = ""
+    return [key for key, count in Counter(keys).items() if count > 1]
+
+
+def test_the_catalog_has_no_duplicate_entries() -> None:
+    """GNU msgfmt refuses a catalog with a duplicate msgid. The check missed
+    entries whose msgid spans several lines."""
+    from pathlib import Path
+
+    path = Path("src/roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po")
+    text = path.read_text(encoding="utf-8") + "\n"
+    assert _duplicate_po_entries(text) == []
+    long_entry = 'msgid ""\n"The first line, "\n"and the second."\nmsgstr "x"\n\n'
+    other_ending = 'msgid ""\n"The first line, "\n"and another."\nmsgstr "y"\n\n'
+    in_context = 'msgctxt "diagnostic"\nmsgid "Cancel"\nmsgstr "z"\n\n'
+    assert _duplicate_po_entries(text + long_entry + other_ending) == []
+    assert _duplicate_po_entries(text + long_entry + long_entry) == [
+        ("", "The first line, and the second.")
+    ]
+    assert _duplicate_po_entries(text + in_context + in_context) == [("diagnostic", "Cancel")]
+
+
+def test_metric_labels_split_from_the_right() -> None:
+    from roomscope.labels import metric_label
+
+    assert metric_label("band.31.5 Hz.t20") == "31.5 Hz T20"
+    assert metric_label("band.2.5 kHz.edt", "s") == "2.5 kHz EDT (s)"
+    assert metric_label("band.63 Hz") == "63 Hz"
+
+
+# --- Diagnostics joined with "; " (localize) ---------------------------------
+
+EDT_STEP = (
+    "the decay curve drops 15.7 dB across the direct sound (it carries 97 % of the energy; "
+    "limit 5 dB): EDT describes the direct sound rather than the room at this position"
+)
+FILTER_BT = (
+    "B*T = 3.8 < 4: the band filter's own decay is comparable to the measured decay; "
+    "values in this band are unreliable"
+)
+TRUNCATION = (
+    "the noise truncation is not trustworthy ({problem}) and the result depends on it ({changes})"
+)
+
+
+def _english_left(text: str) -> list[str]:
+    import re
+
+    return re.findall(r"[A-Za-z]{4,}", text)
+
+
+def _shown_in_chinese(text: str) -> str:
+    from roomscope.i18n import localize
+
+    activate("zh_CN")
+    try:
+        return localize(text)
+    finally:
+        activate("en")
+
+
+def test_joined_diagnostics_with_their_own_semicolons() -> None:
+    """A template whose literal text has a "; " (EDT step, B*T) was cut there."""
+    edt, bt = _shown_in_chinese(EDT_STEP), _shown_in_chinese(FILTER_BT)
+    assert _english_left(edt) == _english_left(bt) == []
+    assert _shown_in_chinese(EDT_STEP + "; " + FILTER_BT) == edt + "；" + bt
+
+
+def test_a_value_that_joins_several_diagnostics() -> None:
+    """The truncation warning lists every changed metric, joined with "; "."""
+    from roomscope.i18n import diag
+
+    text = diag(
+        TRUNCATION,
+        problem="the late decay slope (-3.3 dB/s) is less than 0.5 times the early slope "
+        "(-115.2 dB/s)",
+        changes="T20 0.51 s vs 0.54 s; T30 0.53 s vs 9.81 s",
+    )
+    assert _english_left(_shown_in_chinese(text)) == []
+    warning = diag("decay analysis, {band}: {warning}", band="500 Hz", warning=text)
+    assert _english_left(_shown_in_chinese(warning)) == []
+
+
+def test_upper_plane_rejections_joined_before_a_literal_semicolon() -> None:
+    from roomscope.i18n import diag
+
+    rejections = "; ".join(
+        diag(
+            "the {delay:.1f} ms candidate has no real solution for a plane above both devices",
+            delay=delay,
+        )
+        for delay in (5.1, 6.3)
+    )
+    text = diag(
+        "no detected reflection can be read as a plane above both devices: "
+        "{rejections}; even the lowest plausible upper plane ({lowest:.1f} m) would "
+        "arrive at about {delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window "
+        "that could be searched, so absence here is not evidence of absence",
+        rejections=rejections,
+        lowest=2.1,
+        delay=9.0,
+        start=0.8,
+        end=8.0,
+    )
+    shown = _shown_in_chinese(text)
+    assert _english_left(shown) == [], shown
+
+
+def test_comparison_reasons_that_nest_joined_reasons() -> None:
+    from roomscope.i18n import diag
+
+    text = (
+        diag("baseline {validity} ({reason})", validity="unreliable", reason=EDT_STEP)
+        + "; "
+        + diag(
+            "candidate {validity} ({reason})",
+            validity="unreliable",
+            reason=EDT_STEP + "; " + FILTER_BT,
+        )
+    )
+    shown = _shown_in_chinese(text)
+    assert _english_left(shown) == [], shown
+    # One inside each EDT sentence and inside B*T, one before B*T and one
+    # between the two sides.
+    assert shown.count("；") == 5, shown
+
+
+def test_a_joined_metric_reason_inside_a_comparison_reason() -> None:
+    """#43: low confidence and clipping, joined by with_all_unreliable()."""
+    from roomscope.core.compare import _decay_metric_delta
+    from roomscope.i18n import diag
+    from roomscope.models.result import DecayMetric, Validity
+
+    low_confidence = diag(
+        "direct-sound detection confidence is low (pre-peak margin {margin_db:.1f} dB): "
+        "the recording may not contain the reference sweep",
+        margin_db=3.0,
+    )
+    clipping = diag(
+        "the recording clips, so the measurement chain was not linear and the "
+        "deconvolved response is not the room's impulse response"
+    )
+    bad = DecayMetric(
+        "t30", 0.5, Validity.UNRELIABLE, 30.0, reason=low_confidence + "; " + clipping
+    )
+    good = DecayMetric("t30", 0.5, Validity.VALID, 30.0)
+    reason = _decay_metric_delta("broadband.t30", bad, good).reason
+    assert reason is not None
+    shown = _shown_in_chinese(reason)
+    assert _english_left(shown) == [], shown
+
+
+def test_plain_joins_and_unknown_pieces_still_work() -> None:
+    assert _shown_in_chinese("baseline not_computed; candidate unreliable") == (
+        "基线：未计算；候选：不可靠"
+    )
+    # An unknown piece stays English next to a translated one.
+    shown = _shown_in_chinese("a note that no template knows; candidate unreliable")
+    assert shown == "a note that no template knows；候选：不可靠"
+    # Nothing recognised: the text as stored, separators included.
+    unknown = "a note that no template knows; and (another; one)"
+    assert _shown_in_chinese(unknown) == unknown
+
+
+def test_comparison_reasons_name_the_validity_in_words() -> None:
+    """#66: "candidate outside_excitation_range" stayed an id, also in zh_CN."""
+    from roomscope.core.compare import _decay_metric_delta
+    from roomscope.models.result import DecayMetric, Validity
+
+    reason = _decay_metric_delta(
+        "band.4 kHz.t30",
+        DecayMetric("t30", None, Validity.INSUFFICIENT_RANGE, None, reason="too little decay"),
+        DecayMetric("t30", None, Validity.OUTSIDE_EXCITATION, None),
+    ).reason
+    assert reason == (
+        "baseline insufficient range (too little decay); candidate outside the sweep's range"
+    )
+    assert _shown_in_chinese(reason) == "基线：衰减范围不足（too little decay）；候选：超出扫频范围"
+    # A reason stored with the ids by an earlier version.
+    stored = "baseline insufficient_decay_range; candidate outside_excitation_range"
+    assert _shown_in_chinese(stored) == "基线：衰减范围不足；候选：超出扫频范围"
+
+
+def test_noise_band_metric_labels() -> None:
+    """#23: the GUI compare table showed "noise.band.1000Hz (dBFS)"."""
+    from roomscope.labels import metric_label
+
+    assert metric_label("noise.band.1000Hz", "dBFS") == "Background noise, 1 kHz (dBFS)"
+    assert metric_label("noise.band.31.5Hz") == "Background noise, 31.5 Hz"
+    assert metric_label("noise.rms_dbfs") == "Background noise, RMS"
+    activate("zh_CN")
+    try:
+        assert metric_label("noise.band.63Hz", "dBFS") == "本底噪声，63 Hz (dBFS)"
+    finally:
+        activate("en")

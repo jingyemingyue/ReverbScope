@@ -131,8 +131,9 @@ does not scan running programs.
    trimming or normalising.
 4. Optional loopback: bounce a two-channel export (microphone + electrical
    return) and pass `--channel 0 --loopback-channel 1`.
-5. `roomscope analyze --recording take.wav --sweep sweep.wav --out session/`
-   or drop the files in the GUI.
+5. `roomscope analyze --recording take.wav --sweep sweep.wav --out session/`,
+   or in the GUI's “Universal DAW Mode” choose the files with “Choose
+   Recording...” and “Choose Reference Sweep...”.
 
 **Step-by-step notes for Pro Tools, Logic Pro / GarageBand, Cubase / Nuendo,
 Studio One, Ableton Live, REAPER, FL Studio, Bitwig Studio and Audacity, and
@@ -187,14 +188,15 @@ may add one notice when broadband C50 or C80 is a poor fit for that kind of
 recording; the threshold is an engineering choice for the profile, not a grade.
 
 Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
-`result.json` so bug reports compare across languages. The UI shows them
-verbatim under a heading that says so.
+`result.json` so bug reports compare across languages. The interface and the
+text report show them in the interface language.
 
 The Results page has eight tabs:
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | Broadband and octave-band EDT / T20 / T30 / RT60, plus C50 / C80 / D50 / centre time, each with validity; the text report; core diagnostics (always English). |
+| Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
+| Full report | The same text report that `roomscope analyze` prints, with the warnings at the end. “Copy report” copies it. |
 | Impulse Response | The deconvolved IR. The peak is the direct sound; it is not normalised to 1.0. |
 | Frequency Response | Raw (dotted) and smoothed (solid) magnitude. A dashed curve is the electrical loopback when compensation ran. 0 dB is the interface, not “flat in the room”. |
 | Spectrum | Welch power spectrum of that same impulse response (AES17 density). Not the gated frequency-response tab and not the quiet-segment noise PSD. |
@@ -203,7 +205,7 @@ The Results page has eight tabs:
 | Early Reflections | ETC peaks (delay ms, level dB re direct). Open markers for candidates. |
 | Placement | Excess path, and — only with a tape-measured loudspeaker distance — loudspeaker height, the plane above both devices, and horizontal separation. No wall is named. An imported ASCII PLY or OBJ scan, if you already have one, is drawn as faint points. |
 
-Low-frequency resonance candidates stay in the Overview text report (and in
+Low-frequency resonance candidates are listed in the Full report (and in
 `resonances.csv` after `roomscope export`). They are not a separate tab.
 
 ## Placement
@@ -264,7 +266,7 @@ in a pipe.
 | --- | --- |
 | Direct-sound confidence not high | Wrong sweep sidecar; loudspeaker distortion; trim the recording? Do not trim. |
 | Wrong reference | The `.roomscope-sweep.json` next to the WAV must be the file RoomScope wrote for *this* sweep (same duration, band and fades). A sweep from another session, or the recording used as the reference, will mis-locate the IR. |
-| Multiple passes in one bounce | Play the sweep once. Two passes in the same WAV look like two IRs; RoomScope keeps the strongest peak and the rest becomes “room”. Bounce a single take. |
+| Multiple passes in one bounce | Play the sweep once. With several passes in the same WAV, RoomScope analyses one of them (of the passes about as loud as the loudest, the one followed by the longest recorded decay, usually the last), ignores the others, ends the IR where the next pass starts and warns. Bounce a single take. |
 | Clipping warning | Lower playback or input gain. |
 | Insufficient decay range | Longer sweep, slightly louder playback, or a quieter room. |
 | Device rate mismatch | The GUI shows the device rate next to the requested one; pick a supported rate. |
