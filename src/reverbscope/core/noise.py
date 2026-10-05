@@ -617,9 +617,13 @@ def analyze_noise(
     x = np.asarray(recording[verified.start : verified.end], dtype=np.float64)
     if verified.note:
         notes.append(verified.note)
-    # A DC offset is not background noise; the PSD (detrended) and the band
-    # levels exclude it, and the PSD must integrate to this level.
-    level = rms_dbfs(x - float(np.mean(x)))
+    # A DC offset is not background noise, so the level, the peak and the band
+    # levels are measured without it (the PSD is detrended, and must integrate
+    # to this level). The band filters would not remove it on their own: their
+    # response to the offset switching on at the segment start outlasts the
+    # discarded start transient and lifts the low bands by several dB.
+    centred = x - float(np.mean(x))
+    level = rms_dbfs(centred)
     if level <= NOISE_FLOOR_DBFS:
         notes.append(
             diag(
@@ -632,7 +636,7 @@ def analyze_noise(
         )
         return _unmeasured(verified.source, tuple(notes))
 
-    band_levels, band_notes = _band_levels(x, sample_rate, octave_bands_hz)
+    band_levels, band_notes = _band_levels(centred, sample_rate, octave_bands_hz)
     notes.extend(band_notes)
 
     # 2 Hz resolution with several averaged segments (Welch) keeps random
@@ -663,8 +667,9 @@ def analyze_noise(
         segment_duration_s=x.shape[0] / sample_rate,
         rms_dbfs=level,
         # The segment is above the level floor, so its peak is a measurement
-        # too (and front ends may print it next to the RMS level).
-        peak_dbfs=peak_dbfs(x),
+        # too (and front ends print it next to the RMS level, so both leave
+        # the offset out).
+        peak_dbfs=peak_dbfs(centred),
         band_levels_dbfs=tuple(band_levels),
         psd_frequencies_hz=freqs,
         psd_db=psd_db,

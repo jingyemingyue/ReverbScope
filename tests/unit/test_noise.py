@@ -293,14 +293,24 @@ def test_short_remainder_is_still_measured_with_a_note(sample_rate: int) -> None
 
 
 def test_a_dc_offset_is_not_background_noise(sample_rate: int) -> None:
-    """The RMS level included DC while the PSD and the band levels did not:
-    -90 dBFS noise with a -70 dBFS offset read -67 dBFS."""
+    """The RMS level included DC: -90 dBFS noise with a -70 dBFS offset read
+    -67 dBFS. The band levels and the peak kept it after the RMS level no
+    longer did: the band filters' response to the offset at the segment start
+    lifted the 63 Hz band by about 9 dB, and the peak sat 20 dB above the
+    clean take's."""
     rng = np.random.default_rng(3)
     noise = rng.normal(0.0, 10.0 ** (-90.0 / 20.0) / np.sqrt(2.0), 2 * sample_rate)
     clean = _analyze(noise, sample_rate)
     offset = _analyze(noise + 10.0 ** (-70.0 / 20.0), sample_rate)
     assert clean.rms_dbfs is not None and offset.rms_dbfs is not None
     assert offset.rms_dbfs == pytest.approx(clean.rms_dbfs, abs=0.05)
+    assert offset.peak_dbfs == pytest.approx(clean.peak_dbfs, abs=0.1)
+    assert [center for center, _ in offset.band_levels_dbfs] == list(DEFAULT_OCTAVE_BANDS_HZ)
+    for (center, with_offset), (_, without) in zip(
+        offset.band_levels_dbfs, clean.band_levels_dbfs, strict=True
+    ):
+        assert with_offset is not None and without is not None
+        assert with_offset == pytest.approx(without, abs=0.1), center
 
 
 def test_a_short_quiet_segment_is_averaged_before_the_hum_search(sample_rate: int) -> None:

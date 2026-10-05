@@ -522,9 +522,10 @@ full-scale sine); Welch (1967) for the PSD estimate.
 **Procedure** (`core/noise.py`). Quiet segment = recording from 50 ms after
 the start to 100 ms before the detected sweep start (≥ 0.5 s), else the file
 tail 3 s after the sweep end (flagged as possibly containing reverberation),
-else none. Reported: RMS in dBFS (sine reference, DC offset removed), peak
-dBFS, octave-band RMS levels (one forward filter pass, start transient
-discarded), Welch PSD (Hann, 2 Hz resolution, at least two averaged
+else none. Reported, all with the DC offset removed: RMS in dBFS (sine
+reference), peak dBFS, octave-band RMS levels (one forward filter pass, start
+transient discarded; the offset is removed first because the filters'
+response to it outlasts that transient), Welch PSD (Hann, 2 Hz resolution, at least two averaged
 segments; a segment shorter than 0.75 s gets coarser bins), and mains hum
 candidates: for 50 Hz and 60 Hz, harmonics up to the 12th and at most 1 kHz
 whose PSD peak (±max(2 Hz, 1.5 bins)) exceeds the median of the
