@@ -47,9 +47,6 @@ msgstr "會話目錄或 session.json"
 msgid "leave WAV files out of the zip"
 msgstr "ZIP 檔案中不包含 WAV 錄音"
 
-msgid "zip path (file or directory)"
-msgstr "ZIP 檔案路徑（檔案或目錄）"
-
 msgid "export curves through an exporter"
 msgstr "通過導出器導出曲線"
 
@@ -604,9 +601,6 @@ msgstr "候選"
 msgid "Delta"
 msgstr "差值"
 
-msgid "Validity"
-msgstr "有效性"
-
 msgid "Status"
 msgstr "狀態"
 
@@ -1023,11 +1017,6 @@ msgstr "影響解讀的錄音配置（預設：使用者設定）"
 msgid "separate loopback WAV from the same take (same sample rate)"
 msgstr "同一次錄音的單獨回送（loopback）WAV（相同采樣率）"
 
-msgid ""
-"0-based loopback channel of the recording (or of --loopback if it is mul"
-"ti-channel)"
-msgstr "錄音（或多聲道 --loopback 檔案）中的回送聲道（從 0 起）"
-
 msgid "write the ESS test signal WAV (+ JSON sidecar)"
 msgstr "寫出 ESS 測試信号 WAV（及 JSON 附屬檔案）"
 
@@ -1128,9 +1117,6 @@ msgstr "分析其他工具給出的脈衝響應 WAV"
 
 msgid "impulse-response WAV"
 msgstr "脈衝響應 WAV"
-
-msgid "declared excitation band in Hz (required for band metrics)"
-msgstr "聲明的激勵頻帶（Hz；頻帶指標需要）"
 
 msgid "n/a"
 msgstr "無"
@@ -2233,15 +2219,6 @@ msgid ""
 " a dense early tail some candidates may be statistical rather than discr"
 "ete reflections"
 msgstr "候選是高出局部擴散聲級的包絡峰；在密集的早期尾部，部分候選可能是統計起伏，而不是離散的反射"
-
-msgctxt "diagnostic"
-msgid ""
-"the impulse response ends {analysed_ms:.1f} ms after the direct sound, s"
-"o only that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be sea"
-"rched"
-msgstr ""
-"脈衝響應在直達聲之後 {analysed_ms:.1f} ms 就結束了，因此 {min_ms:.0f}-{max_ms:.0f} ms 窗口中"
-"只有這一部分得到搜索"
 
 msgctxt "diagnostic"
 msgid ""
@@ -4628,9 +4605,6 @@ msgstr "主資料夾顯示為 ~"
 msgid "{inputs} in / {outputs} out"
 msgstr "{inputs} 入 / {outputs} 出"
 
-msgid "{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB"
-msgstr "{lo:.0f}–{hi:.0f} ms，高於 {threshold:.0f} dB"
-
 msgid "{n} more in result.json"
 msgstr "另有 {n} 個，見 result.json"
 
@@ -4890,9 +4864,6 @@ msgstr "沒有高於 {threshold:.0f} dB 的反射"
 
 msgid "potential resonances at {listed}"
 msgstr "可能的共振：{listed}"
-
-msgid "no potential resonance below {max_hz:.0f} Hz"
-msgstr "{max_hz:.0f} Hz 以下沒有可能的共振"
 
 msgid "{n} warning(s), see Diagnostics"
 msgstr "{n} 條警告，見“診斷”"
@@ -5467,3 +5438,151 @@ msgstr "跟隨 DAW"
 
 msgid "Following {label}. The sweep sample rate matches that project."
 msgstr "正在跟隨 {label}。掃頻取樣率與該工程一致。"
+
+msgid "Synthetic demo"
+msgstr "合成演示"
+
+msgid ""
+"0-based loopback channel: of --loopback when it is given, otherwise of t"
+"he recording"
+msgstr "回送聲道（從 0 起）：給出 --loopback 時指該檔案中的聲道，否則指錄音中的聲道"
+
+msgid ""
+"declared excitation band in Hz (required for every decay and clarity met"
+"ric, broadband included)"
+msgstr "聲明的激勵頻帶（Hz；所有衰減與清晰度指標都需要，包括寬帶）"
+
+msgid "zip file (.zip) or folder"
+msgstr "ZIP 檔案（.zip）或資料夾"
+
+msgid "--sources must be at least 1"
+msgstr "--sources 至少為 1"
+
+msgid ""
+"the test signal lasts {seconds:.2f} s, but a recording must last at leas"
+"t 1 s to be analysed; lengthen the silence after the sweep (--post-silen"
+"ce)"
+msgstr "測試信號只有 {seconds:.2f} 秒，而錄音至少要 1 秒才能分析；請加長掃頻後的靜音（--post-silence）"
+
+msgid "{value} is not a comma-separated list of channel numbers (e.g. 1,2)"
+msgstr "{value} 不是以逗號分隔的聲道編號列表（例如 1,2）"
+
+msgid "no project.json in {path}"
+msgstr "{path} 中沒有 project.json"
+
+msgid "no sessions in {path}"
+msgstr "{path} 中沒有會話"
+
+msgid "{lo:g}–{hi:g} ms, above {threshold:.0f} dB"
+msgstr "{lo:g}–{hi:g} ms，高於 {threshold:.0f} dB"
+
+msgid "Not searched."
+msgstr "未搜索。"
+
+msgid "not compared: the direct-sound confidence is not high on both sides"
+msgstr "未比較：兩側的直達聲置信度並非都為高"
+
+msgid "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
+msgstr "在可搜索的 {end:.1f} ms 內沒有高於 {threshold:.0f} dB 的反射"
+
+msgid "no potential resonance at {low:.0f}–{high:.0f} Hz"
+msgstr "{low:.0f}–{high:.0f} Hz 內沒有可能的共振"
+
+msgid "not searched: nothing below {max_hz:.0f} Hz was excited and resolved"
+msgstr "未搜索：{max_hz:.0f} Hz 以下沒有既被激勵又能分辨的部分"
+
+msgid ""
+"the reference sweep was not found in the recording: no response stands o"
+"ut from the noise. Check that the right input channel was recorded, that"
+" playback reached the loudspeaker, and that the reference is the sweep t"
+"hat was played"
+msgstr "錄音中找不到參考掃頻：沒有任何響應高出噪聲。請檢查錄製的輸入聲道是否正確、播放訊號是否到達了揚聲器，以及參考掃頻是否就是實際播放的那一個"
+
+msgid "{error}. However, {explanation}"
+msgstr "{error}。不過，{explanation}"
+
+msgid ""
+"loopback_channel {channel} does not exist (the loopback file has {count}"
+" channel(s))"
+msgstr "loopback_channel {channel} 不存在（回送檔案只有 {count} 個聲道）"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback and the microphone were located on different sweep passes; "
+"compensation is not applied"
+msgstr "回送與話筒定位到了不同遍的掃頻上；未應用補償"
+
+msgctxt "diagnostic"
+msgid ""
+"the impulse response ends {analysed_ms:.1f} ms after the direct sound, s"
+"o only that part of the {min_ms:g}-{max_ms:g} ms window could be searche"
+"d"
+msgstr ""
+"脈衝響應在直達聲之後 {analysed_ms:.1f} ms 就結束了，因此 {min_ms:g}-{max_ms:g} ms 窗口中只有這一"
+"部分得到搜索"
+
+msgctxt "diagnostic"
+msgid "no common excitation band"
+msgstr "沒有共同激勵頻帶"
+
+msgid ""
+"No reflection was detected inside this profile's {window_ms:g} ms window"
+" in the candidate; the strongest in the baseline was {relative_db:.1f} d"
+"B at {delay_ms:.1f} ms."
+msgstr ""
+"候選中，此配置的 {window_ms:g} ms 窗口內未檢測到反射；基線中最強的反射為 {delay_ms:.1f} ms 的 {relat"
+"ive_db:.1f} dB。"
+
+msgid "unknown recording profile {name}; available: {available}"
+msgstr "未知的錄音配置 {name}；可用：{available}"
+
+msgid "{session} is already listed under position '{label}'"
+msgstr "{session} 已列在位置“{label}”下"
+
+msgid "Reference plane"
+msgstr "參考平面"
+
+msgid "Background noise, {band}"
+msgstr "本底噪聲，{band}"
+
+msgid "expected a list of numbers"
+msgstr "此處應為數字列表"
+
+msgid "{field} must not be null"
+msgstr "{field} 不能為 null"
+
+msgid "silences must be <= 60 s"
+msgstr "靜音時長必須 <= 60 s"
+
+msgid "{field} must be a list of numbers"
+msgstr "{field} 必須是數字列表"
+
+msgid "{field} must be true or false"
+msgstr "{field} 必須是 true 或 false"
+
+msgid "{field} must be text"
+msgstr "{field} 必須是文字"
+
+msgid "{field} must be a list"
+msgstr "{field} 必須是列表"
+
+msgid "{field} is out of range"
+msgstr "{field} 超出範圍"
+
+msgid "{field} has the wrong type"
+msgstr "{field} 的類型不正確"
+
+msgid "The result was discarded because you left this page before it was ready."
+msgstr "結果完成前你離開了此頁面，因此結果已丟棄。"
+
+msgid "No noise spectrum stored with this session"
+msgstr "此會話未保存噪聲頻譜"
+
+msgid "Replace session?"
+msgstr "取代會話？"
+
+msgid "Replace"
+msgstr "取代"
+
+msgid "{path} already holds a saved session. Replace it?"
+msgstr "{path} 中已有一個保存的會話。要取代它嗎？"

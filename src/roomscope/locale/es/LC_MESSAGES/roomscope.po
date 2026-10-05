@@ -55,9 +55,6 @@ msgstr "directorio de sesión o session.json"
 msgid "leave WAV files out of the zip"
 msgstr "excluir los archivos WAV del ZIP"
 
-msgid "zip path (file or directory)"
-msgstr "ruta del ZIP (archivo o directorio)"
-
 msgid "export curves through an exporter"
 msgstr "exportar curvas mediante un exportador"
 
@@ -709,9 +706,6 @@ msgstr "Candidata"
 msgid "Delta"
 msgstr "Delta"
 
-msgid "Validity"
-msgstr "Validez"
-
 msgid "Status"
 msgstr "Estado"
 
@@ -1157,13 +1151,6 @@ msgstr ""
 msgid "separate loopback WAV from the same take (same sample rate)"
 msgstr "WAV de loopback aparte de la misma toma (misma frecuencia de muestreo)"
 
-msgid ""
-"0-based loopback channel of the recording (or of --loopback if it is mul"
-"ti-channel)"
-msgstr ""
-"canal de loopback en base 0 de la grabación (o de --loopback si es multi"
-"canal)"
-
 msgid "write the ESS test signal WAV (+ JSON sidecar)"
 msgstr "escribir el WAV de señal de prueba ESS (+ sidecar JSON)"
 
@@ -1274,11 +1261,6 @@ msgstr "analizar un WAV de respuesta al impulso de otra herramienta"
 
 msgid "impulse-response WAV"
 msgstr "WAV de respuesta al impulso"
-
-msgid "declared excitation band in Hz (required for band metrics)"
-msgstr ""
-"banda de excitación declarada en Hz (obligatoria para métricas por banda"
-")"
 
 msgid "n/a"
 msgstr "n/d"
@@ -2543,16 +2525,6 @@ msgstr ""
 "las candidatas son picos de envolvente que sobresalen del nivel difuso l"
 "ocal; en una cola temprana densa algunas candidatas pueden ser estadísti"
 "cas más que reflexiones discretas"
-
-msgctxt "diagnostic"
-msgid ""
-"the impulse response ends {analysed_ms:.1f} ms after the direct sound, s"
-"o only that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be sea"
-"rched"
-msgstr ""
-"la respuesta al impulso termina {analysed_ms:.1f} ms después del sonido "
-"directo, así que solo esa parte de la ventana de {min_ms:.0f}-{max_ms:.0"
-"f} ms pudo buscarse"
 
 msgctxt "diagnostic"
 msgid ""
@@ -5333,9 +5305,6 @@ msgstr "tu carpeta de inicio se muestra como ~"
 msgid "{inputs} in / {outputs} out"
 msgstr "{inputs} ent / {outputs} sal"
 
-msgid "{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB"
-msgstr "{lo:.0f}–{hi:.0f} ms, por encima de {threshold:.0f} dB"
-
 msgid "{n} more in result.json"
 msgstr "{n} más en result.json"
 
@@ -5619,9 +5588,6 @@ msgstr "ninguna por encima de {threshold:.0f} dB"
 
 msgid "potential resonances at {listed}"
 msgstr "resonancias potenciales en {listed}"
-
-msgid "no potential resonance below {max_hz:.0f} Hz"
-msgstr "ninguna resonancia potencial por debajo de {max_hz:.0f} Hz"
 
 msgid "{n} warning(s), see Diagnostics"
 msgstr "{n} advertencia(s), véase Diagnósticos"
@@ -6276,3 +6242,174 @@ msgstr "Seguir DAW"
 
 msgid "Following {label}. The sweep sample rate matches that project."
 msgstr "Siguiendo {label}. La frecuencia del barrido coincide con ese proyecto."
+
+msgid "Synthetic demo"
+msgstr "Demo sintética"
+
+msgid ""
+"0-based loopback channel: of --loopback when it is given, otherwise of t"
+"he recording"
+msgstr ""
+"canal de loopback en base 0: de --loopback cuando se indica, si no, de l"
+"a grabación"
+
+msgid ""
+"declared excitation band in Hz (required for every decay and clarity met"
+"ric, broadband included)"
+msgstr ""
+"banda de excitación declarada en Hz (obligatoria para todas las métricas"
+" de decaimiento y claridad, incluida la de banda ancha)"
+
+msgid "zip file (.zip) or folder"
+msgstr "archivo ZIP (.zip) o carpeta"
+
+msgid "--sources must be at least 1"
+msgstr "--sources debe ser al menos 1"
+
+msgid ""
+"the test signal lasts {seconds:.2f} s, but a recording must last at leas"
+"t 1 s to be analysed; lengthen the silence after the sweep (--post-silen"
+"ce)"
+msgstr ""
+"la señal de prueba dura {seconds:.2f} s, pero una grabación debe durar a"
+"l menos 1 s para poder analizarse; alarga el silencio después del barrid"
+"o (--post-silence)"
+
+msgid "{value} is not a comma-separated list of channel numbers (e.g. 1,2)"
+msgstr ""
+"{value} no es una lista de números de canal separados por comas (p. ej. "
+"1,2)"
+
+msgid "no project.json in {path}"
+msgstr "no hay project.json en {path}"
+
+msgid "no sessions in {path}"
+msgstr "no hay sesiones en {path}"
+
+msgid "{lo:g}–{hi:g} ms, above {threshold:.0f} dB"
+msgstr "{lo:g}–{hi:g} ms, por encima de {threshold:.0f} dB"
+
+msgid "Not searched."
+msgstr "No se buscó."
+
+msgid "not compared: the direct-sound confidence is not high on both sides"
+msgstr "no comparado: la confianza del sonido directo no es alta en ambos lados"
+
+msgid "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
+msgstr ""
+"ninguna por encima de {threshold:.0f} dB en los {end:.1f} ms que se pudi"
+"eron buscar"
+
+msgid "no potential resonance at {low:.0f}–{high:.0f} Hz"
+msgstr "ninguna resonancia potencial en {low:.0f}–{high:.0f} Hz"
+
+msgid "not searched: nothing below {max_hz:.0f} Hz was excited and resolved"
+msgstr "no buscado: nada por debajo de {max_hz:.0f} Hz se excitó y se resolvió"
+
+msgid ""
+"the reference sweep was not found in the recording: no response stands o"
+"ut from the noise. Check that the right input channel was recorded, that"
+" playback reached the loudspeaker, and that the reference is the sweep t"
+"hat was played"
+msgstr ""
+"no se encontró el barrido de referencia en la grabación: ninguna respues"
+"ta destaca sobre el ruido. Comprueba que se grabó el canal de entrada co"
+"rrecto, que la reproducción llegó al altavoz y que la referencia es el b"
+"arrido que se reprodujo"
+
+msgid "{error}. However, {explanation}"
+msgstr "{error}. Sin embargo, {explanation}"
+
+msgid ""
+"loopback_channel {channel} does not exist (the loopback file has {count}"
+" channel(s))"
+msgstr ""
+"loopback_channel {channel} no existe (el archivo de loopback tiene {coun"
+"t} canal(es))"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback and the microphone were located on different sweep passes; "
+"compensation is not applied"
+msgstr ""
+"el loopback y el micrófono se localizaron en pasadas de barrido distinta"
+"s; no se aplica la compensación"
+
+msgctxt "diagnostic"
+msgid ""
+"the impulse response ends {analysed_ms:.1f} ms after the direct sound, s"
+"o only that part of the {min_ms:g}-{max_ms:g} ms window could be searche"
+"d"
+msgstr ""
+"la respuesta al impulso termina {analysed_ms:.1f} ms después del sonido "
+"directo, así que solo esa parte de la ventana de {min_ms:g}-{max_ms:g} m"
+"s pudo buscarse"
+
+msgctxt "diagnostic"
+msgid "no common excitation band"
+msgstr "no hay banda de excitación común"
+
+msgid ""
+"No reflection was detected inside this profile's {window_ms:g} ms window"
+" in the candidate; the strongest in the baseline was {relative_db:.1f} d"
+"B at {delay_ms:.1f} ms."
+msgstr ""
+"En la candidata no se detectó ninguna reflexión dentro de la ventana de "
+"{window_ms:g} ms de este perfil; la más fuerte de la referencia era de {"
+"relative_db:.1f} dB a {delay_ms:.1f} ms."
+
+msgid "unknown recording profile {name}; available: {available}"
+msgstr "perfil de grabación desconocido {name}; disponibles: {available}"
+
+msgid "{session} is already listed under position '{label}'"
+msgstr "{session} ya figura en la posición «{label}»"
+
+msgid "Reference plane"
+msgstr "Plano de referencia"
+
+msgid "Background noise, {band}"
+msgstr "Ruido de fondo, {band}"
+
+msgid "expected a list of numbers"
+msgstr "se esperaba una lista de números"
+
+msgid "{field} must not be null"
+msgstr "{field} no puede ser null"
+
+msgid "silences must be <= 60 s"
+msgstr "los silencios deben ser <= 60 s"
+
+msgid "{field} must be a list of numbers"
+msgstr "{field} debe ser una lista de números"
+
+msgid "{field} must be true or false"
+msgstr "{field} debe ser true o false"
+
+msgid "{field} must be text"
+msgstr "{field} debe ser texto"
+
+msgid "{field} must be a list"
+msgstr "{field} debe ser una lista"
+
+msgid "{field} is out of range"
+msgstr "{field} está fuera de rango"
+
+msgid "{field} has the wrong type"
+msgstr "{field} tiene un tipo incorrecto"
+
+msgid "The result was discarded because you left this page before it was ready."
+msgstr ""
+"El resultado se descartó porque saliste de esta página antes de que estu"
+"viera listo."
+
+msgid "No noise spectrum stored with this session"
+msgstr "Esta sesión no tiene espectro de ruido guardado"
+
+msgid "Replace session?"
+msgstr "¿Reemplazar la sesión?"
+
+msgid "Replace"
+msgstr "Reemplazar"
+
+msgid "{path} already holds a saved session. Replace it?"
+msgstr "{path} ya contiene una sesión guardada. ¿Reemplazarla?"

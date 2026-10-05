@@ -49,9 +49,6 @@ msgstr "セッションディレクトリまたは session.json"
 msgid "leave WAV files out of the zip"
 msgstr "ZIP から WAV を除外する"
 
-msgid "zip path (file or directory)"
-msgstr "ZIP のパス（ファイルまたはディレクトリ）"
-
 msgid "export curves through an exporter"
 msgstr "エクスポーターで曲線を書き出す"
 
@@ -630,9 +627,6 @@ msgstr "比較対象"
 msgid "Delta"
 msgstr "差分"
 
-msgid "Validity"
-msgstr "妥当性"
-
 msgid "Status"
 msgstr "状態"
 
@@ -1052,11 +1046,6 @@ msgstr "解釈を形づくる録音プロファイル（既定: ユーザー設�
 msgid "separate loopback WAV from the same take (same sample rate)"
 msgstr "同じテイクの別ループバック WAV（同じサンプルレート）"
 
-msgid ""
-"0-based loopback channel of the recording (or of --loopback if it is mul"
-"ti-channel)"
-msgstr "録音のループバックチャンネル（0 始まり。--loopback が多チャンネルならそのチャンネル）"
-
 msgid "write the ESS test signal WAV (+ JSON sidecar)"
 msgstr "ESS テスト信号 WAV（+ JSON サイドカー）を書き出す"
 
@@ -1157,9 +1146,6 @@ msgstr "別ツールのインパルス応答 WAV を解析する"
 
 msgid "impulse-response WAV"
 msgstr "インパルス応答 WAV"
-
-msgid "declared excitation band in Hz (required for band metrics)"
-msgstr "宣言した励起帯域（Hz。バンド指標に必須）"
 
 msgid "n/a"
 msgstr "n/a"
@@ -2277,15 +2263,6 @@ msgid ""
 " a dense early tail some candidates may be statistical rather than discr"
 "ete reflections"
 msgstr "候補は局所的な拡散レベルより上に立つ包絡線ピークです。密な初期テールでは、離散反射ではなく統計的な候補もあります"
-
-msgctxt "diagnostic"
-msgid ""
-"the impulse response ends {analysed_ms:.1f} ms after the direct sound, s"
-"o only that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be sea"
-"rched"
-msgstr ""
-"インパルス応答は直接音の {analysed_ms:.1f} ms 後で終わるため、{min_ms:.0f}-{max_ms:.0f} ms 窓"
-"のうちその部分だけを探せました"
 
 msgctxt "diagnostic"
 msgid ""
@@ -4734,9 +4711,6 @@ msgstr "ホームフォルダーは ~ と表示します"
 msgid "{inputs} in / {outputs} out"
 msgstr "入力 {inputs} / 出力 {outputs}"
 
-msgid "{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB"
-msgstr "{lo:.0f}–{hi:.0f} ms、{threshold:.0f} dB 超"
-
 msgid "{n} more in result.json"
 msgstr "result.json にあと {n} 件"
 
@@ -4996,9 +4970,6 @@ msgstr "{threshold:.0f} dB 超はなし"
 
 msgid "potential resonances at {listed}"
 msgstr "{listed} の共振候補"
-
-msgid "no potential resonance below {max_hz:.0f} Hz"
-msgstr "{max_hz:.0f} Hz 未満に共振候補なし"
 
 msgid "{n} warning(s), see Diagnostics"
 msgstr "警告 {n} 件。診断を見てください"
@@ -5586,3 +5557,155 @@ msgstr "DAW に追従"
 
 msgid "Following {label}. The sweep sample rate matches that project."
 msgstr "{label} に追従しています。スイープのサンプルレートはそのプロジェクトに一致します。"
+
+msgid "Synthetic demo"
+msgstr "合成デモ"
+
+msgid ""
+"0-based loopback channel: of --loopback when it is given, otherwise of t"
+"he recording"
+msgstr "ループバックチャンネル（0 始まり）。--loopback を指定したときはそのファイルの、指定しないときは録音のチャンネル"
+
+msgid ""
+"declared excitation band in Hz (required for every decay and clarity met"
+"ric, broadband included)"
+msgstr "宣言した励起帯域（Hz。広帯域を含め、すべての減衰指標と明瞭度指標に必須）"
+
+msgid "zip file (.zip) or folder"
+msgstr "ZIP ファイル（.zip）またはフォルダー"
+
+msgid "--sources must be at least 1"
+msgstr "--sources は 1 以上である必要があります"
+
+msgid ""
+"the test signal lasts {seconds:.2f} s, but a recording must last at leas"
+"t 1 s to be analysed; lengthen the silence after the sweep (--post-silen"
+"ce)"
+msgstr ""
+"テスト信号は {seconds:.2f} s しかありませんが、解析するには録音が少なくとも 1 s 必要です。スイープ後の無音（--post-"
+"silence）を長くしてください"
+
+msgid "{value} is not a comma-separated list of channel numbers (e.g. 1,2)"
+msgstr "{value} はカンマ区切りのチャンネル番号の並びではありません（例: 1,2）"
+
+msgid "no project.json in {path}"
+msgstr "{path} に project.json がありません"
+
+msgid "no sessions in {path}"
+msgstr "{path} にセッションがありません"
+
+msgid "{lo:g}–{hi:g} ms, above {threshold:.0f} dB"
+msgstr "{lo:g}–{hi:g} ms、{threshold:.0f} dB 超"
+
+msgid "Not searched."
+msgstr "探索していません。"
+
+msgid "not compared: the direct-sound confidence is not high on both sides"
+msgstr "未比較: 直接音の確度が両方とも高いわけではありません"
+
+msgid "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
+msgstr "探せた {end:.1f} ms の中に {threshold:.0f} dB を超える反射はありません"
+
+msgid "no potential resonance at {low:.0f}–{high:.0f} Hz"
+msgstr "{low:.0f}–{high:.0f} Hz に共振候補なし"
+
+msgid "not searched: nothing below {max_hz:.0f} Hz was excited and resolved"
+msgstr "探索していません: {max_hz:.0f} Hz 未満に、励起され、かつ分解できた部分がありません"
+
+msgid ""
+"the reference sweep was not found in the recording: no response stands o"
+"ut from the noise. Check that the right input channel was recorded, that"
+" playback reached the loudspeaker, and that the reference is the sweep t"
+"hat was played"
+msgstr ""
+"録音の中に参照スイープが見つかりません。ノイズから浮き出る応答がありません。正しい入力チャンネルを録ったか、再生がスピーカーに届いたか、参照が実"
+"際に再生したスイープかを確認してください"
+
+msgid "{error}. However, {explanation}"
+msgstr "{error}。ただし、{explanation}"
+
+msgid ""
+"loopback_channel {channel} does not exist (the loopback file has {count}"
+" channel(s))"
+msgstr "loopback_channel {channel} はありません（ループバックファイルのチャンネル数は {count}）"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback and the microphone were located on different sweep passes; "
+"compensation is not applied"
+msgstr "ループバックとマイクが別々のスイープ通過で見つかりました。補償は適用しません"
+
+msgctxt "diagnostic"
+msgid ""
+"the impulse response ends {analysed_ms:.1f} ms after the direct sound, s"
+"o only that part of the {min_ms:g}-{max_ms:g} ms window could be searche"
+"d"
+msgstr ""
+"インパルス応答は直接音の {analysed_ms:.1f} ms 後で終わるため、{min_ms:g}-{max_ms:g} ms 窓のうちそ"
+"の部分だけを探せました"
+
+msgctxt "diagnostic"
+msgid "no common excitation band"
+msgstr "共通の励起帯域がありません"
+
+msgid ""
+"No reflection was detected inside this profile's {window_ms:g} ms window"
+" in the candidate; the strongest in the baseline was {relative_db:.1f} d"
+"B at {delay_ms:.1f} ms."
+msgstr ""
+"比較対象では、このプロファイルの {window_ms:g} ms の窓の内側に反射が検出されませんでした。基準で最も強かった反射は {dela"
+"y_ms:.1f} ms の {relative_db:.1f} dB です。"
+
+msgid "unknown recording profile {name}; available: {available}"
+msgstr "不明な録音プロファイル {name}。使用可能: {available}"
+
+msgid "{session} is already listed under position '{label}'"
+msgstr "{session} は既に位置「{label}」に登録されています"
+
+msgid "Reference plane"
+msgstr "基準面"
+
+msgid "Background noise, {band}"
+msgstr "暗騒音、{band}"
+
+msgid "expected a list of numbers"
+msgstr "数値のリストが必要です"
+
+msgid "{field} must not be null"
+msgstr "{field} は null にできません"
+
+msgid "silences must be <= 60 s"
+msgstr "無音は 60 s 以下である必要があります"
+
+msgid "{field} must be a list of numbers"
+msgstr "{field} は数値のリストである必要があります"
+
+msgid "{field} must be true or false"
+msgstr "{field} は true か false である必要があります"
+
+msgid "{field} must be text"
+msgstr "{field} はテキストである必要があります"
+
+msgid "{field} must be a list"
+msgstr "{field} はリストである必要があります"
+
+msgid "{field} is out of range"
+msgstr "{field} は範囲外です"
+
+msgid "{field} has the wrong type"
+msgstr "{field} の型が正しくありません"
+
+msgid "The result was discarded because you left this page before it was ready."
+msgstr "結果ができる前にこのページを離れたため、結果は破棄されました。"
+
+msgid "No noise spectrum stored with this session"
+msgstr "このセッションにはノイズスペクトルが保存されていません"
+
+msgid "Replace session?"
+msgstr "セッションを置き換えますか？"
+
+msgid "Replace"
+msgstr "置き換える"
+
+msgid "{path} already holds a saved session. Replace it?"
+msgstr "{path} には保存済みのセッションがあります。置き換えますか？"
