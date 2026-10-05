@@ -214,3 +214,18 @@ def test_an_assumed_temperature_note_from_an_older_result_still_reads_in_chinese
     for text in (current, stored_by_0_5):
         shown = localize(text)
         assert shown.startswith("未提供气温") and "20 °C" in shown and "5 °C" in shown, shown
+
+
+def test_channel_choices_stored_by_0_5_still_read_in_chinese(zh: None) -> None:
+    """Results written before the channel was numbered from 1 keep the old
+    sentence; it is shown translated and says that it counts from 0."""
+    plain = (
+        "recording has 2 channels; channel 1 (highest RMS) was analysed. "
+        "Use the channel setting to choose explicitly."
+    )
+    beside_loopback = (
+        "recording has 3 channels; channel 2 (highest RMS excluding loopback channel 0) "
+        "was analysed"
+    )
+    assert localize(plain).startswith("录音有 2 个声道；已分析从 0 开始编号的声道 1")
+    assert localize(beside_loopback).startswith("录音有 3 个声道；已分析从 0 开始编号的声道 2")

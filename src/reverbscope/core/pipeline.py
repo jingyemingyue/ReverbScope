@@ -577,12 +577,16 @@ def _select_mic_and_loopback(
         scores = rms.copy()
         scores[lb_channel] = -1.0
         channel = int(np.argmax(scores))
+        # Numbered from 1 like the desktop app's channel lists (see
+        # AudioSignal.select_channel); --channel counts from 0.
         warning = diag(
-            "recording has {count} channels; channel {channel} (highest RMS excluding loopback "
-            "channel {loopback_channel}) was analysed",
+            "recording has {count} channels; channel {number} of {count} (highest RMS "
+            "excluding loopback channel {loopback_number}) was analysed "
+            "(on the command line --channel {index}, counted from 0)",
             count=recording.n_channels,
-            channel=channel,
-            loopback_channel=lb_channel,
+            number=channel + 1,
+            loopback_number=lb_channel + 1,
+            index=channel,
         )
         mono = recording.channel(channel)
     else:

@@ -72,10 +72,14 @@ class AudioSignal:
             return self.channel(0), 0, None
         rms = np.sqrt(np.mean(self.samples.astype(np.float64) ** 2, axis=0))
         chosen = int(np.argmax(rms))
+        # Numbered from 1, as the desktop app's channel list names them; the
+        # command line's --channel counts from 0, so its value is given too.
         warning = diag(
-            "recording has {count} channels; channel {chosen} (highest RMS) "
-            "was analysed. Use the channel setting to choose explicitly.",
+            "recording has {count} channels; channel {number} of {count} (highest RMS) "
+            "was analysed. Use the channel setting to choose explicitly "
+            "(on the command line --channel {index}, counted from 0).",
             count=self.n_channels,
-            chosen=chosen,
+            number=chosen + 1,
+            index=chosen,
         )
         return self.channel(chosen), chosen, warning

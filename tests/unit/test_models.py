@@ -142,3 +142,22 @@ def test_session_recording_profile_defaults_when_absent() -> None:
     del data["recording_profile"]
     loaded = MeasurementSession.from_dict(data)
     assert loaded.recording_profile == "generic"
+
+
+def test_the_automatic_channel_choice_is_numbered_as_the_desktop_app_lists_it() -> None:
+    """The warning said "channel 1 (highest RMS)" for the right channel of a
+    stereo take, which the desktop app lists as "Channel 2": a user who then
+    picked Channel 1 analysed the quiet, wrong side."""
+    from reverbscope.i18n import activate, localize
+
+    stereo = AudioSignal(np.stack([np.full(100, 0.01), np.full(100, 0.5)], axis=1), 48000)
+    _mono, index, warning = stereo.select_channel(None)
+    assert index == 1 and warning is not None
+    assert "channel 2 of 2 (highest RMS)" in warning
+    assert "--channel 1, counted from 0" in warning
+    activate("zh_CN")
+    try:
+        shown = localize(warning)
+    finally:
+        activate("en")
+    assert "已分析声道 2" in shown and "--channel 1" in shown, shown

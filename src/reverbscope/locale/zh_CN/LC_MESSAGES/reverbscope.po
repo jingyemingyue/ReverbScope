@@ -2182,9 +2182,10 @@ msgstr "信号包含 NaN 或无穷大的采样"
 msgid "channel {index} does not exist (signal has {count} channel(s))"
 msgstr "声道 {index} 不存在（信号共有 {count} 个声道）"
 
+# Stored by ReverbScope 0.5 and earlier in result.json, counted from 0; still shown translated.
 msgctxt "diagnostic"
 msgid "recording has {count} channels; channel {chosen} (highest RMS) was analysed. Use the channel setting to choose explicitly."
-msgstr "录音有 {count} 个声道；已分析声道 {chosen}（RMS 最高）。可用声道设置明确指定。"
+msgstr "录音有 {count} 个声道；已分析从 0 开始编号的声道 {chosen}（RMS 最高）。可用声道设置明确指定。"
 
 msgid "sample_rate must be a positive integer"
 msgstr "sample_rate 必须是正整数"
@@ -2696,9 +2697,10 @@ msgctxt "diagnostic"
 msgid "aliased distortion (folded harmonic {orders} at {level_db:.0f} dB re the direct sound) spreads over the impulse response after the direct sound and imitates a decay"
 msgstr "混叠失真（折叠回来的 {orders} 次谐波，相对直达声 {level_db:.0f} dB）散布在直达声之后的脉冲响应中，看起来像衰减"
 
+# Stored by ReverbScope 0.5 and earlier in result.json, counted from 0; still shown translated.
 msgctxt "diagnostic"
 msgid "recording has {count} channels; channel {channel} (highest RMS excluding loopback channel {loopback_channel}) was analysed"
-msgstr "录音有 {count} 个声道；已分析声道 {channel}（除回送声道 {loopback_channel} 外 RMS 最高）"
+msgstr "录音有 {count} 个声道；已分析从 0 开始编号的声道 {channel}（除回送声道 {loopback_channel} 外 RMS 最高）"
 
 msgctxt "diagnostic"
 msgid "the tape-measured loudspeaker distance ({distance_m:.2f} m) exceeds the loopback path-delay bound ({bound_m:.2f} m); the tape cannot be longer than what sound had time to travel"
@@ -4484,3 +4486,13 @@ msgstr "替换已有的 project.json（其中的位置和备注会丢失）"
 
 msgid "{path} already contains a project.json; use --force to replace it"
 msgstr "{path} 中已有 project.json；如要替换，请使用 --force"
+
+# The automatic channel choice, numbered from 1 as the desktop app lists channels
+
+msgctxt "diagnostic"
+msgid "recording has {count} channels; channel {number} of {count} (highest RMS) was analysed. Use the channel setting to choose explicitly (on the command line --channel {index}, counted from 0)."
+msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（RMS 最高）。可用声道设置明确指定（命令行从 0 开始计数，即 --channel {index}）。"
+
+msgctxt "diagnostic"
+msgid "recording has {count} channels; channel {number} of {count} (highest RMS excluding loopback channel {loopback_number}) was analysed (on the command line --channel {index}, counted from 0)"
+msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（除回送声道 {loopback_number} 外 RMS 最高；命令行从 0 开始计数，即 --channel {index}）"

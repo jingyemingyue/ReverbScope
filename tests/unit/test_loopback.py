@@ -473,3 +473,21 @@ def test_compensation_with_a_band_edge_at_its_clamp_is_silent(
         out = compensate(h, fir, 48000, band, fir_peak_index=8)
     assert np.all(np.isfinite(out))
     assert int(np.argmax(np.abs(out))) == 100
+
+
+def test_the_channel_chosen_beside_a_loopback_is_numbered_from_one(
+    short_sweep: SweepSettings,
+) -> None:
+    """Like the plain automatic choice: the desktop app lists channels from 1."""
+    from reverbscope.core.pipeline import _select_mic_and_loopback
+
+    fs = short_sweep.sample_rate
+    rng = np.random.default_rng(3)
+    columns = [rng.normal(0, 0.3, fs), rng.normal(0, 0.01, fs), rng.normal(0, 0.1, fs)]
+    recording = AudioSignal(np.stack(columns, axis=1), fs)
+    _mono, channel, warning, _loop, reported = _select_mic_and_loopback(
+        recording, AnalysisSettings(loopback_channel=0), None
+    )
+    assert (channel, reported) == (2, 0) and warning is not None
+    assert "channel 3 of 3 (highest RMS excluding loopback channel 1)" in warning
+    assert "--channel 2, counted from 0" in warning
