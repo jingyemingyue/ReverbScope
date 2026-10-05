@@ -202,3 +202,43 @@ def test_a_session_cannot_be_listed_under_a_second_position(
     stored = json.loads((project / "project.json").read_text(encoding="utf-8"))
     assert stored["positions"] == [{"label": "sofa", "session_dirs": ["sessions/a"]}]
     assert [label for label, _folder in list_project_sessions(project)] == ["sofa"]
+
+
+def test_bundle_shows_the_home_folder_as_a_tilde(
+    tmp_path: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """session.json keeps the absolute path of a sweep outside the folder:
+    the bundle that issue forms ask for published /Users/<name>/… although
+    the doctor report hides the account name."""
+    import json
+
+    home = tmp_path / "home" / "anna"
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    rec = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
+    result = analyze(rec, Reference.from_settings(short_sweep))
+    sweep, _sidecar = write_sweep_file(short_sweep, home / "takes" / "sweep.wav")
+    recording = write_wav(home / "takes" / "take.wav", rec.samples, rec.sample_rate)
+    out = home / "sessions" / "booth"
+    save_measurement(
+        out,
+        MeasurementSession(sweep_path=str(sweep), recording_path=str(recording)),
+        result,
+        include_curves=False,
+        copy_recording=False,
+    )
+    (out / "comparison.json").write_text(
+        json.dumps({"baseline_session": str(home / "sessions" / "old")}), encoding="utf-8"
+    )
+    on_disk = (out / "session.json").read_bytes()
+    zipped = bundle_session(out, tmp_path / "report.zip", include_audio=False)
+    with zipfile.ZipFile(zipped) as archive:
+        session = json.loads(archive.read("session.json"))
+        comparison = json.loads(archive.read("comparison.json"))
+        assert all(str(home) not in archive.read(name).decode() for name in archive.namelist())
+    assert Path(session["sweep_path"]) == Path("~", "takes", "sweep.wav")
+    assert Path(session["recording_path"]) == Path("~", "takes", "take.wav")
+    assert session["impulse_response_path"] == "impulse_response.wav"
+    assert Path(comparison["baseline_session"]) == Path("~", "sessions", "old")
+    assert (out / "session.json").read_bytes() == on_disk

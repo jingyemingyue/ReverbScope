@@ -159,6 +159,6 @@ reverbscope config language auto    # 改回跟随系统
 
 **帮助 ▸ 用于问题报告的环境报告**显示维护者首先需要的信息：ReverbScope 版本和构建提交、操作系统、库版本、设置和音频设备（*探测采样率*会加上每个设备接受的采样率；不会播放任何声音）。用*复制*把它粘贴到 issue 中；*打开 GitHub Issue 页面*会打开模板选择页。在终端中，同样的报告是 `reverbscope doctor`（`--probe`、`--json`）。ReverbScope 不会自动发送任何内容；发布之前请通读文本，因为设备名称中可能包含个人姓名。
 
-`reverbscope session bundle session/ --out report.zip` 把会话文件夹打包为 zip。如果不想分享房间录音，用 `--no-audio` 去掉 WAV 文件。把 zip 附在测量问题（measurement）类 issue 上。设置和滚动日志保存在 `$REVERBSCOPE_HOME`（默认为 `~/.reverbscope`）下；环境报告中的*打开数据文件夹*按钮会打开它。
+`reverbscope session bundle session/ --out report.zip` 把会话文件夹打包为 zip。如果不想分享房间录音，用 `--no-audio` 去掉 WAV 文件。和环境报告一样，其中 JSON 文件里的路径把你的主文件夹显示为 `~`。把 zip 附在测量问题（measurement）类 issue 上。设置和滚动日志保存在 `$REVERBSCOPE_HOME`（默认为 `~/.reverbscope`）下；环境报告中的*打开数据文件夹*按钮会打开它。
 
 用真实的音频接口或通过 DAW 运行过 ReverbScope？请用 *Audio interface test report*（[音频接口测试报告，中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)）或 *DAW compatibility report*（[DAW 兼容性报告，中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)）模板记录下来；这些真实运行是 [HARDWARE_TESTS.zh-CN.md](../HARDWARE_TESTS.zh-CN.md) 的唯一来源。

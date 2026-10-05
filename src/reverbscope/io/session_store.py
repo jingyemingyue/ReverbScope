@@ -212,7 +212,10 @@ def bundle_session(
     *,
     include_audio: bool = True,
 ) -> Path:
-    """Zip a session folder for a bug report. ``include_audio=False`` drops WAVs."""
+    """Zip a session folder for a bug report. ``include_audio=False`` drops WAVs.
+
+    Paths under the home folder in its JSON files are written as ``~/…``.
+    """
     session_file = _session_file(directory)
     # Absolute, so that "." (bundling the folder you are in) has a name; not
     # resolved, so that a linked folder keeps its own name for the zip.
@@ -257,7 +260,13 @@ def bundle_session(
                     # must not put one of your files into a public report.
                     log.warning("not bundling %s: it links outside the session folder", path)
                     continue
-                archive.write(path, path.relative_to(base).as_posix())
+                name = path.relative_to(base).as_posix()
+                redacted = _without_home(path)
+                if redacted is None:
+                    archive.write(path, name)
+                else:
+                    info = zipfile.ZipInfo.from_file(path, name, strict_timestamps=False)
+                    archive.writestr(info, redacted, compress_type=zipfile.ZIP_DEFLATED)
         os.replace(temporary, target)
     except (OSError, ValueError) as exc:
         raise SessionError(
@@ -268,6 +277,38 @@ def bundle_session(
             with contextlib.suppress(OSError):
                 temporary.unlink(missing_ok=True)
     return target
+
+
+def _without_home(path: Path) -> bytes | None:
+    """A JSON member as it goes into a bundle, or None to bundle it unchanged.
+
+    session.json keeps the absolute path of a sweep or recording outside the
+    folder, and comparison.json the session paths as typed: the user's home
+    folder there would publish the account name with a bug report. It is
+    shown as ``~``, as in the doctor report. result.json names no files.
+    """
+    if path.suffix.lower() != ".json" or path.name == RESULT_FILE:
+        return None
+    try:
+        data = _read_json(path, kind="JSON")
+    except SessionError:
+        return None  # not ReverbScope's JSON: bundled as it is
+    shown = _redact_strings(data)
+    if shown == data:
+        return None
+    return (json.dumps(shown, indent=2) + "\n").encode("utf-8")
+
+
+def _redact_strings(value: Any) -> Any:
+    from reverbscope.diagnostics import redact_home
+
+    if isinstance(value, str):
+        return redact_home(value)
+    if isinstance(value, list):
+        return [_redact_strings(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _redact_strings(item) for key, item in value.items()}
+    return value
 
 
 def _copy_into(src: Path, dest: Path, *, stage: Callable[[str], Path] | None = None) -> Path | None:

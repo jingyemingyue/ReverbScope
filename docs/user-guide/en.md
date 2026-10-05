@@ -284,7 +284,8 @@ read the text before posting, since device names can contain personal names.
 
 `reverbscope session bundle session/ --out report.zip` zips a session folder.
 `--no-audio` leaves the WAVs out if you do not want to share a recording of
-the room. Attach the zip to a measurement issue. Settings and the rotating
+the room. Paths in its JSON files show your home folder as `~`, as the
+environment report does. Attach the zip to a measurement issue. Settings and the rotating
 log live under `$REVERBSCOPE_HOME` (`~/.reverbscope` by default); the report's
 *Open Data Folder* button opens it.
 
