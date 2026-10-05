@@ -122,7 +122,8 @@ def save_measurement(
 
     Nothing in ``directory`` is replaced until every file has been written,
     and a rename that fails puts back the members already replaced, so a
-    failed save keeps the session that was there whole.
+    failed save keeps the session that was there whole. A recording.wav or
+    sweep sidecar of an earlier take that this one does not have is removed.
     """
     base = Path(directory)
     base.mkdir(parents=True, exist_ok=True)
@@ -170,7 +171,7 @@ def save_measurement(
         _write_staged_text(
             stage(RESULT_FILE), result_path, json.dumps(result.to_dict(include_curves), indent=1)
         )
-        _copy_sidecar(original_sweep, base, stage=stage)
+        sidecar = _copy_sidecar(original_sweep, base, stage=stage)
         if copy_recording and recording is None:
             copied = _copy_recording(original_recording, base, stage=stage)
             if copied is not None:
@@ -185,31 +186,52 @@ def save_measurement(
         _write_staged_text(
             stage(SESSION_FILE), session_path, json.dumps(session.to_dict(), indent=2)
         )
-        _replace_members(staged)
+        # The recording and sweep sidecar of an earlier take in this folder
+        # would stay beside the new one (its recording not copied, or no
+        # sidecar), and opening the session would adopt the old sidecar.
+        ours = {final.name for _temporary, final in staged}
+        if sidecar is not None:
+            ours.add(SWEEP_SIDECAR_NAME)
+        if session.recording_path is not None and _same_file(
+            base / RECORDING_FILE, base / session.recording_path
+        ):
+            ours.add(RECORDING_FILE)
+        stale = [
+            base / name
+            for name in (RECORDING_FILE, SWEEP_SIDECAR_NAME)
+            if name not in ours and os.path.lexists(base / name)
+        ]
+        _replace_members(staged, remove=stale)
     finally:
         for temporary, _final in staged:
             discard(temporary)
     return session_path
 
 
-def _replace_members(staged: list[tuple[Path, Path]]) -> None:
-    """Rename every staged member into place, or leave every member as it was.
+def _replace_members(staged: list[tuple[Path, Path]], *, remove: list[Path]) -> None:
+    """Rename every staged member into place and delete ``remove``, or leave
+    every member as it was.
 
-    Each member a save replaces is kept under a second name until all the
-    renames have succeeded. When one fails (Windows refuses to replace a file
-    another program has open), the members already replaced are put back, so
-    the folder never holds one take's recording beside another's analysis.
+    Each member a save replaces or deletes is kept under a second name until
+    all of it has succeeded. When one step fails (Windows refuses to replace
+    a file another program has open), the members already replaced are put
+    back, so the folder never holds one take's recording beside another's
+    analysis.
     """
+    steps: list[tuple[Path | None, Path]] = [*staged, *((None, final) for final in remove)]
     replaced: list[tuple[Path, Path | None]] = []
     kept: list[Path] = []
     try:
-        for temporary, final in staged:
+        for temporary, final in steps:
             try:
                 previous = _keep_previous(final)
                 if previous is not None:
                     kept.append(previous)
-                keep_mode(temporary, final)
-                os.replace(temporary, final)
+                if temporary is None:
+                    final.unlink()
+                else:
+                    keep_mode(temporary, final)
+                    os.replace(temporary, final)
             except OSError as exc:
                 for done, earlier in reversed(replaced):
                     if not _put_back(done, earlier) and earlier is not None:
@@ -236,6 +258,15 @@ def _keep_previous(final: Path) -> Path | None:
     if not stat.S_ISREG(status.st_mode):
         return None
     return keep_beside(final, f".previous{final.suffix}")
+
+
+def _same_file(first: Path, second: Path) -> bool:
+    """Whether two paths name one file (also Recording.WAV and recording.wav
+    on a case-insensitive file system)."""
+    try:
+        return os.path.samefile(first, second)
+    except (OSError, ValueError):
+        return False
 
 
 def _put_back(final: Path, previous: Path | None) -> bool:

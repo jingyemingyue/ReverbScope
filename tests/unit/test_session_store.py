@@ -644,3 +644,78 @@ def test_saving_over_a_write_protected_session_fails_cleanly(
     with pytest.raises(SessionError, match=r"cannot write .*Access is denied"):
         save_measurement(folder, loaded.session, loaded.result, include_curves=False)
     assert {path.name: path.read_bytes() for path in folder.iterdir()} == before
+
+
+def _take_with_copies(tmp_path: Path, short_sweep: SweepSettings, analysed) -> Path:  # type: ignore[no-untyped-def]
+    """A session folder holding a copied recording.wav and sweep sidecar."""
+    from reverbscope.io.wav import write_sweep_file, write_wav
+
+    recording, result = analysed
+    sweep, _sidecar = write_sweep_file(short_sweep, tmp_path / "in" / "sweep.wav")
+    take = write_wav(tmp_path / "in" / "take.wav", recording.samples, 48000, subtype="FLOAT")
+    folder = tmp_path / "s"
+    save_measurement(
+        folder,
+        MeasurementSession(room_name="A", sweep_path=str(sweep), recording_path=str(take)),
+        result,
+        include_curves=False,
+        copy_recording=True,
+    )
+    assert (folder / "recording.wav").is_file() and (
+        folder / "sweep.reverbscope-sweep.json"
+    ).is_file()
+    return folder
+
+
+def test_a_new_take_does_not_keep_the_previous_takes_recording_or_sidecar(
+    tmp_path: Path, short_sweep: SweepSettings, analysed
+) -> None:
+    """An impulse-response take saved over a sweep take (no sidecar, recording
+    not copied) left the old recording.wav and sweep sidecar in the folder:
+    the reopened session claimed the old sweep, and a bundle shipped the old
+    recording as this session's."""
+    _recording, result = analysed
+    folder = _take_with_copies(tmp_path, short_sweep, analysed)
+    save_measurement(
+        folder,
+        MeasurementSession(room_name="B", recording_path=str(tmp_path / "in" / "ir.wav")),
+        result,
+        include_curves=False,
+        copy_recording=False,
+    )
+    assert sorted(path.name for path in folder.iterdir()) == [IR_FILE, RESULT_FILE, SESSION_FILE]
+    assert load_measurement(folder).session.sweep_path is None
+
+
+def test_resaving_without_copying_keeps_the_folders_own_recording(
+    tmp_path: Path, short_sweep: SweepSettings, analysed
+) -> None:
+    folder = _take_with_copies(tmp_path, short_sweep, analysed)
+    before = (folder / "recording.wav").read_bytes()
+    loaded = load_measurement(folder)
+    save_measurement(folder, loaded.session, loaded.result, copy_recording=False)
+    assert (folder / "recording.wav").read_bytes() == before
+    assert (folder / "sweep.reverbscope-sweep.json").is_file()
+    assert load_session(folder).recording_path == "recording.wav"
+
+
+def test_a_failed_removal_puts_the_previous_take_back(
+    tmp_path: Path, short_sweep: SweepSettings, analysed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Removing the old recording is part of the save: when Windows refuses it
+    (a player has it open), the members already replaced are put back."""
+    _recording, result = analysed
+    folder = _take_with_copies(tmp_path, short_sweep, analysed)
+    before = {path.name: path.read_bytes() for path in folder.iterdir()}
+    real_unlink = Path.unlink
+
+    def held_open(self: Path, missing_ok: bool = False) -> None:
+        if self == folder / "recording.wav":
+            raise PermissionError(13, "The process cannot access the file", str(self))
+        real_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(Path, "unlink", held_open)
+    with pytest.raises(SessionError, match=r"recording\.wav"):
+        save_measurement(folder, MeasurementSession(room_name="B"), result, copy_recording=False)
+    monkeypatch.setattr(Path, "unlink", real_unlink)
+    assert {path.name: path.read_bytes() for path in folder.iterdir()} == before
