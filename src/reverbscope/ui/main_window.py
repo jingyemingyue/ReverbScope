@@ -276,17 +276,25 @@ class MainWindow(QMainWindow):
             # the page makes it again before the next one.
             self.standalone.refresh_devices()
 
+    def _tools_backend(self) -> str | None:
+        """The backend the device inspector and the environment report describe.
+
+        The fake one only on the Demo page itself: the page keeps its demo
+        flag after a take, and a bug report sent from Results or Compare
+        must describe the user's real interface.
+        """
+        on_demo = self.stack.currentWidget() is self.standalone and self.standalone.demo_mode
+        return "fake" if on_demo else None
+
     def show_device_inspector(self) -> None:
         from reverbscope.ui.dev_tools import DeviceInspector
 
-        backend = "fake" if self.standalone.demo_mode else None
-        DeviceInspector(backend, self).exec()
+        DeviceInspector(self._tools_backend(), self).exec()
 
     def show_environment_report(self) -> None:
         from reverbscope.ui.dev_tools import EnvironmentReport
 
-        backend = "fake" if self.standalone.demo_mode else None
-        EnvironmentReport(backend, self).exec()
+        EnvironmentReport(self._tools_backend(), self).exec()
 
     def _open_data_folder(self) -> None:
         from reverbscope.io.recent import reverbscope_home

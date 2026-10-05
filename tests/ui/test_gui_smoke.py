@@ -1287,3 +1287,35 @@ def test_standalone_without_any_audio_device_says_so_and_does_not_run(
     assert page.status.property("banner") == "warn"
     assert page.refresh_button.isEnabled()
     window.close()
+
+
+def test_the_environment_report_describes_the_fake_backend_only_on_the_demo_page(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """After a Demo take, Help > Environment Report (and the device
+    inspector) from Results or Compare described the fake interface
+    instead of the user's hardware."""
+    from reverbscope.ui import dev_tools
+
+    described: list[str | None] = []
+
+    class Recorder:
+        def __init__(self, backend: str | None, parent: object = None) -> None:
+            described.append(backend)
+
+        def exec(self) -> int:
+            return 0
+
+    monkeypatch.setattr(dev_tools, "EnvironmentReport", Recorder)
+    monkeypatch.setattr(dev_tools, "DeviceInspector", Recorder)
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    window.show_environment_report()
+    _demo_take(app, window)
+    window.show_environment_report()
+    window.show_device_inspector()
+    window.show_compare()
+    window.show_environment_report()
+    assert described == ["fake", None, None, None]
+    window.close()
