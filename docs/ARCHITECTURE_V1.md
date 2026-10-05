@@ -498,10 +498,12 @@ class AudioBackend(Protocol):
   be added to DEPENDENCIES.md). English is the source language and needs no
   catalog.
 * Selection: `--lang` / `settings.language` (the desktop app's Settings
-  dialog or `roomscope config language zh_CN|en|auto`) / `ROOMSCOPE_LANG`,
-  otherwise the system's language; English when no catalog matches. The
-  home screen and `roomscope --help` end with one line in the other
-  language that names the command to switch. The system's language
+  dialog or `roomscope config language LANG|auto`, where `LANG` is `en` or
+  a catalog: `zh_CN`, `zh_TW`, `ja`, `ko`, `es`, `fr`, `de`) /
+  `ROOMSCOPE_LANG`, otherwise the system's language; English when no
+  catalog matches. The home screen and `roomscope --help` end with one line
+  in another language that names the command to switch: Chinese in
+  English, English in every other language. The system's language
   is read where each system keeps the user's choice:
   * macOS: the preferred languages (`AppleLanguages` in
     `~/Library/Preferences/.GlobalPreferences.plist`, then

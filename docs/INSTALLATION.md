@@ -228,8 +228,9 @@ anywhere, add the folder to your `PATH` (for example
 **Language.** The command line follows the system's language: the Mac's
 preferred languages (also in Terminal, which sets `LANG=en_US.UTF-8`
 whatever they are), the Windows display language, or `LANGUAGE` / `LANG` on
-Linux. To keep Chinese or English whatever the system says, run
-`roomscope config language zh_CN` (or `en`) once;
+Linux. To keep one language whatever the system says, run
+`roomscope config language zh_CN` (or `en`, `zh_TW`, `ja`, `ko`, `es`,
+`fr`, `de`) once;
 `roomscope config language auto` follows the system again, and
 `roomscope config` lists every setting.
 

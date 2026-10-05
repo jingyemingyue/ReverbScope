@@ -291,6 +291,19 @@ def test_the_language_hint_command_is_never_split(
         assert lines[-2:] == [label, command], text
 
 
+@pytest.mark.parametrize("lang", ["zh_TW", "ja", "ko", "es", "fr", "de"])
+def test_every_other_language_points_the_way_to_english(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], lang: str
+) -> None:
+    """Whoever cannot read the language in effect finds the way to English."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", "80")
+    _code, _out, home = _run(["--lang", lang], capsys)
+    _code, help_text, _err = _run(["--lang", lang, "--help"], capsys)
+    for text in (home, help_text):
+        assert text.splitlines()[-1] == "English interface: roomscope config language en", text
+
+
 def test_the_language_hint_needs_the_other_catalog(
     cli: tuple[Path, pytest.MonkeyPatch],
 ) -> None:

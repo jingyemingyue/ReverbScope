@@ -186,8 +186,8 @@ cd roomscope-terminal
 （例如在 `~/.zshrc` 或 `~/.bashrc` 中加入 `export PATH="$HOME/roomscope-terminal:$PATH"`）。
 
 **语言。** 命令行跟随系统语言：Mac 的首选语言（即使“终端”不管首选语言是什么都设置了 `LANG=en_US.UTF-8`）、
-Windows 的显示语言，或 Linux 上的 `LANGUAGE` / `LANG`。想不管系统怎么设置都固定使用中文或英文，运行一次
-`roomscope config language zh_CN`（英文用 `en`）；`roomscope config language auto` 改回跟随系统，
+Windows 的显示语言，或 Linux 上的 `LANGUAGE` / `LANG`。想不管系统怎么设置都固定使用一种语言，运行一次
+`roomscope config language zh_CN`（英文用 `en`，另有 `zh_TW`、`ja`、`ko`、`es`、`fr`、`de`）；`roomscope config language auto` 改回跟随系统，
 `roomscope config` 列出所有设置。
 
 在 **macOS** 上，浏览器会给下载的文件加上标记，macOS 会拒绝运行带这个标记的未签名命令行程序

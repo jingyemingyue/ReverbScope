@@ -71,7 +71,10 @@ All notable changes to RoomScope are documented here. The format follows
 - **Settings from the command line.** `roomscope config` lists the settings
   the desktop app keeps in `settings.json`, says what each value means now
   and where the file is; `roomscope config KEY VALUE` changes one: `language`
-  (`zh_CN`, `en`, or `auto` to follow the system), `profile`, `backend`,
+  (`en` or any catalog, `zh_CN`, `zh_TW`, `ja`, `ko`, `es`, `fr`, `de`, also
+  as `zh-Hant`, `ja_JP` or `es-419`, or `auto` to follow the system;
+  `--lang` and a refused value list the languages from the catalogs
+  installed), `profile`, `backend`,
   `output-folder`, `copy-recording`, `developer-tools` and `theme` (desktop
   app only). `auto` goes back to a setting's default, a value is checked
   before anything is written (exit code 2, nothing changed), a damaged
@@ -83,8 +86,9 @@ All notable changes to RoomScope are documented here. The format follows
 - **The way to the other language.** The home screen and `roomscope --help`
   end with one line in the other language: `中文界面：roomscope config
   language zh_CN` in English, `English interface: roomscope config language
-  en` in Chinese (left out where the terminal cannot write Chinese; on a
-  narrow terminal the command goes whole on a line of its own).
+  en` in Chinese and every other interface language (left out where the
+  terminal cannot write Chinese; on a narrow terminal the command goes whole
+  on a line of its own).
 
 ### Changed
 - **Placement picture shows the first-order image source.** When the

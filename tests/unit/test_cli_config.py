@@ -97,6 +97,19 @@ def test_config_as_json_is_the_settings_and_nothing_else(
         ("language", "en_US", "language", "en"),
         ("language", "EN", "language", "en"),
         ("language", "auto", "language", ""),
+        # The six other catalogs, by their tags and the usual regional forms.
+        ("language", "zh_TW", "language", "zh_TW"),
+        ("language", "zh-Hant", "language", "zh_TW"),
+        ("language", "zh-HK", "language", "zh_TW"),
+        ("language", "ja", "language", "ja"),
+        ("language", "ja_JP", "language", "ja"),
+        ("language", "ko-KR", "language", "ko"),
+        ("language", "es-419", "language", "es"),
+        ("language", "es_ES", "language", "es"),
+        ("language", "fr_CA", "language", "fr"),
+        ("language", "FR", "language", "fr"),
+        ("language", "de-DE", "language", "de"),
+        ("language", "de_AT", "language", "de"),
         ("profile", "vocal", "default_profile", "vocal"),
         ("profile", "Acoustic-Guitar", "default_profile", "acoustic_guitar"),
         ("profile", "auto", "default_profile", "generic"),
@@ -151,8 +164,11 @@ def test_the_output_folder_is_stored_as_an_absolute_path(
     ("argv", "message"),
     [
         (["colour", "on"], "unknown setting 'colour'"),
-        (["language", "fr"], "unknown language 'fr'; available: zh_CN, en, or auto"),
-        (["language", "zh_TW"], "unknown language 'zh_TW'"),
+        (
+            ["language", "pt"],
+            "unknown language 'pt'; available: de, es, fr, ja, ko, zh_CN, zh_TW, en, or auto",
+        ),
+        (["language", "ru_RU"], "unknown language 'ru_RU'"),
         (["profile", "opera"], "unknown profile 'opera'"),
         (["backend", "asio"], "unknown audio backend 'asio'"),
         (["output-folder", "no-such-folder"], "'no-such-folder' is not an existing folder"),
@@ -183,9 +199,11 @@ def test_a_value_a_setting_cannot_take_writes_nothing(
 
 
 def test_a_refusal_is_translated(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
-    code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "language", "fr")
+    code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "language", "pt")
     assert code == 2
-    assert "未知的语言 'fr'；可用：zh_CN、en 或 auto" in err and "没有做任何更改" in err
+    shown = " ".join(err.split())
+    assert "未知的语言 'pt'；可用：de、es、fr、ja、ko、zh_CN、zh_TW、en 或 auto" in shown, shown
+    assert "没有做任何更改" in shown
 
 
 def test_a_change_keeps_every_other_setting(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -259,6 +277,35 @@ def test_the_confirmation_is_in_the_language_just_chosen(
     assert _stored()["language"] == ""
 
 
+@pytest.mark.parametrize(
+    ("lang", "name"),
+    [
+        ("zh_TW", "繁體中文"),
+        ("ja", "日本語"),
+        ("ko", "한국어"),
+        ("es", "español"),
+        ("fr", "français"),
+        ("de", "Deutsch"),
+    ],
+)
+def test_every_catalog_can_be_kept_and_is_confirmed_in_its_language(
+    home: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    lang: str,
+    name: str,
+) -> None:
+    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    code, out, _err = _run(capsys, "--lang", "en", "config", "language", lang)
+    assert code == 0
+    assert name in out and "roomscope config language auto" in out, out
+    assert current_locale() == lang and _stored()["language"] == lang
+    activate("en")  # a new process starts in English
+    code, out, _err = _run(capsys, "config", "language")
+    assert code == 0 and current_locale() == lang
+    assert f"roomscope config language {lang}" in out
+
+
 def test_the_stored_language_is_used_by_the_next_command(
     home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -289,7 +336,7 @@ def test_the_stored_language_is_used_by_the_next_command(
             "zh_CN",
             "已保存的设置（roomscope config language zh_CN）",
         ),
-        ([], {"LANG": "fr_FR.UTF-8"}, "", "fr_FR has no translation, so English is used"),
+        ([], {"LANG": "pt_BR.UTF-8"}, "", "pt_BR has no translation, so English is used"),
     ],
 )
 def test_config_language_shows_what_is_in_effect_and_why(
@@ -376,18 +423,18 @@ def test_chinese_lists_use_the_chinese_separator(
     """Lists read "zh_CN, en，或 auto" and "language, profile, backend", half-
     and full-width punctuation mixed, next to "portaudio、fake 或 auto"."""
     shown = []
-    for argv in (["config", "--help"], ["config", "language", "fr"], ["config", "foo"]):
+    for argv in (["config", "--help"], ["config", "language", "pt"], ["config", "foo"]):
         _code, out, err = _run(capsys, "--lang", "zh_CN", *argv)
-        shown.append(" ".join((out + err).split()))
+        shown.append("".join((out + err).split()))
     help_text, language, unknown = shown
-    assert "zh_CN、en 或 auto（跟随系统）" in help_text
-    assert "vocal、voiceover 或 auto" in help_text
-    assert "可用：zh_CN、en 或 auto" in language
+    assert "de、es、fr、ja、ko、zh_CN、zh_TW、en或auto（跟随系统）" in help_text
+    assert "vocal、voiceover或auto" in help_text
+    assert "可用：de、es、fr、ja、ko、zh_CN、zh_TW、en或auto" in language
     assert "可用的设置项：language、profile、backend、" in unknown
     for text in shown:
-        assert not re.search(r"[A-Za-z0-9_]，或|[a-z_], [a-z]", text), text
-    _code, out, err = _run(capsys, "config", "language", "fr")
-    assert "available: zh_CN, en, or auto" in err
+        assert not re.search(r"[A-Za-z0-9_]，或|[a-z_],[a-z]", text), text
+    _code, out, err = _run(capsys, "config", "language", "pt")
+    assert "available: de, es, fr, ja, ko, zh_CN, zh_TW, en, or auto" in " ".join(err.split())
 
 
 def test_a_setting_has_the_name_the_desktop_app_gives_it(

@@ -28,11 +28,6 @@ msgstr ""
 msgid "audio backend for Standalone Mode: portaudio (default) or fake"
 msgstr "backend audio pour le mode autonome : portaudio (défaut) ou fake"
 
-msgid "UI language (en, zh_CN). Overrides settings and ROOMSCOPE_LANG"
-msgstr ""
-"langue de l'interface (en, zh_CN). Remplace les réglages et ROOMSCOPE_LA"
-"NG"
-
 msgid "text report or JSON on stdout (diagnostics stay on stderr)"
 msgstr "rapport texte ou JSON sur stdout (les diagnostics restent sur stderr)"
 
@@ -6001,12 +5996,8 @@ msgstr ""
 " autant brouillera la diction. C'est une position, pas une note de salle"
 "."
 
-msgid ""
-"UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). Overrides settings a"
-"nd ROOMSCOPE_LANG"
-msgstr ""
-"langue de l'interface (en, zh_CN, zh_TW, ja, ko, es, fr, de). Remplace l"
-"es réglages et ROOMSCOPE_LANG"
+msgid "interface language for this command ({languages}); roomscope config language keeps one"
+msgstr "langue de l'interface pour cette commande seulement ({languages}) ; roomscope config language en garde une"
 
 msgid "Image source"
 msgstr "Source image"
@@ -6461,3 +6452,21 @@ msgstr "Remplacer"
 
 msgid "{path} already holds a saved session. Replace it?"
 msgstr "{path} contient déjà une session enregistrée. La remplacer ?"
+
+msgid "Traditional Chinese"
+msgstr "chinois traditionnel"
+
+msgid "Japanese"
+msgstr "japonais"
+
+msgid "Korean"
+msgstr "coréen"
+
+msgid "Spanish"
+msgstr "espagnol"
+
+msgid "French"
+msgstr "français"
+
+msgid "German"
+msgstr "allemand"

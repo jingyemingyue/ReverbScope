@@ -26,10 +26,8 @@ msgstr "RoomScope: オープンソースで、DAW に依存しない録音環境
 msgid "audio backend for Standalone Mode: portaudio (default) or fake"
 msgstr "スタンドアロンモードのオーディオバックエンド: portaudio（既定）または fake"
 
-msgid ""
-"UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). Overrides settings a"
-"nd ROOMSCOPE_LANG"
-msgstr "表示言語（en、zh_CN、zh_TW、ja、ko、es、fr、de）。設定と ROOMSCOPE_LANG より優先"
+msgid "interface language for this command ({languages}); roomscope config language keeps one"
+msgstr "このコマンドだけの表示言語（{languages}）。常に同じ言語を使うには roomscope config language"
 
 msgid "text report or JSON on stdout (diagnostics stay on stderr)"
 msgstr "標準出力にテキスト報告または JSON（診断は標準エラーのまま）"
@@ -5709,3 +5707,21 @@ msgstr "置き換える"
 
 msgid "{path} already holds a saved session. Replace it?"
 msgstr "{path} には保存済みのセッションがあります。置き換えますか？"
+
+msgid "Traditional Chinese"
+msgstr "繁体字中国語"
+
+msgid "Japanese"
+msgstr "日本語"
+
+msgid "Korean"
+msgstr "韓国語"
+
+msgid "Spanish"
+msgstr "スペイン語"
+
+msgid "French"
+msgstr "フランス語"
+
+msgid "German"
+msgstr "ドイツ語"

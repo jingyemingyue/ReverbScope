@@ -72,12 +72,13 @@ _ON = frozenset({"on", "true", "yes", "1"})
 _OFF = frozenset({"off", "false", "no", "0"})
 
 
-#: How to switch to the other interface language, written in that language on
+#: How to switch to another interface language, written in that language on
 #: purpose (never translated): whoever cannot read the current one can still
-#: find it. Keyed by the language in effect: the label, then the command.
+#: find it. Keyed by the language the hint leads to: the label, then the
+#: command. English leads to Chinese; every other language leads to English.
 LANGUAGE_HINTS = {
-    "en": ("中文界面：", "roomscope config language zh_CN"),
-    "zh_CN": ("English interface: ", "roomscope config language en"),
+    "zh_CN": ("中文界面：", "roomscope config language zh_CN"),
+    "en": ("English interface: ", "roomscope config language en"),
 }
 
 
@@ -87,7 +88,7 @@ def language_hint_parts(current: str) -> tuple[str, str] | None:
     target = DEFAULT_LANG if current != DEFAULT_LANG else "zh_CN"
     if target not in available_locales():
         return None
-    return LANGUAGE_HINTS.get(current)
+    return LANGUAGE_HINTS[target]
 
 
 def language_hint_lines(current: str, width: int) -> list[str]:
@@ -250,7 +251,16 @@ def choices(key: str) -> str:
 def language_name(lang: str) -> str:
     """A language's name in the interface language; English for one without a catalog."""
     shown = lang if lang in available_locales() else DEFAULT_LANG
-    names = {"en": _("English"), "zh_CN": _("Simplified Chinese")}
+    names = {
+        "en": _("English"),
+        "zh_CN": _("Simplified Chinese"),
+        "zh_TW": _("Traditional Chinese"),
+        "ja": _("Japanese"),
+        "ko": _("Korean"),
+        "es": _("Spanish"),
+        "fr": _("French"),
+        "de": _("German"),
+    }
     return names.get(shown) or LANGUAGE_NAMES.get(shown, shown)
 
 

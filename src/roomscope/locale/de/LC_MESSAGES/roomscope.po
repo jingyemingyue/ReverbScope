@@ -30,11 +30,6 @@ msgstr ""
 "Audio-Backend für den eigenständigen Modus: portaudio (Standard) oder fa"
 "ke"
 
-msgid "UI language (en, zh_CN). Overrides settings and ROOMSCOPE_LANG"
-msgstr ""
-"Oberflächensprache (en, zh_CN). Hat Vorrang vor den Einstellungen und RO"
-"OMSCOPE_LANG"
-
 msgid "text report or JSON on stdout (diagnostics stay on stderr)"
 msgstr "Textbericht oder JSON auf stdout (Diagnosen bleiben auf stderr)"
 
@@ -5916,12 +5911,8 @@ msgstr ""
 "er {threshold:.0f} dB). Etwas später Schall steht einem Chor, aber so vi"
 "el verwischt die Diktion. Das ist eine Position, keine Raumbewertung."
 
-msgid ""
-"UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). Overrides settings a"
-"nd ROOMSCOPE_LANG"
-msgstr ""
-"Oberflächensprache (en, zh_CN, zh_TW, ja, ko, es, fr, de). Hat Vorrang v"
-"or den Einstellungen und ROOMSCOPE_LANG"
+msgid "interface language for this command ({languages}); roomscope config language keeps one"
+msgstr "Oberflächensprache nur für diesen Befehl ({languages}); roomscope config language speichert eine dauerhaft"
 
 msgid "Image source"
 msgstr "Spiegelquelle"
@@ -6378,3 +6369,21 @@ msgstr "Ersetzen"
 
 msgid "{path} already holds a saved session. Replace it?"
 msgstr "{path} enthält bereits eine gespeicherte Sitzung. Ersetzen?"
+
+msgid "Traditional Chinese"
+msgstr "Traditionelles Chinesisch"
+
+msgid "Japanese"
+msgstr "Japanisch"
+
+msgid "Korean"
+msgstr "Koreanisch"
+
+msgid "Spanish"
+msgstr "Spanisch"
+
+msgid "French"
+msgstr "Französisch"
+
+msgid "German"
+msgstr "Deutsch"

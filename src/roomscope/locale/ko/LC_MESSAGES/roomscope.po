@@ -26,10 +26,8 @@ msgstr "RoomScope: 오픈소스이며 DAW에 의존하지 않는 녹음 환경 �
 msgid "audio backend for Standalone Mode: portaudio (default) or fake"
 msgstr "독립 실행 모드의 오디오 백엔드: portaudio(기본) 또는 fake"
 
-msgid ""
-"UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). Overrides settings a"
-"nd ROOMSCOPE_LANG"
-msgstr "UI 언어(en, zh_CN, zh_TW, ja, ko, es, fr, de). 설정 및 ROOMSCOPE_LANG보다 우선합니다"
+msgid "interface language for this command ({languages}); roomscope config language keeps one"
+msgstr "이 명령에만 쓸 인터페이스 언어({languages}). 계속 한 언어를 쓰려면 roomscope config language"
 
 msgid "text report or JSON on stdout (diagnostics stay on stderr)"
 msgstr "표준 출력에 텍스트 보고서 또는 JSON(진단은 표준 오류로 유지)"
@@ -5743,3 +5741,21 @@ msgstr "바꾸기"
 
 msgid "{path} already holds a saved session. Replace it?"
 msgstr "{path}에 이미 저장된 세션이 있습니다. 바꿀까요?"
+
+msgid "Traditional Chinese"
+msgstr "중국어 번체"
+
+msgid "Japanese"
+msgstr "일본어"
+
+msgid "Korean"
+msgstr "한국어"
+
+msgid "Spanish"
+msgstr "스페인어"
+
+msgid "French"
+msgstr "프랑스어"
+
+msgid "German"
+msgstr "독일어"

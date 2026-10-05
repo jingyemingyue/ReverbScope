@@ -68,7 +68,16 @@ from roomscope.errors import (
     RoomScopeError,
     SessionError,
 )
-from roomscope.i18n import N_, _, activate, list_separator, localize, pgettext
+from roomscope.i18n import (
+    N_,
+    _,
+    activate,
+    available_locales,
+    list_join,
+    list_separator,
+    localize,
+    pgettext,
+)
 from roomscope.interpretation import available_profiles
 from roomscope.interpretation.profiles import band_text
 from roomscope.labels import accuracy_class_text
@@ -810,8 +819,8 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         metavar=pgettext("metavar", "LANG"),
         help=_(
-            "interface language for this command (en, zh_CN); roomscope config language keeps one"
-        ),
+            "interface language for this command ({languages}); roomscope config language keeps one"
+        ).format(languages=list_join(available_locales())),
     )
     parser.add_argument(
         "--format",

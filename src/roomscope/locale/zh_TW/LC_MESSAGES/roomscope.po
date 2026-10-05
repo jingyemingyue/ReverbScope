@@ -26,8 +26,8 @@ msgstr "RoomScope：開源、不依賴 DAW 的錄音環境分析器。"
 msgid "audio backend for Standalone Mode: portaudio (default) or fake"
 msgstr "獨立模式的音頻後端：portaudio（預設）或 fake"
 
-msgid "UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). Overrides settings and ROOMSCOPE_LANG"
-msgstr "介面語言（en、zh_CN、zh_TW、ja、ko、es、fr、de）。覆蓋設定與 ROOMSCOPE_LANG"
+msgid "interface language for this command ({languages}); roomscope config language keeps one"
+msgstr "此命令的介面語言（{languages}）；要一直使用同一種語言，請用 roomscope config language"
 
 msgid "text report or JSON on stdout (diagnostics stay on stderr)"
 msgstr "標準輸出為文本報告或 JSON（診斷資訊仍走標準錯誤）"
@@ -5586,3 +5586,21 @@ msgstr "取代"
 
 msgid "{path} already holds a saved session. Replace it?"
 msgstr "{path} 中已有一個保存的會話。要取代它嗎？"
+
+msgid "Traditional Chinese"
+msgstr "繁體中文"
+
+msgid "Japanese"
+msgstr "日文"
+
+msgid "Korean"
+msgstr "韓文"
+
+msgid "Spanish"
+msgstr "西班牙文"
+
+msgid "French"
+msgstr "法文"
+
+msgid "German"
+msgstr "德文"
