@@ -10,6 +10,7 @@ from reverbscope.core.sweep import (
     estimate_reference_band_hz,
     excitation_band_hz,
     frequency_at_sweep_time,
+    full_amplitude_band_hz,
     generate_ess,
     harmonic_pre_response_offsets_s,
     instantaneous_frequency,
@@ -137,14 +138,39 @@ def test_spectral_inverse_does_not_boost_out_of_band_or_ring() -> None:
 def test_excitation_band_from_settings() -> None:
     settings = SweepSettings(duration_s=0.5, start_hz=20.0, end_hz=20000.0)
     rate = settings.sweep_rate
-    low, high = excitation_band_hz(settings)
+    low, high = full_amplitude_band_hz(settings)
     assert low == pytest.approx(20.0 * np.exp(settings.fade_in_s / rate))
     assert high == pytest.approx(20000.0 * np.exp(-settings.fade_out_s / rate))
-    # With a 0.5 s sweep the 50 ms fade-in covers a whole octave.
+    # With a 0.5 s sweep the 50 ms fade-in covers a whole octave, and the
+    # ideal loopback is flat from where the fade ends.
     assert low == pytest.approx(39.9, abs=0.1)
+    assert excitation_band_hz(settings) == pytest.approx((low, high))
     no_fades = SweepSettings(start_hz=250.0, end_hz=5000.0, fade_in_s=0.0, fade_out_s=0.0)
-    assert excitation_band_hz(no_fades) == pytest.approx((250.0, 5000.0))
+    assert full_amplitude_band_hz(no_fades) == pytest.approx((250.0, 5000.0))
+    # Without fades both edges ripple; the band keeps the part within 1 dB.
+    band = excitation_band_hz(no_fades)
+    assert 250.0 < band[0] < 300.0 and 4800.0 < band[1] < 5000.0
     assert frequency_at_sweep_time(no_fades, no_fades.duration_s) == pytest.approx(5000.0)
+
+
+@pytest.mark.parametrize("duration_s", [10.0, 3.0, 1.0])
+def test_an_ideal_loopback_is_flat_over_the_excitation_band(duration_s: float) -> None:
+    """R3-6: the band started at f1 * exp(fade_in / L), where the ideal
+    loopback of the default sweep is -9.7 dB (3 s: -7.7 dB, 1 s: -3.9 dB):
+    the start of an ESS spectrum spreads over about sqrt(f / L) Hz with
+    Fresnel ripple, far wider than the 50 ms fade-in at 20 Hz."""
+    settings = SweepSettings(duration_s=duration_s)
+    pulse = reference_pulse(settings)
+    nfft = 1 << (4 * pulse.shape[0]).bit_length()
+    level = 20 * np.log10(np.abs(np.fft.rfft(pulse, nfft)))
+    freqs = np.fft.rfftfreq(nfft, 1.0 / settings.sample_rate)
+    low, high = excitation_band_hz(settings)
+    inside = level[(freqs >= low) & (freqs <= high)]
+    assert np.max(np.abs(inside)) < 1.05
+    # The band only gave up the rippled start (less than an octave), not
+    # the flat part above it.
+    assert low < 2.0 * full_amplitude_band_hz(settings)[0]
+    assert high == pytest.approx(full_amplitude_band_hz(settings)[1])
 
 
 def test_normalisation_band() -> None:
@@ -170,7 +196,7 @@ def test_estimated_reference_band_matches_sweep_definition(
     settings: SweepSettings, tolerance_octaves: float
 ) -> None:
     low, high = estimate_reference_band_hz(generate_ess(settings), settings.sample_rate)
-    exp_low, exp_high = excitation_band_hz(settings)
+    exp_low, exp_high = full_amplitude_band_hz(settings)
     assert abs(np.log2(low / exp_low)) < tolerance_octaves
     assert abs(np.log2(high / exp_high)) < 1.0 / 12.0
     design = design_spectral_inverse(generate_ess(settings), settings.sample_rate)

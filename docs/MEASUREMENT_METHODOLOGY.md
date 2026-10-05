@@ -50,6 +50,20 @@ is *not* 1: it is roughly `2 · bandwidth / fs` (about 0.82 for the default
 48 kHz sweep) and drops further when the direct sound falls between samples.
 Levels are read from the frequency response, not from `peak_value`.
 
+**Excitation band of a sweep definition** (`excitation_band_hz`). The
+range swept at full amplitude, `f1·exp(fade_in/L)` to `f2·exp(−fade_out/L)`,
+narrowed to where the ideal loopback (the sweep deconvolved by its own
+analytic inverse) stays within 1 dB (`EXCITATION_BAND_TOLERANCE_DB`) of
+0 dB. The full-amplitude range alone is not enough: the spectrum of an ESS
+reaches its level over about `sqrt(f/L)` Hz with Fresnel ripple, much more
+than a 50 ms fade-in covers at 20 Hz. The default 10 s sweep's ideal
+loopback is −9.7 dB at 20.7 Hz and +2.6 dB at 23.7 Hz; its band starts at
+28 Hz (3 s: 34 Hz, 1 s: 39 Hz). Everything that trusts the band uses this
+range: the excited range in the report, withheld decay bands, the
+frequency-response and resonance ranges and the common band of a
+comparison, where two perfect chains measured with different sweep lengths
+no longer differ near the low edge.
+
 **Spectral inverse** (`inverse_filter_spectral` / `design_spectral_inverse`):
 when the reference is an arbitrary WAV without a ReverbScope sweep definition,
 a Kirkeby-type regularised spectral division is used (Farina 2007 [2]

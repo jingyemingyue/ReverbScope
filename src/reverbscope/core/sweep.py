@@ -30,12 +30,15 @@ Excitation band
 Outside the frequency range the sweep actually covered, the deconvolved
 response contains only roll-off, leakage and noise.
 
-* From a sweep definition (:func:`excitation_band_hz`): the sweep reaches full
-  amplitude at the end of the fade-in and leaves it at the start of the
-  fade-out, so ``f_lo = f1 * exp(fade_in_s / L)`` and
-  ``f_hi = f2 * exp(-fade_out_s / L)``. Using the full fade lengths is the
-  conservative choice (the fades are sin^2/cos^2 ramps that already pass
-  -6 dB halfway).
+* From a sweep definition (:func:`excitation_band_hz`): the part of the range
+  swept at full amplitude (:func:`full_amplitude_band_hz`, from
+  ``f1 * exp(fade_in_s / L)`` to ``f2 * exp(-fade_out_s / L)``) in which the
+  ideal loopback, the sweep deconvolved by its own inverse filter, stays
+  within ``EXCITATION_BAND_TOLERANCE_DB`` of 0 dB. The full-amplitude range
+  alone is not enough: the spectrum of an ESS reaches its level over about
+  ``sqrt(f / L)`` Hz with Fresnel ripple, and a 50 ms fade-in is far shorter
+  than that at 20 Hz. The default 10 s sweep's ideal loopback is -9.7 dB at
+  20.7 Hz and +2.6 dB at 23.7 Hz, and within 1 dB from 28 Hz up.
 * From reference audio (:func:`estimate_reference_band_hz`): the power
   spectrum of an ESS falls as 1/f, so ``f * |X(f)|^2`` is flat over the swept
   range. It is power-averaged over 1/3 octave; the reference band is the
@@ -85,6 +88,9 @@ from reverbscope.i18n import _
 from reverbscope.models.audio import FloatArray
 from reverbscope.models.configuration import SweepSettings
 
+#: The excitation band of a sweep definition is where its ideal loopback stays
+#: within this many dB of 0 dB (see :func:`excitation_band_hz`).
+EXCITATION_BAND_TOLERANCE_DB = 1.0
 #: Samples of a reference signal below this level (dB re its peak magnitude)
 #: at the start and the end are treated as silence and trimmed.
 REFERENCE_SILENCE_THRESHOLD_DB = -60.0
@@ -149,7 +155,7 @@ def measurement_signal(settings: SweepSettings) -> FloatArray:
     ).astype(np.float64)
 
 
-def excitation_band_hz(settings: SweepSettings) -> tuple[float, float]:
+def full_amplitude_band_hz(settings: SweepSettings) -> tuple[float, float]:
     """Frequencies swept at full amplitude: ``(f1*exp(fade_in/L), f2*exp(-fade_out/L))``.
 
     Because ``fade_in_s + fade_out_s < duration_s`` (enforced by
@@ -159,6 +165,69 @@ def excitation_band_hz(settings: SweepSettings) -> tuple[float, float]:
     low = settings.start_hz * math.exp(settings.fade_in_s / rate)
     high = settings.end_hz * math.exp(-settings.fade_out_s / rate)
     return float(low), float(high)
+
+
+@dataclass(frozen=True)
+class _IdealLoopback:
+    """Spectra of the level-scaled sweep and of its unnormalised analytic inverse."""
+
+    freqs: FloatArray
+    reference: np.ndarray
+    inverse: np.ndarray
+    #: The inverse filter before its in-band normalisation.
+    inverse_samples: FloatArray
+
+
+def _ideal_loopback(settings: SweepSettings) -> _IdealLoopback:
+    reference = generate_ess(settings)
+    unit = generate_ess(settings, apply_level=False)
+    envelope = np.exp(-sweep_time_axis(settings) / settings.sweep_rate)
+    inv = np.asarray(unit[::-1] * envelope, dtype=np.float64)
+    nfft = int(sfft.next_fast_len(reference.shape[0], real=True))
+    return _IdealLoopback(
+        freqs=np.fft.rfftfreq(nfft, 1.0 / settings.sample_rate),
+        reference=sfft.rfft(reference, nfft),
+        inverse=sfft.rfft(inv, nfft),
+        inverse_samples=inv,
+    )
+
+
+def _flat_band(loopback: _IdealLoopback, nominal: tuple[float, float]) -> tuple[float, float]:
+    """The part of ``nominal`` where the ideal loopback stays within the tolerance.
+
+    The loopback's level is its median over the normalisation band of
+    ``nominal``. Each edge moves inwards past the last frequency (seen from
+    the band centre) that deviates by more than ``EXCITATION_BAND_TOLERANCE_DB``.
+    If nothing near the centre is within the tolerance, ``nominal`` is kept.
+    """
+    lo, hi = nominal
+    freqs = loopback.freqs
+    magnitude = np.abs(loopback.reference * loopback.inverse)
+    ref_lo, ref_hi = normalisation_band_hz(lo, hi)
+    level = magnitude[(freqs >= ref_lo) & (freqs <= ref_hi)]
+    if level.size == 0 or not float(np.median(level)) > 0.0:
+        return nominal
+    deviation = 20.0 * np.log10(np.maximum(magnitude, _TINY) / float(np.median(level)))
+    off = np.abs(deviation) > EXCITATION_BAND_TOLERANCE_DB
+    centre = math.sqrt(lo * hi)
+    below = np.flatnonzero(off & (freqs >= lo) & (freqs < centre))
+    above = np.flatnonzero(off & (freqs > centre) & (freqs <= hi))
+    low = float(freqs[below[-1] + 1]) if below.size else lo
+    high = float(freqs[above[0] - 1]) if above.size else hi
+    if not low < high:
+        return nominal
+    return max(lo, low), min(hi, high)
+
+
+def excitation_band_hz(settings: SweepSettings) -> tuple[float, float]:
+    """Frequencies the sweep excites flat to within ``EXCITATION_BAND_TOLERANCE_DB``.
+
+    The full-amplitude range (:func:`full_amplitude_band_hz`), narrowed to
+    where the ideal loopback (the sweep deconvolved by :func:`inverse_filter`)
+    stays within the tolerance of 0 dB; see the module docstring. Never
+    wider than the full-amplitude range, and never empty.
+    """
+    return _flat_band(_ideal_loopback(settings), full_amplitude_band_hz(settings))
 
 
 def frequency_at_sweep_time(settings: SweepSettings, t_s: float) -> float:
@@ -206,21 +275,14 @@ def inverse_filter(settings: SweepSettings) -> FloatArray:
     loopback therefore yields a 0 dB frequency response, and a gain ``g`` in
     the measurement chain yields ``20*log10(g)`` dB.
     """
-    reference = generate_ess(settings)
-    unit = generate_ess(settings, apply_level=False)
-    t = sweep_time_axis(settings)
-    envelope = np.exp(-t / settings.sweep_rate)
-    inv = unit[::-1] * envelope
-    n = reference.shape[0]
-    nfft = int(sfft.next_fast_len(n, real=True))
-    freqs = np.fft.rfftfreq(nfft, 1.0 / settings.sample_rate)
+    loopback = _ideal_loopback(settings)
     gain = _inband_gain(
-        freqs,
-        sfft.rfft(reference, nfft),
-        sfft.rfft(inv, nfft),
-        excitation_band_hz(settings),
+        loopback.freqs,
+        loopback.reference,
+        loopback.inverse,
+        _flat_band(loopback, full_amplitude_band_hz(settings)),
     )
-    return np.asarray(inv / gain, dtype=np.float64)
+    return np.asarray(loopback.inverse_samples / gain, dtype=np.float64)
 
 
 def active_region(

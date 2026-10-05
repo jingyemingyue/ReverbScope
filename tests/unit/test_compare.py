@@ -371,6 +371,25 @@ def test_a_stored_band_above_the_nyquist_frequency_is_not_compared(
     assert comparison.frequency_response.frequencies_hz.max() <= 24000.0 + 1e-6
 
 
+def test_two_perfect_chains_measured_with_different_sweeps_do_not_differ() -> None:
+    """R3-6: a 10 s and a 3 s ideal loopback compared with -7.1 dB at 22.5 Hz
+    and "largest change in the 31.5 Hz octave, 1.3 dB": both bands started
+    where the ideal loopback of its sweep was still 8-10 dB down."""
+    import numpy as np
+
+    chain = np.zeros(10)
+    chain[3] = 1.0
+    results = []
+    for duration_s in (10.0, 3.0):
+        sweep = SweepSettings(duration_s=duration_s, post_silence_s=2.0)
+        recording = synthetic_recording(sweep, chain, noise_rms=1e-6)
+        results.append(analyze(recording, Reference.from_settings(sweep)))
+    comparison = compare(*results)
+    assert comparison.frequency_response is not None
+    assert max(mad for _label, mad in comparison.frequency_response.band_mad_db) < 0.2
+    assert np.max(np.abs(comparison.frequency_response.difference_db)) < 1.0
+
+
 def test_a_refused_pair_names_its_reason_first(short_sweep: SweepSettings) -> None:
     """The finding quoted notes[0], which was a sweep-difference or the ISO note."""
     low = replace(short_sweep, start_hz=20.0, end_hz=1000.0)

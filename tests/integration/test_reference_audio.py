@@ -9,7 +9,7 @@ import pytest
 from scipy.signal import butter, fftconvolve, sosfiltfilt
 
 from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
-from reverbscope.core.sweep import excitation_band_hz, generate_ess, measurement_signal
+from reverbscope.core.sweep import full_amplitude_band_hz, generate_ess, measurement_signal
 from reverbscope.io.wav import load_reference, write_sweep_file
 from reverbscope.models.audio import AudioSignal
 from reverbscope.models.configuration import SweepSettings
@@ -54,7 +54,9 @@ def test_wav_reference_without_sidecar_matches_sidecar_analysis(
         assert any("near-silence" in w for w in result.warnings)
         band = imp.excitation_band
         assert band is not None and band.source == EXCITATION_SOURCE_ESTIMATED
-        settings_band = excitation_band_hz(short_sweep)
+        # The swept range; the spectral inverse is exact over the Fresnel
+        # ripple at its start, where the analytic inverse is not.
+        settings_band = full_amplitude_band_hz(short_sweep)
         assert settings_band[0] < band.low_hz < 2.0 * settings_band[0]
         assert settings_band[1] / 2.0 < band.high_hz < settings_band[1]
 
