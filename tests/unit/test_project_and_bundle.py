@@ -242,3 +242,36 @@ def test_bundle_shows_the_home_folder_as_a_tilde(
     assert session["impulse_response_path"] == "impulse_response.wav"
     assert Path(comparison["baseline_session"]) == Path("~", "sessions", "old")
     assert (out / "session.json").read_bytes() == on_disk
+
+
+@pytest.mark.parametrize("entry", ["NUL byte", "link loop"])
+def test_project_add_skips_a_stored_entry_that_cannot_be_resolved(
+    tmp_path: Path, short_sweep: SweepSettings, entry: str
+) -> None:
+    """A project.json from someone else with "sessions/a\\u0000" (or a folder
+    that is a link loop) made `project add` fail as "unexpected ValueError …
+    a bug in ReverbScope"; `project show` and `average` skip such an entry."""
+    import json
+    import sys
+
+    if entry == "link loop" and sys.platform == "win32":
+        pytest.skip("symbolic links need a privilege")
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    result = analyze(
+        synthetic_recording(short_sweep, ir, noise_rms=1e-5), Reference.from_settings(short_sweep)
+    )
+    project = tmp_path / "room"
+    project.mkdir()
+    stored = "sessions/a\x00"
+    if entry == "link loop":
+        (project / "loop1").symlink_to("loop2")
+        (project / "loop2").symlink_to("loop1")
+        stored = "loop1"
+    (project / "project.json").write_text(
+        json.dumps({"schema_version": 1, "positions": [{"label": "A", "session_dirs": [stored]}]}),
+        encoding="utf-8",
+    )
+    session = project / "b"
+    save_measurement(session, MeasurementSession(), result, include_curves=False)
+    add_session(project, session, position="B")
+    assert list_project_sessions(project) == [("B", session)]

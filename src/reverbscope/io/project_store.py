@@ -63,7 +63,7 @@ def add_session(
     target = _resolve(base, stored).resolve()
     for entry in project.positions:
         if entry.label != position and any(
-            _resolve(base, d).resolve() == target for d in entry.session_dirs
+            _resolved(base, d) == target for d in entry.session_dirs
         ):
             # One take is one position; the listing would keep the first label.
             raise SessionError(
@@ -75,7 +75,7 @@ def add_session(
     for index, entry in enumerate(positions):
         if entry.label == position:
             dirs = list(entry.session_dirs)
-            known = {_resolve(base, d).resolve() for d in dirs}
+            known = {_resolved(base, d) for d in dirs}
             if target not in known:
                 dirs.append(stored)
             positions[index] = PositionEntry(label=position, session_dirs=tuple(dirs))
@@ -117,6 +117,16 @@ def _relative(path: Path, base: Path) -> str:
         return path.resolve().relative_to(base.resolve()).as_posix()
     except ValueError:
         return str(path.resolve())
+
+
+def _resolved(base: Path, stored: str) -> Path | None:
+    """A stored entry resolved, or None when it cannot be: a NUL byte or a
+    link loop (a project.json from someone else) names no session, as in
+    :func:`list_project_sessions`."""
+    try:
+        return _resolve(base, stored).resolve()
+    except (OSError, RuntimeError, ValueError):
+        return None
 
 
 def _resolve(base: Path, stored: str) -> Path:
