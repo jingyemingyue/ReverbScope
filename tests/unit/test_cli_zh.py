@@ -164,6 +164,16 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
             "the following arguments are required: {init,add,average,show}",
         ),
         (["session"], "缺少必需的参数：{bundle}", "the following arguments are required: {bundle}"),
+        (
+            ["schema"],
+            "缺少必需的参数：{result,session,comparison,project,sidecar}",
+            "the following arguments are required: {result,session,comparison,project,sidecar}",
+        ),
+        (
+            ["schema", "bad"],
+            "参数 {result,session,comparison,project,sidecar}：无效选项：'bad'",
+            "argument {result,session,comparison,project,sidecar}: invalid choice: 'bad'",
+        ),
         (["show"], "缺少必需的参数：路径", "the following arguments are required: path"),
         (
             ["analyze-ir", "--ir", "x.wav", "--band", "20"],
@@ -205,7 +215,9 @@ def test_every_argparse_error_is_translated(
         assert expected in " ".join(err.split()), err
         assert "_command" not in err
         if lang == "zh_CN":
-            assert english_words(_everything_shown(err), data=("x.wav", "abc", "long", "yes")) == []
+            typed = ("bad", "result", "session", "comparison", "project", "sidecar")
+            data = ("x.wav", "abc", "long", "yes")
+            assert english_words(_everything_shown(err), data=data, values=typed) == []
 
 
 def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixture[str]) -> None:

@@ -1179,9 +1179,13 @@ def build_parser() -> argparse.ArgumentParser:
     p_schema = _command(
         sub, "schema", _("print a shipped JSON Schema"), examples=("roomscope schema result",)
     )
+    schemas = ["result", "session", "comparison", "project", "sidecar"]
     p_schema.add_argument(
         "name",
-        choices=["result", "session", "comparison", "project", "sidecar"],
+        choices=schemas,
+        # As for project and session: without a metavar argparse's errors
+        # name the argument by its dest ("argument name: invalid choice").
+        metavar="{" + ",".join(schemas) + "}",
         help=_("which schema to print"),
     )
     _shorten_usage(parser)
