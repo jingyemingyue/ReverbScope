@@ -984,7 +984,7 @@ def _type_name_and_refuse_to_replace(app: QApplication, folder: Path, name: str)
 
 
 def test_saving_a_file_asks_before_replacing_it_when_the_extension_is_added(
-    app: QApplication, tmp_path: Path, short_sweep: SweepSettings
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
 ) -> None:
     """The extension was added after the save dialog closed: typing
     "roomscope_sweep" silently replaced roomscope_sweep.wav (and its
@@ -992,6 +992,9 @@ def test_saving_a_file_asks_before_replacing_it_when_the_extension_is_added(
     from roomscope.core.compare import compare
     from roomscope.core.pipeline import Reference, analyze
 
+    # Save Test Signal first asks which DAW project to follow unless exactly
+    # one is in play; with one, the save dialog is the only dialog.
+    monkeypatch.setenv("ROOMSCOPE_FAKE_DAWS", "REAPER:48000:Song")
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
