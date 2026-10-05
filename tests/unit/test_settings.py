@@ -106,3 +106,13 @@ def test_saving_settings_keeps_a_symlinked_settings_file(tmp_path: Path, monkeyp
     assert settings_path().is_symlink()
     assert json.loads(real.read_text(encoding="utf-8"))["language"] == "en"
     assert stat.S_IMODE(real.stat().st_mode) == 0o600
+
+
+def test_settings_saved_with_a_byte_order_mark_are_used(tmp_path: Path, monkeypatch) -> None:
+    """A settings.json edited in Notepad ("UTF-8 with BOM") was ignored
+    without a word: the chosen language was lost."""
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    (tmp_path / "settings.json").write_bytes(
+        b'\xef\xbb\xbf{"schema_version": 1, "language": "zh_CN"}'
+    )
+    assert load_settings().language == "zh_CN"

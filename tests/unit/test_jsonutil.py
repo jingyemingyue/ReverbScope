@@ -134,3 +134,12 @@ def test_a_refused_atomic_write_leaves_no_temporary(
         write_text_atomic(target, '{"language": "zh_CN"}')
     assert raised.value.filename == str(target)
     assert sorted(path.name for path in tmp_path.iterdir()) == ["settings.json"]
+
+
+def test_a_json_file_with_a_byte_order_mark_is_read(tmp_path: Path) -> None:
+    """Notepad's "UTF-8 with BOM" and Windows PowerShell 5's -Encoding UTF8
+    write one: a hand-edited session.json was refused with the parser's
+    English "Unexpected UTF-8 BOM", and settings.json was silently ignored."""
+    edited = tmp_path / "session.json"
+    edited.write_bytes(b"\xef\xbb\xbf" + '{"room_name": "录音棚"}'.encode())
+    assert jsonutil.read_json_object(edited) == {"room_name": "录音棚"}

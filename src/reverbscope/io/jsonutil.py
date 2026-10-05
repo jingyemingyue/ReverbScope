@@ -162,7 +162,9 @@ def read_json_object(
             )
         )
     try:
-        text = path.read_text(encoding="utf-8")
+        # utf-8-sig: Notepad's "UTF-8 with BOM" and Windows PowerShell 5's
+        # "-Encoding UTF8" start the file with a byte-order mark.
+        text = path.read_text(encoding="utf-8-sig")
     except (OSError, UnicodeDecodeError) as exc:
         raise SessionError(_("cannot read {path}: {error}").format(path=path, error=exc)) from exc
     depth = json_nesting_depth(text)
