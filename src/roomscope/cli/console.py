@@ -19,11 +19,17 @@ Rules the rest of the CLI relies on:
 * **Widths are display widths**: a CJK or full-width character takes two
   columns, a combining mark none (:func:`cell_width`); ``len()`` is never used
   to align text.
+* **Frames** (panels and bordered tables) are drawn when
+  :attr:`Console.frames` is on, with ASCII forms where the stream cannot
+  write the box glyphs; below :data:`FRAME_MIN_WIDTH` columns there are
+  none. Every line of a frame has the same display width, and a frame that
+  cannot hold its text (a long path) gives way to the unframed layout.
 * Nothing here changes what is measured or stored; it only lays text out.
 """
 
 from __future__ import annotations
 
+import functools
 import os
 import re
 import shlex
@@ -32,14 +38,22 @@ import sys
 import time
 import unicodedata
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Literal, TextIO
+
+from roomscope.i18n import pgettext
 
 ColorMode = Literal["auto", "always", "never"]
 COLOR_MODES: tuple[ColorMode, ...] = ("auto", "always", "never")
 
+#: Narrower than this, frames are off: a border takes four columns of a line
+#: that is already short.
+FRAME_MIN_WIDTH = 40
+
 #: Status kinds; each has a symbol, an ASCII fallback and a colour.
 Status = Literal["ok", "warn", "error", "info", "skip", "unsure", "next"]
+#: The colour of a panel's border.
+Tone = Literal["accent", "ok", "warn", "error", "muted"]
 
 _SYMBOLS: dict[str, tuple[str, str]] = {
     "next": ("→", "->"),
@@ -73,6 +87,41 @@ _STATUS_STYLE: dict[str, tuple[str, ...]] = {
     "next": ("cyan",),
 }
 
+_TONE_STYLE: dict[str, tuple[str, ...]] = {
+    "accent": ("cyan",),
+    "ok": ("green",),
+    "warn": ("yellow",),
+    "error": ("red",),
+    "muted": ("dim",),
+}
+
+#: One-column marks for a badge (``✓ good``) and a panel title (``✗ Error``).
+#: ``✗`` rather than ``×`` for an error: ``×`` is ambiguous-width, ``✗`` is
+#: one column everywhere. ASCII forms for a stream that cannot write them.
+_MARKS: dict[str, tuple[str, str]] = {
+    "ok": ("✓", "+"),
+    "warn": ("!", "!"),
+    "error": ("✗", "x"),
+    "info": ("i", "i"),
+    "skip": ("–", "-"),
+    "unsure": ("?", "?"),
+    "next": ("→", ">"),
+}
+
+#: Frame glyphs, Unicode then ASCII. A panel: its corners (top left, top
+#: right, bottom left, bottom right), its rule and its side.
+_PANEL = (tuple("╭╮╰╯─│"), tuple("++++-|"))
+#: A table: the junctions of its top, middle and bottom rules (left, inner,
+#: right), its rule and its side.
+_GRID = (tuple("┌┬┐├┼┤└┴┘─│"), tuple("+++++++++-|"))
+#: A table's heavier header: its top junctions, rule and side, then the
+#: junctions of the rule under it (heavy above, light below).
+_HEAD = (tuple("┏┳┓━┃┡╇┩"), tuple("+++=|+++"))
+#: The section bar, Unicode then ASCII.
+_BAR = ("▌", "> ")
+#: What a stream must be able to write for the Unicode frames.
+_FRAME_PROBE = "╭╮╰╯─│┌┬┐├┼┤└┴┘┏┳┓━┃┡╇┩▌╸✗"
+
 #: ASCII stand-ins for the typographic signs the reports use, for a stream
 #: whose encoding cannot write them (a cp1252 pipe, a Latin-1 terminal).
 _ASCII_SIGNS = str.maketrans(
@@ -88,6 +137,7 @@ _ASCII_SIGNS = str.maketrans(
         "·": "|",
         "…": "...",
         "×": "x",
+        "✗": "x",
         "✓": "[OK]",
         "≤": "<=",
         "≥": ">=",
@@ -438,6 +488,23 @@ def terminal_width(stream: TextIO, interactive: bool, environ: Mapping[str, str]
     return max(MIN_WIDTH, min(MAX_WIDTH, width))
 
 
+@functools.lru_cache(maxsize=16)
+def _frames_writable(encoding: str) -> bool:
+    return can_encode(_FRAME_PROBE, encoding)
+
+
+def status_word(kind: Status) -> str:
+    """The word a badge shows next to its mark (``✓ good``); empty for ``next``."""
+    return {
+        "ok": pgettext("status", "good"),
+        "warn": pgettext("status", "check"),
+        "error": pgettext("status", "problem"),
+        "info": pgettext("status", "note"),
+        "skip": pgettext("status", "no data"),
+        "unsure": pgettext("status", "unsure"),
+    }.get(kind, "")
+
+
 # --- Console -----------------------------------------------------------------
 
 
@@ -452,6 +519,9 @@ class Console:
     interactive: bool = False
     #: The stream's encoding, for text that is shown only where it can be written.
     encoding: str = "utf-8"
+    #: Panels and bordered tables; off, the same text is laid out without
+    #: them. :attr:`boxed` says whether they are drawn.
+    frames: bool = False
 
     @classmethod
     def for_stream(
@@ -469,6 +539,21 @@ class Console:
             interactive=interactive,
             encoding=getattr(stream, "encoding", None) or "utf-8",
         )
+
+    @property
+    def boxed(self) -> bool:
+        """Whether frames are drawn: asked for, with room for them."""
+        return self.frames and self.width >= FRAME_MIN_WIDTH
+
+    def inner(self) -> Console:
+        """How a panel's body is laid out: four columns narrower (the sides
+        and their padding). Its text reads like the rest of the output (the
+        same marks and separators); it is not meant to draw frames itself."""
+        return replace(self, width=self.width - 4)
+
+    def _glyphs(self) -> int:
+        """0 for the Unicode frame glyphs, 1 for their ASCII forms."""
+        return 0 if self.unicode and _frames_writable(self.encoding) else 1
 
     def can_write(self, text: str) -> bool:
         """Whether the stream's encoding holds every character of ``text``."""
@@ -488,6 +573,9 @@ class Console:
 
     def _ascii(self, text: str) -> str:
         """``text`` with the signs this stream cannot show in ASCII."""
+        if self.frames:
+            # "|" is the side of an ASCII frame: a separator inside one is "/".
+            text = text.replace("·", "/")
         text = text.translate(_ASCII_SIGNS)
         if _DEGREE in text and not self.can_write(_DEGREE):
             text = text.replace(_DEGREE, "")
@@ -512,7 +600,20 @@ class Console:
 
     def symbol(self, status: Status) -> str:
         glyph, ascii_form = _SYMBOLS[status]
+        if status == "error" and self.frames:
+            glyph = _MARKS["error"][0]  # one column wide, like the frames
         return self.style(glyph if self.unicode else ascii_form, *_STATUS_STYLE[status])
+
+    def mark(self, status: Status) -> str:
+        """The one-column mark of a badge or a panel title, unstyled."""
+        glyph, ascii_form = _MARKS[status]
+        return glyph if self.unicode else ascii_form
+
+    def badge(self, status: Status) -> str:
+        """``✓ good``, ``! check``, ``✗ problem``: the mark and a word, coloured."""
+        word = self.readable(status_word(status))
+        text = f"{self.mark(status)} {word}" if word else self.mark(status)
+        return self.style(text, *_STATUS_STYLE[status])
 
     def fit(self, text: str) -> str:
         """``text`` as this stream can write it: typographic signs become ASCII
@@ -536,20 +637,107 @@ class Console:
 
     def sep(self) -> str:
         """Separator between short facts on one line."""
-        return " · " if self.unicode else " | "
+        if self.unicode:
+            return " · "
+        return " / " if self.frames else " | "
 
     # Blocks -------------------------------------------------------------------
 
-    def title(self, text: str) -> list[str]:
-        """A command's heading: the title and a rule as wide as it."""
+    def title(
+        self,
+        text: str,
+        facts: Iterable[tuple[str, str]] = (),
+        *,
+        body: Callable[[Console, int], list[str]] | None = None,
+        tone: Tone = "accent",
+    ) -> list[str]:
+        """A command's heading, with the facts it ran on.
+
+        With frames: a panel with ``text`` in its top border, holding
+        ``facts`` as aligned fields, then the lines ``body(console, indent)``
+        lays out for it. Without (or when a line is too wide for the panel,
+        a long path): the title, a rule as wide as it and, when there is
+        more, a blank line, the facts and the body at an indent of 2.
+        """
         text = self.readable(text)
-        return [self.bold(text), self.muted(self.rule_char() * cell_width(text))]
+        facts = list(facts)
+        if self.boxed:
+            inner = self.inner()
+            content = inner.fields(facts, indent=0)
+            if body is not None:
+                content += body(inner, 0)
+            framed = (
+                self.frame(text, content, tone)
+                if content
+                else self.frame("", [inner.bold(text)], tone)
+            )
+            if framed is not None:
+                return framed
+        lines = [self.bold(text), self.muted(self.rule_char() * cell_width(text))]
+        if facts or body is not None:
+            lines.append("")
+            lines += self.fields(facts)
+            if body is not None:
+                lines += body(self, 2)
+        return lines
+
+    def frame(self, title: str, lines: Sequence[str], tone: Tone = "accent") -> list[str] | None:
+        """``lines`` (laid out by :meth:`inner`) in a rounded frame with
+        ``title`` in its top border, the border coloured by ``tone``.
+
+        ``None`` without frames, or when the title or a line is wider than
+        the frame holds (a path is never cut): the caller lays the text out
+        unframed.
+        """
+        if not self.boxed:
+            return None
+        room = self.width - 4
+        if any(cell_width(line) > room for line in lines):
+            return None
+        top_left, top_right, bottom_left, bottom_right, rule, side = _PANEL[self._glyphs()]
+        tone_style = _TONE_STYLE[tone]
+        title = self.readable(title)
+        if cell_width(title) > self.width - 6:
+            return None  # a title is never cut either
+        if title:
+            fill = self.width - 5 - cell_width(title)
+            top = (
+                self.style(top_left + rule, *tone_style)
+                + " "
+                + self.style(title, "bold", *tone_style)
+                + " "
+                + self.style(rule * fill + top_right, *tone_style)
+            )
+        else:
+            top = self.style(top_left + rule * (self.width - 2) + top_right, *tone_style)
+        edge = self.style(side, *tone_style)
+        body = [f"{edge} {pad(line, room)} {edge}" for line in lines]
+        bottom = self.style(bottom_left + rule * (self.width - 2) + bottom_right, *tone_style)
+        return [top, *body, bottom]
+
+    def panel(self, title: str, lines: Sequence[str], tone: Tone = "accent") -> list[str]:
+        """:meth:`frame`, or without frames the title in bold and ``lines``
+        at an indent of 2."""
+        framed = self.frame(title, lines, tone)
+        if framed is not None:
+            return framed
+        head = [self.style(self.readable(title), "bold", *_TONE_STYLE[tone])] if title else []
+        return head + [("  " + line) if line else line for line in lines]
 
     def section(self, text: str, note: str = "") -> list[str]:
-        """A blank line and a section heading, with an optional muted note."""
+        """A blank line and a section heading, with an optional muted note.
+
+        With frames the heading starts with a coloured bar (``▌``, ASCII
+        ``> ``).
+        """
         text = self.readable(text)
         note = self.readable(note) if note else ""
-        head = self.style(text, "bold", "cyan")
+        if self.boxed:
+            bar = _BAR[self._glyphs()]
+            head = self.style(bar, "cyan") + self.bold(text)
+            text = bar + text
+        else:
+            head = self.style(text, "bold", "cyan")
         if not note:
             return ["", head]
         if cell_width(text) + 2 + cell_width(note) <= self.width:
@@ -678,12 +866,141 @@ class Console:
         indent: int = 2,
         gap: int = 3,
     ) -> bool:
-        """Whether :meth:`table` would lay these rows out as a table (not blocks)."""
-        widths = [cell_width(header) for header in headers]
+        """Whether :meth:`table` would lay these rows out as a table (not
+        blocks); with frames, as a bordered table."""
+        if self.boxed:
+            return self.framed_table(headers, rows) is not None
+        return self._fits_unframed(_column_widths(headers, rows), indent, gap)
+
+    def _fits_unframed(self, widths: Sequence[int], indent: int, gap: int) -> bool:
+        return indent + sum(widths) + gap * (len(widths) - 1) <= self.width
+
+    def framed_table(
+        self,
+        headers: Sequence[str],
+        rows: Sequence[Sequence[str]],
+        *,
+        align: str = "",
+        wrap_column: int | None = None,
+        expand: bool = False,
+    ) -> list[str] | None:
+        """Rows in a bordered grid under a heavier header row; no header row
+        when ``headers`` is empty.
+
+        Cells may be styled. The text of ``wrap_column`` wraps inside its
+        column when the grid would be wider than the console; ``expand``
+        widens that column (else the last) to the full width. ``None``
+        without frames, or when the grid does not fit even so (a path is
+        never cut): the caller lays the rows out another way.
+        """
+        if not self.boxed or not rows:
+            return None
+        headers = [self.readable(header) for header in headers]
+        rows = [[self.readable(cell) for cell in row] for row in rows]
+        cell_widths = _column_widths([], rows)
+        widths = _column_widths(headers, rows)
+        columns = len(widths)
+        align = (align or "l" * columns).ljust(columns, "l")
+        flex = columns - 1 if wrap_column is None else wrap_column
+        spare = self.width - (sum(widths) + 3 * columns + 1)
+        shrunk = 0
+        if spare < 0 and wrap_column is not None:
+            # The wrapping column narrows first, down to a readable width.
+            least = min(widths[flex], _WRAP_FLOOR)
+            if headers:
+                least = max(least, cell_width(headers[flex]))
+            shrunk = max(0, min(-spare, widths[flex] - least))
+            widths[flex] -= shrunk
+            spare += shrunk
+        if spare < 0 and headers:
+            # Then a header wider than its cells goes on two lines, the one
+            # that saves most first.
+            def narrow(index: int) -> int:
+                header = headers[index]
+                return max(
+                    cell_widths[index],
+                    max(cell_width(token) for token in _tokens(header)),
+                    -(-cell_width(header) // 2),
+                )
+
+            savings = sorted(
+                ((widths[i] - narrow(i), i) for i in range(columns) if i != wrap_column),
+                reverse=True,
+            )
+            for saving, index in savings:
+                if spare >= 0 or saving <= 0:
+                    break
+                widths[index] -= saving
+                spare += saving
+        if spare < 0:
+            return None
+        widths[flex] += spare if expand else min(spare, shrunk)
+
+        def lines_of(cells: Sequence[str]) -> list[list[str]] | None:
+            """One row of cells as display lines; ``None`` when one cannot wrap."""
+            split: list[list[str]] = []
+            for index, cell in enumerate(cells):
+                if cell_width(cell) <= widths[index]:
+                    split.append([cell])
+                    continue
+                if isinstance(cell, Verbatim):
+                    return None
+                wrapped = wrap(strip_ansi(cell), widths[index])
+                if any(cell_width(line) > widths[index] for line in wrapped):
+                    return None  # a path inside the text
+                split.append(wrapped)
+            height = max(len(lines) for lines in split)
+            return [[lines[k] if k < len(lines) else "" for lines in split] for k in range(height)]
+
+        head = lines_of(headers) if headers else []
+        body: list[list[str]] = []
         for row in rows:
-            for index, cell in enumerate(row):
-                widths[index] = max(widths[index], cell_width(cell))
-        return indent + sum(widths) + gap * (len(headers) - 1) <= self.width
+            row_lines = lines_of(row)
+            if head is None or row_lines is None:
+                return None
+            body += row_lines
+        for index, width in enumerate(widths):
+            if any(cell_width(row[index]) > width for row in rows):
+                align = align[:index] + "l" + align[index + 1 :]  # wrapped text reads left
+
+        glyphs = self._glyphs()
+        (top_left, top_mid, top_right, _ml, _mm, _mr, low_left, low_mid, low_right, rule, side) = (
+            _GRID[glyphs]
+        )
+        h_left, h_mid, h_right, h_rule, h_side, s_left, s_mid, s_right = _HEAD[glyphs]
+
+        def border(left: str, mid: str, right: str, fill: str) -> str:
+            return self.muted(left + mid.join(fill * (width + 2) for width in widths) + right)
+
+        def line(cells: Sequence[str], edge: str) -> str:
+            styled = self.muted(edge)
+            parts = [
+                " " + pad(cell, widths[i], "right" if align[i] == "r" else "left") + " "
+                for i, cell in enumerate(cells)
+            ]
+            return styled + styled.join(parts) + styled
+
+        out: list[str] = []
+        if head:
+            out.append(border(h_left, h_mid, h_right, h_rule))
+            out += [line([self.bold(cell) for cell in cells], h_side) for cells in head]
+            out.append(border(s_left, s_mid, s_right, h_rule))
+        else:
+            out.append(border(top_left, top_mid, top_right, rule))
+        out += [line(cells, side) for cells in body]
+        out.append(border(low_left, low_mid, low_right, rule))
+        return out
+
+    def grid(self, pairs: Iterable[tuple[str, str]]) -> list[str]:
+        """``label  value`` rows: with frames a bordered grid without a
+        header (the value wraps in its column), else :meth:`fields`."""
+        items = list(pairs)
+        if not items:
+            return []
+        framed = self.framed_table(
+            [], [[self.muted(self.readable(label)), value] for label, value in items], wrap_column=1
+        )
+        return framed if framed is not None else self.fields(items)
 
     def table(
         self,
@@ -694,25 +1011,31 @@ class Console:
         indent: int = 2,
         gap: int = 3,
         title_columns: int = 1,
+        wrap_column: int | None = None,
+        expand: bool = False,
     ) -> list[str]:
         """A table with a ruled header; ``align`` has one ``l``/``r`` per column.
 
-        Cells may be styled. When the table does not fit the width, every row
-        becomes a small block (its first ``title_columns`` cells as the title,
-        then ``header value`` pairs), so nothing runs off the right edge.
+        Cells may be styled. With frames it is drawn in a bordered grid (see
+        :meth:`framed_table`, which ``wrap_column`` and ``expand`` are for).
+        When the table does not fit the width, every row becomes a small
+        block (its first ``title_columns`` cells as the title, then ``header
+        value`` pairs), so nothing runs off the right edge.
         """
+        framed = self.framed_table(
+            headers, rows, align=align, wrap_column=wrap_column, expand=expand
+        )
+        if framed is not None:
+            return framed
         columns = len(headers)
         headers = [self.readable(header) for header in headers]
         rows = [[self.readable(cell) for cell in row] for row in rows]
         align = (align or "l" * columns).ljust(columns, "l")
-        widths = [cell_width(header) for header in headers]
-        for row in rows:
-            for index, cell in enumerate(row):
-                widths[index] = max(widths[index], cell_width(cell))
+        widths = _column_widths(headers, rows)
         margin = " " * indent
-        if gap > 2 and not self.fits(headers, rows, indent=indent, gap=gap):
+        if gap > 2 and not self._fits_unframed(widths, indent, gap):
             gap = 2  # a little tighter before giving up the table
-        if not self.fits(headers, rows, indent=indent, gap=gap):
+        if not self._fits_unframed(widths, indent, gap):
             out: list[str] = []
             titles = [""] * title_columns
             for number, row in enumerate(rows):
@@ -746,6 +1069,20 @@ class Console:
 
         rule = [self.muted(self.rule_char() * width) for width in widths]
         return [line([self.muted(h) for h in headers]), line(rule), *(line(row) for row in rows)]
+
+
+#: The narrowest a wrapping column of a bordered table gets before the table
+#: is laid out another way.
+_WRAP_FLOOR = 16
+
+
+def _column_widths(headers: Sequence[str], rows: Sequence[Sequence[str]]) -> list[int]:
+    """Each column's display width: its widest cell, header included."""
+    widths = [cell_width(header) for header in headers] or [0] * max(len(row) for row in rows)
+    for row in rows:
+        for index, cell in enumerate(row):
+            widths[index] = max(widths[index], cell_width(cell))
+    return widths
 
 
 def _styled_wrap(value: str, plain: str, styled: bool, width: int, prefix: str) -> list[str]:

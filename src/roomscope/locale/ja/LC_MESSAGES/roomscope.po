@@ -6120,3 +6120,27 @@ msgstr "、"
 
 msgid "invalid JSON at line {line}, column {column}"
 msgstr "{line} 行 {column} 列が有効な JSON ではありません"
+
+msgctxt "status"
+msgid "good"
+msgstr "良好"
+
+msgctxt "status"
+msgid "check"
+msgstr "要確認"
+
+msgctxt "status"
+msgid "problem"
+msgstr "問題"
+
+msgctxt "status"
+msgid "note"
+msgstr "参考"
+
+msgctxt "status"
+msgid "no data"
+msgstr "データなし"
+
+msgctxt "status"
+msgid "unsure"
+msgstr "不確か"

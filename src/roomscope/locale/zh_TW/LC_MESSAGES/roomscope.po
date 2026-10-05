@@ -5999,3 +5999,27 @@ msgstr "、"
 
 msgid "invalid JSON at line {line}, column {column}"
 msgstr "第 {line} 行第 {column} 列不是有效的 JSON"
+
+msgctxt "status"
+msgid "good"
+msgstr "良好"
+
+msgctxt "status"
+msgid "check"
+msgstr "注意"
+
+msgctxt "status"
+msgid "problem"
+msgstr "問題"
+
+msgctxt "status"
+msgid "note"
+msgstr "說明"
+
+msgctxt "status"
+msgid "no data"
+msgstr "無資料"
+
+msgctxt "status"
+msgid "unsure"
+msgstr "不確定"

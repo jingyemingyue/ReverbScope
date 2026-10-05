@@ -6154,3 +6154,27 @@ msgstr ", "
 
 msgid "invalid JSON at line {line}, column {column}"
 msgstr "{line}행 {column}열이 올바른 JSON이 아닙니다"
+
+msgctxt "status"
+msgid "good"
+msgstr "양호"
+
+msgctxt "status"
+msgid "check"
+msgstr "확인 필요"
+
+msgctxt "status"
+msgid "problem"
+msgstr "문제"
+
+msgctxt "status"
+msgid "note"
+msgstr "참고"
+
+msgctxt "status"
+msgid "no data"
+msgstr "데이터 없음"
+
+msgctxt "status"
+msgid "unsure"
+msgstr "불확실"

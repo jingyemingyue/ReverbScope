@@ -6772,3 +6772,27 @@ msgstr ", "
 
 msgid "invalid JSON at line {line}, column {column}"
 msgstr "ungültiges JSON in Zeile {line}, Spalte {column}"
+
+msgctxt "status"
+msgid "good"
+msgstr "gut"
+
+msgctxt "status"
+msgid "check"
+msgstr "prüfen"
+
+msgctxt "status"
+msgid "problem"
+msgstr "Problem"
+
+msgctxt "status"
+msgid "note"
+msgstr "Hinweis"
+
+msgctxt "status"
+msgid "no data"
+msgstr "keine Daten"
+
+msgctxt "status"
+msgid "unsure"
+msgstr "unsicher"

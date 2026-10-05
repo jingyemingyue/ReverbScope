@@ -6808,3 +6808,27 @@ msgstr ", "
 
 msgid "invalid JSON at line {line}, column {column}"
 msgstr "JSON no válido en la línea {line}, columna {column}"
+
+msgctxt "status"
+msgid "good"
+msgstr "bien"
+
+msgctxt "status"
+msgid "check"
+msgstr "revisar"
+
+msgctxt "status"
+msgid "problem"
+msgstr "problema"
+
+msgctxt "status"
+msgid "note"
+msgstr "nota"
+
+msgctxt "status"
+msgid "no data"
+msgstr "sin datos"
+
+msgctxt "status"
+msgid "unsure"
+msgstr "incierto"
