@@ -615,9 +615,26 @@ def list_sessions(root: str | Path, *, max_depth: int = 2) -> list[SessionListin
 
 
 def _session_file(path: str | Path) -> Path:
+    """The session.json that ``path`` names: that file, the one in a folder,
+    or the one beside another file of a session (result.json,
+    impulse_response.wav).
+
+    Any other file is refused. Read as a session, a result.json or
+    project.json became a made-up take: default mode and profile, a new
+    session id, and no "Synthetic demo" mark.
+    """
     p = Path(path)
     if p.is_dir():
         p = p / SESSION_FILE
+    elif p.name != SESSION_FILE and p.is_file():
+        beside = p.with_name(SESSION_FILE)
+        if not beside.is_file():
+            raise SessionError(
+                _(
+                    "{path} is not a session file; give the session folder or its session.json"
+                ).format(path=p)
+            )
+        p = beside
     if not p.is_file():
         raise SessionError(_("session file not found: {path}").format(path=p))
     return p

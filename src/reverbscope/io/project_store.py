@@ -57,11 +57,12 @@ def add_session(
     base = given.parent if given.is_file() else Path(directory)
     project = load_project(base) if is_project(base) else Project(name=base.name)
     session = Path(session_dir)
-    if session.name == SESSION_FILE:
-        # One session, one entry: "dir" and "dir/session.json" are the same take.
-        session = session.parent
     # A typo would be stored and then skipped by every listing without a word.
     load_session(session)
+    if not session.is_dir():
+        # One session, one entry: "dir", "dir/session.json" and "dir/result.json"
+        # are the same take.
+        session = session.parent
     stored = _relative(session, base)
     target = _resolve(base, stored).resolve()
     for entry in project.positions:

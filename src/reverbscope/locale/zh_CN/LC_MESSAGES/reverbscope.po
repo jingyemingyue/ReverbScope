@@ -4496,3 +4496,6 @@ msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（RMS 最
 msgctxt "diagnostic"
 msgid "recording has {count} channels; channel {number} of {count} (highest RMS excluding loopback channel {loopback_number}) was analysed (on the command line --channel {index}, counted from 0)"
 msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（除回送声道 {loopback_number} 外 RMS 最高；命令行从 0 开始计数，即 --channel {index}）"
+
+msgid "{path} is not a session file; give the session folder or its session.json"
+msgstr "{path} 不是会话文件；请指定会话文件夹或其中的 session.json"

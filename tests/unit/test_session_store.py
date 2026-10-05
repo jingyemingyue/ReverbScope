@@ -719,3 +719,29 @@ def test_a_failed_removal_puts_the_previous_take_back(
         save_measurement(folder, MeasurementSession(room_name="B"), result, copy_recording=False)
     monkeypatch.setattr(Path, "unlink", real_unlink)
     assert {path.name: path.read_bytes() for path in folder.iterdir()} == before
+
+
+def test_only_a_session_json_is_read_as_a_session(tmp_path: Path, analysed) -> None:
+    """Any JSON file was read as session.json: `show <session>/result.json`
+    reported a made-up take (Universal DAW Mode, the generic profile, a new
+    session id) and hid a demo's "Synthetic demo" mark."""
+    from reverbscope.i18n import activate
+
+    _recording, result = analysed
+    folder = tmp_path / "demo"
+    stored = MeasurementSession(mode="synthetic_demo", recording_profile="vocal", room_name="R")
+    save_measurement(folder, stored, result, include_curves=False)
+    for member in (RESULT_FILE, IR_FILE, SESSION_FILE):
+        assert load_session(folder / member).session_id == stored.session_id, member
+        assert load_measurement(folder / member).session.mode == "synthetic_demo", member
+    loose = tmp_path / "loose" / "result.json"
+    loose.parent.mkdir()
+    loose.write_bytes((folder / RESULT_FILE).read_bytes())
+    with pytest.raises(SessionError, match="is not a session file"):
+        load_session(loose)
+    activate("zh_CN")
+    try:
+        with pytest.raises(SessionError, match="不是会话文件"):
+            load_measurement(loose)
+    finally:
+        activate("en")
