@@ -538,14 +538,6 @@ msgstr "평면?"
 msgid "No placement result. Add a loudspeaker distance to raise the tier."
 msgstr "배치 결과가 없습니다. 스피커 거리를 넣으면 단계가 올라갑니다."
 
-msgid ""
-"Placement tier {tier}. No coordinates, room length, room width or named "
-"wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} C{assumed"
-"}."
-msgstr ""
-"배치 단계 {tier}. 좌표, 방 길이, 방 너비, 이름 있는 벽은 구하지 않습니다. 음속 {speed:.1f} m/s, {te"
-"mp:.0f} C{assumed}."
-
 msgid " (assumed)"
 msgstr "(가정)"
 
@@ -1154,9 +1146,6 @@ msgstr "임펄스 응답 WAV"
 
 msgid "n/a"
 msgstr "n/a"
-
-msgid "at {temp:.0f} C"
-msgstr "{temp:.0f} C"
 
 msgid "matched"
 msgstr "일치"
@@ -2850,9 +2839,6 @@ msgstr "placement_distance_m는 0.20 m와 15 m 사이여야 합니다"
 
 msgid "placement_mic_height_m must be between 0.02 m and 5 m"
 msgstr "placement_mic_height_m는 0.02 m와 5 m 사이여야 합니다"
-
-msgid "placement_temperature_c must be between -20 C and 50 C"
-msgstr "placement_temperature_c는 -20 C와 50 C 사이여야 합니다"
 
 msgid ""
 "placement_mic_height_m needs placement_distance_m: a height on its own c"
@@ -4609,11 +4595,6 @@ msgstr "RoomScope 독립 실행 측정"
 msgid "RoomScope test signal"
 msgstr "RoomScope 테스트 신호"
 
-msgid ""
-"Run a command with --help for its options, for example: roomscope measur"
-"e --help"
-msgstr "옵션은 각 명령에 --help를 붙이세요. 예: roomscope measure --help"
-
 msgid "Segment"
 msgstr "구간"
 
@@ -5763,3 +5744,427 @@ msgstr "독일어"
 msgctxt "metavar"
 msgid "TITLE"
 msgstr "제목"
+
+msgid "Placement tier {tier}. No coordinates, room length, room width or named wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} °C{assumed}."
+msgstr "배치 단계 {tier}. 좌표, 방 길이, 방 너비, 이름 있는 벽은 구하지 않습니다. 음속 {speed:.1f} m/s, {temp:.0f} °C{assumed}."
+
+msgid "at {temp:.0f} °C"
+msgstr "{temp:.0f} °C"
+
+msgid "ignored explicit argument %r"
+msgstr "이 옵션은 값을 받지 않습니다(%r이(가) 주어짐)"
+
+msgid "unknown parser %(parser_name)r (choices: %(choices)s)"
+msgstr "알 수 없는 하위 명령 %(parser_name)r(선택: %(choices)s)"
+
+msgid "unexpected option string: %s"
+msgstr "예상하지 못한 옵션: %s"
+
+msgid "expected %s argument"
+msgstr "인수가 %s개 필요합니다"
+
+msgid "expected %s arguments"
+msgstr "인수가 %s개 필요합니다"
+
+msgctxt "argument type"
+msgid "int"
+msgstr "정수"
+
+msgctxt "argument type"
+msgid "float"
+msgstr "숫자"
+
+# Placeholders in usage lines and option lists (argparse metavars).
+
+msgctxt "metavar"
+msgid "<command>"
+msgstr "<명령>"
+
+msgctxt "metavar"
+msgid "HZ"
+msgstr "헤르츠"
+
+msgctxt "metavar"
+msgid "S"
+msgstr "초"
+
+msgctxt "metavar"
+msgid "DBFS"
+msgstr "dBFS"
+
+msgctxt "metavar"
+msgid "N"
+msgstr "번호"
+
+msgctxt "channel metavar"
+msgid "N"
+msgstr "채널"
+
+msgctxt "count metavar"
+msgid "N"
+msgstr "개수"
+
+msgctxt "fraction metavar"
+msgid "N"
+msgstr "N"
+
+msgctxt "metavar"
+msgid "TEXT"
+msgstr "텍스트"
+
+msgctxt "metavar"
+msgid "M"
+msgstr "미터"
+
+msgctxt "metavar"
+msgid "C"
+msgstr "섭씨"
+
+msgctxt "metavar"
+msgid "WAV"
+msgstr "WAV파일"
+
+msgctxt "metavar"
+msgid "FILE"
+msgstr "파일"
+
+msgctxt "metavar"
+msgid "DIR"
+msgstr "디렉터리"
+
+msgctxt "metavar"
+msgid "LIST"
+msgstr "목록"
+
+msgctxt "metavar"
+msgid "LO"
+msgstr "하한"
+
+msgctxt "metavar"
+msgid "HI"
+msgstr "상한"
+
+msgctxt "metavar"
+msgid "PATH"
+msgstr "경로"
+
+msgctxt "metavar"
+msgid "LABEL"
+msgstr "레이블"
+
+msgctxt "metavar"
+msgid "NAME"
+msgstr "이름"
+
+msgctxt "metavar"
+msgid "LANG"
+msgstr "언어"
+
+msgctxt "metavar"
+msgid "WHEN"
+msgstr "언제"
+
+msgctxt "metavar"
+msgid "path"
+msgstr "경로"
+
+msgctxt "metavar"
+msgid "baseline"
+msgstr "기준"
+
+msgctxt "metavar"
+msgid "candidate"
+msgstr "후보"
+
+msgctxt "metavar"
+msgid "project"
+msgstr "프로젝트"
+
+msgctxt "metavar"
+msgid "session"
+msgstr "세션"
+
+msgctxt "diagnostic"
+msgid "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance; RoomScope does not identify room modes."
+msgstr "후보만: 저역 응답의 피크와 긴 협대역 감쇠는 방 공진일 수 있습니다. RoomScope는 룸 모드를 식별하지 않습니다."
+
+msgid "placement_temperature_c must be between -20 °C and 50 °C"
+msgstr "placement_temperature_c는 -20 °C와 50 °C 사이여야 합니다"
+
+msgctxt "diagnostic"
+msgid "no air temperature was supplied, so {temperature:.0f} °C ({speed:.1f} m/s) was assumed; a 5 °C error moves every distance by about 0.9 %"
+msgstr "기온이 없어 {temperature:.0f} °C({speed:.1f} m/s)를 가정했습니다. 5 °C 오차는 거리를 약 0.9 % 움직입니다"
+
+msgid "Run a command with --help for its options, for example:"
+msgstr "옵션은 각 명령에 --help를 붙이세요. 예:"
+
+msgid "show or change the settings (the same settings.json as the desktop app)"
+msgstr "설정을 보거나 바꿉니다(데스크톱 앱과 같은 settings.json)"
+
+msgctxt "metavar"
+msgid "KEY"
+msgstr "설정"
+
+msgctxt "metavar"
+msgid "VALUE"
+msgstr "값"
+
+msgid "the setting to show or change; without it every setting is listed"
+msgstr "보거나 바꿀 설정. 생략하면 모든 설정을 나열합니다"
+
+msgid "the new value; auto goes back to the default"
+msgstr "새 값. auto는 기본값으로 되돌립니다"
+
+msgid "settings"
+msgstr "설정"
+
+msgid "system, light or dark (the desktop app only)"
+msgstr "system, light 또는 dark(데스크톱 앱만)"
+
+msgid "portaudio, fake, or auto (PortAudio)"
+msgstr "portaudio, fake 또는 auto(PortAudio)"
+
+msgid "an existing folder, or auto (none)"
+msgstr "이미 있는 폴더 또는 auto(없음)"
+
+msgid "on or off (auto: on)"
+msgstr "on 또는 off(auto: on)"
+
+msgid "on or off (auto: off; a source or pip install always has them)"
+msgstr "on 또는 off(auto: off. 소스나 pip 설치에서는 항상 표시)"
+
+msgid "{languages}, or auto (follow the system)"
+msgstr "{languages} 또는 auto(시스템을 따름)"
+
+msgid "{profiles}, or auto ({default})"
+msgstr "{profiles} 또는 auto({default})"
+
+msgid "English"
+msgstr "영어"
+
+msgid "Simplified Chinese"
+msgstr "중국어 간체"
+
+msgid "follow the system"
+msgstr "시스템을 따름"
+
+msgid "Interface language"
+msgstr "인터페이스 언어"
+
+msgid "Default output folder (desktop app)"
+msgstr "기본 출력 폴더(데스크톱 앱)"
+
+msgid "Copy recordings"
+msgstr "녹음 복사"
+
+msgid "Theme (desktop app)"
+msgstr "테마(데스크톱 앱)"
+
+msgid "simulated interface, for the demo and tests"
+msgstr "데모와 테스트용 시뮬레이션 인터페이스"
+
+msgid "PortAudio (the default)"
+msgstr "PortAudio(기본)"
+
+msgctxt "setting"
+msgid "on"
+msgstr "켬"
+
+msgctxt "setting"
+msgid "off"
+msgstr "끔"
+
+msgid "hidden in the installed app"
+msgstr "설치된 앱에서는 숨김"
+
+msgid "light"
+msgstr "라이트"
+
+msgid "dark"
+msgstr "다크"
+
+msgid "--lang {value} on this command line"
+msgstr "이 명령줄의 --lang {value}"
+
+msgid "; {lang} has no translation, so English is used"
+msgstr ". {lang} 번역이 없어 영어를 씁니다"
+
+msgid "the stored setting (roomscope config language {value})"
+msgstr "저장된 설정(roomscope config language {value})"
+
+msgid "not stored; {name}={value} chooses {language}"
+msgstr "저장 안 됨. {name}={value}가 {language}를 선택합니다"
+
+msgid "follow the system (now {language})"
+msgstr "시스템을 따름(현재 {language})"
+
+msgid "{name}={value} chooses the backend before this setting"
+msgstr "{name}={value}가 이 설정보다 먼저 백엔드를 고릅니다"
+
+msgid "{name}={value} decides before this setting"
+msgstr "{name}={value}가 이 설정보다 우선합니다"
+
+msgid "unknown setting {key}; the settings are: {keys}"
+msgstr "알 수 없는 설정 {key}. 설정은 다음과 같습니다: {keys}"
+
+msgid "{key} is on or off, not {value}"
+msgstr "{key}는 on 또는 off입니다. {value}는 쓸 수 없습니다"
+
+msgid "unknown language {value}; available: {languages}, or auto"
+msgstr "알 수 없는 언어 {value}. 사용 가능: {languages} 또는 auto"
+
+msgid "unknown profile {value}; available: {profiles}, or auto"
+msgstr "알 수 없는 녹음 프로필 {value}. 사용 가능: {profiles} 또는 auto"
+
+msgid "unknown audio backend {value}; choose portaudio, fake or auto"
+msgstr "알 수 없는 오디오 백엔드 {value}. portaudio, fake 또는 auto 중에서 고르세요"
+
+msgid "{path} is not an existing folder; give a folder, or auto"
+msgstr "{path}은(는) 이미 있는 폴더가 아닙니다. 폴더나 auto를 지정하세요"
+
+msgid "unknown theme {value}; choose system, light, dark or auto"
+msgstr "알 수 없는 테마 {value}. system, light, dark 또는 auto 중에서 고르세요"
+
+msgid "the environment variable {name}={value}"
+msgstr "환경 변수 {name}={value}"
+
+msgid "the Mac's preferred languages: {value}"
+msgstr "Mac의 선호하는 언어: {value}"
+
+msgid "the Windows display language: {value}"
+msgstr "Windows 표시 언어: {value}"
+
+msgid "the desktop's UI languages: {value}"
+msgstr "데스크톱 환경의 UI 언어: {value}"
+
+msgid "the system locale: {value}"
+msgstr "시스템 로캘: {value}"
+
+msgid "no language is set anywhere"
+msgstr "어디에도 언어가 설정되어 있지 않습니다"
+
+msgid "Nothing was changed."
+msgstr "아무것도 바꾸지 않았습니다."
+
+msgid "{error}; nothing was changed: correct or delete the file first"
+msgstr "{error}. 아무것도 바꾸지 않았습니다. 먼저 파일을 고치거나 지우세요"
+
+msgid "warning: {error}; the defaults are shown"
+msgstr "경고: {error}. 기본값을 표시합니다"
+
+msgid "RoomScope settings"
+msgstr "RoomScope 설정"
+
+msgid "change a setting"
+msgstr "설정 바꾸기"
+
+msgid "back to its default"
+msgstr "기본값으로 되돌리기"
+
+msgctxt "setting"
+msgid "Setting"
+msgstr "설정"
+
+msgctxt "setting"
+msgid "Value"
+msgstr "값"
+
+msgid "Meaning"
+msgstr "의미"
+
+msgid "Settings file"
+msgstr "설정 파일"
+
+msgid "Nothing is stored yet: every setting has its default."
+msgstr "아직 저장된 것이 없습니다. 모든 설정이 기본값입니다."
+
+msgid "Values"
+msgstr "가능한 값"
+
+msgid "change it"
+msgstr "바꾸기"
+
+msgid "The theme applies to the desktop app only."
+msgstr "테마는 데스크톱 앱에만 적용됩니다."
+
+msgid "Stored"
+msgstr "저장됨"
+
+msgid "In effect"
+msgstr "적용 중"
+
+msgid "Because"
+msgstr "이유"
+
+msgid "{value}: {state}"
+msgstr "{value}: {state}"
+
+msgid "always {language}"
+msgstr "항상 {language}"
+
+msgid "{language} for one command"
+msgstr "명령 하나에만 {language}"
+
+msgid "RoomScope uses {language} from now on."
+msgstr "이제부터 {language}를 사용합니다."
+
+msgid "follow the system again"
+msgstr "다시 시스템을 따름"
+
+msgid "The language setting is cleared; {name}={value} still chooses {language}."
+msgstr "언어 설정을 지웠습니다. {name}={value}가 여전히 {language}를 선택합니다."
+
+msgid "RoomScope follows the system language again: {language}."
+msgstr "RoomScope가 다시 시스템 언어를 따릅니다: {language}."
+
+msgid "Because: {reason}."
+msgstr "이유: {reason}."
+
+msgid "{setting}: {state}"
+msgstr "{setting}: {state}"
+
+msgid "The theme applies to the desktop app only, from the next time it opens."
+msgstr "테마는 데스크톱 앱에만, 다음에 열 때부터 적용됩니다."
+
+msgid "The desktop app shows the change the next time it starts."
+msgstr "데스크톱 앱에는 다음에 시작할 때 반영됩니다."
+
+msgid "do not copy it for one command"
+msgstr "이 명령에서만 복사하지 않기"
+
+msgid "copy it for one command"
+msgstr "이 명령에서만 복사하기"
+
+msgid "Saved in {path}"
+msgstr "{path}에 저장했습니다"
+
+msgid "its Save dialog opens here"
+msgstr "저장 대화 상자가 여기서 열립니다"
+
+msgid "not set"
+msgstr "설정 안 됨"
+
+msgid "set"
+msgstr "설정됨"
+
+msgid "RoomScope folder"
+msgstr "RoomScope 폴더"
+
+msgid "Log file"
+msgstr "로그 파일"
+
+msgid "Synthetic demo room"
+msgstr "합성 데모 방"
+
+msgid "simulated omni"
+msgstr "시뮬레이션 무지향 마이크"
+
+msgid "{label}: {description}"
+msgstr "{label}: {description}"
+
+msgctxt "list separator"
+msgid ", "
+msgstr ", "
+
+msgid "invalid JSON at line {line}, column {column}"
+msgstr "{line}행 {column}열이 올바른 JSON이 아닙니다"

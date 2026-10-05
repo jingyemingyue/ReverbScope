@@ -513,12 +513,6 @@ msgstr "平面？"
 msgid "No placement result. Add a loudspeaker distance to raise the tier."
 msgstr "沒有擺位結果。補上揚聲器距離可提高檔位。"
 
-msgid ""
-"Placement tier {tier}. No coordinates, room length, room width or named "
-"wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} C{assumed"
-"}."
-msgstr "擺位檔位 {tier}。不推導坐標、房間長寬或具名牆面。聲速 {speed:.1f} m/s，氣溫 {temp:.0f} C{assumed}。"
-
 msgid " (assumed)"
 msgstr "（假定）"
 
@@ -1120,9 +1114,6 @@ msgstr "脈衝響應 WAV"
 
 msgid "n/a"
 msgstr "無"
-
-msgid "at {temp:.0f} C"
-msgstr "氣溫 {temp:.0f} C"
 
 msgid "matched"
 msgstr "匹配"
@@ -2004,7 +1995,7 @@ msgid "expected at most one argument"
 msgstr "最多只能有一個參數值"
 
 msgid "invalid %(type)s value: %(value)r"
-msgstr "無效的 %(type)s 值：%(value)r"
+msgstr "無效的%(type)s值：%(value)r"
 
 msgid "invalid choice: %(value)r (choose from %(choices)s)"
 msgstr "無效選項：%(value)r（可選：%(choices)s）"
@@ -2783,9 +2774,6 @@ msgstr "placement_distance_m 必須在 0.20 m 到 15 m 之間"
 
 msgid "placement_mic_height_m must be between 0.02 m and 5 m"
 msgstr "placement_mic_height_m 必須在 0.02 m 到 5 m 之間"
-
-msgid "placement_temperature_c must be between -20 C and 50 C"
-msgstr "placement_temperature_c 必須在 -20 °C 到 50 °C 之間"
 
 msgid ""
 "placement_mic_height_m needs placement_distance_m: a height on its own c"
@@ -4475,11 +4463,6 @@ msgstr "RoomScope 獨立測量"
 msgid "RoomScope test signal"
 msgstr "RoomScope 測試信号"
 
-msgid ""
-"Run a command with --help for its options, for example: roomscope measur"
-"e --help"
-msgstr "在命令後加 --help 查看它的選項，例如：roomscope measure --help"
-
 msgid "Segment"
 msgstr "片段"
 
@@ -5608,3 +5591,427 @@ msgstr "德文"
 msgctxt "metavar"
 msgid "TITLE"
 msgstr "標題"
+
+msgid "Placement tier {tier}. No coordinates, room length, room width or named wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} °C{assumed}."
+msgstr "擺位檔位 {tier}。不推導坐標、房間長寬或具名牆面。聲速 {speed:.1f} m/s，氣溫 {temp:.0f} °C{assumed}。"
+
+msgid "at {temp:.0f} °C"
+msgstr "氣溫 {temp:.0f} °C"
+
+msgid "ignored explicit argument %r"
+msgstr "該選項不接受值（給出了 %r）"
+
+msgid "unknown parser %(parser_name)r (choices: %(choices)s)"
+msgstr "未知的子命令 %(parser_name)r（可選：%(choices)s）"
+
+msgid "unexpected option string: %s"
+msgstr "意外的選項：%s"
+
+msgid "expected %s argument"
+msgstr "需要 %s 個參數值"
+
+msgid "expected %s arguments"
+msgstr "需要 %s 個參數值"
+
+msgctxt "argument type"
+msgid "int"
+msgstr "整數"
+
+msgctxt "argument type"
+msgid "float"
+msgstr "數字"
+
+# Placeholders in usage lines and option lists (argparse metavars).
+
+msgctxt "metavar"
+msgid "<command>"
+msgstr "<命令>"
+
+msgctxt "metavar"
+msgid "HZ"
+msgstr "赫茲"
+
+msgctxt "metavar"
+msgid "S"
+msgstr "秒"
+
+msgctxt "metavar"
+msgid "DBFS"
+msgstr "dBFS"
+
+msgctxt "metavar"
+msgid "N"
+msgstr "序號"
+
+msgctxt "channel metavar"
+msgid "N"
+msgstr "聲道"
+
+msgctxt "count metavar"
+msgid "N"
+msgstr "數量"
+
+msgctxt "fraction metavar"
+msgid "N"
+msgstr "N"
+
+msgctxt "metavar"
+msgid "TEXT"
+msgstr "文字"
+
+msgctxt "metavar"
+msgid "M"
+msgstr "米"
+
+msgctxt "metavar"
+msgid "C"
+msgstr "攝氏度"
+
+msgctxt "metavar"
+msgid "WAV"
+msgstr "WAV檔"
+
+msgctxt "metavar"
+msgid "FILE"
+msgstr "檔案"
+
+msgctxt "metavar"
+msgid "DIR"
+msgstr "目錄"
+
+msgctxt "metavar"
+msgid "LIST"
+msgstr "清單"
+
+msgctxt "metavar"
+msgid "LO"
+msgstr "下限"
+
+msgctxt "metavar"
+msgid "HI"
+msgstr "上限"
+
+msgctxt "metavar"
+msgid "PATH"
+msgstr "路徑"
+
+msgctxt "metavar"
+msgid "LABEL"
+msgstr "標籤"
+
+msgctxt "metavar"
+msgid "NAME"
+msgstr "名稱"
+
+msgctxt "metavar"
+msgid "LANG"
+msgstr "語言"
+
+msgctxt "metavar"
+msgid "WHEN"
+msgstr "何時"
+
+msgctxt "metavar"
+msgid "path"
+msgstr "路徑"
+
+msgctxt "metavar"
+msgid "baseline"
+msgstr "基線"
+
+msgctxt "metavar"
+msgid "candidate"
+msgstr "候選"
+
+msgctxt "metavar"
+msgid "project"
+msgstr "項目"
+
+msgctxt "metavar"
+msgid "session"
+msgstr "會話"
+
+msgctxt "diagnostic"
+msgid "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance; RoomScope does not identify room modes."
+msgstr "僅為候選：低頻響應中窄帶衰減較長的峰可能是房間共振；RoomScope 不識別房間模式。"
+
+msgid "placement_temperature_c must be between -20 °C and 50 °C"
+msgstr "placement_temperature_c 必須在 -20 °C 到 50 °C 之間"
+
+msgctxt "diagnostic"
+msgid "no air temperature was supplied, so {temperature:.0f} °C ({speed:.1f} m/s) was assumed; a 5 °C error moves every distance by about 0.9 %"
+msgstr "未提供氣溫，因此假定為 {temperature:.0f} °C（聲速 {speed:.1f} m/s）；氣溫誤差 5 °C 會使每個距離偏差約 0.9 %"
+
+msgid "Run a command with --help for its options, for example:"
+msgstr "在命令後加 --help 查看它的選項，例如："
+
+msgid "show or change the settings (the same settings.json as the desktop app)"
+msgstr "查看或修改設定（與桌面版共用同一個 settings.json）"
+
+msgctxt "metavar"
+msgid "KEY"
+msgstr "設定項"
+
+msgctxt "metavar"
+msgid "VALUE"
+msgstr "值"
+
+msgid "the setting to show or change; without it every setting is listed"
+msgstr "要查看或修改的設定項；省略時列出所有設定"
+
+msgid "the new value; auto goes back to the default"
+msgstr "新的值；auto 表示恢復預設"
+
+msgid "settings"
+msgstr "設定項"
+
+msgid "system, light or dark (the desktop app only)"
+msgstr "system、light 或 dark（只影響桌面版）"
+
+msgid "portaudio, fake, or auto (PortAudio)"
+msgstr "portaudio、fake 或 auto（PortAudio）"
+
+msgid "an existing folder, or auto (none)"
+msgstr "一個已存在的資料夾，或 auto（不設定）"
+
+msgid "on or off (auto: on)"
+msgstr "on 或 off（auto：on）"
+
+msgid "on or off (auto: off; a source or pip install always has them)"
+msgstr "on 或 off（auto：off；源碼或 pip 安裝總會顯示）"
+
+msgid "{languages}, or auto (follow the system)"
+msgstr "{languages} 或 auto（跟隨系統）"
+
+msgid "{profiles}, or auto ({default})"
+msgstr "{profiles} 或 auto（{default}）"
+
+msgid "English"
+msgstr "英文"
+
+msgid "Simplified Chinese"
+msgstr "簡體中文"
+
+msgid "follow the system"
+msgstr "跟隨系統"
+
+msgid "Interface language"
+msgstr "介面語言"
+
+msgid "Default output folder (desktop app)"
+msgstr "預設輸出資料夾（桌面版）"
+
+msgid "Copy recordings"
+msgstr "把錄音複製進會話"
+
+msgid "Theme (desktop app)"
+msgstr "主題（桌面版）"
+
+msgid "simulated interface, for the demo and tests"
+msgstr "模擬的音頻介面，用於演示和測試"
+
+msgid "PortAudio (the default)"
+msgstr "PortAudio（預設）"
+
+msgctxt "setting"
+msgid "on"
+msgstr "開"
+
+msgctxt "setting"
+msgid "off"
+msgstr "關"
+
+msgid "hidden in the installed app"
+msgstr "安裝版中隱藏"
+
+msgid "light"
+msgstr "淺色"
+
+msgid "dark"
+msgstr "深色"
+
+msgid "--lang {value} on this command line"
+msgstr "本條命令中的 --lang {value}"
+
+msgid "; {lang} has no translation, so English is used"
+msgstr "；{lang} 沒有譯文，因此使用英文"
+
+msgid "the stored setting (roomscope config language {value})"
+msgstr "已保存的設定（roomscope config language {value}）"
+
+msgid "not stored; {name}={value} chooses {language}"
+msgstr "未保存；由 {name}={value} 選擇{language}"
+
+msgid "follow the system (now {language})"
+msgstr "跟隨系統（當前為{language}）"
+
+msgid "{name}={value} chooses the backend before this setting"
+msgstr "{name}={value} 優先於此設定選擇後端"
+
+msgid "{name}={value} decides before this setting"
+msgstr "{name}={value} 優先於此設定"
+
+msgid "unknown setting {key}; the settings are: {keys}"
+msgstr "未知的設定項 {key}；可用的設定項：{keys}"
+
+msgid "{key} is on or off, not {value}"
+msgstr "{key} 只能是 on 或 off，不能是 {value}"
+
+msgid "unknown language {value}; available: {languages}, or auto"
+msgstr "未知的語言 {value}；可用：{languages} 或 auto"
+
+msgid "unknown profile {value}; available: {profiles}, or auto"
+msgstr "未知的錄音配置 {value}；可用：{profiles} 或 auto"
+
+msgid "unknown audio backend {value}; choose portaudio, fake or auto"
+msgstr "未知的音頻後端 {value}；請選擇 portaudio、fake 或 auto"
+
+msgid "{path} is not an existing folder; give a folder, or auto"
+msgstr "{path} 不是已存在的資料夾；請給出一個資料夾，或 auto"
+
+msgid "unknown theme {value}; choose system, light, dark or auto"
+msgstr "未知的主題 {value}；請選擇 system、light、dark 或 auto"
+
+msgid "the environment variable {name}={value}"
+msgstr "環境變數 {name}={value}"
+
+msgid "the Mac's preferred languages: {value}"
+msgstr "Mac 的偏好語言：{value}"
+
+msgid "the Windows display language: {value}"
+msgstr "Windows 顯示語言：{value}"
+
+msgid "the desktop's UI languages: {value}"
+msgstr "桌面環境的介面語言：{value}"
+
+msgid "the system locale: {value}"
+msgstr "系統地區設定：{value}"
+
+msgid "no language is set anywhere"
+msgstr "任何地方都沒有設定語言"
+
+msgid "Nothing was changed."
+msgstr "沒有做任何更改。"
+
+msgid "{error}; nothing was changed: correct or delete the file first"
+msgstr "{error}；沒有做任何更改：請先修正或刪除該檔案"
+
+msgid "warning: {error}; the defaults are shown"
+msgstr "警告：{error}；下面顯示的是預設值"
+
+msgid "RoomScope settings"
+msgstr "RoomScope 設定"
+
+msgid "change a setting"
+msgstr "修改一項設定"
+
+msgid "back to its default"
+msgstr "恢復為預設值"
+
+msgctxt "setting"
+msgid "Setting"
+msgstr "設定項"
+
+msgctxt "setting"
+msgid "Value"
+msgstr "值"
+
+msgid "Meaning"
+msgstr "說明"
+
+msgid "Settings file"
+msgstr "設定檔案"
+
+msgid "Nothing is stored yet: every setting has its default."
+msgstr "尚未保存任何設定：每一項都是預設值。"
+
+msgid "Values"
+msgstr "可選值"
+
+msgid "change it"
+msgstr "修改它"
+
+msgid "The theme applies to the desktop app only."
+msgstr "主題只影響桌面版。"
+
+msgid "Stored"
+msgstr "已保存"
+
+msgid "In effect"
+msgstr "當前使用"
+
+msgid "Because"
+msgstr "原因"
+
+msgid "{value}: {state}"
+msgstr "{value}：{state}"
+
+msgid "always {language}"
+msgstr "一直使用{language}"
+
+msgid "{language} for one command"
+msgstr "只在一條命令中使用{language}"
+
+msgid "RoomScope uses {language} from now on."
+msgstr "以後都會使用{language}。"
+
+msgid "follow the system again"
+msgstr "改回跟隨系統"
+
+msgid "The language setting is cleared; {name}={value} still chooses {language}."
+msgstr "已清除語言設定；{name}={value} 仍會選擇{language}。"
+
+msgid "RoomScope follows the system language again: {language}."
+msgstr "已改回跟隨系統語言：當前為{language}。"
+
+msgid "Because: {reason}."
+msgstr "原因：{reason}。"
+
+msgid "{setting}: {state}"
+msgstr "{setting}：{state}"
+
+msgid "The theme applies to the desktop app only, from the next time it opens."
+msgstr "主題只影響桌面版，下次打開時生效。"
+
+msgid "The desktop app shows the change the next time it starts."
+msgstr "桌面版下次啟動時生效。"
+
+msgid "do not copy it for one command"
+msgstr "只在這一條命令中不複製"
+
+msgid "copy it for one command"
+msgstr "只在這一條命令中複製"
+
+msgid "Saved in {path}"
+msgstr "已保存到 {path}"
+
+msgid "its Save dialog opens here"
+msgstr "保存對話框從這裡打開"
+
+msgid "not set"
+msgstr "未設定"
+
+msgid "set"
+msgstr "已設定"
+
+msgid "RoomScope folder"
+msgstr "RoomScope 資料夾"
+
+msgid "Log file"
+msgstr "日誌檔案"
+
+msgid "Synthetic demo room"
+msgstr "合成演示房間"
+
+msgid "simulated omni"
+msgstr "模擬全指向話筒"
+
+msgid "{label}: {description}"
+msgstr "{label}：{description}"
+
+msgctxt "list separator"
+msgid ", "
+msgstr "、"
+
+msgid "invalid JSON at line {line}, column {column}"
+msgstr "第 {line} 行第 {column} 列不是有效的 JSON"

@@ -304,6 +304,40 @@ def test_every_other_language_points_the_way_to_english(
         assert text.splitlines()[-1] == "English interface: roomscope config language en", text
 
 
+@pytest.mark.parametrize(
+    ("lang", "usage", "shown", "listed"),
+    [
+        ("zh_TW", "用法：", "--out 目錄", "de、en、es、fr、ja、ko、zh_CN、zh_TW"),
+        ("ja", "使い方: ", "--out ディレクトリ", "de、en、es、fr、ja、ko、zh_CN、zh_TW"),
+        ("ko", "사용법: ", "--out 디렉터리", "de, en, es, fr, ja, ko, zh_CN, zh_TW"),
+        ("es", "uso: ", "--out DIRECTORIO", "de, en, es, fr, ja, ko, zh_CN, zh_TW"),
+        ("fr", "usage : ", "--out RÉPERTOIRE", "de, en, es, fr, ja, ko, zh_CN, zh_TW"),
+        ("de", "Aufruf: ", "--out VERZEICHNIS", "de, en, es, fr, ja, ko, zh_CN, zh_TW"),
+    ],
+)
+def test_every_language_translates_the_placeholders(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    usage: str,
+    shown: str,
+    listed: str,
+) -> None:
+    """The placeholders, argparse's words and the language list of the stable
+    line's Chinese help, in the six other catalogs too."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", "200")
+    _code, analyze, _err = _run(["--lang", lang, "analyze", "--help"], capsys)
+    assert analyze.startswith(usage + "roomscope analyze"), analyze
+    assert shown in analyze
+    for english in ("DIR", "FILE", "<command>"):
+        assert not re.search(rf"(?<![\w-]){english}(?![\w-])", analyze), (english, analyze)
+    _code, root, _err = _run(["--lang", lang, "--help"], capsys)
+    assert listed in root
+    code, _out, err = _run(["--lang", lang, "sweep", "--duration", "x"], capsys)
+    assert code == 2 and "int" not in err.split() and "float" not in err.split(), err
+
+
 def test_the_language_hint_needs_the_other_catalog(
     cli: tuple[Path, pytest.MonkeyPatch],
 ) -> None:

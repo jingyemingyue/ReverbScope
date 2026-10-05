@@ -533,14 +533,6 @@ msgstr "平面？"
 msgid "No placement result. Add a loudspeaker distance to raise the tier."
 msgstr "配置結果がありません。スピーカー距離を入れると段階が上がります。"
 
-msgid ""
-"Placement tier {tier}. No coordinates, room length, room width or named "
-"wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} C{assumed"
-"}."
-msgstr ""
-"配置段階 {tier}。座標、部屋の長さ、部屋の幅、名前の付いた壁は導き出せません。音速 {speed:.1f} m/s（{temp:.0f} "
-"C{assumed}）。"
-
 msgid " (assumed)"
 msgstr "（仮定）"
 
@@ -1147,9 +1139,6 @@ msgstr "インパルス応答 WAV"
 
 msgid "n/a"
 msgstr "n/a"
-
-msgid "at {temp:.0f} C"
-msgstr "{temp:.0f} C"
 
 msgid "matched"
 msgstr "一致"
@@ -2043,7 +2032,7 @@ msgid "expected at most one argument"
 msgstr "引数は高々 1 つです"
 
 msgid "invalid %(type)s value: %(value)r"
-msgstr "無効な %(type)s 値: %(value)r"
+msgstr "無効な%(type)s値: %(value)r"
 
 msgid "invalid choice: %(value)r (choose from %(choices)s)"
 msgstr "無効な選択: %(value)r（%(choices)s から選んでください）"
@@ -2836,9 +2825,6 @@ msgstr "placement_distance_m は 0.20 m から 15 m の間である必要があ�
 
 msgid "placement_mic_height_m must be between 0.02 m and 5 m"
 msgstr "placement_mic_height_m は 0.02 m から 5 m の間である必要があります"
-
-msgid "placement_temperature_c must be between -20 C and 50 C"
-msgstr "placement_temperature_c は -20 C から 50 C の間である必要があります"
 
 msgid ""
 "placement_mic_height_m needs placement_distance_m: a height on its own c"
@@ -4579,11 +4565,6 @@ msgstr "RoomScope スタンドアロン測定"
 msgid "RoomScope test signal"
 msgstr "RoomScope テスト信号"
 
-msgid ""
-"Run a command with --help for its options, for example: roomscope measur"
-"e --help"
-msgstr "オプションは各コマンドに --help を付けてください。例: roomscope measure --help"
-
 msgid "Segment"
 msgstr "区間"
 
@@ -5729,3 +5710,427 @@ msgstr "ドイツ語"
 msgctxt "metavar"
 msgid "TITLE"
 msgstr "タイトル"
+
+msgid "Placement tier {tier}. No coordinates, room length, room width or named wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} °C{assumed}."
+msgstr "配置段階 {tier}。座標、部屋の長さ、部屋の幅、名前の付いた壁は導き出せません。音速 {speed:.1f} m/s（{temp:.0f} °C{assumed}）。"
+
+msgid "at {temp:.0f} °C"
+msgstr "{temp:.0f} °C"
+
+msgid "ignored explicit argument %r"
+msgstr "このオプションは値を取りません（%r が与えられました）"
+
+msgid "unknown parser %(parser_name)r (choices: %(choices)s)"
+msgstr "不明なサブコマンド %(parser_name)r（選択肢: %(choices)s）"
+
+msgid "unexpected option string: %s"
+msgstr "予期しないオプション: %s"
+
+msgid "expected %s argument"
+msgstr "引数が %s 個必要です"
+
+msgid "expected %s arguments"
+msgstr "引数が %s 個必要です"
+
+msgctxt "argument type"
+msgid "int"
+msgstr "整数"
+
+msgctxt "argument type"
+msgid "float"
+msgstr "実数"
+
+# Placeholders in usage lines and option lists (argparse metavars).
+
+msgctxt "metavar"
+msgid "<command>"
+msgstr "<コマンド>"
+
+msgctxt "metavar"
+msgid "HZ"
+msgstr "ヘルツ"
+
+msgctxt "metavar"
+msgid "S"
+msgstr "秒"
+
+msgctxt "metavar"
+msgid "DBFS"
+msgstr "dBFS"
+
+msgctxt "metavar"
+msgid "N"
+msgstr "番号"
+
+msgctxt "channel metavar"
+msgid "N"
+msgstr "チャンネル"
+
+msgctxt "count metavar"
+msgid "N"
+msgstr "数"
+
+msgctxt "fraction metavar"
+msgid "N"
+msgstr "N"
+
+msgctxt "metavar"
+msgid "TEXT"
+msgstr "テキスト"
+
+msgctxt "metavar"
+msgid "M"
+msgstr "メートル"
+
+msgctxt "metavar"
+msgid "C"
+msgstr "摂氏"
+
+msgctxt "metavar"
+msgid "WAV"
+msgstr "WAVファイル"
+
+msgctxt "metavar"
+msgid "FILE"
+msgstr "ファイル"
+
+msgctxt "metavar"
+msgid "DIR"
+msgstr "ディレクトリ"
+
+msgctxt "metavar"
+msgid "LIST"
+msgstr "リスト"
+
+msgctxt "metavar"
+msgid "LO"
+msgstr "下限"
+
+msgctxt "metavar"
+msgid "HI"
+msgstr "上限"
+
+msgctxt "metavar"
+msgid "PATH"
+msgstr "パス"
+
+msgctxt "metavar"
+msgid "LABEL"
+msgstr "ラベル"
+
+msgctxt "metavar"
+msgid "NAME"
+msgstr "名前"
+
+msgctxt "metavar"
+msgid "LANG"
+msgstr "言語"
+
+msgctxt "metavar"
+msgid "WHEN"
+msgstr "いつ"
+
+msgctxt "metavar"
+msgid "path"
+msgstr "パス"
+
+msgctxt "metavar"
+msgid "baseline"
+msgstr "基準"
+
+msgctxt "metavar"
+msgid "candidate"
+msgstr "比較対象"
+
+msgctxt "metavar"
+msgid "project"
+msgstr "プロジェクト"
+
+msgctxt "metavar"
+msgid "session"
+msgstr "セッション"
+
+msgctxt "diagnostic"
+msgid "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance; RoomScope does not identify room modes."
+msgstr "候補のみ: 低域特性のピークで狭いバンドの減衰が長いものは部屋の共振かもしれません。RoomScope は部屋モードを同定しません。"
+
+msgid "placement_temperature_c must be between -20 °C and 50 °C"
+msgstr "placement_temperature_c は -20 °C から 50 °C の間である必要があります"
+
+msgctxt "diagnostic"
+msgid "no air temperature was supplied, so {temperature:.0f} °C ({speed:.1f} m/s) was assumed; a 5 °C error moves every distance by about 0.9 %"
+msgstr "気温が与えられなかったため {temperature:.0f} °C（{speed:.1f} m/s）を仮定しました。5 °C の誤差は距離をおよそ 0.9 % 動かします"
+
+msgid "Run a command with --help for its options, for example:"
+msgstr "オプションは各コマンドに --help を付けてください。例:"
+
+msgid "show or change the settings (the same settings.json as the desktop app)"
+msgstr "設定を表示または変更する（デスクトップアプリと同じ settings.json）"
+
+msgctxt "metavar"
+msgid "KEY"
+msgstr "設定項目"
+
+msgctxt "metavar"
+msgid "VALUE"
+msgstr "値"
+
+msgid "the setting to show or change; without it every setting is listed"
+msgstr "表示または変更する設定。省略するとすべての設定を一覧表示します"
+
+msgid "the new value; auto goes back to the default"
+msgstr "新しい値。auto で既定に戻ります"
+
+msgid "settings"
+msgstr "設定項目"
+
+msgid "system, light or dark (the desktop app only)"
+msgstr "system、light、dark のいずれか（デスクトップアプリのみ）"
+
+msgid "portaudio, fake, or auto (PortAudio)"
+msgstr "portaudio、fake、auto のいずれか（auto は PortAudio）"
+
+msgid "an existing folder, or auto (none)"
+msgstr "既存のフォルダー、または auto（なし）"
+
+msgid "on or off (auto: on)"
+msgstr "on または off（auto: on）"
+
+msgid "on or off (auto: off; a source or pip install always has them)"
+msgstr "on または off（auto: off。ソースや pip からのインストールでは常に表示）"
+
+msgid "{languages}, or auto (follow the system)"
+msgstr "{languages}、または auto（システムに従う）"
+
+msgid "{profiles}, or auto ({default})"
+msgstr "{profiles}、または auto（{default}）"
+
+msgid "English"
+msgstr "英語"
+
+msgid "Simplified Chinese"
+msgstr "簡体字中国語"
+
+msgid "follow the system"
+msgstr "システムに従う"
+
+msgid "Interface language"
+msgstr "表示言語"
+
+msgid "Default output folder (desktop app)"
+msgstr "既定の出力フォルダー（デスクトップアプリ）"
+
+msgid "Copy recordings"
+msgstr "録音をコピー"
+
+msgid "Theme (desktop app)"
+msgstr "テーマ（デスクトップアプリ）"
+
+msgid "simulated interface, for the demo and tests"
+msgstr "デモとテスト用の模擬インターフェース"
+
+msgid "PortAudio (the default)"
+msgstr "PortAudio（既定）"
+
+msgctxt "setting"
+msgid "on"
+msgstr "オン"
+
+msgctxt "setting"
+msgid "off"
+msgstr "オフ"
+
+msgid "hidden in the installed app"
+msgstr "インストール版では非表示"
+
+msgid "light"
+msgstr "ライト"
+
+msgid "dark"
+msgstr "ダーク"
+
+msgid "--lang {value} on this command line"
+msgstr "このコマンドラインの --lang {value}"
+
+msgid "; {lang} has no translation, so English is used"
+msgstr "。{lang} の翻訳はないため、英語を使います"
+
+msgid "the stored setting (roomscope config language {value})"
+msgstr "保存された設定（roomscope config language {value}）"
+
+msgid "not stored; {name}={value} chooses {language}"
+msgstr "保存されていません。{name}={value} で{language}になります"
+
+msgid "follow the system (now {language})"
+msgstr "システムに従う（現在は{language}）"
+
+msgid "{name}={value} chooses the backend before this setting"
+msgstr "{name}={value} がこの設定より先にバックエンドを決めます"
+
+msgid "{name}={value} decides before this setting"
+msgstr "{name}={value} がこの設定より優先されます"
+
+msgid "unknown setting {key}; the settings are: {keys}"
+msgstr "不明な設定 {key}。設定は次のとおりです: {keys}"
+
+msgid "{key} is on or off, not {value}"
+msgstr "{key} は on か off です。{value} は使えません"
+
+msgid "unknown language {value}; available: {languages}, or auto"
+msgstr "不明な言語 {value}。使えるのは {languages}、または auto です"
+
+msgid "unknown profile {value}; available: {profiles}, or auto"
+msgstr "不明な録音プロファイル {value}。使えるのは {profiles}、または auto です"
+
+msgid "unknown audio backend {value}; choose portaudio, fake or auto"
+msgstr "不明なオーディオバックエンド {value}。portaudio、fake、auto のいずれかを選んでください"
+
+msgid "{path} is not an existing folder; give a folder, or auto"
+msgstr "{path} は既存のフォルダーではありません。フォルダーか auto を指定してください"
+
+msgid "unknown theme {value}; choose system, light, dark or auto"
+msgstr "不明なテーマ {value}。system、light、dark、auto のいずれかを選んでください"
+
+msgid "the environment variable {name}={value}"
+msgstr "環境変数 {name}={value}"
+
+msgid "the Mac's preferred languages: {value}"
+msgstr "Mac の優先する言語: {value}"
+
+msgid "the Windows display language: {value}"
+msgstr "Windows の表示言語: {value}"
+
+msgid "the desktop's UI languages: {value}"
+msgstr "デスクトップ環境の表示言語: {value}"
+
+msgid "the system locale: {value}"
+msgstr "システムのロケール: {value}"
+
+msgid "no language is set anywhere"
+msgstr "どこにも言語が設定されていません"
+
+msgid "Nothing was changed."
+msgstr "何も変更していません。"
+
+msgid "{error}; nothing was changed: correct or delete the file first"
+msgstr "{error}。何も変更していません。先にファイルを直すか削除してください"
+
+msgid "warning: {error}; the defaults are shown"
+msgstr "警告: {error}。既定値を表示しています"
+
+msgid "RoomScope settings"
+msgstr "RoomScope の設定"
+
+msgid "change a setting"
+msgstr "設定を変更する"
+
+msgid "back to its default"
+msgstr "既定値に戻す"
+
+msgctxt "setting"
+msgid "Setting"
+msgstr "設定項目"
+
+msgctxt "setting"
+msgid "Value"
+msgstr "値"
+
+msgid "Meaning"
+msgstr "意味"
+
+msgid "Settings file"
+msgstr "設定ファイル"
+
+msgid "Nothing is stored yet: every setting has its default."
+msgstr "まだ何も保存されていません。すべての設定が既定値です。"
+
+msgid "Values"
+msgstr "指定できる値"
+
+msgid "change it"
+msgstr "変更する"
+
+msgid "The theme applies to the desktop app only."
+msgstr "テーマはデスクトップアプリにだけ適用されます。"
+
+msgid "Stored"
+msgstr "保存済み"
+
+msgid "In effect"
+msgstr "適用中"
+
+msgid "Because"
+msgstr "理由"
+
+msgid "{value}: {state}"
+msgstr "{value}: {state}"
+
+msgid "always {language}"
+msgstr "常に{language}"
+
+msgid "{language} for one command"
+msgstr "1 つのコマンドだけ{language}"
+
+msgid "RoomScope uses {language} from now on."
+msgstr "これからは{language}を使います。"
+
+msgid "follow the system again"
+msgstr "再びシステムに従う"
+
+msgid "The language setting is cleared; {name}={value} still chooses {language}."
+msgstr "言語の設定を消去しました。{name}={value} により引き続き{language}になります。"
+
+msgid "RoomScope follows the system language again: {language}."
+msgstr "RoomScope は再びシステムの言語に従います: {language}。"
+
+msgid "Because: {reason}."
+msgstr "理由: {reason}。"
+
+msgid "{setting}: {state}"
+msgstr "{setting}: {state}"
+
+msgid "The theme applies to the desktop app only, from the next time it opens."
+msgstr "テーマはデスクトップアプリにだけ、次に開いたときから適用されます。"
+
+msgid "The desktop app shows the change the next time it starts."
+msgstr "デスクトップアプリには次回の起動から反映されます。"
+
+msgid "do not copy it for one command"
+msgstr "このコマンドだけコピーしない"
+
+msgid "copy it for one command"
+msgstr "このコマンドだけコピーする"
+
+msgid "Saved in {path}"
+msgstr "{path} に保存しました"
+
+msgid "its Save dialog opens here"
+msgstr "保存ダイアログはここで開きます"
+
+msgid "not set"
+msgstr "未設定"
+
+msgid "set"
+msgstr "設定済み"
+
+msgid "RoomScope folder"
+msgstr "RoomScope フォルダー"
+
+msgid "Log file"
+msgstr "ログファイル"
+
+msgid "Synthetic demo room"
+msgstr "合成デモの部屋"
+
+msgid "simulated omni"
+msgstr "模擬無指向マイク"
+
+msgid "{label}: {description}"
+msgstr "{label}: {description}"
+
+msgctxt "list separator"
+msgid ", "
+msgstr "、"
+
+msgid "invalid JSON at line {line}, column {column}"
+msgstr "{line} 行 {column} 列が有効な JSON ではありません"

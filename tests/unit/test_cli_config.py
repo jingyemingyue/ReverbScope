@@ -146,7 +146,8 @@ def test_every_setting_is_stored_as_the_desktop_app_reads_it(
     assert code == 0, err
     assert _stored()[field] == stored
     assert getattr(load_settings(), field) == stored
-    assert "Saved in" in out or "保存" in out
+    # A language is confirmed in that language.
+    assert "settings.json" in out and ("Saved in" in out or key == "language")
 
 
 def test_the_output_folder_is_stored_as_an_absolute_path(
@@ -299,6 +300,7 @@ def test_every_catalog_can_be_kept_and_is_confirmed_in_its_language(
     code, out, _err = _run(capsys, "--lang", "en", "config", "language", lang)
     assert code == 0
     assert name in out and "roomscope config language auto" in out, out
+    assert "RoomScope uses" not in out and "Saved in" not in out, out
     assert current_locale() == lang and _stored()["language"] == lang
     activate("en")  # a new process starts in English
     code, out, _err = _run(capsys, "config", "language")
@@ -337,6 +339,9 @@ def test_the_stored_language_is_used_by_the_next_command(
             "已保存的设置（roomscope config language zh_CN）",
         ),
         ([], {"LANG": "pt_BR.UTF-8"}, "", "pt_BR has no translation, so English is used"),
+        ([], {"LANG": "ja_JP.UTF-8"}, "", "環境変数 LANG=ja_JP.UTF-8"),
+        ([], {"LANG": "en_US.UTF-8", "LANGUAGE": "zh_TW:en"}, "", "環境變數 LANGUAGE=zh_TW:en"),
+        ([], {"LANG": "de_DE.UTF-8"}, "", "die Umgebungsvariable LANG=de_DE.UTF-8"),
     ],
 )
 def test_config_language_shows_what_is_in_effect_and_why(

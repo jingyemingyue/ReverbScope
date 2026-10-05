@@ -600,15 +600,6 @@ msgstr ""
 "Kein Platzierungsergebnis. Gib einen Lautsprecherabstand an, um die Stuf"
 "e anzuheben."
 
-msgid ""
-"Placement tier {tier}. No coordinates, room length, room width or named "
-"wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} C{assumed"
-"}."
-msgstr ""
-"Platzierungsstufe {tier}. Es werden weder Koordinaten noch Raumlänge, Ra"
-"umbreite oder benannte Wand abgeleitet. Schallgeschwindigkeit {speed:.1f"
-"} m/s bei {temp:.0f} C{assumed}."
-
 msgid " (assumed)"
 msgstr " (angenommen)"
 
@@ -1257,9 +1248,6 @@ msgstr "Impulsantwort-WAV"
 
 msgid "n/a"
 msgstr "n/v"
-
-msgid "at {temp:.0f} C"
-msgstr "bei {temp:.0f} C"
 
 msgid "matched"
 msgstr "zugeordnet"
@@ -2251,7 +2239,7 @@ msgid "expected at most one argument"
 msgstr "höchstens ein Argument erwartet"
 
 msgid "invalid %(type)s value: %(value)r"
-msgstr "ungültiger %(type)s-Wert: %(value)r"
+msgstr "ungültiger Wert (%(type)s erwartet): %(value)r"
 
 msgid "invalid choice: %(value)r (choose from %(choices)s)"
 msgstr "ungültige Auswahl: %(value)r (wähle aus %(choices)s)"
@@ -3146,9 +3134,6 @@ msgstr "placement_distance_m muss zwischen 0.20 m und 15 m liegen"
 
 msgid "placement_mic_height_m must be between 0.02 m and 5 m"
 msgstr "placement_mic_height_m muss zwischen 0.02 m und 5 m liegen"
-
-msgid "placement_temperature_c must be between -20 C and 50 C"
-msgstr "placement_temperature_c muss zwischen -20 C und 50 C liegen"
 
 msgid ""
 "placement_mic_height_m needs placement_distance_m: a height on its own c"
@@ -5117,13 +5102,6 @@ msgstr "Eigenständige RoomScope-Messung"
 msgid "RoomScope test signal"
 msgstr "RoomScope-Testsignal"
 
-msgid ""
-"Run a command with --help for its options, for example: roomscope measur"
-"e --help"
-msgstr ""
-"Führe einen Befehl mit --help aus, um seine Optionen zu sehen, zum Beisp"
-"iel: roomscope measure --help"
-
 msgid "Segment"
 msgstr "Segment"
 
@@ -6391,3 +6369,427 @@ msgstr "Deutsch"
 msgctxt "metavar"
 msgid "TITLE"
 msgstr "TITEL"
+
+msgid "Placement tier {tier}. No coordinates, room length, room width or named wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} °C{assumed}."
+msgstr "Platzierungsstufe {tier}. Es werden weder Koordinaten noch Raumlänge, Raumbreite oder benannte Wand abgeleitet. Schallgeschwindigkeit {speed:.1f} m/s bei {temp:.0f} °C{assumed}."
+
+msgid "at {temp:.0f} °C"
+msgstr "bei {temp:.0f} °C"
+
+msgid "ignored explicit argument %r"
+msgstr "diese Option nimmt keinen Wert an (%r angegeben)"
+
+msgid "unknown parser %(parser_name)r (choices: %(choices)s)"
+msgstr "unbekannter Unterbefehl %(parser_name)r (Auswahl: %(choices)s)"
+
+msgid "unexpected option string: %s"
+msgstr "unerwartete Option: %s"
+
+msgid "expected %s argument"
+msgstr "%s Argument erwartet"
+
+msgid "expected %s arguments"
+msgstr "%s Argumente erwartet"
+
+msgctxt "argument type"
+msgid "int"
+msgstr "Ganzzahl"
+
+msgctxt "argument type"
+msgid "float"
+msgstr "Zahl"
+
+# Placeholders in usage lines and option lists (argparse metavars).
+
+msgctxt "metavar"
+msgid "<command>"
+msgstr "<Befehl>"
+
+msgctxt "metavar"
+msgid "HZ"
+msgstr "HZ"
+
+msgctxt "metavar"
+msgid "S"
+msgstr "S"
+
+msgctxt "metavar"
+msgid "DBFS"
+msgstr "dBFS"
+
+msgctxt "metavar"
+msgid "N"
+msgstr "NR"
+
+msgctxt "channel metavar"
+msgid "N"
+msgstr "KANAL"
+
+msgctxt "count metavar"
+msgid "N"
+msgstr "ANZAHL"
+
+msgctxt "fraction metavar"
+msgid "N"
+msgstr "N"
+
+msgctxt "metavar"
+msgid "TEXT"
+msgstr "TEXT"
+
+msgctxt "metavar"
+msgid "M"
+msgstr "M"
+
+msgctxt "metavar"
+msgid "C"
+msgstr "°C"
+
+msgctxt "metavar"
+msgid "WAV"
+msgstr "WAV"
+
+msgctxt "metavar"
+msgid "FILE"
+msgstr "DATEI"
+
+msgctxt "metavar"
+msgid "DIR"
+msgstr "VERZEICHNIS"
+
+msgctxt "metavar"
+msgid "LIST"
+msgstr "LISTE"
+
+msgctxt "metavar"
+msgid "LO"
+msgstr "MIN"
+
+msgctxt "metavar"
+msgid "HI"
+msgstr "MAX"
+
+msgctxt "metavar"
+msgid "PATH"
+msgstr "PFAD"
+
+msgctxt "metavar"
+msgid "LABEL"
+msgstr "BEZEICHNUNG"
+
+msgctxt "metavar"
+msgid "NAME"
+msgstr "NAME"
+
+msgctxt "metavar"
+msgid "LANG"
+msgstr "SPRACHE"
+
+msgctxt "metavar"
+msgid "WHEN"
+msgstr "WANN"
+
+msgctxt "metavar"
+msgid "path"
+msgstr "Pfad"
+
+msgctxt "metavar"
+msgid "baseline"
+msgstr "Referenz"
+
+msgctxt "metavar"
+msgid "candidate"
+msgstr "Kandidat"
+
+msgctxt "metavar"
+msgid "project"
+msgstr "Projekt"
+
+msgctxt "metavar"
+msgid "session"
+msgstr "Sitzung"
+
+msgctxt "diagnostic"
+msgid "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance; RoomScope does not identify room modes."
+msgstr "Nur Kandidaten: ein Peak in der Tieftonantwort mit langem Schmalband-Abklingen kann eine Raumresonanz sein; RoomScope identifiziert keine Raummoden."
+
+msgid "placement_temperature_c must be between -20 °C and 50 °C"
+msgstr "placement_temperature_c muss zwischen -20 °C und 50 °C liegen"
+
+msgctxt "diagnostic"
+msgid "no air temperature was supplied, so {temperature:.0f} °C ({speed:.1f} m/s) was assumed; a 5 °C error moves every distance by about 0.9 %"
+msgstr "es wurde keine Lufttemperatur angegeben, daher wurden {temperature:.0f} °C ({speed:.1f} m/s) angenommen; ein Fehler von 5 °C verschiebt jede Distanz um etwa 0.9 %"
+
+msgid "Run a command with --help for its options, for example:"
+msgstr "Führe einen Befehl mit --help aus, um seine Optionen zu sehen, zum Beispiel:"
+
+msgid "show or change the settings (the same settings.json as the desktop app)"
+msgstr "die Einstellungen anzeigen oder ändern (dieselbe settings.json wie die Desktop-App)"
+
+msgctxt "metavar"
+msgid "KEY"
+msgstr "EINSTELLUNG"
+
+msgctxt "metavar"
+msgid "VALUE"
+msgstr "WERT"
+
+msgid "the setting to show or change; without it every setting is listed"
+msgstr "die Einstellung, die angezeigt oder geändert wird; ohne sie werden alle Einstellungen aufgelistet"
+
+msgid "the new value; auto goes back to the default"
+msgstr "der neue Wert; auto stellt den Standard wieder her"
+
+msgid "settings"
+msgstr "Einstellungen"
+
+msgid "system, light or dark (the desktop app only)"
+msgstr "system, light oder dark (nur die Desktop-App)"
+
+msgid "portaudio, fake, or auto (PortAudio)"
+msgstr "portaudio, fake oder auto (PortAudio)"
+
+msgid "an existing folder, or auto (none)"
+msgstr "ein vorhandener Ordner oder auto (keiner)"
+
+msgid "on or off (auto: on)"
+msgstr "on oder off (auto: on)"
+
+msgid "on or off (auto: off; a source or pip install always has them)"
+msgstr "on oder off (auto: off; eine Installation aus dem Quellcode oder mit pip zeigt sie immer)"
+
+msgid "{languages}, or auto (follow the system)"
+msgstr "{languages} oder auto (dem System folgen)"
+
+msgid "{profiles}, or auto ({default})"
+msgstr "{profiles} oder auto ({default})"
+
+msgid "English"
+msgstr "Englisch"
+
+msgid "Simplified Chinese"
+msgstr "Vereinfachtes Chinesisch"
+
+msgid "follow the system"
+msgstr "dem System folgen"
+
+msgid "Interface language"
+msgstr "Oberflächensprache"
+
+msgid "Default output folder (desktop app)"
+msgstr "Standard-Ausgabeordner (Desktop-App)"
+
+msgid "Copy recordings"
+msgstr "Aufnahmen kopieren"
+
+msgid "Theme (desktop app)"
+msgstr "Erscheinungsbild (Desktop-App)"
+
+msgid "simulated interface, for the demo and tests"
+msgstr "simuliertes Interface für die Demo und Tests"
+
+msgid "PortAudio (the default)"
+msgstr "PortAudio (Standard)"
+
+msgctxt "setting"
+msgid "on"
+msgstr "an"
+
+msgctxt "setting"
+msgid "off"
+msgstr "aus"
+
+msgid "hidden in the installed app"
+msgstr "in der installierten App ausgeblendet"
+
+msgid "light"
+msgstr "hell"
+
+msgid "dark"
+msgstr "dunkel"
+
+msgid "--lang {value} on this command line"
+msgstr "--lang {value} in dieser Befehlszeile"
+
+msgid "; {lang} has no translation, so English is used"
+msgstr "; für {lang} gibt es keine Übersetzung, daher wird Englisch verwendet"
+
+msgid "the stored setting (roomscope config language {value})"
+msgstr "die gespeicherte Einstellung (roomscope config language {value})"
+
+msgid "not stored; {name}={value} chooses {language}"
+msgstr "nicht gespeichert; {name}={value} wählt {language}"
+
+msgid "follow the system (now {language})"
+msgstr "dem System folgen (jetzt {language})"
+
+msgid "{name}={value} chooses the backend before this setting"
+msgstr "{name}={value} wählt das Backend vor dieser Einstellung"
+
+msgid "{name}={value} decides before this setting"
+msgstr "{name}={value} entscheidet vor dieser Einstellung"
+
+msgid "unknown setting {key}; the settings are: {keys}"
+msgstr "unbekannte Einstellung {key}; die Einstellungen sind: {keys}"
+
+msgid "{key} is on or off, not {value}"
+msgstr "{key} ist on oder off, nicht {value}"
+
+msgid "unknown language {value}; available: {languages}, or auto"
+msgstr "unbekannte Sprache {value}; verfügbar: {languages} oder auto"
+
+msgid "unknown profile {value}; available: {profiles}, or auto"
+msgstr "unbekanntes Aufnahmeprofil {value}; verfügbar: {profiles} oder auto"
+
+msgid "unknown audio backend {value}; choose portaudio, fake or auto"
+msgstr "unbekanntes Audio-Backend {value}; wähle portaudio, fake oder auto"
+
+msgid "{path} is not an existing folder; give a folder, or auto"
+msgstr "{path} ist kein vorhandener Ordner; gib einen Ordner an oder auto"
+
+msgid "unknown theme {value}; choose system, light, dark or auto"
+msgstr "unbekanntes Erscheinungsbild {value}; wähle system, light, dark oder auto"
+
+msgid "the environment variable {name}={value}"
+msgstr "die Umgebungsvariable {name}={value}"
+
+msgid "the Mac's preferred languages: {value}"
+msgstr "die bevorzugten Sprachen des Mac: {value}"
+
+msgid "the Windows display language: {value}"
+msgstr "die Anzeigesprache von Windows: {value}"
+
+msgid "the desktop's UI languages: {value}"
+msgstr "die Oberflächensprachen des Desktops: {value}"
+
+msgid "the system locale: {value}"
+msgstr "das System-Gebietsschema: {value}"
+
+msgid "no language is set anywhere"
+msgstr "nirgends ist eine Sprache gesetzt"
+
+msgid "Nothing was changed."
+msgstr "Es wurde nichts geändert."
+
+msgid "{error}; nothing was changed: correct or delete the file first"
+msgstr "{error}; es wurde nichts geändert: korrigiere oder lösche zuerst die Datei"
+
+msgid "warning: {error}; the defaults are shown"
+msgstr "Warnung: {error}; die Standardwerte werden angezeigt"
+
+msgid "RoomScope settings"
+msgstr "RoomScope-Einstellungen"
+
+msgid "change a setting"
+msgstr "eine Einstellung ändern"
+
+msgid "back to its default"
+msgstr "auf den Standard zurücksetzen"
+
+msgctxt "setting"
+msgid "Setting"
+msgstr "Einstellung"
+
+msgctxt "setting"
+msgid "Value"
+msgstr "Wert"
+
+msgid "Meaning"
+msgstr "Bedeutung"
+
+msgid "Settings file"
+msgstr "Einstellungsdatei"
+
+msgid "Nothing is stored yet: every setting has its default."
+msgstr "Noch ist nichts gespeichert: jede Einstellung hat ihren Standardwert."
+
+msgid "Values"
+msgstr "Werte"
+
+msgid "change it"
+msgstr "ändern"
+
+msgid "The theme applies to the desktop app only."
+msgstr "Das Erscheinungsbild gilt nur für die Desktop-App."
+
+msgid "Stored"
+msgstr "Gespeichert"
+
+msgid "In effect"
+msgstr "Wirksam"
+
+msgid "Because"
+msgstr "Grund"
+
+msgid "{value}: {state}"
+msgstr "{value}: {state}"
+
+msgid "always {language}"
+msgstr "immer {language}"
+
+msgid "{language} for one command"
+msgstr "{language} für einen Befehl"
+
+msgid "RoomScope uses {language} from now on."
+msgstr "RoomScope verwendet ab jetzt {language}."
+
+msgid "follow the system again"
+msgstr "wieder dem System folgen"
+
+msgid "The language setting is cleared; {name}={value} still chooses {language}."
+msgstr "Die Spracheinstellung ist gelöscht; {name}={value} wählt weiterhin {language}."
+
+msgid "RoomScope follows the system language again: {language}."
+msgstr "RoomScope folgt wieder der Systemsprache: {language}."
+
+msgid "Because: {reason}."
+msgstr "Grund: {reason}."
+
+msgid "{setting}: {state}"
+msgstr "{setting}: {state}"
+
+msgid "The theme applies to the desktop app only, from the next time it opens."
+msgstr "Das Erscheinungsbild gilt nur für die Desktop-App, ab dem nächsten Öffnen."
+
+msgid "The desktop app shows the change the next time it starts."
+msgstr "Die Desktop-App zeigt die Änderung beim nächsten Start."
+
+msgid "do not copy it for one command"
+msgstr "für einen Befehl nicht kopieren"
+
+msgid "copy it for one command"
+msgstr "für einen Befehl kopieren"
+
+msgid "Saved in {path}"
+msgstr "Gespeichert in {path}"
+
+msgid "its Save dialog opens here"
+msgstr "sein Speichern-Dialog öffnet sich hier"
+
+msgid "not set"
+msgstr "nicht gesetzt"
+
+msgid "set"
+msgstr "gesetzt"
+
+msgid "RoomScope folder"
+msgstr "RoomScope-Ordner"
+
+msgid "Log file"
+msgstr "Protokolldatei"
+
+msgid "Synthetic demo room"
+msgstr "Synthetischer Demo-Raum"
+
+msgid "simulated omni"
+msgstr "simulierte Kugel"
+
+msgid "{label}: {description}"
+msgstr "{label}: {description}"
+
+msgctxt "list separator"
+msgid ", "
+msgstr ", "
+
+msgid "invalid JSON at line {line}, column {column}"
+msgstr "ungültiges JSON in Zeile {line}, Spalte {column}"
