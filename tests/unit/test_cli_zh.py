@@ -313,6 +313,11 @@ def test_a_default_of_an_option_with_choices_is_the_value_to_type(zh_cli: None, 
             "--mic-height 需要同时给出 --speaker-distance",
             "--mic-height needs --speaker-distance",
         ),
+        (
+            ["analyze-ir", "--ir", "r.wav", "--band", "8000", "100"],
+            "--band 需要两个频率（Hz）：先下限后上限，上限高于下限，下限大于 0",
+            "--band needs two frequencies in Hz, LO then HI, with HI above LO and LO above 0",
+        ),
     ],
 )
 def test_a_refused_setting_names_the_option_that_set_it(
@@ -335,7 +340,7 @@ def test_a_refused_setting_names_the_option_that_set_it(
         assert main(["--lang", lang, *argv]) != 0
         err = " ".join(capsys.readouterr().err.split())
         assert expected in err, err
-        assert not re.search(r"\b[a-z]+_(hz|s|c|m)\b", err), err
+        assert not re.search(r"\b[a-z]+_(hz|s|c|m|band)\b", err), err
     assert not (tmp_path / "x.wav").exists()
 
 

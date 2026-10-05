@@ -18,6 +18,7 @@ import contextlib
 import errno
 import json
 import logging
+import math
 import os
 import re
 import shlex
@@ -2067,9 +2068,15 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
     from reverbscope.models.session import MeasurementSession
 
     _refuse_file_out(args.out, "analyze-ir")
+    band = (float(args.band[0]), float(args.band[1])) if args.band else None
+    if band is not None and not (band[0] > 0.0 and band[1] > band[0] and math.isfinite(band[1])):
+        # The analysis would name its own parameter: "excitation_band must be
+        # a (low_hz, high_hz) pair".
+        raise ConfigurationError(
+            _("--band needs two frequencies in Hz, LO then HI, with HI above LO and LO above 0")
+        )
     ir = read_wav(args.ir)
     settings = _analysis_settings(args)
-    band = (float(args.band[0]), float(args.band[1])) if args.band else None
     result = analyze_impulse_response(ir, settings, excitation_band=band)
     profile = _resolve_profile(args)
     findings = interpret(result, profile)
