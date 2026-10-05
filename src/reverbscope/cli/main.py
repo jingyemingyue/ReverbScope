@@ -1927,8 +1927,8 @@ def cmd_compare(args: argparse.Namespace) -> int:
     )
     profile = _resolve_profile(args, candidate.session.recording_profile or "generic")
     findings = interpret_comparison(comparison, profile)
-    if args.out is not None:
-        save_comparison(args.out, comparison)
+    # --out without .json is a folder: name the file that was written in it.
+    written = save_comparison(args.out, comparison) if args.out is not None else None
     if _use_json(args):
         payload = comparison.to_dict()
         payload["findings"] = [f.to_dict() for f in findings]
@@ -1936,11 +1936,11 @@ def cmd_compare(args: argparse.Namespace) -> int:
     else:
         console = _console(args)
         print(render_comparison(console, comparison, findings, profile))
-        if args.out is not None:
+        if written is not None:
             print()
             print(
                 render_status(
-                    console, "ok", _("Wrote comparison to {path}").format(path=args.out), keep=True
+                    console, "ok", _("Wrote comparison to {path}").format(path=written), keep=True
                 )
             )
     return 0

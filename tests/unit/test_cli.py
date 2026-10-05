@@ -775,3 +775,20 @@ def test_devices_and_doctor_warn_that_json_is_deprecated(
     assert captured.err.count("--json is deprecated") == 1
     assert main(["--backend", "fake", "--format", "json", *command]) == 0
     assert "deprecated" not in capsys.readouterr().err
+
+
+def test_compare_names_the_file_it_wrote_in_an_out_folder(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--out report.txt is a folder (no .json suffix): the comparison went to
+    report.txt/comparison.json while the message said report.txt."""
+    for name, rt60 in (("a", 0.6), ("b", 0.4)):
+        ir = write_wav(tmp_path / f"{name}.wav", make_rir(48000, rt60_s=rt60) * 0.5, 48000)
+        argv = ["analyze-ir", "--ir", str(ir), "--band", "100", "8000"]
+        assert main([*argv, "--out", str(tmp_path / name)]) == 0
+    capsys.readouterr()
+    out = tmp_path / "report.txt"
+    assert main(["compare", str(tmp_path / "a"), str(tmp_path / "b"), "--out", str(out)]) == 0
+    written = out / "comparison.json"
+    assert written.is_file()
+    assert f"Wrote comparison to {written}" in capsys.readouterr().out
