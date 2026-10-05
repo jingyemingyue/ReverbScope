@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import replace
 from pathlib import Path
 
@@ -272,3 +273,41 @@ def test_analyze_ir_band_help_covers_broadband_metrics() -> None:
     text = _subcommand_help("analyze-ir")
     assert "required for band metrics" not in text
     assert "required for every decay and clarity metric, broadband included" in text
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_the_air_temperature_is_shown_in_degrees_celsius(
+    short_sweep: SweepSettings, lang: str
+) -> None:
+    """The placement section printed "at 20 C" / "气温 20 C", and the note
+    on an assumed temperature "20 C" and "a 5 C error"."""
+    from roomscope.cli.render import _placement
+    from roomscope.i18n import activate
+
+    result = _analysed(short_sweep)
+    activate(lang)
+    try:
+        shown = "\n".join(_placement(WIDE, result.placement))
+        ascii_only = Console(color=False, unicode=False, width=100, encoding="ascii")
+        fallback = ascii_only.fit("\n".join(_placement(ascii_only, result.placement)))
+        # cp1252 and GBK cannot write ✓, so the other signs are ASCII there,
+        # but they hold the degree sign.
+        legacy = {
+            encoding: console.fit("\n".join(_placement(console, result.placement)))
+            for encoding in ("cp1252", "gbk")
+            for console in [Console(color=False, unicode=False, width=100, encoding=encoding)]
+        }
+    finally:
+        activate("en")
+    for encoding, text in legacy.items():
+        assert "20 °C" in text and not re.search(r"\d C\b", text), (encoding, text)
+        if lang == "en" or encoding == "gbk":
+            text.encode(encoding)
+    speed = next(line for line in shown.splitlines() if "343.2 m/s" in line)
+    assert "20 °C" in speed, speed
+    assert "5 °C" in shown, shown
+    assert not re.search(r"\d C\b", shown), shown
+    # A stream that cannot write the degree sign gets the plain unit.
+    assert "20 C" in fallback and "°" not in fallback
+    if lang == "en":
+        fallback.encode("ascii")

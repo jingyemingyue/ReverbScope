@@ -22,6 +22,7 @@ import numpy as np
 from scipy.signal import fftconvolve
 
 from roomscope.audio.fake import make_rir
+from roomscope.i18n import N_, _
 from roomscope.models.audio import AudioSignal, FloatArray
 from roomscope.models.comparison import ComparisonResult
 from roomscope.models.configuration import SweepSettings
@@ -29,7 +30,10 @@ from roomscope.models.result import AnalysisResult
 
 #: ``MeasurementSession.mode`` of every session the demo writes.
 DEMO_MODE = "synthetic_demo"
-DEMO_ROOM_NAME = "Synthetic demo room"
+#: The room, position and microphone names a demo session stores, written in
+#: the interface language like the names a user types (``--room``).
+DEMO_ROOM_NAME = N_("Synthetic demo room")
+DEMO_MICROPHONE = N_("simulated omni")
 DEMO_NOTES = (
     "SYNTHETIC DEMO: simulated with `roomscope demo`. No audio hardware was used; "
     "this is not a measurement of a real room."
@@ -67,7 +71,7 @@ DEMO_POSITIONS: tuple[DemoPosition, ...] = (
     DemoPosition(
         key="position-a",
         label="A",
-        description="close to the desk and the side wall",
+        description=N_("close to the desk and the side wall"),
         rt60_s=0.45,
         reflections=((0.0024, -3.0), (0.0071, -9.0)),
         mode_amplitude=0.012,
@@ -77,7 +81,7 @@ DEMO_POSITIONS: tuple[DemoPosition, ...] = (
     DemoPosition(
         key="position-b",
         label="B",
-        description="moved 1 m back from the desk",
+        description=N_("moved 1 m back from the desk"),
         rt60_s=0.45,
         reflections=((0.0093, -14.0),),
         mode_amplitude=0.004,
@@ -182,9 +186,11 @@ def run_demo(out_dir: Path, *, sample_rate: int = 48000, profile: str = DEMO_PRO
         result = analyze(AudioSignal(samples, settings.sample_rate), reference, analysis_settings)
         session = MeasurementSession(
             mode=DEMO_MODE,
-            room_name=DEMO_ROOM_NAME,
-            measurement_position=f"{position.label}: {position.description}",
-            microphone_name="simulated omni",
+            room_name=_(DEMO_ROOM_NAME),
+            measurement_position=_("{label}: {description}").format(
+                label=position.label, description=_(position.description)
+            ),
+            microphone_name=_(DEMO_MICROPHONE),
             notes=DEMO_NOTES,
             sweep_settings=settings,
             analysis_settings=analysis_settings,

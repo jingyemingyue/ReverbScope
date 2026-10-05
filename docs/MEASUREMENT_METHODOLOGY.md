@@ -133,7 +133,12 @@ is loudest in the frame where the sweep passed it — reverberation only adds
 later and weaker energy — and bins whose maximum is at least 20 dB above
 their median over time are kept. A Theil–Sen line [23, 24] through
 `(ln f, t)` of at least 12 such bins spanning at least 1.5 octaves gives the
-measured `L'`, and `speed = L / L'`. A speed within the estimate's own
+measured `L'`, and `speed = L / L'`. The line must explain the recording: of
+the searched bins it says the sweep crossed inside the recording, at least
+half must be among the kept ones. A take cut while the sweep was still in
+its lowest octaves leaves a few bins (hum, leakage) that peak together, a
+nearly flat line and a "speed" thousands of times too high; it is not
+measured. A speed within the estimate's own
 spread of 1 is "as generated": `max(1.25 %, 5.5 % / T^0.75)` for a sweep of
 `T` seconds (9.3 % at 0.5 s, 5.5 % at 1 s, 2.4 % at 3 s, 1.6 % at 5 s,
 1.25 % from about 9 s). Otherwise, when `speed × generated rate` is within

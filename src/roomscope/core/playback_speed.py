@@ -25,8 +25,11 @@ later, weaker energy). A Theil-Sen line through ``(ln f, t)`` of the bins
 where that maximum clearly stands out gives the measured ``L'``, and
 ``speed = L / L'``: 1.0 when the sweep was played as generated,
 ``played_rate / generated_rate`` for a file played without conversion, and
-``1 / stretch`` for a pitch-preserving time-stretch. The estimate is used only
-to explain a measurement that already failed, never to correct one.
+``1 / stretch`` for a pitch-preserving time-stretch. The line must also
+explain the recording: at least half of the searched frequencies it says the
+sweep crossed inside the recording must show that peak (:data:`MIN_COVERAGE`).
+The estimate is used only to explain a measurement that already failed, never
+to correct one.
 """
 
 from __future__ import annotations
@@ -79,6 +82,16 @@ MIN_FRAMES = 12
 MIN_OCTAVES = 1.5
 #: Points fed to the Theil-Sen fit (its cost is quadratic).
 MAX_FIT_FRAMES = 600
+#: Of the searched frequencies that a sweep at the fitted rate passed inside
+#: the recording, at least this fraction must show it. A recording cut while
+#: the sweep was still in its lowest octaves leaves a few bins (hum, leakage)
+#: whose loudest frame is the same moment; the line through them is nearly
+#: flat, a "speed" thousands of times the generated one, and the bins it says
+#: the sweep crossed show nothing. A sweep that was there shows in nearly all
+#: of them: 100 % in 180 synthetic rooms (RT60 1-4 s, diffuse level
+#: 0.05-0.3, sweeps of 0.5-10 s) and in every sample-rate and stretch case
+#: of the tests; the demo take cut 0.2-1.5 s into its sweep: under 6 %.
+MIN_COVERAGE = 0.5
 
 
 def measure_sweep_speed(
@@ -139,8 +152,15 @@ def measure_sweep_speed(
     if picked.shape[0] > MAX_FIT_FRAMES:
         pick = np.linspace(0, picked.shape[0] - 1, MAX_FIT_FRAMES).round().astype(int)
         t, log_f = t[pick], log_f[pick]
-    measured_rate = float(theilslopes(t, log_f)[0])
+    fit = theilslopes(t, log_f)
+    measured_rate, intercept = float(fit[0]), float(fit[1])
     if not math.isfinite(measured_rate) or measured_rate <= 0.0:
+        return None
+    # Where the fitted sweep was at each searched frequency: those moments
+    # that fall inside the recording must show the sweep (MIN_COVERAGE).
+    passed = intercept + measured_rate * np.log(freqs[band])
+    inside = (passed >= times[1]) & (passed <= times[-2])
+    if not inside.any() or float(np.mean(usable[inside])) < MIN_COVERAGE:
         return None
     return settings.sweep_rate / measured_rate
 

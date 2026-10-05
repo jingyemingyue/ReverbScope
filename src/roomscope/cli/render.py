@@ -15,7 +15,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from roomscope.cli.console import Console, Status, Verbatim, cell_width, glue_units, shell_command
+from roomscope.cli.console import (
+    Console,
+    Status,
+    Verbatim,
+    cell_width,
+    glue_units,
+    pad,
+    shell_command,
+    wrap,
+)
 from roomscope.edition import RELEASES_URL, is_terminal_package
 from roomscope.i18n import _, localize, pgettext
 from roomscope.interpretation import Finding
@@ -52,7 +61,9 @@ if TYPE_CHECKING:
     from roomscope.audio.backend import DeviceInfo
     from roomscope.audio.inventory import DeviceInventory
     from roomscope.demo import DemoRun
+    from roomscope.i18n import LanguageChoice
     from roomscope.models.configuration import SweepSettings
+    from roomscope.settings import UserSettings
 
 
 #: The GUI's "Full report" panes: the same layout as the terminal, as plain
@@ -639,7 +650,7 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
             (
                 _("Speed of sound"),
                 f"{placement.speed_of_sound_m_s:.1f} m/s "
-                + _("at {temp:.0f} C").format(temp=placement.temperature_c)
+                + _("at {temp:.0f} °C").format(temp=placement.temperature_c)
                 + assumed,
             ),
             *(
@@ -1170,6 +1181,35 @@ def _edition_name(edition: str) -> str:
     return edition
 
 
+def _settings_summary(c: Console, summary: dict[str, Any]) -> list[str]:
+    """The settings of the report: what each means, then the value as stored
+    (``roomscope config`` names them the same way)."""
+    from dataclasses import fields, replace
+
+    from roomscope.cli import config
+    from roomscope.settings import UserSettings
+
+    if "error" in summary:
+        return c.status("error", localize(str(summary["error"])))
+    known = {item.name: type(getattr(UserSettings(), item.name)) for item in fields(UserSettings)}
+    stored = {
+        name: value
+        for name, value in summary.items()
+        if name in known and isinstance(value, known[name])
+    }
+    settings = replace(UserSettings(), **stored)
+    rows = []
+    for key in config.KEYS:
+        if key == "output-folder":
+            rows.append(
+                (config.title(key), _("set") if summary.get("output_dir_set") else _("not set"))
+            )
+            continue
+        shown, typed = config.state(key, settings), config.typed_value(key, settings)
+        rows.append((config.title(key), shown if shown == typed else shown + c.sep() + typed))
+    return c.fields(rows)
+
+
 def render_environment(console: Console, report: dict[str, Any]) -> str:
     """``roomscope doctor``: sections a maintainer can read in a GitHub issue."""
     from roomscope.diagnostics import privacy_note
@@ -1228,13 +1268,17 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
     packages.append(("libsndfile", report.get("libsndfile") or _("unknown")))
     lines += c.fields(packages)
 
-    lines += c.section(_("Settings"))
-    lines += c.fields(
-        (key, c.dash() if value in ("", None) else str(value))
-        for key, value in report.get("settings", {}).items()
-    )
+    lines += c.section(_("Settings"), "roomscope config")
+    lines += _settings_summary(c, report.get("settings", {}))
     lines += c.section(_("Paths"), _("your home folder is shown as ~"))
-    lines += c.fields((key, Verbatim(str(value))) for key, value in report["paths"].items())
+    paths = {
+        "roomscope_home": _("RoomScope folder"),
+        "settings": _("Settings file"),
+        "log": _("Log file"),
+    }
+    lines += c.fields(
+        (paths.get(key, key), Verbatim(str(value))) for key, value in report["paths"].items()
+    )
 
     lines += c.section(_("Self-check"))
     callbacks = report.get("audio_callbacks")
@@ -1851,6 +1895,231 @@ def render_status(console: Console, kind: Status, text: str, *, keep: bool = Fal
     return console.fit("\n".join(console.status(kind, text, indent=0)))
 
 
+# --- Settings ----------------------------------------------------------------------------
+
+
+def _setting_rows(c: Console, rows: Sequence[tuple[str, str, str]]) -> list[str]:
+    """``key  value  meaning`` rows; the meaning wraps under itself.
+
+    A value too wide for its column (a folder) puts its meaning on the next
+    line; a narrow terminal puts every meaning under its key.
+    """
+    rows = [(c.readable(key), c.readable(value), c.readable(text)) for key, value, text in rows]
+    key_width = max(cell_width(key) for key, _value, _text in rows)
+    # A long value (a folder) does not widen the column for the others.
+    value_width = max([cell_width(v) for _k, v, _t in rows if cell_width(v) <= 12] or [12])
+    column = 2 + key_width + 2 + value_width + 2
+    stacked = c.width - column < 24
+    out: list[str] = []
+    for key, value, text in rows:
+        head = "  " + pad(key, key_width) + "  " + c.command(value)
+        if stacked:
+            out.append(head)
+            out += [c.muted(line) for line in wrap(text, c.width, first="    ")]
+            continue
+        if cell_width(value) > value_width:
+            out.append(head)
+            out += wrap(text, c.width, first=" " * column)
+            continue
+        lines = wrap(text, c.width, first=" " * column)
+        out.append(head + " " * (value_width - cell_width(value) + 2) + lines[0][column:])
+        out += lines[1:]
+    return out
+
+
+def _config_commands() -> list[tuple[str, str]]:
+    key, value = pgettext("metavar", "KEY"), pgettext("metavar", "VALUE")
+    return [
+        (f"roomscope config {key} {value}", _("change a setting")),
+        (f"roomscope config {key} auto", _("back to its default")),
+    ]
+
+
+def render_config(
+    console: Console,
+    settings: UserSettings,
+    path: Path,
+    choice: LanguageChoice,
+    *,
+    exists: bool,
+) -> str:
+    """``roomscope config``: every setting, what its value means now, and the file."""
+    from roomscope.cli import config
+
+    c = console
+    lines = c.title(_("RoomScope settings"))
+    lines.append("")
+    rows = [(pgettext("setting", "Setting"), pgettext("setting", "Value"), _("Meaning"))]
+    rows += [
+        (
+            key,
+            config.typed_value(key, settings),
+            _("{setting}: {state}").format(
+                setting=config.title(key), state=config.state(key, settings, choice)
+            ),
+        )
+        for key in config.KEYS
+    ]
+    table = _setting_rows(c, rows)
+    lines += [c.muted(table[0]), *table[1:]]
+    lines.append("")
+    lines += c.commands(_config_commands())
+    lines.append("")
+    lines += c.fields([(_("Settings file"), Verbatim(str(path)))])
+    if not exists:
+        lines += c.paragraph(
+            _("Nothing is stored yet: every setting has its default."), style=("dim",)
+        )
+    return c.fit("\n".join(lines))
+
+
+def render_config_key(console: Console, key: str, settings: UserSettings) -> str:
+    """``roomscope config KEY``: one setting, the values it takes, how to change it."""
+    from roomscope.cli import config
+
+    c = console
+    lines = c.title(key)
+    lines.append("")
+    lines += c.fields(
+        [
+            (pgettext("setting", "Value"), c.command(config.typed_value(key, settings))),
+            (
+                _("Meaning"),
+                _("{setting}: {state}").format(
+                    setting=config.title(key), state=config.state(key, settings)
+                ),
+            ),
+            (_("Values"), config.choices(key)),
+        ]
+    )
+    lines.append("")
+    lines += c.commands(
+        [(f"roomscope config {key} {pgettext('metavar', 'VALUE')}", _("change it"))]
+    )
+    if key == "theme":
+        lines += c.paragraph(_("The theme applies to the desktop app only."), style=("dim",))
+    return c.fit("\n".join(lines))
+
+
+def _other_language(lang: str) -> str:
+    return "en" if lang != "en" else "zh_CN"
+
+
+def render_config_language(
+    console: Console, settings: UserSettings, choice: LanguageChoice, in_effect: str
+) -> str:
+    """``roomscope config language``: what is stored, what is in effect, and why."""
+    from roomscope.cli import config
+    from roomscope.i18n import available_locales
+
+    c = console
+    lines = c.title(config.title("language"))
+    lines.append("")
+    stored = settings.language
+    lines += c.fields(
+        [
+            (
+                _("Stored"),
+                _("{value}: {state}").format(
+                    value=stored or config.AUTO, state=config.state("language", settings)
+                ),
+            ),
+            (_("In effect"), config.language_name(in_effect)),
+            (_("Because"), config.language_reason(choice)),
+        ]
+    )
+    lines.append("")
+    rows = [
+        (
+            f"roomscope config language {lang}",
+            _("always {language}").format(language=config.language_name(lang)),
+        )
+        for lang in config.languages()
+    ]
+    rows.append(("roomscope config language auto", _("follow the system")))
+    other = _other_language(in_effect)
+    if other in available_locales():
+        rows.append(
+            (
+                f"roomscope --lang {other} {pgettext('metavar', '<command>')}",
+                _("{language} for one command").format(language=config.language_name(other)),
+            )
+        )
+    lines += c.commands(rows)
+    return c.fit("\n".join(lines))
+
+
+def render_config_saved(
+    console: Console,
+    key: str,
+    settings: UserSettings,
+    path: Path,
+    *,
+    choice: LanguageChoice | None = None,
+) -> str:
+    """The confirmation after ``roomscope config KEY VALUE``.
+
+    For the language it is written in the language now chosen, and says how
+    to go back to following the system.
+    """
+    from roomscope.cli import config
+    from roomscope.i18n import SOURCE_ENVIRONMENT
+
+    c = console
+    notes: list[str] = []
+    commands: list[tuple[str, str]] = []
+    if key == "language":
+        if settings.language:
+            text = _("RoomScope uses {language} from now on.").format(
+                language=config.language_name(settings.language)
+            )
+            commands.append(("roomscope config language auto", _("follow the system again")))
+        elif choice is not None and choice.source == SOURCE_ENVIRONMENT:
+            text = _(
+                "The language setting is cleared; {name}={value} still chooses {language}."
+            ).format(
+                name=choice.origin, value=choice.value, language=config.language_name(choice.lang)
+            )
+        else:
+            text = _("RoomScope follows the system language again: {language}.").format(
+                language=config.language_name(choice.lang if choice else "en")
+            )
+            if choice is not None:
+                notes.append(_("Because: {reason}.").format(reason=config.language_reason(choice)))
+    else:
+        text = _("{setting}: {state}").format(
+            setting=config.title(key), state=config.state(key, settings)
+        )
+        if key == "theme":
+            notes.append(
+                _("The theme applies to the desktop app only, from the next time it opens.")
+            )
+        elif key == "developer-tools":
+            notes.append(_("The desktop app shows the change the next time it starts."))
+        elif key == "copy-recording":
+            # A root option: it goes before the command (after it is refused).
+            command = pgettext("metavar", "<command>")
+            if settings.copy_recording:
+                commands.append(
+                    (
+                        f"roomscope --no-copy-recording {command}",
+                        _("do not copy it for one command"),
+                    )
+                )
+            else:
+                commands.append(
+                    (f"roomscope --copy-recording {command}", _("copy it for one command"))
+                )
+    lines = c.status("ok", text, indent=0)
+    for note in notes:
+        lines += c.paragraph(note, indent=2)
+    if commands:
+        lines += c.commands(commands, indent=2)
+    # One line, whole: a path to copy.
+    lines.append("  " + c.muted(_("Saved in {path}").format(path=path)))
+    return c.fit("\n".join(lines))
+
+
 # --- Home screen -------------------------------------------------------------------------
 
 
@@ -1887,6 +2156,13 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
         indent=0,
         style=("dim",),
     )
+    from roomscope.cli.config import language_hint_lines
+    from roomscope.i18n import current_locale
+
+    # Not a paragraph: wrapping split the command to copy across two lines.
+    hint = language_hint_lines(current_locale(), c.width)
+    if hint and c.can_write("".join(hint)):
+        lines += [c.muted(line) for line in hint]
     return c.fit("\n".join(lines))
 
 

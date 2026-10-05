@@ -288,3 +288,24 @@ def test_the_speed_explanation_is_shown_in_the_active_language(
     assert "不过，录音中扫频的速度是生成时的 200" in shown
     with pytest.raises(InvalidAudioError, match=r"full sweep\. However, the sweep in the"):
         analyze(recording, Reference.from_settings(SWEEP))
+
+
+def test_a_recording_cut_in_the_lowest_octaves_is_not_called_stretched() -> None:
+    """Review finding: the demo's take cut to its first 1.6 s (1 s of silence
+    and 0.6 s of a 5 s sweep, which reaches 46 Hz) was diagnosed as a
+    time-stretch at 837043.2 % speed. The few bins the line was fitted
+    through all peaked at one moment; nothing the sweep would have crossed
+    there showed it."""
+    from roomscope.demo import DEMO_POSITIONS, demo_sweep_settings, simulate_take
+
+    settings = demo_sweep_settings()
+    rate = settings.sample_rate
+    take = simulate_take(DEMO_POSITIONS[0], settings)
+    for cut_s in (1.2, 1.6, 1.8, 2.5):
+        assert measure_sweep_speed(take[: round(cut_s * rate)], rate, settings) is None, cut_s
+    with pytest.raises(InvalidAudioError, match="shorter than the reference") as info:
+        analyze(AudioSignal(take[: round(1.6 * rate)], rate), Reference.from_settings(settings))
+    assert "However" not in str(info.value)
+    # Cut once the sweep has crossed part of the searched band: measured.
+    speed = measure_sweep_speed(take[: 4 * rate], rate, settings)
+    assert speed == pytest.approx(1.0, abs=0.01)

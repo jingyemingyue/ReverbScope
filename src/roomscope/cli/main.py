@@ -2,7 +2,8 @@
 
 Subcommands, in the order of the workflow: ``demo``, ``gui``, ``sweep``,
 ``daw``, ``analyze``, ``devices``, ``measure``, ``analyze-ir``, ``show``,
-``compare``, ``project``, ``export``, ``session``, ``doctor``, ``schema``.
+``compare``, ``project``, ``export``, ``session``, ``config``, ``doctor``,
+``schema``.
 
 Reports go to stdout and diagnostics to stderr; all text is laid out by
 :mod:`roomscope.cli.render` through :mod:`roomscope.cli.console`. A user error
@@ -18,6 +19,7 @@ import contextlib
 import json
 import logging
 import os
+import re
 import shlex
 import sys
 import traceback
@@ -38,6 +40,10 @@ from roomscope.cli.console import (
 from roomscope.cli.render import (
     render_analysis,
     render_comparison,
+    render_config,
+    render_config_key,
+    render_config_language,
+    render_config_saved,
     render_daw_projects,
     render_demo,
     render_devices,
@@ -62,9 +68,9 @@ from roomscope.errors import (
     RoomScopeError,
     SessionError,
 )
-from roomscope.i18n import N_, _, activate, localize
+from roomscope.i18n import N_, _, activate, list_separator, localize, pgettext
 from roomscope.interpretation import available_profiles
-from roomscope.interpretation.profiles import band_text, profile_title
+from roomscope.interpretation.profiles import band_text
 from roomscope.labels import accuracy_class_text
 from roomscope.logging_config import configure_logging
 from roomscope.models.configuration import (
@@ -107,17 +113,74 @@ ARGPARSE_MESSAGES = frozenset(
         N_("show this help message and exit"),
         N_("show program's version number and exit"),
         N_("can't open '%(filename)s': %(error)s"),
+        N_("ignored explicit argument %r"),
+        N_("unknown parser %(parser_name)r (choices: %(choices)s)"),
+        N_("unexpected option string: %s"),
+        # ngettext: "--band 20" (two values expected). Chinese has one form.
+        N_("expected %s argument"),
+        N_("expected %s arguments"),
     }
 )
 
 
+#: argparse messages with a list argparse joined with ", " (all of it, or the
+#: named field); the list is re-joined with the language's separator.
+_LIST_ARGUMENTS: dict[str, str | None] = {
+    "the following arguments are required: %s": None,
+    "invalid choice: %(value)r (choose from %(choices)s)": "choices",
+    "unknown parser %(parser_name)r (choices: %(choices)s)": "choices",
+    "ambiguous option: %(option)s could match %(matches)s": "matches",
+}
+
+
+class _ListTemplate(str):
+    """A translated argparse template whose list argument, which argparse
+    joins with ``", "`` before filling it in, reads as a list of the active
+    language once filled in (``缺少必需的参数：项目、会话、--position``)."""
+
+    field: str | None
+
+    def __new__(cls, text: str, field: str | None) -> _ListTemplate:
+        made = super().__new__(cls, text)
+        made.field = field
+        return made
+
+    def __mod__(self, values: Any) -> str:
+        separator = list_separator()
+        if self.field is None and isinstance(values, str):
+            values = values.replace(", ", separator)
+        elif isinstance(values, dict) and isinstance(values.get(self.field), str):
+            values = {**values, self.field: values[self.field].replace(", ", separator)}
+        filled: str = str(self) % values
+        return filled
+
+
 def _argparse_gettext(message: str) -> str:
+    if message not in ARGPARSE_MESSAGES:
+        return message
+    if message in _LIST_ARGUMENTS:
+        return _ListTemplate(_(message), _LIST_ARGUMENTS[message])
+    return _(message)
+
+
+def _argparse_ngettext(singular: str, plural: str, n: int) -> str:
+    message = singular if n == 1 else plural
     return _(message) if message in ARGPARSE_MESSAGES else message
 
 
 def _translate_argparse() -> None:
-    """Route argparse's module-level ``_`` through RoomScope's catalog."""
+    """Route argparse's module-level ``_`` and ``ngettext`` through RoomScope's catalog."""
     setattr(argparse, "_", _argparse_gettext)  # noqa: B010 - a module attribute, not ours
+    setattr(argparse, "ngettext", _argparse_ngettext)  # noqa: B010
+
+
+def _type_name(kind: object) -> str | None:
+    """The word for a value argparse could not convert ("invalid int value")."""
+    if kind is int:
+        return pgettext("argument type", "int")
+    if kind is float:
+        return pgettext("argument type", "float")
+    return None
 
 
 #: The root help lists the commands in these groups, in the order of the
@@ -126,6 +189,7 @@ COMMAND_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (N_("Get started"), ("demo", "gui")),
     (N_("Measurement"), ("sweep", "daw", "analyze", "devices", "measure", "analyze-ir")),
     (N_("Results"), ("show", "compare", "project", "export", "session")),
+    (N_("Settings"), ("config",)),
     (N_("Diagnostics"), ("doctor", "schema")),
 )
 
@@ -171,8 +235,9 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
         """
         from roomscope.cli.console import cell_width, wrap
 
-        rendered: list[str] = []
+        blocks: list[str] = []
         for block in text.split("\n\n"):
+            rendered: list[str] = []
             lines = block.split("\n")
             preformatted = any(line.startswith((" ", "\t")) for line in lines)
             if preformatted:
@@ -181,10 +246,54 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
                         rendered.append(indent + line)
                     else:
                         rendered.extend(indent + part for part in wrap(line, max(width, 11)))
-                continue
-            paragraph = " ".join(line.strip() for line in lines if line.strip())
-            rendered.extend(indent + part for part in wrap(paragraph, max(width, 11)))
-        return "\n".join(rendered)
+            else:
+                paragraph = " ".join(line.strip() for line in lines if line.strip())
+                rendered.extend(indent + part for part in wrap(paragraph, max(width, 11)))
+            blocks.append("\n".join(rendered))
+        # A blank line between paragraphs, as they were written.
+        return "\n\n".join(block for block in blocks if block)
+
+    def add_argument(self, action: argparse.Action) -> None:
+        """argparse sizes the option column with ``len()``; a translated
+        placeholder ("--out 目录") is wider on screen than it is long."""
+        super().add_argument(action)
+        if action.help is argparse.SUPPRESS:
+            return
+        from roomscope.cli.console import cell_width
+
+        invocations = [self._format_action_invocation(action)]
+        invocations += [
+            self._format_action_invocation(a) for a in self._iter_indented_subactions(action)
+        ]
+        widest = max(cell_width(text) for text in invocations) + self._current_indent
+        self._action_max_length = max(self._action_max_length, widest)
+
+    def _format_action(self, action: argparse.Action) -> str:
+        """argparse's layout, with the help column aligned by display width.
+
+        argparse pads an option to the help column with ``%-*s``, which counts
+        characters: a row with a Chinese placeholder started its help two
+        columns further right for every Chinese character.
+        """
+        from roomscope.cli.console import cell_width
+
+        text = super()._format_action(action)
+        header = self._format_action_invocation(action)
+        extra = cell_width(header) - len(header)
+        if extra <= 0 or not action.help:
+            return text
+        help_position = min(self._action_max_length + 2, self._max_help_position)
+        action_width = help_position - self._current_indent - 2
+        lead = " " * self._current_indent + header
+        first, newline, rest = text.partition("\n")
+        if len(header) > action_width or not first.startswith(lead):
+            return text  # argparse already put the help on the next line
+        after = first[len(lead) :]
+        if cell_width(header) <= action_width:
+            first = lead + after[extra:]
+        else:  # too wide on screen for the column: the help goes below, as argparse does
+            first = lead + "\n" + " " * help_position + after.lstrip(" ")
+        return first + newline + rest
 
     def _format_usage(self, usage: Any, actions: Any, groups: Any, prefix: Any) -> str:
         # argparse measures the prefix with len(); "用法：" takes six columns, not three.
@@ -227,6 +336,17 @@ class _Parser(argparse.ArgumentParser):
     followed by the command's ``--help`` to try.
     """
 
+    def _get_value(self, action: argparse.Action, arg_string: str) -> Any:
+        """argparse's conversion; the type is named in words ("整数"), not as int."""
+        try:
+            return super()._get_value(action, arg_string)
+        except argparse.ArgumentError:
+            name = _type_name(action.type)
+            if name is None:
+                raise
+            message = _("invalid %(type)s value: %(value)r") % {"type": name, "value": arg_string}
+            raise argparse.ArgumentError(action, message) from None
+
     def error(self, message: str) -> Any:
         console = Console.for_stream(sys.stderr, _COLOR_REQUEST["mode"])  # type: ignore[arg-type]
         text = render_error(console, message, hints=[f"{self.prog} --help"])
@@ -256,6 +376,19 @@ def _command(
     )
     parser.add_argument("-h", "--help", action="help", help=_("show this help message and exit"))
     return cast(argparse.ArgumentParser, parser)
+
+
+def _settings_block(keys: Any) -> str:
+    """``roomscope config --help``: each setting and the values it takes."""
+    from roomscope.cli.console import is_terminal, terminal_width, wrap
+
+    width = terminal_width(sys.stdout, is_terminal(sys.stdout), os.environ)
+    name_width = max(len(key) for key in keys.KEYS) + 2
+    lines = [_heading(_("settings"))]
+    for key in keys.KEYS:
+        prefix = f"  {key.ljust(name_width)}"
+        lines += wrap(keys.choices(key), width, first=prefix, rest=" " * len(prefix))
+    return "\n".join(lines)
 
 
 def _commands_block(helps: dict[str, str]) -> str:
@@ -289,7 +422,7 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
         type=int,
         default=DEFAULT_SAMPLE_RATE,
         choices=SUPPORTED_SAMPLE_RATES,
-        metavar="HZ",
+        metavar=pgettext("metavar", "HZ"),
         help=_("sample rate (Hz): {rates}").format(
             rates=", ".join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
         ),
@@ -298,72 +431,104 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
         "--duration",
         type=float,
         default=10.0,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("sweep duration in seconds (default 10)"),
     )
     group.add_argument(
         "--start-hz",
         type=float,
         default=20.0,
-        metavar="HZ",
+        metavar=pgettext("metavar", "HZ"),
         help=_("sweep start frequency (default 20)"),
     )
     group.add_argument(
         "--end-hz",
         type=float,
         default=20000.0,
-        metavar="HZ",
+        metavar=pgettext("metavar", "HZ"),
         help=_("sweep end frequency (default 20000)"),
     )
     group.add_argument(
         "--level",
         type=float,
         default=default_level,
-        metavar="DBFS",
+        metavar=pgettext("metavar", "DBFS"),
         help=_("peak level in dBFS (default {level:g})").format(level=default_level),
     )
     group.add_argument(
         "--fade-in",
         type=float,
         default=0.05,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("fade-in in seconds (default 0.05)"),
     )
     group.add_argument(
         "--fade-out",
         type=float,
         default=0.01,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("fade-out in seconds (default 0.01)"),
     )
     group.add_argument(
         "--pre-silence",
         type=float,
         default=1.0,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("silence before the sweep (s)"),
     )
     group.add_argument(
         "--post-silence",
         type=float,
         default=3.0,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("silence after the sweep (s)"),
     )
 
 
+#: The settings fields the command line sets, as the options that set them.
+_FIELD_OPTIONS = {
+    "sample_rate": "--sample-rate",
+    "duration_s": "--duration",
+    "start_hz": "--start-hz",
+    "end_hz": "--end-hz",
+    "level_dbfs": "--level",
+    "channel": "--channel",
+    "fr_smoothing_fraction": "--smoothing",
+    "placement_distance_m": "--speaker-distance",
+    "placement_mic_height_m": "--mic-height",
+    "placement_temperature_c": "--temperature",
+    "loopback_channel": "--loopback-channel",
+}
+_FIELD_NAME = re.compile(
+    r"(?<![\w-])(" + "|".join(sorted(_FIELD_OPTIONS, key=len, reverse=True)) + r")(?!\w)"
+)
+
+
+def _name_options(exc: ConfigurationError) -> ConfigurationError:
+    """``exc`` with the settings fields it names given as their options.
+
+    The settings check their own values and name their fields ("end_hz must
+    be greater than start_hz"); on the command line the user typed --end-hz.
+    """
+    message = _FIELD_NAME.sub(lambda found: _FIELD_OPTIONS[found.group(1)], str(exc))
+    return ConfigurationError(message)
+
+
 def _sweep_settings(args: argparse.Namespace) -> SweepSettings:
-    return SweepSettings(
-        sample_rate=args.sample_rate,
-        duration_s=args.duration,
-        start_hz=args.start_hz,
-        end_hz=args.end_hz,
-        fade_in_s=args.fade_in,
-        fade_out_s=args.fade_out,
-        level_dbfs=args.level,
-        pre_silence_s=args.pre_silence,
-        post_silence_s=args.post_silence,
-    )
+    try:
+        return SweepSettings(
+            sample_rate=args.sample_rate,
+            duration_s=args.duration,
+            start_hz=args.start_hz,
+            end_hz=args.end_hz,
+            fade_in_s=args.fade_in,
+            fade_out_s=args.fade_out,
+            level_dbfs=args.level,
+            pre_silence_s=args.pre_silence,
+            post_silence_s=args.post_silence,
+        )
+    except ConfigurationError as exc:
+        raise _name_options(exc) from None
 
 
 def _add_daw_follow_arguments(parser: argparse.ArgumentParser) -> None:
@@ -422,14 +587,14 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
             "--channel",
             type=int,
             default=None,
-            metavar="N",
+            metavar=pgettext("channel metavar", "N"),
             help=_("recording channel to analyse (0-based)"),
         )
     analysis.add_argument(
         "--smoothing",
         type=int,
         default=6,
-        metavar="N",
+        metavar=pgettext("fraction metavar", "N"),
         help=_("fractional-octave smoothing 1/N (0 = off)"),
     )
     analysis.add_argument(
@@ -439,18 +604,33 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
         help=_("recording profile that shapes the interpretation (default: user settings)"),
     )
     notes = parser.add_argument_group(_("session notes (stored in session.json)"))
-    notes.add_argument("--room", default="", metavar="TEXT", help=_("room name (metadata)"))
     notes.add_argument(
-        "--position", default="", metavar="TEXT", help=_("measurement position (metadata)")
+        "--room", default="", metavar=pgettext("metavar", "TEXT"), help=_("room name (metadata)")
     )
-    notes.add_argument("--mic", default="", metavar="TEXT", help=_("microphone name (metadata)"))
-    notes.add_argument("--notes", default="", metavar="TEXT", help=_("free-text notes (metadata)"))
+    notes.add_argument(
+        "--position",
+        default="",
+        metavar=pgettext("metavar", "TEXT"),
+        help=_("measurement position (metadata)"),
+    )
+    notes.add_argument(
+        "--mic",
+        default="",
+        metavar=pgettext("metavar", "TEXT"),
+        help=_("microphone name (metadata)"),
+    )
+    notes.add_argument(
+        "--notes",
+        default="",
+        metavar=pgettext("metavar", "TEXT"),
+        help=_("free-text notes (metadata)"),
+    )
     placement = parser.add_argument_group(_("placement (optional tape measurements)"))
     placement.add_argument(
         "--speaker-distance",
         type=float,
         default=None,
-        metavar="M",
+        metavar=pgettext("metavar", "M"),
         help=_(
             "straight line from the loudspeaker to the microphone capsule (m), measured "
             "with a tape. Without it no geometry can be derived from the reflections"
@@ -460,7 +640,7 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
         "--mic-height",
         type=float,
         default=None,
-        metavar="M",
+        metavar=pgettext("metavar", "M"),
         help=_(
             "microphone capsule above the first solid horizontal surface below it (m) -- "
             "the desk top at a desk, otherwise the floor. Needs --speaker-distance"
@@ -470,7 +650,7 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
         "--temperature",
         type=float,
         default=None,
-        metavar="C",
+        metavar=pgettext("metavar", "C"),
         help=_("air temperature (C); 20 C is assumed, and reported as assumed, without it"),
     )
     placement.add_argument(
@@ -496,14 +676,14 @@ def _add_loopback_file_arguments(parser: argparse.ArgumentParser) -> None:
         "--loopback",
         type=Path,
         default=None,
-        metavar="WAV",
+        metavar=pgettext("metavar", "WAV"),
         help=_("separate loopback WAV from the same take (same sample rate)"),
     )
     group.add_argument(
         "--loopback-channel",
         type=int,
         default=None,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         help=_(
             "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
         ),
@@ -514,14 +694,17 @@ def _analysis_settings(
     args: argparse.Namespace, *, loopback_channel: int | None = None
 ) -> AnalysisSettings:
     channel = getattr(args, "loopback_channel", None)
-    return AnalysisSettings(
-        channel=args.channel,
-        fr_smoothing_fraction=args.smoothing,
-        placement_distance_m=args.speaker_distance,
-        placement_mic_height_m=args.mic_height,
-        placement_temperature_c=args.temperature,
-        loopback_channel=loopback_channel if loopback_channel is not None else channel,
-    )
+    try:
+        return AnalysisSettings(
+            channel=args.channel,
+            fr_smoothing_fraction=args.smoothing,
+            placement_distance_m=args.speaker_distance,
+            placement_mic_height_m=args.mic_height,
+            placement_temperature_c=args.temperature,
+            loopback_channel=loopback_channel if loopback_channel is not None else channel,
+        )
+    except ConfigurationError as exc:
+        raise _name_options(exc) from None
 
 
 def _shorten_usage(parser: argparse.ArgumentParser) -> None:
@@ -538,16 +721,24 @@ def _shorten_usage(parser: argparse.ArgumentParser) -> None:
                 _shorten_usage(sub)
                 continue
             parts = [sub.prog]
+            optional = 0  # positionals that may be left out: "[KEY [VALUE]]"
             for item in sub._actions:
                 if not item.option_strings:
                     if item.metavar is None and item.choices:
-                        parts.append("{" + ",".join(str(c) for c in item.choices) + "}")
+                        shown = "{" + ",".join(str(c) for c in item.choices) + "}"
                     else:
-                        parts.append(str(item.metavar or item.dest))
+                        shown = str(item.metavar or item.dest)
+                    if item.nargs == "?":
+                        optional += 1
+                        shown = "[" + shown
+                    parts.append(shown)
                 elif item.required:
                     metavar = item.metavar or item.dest.upper()
                     shown = " ".join(metavar) if isinstance(metavar, tuple) else metavar
                     parts.append(f"{item.option_strings[0]} {shown}")
+            if optional:
+                last = max(i for i, part in enumerate(parts) if part.startswith("["))
+                parts[last] += "]" * optional
             parts.append(_("[options]"))
             sub.usage = " ".join(parts)
 
@@ -560,6 +751,44 @@ def _required(parser: argparse.ArgumentParser) -> Any:
     parser._action_groups.remove(group)
     parser._action_groups.insert(1, group)
     return group
+
+
+#: argparse's split of a usage line into the pieces it keeps together.
+_USAGE_PART = re.compile(r"\(.*?\)+(?=\s|$)|\[.*?\]+(?=\s|$)|\S+")
+
+
+def _root_usage(parser: argparse.ArgumentParser) -> str:
+    """The root usage line, wrapped by display width.
+
+    The command list is printed grouped, so argparse's own list is hidden and
+    the command placeholder is added at the end. argparse wraps with
+    ``len()``: a translated prefix ("用法：") and placeholders ("[--lang 语言]")
+    are wider on screen, so the lines ran past the edge and the continuation
+    lines did not line up under the first. This is argparse's wrapping rule,
+    measured in columns.
+    """
+    from roomscope.cli.console import cell_width
+
+    one_line = _HelpFormatter(parser.prog, width=100_000)
+    one_line.add_usage(None, parser._actions, parser._mutually_exclusive_groups, prefix="")
+    text = one_line.format_help().strip()
+    parts = [
+        parser.prog,
+        *_USAGE_PART.findall(text[len(parser.prog) :]),
+        f"{pgettext('metavar', '<command>')} ...",
+    ]
+    width = parser._get_formatter()._width
+    prefix = cell_width(_("usage: "))
+    hang = " " * (prefix + cell_width(parser.prog) + 1)
+    lines: list[list[str]] = [[]]
+    used = prefix - 1
+    for part in parts:
+        if used + 1 + cell_width(part) > width and lines[-1]:
+            lines.append([])
+            used = len(hang) - 1
+        lines[-1].append(part)
+        used += cell_width(part) + 1
+    return "\n".join((hang if number else "") + " ".join(line) for number, line in enumerate(lines))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -579,10 +808,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--lang",
         default=None,
-        metavar="LANG",
+        metavar=pgettext("metavar", "LANG"),
         help=_(
-            "UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). "
-            "Overrides settings and ROOMSCOPE_LANG"
+            "interface language for this command (en, zh_CN); roomscope config language keeps one"
         ),
     )
     parser.add_argument(
@@ -595,7 +823,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--color",
         choices=COLOR_MODES,
         default="auto",
-        metavar="WHEN",
+        metavar=pgettext("metavar", "WHEN"),
         help=_(
             "colour in the terminal: auto (default; off for pipes, files and NO_COLOR), always, never"
         ),
@@ -603,7 +831,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--backend",
         default=None,
-        metavar="NAME",
+        metavar=pgettext("metavar", "NAME"),
         help=_("audio backend for Standalone Mode: portaudio (default) or fake"),
     )
     parser.add_argument(
@@ -616,7 +844,10 @@ def build_parser() -> argparse.ArgumentParser:
         "-v", "--verbose", action="store_true", help=_("debug logging, and tracebacks on errors")
     )
     sub = parser.add_subparsers(
-        dest="command", required=False, metavar="<command>", help=argparse.SUPPRESS
+        dest="command",
+        required=False,
+        metavar=pgettext("metavar", "<command>"),
+        help=argparse.SUPPRESS,
     )
 
     # Registered in the order of the workflow; the root help groups them (COMMAND_GROUPS).
@@ -630,7 +861,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--out",
         type=Path,
         default=Path(DEMO_FOLDER),
-        metavar="DIR",
+        metavar=pgettext("metavar", "DIR"),
         help=_("folder for the demo files, created or replaced (default {folder})").format(
             folder=DEMO_FOLDER
         ),
@@ -639,8 +870,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--profile",
         default="vocal",
         choices=available_profiles(),
+        # The value to type, as for every other default (not its title, 人声).
         help=_("recording profile used to interpret the demo (default: {profile})").format(
-            profile=profile_title("vocal")
+            profile="vocal"
         ),
     )
 
@@ -666,7 +898,11 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     _required(p_sweep).add_argument(
-        "--out", required=True, type=Path, metavar="WAV", help=_("output WAV path")
+        "--out",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "WAV"),
+        help=_("output WAV path"),
     )
     _add_sweep_arguments(p_sweep, default_level=-12.0)
     _add_daw_follow_arguments(p_sweep)
@@ -696,21 +932,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--recording",
         required=True,
         type=Path,
-        metavar="WAV",
+        metavar=pgettext("metavar", "WAV"),
         help=_("recorded WAV (any length, untrimmed)"),
     )
     required.add_argument(
         "--sweep",
         required=True,
         type=Path,
-        metavar="FILE",
+        metavar=pgettext("metavar", "FILE"),
         help=_("sweep WAV or its .roomscope-sweep.json sidecar"),
     )
     p_an.add_argument(
         "--out",
         type=Path,
         default=None,
-        metavar="DIR",
+        metavar=pgettext("metavar", "DIR"),
         help=_("directory for session.json, result.json, IR WAV"),
     )
     _add_analysis_arguments(p_an)
@@ -754,45 +990,53 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     _required(p_me).add_argument(
-        "--out", required=True, type=Path, metavar="DIR", help=_("session directory (created)")
+        "--out",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("session directory (created)"),
     )
     iface = p_me.add_argument_group(_("audio interface"))
     iface.add_argument(
         "--input-device",
         type=int,
         default=None,
-        metavar="N",
+        metavar=pgettext("metavar", "N"),
         help=_("input device index (see 'devices')"),
     )
     iface.add_argument(
-        "--output-device", type=int, default=None, metavar="N", help=_("output device index")
+        "--output-device",
+        type=int,
+        default=None,
+        metavar=pgettext("metavar", "N"),
+        help=_("output device index"),
     )
     iface.add_argument(
         "--input-channel",
         type=int,
         default=1,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         help=_("input channel, 1-based (default 1)"),
     )
     iface.add_argument(
         "--input-channels",
         type=_channel_list,
         default=None,
-        metavar="LIST",
+        metavar=pgettext("metavar", "LIST"),
         help=_("1-based input channels, comma-separated (e.g. 1,2); overrides --input-channel"),
     )
     iface.add_argument(
         "--output-channel",
         type=int,
         default=1,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         help=_("output channel, 1-based (default 1)"),
     )
     iface.add_argument(
         "--loopback-channel",
         type=int,
         default=None,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         dest="measure_loopback_channel",
         help=_("1-based loopback input channel (recorded with the microphone)"),
     )
@@ -827,20 +1071,30 @@ def build_parser() -> argparse.ArgumentParser:
         examples=("roomscope analyze-ir --ir room.wav --band 20 20000 --out session-ir",),
     )
     _required(p_ir).add_argument(
-        "--ir", required=True, type=Path, metavar="WAV", help=_("impulse-response WAV")
+        "--ir",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "WAV"),
+        help=_("impulse-response WAV"),
     )
     p_ir.add_argument(
         "--band",
         nargs=2,
         type=float,
-        metavar=("LO", "HI"),
+        metavar=(pgettext("metavar", "LO"), pgettext("metavar", "HI")),
         default=None,
         help=_(
             "declared excitation band in Hz (required for every decay and clarity metric, "
             "broadband included)"
         ),
     )
-    p_ir.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("session directory"))
+    p_ir.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("session directory"),
+    )
     _add_analysis_arguments(p_ir)
 
     p_show = _command(
@@ -852,6 +1106,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_show.add_argument(
         "path",
         type=Path,
+        metavar=pgettext("metavar", "path"),
         help=_("session directory, session.json, comparison.json, or folder to list"),
     )
     p_show.add_argument(
@@ -882,18 +1137,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_cmp.add_argument(
         "baseline",
         type=Path,
+        metavar=pgettext("metavar", "baseline"),
         help=_("baseline session directory or session.json"),
     )
     p_cmp.add_argument(
         "candidate",
         type=Path,
+        metavar=pgettext("metavar", "candidate"),
         help=_("candidate session directory or session.json"),
     )
     p_cmp.add_argument(
         "--out",
         type=Path,
         default=None,
-        metavar="PATH",
+        metavar=pgettext("metavar", "PATH"),
         help=_("write comparison.json here (file or directory)"),
     )
     p_cmp.add_argument(
@@ -920,20 +1177,32 @@ def build_parser() -> argparse.ArgumentParser:
         examples=("roomscope project init --out studio-a",),
     )
     _required(p_init).add_argument(
-        "--out", required=True, type=Path, metavar="DIR", help=_("project directory")
+        "--out",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("project directory"),
     )
-    p_init.add_argument("--name", default="", metavar="TEXT", help=_("room name"))
-    p_init.add_argument("--notes", default="", metavar="TEXT", help=_("free-text notes"))
+    p_init.add_argument(
+        "--name", default="", metavar=pgettext("metavar", "TEXT"), help=_("room name")
+    )
+    p_init.add_argument(
+        "--notes", default="", metavar=pgettext("metavar", "TEXT"), help=_("free-text notes")
+    )
     p_add = _command(
         proj_sub,
         "add",
         _("add a session to a position"),
         examples=("roomscope project add studio-a session-1 --position A",),
     )
-    p_add.add_argument("project", type=Path, help=_("project directory"))
-    p_add.add_argument("session", type=Path, help=_("session directory"))
+    p_add.add_argument(
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
+    p_add.add_argument(
+        "session", type=Path, metavar=pgettext("metavar", "session"), help=_("session directory")
+    )
     _required(p_add).add_argument(
-        "--position", required=True, metavar="LABEL", help=_("position label")
+        "--position", required=True, metavar=pgettext("metavar", "LABEL"), help=_("position label")
     )
     p_avg = _command(
         proj_sub,
@@ -941,15 +1210,26 @@ def build_parser() -> argparse.ArgumentParser:
         _("spatial average of VALID T values"),
         examples=("roomscope project average studio-a",),
     )
-    p_avg.add_argument("project", type=Path, help=_("project directory"))
     p_avg.add_argument(
-        "--sources", type=int, default=1, metavar="N", help=_("number of source positions")
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
+    p_avg.add_argument(
+        "--sources",
+        type=int,
+        default=1,
+        metavar=pgettext("count metavar", "N"),
+        help=_("number of source positions"),
     )
     p_avg.add_argument(
         "--json", action="store_true", help=_("deprecated: use roomscope --format json")
     )
     p_show_proj = _command(proj_sub, "show", _("list positions and sessions"))
-    p_show_proj.add_argument("project", type=Path, help=_("project directory"))
+    p_show_proj.add_argument(
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
+    # Without a metavar argparse names the missing action by its dest
+    # ("the following arguments are required: project_command").
+    proj_sub.metavar = "{" + ",".join(proj_sub.choices) + "}"
 
     p_ex = _command(
         sub,
@@ -957,15 +1237,26 @@ def build_parser() -> argparse.ArgumentParser:
         _("export curves through an exporter"),
         examples=("roomscope export session-1 --out session-1/csv",),
     )
-    p_ex.add_argument("session", type=Path, help=_("session directory or session.json"))
+    p_ex.add_argument(
+        "session",
+        type=Path,
+        metavar=pgettext("metavar", "session"),
+        help=_("session directory or session.json"),
+    )
     p_ex.add_argument(
         "--format",
         dest="export_format",
         default="csv",
-        metavar="NAME",
+        metavar=pgettext("metavar", "NAME"),
         help=_("exporter name (default csv)"),
     )
-    p_ex.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("output directory"))
+    p_ex.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("output directory"),
+    )
 
     p_sess = _command(sub, "session", _("session folder tools"))
     sess_sub = p_sess.add_subparsers(dest="session_command", required=True)
@@ -975,15 +1266,54 @@ def build_parser() -> argparse.ArgumentParser:
         _("zip a session for a bug report"),
         examples=("roomscope session bundle session-1 --no-audio",),
     )
-    p_bundle.add_argument("session", type=Path, help=_("session directory or session.json"))
+    p_bundle.add_argument(
+        "session",
+        type=Path,
+        metavar=pgettext("metavar", "session"),
+        help=_("session directory or session.json"),
+    )
     p_bundle.add_argument(
         "--no-audio",
         action="store_true",
         help=_("leave WAV files out of the zip"),
     )
     p_bundle.add_argument(
-        "--out", type=Path, default=None, metavar="PATH", help=_("zip file (.zip) or folder")
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "PATH"),
+        help=_("zip file (.zip) or folder"),
     )
+    sess_sub.metavar = "{" + ",".join(sess_sub.choices) + "}"
+
+    from roomscope.cli import config as settings_keys
+
+    p_cfg = _command(
+        sub,
+        "config",
+        _("show or change the settings (the same settings.json as the desktop app)"),
+        examples=(
+            "roomscope config",
+            "roomscope config language zh_CN",
+            "roomscope config language auto",
+            "roomscope config profile vocal",
+        ),
+    )
+    p_cfg.add_argument(
+        "key",
+        nargs="?",
+        default=None,
+        metavar=pgettext("metavar", "KEY"),
+        help=_("the setting to show or change; without it every setting is listed"),
+    )
+    p_cfg.add_argument(
+        "value",
+        nargs="?",
+        default=None,
+        metavar=pgettext("metavar", "VALUE"),
+        help=_("the new value; auto goes back to the default"),
+    )
+    p_cfg.epilog = "\n\n".join([_settings_block(settings_keys), str(p_cfg.epilog)])
 
     p_doc = _command(
         sub,
@@ -1003,19 +1333,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_schema = _command(
         sub, "schema", _("print a shipped JSON Schema"), examples=("roomscope schema result",)
     )
+    schemas = ["result", "session", "comparison", "project", "sidecar"]
     p_schema.add_argument(
         "name",
-        choices=["result", "session", "comparison", "project", "sidecar"],
+        choices=schemas,
+        # As for project and session: without a metavar argparse's errors
+        # name the argument by its dest ("argument name: invalid choice").
+        metavar="{" + ",".join(schemas) + "}",
         help=_("which schema to print"),
     )
     _shorten_usage(parser)
-    # The command list is printed grouped (below), so argparse's own list is
-    # hidden; put the command placeholder back into the usage line.
-    usage = parser.format_usage().strip()
-    prefix = _("usage: ")
-    if usage.startswith(prefix):
-        usage = usage[len(prefix) :]
-    parser.usage = usage + " <command> ..."
+    parser.usage = _root_usage(parser)
     helps = {action.dest: str(action.help) for action in sub._choices_actions}
     parser.description = "\n\n".join(
         [
@@ -1023,13 +1351,31 @@ def build_parser() -> argparse.ArgumentParser:
             _commands_block(helps),
         ]
     )
-    parser.epilog = "\n\n".join(
-        [
-            _examples_block(ROOT_EXAMPLES),
-            _("Run a command with --help for its options, for example: roomscope measure --help"),
-        ]
-    )
+    epilog = [
+        _examples_block(ROOT_EXAMPLES),
+        # The command on a line of its own: a wrapped sentence split it.
+        _("Run a command with --help for its options, for example:")
+        + "\n  roomscope measure --help",
+    ]
+    # The width argparse lays this help out in: the command in the hint
+    # goes on a line of its own, whole, where the line would not hold it.
+    hint = _language_hint(parser._get_formatter()._width)
+    if hint:
+        epilog.append(hint)
+    parser.epilog = "\n\n".join(epilog)
     return parser
+
+
+def _language_hint(width: int) -> str | None:
+    """The way to the other interface language, where stdout can write it."""
+    from roomscope.cli.config import language_hint_lines
+    from roomscope.cli.console import can_encode
+    from roomscope.i18n import current_locale
+
+    hint = "\n".join(language_hint_lines(current_locale(), width))
+    if hint and can_encode(hint, getattr(sys.stdout, "encoding", None)):
+        return hint
+    return None
 
 
 def cmd_sweep(args: argparse.Namespace) -> int:
@@ -1655,6 +2001,86 @@ def cmd_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def _stored_settings(args: argparse.Namespace) -> Any:
+    """The settings to show; a damaged file is named and the defaults shown."""
+    from roomscope.settings import UserSettings, read_settings
+
+    try:
+        return read_settings()
+    except SessionError as exc:
+        print(
+            render_status(
+                _console(args, sys.stderr),
+                "warn",
+                _("warning: {error}; the defaults are shown").format(error=localize(str(exc))),
+            ),
+            file=sys.stderr,
+        )
+        return UserSettings()
+
+
+def _show_config(args: argparse.Namespace, key: str | None) -> int:
+    """``roomscope config`` and ``roomscope config KEY``: nothing is written."""
+    from roomscope.i18n import current_locale, language_choice
+    from roomscope.settings import settings_path
+
+    settings = _stored_settings(args)
+    if getattr(args, "format", None) == "json":
+        print(json.dumps(settings.to_dict(), indent=1))
+    elif key is None:
+        path = settings_path()
+        shown = render_config(
+            _console(args), settings, path, language_choice(None), exists=path.exists()
+        )
+        print(shown)
+    elif key == "language":
+        choice = language_choice(getattr(args, "lang", None))
+        print(render_config_language(_console(args), settings, choice, current_locale()))
+    else:
+        print(render_config_key(_console(args), key, settings))
+    return 0
+
+
+def cmd_config(args: argparse.Namespace) -> int:
+    from roomscope.cli import config
+    from roomscope.i18n import LanguageChoice, language_choice
+    from roomscope.settings import read_settings, save_settings
+
+    try:
+        key = None if args.key is None else config.canonical_key(args.key)
+        value = None if args.value is None or key is None else config.parse_value(key, args.value)
+    except config.SettingError as exc:
+        changing = args.value is not None
+        detail = _("Nothing was changed.") if changing else ""
+        raise _UsageError(str(exc), detail=detail, hints=exc.hints) from None
+    if key is None or args.value is None:
+        return _show_config(args, key)
+    try:
+        # A damaged file is not replaced by the defaults and one new value.
+        stored = read_settings()
+    except SessionError as exc:
+        refusal = SessionError(
+            _("{error}; nothing was changed: correct or delete the file first").format(
+                error=localize(str(exc))
+            )
+        )
+        refusal.cli_hints = ["roomscope config"]  # type: ignore[attr-defined]
+        raise refusal from exc
+    settings = config.changed(stored, key, value)
+    saved = save_settings(settings)
+    choice: LanguageChoice | None = None
+    if key == "language":
+        # The confirmation is written in the language just chosen; --lang
+        # applied to this command only.
+        activate(settings.language or None)
+        choice = language_choice(None)
+    if getattr(args, "format", None) == "json":
+        print(json.dumps(settings.to_dict(), indent=1))
+    else:
+        print(render_config_saved(_console(args), key, settings, saved, choice=choice))
+    return 0
+
+
 def cmd_schema(args: argparse.Namespace) -> int:
     from roomscope.schemas import schema_text
 
@@ -1963,6 +2389,7 @@ COMMANDS = {
     "session": cmd_session,
     "export": cmd_export,
     "project": cmd_project,
+    "config": cmd_config,
 }
 
 

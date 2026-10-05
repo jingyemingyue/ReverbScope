@@ -55,8 +55,11 @@ def run_app(argv: list[str] | None = None, *, smoke: bool = False, lang: str | N
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
     app = QApplication.instance() or QApplication(argv if argv is not None else sys.argv)
-    # --lang, settings and ROOMSCOPE_LANG first; then the locale variables, and
-    # the desktop's UI languages when none is set (a Finder launch on macOS).
+    # --lang, settings and ROOMSCOPE_LANG first; then the system's language.
+    # Qt's UI languages are the Mac's preferred languages (also for a Finder
+    # launch, which sets no LANG) and come first there. On Windows they are
+    # Windows' preferred-language list and follow a display language that
+    # RoomScope has; on Linux they count when no locale variable is set.
     activate(lang or None, system_languages=QLocale.system().uiLanguages())
     install_qt_translations(app)
     QGuiApplication.setDesktopFileName("roomscope")

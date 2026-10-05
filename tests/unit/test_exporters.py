@@ -162,3 +162,16 @@ def test_csv_export_includes_the_interface_curve_and_resonance_decays(
         "filter_ringing_20db_s",
         "surroundings_decay_20db_s",
     ]
+
+
+def test_an_unknown_exporter_lists_the_others_by_name() -> None:
+    """The error printed the Python list: "available: ['csv']"."""
+    import pytest
+
+    from roomscope.errors import ConfigurationError
+    from roomscope.io.exporters import get_exporter
+
+    with pytest.raises(ConfigurationError) as exc:
+        get_exporter("nope")
+    listed = str(exc.value).split("available: ", 1)[1]
+    assert "csv" in listed.split(", ") and "[" not in listed, exc.value

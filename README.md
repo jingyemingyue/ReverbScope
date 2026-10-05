@@ -258,8 +258,11 @@ roomscope measure --out session1/ --input-device 2 --output-device 3 \
 roomscope demo --out demo/
 roomscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
-# Language, bundle, CSV, project
-roomscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav
+# Language (kept in settings.json; "auto" follows the system again), settings,
+# bundle, CSV, project
+roomscope config language zh_CN
+roomscope --lang en analyze --recording take.wav --sweep sweep.wav   # one command
+roomscope config
 roomscope session bundle session1/ --no-audio --out report.zip
 roomscope export session1/ --format csv --out curves/
 roomscope project init --out room/ --name Booth

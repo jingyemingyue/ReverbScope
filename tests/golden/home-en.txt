@@ -8,3 +8,4 @@ low-frequency resonances and noise, from any DAW.
   roomscope sweep --out sweep.wav   Write the test signal to play from your DAW
 
 Run roomscope --help for every command and option.
+中文界面：roomscope config language zh_CN

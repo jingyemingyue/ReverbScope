@@ -20,23 +20,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from roomscope.i18n import _, available_locales
+from roomscope.i18n import LANGUAGE_NAMES, _, available_locales
 from roomscope.interpretation import available_profiles
 from roomscope.interpretation.profiles import profile_title
 from roomscope.settings import load_settings, save_settings
 from roomscope.ui.widgets import label, tidy_form
 
-#: Display names of the catalogs, each in its own language.
-LANGUAGE_NAMES = {
-    "de": "Deutsch",
-    "en": "English",
-    "es": "Español",
-    "fr": "Français",
-    "ja": "日本語",
-    "ko": "한국어",
-    "zh_CN": "简体中文",
-    "zh_TW": "繁體中文",
-}
 #: Shown in both languages: the new language is not active until a restart.
 RESTART_FOR_LANGUAGE = (
     "语言设置将在重新启动 RoomScope 后完全生效。\n"

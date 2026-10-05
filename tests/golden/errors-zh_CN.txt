@@ -8,7 +8,7 @@
   可以尝试：
     roomscope sweep --help
 
-× 错误：参数 --duration：无效的 float 值：'long'
+× 错误：参数 --duration：无效的数字值：'long'
 
   可以尝试：
     roomscope sweep --help

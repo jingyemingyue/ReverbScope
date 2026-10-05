@@ -30,16 +30,20 @@ def isolate_roomscope_home(
 def pin_language(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Run every test in English regardless of the developer's locale (#14).
 
-    ``ROOMSCOPE_LANG`` and the POSIX locale variables would otherwise pick
-    the CLI / GUI language; a test that wants Chinese passes ``--lang`` or
-    calls ``activate("zh_CN")``. English is re-activated afterwards so a
-    failing test cannot leak its catalog into the next one.
+    ``ROOMSCOPE_LANG``, the POSIX locale variables, the Mac's preferred
+    languages and the Windows display language would otherwise pick the CLI
+    / GUI language; a test that wants Chinese passes ``--lang`` or calls
+    ``activate("zh_CN")``. English is re-activated afterwards so a failing
+    test cannot leak its catalog into the next one.
     """
+    from roomscope import i18n
     from roomscope.i18n import activate
 
     for name in ("ROOMSCOPE_LANG", "LC_ALL", "LC_MESSAGES", "LANGUAGE"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("LANG", "C.UTF-8")
+    monkeypatch.setattr(i18n, "MACOS_PREFERENCES", ())
+    monkeypatch.setattr(i18n, "_windows_ui_language", lambda: None)
     activate("en")
     yield
     activate("en")

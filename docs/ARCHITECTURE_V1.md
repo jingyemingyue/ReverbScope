@@ -497,8 +497,28 @@ class AudioBackend(Protocol):
   Extraction and compilation use Babel (BSD-3-Clause, dev dependency; row to
   be added to DEPENDENCIES.md). English is the source language and needs no
   catalog.
-* Selection: `--lang` / `settings.language` / `ROOMSCOPE_LANG`, otherwise the
-  system locale; English when no catalog matches.
+* Selection: `--lang` / `settings.language` (the desktop app's Settings
+  dialog or `roomscope config language zh_CN|en|auto`) / `ROOMSCOPE_LANG`,
+  otherwise the system's language; English when no catalog matches. The
+  home screen and `roomscope --help` end with one line in the other
+  language that names the command to switch. The system's language
+  is read where each system keeps the user's choice:
+  * macOS: the preferred languages (`AppleLanguages` in
+    `~/Library/Preferences/.GlobalPreferences.plist`, then
+    `/Library/Preferences/.GlobalPreferences.plist`; Qt's `uiLanguages` in
+    the GUI) before `LC_ALL` / `LC_MESSAGES` / `LANG`, which Terminal, iTerm
+    and VS Code set to `en_US.UTF-8` whatever the display language is;
+  * Windows: the display language (`GetUserDefaultUILanguage`) when it has
+    a catalog or is English, then Qt's `uiLanguages` (GUI; Windows' own
+    preferred-language list), then the POSIX variables, which only MSYS,
+    Git Bash or Cygwin set;
+  * Linux and other POSIX systems: GNU `LANGUAGE` (a priority list such as
+    `zh_CN:en`, read only when the locale is not C or POSIX, as gettext reads
+    it), then `LC_ALL`, `LC_MESSAGES`, `LANG`, then the desktop's UI languages
+    (GUI).
+
+  In a list of preferred languages the first entry that has a catalog or is
+  English wins.
 * What is translated in 1.0: interpretation findings, GUI chrome, CLI help
   and the labels of the text report, the user guide (zh-CN).
 * What is deliberately **not** translated: the diagnostic strings produced by
@@ -522,6 +542,7 @@ class AudioBackend(Protocol):
 | `session bundle <session> [--no-audio]` | zip for bug reports | M8 |
 | `export <session> --format csv [--out]` | curves and tables through an exporter | S4 |
 | `schema result\|session\|comparison\|project\|sidecar` | print the JSON Schema | M2 |
+| `config [KEY [VALUE]]` | show or change `settings.json` (language, profile, backend, output-folder, copy-recording, developer-tools, theme; `auto` restores a default) | landed |
 | `measure --input-channels 1,2 --loopback-channel 2`, `analyze --loopback-channel 1` / `--loopback <wav>` | loopback | M5 |
 | global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never` | global options | M7, M6, M8 |
 

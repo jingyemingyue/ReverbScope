@@ -98,11 +98,18 @@ _ASCII_SIGNS = str.maketrans(
     }
 )
 
+#: Kept wherever the encoding can write it (cp1252, GBK, the classic Windows
+#: console), even when the other signs are not; dropped otherwise: 20 C.
+_DEGREE = "°"
+
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 #: Characters a line should not start with (closing punctuation, CJK and
 #: Latin); a wrap lets them hang one step past the margin instead.
 _NO_LINE_START = frozenset("，。、；：！？）」』”’》〉】〕,.;:!?)]}%")
+#: Characters a line should not end with (opening brackets and quotes); a
+#: wrap carries them down with what they open.
+_NO_LINE_END = frozenset("（「『“‘《〈【〔([{")
 
 #: Symbols and rules that must survive the stream's encoding for the
 #: Unicode forms to be used.
@@ -128,7 +135,7 @@ class Verbatim(str):
 #: Joins a number to its unit inside the layout (``2.4<NBSP>ms``): wrapping
 #: never separates them, and :meth:`Console.fit` writes a plain space.
 GLUE = "\u00a0"
-_UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|%)(?![\w])")
+_UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|°C|%)(?![\w])")
 
 
 def glue_units(text: str) -> str:
@@ -301,6 +308,10 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                 # Closing punctuation does not start a line: the character
                 # before it moves down with it.
                 carry = parts.pop()
+            # An opening bracket does not end a line: it moves down with
+            # what it opens (and with the space after it, if any).
+            while len(parts) > 1 and parts[-1][-1] in _NO_LINE_END:
+                carry = parts.pop() + (carry or joiner)
             if parts:
                 lines.append(prefix + "".join(parts))
                 prefix = rest
@@ -367,6 +378,15 @@ def is_terminal(stream: TextIO | None) -> bool:
 _isatty = is_terminal
 
 
+def can_encode(text: str, encoding: str | None) -> bool:
+    """Whether ``encoding`` (UTF-8 when unknown) can write ``text``."""
+    try:
+        text.encode(encoding or "utf-8")
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
+
+
 def _unicode_ok(stream: TextIO, interactive: bool, environ: Mapping[str, str]) -> bool:
     # An in-memory text stream (io.StringIO) has no encoding and holds any character.
     encoding = getattr(stream, "encoding", None) or "utf-8"
@@ -430,6 +450,8 @@ class Console:
     width: int = PIPE_WIDTH
     #: A terminal (dynamic progress may redraw a line); False for pipes/files.
     interactive: bool = False
+    #: The stream's encoding, for text that is shown only where it can be written.
+    encoding: str = "utf-8"
 
     @classmethod
     def for_stream(
@@ -445,7 +467,12 @@ class Console:
             unicode=_unicode_ok(stream, interactive, env),
             width=terminal_width(stream, interactive, env),
             interactive=interactive,
+            encoding=getattr(stream, "encoding", None) or "utf-8",
         )
+
+    def can_write(self, text: str) -> bool:
+        """Whether the stream's encoding holds every character of ``text``."""
+        return can_encode(text, self.encoding)
 
     def readable(self, text: str) -> str:
         """Text as this stream will show it, before its width is measured.
@@ -456,8 +483,15 @@ class Console:
         """
         if self.unicode or not text:
             return text
-        shown = str(text).translate(_ASCII_SIGNS)
+        shown = self._ascii(str(text))
         return Verbatim(shown) if isinstance(text, Verbatim) else shown
+
+    def _ascii(self, text: str) -> str:
+        """``text`` with the signs this stream cannot show in ASCII."""
+        text = text.translate(_ASCII_SIGNS)
+        if _DEGREE in text and not self.can_write(_DEGREE):
+            text = text.replace(_DEGREE, "")
+        return text
 
     # Styles -----------------------------------------------------------------
 
@@ -484,7 +518,7 @@ class Console:
         """``text`` as this stream can write it: typographic signs become ASCII
         where the encoding cannot hold them (see :data:`_ASCII_SIGNS`)."""
         text = text.replace(GLUE, " ")
-        return text if self.unicode else text.translate(_ASCII_SIGNS)
+        return text if self.unicode else self._ascii(text)
 
     def arrow(self) -> str:
         return "→" if self.unicode else "->"

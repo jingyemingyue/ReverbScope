@@ -225,6 +225,14 @@ Keep the `_internal` folder next to `roomscope`. To type `roomscope` from
 anywhere, add the folder to your `PATH` (for example
 `export PATH="$HOME/roomscope-terminal:$PATH"` in `~/.zshrc` or `~/.bashrc`).
 
+**Language.** The command line follows the system's language: the Mac's
+preferred languages (also in Terminal, which sets `LANG=en_US.UTF-8`
+whatever they are), the Windows display language, or `LANGUAGE` / `LANG` on
+Linux. To keep Chinese or English whatever the system says, run
+`roomscope config language zh_CN` (or `en`) once;
+`roomscope config language auto` follows the system again, and
+`roomscope config` lists every setting.
+
 On **macOS**, a browser marks downloaded files, and macOS refuses to run an
 unsigned command-line program with that mark (*“roomscope” cannot be opened
 because the developer cannot be verified*). Clear the mark on this folder

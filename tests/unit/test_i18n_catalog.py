@@ -59,6 +59,10 @@ DYNAMIC_CALLS = {
     ("ui/app.py", "_(GUI_UNAVAILABLE)"),
     # Validity words, each extracted with N_() in VALIDITY_WORDS.
     ("labels.py", "_(word)"),
+    # The demo's room, microphone and position names, extracted with N_().
+    ("demo.py", "_(DEMO_ROOM_NAME)"),
+    ("demo.py", "_(DEMO_MICROPHONE)"),
+    ("demo.py", "_(position.description)"),
 }
 
 #: ASCII tokens a Chinese finding may legitimately contain: units, metric

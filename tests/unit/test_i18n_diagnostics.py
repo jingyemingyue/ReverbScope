@@ -175,3 +175,42 @@ def test_a_failed_loopback_stores_an_english_reason_in_chinese(
     assert loopback.reason and loopback.reason.isascii(), loopback.reason
     assert all(text.isascii() for text in result.warnings)
     assert localize(loopback.reason) != loopback.reason
+
+
+def test_the_resonance_note_names_no_version_and_old_files_still_read_in_chinese(
+    zh: None,
+) -> None:
+    """The note said "v0.1 不尝试识别房间模式" in a 0.5 release. Results written
+    by those versions keep the old sentence; it is still shown translated."""
+    current = (
+        "Candidates only: a peak in the low-frequency response with a long narrow-band "
+        "decay may be a room resonance; RoomScope does not identify room modes."
+    )
+    stored_by_0_5 = (
+        "Candidates only: a peak in the low-frequency response with a long narrow-band "
+        "decay may be a room resonance, but room-mode identification is not attempted in "
+        "v0.1."
+    )
+    source = Path("src/roomscope/core/resonance.py").read_text(encoding="utf-8")
+    assert "v0.1" not in source
+    for text in (current, stored_by_0_5):
+        shown = localize(text)
+        assert shown.startswith("仅为候选") and "v0.1" not in shown, shown
+
+
+def test_an_assumed_temperature_note_from_an_older_result_still_reads_in_chinese(
+    zh: None,
+) -> None:
+    """The note now says "20 °C" and "a 5 °C error"; results written by 0.5
+    said "20 C" and "a 5 C error" and are still shown translated."""
+    from roomscope.core.placement import speed_of_sound_m_s
+
+    speed = speed_of_sound_m_s(20.0)
+    current = (
+        f"no air temperature was supplied, so 20 °C ({speed:.1f} m/s) was assumed; "
+        "a 5 °C error moves every distance by about 0.9 %"
+    )
+    stored_by_0_5 = current.replace("°C", "C")
+    for text in (current, stored_by_0_5):
+        shown = localize(text)
+        assert shown.startswith("未提供气温") and "20 °C" in shown and "5 °C" in shown, shown

@@ -68,6 +68,23 @@ All notable changes to RoomScope are documented here. The format follows
   Spanish, French and German (`--lang zh_TW` / `ja` / `ko` / `es` / `fr` /
   `de`, and Settings → Language). License and legal sentences stay in
   English. User-facing docs remain English and Simplified Chinese.
+- **Settings from the command line.** `roomscope config` lists the settings
+  the desktop app keeps in `settings.json`, says what each value means now
+  and where the file is; `roomscope config KEY VALUE` changes one: `language`
+  (`zh_CN`, `en`, or `auto` to follow the system), `profile`, `backend`,
+  `output-folder`, `copy-recording`, `developer-tools` and `theme` (desktop
+  app only). `auto` goes back to a setting's default, a value is checked
+  before anything is written (exit code 2, nothing changed), a damaged
+  settings file is not replaced, and `--format json` prints the settings.
+  The Terminal Edition, which has no Settings dialog, can now keep a
+  language: after `roomscope config language zh_CN` every command is in
+  Chinese, and the confirmation already is. `roomscope config language`
+  shows the language in effect and why.
+- **The way to the other language.** The home screen and `roomscope --help`
+  end with one line in the other language: `中文界面：roomscope config
+  language zh_CN` in English, `English interface: roomscope config language
+  en` in Chinese (left out where the terminal cannot write Chinese; on a
+  narrow terminal the command goes whole on a line of its own).
 
 ### Changed
 - **Placement picture shows the first-order image source.** When the
@@ -101,6 +118,31 @@ All notable changes to RoomScope are documented here. The format follows
   the new length is cached after 0.002 s. A 2 s synthetic `analyze` that
   measures octave-band noise fell from 0.54 s to 0.13 s (4×); broadband
   T30 and the eight band levels were identical.
+- **Language detection.** The command line follows the system's language
+  where the system keeps it: on macOS the preferred languages (also in
+  Terminal, iTerm and VS Code, which set `LANG=en_US.UTF-8` whatever the
+  display language is), on Windows the display language before a `LANG`
+  from Git Bash or MSYS, on Linux GNU `LANGUAGE` (`zh_CN:en`) as gettext
+  reads it. `--lang`, the stored setting and `ROOMSCOPE_LANG` still come
+  first, in that order. The desktop app reads Qt's UI languages first on
+  macOS, after a display language RoomScope has on Windows, and after the
+  locale variables on Linux; a display language without a catalog (for
+  example Traditional Chinese) leaves the choice to the next of these.
+- **Chinese command line.** Every help screen is Chinese to the last word:
+  the placeholders (`--out 目录`, `--recording WAV文件`, `<命令>`), the
+  positional names and argparse's remaining messages ("expected 2
+  arguments", "ignored explicit argument", the type in "invalid int
+  value"), with the help column aligned by display width. The environment
+  report names its settings and paths in words. Lists are separated by
+  `、`, a wrapped line never ends with an opening bracket, `--color` names
+  `auto`, `always` and `never`, a refused value names the option that set
+  it (`--end-hz`, not `end_hz`), and a damaged JSON file is described in
+  Chinese. `roomscope config` names the profile and output-folder settings
+  as the desktop app's Settings dialog does. A demo made in Chinese
+  names its room, position and microphone in Chinese. Temperatures read
+  `20 °C` (also on a cp1252 or GBK code page and in the classic Windows
+  console; `20 C` where the encoding has no degree sign), and the
+  resonance note no longer cites "v0.1".
 
 ### Fixed
 - **Measurement.** With a loopback whose return is not at unity gain, the
@@ -115,7 +157,9 @@ All notable changes to RoomScope are documented here. The format follows
   a recorded decay is analysed, instead of a random one that could leave
   the take refused or T30 insufficient. A recording with no sweep in it is
   refused as such, not as a late start, and a wrong playback speed is named
-  in the interface language. Digital silence after an imported impulse
+  in the interface language. A take cut while the sweep was still in its
+  lowest octaves is no longer blamed on a DAW time-stretch "at 837043.2 %
+  of the speed it was generated at". Digital silence after an imported impulse
   response is no longer taken for the noise floor (T30 read up to 16 %
   long), and `analyze-ir` without `--band` no longer quotes the hidden
   analysis' values in its warnings; `--band 20 inf` is refused. Smoothed
@@ -189,7 +233,12 @@ All notable changes to RoomScope are documented here. The format follows
   `--backend fake measure` saves a session marked as a synthetic demo.
   `--lang` applies to `gui`. The `--loopback-channel` and `analyze-ir
   --band` help describe what the options do. Plain lines use the console's
-  ASCII signs on an ASCII-only stream.
+  ASCII signs on an ASCII-only stream. Help paragraphs are separated by a
+  blank line again, and the closing example of `roomscope --help` is no
+  longer split across lines. `roomscope project` or `roomscope session`
+  without an action named the parser's internal `project_command` instead
+  of the actions. An unknown exporter lists the others by name, not as
+  `['csv']`.
 - **Desktop app.** A second take could start while one was running (after
   Refresh devices), and closing the window during a take or an analysis
   aborted the process; both are fixed, and leaving the page stops the take.

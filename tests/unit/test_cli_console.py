@@ -86,6 +86,27 @@ def test_wrap_breaks_chinese_between_characters_and_never_starts_with_punctuatio
         assert "".join(line.strip() for line in lines).replace(" ", "") == text.replace(" ", "")
 
 
+OPENING = "（「『“‘《〈【〔([{"
+
+
+def test_wrap_never_ends_a_line_with_an_opening_bracket() -> None:
+    """ "…voiceover 或 auto（" then "generic）": the bracket went with the line
+    before what it opens."""
+    texts = (
+        "acoustic_guitar、choir、drums、generic、room_mic、vocal、voiceover 或 auto（generic）",
+        "列出音频设备，并标出每个物理设备的推荐条目（不会播放任何声音）" * 2,
+        "《设置》「语言」【中文】“引号”‘单引号’〈书名〉〔注〕『双引号』" * 3,
+    )
+    for text in texts:
+        for width in range(12, 70):
+            lines = wrap(text, width, first="  ", rest="  ")
+            assert not any(line.rstrip()[-1:] in OPENING for line in lines), (width, lines)
+            assert "".join("".join(line.split()) for line in lines) == "".join(text.split())
+    assert wrap(texts[0], 60, first="  ", rest="  ")[-1] == "  voiceover 或 auto（generic）"
+    # The space after an opening bracket goes down with it.
+    assert wrap("see ( the thing ) here", 8) == ["see", "( the", "thing )", "here"]
+
+
 def test_wrap_never_splits_a_path_or_url() -> None:
     path = "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\pytest-of-runneradmin\\session"
     url = "https://github.com/jingyemingyue/RoomScope/actions/runs/36321028824"
@@ -142,6 +163,34 @@ def test_symbols_fall_back_to_ascii_words_where_unicode_cannot_be_written() -> N
     )
     assert "[OK]" in text and "[WARN]" in text and "[ERROR]" in text
     text.encode("ascii")
+
+
+@pytest.mark.parametrize(
+    ("encoding", "shown"),
+    [("cp1252", "20 °C"), ("gbk", "20 °C"), ("latin-1", "20 °C"), ("ascii", "20 C")],
+)
+def test_the_degree_sign_is_dropped_only_where_the_encoding_lacks_it(
+    encoding: str, shown: str
+) -> None:
+    """cp1252 and GBK (a Chinese Windows code page) cannot write ✓, so the
+    other signs become ASCII there, but they hold the degree sign."""
+    console = Console.for_stream(_Stream(tty=False, encoding=encoding), "auto", {})
+    assert not console.unicode
+    line = "343.2 m/s at 20 °C – assumed"
+    for text in (console.fit(line), console.readable(line), *console.paragraph(line)):
+        assert shown in text and "–" not in text, text
+        text.encode(encoding)
+
+
+def test_the_classic_windows_console_keeps_the_degree_sign(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Its fonts lack ✓ (so the ASCII signs are used) but have °."""
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr("roomscope.cli.console._enable_windows_vt", lambda stream: False)
+    console = Console.for_stream(_Stream(tty=True, encoding="utf-8"), "auto", {})
+    assert not console.unicode
+    assert console.fit("20 °C – 5 °C") == "20 °C - 5 °C"
 
 
 @pytest.mark.parametrize("unicode", [True, False])
@@ -474,7 +523,28 @@ def test_every_help_example_is_a_valid_command(home: Path) -> None:
     ]
     assert len(examples) >= 10
     for example in examples:
+        if example.endswith(" --help"):
+            # "roomscope measure --help": the command must exist; --help would exit.
+            example = example.removesuffix(" --help")
+            with pytest.raises(SystemExit) as exc:
+                build_parser().parse_args(shlex.split(example)[1:])
+            assert exc.value.code == 2  # measure without --out, not "invalid choice"
+            continue
         build_parser().parse_args(shlex.split(example)[1:])  # exits on an unknown flag
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_help_paragraphs_keep_their_blank_line(home: Path, lang: str) -> None:
+    """The description, the command list, the examples and the closing
+    sentence ran together: the blank lines between them were dropped."""
+    activate(lang)
+    root = _help_screens()["roomscope"]
+    heading = "commands:" if lang == "en" else "命令："
+    examples = "examples:" if lang == "en" else "示例："
+    assert f"\n\n{heading}\n" in root
+    assert f"\n\n{examples}\n" in root
+    tail = root.split(examples, 1)[1]
+    assert "\n\n" in tail.strip(), tail
 
 
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])

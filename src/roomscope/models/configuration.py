@@ -225,7 +225,7 @@ class AnalysisSettings:
         )
         _require(
             self.placement_temperature_c is None or -20.0 <= self.placement_temperature_c <= 50.0,
-            _("placement_temperature_c must be between -20 C and 50 C"),
+            _("placement_temperature_c must be between -20 °C and 50 °C"),
         )
         _require(
             self.placement_mic_height_m is None or self.placement_distance_m is not None,
