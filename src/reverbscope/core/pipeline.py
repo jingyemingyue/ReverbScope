@@ -317,12 +317,18 @@ def _check_recording_start(
     )
 
 
+def _is_silent(samples: FloatArray) -> bool:
+    """True when the peak of ``samples`` is below ``SILENCE_THRESHOLD_DBFS``."""
+    peak = float(np.max(np.abs(samples)))
+    return peak <= 0.0 or 20.0 * np.log10(peak) < SILENCE_THRESHOLD_DBFS
+
+
 def _validate_recording(mono: FloatArray, sample_rate: int) -> tuple[ClippingCheck, list[str]]:
     """Refuse an unusable recording and report flat-topped (clipped) peaks."""
     warnings: list[str] = []
-    peak = float(np.max(np.abs(mono)))
-    if peak <= 0.0 or 20.0 * np.log10(peak) < SILENCE_THRESHOLD_DBFS:
-        # diag(): on the loopback path this message is stored (LoopbackResult.reason).
+    if _is_silent(mono):
+        # diag(): files written before the loopback had its own message
+        # stored this one as the loopback's reason (LoopbackResult.reason).
         raise InvalidAudioError(
             diag(
                 "recording is silent (peak below {threshold_dbfs:g} dBFS); check the input "
@@ -747,6 +753,16 @@ def analyze(
     direct_level_dbfs = _direct_level_dbfs(located.peak_value, prepared)
     if lb_samples is not None:
         try:
+            # The microphone's silence message would blame its routing and the
+            # macOS microphone permission next to a fully analysed take.
+            if _is_silent(lb_samples):
+                raise InvalidAudioError(
+                    diag(
+                        "the loopback channel is silent (peak below {threshold_dbfs:g} dBFS); "
+                        "compensation is not applied",
+                        threshold_dbfs=SILENCE_THRESHOLD_DBFS,
+                    )
+                )
             lb_clipping, _lb_notes = _validate_recording(lb_samples, sample_rate)
             h_lb = deconvolve(lb_samples, prepared.inverse)
             lb_located = _locate_pass(

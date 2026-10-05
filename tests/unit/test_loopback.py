@@ -156,6 +156,30 @@ def test_room_used_as_loopback_does_not_corrupt_mic(short_sweep: SweepSettings) 
     assert result.impulse_response.loopback.reason is not None
 
 
+def test_a_silent_loopback_channel_is_named_as_the_loopback(
+    short_sweep: SweepSettings,
+) -> None:
+    """R3-20: a silent return channel was refused with the microphone's
+    "recording is silent ... microphone access" next to a fully analysed take."""
+    from reverbscope.i18n import activate, localize
+
+    rec = synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate), noise_rms=1e-5)
+    two = np.stack([rec.samples, np.zeros_like(rec.samples)], axis=1)
+    result = analyze(
+        AudioSignal(two, rec.sample_rate, source="file"),
+        Reference.from_settings(short_sweep),
+        AnalysisSettings(channel=0, loopback_channel=1),
+    )
+    loopback = result.impulse_response.loopback
+    assert loopback is not None and not loopback.compensation_applied
+    expected = "the loopback channel is silent (peak below -80 dBFS); compensation is not applied"
+    assert loopback.reason == expected
+    assert result.warnings == (expected,)
+    assert result.decay.broadband.t30.seconds is not None
+    activate("zh_CN")
+    assert localize(expected) == "回送声道无声（峰值低于 -80 dBFS）；未应用补偿"
+
+
 def test_path_delay_and_tape_bound(short_sweep: SweepSettings) -> None:
     sr = short_sweep.sample_rate
     delay_s = 0.006

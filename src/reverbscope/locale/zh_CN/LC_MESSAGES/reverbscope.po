@@ -4630,3 +4630,8 @@ msgstr "n 为该行参与平均的会话数；数值后带 (k) 表示只平均�
 msgctxt "diagnostic"
 msgid "{metric} {seconds:#.3g} s vs {other:#.3g} s"
 msgstr "{metric} {seconds:#.3g} s，对比 {other:#.3g} s"
+# analysis: a silent loopback channel
+
+msgctxt "diagnostic"
+msgid "the loopback channel is silent (peak below {threshold_dbfs:g} dBFS); compensation is not applied"
+msgstr "回送声道无声（峰值低于 {threshold_dbfs:g} dBFS）；未应用补偿"
