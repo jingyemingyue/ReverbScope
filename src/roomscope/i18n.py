@@ -690,8 +690,10 @@ def _macos_languages(paths: Sequence[str | Path] | None = None) -> list[str]:
     binary and the XML form. Any failure (no such file, no ``HOME``, a damaged
     file, a list that is not a list) means "not available": ``[]``.
     """
-    import plistlib
-
+    try:
+        import plistlib  # needs xml.parsers.expat, which a trimmed bundle could lack
+    except ImportError:
+        return []
     for raw in MACOS_PREFERENCES if paths is None else paths:
         try:
             path = Path(raw).expanduser()

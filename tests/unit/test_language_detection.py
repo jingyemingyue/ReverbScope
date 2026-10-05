@@ -229,3 +229,14 @@ def test_the_explicit_choices_come_before_the_system(system: pytest.MonkeyPatch)
     assert (language_choice().lang, language_choice().source) == ("en", SOURCE_SETTINGS)
     choice = language_choice("zh-Hans")
     assert (choice.lang, choice.source, choice.value) == ("zh_CN", SOURCE_OPTION, "zh-Hans")
+
+
+def test_a_python_without_plistlib_falls_back_to_lang(
+    system: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    system.setattr(sys, "platform", "darwin")
+    system.setenv("LANG", "zh_CN.UTF-8")
+    plist = _plist(tmp_path / "user.plist", ["en-US"])
+    system.setattr(i18n, "MACOS_PREFERENCES", (str(plist),))
+    system.setitem(sys.modules, "plistlib", None)  # import plistlib raises ImportError
+    assert language_choice().origin == "LANG"
