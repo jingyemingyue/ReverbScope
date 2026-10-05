@@ -759,3 +759,19 @@ def test_a_take_that_fails_keeps_the_previous_session_whole(
     assert main([*argv, "--duration", "2"]) == 1
     assert "no sweep found" in capsys.readouterr().err
     assert _fingerprints(folder) == before
+
+
+@pytest.mark.parametrize(
+    "command", [["devices"], ["devices", "--probe"], ["devices", "--host-apis"], ["doctor"]]
+)
+def test_devices_and_doctor_warn_that_json_is_deprecated(
+    capsys: pytest.CaptureFixture[str], command: list[str]
+) -> None:
+    """devices --json and doctor --json read the flag directly and never said
+    it will be removed, unlike show, compare, analyze and project average."""
+    assert main(["--backend", "fake", *command, "--json"]) == 0
+    captured = capsys.readouterr()
+    json.loads(captured.out)
+    assert captured.err.count("--json is deprecated") == 1
+    assert main(["--backend", "fake", "--format", "json", *command]) == 0
+    assert "deprecated" not in capsys.readouterr().err

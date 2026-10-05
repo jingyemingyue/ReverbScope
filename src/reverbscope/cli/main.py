@@ -1500,12 +1500,8 @@ def cmd_devices(args: argparse.Namespace) -> int:
     from reverbscope.audio.backend import get_backend
 
     backend = get_backend(args.backend)
-    if (
-        getattr(args, "probe", False)
-        or getattr(args, "host_apis", False)
-        or getattr(args, "json", False)
-        or getattr(args, "format", None) == "json"
-    ):
+    # _use_json, not args.json: it warns that --json is going away.
+    if getattr(args, "probe", False) or getattr(args, "host_apis", False) or _use_json(args):
         return _print_inventory(backend, args)
     print(render_devices(_console(args), backend.list_devices()))
     return 0
@@ -1515,7 +1511,7 @@ def _print_inventory(backend: Any, args: argparse.Namespace) -> int:
     from reverbscope.audio.inventory import build_inventory
 
     inventory = build_inventory(backend, probe_rates=bool(getattr(args, "probe", False)))
-    if getattr(args, "json", False) or getattr(args, "format", None) == "json":
+    if _use_json(args):
         print(json.dumps(inventory.to_dict(), indent=1))
         return 0
     if getattr(args, "host_apis", False):
@@ -1529,7 +1525,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     from reverbscope.diagnostics import environment_report
 
     report = environment_report(backend_name=args.backend, probe_rates=args.probe)
-    if getattr(args, "json", False) or getattr(args, "format", None) == "json":
+    if _use_json(args):
         print(json.dumps(report, indent=1, default=str))
     else:
         print(render_environment(_console(args), report))
