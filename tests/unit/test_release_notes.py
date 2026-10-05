@@ -39,13 +39,13 @@ NAMING_DOCS = (
     ROOT / ".github" / "ISSUE_TEMPLATE" / "bug.yml",
     ROOT / ".github" / "ISSUE_TEMPLATE" / "bug-zh-CN.yml",
 )
-#: A download-like file name: RoomScope-… / roomscope-… with an archive suffix.
+#: A download-like file name: ReverbScope-… / reverbscope-… with an archive suffix.
 _ASSET_NAME = re.compile(
-    r"(?<![\w/-])(?:RoomScope|roomscope)-[\w.-]*?\.(?:dmg|zip|exe|tar\.gz|whl)\b"
+    r"(?<![\w/-])(?:ReverbScope|reverbscope)-[\w.-]*?\.(?:dmg|zip|exe|tar\.gz|whl)\b"
 )
-RELEASES_PAGE = "https://github.com/jingyemingyue/RoomScope/releases"
-#: Programs inside the Windows ZIP / installed folder (packaging/roomscope.spec).
-IN_BUNDLE = {"roomscope-gui.exe", "roomscope.exe"}
+RELEASES_PAGE = "https://github.com/jingyemingyue/ReverbScope/releases"
+#: Programs inside the Windows ZIP / installed folder (packaging/reverbscope.spec).
+IN_BUNDLE = {"reverbscope-gui.exe", "reverbscope.exe"}
 
 
 def _release_draft() -> ModuleType:
@@ -93,7 +93,7 @@ def _known_names() -> set[str]:
 
 def test_release_notes_open_with_the_version_and_the_pre_release_line() -> None:
     lines = [line for line in _notes().splitlines() if line.strip()]
-    assert lines[0] == f"## RoomScope v{_version()}"
+    assert lines[0] == f"## ReverbScope v{_version()}"
     assert "Beta 1, for testing." in lines[1]
 
 
@@ -162,18 +162,18 @@ def test_download_docs_use_real_file_names_and_the_stable_releases_page(doc: Pat
     assert "/releases/latest" not in text
     for name in _archives():
         assert name in text, name
-    assert "roomscope-gui.exe" in text
+    assert "reverbscope-gui.exe" in text
     flat = " ".join(re.sub(r"(?m)^>", "", text).split())
     for fact in ("Gatekeeper", "SIP" if "zh-CN" in doc.name else "System Integrity Protection"):
         assert fact in flat, fact
 
 
 def test_the_windows_program_names_come_from_the_bundle_spec() -> None:
-    spec = (ROOT / "packaging" / "roomscope.spec").read_text(encoding="utf-8")
-    from roomscope.__main__ import GUI_LAUNCHER_STEM
+    spec = (ROOT / "packaging" / "reverbscope.spec").read_text(encoding="utf-8")
+    from reverbscope.__main__ import GUI_LAUNCHER_STEM
 
-    assert GUI_LAUNCHER_STEM == "roomscope-gui"
-    assert "GUI_LAUNCHER_STEM" in spec or '"roomscope-gui"' in spec
+    assert GUI_LAUNCHER_STEM == "reverbscope-gui"
+    assert "GUI_LAUNCHER_STEM" in spec or '"reverbscope-gui"' in spec
 
 
 def test_readme_offers_the_download_before_the_developer_install() -> None:
@@ -195,7 +195,7 @@ def test_every_file_name_in_the_docs_is_a_real_release_asset(doc: Path) -> None:
 
 
 def test_the_old_file_names_are_gone_from_user_documents() -> None:
-    old = _release_draft().LEGACY_ASSETS - {"RoomScope.dmg"}
+    old = _release_draft().LEGACY_ASSETS - {"ReverbScope.dmg"}
     for doc in NAMING_DOCS:
         text = doc.read_text(encoding="utf-8")
         found = sorted(name for name in old if name in text)

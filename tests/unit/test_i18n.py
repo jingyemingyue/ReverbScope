@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.i18n import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.i18n import (
     _,
     activate,
     available_locales,
@@ -10,8 +10,8 @@ from roomscope.i18n import (
     normalize_lang,
     parse_po,
 )
-from roomscope.interpretation import interpret
-from roomscope.models.configuration import SweepSettings
+from reverbscope.interpretation import interpret
+from reverbscope.models.configuration import SweepSettings
 from tests.conftest import make_rir
 
 
@@ -27,7 +27,7 @@ def test_english_is_source_and_chinese_translates_findings(
 ) -> None:
     activate("en")
     assert current_locale() == "en"
-    assert _("RoomScope analysis") == "RoomScope analysis"
+    assert _("ReverbScope analysis") == "ReverbScope analysis"
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.4)])
     rec = synthetic_recording(short_sweep, ir, noise_rms=2e-5)
     result = analyze(rec, Reference.from_settings(short_sweep))
@@ -36,7 +36,7 @@ def test_english_is_source_and_chinese_translates_findings(
     assert all(item.locale == "en" for item in english)
     activate("zh_CN")
     assert current_locale() == "zh_CN"
-    assert _("RoomScope analysis") == "RoomScope 分析"
+    assert _("ReverbScope analysis") == "ReverbScope 分析"
     chinese = interpret(result, "generic")
     assert chinese
     assert all(item.locale == "zh_CN" for item in chinese)
@@ -76,13 +76,13 @@ def test_cli_help_and_report_labels_are_in_the_chinese_catalog() -> None:
 def test_parse_po_round_trip(tmp_path) -> None:
     import gettext
 
-    from roomscope.i18n import write_mo
+    from reverbscope.i18n import write_mo
 
-    po = tmp_path / "roomscope.po"
+    po = tmp_path / "reverbscope.po"
     po.write_text('msgid "Hello"\nmsgstr "你好"\n', encoding="utf-8")
     catalog = parse_po(po)
     assert catalog["Hello"] == "你好"
-    mo = tmp_path / "roomscope.mo"
+    mo = tmp_path / "reverbscope.mo"
     write_mo(catalog, mo)
     with mo.open("rb") as handle:
         trans = gettext.GNUTranslations(handle)
@@ -93,18 +93,18 @@ def _copy_catalog(tmp_path) -> tuple[object, object]:
     import shutil
     from pathlib import Path
 
-    from roomscope.i18n import locale_dir
+    from reverbscope.i18n import locale_dir
 
     base = Path(tmp_path) / "locale"
     messages = base / "zh_CN" / "LC_MESSAGES"
     messages.mkdir(parents=True)
-    shutil.copy(Path(locale_dir()) / "zh_CN" / "LC_MESSAGES" / "roomscope.po", messages)
+    shutil.copy(Path(locale_dir()) / "zh_CN" / "LC_MESSAGES" / "reverbscope.po", messages)
     return base, messages
 
 
 def test_loading_a_catalog_never_writes_to_the_package_tree(tmp_path, monkeypatch) -> None:
     """#14: an installed tree or a frozen bundle may be read-only; no .mo is written."""
-    from roomscope import i18n
+    from reverbscope import i18n
 
     base, messages = _copy_catalog(tmp_path)
     monkeypatch.setattr(i18n, "_LOCALE_DIR", base)
@@ -114,25 +114,25 @@ def test_loading_a_catalog_never_writes_to_the_package_tree(tmp_path, monkeypatc
         assert _("Analyze") == "分析"
     finally:
         activate("en")
-    assert sorted(p.name for p in messages.iterdir()) == before == ["roomscope.po"]
+    assert sorted(p.name for p in messages.iterdir()) == before == ["reverbscope.po"]
 
 
 def test_compiled_mo_is_used_only_while_it_matches_the_po(tmp_path, monkeypatch) -> None:
     import gettext
 
-    from roomscope import i18n
+    from reverbscope import i18n
 
     base, messages = _copy_catalog(tmp_path)
     monkeypatch.setattr(i18n, "_LOCALE_DIR", base)
     written = i18n.compile_catalogs(base)
-    assert written == [messages / "roomscope.mo"]
+    assert written == [messages / "reverbscope.mo"]
     loaded = i18n._load_translation("zh_CN")
     assert isinstance(loaded, gettext.GNUTranslations)
     assert loaded.info()[i18n.SOURCE_HASH_HEADER.lower()] == i18n.source_hash(
-        messages / "roomscope.po"
+        messages / "reverbscope.po"
     )
     # Edit the .po after compiling: the stale .mo must not win.
-    po = messages / "roomscope.po"
+    po = messages / "reverbscope.po"
     po.write_text(
         po.read_text(encoding="utf-8").replace('msgstr "分析"', 'msgstr "分析（新）"', 1),
         encoding="utf-8",
@@ -145,16 +145,16 @@ def test_compiled_mo_is_used_only_while_it_matches_the_po(tmp_path, monkeypatch)
     assert i18n._load_translation("zh_CN").gettext("Analyze") == "分析"
     # A .mo compiled before the hash header existed is ignored when a .po exists.
     po.write_text('msgid "Analyze"\nmsgstr "分析"\n', encoding="utf-8")
-    i18n.write_mo({"Analyze": "旧"}, messages / "roomscope.mo")
+    i18n.write_mo({"Analyze": "旧"}, messages / "reverbscope.mo")
     assert i18n._load_translation("zh_CN").gettext("Analyze") == "分析"
 
 
 def test_msgctxt_entries_round_trip_through_po_and_mo(tmp_path) -> None:
     import gettext
 
-    from roomscope.i18n import _PoTranslations, write_mo
+    from reverbscope.i18n import _PoTranslations, write_mo
 
-    po = tmp_path / "roomscope.po"
+    po = tmp_path / "reverbscope.po"
     po.write_text(
         'msgctxt "decay length"\nmsgid "long"\nmsgstr "很长"\n\n'
         'msgid "long"\nmsgstr "长"\n\n'
@@ -171,7 +171,7 @@ def test_msgctxt_entries_round_trip_through_po_and_mo(tmp_path) -> None:
     assert in_memory.pgettext("decay length", "long") == "很长"
     assert in_memory.gettext("long") == "长"
     assert in_memory.pgettext("RT60 change", "long") == "long"
-    mo = tmp_path / "roomscope.mo"
+    mo = tmp_path / "reverbscope.mo"
     write_mo(catalog, mo)
     with mo.open("rb") as handle:
         compiled = gettext.GNUTranslations(handle)
@@ -188,7 +188,7 @@ def test_wheel_build_hook_compiles_into_a_temporary_directory(tmp_path) -> None:
     import pytest
 
     pytest.importorskip("hatchling")
-    from roomscope.i18n import SOURCE_HASH_HEADER, locale_dir, source_hash
+    from reverbscope.i18n import SOURCE_HASH_HEADER, locale_dir, source_hash
 
     spec = importlib.util.spec_from_file_location("hatch_build", Path("hatch_build.py"))
     assert spec is not None and spec.loader is not None
@@ -197,19 +197,21 @@ def test_wheel_build_hook_compiles_into_a_temporary_directory(tmp_path) -> None:
     src_messages = Path(locale_dir()) / "zh_CN" / "LC_MESSAGES"
     before = sorted(p.name for p in src_messages.iterdir())
     include = hook.compiled_catalogs(tmp_path)
-    assert list(include.values()) == ["roomscope/locale/zh_CN/LC_MESSAGES/roomscope.mo"]
+    assert list(include.values()) == ["reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.mo"]
     mo = Path(next(iter(include)))
-    assert mo == tmp_path / "zh_CN" / "LC_MESSAGES" / "roomscope.mo"
+    assert mo == tmp_path / "zh_CN" / "LC_MESSAGES" / "reverbscope.mo"
     with mo.open("rb") as handle:
         compiled = gettext.GNUTranslations(handle)
-    assert compiled.info()[SOURCE_HASH_HEADER.lower()] == source_hash(src_messages / "roomscope.po")
+    assert compiled.info()[SOURCE_HASH_HEADER.lower()] == source_hash(
+        src_messages / "reverbscope.po"
+    )
     assert compiled.gettext("Analyze") == "分析"
     assert sorted(p.name for p in src_messages.iterdir()) == before
 
 
 def test_parse_po_unescapes_in_one_pass_and_skips_fuzzy(tmp_path) -> None:
     """``\\\\n`` (a backslash, then n) became a newline; fuzzy entries were used."""
-    from roomscope.i18n import parse_po
+    from reverbscope.i18n import parse_po
 
     po = tmp_path / "x.po"
     po.write_text(
@@ -261,7 +263,7 @@ def test_the_catalog_has_no_duplicate_entries() -> None:
     entries whose msgid spans several lines."""
     from pathlib import Path
 
-    path = Path("src/roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po")
+    path = Path("src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po")
     text = path.read_text(encoding="utf-8") + "\n"
     assert _duplicate_po_entries(text) == []
     long_entry = 'msgid ""\n"The first line, "\n"and the second."\nmsgstr "x"\n\n'
@@ -275,7 +277,7 @@ def test_the_catalog_has_no_duplicate_entries() -> None:
 
 
 def test_metric_labels_split_from_the_right() -> None:
-    from roomscope.labels import metric_label
+    from reverbscope.labels import metric_label
 
     assert metric_label("band.31.5 Hz.t20") == "31.5 Hz T20"
     assert metric_label("band.2.5 kHz.edt", "s") == "2.5 kHz EDT (s)"
@@ -304,7 +306,7 @@ def _english_left(text: str) -> list[str]:
 
 
 def _shown_in_chinese(text: str) -> str:
-    from roomscope.i18n import localize
+    from reverbscope.i18n import localize
 
     activate("zh_CN")
     try:
@@ -322,7 +324,7 @@ def test_joined_diagnostics_with_their_own_semicolons() -> None:
 
 def test_a_value_that_joins_several_diagnostics() -> None:
     """The truncation warning lists every changed metric, joined with "; "."""
-    from roomscope.i18n import diag
+    from reverbscope.i18n import diag
 
     text = diag(
         TRUNCATION,
@@ -336,7 +338,7 @@ def test_a_value_that_joins_several_diagnostics() -> None:
 
 
 def test_upper_plane_rejections_joined_before_a_literal_semicolon() -> None:
-    from roomscope.i18n import diag
+    from reverbscope.i18n import diag
 
     rejections = "; ".join(
         diag(
@@ -361,7 +363,7 @@ def test_upper_plane_rejections_joined_before_a_literal_semicolon() -> None:
 
 
 def test_comparison_reasons_that_nest_joined_reasons() -> None:
-    from roomscope.i18n import diag
+    from reverbscope.i18n import diag
 
     text = (
         diag("baseline {validity} ({reason})", validity="unreliable", reason=EDT_STEP)
@@ -381,9 +383,9 @@ def test_comparison_reasons_that_nest_joined_reasons() -> None:
 
 def test_a_joined_metric_reason_inside_a_comparison_reason() -> None:
     """#43: low confidence and clipping, joined by with_all_unreliable()."""
-    from roomscope.core.compare import _decay_metric_delta
-    from roomscope.i18n import diag
-    from roomscope.models.result import DecayMetric, Validity
+    from reverbscope.core.compare import _decay_metric_delta
+    from reverbscope.i18n import diag
+    from reverbscope.models.result import DecayMetric, Validity
 
     low_confidence = diag(
         "direct-sound detection confidence is low (pre-peak margin {margin_db:.1f} dB): "
@@ -418,8 +420,8 @@ def test_plain_joins_and_unknown_pieces_still_work() -> None:
 
 def test_comparison_reasons_name_the_validity_in_words() -> None:
     """#66: "candidate outside_excitation_range" stayed an id, also in zh_CN."""
-    from roomscope.core.compare import _decay_metric_delta
-    from roomscope.models.result import DecayMetric, Validity
+    from reverbscope.core.compare import _decay_metric_delta
+    from reverbscope.models.result import DecayMetric, Validity
 
     reason = _decay_metric_delta(
         "band.4 kHz.t30",
@@ -437,7 +439,7 @@ def test_comparison_reasons_name_the_validity_in_words() -> None:
 
 def test_noise_band_metric_labels() -> None:
     """#23: the GUI compare table showed "noise.band.1000Hz (dBFS)"."""
-    from roomscope.labels import metric_label
+    from reverbscope.labels import metric_label
 
     assert metric_label("noise.band.1000Hz", "dBFS") == "Background noise, 1 kHz (dBFS)"
     assert metric_label("noise.band.31.5Hz") == "Background noise, 31.5 Hz"

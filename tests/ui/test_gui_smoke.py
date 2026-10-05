@@ -13,17 +13,17 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import QApplication
 
-from roomscope.core.pipeline import synthetic_recording
-from roomscope.io.wav import write_wav
-from roomscope.models.configuration import SweepSettings
-from roomscope.ui.main_window import MainWindow
+from reverbscope.core.pipeline import synthetic_recording
+from reverbscope.io.wav import write_wav
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.ui.main_window import MainWindow
 from tests.conftest import make_rir
 
 pytestmark = pytest.mark.gui
 
 
 def test_pyside6_version_is_visible_to_matplotlib() -> None:
-    from roomscope.ui.qt import ensure_pyside6
+    from reverbscope.ui.qt import ensure_pyside6
 
     ensure_pyside6()
     import PySide6
@@ -49,7 +49,7 @@ def test_daw_mode_end_to_end(app: QApplication, tmp_path: Path, short_sweep: Swe
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(short_sweep.sample_rate))
     page.duration.setValue(short_sweep.duration_s)
     page.generate_sweep_to(tmp_path / "sweep.wav")
-    assert (tmp_path / "sweep.roomscope-sweep.json").is_file()
+    assert (tmp_path / "sweep.reverbscope-sweep.json").is_file()
     assert window.state.reference is not None
 
     ir = make_rir(
@@ -67,7 +67,7 @@ def test_daw_mode_end_to_end(app: QApplication, tmp_path: Path, short_sweep: Swe
     app.processEvents()
     assert window.state.result is not None
     assert window.stack.currentWidget() is window.results
-    assert "RoomScope analysis" in window.results.text.toPlainText()
+    assert "ReverbScope analysis" in window.results.text.toPlainText()
     assert window.results.table.rowCount() == 1 + len(window.state.result.decay.bands)
     assert window.state.findings
 
@@ -85,7 +85,7 @@ def test_daw_mode_end_to_end(app: QApplication, tmp_path: Path, short_sweep: Swe
 def test_reopen_saved_session(
     app: QApplication, tmp_path: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
@@ -129,7 +129,7 @@ def test_reopen_saved_session(
     assert window.state.profile == "vocal"
     assert window.state.result.decay.broadband.rt60_estimate_s == saved_rt60
     assert window.state.result.impulse_response.samples.size > 0
-    assert "RoomScope analysis" in window.results.text.toPlainText()
+    assert "ReverbScope analysis" in window.results.text.toPlainText()
     assert "Interpretation (Vocals profile)" in window.results.text.toPlainText()
     window.results._copy_report()
     assert app.clipboard().text() == window.results.text.toPlainText()
@@ -150,7 +150,7 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
         assert needed in shortcuts, shortcuts
     from PySide6.QtWidgets import QLabel
 
-    from roomscope.ui.widgets import shortcut_badge
+    from reverbscope.ui.widgets import shortcut_badge
 
     badges = sorted(
         child.text()
@@ -191,9 +191,9 @@ def test_demo_mode_uses_fake_backend(app: QApplication) -> None:
 def test_settings_dialog_saves(
     app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
-    from roomscope.settings import load_settings
-    from roomscope.ui.settings_dialog import SettingsDialog
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    from reverbscope.settings import load_settings
+    from reverbscope.ui.settings_dialog import SettingsDialog
 
     window = MainWindow()
     window.show()
@@ -204,7 +204,7 @@ def test_settings_dialog_saves(
     loaded = load_settings()
     assert loaded.language == "zh_CN"
     assert loaded.copy_recording is False
-    from roomscope.i18n import activate
+    from reverbscope.i18n import activate
 
     activate("en")
     window.close()
@@ -213,7 +213,7 @@ def test_settings_dialog_saves(
 def test_placement_tab_uses_tape_measurements(
     app: QApplication, tmp_path: Path, short_sweep: SweepSettings
 ) -> None:
-    from roomscope.core.placement import DEFAULT_TEMPERATURE_C, speed_of_sound_m_s
+    from reverbscope.core.placement import DEFAULT_TEMPERATURE_C, speed_of_sound_m_s
 
     source_height, mic_height, horizontal, ceiling = 1.20, 0.40, 1.44, 3.20
     speed = speed_of_sound_m_s(DEFAULT_TEMPERATURE_C)
@@ -269,7 +269,7 @@ def test_placement_tab_uses_tape_measurements(
 def test_compare_two_saved_sessions(
     app: QApplication, tmp_path: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
@@ -307,7 +307,7 @@ def test_compare_two_saved_sessions(
     window.compare.same_gain.setChecked(True)
     window.compare.run_compare()
     app.processEvents()
-    assert "RoomScope comparison" in window.compare.text.toPlainText()
+    assert "ReverbScope comparison" in window.compare.text.toPlainText()
     assert window.compare.table.rowCount() > 0
     assert window.compare.reflections.columnCount() == 4
     assert window.compare.resonances.columnCount() == 4
@@ -330,14 +330,14 @@ def test_standalone_shows_requested_and_device_rate(app: QApplication) -> None:
     assert "44100" in label
     assert "48000" in label
     assert "requested" in label
-    # The same pre-flight as roomscope measure: resolved devices, real channels.
+    # The same pre-flight as reverbscope measure: resolved devices, real channels.
     # "System default" stays selected: PortAudio's default devices are used.
     assert page._preflight([1], 48000) == (None, None)
     window.close()
 
 
 def test_help_licenses_and_report_heading(app: QApplication) -> None:
-    from roomscope.ui.main_window import license_notice_path
+    from reverbscope.ui.main_window import license_notice_path
 
     notice = license_notice_path()
     assert notice is not None
@@ -351,13 +351,13 @@ def test_help_licenses_and_report_heading(app: QApplication) -> None:
     assert any("license" in text.lower() or "许可" in text for text in texts)
     # Diagnostics are shown in the interface language now; the heading names
     # the CLI command that prints the same report.
-    assert "roomscope analyze" in window.results.diagnostics_heading.text()
+    assert "reverbscope analyze" in window.results.diagnostics_heading.text()
     window.close()
 
 
 def test_gui_smoke_flag_constructs_and_exits(app: QApplication) -> None:
-    from roomscope.cli.main import main
-    from roomscope.ui.app import run_app
+    from reverbscope.cli.main import main
+    from reverbscope.ui.app import run_app
 
     assert run_app(smoke=True) == 0
     assert main(["gui", "--smoke"]) == 0
@@ -366,8 +366,8 @@ def test_gui_smoke_flag_constructs_and_exits(app: QApplication) -> None:
 def test_developer_menu_and_device_inspector(
     app: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("ROOMSCOPE_EDITION", "developer")
-    from roomscope.ui.dev_tools import DeviceInspector, EnvironmentReport
+    monkeypatch.setenv("REVERBSCOPE_EDITION", "developer")
+    from reverbscope.ui.dev_tools import DeviceInspector, EnvironmentReport
 
     window = MainWindow()
     assert window.developer_menu is not None
@@ -378,7 +378,7 @@ def test_developer_menu_and_device_inspector(
     assert "48000" in inspector.table.item(0, 6).text()
     inspector.copy_json()
     report = EnvironmentReport("fake", window)
-    assert "RoomScope" in report.text.toPlainText()
+    assert "ReverbScope" in report.text.toPlainText()
     assert "not probed" in report.text.toPlainText()
     report.refresh(probe=True)
     assert "record 44100, 48000" in report.text.toPlainText()
@@ -388,7 +388,7 @@ def test_developer_menu_and_device_inspector(
 def test_user_edition_hides_developer_tools(
     app: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("ROOMSCOPE_EDITION", "user")
+    monkeypatch.setenv("REVERBSCOPE_EDITION", "user")
     window = MainWindow()
     assert window.developer_menu is None
     assert window.standalone.advanced.isHidden()
@@ -415,9 +415,9 @@ def test_standalone_preselects_the_system_default_devices(
     """Review finding: on a Mac every Core Audio device is its own starred
     entry, so the page preselected the lowest index, a virtual BlackHole
     device, instead of the microphone and speakers the system uses."""
-    from roomscope.audio import backend as backend_module
-    from roomscope.audio import inventory as inventory_module
-    from roomscope.audio.backend import DeviceInfo
+    from reverbscope.audio import backend as backend_module
+    from reverbscope.audio import inventory as inventory_module
+    from reverbscope.audio.backend import DeviceInfo
 
     devices = [
         DeviceInfo(0, "BlackHole 2ch", "Core Audio", 2, 2, 48000.0, False, False),
@@ -462,7 +462,7 @@ def test_charts_draw_chinese_text_with_an_installed_cjk_font() -> None:
     from matplotlib.backends.backend_agg import FigureCanvasAgg
     from matplotlib.figure import Figure
 
-    from roomscope.ui.theme import CJK_FALLBACK_FONTS, configure_matplotlib, font_families
+    from reverbscope.ui.theme import CJK_FALLBACK_FONTS, configure_matplotlib, font_families
 
     families = font_families()
     assert families[0] == "DejaVu Sans"
@@ -480,9 +480,9 @@ def test_charts_draw_chinese_text_with_an_installed_cjk_font() -> None:
 
 def test_compare_metrics_have_readable_names() -> None:
     """The compare table showed ids such as ``band.63 Hz.t20`` and ``not_comparable``."""
-    from roomscope.models.result import Validity
-    from roomscope.ui.compare_view import metric_label, status_text
-    from roomscope.ui.results import validity_text
+    from reverbscope.models.result import Validity
+    from reverbscope.ui.compare_view import metric_label, status_text
+    from reverbscope.ui.results import validity_text
 
     assert metric_label("broadband.t30", "s") == "Broadband T30 (s)"
     assert metric_label("band.63 Hz.rt60_estimate", "s") == "63 Hz RT60 estimate (s)"
@@ -502,8 +502,8 @@ def held_take(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
 
     from PySide6.QtCore import QThread
 
-    from roomscope.audio.fake import FakeBackend
-    from roomscope.errors import MeasurementCancelledError
+    from reverbscope.audio.fake import FakeBackend
+    from reverbscope.errors import MeasurementCancelledError
 
     release = threading.Event()
     real = FakeBackend.play_and_record
@@ -535,7 +535,7 @@ def test_a_running_take_cannot_be_replaced_and_closing_waits_for_it(
     """Refresh devices (button, Ctrl+2, Back -> Demo) re-enabled Run during a
     take; a second Run dropped the only reference to the running QThread and
     the process aborted. Closing the window mid-take aborted it too."""
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     window = MainWindow()
     window.show()
     window.show_mode("demo")
@@ -560,12 +560,12 @@ def test_opening_a_session_forgets_the_previous_take(
     """Saving the opened session wrote the earlier take as its recording.wav."""
     import numpy as np
 
-    from roomscope.core.pipeline import Reference, analyze
-    from roomscope.io.session_store import save_measurement
-    from roomscope.models.audio import AudioSignal
-    from roomscope.models.session import MeasurementSession
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.audio import AudioSignal
+    from reverbscope.models.session import MeasurementSession
 
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     recording = synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5)
     result = analyze(recording, Reference.from_settings(short_sweep))
     folder = tmp_path / "studio-a"
@@ -585,12 +585,12 @@ def test_a_live_take_is_saved_with_its_session(
     """The live take was written to recording.wav before the rest of the
     session: a save that then failed (a full disk) had already replaced the
     recording of the session in that folder."""
-    from roomscope.core.pipeline import Reference, analyze
-    from roomscope.io.session_store import RECORDING_FILE, load_session
-    from roomscope.io.wav import read_wav
-    from roomscope.ui import results
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.io.session_store import RECORDING_FILE, load_session
+    from reverbscope.io.wav import read_wav
+    from reverbscope.ui import results
 
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     errors: list[str] = []
     monkeypatch.setattr(
         results.QMessageBox, "critical", lambda _parent, _title, text: errors.append(text)
@@ -631,9 +631,9 @@ def test_home_selects_two_sessions_for_compare_and_settings_reach_the_gui(
 ) -> None:
     from PySide6.QtWidgets import QAbstractItemView
 
-    from roomscope.settings import UserSettings, save_settings
+    from reverbscope.settings import UserSettings, save_settings
 
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     save_settings(UserSettings(default_profile="vocal"))
     window = MainWindow()
     assert (
@@ -662,7 +662,7 @@ def held_analysis(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-d
     """The GUI's analysis waits until the test releases it."""
     import threading
 
-    from roomscope.ui import workers
+    from reverbscope.ui import workers
 
     gate = threading.Event()
     real = workers.analyze
@@ -682,9 +682,9 @@ def test_a_late_analysis_never_joins_a_session_opened_meanwhile(
     """The page only checked that it was visible when the result arrived.
     Ctrl+O then Ctrl+1 to wait for the analysis put the new take's result
     under the opened session's room, settings and recording."""
-    from roomscope.core.pipeline import Reference, analyze
-    from roomscope.io.session_store import save_measurement
-    from roomscope.models.session import MeasurementSession
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
 
     rate = short_sweep.sample_rate
     opened = analyze(
@@ -788,11 +788,11 @@ def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
     said that no audio hardware was used."""
     import json
 
-    from roomscope.demo import DEMO_MODE
+    from reverbscope.demo import DEMO_MODE
 
     if mode == "standalone":
-        # The backend Settings or ROOMSCOPE_AUDIO_BACKEND chose: no demo banner.
-        monkeypatch.setenv("ROOMSCOPE_AUDIO_BACKEND", "fake")
+        # The backend Settings or REVERBSCOPE_AUDIO_BACKEND chose: no demo banner.
+        monkeypatch.setenv("REVERBSCOPE_AUDIO_BACKEND", "fake")
     window = MainWindow()
     window.show()
     window.show_mode(mode)
@@ -813,12 +813,12 @@ def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
 def test_the_lang_option_reaches_the_gui(
     app: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """run_app resolved the language again from settings, ROOMSCOPE_LANG and
-    the system, so `roomscope --lang zh_CN gui` opened in English."""
-    from roomscope.cli.main import main
-    from roomscope.i18n import current_locale
-    from roomscope.ui import app as app_module
-    from roomscope.ui import main_window
+    """run_app resolved the language again from settings, REVERBSCOPE_LANG and
+    the system, so `reverbscope --lang zh_CN gui` opened in English."""
+    from reverbscope.cli.main import main
+    from reverbscope.i18n import current_locale
+    from reverbscope.ui import app as app_module
+    from reverbscope.ui import main_window
 
     seen: list[str] = []
 
@@ -838,10 +838,10 @@ def test_a_new_default_profile_applies_without_a_restart(
     app: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """MainWindow read the default profile once at startup: after Settings
-    the mode pages kept the old one until RoomScope restarted."""
+    the mode pages kept the old one until ReverbScope restarted."""
     from PySide6.QtWidgets import QDialog
 
-    from roomscope.ui import settings_dialog
+    from reverbscope.ui import settings_dialog
 
     def accept_with_profile(self: settings_dialog.SettingsDialog) -> int:
         self.profile.setCurrentIndex(self.profile.findData("vocal"))
@@ -867,10 +867,10 @@ def test_two_selected_sessions_compare_oldest_first(
     """The selection came in click order and the recent list is newest
     first: top row then shift-click the next made the later take the
     baseline, so every delta had the wrong sign."""
-    from roomscope.core.pipeline import Reference, analyze
-    from roomscope.io.recent import remember_session
-    from roomscope.io.session_store import save_measurement
-    from roomscope.models.session import MeasurementSession
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.io.recent import remember_session
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
 
     result = analyze(
         synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
@@ -940,22 +940,22 @@ def test_saving_a_file_asks_before_replacing_it_when_the_extension_is_added(
     app: QApplication, tmp_path: Path, short_sweep: SweepSettings
 ) -> None:
     """The extension was added after the save dialog closed: typing
-    "roomscope_sweep" silently replaced roomscope_sweep.wav (and its
+    "reverbscope_sweep" silently replaced reverbscope_sweep.wav (and its
     sidecar), and "comparison" an existing comparison.json."""
-    from roomscope.core.compare import compare
-    from roomscope.core.pipeline import Reference, analyze
+    from reverbscope.core.compare import compare
+    from reverbscope.core.pipeline import Reference, analyze
 
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
     page = window.daw
-    page.generate_sweep_to(tmp_path / "roomscope_sweep.wav")
-    sweep = (tmp_path / "roomscope_sweep.wav").read_bytes()
+    page.generate_sweep_to(tmp_path / "reverbscope_sweep.wav")
+    sweep = (tmp_path / "reverbscope_sweep.wav").read_bytes()
     page.duration.setValue(3.0)
-    questions = _type_name_and_refuse_to_replace(app, tmp_path, "roomscope_sweep")
+    questions = _type_name_and_refuse_to_replace(app, tmp_path, "reverbscope_sweep")
     page._choose_sweep_target()
-    assert questions and "roomscope_sweep.wav" in questions[0]
-    assert (tmp_path / "roomscope_sweep.wav").read_bytes() == sweep
+    assert questions and "reverbscope_sweep.wav" in questions[0]
+    assert (tmp_path / "reverbscope_sweep.wav").read_bytes() == sweep
 
     result = analyze(
         synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
@@ -979,11 +979,11 @@ def test_saving_over_a_saved_session_asks_first(
 
     from PySide6.QtWidgets import QFileDialog, QMessageBox
 
-    from roomscope.core.pipeline import Reference, analyze
-    from roomscope.interpretation import interpret
-    from roomscope.models.session import MeasurementSession
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.interpretation import interpret
+    from reverbscope.models.session import MeasurementSession
 
-    folder = tmp_path / "RoomScope Sessions"
+    folder = tmp_path / "ReverbScope Sessions"
     monkeypatch.setattr(
         QFileDialog, "getExistingDirectory", staticmethod(lambda *_a, **_k: str(folder))
     )

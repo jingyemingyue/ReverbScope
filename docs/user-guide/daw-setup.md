@@ -3,7 +3,7 @@
 **English** | [简体中文](daw-setup.zh-CN.md)
 
 Universal DAW Mode is designed for any DAW that can play one WAV file and
-record another at the same time. RoomScope never talks to the DAW: it only needs the
+record another at the same time. ReverbScope never talks to the DAW: it only needs the
 recording, exported whole. This page lists what every DAW has to get right,
 then the steps in the DAWs most studios use. The Chinese translation is
 [daw-setup.zh-CN.md](daw-setup.zh-CN.md).
@@ -11,24 +11,24 @@ then the steps in the DAWs most studios use. The Chinese translation is
 > **Documented workflow, not yet tested in a DAW.** The steps and menu names
 > below are written from each vendor's current documentation, with a numbered
 > source per step (the few third-party sources are marked). None of them has
-> been run with RoomScope in a real DAW yet: the DAW matrix in
+> been run with ReverbScope in a real DAW yet: the DAW matrix in
 > [HARDWARE_TESTS.md](../HARDWARE_TESTS.md) is empty. If you run one, or your
 > version differs, please open a
-> [DAW compatibility report](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml).
+> [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml).
 
 ## What every DAW must do
 
 1. **Same sample rate.** Generate the test signal at the project's sample
-   rate: `roomscope sweep --sample-rate 44100 --out sweep_44k.wav`, or pick
+   rate: `reverbscope sweep --sample-rate 44100 --out sweep_44k.wav`, or pick
    the rate in the GUI's Step 1. A 48 kHz file played unconverted in a
-   44.1 kHz project runs 8 % slow and cannot be deconvolved; RoomScope reports
+   44.1 kHz project runs 8 % slow and cannot be deconvolved; ReverbScope reports
    *"a file generated at 48000 Hz was played at 44100 Hz"* when that happens,
-   provided the `.roomscope-sweep.json` sidecar is next to the WAV (keep it
+   provided the `.reverbscope-sweep.json` sidecar is next to the WAV (keep it
    there). Exporting the recording at another rate is harmless: the DAW
-   converts on export and RoomScope follows the file's rate.
+   converts on export and ReverbScope follows the file's rate.
 2. **No time-stretching.** Warp, Flex Time, Follow Tempo, elastic audio and
    stretch modes must be off for the test-signal clip, and the tempo must not
-   change after import. RoomScope reports *"the DAW time-stretched it"* when
+   change after import. ReverbScope reports *"the DAW time-stretched it"* when
    the sweep runs off speed by more than the estimate's own spread (about
    1.3 % for the default 10 s sweep, 2.4 % for 3 s, 5.5 % for 1 s) and the
    sidecar is used; a smaller stretch still spoils the measurement (low direct-sound confidence,
@@ -56,8 +56,8 @@ then the steps in the DAWs most studios use. The Chinese translation is
    32-bit float, **without normalising** (normalising hides the noise floor
    level you compare between takes). Mono or stereo both work; with a stereo
    file pick the microphone channel in the GUI or with `--channel`. Do not
-   trim: RoomScope finds the sweep, and the silence after it is the decay.
-7. **Latency does not matter.** RoomScope finds the sweep wherever it is in
+   trim: ReverbScope finds the sweep, and the silence after it is the decay.
+7. **Latency does not matter.** ReverbScope finds the sweep wherever it is in
    the recording, so plug-in delay compensation and interface latency need no
    setting.
 8. **Optional loopback.** Record the interface's electrical return (an output
@@ -68,7 +68,7 @@ then the steps in the DAWs most studios use. The Chinese translation is
 Then analyse:
 
 ```bash
-roomscope analyze --recording "Mic_01.wav" --sweep sweep_44k.wav --out session/
+reverbscope analyze --recording "Mic_01.wav" --sweep sweep_44k.wav --out session/
 ```
 
 or choose the files in the GUI's Universal DAW Mode.
@@ -95,7 +95,7 @@ or choose the files in the GUI's Universal DAW Mode.
 * **Export:** select the recorded clip and use *Export Clips as Files* from
   the Clip List menu [P1, p. 649]: WAV, mono, the session rate and bit depth
   (converting 32-bit float to 24-bit adds dither). Pro Tools writes Broadcast
-  WAV; RoomScope reads it as is.
+  WAV; ReverbScope reads it as is.
 
 ## Apple Logic Pro and GarageBand
 
@@ -286,7 +286,7 @@ Performer 11 guide describes the same commands [M2].
   *Overdub* off so one pass is recorded [M1, p. 273]. Bypass the inserts on the
   sweep track and the master.
 * **Export:** the take is a file named after the track and take number in the
-  project's *Audio Files* folder [M1, p. 261]; load that file into RoomScope:
+  project's *Audio Files* folder [M1, p. 261]; load that file into ReverbScope:
   it is the recording itself, without fader, inserts or automation. Or select
   the take from before the sweep to the end of the decay and use File ▸
   Bounce to Disk [M1, p. 1017] with *Source* = the microphone track
@@ -359,7 +359,7 @@ Clip *Stretch to Tempo* option off for the sweep [CW3].
 
 ## When the report says something is wrong
 
-| RoomScope says | What happened in the DAW | Fix |
+| ReverbScope says | What happened in the DAW | Fix |
 | --- | --- | --- |
 | *"a file generated at 48000 Hz was played at 44100 Hz"* | The project runs at another rate than the sweep and played it without conversion | Generate the sweep at the project rate |
 | *"the DAW time-stretched it"* | Warp / Flex / Follow Tempo / stretch on the sweep clip, or a tempo change after import | Switch stretching off for the clip |
@@ -374,7 +374,7 @@ Clip *Stretch to Tempo* option off for the sweep [CW3].
 ## Sources
 
 Menu names and defaults above were read in these pages (2026-09); none of
-the steps has been run in the DAW with RoomScope yet:
+the steps has been run in the DAW with ReverbScope yet:
 
 * [P1] Avid, Pro Tools Reference Guide 2026.4 — https://resources.avid.com/SupportFiles/PT/Pro_Tools_Reference_Guide_2026.4.pdf
 * [G1] Apple, Logic Pro User Guide, Set the project sample rate — https://support.apple.com/guide/logicpro/set-the-project-sample-rate-lgcpce0958b8/mac

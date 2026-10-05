@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReverbScope sweep sidecar",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["reverbscope_sweep", "reverbscope_version", "wav_file"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "reverbscope_sweep": {
+      "type": "object",
+      "required": ["sample_rate", "duration_s", "start_hz", "end_hz"],
+      "properties": {
+        "sample_rate": { "type": "integer" },
+        "duration_s": { "type": "number" },
+        "start_hz": { "type": "number" },
+        "end_hz": { "type": "number" },
+        "fade_in_s": { "type": "number" },
+        "fade_out_s": { "type": "number" },
+        "level_dbfs": { "type": "number" },
+        "pre_silence_s": { "type": "number" },
+        "post_silence_s": { "type": "number" }
+      }
+    },
+    "reverbscope_version": { "type": "string" },
+    "wav_file": { "type": "string" },
+    "signal_sha256_float32": { "type": "string" },
+    "note": { "type": "string" }
+  }
+}

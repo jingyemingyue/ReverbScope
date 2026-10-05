@@ -16,15 +16,15 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.cli.main import build_parser, main
-from roomscope.i18n import activate
+from reverbscope.cli.main import build_parser, main
+from reverbscope.i18n import activate
 from tests.conftest import make_rir
 from tests.zh_tokens import english_words
 
 
 @pytest.fixture
 def zh_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     try:
         yield
     finally:
@@ -32,7 +32,7 @@ def zh_cli(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
 
 
 def _help_texts() -> dict[str, str]:
-    from roomscope.cli.main import _translate_argparse
+    from reverbscope.cli.main import _translate_argparse
 
     activate("zh_CN")
     _translate_argparse()
@@ -45,12 +45,12 @@ def _help_texts() -> dict[str, str]:
                 for name, sub in action.choices.items():
                     walk(sub, f"{path} {name}")
 
-    walk(build_parser(), "roomscope")
+    walk(build_parser(), "reverbscope")
     return texts
 
 
 #: Written in English on purpose: the way back for a reader of English.
-ENGLISH_HINT = "English interface: roomscope config language en"
+ENGLISH_HINT = "English interface: reverbscope config language en"
 
 
 def _prose(help_text: str) -> str:
@@ -70,7 +70,7 @@ def _prose(help_text: str) -> str:
 
 def _typed_values(path: str) -> tuple[str, ...]:
     """Values a screen lists as one types them: the choices of its options
-    (--color auto, demo --profile vocal) and the values of ``roomscope config``."""
+    (--color auto, demo --profile vocal) and the values of ``reverbscope config``."""
     parser = build_parser()
     for name in path.split()[1:]:
         parser = next(
@@ -82,13 +82,13 @@ def _typed_values(path: str) -> tuple[str, ...]:
         if action.option_strings and action.choices is not None
         for choice in action.choices
     )
-    if path == "roomscope export":
-        from roomscope.io.exporters.registry import available_exporters
+    if path == "reverbscope export":
+        from reverbscope.io.exporters.registry import available_exporters
 
         return (*values, *available_exporters())
-    if path != "roomscope config":
+    if path != "reverbscope config":
         return values
-    from roomscope.interpretation import available_profiles
+    from reverbscope.interpretation import available_profiles
 
     return (*values, *available_profiles(), "auto", "on", "off", "system", "light", "dark")
 
@@ -100,7 +100,7 @@ def test_every_help_screen_is_chinese(zh_cli: None) -> None:
         assert text.startswith("用法："), path
         found = english_words(_prose(text), values=_typed_values(path))
         assert found == [], f"{path}: {found}"
-    root = texts["roomscope"]
+    root = texts["reverbscope"]
     assert "命令：" in root and "选项" in root and "显示此帮助信息并退出" in root
 
 
@@ -120,29 +120,29 @@ def test_usage_lines_and_placeholders_are_chinese_too(zh_cli: None) -> None:
     for path, text in texts.items():
         found = english_words(_everything_shown(text), values=_typed_values(path))
         assert found == [], f"{path}: {found}"
-    assert texts["roomscope"].startswith("用法：roomscope [-h] [--version] [--lang 语言]")
-    assert "<命令> ..." in texts["roomscope"].split("\n\n", 1)[0]
-    assert texts["roomscope project add"].startswith(
-        "用法：roomscope project add 项目 会话 --position 标签 [选项]"
+    assert texts["reverbscope"].startswith("用法：reverbscope [-h] [--version] [--lang 语言]")
+    assert "<命令> ..." in texts["reverbscope"].split("\n\n", 1)[0]
+    assert texts["reverbscope project add"].startswith(
+        "用法：reverbscope project add 项目 会话 --position 标签 [选项]"
     )
-    analyze = texts["roomscope analyze"]
+    analyze = texts["reverbscope analyze"]
     for shown in ("--recording WAV文件", "--sweep 文件", "--out 目录", "--channel 声道"):
         assert shown in analyze, shown
     # The help says 1/N: the smoothing placeholder keeps its letter.
     assert re.search(r"--smoothing N +分数倍频程平滑 1/N", analyze)
-    assert "--band 下限 上限" in texts["roomscope analyze-ir"]
-    assert "--input-device 序号" in texts["roomscope measure"]
-    assert "--sources 数量" in texts["roomscope project average"]
+    assert "--band 下限 上限" in texts["reverbscope analyze-ir"]
+    assert "--input-device 序号" in texts["reverbscope measure"]
+    assert "--sources 数量" in texts["reverbscope project average"]
 
 
 def _help_columns(text: str) -> set[int]:
     """Display columns where the help of an option starts, in one screen."""
-    from roomscope.cli.console import cell_width
+    from reverbscope.cli.console import cell_width
 
     columns: set[int] = set()
     for line in text.splitlines():
         found = re.match(r"^(  \S.*?\S  +)\S", line)
-        if found and not line.startswith("  roomscope "):
+        if found and not line.startswith("  reverbscope "):
             columns.add(cell_width(found.group(1)))
         elif re.match(r"^ {6,}\S", line):
             columns.add(len(line) - len(line.lstrip()))
@@ -152,7 +152,7 @@ def _help_columns(text: str) -> set[int]:
 def test_option_help_lines_up_with_chinese_placeholders(zh_cli: None) -> None:
     """argparse pads with %-*s, which counts a Chinese character as one column."""
     for path, text in _help_texts().items():
-        if path == "roomscope":
+        if path == "reverbscope":
             continue  # the grouped command list has its own column
         # One column per screen, except the choice lists argparse cannot wrap;
         # the list of settings below the options has its own.
@@ -260,7 +260,7 @@ def _options_with_choices(lang: str) -> list[tuple[str, argparse.Action]]:
             elif action.option_strings and action.choices is not None:
                 found.append((f"{path} {action.option_strings[0]}", action))
 
-    walk(build_parser(), "roomscope")
+    walk(build_parser(), "reverbscope")
     return found
 
 
@@ -286,7 +286,7 @@ def test_a_default_of_an_option_with_choices_is_the_value_to_type(zh_cli: None, 
         named = re.search(r"(?:default|默认)[:：]?\s*([\w.-]+)", str(action.help))
         if named and action.default is not None and named.group(1).isascii():
             assert named.group(1) == str(action.default), (name, action.help)
-    demo = dict(_options_with_choices(lang))["roomscope demo --profile"]
+    demo = dict(_options_with_choices(lang))["reverbscope demo --profile"]
     assert "vocal" in str(demo.help), demo.help
 
 
@@ -341,12 +341,12 @@ def test_a_refused_setting_names_the_option_that_set_it(
 
 def test_the_export_format_default_is_the_value_to_type(zh_cli: None) -> None:
     """导出器名称（默认 CSV）, but `--format CSV` is refused: the exporter is csv."""
-    export = _help_texts()["roomscope export"]
+    export = _help_texts()["reverbscope export"]
     assert "（默认 csv）" in export and "CSV" not in export
 
 
 def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixture[str]) -> None:
-    from roomscope.audio.backend import get_backend
+    from reverbscope.audio.backend import get_backend
 
     assert main(["--lang", "zh_CN", "--backend", "fake", "doctor"]) == 0
     out = capsys.readouterr().out
@@ -358,14 +358,14 @@ def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixtu
         if not re.match(r"^\s+[\w-]+\s{2,}\S", line) and not line.startswith("Python ")
     )
     # The settings are named in Chinese; their stored values are shown as
-    # roomscope config takes them.
-    assert "界面语言" in out and "roomscope config" in out
+    # reverbscope config takes them.
+    assert "界面语言" in out and "reverbscope config" in out
     typed = ("auto", "generic", "system", "on", "off", "portaudio", "fake")
     assert english_words(prose, data=devices, values=typed) == [], out
 
 
 def _take(tmp_path: Path, rt60_s: float, name: str) -> Path:
-    from roomscope.io.wav import read_wav, write_wav
+    from reverbscope.io.wav import read_wav, write_wav
 
     sweep = tmp_path / "sweep.wav"
     if not sweep.exists():
@@ -416,7 +416,7 @@ def test_files_written_in_chinese_stay_language_neutral(
 ) -> None:
     """Result files keep English notes whatever the interface language, so a
     session reads the same everywhere and old readers still parse it."""
-    from roomscope.io.wav import read_wav, write_wav
+    from reverbscope.io.wav import read_wav, write_wav
 
     sweep = tmp_path / "sweep.wav"
     assert main(["sweep", "--out", str(sweep), "--duration", "2", "--post-silence", "2"]) == 0

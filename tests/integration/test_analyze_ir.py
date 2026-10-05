@@ -1,4 +1,4 @@
-"""``analyze_impulse_response`` and ``roomscope analyze-ir`` (#10).
+"""``analyze_impulse_response`` and ``reverbscope analyze-ir`` (#10).
 
 The imported-IR path must recover what the full sweep pipeline recovers from
 the same room, refuse files that are not impulse responses, and handle other
@@ -13,20 +13,20 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from roomscope.core.deconvolution import find_sweep_passes
-from roomscope.core.pipeline import (
+from reverbscope.core.deconvolution import find_sweep_passes
+from reverbscope.core.pipeline import (
     IMPORTED_IR_MIN_MARGIN_DB,
     Reference,
     analyze,
     analyze_impulse_response,
     synthetic_recording,
 )
-from roomscope.core.sweep import measurement_signal
-from roomscope.errors import AnalysisError, ConfigurationError
-from roomscope.io.wav import write_wav
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import AnalysisSettings, SweepSettings
-from roomscope.models.result import AnalysisResult, Validity
+from reverbscope.core.sweep import measurement_signal
+from reverbscope.errors import AnalysisError, ConfigurationError
+from reverbscope.io.wav import write_wav
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import AnalysisSettings, SweepSettings
+from reverbscope.models.result import AnalysisResult, Validity
 from tests.conftest import make_rir
 
 RT60_S = 0.45
@@ -203,7 +203,7 @@ def test_pass_search_is_skipped_without_a_sweep() -> None:
 def test_cli_analyze_ir_json_round_trip(
     tmp_path: Path, full_and_ir: tuple, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    from roomscope.cli.main import main
+    from reverbscope.cli.main import main
 
     full, ir = full_and_ir
     band = full.excitation_band
@@ -239,13 +239,13 @@ def test_cli_analyze_ir_json_round_trip(
     assert (out / "impulse_response.wav").is_file()
     # The saved session reopens.
     assert main(["show", str(out)]) == 0
-    assert "RoomScope analysis" in capsys.readouterr().out
+    assert "ReverbScope analysis" in capsys.readouterr().out
 
 
 def test_cli_analyze_ir_refuses_a_recording(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    from roomscope.cli.main import main
+    from reverbscope.cli.main import main
 
     samples = np.random.default_rng(1).normal(0.0, 0.1, 96000)
     path = write_wav(tmp_path / "noise.wav", samples, 48000, subtype="FLOAT")
@@ -257,7 +257,7 @@ def test_digital_silence_after_an_imported_ir_is_not_a_noise_floor() -> None:
     """Zeros after the response read as a -3000 dB floor: Lundeby never
     converged, the real floor was integrated as decay (63 Hz T30 +16 %) and
     the reported peak-to-noise ratio was about 2970 dB."""
-    from roomscope.core.pipeline import analyze_impulse_response
+    from reverbscope.core.pipeline import analyze_impulse_response
 
     rir = make_rir(48000, rt60_s=0.5, diffuse_level=0.03, length_s=2.0, seed=2, start_delay_s=0.01)
     ir = rir + np.random.default_rng(5).normal(0.0, 1e-4, rir.shape[0])
@@ -277,7 +277,7 @@ def test_digital_silence_after_an_imported_ir_is_not_a_noise_floor() -> None:
 
 
 def test_decay_notes_of_an_imported_ir_reach_the_warnings() -> None:
-    from roomscope.core.pipeline import analyze_impulse_response
+    from reverbscope.core.pipeline import analyze_impulse_response
 
     rir = make_rir(48000, rt60_s=0.4, length_s=1.0, start_delay_s=0.01)
     result = analyze_impulse_response(AudioSignal(rir, 48000), excitation_band=(100, 10000))
@@ -310,8 +310,8 @@ def test_a_band_without_a_finite_upper_edge_is_refused(high_hz: float) -> None:
 
 
 def _diagnostics_text(result: AnalysisResult) -> str:
-    from roomscope.cli.console import Console
-    from roomscope.cli.render import _diagnostics
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import _diagnostics
 
     return "\n".join(_diagnostics(Console(width=100), result))
 

@@ -1,13 +1,13 @@
-=== roomscope --help
-usage: roomscope [-h] [--version] [--lang LANG] [--format {text,json}]
-                 [--color WHEN] [--backend NAME]
-                 [--copy-recording | --no-copy-recording] [-v] <command> ...
+=== reverbscope --help
+usage: reverbscope [-h] [--version] [--lang LANG] [--format {text,json}]
+                   [--color WHEN] [--backend NAME]
+                   [--copy-recording | --no-copy-recording] [-v] <command> ...
 
-RoomScope: an open-source, DAW-independent recording environment analyzer.
+ReverbScope: an open-source, DAW-independent recording environment analyzer.
 
 commands:
   Get started
-    demo        try RoomScope with synthetic data: no audio hardware needed
+    demo        try ReverbScope with synthetic data: no audio hardware needed
     gui         start the desktop GUI (needs PySide6; the desktop download
                 includes it)
   Measurement
@@ -34,7 +34,7 @@ options:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
   --lang LANG           interface language for this command (en, zh_CN);
-                        roomscope config language keeps one
+                        reverbscope config language keeps one
   --format {text,json}  text report or JSON on stdout (diagnostics stay on
                         stderr)
   --color WHEN          colour in the terminal: auto (default; off for pipes,
@@ -47,35 +47,35 @@ options:
   -v, --verbose         debug logging, and tracebacks on errors
 
 examples:
-  roomscope demo
-  roomscope sweep --out sweep.wav
-  roomscope analyze --recording take.wav --sweep sweep.wav --out session-1
-  roomscope compare session-1 session-2
+  reverbscope demo
+  reverbscope sweep --out sweep.wav
+  reverbscope analyze --recording take.wav --sweep sweep.wav --out session-1
+  reverbscope compare session-1 session-2
 
 Run a command with --help for its options, for example:
-  roomscope measure --help
+  reverbscope measure --help
 
-中文界面：roomscope config language zh_CN
+中文界面：reverbscope config language zh_CN
 
-=== roomscope demo --help
-usage: roomscope demo [options]
+=== reverbscope demo --help
+usage: reverbscope demo [options]
 
-try RoomScope with synthetic data: no audio hardware needed
+try ReverbScope with synthetic data: no audio hardware needed
 
 options:
   -h, --help            show this help message and exit
   --out DIR             folder for the demo files, created or replaced
-                        (default roomscope-demo)
+                        (default reverbscope-demo)
   --profile {acoustic_guitar,choir,drums,generic,room_mic,vocal,voiceover}
                         recording profile used to interpret the demo (default:
                         vocal)
 
 examples:
-  roomscope demo
-  roomscope demo --out ~/roomscope-demo
+  reverbscope demo
+  reverbscope demo --out ~/reverbscope-demo
 
-=== roomscope gui --help
-usage: roomscope gui [options]
+=== reverbscope gui --help
+usage: reverbscope gui [options]
 
 start the desktop GUI (needs PySide6; the desktop download includes it)
 
@@ -85,10 +85,10 @@ options:
               loudspeaker)
 
 examples:
-  roomscope gui
+  reverbscope gui
 
-=== roomscope sweep --help
-usage: roomscope sweep --out WAV [options]
+=== reverbscope sweep --help
+usage: reverbscope sweep --out WAV [options]
 
 write the ESS test signal WAV (+ JSON sidecar)
 
@@ -111,17 +111,17 @@ test signal:
   --post-silence S  silence after the sweep (s) (default: 3)
 
 examples:
-  roomscope sweep --out sweep.wav
-  roomscope sweep --out sweep.wav --sample-rate 96000 --duration 15
+  reverbscope sweep --out sweep.wav
+  reverbscope sweep --out sweep.wav --sample-rate 96000 --duration 15
 
-=== roomscope analyze --help
-usage: roomscope analyze --recording WAV --sweep FILE [options]
+=== reverbscope analyze --help
+usage: reverbscope analyze --recording WAV --sweep FILE [options]
 
 analyse a recording made with the sweep
 
 required:
   --recording WAV       recorded WAV (any length, untrimmed)
-  --sweep FILE          sweep WAV or its .roomscope-sweep.json sidecar
+  --sweep FILE          sweep WAV or its .reverbscope-sweep.json sidecar
 
 options:
   -h, --help            show this help message and exit
@@ -152,7 +152,7 @@ placement (optional tape measurements):
 
 output:
   --no-curves           omit curves from result.json
-  --json                deprecated: use roomscope --format json
+  --json                deprecated: use reverbscope --format json
 
 loopback (optional):
   --loopback WAV        separate loopback WAV from the same take (same sample
@@ -161,12 +161,12 @@ loopback (optional):
                         given, otherwise of the recording
 
 examples:
-  roomscope analyze --recording take.wav --sweep sweep.wav
-  roomscope analyze --recording take.wav --sweep sweep.wav --out session-1
-  roomscope analyze --recording take.wav --sweep sweep.wav --loopback-channel 1
+  reverbscope analyze --recording take.wav --sweep sweep.wav
+  reverbscope analyze --recording take.wav --sweep sweep.wav --out session-1
+  reverbscope analyze --recording take.wav --sweep sweep.wav --loopback-channel 1
 
-=== roomscope devices --help
-usage: roomscope devices [options]
+=== reverbscope devices --help
+usage: reverbscope devices [options]
 
 list audio devices (Standalone Mode)
 
@@ -175,14 +175,14 @@ options:
   --probe      also check which sample rates each device accepts and mark the
                recommended entry of each physical device (nothing is played)
   --host-apis  list the host APIs instead of devices
-  --json       deprecated: use roomscope --format json
+  --json       deprecated: use reverbscope --format json
 
 examples:
-  roomscope devices
-  roomscope devices --probe
+  reverbscope devices
+  reverbscope devices --probe
 
-=== roomscope measure --help
-usage: roomscope measure --out DIR [options]
+=== reverbscope measure --help
+usage: reverbscope measure --out DIR [options]
 
 Standalone Mode: play the sweep and record the microphone
 
@@ -206,7 +206,7 @@ audio interface:
                         PortAudio's high latency)
   --wasapi-exclusive    Windows WASAPI: open the device in exclusive mode (no
                         mixer, no conversion)
-  --coreaudio-set-rate  macOS: let RoomScope set the device's sample rate
+  --coreaudio-set-rate  macOS: let ReverbScope set the device's sample rate
                         instead of converting
   --acknowledge-level   required for levels above -12 dBFS; confirms the
                         monitor level was set low first
@@ -247,15 +247,15 @@ placement (optional tape measurements):
 
 output:
   --no-curves           omit curves from result.json
-  --json                deprecated: use roomscope --format json
+  --json                deprecated: use reverbscope --format json
 
 examples:
-  roomscope devices
-  roomscope measure --out session-1 --input-device 2 --output-device 2
-  roomscope measure --out session-2 --input-channels 1,2 --loopback-channel 2
+  reverbscope devices
+  reverbscope measure --out session-1 --input-device 2 --output-device 2
+  reverbscope measure --out session-2 --input-channels 1,2 --loopback-channel 2
 
-=== roomscope analyze-ir --help
-usage: roomscope analyze-ir --ir WAV [options]
+=== reverbscope analyze-ir --help
+usage: reverbscope analyze-ir --ir WAV [options]
 
 analyse an impulse-response WAV from another tool
 
@@ -293,13 +293,13 @@ placement (optional tape measurements):
 
 output:
   --no-curves           omit curves from result.json
-  --json                deprecated: use roomscope --format json
+  --json                deprecated: use reverbscope --format json
 
 examples:
-  roomscope analyze-ir --ir room.wav --band 20 20000 --out session-ir
+  reverbscope analyze-ir --ir room.wav --band 20 20000 --out session-ir
 
-=== roomscope show --help
-usage: roomscope show path [options]
+=== reverbscope show --help
+usage: reverbscope show path [options]
 
 print a saved session or comparison.json report, or list sessions
 
@@ -313,15 +313,15 @@ options:
                         one session
   --profile {acoustic_guitar,choir,drums,generic,room_mic,vocal,voiceover}
                         override the recording profile stored in the session
-  --json                deprecated: use roomscope --format json
+  --json                deprecated: use reverbscope --format json
   --no-curves           omit curves from JSON output
 
 examples:
-  roomscope show session-1
-  roomscope show --list .
+  reverbscope show session-1
+  reverbscope show --list .
 
-=== roomscope compare --help
-usage: roomscope compare baseline candidate [options]
+=== reverbscope compare --help
+usage: reverbscope compare baseline candidate [options]
 
 compare two saved sessions
 
@@ -337,14 +337,14 @@ options:
   --profile {acoustic_guitar,choir,drums,generic,room_mic,vocal,voiceover}
                         recording profile for comparison findings (default:
                         the candidate session's)
-  --json                deprecated: use roomscope --format json
+  --json                deprecated: use reverbscope --format json
 
 examples:
-  roomscope compare session-1 session-2
-  roomscope compare session-1 session-2 --same-input-gain --out comparison.json
+  reverbscope compare session-1 session-2
+  reverbscope compare session-1 session-2 --same-input-gain --out comparison.json
 
-=== roomscope project --help
-usage: roomscope project [-h] {init,add,average,show} ...
+=== reverbscope project --help
+usage: reverbscope project [-h] {init,add,average,show} ...
 
 project folders (one room, several positions)
 
@@ -358,8 +358,8 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
 
-=== roomscope project init --help
-usage: roomscope project init --out DIR [options]
+=== reverbscope project init --help
+usage: reverbscope project init --out DIR [options]
 
 create a project.json
 
@@ -372,10 +372,10 @@ options:
   --notes TEXT  free-text notes
 
 examples:
-  roomscope project init --out studio-a
+  reverbscope project init --out studio-a
 
-=== roomscope project add --help
-usage: roomscope project add project session --position LABEL [options]
+=== reverbscope project add --help
+usage: reverbscope project add project session --position LABEL [options]
 
 add a session to a position
 
@@ -390,10 +390,10 @@ options:
   -h, --help        show this help message and exit
 
 examples:
-  roomscope project add studio-a session-1 --position A
+  reverbscope project add studio-a session-1 --position A
 
-=== roomscope project average --help
-usage: roomscope project average project [options]
+=== reverbscope project average --help
+usage: reverbscope project average project [options]
 
 spatial average of VALID T values
 
@@ -403,13 +403,13 @@ positional arguments:
 options:
   -h, --help   show this help message and exit
   --sources N  number of source positions (default: 1)
-  --json       deprecated: use roomscope --format json
+  --json       deprecated: use reverbscope --format json
 
 examples:
-  roomscope project average studio-a
+  reverbscope project average studio-a
 
-=== roomscope project show --help
-usage: roomscope project show project [options]
+=== reverbscope project show --help
+usage: reverbscope project show project [options]
 
 list positions and sessions
 
@@ -419,8 +419,8 @@ positional arguments:
 options:
   -h, --help  show this help message and exit
 
-=== roomscope export --help
-usage: roomscope export session [options]
+=== reverbscope export --help
+usage: reverbscope export session [options]
 
 export curves through an exporter
 
@@ -433,10 +433,10 @@ options:
   --out DIR      output directory
 
 examples:
-  roomscope export session-1 --out session-1/csv
+  reverbscope export session-1 --out session-1/csv
 
-=== roomscope session --help
-usage: roomscope session [-h] {bundle} ...
+=== reverbscope session --help
+usage: reverbscope session [-h] {bundle} ...
 
 session folder tools
 
@@ -447,8 +447,8 @@ positional arguments:
 options:
   -h, --help  show this help message and exit
 
-=== roomscope session bundle --help
-usage: roomscope session bundle session [options]
+=== reverbscope session bundle --help
+usage: reverbscope session bundle session [options]
 
 zip a session for a bug report
 
@@ -461,10 +461,10 @@ options:
   --out PATH  zip file (.zip) or folder
 
 examples:
-  roomscope session bundle session-1 --no-audio
+  reverbscope session bundle session-1 --no-audio
 
-=== roomscope config --help
-usage: roomscope config [KEY [VALUE]] [options]
+=== reverbscope config --help
+usage: reverbscope config [KEY [VALUE]] [options]
 
 show or change the settings (the same settings.json as the desktop app)
 
@@ -488,28 +488,28 @@ settings:
   theme            system, light or dark (the desktop app only)
 
 examples:
-  roomscope config
-  roomscope config language zh_CN
-  roomscope config language auto
-  roomscope config profile vocal
+  reverbscope config
+  reverbscope config language zh_CN
+  reverbscope config language auto
+  reverbscope config profile vocal
 
-=== roomscope doctor --help
-usage: roomscope doctor [options]
+=== reverbscope doctor --help
+usage: reverbscope doctor [options]
 
 print an environment report for bug reports and debugging
 
 options:
   -h, --help  show this help message and exit
-  --json      deprecated: use roomscope --format json
+  --json      deprecated: use reverbscope --format json
   --probe     also ask every device which sample rates it accepts (nothing is
               played)
 
 examples:
-  roomscope doctor
-  roomscope doctor --probe
+  reverbscope doctor
+  reverbscope doctor --probe
 
-=== roomscope schema --help
-usage: roomscope schema {result,session,comparison,project,sidecar} [options]
+=== reverbscope schema --help
+usage: reverbscope schema {result,session,comparison,project,sidecar} [options]
 
 print a shipped JSON Schema
 
@@ -521,4 +521,4 @@ options:
   -h, --help            show this help message and exit
 
 examples:
-  roomscope schema result
+  reverbscope schema result

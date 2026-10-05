@@ -7,12 +7,12 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.core.noise import NOISE_FLOOR_DBFS
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.core.sweep import measurement_signal
-from roomscope.interpretation import interpret
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import AnalysisSettings, SweepSettings
+from reverbscope.core.noise import NOISE_FLOOR_DBFS
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.core.sweep import measurement_signal
+from reverbscope.interpretation import interpret
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import AnalysisSettings, SweepSettings
 from tests.conftest import make_rir
 
 
@@ -214,8 +214,8 @@ def test_equal_passes_analyse_the_one_followed_by_a_recorded_decay(seed: int) ->
     after it, the second has 3 s. Which one is louder is down to noise, and
     when the first won the take was refused ("the next sweep pass starts
     right after this one")."""
-    from roomscope.core.sweep import generate_ess
-    from roomscope.models.result import Validity
+    from reverbscope.core.sweep import generate_ess
+    from reverbscope.models.result import Validity
 
     sr = 48000
     settings = SweepSettings(sample_rate=sr, duration_s=5.0, pre_silence_s=0.0, post_silence_s=0.0)
@@ -234,8 +234,8 @@ def test_of_equal_passes_with_short_gaps_the_last_one_is_analysed() -> None:
     """Three passes with 0.5 s gaps and a 1 s reverberation time: the pass
     picked by its level had 0.5 s of decay after it, so T30 was not
     computable, although the last pass has 5 s of recorded decay."""
-    from roomscope.core.sweep import generate_ess
-    from roomscope.models.result import Validity
+    from reverbscope.core.sweep import generate_ess
+    from reverbscope.models.result import Validity
 
     sr = 48000
     settings = SweepSettings(sample_rate=sr, duration_s=3.0, pre_silence_s=0.0, post_silence_s=0.0)
@@ -290,7 +290,7 @@ def test_a_take_without_the_sweep_is_not_blamed_on_a_late_start() -> None:
     deconvolved sample sits anywhere, and the take was refused with "the
     recording starts about 0.21 s after the sweep began ... Start the
     recording before playback", which re-recording cannot fix."""
-    from roomscope.errors import InvalidAudioError
+    from reverbscope.errors import InvalidAudioError
 
     settings = SweepSettings(duration_s=2.0, pre_silence_s=1.0, post_silence_s=1.5)
     n = measurement_signal(settings).shape[0]

@@ -6,12 +6,12 @@ from dataclasses import replace
 
 import pytest
 
-from roomscope.core.compare import compare
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.interpretation import interpret_comparison
-from roomscope.models.comparison import CompareSettings
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import Validity
+from reverbscope.core.compare import compare
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.interpretation import interpret_comparison
+from reverbscope.models.comparison import CompareSettings
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import Validity
 from tests.conftest import make_rir
 
 
@@ -221,7 +221,7 @@ def test_decay_bands_missing_on_either_side_are_reported(short_sweep: SweepSetti
 
 
 def test_resonances_are_matched_within_a_sixth_of_an_octave(short_sweep: SweepSettings) -> None:
-    from roomscope.models.result import ResonanceCandidate
+    from reverbscope.models.result import ResonanceCandidate
 
     def candidate(frequency: float, distinguishable: bool) -> ResonanceCandidate:
         return ResonanceCandidate(
@@ -261,7 +261,7 @@ def test_resonances_are_matched_within_a_sixth_of_an_octave(short_sweep: SweepSe
 def test_loopback_path_delay_is_compared_only_when_both_were_compensated(
     short_sweep: SweepSettings,
 ) -> None:
-    from roomscope.models.result import LoopbackResult
+    from reverbscope.models.result import LoopbackResult
 
     result = _room(short_sweep, seed=0)
 
@@ -283,7 +283,7 @@ def test_loopback_path_delay_is_compared_only_when_both_were_compensated(
 def test_percent_change_only_for_ratio_scale_units() -> None:
     """In percent of a level in dB the sign followed the baseline's: C50 going
     from -2 to -1 dB read -50 %."""
-    from roomscope.core.compare import _delta_from_values
+    from reverbscope.core.compare import _delta_from_values
 
     assert _delta_from_values("broadband.c50", -2.0, -1.0, unit="dB").delta_percent is None
     assert _delta_from_values("noise.rms_dbfs", -75.0, -70.0, unit="dBFS").delta_percent is None
@@ -295,7 +295,7 @@ def test_percent_change_only_for_ratio_scale_units() -> None:
 
 def test_no_percent_change_of_a_negative_baseline() -> None:
     """A loopback path delay going from -0.50 to -0.25 ms read -50 %."""
-    from roomscope.core.compare import _delta_from_values
+    from reverbscope.core.compare import _delta_from_values
 
     delta = _delta_from_values("loopback.path_delay_ms", -0.5, -0.25, unit="ms")
     assert delta.delta_percent is None
@@ -304,12 +304,12 @@ def test_no_percent_change_of_a_negative_baseline() -> None:
 
 def test_a_stored_percent_of_a_level_is_dropped_on_load() -> None:
     """Comparisons saved by 0.5.0b1 stored a percent for every unit, and
-    ``roomscope show`` printed "C50 (dB) ... +3.4 %"."""
+    ``reverbscope show`` printed "C50 (dB) ... +3.4 %"."""
     import io
 
-    from roomscope.cli.console import Console
-    from roomscope.cli.render import render_comparison
-    from roomscope.models.comparison import ComparisonResult
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import render_comparison
+    from reverbscope.models.comparison import ComparisonResult
 
     payload = ComparisonResult(comparable=True, common_band=(20.0, 20000.0)).to_dict()
     common = {"validity": "valid", "reason": None}
@@ -336,8 +336,8 @@ def test_a_stored_percent_of_a_level_is_dropped_on_load() -> None:
 def test_an_undeclared_imported_band_is_not_compared(short_sweep: SweepSettings) -> None:
     """The 20 Hz-20 kHz placeholder of an imported IR without --band was used
     as a measured band (octave differences of 60 dB where nothing was excited)."""
-    from roomscope.core.pipeline import analyze_impulse_response
-    from roomscope.models.audio import AudioSignal
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
 
     swept = _result(short_sweep, rt60_s=0.4, reflections=[])
     imported = analyze_impulse_response(AudioSignal(make_rir(48000, rt60_s=0.4), 48000))
@@ -363,7 +363,7 @@ def test_every_refusal_starts_with_a_known_prefix(short_sweep: SweepSettings) ->
     """``show`` finds the reason of a refused comparison saved by 0.5.0b1 (where
     it was not the first note) by these prefixes; a reworded refusal must
     update them."""
-    from roomscope.models.comparison import REFUSAL_NOTE_PREFIXES
+    from reverbscope.models.comparison import REFUSAL_NOTE_PREFIXES
 
     base = _result(short_sweep, rt60_s=0.4, reflections=[])
     band = base.impulse_response.excitation_band

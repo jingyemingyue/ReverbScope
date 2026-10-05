@@ -14,9 +14,9 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.i18n import DIAGNOSTIC_CONTEXT, activate, diag, localize, parse_po
+from reverbscope.i18n import DIAGNOSTIC_CONTEXT, activate, diag, localize, parse_po
 
-CATALOG = Path("src/roomscope/locale/zh_CN/LC_MESSAGES/roomscope.po")
+CATALOG = Path("src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po")
 PREFIX = f"{DIAGNOSTIC_CONTEXT}\x04"
 
 
@@ -76,7 +76,7 @@ def _strip(template: str) -> str:
 
 
 def test_unknown_or_legacy_text_is_shown_unchanged(zh: None) -> None:
-    legacy = "a note written by RoomScope 0.1 that no template matches"
+    legacy = "a note written by ReverbScope 0.1 that no template matches"
     assert localize(legacy) == legacy
     assert localize("") == ""
     assert localize("/Users/someone/room.wav") == "/Users/someone/room.wav"
@@ -162,8 +162,8 @@ def test_a_failed_loopback_stores_an_english_reason_in_chinese(
     zh_CN it must still be the English diagnostic (shown translated later)."""
     import numpy as np
 
-    from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-    from roomscope.models.audio import AudioSignal
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.models.audio import AudioSignal
     from tests.conftest import make_rir
 
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.4)  # type: ignore[attr-defined]
@@ -184,14 +184,14 @@ def test_the_resonance_note_names_no_version_and_old_files_still_read_in_chinese
     by those versions keep the old sentence; it is still shown translated."""
     current = (
         "Candidates only: a peak in the low-frequency response with a long narrow-band "
-        "decay may be a room resonance; RoomScope does not identify room modes."
+        "decay may be a room resonance; ReverbScope does not identify room modes."
     )
     stored_by_0_5 = (
         "Candidates only: a peak in the low-frequency response with a long narrow-band "
         "decay may be a room resonance, but room-mode identification is not attempted in "
         "v0.1."
     )
-    source = Path("src/roomscope/core/resonance.py").read_text(encoding="utf-8")
+    source = Path("src/reverbscope/core/resonance.py").read_text(encoding="utf-8")
     assert "v0.1" not in source
     for text in (current, stored_by_0_5):
         shown = localize(text)
@@ -203,7 +203,7 @@ def test_an_assumed_temperature_note_from_an_older_result_still_reads_in_chinese
 ) -> None:
     """The note now says "20 °C" and "a 5 °C error"; results written by 0.5
     said "20 C" and "a 5 C error" and are still shown translated."""
-    from roomscope.core.placement import speed_of_sound_m_s
+    from reverbscope.core.placement import speed_of_sound_m_s
 
     speed = speed_of_sound_m_s(20.0)
     current = (

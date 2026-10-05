@@ -14,8 +14,8 @@
 set -eu
 : "${MACOS_CERTIFICATE_P12_BASE64:?}" "${MACOS_CERTIFICATE_PASSWORD:?}" "${RUNNER_TEMP:?}"
 
-KEYCHAIN="$RUNNER_TEMP/roomscope-signing.keychain-db"
-P12="$RUNNER_TEMP/roomscope-signing.p12"
+KEYCHAIN="$RUNNER_TEMP/reverbscope-signing.keychain-db"
+P12="$RUNNER_TEMP/reverbscope-signing.p12"
 # A random password for the throwaway keychain; it never leaves the runner.
 KEYCHAIN_PASSWORD="$(openssl rand -base64 24)"
 

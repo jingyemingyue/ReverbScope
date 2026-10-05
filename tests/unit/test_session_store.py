@@ -9,10 +9,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from roomscope.core.compare import compare
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import SessionError
-from roomscope.io.session_store import (
+from reverbscope.core.compare import compare
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import SessionError
+from reverbscope.io.session_store import (
     COMPARISON_FILE,
     IR_FILE,
     RESULT_FILE,
@@ -24,10 +24,10 @@ from roomscope.io.session_store import (
     save_comparison,
     save_measurement,
 )
-from roomscope.io.wav import read_wav
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import AnalysisResult
-from roomscope.models.session import MeasurementSession
+from reverbscope.io.wav import read_wav
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import AnalysisResult
+from reverbscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
 
@@ -160,7 +160,7 @@ def test_saving_one_session_twice_keeps_the_recording(
     session elsewhere). save_measurement rewrote the caller's paths relative
     to the first folder, so the second save looked for recording.wav in the
     working directory and stored a path that does not exist."""
-    from roomscope.io.wav import write_wav
+    from reverbscope.io.wav import write_wav
 
     recording, result = analysed
     take = write_wav(tmp_path / "in" / "take.wav", recording.samples, 48000, subtype="FLOAT")
@@ -199,8 +199,8 @@ def test_list_sessions_skips_refused_and_mistyped_sessions(tmp_path: Path, analy
 def test_bundle_the_folder_you_are_in(
     tmp_path: Path, analysed, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """``roomscope session bundle .`` failed: Path('.') has no name."""
-    from roomscope.io.session_store import bundle_session
+    """``reverbscope session bundle .`` failed: Path('.') has no name."""
+    from reverbscope.io.session_store import bundle_session
 
     _recording, result = analysed
     folder = tmp_path / "booth"
@@ -225,9 +225,9 @@ def test_a_failed_save_keeps_the_previous_take_whole(
     import os
     import shutil
 
-    from roomscope.io import session_store
-    from roomscope.io.session_store import RECORDING_FILE
-    from roomscope.io.wav import write_wav
+    from reverbscope.io import session_store
+    from reverbscope.io.session_store import RECORDING_FILE
+    from reverbscope.io.wav import write_wav
 
     first_rec, first = analysed
     second_rec = synthetic_recording(
@@ -326,7 +326,7 @@ def test_an_opened_session_cannot_copy_outside_files_into_a_new_session(
     its sweep or recording. Saving it again (the GUI's Save button after
     Open) copied that file into the new folder as the sweep sidecar or
     recording.wav, and ``session bundle`` then put it into the zip."""
-    from roomscope.io.session_store import bundle_session
+    from reverbscope.io.session_store import bundle_session
 
     _recording, result = analysed
     config = tmp_path / "config.json"
@@ -342,7 +342,7 @@ def test_an_opened_session_cannot_copy_outside_files_into_a_new_session(
     received = _received_session(tmp_path, result, change)
     if variant == "linked sidecar":
         try:
-            (received / "sweep.roomscope-sweep.json").symlink_to(config)
+            (received / "sweep.reverbscope-sweep.json").symlink_to(config)
         except OSError as exc:  # Windows without the symlink privilege
             pytest.skip(f"this system cannot create symbolic links: {exc}")
 
@@ -363,11 +363,11 @@ def test_an_opened_session_cannot_copy_outside_files_into_a_new_session(
 
 
 @pytest.mark.parametrize("field", ["sweep_path", "recording_path", "result_path"])
-def test_a_nul_byte_in_a_stored_path_is_a_roomscope_error(
+def test_a_nul_byte_in_a_stored_path_is_a_reverbscope_error(
     tmp_path: Path, analysed, field: str
 ) -> None:
     """Resolving a path with a NUL byte raises ValueError, which escaped the
-    loader as a bug in RoomScope."""
+    loader as a bug in ReverbScope."""
     _recording, result = analysed
     received = _received_session(tmp_path, result, {field: "a\u0000b.json"})
     if field == "result_path":
@@ -378,8 +378,8 @@ def test_a_nul_byte_in_a_stored_path_is_a_roomscope_error(
 
 
 def test_an_opened_session_still_copies_its_own_recording(tmp_path: Path, analysed) -> None:
-    from roomscope.io.session_store import RECORDING_FILE
-    from roomscope.io.wav import write_wav
+    from reverbscope.io.session_store import RECORDING_FILE
+    from reverbscope.io.wav import write_wav
 
     recording, result = analysed
     take = write_wav(tmp_path / "take.wav", recording.samples, 48000, subtype="FLOAT")
@@ -404,8 +404,8 @@ def test_resaving_an_opened_session_keeps_its_sweep_sidecar(
     the opened session elsewhere dropped the folder's own sidecar."""
     import shutil
 
-    from roomscope.io.session_store import SWEEP_SIDECAR_NAME
-    from roomscope.io.wav import write_sweep_file
+    from reverbscope.io.session_store import SWEEP_SIDECAR_NAME
+    from reverbscope.io.wav import write_sweep_file
 
     _recording, result = analysed
     sweep, _sidecar = write_sweep_file(short_sweep, tmp_path / "work" / "sweep.wav")
@@ -425,10 +425,10 @@ def test_bundle_of_a_session_at_a_volume_root_fails_cleanly(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A session saved at E:\\ has no folder name: ``with_name('.zip')``
-    raised ValueError, reported as a bug in RoomScope."""
+    raised ValueError, reported as a bug in ReverbScope."""
     import os
 
-    from roomscope.io import session_store
+    from reverbscope.io import session_store
 
     root = Path(os.path.abspath(os.sep))
     monkeypatch.setattr(session_store, "_session_file", lambda _path: root / SESSION_FILE)
@@ -454,10 +454,10 @@ def test_a_listing_with_a_huge_rt60_in_its_summary_still_has_a_label(
 def test_a_192k_six_second_result_reopens(tmp_path: Path, analysed) -> None:
     """At 192 kHz an impulse response longer than about 5.5 s stores 2**20
     frequency-response bins: result.json is about 40 MB, over the 32 MiB cap,
-    so RoomScope refused to reopen a session it had just saved."""
+    so ReverbScope refused to reopen a session it had just saved."""
     from dataclasses import replace
 
-    from roomscope.io.jsonutil import MAX_JSON_BYTES
+    from reverbscope.io.jsonutil import MAX_JSON_BYTES
 
     _recording, result = analysed
     bins = 2**20

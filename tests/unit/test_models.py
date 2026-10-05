@@ -6,12 +6,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import ConfigurationError, InvalidAudioError, SessionError
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import AnalysisSettings, SweepSettings
-from roomscope.models.result import AnalysisResult
-from roomscope.models.session import MeasurementSession
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import ConfigurationError, InvalidAudioError, SessionError
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import AnalysisSettings, SweepSettings
+from reverbscope.models.result import AnalysisResult
+from reverbscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
 
@@ -49,7 +49,7 @@ def test_an_infinite_silence_is_a_clean_error(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     """``sweep --pre-silence inf`` failed as "unexpected OverflowError"."""
-    from roomscope.cli.main import main
+    from reverbscope.cli.main import main
 
     for flag in ("--pre-silence", "--post-silence"):
         assert main(["sweep", "--out", str(tmp_path / "s.wav"), flag, "inf"]) == 1

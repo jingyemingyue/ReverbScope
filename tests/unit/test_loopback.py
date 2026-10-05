@@ -6,8 +6,8 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.core.deconvolution import deconvolve, locate_impulse_response
-from roomscope.core.loopback import (
+from reverbscope.core.deconvolution import deconvolve, locate_impulse_response
+from reverbscope.core.loopback import (
     COMPENSATION_TOLERANCE_DB,
     LOOPBACK_FR_REFERENCE,
     MAX_ELECTRICAL_SETTLE_MS,
@@ -16,12 +16,12 @@ from roomscope.core.loopback import (
     energy_settling_ms,
     late_peak_drop_db,
 )
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.core.sweep import inverse_filter, measurement_signal, normalisation_band_hz
-from roomscope.errors import ConfigurationError, InvalidAudioError, SampleRateMismatchError
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import AnalysisSettings, SweepSettings
-from roomscope.models.result import Validity
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.core.sweep import inverse_filter, measurement_signal, normalisation_band_hz
+from reverbscope.errors import ConfigurationError, InvalidAudioError, SampleRateMismatchError
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import AnalysisSettings, SweepSettings
+from reverbscope.models.result import Validity
 from tests.conftest import fr_median_db, make_rir
 
 
@@ -222,8 +222,8 @@ def test_compensate_with_a_pure_delay_leaves_the_response_in_place(
     short_sweep: SweepSettings,
 ) -> None:
     """A FIR that is only a delay (peak at its origin) must not shift ``h_mic``."""
-    from roomscope.core.loopback import compensate, loopback_fir
-    from roomscope.models.result import ExcitationBand
+    from reverbscope.core.loopback import compensate, loopback_fir
+    from reverbscope.models.result import ExcitationBand
 
     sr = short_sweep.sample_rate
     room = make_rir(sr, rt60_s=0.3, reflections=[(0.012, 0.4)], diffuse_level=0.01)
@@ -300,7 +300,7 @@ def test_a_reverberant_near_field_microphone_is_not_taken_for_a_cable(
 def test_noise_is_estimated_inside_the_valid_record() -> None:
     """Past the valid record the linear deconvolution fades out; including it
     would bias the noise estimate low (review of #12)."""
-    from roomscope.core.loopback import noise_power
+    from reverbscope.core.loopback import noise_power
 
     sweep = SweepSettings(
         sample_rate=48000, duration_s=2.0, pre_silence_s=1.0, post_silence_s=1.5, level_dbfs=-12.0
@@ -350,7 +350,7 @@ def test_loopback_channel_of_a_separate_file_names_a_column_of_that_file(
 ) -> None:
     """It was checked against the recording and excluded from the recording's
     automatic microphone choice."""
-    from roomscope.core.pipeline import _select_mic_and_loopback
+    from reverbscope.core.pipeline import _select_mic_and_loopback
 
     fs = short_sweep.sample_rate
     n = fs
@@ -460,8 +460,8 @@ def test_compensation_with_a_band_edge_at_its_clamp_is_silent(
     encountered" on the user's terminal."""
     import warnings
 
-    from roomscope.core.loopback import compensate
-    from roomscope.models.result import ExcitationBand
+    from reverbscope.core.loopback import compensate
+    from reverbscope.models.result import ExcitationBand
 
     h = np.zeros(4800)
     h[100] = 1.0

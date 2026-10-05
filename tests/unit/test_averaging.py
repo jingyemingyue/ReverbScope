@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import pytest
 
-from roomscope.core.averaging import (
+from reverbscope.core.averaging import (
     ISO_3382_2_TABLE1,
     ISO_3382_2_TABLE1_SOURCE,
     average_decay,
     iso_3382_2_class,
 )
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import ConfigurationError
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import Validity
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import ConfigurationError
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import Validity
 from tests.conftest import make_rir
 
 
@@ -119,16 +119,16 @@ def test_average_decay_means_valid_t_only(short_sweep: SweepSettings) -> None:
 def test_project_average_counts_distinct_positions(
     tmp_path, short_sweep: SweepSettings, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """#15: ``roomscope project average`` used the session count as the
+    """#15: ``reverbscope project average`` used the session count as the
     microphone-position count, so repeated takes at one position were
     labelled as a survey-class spatial average."""
     import json
 
-    from roomscope.cli.main import main
-    from roomscope.io.project_store import add_session, save_project
-    from roomscope.io.session_store import save_measurement
-    from roomscope.models.project import Project
-    from roomscope.models.session import MeasurementSession
+    from reverbscope.cli.main import main
+    from reverbscope.io.project_store import add_session, save_project
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.project import Project
+    from reverbscope.models.session import MeasurementSession
 
     result = analyze(
         synthetic_recording(

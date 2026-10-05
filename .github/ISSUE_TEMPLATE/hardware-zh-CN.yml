@@ -1,14 +1,14 @@
 name: 音频接口测试报告（简体中文）
-description: 你用真实的声卡或音频接口运行了 RoomScope。无论成功还是失败，都有帮助。
+description: 你用真实的声卡或音频接口运行了 ReverbScope。无论成功还是失败，都有帮助。
 title: "[hardware] <音频接口> / <操作系统>"
 labels: ["hardware-report"]
 body:
   - type: markdown
     attributes:
       value: |
-        维护者没有你的音频接口，所以你在自己机器上的真实运行是 RoomScope
+        维护者没有你的音频接口，所以你在自己机器上的真实运行是 ReverbScope
         对该接口的唯一证据。检查项列在
-        [docs/HARDWARE_TESTS.zh-CN.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/HARDWARE_TESTS.zh-CN.md)
+        [docs/HARDWARE_TESTS.zh-CN.md](https://github.com/jingyemingyue/ReverbScope/blob/main/docs/HARDWARE_TESTS.zh-CN.md)
         中；做多少项都可以。一项失败的检查与一项通过的检查同样有用。
         只有在物理音频接口上得到的结果才算数：演示模式、`fake` 后端、CI
         运行环境，以及没有直通真实设备的虚拟机都不算。
@@ -24,7 +24,7 @@ body:
     id: setup
     attributes:
       label: 音频系统（主机 API）、采样率和声道
-      description: 按独立模式中的选择（或 roomscope measure 的选项）填写。列出你运行过的每个采样率。
+      description: 按独立模式中的选择（或 reverbscope measure 的选项）填写。列出你运行过的每个采样率。
       placeholder: "Windows WASAPI；44100、48000 和 96000 Hz；输入 1 -> 输出 1，回送输入 2；延迟为默认值"
     validations:
       required: true
@@ -44,7 +44,7 @@ body:
     id: enumeration
     attributes:
       label: "设备列表"
-      description: '音频接口出现在独立模式 / `roomscope devices` 中，且输入和输出声道数正确。'
+      description: '音频接口出现在独立模式 / `reverbscope devices` 中，且输入和输出声道数正确。'
       options:
         - 未运行（Not run）
         - 通过（Pass）
@@ -128,7 +128,7 @@ body:
     id: xruns
     attributes:
       label: "完整测量且无缓冲区欠载/溢出"
-      description: '通过：结果和 `roomscope.log` 中都没有缓冲区问题警告，即没有“音频设备在本次测量中报告了丢失或延迟的缓冲区”，也没有英文的 "reported ... buffer problem(s) ... may contain dropouts"。日志位于数据文件夹（`~/.roomscope/`，或 环境报告 → 打开数据文件夹）。'
+      description: '通过：结果和 `reverbscope.log` 中都没有缓冲区问题警告，即没有“音频设备在本次测量中报告了丢失或延迟的缓冲区”，也没有英文的 "reported ... buffer problem(s) ... may contain dropouts"。日志位于数据文件夹（`~/.reverbscope/`，或 环境报告 → 打开数据文件夹）。'
       options:
         - 未运行（Not run）
         - 通过（Pass）
@@ -140,7 +140,7 @@ body:
     id: unplug
     attributes:
       label: "测量期间拔出音频接口"
-      description: '在扫频播放时拔掉 USB/Thunderbolt 线缆（请先把监听音箱音量调低）。通过：RoomScope 报告错误且不保存结果；不会卡死或崩溃。'
+      description: '在扫频播放时拔掉 USB/Thunderbolt 线缆（请先把监听音箱音量调低）。通过：ReverbScope 报告错误且不保存结果；不会卡死或崩溃。'
       options:
         - 未运行（Not run）
         - 通过（Pass）
@@ -178,8 +178,8 @@ body:
       label: 结果
       description: |
         对每一项标为“通过”或“失败”的检查，说明哪些正常、哪些不正常，以及
-        RoomScope 显示的任何消息。请注明是否有咔嗒声、丢帧，或
-        `roomscope.log`（位于 `~/.roomscope/`）中出现 "buffer problem(s)" 行。
+        ReverbScope 显示的任何消息。请注明是否有咔嗒声、丢帧，或
+        `reverbscope.log`（位于 `~/.reverbscope/`）中出现 "buffer problem(s)" 行。
     validations:
       required: true
   - type: textarea
@@ -188,7 +188,7 @@ body:
       label: 附带探测采样率的环境报告
       description: |
         **帮助 → 用于问题报告的环境报告 → 探测采样率 → 复制**，
-        或在终端中运行 `roomscope doctor --probe`。探测时不会播放任何声音。
+        或在终端中运行 `reverbscope doctor --probe`。探测时不会播放任何声音。
         发布前请检查内容：设备名称可能包含个人姓名。
       render: text
     validations:
@@ -198,6 +198,6 @@ body:
     attributes:
       label: 会话打包文件或日志（可选）
       description: |
-        拖入会话打包文件（`roomscope session bundle <session> --out
+        拖入会话打包文件（`reverbscope session bundle <session> --out
         report.zip`，加 `--no-audio` 可不含录音），或粘贴
-        `roomscope.log` 中的相关行。
+        `reverbscope.log` 中的相关行。

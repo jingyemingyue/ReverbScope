@@ -1,5 +1,5 @@
-"""Which language RoomScope picks, and why: ``--lang``, the stored setting,
-``ROOMSCOPE_LANG``, then where each system keeps the user's language (the
+"""Which language ReverbScope picks, and why: ``--lang``, the stored setting,
+``REVERBSCOPE_LANG``, then where each system keeps the user's language (the
 Mac's preferred languages, the Windows display language, GNU ``LANGUAGE``
 and the POSIX locale variables)."""
 
@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from roomscope import i18n
-from roomscope.i18n import (
+from reverbscope import i18n
+from reverbscope.i18n import (
     ORIGIN_DESKTOP,
     ORIGIN_MACOS,
     ORIGIN_WINDOWS,
@@ -24,14 +24,14 @@ from roomscope.i18n import (
     resolve_language,
     supported_language,
 )
-from roomscope.settings import UserSettings, save_settings
+from reverbscope.settings import UserSettings, save_settings
 
 
 @pytest.fixture
 def system(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> pytest.MonkeyPatch:
     """No stored language, no override, no Mac preferences, no Windows
     display language, and no locale from Python: every test sets its own."""
-    monkeypatch.delenv("ROOMSCOPE_LANG", raising=False)
+    monkeypatch.delenv("REVERBSCOPE_LANG", raising=False)
     for name in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(i18n, "MACOS_PREFERENCES", (str(tmp_path / "missing.plist"),))
@@ -78,7 +78,7 @@ def test_a_mac_follows_its_preferred_languages_not_lang(
     assert resolve_language() == "zh_CN"
 
 
-def test_the_first_language_the_mac_lists_that_roomscope_has_wins(
+def test_the_first_language_the_mac_lists_that_reverbscope_has_wins(
     system: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     system.setattr(sys, "platform", "darwin")
@@ -148,7 +148,7 @@ def test_the_gui_on_a_mac_follows_qts_ui_languages_first(
     system.setenv("LANG", "en_US.UTF-8")
     choice = language_choice(system_languages=["zh-Hans-CN", "en-US"])
     assert (choice.lang, choice.origin) == ("zh_CN", ORIGIN_DESKTOP)
-    # Qt lists nothing RoomScope has: the Mac's own list is next.
+    # Qt lists nothing ReverbScope has: the Mac's own list is next.
     assert resolve_language(system_languages=["fr-FR"]) == "en"
 
 
@@ -182,7 +182,7 @@ def test_a_windows_display_language_without_a_catalog_leaves_the_choice_to_qt_an
     system.setenv("LANG", "zh_CN.UTF-8")
     choice = language_choice()
     assert (choice.lang, choice.origin) == ("zh_CN", "LANG")
-    # A display language RoomScope has still comes before both.
+    # A display language ReverbScope has still comes before both.
     system.setattr(i18n, "_windows_ui_language", lambda: "en_US")
     choice = language_choice(system_languages=qt)
     assert (choice.lang, choice.origin) == ("en", ORIGIN_WINDOWS)
@@ -243,7 +243,7 @@ def test_the_posix_variables_keep_their_order(system: pytest.MonkeyPatch) -> Non
 def test_the_explicit_choices_come_before_the_system(system: pytest.MonkeyPatch) -> None:
     system.setattr(sys, "platform", "linux")
     system.setenv("LANG", "en_US.UTF-8")
-    system.setenv("ROOMSCOPE_LANG", "zh_CN")
+    system.setenv("REVERBSCOPE_LANG", "zh_CN")
     choice = language_choice()
     assert (choice.lang, choice.source, choice.value) == ("zh_CN", SOURCE_ENVIRONMENT, "zh_CN")
     save_settings(UserSettings(language="en"))

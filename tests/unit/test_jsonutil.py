@@ -8,14 +8,14 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.io import jsonutil
-from roomscope.io.jsonutil import write_text_atomic
+from reverbscope.io import jsonutil
+from reverbscope.io.jsonutil import write_text_atomic
 
 
 def test_overlapping_atomic_writes_do_not_share_a_temporary(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Every writer used ``.recent_sessions.json.tmp``: a second RoomScope
+    """Every writer used ``.recent_sessions.json.tmp``: a second ReverbScope
     (the GUI and a CLI run) wrote into the first one's temporary and renamed
     it away, so the first failed with FileNotFoundError."""
     target = tmp_path / "recent_sessions.json"

@@ -3,14 +3,14 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import ConfigurationError
-from roomscope.interpretation import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import ConfigurationError
+from reverbscope.interpretation import (
     Severity,
     available_profiles,
     interpret,
 )
-from roomscope.interpretation.profiles import (
+from reverbscope.interpretation.profiles import (
     AcousticGuitarProfile,
     ChoirProfile,
     DrumsProfile,
@@ -19,8 +19,8 @@ from roomscope.interpretation.profiles import (
     VoiceOverProfile,
     profile_title,
 )
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import EnergyMetric, Reflection, Validity
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import EnergyMetric, Reflection, Validity
 from tests.conftest import make_rir
 
 ALL_PROFILES = [
@@ -235,8 +235,8 @@ def test_direct_to_noise_margin_follows_the_playback_level() -> None:
 
 def test_a_reflection_as_loud_as_the_direct_sound_is_the_strongest() -> None:
     """``level or -99.0`` ranked a 0.0 dB reflection below a -15 dB one."""
-    from roomscope.interpretation import interpret_comparison
-    from roomscope.models.comparison import ComparisonResult, ReflectionMatch
+    from reverbscope.interpretation import interpret_comparison
+    from reverbscope.models.comparison import ComparisonResult, ReflectionMatch
 
     matches = tuple(
         ReflectionMatch(
@@ -270,8 +270,8 @@ def _noisy_take(*, loopback_db: float | None = None, noise_dbfs: float = -75.0):
     """A -12 dBFS sweep, the direct sound about 50 dB above -75 dBFS noise (the
     generic profile's notice fires below 60 dB), and optionally a loopback
     whose return is ``loopback_db`` from unity gain."""
-    from roomscope.core.sweep import measurement_signal
-    from roomscope.models.audio import AudioSignal
+    from reverbscope.core.sweep import measurement_signal
+    from reverbscope.models.audio import AudioSignal
 
     settings = SweepSettings(duration_s=1.0, pre_silence_s=1.0, post_silence_s=1.0)
     room = make_rir(48000, rt60_s=0.3, start_delay_s=0.002) * 0.3
@@ -313,7 +313,7 @@ def test_direct_to_noise_ignores_the_loopback_return_gain(loopback_db: float) ->
 def test_direct_to_noise_with_a_reference_wav() -> None:
     """A reference WAV without its sidecar has no sweep settings; its own peak
     is the level it was played at, so the notice is still given."""
-    from roomscope.core.sweep import measurement_signal
+    from reverbscope.core.sweep import measurement_signal
 
     settings, rec, _ = _noisy_take()
     expected = _direct_to_noise_db(analyze(rec, Reference.from_settings(settings)))
@@ -333,7 +333,7 @@ def _saved_without_direct_level(noise_dbfs: float = -75.0, **sweep_settings: obj
 
 
 def test_direct_level_survives_a_save_and_old_files_fall_back() -> None:
-    from roomscope.models.result import AnalysisResult
+    from reverbscope.models.result import AnalysisResult
 
     settings, rec, _ = _noisy_take()
     result = analyze(rec, Reference.from_settings(settings))
@@ -355,7 +355,7 @@ def test_direct_level_survives_a_save_and_old_files_fall_back() -> None:
 def test_a_crafted_sweep_level_is_an_unknown_level(level: object) -> None:
     """float() of a 400-digit integer raised OverflowError inside interpret();
     a level no sweep can have is not used either."""
-    from roomscope.models.result import AnalysisResult
+    from reverbscope.models.result import AnalysisResult
 
     # Noisy enough that any level up to +20 dBFS would give the notice.
     data = _saved_without_direct_level(noise_dbfs=-45.0, level_dbfs=level)
@@ -391,8 +391,8 @@ def test_a_refusal_saved_by_an_older_version_names_its_reason(
 ) -> None:
     """0.5.0b1 saved the refusal after the sweep and ISO notes, and ``show``
     quoted notes[0]: "cannot be compared: ISO 3382-1 quotes ..."."""
-    from roomscope.interpretation import interpret_comparison
-    from roomscope.models.comparison import ComparisonResult
+    from reverbscope.interpretation import interpret_comparison
+    from reverbscope.models.comparison import ComparisonResult
 
     comparison = ComparisonResult(comparable=False, common_band=None, notes=notes)
     (finding,) = interpret_comparison(comparison)
@@ -402,9 +402,9 @@ def test_a_refusal_saved_by_an_older_version_names_its_reason(
 
 def test_a_refusal_without_notes_is_translated() -> None:
     """A file without notes fell back to an English literal outside the catalog."""
-    from roomscope.i18n import activate
-    from roomscope.interpretation import interpret_comparison
-    from roomscope.models.comparison import ComparisonResult
+    from reverbscope.i18n import activate
+    from reverbscope.interpretation import interpret_comparison
+    from reverbscope.models.comparison import ComparisonResult
 
     comparison = ComparisonResult.from_dict({"comparable": False, "common_band": None})
     activate("zh_CN")
@@ -414,8 +414,8 @@ def test_a_refusal_without_notes_is_translated() -> None:
 
 
 def _reflection_findings(*matches):
-    from roomscope.interpretation import interpret_comparison
-    from roomscope.models.comparison import ComparisonResult
+    from reverbscope.interpretation import interpret_comparison
+    from reverbscope.models.comparison import ComparisonResult
 
     comparison = ComparisonResult(comparable=True, common_band=(20.0, 20000.0), reflections=matches)
     return [f for f in interpret_comparison(comparison, "vocal") if f.topic == "early_reflections"]
@@ -425,7 +425,7 @@ def test_the_strongest_reflection_counts_unmatched_ones() -> None:
     """Only matched pairs were ranked: a dominant reflection that disappeared,
     or a strong new one, hid behind a weaker matched pair ("went from -9.2 dB
     at 7.1 ms to -9.2 dB at 7.1 ms")."""
-    from roomscope.models.comparison import ReflectionMatch
+    from reverbscope.models.comparison import ReflectionMatch
 
     weak = ReflectionMatch("matched", 7.1, 7.1, -9.2, -9.5)
     (gone,) = _reflection_findings(
@@ -442,7 +442,7 @@ def test_the_strongest_reflection_counts_unmatched_ones() -> None:
 
 
 def test_a_strong_reflection_that_disappeared_is_reported() -> None:
-    from roomscope.models.comparison import ReflectionMatch
+    from reverbscope.models.comparison import ReflectionMatch
 
     (finding,) = _reflection_findings(
         ReflectionMatch("disappeared", baseline_delay_ms=2.4, baseline_relative_db=-3.2),

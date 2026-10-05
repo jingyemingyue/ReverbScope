@@ -7,18 +7,18 @@ import threading
 import numpy as np
 import pytest
 
-from roomscope.audio.backend import CALLBACK_BLOCK, get_backend
-from roomscope.audio.fake import FakeBackend, make_rir
-from roomscope.core.sweep import measurement_signal
-from roomscope.errors import ConfigurationError, MeasurementCancelledError
-from roomscope.models.configuration import SweepSettings
+from reverbscope.audio.backend import CALLBACK_BLOCK, get_backend
+from reverbscope.audio.fake import FakeBackend, make_rir
+from reverbscope.core.sweep import measurement_signal
+from reverbscope.errors import ConfigurationError, MeasurementCancelledError
+from reverbscope.models.configuration import SweepSettings
 
 
 def test_get_backend_fake_and_unknown(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ROOMSCOPE_AUDIO_BACKEND", "fake")
+    monkeypatch.setenv("REVERBSCOPE_AUDIO_BACKEND", "fake")
     backend = get_backend()
     assert backend.name == "fake"
-    monkeypatch.delenv("ROOMSCOPE_AUDIO_BACKEND")
+    monkeypatch.delenv("REVERBSCOPE_AUDIO_BACKEND")
     named = get_backend("fake")
     assert named.name == "fake"
     with pytest.raises(ConfigurationError, match="unknown"):
@@ -100,8 +100,8 @@ def test_the_fake_loopback_arrives_before_the_microphone(short_sweep: SweepSetti
     """The default room had its direct sound at t = 0 while the loopback was
     delayed by the interface: every Demo take with a loopback reported
     "path delay -2.00 ms", which no electrical return can produce."""
-    from roomscope.core.pipeline import Reference, analyze
-    from roomscope.models.configuration import AnalysisSettings
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.models.configuration import AnalysisSettings
 
     take = FakeBackend().play_and_record(
         measurement_signal(short_sweep),
@@ -122,7 +122,7 @@ def test_the_fake_loopback_arrives_before_the_microphone(short_sweep: SweepSetti
 
 
 def test_a_nan_level_is_refused_before_playback() -> None:
-    from roomscope.audio.backend import scale_to_level
+    from reverbscope.audio.backend import scale_to_level
 
     with pytest.raises(ConfigurationError):
         scale_to_level(np.ones(8), float("nan"))
@@ -134,7 +134,7 @@ def test_a_nan_level_is_refused_before_playback() -> None:
 def test_the_fake_device_has_the_channels_it_advertises(
     short_sweep: SweepSettings, inputs: list[int], output: int
 ) -> None:
-    from roomscope.errors import AudioDeviceError
+    from reverbscope.errors import AudioDeviceError
 
     with pytest.raises(AudioDeviceError, match="does not exist"):
         FakeBackend().play_and_record(
@@ -149,7 +149,7 @@ def test_the_fake_device_has_the_channels_it_advertises(
 
 
 def test_preflight_refuses_channel_zero_before_anything_is_played() -> None:
-    from roomscope.audio.inventory import check_channels
+    from reverbscope.audio.inventory import check_channels
 
     devices = FakeBackend().list_devices()
     with pytest.raises(ConfigurationError, match="1-based"):

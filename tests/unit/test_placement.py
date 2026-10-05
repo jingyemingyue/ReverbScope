@@ -5,7 +5,7 @@ import math
 import numpy as np
 import pytest
 
-from roomscope.core.placement import (
+from reverbscope.core.placement import (
     DEFAULT_TEMPERATURE_C,
     LOWER_PLANE,
     UPPER_PLANE,
@@ -15,7 +15,7 @@ from roomscope.core.placement import (
     specular_ceiling_db,
     speed_of_sound_m_s,
 )
-from roomscope.models.result import PlacementLength, Reflection, ReflectionsResult, Validity
+from reverbscope.models.result import PlacementLength, Reflection, ReflectionsResult, Validity
 
 C20 = speed_of_sound_m_s(DEFAULT_TEMPERATURE_C)
 
@@ -405,7 +405,7 @@ def test_each_length_carries_its_own_input_uncertainty(
 ) -> None:
     """Ceiling and horizontal separation reported the loudspeaker height's
     sigma; the horizontal one was understated up to 3.5 times."""
-    from roomscope.core.placement import (
+    from reverbscope.core.placement import (
         DISTANCE_SIGMA_M,
         HEIGHT_SIGMA_M,
         PEAK_LOCATION_SIGMA_MS,

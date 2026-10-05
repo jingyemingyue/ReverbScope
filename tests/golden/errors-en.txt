@@ -1,33 +1,33 @@
 × error: audio file not found: take.wav
 
   Try:
-    roomscope analyze --help
+    reverbscope analyze --help
 
 × error: the following arguments are required: --out
 
   Try:
-    roomscope sweep --help
+    reverbscope sweep --help
 
 × error: argument --duration: invalid float value: 'long'
 
   Try:
-    roomscope sweep --help
+    reverbscope sweep --help
 
-× error: input channel 9 does not exist on RoomScope fake interface (8 input
+× error: input channel 9 does not exist on ReverbScope fake interface (8 input
   channel(s))
   Nothing was played.
 
   Try:
-    roomscope devices --probe
-    roomscope doctor --probe
+    reverbscope devices --probe
+    reverbscope doctor --probe
 
 × error: session file not found: missing-session
 
   Try:
-    roomscope show --list <folder>
+    reverbscope show --list <folder>
 
 × error: sweep.wav is a file; --out needs a folder for the session
   Nothing was played.
 
   Try:
-    roomscope measure --out <new-folder>
+    reverbscope measure --out <new-folder>

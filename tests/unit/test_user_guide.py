@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 GUIDES = (Path("docs/user-guide/en.md"), Path("docs/user-guide/zh-CN.md"))
-UI = Path("src/roomscope/ui")
+UI = Path("src/reverbscope/ui")
 
 
 def _results_tab_rows(text: str) -> list[str]:

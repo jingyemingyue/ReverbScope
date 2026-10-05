@@ -5,18 +5,23 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.io.project_store import add_session, is_project, list_project_sessions, save_project
-from roomscope.io.session_store import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.io.project_store import (
+    add_session,
+    is_project,
+    list_project_sessions,
+    save_project,
+)
+from reverbscope.io.session_store import (
     RECORDING_FILE,
     SWEEP_SIDECAR_NAME,
     bundle_session,
     save_measurement,
 )
-from roomscope.io.wav import write_sweep_file, write_wav
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.project import Project
-from roomscope.models.session import MeasurementSession
+from reverbscope.io.wav import write_sweep_file, write_wav
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.project import Project
+from reverbscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
 
@@ -164,7 +169,7 @@ def test_bundle_out_without_zip_suffix_is_a_folder(
 def test_project_add_refuses_a_folder_without_a_session(tmp_path: Path) -> None:
     """A typo was stored, reported as success, and silently skipped later:
     ``project average`` then failed with 'no sessions in ...'."""
-    from roomscope.errors import SessionError
+    from reverbscope.errors import SessionError
 
     room = tmp_path / "room"
     save_project(room, Project(name="room"))
@@ -180,7 +185,7 @@ def test_a_session_cannot_be_listed_under_a_second_position(
     the first one, so the correction had no effect."""
     import json
 
-    from roomscope.errors import SessionError
+    from reverbscope.errors import SessionError
 
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
     result = analyze(

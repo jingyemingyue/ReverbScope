@@ -56,9 +56,9 @@ DYNAMIC_IMPORT_CALLS = frozenset(
 #: Files that may import a computed module name (path relative to the
 #: scanned root or to its parent), with the reason.
 ALLOWED_DYNAMIC_IMPORTS = {
-    "roomscope/__init__.py": (
+    "reverbscope/__init__.py": (
         "lazy public API: the module names come from the fixed _LAZY table, "
-        "which lists roomscope modules only"
+        "which lists reverbscope modules only"
     ),
 }
 

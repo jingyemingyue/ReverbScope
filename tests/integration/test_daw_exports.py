@@ -16,9 +16,9 @@ import numpy as np
 import pytest
 import soundfile as sf
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.io.wav import read_wav
-from roomscope.models.configuration import SweepSettings
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.io.wav import read_wav
+from reverbscope.models.configuration import SweepSettings
 from tests.conftest import make_rir
 
 #: (file name, soundfile format, subtype)
@@ -45,7 +45,7 @@ def take(short_sweep: SweepSettings) -> np.ndarray:
 
 @pytest.fixture(scope="module")
 def reference_t30(take: np.ndarray, short_sweep: SweepSettings) -> float:
-    from roomscope.models.audio import AudioSignal
+    from reverbscope.models.audio import AudioSignal
 
     result = analyze(
         AudioSignal(take, short_sweep.sample_rate), Reference.from_settings(short_sweep)
@@ -75,7 +75,7 @@ def _broadcast_wav(path: Path, samples: np.ndarray, sample_rate: int) -> None:
         chunks[tag] = raw[offset + 8 : offset + 8 + size]
         offset += 8 + size + (size % 2)
     bext = (
-        b"RoomScope test take".ljust(256, b"\0")  # Description
+        b"ReverbScope test take".ljust(256, b"\0")  # Description
         + b"Pro Tools".ljust(32, b"\0")  # Originator
         + b"".ljust(32, b"\0")  # OriginatorReference
         + b"2026-09-24"  # OriginationDate
@@ -85,7 +85,7 @@ def _broadcast_wav(path: Path, samples: np.ndarray, sample_rate: int) -> None:
         + b"\0" * 64  # UMID
         + b"\0" * 190  # loudness fields + reserved
     )
-    ixml = b'<?xml version="1.0"?><BWFXML><PROJECT>RoomScope</PROJECT></BWFXML>'
+    ixml = b'<?xml version="1.0"?><BWFXML><PROJECT>ReverbScope</PROJECT></BWFXML>'
     body = (
         _chunk(b"JUNK", b"\0" * 28)
         + _chunk(b"fmt ", chunks[b"fmt "])

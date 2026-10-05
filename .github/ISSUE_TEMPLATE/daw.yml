@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        The DAW steps in [docs/user-guide/daw-setup.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/user-guide/daw-setup.md)
+        The DAW steps in [docs/user-guide/daw-setup.md](https://github.com/jingyemingyue/ReverbScope/blob/main/docs/user-guide/daw-setup.md)
         are written from each vendor's manual; none has been confirmed in the
         DAW itself yet. Your run is that confirmation, or a correction.
         If a menu name or step in the guide is wrong for your version, say which.
@@ -20,8 +20,8 @@ body:
   - type: input
     id: os
     attributes:
-      label: Operating system and RoomScope version
-      placeholder: "macOS 15.5 (Apple silicon), RoomScope 0.4.1 build 1a2b3c4"
+      label: Operating system and ReverbScope version
+      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.4.1 build 1a2b3c4"
     validations:
       required: true
   - type: input
@@ -61,13 +61,13 @@ body:
     attributes:
       label: Result
       description: |
-        Did RoomScope analyse the recording? From the **Full report** tab (or
-        `roomscope show <session>`), paste the line that starts with
+        Did ReverbScope analyse the recording? From the **Full report** tab (or
+        `reverbscope show <session>`), paste the line that starts with
         "Impulse response:" (it names the direct-sound confidence; a matrix
         cell needs "high") and any finding about sample rate or playback
         speed. For a negative test (a
         44.1 kHz project with a 48 kHz sweep, or stretching on), say whether
-        RoomScope reported it.
+        ReverbScope reported it.
     validations:
       required: true
   - type: textarea
@@ -75,8 +75,8 @@ body:
     attributes:
       label: Environment report
       description: |
-        **Help → Environment Report for Bug Reports → Copy**, or `roomscope doctor`
-        in a terminal. It names the RoomScope version and build commit and the OS.
+        **Help → Environment Report for Bug Reports → Copy**, or `reverbscope doctor`
+        in a terminal. It names the ReverbScope version and build commit and the OS.
         Review it before posting: device names can contain personal names.
       render: text
     validations:
@@ -91,6 +91,6 @@ body:
     attributes:
       label: Session bundle (optional)
       description: |
-        `roomscope session bundle <session> --out report.zip` (`--no-audio`
+        `reverbscope session bundle <session> --out report.zip` (`--no-audio`
         leaves the recordings out). The sweep sidecar JSON and the exported
         recording are the most useful files.

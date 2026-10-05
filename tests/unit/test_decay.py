@@ -5,7 +5,7 @@ import json
 import numpy as np
 import pytest
 
-from roomscope.core.decay import (
+from reverbscope.core.decay import (
     MIN_BT_PRODUCT,
     analyze_band,
     analyze_decay,
@@ -16,17 +16,17 @@ from roomscope.core.decay import (
     schroeder_curve,
     straightness_limits,
 )
-from roomscope.core.filters import iec_band
-from roomscope.models.audio import FloatArray
-from roomscope.models.configuration import AnalysisSettings
-from roomscope.models.result import (
+from reverbscope.core.filters import iec_band
+from reverbscope.models.audio import FloatArray
+from reverbscope.models.configuration import AnalysisSettings
+from reverbscope.models.result import (
     EXCITATION_SOURCE_SETTINGS,
     BandDecay,
     DecayMetric,
     ExcitationBand,
     Validity,
 )
-from roomscope.models.result_load import band_decay_from_dict
+from reverbscope.models.result_load import band_decay_from_dict
 from tests.conftest import DECAY_CONSTANT, exponential_decay_ir, make_rir
 
 
@@ -123,7 +123,7 @@ def test_short_decay_in_low_band_is_flagged_unreliable(sample_rate: int) -> None
     band = iec_band(63.0, 1)
     # A 30 ms decay in the 63 Hz band gives B*T ~ 1.3 < 4.
     ir = exponential_decay_ir(sample_rate, 0.03, length_s=0.5)
-    from roomscope.core.filters import apply_bandpass, bandpass_sos
+    from reverbscope.core.filters import apply_bandpass, bandpass_sos
 
     filtered = apply_bandpass(ir, bandpass_sos(band, sample_rate))
     result = analyze_band(filtered, sample_rate, band, noise_margin_db=10.0)
@@ -581,7 +581,7 @@ def test_energy_parameters_round_trip_and_older_files_omit_them(sample_rate: int
 def test_energy_ratios_without_a_direct_sound_are_timed_from_the_onset() -> None:
     """Without direct_index, C50 and Ts were timed from the first sample, so
     leading silence changed them while T30 stayed put."""
-    from roomscope.core.decay import analyze_band
+    from reverbscope.core.decay import analyze_band
 
     sample_rate = 48000
     t = np.arange(sample_rate) / sample_rate

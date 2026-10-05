@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from roomscope.settings import UserSettings, load_settings, save_settings, settings_path
+from reverbscope.settings import UserSettings, load_settings, save_settings, settings_path
 
 
 def test_settings_round_trip_and_defaults(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     first = load_settings()
     assert first.copy_recording is True
     assert first.language == ""
@@ -25,7 +25,7 @@ def test_settings_round_trip_and_defaults(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_settings_ignore_unknown_and_unreadable(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     extra = UserSettings.from_dict(
         {
             "schema_version": 1,
@@ -46,7 +46,7 @@ def test_mistyped_settings_fall_back_to_the_defaults(tmp_path: Path, monkeypatch
     read as True."""
     import json
 
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
     settings_path().write_text(
         json.dumps(
             {
@@ -66,10 +66,10 @@ def test_mistyped_settings_fall_back_to_the_defaults(tmp_path: Path, monkeypatch
 def test_a_failed_settings_write_keeps_the_old_file(tmp_path: Path, monkeypatch) -> None:
     import pytest
 
-    from roomscope.errors import SessionError
-    from roomscope.io import jsonutil
+    from reverbscope.errors import SessionError
+    from reverbscope.io import jsonutil
 
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
     save_settings(UserSettings(language="zh_CN"))
 
     def disk_full(_fd: int) -> None:
@@ -79,7 +79,7 @@ def test_a_failed_settings_write_keeps_the_old_file(tmp_path: Path, monkeypatch)
     with pytest.raises(SessionError):
         save_settings(UserSettings(language="en"))
     monkeypatch.undo()
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
     assert load_settings().language == "zh_CN"
 
 
@@ -95,8 +95,8 @@ def test_saving_settings_keeps_a_symlinked_settings_file(tmp_path: Path, monkeyp
 
     if sys.platform == "win32":
         pytest.skip("symbolic links need a privilege on Windows")
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
-    real = tmp_path / "dotfiles" / "roomscope-settings.json"
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    real = tmp_path / "dotfiles" / "reverbscope-settings.json"
     real.parent.mkdir()
     real.write_text(json.dumps({"language": "zh_CN"}), encoding="utf-8")
     real.chmod(0o600)

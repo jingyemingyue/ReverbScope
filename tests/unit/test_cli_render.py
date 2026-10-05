@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.cli.console import Console, cell_width
-from roomscope.cli.render import (
+from reverbscope.cli.console import Console, cell_width
+from reverbscope.cli.render import (
     REPORT_CONSOLE,
     _decay_deltas,
     _reflections,
@@ -18,12 +18,12 @@ from roomscope.cli.render import (
     comparison_at_a_glance,
     render_analysis,
 )
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.interpretation import interpret, interpret_comparison
-from roomscope.labels import signed_number
-from roomscope.models.comparison import ComparisonResult, MetricDelta
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import AnalysisResult, ResonanceResult, Validity
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.interpretation import interpret, interpret_comparison
+from reverbscope.labels import signed_number
+from reverbscope.models.comparison import ComparisonResult, MetricDelta
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import AnalysisResult, ResonanceResult, Validity
 from tests.conftest import make_rir
 
 WIDE = Console(color=False, unicode=True, width=100)
@@ -99,7 +99,7 @@ def test_a_refused_comparison_reports_no_findings() -> None:
     """#64: a refused pair said "none above the threshold on either side",
     "no potential resonance" and "no quiet segment" although nothing was
     compared."""
-    from roomscope.cli.render import render_comparison
+    from reverbscope.cli.render import render_comparison
 
     refused = ComparisonResult(
         comparable=False, common_band=None, notes=("the excitation bands do not overlap",)
@@ -116,7 +116,7 @@ def test_a_refused_comparison_reports_no_findings() -> None:
 
 
 def test_reflections_skipped_for_confidence_are_not_called_absent() -> None:
-    from roomscope.i18n import diag
+    from reverbscope.i18n import diag
 
     note = diag(
         "early reflections are not compared unless both sides have high direct-sound "
@@ -163,8 +163,8 @@ def _analysed(sweep: SweepSettings) -> AnalysisResult:
 
 
 def _imported(length_s: float, **kwargs: object) -> AnalysisResult:
-    from roomscope.core.pipeline import analyze_impulse_response
-    from roomscope.models.audio import AudioSignal
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
 
     ir = make_rir(48000, rt60_s=0.05, length_s=length_s, start_delay_s=0.01, **kwargs)  # type: ignore[arg-type]
     return analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 20000.0))
@@ -194,7 +194,7 @@ def test_a_truncated_reflection_search_says_how_far_it_got() -> None:
 
 def test_the_validity_legend_wraps_between_entries() -> None:
     """#71: the legend was one line, 44 cells on a 40-column terminal."""
-    from roomscope.cli.render import _legend
+    from reverbscope.cli.render import _legend
 
     narrow = Console(color=False, unicode=True, width=40)
     every = [
@@ -219,11 +219,11 @@ def test_listing_and_project_lines_follow_the_stream_encoding(
     import io
     import sys
 
-    from roomscope.cli.main import main
-    from roomscope.io.project_store import add_session, save_project
-    from roomscope.io.session_store import save_measurement
-    from roomscope.models.project import Project
-    from roomscope.models.session import MeasurementSession
+    from reverbscope.cli.main import main
+    from reverbscope.io.project_store import add_session, save_project
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.project import Project
+    from reverbscope.models.session import MeasurementSession
 
     result = _analysed(short_sweep)
     project = tmp_path / "room"
@@ -254,7 +254,7 @@ def test_listing_and_project_lines_follow_the_stream_encoding(
 def _subcommand_help(name: str) -> str:
     import argparse
 
-    from roomscope.cli.main import build_parser
+    from reverbscope.cli.main import build_parser
 
     parser = build_parser()
     action = next(a for a in parser._actions if isinstance(a, argparse._SubParsersAction))
@@ -281,8 +281,8 @@ def test_the_air_temperature_is_shown_in_degrees_celsius(
 ) -> None:
     """The placement section printed "at 20 C" / "气温 20 C", and the note
     on an assumed temperature "20 C" and "a 5 C error"."""
-    from roomscope.cli.render import _placement
-    from roomscope.i18n import activate
+    from reverbscope.cli.render import _placement
+    from reverbscope.i18n import activate
 
     result = _analysed(short_sweep)
     activate(lang)

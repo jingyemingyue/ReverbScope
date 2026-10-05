@@ -21,7 +21,7 @@ third-party code enters the tree:
 
 ## Third-party *libraries* (used, not copied)
 
-RoomScope imports NumPy, SciPy, soundfile, sounddevice, matplotlib and
+ReverbScope imports NumPy, SciPy, soundfile, sounddevice, matplotlib and
 (optionally) PySide6 as ordinary dependencies. Their licenses, bundled native
 libraries and redistribution obligations are recorded in DEPENDENCIES.md.
 Using a library through its public API is not vendoring and creates no
@@ -57,7 +57,7 @@ arrivals its tests are built from) was implemented clean-room from the
 published relation in Allen & Berkley (1979); no code was taken from
 pyroomacoustics (MIT, EPFL-LCAV), which THIRD_PARTY_REVIEW.md records as
 evaluated and not adopted — adopting it would also bring its Eigen
-(MPL-2.0) obligation, see DEPENDENCIES.md. RoomScope does not implement
+(MPL-2.0) obligation, see DEPENDENCIES.md. ReverbScope does not implement
 room-shape-from-echoes / echo sorting (Dokmanić et al., 2013); it is cited in
 MEASUREMENT_METHODOLOGY.md §9 as the published method the project declines,
 and no implementation of it was consulted.

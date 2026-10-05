@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve, firwin
 
-from roomscope.core.reflections import detect_early_reflections
+from reverbscope.core.reflections import detect_early_reflections
 from tests.conftest import make_rir
 
 
@@ -109,7 +109,7 @@ def test_full_window_is_not_reported_as_truncated(sample_rate: int) -> None:
 def test_a_window_that_rounds_to_half_a_sample_is_not_truncated() -> None:
     """25 ms at 44.1 kHz is 1102.5 samples; rounding down was reported as an
     impulse response that ends early (and placement called itself biased)."""
-    from roomscope.core.reflections import detect_early_reflections
+    from reverbscope.core.reflections import detect_early_reflections
 
     sample_rate = 44100
     ir = np.zeros(sample_rate // 2)

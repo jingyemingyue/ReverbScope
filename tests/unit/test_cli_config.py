@@ -1,4 +1,4 @@
-"""``roomscope config``: the settings from the command line.
+"""``reverbscope config``: the settings from the command line.
 
 Every key with its accepted spellings, refused values (exit code 2, nothing
 written), the JSON output, the file the desktop app reads, the other
@@ -16,11 +16,11 @@ from typing import Any
 
 import pytest
 
-from roomscope import i18n
-from roomscope.cli.config import KEYS
-from roomscope.cli.main import main
-from roomscope.i18n import activate, current_locale
-from roomscope.settings import UserSettings, load_settings, save_settings, settings_path
+from reverbscope import i18n
+from reverbscope.cli.config import KEYS
+from reverbscope.cli.main import main
+from reverbscope.i18n import activate, current_locale
+from reverbscope.settings import UserSettings, load_settings, save_settings, settings_path
 from tests.zh_tokens import english_words
 
 
@@ -28,10 +28,10 @@ from tests.zh_tokens import english_words
 def home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
     """Its own settings folder, and a system language read from LANG only
     (no Mac preferences, no Windows display language) on every platform."""
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     monkeypatch.setenv("COLUMNS", "100")
-    monkeypatch.delenv("ROOMSCOPE_AUDIO_BACKEND", raising=False)
-    monkeypatch.delenv("ROOMSCOPE_EDITION", raising=False)
+    monkeypatch.delenv("REVERBSCOPE_AUDIO_BACKEND", raising=False)
+    monkeypatch.delenv("REVERBSCOPE_EDITION", raising=False)
     monkeypatch.setattr(i18n, "MACOS_PREFERENCES", (str(tmp_path / "no.plist"),))
     monkeypatch.setattr(i18n, "_windows_ui_language", lambda: None)
     try:
@@ -174,7 +174,7 @@ def test_a_value_a_setting_cannot_take_writes_nothing(
     code, out, err = _run(capsys, "config", *argv)
     assert code == 2 and out == ""
     assert message in " ".join(err.split()), err
-    assert "Nothing was changed" in err and "roomscope config --help" in err
+    assert "Nothing was changed" in err and "reverbscope config --help" in err
     assert not settings_path().exists()
     save_settings(UserSettings(language="zh_CN", default_profile="vocal"))
     before = settings_path().read_bytes()
@@ -252,11 +252,11 @@ def test_the_confirmation_is_in_the_language_just_chosen(
     code, out, _err = _run(capsys, "--lang", "en", "config", "language", "zh_CN")
     assert code == 0
     assert "以后都会使用简体中文。" in out
-    assert "roomscope config language auto" in out and "改回跟随系统" in out
+    assert "reverbscope config language auto" in out and "改回跟随系统" in out
     assert current_locale() == "zh_CN"
     assert _stored()["language"] == "zh_CN"
     code, out, _err = _run(capsys, "config", "language", "en")
-    assert "RoomScope uses English from now on." in out
+    assert "ReverbScope uses English from now on." in out
     assert current_locale() == "en"
     monkeypatch.setenv("LANG", "zh_CN.UTF-8")
     code, out, _err = _run(capsys, "config", "language", "auto")
@@ -276,8 +276,8 @@ def test_the_stored_language_is_used_by_the_next_command(
     assert code == 0 and "主机" in out
     code, out, _err = _run(capsys, "--lang", "en", "--backend", "fake", "devices")
     assert "主机" not in out
-    # The stored language comes before ROOMSCOPE_LANG.
-    monkeypatch.setenv("ROOMSCOPE_LANG", "en")
+    # The stored language comes before REVERBSCOPE_LANG.
+    monkeypatch.setenv("REVERBSCOPE_LANG", "en")
     code, out, _err = _run(capsys, "--backend", "fake", "devices")
     assert "主机" in out
 
@@ -288,12 +288,12 @@ def test_the_stored_language_is_used_by_the_next_command(
         ([], {"LANG": "zh_CN.UTF-8"}, "", "原因      环境变量 LANG=zh_CN.UTF-8"),
         ([], {"LANG": "en_US.UTF-8", "LANGUAGE": "zh_CN:en"}, "", "环境变量 LANGUAGE=zh_CN:en"),
         (["--lang", "en"], {"LANG": "zh_CN.UTF-8"}, "", "--lang en on this command line"),
-        ([], {"ROOMSCOPE_LANG": "zh_CN"}, "", "环境变量 ROOMSCOPE_LANG=zh_CN"),
+        ([], {"REVERBSCOPE_LANG": "zh_CN"}, "", "环境变量 REVERBSCOPE_LANG=zh_CN"),
         (
             [],
-            {"ROOMSCOPE_LANG": "en"},
+            {"REVERBSCOPE_LANG": "en"},
             "zh_CN",
-            "已保存的设置（roomscope config language zh_CN）",
+            "已保存的设置（reverbscope config language zh_CN）",
         ),
         ([], {"LANG": "fr_FR.UTF-8"}, "", "fr_FR has no translation, so English is used"),
     ],
@@ -320,7 +320,7 @@ def test_config_language_shows_what_is_in_effect_and_why(
 def test_one_setting_shows_its_values(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _err = _run(capsys, "config", "profile")
     assert code == 0
-    assert "acoustic_guitar" in out and "roomscope config profile VALUE" in out
+    assert "acoustic_guitar" in out and "reverbscope config profile VALUE" in out
     code, out, _err = _run(capsys, "config", "theme")
     assert "desktop app only" in out
 
@@ -331,7 +331,7 @@ def test_one_setting_shows_its_values(home: Path, capsys: pytest.CaptureFixture[
 def test_every_config_screen_is_chinese(
     home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from roomscope.interpretation import available_profiles
+    from reverbscope.interpretation import available_profiles
 
     monkeypatch.setenv("LANG", "zh_CN.UTF-8")
     typed = (*KEYS, *available_profiles(), "auto", "system", "zh_CN", "on", "off", "light", "dark")
@@ -365,12 +365,12 @@ def test_the_copy_recording_override_is_shown_where_it_goes(
     """The confirmation said "--copy-recording and --no-copy-recording
     override it for one command", and `analyze … --no-copy-recording` was
     refused: they are root options and go before the command."""
-    from roomscope.cli.main import build_parser
+    from reverbscope.cli.main import build_parser
 
     code, out, _err = _run(capsys, "--lang", lang, "config", "copy-recording", value)
     assert code == 0
     row = next(line.strip() for line in out.splitlines() if "copy-recording" in line)
-    assert row.startswith(f"roomscope {option} <"), out
+    assert row.startswith(f"reverbscope {option} <"), out
     # As shown: the option, then any command.
     args = build_parser().parse_args([option, "sweep", "--out", "x.wav"])
     assert args.copy_recording is (option == "--copy-recording")
@@ -402,7 +402,7 @@ def test_a_setting_has_the_name_the_desktop_app_gives_it(
     """`config profile drums` confirmed "默认配置：鼓" ("default configuration")
     while its errors and every --help say 录音配置, and the output folder was
     a 会话文件夹 here but the 默认输出文件夹 in the Settings dialog."""
-    from roomscope.cli import config
+    from reverbscope.cli import config
 
     activate("zh_CN")
     assert config.title("profile") == i18n._("Default profile") == "默认录音配置"
@@ -426,10 +426,10 @@ def test_showing_an_unknown_setting_does_not_talk_of_changes(
 def test_a_variable_that_comes_before_a_setting_is_named(
     home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("ROOMSCOPE_AUDIO_BACKEND", "fake")
+    monkeypatch.setenv("REVERBSCOPE_AUDIO_BACKEND", "fake")
     code, out, _err = _run(capsys, "config", "backend", "portaudio")
     assert code == 0 and _stored()["audio_backend"] == "portaudio"
-    assert "ROOMSCOPE_AUDIO_BACKEND=fake chooses the backend before this setting" in out
-    monkeypatch.setenv("ROOMSCOPE_EDITION", "user")
+    assert "REVERBSCOPE_AUDIO_BACKEND=fake chooses the backend before this setting" in out
+    monkeypatch.setenv("REVERBSCOPE_EDITION", "user")
     code, out, _err = _run(capsys, "config")
-    assert "ROOMSCOPE_EDITION=user decides before this setting" in out
+    assert "REVERBSCOPE_EDITION=user decides before this setting" in out

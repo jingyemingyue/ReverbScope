@@ -6,9 +6,9 @@ body:
   - type: markdown
     attributes:
       value: |
-        RoomScope prefers **correctness over features**. Requests that would
+        ReverbScope prefers **correctness over features**. Requests that would
         invent a "room score", auto-EQ a room, or copy another project's source
-        will be declined. See [docs/STATUS.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/STATUS.md)
+        will be declined. See [docs/STATUS.md](https://github.com/jingyemingyue/ReverbScope/blob/main/docs/STATUS.md)
         for what is deliberately out of scope.
   - type: textarea
     id: problem

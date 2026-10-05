@@ -5,13 +5,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.linearity import (
+from reverbscope.core.linearity import (
     CLIPPING_MIN_RUNS,
     detect_clipping,
     quantisation_step,
 )
-from roomscope.core.sweep import generate_ess, measurement_signal
-from roomscope.models.configuration import SweepSettings
+from reverbscope.core.sweep import generate_ess, measurement_signal
+from reverbscope.models.configuration import SweepSettings
 
 
 def _quantise(x: np.ndarray, bits: int = 24, dither: float = 0.0, seed: int = 0) -> np.ndarray:
@@ -110,13 +110,13 @@ def test_alias_probe_inverse_is_flat_over_the_folded_band() -> None:
     1/f(t): |R I| tilted by -4 / +5 dB across the folded band."""
     from scipy import fft as sfft
 
-    from roomscope.core.linearity import (
+    from reverbscope.core.linearity import (
         _alias_trajectory,
         _harmonic_reference,
         _probe_inverse,
     )
-    from roomscope.core.sweep import excitation_band_hz
-    from roomscope.models.result import ExcitationBand
+    from reverbscope.core.sweep import excitation_band_hz
+    from reverbscope.models.result import ExcitationBand
 
     settings = SweepSettings(duration_s=2.0)
     low, high = excitation_band_hz(settings)

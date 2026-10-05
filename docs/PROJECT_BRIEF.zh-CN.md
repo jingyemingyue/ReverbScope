@@ -1,4 +1,4 @@
-# RoomScope 项目需求书（原文存档）
+# ReverbScope 项目需求书（原文存档）
 
 > 本文件是项目发起人在 2026-09-17 的 Cowork 会话中给出的原始需求，逐字保留，作为项目范围与优先级的权威来源。
 > 英文架构文档见 `ARCHITECTURE.md`，实现状态见 `STATUS.md`。
@@ -18,7 +18,7 @@
 
 项目暂定名称：
 
-RoomScope
+ReverbScope
 
 项目定位：
 
@@ -38,7 +38,7 @@ An open-source, DAW-independent recording environment analyzer.
 
 DAW-independent
 
-RoomScope 不得依赖 Cubase、Pro Tools、Logic、Studio One 或任何特定 DAW。
+ReverbScope 不得依赖 Cubase、Pro Tools、Logic、Studio One 或任何特定 DAW。
 
 第一版必须原则上兼容所有能够：
 
@@ -169,7 +169,7 @@ LICENSE 文件内容
 是否要求保留版权声明
 是否要求公开源代码
 是否存在 copyleft
-是否影响 RoomScope 的整体许可证
+是否影响 ReverbScope 的整体许可证
 
 建立：
 
@@ -263,7 +263,7 @@ distribution model
 
 GPL / AGPL 代码不得未经分析直接复制进入核心代码库。
 
-如果一个第三方库可能迫使整个 RoomScope 使用特定 copyleft license：
+如果一个第三方库可能迫使整个 ReverbScope 使用特定 copyleft license：
 
 必须先记录风险，不得自行决定引入。
 
@@ -392,7 +392,7 @@ PySide6 / Qt 的许可证结构需要单独确认。
 
 当前使用版本
 LGPL / GPL / commercial licensing 情况
-RoomScope 的分发方式是否满足要求
+ReverbScope 的分发方式是否满足要求
 是否动态链接
 是否修改 Qt 本体
 最终应用打包时需要附带哪些许可证文件
@@ -464,7 +464,7 @@ MIT
 Apache-2.0
 BSD-3-Clause
 
-哪个更适合 RoomScope。
+哪个更适合 ReverbScope。
 
 在决定前考虑：
 
@@ -489,15 +489,15 @@ docs/LICENSE_DECISION.md
 
 A. Universal DAW Mode
 
-RoomScope：
+ReverbScope：
 
 生成标准 ESS Sweep WAV
 用户将 Sweep 导入任意 DAW
 DAW 通过声卡/监听音箱播放
 测量麦克风录制返回信号
 用户从 DAW 导出 recorded WAV
-将 recorded WAV 导入 RoomScope
-RoomScope 自动完成分析
+将 recorded WAV 导入 ReverbScope
+ReverbScope 自动完成分析
 
 尽可能自动识别 Sweep 的时间位置。
 
@@ -505,7 +505,7 @@ RoomScope 自动完成分析
 
 B. Standalone Mode
 
-RoomScope 能够：
+ReverbScope 能够：
 
 枚举音频输入设备
 枚举音频输出设备
@@ -705,10 +705,10 @@ future packaging impact
 
 请先评估并优化类似结构，而不是机械照抄：
 
-roomscope/
+reverbscope/
 
 src/
-roomscope/
+reverbscope/
 
 core/
 sweep/
@@ -1101,13 +1101,13 @@ DSP 问题
 功能数量
 UI 华丽程度
 
-现在开始建立 RoomScope 的可靠底座。
+现在开始建立 ReverbScope 的可靠底座。
 
 ---
 
 ## 二、Git / GitHub 托管规则（第二条指令）
 
-请把当前 RoomScope 项目托管到我的 GitHub 仓库中。
+请把当前 ReverbScope 项目托管到我的 GitHub 仓库中。
 
 要求：
 
@@ -1134,7 +1134,7 @@ UI 华丽程度
 * lock/config files that should be version controlled
 创建清晰的初始 commit。
 如果 GitHub 仓库还不存在，请创建一个新的仓库：
-RoomScope
+ReverbScope
 默认先创建为 Private repository。
 将当前代码 push 到 GitHub。
 设置默认分支为 main。

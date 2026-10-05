@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.filters import (
+from reverbscope.core.filters import (
     apply_bandpass,
     band_fits,
     band_level_samples,
@@ -15,7 +15,7 @@ from roomscope.core.filters import (
     nearest_band_index,
     settling_samples,
 )
-from roomscope.errors import ConfigurationError
+from reverbscope.errors import ConfigurationError
 
 
 def test_octave_band_edges() -> None:
@@ -163,7 +163,7 @@ def test_fractional_octave_smooth_shape_mismatch() -> None:
 def test_smoothing_keeps_levels_far_below_the_running_total() -> None:
     """A difference of forward running sums lost everything 150 dB below them:
     above the sweep band every default analysis stored -3000 dB."""
-    from roomscope.core.filters import fractional_octave_smooth
+    from reverbscope.core.filters import fractional_octave_smooth
 
     freqs = np.arange(1.0, 24001.0)
     magnitude = np.where(freqs < 20000.0, 0.0, -150.0 - freqs / 1000.0)

@@ -13,19 +13,19 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import SessionError
-from roomscope.i18n import normalize_lang
-from roomscope.io.project_store import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import SessionError
+from reverbscope.i18n import normalize_lang
+from reverbscope.io.project_store import (
     add_session,
     list_project_sessions,
     project_file,
     save_project,
 )
-from roomscope.io.session_store import _copy_into, bundle_session, save_measurement
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.project import Project
-from roomscope.models.session import MeasurementSession
+from reverbscope.io.session_store import _copy_into, bundle_session, save_measurement
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.project import Project
+from reverbscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
 
@@ -170,7 +170,7 @@ def test_session_list_survives_dates_windows_cannot_convert(
     pytest.importorskip("PySide6")
     from datetime import datetime
 
-    from roomscope.ui import browser
+    from reverbscope.ui import browser
 
     def refuse(self: datetime, tz: object = None) -> datetime:
         raise OSError(22, "Invalid argument")
@@ -191,14 +191,14 @@ def test_log_rotation_keeps_logging_when_the_file_is_locked(
 ) -> None:
     from logging.handlers import RotatingFileHandler
 
-    from roomscope.logging_config import _SharedRotatingFileHandler
+    from reverbscope.logging_config import _SharedRotatingFileHandler
 
     def locked(self: RotatingFileHandler) -> None:
         raise PermissionError(32, "The process cannot access the file")
 
     monkeypatch.setattr(RotatingFileHandler, "doRollover", locked)
-    handler = _SharedRotatingFileHandler(tmp_path / "roomscope.log", maxBytes=10, backupCount=1)
-    logger = logging.getLogger("roomscope-test-rotation")
+    handler = _SharedRotatingFileHandler(tmp_path / "reverbscope.log", maxBytes=10, backupCount=1)
+    logger = logging.getLogger("reverbscope-test-rotation")
     logger.propagate = False
     logger.addHandler(handler)
     errors = io.StringIO()
@@ -210,7 +210,7 @@ def test_log_rotation_keeps_logging_when_the_file_is_locked(
         logger.removeHandler(handler)
         handler.close()
     assert "Logging error" not in errors.getvalue()
-    assert "record 4" in (tmp_path / "roomscope.log").read_text(encoding="utf-8")
+    assert "record 4" in (tmp_path / "reverbscope.log").read_text(encoding="utf-8")
 
 
 @pytest.mark.skipif(sys.platform == "win32", reason="the rename probe is for Windows")
@@ -218,10 +218,10 @@ def test_log_rotation_never_vacates_the_log_name_on_posix(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The Windows rename probe ran everywhere: on POSIX, another process that
-    opened roomscope.log between its two renames lost its records to a
+    opened reverbscope.log between its two renames lost its records to a
     deleted file."""
-    from roomscope import logging_config
-    from roomscope.logging_config import _SharedRotatingFileHandler
+    from reverbscope import logging_config
+    from reverbscope.logging_config import _SharedRotatingFileHandler
 
     renames: list[tuple[str, str]] = []
     real_replace = os.replace
@@ -231,9 +231,9 @@ def test_log_rotation_never_vacates_the_log_name_on_posix(
         real_replace(source, target)  # type: ignore[arg-type]
 
     monkeypatch.setattr(logging_config.os, "replace", recording_replace)
-    base = tmp_path / "roomscope.log"
+    base = tmp_path / "reverbscope.log"
     handler = _SharedRotatingFileHandler(base, maxBytes=10, backupCount=1)
-    logger = logging.getLogger("roomscope-test-posix-rotation")
+    logger = logging.getLogger("reverbscope-test-posix-rotation")
     logger.propagate = False
     logger.addHandler(handler)
     try:
@@ -249,7 +249,7 @@ def test_log_rotation_never_vacates_the_log_name_on_posix(
 
 def test_default_devices_are_marked(monkeypatch: pytest.MonkeyPatch) -> None:
     """sounddevice returns the defaults as an indexable _InputOutputPair."""
-    from roomscope.audio import devices
+    from reverbscope.audio import devices
 
     class Pair:
         def __init__(self, a: int, b: int) -> None:
@@ -301,7 +301,7 @@ def test_default_devices_are_marked(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_cli_output_to_a_pipe_is_utf8(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import importlib
 
-    cli = importlib.import_module("roomscope.cli.main")
+    cli = importlib.import_module("reverbscope.cli.main")
 
     raw = io.BytesIO()
     stream = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")
@@ -315,14 +315,14 @@ def test_cli_output_to_a_pipe_is_utf8(tmp_path: Path, monkeypatch: pytest.Monkey
 
 def test_a_locked_log_keeps_its_backups(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The stdlib shifts .1 -> .2 -> .3 before it renames the live file; when
-    that rename failed (Windows, another RoomScope process) every record
+    that rename failed (Windows, another ReverbScope process) every record
     pushed one more backup out."""
     import os
 
-    from roomscope import logging_config
-    from roomscope.logging_config import _SharedRotatingFileHandler
+    from reverbscope import logging_config
+    from reverbscope.logging_config import _SharedRotatingFileHandler
 
-    base = tmp_path / "roomscope.log"
+    base = tmp_path / "reverbscope.log"
     for index in (1, 2, 3):
         Path(f"{base}.{index}").write_text(f"backup {index}", encoding="utf-8")
     handler = _SharedRotatingFileHandler(base, maxBytes=10, backupCount=3)
@@ -336,7 +336,7 @@ def test_a_locked_log_keeps_its_backups(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.setattr(logging_config, "_RENAME_FAILS_WHILE_OPEN", True)
     monkeypatch.setattr(logging_config.os, "replace", locked_replace)
     monkeypatch.setattr(handler, "rotate", locked_replace)
-    logger = logging.getLogger("roomscope-test-backups")
+    logger = logging.getLogger("reverbscope-test-backups")
     logger.propagate = False
     logger.addHandler(handler)
     try:

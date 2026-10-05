@@ -14,7 +14,7 @@ Apache-2.0 project with the redistribution obligations listed in §3.
 
 ## 1. Runtime dependencies
 
-| Package | Version | Homepage / repository | License (upstream file) | Purpose in RoomScope | Kind | Apache-2.0 compatible |
+| Package | Version | Homepage / repository | License (upstream file) | Purpose in ReverbScope | Kind | Apache-2.0 compatible |
 | --- | --- | --- | --- | --- | --- | --- |
 | numpy | 2.5.3 | https://numpy.org / https://github.com/numpy/numpy | BSD-3-Clause (wheel bundles OpenBLAS BSD-3, libgfortran/libgcc GPL-3.0 WITH GCC-exception, libquadmath LGPL-2.1+) | arrays, FFT | direct, runtime | Yes* |
 | scipy | 1.18.1 | https://scipy.org / https://github.com/scipy/scipy | BSD-3-Clause (+ bundled permissive components: Qhull, SuperLU, ARPACK, HiGHS, Boost, pybind11 ...) | filters, correlation, Hilbert, Welch, peak finding, resampling | direct, runtime | Yes* |
@@ -48,11 +48,11 @@ Apache-2.0 project with the redistribution obligations listed in §3.
 | hatchling | 1.32.4 | https://github.com/pypa/hatch | MIT | the build backend (`[build-system]`); also in `dev` so that `tests/unit/test_i18n.py` can exercise the wheel build hook (`hatch_build.py`) that compiles the `.mo` catalogs; not a runtime dependency | Yes |
 | PyYAML | 6.0.3 | https://github.com/yaml/pyyaml | MIT | reads `.github/ISSUE_TEMPLATE/*.yml` in `tests/unit/test_issue_forms.py`, which keeps each English form and its Simplified Chinese counterpart in step (same fields, requirements and labels); tests only, not a runtime dependency | Yes |
 | babel | (optional `i18n-dev`) | https://github.com/python-babel/babel | BSD-3-Clause | extract/compile gettext catalogs; not required at runtime | Yes |
-| pyinstaller | (release workflow) | https://github.com/pyinstaller/pyinstaller | GPL-2.0-or-later WITH Bootloader-exception | one-directory desktop bundles; not a runtime dependency | Yes* (the bootloader that PyInstaller embeds in every frozen executable is covered by the Bootloader-exception, which lets it be shipped with a program under any license; RoomScope does not import PyInstaller) |
+| pyinstaller | (release workflow) | https://github.com/pyinstaller/pyinstaller | GPL-2.0-or-later WITH Bootloader-exception | one-directory desktop bundles; not a runtime dependency | Yes* (the bootloader that PyInstaller embeds in every frozen executable is covered by the Bootloader-exception, which lets it be shipped with a program under any license; ReverbScope does not import PyInstaller) |
 | build | (CI and release workflow) | https://github.com/pypa/build | MIT | builds the sdist and wheel; not a runtime dependency | Yes |
 | cyclonedx-bom | (release workflow on `v*` tags) | https://github.com/CycloneDX/cyclonedx-python | Apache-2.0 | SBOM attached to a draft Release; not a runtime dependency | Yes |
-| Inno Setup | (Windows bundle job, when `iscc` is installed) | https://jrsoftware.org/isinfo.php | Inno Setup License (permissive, similar to modified BSD) | optional Windows installer around the one-directory zip; not imported by RoomScope | Yes* (tool only) |
-| Inno Setup Simplified Chinese messages (`ChineseSimplified.isl`, maintainer Zhenghan Yang) | Inno Setup repository tag `is-6_7_1`, `Files/Languages/Unofficial/`, SHA-256 pinned in `scripts/inno_chinese_messages.py` | https://github.com/jrsoftware/issrc | part of the Inno Setup source repository, whose `license.txt` (Inno Setup License, permissive) covers its files "except where otherwise noted"; the translation names its maintainer and states no other license | the installer's Chinese texts; fetched at build time (released Inno Setup up to 6.7 does not install it), compiled into `RoomScope-Desktop-Windows-x64-Setup.exe`, not stored in this repository | Yes* (tool only) |
+| Inno Setup | (Windows bundle job, when `iscc` is installed) | https://jrsoftware.org/isinfo.php | Inno Setup License (permissive, similar to modified BSD) | optional Windows installer around the one-directory zip; not imported by ReverbScope | Yes* (tool only) |
+| Inno Setup Simplified Chinese messages (`ChineseSimplified.isl`, maintainer Zhenghan Yang) | Inno Setup repository tag `is-6_7_1`, `Files/Languages/Unofficial/`, SHA-256 pinned in `scripts/inno_chinese_messages.py` | https://github.com/jrsoftware/issrc | part of the Inno Setup source repository, whose `license.txt` (Inno Setup License, permissive) covers its files "except where otherwise noted"; the translation names its maintainer and states no other license | the installer's Chinese texts; fetched at build time (released Inno Setup up to 6.7 does not install it), compiled into `ReverbScope-Desktop-Windows-x64-Setup.exe`, not stored in this repository | Yes* (tool only) |
 
 Evaluated and **not** adopted: `hypothesis` (MPL-2.0, file-level copyleft;
 dev-only would be acceptable but it is not needed), `pytest-qt` (MIT; the
@@ -60,7 +60,7 @@ offscreen smoke test works without it).
 
 ## 3. Redistribution obligations (for a future packaged desktop app)
 
-Nothing in this table restricts publishing RoomScope's source under
+Nothing in this table restricts publishing ReverbScope's source under
 Apache-2.0. The obligations below attach to a *frozen binary* that bundles
 the wheels, and must be checked again at packaging time:
 
@@ -77,10 +77,10 @@ the wheels, and must be checked again at packaging time:
 3. **Qt / PySide6:** see §4.
 4. **Windows:** remove `libportaudio*-asio.dll` from the sounddevice wheel in
    the frozen build unless the Steinberg ASIO SDK license terms are accepted;
-   RoomScope does not need ASIO.
+   ReverbScope does not need ASIO.
 5. **GPL-only Qt modules must not be imported** (QtCharts, QtDataVisualization,
    QtGraphs, QtLottie, QtQuickTimeline, QtVirtualKeyboard, QtQuick3D,
-   QtHttpServer, QtNetworkAuth, QtShaderTools). RoomScope uses only QtCore,
+   QtHttpServer, QtNetworkAuth, QtShaderTools). ReverbScope uses only QtCore,
    QtGui and QtWidgets; plots are matplotlib.
 
 ## 4. PySide6 / Qt check (project brief §2.8)
@@ -88,16 +88,16 @@ the wheels, and must be checked again at packaging time:
 * **Versions in use:** PySide6 6.11.2 and shiboken6 6.11.2, bundling Qt
   6.11.2 (verified from the wheel's `QtCore.framework/Resources/Info.plist`).
 * **Licensing options:** LGPL-3.0-only, GPL-2.0-only, GPL-3.0-only or a
-  commercial license from The Qt Company. RoomScope uses the **LGPL-3.0**
+  commercial license from The Qt Company. ReverbScope uses the **LGPL-3.0**
   option.
-* **Distribution model:** RoomScope imports PySide6 through the normal Python
+* **Distribution model:** ReverbScope imports PySide6 through the normal Python
   import mechanism; Qt is dynamically linked and is not modified. The `gui`
   extra depends on `PySide6_Essentials` only, so `PySide6_Addons` (GPL-only
   modules such as QtCharts / QtGraphs) is not installed with the project.
   Source distribution (sdist/wheel on PyPI) contains no Qt code at all, so
   the LGPL imposes nothing there.
 * **Frozen app obligations (LGPL-3.0 §4):** the PySide6 wheels ship **no
-  license files**, so a packaged RoomScope must add: the LGPL-3.0 and
+  license files**, so a packaged ReverbScope must add: the LGPL-3.0 and
   GPL-3.0 texts (from the pyside-setup `LICENSES/` directory at tag 6.11.2),
   a prominent notice that Qt/PySide6 are used under the LGPL with a pointer
   to the Qt and PySide6 source (https://download.qt.io/official_releases/qt/6.11/6.11.2/,
@@ -114,7 +114,7 @@ the wheels, and must be checked again at packaging time:
 
 | Package | Version | License | Why not |
 | --- | --- | --- | --- |
-| pyroomacoustics | 0.10.1 | MIT (compiles Eigen MPL-2.0, nanoflann BSD-2, pybind11 BSD-3 into `libroom`; declares Cython as a runtime dependency) | RoomScope needs only ESS, deconvolution and decay analysis, which are short clean-room functions; pyroomacoustics would add a compiled extension, an MPL-2.0 notice obligation and a large simulation library for no measurement benefit. Kept as a conceptual reference (THIRD_PARTY_REVIEW.md). |
+| pyroomacoustics | 0.10.1 | MIT (compiles Eigen MPL-2.0, nanoflann BSD-2, pybind11 BSD-3 into `libroom`; declares Cython as a runtime dependency) | ReverbScope needs only ESS, deconvolution and decay analysis, which are short clean-room functions; pyroomacoustics would add a compiled extension, an MPL-2.0 notice obligation and a large simulation library for no measurement benefit. Kept as a conceptual reference (THIRD_PARTY_REVIEW.md). |
 
 ## 6. Items marked UNKNOWN / NEEDS REVIEW
 
@@ -122,7 +122,7 @@ matplotlib's historical `ttconv` converter is **resolved**: matplotlib 3.10.0
 is the first release whose wheels do not contain the `_ttconv` extension
 (the cp312 wheels of 3.8.0, 3.9.0 and 3.9.4 still ship
 `matplotlib/_ttconv.*.so`; checked 2026-09-24 by opening the wheels), so
-RoomScope requires matplotlib>=3.10; fonttools is used instead. Until
+ReverbScope requires matplotlib>=3.10; fonttools is used instead. Until
 2026-09-24 this section said "3.8+", which was wrong: an environment with
 matplotlib 3.8 or 3.9 contained ttconv.
 `scripts/audit_wheel_contents.py` lists bundled shared libraries and license

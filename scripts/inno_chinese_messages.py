@@ -4,7 +4,7 @@ Released Inno Setup versions up to 6.7 keep ``ChineseSimplified.isl`` among
 the unofficial translations (``Files/Languages/Unofficial`` in the Inno Setup
 repository), which their installer does not install; the development branch
 has since made it an official translation. This script prints the path of the
-file ``packaging/windows/roomscope.iss`` should use:
+file ``packaging/windows/reverbscope.iss`` should use:
 
 * the compiler's own ``Languages/ChineseSimplified.isl`` when it has one;
 * otherwise the file from the Inno Setup repository at the release tag that

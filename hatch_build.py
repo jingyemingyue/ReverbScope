@@ -2,10 +2,10 @@
 
 The ``.mo`` files are written to a temporary directory, never into the source
 tree, and are force-included next to their ``.po`` in the wheel
-(``roomscope/locale/<lang>/LC_MESSAGES/roomscope.mo``). ``*.mo`` is
+(``reverbscope/locale/<lang>/LC_MESSAGES/reverbscope.mo``). ``*.mo`` is
 git-ignored and hatchling honours VCS ignores, so a ``.mo`` lying in the
 source tree would not reach the wheel anyway. Each ``.mo`` records the SHA-256
-of the ``.po`` it was compiled from; ``roomscope.i18n`` uses it only while it
+of the ``.po`` it was compiled from; ``reverbscope.i18n`` uses it only while it
 still matches. The sdist ships the ``.po`` only.
 """
 
@@ -25,13 +25,13 @@ if str(_SRC) not in sys.path:
 
 def compiled_catalogs(out_dir: Path) -> dict[str, str]:
     """Compile the catalogs into ``out_dir``; return the wheel force-include map."""
-    from roomscope.i18n import compile_catalogs
+    from reverbscope.i18n import compile_catalogs
 
-    locale_dir = _SRC / "roomscope" / "locale"
+    locale_dir = _SRC / "reverbscope" / "locale"
     include: dict[str, str] = {}
     for mo in compile_catalogs(locale_dir, out_dir):
         relative = mo.relative_to(out_dir).as_posix()
-        include[str(mo)] = f"roomscope/locale/{relative}"
+        include[str(mo)] = f"reverbscope/locale/{relative}"
     return include
 
 
@@ -41,7 +41,7 @@ class CustomBuildHook(BuildHookInterface):
     def initialize(self, _version: str, build_data: dict[str, object]) -> None:
         if self.target_name != "wheel":
             return
-        self._out_dir = Path(tempfile.mkdtemp(prefix="roomscope-mo-"))
+        self._out_dir = Path(tempfile.mkdtemp(prefix="reverbscope-mo-"))
         force_include = build_data.setdefault("force_include", {})
         assert isinstance(force_include, dict)
         force_include.update(compiled_catalogs(self._out_dir))

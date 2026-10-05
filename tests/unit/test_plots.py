@@ -3,15 +3,15 @@ from __future__ import annotations
 from matplotlib.colors import to_hex
 from matplotlib.figure import Figure
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.ui.plots import plot_decay, plot_frequency_response
-from roomscope.ui.theme import color_scheme, plot_colors, style_figure
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.ui.plots import plot_decay, plot_frequency_response
+from reverbscope.ui.theme import color_scheme, plot_colors, style_figure
 from tests.conftest import make_rir
 
 
 def test_stylesheet_keeps_chinese_section_labels_and_shortcut_badges() -> None:
     """Letter-spacing pulls Chinese characters apart, and a 22px badge clips ⌃1."""
-    from roomscope.ui.theme import stylesheet
+    from reverbscope.ui.theme import stylesheet
 
     css = stylesheet()
     assert "letter-spacing" not in css
@@ -30,9 +30,9 @@ def test_placement_picture_is_a_schematic_not_a_room() -> None:
     import numpy as np
     from matplotlib.figure import Figure
 
-    from roomscope.i18n import activate
-    from roomscope.models.result import PlacementLength, PlacementResult, Validity
-    from roomscope.ui.plots import plot_placement_illustration, plot_placement_result
+    from reverbscope.i18n import activate
+    from reverbscope.models.result import PlacementLength, PlacementResult, Validity
+    from reverbscope.ui.plots import plot_placement_illustration, plot_placement_result
     from tests.zh_tokens import english_words
 
     fig = Figure()
@@ -96,7 +96,7 @@ def test_decay_and_fr_plots_use_linestyle_not_only_colour(short_sweep) -> None:
 
 
 def test_plot_chrome_follows_color_scheme(short_sweep, monkeypatch) -> None:
-    monkeypatch.setenv("ROOMSCOPE_COLOR_SCHEME", "dark")
+    monkeypatch.setenv("REVERBSCOPE_COLOR_SCHEME", "dark")
     assert color_scheme() == "dark"
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)])
     recording = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
@@ -104,7 +104,7 @@ def test_plot_chrome_follows_color_scheme(short_sweep, monkeypatch) -> None:
     fig = Figure()
     plot_decay(fig, result)
     assert to_hex(fig.patch.get_facecolor()[:3]) == plot_colors()["bg"]
-    monkeypatch.setenv("ROOMSCOPE_COLOR_SCHEME", "light")
+    monkeypatch.setenv("REVERBSCOPE_COLOR_SCHEME", "light")
     style_figure(fig)
     assert to_hex(fig.patch.get_facecolor()[:3]) == plot_colors()["bg"]
 
@@ -112,7 +112,7 @@ def test_plot_chrome_follows_color_scheme(short_sweep, monkeypatch) -> None:
 def test_decay_legend_gives_the_reason_a_band_has_no_rt60() -> None:
     """Every band without an RT60 was labelled "insufficient range", also the
     ones outside the sweep (the table said n/a)."""
-    from roomscope.models.configuration import SweepSettings
+    from reverbscope.models.configuration import SweepSettings
 
     sweep = SweepSettings(duration_s=2.0, post_silence_s=1.5, start_hz=300.0)
     result = analyze(
@@ -127,8 +127,8 @@ def test_decay_legend_gives_the_reason_a_band_has_no_rt60() -> None:
 
 
 def test_placement_surfaces_have_names_not_ids() -> None:
-    from roomscope.i18n import activate
-    from roomscope.labels import surface_text
+    from reverbscope.i18n import activate
+    from reverbscope.labels import surface_text
 
     assert surface_text("lower_plane") == "Reference plane"
     assert surface_text("upper_plane") == "Plane above the devices"

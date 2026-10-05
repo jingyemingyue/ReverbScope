@@ -1,4 +1,4 @@
-"""Shipped JSON Schemas validate writers and match ``roomscope schema``."""
+"""Shipped JSON Schemas validate writers and match ``reverbscope schema``."""
 
 from __future__ import annotations
 
@@ -9,13 +9,13 @@ import numpy as np
 import pytest
 from jsonschema import Draft202012Validator
 
-from roomscope.cli.main import main
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.io.wav import write_sweep_file
-from roomscope.models.comparison import ComparisonResult
-from roomscope.models.project import Project
-from roomscope.models.session import MeasurementSession
-from roomscope.schemas import SCHEMA_FILES, load_schema, schema_text
+from reverbscope.cli.main import main
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.io.wav import write_sweep_file
+from reverbscope.models.comparison import ComparisonResult
+from reverbscope.models.project import Project
+from reverbscope.models.session import MeasurementSession
+from reverbscope.schemas import SCHEMA_FILES, load_schema, schema_text
 from tests.conftest import make_rir
 
 
@@ -28,7 +28,7 @@ def test_schema_cli_matches_shipped_files(capsys: pytest.CaptureFixture[str]) ->
         assert main(["schema", name]) == 0
         printed = capsys.readouterr().out
         assert printed == schema_text(name)
-        shipped = Path("src/roomscope/schemas") / filename
+        shipped = Path("src/reverbscope/schemas") / filename
         assert shipped.read_text(encoding="utf-8") == printed
 
 
@@ -43,12 +43,12 @@ def test_result_and_session_to_dict_validate(short_sweep, tmp_path: Path) -> Non
     _validate("session", session.to_dict())
 
     write_sweep_file(short_sweep, tmp_path / "sweep.wav")
-    sidecar = json.loads((tmp_path / "sweep.roomscope-sweep.json").read_text(encoding="utf-8"))
+    sidecar = json.loads((tmp_path / "sweep.reverbscope-sweep.json").read_text(encoding="utf-8"))
     _validate("sidecar", sidecar)
 
 
 def test_comparison_and_project_to_dict_validate(short_sweep) -> None:
-    from roomscope.core.compare import compare
+    from reverbscope.core.compare import compare
 
     ir_a = make_rir(short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)])
     ir_b = make_rir(short_sweep.sample_rate, rt60_s=0.55, reflections=[(0.018, 0.22)], seed=3)
@@ -67,7 +67,7 @@ def test_comparison_and_project_to_dict_validate(short_sweep) -> None:
 
 def test_the_schema_requires_what_the_loader_requires() -> None:
     """A schema-valid result.json without these was refused by the loader."""
-    from roomscope.schemas import load_schema
+    from reverbscope.schemas import load_schema
 
     schema = load_schema("result")
     required = schema["$defs"]["impulse_response"]["required"]
@@ -80,8 +80,8 @@ def full_result(short_sweep) -> dict:  # type: ignore[no-untyped-def]
     """A result with every optional record filled, as ``to_dict`` writes it."""
     from dataclasses import replace
 
-    from roomscope.models.configuration import AnalysisSettings
-    from roomscope.models.result import ResonanceCandidate
+    from reverbscope.models.configuration import AnalysisSettings
+    from reverbscope.models.result import ResonanceCandidate
 
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.3, reflections=[(0.004, 0.5), (0.018, 0.35)])
     rec = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
@@ -134,8 +134,8 @@ def test_the_schema_refuses_what_the_loader_refuses(
     """Each of these passed the published schema and was refused on load."""
     import copy
 
-    from roomscope.errors import SessionError
-    from roomscope.models.result import AnalysisResult
+    from reverbscope.errors import SessionError
+    from reverbscope.models.result import AnalysisResult
 
     edited = copy.deepcopy(full_result)
     target = edited
@@ -148,13 +148,13 @@ def test_the_schema_refuses_what_the_loader_refuses(
 
 
 def _comparison_with_every_record() -> dict:
-    from roomscope.models.comparison import (
+    from reverbscope.models.comparison import (
         FrequencyResponseDelta,
         MetricDelta,
         ReflectionMatch,
         ResonanceMatch,
     )
-    from roomscope.models.result import Validity
+    from reverbscope.models.result import Validity
 
     delta = MetricDelta("broadband.t30", 0.5, 0.55, Validity.VALID, delta=0.05, unit="s")
     return ComparisonResult(
@@ -194,7 +194,7 @@ def test_every_record_of_a_full_comparison_validates() -> None:
     ids=lambda value: repr(value)[:40],
 )
 def test_the_comparison_schema_refuses_what_the_loader_refuses(key: str, value: object) -> None:
-    from roomscope.errors import SessionError
+    from reverbscope.errors import SessionError
 
     edited = {**_comparison_with_every_record(), key: value}
     assert not Draft202012Validator(load_schema("comparison")).is_valid(edited)
