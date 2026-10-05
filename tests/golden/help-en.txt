@@ -23,6 +23,9 @@ commands:
     project     project folders (one room, several positions)
     export      export curves through an exporter
     session     session folder tools
+  Settings
+    config      show or change the settings (the same settings.json as the
+                desktop app)
   Diagnostics
     doctor      print an environment report for bug reports and debugging
     schema      print a shipped JSON Schema
@@ -457,6 +460,36 @@ options:
 
 examples:
   roomscope session bundle session-1 --no-audio
+
+=== roomscope config --help
+usage: roomscope config [KEY [VALUE]] [options]
+
+show or change the settings (the same settings.json as the desktop app)
+
+positional arguments:
+  KEY         the setting to show or change; without it every setting is
+              listed
+  VALUE       the new value; auto goes back to the default
+
+options:
+  -h, --help  show this help message and exit
+
+settings:
+  language         zh_CN, en, or auto (follow the system)
+  profile          acoustic_guitar, choir, drums, generic, room_mic, vocal,
+                   voiceover, or auto (generic)
+  backend          portaudio, fake, or auto (PortAudio)
+  output-folder    an existing folder, or auto (none)
+  copy-recording   on or off (auto: on)
+  developer-tools  on or off (auto: off; a source or pip install always has
+                   them)
+  theme            system, light or dark (the desktop app only)
+
+examples:
+  roomscope config
+  roomscope config language zh_CN
+  roomscope config language auto
+  roomscope config profile vocal
 
 === roomscope doctor --help
 usage: roomscope doctor [options]

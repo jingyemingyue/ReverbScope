@@ -1,0 +1,333 @@
+"""``roomscope config``: the settings from the command line.
+
+Every key with its accepted spellings, refused values (exit code 2, nothing
+written), the JSON output, the file the desktop app reads, the other
+settings kept on a change, a damaged file left alone, and the language:
+stored, confirmed in the language just chosen, and used by the next command.
+"""
+
+from __future__ import annotations
+
+import json
+from collections.abc import Iterator
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from roomscope import i18n
+from roomscope.cli.config import KEYS
+from roomscope.cli.main import main
+from roomscope.i18n import activate, current_locale
+from roomscope.settings import UserSettings, load_settings, save_settings, settings_path
+from tests.zh_tokens import english_words
+
+
+@pytest.fixture
+def home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
+    """Its own settings folder, and a system language read from LANG only
+    (no Mac preferences, no Windows display language) on every platform."""
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("COLUMNS", "100")
+    monkeypatch.delenv("ROOMSCOPE_AUDIO_BACKEND", raising=False)
+    monkeypatch.delenv("ROOMSCOPE_EDITION", raising=False)
+    monkeypatch.setattr(i18n, "MACOS_PREFERENCES", (str(tmp_path / "no.plist"),))
+    monkeypatch.setattr(i18n, "_windows_ui_language", lambda: None)
+    try:
+        yield tmp_path
+    finally:
+        activate("en")
+
+
+def _run(capsys: pytest.CaptureFixture[str], *argv: str) -> tuple[int, str, str]:
+    capsys.readouterr()
+    try:
+        code = main(list(argv))
+    except SystemExit as exc:
+        code = int(exc.code or 0)
+    captured = capsys.readouterr()
+    return code, captured.out, captured.err
+
+
+def _stored() -> dict[str, Any]:
+    data: dict[str, Any] = json.loads(settings_path().read_text(encoding="utf-8"))
+    return data
+
+
+# --- Listing -----------------------------------------------------------------------------
+
+
+def test_config_lists_every_setting_and_the_file(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code, out, err = _run(capsys, "config")
+    assert code == 0 and err == ""
+    for key in KEYS:
+        assert f"  {key} " in out, key
+    assert "follow the system (now English)" in out
+    assert str(settings_path()) in out
+    assert "Nothing is stored yet" in out
+    assert not settings_path().exists()  # showing writes nothing
+
+
+def test_config_as_json_is_the_settings_and_nothing_else(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code, out, err = _run(capsys, "--format", "json", "config")
+    assert code == 0 and err == ""
+    assert json.loads(out) == UserSettings().to_dict()
+    code, out, _err = _run(capsys, "--format", "json", "config", "profile", "vocal")
+    assert code == 0
+    assert json.loads(out)["default_profile"] == "vocal" == _stored()["default_profile"]
+    code, out, _err = _run(capsys, "--format", "json", "config", "language")
+    assert json.loads(out)["default_profile"] == "vocal"
+
+
+# --- Every key ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("key", "value", "field", "stored"),
+    [
+        ("language", "zh_CN", "language", "zh_CN"),
+        ("language", "zh", "language", "zh_CN"),
+        ("language", "zh-CN", "language", "zh_CN"),
+        ("language", "zh_Hans", "language", "zh_CN"),
+        ("language", "en_US", "language", "en"),
+        ("language", "EN", "language", "en"),
+        ("language", "auto", "language", ""),
+        ("profile", "vocal", "default_profile", "vocal"),
+        ("profile", "Acoustic-Guitar", "default_profile", "acoustic_guitar"),
+        ("profile", "auto", "default_profile", "generic"),
+        ("backend", "fake", "audio_backend", "fake"),
+        ("backend", "PortAudio", "audio_backend", "portaudio"),
+        ("backend", "sounddevice", "audio_backend", "portaudio"),
+        ("backend", "auto", "audio_backend", ""),
+        ("copy-recording", "off", "copy_recording", False),
+        ("copy-recording", "no", "copy_recording", False),
+        ("copy-recording", "on", "copy_recording", True),
+        ("copy-recording", "auto", "copy_recording", True),
+        ("developer-tools", "on", "developer_tools", True),
+        ("developer-tools", "true", "developer_tools", True),
+        ("developer-tools", "auto", "developer_tools", False),
+        ("theme", "dark", "theme", "dark"),
+        ("theme", "Light", "theme", "light"),
+        ("theme", "system", "theme", ""),
+        ("theme", "auto", "theme", ""),
+        # The field names of settings.json name the same settings.
+        ("default_profile", "drums", "default_profile", "drums"),
+        ("copy_recording", "off", "copy_recording", False),
+        ("audio-backend", "fake", "audio_backend", "fake"),
+    ],
+)
+def test_every_setting_is_stored_as_the_desktop_app_reads_it(
+    home: Path,
+    capsys: pytest.CaptureFixture[str],
+    key: str,
+    value: str,
+    field: str,
+    stored: object,
+) -> None:
+    code, out, err = _run(capsys, "--lang", "en", "config", key, value)
+    assert code == 0, err
+    assert _stored()[field] == stored
+    assert getattr(load_settings(), field) == stored
+    assert "Saved in" in out or "保存" in out
+
+
+def test_the_output_folder_is_stored_as_an_absolute_path(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (home / "sessions").mkdir()
+    monkeypatch.chdir(home)
+    assert _run(capsys, "config", "output-folder", "sessions")[0] == 0
+    assert _stored()["output_dir"] == str((home / "sessions").resolve())
+    assert _run(capsys, "config", "output_dir", "auto")[0] == 0
+    assert _stored()["output_dir"] == ""
+
+
+@pytest.mark.parametrize(
+    ("argv", "message"),
+    [
+        (["colour", "on"], "unknown setting 'colour'"),
+        (["language", "fr"], "unknown language 'fr'; available: zh_CN, en, or auto"),
+        (["language", "zh_TW"], "unknown language 'zh_TW'"),
+        (["profile", "opera"], "unknown profile 'opera'"),
+        (["backend", "asio"], "unknown audio backend 'asio'"),
+        (["output-folder", "no-such-folder"], "'no-such-folder' is not an existing folder"),
+        (["output-folder", "a-file.txt"], "'a-file.txt' is not an existing folder"),
+        (["copy-recording", "maybe"], "copy-recording is on or off, not 'maybe'"),
+        (["developer-tools", "2"], "developer-tools is on or off"),
+        (["theme", "blue"], "unknown theme 'blue'"),
+    ],
+)
+def test_a_value_a_setting_cannot_take_writes_nothing(
+    home: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    argv: list[str],
+    message: str,
+) -> None:
+    monkeypatch.chdir(home)
+    (home / "a-file.txt").write_text("x", encoding="utf-8")
+    code, out, err = _run(capsys, "config", *argv)
+    assert code == 2 and out == ""
+    assert message in " ".join(err.split()), err
+    assert "Nothing was changed" in err and "roomscope config --help" in err
+    assert not settings_path().exists()
+    save_settings(UserSettings(language="zh_CN", default_profile="vocal"))
+    before = settings_path().read_bytes()
+    assert _run(capsys, "config", *argv)[0] == 2
+    assert settings_path().read_bytes() == before
+
+
+def test_a_refusal_is_translated(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "language", "fr")
+    assert code == 2
+    assert "未知的语言 'fr'；可用：zh_CN, en，或 auto" in err and "没有做任何更改" in err
+
+
+def test_a_change_keeps_every_other_setting(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    save_settings(
+        UserSettings(language="zh_CN", default_profile="vocal", copy_recording=False, theme="dark")
+    )
+    assert _run(capsys, "config", "backend", "fake")[0] == 0
+    assert (
+        _stored()
+        == UserSettings(
+            language="zh_CN",
+            default_profile="vocal",
+            audio_backend="fake",
+            copy_recording=False,
+            theme="dark",
+        ).to_dict()
+    )
+
+
+def test_a_damaged_settings_file_is_left_alone(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """load_settings() reads a damaged file as the defaults; writing those
+    back with one new value would lose every other setting."""
+    settings_path().parent.mkdir(parents=True)
+    settings_path().write_text('{"language": "zh_CN", ', encoding="utf-8")
+    code, out, err = _run(capsys, "--lang", "en", "config", "theme", "dark")
+    assert code == 1 and out == ""
+    assert "nothing was changed" in err and str(settings_path()) in " ".join(err.split())
+    assert settings_path().read_text(encoding="utf-8") == '{"language": "zh_CN", '
+    code, out, err = _run(capsys, "--lang", "en", "config")
+    assert code == 0 and "the defaults are shown" in err
+    assert "language         auto" in out
+
+
+# --- The language ------------------------------------------------------------------------
+
+
+def test_the_confirmation_is_in_the_language_just_chosen(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    code, out, _err = _run(capsys, "--lang", "en", "config", "language", "zh_CN")
+    assert code == 0
+    assert "以后都会使用简体中文。" in out
+    assert "roomscope config language auto" in out and "改回跟随系统" in out
+    assert current_locale() == "zh_CN"
+    assert _stored()["language"] == "zh_CN"
+    code, out, _err = _run(capsys, "config", "language", "en")
+    assert "RoomScope uses English from now on." in out
+    assert current_locale() == "en"
+    monkeypatch.setenv("LANG", "zh_CN.UTF-8")
+    code, out, _err = _run(capsys, "config", "language", "auto")
+    assert "已改回跟随系统语言：当前为简体中文。" in out
+    assert "环境变量 LANG=zh_CN.UTF-8" in out
+    assert _stored()["language"] == ""
+
+
+def test_the_stored_language_is_used_by_the_next_command(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Chinese from the setting, whatever LANG says; --lang still wins for one command."""
+    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    assert _run(capsys, "config", "language", "zh_CN")[0] == 0
+    activate("en")  # a new process starts in English
+    code, out, _err = _run(capsys, "--backend", "fake", "devices")
+    assert code == 0 and "主机" in out
+    code, out, _err = _run(capsys, "--lang", "en", "--backend", "fake", "devices")
+    assert "主机" not in out
+    # The stored language comes before ROOMSCOPE_LANG.
+    monkeypatch.setenv("ROOMSCOPE_LANG", "en")
+    code, out, _err = _run(capsys, "--backend", "fake", "devices")
+    assert "主机" in out
+
+
+@pytest.mark.parametrize(
+    ("argv", "env", "stored", "because"),
+    [
+        ([], {"LANG": "zh_CN.UTF-8"}, "", "原因      环境变量 LANG=zh_CN.UTF-8"),
+        ([], {"LANG": "en_US.UTF-8", "LANGUAGE": "zh_CN:en"}, "", "环境变量 LANGUAGE=zh_CN:en"),
+        (["--lang", "en"], {"LANG": "zh_CN.UTF-8"}, "", "--lang en on this command line"),
+        ([], {"ROOMSCOPE_LANG": "zh_CN"}, "", "环境变量 ROOMSCOPE_LANG=zh_CN"),
+        (
+            [],
+            {"ROOMSCOPE_LANG": "en"},
+            "zh_CN",
+            "已保存的设置（roomscope config language zh_CN）",
+        ),
+        ([], {"LANG": "fr_FR.UTF-8"}, "", "fr_FR has no translation, so English is used"),
+    ],
+)
+def test_config_language_shows_what_is_in_effect_and_why(
+    home: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    argv: list[str],
+    env: dict[str, str],
+    stored: str,
+    because: str,
+) -> None:
+    for name, value in env.items():
+        monkeypatch.setenv(name, value)
+    if stored:
+        save_settings(UserSettings(language=stored))
+    activate(None)
+    code, out, _err = _run(capsys, *argv, "config", "language")
+    assert code == 0
+    assert because in " ".join(out.split()) or because in out, out
+
+
+def test_one_setting_shows_its_values(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    code, out, _err = _run(capsys, "config", "profile")
+    assert code == 0
+    assert "acoustic_guitar" in out and "roomscope config profile VALUE" in out
+    code, out, _err = _run(capsys, "config", "theme")
+    assert "desktop app only" in out
+
+
+# --- Chinese -------------------------------------------------------------------------------
+
+
+def test_every_config_screen_is_chinese(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from roomscope.interpretation import available_profiles
+
+    monkeypatch.setenv("LANG", "zh_CN.UTF-8")
+    typed = (*KEYS, *available_profiles(), "auto", "system", "zh_CN", "on", "off", "light", "dark")
+    # Paths and environment variables are shown as they are.
+    data = (str(settings_path()), str(home), "LANG=zh_CN.UTF-8")
+    runs = [
+        ["config"],
+        ["config", "language"],
+        ["config", "profile"],
+        ["config", "theme"],
+        ["config", "copy-recording", "off"],
+        ["config", "theme", "light"],
+        ["config", "language", "zh_CN"],
+        ["config", "language", "auto"],
+        ["config", "--help"],
+    ]
+    for argv in runs:
+        code, out, err = _run(capsys, "--lang", "zh_CN", *argv)
+        assert code == 0, (argv, err)
+        found = english_words(out + err, data=data, values=typed)
+        assert found == [], (argv, found, out)

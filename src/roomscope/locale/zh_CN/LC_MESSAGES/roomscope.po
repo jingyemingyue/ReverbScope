@@ -4186,3 +4186,256 @@ msgstr "替换"
 
 msgid "the test signal lasts {seconds:.2f} s, but a recording must last at least 1 s to be analysed; lengthen the silence after the sweep (--post-silence)"
 msgstr "测试信号只有 {seconds:.2f} 秒，而录音至少要 1 秒才能分析；请加长扫频后的静音（--post-silence）"
+
+# roomscope config
+
+msgid "show or change the settings (the same settings.json as the desktop app)"
+msgstr "查看或修改设置（与桌面版共用同一个 settings.json）"
+
+msgctxt "metavar"
+msgid "KEY"
+msgstr "设置项"
+
+msgctxt "metavar"
+msgid "VALUE"
+msgstr "值"
+
+msgid "the setting to show or change; without it every setting is listed"
+msgstr "要查看或修改的设置项；省略时列出所有设置"
+
+msgid "the new value; auto goes back to the default"
+msgstr "新的值；auto 表示恢复默认"
+
+msgid "settings"
+msgstr "设置项"
+
+msgid "system, light or dark (the desktop app only)"
+msgstr "system、light 或 dark（只影响桌面版）"
+
+msgid "portaudio, fake, or auto (PortAudio)"
+msgstr "portaudio、fake 或 auto（PortAudio）"
+
+msgid "an existing folder, or auto (none)"
+msgstr "一个已存在的文件夹，或 auto（不设置）"
+
+msgid "on or off (auto: on)"
+msgstr "on 或 off（auto：on）"
+
+msgid "on or off (auto: off; a source or pip install always has them)"
+msgstr "on 或 off（auto：off；源码或 pip 安装总会显示）"
+
+msgid "{languages}, or auto (follow the system)"
+msgstr "{languages}，或 auto（跟随系统）"
+
+msgid "{profiles}, or auto ({default})"
+msgstr "{profiles}，或 auto（{default}）"
+
+msgid "English"
+msgstr "英文"
+
+msgid "Simplified Chinese"
+msgstr "简体中文"
+
+msgid "follow the system"
+msgstr "跟随系统"
+
+msgid "Interface language"
+msgstr "界面语言"
+
+msgid "Default recording profile"
+msgstr "默认录音配置"
+
+msgid "Folder for saved sessions (desktop app)"
+msgstr "保存会话的文件夹（桌面版）"
+
+msgid "Raw recording copied into each session"
+msgstr "把原始录音复制进每个会话"
+
+msgid "Desktop app theme"
+msgstr "桌面版主题"
+
+msgid "simulated interface, for the demo and tests"
+msgstr "模拟的音频接口，用于演示和测试"
+
+msgid "PortAudio (the default)"
+msgstr "PortAudio（默认）"
+
+msgctxt "setting"
+msgid "on"
+msgstr "开"
+
+msgctxt "setting"
+msgid "off"
+msgstr "关"
+
+msgid "hidden in the installed app"
+msgstr "安装版中隐藏"
+
+msgid "light"
+msgstr "浅色"
+
+msgid "dark"
+msgstr "深色"
+
+msgid "--lang {value} on this command line"
+msgstr "本条命令中的 --lang {value}"
+
+msgid "; {lang} has no translation, so English is used"
+msgstr "；{lang} 没有译文，因此使用英文"
+
+msgid "the stored setting (roomscope config language {value})"
+msgstr "已保存的设置（roomscope config language {value}）"
+
+msgid "not stored; {name}={value} chooses {language}"
+msgstr "未保存；由 {name}={value} 选择{language}"
+
+msgid "follow the system (now {language})"
+msgstr "跟随系统（当前为{language}）"
+
+msgid "{name}={value} chooses the backend before this setting"
+msgstr "{name}={value} 优先于此设置选择后端"
+
+msgid "{name}={value} decides before this setting"
+msgstr "{name}={value} 优先于此设置"
+
+msgid "unknown setting {key}; the settings are: {keys}"
+msgstr "未知的设置项 {key}；可用的设置项：{keys}"
+
+msgid "{key} is on or off, not {value}"
+msgstr "{key} 只能是 on 或 off，不能是 {value}"
+
+msgid "unknown language {value}; available: {languages}, or auto"
+msgstr "未知的语言 {value}；可用：{languages}，或 auto"
+
+msgid "unknown profile {value}; available: {profiles}, or auto"
+msgstr "未知的录音配置 {value}；可用：{profiles}，或 auto"
+
+msgid "unknown audio backend {value}; choose portaudio, fake or auto"
+msgstr "未知的音频后端 {value}；请选择 portaudio、fake 或 auto"
+
+msgid "{path} is not an existing folder; give a folder, or auto"
+msgstr "{path} 不是已存在的文件夹；请给出一个文件夹，或 auto"
+
+msgid "unknown theme {value}; choose system, light, dark or auto"
+msgstr "未知的主题 {value}；请选择 system、light、dark 或 auto"
+
+msgid "the environment variable {name}={value}"
+msgstr "环境变量 {name}={value}"
+
+msgid "the Mac's preferred languages: {value}"
+msgstr "Mac 的首选语言：{value}"
+
+msgid "the Windows display language: {value}"
+msgstr "Windows 显示语言：{value}"
+
+msgid "the desktop's UI languages: {value}"
+msgstr "桌面环境的界面语言：{value}"
+
+msgid "the system locale: {value}"
+msgstr "系统区域设置：{value}"
+
+msgid "no language is set anywhere"
+msgstr "任何地方都没有设置语言"
+
+msgid "Nothing was changed."
+msgstr "没有做任何更改。"
+
+msgid "{error}; nothing was changed: correct or delete the file first"
+msgstr "{error}；没有做任何更改：请先修正或删除该文件"
+
+msgid "warning: {error}; the defaults are shown"
+msgstr "警告：{error}；下面显示的是默认值"
+
+msgid "RoomScope settings"
+msgstr "RoomScope 设置"
+
+msgid "change a setting"
+msgstr "修改一项设置"
+
+msgid "back to its default"
+msgstr "恢复为默认值"
+
+msgctxt "setting"
+msgid "Setting"
+msgstr "设置项"
+
+msgctxt "setting"
+msgid "Value"
+msgstr "值"
+
+msgid "Meaning"
+msgstr "说明"
+
+msgid "Settings file"
+msgstr "设置文件"
+
+msgid "Nothing is stored yet: every setting has its default."
+msgstr "尚未保存任何设置：每一项都是默认值。"
+
+msgid "Values"
+msgstr "可选值"
+
+msgid "change it"
+msgstr "修改它"
+
+msgid "The theme applies to the desktop app only."
+msgstr "主题只影响桌面版。"
+
+msgid "Stored"
+msgstr "已保存"
+
+msgid "In effect"
+msgstr "当前使用"
+
+msgid "Because"
+msgstr "原因"
+
+msgid "{value}: {state}"
+msgstr "{value}：{state}"
+
+msgid "always {language}"
+msgstr "一直使用{language}"
+
+msgid "{language} for one command"
+msgstr "只在一条命令中使用{language}"
+
+msgid "RoomScope uses {language} from now on."
+msgstr "以后都会使用{language}。"
+
+msgid "follow the system again"
+msgstr "改回跟随系统"
+
+msgid "The language setting is cleared; {name}={value} still chooses {language}."
+msgstr "已清除语言设置；{name}={value} 仍会选择{language}。"
+
+msgid "RoomScope follows the system language again: {language}."
+msgstr "已改回跟随系统语言：当前为{language}。"
+
+msgid "Because: {reason}."
+msgstr "原因：{reason}。"
+
+msgid "{setting}: {state}"
+msgstr "{setting}：{state}"
+
+msgid "The theme applies to the desktop app only, from the next time it opens."
+msgstr "主题只影响桌面版，下次打开时生效。"
+
+msgid "The desktop app shows the change the next time it starts."
+msgstr "桌面版下次启动时生效。"
+
+msgid "{name} is set and comes before this setting."
+msgstr "已设置 {name}，它优先于此设置。"
+
+msgid "--copy-recording and --no-copy-recording override it for one command."
+msgstr "--copy-recording 和 --no-copy-recording 可以在单条命令中覆盖它。"
+
+msgid "Saved in {path}"
+msgstr "已保存到 {path}"
+
+# roomscope config: output folder
+
+msgid "its Save dialog opens here"
+msgstr "保存对话框从这里打开"
+
+msgid "not set"
+msgstr "未设置"

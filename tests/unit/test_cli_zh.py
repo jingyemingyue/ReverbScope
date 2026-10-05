@@ -62,12 +62,21 @@ def _prose(help_text: str) -> str:
     return re.sub(r"-\n\s*", "-", "\n".join(kept))
 
 
+def _typed_values(path: str) -> tuple[str, ...]:
+    """Values a screen lists as one types them: those of ``roomscope config``."""
+    if path != "roomscope config":
+        return ()
+    from roomscope.interpretation import available_profiles
+
+    return (*available_profiles(), "auto", "on", "off", "system", "light", "dark")
+
+
 def test_every_help_screen_is_chinese(zh_cli: None) -> None:
     texts = _help_texts()
     assert len(texts) >= 15
     for path, text in texts.items():
         assert text.startswith("用法："), path
-        found = english_words(_prose(text))
+        found = english_words(_prose(text), values=_typed_values(path))
         assert found == [], f"{path}: {found}"
     root = texts["roomscope"]
     assert "命令：" in root and "选项" in root and "显示此帮助信息并退出" in root
@@ -87,7 +96,7 @@ def test_usage_lines_and_placeholders_are_chinese_too(zh_cli: None) -> None:
     """The usage line and the option list showed DIR, WAV, N, TEXT, <command>…"""
     texts = _help_texts()
     for path, text in texts.items():
-        found = english_words(_everything_shown(text))
+        found = english_words(_everything_shown(text), values=_typed_values(path))
         assert found == [], f"{path}: {found}"
     assert texts["roomscope"].startswith("用法：roomscope [-h] [--version] [--lang 语言]")
     assert "<命令> ..." in texts["roomscope"].split("\n\n", 1)[0]
@@ -123,8 +132,10 @@ def test_option_help_lines_up_with_chinese_placeholders(zh_cli: None) -> None:
     for path, text in _help_texts().items():
         if path == "roomscope":
             continue  # the grouped command list has its own column
-        # One column per screen, except the choice lists argparse cannot wrap.
-        shown = "\n".join(line for line in text.splitlines() if "{" not in line)
+        # One column per screen, except the choice lists argparse cannot wrap;
+        # the list of settings below the options has its own.
+        options = text.split("\n设置项：\n", 1)[0]
+        shown = "\n".join(line for line in options.splitlines() if "{" not in line)
         assert len(_help_columns(shown)) <= 1, (path, _help_columns(shown), text)
 
 

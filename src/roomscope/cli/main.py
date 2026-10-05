@@ -2,7 +2,7 @@
 
 Subcommands, in the order of the workflow: ``demo``, ``gui``, ``sweep``,
 ``analyze``, ``devices``, ``measure``, ``analyze-ir``, ``show``, ``compare``,
-``project``, ``export``, ``session``, ``doctor``, ``schema``.
+``project``, ``export``, ``session``, ``config``, ``doctor``, ``schema``.
 
 Reports go to stdout and diagnostics to stderr; all text is laid out by
 :mod:`roomscope.cli.render` through :mod:`roomscope.cli.console`. A user error
@@ -39,6 +39,10 @@ from roomscope.cli.console import (
 from roomscope.cli.render import (
     render_analysis,
     render_comparison,
+    render_config,
+    render_config_key,
+    render_config_language,
+    render_config_saved,
     render_demo,
     render_devices,
     render_environment,
@@ -144,6 +148,7 @@ COMMAND_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (N_("Get started"), ("demo", "gui")),
     (N_("Measurement"), ("sweep", "analyze", "devices", "measure", "analyze-ir")),
     (N_("Results"), ("show", "compare", "project", "export", "session")),
+    (N_("Settings"), ("config",)),
     (N_("Diagnostics"), ("doctor", "schema")),
 )
 
@@ -328,6 +333,19 @@ def _command(
     )
     parser.add_argument("-h", "--help", action="help", help=_("show this help message and exit"))
     return cast(argparse.ArgumentParser, parser)
+
+
+def _settings_block(keys: Any) -> str:
+    """``roomscope config --help``: each setting and the values it takes."""
+    from roomscope.cli.console import is_terminal, terminal_width, wrap
+
+    width = terminal_width(sys.stdout, is_terminal(sys.stdout), os.environ)
+    name_width = max(len(key) for key in keys.KEYS) + 2
+    lines = [_heading(_("settings"))]
+    for key in keys.KEYS:
+        prefix = f"  {key.ljust(name_width)}"
+        lines += wrap(keys.choices(key), width, first=prefix, rest=" " * len(prefix))
+    return "\n".join(lines)
 
 
 def _commands_block(helps: dict[str, str]) -> str:
@@ -567,16 +585,24 @@ def _shorten_usage(parser: argparse.ArgumentParser) -> None:
                 _shorten_usage(sub)
                 continue
             parts = [sub.prog]
+            optional = 0  # positionals that may be left out: "[KEY [VALUE]]"
             for item in sub._actions:
                 if not item.option_strings:
                     if item.metavar is None and item.choices:
-                        parts.append("{" + ",".join(str(c) for c in item.choices) + "}")
+                        shown = "{" + ",".join(str(c) for c in item.choices) + "}"
                     else:
-                        parts.append(str(item.metavar or item.dest))
+                        shown = str(item.metavar or item.dest)
+                    if item.nargs == "?":
+                        optional += 1
+                        shown = "[" + shown
+                    parts.append(shown)
                 elif item.required:
                     metavar = item.metavar or item.dest.upper()
                     shown = " ".join(metavar) if isinstance(metavar, tuple) else metavar
                     parts.append(f"{item.option_strings[0]} {shown}")
+            if optional:
+                last = max(i for i, part in enumerate(parts) if part.startswith("["))
+                parts[last] += "]" * optional
             parts.append(_("[options]"))
             sub.usage = " ".join(parts)
 
@@ -1103,6 +1129,35 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("zip file (.zip) or folder"),
     )
     sess_sub.metavar = "{" + ",".join(sess_sub.choices) + "}"
+
+    from roomscope.cli import config as settings_keys
+
+    p_cfg = _command(
+        sub,
+        "config",
+        _("show or change the settings (the same settings.json as the desktop app)"),
+        examples=(
+            "roomscope config",
+            "roomscope config language zh_CN",
+            "roomscope config language auto",
+            "roomscope config profile vocal",
+        ),
+    )
+    p_cfg.add_argument(
+        "key",
+        nargs="?",
+        default=None,
+        metavar=pgettext("metavar", "KEY"),
+        help=_("the setting to show or change; without it every setting is listed"),
+    )
+    p_cfg.add_argument(
+        "value",
+        nargs="?",
+        default=None,
+        metavar=pgettext("metavar", "VALUE"),
+        help=_("the new value; auto goes back to the default"),
+    )
+    p_cfg.epilog = "\n\n".join([_settings_block(settings_keys), str(p_cfg.epilog)])
 
     p_doc = _command(
         sub,
@@ -1718,6 +1773,84 @@ def cmd_compare(args: argparse.Namespace) -> int:
     return 0
 
 
+def _stored_settings(args: argparse.Namespace) -> Any:
+    """The settings to show; a damaged file is named and the defaults shown."""
+    from roomscope.settings import UserSettings, read_settings
+
+    try:
+        return read_settings()
+    except SessionError as exc:
+        print(
+            render_status(
+                _console(args, sys.stderr),
+                "warn",
+                _("warning: {error}; the defaults are shown").format(error=localize(str(exc))),
+            ),
+            file=sys.stderr,
+        )
+        return UserSettings()
+
+
+def _show_config(args: argparse.Namespace, key: str | None) -> int:
+    """``roomscope config`` and ``roomscope config KEY``: nothing is written."""
+    from roomscope.i18n import current_locale, language_choice
+    from roomscope.settings import settings_path
+
+    settings = _stored_settings(args)
+    if getattr(args, "format", None) == "json":
+        print(json.dumps(settings.to_dict(), indent=1))
+    elif key is None:
+        path = settings_path()
+        shown = render_config(
+            _console(args), settings, path, language_choice(None), exists=path.exists()
+        )
+        print(shown)
+    elif key == "language":
+        choice = language_choice(getattr(args, "lang", None))
+        print(render_config_language(_console(args), settings, choice, current_locale()))
+    else:
+        print(render_config_key(_console(args), key, settings))
+    return 0
+
+
+def cmd_config(args: argparse.Namespace) -> int:
+    from roomscope.cli import config
+    from roomscope.i18n import LanguageChoice, language_choice
+    from roomscope.settings import read_settings, save_settings
+
+    try:
+        key = None if args.key is None else config.canonical_key(args.key)
+        value = None if args.value is None or key is None else config.parse_value(key, args.value)
+    except config.SettingError as exc:
+        raise _UsageError(str(exc), detail=_("Nothing was changed."), hints=exc.hints) from None
+    if key is None or args.value is None:
+        return _show_config(args, key)
+    try:
+        # A damaged file is not replaced by the defaults and one new value.
+        stored = read_settings()
+    except SessionError as exc:
+        refusal = SessionError(
+            _("{error}; nothing was changed: correct or delete the file first").format(
+                error=localize(str(exc))
+            )
+        )
+        refusal.cli_hints = ["roomscope config"]  # type: ignore[attr-defined]
+        raise refusal from exc
+    settings = config.changed(stored, key, value)
+    saved = save_settings(settings)
+    choice: LanguageChoice | None = None
+    if key == "language":
+        # The confirmation is written in the language just chosen; --lang
+        # applied to this command only.
+        activate(settings.language or None)
+        choice = language_choice(None)
+    if getattr(args, "format", None) == "json":
+        print(json.dumps(settings.to_dict(), indent=1))
+    else:
+        print(render_config_saved(_console(args), key, settings, saved, choice=choice))
+    return 0
+
+
 def cmd_schema(args: argparse.Namespace) -> int:
     from roomscope.schemas import schema_text
 
@@ -2021,6 +2154,7 @@ COMMANDS = {
     "session": cmd_session,
     "export": cmd_export,
     "project": cmd_project,
+    "config": cmd_config,
 }
 
 

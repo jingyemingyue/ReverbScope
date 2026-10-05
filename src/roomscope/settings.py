@@ -90,6 +90,19 @@ def load_settings() -> UserSettings:
         return UserSettings()
 
 
+def read_settings() -> UserSettings:
+    """The stored settings; an existing file that cannot be read is an error.
+
+    :func:`load_settings` falls back to the defaults so that a damaged file
+    never stops a measurement. A command that changes one setting must not
+    write the defaults over the others instead (``roomscope config``).
+    """
+    path = settings_path()
+    if not path.exists():
+        return UserSettings()
+    return UserSettings.from_dict(read_json_object(path, kind="settings"))
+
+
 def save_settings(settings: UserSettings) -> Path:
     """Write ``settings.json``. Never stores a level acknowledgement."""
     path = settings_path()

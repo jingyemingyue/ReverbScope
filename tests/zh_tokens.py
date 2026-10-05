@@ -117,15 +117,21 @@ _COMMAND = re.compile(r"roomscope(?:[ \t]+[a-z][a-z-]*){0,2}(?:[ \t]+--?[\w-]+)*
 _WORD = re.compile(r"(?<![\w./\\%{\[-])[A-Za-z][A-Za-z']{2,}(?![\w./\\}\]-])")
 
 
-def english_words(text: str, *, data: tuple[str, ...] = ()) -> list[str]:
+def english_words(
+    text: str, *, data: tuple[str, ...] = (), values: tuple[str, ...] = ()
+) -> list[str]:
     """Latin-letter words in ``text`` that a Chinese interface should not show.
 
     ``data`` are values from the user's files or devices (room names, device
-    names) that are shown as they are.
+    names) that are shown as they are. ``values`` are words a user types as
+    they are (``roomscope config theme dark``), removed only as whole words.
     """
     for value in data:
         if value:
             text = text.replace(value, " ")
+    if values:
+        typed = "|".join(re.escape(value) for value in sorted(values, key=len, reverse=True))
+        text = re.sub(rf"(?<![\w-])(?:{typed})(?![\w-])", " ", text)
     text = _URL.sub(" ", text)
     for phrase in PHRASES:
         text = text.replace(phrase, " ")
