@@ -145,9 +145,24 @@ class _ListTemplate(str):
         if self.field is None and isinstance(values, str):
             values = values.replace(", ", separator)
         elif isinstance(values, dict) and isinstance(values.get(self.field), str):
-            values = {**values, self.field: values[self.field].replace(", ", separator)}
+            items = values[self.field].split(", ")
+            if self.field == "choices":
+                items = [_quoted_choice(item) for item in items]
+            values = {**values, self.field: separator.join(items)}
         filled: str = str(self) % values
         return filled
+
+
+def _quoted_choice(item: str) -> str:
+    """One choice of an "invalid choice" error, quoted as the typed value is.
+
+    Python releases disagree: 3.12.3 quotes the choices, 3.12.11 and 3.14
+    do not, 3.13 quotes them again. One form keeps the message the same on
+    every Python.
+    """
+    if len(item) >= 2 and item[0] == item[-1] and item[0] in "'\"":
+        item = item[1:-1]
+    return repr(item)
 
 
 def _argparse_gettext(message: str) -> str:
