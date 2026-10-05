@@ -163,6 +163,28 @@ def _take(
     )
 
 
+def test_progress_starts_when_the_stream_runs_and_never_before(
+    script: _Script, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The CLI says "Nothing was played." until the first progress report, so
+    the stream reports 0 % as soon as it runs and nothing when it never opens."""
+    calls: list[float] = []
+    _take(progress=calls.append)
+    assert calls[0] == 0.0
+
+    def unopened(**_kwargs: object) -> None:
+        raise RuntimeError("Error querying device -1")
+
+    fake = SimpleNamespace(
+        Stream=unopened, CallbackStop=_CallbackStop, CallbackAbort=_CallbackAbort
+    )
+    monkeypatch.setattr(portaudio, "sounddevice_module", lambda: fake)
+    calls.clear()
+    with pytest.raises(AudioDeviceError, match="device -1"):
+        _take(progress=calls.append)
+    assert calls == []
+
+
 def test_progress_is_reported_from_the_waiting_thread(script: _Script) -> None:
     calls: list[tuple[int, float]] = []
     recording = _take(progress=lambda f: calls.append((threading.get_ident(), f)))

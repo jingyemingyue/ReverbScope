@@ -14,6 +14,7 @@ import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -483,13 +484,97 @@ def test_a_refused_measurement_says_nothing_was_played_only_before_playback(
     from reverbscope.audio.fake import FakeBackend
     from reverbscope.errors import AudioDeviceError
 
-    def broken(*_args: object, **_kwargs: object) -> None:
+    def broken(*_args: object, progress: Any = None, **_kwargs: object) -> None:
+        progress(0.25)  # the stream ran for a while
         raise AudioDeviceError("the stream stopped")
 
     monkeypatch.setattr(FakeBackend, "play_and_record", broken)
     assert main(["--backend", "fake", "measure", "--out", str(home / "m")]) == 1
     err = capsys.readouterr().err
     assert "the stream stopped" in err and "Nothing was played" not in err
+
+
+def test_a_stream_that_never_opened_played_nothing(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """playback_started was set before the stream was opened, so PortAudio's
+    "Error querying device -1" lost the line "Nothing was played."."""
+    from reverbscope.audio.fake import FakeBackend
+    from reverbscope.errors import AudioDeviceError
+
+    def unopened(*_args: object, **_kwargs: object) -> None:
+        raise AudioDeviceError("playback/recording failed: Error querying device -1")
+
+    monkeypatch.setattr(FakeBackend, "play_and_record", unopened)
+    assert main(["--backend", "fake", "measure", "--out", str(home / "m")]) == 1
+    err = capsys.readouterr().err
+    assert "device -1" in err and "Nothing was played." in err
+
+
+@pytest.mark.parametrize("missing", ["input", "output", "both"])
+def test_measure_refuses_a_machine_without_audio_devices_before_the_plan(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    """With no device the plan ticked "one host API" and "the selected
+    channels exist", wrote sweep.wav, and only the stream failed."""
+    from dataclasses import replace
+
+    from reverbscope.audio.fake import FakeBackend
+
+    listed = FakeBackend().list_devices()
+    if missing == "both":
+        devices = []
+    elif missing == "input":
+        devices = [replace(d, max_input_channels=0, is_default_input=False) for d in listed]
+    else:
+        devices = [replace(d, max_output_channels=0, is_default_output=False) for d in listed]
+    monkeypatch.setattr(FakeBackend, "list_devices", lambda _self: devices)
+    out = home / "m"
+    assert main(["--backend", "fake", "measure", "--out", str(out)]) == 1
+    captured = capsys.readouterr()
+    word = "output" if missing == "output" else "input"
+    assert f"no audio {word} device found" in captured.err
+    assert "Nothing was played." in captured.err
+    assert "Checks" not in captured.out and not out.exists()
+
+
+def test_the_plan_ticks_no_check_it_could_not_make() -> None:
+    from reverbscope.audio.backend import StreamOptions
+    from reverbscope.cli.render import render_measure_plan
+    from reverbscope.models.configuration import SweepSettings
+
+    def plan(devices: list[DeviceInfo]) -> str:
+        return render_measure_plan(
+            Console(),
+            devices=devices,
+            input_device=None,
+            output_device=None,
+            input_channels=[1],
+            loopback_channel=None,
+            output_channel=1,
+            settings=SweepSettings(),
+            backend="portaudio",
+            options=StreamOptions(),
+            clock_warning=None,
+            safe_max_level=-12.0,
+        )
+
+    unchecked = plan([])
+    assert "one host API" not in unchecked and "channels exist" not in unchecked
+    assert "not checked" in unchecked
+    interface = DeviceInfo(
+        index=0,
+        name="Interface",
+        host_api="Core Audio",
+        max_input_channels=2,
+        max_output_channels=2,
+        default_sample_rate=48000.0,
+        is_default_input=True,
+        is_default_output=True,
+    )
+    checked = plan([interface])
+    assert "one host API" in checked and "channels exist" in checked
+    assert "not checked" not in checked
 
 
 def test_the_chinese_command_line_shows_no_english_prose(

@@ -4506,3 +4506,14 @@ msgstr "{path} 中已有 {name}，且它不是 ReverbScope 会话；这次测量
 
 msgid "Recorded {seconds:.1f} s"
 msgstr "已录制 {seconds:.1f} s"
+
+# reverbscope measure: no device to play or record with
+
+msgid "no audio input device found"
+msgstr "没有找到音频输入设备"
+
+msgid "no audio output device found"
+msgstr "没有找到音频输出设备"
+
+msgid "Host API and channels not checked: no default device found"
+msgstr "未检查主机 API 和声道：没有找到默认设备"

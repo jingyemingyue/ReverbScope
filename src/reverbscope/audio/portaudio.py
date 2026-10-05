@@ -203,6 +203,9 @@ class PortAudioBackend:
                 finished_callback=on_finished,
                 **stream_kwargs,
             ):
+                # The stream is open and running: from here on the take may
+                # reach the loudspeaker (the CLI's "Nothing was played." ends).
+                report(0.0)
                 deadline = time.monotonic() + frames_total / max(sample_rate, 1) + TIMEOUT_MARGIN_S
                 cancelled_at: float | None = None
                 while not finished.wait(timeout=PROGRESS_POLL_S):

@@ -1588,8 +1588,13 @@ def render_measure_plan(
     lines += c.fields(rows)
 
     lines += c.section(_("Checks"), _("nothing has been played yet"))
-    lines += c.status("ok", _("Input and output use one host API"))
-    lines += c.status("ok", _("The selected channels exist"))
+    if inp is not None and out is not None:
+        if inp.host_api == out.host_api:
+            lines += c.status("ok", _("Input and output use one host API"))
+        lines += c.status("ok", _("The selected channels exist"))
+    else:
+        # "System default" with no default device: nothing could be checked.
+        lines += c.status("skip", _("Host API and channels not checked: no default device found"))
     for kind, device in (("input", inp), ("output", out)):
         if device is None:
             continue

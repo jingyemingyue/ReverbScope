@@ -1642,6 +1642,12 @@ def cmd_measure(args: argparse.Namespace) -> int:
     from reverbscope.audio.inventory import build_inventory, preflight
 
     inventory = build_inventory(backend, probe_rates=False)
+    # With no device at all PortAudio's "system default" fails only when the
+    # stream opens, after the plan and the sweep file.
+    if not any(probe.device.is_input for probe in inventory.devices):
+        raise AudioDeviceError(_("no audio input device found"))
+    if not any(probe.device.is_output for probe in inventory.devices):
+        raise AudioDeviceError(_("no audio output device found"))
     device_plan = preflight(
         backend,
         inventory,
@@ -1705,7 +1711,14 @@ def cmd_measure(args: argparse.Namespace) -> int:
                 settings.total_samples / settings.sample_rate,
             )
         )
-        args.playback_started = True
+
+        def report(fraction: float) -> None:
+            # The backends report progress only once the stream runs: until
+            # then a failure (a device PortAudio cannot open) played nothing.
+            args.playback_started = True
+            if progress is not None:
+                progress.update(fraction)
+
         completed = False
         try:
             recording = backend.play_and_record(
@@ -1716,7 +1729,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
                 input_channels=channels,
                 output_channel=args.output_channel,
                 level_dbfs=settings.level_dbfs,
-                progress=None if progress is None else progress.update,
+                progress=report,
                 options=options,
             )
             completed = True
