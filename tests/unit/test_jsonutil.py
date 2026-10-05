@@ -101,3 +101,36 @@ def test_keep_beside_links_or_copies_the_member(
     monkeypatch.setattr(os, "link", no_links)
     copied = keep_beside(member, ".previous.json")
     assert copied.read_text(encoding="utf-8") == "take A" and member.stat().st_nlink == 1
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="emulates Windows on POSIX permissions")
+def test_a_refused_atomic_write_leaves_no_temporary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Windows refuses to replace a read-only file. The temporary had taken
+    its read-only mode, so deleting it raised too: that error replaced the
+    real one and the '.settings.<pid>-<hex>.json.tmp' file stayed behind."""
+    target = tmp_path / "settings.json"
+    target.write_text("{}", encoding="utf-8")
+    target.chmod(0o444)
+    real_replace, real_unlink = os.replace, Path.unlink
+
+    def read_only(path: object) -> bool:
+        return os.path.exists(path) and not os.stat(path).st_mode & stat.S_IWUSR  # type: ignore[arg-type]
+
+    def replace(src: str, dst: str) -> None:
+        if read_only(dst):
+            raise PermissionError(13, "Access is denied", str(dst))
+        real_replace(src, dst)
+
+    def unlink(self: Path, missing_ok: bool = False) -> None:
+        if read_only(self):
+            raise PermissionError(13, "Access is denied", str(self))
+        real_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(os, "replace", replace)
+    monkeypatch.setattr(Path, "unlink", unlink)
+    with pytest.raises(PermissionError) as raised:
+        write_text_atomic(target, '{"language": "zh_CN"}')
+    assert raised.value.filename == str(target)
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["settings.json"]

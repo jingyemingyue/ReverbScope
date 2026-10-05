@@ -14,7 +14,6 @@ Raw sweep and recording files are never modified in place.
 
 from __future__ import annotations
 
-import contextlib
 import json
 import logging
 import math
@@ -35,6 +34,7 @@ from reverbscope.i18n import _
 from reverbscope.io.jsonutil import (
     MAX_JSON_BYTES,
     MAX_RESULT_JSON_BYTES,
+    discard,
     keep_beside,
     keep_mode,
     temporary_beside,
@@ -188,8 +188,7 @@ def save_measurement(
         _replace_members(staged)
     finally:
         for temporary, _final in staged:
-            with contextlib.suppress(OSError):
-                temporary.unlink(missing_ok=True)
+            discard(temporary)
     return session_path
 
 
@@ -221,8 +220,7 @@ def _replace_members(staged: list[tuple[Path, Path]]) -> None:
             replaced.append((final, previous))
     finally:
         for name in kept:
-            with contextlib.suppress(OSError):
-                name.unlink(missing_ok=True)
+            discard(name)
 
 
 def _keep_previous(final: Path) -> Path | None:
@@ -331,8 +329,7 @@ def bundle_session(
         ) from exc
     finally:
         if temporary is not None:
-            with contextlib.suppress(OSError):
-                temporary.unlink(missing_ok=True)
+            discard(temporary)
     return target
 
 

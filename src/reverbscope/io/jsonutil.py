@@ -71,6 +71,22 @@ def temporary_beside(target: Path, suffix: str) -> Path:
     return temporary
 
 
+def discard(path: Path) -> None:
+    """Delete a temporary file, a read-only one too, without ever raising.
+
+    Windows cannot delete a read-only file, and a temporary that took the
+    permissions of a write-protected file it was to replace is one. A cleanup
+    that raised would hide the error that made it necessary, and stop before
+    the other temporaries were removed.
+    """
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        with contextlib.suppress(OSError):
+            os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+            path.unlink(missing_ok=True)
+
+
 def keep_beside(target: Path, suffix: str) -> Path:
     """A second name for the regular file ``target``, next to it and unique.
 
@@ -93,8 +109,7 @@ def keep_beside(target: Path, suffix: str) -> Path:
             shutil.copyfileobj(source, out)
         shutil.copystat(target, copy)
     except BaseException:
-        with contextlib.suppress(OSError):
-            copy.unlink(missing_ok=True)
+        discard(copy)
         raise
     return copy
 
@@ -129,7 +144,7 @@ def write_text_atomic(path: Path, text: str, *, follow_symlinks: bool = False) -
         keep_mode(temporary, target)
         os.replace(temporary, target)
     finally:
-        temporary.unlink(missing_ok=True)
+        discard(temporary)
 
 
 def read_json_object(

@@ -599,3 +599,48 @@ def test_a_failed_rename_puts_back_the_members_already_replaced(
     assert {name: (folder / name).read_bytes() for name in before} == before
     assert load_measurement(folder).session.room_name == "A"
     assert not [path.name for path in folder.iterdir() if path.name.startswith(".")]
+
+
+def _windows_read_only_rules(monkeypatch: pytest.MonkeyPatch) -> None:
+    """What Windows does with a read-only file: it can be neither the target
+    of a rename nor deleted (WinError 5)."""
+    import os
+
+    def read_only(path: object) -> bool:
+        return os.path.exists(path) and not os.stat(path).st_mode & stat.S_IWUSR  # type: ignore[arg-type]
+
+    real_replace, real_unlink = os.replace, Path.unlink
+
+    def replace(src: str, dst: str) -> None:
+        if read_only(dst):
+            raise PermissionError(13, "Access is denied", str(dst))
+        real_replace(src, dst)
+
+    def unlink(self: Path, missing_ok: bool = False) -> None:
+        if read_only(self):
+            raise PermissionError(13, "Access is denied", str(self))
+        real_unlink(self, missing_ok=missing_ok)
+
+    monkeypatch.setattr(os, "replace", replace)
+    monkeypatch.setattr(Path, "unlink", unlink)
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="emulates Windows on POSIX permissions")
+def test_saving_over_a_write_protected_session_fails_cleanly(
+    tmp_path: Path, analysed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A temporary took the read-only mode of the file it was to replace; the
+    cleanup could not delete it on Windows and raised a bare PermissionError
+    (the desktop app's "bug in ReverbScope" box) that hid the "cannot write"
+    error, and left hidden temporaries that a bundle then zipped."""
+    _recording, result = analysed
+    folder = tmp_path / "protected"
+    save_measurement(folder, MeasurementSession(room_name="Kept"), result, include_curves=False)
+    before = {path.name: path.read_bytes() for path in folder.iterdir()}
+    for path in folder.iterdir():
+        path.chmod(0o444)
+    _windows_read_only_rules(monkeypatch)
+    loaded = load_measurement(folder)
+    with pytest.raises(SessionError, match=r"cannot write .*Access is denied"):
+        save_measurement(folder, loaded.session, loaded.result, include_curves=False)
+    assert {path.name: path.read_bytes() for path in folder.iterdir()} == before
