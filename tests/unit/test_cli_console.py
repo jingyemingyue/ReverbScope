@@ -290,6 +290,31 @@ def test_progress_is_throttled() -> None:
     assert stream.getvalue().count("\r") == 1  # same instant: drawn once
 
 
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_progress_never_reaches_the_last_column(monkeypatch: pytest.MonkeyPatch, lang: str) -> None:
+    """The line counted six separating spaces but wrote eight: 81 columns on
+    an 80-column terminal, which wraps, so every redraw started a new row."""
+    from reverbscope.i18n import _
+
+    activate(lang)
+    try:
+        label = _("Playing the sweep and recording")
+        for columns in range(20, 121):
+            monkeypatch.setenv("COLUMNS", str(columns))
+            stream = _Stream(tty=True)
+            console = Console(interactive=True, width=columns)
+            progress = ProgressLine(console, stream, label, 7.0, interval=0.0)
+            for step in range(11):
+                progress.update(step / 10)
+            progress.finish()
+            frames = stream.getvalue().rstrip("\n").split("\r")[1:]
+            assert frames, columns
+            widest = max(cell_width(frame) for frame in frames)
+            assert widest <= min(columns, 100) - 1, (columns, frames)
+    finally:
+        activate("en")
+
+
 # --- The command line ------------------------------------------------------------------------
 
 

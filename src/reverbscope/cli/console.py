@@ -915,15 +915,26 @@ class ProgressLine:
         width = max(MIN_WIDTH, min(MAX_WIDTH, width)) - 1
         percent = f"{fraction * 100:3.0f}%"
         timing = f"{clock(fraction * self.total_s)} / {clock(self.total_s)}"
+        # Every part is preceded by two spaces: "  label  bar  percent  timing".
+        # One column too many and a terminal wraps the line, so each redraw
+        # lands on a new row instead of over the last one.
         label = truncate(self.label, max(8, width // 2))
-        room = width - cell_width(label) - len(percent) - len(timing) - 6
+        room = width - cell_width(label) - len(percent) - len(timing) - 8
         bar = ""
         if room >= 10:
             size = min(32, room)
             filled = round(size * fraction)
             full, empty = ("━", "─") if self.console.unicode else ("#", "-")
             bar = self.console.accent(full * filled) + self.console.muted(empty * (size - filled))
-        text = f"  {label}  {bar}  {percent}  {self.console.muted(timing)}".replace("    ", "  ")
+        else:
+            # No bar: the label takes what is left; on a very narrow terminal
+            # the timing goes first.
+            if width - len(percent) - len(timing) - 6 < 8:
+                timing = ""
+            rest = len(percent) + (len(timing) + 2 if timing else 0)
+            label = truncate(self.label, max(1, width - rest - 4))
+        parts = (label, bar, percent, self.console.muted(timing))
+        text = "".join("  " + part for part in parts if part)
         visible = cell_width(text)
         self.stream.write("\r" + text + " " * max(0, self._drawn - visible))
         self.stream.flush()
