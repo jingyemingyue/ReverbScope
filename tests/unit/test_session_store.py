@@ -477,3 +477,40 @@ def test_a_192k_six_second_result_reopens(tmp_path: Path, analysed) -> None:
     assert (folder / RESULT_FILE).stat().st_size > MAX_JSON_BYTES
     reopened = load_measurement(folder)
     assert reopened.result.frequency_response.frequencies_hz.shape == (bins,)
+
+
+@pytest.mark.parametrize(
+    ("name", "subtype", "stored"),
+    [
+        ("take.aiff", "PCM_24", "PCM_24"),
+        ("take.flac", "PCM_24", "PCM_24"),
+        ("take.caf", "FLOAT", "FLOAT"),
+        ("take.flac", "PCM_S8", "FLOAT"),  # WAV has no signed 8-bit samples
+    ],
+)
+def test_a_copied_aiff_caf_or_flac_take_is_a_real_wav(
+    tmp_path: Path, analysed, name: str, subtype: str, stored: str
+) -> None:
+    """The copy was the source's bytes under the name recording.wav: an AIFF
+    ('FORM'), FLAC ('fLaC') or CAF ('caff') file that programs going by the
+    name call a corrupt WAV."""
+    import soundfile as sf
+
+    recording, result = analysed
+    samples = recording.samples / np.max(np.abs(recording.samples)) * 0.5
+    source = tmp_path / name
+    sf.write(str(source), samples, recording.sample_rate, subtype=subtype)
+    folder = tmp_path / "session"
+    save_measurement(
+        folder,
+        MeasurementSession(recording_path=str(source)),
+        result,
+        include_curves=False,
+        copy_recording=True,
+    )
+    copied = folder / "recording.wav"
+    assert copied.read_bytes()[:4] == b"RIFF"
+    info = sf.info(str(copied))
+    assert (info.format, info.subtype) == ("WAV", stored)
+    np.testing.assert_array_equal(read_wav(copied).samples, read_wav(source).samples)
+    assert load_session(folder).recording_path == "recording.wav"

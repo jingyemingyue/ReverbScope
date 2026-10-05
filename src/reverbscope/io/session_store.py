@@ -6,7 +6,8 @@ A session directory contains::
     result.json             full AnalysisResult (metrics and curves)
     impulse_response.wav    raw impulse response, 32-bit float
     sweep.reverbscope-sweep.json   always copied when a sidecar is available
-    recording.wav           copied when copy_recording is on (GUI default)
+    recording.wav           copied when copy_recording is on (GUI default);
+                            an AIFF, CAF or FLAC take is converted to WAV
 
 Raw sweep and recording files are never modified in place.
 """
@@ -36,7 +37,7 @@ from reverbscope.io.jsonutil import (
     temporary_beside,
     write_text_atomic,
 )
-from reverbscope.io.wav import read_wav, write_wav
+from reverbscope.io.wav import _soundfile, read_wav, write_wav
 from reverbscope.models.audio import AudioSignal
 from reverbscope.models.result import AnalysisResult, Validity
 from reverbscope.models.session import MeasurementSession
@@ -49,7 +50,9 @@ COMPARISON_FILE = "comparison.json"
 IR_FILE = "impulse_response.wav"
 RECORDING_FILE = "recording.wav"
 SWEEP_SIDECAR_NAME = "sweep.reverbscope-sweep.json"
-AUDIO_SUFFIXES = {".wav", ".flac", ".aiff", ".aif", ".ogg"}
+#: Left out of a ``--no-audio`` bundle: every container a DAW export or a
+#: recorder may have put into the folder.
+AUDIO_SUFFIXES = {".wav", ".flac", ".aiff", ".aif", ".aifc", ".caf", ".ogg", ".w64", ".rf64"}
 
 
 def _relative(path: str | Path | None, base: Path) -> str | None:
@@ -308,7 +311,36 @@ def _copy_recording(
     src = Path(recording_path)
     if not src.is_file() and not src.is_absolute():
         src = base / src
-    return _copy_into(src, base / RECORDING_FILE, stage=stage)
+    dest = base / RECORDING_FILE
+    subtype = _wav_subtype(src)
+    if subtype is None:
+        return _copy_into(src, dest, stage=stage)
+    # An AIFF, CAF or FLAC export copied byte for byte under the name
+    # recording.wav is a "corrupt WAV" to every program that goes by the
+    # name; it is converted, with a sample format that keeps every sample.
+    signal = read_wav(src)
+    write_wav(
+        dest if stage is None else stage(dest.name),
+        signal.samples,
+        signal.sample_rate,
+        subtype=subtype,
+    )
+    return dest
+
+
+def _wav_subtype(src: Path) -> str | None:
+    """None when ``src`` is a WAV file (or cannot be inspected): it is copied
+    as it is. Otherwise the WAV sample format that holds its samples exactly."""
+    if not src.is_file():
+        return None
+    sf = _soundfile()
+    try:
+        info = sf.info(str(src))
+    except Exception:  # libsndfile raises RuntimeError / soundfile.LibsndfileError
+        return None
+    if info.format in ("WAV", "WAVEX"):
+        return None
+    return info.subtype if sf.check_format("WAV", info.subtype) else "FLOAT"
 
 
 def load_session(path: str | Path) -> MeasurementSession:

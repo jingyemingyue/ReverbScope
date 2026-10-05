@@ -291,7 +291,7 @@ can validate without cloning.
 | `impulse_response.wav` (float32) | The located impulse response | The measurement (curves are recomputable from it) |
 | `result.json` | Every metric with unit, validity and reason; curves unless `--no-curves`; `sweep_settings`, `analysis_settings`, `reverbscope_version`, `warnings` | Numbers as they were reported |
 | `session.json` | Metadata, paths, `analysis_summary`, `recording_profile` *(PR #2)*, `reverbscope_version`, `platform`, loopback channel used | Provenance |
-| `recording.wav` (copied, optional) | The raw recording, untouched | Re-analysis |
+| `recording.wav` (copied, optional) | The raw recording, untouched (an AIFF, CAF or FLAC take is converted to WAV with every sample kept) | Re-analysis |
 | `sweep.reverbscope-sweep.json` (copied) | The sweep definition | Re-analysis |
 | `comparison.json` | Two session references and the deltas | A comparison as reported |
 | `project.json` | Room name, notes, list of position entries and their session folders | The index; sessions remain standalone |
@@ -612,7 +612,8 @@ an automated check).
   session.json
   result.json
   impulse_response.wav
-  recording.wav                 copied when --copy-recording / the GUI default (on)
+  recording.wav                 copied when --copy-recording / the GUI default (on);
+                                an AIFF, CAF or FLAC take is converted to WAV
   sweep.reverbscope-sweep.json    always copied (tiny; makes the session re-analysable)
 
 <project>/                      SHOULD
