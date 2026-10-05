@@ -13,7 +13,7 @@ import posixpath
 import re
 import shutil
 import unicodedata
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
@@ -107,6 +107,40 @@ class NavItem:
     title: str
     href: str
     section: str
+
+
+@dataclass(frozen=True)
+class Chrome:
+    """The text around a page's content, in the page's language."""
+
+    lang: str  # the <html lang> value
+    index: str  # the hub page, whose list items make the sidebar
+    tag: str
+    footer: str
+
+
+CHROME = {
+    "en": Chrome(
+        lang="en",
+        index="index.md",
+        tag="Documentation",
+        footer="Generated from <code>docs/</code> by <code>scripts/build_docs_site.py</code>. "
+        "Markdown on GitHub remains authoritative.",
+    ),
+    "zh-CN": Chrome(
+        lang="zh-CN",
+        index="index.zh-CN.md",
+        tag="文档",
+        footer="本站由 <code>scripts/build_docs_site.py</code> 根据 <code>docs/</code> 生成，"
+        "以 GitHub 上的 Markdown 为准。",
+    ),
+}
+
+
+def page_language(relative: Path) -> str:
+    """``zh-CN`` for ``*.zh-CN.md`` and ``user-guide/zh-CN.md``, else ``en``."""
+    stem = relative.stem
+    return "zh-CN" if stem == "zh-CN" or stem.endswith(".zh-CN") else "en"
 
 
 def rewrite_md_href(href: str, page: str = "index.md") -> str:
@@ -352,25 +386,28 @@ def nav_items(index_text: str) -> list[NavItem]:
     return items
 
 
-def _sidebar(items: list[NavItem], current: str, css_prefix: str) -> str:
+def _sidebar(items: list[NavItem], current: str, css_prefix: str, chrome: Chrome) -> str:
+    home = rewrite_md_href(chrome.index)
     blocks = [
-        f'<h1><a href="{html.escape(css_prefix + "index.html")}">ReverbScope</a></h1>',
-        '<p class="tag">Documentation</p>',
+        f'<h1><a href="{html.escape(css_prefix + home)}">ReverbScope</a></h1>',
+        f'<p class="tag">{html.escape(chrome.tag)}</p>',
     ]
     last = ""
     for item in items:
         if item.section != last:
             blocks.append(f"<h2>{html.escape(item.section)}</h2>")
             last = item.section
-        href = html.escape(css_prefix + item.href)
+        # The Chinese hub links README.zh-CN.md and the issue forms on GitHub.
+        external = "://" in item.href or item.href.startswith("mailto:")
+        href = html.escape(item.href if external else css_prefix + item.href)
         current_attr = ' aria-current="page"' if item.href == current else ""
         blocks.append(f'<a href="{href}"{current_attr}>{html.escape(item.title)}</a>')
     return "\n".join(blocks)
 
 
-def _page(title: str, body: str, sidebar: str, css_href: str) -> str:
+def _page(title: str, body: str, sidebar: str, css_href: str, chrome: Chrome) -> str:
     return (
-        '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
+        f'<!DOCTYPE html>\n<html lang="{chrome.lang}">\n<head>\n'
         '<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>{html.escape(title)} — ReverbScope</title>\n"
@@ -378,9 +415,7 @@ def _page(title: str, body: str, sidebar: str, css_href: str) -> str:
         '</head>\n<body>\n<div class="layout">\n'
         f'<nav class="sidebar">{sidebar}</nav>\n'
         f"<main><article>{body}</article>\n"
-        "<footer>Generated from <code>docs/</code> by "
-        "<code>scripts/build_docs_site.py</code>. Markdown on GitHub remains "
-        "authoritative.</footer>\n</main>\n</div>\n</body>\n</html>\n"
+        f"<footer>{chrome.footer}</footer>\n</main>\n</div>\n</body>\n</html>\n"
     )
 
 
@@ -439,11 +474,18 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
         shutil.rmtree(dest)
     (dest / "assets").mkdir(parents=True)
     (dest / "assets" / "theme.css").write_text(THEME_CSS.lstrip(), encoding="utf-8")
-    index_text = (docs / "index.md").read_text(encoding="utf-8")
-    items = nav_items(index_text)
+    navigation = {
+        chrome.index: nav_items((docs / chrome.index).read_text(encoding="utf-8"))
+        for chrome in CHROME.values()
+        if (docs / chrome.index).is_file()
+    }
     written: list[Path] = []
     for source in sorted(docs.rglob("*.md")):
         relative = source.relative_to(docs)
+        chrome = CHROME[page_language(relative)]
+        if chrome.index not in navigation:
+            # No hub in this language: its pages use the English one.
+            chrome = replace(chrome, index=CHROME["en"].index)
         target = dest / relative.with_suffix(".html")
         target.parent.mkdir(parents=True, exist_ok=True)
         markdown = source.read_text(encoding="utf-8")
@@ -453,8 +495,9 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
         page = _page(
             title,
             markdown_to_html(markdown, relative.as_posix()),
-            _sidebar(items, current, prefix),
+            _sidebar(navigation.get(chrome.index, []), current, prefix, chrome),
             prefix + "assets/theme.css",
+            chrome,
         )
         target.write_text(page, encoding="utf-8")
         written.append(target)

@@ -183,3 +183,28 @@ def test_every_link_of_the_generated_site_resolves(tmp_path: Path) -> None:
             if not target.exists() or (fragment and unquote(fragment) not in ids[target]):
                 dead.append(f"{page.relative_to(dest)}: {href}")
     assert dead == []
+
+
+def test_chinese_pages_are_marked_and_framed_in_chinese(tmp_path: Path) -> None:
+    """The Chinese pages were ``lang="en"`` with the English sidebar, tag line
+    and footer, and docs/index.zh-CN.md never served as their navigation."""
+    site = _load()
+    dest = tmp_path / "site"
+    site.build_site(Path("docs"), dest)
+    for name in ("index.zh-CN.html", "INSTALLATION.zh-CN.html", "user-guide/zh-CN.html"):
+        page = (dest / name).read_text(encoding="utf-8")
+        assert '<html lang="zh-CN">' in page, name
+        assert '<p class="tag">文档</p>' in page, name
+        assert "<h2>中文用户文档</h2>" in page, name
+        assert "For developers" not in page and "Generated from" not in page, name
+        assert "以 GitHub 上的 Markdown 为准" in page, name
+    nested = (dest / "user-guide" / "zh-CN.html").read_text(encoding="utf-8")
+    assert 'href="../index.zh-CN.html">ReverbScope</a>' in nested
+    assert 'href="../INSTALLATION.zh-CN.html"' in nested
+    # The Chinese hub links README.zh-CN.md on GitHub: no "../" in front of it.
+    assert 'href="https://github.com/jingyemingyue/ReverbScope/blob/main/README.zh-CN.md"' in nested
+    assert 'href="../https:' not in nested
+    english = (dest / "INSTALLATION.html").read_text(encoding="utf-8")
+    assert '<html lang="en">' in english
+    assert '<p class="tag">Documentation</p>' in english and "<h2>For developers</h2>" in english
+    assert "Generated from" in english
