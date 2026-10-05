@@ -65,11 +65,24 @@ def plot_impulse_response(fig: Figure, result: AnalysisResult) -> None:
     style_figure(fig)
 
 
+def _not_stored(fig: Figure, ax: Any, text: str) -> None:
+    """Say in the middle of an empty chart why there is nothing to draw."""
+    ax.text(0.5, 0.5, text, ha="center", va="center", transform=ax.transAxes)
+    ax.set_axis_off()
+    fig.tight_layout()
+    style_figure(fig)
+
+
 def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
     fig.clear()
     ensure_plot_fonts()
     fr = result.frequency_response
     ax = fig.add_subplot(1, 1, 1)
+    if fr.frequencies_hz.size == 0:
+        # A session saved without curves (--no-curves) keeps the figures only;
+        # empty axes with a legend looked like a broken measurement.
+        _not_stored(fig, ax, _("No frequency response stored with this session"))
+        return
     ax.semilogx(
         fr.frequencies_hz,
         fr.magnitude_db_raw,
@@ -121,6 +134,10 @@ def plot_decay(fig: Figure, result: AnalysisResult) -> None:
     ensure_plot_fonts()
     ax = fig.add_subplot(1, 1, 1)
     bb = result.decay.broadband
+    if all(curve.edc_db.size == 0 for curve in (bb, *result.decay.bands)):
+        # As for the frequency response: the RT60s are in the decay table.
+        _not_stored(fig, ax, _("No decay curves stored with this session"))
+        return
     ax.plot(bb.edc_time_s, bb.edc_db, linewidth=2.4, linestyle="-", label=_("Broadband"))
     for index, band in enumerate(result.decay.bands):
         rt = band.rt60_estimate_s
@@ -153,20 +170,14 @@ def plot_noise(fig: Figure, result: AnalysisResult) -> None:
     noise = result.noise
     ax = fig.add_subplot(1, 1, 1)
     if noise.psd_frequencies_hz is None or noise.psd_db is None:
-        ax.text(
-            0.5,
-            0.5,
+        _not_stored(
+            fig,
+            ax,
             # A session saved without curves has a level but no spectrum.
             _("No quiet segment available")
             if noise.rms_dbfs is None
             else _("No noise spectrum stored with this session"),
-            ha="center",
-            va="center",
-            transform=ax.transAxes,
         )
-        ax.set_axis_off()
-        fig.tight_layout()
-        style_figure(fig)
         return
     f = noise.psd_frequencies_hz
     mask = f > 0

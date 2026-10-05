@@ -156,3 +156,33 @@ def test_every_octave_band_has_its_own_dash_pattern(short_sweep) -> None:
     assert patterns[0] == ()  # Broadband is solid
     assert all(patterns[1:]), "a band is drawn solid like Broadband"
     assert len(set(patterns[1:])) == len(patterns) - 1
+
+
+def test_a_session_saved_without_curves_says_so_on_the_fr_and_decay_charts(
+    short_sweep, tmp_path
+) -> None:
+    """A session saved with --no-curves drew an empty Frequency Response
+    axis and an empty Decay axis with every band in its legend, as if the
+    measurement had failed; the Noise tab already said why it was empty."""
+    from reverbscope.io.session_store import load_measurement, save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.35), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    folder = tmp_path / "no-curves"
+    save_measurement(
+        folder, MeasurementSession(), result, include_curves=False, copy_recording=False
+    )
+    loaded = load_measurement(folder).result
+    for plot, text in (
+        (plot_frequency_response, "No frequency response stored with this session"),
+        (plot_decay, "No decay curves stored with this session"),
+    ):
+        fig = Figure()
+        plot(fig, loaded)
+        axes = fig.axes[0]
+        assert [item.get_text() for item in axes.texts] == [text]
+        assert not axes.axison
+        assert axes.get_legend() is None
