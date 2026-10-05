@@ -12,8 +12,24 @@ Loading: a ``.mo`` is used when it was compiled from the ``.po`` next to it
 the ``.po`` is parsed in memory. A ``.mo`` without a ``.po`` beside it is used
 as is.
 
-Selection order (ARCHITECTURE_V1.md §5.6): ``--lang``, ``settings.language``,
-``ROOMSCOPE_LANG``, the system locale; English when nothing matches.
+Selection order (ARCHITECTURE_V1.md §5.6): ``--lang``, ``settings.language``
+(``roomscope config language``), ``ROOMSCOPE_LANG``, then the system's
+language; English when nothing matches. The system's language is read where
+the system keeps it:
+
+* **macOS**: the user's preferred languages (``AppleLanguages`` in the global
+  preferences, or Qt's ``uiLanguages`` in the GUI) before ``LC_ALL`` /
+  ``LC_MESSAGES`` / ``LANG``. Terminal, iTerm and VS Code set
+  ``LANG=en_US.UTF-8`` whatever the display language is.
+* **Windows**: the display language (``GetUserDefaultUILanguage``) before the
+  POSIX variables, which only MSYS, Git Bash or Cygwin set.
+* **Linux and other POSIX systems**: GNU ``LANGUAGE`` (a priority list such as
+  ``zh_CN:en``, used as gettext uses it: only when the locale is not C or
+  POSIX), then ``LC_ALL``, ``LC_MESSAGES``, ``LANG``, then the desktop's UI
+  languages (GUI).
+
+A preferred-language list counts its first entry that has a catalog or is
+English.
 """
 
 from __future__ import annotations
@@ -25,7 +41,9 @@ import os
 import re
 import string
 import struct
-from collections.abc import Sequence
+import sys
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -83,18 +101,79 @@ def normalize_lang(tag: str | None) -> str:
     return raw.lower()
 
 
+#: Where the language in effect came from (:attr:`LanguageChoice.source`).
+SOURCE_OPTION = "option"
+SOURCE_SETTINGS = "settings"
+SOURCE_ENVIRONMENT = "environment"
+SOURCE_SYSTEM = "system"
+
+#: Which system setting gave the language (:attr:`LanguageChoice.origin`).
+ORIGIN_MACOS = "macos"
+ORIGIN_WINDOWS = "windows"
+ORIGIN_DESKTOP = "desktop"
+ORIGIN_LOCALE = "locale"
+#: ``LANGUAGE``, ``LC_ALL``, ``LC_MESSAGES`` and ``LANG`` are their own origins.
+POSIX_VARIABLES = ("LC_ALL", "LC_MESSAGES", "LANG")
+
+#: Display names of the languages, each written in its own language so that a
+#: user finds theirs whatever the interface language is.
+LANGUAGE_NAMES = {"en": "English", "zh_CN": "简体中文"}
+
+
+@dataclass(frozen=True)
+class LanguageChoice:
+    """A language picked by the selection order, and why.
+
+    ``source`` is one of the ``SOURCE_*`` constants. For the system's
+    language, ``origin`` names the setting (``ORIGIN_*``, or the variable
+    ``LANGUAGE`` / ``LC_ALL`` / ``LC_MESSAGES`` / ``LANG``) and ``value`` is
+    what it held (``"zh-Hans-CN, en-CN"``, ``"zh_CN.UTF-8"``).
+    """
+
+    lang: str
+    source: str
+    origin: str = ""
+    value: str = ""
+
+
+def supported_language(tag: str | None) -> str | None:
+    """``tag`` as a language RoomScope has: a catalog, or English for any English.
+
+    ``None`` for anything else (``fr_FR``, ``zh_TW``, ``C``). Encoding and
+    modifier suffixes are ignored (``zh_CN.UTF-8``, ``de_DE@euro``).
+    """
+    if not tag or not tag.strip():
+        return None
+    base = tag.strip().split(".", 1)[0].split("@", 1)[0]
+    if not base or base.upper() in {"C", "POSIX"}:
+        return None
+    lang = normalize_lang(base)
+    if lang in available_locales():
+        return lang
+    if lang.split("_", 1)[0] == DEFAULT_LANG:
+        return DEFAULT_LANG
+    return None
+
+
 def resolve_language(
     explicit: str | None = None, *, system_languages: Sequence[str] | None = None
 ) -> str:
     """Pick a language without activating it.
 
     ``system_languages`` are the desktop's preferred UI languages (the GUI
-    passes Qt's ``QLocale.system().uiLanguages()``); they stand for the
-    system locale when no locale variable is set, as on macOS when the app is
-    opened from the Finder.
+    passes Qt's ``QLocale.system().uiLanguages()``). On macOS they come
+    first, as the Mac's own list does for the command line; elsewhere they
+    stand for the system locale when no locale variable is set.
     """
+    return language_choice(explicit, system_languages=system_languages).lang
+
+
+def language_choice(
+    explicit: str | None = None, *, system_languages: Sequence[str] | None = None
+) -> LanguageChoice:
+    """:func:`resolve_language`, with where the language came from."""
     if explicit:
-        return normalize_lang(explicit)
+        return LanguageChoice(normalize_lang(explicit), SOURCE_OPTION, value=explicit)
     try:
         from roomscope.settings import load_settings
 
@@ -102,11 +181,12 @@ def resolve_language(
     except Exception:
         configured = ""
     if configured:
-        return normalize_lang(configured)
+        return LanguageChoice(normalize_lang(configured), SOURCE_SETTINGS, value=configured)
     env = os.environ.get(ENV_LANG)
     if env:
-        return normalize_lang(env)
-    return _system_language(system_languages)
+        return LanguageChoice(normalize_lang(env), SOURCE_ENVIRONMENT, ENV_LANG, env)
+    lang, origin, value = _system_choice(system_languages)
+    return LanguageChoice(lang, SOURCE_SYSTEM, origin, value)
 
 
 def activate(lang: str | None = None, *, system_languages: Sequence[str] | None = None) -> str:
@@ -507,33 +587,124 @@ def compile_catalogs(root: Path | None = None, out_dir: Path | None = None) -> l
 
 
 def _system_language(system_languages: Sequence[str] | None = None) -> str:
-    for candidate in (
-        os.environ.get("LC_ALL"),
-        os.environ.get("LC_MESSAGES"),
-        os.environ.get("LANG"),
-    ):
-        if candidate:
-            tag = candidate.split(".", 1)[0]
-            if tag and tag.upper() not in {"C", "POSIX"}:
-                return normalize_lang(tag)
-    if system_languages:
-        known = available_locales()
-        for tag in system_languages:
-            lang = normalize_lang(tag)
-            if lang in known:
-                return lang
-            if lang.split("_", 1)[0] == DEFAULT_LANG:
-                return DEFAULT_LANG
-    windows = _windows_ui_language()
-    if windows:
-        return normalize_lang(windows)
+    """The system's language (the last step of the selection order)."""
+    return _system_choice(system_languages)[0]
+
+
+#: One step of the system's language: ``(language, origin, value)`` or ``None``.
+_Step = Callable[[], tuple[str, str, str] | None]
+
+
+def _system_choice(system_languages: Sequence[str] | None = None) -> tuple[str, str, str]:
+    """``(language, origin, value)`` from the system's own settings.
+
+    Each platform is asked where it keeps the user's choice first (see the
+    module docstring); the locale Python reports is the last resort.
+    """
+
+    def desktop() -> tuple[str, str, str] | None:
+        tags = [str(tag) for tag in system_languages or ()]
+        lang = _first_supported(tags)
+        return None if lang is None else (lang, ORIGIN_DESKTOP, ", ".join(tags))
+
+    steps: tuple[_Step, ...]
+    if sys.platform == "darwin":
+        steps = (desktop, _macos_step, _posix_step)
+    elif sys.platform == "win32":
+        steps = (_windows_step, desktop, _posix_step)
+    else:
+        steps = (_posix_step, desktop)
+    for step in steps:
+        found = step()
+        if found is not None:
+            return found
     try:
         detected = py_locale.getlocale()[0]
     except (ValueError, TypeError):
         detected = None
     if detected:
-        return normalize_lang(detected)
-    return DEFAULT_LANG
+        return normalize_lang(detected), ORIGIN_LOCALE, detected
+    return DEFAULT_LANG, "", ""
+
+
+def _first_supported(tags: Sequence[str]) -> str | None:
+    """The first entry of a preferred-language list that RoomScope has."""
+    for tag in tags:
+        lang = supported_language(tag)
+        if lang is not None:
+            return lang
+    return None
+
+
+def _macos_step() -> tuple[str, str, str] | None:
+    languages = _macos_languages()
+    lang = _first_supported(languages)
+    return None if lang is None else (lang, ORIGIN_MACOS, ", ".join(languages))
+
+
+def _windows_step() -> tuple[str, str, str] | None:
+    windows = _windows_ui_language()
+    return None if not windows else (normalize_lang(windows), ORIGIN_WINDOWS, windows)
+
+
+def _is_c_locale(value: str) -> bool:
+    base = value.split(".", 1)[0].split("@", 1)[0]
+    return base.upper() in {"", "C", "POSIX"}
+
+
+def _posix_step() -> tuple[str, str, str] | None:
+    """``LANGUAGE``, then ``LC_ALL`` / ``LC_MESSAGES`` / ``LANG``.
+
+    gettext reads ``LANGUAGE`` only when the locale is set and is not C or
+    POSIX, and takes its first entry that has a catalog. When none has one
+    the locale variable decides. A variable set to C or POSIX is passed over,
+    so ``LANG=C.UTF-8`` leaves the choice to the next step.
+    """
+    variables = [(name, os.environ.get(name, "")) for name in POSIX_VARIABLES]
+    current = next((value for _name, value in variables if value), "")
+    priority = os.environ.get("LANGUAGE", "")
+    if current and not _is_c_locale(current) and priority:
+        lang = _first_supported([tag for tag in priority.split(":") if tag])
+        if lang is not None:
+            return lang, "LANGUAGE", priority
+    for name, value in variables:
+        if value and not _is_c_locale(value):
+            tag = value.split(".", 1)[0].split("@", 1)[0]
+            return normalize_lang(tag), name, value
+    return None
+
+
+#: Where macOS keeps the user's preferred languages (``AppleLanguages``):
+#: the user's global preferences first, then the computer's. Tests point it
+#: at a fake file.
+MACOS_PREFERENCES: tuple[str, ...] = (
+    "~/Library/Preferences/.GlobalPreferences.plist",
+    "/Library/Preferences/.GlobalPreferences.plist",
+)
+
+
+def _macos_languages(paths: Sequence[str | Path] | None = None) -> list[str]:
+    """The Mac's preferred languages, in order (``["zh-Hans-CN", "en-CN"]``).
+
+    Read from the global preferences with :mod:`plistlib`, which reads the
+    binary and the XML form. Any failure (no such file, no ``HOME``, a damaged
+    file, a list that is not a list) means "not available": ``[]``.
+    """
+    import plistlib
+
+    for raw in MACOS_PREFERENCES if paths is None else paths:
+        try:
+            path = Path(raw).expanduser()
+            with path.open("rb") as handle:
+                data = plistlib.load(handle)
+        except Exception:  # OSError, plistlib.InvalidFileException, RuntimeError (no HOME) …
+            continue
+        languages = data.get("AppleLanguages") if isinstance(data, dict) else None
+        if isinstance(languages, list):
+            found = [tag for tag in languages if isinstance(tag, str) and tag.strip()]
+            if found:
+                return found
+    return []
 
 
 def _windows_ui_language() -> str | None:
