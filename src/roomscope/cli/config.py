@@ -73,19 +73,34 @@ _OFF = frozenset({"off", "false", "no", "0"})
 
 #: How to switch to the other interface language, written in that language on
 #: purpose (never translated): whoever cannot read the current one can still
-#: find it. Keyed by the language in effect.
+#: find it. Keyed by the language in effect: the label, then the command.
 LANGUAGE_HINTS = {
-    "en": "中文界面：roomscope config language zh_CN",
-    "zh_CN": "English interface: roomscope config language en",
+    "en": ("中文界面：", "roomscope config language zh_CN"),
+    "zh_CN": ("English interface: ", "roomscope config language en"),
 }
 
 
-def language_hint(current: str) -> str | None:
-    """The line that leads to the other language, or ``None`` without its catalog."""
+def language_hint_parts(current: str) -> tuple[str, str] | None:
+    """``(label, command)`` leading to the other language, or ``None``
+    without its catalog. The command must never be split across lines."""
     target = DEFAULT_LANG if current != DEFAULT_LANG else "zh_CN"
     if target not in available_locales():
         return None
     return LANGUAGE_HINTS.get(current)
+
+
+def language_hint_lines(current: str, width: int) -> list[str]:
+    """The hint as one line where it fits in ``width`` columns; otherwise the
+    label, then the command whole on a line of its own, indented."""
+    from roomscope.cli.console import cell_width
+
+    parts = language_hint_parts(current)
+    if parts is None:
+        return []
+    label, command = parts
+    if cell_width(label + command) <= width:
+        return [label + command]
+    return [label.rstrip(), "  " + command]
 
 
 class SettingError(ValueError):

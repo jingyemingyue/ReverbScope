@@ -264,6 +264,33 @@ def test_the_language_hint_is_left_out_where_it_cannot_be_written(
     assert "English interface" in render_home(Console(unicode=False, encoding="ascii"), "1.0")
 
 
+@pytest.mark.parametrize(
+    ("lang", "label", "command"),
+    [
+        ("en", "中文界面：", "roomscope config language zh_CN"),
+        ("zh_CN", "English interface:", "roomscope config language en"),
+    ],
+)
+@pytest.mark.parametrize("columns", [20, 40])
+def test_the_language_hint_command_is_never_split(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    label: str,
+    command: str,
+    columns: int,
+) -> None:
+    """At 40 columns the home screen and --help ended with "…roomscope config
+    language" and "zh_CN" on the next line: the command to copy was cut."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", str(columns))
+    _code, _out, home = _run(["--lang", lang], capsys)
+    _code, help_text, _err = _run(["--lang", lang, "--help"], capsys)
+    for text in (home, help_text):
+        lines = [line.strip() for line in text.splitlines()]
+        assert lines[-2:] == [label, command], text
+
+
 def test_the_language_hint_needs_the_other_catalog(
     cli: tuple[Path, pytest.MonkeyPatch],
 ) -> None:

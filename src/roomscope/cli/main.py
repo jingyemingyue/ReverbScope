@@ -1203,20 +1203,22 @@ def build_parser() -> argparse.ArgumentParser:
         _("Run a command with --help for its options, for example:")
         + "\n  roomscope measure --help",
     ]
-    hint = _language_hint()
+    # The width argparse lays this help out in: the command in the hint
+    # goes on a line of its own, whole, where the line would not hold it.
+    hint = _language_hint(parser._get_formatter()._width)
     if hint:
         epilog.append(hint)
     parser.epilog = "\n\n".join(epilog)
     return parser
 
 
-def _language_hint() -> str | None:
+def _language_hint(width: int) -> str | None:
     """The way to the other interface language, where stdout can write it."""
-    from roomscope.cli.config import language_hint
+    from roomscope.cli.config import language_hint_lines
     from roomscope.cli.console import can_encode
     from roomscope.i18n import current_locale
 
-    hint = language_hint(current_locale())
+    hint = "\n".join(language_hint_lines(current_locale(), width))
     if hint and can_encode(hint, getattr(sys.stdout, "encoding", None)):
         return hint
     return None

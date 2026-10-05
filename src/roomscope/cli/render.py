@@ -1901,12 +1901,13 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
         indent=0,
         style=("dim",),
     )
-    from roomscope.cli.config import language_hint
+    from roomscope.cli.config import language_hint_lines
     from roomscope.i18n import current_locale
 
-    hint = language_hint(current_locale())
-    if hint and c.can_write(hint):
-        lines += c.paragraph(hint, indent=0, style=("dim",))
+    # Not a paragraph: wrapping split the command to copy across two lines.
+    hint = language_hint_lines(current_locale(), c.width)
+    if hint and c.can_write("".join(hint)):
+        lines += [c.muted(line) for line in hint]
     return c.fit("\n".join(lines))
 
 
