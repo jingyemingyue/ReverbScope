@@ -19,7 +19,10 @@ from reverbscope.diagnostics import (
 
 def test_home_folder_is_redacted_on_posix_and_windows() -> None:
     home = "/home/anna"  # strings, not Path: Path("/home/anna") is \home\anna on Windows
-    assert redact_home("/home/anna/.reverbscope/reverbscope.log", home) == "~/.reverbscope/reverbscope.log"
+    assert (
+        redact_home("/home/anna/.reverbscope/reverbscope.log", home)
+        == "~/.reverbscope/reverbscope.log"
+    )
     assert redact_home("/home/anna", home) == "~"
     # A sibling whose name starts with the account name is not the home folder.
     assert redact_home("/home/annabel/x", home) == "/home/annabel/x"

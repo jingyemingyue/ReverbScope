@@ -209,7 +209,9 @@ def test_golden_demo(
     monkeypatch.setenv("COLUMNS", str(columns))
     code, out, _err = _run(["--lang", lang, "demo"], capsys)
     assert code == 0
-    assert all(cell_width(line) <= columns for line in out.splitlines() if "reverbscope " not in line)
+    assert all(
+        cell_width(line) <= columns for line in out.splitlines() if "reverbscope " not in line
+    )
     _golden(f"demo-{lang}-{columns}", _normalise(out))
 
 
@@ -225,7 +227,9 @@ def test_golden_sweep_next_steps(
     monkeypatch.setenv("COLUMNS", str(columns))
     code, out, _err = _run(["--lang", lang, "sweep", "--out", "sweep.wav"], capsys)
     assert code == 0
-    assert all(cell_width(line) <= columns for line in out.splitlines() if "reverbscope " not in line)
+    assert all(
+        cell_width(line) <= columns for line in out.splitlines() if "reverbscope " not in line
+    )
     _golden(f"sweep-{lang}-{columns}", out.replace("\\", "/"))
 
 

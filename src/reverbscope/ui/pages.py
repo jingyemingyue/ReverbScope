@@ -140,7 +140,9 @@ class HomePage(QWidget):
         standalone = ModeCard(
             "I/O",
             _("Standalone Mode"),
-            _("ReverbScope plays the sweep and records the microphone through your audio interface."),
+            _(
+                "ReverbScope plays the sweep and records the microphone through your audio interface."
+            ),
             _("Measure now"),
             shortcut="Ctrl+2",
         )

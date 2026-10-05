@@ -202,6 +202,8 @@ def test_wheel_build_hook_compiles_into_a_temporary_directory(tmp_path) -> None:
     assert mo == tmp_path / "zh_CN" / "LC_MESSAGES" / "reverbscope.mo"
     with mo.open("rb") as handle:
         compiled = gettext.GNUTranslations(handle)
-    assert compiled.info()[SOURCE_HASH_HEADER.lower()] == source_hash(src_messages / "reverbscope.po")
+    assert compiled.info()[SOURCE_HASH_HEADER.lower()] == source_hash(
+        src_messages / "reverbscope.po"
+    )
     assert compiled.gettext("Analyze") == "分析"
     assert sorted(p.name for p in src_messages.iterdir()) == before

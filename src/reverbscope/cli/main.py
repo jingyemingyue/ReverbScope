@@ -499,7 +499,9 @@ def _required(parser: argparse.ArgumentParser) -> Any:
 def build_parser() -> argparse.ArgumentParser:
     parser = _Parser(
         prog="reverbscope",
-        description=_("ReverbScope: an open-source, DAW-independent recording environment analyzer."),
+        description=_(
+            "ReverbScope: an open-source, DAW-independent recording environment analyzer."
+        ),
         add_help=False,
         formatter_class=_HelpFormatter,
     )

@@ -7,7 +7,12 @@ and never changes it. Recording profiles (vocal, drums, ...) plug in through
 
 from __future__ import annotations
 
-from reverbscope.interpretation.interpreter import Finding, Severity, interpret, interpret_comparison
+from reverbscope.interpretation.interpreter import (
+    Finding,
+    Severity,
+    interpret,
+    interpret_comparison,
+)
 from reverbscope.interpretation.profiles import (
     AcousticGuitarProfile,
     ChoirProfile,

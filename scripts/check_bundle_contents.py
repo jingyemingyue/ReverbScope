@@ -265,7 +265,9 @@ def check(
         except PackageNotFoundError:
             pass
         else:
-            errors.append("PySide6_Addons is installed; ReverbScope must use PySide6_Essentials only")
+            errors.append(
+                "PySide6_Addons is installed; ReverbScope must use PySide6_Essentials only"
+            )
     errors.extend(
         f"{reason}: {path}"
         for path, reason in offending(root, installed_essentials=installed_essentials)

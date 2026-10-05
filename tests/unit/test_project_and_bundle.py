@@ -6,7 +6,12 @@ from pathlib import Path
 import pytest
 
 from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
-from reverbscope.io.project_store import add_session, is_project, list_project_sessions, save_project
+from reverbscope.io.project_store import (
+    add_session,
+    is_project,
+    list_project_sessions,
+    save_project,
+)
 from reverbscope.io.session_store import (
     RECORDING_FILE,
     SWEEP_SIDECAR_NAME,

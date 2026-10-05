@@ -97,7 +97,9 @@ def _gui_excepthook(previous: _Hook) -> _Hook:
         if issubclass(exc_type, (KeyboardInterrupt, SystemExit)):
             previous(exc_type, exc, tb)
             return
-        logging.getLogger("reverbscope.ui").error("unhandled exception", exc_info=(exc_type, exc, tb))
+        logging.getLogger("reverbscope.ui").error(
+            "unhandled exception", exc_info=(exc_type, exc, tb)
+        )
         if showing:
             return
         showing = True

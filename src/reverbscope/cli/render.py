@@ -1675,7 +1675,9 @@ def render_terminal_edition_gui(console: Console) -> str:
     c = console
     lines = c.status(
         "info",
-        _("This is the Terminal Edition of ReverbScope. Install the Desktop Edition to use the GUI."),
+        _(
+            "This is the Terminal Edition of ReverbScope. Install the Desktop Edition to use the GUI."
+        ),
         indent=0,
     )
     lines += c.paragraph(
