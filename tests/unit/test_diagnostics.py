@@ -83,6 +83,33 @@ def test_report_survives_a_broken_settings_file(
     assert "Settings:" in format_environment_report(report)
 
 
+def test_the_text_report_names_settings_and_paths_in_words(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review finding: the GUI's Environment Report listed "default_profile",
+    "copy_recording  True" and "reverbscope_home" in the Chinese report."""
+    from reverbscope.i18n import activate
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    report = environment_report("fake")
+    activate("zh_CN")
+    try:
+        text = format_environment_report(report)
+    finally:
+        activate("en")
+    for label in ("界面语言", "默认录音配置", "把录音复制进会话", "ReverbScope 文件夹", "日志文件"):
+        assert label in text, label
+    for key in ("default_profile", "copy_recording", "output_dir_set", "reverbscope_home"):
+        assert key not in text, key
+    assert "True" not in text and "False" not in text
+    # The JSON keeps the field names and the stored values.
+    assert report["settings"]["copy_recording"] is True
+    assert set(report["paths"]) == {"reverbscope_home", "settings", "log"}
+    english = format_environment_report(report)
+    assert re.search(r"Copy recordings\s+on\n", english)
+    assert re.search(r"Default output folder \(desktop app\)\s+not set\n", english)
+
+
 def test_report_lists_devices_and_probes_on_request() -> None:
     plain = format_environment_report(environment_report("fake"))
     assert "rates not probed" in plain and "[ 0]" in plain

@@ -302,6 +302,36 @@ def _format_devices(audio: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _setting_label(key: str) -> str:
+    """A settings key of the report in words, as ``reverbscope config`` and the
+    Settings dialog name it (the JSON keeps the field names)."""
+    return {
+        "language": _("Interface language"),
+        "default_profile": _("Default profile"),
+        "audio_backend": _("Audio backend"),
+        "copy_recording": _("Copy recordings"),
+        "theme": _("Theme (desktop app)"),
+        "developer_tools": _("Developer tools"),
+        "output_dir_set": _("Default output folder (desktop app)"),
+    }.get(key, key)
+
+
+def _setting_value(key: str, value: object) -> str:
+    if key == "output_dir_set":
+        return _("set") if value else _("not set")
+    if isinstance(value, bool):
+        return pgettext("setting", "on") if value else pgettext("setting", "off")
+    return "-" if value in ("", None) else str(value)
+
+
+def _path_label(key: str) -> str:
+    return {
+        "reverbscope_home": _("ReverbScope folder"),
+        "settings": _("Settings file"),
+        "log": _("Log file"),
+    }.get(key, key)
+
+
 def _field(label: str, value: object) -> str:
     """``label`` padded to 20 terminal columns (a CJK character takes two)."""
     width = sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in label)
@@ -338,11 +368,15 @@ def format_environment_report(report: dict[str, Any]) -> str:
         lines.append(_field(name, found or _("not installed")))
     lines.append(_field("libsndfile", report.get("libsndfile") or _("unknown")))
     lines.append(_("Settings:"))
-    for key, value in report.get("settings", {}).items():
-        lines.append(_field(key, "-" if value in ("", None) else value))
+    settings = report.get("settings", {})
+    if "error" in settings:
+        lines.append("  " + localize(str(settings["error"])))
+    else:
+        for key, value in settings.items():
+            lines.append(_field(_setting_label(key), _setting_value(key, value)))
     lines.append(_("Paths:"))
     for key, value in report["paths"].items():
-        lines.append(_field(key, value))
+        lines.append(_field(_path_label(key), value))
     audio = report.get("audio", {})
     callbacks = report.get("audio_callbacks")
     if callbacks is None:
