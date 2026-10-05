@@ -8,6 +8,24 @@ All notable changes to RoomScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Interactive menu.** Bare `roomscope` in a terminal (stdin and stdout
+  both terminals, no `--format json`, `ROOMSCOPE_NO_MENU` unset) opens a
+  numbered menu in the interface language; `roomscope menu` opens it
+  explicitly. Items: demo, test signal, analysis, measurement through the
+  interface, results, comparison of two positions, desktop app (not in the
+  Terminal Edition), settings (language, default profile, audio backend,
+  output folder, through `roomscope config`) and environment report. Each
+  item asks only for what it needs with a default Enter accepts, takes
+  quoted, drag-and-dropped (`My\ Take.wav`), `~` and Chinese paths, asks
+  again with the reason when a file is missing or a number is out of range,
+  prints the command it stands for ("等同于命令：roomscope analyze …") and
+  runs it in the same process; a failed command is named in words. A take
+  plays nothing until an explicit `y`, keeps -20 dBFS by default and still
+  needs the acknowledgement above -12 dBFS. Ctrl+C at a question returns to
+  the menu (at the menu it leaves); end of input leaves with exit code 0.
+  Pipes, files and scripts keep the home screen and its goldens; there
+  `roomscope menu` refuses with exit code 2. Translated in all seven
+  catalogs.
 - **Two download betas.** The README and installation pages offer a
   **stable beta** (fewer bugs, narrower feature set: last published
   pre-release `0.5.0b1`) and a **preview beta** (stronger features, may
