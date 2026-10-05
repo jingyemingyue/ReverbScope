@@ -221,6 +221,9 @@ curves, and names the ISO 3382-2 class the position counts reach.
 ## Export and language
 
 `reverbscope export session/ --format csv --out curves/` writes every curve.
+Exporting another session into the same folder removes the curve files that
+session does not have (a `--no-curves` session has none), so the folder never
+mixes two sessions.
 
 ReverbScope follows the system's language: on a Mac the preferred languages
 (System Settings → General → Language & Region; Terminal, iTerm and VS Code

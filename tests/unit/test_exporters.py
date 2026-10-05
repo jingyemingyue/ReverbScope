@@ -174,3 +174,26 @@ def test_an_unknown_exporter_lists_the_others_by_name() -> None:
         get_exporter("nope")
     listed = str(exc.value).split("available: ", 1)[1]
     assert "csv" in listed.split(", ") and "[" not in listed, exc.value
+
+
+def test_an_export_removes_the_curves_of_an_earlier_export_it_does_not_have(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """A --no-curves session exported into a folder used before left the
+    earlier session's decay_edc.csv, frequency_response.csv and noise_psd.csv
+    beside its own metrics, with nothing to tell them apart."""
+    from reverbscope.models.result import AnalysisResult
+
+    result = analyze(
+        synthetic_recording(
+            short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3), noise_rms=1e-5
+        ),
+        Reference.from_settings(short_sweep),
+    )
+    full = {path.name for path in export_csv(result, tmp_path)}
+    assert {"decay_edc.csv", "frequency_response.csv"} <= full
+    (tmp_path / "notes.txt").write_text("mine", encoding="utf-8")
+    slim = AnalysisResult.from_dict(result.to_dict(include_curves=False))
+    written = {path.name for path in export_csv(slim, tmp_path)}
+    assert "frequency_response.csv" not in written
+    assert {path.name for path in tmp_path.iterdir()} == written | {"notes.txt"}

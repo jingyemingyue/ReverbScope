@@ -16,17 +16,27 @@ class CsvExporter:
     def export(self, result: AnalysisResult, directory: Path) -> list[Path]:
         base = Path(directory)
         base.mkdir(parents=True, exist_ok=True)
-        written = [
-            _write_decay_metrics(base / "decay_metrics.csv", result),
-            _write_energy_metrics(base / "energy_metrics.csv", result),
-            _write_decay_edc(base / "decay_edc.csv", result),
-            _write_frequency_response(base / "frequency_response.csv", result),
-            _write_interface_response(base / "interface_response.csv", result),
-            _write_noise_psd(base / "noise_psd.csv", result),
-            _write_reflections(base / "reflections.csv", result),
-            _write_resonances(base / "resonances.csv", result),
-        ]
-        return [path for path in written if path is not None]
+        writers = {
+            "decay_metrics.csv": _write_decay_metrics,
+            "energy_metrics.csv": _write_energy_metrics,
+            "decay_edc.csv": _write_decay_edc,
+            "frequency_response.csv": _write_frequency_response,
+            "interface_response.csv": _write_interface_response,
+            "noise_psd.csv": _write_noise_psd,
+            "reflections.csv": _write_reflections,
+            "resonances.csv": _write_resonances,
+        }
+        written: list[Path] = []
+        for name, write in writers.items():
+            path = write(base / name, result)
+            if path is not None:
+                written.append(path)
+            else:
+                # A curve this result does not have: the file of that name
+                # from an earlier export into this folder (another session)
+                # would read as this one's.
+                _remove(base / name)
+        return written
 
 
 def export_csv(result: AnalysisResult, directory: str | Path) -> list[Path]:
@@ -42,6 +52,13 @@ def _write(path: Path, header: list[str], rows: list[list[object]]) -> Path:
     except OSError as exc:
         raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
     return path
+
+
+def _remove(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as exc:
+        raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
 
 
 def _metric_row(

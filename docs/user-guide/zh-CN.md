@@ -125,7 +125,7 @@ reverbscope-env/bin/reverbscope gui
 
 ## 导出与语言
 
-`reverbscope export session/ --format csv --out curves/` 导出每一条曲线。
+`reverbscope export session/ --format csv --out curves/` 导出每一条曲线。把另一个会话导出到同一文件夹时，该会话没有的曲线文件会被删除（`--no-curves` 会话没有任何曲线），因此文件夹里不会混有两个会话的数据。
 
 ReverbScope 跟随系统语言：Mac 上是首选语言（“系统设置 → 通用 → 语言与地区”；“终端”、iTerm 和 VS Code 不管首选语言是什么都会设置 `LANG=en_US.UTF-8`，所以 `LANG` 排在首选语言之后），Windows 上是显示语言，Linux 上是 `LANGUAGE`、`LC_ALL`、`LC_MESSAGES` 和 `LANG`。想不管系统怎么设置都固定使用一种语言，保存一次即可：
 
