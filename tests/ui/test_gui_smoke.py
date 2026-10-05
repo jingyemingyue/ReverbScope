@@ -1508,3 +1508,44 @@ def test_a_new_theme_in_settings_redraws_cards_and_charts(
     assert any(DARK_TOKENS[f"{tone}_soft"] in after["finding card"] for tone in ("info", "good"))
     assert after["chip"] != before["chip"]
     window.close()
+
+
+def test_following_the_system_redraws_the_window_when_the_system_turns_dark(
+    app: QApplication,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    short_sweep: SweepSettings,
+    restore_chrome: None,
+) -> None:
+    """The theme "Follow the system" was applied once at startup: when the
+    system turned dark while ReverbScope ran, cards and charts drawn after
+    that were dark on the still light window (dark text on dark cards)."""
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QGuiApplication
+
+    from reverbscope.core.compare import compare
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.interpretation import interpret
+    from reverbscope.ui.theme import DARK_TOKENS, ENV_COLOR_SCHEME, apply_application_chrome
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv(ENV_COLOR_SCHEME, "light")
+    apply_application_chrome(app)
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    window = MainWindow()
+    window.state.result = result
+    window.state.findings = interpret(result, "generic")
+    window.show_results()
+    window.compare._show(compare(result, result), [], "generic")
+    # The offscreen platform cannot change its scheme: the variable stands
+    # in for the system's answer, and the signal is the one Qt sends.
+    monkeypatch.setenv(ENV_COLOR_SCHEME, "dark")
+    QGuiApplication.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Dark)
+    colours = _theme_colours(window)
+    assert DARK_TOKENS["bg"] in app.styleSheet()
+    for part in ("results chart", "compare chart", "placement picture"):
+        assert colours[part] == DARK_TOKENS["surface"], part
+    window.close()

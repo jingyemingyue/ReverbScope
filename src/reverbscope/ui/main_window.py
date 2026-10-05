@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices
+from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplication
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -167,6 +167,10 @@ class MainWindow(QMainWindow):
         self._before_compare: tuple[QWidget, str] = (self.home, "")
         # The colour scheme the window was last drawn in.
         self._scheme = color_scheme()
+        # "Follow the system": macOS (Auto appearance) or Windows can turn
+        # dark while ReverbScope runs. Widgets drawn after that took the dark
+        # colours while the window kept the light style sheet.
+        QGuiApplication.styleHints().colorSchemeChanged.connect(self._follow_system_scheme)
         self.show_home()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt override
@@ -317,6 +321,12 @@ class MainWindow(QMainWindow):
         self.compare.restyle()
         for page in (self.daw, self.standalone):
             page.placement.redraw()
+
+    def _follow_system_scheme(self, *_scheme: object) -> None:
+        # A theme chosen in Settings (or REVERBSCOPE_COLOR_SCHEME) does not
+        # follow the system, and its scheme does not change here.
+        if color_scheme() != self._scheme:
+            self.restyle()
 
     def _tools_backend(self) -> str | None:
         """The backend the device inspector and the environment report describe.
