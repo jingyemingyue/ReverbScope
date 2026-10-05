@@ -367,6 +367,15 @@ def is_terminal(stream: TextIO | None) -> bool:
 _isatty = is_terminal
 
 
+def can_encode(text: str, encoding: str | None) -> bool:
+    """Whether ``encoding`` (UTF-8 when unknown) can write ``text``."""
+    try:
+        text.encode(encoding or "utf-8")
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
+
+
 def _unicode_ok(stream: TextIO, interactive: bool, environ: Mapping[str, str]) -> bool:
     # An in-memory text stream (io.StringIO) has no encoding and holds any character.
     encoding = getattr(stream, "encoding", None) or "utf-8"
@@ -430,6 +439,8 @@ class Console:
     width: int = PIPE_WIDTH
     #: A terminal (dynamic progress may redraw a line); False for pipes/files.
     interactive: bool = False
+    #: The stream's encoding, for text that is shown only where it can be written.
+    encoding: str = "utf-8"
 
     @classmethod
     def for_stream(
@@ -445,7 +456,12 @@ class Console:
             unicode=_unicode_ok(stream, interactive, env),
             width=terminal_width(stream, interactive, env),
             interactive=interactive,
+            encoding=getattr(stream, "encoding", None) or "utf-8",
         )
+
+    def can_write(self, text: str) -> bool:
+        """Whether the stream's encoding holds every character of ``text``."""
+        return can_encode(text, self.encoding)
 
     def readable(self, text: str) -> str:
         """Text as this stream will show it, before its width is measured.

@@ -3484,8 +3484,8 @@ msgstr "RoomScope 独立测量"
 msgid "RoomScope test signal"
 msgstr "RoomScope 测试信号"
 
-msgid "Run a command with --help for its options, for example: roomscope measure --help"
-msgstr "在命令后加 --help 查看它的选项，例如：roomscope measure --help"
+msgid "Run a command with --help for its options, for example:"
+msgstr "在命令后加 --help 可查看它的选项，例如："
 
 msgid "Segment"
 msgstr "片段"

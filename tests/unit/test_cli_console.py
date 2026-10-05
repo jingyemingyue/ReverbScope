@@ -474,6 +474,13 @@ def test_every_help_example_is_a_valid_command(home: Path) -> None:
     ]
     assert len(examples) >= 10
     for example in examples:
+        if example.endswith(" --help"):
+            # "roomscope measure --help": the command must exist; --help would exit.
+            example = example.removesuffix(" --help")
+            with pytest.raises(SystemExit) as exc:
+                build_parser().parse_args(shlex.split(example)[1:])
+            assert exc.value.code == 2  # measure without --out, not "invalid choice"
+            continue
         build_parser().parse_args(shlex.split(example)[1:])  # exits on an unknown flag
 
 

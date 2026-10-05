@@ -1191,13 +1191,29 @@ def build_parser() -> argparse.ArgumentParser:
             _commands_block(helps),
         ]
     )
-    parser.epilog = "\n\n".join(
-        [
-            _examples_block(ROOT_EXAMPLES),
-            _("Run a command with --help for its options, for example: roomscope measure --help"),
-        ]
-    )
+    epilog = [
+        _examples_block(ROOT_EXAMPLES),
+        # The command on a line of its own: a wrapped sentence split it.
+        _("Run a command with --help for its options, for example:")
+        + "\n  roomscope measure --help",
+    ]
+    hint = _language_hint()
+    if hint:
+        epilog.append(hint)
+    parser.epilog = "\n\n".join(epilog)
     return parser
+
+
+def _language_hint() -> str | None:
+    """The way to the other interface language, where stdout can write it."""
+    from roomscope.cli.config import language_hint
+    from roomscope.cli.console import can_encode
+    from roomscope.i18n import current_locale
+
+    hint = language_hint(current_locale())
+    if hint and can_encode(hint, getattr(sys.stdout, "encoding", None)):
+        return hint
+    return None
 
 
 def cmd_sweep(args: argparse.Namespace) -> int:

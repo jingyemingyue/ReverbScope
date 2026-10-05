@@ -72,6 +72,23 @@ ENV_BACKEND = "ROOMSCOPE_AUDIO_BACKEND"
 ENV_EDITION = "ROOMSCOPE_EDITION"
 
 
+#: How to switch to the other interface language, written in that language on
+#: purpose (never translated): whoever cannot read the current one can still
+#: find it. Keyed by the language in effect.
+LANGUAGE_HINTS = {
+    "en": "中文界面：roomscope config language zh_CN",
+    "zh_CN": "English interface: roomscope config language en",
+}
+
+
+def language_hint(current: str) -> str | None:
+    """The line that leads to the other language, or ``None`` without its catalog."""
+    target = DEFAULT_LANG if current != DEFAULT_LANG else "zh_CN"
+    if target not in available_locales():
+        return None
+    return LANGUAGE_HINTS.get(current)
+
+
 class SettingError(ValueError):
     """A key or value the settings cannot take; nothing was written."""
 

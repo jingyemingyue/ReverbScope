@@ -52,8 +52,10 @@ examples:
   roomscope analyze --recording take.wav --sweep sweep.wav --out session-1
   roomscope compare session-1 session-2
 
-Run a command with --help for its options, for example: roomscope measure
---help
+Run a command with --help for its options, for example:
+  roomscope measure --help
+
+中文界面：roomscope config language zh_CN
 
 === roomscope demo --help
 usage: roomscope demo [options]

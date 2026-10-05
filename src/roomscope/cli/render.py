@@ -1906,6 +1906,12 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
         indent=0,
         style=("dim",),
     )
+    from roomscope.cli.config import language_hint
+    from roomscope.i18n import current_locale
+
+    hint = language_hint(current_locale())
+    if hint and c.can_write(hint):
+        lines += c.paragraph(hint, indent=0, style=("dim",))
     return c.fit("\n".join(lines))
 
 

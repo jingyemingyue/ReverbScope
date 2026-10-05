@@ -48,8 +48,13 @@ def _help_texts() -> dict[str, str]:
     return texts
 
 
+#: Written in English on purpose: the way back for a reader of English.
+ENGLISH_HINT = "English interface: roomscope config language en"
+
+
 def _prose(help_text: str) -> str:
     """The help without its usage block, option names and metavars."""
+    help_text = help_text.replace(ENGLISH_HINT, "")
     lines = help_text.split("\n\n", 1)[1].splitlines() if "\n\n" in help_text else []
     kept = []
     for line in lines:
@@ -86,7 +91,7 @@ def _everything_shown(help_text: str) -> str:
     """The whole help screen, usage line and placeholders included, without
     what a user types as it is: option names and the values of a choice list
     ({text,json}); commands are removed by english_words()."""
-    text = re.sub(r"\{[^{}\s]*\}", " ", help_text)
+    text = re.sub(r"\{[^{}\s]*\}", " ", help_text.replace(ENGLISH_HINT, ""))
     # Command names in the command lists ("    analyze-ir  分析…").
     text = re.sub(r"(?m)^( +)[a-z][a-z-]*(?= {2,}\S)", r"\1", text)
     return re.sub(r"(?<![\w.-])--?[A-Za-z][\w-]*", " ", text)

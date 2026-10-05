@@ -239,8 +239,43 @@ def test_golden_home_screen(
     code, out, err = _run(["--lang", lang], capsys)
     assert code == 2 and out == ""
     assert "roomscope demo" in err and "roomscope --help" in err
-    assert len(err.splitlines()) <= 10
+    assert len(err.splitlines()) <= 11
+    # The way to the other language, written in that language.
+    hint = {
+        "en": "中文界面：roomscope config language zh_CN",
+        "zh_CN": "English interface: roomscope config language en",
+    }[lang]
+    assert err.splitlines()[-1] == hint
     _golden(f"home-{lang}", _normalise(err))
+
+
+def test_the_language_hint_is_left_out_where_it_cannot_be_written(
+    cli: tuple[Path, pytest.MonkeyPatch],
+) -> None:
+    """A cp1252 or ASCII stream would print the Chinese hint as question marks."""
+    from roomscope.cli.render import render_home
+
+    for encoding in ("cp1252", "ascii"):
+        text = render_home(Console(unicode=False, encoding=encoding), "1.0")
+        assert "roomscope config language" not in text
+        text.encode(encoding)
+    assert "中文界面" in render_home(Console(encoding="gbk"), "1.0")
+    activate("zh_CN")
+    assert "English interface" in render_home(Console(unicode=False, encoding="ascii"), "1.0")
+
+
+def test_the_language_hint_needs_the_other_catalog(
+    cli: tuple[Path, pytest.MonkeyPatch],
+) -> None:
+    from roomscope.cli import config
+    from roomscope.cli.main import build_parser
+    from roomscope.cli.render import render_home
+
+    _root, monkeypatch = cli
+    assert "中文界面：roomscope config language zh_CN" in build_parser().format_help()
+    monkeypatch.setattr(config, "available_locales", lambda: ["en"])
+    assert "config language" not in render_home(Console(), "1.0")
+    assert "中文界面" not in build_parser().format_help()
 
 
 def _help_screens() -> str:
@@ -319,8 +354,11 @@ def test_the_chinese_demo_and_home_show_no_english_prose(
         text = "\n".join(
             line
             for line in (out + err).splitlines()
-            # Paths and the pip command are data the user types, not prose.
-            if "roomscope-demo" not in line and "pip install" not in line
+            # Paths and the pip command are data the user types, not prose;
+            # the way back to English is written in English on purpose.
+            if "roomscope-demo" not in line
+            and "pip install" not in line
+            and line != "English interface: roomscope config language en"
         )
         assert english_words(text) == [], (argv, text)
 

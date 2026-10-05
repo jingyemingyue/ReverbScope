@@ -6,3 +6,4 @@ RoomScope <version>
   roomscope sweep --out sweep.wav   写出测试信号，在 DAW 中播放
 
 运行 roomscope --help 查看所有命令和选项。
+English interface: roomscope config language en
