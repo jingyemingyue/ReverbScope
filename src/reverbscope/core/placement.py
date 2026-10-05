@@ -750,10 +750,8 @@ def estimate_placement(
             )
             used_delay = tier1[source_index].delay_ms
             if earliest_upper_ms <= used_delay + MERGE_RESOLUTION_MS:
-                source_length = replace(
-                    source_length,
-                    validity=Validity.UNRELIABLE,
-                    reason=diag(
+                if earliest_upper_ms >= used_delay - MERGE_RESOLUTION_MS:
+                    merge_reason = diag(
                         "no separate arrival from a plane above the devices was found, and one "
                         "as low as {lowest:.2f} m would arrive at {earliest:.1f} ms -- within "
                         "the {resolution:.1f} ms the reflection search can resolve from the "
@@ -765,7 +763,25 @@ def estimate_placement(
                         earliest=earliest_upper_ms,
                         resolution=MERGE_RESOLUTION_MS,
                         used=used_delay,
-                    ),
+                    )
+                else:
+                    # The lowest plausible plane arrives well before the used
+                    # arrival, and a higher one arrives later: the one whose
+                    # mirror path equals the lower plane's lies at H = u_z,
+                    # since sqrt((2H - u_z)^2 + q^2) = sqrt(u_z^2 + q^2) there.
+                    merge_reason = diag(
+                        "no separate arrival from a plane above the devices was found, and a "
+                        "plane {coincide:.2f} m up (plausible heights start at {lowest:.2f} m) "
+                        "would arrive at the same {used:.1f} ms as the arrival this height was "
+                        "solved from. That arrival may therefore be two arrivals merged into "
+                        "one peak, which would bias the height. Moving the microphone 20-30 cm "
+                        "up or down and measuring again separates them",
+                        coincide=u_z,
+                        lowest=lowest_upper,
+                        used=used_delay,
+                    )
+                source_length = replace(
+                    source_length, validity=Validity.UNRELIABLE, reason=merge_reason
                 )
                 horizontal_length = replace(
                     horizontal_length,

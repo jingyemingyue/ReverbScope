@@ -513,3 +513,48 @@ def test_height_uncertainty_is_taken_at_the_arrival_the_height_came_from() -> No
     assert alone.validity is Validity.VALID and agreed.validity is Validity.VALID
     assert agreed.metres == pytest.approx(alone.metres)
     assert agreed.input_uncertainty_m == pytest.approx(alone.input_uncertainty_m, rel=1e-9)
+
+
+@pytest.mark.parametrize(
+    ("source_height", "mic_height", "horizontal", "expected"),
+    [
+        (
+            1.5,
+            1.2,
+            1.0,
+            "and a plane 2.70 m up (plausible heights start at 1.80 m) would arrive at the "
+            "same 5.3 ms as the arrival this height was solved from",
+        ),
+        (
+            1.0,
+            0.9,
+            3.0,
+            "and one as low as 1.80 m would arrive at 1.3 ms -- within the 0.3 ms the "
+            "reflection search can resolve from the 1.6 ms arrival this height was solved from",
+        ),
+    ],
+    ids=["lowest plane arrives well before", "lowest plane within the resolution"],
+)
+def test_a_possible_merge_names_the_plane_that_would_merge(
+    source_height: float, mic_height: float, horizontal: float, expected: str
+) -> None:
+    """With the devices straddling mid-height, the lowest plausible plane above
+    arrives long before the lower plane's arrival, yet the reason said it
+    arrived "at 0.9 ms -- within the 0.3 ms ... from the 5.3 ms arrival". The
+    plane that would really merge is the one at u_z = s + h above the lower
+    plane, whose mirror path equals the lower plane's."""
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    result = estimate_placement(
+        _reflections([(lower_ms, _lossy(distance, lower_ms))]),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    assert result.source_height_m.validity is Validity.UNRELIABLE
+    assert result.source_height_m.metres == pytest.approx(source_height, abs=0.005)
+    reason = result.source_height_m.reason or ""
+    assert expected in reason
+    assert "may therefore be two arrivals merged into one peak" in reason
+    assert result.horizontal_separation_m.validity is Validity.UNRELIABLE
+    assert result.horizontal_separation_m.reason == reason
