@@ -218,7 +218,8 @@ def title(key: str) -> str:
         "language": _("Interface language"),
         "profile": _("Default profile"),
         "backend": _("Audio backend"),
-        "output-folder": _("Session folder (desktop app)"),
+        # The desktop app's Settings dialog names these the same way.
+        "output-folder": _("Default output folder (desktop app)"),
         "copy-recording": _("Copy recordings"),
         "developer-tools": _("Developer tools"),
         "theme": _("Theme (desktop app)"),

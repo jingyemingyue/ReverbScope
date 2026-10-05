@@ -108,7 +108,7 @@ msgid "Language"
 msgstr "语言"
 
 msgid "Default profile"
-msgstr "默认配置"
+msgstr "默认录音配置"
 
 msgid "Audio backend"
 msgstr "音频后端"
@@ -4252,8 +4252,8 @@ msgstr "跟随系统"
 msgid "Interface language"
 msgstr "界面语言"
 
-msgid "Session folder (desktop app)"
-msgstr "会话文件夹（桌面版）"
+msgid "Default output folder (desktop app)"
+msgstr "默认输出文件夹（桌面版）"
 
 msgid "Copy recordings"
 msgstr "把录音复制进会话"

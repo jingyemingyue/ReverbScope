@@ -375,6 +375,25 @@ def test_chinese_lists_use_the_chinese_separator(
     assert "available: zh_CN, en, or auto" in err
 
 
+def test_a_setting_has_the_name_the_desktop_app_gives_it(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`config profile drums` confirmed "默认配置：鼓" ("default configuration")
+    while its errors and every --help say 录音配置, and the output folder was
+    a 会话文件夹 here but the 默认输出文件夹 in the Settings dialog."""
+    from roomscope.cli import config
+
+    activate("zh_CN")
+    assert config.title("profile") == i18n._("Default profile") == "默认录音配置"
+    assert config.title("output-folder").startswith(i18n._("Default output folder"))
+    _code, out, _err = _run(capsys, "--lang", "zh_CN", "config", "profile", "drums")
+    assert "默认录音配置：" in out, out
+    _code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "profile", "foo")
+    assert "录音配置" in err
+    _code, out, _err = _run(capsys, "--lang", "zh_CN", "config")
+    assert "默认录音配置：" in out and "默认输出文件夹（桌面版）：" in out, out
+
+
 def test_showing_an_unknown_setting_does_not_talk_of_changes(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
