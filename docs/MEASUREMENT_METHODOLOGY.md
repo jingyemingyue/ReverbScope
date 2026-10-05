@@ -238,7 +238,14 @@ time-reversed filtering.
    (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated from 7.5 dB
    of decay after the cross-point (at least the last 10 %), late slope over
    15 dB starting 7.5 dB above noise, repeat until the cross-point moves
-   less than max(1 ms, the time the late slope takes to fall 1 dB). These
+   less than max(1 ms, the time the late slope takes to fall 1 dB). The late
+   slope is fitted to the decay only: from its first interval at or below
+   noise + 22.5 dB to the last one before it falls below noise + 7.5 dB. In
+   a narrow band the floor in 1–10 ms intervals swings by many dB, and floor
+   intervals seconds after the cross-point that rise into the level window
+   would otherwise drag the slope towards zero (up to v0.5.0b1 they were
+   fitted too, which rejected the estimate of many clean 63/125 Hz decays
+   with 50–60 dB of range and marked their T20 and T30 unreliable). These
    parameter values are ReverbScope's choices within the ranges published by
    Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB; 10–20 dB). The
    iterative estimate is rejected, and the preliminary cross-point, slope

@@ -37,7 +37,11 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
    loudest block to the first block at noise + 10 dB (noise from the last
    10 %), then iterated block length / noise / late-slope estimates until the
    crosspoint moves by less than ``LUNDEBY_CONVERGENCE_DB`` (1 dB) of decay at
-   the late slope (at least 1 ms). The iterative estimate is rejected, and the
+   the late slope (at least 1 ms). The late slope is fitted to the decay from
+   its first block at or below noise + 22.5 dB to the last one before it
+   falls below noise + 7.5 dB, never to floor blocks after it that rise into
+   that level window again (in a narrow band the floor in short blocks swings
+   by many dB). The iterative estimate is rejected, and the
    preliminary crosspoint, slope and noise level are used instead, when the
    iteration does not converge within 6 passes, when the late slope is less
    than ``LUNDEBY_MIN_SLOPE_RATIO`` (0.5) times the
@@ -421,13 +425,22 @@ def estimate_truncation(
         noise_start = max(noise_start, 0)
         noise_db = _level_db(power[noise_start:])
 
-        # 8. Late slope over 10-20 dB starting 5-10 dB above the noise.
+        # 8. Late slope over 10-20 dB starting 5-10 dB above the noise: the
+        #    decay from its first interval at or below the upper level to the
+        #    last one before it first falls below the lower level. Only that
+        #    stretch: in a narrow band the floor in short intervals swings by
+        #    many dB, and floor intervals seconds after the crosspoint that
+        #    rise into the level window would drag the slope towards zero.
         lower = noise_db + 7.5
         upper = lower + 15.0
-        mask = (level_db <= upper) & (level_db >= lower) & (times >= start_t)
-        if int(np.count_nonzero(mask)) < 3:
+        after_start = times >= start_t
+        below_upper = np.flatnonzero(after_start & (level_db <= upper))
+        below_lower = np.flatnonzero(after_start & (level_db < lower))
+        first = int(below_upper[0]) if below_upper.shape[0] else level_db.shape[0]
+        stop = int(below_lower[0]) if below_lower.shape[0] else level_db.shape[0]
+        if stop - first < 3:
             break
-        new_slope, new_intercept, _ = _linear_fit(times[mask], level_db[mask])
+        new_slope, new_intercept, _ = _linear_fit(times[first:stop], level_db[first:stop])
         if not np.isfinite(new_slope) or new_slope >= 0.0:
             break
         new_cross_t = (noise_db - new_intercept) / new_slope

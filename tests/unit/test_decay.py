@@ -360,15 +360,76 @@ def _decay_with_gated_floor(
     return np.asarray(decay + floor, dtype=np.float64)
 
 
+def _decay_with_noise_burst(
+    sample_rate: int, floor_db: float, rise_db: float = 10.0, duration_s: float = 0.4
+) -> FloatArray:
+    """Squared response: RT 0.5 s noise decay, a steady floor and a noise burst
+    ``rise_db`` above it (a door, a cough) that starts as the decay falls to
+    4 dB above the burst, so the late decay runs straight into it."""
+    n = 3 * sample_rate
+    t = np.arange(n) / sample_rate
+    rng = np.random.default_rng(4)
+    decay = rng.normal(0.0, 1.0, n) ** 2 * np.exp(-DECAY_CONSTANT * t / 0.5)
+    burst_db = floor_db + rise_db
+    start = -(burst_db + 4.0) / 120.0
+    level = np.where((t >= start) & (t < start + duration_s), burst_db, floor_db)
+    floor = 10 ** (level / 10) * rng.normal(0.0, 1.0, n) ** 2
+    return np.asarray(decay + floor, dtype=np.float64)
+
+
+@pytest.mark.parametrize("rate", [48000, 192000])
+def test_floor_intervals_after_the_decay_stay_out_of_the_late_slope(rate: int) -> None:
+    """E1 / R3-0: the late slope was fitted to every interval in its level
+    window, so floor intervals seconds after the decay that rose into it (an
+    intermittent floor, or the short-interval floor of a narrow band) dragged
+    it to -3 dB/s; the estimate was rejected. Only the decay itself is fitted
+    now, and the iterative estimate stands."""
+    power = _decay_with_gated_floor(rate, -40.0)
+    trunc = estimate_truncation(power, rate)
+    assert trunc.problem is None
+    assert trunc.late_slope_db_per_s is not None and trunc.late_slope_db_per_s < -80.0
+    assert trunc.truncation_index / rate < 0.6
+
+    band = analyze_band(np.sqrt(power), rate, None, noise_margin_db=10.0)
+    assert band.t30.validity is Validity.VALID
+    assert band.t30.seconds == pytest.approx(0.5, rel=0.1)
+    assert band.rt60_estimate_s == band.t30.seconds
+    assert not band.warnings
+
+
+@pytest.mark.parametrize("length_s", [3.0, 6.0])
+def test_clean_low_band_decays_keep_their_reverberation_time(length_s: float) -> None:
+    """R3-0: in the 63 and 125 Hz bands the floor in 1-10 ms intervals swings by
+    many dB; floor intervals after the crosspoint entered the late-slope fit,
+    the estimate was rejected and T20/T30 of clean 55 dB decays were marked
+    unreliable with no RT60."""
+    rate = 48000
+    rng = np.random.default_rng(0)
+    lead = int(0.3 * rate)
+    n = lead + int(length_s * rate)
+    t = np.arange(n - lead) / rate
+    ir = np.zeros(n)
+    ir[lead:] = rng.standard_normal(n - lead) * 10 ** (-3 * t / 0.3)
+    ir += 10 ** (-55 / 20) * rng.standard_normal(n)
+    settings = AnalysisSettings(octave_bands_hz=(63.0, 125.0))
+    for band in analyze_decay(ir, rate, settings, direct_index=lead).bands:
+        assert band.t30.validity is Validity.VALID, band.warnings
+        assert band.t20.validity is Validity.VALID
+        assert band.rt60_estimate_s == pytest.approx(0.3, rel=0.25)
+        assert not band.warnings
+
+
 @pytest.mark.parametrize("rate", [48000, 192000])
 def test_runaway_noise_truncation_falls_back_and_is_marked_unreliable(rate: int) -> None:
-    """E1: the late slope was fitted to floor blocks (-3 dB/s), the truncation
-    ran to the end of the response and T30 = 9.8 s was reported as valid."""
-    power = _decay_with_gated_floor(rate, -40.0)
+    """E1: a noise burst right after the decay is fitted as its late slope
+    (-22 dB/s) and the iterative crosspoint runs to the end of the burst. The
+    preliminary estimate is used and the T values, which depend on it, are
+    marked unreliable."""
+    power = _decay_with_noise_burst(rate, -55.0)
     trunc = estimate_truncation(power, rate)
     assert trunc.problem is not None and "late decay slope" in trunc.problem
     assert trunc.iterative_truncation_index is not None
-    assert trunc.iterative_truncation_index / rate > 2.5
+    assert trunc.iterative_truncation_index / rate > 0.9
     assert trunc.truncation_index / rate < 0.6  # preliminary crosspoint
     assert trunc.late_slope_db_per_s is not None and trunc.late_slope_db_per_s < -80.0
 
@@ -383,7 +444,7 @@ def test_runaway_noise_truncation_falls_back_and_is_marked_unreliable(rate: int)
 def test_rejected_truncation_that_does_not_change_the_result_keeps_it_valid(
     sample_rate: int,
 ) -> None:
-    power = _decay_with_gated_floor(sample_rate, -50.0)
+    power = _decay_with_noise_burst(sample_rate, -70.0)
     assert estimate_truncation(power, sample_rate).problem is not None
     band = analyze_band(np.sqrt(power), sample_rate, None, noise_margin_db=10.0)
     assert band.t30.validity is Validity.VALID
