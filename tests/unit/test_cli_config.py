@@ -226,14 +226,20 @@ def test_a_damaged_settings_file_is_described_in_the_interface_language(
 ) -> None:
     """The Chinese error quoted the JSON parser's English sentence
     ("Expecting property name enclosed in double quotes: line 2 column 1")."""
+    damaged = '{"language": "zh_CN",\n}\n'
     settings_path().parent.mkdir(parents=True)
-    settings_path().write_text('{"language": "zh_CN",\n}\n', encoding="utf-8")
+    settings_path().write_text(damaged, encoding="utf-8")
+    # Python 3.14 reports a trailing comma where it stands (line 1), older
+    # versions where the next name was expected (line 2): ask the parser.
+    with pytest.raises(json.JSONDecodeError) as parsed:
+        json.loads(damaged)
+    line, column = parsed.value.lineno, parsed.value.colno
     code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "profile", "vocal")
     shown = " ".join(err.split())
-    assert code == 1 and "第 2 行第 1 列不是有效的 JSON" in shown, shown
-    assert "Expecting" not in shown and "没有做任何更改" in shown
+    assert code == 1 and f"第 {line} 行第 {column} 列不是有效的 JSON" in shown, shown
+    assert "Expecting" not in shown and "Illegal" not in shown and "没有做任何更改" in shown
     _code, _out, err = _run(capsys, "--lang", "en", "config", "profile", "vocal")
-    assert "invalid JSON at line 2, column 1" in " ".join(err.split())
+    assert f"invalid JSON at line {line}, column {column}" in " ".join(err.split())
 
 
 # --- The language ------------------------------------------------------------------------
