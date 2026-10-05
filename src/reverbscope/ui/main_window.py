@@ -259,15 +259,22 @@ class MainWindow(QMainWindow):
     def show_settings(self) -> None:
         from reverbscope.ui.settings_dialog import SettingsDialog
 
-        before = load_settings().default_profile
+        before = load_settings()
         if not SettingsDialog(self).exec():
             return
-        profile = load_settings().default_profile
-        if profile != before and profile in available_profiles():
+        settings = load_settings()
+        profile = settings.default_profile
+        if profile != before.default_profile and profile in available_profiles():
             # A new default profile applies now, as the output folder does.
             # Only the combos: a running take keeps the profile it started with.
             for combo in (self.daw.profile, self.standalone.profile):
                 combo.setCurrentIndex(max(combo.findData(profile), 0))
+        if settings.audio_backend != before.audio_backend and not self.standalone.is_busy():
+            # The Standalone page lists the new backend's devices: a take
+            # would otherwise open that backend's device of the number
+            # chosen from the old list. A running take keeps its list, and
+            # the page makes it again before the next one.
+            self.standalone.refresh_devices()
 
     def show_device_inspector(self) -> None:
         from reverbscope.ui.dev_tools import DeviceInspector

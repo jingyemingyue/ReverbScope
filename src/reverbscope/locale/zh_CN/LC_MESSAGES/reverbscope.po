@@ -4550,3 +4550,10 @@ msgstr "；"
 
 msgid "--band needs two frequencies in Hz, LO then HI, with HI above LO and LO above 0"
 msgstr "--band 需要两个频率（Hz）：先下限后上限，上限高于下限，下限大于 0"
+# Standalone Mode: the audio backend changed in Settings during a take
+
+msgid "Audio backend changed"
+msgstr "音频后端已更改"
+
+msgid "The audio backend was changed in Settings, so the device list has been made again. Check the devices, then start the measurement again."
+msgstr "设置中的音频后端已更改，设备列表已重新生成。请检查设备，然后重新开始测量。"

@@ -1002,8 +1002,27 @@ class StandalonePage(QWidget):
             )
             return None
         try:
+            backend = get_backend("fake" if self.demo_mode else None)
+        except ReverbScopeError as exc:
+            QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
+            return None
+        if backend.name != self._inventory_backend:
+            # Settings chose another backend while a take ran (the list is
+            # made again at once otherwise): the numbers in the list name
+            # that backend's devices, not this one's.
+            self.refresh_devices()
+            QMessageBox.warning(
+                self,
+                _("Audio backend changed"),
+                _(
+                    "The audio backend was changed in Settings, so the device list has been "
+                    "made again. Check the devices, then start the measurement again."
+                ),
+            )
+            return None
+        try:
             plan = preflight(
-                get_backend("fake" if self.demo_mode else None),
+                backend,
                 self._inventory,
                 input_device=self.input_device.currentData(),
                 output_device=self.output_device.currentData(),

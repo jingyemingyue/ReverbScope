@@ -1188,3 +1188,73 @@ def test_standalone_keeps_the_chosen_devices_when_it_lists_them_again(
     page.refresh_button.click()
     assert chosen() == ("Core Audio", 1, 3)
     window.close()
+
+
+def test_a_new_audio_backend_in_settings_reaches_the_standalone_page(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Settings changed the audio backend but the Standalone page kept the
+    old backend's list: the take opened the new backend's device with the
+    number chosen from the old list ("input device 0 does not support
+    48000 Hz"), or a real device, while the fake interface was shown."""
+    from PySide6.QtWidgets import QDialog
+
+    from reverbscope.audio import backend as backend_module
+    from reverbscope.audio import inventory as inventory_module
+    from reverbscope.audio.backend import DeviceInfo
+    from reverbscope.audio.fake import FakeBackend
+    from reverbscope.settings import UserSettings, load_settings, save_settings
+    from reverbscope.ui import pages, settings_dialog
+
+    class Interface:
+        name = "test"
+
+        def list_devices(self) -> list[DeviceInfo]:
+            return [DeviceInfo(0, "Scarlett 2i2", "Core Audio", 2, 2, 48000.0, True, True)]
+
+        def check_sample_rate(self, *args: object, **kwargs: object) -> None:
+            return None
+
+    def backend_for(name: str | None = None) -> object:
+        chosen = name or load_settings().audio_backend
+        return FakeBackend() if chosen == "fake" else Interface()
+
+    real_build = inventory_module.build_inventory
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.delenv("REVERBSCOPE_AUDIO_BACKEND", raising=False)
+    monkeypatch.setattr(backend_module, "get_backend", backend_for)
+    monkeypatch.setattr(
+        inventory_module,
+        "build_inventory",
+        lambda backend, **kwargs: real_build(backend, probe_rates=False, platform="darwin"),
+    )
+    warned: list[str] = []
+    monkeypatch.setattr(
+        pages.QMessageBox, "warning", staticmethod(lambda _p, title, _m: warned.append(title))
+    )
+
+    def accept_with_backend(self: settings_dialog.SettingsDialog) -> int:
+        self.backend.setCurrentIndex(self.backend.findData(""))
+        self.accept()
+        return QDialog.DialogCode.Accepted.value
+
+    monkeypatch.setattr(settings_dialog.SettingsDialog, "exec", accept_with_backend)
+    save_settings(UserSettings(audio_backend="fake"))
+    window = MainWindow()
+    window.show_mode("standalone")
+    page = window.standalone
+
+    def listed() -> str:
+        return " ".join(page.input_device.itemText(i) for i in range(page.input_device.count()))
+
+    assert "ReverbScope fake interface" in listed()
+    window.show_settings()
+    assert "Scarlett 2i2" in listed() and "fake" not in listed()
+
+    # Changed while a take ran, the list stays until Run makes it again.
+    save_settings(UserSettings(audio_backend="fake"))
+    page.run_button.click()
+    assert warned == ["Audio backend changed"]
+    assert page._measure_worker is None
+    assert "ReverbScope fake interface" in listed()
+    window.close()
