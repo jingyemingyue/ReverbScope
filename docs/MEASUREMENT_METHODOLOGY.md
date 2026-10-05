@@ -88,6 +88,21 @@ zero-padded (linear, not circular), harmonic distortion products of the
 loudspeaker land *before* the linear response at `Δt_k = L·ln(k)` for the
 k-th harmonic [1][3] and are never wrapped into the IR.
 
+**Harmonic distortion indicators** (`harmonic_distortion_levels`). For
+k = 2..5, the energy in a window around the k-th harmonic response (5 ms
+before to at most 50 ms after it) relative to the same window around the
+direct sound, over the part of the excitation band both share. A level is
+reported only when it stands 6 dB above a floor measured the same way on
+what a distortion-free take holds there: the noise, over the 0.5 s before
+the earliest harmonic window, and the artefacts the ideal pulse (the sweep
+deconvolved by its own inverse) has in the 0.5 s before its peak, convolved
+with the measured response so that the room spreads them as it spreads the
+direct sound. The 0.5 s before the direct sound itself is not used: it also
+holds the room's decay after each harmonic response, so with a sweep
+shorter than about 5 s (where H2 and H3 lie inside it), or in a very
+reverberant room, the floor followed the distortion level and no harmonic
+was ever reported.
+
 **Impulse-response location.** The direct sound is taken as the strongest
 sample of the deconvolved signal. The IR keeps `ir_pre_delay_ms` (5 ms)
 before it and up to `ir_max_length_s` (6 s) after it, limited by how much

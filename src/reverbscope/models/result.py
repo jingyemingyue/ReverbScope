@@ -339,8 +339,10 @@ class HarmonicDistortion:
     harmonic and the linear response overlap). It is a broadband indicator of
     loudspeaker/chain distortion, not a calibrated THD figure. ``level_db`` is
     ``None`` when the response is not at least ``DETECTION_MARGIN_DB`` above
-    ``floor_db`` (the same measure for harmonic-free content before the direct
-    sound) or cannot be measured; ``reason`` then says why.
+    ``floor_db`` (the same measure for what a distortion-free take holds before
+    the direct sound: the noise and the pulse's own artefacts, never a
+    harmonic response or its decay) or cannot be measured; ``reason`` then
+    says why.
     """
 
     order: int

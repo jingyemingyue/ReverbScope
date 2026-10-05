@@ -137,6 +137,33 @@ def test_loudspeaker_distortion_is_separated_from_linear_response(
     assert result.decay.broadband.rt60_estimate_s == pytest.approx(0.4, rel=0.1)
 
 
+@pytest.mark.parametrize(
+    ("duration_s", "rt60_s"), [(3.0, 0.8), (10.0, 3.0)], ids=["3 s sweep", "very reverberant"]
+)
+def test_harmonics_are_not_hidden_by_their_own_decay(duration_s: float, rt60_s: float) -> None:
+    """R3-4: the floor was taken from the 0.5 s before the direct sound, minus
+    50 ms after each harmonic response. With a 3 s sweep H2 and H3 lie in
+    that stretch and their room decay was taken for the floor (-35.9 dB), so
+    H2 at -32 dB was "not distinguishable from the floor"; a 10 s sweep in a
+    room with an RT60 of 3 s lost H3 the same way to H2's decay. Without
+    distortion nothing is reported."""
+    sweep = SweepSettings(duration_s=duration_s, post_silence_s=3.0, level_dbfs=-6.0)
+    sr = sweep.sample_rate
+    room = make_rir(sr, rt60_s=rt60_s, diffuse_level=0.1, length_s=max(3.0, 1.2 * rt60_s))
+    excitation = measurement_signal(sweep)
+    noise = np.random.default_rng(0).normal(0.0, 1e-5, excitation.shape[0] + sr // 2)
+    for h2, h3 in ((0.025, 0.00625), (0.0, 0.0)):
+        played = alias_free_distortion(excitation, sweep.amplitude, h2=h2, h3=h3)
+        recording = fftconvolve(played, room)[: excitation.shape[0] + sr // 2] + noise
+        result = analyze(AudioSignal(recording, sr), Reference.from_settings(sweep))
+        levels = {h.order: h.level_db for h in result.impulse_response.harmonic_distortion}
+        if h2 > 0.0:
+            assert levels[2] == pytest.approx(20 * np.log10(h2), abs=1.0)
+            assert levels[3] == pytest.approx(20 * np.log10(h3), abs=1.0)
+        else:
+            assert all(level is None for level in levels.values()), levels
+
+
 def test_digital_clipping_before_the_room_is_detected(short_sweep: SweepSettings) -> None:
     """A6: a playback bus clipped 6 dB over full scale folds the harmonics above
     the Nyquist frequency back onto falling trajectories. They deconvolve

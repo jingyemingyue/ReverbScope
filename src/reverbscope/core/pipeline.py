@@ -663,8 +663,22 @@ def _pulse_energy(h: FloatArray, centre: int, half: int) -> float:
     return float(np.sum(np.square(segment)))
 
 
+def _ideal_pulse(prepared: _PreparedReference) -> FloatArray:
+    """The reference deconvolved by its own inverse: what a perfect chain gives."""
+    if prepared.sweep_settings is not None:
+        reference = generate_ess(prepared.sweep_settings)
+    else:
+        assert prepared.trimmed_signal is not None
+        reference = prepared.trimmed_signal
+    return np.asarray(fftconvolve(reference, prepared.inverse, mode="full"), dtype=np.float64)
+
+
 def _direct_level_dbfs(
-    h_full: FloatArray, peak_index: int, prepared: _PreparedReference, sample_rate: int
+    h_full: FloatArray,
+    peak_index: int,
+    prepared: _PreparedReference,
+    sample_rate: int,
+    ideal: FloatArray,
 ) -> float:
     """Level of the direct sound in the recording (dBFS).
 
@@ -681,14 +695,11 @@ def _direct_level_dbfs(
     neither.
     """
     if prepared.sweep_settings is not None:
-        reference = generate_ess(prepared.sweep_settings)
         reference_dbfs = prepared.sweep_settings.level_dbfs
     else:
         assert prepared.trimmed_signal is not None
-        reference = prepared.trimmed_signal
-        reference_peak = float(np.max(np.abs(reference)))
+        reference_peak = float(np.max(np.abs(prepared.trimmed_signal)))
         reference_dbfs = 20.0 * math.log10(max(reference_peak, 1e-12))
-    ideal = np.asarray(fftconvolve(reference, prepared.inverse, mode="full"), dtype=np.float64)
     half = max(1, round(DIRECT_LEVEL_HALF_WINDOW_S * sample_rate))
     ideal_energy = _pulse_energy(ideal, int(np.argmax(np.abs(ideal))), half)
     energy = _pulse_energy(h_full, peak_index, half)
@@ -783,7 +794,8 @@ def analyze(
     h_uncompensated, peak_uncompensated = h_full, located.peak_index
     # The noise floor is measured on the raw recording too, so the direct
     # level is taken before compensation divides out the return gain.
-    direct_level_dbfs = _direct_level_dbfs(h_full, located.peak_index, prepared, sample_rate)
+    ideal = _ideal_pulse(prepared)
+    direct_level_dbfs = _direct_level_dbfs(h_full, located.peak_index, prepared, sample_rate, ideal)
     if lb_samples is not None:
         try:
             # The microphone's silence message would blame its routing and the
@@ -964,7 +976,7 @@ def analyze(
     aliased: tuple[AliasedDistortion, ...] = ()
     if prepared.sweep_settings is not None:
         harmonics = harmonic_distortion_levels(
-            h_full, located, sample_rate=sample_rate, excitation_band=band
+            h_full, located, sample_rate=sample_rate, excitation_band=band, ideal_pulse=ideal
         )
         # Folded (aliased) products land *after* the direct sound, where the
         # harmonic windows and the pre-peak margin cannot see them.

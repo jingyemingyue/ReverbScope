@@ -13,7 +13,8 @@ pass) has started by then. This is what ``valid_length`` measures.
 
 Harmonic distortion of the k-th order appears ``L * ln(k)`` before the linear
 response (Farina 2000). Those windows are excluded from the direct-sound
-margin and evaluated separately (:func:`harmonic_distortion_levels`).
+margin and evaluated separately (:func:`harmonic_distortion_levels`), against
+a floor that holds no harmonic response nor the room's decay after one.
 """
 
 from __future__ import annotations
@@ -447,6 +448,42 @@ def _band_energy(segment: FloatArray, sample_rate: int, band: tuple[float, float
     return float(np.sum(np.abs(spectrum[select]) ** 2)) / nfft
 
 
+def _linear_pre_peak(
+    h_full: FloatArray,
+    located: LocatedImpulseResponse,
+    ideal_pulse: FloatArray,
+    near: int,
+    far: int,
+) -> FloatArray:
+    """What a distortion-free take holds ``far`` to ``near`` samples before the
+    direct sound, without noise.
+
+    The ideal pulse (the reference deconvolved by its own inverse) is not a
+    Dirac: its endpoint artefacts reach far before its peak. Its part more
+    than ``near`` samples before the peak, convolved with the measured
+    response from ``near`` samples before the direct sound to the end of the
+    located impulse response, gives those artefacts as this chain and room
+    spread them, with no harmonic response and no harmonic's decay. Element
+    ``i`` belongs to ``h_full[peak - far + i]``.
+    """
+    peak = located.peak_index
+    out = np.zeros(max(0, far - near), dtype=np.float64)
+    start = max(0, peak - near)
+    response = h_full[start : peak + located.samples.shape[0] - located.direct_index]
+    centre = int(np.argmax(np.abs(ideal_pulse)))
+    first_offset = -min(centre, far + response.shape[0])
+    kernel = ideal_pulse[centre + first_offset : max(0, centre - near)]
+    if response.shape[0] == 0 or kernel.shape[0] == 0:
+        return out
+    spread = fftconvolve(response, kernel)
+    # spread[m] belongs to h_full[start + first_offset + m].
+    lo = peak - far - (start + first_offset)
+    i0, i1 = max(0, -lo), min(out.shape[0], spread.shape[0] - lo)
+    if i1 > i0:
+        out[i0:i1] = spread[lo + i0 : lo + i1]
+    return out
+
+
 def _floor_chunks(segments: list[Window], n: int, max_chunks: int) -> list[Window]:
     """Window-sized chunks of the harmonic-free segments; a segment shorter than
     ``n`` (but at least ``n // 4``) contributes one chunk of its own length."""
@@ -468,6 +505,7 @@ def harmonic_distortion_levels(
     *,
     sample_rate: int,
     excitation_band: ExcitationBand,
+    ideal_pulse: FloatArray,
     margin_near_ms: float = 2.0,
     margin_far_s: float = 0.5,
     max_floor_chunks: int = 20,
@@ -480,15 +518,27 @@ def harmonic_distortion_levels(
     :func:`~reverbscope.core.sweep.normalisation_band_hz`). Comparing spectra
     over a common band avoids the dependence of pulse peaks on bandwidth,
     sub-sample position and the constant phase offset of the harmonic pulses.
-    The floor is the same measure for harmonic-free content in the pre-peak
-    window (the strongest of up to ``max_floor_chunks`` window-sized chunks;
-    shorter gaps between harmonic windows count with their per-sample energy).
+
+    The floor is the same measure (the strongest of up to
+    ``max_floor_chunks`` window-sized chunks; shorter gaps count with their
+    per-sample energy) for what a distortion-free take holds there: the
+    noise, measured over ``margin_far_s`` before the earliest harmonic
+    window, and the ideal pulse's own artefacts in the pre-peak window as
+    this room spreads them (:func:`_linear_pre_peak`, from ``ideal_pulse``,
+    the reference deconvolved by its own inverse). The pre-peak window of
+    ``h_full`` itself also holds the room's decay after each harmonic
+    response: with a sweep shorter than about 5 s, or in a very reverberant
+    room, that floor followed the distortion level and no harmonic was ever
+    6 dB above it.
     """
     peak = located.peak_index
     length = h_full.shape[0]
     near = round(margin_near_ms * sample_rate / 1000.0)
     far = round(margin_far_s * sample_rate)
     floor_segments = _allowed_pre_peak_segments(length, peak, near, far, located.excluded_windows)
+    first = min((w.start for w in located.harmonic_windows), default=peak - near)
+    noise_segments = _allowed_pre_peak_segments(length, first, 0, far, located.excluded_windows)
+    linear_free = _linear_pre_peak(h_full, located, ideal_pulse, near, far)
     results: list[HarmonicDistortion] = []
     for w in located.harmonic_windows:
         low = w.order * excitation_band.low_hz
@@ -525,10 +575,10 @@ def harmonic_distortion_levels(
             continue
         linear = _band_energy(h_full[peak - w.before : peak + w.after + 1], sample_rate, band)
         harmonic = _band_energy(h_full[w.start : w.stop], sample_rate, band)
-        chunks = _floor_chunks(floor_segments, n, max_floor_chunks)
+        noise_chunks = _floor_chunks(noise_segments, n, max_floor_chunks)
         if linear <= 0.0:
             reason = diag("the linear response has no energy in the common band")
-        elif not chunks:
+        elif not noise_chunks:
             reason = diag("no harmonic-free content before the direct sound to compare with")
         if reason is not None:
             results.append(
@@ -543,7 +593,13 @@ def harmonic_distortion_levels(
             )
             continue
         # Energy scaled to the window length, so short chunks count per sample.
-        floor = max(_band_energy(h_full[a:b], sample_rate, band) * n / (b - a) for a, b in chunks)
+        floor = max(
+            _band_energy(h_full[a:b], sample_rate, band) * n / (b - a) for a, b in noise_chunks
+        )
+        offset = peak - far
+        for a, b in _floor_chunks(floor_segments, n, max_floor_chunks):
+            segment = linear_free[a - offset : b - offset]
+            floor = max(floor, _band_energy(segment, sample_rate, band) * n / (b - a))
         level_db = 10.0 * math.log10(max(harmonic, _TINY) / linear)
         floor_db = 10.0 * math.log10(max(floor, _TINY) / linear)
         detected = level_db >= floor_db + HARMONIC_DETECTION_MARGIN_DB
