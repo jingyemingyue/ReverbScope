@@ -220,6 +220,11 @@ _COLOR_REQUEST: dict[str, str] = {"mode": "auto"}
 _INVOKED_ARGV: list[str] = []
 
 
+#: A command named in an option's help: ``roomscope`` and the next two words
+#: (``config language``, ``--format json``).
+_HELP_COMMAND = re.compile(r"(?<![\w.-])roomscope(?: --?[a-z][a-z-]*| [a-z][a-z-]*){1,2}")
+
+
 class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
     """argparse's layout, with help text wrapped by display width.
 
@@ -230,9 +235,12 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
     """
 
     def _split_lines(self, text: str, width: int) -> list[str]:
-        from roomscope.cli.console import wrap
+        """An option's help, wrapped by display width. A command in it
+        ("roomscope config language") stays on one line to be copied."""
+        from roomscope.cli.console import GLUE, wrap
 
-        return wrap(" ".join(text.split()), max(width, 11))
+        text = _HELP_COMMAND.sub(lambda m: m.group(0).replace(" ", GLUE), " ".join(text.split()))
+        return [line.replace(GLUE, " ") for line in wrap(text, max(width, 11))]
 
     def _fill_text(self, text: str, width: int, indent: str) -> str:
         """Wrap plain paragraphs; leave preformatted blocks (commands) whole.
@@ -553,13 +561,13 @@ def _add_daw_follow_arguments(parser: argparse.ArgumentParser) -> None:
     group.add_argument(
         "--daw",
         default=None,
-        metavar="NAME",
+        metavar=pgettext("metavar", "NAME"),
         help=_("DAW to follow when more than one is in play (exact name, not a guess)"),
     )
     group.add_argument(
         "--daw-project",
         default=None,
-        metavar="TITLE",
+        metavar=pgettext("metavar", "TITLE"),
         help=_("project title when that DAW has more than one session open"),
     )
 
@@ -666,7 +674,7 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
         "--scan",
         type=Path,
         default=None,
-        metavar="FILE",
+        metavar=pgettext("metavar", "FILE"),
         help=_(
             "imported room scan (ASCII PLY point cloud or Wavefront OBJ). "
             "Not a lidar attached to this computer"

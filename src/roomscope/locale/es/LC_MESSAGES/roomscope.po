@@ -6422,3 +6422,7 @@ msgstr "francés"
 
 msgid "German"
 msgstr "alemán"
+
+msgctxt "metavar"
+msgid "TITLE"
+msgstr "TÍTULO"

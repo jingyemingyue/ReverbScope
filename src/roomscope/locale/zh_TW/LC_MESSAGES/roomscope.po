@@ -5604,3 +5604,7 @@ msgstr "法文"
 
 msgid "German"
 msgstr "德文"
+
+msgctxt "metavar"
+msgid "TITLE"
+msgstr "標題"

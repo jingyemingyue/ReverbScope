@@ -4883,3 +4883,7 @@ msgstr "法语"
 
 msgid "German"
 msgstr "德语"
+
+msgctxt "metavar"
+msgid "TITLE"
+msgstr "标题"

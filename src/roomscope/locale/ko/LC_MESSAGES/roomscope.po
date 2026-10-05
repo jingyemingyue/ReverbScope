@@ -5759,3 +5759,7 @@ msgstr "프랑스어"
 
 msgid "German"
 msgstr "독일어"
+
+msgctxt "metavar"
+msgid "TITLE"
+msgstr "제목"

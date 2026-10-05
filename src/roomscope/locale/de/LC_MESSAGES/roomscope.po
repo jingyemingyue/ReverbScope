@@ -6387,3 +6387,7 @@ msgstr "Französisch"
 
 msgid "German"
 msgstr "Deutsch"
+
+msgctxt "metavar"
+msgid "TITLE"
+msgstr "TITEL"
