@@ -1,4 +1,4 @@
-"""Print the license metadata of every installed package RoomScope depends on.
+"""Print the license metadata of every installed package ReverbScope depends on.
 
     python scripts/dependency_licenses.py
 

@@ -8,15 +8,15 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve, resample_poly
 
-from roomscope.core.pipeline import Reference, analyze
-from roomscope.core.playback_speed import diagnose_playback_speed, measure_sweep_speed
-from roomscope.core.sweep import measurement_signal
-from roomscope.errors import InvalidAudioError
-from roomscope.interpretation import interpret
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import KIND_SAMPLE_RATE, KIND_TIME_STRETCH, Validity
-from roomscope.models.result_load import analysis_result_from_dict
+from reverbscope.core.pipeline import Reference, analyze
+from reverbscope.core.playback_speed import diagnose_playback_speed, measure_sweep_speed
+from reverbscope.core.sweep import measurement_signal
+from reverbscope.errors import InvalidAudioError
+from reverbscope.interpretation import interpret
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import KIND_SAMPLE_RATE, KIND_TIME_STRETCH, Validity
+from reverbscope.models.result_load import analysis_result_from_dict
 from tests.conftest import make_rir
 
 SWEEP = SweepSettings(
@@ -135,7 +135,7 @@ def test_too_short_recording_explains_a_faster_playback(sweep_signal: np.ndarray
 
 
 def test_finding_is_translated(sweep_signal: np.ndarray) -> None:
-    from roomscope.i18n import activate
+    from reverbscope.i18n import activate
 
     result = analyze(
         AudioSignal(_played(sweep_signal, 44100), 44100), Reference.from_settings(SWEEP)
@@ -159,7 +159,7 @@ def test_sample_rate_mismatch_without_a_rate_is_not_called_a_stretch(
     time-stretching."""
     from dataclasses import replace
 
-    from roomscope.models.result import PlaybackSpeed
+    from reverbscope.models.result import PlaybackSpeed
 
     result = analyze(
         AudioSignal(_played(sweep_signal, 44100), 44100), Reference.from_settings(SWEEP)
@@ -177,7 +177,7 @@ def test_sample_rate_mismatch_without_a_rate_is_not_called_a_stretch(
 def test_failing_diagnosis_keeps_the_original_error(
     sweep_signal: np.ndarray, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    import roomscope.core.pipeline as pipeline
+    import reverbscope.core.pipeline as pipeline
 
     def broken(*_args: object) -> None:
         raise ValueError("diagnosis failed")
@@ -196,7 +196,7 @@ def test_short_sweep_in_a_reverberant_room_is_not_called_stretched(
     """Review finding: a correctly played 1 s sweep with RT60 2.5 s measured
     about 4 % off and was diagnosed as a time-stretch. These are the worst
     cases of the spread measured for the tolerance."""
-    from roomscope.core.pipeline import synthetic_recording
+    from reverbscope.core.pipeline import synthetic_recording
     from tests.conftest import make_rir
 
     settings = SweepSettings(sample_rate=48000, duration_s=duration_s, post_silence_s=rt60_s)
@@ -214,7 +214,7 @@ def test_short_sweep_in_a_reverberant_room_is_not_called_stretched(
 
 
 def test_the_tolerance_keeps_a_sample_rate_mismatch_detectable() -> None:
-    from roomscope.core.playback_speed import speed_tolerance
+    from reverbscope.core.playback_speed import speed_tolerance
 
     assert speed_tolerance(10.0) == pytest.approx(0.0125)
     assert speed_tolerance(3.0) < 0.03  # the +/-3 % stretch tests above still fire
@@ -223,7 +223,7 @@ def test_the_tolerance_keeps_a_sample_rate_mismatch_detectable() -> None:
 
 @pytest.mark.parametrize("source", ["standalone", "fake"])
 def test_self_played_take_is_never_blamed_on_a_daw(source: str) -> None:
-    """RoomScope played the sweep itself, so no DAW can have stretched it.
+    """ReverbScope played the sweep itself, so no DAW can have stretched it.
 
     A correctly played 3 s sweep in a very reverberant, noisy room leaves a low
     direct-sound confidence, and the speed estimate on such a take is biased

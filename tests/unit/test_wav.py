@@ -5,9 +5,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from roomscope.core.sweep import measurement_signal
-from roomscope.errors import ConfigurationError, InvalidAudioError
-from roomscope.io.wav import (
+from reverbscope.core.sweep import measurement_signal
+from reverbscope.errors import ConfigurationError, InvalidAudioError
+from reverbscope.io.wav import (
     load_reference,
     read_sweep_sidecar,
     read_wav,
@@ -15,7 +15,7 @@ from roomscope.io.wav import (
     write_sweep_file,
     write_wav,
 )
-from roomscope.models.configuration import SweepSettings
+from reverbscope.models.configuration import SweepSettings
 
 
 def test_float_round_trip_mono_and_stereo(tmp_path: Path, sample_rate: int) -> None:
@@ -55,7 +55,7 @@ def test_missing_and_invalid_files(tmp_path: Path) -> None:
 def test_sweep_file_and_sidecar(tmp_path: Path, short_sweep: SweepSettings) -> None:
     wav, side = write_sweep_file(short_sweep, tmp_path / "sweep.wav")
     assert wav.is_file() and side.is_file()
-    assert side == sidecar_path(wav) == tmp_path / "sweep.roomscope-sweep.json"
+    assert side == sidecar_path(wav) == tmp_path / "sweep.reverbscope-sweep.json"
     assert read_sweep_sidecar(wav) == short_sweep
     assert read_sweep_sidecar(side) == short_sweep
     signal = read_wav(wav)
@@ -78,7 +78,7 @@ def test_reference_from_plain_wav(tmp_path: Path, short_sweep: SweepSettings) ->
 
 
 def test_bad_sidecar_rejected(tmp_path: Path) -> None:
-    side = tmp_path / "x.roomscope-sweep.json"
+    side = tmp_path / "x.reverbscope-sweep.json"
     side.write_text("{}")
     with pytest.raises(ConfigurationError):
         read_sweep_sidecar(side)

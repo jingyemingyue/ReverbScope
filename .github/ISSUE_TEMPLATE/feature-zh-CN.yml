@@ -6,10 +6,10 @@ body:
   - type: markdown
     attributes:
       value: |
-        RoomScope 把**正确性放在功能之前**。凡是要凭空给出“房间评分”、
+        ReverbScope 把**正确性放在功能之前**。凡是要凭空给出“房间评分”、
         对房间自动做 EQ，或复制其他项目源代码的请求，都会被拒绝。
         哪些内容被刻意排除在范围之外，见
-        [docs/STATUS.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/STATUS.md)（英文）。
+        [docs/STATUS.md](https://github.com/jingyemingyue/ReverbScope/blob/main/docs/STATUS.md)（英文）。
   - type: textarea
     id: problem
     attributes:

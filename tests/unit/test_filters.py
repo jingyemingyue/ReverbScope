@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.filters import (
+from reverbscope.core.filters import (
     apply_bandpass,
     band_fits,
     band_level_samples,
@@ -15,7 +15,7 @@ from roomscope.core.filters import (
     nearest_band_index,
     settling_samples,
 )
-from roomscope.errors import ConfigurationError
+from reverbscope.errors import ConfigurationError
 
 
 def test_octave_band_edges() -> None:

@@ -1,4 +1,4 @@
-"""The command line's presentation layer (roomscope.cli.console / render).
+"""The command line's presentation layer (reverbscope.cli.console / render).
 
 Checked by meaning, not by escape codes: display widths, wrapping, tables
 that fall back to blocks, the colour policy (NO_COLOR, --color, pipes), the
@@ -18,8 +18,8 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.audio.backend import DeviceInfo
-from roomscope.cli.console import (
+from reverbscope.audio.backend import DeviceInfo
+from reverbscope.cli.console import (
     Console,
     ProgressLine,
     cell_width,
@@ -28,10 +28,10 @@ from roomscope.cli.console import (
     use_color,
     wrap,
 )
-from roomscope.cli.main import main
-from roomscope.cli.render import render_devices, validity_cell
-from roomscope.i18n import activate
-from roomscope.models.result import Validity
+from reverbscope.cli.main import main
+from reverbscope.cli.render import render_devices, validity_cell
+from reverbscope.i18n import activate
+from reverbscope.models.result import Validity
 from tests.conftest import make_rir
 from tests.zh_tokens import english_words
 
@@ -55,7 +55,7 @@ class _Stream(io.StringIO):
 
 @pytest.fixture
 def home(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Path]:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     monkeypatch.delenv("NO_COLOR", raising=False)
     try:
         yield tmp_path
@@ -88,8 +88,8 @@ def test_wrap_breaks_chinese_between_characters_and_never_starts_with_punctuatio
 
 def test_wrap_never_splits_a_path_or_url() -> None:
     path = "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\pytest-of-runneradmin\\session"
-    url = "https://github.com/jingyemingyue/RoomScope/actions/runs/36321028824"
-    for token in (path, url, "/Users/me/Music/RoomScope/2026-09-27/a-long-session-folder"):
+    url = "https://github.com/jingyemingyue/ReverbScope/actions/runs/36321028824"
+    for token in (path, url, "/Users/me/Music/ReverbScope/2026-09-27/a-long-session-folder"):
         lines = wrap(f"Saved session to {token}", 30)
         assert token in lines, lines
 
@@ -120,7 +120,7 @@ def test_colour_policy(
 ) -> None:
     # The policy only; on Windows the console call would refuse an in-memory
     # stream (a real console is asked in _enable_windows_vt).
-    monkeypatch.setattr("roomscope.cli.console._enable_windows_vt", lambda _stream: True)
+    monkeypatch.setattr("reverbscope.cli.console._enable_windows_vt", lambda _stream: True)
     assert use_color(_Stream(tty=tty), mode, env) is expected  # type: ignore[arg-type]
 
 
@@ -128,7 +128,7 @@ def test_a_pipe_gets_no_escape_sequences_and_a_fixed_width() -> None:
     console = Console.for_stream(_Stream(tty=False), "auto", {})
     assert not console.color and not console.interactive
     assert console.width == 100
-    assert ESC not in "\n".join(console.status("ok", "done") + console.title("RoomScope"))
+    assert ESC not in "\n".join(console.status("ok", "done") + console.title("ReverbScope"))
 
 
 def test_symbols_fall_back_to_ascii_words_where_unicode_cannot_be_written() -> None:
@@ -245,7 +245,7 @@ def test_progress_is_throttled() -> None:
 
 
 def _take(root: Path, name: str = "take") -> tuple[Path, Path]:
-    from roomscope.io.wav import read_wav, write_wav
+    from reverbscope.io.wav import read_wav, write_wav
 
     sweep = root / "sweep.wav"
     if not sweep.exists():
@@ -313,14 +313,14 @@ def test_measure_status_is_on_stdout_and_progress_on_stderr(
     assert main([*argv, "--duration", "1", "--post-silence", "1"]) == 0
     captured = capsys.readouterr()
     assert "Checks" in captured.out and "Input and output use one host API" in captured.out
-    assert "RoomScope analysis" in captured.out
+    assert "ReverbScope analysis" in captured.out
     assert captured.err.strip().splitlines() == ["Playing the sweep and recording …"]
 
 
 @pytest.mark.parametrize(
     ("argv", "code", "stream", "text"),
     [
-        (["--version"], 0, "out", "roomscope"),
+        (["--version"], 0, "out", "reverbscope"),
         (["--help"], 0, "out", "commands:"),
         (["analyze"], 2, "err", "required"),
         (["analyze", "--recording", "nope.wav", "--sweep", "nope.wav"], 1, "err", "error:"),
@@ -357,8 +357,8 @@ def test_exit_codes_and_streams(
 def test_a_refused_measurement_says_nothing_was_played_only_before_playback(
     home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    from roomscope.audio.fake import FakeBackend
-    from roomscope.errors import AudioDeviceError
+    from reverbscope.audio.fake import FakeBackend
+    from reverbscope.errors import AudioDeviceError
 
     def broken(*_args: object, **_kwargs: object) -> None:
         raise AudioDeviceError("the stream stopped")
@@ -372,7 +372,7 @@ def test_a_refused_measurement_says_nothing_was_played_only_before_playback(
 def test_the_chinese_command_line_shows_no_english_prose(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    devices = ("RoomScope fake interface",)
+    devices = ("ReverbScope fake interface",)
     runs = [
         ["--lang", "zh_CN", "--backend", "fake", "devices"],
         ["--lang", "zh_CN", "--backend", "fake", "devices", "--probe"],
@@ -388,7 +388,7 @@ def test_the_chinese_command_line_shows_no_english_prose(
         text = "\n".join(
             line
             for line in (captured.out + captured.err).splitlines()
-            if str(home) not in line and "roomscope analyze" not in line
+            if str(home) not in line and "reverbscope analyze" not in line
         )
         # "fake" is the synthetic backend's name: data, like a device name.
         assert english_words(text, data=devices) == [], (argv, text)
@@ -400,7 +400,7 @@ def test_the_chinese_command_line_shows_no_english_prose(
 def _help_screens() -> dict[str, str]:
     import argparse
 
-    from roomscope.cli.main import _translate_argparse, build_parser
+    from reverbscope.cli.main import _translate_argparse, build_parser
 
     _translate_argparse()
     screens: dict[str, str] = {}
@@ -412,20 +412,20 @@ def _help_screens() -> dict[str, str]:
                 for name, sub in action.choices.items():
                     walk(sub, f"{path} {name}")
 
-    walk(build_parser(), "roomscope")
+    walk(build_parser(), "reverbscope")
     return screens
 
 
 def test_a_next_step_quotes_a_path_that_contains_a_space() -> None:
     import shlex
 
-    from roomscope.cli.console import shell_command
-    from roomscope.cli.render import render_saved_next_steps
+    from reverbscope.cli.console import shell_command
+    from reverbscope.cli.render import render_saved_next_steps
 
     session = "My Room/take 1"
     text = render_saved_next_steps(Console(width=100, unicode=True), session)
-    line = next(line.strip() for line in text.splitlines() if "roomscope compare" in line)
-    assert line == shell_command(["roomscope", "compare", session, "<other-session>"])
+    line = next(line.strip() for line in text.splitlines() if "reverbscope compare" in line)
+    assert line == shell_command(["reverbscope", "compare", session, "<other-session>"])
     assert shlex.split(line)[2:] == [session, "<other-session>"]
 
 
@@ -440,37 +440,37 @@ def test_a_windows_path_uses_slashes_so_any_shell_can_replay_it(
     """
     import shlex
 
-    from roomscope.cli import console as console_module
+    from reverbscope.cli import console as console_module
 
     monkeypatch.setattr(console_module.os, "name", "nt")
-    show = console_module.shell_command(["roomscope", "show", r"roomscope-demo\position-a"])
-    assert show == "roomscope show roomscope-demo/position-a"
-    assert shlex.split(show) == ["roomscope", "show", "roomscope-demo/position-a"]
-    compare = console_module.shell_command(["roomscope", "compare", r"My Room\take 1", "<other>"])
-    assert compare == 'roomscope compare "My Room/take 1" <other>'
+    show = console_module.shell_command(["reverbscope", "show", r"reverbscope-demo\position-a"])
+    assert show == "reverbscope show reverbscope-demo/position-a"
+    assert shlex.split(show) == ["reverbscope", "show", "reverbscope-demo/position-a"]
+    compare = console_module.shell_command(["reverbscope", "compare", r"My Room\take 1", "<other>"])
+    assert compare == 'reverbscope compare "My Room/take 1" <other>'
     assert shlex.split(compare)[2:] == ["My Room/take 1", "<other>"]
     # The placeholder is an instruction, not a path, so it stays bare.
     assert "<other>" in compare and "'<other>'" not in compare and '"<other>"' not in compare
 
 
 def test_a_posix_shell_quotes_a_backslash(monkeypatch: pytest.MonkeyPatch) -> None:
-    from roomscope.cli import console as console_module
+    from reverbscope.cli import console as console_module
 
     monkeypatch.setattr(console_module.os, "name", "posix")
-    shown = console_module.shell_command(["roomscope", "show", r"odd\name"])
-    assert shown == "roomscope show 'odd\\name'"
+    shown = console_module.shell_command(["reverbscope", "show", r"odd\name"])
+    assert shown == "reverbscope show 'odd\\name'"
 
 
 def test_every_help_example_is_a_valid_command(home: Path) -> None:
     import shlex
 
-    from roomscope.cli.main import build_parser
+    from reverbscope.cli.main import build_parser
 
     examples = [
         line.strip()
         for text in _help_screens().values()
         for line in text.splitlines()
-        if line.startswith("  roomscope ")
+        if line.startswith("  reverbscope ")
     ]
     assert len(examples) >= 10
     for example in examples:
@@ -488,7 +488,7 @@ def test_help_fits_the_terminal_in_both_languages(
         for line in text.splitlines():
             if "{acoustic_guitar," in line:
                 continue  # argparse cannot break one option's choice list
-            if line.startswith("  roomscope "):
+            if line.startswith("  reverbscope "):
                 continue  # an example stays one line so it can be copied
             stripped = line.lstrip()
             if stripped.startswith(("usage:", "用法")):
@@ -519,14 +519,14 @@ def test_a_long_session_path_is_printed_whole(
 def test_the_windowed_bundle_has_no_stdout_and_still_runs(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """roomscope-gui (PyInstaller, windowed) runs with sys.stdout and
+    """reverbscope-gui (PyInstaller, windowed) runs with sys.stdout and
     sys.stderr set to None; building the parser once touched sys.stdout and
     the unhandled error left a modal dialog open (Release #24, Windows)."""
     import sys
 
     monkeypatch.setattr(sys, "stdout", None)
     monkeypatch.setattr(sys, "stderr", None)
-    from roomscope.cli.main import build_parser
+    from reverbscope.cli.main import build_parser
 
     build_parser()
     assert main(["--backend", "fake", "devices"]) == 0

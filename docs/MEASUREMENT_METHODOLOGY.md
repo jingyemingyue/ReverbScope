@@ -1,6 +1,6 @@
 # Measurement methodology
 
-Every quantity RoomScope reports is listed here with its algorithm source,
+Every quantity ReverbScope reports is listed here with its algorithm source,
 unit, computation conditions, validity rule and known limitations. All DSP is
 an independent implementation from the cited publications and standards
 (see CODE_PROVENANCE.md). Bibliographic details were verified against the
@@ -33,7 +33,7 @@ compatibility (a file that ends at Nyquist is resampled unpredictably by
 some DAWs). The silence after the sweep captures the decay; the silence
 before it is the quiet segment for the noise analysis.
 
-**Level safety.** The default is conservative and RoomScope never changes
+**Level safety.** The default is conservative and ReverbScope never changes
 system volume. Standalone Mode defaults to −20 dBFS and needs an explicit
 acknowledgement above −12 dBFS.
 
@@ -51,7 +51,7 @@ is *not* 1: it is roughly `2 · bandwidth / fs` (about 0.82 for the default
 Levels are read from the frequency response, not from `peak_value`.
 
 **Spectral inverse** (`inverse_filter_spectral` / `design_spectral_inverse`):
-when the reference is an arbitrary WAV without a RoomScope sweep definition,
+when the reference is an arbitrary WAV without a ReverbScope sweep definition,
 a Kirkeby-type regularised spectral division is used (Farina 2007 [2]
 §3.1). `H_inv = conj(X) / (|X|² + β(f))` with a frequency-dependent
 `β(f) = P_ref(f) · 10^(b(f)/10)`, where `P_ref(f)` is the pink trend of the
@@ -89,7 +89,7 @@ frequencies [2]; Standalone Mode uses one full-duplex device, Universal DAW
 Mode inherits whatever clocking the DAW/interface provides.
 
 **Imported impulse responses** (`analyze_impulse_response`,
-`roomscope analyze-ir`). An IR WAV from another tool skips deconvolution,
+`reverbscope analyze-ir`). An IR WAV from another tool skips deconvolution,
 the sweep-position checks, the distortion indicators and the noise section;
 no sweep-pass search is made (a one-sample reference has no passes). The
 strongest sample is the direct sound, with the same pre-peak margin as
@@ -124,7 +124,7 @@ identified.
 When direct-sound detection confidence is low (a sweep played even 2 % off
 leaves a pre-peak margin of a few dB, while a medium margin means the
 generated sweep did deconvolve the recording) and the sweep definition is
-known, `roomscope.core.playback_speed` measures the sweep rate
+known, `reverbscope.core.playback_speed` measures the sweep rate
 in the recording itself. An ESS passes frequency `f` at
 `t(f) = L · ln(f / f1)` [1], a straight line of slope `L` against `ln f`.
 In a short-time spectrum of the recording (Hann window of about 40 ms, 87.5 %
@@ -148,7 +148,7 @@ either sign; the tolerance stays about 20 % above it
 (`tests/integration/test_playback_speed.py`). A smaller stretch is not
 named. The estimate is a diagnosis only: it
 explains a failed measurement, marks the decay unreliable and is stored in
-`impulse_response.playback_speed`, but RoomScope never re-analyses with the
+`impulse_response.playback_speed`, but ReverbScope never re-analyses with the
 measured speed. Tests: `tests/integration/test_playback_speed.py`.
 
 ## 2a. Loopback reference channel
@@ -228,7 +228,7 @@ time-reversed filtering.
    new interval (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated
    from 7.5 dB of decay after the cross-point (at least the last 10 %), late
    slope over 15 dB starting 7.5 dB above noise, repeat until the cross-point
-   moves < 1 ms. These parameter values are RoomScope's choices within the
+   moves < 1 ms. These parameter values are ReverbScope's choices within the
    ranges published by Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB;
    10–20 dB).
 3. Schroeder curve: `EDC(t) = Σ_{τ≥t} h²(τ)` from the decay start (peak of the
@@ -276,7 +276,7 @@ only, with the count, the spread (max − min) and the contributing session
 labels. Decay curves (`edc_db`) are never averaged. The output names the
 ISO 3382-2 accuracy class reached by the source positions, microphone
 positions and source–microphone combinations; every row of the table must
-be met. `roomscope project average` counts one microphone position per
+be met. `reverbscope project average` counts one microphone position per
 position label of the project (repeated takes at a position add sessions,
 not positions; sessions without a position are averaged but not counted),
 takes the source count from `--sources` (default 1) and counts at most one
@@ -296,13 +296,13 @@ the table are not implemented: an engineering result used as a correction
 term for other engineering-level measurements needs only one source and
 three microphone positions, and the interrupted-noise method may use a
 rotating microphone boom. The table's fourth row (decays per position) is
-for the interrupted-noise method; RoomScope uses the integrated impulse
+for the interrupted-noise method; ReverbScope uses the integrated impulse
 response. Before v0.4.1 the code carried an unsourced transcription that
 asked for ≥ 3 / ≥ 6 microphone positions for engineering / precision and did
 not check the microphone count for engineering, and `project average`
 counted sessions as microphone positions (#15).
 
-RoomScope measurements are one source unless the caller passes
+ReverbScope measurements are one source unless the caller passes
 `n_source_positions`. The class is a label, not a claim of compliance: the
 standard's other clause 4 conditions (distances between positions and from
 surfaces, source height and so on) are not checked.
@@ -314,7 +314,7 @@ Multi-position *placement* stays out of 1.0 (MEASUREMENT_METHODOLOGY.md §7a).
 one impulse response (clause numbers were not read from the standard text;
 the formulas below are the ones the room-acoustics literature restates).
 Sound strength G is not computed: it needs a calibrated source power, which
-RoomScope does not have. Lateral energy fractions and IACC need a
+ReverbScope does not have. Lateral energy fractions and IACC need a
 figure-of-eight or a dummy head. STI is not computed.
 
 **Procedure** (`core/decay.py`, on the same squared response, onset, Lundeby
@@ -339,7 +339,7 @@ late energy was not measured. A rejected Lundeby estimate that moves C50 or
 C80 by more than 1 dB, D50 by more than 5 percentage points, or `Ts` by more
 than 10 ms marks that parameter unreliable. Those three numbers are the
 just-noticeable differences commonly quoted for the parameters; the clauses
-were not read from the standard, and RoomScope uses them only as a
+were not read from the standard, and ReverbScope uses them only as a
 truncation-sensitivity gate, never to call a change significant. The B·T
 filter warning marks the band's ratios unreliable for the same reason it
 marks T. A non-straight T20/T30 does **not** withdraw a ratio: curvature is
@@ -417,7 +417,7 @@ is compared with the same measure for the filter alone; the decay is called
 distinguishable only when it is ≥ 2× the filter ringing.
 
 **Limitations.** "Potential resonance" only. Identifying a room mode needs
-room dimensions and several positions; RoomScope does not claim it.
+room dimensions and several positions; ReverbScope does not claim it.
 
 ## 7a. Placement geometry
 
@@ -468,7 +468,7 @@ omnidirectional microphone could resolve it.
 **Thresholds by tier of justification.** Tier 1, no free choice: the specular
 ceiling. Tier 2, physical plausibility deliberately wide: loudspeaker
 0.10–3.00 m, plane above 1.80–6.00 m with 0.30 m clearance. Tier 3,
-RoomScope engineering choices calibrated against synthetic arrivals, not
+ReverbScope engineering choices calibrated against synthetic arrivals, not
 standards: `MAX_SURFACE_ATTENUATION_DB = 12`,
 `SPECULAR_EXCESS_TOLERANCE_DB = 2`, `HEIGHT_AGREEMENT_M = 0.08`,
 `CEILING_AGREEMENT_M = 0.12`, `MAX_HYPOTHESIS_CANDIDATES = 8`.
@@ -525,12 +525,12 @@ The seven profiles and their section thresholds:
 | room_mic | −5 / 40 | 0.9 / 1.4 | C80 > 8 dB | The room is the instrument; long decay is not a defect; a very dry ratio is |
 | choir | −12 / 30 | 0.8 / 1.3 | C50 < −2 dB | Ensembles: decay helps ambience but blurs diction |
 
-The default is `generic`; `roomscope analyze --profile vocal` and the GUI
+The default is `generic`; `reverbscope analyze --profile vocal` and the GUI
 profile selector pick another. The report prints the profile name
 (`Interpretation (vocal profile):`) so the advice is never mistaken for
 room-agnostic truth.
 
-## 9. Things RoomScope deliberately does not do
+## 9. Things ReverbScope deliberately does not do
 
 No room score, no auto-EQ or correction, no dB SPL without calibration, no
 room-mode identification, no plug-in hosting. Spatial averaging of T values
@@ -541,7 +541,7 @@ length or width, and no wall is ever named. No speech-intelligibility index,
 no sound strength, and no room score: C50, C80, D50 and centre time (§3b)
 are energy ratios from one position. The published method for the full
 problem — room shape from echoes / echo sorting, Dokmanić et al. (2013) [21] —
-needs a microphone array or several measurement positions, which RoomScope
+needs a microphone array or several measurement positions, which ReverbScope
 does not require of its users. Two microphone positions with a fixed
 loudspeaker would be *exactly* determined (twelve equations, twelve unknowns),
 which means a zero residual would prove nothing about whether the surfaces
@@ -558,12 +558,12 @@ published 1965–2003 prior art. Two in-force patents to stay clear of by
 design: US 9,959,883 B2 (automatic two-sweep pass-band scheme) and
 US 10,816,391 B2 (clock-drift correction between unsynchronised emitter and
 receiver devices). Room-*correction* filter design is densely patented
-(Dirac, Sonarworks, Audyssey/Sound United, DTS, Harman); RoomScope measures
+(Dirac, Sonarworks, Audyssey/Sound United, DTS, Harman); ReverbScope measures
 and reports only.
 
 ## 11. Comparing two sessions
 
-`roomscope.core.compare.compare` takes two `AnalysisResult` objects and
+`reverbscope.core.compare.compare` takes two `AnalysisResult` objects and
 returns a `ComparisonResult`. It is a pure function: it never changes either
 result. Findings are re-derived by `interpret_comparison` and are not stored
 as truth.
@@ -643,7 +643,7 @@ loopback compensation.
 18. AES17-2020, AES standard method for digital audio engineering — Measurement of digital audio equipment. (confirmed via AES publications; defines 0 dB FS as the RMS of a full-scale sine)
 19. D. Cabrera, J. Xun, M. Guski, "Calculating Reverberation Time from Impulse Responses: A Comparison of Software Implementations," Acoustics Australia 44(2), 369–378, 2016. doi:10.1007/s40857-016-0055-6 (confirmed)
 20. J. B. Allen and D. A. Berkley, "Image method for efficiently simulating small-room acoustics," J. Acoust. Soc. Am. 65(4), 943-950, 1979. (confirmed, primary text) — forward image-source model; cited as the origin of the construction, not as a method for the inverse problem. (Numbered [17] before v0.4.1, which collided with Hak et al.)
-21. I. Dokmanić, R. Parhizkar, A. Walther, Y. M. Lu and M. Vetterli, "Acoustic echoes reveal room shape," PNAS 110(30), 12186-12191, 2013. (confirmed, primary text) — the canonical published route to full room geometry from echoes; named here because RoomScope declines it, see §9. (Numbered [18] before v0.4.1, which collided with AES17.)
+21. I. Dokmanić, R. Parhizkar, A. Walther, Y. M. Lu and M. Vetterli, "Acoustic echoes reveal room shape," PNAS 110(30), 12186-12191, 2013. (confirmed, primary text) — the canonical published route to full room geometry from echoes; named here because ReverbScope declines it, see §9. (Numbered [18] before v0.4.1, which collided with AES17.)
 22. O. Kirkeby, P. A. Nelson, H. Hamada and F. Orduña-Bustamante, "Fast deconvolution of multichannel systems using regularization," IEEE Trans. Speech and Audio Processing 6(2), 189–194, 1998. (bibliographic record; the regularised-inversion form `conj(H) / (|H|² + ε(f))` used in §2 and §2a is the one Farina 2007 [2] §3.1 quotes from it; the primary text was not re-read for v0.4.1)
 23. H. Theil, "A rank-invariant method of linear and polynomial regression analysis," Proc. Koninklijke Nederlandse Akademie van Wetenschappen 53, 386–392, 521–525, 1397–1412, 1950. (bibliographic record; used through `scipy.stats.theilslopes`)
 24. P. K. Sen, "Estimates of the regression coefficient based on Kendall's tau," J. Am. Stat. Assoc. 63(324), 1379–1389, 1968. (bibliographic record; used through `scipy.stats.theilslopes`)

@@ -4,14 +4,14 @@
 
 Writes:
 
-* ``cli-demo.svg``            -- ``roomscope demo`` as a terminal screenshot (SVG text)
+* ``cli-demo.svg``            -- ``reverbscope demo`` as a terminal screenshot (SVG text)
 * ``cli-demo.zh-CN.svg``      -- the same in Simplified Chinese
 * ``gui-results.png``         -- Results page, Overview tab, position A
 * ``gui-frequency-response.png`` -- Results page, Frequency Response tab, position A
 * ``gui-compare.png``         -- Compare page, A -> B
 * ``social-preview.png``      -- 1280x640 card for the GitHub social preview
 
-Every image comes from ``roomscope demo``: a simulated room, not a measurement.
+Every image comes from ``reverbscope demo``: a simulated room, not a measurement.
 The GUI images carry a "Synthetic demo data" stamp so they stay labelled when
 they are shared out of context. Needs the ``gui`` extra.
 """
@@ -30,14 +30,14 @@ import tempfile
 import unicodedata
 from pathlib import Path
 
-STAMP = "Synthetic demo data (roomscope demo) - not a real room measurement"
+STAMP = "Synthetic demo data (reverbscope demo) - not a real room measurement"
 TERMINAL_COLUMNS = 80
 _SGR = re.compile(r"\x1b\[([\d;]*)m")
 _COLOURS = {"31": "#f07178", "32": "#a8d982", "33": "#e6c07b", "36": "#6cc4d9"}
 
 
 def _cells(text: str) -> int:
-    """Terminal columns: East Asian wide characters take two (as in roomscope.cli.console)."""
+    """Terminal columns: East Asian wide characters take two (as in reverbscope.cli.console)."""
     return sum(2 if unicodedata.east_asian_width(char) in ("W", "F") else 1 for char in text)
 
 
@@ -130,22 +130,22 @@ def terminal_svg(command: str, output: str, *, title: str) -> str:
 
 
 def render_cli(workdir: Path, out: Path) -> None:
-    from roomscope.cli.main import main
-    from roomscope.i18n import activate
+    from reverbscope.cli.main import main
+    from reverbscope.i18n import activate
 
     previous = Path.cwd()
     os.chdir(workdir)
     try:
         for lang, name, title in (
-            ("en", "cli-demo.svg", "roomscope demo (synthetic data)"),
-            ("zh_CN", "cli-demo.zh-CN.svg", "roomscope demo（合成数据）"),
+            ("en", "cli-demo.svg", "reverbscope demo (synthetic data)"),
+            ("zh_CN", "cli-demo.zh-CN.svg", "reverbscope demo（合成数据）"),
         ):
             buffer = io.StringIO()
             with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(io.StringIO()):
                 code = main(["--lang", lang, "--color", "always", "demo"])
             if code != 0:
-                raise SystemExit(f"roomscope demo failed with {code}")
-            command = "roomscope demo" if lang == "en" else "roomscope --lang zh_CN demo"
+                raise SystemExit(f"reverbscope demo failed with {code}")
+            command = "reverbscope demo" if lang == "en" else "reverbscope --lang zh_CN demo"
             svg = terminal_svg(command, buffer.getvalue(), title=title)
             (out / name).write_text(svg, encoding="utf-8")
     finally:
@@ -177,9 +177,9 @@ def render_gui(workdir: Path, out: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     from PySide6.QtWidgets import QApplication
 
-    from roomscope.i18n import activate
-    from roomscope.ui.main_window import MainWindow
-    from roomscope.ui.theme import apply_application_chrome
+    from reverbscope.i18n import activate
+    from reverbscope.ui.main_window import MainWindow
+    from reverbscope.ui.theme import apply_application_chrome
 
     activate("en")
     app = QApplication.instance() or QApplication(sys.argv[:1])
@@ -187,7 +187,7 @@ def render_gui(workdir: Path, out: Path) -> None:
     window = MainWindow()
     window.resize(1120, 820)
     window.show()
-    demo = workdir / "roomscope-demo"
+    demo = workdir / "reverbscope-demo"
 
     def grab(name: str) -> None:
         for _ in range(5):
@@ -228,7 +228,7 @@ def render_social_preview(out: Path) -> None:
         flags = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextWordWrap
         painter.drawText(QRect(x, y, w, h), int(flags), body)
 
-    text(64, 150, 560, 90, "RoomScope", 76, "#ffffff", bold=True)
+    text(64, 150, 560, 90, "ReverbScope", 76, "#ffffff", bold=True)
     text(
         64,
         250,
@@ -270,12 +270,12 @@ def main(argv: list[str] | None = None) -> int:
     out: Path = args.out.resolve()
     out.mkdir(parents=True, exist_ok=True)
     # A fixed, readable folder name: the paths show up in the screenshots.
-    workdir = Path(tempfile.gettempdir()) / "roomscope-readme"
+    workdir = Path(tempfile.gettempdir()) / "reverbscope-readme"
     shutil.rmtree(workdir, ignore_errors=True)
     workdir.mkdir(parents=True)
     try:
         # Keep the maintainer's recent-session list untouched; fixed width, colour on.
-        os.environ["ROOMSCOPE_HOME"] = str(workdir / "home")
+        os.environ["REVERBSCOPE_HOME"] = str(workdir / "home")
         os.environ["COLUMNS"] = str(TERMINAL_COLUMNS)
         render_cli(workdir, out)
         if not args.cli_only:

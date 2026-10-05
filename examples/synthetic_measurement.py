@@ -1,4 +1,4 @@
-"""Run the whole RoomScope chain on a synthetic room, without any hardware.
+"""Run the whole ReverbScope chain on a synthetic room, without any hardware.
 
     python examples/synthetic_measurement.py [output_dir]
 
@@ -15,14 +15,14 @@ from pathlib import Path
 import numpy as np
 from scipy.signal import fftconvolve
 
-from roomscope.cli.report import format_report
-from roomscope.core import Reference, analyze, measurement_signal
-from roomscope.interpretation import interpret
-from roomscope.io.session_store import save_measurement
-from roomscope.io.wav import write_sweep_file, write_wav
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.session import MeasurementSession
+from reverbscope.cli.report import format_report
+from reverbscope.core import Reference, analyze, measurement_signal
+from reverbscope.interpretation import interpret
+from reverbscope.io.session_store import save_measurement
+from reverbscope.io.wav import write_sweep_file, write_wav
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.session import MeasurementSession
 
 
 def synthetic_room(sample_rate: int, rt60_s: float = 0.45, seed: int = 0) -> np.ndarray:

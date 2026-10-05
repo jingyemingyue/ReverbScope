@@ -6,12 +6,12 @@ from dataclasses import replace
 
 import pytest
 
-from roomscope.core.compare import compare
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.interpretation import interpret_comparison
-from roomscope.models.comparison import CompareSettings
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import Validity
+from reverbscope.core.compare import compare
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.interpretation import interpret_comparison
+from reverbscope.models.comparison import CompareSettings
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import Validity
 from tests.conftest import make_rir
 
 
@@ -221,7 +221,7 @@ def test_decay_bands_missing_on_either_side_are_reported(short_sweep: SweepSetti
 
 
 def test_resonances_are_matched_within_a_sixth_of_an_octave(short_sweep: SweepSettings) -> None:
-    from roomscope.models.result import ResonanceCandidate
+    from reverbscope.models.result import ResonanceCandidate
 
     def candidate(frequency: float, distinguishable: bool) -> ResonanceCandidate:
         return ResonanceCandidate(
@@ -261,7 +261,7 @@ def test_resonances_are_matched_within_a_sixth_of_an_octave(short_sweep: SweepSe
 def test_loopback_path_delay_is_compared_only_when_both_were_compensated(
     short_sweep: SweepSettings,
 ) -> None:
-    from roomscope.models.result import LoopbackResult
+    from reverbscope.models.result import LoopbackResult
 
     result = _room(short_sweep, seed=0)
 

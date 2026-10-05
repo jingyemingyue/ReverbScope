@@ -11,21 +11,21 @@ hand (``docs/RELEASE_PLAN.md`` §3a):
   -> smoke test (CLI, demo, fake-backend measurement, offscreen GUI, windowed
   launcher);
 * Terminal Edition: its license bundle -> PyInstaller with
-  ``ROOMSCOPE_PACKAGE=terminal`` -> the ``--terminal`` gate (no Qt, PySide6
+  ``REVERBSCOPE_PACKAGE=terminal`` -> the ``--terminal`` gate (no Qt, PySide6
   or matplotlib) -> smoke test (CLI, demo in English and Chinese, JSON on
   stdout, ``gui`` refused politely);
-* Linux: ``RoomScope-Desktop-Linux-x86_64.tar.gz`` and
-  ``RoomScope-Terminal-Linux-x86_64.tar.gz``;
-* Windows: ``RoomScope-Desktop-Windows-x64.zip``,
-  ``RoomScope-Terminal-Windows-x64.zip`` and, with Inno Setup installed,
-  ``RoomScope-Desktop-Windows-x64-Setup.exe``. The installer is compiled but
+* Linux: ``ReverbScope-Desktop-Linux-x86_64.tar.gz`` and
+  ``ReverbScope-Terminal-Linux-x86_64.tar.gz``;
+* Windows: ``ReverbScope-Desktop-Windows-x64.zip``,
+  ``ReverbScope-Terminal-Windows-x64.zip`` and, with Inno Setup installed,
+  ``ReverbScope-Desktop-Windows-x64-Setup.exe``. The installer is compiled but
   not installed, smoke-tested and uninstalled as the workflow does, because
   that would change this PC; run it by hand (``/VERYSILENT /CURRENTUSER
   /DIR=<folder>``, ``smoke_bundle.py --root <folder>``, ``unins000.exe
   /VERYSILENT``) before publishing a locally built installer;
-* macOS: ad-hoc signed ``RoomScope.app`` in
-  ``RoomScope-Desktop-macOS-<arch>.dmg``, mounted and launched by
-  ``check_macos_dmg.py``, and ``RoomScope-Terminal-macOS-<arch>.tar.gz``;
+* macOS: ad-hoc signed ``ReverbScope.app`` in
+  ``ReverbScope-Desktop-macOS-<arch>.dmg``, mounted and launched by
+  ``check_macos_dmg.py``, and ``ReverbScope-Terminal-macOS-<arch>.tar.gz``;
 * ``SHA256SUMS-<OS>-<ARCH>``; with ``--python-dist`` also the wheel and sdist.
 
 Install the pinned runtime first (the script refuses a different one unless
@@ -56,7 +56,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 #: The Windows Terminal Edition's "open a prompt here" launcher.
-TERMINAL_CMD = "RoomScope Terminal.cmd"
+TERMINAL_CMD = "ReverbScope Terminal.cmd"
 DIST = ROOT / "dist"
 PYINSTALLER_VERSION = "6.22.3"
 INNO_SETUP_DEFAULT = Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / (
@@ -81,18 +81,18 @@ class Target:
         """Desktop Edition file(s), then the Terminal Edition's (release_draft.CHECKSUM_FILES)."""
         if self.system == "Linux":
             return (
-                "RoomScope-Desktop-Linux-x86_64.tar.gz",
-                "RoomScope-Terminal-Linux-x86_64.tar.gz",
+                "ReverbScope-Desktop-Linux-x86_64.tar.gz",
+                "ReverbScope-Terminal-Linux-x86_64.tar.gz",
             )
         if self.system == "Windows":
             return (
-                "RoomScope-Desktop-Windows-x64-Setup.exe",
-                "RoomScope-Desktop-Windows-x64.zip",
-                "RoomScope-Terminal-Windows-x64.zip",
+                "ReverbScope-Desktop-Windows-x64-Setup.exe",
+                "ReverbScope-Desktop-Windows-x64.zip",
+                "ReverbScope-Terminal-Windows-x64.zip",
             )
         return (
-            f"RoomScope-Desktop-macOS-{self.cpu}.dmg",
-            f"RoomScope-Terminal-macOS-{self.cpu}.tar.gz",
+            f"ReverbScope-Desktop-macOS-{self.cpu}.dmg",
+            f"ReverbScope-Terminal-macOS-{self.cpu}.tar.gz",
         )
 
     @property
@@ -177,8 +177,8 @@ def checksum_lines(paths: list[Path]) -> str:
 def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
     """The build steps for ``target``, in the release workflow's order."""
     licenses = work / "THIRD_PARTY_LICENSES"
-    bundle = DIST / "roomscope"
-    app = DIST / "RoomScope.app"
+    bundle = DIST / "reverbscope"
+    app = DIST / "ReverbScope.app"
     offscreen = {**os.environ, "QT_QPA_PLATFORM": "offscreen"}
     steps: list[Step] = []
 
@@ -188,10 +188,10 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
     steps.append(Step("Test suite", tests, skipped="--skip-tests" if args.skip_tests else None))
 
     def python_dist() -> None:
-        for old in DIST.glob("roomscope-*.whl"):
+        for old in DIST.glob("reverbscope-*.whl"):
             old.unlink()
-        for old in DIST.glob("roomscope-*.tar.gz"):
-            if not old.name.startswith("roomscope-linux"):
+        for old in DIST.glob("reverbscope-*.tar.gz"):
+            if not old.name.startswith("reverbscope-linux"):
                 old.unlink()
         _python("-m", "build", "--outdir", DIST)
 
@@ -212,7 +212,7 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
     def pyinstaller() -> None:
         shutil.rmtree(bundle, ignore_errors=True)
         shutil.rmtree(app, ignore_errors=True)
-        _python("-m", "PyInstaller", "--noconfirm", "--clean", "packaging/roomscope.spec")
+        _python("-m", "PyInstaller", "--noconfirm", "--clean", "packaging/reverbscope.spec")
 
     steps.append(Step("PyInstaller", pyinstaller))
 
@@ -246,11 +246,11 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
         extra += ["--expect-package", "desktop", "--expect-machine", target.cpu]
         _python("scripts/smoke_bundle.py", "--root", bundle, "--out", out, *extra, env=offscreen)
         if target.system == "macOS":
-            _run(app / "Contents" / "MacOS" / "RoomScope", "gui", "--smoke", env=offscreen)
+            _run(app / "Contents" / "MacOS" / "ReverbScope", "gui", "--smoke", env=offscreen)
 
     steps.append(Step("Smoke frozen binary (Desktop Edition)", smoke))
 
-    terminal = DIST / "roomscope-terminal"
+    terminal = DIST / "reverbscope-terminal"
     terminal_licenses = work / "THIRD_PARTY_LICENSES-terminal"
 
     def terminal_build() -> None:
@@ -264,8 +264,8 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
             "--clean",
             "--workpath",
             ROOT / "build" / "terminal",
-            "packaging/roomscope.spec",
-            env={**os.environ, "ROOMSCOPE_PACKAGE": "terminal"},
+            "packaging/reverbscope.spec",
+            env={**os.environ, "REVERBSCOPE_PACKAGE": "terminal"},
         )
         shutil.copytree(terminal_licenses, terminal / "THIRD_PARTY_LICENSES", dirs_exist_ok=True)
         _python(
@@ -301,20 +301,20 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
     if target.system == "Linux":
 
         def linux_archive() -> None:
-            _run("tar", "-C", DIST, "-czf", DIST / desktop_name, "roomscope")
+            _run("tar", "-C", DIST, "-czf", DIST / desktop_name, "reverbscope")
 
         steps.append(Step("Linux archive (Desktop Edition)", linux_archive))
     elif target.system == "Windows":
 
         def windows_zip() -> None:
-            shutil.make_archive(str(DIST / "RoomScope-Desktop-Windows-x64"), "zip", bundle)
+            shutil.make_archive(str(DIST / "ReverbScope-Desktop-Windows-x64"), "zip", bundle)
 
         steps.append(Step("Windows zip (Desktop Edition)", windows_zip))
         iscc = find_iscc()
 
         def windows_installer() -> None:
             assert iscc is not None
-            (DIST / "RoomScope-Desktop-Windows-x64-Setup.exe").unlink(missing_ok=True)
+            (DIST / "ReverbScope-Desktop-Windows-x64-Setup.exe").unlink(missing_ok=True)
             # Released Inno Setup keeps the Chinese messages unofficial (not installed).
             chinese = subprocess.run(
                 [
@@ -331,7 +331,7 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
                 iscc,
                 f"/DMyAppVersion={project_version()}",
                 f"/DChineseMessages={chinese}",
-                "packaging/windows/roomscope.iss",
+                "packaging/windows/reverbscope.iss",
             )
 
         steps.append(
@@ -360,7 +360,7 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
                 str(DIST / terminal_archive_name.removesuffix(".zip")), "zip", terminal
             )
         else:
-            _run("tar", "-C", DIST, "-czf", DIST / terminal_archive_name, "roomscope-terminal")
+            _run("tar", "-C", DIST, "-czf", DIST / terminal_archive_name, "reverbscope-terminal")
 
     steps.append(Step("Terminal Edition archive", terminal_archive))
 
@@ -402,7 +402,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{target.system} {target.arch} is not a release platform; nothing was built")
         return 2
     release_version = project_version()
-    print(f"RoomScope {release_version}: building for {target.system} {target.arch}")
+    print(f"ReverbScope {release_version}: building for {target.system} {target.arch}")
     if "dev" in release_version:
         print("  note: a .dev version never gets a draft Release")
 
@@ -419,7 +419,7 @@ def main(argv: list[str] | None = None) -> int:
     # Files of an earlier build must not be checksummed or listed as this one.
     for name in (*target.archives, target.checksum_name):
         (DIST / name).unlink(missing_ok=True)
-    with tempfile.TemporaryDirectory(prefix="roomscope-release-") as directory:
+    with tempfile.TemporaryDirectory(prefix="reverbscope-release-") as directory:
         steps = plan(target, args, Path(directory))
         for index, step in enumerate(steps, 1):
             if step.skipped:
@@ -433,8 +433,8 @@ def main(argv: list[str] | None = None) -> int:
 
     produced = [DIST / name for name in (*target.archives, target.checksum_name)]
     if args.python_dist:
-        produced += sorted(DIST.glob(f"roomscope-{release_version}-*.whl"))
-        produced.append(DIST / f"roomscope-{release_version}.tar.gz")
+        produced += sorted(DIST.glob(f"reverbscope-{release_version}-*.whl"))
+        produced.append(DIST / f"reverbscope-{release_version}.tar.gz")
     print("\nFiles for the draft Release (upload with the web page or `gh release upload`):")
     for path in produced:
         if path.is_file():

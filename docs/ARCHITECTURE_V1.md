@@ -1,4 +1,4 @@
-# RoomScope v1.0 architecture (design)
+# ReverbScope v1.0 architecture (design)
 
 **English** | [简体中文](ARCHITECTURE_V1.zh-CN.md)
 
@@ -56,14 +56,14 @@ calibration, no room coordinates (§3.3).
 | Audience | What v1.0 gives them | What they must never need |
 | --- | --- | --- |
 | Recording engineers, students, home recordists | A signed desktop app; the four-step DAW workflow and Standalone Mode; a user guide in English and Chinese; a comparison of two positions; a session folder they can send when asking for help | Python, a terminal, an account, an internet connection, a calibrated microphone |
-| Integrators and researchers | `pip install roomscope`; a public API with a stability promise; `result.json`, `session.json`, `comparison.json` with JSON Schemas; CSV export of every curve; `roomscope analyze-ir` for impulse responses from other tools | Reverse engineering the JSON; importing private modules |
+| Integrators and researchers | `pip install reverbscope`; a public API with a stability promise; `result.json`, `session.json`, `comparison.json` with JSON Schemas; CSV export of every curve; `reverbscope analyze-ir` for impulse responses from other tools | Reverse engineering the JSON; importing private modules |
 | Contributors | A package layout where profiles, exporters and locales plug in without touching the DSP; cross-platform CI; ADRs that say why things are the way they are; a validation data set as regression evidence | A DSP background to add a profile or a translation; maintainer approval to run the full test suite locally |
 | Translators and educators | gettext catalogs with message identifiers, so a finding can be translated once and stays translated when thresholds change | Editing Python |
 
 ## 2. Principles
 
 Unchanged from v0.1 and the brief: DAW-independent (WAV in, WAV out),
-core-first (`roomscope.core` is pure NumPy/SciPy), scientific correctness
+core-first (`reverbscope.core` is pure NumPy/SciPy), scientific correctness
 (published methods, validity flags), honest numbers (dBFS unless calibrated,
 no score), legal clarity (no vendored code, audited dependencies), safety
 (conservative levels, nothing touches system audio settings).
@@ -97,7 +97,7 @@ Added for v1.0:
 
 | # | Item | Why it is a blocker | Section |
 | --- | --- | --- | --- |
-| M1 | Public API tiers and `roomscope` top-level exports *(landed in 0.2)* | Integrators cannot depend on a moving target | §5.1 |
+| M1 | Public API tiers and `reverbscope` top-level exports *(landed in 0.2)* | Integrators cannot depend on a moving target | §5.1 |
 | M2 | JSON Schemas for result, session, comparison, sweep sidecar; read-lenient loaders; `AnalysisResult.from_dict` *(landed in 0.2)* | Re-opening, comparing and exporting all need to read what was written | §5.2 |
 | M3 | Session re-opening and a session browser *(landed in 0.2; started in PR #2)* | A tool that cannot show yesterday's measurement cannot compare positions | §5.8, §5.9 |
 | M4 | Comparison of two sessions (core, CLI, GUI, interpretation) *(landed in 0.2)* | The third product question of the brief | §5.3.2 |
@@ -115,7 +115,7 @@ Added for v1.0:
 
 | # | Item | Section |
 | --- | --- | --- |
-| S1 | `roomscope analyze-ir`: analyse an impulse response WAV from another tool *(landed in 0.3)* | §5.3.3 |
+| S1 | `reverbscope analyze-ir`: analyse an impulse response WAV from another tool *(landed in 0.3)* | §5.3.3 |
 | S2 | Spatial averaging of T values over several sessions of one room (ISO 3382-2 style, with the accuracy class named) *(landed in 0.4)* | §5.3.4 |
 | S3 | Project folders (one room, several positions) with a project view in the GUI *(landed in 0.4)* | §5.9 |
 | S4 | CSV exporter for every curve; exporter entry points *(landed in 0.4)* | §5.7 |
@@ -134,7 +134,7 @@ Added for v1.0:
   review first (§11).
 * **Clock-drift estimation or correction between separate playback and
   recording devices.** Outside the single full-duplex interface that
-  RoomScope assumes, and the subject of an in-force patent (US 10,816,391 B2,
+  ReverbScope assumes, and the subject of an in-force patent (US 10,816,391 B2,
   MEASUREMENT_METHODOLOGY.md §10). The loopback channel of §5.3.1 uses one
   device and one clock and does not estimate drift.
 * **Automatic two-sweep pass-band schemes** (US 9,959,883 B2). One sweep, as
@@ -151,29 +151,29 @@ Added for v1.0:
 ## 4. Target package layout
 
 Additions are marked `+`, changed modules `~`; everything unmarked stays as in
-v0.1. `roomscope.core` keeps its single entry point `pipeline.analyze` and
+v0.1. `reverbscope.core` keeps its single entry point `pipeline.analyze` and
 gains three pure functions (`loopback.compensate`, `compare.compare`,
 `averaging.average_decay`) with the same rules: NumPy in, dataclasses out, no
 I/O, no Qt.
 
 ```
-src/roomscope/
+src/reverbscope/
   __init__.py            ~ version + lazy re-exports of the Tier 1 API (§5.1)
-  __main__.py            + `python -m roomscope` (needed by the desktop bundles)
+  __main__.py            + `python -m reverbscope` (needed by the desktop bundles)
   errors.py                exception hierarchy (unchanged)
-  logging_config.py      ~ also writes a rotating log file under ROOMSCOPE_HOME for bug reports
+  logging_config.py      ~ also writes a rotating log file under REVERBSCOPE_HOME for bug reports
   settings.py            + user settings (language, default profile, backend, folders) (§5.10)
   i18n.py                + gettext setup, locale selection, `_()` (§5.6)
-  locale/                + <lang>/LC_MESSAGES/roomscope.po (+ .mo built at packaging time)
+  locale/                + <lang>/LC_MESSAGES/reverbscope.po (+ .mo built at packaging time)
   schemas/               + result.schema.json, session.schema.json, comparison.schema.json,
                            project.schema.json, sweep-sidecar.schema.json (package data)
   models/
     audio.py               AudioSignal
     configuration.py     ~ SweepSettings; AnalysisSettings + loopback_channel, calibration slot
-    result.py            ~ + LoopbackResult; roomscope_version; from_dict (in PR #2)
+    result.py            ~ + LoopbackResult; reverbscope_version; from_dict (in PR #2)
     result_load.py         (in PR #2) JSON -> AnalysisResult
     comparison.py        + ComparisonResult, MetricDelta, ReflectionMatch, ...
-    session.py           ~ MeasurementSession + recording_profile (PR #2), roomscope_version,
+    session.py           ~ MeasurementSession + recording_profile (PR #2), reverbscope_version,
                            platform, loopback metadata; lenient from_dict
     project.py           + Project (one room), PositionEntry
     calibration.py       + CalibrationRecord (reserved slot, no workflow in 1.0)
@@ -188,9 +188,9 @@ src/roomscope/
   io/
     wav.py                 read/write, sidecar, load_reference (unchanged)
     session_store.py     ~ save/load; copy_recording; bundle(); list_sessions (PR #2)
-    recent.py              (in PR #2) recent sessions under ROOMSCOPE_HOME
+    recent.py              (in PR #2) recent sessions under REVERBSCOPE_HOME
     project_store.py     + project.json and the sessions/ index (SHOULD)
-    exporters/           + csv.py; entry-point group "roomscope.exporters" (SHOULD)
+    exporters/           + csv.py; entry-point group "reverbscope.exporters" (SHOULD)
   audio/
     backend.py           + AudioBackend protocol, DeviceInfo, get_backend()
     portaudio.py         ~ the sounddevice backend (today's devices.py + playrec.py), stream
@@ -199,7 +199,7 @@ src/roomscope/
   interpretation/
     interpreter.py       ~ Finding + message_id/params/locale; interpret_comparison()
     profiles.py          ~ RecordingProfile + interpret_comparison; messages via _()
-    registry.py          + built-ins + entry-point group "roomscope.profiles"
+    registry.py          + built-ins + entry-point group "reverbscope.profiles"
   cli/
     main.py              ~ + analyze-ir, compare, session, export, --format, --lang
     console.py           + terminal layout: colour policy, symbols, widths, tables, progress
@@ -233,12 +233,12 @@ from the package.
 
 | Tier | What | Promise for the 1.x line |
 | --- | --- | --- |
-| 1 -- public | The names exported by `roomscope/__init__.py` (below); the JSON files and their schemas; `roomscope <cmd> --format json`; the CLI exit codes | Semantic versioning. Removal or a changed meaning needs a major version; additions are minor; a deprecation is announced with a `DeprecationWarning` one minor release before the change |
-| 2 -- documented | Functions of `roomscope.core.*` named in MEASUREMENT_METHODOLOGY.md; `roomscope.audio.AudioBackend`; `RecordingProfile` / `ProfileBase`; the entry-point groups | Signatures may gain keyword parameters with defaults; every change is in CHANGELOG.md; algorithmic changes are also in the methodology document |
-| 3 -- internal | `roomscope.ui`, `roomscope.cli` internals, everything `_`-prefixed | None |
+| 1 -- public | The names exported by `reverbscope/__init__.py` (below); the JSON files and their schemas; `reverbscope <cmd> --format json`; the CLI exit codes | Semantic versioning. Removal or a changed meaning needs a major version; additions are minor; a deprecation is announced with a `DeprecationWarning` one minor release before the change |
+| 2 -- documented | Functions of `reverbscope.core.*` named in MEASUREMENT_METHODOLOGY.md; `reverbscope.audio.AudioBackend`; `RecordingProfile` / `ProfileBase`; the entry-point groups | Signatures may gain keyword parameters with defaults; every change is in CHANGELOG.md; algorithmic changes are also in the methodology document |
+| 3 -- internal | `reverbscope.ui`, `reverbscope.cli` internals, everything `_`-prefixed | None |
 
 Tier 1 exports, loaded lazily through a module-level `__getattr__` so that
-`import roomscope` stays cheap and does not import SciPy, PortAudio or Qt:
+`import reverbscope` stays cheap and does not import SciPy, PortAudio or Qt:
 
 ```python
 __version__
@@ -252,13 +252,13 @@ MeasurementSession, Project                              # models.session, model
 interpret, interpret_comparison, Finding, Severity, available_profiles
 read_wav, write_wav, write_sweep_file, load_reference     # io.wav
 save_measurement, load_measurement, load_session, list_sessions   # io.session_store
-RoomScopeError and its subclasses                        # errors
+ReverbScopeError and its subclasses                        # errors
 ```
 
 The text report (`cli/render.py`) is *not* an interface: its wording is
 localised and may change in any release. A test asserts that the Tier 1 list
 in `__init__.py` and the list in this document match, and a second test that
-`roomscope.__version__` equals the `pyproject.toml` version.
+`reverbscope.__version__` equals the `pyproject.toml` version.
 
 ### 5.2 Schemas and file formats
 
@@ -273,15 +273,15 @@ changed; v0.1 sessions remain readable either way.
 **Readers are lenient, writers are strict.** `MeasurementSession.from_dict`
 today refuses unknown fields; in v1.0 every `from_dict` ignores unknown keys
 and logs them at INFO, refuses a *higher* `schema_version` than it knows
-with a message naming the RoomScope version that can read it, and applies
+with a message naming the ReverbScope version that can read it, and applies
 registered migrations for lower versions. `to_dict` output is validated
 against the shipped JSON Schema in the test suite (dev dependency
 `jsonschema`, MIT, to be recorded in DEPENDENCIES.md), never at runtime.
 
-**Shipped schemas.** `src/roomscope/schemas/*.schema.json` are package data,
+**Shipped schemas.** `src/reverbscope/schemas/*.schema.json` are package data,
 hand-maintained (no code generation, no pydantic: the dataclasses stay the
 source of truth and a test proves each dataclass round-trips through its
-schema). `roomscope schema result` prints the current schema so integrators
+schema). `reverbscope schema result` prints the current schema so integrators
 can validate without cloning.
 
 **What is stored where.**
@@ -289,15 +289,15 @@ can validate without cloning.
 | File | Content | Authoritative for |
 | --- | --- | --- |
 | `impulse_response.wav` (float32) | The located impulse response | The measurement (curves are recomputable from it) |
-| `result.json` | Every metric with unit, validity and reason; curves unless `--no-curves`; `sweep_settings`, `analysis_settings`, `roomscope_version`, `warnings` | Numbers as they were reported |
-| `session.json` | Metadata, paths, `analysis_summary`, `recording_profile` *(PR #2)*, `roomscope_version`, `platform`, loopback channel used | Provenance |
+| `result.json` | Every metric with unit, validity and reason; curves unless `--no-curves`; `sweep_settings`, `analysis_settings`, `reverbscope_version`, `warnings` | Numbers as they were reported |
+| `session.json` | Metadata, paths, `analysis_summary`, `recording_profile` *(PR #2)*, `reverbscope_version`, `platform`, loopback channel used | Provenance |
 | `recording.wav` (copied, optional) | The raw recording, untouched | Re-analysis |
-| `sweep.roomscope-sweep.json` (copied) | The sweep definition | Re-analysis |
+| `sweep.reverbscope-sweep.json` (copied) | The sweep definition | Re-analysis |
 | `comparison.json` | Two session references and the deltas | A comparison as reported |
 | `project.json` | Room name, notes, list of position entries and their session folders | The index; sessions remain standalone |
 
 Findings are not stored. Loading a session re-runs `interpret` with the
-stored `recording_profile` and the running RoomScope version, and the report
+stored `recording_profile` and the running ReverbScope version, and the report
 names both, so advice always comes from the thresholds the reader can look
 up, never from a frozen sentence.
 
@@ -309,7 +309,7 @@ up, never from a frozen sentence.
 electrically into a second input (a cable from an output to an input, or the
 interface's own loopback). In Universal DAW Mode the user records the
 microphone and the loopback on two tracks and exports either a two-channel
-WAV or two files; in Standalone Mode RoomScope records both inputs in one
+WAV or two files; in Standalone Mode ReverbScope records both inputs in one
 stream. Nothing changes for users without a loopback: every step below is
 skipped and the result says `"loopback": null`.
 
@@ -357,7 +357,7 @@ quantity without claiming more than it proves.
 
 *What it does not do.* No drift estimation or correction: both channels are
 captured by the same converter clock. The loopback also does not remove the
-loudspeaker's own response; RoomScope measures the room *through* the
+loudspeaker's own response; ReverbScope measures the room *through* the
 loudspeaker and says so.
 
 *Result model.* `LoopbackResult(channel, compensation_applied, reason,
@@ -390,7 +390,7 @@ Interpretation: `RecordingProfile.interpret_comparison(comparison) ->
 list[Finding]` with a shared implementation in `ProfileBase` that reuses the
 profile's own thresholds, so "the strongest reflection within 30 ms went from
 −8.7 dB to −14.2 dB" is judged with the same numbers the single-session
-advice uses. CLI `roomscope compare <baseline> <candidate>`; GUI: select two
+advice uses. CLI `reverbscope compare <baseline> <candidate>`; GUI: select two
 sessions in the browser (§5.8). Stored as `comparison.json` (schema 1) next
 to the candidate session or wherever `--out` says.
 
@@ -404,7 +404,7 @@ excitation band is what the caller declares (`--band 20 20000`), recorded
 with `source = "declared by the user"`; without a declaration the band is
 marked unknown and every band metric is `NOT_COMPUTED` with that reason. The
 noise section is `None` with the note that no recording segment exists.
-CLI `roomscope analyze-ir --ir <wav>`.
+CLI `reverbscope analyze-ir --ir <wav>`.
 
 #### 5.3.4 Spatial averaging (S2)
 
@@ -460,7 +460,7 @@ class AudioBackend(Protocol):
   "through" it with a chosen noise floor, and honours `cancel` and
   `progress`. It backs the Standalone tests in CI and the GUI **Demo**
   mode, which lets someone without an interface see a complete measurement.
-* Selection: `settings.audio_backend`, `ROOMSCOPE_AUDIO_BACKEND`, or
+* Selection: `settings.audio_backend`, `REVERBSCOPE_AUDIO_BACKEND`, or
   `--backend`; `get_backend()` raises `AudioBackendUnavailableError` with the
   install hint when PortAudio is missing, exactly as today.
 * No ASIO on Windows (the wheel's ASIO DLL is stripped from bundles, §6.2);
@@ -471,7 +471,7 @@ class AudioBackend(Protocol):
 ### 5.5 Interpretation (registry, messages, comparison)
 
 * **Registry.** `interpretation/registry.py` merges the built-in profiles with
-  `importlib.metadata.entry_points(group="roomscope.profiles")`. A
+  `importlib.metadata.entry_points(group="reverbscope.profiles")`. A
   third-party name that collides with a built-in is ignored with a warning;
   a profile that fails to import is reported, not fatal. `available_profiles()`
   lists both with their origin.
@@ -490,17 +490,17 @@ class AudioBackend(Protocol):
 ### 5.6 Internationalisation (M7)
 
 * Mechanism: standard-library `gettext`. Catalogs live in
-  `src/roomscope/locale/<lang>/LC_MESSAGES/roomscope.po`; `.mo` files are
+  `src/reverbscope/locale/<lang>/LC_MESSAGES/reverbscope.po`; `.mo` files are
   compiled by a Hatch build hook at packaging time and are not committed.
   Extraction and compilation use Babel (BSD-3-Clause, dev dependency; row to
   be added to DEPENDENCIES.md). English is the source language and needs no
   catalog.
-* Selection: `--lang` / `settings.language` / `ROOMSCOPE_LANG`, otherwise the
+* Selection: `--lang` / `settings.language` / `REVERBSCOPE_LANG`, otherwise the
   system locale; English when no catalog matches.
 * What is translated in 1.0: interpretation findings, GUI chrome, CLI help
   and the labels of the text report, the user guide (zh-CN).
 * What is deliberately **not** translated: the diagnostic strings produced by
-  `roomscope.core` (`warnings`, `notes`, `reason` fields). They are stored in
+  `reverbscope.core` (`warnings`, `notes`, `reason` fields). They are stored in
   `result.json`, quoted in bug reports and compared across versions, so they
   must be identical whatever the UI language; the GUI shows them verbatim
   under a translated heading that says so. Revisiting this after 1.0 would
@@ -523,14 +523,14 @@ class AudioBackend(Protocol):
 | `measure --input-channels 1,2 --loopback-channel 2`, `analyze --loopback-channel 1` / `--loopback <wav>` | loopback | M5 |
 | global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never` | global options | M7, M6, M8 |
 
-Exit codes: 0 success; 1 a `RoomScopeError` (message on stderr); 2 usage
+Exit codes: 0 success; 1 a `ReverbScopeError` (message on stderr); 2 usage
 error or a safety refusal (the level acknowledgement); 130 interrupted.
 `--format json` writes exactly the `result.json` payload plus `findings` to
 stdout and nothing else there; all diagnostics go to stderr. `--json` stays
 as an alias for one minor release, then is removed with a warning.
 
-Text output is laid out by `roomscope/cli/console.py` (styles, status
-symbols, display-width-aware wrapping and tables) and `roomscope/cli/render.py`;
+Text output is laid out by `reverbscope/cli/console.py` (styles, status
+symbols, display-width-aware wrapping and tables) and `reverbscope/cli/render.py`;
 no other module writes escape sequences. Colour follows `--color`, then
 `NO_COLOR`, then `FORCE_COLOR`, then `TERM=dumb`, and in `auto` appears only
 on a terminal: a pipe or a file never receives an escape sequence or a
@@ -545,7 +545,7 @@ Every command reads the same way: title and context, the result ("At a
 glance" first in an analysis or a comparison), the detail, then numbered
 next steps. A user error is one block (`× error: …`, an explanation, the
 commands to try) with the documented exit code; a traceback appears only with
-`--verbose`. Bare `roomscope` prints a short home screen on stderr and keeps
+`--verbose`. Bare `reverbscope` prints a short home screen on stderr and keeps
 the usage error's exit code 2. `measure` prints its device plan and checks on
 stdout and its progress on stderr (one redrawn line on a terminal, one stage
 line otherwise; drawn by the waiting thread, never by the audio callback). The
@@ -572,7 +572,7 @@ an automated check).
   deltas and their validity, the difference curve, the matched reflections
   and resonances; the "input gain unchanged" declaration is an explicit
   checkbox because it decides whether the noise delta may be shown.
-  `roomscope show comparison.json` re-derives findings (they are not stored).
+  `reverbscope show comparison.json` re-derives findings (they are not stored).
 * **Settings dialog:** language, default profile, audio backend, default
   output folder, copy-recording default.
 * **Session browser / project view:** the browser from PR #2, extended to
@@ -590,7 +590,7 @@ an automated check).
   result.json
   impulse_response.wav
   recording.wav                 copied when --copy-recording / the GUI default (on)
-  sweep.roomscope-sweep.json    always copied (tiny; makes the session re-analysable)
+  sweep.reverbscope-sweep.json    always copied (tiny; makes the session re-analysable)
 
 <project>/                      SHOULD
   project.json                  room name, notes, positions[]: {label, session_dirs[]}
@@ -599,16 +599,16 @@ an automated check).
 
 * Paths in `session.json` stay relative when inside the folder; a session
   moved as a folder keeps working.
-* `roomscope session bundle` zips the folder for a bug report; `--no-audio`
+* `reverbscope session bundle` zips the folder for a bug report; `--no-audio`
   leaves the WAVs out for people who do not want to share a recording of
   their room. The measurement issue template will ask for the bundle.
-* `ROOMSCOPE_HOME` (default `~/.roomscope`, introduced by PR #2 for the
+* `REVERBSCOPE_HOME` (default `~/.reverbscope`, introduced by PR #2 for the
   recent list) holds recent sessions, the settings file and the log file.
   Nothing else is written outside the folders the user chose.
 
 ### 5.10 User settings
 
-`roomscope/settings.py` reads and writes `ROOMSCOPE_HOME/settings.json`
+`reverbscope/settings.py` reads and writes `REVERBSCOPE_HOME/settings.json`
 (`schema_version`, `language`, `default_profile`, `audio_backend`,
 `output_dir`, `copy_recording`). Plain JSON, written by the package's own
 code, so the CLI does not depend on Qt and no configuration library is
@@ -619,7 +619,7 @@ is asked on every measurement, as the brief's safety rules require.
 
 ### 6.1 PyPI
 
-* Project name `roomscope` (checked free on PyPI on 2026-09-22; registering
+* Project name `reverbscope` (checked free on PyPI on 2026-09-22; registering
   it is a **maintainer decision** and should happen before the first
   pre-release so the name in this document stays true).
 * Pure-Python wheel (`py3-none-any`) and sdist, built by `python -m build`
@@ -627,10 +627,10 @@ is asked on every measurement, as the brief's safety rules require.
   (OIDC from the release workflow; no long-lived token in the repository) to
   a GitHub environment that requires the maintainer's approval.
 * Extras stay `gui` (PySide6 Essentials only) and `dev`; a new `i18n-dev`
-  extra carries Babel. `pipx install "roomscope[gui]"` is the documented
+  extra carries Babel. `pipx install "reverbscope[gui]"` is the documented
   path for people who have Python but no interest in a virtual environment.
-* `[project.gui-scripts] roomscope-gui = "roomscope.ui.app:main"` gives
-  Windows a console-less launcher next to the `roomscope` console script.
+* `[project.gui-scripts] reverbscope-gui = "reverbscope.ui.app:main"` gives
+  Windows a console-less launcher next to the `reverbscope` console script.
 
 ### 6.2 Desktop bundles
 
@@ -674,8 +674,8 @@ is asked on every measurement, as the brief's safety rules require.
   1.0 is not called 1.0 without at least the macOS notarization or an
   explicit maintainer decision to ship unsigned.
 * **Smoke test:** every bundle is launched on its own runner
-  (`roomscope --version`, `roomscope --backend fake measure` on the
-  synthetic room, `roomscope gui --smoke` offscreen) before it is attached
+  (`reverbscope --version`, `reverbscope --backend fake measure` on the
+  synthetic room, `reverbscope gui --smoke` offscreen) before it is attached
   to a release. Nothing is sent to a loudspeaker.
 
 ### 6.3 Release workflow
@@ -685,14 +685,14 @@ maintainer-only, as CONTRIBUTING.md says):
 
 1. lint, type-check, full test matrix (§7.1);
 2. sdist and wheel → PyPI (pre-releases such as `v1.0.0rc1` go to PyPI as
-   pre-releases, so `pip install roomscope` never picks them up by accident);
+   pre-releases, so `pip install reverbscope` never picks them up by accident);
 3. bundles on the three OS runners → bundle gates → smoke tests;
 4. `SHA256SUMS`, a CycloneDX SBOM (`cyclonedx-bom`, Apache-2.0, dev
    dependency to be recorded) and `THIRD_PARTY_LICENSES.zip`;
 5. a **draft** GitHub Release with everything attached and the CHANGELOG
    section as its body; the maintainer publishes it.
 
-Versioning: `pyproject.toml` is the single source; `roomscope.__version__`
+Versioning: `pyproject.toml` is the single source; `reverbscope.__version__`
 is read from package metadata; a test proves both agree. Version numbers
 follow SemVer; schema versions are independent integers (§5.2).
 
@@ -725,9 +725,9 @@ CSS); GitHub still renders the Markdown.
   a user). Every job runs the GUI smoke tests offscreen and the Standalone
   flow on the fake backend.
 * `schemas`: every JSON the suite writes validates against the shipped
-  schema; the schema files are byte-identical to `roomscope schema`.
+  schema; the schema files are byte-identical to `reverbscope schema`.
 * `package`: as today, plus an install of the wheel into a clean environment
-  and `python -c "import roomscope; roomscope.analyze"`.
+  and `python -c "import reverbscope; reverbscope.analyze"`.
 * `bundle` (on `main` and tags): §6.2 gates and smoke tests.
 
 ### 7.2 Test tiers
@@ -737,9 +737,9 @@ CSS); GitHub still renders the Markdown.
 | Unit, synthetic | `tests/unit` | Algebra, formulas, refusals (as today) |
 | Integration, synthetic | `tests/integration` | Round trips, loopback compensation of a synthetic interface response, comparison of two synthetic positions, averaging |
 | GUI offscreen | `tests/ui` | Flows build and run; demo mode; compare view |
-| Robustness | `tests/robustness` | Malformed WAV, JSON, sidecar, session and project files raise `RoomScopeError`, never anything else; oversized JSON is refused (size cap); truncated WAVs; NaN audio; a loopback channel that is actually a microphone |
+| Robustness | `tests/robustness` | Malformed WAV, JSON, sidecar, session and project files raise `ReverbScopeError`, never anything else; oversized JSON is refused (size cap); truncated WAVs; NaN audio; a loopback channel that is actually a microphone |
 | Fixtures, real | `tests/fixtures` (already whitelisted in `.gitignore`) | Short real recordings (a few seconds, contributed under CC0 with a written declaration in `tests/fixtures/README.md`) as *regression* evidence: the numbers must not drift between releases. Real recordings are never the only evidence for a change (CONTRIBUTING.md) |
-| Hardware, manual | `docs/HARDWARE_TESTS.md` | The matrix of §7.3, filled in by hand, dated, with the RoomScope version |
+| Hardware, manual | `docs/HARDWARE_TESTS.md` | The matrix of §7.3, filled in by hand, dated, with the ReverbScope version |
 
 Coverage is reported for every job and enforced only for `core` and `models`
 (threshold chosen when the gate is introduced, then only raised).
@@ -762,7 +762,7 @@ for the repository, with checksums):
 
 * at least two rooms (one treated, one untreated), at least two positions
   each, one interface, one loudspeaker, one measurement microphone;
-* the **same recorded WAV** analysed by RoomScope and by a reference
+* the **same recorded WAV** analysed by ReverbScope and by a reference
   instrument (Room EQ Wizard, used only as a comparison instrument and never
   copied; or an open MATLAB / Python toolbox with a clear license), which
   isolates the analysis from the acquisition;
@@ -800,7 +800,7 @@ tape measure against `source_height_m` and `ceiling_height_m` in both rooms.
 
 The flip itself is one click; the checklist before it: description and
 topics; branch protection on `main` (CI required, no force-push); a
-`CODEOWNERS` file naming the maintainer for `src/roomscope/core`,
+`CODEOWNERS` file naming the maintainer for `src/reverbscope/core`,
 `docs/MEASUREMENT_METHODOLOGY.md` and the license documents; private
 vulnerability reporting; labels (`good first issue`, `help wanted`, `dsp`,
 `gui`, `packaging`, `i18n`, `profile`, `measurement`, `validation`);
@@ -829,7 +829,7 @@ day.
 
 | Version | Theme | Content | Exit criteria |
 | --- | --- | --- | --- |
-| 0.2 | Reopen and compare | PR #2 (reopen, browser, `show`); `compare` core + CLI + GUI + comparison findings; lenient loaders; JSON Schemas and the schema CI job; Tier 1 exports and the export test | Any v0.1 session reopens; two sessions compare with every delta carrying a validity; `roomscope schema` matches the shipped files |
+| 0.2 | Reopen and compare | PR #2 (reopen, browser, `show`); `compare` core + CLI + GUI + comparison findings; lenient loaders; JSON Schemas and the schema CI job; Tier 1 exports and the export test | Any v0.1 session reopens; two sessions compare with every delta carrying a validity; `reverbscope schema` matches the shipped files |
 | 0.3 | Trust the chain | Loopback (DAW two-channel export, Standalone two-channel capture); `AudioBackend`, fake backend, progress and Stop; `analyze-ir`; cross-platform CI; robustness tests; hardware matrix started | A synthetic interface response is removed within a stated tolerance; Stop silences within one callback period on real hardware; the Standalone flow runs in CI on all three OSes |
 | 0.4 | For everyone | i18n + zh-CN; self-contained sessions, bundles, settings; demo mode; projects and averaging (SHOULD); CSV exporter; user guide; unsigned bundles from `release.yml` on all three OSes with the license bundle and the GPL-module gate | A person without Python installs a bundle and completes the demo and a DAW measurement in Chinese or English; the license bundle lists no unresolved package |
 | 1.0-rc | Freeze and prove | API and schema freeze; validation campaign published; hardware matrix complete; signed bundles or an explicit maintainer decision; SECURITY / CONTRIBUTING / STATUS updated; repository public; pre-release on PyPI | No open MUST item; every gate in §6–§7 green on the tag |
@@ -848,7 +848,7 @@ No dates: the exit criteria are the schedule.
 | Internationalisation | gettext + Babel (dev only) | Qt Linguist `.ts` for the GUI only; hand-written JSON catalogs | One mechanism for CLI, GUI and findings; Linguist would split the catalogs and leave the CLI untranslated |
 | Core diagnostics untranslated | English in `result.json`, verbatim in the UI | Message identifiers inside `core` | The strings are part of the stored record and of bug reports; adding identifiers to every core note is a large change with no measurement benefit; recorded as a limitation |
 | Schemas | Hand-maintained JSON Schema files + round-trip tests; `jsonschema` in tests only | pydantic / msgspec models; generated schemas | No new runtime dependency; the dataclasses remain the source of truth; validation at write time in tests is enough for files the package itself produces |
-| Settings storage | JSON under `ROOMSCOPE_HOME`, written by package code | `QSettings`; TOML (needs `tomli-w`); `platformdirs` | The CLI must not depend on Qt; no new dependency; one folder for everything the app writes outside the user's chosen output |
+| Settings storage | JSON under `REVERBSCOPE_HOME`, written by package code | `QSettings`; TOML (needs `tomli-w`); `platformdirs` | The CLI must not depend on Qt; no new dependency; one folder for everything the app writes outside the user's chosen output |
 | Project index | `project.json` listing session folders | SQLite | Files are the truth; tens of sessions, not thousands; a project stays readable by hand |
 | Comparison time origin | Direct sound of each result; the electrical zero when both have a loopback | Cross-correlation of the two responses | The direct sound is already the time origin of every decay figure; aligning on it keeps deltas explainable |
 | Loopback compensation | Regularised division inside the excitation band | Time-domain deconvolution; no compensation, report the loopback separately | Reuses `design_spectral_inverse`; nothing outside the band is amplified; the uncompensated path remains the fallback |
@@ -867,8 +867,8 @@ No dates: the exit criteria are the schedule.
 | Translation drift as thresholds and wording change | Stale advice in one language | Message identifiers with parameters; the English template is the source; untranslated strings fall back to English |
 | Scope creep | 1.0 never ships | §3 is the contract; SHOULD items slip without discussion |
 | Patents adjacent to the field | Drift into a claimed method | The two in-force patents are named in §3.3; no drift correction between devices, no automatic two-sweep schemes |
-| GPL Qt modules or ASIO DLLs entering a bundle | License obligations RoomScope cannot meet | The blocking bundle gate (§6.2) |
-| PyPI name taken before registration | Renaming the package and every document | Register `roomscope` before the first pre-release |
+| GPL Qt modules or ASIO DLLs entering a bundle | License obligations ReverbScope cannot meet | The blocking bundle gate (§6.2) |
+| PyPI name taken before registration | Renaming the package and every document | Register `reverbscope` before the first pre-release |
 | PR #2 and this design diverging | Two session models | PR #2 is the 0.2 baseline; this document only adds to it |
 
 ## 13. Maintainer decisions and open questions
@@ -876,7 +876,7 @@ No dates: the exit criteria are the schedule.
 1. **Public flip timing:** at 1.0-rc (recommended) or at 1.0?
 2. **Signing identities and budget:** Apple Developer Program, a Windows
    code-signing certificate; or ship 1.0 unsigned with documentation?
-3. **PyPI project name and ownership:** register `roomscope`; who holds the
+3. **PyPI project name and ownership:** register `reverbscope`; who holds the
    account; enable trusted publishing.
 4. **Validation campaign:** which reference instrument, which rooms, who
    runs it; may REW be used as a comparison instrument (its EULA allows use,
@@ -893,7 +893,7 @@ Small, listed so that reviewers can see the blast radius:
 
 * `MeasurementSession.from_dict`: ignore unknown keys (log at INFO) instead
   of raising; refuse only a higher `schema_version`.
-* `AnalysisResult`: `roomscope_version` field; `ImpulseResponseResult.loopback`;
+* `AnalysisResult`: `reverbscope_version` field; `ImpulseResponseResult.loopback`;
   `from_dict` *(PR #2)*.
 * `AnalysisSettings`: `loopback_channel`, `calibration`.
 * `Finding`: `message_id`, `params`, `locale`; profile messages through `_()`.
@@ -904,7 +904,7 @@ Small, listed so that reviewers can see the blast radius:
   `cancel`; the blocking `playrec` call becomes a callback stream.
 * `cli/main.py`: `--format`, `--lang`, `--backend`, `--copy-recording`,
   `--loopback-channel`; new subcommands; `--json` deprecated.
-* `roomscope/__init__.py`: lazy Tier 1 exports; `__version__` from metadata.
+* `reverbscope/__init__.py`: lazy Tier 1 exports; `__version__` from metadata.
 * `save_measurement`: copy the sidecar always and the recording on request.
 * `tests/conftest.py`: the synthetic-room helpers move to `audio/fake.py`
   and are imported from there.

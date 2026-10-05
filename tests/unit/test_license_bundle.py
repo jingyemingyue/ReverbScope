@@ -61,7 +61,7 @@ def test_macos_info_plist_declares_microphone() -> None:
     assert "measurement microphone" in plist
     entitlements = Path("packaging/macos/entitlements.plist").read_text(encoding="utf-8")
     assert "com.apple.security.device.audio-input" in entitlements
-    spec = Path("packaging/roomscope.spec").read_text(encoding="utf-8")
+    spec = Path("packaging/reverbscope.spec").read_text(encoding="utf-8")
     assert "packaging" in spec and "Info.plist" in spec
 
 
@@ -155,7 +155,7 @@ def test_installed_essentials_mode_ignores_wheel_stubs_and_stock_plugins(
     (root / "QtCharts.pyi").write_text("", encoding="utf-8")
     (plugins / "libqtvirtualkeyboardplugin.so").write_text("", encoding="utf-8")
     (qml / "libqtquicktimelineplugin.so").write_text("", encoding="utf-8")
-    # Essentials 6.9+ ships this versioned library although RoomScope never loads it.
+    # Essentials 6.9+ ships this versioned library although ReverbScope never loads it.
     (lib / "libQt6QuickTimeline.so.6").write_text("", encoding="utf-8")
     assert gate.check(root, installed_essentials=True) == []
     (root / "QtCharts.abi3.so").write_text("", encoding="utf-8")
@@ -177,7 +177,7 @@ def test_bundle_gate_matches_gpl_qml_plugins_by_directory(tmp_path: Path) -> Non
     timeline.mkdir()
     (timeline / "qmldir").write_text("", encoding="utf-8")
     # The same module inside a macOS .app bundle.
-    styles = tree / "RoomScope.app" / "Contents" / "Resources" / "qml" / "QtQuick"
+    styles = tree / "ReverbScope.app" / "Contents" / "Resources" / "qml" / "QtQuick"
     styles = styles / "VirtualKeyboard" / "Styles"
     styles.mkdir(parents=True)
     (styles / "KeyboardStyle.qml").write_text("", encoding="utf-8")
@@ -199,13 +199,13 @@ def test_bundle_gate_matches_gpl_qml_plugins_by_directory(tmp_path: Path) -> Non
     # Stripping empties and removes the module directories up to (and
     # including) the now-empty qml/ directories, never the root itself.
     assert not (tree / "_internal" / "PySide6" / "Qt" / "qml").exists()
-    assert not (tree / "RoomScope.app" / "Contents" / "Resources" / "qml").exists()
+    assert not (tree / "ReverbScope.app" / "Contents" / "Resources" / "qml").exists()
     assert tree.is_dir()
     assert gate.check(tree) == []
 
 
 def test_bundle_gate_rejects_any_qml_tree_in_a_frozen_bundle(tmp_path: Path) -> None:
-    """#17: RoomScope has no QML UI, so a collected QML tree means QtQml was imported."""
+    """#17: ReverbScope has no QML UI, so a collected QML tree means QtQml was imported."""
     gate = _load("check_bundle_contents")
     tree = tmp_path / "bundle"
     controls = tree / "_internal" / "PySide6" / "Qt" / "qml" / "QtQuick" / "Controls"

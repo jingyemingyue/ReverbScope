@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from roomscope.i18n import activate
+from reverbscope.i18n import activate
 from tests.zh_tokens import english_words
 
 
@@ -36,13 +36,13 @@ def app() -> QApplication:
 
 @pytest.fixture
 def zh(app: QApplication, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[None]:
-    from roomscope.ui.app import install_qt_translations
+    from reverbscope.ui.app import install_qt_translations
 
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
-    monkeypatch.setenv("ROOMSCOPE_EDITION", "developer")
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_EDITION", "developer")
     # The synthetic backend: device names are the user's data, and a CI runner
     # (macOS lists "Apple Virtual Sound Device") must not decide the result.
-    monkeypatch.setenv("ROOMSCOPE_AUDIO_BACKEND", "fake")
+    monkeypatch.setenv("REVERBSCOPE_AUDIO_BACKEND", "fake")
     activate("zh_CN")
     install_qt_translations(app)
     try:
@@ -81,8 +81,8 @@ def _texts(root: QWidget) -> list[str]:
 
 
 def _data_values() -> tuple[str, ...]:
-    from roomscope.audio.backend import get_backend
-    from roomscope.ui.settings_dialog import LANGUAGE_NAMES, RESTART_FOR_LANGUAGE
+    from reverbscope.audio.backend import get_backend
+    from reverbscope.ui.settings_dialog import LANGUAGE_NAMES, RESTART_FOR_LANGUAGE
 
     devices = tuple(device.name for device in get_backend("fake").list_devices())
     # Language names are written in their own language on purpose.
@@ -96,10 +96,10 @@ def _check(texts: list[str], where: str) -> None:
 
 
 def _measurements(home: Path) -> list[tuple[Path, object]]:
-    from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-    from roomscope.io.session_store import save_measurement
-    from roomscope.models.configuration import SweepSettings
-    from roomscope.models.session import MeasurementSession
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.configuration import SweepSettings
+    from reverbscope.models.session import MeasurementSession
     from tests.conftest import make_rir
 
     settings = SweepSettings(sample_rate=48000, duration_s=3.0)
@@ -119,9 +119,9 @@ def _measurements(home: Path) -> list[tuple[Path, object]]:
 
 
 def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> None:
-    from roomscope.interpretation import interpret
-    from roomscope.models.session import MeasurementSession
-    from roomscope.ui.main_window import MainWindow
+    from reverbscope.interpretation import interpret
+    from reverbscope.models.session import MeasurementSession
+    from reverbscope.ui.main_window import MainWindow
 
     saved = _measurements(tmp_path)
     window = MainWindow()
@@ -194,9 +194,9 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
 def _check_about_and_clocks(window: QWidget) -> None:
     import re
 
-    from roomscope.ui.main_window import about_box
-    from roomscope.ui.pages import separate_clocks_box
-    from roomscope.ui.workers import unexpected_error_text
+    from reverbscope.ui.main_window import about_box
+    from reverbscope.ui.pages import separate_clocks_box
+    from reverbscope.ui.workers import unexpected_error_text
 
     about = about_box(window)
     plain = re.sub(r"<[^>]+>", " ", about.text())
@@ -210,7 +210,7 @@ def _check_about_and_clocks(window: QWidget) -> None:
         *[button.text() for button in clocks.buttons()],
     ]
     _check(labels, "two clocks")
-    from roomscope.i18n import _
+    from reverbscope.i18n import _
 
     default = clocks.defaultButton()
     assert default is not None and default.text() == _("Cancel")
@@ -218,7 +218,7 @@ def _check_about_and_clocks(window: QWidget) -> None:
     _check([unexpected_error_text()], "unexpected error")
     from PySide6.QtGui import QFontDatabase
 
-    from roomscope.ui.theme import CJK_FALLBACK_FONTS
+    from reverbscope.ui.theme import CJK_FALLBACK_FONTS
 
     present = [name for name in CJK_FALLBACK_FONTS if name in set(QFontDatabase.families())]
     if present:
@@ -227,14 +227,14 @@ def _check_about_and_clocks(window: QWidget) -> None:
 
 
 def _cjk_fonts() -> list[str]:
-    from roomscope.ui.theme import font_families
+    from reverbscope.ui.theme import font_families
 
     return font_families()[1:]
 
 
 def test_settings_and_developer_tools_are_chinese(zh: None, app: QApplication) -> None:
-    from roomscope.ui.dev_tools import DeviceInspector, EnvironmentReport
-    from roomscope.ui.settings_dialog import SettingsDialog
+    from reverbscope.ui.dev_tools import DeviceInspector, EnvironmentReport
+    from reverbscope.ui.settings_dialog import SettingsDialog
 
     dialog = SettingsDialog()
     names = [dialog.language.itemText(i) for i in range(dialog.language.count())]
@@ -252,9 +252,9 @@ def test_settings_and_developer_tools_are_chinese(zh: None, app: QApplication) -
 
 
 def test_choosing_a_language_does_not_switch_the_open_windows(zh: None, app: QApplication) -> None:
-    from roomscope.i18n import current_locale
-    from roomscope.settings import load_settings
-    from roomscope.ui.settings_dialog import SettingsDialog
+    from reverbscope.i18n import current_locale
+    from reverbscope.settings import load_settings
+    from reverbscope.ui.settings_dialog import SettingsDialog
 
     dialog = SettingsDialog()
     dialog.language.setCurrentIndex(dialog.language.findData("en"))

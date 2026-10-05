@@ -8,12 +8,12 @@ import numpy as np
 import pytest
 from scipy.signal import butter, fftconvolve, sosfiltfilt
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.core.sweep import excitation_band_hz, generate_ess, measurement_signal
-from roomscope.io.wav import load_reference, write_sweep_file
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import EXCITATION_SOURCE_ESTIMATED, Validity
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.core.sweep import excitation_band_hz, generate_ess, measurement_signal
+from reverbscope.io.wav import load_reference, write_sweep_file
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import EXCITATION_SOURCE_ESTIMATED, Validity
 from tests.conftest import make_rir
 
 

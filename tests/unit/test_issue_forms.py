@@ -20,7 +20,7 @@ yaml = pytest.importorskip("yaml")
 ROOT = Path(__file__).resolve().parents[2]
 FORMS = ROOT / ".github" / "ISSUE_TEMPLATE"
 ZH_SUFFIX = "-zh-CN"
-REPO_BLOB = "https://github.com/jingyemingyue/RoomScope/blob/main/"
+REPO_BLOB = "https://github.com/jingyemingyue/ReverbScope/blob/main/"
 
 pytestmark = pytest.mark.skipif(
     not FORMS.is_dir(), reason="issue forms are not part of this checkout (sdist)"
@@ -138,7 +138,7 @@ _RULES = (
     ("fake", "fake"),
     ("Demo", "演示"),
     ("personal", "个人"),
-    ("roomscope doctor", "roomscope doctor"),
+    ("reverbscope doctor", "reverbscope doctor"),
 )
 
 

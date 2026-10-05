@@ -1,8 +1,8 @@
 #!/bin/sh
-# Sign RoomScope.app from the inside out (Apple TN2206; "Creating
+# Sign ReverbScope.app from the inside out (Apple TN2206; "Creating
 # distribution-signed code for macOS"): every loose Mach-O file under
 # Contents/Frameworks, then each nested .framework deepest first, then the
-# app, which signs Contents/MacOS/RoomScope. codesign --deep is used only to
+# app, which signs Contents/MacOS/ReverbScope. codesign --deep is used only to
 # verify: Apple advises against it for signing, because it applies one set
 # of options to every nested item. Entitlements go on the app only.
 #

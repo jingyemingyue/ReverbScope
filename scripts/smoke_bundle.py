@@ -1,20 +1,20 @@
-"""Smoke-test a release bundle or an on-PATH ``roomscope`` (ARCHITECTURE_V1.md §6.2).
+"""Smoke-test a release bundle or an on-PATH ``reverbscope`` (ARCHITECTURE_V1.md §6.2).
 
 Runs ``--version``, ``doctor --json`` (the report a bug reporter pastes: it
 must name every library version, find that PortAudio's cffi callbacks can be
 created, and, with ``--expect-commit``, name the commit the bundle was built
 from; ``--expect-package`` and ``--expect-machine`` check which edition and
 which CPU architecture it is), a fake-backend Standalone measurement, and the
-command line a first-time user runs: ``roomscope demo`` in English and in
+command line a first-time user runs: ``reverbscope demo`` in English and in
 Chinese, and ``--format json show`` with nothing but JSON on stdout.
 
 Desktop Edition: then ``gui --smoke`` offscreen, ``gui --smoke`` through the
-windowed ``roomscope-gui`` launcher when the bundle has one (Windows, Linux),
+windowed ``reverbscope-gui`` launcher when the bundle has one (Windows, Linux),
 and that launcher started without arguments, as a double-click does,
 requiring the GUI to stay open.
 
 Terminal Edition (``--terminal``): ``doctor`` must report no Qt, PySide6 or
-matplotlib, and ``roomscope gui`` must refuse with the Terminal Edition
+matplotlib, and ``reverbscope gui`` must refuse with the Terminal Edition
 sentence in English and Chinese (exit code 2) instead of a traceback.
 
 Nothing is sent to a loudspeaker.
@@ -34,22 +34,22 @@ def find_binary(root: Path | None, explicit: Path | None) -> Path:
     if explicit is not None:
         return explicit
     if root is not None:
-        for name in ("roomscope", "roomscope.exe"):
+        for name in ("reverbscope", "reverbscope.exe"):
             candidate = root / name
             if candidate.is_file():
                 return candidate
         for app in (
-            root / "RoomScope.app" / "Contents" / "MacOS" / "roomscope",
-            root.parent / "RoomScope.app" / "Contents" / "MacOS" / "roomscope",
+            root / "ReverbScope.app" / "Contents" / "MacOS" / "reverbscope",
+            root.parent / "ReverbScope.app" / "Contents" / "MacOS" / "reverbscope",
         ):
             if app.is_file():
                 return app
     from shutil import which
 
-    found = which("roomscope")
+    found = which("reverbscope")
     if found:
         return Path(found)
-    raise SystemExit("roomscope binary not found; pass --root or --roomscope")
+    raise SystemExit("reverbscope binary not found; pass --root or --reverbscope")
 
 
 def smoke_gui_argv(binary: Path) -> list[str]:
@@ -57,15 +57,15 @@ def smoke_gui_argv(binary: Path) -> list[str]:
 
 
 def find_gui_launcher(binary: Path) -> Path | None:
-    """The windowed ``roomscope-gui`` next to the console binary of a bundle.
+    """The windowed ``reverbscope-gui`` next to the console binary of a bundle.
 
     Only a PyInstaller bundle (an ``_internal`` folder beside the binary) has
-    one; the ``roomscope-gui`` script of a pip install opens the GUI without
+    one; the ``reverbscope-gui`` script of a pip install opens the GUI without
     reading its arguments, so ``gui --smoke`` would not end.
     """
     if not (binary.parent / "_internal").is_dir():
         return None
-    for name in ("roomscope-gui", "roomscope-gui.exe"):
+    for name in ("reverbscope-gui", "reverbscope-gui.exe"):
         candidate = binary.parent / name
         if candidate.is_file():
             return candidate
@@ -100,17 +100,17 @@ def check_stays_open(
 
 #: Libraries only the Desktop Edition ships (``doctor`` package names).
 GUI_PACKAGES = frozenset({"matplotlib", "PySide6_Essentials", "shiboken6"})
-#: The sentence ``roomscope gui`` prints in the Terminal Edition.
+#: The sentence ``reverbscope gui`` prints in the Terminal Edition.
 TERMINAL_GUI_TEXT = {
-    "en": "This is the Terminal Edition of RoomScope. Install the Desktop Edition to use the GUI.",
-    "zh_CN": "当前安装的是 RoomScope 终端版。如需图形界面，请安装桌面版。",
+    "en": "This is the Terminal Edition of ReverbScope. Install the Desktop Edition to use the GUI.",
+    "zh_CN": "当前安装的是 ReverbScope 终端版。如需图形界面，请安装桌面版。",
 }
 
 
 def _cli_env(home: Path) -> dict[str, str]:
-    """A clean environment: its own RoomScope home, no colour, UTF-8 pipes."""
+    """A clean environment: its own ReverbScope home, no colour, UTF-8 pipes."""
     env = os.environ.copy()
-    env["ROOMSCOPE_HOME"] = str(home)
+    env["REVERBSCOPE_HOME"] = str(home)
     env["NO_COLOR"] = "1"
     env.pop("FORCE_COLOR", None)
     env["PYTHONIOENCODING"] = "utf-8"
@@ -187,7 +187,7 @@ def check_first_run(binary: Path, work: Path) -> None:
         )
         if done.returncode != 0 or marker not in done.stdout or "Traceback" in done.stderr:
             raise SystemExit(
-                f"roomscope --lang {lang} demo failed ({done.returncode}):\n"
+                f"reverbscope --lang {lang} demo failed ({done.returncode}):\n"
                 f"{done.stdout}\n{done.stderr}"
             )
     done = subprocess.run(
@@ -209,7 +209,7 @@ def check_first_run(binary: Path, work: Path) -> None:
 
 
 def check_terminal_gui_refusal(binary: Path, work: Path) -> None:
-    """``roomscope gui`` in the Terminal Edition: a sentence and exit code 2, no traceback."""
+    """``reverbscope gui`` in the Terminal Edition: a sentence and exit code 2, no traceback."""
     env = _cli_env(work / "home")
     for lang, sentence in TERMINAL_GUI_TEXT.items():
         done = subprocess.run(
@@ -225,7 +225,7 @@ def check_terminal_gui_refusal(binary: Path, work: Path) -> None:
         wanted = "".join(sentence.split()) if lang == "zh_CN" else sentence
         if done.returncode != 2 or wanted not in flat or "Traceback" in done.stderr:
             raise SystemExit(
-                f"roomscope --lang {lang} gui in the Terminal Edition ({done.returncode}):\n"
+                f"reverbscope --lang {lang} gui in the Terminal Edition ({done.returncode}):\n"
                 f"{done.stderr}"
             )
 
@@ -243,8 +243,8 @@ def smoke(
     first_run: bool = True,
 ) -> None:
     version = subprocess.run([str(binary), "--version"], check=True, capture_output=True, text=True)
-    if "roomscope" not in version.stdout.lower() and "roomscope" not in version.stderr.lower():
-        raise SystemExit(f"--version did not name roomscope: {version.stdout!r}")
+    if "reverbscope" not in version.stdout.lower() and "reverbscope" not in version.stderr.lower():
+        raise SystemExit(f"--version did not name reverbscope: {version.stdout!r}")
     check_doctor(
         binary,
         expect_commit,
@@ -282,7 +282,7 @@ def smoke(
         subprocess.run(smoke_gui_argv(binary), check=True, env=env, timeout=120)
         launcher = find_gui_launcher(binary)
         if launcher is None and require_gui_launcher:
-            raise SystemExit(f"no roomscope-gui launcher next to {binary}")
+            raise SystemExit(f"no reverbscope-gui launcher next to {binary}")
         if launcher is not None:
             subprocess.run(smoke_gui_argv(launcher), check=True, env=env, timeout=120)
             # What Explorer, the Start menu, AppRun and the desktop file do.
@@ -291,8 +291,8 @@ def smoke(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, help="bundle directory (dist/roomscope)")
-    parser.add_argument("--roomscope", type=Path, help="path to the roomscope binary")
+    parser.add_argument("--root", type=Path, help="bundle directory (dist/reverbscope)")
+    parser.add_argument("--reverbscope", type=Path, help="path to the reverbscope binary")
     parser.add_argument("--out", type=Path, help="session output directory")
     parser.add_argument(
         "--no-gui",
@@ -302,11 +302,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--require-gui-launcher",
         action="store_true",
-        help="fail when the windowed roomscope-gui launcher is missing (Windows, Linux)",
+        help="fail when the windowed reverbscope-gui launcher is missing (Windows, Linux)",
     )
     parser.add_argument(
         "--expect-commit",
-        help="fail unless roomscope doctor reports this build commit (release builds)",
+        help="fail unless reverbscope doctor reports this build commit (release builds)",
     )
     parser.add_argument(
         "--terminal",
@@ -329,7 +329,7 @@ def main(argv: list[str] | None = None) -> int:
         help="skip the demo and JSON checks (a second smoke of the same build)",
     )
     args = parser.parse_args(argv)
-    binary = find_binary(args.root, args.roomscope)
+    binary = find_binary(args.root, args.reverbscope)
     out = args.out or Path("smoke-session")
     out.mkdir(parents=True, exist_ok=True)
     smoke(

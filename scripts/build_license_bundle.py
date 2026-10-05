@@ -6,7 +6,7 @@ license) from ``packaging/licenses/``, copies the libsndfile LGPL-2.1 text and
 source notes that soundfile keeps outside its metadata, adds short notices
 (libsndfile, FreeType, Qhull, Agg), and fails if a required package still has no license text or if
 PySide6 is installed but the LGPL / GPL texts are missing. matplotlib's old
-``ttconv`` module is treated as resolved: matplotlib 3.10+ (which RoomScope
+``ttconv`` module is treated as resolved: matplotlib 3.10+ (which ReverbScope
 requires) no longer contains it.
 """
 
@@ -38,8 +38,8 @@ REQUIRED = [
 
 OPTIONAL = ["PySide6_Essentials", "shiboken6", "PySide6"]
 
-#: What the Terminal Edition ships (``ROOMSCOPE_PACKAGE=terminal`` in
-#: packaging/roomscope.spec): the analysis and audio stack, without Qt and
+#: What the Terminal Edition ships (``REVERBSCOPE_PACKAGE=terminal`` in
+#: packaging/reverbscope.spec): the analysis and audio stack, without Qt and
 #: without matplotlib and its dependencies.
 TERMINAL_REQUIRED = [
     "numpy",
@@ -113,7 +113,7 @@ KNOWN_NOTICES = {
     ),
     "ttconv": (
         "matplotlib's historical ttconv TrueType converter is not present in\n"
-        "matplotlib 3.10 and later (fonttools is used instead). RoomScope requires\n"
+        "matplotlib 3.10 and later (fonttools is used instead). ReverbScope requires\n"
         "matplotlib>=3.10, so ttconv is not bundled. Status: resolved.\n"
     ),
 }
@@ -237,7 +237,7 @@ def build(out: Path, *, texts_dir: Path = TEXTS_DIR, terminal: bool = False) -> 
     elif not qt_installed:
         qt_line = "PySide6 not installed"
     lines = [
-        "RoomScope third-party license bundle",
+        "ReverbScope third-party license bundle",
         f"unresolved: {', '.join(unresolved) if unresolved else 'none'}",
         f"qt: {qt_line}",
         "ttconv: resolved (not present in matplotlib>=3.10)",

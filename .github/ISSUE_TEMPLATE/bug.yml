@@ -1,5 +1,5 @@
 name: Bug report (English)
-description: RoomScope crashes, shows an error, or does something it should not.
+description: ReverbScope crashes, shows an error, or does something it should not.
 title: "[bug] "
 labels: ["bug"]
 body:
@@ -12,7 +12,7 @@ body:
   - type: input
     id: version
     attributes:
-      label: RoomScope version
+      label: ReverbScope version
       description: The first two lines of the environment report (version and build).
       placeholder: "0.4.1, build 1a2b3c4"
     validations:
@@ -20,13 +20,13 @@ body:
   - type: dropdown
     id: install
     attributes:
-      label: How RoomScope was installed
+      label: How ReverbScope was installed
       options:
-        - Desktop Edition, Windows installer (RoomScope-Desktop-Windows-x64-Setup.exe)
+        - Desktop Edition, Windows installer (ReverbScope-Desktop-Windows-x64-Setup.exe)
         - Desktop Edition, Windows zip
         - Desktop Edition, macOS disk image (.dmg)
         - Desktop Edition, Linux archive (.tar.gz)
-        - Terminal Edition (RoomScope-Terminal-…)
+        - Terminal Edition (ReverbScope-Terminal-…)
         - pip / source checkout
         - Other
     validations:
@@ -59,7 +59,7 @@ body:
     id: actual
     attributes:
       label: What happened instead
-      description: The message RoomScope showed, word for word if you can.
+      description: The message ReverbScope showed, word for word if you can.
     validations:
       required: true
   - type: textarea
@@ -69,7 +69,7 @@ body:
       description: |
         In the app: **Help → Environment Report for Bug Reports → Copy**
         (press *Probe sample rates* first when the problem involves an audio
-        device). From a terminal: `roomscope doctor` (add `--probe` for device
+        device). From a terminal: `reverbscope doctor` (add `--probe` for device
         problems). Review it before posting: device names can contain personal
         names.
       render: text
@@ -80,8 +80,8 @@ body:
     attributes:
       label: Log or traceback (optional)
       description: |
-        The log file is `roomscope.log` in the data folder the report names
+        The log file is `reverbscope.log` in the data folder the report names
         (Environment Report → Open Data Folder). Paste the lines around the
-        error. A session bundle (`roomscope session bundle <session> --out
+        error. A session bundle (`reverbscope session bundle <session> --out
         report.zip`) is welcome when a session misbehaves.
       render: text

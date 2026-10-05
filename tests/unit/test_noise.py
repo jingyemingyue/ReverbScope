@@ -3,8 +3,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.filters import iec_band
-from roomscope.core.noise import (
+from reverbscope.core.filters import iec_band
+from reverbscope.core.noise import (
     NOISE_FLOOR_DBFS,
     QuietSegment,
     analyze_noise,
@@ -14,7 +14,7 @@ from roomscope.core.noise import (
     select_quiet_part,
     sweep_level_dbfs,
 )
-from roomscope.models.configuration import DEFAULT_OCTAVE_BANDS_HZ
+from reverbscope.models.configuration import DEFAULT_OCTAVE_BANDS_HZ
 
 
 def _whole(x: np.ndarray, source: str = "pre-sweep") -> QuietSegment:

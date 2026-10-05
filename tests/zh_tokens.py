@@ -2,7 +2,7 @@
 
 Product, standard and DAW names, units and file formats stay in Latin
 letters in the Chinese interface; everything else a user reads must be
-Chinese. Used by the GUI and CLI zh_CN gates. Commands (``roomscope
+Chinese. Used by the GUI and CLI zh_CN gates. Commands (``reverbscope
 analyze``), file names (``result.json``) and flags (``--probe``) are removed
 before a text is checked.
 """
@@ -13,8 +13,8 @@ import re
 
 ALLOWED = frozenset(
     {
-        # RoomScope, metrics, units, standards
-        "RoomScope",
+        # ReverbScope, metrics, units, standards
+        "ReverbScope",
         "RT60",
         "EDT",
         "T20",
@@ -61,7 +61,7 @@ ALLOWED = frozenset(
         "Thunderbolt",
         "fake",
         "portaudio",
-        # the value of --format ("roomscope --format json")
+        # the value of --format ("reverbscope --format json")
         "json",
         "pip",
         # DAWs and their feature names (menus stay in the vendors' language)
@@ -112,8 +112,8 @@ PHRASES = (
     "GitHub Issue",
 )
 _URL = re.compile(r"https?://\S+")
-# A command and, for "project" and "session", its action ("roomscope project init").
-_COMMAND = re.compile(r"roomscope(?:[ \t]+[a-z][a-z-]*){0,2}(?:[ \t]+--?[\w-]+)*")
+# A command and, for "project" and "session", its action ("reverbscope project init").
+_COMMAND = re.compile(r"reverbscope(?:[ \t]+[a-z][a-z-]*){0,2}(?:[ \t]+--?[\w-]+)*")
 _WORD = re.compile(r"(?<![\w./\\%{\[-])[A-Za-z][A-Za-z']{2,}(?![\w./\\}\]-])")
 
 

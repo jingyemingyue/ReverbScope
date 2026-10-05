@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=ReverbScope
+Comment=DAW-independent recording environment analyzer
+Exec=reverbscope-gui
+Icon=reverbscope
+Terminal=false
+Categories=AudioVideo;Audio;
+StartupWMClass=reverbscope

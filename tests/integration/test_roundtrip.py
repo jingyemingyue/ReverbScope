@@ -6,15 +6,15 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.core.sweep import measurement_signal, reference_pulse
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.core.sweep import measurement_signal, reference_pulse
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import (
     SUPPORTED_SAMPLE_RATES,
     AnalysisSettings,
     SweepSettings,
 )
-from roomscope.models.result import Validity
+from reverbscope.models.result import Validity
 from tests.conftest import alias_free_distortion, fr_median_db, make_rir
 
 

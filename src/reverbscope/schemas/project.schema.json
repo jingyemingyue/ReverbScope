@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReverbScope project.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "name", "positions"],
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "name": { "type": "string" },
+    "notes": { "type": "string" },
+    "reverbscope_version": { "type": "string" },
+    "positions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["label", "session_dirs"],
+        "properties": {
+          "label": { "type": "string" },
+          "session_dirs": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    }
+  }
+}

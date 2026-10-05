@@ -13,7 +13,7 @@ a place to update. Context and alternatives live in that document.
 | Internationalisation | stdlib gettext; Babel is an optional `i18n-dev` extra |
 | Core diagnostics | English in `result.json`; verbatim in the UI |
 | Schemas | Hand-maintained JSON Schema; `jsonschema` in tests only |
-| Settings | JSON under `ROOMSCOPE_HOME`, written by package code |
+| Settings | JSON under `REVERBSCOPE_HOME`, written by package code |
 | Project index | `project.json` listing session folders |
 | Comparison time origin | Direct sound; electrical zero when both have loopback |
 | Loopback compensation | Regularised division inside the excitation band |

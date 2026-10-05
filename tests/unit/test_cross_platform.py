@@ -13,19 +13,19 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import SessionError
-from roomscope.i18n import normalize_lang
-from roomscope.io.project_store import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import SessionError
+from reverbscope.i18n import normalize_lang
+from reverbscope.io.project_store import (
     add_session,
     list_project_sessions,
     project_file,
     save_project,
 )
-from roomscope.io.session_store import _copy_into, bundle_session, save_measurement
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.project import Project
-from roomscope.models.session import MeasurementSession
+from reverbscope.io.session_store import _copy_into, bundle_session, save_measurement
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.project import Project
+from reverbscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
 
@@ -170,7 +170,7 @@ def test_session_list_survives_dates_windows_cannot_convert(
     pytest.importorskip("PySide6")
     from datetime import datetime
 
-    from roomscope.ui import browser
+    from reverbscope.ui import browser
 
     def refuse(self: datetime, tz: object = None) -> datetime:
         raise OSError(22, "Invalid argument")
@@ -191,14 +191,14 @@ def test_log_rotation_keeps_logging_when_the_file_is_locked(
 ) -> None:
     from logging.handlers import RotatingFileHandler
 
-    from roomscope.logging_config import _SharedRotatingFileHandler
+    from reverbscope.logging_config import _SharedRotatingFileHandler
 
     def locked(self: RotatingFileHandler) -> None:
         raise PermissionError(32, "The process cannot access the file")
 
     monkeypatch.setattr(RotatingFileHandler, "doRollover", locked)
-    handler = _SharedRotatingFileHandler(tmp_path / "roomscope.log", maxBytes=10, backupCount=1)
-    logger = logging.getLogger("roomscope-test-rotation")
+    handler = _SharedRotatingFileHandler(tmp_path / "reverbscope.log", maxBytes=10, backupCount=1)
+    logger = logging.getLogger("reverbscope-test-rotation")
     logger.propagate = False
     logger.addHandler(handler)
     errors = io.StringIO()
@@ -210,12 +210,12 @@ def test_log_rotation_keeps_logging_when_the_file_is_locked(
         logger.removeHandler(handler)
         handler.close()
     assert "Logging error" not in errors.getvalue()
-    assert "record 4" in (tmp_path / "roomscope.log").read_text(encoding="utf-8")
+    assert "record 4" in (tmp_path / "reverbscope.log").read_text(encoding="utf-8")
 
 
 def test_default_devices_are_marked(monkeypatch: pytest.MonkeyPatch) -> None:
     """sounddevice returns the defaults as an indexable _InputOutputPair."""
-    from roomscope.audio import devices
+    from reverbscope.audio import devices
 
     class Pair:
         def __init__(self, a: int, b: int) -> None:
@@ -267,7 +267,7 @@ def test_default_devices_are_marked(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_cli_output_to_a_pipe_is_utf8(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     import importlib
 
-    cli = importlib.import_module("roomscope.cli.main")
+    cli = importlib.import_module("reverbscope.cli.main")
 
     raw = io.BytesIO()
     stream = io.TextIOWrapper(raw, encoding="cp1252", errors="strict")

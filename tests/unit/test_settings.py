@@ -2,11 +2,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from roomscope.settings import UserSettings, load_settings, save_settings, settings_path
+from reverbscope.settings import UserSettings, load_settings, save_settings, settings_path
 
 
 def test_settings_round_trip_and_defaults(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     first = load_settings()
     assert first.copy_recording is True
     assert first.language == ""
@@ -25,7 +25,7 @@ def test_settings_round_trip_and_defaults(tmp_path: Path, monkeypatch) -> None:
 
 
 def test_settings_ignore_unknown_and_unreadable(tmp_path: Path, monkeypatch) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     extra = UserSettings.from_dict(
         {
             "schema_version": 1,

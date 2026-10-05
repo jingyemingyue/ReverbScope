@@ -1,9 +1,9 @@
-# Contributing to RoomScope
+# Contributing to ReverbScope
 
 > 中文用户：欢迎在 issue 中用中文提问、报告问题和提交测试结果（中文表单见“New issue”页面）；本贡献指南只提供英文版。
 
 Thank you for helping build a measurement tool people can trust. The rules
-below exist so that every number RoomScope prints stays defensible.
+below exist so that every number ReverbScope prints stays defensible.
 
 Please also follow the [Code of Conduct](CODE_OF_CONDUCT.md). Security reports
 go through [SECURITY.md](SECURITY.md), not public issues.
@@ -26,9 +26,9 @@ go through [SECURITY.md](SECURITY.md), not public issues.
    gets a row in `docs/DEPENDENCIES.md` with its upstream license, bundled
    native libraries and obligations. Copyleft (GPL/AGPL/LGPL/MPL) dependencies
    need an explicit discussion in the pull request.
-5. **Core stays pure.** `roomscope.core` takes and returns NumPy arrays and
+5. **Core stays pure.** `reverbscope.core` takes and returns NumPy arrays and
    dataclasses; no Qt, no device access, no file I/O. Front ends only call
-   `roomscope.core.pipeline.analyze`.
+   `reverbscope.core.pipeline.analyze`.
 6. **Honest units.** dBFS unless calibrated. No "room score".
 7. **Safety.** Nothing changes system volume, audio configuration or DAW
    settings unless the user opts in (the only such option today is
@@ -77,10 +77,10 @@ meta-package, so GPL-only Qt modules never land in a developer environment.
 
 ## Adding a recording profile
 
-Implement `RecordingProfile` (see `src/roomscope/interpretation/profiles.py`),
+Implement `RecordingProfile` (see `src/reverbscope/interpretation/profiles.py`),
 register it in `_PROFILES`, add a synthetic test in
 `tests/unit/test_interpretation.py`, and document the thresholds in
-`docs/MEASUREMENT_METHODOLOGY.md` §8. Do not put advice inside `roomscope.core`.
+`docs/MEASUREMENT_METHODOLOGY.md` §8. Do not put advice inside `reverbscope.core`.
 
 ## Commit and release policy
 
@@ -93,7 +93,7 @@ register it in `_PROFILES`, add a synthetic test in
 ## Reporting problems and test results
 
 Every issue template asks for the environment report: **Help → Environment
-Report for Bug Reports** in the app, or `roomscope doctor` in a terminal
+Report for Bug Reports** in the app, or `reverbscope doctor` in a terminal
 (`--probe` adds the sample rates each device accepts; nothing is played). It
 names the version, the build commit, the OS, the settings and the audio
 devices, with your home folder shown as `~`.
@@ -101,8 +101,8 @@ devices, with your home folder shown as `~`.
 * **Bug report**: a crash, an error, or wrong behaviour.
 * **Measurement problem**: a number looks wrong. Attach the sweep sidecar
   JSON, the recorded WAV (or a link), `result.json`, or a session bundle
-  (`roomscope session bundle <session> --out report.zip`).
+  (`reverbscope session bundle <session> --out report.zip`).
 * **Audio interface test report** and **DAW compatibility report**: you ran
-  RoomScope with real hardware or through a DAW. These are the only source of
+  ReverbScope with real hardware or through a DAW. These are the only source of
   the PASS/FAIL cells in [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md);
   a failed run is as useful as a passed one.

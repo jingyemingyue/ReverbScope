@@ -5,15 +5,15 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>RoomScope</string>
+	<string>ReverbScope</string>
 	<key>CFBundleExecutable</key>
-	<string>RoomScope</string>
+	<string>ReverbScope</string>
 	<key>CFBundleIdentifier</key>
-	<string>org.roomscope.RoomScope</string>
+	<string>org.reverbscope.ReverbScope</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>RoomScope</string>
+	<string>ReverbScope</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>LSMinimumSystemVersion</key>
@@ -21,6 +21,6 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>RoomScope records the measurement microphone during a Standalone sweep. The recording stays on this computer.</string>
+	<string>ReverbScope records the measurement microphone during a Standalone sweep. The recording stays on this computer.</string>
 </dict>
 </plist>
