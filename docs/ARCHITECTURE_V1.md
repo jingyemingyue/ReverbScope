@@ -689,7 +689,10 @@ is asked on every measurement, as the brief's safety rules require.
   `pyproject.toml`) so a bundle can be rebuilt from its tag; the library
   keeps its version ranges.
 * **macOS:** `Info.plist` with `NSMicrophoneUsageDescription` (without it the
-  system denies the microphone silently), hardened runtime, the
+  system denies the microphone silently) and `CFBundleLocalizations` `en`,
+  `zh-Hans`, with the Chinese purpose string in
+  `zh-Hans.lproj/InfoPlist.strings` (AppKit's own panels, menu items and the
+  microphone prompt follow only a language the bundle declares), hardened runtime, the
   `com.apple.security.device.audio-input` entitlement, Developer ID signing
   and notarization. **Windows:** Authenticode signing of the installer and
   the executable. Both need identities only the maintainer can hold

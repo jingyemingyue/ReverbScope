@@ -166,6 +166,35 @@ def test_inno_setup_and_linux_desktop_files_exist() -> None:
     assert "hdiutil" in dmg
 
 
+def test_the_mac_app_declares_its_chinese_localization(tmp_path: Path) -> None:
+    """Review finding: Info.plist declared English only and the bundle had no
+    .lproj, so on a Chinese Mac the microphone prompt's explanation, the
+    native file panels and the app menu stayed English."""
+    import plistlib
+    import re
+    import shutil
+
+    macos = Path("packaging/macos")
+    info = plistlib.loads((macos / "Info.plist").read_bytes())
+    assert info["CFBundleDevelopmentRegion"] == "en"
+    assert info["CFBundleLocalizations"] == ["en", "zh-Hans"]
+    strings = plistlib.loads((macos / "zh-Hans.lproj" / "InfoPlist.strings").read_bytes())
+    purpose = strings["NSMicrophoneUsageDescription"]
+    assert re.search(r"[一-鿿]", purpose) and "话筒" in purpose
+    assert set(strings) <= set(info), "a localized key that Info.plist does not have"
+    spec = Path("packaging/reverbscope.spec").read_text(encoding="utf-8")
+    assert '"*.lproj/InfoPlist.strings"' in spec and "localized," in spec
+    # The DMG check finds the folder where BUNDLE puts it, and misses it otherwise.
+    module = _load("check_macos_dmg", Path("scripts") / "check_macos_dmg.py")
+    app = tmp_path / "ReverbScope.app"
+    resources = app / "Contents" / "Resources"
+    resources.mkdir(parents=True)
+    with pytest.raises(AssertionError):
+        module.check_localizations(app, info)
+    shutil.copytree(macos / "zh-Hans.lproj", resources / "zh-Hans.lproj")
+    module.check_localizations(app, info)
+
+
 def test_smoke_bundle_finds_explicit_binary(tmp_path: Path) -> None:
     module = _load("smoke_bundle", Path("scripts") / "smoke_bundle.py")
     fake = tmp_path / "reverbscope"

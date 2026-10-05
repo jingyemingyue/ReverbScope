@@ -138,7 +138,7 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 * **PyPI：** `reverbscope` 名称 2026-09-22 核实可用，应在第一个预发布前注册（**维护者决定**）。纯 Python wheel + sdist，trusted publishing（OIDC，无长期 token），发布环境需维护者批准。`pipx install "reverbscope[gui]"` 是有 Python 的用户的推荐路径；`gui-scripts` 提供 Windows 无控制台启动器。
 * **桌面包：** PyInstaller one-dir（macOS `.app` 装入 `.dmg`；Windows zip + Inno Setup；Linux AppImage 在最旧受支持 Ubuntu LTS 上构建），保持 Qt、libsndfile、libquadmath 为可替换的共享库以满足 LGPL。macOS 分 arm64 / x86_64 两个包。
 * **打包门禁（CI 阻断）：** 包内不得含 GPL-only Qt 模块（白名单 QtCore / QtGui / QtWidgets / Linux 上的 QtDBus）、不得含 `*asio*.dll`、必须含 `scripts/build_license_bundle.py` 生成的 `THIRD_PARTY_LICENSES/`（含 LGPL/GPL 文本、Qt 与 PySide6 源码指针、FreeType 致谢、PortAudio 许可证等）。DEPENDENCIES.md §6 中 UNKNOWN / NEEDS REVIEW 的条目必须在第一个包发布前解决。
-* **签名：** macOS 需 `NSMicrophoneUsageDescription`、hardened runtime、audio-input entitlement、Developer ID 签名与公证；Windows 需 Authenticode。身份只能由维护者持有（**维护者决定**）；未签名的包明确标注并在用户指南里给出绕过步骤。
+* **签名：** macOS 需 `NSMicrophoneUsageDescription`（并在 `CFBundleLocalizations` 中声明 `en` 和 `zh-Hans`，中文用途说明放在 `zh-Hans.lproj/InfoPlist.strings`：系统自带的面板、菜单项和麦克风授权提示只会使用应用包声明过的语言）、hardened runtime、audio-input entitlement、Developer ID 签名与公证；Windows 需 Authenticode。身份只能由维护者持有（**维护者决定**）；未签名的包明确标注并在用户指南里给出绕过步骤。
 * **发布流程：** 维护者推 `v*` tag 触发 `release.yml`：全矩阵测试 → PyPI（rc 作为预发布）→ 三平台打包与门禁 → `SHA256SUMS`、CycloneDX SBOM、许可证包 → 草稿 Release，由维护者发布。版本号唯一来源是 `pyproject.toml`，测试确保 `__version__` 一致。
 
 ## 7. 质量门槛（M10、M11）

@@ -201,8 +201,19 @@ if sys.platform == "darwin" and not TERMINAL:
         upx=False,
         name="reverbscope-gui",
     )
+    # AppKit picks the app's language among the localizations the bundle
+    # declares (Info.plist CFBundleLocalizations and the .lproj folders); with
+    # English alone, the native file panels, the app menu and the microphone
+    # prompt stayed English in the Chinese app. A translated purpose string can
+    # only come from <language>.lproj/InfoPlist.strings, which BUNDLE puts in
+    # Contents/Resources.
+    localized = [
+        (f"{strings.parent.name}/{strings.name}", str(strings), "DATA")
+        for strings in sorted((ROOT / "packaging" / "macos").glob("*.lproj/InfoPlist.strings"))
+    ]
     app = BUNDLE(  # noqa: F821
         gui_coll,
+        localized,
         name="ReverbScope.app",
         icon=None,
         bundle_identifier="org.reverbscope.ReverbScope",
