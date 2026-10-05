@@ -83,7 +83,8 @@ default suggestion (low / high), not a measured round trip.
   / *- Output* and DirectSound's *Primary Sound Capture Driver* / *Primary
   Sound Driver* (DirectSound's default devices) next to the real devices
   [12]; they play through whatever device Windows uses by default, so
-  ReverbScope never marks them recommended.
+  ReverbScope never marks them recommended and checks the default devices
+  behind them for separate clocks (§3).
 * **Microphone privacy:** Settings ▸ Privacy & security ▸ Microphone ▸
   *Microphone access* and *Let desktop apps access your microphone* [25].
 
@@ -163,7 +164,8 @@ illustration, 50 ppm over 10 s is 0.5 ms, 24 samples at 48 kHz).
   loopback with less than 99 % of its energy within 10 ms after the peak, and
   its compensation window spans 5 ms before to 15 ms after the peak
   (`core/loopback.py`), so it cannot absorb a larger skew. ReverbScope warns if
-  playback and recording are different physical devices (`audio/inventory.py`).
+  playback and recording are different physical devices (`audio/inventory.py`);
+  a Windows system alias counts as the default device it plays through.
 
 ## 4. How ReverbScope probes devices
 

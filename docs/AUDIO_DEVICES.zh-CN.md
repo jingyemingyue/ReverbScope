@@ -70,7 +70,8 @@
   / *- Output* 和 DirectSound 的 *Primary Sound Capture Driver* / *Primary Sound
   Driver*（即 DirectSound 的默认设备；中文 Windows 上名为“Microsoft 声音映射器”和
   “主声音捕获驱动程序”/“主声音驱动程序”）[12]；它们经由 Windows 当前的默认设备
-  播放和录音，所以 ReverbScope 从不把它们标为推荐。
+  播放和录音，所以 ReverbScope 从不把它们标为推荐，检查独立时钟时也按它们背后的默认
+  设备比较（第 3 节）。
 * **麦克风隐私：** 设置 ▸ 隐私和安全性 ▸ 麦克风 ▸ 打开*麦克风访问权限*和*允许桌面
   应用访问你的麦克风* [25]。
 
@@ -135,7 +136,8 @@ Core Audio 用两个回调之间的环形缓冲连接两个设备 [11]。两个�
 * **回送能暴露漂移。** 把输出设备回送到输入设备的第二个输入；回送会显示
   同样的倾斜。ReverbScope 会拒绝峰值后 10 ms 内能量不足 99 % 的回送，其补偿窗口
   只覆盖峰值前 5 ms 到峰值后 15 ms（`core/loopback.py`），因此无法吸收更大的倾斜。
-  播放和录音是不同物理设备时 ReverbScope 会给出警告（`audio/inventory.py`）。
+  播放和录音是不同物理设备时 ReverbScope 会给出警告（`audio/inventory.py`）；Windows
+  的系统别名按它所经由的默认设备计。
 
 ## 4. ReverbScope 如何探测设备
 

@@ -440,6 +440,39 @@ def test_separate_clocks_are_warned() -> None:
     assert warning is not None and "separate sample clocks" in warning
 
 
+def test_system_aliases_are_compared_as_the_default_devices(windows: WindowsBackend) -> None:
+    """Review finding: every take on DirectSound's preselected defaults, "Primary
+    Sound Driver" and "Primary Sound Capture Driver", asked "Two devices, two
+    clocks: measure anyway?", although both follow the one default interface."""
+    from dataclasses import replace
+
+    inventory = build_inventory(windows, probe_rates=False, platform="win32")
+    apis = inventory.host_apis
+    devices = _devices()
+    assert separate_clocks_warning(devices, 12, 13, apis) is None
+    assert separate_clocks_warning(devices, 10, 11, apis) is None
+    # One alias next to a real device of the default interface.
+    assert separate_clocks_warning(devices, 12, 4, apis) is None
+    plan = preflight(
+        StreamCheckBackend(),
+        inventory,
+        input_device=None,
+        output_device=4,
+        input_channels=[1],
+        output_channel=1,
+        sample_rate=48000,
+    )
+    assert (plan.input_device, plan.output_device) == (12, 4) and plan.clock_warning is None
+    # The aliases still warn when the defaults are two devices: the Focusrite
+    # records and the laptop's Realtek speakers play.
+    realtek_out = [replace(d, is_default_output=d.index == 2) for d in devices]
+    warning = separate_clocks_warning(realtek_out, 12, 13, apis)
+    assert warning is not None and "(Speakers (Realtek(R) Audio))" in warning
+    # No real default device to stand in for an alias: nothing to compare.
+    no_defaults = [replace(d, is_default_input=False, is_default_output=False) for d in devices]
+    assert separate_clocks_warning(no_defaults, 12, 7, apis) is None
+
+
 def test_json_inventory_round_trips(windows: WindowsBackend) -> None:
     import json
 

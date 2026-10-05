@@ -446,14 +446,19 @@ def _portaudio_version(backend: AudioBackend) -> str | None:
 
 
 def separate_clocks_warning(
-    devices: Sequence[DeviceInfo], input_device: int | None, output_device: int | None
+    devices: Sequence[DeviceInfo],
+    input_device: int | None,
+    output_device: int | None,
+    host_apis: Sequence[HostApiInfo] = (),
 ) -> str | None:
     """A warning when playback and recording use different physical devices.
 
     Two devices run on two sample clocks; the drift between them stretches the
     recorded sweep against the reference and smears the deconvolved response
     (Farina 2007). One interface for both, or an aggregate device with drift
-    correction, avoids it.
+    correction, avoids it. A system alias (:func:`is_system_alias`) is
+    compared as the system default device it plays through; without one that
+    is a real device there is nothing to compare, and no warning.
     """
     by_index = {device.index: device for device in devices}
     inp = by_index.get(input_device) if input_device is not None else None
@@ -462,6 +467,8 @@ def separate_clocks_warning(
         inp = next((d for d in devices if d.is_default_input), None)
     if out is None:
         out = next((d for d in devices if d.is_default_output), None)
+    inp = _behind_alias(inp, devices, host_apis, "is_default_input")
+    out = _behind_alias(out, devices, host_apis, "is_default_output")
     if inp is None or out is None or host_api_kind(inp.host_api) == "fake":
         return None
     if same_adapter(inp, out):
@@ -472,6 +479,26 @@ def separate_clocks_warning(
         "or an aggregate device with drift correction (macOS), and check the result with a "
         "loopback"
     ).format(output=out.name, input=inp.name)
+
+
+def _behind_alias(
+    device: DeviceInfo | None,
+    devices: Sequence[DeviceInfo],
+    host_apis: Sequence[HostApiInfo],
+    default_attr: str,
+) -> DeviceInfo | None:
+    """The device a system alias plays through: the system default device.
+
+    "Primary Sound Driver" and "Primary Sound Capture Driver" share no
+    adapter name, yet both follow the Windows defaults, which are usually
+    one interface.
+    """
+    if device is None or not is_system_alias(device, host_apis):
+        return device
+    default = next((d for d in devices if getattr(d, default_attr)), None)
+    if default is None or is_system_alias(default, host_apis):
+        return None
+    return default
 
 
 def check_channels(
@@ -624,7 +651,7 @@ def preflight(
             backend.check_sample_rate(
                 device.index, sample_rate, kind=kind, channels=channels, options=options
             )
-    return DevicePlan(inp, out, separate_clocks_warning(devices, inp, out))
+    return DevicePlan(inp, out, separate_clocks_warning(devices, inp, out, inventory.host_apis))
 
 
 def check_host_api_options(device: DeviceInfo, options: StreamOptions | None) -> None:
