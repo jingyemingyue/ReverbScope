@@ -469,7 +469,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
 
 
 def _legend(c: Console, validities: Sequence[Validity]) -> list[str]:
-    """``? unreliable   – outside the sweep's range``: what each symbol means,
+    """``? unreliable   – outside the excitation range``: what each symbol means,
     as many entries per line as the width holds (an entry is never split)."""
     lines: list[str] = []
     line = ""

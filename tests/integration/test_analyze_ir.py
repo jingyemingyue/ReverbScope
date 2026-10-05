@@ -242,6 +242,22 @@ def test_cli_analyze_ir_json_round_trip(
     assert "ReverbScope analysis" in capsys.readouterr().out
 
 
+def test_cli_analyze_ir_legend_names_no_sweep(
+    tmp_path: Path, full_and_ir: tuple, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Bands left out by --band were explained as "outside the sweep's range",
+    although an imported impulse response has no sweep."""
+    from reverbscope.cli.main import main
+
+    _full, ir = full_and_ir
+    ir_path = write_wav(tmp_path / "room_ir.wav", ir.samples, ir.sample_rate, subtype="FLOAT")
+    code = main(["analyze-ir", "--ir", str(ir_path), "--band", "100", "8000"])
+    captured = capsys.readouterr()
+    assert code == 0, captured.err
+    assert "– outside the excitation range" in captured.out
+    assert "sweep's range" not in captured.out
+
+
 def test_cli_analyze_ir_refuses_a_recording(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

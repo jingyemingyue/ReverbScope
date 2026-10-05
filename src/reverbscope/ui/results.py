@@ -63,7 +63,7 @@ VALIDITY_DISPLAY = {
     Validity.UNRELIABLE: ("unreliable", "warn"),
     Validity.INSUFFICIENT_RANGE: ("insufficient range", "warn"),
     Validity.NOT_COMPUTED: ("not computed", "neutral"),
-    Validity.OUTSIDE_EXCITATION: ("outside the sweep's range", "neutral"),
+    Validity.OUTSIDE_EXCITATION: ("outside the excitation range", "neutral"),
     Validity.NOT_COMPARABLE: ("not comparable", "warn"),
 }
 CONFIDENCE_TONE = {"high": "good", "medium": "info", "low": "bad"}

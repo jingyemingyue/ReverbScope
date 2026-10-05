@@ -1497,8 +1497,11 @@ msgstr "回送路径延迟"
 msgid "Broadband"
 msgstr "宽带"
 
+# Stored in comparison reasons by ReverbScope 0.5 and earlier ("candidate outside
+# the sweep's range"); an imported impulse response has no sweep, so it is shown
+# with the neutral word.
 msgid "outside the sweep's range"
-msgstr "超出扫频范围"
+msgstr "超出激励范围"
 
 msgid "not comparable"
 msgstr "不可比较"
@@ -4684,3 +4687,9 @@ msgstr "{source} 片段中另有 {unused:.2f} s 安静的信号未被使用：�
 msgctxt "RT60 change"
 msgid "unchanged"
 msgstr "未变"
+
+# Validity: a band outside the sweep's range or the --band declared for an
+# imported impulse response
+
+msgid "outside the excitation range"
+msgstr "超出激励范围"

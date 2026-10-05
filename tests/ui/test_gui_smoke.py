@@ -526,7 +526,7 @@ def test_compare_metrics_have_readable_names() -> None:
     assert metric_label("something.new") == "something.new"
     assert status_text("appeared") == "appeared"
     assert validity_text(Validity.NOT_COMPARABLE) == ("not comparable", "warn")
-    assert validity_text(Validity.OUTSIDE_EXCITATION)[0] == "outside the sweep's range"
+    assert validity_text(Validity.OUTSIDE_EXCITATION)[0] == "outside the excitation range"
 
 
 @pytest.fixture

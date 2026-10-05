@@ -449,12 +449,16 @@ def test_comparison_reasons_name_the_validity_in_words() -> None:
         DecayMetric("t30", None, Validity.OUTSIDE_EXCITATION, None),
     ).reason
     assert reason == (
-        "baseline insufficient range (too little decay); candidate outside the sweep's range"
+        "baseline insufficient range (too little decay); candidate outside the excitation range"
     )
-    assert _shown_in_chinese(reason) == "基线：衰减范围不足（too little decay）；候选：超出扫频范围"
+    assert _shown_in_chinese(reason) == "基线：衰减范围不足（too little decay）；候选：超出激励范围"
     # A reason stored with the ids by an earlier version.
     stored = "baseline insufficient_decay_range; candidate outside_excitation_range"
-    assert _shown_in_chinese(stored) == "基线：衰减范围不足；候选：超出扫频范围"
+    assert _shown_in_chinese(stored) == "基线：衰减范围不足；候选：超出激励范围"
+    # And one stored with the word 0.5 used, which named a sweep even for an
+    # imported impulse response.
+    older = "baseline insufficient range; candidate outside the sweep's range"
+    assert _shown_in_chinese(older) == "基线：衰减范围不足；候选：超出激励范围"
 
 
 def test_noise_band_metric_labels() -> None:

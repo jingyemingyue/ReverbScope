@@ -205,9 +205,9 @@ def test_the_validity_legend_wraps_between_entries() -> None:
     ]
     lines = _legend(narrow, every)
     assert len(lines) > 1 and all(cell_width(line) <= 40 for line in lines), lines
-    assert "– outside the sweep's range" in lines[-1], lines
+    assert "– outside the excitation range" in lines[-1], lines
     assert _legend(WIDE, every) == [
-        "  ? unreliable   ! insufficient range   – not computed   – outside the sweep's range"
+        "  ? unreliable   ! insufficient range   – not computed   – outside the excitation range"
     ]
 
 

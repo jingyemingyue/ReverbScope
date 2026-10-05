@@ -19,7 +19,9 @@ VALIDITY_WORDS: dict[Validity, str] = {
     Validity.UNRELIABLE: N_("unreliable"),
     Validity.INSUFFICIENT_RANGE: N_("insufficient range"),
     Validity.NOT_COMPUTED: N_("not computed"),
-    Validity.OUTSIDE_EXCITATION: N_("outside the sweep's range"),
+    # Not "the sweep's": an imported impulse response's range is the --band
+    # declared for it.
+    Validity.OUTSIDE_EXCITATION: N_("outside the excitation range"),
     Validity.NOT_COMPARABLE: N_("not comparable"),
 }
 

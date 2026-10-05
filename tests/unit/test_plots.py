@@ -123,7 +123,7 @@ def test_decay_legend_gives_the_reason_a_band_has_no_rt60() -> None:
     plot_decay(fig, result)
     labels = fig.axes[0].get_legend_handles_labels()[1]
     low = next(label for label in labels if label.startswith("63 Hz"))
-    assert "outside the sweep's range" in low
+    assert "outside the excitation range" in low
 
 
 def test_placement_surfaces_have_names_not_ids() -> None:
