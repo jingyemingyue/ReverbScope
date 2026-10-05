@@ -12,6 +12,7 @@ commands:
                 includes it)
   Measurement
     sweep       write the ESS test signal WAV (+ JSON sidecar)
+    daw         list open DAW projects, or say that none were found
     analyze     analyse a recording made with the sweep
     devices     list audio devices (Standalone Mode)
     measure     Standalone Mode: play the sweep and record the microphone
@@ -33,8 +34,9 @@ commands:
 options:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
-  --lang LANG           interface language for this command (en, zh_CN);
-                        roomscope config language keeps one
+  --lang LANG           interface language for this command (de, en, es, fr,
+                        ja, ko, zh_CN, zh_TW); roomscope config language keeps
+                        one
   --format {text,json}  text report or JSON on stdout (diagnostics stay on
                         stderr)
   --color WHEN          colour in the terminal: auto (default; off for pipes,
@@ -93,26 +95,46 @@ usage: roomscope sweep --out WAV [options]
 write the ESS test signal WAV (+ JSON sidecar)
 
 required:
-  --out WAV         output WAV path
+  --out WAV            output WAV path
 
 options:
-  -h, --help        show this help message and exit
+  -h, --help           show this help message and exit
 
 test signal:
-  --sample-rate HZ  sample rate (Hz): 44100, 48000, 88200, 96000, 176400,
-                    192000 (default: 48000)
-  --duration S      sweep duration in seconds (default 10)
-  --start-hz HZ     sweep start frequency (default 20)
-  --end-hz HZ       sweep end frequency (default 20000)
-  --level DBFS      peak level in dBFS (default -12)
-  --fade-in S       fade-in in seconds (default 0.05)
-  --fade-out S      fade-out in seconds (default 0.01)
-  --pre-silence S   silence before the sweep (s) (default: 1)
-  --post-silence S  silence after the sweep (s) (default: 3)
+  --sample-rate HZ     sample rate (Hz): 44100, 48000, 88200, 96000, 176400,
+                       192000 (default: 48000)
+  --duration S         sweep duration in seconds (default 10)
+  --start-hz HZ        sweep start frequency (default 20)
+  --end-hz HZ          sweep end frequency (default 20000)
+  --level DBFS         peak level in dBFS (default -12)
+  --fade-in S          fade-in in seconds (default 0.05)
+  --fade-out S         fade-out in seconds (default 0.01)
+  --pre-silence S      silence before the sweep (s) (default: 1)
+  --post-silence S     silence after the sweep (s) (default: 3)
+
+DAW to follow:
+  --follow-daw         follow the open DAW project's sample rate. If none or
+                       more than one is in play, ask; do not guess
+  --daw NAME           DAW to follow when more than one is in play (exact
+                       name, not a guess)
+  --daw-project TITLE  project title when that DAW has more than one session
+                       open
 
 examples:
   roomscope sweep --out sweep.wav
   roomscope sweep --out sweep.wav --sample-rate 96000 --duration 15
+
+=== roomscope daw --help
+usage: roomscope daw [options]
+
+list open DAW projects, or say that none were found
+
+options:
+  -h, --help  show this help message and exit
+
+examples:
+  roomscope daw
+  roomscope sweep --out sweep.wav --follow-daw --daw REAPER
 
 === roomscope analyze --help
 usage: roomscope analyze --recording WAV --sweep FILE [options]
@@ -149,10 +171,20 @@ placement (optional tape measurements):
                         otherwise the floor. Needs --speaker-distance
   --temperature C       air temperature (C); 20 C is assumed, and reported as
                         assumed, without it
+  --scan FILE           imported room scan (ASCII PLY point cloud or Wavefront
+                        OBJ). Not a lidar attached to this computer
 
 output:
   --no-curves           omit curves from result.json
   --json                deprecated: use roomscope --format json
+
+DAW to follow:
+  --follow-daw          follow the open DAW project's sample rate. If none or
+                        more than one is in play, ask; do not guess
+  --daw NAME            DAW to follow when more than one is in play (exact
+                        name, not a guess)
+  --daw-project TITLE   project title when that DAW has more than one session
+                        open
 
 loopback (optional):
   --loopback WAV        separate loopback WAV from the same take (same sample
@@ -171,11 +203,12 @@ usage: roomscope devices [options]
 list audio devices (Standalone Mode)
 
 options:
-  -h, --help   show this help message and exit
-  --probe      also check which sample rates each device accepts and mark the
-               recommended entry of each physical device (nothing is played)
-  --host-apis  list the host APIs instead of devices
-  --json       deprecated: use roomscope --format json
+  -h, --help    show this help message and exit
+  --probe       also check which sample rates each device accepts and mark the
+                recommended entry of each physical device (nothing is played)
+  --host-apis   list the host APIs instead of devices
+  --referenced  show manufacturer and repo specs (not a hardware result)
+  --json        deprecated: use roomscope --format json
 
 examples:
   roomscope devices
@@ -244,6 +277,8 @@ placement (optional tape measurements):
                         otherwise the floor. Needs --speaker-distance
   --temperature C       air temperature (C); 20 C is assumed, and reported as
                         assumed, without it
+  --scan FILE           imported room scan (ASCII PLY point cloud or Wavefront
+                        OBJ). Not a lidar attached to this computer
 
 output:
   --no-curves           omit curves from result.json
@@ -290,6 +325,8 @@ placement (optional tape measurements):
                         otherwise the floor. Needs --speaker-distance
   --temperature C       air temperature (C); 20 C is assumed, and reported as
                         assumed, without it
+  --scan FILE           imported room scan (ASCII PLY point cloud or Wavefront
+                        OBJ). Not a lidar attached to this computer
 
 output:
   --no-curves           omit curves from result.json
@@ -477,7 +514,8 @@ options:
   -h, --help  show this help message and exit
 
 settings:
-  language         zh_CN, en, or auto (follow the system)
+  language         de, es, fr, ja, ko, zh_CN, zh_TW, en, or auto (follow the
+                   system)
   profile          acoustic_guitar, choir, drums, generic, room_mic, vocal,
                    voiceover, or auto (generic)
   backend          portaudio, fake, or auto (PortAudio)
