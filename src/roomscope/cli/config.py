@@ -184,12 +184,12 @@ def title(key: str) -> str:
     """What a setting is, in words."""
     return {
         "language": _("Interface language"),
-        "profile": _("Default recording profile"),
+        "profile": _("Default profile"),
         "backend": _("Audio backend"),
-        "output-folder": _("Folder for saved sessions (desktop app)"),
-        "copy-recording": _("Raw recording copied into each session"),
+        "output-folder": _("Session folder (desktop app)"),
+        "copy-recording": _("Copy recordings"),
         "developer-tools": _("Developer tools"),
-        "theme": _("Desktop app theme"),
+        "theme": _("Theme (desktop app)"),
     }[key]
 
 

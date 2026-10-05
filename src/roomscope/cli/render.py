@@ -1125,6 +1125,35 @@ def _edition_name(edition: str) -> str:
     return edition
 
 
+def _settings_summary(c: Console, summary: dict[str, Any]) -> list[str]:
+    """The settings of the report: what each means, then the value as stored
+    (``roomscope config`` names them the same way)."""
+    from dataclasses import fields, replace
+
+    from roomscope.cli import config
+    from roomscope.settings import UserSettings
+
+    if "error" in summary:
+        return c.status("error", localize(str(summary["error"])))
+    known = {item.name: type(getattr(UserSettings(), item.name)) for item in fields(UserSettings)}
+    stored = {
+        name: value
+        for name, value in summary.items()
+        if name in known and isinstance(value, known[name])
+    }
+    settings = replace(UserSettings(), **stored)
+    rows = []
+    for key in config.KEYS:
+        if key == "output-folder":
+            rows.append(
+                (config.title(key), _("set") if summary.get("output_dir_set") else _("not set"))
+            )
+            continue
+        shown, typed = config.state(key, settings), config.typed_value(key, settings)
+        rows.append((config.title(key), shown if shown == typed else shown + c.sep() + typed))
+    return c.fields(rows)
+
+
 def render_environment(console: Console, report: dict[str, Any]) -> str:
     """``roomscope doctor``: sections a maintainer can read in a GitHub issue."""
     from roomscope.diagnostics import privacy_note
@@ -1183,13 +1212,17 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
     packages.append(("libsndfile", report.get("libsndfile") or _("unknown")))
     lines += c.fields(packages)
 
-    lines += c.section(_("Settings"))
-    lines += c.fields(
-        (key, c.dash() if value in ("", None) else str(value))
-        for key, value in report.get("settings", {}).items()
-    )
+    lines += c.section(_("Settings"), "roomscope config")
+    lines += _settings_summary(c, report.get("settings", {}))
     lines += c.section(_("Paths"), _("your home folder is shown as ~"))
-    lines += c.fields((key, Verbatim(str(value))) for key, value in report["paths"].items())
+    paths = {
+        "roomscope_home": _("RoomScope folder"),
+        "settings": _("Settings file"),
+        "log": _("Log file"),
+    }
+    lines += c.fields(
+        (paths.get(key, key), Verbatim(str(value))) for key, value in report["paths"].items()
+    )
 
     lines += c.section(_("Self-check"))
     callbacks = report.get("audio_callbacks")

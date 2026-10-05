@@ -4242,17 +4242,14 @@ msgstr "跟随系统"
 msgid "Interface language"
 msgstr "界面语言"
 
-msgid "Default recording profile"
-msgstr "默认录音配置"
+msgid "Session folder (desktop app)"
+msgstr "会话文件夹（桌面版）"
 
-msgid "Folder for saved sessions (desktop app)"
-msgstr "保存会话的文件夹（桌面版）"
+msgid "Copy recordings"
+msgstr "把录音复制进会话"
 
-msgid "Raw recording copied into each session"
-msgstr "把原始录音复制进每个会话"
-
-msgid "Desktop app theme"
-msgstr "桌面版主题"
+msgid "Theme (desktop app)"
+msgstr "主题（桌面版）"
 
 msgid "simulated interface, for the demo and tests"
 msgstr "模拟的音频接口，用于演示和测试"
@@ -4439,3 +4436,14 @@ msgstr "保存对话框从这里打开"
 
 msgid "not set"
 msgstr "未设置"
+
+# roomscope doctor: settings and paths
+
+msgid "set"
+msgstr "已设置"
+
+msgid "RoomScope folder"
+msgstr "RoomScope 文件夹"
+
+msgid "Log file"
+msgstr "日志文件"

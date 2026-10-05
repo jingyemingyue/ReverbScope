@@ -215,7 +215,11 @@ def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixtu
         for line in out.splitlines()
         if not re.match(r"^\s+[\w-]+\s{2,}\S", line) and not line.startswith("Python ")
     )
-    assert english_words(prose, data=devices) == [], out
+    # The settings are named in Chinese; their stored values are shown as
+    # roomscope config takes them.
+    assert "界面语言" in out and "roomscope config" in out
+    typed = ("auto", "generic", "system", "on", "off", "portaudio", "fake")
+    assert english_words(prose, data=devices, values=typed) == [], out
 
 
 def _take(tmp_path: Path, rt60_s: float, name: str) -> Path:
