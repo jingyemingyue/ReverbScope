@@ -1319,3 +1319,45 @@ def test_the_environment_report_describes_the_fake_backend_only_on_the_demo_page
     window.show_environment_report()
     assert described == ["fake", None, None, None]
     window.close()
+
+
+def test_a_comparison_saved_from_the_app_names_its_sessions(
+    app: QApplication,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    short_sweep: SweepSettings,
+) -> None:
+    """The desktop app saved comparison.json without baseline_session and
+    candidate_session: `reverbscope show` listed neither session and read the
+    report with the General profile instead of the candidate's."""
+    from reverbscope.cli.main import main
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.io.session_store import load_comparison, save_measurement
+    from reverbscope.models.session import MeasurementSession
+    from reverbscope.ui import compare_view
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    for name in ("base", "cand"):
+        session = MeasurementSession(room_name=name, recording_profile="vocal")
+        save_measurement(tmp_path / name, session, result, copy_recording=False)
+    target = tmp_path / "gui_comparison.json"
+    monkeypatch.setattr(compare_view, "ask_save_path", lambda *_a, **_k: target)
+    window = MainWindow()
+    page = window.compare
+    page.set_paths(tmp_path / "base", tmp_path / "cand")
+    page.run_compare()
+    page._save()
+    saved = load_comparison(target)
+    assert saved.baseline_session == str(tmp_path / "base")
+    assert saved.candidate_session == str(tmp_path / "cand")
+    capsys.readouterr()
+    assert main(["show", str(target)]) == 0
+    shown = capsys.readouterr().out
+    assert str(tmp_path / "cand") in shown
+    assert "Interpretation (Vocals profile)" in shown
+    window.close()

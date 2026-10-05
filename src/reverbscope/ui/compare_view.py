@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from reverbscope.ui.qt import ensure_pyside6
@@ -185,10 +186,16 @@ class ComparePage(QWidget):
         try:
             left = load_measurement(baseline)
             right = load_measurement(candidate)
-            comparison = compare(
-                left.result,
-                right.result,
-                settings=CompareSettings(same_input_gain=self.same_gain.isChecked()),
+            # Named as `reverbscope compare` names them: `reverbscope show` lists
+            # the two sessions and reads the candidate's profile from them.
+            comparison = replace(
+                compare(
+                    left.result,
+                    right.result,
+                    settings=CompareSettings(same_input_gain=self.same_gain.isChecked()),
+                ),
+                baseline_session=str(left.directory),
+                candidate_session=str(right.directory),
             )
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Cannot compare"), localize(str(exc)))
