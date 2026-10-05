@@ -79,6 +79,11 @@ default suggestion (low / high), not a measured round trip.
 * **ASIO** DLLs are removed from ReverbScope's bundles for licensing
   ([DEPENDENCIES.md](DEPENDENCIES.md) §3); sounddevice loads its ASIO DLL only
   with `SD_ENABLE_ASIO` set [14]. One ASIO device serves both directions [12].
+* **System aliases.** PortAudio lists MME's *Microsoft Sound Mapper - Input*
+  / *- Output* and DirectSound's *Primary Sound Capture Driver* / *Primary
+  Sound Driver* (DirectSound's default devices) next to the real devices
+  [12]; they play through whatever device Windows uses by default, so
+  ReverbScope never marks them recommended.
 * **Microphone privacy:** Settings ▸ Privacy & security ▸ Microphone ▸
   *Microphone access* and *Let desktop apps access your microphone* [25].
 
@@ -118,7 +123,8 @@ measurement rate, or an aggregate device (§3).
 | 5 | `OSS` | driver; PortAudio accepts a rate within 1 % [12] | ALSA's OSS emulation, if used [38] | not assessed |
 
 * PortAudio names ALSA hardware `card: device (hw:X,Y)` and also lists
-  plug-in and server PCMs (`default`, `pulse`, `pipewire`, ...);
+  plug-in and server PCMs (`default`, `pulse`, `pipewire`, ...), which
+  ReverbScope never marks recommended;
   `PA_ALSA_PLUGHW=1` makes it open `plughw:` instead of `hw:` [12].
 * **PipeWire** resamples when a stream's rate differs from the graph rate
   and adapts device clocks to the graph clock; in the *Pro Audio* profile,

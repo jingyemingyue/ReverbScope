@@ -1,8 +1,11 @@
 """Device inventory, host-API resolution and stream options against a simulated
 Windows machine: one USB interface listed under MME, DirectSound, WASAPI and
 WDM-KS (PortAudio reports every device once per host API; MME truncates the
-name to 31 characters), plus the laptop's own speakers. Nothing is played and
-no PortAudio is loaded; this is not hardware evidence (docs/HARDWARE_TESTS.md).
+name to 31 characters), plus the laptop's own speakers and the system aliases
+every Windows list has: MME's Sound Mapper and DirectSound's primary drivers,
+which PortAudio makes DirectSound's default devices (MME's defaults are the
+preferred real devices). Nothing is played and no PortAudio is loaded; this
+is not hardware evidence (docs/HARDWARE_TESTS.md).
 """
 
 from __future__ import annotations
@@ -25,12 +28,17 @@ from reverbscope.audio.inventory import (
 from reverbscope.errors import AudioDeviceError, ConfigurationError
 
 HOST_APIS = [
-    {"name": "MME", "devices": [0, 1, 2], "default_input_device": 0, "default_output_device": 1},
+    {
+        "name": "MME",
+        "devices": [0, 1, 2, 10, 11],
+        "default_input_device": 0,
+        "default_output_device": 1,
+    },
     {
         "name": "Windows DirectSound",
-        "devices": [3, 4],
-        "default_input_device": 3,
-        "default_output_device": 4,
+        "devices": [3, 4, 12, 13],
+        "default_input_device": 12,
+        "default_output_device": 13,
     },
     {
         "name": "Windows WASAPI",
@@ -58,6 +66,10 @@ RAW = [
     (7, "Speakers (Realtek(R) Audio)", 2, 0, 2, {48000}),
     (8, "Line (Focusrite USB Audio Interface)", 3, 2, 0, {44100, 48000, 88200, 96000}),
     (9, "Speakers (Focusrite USB Audio Interface)", 3, 0, 2, {44100, 48000, 88200, 96000}),
+    (10, "Microsoft Sound Mapper - Input", 0, 2, 0, {44100, 48000, 96000}),
+    (11, "Microsoft Sound Mapper - Output", 0, 0, 2, {44100, 48000, 96000}),
+    (12, "Primary Sound Capture Driver", 1, 2, 0, {44100, 48000, 96000}),
+    (13, "Primary Sound Driver", 1, 0, 2, {44100, 48000, 96000}),
 ]
 
 
@@ -150,10 +162,96 @@ def test_the_preferred_host_api_is_recommended(windows: WindowsBackend) -> None:
     recommended_out = {p.device.index for p in inventory.recommended("output")}
     # WDM-KS bypasses the mixer (a direct path) and wins over WASAPI shared;
     # MME and DirectSound are never recommended while a better path exists.
+    # The Sound Mapper and the primary drivers are no device of their own:
+    # each was a group of its own and always won it.
     assert recommended_in == {8}
     assert recommended_out == {9, 7}
     mme = next(p for p in inventory.devices if p.device.index == 0)
     assert any("prefer WASAPI" in note for note in mme.notes)
+
+
+@dataclass
+class LinuxBackend:
+    """An ALSA list: two cards as hw: devices, plus PortAudio's plugin and
+    sound-server PCMs, all accepting every rate."""
+
+    name: str = "linux"
+
+    def list_devices(self) -> list[DeviceInfo]:
+        names = [
+            ("HDA Intel PCH: ALC892 Analog (hw:0,0)", 2, 2),
+            ("HDA Intel PCH: HDMI 0 (hw:0,3)", 0, 8),
+            ("Scarlett 2i2 USB: Audio (hw:1,0)", 2, 2),
+            ("sysdefault", 128, 128),
+            ("front", 0, 2),
+            ("pulse", 32, 32),
+            ("pipewire", 64, 64),
+            ("default", 64, 64),
+        ]
+        return [
+            DeviceInfo(
+                index=index,
+                name=name,
+                host_api="ALSA",
+                max_input_channels=n_in,
+                max_output_channels=n_out,
+                default_sample_rate=48000.0,
+                is_default_input=name == "default",
+                is_default_output=name == "default",
+            )
+            for index, (name, n_in, n_out) in enumerate(names)
+        ]
+
+    def check_sample_rate(self, *args: Any, **kwargs: Any) -> None:
+        return None
+
+    def play_and_record(self, *args: Any, **kwargs: Any) -> Any:  # pragma: no cover
+        raise AssertionError("nothing may be played")
+
+
+def test_alsa_plugins_and_sound_servers_are_never_recommended() -> None:
+    """Review finding: default, sysdefault, front, pulse and pipewire each came
+    out "recommended" right above their own note "may resample and mix"."""
+    inventory = build_inventory(LinuxBackend(), platform="linux")
+    assert {p.device.index for p in inventory.recommended("input")} == {0, 2}
+    assert {p.device.index for p in inventory.recommended("output")} == {0, 1, 2}
+    pulse = next(p for p in inventory.devices if p.device.name == "pulse")
+    assert any("sound-server" in note for note in pulse.notes)
+
+
+@pytest.mark.parametrize(
+    ("index", "name", "api", "alias"),
+    [
+        # PortAudio's suffix stays English when Windows names the mapper in Chinese.
+        (10, "Microsoft 声音映射器 - Input", "MME", True),
+        (11, "Microsoft 声音映射器 - Output", "MME", True),
+        # Localized primary drivers are known by being DirectSound's defaults.
+        (12, "主声音捕获驱动程序", "Windows DirectSound", True),
+        (13, "主声音驱动程序", "Windows DirectSound", True),
+        (12, "Primary Sound Capture Driver", "Windows DirectSound", True),
+        (3, "Line (Focusrite USB Audio Interface)", "Windows DirectSound", False),
+        (0, "Line (Focusrite USB Audio Inter", "MME", False),
+        # MME's default devices are the preferred real devices, not aliases.
+        (5, "Line (Focusrite USB Audio Interface)", "Windows WASAPI", False),
+    ],
+)
+def test_windows_system_aliases_are_recognised_in_any_language(
+    windows: WindowsBackend, index: int, name: str, api: str, alias: bool
+) -> None:
+    from reverbscope.audio.inventory import is_system_alias
+
+    inventory = build_inventory(windows, probe_rates=False, platform="win32")
+    device = DeviceInfo(
+        index=index,
+        name=name,
+        host_api=api,
+        max_input_channels=2,
+        max_output_channels=0,
+        default_sample_rate=48000.0,
+        is_default_input=False,
+        is_default_output=False,
+    )
+    assert is_system_alias(device, inventory.host_apis) is alias
 
 
 def test_duplex_devices_are_kept_on_one_host_api(windows: WindowsBackend) -> None:

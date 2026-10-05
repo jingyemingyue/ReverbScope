@@ -66,6 +66,11 @@
 * **ASIO** DLL 因许可原因已从 ReverbScope 安装包中移除（[DEPENDENCIES.md](DEPENDENCIES.md)
   §3）；sounddevice 只有在设置 `SD_ENABLE_ASIO` 时才加载其 ASIO DLL [14]。一台 ASIO
   设备同时负责两个方向 [12]。
+* **系统别名。** PortAudio 会在真实设备旁列出 MME 的 *Microsoft Sound Mapper - Input*
+  / *- Output* 和 DirectSound 的 *Primary Sound Capture Driver* / *Primary Sound
+  Driver*（即 DirectSound 的默认设备；中文 Windows 上名为“Microsoft 声音映射器”和
+  “主声音捕获驱动程序”/“主声音驱动程序”）[12]；它们经由 Windows 当前的默认设备
+  播放和录音，所以 ReverbScope 从不把它们标为推荐。
 * **麦克风隐私：** 设置 ▸ 隐私和安全性 ▸ 麦克风 ▸ 打开*麦克风访问权限*和*允许桌面
   应用访问你的麦克风* [25]。
 
@@ -101,8 +106,8 @@ Core Audio 是唯一的主机 API（排名 1）。使用一块设为测量采样
 | 5 | `OSS` | 由驱动决定；PortAudio 接受 1 % 以内的采样率 [12] | 如使用 ALSA 的 OSS 仿真 [38] | 未评估 |
 
 * PortAudio 把 ALSA 硬件命名为 `card: device (hw:X,Y)`，同时也列出插件和服务器
-  PCM（`default`、`pulse`、`pipewire` 等）；设置 `PA_ALSA_PLUGHW=1` 会让它打开
-  `plughw:` 而不是 `hw:` [12]。
+  PCM（`default`、`pulse`、`pipewire` 等），ReverbScope 从不把这些标为推荐；设置
+  `PA_ALSA_PLUGHW=1` 会让它打开 `plughw:` 而不是 `hw:` [12]。
 * **PipeWire** 在流的采样率不同于图采样率时重采样，并把设备时钟自适应到图时钟；在
   *Pro Audio* 配置下，同一设备的节点被视为共用一个时钟，不做重采样 [35]。图采样率
   切换（`default.clock.allowed-rates`）默认关闭 [34]。

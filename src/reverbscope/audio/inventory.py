@@ -100,6 +100,13 @@ _ALSA_VIRTUAL = re.compile(
 _ALSA_HW = re.compile(r"\(hw:\s*\d+\s*,\s*\d+\)")
 #: MME truncates device names to 31 characters.
 _MME_NAME_LENGTH = 31
+#: PortAudio appends " - Input" / " - Output", in English whatever the
+#: Windows language, to the name of MME's WAVE_MAPPER ("Microsoft Sound
+#: Mapper - Input", "Microsoft 声音映射器 - Output"); no real device gets it.
+_MME_MAPPER = re.compile(r" - (Input|Output)$")
+#: DirectSound's primary drivers in English Windows; other languages name
+#: them in their own words, which only the host API's defaults reveal.
+_DIRECTSOUND_PRIMARY = re.compile(r"^Primary Sound (Capture )?Driver$", re.IGNORECASE)
 
 
 def host_api_kind(name: str) -> str:
@@ -141,6 +148,35 @@ def same_adapter(a: DeviceInfo, b: DeviceInfo) -> bool:
         return False
     short, long_ = sorted((ka, kb), key=len)
     return (long_.startswith(short) and len(short) >= 8) or ka == kb
+
+
+def is_system_alias(device: DeviceInfo, host_apis: Sequence[HostApiInfo] = ()) -> bool:
+    """True for a Windows entry that stands for the system default device.
+
+    MME's WAVE_MAPPER and DirectSound's primary drivers play and record
+    through whichever device Windows has as its default, so they are no
+    adapter of their own. PortAudio makes the primary drivers (the
+    ``lpGUID == NULL`` entries) DirectSound's default devices
+    (``pa_win_ds.c``); MME's defaults are the preferred real devices
+    (``DRVM_MAPPER_PREFERRED_GET`` in ``pa_win_wmme.c``), not the mapper.
+    """
+    kind = host_api_kind(device.host_api)
+    if kind == "mme":
+        return bool(_MME_MAPPER.search(device.name))
+    if kind != "directsound":
+        return False
+    if _DIRECTSOUND_PRIMARY.match(device.name.strip()):
+        return True
+    api = next((a for a in host_apis if a.name == device.host_api), None)
+    return api is not None and device.index in (api.default_input, api.default_output)
+
+
+def is_virtual_device(device: DeviceInfo, host_apis: Sequence[HostApiInfo] = ()) -> bool:
+    """True for an entry that is no physical device: a Windows system alias,
+    or an ALSA plugin or sound server (``default``, ``pulse``, ``dmix``...)."""
+    if host_api_kind(device.host_api) == "alsa" and _ALSA_VIRTUAL.match(device.name):
+        return True
+    return is_system_alias(device, host_apis)
 
 
 def is_direct_path(device: DeviceInfo) -> bool:
@@ -293,7 +329,7 @@ def build_inventory(
                 notes=tuple(notes),
             )
         )
-    probes = _mark_recommended(probes, platform, probe_rates)
+    probes = _mark_recommended(probes, platform, probe_rates, host_apis)
     inventory_notes: list[str] = []
     if not probes:
         inventory_notes.append(diag("no audio device found; Universal DAW Mode still works"))
@@ -309,11 +345,21 @@ def build_inventory(
 
 
 def _mark_recommended(
-    probes: list[DeviceProbe], platform: str, probe_rates: bool
+    probes: list[DeviceProbe],
+    platform: str,
+    probe_rates: bool,
+    host_apis: Sequence[HostApiInfo] = (),
 ) -> list[DeviceProbe]:
-    """Recommend, per physical device and direction, the best-ranked usable entry."""
+    """Recommend, per physical device and direction, the best-ranked usable entry.
+
+    System aliases and ALSA plugins are never recommended: each forms a group
+    of its own and would always win it, although it is the path that
+    resamples and mixes (docs/AUDIO_DEVICES.md ranks it last).
+    """
     best: dict[tuple[str, str], DeviceProbe] = {}
     for probe in probes:
+        if is_virtual_device(probe.device, host_apis):
+            continue
         for direction in ("input", "output"):
             has = probe.device.is_input if direction == "input" else probe.device.is_output
             rates = probe.input_rates if direction == "input" else probe.output_rates
