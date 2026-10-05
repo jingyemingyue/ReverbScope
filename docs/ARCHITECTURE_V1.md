@@ -508,8 +508,10 @@ class AudioBackend(Protocol):
     `/Library/Preferences/.GlobalPreferences.plist`; Qt's `uiLanguages` in
     the GUI) before `LC_ALL` / `LC_MESSAGES` / `LANG`, which Terminal, iTerm
     and VS Code set to `en_US.UTF-8` whatever the display language is;
-  * Windows: the display language (`GetUserDefaultUILanguage`) before the
-    POSIX variables, which only MSYS, Git Bash or Cygwin set;
+  * Windows: the display language (`GetUserDefaultUILanguage`) when it has
+    a catalog or is English, then Qt's `uiLanguages` (GUI; Windows' own
+    preferred-language list), then the POSIX variables, which only MSYS,
+    Git Bash or Cygwin set;
   * Linux and other POSIX systems: GNU `LANGUAGE` (a priority list such as
     `zh_CN:en`, read only when the locale is not C or POSIX, as gettext reads
     it), then `LC_ALL`, `LC_MESSAGES`, `LANG`, then the desktop's UI languages

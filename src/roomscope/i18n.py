@@ -21,7 +21,8 @@ the system keeps it:
   preferences, or Qt's ``uiLanguages`` in the GUI) before ``LC_ALL`` /
   ``LC_MESSAGES`` / ``LANG``. Terminal, iTerm and VS Code set
   ``LANG=en_US.UTF-8`` whatever the display language is.
-* **Windows**: the display language (``GetUserDefaultUILanguage``) before the
+* **Windows**: the display language (``GetUserDefaultUILanguage``) when it
+  has a catalog or is English, then Qt's ``uiLanguages`` (GUI), then the
   POSIX variables, which only MSYS, Git Bash or Cygwin set.
 * **Linux and other POSIX systems**: GNU ``LANGUAGE`` (a priority list such as
   ``zh_CN:en``, used as gettext uses it: only when the locale is not C or
@@ -643,8 +644,15 @@ def _macos_step() -> tuple[str, str, str] | None:
 
 
 def _windows_step() -> tuple[str, str, str] | None:
+    """The Windows display language, when RoomScope has it.
+
+    A display language without a catalog (``zh_TW``, ``ja_JP``) leaves the
+    choice to the next step, as on a Mac: Qt's UI languages in the GUI
+    (Windows' own preferred-language list) and then ``LANG``.
+    """
     windows = _windows_ui_language()
-    return None if not windows else (normalize_lang(windows), ORIGIN_WINDOWS, windows)
+    lang = supported_language(windows)
+    return None if lang is None or not windows else (lang, ORIGIN_WINDOWS, windows)
 
 
 def _is_c_locale(value: str) -> bool:

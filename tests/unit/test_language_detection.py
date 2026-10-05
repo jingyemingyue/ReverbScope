@@ -167,6 +167,27 @@ def test_windows_follows_the_display_language_before_lang(system: pytest.MonkeyP
     assert language_choice().origin == "LANG"
 
 
+def test_a_windows_display_language_without_a_catalog_leaves_the_choice_to_qt_and_lang(
+    system: pytest.MonkeyPatch,
+) -> None:
+    """Traditional Chinese with Simplified Chinese second in Windows' list."""
+    system.setattr(sys, "platform", "win32")
+    system.setattr(i18n, "_windows_ui_language", lambda: "zh_TW")
+    qt = ["zh-Hant-TW", "zh-Hans-CN", "en-US"]
+    choice = language_choice(system_languages=qt)
+    assert (choice.lang, choice.origin) == ("zh_CN", ORIGIN_DESKTOP)
+    assert i18n.activate(system_languages=qt) == "zh_CN"  # the GUI, as before
+    # The command line has no Qt list: LANG (Git Bash, MSYS) is next.
+    system.setattr(i18n, "_windows_ui_language", lambda: "ja_JP")
+    system.setenv("LANG", "zh_CN.UTF-8")
+    choice = language_choice()
+    assert (choice.lang, choice.origin) == ("zh_CN", "LANG")
+    # A display language RoomScope has still comes before both.
+    system.setattr(i18n, "_windows_ui_language", lambda: "en_US")
+    choice = language_choice(system_languages=qt)
+    assert (choice.lang, choice.origin) == ("en", ORIGIN_WINDOWS)
+
+
 # --- Linux and other POSIX systems -------------------------------------------------------
 
 

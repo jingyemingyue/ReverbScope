@@ -116,7 +116,7 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 界面语言的选择顺序：`--lang`、`settings.language`（桌面版的“设置”对话框或 `roomscope config language zh_CN|en|auto`）、`ROOMSCOPE_LANG`，然后是系统语言；都没有对应译文时用英文。主屏幕和 `roomscope --help` 的最后一行用另一种语言写出切换语言的命令。系统语言从各系统保存用户选择的地方读取：
 
 * macOS：先读首选语言（`~/Library/Preferences/.GlobalPreferences.plist` 中的 `AppleLanguages`，其次是 `/Library/Preferences/.GlobalPreferences.plist`；图形界面用 Qt 的 `uiLanguages`），再看 `LC_ALL` / `LC_MESSAGES` / `LANG`——“终端”、iTerm 和 VS Code 不管显示语言是什么都会设置 `LANG=en_US.UTF-8`；
-* Windows：先读显示语言（`GetUserDefaultUILanguage`），再看 POSIX 变量（只有 MSYS、Git Bash、Cygwin 会设置）；
+* Windows：显示语言（`GetUserDefaultUILanguage`）有译文或是英文时用它，否则看 Qt 的 `uiLanguages`（图形界面；即 Windows 自己的首选语言列表），再看 POSIX 变量（只有 MSYS、Git Bash、Cygwin 会设置）；
 * Linux 等 POSIX 系统：按 gettext 的规则读 GNU `LANGUAGE`（如 `zh_CN:en`，区域设置为 C 或 POSIX 时忽略），再读 `LC_ALL`、`LC_MESSAGES`、`LANG`，最后是桌面的界面语言（图形界面）。
 
 首选语言列表中，取第一个有译文或是英文的条目。

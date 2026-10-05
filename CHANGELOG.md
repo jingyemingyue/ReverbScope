@@ -32,7 +32,10 @@ All notable changes to RoomScope are documented here. The format follows
   display language is), on Windows the display language before a `LANG`
   from Git Bash or MSYS, on Linux GNU `LANGUAGE` (`zh_CN:en`) as gettext
   reads it. `--lang`, the stored setting and `ROOMSCOPE_LANG` still come
-  first, in that order; the GUI follows Qt's UI languages as before.
+  first, in that order. The desktop app reads Qt's UI languages first on
+  macOS, after a display language RoomScope has on Windows, and after the
+  locale variables on Linux; a display language without a catalog (for
+  example Traditional Chinese) leaves the choice to the next of these.
 - **Chinese command line.** Every help screen is Chinese to the last word:
   the placeholders (`--out 目录`, `--recording WAV文件`, `<命令>`), the
   positional names and argparse's remaining messages ("expected 2
