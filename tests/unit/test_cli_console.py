@@ -9,6 +9,7 @@ exit codes, and the Chinese command line.
 from __future__ import annotations
 
 import io
+import itertools
 import json
 import re
 from collections.abc import Iterator
@@ -119,6 +120,29 @@ def test_wrap_splits_a_word_longer_than_the_line() -> None:
     lines = wrap("a-very-long-file-name-without-any-spaces.wav", 12, first="", rest="")
     assert all(cell_width(line) <= 12 for line in lines)
     assert "".join(lines) == "a-very-long-file-name-without-any-spaces.wav"
+
+
+def test_wrapping_never_separates_a_number_from_its_unit() -> None:
+    """Only the at-a-glance rows held numbers to their units: paragraphs,
+    status lines and fields broke "至少有 20" / "dB 时", "-12" / "dBFS"."""
+    texts = [
+        "只有衰减范围至少有 20 dB 时才给出比值，而且它不是房间评分。",
+        "Background noise is -69.2 dBFS RMS (uncalibrated digital level, not dB SPL).",
+        "Potential mains hum at multiples of 50 Hz: 50 Hz (+57 dB), 100 Hz (+48 dB)",
+    ]
+    unit = re.compile(r"^\s*(dBFS|dB|kHz|Hz|s|SPL)\b")
+    for width in range(20, 90):
+        console = Console(width=width)
+        blocks = [
+            *(console.paragraph(text) for text in texts),
+            *(console.status("warn", text) for text in texts),
+            console.fields([("Sweep", "20 Hz – 20 kHz · 10 s · -12 dBFS")]),
+        ]
+        for lines in blocks:
+            assert "\u00a0" not in "".join(lines)  # no-break spaces are written back
+            for above, below in itertools.pairwise(lines):
+                assert not (above.rstrip()[-1:].isdigit() and unit.match(below)), (above, below)
+                assert not (above.endswith(" dB") and below.lstrip().startswith("SPL"))
 
 
 # --- Colour policy and fallbacks ------------------------------------------------------

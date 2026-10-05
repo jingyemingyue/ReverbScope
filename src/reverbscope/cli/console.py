@@ -222,8 +222,9 @@ _UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|°C|%)(?![\w])")
 
 
 def glue_units(text: str) -> str:
-    """``110 Hz (+11.3 dB)`` with each number held to its unit."""
-    return _UNIT.sub(lambda match: match.group(1) + GLUE + match.group(2), text)
+    """``110 Hz (+11.3 dB)`` with each number held to its unit (and dB to SPL)."""
+    text = _UNIT.sub(lambda match: match.group(1) + GLUE + match.group(2), text)
+    return text.replace("dB SPL", "dB" + GLUE + "SPL")
 
 
 def _windows_cmdline_arg(text: str) -> str:
@@ -365,8 +366,11 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
     ``first`` starts the first line and ``rest`` every following one (a
     hanging indent). Chinese text breaks between characters, Latin text at
     spaces; a word longer than a line is split. Explicit newlines are kept.
+    A number stays on the line of its unit (:func:`glue_units`): paragraphs,
+    status lines and fields are wrapped here, not only the at-a-glance rows.
     """
     rest = first if rest is None else rest
+    text = glue_units(text)
     lines: list[str] = []
     for paragraph in text.split("\n"):
         prefix = first if not lines else rest
@@ -409,7 +413,7 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                 prefix, piece = rest, piece[len(head) :]
             parts = [piece]
         lines.append(prefix + "".join(parts))
-    return lines
+    return [line.replace(GLUE, " ") for line in lines]
 
 
 # --- Environment -----------------------------------------------------------
