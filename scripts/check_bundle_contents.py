@@ -25,11 +25,17 @@ no QML UI and PyInstaller collects QML only when something imports QtQml, so a
 frozen tree that still contains any file below a ``qml/`` directory fails the
 gate as well; ``--strip`` does not hide that, because it means the import
 graph changed.
+
+``--require-licenses`` also fails a tree with a native library that no Python
+package ships (PyInstaller copies GLib, OpenSSL, the C++ runtime, libpython
+... from the build machine) unless ``THIRD_PARTY_LICENSES/NATIVE.txt`` names
+a notice for it, which ``build_license_bundle.py --frozen`` writes.
 """
 
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from importlib.metadata import PackageNotFoundError, distribution
 from pathlib import Path
@@ -250,6 +256,64 @@ def gui_files(root: Path) -> list[tuple[Path, str]]:
     return found
 
 
+#: Where PyInstaller puts the libraries that no package folder holds: the
+#: bundle's top level, ``_internal`` and a macOS app's ``Contents/Frameworks``.
+LIBRARY_DIRS = ((), ("_internal",), ("Contents", "Frameworks"))
+#: Python extension modules: covered by their package's licence or Python's.
+_EXTENSION_MODULE = re.compile(r"\.(cpython-[^.]+|abi3|cp\d+-[^.]+)\.so$|\.pyd$", re.IGNORECASE)
+NATIVE_INDEX = "NATIVE.txt"
+
+
+def loose_native_libraries(root: Path) -> list[Path]:
+    """Shared libraries of a frozen tree that no Python package folder holds.
+
+    A wheel's own libraries stay in its folder (``numpy.libs/``,
+    ``PySide6/Qt/lib/``) under the wheel's licence files, and the top-level
+    symlinks PyInstaller adds point there. What lies loose at the top was
+    copied from the build machine or from the Python installation.
+    """
+    found: list[Path] = []
+    for parts in LIBRARY_DIRS:
+        folder = root.joinpath(*parts)
+        if not folder.is_dir():
+            continue
+        for path in sorted(folder.iterdir()):
+            name = path.name.lower()
+            if path.is_symlink() or not path.is_file() or _EXTENSION_MODULE.search(name):
+                continue
+            if name.endswith((".so", ".dll", ".dylib")) or ".so." in name or ".dylib." in name:
+                found.append(path)
+    return found
+
+
+def native_notices(licenses: Path) -> dict[str, str]:
+    """``NATIVE.txt``: each native library's file name and its notice."""
+    index = licenses / NATIVE_INDEX
+    if not index.is_file():
+        return {}
+    notices: dict[str, str] = {}
+    for line in index.read_text(encoding="utf-8").splitlines():
+        name, tab, notice = line.partition("\t")
+        if tab:
+            notices[name] = notice.strip()
+    return notices
+
+
+def unlicensed_native_libraries(root: Path, licenses: Path) -> list[str]:
+    notices = native_notices(licenses)
+    errors: list[str] = []
+    for path in loose_native_libraries(root):
+        notice = notices.get(path.name)
+        if notice is None:
+            errors.append(
+                f"native library without a licence notice in {NATIVE_INDEX} "
+                f"(build_license_bundle.py --frozen): {path}"
+            )
+        elif not (licenses / notice).is_file():
+            errors.append(f"THIRD_PARTY_LICENSES/{notice} (for {path.name}) is missing")
+    return errors
+
+
 def check(
     root: Path,
     *,
@@ -298,6 +362,13 @@ def check(
             for filename in wanted:
                 if not (texts / filename).is_file():
                     errors.append(f"THIRD_PARTY_LICENSES/_texts/{filename} is missing")
+            # Every bundle carries the interpreter; the desktop one also Qt,
+            # whose third-party code needs its own notices.
+            notices = ("python.txt",) if terminal else ("python.txt", "qt-third-party.txt")
+            for filename in notices:
+                if not (licenses / "_notices" / filename).is_file():
+                    errors.append(f"THIRD_PARTY_LICENSES/_notices/{filename} is missing")
+            errors.extend(unlicensed_native_libraries(root, licenses))
     return errors
 
 
@@ -307,7 +378,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--require-licenses",
         action="store_true",
-        help="require THIRD_PARTY_LICENSES/ with no unresolved packages",
+        help="require THIRD_PARTY_LICENSES/ with no unresolved packages and a notice "
+        "for every native library",
     )
     parser.add_argument(
         "--installed-essentials",

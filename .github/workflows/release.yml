@@ -165,10 +165,12 @@ jobs:
           pip install -r requirements/bundle.lock
           pip install -e ".[dev,gui]" pyinstaller==6.22.3
           pip check
-      - name: License bundle
-        run: python scripts/build_license_bundle.py --out THIRD_PARTY_LICENSES
       - name: PyInstaller
         run: pyinstaller --noconfirm --clean packaging/reverbscope.spec
+      - name: License bundle
+        # After PyInstaller: the bundle also needs a notice for every native
+        # library PyInstaller copied from the runner (GLib, OpenSSL, ...).
+        run: python scripts/build_license_bundle.py --out THIRD_PARTY_LICENSES --frozen dist/reverbscope
       - name: Copy licenses and remove disallowed modules
         shell: bash
         run: |
@@ -354,8 +356,9 @@ jobs:
         env:
           REVERBSCOPE_PACKAGE: terminal
         run: |
-          python scripts/build_license_bundle.py --terminal --out THIRD_PARTY_LICENSES-terminal
           pyinstaller --noconfirm --clean --workpath build/terminal packaging/reverbscope.spec
+          python scripts/build_license_bundle.py --terminal --out THIRD_PARTY_LICENSES-terminal \
+            --frozen dist/reverbscope-terminal
           cp -R THIRD_PARTY_LICENSES-terminal dist/reverbscope-terminal/THIRD_PARTY_LICENSES
           python scripts/check_bundle_contents.py --root dist/reverbscope-terminal --strip --require-licenses --terminal
           if [[ "$RUNNER_OS" == Windows ]]; then

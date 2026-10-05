@@ -257,3 +257,21 @@ def test_the_installer_step_shows_why_the_chinese_messages_failed(
     with pytest.raises(subprocess.CalledProcessError):
         _steps(WINDOWS)["Windows installer"].run()
     assert "has SHA-256 7d54, expected 0000" in capfd.readouterr().err
+
+
+def test_the_license_bundle_follows_pyinstaller_and_covers_its_libraries(
+    tmp_path: Path,
+) -> None:
+    """The licence bundle was written before PyInstaller ran, so the native
+    libraries PyInstaller copied from the runner had no notice."""
+    names = [step.name for step in MODULE.plan(MODULE.Target(*WINDOWS), _args(), tmp_path)]
+    assert names.index("PyInstaller") < names.index("License bundle")
+    assert WORKFLOW.index("name: PyInstaller") < WORKFLOW.index("name: License bundle")
+    assert (
+        "build_license_bundle.py --out THIRD_PARTY_LICENSES --frozen dist/reverbscope" in WORKFLOW
+    )
+    terminal = WORKFLOW.split("name: Terminal Edition (command line only, no Qt)", 1)[1]
+    assert terminal.index("pyinstaller") < terminal.index("build_license_bundle.py")
+    assert "--frozen dist/reverbscope-terminal" in terminal
+    source = Path("scripts/build_release.py").read_text(encoding="utf-8")
+    assert '"--frozen", bundle' in source and '"--frozen",\n            terminal' in source

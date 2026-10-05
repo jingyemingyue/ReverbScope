@@ -135,6 +135,19 @@ if sys.platform.startswith("linux"):
     a.binaries = [
         entry for entry in a.binaries if not Path(entry[0]).name.startswith(SYSTEM_AUDIO_LIBS)
     ]
+    # Qt's GTK3 platform theme only gives Qt's own dialogs a GTK look. It links
+    # GTK, GDK, Pango, Cairo, ATK and gdk-pixbuf, so PyInstaller copied about
+    # thirty of the build runner's libraries, most of them LGPL, into the
+    # tarball and carried Ubuntu's GTK to other distributions. Without it Qt
+    # draws its own dialogs; the libraries that only it loads go with it.
+    sys.path.insert(0, str(ROOT / "packaging"))
+    from PyInstaller.depend.bindepend import get_imports
+    from pyinstaller_filters import without_plugin
+
+    def _loads(path):
+        return {Path(name).name for name, _resolved in get_imports(path)}
+
+    a.binaries = without_plugin(a.binaries, "platformthemes/libqgtk3.so", _loads)
 
 pyz = PYZ(a.pure)
 exe = EXE(

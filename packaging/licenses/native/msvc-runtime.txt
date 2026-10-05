@@ -1,0 +1,11 @@
+Microsoft Visual C++ runtime (VCRUNTIME140*.dll, MSVCP140*.dll, CONCRT140.dll)
+
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+The Windows builds of Python and of the extension modules in this bundle
+are compiled with Microsoft Visual C++ and load its runtime. PyInstaller
+copied these files unchanged from the Python installation that built the
+bundle (CPython's Windows installer ships them) or from the Windows system
+folder. They are redistributable files of Microsoft Visual Studio, which
+lets applications built with it ship them; they remain subject to
+Microsoft's licence terms. https://learn.microsoft.com/cpp/windows/redistributing-visual-cpp-files

@@ -7,13 +7,14 @@ below), and writes the same file names into
 Windows PC and a Linux PC and attach the results to the draft Release by
 hand (``docs/RELEASE_PLAN.md`` §3a):
 
-* Desktop Edition: license bundle -> PyInstaller -> ``--strip`` bundle gate
-  -> smoke test (CLI, demo, fake-backend measurement, offscreen GUI, windowed
+* Desktop Edition: PyInstaller -> license bundle (with a notice for every
+  native library PyInstaller collected) -> ``--strip`` bundle gate -> smoke
+  test (CLI, demo, fake-backend measurement, offscreen GUI, windowed
   launcher);
-* Terminal Edition: its license bundle -> PyInstaller with
-  ``REVERBSCOPE_PACKAGE=terminal`` -> the ``--terminal`` gate (no Qt, PySide6
-  or matplotlib) -> smoke test (CLI, demo in English and Chinese, JSON on
-  stdout, ``gui`` refused politely);
+* Terminal Edition: PyInstaller with ``REVERBSCOPE_PACKAGE=terminal`` -> its
+  license bundle -> the ``--terminal`` gate (no Qt, PySide6 or matplotlib)
+  -> smoke test (CLI, demo in English and Chinese, JSON on stdout, ``gui``
+  refused politely);
 * Linux: ``ReverbScope-Desktop-Linux-x86_64.tar.gz`` and
   ``ReverbScope-Terminal-Linux-x86_64.tar.gz``;
 * Windows: ``ReverbScope-Desktop-Windows-x64.zip``,
@@ -205,18 +206,19 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
         )
     )
 
-    def license_bundle() -> None:
-        shutil.rmtree(licenses, ignore_errors=True)
-        _python("scripts/build_license_bundle.py", "--out", licenses)
-
-    steps.append(Step("License bundle", license_bundle))
-
     def pyinstaller() -> None:
         shutil.rmtree(bundle, ignore_errors=True)
         shutil.rmtree(app, ignore_errors=True)
         _python("-m", "PyInstaller", "--noconfirm", "--clean", "packaging/reverbscope.spec")
 
     steps.append(Step("PyInstaller", pyinstaller))
+
+    def license_bundle() -> None:
+        # After PyInstaller, for the native libraries it copied.
+        shutil.rmtree(licenses, ignore_errors=True)
+        _python("scripts/build_license_bundle.py", "--out", licenses, "--frozen", bundle)
+
+    steps.append(Step("License bundle", license_bundle))
 
     def gate() -> None:
         shutil.copytree(licenses, bundle / "THIRD_PARTY_LICENSES", dirs_exist_ok=True)
@@ -258,7 +260,6 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
     def terminal_build() -> None:
         shutil.rmtree(terminal, ignore_errors=True)
         shutil.rmtree(terminal_licenses, ignore_errors=True)
-        _python("scripts/build_license_bundle.py", "--terminal", "--out", terminal_licenses)
         _python(
             "-m",
             "PyInstaller",
@@ -268,6 +269,14 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
             ROOT / "build" / "terminal",
             "packaging/reverbscope.spec",
             env={**os.environ, "REVERBSCOPE_PACKAGE": "terminal"},
+        )
+        _python(
+            "scripts/build_license_bundle.py",
+            "--terminal",
+            "--out",
+            terminal_licenses,
+            "--frozen",
+            terminal,
         )
         shutil.copytree(terminal_licenses, terminal / "THIRD_PARTY_LICENSES", dirs_exist_ok=True)
         _python(

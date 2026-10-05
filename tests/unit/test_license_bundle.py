@@ -50,7 +50,7 @@ def test_license_bundle_reports_missing_qt_texts_when_pyside_is_installed(tmp_pa
     qt_installed = bundle_mod._installed("PySide6_Essentials") or bundle_mod._installed("PySide6")
     missing = {item for item in unresolved if item.startswith("text:")}
     if qt_installed:
-        assert missing == {"text:LGPL-3.0.txt", "text:GPL-3.0.txt"}
+        assert missing == {"text:LGPL-3.0.txt", "text:GPL-3.0.txt", "text:qt-third-party.txt"}
     else:
         assert missing == set()
 
@@ -138,6 +138,14 @@ def test_bundle_gate_require_licenses_needs_the_verbatim_texts(tmp_path: Path) -
     texts.mkdir()
     for name in ("LGPL-3.0.txt", "GPL-3.0.txt", "PortAudio-LICENSE.txt"):
         (texts / name).write_text("x", encoding="utf-8")
+    errors = gate.check(tree, require_licenses=True)
+    assert errors == [
+        "THIRD_PARTY_LICENSES/_notices/python.txt is missing",
+        "THIRD_PARTY_LICENSES/_notices/qt-third-party.txt is missing",
+    ]
+    (licenses / "_notices").mkdir()
+    for name in ("python.txt", "qt-third-party.txt"):
+        (licenses / "_notices" / name).write_text("x", encoding="utf-8")
     assert gate.check(tree, require_licenses=True) == []
 
 
@@ -323,3 +331,246 @@ def test_lock_names_are_read_from_any_specifier() -> None:
     assert lock._requirement_name("x===1") == "x"
     assert lock._requirement_name("name @ https://example.org/x.whl") == "name"
     assert lock._requirement_name("zope.interface (>=5)") == "zope.interface"
+
+
+# --- Native libraries PyInstaller copies (R3-87) -----------------------------
+
+
+def _frozen_tree(root: Path) -> Path:
+    """A one-folder bundle: loose libraries, a wheel's own and Python modules."""
+    internal = root / "_internal"
+    (internal / "numpy.libs").mkdir(parents=True)
+    (internal / "PySide6" / "Qt" / "lib").mkdir(parents=True)
+    (internal / "python3.12" / "lib-dynload").mkdir(parents=True)
+    (internal / "numpy.libs" / "libscipy_openblas64_.so").write_bytes(b"wheel")
+    (internal / "PySide6" / "Qt" / "lib" / "libQt6Core.so.6").write_bytes(b"wheel")
+    (internal / "libQt6Core.so.6").symlink_to(Path("PySide6/Qt/lib/libQt6Core.so.6"))
+    (internal / "_cffi_backend.cpython-312-x86_64-linux-gnu.so").write_bytes(b"module")
+    (internal / "python3.12" / "lib-dynload" / "_ssl.cpython-312-x86_64-linux-gnu.so").write_bytes(
+        b"module"
+    )
+    (internal / "_ssl.pyd").write_bytes(b"module")
+    (internal / "libmystery.so.2").write_bytes(b"from the build machine")
+    (internal / "libssl-3.dll").write_bytes(b"from the Python installation")
+    (internal / "python312.dll").write_bytes(b"the interpreter")
+    (root / "reverbscope").write_bytes(b"executable")
+    return root
+
+
+def test_the_gate_finds_the_native_libraries_no_package_ships(tmp_path: Path) -> None:
+    gate = _load("check_bundle_contents")
+    root = _frozen_tree(tmp_path / "reverbscope")
+    found = [path.relative_to(root).as_posix() for path in gate.loose_native_libraries(root)]
+    assert found == [
+        "_internal/libmystery.so.2",
+        "_internal/libssl-3.dll",
+        "_internal/python312.dll",
+    ]
+
+
+def test_the_licence_gate_fails_on_a_native_library_without_a_notice(tmp_path: Path) -> None:
+    """GLib, libgcrypt, libsystemd, OpenSSL, libpython ... were copied from the
+    build runner with no notice, and the gate still said 'bundle gate passed'."""
+    gate = _load("check_bundle_contents")
+    root = _frozen_tree(tmp_path / "reverbscope")
+    licenses = root / "THIRD_PARTY_LICENSES"
+    (licenses / "_texts").mkdir(parents=True)
+    (licenses / "_notices" / "native").mkdir(parents=True)
+    (licenses / "INDEX.txt").write_text("unresolved: none\n", encoding="utf-8")
+    for name in ("LGPL-3.0.txt", "GPL-3.0.txt", "PortAudio-LICENSE.txt"):
+        (licenses / "_texts" / name).write_text("x", encoding="utf-8")
+    for name in ("python.txt", "qt-third-party.txt"):
+        (licenses / "_notices" / name).write_text("x", encoding="utf-8")
+    errors = gate.check(root, require_licenses=True)
+    assert len(errors) == 3
+    assert all("native library without a licence notice" in error for error in errors)
+    assert any(error.endswith("libmystery.so.2") for error in errors)
+    (licenses / "NATIVE.txt").write_text(
+        "header line\n"
+        "libmystery.so.2\t_notices/native/mystery.txt\n"
+        "libssl-3.dll\t_notices/native/openssl.txt\n"
+        "python312.dll\t_notices/python.txt\n",
+        encoding="utf-8",
+    )
+    (licenses / "_notices" / "native" / "openssl.txt").write_text("x", encoding="utf-8")
+    assert gate.check(root, require_licenses=True) == [
+        "THIRD_PARTY_LICENSES/_notices/native/mystery.txt (for libmystery.so.2) is missing"
+    ]
+    (licenses / "_notices" / "native" / "mystery.txt").write_text("x", encoding="utf-8")
+    assert gate.check(root, require_licenses=True) == []
+
+
+def test_native_libraries_of_a_python_installation_get_their_notices(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Where no package database names a library (Windows, macOS), the
+    libraries a Python installation brings get the notices in the repository."""
+    bundle_mod = _load("build_license_bundle")
+    monkeypatch.setattr(bundle_mod, "system_package", lambda library: None)
+    root = _frozen_tree(tmp_path / "reverbscope")
+    out = tmp_path / "THIRD_PARTY_LICENSES"
+    unresolved = bundle_mod.build(out, frozen=root)
+    assert [item for item in unresolved if item.startswith("native:")] == ["native:libmystery.so.2"]
+    lines = (out / "NATIVE.txt").read_text(encoding="utf-8").splitlines()
+    assert "libssl-3.dll\t_notices/native/openssl.txt" in lines
+    assert "python312.dll\t_notices/python.txt" in lines
+    openssl = (out / "_notices" / "native" / "openssl.txt").read_text(encoding="utf-8")
+    assert "The OpenSSL Project Authors" in openssl and "Apache License" in openssl
+    python = (out / "_notices" / "python.txt").read_text(encoding="utf-8")
+    assert "PYTHON SOFTWARE FOUNDATION LICENSE" in python
+    assert "native: 2 libraries outside Python packages" in (out / "INDEX.txt").read_text("utf-8")
+
+
+def test_a_debian_library_gets_its_package_copyright_and_source(tmp_path: Path) -> None:
+    """On the Ubuntu runner every library PyInstaller copied is credited to the
+    package that installed it, with its copyright file and source package."""
+    import shutil
+
+    import pytest
+
+    bundle_mod = _load("build_license_bundle")
+    if shutil.which("dpkg-query") is None:
+        pytest.skip("not a Debian or Ubuntu system")
+    system_zlib = next(iter(bundle_mod._system_copies("libz.so.1")), None)
+    if system_zlib is None:
+        pytest.skip("no system zlib")
+    root = tmp_path / "reverbscope"
+    (root / "_internal").mkdir(parents=True)
+    shutil.copyfile(system_zlib, root / "_internal" / "libz.so.1")
+    (root / "_internal" / "libz-but-not.so.1").write_bytes(b"not the system's file")
+    out = tmp_path / "THIRD_PARTY_LICENSES"
+    notices, unresolved = bundle_mod.native_notices(out, root)
+    assert unresolved == ["native:libz-but-not.so.1"]
+    notice = out / notices["libz.so.1"]
+    text = notice.read_text(encoding="utf-8")
+    assert "libz.so.1" in text.splitlines()[0]
+    assert "Source code: source package zlib" in text
+    assert "Jean-loup Gailly" in text
+
+
+def test_the_spec_drops_the_gtk_theme_and_only_the_libraries_it_alone_loads() -> None:
+    """Qt's GTK3 platform theme pulled about thirty of the runner's libraries
+    (GTK, Pango, Cairo, ATK, mostly LGPL) into the Linux bundle."""
+    import importlib.util
+
+    path = Path("packaging") / "pyinstaller_filters.py"
+    spec = importlib.util.spec_from_file_location("pyinstaller_filters", path)
+    assert spec is not None and spec.loader is not None
+    filters = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(filters)
+    loads = {
+        "/qt/plugins/platformthemes/libqgtk3.so": {
+            "libgtk-3.so.0",
+            "libpango-1.0.so.0",
+            "libglib-2.0.so.0",
+            "libQt6Core.so.6",
+        },
+        "/usr/lib/libgtk-3.so.0": {"libpango-1.0.so.0", "libglib-2.0.so.0"},
+        "/usr/lib/libpango-1.0.so.0": {"libglib-2.0.so.0"},
+        "/usr/lib/libglib-2.0.so.0": set(),
+        "/qt/lib/libQt6Core.so.6": {"libglib-2.0.so.0"},
+        "/qt/plugins/platforms/libqxcb.so": {"libQt6Core.so.6", "libglib-2.0.so.0"},
+    }
+    binaries = [
+        (
+            "PySide6/Qt/plugins/platformthemes/libqgtk3.so",
+            "/qt/plugins/platformthemes/libqgtk3.so",
+            "BINARY",
+        ),
+        ("libgtk-3.so.0", "/usr/lib/libgtk-3.so.0", "BINARY"),
+        ("libpango-1.0.so.0", "/usr/lib/libpango-1.0.so.0", "BINARY"),
+        ("libglib-2.0.so.0", "/usr/lib/libglib-2.0.so.0", "BINARY"),
+        ("PySide6/Qt/lib/libQt6Core.so.6", "/qt/lib/libQt6Core.so.6", "BINARY"),
+        ("PySide6/Qt/plugins/platforms/libqxcb.so", "/qt/plugins/platforms/libqxcb.so", "BINARY"),
+    ]
+    kept = filters.without_plugin(binaries, "platformthemes/libqgtk3.so", loads.__getitem__)
+    # QtCore links GLib, so GLib stays; GTK and Pango go with the theme.
+    assert [entry[0] for entry in kept] == [
+        "libglib-2.0.so.0",
+        "PySide6/Qt/lib/libQt6Core.so.6",
+        "PySide6/Qt/plugins/platforms/libqxcb.so",
+    ]
+    assert filters.without_plugin(kept, "platformthemes/libqgtk3.so", loads.__getitem__) == kept
+    spec_text = Path("packaging/reverbscope.spec").read_text(encoding="utf-8")
+    assert 'without_plugin(a.binaries, "platformthemes/libqgtk3.so"' in spec_text
+
+
+def test_the_qt_third_party_notice_matches_the_pinned_qt() -> None:
+    """DEPENDENCIES.md §4: the bundle must carry the notices of the code inside
+    Qt (PCRE2, HarfBuzz, libpng, MD4C, the Unicode data, ...). The file is
+    generated for one Qt version; a new PySide6 pin needs a new file."""
+    notice = Path("packaging/licenses/qt-third-party.txt").read_text(encoding="utf-8")
+    lock = Path("requirements/bundle.lock").read_text(encoding="utf-8")
+    pinned = next(
+        line.split("==", 1)[1].split()[0]
+        for line in lock.splitlines()
+        if line.lower().startswith("pyside6-essentials==")
+        or line.lower().startswith("pyside6_essentials==")
+    )
+    assert notice.splitlines()[0] == f"Third-party code inside Qt {pinned}"
+    for name in ("PCRE2", "HarfBuzz", "libpng", "libjpeg", "MD4C", "Unicode Character Database"):
+        assert name in notice, name
+    assert "--- ICU " in notice and "--- FTL ---" in notice
+
+
+def test_the_qt_notice_lists_shipped_code_with_the_chosen_licence_texts(tmp_path: Path) -> None:
+    import json
+
+    generator = _load("qt_third_party_notice")
+    qtbase = tmp_path / "qtbase"
+    (qtbase / "LICENSES").mkdir(parents=True)
+    for licence in ("FTL", "GPL-2.0-only", "MIT", "BSD-3-Clause"):
+        (qtbase / "LICENSES" / f"{licence}.txt").write_text(f"{licence} text", "utf-8")
+    entries = [
+        {
+            "Id": "freetype",
+            "Name": "Freetype 2",
+            "QDocModule": "qtgui",
+            "QtUsage": "Used in Qt GUI.",
+            "Version": "2.14.3",
+            "LicenseId": "FTL OR GPL-2.0-only",
+            "Copyright": ["Copyright (c) David Turner"],
+            "DownloadLocation": "https://download.savannah.gnu.org/releases/freetype/",
+        },
+        {
+            "Id": "md4c",
+            "Name": "MD4C",
+            "QDocModule": "qtgui",
+            "QtUsage": "Optionally used in QTextDocument.",
+            "LicenseId": "MIT",
+            "Copyright": "Copyright © 2016-2024 Martin Mitáš",
+        },
+        {
+            "Id": "kwin",
+            "Name": "KWin",
+            "QDocModule": "qtcore",
+            "QtUsage": "Used as part of the build system.",
+            "LicenseId": "BSD-3-Clause",
+        },
+        {
+            "Id": "sqlite",
+            "Name": "SQLite",
+            "QDocModule": "qtsql",
+            "QtUsage": "Used in Qt SQL Lite plugin.",
+            "LicenseId": "blessing",
+        },
+        {
+            "Id": "presentation-time",
+            "Name": "Wayland presentation time",
+            "QDocModule": "qtwaylandcompositor",
+            "QtUsage": "Used in the Qt Wayland Compositor",
+            "LicenseId": "MIT",
+        },
+    ]
+    (qtbase / "src").mkdir()
+    (qtbase / "src" / "qt_attribution.json").write_text(json.dumps(entries), encoding="utf-8")
+    icu = tmp_path / "ICU-LICENSE"
+    icu.write_text("UNICODE LICENSE", encoding="utf-8")
+    text, missing = generator.render("6.11.2", [qtbase], icu, "73.2")
+    assert missing == []
+    assert text.splitlines()[0] == "Third-party code inside Qt 6.11.2"
+    assert "Freetype 2 2.14.3" in text and "MD4C" in text and "Martin Mitáš" in text
+    assert "KWin" not in text and "SQLite" not in text and "presentation" not in text
+    # Of "FTL OR GPL-2.0-only" the FreeType licence is the one ReverbScope uses.
+    assert "--- FTL ---" in text and "GPL-2.0-only text" not in text
+    assert "--- ICU 73.2 ---" in text and "UNICODE LICENSE" in text
