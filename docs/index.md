@@ -10,6 +10,8 @@ python scripts/build_docs_site.py --out site
 ```
 
 The generator uses only the standard library. Open `site/index.html`.
+It replaces an earlier site in the output folder and refuses any other
+folder that is not empty.
 
 ## Languages / 语言
 

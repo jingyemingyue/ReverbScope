@@ -349,6 +349,25 @@ def rel_prefix(relative: Path) -> str:
     return "" if depth == 0 else "../" * depth
 
 
+#: Files the desktop puts into a folder that was browsed (Finder, Explorer).
+OS_LITTER = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
+
+
+def is_previous_site(folder: Path) -> bool:
+    """Whether ``folder`` holds nothing but what :func:`build_site` writes."""
+    if not (folder / "assets" / "theme.css").is_file():
+        return False
+    for path in folder.rglob("*"):
+        if path.is_dir() or path.name in OS_LITTER:
+            continue
+        relative = path.relative_to(folder)
+        if relative.as_posix() == "assets/theme.css":
+            continue
+        if path.is_symlink() or path.suffix != ".html" or relative.parts[0] == "assets":
+            return False
+    return True
+
+
 def build_site(docs: Path, dest: Path) -> list[Path]:
     """Render every Markdown file under ``docs`` into ``dest``. Returns HTML paths."""
     resolved = dest.resolve()
@@ -359,7 +378,16 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
         raise SystemExit(
             f"refusing to write the site into {dest}: it holds or is inside the documentation"
         )
-    if dest.exists():
+    if dest.exists() or dest.is_symlink():
+        # dest is deleted before it is written, so "--out src" or a folder of
+        # the user's own files must be refused, not emptied.
+        if dest.is_symlink() or not dest.is_dir():
+            raise SystemExit(f"refusing to write the site into {dest}: it is not a folder")
+        if any(dest.iterdir()) and not is_previous_site(dest):
+            raise SystemExit(
+                f"refusing to write the site into {dest}: the folder is not empty and "
+                "holds more than a site written by this script; choose a new folder"
+            )
         shutil.rmtree(dest)
     (dest / "assets").mkdir(parents=True)
     (dest / "assets" / "theme.css").write_text(THEME_CSS.lstrip(), encoding="utf-8")
@@ -388,7 +416,12 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--docs", type=Path, default=Path("docs"), help="Markdown source")
-    parser.add_argument("--out", type=Path, default=Path("site"), help="HTML output directory")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=Path("site"),
+        help="HTML output folder: a new or empty one, or an earlier site, which is replaced",
+    )
     args = parser.parse_args(argv)
     written = build_site(args.docs, args.out)
     print(f"wrote {len(written)} pages under {args.out}")

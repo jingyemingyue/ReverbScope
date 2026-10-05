@@ -70,3 +70,43 @@ def test_the_site_is_never_written_over_the_documentation(tmp_path: Path) -> Non
     assert (docs / "index.md").is_file()
     assert (docs / "user-guide" / "en.md").is_file()
     assert not (docs / "new-folder").exists()
+
+
+def test_the_site_only_replaces_an_empty_folder_or_an_earlier_site(tmp_path: Path) -> None:
+    """``--out src`` or ``--out ~/Desktop/ReverbScope`` deleted whatever that
+    folder held before the site was written into it."""
+    import pytest
+
+    site = _load()
+    victim = tmp_path / "victim"
+    (victim / "notes").mkdir(parents=True)
+    (victim / "notes" / "important.txt").write_text("notes", encoding="utf-8")
+    (victim / "thesis.docx").write_bytes(b"keep")
+    with pytest.raises(SystemExit, match="victim"):
+        site.build_site(Path("docs"), victim)
+    assert (victim / "notes" / "important.txt").read_text(encoding="utf-8") == "notes"
+    assert (victim / "thesis.docx").read_bytes() == b"keep"
+    assert not (victim / "assets").exists()
+
+    a_file = tmp_path / "page.html"
+    a_file.write_text("mine", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        site.build_site(Path("docs"), a_file)
+    assert a_file.read_text(encoding="utf-8") == "mine"
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    assert site.build_site(Path("docs"), empty)
+
+    # An earlier site is replaced, and a page whose source is gone goes with it.
+    (empty / "removed-page.html").write_text("<p>old</p>", encoding="utf-8")
+    (empty / ".DS_Store").write_bytes(b"\0")
+    assert site.build_site(Path("docs"), empty)
+    assert not (empty / "removed-page.html").exists()
+    assert (empty / "index.html").is_file()
+
+    # A file the generator never writes means the folder is not only a site.
+    (empty / "user-guide" / "my-notes.txt").write_text("mine", encoding="utf-8")
+    with pytest.raises(SystemExit):
+        site.build_site(Path("docs"), empty)
+    assert (empty / "user-guide" / "my-notes.txt").is_file()
