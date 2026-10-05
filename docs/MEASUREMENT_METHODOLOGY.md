@@ -772,7 +772,9 @@ random diffuse tail, the 4 / 8 / 16 kHz octave MADs are below 1.2 / 1.0 /
 recovered within 0.3 dB (`tests/unit/test_compare.py`).
 
 Early reflections. Matched by delay within ±0.5 ms
-(`CompareSettings.reflection_match_ms`). Unmatched arrivals are listed as
+(`CompareSettings.reflection_match_ms`), the closest pairs first and each
+arrival once, so an arrival 0.1 ms from a candidate is never left unmatched
+because an earlier one 0.5 ms away took it. Unmatched arrivals are listed as
 appeared or disappeared. Both sides must have high direct-sound confidence.
 The profile's finding compares the strongest reflection inside its window on
 each side, matched or not, so a dominant reflection that moved more than the
@@ -785,7 +787,8 @@ quiet segment *and* the caller declares the input gain unchanged
 the reason "gain not declared equal".
 
 Resonances. Matched within 1/6 octave
-(`CompareSettings.resonance_match_octaves`). The decay-distinguishable flags
+(`CompareSettings.resonance_match_octaves`), the closest pairs (by frequency
+ratio) first. The decay-distinguishable flags
 are compared, not a decay-time delta.
 
 Placement. Tier-2 heights are compared when both results are tier 2;

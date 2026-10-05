@@ -7,6 +7,7 @@ either result. Every delta carries its own :class:`~reverbscope.models.result.Va
 from __future__ import annotations
 
 import math
+from collections.abc import Callable, Sequence
 
 import numpy as np
 
@@ -387,6 +388,36 @@ def _compare_frequency_response(
     )
 
 
+def _closest_pairs(
+    left: Sequence[float],
+    right: Sequence[float],
+    distance: Callable[[float, float], float | None],
+    tolerance: float,
+) -> dict[int, int]:
+    """Index in ``left`` -> index in ``right`` of the pairs within ``tolerance``,
+    the closest pairs first, each item used once.
+
+    Giving each baseline item in turn the nearest free candidate let an
+    earlier one take a candidate that a later one sits much closer to: two
+    reflections 0.6 ms apart and one that only moved by 0.1 ms read as the
+    strong one getting 6.6 dB weaker and the moved one disappearing.
+    """
+    pairs = sorted(
+        (gap, i, j)
+        for i, a in enumerate(left)
+        for j, b in enumerate(right)
+        if (gap := distance(a, b)) is not None and gap <= tolerance
+    )
+    chosen: dict[int, int] = {}
+    taken: set[int] = set()
+    for _gap, i, j in pairs:
+        if i in chosen or j in taken:
+            continue
+        chosen[i] = j
+        taken.add(j)
+    return chosen
+
+
 def _match_reflections(
     baseline: AnalysisResult,
     candidate: AnalysisResult,
@@ -403,18 +434,16 @@ def _match_reflections(
         )
     left = list(baseline.reflections.reflections)
     right = list(candidate.reflections.reflections)
-    used_right: set[int] = set()
+    paired = _closest_pairs(
+        [item.delay_ms for item in left],
+        [other.delay_ms for other in right],
+        lambda a, b: abs(b - a),
+        settings.reflection_match_ms,
+    )
+    used_right = set(paired.values())
     matches: list[ReflectionMatch] = []
-    for item in left:
-        best_i: int | None = None
-        best_d = settings.reflection_match_ms
-        for i, other in enumerate(right):
-            if i in used_right:
-                continue
-            d = abs(other.delay_ms - item.delay_ms)
-            if d <= best_d:
-                best_d = d
-                best_i = i
+    for index, item in enumerate(left):
+        best_i = paired.get(index)
         if best_i is None:
             matches.append(
                 ReflectionMatch(
@@ -425,7 +454,6 @@ def _match_reflections(
             )
             continue
         other = right[best_i]
-        used_right.add(best_i)
         matches.append(
             ReflectionMatch(
                 status="matched",
@@ -516,19 +544,20 @@ def _match_resonances(
 ) -> tuple[ResonanceMatch, ...]:
     left = list(baseline.resonances.candidates)
     right = list(candidate.resonances.candidates)
-    used: set[int] = set()
+
+    def frequency_ratio(a: float, b: float) -> float | None:
+        return None if a <= 0.0 or b <= 0.0 else max(a / b, b / a)
+
+    paired = _closest_pairs(
+        [item.frequency_hz for item in left],
+        [other.frequency_hz for other in right],
+        frequency_ratio,
+        _octave_ratio(settings.resonance_match_octaves),
+    )
+    used = set(paired.values())
     matches: list[ResonanceMatch] = []
-    ratio = _octave_ratio(settings.resonance_match_octaves)
-    for item in left:
-        best_i: int | None = None
-        best_r = ratio
-        for i, other in enumerate(right):
-            if i in used or item.frequency_hz <= 0.0 or other.frequency_hz <= 0.0:
-                continue
-            r = max(item.frequency_hz / other.frequency_hz, other.frequency_hz / item.frequency_hz)
-            if r <= best_r:
-                best_r = r
-                best_i = i
+    for index, item in enumerate(left):
+        best_i = paired.get(index)
         if best_i is None:
             matches.append(
                 ResonanceMatch(
@@ -539,7 +568,6 @@ def _match_resonances(
             )
             continue
         other = right[best_i]
-        used.add(best_i)
         matches.append(
             ResonanceMatch(
                 status="matched",

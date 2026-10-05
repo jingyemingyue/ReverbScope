@@ -258,6 +258,50 @@ def test_resonances_are_matched_within_a_sixth_of_an_octave(short_sweep: SweepSe
     assert matched.candidate_decay_distinguishable is False
 
 
+def test_the_closest_pairs_are_matched_first(short_sweep: SweepSettings) -> None:
+    """Each baseline item took the nearest free candidate in turn, so a
+    reflection that vanished took the 10.5 ms arrival 0.5 ms away ("6.6 dB
+    weaker") and the 10.6 ms one it really was, 0.1 ms away, "disappeared".
+    Resonances were paired the same way."""
+    from reverbscope.models.result import Reflection, ResonanceCandidate
+
+    def resonance(frequency: float) -> ResonanceCandidate:
+        return ResonanceCandidate(
+            frequency_hz=frequency,
+            level_above_baseline_db=6.0,
+            narrowband_decay_20db_s=0.5,
+            filter_ringing_20db_s=0.1,
+            decay_distinguishable=True,
+            surroundings_decay_20db_s=0.2,
+        )
+
+    def take(reflections: list[tuple[float, float]], resonances: list[float]):
+        return replace(
+            result,
+            reflections=replace(
+                result.reflections,
+                reflections=tuple(Reflection(delay, level) for delay, level in reflections),
+            ),
+            resonances=replace(
+                result.resonances, candidates=tuple(resonance(f) for f in resonances)
+            ),
+        )
+
+    result = _room(short_sweep, seed=0)
+    assert result.reflections.direct_sound_confidence == "high"
+    baseline = take([(10.0, -8.1), (10.6, -15.1)], [50.0, 55.0])
+    candidate = take([(10.5, -14.7)], [54.0])
+    comparison = compare(baseline, candidate)
+    reflections = {
+        (m.status, m.baseline_delay_ms, m.candidate_delay_ms) for m in comparison.reflections
+    }
+    assert reflections == {("disappeared", 10.0, None), ("matched", 10.6, 10.5)}
+    matched = next(m for m in comparison.reflections if m.status == "matched")
+    assert matched.level_delta_db == pytest.approx(0.4)
+    resonances = {(m.status, m.baseline_hz, m.candidate_hz) for m in comparison.resonances}
+    assert resonances == {("disappeared", 50.0, None), ("matched", 55.0, 54.0)}
+
+
 def test_loopback_path_delay_is_compared_only_when_both_were_compensated(
     short_sweep: SweepSettings,
 ) -> None:
