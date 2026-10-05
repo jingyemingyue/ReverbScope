@@ -1854,7 +1854,19 @@ def render_config_saved(
         elif key == "developer-tools":
             notes.append(_("The desktop app shows the change the next time it starts."))
         elif key == "copy-recording":
-            notes.append(_("--copy-recording and --no-copy-recording override it for one command."))
+            # A root option: it goes before the command (after it is refused).
+            command = pgettext("metavar", "<command>")
+            if settings.copy_recording:
+                commands.append(
+                    (
+                        f"roomscope --no-copy-recording {command}",
+                        _("do not copy it for one command"),
+                    )
+                )
+            else:
+                commands.append(
+                    (f"roomscope --copy-recording {command}", _("copy it for one command"))
+                )
     lines = c.status("ok", text, indent=0)
     for note in notes:
         lines += c.paragraph(note, indent=2)

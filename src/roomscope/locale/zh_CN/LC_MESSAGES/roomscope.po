@@ -4431,8 +4431,11 @@ msgid "The desktop app shows the change the next time it starts."
 msgstr "桌面版下次启动时生效。"
 
 
-msgid "--copy-recording and --no-copy-recording override it for one command."
-msgstr "--copy-recording 和 --no-copy-recording 可以在单条命令中覆盖它。"
+msgid "do not copy it for one command"
+msgstr "只在这一条命令中不复制"
+
+msgid "copy it for one command"
+msgstr "只在这一条命令中复制"
 
 msgid "Saved in {path}"
 msgstr "已保存到 {path}"

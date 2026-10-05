@@ -333,6 +333,27 @@ def test_every_config_screen_is_chinese(
         assert found == [], (argv, found, out)
 
 
+@pytest.mark.parametrize(
+    ("value", "option"), [("off", "--copy-recording"), ("on", "--no-copy-recording")]
+)
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_the_copy_recording_override_is_shown_where_it_goes(
+    home: Path, capsys: pytest.CaptureFixture[str], value: str, option: str, lang: str
+) -> None:
+    """The confirmation said "--copy-recording and --no-copy-recording
+    override it for one command", and `analyze … --no-copy-recording` was
+    refused: they are root options and go before the command."""
+    from roomscope.cli.main import build_parser
+
+    code, out, _err = _run(capsys, "--lang", lang, "config", "copy-recording", value)
+    assert code == 0
+    row = next(line.strip() for line in out.splitlines() if "copy-recording" in line)
+    assert row.startswith(f"roomscope {option} <"), out
+    # As shown: the option, then any command.
+    args = build_parser().parse_args([option, "sweep", "--out", "x.wav"])
+    assert args.copy_recording is (option == "--copy-recording")
+
+
 def test_showing_an_unknown_setting_does_not_talk_of_changes(
     home: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
