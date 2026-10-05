@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import secrets
+import shutil
 import stat
 from pathlib import Path
 from typing import Any
@@ -67,6 +69,34 @@ def temporary_beside(target: Path, suffix: str) -> Path:
     temporary, descriptor = _create_beside(target, suffix)
     os.close(descriptor)
     return temporary
+
+
+def keep_beside(target: Path, suffix: str) -> Path:
+    """A second name for the regular file ``target``, next to it and unique.
+
+    A hard link where it costs nothing. A copy where the file system has no
+    links (FAT and exFAT memory cards) and for a read-only file: on Windows
+    the links of a file share its read-only flag, so the second name could
+    not be deleted without unprotecting the file. Raises ``OSError``.
+    """
+    if os.stat(target).st_mode & stat.S_IWUSR:
+        name = target.with_name(f".{target.stem}.{os.getpid()}-{secrets.token_hex(4)}{suffix}")
+        try:
+            os.link(target, name)  # fails, never follows, when the name exists
+        except OSError:
+            pass
+        else:
+            return name
+    copy, descriptor = _create_beside(target, suffix)
+    try:
+        with os.fdopen(descriptor, "wb") as out, open(target, "rb") as source:
+            shutil.copyfileobj(source, out)
+        shutil.copystat(target, copy)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            copy.unlink(missing_ok=True)
+        raise
+    return copy
 
 
 def keep_mode(temporary: Path, target: Path) -> None:

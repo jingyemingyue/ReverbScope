@@ -73,3 +73,31 @@ def test_atomic_write_keeps_the_mode_and_follows_links_only_when_asked(tmp_path:
     write_text_atomic(replaced, '{"room_name": "X"}')
     assert not replaced.is_symlink()
     assert real.read_text(encoding="utf-8") == '{"sessions": []}'
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX permissions")
+def test_keep_beside_links_or_copies_the_member(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A hard link where it can; a copy on a file system without links and
+    for a read-only file, whose links would share its read-only flag."""
+    import os
+
+    from reverbscope.io.jsonutil import keep_beside
+
+    member = tmp_path / "result.json"
+    member.write_text("take A", encoding="utf-8")
+    linked = keep_beside(member, ".previous.json")
+    assert linked.read_text(encoding="utf-8") == "take A" and member.stat().st_nlink == 2
+    linked.unlink()
+    member.chmod(0o444)
+    copied = keep_beside(member, ".previous.json")
+    assert member.stat().st_nlink == 1 and copied.stat().st_mode & 0o777 == 0o444
+    member.chmod(0o644)
+
+    def no_links(*_args: object, **_kwargs: object) -> None:
+        raise OSError(1, "Operation not permitted")  # exFAT
+
+    monkeypatch.setattr(os, "link", no_links)
+    copied = keep_beside(member, ".previous.json")
+    assert copied.read_text(encoding="utf-8") == "take A" and member.stat().st_nlink == 1

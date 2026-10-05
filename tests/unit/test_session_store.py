@@ -559,3 +559,43 @@ def test_a_failed_bundle_keeps_the_earlier_one(
         bundle_session(folder, tmp_path / "out")
     assert target.read_bytes() == good
     assert sorted(path.name for path in target.parent.iterdir()) == [target.name]
+
+
+@pytest.mark.parametrize("locked", ["renamed or replaced", "replaced"])
+def test_a_failed_rename_puts_back_the_members_already_replaced(
+    tmp_path: Path,
+    short_sweep: SweepSettings,
+    analysed,
+    monkeypatch: pytest.MonkeyPatch,
+    locked: str,
+) -> None:
+    """Windows refuses to replace a file another program holds open (a DAW
+    with impulse_response.wav loaded). recording.wav had already been
+    replaced: the folder held take B's recording beside take A's analysis."""
+    import os
+
+    from reverbscope.io.session_store import RECORDING_FILE
+    from reverbscope.models.audio import AudioSignal
+
+    _recording, result = analysed
+    folder = tmp_path / "s"
+    take_a = AudioSignal(np.full(4800, 0.1), short_sweep.sample_rate)
+    take_b = AudioSignal(np.full(4800, -0.2), short_sweep.sample_rate)
+    save_measurement(folder, MeasurementSession(room_name="A"), result, recording=take_a)
+    members = (RECORDING_FILE, IR_FILE, RESULT_FILE, SESSION_FILE, "sweep.reverbscope-sweep.json")
+    before = {name: (folder / name).read_bytes() for name in members if (folder / name).exists()}
+    real_replace = os.replace
+    held = str(folder / IR_FILE)
+
+    def windows_replace(src: str | os.PathLike[str], dst: str | os.PathLike[str]) -> None:
+        if str(dst) == held or (locked != "replaced" and str(src) == held):
+            raise PermissionError(13, "The process cannot access the file", str(dst))
+        real_replace(src, dst)
+
+    monkeypatch.setattr(os, "replace", windows_replace)
+    with pytest.raises(SessionError, match="cannot write"):
+        save_measurement(folder, MeasurementSession(room_name="B"), result, recording=take_b)
+    monkeypatch.setattr(os, "replace", real_replace)
+    assert {name: (folder / name).read_bytes() for name in before} == before
+    assert load_measurement(folder).session.room_name == "A"
+    assert not [path.name for path in folder.iterdir() if path.name.startswith(".")]

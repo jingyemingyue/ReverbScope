@@ -20,6 +20,7 @@ import logging
 import math
 import os
 import shutil
+import stat
 import zipfile
 from collections.abc import Callable
 from dataclasses import dataclass, replace
@@ -34,6 +35,7 @@ from reverbscope.i18n import _
 from reverbscope.io.jsonutil import (
     MAX_JSON_BYTES,
     MAX_RESULT_JSON_BYTES,
+    keep_beside,
     keep_mode,
     temporary_beside,
     write_text_atomic,
@@ -118,8 +120,9 @@ def save_measurement(
     user settings default to copying (the GUI default). ``recording`` is a take
     that has no file yet (a live GUI take): it is written as recording.wav.
 
-    Nothing in ``directory`` is replaced until every file has been written, so
-    a failed save keeps the session that was there whole.
+    Nothing in ``directory`` is replaced until every file has been written,
+    and a rename that fails puts back the members already replaced, so a
+    failed save keeps the session that was there whole.
     """
     base = Path(directory)
     base.mkdir(parents=True, exist_ok=True)
@@ -182,18 +185,72 @@ def save_measurement(
         _write_staged_text(
             stage(SESSION_FILE), session_path, json.dumps(session.to_dict(), indent=2)
         )
+        _replace_members(staged)
+    finally:
+        for temporary, _final in staged:
+            with contextlib.suppress(OSError):
+                temporary.unlink(missing_ok=True)
+    return session_path
+
+
+def _replace_members(staged: list[tuple[Path, Path]]) -> None:
+    """Rename every staged member into place, or leave every member as it was.
+
+    Each member a save replaces is kept under a second name until all the
+    renames have succeeded. When one fails (Windows refuses to replace a file
+    another program has open), the members already replaced are put back, so
+    the folder never holds one take's recording beside another's analysis.
+    """
+    replaced: list[tuple[Path, Path | None]] = []
+    kept: list[Path] = []
+    try:
         for temporary, final in staged:
             try:
+                previous = _keep_previous(final)
+                if previous is not None:
+                    kept.append(previous)
                 keep_mode(temporary, final)
                 os.replace(temporary, final)
             except OSError as exc:
+                for done, earlier in reversed(replaced):
+                    if not _put_back(done, earlier) and earlier is not None:
+                        kept.remove(earlier)  # its only copy now: never deleted
                 raise SessionError(
                     _("cannot write {path}: {error}").format(path=final, error=exc)
                 ) from exc
+            replaced.append((final, previous))
     finally:
-        for temporary, _final in staged:
-            temporary.unlink(missing_ok=True)
-    return session_path
+        for name in kept:
+            with contextlib.suppress(OSError):
+                name.unlink(missing_ok=True)
+
+
+def _keep_previous(final: Path) -> Path | None:
+    """The member at ``final`` under a second name; None when there is none.
+
+    A link planted under a member's name is replaced like any file, but never
+    kept: it is not part of a take.
+    """
+    try:
+        status = os.lstat(final)
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(status.st_mode):
+        return None
+    return keep_beside(final, f".previous{final.suffix}")
+
+
+def _put_back(final: Path, previous: Path | None) -> bool:
+    """Undo one rename of a failed save: the previous member, or none."""
+    try:
+        if previous is None:
+            final.unlink(missing_ok=True)
+        else:
+            os.replace(previous, final)
+    except OSError as exc:
+        log.warning("cannot restore %s after a failed save: %s", final, exc)
+        return False
+    return True
 
 
 def _write_staged_text(temporary: Path, final: Path, text: str) -> None:
