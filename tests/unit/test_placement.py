@@ -193,6 +193,46 @@ def test_a_microphone_near_the_vertical_midpoint_is_refused_with_both_readings()
     assert all(c.surface is None for c in result.candidates)
 
 
+def test_competing_upper_planes_are_refused_as_the_plane_above() -> None:
+    """Two ceiling readings were refused as "the surface the height was
+    measured from", with the vertical-midpoint advice, although the lower
+    plane had been found and only the plane above was in doubt."""
+    source_height, mic_height, horizontal = 0.90, 0.40, 1.0
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    arrivals = [(lower_ms, _lossy(distance, lower_ms))]
+    for ceiling in (2.5, 3.2):
+        upper_ms = _plane_arrival(
+            distance, ceiling - source_height, ceiling - mic_height, horizontal
+        )
+        arrivals.append((upper_ms, _lossy(distance, upper_ms)))
+    result = estimate_placement(
+        _reflections(arrivals),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    assert result.source_height_m.validity is Validity.VALID
+    assert result.source_height_m.metres == pytest.approx(source_height, abs=0.005)
+    ceiling_length = result.ceiling_height_m
+    assert ceiling_length.metres is None
+    assert ceiling_length.alternatives_m == pytest.approx((2.5, 3.2), abs=0.005)
+    assert ceiling_length.reason == (
+        "more than one reflection could be the plane above the devices, and they disagree by "
+        "more than 12 cm: 2.50 m or 3.20 m. ReverbScope does not choose between them"
+    )
+    from reverbscope.i18n import activate, localize
+
+    activate("zh_CN")
+    try:
+        assert localize(ceiling_length.reason) == (
+            "有不止一个反射可能来自设备上方平面，且它们之间相差超过 12 cm："
+            "2.50 m 或 3.20 m。ReverbScope 不会在其中做选择"
+        )
+    finally:
+        activate("en")
+
+
 def test_reported_uncertainty_is_labelled_as_input_only() -> None:
     source_height, mic_height, horizontal = 1.20, 1.25, 1.44
     distance = math.hypot(source_height - mic_height, horizontal)

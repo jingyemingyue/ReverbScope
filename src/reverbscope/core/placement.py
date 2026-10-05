@@ -203,6 +203,7 @@ def _resolve(
     *,
     empty_reason: str,
     uncertainty_m: float | None,
+    upper: bool = False,
 ) -> tuple[PlacementLength, int | None]:
     """The unique-or-refuse rule: agree, or say which values competed.
 
@@ -210,7 +211,10 @@ def _resolve(
     when nothing was resolved). There is deliberately no tie-break: picking the
     earliest is wrong exactly in the commonest setup (a desk edge arrives
     before the desk top) and picking the loudest is wrong whenever the lower
-    plane is carpeted.
+    plane is carpeted. ``upper`` resolves the plane above the devices, whose
+    refusal names that plane: the lower plane is already known by then, so the
+    competing values are ceiling heights, not the surface the height was
+    measured from.
     """
     if not hypotheses:
         return _refused(empty_reason), None
@@ -227,21 +231,31 @@ def _resolve(
             chosen.index,
         )
     listed = " or ".join(f"{v:.2f} m" for v in values)
+    if upper:
+        reason = diag(
+            "more than one reflection could be the plane above the devices, and they "
+            "disagree by more than {agreement_cm:.0f} cm: {values}. ReverbScope does not "
+            "choose between them",
+            agreement_cm=agreement_m * 100,
+            values=listed,
+        )
+    else:
+        reason = diag(
+            "more than one reflection could be the surface the height was measured "
+            "from, and they disagree by more than {agreement_cm:.0f} cm: {values}. "
+            "ReverbScope does not choose between them. This is the expected outcome when "
+            "the microphone sits near the vertical midpoint of the room, where the "
+            "arrival from the surface below and the one from the surface above are "
+            "interchangeable; moving the microphone 20-30 cm up or down and measuring "
+            "again separates them",
+            agreement_cm=agreement_m * 100,
+            values=listed,
+        )
     return (
         PlacementLength(
             metres=None,
             validity=_NOT_COMPUTED,
-            reason=diag(
-                "more than one reflection could be the surface the height was measured "
-                "from, and they disagree by more than {agreement_cm:.0f} cm: {values}. "
-                "ReverbScope does not choose between them. This is the expected outcome when "
-                "the microphone sits near the vertical midpoint of the room, where the "
-                "arrival from the surface below and the one from the surface above are "
-                "interchangeable; moving the microphone 20-30 cm up or down and measuring "
-                "again separates them",
-                agreement_cm=agreement_m * 100,
-                values=listed,
-            ),
+            reason=reason,
             alternatives_m=tuple(values),
         ),
         None,
@@ -711,6 +725,7 @@ def estimate_placement(
             ceiling_agreement_m,
             empty_reason=upper_empty_reason,
             uncertainty_m=None,
+            upper=True,
         )
         if ceiling_index is not None:
             ceiling_length = replace(
