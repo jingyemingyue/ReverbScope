@@ -2,8 +2,8 @@
 
 ``make_rir`` lives here so the package does not import ``tests``. The fake
 backend convolves the playback with a configured room impulse response, honours
-``progress`` and ``cancel``, and can emit a second channel that is an electrical
-loopback of the playback.
+``progress`` and ``cancel``, and records an electrical loopback of the playback
+on input 2; every other input hears the room.
 """
 
 from __future__ import annotations
@@ -27,6 +27,8 @@ from reverbscope.i18n import _
 from reverbscope.models.audio import AudioSignal, FloatArray
 
 DECAY_CONSTANT = 3.0 * np.log(10.0) * 2.0
+#: The fake interface's input (1-based) wired to its output: a loopback cable.
+LOOPBACK_INPUT = 2
 
 
 def make_rir(
@@ -189,7 +191,8 @@ class FakeBackend:
         n_ch = len(input_channels)
         recorded = np.zeros((signal.shape[0], n_ch), dtype=np.float64)
         for i, channel in enumerate(input_channels):
-            recorded[:, i] = loop if channel >= 2 else mic
+            # Only the cable's input: a microphone on input 3 to 8 hears the room.
+            recorded[:, i] = loop if channel == LOOPBACK_INPUT else mic
 
         n = signal.shape[0]
         for start in range(0, n, CALLBACK_BLOCK):

@@ -96,6 +96,27 @@ def test_fake_two_channel_loopback_capture(short_sweep: SweepSettings) -> None:
     assert float(np.sqrt(np.mean(mic**2))) != pytest.approx(float(np.sqrt(np.mean(loop**2))))
 
 
+def test_only_the_fake_loopback_input_carries_the_cable(short_sweep: SweepSettings) -> None:
+    """Review finding: every fake input from 2 to 8 was the noiseless loopback,
+    so a Demo microphone on input 3 analysed a cable (RT60 0.07 s, "exact
+    digital silence") instead of the synthetic room."""
+    from reverbscope.audio.fake import LOOPBACK_INPUT
+
+    take = FakeBackend().play_and_record(
+        measurement_signal(short_sweep),
+        short_sweep.sample_rate,
+        input_device=0,
+        output_device=0,
+        input_channels=[1, LOOPBACK_INPUT, 3, 8],
+        output_channel=1,
+        level_dbfs=-12.0,
+    )
+    room, cable = take.channel(0), take.channel(1)
+    assert not np.array_equal(room, cable)
+    for column in (2, 3):
+        np.testing.assert_array_equal(take.channel(column), room)
+
+
 def test_the_fake_loopback_arrives_before_the_microphone(short_sweep: SweepSettings) -> None:
     """The default room had its direct sound at t = 0 while the loopback was
     delayed by the interface: every Demo take with a loopback reported
