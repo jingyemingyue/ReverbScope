@@ -191,7 +191,7 @@ Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The interface and the
 text report show them in the interface language.
 
-The Results page has eight tabs:
+The Results page has nine tabs:
 
 | Tab | What it shows |
 | --- | --- |

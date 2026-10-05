@@ -97,7 +97,7 @@ roomscope-env/bin/roomscope gui
 
 核心诊断（`warnings`、`notes`、`reason`）在 `result.json` 中保持英文，便于跨语言对照问题报告。界面和文本报告按界面语言显示它们。
 
-结果页有八个标签页：
+结果页有九个标签页：
 
 | 标签页 | 显示内容 |
 | --- | --- |
