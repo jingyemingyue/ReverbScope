@@ -188,6 +188,16 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
         ),
         (["show"], "缺少必需的参数：路径", "the following arguments are required: path"),
         (
+            ["project", "add"],
+            "缺少必需的参数：项目、会话、--position",
+            "the following arguments are required: project, session, --position",
+        ),
+        (
+            ["project", "bogus"],
+            "无效选项：'bogus'（可选：'init'、'add'、'average'、'show'）",
+            "invalid choice: 'bogus' (choose from 'init', 'add', 'average', 'show')",
+        ),
+        (
             ["analyze-ir", "--ir", "x.wav", "--band", "20"],
             "参数 --band：需要 2 个参数值",
             "argument --band: expected 2 arguments",
@@ -227,7 +237,8 @@ def test_every_argparse_error_is_translated(
         assert expected in " ".join(err.split()), err
         assert "_command" not in err
         if lang == "zh_CN":
-            typed = ("bad", "result", "session", "comparison", "project", "sidecar")
+            typed = ("bad", "bogus", "result", "session", "comparison", "project", "sidecar")
+            typed += ("init", "add", "average", "show")
             data = ("x.wav", "abc", "long", "yes")
             assert english_words(_everything_shown(err), data=data, values=typed) == []
 

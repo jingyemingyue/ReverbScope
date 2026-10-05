@@ -65,7 +65,7 @@ from roomscope.errors import (
     RoomScopeError,
     SessionError,
 )
-from roomscope.i18n import N_, _, activate, localize, pgettext
+from roomscope.i18n import N_, _, activate, list_separator, localize, pgettext
 from roomscope.interpretation import available_profiles
 from roomscope.interpretation.profiles import band_text
 from roomscope.labels import accuracy_class_text
@@ -118,8 +118,44 @@ ARGPARSE_MESSAGES = frozenset(
 )
 
 
+#: argparse messages with a list argparse joined with ", " (all of it, or the
+#: named field); the list is re-joined with the language's separator.
+_LIST_ARGUMENTS: dict[str, str | None] = {
+    "the following arguments are required: %s": None,
+    "invalid choice: %(value)r (choose from %(choices)s)": "choices",
+    "unknown parser %(parser_name)r (choices: %(choices)s)": "choices",
+    "ambiguous option: %(option)s could match %(matches)s": "matches",
+}
+
+
+class _ListTemplate(str):
+    """A translated argparse template whose list argument, which argparse
+    joins with ``", "`` before filling it in, reads as a list of the active
+    language once filled in (``缺少必需的参数：项目、会话、--position``)."""
+
+    field: str | None
+
+    def __new__(cls, text: str, field: str | None) -> _ListTemplate:
+        made = super().__new__(cls, text)
+        made.field = field
+        return made
+
+    def __mod__(self, values: Any) -> str:
+        separator = list_separator()
+        if self.field is None and isinstance(values, str):
+            values = values.replace(", ", separator)
+        elif isinstance(values, dict) and isinstance(values.get(self.field), str):
+            values = {**values, self.field: values[self.field].replace(", ", separator)}
+        filled: str = str(self) % values
+        return filled
+
+
 def _argparse_gettext(message: str) -> str:
-    return _(message) if message in ARGPARSE_MESSAGES else message
+    if message not in ARGPARSE_MESSAGES:
+        return message
+    if message in _LIST_ARGUMENTS:
+        return _ListTemplate(_(message), _LIST_ARGUMENTS[message])
+    return _(message)
 
 
 def _argparse_ngettext(singular: str, plural: str, n: int) -> str:

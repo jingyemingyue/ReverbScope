@@ -9,6 +9,7 @@ stored, confirmed in the language just chosen, and used by the next command.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -184,7 +185,7 @@ def test_a_value_a_setting_cannot_take_writes_nothing(
 def test_a_refusal_is_translated(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "language", "fr")
     assert code == 2
-    assert "未知的语言 'fr'；可用：zh_CN, en，或 auto" in err and "没有做任何更改" in err
+    assert "未知的语言 'fr'；可用：zh_CN、en 或 auto" in err and "没有做任何更改" in err
 
 
 def test_a_change_keeps_every_other_setting(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -352,6 +353,26 @@ def test_the_copy_recording_override_is_shown_where_it_goes(
     # As shown: the option, then any command.
     args = build_parser().parse_args([option, "sweep", "--out", "x.wav"])
     assert args.copy_recording is (option == "--copy-recording")
+
+
+def test_chinese_lists_use_the_chinese_separator(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Lists read "zh_CN, en，或 auto" and "language, profile, backend", half-
+    and full-width punctuation mixed, next to "portaudio、fake 或 auto"."""
+    shown = []
+    for argv in (["config", "--help"], ["config", "language", "fr"], ["config", "foo"]):
+        _code, out, err = _run(capsys, "--lang", "zh_CN", *argv)
+        shown.append(" ".join((out + err).split()))
+    help_text, language, unknown = shown
+    assert "zh_CN、en 或 auto（跟随系统）" in help_text
+    assert "vocal、voiceover 或 auto" in help_text
+    assert "可用：zh_CN、en 或 auto" in language
+    assert "可用的设置项：language、profile、backend、" in unknown
+    for text in shown:
+        assert not re.search(r"[A-Za-z0-9_]，或|[a-z_], [a-z]", text), text
+    _code, out, err = _run(capsys, "config", "language", "fr")
+    assert "available: zh_CN, en, or auto" in err
 
 
 def test_showing_an_unknown_setting_does_not_talk_of_changes(

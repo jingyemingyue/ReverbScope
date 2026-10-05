@@ -4235,10 +4235,10 @@ msgid "on or off (auto: off; a source or pip install always has them)"
 msgstr "on 或 off（auto：off；源码或 pip 安装总会显示）"
 
 msgid "{languages}, or auto (follow the system)"
-msgstr "{languages}，或 auto（跟随系统）"
+msgstr "{languages} 或 auto（跟随系统）"
 
 msgid "{profiles}, or auto ({default})"
-msgstr "{profiles}，或 auto（{default}）"
+msgstr "{profiles} 或 auto（{default}）"
 
 msgid "English"
 msgstr "英文"
@@ -4312,10 +4312,10 @@ msgid "{key} is on or off, not {value}"
 msgstr "{key} 只能是 on 或 off，不能是 {value}"
 
 msgid "unknown language {value}; available: {languages}, or auto"
-msgstr "未知的语言 {value}；可用：{languages}，或 auto"
+msgstr "未知的语言 {value}；可用：{languages} 或 auto"
 
 msgid "unknown profile {value}; available: {profiles}, or auto"
-msgstr "未知的录音配置 {value}；可用：{profiles}，或 auto"
+msgstr "未知的录音配置 {value}；可用：{profiles} 或 auto"
 
 msgid "unknown audio backend {value}; choose portaudio, fake or auto"
 msgstr "未知的音频后端 {value}；请选择 portaudio、fake 或 auto"
@@ -4469,3 +4469,7 @@ msgstr "模拟全指向话筒"
 
 msgid "{label}: {description}"
 msgstr "{label}：{description}"
+
+msgctxt "list separator"
+msgid ", "
+msgstr "、"

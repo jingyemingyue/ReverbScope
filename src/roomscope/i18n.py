@@ -43,7 +43,7 @@ import re
 import string
 import struct
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -238,6 +238,16 @@ def pgettext(context: str, message: str) -> str:
 
 def ngettext(singular: str, plural: str, n: int) -> str:
     return _translation.ngettext(singular, plural, n)
+
+
+def list_separator() -> str:
+    """What separates the items of a list: ``", "`` in English, ``"、"`` in Chinese."""
+    return pgettext("list separator", ", ")
+
+
+def list_join(items: Iterable[str]) -> str:
+    """``items`` as a list in the active language (``zh_CN、en``)."""
+    return list_separator().join(items)
 
 
 def format_message(template: str, **params: Any) -> str:

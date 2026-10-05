@@ -32,6 +32,7 @@ from roomscope.i18n import (
     LanguageChoice,
     _,
     available_locales,
+    list_join,
     pgettext,
     supported_language,
 )
@@ -118,7 +119,7 @@ def canonical_key(raw: str) -> str:
     if key not in KEYS:
         raise SettingError(
             _("unknown setting {key}; the settings are: {keys}").format(
-                key=repr(raw), keys=", ".join(KEYS)
+                key=repr(raw), keys=list_join(KEYS)
             )
         )
     return key
@@ -141,7 +142,7 @@ def parse_value(key: str, raw: str) -> Any:
         if lang is None:
             raise SettingError(
                 _("unknown language {value}; available: {languages}, or auto").format(
-                    value=repr(raw), languages=", ".join(languages())
+                    value=repr(raw), languages=list_join(languages())
                 )
             )
         return lang
@@ -152,7 +153,7 @@ def parse_value(key: str, raw: str) -> Any:
         if name not in _profiles():
             raise SettingError(
                 _("unknown profile {value}; available: {profiles}, or auto").format(
-                    value=repr(raw), profiles=", ".join(_profiles())
+                    value=repr(raw), profiles=list_join(_profiles())
                 )
             )
         return name
@@ -228,11 +229,11 @@ def choices(key: str) -> str:
     """The values a setting takes, in words (help and errors)."""
     if key == "language":
         return _("{languages}, or auto (follow the system)").format(
-            languages=", ".join(languages())
+            languages=list_join(languages())
         )
     if key == "profile":
         return _("{profiles}, or auto ({default})").format(
-            profiles=", ".join(_profiles()), default=UserSettings().default_profile
+            profiles=list_join(_profiles()), default=UserSettings().default_profile
         )
     if key == "backend":
         return _("portaudio, fake, or auto (PortAudio)")
