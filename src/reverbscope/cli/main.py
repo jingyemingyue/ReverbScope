@@ -34,6 +34,7 @@ from reverbscope.cli.console import (
     ProgressLine,
     Verbatim,
     cell_width,
+    printable,
     shell_command,
 )
 from reverbscope.cli.render import (
@@ -1790,8 +1791,10 @@ def cmd_show(args: argparse.Namespace) -> int:
         console = _console(args)
         for item in listings:
             # Tab-separated for scripts: never wrapped, but "·" becomes "|"
-            # where the stream's encoding has no "·".
-            print(f"{item.path}\t{console.fit(item.label)}")
+            # where the stream's encoding has no "·". A tab or a control
+            # character from a received session.json is shown as an escape.
+            path = printable(str(item.path), single_line=True)
+            print(f"{path}\t{console.fit(printable(item.label, single_line=True))}")
         return 0
 
     if _is_comparison_path(args.path):
@@ -1850,7 +1853,9 @@ def _session_inputs(session: Any, directory: Path) -> list[tuple[str, str]]:
         (_("Microphone"), session.microphone_name),
     ):
         if value:
-            rows.append((label, str(value)))
+            # A session from someone else: a line break or escape sequence in
+            # a name must not forge report lines or drive the terminal.
+            rows.append((label, printable(str(value), single_line=True)))
     return rows
 
 
@@ -2099,10 +2104,11 @@ def cmd_project(args: argparse.Namespace) -> int:
         if not is_project(args.project):
             raise ReverbScopeError(_("no project.json in {path}").format(path=args.project))
         project = load_project(args.project)
-        print(f"{project.name or args.project}")
+        # project.json may come from someone else (SECURITY.md).
+        print(printable(project.name or str(args.project), single_line=True))
         for label, path in list_project_sessions(args.project):
-            tag = label or _("(unlisted)")
-            print(f"  {tag}\t{path}")
+            tag = printable(label, single_line=True) if label else _("(unlisted)")
+            print(f"  {tag}\t{printable(str(path), single_line=True)}")
         return 0
     if command == "average":
         if not is_project(args.project):

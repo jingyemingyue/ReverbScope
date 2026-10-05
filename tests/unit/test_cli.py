@@ -536,3 +536,51 @@ def test_project_init_keeps_an_existing_project(
     assert main(["project", "init", "--out", str(project), "--force"]) == 0
     payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
     assert payload["name"] == "room" and payload["positions"] == []
+
+
+def test_show_escapes_control_characters_from_a_received_session(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`show`, `show --list` and `project show` printed a crafted room name,
+    stored warning or position label raw: ESC sequences cleared the screen
+    or retitled the terminal, and a line break forged a report line."""
+    from dataclasses import replace
+
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    settings = SweepSettings(duration_s=1.0, pre_silence_s=0.5, post_silence_s=1.0)
+    rec = synthetic_recording(settings, make_rir(settings.sample_rate, rt60_s=0.3), noise_rms=1e-5)
+    result = replace(
+        analyze(rec, Reference.from_settings(settings)), warnings=("stored\x1b[2Jwarning",)
+    )
+    project = tmp_path / "inbox"
+    session = project / "received"
+    crafted = MeasurementSession(
+        room_name="Booth\x1b[2J\x1b]0;pwned\x07", measurement_position="A\nRT60 0.30 s"
+    )
+    save_measurement(session, crafted, result, include_curves=False)
+    (project / "project.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "name": "P\x1b[2J",
+                "positions": [{"label": "A\x1b[8m", "session_dirs": ["received"]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    capsys.readouterr()
+
+    assert main(["--color", "always", "show", str(session)]) == 0
+    report = capsys.readouterr().out
+    assert main(["--color", "always", "show", "--list", str(project)]) == 0
+    listing = capsys.readouterr().out
+    assert main(["project", "show", str(project)]) == 0
+    projects = capsys.readouterr().out
+    for out in (report, listing, projects):
+        assert "\x1b[2J" not in out and "\x07" not in out and "\x1b[8m" not in out
+    assert "Booth\\x1b[2J\\x1b]0;pwned\\x07" in report and "Booth\\x1b[2J" in listing
+    assert "A\\nRT60 0.30 s" in report and "stored\\x1b[2Jwarning" in report
+    assert "P\\x1b[2J" in projects and "A\\x1b[8m" in projects

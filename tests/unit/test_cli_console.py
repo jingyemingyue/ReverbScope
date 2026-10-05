@@ -604,3 +604,22 @@ def test_the_windowed_bundle_has_no_stdout_and_still_runs(
     with pytest.raises(SystemExit) as exc:
         main(["--help"])
     assert exc.value.code == 0
+
+
+def test_control_characters_from_files_are_shown_as_escapes() -> None:
+    """A room name or stored warning from someone else's session reached the
+    terminal raw: ESC sequences cleared the screen or retitled the window,
+    and a line break forged a report line."""
+    from reverbscope.cli.console import Verbatim, printable
+
+    crafted = "Booth\x1b[2J\x1b]0;pwned\x07‮"
+    assert printable(crafted) == "Booth\\x1b[2J\\x1b]0;pwned\\x07\\u202e"
+    assert printable("A\nRT60 0.30 s\tVALID") == "A\nRT60 0.30 s\tVALID"
+    assert printable("A\nRT60\t0.30 s", single_line=True) == "A\\nRT60\\t0.30 s"
+    assert printable("录音棚 · 2 m") == "录音棚 · 2 m"
+    console = Console(color=True)
+    styled = console.style("ok", "green", "bold") + " \x1b[8mhidden\x1b[0m"
+    shown = console.readable(styled)
+    assert shown.startswith("\x1b[32;1mok\x1b[0m ") and "\\x1b[8mhidden" in shown
+    path = console.readable(Verbatim("sessions/a\nb"))
+    assert isinstance(path, Verbatim) and path == "sessions/a\\nb"

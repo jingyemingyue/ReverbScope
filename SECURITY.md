@@ -36,7 +36,9 @@ session's `result.json` and
 `impulse_response.wav` only from inside that session's folder (a path in
 `session.json` that is absolute or leads out of the folder is refused).
 Saving an opened session into another folder copies its sweep sidecar and
-recording only from inside its own folder.
+recording only from inside its own folder. The command line shows control
+characters in text from these files (a room name, a stored warning) as
+escapes such as `\x1b`, so they cannot drive the terminal or forge report lines.
 `reverbscope session bundle` leaves out any file that links out of the session
 folder, so a session from someone else cannot put one of your files into the
 zip you attach to a public issue, and writes the home folder in the paths of

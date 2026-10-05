@@ -103,6 +103,14 @@ _ASCII_SIGNS = str.maketrans(
 _DEGREE = "°"
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
+#: The escape sequences :meth:`Console.style` writes, and only those.
+_OWN_CODE = "|".join(sorted({*_SGR.values(), "0"}, key=len, reverse=True))
+_OWN_STYLE = re.compile(rf"(\x1b\[(?:{_OWN_CODE})(?:;(?:{_OWN_CODE}))*m)")
+#: Characters a terminal acts on instead of showing: C0 and C1 controls
+#: (ESC starts a sequence that clears the screen or retitles the window) and
+#: the bidirectional controls, which reorder what follows them.
+_CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")
+_ESCAPES = {"\n": "\\n", "\r": "\\r", "\t": "\\t"}
 
 #: Characters a line should not start with (closing punctuation, CJK and
 #: Latin); a wrap lets them hang one step past the margin instead.
@@ -130,6 +138,39 @@ class Verbatim(str):
     narrow terminal they run past the edge (the terminal folds them) rather
     than being cut into pieces.
     """
+
+
+def printable(text: str, *, single_line: bool = False) -> str:
+    """``text`` with the control characters in it shown as escapes (``\\x1b``).
+
+    Text from files, such as the room name of a session from someone else or
+    a warning stored in its result.json, must not reach the terminal as
+    control sequences: they could clear the screen, retitle the window, or
+    hide and forge lines of the report. ReverbScope's own colour codes are
+    kept. ``single_line`` is for a name shown on one line: line breaks and
+    tabs are shown as escapes too, and every escape sequence.
+    """
+    keep = "" if single_line else "\n\t"
+
+    def escape(match: re.Match[str]) -> str:
+        char = match.group()
+        if char in keep:
+            return char
+        if char in _ESCAPES:
+            return _ESCAPES[char]
+        code = ord(char)
+        return f"\\x{code:02x}" if code < 0x100 else f"\\u{code:04x}"
+
+    if not _CONTROL.search(text):
+        return text
+    if single_line:
+        shown = _CONTROL.sub(escape, text)
+    else:
+        parts = _OWN_STYLE.split(text)
+        shown = "".join(
+            part if index % 2 else _CONTROL.sub(escape, part) for index, part in enumerate(parts)
+        )
+    return Verbatim(shown) if isinstance(text, Verbatim) else shown
 
 
 #: Joins a number to its unit inside the layout (``2.4<NBSP>ms``): wrapping
@@ -477,13 +518,17 @@ class Console:
     def readable(self, text: str) -> str:
         """Text as this stream will show it, before its width is measured.
 
-        :meth:`fit` still translates anything left. Doing it here keeps a
-        narrow encoding (``Δ`` becomes ``delta``) from running past the width
-        the line was wrapped to.
+        Control characters are shown as escapes (:func:`printable`); a
+        :class:`Verbatim` value stays on its one line. :meth:`fit` still
+        translates anything left. Doing it here keeps a narrow encoding
+        (``Δ`` becomes ``delta``) from running past the width the line was
+        wrapped to.
         """
-        if self.unicode or not text:
+        if not text:
             return text
-        shown = self._ascii(str(text))
+        shown = printable(text, single_line=isinstance(text, Verbatim))
+        if not self.unicode:
+            shown = self._ascii(str(shown))
         return Verbatim(shown) if isinstance(text, Verbatim) else shown
 
     def _ascii(self, text: str) -> str:
