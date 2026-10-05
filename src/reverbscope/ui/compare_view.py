@@ -308,12 +308,9 @@ class ComparePage(QWidget):
         )
         if target is None:
             return
-        path = str(target)
-        if not path.lower().endswith(".json"):
-            # Without the extension save_comparison takes the name for a folder.
-            path += ".json"
         try:
-            written = save_comparison(path, self._comparison)
+            # Always a .json name: save_comparison takes any other for a folder.
+            written = save_comparison(target, self._comparison)
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Cannot save"), localize(str(exc)))
             return

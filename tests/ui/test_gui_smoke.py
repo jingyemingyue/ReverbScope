@@ -1389,3 +1389,45 @@ def test_back_from_compare_returns_to_the_unsaved_result(
     window.compare.back.emit()
     assert window.stack.currentWidget() is window.home
     window.close()
+
+
+def test_saving_a_name_with_a_dot_asks_before_replacing_the_file_written(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """Qt's dialog adds the extension only to a name that has none: "sweep
+    2026.10.05" and "studio v1.2" were checked as typed, and the .wav or
+    .json added after the dialog closed replaced an existing file (and the
+    sweep's sidecar) without a question."""
+    from reverbscope.core.compare import compare
+    from reverbscope.core.pipeline import Reference, analyze
+
+    window = MainWindow()
+    window.show()
+    window.show_mode("universal_daw")
+    page = window.daw
+    page.generate_sweep_to(tmp_path / "sweep 2026.10.05.wav")
+    sweep = (tmp_path / "sweep 2026.10.05.wav").read_bytes()
+    page.duration.setValue(3.0)
+    questions = _type_name_and_refuse_to_replace(app, tmp_path, "sweep 2026.10.05")
+    page._choose_sweep_target()
+    assert questions == ["sweep 2026.10.05.wav already exists. Replace it?"]
+    assert (tmp_path / "sweep 2026.10.05.wav").read_bytes() == sweep
+
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.3), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    (tmp_path / "studio v1.2.json").write_text('{"keep": true}', encoding="utf-8")
+    window.compare._comparison = compare(result, result)
+    questions = _type_name_and_refuse_to_replace(app, tmp_path, "studio v1.2")
+    window.compare._save()
+    assert questions == ["studio v1.2.json already exists. Replace it?"]
+    assert (tmp_path / "studio v1.2.json").read_text(encoding="utf-8") == '{"keep": true}'
+
+    # A new name with a dot gets the extension without a question.
+    questions = _type_name_and_refuse_to_replace(app, tmp_path, "take.v2")
+    page._choose_sweep_target()
+    assert questions == []
+    assert (tmp_path / "take.v2.wav").is_file()
+    assert (tmp_path / "take.v2.reverbscope-sweep.json").is_file()
+    window.close()

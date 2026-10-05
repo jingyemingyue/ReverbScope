@@ -4575,3 +4575,11 @@ msgstr "此会话未保存频率响应曲线"
 
 msgid "No decay curves stored with this session"
 msgstr "此会话未保存衰减曲线"
+
+# Save dialogs: the extension added to a name typed with a dot names an existing file
+
+msgid "Replace file?"
+msgstr "替换文件？"
+
+msgid "{name} already exists. Replace it?"
+msgstr "{name} 已存在。要替换它吗？"

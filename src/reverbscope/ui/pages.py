@@ -465,9 +465,6 @@ class DawModePage(QWidget):
             self, _("Save test signal"), "reverbscope_sweep.wav", _("WAV files (*.wav)")
         )
         if target is not None:
-            # A name typed with another extension ("take.v2") still gets one.
-            if target.suffix.lower() != ".wav":
-                target = target.with_name(target.name + ".wav")
             self.generate_sweep_to(target)
 
     def generate_sweep_to(self, path: Path) -> None:
