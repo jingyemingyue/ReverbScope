@@ -37,15 +37,35 @@ def _entry_points() -> dict[str, RecordingProfile]:
     except ImportError:  # pragma: no cover
         return found
     for item in entry_points().select(group="reverbscope.profiles"):
-        if item.name in _BUILTINS or item.name in found:
+        if item.name in _BUILTINS:
             log.warning("ignoring third-party profile %r; name collides with a built-in", item.name)
+            continue
+        if item.name in found:
+            log.warning(
+                "ignoring third-party profile %r; another package registers the same name",
+                item.name,
+            )
             continue
         try:
             loaded = item.load()
         except Exception as exc:
             log.warning("profile %r failed to import: %s", item.name, exc)
             continue
-        profile = loaded() if isinstance(loaded, type) else loaded
+        # Every command lists the profiles while it builds its options, so a
+        # plugin that cannot be created is skipped, as an exporter is: it must
+        # not stop `reverbscope --version` or the desktop app.
+        try:
+            profile = loaded() if isinstance(loaded, type) else loaded
+        except Exception as exc:
+            log.warning("profile %r could not be created: %s", item.name, exc)
+            continue
+        if not isinstance(profile, RecordingProfile):
+            log.warning(
+                "ignoring third-party profile %r; it lacks name, description, interpret or "
+                "interpret_comparison",
+                item.name,
+            )
+            continue
         found[item.name] = profile
     return found
 

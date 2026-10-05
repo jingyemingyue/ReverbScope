@@ -14,6 +14,7 @@ from reverbscope.interpretation.profiles import (
     AcousticGuitarProfile,
     ChoirProfile,
     DrumsProfile,
+    GenericProfile,
     RoomMicProfile,
     VocalProfile,
     VoiceOverProfile,
@@ -554,3 +555,68 @@ def test_the_rt60_change_direction_follows_the_printed_percentage(
         assert f"（相对基线 {shown} %，{chinese}）" in decay_finding().message
     finally:
         activate("en")
+
+
+def test_a_third_party_profile_that_cannot_be_created_is_skipped(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A plugin whose constructor raised stopped every command, `reverbscope
+    --version` included, because the options list the profiles. An object
+    without interpret_comparison was registered and failed only later."""
+    import importlib.metadata as metadata
+    import logging
+    import sys
+    import types
+
+    from reverbscope.cli.main import main
+    from reverbscope.interpretation import get_profile, profile_origins
+
+    module = types.ModuleType("third_party_profiles")
+
+    class Studio:
+        name = "studio"
+        description = "needs a configuration file"
+
+        def __init__(self) -> None:
+            raise RuntimeError("config file ~/.studio.toml missing")
+
+    class Half:
+        name = "half"
+        description = "no comparison"
+
+        def interpret(self, result: object) -> list[object]:
+            return []
+
+    class Booth(GenericProfile):
+        name = "booth"
+        description = "works"
+
+    module.Studio, module.Half, module.Booth = Studio, Half, Booth  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "third_party_profiles", module)
+    points = [
+        metadata.EntryPoint(name, f"third_party_profiles:{cls}", "reverbscope.profiles")
+        for name, cls in (
+            ("studio", "Studio"),
+            ("half", "Half"),
+            ("booth", "Booth"),
+            ("booth", "Booth"),
+        )
+    ]
+
+    class Points:
+        def select(self, *, group: str) -> list[metadata.EntryPoint]:
+            return [point for point in points if point.group == group]
+
+    monkeypatch.setattr(metadata, "entry_points", lambda: Points())
+    with caplog.at_level(logging.WARNING, logger="reverbscope.interpretation"):
+        assert available_profiles() == sorted([*ALL_PROFILES, "booth"])
+    messages = [record.getMessage() for record in caplog.records]
+    assert "profile 'studio' could not be created: config file ~/.studio.toml missing" in messages
+    assert any("'half'" in message and "interpret_comparison" in message for message in messages)
+    assert any("'booth'" in message and "another package" in message for message in messages)
+    assert not any("built-in" in message for message in messages)
+    assert profile_origins()["booth"] == "entry_point"
+    assert isinstance(get_profile("booth"), Booth)
+    with pytest.raises(SystemExit) as stopped:
+        main(["--version"])
+    assert stopped.value.code == 0
