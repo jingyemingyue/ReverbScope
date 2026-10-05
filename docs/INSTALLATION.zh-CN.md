@@ -201,6 +201,18 @@ xattr -dr com.apple.quarantine reverbscope-terminal
 `reverbscope.exe --help`。（直接双击 `reverbscope.exe` 的话，窗口会在输出后立刻关闭。）在 PowerShell 中，于该文件夹运行
 `.\reverbscope.exe demo` 也一样。
 
+**在 PowerShell 中保存报告。** 输出重定向到文件或交给其他程序时，每条 `reverbscope` 命令都写出 UTF-8。命令提示符的 `>`
+会原样保存。Windows PowerShell 5.1，以及把输出交给 `Select-String`、`Out-File` 等命令时的 PowerShell 7，则按控制台代码页解码，
+中文报告就会变成乱码（`混响` 变成 `娣峰搷`）。重定向或使用管道之前，先把这个 PowerShell 窗口切换到 UTF-8：
+
+```powershell
+$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
+reverbscope show session > report.txt
+```
+
+也可以让 ReverbScope 改用控制台代码页输出：在中文 Windows 上设置 `$env:PYTHONIOENCODING = "cp936"`
+（`[Console]::OutputEncoding` 会显示当前代码页）。该代码页没有的字符会被替换。
+
 ## Python wheel 和源码包
 
 ReverbScope **还没有发布到 PyPI**，所以 `pip install reverbscope` 装不到本项目；在本页另有说明之前，PyPI 上名为
@@ -312,6 +324,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 | Linux：图表里的中文显示成方框 | `sudo apt install fonts-noto-cjk` |
 | `reverbscope gui` 提示*当前安装的是 ReverbScope 终端版* | 终端版没有图形界面；请下载桌面版（两个版本都有命令行）。 |
 | macOS：*无法打开“reverbscope”，因为无法验证开发者*（终端版） | 清除一次下载标记：`xattr -dr com.apple.quarantine reverbscope-terminal`（见[终端版](#终端版)）。 |
+| Windows PowerShell：重定向到文件或经过管道后中文变成乱码（`> report.txt`、`\| Select-String`） | 先运行 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`（见[在 PowerShell 中保存报告](#终端版)）。 |
 | Windows：`reverbscope.exe` 打开后立刻关闭 | 它是命令行程序：改为双击 `ReverbScope Terminal.cmd`，或在命令提示符里运行它。 |
 | `reverbscope gui` 提示无法加载 PySide6 | 安装界面组件：`pip install "PySide6_Essentials>=6.6"`（或者带 `[gui]` 重新安装 wheel）。 |
 | `pip install reverbscope` 找不到，或者装到了别的东西 | ReverbScope 还没有发布到 PyPI；请使用 [wheel](#用发布页的-wheel-安装)。 |

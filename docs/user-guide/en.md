@@ -270,6 +270,13 @@ a file or another program it writes plain text. `--color never` or the
 `NO_COLOR` environment variable turns colour off, `--color always` keeps it
 in a pipe.
 
+Piped or redirected output is UTF-8. Windows PowerShell decodes it in the
+console's code page and garbles Chinese (`> report.txt`, `| Select-String`);
+run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`
+once in that window first, or see
+[Saving a report from PowerShell](../INSTALLATION.md#terminal-edition).
+Command Prompt is not affected.
+
 ## Troubleshooting
 
 | Symptom | What to check |
