@@ -42,8 +42,10 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
    falls below noise + 7.5 dB, never to floor blocks after it that rise into
    that level window again (in a narrow band the floor in short blocks swings
    by many dB). The iterative estimate is rejected, and the
-   preliminary crosspoint, slope and noise level are used instead, when the
-   iteration does not converge within 6 passes, when the late slope is less
+   preliminary crosspoint, slope and noise level are used instead, when a
+   pass cannot estimate a late slope (fewer than 3 blocks of decay in that
+   level window, or no fall across it), when the iteration does not
+   converge within 6 passes, when the late slope is less
    than ``LUNDEBY_MIN_SLOPE_RATIO`` (0.5) times the
    preliminary slope, or when the crosspoint lies more than
    ``10 dB / |preliminary slope|`` plus two blocks after the first block at
@@ -185,6 +187,10 @@ EDT_MAX_DIRECT_STEP_DB = 5.0
 #: much decay (dB at the late slope), or by less than 1 ms.
 LUNDEBY_CONVERGENCE_DB = 1.0
 LUNDEBY_MAX_ITERATIONS = 6
+#: Lundeby late slope: fitted to the decay from this many dB above the noise ...
+LUNDEBY_LATE_FIT_LOWER_DB = 7.5
+#: ... up to this many dB higher.
+LUNDEBY_LATE_FIT_RANGE_DB = 15.0
 #: Lundeby estimate rejected when |late slope| < this ratio * |preliminary slope| ...
 LUNDEBY_MIN_SLOPE_RATIO = 0.5
 #: ... or when the crosspoint lies more than this decay (dB, at the
@@ -404,6 +410,9 @@ def estimate_truncation(
     preliminary = (cross_t, slope, noise_db)
 
     converged = False
+    # Why the iteration stopped before converging, when it could not estimate
+    # a late slope at all (it did not run out of passes).
+    stalled: str | None = None
     iterations = 0
     late_slope = slope
     times = centres / sample_rate
@@ -431,17 +440,29 @@ def estimate_truncation(
         #    stretch: in a narrow band the floor in short intervals swings by
         #    many dB, and floor intervals seconds after the crosspoint that
         #    rise into the level window would drag the slope towards zero.
-        lower = noise_db + 7.5
-        upper = lower + 15.0
+        lower = noise_db + LUNDEBY_LATE_FIT_LOWER_DB
+        upper = lower + LUNDEBY_LATE_FIT_RANGE_DB
         after_start = times >= start_t
         below_upper = np.flatnonzero(after_start & (level_db <= upper))
         below_lower = np.flatnonzero(after_start & (level_db < lower))
         first = int(below_upper[0]) if below_upper.shape[0] else level_db.shape[0]
         stop = int(below_lower[0]) if below_lower.shape[0] else level_db.shape[0]
         if stop - first < 3:
+            stalled = diag(
+                "the late decay slope could not be estimated: fewer than 3 intervals of decay "
+                "lie between {lower:g} and {upper:g} dB above the noise",
+                lower=LUNDEBY_LATE_FIT_LOWER_DB,
+                upper=LUNDEBY_LATE_FIT_LOWER_DB + LUNDEBY_LATE_FIT_RANGE_DB,
+            )
             break
         new_slope, new_intercept, _ = _linear_fit(times[first:stop], level_db[first:stop])
         if not np.isfinite(new_slope) or new_slope >= 0.0:
+            stalled = diag(
+                "the late decay slope could not be estimated: the response does not fall "
+                "between {lower:g} and {upper:g} dB above the noise",
+                lower=LUNDEBY_LATE_FIT_LOWER_DB,
+                upper=LUNDEBY_LATE_FIT_LOWER_DB + LUNDEBY_LATE_FIT_RANGE_DB,
+            )
             break
         new_cross_t = (noise_db - new_intercept) / new_slope
         late_slope = new_slope
@@ -453,7 +474,9 @@ def estimate_truncation(
             break
 
     problem: str | None = None
-    if not converged:
+    if stalled is not None:
+        problem = stalled
+    elif not converged:
         problem = diag(
             "the Lundeby noise-floor iteration did not converge in {iterations} iteration(s)",
             iterations=iterations,

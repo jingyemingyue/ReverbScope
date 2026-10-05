@@ -249,7 +249,10 @@ time-reversed filtering.
    parameter values are ReverbScope's choices within the ranges published by
    Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB; 10–20 dB). The
    iterative estimate is rejected, and the preliminary cross-point, slope
-   and noise level are used instead, when it does not converge within 6
+   and noise level are used instead, when a pass cannot estimate a late
+   slope (fewer than 3 intervals of decay between noise + 7.5 dB and
+   noise + 22.5 dB, or no fall across them; the warning says so rather than
+   "did not converge"), when it does not converge within 6
    passes, when the late slope is less than half the preliminary slope, or
    when the cross-point lies more than `10 dB / |preliminary slope|` plus
    two intervals after the first interval at noise + 5 dB (a stationary
