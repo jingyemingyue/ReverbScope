@@ -50,12 +50,12 @@ def test_daw_mode_end_to_end(app: QApplication, tmp_path: Path, short_sweep: Swe
     page.duration.setValue(short_sweep.duration_s)
     page.generate_sweep_to(tmp_path / "sweep.wav")
     assert (tmp_path / "sweep.reverbscope-sweep.json").is_file()
-    assert window.state.reference is not None
+    assert page._reference is not None
 
     ir = make_rir(
         short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)], diffuse_level=0.01
     )
-    recording = synthetic_recording(window.state.sweep_settings, ir, noise_rms=1e-5)
+    recording = synthetic_recording(page.current_sweep_settings(), ir, noise_rms=1e-5)
     rec_path = write_wav(
         tmp_path / "recording.wav", recording.samples, recording.sample_rate, subtype="FLOAT"
     )
@@ -96,7 +96,7 @@ def test_reopen_saved_session(
     ir = make_rir(
         short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)], diffuse_level=0.01
     )
-    recording = synthetic_recording(window.state.sweep_settings, ir, noise_rms=1e-5)
+    recording = synthetic_recording(page.current_sweep_settings(), ir, noise_rms=1e-5)
     rec_path = write_wav(
         tmp_path / "recording.wav", recording.samples, recording.sample_rate, subtype="FLOAT"
     )
@@ -244,7 +244,7 @@ def test_placement_tab_uses_tape_measurements(
         diffuse_level=0.004,
         length_s=0.6,
     )
-    recording = synthetic_recording(window.state.sweep_settings, ir, noise_rms=1e-4)
+    recording = synthetic_recording(page.current_sweep_settings(), ir, noise_rms=1e-4)
     rec_path = write_wav(
         tmp_path / "recording.wav", recording.samples, recording.sample_rate, subtype="FLOAT"
     )
@@ -280,7 +280,7 @@ def test_compare_two_saved_sessions(
     ir = make_rir(
         short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)], diffuse_level=0.01
     )
-    recording = synthetic_recording(window.state.sweep_settings, ir, noise_rms=1e-5)
+    recording = synthetic_recording(page.current_sweep_settings(), ir, noise_rms=1e-5)
     rec_path = write_wav(
         tmp_path / "recording.wav", recording.samples, recording.sample_rate, subtype="FLOAT"
     )
@@ -700,7 +700,7 @@ def test_a_late_analysis_never_joins_a_session_opened_meanwhile(
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(rate))
     page.duration.setValue(short_sweep.duration_s)
     page.generate_sweep_to(tmp_path / "sweep.wav")
-    take = synthetic_recording(window.state.sweep_settings, make_rir(rate, rt60_s=0.3))
+    take = synthetic_recording(page.current_sweep_settings(), make_rir(rate, rt60_s=0.3))
     page.set_recording(
         write_wav(tmp_path / "take.wav", take.samples, take.sample_rate, subtype="FLOAT")
     )
@@ -1022,4 +1022,110 @@ def test_saving_over_a_saved_session_asks_first(
     assert len(asked) == 1 and str(folder) in asked[0]
     answer["replace"] = True
     assert save("Room C") == "Room C"
+    window.close()
+
+
+def _demo_take(app: QApplication, window: MainWindow, seconds: float = 1.0) -> None:
+    """Run a take on the Demo page and wait until Results shows it."""
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(seconds)
+    page.run_button.click()
+    _settle(app, page._measure_worker)
+    _settle(app, page._analysis_worker)
+    assert window.stack.currentWidget() is window.results
+
+
+def test_daw_mode_analyses_only_the_recording_it_shows(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
+) -> None:
+    """After a Demo take, Ctrl+1 showed "No recording selected." but Analyze
+    ran on the demo's synthetic take and saved it as a Universal DAW session.
+    With a recording imported first, its name stayed on the page while the
+    demo take was analysed."""
+    import json
+
+    from reverbscope.io.wav import read_wav
+    from reverbscope.ui import pages
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    refused: list[str] = []
+    monkeypatch.setattr(
+        pages.QMessageBox, "warning", staticmethod(lambda _p, title, _m: refused.append(title))
+    )
+    window = MainWindow()
+    window.show()
+    _demo_take(app, window)
+    window.show_mode("universal_daw")  # Ctrl+1 from Results
+    daw = window.daw
+    assert daw.recording_label.text() == "No recording selected."
+    daw.start_analysis(blocking=True)
+    assert refused == ["No recording"]
+    assert window.stack.currentWidget() is daw
+
+    rate = short_sweep.sample_rate
+    daw.sample_rate.setCurrentIndex(daw.sample_rate.findData(rate))
+    daw.duration.setValue(short_sweep.duration_s)
+    daw.generate_sweep_to(tmp_path / "sweep.wav")
+    take = synthetic_recording(daw.current_sweep_settings(), make_rir(rate, rt60_s=0.3))
+    take_path = write_wav(tmp_path / "daw_take.wav", take.samples, rate, subtype="FLOAT")
+    daw.set_recording(take_path)
+    _demo_take(app, window)
+    window.show_mode("universal_daw")
+    assert daw.recording_label.text().startswith("daw_take.wav")
+    daw.start_analysis(blocking=True)
+    assert window.stack.currentWidget() is window.results
+    assert window.state.recording_path == take_path
+    window.results.save_to(tmp_path / "session")
+    saved = json.loads((tmp_path / "session" / "session.json").read_text(encoding="utf-8"))
+    assert saved["mode"] == "universal_daw"
+    copied = read_wav(tmp_path / "session" / saved["recording_path"])
+    assert len(copied.samples) == len(take.samples)
+    window.close()
+
+
+def test_a_standalone_take_never_replaces_the_daw_reference(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
+) -> None:
+    """Every Standalone or Demo Run, even a refused one, replaced the shared
+    reference: the Universal DAW page, still showing its Step 1 sweep, then
+    deconvolved its recording with the take's shorter sweep, reported a
+    time-stretched sweep and marked every decay metric unreliable."""
+    import json
+
+    from reverbscope.ui import pages
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setattr(pages.QMessageBox, "critical", staticmethod(lambda *_a: None))
+    rate = short_sweep.sample_rate
+    window = MainWindow()
+    window.show()
+    window.show_mode("universal_daw")
+    daw = window.daw
+    daw.sample_rate.setCurrentIndex(daw.sample_rate.findData(rate))
+    daw.duration.setValue(short_sweep.duration_s)
+    daw.generate_sweep_to(tmp_path / "daw_sweep.wav")
+    take = synthetic_recording(
+        daw.current_sweep_settings(), make_rir(rate, rt60_s=0.4), noise_rms=1e-5
+    )
+    daw.set_recording(write_wav(tmp_path / "daw_take.wav", take.samples, rate, subtype="FLOAT"))
+
+    window.show_mode("demo")
+    window.standalone.input_channel.setValue(40)  # refused: the fake interface has 8 inputs
+    window.standalone.duration.setValue(1.5)
+    window.standalone.run_button.click()
+    assert window.standalone._measure_worker is None
+    window.standalone.input_channel.setValue(1)
+    _demo_take(app, window, seconds=1.5)
+    window.show_mode("universal_daw")
+    assert daw.reference_label.text() == "Reference: daw_sweep.wav"
+    daw.start_analysis(blocking=True)
+    result = window.state.result
+    assert result is not None
+    assert result.sweep_settings["duration_s"] == short_sweep.duration_s
+    assert result.decay.broadband.rt60_estimate_s == pytest.approx(0.4, rel=0.1)
+    window.results.save_to(tmp_path / "session")
+    saved = json.loads((tmp_path / "session" / "session.json").read_text(encoding="utf-8"))
+    assert saved["sweep_settings"]["duration_s"] == short_sweep.duration_s
     window.close()

@@ -15,6 +15,13 @@ from reverbscope.models.session import MeasurementSession
 
 @dataclass
 class MeasurementState:
+    """The session on the Results page: its recording, sweep, settings and result.
+
+    A mode page keeps its own recording and sweep and writes them here only
+    when it starts an analysis (or a take is recorded), so one page never
+    analyses what another page imported or played.
+    """
+
     mode: str = "universal_daw"
     sweep_settings: SweepSettings = field(default_factory=SweepSettings)
     sweep_path: Path | None = None
