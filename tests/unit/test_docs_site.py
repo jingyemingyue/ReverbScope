@@ -22,7 +22,7 @@ def test_markdown_subset_renders_tables_links_and_code() -> None:
         "| A | B |\n| --- | --- |\n| 1 | `code` |\n\n"
         "- item **bold**\n\n```python\nprint(1)\n```\n"
     )
-    assert "<h1>Title</h1>" in html
+    assert '<h1 id="title">Title</h1>' in html
     assert 'href="ARCHITECTURE_V1.html#scope"' in html
     assert "<table>" in html and "<th>A</th>" in html
     assert "<code>code</code>" in html
@@ -110,3 +110,76 @@ def test_the_site_only_replaces_an_empty_folder_or_an_earlier_site(tmp_path: Pat
     with pytest.raises(SystemExit):
         site.build_site(Path("docs"), empty)
     assert (empty / "user-guide" / "my-notes.txt").is_file()
+
+
+def test_headings_carry_the_anchors_github_gives_them() -> None:
+    """Headings had no id, so every ``#section`` link opened the top of the page."""
+    site = _load()
+    html = site.markdown_to_html(
+        "# Install ReverbScope\n\n## Check the download\n\n### First launch on macOS\n\n"
+        "## Python wheel and source\n\n## `reverbscope config`: settings\n\n"
+        "## 终端版\n\n### macOS 首次打开\n\n## Python wheel 和源码包\n\n"
+        "## 我该下载哪个文件？\n\n## Linux\n\n## Linux\n\n## Linux-1\n\n"
+        "See [the check](#check-the-download).\n"
+    )
+    for anchor in (
+        "install-reverbscope",
+        "check-the-download",
+        "first-launch-on-macos",
+        "python-wheel-and-source",
+        "reverbscope-config-settings",
+        "终端版",
+        "macos-首次打开",
+        "python-wheel-和源码包",
+        "我该下载哪个文件",
+        "linux",
+        "linux-1",
+        "linux-1-1",
+    ):
+        assert f' id="{anchor}"' in html, anchor
+    assert '<h2 id="check-the-download">Check the download</h2>' in html
+    assert 'href="#check-the-download"' in html
+
+
+def test_links_that_leave_docs_point_to_the_repository() -> None:
+    """``../CONTRIBUTING.md`` became ``../CONTRIBUTING.html``, which the site
+    never has; ``../.github/workflows/release.yml`` was not in it either."""
+    site = _load()
+    blob = "https://github.com/jingyemingyue/ReverbScope/blob/main/"
+    page = site.markdown_to_html(
+        "[c](../CONTRIBUTING.md#tests) [w](../.github/workflows/release.yml) "
+        "[i](INSTALLATION.md#macos)",
+        page="EDITIONS.md",
+    )
+    assert f'href="{blob}CONTRIBUTING.md#tests"' in page
+    assert f'href="{blob}.github/workflows/release.yml"' in page
+    assert 'href="INSTALLATION.html#macos"' in page
+    nested = site.markdown_to_html(
+        "[h](../HARDWARE_TESTS.md) [r](../../README.md)", page="user-guide/en.md"
+    )
+    assert 'href="../HARDWARE_TESTS.html"' in nested
+    assert f'href="{blob}README.md"' in nested
+
+
+def test_every_link_of_the_generated_site_resolves(tmp_path: Path) -> None:
+    import re
+    from urllib.parse import unquote
+
+    site = _load()
+    dest = (tmp_path / "site").resolve()
+    site.build_site(Path("docs"), dest)
+    ids = {
+        page: set(re.findall(r' id="([^"]+)"', page.read_text(encoding="utf-8")))
+        for page in dest.rglob("*.html")
+    }
+    assert ids
+    dead: list[str] = []
+    for page in ids:
+        for href in re.findall(r'href="([^"]+)"', page.read_text(encoding="utf-8")):
+            if href.startswith(("http://", "https://", "mailto:")):
+                continue
+            path, _, fragment = href.partition("#")
+            target = (page.parent / unquote(path)).resolve() if path else page
+            if not target.exists() or (fragment and unquote(fragment) not in ids[target]):
+                dead.append(f"{page.relative_to(dest)}: {href}")
+    assert dead == []

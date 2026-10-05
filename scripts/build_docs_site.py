@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import argparse
 import html
+import posixpath
 import re
 import shutil
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,6 +24,9 @@ INLINE_CODE = re.compile(r"`([^`]+)`")
 LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 BOLD = re.compile(r"\*\*([^*]+)\*\*")
 ITALIC = re.compile(r"(?<!\*)\*([^*]+)\*(?!\*)")
+#: Where a link that leaves docs/ (``../CONTRIBUTING.md``) is shown: the site
+#: holds only the pages rendered from docs/.
+REPO_BLOB = "https://github.com/jingyemingyue/ReverbScope/blob/main/"
 
 THEME_CSS = """
 :root {
@@ -104,26 +109,52 @@ class NavItem:
     section: str
 
 
-def rewrite_md_href(href: str) -> str:
-    """Turn a same-tree ``.md`` link into the generated ``.html`` page."""
+def rewrite_md_href(href: str, page: str = "index.md") -> str:
+    """Turn a same-tree ``.md`` link into the generated ``.html`` page.
+
+    ``page`` is the linking file's path inside docs/. A link that leaves
+    docs/ points to the file on GitHub, because the site has no copy of it.
+    """
     if href.startswith(("http://", "https://", "mailto:", "ftp://", "#")):
         return href
     path, frag = href, ""
     if "#" in href:
         path, frag = href.split("#", 1)
         frag = "#" + frag
+    in_repo = posixpath.normpath(posixpath.join("docs", posixpath.dirname(page), path))
+    if in_repo != "docs" and not in_repo.startswith("docs/"):
+        return REPO_BLOB + in_repo + frag
     if path.endswith(".md"):
         path = path[: -len(".md")] + ".html"
     return path + frag
 
 
-def inline_html(text: str) -> str:
+def heading_anchor(markdown: str) -> str:
+    """The anchor GitHub gives a heading, so ``#check-the-download`` links work.
+
+    Markdown marks are dropped and the text lower-cased; letters (CJK too),
+    digits, ``-`` and ``_`` are kept, each space becomes ``-`` and any other
+    character (punctuation, full-width or not) is removed.
+    """
+    text = LINK.sub(r"\1", markdown)
+    text = INLINE_CODE.sub(r"\1", text)
+    text = ITALIC.sub(r"\1", BOLD.sub(r"\1", text))
+    kept: list[str] = []
+    for char in text.strip().lower():
+        if char == " ":
+            kept.append("-")
+        elif char in "-_" or unicodedata.category(char)[0] in "LNM":
+            kept.append(char)
+    return "".join(kept)
+
+
+def inline_html(text: str, page: str = "index.md") -> str:
     pieces: list[str] = []
     cursor = 0
     for match in LINK.finditer(text):
         pieces.append(_inline_plain(text[cursor : match.start()]))
         label = _inline_plain(match.group(1))
-        href = html.escape(rewrite_md_href(match.group(2).split()[0]), quote=True)
+        href = html.escape(rewrite_md_href(match.group(2).split()[0], page), quote=True)
         pieces.append(f'<a href="{href}">{label}</a>')
         cursor = match.end()
     pieces.append(_inline_plain(text[cursor:]))
@@ -156,10 +187,16 @@ def _split_row(line: str) -> list[str]:
     return [cell.strip() for cell in body.split("|")]
 
 
-def markdown_to_html(text: str) -> str:
-    """Render a documentation Markdown subset to an HTML fragment."""
+def markdown_to_html(text: str, page: str = "index.md") -> str:
+    """Render a documentation Markdown subset to an HTML fragment.
+
+    ``page`` is the file's path inside docs/; relative links are resolved
+    from it.
+    """
     lines = text.replace("\r\n", "\n").split("\n")
     out: list[str] = []
+    # GitHub numbers a repeated anchor: "linux", "linux-1", "linux-2", ...
+    anchors: dict[str, int] = {}
     i = 0
     in_code = False
     code_lang = ""
@@ -175,8 +212,16 @@ def markdown_to_html(text: str) -> str:
 
     def flush_para() -> None:
         if para:
-            out.append(f"<p>{inline_html(' '.join(para))}</p>")
+            out.append(f"<p>{inline_html(' '.join(para), page)}</p>")
             para.clear()
+
+    def anchor(heading: str) -> str:
+        base = anchor_id = heading_anchor(heading)
+        while anchor_id in anchors:
+            anchors[base] += 1
+            anchor_id = f"{base}-{anchors[base]}"
+        anchors[anchor_id] = 0
+        return anchor_id
 
     def open_list(kind: str) -> None:
         nonlocal list_kind
@@ -213,7 +258,10 @@ def markdown_to_html(text: str) -> str:
             flush_para()
             close_list()
             level = len(heading.group(1))
-            out.append(f"<h{level}>{inline_html(heading.group(2).strip())}</h{level}>")
+            title = heading.group(2).strip()
+            anchor_id = anchor(title)
+            id_attr = f' id="{html.escape(anchor_id, quote=True)}"' if anchor_id else ""
+            out.append(f"<h{level}{id_attr}>{inline_html(title, page)}</h{level}>")
             i += 1
             continue
         if stripped in {"---", "***", "___"}:
@@ -230,7 +278,7 @@ def markdown_to_html(text: str) -> str:
             while i < len(lines) and lines[i].strip().startswith(">"):
                 quote.append(lines[i].strip()[1:].strip())
                 i += 1
-            out.append(f"<blockquote><p>{inline_html(' '.join(quote))}</p></blockquote>")
+            out.append(f"<blockquote><p>{inline_html(' '.join(quote), page)}</p></blockquote>")
             continue
         if (
             stripped.startswith("|")
@@ -245,10 +293,10 @@ def markdown_to_html(text: str) -> str:
             while i < len(lines) and lines[i].strip().startswith("|"):
                 rows.append(_split_row(lines[i].strip()))
                 i += 1
-            cells = "".join(f"<th>{inline_html(h)}</th>" for h in headers)
+            cells = "".join(f"<th>{inline_html(h, page)}</th>" for h in headers)
             body = []
             for row in rows:
-                tds = "".join(f"<td>{inline_html(c)}</td>" for c in row)
+                tds = "".join(f"<td>{inline_html(c, page)}</td>" for c in row)
                 body.append(f"<tr>{tds}</tr>")
             out.append(
                 f"<table><thead><tr>{cells}</tr></thead><tbody>{''.join(body)}</tbody></table>"
@@ -258,14 +306,14 @@ def markdown_to_html(text: str) -> str:
         if ul:
             flush_para()
             open_list("ul")
-            out.append(f"<li>{inline_html(ul.group(1))}</li>")
+            out.append(f"<li>{inline_html(ul.group(1), page)}</li>")
             i += 1
             continue
         ol = OL_ITEM.match(line)
         if ol:
             flush_para()
             open_list("ol")
-            out.append(f"<li>{inline_html(ol.group(2))}</li>")
+            out.append(f"<li>{inline_html(ol.group(2), page)}</li>")
             i += 1
             continue
         if not stripped:
@@ -404,7 +452,7 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
         current = relative.with_suffix(".html").as_posix()
         page = _page(
             title,
-            markdown_to_html(markdown),
+            markdown_to_html(markdown, relative.as_posix()),
             _sidebar(items, current, prefix),
             prefix + "assets/theme.css",
         )
