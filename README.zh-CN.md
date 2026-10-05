@@ -1,8 +1,10 @@
 [English](README.md) | **简体中文**
 
+> 🌐 官网即将上线（Pages 开启后生效）。
+
 # ReverbScope
 
-**用扫频测量你的录音房间，判断一个话筒位置能不能用——可以配合任何 DAW，也可以单独使用。**
+**ReverbScope 是一款免费开源的房间声学测量工具：用指数扫频（sine sweep）测量你的录音房间，还原房间脉冲响应（impulse response），判断一个话筒位置能不能用——混响时间（RT60 / reverberation time）、早期反射、背景噪声与直达声，可以配合任何 DAW，也可以单独使用。录音棚的免费 REW 替代品，从不编造数字。**
 
 [![最新预发布版](https://img.shields.io/github/v/release/jingyemingyue/ReverbScope?include_prereleases&label=pre-release&color=1a7f8e)](https://github.com/jingyemingyue/ReverbScope/releases)
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)

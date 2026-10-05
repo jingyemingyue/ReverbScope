@@ -1,9 +1,15 @@
 **English** | [简体中文](README.zh-CN.md)
 
+> 🌐 Official website coming soon — it will go live once GitHub Pages is enabled.
+
 # ReverbScope
 
-**Measure your recording room with a sine sweep and find out whether a
-microphone position is usable — next to any DAW, or on its own.**
+**ReverbScope is a free, open-source room acoustics measurement tool: measure
+your recording room with an exponential sine sweep, derive the room impulse
+response, and find out whether a microphone position is usable — reverberation
+time (RT60), early reflections, background noise and direct sound, next to any
+DAW, or on its own. A free REW alternative for the recording studio that
+refuses to invent a number.**
 
 [![Latest pre-release](https://img.shields.io/github/v/release/jingyemingyue/ReverbScope?include_prereleases&label=pre-release&color=1a7f8e)](https://github.com/jingyemingyue/ReverbScope/releases)
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)

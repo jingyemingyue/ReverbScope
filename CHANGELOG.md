@@ -27,6 +27,13 @@ All notable changes to ReverbScope are documented here. The format follows
   narrow terminal the command goes whole on a line of its own).
 
 ### Changed
+- **Renamed RoomScope → ReverbScope.** The project, the Python package
+  (`roomscope` → `reverbscope`), the command line (`roomscope` →
+  `reverbscope`, `roomscope-gui` → `reverbscope-gui`), the `roomscope.exporters`
+  entry-point group, the environment variable (`$ROOMSCOPE_HOME` →
+  `$REVERBSCOPE_HOME`) and the default data directory (`~/.roomscope` →
+  `~/.reverbscope`) were renamed. GitHub keeps redirecting the old repository
+  URL to the new name.
 - **Language detection.** The command line follows the system's language
   where the system keeps it: on macOS the preferred languages (also in
   Terminal, iTerm and VS Code, which set `LANG=en_US.UTF-8` whatever the
