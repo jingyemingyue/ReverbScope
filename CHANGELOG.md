@@ -23,7 +23,8 @@ All notable changes to RoomScope are documented here. The format follows
 - **The way to the other language.** The home screen and `roomscope --help`
   end with one line in the other language: `中文界面：roomscope config
   language zh_CN` in English, `English interface: roomscope config language
-  en` in Chinese (left out where the terminal cannot write Chinese).
+  en` in Chinese (left out where the terminal cannot write Chinese; on a
+  narrow terminal the command goes whole on a line of its own).
 
 ### Changed
 - **Language detection.** The command line follows the system's language
@@ -41,7 +42,12 @@ All notable changes to RoomScope are documented here. The format follows
   positional names and argparse's remaining messages ("expected 2
   arguments", "ignored explicit argument", the type in "invalid int
   value"), with the help column aligned by display width. The environment
-  report names its settings and paths in words. A demo made in Chinese
+  report names its settings and paths in words. Lists are separated by
+  `、`, a wrapped line never ends with an opening bracket, `--color` names
+  `auto`, `always` and `never`, a refused value names the option that set
+  it (`--end-hz`, not `end_hz`), and a damaged JSON file is described in
+  Chinese. `roomscope config` names the profile and output-folder settings
+  as the desktop app's Settings dialog does. A demo made in Chinese
   names its room, position and microphone in Chinese. Temperatures read
   `20 °C` (also on a cp1252 or GBK code page and in the classic Windows
   console; `20 C` where the encoding has no degree sign), and the
