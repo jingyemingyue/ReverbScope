@@ -17,6 +17,8 @@ from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
+from roomscope.audio.backend import ENV_BACKEND
+from roomscope.edition import ENV_EDITION
 from roomscope.i18n import (
     DEFAULT_LANG,
     LANGUAGE_NAMES,
@@ -67,9 +69,6 @@ BACKENDS = ("portaudio", "fake")
 THEMES = ("system", "light", "dark")
 _ON = frozenset({"on", "true", "yes", "1"})
 _OFF = frozenset({"off", "false", "no", "0"})
-#: The variables that come before the stored setting.
-ENV_BACKEND = "ROOMSCOPE_AUDIO_BACKEND"
-ENV_EDITION = "ROOMSCOPE_EDITION"
 
 
 #: How to switch to the other interface language, written in that language on

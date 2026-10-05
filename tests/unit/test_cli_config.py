@@ -331,3 +331,23 @@ def test_every_config_screen_is_chinese(
         assert code == 0, (argv, err)
         found = english_words(out + err, data=data, values=typed)
         assert found == [], (argv, found, out)
+
+
+def test_showing_an_unknown_setting_does_not_talk_of_changes(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    code, _out, err = _run(capsys, "config", "colour")
+    assert code == 2 and "unknown setting 'colour'" in err
+    assert "Nothing was changed" not in err
+
+
+def test_a_variable_that_comes_before_a_setting_is_named(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("ROOMSCOPE_AUDIO_BACKEND", "fake")
+    code, out, _err = _run(capsys, "config", "backend", "portaudio")
+    assert code == 0 and _stored()["audio_backend"] == "portaudio"
+    assert "ROOMSCOPE_AUDIO_BACKEND=fake chooses the backend before this setting" in out
+    monkeypatch.setenv("ROOMSCOPE_EDITION", "user")
+    code, out, _err = _run(capsys, "config")
+    assert "ROOMSCOPE_EDITION=user decides before this setting" in out

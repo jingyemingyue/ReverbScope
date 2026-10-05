@@ -23,8 +23,8 @@ msgstr "RoomScope：开源、不依赖 DAW 的录音环境分析器。"
 msgid "audio backend for Standalone Mode: portaudio (default) or fake"
 msgstr "独立模式的音频后端：portaudio（默认）或 fake"
 
-msgid "UI language (en, zh_CN). Overrides settings and ROOMSCOPE_LANG"
-msgstr "界面语言（en、zh_CN）。覆盖设置与 ROOMSCOPE_LANG"
+msgid "interface language for this command (en, zh_CN); roomscope config language keeps one"
+msgstr "本条命令的界面语言（en、zh_CN）；要一直使用一种语言，请用 roomscope config language"
 
 msgid "text report or JSON on stdout (diagnostics stay on stderr)"
 msgstr "标准输出为文本报告或 JSON（诊断信息仍走标准错误）"
@@ -4425,8 +4425,6 @@ msgstr "主题只影响桌面版，下次打开时生效。"
 msgid "The desktop app shows the change the next time it starts."
 msgstr "桌面版下次启动时生效。"
 
-msgid "{name} is set and comes before this setting."
-msgstr "已设置 {name}，它优先于此设置。"
 
 msgid "--copy-recording and --no-copy-recording override it for one command."
 msgstr "--copy-recording 和 --no-copy-recording 可以在单条命令中覆盖它。"

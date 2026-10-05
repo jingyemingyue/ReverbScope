@@ -33,8 +33,8 @@ commands:
 options:
   -h, --help            show this help message and exit
   --version             show program's version number and exit
-  --lang LANG           UI language (en, zh_CN). Overrides settings and
-                        ROOMSCOPE_LANG
+  --lang LANG           interface language for this command (en, zh_CN);
+                        roomscope config language keeps one
   --format {text,json}  text report or JSON on stdout (diagnostics stay on
                         stderr)
   --color WHEN          colour in the terminal: auto (default; off for pipes,

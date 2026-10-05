@@ -1819,9 +1819,8 @@ def render_config_saved(
     For the language it is written in the language now chosen, and says how
     to go back to following the system.
     """
-    import os
-
     from roomscope.cli import config
+    from roomscope.i18n import SOURCE_ENVIRONMENT
 
     c = console
     notes: list[str] = []
@@ -1832,7 +1831,7 @@ def render_config_saved(
                 language=config.language_name(settings.language)
             )
             commands.append(("roomscope config language auto", _("follow the system again")))
-        elif choice is not None and choice.source == "environment":
+        elif choice is not None and choice.source == SOURCE_ENVIRONMENT:
             text = _(
                 "The language setting is cleared; {name}={value} still chooses {language}."
             ).format(
@@ -1854,10 +1853,6 @@ def render_config_saved(
             )
         elif key == "developer-tools":
             notes.append(_("The desktop app shows the change the next time it starts."))
-        elif key == "backend" and os.environ.get(config.ENV_BACKEND, "").strip():
-            notes.append(
-                _("{name} is set and comes before this setting.").format(name=config.ENV_BACKEND)
-            )
         elif key == "copy-recording":
             notes.append(_("--copy-recording and --no-copy-recording override it for one command."))
     lines = c.status("ok", text, indent=0)

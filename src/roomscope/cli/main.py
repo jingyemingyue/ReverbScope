@@ -673,7 +673,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--lang",
         default=None,
         metavar=pgettext("metavar", "LANG"),
-        help=_("UI language (en, zh_CN). Overrides settings and ROOMSCOPE_LANG"),
+        help=_(
+            "interface language for this command (en, zh_CN); roomscope config language keeps one"
+        ),
     )
     parser.add_argument(
         "--format",
@@ -1838,7 +1840,9 @@ def cmd_config(args: argparse.Namespace) -> int:
         key = None if args.key is None else config.canonical_key(args.key)
         value = None if args.value is None or key is None else config.parse_value(key, args.value)
     except config.SettingError as exc:
-        raise _UsageError(str(exc), detail=_("Nothing was changed."), hints=exc.hints) from None
+        changing = args.value is not None
+        detail = _("Nothing was changed.") if changing else ""
+        raise _UsageError(str(exc), detail=detail, hints=exc.hints) from None
     if key is None or args.value is None:
         return _show_config(args, key)
     try:
