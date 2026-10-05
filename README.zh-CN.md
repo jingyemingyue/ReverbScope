@@ -96,6 +96,8 @@ RoomScope 提供**两条 beta**。两条都还是 beta，都不是硬件验证�
   RoomScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
   保存后不管系统怎么设置都使用中文，`roomscope config language auto` 改回跟随系统。
 
+* **不想记命令：** 在终端里直接运行 `roomscope`，从编号菜单里选择要做的事（见[命令行](#命令行)）。
+
 ![终端中的 roomscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
 `roomscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步
@@ -186,6 +188,13 @@ RoomScope 通过你选择的音频接口自己播放扫频并录制话筒（经 
 
 两个版本都包含命令行。在终端版、Windows / Linux 桌面版（与 `roomscope-gui` 在同一文件夹）和 Python
 安装中，命令是 `roomscope`；在 macOS 桌面版中是 `/Applications/RoomScope.app/Contents/MacOS/RoomScope`。
+
+**不想记命令：** 在终端里直接运行 `roomscope`，会打开界面语言的编号菜单：1 体验演示 · 2 生成测试信号 ·
+3 分析录音 · 4 用声卡直接测量 · 5 查看结果 · 6 对比两个位置 · 7 打开桌面应用 · 8 设置 · 9 环境报告 ·
+0 退出。每一项都会逐项询问文件和设置，直接按回车采用默认值；运行之前先显示“等同于命令：……”，用着用着
+就记住了命令。直接测量时，只有输入 `y` 才会播放。`roomscope menu` 也能打开菜单；在管道或脚本中，或者
+设置了 `ROOMSCOPE_NO_MENU=1` 时，直接运行 `roomscope` 仍显示简短的概览。[用户指南](docs/user-guide/zh-CN.md)
+的“交互菜单”一节介绍了每一项。
 
 ```bash
 # 1. 生成测试信号（48 kHz，20 Hz–20 kHz，10 s 扫频，-12 dBFS）
