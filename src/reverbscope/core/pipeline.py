@@ -62,6 +62,7 @@ from reverbscope.errors import (
     AnalysisError,
     ConfigurationError,
     InvalidAudioError,
+    ReverbScopeError,
     SampleRateMismatchError,
 )
 from reverbscope.i18n import _, diag, localize
@@ -508,7 +509,7 @@ def _playback_speed(
 
 
 def _explain_playback_speed(
-    exc: InvalidAudioError,
+    exc: ReverbScopeError,
     mono: FloatArray,
     sample_rate: int,
     reference: Reference,
@@ -517,10 +518,11 @@ def _explain_playback_speed(
     """Append a wrong sweep speed, when there is one, to ``exc``'s message.
 
     A sweep played faster than generated is shorter than the reference and
-    seems to start late; the speed is the cause the user can fix. The
-    exception keeps its type and attributes. Both parts are shown in the
-    active language: the joined text matches no catalogued diagnostic, so it
-    could not be localised later.
+    seems to start late; one played slower outlasts a short post-roll and
+    seems to end after the recording. The speed is the cause the user can
+    fix. The exception keeps its type and attributes. Both parts are shown
+    in the active language: the joined text matches no catalogued
+    diagnostic, so it could not be localised later.
     """
     speed = _playback_speed(mono, sample_rate, reference, source)
     if speed is not None and exc.args:
@@ -733,16 +735,18 @@ def analyze(
 
     try:
         h_full = deconvolve(mono, prepared.inverse)
-    except InvalidAudioError as exc:
+        # A slowed sweep outlasts a short post-roll: the recording then seems
+        # to stop inside the sweep or right at its end.
+        located = _locate_pass(
+            h_full,
+            recording_length=mono.shape[0],
+            prepared=prepared,
+            settings=settings,
+            sample_rate=sample_rate,
+        )
+    except (InvalidAudioError, AnalysisError) as exc:
         _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
         raise
-    located = _locate_pass(
-        h_full,
-        recording_length=mono.shape[0],
-        prepared=prepared,
-        settings=settings,
-        sample_rate=sample_rate,
-    )
     loopback_result: LoopbackResult | None = None
     # The folded-product probe below runs on the raw recording, so its linear
     # reference must be the response before the loopback is divided out:

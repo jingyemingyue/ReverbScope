@@ -4640,3 +4640,9 @@ msgstr "回送声道无声（峰值低于 {threshold_dbfs:g} dBFS）；未应用
 
 msgid "the declared band ends at {high_hz:g} Hz, but a {sample_rate} Hz impulse response contains nothing above {nyquist_hz:g} Hz (half its sample rate)"
 msgstr "声明的频带上限为 {high_hz:g} Hz，但采样率为 {sample_rate} Hz 的脉冲响应不含 {nyquist_hz:g} Hz（采样率的一半）以上的内容"
+
+# analysis: a recording that stops inside the sweep
+
+msgctxt "diagnostic"
+msgid "the recording ends about {missing_s:.2f} s before the sweep does, so the end of the sweep and the room decay after it were not recorded. Export the whole take, with the silence after the sweep"
+msgstr "录音比扫频早约 {missing_s:.2f} s 结束，扫频的末尾及其后的房间衰减都没有录下。请导出整条录音，包括扫频之后的静音"

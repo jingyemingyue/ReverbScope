@@ -361,6 +361,17 @@ def locate_impulse_response(
                     "file contains it) or record a single pass"
                 )
             )
+        if peak >= recording_length:
+            # The direct sound arrives when the sweep ends; past the last
+            # recorded sample, the export stopped inside the sweep.
+            raise InvalidAudioError(
+                diag(
+                    "the recording ends about {missing_s:.2f} s before the sweep does, so the "
+                    "end of the sweep and the room decay after it were not recorded. Export "
+                    "the whole take, with the silence after the sweep",
+                    missing_s=(peak - recording_length + 1) / sample_rate,
+                )
+            )
         raise AnalysisError(
             diag(
                 "the direct sound was found at the very end of the recording; "

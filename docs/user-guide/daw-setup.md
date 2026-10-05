@@ -364,6 +364,7 @@ Clip *Stretch to Tempo* option off for the sweep [CW3].
 | *"a file generated at 48000 Hz was played at 44100 Hz"* | The project runs at another rate than the sweep and played it without conversion | Generate the sweep at the project rate |
 | *"the DAW time-stretched it"* | Warp / Flex / Follow Tempo / stretch on the sweep clip, or a tempo change after import | Switch stretching off for the clip |
 | *"the recording starts ... after the sweep began"* | Recording started late, or the export was trimmed | Record from before the sweep; export the whole clip |
+| *"the recording ends ... before the sweep does"* | Recording stopped early, or the export ends before the sweep's silence (with a short post-roll, also a sweep played too slowly) | Record past the end of the test file; export the whole clip |
 | *"harmonic ... was folded back"* | A limiter, clipper or overloaded bus in the playback path | Bypass master and track plug-ins; lower the sweep track |
 | *"flat-topped peaks ... probable clipping"* | Microphone preamp too hot | Lower the input gain |
 | *"the recording contains N sweep passes"* | Loop / cycle recording, or the sweep placed twice | Record one pass |

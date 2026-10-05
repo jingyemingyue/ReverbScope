@@ -135,6 +135,7 @@ Studio One 自第 8 版（2026 年 1 月）起更名为 Fender Studio Pro，“S
 | *“a file generated at 48000 Hz was played at 44100 Hz”* | 工程采样率与扫频不同，且播放时未转换 | 按工程采样率生成扫频 |
 | *“the DAW time-stretched it”* | 扫频片段开启了 Warp / Flex / Follow Tempo / 伸缩，或导入后改了速度 | 关闭该片段的时间伸缩 |
 | *“the recording starts ... after the sweep began”* | 录音开始得太晚，或导出时被裁切 | 在扫频开始前录音；完整导出片段 |
+| *“the recording ends ... before the sweep does”* | 录音停得太早，或导出在扫频后的静音之前就结束了（尾部留得很短时，也可能是扫频播放得太慢） | 录到测试文件结束之后；完整导出片段 |
 | *“harmonic ... was folded back”* | 回放链路上有限幅器、削波器或过载的总线 | 旁通主输出和轨道插件；降低扫频轨电平 |
 | *“flat-topped peaks ... probable clipping”* | 话放增益过高 | 降低输入增益 |
 | *“the recording contains N sweep passes”* | 循环录音，或扫频放了两次 | 只录一遍 |

@@ -266,6 +266,21 @@ def test_a_wrong_speed_is_the_message_when_no_response_stands_out(
     assert "runs at 200" in str(info.value)
 
 
+def test_a_slowed_sweep_that_outlasts_the_post_roll_is_explained(
+    sweep_signal: np.ndarray,
+) -> None:
+    """R3-7: the 48 kHz sweep played at 44.1 kHz runs 8.8 % longer; with
+    0.2 s after it the take was refused as ending at the direct sound,
+    without naming the playback speed (with 2 s it was diagnosed)."""
+    take = _played(sweep_signal, 44100)[: round((SWEEP.pre_silence_s + 3.0 + 0.2) * 44100)]
+    with pytest.raises(InvalidAudioError) as refused:
+        analyze(AudioSignal(take, 44100, source="take.wav"), Reference.from_settings(SWEEP))
+    message = str(refused.value)
+    assert "before the sweep does" in message
+    assert "However, the sweep in the recording runs at 91.9 %" in message
+    assert "played at 44100 Hz" in message
+
+
 def test_the_speed_explanation_is_shown_in_the_active_language(
     sweep_signal: np.ndarray,
 ) -> None:
