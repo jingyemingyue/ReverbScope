@@ -4592,3 +4592,20 @@ msgstr "无法打开该设备录音，因此不知道它接受哪些采样率（
 msgctxt "diagnostic"
 msgid "could not be opened for playback, so its sample rates are unknown (in use by another program, or disconnected?): {error}"
 msgstr "无法打开该设备播放，因此不知道它接受哪些采样率（是否正被其他程序占用，或已断开？）：{error}"
+
+# PortAudio's status flags inside the buffer-problem warning
+
+msgid "input underflow"
+msgstr "输入欠载"
+
+msgid "input overflow"
+msgstr "输入溢出"
+
+msgid "output underflow"
+msgstr "输出欠载"
+
+msgid "output overflow"
+msgstr "输出溢出"
+
+msgid "priming output"
+msgstr "预填充输出"

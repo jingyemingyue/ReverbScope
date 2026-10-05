@@ -22,7 +22,7 @@ import numpy as np
 from reverbscope.audio.backend import CALLBACK_BLOCK, DeviceInfo, StreamOptions, prepare_playback
 from reverbscope.audio.devices import check_sample_rate, list_devices, sounddevice_module
 from reverbscope.errors import AudioDeviceError, ConfigurationError, MeasurementCancelledError
-from reverbscope.i18n import _, diag
+from reverbscope.i18n import N_, _, diag
 from reverbscope.models.audio import AudioSignal, FloatArray
 
 log = logging.getLogger(__name__)
@@ -34,6 +34,16 @@ TIMEOUT_MARGIN_S = 5.0
 #: After Stop, how long to wait for the stream's next callback before giving
 #: up on a stalled device (s).
 CANCEL_GRACE_S = 0.5
+#: PortAudio's callback flags as python-sounddevice names them
+#: (``str(CallbackFlags)``). The device warning stores them in English;
+#: :func:`~reverbscope.i18n.localize` shows each in the interface language.
+STATUS_FLAG_NAMES = (
+    N_("input underflow"),
+    N_("input overflow"),
+    N_("output underflow"),
+    N_("output overflow"),
+    N_("priming output"),
+)
 
 
 def device_host_api(sd: Any, device: int | None, kind: str) -> str | None:

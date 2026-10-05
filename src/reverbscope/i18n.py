@@ -449,6 +449,13 @@ def _localize_value(value: str, depth: int) -> str:
     nested = localize(value, depth)
     if nested != value:
         return nested
+    if ", " in value:
+        # Stored words listed in a sentence, such as PortAudio's status flags
+        # ("input overflow, output underflow"): shown when every one is known.
+        items = value.split(", ")
+        words = [_localize_value(item, depth) for item in items]
+        if all(word != item for item, word in zip(items, words, strict=True)):
+            return list_join(words)
     if " or " in value:
         # Alternatives listed in a stored sentence ("1.20 m or 1.35 m"). An
         # error that says "or" ("Device or resource busy") is no list.

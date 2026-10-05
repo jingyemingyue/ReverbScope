@@ -171,6 +171,28 @@ def test_only_a_list_of_values_has_its_or_translated(zh: None) -> None:
     assert shown.endswith(error) and "或" not in shown
 
 
+def test_portaudio_status_flags_are_shown_in_chinese(zh: None) -> None:
+    """The buffer warning showed "（input overflow, output underflow）" inside
+    the Chinese sentence: PortAudio's flag names had no catalog entries."""
+    from reverbscope.audio.portaudio import STATUS_FLAG_NAMES
+
+    template = (
+        "the audio device reported {count} buffer problem(s) during the take "
+        "({flags}); the recording may contain dropouts"
+    )
+    shown = localize(diag(template, count=3, flags="input overflow, output underflow"))
+    assert (
+        shown == "音频设备在本次测量中报告了 3 次缓冲区问题（输入溢出、输出欠载）；录音中可能有丢帧"
+    )
+    assert "（预填充输出）" in localize(diag(template, count=1, flags="priming output"))
+    for name in STATUS_FLAG_NAMES:
+        assert name not in localize(diag(template, count=1, flags=name))
+    # A list with an unknown word is kept as stored.
+    assert "（input overflow, gremlins）" in localize(
+        diag(template, count=2, flags="input overflow, gremlins")
+    )
+
+
 def test_deep_nesting_ends(zh: None) -> None:
     text = "decay analysis, broadband: " * 40 + "the response does not decay"
     shown = localize(text)
