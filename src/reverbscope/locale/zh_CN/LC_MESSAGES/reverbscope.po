@@ -4583,3 +4583,12 @@ msgstr "替换文件？"
 
 msgid "{name} already exists. Replace it?"
 msgstr "{name} 已存在。要替换它吗？"
+# reverbscope devices --probe: a device that could not be opened to probe
+
+msgctxt "diagnostic"
+msgid "could not be opened for recording, so its sample rates are unknown (in use by another program, or disconnected?): {error}"
+msgstr "无法打开该设备录音，因此不知道它接受哪些采样率（是否正被其他程序占用，或已断开？）：{error}"
+
+msgctxt "diagnostic"
+msgid "could not be opened for playback, so its sample rates are unknown (in use by another program, or disconnected?): {error}"
+msgstr "无法打开该设备播放，因此不知道它接受哪些采样率（是否正被其他程序占用，或已断开？）：{error}"

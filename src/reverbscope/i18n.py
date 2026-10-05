@@ -450,18 +450,24 @@ def _localize_value(value: str, depth: int) -> str:
     if nested != value:
         return nested
     if " or " in value:
-        # Alternatives listed in a stored sentence ("1.20 m or 1.35 m").
-        return (
-            _("{a} or {b}")
-            .format(a="", b="")
-            .join(_localize_value(part, depth) for part in value.split(" or "))
-        )
+        # Alternatives listed in a stored sentence ("1.20 m or 1.35 m"). An
+        # error that says "or" ("Device or resource busy") is no list.
+        parts = value.split(" or ")
+        shown = [_localize_value(part, depth) for part in parts]
+        if all(
+            _MEASURE.fullmatch(part) or text != part
+            for part, text in zip(parts, shown, strict=True)
+        ):
+            return _("{a} or {b}").format(a="", b="").join(shown)
     for candidate in (value, _STORED_WORDS.get(value, value.replace("_", " "))):
         translated = _translation.gettext(candidate)
         if translated != candidate:
             return translated
     return value
 
+
+#: A measured value inside a stored sentence: "1.20 m", "-3.0 dB", "48000".
+_MEASURE = re.compile(r"[-+]?\d[\d.,]*(?: ?[A-Za-z%]+)?")
 
 #: Validity ids whose display word is worded differently. Comparison reasons
 #: written by earlier versions held the id ("baseline outside_excitation_range").

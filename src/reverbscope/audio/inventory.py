@@ -29,7 +29,6 @@ from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 
 from reverbscope.audio.backend import AudioBackend, DeviceInfo, StreamOptions
-from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, diag
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
@@ -268,19 +267,36 @@ def _rank(kind: str, platform: str) -> int | None:
     return order.index(kind) if kind in order else None
 
 
+#: PortAudio errors that say the device could not be opened at all, so its
+#: rates stay unknown: paDeviceUnavailable (-9985: another program holds it,
+#: or it was unplugged since the list was read), paInvalidDevice (-9996), and
+#: ALSA's EBUSY ("Device or resource busy") in an unanticipated host error.
+_UNAVAILABLE = re.compile(
+    r"PaErrorCode -99(85|96)\b|Device unavailable|Invalid device|resource busy", re.IGNORECASE
+)
+
+
 def _supported(
     backend: AudioBackend, device: DeviceInfo, rates: Sequence[int], kind: str
-) -> tuple[int, ...]:
+) -> tuple[tuple[int, ...], str | None]:
+    """The rates ``device`` accepts, and PortAudio's error when every probe
+    failed because the device could not be opened (``None`` otherwise)."""
     accepted: list[int] = []
+    unavailable: list[str] = []
     for rate in rates:
         try:
             backend.check_sample_rate(device.index, int(rate), kind=kind, channels=1)
-        except ReverbScopeError:
-            continue
-        except Exception:  # a driver that fails the query is "not supported"
+        except Exception as exc:  # a driver that fails the query is "not supported"
+            # check_sample_rate words its own sentence around PortAudio's error.
+            error = str(exc.__cause__ or exc)
+            if _UNAVAILABLE.search(error):
+                unavailable.append(error)
             continue
         accepted.append(int(rate))
-    return tuple(accepted)
+    if not accepted and unavailable and len(unavailable) == len(rates):
+        # Not one rate could be asked: the rates are unknown, not refused.
+        return (), unavailable[-1]
+    return tuple(accepted), None
 
 
 def _sort_key(probe: DeviceProbe, platform: str) -> tuple[int, int, int]:
@@ -308,15 +324,35 @@ def build_inventory(
             notes.append(note)
         if kind == "alsa" and _ALSA_VIRTUAL.match(device.name):
             notes.append(diag("ALSA plugin or sound-server device: may resample and mix"))
-        input_rates = (
-            _supported(backend, device, rates, "input") if probe_rates and device.is_input else ()
+        input_rates, input_error = (
+            _supported(backend, device, rates, "input")
+            if probe_rates and device.is_input
+            else ((), None)
         )
-        output_rates = (
-            _supported(backend, device, rates, "output") if probe_rates and device.is_output else ()
+        output_rates, output_error = (
+            _supported(backend, device, rates, "output")
+            if probe_rates and device.is_output
+            else ((), None)
         )
-        if probe_rates and device.is_input and not input_rates:
+        if input_error is not None:
+            notes.append(
+                diag(
+                    "could not be opened for recording, so its sample rates are unknown "
+                    "(in use by another program, or disconnected?): {error}",
+                    error=input_error,
+                )
+            )
+        elif probe_rates and device.is_input and not input_rates:
             notes.append(diag("accepts none of ReverbScope's sample rates for recording"))
-        if probe_rates and device.is_output and not output_rates:
+        if output_error is not None:
+            notes.append(
+                diag(
+                    "could not be opened for playback, so its sample rates are unknown "
+                    "(in use by another program, or disconnected?): {error}",
+                    error=output_error,
+                )
+            )
+        elif probe_rates and device.is_output and not output_rates:
             notes.append(diag("accepts none of ReverbScope's sample rates for playback"))
         probes.append(
             DeviceProbe(

@@ -149,6 +149,28 @@ def test_stored_words_inside_a_sentence_are_translated(zh: None) -> None:
     assert localize("candidate unreliable") == "候选：不可靠"
 
 
+def test_only_a_list_of_values_has_its_or_translated(zh: None) -> None:
+    """Alternatives ("1.20 m or 1.35 m") are joined with 或; a PortAudio error
+    that says "or" stayed a list and read "Device 或 resource busy"."""
+    heights = localize(
+        diag(
+            "more than one reflection could be the surface the height was measured "
+            "from, and they disagree by more than {agreement_cm:.0f} cm: {values}. "
+            "ReverbScope does not choose between them. This is the expected outcome when "
+            "the microphone sits near the vertical midpoint of the room, where the "
+            "arrival from the surface below and the one from the surface above are "
+            "interchangeable; moving the microphone 20-30 cm up or down and measuring "
+            "again separates them",
+            agreement_cm=15,
+            values="1.20 m or 1.35 m",
+        )
+    )
+    assert "：1.20 m 或 1.35 m。" in heights
+    error = "Unanticipated host error [PaErrorCode -9999]: 'Device or resource busy'"
+    shown = localize(diag("failed: {error}", error=error))
+    assert shown.endswith(error) and "或" not in shown
+
+
 def test_deep_nesting_ends(zh: None) -> None:
     text = "decay analysis, broadband: " * 40 + "the response does not decay"
     shown = localize(text)

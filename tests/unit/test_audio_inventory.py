@@ -220,6 +220,63 @@ def test_alsa_plugins_and_sound_servers_are_never_recommended() -> None:
 
 
 @pytest.mark.parametrize(
+    ("error", "busy"),
+    [
+        ("Error opening InputStream: Device unavailable [PaErrorCode -9985]", True),
+        (
+            "Unanticipated host error [PaErrorCode -9999]: 'Device or resource busy' "
+            "[ALSA error -16]",
+            True,
+        ),
+        ("Invalid sample rate [PaErrorCode -9997]", False),
+    ],
+)
+def test_a_device_that_cannot_be_opened_is_not_said_to_refuse_the_rates(
+    monkeypatch: pytest.MonkeyPatch, error: str, busy: bool
+) -> None:
+    """Review finding: an hw: device another program held open failed every
+    probe with "Device unavailable" and was reported as accepting none of
+    ReverbScope's sample rates. Its rates are unknown: it is still not
+    recommended, but the note names the cause."""
+    from reverbscope.audio import devices
+    from reverbscope.i18n import activate, localize
+
+    class Sd:
+        @staticmethod
+        def check_input_settings(**kwargs: Any) -> None:
+            if kwargs["device"] == 2:
+                raise RuntimeError(error)
+
+        check_output_settings = check_input_settings
+
+    class ProbedLinux(LinuxBackend):
+        def check_sample_rate(self, device: int, sample_rate: int, **kwargs: Any) -> None:
+            devices.check_sample_rate(device, sample_rate, kind=kwargs["kind"], channels=1)
+
+    monkeypatch.setattr(devices, "sounddevice_module", lambda: Sd)
+    activate("zh_CN")  # the stored note stays English whatever the language
+    try:
+        inventory = build_inventory(ProbedLinux(), platform="linux")
+        scarlett = inventory.devices[2]
+        shown = [localize(note) for note in scarlett.notes]
+    finally:
+        activate("en")
+    assert scarlett.input_rates == scarlett.output_rates == ()
+    refused = [n for n in scarlett.notes if "accepts none of ReverbScope's sample rates" in n]
+    unopened = [n for n in scarlett.notes if n.startswith("could not be opened")]
+    if busy:
+        assert refused == [] and len(unopened) == 2
+        assert unopened[0] == (
+            "could not be opened for recording, so its sample rates are unknown "
+            f"(in use by another program, or disconnected?): {error}"
+        )
+        assert any(text.startswith("无法打开该设备录音") and error in text for text in shown)
+    else:
+        assert len(refused) == 2 and unopened == []
+    assert not scarlett.recommended_input and not scarlett.recommended_output
+
+
+@pytest.mark.parametrize(
     ("index", "name", "api", "alias"),
     [
         # PortAudio's suffix stays English when Windows names the mapper in Chinese.
