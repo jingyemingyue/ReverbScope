@@ -84,10 +84,15 @@ def available_locales() -> list[str]:
 
 
 def normalize_lang(tag: str | None) -> str:
-    """Map a BCP-47 / locale tag onto a catalog directory name."""
+    """Map a BCP-47 / locale tag onto a catalog directory name.
+
+    The encoding and modifier of a locale name are dropped (``zh_CN.UTF-8``,
+    ``zh_CN@pinyin``): users copy what ``LANG`` holds into ``--lang`` and
+    ``REVERBSCOPE_LANG``, and no catalog is named after them.
+    """
     if not tag:
         return DEFAULT_LANG
-    raw = tag.strip().replace("-", "_")
+    raw = tag.strip().split(".", 1)[0].split("@", 1)[0].replace("-", "_")
     if not raw:
         return DEFAULT_LANG
     lower = raw.lower()

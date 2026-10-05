@@ -306,3 +306,21 @@ def test_the_c_locale_counts_only_where_it_decides(system: pytest.MonkeyPatch) -
         system.delenv(name)
     system.setenv("LANG", "C.UTF-8")
     assert resolve_language(system_languages=["zh-CN"]) == "zh_CN"
+
+
+@pytest.mark.parametrize("tag", ["zh_CN.UTF-8", "zh_CN.GB18030", "zh_CN@pinyin", "zh-Hans.UTF-8"])
+def test_an_explicit_choice_copied_from_lang_keeps_its_language(
+    system: pytest.MonkeyPatch, tag: str
+) -> None:
+    """``--lang``, the setting and ``REVERBSCOPE_LANG`` take what ``LANG`` holds."""
+    system.setattr(sys, "platform", "linux")
+    system.setenv("LANG", "C.UTF-8")
+    assert i18n.normalize_lang(tag) == "zh_CN"
+    assert language_choice(tag).lang == "zh_CN"
+    system.setenv("REVERBSCOPE_LANG", tag)
+    assert language_choice().lang == "zh_CN"
+    save_settings(UserSettings(language=tag))
+    assert (language_choice().lang, language_choice().source) == ("zh_CN", SOURCE_SETTINGS)
+    assert i18n.activate(tag) == "zh_CN"
+    assert i18n.normalize_lang("en_US.UTF-8") == "en_US"
+    assert i18n.normalize_lang("C.UTF-8") == "en"
