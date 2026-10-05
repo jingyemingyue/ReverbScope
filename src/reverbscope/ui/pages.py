@@ -870,9 +870,15 @@ class StandalonePage(QWidget):
                     combo.setCurrentIndex(row)
         # Refresh (button, Ctrl+2, Back -> Demo) can run during a take; Run
         # must stay off then, or a second take replaces the running thread.
-        self.run_button.setEnabled(not self.is_busy())
+        # With no device at all a take would only end in PortAudio's own
+        # English error ("Error querying device -1").
+        self.run_button.setEnabled(not self.is_busy() and bool(self._devices))
         if self.demo_mode:
             set_banner_text(self.status, _("Demo mode: fake backend, no loudspeaker."))
+        elif not self._devices:
+            set_banner_text(
+                self.status, _("No audio device found; Universal DAW Mode still works."), "warn"
+            )
         else:
             set_banner_text(
                 self.status, _("{n} audio device(s) found.").format(n=len(self._devices))

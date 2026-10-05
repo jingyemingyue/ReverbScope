@@ -1258,3 +1258,32 @@ def test_a_new_audio_backend_in_settings_reaches_the_standalone_page(
     assert page._measure_worker is None
     assert "ReverbScope fake interface" in listed()
     window.close()
+
+
+def test_standalone_without_any_audio_device_says_so_and_does_not_run(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With no audio device Run stayed enabled under "0 audio device(s)
+    found.", and the take failed with PortAudio's English "Error querying
+    device -1", also in the Chinese interface."""
+    from reverbscope.audio import backend as backend_module
+    from reverbscope.audio.backend import DeviceInfo
+
+    class Silent:
+        name = "test"
+
+        def list_devices(self) -> list[DeviceInfo]:
+            return []
+
+        def check_sample_rate(self, *args: object, **kwargs: object) -> None:
+            return None
+
+    monkeypatch.setattr(backend_module, "get_backend", lambda name=None: Silent())
+    window = MainWindow()
+    window.show_mode("standalone")
+    page = window.standalone
+    assert not page.run_button.isEnabled()
+    assert page.status.text() == "No audio device found; Universal DAW Mode still works."
+    assert page.status.property("banner") == "warn"
+    assert page.refresh_button.isEnabled()
+    window.close()

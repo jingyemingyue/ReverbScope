@@ -4557,3 +4557,8 @@ msgstr "音频后端已更改"
 
 msgid "The audio backend was changed in Settings, so the device list has been made again. Check the devices, then start the measurement again."
 msgstr "设置中的音频后端已更改，设备列表已重新生成。请检查设备，然后重新开始测量。"
+
+# Standalone Mode: the backend lists no device at all
+
+msgid "No audio device found; Universal DAW Mode still works."
+msgstr "未找到音频设备；通用 DAW 模式仍然可用。"
