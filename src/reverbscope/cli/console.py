@@ -227,16 +227,25 @@ def glue_units(text: str) -> str:
     return text.replace("dB SPL", "dB" + GLUE + "SPL")
 
 
-def _windows_cmdline_arg(text: str) -> str:
+#: Characters a POSIX shell splits, expands or globs at somewhere in a word.
+_POSIX_SPECIAL = frozenset(" \t\n'\"\\|&;<>()$`*?[]{}!#~")
+#: Characters cmd.exe or PowerShell split at or expand outside quotes.
+_WINDOWS_SPECIAL = frozenset(" \t\"'&|()<>^%;,{}@$`")
+#: ``<take.wav>``: an instruction, not a path.
+_PLACEHOLDER = re.compile(r"<[^<>\s]+>")
+
+
+def _windows_cmdline_arg(text: str, *, quote: bool = False) -> str:
     """One argv element quoted the way ``cmd.exe`` parses it.
 
-    Same rules as ``subprocess.list2cmdline`` for a single argument. Inlined
+    Same rules as ``subprocess.list2cmdline`` for a single argument; ``quote``
+    also quotes an argument that has no space (``room&booth``). Inlined
     because ``src/`` may not import ``subprocess`` (that module is for
     launching processes; this only prints a command the user can copy).
     """
     # A space, a tab, or an empty argument needs quotes. A quote is escaped
     # either way.
-    needs_quotes = (not text) or any(char in text for char in " \t")
+    needs_quotes = quote or (not text) or any(char in text for char in " \t")
     out: list[str] = ['"'] if needs_quotes else []
     backslashes: list[str] = []
     for char in text:
@@ -262,7 +271,8 @@ def _windows_cmdline_arg(text: str) -> str:
 
 
 def shell_command(argv: Iterable[str]) -> str:
-    """One copy-paste command. An argument with a space or a quote is quoted.
+    """One copy-paste command. An argument the shell would split, expand or
+    glob (a space, a quote, ``( ) & ; $ |`` …) is quoted.
 
     Placeholders such as ``<take.wav>`` stay bare: they are instructions, not
     a path, and quoting them would hide that. On Windows a backslash is
@@ -273,15 +283,16 @@ def shell_command(argv: Iterable[str]) -> str:
     """
     windows = os.name == "nt"
     parts: list[str] = []
+    special = _WINDOWS_SPECIAL if windows else _POSIX_SPECIAL
     for part in argv:
         text = str(part).replace("\\", "/") if windows else str(part)
-        needs_quotes = any(char.isspace() for char in text) or '"' in text or "'" in text
-        if not windows and "\\" in text:
-            needs_quotes = True
-        if not needs_quotes:
+        # "demo(1)&x/position-a" bare is a syntax error in bash and two
+        # commands in bash and cmd.
+        needs_quotes = not text or any(char.isspace() or char in special for char in text)
+        if not needs_quotes or _PLACEHOLDER.fullmatch(text):
             parts.append(text)
         elif windows:
-            parts.append(_windows_cmdline_arg(text))
+            parts.append(_windows_cmdline_arg(text, quote=True))
         else:
             parts.append(shlex.quote(text))
     return " ".join(parts)

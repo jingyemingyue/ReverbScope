@@ -559,6 +559,27 @@ def test_a_posix_shell_quotes_a_backslash(monkeypatch: pytest.MonkeyPatch) -> No
     assert shown == "reverbscope show 'odd\\name'"
 
 
+@pytest.mark.parametrize("folder", ["take(1)", "room&booth", "mix;v2", "$tmp", "a|b", "x*"])
+def test_a_next_step_quotes_shell_metacharacters(
+    monkeypatch: pytest.MonkeyPatch, folder: str
+) -> None:
+    """A folder such as demo(1)&x was printed bare: the command to copy was a
+    syntax error in bash, and & split it in two in bash and cmd."""
+    import shlex
+
+    from reverbscope.cli import console as console_module
+
+    monkeypatch.setattr(console_module.os, "name", "posix")
+    shown = console_module.shell_command(["reverbscope", "show", f"{folder}/position-a", "<other>"])
+    assert shlex.split(shown) == ["reverbscope", "show", f"{folder}/position-a", "<other>"]
+    assert shown.startswith("reverbscope show '") and shown.endswith(" <other>")
+    monkeypatch.setattr(console_module.os, "name", "nt")
+    shown = console_module.shell_command(["reverbscope", "show", f"{folder}/position-a", "<other>"])
+    # cmd and PowerShell hand * to the program as it is.
+    quote = "" if folder == "x*" else '"'
+    assert shown == f"reverbscope show {quote}{folder}/position-a{quote} <other>"
+
+
 def test_every_help_example_is_a_valid_command(home: Path) -> None:
     import shlex
 
