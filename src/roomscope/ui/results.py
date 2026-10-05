@@ -123,7 +123,7 @@ class _PlacementTab(QWidget):
             _(
                 "Placement tier {tier}. No coordinates, room length, room width or "
                 "named wall are derived. Speed of sound {speed:.1f} m/s at "
-                "{temp:.0f} C{assumed}."
+                "{temp:.0f} °C{assumed}."
             ).format(
                 tier=placement.tier,
                 speed=placement.speed_of_sound_m_s,

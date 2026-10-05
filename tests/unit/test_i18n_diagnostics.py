@@ -196,3 +196,21 @@ def test_the_resonance_note_names_no_version_and_old_files_still_read_in_chinese
     for text in (current, stored_by_0_5):
         shown = localize(text)
         assert shown.startswith("仅为候选") and "v0.1" not in shown, shown
+
+
+def test_an_assumed_temperature_note_from_an_older_result_still_reads_in_chinese(
+    zh: None,
+) -> None:
+    """The note now says "20 °C" and "a 5 °C error"; results written by 0.5
+    said "20 C" and "a 5 C error" and are still shown translated."""
+    from roomscope.core.placement import speed_of_sound_m_s
+
+    speed = speed_of_sound_m_s(20.0)
+    current = (
+        f"no air temperature was supplied, so 20 °C ({speed:.1f} m/s) was assumed; "
+        "a 5 °C error moves every distance by about 0.9 %"
+    )
+    stored_by_0_5 = current.replace("°C", "C")
+    for text in (current, stored_by_0_5):
+        shown = localize(text)
+        assert shown.startswith("未提供气温") and "20 °C" in shown and "5 °C" in shown, shown

@@ -279,7 +279,8 @@ def test_analyze_ir_band_help_covers_broadband_metrics() -> None:
 def test_the_air_temperature_is_shown_in_degrees_celsius(
     short_sweep: SweepSettings, lang: str
 ) -> None:
-    """The placement section printed "at 20 C" / "气温 20 C"."""
+    """The placement section printed "at 20 C" / "气温 20 C", and the note
+    on an assumed temperature "20 C" and "a 5 C error"."""
     from roomscope.cli.render import _placement
     from roomscope.i18n import activate
 
@@ -293,9 +294,8 @@ def test_the_air_temperature_is_shown_in_degrees_celsius(
         activate("en")
     speed = next(line for line in shown.splitlines() if "343.2 m/s" in line)
     assert "20 °C" in speed, speed
-    if lang == "zh_CN":
-        # The stored English note says "20 C"; shown translated, it says °C too.
-        assert not re.search(r"\d C\b", shown), shown
+    assert "5 °C" in shown, shown
+    assert not re.search(r"\d C\b", shown), shown
     # A stream that cannot write the degree sign gets the plain unit.
     assert "20 C" in fallback and "°" not in fallback
     if lang == "en":

@@ -409,8 +409,8 @@ def estimate_placement(
     if temperature_assumed:
         notes.append(
             diag(
-                "no air temperature was supplied, so {temperature:.0f} C ({speed:.1f} m/s) "
-                "was assumed; a 5 C error moves every distance by about 0.9 %",
+                "no air temperature was supplied, so {temperature:.0f} °C ({speed:.1f} m/s) "
+                "was assumed; a 5 °C error moves every distance by about 0.9 %",
                 temperature=DEFAULT_TEMPERATURE_C,
                 speed=speed,
             )

@@ -368,7 +368,7 @@ msgstr "平面？"
 msgid "No placement result. Add a loudspeaker distance to raise the tier."
 msgstr "没有摆位结果。补上扬声器距离可提高档位。"
 
-msgid "Placement tier {tier}. No coordinates, room length, room width or named wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} C{assumed}."
+msgid "Placement tier {tier}. No coordinates, room length, room width or named wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} °C{assumed}."
 msgstr "摆位档位 {tier}。不推导坐标、房间长宽或具名墙面。声速 {speed:.1f} m/s，气温 {temp:.0f} °C{assumed}。"
 
 msgid " (assumed)"
@@ -2946,6 +2946,11 @@ msgctxt "diagnostic"
 msgid "the reflection search was cut short at {end:.1f} ms, and truncation does not drop arrivals at random: it drops the longest paths first, so any height derived from what remains is biased low"
 msgstr "反射搜索在 {end:.1f} ms 处被截断，而截断并不是随机丢弃到达声：它最先丢弃路径最长的反射，因此由剩余反射推算的任何高度都会偏低"
 
+msgctxt "diagnostic"
+msgid "no air temperature was supplied, so {temperature:.0f} °C ({speed:.1f} m/s) was assumed; a 5 °C error moves every distance by about 0.9 %"
+msgstr "未提供气温，因此假定为 {temperature:.0f} °C（声速 {speed:.1f} m/s）；气温误差 5 °C 会使每个距离偏差约 0.9 %"
+
+# Stored by RoomScope 0.5 and earlier in result.json; still shown translated.
 msgctxt "diagnostic"
 msgid "no air temperature was supplied, so {temperature:.0f} C ({speed:.1f} m/s) was assumed; a 5 C error moves every distance by about 0.9 %"
 msgstr "未提供气温，因此假定为 {temperature:.0f} °C（声速 {speed:.1f} m/s）；气温误差 5 °C 会使每个距离偏差约 0.9 %"
