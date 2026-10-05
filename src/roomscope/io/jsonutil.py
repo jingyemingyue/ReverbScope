@@ -129,7 +129,14 @@ def read_json_object(
         )
     try:
         data = json.loads(text)
-    except ValueError as exc:  # JSONDecodeError, or an integer longer than 4300 digits
+    except json.JSONDecodeError as exc:
+        # The parser's own sentence is English whatever the interface language;
+        # where the file is broken is what the user needs to fix it.
+        where = _("invalid JSON at line {line}, column {column}").format(
+            line=exc.lineno, column=exc.colno
+        )
+        raise SessionError(_("cannot read {path}: {error}").format(path=path, error=where)) from exc
+    except ValueError as exc:  # an integer longer than 4300 digits
         raise SessionError(_("cannot read {path}: {error}").format(path=path, error=exc)) from exc
     if not isinstance(data, dict):
         raise SessionError(_("{path} is not a JSON object").format(path=path))

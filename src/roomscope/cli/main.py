@@ -478,18 +478,50 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
     )
 
 
+#: The settings fields the command line sets, as the options that set them.
+_FIELD_OPTIONS = {
+    "sample_rate": "--sample-rate",
+    "duration_s": "--duration",
+    "start_hz": "--start-hz",
+    "end_hz": "--end-hz",
+    "level_dbfs": "--level",
+    "channel": "--channel",
+    "fr_smoothing_fraction": "--smoothing",
+    "placement_distance_m": "--speaker-distance",
+    "placement_mic_height_m": "--mic-height",
+    "placement_temperature_c": "--temperature",
+    "loopback_channel": "--loopback-channel",
+}
+_FIELD_NAME = re.compile(
+    r"(?<![\w-])(" + "|".join(sorted(_FIELD_OPTIONS, key=len, reverse=True)) + r")(?!\w)"
+)
+
+
+def _name_options(exc: ConfigurationError) -> ConfigurationError:
+    """``exc`` with the settings fields it names given as their options.
+
+    The settings check their own values and name their fields ("end_hz must
+    be greater than start_hz"); on the command line the user typed --end-hz.
+    """
+    message = _FIELD_NAME.sub(lambda found: _FIELD_OPTIONS[found.group(1)], str(exc))
+    return ConfigurationError(message)
+
+
 def _sweep_settings(args: argparse.Namespace) -> SweepSettings:
-    return SweepSettings(
-        sample_rate=args.sample_rate,
-        duration_s=args.duration,
-        start_hz=args.start_hz,
-        end_hz=args.end_hz,
-        fade_in_s=args.fade_in,
-        fade_out_s=args.fade_out,
-        level_dbfs=args.level,
-        pre_silence_s=args.pre_silence,
-        post_silence_s=args.post_silence,
-    )
+    try:
+        return SweepSettings(
+            sample_rate=args.sample_rate,
+            duration_s=args.duration,
+            start_hz=args.start_hz,
+            end_hz=args.end_hz,
+            fade_in_s=args.fade_in,
+            fade_out_s=args.fade_out,
+            level_dbfs=args.level,
+            pre_silence_s=args.pre_silence,
+            post_silence_s=args.post_silence,
+        )
+    except ConfigurationError as exc:
+        raise _name_options(exc) from None
 
 
 def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = True) -> None:
@@ -597,14 +629,17 @@ def _analysis_settings(
     args: argparse.Namespace, *, loopback_channel: int | None = None
 ) -> AnalysisSettings:
     channel = getattr(args, "loopback_channel", None)
-    return AnalysisSettings(
-        channel=args.channel,
-        fr_smoothing_fraction=args.smoothing,
-        placement_distance_m=args.speaker_distance,
-        placement_mic_height_m=args.mic_height,
-        placement_temperature_c=args.temperature,
-        loopback_channel=loopback_channel if loopback_channel is not None else channel,
-    )
+    try:
+        return AnalysisSettings(
+            channel=args.channel,
+            fr_smoothing_fraction=args.smoothing,
+            placement_distance_m=args.speaker_distance,
+            placement_mic_height_m=args.mic_height,
+            placement_temperature_c=args.temperature,
+            loopback_channel=loopback_channel if loopback_channel is not None else channel,
+        )
+    except ConfigurationError as exc:
+        raise _name_options(exc) from None
 
 
 def _shorten_usage(parser: argparse.ArgumentParser) -> None:

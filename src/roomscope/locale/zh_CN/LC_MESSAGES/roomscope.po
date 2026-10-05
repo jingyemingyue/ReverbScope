@@ -51,7 +51,7 @@ msgid "export curves through an exporter"
 msgstr "通过导出器导出曲线"
 
 msgid "exporter name (default csv)"
-msgstr "导出器名称（默认 CSV）"
+msgstr "导出器名称（默认 csv）"
 
 msgid "output directory"
 msgstr "输出目录"
@@ -2193,13 +2193,13 @@ msgid "sample_rate {rate} is not supported; use one of {supported}"
 msgstr "不支持 sample_rate {rate}；请使用以下之一：{supported}"
 
 msgid "duration_s must be >= 0.5 s"
-msgstr "duration_s 必须 >= 0.5 s"
+msgstr "duration_s 必须至少为 0.5 s"
 
 msgid "duration_s must be <= 120 s"
-msgstr "duration_s 必须 <= 120 s"
+msgstr "duration_s 不能超过 120 s"
 
 msgid "start_hz must be > 0"
-msgstr "start_hz 必须 > 0"
+msgstr "start_hz 必须大于 0"
 
 msgid "end_hz must be greater than start_hz"
 msgstr "end_hz 必须大于 start_hz"
@@ -2214,7 +2214,7 @@ msgid "fades must be shorter than the sweep"
 msgstr "淡入淡出必须短于扫频"
 
 msgid "level_dbfs must be <= 0 dBFS"
-msgstr "level_dbfs 必须 <= 0 dBFS"
+msgstr "level_dbfs 不能超过 0 dBFS"
 
 msgid "level_dbfs below -80 dBFS is not a usable test signal"
 msgstr "level_dbfs 低于 -80 dBFS 时不是可用的测试信号"
@@ -2223,7 +2223,7 @@ msgid "silences must be >= 0"
 msgstr "静音时长必须 >= 0"
 
 msgid "channel must be >= 0 or None"
-msgstr "channel 必须 >= 0 或为 None"
+msgstr "channel 不能为负数"
 
 msgid "ir_pre_delay_ms must be >= 0"
 msgstr "ir_pre_delay_ms 必须 >= 0"
@@ -2244,7 +2244,7 @@ msgid "fr_window_s must be > 0"
 msgstr "fr_window_s 必须 > 0"
 
 msgid "fr_smoothing_fraction must be >= 0"
-msgstr "fr_smoothing_fraction 必须 >= 0"
+msgstr "fr_smoothing_fraction 不能为负数"
 
 msgid "noise_min_segment_s must be > 0"
 msgstr "noise_min_segment_s 必须 > 0"
@@ -2273,14 +2273,14 @@ msgstr "placement_distance_m 必须在 0.20 m 到 15 m 之间"
 msgid "placement_mic_height_m must be between 0.02 m and 5 m"
 msgstr "placement_mic_height_m 必须在 0.02 m 到 5 m 之间"
 
-msgid "placement_temperature_c must be between -20 C and 50 C"
+msgid "placement_temperature_c must be between -20 °C and 50 °C"
 msgstr "placement_temperature_c 必须在 -20 °C 到 50 °C 之间"
 
 msgid "placement_mic_height_m needs placement_distance_m: a height on its own cannot be turned into geometry"
 msgstr "placement_mic_height_m 需要同时给出 placement_distance_m：仅有高度无法换算成几何位置"
 
 msgid "loopback_channel must be >= 0 or None"
-msgstr "loopback_channel 必须 >= 0 或为 None"
+msgstr "loopback_channel 不能为负数"
 
 msgctxt "file record"
 msgid "settings"
@@ -4473,3 +4473,6 @@ msgstr "{label}：{description}"
 msgctxt "list separator"
 msgid ", "
 msgstr "、"
+
+msgid "invalid JSON at line {line}, column {column}"
+msgstr "第 {line} 行第 {column} 列不是有效的 JSON"

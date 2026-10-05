@@ -8,6 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shutil
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -81,6 +82,10 @@ def _typed_values(path: str) -> tuple[str, ...]:
         if action.option_strings and action.choices is not None
         for choice in action.choices
     )
+    if path == "roomscope export":
+        from roomscope.io.exporters.registry import available_exporters
+
+        return (*values, *available_exporters())
     if path != "roomscope config":
         return values
     from roomscope.interpretation import available_profiles
@@ -283,6 +288,61 @@ def test_a_default_of_an_option_with_choices_is_the_value_to_type(zh_cli: None, 
             assert named.group(1) == str(action.default), (name, action.help)
     demo = dict(_options_with_choices(lang))["roomscope demo --profile"]
     assert "vocal" in str(demo.help), demo.help
+
+
+@pytest.mark.parametrize(
+    ("argv", "chinese", "english"),
+    [
+        (
+            ["sweep", "--out", "x.wav", "--start-hz", "30000"],
+            "--end-hz 必须大于 --start-hz",
+            "--end-hz must be greater than --start-hz",
+        ),
+        (
+            ["sweep", "--out", "x.wav", "--duration", "-1"],
+            "--duration 必须至少为 0.5 s",
+            "--duration must be >= 0.5 s",
+        ),
+        (
+            ["analyze", "--recording", "r.wav", "--sweep", "s.wav", "--temperature", "80"],
+            "--temperature 必须在 -20 °C 到 50 °C 之间",
+            "--temperature must be between -20 °C and 50 °C",
+        ),
+        (
+            ["analyze", "--recording", "r.wav", "--sweep", "s.wav", "--mic-height", "1"],
+            "--mic-height 需要同时给出 --speaker-distance",
+            "--mic-height needs --speaker-distance",
+        ),
+    ],
+)
+def test_a_refused_setting_names_the_option_that_set_it(
+    zh_cli: None,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    argv: list[str],
+    chinese: str,
+    english: str,
+) -> None:
+    """The errors named the settings' fields ("end_hz must be greater than
+    start_hz", "duration_s 必须 >= 0.5 s"), not the options the user typed."""
+    monkeypatch.chdir(tmp_path)
+    # The analysis settings are checked once the files are read.
+    assert main(["sweep", "--out", "s.wav", "--duration", "1"]) == 0
+    shutil.copyfile("s.wav", "r.wav")
+    capsys.readouterr()
+    for lang, expected in (("zh_CN", chinese), ("en", english)):
+        assert main(["--lang", lang, *argv]) != 0
+        err = " ".join(capsys.readouterr().err.split())
+        assert expected in err, err
+        assert not re.search(r"\b[a-z]+_(hz|s|c|m)\b", err), err
+    assert not (tmp_path / "x.wav").exists()
+
+
+def test_the_export_format_default_is_the_value_to_type(zh_cli: None) -> None:
+    """导出器名称（默认 CSV）, but `--format CSV` is refused: the exporter is csv."""
+    export = _help_texts()["roomscope export"]
+    assert "（默认 csv）" in export and "CSV" not in export
 
 
 def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixture[str]) -> None:

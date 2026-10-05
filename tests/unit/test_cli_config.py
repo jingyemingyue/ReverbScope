@@ -221,6 +221,21 @@ def test_a_damaged_settings_file_is_left_alone(
     assert "language         auto" in out
 
 
+def test_a_damaged_settings_file_is_described_in_the_interface_language(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The Chinese error quoted the JSON parser's English sentence
+    ("Expecting property name enclosed in double quotes: line 2 column 1")."""
+    settings_path().parent.mkdir(parents=True)
+    settings_path().write_text('{"language": "zh_CN",\n}\n', encoding="utf-8")
+    code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "profile", "vocal")
+    shown = " ".join(err.split())
+    assert code == 1 and "第 2 行第 1 列不是有效的 JSON" in shown, shown
+    assert "Expecting" not in shown and "没有做任何更改" in shown
+    _code, _out, err = _run(capsys, "--lang", "en", "config", "profile", "vocal")
+    assert "invalid JSON at line 2, column 1" in " ".join(err.split())
+
+
 # --- The language ------------------------------------------------------------------------
 
 
