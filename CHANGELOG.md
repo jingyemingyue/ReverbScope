@@ -60,7 +60,9 @@ All notable changes to RoomScope are documented here. The format follows
   a recorded decay is analysed, instead of a random one that could leave
   the take refused or T30 insufficient. A recording with no sweep in it is
   refused as such, not as a late start, and a wrong playback speed is named
-  in the interface language. Digital silence after an imported impulse
+  in the interface language. A take cut while the sweep was still in its
+  lowest octaves is no longer blamed on a DAW time-stretch "at 837043.2 %
+  of the speed it was generated at". Digital silence after an imported impulse
   response is no longer taken for the noise floor (T30 read up to 16 %
   long), and `analyze-ir` without `--band` no longer quotes the hidden
   analysis' values in its warnings; `--band 20 inf` is refused. Smoothed
