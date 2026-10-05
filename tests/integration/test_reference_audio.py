@@ -80,6 +80,31 @@ def _room(sr: int) -> np.ndarray:
     return make_rir(sr, rt60_s=0.5, diffuse_level=0.01, length_s=1.0, start_delay_s=0.003)
 
 
+@pytest.mark.parametrize("level_dbfs", [-36.0, -50.0])
+def test_a_quiet_dithered_reference_still_has_its_silences_removed(
+    short_sweep: SweepSettings, level_dbfs: float
+) -> None:
+    """R3-8: a 16-bit, TPDF-dithered copy of the test file at -36 dBFS kept
+    its silences (single dither samples reach -54 dB re its peak), so the
+    decay after the sweep was taken for part of the reference: sweep start
+    0.0001 s, 0.00 s of decay and T30 "insufficient decay range"."""
+    from dataclasses import replace
+
+    sweep = replace(short_sweep, level_dbfs=level_dbfs)
+    played = measurement_signal(sweep)
+    rng = np.random.default_rng(1)
+    dither = rng.uniform(-0.5, 0.5, played.size) + rng.uniform(-0.5, 0.5, played.size)
+    reference = Reference.from_signal(np.round(played * 32768 + dither) / 32768, 48000)
+    room = make_rir(48000, rt60_s=0.4, diffuse_level=0.05, length_s=1.0)
+    recording = synthetic_recording(sweep, room, noise_rms=1e-5).samples[: sweep.total_samples]
+    result = analyze(AudioSignal(recording, 48000, source="x.wav"), reference)
+    impulse = result.impulse_response
+    assert impulse.sweep_start_in_recording_s == pytest.approx(sweep.pre_silence_s, abs=0.01)
+    assert impulse.valid_length_s == pytest.approx(sweep.post_silence_s, abs=0.01)
+    assert result.decay.broadband.t30.validity is Validity.VALID
+    assert any("of near-silence" in w for w in result.warnings)
+
+
 def test_sweep_only_reference_gives_correct_t30() -> None:
     """A8: with a constant regularisation the spectral inverse left a slowly
     decaying tail and a noise-free 0.5 s room read T30 = 8.09 s (valid)."""

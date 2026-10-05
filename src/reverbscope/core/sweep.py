@@ -94,6 +94,17 @@ EXCITATION_BAND_TOLERANCE_DB = 1.0
 #: Samples of a reference signal below this level (dB re its peak magnitude)
 #: at the start and the end are treated as silence and trimmed.
 REFERENCE_SILENCE_THRESHOLD_DB = -60.0
+#: The first and last ``REFERENCE_EDGE_FRAMES`` frames of ``REFERENCE_EDGE_FRAME_S``
+#: of a reference are its noise floor when their RMS levels lie within
+#: ``REFERENCE_NOISE_SPREAD_DB`` of each other (a fade-in or the sweep itself
+#: varies far more) and at least ``REFERENCE_NOISE_BELOW_PEAK_DB`` below its
+#: peak. Samples less than ``REFERENCE_NOISE_MARGIN_DB`` above that floor are
+#: silence too (see :func:`reference_silence_threshold_db`).
+REFERENCE_EDGE_FRAME_S = 0.01
+REFERENCE_EDGE_FRAMES = 5
+REFERENCE_NOISE_SPREAD_DB = 6.0
+REFERENCE_NOISE_BELOW_PEAK_DB = 30.0
+REFERENCE_NOISE_MARGIN_DB = 20.0
 #: Fractional-octave smoothing of ``f * |X|^2`` for the band estimate (1/3 octave).
 REFERENCE_BAND_SMOOTHING_FRACTION = 3
 #: Region around the maximum used to find the plateau level (dB below the maximum).
@@ -291,7 +302,9 @@ def active_region(
     """``(start, stop)`` of the part of ``signal`` above ``threshold_db`` re its peak.
 
     Leading and trailing samples whose magnitude stays below the threshold are
-    considered silence (e.g. the silences of a ReverbScope test file).
+    considered silence (e.g. the silences of a ReverbScope test file). Silences
+    that hold dither or noise need the threshold of
+    :func:`reference_silence_threshold_db`.
     """
     if signal.ndim != 1 or signal.shape[0] == 0:
         raise ConfigurationError(_("reference signal must be a non-empty mono array"))
@@ -301,6 +314,37 @@ def active_region(
         raise ConfigurationError(_("reference signal is silent"))
     above = np.flatnonzero(magnitude >= peak * 10.0 ** (threshold_db / 20.0))
     return int(above[0]), int(above[-1]) + 1
+
+
+def reference_silence_threshold_db(signal: FloatArray, sample_rate: int) -> float:
+    """Level (dB re the peak) below which a reference's edges are silence.
+
+    ``REFERENCE_SILENCE_THRESHOLD_DB``, raised to ``REFERENCE_NOISE_MARGIN_DB``
+    above the noise floor of the file's start or end when there is one (see
+    ``REFERENCE_EDGE_FRAMES``). A threshold relative to the peak alone fails
+    on a quiet reference: the dither of a 16-bit copy of a sweep at -36 dBFS
+    reaches -54 dB re its peak, so single dither samples counted as sweep,
+    the silences stayed in the reference and the decay after the sweep was
+    taken for part of it.
+    """
+    if signal.ndim != 1 or signal.shape[0] == 0:
+        return REFERENCE_SILENCE_THRESHOLD_DB
+    peak = float(np.max(np.abs(signal)))
+    frame = max(1, round(REFERENCE_EDGE_FRAME_S * sample_rate))
+    edge = frame * REFERENCE_EDGE_FRAMES
+    if not (math.isfinite(peak) and peak > 0.0) or signal.shape[0] < 2 * edge:
+        return REFERENCE_SILENCE_THRESHOLD_DB
+    threshold = REFERENCE_SILENCE_THRESHOLD_DB
+    for part in (signal[:edge], signal[-edge:]):
+        rms = np.sqrt(np.mean(np.square(part.reshape(REFERENCE_EDGE_FRAMES, frame)), axis=1))
+        quietest, loudest = float(np.min(rms)), float(np.max(rms))
+        # Digital silence has no floor to measure: the threshold re the peak holds.
+        if quietest <= 0.0 or 20.0 * math.log10(loudest / quietest) > REFERENCE_NOISE_SPREAD_DB:
+            continue
+        floor_db = 20.0 * math.log10(loudest / peak)
+        if floor_db <= -REFERENCE_NOISE_BELOW_PEAK_DB:
+            threshold = max(threshold, floor_db + REFERENCE_NOISE_MARGIN_DB)
+    return threshold
 
 
 def _contiguous_around(mask: np.ndarray, index: int) -> tuple[int, int]:

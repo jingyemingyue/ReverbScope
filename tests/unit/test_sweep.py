@@ -19,6 +19,7 @@ from reverbscope.core.sweep import (
     measurement_signal,
     normalisation_band_hz,
     reference_pulse,
+    reference_silence_threshold_db,
     sweep_time_axis,
 )
 from reverbscope.errors import ConfigurationError
@@ -273,3 +274,31 @@ def test_spectral_inverse_rejects_silence() -> None:
         inverse_filter_spectral(np.zeros(1000), 48000)
     with pytest.raises(ConfigurationError):
         design_spectral_inverse(np.ones(8), 48000)
+
+
+def test_silence_of_a_quiet_dithered_reference_is_measured_from_its_noise_floor(
+    short_sweep: SweepSettings,
+) -> None:
+    """R3-8: with a threshold of -60 dB re the peak, the dither of a 16-bit
+    copy of a -36 dBFS test file counted as sweep and nothing was trimmed."""
+    from dataclasses import replace
+
+    sr = short_sweep.sample_rate
+    sweep = replace(short_sweep, level_dbfs=-36.0)
+    signal = measurement_signal(sweep)
+    rng = np.random.default_rng(1)
+    dither = rng.uniform(-0.5, 0.5, signal.size) + rng.uniform(-0.5, 0.5, signal.size)
+    dithered = np.round(signal * 32768 + dither) / 32768
+    # The threshold re the peak alone keeps nearly all of the 1 s pre-roll.
+    assert active_region(dithered)[0] < round(0.01 * sr)
+    threshold = reference_silence_threshold_db(dithered, sr)
+    assert -50.0 < threshold < -30.0
+    start, stop = active_region(dithered, threshold)
+    pre = round(sweep.pre_silence_s * sr)
+    assert pre <= start < pre + round(0.01 * sr)
+    assert pre + sweep.sweep_samples - round(0.01 * sr) < stop <= pre + sweep.sweep_samples
+    # Digital silence, and a sweep without silences (its fade-in is no
+    # noise floor), keep the threshold re the peak.
+    assert reference_silence_threshold_db(signal, sr) == -60.0
+    only = generate_ess(sweep)
+    assert reference_silence_threshold_db(np.round(only * 32768) / 32768, sr) == -60.0

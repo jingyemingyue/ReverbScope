@@ -50,7 +50,6 @@ from reverbscope.core.playback_speed import diagnose_playback_speed
 from reverbscope.core.reflections import detect_early_reflections
 from reverbscope.core.resonance import detect_potential_resonances
 from reverbscope.core.sweep import (
-    REFERENCE_SILENCE_THRESHOLD_DB,
     active_region,
     design_spectral_inverse,
     estimate_reference_band_hz,
@@ -58,6 +57,7 @@ from reverbscope.core.sweep import (
     frequency_at_sweep_time,
     generate_ess,
     inverse_filter,
+    reference_silence_threshold_db,
 )
 from reverbscope.errors import (
     AnalysisError,
@@ -204,8 +204,9 @@ def _prepare_reference(reference: Reference, sample_rate: int) -> _PreparedRefer
                 to_rate=sample_rate,
             )
         )
+    silence_db = reference_silence_threshold_db(signal, sample_rate)
     try:
-        first, stop = active_region(signal)
+        first, stop = active_region(signal, silence_db)
     except ConfigurationError as exc:
         raise InvalidAudioError(
             _("reference signal cannot be used: {error}").format(error=exc)
@@ -221,7 +222,8 @@ def _prepare_reference(reference: Reference, sample_rate: int) -> _PreparedRefer
                 "not to the start of the file",
                 lead_s=lead / sample_rate,
                 tail_s=tail / sample_rate,
-                threshold_db=REFERENCE_SILENCE_THRESHOLD_DB,
+                # Whole dB, rounded up: every trimmed sample is below it.
+                threshold_db=math.ceil(silence_db),
             )
         )
     warnings.append(

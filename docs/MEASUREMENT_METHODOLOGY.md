@@ -73,7 +73,14 @@ reference and `b(f)` is small inside the estimated excitation band
 (`SPECTRAL_REG_IN_BAND_DB`) and large outside it
 (`SPECTRAL_REG_OUT_OF_BAND_DB`), with sin² transitions in log frequency.
 Same in-band normalisation as the analytic inverse. A constant `β` would
-boost the inverse just below `f1` and above `f2`.
+boost the inverse just below `f1` and above `f2`. Before the inverse is
+designed, the silences at the start and end of the WAV are removed: samples
+below −60 dB re its peak, or, when the first or last 50 ms of the file is a
+steady noise floor (five 10 ms frames within 6 dB of each other) at least
+30 dB below the peak, less than 20 dB above that floor. A threshold
+relative to the peak alone kept the silences of a dithered 16-bit copy of a
+quiet sweep (at −36 dBFS its dither reaches −54 dB re the peak), and the
+decay after the sweep was then taken for part of the reference.
 
 **Deconvolution** (`core/deconvolution.py`): full linear convolution of the
 whole recording with the inverse filter (FFT). Because the convolution is
