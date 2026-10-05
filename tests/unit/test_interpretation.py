@@ -507,3 +507,50 @@ def test_a_strong_reflection_that_disappeared_is_reported() -> None:
     # A weak one (below the profile's -12 dB) is not worth a finding, as for "appeared".
     weak = ReflectionMatch("disappeared", baseline_delay_ms=2.4, baseline_relative_db=-20.0)
     assert _reflection_findings(weak) == []
+
+
+@pytest.mark.parametrize(
+    ("candidate", "percent", "direction", "chinese"),
+    [
+        (0.4, 0.0, "unchanged", "未变"),
+        (0.39985, -0.0375, "unchanged", "未变"),
+        (0.398, -0.5, "shorter", "变短"),
+        (0.402, 0.5, "longer", "变长"),
+    ],
+    ids=["equal", "rounds to zero", "shorter", "longer"],
+)
+def test_the_rt60_change_direction_follows_the_printed_percentage(
+    candidate: float, percent: float, direction: str, chinese: str
+) -> None:
+    """A session compared with itself read "+0.0 % of the baseline, longer",
+    and a -0.04 % change "+0.0 % of the baseline, shorter"."""
+    from reverbscope.i18n import activate
+    from reverbscope.interpretation import interpret_comparison
+    from reverbscope.models.comparison import ComparisonResult, MetricDelta
+
+    rt = MetricDelta(
+        name="broadband.rt60_estimate",
+        baseline=0.4,
+        candidate=candidate,
+        validity=Validity.VALID,
+        delta_s=candidate - 0.4,
+        delta_percent=percent,
+        delta=candidate - 0.4,
+        unit="s",
+    )
+    comparison = ComparisonResult(comparable=True, common_band=(20.0, 20000.0), decay=(rt,))
+
+    def decay_finding():
+        return next(
+            f for f in interpret_comparison(comparison) if f.message_id == "comparison.decay_rt60"
+        )
+
+    english = decay_finding()
+    assert english.params["direction"] == direction
+    shown = f"{round(percent, 1) + 0.0:+.1f}"
+    assert f"({shown} % of the baseline, {direction})" in english.message
+    activate("zh_CN")
+    try:
+        assert f"（相对基线 {shown} %，{chinese}）" in decay_finding().message
+    finally:
+        activate("en")

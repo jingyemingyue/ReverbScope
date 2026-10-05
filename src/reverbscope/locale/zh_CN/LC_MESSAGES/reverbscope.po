@@ -4678,3 +4678,9 @@ msgstr "末尾片段中另有 {unused:.2f} s 安静的信号未被使用：只�
 msgctxt "diagnostic"
 msgid "{unused:.2f} s of quiet signal in the {source} segment were not used: only the longest quiet stretch is measured, and a louder part separates them from it"
 msgstr "{source} 片段中另有 {unused:.2f} s 安静的信号未被使用：只测量最长的连续安静部分，而它们与该部分之间隔着较响的部分"
+
+# Comparison: an RT60 change that rounds to 0.0 %
+
+msgctxt "RT60 change"
+msgid "unchanged"
+msgstr "未变"

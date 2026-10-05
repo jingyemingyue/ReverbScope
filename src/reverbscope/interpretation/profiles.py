@@ -78,10 +78,12 @@ def profile_title(name: str) -> str:
 
 
 def change_direction_text(direction: str) -> str:
-    """Translated word for the direction of an RT60 change (``"shorter"`` / ``"longer"``)."""
+    """Translated word for the direction of an RT60 change (``"shorter"`` /
+    ``"longer"`` / ``"unchanged"``)."""
     words = {
         "shorter": pgettext("RT60 change", "shorter"),
         "longer": pgettext("RT60 change", "longer"),
+        "unchanged": pgettext("RT60 change", "unchanged"),
     }
     return words.get(direction, direction)
 
@@ -255,7 +257,10 @@ class ProfileBase:
             and rt.candidate is not None
         ):
             percent = rt.delta_percent if rt.delta_percent is not None else 0.0
-            direction = "shorter" if rt.candidate < rt.baseline else "longer"
+            shown = round(percent, 1) + 0.0  # never "-0.0 %"
+            # The direction follows the percentage as printed: equal values read
+            # "longer" and a -0.04 % change "+0.0 %, shorter".
+            direction = "unchanged" if shown == 0.0 else "shorter" if shown < 0.0 else "longer"
             findings.append(
                 finding(
                     "reverberation",
@@ -275,7 +280,7 @@ class ProfileBase:
                     display={"direction": change_direction_text(direction)},
                     baseline_s=rt.baseline,
                     candidate_s=rt.candidate,
-                    delta_percent=round(percent, 1) + 0.0,  # never "-0.0 %"
+                    delta_percent=shown,
                     direction=direction,
                     jnd_percent=T_JND_PERCENT,
                 )
