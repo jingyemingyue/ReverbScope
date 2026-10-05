@@ -235,3 +235,25 @@ def test_every_script_only_the_release_workflow_runs_triggers_it() -> None:
     triggers = release[True]  # YAML 1.1 reads the key "on" as True
     for event in ("push", "pull_request"):
         assert only_release <= set(triggers[event]["paths"]), event
+
+
+def test_the_installer_step_shows_why_the_chinese_messages_failed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capfd: pytest.CaptureFixture[str]
+) -> None:
+    """The helper's stderr was captured and dropped, so a changed upstream file
+    or a network error ended in "returned non-zero exit status 1" alone."""
+    import subprocess
+
+    helper = tmp_path / "scripts" / "inno_chinese_messages.py"
+    helper.parent.mkdir()
+    helper.write_text(
+        "raise SystemExit('ChineseSimplified.isl has SHA-256 7d54, expected 0000')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(MODULE, "ROOT", tmp_path)
+    monkeypatch.setattr(MODULE, "DIST", tmp_path / "dist")
+    monkeypatch.setattr(MODULE, "find_iscc", lambda: tmp_path / "ISCC.exe")
+    monkeypatch.setattr(MODULE, "_run", _never)
+    with pytest.raises(subprocess.CalledProcessError):
+        _steps(WINDOWS)["Windows installer"].run()
+    assert "has SHA-256 7d54, expected 0000" in capfd.readouterr().err

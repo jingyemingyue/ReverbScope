@@ -326,7 +326,9 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
                 ],
                 check=True,
                 cwd=ROOT,
-                capture_output=True,
+                # Only the printed path is wanted; stderr stays on the terminal
+                # so a checksum mismatch or a network error says what went wrong.
+                stdout=subprocess.PIPE,
                 text=True,
             ).stdout.strip()
             _run(
