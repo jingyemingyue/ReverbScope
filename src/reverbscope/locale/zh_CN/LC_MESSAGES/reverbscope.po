@@ -4543,3 +4543,7 @@ msgstr "文件或文件夹不存在"
 
 msgid "the disk is read-only"
 msgstr "磁盘是只读的"
+
+msgctxt "clause separator"
+msgid "; "
+msgstr "；"

@@ -27,7 +27,7 @@ from reverbscope.cli.console import (
     wrap,
 )
 from reverbscope.edition import RELEASES_URL, is_terminal_package
-from reverbscope.i18n import _, localize, pgettext
+from reverbscope.i18n import _, list_join, localize, pgettext
 from reverbscope.interpretation import Finding
 from reverbscope.interpretation.profiles import (
     band_text,
@@ -85,6 +85,11 @@ def rates_text(rates: Sequence[int], console: Console) -> str:
     if not rates:
         return pgettext("sample rates", "none")
     return console.sep().join(f"{rate / 1000:g}" for rate in rates) + " kHz"
+
+
+def _labelled(label: str, text: str) -> str:
+    """``label: text``, with the colon of the interface language (``扬声器高度：不可比较``)."""
+    return _("{label}: {description}").format(label=label, description=text)
 
 
 def created_text(created: str) -> str:
@@ -279,7 +284,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         strongest_modes = sorted(
             res.candidates, key=lambda cand: cand.level_above_baseline_db, reverse=True
         )[:3]
-        listed = ", ".join(
+        listed = list_join(
             f"{cand.frequency_hz:.0f} Hz (+{cand.level_above_baseline_db:.1f} dB)"
             for cand in strongest_modes
         )
@@ -425,7 +430,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
             ]
         )
         if band.filter_warning:
-            notes.append(f"{band_text(band.band_label)}: {localize(band.filter_warning)}")
+            notes.append(_labelled(band_text(band.band_label), localize(band.filter_warning)))
     headers = [_("Band"), "EDT", "T20", "T30", "RT60", _("Decay range")]
     bases = {band.rt60_basis for band in (result.decay.broadband, *result.decay.bands)}
     basis_note = ""
@@ -567,7 +572,7 @@ def _noise(c: Console, result: AnalysisResult) -> list[str]:
         )
         hums = [h for h in noise.hum if h.detected]
         for hum in hums:
-            harmonics = ", ".join(f"{f:.0f} Hz (+{p:.0f} dB)" for f, p in hum.harmonics)
+            harmonics = list_join(f"{f:.0f} Hz (+{p:.0f} dB)" for f, p in hum.harmonics)
             lines += c.status(
                 "warn",
                 _("Potential mains hum at multiples of {base:.0f} Hz: {harmonics}").format(
@@ -658,8 +663,8 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         if length.reason:
             reasons.setdefault(localize(length.reason), []).append(name)
     for reason, names in reasons.items():
-        prefix = "" if len(names) == len(figures) else ", ".join(names) + ": "
-        lines += c.status("info", prefix + reason)
+        text = reason if len(names) == len(figures) else _labelled(list_join(names), reason)
+        lines += c.status("info", text)
     named = [candidate for candidate in placement.candidates if candidate.surface]
     if named:
         lines.append("")
@@ -974,7 +979,7 @@ def _reasons(c: Console, items: Sequence[MetricDelta], *, label: Any = metric_la
     if grouped:
         lines.append("")
     for reason, names in grouped.items():
-        lines += c.status("skip", ", ".join(names), detail=reason)
+        lines += c.status("skip", list_join(names), detail=reason)
     return lines
 
 
@@ -989,10 +994,10 @@ def _delta_statuses(c: Console, items: Sequence[MetricDelta]) -> list[str]:
             for item in members:
                 lines += c.status("ok", _delta_text(c, item))
             continue
-        names = ", ".join(metric_label(item.name) for item in members)
+        names = list_join(metric_label(item.name) for item in members)
         lines += c.status(
             validity_status(validity),
-            f"{names}: {validity_word(validity)}",
+            _labelled(names, validity_word(validity)),
             detail=localize(reason) if reason else "",
         )
     return lines
@@ -1002,7 +1007,7 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
     unit = f" {item.unit}" if item.unit else ""
     base = f"{item.baseline:.2f}" if item.baseline is not None else c.dash()
     cand = f"{item.candidate:.2f}" if item.candidate is not None else c.dash()
-    text = f"{metric_label(item.name)}: {base} {c.arrow()} {cand}{unit}"
+    text = _labelled(metric_label(item.name), f"{base} {c.arrow()} {cand}{unit}")
     if item.delta is not None:
         text += f" ({signed_number(item.delta, 2)}{unit})"
     return text
@@ -1090,8 +1095,9 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
             if r.status == status
         ]
         if found:
-            parts.append(label.format(list=", ".join(found)))
-    row(_("Low end"), "ok", "; ".join(parts) if parts else _("no potential resonance"))
+            parts.append(label.format(list=list_join(found)))
+    clauses = pgettext("clause separator", "; ")
+    row(_("Low end"), "ok", clauses.join(parts) if parts else _("no potential resonance"))
 
     rms = next((d for d in comparison.noise if d.name == "noise.rms_dbfs"), None)
     if rms is not None and rms.baseline is not None and rms.candidate is not None:
@@ -1256,7 +1262,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         default_out = next(
             (p["device"]["name"] for p in devices if p["device"].get("is_default_output")), None
         )
-        apis = ", ".join(
+        apis = list_join(
             f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
         )
         lines += c.fields(
@@ -1293,7 +1299,7 @@ def _default_marks(device: dict[str, Any], *, short: bool = False) -> str:
         marks.append(_("Input") if short else pgettext("environment report", "default input"))
     if device.get("is_default_output"):
         marks.append(_("Output") if short else pgettext("environment report", "default output"))
-    return ", ".join(marks)
+    return list_join(marks)
 
 
 def _recommended(probe: dict[str, Any]) -> str:
@@ -1432,7 +1438,7 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
     )
     for api in inventory.host_apis:
         if api.note:
-            lines += console.status("info", f"{api.name}: {localize(api.note)}")
+            lines += console.status("info", _labelled(api.name, localize(api.note)))
     return console.fit("\n".join(lines))
 
 
@@ -1558,7 +1564,7 @@ def render_measure_plan(
 
     microphone = [ch for ch in input_channels if ch != loopback_channel]
     in_text = device_text(inp, _("system default")) + c.sep()
-    in_text += _("input {channels}").format(channels=", ".join(str(ch) for ch in microphone))
+    in_text += _("input {channels}").format(channels=list_join(str(ch) for ch in microphone))
     if loopback_channel is not None:
         in_text += c.sep() + _("loopback on input {channel}").format(channel=loopback_channel)
     out_text = device_text(out, _("system default")) + c.sep()

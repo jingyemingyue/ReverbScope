@@ -398,6 +398,32 @@ def test_an_operating_system_error_is_explained_in_chinese(
     assert "没有权限：" in err and "Permission denied" not in err
 
 
+def test_chinese_lines_join_their_parts_with_chinese_punctuation(
+    zh_cli: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """ "扬声器高度: 不可比较", "输入, 输出", "两侧都有：110 Hz; 消失：…": the
+    renderers joined translated phrases with ASCII colons, commas and
+    semicolons that never reached the catalog."""
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import _delta_statuses
+    from reverbscope.models.comparison import MetricDelta
+    from reverbscope.models.result import Validity
+
+    assert main(["--lang", "zh_CN", "--backend", "fake", "devices"]) == 0
+    assert "输入、输出" in capsys.readouterr().out
+    assert main(["--lang", "zh_CN", "--backend", "fake", "doctor", "--probe"]) == 0
+    assert "默认输入、默认输出" in capsys.readouterr().out
+    assert main(["--lang", "zh_CN", "--backend", "fake", "devices", "--host-apis"]) == 0
+    assert "fake：" in capsys.readouterr().out
+    deltas = [
+        MetricDelta(f"placement.{name}", None, None, Validity.NOT_COMPARABLE, reason="")
+        for name in ("source_height_m", "ceiling_height_m")
+    ]
+    text = "\n".join(_delta_statuses(Console(), deltas))
+    assert "扬声器高度、" in text and "：不可比较" in text
+    assert not re.search(r"[\u4e00-\u9fff][,;:] ", text), text
+
+
 def test_the_export_format_default_is_the_value_to_type(zh_cli: None) -> None:
     """导出器名称（默认 CSV）, but `--format CSV` is refused: the exporter is csv."""
     export = _help_texts()["reverbscope export"]
