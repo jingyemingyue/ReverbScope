@@ -1361,3 +1361,31 @@ def test_a_comparison_saved_from_the_app_names_its_sessions(
     assert str(tmp_path / "cand") in shown
     assert "Interpretation (Vocals profile)" in shown
     window.close()
+
+
+def test_back_from_compare_returns_to_the_unsaved_result(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Compare's Back went Home and reset the state: a take checked against
+    an old session before it was saved (Results, Ctrl+Shift+C, Back) was
+    gone, recording and all."""
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    window = MainWindow()
+    window.show()
+    _demo_take(app, window)
+    result, recording = window.state.result, window.state.recording
+    assert recording is not None and window.state.recording_path is None
+    window.show_compare()
+    window.compare.back.emit()
+    assert window.stack.currentWidget() is window.results
+    assert window.state.result is result
+    assert window.state.recording is recording
+    assert window.statusBar().currentMessage().endswith("Results")
+    window.results.save_to(tmp_path / "take")
+    assert (tmp_path / "take" / "recording.wav").is_file()
+
+    window.show_home()
+    window.show_compare()
+    window.compare.back.emit()
+    assert window.stack.currentWidget() is window.home
+    window.close()

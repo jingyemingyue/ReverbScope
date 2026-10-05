@@ -92,7 +92,7 @@ class MainWindow(QMainWindow):
         self.daw.back.connect(self.show_home)
         self.standalone.back.connect(self.show_home)
         self.results.new_measurement.connect(self.show_home)
-        self.compare.back.connect(self.show_home)
+        self.compare.back.connect(self._leave_compare)
 
         file_menu = self.menuBar().addMenu(_("&File"))
         new_action = QAction(_("&New Measurement"), self)
@@ -158,6 +158,11 @@ class MainWindow(QMainWindow):
         help_menu.addAction(licenses_action)
         self._status = QStatusBar()
         self.setStatusBar(self._status)
+        self._place = ""
+        # The page Compare was opened from, and its status-bar place: Back
+        # returns there. Going Home instead reset the state, so an unsaved
+        # result (the only copy of a live take) was gone.
+        self._before_compare: tuple[QWidget, str] = (self.home, "")
         self.show_home()
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt override
@@ -168,6 +173,7 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def _set_place(self, place: str) -> None:
+        self._place = place
         self._status.showMessage(
             _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
         )
@@ -249,12 +255,25 @@ class MainWindow(QMainWindow):
         self._set_place(_("Results"))
 
     def show_compare(self) -> None:
+        current = self.stack.currentWidget()
+        if current is not None and current is not self.compare:
+            self._before_compare = (current, self._place)
         self.compare.browser.refresh_recent()
         selected = self.home.browser.selected_pair()
         if selected is not None:
             self.compare.set_paths(*selected)
         self.stack.setCurrentWidget(self.compare)
         self._set_place(_("Compare"))
+
+    def _leave_compare(self) -> None:
+        """Back: to the page Compare was opened from, with its measurement kept."""
+        page, place = self._before_compare
+        if page is self.home:
+            # Nothing to keep there; Home lists the sessions saved meanwhile.
+            self.show_home()
+            return
+        self.stack.setCurrentWidget(page)
+        self._set_place(place)
 
     def show_settings(self) -> None:
         from reverbscope.ui.settings_dialog import SettingsDialog
