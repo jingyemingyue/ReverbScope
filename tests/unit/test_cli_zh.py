@@ -73,6 +73,61 @@ def test_every_help_screen_is_chinese(zh_cli: None) -> None:
     assert "命令：" in root and "选项" in root and "显示此帮助信息并退出" in root
 
 
+def _everything_shown(help_text: str) -> str:
+    """The whole help screen, usage line and placeholders included, without
+    what a user types as it is: option names and the values of a choice list
+    ({text,json}); commands are removed by english_words()."""
+    text = re.sub(r"\{[^{}\s]*\}", " ", help_text)
+    # Command names in the command lists ("    analyze-ir  分析…").
+    text = re.sub(r"(?m)^( +)[a-z][a-z-]*(?= {2,}\S)", r"\1", text)
+    return re.sub(r"(?<![\w.-])--?[A-Za-z][\w-]*", " ", text)
+
+
+def test_usage_lines_and_placeholders_are_chinese_too(zh_cli: None) -> None:
+    """The usage line and the option list showed DIR, WAV, N, TEXT, <command>…"""
+    texts = _help_texts()
+    for path, text in texts.items():
+        found = english_words(_everything_shown(text))
+        assert found == [], f"{path}: {found}"
+    assert texts["roomscope"].startswith("用法：roomscope [-h] [--version] [--lang 语言]")
+    assert "<命令> ..." in texts["roomscope"].split("\n\n", 1)[0]
+    assert texts["roomscope project add"].startswith(
+        "用法：roomscope project add 项目 会话 --position 标签 [选项]"
+    )
+    analyze = texts["roomscope analyze"]
+    for shown in ("--recording WAV文件", "--sweep 文件", "--out 目录", "--channel 声道"):
+        assert shown in analyze, shown
+    # The help says 1/N: the smoothing placeholder keeps its letter.
+    assert re.search(r"--smoothing N +分数倍频程平滑 1/N", analyze)
+    assert "--band 下限 上限" in texts["roomscope analyze-ir"]
+    assert "--input-device 序号" in texts["roomscope measure"]
+    assert "--sources 数量" in texts["roomscope project average"]
+
+
+def _help_columns(text: str) -> set[int]:
+    """Display columns where the help of an option starts, in one screen."""
+    from roomscope.cli.console import cell_width
+
+    columns: set[int] = set()
+    for line in text.splitlines():
+        found = re.match(r"^(  \S.*?\S  +)\S", line)
+        if found and not line.startswith("  roomscope "):
+            columns.add(cell_width(found.group(1)))
+        elif re.match(r"^ {6,}\S", line):
+            columns.add(len(line) - len(line.lstrip()))
+    return columns
+
+
+def test_option_help_lines_up_with_chinese_placeholders(zh_cli: None) -> None:
+    """argparse pads with %-*s, which counts a Chinese character as one column."""
+    for path, text in _help_texts().items():
+        if path == "roomscope":
+            continue  # the grouped command list has its own column
+        # One column per screen, except the choice lists argparse cannot wrap.
+        shown = "\n".join(line for line in text.splitlines() if "{" not in line)
+        assert len(_help_columns(shown)) <= 1, (path, _help_columns(shown), text)
+
+
 def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit):
         main(["--lang", "zh_CN", "measure"])

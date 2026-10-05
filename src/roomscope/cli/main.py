@@ -18,6 +18,7 @@ import contextlib
 import json
 import logging
 import os
+import re
 import shlex
 import sys
 import traceback
@@ -60,7 +61,7 @@ from roomscope.errors import (
     RoomScopeError,
     SessionError,
 )
-from roomscope.i18n import N_, _, activate, localize
+from roomscope.i18n import N_, _, activate, localize, pgettext
 from roomscope.interpretation import available_profiles
 from roomscope.interpretation.profiles import band_text, profile_title
 from roomscope.labels import accuracy_class_text
@@ -183,6 +184,48 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
         # A blank line between paragraphs, as they were written.
         return "\n\n".join(block for block in blocks if block)
 
+    def add_argument(self, action: argparse.Action) -> None:
+        """argparse sizes the option column with ``len()``; a translated
+        placeholder ("--out 目录") is wider on screen than it is long."""
+        super().add_argument(action)
+        if action.help is argparse.SUPPRESS:
+            return
+        from roomscope.cli.console import cell_width
+
+        invocations = [self._format_action_invocation(action)]
+        invocations += [
+            self._format_action_invocation(a) for a in self._iter_indented_subactions(action)
+        ]
+        widest = max(cell_width(text) for text in invocations) + self._current_indent
+        self._action_max_length = max(self._action_max_length, widest)
+
+    def _format_action(self, action: argparse.Action) -> str:
+        """argparse's layout, with the help column aligned by display width.
+
+        argparse pads an option to the help column with ``%-*s``, which counts
+        characters: a row with a Chinese placeholder started its help two
+        columns further right for every Chinese character.
+        """
+        from roomscope.cli.console import cell_width
+
+        text = super()._format_action(action)
+        header = self._format_action_invocation(action)
+        extra = cell_width(header) - len(header)
+        if extra <= 0 or not action.help:
+            return text
+        help_position = min(self._action_max_length + 2, self._max_help_position)
+        action_width = help_position - self._current_indent - 2
+        lead = " " * self._current_indent + header
+        first, newline, rest = text.partition("\n")
+        if len(header) > action_width or not first.startswith(lead):
+            return text  # argparse already put the help on the next line
+        after = first[len(lead) :]
+        if cell_width(header) <= action_width:
+            first = lead + after[extra:]
+        else:  # too wide on screen for the column: the help goes below, as argparse does
+            first = lead + "\n" + " " * help_position + after.lstrip(" ")
+        return first + newline + rest
+
     def _format_usage(self, usage: Any, actions: Any, groups: Any, prefix: Any) -> str:
         # argparse measures the prefix with len(); "用法：" takes six columns, not three.
         from roomscope.cli.console import cell_width
@@ -286,7 +329,7 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
         type=int,
         default=DEFAULT_SAMPLE_RATE,
         choices=SUPPORTED_SAMPLE_RATES,
-        metavar="HZ",
+        metavar=pgettext("metavar", "HZ"),
         help=_("sample rate (Hz): {rates}").format(
             rates=", ".join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
         ),
@@ -295,56 +338,56 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
         "--duration",
         type=float,
         default=10.0,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("sweep duration in seconds (default 10)"),
     )
     group.add_argument(
         "--start-hz",
         type=float,
         default=20.0,
-        metavar="HZ",
+        metavar=pgettext("metavar", "HZ"),
         help=_("sweep start frequency (default 20)"),
     )
     group.add_argument(
         "--end-hz",
         type=float,
         default=20000.0,
-        metavar="HZ",
+        metavar=pgettext("metavar", "HZ"),
         help=_("sweep end frequency (default 20000)"),
     )
     group.add_argument(
         "--level",
         type=float,
         default=default_level,
-        metavar="DBFS",
+        metavar=pgettext("metavar", "DBFS"),
         help=_("peak level in dBFS (default {level:g})").format(level=default_level),
     )
     group.add_argument(
         "--fade-in",
         type=float,
         default=0.05,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("fade-in in seconds (default 0.05)"),
     )
     group.add_argument(
         "--fade-out",
         type=float,
         default=0.01,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("fade-out in seconds (default 0.01)"),
     )
     group.add_argument(
         "--pre-silence",
         type=float,
         default=1.0,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("silence before the sweep (s)"),
     )
     group.add_argument(
         "--post-silence",
         type=float,
         default=3.0,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("silence after the sweep (s)"),
     )
 
@@ -371,14 +414,14 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
             "--channel",
             type=int,
             default=None,
-            metavar="N",
+            metavar=pgettext("channel metavar", "N"),
             help=_("recording channel to analyse (0-based)"),
         )
     analysis.add_argument(
         "--smoothing",
         type=int,
         default=6,
-        metavar="N",
+        metavar=pgettext("fraction metavar", "N"),
         help=_("fractional-octave smoothing 1/N (0 = off)"),
     )
     analysis.add_argument(
@@ -388,18 +431,33 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
         help=_("recording profile that shapes the interpretation (default: user settings)"),
     )
     notes = parser.add_argument_group(_("session notes (stored in session.json)"))
-    notes.add_argument("--room", default="", metavar="TEXT", help=_("room name (metadata)"))
     notes.add_argument(
-        "--position", default="", metavar="TEXT", help=_("measurement position (metadata)")
+        "--room", default="", metavar=pgettext("metavar", "TEXT"), help=_("room name (metadata)")
     )
-    notes.add_argument("--mic", default="", metavar="TEXT", help=_("microphone name (metadata)"))
-    notes.add_argument("--notes", default="", metavar="TEXT", help=_("free-text notes (metadata)"))
+    notes.add_argument(
+        "--position",
+        default="",
+        metavar=pgettext("metavar", "TEXT"),
+        help=_("measurement position (metadata)"),
+    )
+    notes.add_argument(
+        "--mic",
+        default="",
+        metavar=pgettext("metavar", "TEXT"),
+        help=_("microphone name (metadata)"),
+    )
+    notes.add_argument(
+        "--notes",
+        default="",
+        metavar=pgettext("metavar", "TEXT"),
+        help=_("free-text notes (metadata)"),
+    )
     placement = parser.add_argument_group(_("placement (optional tape measurements)"))
     placement.add_argument(
         "--speaker-distance",
         type=float,
         default=None,
-        metavar="M",
+        metavar=pgettext("metavar", "M"),
         help=_(
             "straight line from the loudspeaker to the microphone capsule (m), measured "
             "with a tape. Without it no geometry can be derived from the reflections"
@@ -409,7 +467,7 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
         "--mic-height",
         type=float,
         default=None,
-        metavar="M",
+        metavar=pgettext("metavar", "M"),
         help=_(
             "microphone capsule above the first solid horizontal surface below it (m) -- "
             "the desk top at a desk, otherwise the floor. Needs --speaker-distance"
@@ -419,7 +477,7 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = 
         "--temperature",
         type=float,
         default=None,
-        metavar="C",
+        metavar=pgettext("metavar", "C"),
         help=_("air temperature (C); 20 C is assumed, and reported as assumed, without it"),
     )
     output = parser.add_argument_group(_("output"))
@@ -435,14 +493,14 @@ def _add_loopback_file_arguments(parser: argparse.ArgumentParser) -> None:
         "--loopback",
         type=Path,
         default=None,
-        metavar="WAV",
+        metavar=pgettext("metavar", "WAV"),
         help=_("separate loopback WAV from the same take (same sample rate)"),
     )
     group.add_argument(
         "--loopback-channel",
         type=int,
         default=None,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         help=_(
             "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
         ),
@@ -501,6 +559,44 @@ def _required(parser: argparse.ArgumentParser) -> Any:
     return group
 
 
+#: argparse's split of a usage line into the pieces it keeps together.
+_USAGE_PART = re.compile(r"\(.*?\)+(?=\s|$)|\[.*?\]+(?=\s|$)|\S+")
+
+
+def _root_usage(parser: argparse.ArgumentParser) -> str:
+    """The root usage line, wrapped by display width.
+
+    The command list is printed grouped, so argparse's own list is hidden and
+    the command placeholder is added at the end. argparse wraps with
+    ``len()``: a translated prefix ("用法：") and placeholders ("[--lang 语言]")
+    are wider on screen, so the lines ran past the edge and the continuation
+    lines did not line up under the first. This is argparse's wrapping rule,
+    measured in columns.
+    """
+    from roomscope.cli.console import cell_width
+
+    one_line = _HelpFormatter(parser.prog, width=100_000)
+    one_line.add_usage(None, parser._actions, parser._mutually_exclusive_groups, prefix="")
+    text = one_line.format_help().strip()
+    parts = [
+        parser.prog,
+        *_USAGE_PART.findall(text[len(parser.prog) :]),
+        f"{pgettext('metavar', '<command>')} ...",
+    ]
+    width = parser._get_formatter()._width
+    prefix = cell_width(_("usage: "))
+    hang = " " * (prefix + cell_width(parser.prog) + 1)
+    lines: list[list[str]] = [[]]
+    used = prefix - 1
+    for part in parts:
+        if used + 1 + cell_width(part) > width and lines[-1]:
+            lines.append([])
+            used = len(hang) - 1
+        lines[-1].append(part)
+        used += cell_width(part) + 1
+    return "\n".join((hang if number else "") + " ".join(line) for number, line in enumerate(lines))
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = _Parser(
         prog="roomscope",
@@ -518,7 +614,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--lang",
         default=None,
-        metavar="LANG",
+        metavar=pgettext("metavar", "LANG"),
         help=_("UI language (en, zh_CN). Overrides settings and ROOMSCOPE_LANG"),
     )
     parser.add_argument(
@@ -531,7 +627,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--color",
         choices=COLOR_MODES,
         default="auto",
-        metavar="WHEN",
+        metavar=pgettext("metavar", "WHEN"),
         help=_(
             "colour in the terminal: auto (default; off for pipes, files and NO_COLOR), always, never"
         ),
@@ -539,7 +635,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--backend",
         default=None,
-        metavar="NAME",
+        metavar=pgettext("metavar", "NAME"),
         help=_("audio backend for Standalone Mode: portaudio (default) or fake"),
     )
     parser.add_argument(
@@ -552,7 +648,10 @@ def build_parser() -> argparse.ArgumentParser:
         "-v", "--verbose", action="store_true", help=_("debug logging, and tracebacks on errors")
     )
     sub = parser.add_subparsers(
-        dest="command", required=False, metavar="<command>", help=argparse.SUPPRESS
+        dest="command",
+        required=False,
+        metavar=pgettext("metavar", "<command>"),
+        help=argparse.SUPPRESS,
     )
 
     # Registered in the order of the workflow; the root help groups them (COMMAND_GROUPS).
@@ -566,7 +665,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--out",
         type=Path,
         default=Path(DEMO_FOLDER),
-        metavar="DIR",
+        metavar=pgettext("metavar", "DIR"),
         help=_("folder for the demo files, created or replaced (default {folder})").format(
             folder=DEMO_FOLDER
         ),
@@ -602,7 +701,11 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     _required(p_sweep).add_argument(
-        "--out", required=True, type=Path, metavar="WAV", help=_("output WAV path")
+        "--out",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "WAV"),
+        help=_("output WAV path"),
     )
     _add_sweep_arguments(p_sweep, default_level=-12.0)
 
@@ -621,21 +724,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--recording",
         required=True,
         type=Path,
-        metavar="WAV",
+        metavar=pgettext("metavar", "WAV"),
         help=_("recorded WAV (any length, untrimmed)"),
     )
     required.add_argument(
         "--sweep",
         required=True,
         type=Path,
-        metavar="FILE",
+        metavar=pgettext("metavar", "FILE"),
         help=_("sweep WAV or its .roomscope-sweep.json sidecar"),
     )
     p_an.add_argument(
         "--out",
         type=Path,
         default=None,
-        metavar="DIR",
+        metavar=pgettext("metavar", "DIR"),
         help=_("directory for session.json, result.json, IR WAV"),
     )
     _add_analysis_arguments(p_an)
@@ -673,45 +776,53 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     _required(p_me).add_argument(
-        "--out", required=True, type=Path, metavar="DIR", help=_("session directory (created)")
+        "--out",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("session directory (created)"),
     )
     iface = p_me.add_argument_group(_("audio interface"))
     iface.add_argument(
         "--input-device",
         type=int,
         default=None,
-        metavar="N",
+        metavar=pgettext("metavar", "N"),
         help=_("input device index (see 'devices')"),
     )
     iface.add_argument(
-        "--output-device", type=int, default=None, metavar="N", help=_("output device index")
+        "--output-device",
+        type=int,
+        default=None,
+        metavar=pgettext("metavar", "N"),
+        help=_("output device index"),
     )
     iface.add_argument(
         "--input-channel",
         type=int,
         default=1,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         help=_("input channel, 1-based (default 1)"),
     )
     iface.add_argument(
         "--input-channels",
         type=_channel_list,
         default=None,
-        metavar="LIST",
+        metavar=pgettext("metavar", "LIST"),
         help=_("1-based input channels, comma-separated (e.g. 1,2); overrides --input-channel"),
     )
     iface.add_argument(
         "--output-channel",
         type=int,
         default=1,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         help=_("output channel, 1-based (default 1)"),
     )
     iface.add_argument(
         "--loopback-channel",
         type=int,
         default=None,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         dest="measure_loopback_channel",
         help=_("1-based loopback input channel (recorded with the microphone)"),
     )
@@ -746,20 +857,30 @@ def build_parser() -> argparse.ArgumentParser:
         examples=("roomscope analyze-ir --ir room.wav --band 20 20000 --out session-ir",),
     )
     _required(p_ir).add_argument(
-        "--ir", required=True, type=Path, metavar="WAV", help=_("impulse-response WAV")
+        "--ir",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "WAV"),
+        help=_("impulse-response WAV"),
     )
     p_ir.add_argument(
         "--band",
         nargs=2,
         type=float,
-        metavar=("LO", "HI"),
+        metavar=(pgettext("metavar", "LO"), pgettext("metavar", "HI")),
         default=None,
         help=_(
             "declared excitation band in Hz (required for every decay and clarity metric, "
             "broadband included)"
         ),
     )
-    p_ir.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("session directory"))
+    p_ir.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("session directory"),
+    )
     _add_analysis_arguments(p_ir)
 
     p_show = _command(
@@ -771,6 +892,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_show.add_argument(
         "path",
         type=Path,
+        metavar=pgettext("metavar", "path"),
         help=_("session directory, session.json, comparison.json, or folder to list"),
     )
     p_show.add_argument(
@@ -801,18 +923,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_cmp.add_argument(
         "baseline",
         type=Path,
+        metavar=pgettext("metavar", "baseline"),
         help=_("baseline session directory or session.json"),
     )
     p_cmp.add_argument(
         "candidate",
         type=Path,
+        metavar=pgettext("metavar", "candidate"),
         help=_("candidate session directory or session.json"),
     )
     p_cmp.add_argument(
         "--out",
         type=Path,
         default=None,
-        metavar="PATH",
+        metavar=pgettext("metavar", "PATH"),
         help=_("write comparison.json here (file or directory)"),
     )
     p_cmp.add_argument(
@@ -839,20 +963,32 @@ def build_parser() -> argparse.ArgumentParser:
         examples=("roomscope project init --out studio-a",),
     )
     _required(p_init).add_argument(
-        "--out", required=True, type=Path, metavar="DIR", help=_("project directory")
+        "--out",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("project directory"),
     )
-    p_init.add_argument("--name", default="", metavar="TEXT", help=_("room name"))
-    p_init.add_argument("--notes", default="", metavar="TEXT", help=_("free-text notes"))
+    p_init.add_argument(
+        "--name", default="", metavar=pgettext("metavar", "TEXT"), help=_("room name")
+    )
+    p_init.add_argument(
+        "--notes", default="", metavar=pgettext("metavar", "TEXT"), help=_("free-text notes")
+    )
     p_add = _command(
         proj_sub,
         "add",
         _("add a session to a position"),
         examples=("roomscope project add studio-a session-1 --position A",),
     )
-    p_add.add_argument("project", type=Path, help=_("project directory"))
-    p_add.add_argument("session", type=Path, help=_("session directory"))
+    p_add.add_argument(
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
+    p_add.add_argument(
+        "session", type=Path, metavar=pgettext("metavar", "session"), help=_("session directory")
+    )
     _required(p_add).add_argument(
-        "--position", required=True, metavar="LABEL", help=_("position label")
+        "--position", required=True, metavar=pgettext("metavar", "LABEL"), help=_("position label")
     )
     p_avg = _command(
         proj_sub,
@@ -860,15 +996,23 @@ def build_parser() -> argparse.ArgumentParser:
         _("spatial average of VALID T values"),
         examples=("roomscope project average studio-a",),
     )
-    p_avg.add_argument("project", type=Path, help=_("project directory"))
     p_avg.add_argument(
-        "--sources", type=int, default=1, metavar="N", help=_("number of source positions")
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
+    p_avg.add_argument(
+        "--sources",
+        type=int,
+        default=1,
+        metavar=pgettext("count metavar", "N"),
+        help=_("number of source positions"),
     )
     p_avg.add_argument(
         "--json", action="store_true", help=_("deprecated: use roomscope --format json")
     )
     p_show_proj = _command(proj_sub, "show", _("list positions and sessions"))
-    p_show_proj.add_argument("project", type=Path, help=_("project directory"))
+    p_show_proj.add_argument(
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
 
     p_ex = _command(
         sub,
@@ -876,15 +1020,26 @@ def build_parser() -> argparse.ArgumentParser:
         _("export curves through an exporter"),
         examples=("roomscope export session-1 --out session-1/csv",),
     )
-    p_ex.add_argument("session", type=Path, help=_("session directory or session.json"))
+    p_ex.add_argument(
+        "session",
+        type=Path,
+        metavar=pgettext("metavar", "session"),
+        help=_("session directory or session.json"),
+    )
     p_ex.add_argument(
         "--format",
         dest="export_format",
         default="csv",
-        metavar="NAME",
+        metavar=pgettext("metavar", "NAME"),
         help=_("exporter name (default csv)"),
     )
-    p_ex.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("output directory"))
+    p_ex.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("output directory"),
+    )
 
     p_sess = _command(sub, "session", _("session folder tools"))
     sess_sub = p_sess.add_subparsers(dest="session_command", required=True)
@@ -894,14 +1049,23 @@ def build_parser() -> argparse.ArgumentParser:
         _("zip a session for a bug report"),
         examples=("roomscope session bundle session-1 --no-audio",),
     )
-    p_bundle.add_argument("session", type=Path, help=_("session directory or session.json"))
+    p_bundle.add_argument(
+        "session",
+        type=Path,
+        metavar=pgettext("metavar", "session"),
+        help=_("session directory or session.json"),
+    )
     p_bundle.add_argument(
         "--no-audio",
         action="store_true",
         help=_("leave WAV files out of the zip"),
     )
     p_bundle.add_argument(
-        "--out", type=Path, default=None, metavar="PATH", help=_("zip file (.zip) or folder")
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "PATH"),
+        help=_("zip file (.zip) or folder"),
     )
 
     p_doc = _command(
@@ -928,13 +1092,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("which schema to print"),
     )
     _shorten_usage(parser)
-    # The command list is printed grouped (below), so argparse's own list is
-    # hidden; put the command placeholder back into the usage line.
-    usage = parser.format_usage().strip()
-    prefix = _("usage: ")
-    if usage.startswith(prefix):
-        usage = usage[len(prefix) :]
-    parser.usage = usage + " <command> ..."
+    parser.usage = _root_usage(parser)
     helps = {action.dest: str(action.help) for action in sub._choices_actions}
     parser.description = "\n\n".join(
         [

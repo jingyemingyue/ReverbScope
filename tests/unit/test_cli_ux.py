@@ -243,6 +243,35 @@ def test_golden_home_screen(
     _golden(f"home-{lang}", _normalise(err))
 
 
+def _help_screens() -> str:
+    """Every help screen, root first, as ``roomscope … --help`` prints it."""
+    import argparse
+
+    from roomscope.cli.main import _translate_argparse, build_parser
+
+    _translate_argparse()
+    screens: list[str] = []
+
+    def walk(parser: argparse.ArgumentParser, path: str) -> None:
+        screens.append(f"=== {path} --help\n{parser.format_help()}")
+        for action in parser._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                for name, sub in action.choices.items():
+                    walk(sub, f"{path} {name}")
+
+    walk(build_parser(), "roomscope")
+    return "\n".join(screens)
+
+
+def test_golden_english_help(cli: tuple[Path, pytest.MonkeyPatch]) -> None:
+    """The English help of every command, so that translating its
+    placeholders and argparse's texts for Chinese cannot change it."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", "80")
+    activate("en")
+    _golden("help-en", _help_screens())
+
+
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
 def test_golden_measure_plan_with_the_fake_interface(
     cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], lang: str

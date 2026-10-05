@@ -818,7 +818,7 @@ msgid "microphone capsule above the first solid horizontal surface below it (m) 
 msgstr "话筒振膜到其下方第一块水平固体表面的高度（米）——桌上是桌面，否则是地板。需要 --speaker-distance"
 
 msgid "air temperature (C); 20 C is assumed, and reported as assumed, without it"
-msgstr "气温（C）；未提供时假定 20 C，并报告为假定"
+msgstr "气温（摄氏度）；未提供时按 20 摄氏度计算，并在报告中注明是假定值"
 
 msgid "recording profile that shapes the interpretation (default: user settings)"
 msgstr "影响解读的录音配置（默认：用户设置）"
@@ -1649,6 +1649,116 @@ msgstr "无法识别的参数：%s"
 
 msgid "can't open '%(filename)s': %(error)s"
 msgstr "无法打开“%(filename)s”：%(error)s"
+
+# Placeholders in usage lines and option lists (argparse metavars).
+
+msgctxt "metavar"
+msgid "<command>"
+msgstr "<命令>"
+
+msgctxt "metavar"
+msgid "HZ"
+msgstr "赫兹"
+
+msgctxt "metavar"
+msgid "S"
+msgstr "秒"
+
+msgctxt "metavar"
+msgid "DBFS"
+msgstr "dBFS"
+
+msgctxt "metavar"
+msgid "N"
+msgstr "序号"
+
+msgctxt "channel metavar"
+msgid "N"
+msgstr "声道"
+
+msgctxt "count metavar"
+msgid "N"
+msgstr "数量"
+
+msgctxt "fraction metavar"
+msgid "N"
+msgstr "N"
+
+msgctxt "metavar"
+msgid "TEXT"
+msgstr "文字"
+
+msgctxt "metavar"
+msgid "M"
+msgstr "米"
+
+msgctxt "metavar"
+msgid "C"
+msgstr "摄氏度"
+
+msgctxt "metavar"
+msgid "WAV"
+msgstr "WAV文件"
+
+msgctxt "metavar"
+msgid "FILE"
+msgstr "文件"
+
+msgctxt "metavar"
+msgid "DIR"
+msgstr "目录"
+
+msgctxt "metavar"
+msgid "LIST"
+msgstr "列表"
+
+msgctxt "metavar"
+msgid "LO"
+msgstr "下限"
+
+msgctxt "metavar"
+msgid "HI"
+msgstr "上限"
+
+msgctxt "metavar"
+msgid "PATH"
+msgstr "路径"
+
+msgctxt "metavar"
+msgid "LABEL"
+msgstr "标签"
+
+msgctxt "metavar"
+msgid "NAME"
+msgstr "名称"
+
+msgctxt "metavar"
+msgid "LANG"
+msgstr "语言"
+
+msgctxt "metavar"
+msgid "WHEN"
+msgstr "何时"
+
+msgctxt "metavar"
+msgid "path"
+msgstr "路径"
+
+msgctxt "metavar"
+msgid "baseline"
+msgstr "基线"
+
+msgctxt "metavar"
+msgid "candidate"
+msgstr "候选"
+
+msgctxt "metavar"
+msgid "project"
+msgstr "项目"
+
+msgctxt "metavar"
+msgid "session"
+msgstr "会话"
 
 msgid "DEMO"
 msgstr "演示"
