@@ -29,13 +29,13 @@ src/reverbscope/
   logging_config.py      rotating log under $REVERBSCOPE_HOME
   settings.py            user settings (language, profile, backend, folders)
   i18n.py                gettext setup, locale selection, `_()`
-  locale/                zh_CN/LC_MESSAGES/reverbscope.po
+  locale/                zh_CN, zh_TW, ja, ko, es, fr, de catalogs
   models/                data only, no algorithms
     audio.py             AudioSignal (samples, sample_rate, channel selection)
     configuration.py     SweepSettings, AnalysisSettings (validated, immutable)
     result.py            AnalysisResult and sub-results, Validity enum, JSON export
     result_load.py       JSON → AnalysisResult (unknown keys ignored)
-    session.py           MeasurementSession (metadata, paths, summary)
+    session.py           MeasurementSession (metadata, paths, summary; optional daw_name / daw_project)
     comparison.py        ComparisonResult, MetricDelta, CompareSettings
     project.py           Project index (SHOULD)
     calibration.py       reserved CalibrationRecord
@@ -44,11 +44,12 @@ src/reverbscope/
     deconvolution.py     whole-recording deconvolution, IR location, confidence
     impulse.py           envelopes, dB helpers
     filters.py           octave bands, Butterworth SOS, time-reversed filtering, smoothing
-    decay.py             Schroeder integration, Lundeby truncation, EDT/T20/T30
+    decay.py             Schroeder integration, Lundeby truncation, Chu subtraction, EDT/T20/T30
     frequency_response.py
+    spectrum.py          Welch PSD of the deconvolved IR (AES17 density)
     noise.py             quiet segment, dBFS, PSD, mains-hum detection
     reflections.py       early-reflection candidates
-    placement.py         vertical geometry from reflections + tape measurements
+    placement.py         vertical geometry from reflections + tape measurements; first-order image path
     resonance.py         potential low-frequency resonance candidates
     compare.py           validity-aware comparison of two AnalysisResults
     loopback.py          electrical-return validation and regularised compensation
@@ -56,6 +57,7 @@ src/reverbscope/
     pipeline.py          Reference + analyze() + analyze_impulse_response()
   io/
     wav.py               soundfile-based read/write, sweep sidecar, load_reference
+    scan.py              ASCII PLY / Wavefront OBJ import (overlay only; no lidar)
     session_store.py     save_measurement / load_session / load_measurement / list_sessions / bundle_session / save_comparison
     recent.py            recent session paths under $REVERBSCOPE_HOME
     jsonutil.py          size-capped JSON object reads
@@ -78,9 +80,11 @@ src/reverbscope/
     console.py           terminal layout: colour policy, symbols, widths, tables, progress
     render.py            every report and message (the GUI's "Full report" panes too)
     report.py            format_report / format_comparison_report: render.py as plain text
+  daw.py                 follow a named / fake DAW project (sample rate only; never guess)
   demo.py                reverbscope demo: two simulated positions through the real pipeline
   ui/                    optional (needs PySide6)
     app.py, main_window.py, pages.py, results.py, plots.py, workers.py, state.py
+    daw.py               ask which DAW project to follow (none / several)
     browser.py           session list (Home and Compare); project.json folders
     compare_view.py      two-session comparison
     settings_dialog.py   language, profile, backend, copy-recording

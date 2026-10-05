@@ -2,7 +2,11 @@
 
 [English](index.md) | **简体中文**
 
+ReverbScope 用来测量录音房间，让你听清房间对近距离拾音的声源做了什么。本页是仓库里已有的文档站：安装、扫频流程、跟随 DAW、以及分析报告。
+
 ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上测量并与参考仪器对照过，安装包没有用于分发的签名，通用 DAW 模式的各 DAW 步骤是按厂商文档编写、尚未在 DAW 中实测的流程。ReverbScope 不给房间打分。
+
+公开网站是已提交的 `site/` 落地页（GitHub Pages：`https://jingyemingyue.github.io/ReverbScope/`）。该页、它的 `sitemap.xml`、`robots.txt` 和 utterances 留言板是唯一来源；不要覆盖它们。Markdown 预览用 `python scripts/build_docs_site.py --out docs-html` 生成（每页标题与摘要、规范网址、Open Graph）。预览自己的 `sitemap.xml` / `robots.txt` 只写在 `docs-html/`，不写进 `site/`。本仓库不会向 Google 提交站点。
 
 用户文档提供英文和简体中文两种版本，**以英文版为准**；每篇中文文档顶部都有指向英文原文的链接。开发者与内部文档（架构、ADR、研究笔记、依赖与许可证审查、代码来源、项目状态、发布计划）只提供英文版，其中发布计划和 v1.0 架构另有中文摘要。
 

@@ -23,8 +23,8 @@ msgstr "ReverbScope：开源、不依赖 DAW 的录音环境分析器。"
 msgid "audio backend for Standalone Mode: portaudio (default) or fake"
 msgstr "独立模式的音频后端：portaudio（默认）或 fake"
 
-msgid "UI language (en, zh_CN). Overrides settings and REVERBSCOPE_LANG"
-msgstr "界面语言（en、zh_CN）。覆盖设置与 REVERBSCOPE_LANG"
+msgid "UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). Overrides settings and REVERBSCOPE_LANG"
+msgstr "界面语言（en、zh_CN、zh_TW、ja、ko、es、fr、de）。覆盖设置与 REVERBSCOPE_LANG"
 
 msgid "text report or JSON on stdout (diagnostics stay on stderr)"
 msgstr "标准输出为文本报告或 JSON（诊断信息仍走标准错误）"
@@ -1990,6 +1990,106 @@ msgid "synthetic backend: nothing is played"
 msgstr "合成后端：不会播放任何声音"
 
 msgctxt "diagnostic"
+msgid "shared-mode engine buffer default 10 ms; exclusive uses the device period"
+msgstr "共享模式引擎缓冲默认 10 ms；独占模式使用设备周期"
+
+msgctxt "diagnostic"
+msgid "WaveRT compiled defaults 10 / 40 ms (WaveCyclic 10 / 85 ms)"
+msgstr "WaveRT 编译默认值 10 / 40 ms（WaveCyclic 为 10 / 85 ms）"
+
+msgctxt "diagnostic"
+msgid "preferred / maximum driver buffer"
+msgstr "首选 / 最大驱动缓冲"
+
+msgctxt "diagnostic"
+msgid "PortAudio compiled defaults 120 / 240 ms"
+msgstr "PortAudio 编译默认值 120 / 240 ms"
+
+msgctxt "diagnostic"
+msgid "PortAudio compiled defaults 90 / 180 ms"
+msgstr "PortAudio 编译默认值 90 / 180 ms"
+
+msgctxt "diagnostic"
+msgid "fallback 10 / 100 ms when the device latency is unreadable"
+msgstr "设备延迟不可读时回退为 10 / 100 ms"
+
+msgctxt "diagnostic"
+msgid "compiled default (512-128)/fs / (2048-512)/fs: 8 / 32 ms at 48 kHz if hardware allows"
+msgstr "编译默认值 (512-128)/fs / (2048-512)/fs：硬件允许时在 48 kHz 下为 8 / 32 ms"
+
+msgctxt "diagnostic"
+msgid "port latency divided by the JACK server rate"
+msgstr "端口延迟除以 JACK 服务器采样率"
+
+msgctxt "diagnostic"
+msgid "not assessed"
+msgstr "未评估"
+
+msgctxt "diagnostic"
+msgid "requested 4 fragments × 128 frames; low=(nfrags-1)*frag/fs (8 / 32 ms at 48 kHz if the driver keeps those sizes)"
+msgstr "请求 4 个片段 × 每片段 128 帧；低延迟=(nfrags-1)*frag/fs（若驱动保持该大小，48 kHz 下为 8 / 32 ms）"
+
+msgctxt "diagnostic"
+msgid "PortAudio host-API name on a given OS"
+msgstr "给定操作系统上的 PortAudio 主机 API 名称"
+
+msgctxt "diagnostic"
+msgid "measured round-trip latency"
+msgstr "测得的往返延迟"
+
+msgctxt "diagnostic"
+msgid "whether Windows/Core Audio expose loopback as extra channels"
+msgstr "Windows/Core Audio 是否把回送显示为额外声道"
+
+msgctxt "diagnostic"
+msgid "analogue line-output count"
+msgstr "模拟线路输出数量"
+
+msgctxt "diagnostic"
+msgid "PortAudio channel count including ADAT at each rate"
+msgstr "各采样率下含 ADAT 的 PortAudio 声道数"
+
+msgctxt "diagnostic"
+msgid "discrete sample-rate list (only a 28–200 kHz range is stated)"
+msgstr "离散采样率列表（来源只给出 28–200 kHz 范围）"
+
+msgctxt "diagnostic"
+msgid "This machine's PortAudio device list (ALSA 0 devices, OSS 0 devices): no physical interface"
+msgstr "本机 PortAudio 设备列表（ALSA 0 个设备，OSS 0 个设备）：没有实体接口"
+
+msgctxt "diagnostic"
+msgid "Measured full-duplex round-trip latency on any interface"
+msgstr "任何接口上测得的全双工往返延迟"
+
+msgctxt "diagnostic"
+msgid "Pa_IsFormatSupported results on a physical interface (sample-rate negotiation)"
+msgstr "实体接口上的 Pa_IsFormatSupported 结果（采样率协商）"
+
+msgctxt "diagnostic"
+msgid "ASIO compiled numeric default latency (PortAudio stores the driver's buffer only)"
+msgstr "ASIO 的编译默认数值延迟（PortAudio 只保存驱动缓冲）"
+
+msgctxt "diagnostic"
+msgid "JACK compiled numeric default latency (only jack_port_get_latency / server rate)"
+msgstr "JACK 的编译默认数值延迟（只有 jack_port_get_latency / 服务器采样率）"
+
+msgctxt "diagnostic"
+msgid "Core Audio device-specific latency (only the 10 / 100 ms fallback is sourced)"
+msgstr "Core Audio 设备特定延迟（只有 10 / 100 ms 回退值有来源）"
+
+msgctxt "diagnostic"
+msgid "Scarlett 18i20 4th Gen analogue line-output count (spec page did not yield a clear figure)"
+msgstr "Scarlett 18i20 第四代模拟线路输出数量（规格页未给出明确数字）"
+
+msgctxt "diagnostic"
+msgid "USB Audio Class 1.0 / 2.0 discrete rate tables (USB-IF PDFs were not re-read)"
+msgstr "USB Audio Class 1.0 / 2.0 离散采样率表（未重读 USB-IF PDF）"
+
+msgctxt "diagnostic"
+msgid "Hardware bit depth of a PortAudio stream (ReverbScope writes 32-bit float; manufacturer pages above state 24-bit converters)"
+msgstr "PortAudio 流的硬件位深度（ReverbScope 写出 32-bit float；上述厂商页面写的是 24-bit 转换器）"
+
+msgctxt "diagnostic"
 msgid "ALSA plugin or sound-server device: may resample and mix"
 msgstr "ALSA 插件或声音服务器设备：可能重采样并混音"
 
@@ -2479,6 +2579,46 @@ msgstr "默认输入"
 msgctxt "environment report"
 msgid "default output"
 msgstr "默认输出"
+
+msgctxt "environment report"
+msgid "measurement rates"
+msgstr "测量采样率"
+
+msgid "Documented latency"
+msgstr "文档中的延迟"
+
+msgid "Referenced manufacturer specs: reverbscope devices --referenced (not a hardware result)"
+msgstr "引用的厂商规格：reverbscope devices --referenced（不是硬件结果）"
+
+msgid "show manufacturer and repo specs (not a hardware result)"
+msgstr "显示厂商和仓库规格（不是硬件结果）"
+
+msgid "Referenced device data (not measured)"
+msgstr "引用的设备数据（未经测量）"
+
+msgid "Public sources only. Not a ReverbScope measurement and not a HARDWARE_TESTS.md PASS."
+msgstr "仅来自公开来源。不是 ReverbScope 测量，也不是 HARDWARE_TESTS.md 的 PASS。"
+
+msgid "Interface"
+msgstr "接口"
+
+msgid "Bit depth"
+msgstr "位深度"
+
+msgid "Mixer default"
+msgstr "混音器默认值"
+
+msgid "Channels"
+msgstr "声道"
+
+msgid "Gaps with no citable source"
+msgstr "尚无可靠来源的空缺"
+
+msgid "Accepted rates: {rates}"
+msgstr "可接受采样率：{rates}"
+
+msgid "ReverbScope measurement rates: {rates}"
+msgstr "ReverbScope 测量采样率：{rates}"
 
 msgid "note: {note}"
 msgstr "注：{note}"
@@ -3957,3 +4097,255 @@ msgstr "作为房间话筒，后期房间声偏少（C80 {value:.1f} dB，高于
 msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {threshold:.0f} dB). Some late sound suits a choir, but this much will blur diction. This is one position, not a room grade."
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
+msgid "Image source"
+msgstr "镜像声源"
+
+msgid "Specular bounce"
+msgstr "镜面反射点"
+
+msgid ""
+"The hollow mark is the first-order image source of that loudspeaker; the"
+" dashed path is the specular bounce off the plane above."
+msgstr "空心标记是该扬声器的一阶镜像声源；虚线是上方平面上的镜面反射路径。"
+
+
+msgid ""
+"imported room scan (ASCII PLY point cloud or Wavefront OBJ). Not a "
+"lidar attached to this computer"
+msgstr "导入的房间扫描（ASCII PLY 点云或 Wavefront OBJ）。不是接在本机上的激光雷达"
+
+msgid "Spectrum"
+msgstr "频谱"
+
+msgid "of the impulse response"
+msgstr "脉冲响应的"
+
+msgid "Imported scan"
+msgstr "导入的扫描"
+
+msgid "No spectrum available"
+msgstr "没有频谱"
+
+msgid "Peak"
+msgstr "峰值"
+
+msgid "Source"
+msgstr "来源"
+
+msgid "impulse response"
+msgstr "脉冲响应"
+
+msgid "Window length"
+msgstr "窗长"
+
+msgid "File"
+msgstr "文件"
+
+msgid "Points"
+msgstr "点数"
+
+msgid "Extent"
+msgstr "范围"
+
+msgid "peak {hz:.0f} Hz ({level:.1f} dB)"
+msgstr "峰值 {hz:.0f} Hz（{level:.1f} dB）"
+
+msgctxt "diagnostic"
+msgid "imported PLY scan; coordinates are file units treated as metres"
+msgstr "已导入 PLY 扫描；坐标按文件单位当作米"
+
+msgctxt "diagnostic"
+msgid "no lidar was attached; this is a file the user already had"
+msgstr "未连接激光雷达；这是用户已有的文件"
+
+msgctxt "diagnostic"
+msgid "imported OBJ mesh; coordinates are file units treated as metres"
+msgstr "已导入 OBJ 网格；坐标按文件单位当作米"
+
+msgctxt "diagnostic"
+msgid "imported scan was downsampled from {count} to {kept} points for the picture"
+msgstr "导入的扫描已从 {count} 个点降采样到 {kept} 个点，用于画面"
+
+msgid "scan file not found: {path}"
+msgstr "找不到扫描文件：{path}"
+
+msgid "scan file has fewer than three vertices: {path}"
+msgstr "扫描文件顶点少于三个：{path}"
+
+msgid "not a PLY file: {path}"
+msgstr "不是 PLY 文件：{path}"
+
+msgid "PLY header is incomplete: {path}"
+msgstr "PLY 文件头不完整：{path}"
+
+msgid "PLY file has no end_header: {path}"
+msgstr "PLY 文件缺少文件头结束行：{path}"
+
+msgid "binary PLY is not read; export ASCII 1.0 PLY from the scanner: {path}"
+msgstr "不读取二进制 PLY；请从扫描仪导出 ASCII 1.0 PLY：{path}"
+
+msgid "PLY vertex list is short: {path}"
+msgstr "PLY 顶点列表过短：{path}"
+
+msgid "OBJ file has no vertices: {path}"
+msgstr "OBJ 文件没有顶点：{path}"
+
+msgid "scan file must be a .ply or .obj file, not {name}"
+msgstr "扫描文件必须是 .ply 或 .obj，不能是 {name}"
+
+msgid "PLY vertices need x, y and z properties: {path}"
+msgstr "PLY 顶点需要 x、y 和 z 属性：{path}"
+
+msgid "PLY vertex {row} is short: {path}"
+msgstr "PLY 第 {row} 个顶点过短：{path}"
+
+msgctxt "diagnostic"
+msgid ""
+"Welch (1967) periodogram, Hann window, density scaling; 10*log10(2*psd) "
+"so the integral matches AES17 RMS dBFS"
+msgstr "Welch（1967）周期图，Hann 窗，密度标定；10*log10(2*psd) 使积分与 AES17 RMS dBFS 一致"
+
+msgid "ASCII PLY or OBJ (optional)"
+msgstr "ASCII PLY 或 OBJ（可选）"
+
+msgid "Open scan"
+msgstr "打开扫描"
+
+msgid "Scan files (*.ply *.obj);;All files (*)"
+msgstr "扫描文件 (*.ply *.obj);;所有文件 (*)"
+
+msgid "Spectrum (impulse response)"
+msgstr "频谱（脉冲响应）"
+
+msgid ""
+"The faint points are an imported scan ({name}), not a ReverbScope "
+"measurement and not a lidar attached to this computer."
+msgstr "淡色点是导入的扫描（{name}），不是 ReverbScope 的测量，也不是接在本机上的激光雷达。"
+
+msgid "DAW to follow"
+msgstr "要跟随的 DAW"
+
+msgid "list open DAW projects, or say that none were found"
+msgstr "列出已打开的 DAW 工程，或说明未找到"
+
+msgid ""
+"No running DAW was queried. An empty list means none was declared (this "
+"VM has no DAW). The sweep sample rate follows the chosen project."
+msgstr "未查询正在运行的 DAW。空列表表示未声明任何工程（本虚拟机没有 DAW）。扫频采样率跟随所选工程。"
+
+msgid ""
+"follow the open DAW project's sample rate. If none or more than one is "
+"in play, ask; do not guess"
+msgstr "跟随已打开 DAW 工程的采样率。若未找到或不止一个，则询问，不要猜测"
+
+msgid "DAW to follow when more than one is in play (exact name, not a guess)"
+msgstr "同时有多个 DAW 时要跟随的那一个（须用确切名称，不是猜测）"
+
+msgid "project title when that DAW has more than one session open"
+msgstr "同一 DAW 打开了多个工程时的工程标题"
+
+msgid "No DAW project was found. This computer was not treated as running a DAW."
+msgstr "未找到 DAW 工程。本机未被当作正在运行 DAW。"
+
+msgid ""
+"Say which project to follow before generating a sweep. ReverbScope will "
+"not guess the sample rate."
+msgstr "生成扫频前请指明要跟随的工程。ReverbScope 不会猜测采样率。"
+
+msgid "DAW"
+msgstr "DAW"
+
+msgid "Project"
+msgstr "工程"
+
+msgid "One project is in play. ReverbScope will follow it."
+msgstr "当前只有一个工程。ReverbScope 将跟随它。"
+
+msgid ""
+"More than one DAW project is in play. Say which one to follow with --daw "
+"NAME. ReverbScope will not guess."
+msgstr "同时有多个 DAW 工程。请用 --daw 名称 指明要跟随的那个。ReverbScope 不会猜测。"
+
+msgid "Following"
+msgstr "跟随"
+
+msgid "Settings that follow the chosen DAW"
+msgstr "跟随所选 DAW 的设置"
+
+msgid ""
+"No DAW project was found. This computer was not treated as running a "
+"DAW. Say which project ReverbScope should follow (name and sample rate). "
+"The sweep sample rate must match that project. ReverbScope will not guess."
+msgstr ""
+"未找到 DAW 工程。本机未被当作正在运行 DAW。请指明 ReverbScope "
+"应跟随的工程（名称和采样率）。扫频采样率必须与该工程一致。ReverbScope 不会猜测。"
+
+msgctxt "diagnostic"
+msgid "following {label}; sweep sample rate matches that DAW project"
+msgstr "跟随 {label}；扫频采样率与该 DAW 工程一致"
+
+msgid ""
+"More than one DAW project is in play. Say which one ReverbScope should "
+"follow; it will not guess. The sweep sample rate follows the chosen "
+"project."
+msgstr "同时有多个 DAW 工程。请指明 ReverbScope 应跟随哪一个；它不会猜测。扫频采样率跟随所选工程。"
+
+msgid "Use --daw NAME and, if that name is shared, --daw-project TITLE."
+msgstr "请使用 --daw 名称；若该名称对应多个工程，再加 --daw-project 标题。"
+
+msgid "DAW name is required"
+msgstr "必须填写 DAW 名称"
+
+msgid "none of the open DAW projects is {name}. ReverbScope will not guess"
+msgstr "已打开的 DAW 工程中没有 {name}。ReverbScope 不会猜测"
+
+msgid "fake DAW entry {item} must be Name:rate or Name:rate:project"
+msgstr "伪 DAW 条目 {item} 必须是 名称:采样率 或 名称:采样率:工程"
+
+msgid ""
+"the chosen DAW project is {rate} Hz; --sample-rate {declared} Hz does "
+"not match. ReverbScope will not guess"
+msgstr "所选 DAW 工程为 {rate} Hz；--sample-rate {declared} Hz 与之不符。ReverbScope 不会猜测"
+
+msgid "fake DAW entry {item} has no sample rate"
+msgstr "伪 DAW 条目 {item} 没有采样率"
+
+msgid "Which DAW should ReverbScope follow?"
+msgstr "ReverbScope 应跟随哪一个 DAW？"
+
+msgid ""
+"No DAW project was found. Type the DAW you are using. ReverbScope will not "
+"guess a sample rate."
+msgstr "未找到 DAW 工程。请输入你正在使用的 DAW。ReverbScope 不会猜测采样率。"
+
+msgid "Which project?"
+msgstr "哪个工程？"
+
+msgid "Project title (optional). Needed when that DAW has more than one session open."
+msgstr "工程标题（可选）。同一 DAW 打开了多个会话时需要填写。"
+
+msgid "Project sample rate"
+msgstr "工程采样率"
+
+msgid "The sweep must be generated at this rate."
+msgstr "扫频必须按此采样率生成。"
+
+msgid "Which DAW project should ReverbScope follow?"
+msgstr "ReverbScope 应跟随哪一个 DAW 工程？"
+
+msgid ""
+"More than one DAW project is in play. Choose one. The sweep sample rate "
+"will match it. ReverbScope will not guess."
+msgstr "同时有多个 DAW 工程。请选择一个。扫频采样率将与之匹配。ReverbScope 不会猜测。"
+
+msgid "No DAW is being followed yet. Choose which project the sweep must match."
+msgstr "尚未跟随任何 DAW。请选择扫频必须匹配的工程。"
+
+msgid "Choose DAW to follow..."
+msgstr "选择要跟随的 DAW..."
+
+msgid "Follow DAW"
+msgstr "跟随 DAW"
+
+msgid "Following {label}. The sweep sample rate matches that project."
+msgstr "正在跟随 {label}。扫频采样率与该工程一致。"

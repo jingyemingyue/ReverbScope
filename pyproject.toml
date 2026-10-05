@@ -88,6 +88,12 @@ packages = ["src/reverbscope"]
 "src/reverbscope/schemas/project.schema.json" = "reverbscope/schemas/project.schema.json"
 "src/reverbscope/schemas/sweep-sidecar.schema.json" = "reverbscope/schemas/sweep-sidecar.schema.json"
 "src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po"
+"src/reverbscope/locale/zh_TW/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/zh_TW/LC_MESSAGES/reverbscope.po"
+"src/reverbscope/locale/ja/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/ja/LC_MESSAGES/reverbscope.po"
+"src/reverbscope/locale/ko/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/ko/LC_MESSAGES/reverbscope.po"
+"src/reverbscope/locale/es/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/es/LC_MESSAGES/reverbscope.po"
+"src/reverbscope/locale/fr/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/fr/LC_MESSAGES/reverbscope.po"
+"src/reverbscope/locale/de/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/de/LC_MESSAGES/reverbscope.po"
 
 [tool.hatch.build.hooks.custom]
 path = "hatch_build.py"
@@ -160,6 +166,7 @@ ignore = [
 "src/reverbscope/cli/*" = ["T20"]
 "src/reverbscope/ui/results.py" = ["E402", "I001"]
 "src/reverbscope/ui/compare_view.py" = ["E402", "I001"]
+"src/reverbscope/ui/daw.py" = ["E402", "I001"]
 "examples/*" = ["T20"]
 "scripts/*" = ["T20"]
 "packaging/*" = ["F821"]

@@ -13,10 +13,17 @@ import mpl_toolkits.mplot3d  # noqa: F401  registers the 3d projection
 import numpy as np
 from matplotlib.figure import Figure
 
+from reverbscope.core.placement import horizontal_plane_image_path
 from reverbscope.core.reflections import reflection_envelope_db
 from reverbscope.i18n import _
 from reverbscope.interpretation.profiles import band_text, confidence_text, noise_segment_text
-from reverbscope.models.result import AnalysisResult, EnergyMetric, PlacementResult, Validity
+from reverbscope.models.result import (
+    AnalysisResult,
+    EnergyMetric,
+    PlacementResult,
+    RoomScan,
+    Validity,
+)
 from reverbscope.ui.theme import PLOT_SERIES, ensure_plot_fonts, plot_colors, style_figure, tokens
 
 _EPS = 1e-300
@@ -175,6 +182,42 @@ def plot_noise(fig: Figure, result: AnalysisResult) -> None:
     style_figure(fig)
 
 
+def plot_spectrum(fig: Figure, result: AnalysisResult) -> None:
+    fig.clear()
+    ensure_plot_fonts()
+    ax = fig.add_subplot(1, 1, 1)
+    spectrum = result.spectrum
+    if spectrum is None or spectrum.frequencies_hz.size == 0:
+        ax.text(
+            0.5,
+            0.5,
+            _("No spectrum available"),
+            ha="center",
+            va="center",
+            transform=ax.transAxes,
+        )
+        ax.set_axis_off()
+        fig.tight_layout()
+        style_figure(fig)
+        return
+    mask = spectrum.frequencies_hz > 0
+    ax.semilogx(spectrum.frequencies_hz[mask], spectrum.level_db[mask], linewidth=0.8)
+    if spectrum.peak_hz is not None and spectrum.peak_db is not None:
+        ax.plot(spectrum.peak_hz, spectrum.peak_db, "o", markerfacecolor="none")
+        ax.annotate(
+            f"{spectrum.peak_hz:.0f} Hz",
+            (spectrum.peak_hz, spectrum.peak_db),
+            fontsize="x-small",
+        )
+    ax.set_xlim(10.0, result.sample_rate / 2.0)
+    ax.set_xlabel(_("Frequency (Hz)"))
+    ax.set_ylabel(_("PSD (dB re FS^2/Hz)"))
+    ax.set_title(_("Spectrum (impulse response)"))
+    ax.grid(True, which="both", alpha=0.3)
+    fig.tight_layout()
+    style_figure(fig)
+
+
 def plot_reflections(fig: Figure, result: AnalysisResult) -> None:
     fig.clear()
     ensure_plot_fonts()
@@ -220,7 +263,11 @@ _EXAMPLE_HEIGHT_M = 1.2
 
 
 def plot_placement_illustration(
-    fig: Figure, *, distance_m: float | None, mic_height_m: float | None
+    fig: Figure,
+    *,
+    distance_m: float | None,
+    mic_height_m: float | None,
+    scan: RoomScan | None = None,
 ) -> str:
     """A rotatable picture of the two tape measures. Not a room, and not a result.
 
@@ -240,26 +287,39 @@ def plot_placement_illustration(
         ceiling_z=None,
         ring=False,
         title=_("Placement picture. Drag to rotate."),
+        scan=scan,
     )
+    extra = _scan_hint(scan)
     if distance_entered and height_entered:
-        return _(
-            "The line is the loudspeaker distance you entered, and the stand is the "
-            "microphone height you entered. The loudspeaker is drawn at that same height "
-            "only so the tape can be seen; its real height comes from a measurement. "
-            "No room and no wall are drawn."
+        return (
+            _(
+                "The line is the loudspeaker distance you entered, and the stand is the "
+                "microphone height you entered. The loudspeaker is drawn at that same height "
+                "only so the tape can be seen; its real height comes from a measurement. "
+                "No room and no wall are drawn."
+            )
+            + extra
         )
     if distance_entered:
-        return _(
-            "The line is the loudspeaker distance you entered. Both heights in this "
-            "picture are an example. No room and no wall are drawn."
+        return (
+            _(
+                "The line is the loudspeaker distance you entered. Both heights in this "
+                "picture are an example. No room and no wall are drawn."
+            )
+            + extra
         )
-    return _(
-        "Nothing has been entered. This picture shows where the two tape measures go. "
-        "It is not your room, and no wall is drawn."
+    return (
+        _(
+            "Nothing has been entered. This picture shows where the two tape measures go. "
+            "It is not your room, and no wall is drawn."
+        )
+        + extra
     )
 
 
-def plot_placement_result(fig: Figure, placement: PlacementResult | None) -> str:
+def plot_placement_result(
+    fig: Figure, placement: PlacementResult | None, scan: RoomScan | None = None
+) -> str:
     """The measured vertical axis, or the tape-measure picture when it is not known.
 
     A single microphone does not decide which way the loudspeaker sits. When
@@ -272,6 +332,7 @@ def plot_placement_result(fig: Figure, placement: PlacementResult | None) -> str
             fig,
             distance_m=None if placement is None else placement.distance_m,
             mic_height_m=None if placement is None else placement.mic_height_m,
+            scan=scan,
         )
     source = placement.source_height_m.metres
     horizontal = placement.horizontal_separation_m.metres
@@ -288,11 +349,27 @@ def plot_placement_result(fig: Figure, placement: PlacementResult | None) -> str
         ceiling_z=ceiling,
         ring=True,
         title=_("Measured geometry. Drag to rotate."),
+        scan=scan,
     )
-    return _(
+    hint = _(
         "The ring is every loudspeaker position this measurement allows. The cabinet "
         "is one of them, drawn so the direct path can be seen. No wall is drawn."
     )
+    if ceiling is not None:
+        hint += " " + _(
+            "The hollow mark is the first-order image source of that loudspeaker; "
+            "the dashed path is the specular bounce off the plane above."
+        )
+    return hint + _scan_hint(scan)
+
+
+def _scan_hint(scan: RoomScan | None) -> str:
+    if scan is None:
+        return ""
+    return " " + _(
+        "The faint points are an imported scan ({name}), not a ReverbScope measurement "
+        "and not a lidar attached to this computer."
+    ).format(name=scan.source_name)
 
 
 def _placement_axis_known(placement: PlacementResult) -> bool:
@@ -315,6 +392,7 @@ def _draw_placement(
     ceiling_z: float | None,
     ring: bool,
     title: str,
+    scan: RoomScan | None = None,
 ) -> None:
     fig.clear()
     ensure_plot_fonts()
@@ -323,6 +401,9 @@ def _draw_placement(
     accent = tokens()["accent"]
     speaker = PLOT_SERIES[1]
     radius = max(horizontal_m, mic_z, source_z, 0.8) * 1.35
+    if scan is not None and scan.points_m.size:
+        extent = float(np.max(np.abs(scan.points_m)))
+        radius = max(radius, extent * 1.05 if extent > 0 else radius)
     _disc(ax, radius, 0.0, colors["muted"], 0.28)
     ax.plot(
         radius * np.cos(np.linspace(0, 2 * np.pi, 80)),
@@ -333,6 +414,17 @@ def _draw_placement(
     )
     ax.text(radius * 0.15, -radius * 0.62, 0.02, _("reference plane"), fontsize=8)
     top = max(mic_z, source_z, ceiling_z or 0.0, 1.0)
+    if scan is not None and scan.points_m.size:
+        top = max(top, float(scan.points_m[:, 2].max()))
+        ax.scatter(
+            scan.points_m[:, 0],
+            scan.points_m[:, 1],
+            scan.points_m[:, 2],
+            s=6,
+            c=colors["muted"],
+            alpha=0.35,
+            depthshade=False,
+        )
     if ceiling_z is not None and ceiling_z > top * 0.5:
         _disc(ax, radius, ceiling_z, colors["grid"], 0.18)
         ax.text(0.0, 0.0, ceiling_z, _("Plane above the devices"), fontsize=8)
@@ -366,11 +458,39 @@ def _draw_placement(
     ax.plot([0.0, sx], [0.0, sy], [mic_z, source_z], color=colors["fg"], linewidth=1.4)
     mid_z = (mic_z + source_z) * 0.5 + 0.16
     ax.text(sx * 0.42, sy * 0.42, mid_z, _("Direct sound"), fontsize=8)
+    image_z = None
+    if ceiling_z is not None:
+        image, bounce = horizontal_plane_image_path(
+            (sx, sy, source_z), (0.0, 0.0, mic_z), ceiling_z
+        )
+        image_z = image[2]
+        bounce_color = PLOT_SERIES[2]
+        ax.plot(
+            [sx, bounce[0], 0.0],
+            [sy, bounce[1], 0.0],
+            [source_z, bounce[2], mic_z],
+            color=bounce_color,
+            linestyle="--",
+            linewidth=1.3,
+        )
+        ax.scatter(
+            [image[0]],
+            [image[1]],
+            [image[2]],
+            s=42,
+            facecolors="none",
+            edgecolors=speaker,
+            linewidths=1.4,
+        )
+        ax.text(image[0] + 0.16, image[1] + 0.08, image[2], _("Image source"), fontsize=8)
+        ax.text(
+            bounce[0] + 0.12, bounce[1] + 0.08, bounce[2] + 0.06, _("Specular bounce"), fontsize=8
+        )
     scale = 1.0 if radius >= 1.4 else 0.5
     edge = -radius * 0.72
     ax.plot([edge, edge + scale], [edge, edge], [0.0, 0.0], color=colors["fg"], linewidth=2.0)
     ax.text(edge + scale * 0.5, edge, 0.05, f"{scale:g} m", fontsize=8)
-    zlim = top * 1.15
+    zlim = max(top, image_z or 0.0) * 1.15
     ax.set_xlim(-radius, radius)
     ax.set_ylim(-radius, radius)
     ax.set_zlim(0.0, zlim)

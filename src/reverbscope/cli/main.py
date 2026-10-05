@@ -1,8 +1,8 @@
 """``reverbscope`` command-line interface.
 
 Subcommands, in the order of the workflow: ``demo``, ``gui``, ``sweep``,
-``analyze``, ``devices``, ``measure``, ``analyze-ir``, ``show``, ``compare``,
-``project``, ``export``, ``session``, ``doctor``, ``schema``.
+``daw``, ``analyze``, ``devices``, ``measure``, ``analyze-ir``, ``show``,
+``compare``, ``project``, ``export``, ``session``, ``doctor``, ``schema``.
 
 Reports go to stdout and diagnostics to stderr; all text is laid out by
 :mod:`reverbscope.cli.render` through :mod:`reverbscope.cli.console`. A user error
@@ -38,6 +38,7 @@ from reverbscope.cli.console import (
 from reverbscope.cli.render import (
     render_analysis,
     render_comparison,
+    render_daw_projects,
     render_demo,
     render_devices,
     render_environment,
@@ -46,6 +47,7 @@ from reverbscope.cli.render import (
     render_host_apis,
     render_inventory,
     render_measure_plan,
+    render_referenced,
     render_saved_next_steps,
     render_status,
     render_sweep_written,
@@ -71,9 +73,11 @@ from reverbscope.models.configuration import (
     AnalysisSettings,
     SweepSettings,
 )
+from reverbscope.models.session import STANDALONE_BIT_DEPTH
 
 if TYPE_CHECKING:
     from reverbscope.audio.backend import ChannelPlan
+    from reverbscope.daw import DawProject
 
 log = logging.getLogger("reverbscope.cli")
 
@@ -120,7 +124,7 @@ def _translate_argparse() -> None:
 #: workflow: try it, measure, look at the results, then troubleshoot.
 COMMAND_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (N_("Get started"), ("demo", "gui")),
-    (N_("Measurement"), ("sweep", "analyze", "devices", "measure", "analyze-ir")),
+    (N_("Measurement"), ("sweep", "daw", "analyze", "devices", "measure", "analyze-ir")),
     (N_("Results"), ("show", "compare", "project", "export", "session")),
     (N_("Diagnostics"), ("doctor", "schema")),
 )
@@ -139,6 +143,8 @@ DEMO_FOLDER = "reverbscope-demo"
 #: ``--color`` as given on the command line, for messages printed before the
 #: arguments are parsed (argparse's own errors).
 _COLOR_REQUEST: dict[str, str] = {"mode": "auto"}
+#: argv of the current ``main()`` call (not ``sys.argv``, which tests leave alone).
+_INVOKED_ARGV: list[str] = []
 
 
 class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
@@ -360,6 +366,54 @@ def _sweep_settings(args: argparse.Namespace) -> SweepSettings:
     )
 
 
+def _add_daw_follow_arguments(parser: argparse.ArgumentParser) -> None:
+    group = parser.add_argument_group(_("DAW to follow"))
+    group.add_argument(
+        "--follow-daw",
+        action="store_true",
+        help=_(
+            "follow the open DAW project's sample rate. "
+            "If none or more than one is in play, ask; do not guess"
+        ),
+    )
+    group.add_argument(
+        "--daw",
+        default=None,
+        metavar="NAME",
+        help=_("DAW to follow when more than one is in play (exact name, not a guess)"),
+    )
+    group.add_argument(
+        "--daw-project",
+        default=None,
+        metavar="TITLE",
+        help=_("project title when that DAW has more than one session open"),
+    )
+
+
+def _followed_daw(args: argparse.Namespace) -> DawProject | None:
+    """Resolve the DAW project when the user asked to follow one."""
+    from reverbscope.daw import open_daw_projects, resolve_daw_follow
+
+    wants = bool(
+        getattr(args, "follow_daw", False)
+        or getattr(args, "daw", None)
+        or getattr(args, "daw_project", None)
+    )
+    if not wants:
+        return None
+    declared = None
+    if "--sample-rate" in _INVOKED_ARGV or any(
+        arg.startswith("--sample-rate=") for arg in _INVOKED_ARGV
+    ):
+        declared = getattr(args, "sample_rate", None)
+    return resolve_daw_follow(
+        open_daw_projects(),
+        daw=getattr(args, "daw", None),
+        project=getattr(args, "daw_project", None),
+        declared_rate=declared,
+    )
+
+
 def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
     analysis = parser.add_argument_group(_("analysis"))
     analysis.add_argument(
@@ -416,6 +470,16 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
         default=None,
         metavar="C",
         help=_("air temperature (C); 20 C is assumed, and reported as assumed, without it"),
+    )
+    placement.add_argument(
+        "--scan",
+        type=Path,
+        default=None,
+        metavar="FILE",
+        help=_(
+            "imported room scan (ASCII PLY point cloud or Wavefront OBJ). "
+            "Not a lidar attached to this computer"
+        ),
     )
     output = parser.add_argument_group(_("output"))
     output.add_argument("--no-curves", action="store_true", help=_("omit curves from result.json"))
@@ -516,7 +580,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--lang",
         default=None,
         metavar="LANG",
-        help=_("UI language (en, zh_CN). Overrides settings and REVERBSCOPE_LANG"),
+        help=_(
+            "UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). "
+            "Overrides settings and REVERBSCOPE_LANG"
+        ),
     )
     parser.add_argument(
         "--format",
@@ -602,6 +669,17 @@ def build_parser() -> argparse.ArgumentParser:
         "--out", required=True, type=Path, metavar="WAV", help=_("output WAV path")
     )
     _add_sweep_arguments(p_sweep, default_level=-12.0)
+    _add_daw_follow_arguments(p_sweep)
+
+    _command(
+        sub,
+        "daw",
+        _("list open DAW projects, or say that none were found"),
+        examples=(
+            "reverbscope daw",
+            "reverbscope sweep --out sweep.wav --follow-daw --daw REAPER",
+        ),
+    )
 
     p_an = _command(
         sub,
@@ -636,6 +714,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("directory for session.json, result.json, IR WAV"),
     )
     _add_analysis_arguments(p_an)
+    _add_daw_follow_arguments(p_an)
     _add_loopback_file_arguments(p_an)
 
     p_dev = _command(
@@ -654,6 +733,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_dev.add_argument(
         "--host-apis", action="store_true", help=_("list the host APIs instead of devices")
+    )
+    p_dev.add_argument(
+        "--referenced",
+        action="store_true",
+        help=_("show manufacturer and repo specs (not a hardware result)"),
     )
     p_dev.add_argument(
         "--json", action="store_true", help=_("deprecated: use reverbscope --format json")
@@ -945,12 +1029,37 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def cmd_sweep(args: argparse.Namespace) -> int:
+    from reverbscope.daw import apply_daw_follow
     from reverbscope.io.wav import write_sweep_file
 
     _warn_ignored_json(args, "sweep")
     settings = _sweep_settings(args)
+    followed = _followed_daw(args)
+    if followed is not None:
+        settings = apply_daw_follow(settings, followed)
     wav_path, sidecar = write_sweep_file(settings, args.out)
-    print(render_sweep_written(_console(args), settings, wav_path, sidecar))
+    print(render_sweep_written(_console(args), settings, wav_path, sidecar, followed=followed))
+    return 0
+
+
+def cmd_daw(args: argparse.Namespace) -> int:
+    from reverbscope.daw import FOLLOWED_SETTINGS, open_daw_projects
+
+    projects = open_daw_projects()
+    payload = {
+        "candidates": [item.to_dict() for item in projects],
+        "followed_settings": list(FOLLOWED_SETTINGS),
+        "needs_choice": len(projects) != 1,
+        "reason": "ok" if len(projects) == 1 else ("none" if not projects else "several"),
+        "note": _(
+            "No running DAW was queried. An empty list means none was declared "
+            "(this VM has no DAW). The sweep sample rate follows the chosen project."
+        ),
+    }
+    if _use_json(args):
+        print(json.dumps(payload, indent=1))
+        return 0
+    print(render_daw_projects(_console(args), projects))
     return 0
 
 
@@ -1031,6 +1140,8 @@ def _run_analysis(
     out_dir: Path | None = None,
     hardware: ChannelPlan | None = None,
     output_channel: int | None = None,
+    audio_interface: str = "",
+    bit_depth: str | None = None,
     device_warnings: tuple[str, ...] = (),
     inputs: Sequence[tuple[str, str]] = (),
 ) -> int:
@@ -1063,8 +1174,14 @@ def _run_analysis(
     if getattr(args, "loopback", None) is not None:
         loopback_signal = read_wav(args.loopback)
     result = analyze(recording, reference, settings, loopback=loopback_signal)
+    from reverbscope.io.scan import attach_room_scan
+
+    result = attach_room_scan(result, getattr(args, "scan", None))
     profile = _resolve_profile(args)
     findings = interpret(result, profile)
+    # Only resolve a live/fake DAW when the user asked to follow one.
+    # ``--daw`` / ``--daw-project`` alone are session labels, not a guess.
+    followed = _followed_daw(args) if getattr(args, "follow_daw", False) else None
 
     if out_dir is not None:
         session = MeasurementSession(
@@ -1080,7 +1197,14 @@ def _run_analysis(
             input_channel=None if hardware is None else hardware.microphone_channel,
             output_channel=output_channel if hardware is not None else None,
             loopback_channel=None if hardware is None else hardware.loopback_channel,
+            audio_interface=audio_interface,
+            bit_depth=bit_depth,
             recording_profile=profile,
+            scan_path=str(args.scan) if getattr(args, "scan", None) else None,
+            daw_name=followed.daw if followed is not None else getattr(args, "daw", None),
+            daw_project=(
+                followed.project if followed is not None else getattr(args, "daw_project", None)
+            ),
         )
         session_path = save_measurement(
             out_dir,
@@ -1122,6 +1246,7 @@ def cmd_devices(args: argparse.Namespace) -> int:
     if (
         getattr(args, "probe", False)
         or getattr(args, "host_apis", False)
+        or getattr(args, "referenced", False)
         or getattr(args, "json", False)
         or getattr(args, "format", None) == "json"
     ):
@@ -1139,8 +1264,11 @@ def _print_inventory(backend: Any, args: argparse.Namespace) -> int:
         return 0
     if getattr(args, "host_apis", False):
         print(render_host_apis(_console(args), inventory))
-    else:
-        print(render_inventory(_console(args), inventory))
+        return 0
+    if getattr(args, "referenced", False):
+        print(render_referenced(_console(args), inventory))
+        return 0
+    print(render_inventory(_console(args), inventory))
     return 0
 
 
@@ -1216,7 +1344,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
     # Device pre-flight, shared with the GUI: one host API for both
     # directions, channels that exist, the rate on the devices the stream will
     # open, and a warning for two devices on two clocks (docs/AUDIO_DEVICES.md).
-    from reverbscope.audio.inventory import build_inventory, preflight
+    from reverbscope.audio.inventory import build_inventory, preflight, session_audio_interface
 
     inventory = build_inventory(backend, probe_rates=False)
     device_plan = preflight(
@@ -1322,6 +1450,12 @@ def cmd_measure(args: argparse.Namespace) -> int:
         out_dir=out_dir,
         hardware=plan,
         output_channel=int(args.output_channel),
+        audio_interface=session_audio_interface(
+            [probe.device for probe in inventory.devices],
+            device_plan.input_device,
+            device_plan.output_device,
+        ),
+        bit_depth=STANDALONE_BIT_DEPTH,
         device_warnings=recording.device_warnings,
         inputs=[(_("Recording"), Verbatim(str(recording_path)))],
     )
@@ -1463,6 +1597,9 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
     settings = _analysis_settings(args)
     band = (float(args.band[0]), float(args.band[1])) if args.band else None
     result = analyze_impulse_response(ir, settings, excitation_band=band)
+    from reverbscope.io.scan import attach_room_scan
+
+    result = attach_room_scan(result, getattr(args, "scan", None))
     profile = _resolve_profile(args)
     findings = interpret(result, profile)
     if args.out is not None:
@@ -1475,6 +1612,7 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
             analysis_settings=settings,
             recording_path=str(args.ir),
             recording_profile=profile,
+            scan_path=str(args.scan) if getattr(args, "scan", None) else None,
         )
         save_measurement(
             args.out,
@@ -1732,6 +1870,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
 COMMANDS = {
     "demo": cmd_demo,
     "sweep": cmd_sweep,
+    "daw": cmd_daw,
     "analyze": cmd_analyze,
     "analyze-ir": cmd_analyze_ir,
     "show": cmd_show,
@@ -1829,6 +1968,7 @@ def _os_error_text(exc: OSError) -> str:
 def main(argv: Sequence[str] | None = None) -> int:
     _prepare_streams()
     argv_list = list(sys.argv[1:] if argv is None else argv)
+    _INVOKED_ARGV[:] = argv_list
     activate(_peek_option(argv_list, ("--lang",)))
     _translate_argparse()
     color = _peek_option(argv_list, ("--color",))

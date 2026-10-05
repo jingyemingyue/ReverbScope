@@ -8,7 +8,9 @@ ReverbScope 用来测量录音房间，让你听清房间对近距离拾音的�
 
 ## 安装
 
-从项目的 [Releases 页面](https://github.com/jingyemingyue/ReverbScope/releases)下载。各系统的分步说明、更新、卸载和故障排查见 [INSTALLATION.zh-CN.md](../INSTALLATION.zh-CN.md)，本节是简要版。每个 Release 都附有一个 `SHA256SUMS` 文件，请与下载文件的校验值比对（macOS / Linux：`shasum -a 256 <file>`；PowerShell：`Get-FileHash <file>`）。
+ReverbScope 提供**两条 beta**（都还是 beta）。**稳定 beta** 是最近一次已发布的预发布（更少缺陷、功能面更窄）。**预览 beta** 是当前开发线（功能更强，可能不稳定）；没有发布预览版 GitHub Release。
+
+从项目的 [Releases 页面](https://github.com/jingyemingyue/ReverbScope/releases)下载**稳定 beta**。各系统的分步说明、更新、卸载和故障排查见 [INSTALLATION.zh-CN.md](../INSTALLATION.zh-CN.md)，本节是简要版。每个 Release 都附有一个 `SHA256SUMS` 文件，请与下载文件的校验值比对（macOS / Linux：`shasum -a 256 <file>`；PowerShell：`Get-FileHash <file>`）。
 
 ReverbScope 有两个版本。**桌面版**就是本指南介绍的应用程序，同时包含命令行；**终端版**只有命令行（没有窗口和图表），
 适合脚本、服务器和没有图形桌面的电脑。
@@ -59,7 +61,13 @@ reverbscope-env/bin/reverbscope gui
 
 ## 通用 DAW 模式
 
-1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav`（或在界面的“通用 DAW 模式”中用“步骤 1 — 生成测试信号”生成，采样率选工程采样率）。把 `.reverbscope-sweep.json` 配套文件和 WAV 放在一起。
+**扫频采样率**必须与你正在使用的 DAW 工程一致。这是 ReverbScope 已经当作依赖 DAW 的唯一会话设置（导出位深和时间伸缩是你的操作说明，不是从宿主抄来的值）。ReverbScope 不连接 DAW，也不扫描正在运行的程序。
+
+- `reverbscope daw` 列出已声明或伪（fake）工程，或说明未找到。除非设置了 `REVERBSCOPE_FAKE_DAWS`（仅测试 / 演示：`名称:采样率` 或 `名称:采样率:工程`，用 `;` 分隔），本机不会被当作正在运行 DAW。
+- 若未找到或同时有多个工程，ReverbScope **会询问**要跟随哪一个，不会猜测。命令行：`--follow-daw --daw 名称`；同一名称有多个工程时再加 `--daw-project 标题`。未检测到工程时，`--daw 名称 --sample-rate 采样率` 就是你给出的答案。
+- 界面里，通用 DAW 模式步骤 1 的 **选择要跟随的 DAW...**（在“保存测试信号”之前）。多个伪工程是选择列表；一个都没有时，请输入名称和采样率。
+
+1. `reverbscope sweep --follow-daw --daw <名称> --out sweep.wav`（或 `reverbscope sweep --sample-rate <工程采样率> --out sweep.wav`，或在界面的“通用 DAW 模式”中先选择 DAW 再生成）。把 `.reverbscope-sweep.json` 配套文件和 WAV 放在一起。
 2. 把 WAV 导入 DAW 的一条新轨道，关闭时间伸缩（Warp、Flex、Follow Tempo），信号通路上不要有插件。把它路由到一只扬声器。
 3. 在第二条轨道上接入测量话筒并开启录音待命，关闭输入监听，在扫频播放的同时录音。完整导出录音轨，不要裁切，也不要标准化。
 4. 可选回送（loopback）：导出双声道文件（话筒 + 电回送），并使用 `--channel 0 --loopback-channel 1`。
@@ -89,17 +97,18 @@ reverbscope-env/bin/reverbscope gui
 
 核心诊断（`warnings`、`notes`、`reason`）在 `result.json` 中保持英文，便于跨语言对照问题报告。界面会在注明这一点的标题下原样显示它们。
 
-结果页有七个标签页：
+结果页有八个标签页：
 
 | 标签页 | 显示内容 |
 | --- | --- |
 | 总览 | 宽带与倍频程频带的 EDT / T20 / T30 / RT60，以及 C50 / C80 / D50 / 重心时间，各自带有效性；文本报告；核心诊断（始终为英文）。 |
 | 脉冲响应 | 反卷积得到的脉冲响应（IR）。峰值是直达声；不会归一化到 1.0。 |
 | 频率响应 | 原始（点线）与平滑（实线）幅度。进行了回送补偿时，虚线是电回送。0 dB 指音频接口，而不是“房间里是平直的”。 |
+| 频谱 | 同一脉冲响应的 Welch 功率谱（AES17 密度）。不是加窗频率响应标签页，也不是安静段噪声 PSD。 |
 | 衰减 | Schroeder / 能量衰减曲线。宽带为实线；各倍频程频带使用不同的虚线样式，不只靠颜色区分。 |
 | 噪声 | 安静段的频谱和 50/60 Hz 交流哼声候选。 |
 | 早期反射 | ETC 峰值（延时 ms，相对直达声的 dB）。候选用空心标记表示。 |
-| 摆位 | 多余路径；只有在输入了卷尺实测的扬声器距离时，才给出扬声器高度、两个设备上方的平面以及水平间距。不指明任何墙面。 |
+| 摆位 | 多余路径；只有在输入了卷尺实测的扬声器距离时，才给出扬声器高度、两个设备上方的平面以及水平间距。不指明任何墙面。若已有 ASCII PLY 或 OBJ 扫描，会画成淡色点。 |
 
 低频共振候选保留在总览的文本报告中（以及 `reverbscope export` 之后的 `resonances.csv`），没有单独的标签页。
 
@@ -107,7 +116,7 @@ reverbscope-env/bin/reverbscope gui
 
 结果页有“摆位”标签页。没有卷尺实测的扬声器距离时，ReverbScope 只报告每个到达声的多余路径。有了距离（垂直方向还需要话筒高度）之后，它会报告扬声器高度、两个设备上方的平面和水平间距。它从不指明墙面，也不给出房间长度或宽度。
 
-请在通用 DAW 模式或独立模式中、点击“分析”之前填入卷尺数值，或在命令行中使用 `--speaker-distance` / `--mic-height` / `--temperature`。
+请在通用 DAW 模式或独立模式中、点击“分析”之前填入卷尺数值，或在命令行中使用 `--speaker-distance` / `--mic-height` / `--temperature`。若要叠加上已有的扫描，在摆位页选择 ASCII PLY 或 OBJ，或使用 `--scan FILE`。ReverbScope 不连接激光雷达；不读取二进制 PLY；坐标按文件原样当作米，不会对齐到话筒。
 
 ## 对比两个位置
 
@@ -125,7 +134,7 @@ reverbscope-env/bin/reverbscope gui
 ## 导出与语言
 
 `reverbscope export session/ --format csv --out curves/` 导出每一条曲线。
-`--lang zh_CN`（或“设置 → 语言”，或 `REVERBSCOPE_LANG`）会翻译解读、文本报告的标签、图形界面和命令行帮助（`reverbscope --help` 及每个子命令）。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
+`--lang zh_CN`（或 `zh_TW`、`ja`、`ko`、`es`、`fr`、`de`；或“设置 → 语言”，或 `REVERBSCOPE_LANG`）会翻译解读、文本报告的标签、图形界面和命令行帮助（`reverbscope --help` 及每个子命令）。用户文档仍为英文和简体中文。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
 
 在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
 

@@ -38,7 +38,7 @@ from reverbscope.models.comparison import CompareSettings, ComparisonResult, Res
 from reverbscope.ui.browser import SessionBrowser
 from reverbscope.labels import metric_label, status_text, validity_word
 from reverbscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
-from reverbscope.ui.widgets import Card, PageHeader, label, primary
+from reverbscope.ui.widgets import PAGE_MARGINS, PAGE_SPACING, Card, PageHeader, label, primary
 
 
 def _decay_flags(match: ResonanceMatch) -> str:
@@ -58,8 +58,8 @@ class ComparePage(QWidget):
         self._comparison: ComparisonResult | None = None
         self.setProperty("page", True)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 20, 28, 14)
-        layout.setSpacing(10)
+        layout.setContentsMargins(*PAGE_MARGINS)
+        layout.setSpacing(PAGE_SPACING)
 
         header = PageHeader(
             _("Compare two sessions"),

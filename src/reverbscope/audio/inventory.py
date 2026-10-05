@@ -29,6 +29,11 @@ from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 
 from reverbscope.audio.backend import AudioBackend, DeviceInfo, StreamOptions
+from reverbscope.audio.referenced import (
+    HOST_API_DOCUMENTED_LATENCY,
+    REFERENCED_HOST_API_LATENCY,
+    referenced_catalog_dict,
+)
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, diag
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
@@ -89,6 +94,9 @@ HOST_API_NOTES: dict[str, str] = {
     "oss": diag("OSS: legacy Linux interface"),
     "fake": diag("synthetic backend: nothing is played"),
 }
+
+#: PortAudio name for each known kind (the inverse of :data:`HOST_API_KINDS`).
+HOST_API_NAMES: dict[str, str] = {kind: name for name, kind in HOST_API_KINDS.items()}
 
 #: ALSA device names that are plugins or sound servers rather than hardware.
 _ALSA_VIRTUAL = re.compile(
@@ -194,6 +202,26 @@ class DeviceProbe:
 
 
 @dataclass(frozen=True)
+class HostApiCatalogEntry:
+    """One known host API, from :data:`HOST_API_KINDS` plus this machine's table."""
+
+    kind: str
+    name: str
+    rank: int | None
+    present: bool
+    device_count: int
+    documented_low_latency_s: float | None
+    documented_high_latency_s: float | None
+    documented_latency_note: str
+    note: str
+    documented_latency_source_url: str = ""
+    documented_latency_source_locator: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class DeviceInventory:
     platform: str
     backend: str
@@ -202,6 +230,12 @@ class DeviceInventory:
     devices: tuple[DeviceProbe, ...]
     rates_probed: tuple[int, ...]
     notes: tuple[str, ...] = field(default=())
+    #: Rates ReverbScope will ask a device to accept (not a hardware result).
+    supported_sample_rates: tuple[int, ...] = SUPPORTED_SAMPLE_RATES
+    #: Every host API ReverbScope knows, including ones absent on this machine.
+    host_api_catalog: tuple[HostApiCatalogEntry, ...] = ()
+    #: Manufacturer / repo specs. Not a hardware-matrix result.
+    referenced: dict[str, Any] = field(default_factory=referenced_catalog_dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -209,9 +243,12 @@ class DeviceInventory:
             "backend": self.backend,
             "portaudio_version": self.portaudio_version,
             "rates_probed": list(self.rates_probed),
+            "supported_sample_rates": list(self.supported_sample_rates),
             "host_apis": [api.to_dict() for api in self.host_apis],
+            "host_api_catalog": [entry.to_dict() for entry in self.host_api_catalog],
             "devices": [probe.to_dict() for probe in self.devices],
             "notes": list(self.notes),
+            "referenced": self.referenced,
         }
 
     def recommended(self, kind: str) -> list[DeviceProbe]:
@@ -225,6 +262,75 @@ def _platform_key(platform: str) -> str:
     if platform == "darwin":
         return "darwin"
     return "linux"
+
+
+def _host_api_catalog(present: Sequence[HostApiInfo], platform: str) -> list[HostApiCatalogEntry]:
+    """Every kind in :data:`HOST_API_KINDS`, marked present when this machine listed it."""
+    by_kind = {api.kind: api for api in present}
+    preferred = HOST_API_PREFERENCE.get(_platform_key(platform), ())
+    kinds = list(dict.fromkeys([*preferred, *HOST_API_NAMES]))
+    catalog: list[HostApiCatalogEntry] = []
+    for kind in kinds:
+        low, high, latency_note = HOST_API_DOCUMENTED_LATENCY.get(kind, (None, None, ""))
+        sourced = REFERENCED_HOST_API_LATENCY.get(kind)
+        found = by_kind.get(kind)
+        catalog.append(
+            HostApiCatalogEntry(
+                kind=kind,
+                name=found.name if found is not None else HOST_API_NAMES.get(kind, kind),
+                rank=_rank(kind, platform),
+                present=found is not None,
+                device_count=found.device_count if found is not None else 0,
+                documented_low_latency_s=low,
+                documented_high_latency_s=high,
+                documented_latency_note=latency_note,
+                documented_latency_source_url=sourced.citation.url if sourced else "",
+                documented_latency_source_locator=sourced.citation.locator if sourced else "",
+                note=HOST_API_NOTES.get(kind, ""),
+            )
+        )
+    return catalog
+
+
+def describe_device(device: DeviceInfo) -> str:
+    """Name, host API, channel counts and known rates already on ``device``."""
+    rates = device.supported_sample_rates
+    rate_text = (
+        ", ".join(str(rate) for rate in rates) + " Hz"
+        if rates
+        else f"{device.default_sample_rate:.0f} Hz default"
+    )
+    return (
+        f"{device.name} [{device.host_api}] "
+        f"{device.max_input_channels} in / {device.max_output_channels} out; {rate_text}"
+    )
+
+
+def session_audio_interface(
+    devices: Sequence[DeviceInfo],
+    input_device: int | None,
+    output_device: int | None,
+) -> str:
+    """``MeasurementSession.audio_interface`` from devices the take will open."""
+    by_index = {device.index: device for device in devices}
+
+    def pick(index: int | None, default_attr: str) -> DeviceInfo | None:
+        if index is not None:
+            return by_index.get(index)
+        return next((device for device in devices if getattr(device, default_attr)), None)
+
+    inp = pick(input_device, "is_default_input")
+    out = pick(output_device, "is_default_output")
+    if inp is None and out is None:
+        return ""
+    if inp is not None and out is not None and inp.index == out.index:
+        return describe_device(inp)
+    parts: list[str] = []
+    if inp is not None:
+        parts.append("in: " + describe_device(inp))
+    if out is not None:
+        parts.append("out: " + describe_device(out))
+    return "; ".join(parts)
 
 
 def _rank(kind: str, platform: str) -> int | None:
@@ -272,12 +378,18 @@ def build_inventory(
             notes.append(note)
         if kind == "alsa" and _ALSA_VIRTUAL.match(device.name):
             notes.append(diag("ALSA plugin or sound-server device: may resample and mix"))
-        input_rates = (
-            _supported(backend, device, rates, "input") if probe_rates and device.is_input else ()
-        )
-        output_rates = (
-            _supported(backend, device, rates, "output") if probe_rates and device.is_output else ()
-        )
+        advertised = tuple(int(rate) for rate in device.supported_sample_rates)
+        if probe_rates:
+            input_rates = _supported(backend, device, rates, "input") if device.is_input else ()
+            output_rates = _supported(backend, device, rates, "output") if device.is_output else ()
+        elif advertised:
+            # Backend-advertised rates (the fake device lists SUPPORTED_SAMPLE_RATES).
+            # Not a PortAudio probe and not a hardware-matrix result.
+            input_rates = advertised if device.is_input else ()
+            output_rates = advertised if device.is_output else ()
+        else:
+            input_rates = ()
+            output_rates = ()
         if probe_rates and device.is_input and not input_rates:
             notes.append(diag("accepts none of ReverbScope's sample rates for recording"))
         if probe_rates and device.is_output and not output_rates:
@@ -305,6 +417,8 @@ def build_inventory(
         devices=tuple(probes),
         rates_probed=tuple(int(rate) for rate in rates) if probe_rates else (),
         notes=tuple(inventory_notes),
+        supported_sample_rates=tuple(int(rate) for rate in rates),
+        host_api_catalog=tuple(_host_api_catalog(host_apis, platform)),
     )
 
 

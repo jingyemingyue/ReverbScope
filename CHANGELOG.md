@@ -7,6 +7,67 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Two download betas.** The README and installation pages offer a
+  **stable beta** (fewer bugs, narrower feature set: last published
+  pre-release `0.5.0b1`) and a **preview beta** (stronger features, may
+  be unstable: this development line). Both are still beta. No GitHub
+  Release was published for the preview track.
+- **Docs HTML preview SEO tags.** `scripts/build_docs_site.py` writes a
+  title, meta description, canonical URL, and Open Graph
+  title/description on every preview page. It defaults to `docs-html/`
+  and refuses to overwrite the committed `site/` landing page. The
+  published `site/sitemap.xml` and `site/robots.txt` stay the only
+  copies on GitHub Pages. This change does not submit the site to
+  Google.
+- **Follow the DAW in play.** The sweep sample rate is the only session
+  setting ReverbScope already treats as DAW-dependent; it must match the
+  chosen project. `reverbscope daw` lists declared / fake projects (this
+  VM has no DAW and does not query hosts). Zero or several candidates
+  raise an ask (`DawChoiceNeeded`); ReverbScope does not guess. CLI:
+  `reverbscope sweep --follow-daw --daw NAME [--daw-project TITLE]`.
+  GUI Universal DAW Mode: **Choose DAW to follow...** before Save Test
+  Signal. Fake path: `REVERBSCOPE_FAKE_DAWS=Name:rate[:project]`,
+  `;`-separated. A plain `reverbscope sweep --out` still uses 48 kHz so
+  existing goldens stay valid. No real DAW was running.
+- **Imported room scan.** `reverbscope analyze --scan FILE` (and the
+  Placement page) reads an ASCII PLY point cloud or Wavefront OBJ the
+  user already has. Coordinates stay in file units, treated as metres,
+  and are drawn as faint points on the placement picture. Binary PLY is
+  refused. ReverbScope does not talk to a lidar; the checked-in sample is
+  `tests/fixtures/synthetic_room.ply` (a 4×3×2.5 m shoebox, not a
+  capture). Formats: Stanford Triangle Format / Greg Turk
+  (http://paulbourke.net/dataformats/ply/) and Library of Congress
+  FDD000507 (Wavefront OBJ). Clean-room readers; no Open3D, trimesh or
+  CloudCompare source.
+- **Impulse-response spectrum.** `analyze` and `analyze-ir` now store a
+  Welch (1967) PSD of the deconvolved IR (`core/spectrum.py`), with the
+  same AES17 density scaling as the noise tab (`10*log10(2*psd)`). It is
+  a separate tab and `spectrum.csv`, not a gated frequency response and
+  not a quiet-segment noise PSD. Shown on the synthetic path and the
+  fake backend; this VM has no analyser and no claim of one.
+- **Referenced interface specs.** `reverbscope devices --referenced` and the
+  inventory JSON `referenced` object cite PortAudio v19.7.0 compiled
+  defaults (including the OSS 4×128-frame request), alsa-lib dmix
+  48 kHz / 2 ch, PipeWire `default.clock.rate` 48 kHz, Focusrite Scarlett
+  2i2 / 18i20 4th Gen user-guide figures, and the RME Babyface Pro FS
+  product page. Empty cells stay empty when the source does not state a
+  number. None of this is a HARDWARE_TESTS.md PASS.
+- **Device capability catalog.** `reverbscope devices --json` and
+  `reverbscope doctor` now always include ReverbScope's six measurement rates
+  (`SUPPORTED_SAMPLE_RATES`) and a host-API catalog built from
+  `HOST_API_KINDS`, `HOST_API_PREFERENCE`, `HOST_API_NOTES` and PortAudio's
+  documented default latencies. The fake backend advertises 8 inputs, 2
+  outputs and those six rates without a PortAudio probe. A machine with no
+  audio devices still reports the catalog; its device list stays empty.
+  Standalone sessions store the same parameters in `audio_interface` and
+  `bit_depth` (`32-bit float`). This is not a hardware-matrix result.
+- **GUI and CLI languages.** Besides English and Simplified Chinese, the
+  interface catalogs now include Traditional Chinese, Japanese, Korean,
+  Spanish, French and German (`--lang zh_TW` / `ja` / `ko` / `es` / `fr` /
+  `de`, and Settings → Language). License and legal sentences stay in
+  English. User-facing docs remain English and Simplified Chinese.
+
 ### Changed
 - **Renamed RoomScope → ReverbScope.** The project, the Python package
   (`roomscope` → `reverbscope`), the command line (`roomscope` →
@@ -15,6 +76,37 @@ All notable changes to ReverbScope are documented here. The format follows
   `$REVERBSCOPE_HOME`) and the default data directory (`~/.roomscope` →
   `~/.reverbscope`) were renamed. GitHub keeps redirecting the old repository
   URL to the new name.
+- **Placement picture shows the first-order image source.** When the
+  vertical axis is solved, the rotatable 3D schematic draws the hollow
+  image of the loudspeaker through the plane above and the dashed
+  specular bounce, the way pyroomacoustics' documented `Room.plot`
+  shows sources, microphones and images. The construction is
+  Allen & Berkley (1979), implemented clean-room in
+  `horizontal_plane_image_path` (CODE_PROVENANCE.md). No wall or room
+  is invented; the measurement steps are unchanged.
+- **Desktop chrome.** Shared page margins, form column alignment, card
+  padding, and a slightly larger type scale so Home, measure, results and
+  compare line up. The measurement steps are unchanged.
+- **Chu noise-power subtraction on the Schroeder integral.** After Lundeby
+  finds a floor, ReverbScope subtracts that mean-square estimate from `h²`
+  (clipping negatives) before backward integration and the early/late
+  energy sums. The idea is Chu (1978), combined with the existing Lundeby
+  truncation the way pyrato documents `energy_decay_curve_chu_lundeby`;
+  the step is a clean-room reimplementation (CODE_PROVENANCE.md).
+  `AnalysisSettings.decay_subtract_noise` (default on) turns it off.
+  On a 0.5 s exponential plus a −50 dB floor (48 kHz, 2 s, seed 11):
+  Lundeby-only T30 0.5485 s → Chu–Lundeby 0.5404 s (true 0.500;
+  error 9.7 % → 8.1 %, a 17 % relative error cut). A clean alternating
+  exponential stays within 0.04 % (0.500000 → 0.499813 s). Broadband
+  `analyze_band` on that noisy IR: 1.80 ms → 2.03 ms. The settling-cache
+  path is unchanged.
+- **Noise-band filter settling.** `settling_samples` grows a short impulse
+  until the unused tail is below the 0.001 energy remainder, then caches
+  the length. Octave-band results match a full 4 s impulse. On this Linux
+  VM the old 4 s impulse took 1.24 s for eight bands × three repeats;
+  the new length is cached after 0.002 s. A 2 s synthetic `analyze` that
+  measures octave-band noise fell from 0.54 s to 0.13 s (4×); broadband
+  T30 and the eight band levels were identical.
 
 ## [0.5.0b1] - 2026-10-01
 

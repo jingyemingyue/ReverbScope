@@ -165,6 +165,10 @@ class AnalysisSettings:
     #: Required margin between the evaluation range and the noise floor (dB).
     #: ISO 3382-1 requires the decay range to be at least 10 dB above noise.
     decay_noise_margin_db: float = 10.0
+    #: Subtract the Lundeby noise-power estimate from ``h²`` before Schroeder
+    #: integration (Chu 1978). Combined with truncation this is the Chu–Lundeby
+    #: curve. ``False`` integrates the raw squared response (Lundeby only).
+    decay_subtract_noise: bool = True
     #: Straight line from the loudspeaker's acoustic centre to the microphone
     #: capsule (m), measured with a tape. Without it no geometry is reported.
     placement_distance_m: float | None = None

@@ -150,6 +150,32 @@ def specular_ceiling_db(distance_m: float, path_m: float) -> float:
     return 20.0 * math.log10(distance_m / path_m)
 
 
+def horizontal_plane_image_path(
+    source: tuple[float, float, float],
+    receiver: tuple[float, float, float],
+    plane_z: float,
+) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
+    """First-order image source and bounce on a horizontal plane.
+
+    The image is the source mirrored through ``z = plane_z`` (Allen & Berkley
+    1979). The bounce is where the straight line from that image to the
+    receiver crosses the plane: the physical source → bounce → receiver path
+    has the same length. This is the construction pyroomacoustics' ``Room.plot``
+    shows for image sources; the arithmetic here is clean-room.
+    """
+    sx, sy, zs = source
+    rx, ry, zr = receiver
+    image = (sx, sy, 2.0 * plane_z - zs)
+    ix, iy, iz = image
+    denom = zr - iz
+    if abs(denom) < 1e-15:
+        bounce = ((sx + rx) * 0.5, (sy + ry) * 0.5, plane_z)
+        return image, bounce
+    t = (plane_z - iz) / denom
+    bounce = (ix + t * (rx - ix), iy + t * (ry - iy), plane_z)
+    return image, bounce
+
+
 @dataclass(frozen=True)
 class _Hypothesis:
     """One candidate read as a particular plane."""

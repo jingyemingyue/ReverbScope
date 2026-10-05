@@ -40,6 +40,36 @@ Record a cell as `PASS YYYY-MM-DD, ReverbScope x.y.z (commit), <OS version>,
 <interface and driver>, #issue` or `FAIL ... #issue`. Do not fill a cell from
 the fake backend, a CI runner or a test.
 
+A cloud VM is not a physical interface. On 2026-10-03 a Linux x86_64 Cursor
+cloud VM ran PortAudio V19.6.0-devel (`libportaudio2` 19.6.0) and listed
+**ALSA (0 devices)** and **OSS (0 devices)**. That is not device
+enumeration of an interface, not sample-rate negotiation, and not a PASS.
+Each empty cell above is still missing a physical machine, a physical
+interface and its real driver. Software parameters that *are* complete
+(and are not hardware results) live in
+[AUDIO_DEVICES.md](AUDIO_DEVICES.md) §4a: ReverbScope's six measurement
+rates, the fake backend's 8-in / 2-out device, and the host-API catalog
+with PortAudio's documented default latencies.
+
+Referenced manufacturer and repository specs (Scarlett 2i2 / 18i20, Babyface
+Pro FS, PortAudio compiled defaults, ALSA dmix, PipeWire graph rate) live in
+[AUDIO_DEVICES.md](AUDIO_DEVICES.md) §4b and `reverbscope devices --referenced`.
+They are borrowed published numbers, not a ReverbScope measurement, and they
+do **not** mark any cell above PASS.
+
+No lidar was attached to this VM. The scan path reads a file the user
+already has (ASCII PLY or OBJ); the checked-in sample is a synthetic
+shoebox (`tests/fixtures/synthetic_room.ply`), not a capture. The IR
+spectrum is produced from ReverbScope's own deconvolution on synthetic
+recordings and the fake backend. Neither is a physical lidar, analyser
+or interface result, and neither marks a cell above PASS.
+
+No DAW was installed or running on this VM. `reverbscope daw` and
+`--follow-daw` were exercised with the fake path
+(`REVERBSCOPE_FAKE_DAWS` / injected entries) only. That is not a
+Universal DAW Mode measurement through a host, and it does **not**
+mark any DAW-matrix cell PASS.
+
 ## DAW matrix
 
 One Universal DAW Mode measurement per DAW, following

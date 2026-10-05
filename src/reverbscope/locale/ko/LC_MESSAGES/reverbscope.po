@@ -1,0 +1,5629 @@
+# ReverbScope Korean catalog.
+# English is the source language. Numbers stay ASCII; units are not translated.
+# License and legal sentences stay in English.
+msgid ""
+msgstr ""
+"Project-Id-Version: reverbscope 0.5.0b1\n"
+"Language: ko\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "ReverbScope analysis"
+msgstr "ReverbScope 분석"
+
+msgid "ReverbScope comparison"
+msgstr "ReverbScope 비교"
+
+msgid "Warnings (core diagnostics, always English):"
+msgstr "경고(핵심 진단, 항상 영어):"
+
+msgid ""
+"ReverbScope: an open-source, DAW-independent recording environment analyze"
+"r."
+msgstr "ReverbScope: 오픈소스이며 DAW에 의존하지 않는 녹음 환경 분석기."
+
+msgid "audio backend for Standalone Mode: portaudio (default) or fake"
+msgstr "독립 실행 모드의 오디오 백엔드: portaudio(기본) 또는 fake"
+
+msgid ""
+"UI language (en, zh_CN, zh_TW, ja, ko, es, fr, de). Overrides settings a"
+"nd REVERBSCOPE_LANG"
+msgstr "UI 언어(en, zh_CN, zh_TW, ja, ko, es, fr, de). 설정 및 REVERBSCOPE_LANG보다 우선합니다"
+
+msgid "text report or JSON on stdout (diagnostics stay on stderr)"
+msgstr "표준 출력에 텍스트 보고서 또는 JSON(진단은 표준 오류로 유지)"
+
+msgid "copy the raw recording into the session folder (default: user settings)"
+msgstr "원본 녹음을 세션 폴더에 복사합니다(기본: 사용자 설정)"
+
+msgid "session folder tools"
+msgstr "세션 폴더 도구"
+
+msgid "zip a session for a bug report"
+msgstr "버그 보고용으로 세션을 ZIP으로 묶기"
+
+msgid "session directory or session.json"
+msgstr "세션 디렉터리 또는 session.json"
+
+msgid "leave WAV files out of the zip"
+msgstr "ZIP에서 WAV를 빼기"
+
+msgid "zip path (file or directory)"
+msgstr "ZIP 경로(파일 또는 디렉터리)"
+
+msgid "export curves through an exporter"
+msgstr "내보내기로 곡선을 내보냅니다"
+
+msgid "exporter name (default csv)"
+msgstr "내보내기 이름(기본 csv)"
+
+msgid "output directory"
+msgstr "출력 디렉터리"
+
+msgid "project folders (one room, several positions)"
+msgstr "프로젝트 폴더(방 하나, 위치 여러 개)"
+
+msgid "create a project.json"
+msgstr "project.json 만들기"
+
+msgid "project directory"
+msgstr "프로젝트 디렉터리"
+
+msgid "room name"
+msgstr "방 이름"
+
+msgid "free-text notes"
+msgstr "자유 형식 메모"
+
+msgid "add a session to a position"
+msgstr "위치에 세션 추가"
+
+msgid "session directory"
+msgstr "세션 디렉터리"
+
+msgid "position label"
+msgstr "위치 레이블"
+
+msgid "spatial average of VALID T values"
+msgstr "VALID T 값의 공간 평균"
+
+msgid "number of source positions"
+msgstr "음원 위치 수"
+
+msgid "list positions and sessions"
+msgstr "위치와 세션 나열"
+
+msgid "Settings"
+msgstr "설정"
+
+msgid "System / English fallback"
+msgstr "시스템 / 영어 대체"
+
+msgid "Default (PortAudio)"
+msgstr "기본(PortAudio)"
+
+msgid "Browse..."
+msgstr "찾아보기…"
+
+msgid "Copy the raw recording into every session"
+msgstr "원본 녹음을 모든 세션에 복사"
+
+msgid "Language"
+msgstr "언어"
+
+msgid "Default profile"
+msgstr "기본 프로필"
+
+msgid "Audio backend"
+msgstr "오디오 백엔드"
+
+msgid "Default output folder"
+msgstr "기본 출력 폴더"
+
+msgid "&Measure"
+msgstr "측정(&M)"
+
+msgid "&File"
+msgstr "파일(&F)"
+
+msgid "&New Measurement"
+msgstr "새 측정(&N)"
+
+msgid "&Open Session..."
+msgstr "세션 열기(&O)…"
+
+msgid "&Compare Sessions..."
+msgstr "세션 비교(&C)…"
+
+msgid "&Settings..."
+msgstr "설정(&S)…"
+
+msgid "&Quit"
+msgstr "종료(&Q)"
+
+msgid "&Help"
+msgstr "도움말(&H)"
+
+msgid "&About ReverbScope"
+msgstr "ReverbScope 정보(&A)"
+
+msgid "About ReverbScope"
+msgstr "ReverbScope 정보"
+
+msgid "Browse Folder..."
+msgstr "폴더 찾아보기…"
+
+msgid "Recent"
+msgstr "최근"
+
+msgid "No recent sessions yet. Save a measurement to see it here."
+msgstr "최근 세션이 없습니다. 측정을 저장하면 여기에 나타납니다."
+
+msgid "Cannot list sessions"
+msgstr "세션을 나열할 수 없습니다"
+
+msgid "No sessions in this project"
+msgstr "이 프로젝트에 세션이 없습니다"
+
+msgid "No session.json files under {root}"
+msgstr "{root} 아래에 session.json이 없습니다"
+
+msgid "An open-source, DAW-independent recording environment analyzer"
+msgstr "오픈소스이며 DAW에 의존하지 않는 녹음 환경 분석기"
+
+msgid "New Measurement"
+msgstr "새 측정"
+
+msgid "Universal DAW Mode"
+msgstr "유니버설 DAW 모드"
+
+msgid "Standalone Mode"
+msgstr "독립 실행 모드"
+
+msgid "Demo (no interface)"
+msgstr "데모(인터페이스 없음)"
+
+msgid "Saved sessions"
+msgstr "저장된 세션"
+
+msgid "Open Session..."
+msgstr "세션 열기…"
+
+msgid "Compare two sessions..."
+msgstr "세션 두 개 비교…"
+
+msgid "These two sessions cannot be compared: {notes}"
+msgstr "이 두 세션은 비교할 수 없습니다: {notes}"
+
+msgid ""
+"Broadband estimated RT60 went from {baseline_s:.2f} s to {candidate_s:.2"
+"f} s ({delta_percent:+.1f} % of the baseline, {direction}). ISO 3382-1 q"
+"uotes a just-noticeable difference for T of about {jnd_percent:g} %; a s"
+"ingle pair of positions is not enough to call the change significant."
+msgstr ""
+"광대역 추정 RT60이 {baseline_s:.2f} s에서 {candidate_s:.2f} s로 바뀌었습니다(기준의 {delta"
+"_percent:+.1f} %, {direction}). ISO 3382-1은 T의 막 알아챌 수 있는 차이를 약 {jnd_per"
+"cent:g} %로 둡니다. 위치 한 쌍만으로는 변화를 유의미하다고 할 수 없습니다."
+
+msgid ""
+"Against this profile's decay thresholds the broadband RT60 moved from '{"
+"before}' ({baseline_s:.2f} s) to '{after}' ({candidate_s:.2f} s)."
+msgstr ""
+"이 프로필의 감쇠 임계값에 비추면 광대역 RT60이 '{before}'({baseline_s:.2f} s)에서 '{after}'("
+"{candidate_s:.2f} s)로 바뀌었습니다."
+
+msgid ""
+"A reflection appeared at {delay_ms:.1f} ms ({relative_db:.1f} dB) inside"
+" this profile's {window_ms:g} ms window."
+msgstr ""
+"이 프로필의 {window_ms:g} ms 창 안에 {delay_ms:.1f} ms({relative_db:.1f} dB) 반사가"
+" 나타났습니다."
+
+msgid ""
+"The strongest reflection within {window_ms:g} ms went from {baseline_rel"
+"ative_db:.1f} dB at {baseline_delay_ms:.1f} ms to {candidate_relative_db"
+":.1f} dB at {candidate_delay_ms:.1f} ms (threshold {threshold_db:.1f} dB"
+" for this profile)."
+msgstr ""
+"{window_ms:g} ms 안의 가장 강한 반사는 {baseline_delay_ms:.1f} ms의 {baseline_rela"
+"tive_db:.1f} dB에서 {candidate_delay_ms:.1f} ms의 {candidate_relative_db:.1"
+"f} dB로 바뀌었습니다(이 프로필 임계값 {threshold_db:.1f} dB)."
+
+msgid ""
+"Background noise went from {baseline_dbfs:.1f} dBFS to {candidate_dbfs:."
+"1f} dBFS ({delta_db:+.1f} dB) at the declared-equal input gain."
+msgstr ""
+"입력 게인이 같다고 선언된 상태에서 배경 소음이 {baseline_dbfs:.1f} dBFS에서 {candidate_dbfs:.1"
+"f} dBFS로 바뀌었습니다({delta_db:+.1f} dB)."
+
+msgid ""
+"The direct sound could not be identified with confidence, so delays and "
+"levels of reflections may be off. Check that the correct reference sweep"
+" was used, lower the playback level if the loudspeaker distorts, and mea"
+"sure again."
+msgstr ""
+"직접음을 충분히 확신하고 찾지 못했으므로 반사의 지연과 레벨이 어긋날 수 있습니다. 올바른 참조 스윕을 썼는지 확인하고, 스피커가"
+" 왜곡되면 재생 레벨을 낮춘 뒤 다시 측정하세요."
+
+msgid ""
+"The sweep was generated at {generated_rate_hz} Hz but played at {played_"
+"rate_hz} Hz: the DAW project runs at another sample rate and did not con"
+"vert the file. Generate the sweep at the project's sample rate, or let t"
+"he DAW convert it on import, and measure again."
+msgstr ""
+"스윕은 {generated_rate_hz} Hz로 만들었지만 {played_rate_hz} Hz로 재생되었습니다. DAW 프로젝트"
+"가 다른 샘플레이트이고 파일을 변환하지 않았습니다. 프로젝트 샘플레이트로 스윕을 만들거나 가져올 때 DAW가 변환하게 한 뒤 다시"
+" 측정하세요."
+
+msgid ""
+"The sweep was played at {speed_percent:.1f} % of its speed: the DAW time"
+"-stretched it (Warp, Flex Time, Follow Tempo, elastic audio or a stretch"
+" mode). Switch time-stretching off for the sweep clip and measure again."
+msgstr ""
+"스윕이 생성 속도의 {speed_percent:.1f} %로 재생되었습니다. DAW가 타임스트레치했습니다(Warp, Flex Ti"
+"me, Follow Tempo, elastic audio 또는 스트레치 모드). 스윕 클립의 타임스트레치를 끄고 다시 측정하세요."
+
+msgid "The recording clips. Lower the playback or input gain and measure again."
+msgstr "녹음이 클립되었습니다. 재생 또는 입력 게인을 낮추고 다시 측정하세요."
+
+msgid ""
+"The decay range is too small for a reliable reverberation time. A longer"
+" sweep, a slightly higher playback level or a quieter room increases it."
+msgstr ""
+"감쇠 범위가 너무 좁아 잔향 시간을 신뢰할 수 없습니다. 스윕을 더 길게, 재생을 조금 높이거나 방을 더 조용히 하면 범위가 늘어"
+"납니다."
+
+msgid ""
+"The direct sound is only {direct_to_noise_db:.0f} dB above the noise flo"
+"or in the quiet segment. Sources quieter than this will be recorded with"
+" audible noise; lower the noise at the source or increase the playback l"
+"evel within the headroom of the chain."
+msgstr ""
+"무음 구간에서 직접음이 노이즈 플로어보다 {direct_to_noise_db:.0f} dB밖에 높지 않습니다. 이보다 작은 음원은"
+" 들리는 노이즈와 함께 녹음됩니다. 원인에서 노이즈를 낮추거나 체인의 헤드룸 안에서 재생 레벨을 올리세요."
+
+msgid ""
+"A relatively strong early reflection is present approximately {delay_ms:"
+".0f} ms after the direct sound ({relative_db:.1f} dB). For close vocal o"
+"r instrument recording, try moving the microphone or the performer farth"
+"er from nearby hard surfaces, or treat that surface, and measure again."
+msgstr ""
+"직접음 약 {delay_ms:.0f} ms 뒤에 비교적 강한 초기 반사가 있습니다({relative_db:.1f} dB). 근접 "
+"보컬이나 악기 녹음에서는 마이크나 연주자를 가까운 단단한 면에서 멀리 두거나 그 면을 처리한 뒤 다시 측정하세요."
+
+msgid ""
+"A strong early reflection is present approximately {delay_ms:.0f} ms aft"
+"er the direct sound ({relative_db:.1f} dB). Close-miked vocals are colou"
+"red by reflections this early; move the microphone closer to the singer "
+"and farther from the nearest hard surface, or treat that surface, then m"
+"easure again."
+msgstr ""
+"직접음 약 {delay_ms:.0f} ms 뒤에 강한 초기 반사가 있습니다({relative_db:.1f} dB). 이렇게 이른 "
+"반사는 근접 보컬의 음색을 물들입니다. 마이크를 가수에게 더 가깝게, 가장 가까운 단단한 면에서 멀리 두거나 그 면을 처리한 뒤 "
+"다시 측정하세요."
+
+msgid ""
+"An early reflection is present approximately {delay_ms:.0f} ms after the"
+" direct sound ({relative_db:.1f} dB). Voice-over is usually close-miked "
+"and heavily processed, so even a reflection this weak colours the voice;"
+" move the microphone closer to the talent and farther from the nearest h"
+"ard surface, or treat the surface."
+msgstr ""
+"직접음 약 {delay_ms:.0f} ms 뒤에 초기 반사가 있습니다({relative_db:.1f} dB). 보이스오버는 보통 "
+"근접으로 세게 처리하므로 이 정도 반사도 목소리를 물들입니다. 마이크를 화자에게 더 가깝게, 가장 가까운 단단한 면에서 멀리 두거"
+"나 그 면을 처리하세요."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). This is typica"
+"l of a treated or small, well-damped room."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s). 처리된 방이나 잘 감쇠된 작은 방에서 흔합니다."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). T"
+"his is typical of a treated or small, well-damped room."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s, {basis}에서). 처리된 방이나 잘 감쇠된 작은 방에서 흔합니다."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). Dry close-mik"
+"ed recordings will pick up audible room sound; consider absorption or a "
+"closer microphone position."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s). 드라이한 근접 녹음에도 방 소리가 들립니다. 흡음을 더하거나"
+" 마이크를 더 가까이 두세요."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"Dry close-miked recordings will pick up audible room sound; consider abs"
+"orption or a closer microphone position."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s, {basis}에서). 드라이한 근접 녹음에도 방 소리가 들립니"
+"다. 흡음을 더하거나 마이크를 더 가까이 두세요."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). A dry room lik"
+"e this suits close vocal recording."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s). 이런 드라이한 방은 근접 보컬에 맞습니다."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). A"
+" dry room like this suits close vocal recording."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s, {basis}에서). 이런 드라이한 방은 근접 보컬에 맞습니다."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). A vocal that "
+"is this live picks up room colour between phrases; add absorption or mov"
+"e to a drier position."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s). 이렇게 라이브한 보컬은 프레이즈 사이에 방의 색이 탑니다. "
+"흡음을 더하거나 더 드라이한 위치로 옮기세요."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"A vocal that is this live picks up room colour between phrases; add abso"
+"rption or move to a drier position."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s, {basis}에서). 이렇게 라이브한 보컬은 프레이즈 사이에 "
+"방의 색이 탑니다. 흡음을 더하거나 더 드라이한 위치로 옮기세요."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). This suits voi"
+"ce-over: the narration stays dry and close."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s). 보이스오버에 맞습니다. 내레이션이 드라이하고 가깝게 남습니다."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). T"
+"his suits voice-over: the narration stays dry and close."
+msgstr ""
+"광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s, {basis}에서). 보이스오버에 맞습니다. 내레이션이 드라이하고 가깝"
+"게 남습니다."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). Voice-over ne"
+"eds a dry room; room tone of this length will sit under the narration. A"
+"dd absorption or move to a drier position."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s). 보이스오버에는 드라이한 방이 필요합니다. 이 길이의 룸 톤이"
+" 내레이션 아래에 남습니다. 흡음을 더하거나 더 드라이한 위치로 옮기세요."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"Voice-over needs a dry room; room tone of this length will sit under the"
+" narration. Add absorption or move to a drier position."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s, {basis}에서). 보이스오버에는 드라이한 방이 필요합니다."
+" 이 길이의 룸 톤이 내레이션 아래에 남습니다. 흡음을 더하거나 더 드라이한 위치로 옮기세요."
+
+msgid ""
+"Low frequencies decay clearly more slowly than the mid range ({low_max:."
+"2f} s vs {mid_mean:.2f} s), which usually makes bass-heavy sources sound"
+" boomy at this position. Bass trapping or a different position helps."
+msgstr ""
+"저역이 중역보다 분명히 더 느리게 감쇠합니다({low_max:.2f} s 대 {mid_mean:.2f} s). 이 위치에서는 저역"
+"이 많은 음원이 부미하게 들리기 쉽습니다. 베이스 트랩이나 다른 위치가 도움이 됩니다."
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), which makes vocals sound boxy at this position. Bass"
+" trapping or a different position helps."
+msgstr ""
+"저역이 중역보다 더 느리게 감쇠합니다({low_max:.2f} s 대 {mid_mean:.2f} s). 이 위치에서는 보컬이 상자"
+"처럼 울립니다. 베이스 트랩이나 다른 위치가 도움이 됩니다."
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), which makes voice-over sound muddy. Bass trapping or"
+" a different position helps."
+msgstr ""
+"저역이 중역보다 더 느리게 감쇠합니다({low_max:.2f} s 대 {mid_mean:.2f} s). 보이스오버가 탁해집니다. "
+"베이스 트랩이나 다른 위치가 도움이 됩니다."
+
+msgid ""
+"Mains hum components at multiples of {base_hz:.0f} Hz were detected in t"
+"he quiet part of the recording. Check grounding, cables, dimmers and pow"
+"er supplies before treating the room."
+msgstr ""
+"녹음의 조용한 구간에 {base_hz:.0f} Hz 배수의 전원 험이 검출되었습니다. 방을 처리하기 전에 접지, 케이블, 디머, "
+"전원을 확인하세요."
+
+msgid ""
+"Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (un"
+"calibrated digital level, not dB SPL). Compare it with the level of the "
+"sources you record at the same gain."
+msgstr ""
+"{segment} 구간의 배경 소음은 {rms_dbfs:.1f} dBFS RMS입니다(교정되지 않은 디지털 레벨, dB SPL이 "
+"아님). 같은 게인에서 녹음할 음원 레벨과 비교하세요."
+
+msgid ""
+"Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (un"
+"calibrated digital level, not dB SPL). Vocal tracks are often compressed"
+", which brings this noise up; compare it with your chain's noise at the "
+"same gain."
+msgstr ""
+"{segment} 구간의 배경 소음은 {rms_dbfs:.1f} dBFS RMS입니다(교정되지 않은 디지털 레벨, dB SPL이 "
+"아님). 보컬 트랙은 압축되는 경우가 많아 이 노이즈가 올라옵니다. 같은 게인에서 체인의 노이즈와 비교하세요."
+
+msgid ""
+"Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (un"
+"calibrated digital level, not dB SPL). Voice-over is usually quiet and c"
+"lose-miked, so this floor will be audible under the narration."
+msgstr ""
+"{segment} 구간의 배경 소음은 {rms_dbfs:.1f} dBFS RMS입니다(교정되지 않은 디지털 레벨, dB SPL이 "
+"아님). 보이스오버는 보통 조용하고 근접이므로 이 플로어가 내레이션 아래에서 들립니다."
+
+msgid ""
+"Potential low-frequency resonances around {listed}: these frequencies st"
+"and out in the response and ring longer than their surroundings. Measure"
+" one or two other positions to see whether they follow the room or the p"
+"osition."
+msgstr ""
+"{listed} 근처에 저역 공진 후보가 있습니다. 이 주파수들이 응답에서 두드러지고 주변보다 오래 울립니다. 방의 성질인지 위치"
+"의 성질인지 보려면 한두 곳을 더 측정하세요."
+
+msgid ""
+"Potential low-frequency resonances around {listed}: these frequencies st"
+"and out in the response and ring longer than their surroundings, which c"
+"olours voice and dialogue. Move the microphone or treat the affected cor"
+"ner, then measure again."
+msgstr ""
+"{listed} 근처에 저역 공진 후보가 있습니다. 이 주파수들이 응답에서 두드러지고 주변보다 오래 울려 목소리와 대사의 색이 바"
+"뀝니다. 마이크를 옮기거나 해당 모서리를 처리한 뒤 다시 측정하세요."
+
+msgid "Tape measurements (optional)"
+msgstr "줄자 측정(선택)"
+
+msgid "not measured"
+msgstr "측정하지 않음"
+
+msgid "Straight line from the loudspeaker to the microphone capsule."
+msgstr "스피커에서 마이크 캡슐까지의 직선 거리."
+
+msgid ""
+"Capsule above the first solid horizontal surface below it. Needs the dis"
+"tance."
+msgstr "캡슐에서 그 아래 첫 단단한 수평면까지의 높이. 거리가 필요합니다."
+
+msgid "air temperature measured"
+msgstr "기온을 측정함"
+
+msgid "Loudspeaker distance"
+msgstr "스피커 거리"
+
+msgid "Microphone height"
+msgstr "마이크 높이"
+
+msgid "Overview"
+msgstr "개요"
+
+msgid "Impulse Response"
+msgstr "임펄스 응답"
+
+msgid "Frequency Response"
+msgstr "주파수 응답"
+
+msgid "Decay"
+msgstr "감쇠"
+
+msgid "Noise"
+msgstr "노이즈"
+
+msgid "Early Reflections"
+msgstr "초기 반사"
+
+msgid "Placement"
+msgstr "배치"
+
+msgid "Figure"
+msgstr "그림"
+
+msgid "Value"
+msgstr "값"
+
+msgid "Validity"
+msgstr "유효성"
+
+msgid "Note"
+msgstr "메모"
+
+msgid "Delay (ms)"
+msgstr "지연(ms)"
+
+msgid "Level (dB)"
+msgstr "레벨(dB)"
+
+msgid "Excess path (m)"
+msgstr "초과 경로(m)"
+
+msgid "Surface"
+msgstr "면"
+
+msgid "Plane?"
+msgstr "평면?"
+
+msgid "No placement result. Add a loudspeaker distance to raise the tier."
+msgstr "배치 결과가 없습니다. 스피커 거리를 넣으면 단계가 올라갑니다."
+
+msgid ""
+"Placement tier {tier}. No coordinates, room length, room width or named "
+"wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} C{assumed"
+"}."
+msgstr ""
+"배치 단계 {tier}. 좌표, 방 길이, 방 너비, 이름 있는 벽은 구하지 않습니다. 음속 {speed:.1f} m/s, {te"
+"mp:.0f} C{assumed}."
+
+msgid " (assumed)"
+msgstr "(가정)"
+
+msgid "Loudspeaker height"
+msgstr "스피커 높이"
+
+msgid "Plane above the devices"
+msgstr "장치 위의 평면"
+
+msgid "Horizontal separation"
+msgstr "수평 간격"
+
+msgid "not determined"
+msgstr "결정되지 않음"
+
+msgid "yes"
+msgstr "예"
+
+msgid "no"
+msgstr "아니요"
+
+msgid "untested"
+msgstr "검사하지 않음"
+
+msgid "&Third-party licenses..."
+msgstr "타사 라이선스(&T)…"
+
+msgid "Third-party licenses"
+msgstr "타사 라이선스"
+
+msgid ""
+"No THIRD_PARTY_LICENSES directory was found next to this executable. See"
+" docs/DEPENDENCIES.md in the source tree."
+msgstr ""
+"이 실행 파일 옆에 THIRD_PARTY_LICENSES 디렉터리가 없습니다. 소스 트리의 docs/DEPENDENCIES.md를"
+" 보세요."
+
+msgid "construct the window offscreen and exit (bundle smoke; no loudspeaker)"
+msgstr "창을 화면 밖에서 만든 뒤 종료합니다(번들 스모크, 스피커 없음)"
+
+msgid "Compare two sessions. Select two rows, or pick each path."
+msgstr "세션 두 개를 비교합니다. 행을 두 개 고르거나 각 경로를 지정하세요."
+
+msgid "Baseline session"
+msgstr "기준 세션"
+
+msgid "Candidate session"
+msgstr "후보 세션"
+
+msgid "Baseline..."
+msgstr "기준…"
+
+msgid "Candidate..."
+msgstr "후보…"
+
+msgid "Input gain unchanged"
+msgstr "입력 게인을 바꾸지 않음"
+
+msgid ""
+"Required for a VALID noise delta. Leave unchecked if the preamp gain may"
+" have changed."
+msgstr "VALID 노이즈 차이에 필요합니다. 프리앰프 게인이 바뀌었을 수 있으면 선택을 해제하세요."
+
+msgid "Compare"
+msgstr "비교"
+
+msgid "Save comparison.json..."
+msgstr "comparison.json 저장…"
+
+msgid "Back"
+msgstr "뒤로"
+
+msgid "Metric"
+msgstr "지표"
+
+msgid "Baseline"
+msgstr "기준"
+
+msgid "Candidate"
+msgstr "후보"
+
+msgid "Delta"
+msgstr "차이"
+
+msgid "Validity"
+msgstr "유효성"
+
+msgid "Status"
+msgstr "상태"
+
+msgid "Baseline (ms / dB)"
+msgstr "기준(ms / dB)"
+
+msgid "Candidate (ms / dB)"
+msgstr "후보(ms / dB)"
+
+msgid "Δ level (dB)"
+msgstr "Δ 레벨(dB)"
+
+msgid "Baseline (Hz)"
+msgstr "기준(Hz)"
+
+msgid "Candidate (Hz)"
+msgstr "후보(Hz)"
+
+msgid "Decay distinguishable"
+msgstr "감쇠를 구분할 수 있음"
+
+msgid "Choose two sessions first."
+msgstr "먼저 세션을 두 개 고르세요."
+
+msgid "Cannot compare"
+msgstr "비교할 수 없습니다"
+
+msgid "Frequency-response difference (candidate − baseline)"
+msgstr "주파수 응답 차이(후보 − 기준)"
+
+msgid "Mean absolute difference per octave: {bits}"
+msgstr "옥타브당 평균 절대 차이: {bits}"
+
+msgid "No difference curve"
+msgstr "차이 곡선이 없습니다"
+
+msgid "Save comparison"
+msgstr "비교 저장"
+
+msgid "Run a comparison first."
+msgstr "먼저 비교를 실행하세요."
+
+msgid "Save comparison.json"
+msgstr "comparison.json 저장"
+
+msgid "JSON files (*.json)"
+msgstr "JSON 파일 (*.json)"
+
+msgid "Cannot save"
+msgstr "저장할 수 없습니다"
+
+msgid "Wrote {path}"
+msgstr "{path}에 썼습니다"
+
+msgid "Open session"
+msgstr "세션 열기"
+
+msgid "Session files (session.json);;JSON files (*.json);;All files (*)"
+msgstr "세션 파일 (session.json);;JSON 파일 (*.json);;모든 파일 (*)"
+
+msgid "Measurement metadata (optional)"
+msgstr "측정 메타데이터(선택)"
+
+msgid "Room"
+msgstr "방"
+
+msgid "Position"
+msgstr "위치"
+
+msgid "Microphone"
+msgstr "마이크"
+
+msgid "Step 1 - Generate Test Signal"
+msgstr "1단계 — 테스트 신호 만들기"
+
+msgid "Sample rate"
+msgstr "샘플레이트"
+
+msgid "Sweep duration"
+msgstr "스윕 길이"
+
+msgid "Peak level"
+msgstr "피크 레벨"
+
+msgid "Save Test Signal WAV..."
+msgstr "테스트 신호 WAV 저장…"
+
+msgid "No test signal written yet."
+msgstr "아직 테스트 신호를 쓰지 않았습니다."
+
+msgid "Step 2 - Record Through Your DAW"
+msgstr "2단계 — DAW에서 녹음"
+
+msgid ""
+"1. Generate the test signal at your DAW project's sample rate (Step 1).\n"
+"2. Import it on a new track. Switch time-stretching off for that clip (W"
+"arp, Flex, Follow Tempo, elastic audio) and bypass plug-ins on its track"
+" and on the master bus, including room-correction plug-ins.\n3. Route tha"
+"t track to the one loudspeaker you want to test.\n4. Arm a second track w"
+"ith the measurement microphone (input monitoring off) and record while t"
+"he test signal plays.\n5. Export the recorded track as WAV, AIFF, CAF or "
+"FLAC at the project sample rate, without normalising.\n   Do not trim it "
+"- ReverbScope finds the sweep automatically.\nStart with a low monitor leve"
+"l; the sweep should be clearly audible but not loud.\nThe user guide has "
+"step-by-step notes for Pro Tools, Logic Pro, Cubase, Studio One, Ableton"
+" Live, REAPER, FL Studio and Bitwig Studio."
+msgstr ""
+"1. DAW 프로젝트 샘플레이트로 테스트 신호를 만듭니다(1단계).\n2. 새 트랙으로 가져옵니다. 그 클립의 타임스트레치(Warp"
+", Flex, Follow Tempo, elastic audio)를 끄고, 해당 트랙과 마스터 버스의 플러그인(룸 보정 포함)을 "
+"바이패스합니다.\n3. 그 트랙을 시험할 스피커 한 대로 라우팅합니다.\n4. 측정 마이크가 있는 두 번째 트랙을 암(입력 모니터 끄"
+"기)하고 테스트 신호가 재생되는 동안 녹음합니다.\n5. 녹음한 트랙을 정규화하지 말고 프로젝트 샘플레이트의 WAV, AIFF, C"
+"AF 또는 FLAC로 내보냅니다.\n   자르지 마세요. ReverbScope가 스윕을 자동으로 찾습니다.\n모니터 레벨은 낮게 시작하세"
+"요. 스윕은 또렷이 들리되 크지 않아야 합니다.\n사용 설명서에 Pro Tools, Logic Pro, Cubase, Studio "
+"One, Ableton Live, REAPER, FL Studio, Bitwig Studio 단계가 있습니다."
+
+msgid "Step 3 - Import Recording"
+msgstr "3단계 — 녹음 가져오기"
+
+msgid "Choose Recording..."
+msgstr "녹음 선택…"
+
+msgid "No recording selected."
+msgstr "녹음이 선택되지 않았습니다."
+
+msgid "Choose Reference Sweep..."
+msgstr "참조 스윕 선택…"
+
+msgid "Reference: the test signal from Step 1 (or choose a file)."
+msgstr "참조: 1단계의 테스트 신호(또는 파일 선택)."
+
+msgid "Auto (highest level)"
+msgstr "자동(가장 높은 레벨)"
+
+msgid "None"
+msgstr "없음"
+
+msgid "Microphone channel"
+msgstr "마이크 채널"
+
+msgid "Loopback channel"
+msgstr "루프백 채널"
+
+msgid "Step 4 - Analyze"
+msgstr "4단계 — 분석"
+
+msgid "Recording profile"
+msgstr "녹음 프로필"
+
+msgid "Analyze"
+msgstr "분석"
+
+msgid "Save test signal"
+msgstr "테스트 신호 저장"
+
+msgid "WAV files (*.wav)"
+msgstr "WAV 파일 (*.wav)"
+
+msgid "Cannot write test signal"
+msgstr "테스트 신호를 쓸 수 없습니다"
+
+msgid "Written: {wav} (+ {sidecar}). Keep both files together."
+msgstr "씀: {wav}(+ {sidecar}). 두 파일을 함께 두세요."
+
+msgid "Reference: {name}"
+msgstr "참조: {name}"
+
+msgid "Choose recording"
+msgstr "녹음 선택"
+
+msgid ""
+"Audio files (*.wav *.wave *.bwf *.rf64 *.w64 *.aif *.aiff *.aifc *.caf *"
+".flac);;All files (*)"
+msgstr ""
+"오디오 파일 (*.wav *.wave *.bwf *.rf64 *.w64 *.aif *.aiff *.aifc *.caf *.flac"
+");;모든 파일 (*)"
+
+msgid "Cannot read recording"
+msgstr "녹음을 읽을 수 없습니다"
+
+msgid "Channel {n}"
+msgstr "채널 {n}"
+
+msgid "{name}: {seconds:.1f} s, {rate} Hz, {channels} channel(s)"
+msgstr "{name}: {seconds:.1f} s, {rate} Hz, {channels}채널"
+
+msgid "Choose reference sweep"
+msgstr "참조 스윕 선택"
+
+msgid "Sweep files (*.wav *.json);;All files (*)"
+msgstr "스윕 파일 (*.wav *.json);;모든 파일 (*)"
+
+msgid "Cannot read reference sweep"
+msgstr "참조 스윕을 읽을 수 없습니다"
+
+msgid "No recording"
+msgstr "녹음이 없습니다"
+
+msgid "Choose the recorded WAV file first (Step 3)."
+msgstr "먼저 녹음한 WAV를 고르세요(3단계)."
+
+msgid "No reference"
+msgstr "참조가 없습니다"
+
+msgid "Generate the test signal (Step 1) or choose the sweep file."
+msgstr "테스트 신호를 만들거나(1단계) 스윕 파일을 고르세요."
+
+msgid "Analyzing..."
+msgstr "분석 중…"
+
+msgid "Done."
+msgstr "완료."
+
+msgid "Analysis failed: {message}"
+msgstr "분석에 실패했습니다: {message}"
+
+msgid "Analysis failed"
+msgstr "분석에 실패했습니다"
+
+msgid ""
+"Demo mode: the fake backend synthesises a room. Nothing is sent to a lou"
+"dspeaker."
+msgstr "데모 모드: fake 백엔드가 방을 합성합니다. 스피커로는 아무것도 보내지 않습니다."
+
+msgid ""
+"Start with your monitor/interface output at a low level. ReverbScope will "
+"play a sine sweep at a conservative digital level; raise the level gradu"
+"ally between measurements only if the recording is too quiet."
+msgstr ""
+"모니터/인터페이스 출력은 낮은 레벨에서 시작하세요. ReverbScope는 보수적인 디지털 레벨로 사인 스윕을 재생합니다. 녹음이 너"
+"무 작을 때만 측정 사이에 조금씩 올리세요."
+
+msgid "Audio devices"
+msgstr "오디오 장치"
+
+msgid "Refresh devices"
+msgstr "장치 새로 고침"
+
+msgid "unused"
+msgstr "사용 안 함"
+
+msgid "Device rate: unknown"
+msgstr "장치 레이트: 알 수 없음"
+
+msgid "Input device"
+msgstr "입력 장치"
+
+msgid "Output device"
+msgstr "출력 장치"
+
+msgid "Input channel (mic)"
+msgstr "입력 채널(마이크)"
+
+msgid "Loopback channel (1-based)"
+msgstr "루프백 채널(1부터)"
+
+msgid "Output channel (speaker)"
+msgstr "출력 채널(스피커)"
+
+msgid "Test signal"
+msgstr "테스트 신호"
+
+msgid "I have set the monitor level low (required above {level:g} dBFS)"
+msgstr "모니터 레벨을 낮췄습니다({level:g} dBFS 초과 시 필수)"
+
+msgid "Playback level"
+msgstr "재생 레벨"
+
+msgid "Run Measurement"
+msgstr "측정 실행"
+
+msgid "Stop"
+msgstr "중지"
+
+msgid "System default"
+msgstr "시스템 기본"
+
+msgid "Demo mode: fake backend, no loudspeaker."
+msgstr "데모 모드: fake 백엔드, 스피커 없음."
+
+msgid "{n} audio device(s) found."
+msgstr "오디오 장치 {n}개를 찾았습니다."
+
+msgid "unknown"
+msgstr "알 수 없음"
+
+msgid "Device rate: {device}  (requested {requested} Hz)"
+msgstr "장치 레이트: {device}  (요청 {requested} Hz)"
+
+msgid " — rates differ; the interface may resample"
+msgstr " — 레이트가 다릅니다. 인터페이스가 리샘플할 수 있습니다"
+
+msgid "Invalid settings"
+msgstr "잘못된 설정"
+
+msgid "Level too high"
+msgstr "레벨이 너무 높습니다"
+
+msgid ""
+"Levels above {level:g} dBFS need the acknowledgement checkbox. Set the m"
+"onitor level low first."
+msgstr "{level:g} dBFS를 넘는 레벨은 확인 확인란이 필요합니다. 먼저 모니터 레벨을 낮추세요."
+
+msgid "Sample rate not supported"
+msgstr "샘플레이트를 지원하지 않음"
+
+msgid "Playing the sweep and recording..."
+msgstr "스윕을 재생하며 녹음하는 중…"
+
+msgid "Stopped."
+msgstr "중지했습니다."
+
+msgid "Recorded. Analyzing..."
+msgstr "녹음했습니다. 분석 중…"
+
+msgid "Measurement failed: {message}"
+msgstr "측정에 실패했습니다: {message}"
+
+msgid "Measurement failed"
+msgstr "측정에 실패했습니다"
+
+msgid "Band"
+msgstr "밴드"
+
+msgid "RT60 estimate"
+msgstr "RT60 추정"
+
+msgid ""
+"Reverberation (extrapolated to 60 dB). 'insufficient range' means the de"
+"cay is not clean enough for that metric."
+msgstr "잔향(60 dB까지 외삽). '범위 부족'은 그 지표에 쓸 만큼 감쇠가 깨끗하지 않다는 뜻입니다."
+
+msgid "Save Session..."
+msgstr "세션 저장…"
+
+msgid "Choose a folder for the session"
+msgstr "세션용 폴더 선택"
+
+msgid "Cannot save session"
+msgstr "세션을 저장할 수 없습니다"
+
+msgid "Session saved to {path}"
+msgstr "세션을 {path}에 저장했습니다"
+
+msgid "Cannot open session"
+msgstr "세션을 열 수 없습니다"
+
+msgid "Choose a folder of sessions"
+msgstr "세션이 있는 폴더 선택"
+
+msgid "sweep duration in seconds (default 10)"
+msgstr "스윕 길이(초, 기본 10)"
+
+msgid "sweep start frequency (default 20)"
+msgstr "스윕 시작 주파수(기본 20)"
+
+msgid "sweep end frequency (default 20000)"
+msgstr "스윕 끝 주파수(기본 20000)"
+
+msgid "fade-in in seconds (default 0.05)"
+msgstr "페이드인(초, 기본 0.05)"
+
+msgid "fade-out in seconds (default 0.01)"
+msgstr "페이드아웃(초, 기본 0.01)"
+
+msgid "peak level in dBFS (default {level:g})"
+msgstr "피크 레벨(dBFS, 기본 {level:g})"
+
+msgid "silence before the sweep (s)"
+msgstr "스윕 앞 무음(s)"
+
+msgid "silence after the sweep (s)"
+msgstr "스윕 뒤 무음(s)"
+
+msgid "recording channel to analyse (0-based)"
+msgstr "분석할 녹음 채널(0부터)"
+
+msgid "fractional-octave smoothing 1/N (0 = off)"
+msgstr "분수 옥타브 평활 1/N(0 = 끔)"
+
+msgid "room name (metadata)"
+msgstr "방 이름(메타데이터)"
+
+msgid "measurement position (metadata)"
+msgstr "측정 위치(메타데이터)"
+
+msgid "microphone name (metadata)"
+msgstr "마이크 이름(메타데이터)"
+
+msgid "free-text notes (metadata)"
+msgstr "자유 형식 메모(메타데이터)"
+
+msgid "omit curves from result.json"
+msgstr "result.json에서 곡선을 빼기"
+
+msgid ""
+"straight line from the loudspeaker to the microphone capsule (m), measur"
+"ed with a tape. Without it no geometry can be derived from the reflectio"
+"ns"
+msgstr "스피커에서 마이크 캡슐까지의 직선 거리(m). 줄자로 잽니다. 없으면 반사에서 기하를 구할 수 없습니다"
+
+msgid ""
+"microphone capsule above the first solid horizontal surface below it (m)"
+" -- the desk top at a desk, otherwise the floor. Needs --speaker-distanc"
+"e"
+msgstr ""
+"마이크 캡슐에서 그 아래 첫 단단한 수평면까지의 높이(m) -- 책상이면 상판, 아니면 바닥. --speaker-distance가"
+" 필요합니다"
+
+msgid ""
+"air temperature (C); 20 C is assumed, and reported as assumed, without i"
+"t"
+msgstr "기온(C). 없으면 20 C로 가정하고 가정이라고 보고합니다"
+
+msgid ""
+"recording profile that shapes the interpretation (default: user settings"
+")"
+msgstr "해석을 만드는 녹음 프로필(기본: 사용자 설정)"
+
+msgid "separate loopback WAV from the same take (same sample rate)"
+msgstr "같은 테이크의 별도 루프백 WAV(같은 샘플레이트)"
+
+msgid ""
+"0-based loopback channel of the recording (or of --loopback if it is mul"
+"ti-channel)"
+msgstr "녹음의 루프백 채널(0부터. --loopback이 다채널이면 그 채널)"
+
+msgid "write the ESS test signal WAV (+ JSON sidecar)"
+msgstr "ESS 테스트 신호 WAV(+ JSON 사이드카)를 씁니다"
+
+msgid "output WAV path"
+msgstr "출력 WAV 경로"
+
+msgid "analyse a recording made with the sweep"
+msgstr "스윕으로 찍은 녹음을 분석합니다"
+
+msgid "recorded WAV (any length, untrimmed)"
+msgstr "녹음 WAV(길이는 상관없음, 자르지 않음)"
+
+msgid "sweep WAV or its .reverbscope-sweep.json sidecar"
+msgstr "스윕 WAV 또는 그 .reverbscope-sweep.json 사이드카"
+
+msgid "directory for session.json, result.json, IR WAV"
+msgstr "session.json, result.json, IR WAV용 디렉터리"
+
+msgid "list audio devices (Standalone Mode)"
+msgstr "오디오 장치를 나열합니다(독립 실행 모드)"
+
+msgid "Standalone Mode: play the sweep and record the microphone"
+msgstr "독립 실행 모드: 스윕을 재생하고 마이크를 녹음합니다"
+
+msgid "session directory (created)"
+msgstr "세션 디렉터리(만들어짐)"
+
+msgid "input device index (see 'devices')"
+msgstr "입력 장치 번호(devices 참조)"
+
+msgid "output device index"
+msgstr "출력 장치 번호"
+
+msgid "input channel, 1-based (default 1)"
+msgstr "입력 채널, 1부터(기본 1)"
+
+msgid ""
+"1-based input channels, comma-separated (e.g. 1,2); overrides --input-ch"
+"annel"
+msgstr "1부터인 입력 채널, 쉼표로 구분(예: 1,2). --input-channel보다 우선"
+
+msgid "output channel, 1-based (default 1)"
+msgstr "출력 채널, 1부터(기본 1)"
+
+msgid "1-based loopback input channel (recorded with the microphone)"
+msgstr "1부터인 루프백 입력 채널(마이크와 함께 녹음)"
+
+msgid ""
+"required for levels above -12 dBFS; confirms the monitor level was set l"
+"ow first"
+msgstr "-12 dBFS를 넘는 레벨에 필수. 모니터 레벨을 먼저 낮췄음을 확인합니다"
+
+msgid "print a saved session or comparison.json report, or list sessions"
+msgstr "저장된 세션이나 comparison.json 보고서를 출력하거나 세션을 나열합니다"
+
+msgid "session directory, session.json, comparison.json, or folder to list"
+msgstr "세션 디렉터리, session.json, comparison.json, 또는 나열할 폴더"
+
+msgid "list session.json files under path instead of opening one session"
+msgstr "세션 하나를 여는 대신 경로 아래 session.json을 나열합니다"
+
+msgid "override the recording profile stored in the session"
+msgstr "세션에 저장된 녹음 프로필을 덮어씁니다"
+
+msgid "omit curves from JSON output"
+msgstr "JSON 출력에서 곡선을 빼기"
+
+msgid "compare two saved sessions"
+msgstr "저장된 세션 두 개를 비교합니다"
+
+msgid "baseline session directory or session.json"
+msgstr "기준 세션 디렉터리 또는 session.json"
+
+msgid "candidate session directory or session.json"
+msgstr "후보 세션 디렉터리 또는 session.json"
+
+msgid "write comparison.json here (file or directory)"
+msgstr "comparison.json을 쓸 곳(파일 또는 디렉터리)"
+
+msgid ""
+"declare that the input gain was unchanged (required for a VALID noise de"
+"lta)"
+msgstr "입력 게인이 그대로라고 선언합니다(VALID 노이즈 차이에 필수)"
+
+msgid ""
+"recording profile for comparison findings (default: the candidate sessio"
+"n's)"
+msgstr "비교 소견용 녹음 프로필(기본: 후보 세션의 것)"
+
+msgid "print a shipped JSON Schema"
+msgstr "포함된 JSON Schema를 출력합니다"
+
+msgid "which schema to print"
+msgstr "출력할 스키마"
+
+msgid "analyse an impulse-response WAV from another tool"
+msgstr "다른 도구의 임펄스 응답 WAV를 분석합니다"
+
+msgid "impulse-response WAV"
+msgstr "임펄스 응답 WAV"
+
+msgid "declared excitation band in Hz (required for band metrics)"
+msgstr "선언한 여기 대역(Hz, 밴드 지표에 필수)"
+
+msgid "n/a"
+msgstr "n/a"
+
+msgid "at {temp:.0f} C"
+msgstr "{temp:.0f} C"
+
+msgid "matched"
+msgstr "일치"
+
+msgid "appeared"
+msgstr "나타남"
+
+msgid "disappeared"
+msgstr "사라짐"
+
+msgid "show this help message and exit"
+msgstr "이 도움말을 표시하고 종료"
+
+msgid "show program's version number and exit"
+msgstr "프로그램 버전을 표시하고 종료"
+
+msgid ""
+"Wrote {wav} ({seconds:.1f} s at {rate} Hz, sweep {start:g}-{end:g} Hz, {"
+"duration:g} s, {level:g} dBFS)"
+msgstr ""
+"{wav}을(를) 썼습니다({seconds:.1f} s, {rate} Hz, 스윕 {start:g}-{end:g} Hz, {dur"
+"ation:g} s, {level:g} dBFS)"
+
+msgid ""
+"Next: import the WAV into your DAW, play it through the monitors, record"
+" the measurement microphone,"
+msgstr "다음: WAV를 DAW로 가져와 모니터로 재생하고 측정 마이크로 녹음한 뒤,"
+
+msgid ""
+"export the recording as WAV and run: reverbscope analyze --recording <file"
+"> --sweep {wav}"
+msgstr "녹음을 WAV로 내보낸 뒤 실행: reverbscope analyze --recording <file> --sweep {wav}"
+
+msgid ""
+"warning: --json is deprecated; use --format json (--json will be removed"
+" in a future minor release)"
+msgstr ""
+"경고: --json은 더 이상 권장되지 않습니다. --format json을 쓰세요(--json은 이후 마이너 릴리스에서 제거됩니"
+"다)"
+
+msgid "Saved session to {path}"
+msgstr "세션을 {path}에 저장했습니다"
+
+msgid "idx"
+msgstr "번호"
+
+msgid "in"
+msgstr "입력"
+
+msgid "out"
+msgstr "출력"
+
+msgid "rate"
+msgstr "레이트"
+
+msgid "name"
+msgstr "이름"
+
+msgid "host API"
+msgstr "호스트 API"
+
+msgid ""
+"Level {level:g} dBFS is above {max_level:g} dBFS. Set the monitor level "
+"low first and pass --acknowledge-level to confirm."
+msgstr ""
+"레벨 {level:g} dBFS가 {max_level:g} dBFS를 넘습니다. 먼저 모니터 레벨을 낮추고 --acknowledg"
+"e-level로 확인하세요."
+
+msgid ""
+"Playing sweep on output channel {output}, recording input channel(s) {ch"
+"annels} via {backend} ..."
+msgstr "출력 채널 {output}에서 스윕을 재생하고 입력 채널 {channels}을(를) {backend}로 녹음하는 중 …"
+
+msgid "Recorded {seconds:.1f} s to {path}"
+msgstr "{seconds:.1f} s를 {path}에 녹음했습니다"
+
+msgid "Session: {path}"
+msgstr "세션: {path}"
+
+msgid "Wrote comparison to {path}"
+msgstr "비교를 {path}에 썼습니다"
+
+msgid "{n} position(s) in {path}"
+msgstr "{path}에 위치 {n}개"
+
+msgid "(unlisted)"
+msgstr "(목록 없음)"
+
+msgid ""
+"ISO 3382-2 class: {klass} ({sources} source × {mics} mic, {combos} combi"
+"nations)"
+msgstr "ISO 3382-2 등급: {klass}(음원 {sources} × 마이크 {mics}, 조합 {combos})"
+
+msgid "RT60"
+msgstr "RT60"
+
+msgid ""
+"The desktop GUI cannot start because PySide6 could not be loaded ({error"
+"}). Install it in this Python environment with: pip install \"PySide6_Ess"
+"entials>=6.6\". On Linux the OpenGL/EGL and XCB system libraries are also"
+" needed; see docs/INSTALLATION.md. The command-line tool works without i"
+"t."
+msgstr ""
+"데스크톱 GUI를 시작할 수 없습니다. PySide6를 불러오지 못했습니다({error}). 이 Python 환경에 설치하세요: "
+"pip install \"PySide6_Essentials>=6.6\". Linux에서는 OpenGL/EGL과 XCB 시스템 라이브러"
+"리도 필요합니다. docs/INSTALLATION.md를 보세요. 명령줄 도구는 없이 동작합니다."
+
+msgid "stopped: {message}"
+msgstr "중지함: {message}"
+
+msgid "error: {message}"
+msgstr "오류: {message}"
+
+msgid "interrupted"
+msgstr "중단됨"
+
+msgctxt "decay length"
+msgid "short"
+msgstr "짧음"
+
+msgctxt "decay length"
+msgid "noticeable"
+msgstr "뚜렷함"
+
+msgctxt "decay length"
+msgid "long"
+msgstr "긺"
+
+msgctxt "RT60 change"
+msgid "shorter"
+msgstr "짧아짐"
+
+msgctxt "RT60 change"
+msgid "longer"
+msgstr "길어짐"
+
+msgctxt "noise segment"
+msgid "pre-sweep"
+msgstr "스윕 전"
+
+msgctxt "noise segment"
+msgid "tail"
+msgstr "테일"
+
+msgctxt "noise segment"
+msgid "quiet"
+msgstr "무음"
+
+msgid ""
+"A strong early reflection is present approximately {delay_ms:.0f} ms aft"
+"er the direct sound ({relative_db:.1f} dB). Acoustic guitar is vulnerabl"
+"e to comb filtering from early reflections; move the microphone or the i"
+"nstrument farther from the nearest hard surface, or treat it, then measu"
+"re again."
+msgstr ""
+"직접음 약 {delay_ms:.0f} ms 뒤에 강한 초기 반사가 있습니다({relative_db:.1f} dB). 어쿠스틱 기타"
+"는 초기 반사의 콤 필터에 취약합니다. 마이크나 악기를 가장 가까운 단단한 면에서 멀리 두거나 그 면을 처리한 뒤 다시 측정하세요"
+"."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). Acoustic guita"
+"r keeps its transients and body in a room like this."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s). 이런 방에서는 어쿠스틱 기타의 트랜지언트와 몸통이 남습니다."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). A"
+"coustic guitar keeps its transients and body in a room like this."
+msgstr ""
+"광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s, {basis}에서). 이런 방에서는 어쿠스틱 기타의 트랜지언트와 몸통이"
+" 남습니다."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). For acoustic "
+"guitar, a decay this long clouds transients and adds boom; a position wi"
+"th absorption behind the performer helps."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s). 어쿠스틱 기타에서는 이 길이의 감쇠가 트랜지언트를 흐리고 부"
+"미를 더합니다. 연주자 뒤에 흡음이 있는 위치가 도움이 됩니다."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"For acoustic guitar, a decay this long clouds transients and adds boom; "
+"a position with absorption behind the performer helps."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s, {basis}에서). 어쿠스틱 기타에서는 이 길이의 감쇠가 트"
+"랜지언트를 흐리고 부미를 더합니다. 연주자 뒤에 흡음이 있는 위치가 도움이 됩니다."
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), which makes the guitar sound boomy at this position."
+" Bass trapping or a different position helps."
+msgstr ""
+"저역이 중역보다 더 느리게 감쇠합니다({low_max:.2f} s 대 {mid_mean:.2f} s). 이 위치에서는 기타가 부미"
+"하게 들립니다. 베이스 트랩이나 다른 위치가 도움이 됩니다."
+
+msgid ""
+"A very strong early reflection is present approximately {delay_ms:.0f} m"
+"s after the direct sound ({relative_db:.1f} dB). Drums mask most reflect"
+"ions, but a slap this strong will smear transients; move the kit or the "
+"overheads, or hang absorption at the reflection point."
+msgstr ""
+"직접음 약 {delay_ms:.0f} ms 뒤에 매우 강한 초기 반사가 있습니다({relative_db:.1f} dB). 드럼은 "
+"대부분의 반사를 가리지만, 이 정도 강한 슬랩은 트랜지언트를 번지게 합니다. 킷이나 오버헤드를 옮기거나 반사점에 흡음을 거세요."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). The kit will s"
+"tay tight in a room like this."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s). 이런 방에서는 킷이 타이트하게 남습니다."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). T"
+"he kit will stay tight in a room like this."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s, {basis}에서). 이런 방에서는 킷이 타이트하게 남습니다."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). A room this l"
+"ive rings under the kit; for a tighter drum sound add absorption or move"
+" the kit."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s). 이렇게 라이브한 방은 킷 아래에서 울립니다. 더 타이트한 드"
+"럼 소리를 원하면 흡음을 더하거나 킷을 옮기세요."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"A room this live rings under the kit; for a tighter drum sound add absor"
+"ption or move the kit."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s, {basis}에서). 이렇게 라이브한 방은 킷 아래에서 울립니"
+"다. 더 타이트한 드럼 소리를 원하면 흡음을 더하거나 킷을 옮기세요."
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), so the kick and low toms will boom at this position."
+" Bass trapping or a different kit position helps."
+msgstr ""
+"저역이 중역보다 더 느리게 감쇠합니다({low_max:.2f} s 대 {mid_mean:.2f} s). 이 위치에서는 킥과 로우 "
+"탐이 부미하게 들립니다. 베이스 트랩이나 킷 위치를 바꾸세요."
+
+msgid ""
+"A very strong early reflection is present approximately {delay_ms:.0f} m"
+"s after the direct sound ({relative_db:.1f} dB). For a room microphone t"
+"his is a hard slap that will sit under everything; reposition the microp"
+"hone or add absorption at the reflection point."
+msgstr ""
+"직접음 약 {delay_ms:.0f} ms 뒤에 매우 강한 초기 반사가 있습니다({relative_db:.1f} dB). 룸 마이"
+"크에서는 모든 소리 아래에 앉는 단단한 슬랩입니다. 마이크를 옮기거나 반사점에 흡음을 더하세요."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). A room microph"
+"one in a room this dry records mostly direct sound; if you want ambience"
+", the microphone needs to be farther from the source."
+msgstr ""
+"광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s). 이렇게 드라이한 방의 룸 마이크는 거의 직접음만 담습니다. 앰비언스가"
+" 필요하면 음원에서 더 멀리 두세요."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). A"
+" room microphone in a room this dry records mostly direct sound; if you "
+"want ambience, the microphone needs to be farther from the source."
+msgstr ""
+"광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s, {basis}에서). 이렇게 드라이한 방의 룸 마이크는 거의 직접음만 "
+"담습니다. 앰비언스가 필요하면 음원에서 더 멀리 두세요."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). For a room mi"
+"crophone this is a long room tone that may swamp the source; check wheth"
+"er the ambience stays usable, and consider absorption or a closer microp"
+"hone position."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s). 룸 마이크에서는 음원을 덮을 수 있는 긴 룸 톤입니다. 앰비"
+"언스가 쓸 만한지 확인하고, 흡음이나 더 가까운 위치를 검토하세요."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"For a room microphone this is a long room tone that may swamp the source"
+"; check whether the ambience stays usable, and consider absorption or a "
+"closer microphone position."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s, {basis}에서). 룸 마이크에서는 음원을 덮을 수 있는 긴"
+" 룸 톤입니다. 앰비언스가 쓸 만한지 확인하고, 흡음이나 더 가까운 위치를 검토하세요."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). For a room mi"
+"crophone this is usable ambience; keep the microphone position and liste"
+"n for how it sits under the source."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s). 룸 마이크로는 쓸 수 있는 앰비언스입니다. 마이크 위치를 유"
+"지하고 음원 아래에서 어떻게 앉는지 들어 보세요."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"For a room microphone this is usable ambience; keep the microphone posit"
+"ion and listen for how it sits under the source."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s, {basis}에서). 룸 마이크로는 쓸 수 있는 앰비언스입니다"
+". 마이크 위치를 유지하고 음원 아래에서 어떻게 앉는지 들어 보세요."
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), so the room sound will be bass-heavy at this positio"
+"n. Bass trapping or a different microphone position helps."
+msgstr ""
+"저역이 중역보다 더 느리게 감쇠합니다({low_max:.2f} s 대 {mid_mean:.2f} s). 이 위치의 방 소리는 저역"
+"이 셉니다. 베이스 트랩이나 마이크 위치를 바꾸세요."
+
+msgid ""
+"Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (un"
+"calibrated digital level, not dB SPL). A room microphone captures everyt"
+"hing, so this floor is part of what you record; it is audible whenever t"
+"he source pauses."
+msgstr ""
+"{segment} 구간의 배경 소음은 {rms_dbfs:.1f} dBFS RMS입니다(교정되지 않은 디지털 레벨, dB SPL이 "
+"아님). 룸 마이크는 모든 것을 담으므로 이 플로어도 녹음의 일부입니다. 음원이 쉴 때마다 들립니다."
+
+msgid ""
+"Potential low-frequency resonances around {listed}: these frequencies ri"
+"ng longer than their surroundings, so the room sound will be uneven ther"
+"e. Measure one or two other positions to see whether they follow the roo"
+"m."
+msgstr ""
+"{listed} 근처에 저역 공진 후보가 있습니다. 이 주파수들이 주변보다 오래 울리므로 그 구간의 방 소리가 고르지 않습니다. "
+"방을 따라가는지 보려면 한두 곳을 더 측정하세요."
+
+msgid ""
+"An early reflection is present approximately {delay_ms:.0f} ms after the"
+" direct sound ({relative_db:.1f} dB). For an ensemble, early reflections"
+" smear diction; move the microphones away from the nearest hard surface "
+"or treat it, and measure again."
+msgstr ""
+"직접음 약 {delay_ms:.0f} ms 뒤에 초기 반사가 있습니다({relative_db:.1f} dB). 앙상블에서는 초기 "
+"반사가 딕션을 번지게 합니다. 마이크를 가장 가까운 단단한 면에서 멀리 두거나 그 면을 처리한 뒤 다시 측정하세요."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s). An ensemble ke"
+"eps its diction in a room like this."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s). 이런 방에서는 앙상블의 딕션이 남습니다."
+
+msgid ""
+"The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). A"
+"n ensemble keeps its diction in a room like this."
+msgstr "광대역 감쇠가 짧습니다(추정 RT60 {rt:.2f} s, {basis}에서). 이런 방에서는 앙상블의 딕션이 남습니다."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s). For a choir, "
+"decay this long gives ambience but blurs diction; absorption behind the "
+"ensemble or a different microphone position helps."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s). 합창에서는 이 길이의 감쇠가 앰비언스를 주지만 딕션을 흐립니"
+"다. 앙상블 뒤의 흡음이나 다른 마이크 위치가 도움이 됩니다."
+
+msgid ""
+"The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). "
+"For a choir, decay this long gives ambience but blurs diction; absorptio"
+"n behind the ensemble or a different microphone position helps."
+msgstr ""
+"광대역 감쇠가 {text}입니다(추정 RT60 {rt:.2f} s, {basis}에서). 합창에서는 이 길이의 감쇠가 앰비언스를 "
+"주지만 딕션을 흐립니다. 앙상블 뒤의 흡음이나 다른 마이크 위치가 도움이 됩니다."
+
+msgid ""
+"Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs"
+" {mid_mean:.2f} s), which makes the ensemble bottom-heavy and muddies di"
+"ction. Bass trapping or a different position helps."
+msgstr ""
+"저역이 중역보다 더 느리게 감쇠합니다({low_max:.2f} s 대 {mid_mean:.2f} s). 앙상블이 저역이 세지고 딕"
+"션이 탁해집니다. 베이스 트랩이나 다른 위치가 도움이 됩니다."
+
+msgid "(unnamed room)"
+msgstr "(이름 없는 방)"
+
+msgid "A validity flag on every number"
+msgstr "모든 숫자에 유효성 플래그"
+
+msgid "Any DAW: WAV in, WAV out"
+msgstr "어떤 DAW든: WAV를 넣고 WAV를 냄"
+
+msgid "No room score, no invented figures"
+msgstr "방 점수도, 지어낸 숫자도 없음"
+
+msgid ""
+"Generate a test signal, play and record it in any DAW, import the record"
+"ing."
+msgstr "테스트 신호를 만들고 아무 DAW에서 재생·녹음한 뒤 녹음을 가져옵니다."
+
+msgid "Start in my DAW"
+msgstr "DAW에서 시작"
+
+msgid ""
+"ReverbScope plays the sweep and records the microphone through your audio "
+"interface."
+msgstr "ReverbScope가 오디오 인터페이스로 스윕을 재생하고 마이크를 녹음합니다."
+
+msgid "Measure now"
+msgstr "지금 측정"
+
+msgid ""
+"Run Standalone Mode on the fake backend. Nothing is sent to a loudspeake"
+"r."
+msgstr "fake 백엔드로 독립 실행 모드를 돌립니다. 스피커로는 아무것도 보내지 않습니다."
+
+msgid "Try the demo"
+msgstr "데모 해 보기"
+
+msgid "Open a session.json or a folder that contains one."
+msgstr "session.json 또는 그것이 들어 있는 폴더를 엽니다."
+
+msgid "Pick two saved sessions and compare their metrics."
+msgstr "저장된 세션 두 개를 골라 지표를 비교합니다."
+
+msgid ""
+"Four steps: generate the test signal, play and record it in your DAW, im"
+"port the recording, analyse. ReverbScope never talks to the DAW."
+msgstr ""
+"네 단계입니다. 테스트 신호를 만들고 DAW에서 재생·녹음한 뒤 녹음을 가져와 분석합니다. ReverbScope는 DAW와 대화하지 "
+"않습니다."
+
+msgid ""
+"ReverbScope plays the sweep and records the microphone through your audio "
+"interface, then runs the same analysis as Universal DAW Mode."
+msgstr "ReverbScope가 오디오 인터페이스로 스윕을 재생하고 마이크를 녹음한 뒤, 유니버설 DAW 모드와 같은 분석을 합니다."
+
+msgid "valid"
+msgstr "유효"
+
+msgid "unreliable"
+msgstr "신뢰할 수 없음"
+
+msgid "insufficient range"
+msgstr "범위 부족"
+
+msgid "not computed"
+msgstr "계산되지 않음"
+
+msgid "Reverberation (RT60)"
+msgstr "잔향(RT60)"
+
+msgid "Background noise"
+msgstr "배경 소음"
+
+msgid "Early reflections"
+msgstr "초기 반사"
+
+msgid "Direct sound"
+msgstr "직접음"
+
+msgid "pre-peak margin not checkable"
+msgstr "피크 앞 여유를 확인할 수 없음"
+
+msgid "Results"
+msgstr "결과"
+
+msgid "Full report"
+msgstr "전체 보고서"
+
+msgid "high"
+msgstr "높음"
+
+msgid "medium"
+msgstr "중간"
+
+msgid "low"
+msgstr "낮음"
+
+msgid "REVERBERATION BY BAND"
+msgstr "밴드별 잔향"
+
+msgid "no reverberation time could be reported"
+msgstr "잔향 시간을 보고할 수 없었습니다"
+
+msgid "no quiet segment to measure"
+msgstr "측정할 무음 구간이 없습니다"
+
+msgid "clean"
+msgstr "깨끗함"
+
+msgid "wrong speed"
+msgstr "속도가 틀림"
+
+msgid "confidence"
+msgstr "신뢰도"
+
+msgid "no hum"
+msgstr "험 없음"
+
+msgid "pre-peak margin {margin:.1f} dB"
+msgstr "피크 앞 여유 {margin:.1f} dB"
+
+msgid "INTERPRETATION ({profile} PROFILE)"
+msgstr "해석({profile} 프로필)"
+
+msgid "No findings."
+msgstr "소견이 없습니다."
+
+msgid "{profile} profile"
+msgstr "{profile} 프로필"
+
+msgid "broadband, estimated from {basis}"
+msgstr "광대역, {basis}에서 추정"
+
+msgid "RMS, {segment} segment, uncalibrated"
+msgstr "RMS, {segment} 구간, 미교정"
+
+msgid "strongest at {delay:.1f} ms, {level:.1f} dB"
+msgstr "가장 강함 {delay:.1f} ms, {level:.1f} dB"
+
+msgid "above {threshold:g} dB"
+msgstr "{threshold:g} dB 초과"
+
+msgid "none above {threshold:g} dB"
+msgstr "{threshold:g} dB 초과 없음"
+
+msgid "sweep played at {percent:.1f} % speed"
+msgstr "스윕이 {percent:.1f} % 속도로 재생됨"
+
+msgid "hum {base:g} Hz"
+msgstr "험 {base:g} Hz"
+
+msgid "warning"
+msgstr "경고"
+
+msgid "notice"
+msgstr "주의"
+
+msgid "info"
+msgstr "정보"
+
+msgid "reverberation"
+msgstr "잔향"
+
+msgid "clarity"
+msgstr "명료도"
+
+msgid "noise"
+msgstr "노이즈"
+
+msgid "early reflections"
+msgstr "초기 반사"
+
+msgid "low frequency"
+msgstr "저역"
+
+msgid "measurement"
+msgstr "측정"
+
+msgid "comparison"
+msgstr "비교"
+
+msgid "print an environment report for bug reports and debugging"
+msgstr "버그 보고와 디버그용 환경 보고서를 출력합니다"
+
+msgid ""
+"also check which sample rates each device accepts and mark the recommend"
+"ed entry of each physical device (nothing is played)"
+msgstr "각 장치가 받는 샘플레이트도 확인하고 물리 장치마다 권장 항목을 표시합니다(재생하지 않음)"
+
+msgid "list the host APIs instead of devices"
+msgstr "장치 대신 호스트 API를 나열합니다"
+
+msgid ""
+"PortAudio latency class of the stream (default: PortAudio's high latency"
+")"
+msgstr "스트림의 PortAudio 레이턴시 클래스(기본: PortAudio의 높은 레이턴시)"
+
+msgid ""
+"Windows WASAPI: open the device in exclusive mode (no mixer, no conversi"
+"on)"
+msgstr "Windows WASAPI: 장치를 배타 모드로 엽니다(믹서 없음, 변환 없음)"
+
+msgid "macOS: let ReverbScope set the device's sample rate instead of converting"
+msgstr "macOS: 변환하지 않고 ReverbScope가 장치 샘플레이트를 설정합니다"
+
+msgid "recommended input"
+msgstr "권장 입력"
+
+msgid "recommended output"
+msgstr "권장 출력"
+
+msgid "devices"
+msgstr "장치"
+
+msgid "rank"
+msgstr "순위"
+
+msgid "Warning: {message}"
+msgstr "경고: {message}"
+
+msgid "record"
+msgstr "녹음"
+
+msgid "play"
+msgstr "재생"
+
+msgid "Audio Device Inspector"
+msgstr "오디오 장치 검사기"
+
+msgid "All host APIs"
+msgstr "모든 호스트 API"
+
+msgid "Probe sample rates"
+msgstr "샘플레이트 조사"
+
+msgid "Copy as JSON"
+msgstr "JSON으로 복사"
+
+msgid "Environment Report"
+msgstr "환경 보고서"
+
+msgid "Copy"
+msgstr "복사"
+
+msgid ""
+"Every host API and device PortAudio reports. Probing asks each device wh"
+"ich sample rates it accepts for one channel; nothing is played. See docs"
+"/AUDIO_DEVICES.md for what each host API does to the signal."
+msgstr ""
+"PortAudio가 보고하는 모든 호스트 API와 장치. 조사는 각 장치에 채널 하나에서 받는 샘플레이트를 묻습니다. 재생하지 않"
+"습니다. 각 호스트 API가 신호에 하는 일은 docs/AUDIO_DEVICES.md를 보세요."
+
+msgid "Backend {backend}; {version}; host APIs: {apis}; {n} device(s)."
+msgstr "백엔드 {backend}; {version}; 호스트 API: {apis}; 장치 {n}대."
+
+msgid "&Developer"
+msgstr "개발자(&D)"
+
+msgid "Audio Device &Inspector..."
+msgstr "오디오 장치 검사기(&I)…"
+
+msgid "Open &Data Folder"
+msgstr "데이터 폴더 열기(&D)"
+
+msgid ""
+"How ReverbScope talks to your interface: WASAPI, ASIO, WDM-KS, DirectSound"
+" or MME on Windows, Core Audio on macOS, ALSA or JACK on Linux. Input an"
+"d output must use the same one. \"System default\" uses the devices your s"
+"ystem uses; a star marks the entry recommended for each device."
+msgstr ""
+"ReverbScope가 인터페이스와 대화하는 방식입니다. Windows에서는 WASAPI, ASIO, WDM-KS, DirectSou"
+"nd 또는 MME, macOS에서는 Core Audio, Linux에서는 ALSA 또는 JACK. 입력과 출력은 같은 것을 써야 "
+"합니다. \"시스템 기본\"은 시스템이 쓰는 장치입니다. 별표는 각 장치의 권장 항목입니다."
+
+msgid "Advanced audio options (developer edition)"
+msgstr "고급 오디오 옵션(개발자 에디션)"
+
+msgid "PortAudio default (high)"
+msgstr "PortAudio 기본(높음)"
+
+msgid "Low"
+msgstr "낮음"
+
+msgid "High"
+msgstr "높음"
+
+msgid "WASAPI exclusive mode (bypasses the Windows audio engine)"
+msgstr "WASAPI 배타 모드(Windows 오디오 엔진을 우회)"
+
+msgid "Core Audio: set the device to the requested rate, never convert"
+msgstr "Core Audio: 장치를 요청 레이트로 설정하고 변환하지 않음"
+
+msgid "Latency"
+msgstr "레이턴시"
+
+msgid "Two devices, two clocks"
+msgstr "장치 둘, 클록 둘"
+
+msgid "Measure anyway?"
+msgstr "그래도 측정할까요?"
+
+msgid "Follow the system"
+msgstr "시스템을 따름"
+
+msgid "Light"
+msgstr "라이트"
+
+msgid "Dark"
+msgstr "다크"
+
+msgid ""
+"Show developer tools (Developer menu, advanced audio options; after a re"
+"start)"
+msgstr "개발자 도구 표시(개발자 메뉴, 고급 오디오 옵션; 다시 시작한 뒤)"
+
+msgid "Theme"
+msgstr "테마"
+
+msgid "Compare two sessions"
+msgstr "세션 두 개 비교"
+
+msgid ""
+"Every difference carries a validity: ReverbScope says when two takes canno"
+"t be compared rather than printing a delta."
+msgstr "모든 차이에 유효성이 붙습니다. 두 테이크를 비교할 수 없으면 차이를 찍지 않고 그렇게 말합니다."
+
+msgid "Metrics"
+msgstr "지표"
+
+msgid "Frequency response difference"
+msgstr "주파수 응답 차이"
+
+msgid "Resonances"
+msgstr "공진"
+
+msgid "also ask every device which sample rates it accepts (nothing is played)"
+msgstr "각 장치가 받는 샘플레이트도 묻습니다(재생하지 않음)"
+
+msgid ""
+"Paste this report into a GitHub issue so the problem can be reproduced. "
+"Nothing is sent automatically. Probing asks each device which sample rat"
+"es it accepts; nothing is played. Device names can contain personal name"
+"s: review the text before posting."
+msgstr ""
+"이 보고서를 GitHub 이슈에 붙여 넣으면 재현할 수 있습니다. 자동으로 보내지 않습니다. 조사는 각 장치에 받는 샘플레이트를 "
+"묻습니다. 재생하지 않습니다. 장치 이름에 사람 이름이 들어 있을 수 있습니다. 올리기 전에 글을 검토하세요."
+
+msgid "The log file and settings are in this folder."
+msgstr "로그 파일과 설정은 이 폴더에 있습니다."
+
+msgid "Open Issue Page"
+msgstr "이슈 페이지 열기"
+
+msgid "&Environment Report for Bug Reports..."
+msgstr "버그 보고용 환경 보고서(&E)…"
+
+msgid "Open Data Folder"
+msgstr "데이터 폴더 열기"
+
+msgid "Audio backend unavailable"
+msgstr "오디오 백엔드를 쓸 수 없습니다"
+
+msgid "No audio device list is available; Universal DAW Mode still works."
+msgstr "오디오 장치 목록을 쓸 수 없습니다. 유니버설 DAW 모드는 동작합니다."
+
+msgid "Audio backend unavailable: {error}"
+msgstr "오디오 백엔드를 쓸 수 없습니다: {error}"
+
+msgid ""
+"The audio device reported dropped or late buffers during the take, so sa"
+"mples may be missing and the result may be smeared. Close other audio pr"
+"ograms, choose a higher latency or buffer size, and measure again."
+msgstr ""
+"테이크 중에 오디오 장치가 누락되거나 늦은 버퍼를 보고했으므로 샘플이 빠지고 결과가 번질 수 있습니다. 다른 오디오 프로그램을 닫"
+"고 레이턴시나 버퍼를 키운 뒤 다시 측정하세요."
+
+msgid ""
+"The recording has no background noise at all: its quiet part is exact di"
+"gital silence, which a microphone never records. Check that you exported"
+" the microphone track, not the test-signal track, and that no gate or no"
+"ise reduction is on the microphone track. The room figures are not relia"
+"ble until then."
+msgstr ""
+"녹음에 배경 소음이 전혀 없습니다. 조용한 부분이 완전한 디지털 무음인데, 마이크는 그렇게 녹음하지 않습니다. 테스트 신호 트랙이"
+" 아니라 마이크 트랙을 내보냈는지, 마이크 트랙에 게이트나 노이즈 감소가 없는지 확인하세요. 그때까지 방 숫자는 신뢰할 수 없습니"
+"다."
+
+msgid "Audio system (host API)"
+msgstr "오디오 시스템(호스트 API)"
+
+msgid "Background noise, RMS"
+msgstr "배경 소음, RMS"
+
+msgid "Loopback path delay"
+msgstr "루프백 경로 지연"
+
+msgid "Broadband"
+msgstr "광대역"
+
+msgid "outside the sweep's range"
+msgstr "스윕 범위 밖"
+
+msgid "not comparable"
+msgstr "비교할 수 없음"
+
+msgid "Time after direct sound (ms)"
+msgstr "직접음 이후 시간(ms)"
+
+msgid "Time after direct sound (s)"
+msgstr "직접음 이후 시간(s)"
+
+msgid "Amplitude (relative)"
+msgstr "진폭(상대)"
+
+msgid "Impulse response, first 100 ms"
+msgstr "임펄스 응답, 처음 100 ms"
+
+msgid "Envelope (dB re direct)"
+msgstr "엔벨로프(dB, 직접음 기준)"
+
+msgid "Energy-time curve"
+msgstr "에너지-시간 곡선"
+
+msgid "raw"
+msgstr "원본"
+
+msgid "1/{fraction}-octave smoothed"
+msgstr "1/{fraction}옥타브 평활"
+
+msgid "interface (loopback)"
+msgstr "인터페이스(루프백)"
+
+msgid "Frequency (Hz)"
+msgstr "주파수(Hz)"
+
+msgid "Magnitude (dB, relative)"
+msgstr "크기(dB, 상대)"
+
+msgid "Frequency response ({window:.2f} s window)"
+msgstr "주파수 응답({window:.2f} s 창)"
+
+msgid "Time (s)"
+msgstr "시간(s)"
+
+msgid "Schroeder decay (dB)"
+msgstr "Schroeder 감쇠(dB)"
+
+msgid "Energy decay curves (Lundeby-truncated)"
+msgstr "에너지 감쇠 곡선(Lundeby 절단)"
+
+msgid "No quiet segment available"
+msgstr "쓸 수 있는 무음 구간이 없습니다"
+
+msgid "PSD (dB re FS^2/Hz)"
+msgstr "PSD (dB re FS^2/Hz)"
+
+msgid "Background noise: {rms:.1f} dBFS RMS ({segment}), uncalibrated"
+msgstr "배경 소음: {rms:.1f} dBFS RMS({segment}), 미교정"
+
+msgid "envelope"
+msgstr "엔벨로프"
+
+msgid "candidate reflections"
+msgstr "반사 후보"
+
+msgid "threshold"
+msgstr "임계값"
+
+msgid "Level re direct sound (dB)"
+msgstr "직접음 기준 레벨(dB)"
+
+msgid "Early reflections (direct-sound confidence: {confidence})"
+msgstr "초기 반사(직접음 신뢰도: {confidence})"
+
+msgid "General"
+msgstr "일반"
+
+msgid "Vocals"
+msgstr "보컬"
+
+msgid "Voice-over"
+msgstr "보이스오버"
+
+msgid "Acoustic guitar"
+msgstr "어쿠스틱 기타"
+
+msgid "Drums"
+msgstr "드럼"
+
+msgid "Room microphone"
+msgstr "룸 마이크"
+
+msgid "Choir / ensemble"
+msgstr "합창 / 앙상블"
+
+msgid "The same report that reverbscope analyze prints; warnings are at the end."
+msgstr "reverbscope analyze가 출력하는 것과 같은 보고서입니다. 경고는 끝에 있습니다."
+
+msgid "usage: "
+msgstr "사용법: "
+
+msgid "positional arguments"
+msgstr "위치 인수"
+
+msgid "options"
+msgstr "옵션"
+
+msgid "%(heading)s:"
+msgstr "%(heading)s:"
+
+msgid " (default: %(default)s)"
+msgstr " (기본: %(default)s)"
+
+msgid ""
+"%(prog)s: error: %(message)s\n"
+msgstr ""
+"%(prog)s: 오류: %(message)s\n"
+
+msgid "argument %(argument_name)s: %(message)s"
+msgstr "인수 %(argument_name)s: %(message)s"
+
+msgid "ambiguous option: %(option)s could match %(matches)s"
+msgstr "모호한 옵션: %(option)s은(는) %(matches)s과(와) 맞을 수 있습니다"
+
+msgid "expected one argument"
+msgstr "인수가 하나 필요합니다"
+
+msgid "expected at least one argument"
+msgstr "인수가 적어도 하나 필요합니다"
+
+msgid "expected at most one argument"
+msgstr "인수는 많아야 하나입니다"
+
+msgid "invalid %(type)s value: %(value)r"
+msgstr "잘못된 %(type)s 값: %(value)r"
+
+msgid "invalid choice: %(value)r (choose from %(choices)s)"
+msgstr "잘못된 선택: %(value)r(%(choices)s 중에서 고르세요)"
+
+msgid "not allowed with argument %s"
+msgstr "인수 %s와(과) 함께 쓸 수 없습니다"
+
+msgid "one of the arguments %s is required"
+msgstr "인수 %s 중 하나가 필요합니다"
+
+msgid "the following arguments are required: %s"
+msgstr "다음 인수가 필요합니다: %s"
+
+msgid "unrecognized arguments: %s"
+msgstr "알 수 없는 인수: %s"
+
+msgid "can't open '%(filename)s': %(error)s"
+msgstr "'%(filename)s'을(를) 열 수 없습니다: %(error)s"
+
+msgid "DEMO"
+msgstr "데모"
+
+msgctxt "diagnostic"
+msgid "one or both sessions have no verified quiet segment"
+msgstr "한쪽 또는 양쪽 세션에 검증된 무음 구간이 없습니다"
+
+msgctxt "diagnostic"
+msgid "gain not declared equal"
+msgstr "게인이 같다고 선언되지 않았습니다"
+
+msgctxt "diagnostic"
+msgid "placement heights are compared only when both results are tier 2"
+msgstr "배치 높이는 양쪽 결과가 단계 2일 때만 비교합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"ISO 3382-1 quotes a just-noticeable difference for reverberation time of"
+" about {jnd_percent:g} % (clause not verified against the standard text)"
+". A change is not called significant from a single pair of positions."
+msgstr ""
+"ISO 3382-1은 잔향 시간의 막 알아챌 수 있는 차이를 약 {jnd_percent:g} %로 둡니다(조항을 규격 본문과 대조"
+"하지 않음). 위치 한 쌍만으로는 변화를 유의미하다고 하지 않습니다."
+
+msgctxt "diagnostic"
+msgid ""
+"sample rates differ ({baseline_rate} Hz vs {candidate_rate} Hz); compari"
+"son is still allowed"
+msgstr "샘플레이트가 다릅니다({baseline_rate} Hz 대 {candidate_rate} Hz). 비교는 계속합니다"
+
+msgctxt "diagnostic"
+msgid "sweep durations differ ({baseline_s} s vs {candidate_s} s)"
+msgstr "스윕 길이가 다릅니다({baseline_s} s 대 {candidate_s} s)"
+
+msgctxt "diagnostic"
+msgid "sweep levels differ ({baseline_dbfs} dBFS vs {candidate_dbfs} dBFS)"
+msgstr "스윕 레벨이 다릅니다({baseline_dbfs} dBFS 대 {candidate_dbfs} dBFS)"
+
+msgctxt "diagnostic"
+msgid "one or both sides have no number"
+msgstr "한쪽 또는 양쪽에 숫자가 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"candidate minus baseline (dB) on a shared log grid inside the common exc"
+"itation band"
+msgstr "공통 여기 대역 안의 공유 로그 격자에서 후보 빼기 기준(dB)"
+
+msgctxt "diagnostic"
+msgid ""
+"early reflections are not compared unless both sides have high direct-so"
+"und confidence (baseline {baseline_confidence}, candidate {candidate_con"
+"fidence})"
+msgstr ""
+"초기 반사는 양쪽 직접음 신뢰도가 높을 때만 비교합니다(기준 {baseline_confidence}, 후보 {candidate_c"
+"onfidence})"
+
+msgctxt "diagnostic"
+msgid "frequency-response curves are missing on one or both sides (--no-curves)"
+msgstr "한쪽 또는 양쪽에 주파수 응답 곡선이 없습니다(--no-curves)"
+
+msgctxt "diagnostic"
+msgid "one or both results have no excitation band, so they cannot be compared"
+msgstr "한쪽 또는 양쪽 결과에 여기 대역이 없어 비교할 수 없습니다"
+
+msgctxt "diagnostic"
+msgid "the excitation bands do not overlap"
+msgstr "여기 대역이 겹치지 않습니다"
+
+msgctxt "diagnostic"
+msgid "baseline {validity} ({reason})"
+msgstr "기준 {validity}({reason})"
+
+msgctxt "diagnostic"
+msgid "baseline {validity}"
+msgstr "기준 {validity}"
+
+msgctxt "diagnostic"
+msgid "candidate {validity} ({reason})"
+msgstr "후보 {validity}({reason})"
+
+msgctxt "diagnostic"
+msgid "candidate {validity}"
+msgstr "후보 {validity}"
+
+msgctxt "diagnostic"
+msgid "metrics are not both VALID"
+msgstr "지표가 둘 다 VALID가 아닙니다"
+
+msgctxt "diagnostic"
+msgid "placement lengths are not both VALID"
+msgstr "배치 길이가 둘 다 VALID가 아닙니다"
+
+msgctxt "diagnostic"
+msgid ""
+"common excitation band {low:g}-{high:g} Hz is {octaves:.2f} octaves, nar"
+"rower than the required {required:g} octave"
+msgstr ""
+"공통 여기 대역 {low:g}-{high:g} Hz는 {octaves:.2f}옥타브로, 필요한 {required:g}옥타브보다 좁"
+"습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"RT60 estimate missing on one or both sides (never taken from an invalid "
+"metric)"
+msgstr "한쪽 또는 양쪽에 RT60 추정이 없습니다(유효하지 않은 지표에서는 가져오지 않음)"
+
+msgctxt "diagnostic"
+msgid "band missing from the baseline"
+msgstr "기준에 해당 밴드가 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"path delay is compared only when both results used a compensated loopbac"
+"k"
+msgstr "경로 지연은 양쪽 결과가 보상된 루프백을 썼을 때만 비교합니다"
+
+msgctxt "diagnostic"
+msgid "band missing from the candidate"
+msgstr "후보에 해당 밴드가 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"ISO 3382-2:2008, 4.3.1, Table 1, read from the standard's preview pages "
+"(cdn.standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnot"
+"es not implemented"
+msgstr ""
+"ISO 3382-2:2008, 4.3.1, 표 1. 규격 미리보기 페이지(cdn.standards.iteh.ai의 ISO 3382"
+"-2:2008 샘플)를 2026-09-24에 읽었습니다. 각주는 구현하지 않았습니다"
+
+msgctxt "diagnostic"
+msgid "Decay curves are never averaged; only VALID T values enter the mean."
+msgstr "감쇠 곡선은 평균하지 않습니다. 평균에는 VALID T 값만 들어갑니다."
+
+msgctxt "diagnostic"
+msgid ""
+"ISO 3382-2 class {klass}: {n_source} source position(s), {n_mic} microph"
+"one position(s), {combos} source-microphone combination(s) against ISO 3"
+"382-2:2008, 4.3.1, Table 1, read from the standard's preview pages (cdn."
+"standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnotes no"
+"t implemented. The class is a label; the other clause 4 conditions (posi"
+"tion spacing, distances from surfaces) are not checked."
+msgstr ""
+"ISO 3382-2 등급 {klass}: 음원 위치 {n_source}, 마이크 위치 {n_mic}, 음원-마이크 조합 {comb"
+"os}. ISO 3382-2:2008, 4.3.1, 표 1. 규격 미리보기 페이지(cdn.standards.iteh.ai의 ISO"
+" 3382-2:2008 샘플)를 2026-09-24에 읽었습니다. 각주는 구현하지 않았습니다. 등급은 레이블입니다. 조항 4의 다"
+"른 조건(위치 간격, 면에서의 거리)은 확인하지 않습니다."
+
+msgctxt "diagnostic"
+msgid "no VALID values to average"
+msgstr "평균할 VALID 값이 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"Candidates only: a peak in the low-frequency response with a long narrow"
+"-band decay may be a room resonance, but room-mode identification is not"
+" attempted in v0.1."
+msgstr "후보만: 저역 응답의 피크와 긴 협대역 감쇠는 방 공진일 수 있지만, v0.1에서는 룸 모드 식별을 시도하지 않습니다."
+
+msgctxt "diagnostic"
+msgid ""
+"the analysed response is {length_s:.2f} s long, so its resolution is {re"
+"solution_hz:.1f} Hz and peaks below {low:.0f} Hz cannot be separated"
+msgstr ""
+"분석한 응답이 {length_s:.2f} s이므로 분해능은 {resolution_hz:.1f} Hz입니다. {low:.0f} Hz"
+" 아래 피크는 나눌 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"no part of the resonance range was excited and resolved; no search was m"
+"ade"
+msgstr "공진 범위의 어느 부분도 여기·분해되지 않아 탐색하지 않았습니다"
+
+msgctxt "diagnostic"
+msgid "frequency resolution is too coarse for the resonance search"
+msgstr "주파수 분해능이 너무 거칠어 공진 탐색에 부족합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"some candidates have too few measurable neighbouring bands for the surro"
+"undings comparison; their decay is not called distinguishable"
+msgstr "일부 후보는 주변 비교에 쓸 이웃 밴드가 부족하여 감쇠를 구분할 수 있다고 하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the search is limited to {low:.0f}-{high:.0f} Hz, the part of the range "
+"whose 1/3-octave band lies inside the excited {band_low:.0f}-{band_high:"
+".0f} Hz"
+msgstr ""
+"탐색은 {low:.0f}-{high:.0f} Hz로 제한합니다. 여기된 {band_low:.0f}-{band_high:.0f} H"
+"z 안에 1/3옥타브 밴드가 들어가는 부분입니다"
+
+msgctxt "diagnostic"
+msgid ""
+"candidates are envelope peaks standing above the local diffuse level; in"
+" a dense early tail some candidates may be statistical rather than discr"
+"ete reflections"
+msgstr "후보는 국소 확산 레벨 위에 선 엔벨로프 피크입니다. 밀한 초기 테일에서는 이산 반사가 아니라 통계적인 후보가 있을 수 있습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the impulse response ends {analysed_ms:.1f} ms after the direct sound, s"
+"o only that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be sea"
+"rched"
+msgstr ""
+"임펄스 응답이 직접음 {analysed_ms:.1f} ms 뒤에서 끝나므로 {min_ms:.0f}-{max_ms:.0f} ms 창"
+" 중 그 부분만 찾을 수 있었습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"impulse response is too short after the direct sound for reflection anal"
+"ysis"
+msgstr "직접음 이후가 너무 짧아 반사 분석에 부족합니다"
+
+msgctxt "diagnostic"
+msgid "only the {count} strongest reflections are listed"
+msgstr "가장 강한 반사 {count}개만 나열합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is low; reflection delays are relative"
+" to the strongest peak, which may not be the direct sound"
+msgstr "직접음 검출 신뢰도가 낮습니다. 반사 지연은 가장 강한 피크 기준이며, 그것이 직접음이 아닐 수 있습니다"
+
+msgctxt "diagnostic"
+msgid "direct sound (time 0 = the detected broadband direct sound)"
+msgstr "직접음(시각 0 = 검출한 광대역 직접음)"
+
+msgctxt "diagnostic"
+msgid ""
+"dB re (full-scale sine RMS)^2 per Hz: the power spectral density is scal"
+"ed so that 10*log10 of its integral is the reported AES17 RMS level in d"
+"BFS"
+msgstr ""
+"dB re (풀스케일 사인 RMS)^2 per Hz: 파워 스펙트럼 밀도는 적분의 10*log10이 보고하는 AES17 RMS(d"
+"BFS)가 되도록 스케일합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"c = 331.3 * sqrt(1 + T/273.15) m/s (adiabatic ideal-gas relation for dry"
+" air; 343.2 m/s at 20 C, numerically equal to the ISO 9613-1 form c = 34"
+"3.2 * sqrt(T/293.15))"
+msgstr ""
+"c = 331.3 * sqrt(1 + T/273.15) m/s(건조 공기의 단열 이상기체. 20 C에서 343.2 m/s. ISO"
+" 9613-1의 c = 343.2 * sqrt(T/293.15)와 수치가 같음)"
+
+msgctxt "diagnostic"
+msgid ""
+"No coordinate, room length, room width or wall distance is reported. One"
+" omnidirectional microphone at one position measures path lengths, not d"
+"irections, and the deconvolved time origin contains the interface round-"
+"trip latency, so there is no absolute time of flight: the four independe"
+"nt arrival equations constrain six unknowns, a deficit of three without "
+"a tape-measured loudspeaker-to-microphone distance and two with it. The "
+"remaining freedom is the direction of the loudspeaker-to-microphone vect"
+"or, and every direction reproduces the measured arrival times exactly. O"
+"nly quantities invariant over that family are reported: the product of t"
+"he two perpendicular distances to a plane, and the vertical axis once on"
+"e perpendicular distance is supplied by the user."
+msgstr ""
+"좌표, 방 길이, 방 너비, 벽 거리는 보고하지 않습니다. 전방향 마이크 하나·위치 하나로는 경로 길이는 재도 방향은 모르고, 역"
+"합성의 시간 원점에는 인터페이스 왕복 레이턴시가 들어 절대 비행 시간이 없습니다. 독립 도착 방정식 4개가 미지 6개를 묶고, 줄"
+"자로 잰 스피커-마이크 거리가 없으면 부족은 3, 있으면 2입니다. 남는 자유도는 스피커-마이크 벡터의 방향이며, 어떤 방향이든 "
+"잰 도착 시각을 정확히 재현합니다. 그 족에서 불변인 양만 보고합니다. 평면에 대한 두 수직 거리의 곱과, 수직 거리를 하나 사용"
+"자가 넣었을 때의 수직축입니다."
+
+msgctxt "diagnostic"
+msgid ""
+"propagated from the stated tape-measure, temperature and peak-location u"
+"ncertainties only; it excludes model error (that the reflector is flat, "
+"rigid and large compared with the wavelength, that the arrival is a firs"
+"t-order specular reflection, and that the user measured to the plane tha"
+"t actually reflected), which is usually larger"
+msgstr ""
+"명시한 줄자·기온·피크 위치 불확도만 전파합니다. 모델 오차(반사면이 파장에 비해 평평하고 단단하며 큼, 도착이 1차 경면 반사,"
+" 사용자가 실제로 반사한 면을 잽)는 빼며, 보통 그쪽이 더 큽니다"
+
+msgctxt "diagnostic"
+msgid "relative dB (0 dB = flat loopback of the reference sweep)"
+msgstr "상대 dB(0 dB = 참조 스윕의 평탄한 루프백)"
+
+msgctxt "diagnostic"
+msgid "uncalibrated: levels are dBFS, not dB SPL"
+msgstr "미교정: 레벨은 dBFS이며 dB SPL이 아닙니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the sweep in the recording runs at {percent:.1f} % of the speed it was g"
+"enerated at: the DAW time-stretched it (Warp, Flex Time, Follow Tempo, e"
+"lastic audio or a stretch mode). Switch time-stretching off for the swee"
+"p clip and measure again"
+msgstr ""
+"녹음 속 스윕이 생성 속도의 {percent:.1f} %입니다. DAW가 타임스트레치했습니다(Warp, Flex Time, Fol"
+"low Tempo, elastic audio 또는 스트레치 모드). 스윕 클립의 타임스트레치를 끄고 다시 측정하세요"
+
+msgctxt "diagnostic"
+msgid ""
+"the sweep in the recording runs at {percent:.1f} % of the speed it was g"
+"enerated at: a file generated at {generated_hz} Hz was played at {played"
+"_hz} Hz without sample-rate conversion (a DAW project at another sample "
+"rate that did not convert the file on import). Generate the sweep at the"
+" project's sample rate, or let the DAW convert it on import, and measure"
+" again"
+msgstr ""
+"녹음 속 스윕이 생성 속도의 {percent:.1f} %입니다. {generated_hz} Hz로 만든 파일을 {played_hz"
+"} Hz로 샘플레이트 변환 없이 재생했습니다(다른 레이트의 DAW 프로젝트가 가져올 때 변환하지 않음). 프로젝트 샘플레이트로 스"
+"윕을 만들거나 가져올 때 DAW가 변환하게 한 뒤 다시 측정하세요"
+
+msgctxt "diagnostic"
+msgid "all decay metrics are marked unreliable: {reason}"
+msgstr "모든 감쇠 지표를 신뢰할 수 없음으로 표시했습니다: {reason}"
+
+msgid "sweep settings"
+msgstr "스윕 설정"
+
+msgid "estimated from reference audio"
+msgstr "참조 오디오에서 추정"
+
+msgid "declared by the user"
+msgstr "사용자가 선언"
+
+msgid "survey"
+msgstr "개략"
+
+msgid "engineering"
+msgstr "공학"
+
+msgid "precision"
+msgstr "정밀"
+
+msgid "below survey"
+msgstr "개략 미만"
+
+msgid "unknown project command {command}"
+msgstr "알 수 없는 프로젝트 명령 {command}"
+
+msgid "at least one input channel is required"
+msgstr "입력 채널이 적어도 하나 필요합니다"
+
+msgid "input channels are 1-based and must be >= 1"
+msgstr "입력 채널은 1부터이며 1 이상이어야 합니다"
+
+msgid "each input channel may be listed once"
+msgstr "각 입력 채널은 한 번만 나열할 수 있습니다"
+
+msgid "the loopback channel is 1-based and must be >= 1"
+msgstr "루프백 채널은 1부터이며 1 이상이어야 합니다"
+
+msgid ""
+"input {channel} cannot be both the microphone and the loopback; record t"
+"he loopback on a different input"
+msgstr "입력 {channel}을(를) 마이크와 루프백으로 같이 쓸 수 없습니다. 루프백은 다른 입력에 녹음하세요"
+
+msgid "playback level must be <= 0 dBFS"
+msgstr "재생 레벨은 0 dBFS 이하여야 합니다"
+
+msgid "signal is silent"
+msgstr "신호가 무음입니다"
+
+msgid "latency must be 'low' or 'high'"
+msgstr "레이턴시는 'low' 또는 'high'여야 합니다"
+
+msgid "unknown audio backend {name}; available: portaudio, fake"
+msgstr "알 수 없는 오디오 백엔드 {name}. 사용 가능: portaudio, fake"
+
+msgid "sample rate {rate} Hz is not in {supported}"
+msgstr "샘플레이트 {rate} Hz가 {supported}에 없습니다"
+
+msgid "kind must be 'input' or 'output'"
+msgstr "kind는 'input' 또는 'output'이어야 합니다"
+
+msgid "fake backend has no device {device}"
+msgstr "fake 백엔드에 장치 {device}가 없습니다"
+
+msgid "fake backend only has device 0"
+msgstr "fake 백엔드에는 장치 0만 있습니다"
+
+msgid "channels are 1-based and must be >= 1"
+msgstr "채널은 1부터이며 1 이상이어야 합니다"
+
+msgid "measurement stopped"
+msgstr "측정을 중지했습니다"
+
+msgid "playback/recording timed out"
+msgstr "재생/녹음이 시간 초과되었습니다"
+
+msgid "playback/recording failed: {error}"
+msgstr "재생/녹음에 실패했습니다: {error}"
+
+msgid "playback/recording failed in the audio callback: {error}"
+msgstr "오디오 콜백에서 재생/녹음에 실패했습니다: {error}"
+
+msgid "the audio stream ended after {done} of {total} frames"
+msgstr "오디오 스트림이 {total}프레임 중 {done}에서 끝났습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the audio device reported {count} buffer problem(s) during the take ({fl"
+"ags}); the recording may contain dropouts"
+msgstr "테이크 중에 오디오 장치가 버퍼 문제를 {count}건 보고했습니다({flags}). 녹음에 드롭아웃이 있을 수 있습니다"
+
+msgid ""
+"the audio backend (sounddevice / PortAudio) is not available; Standalone"
+" Mode needs it, Universal DAW Mode does not"
+msgstr ""
+"오디오 백엔드(sounddevice / PortAudio)를 쓸 수 없습니다. 독립 실행 모드에는 필요하고 유니버설 DAW 모드에"
+"는 필요 없습니다"
+
+msgid "cannot query audio devices: {error}"
+msgstr "오디오 장치를 조회할 수 없습니다: {error}"
+
+msgid "input device {device} does not support {rate} Hz: {error}"
+msgstr "입력 장치 {device}가 {rate} Hz를 지원하지 않습니다: {error}"
+
+msgid "output device {device} does not support {rate} Hz: {error}"
+msgstr "출력 장치 {device}가 {rate} Hz를 지원하지 않습니다: {error}"
+
+msgctxt "diagnostic"
+msgid ""
+"WASAPI: shared mode goes through the Windows audio engine and accepts on"
+"ly the device's Default Format rate; exclusive mode (--wasapi-exclusive)"
+" bypasses the engine at a rate the hardware supports"
+msgstr ""
+"WASAPI: 공유 모드는 Windows 오디오 엔진을 지나 장치의 Default Format 레이트만 받습니다. 배타 모드(--"
+"wasapi-exclusive)는 하드웨어가 받는 레이트로 엔진을 우회합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"WDM kernel streaming: bypasses the Windows mixer; the device must suppor"
+"t the rate"
+msgstr "WDM 커널 스트리밍: Windows 믹서를 우회합니다. 장치가 해당 레이트를 지원해야 합니다"
+
+msgctxt "diagnostic"
+msgid "ASIO: direct driver path (not included in ReverbScope's desktop bundles)"
+msgstr "ASIO: 직접 드라이버 경로(ReverbScope 데스크톱 번들에는 없음)"
+
+msgctxt "diagnostic"
+msgid ""
+"DirectSound: deprecated, runs on the Windows audio engine; resamples and"
+" mixes, and PortAudio does not check its rates (all look accepted); pref"
+"er WASAPI"
+msgstr ""
+"DirectSound: 권장되지 않음. Windows 오디오 엔진에서 리샘플하고 믹스하며, PortAudio는 레이트를 검사하지 "
+"않아 모두 받은 것처럼 보입니다. WASAPI를 쓰세요"
+
+msgctxt "diagnostic"
+msgid ""
+"MME: legacy path through the Windows audio engine; resamples and mixes, "
+"truncates device names; prefer WASAPI"
+msgstr "MME: Windows 오디오 엔진을 지나는 레거시 경로. 리샘플하고 믹스하며 장치 이름을 자릅니다. WASAPI를 쓰세요"
+
+msgctxt "diagnostic"
+msgid ""
+"Core Audio: the device runs at its nominal rate (Audio MIDI Setup) and P"
+"ortAudio converts other rates, unless --coreaudio-set-rate sets the devi"
+"ce rate and refuses to convert"
+msgstr ""
+"Core Audio: 장치는 공칭 레이트(Audio MIDI Setup)로 동작하고 PortAudio가 다른 레이트를 변환합니다."
+" --coreaudio-set-rate이면 장치 레이트를 설정하고 변환을 거부합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"ALSA: a hw: device is direct; default, pulse, pipewire, dmix and plug de"
+"vices may resample"
+msgstr ""
+"ALSA: hw: 장치는 직접입니다. default, pulse, pipewire, dmix, plug 장치는 리샘플할 수 있습니"
+"다"
+
+msgctxt "diagnostic"
+msgid "JACK: runs at the JACK server's rate only"
+msgstr "JACK: JACK 서버 레이트로만 동작합니다"
+
+msgctxt "diagnostic"
+msgid "OSS: legacy Linux interface"
+msgstr "OSS: 레거시 Linux 인터페이스"
+
+msgctxt "diagnostic"
+msgid "synthetic backend: nothing is played"
+msgstr "합성 백엔드: 재생하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"shared-mode engine buffer default 10 ms; exclusive uses the device perio"
+"d"
+msgstr "공유 모드 엔진 버퍼 기본 10 ms. 배타는 장치 주기를 씁니다"
+
+msgctxt "diagnostic"
+msgid "WaveRT compiled defaults 10 / 40 ms (WaveCyclic 10 / 85 ms)"
+msgstr "WaveRT 컴파일 기본 10 / 40 ms(WaveCyclic 10 / 85 ms)"
+
+msgctxt "diagnostic"
+msgid "preferred / maximum driver buffer"
+msgstr "드라이버의 권장 / 최대 버퍼"
+
+msgctxt "diagnostic"
+msgid "PortAudio compiled defaults 120 / 240 ms"
+msgstr "PortAudio 컴파일 기본 120 / 240 ms"
+
+msgctxt "diagnostic"
+msgid "PortAudio compiled defaults 90 / 180 ms"
+msgstr "PortAudio 컴파일 기본 90 / 180 ms"
+
+msgctxt "diagnostic"
+msgid "fallback 10 / 100 ms when the device latency is unreadable"
+msgstr "장치 레이턴시를 읽을 수 없을 때의 대체 10 / 100 ms"
+
+msgctxt "diagnostic"
+msgid ""
+"compiled default (512-128)/fs / (2048-512)/fs: 8 / 32 ms at 48 kHz if ha"
+"rdware allows"
+msgstr "컴파일 기본 (512-128)/fs / (2048-512)/fs: 하드웨어가 되면 48 kHz에서 8 / 32 ms"
+
+msgctxt "diagnostic"
+msgid "port latency divided by the JACK server rate"
+msgstr "포트 레이턴시를 JACK 서버 레이트로 나눈 값"
+
+msgctxt "diagnostic"
+msgid "not assessed"
+msgstr "평가하지 않음"
+
+msgctxt "diagnostic"
+msgid ""
+"requested 4 fragments × 128 frames; low=(nfrags-1)*frag/fs (8 / 32 ms at"
+" 48 kHz if the driver keeps those sizes)"
+msgstr ""
+"요청은 프래그먼트 4개 × 128프레임. low=(nfrags-1)*frag/fs(드라이버가 그 크기를 유지하면 48 kHz에서 "
+"8 / 32 ms)"
+
+msgctxt "diagnostic"
+msgid "PortAudio host-API name on a given OS"
+msgstr "해당 OS의 PortAudio 호스트 API 이름"
+
+msgctxt "diagnostic"
+msgid "measured round-trip latency"
+msgstr "측정한 왕복 레이턴시"
+
+msgctxt "diagnostic"
+msgid "whether Windows/Core Audio expose loopback as extra channels"
+msgstr "Windows/Core Audio가 루프백을 추가 채널로 노출하는지"
+
+msgctxt "diagnostic"
+msgid "analogue line-output count"
+msgstr "아날로그 라인 출력 수"
+
+msgctxt "diagnostic"
+msgid "PortAudio channel count including ADAT at each rate"
+msgstr "각 레이트의 PortAudio 채널 수(ADAT 포함)"
+
+msgctxt "diagnostic"
+msgid "discrete sample-rate list (only a 28–200 kHz range is stated)"
+msgstr "이산 샘플레이트 목록(28–200 kHz 범위만 명시됨)"
+
+msgctxt "diagnostic"
+msgid ""
+"This machine's PortAudio device list (ALSA 0 devices, OSS 0 devices): no"
+" physical interface"
+msgstr "이 기기의 PortAudio 장치 목록(ALSA 0대, OSS 0대): 물리 인터페이스 없음"
+
+msgctxt "diagnostic"
+msgid "Measured full-duplex round-trip latency on any interface"
+msgstr "어떤 인터페이스에서든 잰 전이중 왕복 레이턴시"
+
+msgctxt "diagnostic"
+msgid ""
+"Pa_IsFormatSupported results on a physical interface (sample-rate negoti"
+"ation)"
+msgstr "물리 인터페이스의 Pa_IsFormatSupported 결과(샘플레이트 협상)"
+
+msgctxt "diagnostic"
+msgid ""
+"ASIO compiled numeric default latency (PortAudio stores the driver's buf"
+"fer only)"
+msgstr "ASIO 컴파일 수치 기본 레이턴시(PortAudio는 드라이버 버퍼만 저장)"
+
+msgctxt "diagnostic"
+msgid ""
+"JACK compiled numeric default latency (only jack_port_get_latency / serv"
+"er rate)"
+msgstr "JACK 컴파일 수치 기본 레이턴시(jack_port_get_latency / 서버 레이트만)"
+
+msgctxt "diagnostic"
+msgid ""
+"Core Audio device-specific latency (only the 10 / 100 ms fallback is sou"
+"rced)"
+msgstr "Core Audio 장치별 레이턴시(근거가 있는 것은 10 / 100 ms 대체만)"
+
+msgctxt "diagnostic"
+msgid ""
+"Scarlett 18i20 4th Gen analogue line-output count (spec page did not yie"
+"ld a clear figure)"
+msgstr "Scarlett 18i20 4th Gen 아날로그 라인 출력 수(사양 페이지에서 분명한 숫자를 얻지 못함)"
+
+msgctxt "diagnostic"
+msgid ""
+"USB Audio Class 1.0 / 2.0 discrete rate tables (USB-IF PDFs were not re-"
+"read)"
+msgstr "USB Audio Class 1.0 / 2.0 이산 레이트 표(USB-IF PDF는 다시 읽지 않음)"
+
+msgctxt "diagnostic"
+msgid ""
+"Hardware bit depth of a PortAudio stream (ReverbScope writes 32-bit float;"
+" manufacturer pages above state 24-bit converters)"
+msgstr ""
+"PortAudio 스트림의 하드웨어 비트 깊이(ReverbScope는 32-bit float로 씁니다. 위 제조사 페이지는 24-bi"
+"t 변환기를 말함)"
+
+msgctxt "diagnostic"
+msgid "ALSA plugin or sound-server device: may resample and mix"
+msgstr "ALSA 플러그인 또는 사운드 서버 장치: 리샘플하고 믹스할 수 있습니다"
+
+msgctxt "diagnostic"
+msgid "accepts none of ReverbScope's sample rates for recording"
+msgstr "녹음용으로 ReverbScope 샘플레이트를 하나도 받지 않습니다"
+
+msgctxt "diagnostic"
+msgid "accepts none of ReverbScope's sample rates for playback"
+msgstr "재생용으로 ReverbScope 샘플레이트를 하나도 받지 않습니다"
+
+msgctxt "diagnostic"
+msgid "no audio device found; Universal DAW Mode still works"
+msgstr "오디오 장치가 없습니다. 유니버설 DAW 모드는 동작합니다"
+
+msgid ""
+"playback ({output}) and recording ({input}) use different devices, which"
+" run on separate sample clocks; their drift smears the measurement. Use "
+"one interface for both, or an aggregate device with drift correction (ma"
+"cOS), and check the result with a loopback"
+msgstr ""
+"재생({output})과 녹음({input})이 다른 장치라 샘플 클록이 갈립니다. 드리프트가 측정을 번지게 합니다. 둘 다 한 "
+"인터페이스를 쓰거나 드리프트 보정이 있는 집합 장치(macOS)를 쓰고, 루프백으로 결과를 확인하세요"
+
+msgid ""
+"input channel {channel} does not exist on {device} ({count} input channe"
+"l(s))"
+msgstr "입력 채널 {channel}이(가) {device}에 없습니다(입력 {count}채널)"
+
+msgid ""
+"output channel {channel} does not exist on {device} ({count} output chan"
+"nel(s))"
+msgstr "출력 채널 {channel}이(가) {device}에 없습니다(출력 {count}채널)"
+
+msgid "there is no audio device {index}"
+msgstr "오디오 장치 {index}가 없습니다"
+
+msgid ""
+"input {input} ({input_api}) and output {output} ({output_api}) belong to"
+" different host APIs; PortAudio records and plays in one stream only wit"
+"hin one host API. Choose both on the same host API"
+msgstr ""
+"입력 {input}({input_api})과 출력 {output}({output_api})이 다른 호스트 API입니다. PortA"
+"udio는 한 호스트 API 안에서만 한 스트림으로 녹음·재생합니다. 둘 다 같은 호스트 API에서 고르세요"
+
+msgid ""
+"{api} has no default input device; choose the input device on {api} as w"
+"ell"
+msgstr "{api}에 기본 입력 장치가 없습니다. {api}에서도 입력 장치를 고르세요"
+
+msgid ""
+"{api} has no default output device; choose the output device on {api} as"
+" well"
+msgstr "{api}에 기본 출력 장치가 없습니다. {api}에서도 출력 장치를 고르세요"
+
+msgid ""
+"WASAPI exclusive mode was requested, but {device} is a {api} device; cho"
+"ose a Windows WASAPI device or drop --wasapi-exclusive"
+msgstr ""
+"WASAPI 배타 모드를 요청했지만 {device}는 {api} 장치입니다. Windows WASAPI 장치를 고르거나 --was"
+"api-exclusive를 빼세요"
+
+msgid ""
+"setting the Core Audio device rate was requested, but {device} is a {api"
+"} device; drop --coreaudio-set-rate"
+msgstr ""
+"Core Audio 장치 레이트 설정이 요청되었지만 {device}는 {api} 장치입니다. --coreaudio-set-rate"
+"를 빼세요"
+
+msgid "sample_rate must be positive"
+msgstr "sample_rate는 양수여야 합니다"
+
+msgid "samples must be 1-D (mono) or 2-D (frames, channels)"
+msgstr "samples는 1차원(모노) 또는 2차원(프레임, 채널)이어야 합니다"
+
+msgid "signal is empty"
+msgstr "신호가 비어 있습니다"
+
+msgid "signal contains NaN or infinite samples"
+msgstr "신호에 NaN 또는 무한대 샘플이 있습니다"
+
+msgid "channel {index} does not exist (signal has {count} channel(s))"
+msgstr "채널 {index}가 없습니다(신호는 {count}채널)"
+
+msgctxt "diagnostic"
+msgid ""
+"recording has {count} channels; channel {chosen} (highest RMS) was analy"
+"sed. Use the channel setting to choose explicitly."
+msgstr "녹음은 {count}채널입니다. 분석한 것은 채널 {chosen}(RMS가 가장 높음)입니다. 채널 설정에서 명시하세요."
+
+msgid "sample_rate must be a positive integer"
+msgstr "sample_rate는 양의 정수여야 합니다"
+
+msgid "sample_rate {rate} is not supported; use one of {supported}"
+msgstr "sample_rate {rate}는 지원되지 않습니다. {supported} 중 하나를 쓰세요"
+
+msgid "duration_s must be >= 0.5 s"
+msgstr "duration_s는 0.5 s 이상이어야 합니다"
+
+msgid "duration_s must be <= 120 s"
+msgstr "duration_s는 120 s 이하여야 합니다"
+
+msgid "start_hz must be > 0"
+msgstr "start_hz는 0보다 커야 합니다"
+
+msgid "end_hz must be greater than start_hz"
+msgstr "end_hz는 start_hz보다 커야 합니다"
+
+msgid "end_hz must not exceed the Nyquist frequency"
+msgstr "end_hz는 나이퀴스트 주파수를 넘으면 안 됩니다"
+
+msgid "fades must be >= 0"
+msgstr "페이드는 0 이상이어야 합니다"
+
+msgid "fades must be shorter than the sweep"
+msgstr "페이드는 스윕보다 짧아야 합니다"
+
+msgid "level_dbfs must be <= 0 dBFS"
+msgstr "level_dbfs는 0 dBFS 이하여야 합니다"
+
+msgid "level_dbfs below -80 dBFS is not a usable test signal"
+msgstr "-80 dBFS 미만의 level_dbfs는 쓸 수 있는 테스트 신호가 아닙니다"
+
+msgid "silences must be >= 0"
+msgstr "무음은 0 이상이어야 합니다"
+
+msgid "channel must be >= 0 or None"
+msgstr "channel은 0 이상이거나 None이어야 합니다"
+
+msgid "ir_pre_delay_ms must be >= 0"
+msgstr "ir_pre_delay_ms는 0 이상이어야 합니다"
+
+msgid "ir_max_length_s must be > 0.1 s"
+msgstr "ir_max_length_s는 0.1 s보다 커야 합니다"
+
+msgid "at least one octave band is required"
+msgstr "옥타브 밴드가 적어도 하나 필요합니다"
+
+msgid "octave band frequencies must be > 0"
+msgstr "옥타브 밴드 주파수는 0보다 커야 합니다"
+
+msgid "octave_bands_hz must be ascending"
+msgstr "octave_bands_hz는 오름차순이어야 합니다"
+
+msgid "fr_window_s must be > 0"
+msgstr "fr_window_s는 0보다 커야 합니다"
+
+msgid "fr_smoothing_fraction must be >= 0"
+msgstr "fr_smoothing_fraction은 0 이상이어야 합니다"
+
+msgid "noise_min_segment_s must be > 0"
+msgstr "noise_min_segment_s는 0보다 커야 합니다"
+
+msgid "reflection delay window is invalid"
+msgstr "반사 지연 창이 잘못되었습니다"
+
+msgid "reflections_threshold_db must be negative"
+msgstr "reflections_threshold_db는 음수여야 합니다"
+
+msgid "reflections_prominence_db must be > 0"
+msgstr "reflections_prominence_db는 0보다 커야 합니다"
+
+msgid "resonance_max_hz must be > 20 Hz"
+msgstr "resonance_max_hz는 20 Hz보다 커야 합니다"
+
+msgid "resonance_min_prominence_db must be > 0"
+msgstr "resonance_min_prominence_db는 0보다 커야 합니다"
+
+msgid "decay_noise_margin_db must be >= 0"
+msgstr "decay_noise_margin_db는 0 이상이어야 합니다"
+
+msgid "placement_distance_m must be between 0.20 m and 15 m"
+msgstr "placement_distance_m는 0.20 m와 15 m 사이여야 합니다"
+
+msgid "placement_mic_height_m must be between 0.02 m and 5 m"
+msgstr "placement_mic_height_m는 0.02 m와 5 m 사이여야 합니다"
+
+msgid "placement_temperature_c must be between -20 C and 50 C"
+msgstr "placement_temperature_c는 -20 C와 50 C 사이여야 합니다"
+
+msgid ""
+"placement_mic_height_m needs placement_distance_m: a height on its own c"
+"annot be turned into geometry"
+msgstr "placement_mic_height_m에는 placement_distance_m가 필요합니다. 높이만으로는 기하가 되지 않습니다"
+
+msgid "loopback_channel must be >= 0 or None"
+msgstr "loopback_channel은 0 이상이거나 None이어야 합니다"
+
+msgctxt "file record"
+msgid "settings"
+msgstr "설정"
+
+msgctxt "file record"
+msgid "sweep settings"
+msgstr "스윕 설정"
+
+msgctxt "file record"
+msgid "analysis settings"
+msgstr "분석 설정"
+
+msgctxt "file record"
+msgid "calibration"
+msgstr "교정"
+
+msgctxt "file record"
+msgid "project"
+msgstr "프로젝트"
+
+msgctxt "file record"
+msgid "position entry"
+msgstr "위치 항목"
+
+msgctxt "file record"
+msgid "session"
+msgstr "세션"
+
+msgctxt "file record"
+msgid "recent sessions"
+msgstr "최근 세션"
+
+msgctxt "file record"
+msgid "result"
+msgstr "결과"
+
+msgctxt "file record"
+msgid "comparison"
+msgstr "비교"
+
+msgctxt "file record"
+msgid "compare settings"
+msgstr "비교 설정"
+
+msgctxt "file record"
+msgid "metric delta"
+msgstr "지표 차이"
+
+msgctxt "file record"
+msgid "reflection match"
+msgstr "반사 대응"
+
+msgctxt "file record"
+msgid "resonance match"
+msgstr "공진 대응"
+
+msgctxt "file record"
+msgid "frequency-response delta"
+msgstr "주파수 응답 차이"
+
+msgctxt "file record"
+msgid "sweep sidecar"
+msgstr "스윕 사이드카"
+
+msgctxt "file record"
+msgid "decay"
+msgstr "감쇠"
+
+msgctxt "file record"
+msgid "decay metric"
+msgstr "감쇠 지표"
+
+msgctxt "file record"
+msgid "band decay"
+msgstr "밴드 감쇠"
+
+msgctxt "file record"
+msgid "excitation band"
+msgstr "여기 대역"
+
+msgctxt "file record"
+msgid "harmonic distortion"
+msgstr "고조파 왜곡"
+
+msgctxt "file record"
+msgid "aliased distortion"
+msgstr "앨리어스 왜곡"
+
+msgctxt "file record"
+msgid "clipping"
+msgstr "클리핑"
+
+msgctxt "file record"
+msgid "loopback"
+msgstr "루프백"
+
+msgctxt "file record"
+msgid "hum"
+msgstr "험"
+
+msgctxt "file record"
+msgid "noise"
+msgstr "노이즈"
+
+msgctxt "file record"
+msgid "reflections"
+msgstr "반사"
+
+msgctxt "file record"
+msgid "resonances"
+msgstr "공진"
+
+msgctxt "file record"
+msgid "resonance candidate"
+msgstr "공진 후보"
+
+msgctxt "file record"
+msgid "placement"
+msgstr "배치"
+
+msgctxt "file record"
+msgid "placement length"
+msgstr "배치 길이"
+
+msgctxt "file record"
+msgid "boundary candidate"
+msgstr "경계 후보"
+
+msgid "{kind} schema_version is not an integer"
+msgstr "{kind} schema_version이 정수가 아닙니다"
+
+msgid ""
+"{kind} schema version {version} cannot be read by ReverbScope {running}; t"
+"his version reads schema {known} and below. Open the file in a newer Roo"
+"mScope."
+msgstr ""
+"{kind} 스키마 버전 {version}을 ReverbScope {running}이 읽을 수 없습니다. 이 버전은 스키마 {know"
+"n} 이하를 읽습니다. 더 새 ReverbScope에서 파일을 여세요."
+
+msgid "{kind} must be a JSON object"
+msgstr "{kind}는 JSON 객체여야 합니다"
+
+msgid "invalid {kind} in file: {error}"
+msgstr "파일의 {kind}가 잘못되었습니다: {error}"
+
+msgid "expected a pair of numbers"
+msgstr "숫자 쌍이 필요합니다"
+
+msgid "unknown validity {value}"
+msgstr "알 수 없는 유효성 {value}"
+
+msgid "result.json is incomplete or invalid: {error}"
+msgstr "result.json이 불완전하거나 잘못되었습니다: {error}"
+
+msgid "settings data must be a JSON object"
+msgstr "설정 데이터는 JSON 객체여야 합니다"
+
+msgid "cannot read {path}: {error}"
+msgstr "{path}을(를) 읽을 수 없습니다: {error}"
+
+msgid "cannot write {path}: {error}"
+msgstr "{path}을(를) 쓸 수 없습니다: {error}"
+
+msgid ""
+"{name} is {size} bytes; {kind} files larger than {limit} bytes are refus"
+"ed"
+msgstr "{name}은(는) {size}바이트입니다. {kind} 파일은 {limit}바이트를 넘으면 거절합니다"
+
+msgid ""
+"{name} nests {depth} levels; {kind} files deeper than {limit} are refuse"
+"d"
+msgstr "{name}은(는) {depth}단계 중첩입니다. {kind} 파일은 {limit}보다 깊으면 거절합니다"
+
+msgid "{path} is not a JSON object"
+msgstr "{path}은(는) JSON 객체가 아닙니다"
+
+msgid ""
+"write the bundle outside the session folder (it would be inside {folder}"
+")"
+msgstr "번들은 세션 폴더 밖에 쓰세요({folder} 안이 됩니다)"
+
+msgid "cannot write bundle {path}: {error}"
+msgstr "번들 {path}을(를) 쓸 수 없습니다: {error}"
+
+msgid "cannot copy {source} to {target}: {error}"
+msgstr "{source}을(를) {target}에 복사할 수 없습니다: {error}"
+
+msgid "RT60 {seconds:.2f} s"
+msgstr "RT60 {seconds:.2f} s"
+
+msgid "RT60 n/a"
+msgstr "RT60 n/a"
+
+msgid "result.json not found next to {path}"
+msgstr "{path} 옆에 result.json이 없습니다"
+
+msgid ""
+"impulse_response.wav not found next to {path} and result.json has no IR "
+"samples"
+msgstr "{path} 옆에 impulse_response.wav가 없고 result.json에도 IR 샘플이 없습니다"
+
+msgid "not a directory: {path}"
+msgstr "디렉터리가 아닙니다: {path}"
+
+msgid "session file not found: {path}"
+msgstr "세션 파일을 찾을 수 없습니다: {path}"
+
+msgid ""
+"session.json names {name} at an absolute path ({path}); session files mu"
+"st stay inside the session folder"
+msgstr "session.json이 {name}을(를) 절대 경로({path})로 가리킵니다. 세션 파일은 세션 폴더 안에 있어야 합니다"
+
+msgid ""
+"session.json names {name} outside the session folder ({path}); session f"
+"iles must stay inside the session folder"
+msgstr ""
+"session.json이 {name}을(를) 세션 폴더 밖({path})으로 가리킵니다. 세션 파일은 세션 폴더 안에 있어야 합니"
+"다"
+
+msgid "save_comparison expects a ComparisonResult"
+msgstr "save_comparison은 ComparisonResult를 기대합니다"
+
+msgid "comparison file not found: {path}"
+msgstr "비교 파일을 찾을 수 없습니다: {path}"
+
+msgid "unknown exporter {name}; available: {available}"
+msgstr "알 수 없는 내보내기 {name}. 사용 가능: {available}"
+
+msgid "the 'soundfile' package (libsndfile) is required for WAV I/O"
+msgstr "WAV 입출력에는 'soundfile' 패키지(libsndfile)가 필요합니다"
+
+msgid "audio file not found: {path}"
+msgstr "오디오 파일을 찾을 수 없습니다: {path}"
+
+msgid "cannot read audio file {name}: {error}"
+msgstr "오디오 파일 {name}을(를) 읽을 수 없습니다: {error}"
+
+msgid "audio file is empty: {name}"
+msgstr "오디오 파일이 비어 있습니다: {name}"
+
+msgid "samples must be a non-empty 1-D or 2-D array"
+msgstr "samples는 비어 있지 않은 1차원 또는 2차원 배열이어야 합니다"
+
+msgid "signal exceeds full scale; use subtype='FLOAT' or lower the level"
+msgstr "신호가 풀스케일을 넘습니다. subtype='FLOAT'를 쓰거나 레벨을 낮추세요"
+
+msgid "cannot write audio file {path}: {error}"
+msgstr "오디오 파일 {path}을(를) 쓸 수 없습니다: {error}"
+
+msgid "{name} is larger than 1 MB; a sweep sidecar cannot be that large"
+msgstr "{name}이(가) 1 MB보다 큽니다. 스윕 사이드카는 그렇게 클 수 없습니다"
+
+msgid "cannot read sweep sidecar {name}: {error}"
+msgstr "스윕 사이드카 {name}을(를) 읽을 수 없습니다: {error}"
+
+msgid "{name} is not a ReverbScope sweep sidecar"
+msgstr "{name}은(는) ReverbScope 스윕 사이드카가 아닙니다"
+
+msgid "{name} does not contain a sweep definition"
+msgstr "{name}에 스윕 정의가 없습니다"
+
+msgid ""
+"Review before posting: device names can contain personal names; paths un"
+"der your home folder are shown as ~."
+msgstr "올리기 전에 검토하세요. 장치 이름에 사람 이름이 들어 있을 수 있고, 홈 폴더 아래 경로는 ~로 표시됩니다."
+
+msgctxt "diagnostic"
+msgid "failed: {error}"
+msgstr "실패: {error}"
+
+msgctxt "diagnostic"
+msgid "failed: the callback returned {answer}"
+msgstr "실패: 콜백이 {answer}를 반환했습니다"
+
+msgctxt "sample rates"
+msgid "none"
+msgstr "없음"
+
+msgctxt "edition"
+msgid "developer"
+msgstr "개발자"
+
+msgctxt "edition"
+msgid "user"
+msgstr "사용자"
+
+msgid "ReverbScope {version} ({edition} edition)"
+msgstr "ReverbScope {version}({edition} 에디션)"
+
+msgid "ReverbScope {version} ({edition} edition, desktop bundle)"
+msgstr "ReverbScope {version}({edition} 에디션, 데스크톱 번들)"
+
+msgid "Build: {commit}"
+msgstr "빌드: {commit}"
+
+msgid "Build: no commit recorded (source or pip install)"
+msgstr "빌드: 커밋 없음(소스 또는 pip 설치)"
+
+msgid "CI run: {url}"
+msgstr "CI 실행: {url}"
+
+msgid "Python {version} ({implementation}) on {platform} [{machine}]"
+msgstr "Python {version}({implementation}), {platform} [{machine}]"
+
+msgid "Language: {language}"
+msgstr "언어: {language}"
+
+msgid "Packages:"
+msgstr "패키지:"
+
+msgid "not installed"
+msgstr "설치되지 않음"
+
+msgid "Settings:"
+msgstr "설정:"
+
+msgid "Paths:"
+msgstr "경로:"
+
+msgid "Audio callbacks: ok"
+msgstr "오디오 콜백: 정상"
+
+msgid "Audio callbacks: not checked"
+msgstr "오디오 콜백: 확인하지 않음"
+
+msgid "Audio callbacks: {status}"
+msgstr "오디오 콜백: {status}"
+
+msgid "Audio:"
+msgstr "오디오:"
+
+msgid "unavailable: {error}"
+msgstr "사용할 수 없음: {error}"
+
+msgctxt "environment report"
+msgid "backend"
+msgstr "백엔드"
+
+msgctxt "environment report"
+msgid "host APIs"
+msgstr "호스트 API"
+
+msgctxt "environment report"
+msgid "devices"
+msgstr "장치"
+
+msgctxt "environment report"
+msgid "default input"
+msgstr "기본 입력"
+
+msgctxt "environment report"
+msgid "default output"
+msgstr "기본 출력"
+
+msgctxt "environment report"
+msgid "measurement rates"
+msgstr "측정 레이트"
+
+msgid "Documented latency"
+msgstr "문서화된 레이턴시"
+
+msgid ""
+"Referenced manufacturer specs: reverbscope devices --referenced (not a har"
+"dware result)"
+msgstr "참조한 제조사 사양: reverbscope devices --referenced(하드웨어 결과가 아님)"
+
+msgid "show manufacturer and repo specs (not a hardware result)"
+msgstr "제조사와 저장소 사양을 표시(하드웨어 결과가 아님)"
+
+msgid "Referenced device data (not measured)"
+msgstr "참조 장치 데이터(측정 아님)"
+
+msgid ""
+"Public sources only. Not a ReverbScope measurement and not a HARDWARE_TEST"
+"S.md PASS."
+msgstr "공개 출처만. ReverbScope 측정이 아니며 HARDWARE_TESTS.md PASS도 아닙니다."
+
+msgid "Interface"
+msgstr "인터페이스"
+
+msgid "Bit depth"
+msgstr "비트 깊이"
+
+msgid "Mixer default"
+msgstr "믹서 기본"
+
+msgid "Channels"
+msgstr "채널"
+
+msgid "Gaps with no citable source"
+msgstr "인용할 출처가 없는 공백"
+
+msgid "Accepted rates: {rates}"
+msgstr "받는 레이트: {rates}"
+
+msgid "ReverbScope measurement rates: {rates}"
+msgstr "ReverbScope 측정 레이트: {rates}"
+
+msgid "note: {note}"
+msgstr "메모: {note}"
+
+msgid ""
+"Devices (* default; sample rates accepted for 1 channel, nothing was pla"
+"yed):"
+msgstr "장치(* 기본. 채널 1개에서 받는 샘플레이트, 재생하지 않음):"
+
+msgid ""
+"Devices (* default; sample rates not probed, use reverbscope doctor --prob"
+"e):"
+msgstr "장치(* 기본. 샘플레이트 미조사, reverbscope doctor --probe를 쓰세요):"
+
+msgid ""
+"[{index:>2}] {name}{star} | {host_api} | in {inputs} / out {outputs} | d"
+"efault {rate:.0f} Hz"
+msgstr ""
+"[{index:>2}] {name}{star} | {host_api} | 입력 {inputs} / 출력 {outputs} | 기본"
+" {rate:.0f} Hz"
+
+msgid "record {rates}"
+msgstr "녹음 {rates}"
+
+msgid "play {rates}"
+msgstr "재생 {rates}"
+
+msgid "recommended input + output"
+msgstr "권장 입력 + 출력"
+
+msgctxt "diagnostic"
+msgid ""
+"reference sweep regenerated at the recording sample rate ({sample_rate} "
+"Hz); it was defined at {defined_rate} Hz"
+msgstr "참조 스윕을 녹음 샘플레이트({sample_rate} Hz)로 다시 만들었습니다. 정의는 {defined_rate} Hz였습니다"
+
+msgctxt "diagnostic"
+msgid "reference signal resampled from {from_rate} Hz to {to_rate} Hz"
+msgstr "참조 신호를 {from_rate} Hz에서 {to_rate} Hz로 리샘플했습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the reference audio starts with {lead_s:.2f} s and ends with {tail_s:.2f"
+"} s of near-silence (below {threshold_db:g} dB re its peak); it was remo"
+"ved so that the reference is the sweep itself, and sweep positions refer"
+" to the sweep, not to the start of the file"
+msgstr ""
+"참조 오디오 앞에 {lead_s:.2f} s, 뒤에 {tail_s:.2f} s의 거의 무음(피크보다 {threshold_db:g}"
+" dB 아래)이 있습니다. 참조가 스윕 자체가 되도록 제거했습니다. 스윕 위치는 파일 시작이 아니라 스윕 기준입니다"
+
+msgctxt "diagnostic"
+msgid ""
+"reference given as an audio file without a ReverbScope sweep definition; u"
+"sing regularised spectral division instead of the analytic inverse filte"
+"r, and the excitation band is estimated from the reference spectrum"
+msgstr ""
+"참조가 ReverbScope 스윕 정의 없는 오디오 파일입니다. 해석적 역필터 대신 정규화 스펙트럼 나눗셈을 쓰고, 여기 대역은 참조"
+" 스펙트럼에서 추정합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the reference covers about {low_hz:.0f}-{high_hz:.0f} Hz (-3 dB); the ou"
+"ter 1/3 octave at each end is used for the regularisation roll-off and e"
+"xcluded"
+msgstr ""
+"참조는 약 {low_hz:.0f}-{high_hz:.0f} Hz(-3 dB)를 덮습니다. 양쪽 바깥 1/3옥타브는 정규화 롤오프에"
+" 쓰고 제외합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the recording starts {missing_ms:.0f} ms after the sweep began; the exci"
+"tation band now starts at {new_low_hz:.0f} Hz instead of {old_low_hz:.0f"
+"} Hz"
+msgstr ""
+"녹음이 스윕 시작 {missing_ms:.0f} ms 뒤에서 시작합니다. 여기 대역은 {old_low_hz:.0f} Hz가 아니라"
+" {new_low_hz:.0f} Hz부터입니다"
+
+msgctxt "diagnostic"
+msgid ""
+"recording is silent (peak below {threshold_dbfs:g} dBFS); check the inpu"
+"t routing and, on macOS, that the app has microphone access (System Sett"
+"ings > Privacy & Security > Microphone)"
+msgstr ""
+"녹음이 무음입니다(피크가 {threshold_dbfs:g} dBFS 미만). 입력 라우팅을 확인하고, macOS에서는 앱에 마이크"
+" 권한이 있는지 보세요(시스템 설정 > 개인 정보 보호 및 보안 > 마이크)"
+
+msgctxt "diagnostic"
+msgid ""
+"recording has {runs} flat-topped peaks ({samples} samples) at {peak_dbfs"
+":.1f} dBFS, its highest level: probable clipping before an export or a g"
+"ain change, because the flat tops are below full scale; lower the playba"
+"ck or input level and measure again"
+msgstr ""
+"녹음에 평평한 꼭대기 피크가 {runs}곳({samples}샘플), 최고 레벨 {peak_dbfs:.1f} dBFS 있습니다. 풀"
+"스케일보다 아래에서 꼭대기가 평평하므로 내보내기나 게인 변경 전에 클립됐을 가능성이 큽니다. 재생 또는 입력 레벨을 낮추고 다시 "
+"측정하세요"
+
+msgctxt "diagnostic"
+msgid ""
+"recording has {runs} flat-topped peaks ({samples} samples) at {peak_dbfs"
+":.1f} dBFS, its highest level: probable clipping; lower the playback or "
+"input level and measure again"
+msgstr ""
+"녹음에 평평한 꼭대기 피크가 {runs}곳({samples}샘플), 최고 레벨 {peak_dbfs:.1f} dBFS 있습니다. 클"
+"립 가능성이 큽니다. 재생 또는 입력 레벨을 낮추고 다시 측정하세요"
+
+msgctxt "diagnostic"
+msgid "recording is shorter than one second"
+msgstr "녹음이 1초보다 짧습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the sweep was played at {speed_percent:.1f} % of the speed it was genera"
+"ted at, so the deconvolved response is not the room's impulse response"
+msgstr "스윕이 생성 속도의 {speed_percent:.1f} %로 재생되어, 역합성 결과는 방의 임펄스 응답이 아닙니다"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is low (pre-peak margin not checkable)"
+": the recording may not contain the reference sweep"
+msgstr "직접음 검출 신뢰도가 낮습니다(피크 앞 여유를 확인할 수 없음): 녹음에 참조 스윕이 없을 수 있습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is low (pre-peak margin {margin_db:.1f"
+"} dB): the recording may not contain the reference sweep"
+msgstr "직접음 검출 신뢰도가 낮습니다(피크 앞 여유 {margin_db:.1f} dB): 녹음에 참조 스윕이 없을 수 있습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the recording clips, so the measurement chain was not linear and the dec"
+"onvolved response is not the room's impulse response"
+msgstr "녹음이 클립되어 측정 체인이 비선형이고, 역합성 결과는 방의 임펄스 응답이 아닙니다"
+
+msgctxt "diagnostic"
+msgid ""
+"aliased distortion (folded harmonic {orders} at {level_db:.0f} dB re the"
+" direct sound) spreads over the impulse response after the direct sound "
+"and imitates a decay"
+msgstr ""
+"앨리어스 왜곡(접힌 고조파 {orders}, 직접음 대비 {level_db:.0f} dB)이 직접음 뒤 임펄스 응답에 퍼져 감쇠를"
+" 흉내 냅니다"
+
+msgctxt "diagnostic"
+msgid ""
+"recording has {count} channels; channel {channel} (highest RMS excluding"
+" loopback channel {loopback_channel}) was analysed"
+msgstr ""
+"녹음은 {count}채널입니다. 분석한 것은 채널 {channel}(루프백 채널 {loopback_channel}을 제외하고 RM"
+"S가 가장 높음)입니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the tape-measured loudspeaker distance ({distance_m:.2f} m) exceeds the "
+"loopback path-delay bound ({bound_m:.2f} m); the tape cannot be longer t"
+"han what sound had time to travel"
+msgstr ""
+"줄자로 잰 스피커 거리({distance_m:.2f} m)가 루프백 경로 지연 상한({bound_m:.2f} m)을 넘습니다. 소"
+"리가 이동한 시간보다 줄자를 길게 잴 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"loopback compensation applied: the frequency response is relative to the"
+" interface return"
+msgstr "루프백 보상을 적용했습니다. 주파수 응답은 인터페이스 반환 기준입니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the recording contains {passes} sweep passes (pulses within {pass_level_"
+"db:g} dB of the strongest); pass {order}, starting at {start_s:.2f} s, w"
+"as analysed and the others were ignored. Record a single pass for a clea"
+"n measurement"
+msgstr ""
+"녹음에 스윕 패스가 {passes}번 있습니다(가장 강한 것에서 {pass_level_db:g} dB 안 펄스). {start_s"
+":.2f} s에서 시작하는 패스 {order}를 분석하고 나머지는 무시했습니다. 깨끗한 측정에는 한 번만 녹음하세요"
+
+msgctxt "diagnostic"
+msgid ""
+"the impulse response ends where the next sweep pass starts ({length_s:.2"
+"f} s after the direct sound)"
+msgstr "임펄스 응답은 다음 스윕 패스가 시작되는 곳에서 끝납니다(직접음 {length_s:.2f} s 뒤)"
+
+msgctxt "diagnostic"
+msgid ""
+"only {length_s:.2f} s of decay were recorded after the sweep; long rever"
+"beration times cannot be evaluated"
+msgstr "스윕 뒤에 녹음된 감쇠는 {length_s:.2f} s뿐입니다. 긴 잔향 시간은 평가할 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"there is no content before the direct sound to check the detection again"
+"st; direct-sound detection confidence is low"
+msgstr "직접음 앞에 대조할 내용이 없어 직접음 검출 신뢰도가 낮습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"content before the direct sound is only {margin_db:.1f} dB below it (noi"
+"se, pre-ringing or a wrong reference); direct-sound detection confidence"
+" is medium"
+msgstr ""
+"직접음 앞 내용이 그보다 {margin_db:.1f} dB밖에 낮지 않습니다(노이즈, 프리링잉 또는 잘못된 참조). 직접음 검출 "
+"신뢰도는 중간입니다"
+
+msgctxt "diagnostic"
+msgid ""
+"content before the direct sound is only {margin_db:.1f} dB below it (noi"
+"se, pre-ringing or a wrong reference); direct-sound detection confidence"
+" is low"
+msgstr ""
+"직접음 앞 내용이 그보다 {margin_db:.1f} dB밖에 낮지 않습니다(노이즈, 프리링잉 또는 잘못된 참조). 직접음 검출 "
+"신뢰도는 낮습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"harmonic {orders} of the sweep was folded back below the Nyquist frequen"
+"cy ({level_db:.0f} dB re the direct sound): a nonlinearity in the digita"
+"l domain (a playback bus or export that clipped, or a saturation plug-in"
+" without oversampling) distorted the signal before the converter. The fo"
+"lded products land after the direct sound and imitate a long decay, so t"
+"he decay metrics cannot be trusted. Lower the level in the playback path"
+" and measure again"
+msgstr ""
+"스윕의 고조파 {orders}가 나이퀴스트 주파수 아래로 접혔습니다(직접음 대비 {level_db:.0f} dB). 디지털 영역의"
+" 비선형(클립된 재생 버스나 내보내기, 오버샘플링 없는 새추레이션 플러그인)이 변환 전에 신호를 왜곡했습니다. 접힌 성분은 직접음"
+" 뒤에 떨어져 긴 감쇠를 흉내 내므로 감쇠 지표를 믿을 수 없습니다. 재생 경로의 레벨을 낮추고 다시 측정하세요"
+
+msgctxt "diagnostic"
+msgid ""
+"the frequency response is gated to {window_ms:.0f} ms after the direct s"
+"ound, so its resolution is {resolution_hz:.1f} Hz; the resonance search "
+"uses the ungated response"
+msgstr ""
+"주파수 응답은 직접음 {window_ms:.0f} ms 뒤까지 게이트하므로 분해능은 {resolution_hz:.1f} Hz입니다"
+". 공진 탐색은 게이트하지 않은 응답을 씁니다"
+
+msgctxt "diagnostic"
+msgid ""
+"impulse response imported; deconvolution, sweep-position checks and dist"
+"ortion indicators were skipped"
+msgstr "임펄스 응답을 가져왔습니다. 역합성, 스윕 위치 검사, 왜곡 지표는 건너뛰었습니다"
+
+msgctxt "diagnostic"
+msgid "excitation band was not declared; band metrics are not computed"
+msgstr "여기 대역이 선언되지 않아 밴드 지표를 계산하지 않습니다"
+
+msgctxt "diagnostic"
+msgid "excitation band unknown (imported impulse response; declare --band)"
+msgstr "여기 대역을 모름(가져온 임펄스 응답. --band로 선언하세요)"
+
+msgctxt "diagnostic"
+msgid "no recording segment exists (imported impulse response)"
+msgstr "녹음 구간이 없습니다(가져온 임펄스 응답)"
+
+msgctxt "diagnostic"
+msgid ""
+"recording is shorter than the reference sweep; the file does not contain"
+" the full sweep"
+msgstr "녹음이 참조 스윕보다 짧습니다. 파일에 스윕 전체가 없습니다"
+
+msgctxt "diagnostic"
+msgid "deconvolved signal is empty"
+msgstr "역합성 신호가 비어 있습니다"
+
+msgctxt "diagnostic"
+msgid "deconvolved signal has no usable peak (silent recording?)"
+msgstr "역합성 신호에 쓸 수 있는 피크가 없습니다(무음 녹음?)"
+
+msgctxt "diagnostic"
+msgid ""
+"the next sweep pass starts right after this one; the room decay after th"
+"e sweep was not recorded. Leave silence after each sweep (the generated "
+"test file contains it) or record a single pass"
+msgstr ""
+"다음 스윕 패스가 바로 뒤에서 시작해 스윕 뒤 방의 감쇠가 녹음되지 않았습니다. 각 스윕 뒤에 무음을 남기거나(생성한 테스트 파일"
+"에 들어 있음) 한 번만 녹음하세요"
+
+msgctxt "diagnostic"
+msgid ""
+"the direct sound was found at the very end of the recording; the recordi"
+"ng does not contain the room decay after the sweep"
+msgstr "직접음이 녹음 맨 끝에서 찾아졌습니다. 스윕 뒤 방의 감쇠가 녹음에 없습니다"
+
+msgctxt "diagnostic"
+msgid "the harmonic lies above the excitation band"
+msgstr "고조파는 여기 대역 위에 있습니다"
+
+msgctxt "diagnostic"
+msgid "the harmonic window lies outside the deconvolved signal"
+msgstr "고조파 창이 역합성 신호 밖에 있습니다"
+
+msgctxt "diagnostic"
+msgid "the harmonic window is too short to resolve the common band"
+msgstr "고조파 창이 너무 짧아 공통 밴드를 분해할 수 없습니다"
+
+msgctxt "diagnostic"
+msgid "the linear response has no energy in the common band"
+msgstr "선형 응답에 공통 밴드 에너지가 없습니다"
+
+msgctxt "diagnostic"
+msgid "no harmonic-free content before the direct sound to compare with"
+msgstr "직접음 앞에 고조파 없는 내용이 없어 비교할 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"not distinguishable from the floor (at most {level_db:.1f} dB, floor {fl"
+"oor_db:.1f} dB)"
+msgstr "플로어와 구분할 수 없습니다(많아야 {level_db:.1f} dB, 플로어 {floor_db:.1f} dB)"
+
+msgctxt "diagnostic"
+msgid ""
+"harmonic {order} folds back to {low_khz:.1f}-{high_khz:.1f} kHz, outside"
+" the swept range, where the inverse filter has no gain: such products ca"
+"nnot reach the impulse response"
+msgstr ""
+"고조파 {order}가 {low_khz:.1f}-{high_khz:.1f} kHz로 접혀 스윕 범위 밖입니다. 역필터에 이득이 없"
+"어 그런 성분은 임펄스 응답에 닿지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"no wide enough part of the folded trajectory of harmonic {order} can be "
+"separated from the sweep and its non-aliased harmonics"
+msgstr "고조파 {order}의 접힌 궤도 중 스윕과 접히지 않은 고조파에서 충분히 넓게 나눌 수 있는 부분이 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"harmonic {order} of this sweep does not fold back into the swept range a"
+"t {sample_rate} Hz"
+msgstr "이 스윕의 고조파 {order}는 {sample_rate} Hz에서 스윕 범위로 접히지 않습니다"
+
+msgctxt "diagnostic"
+msgid "the probe window lies outside the recording"
+msgstr "프로브 창이 녹음 밖에 있습니다"
+
+msgctxt "diagnostic"
+msgid "the linear response has no energy in the probe band"
+msgstr "선형 응답에 프로브 밴드 에너지가 없습니다"
+
+msgctxt "diagnostic"
+msgid "no content before the probe window to compare with"
+msgstr "프로브 창 앞에 비교할 내용이 없습니다"
+
+msgctxt "diagnostic"
+msgid "relative dB (0 dB = the interface loopback)"
+msgstr "상대 dB(0 dB = 인터페이스 루프백)"
+
+msgctxt "diagnostic"
+msgid "the loopback channel clips; compensation is not applied"
+msgstr "루프백 채널이 클립되어 보상하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback peak does not stand far enough above the content before it "
+"(confidence medium); the channel may be a microphone, not an electrical "
+"return. Compensation is not applied"
+msgstr ""
+"루프백 피크가 그 앞 내용보다 충분히 솟지 않습니다(신뢰도 중간). 채널이 전기 반환이 아니라 마이크일 수 있습니다. 보상하지 않"
+"습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback peak does not stand far enough above the content before it "
+"(confidence low); the channel may be a microphone, not an electrical ret"
+"urn. Compensation is not applied"
+msgstr ""
+"루프백 피크가 그 앞 내용보다 충분히 솟지 않습니다(신뢰도 낮음). 채널이 전기 반환이 아니라 마이크일 수 있습니다. 보상하지 않"
+"습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback recording is too short after the peak to check that the ret"
+"urn is electrical; compensation is not applied"
+msgstr "루프백 녹음이 피크 뒤가 짧아 반환이 전기적인지 확인할 수 없습니다. 보상하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the loopback still carries energy {settle_ms:.1f} ms after the peak (lat"
+"e peak {drop_db:.1f} dB down); that looks like a room, not a cable. Comp"
+"ensation is not applied"
+msgstr ""
+"루프백이 피크 {settle_ms:.1f} ms 뒤에도 에너지가 남습니다(늦은 피크는 {drop_db:.1f} dB 아래). 케이"
+"블이 아니라 방처럼 보입니다. 보상하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"loopback settled in {settle_ms:.1f} ms (late peak {drop_db:.1f} dB down)"
+"; using a {fir_samples}-sample interface FIR around the peak"
+msgstr ""
+"루프백이 {settle_ms:.1f} ms에 가라앉았습니다(늦은 피크는 {drop_db:.1f} dB 아래). 피크 주위 {fir"
+"_samples}샘플 인터페이스 FIR을 씁니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the microphone peak precedes the loopback peak by {lead_ms:.2f} ms; the "
+"path-delay bound is not reported"
+msgstr "마이크 피크가 루프백 피크보다 {lead_ms:.2f} ms 앞서므로 경로 지연 상한을 보고하지 않습니다"
+
+msgid ""
+"recording is at {sample_rate} Hz but the sweep cannot be regenerated at "
+"that rate: {error}"
+msgstr "녹음은 {sample_rate} Hz이지만 그 레이트로 스윕을 다시 만들 수 없습니다: {error}"
+
+msgid "reference signal cannot be used: {error}"
+msgstr "참조 신호를 쓸 수 없습니다: {error}"
+
+msgid ""
+"the recording starts about {missing_s:.2f} s after the sweep began, so f"
+"requencies below about {lost_hz:.0f} Hz were not recorded. Start the rec"
+"ording before playback (the test file begins with silence for this purpo"
+"se) and export the whole take"
+msgstr ""
+"녹음이 스윕 시작 약 {missing_s:.2f} s 뒤에서 시작되어 약 {lost_hz:.0f} Hz 아래가 녹음되지 않았습니다"
+". 재생보다 먼저 녹음을 시작하고(테스트 파일 앞 무음이 이를 위한 것) 테이크 전체를 내보내세요"
+
+msgid ""
+"the recording starts about {missing_s:.2f} s after the reference sweep b"
+"egan, so the first part of the sweep (for a rising sweep: its lowest fre"
+"quencies) was not recorded. Start the recording before playback and expo"
+"rt the whole take"
+msgstr ""
+"녹음이 참조 스윕 시작 약 {missing_s:.2f} s 뒤에서 시작되어 스윕 앞부분(상승 스윕이면 가장 낮은 주파수)이 녹음되"
+"지 않았습니다. 재생보다 먼저 녹음을 시작하고 테이크 전체를 내보내세요"
+
+msgid ""
+"the recording starts after the swept range; no part of the sweep can be "
+"analysed"
+msgstr "녹음이 스윕 범위 뒤에서 시작되어 스윕의 어느 부분도 분석할 수 없습니다"
+
+msgid ""
+"the loopback file and the recording have different sample rates; export "
+"both from the same take"
+msgstr "루프백 파일과 녹음의 샘플레이트가 다릅니다. 같은 테이크에서 둘 다 내보내세요"
+
+msgid ""
+"loopback_channel {channel} does not exist (recording has {count} channel"
+"(s))"
+msgstr "loopback_channel {channel}이(가) 없습니다(녹음은 {count}채널)"
+
+msgid "loopback_channel must differ from the microphone channel"
+msgstr "loopback_channel은 마이크 채널과 달라야 합니다"
+
+msgid ""
+"the loopback file and the recording differ in length by more than {toler"
+"ance_ms:.0f} ms; export both from the same take"
+msgstr "루프백 파일과 녹음 길이가 {tolerance_ms:.0f} ms 넘게 다릅니다. 같은 테이크에서 둘 다 내보내세요"
+
+msgid "impulse response is shorter than 50 ms"
+msgstr "임펄스 응답이 50 ms보다 짧습니다"
+
+msgid "excitation_band must be a (low_hz, high_hz) pair with high > low > 0"
+msgstr "excitation_band는 high > low > 0인 (low_hz, high_hz) 쌍이어야 합니다"
+
+msgid ""
+"this file cannot be analysed as an impulse response: its strongest sampl"
+"e is only {margin_db:.1f} dB above the content before it (at least {requ"
+"ired_db:g} dB is required). It may be a recording (a recording of the te"
+"st sweep is analysed with `reverbscope analyze`), or an IR whose direct so"
+"und is weaker than a later arrival, which ReverbScope cannot use as time z"
+"ero. For a band-limited IR, declare its band with --band"
+msgstr ""
+"이 파일은 임펄스 응답으로 분석할 수 없습니다. 가장 강한 샘플이 그 앞 내용보다 {margin_db:.1f} dB밖에 높지 않습"
+"니다(적어도 {required_db:g} dB 필요). 녹음일 수 있습니다(테스트 스윕 녹음은 `reverbscope analyze`"
+"로 분석). 또는 직접음보다 나중 도착이 더 센 IR이라 ReverbScope가 그것을 시각 0으로 쓸 수 없습니다. 대역 제한 IR"
+"이면 --band로 대역을 선언하세요"
+
+msgid ""
+"the frequency-response window ({window_ms:.1f} ms) is shorter than its {"
+"taper_ms:g} ms end taper plus {minimum_ms:g} ms: it would attenuate or e"
+"xclude the direct sound. Use a longer window"
+msgstr ""
+"주파수 응답 창({window_ms:.1f} ms)이 끝 테이퍼 {taper_ms:g} ms에 {minimum_ms:g} ms를 "
+"더한 길이보다 짧습니다. 직접음을 감쇠하거나 빼 버립니다. 더 긴 창을 쓰세요"
+
+msgid "reference signal must be a non-empty mono array"
+msgstr "참조 신호는 비어 있지 않은 모노 배열이어야 합니다"
+
+msgid "reference signal is silent"
+msgstr "참조 신호가 무음입니다"
+
+msgid "reference signal must be a mono array with at least 16 samples"
+msgstr "참조 신호는 샘플 16개 이상의 모노 배열이어야 합니다"
+
+msgid "reference signal contains NaN or infinite samples"
+msgstr "참조 신호에 NaN 또는 무한대 샘플이 있습니다"
+
+msgid ""
+"the reference signal only covers {low_hz:.0f}-{high_hz:.0f} Hz; that is "
+"too narrow for a sweep measurement"
+msgstr "참조 신호가 {low_hz:.0f}-{high_hz:.0f} Hz만 덮어 스윕 측정에 너무 좁습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as coming from the horizontal plane t"
+"he microphone height was measured from: {rejections}"
+msgstr "검출한 반사를 마이크 높이를 잰 수평면에서 온 것으로 읽을 수 없습니다: {rejections}"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as coming from the horizontal plane t"
+"he microphone height was measured from; none was detected at all"
+msgstr "검출한 반사를 마이크 높이를 잰 수평면에서 온 것으로 읽을 수 없습니다. 아예 검출되지 않았습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the plane the heights are measured from was not established, so nothing "
+"above it can be placed"
+msgstr "높이를 잰 평면이 정해지지 않아 그 위의 것을 놓을 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"only the two horizontal planes are ever named. No wall is identified: on"
+"e omnidirectional microphone gives no bearing, so naming one would be a "
+"guess"
+msgstr ""
+"이름을 붙이는 수평면은 언제나 둘뿐입니다. 벽은 식별하지 않습니다. 전방향 마이크 하나로는 방위가 없어 하나를 이름 붙이면 추측이"
+" 됩니다"
+
+msgctxt "diagnostic"
+msgid ""
+"reads {excess:.1f} dB above what a lossless point source mirrored in a r"
+"igid plane would give at that path length, so it is not treated as a fir"
+"st-order specular arrival (it may be two arrivals merged by the envelope"
+" peak-hold, a comb-filter artefact or a peak of the dense early tail)"
+msgstr ""
+"그 경로 길이에서 손실 없는 점음원이 강체 평면에 거울상일 때보다 {excess:.1f} dB 높아 1차 경면 도착으로 다루지 않"
+"습니다(엔벨로프 피크 홀드로 도착 둘이 합쳐졌거나, 콤 필터 잔여, 또는 밀한 초기 테일의 피크일 수 있음)"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate reads {excess:.1f} dB above what a lossless"
+" point source mirrored in a rigid plane would give at that path length, "
+"so it is not treated as a first-order specular arrival (it may be two ar"
+"rivals merged by the envelope peak-hold, a comb-filter artefact or a pea"
+"k of the dense early tail)"
+msgstr ""
+"{delay:.1f} ms 후보는 그 경로 길이에서 손실 없는 점음원이 강체 평면에 거울상일 때보다 {excess:.1f} dB "
+"높아 1차 경면 도착으로 다루지 않습니다(엔벨로프 피크 홀드로 도착 둘이 합쳐졌거나, 콤 필터 잔여, 또는 밀한 초기 테일의 피크"
+"일 수 있음)"
+
+msgctxt "diagnostic"
+msgid ""
+"reads {attenuation:.1f} dB below that ceiling, more than the {limit:.0f}"
+" dB ReverbScope treats as the limit for a discrete plane reflection, so it"
+" is not used to attribute a surface"
+msgstr ""
+"그 상한보다 {attenuation:.1f} dB 낮아, ReverbScope가 이산 평면 반사의 한도로 보는 {limit:.0f} "
+"dB를 넘으므로 면 귀속에 쓰지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate reads {attenuation:.1f} dB below that ceili"
+"ng, more than the {limit:.0f} dB ReverbScope treats as the limit for a dis"
+"crete plane reflection, so it is not used to attribute a surface"
+msgstr ""
+"{delay:.1f} ms 후보는 그 상한보다 {attenuation:.1f} dB 낮아, ReverbScope가 이산 평면 반사의 "
+"한도로 보는 {limit:.0f} dB를 넘으므로 면 귀속에 쓰지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the reflection search was cut short at {end:.1f} ms, and truncation does"
+" not drop arrivals at random: it drops the longest paths first, so any h"
+"eight derived from what remains is biased low"
+msgstr ""
+"반사 탐색이 {end:.1f} ms에서 잘렸습니다. 절단은 도착을 무작위로 빼는 것이 아니라 가장 긴 경로부터 빼므로, 남은 것에"
+"서 구한 높이는 낮게 치우칩니다"
+
+msgctxt "diagnostic"
+msgid ""
+"no air temperature was supplied, so {temperature:.0f} C ({speed:.1f} m/s"
+") was assumed; a 5 C error moves every distance by about 0.9 %"
+msgstr ""
+"기온이 없어 {temperature:.0f} C({speed:.1f} m/s)를 가정했습니다. 5 C 오차는 거리를 약 0.9 %"
+" 움직입니다"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is low, so the time origin every delay"
+" is measured from was not established and no distance derived from it is"
+" reported"
+msgstr "직접음 검출 신뢰도가 낮아 모든 지연의 시간 원점이 정해지지 않았고, 거기서 구한 거리는 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as a plane above both devices: {rejec"
+"tions}; even the lowest plausible upper plane ({lowest:.1f} m) would arr"
+"ive at about {delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window "
+"that could be searched, so absence here is not evidence of absence"
+msgstr ""
+"검출한 반사를 두 장치 위 평면으로 읽을 수 없습니다: {rejections}. 가능한 가장 낮은 위 평면({lowest:.1f}"
+" m)도 약 {delay:.1f} ms에 도착하며, 찾을 수 있던 {start:.1f}-{end:.1f} ms 창 밖입니다. 여기"
+"에 없다고 없는 증거가 아닙니다"
+
+msgctxt "diagnostic"
+msgid ""
+"more than one reflection could be the surface the height was measured fr"
+"om, and they disagree by more than {agreement_cm:.0f} cm: {values}. Room"
+"Scope does not choose between them. This is the expected outcome when th"
+"e microphone sits near the vertical midpoint of the room, where the arri"
+"val from the surface below and the one from the surface above are interc"
+"hangeable; moving the microphone 20-30 cm up or down and measuring again"
+" separates them"
+msgstr ""
+"높이를 잰 면이 될 수 있는 반사가 둘 이상이고 {agreement_cm:.0f} cm 넘게 어긋납니다: {values}. Roo"
+"mScope는 고르지 않습니다. 마이크가 방의 수직 중앙 근처에 있어 아래 면과 위 면 도착이 서로 바뀔 때 나오는 결과입니다. "
+"마이크를 20-30 cm 위아래로 옮겨 다시 재면 갈립니다"
+
+msgctxt "diagnostic"
+msgid "inherited from the reflection search: {note}"
+msgstr "반사 탐색에서 상속: {note}"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is medium, so the time origin every de"
+"lay is measured from was not established and no distance derived from it"
+" is reported"
+msgstr "직접음 검출 신뢰도가 중간이라 모든 지연의 시간 원점이 정해지지 않았고, 거기서 구한 거리는 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"direct-sound detection confidence is {confidence}, so the time origin ev"
+"ery delay is measured from was not established and no distance derived f"
+"rom it is reported"
+msgstr "직접음 검출 신뢰도가 {confidence}라 모든 지연의 시간 원점이 정해지지 않았고, 거기서 구한 거리는 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"no loudspeaker-to-microphone distance was supplied; measure the straight"
+" line from the loudspeaker to the microphone capsule with a tape"
+msgstr "스피커-마이크 거리가 없습니다. 스피커에서 마이크 캡슐까지의 직선을 줄자로 재세요"
+
+msgctxt "diagnostic"
+msgid ""
+"no microphone height was supplied, so no reflection can be attributed to"
+" a horizontal plane"
+msgstr "마이크 높이가 없어 수평면에 반사를 귀속할 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies a loudspeaker {height:.2f} m above "
+"the plane the height was measured from ({low:.2f}-{high:.2f} m is treate"
+"d as plausible)"
+msgstr ""
+"{delay:.1f} ms 후보는 높이를 잰 면 위 {height:.2f} m에 스피커가 있음을 뜻합니다(타당 범위 {low:.2"
+"f}-{high:.2f} m)"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as a plane above both devices: {rejec"
+"tions}"
+msgstr "검출한 반사를 두 장치 위 평면으로 읽을 수 없습니다: {rejections}"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies a vertical separation of {separatio"
+"n:.2f} m, which the {distance:.2f} m straight-line distance cannot conta"
+"in"
+msgstr ""
+"{delay:.1f} ms 후보는 수직 간격 {separation:.2f} m를 뜻하며, 직선 거리 {distance:.2f} m"
+"에 들어가지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate has no real solution for a plane above both"
+" devices"
+msgstr "{delay:.1f} ms 후보에 두 장치 위 평면의 실수 해가 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies an upper plane {height:.2f} m above"
+" the lower one ({low:.1f}-{high:.1f} m is treated as plausible)"
+msgstr ""
+"{delay:.1f} ms 후보는 아래보다 {height:.2f} m 위인 위 평면을 뜻합니다(타당 범위 {low:.1f}-{hi"
+"gh:.1f} m)"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies an upper plane {height:.2f} m up, l"
+"ess than {clearance:.2f} m above the higher of the two devices"
+msgstr ""
+"{delay:.1f} ms 후보는 {height:.2f} m 위 위 평면을 뜻하며, 더 높은 장치에서 {clearance:.2f}"
+" m 미만입니다"
+
+msgctxt "diagnostic"
+msgid ""
+"no detected reflection can be read as a plane above both devices; even t"
+"he lowest plausible upper plane ({lowest:.1f} m) would arrive at about {"
+"delay:.1f} ms, beyond the {start:.1f}-{end:.1f} ms window that could be "
+"searched, so absence here is not evidence of absence"
+msgstr ""
+"검출한 반사를 두 장치 위 평면으로 읽을 수 없습니다. 가능한 가장 낮은 위 평면({lowest:.1f} m)도 약 {delay:"
+".1f} ms에 도착하며, 찾을 수 있던 {start:.1f}-{end:.1f} ms 창 밖입니다. 여기에 없다고 없는 증거가 아"
+"닙니다"
+
+msgctxt "diagnostic"
+msgid "no detected reflection can be read as a plane above both devices"
+msgstr "검출한 반사를 두 장치 위 평면으로 읽을 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {delay:.1f} ms candidate implies the loudspeaker is vertically above"
+" the microphone, which leaves no horizontal separation"
+msgstr "{delay:.1f} ms 후보는 스피커가 마이크 바로 위에 있어 수평 간격이 없음을 뜻합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"no separate arrival from a plane above the devices was found, and one as"
+" low as {lowest:.2f} m would arrive at {earliest:.1f} ms -- within the {"
+"resolution:.1f} ms the reflection search can resolve from the {used:.1f}"
+" ms arrival this height was solved from. That arrival may therefore be t"
+"wo arrivals merged into one peak, which would bias the height. Moving th"
+"e microphone 20-30 cm up or down and measuring again separates them"
+msgstr ""
+"장치 위 평면에서 온 별도 도착을 찾지 못했습니다. {lowest:.2f} m까지 낮은 것도 {earliest:.1f} ms에 도"
+"착하며, 이 높이를 푼 {used:.1f} ms 도착에서 반사 탐색이 분해할 수 있는 {resolution:.1f} ms 안입니다"
+". 그 도착은 둘이 한 피크로 합쳐졌을 수 있어 높이가 치우칩니다. 마이크를 20-30 cm 위아래로 옮겨 다시 재면 갈립니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the quiet segment is too short for the {bands} band filter(s); no level "
+"is reported for them"
+msgstr "무음 구간이 {bands}개 밴드 필터에는 짧아 그 레벨을 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"No quiet segment found: add at least 1 s of silence before the sweep (th"
+"e generated test signal already contains it) or record a longer tail."
+msgstr "무음 구간이 없습니다. 스윕 앞에 적어도 1 s 무음을 더하거나(생성한 테스트 신호에 들어 있음) 더 긴 테일을 녹음하세요."
+
+msgctxt "diagnostic"
+msgid ""
+"the quiet segment is below {floor:g} dBFS ({level:.0f} dBFS): that is be"
+"low the quantisation noise of a 24-bit file, so it is digital silence or"
+" numerical residue, not a measured noise floor"
+msgstr ""
+"무음 구간이 {floor:g} dBFS 미만입니다({level:.0f} dBFS). 24-bit 파일의 양자화 노이즈보다 아래이므"
+"로 잰 노이즈 플로어가 아니라 디지털 무음 또는 수치 잔여입니다"
+
+msgctxt "diagnostic"
+msgid "quiet segment is too short ({duration:.2f} s) for mains-hum detection"
+msgstr "무음 구간이 짧아({duration:.2f} s) 전원 험 검출에 부족합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"quiet segment taken from the end of the recording; it may contain late r"
+"everberation, so the noise floor may be overestimated"
+msgstr "무음 구간을 녹음 끝에서 가져왔습니다. 늦은 잔향이 들어 노이즈 플로어를 과대평가할 수 있습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"{dropped:.2f} s of exact digital zeros (an export that starts before the"
+" recorded region, or a gap between regions) were excluded from the pre-s"
+"weep segment"
+msgstr ""
+"스윕 전 구간에서 완전한 디지털 제로 {dropped:.2f} s(녹음 영역보다 앞에서 시작하는 내보내기, 또는 영역 사이 틈)를"
+" 제외했습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"{dropped:.2f} s of exact digital zeros (an export that starts before the"
+" recorded region, or a gap between regions) were excluded from the tail "
+"segment"
+msgstr ""
+"테일 구간에서 완전한 디지털 제로 {dropped:.2f} s(녹음 영역보다 앞에서 시작하는 내보내기, 또는 영역 사이 틈)를 제"
+"외했습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"{dropped:.2f} s of exact digital zeros (an export that starts before the"
+" recorded region, or a gap between regions) were excluded from the {sour"
+"ce} segment"
+msgstr ""
+"{source} 구간에서 완전한 디지털 제로 {dropped:.2f} s(녹음 영역보다 앞에서 시작하는 내보내기, 또는 영역 사이"
+" 틈)를 제외했습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"only {remaining:.2f} s of the pre-sweep segment are not digital silence,"
+" less than the {needed:.2f} s a level needs"
+msgstr ""
+"스윕 전 구간 중 디지털 무음이 아닌 것은 {remaining:.2f} s뿐이며, 레벨에 필요한 {needed:.2f} s보다 적"
+"습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"only {remaining:.2f} s of the tail segment are not digital silence, less"
+" than the {needed:.2f} s a level needs"
+msgstr ""
+"테일 구간 중 디지털 무음이 아닌 것은 {remaining:.2f} s뿐이며, 레벨에 필요한 {needed:.2f} s보다 적습니"
+"다"
+
+msgctxt "diagnostic"
+msgid ""
+"only {remaining:.2f} s of the {source} segment are not digital silence, "
+"less than the {needed:.2f} s a level needs"
+msgstr ""
+"{source} 구간 중 디지털 무음이 아닌 것은 {remaining:.2f} s뿐이며, 레벨에 필요한 {needed:.2f} s"
+"보다 적습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"only {usable:.2f} s of the pre-sweep segment are usable instead of the {"
+"configured:.2f} s configured; the levels come from that shorter part"
+msgstr ""
+"스윕 전 구간 중 쓸 수 있는 것은 설정의 {configured:.2f} s가 아니라 {usable:.2f} s입니다. 레벨은 그"
+" 짧은 부분에서 옵니다"
+
+msgctxt "diagnostic"
+msgid ""
+"only {usable:.2f} s of the tail segment are usable instead of the {confi"
+"gured:.2f} s configured; the levels come from that shorter part"
+msgstr ""
+"테일 구간 중 쓸 수 있는 것은 설정의 {configured:.2f} s가 아니라 {usable:.2f} s입니다. 레벨은 그 짧"
+"은 부분에서 옵니다"
+
+msgctxt "diagnostic"
+msgid ""
+"only {usable:.2f} s of the {source} segment are usable instead of the {c"
+"onfigured:.2f} s configured; the levels come from that shorter part"
+msgstr ""
+"{source} 구간 중 쓸 수 있는 것은 설정의 {configured:.2f} s가 아니라 {usable:.2f} s입니다. 레"
+"벨은 그 짧은 부분에서 옵니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the pre-sweep segment is only {below:.1f} dB below the level of the swee"
+"p ({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass witho"
+"ut silence before it?)"
+msgstr ""
+"스윕 전 구간이 스윕 레벨({sweep:.1f} dBFS RMS)보다 {below:.1f} dB밖에 낮지 않습니다. 배경 소음이 "
+"아닙니다(앞에 무음 없는 스윕 패스?)"
+
+msgctxt "diagnostic"
+msgid ""
+"the tail segment is only {below:.1f} dB below the level of the sweep ({s"
+"weep:.1f} dBFS RMS): it is not background noise (a sweep pass without si"
+"lence before it?)"
+msgstr ""
+"테일 구간이 스윕 레벨({sweep:.1f} dBFS RMS)보다 {below:.1f} dB밖에 낮지 않습니다. 배경 소음이 아닙"
+"니다(앞에 무음 없는 스윕 패스?)"
+
+msgctxt "diagnostic"
+msgid ""
+"the {source} segment is only {below:.1f} dB below the level of the sweep"
+" ({sweep:.1f} dBFS RMS): it is not background noise (a sweep pass withou"
+"t silence before it?)"
+msgstr ""
+"{source} 구간이 스윕 레벨({sweep:.1f} dBFS RMS)보다 {below:.1f} dB밖에 낮지 않습니다. 배경 "
+"소음이 아닙니다(앞에 무음 없는 스윕 패스?)"
+
+msgctxt "diagnostic"
+msgid ""
+"the pre-sweep segment is digital silence (exact zeros); the acoustic noi"
+"se floor cannot be measured there"
+msgstr "스윕 전 구간이 디지털 무음(완전한 제로)입니다. 그곳의 음향 노이즈 플로어를 잴 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the tail segment is digital silence (exact zeros); the acoustic noise fl"
+"oor cannot be measured there"
+msgstr "테일 구간이 디지털 무음(완전한 제로)입니다. 그곳의 음향 노이즈 플로어를 잴 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {source} segment is digital silence (exact zeros); the acoustic nois"
+"e floor cannot be measured there"
+msgstr "{source} 구간이 디지털 무음(완전한 제로)입니다. 그곳의 음향 노이즈 플로어를 잴 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the pre-sweep segment is not quiet: only {quiet:.2f} s of it stay within"
+" {excess:.0f} dB of its quietest blocks (another sweep pass or a noise e"
+"vent?)"
+msgstr ""
+"스윕 전 구간이 조용하지 않습니다. 가장 조용한 블록에서 {excess:.0f} dB 안에 머무는 것은 {quiet:.2f} s뿐"
+"입니다(다른 스윕 패스나 노이즈 사건?)"
+
+msgctxt "diagnostic"
+msgid ""
+"the tail segment is not quiet: only {quiet:.2f} s of it stay within {exc"
+"ess:.0f} dB of its quietest blocks (another sweep pass or a noise event?"
+")"
+msgstr ""
+"테일 구간이 조용하지 않습니다. 가장 조용한 블록에서 {excess:.0f} dB 안에 머무는 것은 {quiet:.2f} s뿐입니"
+"다(다른 스윕 패스나 노이즈 사건?)"
+
+msgctxt "diagnostic"
+msgid ""
+"the {source} segment is not quiet: only {quiet:.2f} s of it stay within "
+"{excess:.0f} dB of its quietest blocks (another sweep pass or a noise ev"
+"ent?)"
+msgstr ""
+"{source} 구간이 조용하지 않습니다. 가장 조용한 블록에서 {excess:.0f} dB 안에 머무는 것은 {quiet:.2f"
+"} s뿐입니다(다른 스윕 패스나 노이즈 사건?)"
+
+msgctxt "diagnostic"
+msgid ""
+"{excluded:.2f} s of the pre-sweep segment were more than {excess:.0f} dB"
+" above its quietest blocks (another sweep pass or a noise event?) and we"
+"re excluded"
+msgstr ""
+"스윕 전 구간의 {excluded:.2f} s가 가장 조용한 블록보다 {excess:.0f} dB 넘게 높아(다른 스윕 패스나 노"
+"이즈 사건?) 제외했습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"{excluded:.2f} s of the tail segment were more than {excess:.0f} dB abov"
+"e its quietest blocks (another sweep pass or a noise event?) and were ex"
+"cluded"
+msgstr ""
+"테일 구간의 {excluded:.2f} s가 가장 조용한 블록보다 {excess:.0f} dB 넘게 높아(다른 스윕 패스나 노이즈"
+" 사건?) 제외했습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"{excluded:.2f} s of the {source} segment were more than {excess:.0f} dB "
+"above its quietest blocks (another sweep pass or a noise event?) and wer"
+"e excluded"
+msgstr ""
+"{source} 구간의 {excluded:.2f} s가 가장 조용한 블록보다 {excess:.0f} dB 넘게 높아(다른 스윕 패"
+"스나 노이즈 사건?) 제외했습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"harmonics of {base:.0f} Hz were found as well, but {best:.0f} Hz explain"
+"s more of them; a single mains supply has one fundamental"
+msgstr ""
+"{base:.0f} Hz의 고조파도 찾았지만 더 많이 설명하는 것은 {best:.0f} Hz입니다. 전원 하나에는 기본파가 하나입"
+"니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, {source}): it contains on"
+"ly leakage and noise, so no decay values are reported"
+msgstr ""
+"{band} 밴드({band_low:.0f}-{band_high:.0f} Hz)가 여기 범위({low:.0f}-{high:.0f}"
+" Hz, {source})에 완전히 들어가지 않습니다. 누설과 노이즈만 있어 감쇠 값을 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the Lundeby noise-floor iteration did not converge in {iterations} itera"
+"tion(s)"
+msgstr "Lundeby 노이즈 플로어 반복이 {iterations}번 만에 수렴하지 않았습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the decay curve drops {step:.1f} dB across the direct sound (it carries "
+"{share:.0f} % of the energy; limit {limit:g} dB): EDT describes the dire"
+"ct sound rather than the room at this position"
+msgstr ""
+"감쇠 곡선이 직접음을 건너 {step:.1f} dB 떨어집니다(에너지의 {share:.0f} %, 한계 {limit:g} dB)."
+" 이 위치의 EDT는 방이 아니라 직접음을 말합니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the decay curve is not straight (curvature C = {curvature:.0f} %, limit "
+"{limit:.0f} %): possibly a double slope, coupled volumes or strong early"
+" reflections; no single reverberation time describes it"
+msgstr ""
+"감쇠 곡선이 곧지 않습니다(곡률 C = {curvature:.0f} %, 한계 {limit:.0f} %). 이중 기울기, 결합 공"
+"간, 또는 강한 초기 반사일 수 있습니다. 잔향 시간 하나로는 설명할 수 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, sweep settings): it conta"
+"ins only leakage and noise, so no decay values are reported"
+msgstr ""
+"{band} 밴드({band_low:.0f}-{band_high:.0f} Hz)가 여기 범위({low:.0f}-{high:.0f}"
+" Hz, 스윕 설정)에 완전히 들어가지 않습니다. 누설과 노이즈만 있어 감쇠 값을 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, estimated from reference "
+"audio): it contains only leakage and noise, so no decay values are repor"
+"ted"
+msgstr ""
+"{band} 밴드({band_low:.0f}-{band_high:.0f} Hz)가 여기 범위({low:.0f}-{high:.0f}"
+" Hz, 참조 오디오에서 추정)에 완전히 들어가지 않습니다. 누설과 노이즈만 있어 감쇠 값을 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, declared by the user): it"
+" contains only leakage and noise, so no decay values are reported"
+msgstr ""
+"{band} 밴드({band_low:.0f}-{band_high:.0f} Hz)가 여기 범위({low:.0f}-{high:.0f}"
+" Hz, 사용자가 선언)에 완전히 들어가지 않습니다. 누설과 노이즈만 있어 감쇠 값을 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {band} band ({band_low:.0f}-{band_high:.0f} Hz) is not fully inside "
+"the excitation range ({low:.0f}-{high:.0f} Hz, unknown): it contains onl"
+"y leakage and noise, so no decay values are reported"
+msgstr ""
+"{band} 밴드({band_low:.0f}-{band_high:.0f} Hz)가 여기 범위({low:.0f}-{high:.0f}"
+" Hz, 알 수 없음)에 완전히 들어가지 않습니다. 누설과 노이즈만 있어 감쇠 값을 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the late decay slope ({late:.1f} dB/s) is less than {ratio:g} times the "
+"early slope ({early:.1f} dB/s)"
+msgstr "늦은 감쇠 기울기({late:.1f} dB/s)가 이른 기울기({early:.1f} dB/s)의 {ratio:g}배 미만입니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the {metric} fit is not straight (xi = {xi:.0f} permille, limit {limit:."
+"0f}): {metric} is not a reliable reverberation time here"
+msgstr ""
+"{metric} 맞춤이 곧지 않습니다(xi = {xi:.0f}퍼밀, 한계 {limit:.0f}). 여기서 {metric}은 믿을 "
+"수 있는 잔향 시간이 아닙니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the noise truncation is not trustworthy ({problem}) and the result depen"
+"ds on it ({changes})"
+msgstr "노이즈 절단을 믿을 수 없습니다({problem}). 결과가 그것에 의존합니다({changes})"
+
+msgctxt "diagnostic"
+msgid ""
+"decay analysis: the {bands} band(s) are not fully inside the excitation "
+"range ({low:.0f}-{high:.0f} Hz); no decay values are reported for them"
+msgstr ""
+"감쇠 분석: {bands} 밴드가 여기 범위({low:.0f}-{high:.0f} Hz)에 완전히 들어가지 않습니다. 그 감쇠 값"
+"을 보고하지 않습니다"
+
+msgctxt "diagnostic"
+msgid "the response is too short for a noise-floor estimate"
+msgstr "응답이 너무 짧아 노이즈 플로어를 추정할 수 없습니다"
+
+msgctxt "diagnostic"
+msgid "no decay above the noise floor was found"
+msgstr "노이즈 플로어 위 감쇠를 찾지 못했습니다"
+
+msgctxt "diagnostic"
+msgid "the response does not decay"
+msgstr "응답이 감쇠하지 않습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"Insufficient decay range: {available:.1f} dB available, {needed:.0f} dB "
+"needed ({range:.0f} dB range + {margin:.0f} dB above noise)"
+msgstr ""
+"감쇠 범위 부족: 사용 가능 {available:.1f} dB, 필요 {needed:.0f} dB(범위 {range:.0f} dB"
+" + 노이즈 위 {margin:.0f} dB)"
+
+msgctxt "diagnostic"
+msgid ""
+"Insufficient decay range: the decay curve does not reach the evaluation "
+"range"
+msgstr "감쇠 범위 부족: 감쇠 곡선이 평가 범위에 닿지 않습니다"
+
+msgctxt "diagnostic"
+msgid "Decay slope is not negative"
+msgstr "감쇠 기울기가 음수가 아닙니다"
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:.2f} s vs no value"
+msgstr "{metric} {seconds:.2f} s 대 값 없음"
+
+msgctxt "diagnostic"
+msgid "{metric} has no truncation-independent value"
+msgstr "{metric}에 절단에 의존하지 않는 값이 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"B*T = {bt:.1f} < {minimum:g}: the band filter's own decay is comparable "
+"to the measured decay; values in this band are unreliable"
+msgstr ""
+"B*T = {bt:.1f} < {minimum:g}: 밴드 필터 자체의 감쇠가 측정 감쇠와 비슷합니다. 이 밴드의 값은 신뢰할 수"
+" 없습니다"
+
+msgctxt "diagnostic"
+msgid ""
+"the noise crosspoint ({crosspoint:.2f} s after the onset) lies far beyon"
+"d the first point where the decay reaches the noise floor ({reached:.2f}"
+" s)"
+msgstr ""
+"노이즈 교차점(시작 후 {crosspoint:.2f} s)이 감쇠가 노이즈 플로어에 닿는 첫 점({reached:.2f} s)보다"
+" 훨씬 뒤입니다"
+
+msgctxt "diagnostic"
+msgid "Evaluation range covers fewer than 3 samples after the direct sound"
+msgstr "평가 범위가 직접음 뒤 3샘플 미만입니다"
+
+msgctxt "diagnostic"
+msgid "Evaluation range covers fewer than 3 samples"
+msgstr "평가 범위가 3샘플 미만입니다"
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:.2f} s vs {other:.2f} s"
+msgstr "{metric} {seconds:.2f} s 대 {other:.2f} s"
+
+msgctxt "diagnostic"
+msgid "decay analysis, broadband: {warning}"
+msgstr "감쇠 분석, 광대역: {warning}"
+
+msgctxt "diagnostic"
+msgid "decay analysis, {band}: {warning}"
+msgstr "감쇠 분석, {band}: {warning}"
+
+msgid "{a} or {b}"
+msgstr "{a} 또는 {b}"
+
+msgid "Name"
+msgstr "이름"
+
+msgid "Host API"
+msgstr "호스트 API"
+
+msgid "In"
+msgstr "입력"
+
+msgid "Out"
+msgstr "출력"
+
+msgid "Default rate"
+msgstr "기본 레이트"
+
+msgid "Record rates"
+msgstr "녹음 레이트"
+
+msgid "Play rates"
+msgstr "재생 레이트"
+
+msgid "Latency low/high (ms)"
+msgstr "레이턴시 낮음/높음(ms)"
+
+msgid "Recommended"
+msgstr "권장"
+
+msgid "Notes"
+msgstr "메모"
+
+msgid "input"
+msgstr "입력"
+
+msgid "output"
+msgstr "출력"
+
+msgid "in {input}, out {output}"
+msgstr "입력 {input}, 출력 {output}"
+
+msgid "in {rate:.0f} Hz"
+msgstr "입력 {rate:.0f} Hz"
+
+msgid "out {rate:.0f} Hz"
+msgstr "출력 {rate:.0f} Hz"
+
+msgid "{name} - {count} in"
+msgstr "{name} - 입력 {count}"
+
+msgid "{name} - {count} out"
+msgstr "{name} - 출력 {count}"
+
+msgid "(add {input})"
+msgstr "({input} 추가)"
+
+msgid "20 dB decay"
+msgstr "20 dB 감쇠"
+
+msgid "Above baseline"
+msgstr "베이스라인 위"
+
+msgid "Analysed"
+msgstr "분석됨"
+
+msgid "Architecture"
+msgstr "아키텍처"
+
+msgid "Arrival"
+msgstr "도착"
+
+msgid "Audio"
+msgstr "오디오"
+
+msgid "Audio systems (host APIs)"
+msgstr "오디오 시스템(호스트 API)"
+
+msgid "Build"
+msgstr "빌드"
+
+msgid "CI run"
+msgstr "CI 실행"
+
+msgid "Calibration"
+msgstr "교정"
+
+msgid "Checks"
+msgstr "검사"
+
+msgid "Common band"
+msgstr "공통 밴드"
+
+msgid "Comparable"
+msgstr "비교 가능"
+
+msgid "Created"
+msgstr "생성됨"
+
+msgid "Decay range"
+msgstr "감쇠 범위"
+
+msgid "Default"
+msgstr "기본"
+
+msgid "Delay"
+msgstr "지연"
+
+msgid "Device"
+msgstr "장치"
+
+msgid "Devices"
+msgstr "장치"
+
+msgid "Diagnostics"
+msgstr "진단"
+
+msgid "Distinguishable"
+msgstr "구분 가능"
+
+msgid "Edition"
+msgstr "에디션"
+
+msgid "Excess path"
+msgstr "초과 경로"
+
+msgid "Filter ringing"
+msgstr "필터 링잉"
+
+msgid "Frequency"
+msgstr "주파수"
+
+msgid "Frequency response"
+msgstr "주파수 응답"
+
+msgid "Impulse response"
+msgstr "임펄스 응답"
+
+msgid "Info"
+msgstr "정보"
+
+msgid "Input"
+msgstr "입력"
+
+msgid "Input and output use one host API"
+msgstr "입력과 출력은 호스트 API 하나"
+
+msgid "Interpretation ({profile} profile)"
+msgstr "해석({profile} 프로필)"
+
+msgid "Length"
+msgstr "길이"
+
+msgid "Level"
+msgstr "레벨"
+
+msgid "Level above {max_level:g} dBFS, confirmed with --acknowledge-level"
+msgstr "{max_level:g} dBFS를 넘는 레벨, --acknowledge-level로 확인함"
+
+msgid "Level at or below {max_level:g} dBFS"
+msgstr "{max_level:g} dBFS 이하 레벨"
+
+msgid "Libraries"
+msgstr "라이브러리"
+
+msgid "Loopback"
+msgstr "루프백"
+
+msgid "Low-frequency resonances"
+msgstr "저역 공진"
+
+msgid "Mean |Δ|"
+msgstr "평균 |Δ|"
+
+msgid "Measurement"
+msgstr "측정"
+
+msgid "Mode"
+msgstr "모드"
+
+msgid "No audio device found."
+msgstr "오디오 장치가 없습니다."
+
+msgid "No mains hum detected (50/60 Hz harmonics)."
+msgstr "전원 험이 검출되지 않았습니다(50/60 Hz 고조파)."
+
+msgid "No quiet segment was available."
+msgstr "쓸 수 있는 무음 구간이 없었습니다."
+
+msgid "None above the threshold."
+msgstr "임계값을 넘는 것이 없습니다."
+
+msgid "None found."
+msgstr "찾지 못했습니다."
+
+msgid "Nothing was played."
+msgstr "재생하지 않았습니다."
+
+msgid "Nothing was sent anywhere: this report is only printed."
+msgstr "어디에도 보내지 않았습니다. 이 보고서는 출력만 합니다."
+
+msgid "Notice"
+msgstr "주의"
+
+msgid "Output"
+msgstr "출력"
+
+msgid "Paths"
+msgstr "경로"
+
+msgid "Platform"
+msgstr "플랫폼"
+
+msgid "Play"
+msgstr "재생"
+
+msgid "Playing the sweep and recording"
+msgstr "스윕을 재생하며 녹음"
+
+msgid "Potential mains hum at multiples of {base:.0f} Hz: {harmonics}"
+msgstr "전원 험 가능성({base:.0f} Hz 배수): {harmonics}"
+
+msgid "Preference"
+msgstr "기본 설정"
+
+msgid "Privacy"
+msgstr "개인정보"
+
+msgid "Rate"
+msgstr "레이트"
+
+msgid "Record"
+msgstr "녹음"
+
+msgid "Recording"
+msgstr "녹음"
+
+msgid "Reverberation"
+msgstr "잔향"
+
+msgid "ReverbScope environment report"
+msgstr "ReverbScope 환경 보고서"
+
+msgid "ReverbScope standalone measurement"
+msgstr "ReverbScope 독립 실행 측정"
+
+msgid "ReverbScope test signal"
+msgstr "ReverbScope 테스트 신호"
+
+msgid ""
+"Run a command with --help for its options, for example: reverbscope measur"
+"e --help"
+msgstr "옵션은 각 명령에 --help를 붙이세요. 예: reverbscope measure --help"
+
+msgid "Segment"
+msgstr "구간"
+
+msgid "Self-check"
+msgstr "자가 검사"
+
+msgid "Session"
+msgstr "세션"
+
+msgid "Speed of sound"
+msgstr "음속"
+
+msgid "Stream"
+msgstr "스트림"
+
+msgid "Sweep"
+msgstr "스윕"
+
+msgid "Sweep found"
+msgstr "스윕을 찾음"
+
+msgid "System"
+msgstr "시스템"
+
+msgid "The input device accepts {rate}"
+msgstr "입력 장치가 {rate}를 받습니다"
+
+msgid "The output device accepts {rate}"
+msgstr "출력 장치가 {rate}를 받습니다"
+
+msgid "The selected channels exist"
+msgstr "선택한 채널이 있습니다"
+
+msgid "Use the number with --input-device / --output-device."
+msgstr "번호는 --input-device / --output-device에 씁니다."
+
+msgid "Version"
+msgstr "버전"
+
+msgid "WASAPI exclusive mode"
+msgstr "WASAPI 배타 모드"
+
+msgid "Warning"
+msgstr "경고"
+
+msgid "a delta is valid only when both sides are valid"
+msgstr "차이는 양쪽이 유효할 때만 유효합니다"
+
+msgid "candidates below {max_hz:.0f} Hz"
+msgstr "{max_hz:.0f} Hz 아래 후보"
+
+msgid ""
+"colour in the terminal: auto (default; off for pipes, files and NO_COLOR"
+"), always, never"
+msgstr "터미널 색: auto(기본. 파이프, 파일, NO_COLOR에서는 끔), always, never"
+
+msgid "commands"
+msgstr "명령"
+
+msgid "compensated{sep}path delay {delay}{sep}distance at most {bound}"
+msgstr "보상됨{sep}경로 지연 {delay}{sep}거리는 많아야 {bound}"
+
+msgid "confidence {confidence}{sep}pre-peak margin {margin}"
+msgstr "신뢰도 {confidence}{sep}피크 앞 여유 {margin}"
+
+msgid "default {rate}"
+msgstr "기본 {rate}"
+
+msgid "examples"
+msgstr "예"
+
+msgid "extrapolated to 60 dB"
+msgstr "60 dB까지 외삽"
+
+msgid "impulse-response file"
+msgstr "임펄스 응답 파일"
+
+msgid "input {channels}"
+msgstr "입력 {channels}"
+
+msgid "latency {latency}"
+msgstr "레이턴시 {latency}"
+
+msgid "loopback on input {channel}"
+msgstr "입력 {channel}에서 루프백"
+
+msgid "mean |Δ| per octave"
+msgstr "옥타브당 평균 |Δ|"
+
+msgid "no commit recorded (source or pip install)"
+msgstr "커밋 없음(소스 또는 pip 설치)"
+
+msgid "not applied: {reason}"
+msgstr "적용하지 않음: {reason}"
+
+msgid "nothing has been played yet"
+msgstr "아직 재생하지 않았습니다"
+
+msgid "offered but not applied"
+msgstr "제안했지만 적용하지 않음"
+
+msgid "output {channel}"
+msgstr "출력 {channel}"
+
+msgid "sample rates accepted for 1 channel; nothing was played"
+msgstr "채널 1개에서 받는 샘플레이트. 재생하지 않음"
+
+msgid "sample rates not probed; run reverbscope doctor --probe"
+msgstr "샘플레이트 미조사. reverbscope doctor --probe를 실행하세요"
+
+msgid "sets the Core Audio device rate"
+msgstr "Core Audio 장치 레이트를 설정"
+
+msgid "system default"
+msgstr "시스템 기본"
+
+msgid "tier {tier}; no coordinates are derived (see the JSON)"
+msgstr "단계 {tier}. 좌표는 구하지 않습니다(JSON을 보세요)"
+
+msgid "your home folder is shown as ~"
+msgstr "홈 폴더는 ~로 표시합니다"
+
+msgid "{inputs} in / {outputs} out"
+msgstr "{inputs} 입력 / {outputs} 출력"
+
+msgid "{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB"
+msgstr "{lo:.0f}–{hi:.0f} ms, {threshold:.0f} dB 초과"
+
+msgid "{n} more in result.json"
+msgstr "result.json에 {n}개 더"
+
+msgid "{rms:.1f} dBFS RMS{sep}peak {peak}"
+msgstr "{rms:.1f} dBFS RMS{sep}피크 {peak}"
+
+msgid "{seconds:.1f} s at {rate}"
+msgstr "{seconds:.1f} s, {rate}"
+
+msgid "{seconds:.2f} s, of which {decay:.2f} s is decay"
+msgstr "{seconds:.2f} s, 그중 감쇠 {decay:.2f} s"
+
+msgid "{start:.2f} s into the recording"
+msgstr "녹음의 {start:.2f} s 지점"
+
+msgid "±{uncertainty:.2f} m from the stated inputs only"
+msgstr "명시한 입력에서만 ±{uncertainty:.2f} m"
+
+msgid "Get started"
+msgstr "시작하기"
+
+msgid "test signal"
+msgstr "테스트 신호"
+
+msgid "analysis"
+msgstr "분석"
+
+msgid "session notes (stored in session.json)"
+msgstr "세션 메모(session.json에 저장)"
+
+msgid "placement (optional tape measurements)"
+msgstr "배치(선택 줄자 측정)"
+
+msgid "loopback (optional)"
+msgstr "루프백(선택)"
+
+msgid "required"
+msgstr "필수"
+
+msgid ""
+"try ReverbScope without audio hardware: simulate, analyse and compare two "
+"positions"
+msgstr "오디오 하드웨어 없이 ReverbScope를 써 보기: 두 위치를 시뮬레이션·분석·비교"
+
+msgid "audio interface"
+msgstr "오디오 인터페이스"
+
+msgid "Simulating and analysing two microphone positions …"
+msgstr "마이크 위치 두 곳을 시뮬레이션하며 분석하는 중…"
+
+msgid "deprecated: use reverbscope --format json"
+msgstr "더 이상 권장되지 않음: reverbscope --format json을 쓰세요"
+
+msgid "debug logging, and tracebacks on errors"
+msgstr "디버그 로그와 오류 시 트레이스백"
+
+msgid "recording profile used to interpret the demo (default vocal)"
+msgstr "데모 해석에 쓰는 녹음 프로필(기본 vocal)"
+
+msgid "the demo prints a walkthrough, not JSON"
+msgstr "데모는 안내를 출력하고 JSON은 출력하지 않습니다"
+
+msgid "Nothing was changed. Choose an empty or new folder for the demo."
+msgstr "아무것도 바꾸지 않았습니다. 데모에는 비어 있거나 새 폴더를 고르세요."
+
+msgid "{reason}: {path}"
+msgstr "{reason}: {path}"
+
+msgid "sample rate (Hz): {rates}"
+msgstr "샘플레이트(Hz): {rates}"
+
+msgid ""
+"recording profile that shapes the interpretation: {names} (default: user"
+" settings)"
+msgstr "해석을 만드는 녹음 프로필: {names}(기본: 사용자 설정)"
+
+msgid "folder for the demo files, created or replaced (default {folder})"
+msgstr "데모 파일용 폴더. 만들거나 바꿈(기본 {folder})"
+
+msgid "{path} already exists and was not written by reverbscope demo"
+msgstr "{path}이(가) 이미 있고 reverbscope demo가 쓰지 않았습니다"
+
+msgid "<folder>"
+msgstr "<folder>"
+
+msgid ""
+"This is a bug in ReverbScope. Run the command again with --verbose for the"
+" details and include them, with the environment report, in a bug report."
+msgstr "이것은 ReverbScope의 버그입니다. --verbose로 다시 실행하고 그 내용과 환경 보고서를 버그 보고에 넣으세요."
+
+msgid "<new-folder>"
+msgstr "<new-folder>"
+
+msgid "unexpected {kind}: {message}"
+msgstr "예상하지 않은 {kind}: {message}"
+
+msgid "Data quality"
+msgstr "데이터 품질"
+
+msgid "dBFS RMS; a change needs the same input gain"
+msgstr "dBFS RMS. 변화를 보려면 같은 입력 게인이 필요합니다"
+
+msgid "Low end"
+msgstr "저역"
+
+msgid "Next steps"
+msgstr "다음 단계"
+
+msgid ""
+"Start with the monitors turned down and raise them between takes if need"
+"ed."
+msgstr "모니터는 내린 상태에서 시작하고, 필요하면 테이크 사이에 올리세요."
+
+msgid ""
+"Measure and compare the rooms you record in: reverberation, early reflec"
+"tions, low-frequency resonances and noise, from any DAW."
+msgstr "녹음하는 방을 재고 비교합니다. 잔향, 초기 반사, 저역 공진, 노이즈. 어떤 DAW에서든."
+
+msgid "ReverbScope demo"
+msgstr "ReverbScope 데모"
+
+msgid "Synthetic data: a simulated room, not a measurement."
+msgstr "합성 데이터: 시뮬레이션한 방이며 측정이 아닙니다."
+
+msgid "What the demo shows"
+msgstr "데모가 보여주는 것"
+
+msgid "A strong desk reflection at 2.4 ms at position A is gone at position B."
+msgstr "위치 A의 2.4 ms 강한 책상 반사는 위치 B에서 사라졌습니다."
+
+msgid ""
+"The 110 Hz room mode stays at both positions: it belongs to the room, no"
+"t the spot."
+msgstr "110 Hz 룸 모드는 두 위치에 남습니다. 자리가 아니라 방의 것입니다."
+
+msgid "Mains hum at 50 Hz is clearly lower at position B."
+msgstr "50 Hz 전원 험은 위치 B에서 분명히 낮습니다."
+
+msgid "no reliable broadband RT60 (see Reverberation)"
+msgstr "믿을 수 있는 광대역 RT60 없음(잔향을 보세요)"
+
+msgid "Noise floor"
+msgstr "노이즈 플로어"
+
+msgid "no quiet segment in the recording"
+msgstr "녹음에 무음 구간이 없습니다"
+
+msgid "direct sound: confidence {confidence}"
+msgstr "직접음: 신뢰도 {confidence}"
+
+msgid "no warnings"
+msgstr "경고 없음"
+
+msgid "the recording clipped"
+msgstr "녹음이 클립되었습니다"
+
+msgid "At a glance"
+msgstr "한눈에"
+
+msgid "broadband RT60 not comparable (see Reverberation)"
+msgstr "광대역 RT60을 비교할 수 없음(잔향을 보세요)"
+
+msgid "none above the threshold on either side"
+msgstr "어느 쪽도 임계값 초과 없음"
+
+msgid "at both: {list}"
+msgstr "양쪽: {list}"
+
+msgid "gone: {list}"
+msgstr "사라짐: {list}"
+
+msgid "new: {list}"
+msgstr "새로움: {list}"
+
+msgid "no potential resonance"
+msgstr "공진 후보 없음"
+
+msgid "no quiet segment on one or both sides"
+msgstr "한쪽 또는 양쪽에 무음 구간이 없습니다"
+
+msgid ""
+"No audio device was used and nothing was played. The numbers below descr"
+"ibe the simulation; every session is marked as a synthetic demo."
+msgstr "오디오 장치를 쓰지 않았고 재생도 하지 않았습니다. 아래 숫자는 시뮬레이션입니다. 각 세션은 합성 데모로 표시됩니다."
+
+msgid "Comparison"
+msgstr "비교"
+
+msgid "Open the sessions in the desktop app:"
+msgstr "데스크톱 앱에서 세션 열기:"
+
+msgid ""
+"Open them in the desktop app (download it, or add PySide6 to this Python"
+"):"
+msgstr "데스크톱 앱에서 열기(다운로드하거나 이 Python에 PySide6를 넣으세요):"
+
+msgid "{rms:.1f} dBFS RMS"
+msgstr "{rms:.1f} dBFS RMS"
+
+msgid ""
+"Record the measurement microphone on another track at the same sample ra"
+"te."
+msgstr "같은 샘플레이트의 다른 트랙에 측정 마이크를 녹음합니다."
+
+msgid "Export that track as WAV (no trimming needed) and analyse it:"
+msgstr "그 트랙을 WAV로 내보낸 뒤(자를 필요 없음) 분석합니다:"
+
+msgid "Measure another position into a new folder, then compare the two:"
+msgstr "다른 위치를 새 폴더에 잰 뒤 둘을 비교합니다:"
+
+msgid "Open the session in the desktop app:"
+msgstr "데스크톱 앱에서 세션 열기:"
+
+msgid "Try:"
+msgstr "시도:"
+
+msgid "Try it with synthetic data; no audio interface needed"
+msgstr "합성 데이터로 해 보기. 오디오 인터페이스 불필요"
+
+msgid "Open the desktop app"
+msgstr "데스크톱 앱 열기"
+
+msgid "Write the test signal to play from your DAW"
+msgstr "DAW에서 재생할 테스트 신호 쓰기"
+
+msgid "Run {command} for every command and option."
+msgstr "모든 명령과 옵션은 {command}를 실행하세요."
+
+msgid "close to the desk and the side wall"
+msgstr "책상과 옆벽에 가까움"
+
+msgid "moved 1 m back from the desk"
+msgstr "책상에서 1 m 뒤로 옮김"
+
+msgid "{duration:g} s sweep{sep}{start} – {end}{sep}{rate}"
+msgstr "{duration:g} s 스윕{sep}{start} – {end}{sep}{rate}"
+
+msgid "Position {label}"
+msgstr "위치 {label}"
+
+msgid "Read the full report of one position:"
+msgstr "위치 하나의 전체 보고서 읽기:"
+
+msgid "See every delta between the two positions:"
+msgstr "두 위치의 모든 차이 보기:"
+
+msgid "Measure your own room: write the test signal for your DAW."
+msgstr "자기 방을 재기: DAW용 테스트 신호를 씁니다."
+
+msgid ""
+"strongest {level:.1f} dB at {delay:.1f} ms{sep}{count} above {threshold:"
+".0f} dB"
+msgstr "가장 강함 {level:.1f} dB, {delay:.1f} ms{sep}{threshold:.0f} dB 초과 {count}개"
+
+msgid "none above {threshold:.0f} dB"
+msgstr "{threshold:.0f} dB 초과 없음"
+
+msgid "potential resonances at {listed}"
+msgstr "{listed}의 공진 후보"
+
+msgid "no potential resonance below {max_hz:.0f} Hz"
+msgstr "{max_hz:.0f} Hz 아래에 공진 후보 없음"
+
+msgid "{n} warning(s), see Diagnostics"
+msgstr "경고 {n}건, 진단을 보세요"
+
+msgid "{gone} gone{sep}{new} new{sep}{kept} at both"
+msgstr "{gone} 사라짐{sep}{new} 새로움{sep}양쪽에 {kept}"
+
+msgid "add --same-input-gain if the input gain was unchanged"
+msgstr "입력 게인이 그대로면 --same-input-gain을 붙이세요"
+
+msgid "largest change in the {band} octave, {mad:.1f} dB mean |Δ|"
+msgstr "{band} 옥타브에서 가장 큰 변화, 평균 |Δ| {mad:.1f} dB"
+
+msgid "Comparison {a} {arrow} {b}"
+msgstr "비교 {a} {arrow} {b}"
+
+msgid "mains hum at {base:.0f} Hz"
+msgstr "{base:.0f} Hz 전원 험"
+
+msgid "not compared: {validity}"
+msgstr "비교하지 않음: {validity}"
+
+msgid "Import {name} into your DAW and play it through the monitors."
+msgstr "{name}을(를) DAW로 가져와 모니터로 재생합니다."
+
+msgid "<take.wav>"
+msgstr "<take.wav>"
+
+msgid "<session>"
+msgstr "<session>"
+
+msgid "<other-session>"
+msgstr "<other-session>"
+
+msgid "Geometry"
+msgstr "기하"
+
+msgid "try ReverbScope with synthetic data: no audio hardware needed"
+msgstr "합성 데이터로 ReverbScope를 써 보기. 오디오 하드웨어 불필요"
+
+msgid "recording profile used to interpret the demo (default: {profile})"
+msgstr "데모 해석에 쓰는 녹음 프로필(기본: {profile})"
+
+msgid "[options]"
+msgstr "[options]"
+
+msgid "Files written"
+msgstr "쓴 파일"
+
+msgid "RT60 extrapolated from {basis} in every band"
+msgstr "모든 밴드에서 {basis}로부터 외삽한 RT60"
+
+msgid "Keep it next to the WAV: the analysis rebuilds the exact sweep from it."
+msgstr "WAV 옆에 두세요. 분석이 그것으로 정확한 스윕을 다시 만듭니다."
+
+msgid "start the desktop GUI (needs PySide6; the desktop download includes it)"
+msgstr "데스크톱 GUI를 시작합니다(PySide6 필요. 데스크톱 다운로드에 포함)"
+
+msgid "{path} is a file; --out needs a folder for the session"
+msgstr "{path}은(는) 파일입니다. --out에는 세션용 폴더가 필요합니다"
+
+msgid ""
+"This is the Terminal Edition of ReverbScope. Install the Desktop Edition t"
+"o use the GUI."
+msgstr "이것은 ReverbScope Terminal Edition입니다. GUI를 쓰려면 Desktop Edition을 설치하세요."
+
+msgid "Every command-line feature works here: reverbscope --help lists them."
+msgstr "명령줄 기능은 모두 여기서 동작합니다. reverbscope --help가 나열합니다."
+
+msgid "Download:"
+msgstr "다운로드:"
+
+msgid "Terminal Edition"
+msgstr "Terminal Edition"
+
+msgid "To see them with charts, get ReverbScope Desktop Edition:"
+msgstr "차트로 보려면 ReverbScope Desktop Edition을 받으세요:"
+
+msgid "Check this computer's audio setup"
+msgstr "이 컴퓨터의 오디오 설정을 확인"
+
+msgid "Terminal Edition bundle"
+msgstr "Terminal Edition 번들"
+
+msgid "Desktop Edition bundle"
+msgstr "Desktop Edition 번들"
+
+msgid "not included (Terminal Edition)"
+msgstr "포함되지 않음(Terminal Edition)"
+
+msgid "To see it with charts, get ReverbScope Desktop Edition:"
+msgstr "차트로 보려면 ReverbScope Desktop Edition을 받으세요:"
+
+msgid "shown"
+msgstr "표시됨"
+
+msgid "hidden"
+msgstr "숨김"
+
+msgid "Desktop Edition"
+msgstr "Desktop Edition"
+
+msgid "source or pip install"
+msgstr "소스 또는 pip 설치"
+
+msgid "Developer tools"
+msgstr "개발자 도구"
+
+msgid "Home"
+msgstr "홈"
+
+msgid "ReverbScope {version}  ·  {place}"
+msgstr "ReverbScope {version}  ·  {place}"
+
+msgid "Copy report"
+msgstr "보고서 복사"
+
+msgid "Copy the full text report to the clipboard."
+msgstr "전체 텍스트 보고서를 클립보드에 복사합니다."
+
+msgid "Nothing to copy yet."
+msgstr "아직 복사할 것이 없습니다."
+
+msgid "Report copied to the clipboard."
+msgstr "보고서를 클립보드에 복사했습니다."
+
+msgid "warning: --format json does not apply to {command}; printing text"
+msgstr "경고: --format json은 {command}에 적용되지 않습니다. 텍스트를 출력합니다"
+
+msgid "OK"
+msgstr "확인"
+
+msgid "Cancel"
+msgstr "취소"
+
+msgid "Measure anyway"
+msgstr "그래도 측정"
+
+msgid ""
+"Something unexpected went wrong. This is a bug in ReverbScope. The details"
+" were written to the log; the environment report in the Help menu shows "
+"where that log is. Include both in a bug report."
+msgstr ""
+"예상하지 못한 일이 생겼습니다. ReverbScope의 버그입니다. 자세한 내용은 로그에 썼습니다. 도움말 메뉴의 환경 보고서에 로그"
+" 위치가 있습니다. 둘 다 버그 보고에 넣으세요."
+
+msgid ""
+"<b>ReverbScope {version}</b><br>An open-source, DAW-independent recording "
+"environment analyzer.<br><br>Licensed under the Apache License, Version "
+"2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. "
+"and contributors) under the GNU Lesser General Public License v3; the Qt"
+" libraries are loaded as separate shared libraries and may be replaced b"
+"y interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (li"
+"bsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their res"
+"pective licenses.<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICE"
+"NSES/</code> directory next to the executable (and inside <code>ReverbScop"
+"e.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md."
+" Levels are digital (dBFS) unless a calibration is provided; ReverbScope n"
+"ever reports dB SPL."
+msgstr ""
+"<b>ReverbScope {version}</b><br>오픈소스이며 DAW에 의존하지 않는 녹음 환경 분석기입니다.<br><br>L"
+"icensed under the Apache License, Version 2.0.<br>This program uses Qt a"
+"nd PySide6 (Copyright The Qt Company Ltd. and contributors) under the GN"
+"U Lesser General Public License v3; the Qt libraries are loaded as separ"
+"ate shared libraries and may be replaced by interface-compatible version"
+"s. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and soundd"
+"evice (PortAudio) are used under their respective licenses.<br><br>A des"
+"ktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to"
+" the executable (and inside <code>ReverbScope.app</code> on macOS). From a"
+" source checkout see docs/DEPENDENCIES.md. Levels are digital (dBFS) unl"
+"ess a calibration is provided; ReverbScope never reports dB SPL."
+
+msgid ""
+"Nothing has been entered. This picture shows where the two tape measures"
+" go. It is not your room, and no wall is drawn."
+msgstr "아직 입력한 값이 없습니다. 이 그림은 줄자 두 곳이 어디인지 보여 줍니다. 당신 방이 아니며 벽도 그리지 않습니다."
+
+msgid ""
+"The ring is every loudspeaker position this measurement allows. The cabi"
+"net is one of them, drawn so the direct path can be seen. No wall is dra"
+"wn."
+msgstr ""
+"고리는 이 측정이 허용하는 모든 스피커 위치입니다. 캐비닛은 그중 하나로, 직접 경로가 보이도록 그렸습니다. 벽은 그리지 않습니다"
+"."
+
+msgid ""
+"The line is the loudspeaker distance you entered, and the stand is the m"
+"icrophone height you entered. The loudspeaker is drawn at that same heig"
+"ht only so the tape can be seen; its real height comes from a measuremen"
+"t. No room and no wall are drawn."
+msgstr ""
+"선은 입력한 스피커 거리이고 스탠드는 입력한 마이크 높이입니다. 스피커를 같은 높이에 그리는 것은 줄자가 보이게 하기 위해서만이며"
+", 실제 높이는 측정에서 나옵니다. 방도 벽도 그리지 않습니다."
+
+msgid ""
+"The line is the loudspeaker distance you entered. Both heights in this p"
+"icture are an example. No room and no wall are drawn."
+msgstr "선은 입력한 스피커 거리입니다. 그림의 두 높이는 예시입니다. 방도 벽도 그리지 않습니다."
+
+msgid "reference plane"
+msgstr "기준면"
+
+msgid "Loudspeaker"
+msgstr "스피커"
+
+msgid "Placement picture. Drag to rotate."
+msgstr "배치 그림. 끌어 회전."
+
+msgid "Measured geometry. Drag to rotate."
+msgstr "잰 기하. 끌어 회전."
+
+msgid "possible positions"
+msgstr "가능한 위치"
+
+msgid "Clarity"
+msgstr "명료도"
+
+msgid "Early and late energy"
+msgstr "초기와 후기 에너지"
+
+msgid "ratios from the same truncation as the decay; not a room score"
+msgstr "감쇠와 같은 절단에서 온 비. 방 점수가 아님"
+
+msgid ""
+"C50 is early energy over late energy at 50 ms (speech). C80 is the same "
+"at 80 ms (music). D50 is the share of energy in the first 50 ms. Centre "
+"time is the energy-weighted average time. Time zero is the detected dire"
+"ct sound. A ratio is reported only when the decay range is at least 20 d"
+"B, and it is not a room score."
+msgstr ""
+"C50은 50 ms에서 초기 에너지 나누기 후기 에너지(말)입니다. C80은 80 ms에서 같은 비(음악)입니다. D50은 처음 "
+"50 ms가 차지하는 에너지 몫입니다. 중심 시간은 에너지 가중 평균 시간입니다. 시각 0은 검출한 직접음입니다. 비는 감쇠 범위"
+"가 적어도 20 dB일 때만 보고하며 방 점수가 아닙니다."
+
+msgid "Centre time"
+msgstr "중심 시간"
+
+msgid "EARLY AND LATE ENERGY"
+msgstr "초기와 후기 에너지"
+
+msgctxt "diagnostic"
+msgid ""
+"Insufficient decay range for an early/late energy ratio: {available:.1f}"
+" dB available, {needed:.0f} dB needed"
+msgstr "초기/후기 에너지 비의 감쇠 범위 부족: 사용 가능 {available:.1f} dB, 필요 {needed:.0f} dB"
+
+msgctxt "diagnostic"
+msgid ""
+"the noise truncation ({truncation_s:.3f} s) is not after the {split_ms:."
+"0f} ms early window, so the late energy is not measured"
+msgstr ""
+"노이즈 절단({truncation_s:.3f} s)이 {split_ms:.0f} ms 초기 창 뒤가 아니어서 후기 에너지를 재지 "
+"않습니다"
+
+msgctxt "diagnostic"
+msgid "{metric} {value:.1f} dB vs {other:.1f} dB"
+msgstr "{metric} {value:.1f} dB 대 {other:.1f} dB"
+
+msgctxt "diagnostic"
+msgid "the response is too short for a centre time"
+msgstr "응답이 너무 짧아 중심 시간을 구할 수 없습니다"
+
+msgctxt "diagnostic"
+msgid "{metric} {value:.1f} % vs {other:.1f} %"
+msgstr "{metric} {value:.1f} % 대 {other:.1f} %"
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:.3f} s vs {other:.3f} s"
+msgstr "{metric} {seconds:.3f} s 대 {other:.3f} s"
+
+msgid ""
+"Early sound is not clearly ahead of the later room sound (C50 {value:.1f"
+"} dB, below {threshold:.0f} dB). For close-miked recording this can blur"
+" the source; move the microphone closer or add absorption, then measure "
+"again. This is one position, not a room grade."
+msgstr ""
+"초기 소리가 나중 방 소리보다 분명히 앞서지 않습니다(C50 {value:.1f} dB, {threshold:.0f} dB 미만)"
+". 근접 녹음에서는 음원이 흐려질 수 있습니다. 마이크를 더 가까이 두거나 흡음을 더한 뒤 다시 측정하세요. 위치 하나이지 방 등"
+"급이 아닙니다."
+
+msgid ""
+"Late room sound is weak (C80 {value:.1f} dB, above {threshold:.0f} dB). "
+"This is one position, not a room grade."
+msgstr ""
+"늦은 방 소리가 약합니다(C80 {value:.1f} dB, {threshold:.0f} dB 초과). 위치 하나이지 방 등급이 "
+"아닙니다."
+
+msgid ""
+"Speech clarity is low for close vocals (C50 {value:.1f} dB, below {thres"
+"hold:.0f} dB). Diction may blur between words; move the microphone close"
+"r or add absorption. This is one position, not a room grade."
+msgstr ""
+"근접 보컬로는 말 명료도가 낮습니다(C50 {value:.1f} dB, {threshold:.0f} dB 미만). 단어 사이에서 "
+"딕션이 흐려질 수 있습니다. 마이크를 더 가까이 두거나 흡음을 더하세요. 위치 하나이지 방 등급이 아닙니다."
+
+msgid ""
+"Speech clarity is low for voice-over (C50 {value:.1f} dB, below {thresho"
+"ld:.0f} dB). Narration usually wants the first 50 ms to hold more of the"
+" energy; move the microphone closer or add absorption. This is one posit"
+"ion, not a room grade."
+msgstr ""
+"보이스오버로는 말 명료도가 낮습니다(C50 {value:.1f} dB, {threshold:.0f} dB 미만). 내레이션은 보통"
+" 처음 50 ms에 에너지가 더 많이 있기를 바랍니다. 마이크를 더 가까이 두거나 흡음을 더하세요. 위치 하나이지 방 등급이 아닙"
+"니다."
+
+msgid ""
+"Musical clarity is low for acoustic guitar (C80 {value:.1f} dB, below {t"
+"hreshold:.0f} dB). The note may sit in the room rather than in the instr"
+"ument; move the microphone closer or add absorption. This is one positio"
+"n, not a room grade."
+msgstr ""
+"어쿠스틱 기타로는 음악 명료도가 낮습니다(C80 {value:.1f} dB, {threshold:.0f} dB 미만). 음이 악기"
+"보다 방에 앉을 수 있습니다. 마이크를 더 가까이 두거나 흡음을 더하세요. 위치 하나이지 방 등급이 아닙니다."
+
+msgid ""
+"Late room sound is weak for a room microphone (C80 {value:.1f} dB, above"
+" {threshold:.0f} dB). A room microphone usually wants more of the room a"
+"fter 80 ms; move it farther from the source or into a livelier part of t"
+"he room. This is one position, not a room grade."
+msgstr ""
+"룸 마이크로는 늦은 방 소리가 약합니다(C80 {value:.1f} dB, {threshold:.0f} dB 초과). 룸 마이크는"
+" 보통 80 ms 이후의 방을 더 원합니다. 음원에서 더 멀리 두거나 더 라이브한 곳으로 옮기세요. 위치 하나이지 방 등급이 아닙"
+"니다."
+
+msgid ""
+"Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {thresh"
+"old:.0f} dB). Some late sound suits a choir, but this much will blur dic"
+"tion. This is one position, not a room grade."
+msgstr ""
+"앙상블로는 말 명료도가 낮습니다(C50 {value:.1f} dB, {threshold:.0f} dB 미만). 합창에는 늦은 소리"
+"도 어느 정도 맞지만, 이 정도면 딕션이 흐려집니다. 위치 하나이지 방 등급이 아닙니다."
+
+msgid "Image source"
+msgstr "허상 음원"
+
+msgid "Specular bounce"
+msgstr "정반사"
+
+msgid ""
+"The hollow mark is the first-order image source of that loudspeaker; the"
+" dashed path is the specular bounce off the plane above."
+msgstr "빈 표시는 그 스피커의 1차 허상 음원입니다. 점선은 위쪽 평면에서의 정반사 경로입니다."
+
+
+msgid ""
+"imported room scan (ASCII PLY point cloud or Wavefront OBJ). Not a "
+"lidar attached to this computer"
+msgstr "가져온 룸 스캔(ASCII PLY 포인트 클라우드 또는 Wavefront OBJ). 이 컴퓨터에 연결된 라이다가 아닙니다"
+
+msgid "Spectrum"
+msgstr "스펙트럼"
+
+msgid "of the impulse response"
+msgstr "임펄스 응답의"
+
+msgid "Imported scan"
+msgstr "가져온 스캔"
+
+msgid "No spectrum available"
+msgstr "스펙트럼 없음"
+
+msgid "Peak"
+msgstr "피크"
+
+msgid "Source"
+msgstr "소스"
+
+msgid "impulse response"
+msgstr "임펄스 응답"
+
+msgid "Window length"
+msgstr "창 길이"
+
+msgid "File"
+msgstr "파일"
+
+msgid "Points"
+msgstr "점 수"
+
+msgid "Extent"
+msgstr "범위"
+
+msgid "peak {hz:.0f} Hz ({level:.1f} dB)"
+msgstr "피크 {hz:.0f} Hz ({level:.1f} dB)"
+
+msgctxt "diagnostic"
+msgid "imported PLY scan; coordinates are file units treated as metres"
+msgstr "PLY 스캔을 가져왔습니다. 좌표는 파일 단위를 미터로 취급합니다"
+
+msgctxt "diagnostic"
+msgid "no lidar was attached; this is a file the user already had"
+msgstr "라이다는 연결되지 않았습니다. 사용자가 이미 가지고 있던 파일입니다"
+
+msgctxt "diagnostic"
+msgid "imported OBJ mesh; coordinates are file units treated as metres"
+msgstr "OBJ 메시를 가져왔습니다. 좌표는 파일 단위를 미터로 취급합니다"
+
+msgctxt "diagnostic"
+msgid "imported scan was downsampled from {count} to {kept} points for the picture"
+msgstr "가져온 스캔을 그림용으로 {count}개에서 {kept}개로 줄였습니다"
+
+msgid "scan file not found: {path}"
+msgstr "스캔 파일을 찾을 수 없음: {path}"
+
+msgid "scan file has fewer than three vertices: {path}"
+msgstr "스캔 파일의 꼭짓점이 3개 미만입니다: {path}"
+
+msgid "not a PLY file: {path}"
+msgstr "PLY 파일이 아닙니다: {path}"
+
+msgid "PLY header is incomplete: {path}"
+msgstr "PLY 헤더가 불완전합니다: {path}"
+
+msgid "PLY file has no end_header: {path}"
+msgstr "PLY 파일에 헤더 종료 표시가 없습니다: {path}"
+
+msgid "binary PLY is not read; export ASCII 1.0 PLY from the scanner: {path}"
+msgstr "바이너리 PLY는 읽지 않습니다. 스캐너에서 ASCII 1.0 PLY를 내보내십시오: {path}"
+
+msgid "PLY vertex list is short: {path}"
+msgstr "PLY 꼭짓점 목록이 너무 짧습니다: {path}"
+
+msgid "OBJ file has no vertices: {path}"
+msgstr "OBJ 파일에 꼭짓점이 없습니다: {path}"
+
+msgid "scan file must be a .ply or .obj file, not {name}"
+msgstr "스캔 파일은 .ply 또는 .obj여야 하며 {name}이(가) 아닙니다"
+
+msgid "PLY vertices need x, y and z properties: {path}"
+msgstr "PLY 꼭짓점에는 x, y, z 속성이 필요합니다: {path}"
+
+msgid "PLY vertex {row} is short: {path}"
+msgstr "PLY 꼭짓점 {row}이(가) 너무 짧습니다: {path}"
+
+msgctxt "diagnostic"
+msgid ""
+"Welch (1967) periodogram, Hann window, density scaling; 10*log10(2*psd) "
+"so the integral matches AES17 RMS dBFS"
+msgstr "Welch(1967) 주기그램, Hann 창, 밀도 스케일. 10*log10(2*psd)로 적분이 AES17 RMS dBFS와 맞습니다"
+
+msgid "ASCII PLY or OBJ (optional)"
+msgstr "ASCII PLY 또는 OBJ(선택)"
+
+msgid "Open scan"
+msgstr "스캔 열기"
+
+msgid "Scan files (*.ply *.obj);;All files (*)"
+msgstr "스캔 파일 (*.ply *.obj);;모든 파일 (*)"
+
+msgid "Spectrum (impulse response)"
+msgstr "스펙트럼(임펄스 응답)"
+
+msgid ""
+"The faint points are an imported scan ({name}), not a ReverbScope "
+"measurement and not a lidar attached to this computer."
+msgstr "흐린 점은 가져온 스캔({name})이며 ReverbScope 측정이 아니고 이 컴퓨터에 연결된 라이다도 아닙니다."
+
+msgid "DAW to follow"
+msgstr "따를 DAW"
+
+msgid "list open DAW projects, or say that none were found"
+msgstr "열려 있는 DAW 프로젝트를 나열하거나, 없음을 알림"
+
+msgid ""
+"No running DAW was queried. An empty list means none was declared (this "
+"VM has no DAW). The sweep sample rate follows the chosen project."
+msgstr ""
+"실행 중인 DAW를 조회하지 않았습니다. 빈 목록은 선언된 항목이 없음을 뜻합니다(이 가상 머신에는 DAW가 없습니다). 스윕 "
+"샘플 레이트는 선택한 프로젝트를 따릅니다."
+
+msgid ""
+"follow the open DAW project's sample rate. If none or more than one is "
+"in play, ask; do not guess"
+msgstr "열려 있는 DAW 프로젝트의 샘플 레이트를 따름.없거나 둘 이상이면 묻고, 추측하지 않음"
+
+msgid "DAW to follow when more than one is in play (exact name, not a guess)"
+msgstr "둘 이상일 때 따를 DAW(정확한 이름, 추측 아님)"
+
+msgid "project title when that DAW has more than one session open"
+msgstr "해당 DAW에 세션이 둘 이상 열려 있을 때의 프로젝트 제목"
+
+msgid "No DAW project was found. This computer was not treated as running a DAW."
+msgstr "DAW 프로젝트를 찾지 못했습니다. 이 컴퓨터는 DAW가 실행 중인 것으로 취급하지 않았습니다."
+
+msgid ""
+"Say which project to follow before generating a sweep. ReverbScope will "
+"not guess the sample rate."
+msgstr "스윕을 만들기 전에 따를 프로젝트를 지정하세요. ReverbScope는 샘플 레이트를 추측하지 않습니다."
+
+msgid "DAW"
+msgstr "DAW"
+
+msgid "Project"
+msgstr "프로젝트"
+
+msgid "One project is in play. ReverbScope will follow it."
+msgstr "프로젝트가 하나뿐입니다. ReverbScope가 그것을 따릅니다."
+
+msgid ""
+"More than one DAW project is in play. Say which one to follow with --daw "
+"NAME. ReverbScope will not guess."
+msgstr "DAW 프로젝트가 둘 이상입니다. --daw 이름으로 따를 항목을 지정하세요. ReverbScope는 추측하지 않습니다."
+
+msgid "Following"
+msgstr "따름"
+
+msgid "Settings that follow the chosen DAW"
+msgstr "선택한 DAW를 따르는 설정"
+
+msgid ""
+"No DAW project was found. This computer was not treated as running a "
+"DAW. Say which project ReverbScope should follow (name and sample rate). "
+"The sweep sample rate must match that project. ReverbScope will not guess."
+msgstr ""
+"DAW 프로젝트를 찾지 못했습니다. 이 컴퓨터는 DAW가 실행 중인 것으로 취급하지 않았습니다. ReverbScope가 따를 "
+"프로젝트(이름과 샘플 레이트)를 지정하세요. 스윕 샘플 레이트는 그 프로젝트와 같아야 합니다. ReverbScope는 추측하지 "
+"않습니다."
+
+msgctxt "diagnostic"
+msgid "following {label}; sweep sample rate matches that DAW project"
+msgstr "{label}을(를) 따름; 스윕 샘플 레이트가 해당 DAW 프로젝트와 일치"
+
+msgid ""
+"More than one DAW project is in play. Say which one ReverbScope should "
+"follow; it will not guess. The sweep sample rate follows the chosen "
+"project."
+msgstr ""
+"DAW 프로젝트가 둘 이상입니다. ReverbScope가 따를 항목을 지정하세요. 추측하지 않습니다. 스윕 샘플 레이트는 선택한 "
+"프로젝트를 따릅니다."
+
+msgid "Use --daw NAME and, if that name is shared, --daw-project TITLE."
+msgstr "--daw 이름을 쓰고, 그 이름이 겹치면 --daw-project 제목도 지정하세요."
+
+msgid "DAW name is required"
+msgstr "DAW 이름이 필요합니다"
+
+msgid "none of the open DAW projects is {name}. ReverbScope will not guess"
+msgstr "열려 있는 DAW 프로젝트 중에 {name}이(가) 없습니다. ReverbScope는 추측하지 않습니다"
+
+msgid "fake DAW entry {item} must be Name:rate or Name:rate:project"
+msgstr "가짜 DAW 항목 {item}은 이름:레이트 또는 이름:레이트:프로젝트 형식이어야 합니다"
+
+msgid ""
+"the chosen DAW project is {rate} Hz; --sample-rate {declared} Hz does "
+"not match. ReverbScope will not guess"
+msgstr ""
+"선택한 DAW 프로젝트는 {rate} Hz입니다. --sample-rate {declared} Hz와 일치하지 않습니다. "
+"ReverbScope는 추측하지 않습니다"
+
+msgid "fake DAW entry {item} has no sample rate"
+msgstr "가짜 DAW 항목 {item}에 샘플 레이트가 없습니다"
+
+msgid "Which DAW should ReverbScope follow?"
+msgstr "ReverbScope가 따를 DAW는 무엇입니까?"
+
+msgid ""
+"No DAW project was found. Type the DAW you are using. ReverbScope will not "
+"guess a sample rate."
+msgstr "DAW 프로젝트를 찾지 못했습니다. 사용 중인 DAW를 입력하세요. ReverbScope는 샘플 레이트를 추측하지 않습니다."
+
+msgid "Which project?"
+msgstr "어떤 프로젝트입니까?"
+
+msgid "Project title (optional). Needed when that DAW has more than one session open."
+msgstr "프로젝트 제목(선택). 해당 DAW에 세션이 둘 이상 열려 있을 때 필요합니다."
+
+msgid "Project sample rate"
+msgstr "프로젝트 샘플 레이트"
+
+msgid "The sweep must be generated at this rate."
+msgstr "스윕은 이 레이트로 만들어야 합니다."
+
+msgid "Which DAW project should ReverbScope follow?"
+msgstr "ReverbScope가 따를 DAW 프로젝트는 무엇입니까?"
+
+msgid ""
+"More than one DAW project is in play. Choose one. The sweep sample rate "
+"will match it. ReverbScope will not guess."
+msgstr "DAW 프로젝트가 둘 이상입니다. 하나를 선택하세요. 스윕 샘플 레이트는 그것과 맞춥니다. ReverbScope는 추측하지 않습니다."
+
+msgid "No DAW is being followed yet. Choose which project the sweep must match."
+msgstr "아직 따르는 DAW가 없습니다. 스윕이 맞춰야 할 프로젝트를 선택하세요."
+
+msgid "Choose DAW to follow..."
+msgstr "따를 DAW 선택..."
+
+msgid "Follow DAW"
+msgstr "DAW 따르기"
+
+msgid "Following {label}. The sweep sample rate matches that project."
+msgstr "{label}을(를) 따르는 중입니다. 스윕 샘플 레이트가 해당 프로젝트와 일치합니다."
+msgid "{kind} schema version {version} cannot be read by ReverbScope {running}; this version reads schema {known} and below. Open the file in a newer ReverbScope."
+msgstr "ReverbScope {running}은(는) 스키마 버전 {version}인 {kind}을(를) 읽을 수 없습니다. 이 버전이 읽는 스키마는 {known} 이하입니다. 더 새 ReverbScope에서 파일을 여십시오."
+
+msgctxt "diagnostic"
+msgid "more than one reflection could be the surface the height was measured from, and they disagree by more than {agreement_cm:.0f} cm: {values}. ReverbScope does not choose between them. This is the expected outcome when the microphone sits near the vertical midpoint of the room, where the arrival from the surface below and the one from the surface above are interchangeable; moving the microphone 20-30 cm up or down and measuring again separates them"
+msgstr "높이를 잰 면으로 볼 수 있는 반사가 둘 이상이고, 차이가 {agreement_cm:.0f} cm를 넘습니다: {values}. ReverbScope는 그중 하나를 고르지 않습니다. 마이크가 방의 수직 중간 근처에 있으면 아래 면과 위 면에서 온 도착이 뒤바뀔 수 있어 예상된 결과입니다. 마이크를 20-30 cm 위나 아래로 옮겨 다시 재면 둘을 나눌 수 있습니다"
+

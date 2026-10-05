@@ -199,6 +199,81 @@ illustration, 50 ppm over 10 s is 0.5 ms, 24 samples at 48 kHz).
   device's default high latency, "typically more robust" [14] (`portaudio.py`);
   `--latency low` selects the default low latency instead.
 
+## 4a. Software capability catalog (not hardware results)
+
+These values are ReverbScope's own parameters and PortAudio's documented
+defaults. They fill the device list, channel counts, measurement rates and
+host-API table the product ships. They do **not** fill
+[HARDWARE_TESTS.md](HARDWARE_TESTS.md).
+
+| Source | What it completes |
+| --- | --- |
+| `SUPPORTED_SAMPLE_RATES` (`models/configuration.py`) | 44100, 48000, 88200, 96000, 176400, 192000 Hz — every rate ReverbScope will ask `Pa_IsFormatSupported` |
+| `FakeBackend.list_devices` | One synthetic device: **8 in / 2 out**, default 48 kHz, all six rates above. Nothing is played. |
+| `HOST_API_PREFERENCE` / `HOST_API_NOTES` (`audio/inventory.py`) | Rank and measurement note per host API on Windows, macOS and Linux |
+| `HOST_API_DOCUMENTED_LATENCY` | PortAudio compiled default low/high latency from §2 (not a measured round trip) |
+
+`reverbscope devices --json` and `reverbscope doctor --json` include
+`supported_sample_rates` and `host_api_catalog` on every run. A machine
+with no PortAudio devices still reports the catalog and the six rates;
+its `devices` array stays empty until an interface appears.
+
+Standalone sessions now store the same parameters in
+`session.audio_interface` (name, host API, channel counts, advertised
+rates) and `session.bit_depth` (`32-bit float`, the FLOAT files
+`reverbscope measure` writes). Universal DAW Mode leaves those fields empty:
+the DAW owns the device path.
+
+## 4b. Referenced catalogs (not ReverbScope measurements)
+
+These rows were read from public manufacturer pages and open-source
+repositories. They fill channel counts, sample rates, bit depths and
+host-API compiled defaults that this machine cannot probe. They are **not**
+a physical-interface test and do **not** fill
+[HARDWARE_TESTS.md](HARDWARE_TESTS.md).
+
+`reverbscope devices --referenced` and the `referenced` object on
+`reverbscope devices --json` print the same table. Each value carries its
+source URL and locator (`src/reverbscope/audio/referenced.py`).
+
+### Host-API compiled defaults (PortAudio v19.7.0 and Microsoft)
+
+| Kind | Low / high | Source |
+| --- | --- | --- |
+| WASAPI shared | 10 / 10 ms | Microsoft Learn, Low Latency Audio (engine periodicity 10 ms) |
+| WDM-KS WaveRT | 10 / 40 ms | `src/hostapi/wdmks/pa_win_wdmks.c` (`Type_kWaveRT`) |
+| DirectSound (WDM) | 120 / 240 ms | `PA_DS_WIN_WDM_DEFAULT_LATENCY_` (.120); high = 2× low |
+| MME (WDM) | 90 / 180 ms | `PA_MME_WIN_WDM_DEFAULT_LATENCY_` (0.090); high = 2× low |
+| Core Audio fallback | 10 / 100 ms | `pa_mac_core.c` when device latency is unreadable |
+| ALSA probe request | 8 / 32 ms at 48 kHz | `GropeDevice`: (512−128)/fs / (2048−512)/fs |
+| OSS probe request | 8 / 32 ms at 48 kHz | `pa_unix_oss.c`: 4 fragments × 128 frames, high = 4× low if the driver keeps those sizes |
+| ASIO | (empty) | no compiled seconds; driver's preferred / maximum buffer |
+| JACK | (empty) | `jack_port_get_latency` / `jack_get_sample_rate` only |
+
+PortAudio URLs use tag `v19.7.0` (docs/AUDIO_DEVICES.md [9]–[12]).
+
+### Mixer / graph defaults
+
+| Source | What it states |
+| --- | --- |
+| alsa-lib v1.2.13 `src/conf/alsa.conf` | `defaults.pcm.dmix.rate 48000`, `defaults.pcm.dmix.channels 2` |
+| PipeWire `pipewire.conf(5)` | `default.clock.rate = 48000`; `default.clock.allowed-rates = [ ]` |
+
+### Manufacturer interface pages
+
+| Interface | Stated | Left empty | Source |
+| --- | --- | --- | --- |
+| Focusrite Scarlett 2i2 4th Gen | 2 analog in / 2 analog out / 2 loopback in; 44.1–192 kHz; 24-bit | measured latency; host-API name | [2i2 4th Gen Specifications](https://userguides.focusrite.com/hc/en-gb/articles/19640392541202-2i2-4th-Gen-Specifications) |
+| Focusrite Scarlett 18i20 4th Gen | 8 analog in; 2 loopback in; 44.1–192 kHz; 24-bit | analog line-out count | [Using your 18i20 4th Gen](https://userguides.focusrite.com/hc/en-gb/articles/21616163352722-Using-your-18i20-4th-Gen); [Specifications](https://userguides.focusrite.com/hc/en-gb/articles/21616107507218-18i20-4th-Gen-Specifications) |
+| RME Babyface Pro FS | 4 analog in / 4 analog out; 24-bit; 28–200 kHz range | discrete rate list | [rme-audio.de/babyface-pro-fs.html](https://rme-audio.de/babyface-pro-fs.html) |
+
+### Still no citable source
+
+USB Audio Class discrete rate tables (USB-IF PDFs not re-read); measured
+round-trip; `Pa_IsFormatSupported` on a physical interface; this VM's
+empty ALSA/OSS device list; Scarlett 18i20 analog output count; hardware
+bit depth of a PortAudio stream (ReverbScope writes 32-bit float).
+
 ## 5. References
 
 Accessed 2026-09-24. See also [research/literature.md](research/literature.md).

@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from reverbscope.core.pipeline import Reference
+from reverbscope.daw import DawProject
 from reverbscope.interpretation import Finding
 from reverbscope.models.audio import AudioSignal
 from reverbscope.models.configuration import AnalysisSettings, SweepSettings
@@ -26,6 +27,7 @@ class MeasurementState:
     result: AnalysisResult | None = None
     findings: list[Finding] = field(default_factory=list)
     session: MeasurementSession = field(default_factory=MeasurementSession)
+    followed_daw: DawProject | None = None
 
     def reset(self) -> None:
         self.recording_path = None
@@ -33,3 +35,4 @@ class MeasurementState:
         self.result = None
         self.findings = []
         self.session = MeasurementSession(mode=self.mode)
+        self.followed_daw = None

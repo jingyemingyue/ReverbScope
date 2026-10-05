@@ -161,6 +161,9 @@ def render_analysis(
     lines += _reflections(c, result)
     if result.placement is not None:
         lines += _placement(c, result.placement)
+    if result.room_scan is not None:
+        lines += _room_scan(c, result)
+    lines += _spectrum(c, result)
     lines += _resonances(c, result)
     lines += _diagnostics(c, result)
     lines += _findings(c, findings, profile_name)
@@ -189,6 +192,7 @@ def _glance_label_width() -> int:
         _("Noise floor"),
         _("Data quality"),
         _("Frequency response"),
+        _("Spectrum"),
     )
     return max(cell_width(label) for label in labels)
 
@@ -289,6 +293,15 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         quality += c.sep() + _("the recording clipped")
         status = "error"
     row(_("Data quality"), status, quality)
+    spectrum = result.spectrum
+    if spectrum is not None and spectrum.peak_hz is not None and spectrum.peak_db is not None:
+        row(
+            _("Spectrum"),
+            "ok",
+            _("peak {hz:.0f} Hz ({level:.1f} dB)").format(
+                hz=spectrum.peak_hz, level=spectrum.peak_db
+            ),
+        )
     return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
 
 
@@ -594,6 +607,49 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
             align="rlr",
         )
     for note in placement.notes:
+        lines += c.status("info", localize(note))
+    return lines
+
+
+def _spectrum(c: Console, result: AnalysisResult) -> list[str]:
+    spectrum = result.spectrum
+    lines = c.section(_("Spectrum"), _("of the impulse response"))
+    if spectrum is None or spectrum.peak_hz is None:
+        return lines + c.status("skip", _("No spectrum available"))
+    lines += c.fields(
+        [
+            (
+                _("Peak"),
+                f"{spectrum.peak_hz:.1f} Hz"
+                + (f" ({spectrum.peak_db:.1f} dB)" if spectrum.peak_db is not None else ""),
+            ),
+            (_("Source"), _("impulse response")),
+            (_("Window length"), str(spectrum.nperseg)),
+        ]
+    )
+    return lines
+
+
+def _room_scan(c: Console, result: AnalysisResult) -> list[str]:
+    scan = result.room_scan
+    assert scan is not None
+    lines = c.section(_("Imported scan"), scan.format.upper())
+    extent = (
+        scan.bounds_max_m[0] - scan.bounds_min_m[0],
+        scan.bounds_max_m[1] - scan.bounds_min_m[1],
+        scan.bounds_max_m[2] - scan.bounds_min_m[2],
+    )
+    lines += c.fields(
+        [
+            (_("File"), scan.source_name),
+            (_("Points"), str(scan.point_count)),
+            (
+                _("Extent"),
+                f"{extent[0]:.2f} × {extent[1]:.2f} × {extent[2]:.2f} m",
+            ),
+        ]
+    )
+    for note in scan.notes:
         lines += c.status("info", localize(note))
     return lines
 
@@ -1117,6 +1173,10 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
                 (pgettext("environment report", "devices"), str(len(devices))),
                 (pgettext("environment report", "default input"), default_in or c.dash()),
                 (pgettext("environment report", "default output"), default_out or c.dash()),
+                (
+                    pgettext("environment report", "measurement rates"),
+                    rates_text(audio.get("supported_sample_rates") or (), c),
+                ),
             ]
         )
         for note in audio.get("notes", []):
@@ -1157,6 +1217,20 @@ def _recommended(probe: dict[str, Any]) -> str:
     return ""
 
 
+def _device_rate_cell(c: Console, device: dict[str, Any], probe: dict[str, Any]) -> str:
+    """Default rate, plus backend-advertised or probed rates when they exist."""
+    default = rate_text(float(device.get("default_sample_rate") or 0.0))
+    advertised = tuple(int(rate) for rate in device.get("supported_sample_rates") or ())
+    known = tuple(int(rate) for rate in probe.get("input_rates") or probe.get("output_rates") or ())
+    extra = advertised or known
+    if not extra:
+        return default
+    listed = rates_text(extra, c)
+    if listed == default or default in listed:
+        return listed
+    return f"{default}; {listed}"
+
+
 def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> list[str]:
     """Devices as a table, or one block per device when the rates were probed."""
     if not probes:
@@ -1172,7 +1246,7 @@ def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> 
                     device["host_api"],
                     str(device["max_input_channels"] or c.dash()),
                     str(device["max_output_channels"] or c.dash()),
-                    rate_text(device["default_sample_rate"]),
+                    _device_rate_cell(c, device, probe),
                     _default_marks(device, short=True),
                 ]
             )
@@ -1196,7 +1270,7 @@ def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> 
             _("{inputs} in / {outputs} out").format(
                 inputs=device["max_input_channels"], outputs=device["max_output_channels"]
             ),
-            _("default {rate}").format(rate=rate_text(device["default_sample_rate"])),
+            _("default {rate}").format(rate=_device_rate_cell(c, device, probe)),
         ]
         marks = _default_marks(device)
         if marks:
@@ -1229,6 +1303,7 @@ def render_devices(console: Console, devices: Sequence[DeviceInfo]) -> str:
                 "default_sample_rate": d.default_sample_rate,
                 "is_default_input": d.is_default_input,
                 "is_default_output": d.is_default_output,
+                "supported_sample_rates": list(d.supported_sample_rates),
             }
         }
         for d in devices
@@ -1250,6 +1325,14 @@ def render_inventory(console: Console, inventory: DeviceInventory) -> str:
     if inventory.portaudio_version:
         lines.append("")
         lines += console.fields([("PortAudio", inventory.portaudio_version)])
+    lines += console.fields(
+        [
+            (
+                pgettext("environment report", "measurement rates"),
+                rates_text(data.get("supported_sample_rates") or (), console),
+            )
+        ]
+    )
     lines += console.section(
         _("Devices"),
         _("sample rates accepted for 1 channel; nothing was played")
@@ -1283,36 +1366,145 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
     for api in inventory.host_apis:
         if api.note:
             lines += console.status("info", f"{api.name}: {localize(api.note)}")
+    if inventory.host_api_catalog:
+        lines.append("")
+        rows = [
+            [
+                entry.name,
+                console.dash() if entry.rank is None else str(entry.rank + 1),
+                _catalog_latency(console, entry),
+            ]
+            for entry in inventory.host_api_catalog
+        ]
+        lines += console.table(
+            [_("Host API"), _("Preference"), _("Documented latency")],
+            rows,
+            align="llr",
+            title_columns=1,
+        )
+        lines += console.status(
+            "info",
+            _(
+                "Referenced manufacturer specs: reverbscope devices --referenced (not a hardware result)"
+            ),
+        )
     return console.fit("\n".join(lines))
+
+
+def render_referenced(console: Console, inventory: DeviceInventory) -> str:
+    """Manufacturer / repo specs. Not a HARDWARE_TESTS.md result."""
+    data = inventory.referenced
+    lines = console.title(_("Referenced device data (not measured)"))
+    lines += console.status(
+        "info",
+        _("Public sources only. Not a ReverbScope measurement and not a HARDWARE_TESTS.md PASS."),
+    )
+    rows = []
+    for entry in data.get("interfaces", []):
+        rates_hz = entry.get("sample_rates_hz") or ()
+        lo, hi = entry.get("sample_rate_min_hz"), entry.get("sample_rate_max_hz")
+        if rates_hz:
+            rates = rates_text(rates_hz, console)
+        elif lo and hi:
+            rates = f"{lo / 1000:g}–{hi / 1000:g} kHz"
+        else:
+            rates = console.dash()
+        rows.append(
+            [
+                entry["name"],
+                console.dash()
+                if entry.get("analog_inputs") is None
+                else str(entry["analog_inputs"]),
+                console.dash()
+                if entry.get("analog_outputs") is None
+                else str(entry["analog_outputs"]),
+                rates,
+                entry.get("bit_depth") or console.dash(),
+            ]
+        )
+    lines.append("")
+    lines += console.table(
+        [_("Interface"), _("In"), _("Out"), _("Rate"), _("Bit depth")],
+        rows,
+        align="llrrr",
+        title_columns=1,
+    )
+    for entry in data.get("interfaces", []):
+        citation = entry.get("citation") or {}
+        lines += console.status("info", f"{entry['name']}: {citation.get('url', '')}")
+        for missing in entry.get("not_stated", []):
+            lines += console.status("skip", f"{entry['name']}: {localize(missing)}")
+    lines.append("")
+    mix_rows = [
+        [
+            entry["name"],
+            console.dash()
+            if entry.get("sample_rate_hz") is None
+            else rate_text(float(entry["sample_rate_hz"])),
+            console.dash() if entry.get("channels") is None else str(entry["channels"]),
+        ]
+        for entry in data.get("mixer_defaults", [])
+    ]
+    lines += console.table(
+        [_("Mixer default"), _("Rate"), _("Channels")],
+        mix_rows,
+        align="llr",
+        title_columns=1,
+    )
+    for entry in data.get("mixer_defaults", []):
+        citation = entry.get("citation") or {}
+        lines += console.status("info", f"{entry['name']}: {citation.get('url', '')}")
+    lines.append("")
+    lines += console.section(_("Gaps with no citable source"))
+    for gap in data.get("gaps", []):
+        lines += console.status("skip", localize(gap))
+    return console.fit("\n".join(lines))
+
+
+def _catalog_latency(console: Console, entry: Any) -> str:
+    low, high = entry.documented_low_latency_s, entry.documented_high_latency_s
+    if low is None and high is None:
+        return localize(entry.documented_latency_note) or console.dash()
+
+    def _ms(value: float | None) -> str:
+        return console.dash() if value is None else f"{value * 1000:g} ms"
+
+    return f"{_ms(low)} / {_ms(high)}"
 
 
 # --- Sweep -----------------------------------------------------------------------------
 
 
 def render_sweep_written(
-    console: Console, settings: SweepSettings, wav_path: object, sidecar: object
+    console: Console,
+    settings: SweepSettings,
+    wav_path: object,
+    sidecar: object,
+    *,
+    followed: object | None = None,
 ) -> str:
     c = console
     lines = c.title(_("ReverbScope test signal"))
     lines.append("")
     lines += c.status("ok", Verbatim(_("Wrote {path}").format(path=wav_path)))
-    lines += c.fields(
-        [
-            (
-                _("Length"),
-                _("{seconds:.1f} s at {rate}").format(
-                    seconds=settings.total_samples / settings.sample_rate,
-                    rate=rate_text(settings.sample_rate),
-                ),
+    fields = [
+        (
+            _("Length"),
+            _("{seconds:.1f} s at {rate}").format(
+                seconds=settings.total_samples / settings.sample_rate,
+                rate=rate_text(settings.sample_rate),
             ),
-            (
-                _("Sweep"),
-                f"{frequency_text(settings.start_hz)} – {frequency_text(settings.end_hz)}"
-                f"{c.sep()}{settings.duration_s:g} s{c.sep()}{settings.level_dbfs:g} dBFS",
-            ),
-        ],
-        indent=4,
-    )
+        ),
+        (
+            _("Sweep"),
+            f"{frequency_text(settings.start_hz)} – {frequency_text(settings.end_hz)}"
+            f"{c.sep()}{settings.duration_s:g} s{c.sep()}{settings.level_dbfs:g} dBFS",
+        ),
+    ]
+    if followed is not None:
+        label = getattr(followed, "label", None)
+        fields.append((_("Following"), label() if callable(label) else str(followed)))
+    lines += c.fields(fields, indent=4)
     lines += c.status(
         "ok",
         Verbatim(_("Wrote {path}").format(path=sidecar)),
@@ -1349,6 +1541,57 @@ def render_sweep_written(
         _("Start with the monitors turned down and raise them between takes if needed."),
         style=("dim",),
     )
+    return c.fit("\n".join(lines))
+
+
+def render_daw_projects(console: Console, projects: Sequence[object]) -> str:
+    """Open / declared DAW projects, or the ask when none or several are in play."""
+    from reverbscope.daw import FOLLOWED_SETTINGS, DawProject
+
+    c = console
+    lines = c.title(_("DAW to follow"))
+    lines.append("")
+    lines += c.fields(
+        [
+            (
+                _("Settings that follow the chosen DAW"),
+                ", ".join(
+                    _("Sample rate") if name == "sample_rate" else name
+                    for name in FOLLOWED_SETTINGS
+                ),
+            )
+        ]
+    )
+    if not projects:
+        lines += c.status(
+            "warn",
+            _("No DAW project was found. This computer was not treated as running a DAW."),
+        )
+        lines += c.status(
+            "info",
+            _(
+                "Say which project to follow before generating a sweep. "
+                "ReverbScope will not guess the sample rate."
+            ),
+        )
+        return c.fit("\n".join(lines))
+    rows = []
+    for item in projects:
+        project = item if isinstance(item, DawProject) else None
+        if project is None:
+            continue
+        rows.append([project.daw, project.project or c.dash(), rate_text(project.sample_rate)])
+    lines += c.table([_("DAW"), _("Project"), _("Sample rate")], rows, align="llr")
+    if len(projects) == 1:
+        lines += c.status("ok", _("One project is in play. ReverbScope will follow it."))
+    else:
+        lines += c.status(
+            "warn",
+            _(
+                "More than one DAW project is in play. Say which one to follow "
+                "with --daw NAME. ReverbScope will not guess."
+            ),
+        )
     return c.fit("\n".join(lines))
 
 

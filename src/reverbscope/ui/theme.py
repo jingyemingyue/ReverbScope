@@ -172,12 +172,23 @@ def tone_color(tone: str) -> tuple[str, str]:
 #: the zh-CN catalog are not drawn as empty boxes by DejaVu Sans.
 CJK_FALLBACK_FONTS = (
     "PingFang SC",
+    "PingFang TC",
+    "PingFang HK",
     "Hiragino Sans GB",
+    "Hiragino Sans",
     "Arial Unicode MS",
     "Microsoft YaHei",
+    "Microsoft JhengHei",
+    "Yu Gothic",
+    "Yu Gothic UI",
+    "Malgun Gothic",
     "SimHei",
     "Noto Sans CJK SC",
+    "Noto Sans CJK TC",
+    "Noto Sans CJK JP",
+    "Noto Sans CJK KR",
     "Source Han Sans SC",
+    "Source Han Sans TC",
     "WenQuanYi Zen Hei",
     "Droid Sans Fallback",
 )
@@ -244,52 +255,53 @@ def stylesheet(t: dict[str, str] | None = None) -> str:
     arrow_up = f'image: url("{images[0]}");' if images else ""
     arrow_down = f'image: url("{images[1]}");' if images else ""
     return f"""
-QWidget {{ color: {t["text"]}; }}
+QWidget {{ color: {t["text"]}; font-size: 13px; }}
 QMainWindow, QStackedWidget, QScrollArea, QScrollArea > QWidget > QWidget,
-QWidget[page="true"] {{ background: {t["bg"]}; }}
-QMenuBar {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; }}
-QMenuBar::item {{ padding: 4px 10px; background: transparent; }}
-QMenuBar::item:selected {{ background: {t["accent_soft"]}; border-radius: 4px; }}
-QMenu {{ background: {t["surface"]}; border: 1px solid {t["border"]}; padding: 4px; }}
-QMenu::item {{ padding: 5px 22px 5px 14px; border-radius: 4px; }}
+QWidget[page="true"], QDialog {{ background: {t["bg"]}; }}
+QMenuBar {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; padding: 2px 6px; }}
+QMenuBar::item {{ padding: 6px 12px; background: transparent; }}
+QMenuBar::item:selected {{ background: {t["accent_soft"]}; border-radius: 6px; }}
+QMenu {{ background: {t["surface"]}; border: 1px solid {t["border"]}; padding: 6px; }}
+QMenu::item {{ padding: 6px 24px 6px 16px; border-radius: 5px; }}
 QMenu::item:selected {{ background: {t["accent_soft"]}; color: {t["text"]}; }}
-QStatusBar {{ background: {t["surface"]}; color: {t["muted"]}; border-top: 1px solid {t["border"]}; }}
+QStatusBar {{ background: {t["surface"]}; color: {t["muted"]}; border-top: 1px solid {t["border"]};
+    padding: 3px 10px; min-height: 22px; }}
 QStatusBar::item {{ border: none; }}
 QToolTip {{ background: {t["surface"]}; color: {t["text"]}; border: 1px solid {t["border"]};
-    padding: 4px 6px; }}
+    padding: 6px 8px; }}
 
-QLabel[role="title"] {{ font-size: 24px; font-weight: 700; }}
-QLabel[role="page-title"] {{ font-size: 19px; font-weight: 700; }}
+QLabel[role="title"] {{ font-size: 28px; font-weight: 700; }}
+QLabel[role="page-title"] {{ font-size: 20px; font-weight: 700; }}
 QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 13px; }}
-QLabel[role="section"] {{ color: {t["muted"]}; font-size: 12px; font-weight: 700; }}
-QLabel[role="hint"] {{ color: {t["muted"]}; }}
+QLabel[role="section"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 700; }}
+QLabel[role="hint"] {{ color: {t["muted"]}; font-size: 12px; }}
 QLabel[role="kpi-label"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 600; }}
-QLabel[role="kpi-value"] {{ font-size: 22px; font-weight: 700; }}
+QLabel[role="kpi-value"] {{ font-size: 24px; font-weight: 700; }}
 QLabel[role="kpi-sub"] {{ color: {t["muted"]}; font-size: 11px; }}
 QLabel[role="card-title"] {{ font-size: 15px; font-weight: 700; }}
 QLabel[role="badge"] {{ background: {t["accent"]}; color: {t["accent_text"]};
     border-radius: 11px; min-width: 22px; min-height: 22px; max-height: 22px;
-    padding: 0 7px; font-size: 12px; font-weight: 700;
+    padding: 0 8px; font-size: 12px; font-weight: 700;
     qproperty-alignment: AlignCenter; }}
 QLabel[role="pill"] {{ background: {t["accent_soft"]}; color: {t["text"]};
-    border: 1px solid {t["accent_soft"]}; border-radius: 11px; padding: 3px 10px;
+    border: 1px solid {t["accent_soft"]}; border-radius: 12px; padding: 4px 12px;
     font-size: 12px; }}
 
 QFrame[card="true"], QGroupBox {{ background: {t["surface"]}; border: 1px solid {t["border"]};
-    border-radius: 10px; }}
+    border-radius: 12px; }}
 QFrame[card="true"][hover="true"]:hover {{ border: 1px solid {t["accent"]};
     background: {t["accent_soft"]}; }}
 QLabel[banner="warn"] {{ background: {t["warn_soft"]}; border: 1px solid {t["warn"]};
-    border-radius: 8px; padding: 8px 12px; }}
+    border-radius: 8px; padding: 10px 14px; }}
 QLabel[banner="info"] {{ background: {t["info_soft"]}; border: 1px solid {t["info"]};
-    border-radius: 8px; padding: 8px 12px; }}
-QGroupBox {{ margin-top: 14px; padding: 18px 14px 12px 14px; font-weight: 600; }}
-QGroupBox::title {{ subcontrol-origin: margin; subcontrol-position: top left; left: 12px;
+    border-radius: 8px; padding: 10px 14px; }}
+QGroupBox {{ margin-top: 16px; padding: 20px 16px 14px 16px; font-weight: 600; }}
+QGroupBox::title {{ subcontrol-origin: margin; subcontrol-position: top left; left: 14px;
     top: 2px; padding: 0 6px; color: {t["text"]}; background: transparent; }}
 QGroupBox QGroupBox {{ background: {t["surface_alt"]}; border-radius: 8px; }}
 
-QPushButton {{ background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 6px;
-    padding: 6px 14px; min-height: 18px; }}
+QPushButton {{ background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 8px;
+    padding: 7px 16px; min-height: 20px; }}
 QPushButton:hover {{ border-color: {t["accent"]}; background: {t["accent_soft"]}; }}
 QPushButton:pressed {{ background: {t["surface_alt"]}; }}
 QPushButton:disabled {{ color: {t["muted"]}; background: {t["surface_alt"]}; }}
@@ -302,8 +314,8 @@ QPushButton[primary="true"]:disabled {{ background: {t["border"]}; border-color:
 QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; }}
 
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit {{
-    background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 6px;
-    padding: 4px 8px; selection-background-color: {t["accent"]};
+    background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 8px;
+    padding: 6px 10px; min-height: 18px; selection-background-color: {t["accent"]};
     selection-color: {t["accent_text"]}; }}
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus,
 QPlainTextEdit:focus {{ border: 1px solid {t["accent"]}; }}
@@ -327,21 +339,21 @@ QCheckBox::indicator:checked {{ background: {t["accent"]}; border: 1px solid {t[
     border-radius: 3px; }}
 
 QTabWidget::pane {{ background: {t["surface"]}; border: 1px solid {t["border"]};
-    border-radius: 10px; top: -1px; }}
-QTabBar::tab {{ background: transparent; color: {t["muted"]}; padding: 8px 14px;
-    border: none; border-bottom: 2px solid transparent; margin-right: 2px; }}
+    border-radius: 12px; top: -1px; }}
+QTabBar::tab {{ background: transparent; color: {t["muted"]}; padding: 9px 16px;
+    border: none; border-bottom: 2px solid transparent; margin-right: 4px; }}
 QTabBar::tab:selected {{ color: {t["text"]}; border-bottom: 2px solid {t["accent"]};
     font-weight: 600; }}
 QTabBar::tab:hover:!selected {{ color: {t["text"]}; }}
 
 QTableWidget, QTableView, QListWidget {{ background: {t["surface"]};
     alternate-background-color: {t["surface_alt"]}; border: 1px solid {t["border"]};
-    border-radius: 8px; gridline-color: {t["border"]};
+    border-radius: 10px; gridline-color: {t["border"]};
     selection-background-color: {t["accent_soft"]}; selection-color: {t["text"]}; }}
 QHeaderView::section {{ background: {t["surface_alt"]}; color: {t["muted"]};
     font-weight: 600; border: none; border-bottom: 1px solid {t["border"]};
-    padding: 6px 8px; }}
-QListWidget::item {{ padding: 8px 10px; border-bottom: 1px solid {t["surface_alt"]}; }}
+    padding: 8px 10px; }}
+QListWidget::item {{ padding: 9px 12px; border-bottom: 1px solid {t["surface_alt"]}; }}
 QListWidget::item:selected {{ background: {t["accent_soft"]}; color: {t["text"]}; }}
 QListWidget::item:hover {{ background: {t["surface_alt"]}; }}
 
@@ -354,8 +366,6 @@ QScrollBar::handle:vertical:hover {{ background: {t["muted"]}; }}
 QScrollBar:horizontal {{ background: transparent; height: 10px; margin: 2px; }}
 QScrollBar::handle:horizontal {{ background: {t["border"]}; border-radius: 4px; min-width: 30px; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
-QStatusBar {{ background: {t["surface"]}; border-top: 1px solid {t["border"]};
-    color: {t["muted"]}; }}
 """
 
 

@@ -15,10 +15,11 @@ architecture ideas) or as ordinary dependencies. See CODE_PROVENANCE.md.
 
 | Project | Repository | License (from LICENSE file) | Copyleft | Affects Apache-2.0? | Classification for ReverbScope |
 | --- | --- | --- | --- | --- | --- |
-| pyroomacoustics | https://github.com/LCAV/pyroomacoustics | MIT | no | no (keep EPFL-LCAV notice if code were copied) | Conceptual reference (ESS/deconvolution API design). Not a dependency. Re-checked 2026-09-21 when image-source mathematics entered `core/placement.py` and its tests: still no code taken, implementation is clean-room from Allen & Berkley (1979). |
+| pyroomacoustics | https://github.com/LCAV/pyroomacoustics | MIT | no | no (keep EPFL-LCAV notice if code were copied) | Conceptual reference (ESS/deconvolution API design; documented `Room.plot` showing sources, microphones and image sources). Not a dependency. Re-checked 2026-10-03 when the placement picture started drawing the first-order image: documentation of `Room.plot` was the visualization idea; **no source copied.** Geometry is clean-room from Allen & Berkley (1979). |
 | python-acoustics (archived) | https://github.com/python-acoustics/python-acoustics | BSD-3-Clause (template placeholder `{organization}` left in the file) | no | no | Conceptual reference (octave-band and decay API ideas). |
 | pyfar | https://github.com/pyfar/pyfar | MIT (bracketed placeholders in the copyright line) | no | no | Conceptual reference (signal/measurement class design). |
-| SciPy | https://github.com/scipy/scipy | BSD-3-Clause (+ bundled permissive licenses, none in `scipy.signal`) | no | no | Dependency (public API only). |
+| pyrato | https://github.com/pyfar/pyrato | MIT | no | no | Conceptual reference only (documented Chu–Lundeby energy-decay combination). Re-checked 2026-10-03 when Chu subtraction entered `core/decay.py`: documentation of `energy_decay_curve_chu_lundeby` was the idea source; **no source copied.** Implementation is clean-room from Chu (1978). |
+| SciPy | https://github.com/scipy/scipy | BSD-3-Clause (+ bundled permissive licenses, none in `scipy.signal`) | no | no | Dependency (public API only). Re-checked 2026-10-03: `scipy.signal.welch` is called for the IR spectrum the same way the noise PSD already used it. **No SciPy source copied.** |
 | Impulcifer | https://github.com/jaakkopasanen/Impulcifer | MIT | no | no | Conceptual reference (sweep/IR workflow). |
 | AutoEq | https://github.com/jaakkopasanen/AutoEq | MIT (measurement data license unclear) | no | no | Conceptual reference only (smoothing ideas). |
 | DRC — Digital Room Correction (D. Sbragion) | https://drc-fir.sourceforge.net/ | GPL-2.0-or-later (from docs and SourceForge metadata; tarball not opened) | **yes** | **would force GPL** | Conceptual reference only. No code used. |
@@ -34,7 +35,9 @@ architecture ideas) or as ordinary dependencies. See CODE_PROVENANCE.md.
 | pengowray/sweep (JavaScript) | (GitHub search result) | MIT | no | no | Conceptual reference only. |
 | ESS gists (akashrajkn; a Farina-formula gist) | GitHub gists | **none** | unknown | unknown | **License unclear — no source code copied.** |
 | python-sounddevice (+ examples) | https://github.com/spatialaudio/python-sounddevice | MIT (PortAudio MIT-style; Windows ASIO DLLs carry Steinberg SDK terms) | no | no | Dependency (public API only). |
+| PortAudio v19.7.0 (compiled host-API defaults only) | https://github.com/PortAudio/portaudio/tree/v19.7.0 | MIT | no | no | Numbers cited in `audio/referenced.py` (MME/DirectSound/WDM-KS/ALSA/OSS/Core Audio macros). **No source copied.** |
 | python-soundfile | https://github.com/bastibe/python-soundfile | BSD-3-Clause (bundled libsndfile LGPL-2.1+, dynamic) | no | no as a pip dependency | Dependency (public API only). |
+| Open3D / trimesh / CloudCompare | (not opened) | n/a | n/a | n/a | **Not used.** The scan importer is a clean-room ASCII PLY / OBJ reader of the public layouts (Turk / Bourke; LoC FDD000507). No scanner library was a dependency or a source. |
 
 ## Rules applied
 

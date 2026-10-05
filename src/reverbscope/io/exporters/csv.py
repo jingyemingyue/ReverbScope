@@ -21,6 +21,7 @@ class CsvExporter:
             _write_energy_metrics(base / "energy_metrics.csv", result),
             _write_decay_edc(base / "decay_edc.csv", result),
             _write_frequency_response(base / "frequency_response.csv", result),
+            _write_spectrum(base / "spectrum.csv", result),
             _write_noise_psd(base / "noise_psd.csv", result),
             _write_reflections(base / "reflections.csv", result),
             _write_resonances(base / "resonances.csv", result),
@@ -105,6 +106,17 @@ def _write_frequency_response(path: Path, result: AnalysisResult) -> Path | None
         sm = float(smoothed[index]) if smoothed is not None and index < smoothed.size else ""
         rows.append([float(freq), raw, sm])
     return _write(path, ["frequency_hz", "magnitude_db_raw", "magnitude_db_smoothed"], rows)
+
+
+def _write_spectrum(path: Path, result: AnalysisResult) -> Path | None:
+    spectrum = result.spectrum
+    if spectrum is None or spectrum.frequencies_hz.size == 0:
+        return None
+    rows: list[list[object]] = [
+        [float(freq), float(level)]
+        for freq, level in zip(spectrum.frequencies_hz, spectrum.level_db, strict=False)
+    ]
+    return _write(path, ["frequency_hz", "level_db"], rows)
 
 
 def _write_noise_psd(path: Path, result: AnalysisResult) -> Path | None:

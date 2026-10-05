@@ -78,6 +78,8 @@ No ISO/IEC standard defines room-mode detection from a measured response; the Bo
 
 17d. **C. L. Christensen, G. Koutsouris, J. H. Rindel, "The ISO 3382 parameters: Can we simulate them? Can we measure them?," Proc. International Symposium on Room Acoustics (ISRA) 2013, Toronto, 2013 June 9–11.** — **CONFIRMED** (primary PDF read: https://www.odeon.dk/pdf/ISRA2013_Paper_The%20ISO%203382%20parameters_Can%20we%20simulate%20them_Can%20we%20measure%20them_24July2013.pdf). Explains T20/T30 regression ranges, truncation compensation constant C, and noise-floor subtraction in practice.
 
+17e. **W. T. Chu, "Comparison of reverberation measurements using Schroeder's impulse method and decay-curve averaging method," J. Acoust. Soc. Am., vol. 63, no. 5, pp. 1444–1450, 1978 May. DOI 10.1121/1.381875.** — **CONFIRMED** via Crossref (https://api.crossref.org/works/10.1121/1.381875). *Contribution:* subtract the estimated average noise power from the squared impulse response before Schroeder backward integration, so the late EDC is not flattened by a stationary floor. Combined with Lundeby truncation in ReverbScope (`core/decay.py`); the combination is also the documented approach of pyrato (`energy_decay_curve_chu_lundeby`), used as a conceptual reference — no source copied.
+
 ### A.6 Digital level reference
 
 18. **AES17-2020, "AES standard method for digital audio engineering — Measurement of digital audio equipment"** (revision of AES17-2015; earlier editions 1991, 1998). — **CONFIRMED** (https://www.aes.org/publications/standards/search.cfm?docID=21; AES Standards blog on the 2020 revision http://www.aes.org/standards/blog/2020/12/aes17-revision-to-clarify-0dbfs). Defines full scale and **0 dB FS as the RMS level of a full-scale sine wave** (a sine whose peaks just reach the largest positive code), so a full-scale square wave reads +3.01 dB FS. The 2020 revision only clarifies this definition. "dB FS"/"dBFS" is the correct unit for uncalibrated digital levels.
@@ -119,7 +121,7 @@ No ISO/IEC standard defines room-mode detection from a measured response; the Bo
   8. Re-estimate the late-decay slope over a **10–20 dB** range starting **5–10 dB above** the noise level.
   9. Find a new cross-point. **Iterate steps 7–9 until the cross-point converges (max. 5 iterations).**
   10. Truncate the IR at the cross-point and add the compensation energy C from the extrapolated late-decay line (as in the previous bullet).
-- Alternative/complementary: **Chu's noise subtraction** — subtract the mean-square noise estimate from h² before integrating (cited by Karjalainen 2002 as Chu [15]; compared in Guski & Vorländer 2014). ODEON (Christensen 2013) does both truncation and subtraction. ReverbScope: implement Lundeby truncation + compensation as default, expose noise subtraction as an option.
+- Alternative/complementary: **Chu's noise subtraction** — subtract the mean-square noise estimate from h² before integrating (Chu 1978, restated by Karjalainen 2002; compared in Guski & Vorländer 2014). ODEON (Christensen 2013) and pyrato's documented Chu–Lundeby curve do both truncation and subtraction. ReverbScope: Lundeby truncation + compensation remains the noise-floor estimator; Chu subtraction is then applied to `h²` before the integral when a floor is found (`AnalysisSettings.decay_subtract_noise`, default on). Clean-room implementation; no third-party source copied.
 
 ### B.3 Filter bandwidth × reverberation-time limits (B·T)
 
@@ -151,6 +153,22 @@ Playback/record clocks need not be locked; small mismatch leaves the IR clean, l
 - Without a calibrated microphone chain there is no path to dB SPL, NR/NC or LAeq; report levels **in dB FS per AES17-2020** (0 dB FS = RMS of a full-scale sine). State the reference explicitly ("RMS, sine-referenced, AES17"), and give both broadband and per-band values so a user with a known mic sensitivity/preamp gain can convert later. **CONFIRMED** (AES17 definition, A.6/18).
 - Hum detection: report the level of spectral peaks at 50/60 Hz and harmonics relative to the surrounding noise floor (dB re noise floor) and relative to full scale (dB FS). No standard defines this analysis; it is straightforward spectral peak detection (Welch PSD) and needs no citation beyond the PSD method (Welch 1967, IEEE Trans. Audio Electroacoust. 15(2):70–73, DOI 10.1109/TAU.1967.1161901 — DOI not re-verified in this session).
 - ISO 3382-2 requires the background noise to be measured (for the 10 dB / 35–45 dB rules) — in ReverbScope this is the noise floor of the *deconvolved* IR per band (Lundeby estimate) plus the raw recording's noise, both in dB FS.
+
+### B.8 Image-source picture (visualization only)
+
+pyroomacoustics documents `Room.plot` as plotting "the room with its walls, microphones, sources and images" (https://pyroomacoustics.readthedocs.io/en/pypi-release/pyroomacoustics.room.html). ReverbScope's placement picture already showed the microphone, one cabinet and the known planes. It now also draws the first-order image through the upper plane and the specular bounce (`horizontal_plane_image_path`), from Allen & Berkley 1979 [20]. No wall is invented. The pyroomacoustics page is the idea source; **no source was copied.**
+
+### B.9 External lidar / mesh scan (file import only)
+
+ReverbScope does not talk to a lidar. A user who already has a scan can import ASCII PLY (Stanford Triangle Format, Greg Turk; http://paulbourke.net/dataformats/ply/) or Wavefront OBJ (Library of Congress FDD000507). The readers in `io/scan.py` follow those public layouts only; binary PLY is refused. Coordinates are file units treated as metres and are drawn as an overlay. **No Open3D, trimesh or CloudCompare source was copied.** The checked-in fixture is a synthetic shoebox, not a capture.
+
+### B.10 Impulse-response spectrum
+
+The frequency-response tab is a gated FFT of a window around the direct sound. The noise tab is a Welch PSD of a quiet recording segment. Alongside those, ReverbScope now reports a Welch (1967) PSD of the deconvolved IR itself (`core/spectrum.py`), with the same AES17 density scaling as B.7 (`10*log10(2*psd)`). SciPy's public `welch` is used; no third-party measurement program's spectrum code was copied. This VM shows it on synthetic recordings and the fake backend, not on a physical analyser.
+
+### B.11 Follow the DAW in play (no host query)
+
+The sweep must be generated at the project sample rate (daw-setup.md). ReverbScope already treated that rate as DAW-dependent; it does not copy export bit depth or time-stretch from a host. `daw.py` resolves a named or fake project and asks when none or several are in play. This VM has no DAW; the path is `REVERBSCOPE_FAKE_DAWS` / injected entries only. No DAW SDK and no process scan.
 
 ---
 

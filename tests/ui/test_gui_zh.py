@@ -5,6 +5,7 @@ their Chinese text with a CJK font (no empty boxes)."""
 
 from __future__ import annotations
 
+import os
 import warnings
 from collections.abc import Iterator
 from pathlib import Path
@@ -12,6 +13,7 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("PySide6")
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import (
     QAbstractButton,
@@ -172,6 +174,7 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
     tabs = (
         window.results.ir_tab,
         window.results.fr_tab,
+        window.results.spectrum_tab,
         window.results.decay_tab,
         window.results.noise_tab,
         window.results.refl_tab,
@@ -238,12 +241,13 @@ def test_settings_and_developer_tools_are_chinese(zh: None, app: QApplication) -
 
     dialog = SettingsDialog()
     names = [dialog.language.itemText(i) for i in range(dialog.language.count())]
-    assert names == ["跟随系统", "English", "简体中文"]
-    assert [dialog.language.itemData(i) for i in range(dialog.language.count())] == [
-        "",
-        "en",
-        "zh_CN",
-    ]
+    assert names[0] == "跟随系统"
+    assert "简体中文" in names and "繁體中文" in names
+    assert "日本語" in names and "한국어" in names
+    assert "Español" in names and "Français" in names and "Deutsch" in names
+    data = [dialog.language.itemData(i) for i in range(dialog.language.count())]
+    assert data[0] == ""
+    assert {"en", "zh_CN", "zh_TW", "ja", "ko", "es", "fr", "de"} <= set(data)
     _check(_texts(dialog), "settings")
     for tool in (EnvironmentReport("fake"), DeviceInspector("fake")):
         _check(_texts(tool), type(tool).__name__)

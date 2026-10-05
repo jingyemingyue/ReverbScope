@@ -615,25 +615,29 @@ discovery follows files under `.dist-info/licenses/`; macOS
 | Excitation | ESS generation (Farina), fades, level, silences; WAV + JSON sidecar; 44.1–192 kHz |
 | Inverse filters | Analytic (time-reversed, −6 dB/oct) and regularised spectral division |
 | Deconvolution | Whole-recording linear convolution; automatic IR location; pre-peak margin / confidence; sweep-start estimate |
-| Reverberation | Schroeder integration, Lundeby truncation + compensation, EDT/T20/T30 with ISO 3382-1 ranges, validity flags, non-linearity, curvature, B·T check; broadband + octave bands 63 Hz–8 kHz (time-reversed Butterworth) |
+| Reverberation | Schroeder integration, Lundeby truncation + compensation, Chu (1978) noise-power subtraction when a floor is found, EDT/T20/T30 with ISO 3382-1 ranges, validity flags, non-linearity, curvature, B·T check; broadband + octave bands 63 Hz–8 kHz (time-reversed Butterworth) |
 | Frequency response | FFT with optional gating; raw kept; configurable fractional-octave smoothing |
+| Impulse-response spectrum | Welch (1967) PSD of the deconvolved IR, AES17 density scaling; Spectrum tab and `spectrum.csv`. Not a gated FR and not a hardware RTA |
+| Imported room scan | ASCII PLY / Wavefront OBJ overlay on the placement picture (`--scan`); synthetic checked-in sample; no lidar attached |
 | Background noise | Quiet-segment selection (pre-sweep / tail), RMS + peak dBFS (AES17), octave-band levels, Welch PSD, 50/60 Hz hum candidates |
 | Early reflections | ETC peak candidates (delay ms, level dB re direct) with local-trend prominence |
 | Placement geometry | Excess path per candidate; with a tape-measured loudspeaker distance the exact product of perpendicular distances and its two-sided bracket; with a microphone height the vertical axis (loudspeaker height, plane above the devices, horizontal separation). No coordinates, no room length or width, no wall named |
 | Low-frequency resonances | Candidate peaks (< 300 Hz) with narrow-band decay vs. filter ringing comparison |
 | Models & storage | Validated settings; result model with JSON export and `from_dict` load; MeasurementSession; self-contained session directory (session.json, result.json, IR WAV, optional recording.wav, always-copied sweep sidecar); `load_measurement` / `load_comparison` / `list_sessions` / `bundle_session`; recent list and `settings.json` under `$REVERBSCOPE_HOME`; shipped JSON Schemas; `comparison.json` (findings not stored); `project.json` |
 | Interpretation | Finding model (`message_id` / `params` / `locale`); messages through gettext `_()`; RecordingProfile registry + entry points; seven profiles; `interpret_comparison` |
-| CLI | `reverbscope sweep / analyze / analyze-ir / show / compare / schema / devices / measure / gui / session bundle / export / project`; global `--lang`, `--format`, `--backend`, `--copy-recording` |
+| Follow DAW | Sweep sample rate matches the chosen project (`FOLLOWED_SETTINGS`); `reverbscope daw`, `--follow-daw --daw` / `--daw-project`; GUI asks when none or several; fake path `REVERBSCOPE_FAKE_DAWS`. No host is queried; this VM has no DAW |
+| Download tracks | Two betas on the existing Releases / install pages: **stable** (published `0.5.0b1`, narrower) and **preview** (this PR; no Release published). Both still beta |
+| CLI | `reverbscope sweep / daw / analyze / analyze-ir / show / compare / schema / devices / measure / gui / session bundle / export / project`; global `--lang`, `--format`, `--backend`, `--copy-recording` |
 | Public API | Lazy Tier 1 exports from `import reverbscope` (ARCHITECTURE_V1.md §5.1) |
 | Loopback | Optional electrical return: pulse validation (99 % energy settling over the valid record, net of noise), regularised compensation with the FIR peak as time origin and linear division, path-delay bound; refused room-like or clipped channels leave the analysis uncompensated |
 | Audio backends | `AudioBackend` protocol; PortAudio callback stream (progress polled from the waiting thread, Stop, callback errors and early stream end fail the take, buffer problems logged); `plan_input_channels` (1-based inputs → 0-based columns, validated before playback); fake backend for CI and Demo |
 | Averaging | `average_decay`: VALID T values only; ISO 3382-2 class from 4.3.1 Table 1 (combinations, source and microphone positions all checked); `project average` counts distinct position labels |
-| Export | CSV exporter for decay, FR, noise PSD, reflections, resonances; `reverbscope.exporters` entry points |
-| i18n | stdlib gettext with `pgettext` contexts; `zh_CN` catalog for report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles (a test requires a translation with matching placeholders for every extracted message); wheel ships a hashed `.mo`, nothing is written at run time; `--lang` / settings / `REVERBSCOPE_LANG` |
-| GUI | PySide6 window: Home, Universal DAW Mode, Standalone Mode, Results (including Placement), session save/open, Compare (difference curve, matched reflections and resonances, loopback deltas), Demo, Stop, Settings, project-folder browser, tape-measure fields, dark-mode plot chrome, device rate vs requested rate, `gui --smoke` |
+| Export | CSV exporter for decay, FR, IR spectrum, noise PSD, reflections, resonances; `reverbscope.exporters` entry points |
+| i18n | stdlib gettext with `pgettext` contexts; catalogs for `zh_CN`, `zh_TW`, `ja`, `ko`, `es`, `fr` and `de` (report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles; a test requires a translation with matching placeholders for every extracted message); wheel ships hashed `.mo` files, nothing is written at run time; `--lang` / settings / `REVERBSCOPE_LANG` |
+| GUI | PySide6 window: Home, Universal DAW Mode, Standalone Mode, Results (including Spectrum and Placement), session save/open, Compare (difference curve, matched reflections and resonances, loopback deltas), Demo, Stop, Settings, project-folder browser, tape-measure fields, optional imported scan, dark-mode plot chrome, device rate vs requested rate, `gui --smoke` |
 | Standalone Mode | Device enumeration and play+record through the selected backend with safety defaults |
 | Bundles | `scripts/build_license_bundle.py` (verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts from `packaging/licenses/`), `scripts/check_bundle_contents.py` (`--strip`, `--require-licenses`, `--installed-essentials`; GPL-only QML module directories matched, any `qml/` tree in a frozen bundle fails), `packaging/reverbscope.spec`, `release.yml` (the version-driven workflow on `main` since PR #18; it opened the v0.4.1 draft and refreshes it while `v0.4.1` has no tag, see RELEASE_PLAN.md §3), `scripts/smoke_bundle.py` |
-| Documentation | Hub at `docs/index.md`; themed HTML site from `scripts/build_docs_site.py` (S7); release plan in `docs/RELEASE_PLAN.md` |
+| Documentation | Hub at `docs/index.md`; committed GitHub Pages landing page in `site/` (one `sitemap.xml`, one `robots.txt`, utterances); themed HTML preview from `scripts/build_docs_site.py` (S7) into `docs-html/` with per-page title/description, canonical + Open Graph tags; nothing submitted to Google; release plan in `docs/RELEASE_PLAN.md` |
 
 ## Tested (all PASS on 2026-09-17 on macOS; profile work re-verified 2026-09-22;
 Linux x86_64 re-verified 2026-09-24 for v0.4.1, snapshot 22)
@@ -810,7 +814,8 @@ algebra and the refusals, not the acoustics of any real surface.
 ## Not implemented (by design for v0.1 or deferred)
 
 VST3/AU/AAX plug-ins, room score, auto-EQ/correction, cloud/accounts, 3D
-room modelling, absorption material calculators, dB SPL, room-mode
+room modelling (the placement picture is a schematic with the first-order
+image source, not a room model), absorption material calculators, dB SPL, room-mode
 identification, phase display, signed desktop installers. A themed
 documentation site is generated from `docs/` (`scripts/build_docs_site.py`).
 Unsigned bundles are built by `release.yml` when the version changes;

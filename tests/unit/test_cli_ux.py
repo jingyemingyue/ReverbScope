@@ -243,7 +243,7 @@ def test_golden_home_screen(
     code, out, err = _run(["--lang", lang], capsys)
     assert code == 2 and out == ""
     assert "reverbscope demo" in err and "reverbscope --help" in err
-    assert len(err.splitlines()) <= 12  # "ReverbScope" is 2 chars longer than "RoomScope"
+    assert len(err.splitlines()) <= 12  # "ReverbScope" is 2 chars longer than "ReverbScope"
     _golden(f"home-{lang}", _normalise(err))
 
 

@@ -28,7 +28,7 @@ from PySide6.QtWidgets import (
 )
 
 from reverbscope.audio.backend import ChannelPlan, DeviceInfo, StreamOptions, plan_input_channels
-from reverbscope.audio.inventory import DeviceInventory
+from reverbscope.audio.inventory import DeviceInventory, session_audio_interface
 from reverbscope.audio.playrec import (
     DEFAULT_STANDALONE_LEVEL_DBFS,
     SAFE_MAX_LEVEL_DBFS,
@@ -44,10 +44,12 @@ from reverbscope.io.wav import load_reference, read_wav, write_sweep_file
 from reverbscope.models.audio import AudioSignal
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES, AnalysisSettings, SweepSettings
 from reverbscope.models.result import AnalysisResult
-from reverbscope.models.session import MeasurementSession
+from reverbscope.models.session import STANDALONE_BIT_DEPTH, MeasurementSession
 from reverbscope.ui.browser import SessionBrowser
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.widgets import (
+    PAGE_MARGINS,
+    PAGE_SPACING,
     Card,
     ModeCard,
     PageHeader,
@@ -55,6 +57,7 @@ from reverbscope.ui.widgets import (
     label,
     primary,
     set_banner_text,
+    tidy_form,
 )
 from reverbscope.ui.workers import AnalysisWorker, MeasureWorker
 
@@ -104,8 +107,8 @@ class HomePage(QWidget):
         super().__init__(parent)
         self.setProperty("page", True)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 22, 28, 22)
-        layout.setSpacing(14)
+        layout.setContentsMargins(*PAGE_MARGINS)
+        layout.setSpacing(PAGE_SPACING)
 
         layout.addWidget(label("ReverbScope", "title"))
         layout.addWidget(
@@ -192,8 +195,8 @@ def _scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
     """Give ``page`` a fixed header and a scrolling body; return the body layout."""
     page.setProperty("page", True)
     outer = QVBoxLayout(page)
-    outer.setContentsMargins(28, 20, 28, 12)
-    outer.setSpacing(8)
+    outer.setContentsMargins(*PAGE_MARGINS)
+    outer.setSpacing(12)
     outer.addWidget(header)
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
@@ -211,7 +214,7 @@ def _scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
 
 def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLineEdit, QLineEdit]:
     box = QGroupBox(_("Measurement metadata (optional)"))
-    form = QFormLayout(box)
+    form = tidy_form(QFormLayout(box))
     room = QLineEdit(state.session.room_name)
     position = QLineEdit(state.session.measurement_position)
     mic = QLineEdit(state.session.microphone_name)
@@ -236,7 +239,7 @@ class PlacementInputs(QGroupBox):
         super().__init__(parent)
         self.setTitle(_("Tape measurements (optional)"))
         row = QHBoxLayout(self)
-        form = QFormLayout()
+        form = tidy_form(QFormLayout())
         self.distance = QDoubleSpinBox()
         self.distance.setRange(0.0, 15.0)
         self.distance.setDecimals(2)
@@ -270,6 +273,16 @@ class PlacementInputs(QGroupBox):
         form.addRow(_("Loudspeaker distance"), self.distance)
         form.addRow(_("Microphone height"), self.mic_height)
         form.addRow(self.temperature_measured, self.temperature)
+        scan_row = QHBoxLayout()
+        self.scan_path = QLineEdit()
+        self.scan_path.setPlaceholderText(_("ASCII PLY or OBJ (optional)"))
+        self.scan_path.setClearButtonEnabled(True)
+        browse_scan = QPushButton(_("Browse..."))
+        browse_scan.clicked.connect(self._browse_scan)
+        scan_row.addWidget(self.scan_path)
+        scan_row.addWidget(browse_scan)
+        form.addRow(_("Imported scan"), scan_row)
+        self.scan_path.textChanged.connect(self._redraw_scene)
         row.addLayout(form, 1)
         scene = QVBoxLayout()
         self.figure = Figure(figsize=(5.6, 3.3), dpi=100)
@@ -289,15 +302,38 @@ class PlacementInputs(QGroupBox):
         if not allowed:
             self.mic_height.setValue(0.0)
 
-    def _redraw_scene(self, _value: float | None = None) -> None:
+    def _browse_scan(self) -> None:
+        path, _filter = QFileDialog.getOpenFileName(
+            self,
+            _("Open scan"),
+            "",
+            _("Scan files (*.ply *.obj);;All files (*)"),
+        )
+        if path:
+            self.scan_path.setText(path)
+
+    def scan_file(self) -> Path | None:
+        text = self.scan_path.text().strip()
+        return Path(text) if text else None
+
+    def _redraw_scene(self, _value: float | str | None = None) -> None:
+        from reverbscope.io.scan import ScanError, load_scan_optional
         from reverbscope.ui.plots import plot_placement_illustration
 
         distance = self.distance.value()
         height = self.mic_height.value()
+        scan = None
+        try:
+            scan = load_scan_optional(self.scan_file())
+        except ScanError as exc:
+            self.scene_hint.setText(str(exc))
+            self.canvas.draw_idle()
+            return
         hint = plot_placement_illustration(
             self.figure,
             distance_m=distance if distance >= 0.20 else None,
             mic_height_m=height if self.mic_height.isEnabled() and height >= 0.02 else None,
+            scan=scan,
         )
         self.scene_hint.setText(hint)
         self.canvas.draw_idle()
@@ -336,13 +372,22 @@ class DawModePage(QWidget):
 
         # Step 1
         step1 = QGroupBox(_("Step 1 - Generate Test Signal"))
-        form1 = QFormLayout(step1)
+        form1 = tidy_form(QFormLayout(step1))
         self.sample_rate = QComboBox()
         for sr in SUPPORTED_SAMPLE_RATES:
             self.sample_rate.addItem(f"{sr} Hz", sr)
         self.sample_rate.setCurrentIndex(
             list(SUPPORTED_SAMPLE_RATES).index(state.sweep_settings.sample_rate)
         )
+        self.follow_label = QLabel(
+            _("No DAW is being followed yet. Choose which project the sweep must match.")
+        )
+        self.follow_label.setWordWrap(True)
+        self.follow_label.setProperty("role", "hint")
+        self.follow_button = QPushButton(_("Choose DAW to follow..."))
+        self.follow_button.clicked.connect(self.ensure_daw_follow)
+        form1.addRow(_("Follow DAW"), self.follow_button)
+        form1.addRow(self.follow_label)
         self.duration = QDoubleSpinBox()
         self.duration.setRange(1.0, 60.0)
         self.duration.setValue(state.sweep_settings.duration_s)
@@ -373,7 +418,7 @@ class DawModePage(QWidget):
 
         # Step 3
         step3 = QGroupBox(_("Step 3 - Import Recording"))
-        form3 = QFormLayout(step3)
+        form3 = tidy_form(QFormLayout(step3))
         self.recording_button = QPushButton(_("Choose Recording..."))
         self.recording_button.clicked.connect(self._choose_recording)
         self.recording_label = QLabel(_("No recording selected."))
@@ -401,7 +446,7 @@ class DawModePage(QWidget):
         v4.addWidget(meta)
         self.placement = PlacementInputs()
         v4.addWidget(self.placement)
-        profile_form = QFormLayout()
+        profile_form = tidy_form(QFormLayout())
         self.profile = _profile_combo(state)
         profile_form.addRow(_("Recording profile"), self.profile)
         v4.addLayout(profile_form)
@@ -434,15 +479,55 @@ class DawModePage(QWidget):
         )
 
     def _choose_sweep_target(self) -> None:
+        if not self.ensure_daw_follow():
+            return
         path, _filter = QFileDialog.getSaveFileName(
             self, _("Save test signal"), "reverbscope_sweep.wav", _("WAV files (*.wav)")
         )
         if path:
             self.generate_sweep_to(Path(path))
 
+    def ensure_daw_follow(self) -> bool:
+        """Resolve or ask which DAW project the sweep must follow. Never guess."""
+        from reverbscope.daw import DawChoiceNeeded, open_daw_projects, resolve_daw_follow
+        from reverbscope.ui.daw import ask_daw_project
+
+        if self.state.followed_daw is not None:
+            self._show_followed_daw()
+            return True
+        try:
+            self.state.followed_daw = resolve_daw_follow(open_daw_projects())
+        except DawChoiceNeeded as exc:
+            chosen = ask_daw_project(self, exc.candidates, reason=exc.reason)
+            if chosen is None:
+                return False
+            self.state.followed_daw = chosen
+        self._show_followed_daw()
+        return True
+
+    def _show_followed_daw(self) -> None:
+        from reverbscope.daw import apply_daw_follow
+
+        project = self.state.followed_daw
+        if project is None:
+            return
+        settings = apply_daw_follow(self.current_sweep_settings(), project)
+        index = self.sample_rate.findData(settings.sample_rate)
+        if index >= 0:
+            self.sample_rate.setCurrentIndex(index)
+        self.follow_label.setText(
+            _("Following {label}. The sweep sample rate matches that project.").format(
+                label=project.label()
+            )
+        )
+
     def generate_sweep_to(self, path: Path) -> None:
         try:
             settings = self.current_sweep_settings()
+            if self.state.followed_daw is not None:
+                from reverbscope.daw import apply_daw_follow
+
+                settings = apply_daw_follow(settings, self.state.followed_daw)
             wav_path, sidecar = write_sweep_file(settings, path)
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Cannot write test signal"), localize(str(exc)))
@@ -555,6 +640,9 @@ class DawModePage(QWidget):
             sweep_path=str(self.state.sweep_path) if self.state.sweep_path else None,
             recording_path=str(self.state.recording_path) if self.state.recording_path else None,
             recording_profile=self.state.profile,
+            scan_path=str(self.placement.scan_file()) if self.placement.scan_file() else None,
+            daw_name=self.state.followed_daw.daw if self.state.followed_daw else None,
+            daw_project=self.state.followed_daw.project if self.state.followed_daw else None,
         )
         self._set_busy(True, _("Analyzing..."))
         self._worker = AnalysisWorker(
@@ -573,6 +661,13 @@ class DawModePage(QWidget):
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
+        from reverbscope.io.scan import ScanError, attach_room_scan
+
+        try:
+            result = attach_room_scan(result, self.placement.scan_file())
+        except ScanError as exc:
+            self._on_failure(str(exc))
+            return
         self.state.result = result
         self.state.findings = interpret(result, self.state.profile)
         self._set_busy(False, _("Done."))
@@ -621,7 +716,7 @@ class StandalonePage(QWidget):
         layout.addWidget(safety)
 
         devices = QGroupBox(_("Audio devices"))
-        form = QFormLayout(devices)
+        form = tidy_form(QFormLayout(devices))
         self.host_api = QComboBox()
         self.host_api.setToolTip(
             _(
@@ -651,22 +746,27 @@ class StandalonePage(QWidget):
         self.output_channel.setRange(1, 64)
         self.device_rate = QLabel(_("Device rate: unknown"))
         self.device_rate.setWordWrap(True)
+        self.device_rates = QLabel("")
+        self.device_rates.setWordWrap(True)
         self.input_device.currentIndexChanged.connect(self._update_device_rate)
         self.output_device.currentIndexChanged.connect(self._update_device_rate)
         self.sample_rate.currentIndexChanged.connect(self._update_device_rate)
+        self.input_device.currentIndexChanged.connect(self._update_channel_limits)
+        self.output_device.currentIndexChanged.connect(self._update_channel_limits)
         form.addRow(_("Audio system (host API)"), self.host_api)
         form.addRow(_("Input device"), self.input_device)
         form.addRow(_("Output device"), self.output_device)
         form.addRow(self.refresh_button)
         form.addRow(_("Sample rate"), self.sample_rate)
         form.addRow(self.device_rate)
+        form.addRow(self.device_rates)
         form.addRow(_("Input channel (mic)"), self.input_channel)
         form.addRow(_("Loopback channel (1-based)"), self.loopback_channel)
         form.addRow(_("Output channel (speaker)"), self.output_channel)
         layout.addWidget(devices)
 
         sweep = QGroupBox(_("Test signal"))
-        form2 = QFormLayout(sweep)
+        form2 = tidy_form(QFormLayout(sweep))
         self.duration = QDoubleSpinBox()
         self.duration.setRange(1.0, 60.0)
         self.duration.setValue(state.sweep_settings.duration_s)
@@ -690,7 +790,7 @@ class StandalonePage(QWidget):
         from reverbscope.edition import is_developer
 
         self.advanced = QGroupBox(_("Advanced audio options (developer edition)"))
-        adv = QFormLayout(self.advanced)
+        adv = tidy_form(QFormLayout(self.advanced))
         self.latency = QComboBox()
         self.latency.addItem(_("PortAudio default (high)"), None)
         self.latency.addItem(_("Low"), "low")
@@ -852,6 +952,7 @@ class StandalonePage(QWidget):
         self.wasapi_exclusive.setEnabled(kind == "wasapi")
         self.coreaudio_set_rate.setEnabled(kind == "coreaudio")
         self._update_device_rate()
+        self._update_channel_limits()
 
     def stream_options(self) -> StreamOptions:
         return StreamOptions(
@@ -938,6 +1039,34 @@ class StandalonePage(QWidget):
         if mismatch:
             text += _(" — rates differ; the interface may resample")
         self.device_rate.setText(text)
+        rate_sets = [device.supported_sample_rates for device in (inp, out) if device is not None]
+        advertised = next((rates for rates in rate_sets if rates), ())
+        if advertised:
+            self.device_rates.setText(
+                _("Accepted rates: {rates}").format(
+                    rates=", ".join(f"{rate / 1000:g} kHz" for rate in advertised)
+                )
+            )
+        elif self._inventory is not None:
+            self.device_rates.setText(
+                _("ReverbScope measurement rates: {rates}").format(
+                    rates=", ".join(
+                        f"{rate / 1000:g} kHz" for rate in self._inventory.supported_sample_rates
+                    )
+                )
+            )
+        else:
+            self.device_rates.setText("")
+
+    def _update_channel_limits(self) -> None:
+        """Spin-box maxima come from the selected device's channel counts."""
+        inp = self._device_for(self.input_device, kind="input")
+        out = self._device_for(self.output_device, kind="output")
+        in_max = inp.max_input_channels if inp is not None and inp.max_input_channels > 0 else 64
+        out_max = out.max_output_channels if out is not None and out.max_output_channels > 0 else 64
+        self.input_channel.setRange(1, in_max)
+        self.loopback_channel.setRange(0, in_max)
+        self.output_channel.setRange(1, out_max)
 
     def current_sweep_settings(self) -> SweepSettings:
         return SweepSettings(
@@ -1032,9 +1161,17 @@ class StandalonePage(QWidget):
             input_channel=plan.microphone_channel,
             loopback_channel=plan.loopback_channel,
             output_channel=int(self.output_channel.value()),
+            audio_interface=session_audio_interface(
+                self._devices,
+                self.input_device.currentData(),
+                self.output_device.currentData(),
+            ),
+            bit_depth=STANDALONE_BIT_DEPTH,
+            sample_rate=self.state.sweep_settings.sample_rate,
             sweep_settings=self.state.sweep_settings,
             analysis_settings=self.state.analysis_settings,
             recording_profile=self.state.profile,
+            scan_path=str(self.placement.scan_file()) if self.placement.scan_file() else None,
         )
         assert self.state.reference is not None
         set_banner_text(self.status, _("Recorded. Analyzing..."))
@@ -1055,6 +1192,13 @@ class StandalonePage(QWidget):
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
+        from reverbscope.io.scan import ScanError, attach_room_scan
+
+        try:
+            result = attach_room_scan(result, self.placement.scan_file())
+        except ScanError as exc:
+            self._on_failure(str(exc))
+            return
         self.state.result = result
         self.state.findings = interpret(result, self.state.profile)
         self._set_busy(False, _("Done."))

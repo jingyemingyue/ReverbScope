@@ -10,7 +10,12 @@ This page is the English guide. The Chinese translation is
 
 ## Install
 
-Download from the project's
+ReverbScope is offered as **two betas** (both still beta). **Stable beta**
+is the last published pre-release (fewer bugs, narrower features).
+**Preview beta** is this development line (stronger features, may be
+unstable); no preview Release was published.
+
+Download the **stable beta** from the project's
 [Releases page](https://github.com/jingyemingyue/ReverbScope/releases).
 Step-by-step instructions for every system, updating, uninstalling and
 troubleshooting are in [INSTALLATION.md](../INSTALLATION.md); this section is
@@ -97,8 +102,27 @@ the demo never overwrites a folder it did not write. `reverbscope demo --out
 
 ## Universal DAW Mode
 
-1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav` (or the GUI
-   “Universal DAW Mode” generate button, with the project's sample rate).
+The **sweep sample rate** must match the DAW project you are actually
+using. That is the only session setting ReverbScope already treats as
+DAW-dependent (export bit depth and time-stretch are your instructions,
+not values copied from a host). ReverbScope does not talk to a DAW and
+does not scan running programs.
+
+- `reverbscope daw` lists declared or fake projects, or says that none
+  were found. This computer is not treated as running a DAW unless you
+  set `REVERBSCOPE_FAKE_DAWS` (test / demo only: `Name:rate` or
+  `Name:rate:project`, separated by `;`).
+- If none or more than one project is in play, ReverbScope **asks** which
+  one to follow. It will not guess. CLI: `--follow-daw --daw NAME` and,
+  when that name is shared, `--daw-project TITLE`. With no detected
+  project, `--daw NAME --sample-rate HZ` is the declared answer.
+- In the GUI, **Choose DAW to follow...** on Universal DAW Mode Step 1
+  (before Save Test Signal). Several fakes are a pick list; none means
+  you type a name and a rate.
+
+1. `reverbscope sweep --follow-daw --daw <name> --out sweep.wav` (or
+   `reverbscope sweep --sample-rate <project rate> --out sweep.wav`, or the
+   GUI “Universal DAW Mode” generate button after choosing the DAW).
    Keep the `.reverbscope-sweep.json` sidecar next to the WAV.
 2. Import the WAV on a new DAW track, with time-stretching (Warp, Flex,
    Follow Tempo) off and no plug-in on its path. Route it to one loudspeaker.
@@ -166,17 +190,18 @@ Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The UI shows them
 verbatim under a heading that says so.
 
-The Results page has seven tabs:
+The Results page has eight tabs:
 
 | Tab | What it shows |
 | --- | --- |
 | Overview | Broadband and octave-band EDT / T20 / T30 / RT60, plus C50 / C80 / D50 / centre time, each with validity; the text report; core diagnostics (always English). |
 | Impulse Response | The deconvolved IR. The peak is the direct sound; it is not normalised to 1.0. |
 | Frequency Response | Raw (dotted) and smoothed (solid) magnitude. A dashed curve is the electrical loopback when compensation ran. 0 dB is the interface, not “flat in the room”. |
+| Spectrum | Welch power spectrum of that same impulse response (AES17 density). Not the gated frequency-response tab and not the quiet-segment noise PSD. |
 | Decay | Schroeder / energy-decay curves. Broadband is a solid line; octave bands use changing dash patterns so colour is not the only cue. |
 | Noise | Quiet-segment spectrum and 50/60 Hz hum candidates. |
 | Early Reflections | ETC peaks (delay ms, level dB re direct). Open markers for candidates. |
-| Placement | Excess path, and — only with a tape-measured loudspeaker distance — loudspeaker height, the plane above both devices, and horizontal separation. No wall is named. |
+| Placement | Excess path, and — only with a tape-measured loudspeaker distance — loudspeaker height, the plane above both devices, and horizontal separation. No wall is named. An imported ASCII PLY or OBJ scan, if you already have one, is drawn as faint points. |
 
 Low-frequency resonance candidates stay in the Overview text report (and in
 `resonances.csv` after `reverbscope export`). They are not a separate tab.
@@ -191,7 +216,10 @@ separation. It never names a wall or gives room length or width.
 
 Enter the tape numbers in Universal DAW Mode or Standalone Mode before
 Analyze, or pass `--speaker-distance` / `--mic-height` / `--temperature`
-on the CLI.
+on the CLI. To overlay a scan you already have, choose an ASCII PLY or
+OBJ on the Placement page or pass `--scan FILE`. ReverbScope does not
+talk to a lidar; binary PLY is refused; coordinates stay as stored
+(treated as metres) and are not aligned to the microphone.
 
 ## Comparing two positions
 
@@ -217,9 +245,11 @@ curves, and names the ISO 3382-2 class the position counts reach.
 ## Export and language
 
 `reverbscope export session/ --format csv --out curves/` writes every curve.
-`--lang zh_CN` (or Settings → Language, or `REVERBSCOPE_LANG`) translates
-findings, the text-report labels, the GUI and CLI help (`reverbscope --help`
-and every subcommand). Units stay untranslated; digits stay ASCII.
+`--lang zh_CN` (or `zh_TW`, `ja`, `ko`, `es`, `fr`, `de`; or Settings →
+Language, or `REVERBSCOPE_LANG`) translates findings, the text-report labels,
+the GUI and CLI help (`reverbscope --help` and every subcommand). User-facing
+docs stay English and Simplified Chinese. Units stay untranslated; digits
+stay ASCII.
 Diagnostic notes and warnings are stored in English in `result.json` and
 shown translated.
 

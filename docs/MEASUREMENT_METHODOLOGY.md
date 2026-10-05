@@ -213,8 +213,11 @@ bound marks the placement figures unreliable.
 
 **Source.** Schroeder (1965) [4] for backward integration; Lundeby et al.
 (1995) [5] for noise truncation and compensation (step list as reproduced by
-Karjalainen et al. 2002 [15]); ISO 3382-1:2009 [9] / ISO 3382-2:2008 [10] for
-evaluation ranges and the noise margin; Jacobsen & Rindel (1987) [6] for
+Karjalainen et al. 2002 [15]); Chu (1978) [25] for subtracting the estimated
+mean-square noise from `h²` before the integral (the combination with Lundeby
+is the documented Chu–Lundeby approach of pyrato, used as a conceptual
+reference — no source was copied); ISO 3382-1:2009 [9] / ISO 3382-2:2008 [10]
+for evaluation ranges and the noise margin; Jacobsen & Rindel (1987) [6] for
 time-reversed filtering.
 
 **Procedure** (`core/decay.py`):
@@ -231,24 +234,34 @@ time-reversed filtering.
    moves < 1 ms. These parameter values are ReverbScope's choices within the
    ranges published by Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB;
    10–20 dB).
-3. Schroeder curve: `EDC(t) = Σ_{τ≥t} h²(τ)` from the decay start (peak of the
-   smoothed energy) to the truncation point, plus the late-decay
+3. Chu noise-power subtraction (when Lundeby found a floor after the decay):
+   subtract `10^(noise_floor_db/10)` from `h²` and clip negatives to zero
+   before the integral and the early/late energy sums. Lundeby itself still
+   runs on the raw squared response. A clean IR that never reaches a floor is
+   left unsubtracted (`AnalysisSettings.decay_subtract_noise` turns the step
+   off). The idea is Chu (1978) [25] as restated by Karjalainen et al. [15]
+   and compared by Guski & Vorländer 2014; pyrato documents the same
+   combination as `energy_decay_curve_chu_lundeby` (conceptual reference
+   only).
+4. Schroeder curve: `EDC(t) = Σ_{τ≥t} h_sub²(τ)` from the decay start (peak of
+   the smoothed energy) to the truncation point, plus the late-decay
    compensation `C = p(t_c)·(−10 / (slope·ln 10))` (energy of the extrapolated
-   exponential tail). Normalised to 0 dB at the start.
-4. Least-squares line fits over the ISO 3382-1 ranges and extrapolation to
+   exponential tail, still taken from the unsubtracted Lundeby floor at the
+   cross-point). Normalised to 0 dB at the start.
+5. Least-squares line fits over the ISO 3382-1 ranges and extrapolation to
    60 dB: EDT 0…−10 dB (×6), T20 −5…−25 dB (×3), T30 −5…−35 dB (×2). The
    ISO "degree of non-linearity" `ξ = 1000·(1 − r²)` (‰) is reported.
-5. **Validity.** A metric is reported only when the available decay range
+6. **Validity.** A metric is reported only when the available decay range
    (peak level of the smoothed energy minus the estimated noise floor, in dB)
    is at least `|lower limit| + 10 dB`: 20 dB for EDT, 35 dB for T20, 45 dB
    for T30 (ISO 3382: the evaluation range must lie ≥ 10 dB above the noise
    [9][10], restated by Hak et al. 2012 [17]). Otherwise the metric is
    `insufficient_decay_range` with the numbers in `reason`.
-6. **B·T check.** With time-reversed filtering the bandwidth × reverberation
+7. **B·T check.** With time-reversed filtering the bandwidth × reverberation
    time product should exceed about 4 (about 16 with forward filtering) [6];
    below 4 the band's metrics are marked `unreliable` and a warning explains
    why. The numbers 16 / 4 are confirmed only through works citing [6].
-7. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
+8. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
    always reported. Curvature `C = 100·(T30/T20 − 1)` % is given when both
    exist.
 
@@ -318,7 +331,8 @@ ReverbScope does not have. Lateral energy fractions and IACC need a
 figure-of-eight or a dummy head. STI is not computed.
 
 **Procedure** (`core/decay.py`, on the same squared response, onset, Lundeby
-truncation and late-decay compensation as the Schroeder curve). Time zero is
+truncation, Chu subtraction and late-decay compensation as the Schroeder
+curve). Time zero is
 the detected direct-sound sample. Energy from the onset up to that sample
 (the rise, and for a band the time-reversed filter's pre-ringing of the
 direct sound) is counted at time zero. With `E_early` the energy before the
@@ -366,6 +380,23 @@ separately and labelled.
 
 **Limitations.** Relative dB only; the absolute gain of loudspeaker, mic and
 preamp is included. No phase display in v0.1.
+
+## 4a. Impulse-response spectrum
+
+**Source.** Welch (1967) periodogram, the same density estimator and AES17
+scaling already used for the quiet-segment noise PSD in §5
+(`10*log10(2*psd)` so the integral matches AES17 RMS dBFS). This is the
+energy spectrum of ReverbScope's own deconvolved impulse response, not a
+gated frequency-response magnitude and not a hardware RTA.
+
+**Procedure** (`core/spectrum.py`). `scipy.signal.welch` on the IR samples,
+Hann window, `nperseg` at most half a second. Peak frequency and level
+are the loudest bin above 0 Hz. Always computed by `analyze` and
+`analyze-ir`. Exported as `spectrum.csv` and shown on the Spectrum tab.
+
+**Limitations.** Relative dBFS density only. No analyser, no calibrated
+SPL, no claim that a physical interface produced the curve. This VM
+shows it on synthetic recordings and the fake backend.
 
 ## 5. Background noise
 
@@ -485,6 +516,24 @@ commonest setup (a desk edge arrives before the desk top) and picking the
 loudest is wrong whenever the lower plane is carpeted. Nothing at all is
 reported when direct-sound confidence is not `high`, because every delay is
 measured from that origin.
+
+**Picture.** The results Placement tab already draws a rotatable schematic
+of the microphone, one cabinet on the allowed ring, and the two known
+planes. When the upper plane is valid it also draws the first-order
+image of that cabinet through the plane and the specular bounce, the
+construction Allen & Berkley use and the one pyroomacoustics documents
+for `Room.plot` (sources, microphones and images). No wall is drawn;
+the image is a construction, not a second loudspeaker. The arithmetic
+is `horizontal_plane_image_path` in `core/placement.py`.
+
+An optional imported scan (`--scan`, or the Placement page file field)
+overlays faint points from an ASCII PLY or Wavefront OBJ the user already
+has (`io/scan.py`). The layouts are the public Stanford Triangle Format
+(http://paulbourke.net/dataformats/ply/) and LoC FDD000507. Coordinates
+are file units treated as metres. The scan is not aligned to the
+microphone, does not invent walls, and is not a lidar attached to this
+computer. Binary PLY is refused. The checked-in sample is a synthetic
+shoebox, not a capture.
 
 **Limitations.** The reported `input_uncertainty_m` propagates the stated
 tape, temperature and peak-location uncertainties **only**; model error
@@ -647,6 +696,7 @@ loopback compensation.
 22. O. Kirkeby, P. A. Nelson, H. Hamada and F. Orduña-Bustamante, "Fast deconvolution of multichannel systems using regularization," IEEE Trans. Speech and Audio Processing 6(2), 189–194, 1998. (bibliographic record; the regularised-inversion form `conj(H) / (|H|² + ε(f))` used in §2 and §2a is the one Farina 2007 [2] §3.1 quotes from it; the primary text was not re-read for v0.4.1)
 23. H. Theil, "A rank-invariant method of linear and polynomial regression analysis," Proc. Koninklijke Nederlandse Akademie van Wetenschappen 53, 386–392, 521–525, 1397–1412, 1950. (bibliographic record; used through `scipy.stats.theilslopes`)
 24. P. K. Sen, "Estimates of the regression coefficient based on Kendall's tau," J. Am. Stat. Assoc. 63(324), 1379–1389, 1968. (bibliographic record; used through `scipy.stats.theilslopes`)
+25. W. T. Chu, "Comparison of reverberation measurements using Schroeder's impulse method and decay-curve averaging method," J. Acoust. Soc. Am. 63(5), 1444–1450, 1978. doi:10.1121/1.381875 (bibliographic record; subtract the estimated mean-square noise from `h²` before backward integration. Karjalainen et al. [15] restate the step; Guski & Vorländer 2014 compare it with Lundeby compensation. ReverbScope's combination is a clean-room implementation of that published idea; pyrato's documented `energy_decay_curve_chu_lundeby` was the conceptual prompt, no source copied.)
 
 Additional supporting references (A. Mäkivirta et al. 2003; G. Defrance et
 al. 2008; J. Usher 2010; M. Guski & M. Vorländer 2014; C. L. Christensen et

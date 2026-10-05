@@ -1,4 +1,4 @@
-"""Results page: Overview, Impulse Response, Frequency Response, Decay, Noise, Early Reflections."""
+"""Results page: Overview, Impulse Response, Frequency Response, Spectrum, Decay, Noise, Early Reflections."""
 
 from __future__ import annotations
 
@@ -52,10 +52,20 @@ from reverbscope.ui.plots import (
     plot_noise,
     plot_placement_result,
     plot_reflections,
+    plot_spectrum,
 )
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.theme import apply_report_font, tokens
-from reverbscope.ui.widgets import Card, FindingCard, PageHeader, StatTile, label, primary
+from reverbscope.ui.widgets import (
+    PAGE_MARGINS,
+    PAGE_SPACING,
+    Card,
+    FindingCard,
+    PageHeader,
+    StatTile,
+    label,
+    primary,
+)
 
 #: Display word and chip tone of a metric validity.
 VALIDITY_DISPLAY = {
@@ -107,7 +117,10 @@ class _PlacementTab(QWidget):
         self.notes.setReadOnly(True)
         layout.addWidget(self.notes, 1)
 
-    def show_placement(self, placement: PlacementResult | None) -> None:
+    def show_placement(self, placement: PlacementResult | None, scan: object | None = None) -> None:
+        from reverbscope.models.result import RoomScan
+
+        imported = scan if isinstance(scan, RoomScan) else None
         if placement is None:
             self.summary.setText(
                 _("No placement result. Add a loudspeaker distance to raise the tier.")
@@ -115,7 +128,7 @@ class _PlacementTab(QWidget):
             self.table.setRowCount(0)
             self.candidates.setRowCount(0)
             self.notes.setPlainText("")
-            self.scene_hint.setText(plot_placement_result(self.figure, None))
+            self.scene_hint.setText(plot_placement_result(self.figure, None, imported))
             self.canvas.draw_idle()
             return
         assumed = _(" (assumed)") if placement.temperature_assumed else ""
@@ -173,7 +186,7 @@ class _PlacementTab(QWidget):
         if placement.coordinates_withheld:
             notes.append(localize(placement.coordinates_withheld))
         self.notes.setPlainText("\n".join(notes))
-        self.scene_hint.setText(plot_placement_result(self.figure, placement))
+        self.scene_hint.setText(plot_placement_result(self.figure, placement, imported))
         self.canvas.draw_idle()
 
 
@@ -217,8 +230,8 @@ class _Overview(QWidget):
         body = QWidget()
         body.setProperty("page", True)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(12)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(14)
         scroll.setWidget(body)
         outer.addWidget(scroll)
 
@@ -428,8 +441,8 @@ class ResultsPage(QWidget):
         self.state = state
         self.setProperty("page", True)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 20, 28, 14)
-        layout.setSpacing(10)
+        layout.setContentsMargins(*PAGE_MARGINS)
+        layout.setSpacing(PAGE_SPACING)
 
         self.header = PageHeader(_("Results"))
         self.new_button = QPushButton(_("New Measurement"))
@@ -469,12 +482,14 @@ class ResultsPage(QWidget):
 
         self.ir_tab = _PlotTab()
         self.fr_tab = _PlotTab()
+        self.spectrum_tab = _PlotTab()
         self.decay_tab = _PlotTab()
         self.noise_tab = _PlotTab()
         self.refl_tab = _PlotTab()
         self.place_tab = _PlacementTab()
         self.tabs.addTab(self.ir_tab, _("Impulse Response"))
         self.tabs.addTab(self.fr_tab, _("Frequency Response"))
+        self.tabs.addTab(self.spectrum_tab, _("Spectrum"))
         self.tabs.addTab(self.decay_tab, _("Decay"))
         self.tabs.addTab(self.noise_tab, _("Noise"))
         self.tabs.addTab(self.refl_tab, _("Early Reflections"))
@@ -513,11 +528,19 @@ class ResultsPage(QWidget):
         )
         plot_impulse_response(self.ir_tab.figure, result)
         plot_frequency_response(self.fr_tab.figure, result)
+        plot_spectrum(self.spectrum_tab.figure, result)
         plot_decay(self.decay_tab.figure, result)
         plot_noise(self.noise_tab.figure, result)
         plot_reflections(self.refl_tab.figure, result)
-        self.place_tab.show_placement(result.placement)
-        for tab in (self.ir_tab, self.fr_tab, self.decay_tab, self.noise_tab, self.refl_tab):
+        self.place_tab.show_placement(result.placement, result.room_scan)
+        for tab in (
+            self.ir_tab,
+            self.fr_tab,
+            self.spectrum_tab,
+            self.decay_tab,
+            self.noise_tab,
+            self.refl_tab,
+        ):
             tab.redraw()
         self.status.setText("")
 

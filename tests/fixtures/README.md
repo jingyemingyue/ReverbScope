@@ -11,3 +11,7 @@ adds one with a written CC0 declaration in this file.
 
 No real recordings are checked in yet. Synthetic signals in `tests/` remain
 the evidence that the algorithms match their published sources.
+
+| File | What it is | Licence | Added |
+| --- | --- | --- | --- |
+| `synthetic_room.ply` | ASCII PLY of a 4.0 × 3.0 × 2.5 m shoebox (43 vertices, 12 triangles). Written for tests. **Not a lidar capture.** Coordinates in metres. | project (Apache-2.0) | 2026-10-03 |

@@ -157,6 +157,13 @@ def test_copy_over_a_different_file_replaces_it(tmp_path: Path) -> None:
         ("zh-Hans", "zh_CN"),
         ("Chinese (Simplified)_China", "zh_CN"),
         (["zh_CN", "UTF-8"][0], "zh_CN"),
+        ("zh-Hant-TW", "zh_TW"),
+        ("Chinese (Traditional)_Taiwan", "zh_TW"),
+        ("ja-JP", "ja"),
+        ("ko-KR", "ko"),
+        ("es-MX", "es"),
+        ("fr-FR", "fr"),
+        ("de-AT", "de"),
         ("en-US", "en_US"),
     ],
 )

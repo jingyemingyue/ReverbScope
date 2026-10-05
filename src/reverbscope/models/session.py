@@ -20,6 +20,8 @@ from reverbscope.models.loadutil import drop_unknown, read_schema_version
 from reverbscope.version import __version__
 
 SESSION_SCHEMA_VERSION = 1
+#: libsndfile subtype ReverbScope writes for Standalone recordings (FLOAT).
+STANDALONE_BIT_DEPTH = "32-bit float"
 
 
 def utc_now_iso() -> str:
@@ -66,6 +68,11 @@ class MeasurementSession:
     platform: str = field(default_factory=lambda: f"{py_platform.system()} {py_platform.release()}")
     #: 1-based interface input of the electrical loopback (see ``input_channel``).
     loopback_channel: int | None = None
+    #: Optional imported PLY/OBJ scan path (not a lidar attached to this machine).
+    scan_path: str | None = None
+    #: DAW the sweep followed (name only; not a claim that a host was queried).
+    daw_name: str | None = None
+    daw_project: str | None = None
     schema_version: int = SESSION_SCHEMA_VERSION
 
     def to_dict(self) -> dict[str, Any]:
