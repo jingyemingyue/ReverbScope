@@ -219,11 +219,39 @@ curves, and names the ISO 3382-2 class the position counts reach.
 ## Export and language
 
 `roomscope export session/ --format csv --out curves/` writes every curve.
-`--lang zh_CN` (or Settings → Language, or `ROOMSCOPE_LANG`) translates
-findings, the text-report labels, the GUI and CLI help (`roomscope --help`
-and every subcommand). Units stay untranslated; digits stay ASCII.
-Diagnostic notes and warnings are stored in English in `result.json` and
-shown translated.
+
+RoomScope follows the system's language: on a Mac the preferred languages
+(System Settings → General → Language & Region; Terminal, iTerm and VS Code
+set `LANG=en_US.UTF-8` whatever they are, so `LANG` comes after them), on
+Windows the display language, on Linux `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`
+and `LANG`. To keep one language whatever the system says, store it once:
+
+```bash
+roomscope config language zh_CN   # 中文
+roomscope config language en      # English
+roomscope config language auto    # follow the system again
+```
+
+`roomscope config language` shows the language in effect and why. The
+desktop app's Settings → Language writes the same setting. `--lang zh_CN`
+picks a language for one command and `ROOMSCOPE_LANG` for a shell; the
+order is `--lang`, the stored setting, `ROOMSCOPE_LANG`, the system. The
+home screen (bare `roomscope`) and `roomscope --help` end with the command
+for the other language, written in that language.
+
+Chinese translates findings, the text-report labels, the GUI and the whole
+CLI help (`roomscope --help` and every subcommand, placeholders and
+argparse's own messages included). Units stay untranslated; digits stay
+ASCII. Diagnostic notes and warnings are stored in English in `result.json`
+and shown translated.
+
+`roomscope config` lists the other settings the desktop app keeps and
+changes them from the command line, also in the Terminal Edition:
+`profile` (the default recording profile), `backend` (`portaudio` or
+`fake`), `output-folder`, `copy-recording` and `developer-tools` (`on` or
+`off`), and `theme` (`system`, `light` or `dark`; desktop app only). For
+example `roomscope config profile vocal`; `auto` goes back to a setting's
+default, and `roomscope --format json config` prints the settings as JSON.
 
 In a terminal the command line uses colour and the symbols ✓ ! ×; piped into
 a file or another program it writes plain text. `--color never` or the

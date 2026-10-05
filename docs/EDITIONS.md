@@ -48,7 +48,8 @@ same program.
 
 Override the choice for one run with `ROOMSCOPE_EDITION=developer` or
 `ROOMSCOPE_EDITION=user`; an installed RoomScope switches the developer tools on
-permanently with Settings ▸ *Show developer tools* (after a restart). The
+permanently with Settings ▸ *Show developer tools* or
+`roomscope config developer-tools on` (after a restart). The
 command-line tool is the same in both editions: `roomscope devices --probe`,
 `roomscope doctor` and the `measure` options `--latency`, `--wasapi-exclusive`
 and `--coreaudio-set-rate` are always available.

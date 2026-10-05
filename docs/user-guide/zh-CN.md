@@ -126,7 +126,20 @@ roomscope-env/bin/roomscope gui
 ## 导出与语言
 
 `roomscope export session/ --format csv --out curves/` 导出每一条曲线。
-`--lang zh_CN`（或“设置 → 语言”，或 `ROOMSCOPE_LANG`）会翻译解读、文本报告的标签、图形界面和命令行帮助（`roomscope --help` 及每个子命令）。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
+
+RoomScope 跟随系统语言：Mac 上是首选语言（“系统设置 → 通用 → 语言与地区”；“终端”、iTerm 和 VS Code 不管首选语言是什么都会设置 `LANG=en_US.UTF-8`，所以 `LANG` 排在首选语言之后），Windows 上是显示语言，Linux 上是 `LANGUAGE`、`LC_ALL`、`LC_MESSAGES` 和 `LANG`。想不管系统怎么设置都固定使用一种语言，保存一次即可：
+
+```bash
+roomscope config language zh_CN   # 中文
+roomscope config language en      # English
+roomscope config language auto    # 改回跟随系统
+```
+
+`roomscope config language` 显示当前使用的语言以及原因。桌面版的“设置 → 语言”写入的是同一个设置。`--lang zh_CN` 只对一条命令指定语言，`ROOMSCOPE_LANG` 对一个终端会话指定语言；优先顺序是 `--lang`、已保存的设置、`ROOMSCOPE_LANG`、系统语言。主屏幕（直接运行 `roomscope`）和 `roomscope --help` 的最后一行用另一种语言写出切换到该语言的命令。
+
+中文界面会翻译解读、文本报告的标签、图形界面和全部命令行帮助（`roomscope --help` 及每个子命令，包括占位符和 argparse 自己的提示）。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
+
+`roomscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们，终端版也一样：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`、`copy-recording` 和 `developer-tools`（`on` 或 `off`），以及 `theme`（`system`、`light` 或 `dark`，只影响桌面版）。例如 `roomscope config profile vocal`；`auto` 把一项设置恢复为默认值，`roomscope --format json config` 以 JSON 输出所有设置。
 
 在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
 

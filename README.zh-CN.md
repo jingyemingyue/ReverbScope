@@ -82,8 +82,12 @@
 * **任一版本，在终端中：**
 
   ```bash
-  roomscope --lang zh_CN demo
+  roomscope config language zh_CN   # 以后一直使用中文界面（只需运行一次）
+  roomscope demo
   ```
+
+  RoomScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
+  保存后不管系统怎么设置都使用中文，`roomscope config language auto` 改回跟随系统。
 
 ![终端中的 roomscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
@@ -213,8 +217,10 @@ roomscope measure --out session1/ --input-device 2 --output-device 3 \
 roomscope demo --out demo/
 roomscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
-# 语言、打包、CSV、项目
-roomscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav
+# 语言（保存在 settings.json 中；auto 改回跟随系统）、设置、打包、CSV、项目
+roomscope config language zh_CN
+roomscope --lang en analyze --recording take.wav --sweep sweep.wav   # 只对这一条命令
+roomscope config
 roomscope session bundle session1/ --no-audio --out report.zip
 roomscope export session1/ --format csv --out curves/
 roomscope project init --out room/ --name Booth

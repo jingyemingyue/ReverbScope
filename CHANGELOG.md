@@ -7,6 +7,41 @@ All notable changes to RoomScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Settings from the command line.** `roomscope config` lists the settings
+  the desktop app keeps in `settings.json`, says what each value means now
+  and where the file is; `roomscope config KEY VALUE` changes one: `language`
+  (`zh_CN`, `en`, or `auto` to follow the system), `profile`, `backend`,
+  `output-folder`, `copy-recording`, `developer-tools` and `theme` (desktop
+  app only). `auto` goes back to a setting's default, a value is checked
+  before anything is written (exit code 2, nothing changed), a damaged
+  settings file is not replaced, and `--format json` prints the settings.
+  The Terminal Edition, which has no Settings dialog, can now keep a
+  language: after `roomscope config language zh_CN` every command is in
+  Chinese, and the confirmation already is. `roomscope config language`
+  shows the language in effect and why.
+- **The way to the other language.** The home screen and `roomscope --help`
+  end with one line in the other language: `中文界面：roomscope config
+  language zh_CN` in English, `English interface: roomscope config language
+  en` in Chinese (left out where the terminal cannot write Chinese).
+
+### Changed
+- **Language detection.** The command line follows the system's language
+  where the system keeps it: on macOS the preferred languages (also in
+  Terminal, iTerm and VS Code, which set `LANG=en_US.UTF-8` whatever the
+  display language is), on Windows the display language before a `LANG`
+  from Git Bash or MSYS, on Linux GNU `LANGUAGE` (`zh_CN:en`) as gettext
+  reads it. `--lang`, the stored setting and `ROOMSCOPE_LANG` still come
+  first, in that order; the GUI follows Qt's UI languages as before.
+- **Chinese command line.** Every help screen is Chinese to the last word:
+  the placeholders (`--out 目录`, `--recording WAV文件`, `<命令>`), the
+  positional names and argparse's remaining messages ("expected 2
+  arguments", "ignored explicit argument", the type in "invalid int
+  value"), with the help column aligned by display width. The environment
+  report names its settings and paths in words. A demo made in Chinese
+  names its room, position and microphone in Chinese. Temperatures read
+  `20 °C`, and the resonance note no longer cites "v0.1".
+
 ### Fixed
 - **Measurement.** With a loopback whose return is not at unity gain, the
   folded-distortion probe was biased by that gain (a −20 dB return hid
@@ -94,7 +129,12 @@ All notable changes to RoomScope are documented here. The format follows
   `--backend fake measure` saves a session marked as a synthetic demo.
   `--lang` applies to `gui`. The `--loopback-channel` and `analyze-ir
   --band` help describe what the options do. Plain lines use the console's
-  ASCII signs on an ASCII-only stream.
+  ASCII signs on an ASCII-only stream. Help paragraphs are separated by a
+  blank line again, and the closing example of `roomscope --help` is no
+  longer split across lines. `roomscope project` or `roomscope session`
+  without an action named the parser's internal `project_command` instead
+  of the actions. An unknown exporter lists the others by name, not as
+  `['csv']`.
 - **Desktop app.** A second take could start while one was running (after
   Refresh devices), and closing the window during a take or an analysis
   aborted the process; both are fixed, and leaving the page stops the take.
