@@ -113,7 +113,7 @@ NumPy 进、dataclass 出，无 I/O、无 Qt。其他新增：
 
 Profile 注册表合并内置与 entry point；第三方名字与内置冲突时忽略并警告。`Finding` 增加 `message_id`、`params`、`locale`，句子通过 gettext `_()` 用命名占位符渲染，阈值变化不会让翻译失效。机制是标准库 gettext，`.po` 提交、`.mo` 打包时编译，Babel（BSD-3）仅作开发依赖。**刻意不翻译**的部分：`core` 产生的诊断字符串（warnings / notes / reason），它们存在 `result.json` 里、出现在 bug 报告里、跨版本比较，必须与界面语言无关；GUI 在一个翻译过的标题下原样显示，并记录为已知限制。数字在所有语言里保持 ASCII 数字与小数点，单位不翻译。
 
-界面语言的选择顺序：`--lang`、`settings.language`（桌面版的“设置”对话框或 `reverbscope config language zh_CN|en|auto`）、`REVERBSCOPE_LANG`，然后是系统语言；都没有对应译文时用英文。主屏幕和 `reverbscope --help` 的最后一行用另一种语言写出切换语言的命令。系统语言从各系统保存用户选择的地方读取：
+界面语言的选择顺序：`--lang`、`settings.language`（桌面版的“设置”对话框或 `reverbscope config language zh_CN|en|auto`）、`REVERBSCOPE_LANG`，然后是系统语言；都没有对应译文时用英文。主屏幕和 `reverbscope --help` 的最后一行用另一种语言写出切换语言的命令。`LC_ALL` 或 `LC_MESSAGES` 设为 C 或 POSIX 时，在任何系统上都用英文：这是要求程序输出未翻译消息的通用做法（例如为错误报告或脚本运行 `LC_ALL=C reverbscope …`）。否则，系统语言从各系统保存用户选择的地方读取：
 
 * macOS：先读首选语言（`~/Library/Preferences/.GlobalPreferences.plist` 中的 `AppleLanguages`，其次是 `/Library/Preferences/.GlobalPreferences.plist`；图形界面用 Qt 的 `uiLanguages`），再看 `LC_ALL` / `LC_MESSAGES` / `LANG`——“终端”、iTerm 和 VS Code 不管显示语言是什么都会设置 `LANG=en_US.UTF-8`；
 * Windows：显示语言（`GetUserDefaultUILanguage`）有译文或是英文时用它，否则看 Qt 的 `uiLanguages`（图形界面；即 Windows 自己的首选语言列表），再看 POSIX 变量（只有 MSYS、Git Bash、Cygwin 会设置）；

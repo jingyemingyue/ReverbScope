@@ -244,7 +244,9 @@ ReverbScope follows the system's language: on a Mac the preferred languages
 (System Settings → General → Language & Region; Terminal, iTerm and VS Code
 set `LANG=en_US.UTF-8` whatever they are, so `LANG` comes after them), on
 Windows the display language, on Linux `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`
-and `LANG`. To keep one language whatever the system says, store it once:
+and `LANG`. `LC_ALL=C` (or `LC_MESSAGES=C`) gives English on every system,
+as it does for other programs: `LC_ALL=C reverbscope show session/` for a bug
+report. To keep one language whatever the system says, store it once:
 
 ```bash
 reverbscope config language zh_CN   # 中文

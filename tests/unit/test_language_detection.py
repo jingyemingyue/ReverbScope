@@ -261,3 +261,48 @@ def test_a_python_without_plistlib_falls_back_to_lang(
     system.setattr(i18n, "MACOS_PREFERENCES", (str(plist),))
     system.setitem(sys.modules, "plistlib", None)  # import plistlib raises ImportError
     assert language_choice().origin == "LANG"
+
+
+# --- The C locale ------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("platform", ["linux", "darwin", "win32"])
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [("LC_ALL", "C"), ("LC_ALL", "C.UTF-8"), ("LC_ALL", "POSIX"), ("LC_MESSAGES", "C")],
+)
+def test_lc_all_or_lc_messages_c_asks_for_english(
+    system: pytest.MonkeyPatch, tmp_path: Path, platform: str, name: str, value: str
+) -> None:
+    """``LC_ALL=C reverbscope …`` gives English output, for a bug report or a script."""
+    system.setattr(sys, "platform", platform)
+    system.setenv("LANG", "zh_CN.UTF-8")
+    system.setenv("LANGUAGE", "zh_CN:en")
+    system.setattr(i18n, "_windows_ui_language", lambda: "zh_CN")
+    plist = _plist(tmp_path / "user.plist", ["zh-Hans-CN"])
+    system.setattr(i18n, "MACOS_PREFERENCES", (str(plist),))
+    system.setenv(name, value)
+    choice = language_choice(system_languages=["zh-Hans-CN"])
+    assert (choice.lang, choice.source, choice.origin, choice.value) == (
+        "en",
+        SOURCE_SYSTEM,
+        name,
+        value,
+    )
+    assert i18n.activate(system_languages=["zh-Hans-CN"]) == "en"
+
+
+def test_the_c_locale_counts_only_where_it_decides(system: pytest.MonkeyPatch) -> None:
+    system.setattr(sys, "platform", "linux")
+    system.setenv("LANG", "zh_CN.UTF-8")
+    # LC_ALL outranks LC_MESSAGES=C, as it does for every program.
+    system.setenv("LC_MESSAGES", "C")
+    system.setenv("LC_ALL", "zh_CN.UTF-8")
+    assert language_choice().origin == "LC_ALL"
+    assert resolve_language() == "zh_CN"
+    # A bare LANG=C (containers, minimal shells) asks for nothing: the GUI's
+    # UI languages still decide.
+    for name in ("LC_ALL", "LC_MESSAGES"):
+        system.delenv(name)
+    system.setenv("LANG", "C.UTF-8")
+    assert resolve_language(system_languages=["zh-CN"]) == "zh_CN"

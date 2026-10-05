@@ -504,8 +504,11 @@ class AudioBackend(Protocol):
   dialog or `reverbscope config language zh_CN|en|auto`) / `REVERBSCOPE_LANG`,
   otherwise the system's language; English when no catalog matches. The
   home screen and `reverbscope --help` end with one line in the other
-  language that names the command to switch. The system's language
-  is read where each system keeps the user's choice:
+  language that names the command to switch. `LC_ALL` or `LC_MESSAGES` set
+  to C or POSIX gives English on every system: it asks any program for
+  untranslated messages (`LC_ALL=C reverbscope …` for a bug report or a
+  script). Otherwise the system's language is read where each system keeps
+  the user's choice:
   * macOS: the preferred languages (`AppleLanguages` in
     `~/Library/Preferences/.GlobalPreferences.plist`, then
     `/Library/Preferences/.GlobalPreferences.plist`; Qt's `uiLanguages` in

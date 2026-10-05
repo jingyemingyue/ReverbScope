@@ -14,8 +14,10 @@ as is.
 
 Selection order (ARCHITECTURE_V1.md §5.6): ``--lang``, ``settings.language``
 (``reverbscope config language``), ``REVERBSCOPE_LANG``, then the system's
-language; English when nothing matches. The system's language is read where
-the system keeps it:
+language; English when nothing matches. ``LC_ALL`` or ``LC_MESSAGES`` set to
+C or POSIX asks for untranslated messages on every system, as it does of any
+program, and gives English. Otherwise the system's language is read where the
+system keeps it:
 
 * **macOS**: the user's preferred languages (``AppleLanguages`` in the global
   preferences, or Qt's ``uiLanguages`` in the GUI) before ``LC_ALL`` /
@@ -651,11 +653,11 @@ def _system_choice(system_languages: Sequence[str] | None = None) -> tuple[str, 
 
     steps: tuple[_Step, ...]
     if sys.platform == "darwin":
-        steps = (desktop, _macos_step, _posix_step)
+        steps = (_c_locale_step, desktop, _macos_step, _posix_step)
     elif sys.platform == "win32":
-        steps = (_windows_step, desktop, _posix_step)
+        steps = (_c_locale_step, _windows_step, desktop, _posix_step)
     else:
-        steps = (_posix_step, desktop)
+        steps = (_c_locale_step, _posix_step, desktop)
     for step in steps:
         found = step()
         if found is not None:
@@ -701,13 +703,32 @@ def _is_c_locale(value: str) -> bool:
     return base.upper() in {"", "C", "POSIX"}
 
 
+def _c_locale_step() -> tuple[str, str, str] | None:
+    """English when ``LC_ALL`` or ``LC_MESSAGES`` names the C locale.
+
+    ``LC_ALL=C reverbscope …`` is how a user asks any program for untranslated
+    messages (for a bug report, or a script that reads the output), so it
+    outranks the desktop's languages too. The variable in effect decides:
+    ``LC_ALL=zh_CN.UTF-8`` still wins over ``LC_MESSAGES=C``. A bare
+    ``LANG=C`` asks for nothing (containers and minimal shells set it), so it
+    is left to the later steps.
+    """
+    for name in ("LC_ALL", "LC_MESSAGES"):
+        value = os.environ.get(name, "")
+        if value:
+            return (DEFAULT_LANG, name, value) if _is_c_locale(value) else None
+    return None
+
+
 def _posix_step() -> tuple[str, str, str] | None:
     """``LANGUAGE``, then ``LC_ALL`` / ``LC_MESSAGES`` / ``LANG``.
 
     gettext reads ``LANGUAGE`` only when the locale is set and is not C or
     POSIX, and takes its first entry that has a catalog. When none has one
-    the locale variable decides. A variable set to C or POSIX is passed over,
-    so ``LANG=C.UTF-8`` leaves the choice to the next step.
+    the locale variable decides. ``LC_ALL`` or ``LC_MESSAGES`` set to C gave
+    English before this step (:func:`_c_locale_step`); a ``LANG`` set to C or
+    POSIX is passed over, so ``LANG=C.UTF-8`` leaves the choice to the next
+    step.
     """
     variables = [(name, os.environ.get(name, "")) for name in POSIX_VARIABLES]
     current = next((value for _name, value in variables if value), "")
