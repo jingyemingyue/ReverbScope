@@ -3,8 +3,9 @@ Measure and compare the rooms you record in: reverberation, early reflections,
 low-frequency resonances and noise, from any DAW.
 
   reverbscope demo                    Try it with synthetic data; no audio
-                                    interface needed
+                                      interface needed
   reverbscope gui                     Open the desktop app
-  reverbscope sweep --out sweep.wav   Write the test signal to play from your DAW
+  reverbscope sweep --out sweep.wav   Write the test signal to play from your
+                                      DAW
 
 Run reverbscope --help for every command and option.

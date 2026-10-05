@@ -1,5 +1,5 @@
 ReverbScope demo
-──────────────
+────────────────
 
   ! Synthetic data: a simulated room, not a measurement.
     No audio device was used and nothing was played. The
