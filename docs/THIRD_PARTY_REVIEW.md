@@ -1,7 +1,7 @@
 # Third-party repository review
 
 Audit date: 2026-09-17. Every repository that was studied while designing
-RoomScope is registered here with the result of its license check. The full
+ReverbScope is registered here with the result of its license check. The full
 records (repository URL, author, commit/tag, verbatim license header,
 multiple-license check, file headers, vendored code, NOTICE/COPYRIGHT/AUTHORS
 files, patent statements, obligations, and the URL of every fact) are in
@@ -13,7 +13,7 @@ architecture ideas) or as ordinary dependencies. See CODE_PROVENANCE.md.
 
 ## Summary
 
-| Project | Repository | License (from LICENSE file) | Copyleft | Affects Apache-2.0? | Classification for RoomScope |
+| Project | Repository | License (from LICENSE file) | Copyleft | Affects Apache-2.0? | Classification for ReverbScope |
 | --- | --- | --- | --- | --- | --- |
 | pyroomacoustics | https://github.com/LCAV/pyroomacoustics | MIT | no | no (keep EPFL-LCAV notice if code were copied) | Conceptual reference (ESS/deconvolution API design; documented `Room.plot` showing sources, microphones and image sources). Not a dependency. Re-checked 2026-10-03 when the placement picture started drawing the first-order image: documentation of `Room.plot` was the visualization idea; **no source copied.** Geometry is clean-room from Allen & Berkley (1979). |
 | python-acoustics (archived) | https://github.com/python-acoustics/python-acoustics | BSD-3-Clause (template placeholder `{organization}` left in the file) | no | no | Conceptual reference (octave-band and decay API ideas). |

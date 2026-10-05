@@ -1,11 +1,11 @@
-# RoomScope — License audit of external reference repositories
+# ReverbScope — License audit of external reference repositories
 
-Audit date: 2026-09-17. RoomScope target license: Apache-2.0, core DSP written clean-room from papers/standards.
+Audit date: 2026-09-17. ReverbScope target license: Apache-2.0, core DSP written clean-room from papers/standards.
 Method: GitHub REST API (`https://api.github.com/repos/<owner>/<repo>`, `/commits/<branch>`, `/releases/latest`, `/tags`, `/git/trees/<branch>`) for metadata; `raw.githubusercontent.com` for LICENSE / README / source files; project websites for non-GitHub projects. Every fact below carries the URL it was read from. Nothing was inferred from memory; where a file could not be fetched it is marked **UNKNOWN / NEEDS REVIEW**.
 
 Classification key:
 - **Conceptual reference only** — read for ideas/algorithms; do not copy code.
-- **Code could be adapted with attribution** — license permits it if the copyright + permission notice is preserved (RoomScope still prefers not to copy).
+- **Code could be adapted with attribution** — license permits it if the copyright + permission notice is preserved (ReverbScope still prefers not to copy).
 - **Do not use** — license unclear, incompatible, or no code available.
 
 ---
@@ -29,9 +29,9 @@ Classification key:
 | Patent statements | None (MIT has no patent clause). |
 | README vs LICENSE conflict | README "License" section reproduces MIT text but says `Copyright (c) 2014-2021 EPFL-LCAV` while LICENSE says `2014-2017` (https://raw.githubusercontent.com/LCAV/pyroomacoustics/master/README.rst, line 263). Year mismatch only; same license. |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes (keep copyright + permission notice). Preserve notice: yes. Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | No. MIT code can be included; the EPFL-LCAV notice must be kept for any copied portion. |
+| Affects ReverbScope's Apache-2.0? | No. MIT code can be included; the EPFL-LCAV notice must be kept for any copied portion. |
 | Relevance | `experimental/deconvolution.py` (`deconvolve`, `wiener_deconvolve`), `experimental/signals.py` (`exponential_sweep`, `linear_sweep`), `experimental/measure_ir.py` — directly on-topic. |
-| **Classification** | **Code could be adapted with attribution** (RoomScope preference: conceptual reference only). |
+| **Classification** | **Code could be adapted with attribution** (ReverbScope preference: conceptual reference only). |
 
 ---
 
@@ -56,7 +56,7 @@ Classification key:
 | Patent statements | None. |
 | README vs LICENSE | Consistent: README "python-acoustics is distributed under the BSD 3-clause license. See LICENSE" (https://raw.githubusercontent.com/python-acoustics/python-acoustics/master/README.md line 29). |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes. Preserve notice: yes (+ no-endorsement clause). Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | No. |
+| Affects ReverbScope's Apache-2.0? | No. |
 | Relevance | `acoustics/room.py` (T60 from impulse response, Schroeder integration, band filtering). |
 | **Classification** | **Code could be adapted with attribution** (project archived — treat as conceptual reference; algorithms come from ISO 3382 anyway). |
 
@@ -82,9 +82,9 @@ Classification key:
 | Patent statements | None. |
 | README vs LICENSE | README.md contains **no license statement at all** (grep for "licen" empty — https://raw.githubusercontent.com/pyfar/pyfar/main/README.md). Not a conflict; pyproject + LICENSE agree on MIT. |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes. Preserve notice: yes. Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | No. |
+| Affects ReverbScope's Apache-2.0? | No. |
 | Relevance | `pyfar.signals.exponential_sweep_time/freq`, `pyfar.dsp.deconvolve` / regularized inversion, filter banks; pyfar-gallery has an ESS IR-measurement tutorial (https://pyfar-gallery.readthedocs.io/en/latest/gallery/no_binder/impulse_response_measurement.html). |
-| **Classification** | **Code could be adapted with attribution** (RoomScope preference: conceptual reference; it is also a reasonable runtime dependency). |
+| **Classification** | **Code could be adapted with attribution** (ReverbScope preference: conceptual reference; it is also a reasonable runtime dependency). |
 
 ---
 
@@ -107,7 +107,7 @@ Classification key:
 | Patent statements | None in LICENSE.txt. |
 | README vs LICENSE | README.rst has no license statement (grep empty) — no conflict. |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes. Preserve notice: yes. Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | No. RoomScope already depends on SciPy at runtime; that imposes nothing on RoomScope's own license. Copying SciPy *source* into RoomScope would require keeping the SciPy BSD notice. |
+| Affects ReverbScope's Apache-2.0? | No. ReverbScope already depends on SciPy at runtime; that imposes nothing on ReverbScope's own license. Copying SciPy *source* into ReverbScope would require keeping the SciPy BSD notice. |
 | Relevance | `scipy.signal.chirp` (log sweep), `fftconvolve`, `butter`/`sosfiltfilt` (octave bands), `welch`, `minimum_phase`, `hilbert` — used as a library, not copied. |
 | **Classification** | **Code could be adapted with attribution** — but the intended use is as a dependency; no source copying needed. |
 
@@ -132,9 +132,9 @@ Classification key:
 | Patent statements | None. |
 | README vs LICENSE | README.md contains no license statement (grep empty — https://raw.githubusercontent.com/jaakkopasanen/Impulcifer/master/README.md). No conflict. |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes. Preserve notice: yes. Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | No. |
+| Affects ReverbScope's Apache-2.0? | No. |
 | Relevance | `impulse_response_estimator.py` (ESS generation + inverse filter), `impulse_response.py` (decay/plots), `room_correction.py`. Project is headphone/BRIR-oriented and dormant since 2023. |
-| **Classification** | **Code could be adapted with attribution** (RoomScope preference: conceptual reference only). |
+| **Classification** | **Code could be adapted with attribution** (ReverbScope preference: conceptual reference only). |
 
 ---
 
@@ -150,14 +150,14 @@ Classification key:
 | License (SPDX) | **MIT** (GitHub detection: MIT; pyproject classifier "License :: OSI Approved :: MIT License") |
 | LICENSE file | https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/LICENSE (21 lines) |
 | Verbatim head + copyright | ```MIT License``` <br> ```Copyright (c) 2018-2022 Jaakko Pasanen``` <br> ```Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, ... The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.``` |
-| Multiple licenses? | Code: no. **Data**: `measurements/` and `results/` hold headphone measurement data derived from oratory1990, crinacle, Innerfidelity, Rtings, headphone.com (README lines 11-15 credit the sources). **No license statement for that data was found** in README or repo — data licensing is UNKNOWN. Irrelevant to RoomScope (only smoothing ideas wanted). |
+| Multiple licenses? | Code: no. **Data**: `measurements/` and `results/` hold headphone measurement data derived from oratory1990, crinacle, Innerfidelity, Rtings, headphone.com (README lines 11-15 credit the sources). **No license statement for that data was found** in README or repo — data licensing is UNKNOWN. Irrelevant to ReverbScope (only smoothing ideas wanted). |
 | File-level headers? | **No.** `autoeq/frequency_response.py`, `autoeq/peq.py` have no copyright header. |
 | Vendored third-party code? | No third-party *code* dirs found (top-level: `autoeq/`, `dbtools/`, `webapp/`, `measurements/`, `results/`, `targets/`, `tests/`). |
 | NOTICE / COPYRIGHT / AUTHORS | None (all 404). |
 | Patent statements | None. |
 | README / packaging vs LICENSE | README.md has no license section (grep empty). `pyproject.toml` `[tool.hatch.build] include` lists `"LICENCE"` (British spelling) while the file is `LICENSE` — packaging typo, not a license conflict (https://raw.githubusercontent.com/jaakkopasanen/AutoEq/master/pyproject.toml line 39). |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes. Preserve notice: yes. Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | No. |
+| Affects ReverbScope's Apache-2.0? | No. |
 | Relevance | `frequency_response.py` smoothing (Savitzky–Golay via `scipy.signal.savgol_filter`, log-spaced interpolation). Only smoothing concepts are of interest. |
 | **Classification** | **Conceptual reference only** (smoothing ideas). Code could legally be adapted with attribution, but nothing in it is needed. |
 
@@ -180,7 +180,7 @@ Classification key:
 | NOTICE / AUTHORS | Not checked. |
 | Patent statements | GPL-2.0 has an implicit patent licence / liberty-or-death clause (§7); no separate statement seen. |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution/notice: yes. **Source disclosure: yes (strong copyleft).** |
-| Affects RoomScope's Apache-2.0? | **YES.** Incorporating GPL-2.0 code would force the combined work under GPL. Apache-2.0 is also not compatible with GPL-2.0-only (it is with GPL-3.0), so even one-way mixing is problematic. |
+| Affects ReverbScope's Apache-2.0? | **YES.** Incorporating GPL-2.0 code would force the combined work under GPL. Apache-2.0 is also not compatible with GPL-2.0-only (it is with GPL-3.0), so even one-way mixing is problematic. |
 | Relevance | Sweep generation (`glsweep`), inverse-filter convolution (`lsconv`), room-correction filter design. Conceptually valuable; the documentation is a good reference for ESS parameter choices. |
 | **Classification** | **Conceptual reference only** (GPL copyleft). Do not copy or translate code. |
 
@@ -202,7 +202,7 @@ Classification key:
 | NOTICE / AUTHORS | Not checked. |
 | Patent statements | GPL-3.0 §11 contains an explicit patent grant (if that is indeed the license text shipped). |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Notice: yes. **Source disclosure: yes (strong copyleft).** |
-| Affects RoomScope's Apache-2.0? | **YES.** GPL-3.0 code would pull RoomScope to GPL-3.0. (Apache-2.0 → GPL-3.0 one-way compatibility does not help RoomScope stay Apache.) |
+| Affects ReverbScope's Apache-2.0? | **YES.** GPL-3.0 code would pull ReverbScope to GPL-3.0. (Apache-2.0 → GPL-3.0 one-way compatibility does not help ReverbScope stay Apache.) |
 | Relevance | Full ESS measurement workflow (Farina method) in C++/JACK; the Aliki manual (PDF linked from the index page) is a useful conceptual reference. |
 | **Classification** | **Conceptual reference only** (GPL copyleft). |
 
@@ -227,7 +227,7 @@ Classification key:
 | Patent statements | None. |
 | Website / paper vs LICENSE | Website: "The ITA-Toolbox is published under the original BSD-License." — consistent with the 4-clause text. DAGA 2017 paper (https://pub.dega-akustik.de/DAGA_2017/data/articles/000257.pdf, p. 222/223): "Since 2010, the ITA-Toolbox is available as open source software under the Berkeley Software Distribution (BSD) license" / "licensed under the BSD license" — does not state the clause count. **Do not mistake it for BSD-3-Clause: the advertising clause (3) is present.** |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes **plus the advertising-acknowledgment obligation** ("This product includes software developed by the Institute of Technical Acoustics (RWTH Aachen University)"). Preserve notice: yes. Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | Not copyleft, so RoomScope could remain Apache-2.0, but any adapted code would add a BSD-4-Clause acknowledgment obligation to RoomScope's NOTICE/README and marketing material. BSD-4-Clause is also GPL-incompatible (a downstream concern for anyone combining RoomScope with GPL code). It is also MATLAB, so nothing is directly reusable in Python. |
+| Affects ReverbScope's Apache-2.0? | Not copyleft, so ReverbScope could remain Apache-2.0, but any adapted code would add a BSD-4-Clause acknowledgment obligation to ReverbScope's NOTICE/README and marketing material. BSD-4-Clause is also GPL-incompatible (a downstream concern for anyone combining ReverbScope with GPL code). It is also MATLAB, so nothing is directly reusable in Python. |
 | Relevance | Room-acoustics application (T60, C80, D50, ISO 3382 parameters), measurement classes (itaMSTF), multiple-exponential-sweep method (Dietrich et al.). |
 | **Classification** | **Conceptual reference only** (MATLAB; BSD-4-Clause advertising clause; unverified bundled third-party code). |
 
@@ -247,7 +247,7 @@ Classification key:
 | Multiple licenses? | N/A. |
 | Source code available? | **No.** |
 | Modification / redistribution / attribution / copyleft | Modify: **no**. Redistribute: **no**. Reverse-engineering: **prohibited**. Copyleft: N/A. |
-| Affects RoomScope's Apache-2.0? | No code can be used at all. Using REW's public documentation to understand *what* features users expect (RT60/EDT/T20/T30 reporting, waterfall, ETC) is fine; replicating its behaviour must be from first principles/standards, never from decompilation. |
+| Affects ReverbScope's Apache-2.0? | No code can be used at all. Using REW's public documentation to understand *what* features users expect (RT60/EDT/T20/T30 reporting, waterfall, ETC) is fine; replicating its behaviour must be from first principles/standards, never from decompilation. |
 | **Classification** | **Do not use (proprietary; no source).** Feature-level conceptual reference only, from public docs. |
 
 ---
@@ -271,7 +271,7 @@ Classification key:
 | Patent statements | None. |
 | README vs LICENSE | Consistent: "Acoular is a Python module for acoustic beamforming that is distributed under the BSD 3-clause license" (https://raw.githubusercontent.com/acoular/acoular/master/README.md line 9). |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes. Preserve notice: yes. Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | No. |
+| Affects ReverbScope's Apache-2.0? | No. |
 | Relevance | Microphone-array beamforming / source mapping; only tangential to a single-mic room analyzer (time-domain block processing, octave-band filtering ideas). |
 | **Classification** | **Conceptual reference only** (low relevance; code could legally be adapted with attribution). |
 
@@ -296,9 +296,9 @@ Classification key:
 | Patent statements | None. |
 | README vs LICENSE | Consistent: "This project is licensed under the MIT License - see the LICENSE.md file for details" (https://raw.githubusercontent.com/maj4e/pyrirtool/master/README.md line 106). |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes. Preserve notice: yes. Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | No. |
+| Affects ReverbScope's Apache-2.0? | No. |
 | Relevance | Very high: ESS stimulus class (`stimulus.py`), inverse filter, sounddevice-based play/record (`measure.py`), Farina method. |
-| **Classification** | **Code could be adapted with attribution** (RoomScope preference: conceptual reference only). |
+| **Classification** | **Code could be adapted with attribution** (ReverbScope preference: conceptual reference only). |
 
 ---
 
@@ -320,8 +320,8 @@ Searches run: `github "exponential sine sweep" impulse response measurement pyth
 | Multiple licenses / vendored code? | No vendored third-party code seen at top level. README (line 63-65) notes the optional `[audio]` extra installs python-soundfile "whose wheel bundles libsndfile under the LGPL-2.1 (dynamically linked)". |
 | NOTICE / AUTHORS | None; README MIT badge links to LICENSE (consistent). |
 | Copyleft? | No. Affects Apache-2.0? No. |
-| Relevance | Claims standards-based (ISO 3382 etc.) room acoustics, Farina ESS deconvolution with harmonic separation, synchronized swept sine — a very close analogue to RoomScope's goals. |
-| **Classification** | **Code could be adapted with attribution** (RoomScope preference: conceptual reference; its per-standard documentation is useful for clean-room work). |
+| Relevance | Claims standards-based (ISO 3382 etc.) room acoustics, Farina ESS deconvolution with harmonic separation, synchronized swept sine — a very close analogue to ReverbScope's goals. |
+| **Classification** | **Code could be adapted with attribution** (ReverbScope preference: conceptual reference; its per-standard documentation is useful for clean-room work). |
 
 ### 13b. baranovmv/RoomResponse
 
@@ -390,12 +390,12 @@ Searches run: `github "exponential sine sweep" impulse response measurement pyth
 | Verbatim head + copyright | ```Copyright (c) 2015-2025 Matthias Geier``` <br> ```Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, ... The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", ...``` |
 | Multiple licenses? | Repo code: no. **Bundled binaries via git submodule** `src/_sounddevice_data/portaudio-binaries` → https://github.com/spatialaudio/portaudio-binaries whose README "Copyright" section states: "PortAudio by Ross Bencina and Phil Burk, MIT License." and "Steinberg Audio Stream I/O API by Steinberg Media Technologies GmbH." (https://raw.githubusercontent.com/spatialaudio/portaudio-binaries/master/README.md lines 29-34). The ASIO SDK is under Steinberg's own terms (not audited); it only matters for the Windows binary wheels. |
 | File-level headers? | **Yes.** `src/sounddevice.py` opens with `# Copyright (c) 2015-2026 Matthias Geier` followed by the full MIT permission text (note year 2026 vs LICENSE file's 2025 — trivial drift). |
-| **Example scripts license** | `examples/rec_unlimited.py`, `examples/play_file.py` carry **no license header** (shebang + docstring only), and `doc/examples.rst` contains no separate license/public-domain statement (grep empty). They are therefore covered by the repository's MIT LICENSE: copying an example into RoomScope requires keeping the Matthias Geier MIT notice. |
+| **Example scripts license** | `examples/rec_unlimited.py`, `examples/play_file.py` carry **no license header** (shebang + docstring only), and `doc/examples.rst` contains no separate license/public-domain statement (grep empty). They are therefore covered by the repository's MIT LICENSE: copying an example into ReverbScope requires keeping the Matthias Geier MIT notice. |
 | NOTICE / COPYRIGHT / AUTHORS | None (all 404). `CONTRIBUTING.rst`, `NEWS.rst` present. |
 | Patent statements | None. |
 | README vs LICENSE | Consistent: "License: MIT -- see the file LICENSE for details." (https://raw.githubusercontent.com/spatialaudio/python-sounddevice/master/README.rst line 15-16). |
 | Modification / redistribution / attribution / notice / copyleft | Modify: yes. Redistribute: yes. Attribution: yes. Preserve notice: yes. Source disclosure: no. **Copyleft: no.** |
-| Affects RoomScope's Apache-2.0? | No, as a dependency. If example code is adapted, add the MIT notice to RoomScope's third-party notices. |
+| Affects ReverbScope's Apache-2.0? | No, as a dependency. If example code is adapted, add the MIT notice to ReverbScope's third-party notices. |
 | **Classification** | **Code could be adapted with attribution** (dependency; examples reusable with the MIT notice). |
 
 ---
@@ -419,14 +419,14 @@ Searches run: `github "exponential sine sweep" impulse response measurement pyth
 | Patent statements | None. |
 | README vs LICENSE | Consistent: "python-soundfile is BSD licensed (BSD 3-Clause License). (c) 2013, Bastian Bechtold" (https://raw.githubusercontent.com/bastibe/python-soundfile/master/README.rst lines 21-22). |
 | Modification / redistribution / attribution / notice / copyleft | soundfile itself: Modify yes, redistribute yes, attribution yes, notice yes, source disclosure no, **copyleft no**. The bundled libsndfile is **LGPL (weak copyleft)** — dynamically linked; obligations attach to whoever redistributes the binary (the wheel publisher), not to a pip-installing Apache-2.0 project. |
-| Affects RoomScope's Apache-2.0? | No, when used as a normal pip dependency. If RoomScope ever bundles the soundfile wheel/libsndfile in its own installer, the LGPL notice/relinking obligations for libsndfile apply. |
+| Affects ReverbScope's Apache-2.0? | No, when used as a normal pip dependency. If ReverbScope ever bundles the soundfile wheel/libsndfile in its own installer, the LGPL notice/relinking obligations for libsndfile apply. |
 | **Classification** | **Code could be adapted with attribution** (dependency; no need to copy source). |
 
 ---
 
 ## Summary table
 
-| # | Project | License (SPDX) | Copyleft? | Affects Apache-2.0 project? | Classification for RoomScope |
+| # | Project | License (SPDX) | Copyleft? | Affects Apache-2.0 project? | Classification for ReverbScope |
 |---|---|---|---|---|---|
 | 1 | pyroomacoustics | MIT | No | No (keep EPFL-LCAV notice if copied) | Code could be adapted with attribution (prefer conceptual) |
 | 2 | python-acoustics (archived) | BSD-3-Clause (template `{organization}` left in) | No | No | Code could be adapted with attribution (prefer conceptual) |
@@ -449,7 +449,7 @@ Searches run: `github "exponential sine sweep" impulse response measurement pyth
 | 14 | python-sounddevice (+ examples) | MIT (PortAudio binaries MIT; ASIO SDK Steinberg terms) | No | No (keep MIT notice if examples copied) | Code could be adapted with attribution (dependency) |
 | 15 | python-soundfile | BSD-3-Clause (bundled libsndfile LGPL, dynamic) | No (LGPL only in bundled binary) | No as pip dependency | Code could be adapted with attribution (dependency) |
 
-Practical rule for RoomScope: every green-lit repo above is MIT/BSD, so nothing here threatens the Apache-2.0 plan **as long as DRC, Aliki and REW are never copied, translated, or decompiled**. If any MIT/BSD snippet is ever adapted despite the clean-room preference, record it in a `THIRD_PARTY_NOTICES` file with the exact copyright line quoted above.
+Practical rule for ReverbScope: every green-lit repo above is MIT/BSD, so nothing here threatens the Apache-2.0 plan **as long as DRC, Aliki and REW are never copied, translated, or decompiled**. If any MIT/BSD snippet is ever adapted despite the clean-room preference, record it in a `THIRD_PARTY_NOTICES` file with the exact copyright line quoted above.
 
 ---
 
@@ -459,7 +459,7 @@ Practical rule for RoomScope: every green-lit repo above is MIT/BSD, so nothing 
 2. **ITA-Toolbox**: the RWTH GitLab web UI and API are behind an Anubis anti-bot challenge; only `/-/raw/` worked. Consequently: no HEAD commit SHA, no tag/release list, no enumeration of the "bundled third party packages" the website mentions, and no source-file header check. The 4-clause license text itself was read verbatim.
 3. **REW**: findings rely on the public homepage and EULA page as rendered on 2026-09-17; the version string on the homepage (V5.31.3, 2024) may not reflect the current build. No terms-of-use page beyond the EULA was read.
 4. **Third-party build/binary dependencies were not audited to license-file level**: pyroomacoustics' CMake-fetched Eigen/nanoflann/pybind11; sounddevice's ASIO SDK inside the PortAudio binaries; soundfile's full libsndfile dependency chain (only the project's own `license_notes.md` and `libsndfile-binaries` README were read). SciPy's bundled components were taken from `LICENSES_bundled.txt` without opening each license file.
-5. **AutoEq measurement/result data** licensing could not be determined (no statement found); irrelevant to RoomScope's stated use.
+5. **AutoEq measurement/result data** licensing could not be determined (no statement found); irrelevant to ReverbScope's stated use.
 6. **Source-header checks covered 1-2 files per repo** as requested, not the whole tree; repositories with no headers in those files may still have headers elsewhere.
 7. **Release information** for phonometry was not queried (tags/releases API not called). For Impulcifer, AutoEq, pyfar and python-acoustics GitHub has no "Releases", so the newest *tag* is reported instead.
 8. GitHub license detection (`license.spdx_id`) was used only as corroboration; the primary source for every license is the raw LICENSE file quoted in each section.

@@ -3,12 +3,12 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.deconvolution import confidence_label, deconvolve, locate_impulse_response
-from roomscope.core.pipeline import Reference, analyze
-from roomscope.core.sweep import inverse_filter, measurement_signal, reference_pulse
-from roomscope.errors import AnalysisError, InvalidAudioError
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import SweepSettings
+from reverbscope.core.deconvolution import confidence_label, deconvolve, locate_impulse_response
+from reverbscope.core.pipeline import Reference, analyze
+from reverbscope.core.sweep import inverse_filter, measurement_signal, reference_pulse
+from reverbscope.errors import AnalysisError, InvalidAudioError
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import SweepSettings
 
 
 def test_loopback_gives_unit_impulse_at_pre_delay(short_sweep: SweepSettings) -> None:

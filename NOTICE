@@ -1,9 +1,9 @@
-RoomScope
-Copyright 2026 RoomScope contributors
+ReverbScope
+Copyright 2026 ReverbScope contributors
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 
-RoomScope contains no vendored third-party source code (see docs/CODE_PROVENANCE.md).
+ReverbScope contains no vendored third-party source code (see docs/CODE_PROVENANCE.md).
 It depends on third-party Python packages whose licenses are recorded in
-docs/DEPENDENCIES.md. Binary distributions of RoomScope must ship the license
+docs/DEPENDENCIES.md. Binary distributions of ReverbScope must ship the license
 and notice files of those packages as described there.

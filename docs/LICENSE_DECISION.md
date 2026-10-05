@@ -13,7 +13,7 @@ Changing the license requires the project owner's explicit approval.
 | Explicit patent grant from contributors | no | no | **yes** (§3) |
 | Patent retaliation clause | no | no | yes |
 | Explicit contribution terms | no | no | yes (§5) |
-| Compatible with all RoomScope dependencies | yes | yes | yes |
+| Compatible with all ReverbScope dependencies | yes | yes | yes |
 | Can be combined into GPL-3.0 works | yes | yes | yes |
 | Can be combined into GPL-2.0-only works | yes | yes | no |
 | Common in the Python DSP ecosystem | very (pyroomacoustics, pyfar) | very (NumPy, SciPy, python-acoustics) | common (packaging, pip-audit, many Apache projects) |
@@ -34,7 +34,7 @@ Changing the license requires the project owner's explicit approval.
 3. **Dependency compatibility.** All runtime dependencies are permissive
    (BSD-3, MIT, MIT-0, PSF-style, Apache-2.0/BSD dual) or LGPL used
    dynamically (Qt/PySide6, libsndfile). Apache-2.0 code may be combined with
-   all of them. Nothing forces copyleft on RoomScope as long as the LGPL
+   all of them. Nothing forces copyleft on ReverbScope as long as the LGPL
    components stay replaceable shared libraries (see DEPENDENCIES.md).
 4. **Community.** Apache-2.0 is an OSI/FSF-approved, GPLv3-compatible
    license accepted by all major distributions and package indexes.

@@ -5,13 +5,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.linearity import (
+from reverbscope.core.linearity import (
     CLIPPING_MIN_RUNS,
     detect_clipping,
     quantisation_step,
 )
-from roomscope.core.sweep import generate_ess, measurement_signal
-from roomscope.models.configuration import SweepSettings
+from reverbscope.core.sweep import generate_ess, measurement_signal
+from reverbscope.models.configuration import SweepSettings
 
 
 def _quantise(x: np.ndarray, bits: int = 24, dither: float = 0.0, seed: int = 0) -> np.ndarray:

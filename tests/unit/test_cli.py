@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 from scipy.signal import fftconvolve
 
-from roomscope.cli.main import main
-from roomscope.io.wav import read_wav, write_wav
+from reverbscope.cli.main import main
+from reverbscope.io.wav import read_wav, write_wav
 from tests.conftest import make_rir
 
 
@@ -16,18 +16,18 @@ def test_version_flag(capsys: pytest.CaptureFixture[str]) -> None:
     with pytest.raises(SystemExit) as exc:
         main(["--version"])
     assert exc.value.code == 0
-    assert "roomscope" in capsys.readouterr().out
+    assert "reverbscope" in capsys.readouterr().out
 
 
 def test_sweep_and_analyze_commands(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     sweep = tmp_path / "sweep.wav"
     assert main(["sweep", "--out", str(sweep), "--duration", "2", "--post-silence", "1.5"]) == 0
-    assert sweep.is_file() and (tmp_path / "sweep.roomscope-sweep.json").is_file()
+    assert sweep.is_file() and (tmp_path / "sweep.reverbscope-sweep.json").is_file()
 
     signal = read_wav(sweep)
     # diffuse_level was 0.01: there the single -9 dB reflection carries about half
     # of the energy after the direct sound, the broadband decay is curved by the
-    # ISO 3382-2 measure (C = 12 %) and RoomScope now withholds the RT60 (see
+    # ISO 3382-2 measure (C = 12 %) and ReverbScope now withholds the RT60 (see
     # tests/unit/test_decay.py). With 0.02 the decay is straight (C ~ 1 %), so
     # this test keeps checking the CLI's RT60 output.
     ir = make_rir(signal.sample_rate, rt60_s=0.4, reflections=[(0.018, 0.35)], diffuse_level=0.02)
@@ -51,7 +51,7 @@ def test_sweep_and_analyze_commands(tmp_path: Path, capsys: pytest.CaptureFixtur
     )
     captured = capsys.readouterr()
     assert code == 0
-    assert "RoomScope analysis" in captured.out
+    assert "ReverbScope analysis" in captured.out
     assert "18.0 ms" in captured.out
     assert (out / "session.json").is_file() and (out / "result.json").is_file()
 
@@ -146,7 +146,7 @@ def test_show_prints_saved_session_and_lists_folder(
 
     assert main(["show", str(session)]) == 0
     shown = capsys.readouterr().out
-    assert "RoomScope analysis" in shown
+    assert "ReverbScope analysis" in shown
     assert "Interpretation (Vocals profile)" in shown
     assert str(session) in shown
 
@@ -215,7 +215,7 @@ def test_compare_and_schema_commands(tmp_path: Path, capsys: pytest.CaptureFixtu
     assert out.is_file()
     assert main(["show", str(out)]) == 0
     shown = capsys.readouterr().out
-    assert "RoomScope comparison" in shown
+    assert "ReverbScope comparison" in shown
     assert main(["show", str(out), "--json"]) == 0
     reloaded = json.loads(capsys.readouterr().out)
     assert reloaded["comparable"] == payload["comparable"]
@@ -223,7 +223,7 @@ def test_compare_and_schema_commands(tmp_path: Path, capsys: pytest.CaptureFixtu
     assert "findings" not in json.loads(out.read_text(encoding="utf-8"))
     assert main(["schema", "comparison"]) == 0
     schema = capsys.readouterr().out
-    assert '"title": "RoomScope comparison.json"' in schema
+    assert '"title": "ReverbScope comparison.json"' in schema
 
 
 def test_analyze_missing_file_returns_error(
@@ -279,7 +279,7 @@ def test_session_bundle_export_and_project(
     )
     capsys.readouterr()
     assert (session / "recording.wav").is_file()
-    assert (session / "sweep.roomscope-sweep.json").is_file()
+    assert (session / "sweep.reverbscope-sweep.json").is_file()
     bundle = tmp_path / "report.zip"
     assert main(["session", "bundle", str(session), "--no-audio", "--out", str(bundle)]) == 0
     assert bundle.is_file()
@@ -319,10 +319,10 @@ def test_lang_zh_cn_translates_report(tmp_path: Path, capsys: pytest.CaptureFixt
         == 0
     )
     out = capsys.readouterr().out
-    assert "RoomScope 分析" in out
+    assert "ReverbScope 分析" in out
     assert "混响" in out
     assert "概览" in out and "诊断" in out
-    from roomscope.i18n import activate
+    from reverbscope.i18n import activate
 
     activate("en")
 
@@ -343,7 +343,7 @@ def test_lang_zh_cn_translates_cli_help(capsys: pytest.CaptureFixture[str]) -> N
     assert "不要裁切" in analyze
     assert "附属文件" in analyze
     assert "显示此帮助信息并退出" in out
-    from roomscope.i18n import activate
+    from reverbscope.i18n import activate
 
     activate("en")
 
@@ -358,7 +358,7 @@ def test_lang_zh_cn_translates_cli_output(
     assert main(["--lang", "zh_CN", "--backend", "fake", "devices"]) == 0
     listed = capsys.readouterr().out
     assert "主机" in listed
-    from roomscope.i18n import activate
+    from reverbscope.i18n import activate
 
     activate("en")
 

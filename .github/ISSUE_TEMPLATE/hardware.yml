@@ -1,5 +1,5 @@
 name: Audio interface test report (English)
-description: You ran RoomScope with a real sound card or audio interface. Works or fails, both help.
+description: You ran ReverbScope with a real sound card or audio interface. Works or fails, both help.
 title: "[hardware] <interface> on <OS>"
 labels: ["hardware-report"]
 body:
@@ -7,8 +7,8 @@ body:
     attributes:
       value: |
         The maintainer does not own your interface, so a real run on your
-        machine is the only evidence RoomScope has for it. The checks are listed
-        in [docs/HARDWARE_TESTS.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/HARDWARE_TESTS.md);
+        machine is the only evidence ReverbScope has for it. The checks are listed
+        in [docs/HARDWARE_TESTS.md](https://github.com/jingyemingyue/ReverbScope/blob/main/docs/HARDWARE_TESTS.md);
         do as many as you like. A failed check is as useful as a pass.
         Only results from a physical interface count: not the Demo mode, the
         fake backend, a CI runner, or a virtual machine without a passed-through
@@ -25,7 +25,7 @@ body:
     id: setup
     attributes:
       label: Host API, sample rates and channels
-      description: As chosen in Standalone Mode (or the roomscope measure options). List every rate you ran.
+      description: As chosen in Standalone Mode (or the reverbscope measure options). List every rate you ran.
       placeholder: "Windows WASAPI; 44100, 48000 and 96000 Hz; input 1 -> output 1, loopback input 2; latency default"
     validations:
       required: true
@@ -44,7 +44,7 @@ body:
     id: enumeration
     attributes:
       label: "Device list"
-      description: 'The interface appears in Standalone Mode / `roomscope devices` with the right number of input and output channels.'
+      description: 'The interface appears in Standalone Mode / `reverbscope devices` with the right number of input and output channels.'
       options:
         - Not run
         - Pass
@@ -128,7 +128,7 @@ body:
     id: xruns
     attributes:
       label: "Full take without a buffer under/overflow"
-      description: 'Pass: no "reported ... buffer problem(s) ... may contain dropouts" warning in the result or in `roomscope.log`. The log is in the data folder (`~/.roomscope/`, or Environment Report → Open Data Folder).'
+      description: 'Pass: no "reported ... buffer problem(s) ... may contain dropouts" warning in the result or in `reverbscope.log`. The log is in the data folder (`~/.reverbscope/`, or Environment Report → Open Data Folder).'
       options:
         - Not run
         - Pass
@@ -140,7 +140,7 @@ body:
     id: unplug
     attributes:
       label: "Interface unplugged during a take"
-      description: 'Unplug the USB/Thunderbolt cable while the sweep plays (turn the monitors down first). Pass: RoomScope reports an error and saves no result; it does not hang or crash.'
+      description: 'Unplug the USB/Thunderbolt cable while the sweep plays (turn the monitors down first). Pass: ReverbScope reports an error and saves no result; it does not hang or crash.'
       options:
         - Not run
         - Pass
@@ -177,9 +177,9 @@ body:
     attributes:
       label: Result
       description: |
-        What worked and what did not, and any message RoomScope showed, for
+        What worked and what did not, and any message ReverbScope showed, for
         each check you marked Pass or Fail. Mention clicks, dropouts, or a
-        "buffer problem(s)" line in `roomscope.log` (in `~/.roomscope/`).
+        "buffer problem(s)" line in `reverbscope.log` (in `~/.reverbscope/`).
     validations:
       required: true
   - type: textarea
@@ -188,7 +188,7 @@ body:
       label: Environment report with probed sample rates
       description: |
         **Help → Environment Report for Bug Reports → Probe sample rates → Copy**,
-        or `roomscope doctor --probe` in a terminal. Nothing is played while
+        or `reverbscope doctor --probe` in a terminal. Nothing is played while
         probing. Review it before posting: device names can contain personal names.
       render: text
     validations:
@@ -198,6 +198,6 @@ body:
     attributes:
       label: Session bundle or log (optional)
       description: |
-        Drag in a session bundle (`roomscope session bundle <session> --out
+        Drag in a session bundle (`reverbscope session bundle <session> --out
         report.zip`, add `--no-audio` to leave the recordings out), or paste the
-        relevant lines of `roomscope.log`.
+        relevant lines of `reverbscope.log`.

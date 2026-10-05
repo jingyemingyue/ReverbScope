@@ -1,20 +1,20 @@
 blank_issues_enabled: true
 contact_links:
   - name: Measurement methodology / 测量方法
-    url: https://github.com/jingyemingyue/RoomScope/blob/main/docs/MEASUREMENT_METHODOLOGY.md
+    url: https://github.com/jingyemingyue/ReverbScope/blob/main/docs/MEASUREMENT_METHODOLOGY.md
     about: How each metric is computed, which units it uses, and when it is marked invalid. 各项指标如何计算、使用什么单位、何时被标记为无效（英文文档）。
   - name: Project status / 项目状态
-    url: https://github.com/jingyemingyue/RoomScope/blob/main/docs/STATUS.md
+    url: https://github.com/jingyemingyue/ReverbScope/blob/main/docs/STATUS.md
     about: What is implemented, tested, known to be missing, and planned next. 已实现、已测试、已知缺失和下一步计划的内容（英文文档）。
   - name: Hardware and DAW test matrix (English)
-    url: https://github.com/jingyemingyue/RoomScope/blob/main/docs/HARDWARE_TESTS.md
+    url: https://github.com/jingyemingyue/ReverbScope/blob/main/docs/HARDWARE_TESTS.md
     about: Which interfaces and DAWs have been run for real (none yet) and how to add yours.
   - name: 硬件与 DAW 测试矩阵（简体中文）
-    url: https://github.com/jingyemingyue/RoomScope/blob/main/docs/HARDWARE_TESTS.zh-CN.md
+    url: https://github.com/jingyemingyue/ReverbScope/blob/main/docs/HARDWARE_TESTS.zh-CN.md
     about: 哪些音频接口和 DAW 已经实际运行过（目前还没有），以及如何提交你的结果。
   - name: Security vulnerability (English)
-    url: https://github.com/jingyemingyue/RoomScope/security/advisories/new
+    url: https://github.com/jingyemingyue/ReverbScope/security/advisories/new
     about: Report privately, not in a public issue (see SECURITY.md).
   - name: 安全漏洞（简体中文）
-    url: https://github.com/jingyemingyue/RoomScope/security/advisories/new
+    url: https://github.com/jingyemingyue/ReverbScope/security/advisories/new
     about: 请私下报告，不要提交公开 issue（见 SECURITY.zh-CN.md）。

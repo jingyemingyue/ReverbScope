@@ -53,8 +53,8 @@ secrets.*
 *.p12
 *.token
 credentials*
-.roomscope/
-roomscope.local.toml
+.reverbscope/
+reverbscope.local.toml
 
 # --- Measurement data (raw audio is user data, not source) ---
 *.wav
@@ -82,8 +82,8 @@ scratch/
 # --- gettext (compiled at packaging time; do not commit) ---
 *.mo
 
-# --- Generated documentation site (S7) ---
-site/
+# --- Generated docs HTML preview (S7). Never write this into site/. ---
+docs-html/
 
 # --- Packaging outputs ---
 *.dmg

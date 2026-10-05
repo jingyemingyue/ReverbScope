@@ -8,8 +8,8 @@ from pathlib import Path
 import pytest
 from jsonschema import Draft202012Validator
 
-from roomscope.cli.main import main
-from roomscope.daw import (
+from reverbscope.cli.main import main
+from reverbscope.daw import (
     FAKE_DAWS_ENV,
     FOLLOWED_SETTINGS,
     SOURCE_DECLARED,
@@ -21,11 +21,11 @@ from roomscope.daw import (
     parse_fake_daws,
     resolve_daw_follow,
 )
-from roomscope.errors import ConfigurationError
-from roomscope.io.wav import read_wav
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.session import MeasurementSession
-from roomscope.schemas import load_schema
+from reverbscope.errors import ConfigurationError
+from reverbscope.io.wav import read_wav
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.session import MeasurementSession
+from reverbscope.schemas import load_schema
 
 TWO_FAKES = "Logic Pro:48000:Song A;REAPER:44100:Film"
 

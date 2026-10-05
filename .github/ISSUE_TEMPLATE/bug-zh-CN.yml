@@ -1,5 +1,5 @@
 name: 缺陷报告（简体中文）
-description: RoomScope 崩溃、显示错误，或做了不该做的事。
+description: ReverbScope 崩溃、显示错误，或做了不该做的事。
 title: "[bug] "
 labels: ["bug"]
 body:
@@ -8,11 +8,11 @@ body:
       value: |
         感谢你抽时间报告。如果是某个**测量数值**看起来不对，请改用
         *测量问题* 模板。声卡与 DAW 的测试结果各有专门的模板。
-        使用说明见[简体中文用户指南](https://github.com/jingyemingyue/RoomScope/blob/main/docs/user-guide/zh-CN.md)。
+        使用说明见[简体中文用户指南](https://github.com/jingyemingyue/ReverbScope/blob/main/docs/user-guide/zh-CN.md)。
   - type: input
     id: version
     attributes:
-      label: RoomScope 版本
+      label: ReverbScope 版本
       description: 环境报告的前两行（版本号和构建号）。
       placeholder: "0.4.1, build 1a2b3c4"
     validations:
@@ -20,13 +20,13 @@ body:
   - type: dropdown
     id: install
     attributes:
-      label: RoomScope 的安装方式
+      label: ReverbScope 的安装方式
       options:
-        - 桌面版，Windows 安装程序（RoomScope-Desktop-Windows-x64-Setup.exe）
+        - 桌面版，Windows 安装程序（ReverbScope-Desktop-Windows-x64-Setup.exe）
         - 桌面版，Windows zip 压缩包
         - 桌面版，macOS 磁盘映像（.dmg）
         - 桌面版，Linux 压缩包（.tar.gz）
-        - 终端版（RoomScope-Terminal-…）
+        - 终端版（ReverbScope-Terminal-…）
         - pip / 源码检出
         - 其他
     validations:
@@ -59,7 +59,7 @@ body:
     id: actual
     attributes:
       label: 实际发生了什么
-      description: RoomScope 显示的消息，尽量逐字照录。
+      description: ReverbScope 显示的消息，尽量逐字照录。
     validations:
       required: true
   - type: textarea
@@ -69,7 +69,7 @@ body:
       description: |
         在应用中：**帮助 → 用于问题报告的环境报告 → 复制**
         （问题涉及音频设备时，请先点击 *探测采样率*）。在终端中：
-        `roomscope doctor`（设备问题请加 `--probe`）。发布前请检查内容：
+        `reverbscope doctor`（设备问题请加 `--probe`）。发布前请检查内容：
         设备名称可能包含个人姓名。
       render: text
     validations:
@@ -79,8 +79,8 @@ body:
     attributes:
       label: 日志或 traceback（可选）
       description: |
-        日志文件是环境报告所列数据文件夹中的 `roomscope.log`
+        日志文件是环境报告所列数据文件夹中的 `reverbscope.log`
         （环境报告 → 打开数据文件夹）。请粘贴出错位置前后的几行。
-        如果某个会话表现异常，欢迎附上会话打包文件（`roomscope session bundle
+        如果某个会话表现异常，欢迎附上会话打包文件（`reverbscope session bundle
         <session> --out report.zip`）。
       render: text

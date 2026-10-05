@@ -1,7 +1,7 @@
 # Code provenance
 
 Last reviewed: 2026-10-03 (referenced device parameters added to
-`src/roomscope/audio/referenced.py`; Chu noise-power subtraction added to
+`src/reverbscope/audio/referenced.py`; Chu noise-power subtraction added to
 `core/decay.py` from the published method; ASCII PLY / OBJ scan import
 and Welch IR spectrum added from published formats and methods; no
 third-party source was copied).
@@ -24,7 +24,7 @@ third-party code enters the tree:
 
 ## Third-party *libraries* (used, not copied)
 
-RoomScope imports NumPy, SciPy, soundfile, sounddevice, matplotlib and
+ReverbScope imports NumPy, SciPy, soundfile, sounddevice, matplotlib and
 (optionally) PySide6 as ordinary dependencies. Their licenses, bundled native
 libraries and redistribution obligations are recorded in DEPENDENCIES.md.
 Using a library through its public API is not vendoring and creates no
@@ -42,11 +42,11 @@ entry above.
 
 ## Referenced device parameters (not code)
 
-`src/roomscope/audio/referenced.py` stores published numbers (channel
+`src/reverbscope/audio/referenced.py` stores published numbers (channel
 counts, sample rates, compiled latencies) read from public documents and
 open-source files already cited in AUDIO_DEVICES.md. **No third-party
 source was copied.** Each value has a URL and locator. These are not
-RoomScope hardware results.
+ReverbScope hardware results.
 
 | local field | source | URL / locator |
 | --- | --- | --- |
@@ -86,7 +86,7 @@ arrivals its tests are built from) was implemented clean-room from the
 published relation in Allen & Berkley (1979); no code was taken from
 pyroomacoustics (MIT, EPFL-LCAV), which THIRD_PARTY_REVIEW.md records as
 evaluated and not adopted — adopting it would also bring its Eigen
-(MPL-2.0) obligation, see DEPENDENCIES.md. RoomScope does not implement
+(MPL-2.0) obligation, see DEPENDENCIES.md. ReverbScope does not implement
 room-shape-from-echoes / echo sorting (Dokmanić et al., 2013); it is cited in
 MEASUREMENT_METHODOLOGY.md §9 as the published method the project declines,
 and no implementation of it was consulted.
@@ -98,7 +98,7 @@ showing the image source next to the real source and microphone is the
 documented behaviour of pyroomacoustics `Room.plot`
 (https://pyroomacoustics.readthedocs.io/en/pypi-release/pyroomacoustics.room.html:
 "Plots the room with its walls, microphones, sources and images").
-RoomScope still draws no wall: only the planes the tape and the
+ReverbScope still draws no wall: only the planes the tape and the
 reflections identify. **No pyroomacoustics source was read or copied.**
 
 The Chu noise-power subtraction in `core/decay.py` (subtract the Lundeby
@@ -117,19 +117,19 @@ http://paulbourke.net/dataformats/ply/) and Wavefront OBJ vertex/face
 records (Library of Congress FDD000507). Binary PLY is refused.
 **No Open3D, trimesh, CloudCompare or other scanner-library source was
 read or copied.** Coordinates are the file's, treated as metres;
-RoomScope does not align them to the microphone and does not talk to a
+ReverbScope does not align them to the microphone and does not talk to a
 lidar. The checked-in `tests/fixtures/synthetic_room.ply` is a synthetic
 shoebox written for tests, not a capture.
 
-DAW follow in `daw.py` is RoomScope's own resolve/ask policy. Running
+DAW follow in `daw.py` is ReverbScope's own resolve/ask policy. Running
 hosts are not inspected and no DAW SDK is used. On a machine with no
 DAW — including this VM — the candidate list is empty unless tests
-inject entries or `ROOMSCOPE_FAKE_DAWS` is set. **No host-application
+inject entries or `REVERBSCOPE_FAKE_DAWS` is set. **No host-application
 source was read or copied.**
 
 The impulse-response spectrum in `core/spectrum.py` calls SciPy's public
 `scipy.signal.welch` (already a dependency) with the same AES17 density
-scaling already used in `core/noise.py` (Welch 1967). It is RoomScope's
+scaling already used in `core/noise.py` (Welch 1967). It is ReverbScope's
 own IR, not a hardware RTA. **No third-party measurement program's
 spectrum code was read or copied.**
 

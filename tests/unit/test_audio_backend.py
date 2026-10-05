@@ -7,18 +7,18 @@ import threading
 import numpy as np
 import pytest
 
-from roomscope.audio.backend import CALLBACK_BLOCK, get_backend
-from roomscope.audio.fake import FakeBackend, make_rir
-from roomscope.core.sweep import measurement_signal
-from roomscope.errors import ConfigurationError, MeasurementCancelledError
-from roomscope.models.configuration import SweepSettings
+from reverbscope.audio.backend import CALLBACK_BLOCK, get_backend
+from reverbscope.audio.fake import FakeBackend, make_rir
+from reverbscope.core.sweep import measurement_signal
+from reverbscope.errors import ConfigurationError, MeasurementCancelledError
+from reverbscope.models.configuration import SweepSettings
 
 
 def test_get_backend_fake_and_unknown(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ROOMSCOPE_AUDIO_BACKEND", "fake")
+    monkeypatch.setenv("REVERBSCOPE_AUDIO_BACKEND", "fake")
     backend = get_backend()
     assert backend.name == "fake"
-    monkeypatch.delenv("ROOMSCOPE_AUDIO_BACKEND")
+    monkeypatch.delenv("REVERBSCOPE_AUDIO_BACKEND")
     named = get_backend("fake")
     assert named.name == "fake"
     with pytest.raises(ConfigurationError, match="unknown"):

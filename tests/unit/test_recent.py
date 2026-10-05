@@ -5,11 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.io.recent import recent_session_paths, remember_session
-from roomscope.io.session_store import save_measurement
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.session import MeasurementSession
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.io.recent import recent_session_paths, remember_session
+from reverbscope.io.session_store import save_measurement
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
 
@@ -24,7 +24,7 @@ def _save_session(directory: Path, sweep: SweepSettings, room: str) -> Path:
 def test_remember_session_orders_and_drops_missing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
 ) -> None:
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     first = _save_session(tmp_path / "one", short_sweep, "One")
     second = _save_session(tmp_path / "two", short_sweep, "Two")
     remember_session(first)
@@ -44,7 +44,7 @@ def test_remember_session_orders_and_drops_missing(
 def test_recent_store_ignores_corrupt_json(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     home = tmp_path / "home"
     home.mkdir()
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(home))
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(home))
     (home / "recent_sessions.json").write_text("{not json", encoding="utf-8")
     assert recent_session_paths() == []
     (home / "recent_sessions.json").write_text(

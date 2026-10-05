@@ -44,7 +44,7 @@ def test_build_site_writes_themed_pages(tmp_path: Path) -> None:
     assert any(path.name == "en.html" for path in written)
     index_html = index.read_text(encoding="utf-8")
     css_text = css.read_text(encoding="utf-8")
-    assert "RoomScope" in index_html
+    assert "ReverbScope" in index_html
     assert "user-guide/en.html" in index_html
     assert "prefers-color-scheme: dark" in css_text
     assert 'class="sidebar"' in index_html
@@ -84,7 +84,7 @@ def test_site_seo_files_use_placeholder_and_allow_indexing(tmp_path: Path) -> No
 
     index_html = (dest / "index.html").read_text(encoding="utf-8")
     assert 'lang="en"' in index_html
-    assert "<title>" in index_html and "RoomScope" in index_html
+    assert "<title>" in index_html and "ReverbScope" in index_html
     assert 'content="' in index_html
     index_desc = index_html.split('name="description" content="', 1)[1].split('"', 1)[0]
     assert "recording room" in index_desc
@@ -114,7 +114,7 @@ def test_page_description_skips_language_switcher() -> None:
     site = _load()
     text = (
         "# Title\n\n**English** | [简体中文](index.zh-CN.md)\n\n"
-        "This is the documentation hub for measuring rooms with RoomScope.\n"
+        "This is the documentation hub for measuring rooms with ReverbScope.\n"
     )
     desc = site.page_description(text, fallback="fallback")
     assert "documentation hub" in desc
@@ -124,10 +124,46 @@ def test_page_description_skips_language_switcher() -> None:
 def test_page_description_skips_download_url_line() -> None:
     site = _load()
     text = (
-        "# Installing RoomScope\n\n"
-        "**Download page (stable beta):** <https://github.com/jingyemingyue/RoomScope/releases>\n\n"
-        "RoomScope is offered as two betas. Both are still beta.\n"
+        "# Installing ReverbScope\n\n"
+        "**Download page (stable beta):** <https://github.com/jingyemingyue/ReverbScope/releases>\n\n"
+        "ReverbScope is offered as two betas. Both are still beta.\n"
     )
     desc = site.page_description(text, fallback="fallback")
     assert "two betas" in desc
     assert "github.com" not in desc.casefold()
+
+
+def test_build_site_refuses_to_overwrite_landing_page(tmp_path: Path) -> None:
+    site = _load()
+    landing = tmp_path / "site"
+    landing.mkdir()
+    (landing / "index.html").write_text(
+        '<html><script src="https://utteranc.es/client.js"></script></html>',
+        encoding="utf-8",
+    )
+    (landing / "robots.txt").write_text("User-agent: *\nAllow: /\n", encoding="utf-8")
+    (landing / "sitemap.xml").write_text("<urlset></urlset>\n", encoding="utf-8")
+    try:
+        site.build_site(Path("docs"), landing)
+    except site.LandingPageError:
+        pass
+    else:
+        raise AssertionError("expected LandingPageError")
+    assert (landing / "index.html").read_text(encoding="utf-8").count("utteranc.es") == 1
+    assert (landing / "robots.txt").is_file()
+    assert (landing / "sitemap.xml").is_file()
+
+
+def test_committed_site_is_the_only_published_seo_root() -> None:
+    landing = Path("site")
+    robots = (landing / "robots.txt").read_text(encoding="utf-8")
+    sitemap = (landing / "sitemap.xml").read_text(encoding="utf-8")
+    index = (landing / "index.html").read_text(encoding="utf-8")
+    assert "User-agent: *" in robots
+    assert "Allow: /" in robots
+    assert "jingyemingyue.github.io/ReverbScope/sitemap.xml" in robots
+    assert sitemap.count("<urlset") == 1
+    assert "jingyemingyue.github.io/ReverbScope/" in sitemap
+    assert "utteranc.es" in index
+    assert 'property="og:title"' in index
+    assert index.count("<sitemap") == 0

@@ -5,12 +5,12 @@ import json
 import numpy as np
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.errors import ConfigurationError, InvalidAudioError, SessionError
-from roomscope.models.audio import AudioSignal
-from roomscope.models.configuration import AnalysisSettings, SweepSettings
-from roomscope.models.result import AnalysisResult
-from roomscope.models.session import MeasurementSession
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.errors import ConfigurationError, InvalidAudioError, SessionError
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.configuration import AnalysisSettings, SweepSettings
+from reverbscope.models.result import AnalysisResult
+from reverbscope.models.session import MeasurementSession
 from tests.conftest import make_rir
 
 

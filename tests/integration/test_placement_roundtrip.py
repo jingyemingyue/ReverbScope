@@ -10,10 +10,10 @@ import math
 
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.core.placement import DEFAULT_TEMPERATURE_C, speed_of_sound_m_s
-from roomscope.models.configuration import AnalysisSettings, SweepSettings
-from roomscope.models.result import Validity
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.core.placement import DEFAULT_TEMPERATURE_C, speed_of_sound_m_s
+from reverbscope.models.configuration import AnalysisSettings, SweepSettings
+from reverbscope.models.result import Validity
 from tests.conftest import make_rir
 
 C20 = speed_of_sound_m_s(DEFAULT_TEMPERATURE_C)

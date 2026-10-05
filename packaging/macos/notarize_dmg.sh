@@ -1,5 +1,5 @@
 #!/bin/sh
-# Sign, notarize and staple a RoomScope disk image, then check that
+# Sign, notarize and staple a ReverbScope disk image, then check that
 # Gatekeeper accepts both the image and the app inside it
 # (docs/RELEASE_PLAN.md §3b, steps 3-5). Run only with a Developer ID;
 # the app inside must already be signed with sign_app.sh --identity.
@@ -51,6 +51,6 @@ xcrun stapler validate "$DMG"
 spctl -a -t open -vvv --context context:primary-signature "$DMG"
 mkdir "$MOUNT"
 hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MOUNT" -quiet
-spctl -a -t exec -vvv "$MOUNT/RoomScope.app"
-codesign --verify --deep --strict --verbose=2 "$MOUNT/RoomScope.app"
+spctl -a -t exec -vvv "$MOUNT/ReverbScope.app"
+codesign --verify --deep --strict --verbose=2 "$MOUNT/ReverbScope.app"
 echo "notarized and stapled: $DMG"

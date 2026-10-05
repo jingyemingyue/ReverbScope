@@ -8,36 +8,36 @@ import numpy as np
 import pytest
 from scipy.signal import resample_poly
 
-from roomscope.audio.fake import make_rir
-from roomscope.core.sweep import normalisation_band_hz
+from reverbscope.audio.fake import make_rir
+from reverbscope.core.sweep import normalisation_band_hz
 
 # Re-export the synthetic room used throughout the suite.
 __all__ = ["make_rir"]
-from roomscope.models.audio import FloatArray
-from roomscope.models.configuration import SweepSettings
-from roomscope.models.result import AnalysisResult
+from reverbscope.models.audio import FloatArray
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.result import AnalysisResult
 
 
 @pytest.fixture(autouse=True)
-def isolate_roomscope_home(
+def isolate_reverbscope_home(
     tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Keep recent-session writes out of the real ``~/.roomscope``."""
-    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path_factory.mktemp("roomscope_home")))
+    """Keep recent-session writes out of the real ``~/.reverbscope``."""
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path_factory.mktemp("reverbscope_home")))
 
 
 @pytest.fixture(autouse=True)
 def pin_language(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Run every test in English regardless of the developer's locale (#14).
 
-    ``ROOMSCOPE_LANG`` and the POSIX locale variables would otherwise pick
+    ``REVERBSCOPE_LANG`` and the POSIX locale variables would otherwise pick
     the CLI / GUI language; a test that wants Chinese passes ``--lang`` or
     calls ``activate("zh_CN")``. English is re-activated afterwards so a
     failing test cannot leak its catalog into the next one.
     """
-    from roomscope.i18n import activate
+    from reverbscope.i18n import activate
 
-    for name in ("ROOMSCOPE_LANG", "LC_ALL", "LC_MESSAGES", "LANGUAGE"):
+    for name in ("REVERBSCOPE_LANG", "LC_ALL", "LC_MESSAGES", "LANGUAGE"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setenv("LANG", "C.UTF-8")
     activate("en")

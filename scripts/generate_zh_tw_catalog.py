@@ -349,18 +349,18 @@ def _keep_about_legal_english(msgid: str, msgstr: str) -> str:
 
 
 def main() -> None:
-    source = json.loads(Path("/tmp/roomscope_catalog.json").read_text(encoding="utf-8"))
+    source = json.loads(Path("/tmp/reverbscope_catalog.json").read_text(encoding="utf-8"))
     entries = []
     for item in source:
         msgstr = item["msgstr"]
         msgid = item["msgid"]
         if msgid and msgstr:
-            if msgid.startswith("<b>RoomScope {version}"):
+            if msgid.startswith("<b>ReverbScope {version}"):
                 msgstr = _keep_about_legal_english(msgid, msgstr)
             else:
                 msgstr = to_traditional(msgstr)
         entries.append({**item, "msgstr": msgstr})
-    dest = Path("src/roomscope/locale/zh_TW/LC_MESSAGES/roomscope.po")
+    dest = Path("src/reverbscope/locale/zh_TW/LC_MESSAGES/reverbscope.po")
     write_po(dest, language="zh_TW", language_name="Traditional Chinese", entries=entries)
     print(f"wrote {dest} ({dest.stat().st_size} bytes)")
 

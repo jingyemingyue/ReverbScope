@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        [docs/user-guide/daw-setup.zh-CN.md](https://github.com/jingyemingyue/RoomScope/blob/main/docs/user-guide/daw-setup.zh-CN.md)
+        [docs/user-guide/daw-setup.zh-CN.md](https://github.com/jingyemingyue/ReverbScope/blob/main/docs/user-guide/daw-setup.zh-CN.md)
         中的 DAW 步骤依据各厂商的手册编写，目前还没有任何一步在 DAW 中实际确认过。
         你的运行就是这份确认，或是一处更正。
         如果指南中的某个菜单名称或步骤与你的版本不符，请指出是哪一处。
@@ -20,8 +20,8 @@ body:
   - type: input
     id: os
     attributes:
-      label: 操作系统和 RoomScope 版本
-      placeholder: "macOS 15.5 (Apple silicon), RoomScope 0.4.1 build 1a2b3c4"
+      label: 操作系统和 ReverbScope 版本
+      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.4.1 build 1a2b3c4"
     validations:
       required: true
   - type: input
@@ -61,12 +61,12 @@ body:
     attributes:
       label: 结果
       description: |
-        RoomScope 是否分析了这段录音？请从**完整报告**选项卡（或
-        `roomscope show <session>`）中粘贴以“脉冲响应：”开头的那一行
+        ReverbScope 是否分析了这段录音？请从**完整报告**选项卡（或
+        `reverbscope show <session>`）中粘贴以“脉冲响应：”开头的那一行
         （英文界面为 "Impulse response:"；其中给出直达声置信度，矩阵单元格
         要求为“高”（high）），以及任何关于采样率或播放速度的发现。
         如果是反向测试（44.1 kHz 工程配 48 kHz 扫频，或开启了时间伸缩），
-        请说明 RoomScope 是否报告了该问题。
+        请说明 ReverbScope 是否报告了该问题。
     validations:
       required: true
   - type: textarea
@@ -74,8 +74,8 @@ body:
     attributes:
       label: 环境报告
       description: |
-        **帮助 → 用于问题报告的环境报告 → 复制**，或在终端中运行 `roomscope doctor`。
-        其中包含 RoomScope 版本、构建提交和操作系统。
+        **帮助 → 用于问题报告的环境报告 → 复制**，或在终端中运行 `reverbscope doctor`。
+        其中包含 ReverbScope 版本、构建提交和操作系统。
         发布前请检查内容：设备名称可能包含个人姓名。
       render: text
     validations:
@@ -90,5 +90,5 @@ body:
     attributes:
       label: 会话打包文件（可选）
       description: |
-        `roomscope session bundle <session> --out report.zip`（`--no-audio`
+        `reverbscope session bundle <session> --out report.zip`（`--no-audio`
         可不含录音）。扫频附带的 JSON 文件和导出的录音是最有用的文件。

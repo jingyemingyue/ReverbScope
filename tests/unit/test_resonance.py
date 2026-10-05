@@ -4,9 +4,9 @@ import numpy as np
 import pytest
 from scipy.signal import lfilter, sosfilt
 
-from roomscope.core.filters import bandpass_sos, fractional_octave_band
-from roomscope.core.frequency_response import frequency_response
-from roomscope.core.resonance import (
+from reverbscope.core.filters import bandpass_sos, fractional_octave_band
+from reverbscope.core.frequency_response import frequency_response
+from reverbscope.core.resonance import (
     SURROUNDINGS_RATIO,
     _decay_20db_s,
     band_decay_20db_s,
@@ -14,7 +14,7 @@ from roomscope.core.resonance import (
     filter_ringing_20db_s,
     notch_band,
 )
-from roomscope.models.result import ExcitationBand
+from reverbscope.models.result import ExcitationBand
 from tests.conftest import DECAY_CONSTANT, make_rir
 
 

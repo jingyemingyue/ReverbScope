@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from roomscope.core.filters import (
+from reverbscope.core.filters import (
     apply_bandpass,
     band_fits,
     band_level_samples,
@@ -15,7 +15,7 @@ from roomscope.core.filters import (
     nearest_band_index,
     settling_samples,
 )
-from roomscope.errors import ConfigurationError
+from reverbscope.errors import ConfigurationError
 
 
 def test_octave_band_edges() -> None:
@@ -177,8 +177,8 @@ def _settling_full_impulse(
 
 
 def test_settling_samples_matches_a_full_max_s_impulse() -> None:
-    from roomscope.core.filters import _SETTLING_CACHE
-    from roomscope.models.configuration import DEFAULT_OCTAVE_BANDS_HZ
+    from reverbscope.core.filters import _SETTLING_CACHE
+    from reverbscope.models.configuration import DEFAULT_OCTAVE_BANDS_HZ
 
     _SETTLING_CACHE.clear()
     for sample_rate in (44100, 48000):

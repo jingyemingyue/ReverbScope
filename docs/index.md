@@ -1,27 +1,28 @@
-# RoomScope documentation
+# ReverbScope documentation
 
 **English** | [简体中文](index.zh-CN.md)
 
-RoomScope measures a recording room so you can hear what the room is doing
-to close-miked sources. This hub is the existing docs site: installation,
+ReverbScope measures a recording room so you can hear what the room is doing
+to close-miked sources. This hub is the existing docs tree: installation,
 the sweep workflow, DAW follow, and the analysis report.
 
-GitHub renders the Markdown. A themed HTML site (S7) is generated from
-these files:
+The public website is the committed `site/` landing page on GitHub Pages
+(`https://jingyemingyue.github.io/ReverbScope/`). That page, its
+`sitemap.xml`, `robots.txt`, and the utterances message board are the
+source of truth. Do not overwrite them.
+
+GitHub renders this Markdown. A themed HTML preview (S7) is generated
+separately:
 
 ```bash
-python scripts/build_docs_site.py --out site
+python scripts/build_docs_site.py --out docs-html
 ```
 
-The generator uses only the standard library. Open `site/index.html`.
-Each page gets a title, a description, a canonical URL, and Open Graph
-title/description. The build also writes `site/sitemap.xml` and
-`site/robots.txt` (crawlers are allowed). The repo has **no public docs
-host yet**; canonical URLs use the placeholder
-`https://docs.example.invalid/roomscope/` until you pass
-`--base-url https://your.host/path/`. Copy the `site/` folder to any
-static host. This repository does not submit the site to Google, buy a
-domain, or enable a host account.
+The generator uses only the standard library. Open `docs-html/index.html`.
+Each preview page gets a title, a description, a canonical URL, and Open
+Graph title/description. The preview writes its own `sitemap.xml` and
+`robots.txt` next to those HTML files only — not into `site/`. This
+repository does not submit the site to Google.
 
 ## Languages / 语言
 
@@ -34,20 +35,20 @@ the release plan and the v1.0 architecture have a Chinese digest.
 
 | Document / 文档 | English | 简体中文 |
 | --- | --- | --- |
-| Project overview / 项目简介 | [README.md](https://github.com/jingyemingyue/RoomScope/blob/main/README.md) | [README.zh-CN.md](https://github.com/jingyemingyue/RoomScope/blob/main/README.zh-CN.md) |
+| Project overview / 项目简介 | [README.md](https://github.com/jingyemingyue/ReverbScope/blob/main/README.md) | [README.zh-CN.md](https://github.com/jingyemingyue/ReverbScope/blob/main/README.zh-CN.md) |
 | Installation / 安装 | [INSTALLATION.md](INSTALLATION.md) | [INSTALLATION.zh-CN.md](INSTALLATION.zh-CN.md) |
 | User guide / 用户指南 | [user-guide/en.md](user-guide/en.md) | [user-guide/zh-CN.md](user-guide/zh-CN.md) |
 | Measuring through your DAW / 用 DAW 测量 | [user-guide/daw-setup.md](user-guide/daw-setup.md) | [user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md) |
 | Compatibility / 兼容性 | [COMPATIBILITY.md](COMPATIBILITY.md) | [COMPATIBILITY.zh-CN.md](COMPATIBILITY.zh-CN.md) |
 | Editions: Desktop, Terminal, developer tools / 桌面版、终端版与开发者工具 | [EDITIONS.md](EDITIONS.md) | [EDITIONS.zh-CN.md](EDITIONS.zh-CN.md) |
-| How RoomScope compares / 与同类工具的比较 | [COMPARISON.md](COMPARISON.md) | [COMPARISON.zh-CN.md](COMPARISON.zh-CN.md) |
+| How ReverbScope compares / 与同类工具的比较 | [COMPARISON.md](COMPARISON.md) | [COMPARISON.zh-CN.md](COMPARISON.zh-CN.md) |
 | Audio devices and host APIs / 音频设备与主机 API | [AUDIO_DEVICES.md](AUDIO_DEVICES.md) | [AUDIO_DEVICES.zh-CN.md](AUDIO_DEVICES.zh-CN.md) |
 | Hardware test matrix / 硬件测试矩阵 | [HARDWARE_TESTS.md](HARDWARE_TESTS.md) | [HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md) |
-| Security policy / 安全策略 | [SECURITY.md](https://github.com/jingyemingyue/RoomScope/blob/main/SECURITY.md) | [SECURITY.zh-CN.md](https://github.com/jingyemingyue/RoomScope/blob/main/SECURITY.zh-CN.md) |
-| Contributing / 贡献指南 | [CONTRIBUTING.md](https://github.com/jingyemingyue/RoomScope/blob/main/CONTRIBUTING.md) | English only; issues in Chinese are welcome / 仅英文，欢迎用中文提 issue |
+| Security policy / 安全策略 | [SECURITY.md](https://github.com/jingyemingyue/ReverbScope/blob/main/SECURITY.md) | [SECURITY.zh-CN.md](https://github.com/jingyemingyue/ReverbScope/blob/main/SECURITY.zh-CN.md) |
+| Contributing / 贡献指南 | [CONTRIBUTING.md](https://github.com/jingyemingyue/ReverbScope/blob/main/CONTRIBUTING.md) | English only; issues in Chinese are welcome / 仅英文，欢迎用中文提 issue |
 | Validation campaign protocol / 验证方案 | [VALIDATION.md](VALIDATION.md) | English only / 仅英文 |
 | Measurement methodology / 测量方法 | [MEASUREMENT_METHODOLOGY.md](MEASUREMENT_METHODOLOGY.md) | English only / 仅英文 |
-| Changelog / 更新日志 | [CHANGELOG.md](https://github.com/jingyemingyue/RoomScope/blob/main/CHANGELOG.md) | English only / 仅英文 |
+| Changelog / 更新日志 | [CHANGELOG.md](https://github.com/jingyemingyue/ReverbScope/blob/main/CHANGELOG.md) | English only / 仅英文 |
 
 ## For users
 
@@ -55,7 +56,7 @@ the release plan and the v1.0 architecture have a Chinese digest.
 - [User guide (English)](user-guide/en.md)
 - [用户指南（中文）](user-guide/zh-CN.md)
 - [Measuring through your DAW](user-guide/daw-setup.md) · [用 DAW 测量](user-guide/daw-setup.zh-CN.md)
-- [How RoomScope compares](COMPARISON.md) · [与其他工具的比较](COMPARISON.zh-CN.md)
+- [How ReverbScope compares](COMPARISON.md) · [与其他工具的比较](COMPARISON.zh-CN.md)
 - [Audio devices and host APIs](AUDIO_DEVICES.md) · [音频设备与主机 API](AUDIO_DEVICES.zh-CN.md)
 - [Desktop and Terminal Editions, developer tools](EDITIONS.md) · [桌面版、终端版与开发者工具](EDITIONS.zh-CN.md)
 - [Compatibility review](COMPATIBILITY.md) · [兼容性](COMPATIBILITY.zh-CN.md)

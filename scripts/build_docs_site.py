@@ -1,12 +1,14 @@
-"""Build a themed static HTML site from ``docs/`` (ARCHITECTURE_V1.md S7).
+"""Build a themed static HTML preview from ``docs/`` (ARCHITECTURE_V1.md S7).
 
 No extra runtime dependency: a small Markdown subset (headings, lists,
 tables, fenced code, links, emphasis) is rendered with the standard library.
-GitHub still renders the Markdown; this generator is for a browsable site.
+GitHub still renders the Markdown; this generator is for a local preview.
 
-The repo has no public docs host yet. Canonical URLs, Open Graph ``og:url``,
-``sitemap.xml`` and ``robots.txt`` use :data:`PLACEHOLDER_BASE_URL` unless
-``--base-url`` is passed. This script does not submit the site to Google.
+The public website is the committed ``site/`` folder (GitHub Pages). That
+landing page, its ``sitemap.xml``, ``robots.txt`` and the utterances
+message board are the source of truth. This script writes to ``docs-html/``
+by default and refuses to overwrite ``site/``. It does not submit anything
+to Google.
 """
 
 from __future__ import annotations
@@ -20,9 +22,17 @@ from pathlib import Path
 from urllib.parse import urljoin
 from xml.sax.saxutils import escape as xml_escape
 
-#: No public docs URL is configured. Replace when a real host exists.
-PLACEHOLDER_BASE_URL = "https://docs.example.invalid/roomscope/"
+#: Public GitHub Pages origin (the committed ``site/`` landing page).
+PUBLIC_SITE_URL = "https://jingyemingyue.github.io/ReverbScope/"
+#: Canonical origin for a local docs-html preview (not the Pages landing page).
+PLACEHOLDER_BASE_URL = "https://docs.example.invalid/reverbscope/"
+DEFAULT_OUT = Path("docs-html")
 DESCRIPTION_LIMIT = 160
+
+
+class LandingPageError(ValueError):
+    """Raised when the generator would overwrite the committed Pages landing page."""
+
 
 HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
 UL_ITEM = re.compile(r"^[-*]\s+(.*)$")
@@ -316,7 +326,7 @@ def nav_items(index_text: str) -> list[NavItem]:
 
 def _sidebar(items: list[NavItem], current: str, css_prefix: str) -> str:
     blocks = [
-        f'<h1><a href="{html.escape(css_prefix + "index.html")}">RoomScope</a></h1>',
+        f'<h1><a href="{html.escape(css_prefix + "index.html")}">ReverbScope</a></h1>',
         '<p class="tag">Documentation</p>',
     ]
     last = ""
@@ -340,7 +350,7 @@ def _page(
     canonical: str,
     lang: str,
 ) -> str:
-    page_title = f"{title} — RoomScope"
+    page_title = f"{title} — ReverbScope"
     desc = html.escape(description, quote=True)
     canon = html.escape(canonical, quote=True)
     return (
@@ -435,7 +445,7 @@ def page_canonical(base: str, relative_html: str) -> str:
 def write_robots_txt(dest: Path, base: str) -> Path:
     sitemap = urljoin(normalize_base_url(base), "sitemap.xml")
     text = (
-        "# Public RoomScope docs. This file allows crawlers; nothing was submitted\n"
+        "# Public ReverbScope docs. This file allows crawlers; nothing was submitted\n"
         "# to Google from the generator.\n"
         "User-agent: *\n"
         "Allow: /\n"
@@ -468,8 +478,22 @@ def rel_prefix(relative: Path) -> str:
     return "" if depth == 0 else "../" * depth
 
 
+def is_committed_landing(dest: Path) -> bool:
+    """True when ``dest`` is the user's GitHub Pages landing page."""
+    index = dest / "index.html"
+    if not index.is_file():
+        return False
+    text = index.read_text(encoding="utf-8")
+    return "utteranc.es" in text or 'property="og:site_name"' in text
+
+
 def build_site(docs: Path, dest: Path, *, base_url: str = PLACEHOLDER_BASE_URL) -> list[Path]:
     """Render every Markdown file under ``docs`` into ``dest``. Returns HTML paths."""
+    if is_committed_landing(dest):
+        raise LandingPageError(
+            f"{dest} is the committed GitHub Pages landing page; "
+            f"write generated docs to {DEFAULT_OUT}/ instead"
+        )
     if dest.exists():
         shutil.rmtree(dest)
     (dest / "assets").mkdir(parents=True)
@@ -485,7 +509,7 @@ def build_site(docs: Path, dest: Path, *, base_url: str = PLACEHOLDER_BASE_URL) 
         title = _first_heading(markdown, source.stem)
         prefix = rel_prefix(relative)
         current = relative.with_suffix(".html").as_posix()
-        description = page_description(markdown, fallback=f"{title} — RoomScope documentation.")
+        description = page_description(markdown, fallback=f"{title} — ReverbScope documentation.")
         page = _page(
             title,
             markdown_to_html(markdown),
@@ -505,13 +529,18 @@ def build_site(docs: Path, dest: Path, *, base_url: str = PLACEHOLDER_BASE_URL) 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--docs", type=Path, default=Path("docs"), help="Markdown source")
-    parser.add_argument("--out", type=Path, default=Path("site"), help="HTML output directory")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=DEFAULT_OUT,
+        help=f"HTML output directory (default {DEFAULT_OUT}; never the committed site/)",
+    )
     parser.add_argument(
         "--base-url",
         default=PLACEHOLDER_BASE_URL,
         help=(
-            "public origin for canonical URLs and the sitemap "
-            f"(placeholder {PLACEHOLDER_BASE_URL} until a host exists)"
+            "origin for preview canonical URLs and the preview sitemap "
+            f"(default {PLACEHOLDER_BASE_URL}; Pages uses {PUBLIC_SITE_URL})"
         ),
     )
     args = parser.parse_args(argv)

@@ -12,8 +12,8 @@ from typing import Any
 
 import pytest
 
-from roomscope.audio.backend import DeviceInfo, StreamOptions
-from roomscope.audio.inventory import (
+from reverbscope.audio.backend import DeviceInfo, StreamOptions
+from reverbscope.audio.inventory import (
     build_inventory,
     check_channels,
     check_host_api_options,
@@ -23,9 +23,9 @@ from roomscope.audio.inventory import (
     separate_clocks_warning,
     session_audio_interface,
 )
-from roomscope.errors import AudioDeviceError, ConfigurationError
-from roomscope.models.configuration import SUPPORTED_SAMPLE_RATES
-from roomscope.models.session import STANDALONE_BIT_DEPTH
+from reverbscope.errors import AudioDeviceError, ConfigurationError
+from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
+from reverbscope.models.session import STANDALONE_BIT_DEPTH
 
 HOST_APIS = [
     {"name": "MME", "devices": [0, 1, 2], "default_input_device": 0, "default_output_device": 1},
@@ -112,7 +112,7 @@ class WindowsBackend:
 
 @pytest.fixture
 def windows(monkeypatch: pytest.MonkeyPatch) -> WindowsBackend:
-    from roomscope.audio import inventory
+    from reverbscope.audio import inventory
 
     monkeypatch.setattr(inventory, "_query_host_apis", lambda backend: HOST_APIS)
     monkeypatch.setattr(inventory, "_portaudio_version", lambda backend: "PortAudio V19.7.0")
@@ -300,7 +300,7 @@ def test_exclusive_mode_rate_is_checked_in_exclusive_mode(monkeypatch: pytest.Mo
     """Review finding: --wasapi-exclusive at 96 kHz was refused by a shared-mode
     check (shared mode accepts only the engine rate), before the exclusive
     stream that would have run at 96 kHz was ever opened."""
-    from roomscope.audio import devices, portaudio
+    from reverbscope.audio import devices, portaudio
 
     class SharedOrExclusiveSd(_FakeSd):
         @staticmethod
@@ -323,9 +323,9 @@ def test_exclusive_mode_rate_is_checked_in_exclusive_mode(monkeypatch: pytest.Mo
 
 def test_fake_backend_default_devices_resolve(tmp_path: Any) -> None:
     """Review finding: with only one fake device chosen, the other side had no
-    host-API default and roomscope measure refused the take."""
-    from roomscope.audio.fake import FakeBackend
-    from roomscope.cli.main import main
+    host-API default and reverbscope measure refused the take."""
+    from reverbscope.audio.fake import FakeBackend
+    from reverbscope.cli.main import main
 
     inventory = build_inventory(FakeBackend(), probe_rates=False)
     devices = [probe.device for probe in inventory.devices]
@@ -337,7 +337,7 @@ def test_fake_backend_default_devices_resolve(tmp_path: Any) -> None:
     import json
 
     session = json.loads((tmp_path / "session.json").read_text(encoding="utf-8"))
-    assert "RoomScope fake interface" in session["audio_interface"]
+    assert "ReverbScope fake interface" in session["audio_interface"]
     assert "8 in / 2 out" in session["audio_interface"]
     assert "44100" in session["audio_interface"]
     assert session["bit_depth"] == STANDALONE_BIT_DEPTH
@@ -373,7 +373,7 @@ def test_inventory_includes_software_capability_catalog(windows: WindowsBackend)
 
 
 def test_referenced_catalog_cites_sources_and_leaves_gaps() -> None:
-    from roomscope.audio.referenced import (
+    from reverbscope.audio.referenced import (
         REFERENCED_GAPS,
         REFERENCED_HOST_API_LATENCY,
         REFERENCED_INTERFACES,
@@ -402,11 +402,11 @@ def test_referenced_catalog_cites_sources_and_leaves_gaps() -> None:
     assert any("USB Audio Class" in gap for gap in REFERENCED_GAPS)
     catalog = referenced_catalog_dict()
     assert catalog["gaps"]
-    assert "Not a RoomScope measurement" in catalog["disclaimer"]
+    assert "Not a ReverbScope measurement" in catalog["disclaimer"]
 
 
 def test_fake_device_advertises_supported_rates_without_probing() -> None:
-    from roomscope.audio.fake import FakeBackend
+    from reverbscope.audio.fake import FakeBackend
 
     inventory = build_inventory(FakeBackend(), probe_rates=False)
     probe = inventory.devices[0]
@@ -416,7 +416,7 @@ def test_fake_device_advertises_supported_rates_without_probing() -> None:
     assert probe.input_rates == SUPPORTED_SAMPLE_RATES
     assert probe.output_rates == SUPPORTED_SAMPLE_RATES
     assert inventory.rates_probed == ()
-    assert session_audio_interface([probe.device], 0, 0).startswith("RoomScope fake interface")
+    assert session_audio_interface([probe.device], 0, 0).startswith("ReverbScope fake interface")
 
 
 def test_json_inventory_round_trips(windows: WindowsBackend) -> None:
@@ -450,7 +450,7 @@ class _FakeSd:
 
 
 def test_stream_options_map_to_the_device_host_api() -> None:
-    from roomscope.audio.portaudio import host_api_settings
+    from reverbscope.audio.portaudio import host_api_settings
 
     exclusive = StreamOptions(wasapi_exclusive=True)
     setting = host_api_settings(_FakeSd, 5, "input", exclusive)
@@ -469,7 +469,7 @@ def test_stream_options_are_validated() -> None:
 
 
 def test_cli_devices_probe_and_doctor(capsys: pytest.CaptureFixture[str]) -> None:
-    from roomscope.cli.main import main
+    from reverbscope.cli.main import main
 
     assert main(["--backend", "fake", "devices", "--probe"]) == 0
     out = capsys.readouterr().out
@@ -478,7 +478,7 @@ def test_cli_devices_probe_and_doctor(capsys: pytest.CaptureFixture[str]) -> Non
     assert '"devices"' in capsys.readouterr().out
     assert main(["--backend", "fake", "doctor"]) == 0
     report = capsys.readouterr().out
-    assert "RoomScope" in report and "numpy" in report and "\nAudio\n" in report
+    assert "ReverbScope" in report and "numpy" in report and "\nAudio\n" in report
     assert main(["--backend", "fake", "devices", "--referenced"]) == 0
     referenced = capsys.readouterr().out
     assert "Scarlett 2i2" in referenced and "not a HARDWARE_TESTS.md PASS" in referenced
@@ -488,14 +488,14 @@ def test_cli_devices_probe_and_doctor(capsys: pytest.CaptureFixture[str]) -> Non
 def test_edition_follows_environment_and_bundle(monkeypatch: pytest.MonkeyPatch) -> None:
     import sys
 
-    from roomscope.edition import DEVELOPER, USER, edition
+    from reverbscope.edition import DEVELOPER, USER, edition
 
-    monkeypatch.delenv("ROOMSCOPE_EDITION", raising=False)
+    monkeypatch.delenv("REVERBSCOPE_EDITION", raising=False)
     monkeypatch.delattr(sys, "frozen", raising=False)
     assert edition() == DEVELOPER
     monkeypatch.setattr(sys, "frozen", True, raising=False)
     assert edition() == USER
-    monkeypatch.setenv("ROOMSCOPE_EDITION", "developer")
+    monkeypatch.setenv("REVERBSCOPE_EDITION", "developer")
     assert edition() == DEVELOPER
 
 

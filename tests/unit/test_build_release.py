@@ -38,26 +38,26 @@ def _args(**overrides: bool) -> argparse.Namespace:
     [
         (
             ("Linux", "X64", "x86_64"),
-            ("RoomScope-Desktop-Linux-x86_64.tar.gz", "RoomScope-Terminal-Linux-x86_64.tar.gz"),
+            ("ReverbScope-Desktop-Linux-x86_64.tar.gz", "ReverbScope-Terminal-Linux-x86_64.tar.gz"),
             "SHA256SUMS-Linux-X64",
         ),
         (
             ("Windows", "X64", "AMD64"),
             (
-                "RoomScope-Desktop-Windows-x64-Setup.exe",
-                "RoomScope-Desktop-Windows-x64.zip",
-                "RoomScope-Terminal-Windows-x64.zip",
+                "ReverbScope-Desktop-Windows-x64-Setup.exe",
+                "ReverbScope-Desktop-Windows-x64.zip",
+                "ReverbScope-Terminal-Windows-x64.zip",
             ),
             "SHA256SUMS-Windows-X64",
         ),
         (
             ("macOS", "ARM64", "arm64"),
-            ("RoomScope-Desktop-macOS-arm64.dmg", "RoomScope-Terminal-macOS-arm64.tar.gz"),
+            ("ReverbScope-Desktop-macOS-arm64.dmg", "ReverbScope-Terminal-macOS-arm64.tar.gz"),
             "SHA256SUMS-macOS-ARM64",
         ),
         (
             ("macOS", "X64", "x86_64"),
-            ("RoomScope-Desktop-macOS-x86_64.dmg", "RoomScope-Terminal-macOS-x86_64.tar.gz"),
+            ("ReverbScope-Desktop-macOS-x86_64.dmg", "ReverbScope-Terminal-macOS-x86_64.tar.gz"),
             "SHA256SUMS-macOS-X64",
         ),
     ],
@@ -126,11 +126,11 @@ def test_optional_steps_are_skipped_by_default(tmp_path: Path) -> None:
 def test_lock_mismatches_names_each_difference(tmp_path: Path) -> None:
     lock = tmp_path / "bundle.lock"
     lock.write_text(
-        "# comment\nnumpy==0.0.1\nroomscope-surely-not-installed==1.0\n", encoding="utf-8"
+        "# comment\nnumpy==0.0.1\nreverbscope-surely-not-installed==1.0\n", encoding="utf-8"
     )
     problems = MODULE.lock_mismatches(lock)
     assert any(p.startswith("numpy: ") and "lock pins 0.0.1" in p for p in problems)
-    assert any("roomscope-surely-not-installed: not installed" in p for p in problems)
+    assert any("reverbscope-surely-not-installed: not installed" in p for p in problems)
 
 
 def test_checksum_lines_use_sha256sum_format(tmp_path: Path) -> None:

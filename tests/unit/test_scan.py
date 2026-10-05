@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from roomscope.core.pipeline import Reference, analyze, synthetic_recording
-from roomscope.io.scan import (
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.io.scan import (
     MAX_STORED_POINTS,
     OBJ_FORMAT_REFERENCE,
     PLY_FORMAT_REFERENCE,
@@ -16,7 +16,7 @@ from roomscope.io.scan import (
     load_scan,
     load_scan_optional,
 )
-from roomscope.models.result import AnalysisResult
+from reverbscope.models.result import AnalysisResult
 from tests.conftest import make_rir
 
 FIXTURE = Path("tests/fixtures/synthetic_room.ply")
@@ -43,7 +43,7 @@ def test_checked_in_ply_is_a_synthetic_shoebox_not_a_lidar_capture() -> None:
 def test_obj_mesh_and_optional_empty_path(tmp_path: Path) -> None:
     path = tmp_path / "box.obj"
     path.write_text(
-        "# RoomScope synthetic OBJ. Not a lidar capture.\n"
+        "# ReverbScope synthetic OBJ. Not a lidar capture.\n"
         "v 0 0 0\n"
         "v 1 0 0\n"
         "v 1 1 0\n"
@@ -119,8 +119,8 @@ def test_attach_room_scan_on_synthetic_analysis(short_sweep) -> None:
     assert attach_room_scan(result, None).room_scan is None
     from jsonschema import Draft202012Validator
 
-    from roomscope.models.session import MeasurementSession
-    from roomscope.schemas import load_schema
+    from reverbscope.models.session import MeasurementSession
+    from reverbscope.schemas import load_schema
 
     Draft202012Validator(load_schema("result")).validate(attached.to_dict())
     Draft202012Validator(load_schema("session")).validate(

@@ -1,4 +1,4 @@
-"""Welch spectrum of RoomScope's own impulse response (synthetic / fake)."""
+"""Welch spectrum of ReverbScope's own impulse response (synthetic / fake)."""
 
 from __future__ import annotations
 
@@ -8,20 +8,20 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from roomscope.audio.fake import FakeBackend
-from roomscope.audio.fake import make_rir as fake_make_rir
-from roomscope.cli.main import main
-from roomscope.core.pipeline import (
+from reverbscope.audio.fake import FakeBackend
+from reverbscope.audio.fake import make_rir as fake_make_rir
+from reverbscope.cli.main import main
+from reverbscope.core.pipeline import (
     Reference,
     analyze,
     analyze_impulse_response,
     synthetic_recording,
 )
-from roomscope.core.spectrum import measure_spectrum
-from roomscope.core.sweep import measurement_signal
-from roomscope.io.wav import write_sweep_file, write_wav
-from roomscope.models.audio import AudioSignal
-from roomscope.models.result import SPECTRUM_SOURCE
+from reverbscope.core.spectrum import measure_spectrum
+from reverbscope.core.sweep import measurement_signal
+from reverbscope.io.wav import write_sweep_file, write_wav
+from reverbscope.models.audio import AudioSignal
+from reverbscope.models.result import SPECTRUM_SOURCE
 from tests.conftest import make_rir
 
 SCAN = Path("tests/fixtures/synthetic_room.ply")

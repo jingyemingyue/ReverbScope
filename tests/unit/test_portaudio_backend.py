@@ -22,10 +22,10 @@ from typing import Any
 import numpy as np
 import pytest
 
-from roomscope.audio import portaudio
-from roomscope.audio.backend import CALLBACK_BLOCK, plan_input_channels
-from roomscope.audio.portaudio import PortAudioBackend
-from roomscope.errors import AudioDeviceError, ConfigurationError, MeasurementCancelledError
+from reverbscope.audio import portaudio
+from reverbscope.audio.backend import CALLBACK_BLOCK, plan_input_channels
+from reverbscope.audio.portaudio import PortAudioBackend
+from reverbscope.errors import AudioDeviceError, ConfigurationError, MeasurementCancelledError
 
 
 class _CallbackStop(Exception):  # noqa: N818 - mirrors sounddevice.CallbackStop
@@ -234,7 +234,7 @@ def test_a_failing_final_progress_report_keeps_the_take(
         if fraction >= 1.0:
             raise RuntimeError("window already closed")
 
-    with caplog.at_level(logging.WARNING, logger="roomscope.audio.portaudio"):
+    with caplog.at_level(logging.WARNING, logger="reverbscope.audio.portaudio"):
         recording = _take(progress=progress)
     assert recording.n_samples == 60 * CALLBACK_BLOCK
     assert any("progress callback failed" in r.getMessage() for r in caplog.records)
@@ -247,7 +247,7 @@ def test_progress_at_100_percent_before_the_stream_finishes_keeps_the_take(
     PortAudio calls the finished callback (it drains the output first). A poll
     in that gap reported 1.0 inside the stream loop, the failing progress
     callback escaped and the complete take was discarded."""
-    from roomscope.audio.portaudio import PROGRESS_POLL_S
+    from reverbscope.audio.portaudio import PROGRESS_POLL_S
 
     script.finish_delay_s = 4 * PROGRESS_POLL_S
     calls: list[float] = []
@@ -257,7 +257,7 @@ def test_progress_at_100_percent_before_the_stream_finishes_keeps_the_take(
         if fraction >= 1.0:
             raise RuntimeError("window already closed")
 
-    with caplog.at_level(logging.WARNING, logger="roomscope.audio.portaudio"):
+    with caplog.at_level(logging.WARNING, logger="reverbscope.audio.portaudio"):
         recording = _take(progress=progress)
     assert recording.n_samples == 60 * CALLBACK_BLOCK
     assert 1.0 in calls
@@ -276,7 +276,7 @@ def test_buffer_problems_are_logged_and_kept_with_the_take(
     script: _Script, caplog: pytest.LogCaptureFixture
 ) -> None:
     script.status = {2: "input overflow", 7: "input overflow"}
-    with caplog.at_level(logging.WARNING, logger="roomscope.audio.portaudio"):
+    with caplog.at_level(logging.WARNING, logger="reverbscope.audio.portaudio"):
         recording = _take()
     assert any("2 buffer problem(s)" in r.getMessage() for r in caplog.records)
     assert any("input overflow" in r.getMessage() for r in caplog.records)
@@ -334,7 +334,7 @@ def test_channel_plan_refuses_bad_inputs(
 def test_cli_refuses_a_loopback_on_the_microphone_input_before_playing(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    from roomscope.cli.main import main
+    from reverbscope.cli.main import main
 
     out = tmp_path / "take"
     code = main(
@@ -366,7 +366,7 @@ def test_cli_session_stores_1_based_hardware_channels(
 ) -> None:
     import json
 
-    from roomscope.cli.main import main
+    from reverbscope.cli.main import main
 
     out = tmp_path / "take"
     code = main(
@@ -406,8 +406,8 @@ def test_cli_daw_mode_session_leaves_hardware_channels_empty(
 
     from scipy.signal import fftconvolve
 
-    from roomscope.cli.main import main
-    from roomscope.io.wav import read_wav, write_wav
+    from reverbscope.cli.main import main
+    from reverbscope.io.wav import read_wav, write_wav
     from tests.conftest import make_rir
 
     sweep = tmp_path / "sweep.wav"

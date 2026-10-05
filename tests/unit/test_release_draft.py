@@ -32,7 +32,7 @@ def _load() -> ModuleType:
 
 rd = _load()
 VERSION = "0.4.1"
-SETUP = "RoomScope-Desktop-Windows-x64-Setup.exe"
+SETUP = "ReverbScope-Desktop-Windows-x64-Setup.exe"
 TAG = "v0.4.1"
 SHA = "ab4e0573cf1208f6c74b673c866511fc89269aa9"
 OLD_SHA = "909f332838a896d76025f0dc2024ced5dbd48910"
@@ -168,11 +168,11 @@ def _release(release_id: int, *, draft: bool, names: tuple[str, ...] = (), **ext
 OLD_DRAFT_NAMES = (
     "cyclonedx.sbom.json",
     "generated-bundle.lock",
-    "roomscope-0.4.1-py3-none-any.whl",
-    "roomscope-0.4.1.tar.gz",
-    "roomscope-linux-x86_64.tar.gz",
-    "roomscope-windows-x64.zip",
-    "RoomScope.dmg",
+    "reverbscope-0.4.1-py3-none-any.whl",
+    "reverbscope-0.4.1.tar.gz",
+    "reverbscope-linux-x86_64.tar.gz",
+    "reverbscope-windows-x64.zip",
+    "ReverbScope.dmg",
     "SHA256SUMS-Linux",
     "SHA256SUMS-macOS",
     "SHA256SUMS-Windows",
@@ -185,19 +185,19 @@ OLD_DRAFT_NAMES = (
 def test_expected_manifest_is_exact() -> None:
     assert rd.expected_assets(VERSION) == {
         # Desktop Edition (GUI + command line)
-        "RoomScope-Desktop-macOS-arm64.dmg",
-        "RoomScope-Desktop-macOS-x86_64.dmg",
-        "RoomScope-Desktop-Windows-x64-Setup.exe",
-        "RoomScope-Desktop-Windows-x64.zip",
-        "RoomScope-Desktop-Linux-x86_64.tar.gz",
+        "ReverbScope-Desktop-macOS-arm64.dmg",
+        "ReverbScope-Desktop-macOS-x86_64.dmg",
+        "ReverbScope-Desktop-Windows-x64-Setup.exe",
+        "ReverbScope-Desktop-Windows-x64.zip",
+        "ReverbScope-Desktop-Linux-x86_64.tar.gz",
         # Terminal Edition (command line only)
-        "RoomScope-Terminal-macOS-arm64.tar.gz",
-        "RoomScope-Terminal-macOS-x86_64.tar.gz",
-        "RoomScope-Terminal-Windows-x64.zip",
-        "RoomScope-Terminal-Linux-x86_64.tar.gz",
+        "ReverbScope-Terminal-macOS-arm64.tar.gz",
+        "ReverbScope-Terminal-macOS-x86_64.tar.gz",
+        "ReverbScope-Terminal-Windows-x64.zip",
+        "ReverbScope-Terminal-Linux-x86_64.tar.gz",
         # Python, checksums, SBOM
-        "roomscope-0.4.1-py3-none-any.whl",
-        "roomscope-0.4.1.tar.gz",
+        "reverbscope-0.4.1-py3-none-any.whl",
+        "reverbscope-0.4.1.tar.gz",
         "SHA256SUMS",
         "cyclonedx.sbom.json",
         "generated-bundle.lock",
@@ -207,7 +207,7 @@ def test_expected_manifest_is_exact() -> None:
 
 def test_every_download_name_says_edition_system_and_cpu() -> None:
     pattern = re.compile(
-        r"RoomScope-(Desktop|Terminal)-(macOS-(arm64|x86_64)|Windows-x64|Linux-x86_64)"
+        r"ReverbScope-(Desktop|Terminal)-(macOS-(arm64|x86_64)|Windows-x64|Linux-x86_64)"
         r"(-Setup\.exe|\.dmg|\.zip|\.tar\.gz)"
     )
     archives = [name for names in rd.CHECKSUM_FILES.values() for name in names]
@@ -225,11 +225,11 @@ def test_manifest_matches_the_workflow_and_local_builder() -> None:
             assert (
                 archive in WORKFLOW
                 or archive.removesuffix(".zip") in WORKFLOW
-                or archive.startswith(("RoomScope-Desktop-macOS-", "RoomScope-Terminal-macOS-"))
+                or archive.startswith(("ReverbScope-Desktop-macOS-", "ReverbScope-Terminal-macOS-"))
             ), archive
-    assert "RoomScope-Desktop-macOS-$(uname -m).dmg" in WORKFLOW
-    assert "RoomScope-Terminal-macOS-$(uname -m).tar.gz" in WORKFLOW
-    assert "dist/RoomScope-Desktop-*" in WORKFLOW and "dist/RoomScope-Terminal-*" in WORKFLOW
+    assert "ReverbScope-Desktop-macOS-$(uname -m).dmg" in WORKFLOW
+    assert "ReverbScope-Terminal-macOS-$(uname -m).tar.gz" in WORKFLOW
+    assert "dist/ReverbScope-Desktop-*" in WORKFLOW and "dist/ReverbScope-Terminal-*" in WORKFLOW
     # The runner's checksum file is written from the manifest, not a copied list.
     assert "rd.CHECKSUM_FILES[sums_name]" in WORKFLOW
     matrix = re.search(r"os: \[(.*?)\]", WORKFLOW)
@@ -278,8 +278,8 @@ def test_stage_accepts_one_complete_run(tmp_path: Path) -> None:
 
 def test_stage_rejects_a_legacy_or_extra_file(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
-    (run / "bundle-macos-latest" / "RoomScope.dmg").write_bytes(b"old")
-    with pytest.raises(rd.ReleaseError, match=r"unexpected \['RoomScope.dmg'\]"):
+    (run / "bundle-macos-latest" / "ReverbScope.dmg").write_bytes(b"old")
+    with pytest.raises(rd.ReleaseError, match=r"unexpected \['ReverbScope.dmg'\]"):
         rd.stage(run, tmp_path / "out", VERSION)
     assert not (tmp_path / "out").exists()
 
@@ -288,19 +288,19 @@ def test_stage_rejects_a_missing_platform(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
     for path in (run / "bundle-macos-15-intel").iterdir():
         path.unlink()
-    with pytest.raises(rd.ReleaseError, match=re.escape("RoomScope-Desktop-macOS-x86_64.dmg")):
+    with pytest.raises(rd.ReleaseError, match=re.escape("ReverbScope-Desktop-macOS-x86_64.dmg")):
         rd.stage(run, tmp_path / "out", VERSION)
 
 
 def test_stage_rejects_a_wrong_version(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts", version="0.4.0")
-    with pytest.raises(rd.ReleaseError, match=re.escape("roomscope-0.4.1.tar.gz")):
+    with pytest.raises(rd.ReleaseError, match=re.escape("reverbscope-0.4.1.tar.gz")):
         rd.stage(run, tmp_path / "out", VERSION)
 
 
 def test_stage_rejects_the_same_name_from_two_artifacts(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
-    (run / "sbom" / "RoomScope-Terminal-Windows-x64.zip").write_bytes(b"x")
+    (run / "sbom" / "ReverbScope-Terminal-Windows-x64.zip").write_bytes(b"x")
     with pytest.raises(rd.ReleaseError, match="two artifacts"):
         rd.stage(run, tmp_path / "out", VERSION)
 
@@ -365,13 +365,13 @@ def test_plan_refuses_a_draft_tagged_for_another_version() -> None:
 
 
 def test_plan_refuses_unknown_assets() -> None:
-    draft = _release(1, draft=True, names=(*OLD_DRAFT_NAMES, "RoomScope-signed-by-hand.dmg"))
-    with pytest.raises(rd.ReleaseError, match=re.escape("RoomScope-signed-by-hand.dmg")):
+    draft = _release(1, draft=True, names=(*OLD_DRAFT_NAMES, "ReverbScope-signed-by-hand.dmg"))
+    with pytest.raises(rd.ReleaseError, match=re.escape("ReverbScope-signed-by-hand.dmg")):
         rd.plan_sync([draft], draft, VERSION)
 
 
 def test_plan_refuses_duplicate_asset_names() -> None:
-    draft = _release(1, draft=True, names=("RoomScope.dmg", "RoomScope.dmg"))
+    draft = _release(1, draft=True, names=("ReverbScope.dmg", "ReverbScope.dmg"))
     with pytest.raises(rd.ReleaseError, match="duplicate"):
         rd.plan_sync([draft], draft, VERSION)
 
@@ -381,15 +381,15 @@ def test_plan_detects_legacy_assets_on_the_current_draft() -> None:
     plan = rd.plan_sync([draft], draft, VERSION)
     assert plan.release_id == 1
     assert plan.obsolete == (
-        "RoomScope.dmg",
+        "ReverbScope.dmg",
         "SHA256SUMS-Linux",
         "SHA256SUMS-Windows",
         "SHA256SUMS-macOS",
-        "roomscope-linux-x86_64.tar.gz",
-        "roomscope-windows-x64.zip",
+        "reverbscope-linux-x86_64.tar.gz",
+        "reverbscope-windows-x64.zip",
     )
-    assert "roomscope-0.4.1.tar.gz" in plan.replace
-    assert "RoomScope.dmg" not in plan.replace
+    assert "reverbscope-0.4.1.tar.gz" in plan.replace
+    assert "ReverbScope.dmg" not in plan.replace
 
 
 def test_plan_removes_the_names_from_before_the_editions() -> None:
@@ -397,12 +397,12 @@ def test_plan_removes_the_names_from_before_the_editions() -> None:
     names = (
         "cyclonedx.sbom.json",
         "generated-bundle.lock",
-        "roomscope-0.4.1-py3-none-any.whl",
-        "roomscope-0.4.1.tar.gz",
-        "roomscope-linux-x86_64.tar.gz",
-        "RoomScope-macos-arm64.dmg",
-        "RoomScope-macos-x86_64.dmg",
-        "roomscope-windows-x64.zip",
+        "reverbscope-0.4.1-py3-none-any.whl",
+        "reverbscope-0.4.1.tar.gz",
+        "reverbscope-linux-x86_64.tar.gz",
+        "ReverbScope-macos-arm64.dmg",
+        "ReverbScope-macos-x86_64.dmg",
+        "reverbscope-windows-x64.zip",
         SETUP,
         "SHA256SUMS-Linux-X64",
         "SHA256SUMS-macOS-ARM64",
@@ -421,15 +421,15 @@ def test_stage_writes_one_checksum_file_for_every_download(tmp_path: Path) -> No
     lines = staged["SHA256SUMS"].read_text(encoding="utf-8").splitlines()
     assert [line.split("  ", 1)[1] for line in lines] == list(rd.downloads(VERSION))
     assert not any(name.startswith("SHA256SUMS-") for name in staged)
-    staged["RoomScope-Terminal-Linux-x86_64.tar.gz"].write_bytes(b"changed after staging")
+    staged["ReverbScope-Terminal-Linux-x86_64.tar.gz"].write_bytes(b"changed after staging")
     with pytest.raises(
-        rd.ReleaseError, match=re.escape("RoomScope-Terminal-Linux-x86_64.tar.gz is")
+        rd.ReleaseError, match=re.escape("ReverbScope-Terminal-Linux-x86_64.tar.gz is")
     ):
         rd.load_staged(tmp_path / "out", VERSION)
 
 
 def test_plan_ignores_other_versions() -> None:
-    older = _release(1, draft=False, tag_name="v0.4.0", name="v0.4.0", names=("RoomScope.dmg",))
+    older = _release(1, draft=False, tag_name="v0.4.0", name="v0.4.0", names=("ReverbScope.dmg",))
     plan = rd.plan_sync([older], None, VERSION)
     assert plan == rd.Plan(TAG, None, (), ())
 
@@ -469,13 +469,13 @@ def test_sync_replaces_same_names_and_removes_obsolete_ones(staged: dict[str, Pa
 
 
 def test_sync_creates_a_draft_when_there_is_none(staged: dict[str, Path]) -> None:
-    older = _release(1, draft=False, tag_name="v0.4.0", name="v0.4.0", names=("RoomScope.dmg",))
+    older = _release(1, draft=False, tag_name="v0.4.0", name="v0.4.0", names=("ReverbScope.dmg",))
     client = FakeGitHub([older])
     rd.sync(client, VERSION, SHA, staged, "notes")
     created = [r for r in client.releases.values() if r["id"] != 1]
     assert len(created) == 1 and created[0]["draft"] is True
     assert created[0]["target_commitish"] == SHA
-    assert client.releases[1]["assets"] == [_asset(100, "RoomScope.dmg")]
+    assert client.releases[1]["assets"] == [_asset(100, "ReverbScope.dmg")]
 
 
 def test_sync_never_touches_a_published_release(staged: dict[str, Path]) -> None:
@@ -488,10 +488,10 @@ def test_sync_never_touches_a_published_release(staged: dict[str, Path]) -> None
 
 
 def test_delete_refuses_a_release_published_in_the_meantime() -> None:
-    client = FakeGitHub([_release(4, draft=True, names=("RoomScope.dmg",))])
+    client = FakeGitHub([_release(4, draft=True, names=("ReverbScope.dmg",))])
     client.releases[4]["draft"] = False  # published between plan and delete
     with pytest.raises(rd.ReleaseError, match="not a draft"):
-        rd.delete_draft_asset(client, 4, "RoomScope.dmg")
+        rd.delete_draft_asset(client, 4, "ReverbScope.dmg")
     assert client.log == []
 
 
@@ -555,7 +555,7 @@ def test_verify_checks_target_digest_and_names(staged: dict[str, Path]) -> None:
         rd.verify(client, 11, VERSION, SHA, staged, "notes")
     asset["digest"] = None
 
-    client.releases[11]["assets"].append(_asset(1, "RoomScope.dmg"))
+    client.releases[11]["assets"].append(_asset(1, "ReverbScope.dmg"))
     with pytest.raises(rd.ReleaseError, match="assets are"):
         rd.verify(client, 11, VERSION, SHA, staged, "notes")
     client.releases[11]["assets"].pop()

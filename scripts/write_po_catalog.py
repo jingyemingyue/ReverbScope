@@ -36,12 +36,12 @@ def write_po(
 ) -> None:
     """Write ``entries`` (``msgctxt``, ``msgid``, ``msgstr``) to ``path``."""
     lines = [
-        f"# RoomScope {language_name} catalog.",
+        f"# ReverbScope {language_name} catalog.",
         "# English is the source language. Numbers stay ASCII; units are not translated.",
         "# License and legal sentences stay in English.",
         'msgid ""',
         'msgstr ""',
-        '"Project-Id-Version: roomscope 0.5.0b1\\n"',
+        '"Project-Id-Version: reverbscope 0.5.0b1\\n"',
         f'"Language: {language}\\n"',
         '"MIME-Version: 1.0\\n"',
         '"Content-Type: text/plain; charset=UTF-8\\n"',
