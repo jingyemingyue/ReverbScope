@@ -275,3 +275,22 @@ def test_project_add_skips_a_stored_entry_that_cannot_be_resolved(
     save_measurement(session, MeasurementSession(), result, include_curves=False)
     add_session(project, session, position="B")
     assert list_project_sessions(project) == [("B", session)]
+
+
+def test_project_add_accepts_the_project_file(tmp_path: Path, short_sweep: SweepSettings) -> None:
+    """`project show room/project.json` works; `project add room/project.json`
+    failed with the untranslated "File exists: room/project.json"."""
+    import json
+
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    result = analyze(
+        synthetic_recording(short_sweep, ir, noise_rms=1e-5), Reference.from_settings(short_sweep)
+    )
+    project = tmp_path / "room"
+    save_project(project, Project(name="room"))
+    session = project / "sessions" / "a"
+    save_measurement(session, MeasurementSession(), result, include_curves=False)
+    add_session(project / "project.json", session, position="desk")
+    stored = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    assert stored["positions"] == [{"label": "desk", "session_dirs": ["sessions/a"]}]
+    assert list_project_sessions(project / "project.json") == [("desk", session)]

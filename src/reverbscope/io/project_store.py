@@ -51,7 +51,10 @@ def add_session(
     position: str,
 ) -> Project:
     """Append ``session_dir`` to the named position, creating the position if needed."""
-    base = Path(directory)
+    given = project_file(directory)
+    # "room/project.json" names the same project as "room", as in
+    # list_project_sessions (`project show` and `project average`).
+    base = given.parent if given.is_file() else Path(directory)
     project = load_project(base) if is_project(base) else Project(name=base.name)
     session = Path(session_dir)
     if session.name == SESSION_FILE:
