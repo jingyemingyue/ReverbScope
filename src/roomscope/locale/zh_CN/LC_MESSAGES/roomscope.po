@@ -4452,3 +4452,14 @@ msgstr "RoomScope 文件夹"
 
 msgid "Log file"
 msgstr "日志文件"
+
+# roomscope demo: the names a demo session stores
+
+msgid "Synthetic demo room"
+msgstr "合成演示房间"
+
+msgid "simulated omni"
+msgstr "模拟全指向话筒"
+
+msgid "{label}: {description}"
+msgstr "{label}：{description}"

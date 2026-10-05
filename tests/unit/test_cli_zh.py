@@ -340,3 +340,37 @@ def test_an_english_session_is_shown_in_chinese_and_left_untouched(
     shown = capsys.readouterr().out
     assert "解读（" in shown
     assert {p.name: p.read_bytes() for p in session.glob("*.json")} == before
+
+
+@pytest.mark.parametrize(
+    ("lang", "room", "position", "microphone"),
+    [
+        ("en", "Synthetic demo room", "A: close to the desk and the side wall", "simulated omni"),
+        ("zh_CN", "合成演示房间", "A：靠近桌面和侧墙", "模拟全指向话筒"),
+    ],
+)
+def test_the_demo_names_its_room_in_the_interface_language(
+    zh_cli: None,
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    room: str,
+    position: str,
+    microphone: str,
+) -> None:
+    """``show`` of a Chinese demo printed "Synthetic demo room" and
+    "A: close to the desk and the side wall": names a user would have typed
+    in their own language, so the demo writes them in the interface's."""
+    out_dir = tmp_path / "demo"
+    assert main(["--lang", lang, "demo", "--out", str(out_dir)]) == 0
+    session = json.loads((out_dir / "position-a" / "session.json").read_text(encoding="utf-8"))
+    assert (session["room_name"], session["measurement_position"]) == (room, position)
+    assert session["microphone_name"] == microphone
+    assert session["notes"].startswith("SYNTHETIC DEMO")  # the marker stays as it is
+    capsys.readouterr()
+    assert main(["--lang", lang, "show", str(out_dir / "position-a")]) == 0
+    shown = capsys.readouterr().out
+    assert room in shown and position in shown and microphone in shown
+    if lang == "zh_CN":
+        prose = "\n".join(line for line in shown.splitlines() if str(tmp_path) not in line)
+        assert english_words(prose) == [], shown
