@@ -97,6 +97,11 @@ DAW_INSTRUCTIONS = N_(
 )
 
 
+def _find_data(combo: QComboBox, value: object) -> int:
+    """The first row of ``combo`` whose data is ``value`` (``None`` included)."""
+    return next((row for row in range(combo.count()) if combo.itemData(row) == value), -1)
+
+
 def late_result_text() -> str:
     """Shown on a mode page whose take or analysis ended after the user left it."""
     return _("The result was discarded because you left this page before it was ready.")
@@ -665,6 +670,9 @@ class StandalonePage(QWidget):
         self._take_analysis_settings = AnalysisSettings()
         self._take_profile = state.profile
         self._inventory: DeviceInventory | None = None
+        # The backend that listed :attr:`_inventory`: device indices of
+        # another one (the Demo's fake interface) name other devices.
+        self._inventory_backend: str | None = None
         # The state generation the running take belongs to.
         self._generation = -1
         layout = _scroll_page(
@@ -814,12 +822,14 @@ class StandalonePage(QWidget):
         from reverbscope.audio.inventory import build_inventory
 
         self.demo_banner.setVisible(self.demo_mode)
+        chosen = self._chosen_devices()
         try:
             backend = get_backend("fake" if self.demo_mode else None)
             inventory = build_inventory(backend, probe_rates=False)
         except ReverbScopeError as exc:
             self._devices = []
             self._inventory = None
+            self._inventory_backend = None
             self.host_api.clear()
             self._fill_device_lists()
             set_banner_text(
@@ -829,7 +839,10 @@ class StandalonePage(QWidget):
             )
             self.run_button.setEnabled(False)
             return
+        if backend.name != self._inventory_backend:
+            chosen = None
         self._inventory = inventory
+        self._inventory_backend = backend.name
         self._devices = [probe.device for probe in inventory.devices]
         self.host_api.blockSignals(True)
         self.host_api.clear()
@@ -841,8 +854,20 @@ class StandalonePage(QWidget):
         # MME on Windows); a single-API system keeps "System default".
         if len(used) > 1:
             self.host_api.setCurrentIndex(1)
+        if chosen is not None and _find_data(self.host_api, chosen[0]) >= 0:
+            self.host_api.setCurrentIndex(_find_data(self.host_api, chosen[0]))
+        else:
+            chosen = None
         self.host_api.blockSignals(False)
         self._fill_device_lists()
+        if chosen is not None:
+            # Refresh, Ctrl+2 and coming back from Results list the devices
+            # again; the next take stays on the interface chosen, not on the
+            # system's default devices, while it is still there.
+            for combo, device in ((self.input_device, chosen[1]), (self.output_device, chosen[2])):
+                row = self._row_of(combo, device)
+                if row >= 0:
+                    combo.setCurrentIndex(row)
         # Refresh (button, Ctrl+2, Back -> Demo) can run during a take; Run
         # must stay off then, or a second take replaces the running thread.
         self.run_button.setEnabled(not self.is_busy())
@@ -852,6 +877,33 @@ class StandalonePage(QWidget):
             set_banner_text(
                 self.status, _("{n} audio device(s) found.").format(n=len(self._devices))
             )
+
+    def _chosen_devices(
+        self,
+    ) -> tuple[object, tuple[int, str] | None, tuple[int, str] | None] | None:
+        """The host API and the (index, name) of the devices chosen now.
+
+        ``None`` before the first list. A device is kept by name too: an
+        interface plugged in again can come back under another index.
+        """
+        if self._inventory is None or not self.host_api.count():
+            return None
+
+        def device(combo: QComboBox) -> tuple[int, str] | None:
+            index = combo.currentData()
+            name = next((d.name for d in self._devices if d.index == index), None)
+            return None if index is None or name is None else (int(index), name)
+
+        return self.host_api.currentData(), device(self.input_device), device(self.output_device)
+
+    def _row_of(self, combo: QComboBox, device: tuple[int, str] | None) -> int:
+        """The row of ``device`` in ``combo`` when it is still the same device."""
+        if device is None:
+            return _find_data(combo, None)
+        index, name = device
+        if not any(d.index == index and d.name == name for d in self._devices):
+            return -1
+        return _find_data(combo, index)
 
     def _fill_device_lists(self) -> None:
         """Devices of the chosen host API; the recommended entries are starred.

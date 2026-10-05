@@ -1129,3 +1129,62 @@ def test_a_standalone_take_never_replaces_the_daw_reference(
     saved = json.loads((tmp_path / "session" / "session.json").read_text(encoding="utf-8"))
     assert saved["sweep_settings"]["duration_s"] == short_sweep.duration_s
     window.close()
+
+
+def test_standalone_keeps_the_chosen_devices_when_it_lists_them_again(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ctrl+2, Refresh devices or coming back from Results listed the devices
+    again on "System default": the next take played and recorded through
+    the computer's default devices instead of the interface chosen."""
+    from reverbscope.audio import backend as backend_module
+    from reverbscope.audio import inventory as inventory_module
+    from reverbscope.audio.backend import DeviceInfo
+
+    devices = [
+        DeviceInfo(0, "BlackHole 2ch", "Core Audio", 2, 2, 48000.0, False, False),
+        DeviceInfo(1, "MacBook Pro Microphone", "Core Audio", 1, 0, 48000.0, True, False),
+        DeviceInfo(2, "Scarlett 2i2", "Core Audio", 2, 2, 48000.0, False, False),
+        DeviceInfo(3, "MacBook Pro Speakers", "Core Audio", 0, 2, 48000.0, False, True),
+    ]
+
+    class Mac:
+        name = "test"
+
+        def list_devices(self) -> list[DeviceInfo]:
+            return list(devices)
+
+        def check_sample_rate(self, *args: object, **kwargs: object) -> None:
+            return None
+
+    real_build = inventory_module.build_inventory
+    monkeypatch.setattr(backend_module, "get_backend", lambda name=None: Mac())
+    monkeypatch.setattr(
+        inventory_module,
+        "build_inventory",
+        lambda backend, **kwargs: real_build(backend, probe_rates=False, platform="darwin"),
+    )
+    window = MainWindow()
+    window.show_mode("standalone")
+    page = window.standalone
+
+    def chosen() -> tuple[object, object, object]:
+        return (
+            page.host_api.currentData(),
+            page.input_device.currentData(),
+            page.output_device.currentData(),
+        )
+
+    page.host_api.setCurrentIndex(page.host_api.findData("Core Audio"))
+    page.input_device.setCurrentIndex(page.input_device.findData(2))
+    page.output_device.setCurrentIndex(page.output_device.findData(2))
+    window.show_results()
+    window.show_mode("standalone")  # Ctrl+2 from Results
+    assert chosen() == ("Core Audio", 2, 2)
+    page.refresh_button.click()
+    assert chosen() == ("Core Audio", 2, 2)
+    # Unplugged, its index taken by another device: the system's defaults.
+    devices[2] = DeviceInfo(2, "USB Headset", "Core Audio", 1, 2, 48000.0, False, False)
+    page.refresh_button.click()
+    assert chosen() == ("Core Audio", 1, 3)
+    window.close()
