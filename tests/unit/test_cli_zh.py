@@ -68,12 +68,24 @@ def _prose(help_text: str) -> str:
 
 
 def _typed_values(path: str) -> tuple[str, ...]:
-    """Values a screen lists as one types them: those of ``roomscope config``."""
+    """Values a screen lists as one types them: the choices of its options
+    (--color auto, demo --profile vocal) and the values of ``roomscope config``."""
+    parser = build_parser()
+    for name in path.split()[1:]:
+        parser = next(
+            a for a in parser._actions if isinstance(a, argparse._SubParsersAction)
+        ).choices[name]
+    values = tuple(
+        str(choice)
+        for action in parser._actions
+        if action.option_strings and action.choices is not None
+        for choice in action.choices
+    )
     if path != "roomscope config":
-        return ()
+        return values
     from roomscope.interpretation import available_profiles
 
-    return (*available_profiles(), "auto", "on", "off", "system", "light", "dark")
+    return (*values, *available_profiles(), "auto", "on", "off", "system", "light", "dark")
 
 
 def test_every_help_screen_is_chinese(zh_cli: None) -> None:
@@ -218,6 +230,48 @@ def test_every_argparse_error_is_translated(
             typed = ("bad", "result", "session", "comparison", "project", "sidecar")
             data = ("x.wav", "abc", "long", "yes")
             assert english_words(_everything_shown(err), data=data, values=typed) == []
+
+
+def _options_with_choices(lang: str) -> list[tuple[str, argparse.Action]]:
+    activate(lang)
+    found: list[tuple[str, argparse.Action]] = []
+
+    def walk(parser: argparse.ArgumentParser, path: str) -> None:
+        for action in parser._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                for name, sub in action.choices.items():
+                    walk(sub, f"{path} {name}")
+            elif action.option_strings and action.choices is not None:
+                found.append((f"{path} {action.option_strings[0]}", action))
+
+    walk(build_parser(), "roomscope")
+    return found
+
+
+@pytest.mark.parametrize("lang", ["zh_CN", "en"])
+def test_an_option_whose_placeholder_hides_its_choices_names_them(zh_cli: None, lang: str) -> None:
+    """The Chinese --color help said 默认自动 … 始终着色或从不着色 under the
+    placeholder 何时, so a reader typed --color 始终 and was refused."""
+    hidden = [(name, a) for name, a in _options_with_choices(lang) if a.metavar is not None]
+    assert hidden, "no option hides its choices behind a placeholder"
+    for name, action in hidden:
+        for choice in action.choices or ():
+            assert re.search(rf"(?<![\w-]){re.escape(str(choice))}(?![\w-])", str(action.help)), (
+                name,
+                choice,
+                action.help,
+            )
+
+
+@pytest.mark.parametrize("lang", ["zh_CN", "en"])
+def test_a_default_of_an_option_with_choices_is_the_value_to_type(zh_cli: None, lang: str) -> None:
+    """demo --help said （默认：人声） (English: Vocals) for --profile vocal."""
+    for name, action in _options_with_choices(lang):
+        named = re.search(r"(?:default|默认)[:：]?\s*([\w.-]+)", str(action.help))
+        if named and action.default is not None and named.group(1).isascii():
+            assert named.group(1) == str(action.default), (name, action.help)
+    demo = dict(_options_with_choices(lang))["roomscope demo --profile"]
+    assert "vocal" in str(demo.help), demo.help
 
 
 def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixture[str]) -> None:

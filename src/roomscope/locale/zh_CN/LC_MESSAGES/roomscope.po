@@ -3549,7 +3549,7 @@ msgid "candidates below {max_hz:.0f} Hz"
 msgstr "{max_hz:.0f} Hz 以下的候选"
 
 msgid "colour in the terminal: auto (default; off for pipes, files and NO_COLOR), always, never"
-msgstr "终端颜色：默认自动（输出到管道、文件或设置了 NO_COLOR 时不着色），也可以始终着色或从不着色"
+msgstr "终端颜色：auto（默认；输出到管道、文件或设置了 NO_COLOR 时不着色）、always（始终着色）或 never（从不着色）"
 
 msgid "commands"
 msgstr "命令"

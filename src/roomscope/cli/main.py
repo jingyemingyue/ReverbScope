@@ -67,7 +67,7 @@ from roomscope.errors import (
 )
 from roomscope.i18n import N_, _, activate, localize, pgettext
 from roomscope.interpretation import available_profiles
-from roomscope.interpretation.profiles import band_text, profile_title
+from roomscope.interpretation.profiles import band_text
 from roomscope.labels import accuracy_class_text
 from roomscope.logging_config import configure_logging
 from roomscope.models.configuration import (
@@ -734,8 +734,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--profile",
         default="vocal",
         choices=available_profiles(),
+        # The value to type, as for every other default (not its title, 人声).
         help=_("recording profile used to interpret the demo (default: {profile})").format(
-            profile=profile_title("vocal")
+            profile="vocal"
         ),
     )
 

@@ -68,7 +68,7 @@ options:
                         (default roomscope-demo)
   --profile {acoustic_guitar,choir,drums,generic,room_mic,vocal,voiceover}
                         recording profile used to interpret the demo (default:
-                        Vocals)
+                        vocal)
 
 examples:
   roomscope demo
