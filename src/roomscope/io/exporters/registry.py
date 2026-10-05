@@ -93,6 +93,6 @@ def get_exporter(name: str) -> ResultExporter:
     except KeyError as exc:
         raise ConfigurationError(
             _("unknown exporter {name}; available: {available}").format(
-                name=repr(name), available=available_exporters()
+                name=repr(name), available=", ".join(available_exporters())
             )
         ) from exc
