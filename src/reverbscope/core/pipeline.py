@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import numpy as np
-from scipy.signal import resample_poly
+from scipy.signal import fftconvolve, resample_poly
 
 from reverbscope.core.decay import analyze_decay, decay_lead_in_s
 from reverbscope.core.deconvolution import (
@@ -56,6 +56,7 @@ from reverbscope.core.sweep import (
     estimate_reference_band_hz,
     excitation_band_hz,
     frequency_at_sweep_time,
+    generate_ess,
     inverse_filter,
 )
 from reverbscope.errors import (
@@ -93,6 +94,10 @@ SILENCE_THRESHOLD_DBFS = -80.0
 #: Periods of the lowest excited frequency analysed before the direct sound
 #: for the frequency response (see :func:`frequency_response_lead_in_s`).
 FREQUENCY_RESPONSE_LEAD_IN_PERIODS = 10.0
+#: The direct level is measured on the energy within this many seconds of the
+#: direct-sound peak (see :func:`_direct_level_dbfs`): the whole of a
+#: full-band pulse at 44.1 kHz and above, rarely a reflection.
+DIRECT_LEVEL_HALF_WINDOW_S = 0.0005
 
 
 @dataclass(frozen=True)
@@ -650,21 +655,43 @@ def _locate_pass(
     )
 
 
-def _direct_level_dbfs(peak_value: float, prepared: _PreparedReference) -> float:
+def _pulse_energy(h: FloatArray, centre: int, half: int) -> float:
+    """Energy of ``h`` within ``half`` samples of ``centre``."""
+    segment = h[max(0, centre - half) : centre + half + 1]
+    return float(np.sum(np.square(segment)))
+
+
+def _direct_level_dbfs(
+    h_full: FloatArray, peak_index: int, prepared: _PreparedReference, sample_rate: int
+) -> float:
     """Level of the direct sound in the recording (dBFS).
 
-    The inverse filter has unit in-band gain for the reference at its own
-    level, so the IR peak is the gain of the chain alone; the direct sound is
-    that gain plus the peak level of the reference (the sweep's
-    ``level_dbfs``, or the peak of a reference audio file).
+    The chain gain is the energy of the deconvolved direct sound relative to
+    that of the ideal pulse (the reference deconvolved by its own inverse,
+    a perfect chain), both within ``DIRECT_LEVEL_HALF_WINDOW_S`` of their
+    peaks; the direct sound is that gain plus the peak level of the
+    reference (the sweep's ``level_dbfs``, or the peak of a reference audio
+    file). The IR peak alone is not the chain gain: a band-limited pulse
+    peaks at about ``2 * bandwidth / fs`` times its in-band gain, so the same
+    chain read 6.7 dB lower at 96 kHz and 12.4 dB lower at 192 kHz than at
+    48 kHz, and up to 2.6 dB lower at 48 kHz when the direct sound falls
+    between two samples. The energy of a band-limited pulse depends on
+    neither.
     """
     if prepared.sweep_settings is not None:
+        reference = generate_ess(prepared.sweep_settings)
         reference_dbfs = prepared.sweep_settings.level_dbfs
     else:
         assert prepared.trimmed_signal is not None
-        reference_peak = float(np.max(np.abs(prepared.trimmed_signal)))
+        reference = prepared.trimmed_signal
+        reference_peak = float(np.max(np.abs(reference)))
         reference_dbfs = 20.0 * math.log10(max(reference_peak, 1e-12))
-    return 20.0 * math.log10(max(abs(peak_value), 1e-12)) + reference_dbfs
+    ideal = np.asarray(fftconvolve(reference, prepared.inverse, mode="full"), dtype=np.float64)
+    half = max(1, round(DIRECT_LEVEL_HALF_WINDOW_S * sample_rate))
+    ideal_energy = _pulse_energy(ideal, int(np.argmax(np.abs(ideal))), half)
+    energy = _pulse_energy(h_full, peak_index, half)
+    gain_db = 10.0 * math.log10(max(energy, 1e-24) / max(ideal_energy, 1e-300))
+    return gain_db + reference_dbfs
 
 
 def _placement_against_loopback_bound(
@@ -754,7 +781,7 @@ def analyze(
     h_uncompensated, peak_uncompensated = h_full, located.peak_index
     # The noise floor is measured on the raw recording too, so the direct
     # level is taken before compensation divides out the return gain.
-    direct_level_dbfs = _direct_level_dbfs(located.peak_value, prepared)
+    direct_level_dbfs = _direct_level_dbfs(h_full, located.peak_index, prepared, sample_rate)
     if lb_samples is not None:
         try:
             # The microphone's silence message would blame its routing and the
@@ -1377,8 +1404,6 @@ def synthetic_recording(
     Used by the tests to prove the round trip without a real room; it is not
     used by the analysis itself.
     """
-    from scipy.signal import fftconvolve
-
     from reverbscope.core.sweep import measurement_signal
 
     excitation = measurement_signal(settings)

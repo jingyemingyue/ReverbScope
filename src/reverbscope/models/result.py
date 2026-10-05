@@ -564,9 +564,11 @@ class ImpulseResponseResult:
     #: direct-sound detection confidence is low.
     playback_speed: PlaybackSpeed | None = None
     #: Approximate level of the direct sound in the analysed recording (dBFS,
-    #: like the noise floor): the IR peak *before* loopback compensation
-    #: (roughly the chain gain, see ``peak_value``) plus the peak level of the
-    #: reference. Only the direct-to-noise notice uses it. ``None`` for an
+    #: like the noise floor): the chain gain *before* loopback compensation
+    #: (the energy within 0.5 ms of the direct sound relative to that of a
+    #: perfect chain's pulse, so it does not depend on the sample rate or on
+    #: where the direct sound falls between samples) plus the peak level of
+    #: the reference. Only the direct-to-noise notice uses it. ``None`` for an
     #: imported impulse response and in files written by 0.5.0b1 and earlier.
     direct_level_dbfs: float | None = None
 

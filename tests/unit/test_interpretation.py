@@ -221,7 +221,9 @@ def test_direct_to_noise_margin_follows_the_playback_level() -> None:
     margins = []
     for level in (-3.0, -40.0):
         settings = SweepSettings(duration_s=2.0, post_silence_s=1.5, level_dbfs=level)
-        rec = synthetic_recording(settings, make_rir(48000, rt60_s=0.4) * 0.2, noise_rms=1e-4)
+        # -70 dBFS noise: the direct sound (-17 / -54 dBFS) is less than 60 dB
+        # above it at both levels, so both get the notice.
+        rec = synthetic_recording(settings, make_rir(48000, rt60_s=0.4) * 0.2, noise_rms=3e-4)
         findings = interpret(analyze(rec, Reference.from_settings(settings)))
         margins.append(
             next(
@@ -345,6 +347,57 @@ def test_direct_level_survives_a_save_and_old_files_fall_back() -> None:
     old = AnalysisResult.from_dict(_saved_without_direct_level())
     assert old.impulse_response.direct_level_dbfs is None
     assert _direct_to_noise_db(old) == pytest.approx(_direct_to_noise_db(result), abs=0.5)
+
+
+def _take_at(sample_rate: int, *, delay_samples: float = 0.0):
+    """A -12 dBFS, 1 s sweep through a chain of gain 0.5 (a room with a 3 ms
+    reflection), recorded with white noise at -82 dBFS (RMS re a full-scale
+    sine): the direct sound, at -18 dBFS, is 64 dB above it at every rate."""
+    from scipy.signal import fftconvolve
+
+    settings = SweepSettings(
+        sample_rate=sample_rate, duration_s=1.0, pre_silence_s=1.0, post_silence_s=1.0
+    )
+    room = make_rir(
+        sample_rate, rt60_s=0.3, diffuse_level=0.005, length_s=0.6, reflections=[(0.003, 0.4)]
+    )
+    taps = np.arange(-63, 64) - delay_samples
+    fractional = np.sinc(taps) * np.hanning(taps.shape[0] + 2)[1:-1]
+    chain = 0.5 * np.asarray(fftconvolve(room, fractional), dtype=np.float64)
+    rec = synthetic_recording(settings, chain, noise_rms=10 ** (-85.0 / 20.0), seed=4)
+    return analyze(rec, Reference.from_settings(settings))
+
+
+@pytest.mark.parametrize(
+    ("sample_rate", "delay_samples"),
+    [(48000, 0.0), (48000, 0.5), (96000, 0.0), (192000, 0.0)],
+    ids=["48k", "48k between samples", "96k", "192k"],
+)
+def test_the_direct_level_does_not_depend_on_the_sample_rate(
+    sample_rate: int, delay_samples: float
+) -> None:
+    """R3-5: the IR peak of a band-limited pulse is about 2 * bandwidth / fs
+    times the chain gain, so the same chain and noise read a direct level
+    6.7 dB lower at 96 kHz and 12.4 dB lower at 192 kHz (2.6 dB lower at
+    48 kHz between two samples) and got a false "only 49 dB above the noise
+    floor" notice."""
+    from reverbscope.interpretation.profiles import _direct_level_dbfs
+    from reverbscope.models.result import AnalysisResult
+
+    result = _take_at(sample_rate, delay_samples=delay_samples)
+    level = result.impulse_response.direct_level_dbfs
+    assert level == pytest.approx(-12.0 + 20.0 * np.log10(0.5), abs=0.3)
+    assert result.noise.rms_dbfs == pytest.approx(-82.0, abs=0.3)
+    assert _direct_to_noise_db(result) is None
+    if delay_samples == 0.0:
+        # A file without the stored level (0.5.0b1) has only the IR peak,
+        # which is now read relative to the peak of its band's ideal pulse.
+        data = result.to_dict(include_curves=False)
+        data["impulse_response"].pop("direct_level_dbfs")
+        old = AnalysisResult.from_dict(data)
+        peak_db = 20.0 * np.log10(abs(old.impulse_response.peak_value))
+        assert _direct_level_dbfs(old, peak_db) == pytest.approx(level, abs=0.5)
+        assert _direct_to_noise_db(old) is None
 
 
 @pytest.mark.parametrize(

@@ -123,14 +123,31 @@ def _refusal_note(notes: tuple[str, ...]) -> str:
     return notes[0] if notes else diag("no common excitation band")
 
 
+def _ideal_pulse_peak_db(result: AnalysisResult) -> float:
+    """Peak of a perfect chain's pulse (dB), about ``2 * bandwidth / fs``.
+
+    The inverse filter gives the deconvolved pulse unit *in-band* gain, so
+    its peak depends on the excited bandwidth relative to the sample rate
+    (-1.6 dB at 48 kHz, -13.7 dB at 192 kHz for a 20 Hz-20 kHz sweep).
+    0 dB when the file holds no usable band.
+    """
+    band = result.excitation_band
+    rate = result.sample_rate
+    if band is None or not (0.0 < band.low_hz < band.high_hz <= rate / 2.0):
+        return 0.0
+    return 20.0 * math.log10(2.0 * (band.high_hz - band.low_hz) / rate)
+
+
 def _direct_level_dbfs(result: AnalysisResult, peak_db: float) -> float | None:
     """Level of the direct sound in the recording (dBFS, like the noise floor).
 
     The analysis stores it from the response before any loopback compensation
     (a compensated IR peak also carries the inverse of the return gain). A
-    file without it (0.5.0b1 and earlier) falls back to the IR peak, which is
-    the chain gain alone, plus the level the sweep was played at; that level
-    is unknown for an analysis against a reference WAV.
+    file without it (0.5.0b1 and earlier) falls back to the IR peak relative
+    to the peak of a perfect chain's pulse, which is about the chain gain,
+    plus the level the sweep was played at; that level is unknown for an
+    analysis against a reference WAV. The IR peak alone read the same chain
+    12 dB lower at 192 kHz than at 48 kHz.
     """
     stored = result.impulse_response.direct_level_dbfs
     if stored is not None and math.isfinite(stored):
@@ -139,7 +156,7 @@ def _direct_level_dbfs(result: AnalysisResult, peak_db: float) -> float | None:
     # Only a level a sweep accepts: float() of a 400-digit integer in a
     # crafted file raises OverflowError.
     if isinstance(level, int | float) and not isinstance(level, bool) and -80.0 <= level <= 0.0:
-        return peak_db + float(level)
+        return peak_db - _ideal_pulse_peak_db(result) + float(level)
     return None
 
 

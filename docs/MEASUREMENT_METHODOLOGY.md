@@ -482,6 +482,20 @@ whose PSD peak (±max(2 Hz, 1.5 bins)) exceeds the median of the
 ±max(10 Hz, 15 %) neighbourhood by ≥ 10 dB; "detected" means ≥ 2 such
 harmonics not shared with the other mains frequency.
 
+**Direct sound against the noise.** The notice "the direct sound is only
+N dB above the noise floor" (below 60 dB) compares the noise RMS with the
+level of the direct sound in the recording: the chain gain before loopback
+compensation plus the reference's peak level (the sweep's `level_dbfs`, or
+the peak of a reference audio file). The chain gain is the energy within
+±0.5 ms of the direct-sound peak relative to that of a perfect chain's
+pulse (the reference deconvolved by its own inverse). The IR peak itself is
+not the chain gain: a band-limited pulse peaks at about
+`2 * bandwidth / fs` times its in-band gain, so the same chain read 12 dB
+lower at 192 kHz than at 48 kHz, and up to 2.6 dB lower when the direct
+sound falls between two samples; the pulse's energy depends on neither. A
+result saved without this level (0.5.0b1) is read from its IR peak relative
+to `2 * bandwidth / fs` of its excitation band.
+
 **Units.** dBFS and dB re FS²/Hz. **Never dB SPL** without calibration, which
 v0.1 does not support.
 
