@@ -3557,7 +3557,7 @@ msgid "commands"
 msgstr "命令"
 
 msgid "compensated{sep}path delay {delay}{sep}distance at most {bound}"
-msgstr "已补偿{sep}电路径延迟 {delay}{sep}距离上限 {bound}"
+msgstr "已补偿{sep}路径延迟 {delay}{sep}距离上限 {bound}"
 
 msgid "confidence {confidence}{sep}pre-peak margin {margin}"
 msgstr "置信度 {confidence}{sep}峰前裕量 {margin}"

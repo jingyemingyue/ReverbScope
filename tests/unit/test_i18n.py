@@ -449,3 +449,17 @@ def test_noise_band_metric_labels() -> None:
         assert metric_label("noise.band.63Hz", "dBFS") == "本底噪声，63 Hz (dBFS)"
     finally:
         activate("en")
+
+
+def test_the_loopback_path_delay_is_not_called_electrical() -> None:
+    """The Loopback row said 已补偿 · 电路径延迟 ("electrical path delay"). The
+    delay is the microphone's direct sound after the electrical loopback,
+    i.e. the loudspeaker and air path; the electrical path is the reference."""
+    activate("zh_CN")
+    try:
+        shown = _("compensated{sep}path delay {delay}{sep}distance at most {bound}").format(
+            sep=" · ", delay="4.00 ms", bound="1.37 m"
+        )
+    finally:
+        activate("en")
+    assert shown == "已补偿 · 路径延迟 4.00 ms · 距离上限 1.37 m"
