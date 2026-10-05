@@ -169,3 +169,36 @@ def test_a_band_that_misses_the_range_stores_no_searched_range(sample_rate: int)
     assert res.searched_range_hz is None
     assert not any("limited to" in n for n in res.notes), res.notes
     assert any("no search was made" in n for n in res.notes)
+
+
+@pytest.mark.parametrize("window", [1, 2, 3, 4, 101, 250, 999])
+def test_moving_average_is_the_centred_zero_padded_mean(window: int) -> None:
+    from reverbscope.core.impulse import moving_average
+
+    x = np.abs(np.random.default_rng(0).normal(size=1000))
+    expected = np.convolve(x, np.ones(window) / window, mode="same")
+    assert moving_average(x, window) == pytest.approx(expected, abs=1e-12)
+
+
+def test_moving_average_keeps_the_input_length_for_a_longer_window() -> None:
+    """np.convolve's "same" mode returned max(N, window) samples."""
+    from reverbscope.core.impulse import moving_average
+
+    smoothed = moving_average(np.arange(10.0), 25)
+    assert smoothed.shape == (10,)
+    assert smoothed == pytest.approx(np.full(10, 45.0 / 25.0))
+
+
+def test_smoothing_a_low_mode_at_192_khz_takes_linear_time() -> None:
+    """R3-9: two periods of a 28 Hz band at 192 kHz are 13 511 samples; a direct
+    convolution over a 5 s response took 13-22 s per call, and an analysis
+    with one low mode spent 105 s smoothing envelopes."""
+    import time
+
+    from reverbscope.core.impulse import moving_average
+
+    x = np.abs(np.random.default_rng(0).normal(size=960_960))
+    started = time.perf_counter()
+    smoothed = moving_average(x, 13_511)
+    assert time.perf_counter() - started < 1.0
+    assert smoothed.shape == x.shape
