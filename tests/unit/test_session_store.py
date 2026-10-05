@@ -514,3 +514,48 @@ def test_a_copied_aiff_caf_or_flac_take_is_a_real_wav(
     assert (info.format, info.subtype) == ("WAV", stored)
     np.testing.assert_array_equal(read_wav(copied).samples, read_wav(source).samples)
     assert load_session(folder).recording_path == "recording.wav"
+
+
+def test_a_file_dated_before_1980_is_bundled(tmp_path: Path, analysed) -> None:
+    """zipfile refuses dates before 1980 (a recorder whose clock was never
+    set): the bundle failed as "unexpected ValueError … a bug in ReverbScope"."""
+    import os
+
+    from reverbscope.io.session_store import bundle_session
+
+    _recording, result = analysed
+    folder = tmp_path / "old-clock"
+    save_measurement(folder, MeasurementSession(), result, include_curves=False)
+    os.utime(folder / IR_FILE, (0, 0))
+    target = bundle_session(folder, tmp_path / "out")
+    with zipfile.ZipFile(target) as archive:
+        assert archive.getinfo(IR_FILE).date_time[0] == 1980
+        assert archive.read(IR_FILE) == (folder / IR_FILE).read_bytes()
+
+
+def test_a_failed_bundle_keeps_the_earlier_one(
+    tmp_path: Path, analysed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The zip was opened on its final name: a failure half-way left a cut-off
+    (or empty, 22-byte) zip in place of a good bundle from an earlier run."""
+    from reverbscope.io.session_store import bundle_session
+
+    _recording, result = analysed
+    folder = tmp_path / "booth"
+    save_measurement(folder, MeasurementSession(), result, include_curves=False)
+    target = bundle_session(folder, tmp_path / "out")
+    good = target.read_bytes()
+    written: list[str] = []
+    real_write = zipfile.ZipFile.write
+
+    def disk_full(self: zipfile.ZipFile, filename: object, arcname: str | None = None) -> None:
+        if written:
+            raise OSError(28, "No space left on device")
+        written.append(str(arcname))
+        real_write(self, filename, arcname)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(zipfile.ZipFile, "write", disk_full)
+    with pytest.raises(SessionError, match="No space left"):
+        bundle_session(folder, tmp_path / "out")
+    assert target.read_bytes() == good
+    assert sorted(path.name for path in target.parent.iterdir()) == [target.name]

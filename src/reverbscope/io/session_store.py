@@ -14,6 +14,7 @@ Raw sweep and recording files are never modified in place.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import logging
 import math
@@ -235,9 +236,17 @@ def bundle_session(
             )
         )
     inside = base.resolve()
+    temporary: Path | None = None
     try:
         target.parent.mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+        # Written beside the target and renamed over it once complete: a
+        # failure half-way (a full disk) keeps an earlier bundle there whole.
+        temporary = temporary_beside(target, ".zip")
+        # strict_timestamps=False: a file dated before 1980 (a recorder whose
+        # clock was never set) is stored as 1980 instead of failing the zip.
+        with zipfile.ZipFile(
+            temporary, "w", zipfile.ZIP_DEFLATED, strict_timestamps=False
+        ) as archive:
             for path in sorted(base.rglob("*")):
                 if not path.is_file():
                     continue
@@ -249,10 +258,15 @@ def bundle_session(
                     log.warning("not bundling %s: it links outside the session folder", path)
                     continue
                 archive.write(path, path.relative_to(base).as_posix())
-    except OSError as exc:
+        os.replace(temporary, target)
+    except (OSError, ValueError) as exc:
         raise SessionError(
             _("cannot write bundle {path}: {error}").format(path=target, error=exc)
         ) from exc
+    finally:
+        if temporary is not None:
+            with contextlib.suppress(OSError):
+                temporary.unlink(missing_ok=True)
     return target
 
 
