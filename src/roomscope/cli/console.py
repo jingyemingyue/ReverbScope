@@ -77,6 +77,7 @@ _STATUS_STYLE: dict[str, tuple[str, ...]] = {
 #: whose encoding cannot write them (a cp1252 pipe, a Latin-1 terminal).
 _ASCII_SIGNS = str.maketrans(
     {
+        "°": "",  # 20 °C as 20 C
         "–": "-",
         "—": "-",
         "─": "-",
@@ -128,7 +129,7 @@ class Verbatim(str):
 #: Joins a number to its unit inside the layout (``2.4<NBSP>ms``): wrapping
 #: never separates them, and :meth:`Console.fit` writes a plain space.
 GLUE = "\u00a0"
-_UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|%)(?![\w])")
+_UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|°C|%)(?![\w])")
 
 
 def glue_units(text: str) -> str:

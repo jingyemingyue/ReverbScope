@@ -637,7 +637,7 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
             (
                 _("Speed of sound"),
                 f"{placement.speed_of_sound_m_s:.1f} m/s "
-                + _("at {temp:.0f} C").format(temp=placement.temperature_c)
+                + _("at {temp:.0f} °C").format(temp=placement.temperature_c)
                 + assumed,
             ),
             *(

@@ -369,7 +369,7 @@ msgid "No placement result. Add a loudspeaker distance to raise the tier."
 msgstr "没有摆位结果。补上扬声器距离可提高档位。"
 
 msgid "Placement tier {tier}. No coordinates, room length, room width or named wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} C{assumed}."
-msgstr "摆位档位 {tier}。不推导坐标、房间长宽或具名墙面。声速 {speed:.1f} m/s，气温 {temp:.0f} C{assumed}。"
+msgstr "摆位档位 {tier}。不推导坐标、房间长宽或具名墙面。声速 {speed:.1f} m/s，气温 {temp:.0f} °C{assumed}。"
 
 msgid " (assumed)"
 msgstr "（假定）"
@@ -928,8 +928,8 @@ msgstr "声明的激励频带（Hz；所有衰减与清晰度指标都需要，�
 msgid "n/a"
 msgstr "无"
 
-msgid "at {temp:.0f} C"
-msgstr "气温 {temp:.0f} C"
+msgid "at {temp:.0f} °C"
+msgstr "气温 {temp:.0f} °C"
 
 msgid "matched"
 msgstr "匹配"
@@ -1952,7 +1952,7 @@ msgstr "dB re（满幅正弦 RMS）^2 每 Hz：功率谱密度经过缩放，使
 
 msgctxt "diagnostic"
 msgid "c = 331.3 * sqrt(1 + T/273.15) m/s (adiabatic ideal-gas relation for dry air; 343.2 m/s at 20 C, numerically equal to the ISO 9613-1 form c = 343.2 * sqrt(T/293.15))"
-msgstr "c = 331.3 * sqrt(1 + T/273.15) m/s（干燥空气的绝热理想气体关系；20 C 时为 343.2 m/s，数值上与 ISO 9613-1 的形式 c = 343.2 * sqrt(T/293.15) 相同）"
+msgstr "c = 331.3 * sqrt(1 + T/273.15) m/s（干燥空气的绝热理想气体关系；20 °C 时为 343.2 m/s，数值上与 ISO 9613-1 的形式 c = 343.2 * sqrt(T/293.15) 相同）"
 
 msgctxt "diagnostic"
 msgid "No coordinate, room length, room width or wall distance is reported. One omnidirectional microphone at one position measures path lengths, not directions, and the deconvolved time origin contains the interface round-trip latency, so there is no absolute time of flight: the four independent arrival equations constrain six unknowns, a deficit of three without a tape-measured loudspeaker-to-microphone distance and two with it. The remaining freedom is the direction of the loudspeaker-to-microphone vector, and every direction reproduces the measured arrival times exactly. Only quantities invariant over that family are reported: the product of the two perpendicular distances to a plane, and the vertical axis once one perpendicular distance is supplied by the user."
@@ -2943,7 +2943,7 @@ msgstr "反射搜索在 {end:.1f} ms 处被截断，而截断并不是随机丢�
 
 msgctxt "diagnostic"
 msgid "no air temperature was supplied, so {temperature:.0f} C ({speed:.1f} m/s) was assumed; a 5 C error moves every distance by about 0.9 %"
-msgstr "未提供气温，因此假定为 {temperature:.0f} C（声速 {speed:.1f} m/s）；气温误差 5 C 会使每个距离偏差约 0.9 %"
+msgstr "未提供气温，因此假定为 {temperature:.0f} °C（声速 {speed:.1f} m/s）；气温误差 5 °C 会使每个距离偏差约 0.9 %"
 
 msgctxt "diagnostic"
 msgid "direct-sound detection confidence is low, so the time origin every delay is measured from was not established and no distance derived from it is reported"

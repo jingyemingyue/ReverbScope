@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import replace
 from pathlib import Path
 
@@ -272,3 +273,30 @@ def test_analyze_ir_band_help_covers_broadband_metrics() -> None:
     text = _subcommand_help("analyze-ir")
     assert "required for band metrics" not in text
     assert "required for every decay and clarity metric, broadband included" in text
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_the_air_temperature_is_shown_in_degrees_celsius(
+    short_sweep: SweepSettings, lang: str
+) -> None:
+    """The placement section printed "at 20 C" / "气温 20 C"."""
+    from roomscope.cli.render import _placement
+    from roomscope.i18n import activate
+
+    result = _analysed(short_sweep)
+    activate(lang)
+    try:
+        shown = "\n".join(_placement(WIDE, result.placement))
+        ascii_only = Console(color=False, unicode=False, width=100)
+        fallback = ascii_only.fit("\n".join(_placement(ascii_only, result.placement)))
+    finally:
+        activate("en")
+    speed = next(line for line in shown.splitlines() if "343.2 m/s" in line)
+    assert "20 °C" in speed, speed
+    if lang == "zh_CN":
+        # The stored English note says "20 C"; shown translated, it says °C too.
+        assert not re.search(r"\d C\b", shown), shown
+    # A stream that cannot write the degree sign gets the plain unit.
+    assert "20 C" in fallback and "°" not in fallback
+    if lang == "en":
+        fallback.encode("ascii")
