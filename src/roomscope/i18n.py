@@ -60,6 +60,16 @@ _CONTEXT_SEPARATOR = "\x04"
 #: Catalog directory names other than English and the two Chinese variants.
 #: Regional tags (``ja_JP``, ``es_MX``) map onto these.
 _LANGUAGE_CATALOGS = frozenset({"de", "es", "fr", "ja", "ko"})
+#: Windows' ``getlocale()`` names the language in English (``Japanese_Japan``,
+#: ``English_United States``); the Chinese names are handled with the scripts.
+_WINDOWS_LANGUAGE_NAMES = {
+    "english": "en",
+    "french": "fr",
+    "german": "de",
+    "japanese": "ja",
+    "korean": "ko",
+    "spanish": "es",
+}
 _current = DEFAULT_LANG
 _translation: gettext.NullTranslations = gettext.NullTranslations()
 
@@ -106,13 +116,11 @@ def normalize_lang(tag: str | None) -> str:
         return "zh_TW"
     if "_" in raw:
         lang, _, region = raw.partition("_")
-        lang = lang.lower()
+        lang = _WINDOWS_LANGUAGE_NAMES.get(lang.lower(), lang.lower())
         if lang in _LANGUAGE_CATALOGS:
             return lang
         return f"{lang}_{region.upper()}" if region else lang
-    if lower in _LANGUAGE_CATALOGS:
-        return lower
-    return raw.lower()
+    return _WINDOWS_LANGUAGE_NAMES.get(lower, lower)
 
 
 #: Where the language in effect came from (:attr:`LanguageChoice.source`).
@@ -162,8 +170,10 @@ class LanguageChoice:
 def supported_language(tag: str | None) -> str | None:
     """``tag`` as a language RoomScope has: a catalog, or English for any English.
 
-    ``None`` for anything else (``fr_FR``, ``zh_TW``, ``C``). Encoding and
-    modifier suffixes are ignored (``zh_CN.UTF-8``, ``de_DE@euro``).
+    ``None`` for anything else (``pt_BR``, ``ru``, ``C``). Encoding and
+    modifier suffixes are ignored (``zh_TW.UTF-8``, ``de_DE@euro``), and a
+    regional tag counts for its language (``zh-Hant-HK`` is ``zh_TW``,
+    ``ja-JP`` is ``ja``, ``es-419`` is ``es``).
     """
     if not tag or not tag.strip():
         return None
@@ -678,7 +688,7 @@ def _macos_step() -> tuple[str, str, str] | None:
 def _windows_step() -> tuple[str, str, str] | None:
     """The Windows display language, when RoomScope has it.
 
-    A display language without a catalog (``zh_TW``, ``ja_JP``) leaves the
+    A display language without a catalog (``pt_BR``, ``ru_RU``) leaves the
     choice to the next step, as on a Mac: Qt's UI languages in the GUI
     (Windows' own preferred-language list) and then ``LANG``.
     """

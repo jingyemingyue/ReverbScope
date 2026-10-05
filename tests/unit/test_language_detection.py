@@ -52,8 +52,46 @@ def test_supported_languages_are_a_catalog_or_english() -> None:
     assert supported_language("zh") == "zh_CN"
     assert supported_language("en_US.UTF-8") == "en"
     assert supported_language("en-GB") == "en"
-    for other in ("fr_FR", "zh_TW", "zh-Hant-TW", "C", "C.UTF-8", "POSIX", "", "  ", None):
+    for other in ("pt_BR", "ru-RU", "it", "yue-Hant-HK", "C", "C.UTF-8", "POSIX", "", "  ", None):
         assert supported_language(other) is None, other
+
+
+@pytest.mark.parametrize(
+    ("tag", "expected"),
+    [
+        # The Mac and Qt write BCP 47 tags with a script or a region.
+        ("zh-Hant", "zh_TW"),
+        ("zh-Hant-TW", "zh_TW"),
+        ("zh-Hant-HK", "zh_TW"),
+        ("zh-Hans-HK", "zh_CN"),
+        ("ja-JP", "ja"),
+        ("ko-KR", "ko"),
+        ("es-419", "es"),
+        ("es-MX", "es"),
+        ("fr-CA", "fr"),
+        ("de-CH", "de"),
+        # The POSIX variables and GNU LANGUAGE.
+        ("zh_TW.UTF-8", "zh_TW"),
+        ("zh_HK.Big5", "zh_TW"),
+        ("ja_JP.eucJP", "ja"),
+        ("ko_KR.UTF-8", "ko"),
+        ("es_ES.UTF-8", "es"),
+        ("fr_FR.UTF-8", "fr"),
+        ("de_DE@euro", "de"),
+        # Windows: the display language's locale name and getlocale()'s form.
+        ("zh_MO", "zh_TW"),
+        ("zh_CHT", "zh_TW"),
+        ("Chinese (Traditional)_Taiwan", "zh_TW"),
+        ("Japanese_Japan", "ja"),
+        ("Korean_Korea", "ko"),
+        ("Spanish_Mexico", "es"),
+        ("French_France", "fr"),
+        ("German_Germany", "de"),
+        ("English_United States", "en"),
+    ],
+)
+def test_every_catalog_is_found_from_the_tags_systems_write(tag: str, expected: str) -> None:
+    assert supported_language(tag) == expected
 
 
 # --- macOS -------------------------------------------------------------------------------
@@ -85,14 +123,39 @@ def test_the_first_language_the_mac_lists_that_roomscope_has_wins(
     system.setenv("LANG", "zh_CN.UTF-8")
     plist = tmp_path / "user.plist"
     system.setattr(i18n, "MACOS_PREFERENCES", (str(plist),))
-    _plist(plist, ["fr-FR", "en-GB", "zh-Hans-CN"])
+    _plist(plist, ["pt-BR", "en-GB", "zh-Hans-CN"])
     assert resolve_language() == "en"
-    _plist(plist, ["de-DE", "zh-Hans-CN", "en-US"])
+    _plist(plist, ["ru-RU", "zh-Hans-CN", "en-US"])
     assert resolve_language() == "zh_CN"
     # Nothing the Mac lists has a catalog: the locale variables decide.
-    _plist(plist, ["fr-FR", "de-DE"])
+    _plist(plist, ["pt-BR", "ru-RU"])
     assert language_choice().origin == "LANG"
     assert resolve_language() == "zh_CN"
+
+
+@pytest.mark.parametrize(
+    ("languages", "expected"),
+    [
+        (["zh-Hant-TW", "en-TW"], "zh_TW"),
+        (["zh-Hant-HK", "zh-Hans-CN"], "zh_TW"),
+        (["ja-JP", "en-JP"], "ja"),
+        (["ko-KR"], "ko"),
+        (["es-419", "en-US"], "es"),
+        (["fr-CA"], "fr"),
+        (["de-CH", "en-GB"], "de"),
+        (["pt-BR", "ja-JP", "zh-Hans-CN"], "ja"),
+    ],
+)
+def test_a_mac_finds_every_catalog_in_its_preferred_languages(
+    system: pytest.MonkeyPatch, tmp_path: Path, languages: list[str], expected: str
+) -> None:
+    system.setattr(sys, "platform", "darwin")
+    system.setenv("LANG", "en_US.UTF-8")
+    user = _plist(tmp_path / "user.plist", languages)
+    system.setattr(i18n, "MACOS_PREFERENCES", (str(user),))
+    choice = language_choice()
+    assert (choice.lang, choice.origin) == (expected, ORIGIN_MACOS)
+    assert i18n.activate() == expected
 
 
 def test_the_computer_wide_preferences_and_an_xml_plist_are_read(
@@ -148,8 +211,9 @@ def test_the_gui_on_a_mac_follows_qts_ui_languages_first(
     system.setenv("LANG", "en_US.UTF-8")
     choice = language_choice(system_languages=["zh-Hans-CN", "en-US"])
     assert (choice.lang, choice.origin) == ("zh_CN", ORIGIN_DESKTOP)
+    assert resolve_language(system_languages=["ja-JP", "zh-Hans-CN"]) == "ja"
     # Qt lists nothing RoomScope has: the Mac's own list is next.
-    assert resolve_language(system_languages=["fr-FR"]) == "en"
+    assert resolve_language(system_languages=["pt-BR"]) == "en"
 
 
 # --- Windows -----------------------------------------------------------------------------
@@ -167,18 +231,51 @@ def test_windows_follows_the_display_language_before_lang(system: pytest.MonkeyP
     assert language_choice().origin == "LANG"
 
 
+@pytest.mark.parametrize(
+    ("display", "expected"),
+    [
+        ("zh_TW", "zh_TW"),
+        ("zh_HK", "zh_TW"),
+        ("ja_JP", "ja"),
+        ("ko_KR", "ko"),
+        ("es_MX", "es"),
+        ("fr_FR", "fr"),
+        ("de_DE", "de"),
+    ],
+)
+def test_windows_finds_every_catalog_from_the_display_language(
+    system: pytest.MonkeyPatch, display: str, expected: str
+) -> None:
+    """The names ``locale.windows_locale`` gives the display language's id."""
+    system.setattr(sys, "platform", "win32")
+    system.setenv("LANG", "en_US.UTF-8")
+    system.setattr(i18n, "_windows_ui_language", lambda: display)
+    choice = language_choice(system_languages=["zh-Hans-CN", "en-US"])
+    assert (choice.lang, choice.origin, choice.value) == (expected, ORIGIN_WINDOWS, display)
+
+
+def test_the_windows_display_language_ids_name_the_catalogs() -> None:
+    """``GetUserDefaultUILanguage`` ids, as Python's table names them."""
+    import locale
+
+    ids = {0x0804: "zh_CN", 0x0404: "zh_TW", 0x0C04: "zh_TW", 0x0411: "ja", 0x0412: "ko"}
+    ids |= {0x0C0A: "es", 0x040C: "fr", 0x0407: "de", 0x0409: "en"}
+    for lang_id, expected in ids.items():
+        assert supported_language(locale.windows_locale[lang_id]) == expected, hex(lang_id)
+
+
 def test_a_windows_display_language_without_a_catalog_leaves_the_choice_to_qt_and_lang(
     system: pytest.MonkeyPatch,
 ) -> None:
-    """Traditional Chinese with Simplified Chinese second in Windows' list."""
+    """Brazilian Portuguese with Simplified Chinese second in Windows' list."""
     system.setattr(sys, "platform", "win32")
-    system.setattr(i18n, "_windows_ui_language", lambda: "zh_TW")
-    qt = ["zh-Hant-TW", "zh-Hans-CN", "en-US"]
+    system.setattr(i18n, "_windows_ui_language", lambda: "pt_BR")
+    qt = ["pt-BR", "zh-Hans-CN", "en-US"]
     choice = language_choice(system_languages=qt)
     assert (choice.lang, choice.origin) == ("zh_CN", ORIGIN_DESKTOP)
     assert i18n.activate(system_languages=qt) == "zh_CN"  # the GUI, as before
     # The command line has no Qt list: LANG (Git Bash, MSYS) is next.
-    system.setattr(i18n, "_windows_ui_language", lambda: "ja_JP")
+    system.setattr(i18n, "_windows_ui_language", lambda: "ru_RU")
     system.setenv("LANG", "zh_CN.UTF-8")
     choice = language_choice()
     assert (choice.lang, choice.origin) == ("zh_CN", "LANG")
@@ -196,8 +293,12 @@ def test_a_windows_display_language_without_a_catalog_leaves_the_choice_to_qt_an
     [
         ("zh_CN:en", "en_US.UTF-8", "zh_CN", "LANGUAGE"),
         ("en:zh_CN", "zh_CN.UTF-8", "en", "LANGUAGE"),
-        ("fr:zh_CN:en", "en_US.UTF-8", "zh_CN", "LANGUAGE"),
-        ("fr_FR:de", "zh_CN.UTF-8", "zh_CN", "LANG"),  # nothing listed has a catalog
+        ("pt:zh_CN:en", "en_US.UTF-8", "zh_CN", "LANGUAGE"),
+        ("pt_BR:ru", "zh_CN.UTF-8", "zh_CN", "LANG"),  # nothing listed has a catalog
+        ("ja:en", "en_US.UTF-8", "ja", "LANGUAGE"),
+        ("pt_BR:zh_TW:zh_CN", "en_US.UTF-8", "zh_TW", "LANGUAGE"),
+        ("fr_CA:fr:en", "C.UTF-8", "en", ""),
+        ("", "de_DE.UTF-8", "de", "LANG"),
         ("zh_CN:en", "C.UTF-8", "en", ""),  # gettext ignores LANGUAGE in the C locale
         ("zh_CN:en", "POSIX", "en", ""),
         ("", "zh_CN.UTF-8", "zh_CN", "LANG"),
