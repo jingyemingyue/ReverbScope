@@ -342,6 +342,31 @@ def test_progress_never_reaches_the_last_column(monkeypatch: pytest.MonkeyPatch,
 # --- The command line ------------------------------------------------------------------------
 
 
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_the_demo_note_fits_a_narrow_terminal(
+    home: Path, monkeypatch: pytest.MonkeyPatch, lang: str
+) -> None:
+    """The demo's transient note was written whole: on a terminal narrower
+    than it, it wrapped, "\r" returned to the second row only, and the first
+    row stayed above the report."""
+    import reverbscope.demo
+    from reverbscope.errors import ReverbScopeError
+
+    def stop(*_args: object, **_kwargs: object) -> None:
+        raise ReverbScopeError("stopped here")
+
+    monkeypatch.setattr(reverbscope.demo, "run_demo", stop)
+    for columns in (20, 24, 40):
+        stderr = _Stream(tty=True)
+        monkeypatch.setattr("sys.stderr", stderr)
+        monkeypatch.setenv("COLUMNS", str(columns))
+        monkeypatch.setenv("TERM", "xterm")
+        main(["--lang", lang, "--color", "never", "demo", "--out", str(home / "d")])
+        note, clear = stderr.getvalue().split("\r")[:2]
+        assert note and cell_width(note) <= columns - 1, (columns, note)
+        assert clear == " " * cell_width(note)
+
+
 def _take(root: Path, name: str = "take") -> tuple[Path, Path]:
     from reverbscope.io.wav import read_wav, write_wav
 

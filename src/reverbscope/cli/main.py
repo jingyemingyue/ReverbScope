@@ -37,6 +37,7 @@ from reverbscope.cli.console import (
     cell_width,
     printable,
     shell_command,
+    truncate,
 )
 from reverbscope.cli.render import (
     render_analysis,
@@ -2287,8 +2288,13 @@ def cmd_demo(args: argparse.Namespace) -> int:
     if err.interactive and sys.stderr is not None:
         # A transient line while the two positions are simulated and analysed.
         # Cleared with spaces, never an escape sequence: --color never and
-        # NO_COLOR must not write ESC[2K.
-        note = err.fit(_("Simulating and analysing two microphone positions …"))
+        # NO_COLOR must not write ESC[2K. Cut to the terminal like the
+        # progress line: a wrapped note leaves its first row behind, as "\r"
+        # returns only to the start of the second.
+        note = truncate(
+            err.fit(_("Simulating and analysing two microphone positions …")),
+            max(8, err.width - 1),
+        )
         sys.stderr.write(note)
         sys.stderr.flush()
     try:
