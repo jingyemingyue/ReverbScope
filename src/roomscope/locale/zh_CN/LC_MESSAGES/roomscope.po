@@ -1630,7 +1630,7 @@ msgid "expected at most one argument"
 msgstr "最多只能有一个参数值"
 
 msgid "invalid %(type)s value: %(value)r"
-msgstr "无效的 %(type)s 值：%(value)r"
+msgstr "无效的%(type)s值：%(value)r"
 
 msgid "invalid choice: %(value)r (choose from %(choices)s)"
 msgstr "无效选项：%(value)r（可选：%(choices)s）"
@@ -1649,6 +1649,29 @@ msgstr "无法识别的参数：%s"
 
 msgid "can't open '%(filename)s': %(error)s"
 msgstr "无法打开“%(filename)s”：%(error)s"
+
+msgid "ignored explicit argument %r"
+msgstr "该选项不接受值（给出了 %r）"
+
+msgid "unknown parser %(parser_name)r (choices: %(choices)s)"
+msgstr "未知的子命令 %(parser_name)r（可选：%(choices)s）"
+
+msgid "unexpected option string: %s"
+msgstr "意外的选项：%s"
+
+msgid "expected %s argument"
+msgstr "需要 %s 个参数值"
+
+msgid "expected %s arguments"
+msgstr "需要 %s 个参数值"
+
+msgctxt "argument type"
+msgid "int"
+msgstr "整数"
+
+msgctxt "argument type"
+msgid "float"
+msgstr "数字"
 
 # Placeholders in usage lines and option lists (argparse metavars).
 

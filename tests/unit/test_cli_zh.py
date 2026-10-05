@@ -139,6 +139,59 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
     assert "无效选项" in err, err
 
 
+@pytest.mark.parametrize(
+    ("argv", "chinese", "english"),
+    [
+        (
+            ["project"],
+            "缺少必需的参数：{init,add,average,show}",
+            "the following arguments are required: {init,add,average,show}",
+        ),
+        (["session"], "缺少必需的参数：{bundle}", "the following arguments are required: {bundle}"),
+        (["show"], "缺少必需的参数：路径", "the following arguments are required: path"),
+        (
+            ["analyze-ir", "--ir", "x.wav", "--band", "20"],
+            "参数 --band：需要 2 个参数值",
+            "argument --band: expected 2 arguments",
+        ),
+        (
+            ["devices", "--probe=yes"],
+            "参数 --probe：该选项不接受值（给出了 'yes'）",
+            "argument --probe: ignored explicit argument 'yes'",
+        ),
+        (
+            ["sweep", "--out", "x.wav", "--sample-rate", "abc"],
+            "参数 --sample-rate：无效的整数值：'abc'",
+            "argument --sample-rate: invalid int value: 'abc'",
+        ),
+        (
+            ["sweep", "--out", "x.wav", "--duration", "long"],
+            "参数 --duration：无效的数字值：'long'",
+            "argument --duration: invalid float value: 'long'",
+        ),
+    ],
+)
+def test_every_argparse_error_is_translated(
+    zh_cli: None,
+    capsys: pytest.CaptureFixture[str],
+    argv: list[str],
+    chinese: str,
+    english: str,
+) -> None:
+    """In Chinese, "expected 2 arguments", "ignored explicit argument" and the
+    type in "invalid int value" stayed English; a missing project or session
+    action was named by its internal dest (project_command)."""
+    for lang, expected in (("zh_CN", chinese), ("en", english)):
+        with pytest.raises(SystemExit) as exc:
+            main(["--lang", lang, *argv])
+        assert exc.value.code == 2
+        err = capsys.readouterr().err
+        assert expected in " ".join(err.split()), err
+        assert "_command" not in err
+        if lang == "zh_CN":
+            assert english_words(_everything_shown(err), data=("x.wav", "abc", "long", "yes")) == []
+
+
 def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixture[str]) -> None:
     from roomscope.audio.backend import get_backend
 

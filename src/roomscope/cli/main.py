@@ -104,6 +104,12 @@ ARGPARSE_MESSAGES = frozenset(
         N_("show this help message and exit"),
         N_("show program's version number and exit"),
         N_("can't open '%(filename)s': %(error)s"),
+        N_("ignored explicit argument %r"),
+        N_("unknown parser %(parser_name)r (choices: %(choices)s)"),
+        N_("unexpected option string: %s"),
+        # ngettext: "--band 20" (two values expected). Chinese has one form.
+        N_("expected %s argument"),
+        N_("expected %s arguments"),
     }
 )
 
@@ -112,9 +118,24 @@ def _argparse_gettext(message: str) -> str:
     return _(message) if message in ARGPARSE_MESSAGES else message
 
 
+def _argparse_ngettext(singular: str, plural: str, n: int) -> str:
+    message = singular if n == 1 else plural
+    return _(message) if message in ARGPARSE_MESSAGES else message
+
+
 def _translate_argparse() -> None:
-    """Route argparse's module-level ``_`` through RoomScope's catalog."""
+    """Route argparse's module-level ``_`` and ``ngettext`` through RoomScope's catalog."""
     setattr(argparse, "_", _argparse_gettext)  # noqa: B010 - a module attribute, not ours
+    setattr(argparse, "ngettext", _argparse_ngettext)  # noqa: B010
+
+
+def _type_name(kind: object) -> str | None:
+    """The word for a value argparse could not convert ("invalid int value")."""
+    if kind is int:
+        return pgettext("argument type", "int")
+    if kind is float:
+        return pgettext("argument type", "float")
+    return None
 
 
 #: The root help lists the commands in these groups, in the order of the
@@ -266,6 +287,17 @@ class _Parser(argparse.ArgumentParser):
     Exit code 2 and stderr as before; the message is argparse's (translated),
     followed by the command's ``--help`` to try.
     """
+
+    def _get_value(self, action: argparse.Action, arg_string: str) -> Any:
+        """argparse's conversion; the type is named in words ("整数"), not as int."""
+        try:
+            return super()._get_value(action, arg_string)
+        except argparse.ArgumentError:
+            name = _type_name(action.type)
+            if name is None:
+                raise
+            message = _("invalid %(type)s value: %(value)r") % {"type": name, "value": arg_string}
+            raise argparse.ArgumentError(action, message) from None
 
     def error(self, message: str) -> Any:
         console = Console.for_stream(sys.stderr, _COLOR_REQUEST["mode"])  # type: ignore[arg-type]
@@ -1013,6 +1045,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_show_proj.add_argument(
         "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
     )
+    # Without a metavar argparse names the missing action by its dest
+    # ("the following arguments are required: project_command").
+    proj_sub.metavar = "{" + ",".join(proj_sub.choices) + "}"
 
     p_ex = _command(
         sub,
@@ -1067,6 +1102,7 @@ def build_parser() -> argparse.ArgumentParser:
         metavar=pgettext("metavar", "PATH"),
         help=_("zip file (.zip) or folder"),
     )
+    sess_sub.metavar = "{" + ",".join(sess_sub.choices) + "}"
 
     p_doc = _command(
         sub,
