@@ -230,6 +230,33 @@ def test_loud_part_of_the_segment_is_excluded(sample_rate: int) -> None:
     assert any("were excluded" in n for n in res.notes)
 
 
+def test_excluded_time_counts_only_the_zeros_and_the_loud_blocks(sample_rate: int) -> None:
+    """Only the longest piece and the longest quiet run are measured, and the
+    notes put everything else down to its cause: 0.05 s of zeros between
+    0.35 s and 0.6 s of noise read "0.40 s of exact digital zeros", and a
+    0.15 s noise event between two seconds of quiet read "1.10 s ... more than
+    10 dB above its quietest blocks"."""
+
+    def notes(*parts: np.ndarray) -> tuple[str, ...]:
+        x = np.concatenate(parts)
+        return select_quiet_part(x, sample_rate, _whole(x), min_segment_s=0.5).notes
+
+    zeros = np.zeros(round(0.05 * sample_rate))
+    assert notes(_noise(sample_rate, 0.35, seed=1), zeros, _noise(sample_rate, 0.6, seed=2)) == (
+        "0.05 s of exact digital zeros (an export that starts before the recorded region, or a "
+        "gap between regions) were excluded from the pre-sweep segment",
+        "0.35 s of the pre-sweep segment were not used: only the longest stretch between "
+        "digital silences is measured",
+    )
+    event = _noise(sample_rate, 0.15, seed=3, sigma=1e-2)
+    assert notes(_noise(sample_rate, 1.0, seed=1), event, _noise(sample_rate, 1.0, seed=2)) == (
+        "0.20 s of the pre-sweep segment were more than 10 dB above its quietest blocks "
+        "(another sweep pass or a noise event?) and were excluded",
+        "0.90 s of quiet signal in the pre-sweep segment were not used: only the longest quiet "
+        "stretch is measured, and a louder part separates them from it",
+    )
+
+
 def test_segment_as_loud_as_the_sweep_is_rejected(sample_rate: int) -> None:
     """E2: a looped sweep without silence gave a 'background noise' level that
     was really the sweep itself."""

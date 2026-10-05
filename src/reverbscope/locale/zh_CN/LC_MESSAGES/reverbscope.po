@@ -4653,3 +4653,28 @@ msgstr "录音比扫频早约 {missing_s:.2f} s 结束，扫频的末尾及其�
 msgctxt "diagnostic"
 msgid "no harmonic-free content around the direct sound to compare with"
 msgstr "直达声前后没有不含谐波的内容可供比较"
+# Background noise: signal left out because only the longest part is measured
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of the pre-sweep segment were not used: only the longest stretch between digital silences is measured"
+msgstr "扫频前片段中另有 {unused:.2f} s 未被使用：只测量数字静音之间最长的一段"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of the tail segment were not used: only the longest stretch between digital silences is measured"
+msgstr "末尾片段中另有 {unused:.2f} s 未被使用：只测量数字静音之间最长的一段"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of the {source} segment were not used: only the longest stretch between digital silences is measured"
+msgstr "{source} 片段中另有 {unused:.2f} s 未被使用：只测量数字静音之间最长的一段"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of quiet signal in the pre-sweep segment were not used: only the longest quiet stretch is measured, and a louder part separates them from it"
+msgstr "扫频前片段中另有 {unused:.2f} s 安静的信号未被使用：只测量最长的连续安静部分，而它们与该部分之间隔着较响的部分"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of quiet signal in the tail segment were not used: only the longest quiet stretch is measured, and a louder part separates them from it"
+msgstr "末尾片段中另有 {unused:.2f} s 安静的信号未被使用：只测量最长的连续安静部分，而它们与该部分之间隔着较响的部分"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of quiet signal in the {source} segment were not used: only the longest quiet stretch is measured, and a louder part separates them from it"
+msgstr "{source} 片段中另有 {unused:.2f} s 安静的信号未被使用：只测量最长的连续安静部分，而它们与该部分之间隔着较响的部分"

@@ -256,7 +256,10 @@ def select_quiet_part(
         )
     notes: list[str] = []
     start, stop = max(pieces, key=lambda p: p[1] - p[0])
-    dropped = (x.shape[0] - (stop - start)) / sample_rate
+    # Only the longest piece is measured. The zeros and the other pieces are
+    # counted apart: the other pieces are signal, not digital silence.
+    signal = sum(piece_stop - piece_start for piece_start, piece_stop in pieces)
+    dropped = (x.shape[0] - signal) / sample_rate
     if dropped > ZERO_RUN_S:
         notes.append(
             _by_source(
@@ -278,6 +281,29 @@ def select_quiet_part(
                     "recorded region, or a gap between regions) were excluded from the "
                     "{source} segment",
                     dropped=dropped,
+                    source=source,
+                ),
+            )
+        )
+    unused = (signal - (stop - start)) / sample_rate
+    if unused > ZERO_RUN_S:
+        notes.append(
+            _by_source(
+                source,
+                pre_sweep=diag(
+                    "{unused:.2f} s of the pre-sweep segment were not used: only the longest "
+                    "stretch between digital silences is measured",
+                    unused=unused,
+                ),
+                tail=diag(
+                    "{unused:.2f} s of the tail segment were not used: only the longest "
+                    "stretch between digital silences is measured",
+                    unused=unused,
+                ),
+                other=diag(
+                    "{unused:.2f} s of the {source} segment were not used: only the longest "
+                    "stretch between digital silences is measured",
+                    unused=unused,
                     source=source,
                 ),
             )
@@ -316,7 +342,10 @@ def select_quiet_part(
         reference = float(np.percentile(levels, QUIET_REFERENCE_PERCENTILE))
         quiet = levels <= reference + QUIET_EXCESS_DB
         first, last = _longest_run(quiet)
-        excluded = (levels.shape[0] - (last - first)) * block / sample_rate
+        # Only the longest quiet run is measured; quiet blocks on the other
+        # side of a noise event are not loud, so they are counted apart.
+        excluded = int(np.count_nonzero(~quiet)) * block / sample_rate
+        unused_quiet = (int(np.count_nonzero(quiet)) - (last - first)) * block / sample_rate
         if (last - first) * block < min_len:
             quiet_part = {"quiet": (last - first) * block / sample_rate, "excess": QUIET_EXCESS_DB}
             notes.append(
@@ -367,6 +396,31 @@ def select_quiet_part(
                         "were excluded",
                         source=source,
                         **loud_part,
+                    ),
+                )
+            )
+        if unused_quiet > QUIET_BLOCK_S:
+            notes.append(
+                _by_source(
+                    source,
+                    pre_sweep=diag(
+                        "{unused:.2f} s of quiet signal in the pre-sweep segment were not used: "
+                        "only the longest quiet stretch is measured, and a louder part "
+                        "separates them from it",
+                        unused=unused_quiet,
+                    ),
+                    tail=diag(
+                        "{unused:.2f} s of quiet signal in the tail segment were not used: only "
+                        "the longest quiet stretch is measured, and a louder part separates "
+                        "them from it",
+                        unused=unused_quiet,
+                    ),
+                    other=diag(
+                        "{unused:.2f} s of quiet signal in the {source} segment were not used: "
+                        "only the longest quiet stretch is measured, and a louder part "
+                        "separates them from it",
+                        unused=unused_quiet,
+                        source=source,
                     ),
                 )
             )
