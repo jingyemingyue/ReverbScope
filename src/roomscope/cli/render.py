@@ -11,6 +11,7 @@ here changes a stored value.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -2019,6 +2020,12 @@ def render_error(
         lines.append("  " + _("Try:"))
         lines += ["    " + c.command(hint) for hint in hints]
     return c.fit("\n".join(lines))
+
+
+#: Set by the menu around the command it runs after it has shown the note
+#: about the monitors and asked whether to play: the command does not repeat
+#: it a screen later. Typed by hand, ``roomscope measure`` always shows it.
+SAFETY_NOTE_SHOWN: ContextVar[bool] = ContextVar("roomscope_safety_note_shown", default=False)
 
 
 def render_safety_note(console: Console, text: str) -> str:

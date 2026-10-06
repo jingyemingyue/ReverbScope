@@ -38,6 +38,7 @@ from roomscope.cli.console import (
     shell_command,
 )
 from roomscope.cli.render import (
+    SAFETY_NOTE_SHOWN,
     render_analysis,
     render_comparison,
     render_config,
@@ -1831,8 +1832,9 @@ def cmd_measure(args: argparse.Namespace) -> int:
             )
         )
         print()
-        print(render_safety_note(out, _(SAFETY_MESSAGE)))
-        print()
+        if not SAFETY_NOTE_SHOWN.get():
+            print(render_safety_note(out, _(SAFETY_MESSAGE)))
+            print()
     args.loopback_channel = plan.analysis_loopback_channel
     args.channel = plan.analysis_channel
     out_dir: Path = args.out

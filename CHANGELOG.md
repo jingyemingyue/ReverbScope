@@ -34,8 +34,9 @@ All notable changes to RoomScope are documented here. The format follows
   with the reason when a file is missing or a number is out of range,
   prints the command it stands for ("等同于命令：roomscope analyze …") and
   runs it in the same process; a failed command is named in words. A take
-  plays nothing until an explicit `y`, keeps -20 dBFS by default and still
-  needs the acknowledgement above -12 dBFS. Ctrl+C at a question returns to
+  plays nothing until an explicit `y` (the note about the monitors comes
+  before that question and is not repeated by the take), keeps -20 dBFS by
+  default and still needs the acknowledgement above -12 dBFS. Ctrl+C at a question returns to
   the menu (at the menu it leaves); end of input leaves with exit code 0.
   Pipes, files and scripts keep the home screen and its goldens; there
   `roomscope menu` refuses with exit code 2. It looks like the rest of the

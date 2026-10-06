@@ -672,14 +672,21 @@ class Menu:
 
     def run(self, argv: list[str]) -> int:
         """Print the command, run it here, and say in words when it failed."""
+        from roomscope.cli.render import SAFETY_NOTE_SHOWN
+
         c = self.console()
         self.same_as(argv)
+        # The take is played only after the note about the monitors was shown
+        # and "y" typed (see measure()): the command need not repeat it.
+        shown = SAFETY_NOTE_SHOWN.set(argv[:1] == ["measure"])
         try:
             code = self.dispatch([*self.root, *argv])
         except SystemExit as stop:  # argparse: --help, or arguments it refused
             code = stop.code if isinstance(stop.code, int) else (0 if stop.code is None else 1)
         except KeyboardInterrupt:
             code = EXIT_INTERRUPTED
+        finally:
+            SAFETY_NOTE_SHOWN.reset(shown)
         if code:
             reason = {
                 2: _("it could not run as asked"),

@@ -681,6 +681,23 @@ def test_a_take_on_the_fake_interface(here: Path, capsys: pytest.CaptureFixture[
     assert plan < warning < question < out.index(same_as(*root, "measure", "--out", "session-1"))
     assert re.search(r"^│ Level\s+-20 dBFS\s+│$", out, re.MULTILINE)  # the plan is a panel
     assert (here / "session-1" / "recording.wav").is_file()
+    # The note is shown once, before the question; the command run after the
+    # "y" does not repeat it 25 lines later.
+    assert out.count("Start with your monitor/interface output at a low level") == 1
+
+
+def test_a_measure_typed_by_hand_still_shows_the_note_about_the_monitors(
+    here: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Only the menu, which asked "play now?" after the note, skips the repeat."""
+    from roomscope.cli.render import SAFETY_NOTE_SHOWN
+
+    drive("4", "", "", "", "", "", "y", "", root=["--backend", "fake"])
+    capsys.readouterr()
+    assert SAFETY_NOTE_SHOWN.get() is False  # the menu put it back
+    assert main(["--backend", "fake", "measure", "--out", "by-hand", "--duration", "1"]) == 0
+    out = capsys.readouterr().out
+    assert out.count("Start with your monitor/interface output at a low level") == 1
 
 
 def test_nothing_plays_without_an_explicit_y(
