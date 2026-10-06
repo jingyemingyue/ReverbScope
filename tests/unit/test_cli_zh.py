@@ -19,6 +19,7 @@ from scipy.signal import fftconvolve
 from roomscope.cli.main import build_parser, main
 from roomscope.i18n import activate
 from tests.conftest import make_rir
+from tests.frames import unframe, words
 from tests.zh_tokens import english_words
 
 
@@ -239,7 +240,7 @@ def test_every_argparse_error_is_translated(
             main(["--lang", lang, *argv])
         assert exc.value.code == 2
         err = capsys.readouterr().err
-        assert expected in " ".join(err.split()), err
+        assert expected in words(err), err
         assert "_command" not in err
         if lang == "zh_CN":
             typed = ("bad", "bogus", "result", "session", "comparison", "project", "sidecar")
@@ -349,7 +350,7 @@ def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixtu
     from roomscope.audio.backend import get_backend
 
     assert main(["--lang", "zh_CN", "--backend", "fake", "doctor"]) == 0
-    out = capsys.readouterr().out
+    out = unframe(capsys.readouterr().out)
     devices = tuple(d.name for d in get_backend("fake").list_devices())
     # Package names, versions and the platform string are data.
     prose = "\n".join(

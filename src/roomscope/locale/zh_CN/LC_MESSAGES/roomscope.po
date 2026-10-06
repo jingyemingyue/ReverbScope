@@ -4911,3 +4911,22 @@ msgstr "无数据"
 msgctxt "status"
 msgid "unsure"
 msgstr "不确定"
+
+msgctxt "at a glance"
+msgid "Topic"
+msgstr "项目"
+
+msgctxt "at a glance"
+msgid "Result"
+msgstr "结果"
+
+msgctxt "error panel"
+msgid "Error"
+msgstr "错误"
+
+msgid "Folder"
+msgstr "文件夹"
+
+msgctxt "session list"
+msgid "Summary"
+msgstr "摘要"

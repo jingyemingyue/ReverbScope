@@ -6144,3 +6144,22 @@ msgstr "データなし"
 msgctxt "status"
 msgid "unsure"
 msgstr "不確か"
+
+msgctxt "at a glance"
+msgid "Topic"
+msgstr "項目"
+
+msgctxt "at a glance"
+msgid "Result"
+msgstr "結果"
+
+msgctxt "error panel"
+msgid "Error"
+msgstr "エラー"
+
+msgid "Folder"
+msgstr "フォルダー"
+
+msgctxt "session list"
+msgid "Summary"
+msgstr "概要"

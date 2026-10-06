@@ -19,11 +19,13 @@ Rules the rest of the CLI relies on:
 * **Widths are display widths**: a CJK or full-width character takes two
   columns, a combining mark none (:func:`cell_width`); ``len()`` is never used
   to align text.
-* **Frames** (panels and bordered tables) are drawn when
-  :attr:`Console.frames` is on, with ASCII forms where the stream cannot
-  write the box glyphs; below :data:`FRAME_MIN_WIDTH` columns there are
-  none. Every line of a frame has the same display width, and a frame that
-  cannot hold its text (a long path) gives way to the unframed layout.
+* **Frames** (panels and bordered tables) are on for the command line and
+  off for the desktop app's report panes and :mod:`roomscope.cli.report`
+  (:attr:`Console.frames`). ``ROOMSCOPE_CLI_STYLE=plain`` turns them off for
+  a terminal that draws the ambiguous-width box glyphs two columns wide
+  (some CJK fonts and locales); below :data:`FRAME_MIN_WIDTH` columns they
+  are off anyway. Every line of a frame has the same display width, and a
+  line that holds a command to copy never carries a border.
 * Nothing here changes what is measured or stored; it only lays text out.
 """
 
@@ -46,6 +48,12 @@ from roomscope.i18n import pgettext
 ColorMode = Literal["auto", "always", "never"]
 COLOR_MODES: tuple[ColorMode, ...] = ("auto", "always", "never")
 
+#: ``boxed`` draws panels and bordered tables; ``plain`` lays the same text
+#: out without them (the layout the desktop app's report panes use).
+CliStyle = Literal["boxed", "plain"]
+CLI_STYLES: tuple[CliStyle, ...] = ("boxed", "plain")
+#: Chooses the style for one shell, before the stored setting.
+ENV_STYLE = "ROOMSCOPE_CLI_STYLE"
 #: Narrower than this, frames are off: a border takes four columns of a line
 #: that is already short.
 FRAME_MIN_WIDTH = 40
@@ -488,6 +496,18 @@ def terminal_width(stream: TextIO, interactive: bool, environ: Mapping[str, str]
     return max(MIN_WIDTH, min(MAX_WIDTH, width))
 
 
+def cli_style(setting: str = "", environ: Mapping[str, str] | None = None) -> CliStyle:
+    """The style in effect: ``ROOMSCOPE_CLI_STYLE``, then ``setting`` (the
+    user's stored choice, if any), then ``boxed``. A value neither of them
+    knows is passed over."""
+    env = os.environ if environ is None else environ
+    for value in (env.get(ENV_STYLE, ""), setting):
+        word = value.strip().lower()
+        if word in CLI_STYLES:
+            return word
+    return "boxed"
+
+
 @functools.lru_cache(maxsize=16)
 def _frames_writable(encoding: str) -> bool:
     return can_encode(_FRAME_PROBE, encoding)
@@ -519,8 +539,10 @@ class Console:
     interactive: bool = False
     #: The stream's encoding, for text that is shown only where it can be written.
     encoding: str = "utf-8"
-    #: Panels and bordered tables; off, the same text is laid out without
-    #: them. :attr:`boxed` says whether they are drawn.
+    #: Panels and bordered tables. The command line turns them on
+    #: (:meth:`for_stream`); off, the same text is laid out without them, as
+    #: in the desktop app's report panes. :attr:`boxed` says whether they are
+    #: drawn.
     frames: bool = False
 
     @classmethod
@@ -529,15 +551,21 @@ class Console:
         stream: TextIO,
         mode: ColorMode = "auto",
         environ: Mapping[str, str] | None = None,
+        *,
+        style: str = "",
     ) -> Console:
+        """The console for ``stream``. ``style`` is the user's stored choice,
+        if any (``boxed`` or ``plain``); ``ROOMSCOPE_CLI_STYLE`` decides first."""
         env = os.environ if environ is None else environ
         interactive = _isatty(stream) and env.get("TERM") != "dumb"
+        width = terminal_width(stream, interactive, env)
         return cls(
             color=use_color(stream, mode, env),
             unicode=_unicode_ok(stream, interactive, env),
-            width=terminal_width(stream, interactive, env),
+            width=width,
             interactive=interactive,
             encoding=getattr(stream, "encoding", None) or "utf-8",
+            frames=cli_style(style, env) == "boxed" and width >= FRAME_MIN_WIDTH,
         )
 
     @property
@@ -655,15 +683,24 @@ class Console:
 
         With frames: a panel with ``text`` in its top border, holding
         ``facts`` as aligned fields, then the lines ``body(console, indent)``
-        lays out for it. Without (or when a line is too wide for the panel,
-        a long path): the title, a rule as wide as it and, when there is
+        lays out for it. A fact that is a path too long for the panel is
+        never cut: it follows the panel, bare (a path to copy), under the
+        same labels. Without frames (or when a line of the body is too wide
+        for the panel): the title, a rule as wide as it and, when there is
         more, a blank line, the facts and the body at an indent of 2.
         """
         text = self.readable(text)
         facts = list(facts)
         if self.boxed:
             inner = self.inner()
-            content = inner.fields(facts, indent=0)
+            label = max((cell_width(self.readable(name)) for name, _value in facts), default=0)
+            held: list[tuple[str, str]] = []
+            spilled: list[tuple[str, str]] = []
+            for name, value in facts:
+                room = inner.width - min(label, 28) - 2
+                too_long = isinstance(value, Verbatim) and cell_width(self.readable(value)) > room
+                (spilled if too_long else held).append((name, value))
+            content = inner.fields(held, indent=0, min_label=label)
             if body is not None:
                 content += body(inner, 0)
             framed = (
@@ -672,7 +709,7 @@ class Console:
                 else self.frame("", [inner.bold(text)], tone)
             )
             if framed is not None:
-                return framed
+                return framed + self.fields(spilled, min_label=label)
         lines = [self.bold(text), self.muted(self.rule_char() * cell_width(text))]
         if facts or body is not None:
             lines.append("")

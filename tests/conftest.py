@@ -27,6 +27,13 @@ def isolate_roomscope_home(
 
 
 @pytest.fixture(autouse=True)
+def default_terminal_style(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The command line's default look, whatever ``ROOMSCOPE_CLI_STYLE`` the
+    developer chose; a test that wants another sets it."""
+    monkeypatch.delenv("ROOMSCOPE_CLI_STYLE", raising=False)
+
+
+@pytest.fixture(autouse=True)
 def pin_language(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Run every test in English regardless of the developer's locale (#14).
 

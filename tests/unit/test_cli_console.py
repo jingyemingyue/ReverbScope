@@ -372,7 +372,7 @@ def test_measure_status_is_on_stdout_and_progress_on_stderr(
         (["--version"], 0, "out", "roomscope"),
         (["--help"], 0, "out", "commands:"),
         (["analyze"], 2, "err", "required"),
-        (["analyze", "--recording", "nope.wav", "--sweep", "nope.wav"], 1, "err", "error:"),
+        (["analyze", "--recording", "nope.wav", "--sweep", "nope.wav"], 1, "err", "Error"),
         (
             ["--backend", "fake", "measure", "--out", "m", "--input-channel", "12"],
             1,

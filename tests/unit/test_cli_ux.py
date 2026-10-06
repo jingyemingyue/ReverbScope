@@ -5,11 +5,12 @@ screen, next steps, the error block, and the terminal matrix: English and
 Chinese at 80 and 60 columns, NO_COLOR, TERM=dumb, redirected stdout, a
 cp1252 stream and JSON on stdout.
 
-Golden files live in ``tests/golden``. Measured numbers are replaced by ``#``
-before the comparison, so a last-digit difference between platforms (numpy
-on Accelerate or OpenBLAS) does not fail the layout test. Regenerate with
-``ROOMSCOPE_UPDATE_GOLDEN=1 pytest tests/unit/test_cli_ux.py`` and review the
-diff like code.
+Golden files live in ``tests/golden``. The digits of measured numbers are
+replaced by ``#`` before the comparison, so a last-digit difference between
+platforms (numpy on Accelerate or OpenBLAS) does not fail the layout test;
+one ``#`` per digit keeps the frames of a panel or a table lined up in the
+file. Regenerate with ``ROOMSCOPE_UPDATE_GOLDEN=1 pytest
+tests/unit/test_cli_ux.py`` and review the diff like code.
 """
 
 from __future__ import annotations
@@ -39,12 +40,13 @@ _DATE = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} [+-]\d{2}:\d{2}")
 
 
 def _normalise(text: str) -> str:
-    """Numbers and dates to ``#``; names with digits (T20, RT60, cp1252) stay;
-    Windows path separators as ``/``."""
+    """Every digit of a number or a date to ``#`` (one column for one, so the
+    frames stay aligned); names with digits (T20, RT60, cp1252) stay; Windows
+    path separators as ``/``."""
     text = text.replace(__version__, "<version>")
     text = re.sub(r"(?<=[\w.-])\\(?=[\w.-])", "/", text)
-    text = _DATE.sub("<date>", text)
-    return _NUMBER.sub("#", text)
+    text = _DATE.sub(lambda match: re.sub(r"\d", "#", match.group()), text)
+    return _NUMBER.sub(lambda match: re.sub(r"\d", "#", match.group()), text)
 
 
 def _golden(name: str, text: str) -> None:
@@ -198,7 +200,7 @@ def test_demo_on_a_cli_only_install(
 
 
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
-@pytest.mark.parametrize("columns", [80, 60])
+@pytest.mark.parametrize("columns", [100, 80, 60])
 def test_golden_demo(
     cli: tuple[Path, pytest.MonkeyPatch],
     capsys: pytest.CaptureFixture[str],
@@ -236,17 +238,21 @@ def test_golden_home_screen(
     """Bare ``roomscope``: a short home screen; still the usage error's exit code."""
     _root, monkeypatch = cli
     monkeypatch.setenv("COLUMNS", "80")
+    # A fixed version: its length sets the panel's top border.
+    import importlib
+
+    monkeypatch.setattr(importlib.import_module("roomscope.cli.main"), "__version__", "1.0.0")
     code, out, err = _run(["--lang", lang], capsys)
     assert code == 2 and out == ""
     assert "roomscope demo" in err and "roomscope --help" in err
-    assert len(err.splitlines()) <= 11
+    assert len(err.splitlines()) <= 12  # 11 without the panel's borders
     # The way to the other language, written in that language.
     hint = {
         "en": "中文界面：roomscope config language zh_CN",
         "zh_CN": "English interface: roomscope config language en",
     }[lang]
     assert err.splitlines()[-1] == hint
-    _golden(f"home-{lang}", _normalise(err))
+    _golden(f"home-{lang}", _normalise(err.replace("1.0.0", "x.y.z")))
 
 
 def test_the_language_hint_is_left_out_where_it_cannot_be_written(
@@ -390,8 +396,10 @@ def test_golden_measure_plan_with_the_fake_interface(
     argv = ["--lang", lang, "--backend", "fake", "measure", "--out", "m"]
     code, out, err = _run([*argv, "--duration", "1", "--post-silence", "1"], capsys)
     assert code == 0
-    # The plan, the checks, the safety note and the take; the report follows.
-    head = out[: out.index("RoomScope " + ("analysis" if lang == "en" else "分析"))]
+    # The plan, the checks, the safety note and the take; the report follows
+    # (its title panel starts on the line that names it).
+    report = out.index("RoomScope " + ("analysis" if lang == "en" else "分析"))
+    head = out[: out.rindex("\n", 0, report) + 1]
     assert len(err.strip().splitlines()) == 1  # one milestone in a log, no percentages
     _golden(f"measure-plan-{lang}", _normalise(head))
 
@@ -535,7 +543,164 @@ def test_a_cp1252_stream_gets_ascii_symbols_and_never_fails(
     text = raw.getvalue().decode("cp1252")
     assert "[OK]" in text and "[WARN]" in text and "->" in text
     assert "✓" not in text and "→" not in text
+    _assert_frames_line_up(text, ascii=True)
     _golden("demo-en-cp1252", _normalise(text))
+
+
+# --- Panels and bordered tables (boxed, the default) and the plain style ---------------
+
+
+def _assert_frames_line_up(text: str, *, ascii: bool = False) -> None:
+    """Every line of a panel or a table has the same display width."""
+    from tests.frames import frame_blocks
+
+    blocks = frame_blocks(text, ascii=ascii)
+    assert blocks, text
+    for block in blocks:
+        assert len({cell_width(line) for line in block}) == 1, "\n".join(block)
+
+
+@pytest.fixture
+def demo_folder(demo_run: DemoRun, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """The demo's sessions under a relative path, so the goldens hold no
+    temporary folder."""
+    root = demo_run.comparison_path.parent
+    monkeypatch.chdir(root.parent)
+    for name in ("NO_COLOR", "FORCE_COLOR", "TERM", "COLUMNS", "PYTHONIOENCODING"):
+        monkeypatch.delenv(name, raising=False)
+    return Path(root.name)
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+@pytest.mark.parametrize("columns", [100, 60])
+def test_golden_report(
+    demo_folder: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    lang: str,
+    columns: int,
+) -> None:
+    """A full report: the header panel, the overview table, bordered tables
+    and grids, and a card per finding."""
+    monkeypatch.setenv("COLUMNS", str(columns))
+    try:
+        code, out, _err = _run(["--lang", lang, "show", str(demo_folder / "position-a")], capsys)
+    finally:
+        activate("en")
+    assert code == 0
+    assert all(cell_width(line) <= columns for line in out.splitlines())
+    _assert_frames_line_up(out)
+    _golden(f"report-{lang}-{columns}", _normalise(out).replace("\\", "/"))
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_golden_gui_report(demo_folder: Path, monkeypatch: pytest.MonkeyPatch, lang: str) -> None:
+    """The text of the desktop app's "Full report" panes, byte for byte what
+    it was before the command line got panels and tables: no frames, no
+    section bars, whatever the terminal style."""
+    from roomscope.cli.render import REPORT_CONSOLE, render_analysis, render_comparison
+    from roomscope.interpretation import interpret, interpret_comparison
+    from roomscope.io.session_store import load_comparison, load_measurement
+
+    monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "boxed")
+    activate(lang)
+    try:
+        measurement = load_measurement(demo_folder / "position-a")
+        findings = interpret(measurement.result, "vocal")
+        comparison = load_comparison(demo_folder / "comparison.json")
+        text = render_analysis(REPORT_CONSOLE, measurement.result, findings, "vocal")
+        text += "\n\n" + render_comparison(
+            REPORT_CONSOLE, comparison, interpret_comparison(comparison, "vocal"), "vocal"
+        )
+    finally:
+        activate("en")
+    _golden(f"gui-report-{lang}", _normalise(text).replace("\\", "/"))
+
+
+def test_golden_report_on_a_cp1252_stream(
+    demo_folder: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The ASCII frames (+ - | =) line up where ╭ ━ ┃ cannot be written."""
+    raw = io.BytesIO()
+    stream = io.TextIOWrapper(raw, encoding="cp1252", errors="strict", newline="\n")
+    monkeypatch.setenv("PYTHONIOENCODING", "cp1252")
+    monkeypatch.setenv("COLUMNS", "80")
+    monkeypatch.setattr(sys, "stdout", stream)
+    assert main(["show", str(demo_folder / "position-a")]) == 0
+    stream.flush()
+    text = raw.getvalue().decode("cp1252")
+    assert "+=" in text and "| " in text and "> " in text
+    _assert_frames_line_up(text, ascii=True)
+    _golden("report-en-cp1252", _normalise(text).replace("\\", "/"))
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_golden_plain_style(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], lang: str
+) -> None:
+    """ROOMSCOPE_CLI_STYLE=plain: the same text without frames, for a
+    terminal that draws box glyphs two columns wide."""
+    from tests.frames import FRAME_GLYPHS
+
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", "80")
+    monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "plain")
+    code, out, _err = _run(["--lang", lang, "demo"], capsys)
+    assert code == 0
+    # Only the title's rule is left: no panel, table or section bar.
+    assert not set(out) & (set(FRAME_GLYPHS) - {"─"}), out
+    _golden(f"demo-{lang}-plain", _normalise(out))
+
+
+@pytest.mark.parametrize("columns", ["39", "20"])
+def test_a_narrow_terminal_gets_no_frames(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], columns: str
+) -> None:
+    from tests.frames import FRAME_GLYPHS
+
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", columns)
+    code, out, _err = _run(["--lang", "zh_CN", "demo"], capsys)
+    assert code == 0
+    assert not set(out) & (set(FRAME_GLYPHS) - {"─"}), out
+
+
+def test_frames_line_up_in_colour(cli: tuple[Path, pytest.MonkeyPatch]) -> None:
+    """Escape sequences take no column: a coloured border still lines up."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", "80")
+    text = _demo_on(_Tty(), {}, monkeypatch, "--lang", "zh_CN")
+    assert ESC in text
+    _assert_frames_line_up(text)
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_a_command_to_copy_is_never_on_a_framed_line(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], lang: str
+) -> None:
+    """Triple-clicking a next step, a hint or the home screen's commands
+    copies the command alone: no border on its line, and never wrapped."""
+    from tests.frames import FRAME_GLYPHS
+
+    root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", "60")
+    (root / "sweep.wav").write_bytes(b"")
+    analyze = ["analyze", "--recording", "x.wav", "--sweep", "sweep.wav"]
+    texts = [
+        _run(["--lang", lang, "demo"], capsys)[1],
+        _run(["--lang", lang, "sweep", "--out", "s.wav"], capsys)[1],
+        _run(["--lang", lang], capsys)[2],
+        _run(["--lang", lang, "show", "missing"], capsys)[2],
+        _run(["--lang", lang, "config"], capsys)[1],
+        _run(["--lang", lang, *analyze], capsys)[2],
+    ]
+    commands = 0
+    for text in texts:
+        for line in text.splitlines():
+            if line.strip().startswith("roomscope ") or "pip install" in line:
+                commands += 1
+                assert not set(line) & set(FRAME_GLYPHS), line
+    assert commands >= 10
 
 
 def test_a_narrow_encoding_replaces_what_it_cannot_write(
@@ -661,7 +826,8 @@ def test_wide_terminals_keep_a_readable_width(
     assert code == 0
     lines = out.splitlines()
     assert all(cell_width(line) <= 100 for line in lines if "roomscope" not in line)
-    assert any(set(line.strip()) <= {"─", " "} and line.count("─") > 20 for line in lines)
+    # The decay table is a bordered table, not one block per band.
+    assert any(line.startswith("┏") and line.count("━") > 20 for line in lines)
 
 
 def test_format_report_prints_on_a_cp1252_stdout(

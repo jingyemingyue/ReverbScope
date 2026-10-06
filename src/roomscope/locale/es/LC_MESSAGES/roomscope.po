@@ -6832,3 +6832,22 @@ msgstr "sin datos"
 msgctxt "status"
 msgid "unsure"
 msgstr "incierto"
+
+msgctxt "at a glance"
+msgid "Topic"
+msgstr "Aspecto"
+
+msgctxt "at a glance"
+msgid "Result"
+msgstr "Resultado"
+
+msgctxt "error panel"
+msgid "Error"
+msgstr "Error"
+
+msgid "Folder"
+msgstr "Carpeta"
+
+msgctxt "session list"
+msgid "Summary"
+msgstr "Resumen"

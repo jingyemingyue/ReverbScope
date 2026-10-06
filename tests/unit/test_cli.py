@@ -166,7 +166,7 @@ def test_show_prints_saved_session_and_lists_folder(
     assert "Booth" in listing
 
     assert main(["show", str(tmp_path / "empty"), "--list"]) == 1
-    assert "error:" in capsys.readouterr().err
+    assert "error" in capsys.readouterr().err.lower()
 
 
 def test_compare_and_schema_commands(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -240,7 +240,7 @@ def test_analyze_missing_file_returns_error(
         ]
     )
     assert code == 1
-    assert "error:" in capsys.readouterr().err
+    assert "error" in capsys.readouterr().err.lower()
 
 
 def test_measure_refuses_loud_level_without_acknowledgement(

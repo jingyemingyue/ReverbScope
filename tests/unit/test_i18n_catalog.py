@@ -325,10 +325,17 @@ def test_findings_keep_english_labels_in_params(short_sweep) -> None:
 
 @pytest.mark.parametrize("profile", ["drums", "room_mic", "acoustic_guitar", "choir"])
 def test_cli_zh_cn_analyze_prints_no_english_finding_text(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str], profile: str
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    profile: str,
 ) -> None:
     from roomscope.cli.main import main
     from roomscope.io.wav import read_wav, write_wav
+
+    # The findings are read from the plain layout: one line per heading,
+    # the message indented under it.
+    monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "plain")
 
     sweep = tmp_path / "sweep.wav"
     assert main(["sweep", "--out", str(sweep), "--duration", "2", "--post-silence", "2.0"]) == 0

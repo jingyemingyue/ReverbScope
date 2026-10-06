@@ -6023,3 +6023,22 @@ msgstr "無資料"
 msgctxt "status"
 msgid "unsure"
 msgstr "不確定"
+
+msgctxt "at a glance"
+msgid "Topic"
+msgstr "項目"
+
+msgctxt "at a glance"
+msgid "Result"
+msgstr "結果"
+
+msgctxt "error panel"
+msgid "Error"
+msgstr "錯誤"
+
+msgid "Folder"
+msgstr "資料夾"
+
+msgctxt "session list"
+msgid "Summary"
+msgstr "摘要"

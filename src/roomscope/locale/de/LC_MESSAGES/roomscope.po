@@ -6796,3 +6796,22 @@ msgstr "keine Daten"
 msgctxt "status"
 msgid "unsure"
 msgstr "unsicher"
+
+msgctxt "at a glance"
+msgid "Topic"
+msgstr "Thema"
+
+msgctxt "at a glance"
+msgid "Result"
+msgstr "Ergebnis"
+
+msgctxt "error panel"
+msgid "Error"
+msgstr "Fehler"
+
+msgid "Folder"
+msgstr "Ordner"
+
+msgctxt "session list"
+msgid "Summary"
+msgstr "Zusammenfassung"

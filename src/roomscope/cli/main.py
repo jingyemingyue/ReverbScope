@@ -53,8 +53,11 @@ from roomscope.cli.render import (
     render_host_apis,
     render_inventory,
     render_measure_plan,
+    render_project,
     render_referenced,
+    render_safety_note,
     render_saved_next_steps,
+    render_session_list,
     render_status,
     render_sweep_written,
     render_terminal_edition_gui,
@@ -1767,7 +1770,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
             )
         )
         print()
-        print("\n".join(out.status("warn", _(SAFETY_MESSAGE), indent=0)))
+        print(render_safety_note(out, _(SAFETY_MESSAGE)))
         print()
     args.loopback_channel = plan.analysis_loopback_channel
     args.channel = plan.analysis_channel
@@ -1915,10 +1918,17 @@ def cmd_show(args: argparse.Namespace) -> int:
             print(_("No session.json files under {root}").format(root=args.path))
             return 0
         console = _console(args)
+        table = render_session_list(
+            console, args.path, [(str(item.path), item.label) for item in listings]
+        )
+        if table is not None:
+            print(table)
+            return 0
+        # Tab-separated for scripts: never wrapped, but "·" becomes "|"
+        # where the stream's encoding has no "·" (as without frames).
+        plain = replace(console, frames=False)
         for item in listings:
-            # Tab-separated for scripts: never wrapped, but "·" becomes "|"
-            # where the stream's encoding has no "·".
-            print(f"{item.path}\t{console.fit(item.label)}")
+            print(f"{item.path}\t{plain.fit(item.label)}")
         return 0
 
     if _is_comparison_path(args.path):
@@ -2221,10 +2231,15 @@ def cmd_project(args: argparse.Namespace) -> int:
         if not is_project(args.project):
             raise RoomScopeError(_("no project.json in {path}").format(path=args.project))
         project = load_project(args.project)
+        sessions = [(label, str(path)) for label, path in list_project_sessions(args.project)]
+        shown = render_project(_console(args), str(project.name or args.project), sessions)
+        if shown is not None:
+            print(shown)
+            return 0
         print(f"{project.name or args.project}")
-        for label, path in list_project_sessions(args.project):
+        for label, folder in sessions:
             tag = label or _("(unlisted)")
-            print(f"  {tag}\t{path}")
+            print(f"  {tag}\t{folder}")
         return 0
     if command == "average":
         if not is_project(args.project):

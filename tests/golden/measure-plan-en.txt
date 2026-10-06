@@ -1,23 +1,24 @@
-RoomScope standalone measurement
-────────────────────────────────
+╭─ RoomScope standalone measurement ───────────────────────────────────────────╮
+│ Input        [#] RoomScope fake interface · input #                          │
+│ Output       [#] RoomScope fake interface · output #                         │
+│ Host API     fake                                                            │
+│ Sample rate  ## kHz                                                          │
+│ Level        -## dBFS                                                        │
+│ Sweep        # s · ## Hz – ## kHz                                            │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
-  Input        [#] RoomScope fake interface · input #
-  Output       [#] RoomScope fake interface · output #
-  Host API     fake
-  Sample rate  # kHz
-  Level        # dBFS
-  Sweep        # s · # Hz – # kHz
-
-Checks  nothing has been played yet
+▌Checks  nothing has been played yet
   ✓ Input and output use one host API
   ✓ The selected channels exist
-  ✓ The input device accepts # kHz
-  ✓ The output device accepts # kHz
-  ✓ Level at or below # dBFS
+  ✓ The input device accepts ## kHz
+  ✓ The output device accepts ## kHz
+  ✓ Level at or below -## dBFS
 
-! Start with your monitor/interface output at a low level. RoomScope will play a
-  sine sweep at a conservative digital level; raise the level gradually between
-  measurements only if the recording is too quiet.
+╭──────────────────────────────────────────────────────────────────────────────╮
+│ ! Start with your monitor/interface output at a low level. RoomScope will    │
+│   play a sine sweep at a conservative digital level; raise the level         │
+│   gradually between measurements only if the recording is too quiet.         │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
-✓ Recorded # s to m/recording.wav
+✓ Recorded #.# s to m/recording.wav
 

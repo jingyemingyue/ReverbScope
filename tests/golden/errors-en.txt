@@ -1,33 +1,45 @@
-× error: audio file not found: take.wav
+╭─ ✗ Error ────────────────────────────────────────────────────────────────────╮
+│ audio file not found: take.wav                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
   Try:
     roomscope analyze --help
 
-× error: the following arguments are required: --out
+╭─ ✗ Error ────────────────────────────────────────────────────────────────────╮
+│ the following arguments are required: --out                                  │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
   Try:
     roomscope sweep --help
 
-× error: argument --duration: invalid float value: 'long'
+╭─ ✗ Error ────────────────────────────────────────────────────────────────────╮
+│ argument --duration: invalid float value: 'long'                             │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
   Try:
     roomscope sweep --help
 
-× error: input channel 9 does not exist on RoomScope fake interface (8 input
-  channel(s))
-  Nothing was played.
+╭─ ✗ Error ────────────────────────────────────────────────────────────────────╮
+│ input channel 9 does not exist on RoomScope fake interface (8 input          │
+│ channel(s))                                                                  │
+│ Nothing was played.                                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
   Try:
     roomscope devices --probe
     roomscope doctor --probe
 
-× error: session file not found: missing-session
+╭─ ✗ Error ────────────────────────────────────────────────────────────────────╮
+│ session file not found: missing-session                                      │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
   Try:
     roomscope show --list <folder>
 
-× error: sweep.wav is a file; --out needs a folder for the session
-  Nothing was played.
+╭─ ✗ Error ────────────────────────────────────────────────────────────────────╮
+│ sweep.wav is a file; --out needs a folder for the session                    │
+│ Nothing was played.                                                          │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
   Try:
     roomscope measure --out <new-folder>

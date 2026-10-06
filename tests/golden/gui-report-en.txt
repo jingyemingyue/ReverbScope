@@ -1,0 +1,256 @@
+RoomScope analysis
+──────────────────
+
+  Sample rate  ## kHz
+  Created      ####-##-## ##:## +##:##
+
+At a glance
+  Reverberation       ! RT60 #.## s (T30) · EDT #.## s
+  Clarity             ✓ C50 +#.# dB · C80 +##.# dB · D50 ## %
+  Early reflections   ! strongest -#.# dB at #.# ms · # above -## dB
+  Low end             ! potential resonances at ### Hz (+##.# dB)
+  Noise floor         ! -##.# dBFS RMS · mains hum at ## Hz
+  Data quality        ✓ direct sound: confidence high · no warnings
+  Spectrum            ✓ peak ### Hz (-##.# dB)
+
+Reverberation  extrapolated to ## dB
+  Band           EDT      T20      T30           RT60   Decay range
+  ─────────   ──────   ──────   ──────   ────────────   ───────────
+  Broadband   #.## s   #.## s   #.## s   #.## s (T30)       ##.# dB
+  ## Hz       #.## s   #.## s   #.## s   #.## s (T30)       ##.# dB
+  ### Hz      #.## s   #.## s   #.## s   #.## s (T30)       ##.# dB
+  ### Hz      #.## s   #.## s   #.## s   #.## s (T30)       ##.# dB
+  ### Hz      #.## s   #.## s   #.## s   #.## s (T30)      ###.# dB
+  # kHz       #.## s   #.## s   #.## s   #.## s (T30)      ###.# dB
+  # kHz       #.## s   #.## s   #.## s   #.## s (T30)      ###.# dB
+  # kHz       #.## s   #.## s   #.## s   #.## s (T30)      ###.# dB
+  # kHz       #.## s   #.## s   #.## s   #.## s (T30)       ##.# dB
+
+Early and late energy  ratios from the same truncation as the decay; not a room score
+  C50 is early energy over late energy at ## ms (speech). C80 is the same at ## ms (music). D50
+  is the share of energy in the first ## ms. Centre time is the energy-weighted average time.
+  Time zero is the detected direct sound. A ratio is reported only when the decay range is at
+  least ## dB, and it is not a room score.
+  Band             C50        C80    D50   Centre time
+  ─────────   ────────   ────────   ────   ───────────
+  Broadband    +#.# dB   +##.# dB   ## %         ## ms
+  ## Hz        +#.# dB    +#.# dB   ## %         ## ms
+  ### Hz       +#.# dB    +#.# dB   ## %         ## ms
+  ### Hz      +##.# dB   +##.# dB   ## %         ## ms
+  ### Hz      +##.# dB   +##.# dB   ## %          # ms
+  # kHz       +##.# dB   +##.# dB   ## %          # ms
+  # kHz       +##.# dB   +##.# dB   ## %         ## ms
+  # kHz       +##.# dB   +##.# dB   ## %         ## ms
+  # kHz       +##.# dB   +##.# dB   ## %         ## ms
+
+Background noise
+  Level        -##.# dBFS RMS · peak -##.# dBFS
+  Segment      pre-sweep · #.## s
+  Calibration  uncalibrated: levels are dBFS, not dB SPL
+  ! Potential mains hum at multiples of ## Hz: ## Hz (+## dB), ### Hz (+## dB), ### Hz (+## dB)
+
+Early reflections  #.#–## ms, above -## dB
+   Delay     Level
+  ──────   ───────
+  #.# ms   -#.# dB
+  #.# ms   -#.# dB
+  i candidates are envelope peaks standing above the local diffuse level; in a dense early tail
+    some candidates may be statistical rather than discrete reflections
+
+Placement  tier #; no coordinates are derived (see the JSON)
+  Speed of sound  ###.# m/s at ## °C (assumed)
+  Geometry        – not determined (add --speaker-distance)
+  i no loudspeaker-to-microphone distance was supplied; measure the straight line from the
+    loudspeaker to the microphone capsule with a tape
+  i inherited from the reflection search: candidates are envelope peaks standing above the local
+    diffuse level; in a dense early tail some candidates may be statistical rather than discrete
+    reflections
+  i no air temperature was supplied, so ## °C (###.# m/s) was assumed; a # °C error moves every
+    distance by about #.# %
+
+Spectrum  of the impulse response
+  Peak           ###.# Hz (-##.# dB)
+  Source         impulse response
+  Window length  #####
+
+Low-frequency resonances  candidates below ### Hz
+  Frequency   Above baseline   ## dB decay   Filter ringing   Distinguishable
+  ─────────   ──────────────   ───────────   ──────────────   ───────────────
+   ###.# Hz         +##.# dB        ### ms            ## ms   ✓ yes
+  i Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a
+    room resonance; RoomScope does not identify room modes.
+  i the search is limited to ##-### Hz, the part of the range whose #/#-octave band lies inside
+    the excited ##-##### Hz
+
+Diagnostics
+  Sweep found   #.## s into the recording
+  Analysed      #.## s, of which #.## s is decay
+  Direct sound  confidence high · pre-peak margin ##.# dB
+
+Interpretation (Vocals profile)
+  ! Notice · early reflections
+    A strong early reflection is present approximately # ms after the direct sound (-#.# dB).
+    Close-miked vocals are coloured by reflections this early; move the microphone closer to the
+    singer and farther from the nearest hard surface, or treat that surface, then measure again.
+
+  ! Notice · reverberation
+    The broadband decay is noticeable (estimated RT60 #.## s from T30). A vocal that is this
+    live picks up room colour between phrases; add absorption or move to a drier position.
+
+  ! Notice · reverberation
+    Low frequencies decay more slowly than the mid range (#.## s vs #.## s), which makes vocals
+    sound boxy at this position. Bass trapping or a different position helps.
+
+  ! Warning · noise
+    Mains hum components at multiples of ## Hz were detected in the quiet part of the recording.
+    Check grounding, cables, dimmers and power supplies before treating the room.
+
+  i Info · noise
+    Background noise in the pre-sweep segment is -##.# dBFS RMS (uncalibrated digital level, not
+    dB SPL). Vocal tracks are often compressed, which brings this noise up; compare it with your
+    chain's noise at the same gain.
+
+  ! Notice · noise
+    The direct sound is only ## dB above the noise floor in the quiet segment. Sources quieter
+    than this will be recorded with audible noise; lower the noise at the source or increase the
+    playback level within the headroom of the chain.
+
+  ! Notice · low frequency
+    Potential low-frequency resonances around ### Hz: these frequencies stand out in the
+    response and ring longer than their surroundings. Measure one or two other positions to see
+    whether they follow the room or the position.
+
+RoomScope comparison
+────────────────────
+
+  Baseline     /tmp/pytest-of-root/pytest-###/demo0/out/position-a
+  Candidate    /tmp/pytest-of-root/pytest-###/demo0/out/position-b
+  Common band  ##.# Hz – ##.# kHz
+  Comparable   ✓ yes
+  i ISO ####-# quotes a just-noticeable difference for reverberation time of about # % (clause
+    not verified against the standard text). A change is not called significant from a single
+    pair of positions.
+
+At a glance
+  Reverberation       ✓ RT60 #.## s → #.## s (-##.# %)
+  Clarity             ✓ C50 +#.# dB → +##.# dB · C80 +##.# dB → +##.# dB
+  Early reflections   ✓ # gone · # new · # at both
+  Low end             ✓ at both: ### Hz
+  Noise floor         ✓ -##.# → -##.# dBFS (-##.# dB)
+  Frequency response  ✓ largest change in the ##.# Hz octave, #.# dB mean |Δ|
+
+Reverberation  a delta is valid only when both sides are valid
+  Band       Metric    Baseline  Candidate       Δ       Δ %
+  ─────────  ────────  ────────  ─────────  ──────  ────────  ─
+  Broadband  EDT          #.###      #.###  -#.###    -#.# %  ✓
+             T20          #.###      #.###  -#.###   -##.# %  ✓
+             T30          #.###      #.###  -#.###   -##.# %  ✓
+             RT60         #.###      #.###  -#.###   -##.# %  ✓
+             C50 (dB)     #.###     ##.###  +#.###         —  ✓
+             C80 (dB)    ##.###     ##.###  +#.###         —  ✓
+             D50 (%)     ##.###     ##.###  +#.###         —  ✓
+             Ts           #.###      #.###  -#.###   -##.# %  ✓
+  ## Hz      EDT          #.###      #.###       —         —  –
+             T20          #.###      #.###  -#.###   -##.# %  ✓
+             T30          #.###      #.###  -#.###    -#.# %  ✓
+             RT60         #.###      #.###  -#.###    -#.# %  ✓
+  ### Hz     EDT          #.###      #.###  -#.###    -#.# %  ✓
+             T20          #.###      #.###  -#.###    -#.# %  ✓
+             T30          #.###      #.###  -#.###    -#.# %  ✓
+             RT60         #.###      #.###  -#.###    -#.# %  ✓
+  ### Hz     EDT          #.###      #.###       —         —  –
+             T20          #.###      #.###  -#.###    -#.# %  ✓
+             T30          #.###      #.###  -#.###   -##.# %  ✓
+             RT60         #.###      #.###  -#.###   -##.# %  ✓
+  ### Hz     EDT          #.###      #.###  +#.###  +###.# %  ✓
+             T20          #.###      #.###  -#.###    -#.# %  ✓
+             T30          #.###      #.###  -#.###    -#.# %  ✓
+             RT60         #.###      #.###  -#.###    -#.# %  ✓
+  # kHz      EDT          #.###      #.###  +#.###   +##.# %  ✓
+             T20          #.###      #.###  +#.###    +#.# %  ✓
+             T30          #.###      #.###  +#.###    +#.# %  ✓
+             RT60         #.###      #.###  +#.###    +#.# %  ✓
+  # kHz      EDT          #.###      #.###  +#.###   +##.# %  ✓
+             T20          #.###      #.###  +#.###    +#.# %  ✓
+             T30          #.###      #.###  +#.###    +#.# %  ✓
+             RT60         #.###      #.###  +#.###    +#.# %  ✓
+  # kHz      EDT          #.###      #.###  +#.###   +##.# %  ✓
+             T20          #.###      #.###  +#.###    +#.# %  ✓
+             T30          #.###      #.###  +#.###    +#.# %  ✓
+             RT60         #.###      #.###  +#.###    +#.# %  ✓
+  # kHz      EDT          #.###      #.###  +#.###   +##.# %  ✓
+             T20          #.###      #.###  +#.###    +#.# %  ✓
+             T30          #.###      #.###  +#.###    +#.# %  ✓
+             RT60         #.###      #.###  +#.###    +#.# %  ✓
+
+  ✓ valid   – not comparable
+
+  – ## Hz EDT
+    candidate unreliable (the decay curve drops #.# dB across the direct sound (it carries ## %
+    of the energy; limit # dB): EDT describes the direct sound rather than the room at this
+    position)
+  – ### Hz EDT
+    candidate unreliable (the decay curve drops #.# dB across the direct sound (it carries ## %
+    of the energy; limit # dB): EDT describes the direct sound rather than the room at this
+    position)
+
+Frequency response  mean |Δ| per octave
+  Band      Mean |Δ|
+  ───────   ────────
+  ##.# Hz    #.## dB
+  ## Hz      #.## dB
+  ### Hz     #.## dB
+  ### Hz     #.## dB
+  ### Hz     #.## dB
+  # kHz      #.## dB
+  # kHz      #.## dB
+  # kHz      #.## dB
+  # kHz      #.## dB
+  ## kHz     #.## dB
+
+Early reflections
+  Status         Delay      Level
+  ───────────   ──────   ────────
+  disappeared   #.# ms    -#.# dB
+  disappeared   #.# ms    -#.# dB
+  appeared      #.# ms   -##.# dB
+
+Low-frequency resonances
+  Status    Baseline   Candidate
+  ───────   ────────   ─────────
+  matched   ###.# Hz    ###.# Hz
+
+Background noise  dBFS RMS; a change needs the same input gain
+  Band        Baseline   Candidate          Δ   Validity
+  ─────────   ────────   ─────────   ────────   ────────
+  Broadband      -##.#       -##.#   -##.# dB   ✓ valid
+  ## Hz          -##.#       -##.#   -##.# dB   ✓ valid
+  ### Hz         -##.#      -###.#   -##.# dB   ✓ valid
+  ### Hz         -##.#      -###.#   -##.# dB   ✓ valid
+  ### Hz        -###.#      -###.#    +#.# dB   ✓ valid
+  # kHz         -###.#      -###.#    +#.# dB   ✓ valid
+  # kHz          -##.#       -##.#    +#.# dB   ✓ valid
+  # kHz          -##.#       -##.#    +#.# dB   ✓ valid
+  # kHz          -##.#       -##.#    -#.# dB   ✓ valid
+
+Placement
+  – Loudspeaker height: not comparable
+    placement heights are compared only when both results are tier #
+
+Loopback
+  – Loopback path delay: not comparable
+    path delay is compared only when both results used a compensated loopback
+
+Interpretation (Vocals profile)
+  ! Notice · reverberation
+    Broadband estimated RT60 went from #.## s to #.## s (-##.# % of the baseline, shorter). ISO
+    ####-# quotes a just-noticeable difference for T of about # %; a single pair of positions is
+    not enough to call the change significant.
+
+  ! Notice · early reflections
+    The strongest reflection within ## ms went from -#.# dB at #.# ms to -##.# dB at #.# ms
+    (threshold -##.# dB for this profile).
+
+  i Info · noise
+    Background noise went from -##.# dBFS to -##.# dBFS (-##.# dB) at the declared-equal input
+    gain.

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 from roomscope.cli.console import (
     Console,
     Status,
+    Tone,
     Verbatim,
     cell_width,
     glue_units,
@@ -66,9 +67,10 @@ if TYPE_CHECKING:
     from roomscope.settings import UserSettings
 
 
-#: The GUI's "Full report" panes: the same layout as the terminal, as plain
-#: text (no colour) in a fixed width that suits the pane's monospace font.
-REPORT_CONSOLE = Console(color=False, unicode=True, width=96)
+#: The GUI's "Full report" panes: the same text as the terminal, as plain
+#: text (no colour) in a fixed width that suits the pane's monospace font, and
+#: without frames: the pane's CJK fallback face does not line box glyphs up.
+REPORT_CONSOLE = Console(color=False, unicode=True, width=96, frames=False)
 
 
 # --- Small formatters ----------------------------------------------------------
@@ -123,6 +125,10 @@ def severity_word(severity: str) -> str:
     )
 
 
+#: The border of a finding's card.
+_SEVERITY_TONE: dict[str, Tone] = {"warning": "warn", "notice": "accent", "info": "muted"}
+
+
 def _metric_cell(console: Console, metric: DecayMetric) -> str:
     """A decay time, marked when it is not a VALID measurement."""
     if metric.seconds is not None and metric.validity is Validity.VALID:
@@ -140,11 +146,21 @@ def _findings(console: Console, findings: Sequence[Finding], profile_name: str) 
     lines = console.section(
         _("Interpretation ({profile} profile)").format(profile=profile_title(profile_name))
     )
+    inner = console.inner()
     for number, finding in enumerate(findings):
-        if number:
-            lines.append("")
         severity = str(finding.severity)
         head = f"{severity_word(severity)}{console.sep()}{topic_text(finding.topic)}"
+        # With frames, a card: its border coloured by the severity.
+        card = console.frame(
+            f"{console.mark(severity_status(severity))} {head}",
+            inner.paragraph(finding.message, indent=0),
+            _SEVERITY_TONE.get(severity, "accent"),
+        )
+        if card is not None:
+            lines += card
+            continue
+        if number:
+            lines.append("")
         lines += console.status(severity_status(severity), console.bold(head))
         lines += console.paragraph(finding.message, indent=4)
     return lines
@@ -164,14 +180,13 @@ def render_analysis(
     """The report of one analysis: context, "At a glance", results by topic,
     diagnostics, then the interpretation."""
     c = console
-    lines = c.title(_("RoomScope analysis"))
-    lines.append("")
-    lines += c.fields(
+    lines = c.title(
+        _("RoomScope analysis"),
         [
             *inputs,
             (_("Sample rate"), rate_text(result.sample_rate)),
             (_("Created"), created_text(result.created_at)),
-        ]
+        ],
     )
     lines += at_a_glance(c, result, findings)
     lines += _reverberation(c, result)
@@ -219,12 +234,13 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
     """One line per question a recording engineer asks first.
 
     Every value is copied from the result; the symbol follows the profile's
-    findings on that topic. The sections below hold the detail.
+    findings on that topic. The sections below hold the detail. With frames
+    it is a table: topic, a status badge and the result.
     """
-    rows: list[tuple[str, str]] = []
+    rows: list[tuple[str, Status, str]] = []
 
     def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, f"{c.symbol(status)} {glue_units(text)}"))
+        rows.append((label, status, glue_units(text)))
 
     broadband = result.decay.broadband
     if broadband.rt60_estimate_s is not None:
@@ -341,7 +357,25 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
                 hz=spectrum.peak_hz, level=spectrum.peak_db
             ),
         )
-    return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
+    return c.section(_("At a glance")) + _glance_rows(c, rows, badges=True)
+
+
+def _glance_rows(c: Console, rows: Sequence[tuple[str, Status, str]], *, badges: bool) -> list[str]:
+    """The "At a glance" lines: a bordered table with frames (topic, then a
+    badge and the result, or the result after its symbol), else aligned fields."""
+    if badges:
+        headers = [pgettext("at a glance", "Topic"), _("Status"), pgettext("at a glance", "Result")]
+        cells = [[label, c.badge(status), text] for label, status, text in rows]
+    else:
+        headers = [pgettext("at a glance", "Topic"), pgettext("at a glance", "Result")]
+        cells = [[label, f"{c.symbol(status)} {text}"] for label, status, text in rows]
+    table = c.framed_table(headers, cells, wrap_column=len(headers) - 1, expand=True)
+    if table is not None:
+        return table
+    return c.fields(
+        [(label, f"{c.symbol(status)} {text}") for label, status, text in rows],
+        min_label=_glance_label_width(),
+    )
 
 
 def _diagnostics(c: Console, result: AnalysisResult) -> list[str]:
@@ -382,7 +416,7 @@ def _diagnostics(c: Console, result: AnalysisResult) -> list[str]:
     ]
     if ir.loopback is not None:
         rows.append((_("Loopback"), _loopback_text(c, result)))
-    lines += c.fields(rows)
+    lines += c.grid(rows)
     if result.warnings:
         lines.append("")
         for warning in result.warnings:
@@ -532,6 +566,8 @@ def _energy(c: Console, result: AnalysisResult) -> list[str]:
             "20 dB, and it is not a room score."
         )
     )
+    if c.boxed:
+        lines.append("")  # the explanation, then the table under it
     rows = []
     for band in (result.decay.broadband, *result.decay.bands):
         rows.append(
@@ -561,7 +597,7 @@ def _noise(c: Console, result: AnalysisResult) -> list[str]:
         segment = noise_segment_text(noise.segment_source)
         if noise.segment_duration_s is not None:
             segment += f"{c.sep()}{noise.segment_duration_s:.2f} s"
-        lines += c.fields(
+        lines += c.grid(
             [
                 (
                     _("Level"),
@@ -645,7 +681,7 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         (_("Plane above the devices"), placement.ceiling_height_m),
         (_("Horizontal separation"), placement.horizontal_separation_m),
     )
-    lines += c.fields(
+    lines += c.grid(
         [
             (
                 _("Speed of sound"),
@@ -693,7 +729,7 @@ def _spectrum(c: Console, result: AnalysisResult) -> list[str]:
     lines = c.section(_("Spectrum"), _("of the impulse response"))
     if spectrum is None or spectrum.peak_hz is None:
         return lines + c.status("skip", _("No spectrum available"))
-    lines += c.fields(
+    lines += c.grid(
         [
             (
                 _("Peak"),
@@ -716,7 +752,7 @@ def _room_scan(c: Console, result: AnalysisResult) -> list[str]:
         scan.bounds_max_m[1] - scan.bounds_min_m[1],
         scan.bounds_max_m[2] - scan.bounds_min_m[2],
     )
-    lines += c.fields(
+    lines += c.grid(
         [
             (_("File"), scan.source_name),
             (_("Points"), str(scan.point_count)),
@@ -804,8 +840,6 @@ def render_comparison(
 ) -> str:
     """Baseline against candidate: the sessions, "At a glance", every delta, findings."""
     c = console
-    lines = c.title(_("RoomScope comparison"))
-    lines.append("")
     rows: list[tuple[str, str]] = []
     if comparison.baseline_session:
         rows.append((_("Baseline"), Verbatim(comparison.baseline_session)))
@@ -822,7 +856,7 @@ def render_comparison(
             else f"{c.symbol('error')} {_('no')}",
         )
     )
-    lines += c.fields(rows)
+    lines = c.title(_("RoomScope comparison"), rows)
     for note in comparison.notes:
         lines += c.status("info", localize(note))
 
@@ -1063,12 +1097,13 @@ _REFLECTIONS_NOT_COMPARED = "early reflections are not compared unless"
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
     """Baseline against candidate, one line per topic; the symbol says whether
-    the topic could be compared, never whether the change is good."""
-    rows: list[tuple[str, str]] = []
+    the topic could be compared, never whether the change is good (so a
+    bordered table shows the symbol, not a word such as "good")."""
+    rows: list[tuple[str, Status, str]] = []
     arrow = f" {c.arrow()} "
 
     def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, f"{c.symbol(status)} {glue_units(text)}"))
+        rows.append((label, status, glue_units(text)))
 
     rt = next((d for d in comparison.decay if d.name == "broadband.rt60_estimate"), None)
     if (
@@ -1167,7 +1202,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 band=band, mad=mad
             ),
         )
-    return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
+    return c.section(_("At a glance")) + _glance_rows(c, rows, badges=False)
 
 
 # --- Environment report -------------------------------------------------------------
@@ -1207,7 +1242,7 @@ def _settings_summary(c: Console, summary: dict[str, Any]) -> list[str]:
             continue
         shown, typed = config.state(key, settings), config.typed_value(key, settings)
         rows.append((config.title(key), shown if shown == typed else shown + c.sep() + typed))
-    return c.fields(rows)
+    return c.grid(rows)
 
 
 def render_environment(console: Console, report: dict[str, Any]) -> str:
@@ -1215,7 +1250,6 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
     from roomscope.diagnostics import privacy_note
 
     c = console
-    lines = c.title(_("RoomScope environment report"))
     build = report.get("build") or {}
     terminal = build.get("package") == "terminal"
     if terminal:
@@ -1238,10 +1272,15 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
     ]
     if build.get("ci_run"):
         rows.append((_("CI run"), Verbatim(build["ci_run"])))
-    lines += c.section("RoomScope") + c.fields(rows)
+    if c.boxed:
+        # The build facts head the report, in its title panel.
+        lines = c.title(_("RoomScope environment report"), rows)
+    else:
+        lines = c.title(_("RoomScope environment report"))
+        lines += c.section("RoomScope") + c.fields(rows)
 
     lines += c.section(_("System"))
-    lines += c.fields(
+    lines += c.grid(
         [
             (_("Platform"), str(report["platform"])),
             (_("Architecture"), str(report["machine"])),
@@ -1266,7 +1305,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         for name, found in report["packages"].items()
     ]
     packages.append(("libsndfile", report.get("libsndfile") or _("unknown")))
-    lines += c.fields(packages)
+    lines += c.grid(packages)
 
     lines += c.section(_("Settings"), "roomscope config")
     lines += _settings_summary(c, report.get("settings", {}))
@@ -1308,7 +1347,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         apis = ", ".join(
             f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
         )
-        lines += c.fields(
+        lines += c.grid(
             [
                 (pgettext("environment report", "backend"), str(audio.get("backend"))),
                 ("PortAudio", audio.get("portaudio_version") or c.dash()),
@@ -1398,35 +1437,51 @@ def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> 
             rows,
             align="lllrrrl",
             title_columns=2,
+            wrap_column=5,
         )
     lines: list[str] = []
     for number, probe in enumerate(probes):
         device = probe["device"]
+        name = f"[{device['index']}] {device['name']}"
+        # With frames, a card per device; else a block under its name.
+        card = c.frame(name, _device_block(c.inner(), device, probe, 0), "muted")
+        if card is not None:
+            lines += card
+            continue
         if number:
             lines.append("")
-        lines += c.paragraph(f"[{device['index']}] {device['name']}", indent=2, style=("bold",))
-        recommended = _recommended(probe)
-        if recommended:
-            lines += c.status("ok", recommended, indent=6)
-        facts = [
-            device["host_api"],
-            _("{inputs} in / {outputs} out").format(
-                inputs=device["max_input_channels"], outputs=device["max_output_channels"]
-            ),
-            _("default {rate}").format(rate=_device_rate_cell(c, device, probe)),
-        ]
-        marks = _default_marks(device)
-        if marks:
-            facts.append(marks)
-        lines += c.paragraph(c.sep().join(facts), indent=6)
-        rate_rows: list[tuple[str, str]] = []
-        if device["max_input_channels"] > 0:
-            rate_rows.append((_("Record"), rates_text(probe.get("input_rates", []), c)))
-        if device["max_output_channels"] > 0:
-            rate_rows.append((_("Play"), rates_text(probe.get("output_rates", []), c)))
-        lines += c.fields(rate_rows, indent=6)
-        for note in probe.get("notes", []):
-            lines += c.status("info", localize(note), indent=6)
+        lines += c.paragraph(name, indent=2, style=("bold",))
+        lines += _device_block(c, device, probe, 6)
+    return lines
+
+
+def _device_block(
+    c: Console, device: dict[str, Any], probe: dict[str, Any], indent: int
+) -> list[str]:
+    """What a device offers, and the rates it accepted, at ``indent``."""
+    lines: list[str] = []
+    recommended = _recommended(probe)
+    if recommended:
+        lines += c.status("ok", recommended, indent=indent)
+    facts = [
+        device["host_api"],
+        _("{inputs} in / {outputs} out").format(
+            inputs=device["max_input_channels"], outputs=device["max_output_channels"]
+        ),
+        _("default {rate}").format(rate=_device_rate_cell(c, device, probe)),
+    ]
+    marks = _default_marks(device)
+    if marks:
+        facts.append(marks)
+    lines += c.paragraph(c.sep().join(facts), indent=indent)
+    rate_rows: list[tuple[str, str]] = []
+    if device["max_input_channels"] > 0:
+        rate_rows.append((_("Record"), rates_text(probe.get("input_rates", []), c)))
+    if device["max_output_channels"] > 0:
+        rate_rows.append((_("Play"), rates_text(probe.get("output_rates", []), c)))
+    lines += c.fields(rate_rows, indent=indent)
+    for note in probe.get("notes", []):
+        lines += c.status("info", localize(note), indent=indent)
     return lines
 
 
@@ -1451,31 +1506,39 @@ def render_devices(console: Console, devices: Sequence[DeviceInfo]) -> str:
         }
         for d in devices
     ]
+    hint = _("Use the number with --input-device / --output-device.")
+    if console.boxed:
+        # The hint goes in the title panel, above the table it explains.
+        lines = console.title(
+            _("Audio devices"), body=lambda c, indent: c.paragraph(hint, indent, style=("dim",))
+        )
+        lines.append("")
+        lines += _device_rows(console, payload, probed=False)
+        return console.fit("\n".join(lines))
     lines = console.title(_("Audio devices"))
     lines.append("")
     lines += _device_rows(console, payload, probed=False)
     lines.append("")
-    lines += console.paragraph(
-        _("Use the number with --input-device / --output-device."), style=("dim",)
-    )
+    lines += console.paragraph(hint, style=("dim",))
     return console.fit("\n".join(lines))
 
 
 def render_inventory(console: Console, inventory: DeviceInventory) -> str:
     """``roomscope devices --probe``: every device with the rates it accepts."""
     data = inventory.to_dict()
-    lines = console.title(_("Audio devices"))
-    if inventory.portaudio_version:
-        lines.append("")
-        lines += console.fields([("PortAudio", inventory.portaudio_version)])
-    lines += console.fields(
-        [
-            (
-                pgettext("environment report", "measurement rates"),
-                rates_text(data.get("supported_sample_rates") or (), console),
-            )
-        ]
+    version = [("PortAudio", inventory.portaudio_version)] if inventory.portaudio_version else []
+    rates = (
+        pgettext("environment report", "measurement rates"),
+        rates_text(data.get("supported_sample_rates") or (), console),
     )
+    if console.boxed:
+        lines = console.title(_("Audio devices"), [*version, rates])
+    else:
+        lines = console.title(_("Audio devices"))
+        if version:
+            lines.append("")
+            lines += console.fields(version)
+        lines += console.fields([rates])
     lines += console.section(
         _("Devices"),
         _("sample rates accepted for 1 channel; nothing was played")
@@ -1489,10 +1552,14 @@ def render_inventory(console: Console, inventory: DeviceInventory) -> str:
 
 
 def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
-    lines = console.title(_("Audio systems (host APIs)"))
-    if inventory.portaudio_version:
-        lines.append("")
-        lines += console.fields([("PortAudio", inventory.portaudio_version)])
+    version = [("PortAudio", inventory.portaudio_version)] if inventory.portaudio_version else []
+    if console.boxed:
+        lines = console.title(_("Audio systems (host APIs)"), version)
+    else:
+        lines = console.title(_("Audio systems (host APIs)"))
+        if version:
+            lines.append("")
+            lines += console.fields(version)
     lines.append("")
     rows = [
         [
@@ -1524,6 +1591,7 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
             rows,
             align="llr",
             title_columns=1,
+            wrap_column=2,
         )
         lines += console.status(
             "info",
@@ -1537,11 +1605,17 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
 def render_referenced(console: Console, inventory: DeviceInventory) -> str:
     """Manufacturer / repo specs. Not a HARDWARE_TESTS.md result."""
     data = inventory.referenced
-    lines = console.title(_("Referenced device data (not measured)"))
-    lines += console.status(
-        "info",
-        _("Public sources only. Not a RoomScope measurement and not a HARDWARE_TESTS.md PASS."),
+    sources = _(
+        "Public sources only. Not a RoomScope measurement and not a HARDWARE_TESTS.md PASS."
     )
+    if console.boxed:
+        lines = console.title(
+            _("Referenced device data (not measured)"),
+            body=lambda c, indent: c.status("info", sources, indent),
+        )
+    else:
+        lines = console.title(_("Referenced device data (not measured)"))
+        lines += console.status("info", sources)
     rows = []
     for entry in data.get("interfaces", []):
         rates_hz = entry.get("sample_rates_hz") or ()
@@ -1571,6 +1645,7 @@ def render_referenced(console: Console, inventory: DeviceInventory) -> str:
         rows,
         align="llrrr",
         title_columns=1,
+        wrap_column=3,
     )
     for entry in data.get("interfaces", []):
         citation = entry.get("citation") or {}
@@ -1627,9 +1702,6 @@ def render_sweep_written(
     followed: object | None = None,
 ) -> str:
     c = console
-    lines = c.title(_("RoomScope test signal"))
-    lines.append("")
-    lines += c.status("ok", Verbatim(_("Wrote {path}").format(path=wav_path)))
     fields = [
         (
             _("Length"),
@@ -1647,12 +1719,18 @@ def render_sweep_written(
     if followed is not None:
         label = getattr(followed, "label", None)
         fields.append((_("Following"), label() if callable(label) else str(followed)))
-    lines += c.fields(fields, indent=4)
-    lines += c.status(
-        "ok",
-        Verbatim(_("Wrote {path}").format(path=sidecar)),
-        detail=_("Keep it next to the WAV: the analysis rebuilds the exact sweep from it."),
-    )
+
+    def written(c: Console, indent: int) -> list[str]:
+        lines = c.status("ok", Verbatim(_("Wrote {path}").format(path=wav_path)), indent)
+        lines += c.fields(fields, indent=indent + 2)
+        return lines + c.status(
+            "ok",
+            Verbatim(_("Wrote {path}").format(path=sidecar)),
+            indent,
+            detail=_("Keep it next to the WAV: the analysis rebuilds the exact sweep from it."),
+        )
+
+    lines = c.title(_("RoomScope test signal"), body=written)
     lines += c.section(_("Next steps"))
     lines += c.steps(
         [
@@ -1692,9 +1770,8 @@ def render_daw_projects(console: Console, projects: Sequence[object]) -> str:
     from roomscope.daw import FOLLOWED_SETTINGS, DawProject
 
     c = console
-    lines = c.title(_("DAW to follow"))
-    lines.append("")
-    lines += c.fields(
+    lines = c.title(
+        _("DAW to follow"),
         [
             (
                 _("Settings that follow the chosen DAW"),
@@ -1703,7 +1780,7 @@ def render_daw_projects(console: Console, projects: Sequence[object]) -> str:
                     for name in FOLLOWED_SETTINGS
                 ),
             )
-        ]
+        ],
     )
     if not projects:
         lines += c.status(
@@ -1787,7 +1864,6 @@ def render_measure_plan(
     c = console
     inp = _find(devices, input_device, "is_default_input")
     out = _find(devices, output_device, "is_default_output")
-    lines = c.title(_("RoomScope standalone measurement"))
 
     def device_text(device: DeviceInfo | None, fallback: str) -> str:
         return f"[{device.index}] {device.name}" if device is not None else fallback
@@ -1820,8 +1896,7 @@ def render_measure_plan(
         stream.append(_("sets the Core Audio device rate"))
     if stream:
         rows.append((_("Stream"), c.sep().join(stream)))
-    lines.append("")
-    lines += c.fields(rows)
+    lines = c.title(_("RoomScope standalone measurement"), rows)
 
     lines += c.section(_("Checks"), _("nothing has been played yet"))
     lines += c.status("ok", _("Input and output use one host API"))
@@ -1866,19 +1941,70 @@ def render_error(
 
           Try:
             roomscope analyze --help
+
+    With frames the message and the explanation are in a red panel titled
+    ``✗ Error``; the commands stay outside it, bare, to copy.
     """
     c = console
+    inner = c.inner()
+    body = inner.paragraph(message, indent=0)
+    if detail:
+        body += inner.paragraph(detail, indent=0, style=("dim",))
+    framed = c.frame(f"{c.mark('error')} {pgettext('error panel', 'Error')}", body, "error")
     text = _("error: {message}").format(message=message)
-    if c.unicode:
+    if framed is not None:
+        lines = framed
+    elif c.unicode:
         lines = c.status("error", text, indent=0, style=("red", "bold"))
     else:  # "[ERROR] error:" would say it twice
         lines = c.paragraph(text, indent=0)
-    if detail:
+    if detail and framed is None:
         lines += c.paragraph(detail, indent=2)
     if hints:
         lines.append("")
         lines.append("  " + _("Try:"))
         lines += ["    " + c.command(hint) for hint in hints]
+    return c.fit("\n".join(lines))
+
+
+def render_safety_note(console: Console, text: str) -> str:
+    """The note to turn the monitors down before a take: a yellow panel with
+    frames, else a warning line."""
+    framed = console.frame("", console.inner().status("warn", text, indent=0), "warn")
+    return console.fit("\n".join(framed or console.status("warn", text, indent=0)))
+
+
+def render_session_list(
+    console: Console, root: object, listings: Sequence[tuple[str, str]]
+) -> str | None:
+    """``roomscope show --list`` on a terminal with frames: the folder in a
+    title panel, then a table of the sessions. ``None`` otherwise: a pipe or
+    a file keeps one tab-separated line per session, for scripts."""
+    if not (console.boxed and console.interactive):
+        return None
+    c = console
+    lines = c.title(_("Saved sessions"), [(_("Folder"), Verbatim(str(root)))])
+    lines.append("")
+    lines += c.table(
+        [_("Session"), pgettext("session list", "Summary")],
+        [[Verbatim(path), label] for path, label in listings],
+        wrap_column=1,
+    )
+    return c.fit("\n".join(lines))
+
+
+def render_project(console: Console, name: str, sessions: Sequence[tuple[str, str]]) -> str | None:
+    """``roomscope project show`` with frames: the name in a title panel and a
+    table of its positions and sessions. ``None`` without frames."""
+    if not console.boxed:
+        return None
+    c = console
+    lines = c.title(name)
+    lines.append("")
+    lines += c.table(
+        [_("Position"), _("Session")],
+        [[label or _("(unlisted)"), Verbatim(path)] for label, path in sessions],
+    )
     return c.fit("\n".join(lines))
 
 
@@ -1947,8 +2073,6 @@ def render_config(
     from roomscope.cli import config
 
     c = console
-    lines = c.title(_("RoomScope settings"))
-    lines.append("")
     rows = [(pgettext("setting", "Setting"), pgettext("setting", "Value"), _("Meaning"))]
     rows += [
         (
@@ -1960,16 +2084,32 @@ def render_config(
         )
         for key in config.KEYS
     ]
+    file = [(_("Settings file"), Verbatim(str(path)))]
+    nothing = _("Nothing is stored yet: every setting has its default.")
+    framed = c.framed_table(
+        [c.readable(cell) for cell in rows[0]],
+        [[key, c.command(value), text] for key, value, text in rows[1:]],
+        wrap_column=2,
+    )
+    if c.boxed and framed is not None:
+        # The file heads the screen, in the title panel; the commands to
+        # change a setting follow the table, bare.
+        lines = c.title(_("RoomScope settings"), file)
+        if not exists:
+            lines += c.paragraph(nothing, style=("dim",))
+        lines += ["", *framed, ""]
+        lines += c.commands(_config_commands())
+        return c.fit("\n".join(lines))
+    lines = c.title(_("RoomScope settings"))
+    lines.append("")
     table = _setting_rows(c, rows)
     lines += [c.muted(table[0]), *table[1:]]
     lines.append("")
     lines += c.commands(_config_commands())
     lines.append("")
-    lines += c.fields([(_("Settings file"), Verbatim(str(path)))])
+    lines += c.fields(file)
     if not exists:
-        lines += c.paragraph(
-            _("Nothing is stored yet: every setting has its default."), style=("dim",)
-        )
+        lines += c.paragraph(nothing, style=("dim",))
     return c.fit("\n".join(lines))
 
 
@@ -1978,9 +2118,8 @@ def render_config_key(console: Console, key: str, settings: UserSettings) -> str
     from roomscope.cli import config
 
     c = console
-    lines = c.title(key)
-    lines.append("")
-    lines += c.fields(
+    lines = c.title(
+        key,
         [
             (pgettext("setting", "Value"), c.command(config.typed_value(key, settings))),
             (
@@ -1990,7 +2129,7 @@ def render_config_key(console: Console, key: str, settings: UserSettings) -> str
                 ),
             ),
             (_("Values"), config.choices(key)),
-        ]
+        ],
     )
     lines.append("")
     lines += c.commands(
@@ -2013,10 +2152,9 @@ def render_config_language(
     from roomscope.i18n import available_locales
 
     c = console
-    lines = c.title(config.title("language"))
-    lines.append("")
     stored = settings.language
-    lines += c.fields(
+    lines = c.title(
+        config.title("language"),
         [
             (
                 _("Stored"),
@@ -2026,7 +2164,7 @@ def render_config_language(
             ),
             (_("In effect"), config.language_name(in_effect)),
             (_("Because"), config.language_reason(choice)),
-        ]
+        ],
     )
     lines.append("")
     rows = [
@@ -2130,14 +2268,16 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
     """
     c = console
     name = "RoomScope" + (" " + _("Terminal Edition") if terminal_edition else "")
-    lines = [c.bold(name) + " " + c.muted(version)]
-    lines += c.paragraph(
-        _(
-            "Measure and compare the rooms you record in: reverberation, early reflections, "
-            "low-frequency resonances and noise, from any DAW."
-        ),
-        indent=0,
+    tagline = _(
+        "Measure and compare the rooms you record in: reverberation, early reflections, "
+        "low-frequency resonances and noise, from any DAW."
     )
+    framed = c.frame(f"{name} {version}", c.inner().paragraph(tagline, indent=0))
+    if framed is not None:
+        lines = framed
+    else:
+        lines = [c.bold(name) + " " + c.muted(version)]
+        lines += c.paragraph(tagline, indent=0)
     lines.append("")
     lines += c.commands(
         [
@@ -2188,15 +2328,17 @@ def render_demo(
     """``roomscope demo``: what was simulated, what the analysis found, what next."""
     c = console
     settings = run.settings
-    lines = c.title(_("RoomScope demo"))
-    lines.append("")
-    lines += c.status(
-        "warn",
-        _("Synthetic data: a simulated room, not a measurement."),
-        style=("bold",),
-        detail=_(
-            "No audio device was used and nothing was played. The numbers below describe "
-            "the simulation; every session is marked as a synthetic demo."
+    lines = c.title(
+        _("RoomScope demo"),
+        body=lambda c, indent: c.status(
+            "warn",
+            _("Synthetic data: a simulated room, not a measurement."),
+            indent,
+            style=("bold",),
+            detail=_(
+                "No audio device was used and nothing was played. The numbers below describe "
+                "the simulation; every session is marked as a synthetic demo."
+            ),
         ),
     )
 

@@ -21,6 +21,7 @@ from roomscope.cli.config import KEYS
 from roomscope.cli.main import main
 from roomscope.i18n import activate, current_locale
 from roomscope.settings import UserSettings, load_settings, save_settings, settings_path
+from tests.frames import unframe, words
 from tests.zh_tokens import english_words
 
 
@@ -64,8 +65,8 @@ def test_config_lists_every_setting_and_the_file(
     code, out, err = _run(capsys, "config")
     assert code == 0 and err == ""
     for key in KEYS:
-        assert f"  {key} " in out, key
-    assert "follow the system (now English)" in out
+        assert f"  {key} " in unframe(out), key
+    assert "follow the system (now English)" in words(out)
     assert str(settings_path()) in out
     assert "Nothing is stored yet" in out
     assert not settings_path().exists()  # showing writes nothing
@@ -233,11 +234,11 @@ def test_a_damaged_settings_file_is_left_alone(
     settings_path().write_text('{"language": "zh_CN", ', encoding="utf-8")
     code, out, err = _run(capsys, "--lang", "en", "config", "theme", "dark")
     assert code == 1 and out == ""
-    assert "nothing was changed" in err and str(settings_path()) in " ".join(err.split())
+    assert "nothing was changed" in words(err) and str(settings_path()) in words(err)
     assert settings_path().read_text(encoding="utf-8") == '{"language": "zh_CN", '
     code, out, err = _run(capsys, "--lang", "en", "config")
     assert code == 0 and "the defaults are shown" in err
-    assert "language         auto" in out
+    assert re.search(r"(?m)^ +language +auto ", unframe(out)), out
 
 
 def test_a_damaged_settings_file_is_described_in_the_interface_language(
@@ -248,11 +249,11 @@ def test_a_damaged_settings_file_is_described_in_the_interface_language(
     settings_path().parent.mkdir(parents=True)
     settings_path().write_text('{"language": "zh_CN",\n}\n', encoding="utf-8")
     code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "profile", "vocal")
-    shown = " ".join(err.split())
+    shown = words(err)
     assert code == 1 and "第 2 行第 1 列不是有效的 JSON" in shown, shown
     assert "Expecting" not in shown and "没有做任何更改" in shown
     _code, _out, err = _run(capsys, "--lang", "en", "config", "profile", "vocal")
-    assert "invalid JSON at line 2, column 1" in " ".join(err.split())
+    assert "invalid JSON at line 2, column 1" in words(err)
 
 
 # --- The language ------------------------------------------------------------------------
@@ -360,7 +361,7 @@ def test_config_language_shows_what_is_in_effect_and_why(
     activate(None)
     code, out, _err = _run(capsys, *argv, "config", "language")
     assert code == 0
-    assert because in " ".join(out.split()) or because in out, out
+    assert because in words(out) or because in out, out
 
 
 def test_one_setting_shows_its_values(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -478,4 +479,4 @@ def test_a_variable_that_comes_before_a_setting_is_named(
     assert "ROOMSCOPE_AUDIO_BACKEND=fake chooses the backend before this setting" in out
     monkeypatch.setenv("ROOMSCOPE_EDITION", "user")
     code, out, _err = _run(capsys, "config")
-    assert "ROOMSCOPE_EDITION=user decides before this setting" in out
+    assert "ROOMSCOPE_EDITION=user decides before this setting" in words(out)

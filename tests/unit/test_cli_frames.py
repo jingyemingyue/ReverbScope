@@ -1,13 +1,18 @@
-"""Panels, bordered tables, section bars and badges (``Console.frames``).
+"""Panels, bordered tables and the terminal style (``ROOMSCOPE_CLI_STYLE``).
 
 Every line of a frame has the same display width (CJK text, colour and the
 ASCII forms included), a frame that cannot hold its text gives way to the
-unframed layout, and without frames the text is laid out as before.
+unframed layout, the desktop app's report text has no frames, the style is
+chosen by ROOMSCOPE_CLI_STYLE, then a stored choice, then ``boxed``, and
+the JSON output does not depend on it.
 """
 
 from __future__ import annotations
 
+import io
+import json
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 
@@ -16,8 +21,10 @@ from roomscope.cli.console import (
     Console,
     Verbatim,
     cell_width,
+    cli_style,
     strip_ansi,
 )
+from roomscope.cli.main import main
 from roomscope.i18n import activate
 from tests.frames import FRAME_GLYPHS, words
 
@@ -69,14 +76,24 @@ def test_a_panel_wraps_chinese_inside_its_border(zh: None) -> None:
     assert words("\n".join(lines)).replace(" ", "") == ("! 提示 · 早期反射" + text).replace(" ", "")
 
 
-def test_a_panel_without_room_for_a_path_is_not_drawn() -> None:
-    """A path is never cut: the text is laid out without the frame."""
+def test_a_path_too_long_for_the_panel_follows_it_bare() -> None:
+    """A path is never cut or wrapped, and it is a thing to copy: the panel
+    holds the other facts and the path follows under the same labels."""
     c = Console(width=50, frames=True)
     path = Verbatim("/a/very/long/path/that/does/not/fit/in/a/panel/of/fifty/columns")
-    lines = c.title("RoomScope analysis", [("Session", path)])
-    assert not set("".join(lines)) & set("╭│╰")
-    assert path in "\n".join(lines)
-    assert c.frame("x" * 45, ["text"]) is None  # nor is a title
+    lines = c.title("RoomScope analysis", [("Session", path), ("Sample rate", "48 kHz")])
+    assert lines[-1] == "  Session      " + path  # under the labels of the panel
+    panel = lines[:-1]
+    _same_width(panel, 50)
+    assert "Sample rate  48 kHz" in "\n".join(panel) and path not in "\n".join(panel)
+    # Nothing else to show: the title alone is in the panel.
+    only = c.title("RoomScope analysis", [("Session", path)])
+    assert only[0].startswith("╭") and only[-1] == "  Session  " + path
+    _same_width(only[:-1], 50)
+    # A body too wide for the panel (a path inside a sentence): no panel.
+    unframed = c.title("RoomScope", body=lambda inner, _indent: [inner.paragraph(path)[0]])
+    assert not set("".join(unframed)) & set("╭│╰")
+    assert c.frame("x" * 45, ["text"]) is None  # a title is never cut either
 
 
 def test_a_title_with_nothing_under_it_is_inside_its_panel() -> None:
@@ -98,7 +115,9 @@ def test_without_frames_a_title_is_the_unframed_heading() -> None:
 def test_frames_need_forty_columns() -> None:
     assert not Console(width=FRAME_MIN_WIDTH - 1, frames=True).boxed
     assert Console(width=FRAME_MIN_WIDTH, frames=True).boxed
-    assert not Console(width=100).boxed
+    stream = io.StringIO()
+    assert not Console.for_stream(stream, environ={"COLUMNS": "39"}).frames
+    assert Console.for_stream(stream, environ={"COLUMNS": "40"}).frames
 
 
 # --- Tables -------------------------------------------------------------------------------
@@ -169,7 +188,7 @@ def test_ascii_frames_never_show_a_bar_inside_a_cell() -> None:
     assert Console(unicode=False).sep() == " | "  # unchanged without frames
 
 
-# --- Sections and badges ------------------------------------------------------------------
+# --- Sections, badges, errors ---------------------------------------------------------------
 
 
 def test_sections_start_with_a_bar() -> None:
@@ -201,3 +220,157 @@ def test_badges_carry_a_mark_and_a_word(zh: None) -> None:
     ascii_console = Console(frames=True, unicode=False)
     assert ascii_console.badge("ok") == "+ good" and ascii_console.badge("error") == "x problem"
     assert Console(frames=True, color=True).badge("warn") == "\x1b[33;1m! check\x1b[0m"
+
+
+def test_an_error_is_a_red_panel_and_its_hints_stay_bare(zh: None) -> None:
+    from roomscope.cli.render import render_error
+
+    c = Console(width=60, frames=True)
+    text = render_error(
+        c,
+        "找不到音频文件：take.wav",
+        detail="没有播放任何声音。",
+        hints=["roomscope analyze --help"],
+    )
+    lines = text.splitlines()
+    assert lines[0].startswith("╭─ ✗ 错误 ")
+    _same_width(lines[:4], 60)
+    assert lines[-1] == "    roomscope analyze --help"
+
+
+# --- The style: ROOMSCOPE_CLI_STYLE, then a stored choice, then boxed -----------------------
+
+
+def test_the_style_is_the_variable_then_the_setting_then_boxed() -> None:
+    assert cli_style("", {}) == "boxed"
+    assert cli_style("plain", {}) == "plain"
+    assert cli_style("plain", {"ROOMSCOPE_CLI_STYLE": "boxed"}) == "boxed"
+    assert cli_style("", {"ROOMSCOPE_CLI_STYLE": " Plain "}) == "plain"
+    assert cli_style("plain", {"ROOMSCOPE_CLI_STYLE": "fancy"}) == "plain"  # unknown: passed over
+    stream = io.StringIO()
+    assert Console.for_stream(stream, environ={}).frames
+    assert not Console.for_stream(stream, environ={}, style="plain").frames
+    assert not Console.for_stream(stream, environ={"ROOMSCOPE_CLI_STYLE": "plain"}).frames
+
+
+def _run(capsys: pytest.CaptureFixture[str], *argv: str) -> tuple[int, str, str]:
+    capsys.readouterr()
+    try:
+        code = main(list(argv))
+    except SystemExit as exc:
+        code = int(exc.code or 0)
+    captured = capsys.readouterr()
+    return code, captured.out, captured.err
+
+
+# --- What the style never changes ------------------------------------------------------------
+
+
+@pytest.fixture
+def demo(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> Path:
+    monkeypatch.chdir(tmp_path)
+    assert _run(capsys, "demo")[0] == 0
+    return tmp_path / "roomscope-demo"
+
+
+def test_json_output_does_not_depend_on_the_style(
+    demo: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runs = (
+        ["show", "roomscope-demo/position-a"],
+        ["compare", "roomscope-demo/position-a", "roomscope-demo/position-b"],
+        ["show", "roomscope-demo/comparison.json"],
+        ["--backend", "fake", "devices"],
+        ["--backend", "fake", "doctor"],
+        ["config"],
+    )
+    for argv in runs:
+        shown = {}
+        for style in ("boxed", "plain"):
+            monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", style)
+            code, out, _err = _run(capsys, "--format", "json", *argv)
+            assert code == 0, argv
+            shown[style] = out
+        assert shown["boxed"] == shown["plain"], argv
+        json.loads(shown["boxed"])
+
+
+def test_the_desktop_reports_have_no_frames(demo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The GUI's report panes and roomscope.cli.report: the unframed layout,
+    whatever the style of the command line."""
+    from roomscope.cli.render import REPORT_CONSOLE, render_analysis, render_comparison
+    from roomscope.cli.report import format_comparison_report, format_report
+    from roomscope.interpretation import interpret
+    from roomscope.io.session_store import load_comparison, load_measurement
+
+    monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "boxed")
+    measurement = load_measurement(demo / "position-a")
+    findings = interpret(measurement.result, "vocal")
+    comparison = load_comparison(demo / "comparison.json")
+    unframed = Console(color=False, unicode=True, width=96)
+    assert not REPORT_CONSOLE.frames
+    texts = [
+        render_analysis(REPORT_CONSOLE, measurement.result, findings, "vocal"),
+        render_comparison(REPORT_CONSOLE, comparison, (), "vocal"),
+        format_report(measurement.result, findings, "vocal"),
+        format_comparison_report(comparison),
+    ]
+    assert texts[0] == render_analysis(unframed, measurement.result, findings, "vocal")
+    for text in texts:
+        assert not set(text) & (set(FRAME_GLYPHS) - {"─"})
+        assert "✗" not in text
+
+
+class _Tty(io.StringIO):
+    def isatty(self) -> bool:
+        return True
+
+
+def test_the_session_list_is_a_table_on_a_terminal_and_tab_separated_in_a_pipe(
+    demo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Scripts read ``show --list`` from a pipe: one ``path<TAB>label`` line
+    per session there, whatever the style."""
+    import sys
+
+    from tests.frames import frame_blocks
+
+    monkeypatch.setenv("COLUMNS", "100")
+    monkeypatch.setenv("NO_COLOR", "1")
+    terminal = _Tty()
+    monkeypatch.setattr(sys, "stdout", terminal)
+    assert main(["show", "--list", "roomscope-demo"]) == 0
+    shown = terminal.getvalue()
+    assert "Saved sessions" in shown and "┏" in shown and "\t" not in shown
+    assert "roomscope-demo/position-a" in shown and "Synthetic demo room" in shown
+    for block in frame_blocks(shown):
+        _same_width(block)
+    pipe = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", pipe)
+    assert main(["show", "--list", "roomscope-demo"]) == 0
+    lines = pipe.getvalue().splitlines()
+    assert len(lines) == 2 and all(line.count("\t") == 1 for line in lines)
+    assert all(" · " in line for line in lines)
+
+
+def test_a_project_is_shown_under_its_name(
+    demo: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from tests.frames import frame_blocks
+
+    monkeypatch.setenv("COLUMNS", "100")
+    assert _run(capsys, "project", "init", "--out", "booth", "--name", "Booth A")[0] == 0
+    for label in ("a", "b"):
+        argv = ["project", "add", "booth", f"roomscope-demo/position-{label}", "--position", label]
+        assert _run(capsys, *argv)[0] == 0
+    code, out, _err = _run(capsys, "project", "show", "booth")
+    assert code == 0
+    assert "Booth A" in out.splitlines()[1] and out.startswith("╭")
+    assert str(demo / "position-b") in out  # a path is never cut
+    for block in frame_blocks(out):
+        _same_width(block)
+    monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "plain")
+    _code, out, _err = _run(capsys, "project", "show", "booth")
+    assert out.splitlines()[0] == "Booth A" and out.splitlines()[1].startswith("  a\t")

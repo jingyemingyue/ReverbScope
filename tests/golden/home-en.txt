@@ -1,6 +1,7 @@
-RoomScope <version>
-Measure and compare the rooms you record in: reverberation, early reflections,
-low-frequency resonances and noise, from any DAW.
+╭─ RoomScope x.y.z ────────────────────────────────────────────────────────────╮
+│ Measure and compare the rooms you record in: reverberation, early            │
+│ reflections, low-frequency resonances and noise, from any DAW.               │
+╰──────────────────────────────────────────────────────────────────────────────╯
 
   roomscope demo                    Try it with synthetic data; no audio
                                     interface needed
