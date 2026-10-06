@@ -1360,14 +1360,49 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     return 0
 
 
+#: The long options of the top-level parser (``build_parser``; a test keeps the
+#: two in step). argparse takes any unambiguous prefix of them for the option
+#: (``--lan zh_CN``), so the ones read before the parser exists must too.
+_ROOT_LONG_OPTIONS = (
+    "--help",
+    "--version",
+    "--lang",
+    "--format",
+    "--color",
+    "--backend",
+    "--copy-recording",
+    "--no-copy-recording",
+    "--verbose",
+)
+
+
+def _abbreviates(flag: str, names: tuple[str, ...]) -> bool:
+    """Whether ``flag`` is an abbreviation argparse resolves to one of ``names``."""
+    if len(flag) < 3 or not flag.startswith("--"):
+        return False
+    matches = [option for option in _ROOT_LONG_OPTIONS if option.startswith(flag)]
+    return len(matches) == 1 and matches[0] in names
+
+
 def _peek_option(argv: Sequence[str], names: tuple[str, ...]) -> str | None:
+    """The value of a top-level option, read before the parser is built.
+
+    ``--lang X``, ``--lang=X`` and what argparse accepts for them (``--lan X``,
+    ``--la=X``): the language and the colour policy have to be known before
+    the parser's own texts are made, and an option given by an abbreviation
+    would otherwise be dropped without a word.
+    """
+    # The top-level options come before the command; after it, ``--l`` may be
+    # the start of one of the command's own options.
+    command = next((index for index, arg in enumerate(argv) if arg in COMMANDS), len(argv))
     for index, arg in enumerate(argv):
-        for name in names:
-            if arg == name and index + 1 < len(argv):
-                return argv[index + 1]
-            prefix = name + "="
-            if arg.startswith(prefix):
-                return arg[len(prefix) :]
+        flag, has_value, value = arg.partition("=")
+        if flag not in names and not (index < command and _abbreviates(flag, names)):
+            continue
+        if has_value:
+            return value
+        if index + 1 < len(argv):
+            return argv[index + 1]
     return None
 
 

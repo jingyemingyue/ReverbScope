@@ -620,3 +620,60 @@ def test_the_demo_names_its_room_in_the_interface_language(
     if lang == "zh_CN":
         prose = "\n".join(line for line in shown.splitlines() if str(tmp_path) not in line)
         assert english_words(prose) == [], shown
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--lan", "zh_CN"],
+        ["--la=zh_CN"],
+        ["--l", "zh_CN.UTF-8"],
+        ["--lang", "zh_CN"],
+    ],
+)
+def test_an_abbreviated_lang_option_still_sets_the_language(
+    zh_cli: None, capsys: pytest.CaptureFixture[str], argv: list[str]
+) -> None:
+    """argparse takes ``--lan zh_CN`` for ``--lang zh_CN`` but the language is
+    chosen before the parser exists, so the run stayed English without a word."""
+    assert main([*argv, "--backend", "fake", "devices"]) == 0
+    shown = capsys.readouterr().out
+    assert "音频设备" in shown and "Audio devices" not in shown, shown
+
+
+def test_an_abbreviated_color_option_is_read_before_the_parser_is_built(
+    zh_cli: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``--col always`` makes argparse's own errors coloured like ``--color always``."""
+    assert main(["--col", "always", "--backend", "fake", "devices"]) == 0
+    assert "\x1b[" in capsys.readouterr().out
+    with pytest.raises(SystemExit):
+        main(["--colo=always", "devices", "--nope"])
+    assert "\x1b[" in capsys.readouterr().err
+
+
+def test_peeking_at_the_root_options_follows_argparse(zh_cli: None) -> None:
+    from reverbscope.cli.main import _peek_option
+
+    lang = ("--lang",)
+    assert _peek_option(["--lang", "zh_CN", "devices"], lang) == "zh_CN"
+    assert _peek_option(["--lang=zh_CN", "devices"], lang) == "zh_CN"
+    assert _peek_option(["--la", "zh_CN", "devices"], lang) == "zh_CN"
+    assert _peek_option(["--backend", "fake", "--lan=en", "devices"], lang) == "en"
+    # --c is --color or --copy-recording: argparse refuses it, so nothing is read.
+    assert _peek_option(["--c", "never", "devices"], ("--color",)) is None
+    assert _peek_option(["--col", "never", "devices"], ("--color",)) == "never"
+    # A name that merely starts like an option is another option.
+    assert _peek_option(["--language", "zh_CN", "devices"], lang) is None
+    assert _peek_option(["--lang"], lang) is None
+    # After the command, --l is the command's own option (--level …), not --lang.
+    assert _peek_option(["sweep", "--l", "-20"], lang) is None
+
+
+def test_the_root_options_peeked_at_are_the_parsers() -> None:
+    """``_ROOT_LONG_OPTIONS`` is what an abbreviation is matched against."""
+    from reverbscope.cli.main import _ROOT_LONG_OPTIONS
+
+    parser = build_parser()
+    actual = {s for a in parser._actions for s in a.option_strings if s.startswith("--")}
+    assert set(_ROOT_LONG_OPTIONS) == actual
