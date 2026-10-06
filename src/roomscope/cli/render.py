@@ -2058,9 +2058,10 @@ def render_session_list(
 
 
 def render_project(console: Console, name: str, sessions: Sequence[tuple[str, str]]) -> str | None:
-    """``roomscope project show`` with frames: the name in a title panel and a
-    table of its positions and sessions. ``None`` without frames."""
-    if not console.boxed:
+    """``roomscope project show`` on a terminal with frames: the name in a title
+    panel and a table of its positions and sessions. ``None`` otherwise: a pipe
+    or a file keeps the name and one ``position<TAB>path`` line per session."""
+    if not (console.boxed and console.interactive):
         return None
     c = console
     lines = c.title(name)

@@ -183,7 +183,8 @@ All notable changes to RoomScope are documented here. The format follows
   joined with `、`, a clause with `；` and a note in brackets takes the
   brackets of the language (`110 Hz（+11.3 dB）`), instead of an ASCII
   comma, semicolon and parenthesis. `show --list` keeps one
-  `path<TAB>summary` line per session when its output is not a terminal.
+  `path<TAB>summary` line per session, and `project show` its name and one
+  `position<TAB>path` line per session, when the output is not a terminal.
   Information and `--format json` output are unchanged.
 - **Progress line.** A coloured bar (`━` and `╸`, or `=` and `>`) with the
   percentage and the elapsed and total time; the numbers are never cut

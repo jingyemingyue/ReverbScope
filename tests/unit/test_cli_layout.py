@@ -624,3 +624,23 @@ def test_a_path_too_long_for_the_panel_does_not_take_the_panel_of_the_sweep_away
     monkeypatch.chdir(tmp_path)
     short = run("sweep", "--out", "s.wav", columns=80)
     assert any(line.startswith("│ ✓ Wrote ") for line in short.splitlines())  # fits: inside
+
+
+def test_project_show_keeps_its_tab_separated_lines_in_a_pipe(
+    demo: Path, tmp_path: Path, run: Call, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A script reads `project show` from a pipe: the name, then one
+    `label<TAB>path` line a session. The panel is for a terminal."""
+    project = tmp_path / "booth"
+    assert run("project", "init", "--out", str(project), "--name", "Booth A")
+    run("project", "add", str(project), str(demo / "position-a"), "--position", "A")
+    piped = run("project", "show", str(project), columns=100)
+    lines = piped.splitlines()
+    assert lines[0] == "Booth A" and lines[1] == f"  A\t{demo / 'position-a'}", piped
+    assert not set(piped) & set("╭│╰┏┃")
+    terminal = _Tty()
+    monkeypatch.setattr(sys, "stdout", terminal)
+    monkeypatch.setenv("COLUMNS", "100")
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert main(["project", "show", str(project)]) == 0
+    assert terminal.getvalue().startswith("╭─ Booth A")

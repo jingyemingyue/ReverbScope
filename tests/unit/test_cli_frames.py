@@ -374,27 +374,48 @@ def test_the_session_list_is_a_table_on_a_terminal_and_tab_separated_in_a_pipe(
     assert all(" · " in line for line in lines)
 
 
-def test_a_project_is_shown_under_its_name(
+def test_a_project_is_a_table_on_a_terminal_and_tab_separated_in_a_pipe(
     demo: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    """``project show`` in a pipe is read by scripts: the name, then one
+    ``position<TAB>path`` line per session, whatever the style."""
+    import sys
+
     from tests.frames import frame_blocks
 
     monkeypatch.setenv("COLUMNS", "100")
+    monkeypatch.setenv("NO_COLOR", "1")
     assert _run(capsys, "project", "init", "--out", "booth", "--name", "Booth A")[0] == 0
     for label in ("a", "b"):
         argv = ["project", "add", "booth", f"roomscope-demo/position-{label}", "--position", label]
         assert _run(capsys, *argv)[0] == 0
-    code, out, _err = _run(capsys, "project", "show", "booth")
-    assert code == 0
-    assert "Booth A" in out.splitlines()[0] and out.startswith("╭─ Booth A")
-    assert str(demo / "position-b") in out  # a path is never cut
-    for block in frame_blocks(out):
-        _same_width(block)
-    monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "plain")
-    _code, out, _err = _run(capsys, "project", "show", "booth")
-    assert out.splitlines()[0] == "Booth A" and out.splitlines()[1].startswith("  a\t")
-    # A project without sessions is its panel alone, not a table with no rows.
+    for style in ("boxed", "plain"):
+        monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", style)
+        code, out, _err = _run(capsys, "project", "show", "booth")
+        assert code == 0
+        assert out.splitlines()[0] == "Booth A" and out.splitlines()[1].startswith("  a\t"), out
+        assert not set(out) & set(FRAME_GLYPHS)
     monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "boxed")
+    terminal = _Tty()
+    monkeypatch.setattr(sys, "stdout", terminal)
+    assert main(["project", "show", "booth"]) == 0
+    shown = terminal.getvalue()
+    assert shown.startswith("╭─ Booth A ─")
+    assert str(demo / "position-b") in shown  # a path is never cut
+    for block in frame_blocks(shown):
+        _same_width(block)
+    # A project without sessions is its titled border alone, not a table with no rows.
+    monkeypatch.undo()
+    monkeypatch.setenv("COLUMNS", "100")
+    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.chdir(demo.parent)
     assert _run(capsys, "project", "init", "--out", "empty", "--name", "Empty")[0] == 0
+    terminal = _Tty()
+    monkeypatch.setattr(sys, "stdout", terminal)
+    assert main(["project", "show", "empty"]) == 0
+    assert len(terminal.getvalue().splitlines()) == 2 and "Empty" in terminal.getvalue()
+    monkeypatch.undo()
+    monkeypatch.setenv("COLUMNS", "100")
+    monkeypatch.chdir(demo.parent)
     _code, out, _err = _run(capsys, "project", "show", "empty")
-    assert len(out.splitlines()) == 2 and "Empty" in out.splitlines()[0]
+    assert out == "Empty\n"
