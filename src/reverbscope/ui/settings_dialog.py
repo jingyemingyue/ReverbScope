@@ -35,6 +35,14 @@ RESTART_FOR_LANGUAGE = (
 )
 
 
+def _guided_copy(key: str) -> str:
+    """Catalog text, not gettext: the experimental assistant keeps its own strings."""
+    from reverbscope.experimental.guided.catalog import ui_text
+    from reverbscope.experimental.guided.setup import interface_language
+
+    return ui_text(interface_language(), key)
+
+
 class SettingsDialog(QDialog):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -87,6 +95,11 @@ class SettingsDialog(QDialog):
         form.addRow(self.copy_recording)
         form.addRow(_("Theme"), self.theme)
         form.addRow(self.developer_tools)
+        self.guided_assistant = QPushButton(_guided_copy("open_settings"))
+        self.guided_assistant.clicked.connect(self._open_guided_assistant)
+        self.guided_hint = label(_guided_copy("settings_hint"), "hint", wrap=True)
+        form.addRow(self.guided_assistant)
+        form.addRow(self.guided_hint)
         layout.addLayout(form)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
@@ -105,6 +118,11 @@ class SettingsDialog(QDialog):
         directory = QFileDialog.getExistingDirectory(self, _("Default output folder"))
         if directory:
             self.output_dir.setText(directory)
+
+    def _open_guided_assistant(self) -> None:
+        from reverbscope.experimental.guided.settings_panel import GuidedAssistantDialog
+
+        GuidedAssistantDialog(self).exec()
 
     def accept(self) -> None:
         # Start from the stored settings so fields this dialog does not show

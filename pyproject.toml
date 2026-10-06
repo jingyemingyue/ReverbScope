@@ -184,8 +184,9 @@ disallow_untyped_calls = false
 
 [[tool.mypy.overrides]]
 # PySide6_Essentials ships the widgets we import but no py.typed marker.
-# Subclassing those untyped Qt types is expected in reverbscope.ui.
-module = ["reverbscope.ui.*"]
+# Subclassing those untyped Qt types is expected in reverbscope.ui and in the
+# experimental guided settings dialog. That dialog is not a stable feature.
+module = ["reverbscope.ui.*", "reverbscope.experimental.guided.settings_panel"]
 disable_error_code = ["misc", "import-untyped"]
 
 [[tool.mypy.overrides]]

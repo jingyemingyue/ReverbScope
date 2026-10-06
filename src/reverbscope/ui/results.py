@@ -479,6 +479,11 @@ class ResultsPage(QWidget):
         self.tabs.addTab(self.noise_tab, _("Noise"))
         self.tabs.addTab(self.refl_tab, _("Early Reflections"))
         self.tabs.addTab(self.place_tab, _("Placement"))
+        self.guided_text = QPlainTextEdit()
+        self.guided_text.setReadOnly(True)
+        self.guided_text.setProperty("report", True)
+        apply_report_font(self.guided_text)
+        self.tabs.addTab(self.guided_text, _("Guided"))
         layout.addWidget(self.tabs, 1)
 
         self.status = label("", "hint", wrap=True)
@@ -517,9 +522,32 @@ class ResultsPage(QWidget):
         plot_noise(self.noise_tab.figure, result)
         plot_reflections(self.refl_tab.figure, result)
         self.place_tab.show_placement(result.placement)
+        self._show_guided(result)
         for tab in (self.ir_tab, self.fr_tab, self.decay_tab, self.noise_tab, self.refl_tab):
             tab.redraw()
         self.status.setText("")
+
+    def _show_guided(self, result: AnalysisResult) -> None:
+        from reverbscope.experimental.guided.config import load_guided_settings
+        from reverbscope.experimental.guided.privacy import process_vault
+        from reverbscope.experimental.guided.service import run_guided
+        from reverbscope.experimental.guided.setup import resolve_api_key
+        from reverbscope.i18n import current_locale
+
+        try:
+            settings = load_guided_settings()
+            private = settings.privacy_mode
+            api_key = "" if private else resolve_api_key(settings.provider_id, process_vault())
+            report = run_guided(
+                result,
+                settings=settings,
+                language="zh-CN" if current_locale() == "zh_CN" else "en",
+                api_key=api_key,
+                privacy=private,
+            )
+            self.guided_text.setPlainText(report.text())
+        except Exception:
+            self.guided_text.setPlainText("")
 
     def _choose_save_directory(self) -> None:
         directory = QFileDialog.getExistingDirectory(self, _("Choose a folder for the session"))
