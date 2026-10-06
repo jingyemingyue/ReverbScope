@@ -7172,3 +7172,9 @@ msgstr "seine Audiocodierung wird nicht unterstützt"
 
 msgid "the WAV file is damaged or was cut short"
 msgstr "die WAV-Datei ist beschädigt oder wurde abgeschnitten"
+
+msgid "Number or path of the baseline session (before)"
+msgstr "Nummer oder Pfad der Referenzsitzung (vorher)"
+
+msgid "Number or path of the candidate session (after)"
+msgstr "Nummer oder Pfad der Vergleichssitzung (nachher)"

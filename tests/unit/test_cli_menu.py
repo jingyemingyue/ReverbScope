@@ -199,7 +199,7 @@ def test_the_menu_is_chinese_in_chinese(here: Path, capsys: pytest.CaptureFixtur
         "1  体验演示",
         "2  生成测试信号",
         "3  分析录音",
-        "4  用声卡直接测量",
+        "4  用音频接口直接测量",
         "5  查看结果",
         "6  对比两个位置",
         "7  打开桌面应用",
@@ -1066,3 +1066,30 @@ def test_the_menu_writes_only_through_the_console(here: Path) -> None:
     source = Path(menu.__file__).read_text(encoding="utf-8")
     assert "\\x1b" not in source and "\\033" not in source
     assert isinstance(Menu(read=input, out=io.StringIO(), dispatch=main).console().width, int)
+
+
+@pytest.mark.parametrize("lang", ["zh_CN", "en", "ja", "fr"])
+def test_the_compare_questions_have_one_colon_not_two(
+    here: Path, capsys: pytest.CaptureFixture[str], lang: str, demo_folder: Path
+) -> None:
+    """The questions were "基线（之前）：编号或路径：" and "Baseline (before): number
+    or path:": the label had its own colon before the prompt's."""
+    shutil.copytree(demo_folder, here / "roomscope-demo")
+    activate(lang)
+    _code, script = drive("6", "1", "2", "")
+    capsys.readouterr()
+    baseline, candidate = script.prompts[1:3]
+    for prompt in (baseline, candidate):
+        assert len(re.findall("[:：]", prompt)) == 1, prompt
+        assert prompt.rstrip().endswith((":", "：")), prompt
+
+
+def test_the_output_folder_question_says_default_once_in_chinese(
+    here: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """ "默认输出文件夹，输入 auto 可清除（默认：未设置）" said 默认 twice."""
+    activate("zh_CN")
+    _code, script = drive("8", "4", "", "0", "0")
+    capsys.readouterr()
+    question = next(prompt for prompt in script.prompts if "auto" in prompt)
+    assert question.count("默认") == 1 and "未设置" in question, question

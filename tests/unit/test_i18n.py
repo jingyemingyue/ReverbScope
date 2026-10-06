@@ -434,11 +434,11 @@ def test_a_joined_metric_reason_inside_a_comparison_reason() -> None:
 
 def test_plain_joins_and_unknown_pieces_still_work() -> None:
     assert _shown_in_chinese("baseline not_computed; candidate unreliable") == (
-        "基线：未计算；候选：不可靠"
+        "基准：未计算；对比项：不可靠"
     )
     # An unknown piece stays English next to a translated one.
     shown = _shown_in_chinese("a note that no template knows; candidate unreliable")
-    assert shown == "a note that no template knows；候选：不可靠"
+    assert shown == "a note that no template knows；对比项：不可靠"
     # Nothing recognised: the text as stored, separators included.
     unknown = "a note that no template knows; and (another; one)"
     assert _shown_in_chinese(unknown) == unknown
@@ -457,10 +457,12 @@ def test_comparison_reasons_name_the_validity_in_words() -> None:
     assert reason == (
         "baseline insufficient range (too little decay); candidate outside the sweep's range"
     )
-    assert _shown_in_chinese(reason) == "基线：衰减范围不足（too little decay）；候选：超出扫频范围"
+    assert (
+        _shown_in_chinese(reason) == "基准：衰减范围不足（too little decay）；对比项：超出扫频范围"
+    )
     # A reason stored with the ids by an earlier version.
     stored = "baseline insufficient_decay_range; candidate outside_excitation_range"
-    assert _shown_in_chinese(stored) == "基线：衰减范围不足；候选：超出扫频范围"
+    assert _shown_in_chinese(stored) == "基准：衰减范围不足；对比项：超出扫频范围"
 
 
 def test_noise_band_metric_labels() -> None:

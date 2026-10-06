@@ -7260,3 +7260,9 @@ msgstr "son encodage audio n'est pas pris en charge"
 
 msgid "the WAV file is damaged or was cut short"
 msgstr "le fichier WAV est endommagé ou tronqué"
+
+msgid "Number or path of the baseline session (before)"
+msgstr "Numéro ou chemin de la session de référence (avant)"
+
+msgid "Number or path of the candidate session (after)"
+msgstr "Numéro ou chemin de la session à comparer (après)"

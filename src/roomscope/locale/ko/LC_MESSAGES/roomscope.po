@@ -6551,3 +6551,9 @@ msgstr "이 오디오 인코딩은 지원하지 않습니다"
 
 msgid "the WAV file is damaged or was cut short"
 msgstr "WAV 파일이 손상되었거나 중간에 잘렸습니다"
+
+msgid "Number or path of the baseline session (before)"
+msgstr "기준 세션(이전)의 번호 또는 경로"
+
+msgid "Number or path of the candidate session (after)"
+msgstr "비교할 세션(이후)의 번호 또는 경로"

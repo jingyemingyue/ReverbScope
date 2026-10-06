@@ -6323,7 +6323,7 @@ msgid "the audio interfaces of this computer"
 msgstr "這臺電腦上的音頻介面"
 
 msgid "Default output folder (auto clears it)"
-msgstr "預設輸出資料夾，輸入 auto 可清除"
+msgstr "輸出資料夾，輸入 auto 可清除"
 
 msgctxt "answers meaning quit"
 msgid "q quit exit"
@@ -6396,3 +6396,9 @@ msgstr "不支援它的音訊編碼"
 
 msgid "the WAV file is damaged or was cut short"
 msgstr "WAV 檔案已損壞，或被截斷了"
+
+msgid "Number or path of the baseline session (before)"
+msgstr "基準會話（之前）的編號或路徑"
+
+msgid "Number or path of the candidate session (after)"
+msgstr "對比會話（之後）的編號或路徑"

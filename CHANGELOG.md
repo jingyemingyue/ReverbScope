@@ -278,6 +278,17 @@ All notable changes to RoomScope are documented here. The format follows
   `--verbose`. argparse's "invalid choice" read `无效选项` in Chinese (an
   option, not a choice) and quoted the value with ASCII quotes; it is
   `无效的选择：“bogus”（可选：“init”、“add”）` now, and Japanese quotes with 「」.
+- **One Chinese word for each concept.** The same thing was said two or
+  three ways on one screen: 声卡 and 音频接口 for the audio interface (the
+  menu said the first), 音箱 and 扬声器 for the loudspeaker, 回送 for a
+  loopback (audio engineers say 回采), 市电哼声 and 电源嗡声 for mains hum
+  (交流声), 比较 and 对比 for a comparison (`不可比较` beside `可对比`), and
+  基线 and 候选 for the two sessions of a comparison, where 候选 means an
+  election candidate. It is 音频接口, 扬声器, 回采, 交流声, 对比, and 基准 and
+  对比项 for the two sessions now (基线 stays for the baseline level of a
+  spectrum, 候选 for candidate peaks and reflections); the guides follow.
+  The compare questions of the menu read "基准会话（之前）的编号或路径" with
+  one colon, and the output folder question says 默认 once.
 - **Progress line width.** On an 80-column terminal the line was 81 columns
   wide, so the cursor wrapped and every redraw left a line behind. It is
   now never wider than the terminal's last column, down to 20 columns.

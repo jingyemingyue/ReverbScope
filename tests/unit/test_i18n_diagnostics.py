@@ -118,7 +118,7 @@ def test_joined_reasons_keep_their_own_parts(zh: None) -> None:
         "baseline unreliable (the response does not decay); "
         "candidate unreliable (Decay slope is not negative)"
     )
-    assert localize(text) == "基线：不可靠（响应没有衰减）；候选：不可靠（衰减斜率不为负）"
+    assert localize(text) == "基准：不可靠（响应没有衰减）；对比项：不可靠（衰减斜率不为负）"
 
 
 def test_a_nested_diagnostic_with_its_own_semicolon_is_one_value(zh: None) -> None:
@@ -145,8 +145,8 @@ def test_names_and_unknown_text_stay_as_they_are(zh: None) -> None:
 
 
 def test_stored_words_inside_a_sentence_are_translated(zh: None) -> None:
-    assert localize("baseline not_computed") == "基线：未计算"
-    assert localize("candidate unreliable") == "候选：不可靠"
+    assert localize("baseline not_computed") == "基准：未计算"
+    assert localize("candidate unreliable") == "对比项：不可靠"
 
 
 def test_deep_nesting_ends(zh: None) -> None:

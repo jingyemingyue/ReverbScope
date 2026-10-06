@@ -1173,9 +1173,9 @@ class Menu:
 
     def compare(self) -> None:
         listed = self.sessions()
-        baseline = self.pick_session(_("Baseline (before): number or path"), listed)
+        baseline = self.pick_session(_("Number or path of the baseline session (before)"), listed)
         candidate = self.pick_session(
-            _("Candidate (after): number or path"), listed, other_than=baseline
+            _("Number or path of the candidate session (after)"), listed, other_than=baseline
         )
         self.run_and_pause(["compare", path_arg(baseline), path_arg(candidate)])
 

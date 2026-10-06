@@ -388,3 +388,55 @@ def test_cli_zh_cn_analyze_prints_no_english_finding_text(
     for topic, message in findings:
         assert message, topic
         assert _english_words(message) == [], (topic, message)
+
+
+#: Words the Chinese catalog does not use: one word for each concept (the
+#: left, with what to say instead on the right).
+RETIRED_CHINESE_WORDS = {
+    "声卡": "音频接口",
+    "音频硬件": "音频设备",
+    "音箱所用": "扬声器所用",
+    "回送": "回采",
+    "市电哼声": "交流声",
+    "电源嗡声": "交流声",
+    "不可比较": "不可对比",
+    "未比较": "未对比",
+    "无法比较": "无法对比",
+    "才比较": "才对比",
+    "比较两个": "对比两个",
+}
+#: The messages that are about candidate peaks, reflections and resonances,
+#: not about the second session of a comparison (where "对比项" is said).
+DETECTION_CANDIDATES = (
+    "candidates",
+    "candidate reflections",
+    "resonance candidate",
+    "boundary candidate",
+    "ms candidate",
+    "Candidates only",
+)
+
+
+def test_the_chinese_catalog_says_one_word_for_each_concept() -> None:
+    """Audio interface, loudspeaker, loopback, mains hum and "compare" were each
+    said two or three ways on the same screen; baseline and candidate (the two
+    sessions of a comparison) are 基准 and 对比项 and 基线 and 候选 only where
+    they mean a baseline level and candidate peaks."""
+    catalog = parse_po(CATALOG)
+    found = {
+        (msgid.replace(CONTEXT_SEPARATOR, " | "), word, better)
+        for msgid, msgstr in catalog.items()
+        for word, better in RETIRED_CHINESE_WORDS.items()
+        if word in msgstr
+    }
+    assert found == set(), sorted(found)
+    wrong_candidate = [
+        msgid
+        for msgid, msgstr in catalog.items()
+        if "候选" in msgstr and not any(kind in msgid for kind in DETECTION_CANDIDATES)
+    ]
+    assert wrong_candidate == []
+    wrong_baseline = [
+        msgid for msgid, msgstr in catalog.items() if "基线" in msgstr and msgid != "Above baseline"
+    ]
+    assert wrong_baseline == []

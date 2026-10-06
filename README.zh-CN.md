@@ -131,7 +131,7 @@ range*），而不是编造一个数字。RoomScope 有意不提供任何“房�
 
 状态：**0.5.0 beta 1（预发布）**，正在向 1.0 推进
 （[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
-DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
+DSP 核心、CLI、GUI、对比、回采（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
 并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
 （硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。Beta 1 不满足发布计划里 0.5.0 的退出条件。当前可用功能的概况：
 [docs/STATUS.md](docs/STATUS.md)。
@@ -150,7 +150,7 @@ DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、�
    **Help → Environment Report for Bug Reports**）的内容：
    * 音频接口测试报告（[中文表单](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware-zh-CN.yml)
      / [English form](https://github.com/jingyemingyue/RoomScope/issues/new?template=hardware.yml)）：
-     设备列表、44.1 / 48 / 96 kHz 下的完整测量、2 个以上的声道、回送、播放过程中点“停止”、丢帧、
+     设备列表、44.1 / 48 / 96 kHz 下的完整测量、2 个以上的声道、回采、播放过程中点“停止”、丢帧、
      测量过程中拔出设备；
    * DAW 兼容性报告（[中文表单](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw-zh-CN.yml)
      / [English form](https://github.com/jingyemingyue/RoomScope/issues/new?template=daw.yml)）：
@@ -226,10 +226,10 @@ roomscope show results/ --list
 roomscope compare results/ position-b/ --same-input-gain
 roomscope schema result
 
-# 双声道 DAW 导出：话筒 + 电回送
+# 双声道 DAW 导出：话筒 + 电回采
 roomscope analyze --recording take.wav --sweep sweep_48k.wav --channel 0 --loopback-channel 1
 
-# 独立模式：先列出设备，再测量（可选：在输入 2 上接回送）
+# 独立模式：先列出设备，再测量（可选：在输入 2 上接回采）
 roomscope devices
 roomscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
@@ -275,7 +275,7 @@ roomscope gui
 | [docs/INSTALLATION.zh-CN.md](docs/INSTALLATION.zh-CN.md) | 在 macOS、Windows、Linux 上下载安装或用 Python 安装；更新、卸载、未签名构建的警告、故障排查；[English](docs/INSTALLATION.md) |
 | [docs/index.md](docs/index.md) | 文档索引 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 包结构、数据流、扩展点 |
-| [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回送、打包、国际化、验证关卡 |
+| [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回采、打包、国际化、验证关卡 |
 | [docs/ARCHITECTURE_V1.zh-CN.md](docs/ARCHITECTURE_V1.zh-CN.md) | v1.0 设计的中文摘要 |
 | [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) | 算法、单位、有效性规则、参考文献 |
 | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | 每一项运行时/开发依赖的许可证和用途 |

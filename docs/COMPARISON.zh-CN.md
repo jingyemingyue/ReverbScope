@@ -21,7 +21,7 @@ RoomScope 目前是**预发布版（0.4.x）**。它的 DSP 在 Linux、macOS �
 - **能解释 DAW 以错误速度播放的扫频。** 反卷积失败时，RoomScope 会在录音中测出扫频速率（对扫频时间与对数频率的关系做 Theil–Sen 拟合），然后报告是采样率不匹配（“a file generated at 48000 Hz was played at 44100 Hz”），还是时间伸缩（Warp、Flex、Follow Tempo）。这只是诊断：RoomScope 从不按测得的速度重新分析录音（MEASUREMENT_METHODOLOGY.md §2b）。
 - **录音配置（profile）的建议明确标注为“解读”。** 建议来自录音配置，而不是 DSP。配置包括 generic（通用）、vocal（人声）、voiceover（配音/旁白）、acoustic_guitar（木吉他）、drums（鼓）、room_mic（房间话筒）和 choir（合唱），各有自己的阈值和措辞。报告会在 “Interpretation” 旁边印出配置名，所以没有人会把建议误当成与录音类型无关的结论（§8）。
 - **摆位几何只给一支话筒测得出的内容。** 根据反射延迟，加上可选的卷尺测得的扬声器距离和话筒高度，RoomScope 报告扬声器高度和上方表面的高度。它不给坐标，不给房间长度或宽度，也从不指明是哪面墙：一支全指向话筒在一个位置只能测到路径长度，测不到方向。如果两个到达声都能解释同一个数值，两者都会列出，不会挑选其一（§7a）。
-- **可选的回送（loopback）补偿。** 音频接口输出的电回送会先经过检查：它必须表现为电脉冲。通过后，它用来从测量中除去接口自身的响应，并提供电气时间原点。如果该通道仍带有房间声音，RoomScope 会拒绝它、说明原因，并在不补偿的情况下继续分析（§2a）。
+- **可选的回采（loopback）补偿。** 音频接口输出的电回采会先经过检查：它必须表现为电脉冲。通过后，它用来从测量中除去接口自身的响应，并提供电气时间原点。如果该通道仍带有房间声音，RoomScope 会拒绝它、说明原因，并在不补偿的情况下继续分析（§2a）。
 - **会话比较，每个差值都有有效性。** 比较两个位置，回答“移动之后有没有改善？”。只有两边都有效时才给出衰减差值；噪声差值要求声明输入增益未变；仅凭一对测量，从不把任何变化称为“显著”（§11）。
 - **英文和简体中文文档；图形界面和命令行另有繁体中文、日语、韩语、西班牙语、法语和德语。** Apache-2.0 许可，净室来源。解读结论、图形界面和命令行帮助都已翻译；用户指南仍为英文和简体中文（[user-guide/zh-CN.md](user-guide/zh-CN.md)）。核心诊断字符串在 `result.json` 中保持英文（[ARCHITECTURE_V1.md](ARCHITECTURE_V1.md) §5.6）。所有 DSP 都依据论文和标准编写，没有收录任何第三方源代码；设计阶段研究过的每个代码仓库都做过许可证审查（[CODE_PROVENANCE.md](CODE_PROVENANCE.md)、[THIRD_PARTY_REVIEW.md](THIRD_PARTY_REVIEW.md)）。
 
@@ -31,7 +31,7 @@ RoomScope 目前是**预发布版（0.4.x）**。它的 DSP 在 Linux、macOS �
 
 | 工具 | 许可 / 收费方式 | 平台 | 主要用途 | 经由 DAW / 其他录音设备 | 激励信号 / IR 方法 | 是否报告指标有效性 |
 | --- | --- | --- | --- | --- | --- | --- |
-| **RoomScope** | Apache-2.0，免费 | Windows 10/11 x64；macOS 14+（arm64、x86_64）；Linux x86_64；Python 3.12+ wheel | 测量并解读录音位置 | 是：通用 DAW 模式（输出 WAV、读入 WAV）；另有独立模式 | 指数正弦扫频，逆滤波反卷积；可选回送；可导入 IR WAV（`analyze-ir`） | 是：每个指标和每个比较差值都有标记；无法支撑的数值不给出 |
+| **RoomScope** | Apache-2.0，免费 | Windows 10/11 x64；macOS 14+（arm64、x86_64）；Linux x86_64；Python 3.12+ wheel | 测量并解读录音位置 | 是：通用 DAW 模式（输出 WAV、读入 WAV）；另有独立模式 | 指数正弦扫频，逆滤波反卷积；可选回采；可导入 IR WAV（`analyze-ir`） | 是：每个指标和每个比较差值都有标记；无法支撑的数值不给出 |
 | REW（Room EQ Wizard） | 专有免费软件；Pro 升级收费 | Windows、macOS、Linux | 测量与分析；EQ 滤波器设计；房间模拟器 | 是：离线测量。REW 扫频在别处播放并录音，再用 *Import Sweep Recordings* 载入（需要时间基准信号） | 对数扫频；步进正弦；噪声 RTA | RT60：显示回归系数；它认为不可靠的数值以橙色斜体显示；用 Lundeby 本底噪声估计标出数据不再有效的位置 |
 | Open Sound Meter | 桌面版 GPL-3.0，随意付费；iPad 版在 App Store | macOS、Windows、Linux；iPadOS | 实时调试扩声系统 | 未见说明 | 双通道 FFT：RTA、幅度、相位、脉冲响应、相干、群延迟 | 相干；混响指标未见说明 |
 | ARTA | 自 2024 年 12 月起为免费软件（2024 年 3 月停止销售） | Windows | IR、频率响应和频谱测量；ISO 3382 房间参数 | 自己驱动声卡；可导入 IR 和信号 WAV 文件；经由 DAW 播放未见说明 | 周期噪声、MLS、线性和对数扫频；单通道或双通道 | 衰减回归的相关系数 |

@@ -7213,3 +7213,9 @@ msgstr "no se admite su codificación de audio"
 
 msgid "the WAV file is damaged or was cut short"
 msgstr "el archivo WAV está dañado o se cortó"
+
+msgid "Number or path of the baseline session (before)"
+msgstr "Número o ruta de la sesión de referencia (antes)"
+
+msgid "Number or path of the candidate session (after)"
+msgstr "Número o ruta de la sesión a comparar (después)"

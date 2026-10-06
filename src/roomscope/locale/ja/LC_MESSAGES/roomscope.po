@@ -6517,3 +6517,9 @@ msgstr "この音声エンコードには対応していません"
 
 msgid "the WAV file is damaged or was cut short"
 msgstr "WAV ファイルが壊れているか、途中で切れています"
+
+msgid "Number or path of the baseline session (before)"
+msgstr "基準セッション（前）の番号またはパス"
+
+msgid "Number or path of the candidate session (after)"
+msgstr "比較対象セッション（後）の番号またはパス"
