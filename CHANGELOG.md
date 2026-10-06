@@ -254,11 +254,6 @@ All notable changes to RoomScope are documented here. The format follows
   `--daw`, `--daw-project` and `--scan` placeholders are translated too.
 
 ### Fixed
-- **`compare` on a narrow terminal.** On a terminal of about 60 columns
-  `roomscope compare` ended with "unexpected error ValueError: max()
-  iterable argument is empty": the table of reverberation changes has a
-  column without a header, and fitting the table to the width took the
-  widest word of that empty header. It no longer does.
 - **Commands to copy.** A name with a bracket, an ampersand, a semicolon, a
   dollar sign, a star or a leading `#` or `~` (`录音(1).wav`, `a&b.wav`) is
   now quoted in the "next steps", the menu's "Same as the command" line and
