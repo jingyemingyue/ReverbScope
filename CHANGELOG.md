@@ -29,8 +29,8 @@ and install, and the Release workflow's bundle smoke tests, which show that
 the bundles start and run the fake measurement on GitHub's machines and
 nothing more. **No real audio interface, microphone, loudspeaker, room or
 DAW was used.** `docs/HARDWARE_TESTS.md` and `docs/VALIDATION.md` are
-unchanged: every cell is still *Not tested*, and nothing in this version is
-hardware-validated. The bundles are unsigned (macOS: ad hoc, not notarized;
+unchanged: every cell is still empty (not tested), and nothing in this
+version is hardware-validated. The bundles are unsigned (macOS: ad hoc, not notarized;
 Windows: no Authenticode) and nothing is on PyPI.
 
 ### Added

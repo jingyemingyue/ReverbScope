@@ -46,9 +46,9 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
   desktop and command-line polish). It does **not** meet the 0.5.0 row:
   no hardware cell is PASS, so 0.5.0 itself is not cut. Publishing
   `v0.5.0b1` does not republish `v0.4.1`. **Published (2026-10-01)** as a
-  pre-release from `2efcf42`; its 14 assets still carry the RoomScope names
-  (`RoomScope-*`, `roomscope-*`) because the rename landed afterwards. That
-  release is left as it is.
+  pre-release from `2efcf42`; its downloads (11 of its 14 assets) still carry
+  the RoomScope names (`RoomScope-*`, `roomscope-*`) because the rename landed
+  afterwards. That release is left as it is.
 * **Software beta 2 (prepared 2026-10-06, not published):** `0.5.0b2` is the
   stabilization release after the RoomScope → ReverbScope rename: the stable
   line's defect fixes (PR #40), the acoustic measurement audit (PR #43: metrics
