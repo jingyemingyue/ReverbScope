@@ -146,6 +146,7 @@ def start(
     Refused (exit code 2) for JSON output and where nobody can type the
     answers: a pipe, a file, a script.
     """
+    from roomscope.cli.main import _stream_console
     from roomscope.cli.render import render_error
 
     stdin = sys.stdin if stdin is None else stdin
@@ -161,7 +162,7 @@ def start(
         )
     if refusal:
         if sys.stderr is not None:
-            console = Console.for_stream(sys.stderr, color)
+            console = _stream_console(sys.stderr, color)
             print(render_error(console, refusal, hints=["roomscope --help"]), file=sys.stderr)
         return EXIT_REFUSED
     if read is None:
@@ -459,7 +460,10 @@ class Menu:
     # Output --------------------------------------------------------------------------------
 
     def console(self) -> Console:
-        return Console.for_stream(self.out, self.color)
+        # The style stored by ``roomscope config style`` applies here as well.
+        from roomscope.cli.main import _stream_console
+
+        return _stream_console(self.out, self.color)
 
     def write(self, lines: Sequence[str]) -> None:
         self.out.write(self.console().fit("\n".join(lines)) + "\n")

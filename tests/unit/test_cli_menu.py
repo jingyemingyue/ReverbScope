@@ -200,6 +200,19 @@ def test_the_terminal_edition_has_no_desktop_app_item(
     assert "There is no item 7 in the menu" in out
 
 
+def test_the_menu_follows_the_style_stored_by_config(
+    here: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["config", "style", "plain"]) == 0
+    capsys.readouterr()
+    code, _script = drive("5", "0")
+    out = capsys.readouterr().out
+    assert code == 0
+    assert out.lstrip().startswith("RoomScope menu\n──────────────\n")
+    assert not set(out) & set("╭╮╰╯│┏┃▌")
+    assert "\n  1  Try the demo" in out
+
+
 def test_an_unknown_choice_is_asked_again(here: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code, script = drive("", "x", "42", "0")
     out = capsys.readouterr().out
