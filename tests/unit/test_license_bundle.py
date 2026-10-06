@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
+import pytest
+
 
 def _load(name: str):
     path = Path("scripts") / f"{name}.py"
@@ -316,13 +318,17 @@ def test_both_editions_leave_the_developer_tools_out() -> None:
     assert desktop.split("]", 1)[0].count("*DEV_ONLY_EXCLUDES") == 1
 
 
-def test_check_scripts_refuse_a_root_that_is_not_a_folder(tmp_path: Path) -> None:
-    import pytest
-
+def test_check_scripts_refuse_a_root_that_is_not_a_folder(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A mistyped root scans nothing; that is a failure (exit 1, the root named
+    on stderr), not a pass. tests/unit/test_check_failures.py covers the
+    empty-scan and unreadable-file cases."""
     for name in ("check_src_safety", "check_doc_links"):
-        with pytest.raises(SystemExit) as stop:
-            _load(name).main(["--root", str(tmp_path / "missing")])
-        assert stop.value.code == 2, name
+        assert _load(name).main(["--root", str(tmp_path / "missing")]) == 1, name
+        captured = capsys.readouterr()
+        assert captured.out == "", name
+        assert str(tmp_path / "missing") in captured.err and "not found" in captured.err, name
 
 
 def test_lock_names_are_read_from_any_specifier() -> None:
