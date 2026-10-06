@@ -299,7 +299,8 @@ Four things you may want to know:
 
 * **`plain`.** `roomscope config style plain` draws the same text without
   panels, borders or the bar before a heading; `roomscope config style auto`
-  (or `boxed`) goes back to the default, and the variable
+  (or `boxed`) goes back to the default (the setting is `cli_style` in
+  `settings.json`: empty for `boxed`, or `plain`), and the variable
   `ROOMSCOPE_CLI_STYLE=boxed|plain` decides for one shell, before the
   stored setting. Use `plain` if your terminal draws the box glyphs
   `╭ ─ │ ┃` two columns wide (some CJK fonts and locales, which treat
