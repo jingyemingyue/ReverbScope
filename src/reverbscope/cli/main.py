@@ -1600,6 +1600,16 @@ def cmd_measure(args: argparse.Namespace) -> int:
     # mapping before anything is played (#13).
     plan = plan_input_channels(requested, getattr(args, "measure_loopback_channel", None))
     channels = list(plan.input_channels)
+    args.loopback_channel = plan.analysis_loopback_channel
+    args.channel = plan.analysis_channel
+    try:
+        # --mic-height without --speaker-distance, a temperature out of range:
+        # refused after the take, the sweep was played and recorded for nothing.
+        _analysis_settings(args)
+    except ConfigurationError as exc:
+        # The option is at fault, not the devices.
+        exc.cli_hints = ["reverbscope measure --help"]  # type: ignore[attr-defined]
+        raise
     options = _stream_options(args)
     # Device pre-flight, shared with the GUI: one host API for both
     # directions, channels that exist, the rate on the devices the stream will
@@ -1649,8 +1659,6 @@ def cmd_measure(args: argparse.Namespace) -> int:
         print()
         print("\n".join(out.status("warn", _(SAFETY_MESSAGE), indent=0)))
         print()
-    args.loopback_channel = plan.analysis_loopback_channel
-    args.channel = plan.analysis_channel
     out_dir: Path = args.out
     out_dir.mkdir(parents=True, exist_ok=True)
     sweep_path, _sidecar = write_sweep_file(settings, out_dir / "sweep.wav")

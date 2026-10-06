@@ -684,3 +684,30 @@ def test_project_average_keeps_a_stored_band_label_to_its_row(
     table = capsys.readouterr().out
     assert "63 Hz\\nFORGEDROW 9.99 s" in table
     assert not [line for line in table.splitlines() if line.startswith("FORGEDROW")]
+
+
+@pytest.mark.parametrize(
+    ("option", "named"),
+    [
+        (["--mic-height", "1.2"], "--mic-height"),
+        (["--speaker-distance", "-1"], "--speaker-distance"),
+        (["--temperature", "80"], "--temperature"),
+        (["--smoothing", "-1"], "--smoothing"),
+    ],
+)
+def test_measure_refuses_an_analysis_option_before_playing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], option: list[str], named: str
+) -> None:
+    """--mic-height without --speaker-distance (and the other analysis
+    options) were checked only after the sweep had been played and recorded,
+    and the error then suggested the device commands."""
+    out = tmp_path / "m_option"
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    code = main([*argv, "--out", str(out), *option])
+    captured = capsys.readouterr()
+    assert code == 1
+    assert named in captured.err and "Nothing was played." in captured.err
+    assert "reverbscope measure --help" in captured.err
+    assert "devices --probe" not in captured.err
+    assert "Playing the sweep" not in captured.err and "Recorded" not in captured.out
+    assert not out.exists()
