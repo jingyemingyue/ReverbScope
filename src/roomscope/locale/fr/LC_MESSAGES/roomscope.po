@@ -7247,3 +7247,16 @@ msgstr "fréquences d'échantillonnage non sondées"
 
 msgid "probe the sample rates; nothing is played"
 msgstr "sonder les fréquences d'échantillonnage ; rien n'est joué"
+
+msgctxt "argument value"
+msgid "'{text}'"
+msgstr "'{text}'"
+
+msgid "it is not a WAV, FLAC or other audio file that RoomScope can read"
+msgstr "ce n'est pas un fichier WAV, FLAC ou autre audio que RoomScope sait lire"
+
+msgid "its audio encoding is not supported"
+msgstr "son encodage audio n'est pas pris en charge"
+
+msgid "the WAV file is damaged or was cut short"
+msgstr "le fichier WAV est endommagé ou tronqué"

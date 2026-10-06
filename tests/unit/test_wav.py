@@ -93,3 +93,32 @@ def test_write_wav_refuses_non_finite_samples(tmp_path: Path, subtype: str) -> N
     with pytest.raises(InvalidAudioError, match="NaN"):
         write_wav(tmp_path / "x.wav", np.array([0.0, np.nan, 0.5]), 48000, subtype=subtype)
     assert not (tmp_path / "x.wav").exists()
+
+
+@pytest.mark.parametrize(
+    ("lang", "content", "said"),
+    [
+        ("en", b"this is not audio", "it is not a WAV, FLAC or other audio file"),
+        ("zh_CN", b"this is not audio", "这不是 RoomScope 能读取的 WAV、FLAC 等音频文件"),
+        ("zh_CN", b"RIFF\x24\x00\x00\x00WAVEfmt ", "WAV 文件已损坏，或被截断了"),
+        ("en", b"", "audio file is empty: take.wav"),
+        ("zh_CN", b"", "音频文件为空：take.wav"),
+    ],
+)
+def test_a_file_libsndfile_cannot_open_is_explained_in_the_interface_language(
+    tmp_path: Path, lang: str, content: bytes, said: str
+) -> None:
+    """The error quoted libsndfile's English ("Error opening 'bad.wav': Format
+    not recognised.") in the middle of a Chinese sentence."""
+    from roomscope.i18n import activate
+
+    path = tmp_path / "take.wav"
+    path.write_bytes(content)
+    activate(lang)
+    try:
+        with pytest.raises(InvalidAudioError) as exc:
+            read_wav(path)
+    finally:
+        activate("en")
+    assert said in str(exc.value)
+    assert "Error opening" not in str(exc.value) and "recognised" not in str(exc.value)

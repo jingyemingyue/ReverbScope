@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,8 @@ from roomscope.io.jsonutil import read_json_object, write_text_atomic
 from roomscope.models.audio import AudioSignal, FloatArray
 from roomscope.models.configuration import SweepSettings
 from roomscope.models.loadutil import read_schema_version
+
+log = logging.getLogger(__name__)
 
 SIDECAR_SUFFIX = ".roomscope-sweep.json"
 SIDECAR_KEY = "roomscope_sweep"
@@ -40,6 +43,23 @@ def _soundfile() -> Any:
     return soundfile
 
 
+def _read_failure(error: BaseException) -> str:
+    """Why libsndfile could not open a file, in the interface language.
+
+    libsndfile's own sentences are English ("Error opening 'x.wav': Format not
+    recognised."); the usual ones are translated, and the others are shown as
+    they are (``--verbose`` logs the original of each).
+    """
+    text = str(error).lower()
+    if "format not recognised" in text:
+        return _("it is not a WAV, FLAC or other audio file that RoomScope can read")
+    if "unsupported encoding" in text:
+        return _("its audio encoding is not supported")
+    if "error in wav file" in text or "malformed" in text or "chunk" in text:
+        return _("the WAV file is damaged or was cut short")
+    return str(error)
+
+
 def read_wav(path: str | Path) -> AudioSignal:
     """Read an audio file as float64. Multi-channel files keep their channels."""
     sf = _soundfile()
@@ -47,10 +67,17 @@ def read_wav(path: str | Path) -> AudioSignal:
     if not file_path.is_file():
         raise InvalidAudioError(_("audio file not found: {path}").format(path=file_path))
     try:
+        if file_path.stat().st_size == 0:
+            raise InvalidAudioError(_("audio file is empty: {name}").format(name=file_path.name))
         data, sample_rate = sf.read(str(file_path), dtype="float64", always_2d=True)
+    except InvalidAudioError:
+        raise
     except Exception as exc:  # libsndfile raises RuntimeError / soundfile.LibsndfileError
+        log.debug("libsndfile said: %s", exc)
         raise InvalidAudioError(
-            _("cannot read audio file {name}: {error}").format(name=file_path.name, error=exc)
+            _("cannot read audio file {name}: {error}").format(
+                name=file_path.name, error=_read_failure(exc)
+            )
         ) from exc
     samples = np.asarray(data, dtype=np.float64)
     if samples.shape[0] == 0:

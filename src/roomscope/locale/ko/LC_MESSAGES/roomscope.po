@@ -6538,3 +6538,16 @@ msgstr "샘플레이트를 확인하지 않음"
 
 msgid "probe the sample rates; nothing is played"
 msgstr "샘플레이트 확인(아무것도 재생하지 않음)"
+
+msgctxt "argument value"
+msgid "'{text}'"
+msgstr "'{text}'"
+
+msgid "it is not a WAV, FLAC or other audio file that RoomScope can read"
+msgstr "RoomScope가 읽을 수 있는 WAV, FLAC 등의 오디오 파일이 아닙니다"
+
+msgid "its audio encoding is not supported"
+msgstr "이 오디오 인코딩은 지원하지 않습니다"
+
+msgid "the WAV file is damaged or was cut short"
+msgstr "WAV 파일이 손상되었거나 중간에 잘렸습니다"

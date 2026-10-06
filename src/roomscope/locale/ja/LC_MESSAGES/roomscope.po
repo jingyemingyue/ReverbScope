@@ -6504,3 +6504,16 @@ msgstr "サンプルレートは未確認"
 
 msgid "probe the sample rates; nothing is played"
 msgstr "サンプルレートを確認（再生はしません）"
+
+msgctxt "argument value"
+msgid "'{text}'"
+msgstr "「{text}」"
+
+msgid "it is not a WAV, FLAC or other audio file that RoomScope can read"
+msgstr "RoomScope が読める WAV や FLAC などの音声ファイルではありません"
+
+msgid "its audio encoding is not supported"
+msgstr "この音声エンコードには対応していません"
+
+msgid "the WAV file is damaged or was cut short"
+msgstr "WAV ファイルが壊れているか、途中で切れています"

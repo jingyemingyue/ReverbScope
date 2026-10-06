@@ -1996,7 +1996,7 @@ msgid "invalid %(type)s value: %(value)r"
 msgstr "無效的%(type)s值：%(value)r"
 
 msgid "invalid choice: %(value)r (choose from %(choices)s)"
-msgstr "無效選項：%(value)r（可選：%(choices)s）"
+msgstr "無效的選擇：%(value)r（可選：%(choices)s）"
 
 msgid "not allowed with argument %s"
 msgstr "不能與參數 %s 同時使用"
@@ -6383,3 +6383,16 @@ msgstr "未探測採樣率"
 
 msgid "probe the sample rates; nothing is played"
 msgstr "探測採樣率；不會播放任何聲音"
+
+msgctxt "argument value"
+msgid "'{text}'"
+msgstr "“{text}”"
+
+msgid "it is not a WAV, FLAC or other audio file that RoomScope can read"
+msgstr "這不是 RoomScope 能讀取的 WAV、FLAC 等音訊檔案"
+
+msgid "its audio encoding is not supported"
+msgstr "不支援它的音訊編碼"
+
+msgid "the WAV file is damaged or was cut short"
+msgstr "WAV 檔案已損壞，或被截斷了"

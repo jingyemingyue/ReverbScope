@@ -145,34 +145,69 @@ _LIST_ARGUMENTS: dict[str, str | None] = {
 }
 
 
-class _ListTemplate(str):
-    """A translated argparse template whose list argument, which argparse
-    joins with ``", "`` before filling it in, reads as a list of the active
-    language once filled in (``缺少必需的参数：项目、会话、--position``)."""
+class _Quoted(str):
+    """A value argparse shows through ``%r``: written in the quotation marks of
+    the active language (``“bad”`` in Chinese, ``'bad'`` as Python writes it)."""
+
+    def __repr__(self) -> str:
+        return _quote(str(self))
+
+
+def _quote(text: str) -> str:
+    return pgettext("argument value", "'{text}'").format(text=text)
+
+
+_REPR_FIELD = re.compile(r"%\((\w+)\)r")
+_PYTHON_QUOTED = re.compile(r"'([^']*)'")
+
+
+class _ArgTemplate(str):
+    """A translated argparse template, filled in the way the active language
+    writes it: a value that argparse shows with ``%r`` in the language's
+    quotation marks, and a list argument, which argparse joins with ``", "``
+    before filling it in, as a list of the language
+    (``缺少必需的参数：项目、会话、--position``,
+    ``无效的选择：“bogus”（可选：“init”、“add”）``)."""
 
     field: str | None
+    lists: bool
 
-    def __new__(cls, text: str, field: str | None) -> _ListTemplate:
+    def __new__(cls, text: str, field: str | None, *, lists: bool) -> _ArgTemplate:
         made = super().__new__(cls, text)
         made.field = field
+        made.lists = lists
         return made
 
     def __mod__(self, values: Any) -> str:
         separator = list_separator()
-        if self.field is None and isinstance(values, str):
-            values = values.replace(", ", separator)
-        elif isinstance(values, dict) and isinstance(values.get(self.field), str):
-            values = {**values, self.field: values[self.field].replace(", ", separator)}
-        filled: str = str(self) % values
+        text = str(self)
+        if isinstance(values, dict):
+            values = dict(values)
+            for name in _REPR_FIELD.findall(text):
+                if isinstance(values.get(name), str):
+                    values[name] = _Quoted(values[name])
+            listed = values.get(self.field) if self.field else None
+            if self.lists and isinstance(listed, str):
+                quoted = _PYTHON_QUOTED.sub(lambda match: _quote(match.group(1)), listed)
+                values[self.field] = quoted.replace(", ", separator)
+        elif isinstance(values, str):
+            if self.lists and self.field is None:
+                values = values.replace(", ", separator)
+            elif "%r" in text:
+                values = _Quoted(values)
+        filled: str = text % values
         return filled
 
 
 def _argparse_gettext(message: str) -> str:
     if message not in ARGPARSE_MESSAGES:
         return message
+    translated = _(message)
     if message in _LIST_ARGUMENTS:
-        return _ListTemplate(_(message), _LIST_ARGUMENTS[message])
-    return _(message)
+        return _ArgTemplate(translated, _LIST_ARGUMENTS[message], lists=True)
+    if "%r" in message or _REPR_FIELD.search(message):
+        return _ArgTemplate(translated, None, lists=False)
+    return translated
 
 
 def _argparse_ngettext(singular: str, plural: str, n: int) -> str:
@@ -364,7 +399,8 @@ class _Parser(argparse.ArgumentParser):
             name = _type_name(action.type)
             if name is None:
                 raise
-            message = _("invalid %(type)s value: %(value)r") % {"type": name, "value": arg_string}
+            template = _argparse_gettext("invalid %(type)s value: %(value)r")
+            message = template % {"type": name, "value": arg_string}
             raise argparse.ArgumentError(action, message) from None
 
     def error(self, message: str) -> Any:

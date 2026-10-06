@@ -7200,3 +7200,16 @@ msgstr "frecuencias de muestreo sin sondear"
 
 msgid "probe the sample rates; nothing is played"
 msgstr "sondear las frecuencias de muestreo; no se reproduce nada"
+
+msgctxt "argument value"
+msgid "'{text}'"
+msgstr "'{text}'"
+
+msgid "it is not a WAV, FLAC or other audio file that RoomScope can read"
+msgstr "no es un archivo WAV, FLAC u otro audio que RoomScope pueda leer"
+
+msgid "its audio encoding is not supported"
+msgstr "no se admite su codificación de audio"
+
+msgid "the WAV file is damaged or was cut short"
+msgstr "el archivo WAV está dañado o se cortó"

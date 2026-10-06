@@ -270,6 +270,14 @@ All notable changes to RoomScope are documented here. The format follows
   "desktop app" setting; the menu starts its new sessions there too, so it
   is now "Default output folder: new sessions and the desktop app's Save
   dialog start here".
+- **Audio files RoomScope cannot open.** The error pasted libsndfile's English
+  ("Error opening 'bad.wav': Format not recognised.") into the sentence in
+  the interface language. The usual reasons are now translated (not an audio
+  file, damaged or cut short, an encoding that is not supported; an empty
+  file says it is empty), and libsndfile's own words are logged with
+  `--verbose`. argparse's "invalid choice" read `无效选项` in Chinese (an
+  option, not a choice) and quoted the value with ASCII quotes; it is
+  `无效的选择：“bogus”（可选：“init”、“add”）` now, and Japanese quotes with 「」.
 - **Progress line width.** On an 80-column terminal the line was 81 columns
   wide, so the cursor wrapped and every redraw left a line behind. It is
   now never wider than the terminal's last column, down to 20 columns.

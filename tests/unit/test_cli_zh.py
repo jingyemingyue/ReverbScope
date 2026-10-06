@@ -171,7 +171,7 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
     with pytest.raises(SystemExit):
         main(["--lang", "zh_CN", "analyze", "--profile", "nope"])
     err = capsys.readouterr().err
-    assert "无效选项" in err, err
+    assert "无效的选择" in err, err
 
 
 @pytest.mark.parametrize(
@@ -190,7 +190,7 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
         ),
         (
             ["schema", "bad"],
-            "参数 {result,session,comparison,project,sidecar}：无效选项：'bad'",
+            "参数 {result,session,comparison,project,sidecar}：无效的选择：“bad”",
             "argument {result,session,comparison,project,sidecar}: invalid choice: 'bad'",
         ),
         (["show"], "缺少必需的参数：路径", "the following arguments are required: path"),
@@ -201,7 +201,7 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
         ),
         (
             ["project", "bogus"],
-            "无效选项：'bogus'（可选：'init'、'add'、'average'、'show'）",
+            "无效的选择：“bogus”（可选：“init”、“add”、“average”、“show”）",
             "invalid choice: 'bogus' (choose from 'init', 'add', 'average', 'show')",
         ),
         (
@@ -211,17 +211,17 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
         ),
         (
             ["devices", "--probe=yes"],
-            "参数 --probe：该选项不接受值（给出了 'yes'）",
+            "参数 --probe：该选项不接受值（给出了 “yes”）",
             "argument --probe: ignored explicit argument 'yes'",
         ),
         (
             ["sweep", "--out", "x.wav", "--sample-rate", "abc"],
-            "参数 --sample-rate：无效的整数值：'abc'",
+            "参数 --sample-rate：无效的整数值：“abc”",
             "argument --sample-rate: invalid int value: 'abc'",
         ),
         (
             ["sweep", "--out", "x.wav", "--duration", "long"],
-            "参数 --duration：无效的数字值：'long'",
+            "参数 --duration：无效的数字值：“long”",
             "argument --duration: invalid float value: 'long'",
         ),
     ],
@@ -513,3 +513,26 @@ def test_the_demo_names_its_room_in_the_interface_language(
     if lang == "zh_CN":
         prose = "\n".join(line for line in shown.splitlines() if str(tmp_path) not in line)
         assert english_words(prose) == [], shown
+
+
+@pytest.mark.parametrize(
+    ("lang", "quoted"),
+    [
+        ("zh_CN", "“bogus”"),
+        ("ja", "「bogus」"),
+        ("en", "'bogus'"),
+        ("fr", "'bogus'"),
+    ],
+)
+def test_a_wrong_value_is_quoted_the_way_the_language_quotes(
+    zh_cli: None, capsys: pytest.CaptureFixture[str], lang: str, quoted: str
+) -> None:
+    """The error said `无效选项：'frobnicate'`: ASCII quotes around the value
+    and, in the choices, 选项 (an option) for a choice."""
+    with pytest.raises(SystemExit):
+        main(["--lang", lang, "project", "bogus"])
+    err = words(capsys.readouterr().err)
+    assert quoted in err
+    if lang == "zh_CN":
+        assert "无效的选择" in err and "无效选项" not in err
+        assert "“init”、“add”、“average”、“show”" in err
