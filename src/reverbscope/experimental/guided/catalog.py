@@ -179,7 +179,7 @@ _EN: dict[FindingType, FindingCopy] = {
             "That is a limit of this take, not a room score.",
         ),
         "Use a longer sweep, a little more playback level if it is not already hot, or a quieter room, then measure again.",
-        "The withheld metric should become valid. Until it does, do not quote it.",
+        "The withheld metric should then be reported. Until then, do not quote it.",
     ),
     FindingType.LOW_DIRECT_SOUND_CONFIDENCE: _c(
         "The direct sound is uncertain",
@@ -550,7 +550,13 @@ _UI = {
         "secure_choice": "Store securely if possible",
         "session_choice": "Use for this session only",
         "cancel_choice": "Cancel",
-        "local_status": "No local model is bundled, and nothing is downloaded automatically.",
+        "local_status": (
+            "An optional on-device model can be installed. "
+            "It stays off until you install it, and it is never downloaded."
+        ),
+        "install_local": "Install the on-device model",
+        "local_installed": "On-device model installed. You can switch back to the built-in explanation.",
+        "local_install_failed": "The on-device model was not installed.",
         "packs_status": "Knowledge packs are optional. None are bundled or downloaded automatically.",
         "key_missing": "No API key is configured. Showing the built-in offline explanation instead.",
         "store_title": "Where should the key be kept?",
@@ -657,7 +663,10 @@ _UI = {
         "secure_choice": "尽量放入系统凭据库",
         "session_choice": "仅本次运行",
         "cancel_choice": "取消",
-        "local_status": "没有随程序附带本地模型，也不会自动下载。",
+        "local_status": "可以安装本机说明模型。安装之前不会启用，也不会自动下载。",
+        "install_local": "安装本机说明模型",
+        "local_installed": "本机说明模型已安装。可以改回内置说明。",
+        "local_install_failed": "本机说明模型没有安装成功。",
         "packs_status": "知识包需要另行获取。当前没有附带，也不会自动下载。",
         "key_missing": "还没有配置密钥。以下改为内置离线说明。",
         "store_title": "密钥要放在哪里？",
