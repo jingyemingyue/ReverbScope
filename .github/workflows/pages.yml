@@ -1,6 +1,7 @@
-# Deploy the ReverbScope marketing site to GitHub Pages.
-# Source: the site/ directory on main. Enable in
-# Settings -> Pages -> Source: GitHub Actions.
+# Deploy the ReverbScope landing page (site/) to GitHub Pages.
+# The site is static and committed; nothing is generated here. Enable once in
+# Settings -> Pages -> Build and deployment -> Source: GitHub Actions; until
+# then the deploy job fails with "Pages is not enabled" and nothing is served.
 name: Deploy site to Pages
 
 on:
@@ -11,8 +12,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: pages
@@ -22,6 +21,15 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # upload-pages-artifact tars the path it is given; without a checkout
+      # the runner has no site/ and run #1 failed with "tar: site: Cannot open".
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Check the site files
+        run: |
+          for file in site/index.html site/robots.txt site/sitemap.xml; do
+            test -s "$file" || { echo "::error::$file is missing or empty"; exit 1; }
+          done
+          python3 -c "import xml.dom.minidom; xml.dom.minidom.parse('site/sitemap.xml')"
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3
         with:
@@ -29,6 +37,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
