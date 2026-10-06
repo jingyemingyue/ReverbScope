@@ -19,6 +19,22 @@ from reverbscope.interpretation.profiles import (
 
 log = logging.getLogger("reverbscope.interpretation")
 
+# The parser builder lists the profiles several times per command, and every
+# listing walks the entry points again (so a plugin installed or patched while
+# the process runs is still seen). A plugin that cannot be used would
+# otherwise repeat the same warning on every walk: seven times for
+# `reverbscope --version`. Each distinct message is logged once per process.
+_reported: set[str] = set()
+
+
+def _warn_once(message: str, *args: object) -> None:
+    text = message % args
+    if text in _reported:
+        return
+    _reported.add(text)
+    log.warning("%s", text)
+
+
 _BUILTINS: dict[str, RecordingProfile] = {
     "generic": GenericProfile(),
     "vocal": VocalProfile(),
@@ -38,10 +54,10 @@ def _entry_points() -> dict[str, RecordingProfile]:
         return found
     for item in entry_points().select(group="reverbscope.profiles"):
         if item.name in _BUILTINS:
-            log.warning("ignoring third-party profile %r; name collides with a built-in", item.name)
+            _warn_once("ignoring third-party profile %r; name collides with a built-in", item.name)
             continue
         if item.name in found:
-            log.warning(
+            _warn_once(
                 "ignoring third-party profile %r; another package registers the same name",
                 item.name,
             )
@@ -49,7 +65,7 @@ def _entry_points() -> dict[str, RecordingProfile]:
         try:
             loaded = item.load()
         except Exception as exc:
-            log.warning("profile %r failed to import: %s", item.name, exc)
+            _warn_once("profile %r failed to import: %s", item.name, exc)
             continue
         # Every command lists the profiles while it builds its options, so a
         # plugin that cannot be created is skipped, as an exporter is: it must
@@ -57,10 +73,10 @@ def _entry_points() -> dict[str, RecordingProfile]:
         try:
             profile = loaded() if isinstance(loaded, type) else loaded
         except Exception as exc:
-            log.warning("profile %r could not be created: %s", item.name, exc)
+            _warn_once("profile %r could not be created: %s", item.name, exc)
             continue
         if not isinstance(profile, RecordingProfile):
-            log.warning(
+            _warn_once(
                 "ignoring third-party profile %r; it lacks name, description, interpret or "
                 "interpret_comparison",
                 item.name,

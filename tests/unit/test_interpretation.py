@@ -569,7 +569,7 @@ def test_a_third_party_profile_that_cannot_be_created_is_skipped(
     import types
 
     from reverbscope.cli.main import main
-    from reverbscope.interpretation import get_profile, profile_origins
+    from reverbscope.interpretation import get_profile, profile_origins, registry
 
     module = types.ModuleType("third_party_profiles")
 
@@ -608,6 +608,8 @@ def test_a_third_party_profile_that_cannot_be_created_is_skipped(
             return [point for point in points if point.group == group]
 
     monkeypatch.setattr(metadata, "entry_points", lambda: Points())
+    # A process-wide memory of what was reported must not hide these from caplog.
+    monkeypatch.setattr(registry, "_reported", set(), raising=False)
     with caplog.at_level(logging.WARNING, logger="reverbscope.interpretation"):
         assert available_profiles() == sorted([*ALL_PROFILES, "booth"])
     messages = [record.getMessage() for record in caplog.records]
@@ -620,3 +622,78 @@ def test_a_third_party_profile_that_cannot_be_created_is_skipped(
     with pytest.raises(SystemExit) as stopped:
         main(["--version"])
     assert stopped.value.code == 0
+
+
+def test_a_broken_third_party_profile_is_reported_once_per_process(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Every listing of the profiles walks the entry points again and the
+    parser builder lists them several times, so one plugin that cannot be
+    used repeated its warning seven times for `reverbscope --version`. The
+    walk is still repeated (a plugin patched in later is seen); only the
+    identical message is not."""
+    import importlib.metadata as metadata
+    import logging
+    import sys
+    import types
+
+    from reverbscope.cli.main import main
+    from reverbscope.interpretation import registry
+
+    module = types.ModuleType("third_party_broken_profiles")
+
+    class Studio:
+        name = "studio"
+        description = "needs a configuration file"
+
+        def __init__(self) -> None:
+            raise RuntimeError("config file ~/.studio.toml missing")
+
+    class Half:
+        name = "half"
+        description = "no comparison"
+
+        def interpret(self, result: object) -> list[object]:
+            return []
+
+    module.Studio, module.Half = Studio, Half  # type: ignore[attr-defined]
+    monkeypatch.setitem(sys.modules, "third_party_broken_profiles", module)
+    points = [
+        metadata.EntryPoint(name, value, "reverbscope.profiles")
+        for name, value in (
+            ("studio", "third_party_broken_profiles:Studio"),
+            ("half", "third_party_broken_profiles:Half"),
+            ("gone", "third_party_not_installed:Profile"),
+        )
+    ]
+    walks: list[int] = []
+
+    class Points:
+        def select(self, *, group: str) -> list[metadata.EntryPoint]:
+            walks.append(1)
+            return [point for point in points if point.group == group]
+
+    monkeypatch.setattr(metadata, "entry_points", lambda: Points())
+    monkeypatch.setattr(registry, "_reported", set(), raising=False)
+    with caplog.at_level(logging.WARNING, logger="reverbscope.interpretation"):
+        for _ in range(4):
+            assert available_profiles() == sorted(ALL_PROFILES)
+        with pytest.raises(SystemExit):
+            main(["--version"])
+    assert len(walks) > 4
+    messages = [record.getMessage() for record in caplog.records]
+    assert sorted(messages) == sorted(
+        [
+            "profile 'studio' could not be created: config file ~/.studio.toml missing",
+            "ignoring third-party profile 'half'; it lacks name, description, interpret or "
+            "interpret_comparison",
+            "profile 'gone' failed to import: No module named 'third_party_not_installed'",
+        ]
+    )
+    # A different reason for the same plugin is news and is reported.
+    Studio.__init__ = lambda self: (_ for _ in ()).throw(RuntimeError("licence expired"))  # type: ignore[method-assign,misc]
+    with caplog.at_level(logging.WARNING, logger="reverbscope.interpretation"):
+        available_profiles()
+    assert (
+        caplog.records[-1].getMessage() == "profile 'studio' could not be created: licence expired"
+    )
