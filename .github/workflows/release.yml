@@ -44,9 +44,13 @@ on:
 permissions:
   contents: read
 
+# One Release run per ref at a time. A newer push to a pull request cancels
+# the older run for that PR (four bundle runners would otherwise finish a
+# superseded commit); runs for main, tags and manual verification queue
+# behind each other and are never cancelled by a later event.
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  group: release-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   prepare:
