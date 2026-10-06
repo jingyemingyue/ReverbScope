@@ -124,7 +124,8 @@ def save_measurement(
     Nothing in ``directory`` is replaced until every file has been written,
     and a rename that fails puts back the members already replaced, so a
     failed save keeps the session that was there whole. A recording.wav or
-    sweep sidecar of an earlier take that this one does not have is removed.
+    sweep sidecar of an earlier take that this one does not have is removed;
+    a file of the same name in a folder with no session is not ReverbScope's.
     """
     base = Path(directory)
     base.mkdir(parents=True, exist_ok=True)
@@ -189,7 +190,10 @@ def save_measurement(
         )
         # The recording and sweep sidecar of an earlier take in this folder
         # would stay beside the new one (its recording not copied, or no
-        # sidecar), and opening the session would adopt the old sidecar.
+        # sidecar), and opening the session would adopt the old sidecar. Only
+        # a folder with a session in it has an earlier take: elsewhere a
+        # recording.wav (a very common name for a DAW export) or a sidecar
+        # that `reverbscope sweep` wrote is the user's own file.
         ours = {final.name for _temporary, final in staged}
         if sidecar is not None:
             ours.add(SWEEP_SIDECAR_NAME)
@@ -197,16 +201,35 @@ def save_measurement(
             base / RECORDING_FILE, base / session.recording_path
         ):
             ours.add(RECORDING_FILE)
-        stale = [
-            base / name
-            for name in (RECORDING_FILE, SWEEP_SIDECAR_NAME)
-            if name not in ours and os.path.lexists(base / name)
-        ]
+        stale: list[Path] = []
+        earlier = _earlier_take(session_path)
+        if earlier is not None:
+            if SWEEP_SIDECAR_NAME not in ours and os.path.lexists(base / SWEEP_SIDECAR_NAME):
+                stale.append(base / SWEEP_SIDECAR_NAME)
+            # The recording is the earlier take's only when that session
+            # names it: another recording.wav in the folder is not ours.
+            named = earlier.get("recording_path")
+            if (
+                RECORDING_FILE not in ours
+                and isinstance(named, str)
+                and named
+                and _same_file(base / RECORDING_FILE, base / named)
+            ):
+                stale.append(base / RECORDING_FILE)
         _replace_members(staged, remove=stale)
     finally:
         for temporary, _final in staged:
             discard(temporary)
     return session_path
+
+
+def _earlier_take(session_path: Path) -> dict[str, Any] | None:
+    """The session.json an earlier save left at ``session_path``, as stored;
+    None when there is none or it cannot be read (nothing is then removed)."""
+    try:
+        return _read_json(session_path)
+    except (ReverbScopeError, OSError):
+        return None
 
 
 def _replace_members(staged: list[tuple[Path, Path]], *, remove: list[Path]) -> None:

@@ -819,3 +819,49 @@ def test_only_a_session_json_is_read_as_a_session(tmp_path: Path, analysed) -> N
             load_measurement(loose)
     finally:
         activate("en")
+
+
+def test_saving_into_a_folder_with_no_session_leaves_its_files_alone(
+    tmp_path: Path, analysed
+) -> None:
+    """A DAW export folder holds a recording.wav (a very common name) and the
+    sidecar `reverbscope sweep` wrote beside its sweep. A save removed both as
+    "the earlier take's" although no session had ever been saved there."""
+    _recording, result = analysed
+    folder = tmp_path / "export"
+    folder.mkdir()
+    (folder / "recording.wav").write_bytes(b"the engineer's mix")
+    (folder / "sweep.reverbscope-sweep.json").write_text('{"mine": true}', encoding="utf-8")
+    save_measurement(
+        folder,
+        MeasurementSession(room_name="B"),
+        result,
+        include_curves=False,
+        copy_recording=False,
+    )
+    assert (folder / "recording.wav").read_bytes() == b"the engineer's mix"
+    assert (folder / "sweep.reverbscope-sweep.json").read_text(encoding="utf-8") == '{"mine": true}'
+
+
+def test_a_save_keeps_a_recording_wav_its_session_never_named(tmp_path: Path, analysed) -> None:
+    """The folder of an earlier session is not ReverbScope's to clean: only the
+    recording.wav that session itself copied belongs to its take."""
+    _recording, result = analysed
+    folder = tmp_path / "s"
+    save_measurement(
+        folder,
+        MeasurementSession(room_name="A"),
+        result,
+        include_curves=False,
+        copy_recording=False,
+    )
+    (folder / "recording.wav").write_bytes(b"a file put here afterwards")
+    save_measurement(
+        folder,
+        MeasurementSession(room_name="B"),
+        result,
+        include_curves=False,
+        copy_recording=False,
+    )
+    assert (folder / "recording.wav").read_bytes() == b"a file put here afterwards"
+    assert load_session(folder).room_name == "B"
