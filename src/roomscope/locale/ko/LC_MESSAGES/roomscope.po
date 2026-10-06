@@ -6479,3 +6479,7 @@ msgstr "이 컴퓨터의 오디오 인터페이스"
 
 msgid "Default output folder (auto clears it)"
 msgstr "기본 출력 폴더(auto를 입력하면 지움)"
+
+msgctxt "answers meaning quit"
+msgid "q quit exit"
+msgstr "q quit exit 종료 나가기"

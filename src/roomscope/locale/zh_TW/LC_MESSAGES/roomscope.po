@@ -6194,7 +6194,7 @@ msgid "Quit"
 msgstr "退出"
 
 msgid "or type q"
-msgstr "也可以輸入 q"
+msgstr "也可以輸入 q 或「退出」"
 
 msgid "RoomScope menu"
 msgstr "RoomScope 選單"
@@ -6324,3 +6324,7 @@ msgstr "這臺電腦上的音頻介面"
 
 msgid "Default output folder (auto clears it)"
 msgstr "預設輸出資料夾，輸入 auto 可清除"
+
+msgctxt "answers meaning quit"
+msgid "q quit exit"
+msgstr "q quit exit 退出 離開"

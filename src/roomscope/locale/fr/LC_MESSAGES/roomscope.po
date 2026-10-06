@@ -7180,3 +7180,7 @@ msgstr "les interfaces audio de cet ordinateur"
 
 msgid "Default output folder (auto clears it)"
 msgstr "Dossier de sortie par défaut (auto l'efface)"
+
+msgctxt "answers meaning quit"
+msgid "q quit exit"
+msgstr "q quit exit quitter"

@@ -10,6 +10,7 @@ can type are covered too.
 
 from __future__ import annotations
 
+import contextlib
 import io
 import os
 import re
@@ -157,6 +158,36 @@ def test_the_menu_lists_every_item_and_0_leaves(
 @pytest.mark.parametrize("answer", ["q", "Q", "quit", "exit"])
 def test_q_leaves_too(here: Path, capsys: pytest.CaptureFixture[str], answer: str) -> None:
     assert drive(answer)[0] == 0
+
+
+@pytest.mark.parametrize("answer", ["０", "ｑ", "ＱＵＩＴ", " 0 "])
+def test_a_full_width_answer_is_read_as_typed_on_a_chinese_keyboard(
+    here: Path, capsys: pytest.CaptureFixture[str], answer: str
+) -> None:
+    assert drive(answer)[0] == 0
+    assert "no item" not in capsys.readouterr().out.lower()
+
+
+def test_a_full_width_number_chooses_the_item(
+    here: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    dispatch = Commands()
+    code, _script = drive("９", "", "0", dispatch=dispatch)
+    assert code == 0
+    assert dispatch.calls == [["doctor"]]
+
+
+def test_the_chinese_word_for_quit_leaves_the_chinese_menu(
+    here: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    activate("zh_CN")
+    code, _script = drive("退出")
+    out = capsys.readouterr().out
+    assert code == 0 and "菜单中没有" not in out
+    assert "也可以输入 q 或“退出”" in out
+    activate("en")
+    assert drive("退出")[0] == 0  # English has no such word: asked again, then the input ends
+    assert "There is no item" in capsys.readouterr().out
 
 
 def test_the_menu_is_chinese_in_chinese(here: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -321,6 +352,67 @@ def test_end_of_input_leaves_cleanly_anywhere(
     assert "Traceback" not in captured.out + captured.err
 
 
+# --- Answers that look like numbers -------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "typed", ["①", "²", "٣٣٣٣٣", "1" * 5000, "9" * 400, "-1", "1.5", "１２３４"]
+)
+def test_a_number_prompt_asks_again_instead_of_failing(typed: str) -> None:
+    """``①`` and ``²`` are digits to ``str.isdigit`` but not to ``int``; a string
+    of thousands of digits is more than ``int`` takes. Each is taken as the
+    number it stands for or refused in words, never a crash of the whole menu."""
+    for check in (
+        menu.number_between(0, 4),
+        menu.one_of([0, 1], "x"),
+        menu.sample_rate,
+        menu.sweep_seconds,
+        menu.level_dbfs,
+    ):
+        with contextlib.suppress(menu.InvalidAnswerError):
+            check(typed)
+
+
+@pytest.mark.parametrize(
+    ("check", "typed", "value"),
+    [
+        (menu.number_between(0, 4), "３", 3),
+        (menu.number_between(0, 4), "②", 2),  # a circled digit is the digit
+        (menu.one_of([0, 1, 2], "x"), "２", 2),
+        (menu.sample_rate, "４８０００", 48000),
+        (menu.sample_rate, "44．1 kHz", 44100),
+        (menu.sweep_seconds, "１０", 10.0),
+        (menu.level_dbfs, "－２０", -20.0),
+    ],
+)
+def test_a_full_width_digit_or_sign_is_a_number_too(check, typed, value) -> None:  # type: ignore[no-untyped-def]
+    assert check(typed) == value
+
+
+@pytest.mark.parametrize("typed", ["⑩", "½", "9" * 5000])
+def test_the_menu_keeps_asking_when_a_number_is_not_one(
+    here: Path, capsys: pytest.CaptureFixture[str], typed: str
+) -> None:
+    dispatch = Commands()
+    code, _script = drive("8", typed, "0", "0", dispatch=dispatch)
+    captured = capsys.readouterr()
+    assert code == 0 and dispatch.calls == []
+    assert "Type a number from 0 to 4." in captured.out
+    assert "unexpected error" not in captured.out + captured.err
+
+
+def test_a_session_number_that_is_not_a_number_is_asked_again(
+    here: Path, capsys: pytest.CaptureFixture[str], demo_folder: Path
+) -> None:
+    shutil.copytree(demo_folder, here / "roomscope-demo")
+    dispatch = Commands()
+    code, _script = drive("5", "½", "9" * 5000, "１", "", dispatch=dispatch)
+    out = capsys.readouterr().out
+    assert code == 0
+    assert out.count("was not found") == 2  # read as paths, which do not exist
+    assert len(dispatch.calls) == 1 and dispatch.calls[0][0] == "show"
+
+
 # --- Paths --------------------------------------------------------------------------------
 
 
@@ -334,6 +426,12 @@ def test_end_of_input_leaves_cleanly_anywhere(
         (r"/Users/me/My\ Take\ \(1\).wav ", True, "/Users/me/My Take (1).wav"),
         (r"我的\ 录音.wav", True, "我的 录音.wav"),
         (r"'My\ Take.wav'", True, r"My\ Take.wav"),  # quoted: nothing to undo
+        # GNOME and KDE write an apostrophe as '\'' inside the quotes.
+        ("'it'\\''s a take.wav'", True, "it's a take.wav"),
+        ("'it'\\''s'\\''s a take.wav'", True, "it's's a take.wav"),
+        ('"it\'s a take.wav"', True, "it's a take.wav"),
+        ("'it's a take.wav'", True, "it's a take.wav"),  # one pair of quotes, apostrophe inside
+        ("It's Bob's.wav", True, "It's Bob's.wav"),  # not quoted: an apostrophe is a letter
         (r"C:\Takes\take.wav", False, r"C:\Takes\take.wav"),
         (r'"C:\My Takes\take.wav"', False, r"C:\My Takes\take.wav"),
         (r"& 'C:\My Takes\take.wav'", False, r"C:\My Takes\take.wav"),

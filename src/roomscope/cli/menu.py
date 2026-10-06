@@ -25,9 +25,12 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import math
 import os
 import re
+import shlex
 import sys
+import unicodedata
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -66,7 +69,7 @@ EXIT_OK = 0
 EXIT_REFUSED = 2
 EXIT_INTERRUPTED = 130
 
-#: Answers that leave the menu, besides 0.
+#: Answers that leave the menu, besides 0 and the words of the interface language.
 _QUIT_WORDS = frozenset({"q", "quit", "exit"})
 #: Columns a prompt leaves free at the right edge for the answer being typed.
 _ANSWER_ROOM = 10
@@ -228,18 +231,54 @@ def clean_path(text: str, *, posix: bool | None = None) -> str:
     Spaces around it and one pair of surrounding quotes go (``"My Take.wav"``,
     ``'My Take.wav'``, “…”); PowerShell's ``& '…'`` goes too. On macOS and
     Linux a path that is not quoted loses the backslashes a drag and drop
-    adds (``My\\ Take.wav``); on Windows a backslash is a separator and stays.
-    ``~`` is left for :func:`as_path`.
+    adds (``My\\ Take.wav``), and a name the terminal quoted as a shell would
+    (``'it'\\''s a take.wav'``, which GNOME and KDE write) is read as a shell
+    reads it; on Windows a backslash is a separator and stays. ``~`` is left
+    for :func:`as_path`.
     """
     posix = os.name != "nt" if posix is None else posix
     text = text.strip()
     if text.startswith("& ") and text[2:].lstrip()[:1] in _QUOTES:
         text = text[2:].lstrip()
+    if posix and text[:1] in ("'", '"') and ("\\" in text or "'" in text[1:-1]):
+        with contextlib.suppress(ValueError):
+            words = shlex.split(text)
+            if len(words) == 1:
+                return words[0]
     if len(text) >= 2 and _QUOTES.get(text[0]) == text[-1]:
         return text[1:-1]
     if posix and "\\" in text:
         text = re.sub(r"\\(.)", r"\1", text)
     return text
+
+
+def normalised(text: str) -> str:
+    """``text`` as ASCII digits, signs and letters where it has full-width ones
+    (a Chinese input method types ``９`` and ``ｙ``), without the spaces around it.
+    Only for answers that are numbers or words, never a path: NFKC would
+    rename a file."""
+    return unicodedata.normalize("NFKC", text).strip()
+
+
+def whole_number(text: str) -> int | None:
+    """``text`` as a whole number, or ``None`` for anything else: ``①`` and ``²``
+    are digits to Python but not numbers, and a string of thousands of digits
+    is more than ``int`` takes."""
+    digits = normalised(text)
+    if not digits.isdecimal():
+        return None
+    try:
+        return int(digits)
+    except ValueError:
+        return None
+
+
+def _exists(path: Path) -> bool:
+    """Whether ``path`` exists; a name too long for the file system does not."""
+    try:
+        return path.exists()
+    except OSError:
+        return False
 
 
 def as_path(text: str, *, posix: bool | None = None) -> Path:
@@ -284,7 +323,7 @@ def existing_folder(text: str) -> Path:
 
 def _number(text: str, units: str = "") -> float:
     """``text`` as a number; a unit after it (``10 s``, ``-20 dBFS``) is allowed."""
-    cleaned = text.strip().replace(",", ".")
+    cleaned = normalised(text).replace(",", ".")
     if units:
         cleaned = re.sub(rf"\s*(?:{units})$", "", cleaned, flags=re.IGNORECASE)
     return float(cleaned)
@@ -295,10 +334,8 @@ def number_between(low: int, high: int) -> Callable[[str], int]:
 
     def check(text: str) -> int:
         reason = _("Type a number from {low} to {high}.").format(low=low, high=high)
-        if not text.strip().isdigit():
-            raise InvalidAnswerError(reason)
-        value = int(text.strip())
-        if not low <= value <= high:
+        value = whole_number(text)
+        if value is None or not low <= value <= high:
             raise InvalidAnswerError(reason)
         return value
 
@@ -311,8 +348,9 @@ def one_of(numbers: Sequence[int], reason: str) -> Callable[[str], int | None]:
     def check(text: str) -> int | None:
         if not text.strip():
             return None
-        if text.strip().isdigit() and int(text.strip()) in numbers:
-            return int(text.strip())
+        value = whole_number(text)
+        if value is not None and value in numbers:
+            return value
         raise InvalidAnswerError(reason)
 
     return check
@@ -325,13 +363,15 @@ def sample_rate(text: str) -> int:
     reason = _("Type one of these sample rates: {rates}.").format(
         rates=list_join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
     )
-    match = re.fullmatch(r"\s*([\d.,]+)\s*(k?)(?:hz)?\s*", text, flags=re.IGNORECASE)
+    match = re.fullmatch(r"([\d.,]+)\s*(k?)(?:hz)?", normalised(text), flags=re.IGNORECASE)
     if match is None:
         raise InvalidAnswerError(reason)
     try:
         value = float(match.group(1).replace(",", "."))
     except ValueError:
         raise InvalidAnswerError(reason) from None
+    if not math.isfinite(value * 1000):  # 400 nines are a float, but not a rate
+        raise InvalidAnswerError(reason)
     rate = round(value * 1000) if match.group(2) else round(value)
     if rate not in SUPPORTED_SAMPLE_RATES:
         raise InvalidAnswerError(reason)
@@ -370,7 +410,16 @@ def is_yes(text: str) -> bool:
     """``y`` or ``yes``, or a word for yes in the interface language."""
     words = {"y", "yes"}
     words.update(re.split(r"[\s,、，]+", pgettext("answers meaning yes", "y yes").casefold()))
-    return text.strip().casefold() in words - {""}
+    return normalised(text).casefold() in words - {""}
+
+
+def is_quit(text: str) -> bool:
+    """``0``, ``q``, ``quit`` or ``exit``, or a word for leaving in the interface language."""
+    words = set(_QUIT_WORDS)
+    words.update(
+        re.split(r"[\s,、，]+", pgettext("answers meaning quit", "q quit exit").casefold())
+    )
+    return normalised(text).casefold() in words - {""}
 
 
 # --- Sessions ------------------------------------------------------------------------------
@@ -752,10 +801,10 @@ class Menu:
             except EOFError:
                 self.out.write("\n")
                 raise _LeaveMenuError(EXIT_OK) from None
-            key = answer.strip().casefold()
+            key = normalised(answer).casefold()
             if not key:
                 continue
-            if key == "0" or key in _QUIT_WORDS:
+            if key == "0" or is_quit(key):
                 return None
             if key in actions:
                 return actions[key]
@@ -1036,8 +1085,8 @@ class Menu:
     ) -> Path:
         def check(text: str) -> Path:
             cleaned = clean_path(text)
-            if cleaned.isdigit() and not Path(cleaned).exists():
-                chosen = int(cleaned)
+            chosen = whole_number(cleaned)
+            if chosen is not None and not _exists(Path(cleaned)):
                 if not 1 <= chosen <= len(listed):
                     raise InvalidAnswerError(
                         _("Type a number from {low} to {high}.").format(low=1, high=len(listed))
@@ -1047,7 +1096,7 @@ class Menu:
                 path = Path(shown_path(listed[chosen - 1].path))
             else:
                 path = _required_path(text)
-                if not path.exists():
+                if not _exists(path):
                     raise InvalidAnswerError(
                         _("{path} was not found; check the path and type it again.").format(
                             path=path

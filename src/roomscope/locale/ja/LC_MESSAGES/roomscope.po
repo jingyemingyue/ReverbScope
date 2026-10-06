@@ -6445,3 +6445,7 @@ msgstr "このコンピュータのオーディオインターフェース"
 
 msgid "Default output folder (auto clears it)"
 msgstr "既定の出力フォルダー（auto で解除）"
+
+msgctxt "answers meaning quit"
+msgid "q quit exit"
+msgstr "q quit exit 終了"

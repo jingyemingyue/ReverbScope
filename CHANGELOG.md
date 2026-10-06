@@ -28,8 +28,10 @@ All notable changes to RoomScope are documented here. The format follows
   Terminal Edition), settings (language, default profile, audio backend,
   output folder, through `roomscope config`) and environment report. Each
   item asks only for what it needs with a default Enter accepts, takes
-  quoted, drag-and-dropped (`My\ Take.wav`), `~` and Chinese paths, asks
-  again with the reason when a file is missing or a number is out of range,
+  quoted, drag-and-dropped (`My\ Take.wav`, and the `'it'\''s.wav` that
+  GNOME and KDE write), `~` and Chinese paths, reads numbers and words as a
+  Chinese input method types them (full-width `９`, `①`, 退出), asks again
+  with the reason when a file is missing or a number is out of range,
   prints the command it stands for ("等同于命令：roomscope analyze …") and
   runs it in the same process; a failed command is named in words. A take
   plays nothing until an explicit `y`, keeps -20 dBFS by default and still

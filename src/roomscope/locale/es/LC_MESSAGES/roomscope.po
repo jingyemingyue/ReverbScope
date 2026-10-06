@@ -7133,3 +7133,7 @@ msgstr "las interfaces de audio de este ordenador"
 
 msgid "Default output folder (auto clears it)"
 msgstr "Carpeta de salida predeterminada (auto la borra)"
+
+msgctxt "answers meaning quit"
+msgid "q quit exit"
+msgstr "q quit exit salir"

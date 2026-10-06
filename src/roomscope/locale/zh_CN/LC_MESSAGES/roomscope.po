@@ -5082,7 +5082,7 @@ msgid "Quit"
 msgstr "退出"
 
 msgid "or type q"
-msgstr "也可以输入 q"
+msgstr "也可以输入 q 或“退出”"
 
 msgid "RoomScope menu"
 msgstr "RoomScope 菜单"
@@ -5212,3 +5212,7 @@ msgstr "这台电脑上的音频接口"
 
 msgid "Default output folder (auto clears it)"
 msgstr "默认输出文件夹，输入 auto 可清除"
+
+msgctxt "answers meaning quit"
+msgid "q quit exit"
+msgstr "q quit exit 退出 离开"
