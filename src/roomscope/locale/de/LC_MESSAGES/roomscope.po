@@ -7122,3 +7122,15 @@ msgstr ""
 
 msgid "Δ % is left out: widen the terminal to see it."
 msgstr "Δ % ist ausgelassen: Mach das Terminal breiter, um es zu sehen."
+
+msgctxt "annotation"
+msgid "{value} ({note})"
+msgstr "{value} ({note})"
+
+msgctxt "label and text"
+msgid "{label}: {text}"
+msgstr "{label}: {text}"
+
+msgctxt "clause separator"
+msgid "; "
+msgstr "; "

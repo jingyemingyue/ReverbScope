@@ -393,3 +393,47 @@ def test_closing_marks_may_hang_where_the_caller_has_room() -> None:
     text = "扫频时长，单位秒（默认：10）："
     assert wrap(text, 30, first="  ") == ["  扫频时长，单位秒（默认：", "  10）："]
     assert wrap(text, 30, first="  ", hang=4) == ["  扫频时长，单位秒（默认：10）："]
+
+
+# --- Lists, brackets and colons follow the interface language ------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("lang", "bracketed", "labelled_as", "clause"),
+    [
+        ("en", "110 Hz (+11.3 dB)", "A: b", "x; y"),
+        ("zh_CN", "110 Hz（+11.3 dB）", "A：b", "x；y"),
+        ("zh_TW", "110 Hz（+11.3 dB）", "A：b", "x；y"),
+        ("ja", "110 Hz（+11.3 dB）", "A: b", "x; y"),
+        ("fr", "110 Hz (+11.3 dB)", "A : b", "x ; y"),
+    ],
+)
+def test_brackets_colons_and_semicolons_are_the_languages(
+    lang: str, bracketed: str, labelled_as: str, clause: str
+) -> None:
+    from roomscope.cli.render import annotated, clauses, labelled
+
+    activate(lang)
+    try:
+        assert annotated("110 Hz", "+11.3 dB") == bracketed
+        assert labelled("A", "b") == labelled_as
+        assert clauses(["x", "y"]) == clause
+    finally:
+        activate("en")
+
+
+def test_a_chinese_list_is_joined_with_the_chinese_comma_and_brackets(
+    run: Call, demo: Path
+) -> None:
+    text = run("--lang", "zh_CN", "show", str(demo / "position-a"), columns=120)
+    words = " ".join(unframe(text).split())
+    assert "可能的共振：110 Hz（+11.3 dB）" in words
+    assert "50 Hz（+57 dB）、100 Hz（+48 dB）、150 Hz（+43 dB）" in words
+    assert "(+" not in words  # no ASCII bracket in front of a Chinese reader
+    assert not re.search(r"\), \d", words)
+    devices = run("--lang", "zh_CN", "--backend", "fake", "devices", columns=120)
+    flat = " ".join(unframe(devices).split())
+    assert "输入、输出" in flat and "48 kHz；44.1" in flat
+    english = run("--lang", "en", "show", str(demo / "position-a"), columns=120)
+    assert "110 Hz (+11.3 dB)" in " ".join(unframe(english).split())
+    assert "50 Hz (+57 dB), 100 Hz (+48 dB), 150 Hz (+43 dB)" in " ".join(unframe(english).split())

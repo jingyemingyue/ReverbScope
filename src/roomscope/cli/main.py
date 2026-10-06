@@ -444,7 +444,7 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
         choices=SUPPORTED_SAMPLE_RATES,
         metavar=pgettext("metavar", "HZ"),
         help=_("sample rate (Hz): {rates}").format(
-            rates=", ".join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
+            rates=list_join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
         ),
     )
     group.add_argument(

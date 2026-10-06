@@ -16,7 +16,7 @@ from __future__ import annotations
 import math
 from typing import Protocol, runtime_checkable
 
-from roomscope.i18n import _, current_locale, diag, localize, pgettext
+from roomscope.i18n import _, current_locale, diag, list_join, localize, pgettext
 from roomscope.interpretation.interpreter import Finding, Severity, finding
 from roomscope.models.comparison import (
     REFUSAL_NOTE_PREFIXES,
@@ -834,7 +834,7 @@ class ProfileBase:
         ).format(segment=segment, rms_dbfs=rms_dbfs)
 
     def resonance_message(self, candidates: list[ResonanceCandidate]) -> str:
-        listed = ", ".join(f"{c.frequency_hz:.0f} Hz" for c in candidates[:4])
+        listed = list_join(f"{c.frequency_hz:.0f} Hz" for c in candidates[:4])
         return _(
             "Potential low-frequency resonances around {listed}: these frequencies stand out "
             "in the response and ring longer than their surroundings. Measure one or two other "
@@ -988,7 +988,7 @@ class VoiceOverProfile(ProfileBase):
         ).format(segment=segment, rms_dbfs=rms_dbfs)
 
     def resonance_message(self, candidates: list[ResonanceCandidate]) -> str:
-        listed = ", ".join(f"{c.frequency_hz:.0f} Hz" for c in candidates[:4])
+        listed = list_join(f"{c.frequency_hz:.0f} Hz" for c in candidates[:4])
         return _(
             "Potential low-frequency resonances around {listed}: these frequencies stand out "
             "in the response and ring longer than their surroundings, which colours voice and "
@@ -1201,7 +1201,7 @@ class RoomMicProfile(ProfileBase):
         ).format(segment=segment, rms_dbfs=rms_dbfs)
 
     def resonance_message(self, candidates: list[ResonanceCandidate]) -> str:
-        listed = ", ".join(f"{c.frequency_hz:.0f} Hz" for c in candidates[:4])
+        listed = list_join(f"{c.frequency_hz:.0f} Hz" for c in candidates[:4])
         return _(
             "Potential low-frequency resonances around {listed}: these frequencies ring longer "
             "than their surroundings, so the room sound will be uneven there. Measure one or "

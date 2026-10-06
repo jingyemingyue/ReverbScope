@@ -27,7 +27,7 @@ from roomscope.cli.console import (
     wrap,
 )
 from roomscope.edition import RELEASES_URL, is_terminal_package
-from roomscope.i18n import _, localize, pgettext
+from roomscope.i18n import _, list_join, localize, pgettext
 from roomscope.interpretation import Finding
 from roomscope.interpretation.profiles import (
     band_text,
@@ -86,6 +86,22 @@ def rates_text(rates: Sequence[int], console: Console) -> str:
     if not rates:
         return pgettext("sample rates", "none")
     return console.sep().join(f"{rate / 1000:g}" for rate in rates) + " kHz"
+
+
+def annotated(value: str, note: str) -> str:
+    """``110 Hz (+11.3 dB)``, with the brackets of the interface language
+    (``110 Hz（+11.3 dB）`` in Chinese, where the text around has them too)."""
+    return pgettext("annotation", "{value} ({note})").format(value=value, note=note)
+
+
+def labelled(label: str, text: str) -> str:
+    """``label: text`` with the colon of the interface language (``：``)."""
+    return pgettext("label and text", "{label}: {text}").format(label=label, text=text)
+
+
+def clauses(parts: Sequence[str]) -> str:
+    """``parts`` as clauses of one line, with the semicolon of the language (``；``)."""
+    return pgettext("clause separator", "; ").join(parts)
 
 
 def created_text(created: str) -> str:
@@ -248,7 +264,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
     if broadband.rt60_estimate_s is not None:
         text = _("RT60 {seconds:.2f} s").format(seconds=broadband.rt60_estimate_s)
         if broadband.rt60_basis:
-            text += c.muted(f" ({broadband.rt60_basis})")
+            text = annotated(text, broadband.rt60_basis)
         if broadband.edt.seconds is not None and broadband.edt.validity is Validity.VALID:
             text += c.sep() + f"EDT {broadband.edt.seconds:.2f} s"
         row(_("Reverberation"), _topic_status(findings, "reverberation"), text)
@@ -296,8 +312,8 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         strongest_modes = sorted(
             res.candidates, key=lambda cand: cand.level_above_baseline_db, reverse=True
         )[:3]
-        listed = ", ".join(
-            f"{cand.frequency_hz:.0f} Hz (+{cand.level_above_baseline_db:.1f} dB)"
+        listed = list_join(
+            annotated(f"{cand.frequency_hz:.0f} Hz", f"+{cand.level_above_baseline_db:.1f} dB")
             for cand in strongest_modes
         )
         row(
@@ -452,11 +468,12 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
     for band in (result.decay.broadband, *result.decay.bands):
         for metric in (band.edt, band.t20, band.t30):
             seen.add(metric.validity)
-        rt60 = (
-            f"{band.rt60_estimate_s:.2f} s " + c.muted(f"({band.rt60_basis})")
-            if band.rt60_estimate_s is not None
-            else c.symbol("skip")
-        )
+        if band.rt60_estimate_s is None:
+            rt60 = c.symbol("skip")
+        elif band.rt60_basis:
+            rt60 = annotated(f"{band.rt60_estimate_s:.2f} s", band.rt60_basis)
+        else:
+            rt60 = f"{band.rt60_estimate_s:.2f} s"
         span = f"{band.peak_to_noise_db:.1f} dB" if band.peak_to_noise_db is not None else c.dash()
         rows.append(
             [
@@ -469,7 +486,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
             ]
         )
         if band.filter_warning:
-            notes.append(f"{band_text(band.band_label)}: {localize(band.filter_warning)}")
+            notes.append(labelled(band_text(band.band_label), localize(band.filter_warning)))
     headers = [_("Band"), "EDT", "T20", "T30", "RT60", _("Decay range")]
     bases = {band.rt60_basis for band in (result.decay.broadband, *result.decay.bands)}
     basis_note = ""
@@ -613,7 +630,9 @@ def _noise(c: Console, result: AnalysisResult) -> list[str]:
         )
         hums = [h for h in noise.hum if h.detected]
         for hum in hums:
-            harmonics = ", ".join(f"{f:.0f} Hz (+{p:.0f} dB)" for f, p in hum.harmonics)
+            harmonics = list_join(
+                annotated(f"{f:.0f} Hz", f"+{p:.0f} dB") for f, p in hum.harmonics
+            )
             lines += c.status(
                 "warn",
                 _("Potential mains hum at multiples of {base:.0f} Hz: {harmonics}").format(
@@ -704,7 +723,7 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         if length.reason:
             reasons.setdefault(localize(length.reason), []).append(name)
     for reason, names in reasons.items():
-        prefix = "" if len(names) == len(figures) else ", ".join(names) + ": "
+        prefix = "" if len(names) == len(figures) else labelled(list_join(names), "")
         lines += c.status("info", prefix + reason)
     named = [candidate for candidate in placement.candidates if candidate.surface]
     if named:
@@ -735,8 +754,9 @@ def _spectrum(c: Console, result: AnalysisResult) -> list[str]:
         [
             (
                 _("Peak"),
-                f"{spectrum.peak_hz:.1f} Hz"
-                + (f" ({spectrum.peak_db:.1f} dB)" if spectrum.peak_db is not None else ""),
+                annotated(f"{spectrum.peak_hz:.1f} Hz", f"{spectrum.peak_db:.1f} dB")
+                if spectrum.peak_db is not None
+                else f"{spectrum.peak_hz:.1f} Hz",
             ),
             (_("Source"), _("impulse response")),
             (_("Window length"), str(spectrum.nperseg)),
@@ -1064,7 +1084,7 @@ def _reasons(c: Console, items: Sequence[MetricDelta], *, label: Any = metric_la
     if grouped:
         lines.append("")
     for reason, names in grouped.items():
-        lines += c.status("skip", ", ".join(names), detail=reason)
+        lines += c.status("skip", list_join(names), detail=reason)
     return lines
 
 
@@ -1079,10 +1099,10 @@ def _delta_statuses(c: Console, items: Sequence[MetricDelta]) -> list[str]:
             for item in members:
                 lines += c.status("ok", _delta_text(c, item))
             continue
-        names = ", ".join(metric_label(item.name) for item in members)
+        names = list_join(metric_label(item.name) for item in members)
         lines += c.status(
             validity_status(validity),
-            f"{names}: {validity_word(validity)}",
+            labelled(names, validity_word(validity)),
             detail=localize(reason) if reason else "",
         )
     return lines
@@ -1094,7 +1114,7 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
     cand = f"{item.candidate:.2f}" if item.candidate is not None else c.dash()
     text = f"{metric_label(item.name)}: {base} {c.arrow()} {cand}{unit}"
     if item.delta is not None:
-        text += f" ({signed_number(item.delta, 2)}{unit})"
+        text = annotated(text, f"{signed_number(item.delta, 2)}{unit}")
     return text
 
 
@@ -1121,7 +1141,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     ):
         text = f"RT60 {rt.baseline:.2f} s{arrow}{rt.candidate:.2f} s"
         if rt.delta_percent is not None:
-            text += f" ({signed_number(rt.delta_percent, 1)} %)"
+            text = annotated(text, f"{signed_number(rt.delta_percent, 1)} %")
         row(_("Reverberation"), "ok", text)
     else:
         row(_("Reverberation"), "unsure", _("broadband RT60 not comparable (see Reverberation)"))
@@ -1181,14 +1201,14 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
             if r.status == status
         ]
         if found:
-            parts.append(label.format(list=", ".join(found)))
-    row(_("Low end"), "ok", "; ".join(parts) if parts else _("no potential resonance"))
+            parts.append(label.format(list=list_join(found)))
+    row(_("Low end"), "ok", clauses(parts) if parts else _("no potential resonance"))
 
     rms = next((d for d in comparison.noise if d.name == "noise.rms_dbfs"), None)
     if rms is not None and rms.baseline is not None and rms.candidate is not None:
         text = f"{rms.baseline:.1f}{arrow}{rms.candidate:.1f} dBFS"
         if rms.validity is Validity.VALID and rms.delta is not None:
-            row(_("Noise floor"), "ok", text + f" ({signed_number(rms.delta, 1)} dB)")
+            row(_("Noise floor"), "ok", annotated(text, f"{signed_number(rms.delta, 1)} dB"))
         else:
             text += c.sep() + _("not compared: {validity}").format(
                 validity=validity_word(rms.validity)
@@ -1351,7 +1371,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         default_out = next(
             (p["device"]["name"] for p in devices if p["device"].get("is_default_output")), None
         )
-        apis = ", ".join(
+        apis = list_join(
             f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
         )
         lines += c.grid(
@@ -1392,7 +1412,7 @@ def _default_marks(device: dict[str, Any], *, short: bool = False) -> str:
         marks.append(_("Input") if short else pgettext("environment report", "default input"))
     if device.get("is_default_output"):
         marks.append(_("Output") if short else pgettext("environment report", "default output"))
-    return ", ".join(marks)
+    return list_join(marks)
 
 
 def _recommended(probe: dict[str, Any]) -> str:
@@ -1417,7 +1437,7 @@ def _device_rate_cell(c: Console, device: dict[str, Any], probe: dict[str, Any])
     listed = rates_text(extra, c)
     if listed == default or default in listed:
         return listed
-    return f"{default}; {listed}"
+    return clauses([default, listed])
 
 
 def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> list[str]:
@@ -1779,7 +1799,7 @@ def render_daw_projects(console: Console, projects: Sequence[object]) -> str:
         [
             (
                 _("Settings that follow the chosen DAW"),
-                ", ".join(
+                list_join(
                     _("Sample rate") if name == "sample_rate" else name
                     for name in FOLLOWED_SETTINGS
                 ),
@@ -1874,7 +1894,7 @@ def render_measure_plan(
 
     microphone = [ch for ch in input_channels if ch != loopback_channel]
     in_text = device_text(inp, _("system default")) + c.sep()
-    in_text += _("input {channels}").format(channels=", ".join(str(ch) for ch in microphone))
+    in_text += _("input {channels}").format(channels=list_join(str(ch) for ch in microphone))
     if loopback_channel is not None:
         in_text += c.sep() + _("loopback on input {channel}").format(channel=loopback_channel)
     out_text = device_text(out, _("system default")) + c.sep()

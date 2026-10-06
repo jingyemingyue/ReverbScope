@@ -5236,3 +5236,15 @@ msgstr ""
 
 msgid "Δ % is left out: widen the terminal to see it."
 msgstr "已省略 Δ %；把终端调宽即可看到。"
+
+msgctxt "annotation"
+msgid "{value} ({note})"
+msgstr "{value}（{note}）"
+
+msgctxt "label and text"
+msgid "{label}: {text}"
+msgstr "{label}：{text}"
+
+msgctxt "clause separator"
+msgid "; "
+msgstr "；"

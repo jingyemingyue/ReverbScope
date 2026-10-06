@@ -6503,3 +6503,15 @@ msgstr ""
 
 msgid "Δ % is left out: widen the terminal to see it."
 msgstr "Δ %는 생략했습니다. 터미널을 넓히면 볼 수 있습니다."
+
+msgctxt "annotation"
+msgid "{value} ({note})"
+msgstr "{value} ({note})"
+
+msgctxt "label and text"
+msgid "{label}: {text}"
+msgstr "{label}: {text}"
+
+msgctxt "clause separator"
+msgid "; "
+msgstr "; "

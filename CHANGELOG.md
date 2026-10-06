@@ -161,8 +161,10 @@ All notable changes to RoomScope are documented here. The format follows
   unreliable decay time has its `?` before the number, so the digits of the
   column stay under each other. The next steps, hints and examples stay
   bare, so a triple click copies the command alone. The desktop app's report
-  panes and `roomscope.cli.report` have no frames: their text is byte for
-  byte what it was. `show --list` keeps one
+  panes and `roomscope.cli.report` have no frames. A list in Chinese is
+  joined with `、`, a clause with `；` and a note in brackets takes the
+  brackets of the language (`110 Hz（+11.3 dB）`), instead of an ASCII
+  comma, semicolon and parenthesis. `show --list` keeps one
   `path<TAB>summary` line per session when its output is not a terminal.
   Information and `--format json` output are unchanged.
 - **Progress line.** A coloured bar (`━` and `╸`, or `=` and `>`) with the
