@@ -43,6 +43,7 @@ from roomscope.cli.console import (
     pad,
     shell_command,
     truncate,
+    wrap,
 )
 from roomscope.errors import RoomScopeError
 from roomscope.i18n import _, list_join, localize, pgettext
@@ -67,6 +68,8 @@ EXIT_INTERRUPTED = 130
 
 #: Answers that leave the menu, besides 0.
 _QUIT_WORDS = frozenset({"q", "quit", "exit"})
+#: Columns a prompt leaves free at the right edge for the answer being typed.
+_ANSWER_ROOM = 10
 #: Sessions listed for "view results" and "compare", newest first.
 MAX_LISTED = 20
 #: Interface languages in the order the language list shows them.
@@ -484,8 +487,16 @@ class Menu:
 
     def _input(self, prompt: str) -> str:
         c = self.console()
+        text = c.readable(prompt)
+        trailing = text[len(text.rstrip()) :]
+        margin = " " * (len(text) - len(text.lstrip(" ")))
+        # A question longer than the screen is written in lines, so the answer is
+        # typed on a line with room; only the last line is the prompt.
+        lines = wrap(text.strip(), max(c.width - _ANSWER_ROOM, 20), first=margin)
+        for line in lines[:-1]:
+            self.out.write(c.fit(line) + "\n")
         try:
-            return self.read(c.fit(c.readable(prompt)))
+            return self.read(c.fit(lines[-1] + trailing))
         except KeyboardInterrupt:
             self.out.write("\n")
             raise _BackToMenuError from None

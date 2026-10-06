@@ -213,6 +213,20 @@ def test_the_menu_follows_the_style_stored_by_config(
     assert "\n  1  Try the demo" in out
 
 
+def test_a_question_longer_than_the_screen_is_written_in_lines(
+    here: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("COLUMNS", "60")
+    code, script = drive("2", "", "", "", "", dispatch=Commands())
+    out = capsys.readouterr().out
+    assert code == 0
+    rate = script.prompts[2]  # the last line of the question about the sample rate
+    assert rate.endswith("[48000]: ") and "Sample rate" not in rate
+    assert cell_width(rate) <= 60 - 10  # room to type the answer
+    first = out[: out.index(rate)].splitlines()[-1]
+    assert first.startswith("  Sample rate in Hz (44100,")
+
+
 def test_an_unknown_choice_is_asked_again(here: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code, script = drive("", "x", "42", "0")
     out = capsys.readouterr().out
@@ -319,8 +333,9 @@ def test_the_demo_asks_before_replacing_a_demo(
 
 
 def test_the_sweep_is_written_with_the_defaults(
-    here: Path, capsys: pytest.CaptureFixture[str]
+    here: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    monkeypatch.setenv("COLUMNS", "100")  # the longest question fits on one line
     code, script = drive("2", "", "", "", "")
     out = capsys.readouterr().out
     assert code == 0
