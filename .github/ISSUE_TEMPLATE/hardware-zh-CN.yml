@@ -13,11 +13,34 @@ body:
         只有在物理音频接口上得到的结果才算数：演示模式、`fake` 后端、CI
         运行环境，以及没有直通真实设备的虚拟机都不算。
   - type: input
+    id: version
+    attributes:
+      label: ReverbScope 版本和构建提交
+      description: '取自环境报告的前几行：`reverbscope doctor`，或 帮助 → 用于问题报告的环境报告。'
+      placeholder: "ReverbScope 0.5.0rc1，build 1a2b3c4d，桌面版"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: 操作系统和 CPU
+      placeholder: "Windows 11 24H2 x64 / macOS 15.5 Apple silicon / Ubuntu 24.04 x86_64"
+    validations:
+      required: true
+  - type: input
     id: interface
     attributes:
       label: 音频接口和驱动
       description: 型号、连接方式和驱动（知道的话请写版本号）。
       placeholder: "Focusrite Scarlett 2i2 (4th gen), USB, Focusrite Control 2 / ASIO driver 4.119"
+    validations:
+      required: true
+  - type: input
+    id: buffer
+    attributes:
+      label: 缓冲区大小和延迟设置
+      description: '以音频接口控制面板中的设置为准（如果改过 ReverbScope 的 延迟：低 / 高，也请写明）。`reverbscope.log` 中的 `audio stream:` 行会记录音频流实际报告的值。'
+      placeholder: "48 kHz 下 256 个采样；ReverbScope 延迟为默认；audio stream: latency_s=(0.012, 0.011)"
     validations:
       required: true
   - type: input
@@ -133,6 +156,18 @@ body:
         - 未运行（Not run）
         - 通过（Pass）
         - 失败（Fail）
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: latency
+    attributes:
+      label: "输入/输出延迟已记录"
+      description: '完整测量之后，数据文件夹中的 `reverbscope.log` 会有一行 `audio stream:`，其中 `latency_s=(input, output)`。通过条件：这一行存在，两个数值与你的缓冲区大小相符，且测量没有丢帧。请把这一行粘贴到“结果”中。'
+      options:
+        - 未运行
+        - 通过
+        - 失败
       default: 0
     validations:
       required: true

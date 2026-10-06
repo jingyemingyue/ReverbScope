@@ -32,6 +32,17 @@ body:
       placeholder: "RME Babyface Pro FS, USB, driver 1.246 (Core Audio)"
     validations:
       required: true
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: Workflow
+      description: Which steps you followed. The guide is docs/user-guide/daw-setup.md.
+      options:
+        - Universal DAW Mode as written in the guide for this DAW
+        - Universal DAW Mode with my own steps (say which in Result)
+        - Standalone Mode through the same interface, for comparison
+    validations:
+      required: true
   - type: input
     id: rates
     attributes:
@@ -54,6 +65,17 @@ body:
         - Off (checked in the DAW)
         - On (a deliberate negative test)
         - Not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      description: 'What ReverbScope did with the recording. "Analysed with warnings" means a result opened but the direct-sound confidence was not high, or a sample-rate / time-stretch finding appeared.'
+      options:
+        - Analysed, direct-sound confidence high, no finding
+        - Analysed with warnings
+        - Not analysed (refused, error or crash)
     validations:
       required: true
   - type: textarea
@@ -94,3 +116,11 @@ body:
         `reverbscope session bundle <session> --out report.zip` (`--no-audio`
         leaves the recordings out). The sweep sidecar JSON and the exported
         recording are the most useful files.
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots or log (optional)
+      description: |
+        A screenshot of the DAW's export dialog or clip settings, and the
+        relevant lines of `reverbscope.log` (data folder, or Environment
+        Report → Open Data Folder), help when something went wrong.

@@ -12,6 +12,12 @@ capture where the check needs them. The Demo mode, the `fake` backend, the
 synthetic and scripted-PortAudio tests, and CI runners do not count. The
 cells are empty on purpose; no check has been run on real hardware yet.
 
+**Why this matters now.** `0.5.0rc1` is a release candidate whose only
+purpose is this matrix: the code is frozen, and 0.5.0 is cut when real
+machines, interfaces, rooms and DAWs have filled the rows the release plan
+names as the gate ([RELEASE_PLAN.md §2b](RELEASE_PLAN.md#2b-the-050-gate)).
+A failed row is as valuable as a passed one: it becomes a fix and `0.5.0rc2`.
+
 **Contributing a result.** Open an
 [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)
 or a [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)
@@ -32,13 +38,25 @@ A maintainer copies the result into a cell below with a link to the issue.
 | Loopback capture | | | |
 | Stop during playback (output silent within one callback) | | | |
 | Full take without a logged buffer under/overflow (`reverbscope -v measure`) | | | |
+| Input/output latency reported (`audio stream:` line in `reverbscope.log`) | | | |
 | Device unplugged during a take is reported as a failure, not a recording | | | |
 | Full Standalone measurement | | | |
 | Same signal through one DAW (Universal DAW Mode) | | | |
 
 Record a cell as `PASS YYYY-MM-DD, ReverbScope x.y.z (commit), <OS version>,
-<interface and driver>, #issue` or `FAIL ... #issue`. Do not fill a cell from
-the fake backend, a CI runner or a test.
+<interface, driver version>, <sample rate(s)> at <buffer size>, #issue` or
+`FAIL ... #issue`, and add the same run as one line of the results log
+below. Do not fill a cell from the fake backend, a CI runner or a test.
+
+### Results log
+
+One line per reported run, copied by a maintainer from the issue; the matrix
+above is the summary of this log. Nothing here is generated: every line
+names the issue it came from.
+
+| Date | ReverbScope (commit) | OS | Interface | Driver | Sample rate | Buffer | Check | PASS / FAIL | Issue |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | | | | |
 
 ## DAW matrix
 
@@ -108,9 +126,12 @@ run" with a reason is as useful as a "Pass".
    normally use it, and write down the driver version and the buffer size
    set there.
 4. Copy **Help ▸ Environment Report for Bug Reports** after pressing **Probe
-   sample rates** (or run `reverbscope doctor --probe`). Nothing is played.
-   Paste it into the report; it names the version, build commit, OS, audio
-   systems and devices, with your home folder shown as `~`.
+   sample rates** (or run `reverbscope doctor --probe --out report.txt`, which
+   also writes the report to a file you can attach). Nothing is played.
+   Paste it into the report; it names the version, build commit, edition,
+   OS, CPU, audio systems, devices with their channel counts and accepted
+   sample rates, the driver's default latency, the interface language and
+   the log file, with your home folder shown as `~`.
 
 **Interface checks** (one answer per row of the form)
 
@@ -123,6 +144,7 @@ run" with a reason is as useful as a "Pass".
 | Stop during playback | Press Stop while the sweep plays | The sound stops at once, no tone keeps playing, no result is saved |
 | No buffer under/overflow | A full take at your usual settings | No "buffer problem(s) … may contain dropouts" warning in the result or in `reverbscope.log` |
 | Interface unplugged | Monitors down; unplug the cable during a take | ReverbScope reports an error and saves nothing; it does not hang or crash |
+| Input/output latency reported | After a full take, open `reverbscope.log` (data folder, or **Environment Report ▸ Open Data Folder**) and find the `audio stream:` line | The line shows `latency_s=(input, output)`; both numbers are plausible for the buffer size you set, and the take had no dropouts. Paste the line into the report |
 | Full Standalone measurement | Microphone and loudspeaker in a room | You get a result you can read |
 | Same signal through one DAW | Universal DAW Mode with the same interface | See the DAW steps below |
 
@@ -135,6 +157,13 @@ exclusive mode (Windows) or letting ReverbScope set the device rate (macOS);
 record them if you change them. ASIO is not used by the bundles.
 
 **DAW check** (one DAW, one take)
+
+The candidate asks for these DAWs first, in no particular order: Pro Tools,
+Logic Pro, GarageBand, Cubase / Nuendo, Fender Studio Pro (Studio One),
+Ableton Live, REAPER, FL Studio, Bitwig Studio, Digital Performer and
+Audacity. A DAW is listed in the guide because its vendor documents the
+steps, not because ReverbScope was run with it: no DAW is "supported" until
+a report fills its row.
 
 1. Follow [user-guide/daw-setup.md](user-guide/daw-setup.md) for your DAW
    exactly as written; note any menu that differs in your version.
