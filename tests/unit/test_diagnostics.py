@@ -110,6 +110,44 @@ def test_the_text_report_names_settings_and_paths_in_words(
     assert re.search(r"Default output folder \(desktop app\)\s+not set\n", english)
 
 
+@pytest.mark.parametrize("language", ["en", "zh_CN"])
+def test_the_values_of_each_block_of_the_text_report_line_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, language: str
+) -> None:
+    """Review finding: the Settings title "Default output folder (desktop app)"
+    was wider than the 20-column label field, so its value was glued after one
+    space while every other row kept its value at column 23. A block's value
+    column now follows its longest title (CJK characters count two columns)."""
+    from reverbscope.cli.console import cell_width
+    from reverbscope.diagnostics import _path_label, _setting_label
+    from reverbscope.i18n import activate
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    report = environment_report("fake")
+    activate(language)
+    try:
+        text = format_environment_report(report)
+        settings = [_setting_label(key) for key in report["settings"]]
+        paths = [_path_label(key) for key in report["paths"]]
+    finally:
+        activate("en")
+    lines = text.splitlines()
+
+    def value_columns(labels: list[str]) -> set[int]:
+        """The display column each of ``labels`` has its value at."""
+        columns = set()
+        for label in labels:
+            (line,) = (line for line in lines if line.startswith(f"  {label} "))
+            columns.add(cell_width(line[: len(line) - len(line[len(label) + 2 :].lstrip())]))
+        return columns
+
+    longest = max(cell_width(label) for label in settings)
+    assert longest > 21  # the title that used to break the block
+    assert value_columns(settings) == {2 + longest + 1}
+    assert value_columns(paths) == {2 + 21}
+    assert value_columns(["numpy", "scipy", "libsndfile"]) == {2 + 21}
+
+
 def test_report_lists_devices_and_probes_on_request() -> None:
     plain = format_environment_report(environment_report("fake"))
     assert "rates not probed" in plain and "[ 0]" in plain

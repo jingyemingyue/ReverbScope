@@ -21,6 +21,7 @@ import json
 import platform
 import sys
 import unicodedata
+from collections.abc import Sequence
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
@@ -353,10 +354,19 @@ def _path_label(key: str) -> str:
     }.get(key, key)
 
 
-def _field(label: str, value: object) -> str:
-    """``label`` padded to 20 terminal columns (a CJK character takes two)."""
-    width = sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in label)
-    return f"  {label}{' ' * max(1, 21 - width)}{value}"
+def _fields(rows: Sequence[tuple[str, object]]) -> list[str]:
+    """``label  value`` lines whose values start in one column.
+
+    The column is 21 terminal columns wide (a CJK character takes two), or one
+    space past the block's longest label: a title such as "Default output
+    folder (desktop app)" must not push its value out of line with the rest.
+    """
+
+    def width(label: str) -> int:
+        return sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in label)
+
+    column = max([21, *(width(label) + 1 for label, _value in rows)])
+    return [f"  {label}{' ' * (column - width(label))}{value}" for label, value in rows]
 
 
 def format_environment_report(report: dict[str, Any]) -> str:
@@ -385,19 +395,22 @@ def format_environment_report(report: dict[str, Any]) -> str:
         _("Language: {language}").format(language=report["language"]),
         _("Packages:"),
     ]
-    for name, found in report["packages"].items():
-        lines.append(_field(name, found or _("not installed")))
-    lines.append(_field("libsndfile", report.get("libsndfile") or _("unknown")))
+    lines += _fields(
+        [
+            *((name, found or _("not installed")) for name, found in report["packages"].items()),
+            ("libsndfile", report.get("libsndfile") or _("unknown")),
+        ]
+    )
     lines.append(_("Settings:"))
     settings = report.get("settings", {})
     if "error" in settings:
         lines.append("  " + localize(str(settings["error"])))
     else:
-        for key, value in settings.items():
-            lines.append(_field(_setting_label(key), _setting_value(key, value)))
+        lines += _fields(
+            [(_setting_label(key), _setting_value(key, value)) for key, value in settings.items()]
+        )
     lines.append(_("Paths:"))
-    for key, value in report["paths"].items():
-        lines.append(_field(_path_label(key), value))
+    lines += _fields([(_path_label(key), value) for key, value in report["paths"].items()])
     audio = report.get("audio", {})
     callbacks = report.get("audio_callbacks")
     if callbacks is None:
@@ -420,12 +433,16 @@ def format_environment_report(report: dict[str, Any]) -> str:
         apis = ", ".join(
             f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
         )
-        lines.append(_field(pgettext("environment report", "backend"), audio.get("backend")))
-        lines.append(_field("PortAudio", audio.get("portaudio_version") or "-"))
-        lines.append(_field(pgettext("environment report", "host APIs"), apis or "-"))
-        lines.append(_field(pgettext("environment report", "devices"), len(devices)))
-        lines.append(_field(pgettext("environment report", "default input"), default_in or "-"))
-        lines.append(_field(pgettext("environment report", "default output"), default_out or "-"))
+        lines += _fields(
+            [
+                (pgettext("environment report", "backend"), audio.get("backend")),
+                ("PortAudio", audio.get("portaudio_version") or "-"),
+                (pgettext("environment report", "host APIs"), apis or "-"),
+                (pgettext("environment report", "devices"), len(devices)),
+                (pgettext("environment report", "default input"), default_in or "-"),
+                (pgettext("environment report", "default output"), default_out or "-"),
+            ]
+        )
         for note in audio.get("notes", []):
             lines.append("  " + _("note: {note}").format(note=localize(note)))
         lines.extend(_format_devices(audio))
