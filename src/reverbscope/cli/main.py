@@ -1006,6 +1006,13 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help=_("allow a sanitized summary to be sent to the selected service"),
     )
+    p_guided.add_argument(
+        "--install-local-model",
+        nargs="?",
+        const="",
+        default=None,
+        help=_("install the optional on-device explanation model"),
+    )
     _shorten_usage(parser)
     # The command list is printed grouped (below), so argparse's own list is
     # hidden; put the command placeholder back into the usage line.
@@ -1845,6 +1852,19 @@ def cmd_guided(args: argparse.Namespace) -> int:
         settings.custom_endpoint_acknowledged = True
     if args.enable_cloud:
         settings.cloud_explanation_enabled = True
+    if args.install_local_model is not None:
+        from reverbscope.experimental.guided.local.runtime import install_bundled_model
+        from reverbscope.io.recent import reverbscope_home
+
+        destination = (
+            reverbscope_home() / "guided-models"
+            if args.install_local_model == ""
+            else Path(args.install_local_model)
+        )
+        installed = install_bundled_model(destination)
+        settings.local_model_path = "" if installed.path is None else str(installed.path)
+        if not args.engine:
+            settings.explanation_engine = "local"
     consent = None
     private = bool(args.privacy_mode)
     if args.always_allow_sanitized and not private:

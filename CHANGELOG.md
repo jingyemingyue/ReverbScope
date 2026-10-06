@@ -12,7 +12,11 @@ All notable changes to ReverbScope are documented here. The format follows
 The guided acoustic assistant exists only on
 `experimental/guided-acoustic-assistant`. It is not part of 0.5.0, not part
 of a release candidate, and not imported by the measurement core. See
-`docs/experimental/`. Desktop settings can choose built-in explanations, a
+`docs/experimental/`.
+
+The optional on-device explanation model `guided-clause-v1` is trained from
+the offline catalog only. It is not used until the user installs it, and it
+is never downloaded. It cannot emit measurement numbers. Desktop settings can choose built-in explanations, a
 local model, or a bring-your-own-key cloud provider. A key is never written
 to settings, and a cloud call is skipped entirely when no key is available.
 

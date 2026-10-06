@@ -166,6 +166,10 @@ class GuidedAssistantDialog(QDialog):
         self.share_crash.setChecked(self._settings.share_anonymous_crashes)
         self._local = QLabel(self.L["local_status"])
         self._local.setWordWrap(True)
+        if self._settings.local_model_path:
+            self._local.setText(self.L["local_installed"])
+        self.install_local = QPushButton(self.L["install_local"])
+        self.install_local.clicked.connect(self._install_local)
         self._packs = QLabel(self.L["packs_status"])
         self._packs.setWordWrap(True)
         preview = QPushButton(self.L["preview"])
@@ -201,6 +205,7 @@ class GuidedAssistantDialog(QDialog):
         form.addRow(self.share_hardware)
         form.addRow(self.share_crash)
         form.addRow(self._local)
+        form.addRow(self.install_local)
         form.addRow(self._packs)
         form.addRow(preview)
         form.addRow(self.preview_text)
@@ -243,6 +248,22 @@ class GuidedAssistantDialog(QDialog):
 
     def _provider(self) -> str:
         return str(self.provider.currentData() or "")
+
+    def _install_local(self) -> None:
+        from reverbscope.experimental.guided.local.runtime import install_bundled_model
+        from reverbscope.io.recent import reverbscope_home
+
+        try:
+            manifest = install_bundled_model(reverbscope_home() / "guided-models")
+        except (OSError, FileNotFoundError):
+            self.status.setText(self.L["local_install_failed"])
+            return
+        self._settings.local_model_path = "" if manifest.path is None else str(manifest.path)
+        index = self.engine.findData("local")
+        if index >= 0:
+            self.engine.setCurrentIndex(index)
+        self._local.setText(self.L["local_installed"])
+        self.status.setText(self.L["local_installed"])
 
     def _refresh_key_state(self) -> None:
         configured = self.vault.configured(self._provider())

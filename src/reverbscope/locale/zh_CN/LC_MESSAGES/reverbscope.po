@@ -3990,6 +3990,10 @@ msgstr "记住以后可以发送已清理的摘要"
 msgid "Guided"
 msgstr "导引"
 
+msgid "install the optional on-device explanation model"
+msgstr "安装可选的本机说明模型"
+
+
 msgid "which explanation to use for this run"
 msgstr "本次使用哪种说明方式"
 

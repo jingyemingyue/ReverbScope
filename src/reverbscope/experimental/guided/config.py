@@ -80,6 +80,8 @@ class GuidedSettings:
     share_hardware_compatibility: bool = False
     share_anonymous_crashes: bool = False
     generic_device_model: str = ""
+    #: Empty until the user installs the optional on-device model. Not a secret.
+    local_model_path: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)

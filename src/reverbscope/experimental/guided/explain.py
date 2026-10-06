@@ -500,6 +500,12 @@ def explain_findings(
         return ExplanationBundle(checked, "local", "local", "local", model_id, preview=preview)
     if engine != "cloud":
         if (
+            settings.explanation_engine == EngineChoice.LOCAL.value
+            and not local.available()
+            and not notice
+        ):
+            notice = "local_unavailable"
+        if (
             settings.explanation_engine == EngineChoice.CLOUD.value
             and not notice
             and settings.cloud_consent == Consent.UNSET.value

@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import platform
 from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Any
 
 from reverbscope.experimental.guided.compare import ComparisonGuidance, compare_guidance
@@ -99,6 +100,7 @@ def run_guided(
         comparison = compare_guidance(snap, other_snap, findings, other_findings)
     lang = language_from_settings(chosen, language)
     bands = tuple((band.center_hz, band.rt60_s, band.t30_validity) for band in snap.bands)
+    library, local_complete = _resolve_local(chosen, library, local_complete)
     bundle = explain_findings(
         plan.visible,
         chosen,
@@ -113,6 +115,28 @@ def run_guided(
         bands=bands,
     )
     return GuidedReport(snap, findings, plan, bundle, comparison, lang)
+
+
+def _resolve_local(
+    settings: GuidedSettings,
+    library: LocalModelLibrary | None,
+    local_complete: ExplanationProvider | None,
+) -> tuple[LocalModelLibrary | None, ExplanationProvider | None]:
+    """Use an injected model, otherwise the one the user installed. Never download."""
+    if library is not None or local_complete is not None:
+        return library, local_complete
+    if not settings.local_model_path:
+        return None, None
+    from reverbscope.experimental.guided.local.runtime import open_installed_model
+
+    opened = open_installed_model(
+        Path(settings.local_model_path),
+        length=settings.length,
+        expertise=settings.expertise,
+    )
+    if opened is None:
+        return None, None
+    return opened.library, opened
 
 
 def _privacy_enabled() -> bool:
