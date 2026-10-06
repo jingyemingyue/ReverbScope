@@ -1445,6 +1445,31 @@ def _refuse_file_out(path: Path | None, command: str, *, project: bool = False) 
     raise refusal
 
 
+def _prove_out_usable(path: Path) -> None:
+    """Fail before a take when --out cannot be created or written to.
+
+    ``measure`` copies the take into --out only after it was played, recorded
+    and analysed; a path below a file, a drive that is not mounted or a
+    read-only folder would otherwise fail only then, with the sweep played
+    through the loudspeakers and the take thrown away. A probe file in the
+    nearest folder that exists proves that --out (and the folders above it)
+    can be created there, and leaves nothing behind: a take that is stopped
+    must not have made --out.
+    """
+    folder = path
+    while not folder.exists() and folder.parent != folder:
+        folder = folder.parent
+    if not folder.is_dir():
+        # The text the save's own mkdir would give, naming --out.
+        raise NotADirectoryError(errno.ENOTDIR, os.strerror(errno.ENOTDIR), str(path))
+    try:
+        with tempfile.TemporaryFile(dir=folder):
+            pass
+    except OSError as exc:
+        # Name the folder that refused, not the probe's random file name.
+        raise OSError(exc.errno, exc.strerror, str(folder)) from None
+
+
 def _run_analysis(
     recording_path: Path,
     reference_path: Path | None,
@@ -1628,6 +1653,9 @@ def cmd_measure(args: argparse.Namespace) -> int:
             )
             refusal.cli_hints = [f"reverbscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
             raise refusal
+    # The take reaches --out only after it was played and analysed: prove now,
+    # while nothing has been played, that it can.
+    _prove_out_usable(Path(args.out))
     if settings.total_samples < settings.sample_rate:
         # The analysis refuses a recording shorter than one second: say so
         # before the take, not after it was played and recorded for nothing.

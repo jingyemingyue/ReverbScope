@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import errno
 import json
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -793,6 +795,62 @@ def test_a_take_that_fails_keeps_the_previous_session_whole(
     assert main([*argv, "--duration", "2"]) == 1
     assert "no sweep found" in capsys.readouterr().err
     assert _fingerprints(folder) == before
+
+
+def test_measure_refuses_an_out_below_a_file_before_playing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--out below a file failed only when the take was saved: the sweep had
+    been played through the loudspeakers and the recording thrown away."""
+    blocker = tmp_path / "afile"
+    blocker.write_text("x", encoding="utf-8")
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    assert main([*argv, "--out", str(blocker / "sub" / "m")]) == 1
+    captured = capsys.readouterr()
+    assert "part of the path is a file, not a folder" in captured.err
+    assert "Nothing was played." in captured.err
+    assert "Playing the sweep" not in captured.err and "Recorded" not in captured.out
+    assert blocker.read_text(encoding="utf-8") == "x"
+
+
+def test_measure_refuses_an_out_it_cannot_create_before_playing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A read-only location or a drive that is not mounted: the probe of the
+    nearest existing folder fails, and the error names that folder."""
+
+    def refuse(*_args: object, **_kwargs: object) -> None:
+        raise PermissionError(errno.EACCES, "Permission denied", "probe-file")
+
+    monkeypatch.setattr(tempfile, "TemporaryFile", refuse)
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    assert main([*argv, "--out", str(tmp_path / "Missing" / "room1")]) == 1
+    captured = capsys.readouterr()
+    err = " ".join(captured.err.split())
+    assert f"permission denied: {tmp_path}" in err and "probe-file" not in err
+    assert "Nothing was played." in err
+    assert "Playing the sweep" not in err and "Recorded" not in captured.out
+    assert not (tmp_path / "Missing").exists()
+
+
+def test_proving_out_usable_leaves_nothing_behind(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The check runs before the take for a folder that does not exist yet; a
+    take that is then refused must not have made it, nor left a probe file."""
+    from reverbscope.core import pipeline
+    from reverbscope.errors import AnalysisError
+
+    def refuse(*_args: object, **_kwargs: object) -> None:
+        raise AnalysisError("no sweep found in the recording")
+
+    monkeypatch.setattr(pipeline, "analyze", refuse)
+    existing = tmp_path / "existing"
+    existing.mkdir()
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    assert main([*argv, "--out", str(existing / "new" / "m")]) == 1
+    assert "no sweep found" in capsys.readouterr().err
+    assert list(existing.iterdir()) == []
 
 
 @pytest.mark.parametrize(
