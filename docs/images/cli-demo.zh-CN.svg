@@ -1,16 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="804" height="1016" viewBox="0 0 804 1016" role="img" aria-label="reverbscope demo（合成数据）">
+<svg xmlns="http://www.w3.org/2000/svg" width="855" height="1016" viewBox="0 0 855 1016" role="img" aria-label="reverbscope demo（合成数据）">
 <title>reverbscope demo（合成数据）</title>
-<rect width="804" height="1016" rx="8" fill="#1d1f23"/>
-<rect width="804" height="30" rx="8" fill="#2b2e33"/>
-<rect y="22" width="804" height="8" fill="#2b2e33"/>
+<rect width="855" height="1016" rx="8" fill="#1d1f23"/>
+<rect width="855" height="30" rx="8" fill="#2b2e33"/>
+<rect y="22" width="855" height="8" fill="#2b2e33"/>
 <circle cx="18" cy="15" r="6" fill="#ff5f57"/>
 <circle cx="38" cy="15" r="6" fill="#febc2e"/>
 <circle cx="58" cy="15" r="6" fill="#28c840"/>
-<text x="402.0" y="20" text-anchor="middle" fill="#9aa0a6" font-family="Helvetica, Arial, sans-serif" font-size="12">reverbscope demo（合成数据）</text>
+<text x="427.5" y="20" text-anchor="middle" fill="#9aa0a6" font-family="Helvetica, Arial, sans-serif" font-size="12">reverbscope demo（合成数据）</text>
 <g font-family="DejaVu Sans Mono, Menlo, Consolas, Noto Sans Mono CJK SC, monospace" font-size="14" fill="#d7dae0">
 <text x="16" y="60" xml:space="preserve"><tspan x="16.0" fill="#a8d982">$</tspan><tspan x="24.4"> </tspan><tspan x="32.8" font-weight="bold">reverbscope --lang zh_CN demo</tspan></text>
-<text x="16" y="78" xml:space="preserve"><tspan x="16.0" font-weight="bold">ReverbScope </tspan><tspan x="100.0" font-weight="bold">演示</tspan></text>
-<text x="16" y="96" xml:space="preserve"><tspan x="16.0" opacity="0.62">──────────────</tspan></text>
+<text x="16" y="78" xml:space="preserve"><tspan x="16.0" font-weight="bold">ReverbScope </tspan><tspan x="116.8" font-weight="bold">演示</tspan></text>
+<text x="16" y="96" xml:space="preserve"><tspan x="16.0" opacity="0.62">────────────────</tspan></text>
 <text x="16" y="114" xml:space="preserve"></text>
 <text x="16" y="132" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" font-weight="bold" fill="#e6c07b">!</tspan><tspan x="41.2"> </tspan><tspan x="49.6" font-weight="bold">合成数据：这是模拟的房间，不是实际测量。</tspan></text>
 <text x="16" y="150" xml:space="preserve"><tspan x="16.0">    </tspan><tspan x="49.6">没有使用任何音频设备，也没有播放任何声音。下面的数值描述的是模拟结果；每个会</tspan></text>
@@ -45,7 +45,7 @@
 <text x="16" y="672" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">早期反射</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> 2 </tspan><tspan x="150.4">个消失</tspan><tspan x="200.8"> · 1 </tspan><tspan x="242.8">个新出现</tspan><tspan x="310.0"> · 0 </tspan><tspan x="352.0">个两侧都有</tspan></text>
 <text x="16" y="690" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">低频</tspan><tspan x="66.4">      </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">两侧都有：</tspan><tspan x="217.6">110 Hz</tspan></text>
 <text x="16" y="708" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">本底噪声</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> -69.2 → -87.1 dBFS (-17.9 dB)</tspan></text>
-<text x="16" y="726" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">频率响应</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">变化最大的是</tspan><tspan x="234.4"> 31.5 Hz </tspan><tspan x="310.0">倍频程，平均</tspan><tspan x="410.8"> |Δ| 7.8 dB</tspan></text>
+<text x="16" y="726" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" opacity="0.62">频率响应</tspan><tspan x="100.0">  </tspan><tspan x="116.8" fill="#a8d982">✓</tspan><tspan x="125.2"> </tspan><tspan x="133.6">变化最大的是</tspan><tspan x="234.4"> 31.5 Hz </tspan><tspan x="310.0">倍频程，平均</tspan><tspan x="410.8"> |Δ| 8.1 dB</tspan></text>
 <text x="16" y="744" xml:space="preserve"></text>
 <text x="16" y="762" xml:space="preserve"><tspan x="16.0" font-weight="bold" fill="#6cc4d9">演示说明了什么</tspan></text>
 <text x="16" y="780" xml:space="preserve"><tspan x="16.0">  </tspan><tspan x="32.8" fill="#6cc4d9">i</tspan><tspan x="41.2"> </tspan><tspan x="49.6">位置</tspan><tspan x="83.2"> A </tspan><tspan x="108.4">在</tspan><tspan x="125.2"> 2.4 ms </tspan><tspan x="192.4">处有一个很强的桌面反射，在位置</tspan><tspan x="444.4"> B </tspan><tspan x="469.6">已经消失。</tspan></text>
