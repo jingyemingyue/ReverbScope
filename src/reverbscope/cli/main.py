@@ -1805,6 +1805,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
                 level_dbfs=settings.level_dbfs,
                 progress=report,
                 options=options,
+                loopback_input=plan.loopback_channel,
             )
             completed = True
         finally:

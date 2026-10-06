@@ -810,6 +810,46 @@ def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
     window.close()
 
 
+def test_the_demo_cable_is_on_the_loopback_channel_the_box_says(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review finding: the Demo's "Loopback channel" box accepted 0-64 but the
+    fake interface wired its cable to input 2 whatever was typed there, so a
+    loopback on input 3 was refused as "a room" and a microphone on input 2
+    analysed the cable."""
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    window = MainWindow()
+    window.show()
+    window.show_mode("demo")
+    app.processEvents()
+    page = window.standalone
+    page.duration.setValue(1.0)
+
+    def take() -> object:
+        page.run_button.click()
+        _settle(app, page._measure_worker)
+        _settle(app, page._analysis_worker)
+        assert window.stack.currentWidget() is window.results
+        assert window.state.result is not None
+        return window.state.result
+
+    page.input_channel.setValue(1)
+    page.loopback_channel.setValue(3)
+    wired = take().impulse_response.loopback  # type: ignore[attr-defined]
+    assert wired is not None and wired.compensation_applied
+    assert window.state.session is not None and window.state.session.loopback_channel == 3
+
+    window.show_mode("demo")
+    app.processEvents()
+    page.input_channel.setValue(2)
+    page.loopback_channel.setValue(0)  # "unused": nothing is wired to input 2
+    result = take()
+    assert result.impulse_response.loopback is None  # type: ignore[attr-defined]
+    # The synthetic room (RT60 0.4 s), not a cable (0.07 s).
+    assert result.decay.broadband.rt60_estimate_s == pytest.approx(0.4, abs=0.1)  # type: ignore[attr-defined]
+    window.close()
+
+
 def test_the_lang_option_reaches_the_gui(
     app: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:

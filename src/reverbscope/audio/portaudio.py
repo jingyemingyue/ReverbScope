@@ -118,7 +118,11 @@ class PortAudioBackend:
         progress: Callable[[float], None] | None = None,
         cancel: threading.Event | None = None,
         options: StreamOptions | None = None,
+        loopback_input: int | None = None,
     ) -> AudioSignal:
+        # A real interface is wired by hand: the cable is whatever the user
+        # plugged into that input. Only the fake backend has to be told.
+        del loopback_input
         if not input_channels:
             raise ConfigurationError(_("at least one input channel is required"))
         if any(ch < 1 for ch in input_channels) or output_channel < 1:

@@ -1183,6 +1183,7 @@ class StandalonePage(QWidget):
             level_dbfs=settings.level_dbfs,
             backend=backend,
             options=self.stream_options(),
+            loopback_channel=plan.loopback_channel,
         )
         self._measure_worker.succeeded.connect(self._on_recorded)
         self._measure_worker.failed.connect(self._on_failure)

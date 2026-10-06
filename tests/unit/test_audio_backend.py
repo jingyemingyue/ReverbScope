@@ -11,6 +11,7 @@ from reverbscope.audio.backend import CALLBACK_BLOCK, get_backend
 from reverbscope.audio.fake import FakeBackend, make_rir
 from reverbscope.core.sweep import measurement_signal
 from reverbscope.errors import ConfigurationError, MeasurementCancelledError
+from reverbscope.models.audio import AudioSignal
 from reverbscope.models.configuration import SweepSettings
 
 
@@ -87,6 +88,7 @@ def test_fake_two_channel_loopback_capture(short_sweep: SweepSettings) -> None:
         input_channels=[1, 2],
         output_channel=1,
         level_dbfs=-20.0,
+        loopback_input=2,
     )
     assert recording.n_channels == 2
     mic = recording.channel(0)
@@ -96,25 +98,41 @@ def test_fake_two_channel_loopback_capture(short_sweep: SweepSettings) -> None:
     assert float(np.sqrt(np.mean(mic**2))) != pytest.approx(float(np.sqrt(np.mean(loop**2))))
 
 
-def test_only_the_fake_loopback_input_carries_the_cable(short_sweep: SweepSettings) -> None:
-    """Review finding: every fake input from 2 to 8 was the noiseless loopback,
-    so a Demo microphone on input 3 analysed a cable (RT60 0.07 s, "exact
-    digital silence") instead of the synthetic room."""
-    from reverbscope.audio.fake import LOOPBACK_INPUT
+def test_only_the_declared_fake_loopback_input_carries_the_cable(
+    short_sweep: SweepSettings,
+) -> None:
+    """Review findings: every fake input from 2 to 8 was the noiseless
+    loopback (a Demo microphone on input 3 analysed a cable: RT60 0.07 s,
+    "exact digital silence"), then only input 2 was, so a microphone on input
+    2 still analysed the cable and a loopback on input 3 stopped working. The
+    cable is on the input the caller declares, and on no other."""
 
-    take = FakeBackend().play_and_record(
-        measurement_signal(short_sweep),
-        short_sweep.sample_rate,
-        input_device=0,
-        output_device=0,
-        input_channels=[1, LOOPBACK_INPUT, 3, 8],
-        output_channel=1,
-        level_dbfs=-12.0,
-    )
-    room, cable = take.channel(0), take.channel(1)
+    def take(channels: list[int], loopback_input: int | None) -> AudioSignal:
+        return FakeBackend().play_and_record(
+            measurement_signal(short_sweep),
+            short_sweep.sample_rate,
+            input_device=0,
+            output_device=0,
+            input_channels=channels,
+            output_channel=1,
+            level_dbfs=-12.0,
+            loopback_input=loopback_input,
+        )
+
+    declared_on_3 = take([1, 2, 3, 8], 3)
+    room = declared_on_3.channel(0)
+    cable = declared_on_3.channel(2)
     assert not np.array_equal(room, cable)
-    for column in (2, 3):
-        np.testing.assert_array_equal(take.channel(column), room)
+    for column in (1, 3):
+        np.testing.assert_array_equal(declared_on_3.channel(column), room)
+    # Input 2 is a microphone like any other when nothing is wired to it, and
+    # with no loopback declared there is no cable at all.
+    mic_on_2 = take([2], None)
+    np.testing.assert_array_equal(mic_on_2.channel(0), room)
+    assert np.array_equal(take([1, 3], None).channel(1), room)
+    # The declaration moves the cable with it.
+    np.testing.assert_array_equal(take([2, 3], 2).channel(0), cable)
+    np.testing.assert_array_equal(take([2, 3], 2).channel(1), room)
 
 
 def test_the_fake_loopback_arrives_before_the_microphone(short_sweep: SweepSettings) -> None:
@@ -132,6 +150,7 @@ def test_the_fake_loopback_arrives_before_the_microphone(short_sweep: SweepSetti
         input_channels=[1, 2],
         output_channel=1,
         level_dbfs=-12.0,
+        loopback_input=2,
     )
     result = analyze(
         take, Reference.from_settings(short_sweep), AnalysisSettings(loopback_channel=1)

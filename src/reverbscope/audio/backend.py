@@ -122,6 +122,10 @@ class AudioBackend(Protocol):
         progress: Callable[[float], None] | None = None,
         cancel: threading.Event | None = None,
         options: StreamOptions | None = None,
+        # The 1-based input the caller declared as the electrical loopback. A
+        # real interface is wired by hand and ignores it; the fake one puts
+        # its cable on that input and nowhere else.
+        loopback_input: int | None = None,
     ) -> AudioSignal: ...
 
 

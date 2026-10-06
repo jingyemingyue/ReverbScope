@@ -430,6 +430,38 @@ def test_fake_backend_devices_and_measure(
     assert "Loopback" in captured.out or "loopback" in captured.out.lower()
 
 
+def test_the_fake_cable_is_on_the_declared_loopback_input_only(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review finding: `--backend fake measure --input-channels 2` still
+    analysed a cable (RT60 0.07 s, "exact digital silence") because input 2 was
+    hard-wired as the loopback, and a loopback declared on input 3 was refused
+    as "a room". The cable is where --loopback-channel says, nowhere else."""
+    base = ["--backend", "fake", "measure", "--duration", "2", "--post-silence", "1.5"]
+    mic_on_2 = main([*base, "--out", str(tmp_path / "mic2"), "--input-channels", "2"])
+    plain = capsys.readouterr()
+    assert mic_on_2 == 0, plain.err
+    assert "RT60 0.40 s" in plain.out
+    assert "digital silence" not in plain.out
+    cable_on_3 = main(
+        [
+            *base,
+            "--out",
+            str(tmp_path / "cable3"),
+            "--input-channels",
+            "1,3",
+            "--loopback-channel",
+            "3",
+        ]
+    )
+    wired = capsys.readouterr()
+    assert cable_on_3 == 0, wired.err
+    assert "loopback on input 3" in wired.out
+    assert "compensated" in wired.out
+    assert "not applied" not in wired.out
+    assert "RT60 0.40 s" in wired.out
+
+
 def test_show_comparison_interprets_with_the_candidates_profile(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

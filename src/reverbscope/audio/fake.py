@@ -3,7 +3,8 @@
 ``make_rir`` lives here so the package does not import ``tests``. The fake
 backend convolves the playback with a configured room impulse response, honours
 ``progress`` and ``cancel``, and records an electrical loopback of the playback
-on input 2; every other input hears the room.
+on the input the caller declares as the loopback; every other input hears the
+room.
 """
 
 from __future__ import annotations
@@ -27,8 +28,6 @@ from reverbscope.i18n import _
 from reverbscope.models.audio import AudioSignal, FloatArray
 
 DECAY_CONSTANT = 3.0 * np.log(10.0) * 2.0
-#: The fake interface's input (1-based) wired to its output: a loopback cable.
-LOOPBACK_INPUT = 2
 
 
 def make_rir(
@@ -131,6 +130,7 @@ class FakeBackend:
         progress: Callable[[float], None] | None = None,
         cancel: threading.Event | None = None,
         options: StreamOptions | None = None,
+        loopback_input: int | None = None,
     ) -> AudioSignal:
         del options  # the synthetic backend has no host API
         if not input_channels:
@@ -191,8 +191,10 @@ class FakeBackend:
         n_ch = len(input_channels)
         recorded = np.zeros((signal.shape[0], n_ch), dtype=np.float64)
         for i, channel in enumerate(input_channels):
-            # Only the cable's input: a microphone on input 3 to 8 hears the room.
-            recorded[:, i] = loop if channel == LOOPBACK_INPUT else mic
+            # The cable goes where the caller plugged it (--loopback-channel,
+            # the Demo's loopback box) and nowhere else: a microphone on any
+            # other input, input 2 included, hears the room.
+            recorded[:, i] = loop if channel == loopback_input else mic
 
         n = signal.shape[0]
         for start in range(0, n, CALLBACK_BLOCK):
