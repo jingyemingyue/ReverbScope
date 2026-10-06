@@ -6163,3 +6163,24 @@ msgstr "フォルダー"
 msgctxt "session list"
 msgid "Summary"
 msgstr "概要"
+
+msgid "Terminal style"
+msgstr "ターミナルの表示スタイル"
+
+msgid "boxed (panels and tables), plain (no frames), or auto (boxed)"
+msgstr "boxed（パネルと表）、plain（枠なし）、または auto（boxed）"
+
+msgid "plain, without frames"
+msgstr "plain（枠なし）"
+
+msgid "boxed (the default)"
+msgstr "boxed（既定）"
+
+msgid "unknown style {value}; choose boxed, plain or auto"
+msgstr "不明なスタイル {value}。boxed、plain、auto のいずれかを選んでください"
+
+msgid "plain leaves out the panels and borders. Use it if your terminal draws box characters two columns wide (some CJK fonts and locales) and the frames come out crooked."
+msgstr "plain はパネルと枠を描きません。ターミナルが罫線文字を2桁幅で表示し（一部のCJKフォントやロケール）、枠がずれる場合に使ってください。"
+
+msgid "{name}=boxed or plain chooses the style for one shell, before this setting."
+msgstr "{name}=boxed または plain で、このシェルだけの表示スタイルを指定できます（この設定より優先）。"

@@ -4930,3 +4930,24 @@ msgstr "文件夹"
 msgctxt "session list"
 msgid "Summary"
 msgstr "摘要"
+
+msgid "Terminal style"
+msgstr "终端样式"
+
+msgid "boxed (panels and tables), plain (no frames), or auto (boxed)"
+msgstr "boxed（面板和表格）、plain（无边框）或 auto（boxed）"
+
+msgid "plain, without frames"
+msgstr "plain（无边框）"
+
+msgid "boxed (the default)"
+msgstr "boxed（默认）"
+
+msgid "unknown style {value}; choose boxed, plain or auto"
+msgstr "未知的样式 {value}；请选择 boxed、plain 或 auto"
+
+msgid "plain leaves out the panels and borders. Use it if your terminal draws box characters two columns wide (some CJK fonts and locales) and the frames come out crooked."
+msgstr "plain 不画面板和边框。如果你的终端把制表符画成两列宽（某些中日韩字体和区域设置），导致边框歪斜，请使用它。"
+
+msgid "{name}=boxed or plain chooses the style for one shell, before this setting."
+msgstr "{name}=boxed 或 plain 只对当前终端会话选择样式，优先于此设置。"

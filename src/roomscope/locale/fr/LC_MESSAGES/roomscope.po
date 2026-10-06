@@ -6898,3 +6898,24 @@ msgstr "Dossier"
 msgctxt "session list"
 msgid "Summary"
 msgstr "Résumé"
+
+msgid "Terminal style"
+msgstr "Style du terminal"
+
+msgid "boxed (panels and tables), plain (no frames), or auto (boxed)"
+msgstr "boxed (panneaux et tableaux), plain (sans cadres) ou auto (boxed)"
+
+msgid "plain, without frames"
+msgstr "plain, sans cadres"
+
+msgid "boxed (the default)"
+msgstr "boxed (par défaut)"
+
+msgid "unknown style {value}; choose boxed, plain or auto"
+msgstr "style inconnu {value} ; choisis boxed, plain ou auto"
+
+msgid "plain leaves out the panels and borders. Use it if your terminal draws box characters two columns wide (some CJK fonts and locales) and the frames come out crooked."
+msgstr "plain n'affiche ni panneaux ni bordures. Utilise-le si ton terminal dessine les caractères de cadre sur deux colonnes (certaines polices et locales CJK) et que les cadres sont de travers."
+
+msgid "{name}=boxed or plain chooses the style for one shell, before this setting."
+msgstr "{name}=boxed ou plain choisit le style pour un seul shell, avant ce réglage."

@@ -524,12 +524,14 @@ settings:
   developer-tools  on or off (auto: off; a source or pip install always has
                    them)
   theme            system, light or dark (the desktop app only)
+  style            boxed (panels and tables), plain (no frames), or auto (boxed)
 
 examples:
   roomscope config
   roomscope config language zh_CN
   roomscope config language auto
   roomscope config profile vocal
+  roomscope config style plain
 
 === roomscope doctor --help
 usage: roomscope doctor [options]

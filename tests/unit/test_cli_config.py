@@ -129,10 +129,17 @@ def test_config_as_json_is_the_settings_and_nothing_else(
         ("theme", "Light", "theme", "light"),
         ("theme", "system", "theme", ""),
         ("theme", "auto", "theme", ""),
+        # "boxed" is the default: stored as nothing, only "plain" is written.
+        ("style", "plain", "cli_style", "plain"),
+        ("style", "PLAIN", "cli_style", "plain"),
+        ("style", "boxed", "cli_style", ""),
+        ("style", "auto", "cli_style", ""),
         # The field names of settings.json name the same settings.
         ("default_profile", "drums", "default_profile", "drums"),
         ("copy_recording", "off", "copy_recording", False),
         ("audio-backend", "fake", "audio_backend", "fake"),
+        ("cli_style", "plain", "cli_style", "plain"),
+        ("cli-style", "plain", "cli_style", "plain"),
     ],
 )
 def test_every_setting_is_stored_as_the_desktop_app_reads_it(
@@ -178,6 +185,7 @@ def test_the_output_folder_is_stored_as_an_absolute_path(
         (["copy-recording", "maybe"], "copy-recording is on or off, not 'maybe'"),
         (["developer-tools", "2"], "developer-tools is on or off"),
         (["theme", "blue"], "unknown theme 'blue'"),
+        (["style", "fancy"], "unknown style 'fancy'; choose boxed, plain or auto"),
     ],
 )
 def test_a_value_a_setting_cannot_take_writes_nothing(
@@ -381,9 +389,13 @@ def test_every_config_screen_is_chinese(
     from roomscope.interpretation import available_profiles
 
     monkeypatch.setenv("LANG", "zh_CN.UTF-8")
-    typed = (*KEYS, *available_profiles(), "auto", "system", "zh_CN", "on", "off", "light", "dark")
+    typed = (
+        *KEYS,
+        *available_profiles(),
+        *("auto", "system", "zh_CN", "on", "off", "light", "dark", "boxed", "plain"),
+    )
     # Paths and environment variables are shown as they are.
-    data = (str(settings_path()), str(home), "LANG=zh_CN.UTF-8")
+    data = (str(settings_path()), str(home), "LANG=zh_CN.UTF-8", "ROOMSCOPE_CLI_STYLE")
     runs = [
         ["config"],
         ["config", "language"],
@@ -391,6 +403,8 @@ def test_every_config_screen_is_chinese(
         ["config", "theme"],
         ["config", "copy-recording", "off"],
         ["config", "theme", "light"],
+        ["config", "style"],
+        ["config", "style", "plain"],
         ["config", "language", "zh_CN"],
         ["config", "language", "auto"],
         ["config", "--help"],
@@ -480,3 +494,39 @@ def test_a_variable_that_comes_before_a_setting_is_named(
     monkeypatch.setenv("ROOMSCOPE_EDITION", "user")
     code, out, _err = _run(capsys, "config")
     assert "ROOMSCOPE_EDITION=user decides before this setting" in words(out)
+
+
+def test_the_terminal_style_is_listed_stored_and_named_by_the_variable(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    code, out, _err = _run(capsys, "config", "style")
+    assert code == 0
+    assert "boxed (the default)" in words(out) and "ROOMSCOPE_CLI_STYLE" in words(out)
+    assert _run(capsys, "config", "style", "plain")[0] == 0
+    assert _stored()["cli_style"] == "plain"
+    code, out, _err = _run(capsys, "config")
+    assert re.search(r"(?m)^ *style +plain +Terminal style: plain, without frames", unframe(out))
+    # The stored choice is the one every command uses, and the variable
+    # beats it in the shell it is set in.
+    code, out, _err = _run(capsys, "--lang", "en", "config")
+    assert "╭" not in out and "┏" not in out
+    monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "boxed")
+    code, out, _err = _run(capsys, "config")
+    assert "╭" in out and "┏" in out
+    _code, out, _err = _run(capsys, "config", "style")
+    assert "ROOMSCOPE_CLI_STYLE=boxed decides before this setting" in words(out)
+    # Back to the default; json lists the new key and nothing else changed.
+    monkeypatch.delenv("ROOMSCOPE_CLI_STYLE")
+    assert _run(capsys, "config", "style", "auto")[0] == 0
+    assert _stored()["cli_style"] == ""
+    code, out, _err = _run(capsys, "--format", "json", "config")
+    assert json.loads(out)["cli_style"] == ""
+
+
+def test_a_hand_edited_style_the_settings_do_not_know_is_ignored(home: Path) -> None:
+    from roomscope.settings import UserSettings
+
+    assert UserSettings.from_dict({"cli_style": "fancy"}).cli_style == ""
+    assert UserSettings.from_dict({"cli_style": "boxed"}).cli_style == ""
+    assert UserSettings.from_dict({"cli_style": "plain"}).cli_style == "plain"
+    assert UserSettings.from_dict({"cli_style": 3}).cli_style == ""

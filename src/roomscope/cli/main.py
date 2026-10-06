@@ -368,7 +368,7 @@ class _Parser(argparse.ArgumentParser):
             raise argparse.ArgumentError(action, message) from None
 
     def error(self, message: str) -> Any:
-        console = Console.for_stream(sys.stderr, _COLOR_REQUEST["mode"])  # type: ignore[arg-type]
+        console = _stream_console(sys.stderr, _COLOR_REQUEST["mode"])
         text = render_error(console, message, hints=[f"{self.prog} --help"])
         self.exit(2, text + "\n")
 
@@ -1317,6 +1317,7 @@ def build_parser() -> argparse.ArgumentParser:
             "roomscope config language zh_CN",
             "roomscope config language auto",
             "roomscope config profile vocal",
+            "roomscope config style plain",
         ),
     )
     p_cfg.add_argument(
@@ -1444,9 +1445,17 @@ def _peek_option(argv: Sequence[str], names: tuple[str, ...]) -> str | None:
     return None
 
 
+def _stream_console(stream: Any, mode: Any = "auto") -> Console:
+    """The console for ``stream`` under the colour mode and the style the user
+    stored (``roomscope config style``; ``ROOMSCOPE_CLI_STYLE`` decides first)."""
+    from roomscope.settings import load_settings
+
+    return Console.for_stream(stream, mode, style=load_settings().cli_style)
+
+
 def _console(args: argparse.Namespace, stream: Any = None) -> Console:
     """How to lay out text for ``stream`` (stdout by default) under ``--color``."""
-    return Console.for_stream(stream or sys.stdout, getattr(args, "color", None) or "auto")
+    return _stream_console(stream or sys.stdout, getattr(args, "color", None) or "auto")
 
 
 def _warn_ignored_json(args: argparse.Namespace, command: str) -> None:

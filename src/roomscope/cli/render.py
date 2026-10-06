@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from roomscope.cli.console import (
+    ENV_STYLE,
     Console,
     Status,
     Tone,
@@ -2137,6 +2138,21 @@ def render_config_key(console: Console, key: str, settings: UserSettings) -> str
     )
     if key == "theme":
         lines += c.paragraph(_("The theme applies to the desktop app only."), style=("dim",))
+    elif key == "style":
+        lines += c.paragraph(
+            _(
+                "plain leaves out the panels and borders. Use it if your terminal draws box "
+                "characters two columns wide (some CJK fonts and locales) and the frames "
+                "come out crooked."
+            ),
+            style=("dim",),
+        )
+        lines += c.paragraph(
+            _("{name}=boxed or plain chooses the style for one shell, before this setting.").format(
+                name=ENV_STYLE
+            ),
+            style=("dim",),
+        )
     return c.fit("\n".join(lines))
 
 

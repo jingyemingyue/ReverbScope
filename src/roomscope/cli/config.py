@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any
 
 from roomscope.audio.backend import ENV_BACKEND
+from roomscope.cli.console import CLI_STYLES, ENV_STYLE
 from roomscope.edition import ENV_EDITION
 from roomscope.i18n import (
     DEFAULT_LANG,
@@ -47,6 +48,7 @@ KEYS: tuple[str, ...] = (
     "copy-recording",
     "developer-tools",
     "theme",
+    "style",
 )
 #: The :class:`~roomscope.settings.UserSettings` field each key stores.
 FIELDS = {
@@ -57,12 +59,14 @@ FIELDS = {
     "copy-recording": "copy_recording",
     "developer-tools": "developer_tools",
     "theme": "theme",
+    "style": "cli_style",
 }
 #: The field names of settings.json are accepted for their keys too.
 _ALIASES = {
     "default-profile": "profile",
     "audio-backend": "backend",
     "output-dir": "output-folder",
+    "cli-style": "style",
 }
 #: The value that goes back to a setting's default, for every key.
 AUTO = "auto"
@@ -196,6 +200,15 @@ def parse_value(key: str, raw: str) -> Any:
                 )
             )
         return word
+    if key == "style":
+        # "boxed" is the default, stored as nothing: only "plain" is written.
+        if word in (AUTO, "boxed"):
+            return ""
+        if word not in CLI_STYLES:
+            raise SettingError(
+                _("unknown style {value}; choose boxed, plain or auto").format(value=repr(raw))
+            )
+        return word
     raise SettingError(f"unknown setting {key!r}")  # canonical_key() admits no other key
 
 
@@ -210,6 +223,8 @@ def typed_value(key: str, settings: UserSettings) -> str:
         return "on" if value else "off"
     if key == "theme":
         return value or "system"
+    if key == "style":
+        return value or "boxed"
     return str(value) if value else AUTO
 
 
@@ -224,6 +239,7 @@ def title(key: str) -> str:
         "copy-recording": _("Copy recordings"),
         "developer-tools": _("Developer tools"),
         "theme": _("Theme (desktop app)"),
+        "style": _("Terminal style"),
     }[key]
 
 
@@ -245,6 +261,8 @@ def choices(key: str) -> str:
         return _("on or off (auto: on)")
     if key == "developer-tools":
         return _("on or off (auto: off; a source or pip install always has them)")
+    if key == "style":
+        return _("boxed (panels and tables), plain (no frames), or auto (boxed)")
     return _("system, light or dark (the desktop app only)")
 
 
@@ -340,6 +358,13 @@ def state(key: str, settings: UserSettings, choice: LanguageChoice | None = None
                 name=ENV_EDITION, value=override
             )
         return _("shown") if value else _("hidden in the installed app")
+    if key == "style":
+        override = os.environ.get(ENV_STYLE, "").strip()
+        if override.lower() in CLI_STYLES:
+            return _("{name}={value} decides before this setting").format(
+                name=ENV_STYLE, value=override
+            )
+        return _("plain, without frames") if value else _("boxed (the default)")
     return {
         "": _("follow the system"),
         "light": _("light"),

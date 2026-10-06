@@ -43,6 +43,9 @@ class UserSettings:
     theme: str = ""
     #: Show the developer tools in an installed (user-edition) RoomScope.
     developer_tools: bool = False
+    #: How the command line draws its output: "" for panels and bordered
+    #: tables (``boxed``), "plain" for the same text without them.
+    cli_style: str = ""
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -66,6 +69,8 @@ class UserSettings:
                 del payload[item.name]
         if payload.get("theme") not in (None, "", "light", "dark"):
             payload["theme"] = ""
+        if payload.get("cli_style") not in (None, "", "plain"):
+            payload["cli_style"] = ""
         return cls(**payload)
 
 

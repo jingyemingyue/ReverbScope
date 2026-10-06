@@ -6851,3 +6851,24 @@ msgstr "Carpeta"
 msgctxt "session list"
 msgid "Summary"
 msgstr "Resumen"
+
+msgid "Terminal style"
+msgstr "Estilo del terminal"
+
+msgid "boxed (panels and tables), plain (no frames), or auto (boxed)"
+msgstr "boxed (paneles y tablas), plain (sin marcos) o auto (boxed)"
+
+msgid "plain, without frames"
+msgstr "plain, sin marcos"
+
+msgid "boxed (the default)"
+msgstr "boxed (predeterminado)"
+
+msgid "unknown style {value}; choose boxed, plain or auto"
+msgstr "estilo desconocido {value}; elige boxed, plain o auto"
+
+msgid "plain leaves out the panels and borders. Use it if your terminal draws box characters two columns wide (some CJK fonts and locales) and the frames come out crooked."
+msgstr "plain omite los paneles y los bordes. Úsalo si tu terminal dibuja los caracteres de recuadro con dos columnas de ancho (algunas fuentes y configuraciones regionales CJK) y los marcos quedan torcidos."
+
+msgid "{name}=boxed or plain chooses the style for one shell, before this setting."
+msgstr "{name}=boxed o plain elige el estilo para un solo shell, antes que este ajuste."

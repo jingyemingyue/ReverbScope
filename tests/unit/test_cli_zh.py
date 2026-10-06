@@ -91,7 +91,8 @@ def _typed_values(path: str) -> tuple[str, ...]:
         return values
     from roomscope.interpretation import available_profiles
 
-    return (*values, *available_profiles(), "auto", "on", "off", "system", "light", "dark")
+    typed = ("auto", "on", "off", "system", "light", "dark", "boxed", "plain")
+    return (*values, *available_profiles(), *typed)
 
 
 def test_every_help_screen_is_chinese(zh_cli: None) -> None:
