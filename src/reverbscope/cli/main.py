@@ -2194,7 +2194,7 @@ def cmd_export(args: argparse.Namespace) -> int:
 
 
 def cmd_project(args: argparse.Namespace) -> int:
-    from reverbscope.core.averaging import average_decay
+    from reverbscope.core.averaging import AveragedMetric, average_decay
     from reverbscope.io.project_store import (
         PROJECT_FILE,
         add_session,
@@ -2280,21 +2280,27 @@ def cmd_project(args: argparse.Namespace) -> int:
             print("\n".join(console.paragraph(iso_class, indent=0)))
             dash = console.dash()
 
-            def seconds(value: float | None) -> str:
-                return f"{value:.2f} s" if value is not None else dash
+            # Each value averages only the sessions where it is VALID, so its
+            # count can differ along a row: n is the row's largest count, and
+            # a value from fewer sessions shows its own.
+            partial = False
 
-            rows = [
-                [
-                    # A label read from a session file: one line, whatever it holds.
-                    printable(band_text(band.band_label), single_line=True),
-                    seconds(band.edt.seconds),
-                    seconds(band.t20.seconds),
-                    seconds(band.t30.seconds),
-                    seconds(band.rt60_estimate_s),
-                    str(band.t20.count),
-                ]
-                for band in averaged.bands
-            ]
+            def cell(metric: AveragedMetric, n: int) -> str:
+                nonlocal partial
+                if metric.seconds is None:
+                    return dash
+                if metric.count < n:
+                    partial = True
+                    return f"{metric.seconds:.2f} s ({metric.count})"
+                return f"{metric.seconds:.2f} s"
+
+            rows = []
+            for band in averaged.bands:
+                metrics = (band.edt, band.t20, band.t30, band.rt60)
+                n = max(metric.count for metric in metrics)
+                # A label read from a session file: one line, whatever it holds.
+                label = printable(band_text(band.band_label), single_line=True)
+                rows.append([label, *(cell(m, n) for m in metrics), str(n)])
             print()
             print(
                 "\n".join(
@@ -2303,6 +2309,12 @@ def cmd_project(args: argparse.Namespace) -> int:
                     )
                 )
             )
+            if partial:
+                note = _(
+                    "n is the number of sessions averaged in the row; a value followed by "
+                    "(k) averages only k of them, as the others have no VALID value."
+                )
+                print("\n".join(console.paragraph(note, style=("dim",))))
         return 0
     raise ReverbScopeError(_("unknown project command {command}").format(command=command))
 

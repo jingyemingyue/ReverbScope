@@ -123,7 +123,7 @@ reverbscope-env/bin/reverbscope gui
 项目文件夹包含 `project.json` 和普通的会话文件夹。
 `reverbscope project init --out room/ --name Booth`，然后
 `reverbscope project add room/ session/ --position desk`。对已有 `project.json` 的文件夹再次运行 `project init` 会被拒绝；加 `--force` 则重新开始这个项目，原有的位置不再保留。
-`reverbscope project average room/` 只平均有效（VALID）的 T 值，从不平均衰减曲线，并注明测量位置数达到的 ISO 3382-2 等级。
+`reverbscope project average room/` 只平均有效（VALID）的 T 值，从不平均衰减曲线，并注明测量位置数达到的 ISO 3382-2 等级。RT60 一列是各会话自身 RT60（优先 T30，否则 T20）的平均值。`n` 是该行参与平均的会话数；参与会话较少的数值会附上自己的会话数，例如 `0.91 s (1)`。
 
 ## 导出与语言
 

@@ -350,7 +350,16 @@ accuracy), and the rule that one averages *T values*, not decay curves
 **Procedure** (`core/averaging.py`). `average_decay(results)` takes the
 arithmetic mean of EDT, T20 and T30 per band over the metrics marked VALID
 only, with the count, the spread (max − min) and the contributing session
-labels. Decay curves (`edc_db`) are never averaged. The output names the
+labels. The averaged RT60 is the mean of the sessions' own RT60 estimates
+(each the VALID T30, else the VALID T20, as in §3 step 10), with its own
+count and contributing sessions; its basis is `T30`, `T20`, or `T30/T20`
+when the sessions differ. (Up to v0.5.0b1 it was the mean T30 whenever any
+session had one, so a single quiet position's T30 stood for the room and
+the positions with only a T20 were left out.) Each value averages only the
+sessions where it is VALID, so the counts of one band can differ: the
+`project average` table prints the largest as `n` and the count after any
+value that averages fewer sessions, for example `0.91 s (1)`. Decay curves
+(`edc_db`) are never averaged. The output names the
 ISO 3382-2 accuracy class reached by the source positions, microphone
 positions and source–microphone combinations; every row of the table must
 be met. `reverbscope project average` counts one microphone position per

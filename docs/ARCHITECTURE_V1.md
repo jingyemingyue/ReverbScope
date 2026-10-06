@@ -412,7 +412,9 @@ CLI `reverbscope analyze-ir --ir <wav>`.
 
 `average_decay(results: Sequence[AnalysisResult]) -> AveragedDecay`:
 arithmetic mean of EDT, T20 and T30 per band over the VALID metrics only,
-with the count, the spread and the list of contributing sessions. Decay
+with the count, the spread and the list of contributing sessions. The
+averaged RT60 is the mean of the sessions' own RT60 estimates (VALID T30,
+else VALID T20), with its own count. Decay
 curves are never averaged (ARCHITECTURE.md §5). The output names the ISO
 3382-2 accuracy class the number of source and microphone positions
 reaches; the class thresholds are transcribed from the standard's Table 1

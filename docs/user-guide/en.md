@@ -223,7 +223,10 @@ A project folder holds `project.json` and ordinary session folders.
 again on a folder that has a `project.json` is refused; `--force` starts the
 project over, without its positions.
 `reverbscope project average room/` averages VALID T values only, never decay
-curves, and names the ISO 3382-2 class the position counts reach.
+curves, and names the ISO 3382-2 class the position counts reach. The RT60
+column is the mean of each session's own RT60 (T30, else T20). `n` is the
+number of sessions averaged in a row; a value that averages fewer shows its
+own count, for example `0.91 s (1)`.
 
 ## Export and language
 

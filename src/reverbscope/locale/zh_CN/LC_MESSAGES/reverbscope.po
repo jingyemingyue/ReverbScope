@@ -4618,3 +4618,8 @@ msgstr "无法估计后期衰减斜率：高于本底噪声 {lower:g} 至 {upper
 msgctxt "diagnostic"
 msgid "the late decay slope could not be estimated: the response does not fall between {lower:g} and {upper:g} dB above the noise"
 msgstr "无法估计后期衰减斜率：响应在高于本底噪声 {lower:g} 至 {upper:g} dB 的范围内没有下降"
+
+# reverbscope project average: counts per value
+
+msgid "n is the number of sessions averaged in the row; a value followed by (k) averages only k of them, as the others have no VALID value."
+msgstr "n 为该行参与平均的会话数；数值后带 (k) 表示只平均了其中 k 个会话，其余会话没有有效值。"
