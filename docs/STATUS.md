@@ -28,10 +28,10 @@ protects `main`.
 **What the stabilization branch holds** (on top of `211654b`; all merges
 are merge commits, nothing rewritten):
 
-* `beb9c1d` merges PR #40 `claude/fix-code-errors`, the stable line (204
+* `0874c49` merges PR #40 `claude/fix-code-errors`, the stable line (204
   commits: three review rounds of reproduced defect fixes with regression
   tests, `reverbscope config`, the Chinese-first command line).
-* `8f4c5ac` merges PR #43 `acoustic-measurement-audit` on top of it. Nine
+* `149c1c0` merges PR #43 `acoustic-measurement-audit` on top of it. Nine
   files conflicted (`portaudio.py`, `decay.py`, `deconvolution.py`,
   `frequency_response.py`, `pipeline.py`, the zh-CN catalog, the changelog,
   the methodology and `test_reflections.py`); each was resolved so both sides'
@@ -45,12 +45,12 @@ are merge commits, nothing rewritten):
   (`tests/unit/test_acoustic_oracle.py`, the rival-arrival, device-timing,
   boundary-reflection and non-finite cases) pass on the merged code, so none
   of its correctness fixes was overwritten by the stable line.
-* `1628ade` ports what PR #36 had and #43 lacked: the log file keeps INFO
+* `4846217` ports what PR #36 had and #43 lacked: the log file keeps INFO
   diagnostics (the opened stream's settings) while the console stays at the
   requested level, eight regression tests, the HARDWARE_TESTS paragraph on
   the `audio stream:` log line. With it every behaviour, test, log
   diagnostic and document of #36 is on this line (#36 is superseded).
-* `b3e8b79` ports PR #38 on ReverbScope paths: `scripts/check_cli_docs.py`
+* `2af356e` ports PR #38 on ReverbScope paths: `scripts/check_cli_docs.py`
   (96 documented commands parse against the current parser; CI and the
   Release quality job run it), check scripts that fail on a missing or empty
   root instead of passing, a `smoke_bundle.py` whose failures name the
@@ -58,11 +58,11 @@ are merge commits, nothing rewritten):
   streams, `--no-gui` without Qt, `docs/OFFLINE_CHECKS.md` and
   `tests/integration/test_offline_cli.py`, which runs its 14-command
   workflow against the shipped schemas.
-* `052659f` fixes the Pages workflow (pinned checkout, site-file check,
-  Pages permissions on the deploy job only); `706da96` makes the Release
+* `615fe65` fixes the Pages workflow (pinned checkout, site-file check,
+  Pages permissions on the deploy job only); `086be12` makes the Release
   workflow cancel only a pull request's superseded run, never a `main`, tag
-  or manual run; `52edb06` aligns one stable-line test with the ported exit
-  semantics; `47a8a99` sets the version to 0.5.0b2 and prepares the
+  or manual run; `cb7e079` aligns one stable-line test with the ported exit
+  semantics; `d7eefff` sets the version to 0.5.0b2 and prepares the
   changelog section, the beta-2 release notes, the READMEs, the installation
   and release-plan documents.
 
@@ -101,7 +101,7 @@ Noto CJK fonts installed, no audio device):
   environment; this container's Debian-packaged `pyparsing` has no license
   metadata, which the gate rightly reports).
 * Linux bundles, PyInstaller 6.22.3 from `requirements/bundle.lock` in a
-  virtual environment: the Desktop Edition (312 MB unpacked, 133 MB `ReverbScope-Desktop-Linux-x86_64.tar.gz`) and the Terminal Edition (146 MB, 57 MB `ReverbScope-Terminal-Linux-x86_64.tar.gz`) built, their license bundles resolved every package and native library, `check_bundle_contents.py --strip --require-licenses` (and `--terminal`) passed, and `smoke_bundle.py` passed for both (`--version`, `doctor --json` naming version 0.5.0b2, the build commit `47a8a99` and the edition, the fake measurement, the demo in English and Chinese, `--format json show`, `gui --smoke` offscreen through the console binary and the `reverbscope-gui` launcher, the launcher staying open, and the Terminal Edition's `gui` refusal in both languages). A Linux build on this container, not a download tested on a person's computer.
+  virtual environment: the Desktop Edition (312 MB unpacked, 133 MB `ReverbScope-Desktop-Linux-x86_64.tar.gz`) and the Terminal Edition (146 MB, 57 MB `ReverbScope-Terminal-Linux-x86_64.tar.gz`) built, their license bundles resolved every package and native library, `check_bundle_contents.py --strip --require-licenses` (and `--terminal`) passed, and `smoke_bundle.py` passed for both (`--version`, `doctor --json` naming version 0.5.0b2, the commit it was built from and the edition, the fake measurement, the demo in English and Chinese, `--format json show`, `gui --smoke` offscreen through the console binary and the `reverbscope-gui` launcher, the launcher staying open, and the Terminal Edition's `gui` refusal in both languages). A Linux build on this container, not a download tested on a person's computer.
 
 **Not run, not claimed.** The Windows and macOS bundles, the installer and
 the disk images (the Release workflow builds and smokes them on GitHub's
