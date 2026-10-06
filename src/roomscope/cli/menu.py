@@ -535,7 +535,7 @@ def choice_lines(
     out: list[str] = []
     for key, label, text in rows:
         key, label, text = c.readable(key), c.readable(label), c.readable(text)
-        head = "  " + c.style(pad(key, key_width, "right"), "bold", "cyan") + "  "
+        head = "  " + c.bold(pad(key, key_width, "right")) + "  "
         if stacked or not text:
             out.append(head + c.bold(label))
             if text:
@@ -1129,7 +1129,6 @@ class Menu:
                 _("The {count} newest are listed; type a path for an older one.").format(
                     count=MAX_LISTED
                 ),
-                style=("dim",),
             )
         self.write(["", *lines, ""])
         return listed

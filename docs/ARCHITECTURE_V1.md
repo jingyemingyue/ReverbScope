@@ -572,7 +572,10 @@ editions; see DEPENDENCIES.md §5): a rounded panel (`╭╮╰╯─│`) with 
 title in the top border, a bordered table (`┌┬┐├┼┤└┴┘`) under a heavier header
 row (`┏┳┓┃┡╇┩`), a coloured bar before a section heading, status badges (a
 mark and a word: `✓ good`, `! check`, `✗ problem`, `i note`) and a card per
-finding whose border follows its severity. `Console.frames` is on for the
+finding whose border follows its severity. Colour is on marks, bars and borders
+only (a word or a number is never coloured or dim: yellow, green, cyan and dim
+text cannot be read on some schemes); `Console.wrap` keeps a number with its
+unit and a closing mark with the word before it. `Console.frames` is on for the
 command line and off for `REPORT_CONSOLE` and `roomscope.cli.report`, so the
 GUI's report text is unchanged; frames are also off below 40 columns, and
 on a stream that cannot write the box glyphs they are drawn with `+ - | =`.

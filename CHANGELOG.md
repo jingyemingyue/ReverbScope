@@ -150,7 +150,12 @@ All notable changes to RoomScope are documented here. The format follows
   closing marks and the two halves of a Chinese word stay together, and a
   question of the menu keeps `（默认：48000）：` whole on its last line. A path
   is never cut: a path too long for a panel follows it on a line of its own,
-  a table that does not fit becomes one block per row. The next steps, hints
+  a table that does not fit becomes one block per row. Colour is only on
+  marks, bars and borders: a word or a number is never yellow, green, cyan
+  or dim (unreadable on some colour schemes); titles, status words,
+  commands and the numbers of the menu are bold in the colour of the
+  terminal's text. An unreliable decay time has its `?` before the number,
+  so the digits of the column stay under each other. The next steps, hints
   and examples stay bare, so a triple click copies the command alone. The
   desktop app's report panes and `roomscope.cli.report` have no frames:
   their text is byte for byte what it was. `show --list` keeps one

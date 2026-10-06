@@ -14,11 +14,13 @@ import re
 from collections.abc import Callable, Iterator, Sequence
 from itertools import pairwise
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
 from roomscope.cli.console import (
     GLUE,
+    Console,
     cell_width,
     glue_units,
     strip_ansi,
@@ -130,6 +132,118 @@ def test_no_screen_parts_a_number_from_its_unit(
         assert "Traceback" not in text, argv
         assert GLUE not in text, argv
         assert _split_units(text) == [], (argv, columns)
+
+
+# --- Colour: only marks, bars and borders ------------------------------------------------------
+
+_SGR = re.compile(r"\x1b\[([0-9;]*)m")
+#: Foreground colours and dim: unreadable on some palettes, so never on a word.
+_FAINT_OR_COLOURED = {"2", "30", "31", "32", "33", "34", "35", "36", "37", "90", "91", "92", "93"}
+
+
+def coloured_words(text: str) -> list[str]:
+    """Every run of letters or digits that is dim or coloured."""
+    found: list[str] = []
+    active: set[str] = set()
+    run = ""
+    position = 0
+
+    def flush() -> None:
+        nonlocal run
+        if run and run != "i":  # the mark of a note is the letter i
+            found.append(run)
+        run = ""
+
+    for match in _SGR.finditer(text):
+        for char in text[position : match.start()]:
+            if char.isalnum() and active & _FAINT_OR_COLOURED:
+                run += char
+            else:
+                flush()
+        flush()
+        codes = {code for code in match.group(1).split(";") if code}
+        active = set() if not codes or codes == {"0"} else active | codes
+        position = match.end()
+    for char in text[position:]:
+        if char.isalnum() and active & _FAINT_OR_COLOURED:
+            run += char
+        else:
+            flush()
+    flush()
+    return found
+
+
+def test_the_detector_finds_a_coloured_word() -> None:
+    assert coloured_words("\x1b[33mwarn\x1b[0m \x1b[1mbold\x1b[0m \x1b[2m✓\x1b[0m") == ["warn"]
+    assert coloured_words("\x1b[36m▌\x1b[0m\x1b[1mTitle\x1b[0m") == []
+    assert coloured_words("\x1b[32;1m✓\x1b[0m \x1b[1mgood\x1b[0m") == []
+    assert coloured_words("\x1b[2m0.5 s\x1b[0m") == ["0", "5", "s"]
+
+
+@pytest.mark.parametrize("lang", ["zh_CN", "en"])
+def test_no_word_or_number_is_coloured_or_dim(run: Call, demo: Path, lang: str) -> None:
+    """Yellow, green and cyan text has a contrast of 1.7 to 3.5 on a light
+    background, dim text 1.9 to 3.7: the marks and the borders carry the colour,
+    the words stay in the colour of the terminal's text."""
+    a, b = str(demo / "position-a"), str(demo / "position-b")
+    for argv in (
+        ("show", a),
+        ("show", b),
+        ("compare", a, b),
+        ("show", str(demo / "comparison.json")),
+        ("--backend", "fake", "devices"),
+        ("--backend", "fake", "devices", "--probe"),
+        ("--backend", "fake", "doctor"),
+        ("config",),
+        ("config", "style"),
+        ("sweep", "--out", str(demo / "again.wav")),
+        ("show", str(demo / "missing")),
+    ):
+        text = run("--lang", lang, "--color", "always", *argv, columns=90)
+        assert "\x1b[" in text, argv  # colour is on
+        assert coloured_words(text) == [], argv
+
+
+def test_a_title_a_command_and_a_menu_number_are_bold_not_coloured() -> None:
+    c = Console(width=60, frames=True, color=True)
+    top = c.frame("Title", ["x"], "warn")
+    assert top is not None and "\x1b[1mTitle\x1b[0m" in top[0]
+    assert c.command("roomscope show x") == "\x1b[1mroomscope show x\x1b[0m"
+    assert c.muted("a note") == "a note"
+    assert c.badge("ok") == "\x1b[32m✓\x1b[0m \x1b[1mgood\x1b[0m"
+    plain = Console(width=60, color=True)
+    assert plain.section("Reverberation")[1] == "\x1b[1mReverberation\x1b[0m"
+
+
+def test_the_menu_is_bold_numbers_and_plain_descriptions() -> None:
+    from roomscope.cli.menu import choice_lines
+
+    c = Console(width=80, frames=True, color=True)
+    (line,) = choice_lines(c, [("3", "Analyse a recording", "a WAV recorded while it played")])
+    assert coloured_words(line) == []
+    assert "\x1b[1m3\x1b[0m" in line and "a WAV recorded while it played" in line
+
+
+# --- An unreliable value keeps its digits in the column ----------------------------------------
+
+
+def test_an_unreliable_number_has_its_mark_before_it_not_after() -> None:
+    from roomscope.cli.render import _energy_cell, _metric_cell
+    from roomscope.models.result import Validity
+
+    c = Console(width=80, frames=True)
+    unreliable = SimpleNamespace(seconds=0.22, validity=Validity.UNRELIABLE)
+    valid = SimpleNamespace(seconds=0.40, validity=Validity.VALID)
+    cells = [_metric_cell(c, valid), _metric_cell(c, unreliable), _metric_cell(c, valid)]
+    assert cells == ["0.40 s", "? 0.22 s", "0.40 s"]
+    lines = c.table(
+        ["Band", "T20"], [["a", cells[0]], ["b", cells[1]], ["c", cells[2]]], align="lr"
+    )
+    ends = {line.index(" s") for line in lines if " s" in line}
+    assert len(ends) == 1  # the digits and the unit line up
+    energy = SimpleNamespace(value=-3.2, unit="dB", validity=Validity.UNRELIABLE)
+    assert _energy_cell(c, energy).endswith("-3.2 dB")  # type: ignore[arg-type]
+    assert _energy_cell(c, energy).startswith("?")  # type: ignore[arg-type]
 
 
 # --- Wrapping: closing marks, two-character words and the last line ------------------------------

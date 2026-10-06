@@ -232,7 +232,10 @@ def test_badges_carry_a_mark_and_a_word(zh: None) -> None:
     ]
     ascii_console = Console(frames=True, unicode=False)
     assert ascii_console.badge("ok") == "+ good" and ascii_console.badge("error") == "x problem"
-    assert Console(frames=True, color=True).badge("warn") == "\x1b[33;1m! check\x1b[0m"
+    # Only the mark is coloured; the word stays bold in the colour of the text.
+    assert (
+        Console(frames=True, color=True).badge("warn") == "\x1b[33;1m!\x1b[0m \x1b[1mcheck\x1b[0m"
+    )
 
 
 def test_an_error_is_a_red_panel_and_its_hints_stay_bare(zh: None) -> None:

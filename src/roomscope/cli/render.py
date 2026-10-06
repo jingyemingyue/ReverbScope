@@ -134,7 +134,9 @@ def _metric_cell(console: Console, metric: DecayMetric) -> str:
     if metric.seconds is not None and metric.validity is Validity.VALID:
         return f"{metric.seconds:.2f} s"
     if metric.seconds is not None and metric.validity is Validity.UNRELIABLE:
-        return console.style(f"{metric.seconds:.2f} s", "yellow") + " " + console.symbol("unsure")
+        # The mark goes before the number, so the numbers of a right-aligned
+        # column keep their digits under each other.
+        return console.symbol("unsure") + f" {metric.seconds:.2f} s"
     if metric.validity is Validity.INSUFFICIENT_RANGE:
         return console.symbol("warn")
     return console.symbol("skip")
@@ -481,7 +483,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
         basis_note = _("RT60 extrapolated from {basis} in every band").format(basis=basis)
     lines += c.table(headers, rows, align="lrrrrr")
     if basis_note:
-        lines += c.paragraph(basis_note, style=("dim",))
+        lines += c.paragraph(basis_note)
     legend = [
         v
         for v in (
@@ -545,7 +547,7 @@ def _energy_cell(c: Console, metric: EnergyMetric) -> str:
     if number is not None and metric.validity is Validity.VALID:
         return number
     if number is not None and metric.validity is Validity.UNRELIABLE:
-        return c.style(number, "yellow") + " " + c.symbol("unsure")
+        return c.symbol("unsure") + f" {number}"
     if metric.validity is Validity.INSUFFICIENT_RANGE:
         return c.symbol("warn")
     return c.symbol("skip")
@@ -645,7 +647,7 @@ def _reflections(c: Console, result: AnalysisResult) -> list[str]:
         lines += c.table([_("Delay"), _("Level")], rows, align="rr")
         hidden = len(refl.reflections) - 10
         if hidden > 0:
-            lines += c.paragraph(_("{n} more in result.json").format(n=hidden), style=("dim",))
+            lines += c.paragraph(_("{n} more in result.json").format(n=hidden))
     for note in refl.notes:
         lines += c.status("info", localize(note))
     return lines
@@ -1509,9 +1511,7 @@ def render_devices(console: Console, devices: Sequence[DeviceInfo]) -> str:
     hint = _("Use the number with --input-device / --output-device.")
     if console.boxed:
         # The hint goes in the title panel, above the table it explains.
-        lines = console.title(
-            _("Audio devices"), body=lambda c, indent: c.paragraph(hint, indent, style=("dim",))
-        )
+        lines = console.title(_("Audio devices"), body=lambda c, indent: c.paragraph(hint, indent))
         lines.append("")
         lines += _device_rows(console, payload, probed=False)
         return console.fit("\n".join(lines))
@@ -1519,7 +1519,7 @@ def render_devices(console: Console, devices: Sequence[DeviceInfo]) -> str:
     lines.append("")
     lines += _device_rows(console, payload, probed=False)
     lines.append("")
-    lines += console.paragraph(hint, style=("dim",))
+    lines += console.paragraph(hint)
     return console.fit("\n".join(lines))
 
 
@@ -1760,7 +1760,6 @@ def render_sweep_written(
     )
     lines += c.paragraph(
         _("Start with the monitors turned down and raise them between takes if needed."),
-        style=("dim",),
     )
     return c.fit("\n".join(lines))
 
@@ -1949,13 +1948,13 @@ def render_error(
     inner = c.inner()
     body = inner.paragraph(message, indent=0)
     if detail:
-        body += inner.paragraph(detail, indent=0, style=("dim",))
+        body += inner.paragraph(detail, indent=0)
     framed = c.frame(f"{c.mark('error')} {pgettext('error panel', 'Error')}", body, "error")
     text = _("error: {message}").format(message=message)
     if framed is not None:
         lines = framed
     elif c.unicode:
-        lines = c.status("error", text, indent=0, style=("red", "bold"))
+        lines = c.status("error", text, indent=0, style=("bold",))
     else:  # "[ERROR] error:" would say it twice
         lines = c.paragraph(text, indent=0)
     if detail and framed is None:
@@ -2097,7 +2096,7 @@ def render_config(
         # change a setting follow the table, bare.
         lines = c.title(_("RoomScope settings"), file)
         if not exists:
-            lines += c.paragraph(nothing, style=("dim",))
+            lines += c.paragraph(nothing)
         lines += ["", *framed, ""]
         lines += c.commands(_config_commands())
         return c.fit("\n".join(lines))
@@ -2110,7 +2109,7 @@ def render_config(
     lines.append("")
     lines += c.fields(file)
     if not exists:
-        lines += c.paragraph(nothing, style=("dim",))
+        lines += c.paragraph(nothing)
     return c.fit("\n".join(lines))
 
 
@@ -2137,7 +2136,7 @@ def render_config_key(console: Console, key: str, settings: UserSettings) -> str
         [(f"roomscope config {key} {pgettext('metavar', 'VALUE')}", _("change it"))]
     )
     if key == "theme":
-        lines += c.paragraph(_("The theme applies to the desktop app only."), style=("dim",))
+        lines += c.paragraph(_("The theme applies to the desktop app only."))
     elif key == "style":
         lines += c.paragraph(
             _(
@@ -2145,13 +2144,11 @@ def render_config_key(console: Console, key: str, settings: UserSettings) -> str
                 "characters two columns wide (some CJK fonts and locales) and the frames "
                 "come out crooked."
             ),
-            style=("dim",),
         )
         lines += c.paragraph(
             _("{name}=boxed or plain chooses the style for one shell, before this setting.").format(
                 name=ENV_STYLE
             ),
-            style=("dim",),
         )
     return c.fit("\n".join(lines))
 
@@ -2310,7 +2307,6 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
     lines += c.paragraph(
         _("Run {command} for every command and option.").format(command="roomscope --help"),
         indent=0,
-        style=("dim",),
     )
     from roomscope.cli.config import language_hint_lines
     from roomscope.i18n import current_locale
@@ -2379,7 +2375,6 @@ def render_demo(
             end=frequency_text(settings.end_hz),
             rate=rate_text(settings.sample_rate),
         ),
-        style=("dim",),
     )
 
     for take, take_findings in zip(run.takes, findings, strict=True):
