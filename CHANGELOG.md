@@ -25,6 +25,20 @@ All notable changes to ReverbScope are documented here. The format follows
   language zh_CN` in English, `English interface: reverbscope config language
   en` in Chinese (left out where the terminal cannot write Chinese; on a
   narrow terminal the command goes whole on a line of its own).
+- **Documentation examples are checked against the parser.**
+  `scripts/check_cli_docs.py` parses every complete `reverbscope` command in
+  a Markdown shell fence (root documents and `docs/`) with the current
+  command-line parser and names the file, line, command and parser message
+  of a stale example. No command is run and no device is touched. CI and the
+  Release quality job run it next to the link check.
+- **Checks without hardware.** `docs/OFFLINE_CHECKS.md` lists the gates and
+  a fake-backend command-line workflow (devices, doctor, demo, analyze,
+  show, compare, export, session bundle, project, measure) that
+  `tests/integration/test_offline_cli.py` runs command by command, checking
+  the JSON output and the saved files against the shipped schemas, the CSV
+  and ZIP contents, and that importing the synthetic take leaves its source
+  files unchanged. The document also lists what still needs a physical
+  interface, a DAW or a real room; none of this fills the hardware matrix.
 
 ### Changed
 - **Renamed RoomScope → ReverbScope.** The project, the Python package
@@ -83,6 +97,16 @@ All notable changes to ReverbScope are documented here. The format follows
   opened audio stream's settings, ignored settings fields) while the console
   stays at the requested level, so `reverbscope.log` holds what a hardware
   bug report needs without `--verbose`; `--verbose` keeps DEBUG in both.
+- **Offline gates cannot pass by mistake.** `check_doc_links.py` and
+  `check_src_safety.py` fail on a missing directory, an empty scan, an
+  unreadable file or invalid Python instead of reporting success or an
+  unlocated traceback. `scripts/smoke_bundle.py` names the command, its exit
+  code or timeout and keeps its stdout/stderr when a step fails, rejects
+  invalid JSON and malformed `doctor` metadata with a readable reason, gives
+  every subprocess a timeout and its own ReverbScope home, writes its own
+  output as UTF-8 (a redirected Windows log no longer raises
+  `UnicodeEncodeError` on a Chinese demo line), and with `--no-gui` no longer
+  demands the optional Qt packages of a CLI-only source or wheel install.
 - **Measurement.** With a loopback whose return is not at unity gain, the
   folded-distortion probe was biased by that gain (a −20 dB return hid
   folded products and left T30 valid); it now uses the response before

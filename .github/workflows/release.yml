@@ -115,7 +115,7 @@ jobs:
       - run: pip install -e ".[dev,gui]"
       - run: ruff check . && ruff format --check .
       - run: mypy
-      - run: python scripts/check_doc_links.py && python scripts/check_src_safety.py
+      - run: python scripts/check_doc_links.py && python scripts/check_cli_docs.py && python scripts/check_src_safety.py
       - run: python scripts/build_docs_site.py --out "$RUNNER_TEMP/reverbscope-site"
       - run: pytest --cov=reverbscope.core --cov=reverbscope.models --cov-fail-under=85
       - run: pytest tests/unit/test_schemas.py tests/unit/test_public_api.py

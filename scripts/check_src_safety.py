@@ -169,9 +169,19 @@ def _check_file(path: Path, root: Path) -> list[str]:
 
 
 def check(root: Path) -> list[str]:
+    if not root.is_dir():
+        return [f"{root}: source directory not found; run from the repository root or pass --root"]
+    paths = sorted(root.rglob("*.py"))
+    if not paths:
+        return [f"{root}: no Python sources found"]
     bad: list[str] = []
-    for path in sorted(root.rglob("*.py")):
-        bad.extend(_check_file(path, root))
+    for path in paths:
+        try:
+            bad.extend(_check_file(path, root))
+        except SyntaxError as exc:
+            bad.append(f"{path}:{exc.lineno}: cannot parse Python: {exc.msg}")
+        except (OSError, UnicodeError) as exc:
+            bad.append(f"{path}: cannot read Python source: {exc}")
     return bad
 
 
@@ -179,9 +189,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("src"), help="Python tree to scan")
     args = parser.parse_args(argv)
-    if not args.root.is_dir():
-        # A mistyped root would scan nothing and report success.
-        parser.error(f"{args.root} is not a directory")
+    # A mistyped root would scan nothing: check() reports a missing root or
+    # an empty scan as an error instead of reporting success.
     errors = check(args.root)
     if errors:
         print("\n".join(errors), file=sys.stderr)
