@@ -3957,3 +3957,23 @@ msgstr "作为房间话筒，后期房间声偏少（C80 {value:.1f} dB，高于
 msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {threshold:.0f} dB). Some late sound suits a choir, but this much will blur diction. This is one position, not a room grade."
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
+msgid "impulse response must be one-dimensional"
+msgstr "脉冲响应必须是一维的"
+
+msgctxt "diagnostic"
+msgid "an earlier arrival is only {level_db:.1f} dB below the loudest peak and is separated from it, so the loudest peak may be a reflection rather than the direct sound; decay and energy metrics are not trusted"
+msgstr "有一次更早的到达只比最强峰低 {level_db:.1f} dB，并且与它分开，因此最强峰可能是反射而不是直达声；衰减和能量指标不予采信"
+
+msgctxt "diagnostic"
+msgid "the audio device reported timing problems in this take, so its decay and energy metrics are unreliable. Check the stream settings and repeat the measurement"
+msgstr "这次录音的音频设备报告了时序问题，因此衰减和能量指标不可靠。请检查音频流设置后重新测量"
+
+msgctxt "diagnostic"
+msgid "the separate loopback recording has device timing problems; loopback compensation was not applied"
+msgstr "独立回环录音存在设备时序问题，未做回环补偿"
+
+msgctxt "diagnostic"
+msgid "the audio stream reported {actual:g} Hz instead of the requested {requested:g} Hz; the recording's time scale cannot be trusted"
+msgstr "音频流报告的采样率是 {actual:g} Hz，而不是请求的 {requested:g} Hz；录音的时间刻度不可信"
+
+

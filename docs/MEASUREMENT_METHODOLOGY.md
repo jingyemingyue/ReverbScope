@@ -76,14 +76,26 @@ recording exists after the sweep (`valid_length_s`). The *pre-peak margin*
 medium ≥ 10 dB, low otherwise. A low margin means distortion pre-responses,
 noise or a wrong reference; findings and reflection notes say so.
 
+A *separate* earlier peak is a different check from that margin. Within
+100 ms before the loudest sample, outside the 2 ms rise (and outside harmonic
+windows when the sweep rate is known), a local peak within 20 dB of the
+loudest sample that stands 12 dB above the look-back median and has a gap at
+least 12 dB quieter than both peaks is a rival arrival. Time zero is **not**
+moved onto it: a pre-echo and a true direct sound that is quieter than a
+later reflection cannot be told apart from one microphone. The confidence is
+forced to low and every decay and early/late metric is marked unreliable,
+even when the numeric margin would have been medium. A weaker pre-echo
+(below −20 dB) is left alone. This is synthetic-only behaviour; it has not
+been checked on a real room.
+
 **Sample rates.** If the recording's rate differs from the sweep definition,
 the reference is regenerated at the recording's rate (this is what the DAW
 effectively played) and a warning is recorded. A WAV-only reference is
 resampled with `scipy.signal.resample_poly`.
 
-**Limitations.** A strong reflection louder than the direct sound (rare, but
-possible with the microphone close to a wall and far from the source) would
-be taken as t = 0; the confidence margin does not catch that case. Clock
+**Limitations.** A reflection more than 20 dB louder than the direct sound,
+or one that does not leave a quiet gap, can still be taken as t = 0; the
+rival-arrival check does not claim to solve that. Clock
 mismatch between separate playback and recording devices smears high
 frequencies [2]; Standalone Mode uses one full-duplex device, Universal DAW
 Mode inherits whatever clocking the DAW/interface provides.
@@ -100,8 +112,11 @@ band-limited direct sound (a sub-woofer IR low-passed at 80 Hz rises for
 (`IMPORTED_IR_MIN_MARGIN_DB`) above the content before it — a sweep
 recording, music, noise, or an IR whose direct sound is weaker than a later
 arrival, which cannot serve as time zero — is refused rather than analysed.
-A file that starts at its peak cannot be checked and is analysed with
-confidence "low".
+The same rival-arrival rule as above applies: a separated peak within 20 dB
+does not move time zero, and the decay and energy metrics are marked
+unreliable instead of being reported as valid. A file that starts at its peak
+cannot be checked and is analysed with confidence "low" (numbers are still
+reported, because the file gives no earlier sample to contradict them).
 Band metrics are computed only inside an excitation band the caller
 declares (`--band LO HI`); without one they are `not_computed`. Fed the
 `impulse_response.wav` of a sweep analysis with that analysis's band, the
@@ -220,9 +235,12 @@ time-reversed filtering.
 **Procedure** (`core/decay.py`):
 
 1. Band filtering: Butterworth band-pass (3 poles per skirt, second-order
-   sections) for octave bands 63 Hz–8 kHz (base-2 edges `fc·2^(±1/2)`,
-   IEC 61260-1 [12]), applied *time-reversed* so that the filter's own decay
-   precedes the room decay. The filters are not certified IEC 61260 class 1.
+   sections) for octave bands 63 Hz–8 kHz. Edges and centres are IEC 61260-1
+   base-10 (`G = 10^(3/10)`, exact mid-band `1000·G^(x)`, edges
+   `f_m·G^(±1/2)`), not the base-2 nominals `fc·2^(±1/2)`. Applied
+   *time-reversed* so that the filter's own decay precedes the room decay.
+   The filters are not certified IEC 61260 class 1. A band whose upper edge
+   is at or above 0.9·Nyquist is omitted; it is not filled with a number.
 2. Lundeby truncation (iterative, max 6 passes): 20 ms local averages, noise
    from the last 10 %, regression from the peak to noise + 10 dB, cross-point,
    new interval (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated
@@ -231,10 +249,14 @@ time-reversed filtering.
    moves < 1 ms. These parameter values are ReverbScope's choices within the
    ranges published by Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB;
    10–20 dB).
-3. Schroeder curve: `EDC(t) = Σ_{τ≥t} h²(τ)` from the decay start (peak of the
-   smoothed energy) to the truncation point, plus the late-decay
-   compensation `C = p(t_c)·(−10 / (slope·ln 10))` (energy of the extrapolated
-   exponential tail). Normalised to 0 dB at the start.
+3. Schroeder curve: `EDC(t) = Σ_{τ≥t} h²(τ)` from the onset (the first sample
+   at which the squared response is within 20 dB of its maximum, searched
+   only in the window just before a known direct sound) to the truncation
+   point, plus the late-decay compensation
+   `C = p(t_c)·(−10 / (slope·ln 10))` per second of tail, scaled by the
+   sample rate into the same sum-of-squares units. The noise floor is not
+   subtracted sample by sample before the sum; the 10 dB margin below is
+   what keeps that bias out of the fit. Normalised to 0 dB at the onset.
 4. Least-squares line fits over the ISO 3382-1 ranges and extrapolation to
    60 dB: EDT 0…−10 dB (×6), T20 −5…−25 dB (×3), T30 −5…−35 dB (×2). The
    ISO "degree of non-linearity" `ξ = 1000·(1 − r²)` (‰) is reported.
@@ -243,7 +265,19 @@ time-reversed filtering.
    is at least `|lower limit| + 10 dB`: 20 dB for EDT, 35 dB for T20, 45 dB
    for T30 (ISO 3382: the evaluation range must lie ≥ 10 dB above the noise
    [9][10], restated by Hak et al. 2012 [17]). Otherwise the metric is
-   `insufficient_decay_range` with the numbers in `reason`.
+   `insufficient_decay_range` with the numbers in `reason`. A fit is not
+   returned when the evaluation range does not contain the curve, when fewer
+   than 3 samples remain after the direct sound, or when the slope is not
+   negative. Silence, stationary noise and a non-finite input do not produce
+   an RT60: noise and silence come back `insufficient_decay_range`, and NaN,
+   inf, a sample too large to square, or a non-positive sample rate is an error.
+   A take carrying device timing warnings (buffer under/overflows or a
+   reported stream rate that is not the requested rate) marks all otherwise
+   VALID decay and early/late energy metrics `unreliable`; no estimated RT60
+   is selected. Missing or insufficient-range metrics keep their existing
+   status. This does not repair dropped samples. A faulty separate loopback
+   is refused for compensation; a clean microphone recording can still be
+   evaluated without that compensation.
 6. **B·T check.** With time-reversed filtering the bandwidth × reverberation
    time product should exceed about 4 (about 16 with forward filtering) [6];
    below 4 the band's metrics are marked `unreliable` and a warning explains
@@ -325,7 +359,10 @@ direct sound) is counted at time zero. With `E_early` the energy before the
 split and `E_late` the energy from the split through the truncation plus the
 compensated tail:
 
-* `C50 = 10·log10(E_early / E_late)` at 50 ms, `C80` at 80 ms (dB).
+* `C50 = 10·log10(E_early / E_late)` at 50 ms, `C80` at 80 ms (dB). The split
+  is the first sample whose time is at or after 50 ms or 80 ms (not the
+  nearest sample, which can fall before the nominal time). A reflection on
+  that sample counts as late.
 * `D50 = 100 · E_early / (E_early + E_late)` at 50 ms (percent).
 * Centre time `Ts` is the energy-weighted mean time (seconds), including the
   first moment of the compensated tail.
@@ -397,7 +434,11 @@ peak-hold, expressed in dB relative to the direct sound; a 6 ms moving
 average of the dB envelope models the local diffuse level; peaks between
 0.8 ms and 80 ms after the direct sound, above −20 dB re direct and at least
 6 dB above the local trend, are reported as candidates `(delay_ms,
-relative_db)`.
+relative_db)`. Both delay bounds are inclusive. Peak picking keeps one
+peak-hold of samples outside the window so an arrival that lands on either
+bound still has a neighbour; peaks outside the window are excluded by the
+level mask before the minimum-distance rule. The recording's own endpoints
+still have no sample beyond the file.
 
 **Limitations.** Candidates, not identified surfaces. In a dense early
 diffuse tail some candidates are statistical. Delays are relative to the
