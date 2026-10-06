@@ -6521,3 +6521,20 @@ msgstr "{speed:.1f} m/s, {temp:.0f} °C"
 
 msgid "add {input}"
 msgstr "{input} 추가"
+
+msgctxt "comparison status"
+msgid "compared"
+msgstr "비교함"
+
+msgctxt "comparison status"
+msgid "not compared"
+msgstr "비교 안 함"
+
+msgid "show and change them"
+msgstr "보기와 변경"
+
+msgid "sample rates not probed"
+msgstr "샘플레이트를 확인하지 않음"
+
+msgid "probe the sample rates; nothing is played"
+msgstr "샘플레이트 확인(아무것도 재생하지 않음)"

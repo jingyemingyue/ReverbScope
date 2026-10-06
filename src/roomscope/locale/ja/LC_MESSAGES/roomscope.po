@@ -6487,3 +6487,20 @@ msgstr "{speed:.1f} m/s、{temp:.0f} °C"
 
 msgid "add {input}"
 msgstr "{input} を追加"
+
+msgctxt "comparison status"
+msgid "compared"
+msgstr "比較済み"
+
+msgctxt "comparison status"
+msgid "not compared"
+msgstr "未比較"
+
+msgid "show and change them"
+msgstr "表示と変更"
+
+msgid "sample rates not probed"
+msgstr "サンプルレートは未確認"
+
+msgid "probe the sample rates; nothing is played"
+msgstr "サンプルレートを確認（再生はしません）"

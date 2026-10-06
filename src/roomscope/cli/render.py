@@ -24,6 +24,7 @@ from roomscope.cli.console import (
     cell_width,
     pad,
     shell_command,
+    status_word,
     wrap,
 )
 from roomscope.edition import RELEASES_URL, is_terminal_package
@@ -63,6 +64,7 @@ if TYPE_CHECKING:
     from roomscope.audio.inventory import DeviceInventory
     from roomscope.demo import DemoRun
     from roomscope.i18n import LanguageChoice
+    from roomscope.io.session_store import SessionListing
     from roomscope.models.configuration import SweepSettings
     from roomscope.settings import UserSettings
 
@@ -375,18 +377,29 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
                 hz=spectrum.peak_hz, level=spectrum.peak_db
             ),
         )
-    return c.section(_("At a glance")) + _glance_rows(c, rows, badges=True)
+    return c.section(_("At a glance")) + _glance_rows(c, rows)
 
 
-def _glance_rows(c: Console, rows: Sequence[tuple[str, Status, str]], *, badges: bool) -> list[str]:
-    """The "At a glance" lines: a bordered table with frames (topic, then a
-    badge and the result, or the result after its symbol), else aligned fields."""
-    if badges:
-        headers = [pgettext("at a glance", "Topic"), _("Status"), pgettext("at a glance", "Result")]
-        cells = [[label, c.badge(status), text] for label, status, text in rows]
-    else:
-        headers = [pgettext("at a glance", "Topic"), pgettext("at a glance", "Result")]
-        cells = [[label, f"{c.symbol(status)} {text}"] for label, status, text in rows]
+def _compared_word(status: Status) -> str:
+    """What a status means in the overview of a comparison: whether the topic
+    was compared, never whether the change is good."""
+    return {
+        "ok": pgettext("comparison status", "compared"),
+        "skip": pgettext("comparison status", "not compared"),
+    }.get(status, status_word(status))
+
+
+def _glance_rows(
+    c: Console, rows: Sequence[tuple[str, Status, str]], *, compared: bool = False
+) -> list[str]:
+    """The "At a glance" lines: a bordered table with frames (topic, a status
+    badge and the result; for a comparison the badge says whether the topic
+    was compared), else aligned fields with the status symbol."""
+    headers = [pgettext("at a glance", "Topic"), _("Status"), pgettext("at a glance", "Result")]
+    cells = [
+        [label, c.badge(status, _compared_word(status) if compared else None), text]
+        for label, status, text in rows
+    ]
     table = c.framed_table(headers, cells, wrap_column=len(headers) - 1, expand=True)
     if table is not None:
         return table
@@ -1121,11 +1134,12 @@ _REFLECTIONS_NOT_COMPARED = "early reflections are not compared unless"
 
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
-    """Baseline against candidate, one line per topic; the symbol says whether
-    the topic could be compared, never whether the change is good (so a
-    bordered table shows the symbol, not a word such as "good")."""
+    """Baseline against candidate, one line per topic; the status says whether
+    the topic could be compared (``✓ compared``, ``– not compared``), never
+    whether the change is good."""
     rows: list[tuple[str, Status, str]] = []
     arrow = f" {c.arrow()} "
+    note = ""
 
     def row(label: str, status: Status, text: str) -> None:
         rows.append((label, status, text))
@@ -1212,7 +1226,11 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 validity=validity_word(rms.validity)
             )
             if not comparison.settings.get("same_input_gain", False):
-                text += c.sep() + _("add --same-input-gain if the input gain was unchanged")
+                hint = _("add --same-input-gain if the input gain was unchanged")
+                if c.boxed:
+                    note = hint  # a flag to copy does not belong in a bordered cell
+                else:
+                    text += c.sep() + hint
             row(_("Noise floor"), validity_status(rms.validity), text)
     else:
         row(_("Noise floor"), "skip", _("no quiet segment on one or both sides"))
@@ -1227,7 +1245,8 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 band=band, mad=mad
             ),
         )
-    return c.section(_("At a glance")) + _glance_rows(c, rows, badges=False)
+    lines = c.section(_("At a glance")) + _glance_rows(c, rows, compared=True)
+    return lines + c.status("info", note) if note else lines
 
 
 # --- Environment report -------------------------------------------------------------
@@ -1332,7 +1351,8 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
     packages.append(("libsndfile", report.get("libsndfile") or _("unknown")))
     lines += c.grid(packages)
 
-    lines += c.section(_("Settings"), "roomscope config")
+    lines += c.section(_("Settings"))
+    lines += c.commands([("roomscope config", _("show and change them"))])
     lines += _settings_summary(c, report.get("settings", {}))
     lines += c.section(_("Paths"), _("your home folder is shown as ~"))
     paths = {
@@ -1389,12 +1409,15 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         for note in audio.get("notes", []):
             lines += c.status("info", localize(note))
         probed = bool(audio.get("rates_probed"))
-        lines += c.section(
-            _("Devices"),
-            _("sample rates accepted for 1 channel; nothing was played")
-            if probed
-            else _("sample rates not probed; run roomscope doctor --probe"),
-        )
+        if probed:
+            lines += c.section(
+                _("Devices"), _("sample rates accepted for 1 channel; nothing was played")
+            )
+        else:
+            lines += c.section(_("Devices"), _("sample rates not probed"))
+            lines += c.commands(
+                [("roomscope doctor --probe", _("probe the sample rates; nothing is played"))]
+            )
         lines += _device_rows(c, devices, probed)
 
     lines += c.section(_("Privacy"))
@@ -1666,7 +1689,7 @@ def render_referenced(console: Console, inventory: DeviceInventory) -> str:
     lines += console.table(
         [_("Interface"), _("In"), _("Out"), _("Rate"), _("Bit depth")],
         rows,
-        align="llrrr",
+        align="lrrll",
         title_columns=1,
         wrap_column=3,
     )
@@ -1997,19 +2020,29 @@ def render_safety_note(console: Console, text: str) -> str:
 
 
 def render_session_list(
-    console: Console, root: object, listings: Sequence[tuple[str, str]]
+    console: Console, root: object, listings: Sequence[SessionListing]
 ) -> str | None:
     """``roomscope show --list`` on a terminal with frames: the folder in a
-    title panel, then a table of the sessions. ``None`` otherwise: a pipe or
-    a file keeps one tab-separated line per session, for scripts."""
+    title panel, then a table of the sessions (path, room, time, RT60), so no
+    value is cut in two on a narrow terminal. ``None`` otherwise: a pipe or a
+    file keeps one tab-separated line per session, for scripts."""
     if not (console.boxed and console.interactive):
         return None
     c = console
     lines = c.title(_("Saved sessions"), [(_("Folder"), Verbatim(str(root)))])
     lines.append("")
     lines += c.table(
-        [_("Session"), pgettext("session list", "Summary")],
-        [[Verbatim(path), label] for path, label in listings],
+        [_("Session"), _("Room"), _("Created"), "RT60"],
+        [
+            [
+                Verbatim(str(item.path)),
+                item.room,
+                created_text(item.session.created_at),
+                c.dash() if item.rt60_s is None else f"{item.rt60_s:.2f} s",
+            ]
+            for item in listings
+        ],
+        align="lllr",
         wrap_column=1,
     )
     return c.fit("\n".join(lines))

@@ -541,7 +541,8 @@ def test_a_cp1252_stream_gets_ascii_symbols_and_never_fails(
     assert main(["demo"]) == 0
     stream.flush()
     text = raw.getvalue().decode("cp1252")
-    assert "[OK]" in text and "[WARN]" in text and "->" in text
+    assert "[WARN]" in text and "->" in text
+    assert "+ good" in text and "+ compared" in text  # the badges' ASCII marks
     assert "✓" not in text and "→" not in text
     _assert_frames_line_up(text, ascii=True)
     _golden("demo-en-cp1252", _normalise(text))

@@ -5254,3 +5254,20 @@ msgstr "{speed:.1f} m/s，气温 {temp:.0f} °C"
 
 msgid "add {input}"
 msgstr "需添加 {input}"
+
+msgctxt "comparison status"
+msgid "compared"
+msgstr "已对比"
+
+msgctxt "comparison status"
+msgid "not compared"
+msgstr "未对比"
+
+msgid "show and change them"
+msgstr "查看并修改设置"
+
+msgid "sample rates not probed"
+msgstr "未探测采样率"
+
+msgid "probe the sample rates; nothing is played"
+msgstr "探测采样率；不会播放任何声音"

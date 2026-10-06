@@ -10,7 +10,9 @@ orphan characters at the end of a wrapped line.
 from __future__ import annotations
 
 import contextlib
+import io
 import re
+import sys
 from collections.abc import Callable, Iterator, Sequence
 from itertools import pairwise
 from pathlib import Path
@@ -437,3 +439,82 @@ def test_a_chinese_list_is_joined_with_the_chinese_comma_and_brackets(
     english = run("--lang", "en", "show", str(demo / "position-a"), columns=120)
     assert "110 Hz (+11.3 dB)" in " ".join(unframe(english).split())
     assert "50 Hz (+57 dB), 100 Hz (+48 dB), 150 Hz (+43 dB)" in " ".join(unframe(english).split())
+
+
+# --- Screens in Chinese: phrases, hints outside cells, one status vocabulary ------------------------
+
+
+def test_a_section_note_is_a_phrase_and_a_command_is_not_in_a_heading(
+    run: Call, demo: Path
+) -> None:
+    show = run("--lang", "zh_CN", "show", str(demo / "position-a"), columns=90)
+    assert "▌频谱  来自脉冲响应" in show
+    assert "脉冲响应的\n" not in show
+    for lang in ("zh_CN", "en"):
+        doctor = run("--lang", lang, "--backend", "fake", "doctor", columns=90)
+        for line in doctor.splitlines():
+            if line.startswith("▌"):
+                assert "roomscope " not in line, line  # a command has no bar before it
+        bare = [line for line in doctor.splitlines() if "roomscope doctor --probe" in line]
+        assert bare and not set("".join(bare)) & set("▌│┃"), bare
+        assert any(line.strip().startswith("roomscope config") for line in doctor.splitlines())
+
+
+def test_the_overview_of_a_comparison_says_what_its_check_marks_mean(run: Call, demo: Path) -> None:
+    a, b = str(demo / "position-a"), str(demo / "position-b")
+    text = run("--lang", "zh_CN", "compare", a, b, columns=90)
+    header = next(line for line in text.splitlines() if "项目" in line and "结果" in line)
+    assert "状态" in header
+    assert "✓ 已对比" in text and "? 不确定" in text
+    # A flag to copy is not wrapped inside a bordered cell: it follows the table, bare.
+    flag = [line for line in text.splitlines() if "--same-input-gain" in line]
+    assert flag and all(line.startswith("  i ") for line in flag), flag
+    english = run("compare", a, b, columns=90)
+    assert "✓ compared" in english and "Status" in english
+
+
+def test_the_referenced_interfaces_align_their_counts_and_keep_a_rate_whole(
+    run: Call,
+) -> None:
+    text = run("--backend", "fake", "devices", "--referenced", columns=80)
+    rows = [
+        line
+        for line in text.splitlines()
+        if "│" in line and any(name in line for name in ("Scarlett 2i2", "18i20", "Babyface"))
+    ]
+    assert len(rows) == 3
+    # The counts of inputs and of outputs are right-aligned, both of them.
+    for row, (inputs, outputs) in zip(rows, [("2", "2"), ("8", "—"), ("4", "4")], strict=True):
+        cells = row.strip("│").split("│")
+        assert cells[1].endswith(f"{inputs} ") and cells[2].endswith(f"{outputs} "), row
+    # The unit of a rate is never left alone on a line.
+    for line in text.splitlines():
+        assert not any(cell.strip() == "kHz" for cell in line.split("│")), line
+
+
+class _Tty(io.StringIO):
+    def isatty(self) -> bool:
+        return True
+
+
+@pytest.mark.parametrize("columns", ["100", "60", "40"])
+def test_the_session_list_shows_the_time_as_everywhere_else_and_cuts_no_value(
+    demo: Path, monkeypatch: pytest.MonkeyPatch, columns: str
+) -> None:
+    monkeypatch.setenv("COLUMNS", columns)
+    monkeypatch.setenv("NO_COLOR", "1")
+    terminal = _Tty()
+    monkeypatch.setattr(sys, "stdout", terminal)
+    assert main(["show", "--list", str(demo)]) == 0
+    shown = terminal.getvalue()
+    flat = " ".join(unframe(shown).split())
+    stamps = re.findall(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} [+-]\d{2}:\d{2}", flat)
+    assert len(stamps) == 2, shown  # whole, in the form of the other screens
+    assert "T" not in "".join(re.findall(r"\d{4}-\d{2}-\d{2}\S*", shown))
+    assert "0.51 s" in flat and "0.70 s" in flat
+    for line in shown.splitlines():
+        assert cell_width(line) <= int(columns) or str(demo) in line
+    pipe = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", pipe)
+    assert main(["show", "--list", str(demo)]) == 0
+    assert all(line.count("\t") == 1 and "T" in line for line in pipe.getvalue().splitlines())

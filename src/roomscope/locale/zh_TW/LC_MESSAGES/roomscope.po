@@ -6366,3 +6366,20 @@ msgstr "{speed:.1f} m/s，氣溫 {temp:.0f} °C"
 
 msgid "add {input}"
 msgstr "需添加 {input}"
+
+msgctxt "comparison status"
+msgid "compared"
+msgstr "已對比"
+
+msgctxt "comparison status"
+msgid "not compared"
+msgstr "未對比"
+
+msgid "show and change them"
+msgstr "查看並修改設定"
+
+msgid "sample rates not probed"
+msgstr "未探測採樣率"
+
+msgid "probe the sample rates; nothing is played"
+msgstr "探測採樣率；不會播放任何聲音"

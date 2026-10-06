@@ -7183,3 +7183,20 @@ msgstr "{speed:.1f} m/s a {temp:.0f} °C"
 
 msgid "add {input}"
 msgstr "añadir {input}"
+
+msgctxt "comparison status"
+msgid "compared"
+msgstr "comparado"
+
+msgctxt "comparison status"
+msgid "not compared"
+msgstr "sin comparar"
+
+msgid "show and change them"
+msgstr "verlos y cambiarlos"
+
+msgid "sample rates not probed"
+msgstr "frecuencias de muestreo sin sondear"
+
+msgid "probe the sample rates; nothing is played"
+msgstr "sondear las frecuencias de muestreo; no se reproduce nada"

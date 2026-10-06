@@ -7140,3 +7140,20 @@ msgstr "{speed:.1f} m/s bei {temp:.0f} °C"
 
 msgid "add {input}"
 msgstr "{input} hinzufügen"
+
+msgctxt "comparison status"
+msgid "compared"
+msgstr "verglichen"
+
+msgctxt "comparison status"
+msgid "not compared"
+msgstr "nicht verglichen"
+
+msgid "show and change them"
+msgstr "anzeigen und ändern"
+
+msgid "sample rates not probed"
+msgstr "Sampleraten nicht geprüft"
+
+msgid "probe the sample rates; nothing is played"
+msgstr "Sampleraten prüfen; es wird nichts abgespielt"

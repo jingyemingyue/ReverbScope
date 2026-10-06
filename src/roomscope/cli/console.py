@@ -718,11 +718,11 @@ class Console:
         glyph, ascii_form = _MARKS[status]
         return glyph if self.unicode else ascii_form
 
-    def badge(self, status: Status) -> str:
+    def badge(self, status: Status, word: str | None = None) -> str:
         """``✓ good``, ``! check``, ``✗ problem``: the mark, coloured, and the
-        word, bold in the colour of the text."""
+        word (``word``, else the status's own), bold in the colour of the text."""
         mark = self.style(self.mark(status), *_STATUS_STYLE[status])
-        word = self.readable(status_word(status))
+        word = self.readable(status_word(status) if word is None else word)
         return f"{mark} {self.bold(word)}" if word else mark
 
     def fit(self, text: str) -> str:

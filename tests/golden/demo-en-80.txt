@@ -38,16 +38,18 @@
 └───────────────────┴─────────┴────────────────────────────────────────────────┘
 
 ▌Comparison A → B
-┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Topic              ┃ Result                                                  ┃
-┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ Reverberation      │ ✓ RT60 #.## s → #.## s (-##.# %)                        │
-│ Clarity            │ ✓ C50 +#.# dB → +##.# dB · C80 +##.# dB → +##.# dB      │
-│ Early reflections  │ ✓ # gone · # new · # at both                            │
-│ Low end            │ ✓ at both: ### Hz                                       │
-│ Noise floor        │ ✓ -##.# → -##.# dBFS (-##.# dB)                         │
-│ Frequency response │ ✓ largest change in the ##.# Hz octave, #.# dB mean |Δ| │
-└────────────────────┴─────────────────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Topic              ┃ Status     ┃ Result                                     ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Reverberation      │ ✓ compared │ RT60 #.## s → #.## s (-##.# %)             │
+│ Clarity            │ ✓ compared │ C50 +#.# dB → +##.# dB · C80 +##.# dB →    │
+│                    │            │ +##.# dB                                   │
+│ Early reflections  │ ✓ compared │ # gone · # new · # at both                 │
+│ Low end            │ ✓ compared │ at both: ### Hz                            │
+│ Noise floor        │ ✓ compared │ -##.# → -##.# dBFS (-##.# dB)              │
+│ Frequency response │ ✓ compared │ largest change in the ##.# Hz octave,      │
+│                    │            │ #.# dB mean |Δ|                            │
+└────────────────────┴────────────┴────────────────────────────────────────────┘
 
 ▌What the demo shows
   i A strong desk reflection at #.# ms at position A is gone at position B.

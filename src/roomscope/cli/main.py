@@ -1943,9 +1943,7 @@ def cmd_show(args: argparse.Namespace) -> int:
             print(_("No session.json files under {root}").format(root=args.path))
             return 0
         console = _console(args)
-        table = render_session_list(
-            console, args.path, [(str(item.path), item.label) for item in listings]
-        )
+        table = render_session_list(console, args.path, listings)
         if table is not None:
             print(table)
             return 0

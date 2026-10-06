@@ -162,7 +162,13 @@ All notable changes to RoomScope are documented here. The format follows
   column stay under each other. In Chinese the speed of sound reads
   `343.2 m/s，气温 20 °C（假定）` and an undetermined geometry `– 未确定（需添加
   --speaker-distance）`, and the spectrum's note `来自脉冲响应` (it was
-  "脉冲响应的", the start of a phrase). The next steps, hints and examples stay
+  "脉冲响应的", the start of a phrase). The overview of a comparison has a
+  status column that says whether each topic was compared (`✓ compared`,
+  `– not compared`), the flag it advises (`--same-input-gain`) follows the
+  table on a line of its own, `doctor` keeps its commands out of the section
+  headings, `devices --referenced` right-aligns its counts, and `show
+  --list` on a terminal is a table of path, room, time and RT60 with the time
+  written as on every other screen. The next steps, hints and examples stay
   bare, so a triple click copies the command alone. The desktop app's report
   panes and `roomscope.cli.report` have no frames. A list in Chinese is
   joined with `、`, a clause with `；` and a note in brackets takes the

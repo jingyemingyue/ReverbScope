@@ -342,14 +342,21 @@ class SessionListing:
     session: MeasurementSession
 
     @property
+    def room(self) -> str:
+        return self.session.room_name or _("(unnamed room)")
+
+    @property
+    def rt60_s(self) -> float | None:
+        """The broadband RT60 the session summary stores, if it is a number."""
+        return _finite(self.session.analysis_summary.get("broadband_rt60_estimate_s"))
+
+    @property
     def label(self) -> str:
-        room = self.session.room_name or _("(unnamed room)")
-        created = self.session.created_at
-        rt60 = _finite(self.session.analysis_summary.get("broadband_rt60_estimate_s"))
+        rt60 = self.rt60_s
         rt60_text = (
             _("RT60 {seconds:.2f} s").format(seconds=rt60) if rt60 is not None else _("RT60 n/a")
         )
-        return f"{room}  ·  {created}  ·  {rt60_text}"
+        return f"{self.room}  ·  {self.session.created_at}  ·  {rt60_text}"
 
 
 def _finite(value: object) -> float | None:
