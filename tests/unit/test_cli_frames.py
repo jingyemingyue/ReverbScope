@@ -386,7 +386,7 @@ def test_a_project_is_shown_under_its_name(
         assert _run(capsys, *argv)[0] == 0
     code, out, _err = _run(capsys, "project", "show", "booth")
     assert code == 0
-    assert "Booth A" in out.splitlines()[1] and out.startswith("╭")
+    assert "Booth A" in out.splitlines()[0] and out.startswith("╭─ Booth A")
     assert str(demo / "position-b") in out  # a path is never cut
     for block in frame_blocks(out):
         _same_width(block)
