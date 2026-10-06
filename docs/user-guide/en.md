@@ -280,14 +280,44 @@ shown translated.
 changes them from the command line, also in the Terminal Edition:
 `profile` (the default recording profile), `backend` (`portaudio` or
 `fake`), `output-folder`, `copy-recording` and `developer-tools` (`on` or
-`off`), and `theme` (`system`, `light` or `dark`; desktop app only). For
-example `roomscope config profile vocal`; `auto` goes back to a setting's
-default, and `roomscope --format json config` prints the settings as JSON.
+`off`), `theme` (`system`, `light` or `dark`; desktop app only) and `style`
+(`boxed` or `plain`, see below). For example `roomscope config profile vocal`;
+`auto` goes back to a setting's default, and `roomscope --format json config`
+prints the settings as JSON.
 
-In a terminal the command line uses colour and the symbols ✓ ! ×; piped into
-a file or another program it writes plain text. `--color never` or the
-`NO_COLOR` environment variable turns colour off, `--color always` keeps it
-in a pipe.
+### How the command line looks
+
+In a terminal the command line draws a panel round each title, bordered
+tables for results, a card for each finding (its border coloured by
+severity) and a red panel for an error. Each status is a mark and a word
+(`✓ good`, `! check`, `✗ problem`, `i note`), so colour is never the only
+signal. Piped into a file or another program it writes the same text
+without colour. `--color never` or the `NO_COLOR` environment variable turns
+colour off, `--color always` keeps it in a pipe.
+
+Four things you may want to know:
+
+* **`plain`.** `roomscope config style plain` draws the same text without
+  panels, borders or the bar before a heading; `roomscope config style auto`
+  (or `boxed`) goes back to the default, and the variable
+  `ROOMSCOPE_CLI_STYLE=boxed|plain` decides for one shell, before the
+  stored setting. Use `plain` if your terminal draws the box glyphs
+  `╭ ─ │ ┃` two columns wide (some CJK fonts and locales, which treat
+  "ambiguous width" characters as wide): the frames then come out crooked,
+  and every redraw of the progress bar would wrap. The progress bar uses
+  `=` and `>` in the plain style.
+* **Where the frames stop.** They are off below 40 columns, and on a stream
+  whose encoding cannot write the box glyphs (a cp1252 or cp936 pipe, the
+  classic Windows console) they are drawn with `+ - | =`. A path is never
+  cut: if a path is too long for a panel it follows the panel on a line of
+  its own, and a table that does not fit becomes one block per row. The
+  desktop app's report panes and `roomscope.cli.report` never have frames.
+* **What you copy.** A line that holds a command (the next steps, a hint,
+  an example) never has a border on it and is never wrapped, so a triple
+  click copies the command alone.
+* **For scripts.** `--format json` is not affected. `roomscope show --list`
+  keeps one `path<TAB>summary` line per session when its output is not a
+  terminal.
 
 ## Troubleshooting
 

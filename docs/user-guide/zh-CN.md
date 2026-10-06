@@ -148,9 +148,18 @@ roomscope config language auto    # 改回跟随系统
 
 每种界面语言都会翻译解读、文本报告的标签、图形界面和全部命令行帮助（`roomscope --help` 及每个子命令，包括占位符和 argparse 自己的提示）。用户文档仍为英文和简体中文。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
 
-`roomscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们，终端版也一样：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`、`copy-recording` 和 `developer-tools`（`on` 或 `off`），以及 `theme`（`system`、`light` 或 `dark`，只影响桌面版）。例如 `roomscope config profile vocal`；`auto` 把一项设置恢复为默认值，`roomscope --format json config` 以 JSON 输出所有设置。
+`roomscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们，终端版也一样：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`、`copy-recording` 和 `developer-tools`（`on` 或 `off`）、`theme`（`system`、`light` 或 `dark`，只影响桌面版），以及 `style`（`boxed` 或 `plain`，见下）。例如 `roomscope config profile vocal`；`auto` 把一项设置恢复为默认值，`roomscope --format json config` 以 JSON 输出所有设置。
 
-在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
+### 命令行的外观
+
+在终端里，命令行给每个标题画一个面板，结果用带边框的表格显示，每条解读是一张卡片（边框颜色表示严重程度），错误是一个红色面板。每个状态都是一个符号加一个词（`✓ 良好`、`! 注意`、`✗ 问题`、`i 说明`），所以颜色从不单独表达信息。输出重定向到文件或其他程序时写出同样的文字，只是没有颜色。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
+
+有四点值得知道：
+
+* **`plain`。** `roomscope config style plain` 输出同样的文字，但不画面板、边框和标题前的色条；`roomscope config style auto`（或 `boxed`）改回默认；环境变量 `ROOMSCOPE_CLI_STYLE=boxed|plain` 只对一个终端会话生效，并优先于已保存的设置。如果你的终端把制表符 `╭ ─ │ ┃` 画成两列宽（某些中日韩字体和区域设置会把“宽度不明确”的字符当作宽字符），边框就会歪斜，进度条每次刷新还会折行，这时请用 `plain`。plain 样式下进度条用 `=` 和 `>`。
+* **边框在哪里停止。** 窄于 40 列时不画边框；输出流的编码写不出制表符时（cp1252 或 cp936 的管道、经典的 Windows 控制台）用 `+ - | =` 画。路径从不被截断：路径太长放不进面板时，它单独占一行跟在面板后面；放不下的表格改为每行一个小块。桌面版的报告面板和 `roomscope.cli.report` 从不画边框。
+* **要复制的内容。** 含命令的行（下一步、提示、示例）从不带边框，也从不折行，所以三击就能只复制命令。
+* **给脚本用。** `--format json` 不受影响。输出不是终端时，`roomscope show --list` 仍然每个会话一行 `路径<TAB>摘要`。
 
 ## 故障排查
 

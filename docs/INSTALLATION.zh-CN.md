@@ -190,6 +190,10 @@ Windows 的显示语言，或 Linux 上的 `LANGUAGE` / `LANG`。想不管系统
 `roomscope config language zh_CN`（英文用 `en`，另有 `zh_TW`、`ja`、`ko`、`es`、`fr`、`de`）；`roomscope config language auto` 改回跟随系统，
 `roomscope config` 列出所有设置。
 
+**面板和表格。** 命令行用面板和带边框的表格显示结果。如果你的终端把制表符画成两列宽（某些中日韩字体和区域设置），
+边框显得歪斜，运行 `roomscope config style plain`（或在一个终端会话里设置 `ROOMSCOPE_CLI_STYLE=plain`）即可得到
+同样的文字、不画边框；`roomscope config style auto` 改回默认。
+
 在 **macOS** 上，浏览器会给下载的文件加上标记，macOS 会拒绝运行带这个标记的未签名命令行程序
 （*无法打开“roomscope”，因为无法验证开发者*）。在包含 `roomscope-terminal` 的文件夹里运行一次下面的命令，
 清除这个文件夹上的标记：

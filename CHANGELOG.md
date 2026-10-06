@@ -8,6 +8,17 @@ All notable changes to RoomScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Panels or plain, your choice.** `roomscope config style boxed|plain|auto`
+  keeps `cli_style` in `settings.json` (`""`, the default, is `boxed`), and
+  `ROOMSCOPE_CLI_STYLE=boxed|plain` decides before it for one shell.
+  `plain` writes the same text without panels, borders or the bar before a
+  heading, and draws the progress bar with `=` and `>`: use it if your
+  terminal draws the box glyphs two columns wide (some CJK fonts and
+  locales), which makes the frames crooked. Frames are also off below 40
+  columns, and on a stream that cannot write the glyphs (a cp1252 or cp936
+  pipe, the classic Windows console) they are drawn with `+ - | =`.
+  `config --format json` lists the new `cli_style` key; nothing else in any
+  `--format json` output changed.
 - **Two download betas.** The README and installation pages offer a
   **stable beta** (fewer bugs, narrower feature set: last published
   pre-release `0.5.0b1`) and a **preview beta** (stronger features, may
@@ -91,6 +102,33 @@ All notable changes to RoomScope are documented here. The format follows
   on a line of its own).
 
 ### Changed
+- **Terminal look: panels and bordered tables.** The command line now
+  draws what it prints instead of a column of plain lines: a rounded
+  panel with its title in the top border and the session, mode, room,
+  position, microphone, sample rate and date under it; "At a glance" as a
+  three-column table (topic, a status badge, the result: `✓ good`, `! check`,
+  `✗ problem`, `i note`, translated in all seven catalogs); the decay,
+  energy, reflection, resonance, noise, placement and diagnostics tables
+  bordered under a heavier header row; every interpretation finding as a
+  card whose border follows its severity; section headings with a coloured
+  bar; and a red `✗ Error` panel for an error. The same goes for the demo,
+  `sweep`, the measure plan and its safety note, `devices`, `devices
+  --host-apis` and `--referenced`, `doctor`, `project show` and `average`,
+  `show --list` on a terminal, `daw`, `config` and the home screen. It is
+  drawn by `roomscope/cli/console.py` itself, with no new dependency (`rich`
+  would add `pygments`, `markdown-it-py` and `mdurl` to both downloads).
+  Everything is measured in display columns, so Chinese text, colour and the
+  ASCII forms keep every line of a frame the same width (tested). A path is
+  never cut: a path too long for a panel follows it on a line of its own, a
+  table that does not fit becomes one block per row. The next steps, hints
+  and examples stay bare, so a triple click copies the command alone. The
+  desktop app's report panes and `roomscope.cli.report` have no frames:
+  their text is byte for byte what it was. `show --list` keeps one
+  `path<TAB>summary` line per session when its output is not a terminal.
+  Information and `--format json` output are unchanged.
+- **Progress line.** A coloured bar (`━` and `╸`, or `=` and `>`) with the
+  percentage and the elapsed and total time; the numbers are never cut
+  and a narrow terminal drops the bar first.
 - **Placement picture shows the first-order image source.** When the
   vertical axis is solved, the rotatable 3D schematic draws the hollow
   image of the loudspeaker through the plane above and the dashed
@@ -156,6 +194,9 @@ All notable changes to RoomScope are documented here. The format follows
   `--daw`, `--daw-project` and `--scan` placeholders are translated too.
 
 ### Fixed
+- **Progress line width.** On an 80-column terminal the line was 81 columns
+  wide, so the cursor wrapped and every redraw left a line behind. It is
+  now never wider than the terminal's last column, down to 20 columns.
 - **Measurement.** With a loopback whose return is not at unity gain, the
   folded-distortion probe was biased by that gain (a −20 dB return hid
   folded products and left T30 valid); it now uses the response before

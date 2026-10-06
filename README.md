@@ -105,13 +105,21 @@ No microphone and no audio interface needed; nothing is played.
   roomscope demo
   ```
 
-![roomscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
+![roomscope demo in a terminal: panels and bordered tables with the at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
 `roomscope demo` simulates one room at two microphone positions, runs the
 real analysis and comparison on them and says what to do next. The desktop
 **Demo** runs one Standalone Mode take on a simulated room instead. Every
 number either one shows describes the simulation, and every session either
 one saves is marked as a synthetic demo.
+
+In a terminal the command line draws panels and bordered tables (the desktop
+app's report panes stay plain text). If your terminal draws the box glyphs
+`╭ ─ │` two columns wide (some CJK fonts and locales) and the frames come out
+crooked, run `roomscope config style plain` once, or set
+`ROOMSCOPE_CLI_STYLE=plain` for one shell: the same text, without frames.
+`roomscope config style auto` brings them back. Lines you copy (the next
+steps, hints and examples) never sit inside a border.
 
 **Then measure for real:** turn the monitors **down** (RoomScope never
 changes system volume), then either let RoomScope play and record through
@@ -263,6 +271,7 @@ roomscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.
 roomscope config language zh_CN
 roomscope --lang en analyze --recording take.wav --sweep sweep.wav   # one command
 roomscope config
+roomscope config style plain      # no panels or borders (boxed is the default)
 roomscope session bundle session1/ --no-audio --out report.zip
 roomscope export session1/ --format csv --out curves/
 roomscope project init --out room/ --name Booth

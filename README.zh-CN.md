@@ -96,11 +96,16 @@ RoomScope 提供**两条 beta**。两条都还是 beta，都不是硬件验证�
   RoomScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
   保存后不管系统怎么设置都使用中文，`roomscope config language auto` 改回跟随系统。
 
-![终端中的 roomscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
+![终端中的 roomscope demo：用面板和带边框的表格显示两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
 `roomscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步
 做什么。桌面版的 **演示** 则是在一个模拟房间里完成一次独立模式测量。两者显示的每个数值都描述的是模拟
 结果，保存的每个会话都标记为合成演示。
+
+在终端里，命令行用面板和带边框的表格显示结果（桌面版的报告面板仍是纯文本）。如果你的终端把制表符
+`╭ ─ │` 画成两列宽（某些中日韩字体和区域设置），边框显得歪斜，运行一次 `roomscope config style plain`，
+或在一个终端会话里设置 `ROOMSCOPE_CLI_STYLE=plain`：文字内容不变，只是不画边框。
+`roomscope config style auto` 改回默认。要复制的行（下一步、提示和示例）从不放在边框里。
 
 **然后进行真实测量：** 先把监听音箱音量**调低**（RoomScope 不会改动系统音量），然后二选一：让
 RoomScope 通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW
@@ -228,6 +233,7 @@ roomscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.
 roomscope config language zh_CN
 roomscope --lang en analyze --recording take.wav --sweep sweep.wav   # 只对这一条命令
 roomscope config
+roomscope config style plain      # 不画面板和边框（默认是 boxed）
 roomscope session bundle session1/ --no-audio --out report.zip
 roomscope export session1/ --format csv --out curves/
 roomscope project init --out room/ --name Booth

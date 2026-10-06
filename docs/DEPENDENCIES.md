@@ -116,6 +116,13 @@ the wheels, and must be checked again at packaging time:
 | --- | --- | --- | --- |
 | pyroomacoustics | 0.10.1 | MIT (compiles Eigen MPL-2.0, nanoflann BSD-2, pybind11 BSD-3 into `libroom`; declares Cython as a runtime dependency) | RoomScope needs only ESS, deconvolution and decay analysis, which are short clean-room functions; pyroomacoustics would add a compiled extension, an MPL-2.0 notice obligation and a large simulation library for no measurement benefit. Kept as a conceptual reference (THIRD_PARTY_REVIEW.md). |
 
+The command line's panels, bordered tables and progress bar are drawn by
+`roomscope/cli/console.py` itself:
+
+| Package | Version | License | Why not |
+| --- | --- | --- | --- |
+| rich | not installed | MIT (not audited: not adopted) | Would pull `pygments`, `markdown-it-py` and `mdurl` into both downloadable editions; `pygments` was just removed from the bundles, and every one of them would need its own review and notice. The frames need only box glyphs, display widths (`cell_width`, already needed for CJK) and a few styles, which `console.py` has. |
+
 ## 6. Items marked UNKNOWN / NEEDS REVIEW
 
 matplotlib's historical `ttconv` converter is **resolved**: matplotlib 3.10.0

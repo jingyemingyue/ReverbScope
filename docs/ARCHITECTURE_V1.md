@@ -544,7 +544,7 @@ class AudioBackend(Protocol):
 | `session bundle <session> [--no-audio]` | zip for bug reports | M8 |
 | `export <session> --format csv [--out]` | curves and tables through an exporter | S4 |
 | `schema result\|session\|comparison\|project\|sidecar` | print the JSON Schema | M2 |
-| `config [KEY [VALUE]]` | show or change `settings.json` (language, profile, backend, output-folder, copy-recording, developer-tools, theme; `auto` restores a default) | landed |
+| `config [KEY [VALUE]]` | show or change `settings.json` (language, profile, backend, output-folder, copy-recording, developer-tools, theme, style; `auto` restores a default) | landed |
 | `measure --input-channels 1,2 --loopback-channel 2`, `analyze --loopback-channel 1` / `--loopback <wav>` | loopback | M5 |
 | global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never` | global options | M7, M6, M8 |
 
@@ -555,7 +555,7 @@ stdout and nothing else there; all diagnostics go to stderr. `--json` stays
 as an alias for one minor release, then is removed with a warning.
 
 Text output is laid out by `roomscope/cli/console.py` (styles, status
-symbols, display-width-aware wrapping and tables) and `roomscope/cli/render.py`;
+symbols, display-width-aware wrapping, panels and tables) and `roomscope/cli/render.py`;
 no other module writes escape sequences. Colour follows `--color`, then
 `NO_COLOR`, then `FORCE_COLOR`, then `TERM=dumb`, and in `auto` appears only
 on a terminal: a pipe or a file never receives an escape sequence or a
@@ -566,14 +566,35 @@ them), so colour is never the only signal; on such a stream the other signs
 replaces what it cannot show instead of failing. Widths count a CJK character
 as two columns; text is laid out for at most 100 columns.
 
+The command line draws **frames** natively, with no new dependency (`rich`
+would bring `pygments`, `markdown-it-py` and `mdurl` into both downloadable
+editions; see DEPENDENCIES.md §5): a rounded panel (`╭╮╰╯─│`) with its
+title in the top border, a bordered table (`┌┬┐├┼┤└┴┘`) under a heavier header
+row (`┏┳┓┃┡╇┩`), a coloured bar before a section heading, status badges (a
+mark and a word: `✓ good`, `! check`, `✗ problem`, `i note`) and a card per
+finding whose border follows its severity. `Console.frames` is on for the
+command line and off for `REPORT_CONSOLE` and `roomscope.cli.report`, so the
+GUI's report text is unchanged; frames are also off below 40 columns, and
+on a stream that cannot write the box glyphs they are drawn with `+ - | =`.
+`settings.json` `cli_style` (`""`, the default, is `boxed`; `plain` leaves
+the frames out) is set with `roomscope config style boxed|plain|auto`, and
+`ROOMSCOPE_CLI_STYLE=boxed|plain` decides before it for one shell; `plain`
+is for terminals that draw ambiguous-width box glyphs double-width. Every
+line of a frame has the same display width (CJK, colour and the ASCII forms
+included, pinned by tests), a path is never cut or wrapped, a line that holds
+a command to copy never carries a border, and `--format json` is not
+affected.
+
 Every command reads the same way: title and context, the result ("At a
 glance" first in an analysis or a comparison), the detail, then numbered
-next steps. A user error is one block (`× error: …`, an explanation, the
-commands to try) with the documented exit code; a traceback appears only with
+next steps. A user error is one block (a red panel `✗ Error` with the message and
+an explanation, then the commands to try, bare) with the documented exit code; a traceback appears only with
 `--verbose`. Bare `roomscope` prints a short home screen on stderr and keeps
 the usage error's exit code 2. `measure` prints its device plan and checks on
 stdout and its progress on stderr (one redrawn line on a terminal, one stage
-line otherwise; drawn by the waiting thread, never by the audio callback). The
+line otherwise; drawn by the waiting thread, never by the audio callback; a
+bar of `━` and `╸`, or `=` and `>` where frames cannot be drawn, never wider
+than the terminal's last column). The
 text layout is not a Tier 1 interface. The GUI's "Full report" panes show the
 same `render.py` reports as plain text; the environment report in the
 developer tools keeps `diagnostics.format_environment_report`.

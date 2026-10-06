@@ -234,6 +234,12 @@ Linux. To keep one language whatever the system says, run
 `roomscope config language auto` follows the system again, and
 `roomscope config` lists every setting.
 
+**Panels and tables.** The command line draws panels and bordered tables. If
+your terminal draws the box glyphs two columns wide (some CJK fonts and
+locales) and the frames come out crooked, run `roomscope config style plain`
+(or set `ROOMSCOPE_CLI_STYLE=plain` for one shell) for the same text without
+frames; `roomscope config style auto` brings them back.
+
 On **macOS**, a browser marks downloaded files, and macOS refuses to run an
 unsigned command-line program with that mark (*“roomscope” cannot be opened
 because the developer cannot be verified*). Clear the mark on this folder
