@@ -4,11 +4,12 @@ import numpy as np
 import pytest
 from scipy.signal import lfilter, sosfilt
 
-from reverbscope.core.filters import bandpass_sos, fractional_octave_band
+from reverbscope.core.filters import OCTAVE_RATIO, bandpass_sos, fractional_octave_band
 from reverbscope.core.frequency_response import frequency_response
 from reverbscope.core.resonance import (
     SURROUNDINGS_RATIO,
     _decay_20db_s,
+    _notch_bands,
     band_decay_20db_s,
     candidate_decays_20db_s,
     detect_potential_resonances,
@@ -242,3 +243,57 @@ def test_a_candidate_decay_leaves_out_the_other_candidates(sample_rate: int) -> 
     assert decay is not None and surroundings is not None
     assert decay < 0.2
     assert decay < SURROUNDINGS_RATIO * surroundings
+
+
+@pytest.mark.parametrize("seed", [0, 1])
+@pytest.mark.parametrize("modes", [(45.0, 90.0, 180.0), (45.0, 62.0, 90.0, 124.0)])
+def test_three_or_more_nearby_modes_are_each_distinguishable(
+    sample_rate: int, seed: int, modes: tuple[float, ...]
+) -> None:
+    """Every neighbouring band that overlapped another candidate was skipped,
+    and with three or more candidates within an octave or so of each other
+    that left fewer than two clean bands: a third to a half of the genuinely
+    ringing modes (RT 1.5 s in a room of 0.3 s) had no surroundings and were
+    never called distinguishable. The reference now reaches further out."""
+    res = _detect(_room_with_modes(sample_rate, seed, *modes), sample_rate)
+    assert len(res.candidates) == len(modes)
+    for frequency in modes:
+        found = min(res.candidates, key=lambda c: abs(c.frequency_hz - frequency))
+        assert found.frequency_hz == pytest.approx(frequency, rel=0.05)
+        assert found.surroundings_decay_20db_s is not None
+        assert found.surroundings_decay_20db_s < 0.2
+        assert found.decay_distinguishable is True
+    assert not any("too few measurable" in note for note in res.notes)
+
+
+def test_covered_neighbours_are_replaced_by_the_next_clean_ones(sample_rate: int) -> None:
+    """Candidates 0.8 octave either side cover the bands at +-2/3 and +-1
+    octave: the surroundings come from the bands further out, and a room
+    without a mode there reads the room's own decay (no resonance)."""
+    ir = make_rir(sample_rate, rt60_s=0.3, length_s=2.0, diffuse_level=0.01, seed=3)
+    others = [100.0 * 2**-0.8, 100.0 * 2**0.8]
+    decay, surroundings = candidate_decays_20db_s(
+        ir, sample_rate, 100.0, excitation_band=None, other_candidates_hz=others
+    )
+    assert decay is not None and surroundings is not None
+    assert surroundings == pytest.approx(decay, rel=0.8)
+    assert decay < SURROUNDINGS_RATIO * surroundings
+
+
+def test_the_nearest_clean_bands_are_still_the_surroundings(sample_rate: int) -> None:
+    """With nothing in the way the reference is the median of the bands at
+    +-2/3 and +-1 octave, as it was calibrated; the farther bands are only
+    a stand-in for a covered one."""
+    ir = make_rir(sample_rate, rt60_s=0.3, length_s=2.0, diffuse_level=0.01, seed=4)
+    centre = 100.0
+    expected = []
+    for offset in (-1.0, -2 / 3, 2 / 3, 1.0):
+        decay = band_decay_20db_s(
+            _notch_bands(ir, sample_rate, [centre]), sample_rate, centre * OCTAVE_RATIO**offset
+        )
+        assert decay is not None
+        expected.append(decay)
+    _, surroundings = candidate_decays_20db_s(
+        ir, sample_rate, centre, excitation_band=None, other_candidates_hz=[]
+    )
+    assert surroundings == pytest.approx(float(np.median(expected)))

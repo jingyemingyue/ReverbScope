@@ -583,13 +583,25 @@ neighbouring 1/3-octave bands (with the candidate's own third and every other
 candidate's third notched out, 4 poles per skirt; a neighbouring band that
 overlaps another candidate's band is not used, so two modes an octave apart,
 like the first two axial modes of one dimension, do not read each other's
-decay as their surroundings). The candidate's own decay is measured with the
-other candidates notched out too, unless one overlaps its band. The decay is
-called distinguishable only when it is ≥ 2× the filter ringing and ≥ 2× the
-surroundings.
+decay as their surroundings). The median is taken over the four nearest
+usable neighbours, tried at ±2/3 and ±1 octave first and then at ±4/3, ±5/3
+and ±2 octave when other candidates cover the nearer ones, so that three or
+more candidates within an octave or so of each other still have a reference
+(with only the nearest four, up to two thirds of the genuinely ringing modes
+in rooms with 3 to 6 modes had none and were never called distinguishable).
+The candidate's own decay is measured with the other candidates notched out
+too, unless one overlaps its band. The decay is called distinguishable only
+when it is ≥ 2× the filter ringing and ≥ 2× the surroundings.
 
 **Limitations.** "Potential resonance" only. Identifying a room mode needs
-room dimensions and several positions; ReverbScope does not claim it.
+room dimensions and several positions; ReverbScope does not claim it. A peak
+that does not become a candidate cannot be notched and still leaks into the
+bands next to it. When the whole low end rings alike (many modes within a
+few octaves, all long) the surroundings ring too and no peak is called
+distinguishable: that is the verdict, not a gap. A reference taken up to two
+octaves away assumes the room's decay does not change much between them; the
+ratio at a resonance-free frequency still reaches 2 in 3 % to 5 % of
+synthetic cases when other long modes crowd it (1.8 % when it is alone).
 
 ## 7a. Placement geometry
 

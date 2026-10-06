@@ -11,7 +11,8 @@ ReverbScope deliberately reports *candidates* only:
   the time for the band envelope to fall 20 dB, and compared with **two**
   references measured exactly the same way: the analysis filter's own ringing
   (a band-pass of a Dirac pulse, filtered time-reversed like the measurement)
-  and the *surroundings*, the median of the neighbouring 1/3-octave bands.
+  and the *surroundings*, the median of the (up to four) nearest neighbouring
+  1/3-octave bands.
   ``decay_distinguishable`` requires both: at least
   :data:`DISTINGUISHABLE_RATIO` times the filter ringing (otherwise the
   measurement only shows the filter) and at least
@@ -33,6 +34,16 @@ mode's leaked decay against clean surroundings. The notch has
 :data:`NOTCH_ORDER` poles per skirt: with 3, a 50 Hz mode still leaked into
 the bands an octave below it (0.26-0.33 s where the room gives 0.1 s).
 
+The neighbours are tried nearest first (2/3 and 1 octave either side, then 4/3,
+5/3 and 2 octaves), and the first :data:`SURROUNDING_BANDS` that are clear of
+the other candidates are used. With only the four nearest, three or more
+candidates within an octave or so of each other covered most of them: of
+modes ringing 1.5 s in a room of 0.3 s (3 positions each), 3 of 9 at 45, 90 and
+180 Hz, 6 of 12 at 45, 62, 90 and 124 Hz and 12 of 18 at 40 to 224 Hz had no
+reference and were never called distinguishable. A mode that is not itself a
+candidate (one that stands less than ``min_prominence_db`` above its
+baseline) cannot be notched and still leaks into the bands next to it.
+
 Calibration of :data:`SURROUNDINGS_RATIO` (2.0), re-measured with the other
 candidates notched: for mode-free synthetic rooms (exponential Gaussian tails,
 RT 0.25-1.0 s, seven frequencies from 63 Hz to 250 Hz, 12 seeds each) the
@@ -44,6 +55,19 @@ RT is twice the room's it is at least 2 in 95 % of cases alone and in 90 % to
 2.4 or more, alone or in such a pair. The measure has a large statistical
 spread at low frequencies (B*T of a 1/3-octave band is only a few), so a
 candidate remains a candidate: one position cannot establish a room mode.
+
+Re-measured with the reference reaching up to two octaves out (the same mode-free
+rooms, a resonance-free frequency with two to eight long modes around it, RT
+1.5 s, 168 cases each): the ratio is unchanged alone (1.8 % reach 2) and
+reaches 2 in 3 % to 5 % of cases among the other modes (median 0.84-1.0, 99th
+percentile 2.2-2.8, maximum 3.5), no more than the 5 % beside one long mode
+above. In rooms with 3 to 6 modes (RT of the room 0.3 s, 4 rooms of each
+size) the modes found were called distinguishable in 72 of 72 cases at 5
+times the room's RT (before: 43), 46 of 69 at 3 times (before: 26) and 26 of
+58 at twice (before: 20; a mode of twice the room's RT sits at the threshold,
+as it does alone), and no peak that was not a mode was called
+distinguishable. When the whole low end rings alike (ten modes a quarter
+octave apart) no peak is called distinguishable, as the surroundings ring too.
 
 Identifying an actual room mode requires knowledge of the room geometry and
 several measurement positions and is out of scope.
@@ -81,8 +105,25 @@ MIN_FREQUENCY_HZ = 20.0
 DISTINGUISHABLE_RATIO = 2.0
 #: ... and at least this many times the decay of the neighbouring bands.
 SURROUNDINGS_RATIO = 2.0
-#: Neighbouring band centres used as the surroundings reference (octaves).
-SURROUNDING_OFFSETS_OCTAVES = (-1.0, -2.0 / 3.0, 2.0 / 3.0, 1.0)
+#: Neighbouring band centres tried as the surroundings reference (octaves),
+#: nearest first: the first :data:`SURROUNDING_BANDS` of them that are
+#: measurable and clear of the other candidates are used. The first four are
+#: the usual reference; the others stand in for a neighbour that another
+#: candidate covers.
+SURROUNDING_OFFSETS_OCTAVES = (
+    -2.0 / 3.0,
+    2.0 / 3.0,
+    -1.0,
+    1.0,
+    -4.0 / 3.0,
+    4.0 / 3.0,
+    -5.0 / 3.0,
+    5.0 / 3.0,
+    -2.0,
+    2.0,
+)
+#: Neighbouring bands whose median is the surroundings decay.
+SURROUNDING_BANDS = 4
 #: At least this many neighbouring bands must be measurable.
 MIN_SURROUNDING_BANDS = 2
 #: Length of the impulse response used for the decay measurements (s).
@@ -208,6 +249,8 @@ def candidate_decays_20db_s(
         neighbour_decay = band_decay_20db_s(without_candidates, sample_rate, neighbour)
         if neighbour_decay is not None and neighbour_decay > 0.0:
             decays.append(neighbour_decay)
+            if len(decays) == SURROUNDING_BANDS:
+                break
     if len(decays) < MIN_SURROUNDING_BANDS:
         return decay, None
     return decay, float(np.median(decays))
