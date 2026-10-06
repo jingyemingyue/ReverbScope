@@ -224,6 +224,12 @@ All notable changes to RoomScope are documented here. The format follows
   iterable argument is empty": the table of reverberation changes has a
   column without a header, and fitting the table to the width took the
   widest word of that empty header. It no longer does.
+- **Commands to copy.** A name with a bracket, an ampersand, a semicolon, a
+  dollar sign, a star or a leading `#` or `~` (`录音(1).wav`, `a&b.wav`) is
+  now quoted in the "next steps", the menu's "Same as the command" line and
+  the hints of an error, so pasting the line runs the command it shows
+  instead of failing in the shell or running something else. Letters of any
+  script, digits and `. / - _ : , = @ % +` stay bare.
 - **Progress line width.** On an 80-column terminal the line was 81 columns
   wide, so the cursor wrapped and every redraw left a line behind. It is
   now never wider than the terminal's last column, down to 20 columns.

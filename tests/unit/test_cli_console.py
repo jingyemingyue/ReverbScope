@@ -569,6 +569,68 @@ def test_a_posix_shell_quotes_a_backslash(monkeypatch: pytest.MonkeyPatch) -> No
     assert shown == "roomscope show 'odd\\name'"
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        "录音(1).wav",
+        "a&b.wav",
+        "a;b.wav",
+        "#hash.wav",
+        "$HOME.wav",
+        "a*b.wav",
+        "a|b.wav",
+        "a>b",
+        "a?b",
+        "~x",
+        "!x",
+        "{a,b}",
+        "[a]",
+        "`x`",
+        "",
+    ],
+)
+def test_a_posix_shell_reads_a_quoted_name_as_one_word(
+    monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    import shlex
+
+    from roomscope.cli import console as console_module
+
+    monkeypatch.setattr(console_module.os, "name", "posix")
+    shown = console_module.shell_command(["roomscope", "show", name])
+    assert shlex.split(shown) == ["roomscope", "show", name]
+    assert shown != f"roomscope show {name}"  # quoted, not left for the shell to read
+
+
+@pytest.mark.parametrize(
+    "word",
+    [
+        "--recording",
+        "-12",
+        "session-1",
+        "录音.wav",
+        "a=b",
+        "/tmp/x/y.wav",
+        "my.take_1,2:3",
+        "<其他>",
+    ],
+)
+def test_words_a_shell_leaves_alone_stay_bare(monkeypatch: pytest.MonkeyPatch, word: str) -> None:
+    from roomscope.cli import console as console_module
+
+    monkeypatch.setattr(console_module.os, "name", "posix")
+    assert console_module.shell_command(["roomscope", word]) == f"roomscope {word}"
+
+
+def test_a_windows_shell_quotes_an_ampersand_or_a_bracket(monkeypatch: pytest.MonkeyPatch) -> None:
+    from roomscope.cli import console as console_module
+
+    monkeypatch.setattr(console_module.os, "name", "nt")
+    assert console_module.shell_command(["roomscope", "show", "a&b(1)"]) == (
+        'roomscope show "a&b(1)"'
+    )
+
+
 def test_every_help_example_is_a_valid_command(home: Path) -> None:
     import shlex
 

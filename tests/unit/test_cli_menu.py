@@ -476,6 +476,44 @@ def test_a_recording_path_may_be_quoted_escaped_chinese_or_under_home(
     assert "'" in same_as(*argv) or '"' in same_as(*argv)
 
 
+@pytest.mark.skipif(not POSIX, reason="a POSIX shell reads the command")
+@pytest.mark.parametrize(
+    "name", ["录音(1).wav", "a&b.wav", "a;b.wav", "#hash.wav", "$HOME.wav", "a*b.wav", "a|b.wav"]
+)
+def test_the_command_to_copy_runs_the_same_in_a_shell(
+    here: Path, capsys: pytest.CaptureFixture[str], name: str
+) -> None:
+    """A name with a bracket, an ampersand or a dollar is quoted, so the line
+    printed under "Same as the command" is one command with the same words."""
+    import shlex
+    import subprocess
+
+    (here / name).write_bytes(b"RIFF")
+    (here / "sweep.wav").write_bytes(b"RIFF")
+    dispatch = Commands()
+    code, _script = drive("3", name, "", "", "", dispatch=dispatch)
+    out = capsys.readouterr().out
+    assert code == 0
+    argv = ["analyze", "--recording", name, "--sweep", "sweep.wav", "--out", "session-1"]
+    assert dispatch.calls == [argv]
+    line = next(
+        line.split(": ", 1)[1] for line in out.splitlines() if "Same as the command: " in line
+    )
+    assert line == shell_command(["roomscope", *argv])
+    assert shlex.split(line)[1:] == argv
+    shell = shutil.which("bash") or shutil.which("sh")
+    assert shell is not None
+    echoed = subprocess.run(
+        [shell, "-c", line.replace("roomscope", "printf '<%s>' ", 1)],
+        capture_output=True,
+        text=True,
+        check=True,
+        cwd=here,
+        env={"PATH": os.environ["PATH"], "HOME": "/nonexistent"},
+    )
+    assert echoed.stdout == "".join(f"<{word}>" for word in argv)
+
+
 def test_the_results_folder_of_a_saved_session_is_not_replaced_silently(
     here: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

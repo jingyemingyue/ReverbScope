@@ -211,9 +211,9 @@ def _windows_cmdline_arg(text: str) -> str:
     because ``src/`` may not import ``subprocess`` (that module is for
     launching processes; this only prints a command the user can copy).
     """
-    # A space, a tab, or an empty argument needs quotes. A quote is escaped
-    # either way.
-    needs_quotes = (not text) or any(char in text for char in " \t")
+    # A space, a tab, an empty argument or a character cmd.exe reads as an
+    # operator (``&``, ``(``) needs quotes. A quote is escaped either way.
+    needs_quotes = (not text) or any(char in text for char in " \t&|<>()^;")
     out: list[str] = ['"'] if needs_quotes else []
     backslashes: list[str] = []
     for char in text:
@@ -238,8 +238,26 @@ def _windows_cmdline_arg(text: str) -> str:
     return "".join(out)
 
 
+#: A whole argument that is an instruction for the reader (``<take.wav>``),
+#: not a value: printed bare, as the help does.
+_PLACEHOLDER = re.compile(r"<[\w.-]+>")
+#: What a POSIX shell passes through untouched (letters and digits of any
+#: script, so a Chinese name stays readable): anything else gets quotes.
+_SHELL_SAFE = re.compile(r"[\w@%+=:,./-]+")
+
+
+def _needs_quotes(text: str, windows: bool) -> bool:
+    if _PLACEHOLDER.fullmatch(text):
+        return False
+    if windows:
+        return any(char.isspace() or char in "\"'&|<>()^;" for char in text)
+    # ``~`` and ``#`` are special only at the start, ``=`` only to zsh.
+    return not _SHELL_SAFE.fullmatch(text) or text[0] in "~#="
+
+
 def shell_command(argv: Iterable[str]) -> str:
-    """One copy-paste command. An argument with a space or a quote is quoted.
+    """One copy-paste command. An argument a shell would read as more than a
+    word (a space, a quote, ``( ) & ; $ * ? | < > #``, a leading ``~``) is quoted.
 
     Placeholders such as ``<take.wav>`` stay bare: they are instructions, not
     a path, and quoting them would hide that. On Windows a backslash is
@@ -252,10 +270,7 @@ def shell_command(argv: Iterable[str]) -> str:
     parts: list[str] = []
     for part in argv:
         text = str(part).replace("\\", "/") if windows else str(part)
-        needs_quotes = any(char.isspace() for char in text) or '"' in text or "'" in text
-        if not windows and "\\" in text:
-            needs_quotes = True
-        if not needs_quotes:
+        if not _needs_quotes(text, windows):
             parts.append(text)
         elif windows:
             parts.append(_windows_cmdline_arg(text))
