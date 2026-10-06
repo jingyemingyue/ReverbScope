@@ -94,7 +94,7 @@ NATIVE_NOTICES = (
     (("libssl", "libcrypto"), "openssl"),
     (("libffi",), "libffi"),
     (("liblzma",), "xz"),
-    (("vcruntime140", "msvcp140", "concrt140"), "msvc-runtime"),
+    (("vcruntime140", "msvcp140", "concrt140", "ucrtbase", "api-ms-win-"), "msvc-runtime"),
 )
 PYTHON_NOTICE = "_notices/python.txt"
 _COMMON_LICENSE = re.compile(r"/usr/share/common-licenses/([A-Za-z0-9.+_-]+)")

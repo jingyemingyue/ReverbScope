@@ -421,6 +421,33 @@ def test_native_libraries_of_a_python_installation_get_their_notices(
     assert "native: 2 libraries outside Python packages" in (out / "INDEX.txt").read_text("utf-8")
 
 
+def test_the_windows_c_runtime_files_get_the_microsoft_notice(tmp_path: Path, monkeypatch) -> None:
+    """PyInstaller keeps ucrtbase.dll and the api-ms-win-core / api-ms-win-crt
+    forwarders it finds as dependencies of python3xx.dll (its own include list),
+    next to the Visual C++ runtime. Without a notice for them the new gate
+    would fail every Windows build."""
+    bundle_mod = _load("build_license_bundle")
+    monkeypatch.setattr(bundle_mod, "system_package", lambda library: None)
+    root = tmp_path / "reverbscope"
+    (root / "_internal").mkdir(parents=True)
+    names = (
+        "VCRUNTIME140.dll",
+        "VCRUNTIME140_1.dll",
+        "MSVCP140.dll",
+        "ucrtbase.dll",
+        "api-ms-win-core-file-l1-1-0.dll",
+        "api-ms-win-crt-runtime-l1-1-0.dll",
+    )
+    for name in names:
+        (root / "_internal" / name).write_bytes(b"from the Windows system folder")
+    notices, unresolved = bundle_mod.native_notices(tmp_path / "out", root)
+    assert unresolved == []
+    assert set(notices) == set(names)
+    assert set(notices.values()) == {"_notices/native/msvc-runtime.txt"}
+    text = (tmp_path / "out" / notices["ucrtbase.dll"]).read_text(encoding="utf-8")
+    assert "Universal C Runtime" in text and "api-ms-win-crt" in text
+
+
 def test_a_debian_library_gets_its_package_copyright_and_source(tmp_path: Path) -> None:
     """On the Ubuntu runner every library PyInstaller copied is credited to the
     package that installed it, with its copyright file and source package."""
