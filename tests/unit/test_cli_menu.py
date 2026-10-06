@@ -129,7 +129,10 @@ def test_the_menu_lists_every_item_and_0_leaves(
     code, script = drive("0")
     out = capsys.readouterr().out
     assert code == 0
-    assert out.lstrip().startswith("RoomScope menu\n──────────────\n")
+    # The console draws the heading as a panel.
+    top, title, bottom = out.lstrip().splitlines()[:3]
+    assert top.startswith("╭") and top.endswith("╮") and bottom.startswith("╰")
+    assert title.startswith("│ RoomScope menu")
     for row in (
         "1  Try the demo",
         "2  Write the test signal",
@@ -503,7 +506,7 @@ def test_sessions_here_and_in_the_output_folder_are_listed_and_shown(
     assert "RoomScope analysis" in out  # roomscope show, run here
 
 
-def test_the_session_table_keeps_a_line_a_session_and_room_for_borders(
+def test_the_session_table_keeps_a_line_a_session(
     here: Path, capsys: pytest.CaptureFixture[str], demo_folder: Path
 ) -> None:
     shutil.copytree(demo_folder, here / "roomscope-demo")
@@ -513,8 +516,10 @@ def test_the_session_table_keeps_a_line_a_session_and_room_for_borders(
     table = out[out.index("View results\n") : out.index("Session number")].splitlines()
     rows = [line for line in table if "position-" in line]
     assert len(rows) == 2  # one line a session, the long position cut, not wrapped
-    # A bordered table needs 2 cells more than the plain one: the widest line leaves them.
-    assert max(cell_width(line) for line in rows) <= 80 - 2
+    # A bordered table: every line as wide as the others, none wider than the screen.
+    assert {cell_width(line) for line in table if line and line[0] in "┏┃┡│└"} == {80}
+    assert all(line.startswith("│ ") for line in rows)
+    assert "No." in "".join(table)  # the narrow header is whole
     long_position = next(line for line in rows if "position-a" in line)
     assert "close to the desk and the side wall" not in long_position
     assert "…" in long_position or "..." in long_position
