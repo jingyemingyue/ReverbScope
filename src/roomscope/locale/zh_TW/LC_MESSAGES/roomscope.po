@@ -6063,3 +6063,264 @@ msgstr "plain 不繪製面板與邊框。若你的終端機把製表符號畫成
 
 msgid "{name}=boxed or plain chooses the style for one shell, before this setting."
 msgstr "{name}=boxed 或 plain 只對目前的終端機工作階段選擇樣式，優先於此設定。"
+
+msgid "choose a task from a numbered menu that asks for what it needs"
+msgstr "從編號選單中選擇任務，選單會逐項詢問所需內容"
+
+msgid ""
+"On a terminal, roomscope without a command opens this menu too; set "
+"ROOMSCOPE_NO_MENU=1 to get the short overview instead."
+msgstr "在終端中不帶命令運行 roomscope 也會打開這個選單；設定 ROOMSCOPE_NO_MENU=1 則改為顯示簡短的概覽。"
+
+msgid "the menu prints text, not JSON"
+msgstr "選單輸出的是文字，不是 JSON"
+
+msgid ""
+"the menu needs a terminal to type the answers in; run the commands "
+"themselves instead (roomscope --help lists them)"
+msgstr "選單需要在終端裡輸入回答；請直接運行命令（roomscope --help 列出了所有命令）"
+
+msgid "Type an answer, or press Ctrl+C to go back to the menu."
+msgstr "請輸入回答，或按 Ctrl+C 返回選單。"
+
+msgid "{path} is a folder; type the path of a file."
+msgstr "{path} 是資料夾；請輸入檔案的路徑。"
+
+msgid "{path} was not found; check the path and type it again."
+msgstr "找不到 {path}；請檢查路徑後重新輸入。"
+
+msgid "{path} is a file; type a folder."
+msgstr "{path} 是檔案；請輸入資料夾。"
+
+msgid "{path} is not an existing folder."
+msgstr "{path} 不是已存在的資料夾。"
+
+msgid "Type a number from {low} to {high}."
+msgstr "請輸入 {low} 到 {high} 之間的數字。"
+
+msgid "Type one of these sample rates: {rates}."
+msgstr "請輸入以下採樣率之一：{rates}。"
+
+msgid "Type a duration from {low:g} to {high:g} s."
+msgstr "請輸入 {low:g} 到 {high:g} 秒之間的時長。"
+
+msgid "Type a level from {low:g} to {high:g} dBFS."
+msgstr "請輸入 {low:g} 到 {high:g} dBFS 之間的電平。"
+
+msgctxt "answers meaning yes"
+msgid "y yes"
+msgstr "y yes 是 是的 好 確定"
+
+msgid "{question}: "
+msgstr "{question}："
+
+msgid "{question} [{default}]: "
+msgstr "{question}（預設：{default}）："
+
+msgid "{question} [y/N]: "
+msgstr "{question}（y/N）："
+
+msgid "Press Enter to return to the menu"
+msgstr "按 Enter 返回選單"
+
+msgid "Same as the command: {command}"
+msgstr "等同於命令：{command}"
+
+msgid "it could not run as asked"
+msgstr "無法按要求運行"
+
+msgid "it was interrupted"
+msgstr "被中斷了"
+
+msgid "an error stopped it"
+msgstr "出錯而停止"
+
+msgid "The command did not succeed: {reason} (exit status {code})."
+msgstr "命令沒有成功：{reason}（退出狀態 {code}）。"
+
+msgctxt "menu"
+msgid "Try the demo"
+msgstr "體驗演示"
+
+msgid "synthetic data, no audio interface needed"
+msgstr "用合成資料，不需要音效卡"
+
+msgid "Write the test signal"
+msgstr "生成測試信號"
+
+msgid "a sweep WAV to play and record in your DAW"
+msgstr "在 DAW 中播放並錄音用的掃頻 WAV"
+
+msgid "Analyse a recording"
+msgstr "分析錄音"
+
+msgid "a WAV recorded while the sweep played"
+msgstr "播放掃頻時錄下的 WAV"
+
+msgid "Measure with your interface"
+msgstr "用音效卡直接測量"
+
+msgid "RoomScope plays the sweep and records"
+msgstr "由 RoomScope 播放掃頻並錄音"
+
+msgid "View results"
+msgstr "查看結果"
+
+msgid "a saved session or comparison"
+msgstr "已保存的會話或對比"
+
+msgid "Compare two positions"
+msgstr "對比兩個位置"
+
+msgid "what changed between two sessions"
+msgstr "兩次測量之間有什麼變化"
+
+msgid "the results with charts"
+msgstr "用圖表查看結果"
+
+msgid "language, profile, backend, output folder"
+msgstr "語言、錄音配置、音頻後端、輸出資料夾"
+
+msgid "Environment report"
+msgstr "環境報告"
+
+msgid "for bug reports"
+msgstr "回報問題時附上"
+
+msgid "Settings and diagnostics"
+msgstr "設定與診斷"
+
+msgid "Quit"
+msgstr "退出"
+
+msgid "or type q"
+msgstr "也可以輸入 q"
+
+msgid "RoomScope menu"
+msgstr "RoomScope 選單"
+
+msgid ""
+"Type a number and press Enter. Each step shows the command it runs, "
+"so you can type it yourself next time."
+msgstr "輸入編號並按 Enter。每一步都會顯示它運行的命令，下次可以直接輸入。"
+
+msgid "Choose a number: "
+msgstr "請輸入編號："
+
+msgid "There is no item {choice} in the menu; type one of the numbers shown."
+msgstr "選單中沒有「{choice}」這一項；請輸入上面列出的編號。"
+
+msgid "{path} holds a saved session. Replace it?"
+msgstr "{path} 裡已有保存的會話，要替換嗎？"
+
+msgid "Folder for the demo files"
+msgstr "演示檔案保存到哪個資料夾"
+
+msgid "{path} holds an earlier demo. Replace it?"
+msgstr "{path} 裡是之前的演示，要替換嗎？"
+
+msgid ""
+"{path} already exists and was not written by roomscope demo; choose "
+"another folder."
+msgstr "{path} 已存在，且不是由 roomscope demo 創建的；請換一個資料夾。"
+
+msgid "File for the test signal"
+msgstr "測試信號保存為"
+
+msgid "{path} already exists. Replace it?"
+msgstr "{path} 已存在，要替換嗎？"
+
+msgid "Sample rate in Hz ({rates})"
+msgstr "採樣率 Hz，可選 {rates}"
+
+msgid "Length of the sweep in seconds"
+msgstr "掃頻時長，單位秒"
+
+msgid "Recording (a WAV file; you can drag it into this window)"
+msgstr "錄音檔案（WAV，可以直接把檔案拖進這個視窗）"
+
+msgid "Test signal played for it"
+msgstr "錄音時播放的測試信號"
+
+msgid "Folder for the results"
+msgstr "結果保存到哪個資料夾"
+
+msgid "Input device (the microphone)"
+msgstr "話筒所用的輸入裝置"
+
+msgid "Type one of these input devices: {devices}, or press Enter."
+msgstr "請輸入以下輸入裝置之一：{devices}；或直接按 Enter。"
+
+msgid "Output device (the loudspeakers)"
+msgstr "音箱所用的輸出裝置"
+
+msgid "Type one of these output devices: {devices}, or press Enter."
+msgstr "請輸入以下輸出裝置之一：{devices}；或直接按 Enter。"
+
+msgid "Input channel of the microphone"
+msgstr "話筒接在哪個輸入聲道"
+
+msgid "Level of the sweep in dBFS"
+msgstr "掃頻電平，單位 dBFS"
+
+msgid ""
+"{level:g} dBFS is above {max_level:g} dBFS. Is the monitor level "
+"already turned down?"
+msgstr "{level:g} dBFS 高於 {max_level:g} dBFS。監聽音量已經調低了嗎？"
+
+msgid "Folder for the session"
+msgstr "會話保存到哪個資料夾"
+
+msgid "Measurement plan"
+msgstr "測量計劃"
+
+msgid "Save to"
+msgstr "保存到"
+
+msgid "Type y to play the sweep now"
+msgstr "輸入 y 立即播放掃頻"
+
+msgid "No saved sessions were found in this folder or in the output folder."
+msgstr "在目前資料夾和輸出資料夾中都沒有找到已保存的會話。"
+
+msgid "No."
+msgstr "編號"
+
+msgid "The {count} newest are listed; type a path for an older one."
+msgstr "這裡列出最新的 {count} 個；更早的請輸入路徑。"
+
+msgid "Type the path of a session folder."
+msgstr "請輸入會話資料夾的路徑。"
+
+msgid "That is the baseline; choose another session."
+msgstr "這就是基線；請選擇另一個會話。"
+
+msgid "Session number, or the path of a session or comparison"
+msgstr "會話編號，或會話、對比的路徑"
+
+msgid "Path of a session folder or comparison.json"
+msgstr "會話資料夾或 comparison.json 的路徑"
+
+msgid "Baseline (before): number or path"
+msgstr "基線（之前）：編號或路徑"
+
+msgid "Candidate (after): number or path"
+msgstr "候選（之後）：編號或路徑"
+
+msgid "Output folder"
+msgstr "輸出資料夾"
+
+msgid "Back to the menu"
+msgstr "返回選單"
+
+msgid "Choose a number"
+msgstr "請輸入編號"
+
+msgid "current setting"
+msgstr "目前設定"
+
+msgid "the audio interfaces of this computer"
+msgstr "這臺電腦上的音頻介面"
+
+msgid "Default output folder (auto clears it)"
+msgstr "預設輸出資料夾，輸入 auto 可清除"

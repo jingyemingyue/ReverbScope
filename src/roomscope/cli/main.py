@@ -1,6 +1,6 @@
 """``roomscope`` command-line interface.
 
-Subcommands, in the order of the workflow: ``demo``, ``gui``, ``sweep``,
+Subcommands, in the order of the workflow: ``menu``, ``demo``, ``gui``, ``sweep``,
 ``daw``, ``analyze``, ``devices``, ``measure``, ``analyze-ir``, ``show``,
 ``compare``, ``project``, ``export``, ``session``, ``config``, ``doctor``,
 ``schema``.
@@ -198,7 +198,7 @@ def _type_name(kind: object) -> str | None:
 #: The root help lists the commands in these groups, in the order of the
 #: workflow: try it, measure, look at the results, then troubleshoot.
 COMMAND_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    (N_("Get started"), ("demo", "gui")),
+    (N_("Get started"), ("menu", "demo", "gui")),
     (N_("Measurement"), ("sweep", "daw", "analyze", "devices", "measure", "analyze-ir")),
     (N_("Results"), ("show", "compare", "project", "export", "session")),
     (N_("Settings"), ("config",)),
@@ -871,6 +871,22 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     # Registered in the order of the workflow; the root help groups them (COMMAND_GROUPS).
+    p_menu = _command(
+        sub,
+        "menu",
+        _("choose a task from a numbered menu that asks for what it needs"),
+        examples=("roomscope menu",),
+    )
+    p_menu.epilog = "\n\n".join(
+        [
+            _(
+                "On a terminal, roomscope without a command opens this menu too; "
+                "set ROOMSCOPE_NO_MENU=1 to get the short overview instead."
+            ),
+            str(p_menu.epilog),
+        ]
+    )
+
     p_demo = _command(
         sub,
         "demo",
@@ -2414,7 +2430,14 @@ def cmd_demo(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_menu(args: argparse.Namespace) -> int:
+    from roomscope.cli.menu import start
+
+    return start(args)
+
+
 COMMANDS = {
+    "menu": cmd_menu,
     "demo": cmd_demo,
     "sweep": cmd_sweep,
     "daw": cmd_daw,
@@ -2526,14 +2549,22 @@ def main(argv: Sequence[str] | None = None) -> int:
     configure_logging(logging.DEBUG if args.verbose else logging.WARNING)
     err = _console(args, sys.stderr)
     if args.command is None:
-        # Bare ``roomscope``: a short home screen instead of argparse's error.
-        # A command is still required, so the exit code stays the usage error's.
-        from roomscope.edition import is_terminal_package
+        from roomscope.cli.menu import wanted
 
-        print(
-            render_home(err, __version__, terminal_edition=is_terminal_package()), file=sys.stderr
-        )
-        return 2
+        if wanted(args):
+            # Someone at a terminal: the menu, which asks for what each task needs.
+            args.command = "menu"
+        else:
+            # Bare ``roomscope`` in a pipe or a script: a short home screen instead
+            # of argparse's error. A command is still required, so the exit code
+            # stays the usage error's.
+            from roomscope.edition import is_terminal_package
+
+            print(
+                render_home(err, __version__, terminal_edition=is_terminal_package()),
+                file=sys.stderr,
+            )
+            return 2
 
     def nothing_played() -> str:
         # Before the stream starts nothing has reached the loudspeaker; say so.

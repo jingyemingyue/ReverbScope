@@ -4951,3 +4951,264 @@ msgstr "plain 不画面板和边框。如果你的终端把制表符画成两列
 
 msgid "{name}=boxed or plain chooses the style for one shell, before this setting."
 msgstr "{name}=boxed 或 plain 只对当前终端会话选择样式，优先于此设置。"
+
+msgid "choose a task from a numbered menu that asks for what it needs"
+msgstr "从编号菜单中选择任务，菜单会逐项询问所需内容"
+
+msgid ""
+"On a terminal, roomscope without a command opens this menu too; set "
+"ROOMSCOPE_NO_MENU=1 to get the short overview instead."
+msgstr "在终端中不带命令运行 roomscope 也会打开这个菜单；设置 ROOMSCOPE_NO_MENU=1 则改为显示简短的概览。"
+
+msgid "the menu prints text, not JSON"
+msgstr "菜单输出的是文本，不是 JSON"
+
+msgid ""
+"the menu needs a terminal to type the answers in; run the commands "
+"themselves instead (roomscope --help lists them)"
+msgstr "菜单需要在终端里输入回答；请直接运行命令（roomscope --help 列出了所有命令）"
+
+msgid "Type an answer, or press Ctrl+C to go back to the menu."
+msgstr "请输入回答，或按 Ctrl+C 返回菜单。"
+
+msgid "{path} is a folder; type the path of a file."
+msgstr "{path} 是文件夹；请输入文件的路径。"
+
+msgid "{path} was not found; check the path and type it again."
+msgstr "找不到 {path}；请检查路径后重新输入。"
+
+msgid "{path} is a file; type a folder."
+msgstr "{path} 是文件；请输入文件夹。"
+
+msgid "{path} is not an existing folder."
+msgstr "{path} 不是已存在的文件夹。"
+
+msgid "Type a number from {low} to {high}."
+msgstr "请输入 {low} 到 {high} 之间的数字。"
+
+msgid "Type one of these sample rates: {rates}."
+msgstr "请输入以下采样率之一：{rates}。"
+
+msgid "Type a duration from {low:g} to {high:g} s."
+msgstr "请输入 {low:g} 到 {high:g} 秒之间的时长。"
+
+msgid "Type a level from {low:g} to {high:g} dBFS."
+msgstr "请输入 {low:g} 到 {high:g} dBFS 之间的电平。"
+
+msgctxt "answers meaning yes"
+msgid "y yes"
+msgstr "y yes 是 是的 好 确定"
+
+msgid "{question}: "
+msgstr "{question}："
+
+msgid "{question} [{default}]: "
+msgstr "{question}（默认：{default}）："
+
+msgid "{question} [y/N]: "
+msgstr "{question}（y/N）："
+
+msgid "Press Enter to return to the menu"
+msgstr "按回车返回菜单"
+
+msgid "Same as the command: {command}"
+msgstr "等同于命令：{command}"
+
+msgid "it could not run as asked"
+msgstr "无法按要求运行"
+
+msgid "it was interrupted"
+msgstr "被中断了"
+
+msgid "an error stopped it"
+msgstr "出错而停止"
+
+msgid "The command did not succeed: {reason} (exit status {code})."
+msgstr "命令没有成功：{reason}（退出状态 {code}）。"
+
+msgctxt "menu"
+msgid "Try the demo"
+msgstr "体验演示"
+
+msgid "synthetic data, no audio interface needed"
+msgstr "用合成数据，不需要声卡"
+
+msgid "Write the test signal"
+msgstr "生成测试信号"
+
+msgid "a sweep WAV to play and record in your DAW"
+msgstr "在 DAW 中播放并录音用的扫频 WAV"
+
+msgid "Analyse a recording"
+msgstr "分析录音"
+
+msgid "a WAV recorded while the sweep played"
+msgstr "播放扫频时录下的 WAV"
+
+msgid "Measure with your interface"
+msgstr "用声卡直接测量"
+
+msgid "RoomScope plays the sweep and records"
+msgstr "由 RoomScope 播放扫频并录音"
+
+msgid "View results"
+msgstr "查看结果"
+
+msgid "a saved session or comparison"
+msgstr "已保存的会话或对比"
+
+msgid "Compare two positions"
+msgstr "对比两个位置"
+
+msgid "what changed between two sessions"
+msgstr "两次测量之间有什么变化"
+
+msgid "the results with charts"
+msgstr "用图表查看结果"
+
+msgid "language, profile, backend, output folder"
+msgstr "语言、录音配置、音频后端、输出文件夹"
+
+msgid "Environment report"
+msgstr "环境报告"
+
+msgid "for bug reports"
+msgstr "反馈问题时附上"
+
+msgid "Settings and diagnostics"
+msgstr "设置与诊断"
+
+msgid "Quit"
+msgstr "退出"
+
+msgid "or type q"
+msgstr "也可以输入 q"
+
+msgid "RoomScope menu"
+msgstr "RoomScope 菜单"
+
+msgid ""
+"Type a number and press Enter. Each step shows the command it runs, "
+"so you can type it yourself next time."
+msgstr "输入编号并按回车。每一步都会显示它运行的命令，下次可以直接输入。"
+
+msgid "Choose a number: "
+msgstr "请输入编号："
+
+msgid "There is no item {choice} in the menu; type one of the numbers shown."
+msgstr "菜单中没有“{choice}”这一项；请输入上面列出的编号。"
+
+msgid "{path} holds a saved session. Replace it?"
+msgstr "{path} 里已有保存的会话，要替换吗？"
+
+msgid "Folder for the demo files"
+msgstr "演示文件保存到哪个文件夹"
+
+msgid "{path} holds an earlier demo. Replace it?"
+msgstr "{path} 里是之前的演示，要替换吗？"
+
+msgid ""
+"{path} already exists and was not written by roomscope demo; choose "
+"another folder."
+msgstr "{path} 已存在，且不是由 roomscope demo 创建的；请换一个文件夹。"
+
+msgid "File for the test signal"
+msgstr "测试信号保存为"
+
+msgid "{path} already exists. Replace it?"
+msgstr "{path} 已存在，要替换吗？"
+
+msgid "Sample rate in Hz ({rates})"
+msgstr "采样率 Hz，可选 {rates}"
+
+msgid "Length of the sweep in seconds"
+msgstr "扫频时长，单位秒"
+
+msgid "Recording (a WAV file; you can drag it into this window)"
+msgstr "录音文件（WAV，可以直接把文件拖进这个窗口）"
+
+msgid "Test signal played for it"
+msgstr "录音时播放的测试信号"
+
+msgid "Folder for the results"
+msgstr "结果保存到哪个文件夹"
+
+msgid "Input device (the microphone)"
+msgstr "话筒所用的输入设备"
+
+msgid "Type one of these input devices: {devices}, or press Enter."
+msgstr "请输入以下输入设备之一：{devices}；或直接按回车。"
+
+msgid "Output device (the loudspeakers)"
+msgstr "音箱所用的输出设备"
+
+msgid "Type one of these output devices: {devices}, or press Enter."
+msgstr "请输入以下输出设备之一：{devices}；或直接按回车。"
+
+msgid "Input channel of the microphone"
+msgstr "话筒接在哪个输入声道"
+
+msgid "Level of the sweep in dBFS"
+msgstr "扫频电平，单位 dBFS"
+
+msgid ""
+"{level:g} dBFS is above {max_level:g} dBFS. Is the monitor level "
+"already turned down?"
+msgstr "{level:g} dBFS 高于 {max_level:g} dBFS。监听音量已经调低了吗？"
+
+msgid "Folder for the session"
+msgstr "会话保存到哪个文件夹"
+
+msgid "Measurement plan"
+msgstr "测量计划"
+
+msgid "Save to"
+msgstr "保存到"
+
+msgid "Type y to play the sweep now"
+msgstr "输入 y 立即播放扫频"
+
+msgid "No saved sessions were found in this folder or in the output folder."
+msgstr "在当前文件夹和输出文件夹中都没有找到已保存的会话。"
+
+msgid "No."
+msgstr "编号"
+
+msgid "The {count} newest are listed; type a path for an older one."
+msgstr "这里列出最新的 {count} 个；更早的请输入路径。"
+
+msgid "Type the path of a session folder."
+msgstr "请输入会话文件夹的路径。"
+
+msgid "That is the baseline; choose another session."
+msgstr "这就是基线；请选择另一个会话。"
+
+msgid "Session number, or the path of a session or comparison"
+msgstr "会话编号，或会话、对比的路径"
+
+msgid "Path of a session folder or comparison.json"
+msgstr "会话文件夹或 comparison.json 的路径"
+
+msgid "Baseline (before): number or path"
+msgstr "基线（之前）：编号或路径"
+
+msgid "Candidate (after): number or path"
+msgstr "候选（之后）：编号或路径"
+
+msgid "Output folder"
+msgstr "输出文件夹"
+
+msgid "Back to the menu"
+msgstr "返回菜单"
+
+msgid "Choose a number"
+msgstr "请输入编号"
+
+msgid "current setting"
+msgstr "当前设置"
+
+msgid "the audio interfaces of this computer"
+msgstr "这台电脑上的音频接口"
+
+msgid "Default output folder (auto clears it)"
+msgstr "默认输出文件夹，输入 auto 可清除"

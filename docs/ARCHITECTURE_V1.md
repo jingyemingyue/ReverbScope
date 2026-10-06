@@ -590,8 +590,11 @@ Every command reads the same way: title and context, the result ("At a
 glance" first in an analysis or a comparison), the detail, then numbered
 next steps. A user error is one block (a red panel `✗ Error` with the message and
 an explanation, then the commands to try, bare) with the documented exit code; a traceback appears only with
-`--verbose`. Bare `roomscope` prints a short home screen on stderr and keeps
-the usage error's exit code 2. `measure` prints its device plan and checks on
+`--verbose`. Bare `roomscope` opens the interactive menu (`cli/menu.py`)
+when stdin and stdout are terminals, `--format json` was not given and
+`ROOMSCOPE_NO_MENU` is unset; each item prints the command it stands for and
+runs it through `main()` in the same process. Anywhere else it prints a short
+home screen on stderr and keeps the usage error's exit code 2. `measure` prints its device plan and checks on
 stdout and its progress on stderr (one redrawn line on a terminal, one stage
 line otherwise; drawn by the waiting thread, never by the audio callback; a
 bar of `━` and `╸`, or `=` and `>` where frames cannot be drawn, never wider

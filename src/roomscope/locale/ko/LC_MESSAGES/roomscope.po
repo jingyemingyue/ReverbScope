@@ -6218,3 +6218,264 @@ msgstr "plain은 패널과 테두리를 그리지 않습니다. 터미널이 상
 
 msgid "{name}=boxed or plain chooses the style for one shell, before this setting."
 msgstr "{name}=boxed 또는 plain으로 이 셸에서만 스타일을 정할 수 있으며, 이 설정보다 우선합니다."
+
+msgid "choose a task from a numbered menu that asks for what it needs"
+msgstr "번호 메뉴에서 작업을 고릅니다. 필요한 것은 메뉴가 묻습니다"
+
+msgid ""
+"On a terminal, roomscope without a command opens this menu too; set "
+"ROOMSCOPE_NO_MENU=1 to get the short overview instead."
+msgstr "터미널에서 명령 없이 roomscope를 실행해도 이 메뉴가 열립니다. 대신 짧은 개요를 보려면 ROOMSCOPE_NO_MENU=1을 설정하세요."
+
+msgid "the menu prints text, not JSON"
+msgstr "메뉴는 텍스트를 출력하고 JSON은 출력하지 않습니다"
+
+msgid ""
+"the menu needs a terminal to type the answers in; run the commands "
+"themselves instead (roomscope --help lists them)"
+msgstr "메뉴에는 답을 입력할 터미널이 필요합니다. 대신 명령을 직접 실행하세요(목록은 roomscope --help)"
+
+msgid "Type an answer, or press Ctrl+C to go back to the menu."
+msgstr "답을 입력하거나 Ctrl+C를 눌러 메뉴로 돌아가세요."
+
+msgid "{path} is a folder; type the path of a file."
+msgstr "{path}은(는) 폴더입니다. 파일 경로를 입력하세요."
+
+msgid "{path} was not found; check the path and type it again."
+msgstr "{path}을(를) 찾을 수 없습니다. 경로를 확인하고 다시 입력하세요."
+
+msgid "{path} is a file; type a folder."
+msgstr "{path}은(는) 파일입니다. 폴더를 입력하세요."
+
+msgid "{path} is not an existing folder."
+msgstr "{path}은(는) 있는 폴더가 아닙니다."
+
+msgid "Type a number from {low} to {high}."
+msgstr "{low}에서 {high} 사이의 숫자를 입력하세요."
+
+msgid "Type one of these sample rates: {rates}."
+msgstr "다음 샘플레이트 중 하나를 입력하세요: {rates}."
+
+msgid "Type a duration from {low:g} to {high:g} s."
+msgstr "{low:g}에서 {high:g}초 사이의 길이를 입력하세요."
+
+msgid "Type a level from {low:g} to {high:g} dBFS."
+msgstr "{low:g}에서 {high:g} dBFS 사이의 레벨을 입력하세요."
+
+msgctxt "answers meaning yes"
+msgid "y yes"
+msgstr "y yes 예 네"
+
+msgid "{question}: "
+msgstr "{question}: "
+
+msgid "{question} [{default}]: "
+msgstr "{question} [{default}]: "
+
+msgid "{question} [y/N]: "
+msgstr "{question} [y/N]: "
+
+msgid "Press Enter to return to the menu"
+msgstr "Enter 키를 누르면 메뉴로 돌아갑니다"
+
+msgid "Same as the command: {command}"
+msgstr "같은 명령: {command}"
+
+msgid "it could not run as asked"
+msgstr "요청대로 실행할 수 없었습니다"
+
+msgid "it was interrupted"
+msgstr "중단되었습니다"
+
+msgid "an error stopped it"
+msgstr "오류로 멈췄습니다"
+
+msgid "The command did not succeed: {reason} (exit status {code})."
+msgstr "명령이 성공하지 못했습니다: {reason}(종료 상태 {code})."
+
+msgctxt "menu"
+msgid "Try the demo"
+msgstr "데모 해 보기"
+
+msgid "synthetic data, no audio interface needed"
+msgstr "합성 데이터, 오디오 인터페이스 불필요"
+
+msgid "Write the test signal"
+msgstr "테스트 신호 만들기"
+
+msgid "a sweep WAV to play and record in your DAW"
+msgstr "DAW에서 재생하고 녹음할 스윕 WAV"
+
+msgid "Analyse a recording"
+msgstr "녹음 분석"
+
+msgid "a WAV recorded while the sweep played"
+msgstr "스윕을 재생하며 녹음한 WAV"
+
+msgid "Measure with your interface"
+msgstr "인터페이스로 바로 측정"
+
+msgid "RoomScope plays the sweep and records"
+msgstr "RoomScope가 스윕을 재생하고 녹음"
+
+msgid "View results"
+msgstr "결과 보기"
+
+msgid "a saved session or comparison"
+msgstr "저장된 세션 또는 비교"
+
+msgid "Compare two positions"
+msgstr "두 위치 비교"
+
+msgid "what changed between two sessions"
+msgstr "두 세션 사이에 무엇이 바뀌었는지"
+
+msgid "the results with charts"
+msgstr "차트로 결과 보기"
+
+msgid "language, profile, backend, output folder"
+msgstr "언어, 프로필, 백엔드, 출력 폴더"
+
+msgid "Environment report"
+msgstr "환경 보고서"
+
+msgid "for bug reports"
+msgstr "버그 보고에 첨부"
+
+msgid "Settings and diagnostics"
+msgstr "설정과 진단"
+
+msgid "Quit"
+msgstr "종료"
+
+msgid "or type q"
+msgstr "q를 입력해도 됩니다"
+
+msgid "RoomScope menu"
+msgstr "RoomScope 메뉴"
+
+msgid ""
+"Type a number and press Enter. Each step shows the command it runs, "
+"so you can type it yourself next time."
+msgstr "번호를 입력하고 Enter를 누르세요. 각 단계는 실행하는 명령을 보여 주므로 다음에는 직접 입력할 수 있습니다."
+
+msgid "Choose a number: "
+msgstr "번호를 고르세요: "
+
+msgid "There is no item {choice} in the menu; type one of the numbers shown."
+msgstr "메뉴에 {choice} 항목이 없습니다. 표시된 번호 중 하나를 입력하세요."
+
+msgid "{path} holds a saved session. Replace it?"
+msgstr "{path}에 저장된 세션이 있습니다. 바꿀까요?"
+
+msgid "Folder for the demo files"
+msgstr "데모 파일을 둘 폴더"
+
+msgid "{path} holds an earlier demo. Replace it?"
+msgstr "{path}에 이전 데모가 있습니다. 바꿀까요?"
+
+msgid ""
+"{path} already exists and was not written by roomscope demo; choose "
+"another folder."
+msgstr "{path}이(가) 이미 있고 roomscope demo가 쓰지 않았습니다. 다른 폴더를 고르세요."
+
+msgid "File for the test signal"
+msgstr "테스트 신호 파일"
+
+msgid "{path} already exists. Replace it?"
+msgstr "{path}이(가) 이미 있습니다. 바꿀까요?"
+
+msgid "Sample rate in Hz ({rates})"
+msgstr "샘플레이트 Hz({rates})"
+
+msgid "Length of the sweep in seconds"
+msgstr "스윕 길이(초)"
+
+msgid "Recording (a WAV file; you can drag it into this window)"
+msgstr "녹음(WAV 파일, 이 창으로 끌어 놓아도 됩니다)"
+
+msgid "Test signal played for it"
+msgstr "녹음할 때 재생한 테스트 신호"
+
+msgid "Folder for the results"
+msgstr "결과를 둘 폴더"
+
+msgid "Input device (the microphone)"
+msgstr "입력 장치(마이크)"
+
+msgid "Type one of these input devices: {devices}, or press Enter."
+msgstr "다음 입력 장치 중 하나를 입력하거나 Enter를 누르세요: {devices}."
+
+msgid "Output device (the loudspeakers)"
+msgstr "출력 장치(스피커)"
+
+msgid "Type one of these output devices: {devices}, or press Enter."
+msgstr "다음 출력 장치 중 하나를 입력하거나 Enter를 누르세요: {devices}."
+
+msgid "Input channel of the microphone"
+msgstr "마이크 입력 채널"
+
+msgid "Level of the sweep in dBFS"
+msgstr "스윕 레벨(dBFS)"
+
+msgid ""
+"{level:g} dBFS is above {max_level:g} dBFS. Is the monitor level "
+"already turned down?"
+msgstr "{level:g} dBFS는 {max_level:g} dBFS보다 높습니다. 모니터 음량을 이미 낮췄습니까?"
+
+msgid "Folder for the session"
+msgstr "세션을 둘 폴더"
+
+msgid "Measurement plan"
+msgstr "측정 계획"
+
+msgid "Save to"
+msgstr "저장 위치"
+
+msgid "Type y to play the sweep now"
+msgstr "지금 스윕을 재생하려면 y를 입력"
+
+msgid "No saved sessions were found in this folder or in the output folder."
+msgstr "이 폴더와 출력 폴더에서 저장된 세션을 찾지 못했습니다."
+
+msgid "No."
+msgstr "번호"
+
+msgid "The {count} newest are listed; type a path for an older one."
+msgstr "최신 {count}개를 보여 줍니다. 더 오래된 것은 경로를 입력하세요."
+
+msgid "Type the path of a session folder."
+msgstr "세션 폴더 경로를 입력하세요."
+
+msgid "That is the baseline; choose another session."
+msgstr "그것은 기준입니다. 다른 세션을 고르세요."
+
+msgid "Session number, or the path of a session or comparison"
+msgstr "세션 번호, 또는 세션이나 비교의 경로"
+
+msgid "Path of a session folder or comparison.json"
+msgstr "세션 폴더 또는 comparison.json 경로"
+
+msgid "Baseline (before): number or path"
+msgstr "기준(이전): 번호 또는 경로"
+
+msgid "Candidate (after): number or path"
+msgstr "후보(이후): 번호 또는 경로"
+
+msgid "Output folder"
+msgstr "출력 폴더"
+
+msgid "Back to the menu"
+msgstr "메뉴로 돌아가기"
+
+msgid "Choose a number"
+msgstr "번호를 고르세요"
+
+msgid "current setting"
+msgstr "현재 설정"
+
+msgid "the audio interfaces of this computer"
+msgstr "이 컴퓨터의 오디오 인터페이스"
+
+msgid "Default output folder (auto clears it)"
+msgstr "기본 출력 폴더(auto를 입력하면 지움)"

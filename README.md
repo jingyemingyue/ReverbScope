@@ -105,6 +105,9 @@ No microphone and no audio interface needed; nothing is played.
   roomscope demo
   ```
 
+* **Without remembering commands:** run `roomscope` on its own in a terminal
+  and choose from a numbered menu (see [Command line](#command-line)).
+
 ![roomscope demo in a terminal: panels and bordered tables with the at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
 `roomscope demo` simulates one room at two microphone positions, runs the
@@ -228,6 +231,16 @@ Both editions include the command line. It is `roomscope` in the Terminal
 Edition, in the Windows / Linux Desktop Edition (next to `roomscope-gui`) and
 in a Python install; in the macOS Desktop Edition it is
 `/Applications/RoomScope.app/Contents/MacOS/RoomScope`.
+
+**Without remembering commands:** run `roomscope` on its own in a terminal.
+It opens a numbered menu in the interface language (demo, test signal,
+analysis, measurement through the interface, results, comparison, desktop
+app, settings, environment report) that asks for each file and setting with a
+default Enter accepts, then prints the command it runs, so you learn the
+commands as you go. A measurement plays nothing until you type `y`.
+`roomscope menu` opens it explicitly; in a pipe or a script, or with
+`ROOMSCOPE_NO_MENU=1`, bare `roomscope` prints the short overview as before.
+The [user guide](docs/user-guide/en.md) describes every item.
 
 ```bash
 # 1. Generate the test signal (48 kHz, 20 Hz–20 kHz, 10 s sweep, -12 dBFS)

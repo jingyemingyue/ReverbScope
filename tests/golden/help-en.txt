@@ -7,6 +7,7 @@ RoomScope: an open-source, DAW-independent recording environment analyzer.
 
 commands:
   Get started
+    menu        choose a task from a numbered menu that asks for what it needs
     demo        try RoomScope with synthetic data: no audio hardware needed
     gui         start the desktop GUI (needs PySide6; the desktop download
                 includes it)
@@ -58,6 +59,20 @@ Run a command with --help for its options, for example:
   roomscope measure --help
 
 中文界面：roomscope config language zh_CN
+
+=== roomscope menu --help
+usage: roomscope menu [options]
+
+choose a task from a numbered menu that asks for what it needs
+
+options:
+  -h, --help  show this help message and exit
+
+On a terminal, roomscope without a command opens this menu too; set
+ROOMSCOPE_NO_MENU=1 to get the short overview instead.
+
+examples:
+  roomscope menu
 
 === roomscope demo --help
 usage: roomscope demo [options]
