@@ -5318,7 +5318,7 @@ msgid "Spectrum"
 msgstr "스펙트럼"
 
 msgid "of the impulse response"
-msgstr "임펄스 응답의"
+msgstr "임펄스 응답에서"
 
 msgid "Imported scan"
 msgstr "가져온 스캔"
@@ -6515,3 +6515,9 @@ msgstr "{label}: {text}"
 msgctxt "clause separator"
 msgid "; "
 msgstr "; "
+
+msgid "{speed:.1f} m/s at {temp:.0f} °C"
+msgstr "{speed:.1f} m/s, {temp:.0f} °C"
+
+msgid "add {input}"
+msgstr "{input} 추가"

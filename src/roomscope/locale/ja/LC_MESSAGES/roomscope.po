@@ -5284,7 +5284,7 @@ msgid "Spectrum"
 msgstr "スペクトル"
 
 msgid "of the impulse response"
-msgstr "インパルス応答の"
+msgstr "インパルス応答から"
 
 msgid "Imported scan"
 msgstr "インポートしたスキャン"
@@ -6481,3 +6481,9 @@ msgstr "{label}: {text}"
 msgctxt "clause separator"
 msgid "; "
 msgstr "; "
+
+msgid "{speed:.1f} m/s at {temp:.0f} °C"
+msgstr "{speed:.1f} m/s、{temp:.0f} °C"
+
+msgid "add {input}"
+msgstr "{input} を追加"

@@ -676,18 +676,15 @@ def _length_text(c: Console, length: PlacementLength) -> str:
     if length.metres is None:
         text = f"{c.symbol('skip')} {_('not determined')}"
         if length.missing_input:
-            text += c.muted("  " + _("(add {input})").format(input=length.missing_input))
+            text = annotated(text, _("add {input}").format(input=length.missing_input))
         return text
     value = f"{length.metres:.2f} m"
     if length.input_uncertainty_m is not None:
-        value += c.muted(
-            "  "
-            + _("±{uncertainty:.2f} m from the stated inputs only").format(
-                uncertainty=length.input_uncertainty_m
-            )
+        value += " " + _("±{uncertainty:.2f} m from the stated inputs only").format(
+            uncertainty=length.input_uncertainty_m
         )
     if length.validity is not Validity.VALID:
-        value += "  " + validity_cell(c, length.validity)
+        value += c.sep() + validity_cell(c, length.validity)
     return value
 
 
@@ -706,8 +703,9 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         [
             (
                 _("Speed of sound"),
-                f"{placement.speed_of_sound_m_s:.1f} m/s "
-                + _("at {temp:.0f} °C").format(temp=placement.temperature_c)
+                _("{speed:.1f} m/s at {temp:.0f} °C").format(
+                    speed=placement.speed_of_sound_m_s, temp=placement.temperature_c
+                )
                 + assumed,
             ),
             *(

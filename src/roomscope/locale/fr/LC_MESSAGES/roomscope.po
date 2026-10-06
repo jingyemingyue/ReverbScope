@@ -7224,3 +7224,9 @@ msgstr "{label} : {text}"
 msgctxt "clause separator"
 msgid "; "
 msgstr " ; "
+
+msgid "{speed:.1f} m/s at {temp:.0f} °C"
+msgstr "{speed:.1f} m/s à {temp:.0f} °C"
+
+msgid "add {input}"
+msgstr "ajouter {input}"

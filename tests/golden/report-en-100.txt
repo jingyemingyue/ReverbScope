@@ -75,10 +75,10 @@
     candidates may be statistical rather than discrete reflections
 
 ▌Placement  tier #; no coordinates are derived (see the JSON)
-┌────────────────┬────────────────────────────────────────────┐
-│ Speed of sound │ ###.# m/s at ## °C (assumed)               │
-│ Geometry       │ – not determined  (add --speaker-distance) │
-└────────────────┴────────────────────────────────────────────┘
+┌────────────────┬───────────────────────────────────────────┐
+│ Speed of sound │ ###.# m/s at ## °C (assumed)              │
+│ Geometry       │ – not determined (add --speaker-distance) │
+└────────────────┴───────────────────────────────────────────┘
   i no loudspeaker-to-microphone distance was supplied; measure the straight line from the
     loudspeaker to the microphone capsule with a tape
   i inherited from the reflection search: candidates are envelope peaks standing above the local

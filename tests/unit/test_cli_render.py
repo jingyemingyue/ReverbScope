@@ -311,3 +311,56 @@ def test_the_air_temperature_is_shown_in_degrees_celsius(
     assert "20 C" in fallback and "°" not in fallback
     if lang == "en":
         fallback.encode("ascii")
+
+
+@pytest.mark.parametrize(
+    ("lang", "speed", "geometry"),
+    [
+        ("en", "343.2 m/s at 20 °C (assumed)", "– not determined (add --speaker-distance)"),
+        ("zh_CN", "343.2 m/s，气温 20 °C（假定）", "– 未确定（需添加 --speaker-distance）"),
+    ],
+)
+def test_the_placement_rows_read_as_a_phrase_in_each_language(
+    short_sweep: SweepSettings, lang: str, speed: str, geometry: str
+) -> None:
+    """The Chinese row read "343.2 m/s 气温 20 °C" with no separator and the
+    geometry row had two spaces and full-width brackets after an ASCII dash."""
+    from roomscope.cli.render import _placement
+    from roomscope.i18n import activate
+
+    result = _analysed(short_sweep)
+    activate(lang)
+    try:
+        text = "\n".join(
+            _placement(Console(color=False, unicode=True, width=100), result.placement)
+        )
+    finally:
+        activate("en")
+    flat = " ".join(text.split())
+    assert speed in flat, flat
+    assert geometry in flat, flat
+    assert "  （" not in text and ")  " not in text
+
+
+@pytest.mark.parametrize(
+    ("lang", "heading"),
+    [
+        ("en", "Spectrum  of the impulse response"),
+        ("zh_CN", "频谱  来自脉冲响应"),
+        ("zh_TW", "頻譜  來自脈衝響應"),
+    ],
+)
+def test_the_note_of_the_spectrum_section_is_a_phrase(
+    short_sweep: SweepSettings, lang: str, heading: str
+) -> None:
+    """The Chinese note read "脉冲响应的": the start of a phrase, not a phrase."""
+    from roomscope.cli.render import _spectrum
+    from roomscope.i18n import activate
+
+    result = _analysed(short_sweep)
+    activate(lang)
+    try:
+        heading_line = _spectrum(WIDE, result)[1]
+    finally:
+        activate("en")
+    assert heading_line.strip() == heading

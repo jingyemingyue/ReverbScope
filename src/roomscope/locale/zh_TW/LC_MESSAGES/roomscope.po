@@ -5174,7 +5174,7 @@ msgid "Spectrum"
 msgstr "頻譜"
 
 msgid "of the impulse response"
-msgstr "脈衝響應的"
+msgstr "來自脈衝響應"
 
 msgid "Imported scan"
 msgstr "匯入的掃描"
@@ -6360,3 +6360,9 @@ msgstr "{label}：{text}"
 msgctxt "clause separator"
 msgid "; "
 msgstr "；"
+
+msgid "{speed:.1f} m/s at {temp:.0f} °C"
+msgstr "{speed:.1f} m/s，氣溫 {temp:.0f} °C"
+
+msgid "add {input}"
+msgstr "需添加 {input}"
