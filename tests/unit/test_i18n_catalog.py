@@ -440,3 +440,67 @@ def test_the_chinese_catalog_says_one_word_for_each_concept() -> None:
         msgid for msgid, msgstr in catalog.items() if "基线" in msgstr and msgid != "Above baseline"
     ]
     assert wrong_baseline == []
+
+
+#: Simplified forms that the Big5 set (Taiwan's) also holds, as surnames or
+#: variants: they are not how Traditional Chinese writes these words.
+SIMPLIFIED_IN_BIG5 = "采范适"
+#: Mainland words and Simplified-to-Traditional slips (干 -> 幹, 制 -> 製), with
+#: what Traditional Chinese in Taiwan writes instead.
+MAINLAND_IN_TRADITIONAL = {
+    "日志": "日誌",
+    "标志": "標誌",
+    "獨占": "獨佔",
+    "卷尺": "捲尺",
+    "錄制": "錄製",
+    "復制": "複製",
+    "複制": "複製",
+    "關系": "關係",
+    "幹擾": "干擾",
+    "幹淨": "乾淨",
+    "更幹": "更乾",
+    "音頻": "音訊",
+    "信號": "訊號",
+    "軟件": "軟體",
+    "硬件": "硬體",
+    "界面": "介面",
+    "窗口": "視窗",
+    "服務器": "伺服器",
+    "導出": "匯出",
+    "導入": "匯入",
+    "運行": "執行",
+    "打開": "開啟",
+    "保存": "儲存",
+    "設備": "裝置",
+    "話筒": "麥克風",
+    "工程": "專案",
+    "打印": "列印",
+}
+
+
+def test_the_traditional_chinese_catalog_has_no_simplified_characters() -> None:
+    """About 240 entries had 号, 两, 范, 采 or 适 in the middle of Traditional
+    text, so "--help" printed "寫出 ESS 測試信号 WAV" in zh_TW. Every ideograph
+    must be one that the Big5 set writes, and a few that it also holds are named."""
+    import unicodedata
+
+    catalog = parse_po(SRC / "locale" / "zh_TW" / "LC_MESSAGES" / "roomscope.po")
+    simplified: dict[str, str] = {}
+    for msgid, msgstr in catalog.items():
+        for char in msgstr:
+            if "CJK UNIFIED IDEOGRAPH" not in unicodedata.name(char, ""):
+                continue
+            try:
+                char.encode("big5")
+            except UnicodeEncodeError:
+                simplified.setdefault(char, msgid[:60])
+            if char in SIMPLIFIED_IN_BIG5:
+                simplified.setdefault(char, msgid[:60])
+    assert simplified == {}
+    words = {
+        (msgid[:60], word, better)
+        for msgid, msgstr in catalog.items()
+        for word, better in MAINLAND_IN_TRADITIONAL.items()
+        if word in msgstr
+    }
+    assert words == set(), sorted(words)[:10]

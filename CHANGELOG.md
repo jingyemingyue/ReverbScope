@@ -289,6 +289,14 @@ All notable changes to RoomScope are documented here. The format follows
   spectrum, 候选 for candidate peaks and reflections); the guides follow.
   The compare questions of the menu read "基准会话（之前）的编号或路径" with
   one colon, and the output folder question says 默认 once.
+- **Traditional Chinese without Simplified characters.** About 240 entries
+  of the zh_TW catalog had 号, 两, 范, 采 or 适 in the middle of Traditional
+  text (`--lang zh_TW --help` printed "寫出 ESS 測試信号 WAV"), 干 had become
+  幹 where 乾 or 干 was meant, 制 and 复 were not converted in 錄製 and 複製,
+  and the words were the mainland's (界面, 硬件, 工程, 保存, 話筒). The catalog
+  is proofread: 訊號, 兩, 範圍, 取樣率, 乾, 錄製, 複製, 介面, 硬體, 專案, 儲存, 麥克風.
+  A test keeps Simplified characters (any that Big5 lacks, and 采范适) and
+  those words out of it.
 - **Progress line width.** On an 80-column terminal the line was 81 columns
   wide, so the cursor wrapped and every redraw left a line behind. It is
   now never wider than the terminal's last column, down to 20 columns.
