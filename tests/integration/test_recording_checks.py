@@ -13,6 +13,7 @@ from reverbscope.core.sweep import measurement_signal
 from reverbscope.interpretation import interpret
 from reverbscope.models.audio import AudioSignal
 from reverbscope.models.configuration import AnalysisSettings, SweepSettings
+from reverbscope.models.result import Validity
 from tests.conftest import make_rir
 
 
@@ -188,6 +189,31 @@ def test_device_buffer_problems_reach_the_result_and_a_finding(
     assert len(dropouts) == 1 and dropouts[0].evidence == {"warning": warning}
     clean = analyze(AudioSignal(samples, sr), Reference.from_settings(short_sweep))
     assert not any(f.message_id == "measurement.dropouts" for f in interpret(clean))
+
+
+def test_device_timing_warnings_withhold_rt60(short_sweep: SweepSettings) -> None:
+    """An input overflow breaks the sweep's time base. The take is still
+    analysed, but decay and energy numbers are not offered as valid."""
+    sr = short_sweep.sample_rate
+    samples = _room_recording(short_sweep, noise_rms=1e-6)
+    warning = (
+        "the audio device reported 1 buffer problem(s) during the take (input overflow); "
+        "the recording may contain dropouts"
+    )
+    clean = analyze(
+        AudioSignal(samples, sr, source="standalone"), Reference.from_settings(short_sweep)
+    )
+    assert clean.decay.broadband.t30.validity is Validity.VALID
+    assert clean.decay.broadband.rt60_estimate_s is not None
+    faulty = analyze(
+        AudioSignal(samples, sr, source="standalone", device_warnings=(warning,)),
+        Reference.from_settings(short_sweep),
+    )
+    assert warning in faulty.warnings
+    assert faulty.decay.broadband.t30.validity is Validity.UNRELIABLE
+    assert faulty.decay.broadband.rt60_estimate_s is None
+    assert "timing" in (faulty.decay.broadband.t30.reason or "")
+    assert faulty.decay.broadband.c50.validity is Validity.UNRELIABLE
 
 
 def test_the_test_signal_exported_instead_of_the_microphone_is_flagged(

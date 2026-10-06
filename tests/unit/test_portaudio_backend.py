@@ -55,6 +55,9 @@ class _Script:
     outputs: list[np.ndarray] = field(default_factory=list)
     stream_thread: list[int] = field(default_factory=list)
     aborted: list[bool] = field(default_factory=list)
+    #: Override the rate the opened stream reports. ``None`` reports the rate
+    #: that was requested, which is what a matching PortAudio stream does.
+    reported_samplerate: float | None = None
 
 
 def _input_block(start: int, frames: int, channels: int) -> np.ndarray:
@@ -77,8 +80,11 @@ def _fake_sounddevice(script: _Script) -> SimpleNamespace:
             callback: Callable[..., None],
             finished_callback: Callable[[], None],
         ) -> None:
-            del samplerate, dtype, device
             self.n_in, self.n_out = channels
+            self.samplerate = (
+                samplerate if script.reported_samplerate is None else script.reported_samplerate
+            )
+            del dtype, device
             self.blocksize = blocksize
             self.callback = callback
             self.finished_callback = finished_callback
@@ -287,6 +293,13 @@ def test_buffer_problems_are_logged_and_kept_with_the_take(
 
 def test_a_clean_take_has_no_device_warnings(script: _Script) -> None:
     assert _take().device_warnings == ()
+
+
+def test_a_stream_rate_mismatch_is_kept_with_the_take(script: _Script) -> None:
+    script.reported_samplerate = 44100.0
+    (warning,) = _take().device_warnings
+    assert "44100" in warning and "48000" in warning
+    assert "time scale" in warning
 
 
 @pytest.mark.parametrize(

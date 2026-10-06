@@ -200,6 +200,72 @@ def test_pass_search_is_skipped_without_a_sweep() -> None:
     assert find_sweep_passes(magnitude, 1234, reference_length=1, sample_rate=48000) == (1234,)
 
 
+def _rival_ir(sample_rate: int, earlier_db: float, *, gap_s: float = 0.02) -> np.ndarray:
+    """A loud exponential at 100 ms, and one earlier impulse ``earlier_db`` down.
+
+    The gap between them is silence, so the earlier impulse is a separate
+    arrival rather than a sample of the same decay.
+    """
+    from tests.conftest import DECAY_CONSTANT
+
+    pre = int(0.1 * sample_rate)
+    rt60_s = 0.4
+    tail = int(1.5 * rt60_s * sample_rate)
+    ir = np.zeros(pre + tail)
+    t = np.arange(tail) / sample_rate
+    sign = np.where(np.arange(tail) % 2 == 0, 1.0, -1.0)
+    ir[pre:] = np.exp(-DECAY_CONSTANT * t / (2.0 * rt60_s)) * sign
+    earlier = pre - int(gap_s * sample_rate)
+    ir[earlier] = 10.0 ** (-earlier_db / 20.0)
+    return ir
+
+
+def test_a_separated_earlier_arrival_within_20_db_is_not_trusted() -> None:
+    sr = 48000
+    ir = _rival_ir(sr, 12.0)
+    result = analyze_impulse_response(AudioSignal(ir, sr), excitation_band=(40.0, 16000.0))
+    impulse = result.impulse_response
+    assert impulse.direct_sound_confidence == "low"
+    assert abs(impulse.samples[impulse.direct_sound_index]) == pytest.approx(1.0, abs=1e-9)
+    assert any("earlier arrival" in note for note in result.warnings)
+    assert result.decay.broadband.rt60_estimate_s is None
+    assert result.decay.broadband.t30.validity is Validity.UNRELIABLE
+    assert "earlier arrival" in (result.decay.broadband.t30.reason or "")
+    assert result.decay.broadband.c50.validity is Validity.UNRELIABLE
+
+
+def test_a_weak_pre_echo_does_not_move_time_zero_or_withhold_rt60() -> None:
+    sr = 48000
+    ir = _rival_ir(sr, 40.0)
+    result = analyze_impulse_response(AudioSignal(ir, sr), excitation_band=(40.0, 16000.0))
+    assert result.impulse_response.direct_sound_confidence == "high"
+    assert not any("earlier arrival" in note for note in result.warnings)
+    assert result.decay.broadband.t30.validity is Validity.VALID
+    assert result.decay.broadband.rt60_estimate_s == pytest.approx(0.4, rel=0.02)
+
+
+def test_an_earlier_arrival_at_15_db_is_withheld_but_not_refused() -> None:
+    """Margin is still above the import refusal (10 dB), but 15 dB is close
+    enough, and separated enough, that the loud peak is not trusted."""
+    sr = 48000
+    ir = _rival_ir(sr, 15.0)
+    result = analyze_impulse_response(AudioSignal(ir, sr), excitation_band=(40.0, 16000.0))
+    assert result.impulse_response.pre_peak_margin_db == pytest.approx(15.0, abs=0.1)
+    assert result.impulse_response.direct_sound_confidence == "low"
+    assert result.decay.broadband.rt60_estimate_s is None
+
+
+def test_a_file_that_starts_at_its_peak_still_reports_numbers() -> None:
+    sr = 48000
+    tail = _room_ir(sr, with_mode=False)
+    result = analyze_impulse_response(AudioSignal(tail, sr), excitation_band=(40.0, 16000.0))
+    assert result.impulse_response.direct_sound_confidence == "low"
+    assert result.impulse_response.pre_peak_margin_db is None
+    assert not any("earlier arrival" in note for note in result.warnings)
+    assert result.decay.broadband.t30.validity is Validity.VALID
+    assert result.decay.broadband.rt60_estimate_s is not None
+
+
 def test_cli_analyze_ir_json_round_trip(
     tmp_path: Path, full_and_ir: tuple, capsys: pytest.CaptureFixture[str]
 ) -> None:

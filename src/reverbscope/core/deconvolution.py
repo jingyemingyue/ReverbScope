@@ -24,7 +24,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy import fft as sfft
 from scipy.ndimage import maximum_filter1d
-from scipy.signal import fftconvolve
+from scipy.signal import fftconvolve, find_peaks
 from scipy.signal.windows import tukey
 
 from reverbscope.core.sweep import normalisation_band_hz
@@ -57,6 +57,22 @@ PASS_PULSE_WINDOW_S = 0.1
 _PASS_EXCLUDE_BEFORE_S = 0.005
 _PASS_EXCLUDE_AFTER_S = 0.050
 _TINY = 1e-300
+#: An earlier local peak this close to the loudest sample (dB), with a quiet
+#: gap between them, is a separate arrival. It may be the direct sound and a
+#: louder reflection, so time zero is not trusted. Weaker pre-echoes are left
+#: alone: there is no way to tell them from the direct sound, and moving the
+#: marker would be a guess.
+EARLIER_ARRIVAL_MAX_DB = 20.0
+#: The gap between that peak and the loudest sample must be at least this quiet
+#: (dB below both), so filter ringing and a noise floor are not arrivals.
+EARLIER_ARRIVAL_GAP_DB = 12.0
+#: And the peak must stand this far above the median of the look-back, so a
+#: single noise spike is not an arrival.
+EARLIER_ARRIVAL_ABOVE_BACKGROUND_DB = 12.0
+#: How far before the loudest sample a rival arrival is sought (s). Early
+#: reflections that can steal time zero sit inside this; a longer look-back
+#: mostly sees the pre-roll.
+EARLIER_ARRIVAL_LOOKBACK_S = 0.10
 
 Window = tuple[int, int]
 
@@ -165,6 +181,83 @@ def pre_peak_margin_db(
     return float(20.0 * np.log10(max(float(magnitude[peak]), _TINY) / max(before, _TINY)))
 
 
+def direct_arrival_warning(earlier_arrival_db: float | None) -> str | None:
+    """Why time zero is not trusted, or ``None`` when no rival arrival was found.
+
+    ``earlier_arrival_db`` is negative (the rival is below the loudest peak).
+    """
+    if earlier_arrival_db is None:
+        return None
+    return diag(
+        "an earlier arrival is only {level_db:.1f} dB below the loudest peak and is separated "
+        "from it, so the loudest peak may be a reflection rather than the direct sound; decay "
+        "and energy metrics are not trusted",
+        level_db=-earlier_arrival_db,
+    )
+
+
+def _distinct_earlier_arrival_db(
+    magnitude: FloatArray,
+    peak: int,
+    *,
+    sample_rate: int,
+    near_ms: float,
+    far_s: float,
+    excluded: tuple[Window, ...],
+) -> float | None:
+    """Level (dB, negative) of the strongest distinct peak before ``peak``.
+
+    ``None`` when nothing before the loudest sample is both within
+    :data:`EARLIER_ARRIVAL_MAX_DB` and separated from it by a quiet gap. The
+    loudest sample is not moved: a weak pre-echo and the true direct sound
+    look the same, so a rival withholds trust instead of guessing time zero.
+    """
+    near = round(near_ms * sample_rate / 1000.0)
+    far = round(min(far_s, EARLIER_ARRIVAL_LOOKBACK_S) * sample_rate)
+    hi = peak - max(near, 1)
+    lo = max(0, peak - far)
+    if hi - lo < 3:
+        return None
+    segment = np.array(magnitude[lo:hi], dtype=np.float64, copy=True)
+    for start, stop in excluded:
+        a = max(0, start - lo)
+        b = min(segment.shape[0], stop - lo)
+        if b > a:
+            segment[a:b] = 0.0
+    background = float(np.median(segment))
+    peak_value = float(magnitude[peak])
+    if not np.isfinite(peak_value) or peak_value <= 0.0:
+        return None
+    level_floor = peak_value * 10.0 ** (-EARLIER_ARRIVAL_MAX_DB / 20.0)
+    if background > 0.0:
+        level_floor = max(
+            level_floor,
+            background * 10.0 ** (EARLIER_ARRIVAL_ABOVE_BACKGROUND_DB / 20.0),
+        )
+    padded = np.concatenate(([0.0], segment, [0.0]))
+    distance = max(1, round(0.0003 * sample_rate))
+    indices, _properties = find_peaks(padded, height=level_floor, distance=distance)
+    gap_limit = 10.0 ** (-EARLIER_ARRIVAL_GAP_DB / 20.0)
+    best: float | None = None
+    for index in indices:
+        candidate = int(index) - 1
+        if candidate < 0 or candidate >= segment.shape[0]:
+            continue
+        cand_value = float(segment[candidate])
+        if cand_value < level_floor:
+            continue
+        gap = magnitude[lo + candidate + 1 : hi]
+        if gap.size == 0:
+            continue
+        loudest_between = float(np.max(gap))
+        if loudest_between > cand_value * gap_limit or loudest_between > peak_value * gap_limit:
+            continue
+        relative = 20.0 * math.log10(cand_value / peak_value)
+        if best is None or relative > best:
+            best = float(relative)
+    return best
+
+
 def _pulse_window(reference_length: int, sample_rate: int, sweep_rate_s: float | None) -> int:
     window_s = min(PASS_PULSE_WINDOW_S, 0.05 * reference_length / sample_rate)
     if sweep_rate_s is not None:
@@ -255,6 +348,9 @@ class LocatedImpulseResponse:
     harmonic_windows: tuple[HarmonicWindow, ...] = ()
     #: All windows excluded from the margin (harmonics, other passes).
     excluded_windows: tuple[Window, ...] = ()
+    #: Strongest distinct peak before the loudest sample, in dB (negative).
+    #: ``None`` when time zero does not have a rival arrival.
+    earlier_arrival_db: float | None = None
 
     @property
     def sweep_passes(self) -> int:
@@ -280,8 +376,12 @@ def locate_impulse_response(
 ) -> LocatedImpulseResponse:
     """Find the direct sound in the deconvolved signal and cut the IR around it.
 
-    The direct sound is the strongest sample of ``|h_full|``. Other sweep
-    passes are searched with :func:`find_sweep_passes`; when there are several,
+    The direct sound is the strongest sample of ``|h_full|``. A distinct earlier
+    peak within :data:`EARLIER_ARRIVAL_MAX_DB`, separated by a quiet gap, is
+    recorded on :attr:`LocatedImpulseResponse.earlier_arrival_db` and is not
+    used as time zero: it may be the direct sound or a pre-echo, and guessing
+    would move every later figure. Callers withhold decay and energy metrics.
+    Other sweep passes are searched with :func:`find_sweep_passes`; when there are several,
     the strongest pass whose sweep starts no more than
     ``start_tolerance_samples`` before the recording is analysed, and its IR
     ends where the next pass starts.
@@ -370,6 +470,14 @@ def locate_impulse_response(
         far_s=margin_far_s,
         excluded=tuple(excluded),
     )
+    earlier_arrival_db = _distinct_earlier_arrival_db(
+        magnitude,
+        peak,
+        sample_rate=sample_rate,
+        near_ms=margin_near_ms,
+        far_s=margin_far_s,
+        excluded=tuple(excluded),
+    )
 
     sweep_start = peak - offset
     return LocatedImpulseResponse(
@@ -388,6 +496,7 @@ def locate_impulse_response(
         truncated_by_next_pass=truncated_by_next,
         harmonic_windows=harmonics,
         excluded_windows=tuple(excluded),
+        earlier_arrival_db=earlier_arrival_db,
     )
 
 

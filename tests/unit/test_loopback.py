@@ -147,6 +147,28 @@ def test_compensate_flattens_a_known_interface_fir(short_sweep: SweepSettings) -
     assert abs(fr_median_db(fixed) - fr_median_db(dry)) < COMPENSATION_TOLERANCE_DB
 
 
+def test_loopback_device_timing_skips_compensation(short_sweep: SweepSettings) -> None:
+    sr = short_sweep.sample_rate
+    interface = np.array([1.0, 0.35, 0.12, 0.04], dtype=np.float64)
+    room = make_rir(sr, rt60_s=0.35, reflections=[(0.018, 0.3)], diffuse_level=0.01)
+    colored = np.asarray(fftconvolve(interface, room), dtype=np.float64)
+    mic = synthetic_recording(short_sweep, colored, noise_rms=1e-6)
+    lb_ir = np.zeros(int(0.05 * sr), dtype=np.float64)
+    lb_ir[: interface.shape[0]] = interface
+    lb_raw = synthetic_recording(short_sweep, lb_ir, noise_rms=1e-7)
+    loopback = AudioSignal(
+        _pad_to(lb_raw.samples, mic.n_samples),
+        sr,
+        device_warnings=("input overflow",),
+    )
+    result = analyze(mic, Reference.from_settings(short_sweep), loopback=loopback)
+    assert result.impulse_response.loopback is not None
+    assert result.impulse_response.loopback.compensation_applied is False
+    assert result.impulse_response.loopback.reason is not None
+    assert "timing" in result.impulse_response.loopback.reason
+    assert any("timing" in warning for warning in result.warnings)
+
+
 def test_room_used_as_loopback_does_not_corrupt_mic(short_sweep: SweepSettings) -> None:
     ir = make_rir(short_sweep.sample_rate, rt60_s=0.4, reflections=[(0.018, 0.35)])
     rec = synthetic_recording(short_sweep, ir, noise_rms=1e-5)

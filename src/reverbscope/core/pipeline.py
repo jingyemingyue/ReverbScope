@@ -8,8 +8,9 @@ recording + reference sweep
     -> linearity checks (flat-topped peaks, folded/aliased distortion products)
     -> decay analysis (broadband + octave bands, on h_full with a fixed lead-in;
        bands outside the excitation band withheld; all metrics unreliable when
-       the direct sound is unverified, the recording clips or it contains
-       aliased distortion)
+       the direct sound is unverified, a rival earlier arrival was found, the
+       recording clips, it contains aliased distortion, the sweep was played
+       at the wrong speed, or the device reported timing problems)
     -> frequency response (gated from the direct sound, with a lead-in)
     -> background noise (a quiet segment of the recording, verified quiet)
     -> early reflections
@@ -33,6 +34,7 @@ from reverbscope.core.deconvolution import (
     LocatedImpulseResponse,
     confidence_label,
     deconvolve,
+    direct_arrival_warning,
     harmonic_distortion_levels,
     locate_impulse_response,
 )
@@ -428,9 +430,18 @@ def _decay_unreliable_reasons(
     clipped: bool,
     aliased: tuple[AliasedDistortion, ...] = (),
     playback_speed: PlaybackSpeed | None = None,
+    *,
+    device_timing_problems: bool = False,
 ) -> list[str]:
     """Measurement-level reasons why no decay metric may be reported as valid."""
     reasons: list[str] = []
+    if device_timing_problems:
+        reasons.append(
+            diag(
+                "the audio device reported timing problems in this take, so its decay and energy "
+                "metrics are unreliable. Check the stream settings and repeat the measurement"
+            )
+        )
     if playback_speed is not None:
         reasons.append(
             diag(
@@ -695,6 +706,14 @@ def analyze(
     loopback_result: LoopbackResult | None = None
     if lb_samples is not None:
         try:
+            if loopback is not None and loopback.device_warnings:
+                warnings.extend(loopback.device_warnings)
+                raise AnalysisError(
+                    diag(
+                        "the separate loopback recording has device timing problems; "
+                        "loopback compensation was not applied"
+                    )
+                )
             lb_clipping, _lb_notes = _validate_recording(lb_samples, sample_rate)
             h_lb = deconvolve(lb_samples, prepared.inverse)
             lb_located = _locate_pass(
@@ -790,7 +809,13 @@ def analyze(
             )
         )
     confidence = confidence_label(located.pre_peak_margin_db)
-    if located.pre_peak_margin_db is None:
+    arrival_note = direct_arrival_warning(located.earlier_arrival_db)
+    if arrival_note is not None:
+        # A separated earlier peak within 20 dB is a rival for time zero.
+        # The numeric margin can still be in the "medium" band; trust is low.
+        confidence = "low"
+        ir_notes.append(arrival_note)
+    elif located.pre_peak_margin_db is None:
         # confidence_label(None) is always "low".
         ir_notes.append(
             diag(
@@ -885,8 +910,15 @@ def analyze(
 
     decay = _analyze_decay_of_pass(h_full, located, sample_rate, settings, band)
     unreliable = _decay_unreliable_reasons(
-        confidence, located.pre_peak_margin_db, clipping.clipped, aliased, playback_speed
+        confidence,
+        located.pre_peak_margin_db,
+        clipping.clipped,
+        aliased,
+        playback_speed,
+        device_timing_problems=bool(recording.device_warnings),
     )
+    if arrival_note is not None and arrival_note not in unreliable:
+        unreliable.insert(0, arrival_note)
     if unreliable:
         decay = decay.with_all_unreliable("; ".join(unreliable))
     warnings.extend(decay.notes)
@@ -1094,10 +1126,11 @@ def analyze_impulse_response(
 
     settings = settings or AnalysisSettings()
     warnings: list[str] = [
+        *ir.device_warnings,
         diag(
             "impulse response imported; deconvolution, sweep-position checks and "
             "distortion indicators were skipped"
-        )
+        ),
     ]
     mono, channel, channel_warning = ir.select_channel(settings.channel)
     if channel_warning:
@@ -1153,6 +1186,10 @@ def analyze_impulse_response(
         )
 
     confidence = confidence_label(located.pre_peak_margin_db)
+    arrival_note = direct_arrival_warning(located.earlier_arrival_db)
+    if arrival_note is not None:
+        confidence = "low"
+        warnings.append(arrival_note)
     impulse = ImpulseResponseResult(
         sample_rate=sample_rate,
         samples=located.samples,
@@ -1175,6 +1212,20 @@ def analyze_impulse_response(
         decay = _mark_decay_not_computed(
             decay, diag("excitation band unknown (imported impulse response; declare --band)")
         )
+    if ir.device_warnings or arrival_note is not None:
+        # Do not reuse confidence == "low" here: an imported file that simply
+        # starts on its peak is also "low", and that case still reports numbers.
+        # A rival arrival or a device timing fault is a different gate.
+        reasons = _decay_unreliable_reasons(
+            "high",
+            margin,
+            False,
+            device_timing_problems=bool(ir.device_warnings),
+        )
+        if arrival_note is not None:
+            reasons.append(arrival_note)
+        decay = decay.with_all_unreliable("; ".join(reasons))
+        warnings.extend(decay.notes)
     fr_segment, fr_direct = _segment_around_pass(
         np.asarray(mono, dtype=np.float64),
         located,
