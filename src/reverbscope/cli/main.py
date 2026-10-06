@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import codecs
 import contextlib
+import errno
 import json
 import logging
 import os
@@ -1398,6 +1399,24 @@ def _resolve_profile(args: argparse.Namespace, stored: str | None = None) -> str
     return name
 
 
+def _refuse_file_out(path: Path | None, command: str, *, project: bool = False) -> None:
+    """Refuse an --out that is an existing file before any work is done.
+
+    Otherwise the whole analysis runs first and the save fails with the
+    operating system's English "File exists".
+    """
+    if path is None or not path.exists() or path.is_dir():
+        return
+    message = (
+        _("{path} is a file; --out needs a folder for the project")
+        if project
+        else _("{path} is a file; --out needs a folder for the session")
+    )
+    refusal = ConfigurationError(message.format(path=path))
+    refusal.cli_hints = [f"reverbscope {command} --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
+    raise refusal
+
+
 def _run_analysis(
     recording_path: Path,
     reference_path: Path | None,
@@ -1487,6 +1506,7 @@ def _run_analysis(
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
+    _refuse_file_out(args.out, "analyze")
     inputs = [
         (_("Recording"), Verbatim(str(args.recording))),
         (_("Sweep"), Verbatim(str(args.sweep))),
@@ -1563,12 +1583,7 @@ def cmd_measure(args: argparse.Namespace) -> int:
 
     settings = _sweep_settings(args)
     err = _console(args, sys.stderr)
-    if Path(args.out).exists() and not Path(args.out).is_dir():
-        refusal = ConfigurationError(
-            _("{path} is a file; --out needs a folder for the session").format(path=args.out)
-        )
-        refusal.cli_hints = [f"reverbscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
-        raise refusal
+    _refuse_file_out(Path(args.out), "measure")
     if Path(args.out).is_dir() and not (Path(args.out) / SESSION_FILE).is_file():
         # A session folder is measured again as a whole; any other folder may
         # hold the user's own sweep (reverbscope sweep --out folder/sweep.wav),
@@ -2041,6 +2056,7 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
     from reverbscope.io.wav import read_wav
     from reverbscope.models.session import MeasurementSession
 
+    _refuse_file_out(args.out, "analyze-ir")
     ir = read_wav(args.ir)
     settings = _analysis_settings(args)
     band = (float(args.band[0]), float(args.band[1])) if args.band else None
@@ -2128,6 +2144,7 @@ def cmd_project(args: argparse.Namespace) -> int:
     if command in ("init", "add", "show"):
         _warn_ignored_json(args, f"project {command}")
     if command == "init":
+        _refuse_file_out(args.out, "project init", project=True)
         if (args.out / PROJECT_FILE).is_file() and not args.force:
             # A fresh project.json lists no positions: run again by mistake
             # (or to set a name), init would drop every position label.
@@ -2421,8 +2438,22 @@ def _error_hints(exc: BaseException, command: str | None) -> list[str]:
 
 
 def _os_error_text(exc: OSError) -> str:
-    """``cannot write: …/folder (Permission denied)`` from an OSError."""
-    reason = exc.strerror or str(exc)
+    """``permission denied: …/folder`` from an OSError, in the interface language.
+
+    Python gives ``strerror`` in English on Linux and macOS; the common
+    reasons are translated here, any other stays as the system gives it.
+    """
+    reasons = {
+        errno.EEXIST: _("already exists"),
+        errno.EACCES: _("permission denied"),
+        errno.EPERM: _("permission denied"),
+        errno.ENOSPC: _("no space left on the disk"),
+        errno.ENOTDIR: _("part of the path is a file, not a folder"),
+        errno.EISDIR: _("is a folder, not a file"),
+        errno.ENOENT: _("no such file or folder"),
+        errno.EROFS: _("the disk is read-only"),
+    }
+    reason = reasons.get(exc.errno or 0) or exc.strerror or str(exc)
     if exc.filename is not None:
         return _("{reason}: {path}").format(reason=reason, path=exc.filename)
     return reason

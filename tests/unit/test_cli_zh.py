@@ -339,6 +339,65 @@ def test_a_refused_setting_names_the_option_that_set_it(
     assert not (tmp_path / "x.wav").exists()
 
 
+@pytest.mark.parametrize(
+    "command",
+    [
+        ["analyze", "--recording", "r.wav", "--sweep", "s.wav"],
+        ["analyze-ir", "--ir", "r.wav", "--band", "100", "8000"],
+        ["project", "init"],
+    ],
+)
+def test_an_out_that_is_a_file_is_refused_before_any_work(
+    zh_cli: None,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    command: list[str],
+) -> None:
+    """analyze ran the whole analysis and then failed with the system's
+    English "File exists" inside the Chinese error; project init likewise."""
+    from reverbscope.core import pipeline
+
+    monkeypatch.chdir(tmp_path)
+    assert main(["sweep", "--out", "s.wav", "--duration", "1"]) == 0
+    shutil.copyfile("s.wav", "r.wav")
+    Path("victim.wav").write_bytes(b"keep")
+    capsys.readouterr()
+
+    def never(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("analysed before the --out check")
+
+    monkeypatch.setattr(pipeline, "analyze", never)
+    monkeypatch.setattr(pipeline, "analyze_impulse_response", never)
+    assert main(["--lang", "zh_CN", *command, "--out", "victim.wav"]) == 1
+    err = " ".join(capsys.readouterr().err.split())
+    assert "victim.wav 是一个文件；--out 需要一个用来保存" in err, err
+    assert "File exists" not in err
+    named = "project init" if command[0] == "project" else command[0]
+    assert f"reverbscope {named} --out" in err
+    assert Path("victim.wav").read_bytes() == b"keep"
+
+
+def test_an_operating_system_error_is_explained_in_chinese(
+    zh_cli: None,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Python gives OSError.strerror in English on Linux and macOS."""
+    import errno
+
+    from reverbscope.io import project_store
+
+    def refuse(path: object, _project: object) -> None:
+        raise PermissionError(errno.EACCES, "Permission denied", str(path))
+
+    monkeypatch.setattr(project_store, "save_project", refuse)
+    assert main(["--lang", "zh_CN", "project", "init", "--out", str(tmp_path / "p")]) == 1
+    err = capsys.readouterr().err
+    assert "没有权限：" in err and "Permission denied" not in err
+
+
 def test_the_export_format_default_is_the_value_to_type(zh_cli: None) -> None:
     """导出器名称（默认 CSV）, but `--format CSV` is refused: the exporter is csv."""
     export = _help_texts()["reverbscope export"]

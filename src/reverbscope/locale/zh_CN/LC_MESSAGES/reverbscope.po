@@ -4517,3 +4517,29 @@ msgstr "没有找到音频输出设备"
 
 msgid "Host API and channels not checked: no default device found"
 msgstr "未检查主机 API 和声道：没有找到默认设备"
+
+# The command line: an --out that is a file, and the operating system's reasons
+
+msgid "{path} is a file; --out needs a folder for the project"
+msgstr "{path} 是一个文件；--out 需要一个用来保存项目的文件夹"
+
+msgid "already exists"
+msgstr "已存在"
+
+msgid "permission denied"
+msgstr "没有权限"
+
+msgid "no space left on the disk"
+msgstr "磁盘空间不足"
+
+msgid "part of the path is a file, not a folder"
+msgstr "路径中有一级是文件，而不是文件夹"
+
+msgid "is a folder, not a file"
+msgstr "这是文件夹，而不是文件"
+
+msgid "no such file or folder"
+msgstr "文件或文件夹不存在"
+
+msgid "the disk is read-only"
+msgstr "磁盘是只读的"
