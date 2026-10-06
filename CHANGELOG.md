@@ -36,8 +36,14 @@ All notable changes to RoomScope are documented here. The format follows
   needs the acknowledgement above -12 dBFS. Ctrl+C at a question returns to
   the menu (at the menu it leaves); end of input leaves with exit code 0.
   Pipes, files and scripts keep the home screen and its goldens; there
-  `roomscope menu` refuses with exit code 2. Translated in all seven
-  catalogs.
+  `roomscope menu` refuses with exit code 2. It looks like the rest of the
+  command line: its heading is a panel, each group has the bar before it,
+  the sessions of "View results" and "Compare" are a bordered table (a list
+  on a terminal too narrow for one), the measurement plan and the note about
+  the monitors are panels, and a question longer than the screen is written
+  in lines so the answer has room. The prompts and the line with the command
+  ("等同于命令：roomscope …") never have a border, and `roomscope config style
+  plain` applies to the menu too. Translated in all seven catalogs.
 - **Two download betas.** The README and installation pages offer a
   **stable beta** (fewer bugs, narrower feature set: last published
   pre-release `0.5.0b1`) and a **preview beta** (stronger features, may

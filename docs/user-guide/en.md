@@ -106,25 +106,35 @@ Run `roomscope` without a command in a terminal and RoomScope shows a
 numbered menu, in the interface language:
 
 ```text
-Measurement
+
+╭─ RoomScope menu ─────────────────────────────────────────────────────────────╮
+│ Type a number and press Enter. Each step shows the command it runs, so you   │
+│ can type it yourself next time.                                              │
+╰──────────────────────────────────────────────────────────────────────────────╯
+
+▌Measurement
   1  Try the demo                  synthetic data, no audio interface needed
   2  Write the test signal         a sweep WAV to play and record in your DAW
   3  Analyse a recording           a WAV recorded while the sweep played
   4  Measure with your interface   RoomScope plays the sweep and records
 
-Results
+▌Results
   5  View results                  a saved session or comparison
   6  Compare two positions         what changed between two sessions
   7  Open the desktop app          the results with charts
 
-Settings and diagnostics
+▌Settings and diagnostics
   8  Settings                      language, profile, backend, output folder
   9  Environment report            for bug reports
 
   0  Quit                          or type q
 ```
 
-The Terminal Edition has no item 7.
+The Terminal Edition has no item 7. The heading is a panel and each group has
+the bar before it, like every other screen of the command line; with
+`roomscope config style plain` they are drawn without frames, and on a narrow
+terminal the descriptions go under the names. The sessions of **View results**
+are in a bordered table, or in a list when the terminal is too narrow for one.
 
 Type a number and press Enter. Each item asks only for what it needs, with a
 default in brackets that Enter accepts: the demo folder, where to write the
