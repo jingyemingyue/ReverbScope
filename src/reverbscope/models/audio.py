@@ -21,8 +21,9 @@ class AudioSignal:
     sample_rate: int
     source: str | None = None
     #: Problems the audio device reported while recording this take (buffer
-    #: under/overflows); :func:`reverbscope.core.pipeline.analyze` carries them
-    #: into the result's warnings.
+    #: under/overflows, or a stream that ran at another rate than requested).
+    #: :func:`reverbscope.core.pipeline.analyze` carries them into the result's
+    #: warnings and marks the decay and energy metrics unreliable.
     device_warnings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:

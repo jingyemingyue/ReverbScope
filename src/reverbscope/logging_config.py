@@ -76,6 +76,9 @@ def configure_logging(
 ) -> logging.Logger:
     """Configure the ``reverbscope`` logger with a stream handler and a log file.
 
+    ``level`` is the console's level. The log file also keeps INFO diagnostics
+    (the settings of an opened audio stream, ignored settings fields) when the
+    console shows warnings only; a DEBUG console keeps DEBUG in the file too.
     The rotating file lives under ``$REVERBSCOPE_HOME/reverbscope.log``. Calling
     this more than once replaces the previous ReverbScope handlers instead of
     stacking them.
@@ -87,6 +90,7 @@ def configure_logging(
             # Releases the log file; a StreamHandler leaves its stream open.
             handler.close()
     handler = logging.StreamHandler(stream or sys.stderr)
+    handler.setLevel(level)
     handler.setFormatter(logging.Formatter(fmt))
     handler._reverbscope_handler = True  # type: ignore[attr-defined]
     logger.addHandler(handler)
@@ -104,6 +108,9 @@ def configure_logging(
             logger.addHandler(file_handler)
         except OSError:
             pass
-    logger.setLevel(level)
+    # The logger must not filter out INFO before the file handler sees it. The
+    # console handler keeps the requested level, so JSON and quiet command-line
+    # output stay unchanged and a GUI launch prints no routine diagnostics.
+    logger.setLevel(min(handler.level, logging.INFO) if log_file else handler.level)
     logger.propagate = False
     return logger

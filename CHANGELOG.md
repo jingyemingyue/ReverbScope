@@ -79,6 +79,10 @@ All notable changes to ReverbScope are documented here. The format follows
   non-positive sample rate are refused by the decay and frequency-response
   functions instead of raising `IndexError`, `ZeroDivisionError` or
   `UnboundLocalError`.
+- **Diagnostics in the log file.** The log file keeps INFO diagnostics (the
+  opened audio stream's settings, ignored settings fields) while the console
+  stays at the requested level, so `reverbscope.log` holds what a hardware
+  bug report needs without `--verbose`; `--verbose` keeps DEBUG in both.
 - **Measurement.** With a loopback whose return is not at unity gain, the
   folded-distortion probe was biased by that gain (a −20 dB return hid
   folded products and left T30 valid); it now uses the response before
