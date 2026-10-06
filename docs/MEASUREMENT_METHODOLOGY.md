@@ -788,7 +788,11 @@ the reason "gain not declared equal".
 
 Resonances. Matched within 1/6 octave
 (`CompareSettings.resonance_match_octaves`), the closest pairs (by frequency
-ratio) first. The decay-distinguishable flags
+ratio) first, and only inside the range both searches covered
+(`searched_range_hz` of each side): an unmatched candidate outside it was
+never looked for on the other side, so it is left out with a note instead of
+being called disappeared or appeared. When one side did not search at all,
+nothing is compared and a note says so. The decay-distinguishable flags
 are compared, not a decay-time delta.
 
 Placement. Tier-2 heights are compared when both results are tier 2;

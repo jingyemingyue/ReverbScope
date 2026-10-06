@@ -4705,3 +4705,19 @@ msgstr "有不止一个反射可能来自设备上方平面，且它们之间相
 msgctxt "diagnostic"
 msgid "no separate arrival from a plane above the devices was found, and a plane {coincide:.2f} m up (plausible heights start at {lowest:.2f} m) would arrive at the same {used:.1f} ms as the arrival this height was solved from. That arrival may therefore be two arrivals merged into one peak, which would bias the height. Moving the microphone 20-30 cm up or down and measuring again separates them"
 msgstr "未找到来自设备上方平面的独立到达声，而高 {coincide:.2f} m 的平面（合理高度从 {lowest:.2f} m 起）的反射会与求解该高度所用的到达声一样在 {used:.1f} ms 到达。因此该到达声可能是合并为一个峰的两次到达，这会使高度产生偏差。将话筒上移或下移 20-30 cm 后重新测量即可将两者分开"
+
+# Comparison: resonances only where both sides searched
+
+msgctxt "diagnostic"
+msgid "low-frequency resonances are not compared: no frequency range was searched on both sides"
+msgstr "未比较低频共振：没有双方都搜索过的频率范围"
+
+msgctxt "diagnostic"
+msgid "low-frequency resonances are compared only at {low:.0f}-{high:.0f} Hz, the range both sides searched; {count} potential resonance(s) found outside it are left out"
+msgstr "低频共振只在双方都搜索过的 {low:.0f}-{high:.0f} Hz 范围内比较；在该范围之外发现的 {count} 个可能的共振未纳入比较"
+
+msgid "not compared: no frequency range was searched on both sides"
+msgstr "未比较：没有双方都搜索过的频率范围"
+
+msgid "no potential resonance in the range both sides searched"
+msgstr "双方都搜索过的范围内没有可能的共振"

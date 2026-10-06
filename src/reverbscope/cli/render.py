@@ -1019,6 +1019,10 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
 
 #: The stored note of a comparison whose reflections were not matched.
 _REFLECTIONS_NOT_COMPARED = "early reflections are not compared unless"
+#: ... whose resonances were not, because no range was searched on both sides.
+_RESONANCES_NOT_COMPARED = "low-frequency resonances are not compared"
+#: ... whose resonances were compared over part of what one side searched.
+_RESONANCES_NARROWED = "low-frequency resonances are compared only at"
 
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
@@ -1101,7 +1105,15 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         if found:
             parts.append(label.format(list=list_join(found)))
     clauses = pgettext("clause separator", "; ")
-    row(_("Low end"), "ok", clauses.join(parts) if parts else _("no potential resonance"))
+    if any(note.startswith(_RESONANCES_NOT_COMPARED) for note in comparison.notes):
+        # Not "no potential resonance": one side, or both, never searched.
+        row(_("Low end"), "skip", _("not compared: no frequency range was searched on both sides"))
+    elif parts:
+        row(_("Low end"), "ok", clauses.join(parts))
+    elif any(note.startswith(_RESONANCES_NARROWED) for note in comparison.notes):
+        row(_("Low end"), "ok", _("no potential resonance in the range both sides searched"))
+    else:
+        row(_("Low end"), "ok", _("no potential resonance"))
 
     rms = next((d for d in comparison.noise if d.name == "noise.rms_dbfs"), None)
     if rms is not None and rms.baseline is not None and rms.candidate is not None:

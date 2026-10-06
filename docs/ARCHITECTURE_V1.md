@@ -379,7 +379,7 @@ settings: CompareSettings | None = None) -> ComparisonResult` in
 | Frequency response | Both smoothed curves interpolated onto a shared logarithmic grid inside the common band, with the same smoothing fraction (the coarser of the two); difference curve plus the mean absolute difference per octave band | `difference_db` curve, `band_mad_db` |
 | Early reflections | Matched by delay within ±0.5 ms; level delta for matches; unmatched listed as appeared / disappeared. Requires high direct-sound confidence on both sides | `ReflectionMatch` list |
 | Noise | RMS and band deltas are VALID only if both sessions have a verified quiet segment *and* the user declares the input gain unchanged (`CompareSettings.same_input_gain`); otherwise UNRELIABLE with the reason "gain not declared equal" | `MetricDelta` per band |
-| Resonances | Matched within 1/6 octave; decay-distinguishable flags compared | `ResonanceMatch` list |
+| Resonances | Matched within 1/6 octave, inside the range both searches covered; decay-distinguishable flags compared | `ResonanceMatch` list |
 | Placement | Tier-2 heights compared when both present; refused otherwise | `MetricDelta` |
 | Loopback | `path_delay_ms` compared when both compensated | `MetricDelta` |
 

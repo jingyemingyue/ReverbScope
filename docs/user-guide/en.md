@@ -211,7 +211,10 @@ significant; ISO 3382-1’s just-noticeable difference for T is quoted as contex
 
 The Compare page lists matched early reflections (delay ±0.5 ms) and
 low-frequency resonances (within 1/6 octave, with decay-distinguishable
-flags). `reverbscope compare … --out comparison.json` writes the numbers only;
+flags). Resonances are compared only in the range both takes searched: one
+found where the other take never looked (its sweep started higher) is
+neither gone nor new, and when one take did not search at all the low end
+reads "not compared". `reverbscope compare … --out comparison.json` writes the numbers only;
 `reverbscope show comparison.json` prints the report again and **re-derives**
 findings (they are never stored in the file).
 

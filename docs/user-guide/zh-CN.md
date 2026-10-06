@@ -116,7 +116,7 @@ reverbscope-env/bin/reverbscope gui
 
 `reverbscope compare baseline/ candidate/ --same-input-gain`（或界面的“对比”页面）。只有两侧都是 VALID 时，衰减差值才是 VALID。噪声差值需要明确声明“输入增益未变”。任何变化都不会被称为显著；ISO 3382-1 给出的 T 的刚可察觉差只作为参考背景引用。
 
-“对比”页面列出配对的早期反射（延时相差 ±0.5 ms 以内）和低频共振（相差 1/6 倍频程以内，并带有 decay-distinguishable 标志）。`reverbscope compare … --out comparison.json` 只写入数值；`reverbscope show comparison.json` 会再次打印报告并**重新推导**解读（解读从不存入该文件）。
+“对比”页面列出配对的早期反射（延时相差 ±0.5 ms 以内）和低频共振（相差 1/6 倍频程以内，并带有 decay-distinguishable 标志）。低频共振只在两次测量都搜索过的范围内比较：在另一次测量从未搜索的频率（例如其扫频起点更高）发现的共振既不算消失也不算新出现；若有一次测量根本没有搜索，低频一栏显示“未比较”。`reverbscope compare … --out comparison.json` 只写入数值；`reverbscope show comparison.json` 会再次打印报告并**重新推导**解读（解读从不存入该文件）。
 
 ## 项目与平均
 

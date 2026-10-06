@@ -302,6 +302,72 @@ def test_the_closest_pairs_are_matched_first(short_sweep: SweepSettings) -> None
     assert resonances == {("disappeared", 50.0, None), ("matched", 55.0, 54.0)}
 
 
+def test_resonances_are_compared_only_where_both_sides_searched(
+    short_sweep: SweepSettings,
+) -> None:
+    """A 62 Hz mode found by a full-range take was "gone" against a take whose
+    sweep started at 400 Hz (and "new" the other way round), although that
+    take never searched below 441 Hz; two such takes read "no potential
+    resonance" at a glance, where each report said "not searched"."""
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import comparison_at_a_glance
+    from reverbscope.models.result import ResonanceCandidate
+
+    mode = ResonanceCandidate(
+        frequency_hz=62.0,
+        level_above_baseline_db=9.0,
+        narrowband_decay_20db_s=0.5,
+        filter_ringing_20db_s=0.1,
+        decay_distinguishable=True,
+        surroundings_decay_20db_s=0.1,
+    )
+    result = _room(short_sweep, seed=0)
+
+    def take(searched: tuple[float, float] | None, *candidates: ResonanceCandidate):
+        return replace(
+            result,
+            resonances=replace(
+                result.resonances, candidates=candidates, searched_range_hz=searched
+            ),
+        )
+
+    def low_end(comparison) -> str:
+        console = Console(color=False, unicode=True, width=100)
+        (line,) = [
+            line for line in comparison_at_a_glance(console, comparison) if "Low end" in line
+        ]
+        return " ".join(line.split())
+
+    full = take((26.7, 300.0), mode)
+    unsearched = take(None)
+    for pair in ((full, unsearched), (unsearched, full), (unsearched, unsearched)):
+        comparison = compare(*pair)
+        assert comparison.comparable and comparison.resonances == ()
+        assert (
+            "low-frequency resonances are not compared: no frequency range was searched on "
+            "both sides"
+        ) in comparison.notes
+        assert low_end(comparison) == (
+            "Low end – not compared: no frequency range was searched on both sides"
+        )
+
+    # A sweep that starts at 100 Hz searched from 116 Hz: 62 Hz is left out.
+    narrowed = compare(full, take((116.0, 300.0)))
+    assert narrowed.resonances == ()
+    assert (
+        "low-frequency resonances are compared only at 116-300 Hz, the range both sides "
+        "searched; 1 potential resonance(s) found outside it are left out"
+    ) in narrowed.notes
+    assert low_end(narrowed) == "Low end ✓ no potential resonance in the range both sides searched"
+
+    # A file older than the stored range still compares what it found.
+    older = compare(full, take(None, replace(mode, frequency_hz=63.0)))
+    assert [(m.status, m.baseline_hz, m.candidate_hz) for m in older.resonances] == [
+        ("matched", 62.0, 63.0)
+    ]
+    assert low_end(compare(full, full)) == "Low end ✓ at both: 62 Hz"
+
+
 def test_loopback_path_delay_is_compared_only_when_both_were_compensated(
     short_sweep: SweepSettings,
 ) -> None:

@@ -32,6 +32,7 @@ from reverbscope.models.result import (
     EnergyMetric,
     FrequencyResponseResult,
     PlacementLength,
+    ResonanceResult,
     Validity,
 )
 from reverbscope.version import __version__
@@ -539,9 +540,44 @@ def _compare_noise(
     return tuple(items)
 
 
+def _searched_range(resonances: ResonanceResult) -> tuple[float, float] | None:
+    """The range a resonance search covered; ``None`` when it did not run.
+
+    A file older than the stored range has none (or an inverted one when no
+    search was made); one that found candidates searched up to its limit.
+    """
+    searched = resonances.searched_range_hz
+    if searched is not None and searched[1] > searched[0]:
+        return searched
+    if resonances.candidates:
+        return 0.0, resonances.max_frequency_hz
+    return None
+
+
 def _match_resonances(
     baseline: AnalysisResult, candidate: AnalysisResult, settings: CompareSettings
-) -> tuple[ResonanceMatch, ...]:
+) -> tuple[tuple[ResonanceMatch, ...], str | None]:
+    """Resonances matched inside the range both searches covered.
+
+    A candidate found where the other side never searched (its sweep started
+    above it, or its response was too short to resolve it) is neither gone
+    nor new, so it is left out and a note says so. Without a range searched
+    on both sides nothing is compared: an empty list would read as "no
+    potential resonance".
+    """
+    ranges = (_searched_range(baseline.resonances), _searched_range(candidate.resonances))
+    if ranges[0] is None or ranges[1] is None:
+        return (), diag(
+            "low-frequency resonances are not compared: no frequency range was searched on "
+            "both sides"
+        )
+    low = max(ranges[0][0], ranges[1][0])
+    high = min(ranges[0][1], ranges[1][1])
+    if high <= low:
+        return (), diag(
+            "low-frequency resonances are not compared: no frequency range was searched on "
+            "both sides"
+        )
     left = list(baseline.resonances.candidates)
     right = list(candidate.resonances.candidates)
 
@@ -587,7 +623,25 @@ def _match_resonances(
                 candidate_decay_distinguishable=other.decay_distinguishable,
             )
         )
-    return tuple(matches)
+    # A pair found on both sides stays wherever it is. An unmatched candidate
+    # lies inside its own side's range, so it was searched for on the other
+    # side only when it lies inside both.
+    kept = [
+        match
+        for match in matches
+        if match.status == "matched"
+        or low <= (match.baseline_hz or match.candidate_hz or 0.0) <= high
+    ]
+    left_out = len(matches) - len(kept)
+    if not left_out:
+        return tuple(kept), None
+    return tuple(kept), diag(
+        "low-frequency resonances are compared only at {low:.0f}-{high:.0f} Hz, the range "
+        "both sides searched; {count} potential resonance(s) found outside it are left out",
+        low=low,
+        high=high,
+        count=left_out,
+    )
 
 
 def _placement_length_delta(
@@ -727,6 +781,9 @@ def compare(
     reflections, refl_note = _match_reflections(baseline, candidate, settings)
     if refl_note:
         notes.append(refl_note)
+    resonances, resonance_note = _match_resonances(baseline, candidate, settings)
+    if resonance_note:
+        notes.append(resonance_note)
     return ComparisonResult(
         comparable=True,
         common_band=common,
@@ -735,7 +792,7 @@ def compare(
         frequency_response=fr_delta,
         reflections=reflections,
         noise=_compare_noise(baseline, candidate, settings),
-        resonances=_match_resonances(baseline, candidate, settings),
+        resonances=resonances,
         placement=_compare_placement(baseline, candidate),
         loopback=_compare_loopback(baseline, candidate),
         baseline_created_at=baseline.created_at,
