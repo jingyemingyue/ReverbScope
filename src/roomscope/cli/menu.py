@@ -440,6 +440,52 @@ def sweep_beside(recording: Path) -> Path | None:
 # --- The menu ------------------------------------------------------------------------------
 
 
+#: The narrowest a description may get before it goes under its label.
+_DESCRIPTION_FLOOR = 28
+
+
+def choice_columns(c: Console, rows: Sequence[tuple[str, str, str]]) -> tuple[int, int]:
+    """The widths of the number and the label column for ``rows``, so lists
+    shown one after another (the groups of the menu) line up."""
+    return (
+        max(cell_width(c.readable(key)) for key, _label, _text in rows),
+        max(cell_width(c.readable(label)) for _key, label, _text in rows),
+    )
+
+
+def choice_lines(
+    c: Console,
+    rows: Sequence[tuple[str, str, str]],
+    columns: tuple[int, int] | None = None,
+) -> list[str]:
+    """``rows`` of (number, label, description) as an aligned list: the number
+    in the accent colour, the label bold, the description muted.
+
+    The description wraps under itself; when it would get less than
+    :data:`_DESCRIPTION_FLOOR` columns it goes on a line of its own under the
+    label. Nothing here is a command to copy, so nothing is styled as one.
+    """
+    if not rows:
+        return []
+    key_width, label_width = columns or choice_columns(c, rows)
+    column = 2 + key_width + 2 + label_width + 3
+    stacked = c.width - column < _DESCRIPTION_FLOOR
+    hang = 2 + key_width + 2
+    out: list[str] = []
+    for key, label, text in rows:
+        key, label, text = c.readable(key), c.readable(label), c.readable(text)
+        head = "  " + c.style(pad(key, key_width, "right"), "bold", "cyan") + "  "
+        if stacked or not text:
+            out.append(head + c.bold(label))
+            if text:
+                out += [c.muted(line) for line in wrap(text, c.width, first=" " * hang)]
+            continue
+        lines = wrap(text, c.width, first=" " * column)
+        out.append(head + pad(c.bold(label), label_width) + "   " + c.muted(lines[0][column:]))
+        out += [c.muted(line) for line in lines[1:]]
+    return out
+
+
 @dataclass(frozen=True)
 class _Item:
     key: str
@@ -650,28 +696,21 @@ class Menu:
         c = self.console()
         quit_row = ("0", _("Quit"), _("or type q"))
         rows = [(item.key, item.label, item.description) for _h, items in groups for item in items]
-        width = max(
-            cell_width(c.readable(f"{key}  {label}")) for key, label, _d in [*rows, quit_row]
+        columns = choice_columns(c, [*rows, quit_row])
+        intro = _(
+            "Type a number and press Enter. Each step shows the command it runs, "
+            "so you can type it yourself next time."
         )
-
-        def listed(entries: Sequence[tuple[str, str, str]]) -> list[str]:
-            return c.commands(
-                [(pad(f"{key}  {label}", width), text) for key, label, text in entries]
-            )
-
-        lines = c.title(_("RoomScope menu"))
-        lines += c.paragraph(
-            _(
-                "Type a number and press Enter. Each step shows the command it runs, "
-                "so you can type it yourself next time."
-            ),
-            indent=0,
+        lines = c.title(
+            _("RoomScope menu"), body=lambda inner, indent: inner.paragraph(intro, indent=indent)
         )
         for heading, items in groups:
             lines += c.section(heading)
-            lines += listed([(item.key, item.label, item.description) for item in items])
+            lines += choice_lines(
+                c, [(item.key, item.label, item.description) for item in items], columns
+            )
         lines.append("")
-        lines += listed([quit_row])
+        lines += choice_lines(c, [quit_row], columns)
         # The way to the other language, written in that language, as on the home screen.
         hint = language_hint_lines(current_locale(), c.width)
         if hint and c.can_write("".join(hint)):
@@ -836,7 +875,7 @@ class Menu:
 
     def measure(self) -> None:
         from roomscope.audio.backend import SAFE_MAX_LEVEL_DBFS, SAFETY_MESSAGE
-        from roomscope.cli.render import rate_text
+        from roomscope.cli.render import rate_text, render_safety_note
         from roomscope.models.configuration import DEFAULT_SAMPLE_RATE
 
         self.same_as(["devices"])
@@ -898,8 +937,8 @@ class Menu:
         def device_text(device: DeviceInfo | None) -> str:
             return f"[{device.index}] {device.name}" if device else _("system default")
 
-        lines = c.section(_("Measurement plan"))
-        lines += c.fields(
+        plan = c.title(
+            _("Measurement plan"),
             [
                 (
                     _("Input"),
@@ -917,11 +956,9 @@ class Menu:
                     f"{_SWEEP_SECONDS:g} s{c.sep()}{rate_text(DEFAULT_SAMPLE_RATE)}",
                 ),
                 (_("Save to"), Verbatim(str(out))),
-            ]
+            ],
         )
-        lines.append("")
-        lines += c.status("warn", _(SAFETY_MESSAGE), indent=0)
-        self.write(lines)
+        self.write(["", *plan, "", render_safety_note(c, _(SAFETY_MESSAGE)), ""])
         if not self.confirm(_("Type y to play the sweep now")):
             self.write(c.status("info", _("Nothing was played.")))
             self.out.write("\n")
@@ -974,10 +1011,16 @@ class Menu:
         # narrow columns keep their headers whole.
         widths = [max(cell_width(c.readable(row[i])) for row in [headers, *rows]) for i in range(4)]
         room = c.width - (3 * len(headers) + 1) - widths[0] - widths[1] - widths[3]
-        if room >= 12:  # narrower, and the table becomes blocks that show it whole
+        if room >= 12:
             for row in rows:
                 row[2] = truncate(row[2], room, "…" if c.unicode else "...")
-        lines = c.table(headers, rows, align="rlll")
+            lines = c.table(headers, rows, align="rlll")
+        else:
+            # Too narrow for a table: the number and the folder, then what the
+            # table would show in the other columns, whole, under it.
+            lines = choice_lines(
+                c, [(row[0], row[1], f"{row[2]}{c.sep()}{row[3]}") for row in rows]
+            )
         if len(listed) == MAX_LISTED:
             lines += c.paragraph(
                 _("The {count} newest are listed; type a path for an older one.").format(
@@ -1060,6 +1103,7 @@ class Menu:
             # The menu writes new sessions there too: not "(desktop app)" only.
             return _("Output folder") if key == "output-folder" else config.title(key)
 
+        first = True
         while True:
             stored = load_settings()
             choice = language_choice(self._root_lang())
@@ -1074,7 +1118,9 @@ class Menu:
                 for number, key in enumerate(keys, start=1)
             ]
             rows.append(("0", _("Back to the menu"), ""))
-            self.write(self._choices(rows))
+            # The first list follows the heading; later ones, the output of a change.
+            self.write([*([] if first else [""]), *self._choices(rows)])
+            first = False
             number = self.ask(_("Choose a number"), number_between(0, len(keys)))
             if number == 0:
                 return
@@ -1088,10 +1134,16 @@ class Menu:
                 self._forget_root_lang()
 
     def _choices(self, rows: Sequence[tuple[str, str, str]]) -> list[str]:
+        """A numbered list to choose from; 0 (back) is set apart, as in the menu, and a
+        blank line comes before the question."""
         c = self.console()
-        width = max(cell_width(c.readable(f"{key}  {label}")) for key, label, _t in rows)
-        lines = c.commands([(pad(f"{key}  {label}", width), text) for key, label, text in rows])
-        return ["", *(line.rstrip() for line in lines)]
+        columns = choice_columns(c, rows)
+        choices = [row for row in rows if row[0] != "0"]
+        back = [row for row in rows if row[0] == "0"]
+        lines = choice_lines(c, choices, columns)
+        if back:
+            lines += ["", *choice_lines(c, back, columns)]
+        return [*lines, ""]
 
     def _root_lang(self) -> str | None:
         if "--lang" in self.root:

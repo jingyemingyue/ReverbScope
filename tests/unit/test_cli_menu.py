@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import io
 import os
+import re
 import shutil
 import sys
 from collections.abc import Iterator, Sequence
@@ -25,6 +26,7 @@ from roomscope.cli.main import main
 from roomscope.cli.menu import Menu, clean_path, run_menu
 from roomscope.demo import run_demo
 from roomscope.i18n import activate
+from tests.frames import FRAME_GLYPHS, frame_blocks
 from tests.zh_tokens import english_words
 
 #: An answer that presses Ctrl+C instead of typing.
@@ -129,10 +131,12 @@ def test_the_menu_lists_every_item_and_0_leaves(
     code, script = drive("0")
     out = capsys.readouterr().out
     assert code == 0
-    # The console draws the heading as a panel.
-    top, title, bottom = out.lstrip().splitlines()[:3]
-    assert top.startswith("╭") and top.endswith("╮") and bottom.startswith("╰")
-    assert title.startswith("│ RoomScope menu")
+    # The heading is a panel holding the one sentence that says what to do.
+    head = out.lstrip().splitlines()[:4]
+    assert head[0].startswith("╭─ RoomScope menu ─") and head[0].endswith("╮")
+    assert "Type a number and press Enter." in head[1] and head[1].startswith("│ ")
+    assert head[2].startswith("│ ") and head[3].startswith("╰") and head[3].endswith("╯")
+    assert {cell_width(line) for line in head} == {80}
     for row in (
         "1  Try the demo",
         "2  Write the test signal",
@@ -200,6 +204,35 @@ def test_the_terminal_edition_has_no_desktop_app_item(
     assert "There is no item 7 in the menu" in out
 
 
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+@pytest.mark.parametrize("width", [40, 50, 60, 80, 100])
+def test_the_menu_fits_the_screen_and_its_frames_line_up(
+    here: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    lang: str,
+    width: int,
+) -> None:
+    monkeypatch.setenv("COLUMNS", str(width))
+    activate(lang)
+    code, _script = drive("8", "0", "2", "", "", "", "", dispatch=Commands())
+    out = capsys.readouterr().out
+    assert code == 0
+    # A command to copy is never wrapped, so it may run past a narrow screen.
+    assert all(
+        cell_width(line) <= width for line in out.splitlines() if "roomscope " not in line
+    ), out
+    blocks = frame_blocks(out)
+    assert blocks  # the heading is a panel
+    for block in blocks:
+        assert {cell_width(line) for line in block} == {width}, "\n".join(block)
+    # A line with a command to copy is bare: no border, no bar.
+    commands = [line for line in out.splitlines() if "roomscope " in line]
+    assert any("roomscope sweep --out" in line for line in commands)
+    for line in commands:
+        assert not set(line) & set(FRAME_GLYPHS), line
+
+
 def test_the_menu_follows_the_style_stored_by_config(
     here: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -225,6 +258,26 @@ def test_a_question_longer_than_the_screen_is_written_in_lines(
     assert cell_width(rate) <= 60 - 10  # room to type the answer
     first = out[: out.index(rate)].splitlines()[-1]
     assert first.startswith("  Sample rate in Hz (44100,")
+
+
+def test_a_narrow_screen_lists_sessions_without_a_table(
+    here: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    demo_folder: Path,
+) -> None:
+    monkeypatch.setenv("COLUMNS", "60")
+    shutil.copytree(demo_folder, here / "roomscope-demo")
+    code, _script = drive("5", "1", dispatch=Commands(), root=["--lang", "en"])
+    out = capsys.readouterr().out
+    assert code == 0
+    listed = out[out.index("View results\n") : out.index("Session number")]
+    assert not set(listed) & set("┏┃┡│└")
+    lines = listed.splitlines()
+    first = next(i for i, line in enumerate(lines) if "position-b" in line)
+    assert lines[first].startswith("  1  ")  # the number, then the folder to type
+    assert lines[first + 1].lstrip().startswith("B: moved 1 m back from the desk")
+    assert all(cell_width(line) <= 60 for line in lines)
 
 
 def test_an_unknown_choice_is_asked_again(here: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -464,7 +517,7 @@ def test_a_take_on_the_fake_interface(here: Path, capsys: pytest.CaptureFixture[
     warning = out.index("Start with your monitor/interface output at a low level")
     question = out.index("Type y to play the sweep now")
     assert plan < warning < question < out.index(same_as(*root, "measure", "--out", "session-1"))
-    assert "  Level    -20 dBFS" in out
+    assert re.search(r"^│ Level\s+-20 dBFS\s+│$", out, re.MULTILINE)  # the plan is a panel
     assert (here / "session-1" / "recording.wav").is_file()
 
 
