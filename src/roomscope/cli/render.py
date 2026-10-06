@@ -2001,11 +2001,12 @@ def render_project(console: Console, name: str, sessions: Sequence[tuple[str, st
         return None
     c = console
     lines = c.title(name)
-    lines.append("")
-    lines += c.table(
-        [_("Position"), _("Session")],
-        [[label or _("(unlisted)"), Verbatim(path)] for label, path in sessions],
-    )
+    if sessions:
+        lines.append("")
+        lines += c.table(
+            [_("Position"), _("Session")],
+            [[label or _("(unlisted)"), Verbatim(path)] for label, path in sessions],
+        )
     return c.fit("\n".join(lines))
 
 

@@ -374,3 +374,8 @@ def test_a_project_is_shown_under_its_name(
     monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "plain")
     _code, out, _err = _run(capsys, "project", "show", "booth")
     assert out.splitlines()[0] == "Booth A" and out.splitlines()[1].startswith("  a\t")
+    # A project without sessions is its panel alone, not a table with no rows.
+    monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "boxed")
+    assert _run(capsys, "project", "init", "--out", "empty", "--name", "Empty")[0] == 0
+    _code, out, _err = _run(capsys, "project", "show", "empty")
+    assert len(out.splitlines()) == 3 and "Empty" in out.splitlines()[1]
