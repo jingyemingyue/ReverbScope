@@ -576,8 +576,9 @@ finding whose border follows its severity. `Console.frames` is on for the
 command line and off for `REPORT_CONSOLE` and `roomscope.cli.report`, so the
 GUI's report text is unchanged; frames are also off below 40 columns, and
 on a stream that cannot write the box glyphs they are drawn with `+ - | =`.
-`settings.json` `cli_style` (`""`, the default, is `boxed`; `plain` leaves
-the frames out) is set with `roomscope config style boxed|plain|auto`, and
+`settings.json` `cli_style` (`plain` leaves the frames out; the default,
+`boxed`, is not written, so the file and `config --format json` stay as they
+were) is set with `roomscope config style boxed|plain|auto`, and
 `ROOMSCOPE_CLI_STYLE=boxed|plain` decides before it for one shell; `plain`
 is for terminals that draw ambiguous-width box glyphs double-width. Every
 line of a frame has the same display width (CJK, colour and the ASCII forms

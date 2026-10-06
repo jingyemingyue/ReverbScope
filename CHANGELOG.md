@@ -9,7 +9,8 @@ All notable changes to RoomScope are documented here. The format follows
 
 ### Added
 - **Panels or plain, your choice.** `roomscope config style boxed|plain|auto`
-  keeps `cli_style` in `settings.json` (`""`, the default, is `boxed`), and
+  keeps `cli_style` in `settings.json` (only `plain` is written; `boxed` is
+  the default), and
   `ROOMSCOPE_CLI_STYLE=boxed|plain` decides before it for one shell.
   `plain` writes the same text without panels, borders or the bar before a
   heading, and draws the progress bar with `=` and `>`: use it if your
@@ -17,8 +18,8 @@ All notable changes to RoomScope are documented here. The format follows
   locales), which makes the frames crooked. Frames are also off below 40
   columns, and on a stream that cannot write the glyphs (a cp1252 or cp936
   pipe, the classic Windows console) they are drawn with `+ - | =`.
-  `config --format json` lists the new `cli_style` key; nothing else in any
-  `--format json` output changed.
+  The default is not written, so `settings.json` and `--format json` output,
+  `config` included, are byte for byte what they were.
 - **Two download betas.** The README and installation pages offer a
   **stable beta** (fewer bugs, narrower feature set: last published
   pre-release `0.5.0b1`) and a **preview beta** (stronger features, may
