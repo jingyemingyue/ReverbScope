@@ -1590,3 +1590,77 @@ def test_following_the_system_redraws_the_window_when_the_system_turns_dark(
     for part in ("results chart", "compare chart", "placement picture"):
         assert colours[part] == DARK_TOKENS["surface"], part
     window.close()
+
+
+def test_a_closed_window_stops_following_the_system(
+    app: QApplication,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    restore_chrome: None,
+) -> None:
+    """The colour-scheme signal belongs to the application. A window that was
+    closed but stayed connected still restyled the whole application on every
+    system change, and each closed window made the next change slower (a test
+    run with 40 of them needed over ten minutes for one signal)."""
+    import warnings
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QGuiApplication
+
+    from reverbscope.ui.theme import ENV_COLOR_SCHEME, apply_application_chrome
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv(ENV_COLOR_SCHEME, "light")
+    apply_application_chrome(app)
+    window = MainWindow()
+    restyled: list[int] = []
+    monkeypatch.setattr(window, "restyle", lambda: restyled.append(1))
+    monkeypatch.setenv(ENV_COLOR_SCHEME, "dark")
+    # An open window follows (and the stand-in never records the new scheme,
+    # so a second change would be answered again).
+    QGuiApplication.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Dark)
+    assert restyled == [1]
+    window.close()
+    QGuiApplication.styleHints().colorSchemeChanged.emit(Qt.ColorScheme.Dark)
+    assert restyled == [1]
+    # Closing again must not try to disconnect what is already disconnected.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        window.close()
+
+
+def test_the_measure_menu_opens_each_mode(app: QApplication) -> None:
+    from PySide6.QtGui import QAction
+
+    window = MainWindow()
+    by_shortcut = {
+        action.shortcut().toString(): action
+        for action in window.findChildren(QAction)
+        if not action.shortcut().isEmpty()
+    }
+    by_shortcut["Ctrl+2"].trigger()
+    assert window.stack.currentWidget() is window.standalone
+    assert not window.standalone.demo_mode
+    by_shortcut["Ctrl+3"].trigger()
+    assert window.stack.currentWidget() is window.standalone
+    assert window.standalone.demo_mode
+    by_shortcut["Ctrl+1"].trigger()
+    assert window.stack.currentWidget() is window.daw
+    window.close()
+
+
+def test_a_closed_window_is_freed(app: QApplication) -> None:
+    """A Measure-menu action held its window through a lambda, so a closed
+    window was never freed: they piled up, and every one of them was repolished
+    whenever the application's style sheet changed (about half a second each;
+    a full run of this file spent most of its time on that)."""
+    import gc
+    import weakref
+
+    window = MainWindow()
+    window.show_mode("universal_daw")
+    window.close()
+    freed = weakref.ref(window)
+    del window
+    gc.collect()
+    assert freed() is None

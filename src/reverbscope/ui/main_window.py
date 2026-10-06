@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import sys
+import weakref
+from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl
@@ -123,13 +125,13 @@ class MainWindow(QMainWindow):
         measure_menu = self.menuBar().addMenu(_("&Measure"))
         daw_action = QAction(_("Universal DAW Mode"), self)
         daw_action.setShortcut("Ctrl+1")
-        daw_action.triggered.connect(lambda: self.show_mode("universal_daw"))
+        daw_action.triggered.connect(self._show_mode_action("universal_daw"))
         standalone_action = QAction(_("Standalone Mode"), self)
         standalone_action.setShortcut("Ctrl+2")
-        standalone_action.triggered.connect(lambda: self.show_mode("standalone"))
+        standalone_action.triggered.connect(self._show_mode_action("standalone"))
         demo_action = QAction(_("Demo (no interface)"), self)
         demo_action.setShortcut("Ctrl+3")
-        demo_action.triggered.connect(lambda: self.show_mode("demo"))
+        demo_action.triggered.connect(self._show_mode_action("demo"))
         measure_menu.addAction(daw_action)
         measure_menu.addAction(standalone_action)
         measure_menu.addAction(demo_action)
@@ -171,9 +173,35 @@ class MainWindow(QMainWindow):
         # dark while ReverbScope runs. Widgets drawn after that took the dark
         # colours while the window kept the light style sheet.
         QGuiApplication.styleHints().colorSchemeChanged.connect(self._follow_system_scheme)
+        self._following_system = True
         self.show_home()
 
+    def _show_mode_action(self, mode: str) -> Callable[[], None]:
+        """What a Measure-menu action runs: open ``mode``.
+
+        A lambda capturing ``self`` made the window reachable from the menu
+        action it owns, so it was never freed after closing: every closed
+        window stayed alive, and each one made the application's style sheet
+        slower to apply. This holds the window by a weak reference only.
+        """
+        window = weakref.ref(self)
+
+        def show() -> None:
+            target = window()
+            if target is not None:
+                target.show_mode(mode)
+
+        return show
+
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt override
+        # The colour-scheme signal belongs to the application and outlives this
+        # window: a closed window that stays connected still restyles the whole
+        # application on every system change (the chrome and every chart are
+        # redrawn), and each further closed window makes that slower. Closing
+        # twice is legal, and disconnecting what is no longer connected warns.
+        if self._following_system:
+            self._following_system = False
+            QGuiApplication.styleHints().colorSchemeChanged.disconnect(self._follow_system_scheme)
         # A QThread destroyed while it runs aborts the process (Ctrl+Q during a
         # take or an analysis): stop the take and let the workers finish.
         self.standalone.shutdown_workers()
