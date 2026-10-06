@@ -254,14 +254,49 @@ def test_a_device_that_cannot_be_opened_is_not_said_to_refuse_the_rates(
             devices.check_sample_rate(device, sample_rate, kind=kwargs["kind"], channels=1)
 
     monkeypatch.setattr(devices, "sounddevice_module", lambda: Sd)
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import render_inventory
+    from reverbscope.diagnostics import _format_devices
+
+    def scarlett_lines(text: str) -> str:
+        """The Scarlett's own block of the table: the rate rows sit under its name."""
+        return next(block for block in text.split("\n\n") if "Scarlett" in block)
+
     activate("zh_CN")  # the stored note stays English whatever the language
     try:
         inventory = build_inventory(ProbedLinux(), platform="linux")
         scarlett = inventory.devices[2]
         shown = [localize(note) for note in scarlett.notes]
+        chinese_table = scarlett_lines(
+            render_inventory(Console(color=False, unicode=True, width=100), inventory)
+        )
+        chinese_report = "\n".join(_format_devices(inventory.to_dict()))
+        activate("en")
+        english_table = scarlett_lines(
+            render_inventory(Console(color=False, unicode=True, width=100), inventory)
+        )
+        english_report = "\n".join(_format_devices(inventory.to_dict()))
     finally:
         activate("en")
     assert scarlett.input_rates == scarlett.output_rates == ()
+    # Review finding: the rate rows still read "none" right above the note that
+    # said the rates are unknown, the claim the note had just removed. A
+    # refusal keeps "none"; a device that could not be opened reads "unknown".
+    assert scarlett.input_rates_known is not busy
+    assert scarlett.output_rates_known is not busy
+    if busy:
+        assert "Record  unknown" in english_table and "Play    unknown" in english_table
+        assert "录音  未知" in chinese_table and "播放  未知" in chinese_table
+        assert "record unknown; play unknown" in english_report
+        assert "录制 未知; 播放 未知" in chinese_report
+        assert "none" not in english_table.split("i could not")[0]
+        assert "无" not in chinese_table.split("i 无法打开")[0]
+    else:
+        assert "Record  none" in english_table and "Play    none" in english_table
+        assert "录音  无" in chinese_table and "播放  无" in chinese_table
+        assert "record none; play none" in english_report
+        assert "录制 无; 播放 无" in chinese_report
+        assert "unknown" not in english_table
     refused = [n for n in scarlett.notes if "accepts none of ReverbScope's sample rates" in n]
     unopened = [n for n in scarlett.notes if n.startswith("could not be opened")]
     if busy:

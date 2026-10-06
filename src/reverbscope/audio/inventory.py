@@ -215,6 +215,10 @@ class DeviceProbe:
     #: Sample rates (Hz) the host API accepts for 1 input / 1 output channel.
     input_rates: tuple[int, ...] = ()
     output_rates: tuple[int, ...] = ()
+    #: False when the device could not be opened to ask (busy, unplugged): the
+    #: empty rate list then means "unknown", not "accepts none".
+    input_rates_known: bool = True
+    output_rates_known: bool = True
     #: Entries sharing this key are the same physical device.
     group: str = ""
     direct_path: bool = False
@@ -360,6 +364,8 @@ def build_inventory(
                 host_api_kind=kind,
                 input_rates=input_rates,
                 output_rates=output_rates,
+                input_rates_known=input_error is None,
+                output_rates_known=output_error is None,
                 group=physical_key(device),
                 direct_path=is_direct_path(device),
                 notes=tuple(notes),

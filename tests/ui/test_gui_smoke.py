@@ -385,6 +385,40 @@ def test_developer_menu_and_device_inspector(
     window.close()
 
 
+def test_the_inspector_reads_unknown_for_a_device_that_could_not_be_opened(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review finding: a busy device's rate cells were empty, as if it accepted
+    none, next to a note saying its rates are unknown."""
+    from dataclasses import replace
+
+    from reverbscope.i18n import activate
+    from reverbscope.ui.dev_tools import DeviceInspector
+
+    inspector = DeviceInspector("fake")
+    inspector.refresh(probe=True)
+    assert inspector.inventory is not None
+    device = inspector.inventory.devices[0]
+    assert inspector.table.item(0, 6).text() == "44100, 48000, 88200, 96000, 176400, 192000"
+    busy = replace(
+        device,
+        input_rates=(),
+        output_rates=(),
+        input_rates_known=False,
+        output_rates_known=False,
+    )
+    inspector.inventory = replace(inspector.inventory, devices=(busy,))
+    inspector._fill()
+    assert [inspector.table.item(0, column).text() for column in (6, 7)] == ["unknown"] * 2
+    activate("zh_CN")
+    try:
+        inspector._fill()
+        assert [inspector.table.item(0, column).text() for column in (6, 7)] == ["未知"] * 2
+    finally:
+        activate("en")
+    inspector.close()
+
+
 def test_user_edition_hides_developer_tools(
     app: QApplication, monkeypatch: pytest.MonkeyPatch
 ) -> None:

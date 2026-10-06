@@ -185,7 +185,9 @@ illustration, 50 ppm over 10 s is 0.5 ms, 24 samples at 48 kHz).
   used for the check [14]. A device that cannot be opened at all
   (`paDeviceUnavailable`: another program holds it, or it was unplugged
   after the list was read; ALSA's "Device or resource busy") is reported
-  with PortAudio's error as unknown, not as refusing every rate [9].
+  with PortAudio's error as unknown, not as refusing every rate [9]: its rate
+  rows read "unknown" (not "none") and `input_rates_known` /
+  `output_rates_known` are `false` in the JSON.
 * **No stream is started**, but ALSA opens the PCM and applies hardware
   parameters and Core Audio opens and closes a stream to answer [11][12].
   The suggested latency is ignored [9].

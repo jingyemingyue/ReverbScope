@@ -260,7 +260,9 @@ def privacy_note() -> str:
     )
 
 
-def _rates(rates: list[int]) -> str:
+def _rates(rates: list[int], known: bool = True) -> str:
+    if not known:  # the device could not be opened: "none" would claim it refuses them all
+        return _("unknown")
     return ", ".join(str(rate) for rate in rates) or pgettext("sample rates", "none")
 
 
@@ -297,9 +299,17 @@ def _format_devices(audio: dict[str, Any]) -> list[str]:
         lines.append("  " + row)
         details = []
         if probed and device["max_input_channels"] > 0:
-            details.append(_("record {rates}").format(rates=_rates(probe["input_rates"])))
+            details.append(
+                _("record {rates}").format(
+                    rates=_rates(probe["input_rates"], probe.get("input_rates_known", True))
+                )
+            )
         if probed and device["max_output_channels"] > 0:
-            details.append(_("play {rates}").format(rates=_rates(probe["output_rates"])))
+            details.append(
+                _("play {rates}").format(
+                    rates=_rates(probe["output_rates"], probe.get("output_rates_known", True))
+                )
+            )
         recommended_input = bool(probe.get("recommended_input"))
         recommended_output = bool(probe.get("recommended_output"))
         if recommended_input and recommended_output:

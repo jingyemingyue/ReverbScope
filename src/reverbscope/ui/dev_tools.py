@@ -54,6 +54,14 @@ def _ms(value: float | None) -> str:
     return "-" if value is None else f"{value * 1000.0:.1f}"
 
 
+def _rates_cell(rates: tuple[int, ...], known: bool, probed: bool) -> str:
+    """One rate column: "…" before probing, "unknown" for a device that could
+    not be opened to ask (an empty cell would claim it accepts none)."""
+    if not probed:
+        return "…"
+    return ", ".join(str(r) for r in rates) if known else _("unknown")
+
+
 class DeviceInspector(QDialog):
     """Every device of every host API, with probed rates and recommendations."""
 
@@ -157,8 +165,8 @@ class DeviceInspector(QDialog):
                 str(d.max_input_channels),
                 str(d.max_output_channels),
                 f"{d.default_sample_rate:.0f}",
-                ", ".join(str(r) for r in probe.input_rates) if probed else "…",
-                ", ".join(str(r) for r in probe.output_rates) if probed else "…",
+                _rates_cell(probe.input_rates, probe.input_rates_known, probed),
+                _rates_cell(probe.output_rates, probe.output_rates_known, probed),
                 _("in {input}, out {output}").format(input=latency_in, output=latency_out),
                 " + ".join(recommended),
                 "; ".join(localize(note) for note in probe.notes),

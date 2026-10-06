@@ -149,7 +149,7 @@ Core Audio 用两个回调之间的环形缓冲连接两个设备 [11]。两个�
   `sd.check_input_settings()` / `sd.check_output_settings()`，即
   `Pa_IsFormatSupported` [9][14]。界面在每次测量前检查所选设备的所选采样率，命令行
   检查 `--input-device` / `--output-device` 指定的设备，设备清单
-  （`audio/inventory.py`）检查 44.1、48、88.2、96、176.4 和 192 kHz。检查时只用**一个声道**（`channels=1`）；不指定声道数时 sounddevice 会补上设备的最大声道数，设备只在较少声道下才支持的采样率就会检查失败 [11][14]。检查使用 `'high'` 延迟且不带主机专用设置（WASAPI 共享、Core Audio“友好共享”）[14]。完全无法打开的设备（`paDeviceUnavailable`：被其他程序占用，或在读取列表后被拔出；ALSA 的“Device or resource busy”）会连同 PortAudio 的错误报告为采样率未知，而不是不接受任何采样率 [9]。
+  （`audio/inventory.py`）检查 44.1、48、88.2、96、176.4 和 192 kHz。检查时只用**一个声道**（`channels=1`）；不指定声道数时 sounddevice 会补上设备的最大声道数，设备只在较少声道下才支持的采样率就会检查失败 [11][14]。检查使用 `'high'` 延迟且不带主机专用设置（WASAPI 共享、Core Audio“友好共享”）[14]。完全无法打开的设备（`paDeviceUnavailable`：被其他程序占用，或在读取列表后被拔出；ALSA 的“Device or resource busy”）会连同 PortAudio 的错误报告为采样率未知，而不是不接受任何采样率 [9]：它的采样率行显示“未知”而不是“无”，JSON 中的 `input_rates_known` / `output_rates_known` 为 `false`。
 * **不启动任何流**，但 ALSA 会打开 PCM 并应用硬件参数，Core Audio 会打开再关闭一个
   流来回答 [11][12]。建议延迟会被忽略 [9]。
 * **“支持”不等于“原生”。** MME 和 DirectSound 接受由 Windows 转换的采样率 [16]

@@ -81,7 +81,11 @@ def rate_text(hz: float) -> str:
     return f"{khz:g} kHz" if khz >= 1 else f"{hz:g} Hz"
 
 
-def rates_text(rates: Sequence[int], console: Console) -> str:
+def rates_text(rates: Sequence[int], console: Console, *, known: bool = True) -> str:
+    """The rates a device accepts; "unknown" when it could not be opened to ask
+    (an empty list would claim it accepts none)."""
+    if not known:
+        return _("unknown")
     if not rates:
         return pgettext("sample rates", "none")
     return console.sep().join(f"{rate / 1000:g}" for rate in rates) + " kHz"
@@ -1360,9 +1364,25 @@ def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> 
         lines += c.paragraph(c.sep().join(facts), indent=6)
         rate_rows: list[tuple[str, str]] = []
         if device["max_input_channels"] > 0:
-            rate_rows.append((_("Record"), rates_text(probe.get("input_rates", []), c)))
+            rate_rows.append(
+                (
+                    _("Record"),
+                    rates_text(
+                        probe.get("input_rates", []), c, known=probe.get("input_rates_known", True)
+                    ),
+                )
+            )
         if device["max_output_channels"] > 0:
-            rate_rows.append((_("Play"), rates_text(probe.get("output_rates", []), c)))
+            rate_rows.append(
+                (
+                    _("Play"),
+                    rates_text(
+                        probe.get("output_rates", []),
+                        c,
+                        known=probe.get("output_rates_known", True),
+                    ),
+                )
+            )
         lines += c.fields(rate_rows, indent=6)
         for note in probe.get("notes", []):
             lines += c.status("info", localize(note), indent=6)
