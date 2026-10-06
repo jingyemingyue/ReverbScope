@@ -486,6 +486,15 @@ def test_a_192k_six_second_result_reopens(tmp_path: Path, analysed) -> None:
         ("take.flac", "PCM_24", "PCM_24"),
         ("take.caf", "FLOAT", "FLOAT"),
         ("take.flac", "PCM_S8", "FLOAT"),  # WAV has no signed 8-bit samples
+        # Subtypes libsndfile also writes into WAV, but by encoding the
+        # decoded samples again (lossy): the decoded samples are kept as float.
+        ("take.aiff", "IMA_ADPCM", "FLOAT"),
+        ("take.w64", "MS_ADPCM", "FLOAT"),
+        ("take.aiff", "GSM610", "FLOAT"),
+        # float32 holds 24 bits, not 32: the low 8 bits of a 32-bit Apple
+        # Lossless take were rounded away.
+        ("take.caf", "ALAC_32", "PCM_32"),
+        ("take.ogg", "VORBIS", "FLOAT"),
     ],
 )
 def test_a_copied_aiff_caf_or_flac_take_is_a_real_wav(
@@ -514,6 +523,71 @@ def test_a_copied_aiff_caf_or_flac_take_is_a_real_wav(
     assert (info.format, info.subtype) == ("WAV", stored)
     np.testing.assert_array_equal(read_wav(copied).samples, read_wav(source).samples)
     assert load_session(folder).recording_path == "recording.wav"
+
+
+def test_a_copied_mp3_take_is_stored_as_wav(tmp_path: Path, analysed) -> None:
+    """libsndfile says WAV can hold MPEG_LAYER_III, but cannot write it: the
+    conversion failed with a raw libsndfile error and the whole save was
+    lost, where it used to copy the file."""
+    import soundfile as sf
+
+    if not sf.check_format("MP3", "MPEG_LAYER_III"):
+        pytest.skip("this libsndfile cannot write MP3 files")
+    recording, result = analysed
+    samples = recording.samples / np.max(np.abs(recording.samples)) * 0.5
+    source = tmp_path / "take.mp3"
+    sf.write(str(source), samples, recording.sample_rate)
+    folder = tmp_path / "session"
+    save_measurement(
+        folder,
+        MeasurementSession(recording_path=str(source)),
+        result,
+        include_curves=False,
+        copy_recording=True,
+    )
+    info = sf.info(str(folder / "recording.wav"))
+    assert (info.format, info.subtype) == ("WAV", "FLOAT")
+    np.testing.assert_array_equal(
+        read_wav(folder / "recording.wav").samples, read_wav(source).samples
+    )
+
+
+def test_a_take_that_cannot_be_converted_is_copied_instead(
+    tmp_path: Path, analysed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A conversion that fails (a float AIFF holding NaN samples, a decoder
+    that gives up half-way) must not cost the whole save: the take is copied
+    as it was before conversions existed."""
+    import soundfile as sf
+
+    from reverbscope.errors import InvalidAudioError
+    from reverbscope.io import session_store
+
+    recording, result = analysed
+    source = tmp_path / "take.aiff"
+    sf.write(str(source), recording.samples * 0.5, recording.sample_rate, subtype="PCM_24")
+    real_write = session_store.write_wav
+
+    def refuse_the_recording(path, samples, sample_rate, *, subtype="PCM_24"):  # type: ignore[no-untyped-def]
+        if Path(path).name.startswith(".recording"):
+            Path(path).write_bytes(b"half a file")  # what a failure half-way leaves
+            raise InvalidAudioError("cannot write audio file: unsupported encoding")
+        return real_write(path, samples, sample_rate, subtype=subtype)
+
+    monkeypatch.setattr(session_store, "write_wav", refuse_the_recording)
+    folder = tmp_path / "session"
+    save_measurement(
+        folder,
+        MeasurementSession(recording_path=str(source)),
+        result,
+        include_curves=False,
+        copy_recording=True,
+    )
+    assert (folder / "recording.wav").read_bytes() == source.read_bytes()
+    assert load_session(folder).recording_path == "recording.wav"
+    assert sorted(p.name for p in folder.iterdir()) == sorted(
+        [IR_FILE, RESULT_FILE, SESSION_FILE, "recording.wav"]
+    )
 
 
 def test_a_file_dated_before_1980_is_bundled(tmp_path: Path, analysed) -> None:

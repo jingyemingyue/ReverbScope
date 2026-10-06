@@ -7,7 +7,8 @@ A session directory contains::
     impulse_response.wav    raw impulse response, 32-bit float
     sweep.reverbscope-sweep.json   always copied when a sidecar is available
     recording.wav           copied when copy_recording is on (GUI default);
-                            an AIFF, CAF or FLAC take is converted to WAV
+                            a take that is not a WAV (AIFF, CAF, FLAC, MP3) is
+                            converted to WAV
 
 Raw sweep and recording files are never modified in place.
 """
@@ -29,7 +30,7 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from reverbscope.models.comparison import ComparisonResult
 
-from reverbscope.errors import ReverbScopeError, SessionError
+from reverbscope.errors import InvalidAudioError, ReverbScopeError, SessionError
 from reverbscope.i18n import _
 from reverbscope.io.jsonutil import (
     MAX_JSON_BYTES,
@@ -458,14 +459,29 @@ def _copy_recording(
     # An AIFF, CAF or FLAC export copied byte for byte under the name
     # recording.wav is a "corrupt WAV" to every program that goes by the
     # name; it is converted, with a sample format that keeps every sample.
-    signal = read_wav(src)
-    write_wav(
-        dest if stage is None else stage(dest.name),
-        signal.samples,
-        signal.sample_rate,
-        subtype=subtype,
-    )
+    target = dest if stage is None else stage(dest.name)
+    try:
+        signal = read_wav(src)
+        write_wav(target, signal.samples, signal.sample_rate, subtype=subtype)
+    except InvalidAudioError as exc:
+        # A take that cannot be converted (non-finite samples in a float
+        # AIFF, a decoder that gives up half-way) must not cost the whole
+        # save: it is copied as it is, as it was before conversions existed.
+        # The staged name is reused; it may hold what the failure left.
+        log.warning("copying %s without converting it to WAV: %s", src, exc)
+        try:
+            shutil.copy2(src, target)
+        except OSError as copy_exc:
+            raise SessionError(
+                _("cannot copy {source} to {target}: {error}").format(
+                    source=src, target=dest, error=copy_exc
+                )
+            ) from copy_exc
     return dest
+
+
+#: The sample formats a WAV file keeps without changing a sample.
+_EXACT_WAV_SUBTYPES = frozenset({"PCM_16", "PCM_24", "PCM_32", "PCM_U8", "FLOAT", "DOUBLE"})
 
 
 def _wav_subtype(src: Path) -> str | None:
@@ -480,7 +496,15 @@ def _wav_subtype(src: Path) -> str | None:
         return None
     if info.format in ("WAV", "WAVEX"):
         return None
-    return info.subtype if sf.check_format("WAV", info.subtype) else "FLOAT"
+    # ``check_format("WAV", subtype)`` is not the test: libsndfile lists
+    # every subtype WAV has a code for, and writing IMA/MS ADPCM or GSM 6.10
+    # encodes the decoded samples again (lossy), while MP3 cannot be written
+    # at all. Everything that is not plain PCM or float is decoded already,
+    # to values float32 holds exactly.
+    if info.subtype in _EXACT_WAV_SUBTYPES:
+        return str(info.subtype)
+    # float32 has 24 bits of mantissa: a 32-bit take would lose its low byte.
+    return "PCM_32" if info.subtype == "ALAC_32" else "FLOAT"
 
 
 def load_session(path: str | Path) -> MeasurementSession:

@@ -131,7 +131,7 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 
 ### 5.8 存储
 
-会话文件夹在现有三个文件之外，总是复制 `sweep.reverbscope-sweep.json`，按需（GUI 默认开）复制 `recording.wav`（AIFF、CAF 或 FLAC 录音会转换为 WAV，每个采样都保持不变）。项目文件夹 `project.json` 只是索引，会话仍可独立打开。`reverbscope session bundle` 打包会话供 bug 报告，`--no-audio` 可排除录音。`REVERBSCOPE_HOME`（默认 `~/.reverbscope`，PR #2 引入）存放最近会话、设置与日志。电平确认永不持久化。
+会话文件夹在现有三个文件之外，总是复制 `sweep.reverbscope-sweep.json`，按需（GUI 默认开）复制 `recording.wav`（非 WAV 录音，如 AIFF、CAF、FLAC 或 MP3，会转换为 WAV，每个采样都保持不变；无法转换的则原样复制）。项目文件夹 `project.json` 只是索引，会话仍可独立打开。`reverbscope session bundle` 打包会话供 bug 报告，`--no-audio` 可排除录音。`REVERBSCOPE_HOME`（默认 `~/.reverbscope`，PR #2 引入）存放最近会话、设置与日志。电平确认永不持久化。
 
 ## 6. 分发（M9）
 
