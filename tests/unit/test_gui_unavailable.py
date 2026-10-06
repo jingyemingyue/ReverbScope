@@ -62,3 +62,61 @@ def test_the_message_is_translated(capsys: pytest.CaptureFixture[str]) -> None:
 def test_pyside6_import_error_is_none_when_qt_loads() -> None:
     pytest.importorskip("PySide6.QtWidgets")
     assert app.pyside6_import_error() is None
+
+
+def test_a_session_without_a_screen_gets_a_sentence_not_an_abort(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Qt ends the whole process ("Could not load the Qt platform plugin xcb")
+    when a Linux session has no display. The menu runs ``gui`` in its own
+    process, so it would die with it; say so in words before Qt is started."""
+    with (
+        patch.object(app, "pyside6_import_error", return_value=None),
+        patch.object(app, "display_missing", return_value=True),
+        patch.object(app, "run_app", side_effect=AssertionError("must not start")),
+    ):
+        assert main(["--lang", "en", "gui"]) == 2
+    err = " ".join(capsys.readouterr().err.replace("│", " ").split())
+    assert "needs a graphical display" in err and "DISPLAY and WAYLAND_DISPLAY" in err
+    assert "Traceback" not in err
+
+
+def test_the_desktop_launcher_without_a_screen_says_so(capsys: pytest.CaptureFixture[str]) -> None:
+    with (
+        patch.object(app, "pyside6_import_error", return_value=None),
+        patch.object(app, "display_missing", return_value=True),
+        patch.object(app, "run_app", side_effect=AssertionError("must not start")),
+        patch.dict("os.environ", {"ROOMSCOPE_LANG": "en"}),
+        pytest.raises(SystemExit) as stop,
+    ):
+        app.main()
+    assert stop.value.code == 2
+    assert "graphical display" in capsys.readouterr().err
+
+
+def test_the_smoke_test_does_not_need_a_screen(capsys: pytest.CaptureFixture[str]) -> None:
+    """``roomscope gui --smoke`` runs Qt's offscreen platform by itself."""
+    with (
+        patch.object(app, "pyside6_import_error", return_value=None),
+        patch.object(app, "display_missing", return_value=True),
+        patch.object(app, "run_app", return_value=0) as run_app,
+    ):
+        assert main(["gui", "--smoke"]) == 0
+    assert run_app.call_args.kwargs["smoke"] is True
+
+
+@pytest.mark.parametrize(
+    ("environ", "platform", "missing"),
+    [
+        ({}, "linux", True),
+        ({"DISPLAY": ":0"}, "linux", False),
+        ({"WAYLAND_DISPLAY": "wayland-0"}, "linux", False),
+        ({"QT_QPA_PLATFORM": "offscreen"}, "linux", False),
+        ({}, "win32", False),
+        ({}, "darwin", False),
+    ],
+)
+def test_a_screen_is_missing_only_on_linux_without_display_or_platform(
+    environ: dict[str, str], platform: str, missing: bool
+) -> None:
+    assert app.display_missing(environ, platform) is missing

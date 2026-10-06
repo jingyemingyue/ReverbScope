@@ -2336,7 +2336,13 @@ def cmd_gui(args: argparse.Namespace) -> int:
         # Built without Qt: say which download has the GUI, not that PySide6 is missing.
         print(render_terminal_edition_gui(_console(args, sys.stderr)), file=sys.stderr)
         return 2
-    from roomscope.ui.app import GUI_UNAVAILABLE, pyside6_import_error, run_app
+    from roomscope.ui.app import (
+        GUI_UNAVAILABLE,
+        display_missing,
+        display_missing_message,
+        pyside6_import_error,
+        run_app,
+    )
 
     # PySide6 is imported inside run_app, so check it first: without the gui
     # extra (or the Qt system libraries) the user gets a sentence, not a traceback.
@@ -2350,6 +2356,10 @@ def cmd_gui(args: argparse.Namespace) -> int:
             ),
             file=sys.stderr,
         )
+        return 2
+    if not getattr(args, "smoke", False) and display_missing():
+        # Qt ends the process when there is no screen; a sentence is better.
+        print(render_error(_console(args, sys.stderr), display_missing_message()), file=sys.stderr)
         return 2
     # --lang was activated for the command line; the GUI resolves its
     # language again and would otherwise drop it for settings or the system's.

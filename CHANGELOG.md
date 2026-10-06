@@ -232,6 +232,12 @@ All notable changes to RoomScope are documented here. The format follows
   the hints of an error, so pasting the line runs the command it shows
   instead of failing in the shell or running something else. Letters of any
   script, digits and `. / - _ : , = @ % +` stay bare.
+- **`roomscope gui` without a screen.** On a Linux session with no `DISPLAY`
+  or `WAYLAND_DISPLAY`, Qt ended the whole process ("Could not load the Qt
+  platform plugin xcb", exit status 134), and with it the menu that ran the
+  command. It now says that the desktop app needs a graphical display and
+  exits with code 2; `QT_QPA_PLATFORM` (for example `offscreen`) and
+  `roomscope gui --smoke` are left alone.
 - **Progress line width.** On an 80-column terminal the line was 81 columns
   wide, so the cursor wrapped and every redraw left a line behind. It is
   now never wider than the terminal's last column, down to 20 columns.

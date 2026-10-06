@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from types import TracebackType
 from typing import TYPE_CHECKING
 
-from roomscope.i18n import N_
+from roomscope.i18n import N_, _
 
 if TYPE_CHECKING:
     from PySide6.QtCore import QCoreApplication
@@ -32,6 +32,31 @@ def pyside6_import_error() -> str | None:
     except ImportError as exc:
         return str(exc)
     return None
+
+
+def display_missing(environ: Mapping[str, str] | None = None, platform: str | None = None) -> bool:
+    """Whether Qt would abort for lack of a screen: Linux, no X11 or Wayland
+    display and no platform chosen (``QT_QPA_PLATFORM=offscreen`` is one).
+
+    Qt does not raise an error for this, it ends the whole process, so the
+    command line checks first and says so in words.
+    """
+    env = os.environ if environ is None else environ
+    return (
+        (sys.platform if platform is None else platform).startswith("linux")
+        and not env.get("QT_QPA_PLATFORM")
+        and not env.get("DISPLAY")
+        and not env.get("WAYLAND_DISPLAY")
+    )
+
+
+def display_missing_message() -> str:
+    """The sentence that says there is no screen to open the desktop app on."""
+    return _(
+        "The desktop app needs a graphical display, and this session has none "
+        "(DISPLAY and WAYLAND_DISPLAY are not set). Start it from a desktop "
+        "session; the command-line tool works without one."
+    )
 
 
 def run_app(argv: list[str] | None = None, *, smoke: bool = False, lang: str | None = None) -> int:
@@ -138,11 +163,15 @@ def install_qt_translations(app: QCoreApplication) -> None:
 
 def main() -> None:
     """``roomscope-gui`` entry point of a pip install."""
+    from roomscope.i18n import activate
+
     error = pyside6_import_error()
     if error is not None:
-        from roomscope.i18n import _, activate
-
         activate(None)
         sys.stderr.write(_(GUI_UNAVAILABLE).format(error=error) + "\n")
+        raise SystemExit(2)
+    if display_missing():
+        activate(None)
+        sys.stderr.write(display_missing_message() + "\n")
         raise SystemExit(2)
     raise SystemExit(run_app())
