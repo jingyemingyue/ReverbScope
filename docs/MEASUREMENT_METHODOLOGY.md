@@ -93,15 +93,28 @@ k = 2..5, the energy in a window around the k-th harmonic response (5 ms
 before to at most 50 ms after it) relative to the same window around the
 direct sound, over the part of the excitation band both share. A level is
 reported only when it stands 6 dB above a floor measured the same way on
-what a distortion-free take holds there: the noise, over the 0.5 s before
-the earliest harmonic window, and the artefacts the ideal pulse (the sweep
-deconvolved by its own inverse) has in the 0.5 s before its peak, convolved
-with the measured response so that the room spreads them as it spreads the
-direct sound. The 0.5 s before the direct sound itself is not used: it also
-holds the room's decay after each harmonic response, so with a sweep
-shorter than about 5 s (where H2 and H3 lie inside it), or in a very
-reverberant room, the floor followed the distortion level and no harmonic
-was ever reported.
+what a take without these harmonic responses holds there: the noise, and
+the artefacts the ideal pulse (the sweep deconvolved by its own inverse)
+has in the 0.5 s before its peak, convolved with the measured response so
+that the room spreads them as it spreads the direct sound. The 0.5 s before
+the direct sound itself is not used: it also holds the room's decay after
+each harmonic response, so with a sweep shorter than about 5 s (where H2
+and H3 lie inside it), or in a very reverberant room, the floor followed
+the distortion level and no harmonic was ever reported.
+
+The noise is stationary, so it is measured where no harmonic response
+lands, in two places, and the lower of the two is used. The 0.5 s before
+the earliest window holds none of the evaluated orders, but it holds the
+higher ones: with the default 10 s sweep the 6th and 7th harmonic responses
+(2.6 s and 2.8 s before the direct sound) lie in it, and a loudspeaker
+clipping hard enough to read H3 at −15 dB made them a floor 20 dB above the
+noise, hiding H2 and H4. The last 0.5 s of the valid record, from 0.5 s
+after the direct sound on, holds no harmonic response, but it holds what is
+left of the room's decay when the recording stops soon after the sweep, and
+the products a digital clipper folded back. Each stretch can only hold more
+than the noise, so the lower one is the better estimate. A take with less
+than about 0.6 s of record after the direct sound has only the first
+stretch, and a strongly distorted one can then not be told from its floor.
 
 **Impulse-response location.** The direct sound is taken as the strongest
 sample of the deconvolved signal. The IR keeps `ir_pre_delay_ms` (5 ms)

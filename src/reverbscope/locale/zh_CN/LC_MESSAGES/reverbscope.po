@@ -2794,6 +2794,7 @@ msgctxt "diagnostic"
 msgid "the linear response has no energy in the common band"
 msgstr "线性响应在共同频带内没有能量"
 
+# Stored by ReverbScope 0.5 and earlier in result.json; still shown translated.
 msgctxt "diagnostic"
 msgid "no harmonic-free content before the direct sound to compare with"
 msgstr "直达声之前没有不含谐波的内容可供比较"
@@ -4646,3 +4647,9 @@ msgstr "声明的频带上限为 {high_hz:g} Hz，但采样率为 {sample_rate} 
 msgctxt "diagnostic"
 msgid "the recording ends about {missing_s:.2f} s before the sweep does, so the end of the sweep and the room decay after it were not recorded. Export the whole take, with the silence after the sweep"
 msgstr "录音比扫频早约 {missing_s:.2f} s 结束，扫频的末尾及其后的房间衰减都没有录下。请导出整条录音，包括扫频之后的静音"
+
+# analysis: the noise floor of the harmonic distortion indicator
+
+msgctxt "diagnostic"
+msgid "no harmonic-free content around the direct sound to compare with"
+msgstr "直达声前后没有不含谐波的内容可供比较"

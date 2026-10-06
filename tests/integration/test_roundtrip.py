@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
-from scipy.signal import fftconvolve
+from scipy.signal import fftconvolve, resample_poly
 
 from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
 from reverbscope.core.sweep import measurement_signal, reference_pulse
@@ -162,6 +162,43 @@ def test_harmonics_are_not_hidden_by_their_own_decay(duration_s: float, rt60_s: 
             assert levels[3] == pytest.approx(20 * np.log10(h3), abs=1.0)
         else:
             assert all(level is None for level in levels.values()), levels
+
+
+@pytest.mark.parametrize(
+    ("drive", "post_silence_s"),
+    [(1.0, 3.0), (0.6, 0.4)],
+    ids=["hard clipping", "no recorded tail"],
+)
+def test_higher_orders_do_not_raise_the_distortion_floor(
+    drive: float, post_silence_s: float
+) -> None:
+    """R3-4 again: the noise was taken from the 0.5 s before the earliest
+    harmonic window, which the 6th and 7th harmonic responses of the default
+    10 s sweep (2.6 s and 2.8 s before the direct sound) fall in. A loudspeaker
+    clipping hard enough to read H3 at -15 dB made them the floor (-41 dB) and
+    its H2 and H4 were "not distinguishable from the floor", where they had
+    been reported before. The end of the record, from 0.5 s after the direct
+    sound on, holds none of them; a take with no such tail (0.4 s of silence
+    after the sweep) still measures the noise before the harmonics, which a
+    moderate clipper leaves clean."""
+    sweep = SweepSettings(duration_s=10.0, post_silence_s=post_silence_s, level_dbfs=-6.0)
+    sr = sweep.sample_rate
+    excitation = measurement_signal(sweep)
+    # An asymmetric clipper has the even harmonics; it works at 8 times the
+    # sample rate, as a loudspeaker's distortion does not alias.
+    up = np.asarray(resample_poly(excitation, 8, 1), dtype=np.float64)
+    clipped = np.tanh(4.0 * drive * up + 1.2 * drive * up**2) / (4.0 * drive)
+    played = np.asarray(resample_poly(clipped, 1, 8), dtype=np.float64)
+    room = make_rir(sr, rt60_s=0.6, diffuse_level=0.05, length_s=3.0)
+    noise = np.random.default_rng(0).normal(0.0, 1e-5, excitation.shape[0])
+    recording = fftconvolve(played, room)[: excitation.shape[0]] + noise
+    result = analyze(AudioSignal(recording, sr), Reference.from_settings(sweep))
+    harmonics = {h.order: h for h in result.impulse_response.harmonic_distortion}
+    assert sorted(harmonics) == [2, 3, 4, 5]
+    for h in harmonics.values():
+        assert h.level_db is not None, (h.order, h.reason)
+        # The noise and the pulse's artefacts, not another harmonic's response.
+        assert h.floor_db is not None and h.floor_db < -50.0, (h.order, h.floor_db)
 
 
 def test_digital_clipping_before_the_room_is_detected(short_sweep: SweepSettings) -> None:

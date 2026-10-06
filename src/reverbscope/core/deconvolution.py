@@ -129,12 +129,12 @@ def harmonic_windows(
     return tuple(windows)
 
 
-def _allowed_pre_peak_segments(
-    length: int, peak: int, near: int, far: int, excluded: tuple[Window, ...]
+def _allowed_segments(
+    length: int, start: int, stop: int, excluded: tuple[Window, ...]
 ) -> list[Window]:
-    """Parts of ``[peak - far, peak - near)`` (clipped to the signal) outside ``excluded``."""
-    lo = max(0, peak - far)
-    hi = min(length, max(lo, peak - near))
+    """Parts of ``[start, stop)`` (clipped to the signal) outside ``excluded``."""
+    lo = max(0, start)
+    hi = min(length, max(lo, stop))
     if hi <= lo:
         return []
     allowed = np.ones(hi - lo, dtype=bool)
@@ -144,6 +144,13 @@ def _allowed_pre_peak_segments(
             allowed[a - lo : b - lo] = False
     edges = np.flatnonzero(np.diff(np.concatenate([[0], allowed.astype(np.int8), [0]])))
     return [(lo + int(s), lo + int(e)) for s, e in zip(edges[0::2], edges[1::2], strict=True)]
+
+
+def _allowed_pre_peak_segments(
+    length: int, peak: int, near: int, far: int, excluded: tuple[Window, ...]
+) -> list[Window]:
+    """Parts of ``[peak - far, peak - near)`` (clipped to the signal) outside ``excluded``."""
+    return _allowed_segments(length, peak - far, peak - near, excluded)
 
 
 def pre_peak_margin_db(
@@ -521,15 +528,25 @@ def harmonic_distortion_levels(
 
     The floor is the same measure (the strongest of up to
     ``max_floor_chunks`` window-sized chunks; shorter gaps count with their
-    per-sample energy) for what a distortion-free take holds there: the
-    noise, measured over ``margin_far_s`` before the earliest harmonic
-    window, and the ideal pulse's own artefacts in the pre-peak window as
-    this room spreads them (:func:`_linear_pre_peak`, from ``ideal_pulse``,
-    the reference deconvolved by its own inverse). The pre-peak window of
-    ``h_full`` itself also holds the room's decay after each harmonic
-    response: with a sweep shorter than about 5 s, or in a very reverberant
-    room, that floor followed the distortion level and no harmonic was ever
-    6 dB above it.
+    per-sample energy) for what a take without these harmonic responses
+    holds there: the noise and the ideal pulse's own artefacts in the
+    pre-peak window as this room spreads them (:func:`_linear_pre_peak`, from
+    ``ideal_pulse``, the reference deconvolved by its own inverse). The
+    pre-peak window of ``h_full`` itself also holds the room's decay after
+    each harmonic response: with a sweep shorter than about 5 s, or in a very
+    reverberant room, that floor followed the distortion level and no
+    harmonic was ever 6 dB above it.
+
+    The noise is stationary, so it is measured where no harmonic response
+    lands, in two places, and the lower of the two is used. The
+    ``margin_far_s`` before the earliest window holds none of the evaluated
+    orders but does hold the higher ones, which strong distortion makes loud
+    (the 6th and 7th of a 10 s sweep). The last ``margin_far_s`` of the valid
+    record, at least ``margin_far_s`` after the direct sound, holds none but
+    holds what is left of the room's decay and the products a digital
+    clipper folded back. Either can only hold more than the noise. A record
+    with too little after the direct sound to have that tail has only the
+    first stretch.
     """
     peak = located.peak_index
     length = h_full.shape[0]
@@ -537,7 +554,12 @@ def harmonic_distortion_levels(
     far = round(margin_far_s * sample_rate)
     floor_segments = _allowed_pre_peak_segments(length, peak, near, far, located.excluded_windows)
     first = min((w.start for w in located.harmonic_windows), default=peak - near)
-    noise_segments = _allowed_pre_peak_segments(length, first, 0, far, located.excluded_windows)
+    pre_noise = _allowed_pre_peak_segments(length, first, 0, far, located.excluded_windows)
+    # The end of the valid record, at least ``far`` after the direct sound.
+    record_end = peak + located.valid_length_samples + 1
+    tail_noise = _allowed_segments(
+        length, max(record_end - far, peak + far), record_end, located.excluded_windows
+    )
     linear_free = _linear_pre_peak(h_full, located, ideal_pulse, near, far)
     results: list[HarmonicDistortion] = []
     for w in located.harmonic_windows:
@@ -575,11 +597,15 @@ def harmonic_distortion_levels(
             continue
         linear = _band_energy(h_full[peak - w.before : peak + w.after + 1], sample_rate, band)
         harmonic = _band_energy(h_full[w.start : w.stop], sample_rate, band)
-        noise_chunks = _floor_chunks(noise_segments, n, max_floor_chunks)
+        # A tail shorter than the window is too short an estimate to lower the floor.
+        noise_chunks = [
+            _floor_chunks(pre_noise, n, max_floor_chunks),
+            [(a, b) for a, b in _floor_chunks(tail_noise, n, max_floor_chunks) if b - a == n],
+        ]
         if linear <= 0.0:
             reason = diag("the linear response has no energy in the common band")
-        elif not noise_chunks:
-            reason = diag("no harmonic-free content before the direct sound to compare with")
+        elif not any(noise_chunks):
+            reason = diag("no harmonic-free content around the direct sound to compare with")
         if reason is not None:
             results.append(
                 HarmonicDistortion(
@@ -593,8 +619,10 @@ def harmonic_distortion_levels(
             )
             continue
         # Energy scaled to the window length, so short chunks count per sample.
-        floor = max(
-            _band_energy(h_full[a:b], sample_rate, band) * n / (b - a) for a, b in noise_chunks
+        floor = min(
+            max(_band_energy(h_full[a:b], sample_rate, band) * n / (b - a) for a, b in chunks)
+            for chunks in noise_chunks
+            if chunks
         )
         offset = peak - far
         for a, b in _floor_chunks(floor_segments, n, max_floor_chunks):
