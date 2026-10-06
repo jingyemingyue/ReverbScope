@@ -248,8 +248,12 @@ def choices(key: str) -> str:
 
 
 def language_name(lang: str) -> str:
-    """A language's name in the interface language; English for one without a catalog."""
-    shown = lang if lang in available_locales() else DEFAULT_LANG
+    """A language's name in the interface language; English for one without a catalog.
+
+    ``lang`` may be what a hand-edited settings file holds (``zh_CN.UTF-8``,
+    ``zh-CN``): it is named for the language it selects, as the one in effect is.
+    """
+    shown = supported_language(lang) or DEFAULT_LANG
     names = {"en": _("English"), "zh_CN": _("Simplified Chinese")}
     return names.get(shown) or LANGUAGE_NAMES.get(shown, shown)
 

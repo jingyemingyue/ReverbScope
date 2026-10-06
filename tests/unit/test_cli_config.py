@@ -317,6 +317,39 @@ def test_config_language_shows_what_is_in_effect_and_why(
     assert because in " ".join(out.split()) or because in out, out
 
 
+@pytest.mark.parametrize("stored", ["zh_CN.UTF-8", "zh-CN", "zh_CN@pinyin"])
+def test_a_hand_edited_language_is_named_as_it_is_used(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, stored: str
+) -> None:
+    """The file can hold what LANG holds; the label must agree with the effect.
+
+    The stored text is shown as written, but its meaning (the name beside it
+    and the language in effect) is the same Simplified Chinese.
+    """
+    monkeypatch.setenv("LANG", "en_US.UTF-8")
+    save_settings(UserSettings(language=stored))
+    activate(None)
+    code, out, _err = _run(capsys, "config")
+    assert code == 0
+    assert "界面语言：简体中文" in out and "界面语言：英文" not in out, out
+    code, out, _err = _run(capsys, "config", "language")
+    assert code == 0
+    flat = " ".join(out.split())
+    assert f"已保存 {stored}：简体中文" in flat, out
+    assert "当前使用 简体中文" in flat, out
+
+
+def test_an_unknown_stored_language_is_named_as_english(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A stored language without a catalog beats LANG, and the screen is English."""
+    monkeypatch.setenv("LANG", "zh_CN.UTF-8")
+    save_settings(UserSettings(language="fr_FR.UTF-8"))
+    activate(None)
+    code, out, _err = _run(capsys, "config")
+    assert code == 0 and "Interface language: English" in out, out
+
+
 def test_one_setting_shows_its_values(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _err = _run(capsys, "config", "profile")
     assert code == 0
