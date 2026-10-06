@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
     QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPlainTextEdit,
@@ -28,7 +29,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from reverbscope.cli.render import REPORT_CONSOLE, render_comparison
+from reverbscope.cli.render import (
+    REFLECTIONS_NOT_COMPARED,
+    REPORT_CONSOLE,
+    RESONANCES_NARROWED,
+    RESONANCES_NOT_COMPARED,
+    render_comparison,
+)
 from reverbscope.core.compare import compare
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
@@ -49,6 +56,21 @@ def _decay_flags(match: ResonanceMatch) -> str:
         return _("yes") if value else _("no")
 
     return f"{_flag(match.baseline_decay_distinguishable)} / {_flag(match.candidate_decay_distinguishable)}"
+
+
+def _with_note(table: QTableWidget, note: QLabel) -> QWidget:
+    """A tab page: ``table`` with a line of explanation (``note``) under it."""
+    page = QWidget()
+    box = QVBoxLayout(page)
+    box.setContentsMargins(0, 0, 0, 0)
+    box.addWidget(table, 1)
+    box.addWidget(note)
+    return page
+
+
+def _notes_starting(comparison: ComparisonResult, *prefixes: str) -> str:
+    """The comparison's notes that start with one of ``prefixes``, in the language shown."""
+    return "\n".join(localize(note) for note in comparison.notes if note.startswith(prefixes))
 
 
 class ComparePage(QWidget):
@@ -162,10 +184,17 @@ class ComparePage(QWidget):
         self.text.setReadOnly(True)
         self.text.setProperty("report", True)
         apply_report_font(self.text)
+        # A table with no rows reads as "nothing found". When a topic was not
+        # compared (or only in part) the note says so under the table, as the
+        # report does, instead of leaving the tab blank.
+        self.reflections_note = label("", "hint", wrap=True)
+        self.resonances_note = label("", "hint", wrap=True)
         self.tabs.addTab(self.table, _("Metrics"))
         self.tabs.addTab(chart, _("Frequency response difference"))
-        self.tabs.addTab(self.reflections, _("Early Reflections"))
-        self.tabs.addTab(self.resonances, _("Resonances"))
+        self.tabs.addTab(
+            _with_note(self.reflections, self.reflections_note), _("Early Reflections")
+        )
+        self.tabs.addTab(_with_note(self.resonances, self.resonances_note), _("Resonances"))
         self.tabs.addTab(self.text, _("Full report"))
         layout.addWidget(self.tabs, 2)
         self.status = label("", "hint", wrap=True)
@@ -253,6 +282,7 @@ class ComparePage(QWidget):
                 self.table.setItem(r, c, cell)
         self.table.resizeColumnsToContents()
         self.reflections.setRowCount(len(comparison.reflections))
+        self.reflections_note.setText(_notes_starting(comparison, REFLECTIONS_NOT_COMPARED))
 
         def _pair(delay_ms: float | None, level_db: float | None) -> str:
             if delay_ms is None:
@@ -271,6 +301,9 @@ class ComparePage(QWidget):
                 self.reflections.setItem(r, c, cell)
         self.reflections.resizeColumnsToContents()
         self.resonances.setRowCount(len(comparison.resonances))
+        self.resonances_note.setText(
+            _notes_starting(comparison, RESONANCES_NOT_COMPARED, RESONANCES_NARROWED)
+        )
         for r, resonance in enumerate(comparison.resonances):
             baseline_hz = "" if resonance.baseline_hz is None else f"{resonance.baseline_hz:.1f}"
             candidate_hz = "" if resonance.candidate_hz is None else f"{resonance.candidate_hz:.1f}"

@@ -318,6 +318,73 @@ def test_compare_two_saved_sessions(
     window.close()
 
 
+def test_compare_tabs_say_when_a_topic_was_not_compared(
+    app: QApplication, short_sweep: SweepSettings
+) -> None:
+    """Two takes that never searched the same range showed a blank Resonances
+    tab, as if neither had a resonance; only the Full report said "not
+    compared". The tab says it under the table, and so does the Early
+    Reflections tab, in the language of the interface."""
+    from dataclasses import replace
+
+    from reverbscope.core.compare import compare
+    from reverbscope.core.pipeline import Reference, analyze
+    from reverbscope.i18n import activate
+    from reverbscope.models.result import ResonanceCandidate
+    from reverbscope.ui.compare_view import ComparePage
+
+    recording = synthetic_recording(
+        short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.4, reflections=[(0.018, 0.35)])
+    )
+    room = analyze(recording, Reference.from_settings(short_sweep))
+    mode = ResonanceCandidate(
+        frequency_hz=62.0,
+        level_above_baseline_db=9.0,
+        narrowband_decay_20db_s=0.5,
+        filter_ringing_20db_s=0.1,
+        decay_distinguishable=True,
+        surroundings_decay_20db_s=0.1,
+    )
+
+    def take(searched: tuple[float, float] | None, *found: ResonanceCandidate):
+        return replace(
+            room,
+            resonances=replace(room.resonances, candidates=found, searched_range_hz=searched),
+        )
+
+    page = ComparePage()
+    full = take((26.7, 300.0), mode)
+
+    def show(baseline, candidate):  # type: ignore[no-untyped-def]
+        page._show(compare(baseline, candidate), [], "generic")
+
+    show(full, take(None))
+    assert page.resonances.rowCount() == 0
+    assert page.resonances_note.text() == (
+        "low-frequency resonances are not compared: no frequency range was searched on both sides"
+    )
+    show(full, take((116.0, 300.0)))
+    assert page.resonances.rowCount() == 0
+    assert page.resonances_note.text().startswith(
+        "low-frequency resonances are compared only at 116-300 Hz"
+    )
+    show(full, full)
+    assert page.resonances.rowCount() == 1
+    assert page.resonances_note.text() == ""
+    assert page.reflections_note.text() == ""
+
+    unsure = replace(room, reflections=replace(room.reflections, direct_sound_confidence="low"))
+    show(unsure, room)
+    assert page.reflections.rowCount() == 0
+    assert page.reflections_note.text().startswith("early reflections are not compared unless")
+
+    activate("zh_CN")
+    show(full, take(None))
+    assert page.resonances_note.text() == "未比较低频共振：没有双方都搜索过的频率范围"
+    show(unsure, room)
+    assert page.reflections_note.text().startswith("只有两侧的直达声置信度都为高时才比较早期反射")
+
+
 def test_standalone_shows_requested_and_device_rate(app: QApplication) -> None:
     window = MainWindow()
     window.show_mode("demo")

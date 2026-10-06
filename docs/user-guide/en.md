@@ -214,7 +214,9 @@ low-frequency resonances (within 1/6 octave, with decay-distinguishable
 flags). Resonances are compared only in the range both takes searched: one
 found where the other take never looked (its sweep started higher) is
 neither gone nor new, and when one take did not search at all the low end
-reads "not compared". `reverbscope compare … --out comparison.json` writes the numbers only;
+reads "not compared" (in the report, and as a note under the Resonances tab;
+the Early Reflections tab explains the same way when the direct sound is not
+trusted on both sides). `reverbscope compare … --out comparison.json` writes the numbers only;
 `reverbscope show comparison.json` prints the report again and **re-derives**
 findings (they are never stored in the file).
 

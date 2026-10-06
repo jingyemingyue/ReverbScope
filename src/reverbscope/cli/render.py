@@ -1017,12 +1017,14 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
     return text
 
 
-#: The stored note of a comparison whose reflections were not matched.
-_REFLECTIONS_NOT_COMPARED = "early reflections are not compared unless"
+#: What the stored notes of a comparison start with when a topic was not
+#: compared in full. The desktop app shows the same notes under its own tabs.
+#: The first is the note of a comparison whose reflections were not matched.
+REFLECTIONS_NOT_COMPARED = "early reflections are not compared unless"
 #: ... whose resonances were not, because no range was searched on both sides.
-_RESONANCES_NOT_COMPARED = "low-frequency resonances are not compared"
+RESONANCES_NOT_COMPARED = "low-frequency resonances are not compared"
 #: ... whose resonances were compared over part of what one side searched.
-_RESONANCES_NARROWED = "low-frequency resonances are compared only at"
+RESONANCES_NARROWED = "low-frequency resonances are compared only at"
 
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
@@ -1082,7 +1084,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 sep=c.sep(),
             ),
         )
-    elif any(note.startswith(_REFLECTIONS_NOT_COMPARED) for note in comparison.notes):
+    elif any(note.startswith(REFLECTIONS_NOT_COMPARED) for note in comparison.notes):
         row(
             _("Early reflections"),
             "skip",
@@ -1105,12 +1107,12 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         if found:
             parts.append(label.format(list=list_join(found)))
     clauses = pgettext("clause separator", "; ")
-    if any(note.startswith(_RESONANCES_NOT_COMPARED) for note in comparison.notes):
+    if any(note.startswith(RESONANCES_NOT_COMPARED) for note in comparison.notes):
         # Not "no potential resonance": one side, or both, never searched.
         row(_("Low end"), "skip", _("not compared: no frequency range was searched on both sides"))
     elif parts:
         row(_("Low end"), "ok", clauses.join(parts))
-    elif any(note.startswith(_RESONANCES_NARROWED) for note in comparison.notes):
+    elif any(note.startswith(RESONANCES_NARROWED) for note in comparison.notes):
         row(_("Low end"), "ok", _("no potential resonance in the range both sides searched"))
     else:
         row(_("Low end"), "ok", _("no potential resonance"))
