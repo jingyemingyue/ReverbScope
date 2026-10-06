@@ -234,8 +234,9 @@ def title(key: str) -> str:
         "language": _("Interface language"),
         "profile": _("Default profile"),
         "backend": _("Audio backend"),
-        # The desktop app's Settings dialog names these the same way.
-        "output-folder": _("Default output folder (desktop app)"),
+        # The desktop app's Settings dialog names these the same way; the menu
+        # starts its new sessions there too.
+        "output-folder": _("Default output folder"),
         "copy-recording": _("Copy recordings"),
         "developer-tools": _("Developer tools"),
         "theme": _("Theme (desktop app)"),
@@ -348,7 +349,11 @@ def state(key: str, settings: UserSettings, choice: LanguageChoice | None = None
             return _("simulated interface, for the demo and tests")
         return "PortAudio" if value else _("PortAudio (the default)")
     if key == "output-folder":
-        return _("its Save dialog opens here") if value else _("not set")
+        return (
+            _("new sessions and the desktop app's Save dialog start here")
+            if value
+            else _("not set")
+        )
     if key == "copy-recording":
         return pgettext("setting", "on") if value else pgettext("setting", "off")
     if key == "developer-tools":

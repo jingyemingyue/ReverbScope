@@ -468,13 +468,13 @@ def test_a_setting_has_the_name_the_desktop_app_gives_it(
 
     activate("zh_CN")
     assert config.title("profile") == i18n._("Default profile") == "默认录音配置"
-    assert config.title("output-folder").startswith(i18n._("Default output folder"))
+    assert config.title("output-folder") == i18n._("Default output folder") == "默认输出文件夹"
     _code, out, _err = _run(capsys, "--lang", "zh_CN", "config", "profile", "drums")
     assert "默认录音配置：" in out, out
     _code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "profile", "foo")
     assert "录音配置" in err
     _code, out, _err = _run(capsys, "--lang", "zh_CN", "config")
-    assert "默认录音配置：" in out and "默认输出文件夹（桌面版）：" in out, out
+    assert "默认录音配置：" in out and "默认输出文件夹：" in out, out
 
 
 def test_showing_an_unknown_setting_does_not_talk_of_changes(
@@ -533,3 +533,18 @@ def test_a_hand_edited_style_the_settings_do_not_know_is_ignored(home: Path) -> 
     assert UserSettings.from_dict({"cli_style": "boxed"}).cli_style == ""
     assert UserSettings.from_dict({"cli_style": "plain"}).cli_style == "plain"
     assert UserSettings.from_dict({"cli_style": 3}).cli_style == ""
+
+
+def test_the_output_folder_is_not_called_a_desktop_app_setting(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The menu starts its new sessions in the folder too (session-1 under it),
+    so the setting is not described as the desktop app's alone."""
+    folder = tmp_path / "sessions"
+    folder.mkdir()
+    code, out, _err = _run(capsys, "config", "output-folder", str(folder))
+    assert code == 0
+    assert "Default output folder: new sessions and the desktop app's Save dialog" in out
+    assert "(desktop app)" not in out
+    _code, out, _err = _run(capsys, "--lang", "zh_CN", "config", "output-folder", str(folder))
+    assert "默认输出文件夹：新会话和桌面版的保存对话框从这里开始" in out

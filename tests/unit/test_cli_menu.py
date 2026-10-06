@@ -669,6 +669,67 @@ def test_nothing_plays_without_an_explicit_y(
     assert dispatch.calls == []
 
 
+class _Devices:
+    """A backend that lists the devices it is given and plays nothing."""
+
+    name = "portaudio"
+
+    def __init__(self, *devices: object) -> None:
+        self.devices = list(devices)
+
+    def list_devices(self) -> list[object]:
+        return self.devices
+
+
+def _device(index: int, *, inputs: int, outputs: int) -> object:
+    from roomscope.audio.backend import DeviceInfo
+
+    return DeviceInfo(
+        index=index,
+        name=f"Device {index}",
+        max_input_channels=inputs,
+        max_output_channels=outputs,
+        default_sample_rate=48000.0,
+        host_api="ALSA",
+        is_default_input=inputs > 0,
+        is_default_output=outputs > 0,
+    )
+
+
+@pytest.mark.parametrize(
+    ("devices", "said"),
+    [
+        ((), "No audio input device was found to record the microphone. No audio output device"),
+        ((_device(0, inputs=2, outputs=0),), "No audio output device was found to play the sweep."),
+        ((_device(0, inputs=0, outputs=2),), "No audio input device was found to record"),
+    ],
+    ids=["none", "input-only", "output-only"],
+)
+def test_a_take_without_the_devices_to_make_it_stops_before_the_questions(
+    here: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    devices: tuple[object, ...],
+    said: str,
+) -> None:
+    """With nothing to choose from the menu used to ask for the input and
+    output device, channel, level and folder, then run a take that failed with
+    PortAudio's own English words."""
+    monkeypatch.setattr("roomscope.audio.backend.get_backend", lambda name=None: _Devices(*devices))
+    dispatch = Commands()
+    code, script = drive("4", "", "0", dispatch=dispatch)
+    out = " ".join(capsys.readouterr().out.replace("│", " ").split())  # a panel's sides
+    assert code == 0 and dispatch.calls == []
+    assert said in out and "Nothing was played." in out
+    assert "roomscope doctor" in out and "roomscope --backend fake menu" in out
+    assert script.prompts == [
+        "Choose a number: ",
+        "Press Enter to return to the menu ",
+        "Choose a number: ",
+    ]
+    assert not (here / "session-1").exists()
+
+
 def test_measure_rechecks_numbers_and_asks_before_a_loud_level(
     here: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -793,6 +854,22 @@ def test_the_desktop_app_and_the_environment_report_run_their_commands(
     assert code == 0
     assert dispatch.calls == [["--lang", "en", "gui"], ["--lang", "en", "doctor"]]
     assert same_as("--lang", "en", "doctor") in out
+
+
+def test_the_desktop_app_without_a_screen_returns_to_the_menu(
+    here: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Qt aborts the process when no display exists; ``roomscope gui`` says so
+    first, so the menu shows its usual failure line and carries on."""
+    from roomscope.ui import app
+
+    monkeypatch.setattr(app, "display_missing", lambda *args: True)
+    code, script = drive("7", "", "0", dispatch=Commands(run=["gui"]))
+    captured = capsys.readouterr()
+    assert code == 0
+    assert "needs a graphical display" in " ".join(captured.err.replace("│", " ").split())
+    assert "The command did not succeed: it could not run as asked" in captured.out
+    assert script.prompts[-1] == "Choose a number: "  # and the menu is still there
 
 
 def test_a_failed_command_is_named_in_words(here: Path, capsys: pytest.CaptureFixture[str]) -> None:

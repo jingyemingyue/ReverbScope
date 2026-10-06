@@ -238,6 +238,15 @@ All notable changes to RoomScope are documented here. The format follows
   command. It now says that the desktop app needs a graphical display and
   exits with code 2; `QT_QPA_PLATFORM` (for example `offscreen`) and
   `roomscope gui --smoke` are left alone.
+- **Menu: a take with no audio device.** Item 4 asked for the input device,
+  output device, channel, level and folder even when the computer listed
+  none, then failed with PortAudio's English words. It now says there is no
+  input or output device, that nothing was played, and points to
+  `roomscope doctor` and `roomscope --backend fake menu`.
+- **Output folder wording.** `roomscope config` called the output folder a
+  "desktop app" setting; the menu starts its new sessions there too, so it
+  is now "Default output folder: new sessions and the desktop app's Save
+  dialog start here".
 - **Progress line width.** On an 80-column terminal the line was 81 columns
   wide, so the cursor wrapped and every redraw left a line behind. It is
   now never wider than the terminal's last column, down to 20 columns.

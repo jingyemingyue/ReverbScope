@@ -7138,6 +7138,21 @@ msgctxt "answers meaning quit"
 msgid "q quit exit"
 msgstr "q quit exit salir"
 
+msgid "No audio input device was found to record the microphone."
+msgstr ""
+"No se encontró ningún dispositivo de entrada de audio para grabar el mic"
+"rófono."
+
+msgid "No audio output device was found to play the sweep."
+msgstr ""
+"No se encontró ningún dispositivo de salida de audio para reproducir el "
+"barrido."
+
+msgid "new sessions and the desktop app's Save dialog start here"
+msgstr ""
+"las sesiones nuevas y el diálogo Guardar de la aplicación de escritorio "
+"empiezan aquí"
+
 msgid ""
 "The desktop app needs a graphical display, and this session has none (DI"
 "SPLAY and WAYLAND_DISPLAY are not set). Start it from a desktop session;"

@@ -6484,6 +6484,15 @@ msgctxt "answers meaning quit"
 msgid "q quit exit"
 msgstr "q quit exit 종료 나가기"
 
+msgid "No audio input device was found to record the microphone."
+msgstr "마이크를 녹음할 오디오 입력 장치를 찾을 수 없습니다."
+
+msgid "No audio output device was found to play the sweep."
+msgstr "스윕을 재생할 오디오 출력 장치를 찾을 수 없습니다."
+
+msgid "new sessions and the desktop app's Save dialog start here"
+msgstr "새 세션과 데스크톱 앱의 저장 대화 상자가 여기서 시작됩니다"
+
 msgid ""
 "The desktop app needs a graphical display, and this session has none (DI"
 "SPLAY and WAYLAND_DISPLAY are not set). Start it from a desktop session;"

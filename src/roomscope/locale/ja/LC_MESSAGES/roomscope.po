@@ -6450,6 +6450,15 @@ msgctxt "answers meaning quit"
 msgid "q quit exit"
 msgstr "q quit exit 終了"
 
+msgid "No audio input device was found to record the microphone."
+msgstr "マイクを録音できるオーディオ入力デバイスが見つかりません。"
+
+msgid "No audio output device was found to play the sweep."
+msgstr "スイープを再生できるオーディオ出力デバイスが見つかりません。"
+
+msgid "new sessions and the desktop app's Save dialog start here"
+msgstr "新しいセッションとデスクトップ版の保存ダイアログはここから始まります"
+
 msgid ""
 "The desktop app needs a graphical display, and this session has none (DI"
 "SPLAY and WAYLAND_DISPLAY are not set). Start it from a desktop session;"

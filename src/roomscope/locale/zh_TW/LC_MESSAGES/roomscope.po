@@ -6329,6 +6329,15 @@ msgctxt "answers meaning quit"
 msgid "q quit exit"
 msgstr "q quit exit 退出 離開"
 
+msgid "No audio input device was found to record the microphone."
+msgstr "找不到可以錄製麥克風的音訊輸入裝置。"
+
+msgid "No audio output device was found to play the sweep."
+msgstr "找不到可以播放掃頻的音訊輸出裝置。"
+
+msgid "new sessions and the desktop app's Save dialog start here"
+msgstr "新會話和桌面版的儲存對話方塊從這裡開始"
+
 msgid ""
 "The desktop app needs a graphical display, and this session has none (DI"
 "SPLAY and WAYLAND_DISPLAY are not set). Start it from a desktop session;"

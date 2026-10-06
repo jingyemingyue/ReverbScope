@@ -676,10 +676,14 @@ class Menu:
         self.pause()
 
     def show_error(self, exc: BaseException, *, detail: str = "") -> None:
+        message = localize(str(exc)) if isinstance(exc, RoomScopeError) else str(exc)
+        self.show_message(message, detail=detail)
+
+    def show_message(self, message: str, *, detail: str = "", hints: Sequence[str] = ()) -> None:
+        """An error panel, with the commands to try under it."""
         from roomscope.cli.render import render_error
 
-        message = localize(str(exc)) if isinstance(exc, RoomScopeError) else str(exc)
-        self.write_text(render_error(self.console(), message, detail=detail))
+        self.write_text(render_error(self.console(), message, detail=detail, hints=hints))
 
     # The screen ----------------------------------------------------------------------------
 
@@ -936,6 +940,27 @@ class Menu:
             return
         inputs = [d.index for d in devices if d.max_input_channels > 0]
         outputs = [d.index for d in devices if d.max_output_channels > 0]
+        if not inputs or not outputs:
+            # Nothing to choose from and nothing to play on: say so now, not
+            # after five questions and a failed take.
+            reasons = [
+                reason
+                for found, reason in (
+                    (inputs, _("No audio input device was found to record the microphone.")),
+                    (outputs, _("No audio output device was found to play the sweep.")),
+                )
+                if not found
+            ]
+            self.show_message(
+                " ".join(reasons),
+                detail=_("Nothing was played."),
+                hints=[
+                    shell_command(["roomscope", "doctor"]),
+                    shell_command(["roomscope", "--backend", "fake", "menu"]),
+                ],
+            )
+            self.pause()
+            return
         input_device = self.ask(
             _("Input device (the microphone)"),
             one_of(
@@ -1149,7 +1174,7 @@ class Menu:
         }
 
         def title(key: str) -> str:
-            # The menu writes new sessions there too: not "(desktop app)" only.
+            # A shorter name, for the list; the setting is the same.
             return _("Output folder") if key == "output-folder" else config.title(key)
 
         first = True
