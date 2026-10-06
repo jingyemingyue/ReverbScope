@@ -713,6 +713,40 @@ def test_measure_refuses_an_analysis_option_before_playing(
     assert not out.exists()
 
 
+@pytest.mark.parametrize(
+    ("option", "named"),
+    [
+        (["--duration", "0"], "--duration"),
+        (["--start-hz", "30000"], "--start-hz"),
+        (["--level", "-100"], "--level"),
+        (["--input-channel", "0"], "1-based"),
+        (["--input-channels", "1,1"], "listed once"),
+    ],
+)
+def test_measure_sends_a_refused_sweep_or_channel_option_to_its_help(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], option: list[str], named: str
+) -> None:
+    """measure answered every ConfigurationError with devices --probe and
+    doctor --probe; a --duration of 0 is not the devices' fault."""
+    code = main(["--backend", "fake", "measure", "--out", str(tmp_path / "m"), *option])
+    err = capsys.readouterr().err
+    assert code == 1
+    assert named in err and "Nothing was played." in err
+    assert "reverbscope measure --help" in err
+    assert "devices --probe" not in err and "doctor --probe" not in err
+
+
+def test_measure_still_sends_a_missing_device_to_the_device_commands(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Only the options are redirected: a device that is not there is not one."""
+    argv = ["--backend", "fake", "measure", "--out", str(tmp_path / "m"), "--input-device", "99"]
+    assert main(argv) == 1
+    err = capsys.readouterr().err
+    assert "no audio device 99" in err
+    assert "reverbscope devices --probe" in err and "reverbscope measure --help" not in err
+
+
 def _fingerprints(folder: Path) -> dict[str, bytes]:
     return {path.name: path.read_bytes() for path in sorted(folder.iterdir())}
 

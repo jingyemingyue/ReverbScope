@@ -25,7 +25,7 @@ import shlex
 import sys
 import tempfile
 import traceback
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -552,6 +552,23 @@ def _sweep_settings(args: argparse.Namespace) -> SweepSettings:
         )
     except ConfigurationError as exc:
         raise _name_options(exc) from None
+
+
+@contextlib.contextmanager
+def _option_at_fault(command: str) -> Iterator[None]:
+    """Send a refused option to the command's help, not to the device commands.
+
+    ``measure`` answers a ConfigurationError with ``devices --probe`` and
+    ``doctor --probe`` (a device or channel that is not there is one), but a
+    --duration of 0 or an input channel listed twice is the option's fault:
+    the devices are fine. An error that already chose its hints keeps them.
+    """
+    try:
+        yield
+    except ConfigurationError as exc:
+        if not getattr(exc, "cli_hints", None):
+            exc.cli_hints = [f"reverbscope {command} --help"]  # type: ignore[attr-defined]
+        raise
 
 
 def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = True) -> None:
@@ -1592,7 +1609,8 @@ def cmd_measure(args: argparse.Namespace) -> int:
     )
     from reverbscope.io.wav import write_sweep_file, write_wav
 
-    settings = _sweep_settings(args)
+    with _option_at_fault("measure"):
+        settings = _sweep_settings(args)
     err = _console(args, sys.stderr)
     _refuse_file_out(Path(args.out), "measure")
     if Path(args.out).is_dir() and not (Path(args.out) / SESSION_FILE).is_file():
@@ -1649,18 +1667,15 @@ def cmd_measure(args: argparse.Namespace) -> int:
     requested = list(args.input_channels or [int(args.input_channel)])
     # Hardware inputs are 1-based, recording columns 0-based; validate the
     # mapping before anything is played (#13).
-    plan = plan_input_channels(requested, getattr(args, "measure_loopback_channel", None))
+    with _option_at_fault("measure"):
+        plan = plan_input_channels(requested, getattr(args, "measure_loopback_channel", None))
     channels = list(plan.input_channels)
     args.loopback_channel = plan.analysis_loopback_channel
     args.channel = plan.analysis_channel
-    try:
+    with _option_at_fault("measure"):
         # --mic-height without --speaker-distance, a temperature out of range:
         # refused after the take, the sweep was played and recorded for nothing.
         _analysis_settings(args)
-    except ConfigurationError as exc:
-        # The option is at fault, not the devices.
-        exc.cli_hints = ["reverbscope measure --help"]  # type: ignore[attr-defined]
-        raise
     options = _stream_options(args)
     # Device pre-flight, shared with the GUI: one host API for both
     # directions, channels that exist, the rate on the devices the stream will
