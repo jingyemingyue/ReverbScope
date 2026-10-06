@@ -19,25 +19,39 @@ ReverbScope deliberately reports *candidates* only:
   low end decays like this and the peak is not a separate resonance).
 
 The surroundings are measured *after* notching the candidate's own 1/3 octave
-out of the impulse response. A strong, long resonance is 40 dB or more above
-the tail of the neighbouring bands at later times, so without the notch it
-leaks through the filter skirts and the neighbours simply repeat the
-candidate's own decay (measured: every neighbour of a 62 Hz mode with
-RT 1.5 s in a room with RT 0.3 s read 0.50 s, the mode's own decay).
+out of the impulse response, and every other candidate's. A strong, long
+resonance is 40 dB or more above the tail of the neighbouring bands at later
+times, so without the notch it leaks through the filter skirts and the
+neighbours simply repeat its decay (measured: every neighbour of a 62 Hz mode
+with RT 1.5 s in a room with RT 0.3 s read 0.50 s, the mode's own decay; with
+a second mode at 124 Hz, an octave up like the first two axial modes of one
+room dimension, each read the other's decay as its surroundings). A
+neighbouring band that overlaps another candidate's band is not used, and the
+candidate's own decay is measured with the other candidates notched out too
+(unless one overlaps its band), or a peak next to a long mode would read that
+mode's leaked decay against clean surroundings. The notch has
+:data:`NOTCH_ORDER` poles per skirt: with 3, a 50 Hz mode still leaked into
+the bands an octave below it (0.26-0.33 s where the room gives 0.1 s).
 
-Calibration of :data:`SURROUNDINGS_RATIO` (2.0): for mode-free synthetic rooms
-(exponential Gaussian tails, RT 0.25-1.0 s, seven frequencies from 63 Hz to
-250 Hz, 12 seeds each) the ratio has a median of 1.0 and a 99th percentile of
-2.1, with a maximum of 2.9; for added modes whose RT is twice the room's or
-more it is 2.0 to 7.9. The measure has a large statistical spread at low
-frequencies (B*T of a 1/3-octave band is only a few), so a candidate remains a
-candidate: one position cannot establish a room mode.
+Calibration of :data:`SURROUNDINGS_RATIO` (2.0), re-measured with the other
+candidates notched: for mode-free synthetic rooms (exponential Gaussian tails,
+RT 0.25-1.0 s, seven frequencies from 63 Hz to 250 Hz, 12 seeds each) the
+ratio has a median of 1.0 and a 99th percentile of 2.2, with a maximum of 3.5;
+at a resonance-free frequency whose neighbour an octave away is a long mode
+(another candidate) the median is 0.9 and 5 % reach 2. For added modes whose
+RT is twice the room's it is at least 2 in 95 % of cases alone and in 90 % to
+98 % with a second mode an octave away; from three times the room's RT it is
+2.4 or more, alone or in such a pair. The measure has a large statistical
+spread at low frequencies (B*T of a 1/3-octave band is only a few), so a
+candidate remains a candidate: one position cannot establish a room mode.
 
 Identifying an actual room mode requires knowledge of the room geometry and
 several measurement positions and is out of scope.
 """
 
 from __future__ import annotations
+
+from collections.abc import Sequence
 
 import numpy as np
 from scipy.signal import butter, find_peaks, sosfilt
@@ -73,9 +87,9 @@ SURROUNDING_OFFSETS_OCTAVES = (-1.0, -2.0 / 3.0, 2.0 / 3.0, 1.0)
 MIN_SURROUNDING_BANDS = 2
 #: Length of the impulse response used for the decay measurements (s).
 DECAY_ANALYSIS_S = 3.0
-#: Poles per skirt of the notch that removes the candidate's own band before
-#: the surroundings are measured.
-NOTCH_ORDER = 3
+#: Poles per skirt of the notch that removes a candidate's band before the
+#: surroundings (and the other candidates' decays) are measured.
+NOTCH_ORDER = 4
 _FINE_FRACTION = 24
 _BASELINE_FRACTION = 1
 #: Relative width of the 1/24-octave smoothing window; a peak narrower than
@@ -141,27 +155,62 @@ def notch_band(ir: FloatArray, sample_rate: int, center_hz: float) -> FloatArray
     return np.asarray(sosfilt(sos, ir[::-1])[::-1], dtype=np.float64)
 
 
-def _surroundings_decay_20db_s(
+def _overlap(a_hz: float, b_hz: float) -> bool:
+    """Whether the 1/3-octave bands around ``a_hz`` and ``b_hz`` overlap."""
+    a, b = fractional_octave_band(a_hz, 3), fractional_octave_band(b_hz, 3)
+    return a.low_hz < b.high_hz and b.low_hz < a.high_hz
+
+
+def _notch_bands(ir: FloatArray, sample_rate: int, centers_hz: Sequence[float]) -> FloatArray:
+    """``ir`` with the 1/3-octave band around each of ``centers_hz`` notched out."""
+    out = np.asarray(ir, dtype=np.float64)
+    for center_hz in centers_hz:
+        out = notch_band(out, sample_rate, center_hz)
+    return out
+
+
+def candidate_decays_20db_s(
     ir: FloatArray,
     sample_rate: int,
     center_hz: float,
     *,
     excitation_band: ExcitationBand | None,
-) -> float | None:
-    """Median 20 dB decay of the neighbouring 1/3-octave bands (s)."""
-    without_candidate = notch_band(ir, sample_rate, center_hz)
+    other_candidates_hz: Sequence[float] = (),
+) -> tuple[float | None, float | None]:
+    """``(decay, surroundings)`` of the candidate at ``center_hz`` (s).
+
+    Every long resonance leaks through the skirts of the 1/3-octave filters
+    around it, not only the candidate's own. So the other candidates' bands
+    are notched out before the candidate's decay is measured (unless one
+    overlaps the candidate's band, which would remove the candidate too), and
+    before its surroundings are; a neighbouring band that overlaps another
+    candidate's band is not used. The first and second axial modes of a room
+    dimension lie exactly an octave apart, on a neighbouring band: 62 Hz and
+    124 Hz modes each read the other's decay as their surroundings, and
+    neither was distinguishable.
+    """
+    separable = [other_hz for other_hz in other_candidates_hz if not _overlap(other_hz, center_hz)]
+    without_others = _notch_bands(ir, sample_rate, separable)
+    decay = band_decay_20db_s(without_others, sample_rate, center_hz)
+    without_candidates = _notch_bands(
+        without_others,
+        sample_rate,
+        [center_hz, *(other_hz for other_hz in other_candidates_hz if other_hz not in separable)],
+    )
     decays: list[float] = []
     for offset in SURROUNDING_OFFSETS_OCTAVES:
         neighbour = center_hz * OCTAVE_RATIO**offset
         band = fractional_octave_band(neighbour, 3)
         if excitation_band is not None and not excitation_band.contains(band.low_hz, band.high_hz):
             continue
-        decay = band_decay_20db_s(without_candidate, sample_rate, neighbour)
-        if decay is not None and decay > 0.0:
-            decays.append(decay)
+        if any(_overlap(neighbour, other_hz) for other_hz in other_candidates_hz):
+            continue
+        neighbour_decay = band_decay_20db_s(without_candidates, sample_rate, neighbour)
+        if neighbour_decay is not None and neighbour_decay > 0.0:
+            decays.append(neighbour_decay)
     if len(decays) < MIN_SURROUNDING_BANDS:
-        return None
-    return float(np.median(decays))
+        return decay, None
+    return decay, float(np.median(decays))
 
 
 def _search_range(
@@ -280,13 +329,17 @@ def detect_potential_resonances(
     stop = min(ir.shape[0], direct_index + round(DECAY_ANALYSIS_S * sample_rate))
     analysed = np.asarray(ir[:stop], dtype=np.float64)
     candidates: list[ResonanceCandidate] = []
-    for idx in sorted(peaks[order]):
-        f0 = float(f[idx])
-        decay = band_decay_20db_s(analysed, sample_rate, f0)
-        ringing = filter_ringing_20db_s(sample_rate, f0)
-        surroundings = _surroundings_decay_20db_s(
-            analysed, sample_rate, f0, excitation_band=excitation_band
+    found = sorted(peaks[order])
+    found_hz = [float(f[idx]) for idx in found]
+    for idx, f0 in zip(found, found_hz, strict=True):
+        decay, surroundings = candidate_decays_20db_s(
+            analysed,
+            sample_rate,
+            f0,
+            excitation_band=excitation_band,
+            other_candidates_hz=[other for other in found_hz if other != f0],
         )
+        ringing = filter_ringing_20db_s(sample_rate, f0)
         distinguishable = (
             decay is not None
             and ringing is not None

@@ -10,6 +10,7 @@ from reverbscope.core.resonance import (
     SURROUNDINGS_RATIO,
     _decay_20db_s,
     band_decay_20db_s,
+    candidate_decays_20db_s,
     detect_potential_resonances,
     filter_ringing_20db_s,
     notch_band,
@@ -202,3 +203,42 @@ def test_smoothing_a_low_mode_at_192_khz_takes_linear_time() -> None:
     smoothed = moving_average(x, 13_511)
     assert time.perf_counter() - started < 1.0
     assert smoothed.shape == x.shape
+
+
+def _room_with_modes(sample_rate: int, seed: int, *modes: float) -> np.ndarray:
+    """A room with RT 0.3 s plus modes ringing with RT 1.5 s."""
+    ir = make_rir(sample_rate, rt60_s=0.3, length_s=2.0, diffuse_level=0.01, seed=seed)
+    t = np.arange(ir.shape[0]) / sample_rate
+    for frequency in modes:
+        ir = ir + 0.15 * np.sin(2 * np.pi * frequency * t) * np.exp(-DECAY_CONSTANT * t / (2 * 1.5))
+    return ir
+
+
+@pytest.mark.parametrize("seed", [0, 1])
+def test_two_modes_an_octave_apart_are_both_distinguishable(sample_rate: int, seed: int) -> None:
+    """Only the candidate's own band was notched, so the 124 Hz mode, one
+    octave above a 62 Hz mode (the first two axial modes of one dimension),
+    leaked into its neighbouring bands and each read the other's 0.5 s decay
+    as its surroundings: neither was distinguishable, though each was alone."""
+    res = _detect(_room_with_modes(sample_rate, seed, 62.0, 124.0), sample_rate)
+    for frequency in (62.0, 124.0):
+        found = min(res.candidates, key=lambda c: abs(c.frequency_hz - frequency))
+        assert found.frequency_hz == pytest.approx(frequency, abs=3.0)
+        assert found.narrowband_decay_20db_s == pytest.approx(0.5, rel=0.15)
+        assert found.surroundings_decay_20db_s is not None
+        assert found.surroundings_decay_20db_s < 0.2
+        assert found.decay_distinguishable is True
+
+
+def test_a_candidate_decay_leaves_out_the_other_candidates(sample_rate: int) -> None:
+    """With the other candidates notched out of the surroundings only, a peak
+    an octave below a long mode would read the mode's leaked decay against
+    clean surroundings and pass as a resonance of its own."""
+    ir = _room_with_modes(sample_rate, 0, 124.0)
+    assert band_decay_20db_s(ir, sample_rate, 62.0) == pytest.approx(0.5, rel=0.1)
+    decay, surroundings = candidate_decays_20db_s(
+        ir, sample_rate, 62.0, excitation_band=None, other_candidates_hz=[124.0]
+    )
+    assert decay is not None and surroundings is not None
+    assert decay < 0.2
+    assert decay < SURROUNDINGS_RATIO * surroundings

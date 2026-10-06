@@ -579,9 +579,14 @@ smoothed response that stand ≥ 6 dB above the 1-octave smoothed baseline are
 candidates. For each, a 1/3-octave band-pass (2 poles per skirt,
 time-reversed) is applied and the time for the band envelope to fall 20 dB
 is compared with the same measure for the filter alone and for the
-neighbouring 1/3-octave bands (with the candidate's own third notched out);
-the decay is called distinguishable only when it is ≥ 2× the filter ringing
-and ≥ 2× the surroundings.
+neighbouring 1/3-octave bands (with the candidate's own third and every other
+candidate's third notched out, 4 poles per skirt; a neighbouring band that
+overlaps another candidate's band is not used, so two modes an octave apart,
+like the first two axial modes of one dimension, do not read each other's
+decay as their surroundings). The candidate's own decay is measured with the
+other candidates notched out too, unless one overlaps its band. The decay is
+called distinguishable only when it is ≥ 2× the filter ringing and ≥ 2× the
+surroundings.
 
 **Limitations.** "Potential resonance" only. Identifying a room mode needs
 room dimensions and several positions; ReverbScope does not claim it.
