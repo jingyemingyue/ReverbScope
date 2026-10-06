@@ -164,6 +164,19 @@ def test_a_wide_header_goes_on_two_lines_before_the_table_gives_up() -> None:
     assert "Decay" in lines[1] and "range" in lines[2]
 
 
+def test_a_column_without_a_header_does_not_stop_a_table_that_is_too_wide() -> None:
+    """The comparison's status column has no header: narrowing the headers of the
+    others to fit the width crashed on it (``max()`` of nothing)."""
+    c = Console(width=70, frames=True)
+    headers = ["Band", "Metric", "Baseline value", "Candidate value", "Delta", "Change", ""]
+    rows = [["Broadband", "RT60", "0.511", "0.703", "+0.192", "+37.5 %", c.mark("ok")]]
+    lines = c.table(headers, rows, align="llrrrrl")
+    assert lines[0].startswith("┏")
+    _same_width(lines)
+    assert cell_width(lines[0]) <= 70
+    assert "Baseline" in lines[1] and "value" in lines[2]  # the wide headers took two lines
+
+
 def test_a_table_that_cannot_fit_falls_back_to_blocks() -> None:
     c = Console(width=40, frames=True)
     rows = [["0", "A device with a rather long name", "Windows WASAPI", "48 kHz"]]

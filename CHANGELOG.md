@@ -213,6 +213,11 @@ All notable changes to RoomScope are documented here. The format follows
   `--daw`, `--daw-project` and `--scan` placeholders are translated too.
 
 ### Fixed
+- **`compare` on a narrow terminal.** On a terminal of about 60 columns
+  `roomscope compare` ended with "unexpected error ValueError: max()
+  iterable argument is empty": the table of reverberation changes has a
+  column without a header, and fitting the table to the width took the
+  widest word of that empty header. It no longer does.
 - **Progress line width.** On an 80-column terminal the line was 81 columns
   wide, so the cursor wrapped and every redraw left a line behind. It is
   now never wider than the terminal's last column, down to 20 columns.

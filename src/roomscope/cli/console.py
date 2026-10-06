@@ -973,7 +973,7 @@ class Console:
                 header = headers[index]
                 return max(
                     cell_widths[index],
-                    max(cell_width(token) for token in _tokens(header)),
+                    max((cell_width(token) for token in _tokens(header)), default=0),
                     -(-cell_width(header) // 2),
                 )
 
