@@ -902,22 +902,42 @@ def test_two_selected_sessions_compare_oldest_first(
     window.close()
 
 
-def _type_name_and_refuse_to_replace(app: QApplication, folder: Path, name: str) -> list[str]:
+#: The latest scripted save dialog. A call that asks no question leaves its
+#: 100 ms timer behind; it must not cancel the dialog of the next call.
+_dialog_script: list[object] = []
+
+
+def _type_name_and_refuse_to_replace(
+    app: QApplication, folder: Path, name: str, *, replace: bool = False
+) -> list[str]:
     """Drive the next save dialog: type ``name`` in ``folder``, answer No to
-    a replace question, then cancel. Returns the questions asked."""
+    a replace question (Replace when ``replace``), then cancel. Returns the
+    questions asked."""
     from PySide6.QtCore import QTimer
     from PySide6.QtWidgets import QFileDialog, QLineEdit, QMessageBox
 
     questions: list[str] = []
+    script = object()
+    _dialog_script[:] = [script]
 
     def visible(kind: type) -> list:  # type: ignore[type-arg]
         return [w for w in app.topLevelWidgets() if isinstance(w, kind) and w.isVisible()]
 
     def answer() -> None:
+        if _dialog_script != [script]:
+            return
         boxes = visible(QMessageBox)
         if boxes:
             questions.append(boxes[0].text())
-            boxes[0].done(QMessageBox.StandardButton.No)
+            accepting = [
+                button
+                for button in boxes[0].buttons()
+                if boxes[0].buttonRole(button) == QMessageBox.ButtonRole.AcceptRole
+            ]
+            if replace and accepting:
+                accepting[0].click()
+            else:
+                boxes[0].done(QMessageBox.StandardButton.No)
         for dialog in visible(QFileDialog):
             dialog.reject()
 
@@ -1430,6 +1450,27 @@ def test_saving_a_name_with_a_dot_asks_before_replacing_the_file_written(
     assert questions == []
     assert (tmp_path / "take.v2.wav").is_file()
     assert (tmp_path / "take.v2.reverbscope-sweep.json").is_file()
+    window.close()
+
+
+def test_a_confirmed_replace_writes_the_file_a_dotted_name_names(
+    app: QApplication, tmp_path: Path
+) -> None:
+    """The question asked for "sweep 2026.10.05.wav" is a real one: Replace
+    writes the sweep (and its sidecar) over the old file, as the Qt dialog's
+    own question does for a name typed with its extension."""
+    window = MainWindow()
+    window.show()
+    window.show_mode("universal_daw")
+    page = window.daw
+    page.generate_sweep_to(tmp_path / "sweep 2026.10.05.wav")
+    old = (tmp_path / "sweep 2026.10.05.wav").read_bytes()
+    page.duration.setValue(3.0)
+    questions = _type_name_and_refuse_to_replace(app, tmp_path, "sweep 2026.10.05", replace=True)
+    page._choose_sweep_target()
+    assert questions == ["sweep 2026.10.05.wav already exists. Replace it?"]
+    assert (tmp_path / "sweep 2026.10.05.wav").read_bytes() != old
+    assert page.sweep_label.text().startswith("Written: sweep 2026.10.05.wav")
     window.close()
 
 
