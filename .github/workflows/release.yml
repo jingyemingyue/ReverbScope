@@ -1,14 +1,17 @@
-# Build unsigned bundles and prepare a draft Release for the version on main.
-# Every runner builds both editions of its platform in one job (no extra
-# runners): the Desktop Edition (GUI + command line) and the Terminal Edition
-# (command line only, built without Qt; REVERBSCOPE_PACKAGE=terminal).
-# A pull request that changes this workflow runs the same package gates without
-# creating a Release, tag, or PyPI upload.
+# Build unsigned bundles and prepare a draft Release for the version on main
+# (the beta line) or on a release/* branch (a release-candidate line, for
+# example release/0.5.0 carrying 0.5.0rc1). Every runner builds both editions
+# of its platform in one job (no extra runners): the Desktop Edition (GUI +
+# command line) and the Terminal Edition (command line only, built without
+# Qt; REVERBSCOPE_PACKAGE=terminal). A pull request that changes this workflow
+# runs the same package gates without creating a Release, tag, or PyPI upload.
+# The paths filter keeps a documentation-only push from building four
+# platforms; a release commit changes pyproject.toml and always builds.
 name: Release
 
 on:
   push:
-    branches: [main]
+    branches: [main, "release/**"]
     tags: ["v*"]
     paths:
       - pyproject.toml
@@ -85,7 +88,9 @@ jobs:
             echo "Development version: no draft or PyPI upload."
             exit 0
           fi
-          if [[ "$REF_TYPE" == branch && "$REF_NAME" == main ]]; then
+          if [[ "$REF_TYPE" == branch && ( "$REF_NAME" == main || "$REF_NAME" == release/* ) ]]; then
+            # main carries the beta line; release/<series> a release-candidate
+            # line. Either opens the draft for its own version, never a tag.
             if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null; then
               echo "v$version already has a tag: no new draft."
               exit 0
@@ -486,10 +491,19 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
-      - name: The tested commit is on main
+      - name: The tested commit is on main or on a release branch
+        # A draft only ever points at a commit of the beta line (main) or of
+        # a release-candidate line (release/*): never at a stray branch or tag.
         run: |
-          git fetch --no-tags origin main
-          git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD
+          git fetch --no-tags origin main 'refs/heads/release/*:refs/remotes/origin/release/*'
+          for ref in origin/main $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/release); do
+            if git merge-base --is-ancestor "$GITHUB_SHA" "$ref"; then
+              echo "$GITHUB_SHA is on $ref"
+              exit 0
+            fi
+          done
+          echo "::error::$GITHUB_SHA is not on main or on a release/* branch"
+          exit 1
       # Artifacts of this run only (download-artifact's default), so every
       # file on the draft comes from the jobs above.
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
@@ -508,7 +522,17 @@ jobs:
           match = re.search(r'(?ms)^## \[' + version + r'\].*?\n(.*?)(?=^## \[|\Z)', changelog)
           if match is None:
               raise SystemExit('CHANGELOG section missing for this version')
-          header = Path('packaging/release-notes-header.md').read_text(encoding='utf-8')
+          # The beta header or the release-candidate header, chosen by the
+          # version (scripts/release_draft.py: release_notes_header).
+          import importlib.util
+          import sys
+          spec = importlib.util.spec_from_file_location('rd', 'scripts/release_draft.py')
+          rd = importlib.util.module_from_spec(spec)
+          sys.modules['rd'] = rd
+          spec.loader.exec_module(rd)
+          header_path = Path('packaging') / rd.release_notes_header(os.environ['REVERBSCOPE_VERSION'])
+          print(f'release notes header: {header_path}')
+          header = header_path.read_text(encoding='utf-8')
           header = header.replace('{version}', os.environ['REVERBSCOPE_VERSION'])
           # The changelog goes where the header says {changes}: after the
           # downloads, limitations and checksums, before the technical part.
