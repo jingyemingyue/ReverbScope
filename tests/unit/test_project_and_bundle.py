@@ -244,6 +244,29 @@ def test_bundle_shows_the_home_folder_as_a_tilde(
     assert (out / "session.json").read_bytes() == on_disk
 
 
+def test_bundle_is_written_when_the_home_folder_is_unknown(
+    tmp_path: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """HOME unset and no passwd entry (docker run --user N, a CI job) make
+    Path.home() raise RuntimeError; the bundle stopped as "unexpected
+    RuntimeError … a bug in ReverbScope" although there is no home folder to
+    hide. Every bundle was affected: session.json always holds strings."""
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    result = analyze(
+        synthetic_recording(short_sweep, ir, noise_rms=1e-5), Reference.from_settings(short_sweep)
+    )
+    out = tmp_path / "booth"
+    save_measurement(out, MeasurementSession(room_name="Booth"), result, include_curves=False)
+
+    def no_home() -> Path:
+        raise RuntimeError("Could not determine home directory.")
+
+    monkeypatch.setattr(Path, "home", staticmethod(no_home))
+    with zipfile.ZipFile(bundle_session(out, tmp_path / "report.zip")) as archive:
+        assert archive.read("session.json") == (out / "session.json").read_bytes()
+        assert "impulse_response.wav" in archive.namelist()
+
+
 @pytest.mark.parametrize("entry", ["NUL byte", "link loop"])
 def test_project_add_skips_a_stored_entry_that_cannot_be_resolved(
     tmp_path: Path, short_sweep: SweepSettings, entry: str

@@ -128,10 +128,27 @@ def build_info(path: Path | None = None) -> dict[str, str] | None:
     return info or None
 
 
+def home_folder() -> Path | None:
+    """The home folder, or None when there is none to find.
+
+    ``Path.home()`` raises RuntimeError when HOME is unset and the account has
+    no passwd entry (``docker run --user N``, a CI job): a report that hides
+    the home folder has nothing to hide there, and must not stop for it.
+    """
+    try:
+        return Path.home()
+    except (RuntimeError, OSError):
+        return None
+
+
 def redact_home(path: str | Path, home: str | Path | None = None) -> str:
     """``path`` with the home folder replaced by ``~`` (the account name hidden)."""
     text = str(path)
-    prefix = str(home if home is not None else Path.home()).rstrip("/\\")
+    if home is None:
+        home = home_folder()
+    if home is None:
+        return text
+    prefix = str(home).rstrip("/\\")
     if not prefix:
         return text
     # Windows paths compare case-insensitively (C:\Users\Anna == c:\users\anna).

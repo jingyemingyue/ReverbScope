@@ -373,27 +373,32 @@ def _without_home(path: Path) -> bytes | None:
     folder there would publish the account name with a bug report. It is
     shown as ``~``, as in the doctor report. result.json names no files.
     """
+    from reverbscope.diagnostics import home_folder
+
     if path.suffix.lower() != ".json" or path.name == RESULT_FILE:
         return None
+    home = home_folder()
+    if home is None:
+        return None  # no home folder to hide (HOME unset, no passwd entry)
     try:
         data = _read_json(path, kind="JSON")
     except SessionError:
         return None  # not ReverbScope's JSON: bundled as it is
-    shown = _redact_strings(data)
+    shown = _redact_strings(data, home)
     if shown == data:
         return None
     return (json.dumps(shown, indent=2) + "\n").encode("utf-8")
 
 
-def _redact_strings(value: Any) -> Any:
+def _redact_strings(value: Any, home: Path) -> Any:
     from reverbscope.diagnostics import redact_home
 
     if isinstance(value, str):
-        return redact_home(value)
+        return redact_home(value, home)
     if isinstance(value, list):
-        return [_redact_strings(item) for item in value]
+        return [_redact_strings(item, home) for item in value]
     if isinstance(value, dict):
-        return {key: _redact_strings(item) for key, item in value.items()}
+        return {key: _redact_strings(item, home) for key, item in value.items()}
     return value
 
 

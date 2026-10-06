@@ -33,6 +33,19 @@ def test_home_folder_is_redacted_on_posix_and_windows() -> None:
     )
 
 
+def test_a_path_is_shown_as_it_is_when_the_home_folder_is_unknown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Path.home() raises RuntimeError when HOME is unset and the account has
+    no passwd entry (a container run as a bare uid); nothing is hidden then."""
+
+    def no_home() -> Path:
+        raise RuntimeError("Could not determine home directory.")
+
+    monkeypatch.setattr(Path, "home", staticmethod(no_home))
+    assert redact_home("/srv/takes/a.wav") == "/srv/takes/a.wav"
+
+
 def test_build_info_is_read_from_the_bundle_file(tmp_path: Path) -> None:
     path = tmp_path / "build_info.json"
     assert build_info(path) is None  # source and pip installs have none
