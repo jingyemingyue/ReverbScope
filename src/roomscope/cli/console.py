@@ -668,11 +668,19 @@ class Console:
     def _ascii(self, text: str) -> str:
         """``text`` with the signs this stream cannot show in ASCII."""
         if self.frames:
-            # "|" is the side of an ASCII frame: a separator inside one is "/".
-            text = text.replace("·", "/")
+            # "|" is the side of an ASCII frame: a separator inside one is "/",
+            # and |Δ| (the size of a change) is not drawn as two more sides.
+            text = text.replace("·", "/").replace("|Δ|", "abs(delta)")
         text = text.translate(_ASCII_SIGNS)
         if _DEGREE in text and not self.can_write(_DEGREE):
             text = text.replace(_DEGREE, "")
+        if not self.can_write(text):
+            # What the encoding cannot write would become one "?" however wide
+            # the character is, and a frame's sides would come out ragged:
+            # one "?" per column keeps them straight.
+            text = "".join(
+                char if self.can_write(char) else "?" * max(1, char_width(char)) for char in text
+            )
         return text
 
     # Styles -----------------------------------------------------------------
@@ -988,12 +996,19 @@ class Console:
         *,
         indent: int = 2,
         gap: int = 3,
+        plain_ok: bool = False,
     ) -> bool:
         """Whether :meth:`table` would lay these rows out as a table (not
-        blocks); with frames, as a bordered table."""
+        blocks); with frames, as a bordered table, unless ``plain_ok``: then
+        the plain table the borders give way to counts as well."""
         if self.boxed:
-            return self.framed_table(headers, rows) is not None
-        return self._fits_unframed(_column_widths(headers, rows), indent, gap)
+            if self.framed_table(headers, rows) is not None:
+                return True
+            if not plain_ok:
+                return False
+        shown_headers = [self.readable(header) for header in headers]
+        shown_rows = [[self.readable(cell) for cell in row] for row in rows]
+        return self._fits_unframed(_column_widths(shown_headers, shown_rows), indent, gap)
 
     def _fits_unframed(self, widths: Sequence[int], indent: int, gap: int) -> bool:
         return indent + sum(widths) + gap * (len(widths) - 1) <= self.width

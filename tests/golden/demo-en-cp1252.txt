@@ -46,7 +46,7 @@
 | Early reflections  | [OK] # gone / # new / # at both                                             |
 | Low end            | [OK] at both: ### Hz                                                        |
 | Noise floor        | [OK] -##.# -> -##.# dBFS (-##.# dB)                                         |
-| Frequency response | [OK] largest change in the ##.# Hz octave, #.# dB mean |delta|              |
+| Frequency response | [OK] largest change in the ##.# Hz octave, #.# dB mean abs(delta)           |
 +--------------------+-----------------------------------------------------------------------------+
 
 > What the demo shows

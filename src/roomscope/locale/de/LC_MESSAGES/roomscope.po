@@ -7119,3 +7119,6 @@ msgstr ""
 "Die Desktop-App braucht eine grafische Anzeige, und diese Sitzung hat ke"
 "ine (DISPLAY und WAYLAND_DISPLAY sind nicht gesetzt). Starte sie aus ein"
 "er Desktop-Sitzung; das Kommandozeilenwerkzeug funktioniert auch ohne."
+
+msgid "Δ % is left out: widen the terminal to see it."
+msgstr "Δ % ist ausgelassen: Mach das Terminal breiter, um es zu sehen."

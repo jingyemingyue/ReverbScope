@@ -61,7 +61,9 @@ def test_a_title_panel_holds_the_facts_and_lines_up(zh: None, name: str) -> None
         [("会话", "position-a"), ("采样率", "48 kHz"), ("创建时间", "2026-10-05 14:10 +00:00")],
     )
     _same_width(lines, c.width)
-    assert "RoomScope 分析报告" in strip_ansi(lines[0])
+    # What cp1252 cannot write is one "?" per column, so the sides stay straight.
+    title = "RoomScope 分析报告" if c.unicode else "RoomScope " + "?" * 8
+    assert title in strip_ansi(lines[0])
     assert len(lines) == 5  # top, three facts, bottom
     top = strip_ansi(lines[0])
     assert top.startswith("╭─ " if c.unicode else "+- ") and top.endswith("╮" if c.unicode else "+")

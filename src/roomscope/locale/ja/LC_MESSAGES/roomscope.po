@@ -6466,3 +6466,6 @@ msgid ""
 msgstr ""
 "デスクトップアプリにはグラフィック表示が必要ですが、このセッションにはありません（DISPLAY と WAYLAND_DISPLAY が未設定で"
 "す）。デスクトップのセッションから起動してください。コマンドラインツールは表示がなくても使えます。"
+
+msgid "Δ % is left out: widen the terminal to see it."
+msgstr "Δ % は省略しました。ターミナルを広げると表示されます。"

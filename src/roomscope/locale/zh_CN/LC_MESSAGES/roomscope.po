@@ -5233,3 +5233,6 @@ msgid ""
 msgstr ""
 "桌面应用需要图形界面，而当前会话没有（DISPLAY 和 WAYLAND_DISPLAY 都未设置）。请在桌面会话中启动它；命令行工具不需要图形"
 "界面。"
+
+msgid "Δ % is left out: widen the terminal to see it."
+msgstr "已省略 Δ %；把终端调宽即可看到。"

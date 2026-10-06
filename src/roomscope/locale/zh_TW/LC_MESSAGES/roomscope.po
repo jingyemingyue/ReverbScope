@@ -6345,3 +6345,6 @@ msgid ""
 msgstr ""
 "桌面應用程式需要圖形顯示環境，而目前的工作階段沒有（DISPLAY 和 WAYLAND_DISPLAY 都未設定）。請在桌面工作階段中啟動；命令"
 "列工具不需要圖形顯示環境。"
+
+msgid "Δ % is left out: widen the terminal to see it."
+msgstr "已省略 Δ %；把終端機調寬即可看到。"

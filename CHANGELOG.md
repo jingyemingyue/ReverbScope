@@ -145,20 +145,24 @@ All notable changes to RoomScope are documented here. The format follows
   drawn by `roomscope/cli/console.py` itself, with no new dependency (`rich`
   would add `pygments`, `markdown-it-py` and `mdurl` to both downloads).
   Everything is measured in display columns, so Chinese text, colour and the
-  ASCII forms keep every line of a frame the same width (tested). A number
-  is never parted from its unit when a line wraps (`2.4 ms`, `-17.9 dB`),
-  closing marks and the two halves of a Chinese word stay together, and a
-  question of the menu keeps `（默认：48000）：` whole on its last line. A path
-  is never cut: a path too long for a panel follows it on a line of its own,
-  a table that does not fit becomes one block per row. Colour is only on
-  marks, bars and borders: a word or a number is never yellow, green, cyan
-  or dim (unreadable on some colour schemes); titles, status words,
-  commands and the numbers of the menu are bold in the colour of the
-  terminal's text. An unreliable decay time has its `?` before the number,
-  so the digits of the column stay under each other. The next steps, hints
-  and examples stay bare, so a triple click copies the command alone. The
-  desktop app's report panes and `roomscope.cli.report` have no frames:
-  their text is byte for byte what it was. `show --list` keeps one
+  ASCII forms keep every line of a frame the same width (tested; a character
+  the stream cannot write is one `?` per column, and `|Δ|` is `abs(delta)`
+  inside an ASCII frame). A path is never cut: a path too long for a panel
+  follows it on a line of its own, a table that does not fit becomes one
+  block per row, and the percentage column of the reverberation changes
+  stays in the plain table when the borders leave no room for it (and a line
+  under the table says so when it must go). A number is never parted from
+  its unit when a line wraps (`2.4 ms`, `-17.9 dB`), closing marks and the
+  two halves of a Chinese word stay together, and a question of the menu
+  keeps `（默认：48000）：` whole on its last line. Colour is only on marks,
+  bars and borders: a word or a number is never yellow, green, cyan or dim
+  (unreadable on some colour schemes); titles, status words, commands and
+  the numbers of the menu are bold in the colour of the terminal's text. An
+  unreliable decay time has its `?` before the number, so the digits of the
+  column stay under each other. The next steps, hints and examples stay
+  bare, so a triple click copies the command alone. The desktop app's report
+  panes and `roomscope.cli.report` have no frames: their text is byte for
+  byte what it was. `show --list` keeps one
   `path<TAB>summary` line per session when its output is not a terminal.
   Information and `--format json` output are unchanged.
 - **Progress line.** A coloured bar (`━` and `╸`, or `=` and `>`) with the

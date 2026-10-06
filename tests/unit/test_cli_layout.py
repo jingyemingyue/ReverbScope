@@ -134,6 +134,37 @@ def test_no_screen_parts_a_number_from_its_unit(
         assert _split_units(text) == [], (argv, columns)
 
 
+# --- The table of reverberation changes keeps its percentage -----------------------------------
+
+
+@pytest.mark.parametrize("columns", [56, 60, 64, 70, 80, 100])
+def test_the_delta_table_keeps_its_percentage_where_a_plain_table_holds_it(
+    run: Call, demo: Path, columns: int
+) -> None:
+    """The four columns the borders take pushed "Δ %" out at about 60 columns:
+    the plain table, which holds it, is used instead of dropping it."""
+    text = run(
+        "--lang",
+        "zh_CN",
+        "compare",
+        str(demo / "position-a"),
+        str(demo / "position-b"),
+        columns=columns,
+    )
+    header = next(line for line in text.splitlines() if "频带" in line and "指标" in line)
+    assert "Δ %" in header, text
+    assert "-27.3 %" in text or "+134.3 %" in text
+    assert "Δ % is left out" not in text and "已省略" not in text
+
+
+def test_a_column_that_must_go_is_named_under_the_table(run: Call, demo: Path) -> None:
+    text = run("compare", str(demo / "position-a"), str(demo / "position-b"), columns=60)
+    assert "Δ %" not in next(
+        line for line in text.splitlines() if "Band" in line and "Metric" in line
+    )
+    assert "Δ % is left out: widen the terminal to see it." in text
+
+
 # --- Colour: only marks, bars and borders ------------------------------------------------------
 
 _SGR = re.compile(r"\x1b\[([0-9;]*)m")
@@ -244,6 +275,75 @@ def test_an_unreliable_number_has_its_mark_before_it_not_after() -> None:
     energy = SimpleNamespace(value=-3.2, unit="dB", validity=Validity.UNRELIABLE)
     assert _energy_cell(c, energy).endswith("-3.2 dB")  # type: ignore[arg-type]
     assert _energy_cell(c, energy).startswith("?")  # type: ignore[arg-type]
+
+
+# --- ASCII streams -------------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("encoding", ["cp1252", "ascii", "latin-1"])
+def test_what_the_stream_cannot_write_takes_as_many_columns_as_it_had(encoding: str) -> None:
+    """One "?" for a two-column character made the sides of a frame ragged."""
+    c = Console(width=50, frames=True, unicode=False, encoding=encoding)
+    lines = c.title(
+        "RoomScope 分析",
+        [("房间", "合成演示房间"), ("Position", "A：靠近桌子和侧墙"), ("Room", "Studio")],
+    )
+    assert len({cell_width(line) for line in lines}) == 1, "\n".join(lines)
+    assert "?" in "".join(lines) and "合" not in "".join(lines)
+    assert cell_width(c.readable("合成")) == cell_width("合成") == 4
+
+
+def test_gbk_keeps_its_chinese() -> None:
+    c = Console(width=50, frames=True, unicode=False, encoding="gbk")
+    lines = c.title("RoomScope 分析", [("房间", "合成演示房间")])
+    assert len({cell_width(line) for line in lines}) == 1
+    assert "合成演示房间" in "\n".join(lines) and "?" not in "".join(lines)
+
+
+def test_a_change_in_decibels_is_not_two_more_sides_of_an_ascii_frame() -> None:
+    c = Console(width=60, frames=True, unicode=False, encoding="cp1252")
+    lines = c.grid([("Frequency response", "largest change in the octave, 7.8 dB mean |Δ|")])
+    assert "abs(delta)" in "".join(lines) and "|Δ|" not in "".join(lines)
+    assert len({cell_width(line) for line in lines}) == 1
+    assert all(line.count("|") == 3 for line in lines[1:-1])  # the sides and the divider
+    unframed = Console(width=60, unicode=False, encoding="cp1252")
+    assert unframed.readable("mean |Δ|") == "mean |delta|"
+
+
+# --- The edge of a panel ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("fill", ["x", "录"])
+def test_a_line_exactly_as_wide_as_the_panel_holds_fits_and_one_column_more_does_not(
+    fill: str,
+) -> None:
+    c = Console(width=50, frames=True)
+    room = c.width - 4
+    count = room // cell_width(fill)
+    exact = fill * count
+    assert cell_width(exact) <= room
+    framed = c.frame("Title", [exact, "short"])
+    assert framed is not None and {cell_width(line) for line in framed} == {50}
+    over = fill * (count + 1)
+    assert cell_width(over) > room
+    assert c.frame("Title", [over]) is None  # the caller lays the text out unframed
+    # One column over, for a character one column wide: the same.
+    assert c.frame("", ["x" * room]) is not None
+    assert c.frame("", ["x" * (room + 1)]) is None
+    assert c.frame("", ["x" * (c.width - 3)]) is None
+
+
+def test_a_panel_is_drawn_with_ascii_where_the_encoding_lacks_the_frame_glyphs() -> None:
+    """euc_jisx0213 writes ✓ × – ─ ━ · … (so the stream counts as Unicode) but not
+    ╭ ┡ ▌: the frames are ASCII there."""
+    c = Console(width=40, frames=True, unicode=True, encoding="euc_jisx0213")
+    lines = c.frame("Title", ["text"])
+    assert lines is not None
+    assert lines[0].startswith("+-") and lines[1].startswith("| ")
+    for line in lines:
+        line.encode("euc_jisx0213")
+    utf8 = Console(width=40, frames=True, unicode=True, encoding="utf-8")
+    assert utf8.frame("Title", ["text"])[0].startswith("╭─")  # type: ignore[index]
 
 
 # --- Wrapping: closing marks, two-character words and the last line ------------------------------

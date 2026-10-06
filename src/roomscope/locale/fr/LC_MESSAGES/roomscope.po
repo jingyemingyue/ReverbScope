@@ -7209,3 +7209,6 @@ msgstr ""
 "on n'en a pas (DISPLAY et WAYLAND_DISPLAY ne sont pas définis). Lance-la"
 " depuis une session de bureau ; l'outil en ligne de commande fonctionne "
 "sans."
+
+msgid "Δ % is left out: widen the terminal to see it."
+msgstr "Δ % est omis : élargis le terminal pour le voir."
