@@ -1597,8 +1597,13 @@ def _print_inventory(backend: Any, args: argparse.Namespace) -> int:
 def cmd_doctor(args: argparse.Namespace) -> int:
     from reverbscope.diagnostics import environment_report
 
-    report = environment_report(backend_name=args.backend, probe_rates=args.probe)
-    if _use_json(args):
+    as_json = _use_json(args)
+    # The JSON is pasted into issues and read by tools: English, like the
+    # diagnostics it stores, whatever the interface language.
+    report = environment_report(
+        backend_name=args.backend, probe_rates=args.probe, english_errors=as_json
+    )
+    if as_json:
         print(json.dumps(report, indent=1, default=str))
     else:
         print(render_environment(_console(args), report))

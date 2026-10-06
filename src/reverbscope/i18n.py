@@ -43,7 +43,8 @@ import re
 import string
 import struct
 import sys
-from collections.abc import Callable, Iterable, Sequence
+from collections.abc import Callable, Iterable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -209,6 +210,23 @@ def activate(lang: str | None = None, *, system_languages: Sequence[str] | None 
     _current = chosen
     _shown.clear()
     return _current
+
+
+@contextmanager
+def english() -> Iterator[None]:
+    """English for the block, then the language that was active before it.
+
+    For text that is shared rather than read here, such as the JSON report a
+    user pastes into an issue: a message is worded when it is raised, so it
+    has to be raised in English.
+    """
+    global _current, _translation
+    saved = _current, _translation
+    _current, _translation = DEFAULT_LANG, gettext.NullTranslations()
+    try:
+        yield
+    finally:
+        _current, _translation = saved
 
 
 def _(message: str) -> str:

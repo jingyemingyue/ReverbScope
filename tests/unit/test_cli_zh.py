@@ -454,6 +454,25 @@ def test_environment_report_is_chinese(zh_cli: None, capsys: pytest.CaptureFixtu
     assert english_words(prose, data=devices, values=typed) == [], out
 
 
+def test_the_json_environment_report_stays_english(
+    zh_cli: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review finding: `doctor --format json` under zh_CN stored the backend's
+    error as raised, in Chinese, in the report users paste into issues."""
+    from reverbscope.i18n import current_locale
+
+    chinese = ["--lang", "zh_CN", "--backend", "bogus"]
+    error = "unknown audio backend 'bogus'; available: portaudio, fake"
+    for json_report in (["--format", "json", "doctor"], ["doctor", "--json"]):
+        assert main([*chinese, *json_report]) == 0
+        report = json.loads(capsys.readouterr().out)
+        assert report["audio"] == {"error": error}
+        assert report["language"] == "zh_CN" and current_locale() == "zh_CN"
+    # The text report keeps the interface language.
+    assert main([*chinese, "doctor"]) == 0
+    assert "未知的音频后端 'bogus'" in capsys.readouterr().out
+
+
 def _take(tmp_path: Path, rt60_s: float, name: str) -> Path:
     from reverbscope.io.wav import read_wav, write_wav
 

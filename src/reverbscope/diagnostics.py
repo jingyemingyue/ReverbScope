@@ -199,16 +199,26 @@ def _settings_summary() -> dict[str, Any]:
 
 
 def environment_report(
-    backend_name: str | None = None, *, probe_rates: bool = False
+    backend_name: str | None = None, *, probe_rates: bool = False, english_errors: bool = False
 ) -> dict[str, Any]:
-    """The report as a JSON-ready dict; ``probe_rates`` asks every device for its rates."""
+    """The report as a JSON-ready dict; ``probe_rates`` asks every device for its rates.
+
+    ``english_errors`` words a failed backend or settings file in English, as
+    the JSON report must be (an error is worded when it is raised); the text
+    report keeps the interface language and shows it as raised.
+    """
+    from contextlib import nullcontext
+
     from reverbscope import __version__
     from reverbscope.edition import edition
-    from reverbscope.i18n import current_locale
+    from reverbscope.i18n import current_locale, english
     from reverbscope.io.recent import reverbscope_home
     from reverbscope.logging_config import LOG_FILENAME
     from reverbscope.settings import settings_path
 
+    errors = english if english_errors else nullcontext
+    with errors():
+        settings = _settings_summary()
     report: dict[str, Any] = {
         "reverbscope": __version__,
         "edition": edition(),
@@ -221,7 +231,7 @@ def environment_report(
         "language": current_locale(),
         "packages": {name: _package_version(name, module) for name, module in PACKAGES.items()},
         "libsndfile": _libsndfile_version(),
-        "settings": _settings_summary(),
+        "settings": settings,
         "paths": {
             "reverbscope_home": redact_home(reverbscope_home()),
             "settings": redact_home(settings_path()),
@@ -232,7 +242,8 @@ def environment_report(
         from reverbscope.audio.backend import get_backend
         from reverbscope.audio.inventory import build_inventory
 
-        inventory = build_inventory(get_backend(backend_name), probe_rates=probe_rates)
+        with errors():
+            inventory = build_inventory(get_backend(backend_name), probe_rates=probe_rates)
     except Exception as exc:  # the report must print even without audio
         report["audio"] = {"error": str(exc)}
     else:

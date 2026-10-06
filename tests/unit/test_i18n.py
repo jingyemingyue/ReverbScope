@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
 from reverbscope.i18n import (
     _,
@@ -463,3 +465,19 @@ def test_the_loopback_path_delay_is_not_called_electrical() -> None:
     finally:
         activate("en")
     assert shown == "已补偿 · 路径延迟 4.00 ms · 距离上限 1.37 m"
+
+
+def test_english_is_active_only_inside_the_block() -> None:
+    from reverbscope.i18n import english, localize
+
+    activate("zh_CN")
+    try:
+        with english():
+            assert current_locale() == "en" and _("Reverberation") == "Reverberation"
+            assert localize("candidate unreliable") == "candidate unreliable"
+        assert current_locale() == "zh_CN" and _("Reverberation") == "混响"
+        with pytest.raises(RuntimeError), english():
+            raise RuntimeError(_("Reverberation"))
+        assert _("Reverberation") == "混响"
+    finally:
+        activate("en")
