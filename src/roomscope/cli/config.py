@@ -369,7 +369,11 @@ def state(key: str, settings: UserSettings, choice: LanguageChoice | None = None
             return _("{name}={value} decides before this setting").format(
                 name=ENV_STYLE, value=override
             )
-        return _("plain, without frames") if value else _("boxed (the default)")
+        return (
+            _("plain text, without borders")
+            if value
+            else _("panels and bordered tables (the default)")
+        )
     return {
         "": _("follow the system"),
         "light": _("light"),

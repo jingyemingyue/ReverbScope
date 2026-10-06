@@ -502,11 +502,14 @@ def test_the_terminal_style_is_listed_stored_and_named_by_the_variable(
 ) -> None:
     code, out, _err = _run(capsys, "config", "style")
     assert code == 0
-    assert "boxed (the default)" in words(out) and "ROOMSCOPE_CLI_STYLE" in words(out)
+    assert "panels and bordered tables (the default)" in words(out)
+    assert "ROOMSCOPE_CLI_STYLE" in words(out)
     assert _run(capsys, "config", "style", "plain")[0] == 0
     assert _stored()["cli_style"] == "plain"
     code, out, _err = _run(capsys, "config")
-    assert re.search(r"(?m)^ *style +plain +Terminal style: plain, without frames", unframe(out))
+    assert re.search(
+        r"(?m)^ *style +plain +Terminal style: plain text, without borders", unframe(out)
+    )
     # The stored choice is the one every command uses, and the variable
     # beats it in the shell it is set in.
     code, out, _err = _run(capsys, "--lang", "en", "config")

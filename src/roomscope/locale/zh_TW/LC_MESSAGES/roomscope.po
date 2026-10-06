@@ -6405,3 +6405,9 @@ msgstr "基準會話（之前）的編號或路徑"
 
 msgid "Number or path of the candidate session (after)"
 msgstr "對比會話（之後）的編號或路徑"
+
+msgid "plain text, without borders"
+msgstr "純文字，不帶邊框"
+
+msgid "panels and bordered tables (the default)"
+msgstr "面板和帶邊框的表格（預設）"

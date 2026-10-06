@@ -6523,3 +6523,9 @@ msgstr "基準セッション（前）の番号またはパス"
 
 msgid "Number or path of the candidate session (after)"
 msgstr "比較対象セッション（後）の番号またはパス"
+
+msgid "plain text, without borders"
+msgstr "プレーンテキスト（枠線なし）"
+
+msgid "panels and bordered tables (the default)"
+msgstr "パネルと枠線付きの表（既定）"

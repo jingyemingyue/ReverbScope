@@ -7219,3 +7219,9 @@ msgstr "Número o ruta de la sesión de referencia (antes)"
 
 msgid "Number or path of the candidate session (after)"
 msgstr "Número o ruta de la sesión a comparar (después)"
+
+msgid "plain text, without borders"
+msgstr "texto sin formato, sin bordes"
+
+msgid "panels and bordered tables (the default)"
+msgstr "paneles y tablas con bordes (predeterminado)"

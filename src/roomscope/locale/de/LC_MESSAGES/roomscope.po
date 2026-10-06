@@ -7178,3 +7178,9 @@ msgstr "Nummer oder Pfad der Referenzsitzung (vorher)"
 
 msgid "Number or path of the candidate session (after)"
 msgstr "Nummer oder Pfad der Vergleichssitzung (nachher)"
+
+msgid "plain text, without borders"
+msgstr "reiner Text, ohne Rahmen"
+
+msgid "panels and bordered tables (the default)"
+msgstr "Panels und Tabellen mit Rahmen (Standard)"

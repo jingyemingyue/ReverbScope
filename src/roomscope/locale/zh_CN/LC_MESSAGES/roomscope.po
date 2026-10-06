@@ -5308,3 +5308,9 @@ msgstr "基准会话（之前）的编号或路径"
 
 msgid "Number or path of the candidate session (after)"
 msgstr "对比会话（之后）的编号或路径"
+
+msgid "plain text, without borders"
+msgstr "纯文本，不带边框"
+
+msgid "panels and bordered tables (the default)"
+msgstr "面板和带边框的表格（默认）"

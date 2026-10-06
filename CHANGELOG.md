@@ -159,7 +159,9 @@ All notable changes to RoomScope are documented here. The format follows
   (unreadable on some colour schemes); titles, status words, commands and
   the numbers of the menu are bold in the colour of the terminal's text. An
   unreliable decay time has its `?` before the number, so the digits of the
-  column stay under each other. In Chinese the speed of sound reads
+  column stay under each other. `roomscope config` and `doctor` describe
+  the terminal style once, in words ("面板和带边框的表格（默认）"), not as
+  "boxed（默认） · boxed". In Chinese the speed of sound reads
   `343.2 m/s，气温 20 °C（假定）` and an undetermined geometry `– 未确定（需添加
   --speaker-distance）`, and the spectrum's note `来自脉冲响应` (it was
   "脉冲响应的", the start of a phrase). The overview of a comparison has a

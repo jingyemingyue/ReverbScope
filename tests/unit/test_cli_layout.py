@@ -518,3 +518,21 @@ def test_the_session_list_shows_the_time_as_everywhere_else_and_cuts_no_value(
     monkeypatch.setattr(sys, "stdout", pipe)
     assert main(["show", "--list", str(demo)]) == 0
     assert all(line.count("\t") == 1 and "T" in line for line in pipe.getvalue().splitlines())
+
+
+# --- Frames, hints and the style ----------------------------------------------------------------
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_the_style_is_described_once_not_named_twice(run: Call, lang: str) -> None:
+    meaning = (
+        "panels and bordered tables (the default)" if lang == "en" else "面板和带边框的表格（默认）"
+    )
+    config = run("--lang", lang, "config", columns=100)
+    row = next(line for line in config.splitlines() if "│ style" in line)
+    assert meaning in row and row.count("boxed") == 1
+    doctor = run("--lang", lang, "--backend", "fake", "doctor", columns=100)
+    row = next(line for line in doctor.splitlines() if meaning in line)
+    assert row.count("boxed") == 1, row
+    saved = run("--lang", lang, "config", "style", "plain", columns=100)
+    assert ("plain text, without borders" if lang == "en" else "纯文本，不带边框") in saved
