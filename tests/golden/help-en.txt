@@ -503,6 +503,8 @@ print an environment report for bug reports and debugging
 options:
   -h, --help  show this help message and exit
   --json      deprecated: use reverbscope --format json
+  --out FILE  also write the report to this file (UTF-8), ready to attach to a
+              bug or hardware report
   --probe     also ask every device which sample rates it accepts (nothing is
               played)
 

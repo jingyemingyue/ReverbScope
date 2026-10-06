@@ -1333,6 +1333,8 @@ def _recommended(probe: dict[str, Any]) -> str:
 
 def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> list[str]:
     """Devices as a table, or one block per device when the rates were probed."""
+    from reverbscope.diagnostics import device_latency_text
+
     if not probes:
         return c.status("skip", _("No audio device found."))
     if not probed:
@@ -1376,6 +1378,11 @@ def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> 
         if marks:
             facts.append(marks)
         lines += c.paragraph(c.sep().join(facts), indent=6)
+        latency = device_latency_text(device)
+        if latency:
+            # The driver's defaults; the take's own latency is the "audio
+            # stream:" line of reverbscope.log (docs/HARDWARE_TESTS.md).
+            lines += c.paragraph(latency, indent=6)
         rate_rows: list[tuple[str, str]] = []
         if device["max_input_channels"] > 0:
             rate_rows.append(
