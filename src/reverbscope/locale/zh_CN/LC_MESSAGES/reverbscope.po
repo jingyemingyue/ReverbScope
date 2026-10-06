@@ -3957,3 +3957,56 @@ msgstr "作为房间话筒，后期房间声偏少（C80 {value:.1f} dB，高于
 msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {threshold:.0f} dB). Some late sound suits a choir, but this much will blur diction. This is one position, not a room grade."
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
+msgid "Experimental"
+msgstr "实验"
+
+msgid "experimental: block cloud models, online lookup and telemetry for this run"
+msgstr "实验功能：本次运行禁止云端模型、在线查询和遥测"
+
+msgid "experimental guided diagnosis of a saved measurement"
+msgstr "对已保存的测量做实验性导引诊断"
+
+msgid "saved measurement (result.json or a session folder)"
+msgstr "已保存的测量（result.json 或会话文件夹）"
+
+msgid "second measurement, taken after a change"
+msgstr "改动之后的第二次测量"
+
+msgid "how much to explain"
+msgstr "解释多少内容"
+
+msgid "explanation language, such as en or zh-CN"
+msgstr "说明使用的语言，例如简体中文"
+
+msgid "show the sanitized cloud payload and do not send it"
+msgstr "只显示将发给云端的已清理内容，并不发送"
+
+msgid "send one sanitized summary to the configured cloud model"
+msgstr "向已配置的云端模型发送一次已清理的摘要"
+
+msgid "remember that sanitized summaries may be sent"
+msgstr "记住以后可以发送已清理的摘要"
+
+msgid "Guided"
+msgstr "导引"
+
+msgid "which explanation to use for this run"
+msgstr "本次使用哪种说明方式"
+
+msgid "which cloud service to call"
+msgstr "要调用的云端服务"
+
+msgid "model identifier entered by you"
+msgstr "由你填写的模型标识"
+
+msgid "advanced custom service address"
+msgstr "高级选项：自定义服务地址"
+
+msgid "confirm that a custom server may receive the sanitized summary"
+msgstr "确认自定义服务器可以收到已清理的摘要"
+
+msgid "allow a sanitized summary to be sent to the selected service"
+msgstr "允许向所选服务发送已清理的摘要"
+
+
+

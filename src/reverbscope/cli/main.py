@@ -74,6 +74,7 @@ from reverbscope.models.configuration import (
 
 if TYPE_CHECKING:
     from reverbscope.audio.backend import ChannelPlan
+    from reverbscope.models.result import AnalysisResult
 
 log = logging.getLogger("reverbscope.cli")
 
@@ -123,6 +124,7 @@ COMMAND_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (N_("Measurement"), ("sweep", "analyze", "devices", "measure", "analyze-ir")),
     (N_("Results"), ("show", "compare", "project", "export", "session")),
     (N_("Diagnostics"), ("doctor", "schema")),
+    (N_("Experimental"), ("guided",)),
 )
 
 #: A few commands to start from (every flag exists in the parser; a test runs them).
@@ -548,6 +550,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "-v", "--verbose", action="store_true", help=_("debug logging, and tracebacks on errors")
     )
+    parser.add_argument(
+        "--privacy-mode",
+        action="store_true",
+        help=_("experimental: block cloud models, online lookup and telemetry for this run"),
+    )
     sub = parser.add_subparsers(
         dest="command", required=False, metavar="<command>", help=argparse.SUPPRESS
     )
@@ -919,6 +926,85 @@ def build_parser() -> argparse.ArgumentParser:
         "name",
         choices=["result", "session", "comparison", "project", "sidecar"],
         help=_("which schema to print"),
+    )
+
+    p_guided = _command(
+        sub,
+        "guided",
+        _("experimental guided diagnosis of a saved measurement"),
+        examples=("reverbscope guided --result result.json",),
+    )
+    _required(p_guided).add_argument(
+        "--result",
+        required=True,
+        type=Path,
+        metavar="PATH",
+        help=_("saved measurement (result.json or a session folder)"),
+    )
+    p_guided.add_argument(
+        "--compare",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=_("second measurement, taken after a change"),
+    )
+    p_guided.add_argument(
+        "--expertise",
+        choices=["beginner", "intermediate", "expert"],
+        default=None,
+        help=_("how much to explain"),
+    )
+    p_guided.add_argument(
+        "--language",
+        default=None,
+        metavar="LANG",
+        help=_("explanation language, such as en or zh-CN"),
+    )
+    p_guided.add_argument(
+        "--preview-payload",
+        action="store_true",
+        help=_("show the sanitized cloud payload and do not send it"),
+    )
+    p_guided.add_argument(
+        "--send-once",
+        action="store_true",
+        help=_("send one sanitized summary to the configured cloud model"),
+    )
+    p_guided.add_argument(
+        "--always-allow-sanitized",
+        action="store_true",
+        help=_("remember that sanitized summaries may be sent"),
+    )
+    p_guided.add_argument(
+        "--engine",
+        choices=["builtin", "local", "cloud", "auto"],
+        default=None,
+        help=_("which explanation to use for this run"),
+    )
+    p_guided.add_argument(
+        "--provider",
+        default=None,
+        help=_("which cloud service to call"),
+    )
+    p_guided.add_argument(
+        "--model",
+        default=None,
+        help=_("model identifier entered by you"),
+    )
+    p_guided.add_argument(
+        "--base-url",
+        default=None,
+        help=_("advanced custom service address"),
+    )
+    p_guided.add_argument(
+        "--acknowledge-custom-endpoint",
+        action="store_true",
+        help=_("confirm that a custom server may receive the sanitized summary"),
+    )
+    p_guided.add_argument(
+        "--enable-cloud",
+        action="store_true",
+        help=_("allow a sanitized summary to be sent to the selected service"),
     )
     _shorten_usage(parser)
     # The command list is printed grouped (below), so argparse's own list is
@@ -1729,6 +1815,69 @@ def cmd_demo(args: argparse.Namespace) -> int:
     return 0
 
 
+def _load_guided_result(path: Path) -> AnalysisResult:
+    from reverbscope.io.session_store import load_measurement, load_result
+
+    if path.is_dir() or path.name == "session.json":
+        return load_measurement(path).result
+    return load_result(path)
+
+
+def cmd_guided(args: argparse.Namespace) -> int:
+    """Experimental guided diagnosis. The measurement itself is not repeated."""
+    from reverbscope.experimental.guided.config import load_guided_settings, save_guided_settings
+    from reverbscope.experimental.guided.privacy import process_vault
+    from reverbscope.experimental.guided.service import run_guided
+    from reverbscope.experimental.guided.setup import resolve_api_key
+
+    result = _load_guided_result(args.result)
+    other = None if args.compare is None else _load_guided_result(args.compare)
+    settings = load_guided_settings()
+    if args.engine:
+        settings.explanation_engine = args.engine
+    if args.provider:
+        settings.provider_id = args.provider
+    if args.model:
+        settings.model_id = args.model
+    if args.base_url:
+        settings.base_url = args.base_url
+    if args.acknowledge_custom_endpoint:
+        settings.custom_endpoint_acknowledged = True
+    if args.enable_cloud:
+        settings.cloud_explanation_enabled = True
+    consent = None
+    private = bool(args.privacy_mode)
+    if args.always_allow_sanitized and not private:
+        settings.cloud_consent = "always"
+        settings.cloud_explanation_enabled = True
+        consent = "always"
+    elif args.send_once and not private:
+        consent = "once"
+        settings.cloud_explanation_enabled = True
+    save_guided_settings(settings)
+    api_key = "" if private else resolve_api_key(settings.provider_id, process_vault())
+    report = run_guided(
+        result,
+        settings=settings,
+        other=other,
+        language=args.language,
+        expertise=args.expertise,
+        privacy=private,
+        api_key=api_key,
+        consent_override=consent,
+    )
+    if args.format == "json":
+        print(report.json(include_preview=bool(args.preview_payload)), end="")
+    else:
+        print(report.text(), end="")
+        if args.preview_payload and report.bundle.preview is not None:
+            print(report.bundle.preview.to_json())
+    if args.send_once and settings.cloud_consent != "always":
+        settings.cloud_consent = "unset"
+        save_guided_settings(settings)
+    return 0
+
+
 COMMANDS = {
     "demo": cmd_demo,
     "sweep": cmd_sweep,
@@ -1739,6 +1888,7 @@ COMMANDS = {
     "schema": cmd_schema,
     "devices": cmd_devices,
     "doctor": cmd_doctor,
+    "guided": cmd_guided,
     "measure": cmd_measure,
     "gui": cmd_gui,
     "session": cmd_session,
@@ -1836,6 +1986,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     configure_logging(logging.DEBUG if args.verbose else logging.WARNING)
+    if getattr(args, "privacy_mode", False):
+        os.environ["REVERBSCOPE_PRIVACY_MODE"] = "1"
     err = _console(args, sys.stderr)
     if args.command is None:
         # Bare ``reverbscope``: a short home screen instead of argparse's error.
