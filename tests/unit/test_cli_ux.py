@@ -273,7 +273,7 @@ def test_golden_home_screen(
     code, out, err = _run(["--lang", lang], capsys)
     assert code == 2 and out == ""
     assert "reverbscope demo" in err and "reverbscope --help" in err
-    # "ReverbScope" is 2 chars longer than "RoomScope"; the last line is the language hint.
+    # The rename made the name two characters longer; the last line is the language hint.
     assert len(err.splitlines()) <= 13
     # The way to the other language, written in that language.
     hint = {

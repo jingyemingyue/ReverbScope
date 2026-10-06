@@ -7,6 +7,32 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.5.0b2] - 2026-10-06
+
+Software beta 2: the stabilization release after the RoomScope → ReverbScope
+rename, and still **not** 0.5.0 (the release plan's 0.5.0 needs a dated
+hardware-matrix PASS; none exists). It brings together the stable line's
+defect fixes, an audit of the measurement path that withholds decay and
+energy numbers the measurement cannot support, and the checks that run
+without hardware. From this version every download is named
+`ReverbScope-*` / `reverbscope-*`; the published v0.5.0b1 keeps its
+`RoomScope-*` / `roomscope-*` files and is not rewritten.
+
+**How this version was verified, and how it was not.** Every entry below
+was reproduced and tested with synthetic signals, the fake audio backend and
+scripted stand-ins: the test suite (GitHub's Linux, macOS and Windows CI
+machines on Python 3.12–3.14, and a Linux container), the fake-backend
+Standalone flow, the offline command-line workflow, the sdist and wheel build
+and install, and the Release workflow's bundle smoke tests, which show that
+the bundles start and run the fake measurement on GitHub's machines and
+nothing more. **No real audio interface, microphone, loudspeaker, room or
+DAW was used.** `docs/HARDWARE_TESTS.md` and `docs/VALIDATION.md` are
+unchanged: every cell is still *Not tested*, and nothing in this version is
+hardware-validated. The bundles are unsigned (macOS: ad hoc, not notarized;
+Windows: no Authenticode) and nothing is on PyPI.
+
 ### Added
 - **Settings from the command line.** `reverbscope config` lists the settings
   the desktop app keeps in `settings.json`, says what each value means now
@@ -73,6 +99,17 @@ All notable changes to ReverbScope are documented here. The format follows
   `20 °C` (also on a cp1252 or GBK code page and in the classic Windows
   console; `20 C` where the encoding has no degree sign), and the
   resonance note no longer cites "v0.1".
+
+- **Release files and workflows.** The downloads are named for the project:
+  `ReverbScope-Desktop-*`, `ReverbScope-Terminal-*` and the
+  `reverbscope-<version>` Python files (v0.5.0b1's assets kept the RoomScope
+  names; that release is left as it was). A newer push to a pull request cancels that pull request's older
+  Release run, so four bundle runners no longer finish a superseded commit;
+  runs for `main`, tags and manual verification are never cancelled by a
+  later event. The Pages workflow checks the repository out before it
+  uploads `site/` (its first run failed with "tar: site: Cannot open") and
+  verifies `index.html`, `robots.txt` and `sitemap.xml` first; the site is
+  served only once Pages is enabled in the repository settings.
 
 ### Fixed
 - **Boundary reflections.** An early reflection that landed on either end of

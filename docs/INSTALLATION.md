@@ -276,7 +276,7 @@ Python 3.12 or newer. Download `reverbscope-<version>-py3-none-any.whl`, then:
 ```bash
 python3 -m venv reverbscope-env
 source reverbscope-env/bin/activate          # Windows: reverbscope-env\Scripts\activate
-pip install "./reverbscope-0.5.0b1-py3-none-any.whl[gui]"
+pip install "./reverbscope-0.5.0b2-py3-none-any.whl[gui]"
 reverbscope --help
 reverbscope gui                              # or: reverbscope-gui
 ```
@@ -291,7 +291,7 @@ reverbscope show demo/
 ```
 
 `reverbscope-<version>.tar.gz` is the source archive: `pip install
-"./reverbscope-0.5.0b1.tar.gz[gui]"` builds the same wheel locally.
+"./reverbscope-0.5.0b2.tar.gz[gui]"` builds the same wheel locally.
 
 ### Developer install (from Git)
 

@@ -225,7 +225,7 @@ ReverbScope **还没有发布到 PyPI**，所以 `pip install reverbscope` 装�
 ```bash
 python3 -m venv reverbscope-env
 source reverbscope-env/bin/activate          # Windows：reverbscope-env\Scripts\activate
-pip install "./reverbscope-0.5.0b1-py3-none-any.whl[gui]"
+pip install "./reverbscope-0.5.0b2-py3-none-any.whl[gui]"
 reverbscope --help
 reverbscope gui                              # 或者：reverbscope-gui
 ```
@@ -238,7 +238,7 @@ reverbscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
 reverbscope show demo/
 ```
 
-`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-0.5.0b1.tar.gz[gui]"` 会在本地构建出同样的 wheel。
+`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-0.5.0b2.tar.gz[gui]"` 会在本地构建出同样的 wheel。
 
 ### 开发者安装（从 Git）
 

@@ -1,10 +1,10 @@
 ## ReverbScope v{version}
 
-**Beta 1, for testing.** ReverbScope measures a recording room
+**Beta 2, for testing.** ReverbScope measures a recording room
 with a sine sweep and tells you whether a microphone position is usable —
 next to any DAW, or on its own. Free and open source (Apache-2.0).
 
-> **This is beta 1 of the software, not the 0.5.0 hardware release.**
+> **This is beta 2 of the software, not the 0.5.0 hardware release.**
 > Current builds are unsigned, and **hardware validation has not started**:
 > nothing has been measured through a real audio interface or a real DAW yet.
 > Please read *Known limitations* below.
@@ -62,7 +62,7 @@ run `reverbscope demo`.
 
 ### Known limitations
 
-* **This is beta 1**, not a finished product, and **not 0.5.0**. In the
+* **This is beta 2**, not a finished product, and **not 0.5.0**. In the
   release plan, 0.5.0 means a person has run the hardware matrix. No cell
   is PASS yet.
 * **Hardware validation has not started.** No measurement through a real
@@ -85,6 +85,9 @@ run `reverbscope demo`.
   nobody has seen the Windows installer's Simplified Chinese screens on a
   Chinese Windows yet.
 * Not on PyPI yet: `pip install reverbscope` does not install this project.
+* The v0.5.0b1 downloads were still named `RoomScope-*` and `roomscope-*`;
+  from this version every download carries the ReverbScope name. The
+  earlier release is left as it was.
 
 **Help test it:** a result from your interface or DAW — pass or fail — is the
 most useful contribution right now:

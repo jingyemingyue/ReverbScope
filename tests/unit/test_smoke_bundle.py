@@ -259,7 +259,7 @@ def test_cli_smoke_is_bounded_isolated_and_always_uses_fake_acquisition(
         assert kwargs["timeout"] == 120 and kwargs["encoding"] == "utf-8"
         assert kwargs["env"]["REVERBSCOPE_HOME"] == str(tmp_path / "session-home")
         if "--version" in argv:
-            output = "reverbscope 0.5.0b1"
+            output = "reverbscope 0.0.0"
         elif "doctor" in argv:
             assert argv[1:3] == ["--backend", "fake"]
             output = json.dumps(_report())
@@ -297,7 +297,7 @@ def test_smoke_logs_and_uncaught_failures_survive_a_narrow_parent_encoding(
 
         def fake_run(argv, **kwargs):
             if "--version" in argv:
-                return subprocess.CompletedProcess(argv, 0, "reverbscope 0.5.0b1", "")
+                return subprocess.CompletedProcess(argv, 0, "reverbscope 0.0.0", "")
             if "doctor" in argv:
                 report = {"packages": {"numpy": "2.5.3"}, "audio_callbacks": "ok"}
                 return subprocess.CompletedProcess(argv, 0, json.dumps(report), "")

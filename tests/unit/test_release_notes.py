@@ -94,7 +94,7 @@ def _known_names() -> set[str]:
 def test_release_notes_open_with_the_version_and_the_pre_release_line() -> None:
     lines = [line for line in _notes().splitlines() if line.strip()]
     assert lines[0] == f"## ReverbScope v{_version()}"
-    assert "Beta 1, for testing." in lines[1]
+    assert "Beta 2, for testing." in lines[1]
 
 
 def test_release_notes_name_every_download_that_the_release_carries() -> None:
@@ -135,10 +135,10 @@ def test_release_notes_put_the_user_choice_first() -> None:
 def test_release_notes_are_honest_about_signing_and_hardware() -> None:
     notes = _notes()
     for fact in (
-        "This is beta 1 of the software, not the 0.5.0 hardware release.",
+        "This is beta 2 of the software, not the 0.5.0 hardware release.",
         "hardware validation has not started",
         "should not yet be treated as hardware-validated",
-        "This is beta 1",
+        "This is beta 2",
         "not 0.5.0",
         "not notarized",
         "Authenticode",
