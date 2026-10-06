@@ -148,8 +148,8 @@ All notable changes to RoomScope are documented here. The format follows
   ASCII forms keep every line of a frame the same width (tested; a character
   the stream cannot write is one `?` per column, and `|Δ|` is `abs(delta)`
   inside an ASCII frame). A path is never cut: a path too long for a panel
-  follows it on a line of its own, a table that does not fit becomes one
-  block per row, and the percentage column of the reverberation changes
+  follows it on a line of its own (the two `Wrote` lines of `sweep` too, so
+  the panel stays), a table that does not fit becomes one block per row, and the percentage column of the reverberation changes
   stays in the plain table when the borders leave no room for it (and a line
   under the table says so when it must go). A number is never parted from
   its unit when a line wraps (`2.4 ms`, `-17.9 dB`), closing marks and the

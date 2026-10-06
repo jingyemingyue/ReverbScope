@@ -607,3 +607,20 @@ def test_a_title_with_nothing_under_it_is_a_titled_border_not_a_box_round_a_word
     top, bottom = text.splitlines()[:2]
     assert top.startswith("╭─ Audio systems (host APIs) ─") and top.endswith("╮")
     assert bottom.startswith("╰") and bottom.endswith("╯") and cell_width(top) == cell_width(bottom)
+
+
+def test_a_path_too_long_for_the_panel_does_not_take_the_panel_of_the_sweep_away(
+    tmp_path: Path, run: Call, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    folder = tmp_path / ("a" * 60)
+    folder.mkdir()
+    target = folder / "sweep-with-a-rather-long-name.wav"
+    text = run("sweep", "--out", str(target), columns=80)
+    lines = text.splitlines()
+    assert lines[0].startswith("╭─ RoomScope test signal") and lines[0].endswith("╮")
+    wrote = [line for line in lines if line.startswith("✓ Wrote ")]
+    assert len(wrote) == 2 and str(target) in wrote[0]  # whole, bare, under the panel
+    assert "▌Next steps" in text  # the heading after a panel, as always
+    monkeypatch.chdir(tmp_path)
+    short = run("sweep", "--out", "s.wav", columns=80)
+    assert any(line.startswith("│ ✓ Wrote ") for line in short.splitlines())  # fits: inside

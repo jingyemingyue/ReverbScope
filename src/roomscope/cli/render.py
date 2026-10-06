@@ -1766,17 +1766,26 @@ def render_sweep_written(
         label = getattr(followed, "label", None)
         fields.append((_("Following"), label() if callable(label) else str(followed)))
 
+    wrote = [
+        Verbatim(_("Wrote {path}").format(path=wav_path)),
+        Verbatim(_("Wrote {path}").format(path=sidecar)),
+    ]
+    keep = _("Keep it next to the WAV: the analysis rebuilds the exact sweep from it.")
+    # A path too long for the panel is never cut and does not take the panel
+    # away: the two lines follow it, bare, as a path to copy.
+    outside = c.boxed and any(2 + cell_width(c.readable(text)) > c.inner().width for text in wrote)
+
     def written(c: Console, indent: int) -> list[str]:
-        lines = c.status("ok", Verbatim(_("Wrote {path}").format(path=wav_path)), indent)
+        if outside:
+            return c.fields(fields, indent=indent)
+        lines = c.status("ok", wrote[0], indent)
         lines += c.fields(fields, indent=indent + 2)
-        return lines + c.status(
-            "ok",
-            Verbatim(_("Wrote {path}").format(path=sidecar)),
-            indent,
-            detail=_("Keep it next to the WAV: the analysis rebuilds the exact sweep from it."),
-        )
+        return lines + c.status("ok", wrote[1], indent, detail=keep)
 
     lines = c.title(_("RoomScope test signal"), body=written)
+    if outside:
+        lines += c.status("ok", wrote[0], indent=0)
+        lines += c.status("ok", wrote[1], indent=0, detail=keep)
     lines += c.section(_("Next steps"))
     lines += c.steps(
         [
