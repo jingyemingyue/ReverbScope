@@ -48,7 +48,13 @@ class UserSettings:
     cli_style: str = ""
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        data = asdict(self)
+        if not data["cli_style"]:
+            # The default is not written: settings.json and ``config
+            # --format json`` stay as earlier versions wrote them until a
+            # style is chosen.
+            del data["cli_style"]
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> UserSettings:

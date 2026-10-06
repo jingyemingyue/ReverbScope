@@ -152,7 +152,8 @@ def test_every_setting_is_stored_as_the_desktop_app_reads_it(
 ) -> None:
     code, out, err = _run(capsys, "--lang", "en", "config", key, value)
     assert code == 0, err
-    assert _stored()[field] == stored
+    # A default of the style is not written (nor listed by --format json).
+    assert _stored().get(field, getattr(UserSettings(), field)) == stored
     assert getattr(load_settings(), field) == stored
     # A language is confirmed in that language.
     assert "settings.json" in out and ("Saved in" in out or key == "language")
@@ -518,9 +519,11 @@ def test_the_terminal_style_is_listed_stored_and_named_by_the_variable(
     # Back to the default; json lists the new key and nothing else changed.
     monkeypatch.delenv("ROOMSCOPE_CLI_STYLE")
     assert _run(capsys, "config", "style", "auto")[0] == 0
-    assert _stored()["cli_style"] == ""
+    assert "cli_style" not in _stored()
     code, out, _err = _run(capsys, "--format", "json", "config")
-    assert json.loads(out)["cli_style"] == ""
+    assert "cli_style" not in json.loads(out)
+    assert _run(capsys, "config", "style", "plain")[0] == 0
+    assert json.loads(_run(capsys, "--format", "json", "config")[1])["cli_style"] == "plain"
 
 
 def test_a_hand_edited_style_the_settings_do_not_know_is_ignored(home: Path) -> None:

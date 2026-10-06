@@ -106,3 +106,18 @@ def test_saving_settings_keeps_a_symlinked_settings_file(tmp_path: Path, monkeyp
     assert settings_path().is_symlink()
     assert json.loads(real.read_text(encoding="utf-8"))["language"] == "en"
     assert stat.S_IMODE(real.stat().st_mode) == 0o600
+
+
+def test_the_default_terminal_style_is_not_written(tmp_path: Path, monkeypatch) -> None:
+    """settings.json (and ``roomscope config --format json``) stay as earlier
+    versions wrote them until a style is chosen; a chosen one is stored."""
+    monkeypatch.setenv("ROOMSCOPE_HOME", str(tmp_path / "home"))
+    assert "cli_style" not in UserSettings().to_dict()
+    save_settings(UserSettings(language="zh_CN"))
+    assert "cli_style" not in settings_path().read_text(encoding="utf-8")
+    save_settings(UserSettings(cli_style="plain"))
+    assert '"cli_style": "plain"' in settings_path().read_text(encoding="utf-8")
+    assert load_settings().cli_style == "plain"
+    # A file written by an earlier version has no such key.
+    settings_path().write_text('{"schema_version": 1, "language": "en"}', encoding="utf-8")
+    assert load_settings().cli_style == ""
