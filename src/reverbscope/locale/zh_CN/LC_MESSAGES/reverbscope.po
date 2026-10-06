@@ -4499,3 +4499,10 @@ msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（除回�
 
 msgid "{path} is not a session file; give the session folder or its session.json"
 msgstr "{path} 不是会话文件；请指定会话文件夹或其中的 session.json"
+# reverbscope measure: the take is copied into --out only with its session
+
+msgid "{path} already holds {name} and is not a ReverbScope session; the take would replace that file"
+msgstr "{path} 中已有 {name}，且它不是 ReverbScope 会话；这次测量会覆盖该文件"
+
+msgid "Recorded {seconds:.1f} s"
+msgstr "已录制 {seconds:.1f} s"

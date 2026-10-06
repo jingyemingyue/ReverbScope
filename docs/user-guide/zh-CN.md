@@ -71,6 +71,8 @@ reverbscope-env/bin/reverbscope gui
 
 `reverbscope devices` 列出音频接口。`reverbscope measure --out session/` 播放扫频并录音。`--input-channels 1,2 --loopback-channel 2` 在输入 2 上录制电回送。
 
+这次测量的 `sweep.wav` 和 `recording.wav` 只会连同描述它们的会话一起写入该文件夹：中途停止或被拒绝的测量不会改动文件夹。对已有会话的文件夹再次测量会替换该会话。文件夹里已有扫频或录音文件、却没有会话时（例如你用 `reverbscope sweep --out folder/sweep.wav` 生成的扫频），在播放任何声音之前就会被拒绝。
+
 先把监听电平调低。高于 −12 dBFS 的电平每次都需要 `--acknowledge-level` 确认；该确认从不保存。
 
 **演示**（界面中的“演示（无需音频接口）”，或 `reverbscope --backend fake measure`）在合成房间上运行同一流程，不会向扬声器发送任何信号。

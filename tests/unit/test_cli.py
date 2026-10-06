@@ -711,3 +711,51 @@ def test_measure_refuses_an_analysis_option_before_playing(
     assert "devices --probe" not in captured.err
     assert "Playing the sweep" not in captured.err and "Recorded" not in captured.out
     assert not out.exists()
+
+
+def _fingerprints(folder: Path) -> dict[str, bytes]:
+    return {path.name: path.read_bytes() for path in sorted(folder.iterdir())}
+
+
+def test_measure_refuses_a_folder_that_holds_a_sweep_but_no_session(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """measure --out on a folder with the user's own sweep replaced that sweep
+    and its sidecar with the take's, without a word."""
+    folder = tmp_path / "meas"
+    assert main(["sweep", "--out", str(folder / "sweep.wav"), "--sample-rate", "96000"]) == 0
+    before = _fingerprints(folder)
+    capsys.readouterr()
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    assert main([*argv, "--out", str(folder)]) == 1
+    err = capsys.readouterr().err
+    assert "sweep.wav" in err and "Nothing was played." in err
+    assert "reverbscope measure --out" in err
+    assert _fingerprints(folder) == before
+
+
+def test_a_take_that_fails_keeps_the_previous_session_whole(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A second take into a session folder wrote its sweep.wav, sidecar and
+    recording.wav before the analysis, so a take that was then refused left
+    the old session.json beside another take's audio."""
+    from reverbscope.core import pipeline
+    from reverbscope.errors import AnalysisError
+
+    folder = tmp_path / "session"
+    argv = ["--backend", "fake", "measure", "--post-silence", "1", "--out", str(folder)]
+    assert main([*argv, "--duration", "1"]) == 0
+    before = _fingerprints(folder)
+    assert {"sweep.wav", "sweep.reverbscope-sweep.json", "recording.wav"} <= set(before)
+    saved = json.loads((folder / "session.json").read_text(encoding="utf-8"))
+    assert (saved["sweep_path"], saved["recording_path"]) == ("sweep.wav", "recording.wav")
+    capsys.readouterr()
+
+    def refuse(*_args: object, **_kwargs: object) -> None:
+        raise AnalysisError("no sweep found in the recording")
+
+    monkeypatch.setattr(pipeline, "analyze", refuse)
+    assert main([*argv, "--duration", "2"]) == 1
+    assert "no sweep found" in capsys.readouterr().err
+    assert _fingerprints(folder) == before

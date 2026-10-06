@@ -122,6 +122,13 @@ what each report message means in DAW terms:
 the sweep and records. `--input-channels 1,2 --loopback-channel 2` records an
 electrical return on input 2.
 
+The take's `sweep.wav` and `recording.wav` reach the folder only together with
+the session that describes them: a take that is stopped or refused leaves the
+folder as it was. Measuring into a session folder again replaces that session.
+A folder that holds a sweep or a recording but no session (for example your
+own `reverbscope sweep --out folder/sweep.wav`) is refused before anything is
+played.
+
 Start at a low monitor level. Levels above −12 dBFS need `--acknowledge-level`
 every time; that confirmation is never saved.
 

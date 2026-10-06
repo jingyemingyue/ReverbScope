@@ -21,6 +21,7 @@ import os
 import re
 import shlex
 import sys
+import tempfile
 import traceback
 from collections.abc import Sequence
 from dataclasses import replace
@@ -1408,13 +1409,16 @@ def _run_analysis(
     output_channel: int | None = None,
     device_warnings: tuple[str, ...] = (),
     inputs: Sequence[tuple[str, str]] = (),
+    take: bool = False,
 ) -> int:
     """Analyse a recording and optionally save a session.
 
     ``hardware`` is the Standalone channel plan; the session then records the
     1-based interface channels. In Universal DAW Mode the DAW did the routing,
     so the session leaves them empty and the analysed WAV column stays in
-    ``analysis_settings`` (0-based).
+    ``analysis_settings`` (0-based). ``take`` marks a sweep and a recording
+    written for this session (``reverbscope measure``): both are copied into
+    ``out_dir`` together with it.
     """
     from reverbscope.core.pipeline import Reference, analyze
     from reverbscope.interpretation import interpret
@@ -1462,7 +1466,8 @@ def _run_analysis(
             session,
             result,
             include_curves=not args.no_curves,
-            copy_recording=getattr(args, "copy_recording", None),
+            copy_recording=True if take else getattr(args, "copy_recording", None),
+            copy_sweep=take,
         )
         remember_session(out_dir)
         log.info("session saved to %s", session_path)
@@ -1549,6 +1554,14 @@ def cmd_measure(args: argparse.Namespace) -> int:
     )
     from reverbscope.core.sweep import measurement_signal
     from reverbscope.demo import DEMO_MODE, FAKE_BACKEND_NOTES
+    from reverbscope.io.session_store import (
+        IR_FILE,
+        RECORDING_FILE,
+        RESULT_FILE,
+        SESSION_FILE,
+        SWEEP_FILE,
+        SWEEP_SIDECAR_NAME,
+    )
     from reverbscope.io.wav import write_sweep_file, write_wav
 
     settings = _sweep_settings(args)
@@ -1559,6 +1572,21 @@ def cmd_measure(args: argparse.Namespace) -> int:
         )
         refusal.cli_hints = [f"reverbscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
         raise refusal
+    if Path(args.out).is_dir() and not (Path(args.out) / SESSION_FILE).is_file():
+        # A session folder is measured again as a whole; any other folder may
+        # hold the user's own sweep (reverbscope sweep --out folder/sweep.wav),
+        # which the take's sweep.wav and sidecar would silently replace.
+        names = (SWEEP_FILE, SWEEP_SIDECAR_NAME, RECORDING_FILE, IR_FILE, RESULT_FILE)
+        clash = next((name for name in names if (Path(args.out) / name).exists()), None)
+        if clash is not None:
+            refusal = ConfigurationError(
+                _(
+                    "{path} already holds {name} and is not a ReverbScope session; "
+                    "the take would replace that file"
+                ).format(path=args.out, name=clash)
+            )
+            refusal.cli_hints = [f"reverbscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
+            raise refusal
     if settings.total_samples < settings.sample_rate:
         # The analysis refuses a recording shorter than one second: say so
         # before the take, not after it was played and recorded for nothing.
@@ -1660,67 +1688,71 @@ def cmd_measure(args: argparse.Namespace) -> int:
         print("\n".join(out.status("warn", _(SAFETY_MESSAGE), indent=0)))
         print()
     out_dir: Path = args.out
-    out_dir.mkdir(parents=True, exist_ok=True)
-    sweep_path, _sidecar = write_sweep_file(settings, out_dir / "sweep.wav")
-    # Progress is drawn by the thread that waits for the stream, never by the
-    # audio callback; a failing display cannot stop the take (the backend
-    # catches it). JSON mode shows none.
-    progress = (
-        None
-        if as_json
-        else ProgressLine(
-            err,
-            sys.stderr,
-            _("Playing the sweep and recording"),
-            settings.total_samples / settings.sample_rate,
+    # The sweep and the take are written to a folder of their own and copied
+    # into --out only with the session that describes them: a take that is
+    # stopped or refused leaves --out as it was, the previous session's audio
+    # included, instead of beside a session from another take.
+    with tempfile.TemporaryDirectory(prefix="reverbscope-take-", ignore_cleanup_errors=True) as tmp:
+        take_dir = Path(tmp)
+        sweep_path, _sidecar = write_sweep_file(settings, take_dir / "sweep.wav")
+        # Progress is drawn by the thread that waits for the stream, never by
+        # the audio callback; a failing display cannot stop the take (the
+        # backend catches it). JSON mode shows none.
+        progress = (
+            None
+            if as_json
+            else ProgressLine(
+                err,
+                sys.stderr,
+                _("Playing the sweep and recording"),
+                settings.total_samples / settings.sample_rate,
+            )
         )
-    )
-    args.playback_started = True
-    completed = False
-    try:
-        recording = backend.play_and_record(
-            measurement_signal(settings),
-            settings.sample_rate,
-            input_device=args.input_device,
-            output_device=args.output_device,
-            input_channels=channels,
-            output_channel=args.output_channel,
-            level_dbfs=settings.level_dbfs,
-            progress=None if progress is None else progress.update,
-            options=options,
+        args.playback_started = True
+        completed = False
+        try:
+            recording = backend.play_and_record(
+                measurement_signal(settings),
+                settings.sample_rate,
+                input_device=args.input_device,
+                output_device=args.output_device,
+                input_channels=channels,
+                output_channel=args.output_channel,
+                level_dbfs=settings.level_dbfs,
+                progress=None if progress is None else progress.update,
+                options=options,
+            )
+            completed = True
+        finally:
+            if progress is not None:
+                progress.finish(completed)
+        recording_path = write_wav(
+            take_dir / "recording.wav", recording.samples, settings.sample_rate, subtype="FLOAT"
         )
-        completed = True
-    finally:
-        if progress is not None:
-            progress.finish(completed)
-    recording_path = write_wav(
-        out_dir / "recording.wav", recording.samples, settings.sample_rate, subtype="FLOAT"
-    )
-    print(
-        render_status(
-            err if as_json else out,
-            "ok",
-            _("Recorded {seconds:.1f} s to {path}").format(
-                seconds=recording.duration_s, path=recording_path
+        print(
+            render_status(
+                err if as_json else out,
+                "ok",
+                _("Recorded {seconds:.1f} s").format(seconds=recording.duration_s),
+                keep=True,
             ),
-            keep=True,
-        ),
-        file=status_stream,
-    )
-    if not as_json:
-        print()
-    return _run_analysis(
-        recording_path,
-        sweep_path,
-        args,
-        sweep_settings=settings,
-        mode=DEMO_MODE if synthetic else "standalone",
-        out_dir=out_dir,
-        hardware=plan,
-        output_channel=int(args.output_channel),
-        device_warnings=recording.device_warnings,
-        inputs=[(_("Recording"), Verbatim(str(recording_path)))],
-    )
+            file=status_stream,
+        )
+        if not as_json:
+            print()
+        return _run_analysis(
+            recording_path,
+            sweep_path,
+            args,
+            sweep_settings=settings,
+            mode=DEMO_MODE if synthetic else "standalone",
+            out_dir=out_dir,
+            hardware=plan,
+            output_channel=int(args.output_channel),
+            device_warnings=recording.device_warnings,
+            inputs=[(_("Recording"), Verbatim(str(out_dir / RECORDING_FILE)))],
+            take=True,
+        )
 
 
 def _channel_list(text: str) -> list[int]:

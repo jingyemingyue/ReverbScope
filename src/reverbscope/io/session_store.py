@@ -9,6 +9,7 @@ A session directory contains::
     recording.wav           copied when copy_recording is on (GUI default);
                             a take that is not a WAV (AIFF, CAF, FLAC, MP3) is
                             converted to WAV
+    sweep.wav               a Standalone take's test signal (reverbscope measure)
 
 Raw sweep and recording files are never modified in place.
 """
@@ -53,6 +54,7 @@ RESULT_FILE = "result.json"
 COMPARISON_FILE = "comparison.json"
 IR_FILE = "impulse_response.wav"
 RECORDING_FILE = "recording.wav"
+SWEEP_FILE = "sweep.wav"
 SWEEP_SIDECAR_NAME = "sweep.reverbscope-sweep.json"
 #: Left out of a ``--no-audio`` bundle: every container a DAW export or a
 #: recorder may have put into the folder.
@@ -113,6 +115,7 @@ def save_measurement(
     include_curves: bool = True,
     copy_recording: bool | None = None,
     recording: AudioSignal | None = None,
+    copy_sweep: bool = False,
 ) -> Path:
     """Write session.json, result.json and impulse_response.wav into ``directory``.
 
@@ -120,6 +123,8 @@ def save_measurement(
     is copied when ``copy_recording`` is true, or when it is omitted and the
     user settings default to copying (the GUI default). ``recording`` is a take
     that has no file yet (a live GUI take): it is written as recording.wav.
+    ``copy_sweep`` copies the sweep WAV as well, as sweep.wav: the test signal
+    written for this take (``reverbscope measure``), not a user's own sweep.
 
     Nothing in ``directory`` is replaced until every file has been written,
     and a rename that fails puts back the members already replaced, so a
@@ -174,6 +179,10 @@ def save_measurement(
             stage(RESULT_FILE), result_path, json.dumps(result.to_dict(include_curves), indent=1)
         )
         sidecar = _copy_sidecar(original_sweep, base, stage=stage)
+        if copy_sweep and original_sweep:
+            copied_sweep = _copy_into(Path(original_sweep), base / SWEEP_FILE, stage=stage)
+            if copied_sweep is not None:
+                session.sweep_path = str(copied_sweep)
         if copy_recording and recording is None:
             copied = _copy_recording(original_recording, base, stage=stage)
             if copied is not None:
