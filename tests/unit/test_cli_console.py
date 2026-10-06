@@ -290,6 +290,65 @@ def test_progress_is_throttled() -> None:
     assert stream.getvalue().count("\r") == 1  # same instant: drawn once
 
 
+_METERS = {
+    "unicode": Console(interactive=True, width=80, frames=True),
+    "colour": Console(interactive=True, width=80, frames=True, color=True),
+    "ascii": Console(interactive=True, width=80, frames=True, unicode=False, encoding="cp1252"),
+    "plain": Console(interactive=True, width=80),
+}
+
+
+@pytest.mark.parametrize("name", list(_METERS))
+@pytest.mark.parametrize(
+    "label", ["Playing the sweep and recording", "正在播放扫频并录音", "x" * 80]
+)
+def test_the_progress_line_is_never_wider_than_the_terminal(name: str, label: str) -> None:
+    """On an 80-column terminal the line was 81 columns wide: the cursor
+    wrapped and every redraw left a line behind."""
+    for columns in range(20, 101):
+        progress = ProgressLine(_METERS[name], None, label, 9.0)
+        for fraction in (0.0, 0.01, 0.37, 0.5, 0.999, 1.0):
+            text = progress.line(fraction, columns - 1)
+            assert cell_width(text) <= columns - 1, (columns, fraction, text)
+            assert f"{fraction * 100:3.0f}%" in text  # the numbers are what is never cut
+
+
+def test_the_progress_bar_shows_where_it_stands_without_colour() -> None:
+    bar = _METERS["unicode"].meter
+    assert bar(0.0, 10) == "╸─────────"
+    assert bar(0.5, 10) == "━━━━━╸────"
+    assert bar(0.99, 10) == "━━━━━━━━━╸"
+    assert bar(1.0, 10) == "━" * 10
+    # ASCII where the stream cannot write the glyphs, and in the plain style
+    # (a terminal that draws box glyphs two columns wide would break the line).
+    for name in ("ascii", "plain"):
+        assert _METERS[name].meter(0.5, 10) == "=====>----", name
+        assert _METERS[name].meter(1.0, 10) == "=" * 10, name
+    coloured = _METERS["colour"].meter(0.5, 10)
+    assert f"{ESC}36m━━━━━╸{ESC}0m" in coloured and f"{ESC}2m────{ESC}0m" in coloured
+    assert f"{ESC}32m" in _METERS["colour"].meter(1.0, 10)
+
+
+def test_the_progress_line_has_a_bar_percent_and_the_clock() -> None:
+    progress = ProgressLine(_METERS["unicode"], None, "Recording", 9.0)
+    assert progress.line(0.5, 79) == (
+        "  Recording  " + "━" * 16 + "╸" + "─" * 15 + "   50%  00:04 / 00:09"
+    )
+    # A narrow terminal loses the bar first, then the clock; the label gives way.
+    assert progress.line(0.5, 40) == "  Recording   50%  00:04 / 00:09"
+    assert progress.line(0.5, 25) == "  Recording   50%"
+    assert progress.line(0.5, 5) == "   50%"
+
+
+def test_a_terminal_draws_the_bar_on_stderr(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("COLUMNS", "60")
+    stream = _Stream(tty=True)
+    progress = ProgressLine(_METERS["unicode"], stream, "正在播放扫频并录音", 9.0, now=lambda: 5.0)
+    progress.update(0.5)
+    drawn = stream.getvalue().strip("\r")
+    assert "━" in drawn and "╸" in drawn and cell_width(drawn) <= 59, drawn
+
+
 # --- The command line ------------------------------------------------------------------------
 
 

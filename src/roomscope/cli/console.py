@@ -127,6 +127,9 @@ _GRID = (tuple("┌┬┐├┼┤└┴┘─│"), tuple("+++++++++-|"))
 _HEAD = (tuple("┏┳┓━┃┡╇┩"), tuple("+++=|+++"))
 #: The section bar, Unicode then ASCII.
 _BAR = ("▌", "> ")
+#: The progress bar: the part done, its head and the part to come; Unicode,
+#: then ASCII (also the plain style's, whose terminal may draw ``━`` wide).
+_METER = (("━", "╸", "─"), ("=", ">", "-"))
 #: What a stream must be able to write for the Unicode frames.
 _FRAME_PROBE = "╭╮╰╯─│┌┬┐├┼┤└┴┘┏┳┓━┃┡╇┩▌╸✗"
 
@@ -659,6 +662,20 @@ class Console:
     def rule_char(self) -> str:
         return "─" if self.unicode else "-"
 
+    def meter(self, fraction: float, size: int) -> str:
+        """A progress bar ``size`` columns wide: ``━━━━╸────`` (accent, then
+        muted), green when full; ``====>----`` where the stream cannot write
+        it or the style is plain. The head shows where the bar stands without
+        colour."""
+        glyphs = _METER[0 if self.frames and self._glyphs() == 0 else 1]
+        done_glyph, head, rest = glyphs
+        if fraction >= 1.0:
+            return self.style(done_glyph * size, "green")
+        done = min(size - 1, max(0, int(size * fraction)))
+        return self.style(done_glyph * done + head, "cyan") + self.style(
+            rest * (size - done - 1), "dim"
+        )
+
     def dash(self) -> str:
         """The mark for a value that is not there."""
         return "—" if self.unicode else "-"
@@ -1148,7 +1165,9 @@ class ProgressLine:
     Called from the thread that waits for the audio stream (never from the
     audio callback). Redraws at most every ``interval`` seconds, re-reads the
     terminal width each time (a resize cannot break it), and writes nothing
-    but ``label`` and one closing line when the stream is not a terminal.
+    but ``label`` and one closing line when the stream is not a terminal. The
+    line is a coloured bar with the percentage and the elapsed and total
+    time, never wider than the terminal's last column (:meth:`line`).
     """
 
     def __init__(
@@ -1198,22 +1217,34 @@ class ProgressLine:
         if self.stream is None:
             return
         width = shutil.get_terminal_size((self.console.width, 24)).columns
-        width = max(MIN_WIDTH, min(MAX_WIDTH, width)) - 1
-        percent = f"{fraction * 100:3.0f}%"
-        timing = f"{clock(fraction * self.total_s)} / {clock(self.total_s)}"
-        label = truncate(self.label, max(8, width // 2))
-        room = width - cell_width(label) - len(percent) - len(timing) - 6
-        bar = ""
-        if room >= 10:
-            size = min(32, room)
-            filled = round(size * fraction)
-            full, empty = ("━", "─") if self.console.unicode else ("#", "-")
-            bar = self.console.accent(full * filled) + self.console.muted(empty * (size - filled))
-        text = f"  {label}  {bar}  {percent}  {self.console.muted(timing)}".replace("    ", "  ")
+        text = self.line(fraction, max(MIN_WIDTH, min(MAX_WIDTH, width)) - 1)
         visible = cell_width(text)
         self.stream.write("\r" + text + " " * max(0, self._drawn - visible))
         self.stream.flush()
         self._drawn = visible
+
+    def line(self, fraction: float, width: int) -> str:
+        """The line at ``fraction``, never wider than ``width`` columns:
+        ``  label  ━━━━╸────  42%  00:04 / 00:09``. A narrow terminal loses
+        the bar first, then the clock, and the label is cut short, never the
+        numbers."""
+        c = self.console
+        percent = f"{fraction * 100:3.0f}%"
+        timing = f"{clock(fraction * self.total_s)} / {clock(self.total_s)}"
+        ellipsis = "…" if c.unicode else "..."
+        label = truncate(c.readable(self.label), max(8, width // 2), ellipsis)
+        pct, clk = cell_width(percent), cell_width(timing)
+        size = min(32, width - cell_width(label) - pct - clk - 8)
+        if size >= 10:
+            return f"  {label}  {c.meter(fraction, size)}  {c.bold(percent)}  {c.muted(timing)}"
+        room = width - pct - clk - 6
+        if room >= 6:
+            label = truncate(label, room, ellipsis)
+            return f"  {label}  {c.bold(percent)}  {c.muted(timing)}"
+        room = width - pct - 4
+        if room >= 4:
+            return f"  {truncate(label, room, ellipsis)}  {c.bold(percent)}"
+        return f"  {c.bold(percent)}"
 
     def finish(self, completed: bool = True) -> None:
         """End the line (terminal) so later output starts on its own row.
