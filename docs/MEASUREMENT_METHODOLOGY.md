@@ -238,8 +238,13 @@ time-reversed filtering.
    averages lie above that level, as for a decay with an RT below about
    0.08 s and 30 dB of range that reaches the floor within one of them,
    5 ms and then 1 ms averages are tried first, shorter than Lundeby's
-   range but used only when 20 ms cannot resolve the decay; only when those
-   show no decay either is the response said to have none, and the
+   range but used only when 20 ms cannot resolve the decay and only when the
+   average holds at least one inverse bandwidth of the band (B·T ≥ 1: 5 ms
+   from the 500 Hz octave band up, 1 ms from the 2 kHz band up, always for
+   the broadband curve. In the 125 Hz band, 88 Hz wide, a 1 ms average
+   holds B·T = 0.09, so it is a noise spike whose level would inflate the
+   range and let two or three random averages fit the decay); only when
+   those show no decay either is the response said to have none, and the
    integration then ends at the first 20 ms average at the noise floor
    instead of integrating the noise to the end), cross-point, new interval
    (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated from 7.5 dB

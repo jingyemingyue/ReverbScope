@@ -525,6 +525,72 @@ def test_a_response_without_a_decay_is_not_integrated_to_the_end(sample_rate: in
     assert band.c50.value is None and band.c80.value is None
 
 
+def _fast_decay_power(sample_rate: int, rt60: float, noise_db: float) -> FloatArray:
+    rng = np.random.default_rng(0)
+    n = 2 * sample_rate
+    t = np.arange(n) / sample_rate
+    ir = rng.standard_normal(n) * 10 ** (-3 * t / rt60)
+    ir += 10 ** (-noise_db / 20) * rng.standard_normal(n)
+    return np.asarray(ir**2, dtype=np.float64)
+
+
+def test_short_first_blocks_hold_at_least_one_inverse_bandwidth(sample_rate: int) -> None:
+    """R3-1 follow-up: the 5 and 1 ms blocks that find a decay within one 20 ms
+    block hold only B*T = 0.44 and 0.09 in a 125 Hz band (88 Hz wide). Their
+    level is then a noise spike, so they are not tried there; a band that is
+    wide enough for them still finds the decay."""
+    power = _fast_decay_power(sample_rate, 0.05, 30.0)
+    assert estimate_truncation(power, sample_rate).problem is None
+    assert estimate_truncation(power, sample_rate, bandwidth_hz=2000.0).problem is None
+    narrow = estimate_truncation(power, sample_rate, bandwidth_hz=88.0)
+    assert narrow.problem == "no decay above the noise floor was found"
+    assert narrow.late_slope_db_per_s is None
+    # 5 ms blocks hold B*T = 1 from a bandwidth of 200 Hz up (the 500 Hz octave
+    # band is 353 Hz wide, the 250 Hz band 177 Hz).
+    assert estimate_truncation(power, sample_rate, bandwidth_hz=250.0).problem is None
+    assert estimate_truncation(power, sample_rate, bandwidth_hz=177.0).problem is not None
+
+
+def test_a_narrow_band_does_not_turn_a_noise_spike_into_a_valid_edt(sample_rate: int) -> None:
+    """R3-1 follow-up: in the 125 Hz band of an RT 0.15 s response with 20 dB of
+    range, 1 ms blocks made the loudest block a spike (20.9 dB of range instead
+    of 18.2) and fitted the decay to 2-4 random blocks: EDT read 0.046 s, valid,
+    where the same response with a clean floor gives 0.20 s. The band again says
+    that its range is insufficient."""
+    rng = np.random.default_rng(8)
+    lead = int(0.3 * sample_rate)
+    n = lead + 3 * sample_rate
+    t = np.arange(n - lead) / sample_rate
+    ir = np.zeros(n)
+    ir[lead:] = rng.standard_normal(n - lead) * 10 ** (-3 * t / 0.15)
+    ir += 10 ** (-20 / 20) * rng.standard_normal(n)
+    settings = AnalysisSettings(octave_bands_hz=(125.0,))
+    band = analyze_decay(ir, sample_rate, settings, direct_index=lead).bands[0]
+    assert band.peak_to_noise_db is not None and band.peak_to_noise_db < 19.5
+    assert band.edt.validity is Validity.INSUFFICIENT_RANGE
+    assert band.edt.seconds is None
+    assert band.t20.validity is Validity.INSUFFICIENT_RANGE
+
+
+def test_a_fast_decay_in_a_wide_band_is_still_found_by_the_short_blocks(
+    sample_rate: int,
+) -> None:
+    """The bandwidth rule keeps the R3-1 fix for the bands where 1-5 ms blocks
+    are meaningful: an RT 0.05 s response with 40 dB of range in the 4 kHz band."""
+    rng = np.random.default_rng(3)
+    lead = int(0.3 * sample_rate)
+    n = lead + int(1.5 * sample_rate)
+    t = np.arange(n - lead) / sample_rate
+    ir = np.zeros(n)
+    ir[lead:] = rng.standard_normal(n - lead) * 10 ** (-3 * t / 0.05)
+    ir += 10 ** (-40 / 20) * rng.standard_normal(n)
+    settings = AnalysisSettings(octave_bands_hz=(4000.0,))
+    band = analyze_decay(ir, sample_rate, settings, direct_index=lead).bands[0]
+    assert band.edt.validity is Validity.VALID
+    assert band.edt.seconds == pytest.approx(0.05, rel=0.3)
+    assert band.truncation_time_s is not None and band.truncation_time_s < 0.1
+
+
 @pytest.mark.parametrize("rate", [48000, 192000])
 def test_preliminary_regression_stops_where_the_decay_reaches_the_floor(rate: int) -> None:
     """E1: a slowly modulated floor rose above noise + 10 dB after the decay; the

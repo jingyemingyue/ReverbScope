@@ -37,7 +37,9 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
    loudest block to the first block at noise + 10 dB (noise from the last
    10 %; when fewer than two blocks lie above that level, as for a decay
    that reaches the floor within 20 ms, 5 ms and then 1 ms blocks are tried
-   before the response is said to have no decay, and the integration then
+   before the response is said to have no decay, but only those that hold at
+   least ``LUNDEBY_MIN_BLOCK_BT`` inverse bandwidths of the band, because a
+   shorter block of a narrow band is a noise spike; the integration then
    ends at the first 20 ms block at the noise floor), then iterated block
    length / noise / late-slope estimates until the crosspoint moves by less
    than ``LUNDEBY_CONVERGENCE_DB`` (1 dB) of decay at the late slope (at
@@ -194,6 +196,12 @@ LUNDEBY_MAX_ITERATIONS = 6
 #: Lundeby first block lengths (s): 20 ms, then shorter ones for a decay that
 #: reaches the noise floor within one 20 ms block.
 LUNDEBY_FIRST_BLOCKS_S = (0.02, 0.005, 0.001)
+#: A shorter first block is used only when it holds at least this many inverse
+#: bandwidths of the band (B*T). Below that the block is a fraction of a cycle
+#: of the band's own ringing, its level is a noise spike, and the loudest one
+#: would inflate the decay range and let a few random blocks fit the decay
+#: (a 125 Hz band is 88 Hz wide: its 1 ms blocks hold B*T = 0.09).
+LUNDEBY_MIN_BLOCK_BT = 1.0
 #: Lundeby late slope: fitted to the decay from this many dB above the noise ...
 LUNDEBY_LATE_FIT_LOWER_DB = 7.5
 #: ... up to this many dB higher.
@@ -344,6 +352,7 @@ def estimate_truncation(
     *,
     max_iterations: int = LUNDEBY_MAX_ITERATIONS,
     intervals_per_10db: float = 5.0,
+    bandwidth_hz: float | None = None,
 ) -> TruncationEstimate:
     """Lundeby et al. (1995) iterative estimate of the noise floor and the
     point where the decay meets it, with plausibility checks.
@@ -352,6 +361,9 @@ def estimate_truncation(
     in dB relative to 1 (same scale for peak and noise so that their
     difference is the usable dynamic range). See the module docstring for the
     conditions under which the preliminary estimate replaces the iterative one.
+    ``bandwidth_hz`` is the bandwidth of the (band-filtered) response, if known:
+    the shorter first blocks tried for a very fast decay must hold at least
+    :data:`LUNDEBY_MIN_BLOCK_BT` inverse bandwidths.
     """
     # Digital silence after the response (an imported IR padded or gated with
     # zeros) is not a noise floor: read as one it is -3000 dB, the iteration
@@ -383,7 +395,14 @@ def estimate_truncation(
     #    range) leaves fewer than two blocks above that level, so shorter
     #    blocks are tried before concluding that there is no decay.
     tried: list[tuple[int, FloatArray, FloatArray, int]] = []
-    for block_s in LUNDEBY_FIRST_BLOCKS_S:
+    shortest_s = (
+        LUNDEBY_MIN_BLOCK_BT / bandwidth_hz
+        if bandwidth_hz is not None and bandwidth_hz > 0
+        else 0.0
+    )
+    for index, block_s in enumerate(LUNDEBY_FIRST_BLOCKS_S):
+        if index > 0 and block_s < shortest_s:
+            continue
         block = max(1, round(block_s * sample_rate))
         centres, means = _local_average(power, block)
         level_db = _to_db(means)
@@ -1133,7 +1152,8 @@ def analyze_band(
         else:
             search_start = onset_search_start
     onset = find_onset(power, search_start=search_start)
-    trunc = estimate_truncation(power[onset:], sample_rate)
+    band_bandwidth_hz = band.bandwidth_hz if band is not None else broadband_bandwidth_hz
+    trunc = estimate_truncation(power[onset:], sample_rate, bandwidth_hz=band_bandwidth_hz)
     curve = _curve_from_truncation(
         power, sample_rate, onset, trunc, compensate=True, time_origin_index=origin
     )
@@ -1227,9 +1247,7 @@ def analyze_band(
                     (c50, c80, d50, centre), filter_warning
                 )
 
-    t20, t30, curvature, straightness_warnings = _straightness_check(
-        t20, t30, band.bandwidth_hz if band is not None else broadband_bandwidth_hz
-    )
+    t20, t30, curvature, straightness_warnings = _straightness_check(t20, t30, band_bandwidth_hz)
     warnings.extend(straightness_warnings)
 
     rt60: float | None = None

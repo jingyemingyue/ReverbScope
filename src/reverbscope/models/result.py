@@ -162,7 +162,8 @@ class BandDecay:
     low_hz: float | None
     high_hz: float | None
     #: Level of the noise floor relative to the loudest 20 ms block after the
-    #: onset (dB); 5 or 1 ms blocks for a decay that reaches the floor within 20 ms.
+    #: onset (dB); 5 or 1 ms blocks for a decay that reaches the floor within 20 ms
+    #: in a band wide enough for them.
     noise_floor_db: float | None
     #: Dynamic range available for decay evaluation (dB above the noise floor).
     peak_to_noise_db: float | None
