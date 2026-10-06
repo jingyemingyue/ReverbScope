@@ -251,6 +251,15 @@ def N_(message: str) -> str:  # noqa: N802 - the gettext convention for a deferr
     return message
 
 
+def translator(lang: str) -> Callable[[str], str]:
+    """``_`` for ``lang``, without making it the active language.
+
+    For text that was stored in one language and is shown in another: it is
+    recognised by what the catalog of the language it was written in says.
+    """
+    return _load_translation(normalize_lang(lang)).gettext
+
+
 def pgettext(context: str, message: str) -> str:
     """Translate a short ``message`` whose meaning depends on ``context``.
 

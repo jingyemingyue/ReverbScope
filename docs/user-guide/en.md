@@ -93,7 +93,9 @@ reports, the comparison, the desktop app, and your own first measurement.
 Nothing in the demo is a measurement: the terminal says so first, each saved
 session has the mode `synthetic_demo` and a note saying it was simulated, and
 the demo never overwrites a folder it did not write. `reverbscope demo --out
-<folder>` chooses where the files go.
+<folder>` chooses where the files go. The room, position and microphone names
+the demo gives its sessions are written in the language it ran in, and shown
+in the interface language when a session is opened, listed or reported.
 
 ## Universal DAW Mode
 

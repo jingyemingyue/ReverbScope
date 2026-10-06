@@ -2002,7 +2002,13 @@ SESSION_MODES = {
 
 
 def _session_inputs(session: Any, directory: Path) -> list[tuple[str, str]]:
-    """The saved session's folder and the names the user gave it, as entered."""
+    """The saved session's folder and the names the user gave it, as entered.
+
+    The names a demo wrote itself are shown in the interface language, whichever
+    it was made in.
+    """
+    from reverbscope.demo import localize_demo_name
+
     rows: list[tuple[str, str]] = [(_("Session"), Verbatim(str(directory)))]
     mode = SESSION_MODES.get(str(session.mode))
     if mode:
@@ -2015,7 +2021,8 @@ def _session_inputs(session: Any, directory: Path) -> list[tuple[str, str]]:
         if value:
             # A session from someone else: a line break or escape sequence in
             # a name must not forge report lines or drive the terminal.
-            rows.append((label, printable(str(value), single_line=True)))
+            shown = localize_demo_name(str(session.mode), str(value))
+            rows.append((label, printable(shown, single_line=True)))
     return rows
 
 

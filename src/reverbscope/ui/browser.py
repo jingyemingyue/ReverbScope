@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from reverbscope.demo import localize_demo_name
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
 
@@ -109,10 +110,13 @@ class SessionBrowser(QWidget):
             except ReverbScopeError:
                 label = str(path)
             else:
-                room = session.room_name or _("(unnamed room)")
+                room = localize_demo_name(session.mode, session.room_name) or _("(unnamed room)")
                 details = [
                     part
-                    for part in (session.measurement_position, _when(session.created_at))
+                    for part in (
+                        localize_demo_name(session.mode, session.measurement_position),
+                        _when(session.created_at),
+                    )
                     if part
                 ]
                 label = f"{room}   ·   {'   ·   '.join(details)}\n{path}"

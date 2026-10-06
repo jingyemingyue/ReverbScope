@@ -622,6 +622,49 @@ def test_the_demo_names_its_room_in_the_interface_language(
         assert english_words(prose) == [], shown
 
 
+#: What the demo writes for room, position A, position B and microphone.
+DEMO_NAMES = {
+    "en": (
+        "Synthetic demo room",
+        "A: close to the desk and the side wall",
+        "B: moved 1 m back from the desk",
+        "simulated omni",
+    ),
+    "zh_CN": ("合成演示房间", "A：靠近桌面和侧墙", "B：从桌面向后移动 1 m", "模拟全指向话筒"),
+}
+
+
+@pytest.mark.parametrize("made", ["en", "zh_CN"])
+def test_a_demo_is_shown_in_the_language_of_the_command(
+    zh_cli: None, tmp_path: Path, capsys: pytest.CaptureFixture[str], made: str
+) -> None:
+    """A demo made in one language and shown in the other printed a Chinese
+    label beside an English name ("房间 Synthetic demo room"): the names the
+    demo wrote follow the language of the command that shows them."""
+    out_dir = tmp_path / "demo"
+    assert main(["--lang", made, "demo", "--out", str(out_dir)]) == 0
+    stored = json.loads((out_dir / "position-b" / "session.json").read_text(encoding="utf-8"))
+    assert stored["room_name"] == DEMO_NAMES[made][0]  # the file is not rewritten
+    for lang in ("en", "zh_CN"):
+        room, _position_a, position_b, microphone = DEMO_NAMES[lang]
+        other = DEMO_NAMES["en" if lang == "zh_CN" else "zh_CN"]
+        capsys.readouterr()
+        assert main(["--lang", lang, "show", str(out_dir / "position-b")]) == 0
+        shown = capsys.readouterr().out
+        assert room in shown and position_b in shown and microphone in shown, shown
+        assert not any(name in shown for name in other), shown
+        assert main(["--lang", lang, "show", "--list", str(out_dir)]) == 0
+        listed = capsys.readouterr().out
+        assert room in listed and not any(name in listed for name in other), listed
+    # What the user typed stays as it was, in a demo take as in any other session.
+    typed = json.loads((out_dir / "position-b" / "session.json").read_text(encoding="utf-8"))
+    typed["room_name"] = "Studio 2"
+    (out_dir / "position-b" / "session.json").write_text(json.dumps(typed), encoding="utf-8")
+    capsys.readouterr()
+    assert main(["--lang", "zh_CN", "show", str(out_dir / "position-b")]) == 0
+    assert "Studio 2" in capsys.readouterr().out
+
+
 @pytest.mark.parametrize(
     "argv",
     [

@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
 )
 
 from reverbscope.cli.render import REPORT_CONSOLE, render_analysis
+from reverbscope.demo import localize_demo_name
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
 from reverbscope.io.recent import remember_session
@@ -525,7 +526,7 @@ class ResultsPage(QWidget):
             return
         session = self.state.session
         parts = [
-            part
+            localize_demo_name(session.mode, part)
             for part in (session.room_name, session.measurement_position, session.microphone_name)
             if part
         ]

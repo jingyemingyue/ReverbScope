@@ -576,7 +576,10 @@ class SessionListing:
 
     @property
     def label(self) -> str:
-        room = self.session.room_name or _("(unnamed room)")
+        # Imported here: the demo module needs the session store to write its sessions.
+        from reverbscope.demo import localize_demo_name
+
+        room = localize_demo_name(self.session.mode, self.session.room_name) or _("(unnamed room)")
         created = self.session.created_at
         rt60 = _finite(self.session.analysis_summary.get("broadband_rt60_estimate_s"))
         rt60_text = (
