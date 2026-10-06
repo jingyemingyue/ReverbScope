@@ -149,6 +149,50 @@ def test_stored_words_inside_a_sentence_are_translated(zh: None) -> None:
     assert localize("candidate unreliable") == "候选：不可靠"
 
 
+def test_only_a_list_of_values_has_its_or_translated(zh: None) -> None:
+    """Alternatives ("1.20 m or 1.35 m") are joined with 或; a PortAudio error
+    that says "or" stayed a list and read "Device 或 resource busy"."""
+    heights = localize(
+        diag(
+            "more than one reflection could be the surface the height was measured "
+            "from, and they disagree by more than {agreement_cm:.0f} cm: {values}. "
+            "ReverbScope does not choose between them. This is the expected outcome when "
+            "the microphone sits near the vertical midpoint of the room, where the "
+            "arrival from the surface below and the one from the surface above are "
+            "interchangeable; moving the microphone 20-30 cm up or down and measuring "
+            "again separates them",
+            agreement_cm=15,
+            values="1.20 m or 1.35 m",
+        )
+    )
+    assert "：1.20 m 或 1.35 m。" in heights
+    error = "Unanticipated host error [PaErrorCode -9999]: 'Device or resource busy'"
+    shown = localize(diag("failed: {error}", error=error))
+    assert shown.endswith(error) and "或" not in shown
+
+
+def test_portaudio_status_flags_are_shown_in_chinese(zh: None) -> None:
+    """The buffer warning showed "（input overflow, output underflow）" inside
+    the Chinese sentence: PortAudio's flag names had no catalog entries."""
+    from reverbscope.audio.portaudio import STATUS_FLAG_NAMES
+
+    template = (
+        "the audio device reported {count} buffer problem(s) during the take "
+        "({flags}); the recording may contain dropouts"
+    )
+    shown = localize(diag(template, count=3, flags="input overflow, output underflow"))
+    assert (
+        shown == "音频设备在本次测量中报告了 3 次缓冲区问题（输入溢出、输出欠载）；录音中可能有丢帧"
+    )
+    assert "（预填充输出）" in localize(diag(template, count=1, flags="priming output"))
+    for name in STATUS_FLAG_NAMES:
+        assert name not in localize(diag(template, count=1, flags=name))
+    # A list with an unknown word is kept as stored.
+    assert "（input overflow, gremlins）" in localize(
+        diag(template, count=2, flags="input overflow, gremlins")
+    )
+
+
 def test_deep_nesting_ends(zh: None) -> None:
     text = "decay analysis, broadband: " * 40 + "the response does not decay"
     shown = localize(text)
@@ -175,3 +219,57 @@ def test_a_failed_loopback_stores_an_english_reason_in_chinese(
     assert loopback.reason and loopback.reason.isascii(), loopback.reason
     assert all(text.isascii() for text in result.warnings)
     assert localize(loopback.reason) != loopback.reason
+
+
+def test_the_resonance_note_names_no_version_and_old_files_still_read_in_chinese(
+    zh: None,
+) -> None:
+    """The note said "v0.1 不尝试识别房间模式" in a 0.5 release. Results written
+    by those versions keep the old sentence; it is still shown translated."""
+    current = (
+        "Candidates only: a peak in the low-frequency response with a long narrow-band "
+        "decay may be a room resonance; ReverbScope does not identify room modes."
+    )
+    stored_by_0_5 = (
+        "Candidates only: a peak in the low-frequency response with a long narrow-band "
+        "decay may be a room resonance, but room-mode identification is not attempted in "
+        "v0.1."
+    )
+    source = Path("src/reverbscope/core/resonance.py").read_text(encoding="utf-8")
+    assert "v0.1" not in source
+    for text in (current, stored_by_0_5):
+        shown = localize(text)
+        assert shown.startswith("仅为候选") and "v0.1" not in shown, shown
+
+
+def test_an_assumed_temperature_note_from_an_older_result_still_reads_in_chinese(
+    zh: None,
+) -> None:
+    """The note now says "20 °C" and "a 5 °C error"; results written by 0.5
+    said "20 C" and "a 5 C error" and are still shown translated."""
+    from reverbscope.core.placement import speed_of_sound_m_s
+
+    speed = speed_of_sound_m_s(20.0)
+    current = (
+        f"no air temperature was supplied, so 20 °C ({speed:.1f} m/s) was assumed; "
+        "a 5 °C error moves every distance by about 0.9 %"
+    )
+    stored_by_0_5 = current.replace("°C", "C")
+    for text in (current, stored_by_0_5):
+        shown = localize(text)
+        assert shown.startswith("未提供气温") and "20 °C" in shown and "5 °C" in shown, shown
+
+
+def test_channel_choices_stored_by_0_5_still_read_in_chinese(zh: None) -> None:
+    """Results written before the channel was numbered from 1 keep the old
+    sentence; it is shown translated and says that it counts from 0."""
+    plain = (
+        "recording has 2 channels; channel 1 (highest RMS) was analysed. "
+        "Use the channel setting to choose explicitly."
+    )
+    beside_loopback = (
+        "recording has 3 channels; channel 2 (highest RMS excluding loopback channel 0) "
+        "was analysed"
+    )
+    assert localize(plain).startswith("录音有 2 个声道；已分析从 0 开始编号的声道 1")
+    assert localize(beside_loopback).startswith("录音有 3 个声道；已分析从 0 开始编号的声道 2")

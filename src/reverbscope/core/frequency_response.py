@@ -20,8 +20,10 @@ costs about 1.5 dB at 31.5 Hz on a loopback.
 The FFT is zero-padded to a fine bin spacing, which *interpolates* the
 spectrum; it does not add resolution. Both numbers are reported:
 ``bin_spacing_hz`` (the distance between exported points) and
-``resolution_hz`` = 1 / analysed duration (the width of the narrowest feature
-that can be separated).
+``resolution_hz`` = 1 / analysed duration *after the direct sound* (the width
+of the narrowest feature that can be separated). The lead-in holds only the
+direct sound's own pre-ringing, so it does not refine the resolution: a 20 ms
+gate resolves 50 Hz whatever the lead-in.
 """
 
 from __future__ import annotations
@@ -95,13 +97,16 @@ def frequency_response(
                 )
             )
         stop = min(ir.shape[0], direct_index + max(2, round(window_s * sample_rate)) + 1)
-        segment = _taper_end(ir[:stop], sample_rate, end_taper_ms)
+        # The check above is on the requested window; an impulse response that
+        # ends sooner gets a shorter taper, never one that reaches the direct sound.
+        available_ms = ((stop - 1 - direct_index) / sample_rate - MIN_DIRECT_SOUND_S) * 1000.0
+        segment = _taper_end(ir[:stop], sample_rate, min(end_taper_ms, max(0.0, available_ms)))
     else:
         stop = ir.shape[0]
         segment = np.asarray(ir, dtype=np.float64)
     lead_in_s = direct_index / sample_rate
     window_after_s = (stop - 1 - direct_index) / sample_rate
-    duration_s = segment.shape[0] / sample_rate
+    duration_s = (stop - direct_index) / sample_rate
 
     n_min = int(np.ceil(sample_rate / min_resolution_hz))
     nfft = 1 << max(segment.shape[0], n_min).bit_length()

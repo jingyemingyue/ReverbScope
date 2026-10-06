@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+	Simplified Chinese values for Info.plist (CFBundle reads a strings file in
+	any property-list format; XML keeps it readable and checkable with plistlib).
+	The microphone prompt shows NSMicrophoneUsageDescription from here on a Mac
+	whose preferred language is Chinese.
+-->
+<plist version="1.0">
+<dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>ReverbScope 在独立模式扫频时录制测量话筒，录音只保存在这台电脑上。</string>
+</dict>
+</plist>

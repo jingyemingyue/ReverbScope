@@ -18,8 +18,12 @@ so your recent-session list is untouched), captures the CLI output with
 `--color always` at 80 columns in English and Chinese (each run of Chinese
 characters is placed at its terminal column, so the columns after it line up
 in any font), and grabs the Qt window offscreen. `--cli-only` skips the GUI. On Linux it needs the Qt system
-libraries listed in CONTRIBUTING.md. Rerun it after any change to the report
-wording or the GUI layout, and commit the new images with that change.
+libraries listed in CONTRIBUTING.md. Each language runs the demo in its own
+folder, so every screenshot shows room and position names in its language.
+The window is the user edition, as in the downloads (no Developer menu).
+Rerun it after any change to the report wording or the GUI layout, and
+commit the new images with that change; `tests/unit/test_cli_ux.py` fails
+when the two `cli-demo` SVGs no longer match the demo's golden output.
 
 ## What exists
 
@@ -27,7 +31,8 @@ wording or the GUI layout, and commit the new images with that change.
 | --- | --- | --- | --- |
 | `docs/images/cli-demo.svg` | 80 columns | `reverbscope demo` (colour on) | README, "Command line" |
 | `docs/images/cli-demo.zh-CN.svg` | 80 columns | `reverbscope --lang zh_CN demo` | README.zh-CN, "命令行" |
-| `docs/images/gui-results.png` | 1120×820 | `reverbscope gui` → open `reverbscope-demo/position-a` → Overview | social preview; available for the README |
+| `docs/images/gui-results.png` | 1120×820 | `reverbscope gui` → open `reverbscope-demo/position-a` → Overview | README, social preview |
+| `docs/images/gui-results.zh-CN.png` | 1120×820 | the same in Simplified Chinese (`reverbscope --lang zh_CN gui`) | README.zh-CN |
 | `docs/images/gui-compare.png` | 1120×1000 | Compare page, A → B, "Input gain unchanged" ticked | available for the README |
 | `docs/images/gui-frequency-response.png` | 1120×820 | Results → Frequency Response tab, position A | available for the README |
 | `docs/images/social-preview.png` | 1280×640 | Composed from `gui-results.png` | GitHub Settings → Social preview |

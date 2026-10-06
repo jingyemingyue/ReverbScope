@@ -52,6 +52,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path("docs"), help="docs directory")
     args = parser.parse_args(argv)
+    if not args.root.is_dir():
+        # Run from another directory, "docs" would match nothing and pass.
+        parser.error(f"{args.root} is not a directory")
     # The repository root's own documents (README, README.zh-CN, SECURITY...).
     extra = sorted(args.root.resolve().parent.glob("*.md"))
     errors = check(args.root, extra)

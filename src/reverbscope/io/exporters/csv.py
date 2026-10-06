@@ -16,16 +16,27 @@ class CsvExporter:
     def export(self, result: AnalysisResult, directory: Path) -> list[Path]:
         base = Path(directory)
         base.mkdir(parents=True, exist_ok=True)
-        written = [
-            _write_decay_metrics(base / "decay_metrics.csv", result),
-            _write_energy_metrics(base / "energy_metrics.csv", result),
-            _write_decay_edc(base / "decay_edc.csv", result),
-            _write_frequency_response(base / "frequency_response.csv", result),
-            _write_noise_psd(base / "noise_psd.csv", result),
-            _write_reflections(base / "reflections.csv", result),
-            _write_resonances(base / "resonances.csv", result),
-        ]
-        return [path for path in written if path is not None]
+        writers = {
+            "decay_metrics.csv": _write_decay_metrics,
+            "energy_metrics.csv": _write_energy_metrics,
+            "decay_edc.csv": _write_decay_edc,
+            "frequency_response.csv": _write_frequency_response,
+            "interface_response.csv": _write_interface_response,
+            "noise_psd.csv": _write_noise_psd,
+            "reflections.csv": _write_reflections,
+            "resonances.csv": _write_resonances,
+        }
+        written: list[Path] = []
+        for name, write in writers.items():
+            path = write(base / name, result)
+            if path is not None:
+                written.append(path)
+            else:
+                # A curve this result does not have: the file of that name
+                # from an earlier export into this folder (another session)
+                # would read as this one's.
+                _remove(base / name)
+        return written
 
 
 def export_csv(result: AnalysisResult, directory: str | Path) -> list[Path]:
@@ -41,6 +52,13 @@ def _write(path: Path, header: list[str], rows: list[list[object]]) -> Path:
     except OSError as exc:
         raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
     return path
+
+
+def _remove(path: Path) -> None:
+    try:
+        path.unlink(missing_ok=True)
+    except OSError as exc:
+        raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
 
 
 def _metric_row(
@@ -107,6 +125,25 @@ def _write_frequency_response(path: Path, result: AnalysisResult) -> Path | None
     return _write(path, ["frequency_hz", "magnitude_db_raw", "magnitude_db_smoothed"], rows)
 
 
+def _write_interface_response(path: Path, result: AnalysisResult) -> Path | None:
+    """The interface response measured on the loopback (when one was used)."""
+    loopback = result.impulse_response.loopback
+    if (
+        loopback is None
+        or loopback.interface_response_hz is None
+        or loopback.interface_response_db is None
+        or loopback.interface_response_hz.size == 0
+    ):
+        return None
+    rows: list[list[object]] = [
+        [float(freq), float(level)]
+        for freq, level in zip(
+            loopback.interface_response_hz, loopback.interface_response_db, strict=False
+        )
+    ]
+    return _write(path, ["frequency_hz", "magnitude_db"], rows)
+
+
 def _write_noise_psd(path: Path, result: AnalysisResult) -> Path | None:
     noise = result.noise
     if noise.psd_frequencies_hz is None or noise.psd_db is None:
@@ -130,6 +167,9 @@ def _write_resonances(path: Path, result: AnalysisResult) -> Path:
             c.level_above_baseline_db,
             c.narrowband_decay_20db_s if c.narrowband_decay_20db_s is not None else "",
             c.decay_distinguishable,
+            # Added after decay_distinguishable so existing columns keep their place.
+            c.filter_ringing_20db_s if c.filter_ringing_20db_s is not None else "",
+            c.surroundings_decay_20db_s if c.surroundings_decay_20db_s is not None else "",
         ]
         for c in result.resonances.candidates
     ]
@@ -140,6 +180,8 @@ def _write_resonances(path: Path, result: AnalysisResult) -> Path:
             "level_above_baseline_db",
             "narrowband_decay_20db_s",
             "decay_distinguishable",
+            "filter_ringing_20db_s",
+            "surroundings_decay_20db_s",
         ],
         rows,
     )

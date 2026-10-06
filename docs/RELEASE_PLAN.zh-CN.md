@@ -50,7 +50,7 @@
 > 所以草稿目标仍为 `d97822a`，发布时 tag 会打在这个实际构建附件的提交上（STATUS 快照 33）。
 
 1. **在 `main` 上准备发布提交**：把 `project.version` 改成新版本（不带 `.dev`），把 CHANGELOG 的 `[Unreleased]` 挪到 `## [版本] - 日期` 下，在 `docs/STATUS.md` 加一条写明“实际跑了什么”的快照，依赖版本有变时复查 DEPENDENCIES.md §3–§4。提交并推送。
-2. **CI 自动开草稿**：`pyproject.toml` 在 `main` 上变了、且还没有 `v<版本>` 这个 tag，工作流就会跑 lint/类型检查/测试，构建 sdist 和 wheel，在三个系统上构建未签名安装包（许可证包 → PyInstaller → 剥掉 GPL-only Qt 模块和 ASIO DLL → 门禁 → 冒烟测试 → 打包 → 校验和），生成 SBOM，然后打开或刷新名为 `v<版本>` 的**草稿** Release，正文是发布说明（`packaging/release-notes-header.md` 包着 CHANGELOG 对应段落），附件是那 14 个文件。**此时还没有 tag。** 带 `.dev` 的版本不会开草稿。
+2. **CI 自动开草稿**：`pyproject.toml` 在 `main` 上变了、且还没有 `v<版本>` 这个 tag，工作流就会跑 lint/类型检查/测试，构建 sdist 和 wheel，在三个系统上构建未签名安装包（PyInstaller → 许可证包，含 PyInstaller 复制进来的每个原生库的声明 → 剥掉 GPL-only Qt 模块和 ASIO DLL → 门禁 → 冒烟测试 → 打包 → 校验和），生成 SBOM，然后打开或刷新名为 `v<版本>` 的**草稿** Release，正文是发布说明（`packaging/release-notes-header.md` 包着 CHANGELOG 对应段落），附件是那 14 个文件。**此时还没有 tag。** 带 `.dev` 的版本不会开草稿。
 3. **维护者决定**：从草稿下载安装包在真机上试；发布（publish）或删除草稿。发布这一下会在发布提交上创建 tag `v<版本>` —— 这就是项目简报里保留给维护者的“正式 Release”决定。
 4. **tag 触发的运行**：tag 被创建后再跑一遍质量门禁；只有当仓库变量 `REVERBSCOPE_PUBLISH_PYPI` 为 `true`、`pypi` 环境和 PyPI 可信发布都配好了，才会把 wheel 传到 PyPI。在此之前不会有任何东西到 PyPI。
 

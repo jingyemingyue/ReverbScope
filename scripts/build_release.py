@@ -7,13 +7,14 @@ below), and writes the same file names into
 Windows PC and a Linux PC and attach the results to the draft Release by
 hand (``docs/RELEASE_PLAN.md`` §3a):
 
-* Desktop Edition: license bundle -> PyInstaller -> ``--strip`` bundle gate
-  -> smoke test (CLI, demo, fake-backend measurement, offscreen GUI, windowed
+* Desktop Edition: PyInstaller -> license bundle (with a notice for every
+  native library PyInstaller collected) -> ``--strip`` bundle gate -> smoke
+  test (CLI, demo, fake-backend measurement, offscreen GUI, windowed
   launcher);
-* Terminal Edition: its license bundle -> PyInstaller with
-  ``REVERBSCOPE_PACKAGE=terminal`` -> the ``--terminal`` gate (no Qt, PySide6
-  or matplotlib) -> smoke test (CLI, demo in English and Chinese, JSON on
-  stdout, ``gui`` refused politely);
+* Terminal Edition: PyInstaller with ``REVERBSCOPE_PACKAGE=terminal`` -> its
+  license bundle -> the ``--terminal`` gate (no Qt, PySide6 or matplotlib)
+  -> smoke test (CLI, demo in English and Chinese, JSON on stdout, ``gui``
+  refused politely);
 * Linux: ``ReverbScope-Desktop-Linux-x86_64.tar.gz`` and
   ``ReverbScope-Terminal-Linux-x86_64.tar.gz``;
 * Windows: ``ReverbScope-Desktop-Windows-x64.zip``,
@@ -188,9 +189,11 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
     steps.append(Step("Test suite", tests, skipped="--skip-tests" if args.skip_tests else None))
 
     def python_dist() -> None:
-        for old in DIST.glob("reverbscope-*.whl"):
+        # case_sensitive: Windows globs ignore case by default, and
+        # ReverbScope-Terminal-Linux-*.tar.gz of another runner must survive.
+        for old in DIST.glob("reverbscope-*.whl", case_sensitive=True):
             old.unlink()
-        for old in DIST.glob("reverbscope-*.tar.gz"):
+        for old in DIST.glob("reverbscope-*.tar.gz", case_sensitive=True):
             if not old.name.startswith("reverbscope-linux"):
                 old.unlink()
         _python("-m", "build", "--outdir", DIST)
@@ -203,18 +206,19 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
         )
     )
 
-    def license_bundle() -> None:
-        shutil.rmtree(licenses, ignore_errors=True)
-        _python("scripts/build_license_bundle.py", "--out", licenses)
-
-    steps.append(Step("License bundle", license_bundle))
-
     def pyinstaller() -> None:
         shutil.rmtree(bundle, ignore_errors=True)
         shutil.rmtree(app, ignore_errors=True)
         _python("-m", "PyInstaller", "--noconfirm", "--clean", "packaging/reverbscope.spec")
 
     steps.append(Step("PyInstaller", pyinstaller))
+
+    def license_bundle() -> None:
+        # After PyInstaller, for the native libraries it copied.
+        shutil.rmtree(licenses, ignore_errors=True)
+        _python("scripts/build_license_bundle.py", "--out", licenses, "--frozen", bundle)
+
+    steps.append(Step("License bundle", license_bundle))
 
     def gate() -> None:
         shutil.copytree(licenses, bundle / "THIRD_PARTY_LICENSES", dirs_exist_ok=True)
@@ -256,7 +260,6 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
     def terminal_build() -> None:
         shutil.rmtree(terminal, ignore_errors=True)
         shutil.rmtree(terminal_licenses, ignore_errors=True)
-        _python("scripts/build_license_bundle.py", "--terminal", "--out", terminal_licenses)
         _python(
             "-m",
             "PyInstaller",
@@ -266,6 +269,14 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
             ROOT / "build" / "terminal",
             "packaging/reverbscope.spec",
             env={**os.environ, "REVERBSCOPE_PACKAGE": "terminal"},
+        )
+        _python(
+            "scripts/build_license_bundle.py",
+            "--terminal",
+            "--out",
+            terminal_licenses,
+            "--frozen",
+            terminal,
         )
         shutil.copytree(terminal_licenses, terminal / "THIRD_PARTY_LICENSES", dirs_exist_ok=True)
         _python(
@@ -324,7 +335,9 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
                 ],
                 check=True,
                 cwd=ROOT,
-                capture_output=True,
+                # Only the printed path is wanted; stderr stays on the terminal
+                # so a checksum mismatch or a network error says what went wrong.
+                stdout=subprocess.PIPE,
                 text=True,
             ).stdout.strip()
             _run(
@@ -371,7 +384,10 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
         missing = [name for name in target.archives if not (DIST / name).is_file()]
         if missing and not (args.no_installer and missing == [target.archives[0]]):
             raise SystemExit(f"missing release files: {', '.join(missing)}")
-        (DIST / target.checksum_name).write_text(checksum_lines(assets), encoding="utf-8")
+        # LF on every OS: a merged SHA256SUMS with CRLF lines fails `shasum -c`.
+        (DIST / target.checksum_name).write_text(
+            checksum_lines(assets), encoding="utf-8", newline="\n"
+        )
 
     steps.append(Step("Checksums of distributable files", checksums))
     return steps
@@ -416,17 +432,21 @@ def main(argv: list[str] | None = None) -> int:
             return 2
 
     DIST.mkdir(exist_ok=True)
-    # Files of an earlier build must not be checksummed or listed as this one.
-    for name in (*target.archives, target.checksum_name):
-        (DIST / name).unlink(missing_ok=True)
     with tempfile.TemporaryDirectory(prefix="reverbscope-release-") as directory:
         steps = plan(target, args, Path(directory))
+        # Say so before the tests and both PyInstaller builds, not after them,
+        # and before the previous build's files are deleted.
+        for step in steps:
+            if step.name == "Windows installer" and step.skipped and not args.no_installer:
+                print(f"Windows installer: {step.skipped}")
+                print("install Inno Setup 6 or pass --no-installer")
+                return 1
+        # Files of an earlier build must not be checksummed or listed as this one.
+        for name in (*target.archives, target.checksum_name):
+            (DIST / name).unlink(missing_ok=True)
         for index, step in enumerate(steps, 1):
             if step.skipped:
                 print(f"[{index}/{len(steps)}] {step.name}: skipped ({step.skipped})")
-                if step.name == "Windows installer" and not args.no_installer:
-                    print("install Inno Setup 6 or pass --no-installer")
-                    return 1
                 continue
             print(f"[{index}/{len(steps)}] {step.name}", flush=True)
             step.run()

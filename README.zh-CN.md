@@ -10,9 +10,9 @@
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.png)
+![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
 
-<sub>内置演示房间的结果页。合成数据：没有测量任何真实房间（截图为英文界面，程序可切换为简体中文）。</sub>
+<sub>内置演示房间的结果页。合成数据：没有测量任何真实房间。</sub>
 
 > 本文是 [README.md](README.md) 的简体中文版本；两者不一致时，以英文版为准。
 
@@ -84,13 +84,18 @@
 * **任一版本，在终端中：**
 
   ```bash
-  reverbscope --lang zh_CN demo
+  reverbscope config language zh_CN   # 以后一直使用中文界面（只需运行一次）
+  reverbscope demo
   ```
+
+  ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
+  保存后不管系统怎么设置都使用中文，`reverbscope config language auto` 改回跟随系统。
 
 ![终端中的 reverbscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
-演示会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步做什么。
-它显示的每个数值都描述的是模拟结果，保存的每个会话都标记为合成演示。
+`reverbscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步
+做什么。桌面版的 **演示** 则是在一个模拟房间里完成一次独立模式测量。两者显示的每个数值都描述的是模拟
+结果，保存的每个会话都标记为合成演示。
 
 **然后进行真实测量：** 先把监听音箱音量**调低**（ReverbScope 不会改动系统音量），然后二选一：让
 ReverbScope 通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW
@@ -214,8 +219,10 @@ reverbscope measure --out session1/ --input-device 2 --output-device 3 \
 reverbscope demo --out demo/
 reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
-# 语言、打包、CSV、项目
-reverbscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav
+# 语言（保存在 settings.json 中；auto 改回跟随系统）、设置、打包、CSV、项目
+reverbscope config language zh_CN
+reverbscope --lang en analyze --recording take.wav --sweep sweep.wav   # 只对这一条命令
+reverbscope config
 reverbscope session bundle session1/ --no-audio --out report.zip
 reverbscope export session1/ --format csv --out curves/
 reverbscope project init --out room/ --name Booth

@@ -58,6 +58,26 @@ BUILD_INFO_FILE = Path(workpath) / "build_info.json"  # noqa: F821
 BUILD_INFO_FILE.parent.mkdir(parents=True, exist_ok=True)
 BUILD_INFO_FILE.write_text(json.dumps(BUILD_INFO, indent=1), encoding="utf-8")
 
+# Both editions. Nothing at run time imports these, but NumPy's and SciPy's
+# test helpers (and cffi's distutils shim) pull them into the analysis; they
+# would ship without their licence texts in THIRD_PARTY_LICENSES.
+DEV_ONLY_EXCLUDES = [
+    # Build tools a developer environment has installed.
+    "setuptools",
+    "pkg_resources",
+    "_distutils_hack",
+    "yaml",
+    # Test runners.
+    "pytest",
+    "_pytest",
+    "pluggy",
+    "iniconfig",
+    "pygments",
+    "py",
+    # Optional for pdb/cmd/code; on Linux it would bring GNU libreadline (GPL).
+    "readline",
+]
+
 # The terminal edition: the command line and the analysis only. The GUI
 # package, Qt and the plotting stack (only the GUI draws charts) stay out;
 # ``reverbscope gui`` then says it is the Terminal Edition.
@@ -72,18 +92,7 @@ TERMINAL_EXCLUDES = [
     "fontTools",
     "tkinter",
     "_tkinter",
-    # Build tools a developer environment has installed; nothing at run time imports them.
-    "setuptools",
-    "pkg_resources",
-    "_distutils_hack",
-    "yaml",
-    # Test runners that NumPy's and SciPy's test helpers would pull in.
-    "pytest",
-    "_pytest",
-    "pluggy",
-    "iniconfig",
-    "pygments",
-    "py",
+    *DEV_ONLY_EXCLUDES,
 ]
 
 a = Analysis(
@@ -102,6 +111,7 @@ a = Analysis(
     excludes=TERMINAL_EXCLUDES
     if TERMINAL
     else [
+        *DEV_ONLY_EXCLUDES,
         "PySide6.QtCharts",
         "PySide6.QtDataVisualization",
         "PySide6.QtGraphs",
@@ -125,6 +135,19 @@ if sys.platform.startswith("linux"):
     a.binaries = [
         entry for entry in a.binaries if not Path(entry[0]).name.startswith(SYSTEM_AUDIO_LIBS)
     ]
+    # Qt's GTK3 platform theme only gives Qt's own dialogs a GTK look. It links
+    # GTK, GDK, Pango, Cairo, ATK and gdk-pixbuf, so PyInstaller copied about
+    # thirty of the build runner's libraries, most of them LGPL, into the
+    # tarball and carried Ubuntu's GTK to other distributions. Without it Qt
+    # draws its own dialogs; the libraries that only it loads go with it.
+    sys.path.insert(0, str(ROOT / "packaging"))
+    from PyInstaller.depend.bindepend import get_imports
+    from pyinstaller_filters import without_plugin
+
+    def _loads(path):
+        return {Path(name).name for name, _resolved in get_imports(path)}
+
+    a.binaries = without_plugin(a.binaries, "platformthemes/libqgtk3.so", _loads)
 
 pyz = PYZ(a.pure)
 exe = EXE(
@@ -191,8 +214,19 @@ if sys.platform == "darwin" and not TERMINAL:
         upx=False,
         name="reverbscope-gui",
     )
+    # AppKit picks the app's language among the localizations the bundle
+    # declares (Info.plist CFBundleLocalizations and the .lproj folders); with
+    # English alone, the native file panels, the app menu and the microphone
+    # prompt stayed English in the Chinese app. A translated purpose string can
+    # only come from <language>.lproj/InfoPlist.strings, which BUNDLE puts in
+    # Contents/Resources.
+    localized = [
+        (f"{strings.parent.name}/{strings.name}", str(strings), "DATA")
+        for strings in sorted((ROOT / "packaging" / "macos").glob("*.lproj/InfoPlist.strings"))
+    ]
     app = BUNDLE(  # noqa: F821
         gui_coll,
+        localized,
         name="ReverbScope.app",
         icon=None,
         bundle_identifier="org.reverbscope.ReverbScope",

@@ -15,9 +15,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-from reverbscope.cli.console import Console, Status, Verbatim, cell_width, glue_units, shell_command
+from reverbscope.cli.console import (
+    Console,
+    Status,
+    Verbatim,
+    cell_width,
+    glue_units,
+    pad,
+    printable_fields,
+    shell_command,
+    wrap,
+)
 from reverbscope.edition import RELEASES_URL, is_terminal_package
-from reverbscope.i18n import _, localize, pgettext
+from reverbscope.i18n import _, list_join, localize, pgettext
 from reverbscope.interpretation import Finding
 from reverbscope.interpretation.profiles import (
     band_text,
@@ -25,15 +35,26 @@ from reverbscope.interpretation.profiles import (
     noise_segment_text,
     profile_title,
 )
-from reverbscope.labels import metric_label, topic_text, validity_word
+from reverbscope.labels import (
+    frequency_text,
+    metric_label,
+    noise_band_hz,
+    signed_number,
+    surface_text,
+    topic_text,
+    validity_word,
+)
 from reverbscope.models.comparison import ComparisonResult, MetricDelta
 from reverbscope.models.result import (
+    EXCITATION_SOURCE_DECLARED,
+    EXCITATION_SOURCE_UNKNOWN,
     AnalysisResult,
     BandDecay,
     DecayMetric,
     EnergyMetric,
     PlacementLength,
     PlacementResult,
+    ResonanceResult,
     Validity,
 )
 
@@ -41,7 +62,9 @@ if TYPE_CHECKING:
     from reverbscope.audio.backend import DeviceInfo
     from reverbscope.audio.inventory import DeviceInventory
     from reverbscope.demo import DemoRun
+    from reverbscope.i18n import LanguageChoice
     from reverbscope.models.configuration import SweepSettings
+    from reverbscope.settings import UserSettings
 
 
 #: The GUI's "Full report" panes: the same layout as the terminal, as plain
@@ -58,14 +81,19 @@ def rate_text(hz: float) -> str:
     return f"{khz:g} kHz" if khz >= 1 else f"{hz:g} Hz"
 
 
-def rates_text(rates: Sequence[int], console: Console) -> str:
+def rates_text(rates: Sequence[int], console: Console, *, known: bool = True) -> str:
+    """The rates a device accepts; "unknown" when it could not be opened to ask
+    (an empty list would claim it accepts none)."""
+    if not known:
+        return _("unknown")
     if not rates:
         return pgettext("sample rates", "none")
     return console.sep().join(f"{rate / 1000:g}" for rate in rates) + " kHz"
 
 
-def frequency_text(hz: float) -> str:
-    return f"{hz / 1000:.3g} kHz" if hz >= 1000 else f"{hz:.3g} Hz"
+def _labelled(label: str, text: str) -> str:
+    """``label: text``, with the colon of the interface language (``扬声器高度：不可比较``)."""
+    return _("{label}: {description}").format(label=label, description=text)
 
 
 def created_text(created: str) -> str:
@@ -146,6 +174,10 @@ def render_analysis(
     """The report of one analysis: context, "At a glance", results by topic,
     diagnostics, then the interpretation."""
     c = console
+    # A result read from someone else's file: its texts are laid out inside
+    # lines of our own, so none may carry a line break or an escape code.
+    result = printable_fields(result)
+    findings = printable_fields(tuple(findings))
     lines = c.title(_("ReverbScope analysis"))
     lines.append("")
     lines += c.fields(
@@ -235,6 +267,15 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
                 threshold=refl.threshold_db,
             ),
         )
+    elif refl.window_truncated and refl.analysed_window_ms is not None:
+        # The response ended before the window did: later arrivals were not seen.
+        row(
+            _("Early reflections"),
+            "unsure",
+            _("none above {threshold:.0f} dB in the {end:.1f} ms that could be searched").format(
+                threshold=refl.threshold_db, end=refl.analysed_window_ms[1]
+            ),
+        )
     else:
         row(
             _("Early reflections"),
@@ -247,7 +288,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         strongest_modes = sorted(
             res.candidates, key=lambda cand: cand.level_above_baseline_db, reverse=True
         )[:3]
-        listed = ", ".join(
+        listed = list_join(
             f"{cand.frequency_hz:.0f} Hz (+{cand.level_above_baseline_db:.1f} dB)"
             for cand in strongest_modes
         )
@@ -256,11 +297,23 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             _topic_status(findings, "low_frequency"),
             _("potential resonances at {listed}").format(listed=listed),
         )
-    else:
+    elif (searched := _resonance_range(res)) is not None:
+        # The range actually searched: a sweep that starts high, or a short
+        # response, leaves part of the low end unexamined.
         row(
             _("Low end"),
             "ok",
-            _("no potential resonance below {max_hz:.0f} Hz").format(max_hz=res.max_frequency_hz),
+            _("no potential resonance at {low:.0f}–{high:.0f} Hz").format(
+                low=searched[0], high=searched[1]
+            ),
+        )
+    else:
+        row(
+            _("Low end"),
+            "skip",
+            _("not searched: nothing below {max_hz:.0f} Hz was excited and resolved").format(
+                max_hz=res.max_frequency_hz
+            ),
         )
 
     noise = result.noise
@@ -297,15 +350,26 @@ def _diagnostics(c: Console, result: AnalysisResult) -> list[str]:
     ir = result.impulse_response
     lines = c.section(_("Diagnostics"))
     margin = f"{ir.pre_peak_margin_db:.1f} dB" if ir.pre_peak_margin_db is not None else c.dash()
-    rows = [
-        (
-            _("Sweep found"),
-            _("{start:.2f} s into the recording").format(start=ir.sweep_start_in_recording_s),
-        ),
+    rows: list[tuple[str, str]] = []
+    # An imported impulse response (analyze-ir, the only source of a declared
+    # or unknown band) had no sweep and no recording to find it in.
+    band = ir.excitation_band
+    if band is None or band.source not in (EXCITATION_SOURCE_DECLARED, EXCITATION_SOURCE_UNKNOWN):
+        rows.append(
+            (
+                _("Sweep found"),
+                _("{start:.2f} s into the recording").format(start=ir.sweep_start_in_recording_s),
+            )
+        )
+    # valid_length_s is all the recording after the direct sound; only the
+    # part up to ir_max_length_s was analysed.
+    after_direct_s = (ir.samples.shape[0] - ir.direct_sound_index) / result.sample_rate
+    rows += [
         (
             _("Analysed"),
             _("{seconds:.2f} s, of which {decay:.2f} s is decay").format(
-                seconds=ir.samples.shape[0] / result.sample_rate, decay=ir.valid_length_s
+                seconds=ir.samples.shape[0] / result.sample_rate,
+                decay=min(ir.valid_length_s, after_direct_s),
             ),
         ),
         (
@@ -370,7 +434,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
             ]
         )
         if band.filter_warning:
-            notes.append(f"{band_text(band.band_label)}: {localize(band.filter_warning)}")
+            notes.append(_labelled(band_text(band.band_label), localize(band.filter_warning)))
     headers = [_("Band"), "EDT", "T20", "T30", "RT60", _("Decay range")]
     bases = {band.rt60_basis for band in (result.decay.broadband, *result.decay.bands)}
     basis_note = ""
@@ -386,7 +450,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
     if basis_note:
         lines += c.paragraph(basis_note, style=("dim",))
     legend = [
-        f"{c.symbol(validity_status(v))} {validity_word(v)}"
+        v
         for v in (
             Validity.UNRELIABLE,
             Validity.INSUFFICIENT_RANGE,
@@ -397,20 +461,35 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
     ]
     if legend:
         lines.append("")
-        lines.append("  " + "   ".join(legend))
+        lines += _legend(c, legend)
     for note in notes:
         lines += c.status("info", note)
     lines += _energy(c, result)
     return lines
 
 
+def _legend(c: Console, validities: Sequence[Validity]) -> list[str]:
+    """``? unreliable   – outside the excitation range``: what each symbol means,
+    as many entries per line as the width holds (an entry is never split)."""
+    lines: list[str] = []
+    line = ""
+    for validity in validities:
+        entry = f"{c.symbol(validity_status(validity))} {c.readable(validity_word(validity))}"
+        joined = f"{line}   {entry}" if line else entry
+        if line and cell_width("  " + joined) > c.width:
+            lines.append("  " + line)
+            joined = entry
+        line = joined
+    return [*lines, "  " + line]
+
+
 def _clarity_glance(c: Console, band: BandDecay) -> str | None:
     """C50 / C80 / D50 for the at-a-glance line, or ``None`` when none is valid."""
     parts: list[str] = []
     if band.c50.validity is Validity.VALID and band.c50.value is not None:
-        parts.append(f"C50 {band.c50.value:+.1f} dB")
+        parts.append(f"C50 {signed_number(band.c50.value, 1)} dB")
     if band.c80.validity is Validity.VALID and band.c80.value is not None:
-        parts.append(f"C80 {band.c80.value:+.1f} dB")
+        parts.append(f"C80 {signed_number(band.c80.value, 1)} dB")
     if band.d50.validity is Validity.VALID and band.d50.value is not None:
         parts.append(f"D50 {band.d50.value:.0f} %")
     if not parts:
@@ -422,7 +501,7 @@ def _energy_number(metric: EnergyMetric) -> str | None:
     if metric.value is None:
         return None
     if metric.unit == "dB":
-        return f"{metric.value:+.1f} dB"
+        return f"{signed_number(metric.value, 1)} dB"
     if metric.unit == "%":
         return f"{metric.value:.0f} %"
     return f"{metric.value * 1000:.0f} ms"
@@ -497,7 +576,7 @@ def _noise(c: Console, result: AnalysisResult) -> list[str]:
         )
         hums = [h for h in noise.hum if h.detected]
         for hum in hums:
-            harmonics = ", ".join(f"{f:.0f} Hz (+{p:.0f} dB)" for f, p in hum.harmonics)
+            harmonics = list_join(f"{f:.0f} Hz (+{p:.0f} dB)" for f, p in hum.harmonics)
             lines += c.status(
                 "warn",
                 _("Potential mains hum at multiples of {base:.0f} Hz: {harmonics}").format(
@@ -513,19 +592,27 @@ def _noise(c: Console, result: AnalysisResult) -> list[str]:
 
 def _reflections(c: Console, result: AnalysisResult) -> list[str]:
     refl = result.reflections
+    low, high = refl.window_ms
+    if refl.window_truncated and refl.analysed_window_ms is not None:
+        # The response ended first: only this much of the window was searched.
+        high = refl.analysed_window_ms[1]
     lines = c.section(
         _("Early reflections"),
-        _("{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB").format(
-            lo=refl.window_ms[0], hi=refl.window_ms[1], threshold=refl.threshold_db
+        # 0.8 ms, not "1": the table below can list arrivals before 1 ms.
+        _("{lo:g}–{hi:g} ms, above {threshold:.0f} dB").format(
+            lo=round(low, 1), hi=round(high, 1), threshold=refl.threshold_db
         ),
     )
     if not refl.reflections:
-        return lines + c.status("skip", _("None above the threshold."))
-    rows = [[f"{r.delay_ms:.1f} ms", f"{r.relative_db:.1f} dB"] for r in refl.reflections[:10]]
-    lines += c.table([_("Delay"), _("Level")], rows, align="rr")
-    hidden = len(refl.reflections) - 10
-    if hidden > 0:
-        lines += c.paragraph(_("{n} more in result.json").format(n=hidden), style=("dim",))
+        lines += c.status("skip", _("None above the threshold."))
+    else:
+        rows = [[f"{r.delay_ms:.1f} ms", f"{r.relative_db:.1f} dB"] for r in refl.reflections[:10]]
+        lines += c.table([_("Delay"), _("Level")], rows, align="rr")
+        hidden = len(refl.reflections) - 10
+        if hidden > 0:
+            lines += c.paragraph(_("{n} more in result.json").format(n=hidden), style=("dim",))
+    for note in refl.notes:
+        lines += c.status("info", localize(note))
     return lines
 
 
@@ -564,7 +651,7 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
             (
                 _("Speed of sound"),
                 f"{placement.speed_of_sound_m_s:.1f} m/s "
-                + _("at {temp:.0f} C").format(temp=placement.temperature_c)
+                + _("at {temp:.0f} °C").format(temp=placement.temperature_c)
                 + assumed,
             ),
             *(
@@ -580,15 +667,19 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         if length.reason:
             reasons.setdefault(localize(length.reason), []).append(name)
     for reason, names in reasons.items():
-        prefix = "" if len(names) == len(figures) else ", ".join(names) + ": "
-        lines += c.status("info", prefix + reason)
+        text = reason if len(names) == len(figures) else _labelled(list_join(names), reason)
+        lines += c.status("info", text)
     named = [candidate for candidate in placement.candidates if candidate.surface]
     if named:
         lines.append("")
         lines += c.table(
             [_("Arrival"), _("Surface"), _("Excess path")],
             [
-                [f"{cand.delay_ms:.1f} ms", str(cand.surface), f"{cand.excess_path_m:.2f} m"]
+                [
+                    f"{cand.delay_ms:.1f} ms",
+                    surface_text(cand.surface),
+                    f"{cand.excess_path_m:.2f} m",
+                ]
                 for cand in named
             ],
             align="rlr",
@@ -598,6 +689,15 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
     return lines
 
 
+def _resonance_range(res: ResonanceResult) -> tuple[float, float] | None:
+    """The range the resonance search covered; ``None`` when it did not run
+    (older files stored that as an inverted range, "495-300 Hz")."""
+    searched = res.searched_range_hz
+    if searched is None or searched[1] <= searched[0]:
+        return None
+    return searched
+
+
 def _resonances(c: Console, result: AnalysisResult) -> list[str]:
     res = result.resonances
     lines = c.section(
@@ -605,7 +705,16 @@ def _resonances(c: Console, result: AnalysisResult) -> list[str]:
         _("candidates below {max_hz:.0f} Hz").format(max_hz=res.max_frequency_hz),
     )
     if not res.candidates:
-        return lines + c.status("skip", _("None found."))
+        searched = _resonance_range(res) is not None
+        lines += c.status("skip", _("None found.") if searched else _("Not searched."))
+    else:
+        lines += _resonance_table(c, res)
+    for note in res.notes:
+        lines += c.status("info", localize(note))
+    return lines
+
+
+def _resonance_table(c: Console, res: ResonanceResult) -> list[str]:
     rows = []
     for cand in res.candidates:
         decay = (
@@ -629,7 +738,7 @@ def _resonances(c: Console, result: AnalysisResult) -> list[str]:
                 else f"{c.symbol('skip')} {_('no')}",
             ]
         )
-    return lines + c.table(
+    return c.table(
         [
             _("Frequency"),
             _("Above baseline"),
@@ -653,6 +762,8 @@ def render_comparison(
 ) -> str:
     """Baseline against candidate: the sessions, "At a glance", every delta, findings."""
     c = console
+    comparison = printable_fields(comparison)  # as in render_analysis
+    findings = printable_fields(tuple(findings))
     lines = c.title(_("ReverbScope comparison"))
     lines.append("")
     rows: list[tuple[str, str]] = []
@@ -675,9 +786,11 @@ def render_comparison(
     for note in comparison.notes:
         lines += c.status("info", localize(note))
 
-    lines += comparison_at_a_glance(c, comparison)
-
-    lines += _decay_deltas(c, comparison.decay)
+    if comparison.comparable:
+        # A refused pair compared nothing: its empty lists are not findings
+        # ("no potential resonance"); the notes say why it was refused.
+        lines += comparison_at_a_glance(c, comparison)
+        lines += _decay_deltas(c, comparison.decay)
 
     if comparison.frequency_response is not None:
         lines += c.section(_("Frequency response"), _("mean |Δ| per octave"))
@@ -772,11 +885,18 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
     previous = ""
     for item in items:
         band, metric = _split_decay_name(item.name)
+        if metric and item.unit and item.unit != "s":
+            # C50 (dB) and D50 (%) share the column with times in seconds.
+            metric = f"{metric} ({item.unit})"
         base = f"{item.baseline:.3f}" if item.baseline is not None else c.dash()
         cand = f"{item.candidate:.3f}" if item.candidate is not None else c.dash()
         if item.validity is Validity.VALID and item.delta is not None:
-            delta = f"{item.delta:+.3f}"
-            pct = f"{item.delta_percent:+.1f} %" if item.delta_percent is not None else c.dash()
+            delta = signed_number(item.delta, 3)
+            pct = (
+                f"{signed_number(item.delta_percent, 1)} %"
+                if item.delta_percent is not None
+                else c.dash()
+            )
         else:
             delta = pct = c.dash()
         if item.validity not in seen:
@@ -796,18 +916,15 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
     headers = [_("Band"), _("Metric"), _("Baseline"), _("Candidate"), "Δ", "Δ %", ""]
     align = "llrrrrl"
     if not c.fits(headers, rows, gap=2):
-        # A narrow terminal drops the absolute delta (baseline and candidate
-        # are both shown) before the table has to fall apart into blocks.
-        headers, align = headers[:4] + headers[5:], align[:4] + align[5:]
-        rows = [row[:4] + row[5:] for row in rows]
+        # A narrow terminal drops the percentage before the table has to fall
+        # apart into blocks: it follows from baseline and Δ, and C50, C80 and
+        # D50 have none, so without Δ their change would not be shown at all.
+        headers, align = headers[:5] + headers[6:], align[:5] + align[6:]
+        rows = [row[:5] + row[6:] for row in rows]
     lines += c.table(headers, rows, align=align, gap=2, title_columns=2)
     if seen:
-        legend = [
-            f"{c.symbol(validity_status(v))} {validity_word(v)}"
-            for v in sorted(seen, key=list(Validity).index)
-        ]
         lines.append("")
-        lines.append("  " + "   ".join(legend))
+        lines += _legend(c, sorted(seen, key=list(Validity).index))
     return lines + _reasons(c, items)
 
 
@@ -821,12 +938,9 @@ def _resonance_status(status: str) -> str:
 
 def _noise_label(name: str) -> str:
     """``noise.rms_dbfs`` -> Broadband; ``noise.band.1000Hz`` -> ``1 kHz``."""
-    band = name.removeprefix("noise.band.")
-    if band != name and band.endswith("Hz"):
-        try:
-            return frequency_text(float(band[:-2]))
-        except ValueError:
-            return band
+    hz = noise_band_hz(name)
+    if hz is not None:
+        return frequency_text(hz)
     if name == "noise.rms_dbfs":
         return band_text("broadband")
     return metric_label(name)
@@ -840,7 +954,7 @@ def _noise_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         base = f"{item.baseline:.1f}" if item.baseline is not None else c.dash()
         cand = f"{item.candidate:.1f}" if item.candidate is not None else c.dash()
         delta = (
-            f"{item.delta:+.1f} dB"
+            f"{signed_number(item.delta, 1)} dB"
             if item.validity is Validity.VALID and item.delta is not None
             else c.dash()
         )
@@ -869,7 +983,7 @@ def _reasons(c: Console, items: Sequence[MetricDelta], *, label: Any = metric_la
     if grouped:
         lines.append("")
     for reason, names in grouped.items():
-        lines += c.status("skip", ", ".join(names), detail=reason)
+        lines += c.status("skip", list_join(names), detail=reason)
     return lines
 
 
@@ -884,10 +998,10 @@ def _delta_statuses(c: Console, items: Sequence[MetricDelta]) -> list[str]:
             for item in members:
                 lines += c.status("ok", _delta_text(c, item))
             continue
-        names = ", ".join(metric_label(item.name) for item in members)
+        names = list_join(metric_label(item.name) for item in members)
         lines += c.status(
             validity_status(validity),
-            f"{names}: {validity_word(validity)}",
+            _labelled(names, validity_word(validity)),
             detail=localize(reason) if reason else "",
         )
     return lines
@@ -897,10 +1011,20 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
     unit = f" {item.unit}" if item.unit else ""
     base = f"{item.baseline:.2f}" if item.baseline is not None else c.dash()
     cand = f"{item.candidate:.2f}" if item.candidate is not None else c.dash()
-    text = f"{metric_label(item.name)}: {base} {c.arrow()} {cand}{unit}"
+    text = _labelled(metric_label(item.name), f"{base} {c.arrow()} {cand}{unit}")
     if item.delta is not None:
-        text += f" ({item.delta:+.2f}{unit})"
+        text += f" ({signed_number(item.delta, 2)}{unit})"
     return text
+
+
+#: What the stored notes of a comparison start with when a topic was not
+#: compared in full. The desktop app shows the same notes under its own tabs.
+#: The first is the note of a comparison whose reflections were not matched.
+REFLECTIONS_NOT_COMPARED = "early reflections are not compared unless"
+#: ... whose resonances were not, because no range was searched on both sides.
+RESONANCES_NOT_COMPARED = "low-frequency resonances are not compared"
+#: ... whose resonances were compared over part of what one side searched.
+RESONANCES_NARROWED = "low-frequency resonances are compared only at"
 
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
@@ -921,7 +1045,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     ):
         text = f"RT60 {rt.baseline:.2f} s{arrow}{rt.candidate:.2f} s"
         if rt.delta_percent is not None:
-            text += f" ({rt.delta_percent:+.1f} %)"
+            text += f" ({signed_number(rt.delta_percent, 1)} %)"
         row(_("Reverberation"), "ok", text)
     else:
         row(_("Reverberation"), "unsure", _("broadband RT60 not comparable (see Reverberation)"))
@@ -934,14 +1058,16 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         and c50.baseline is not None
         and c50.candidate is not None
     ):
-        text = f"C50 {c50.baseline:+.1f} dB{arrow}{c50.candidate:+.1f} dB"
+        text = f"C50 {signed_number(c50.baseline, 1)} dB{arrow}{signed_number(c50.candidate, 1)} dB"
         if (
             c80 is not None
             and c80.validity is Validity.VALID
             and c80.baseline is not None
             and c80.candidate is not None
         ):
-            text += c.sep() + f"C80 {c80.baseline:+.1f} dB{arrow}{c80.candidate:+.1f} dB"
+            text += c.sep() + (
+                f"C80 {signed_number(c80.baseline, 1)} dB{arrow}{signed_number(c80.candidate, 1)} dB"
+            )
         row(_("Clarity"), "ok", text)
 
     if comparison.reflections:
@@ -958,6 +1084,12 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 sep=c.sep(),
             ),
         )
+    elif any(note.startswith(REFLECTIONS_NOT_COMPARED) for note in comparison.notes):
+        row(
+            _("Early reflections"),
+            "skip",
+            _("not compared: the direct-sound confidence is not high on both sides"),
+        )
     else:
         row(_("Early reflections"), "ok", _("none above the threshold on either side"))
 
@@ -973,14 +1105,23 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
             if r.status == status
         ]
         if found:
-            parts.append(label.format(list=", ".join(found)))
-    row(_("Low end"), "ok", "; ".join(parts) if parts else _("no potential resonance"))
+            parts.append(label.format(list=list_join(found)))
+    clauses = pgettext("clause separator", "; ")
+    if any(note.startswith(RESONANCES_NOT_COMPARED) for note in comparison.notes):
+        # Not "no potential resonance": one side, or both, never searched.
+        row(_("Low end"), "skip", _("not compared: no frequency range was searched on both sides"))
+    elif parts:
+        row(_("Low end"), "ok", clauses.join(parts))
+    elif any(note.startswith(RESONANCES_NARROWED) for note in comparison.notes):
+        row(_("Low end"), "ok", _("no potential resonance in the range both sides searched"))
+    else:
+        row(_("Low end"), "ok", _("no potential resonance"))
 
     rms = next((d for d in comparison.noise if d.name == "noise.rms_dbfs"), None)
     if rms is not None and rms.baseline is not None and rms.candidate is not None:
         text = f"{rms.baseline:.1f}{arrow}{rms.candidate:.1f} dBFS"
         if rms.validity is Validity.VALID and rms.delta is not None:
-            row(_("Noise floor"), "ok", text + f" ({rms.delta:+.1f} dB)")
+            row(_("Noise floor"), "ok", text + f" ({signed_number(rms.delta, 1)} dB)")
         else:
             text += c.sep() + _("not compared: {validity}").format(
                 validity=validity_word(rms.validity)
@@ -1013,6 +1154,35 @@ def _edition_name(edition: str) -> str:
     if edition == "user":
         return pgettext("edition", "user")
     return edition
+
+
+def _settings_summary(c: Console, summary: dict[str, Any]) -> list[str]:
+    """The settings of the report: what each means, then the value as stored
+    (``reverbscope config`` names them the same way)."""
+    from dataclasses import fields, replace
+
+    from reverbscope.cli import config
+    from reverbscope.settings import UserSettings
+
+    if "error" in summary:
+        return c.status("error", localize(str(summary["error"])))
+    known = {item.name: type(getattr(UserSettings(), item.name)) for item in fields(UserSettings)}
+    stored = {
+        name: value
+        for name, value in summary.items()
+        if name in known and isinstance(value, known[name])
+    }
+    settings = replace(UserSettings(), **stored)
+    rows = []
+    for key in config.KEYS:
+        if key == "output-folder":
+            rows.append(
+                (config.title(key), _("set") if summary.get("output_dir_set") else _("not set"))
+            )
+            continue
+        shown, typed = config.state(key, settings), config.typed_value(key, settings)
+        rows.append((config.title(key), shown if shown == typed else shown + c.sep() + typed))
+    return c.fields(rows)
 
 
 def render_environment(console: Console, report: dict[str, Any]) -> str:
@@ -1073,13 +1243,17 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
     packages.append(("libsndfile", report.get("libsndfile") or _("unknown")))
     lines += c.fields(packages)
 
-    lines += c.section(_("Settings"))
-    lines += c.fields(
-        (key, c.dash() if value in ("", None) else str(value))
-        for key, value in report.get("settings", {}).items()
-    )
+    lines += c.section(_("Settings"), "reverbscope config")
+    lines += _settings_summary(c, report.get("settings", {}))
     lines += c.section(_("Paths"), _("your home folder is shown as ~"))
-    lines += c.fields((key, Verbatim(str(value))) for key, value in report["paths"].items())
+    paths = {
+        "reverbscope_home": _("ReverbScope folder"),
+        "settings": _("Settings file"),
+        "log": _("Log file"),
+    }
+    lines += c.fields(
+        (paths.get(key, key), Verbatim(str(value))) for key, value in report["paths"].items()
+    )
 
     lines += c.section(_("Self-check"))
     callbacks = report.get("audio_callbacks")
@@ -1106,7 +1280,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         default_out = next(
             (p["device"]["name"] for p in devices if p["device"].get("is_default_output")), None
         )
-        apis = ", ".join(
+        apis = list_join(
             f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
         )
         lines += c.fields(
@@ -1143,7 +1317,7 @@ def _default_marks(device: dict[str, Any], *, short: bool = False) -> str:
         marks.append(_("Input") if short else pgettext("environment report", "default input"))
     if device.get("is_default_output"):
         marks.append(_("Output") if short else pgettext("environment report", "default output"))
-    return ", ".join(marks)
+    return list_join(marks)
 
 
 def _recommended(probe: dict[str, Any]) -> str:
@@ -1204,9 +1378,25 @@ def _device_rows(c: Console, probes: Sequence[dict[str, Any]], probed: bool) -> 
         lines += c.paragraph(c.sep().join(facts), indent=6)
         rate_rows: list[tuple[str, str]] = []
         if device["max_input_channels"] > 0:
-            rate_rows.append((_("Record"), rates_text(probe.get("input_rates", []), c)))
+            rate_rows.append(
+                (
+                    _("Record"),
+                    rates_text(
+                        probe.get("input_rates", []), c, known=probe.get("input_rates_known", True)
+                    ),
+                )
+            )
         if device["max_output_channels"] > 0:
-            rate_rows.append((_("Play"), rates_text(probe.get("output_rates", []), c)))
+            rate_rows.append(
+                (
+                    _("Play"),
+                    rates_text(
+                        probe.get("output_rates", []),
+                        c,
+                        known=probe.get("output_rates_known", True),
+                    ),
+                )
+            )
         lines += c.fields(rate_rows, indent=6)
         for note in probe.get("notes", []):
             lines += c.status("info", localize(note), indent=6)
@@ -1282,7 +1472,7 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
     )
     for api in inventory.host_apis:
         if api.note:
-            lines += console.status("info", f"{api.name}: {localize(api.note)}")
+            lines += console.status("info", _labelled(api.name, localize(api.note)))
     return console.fit("\n".join(lines))
 
 
@@ -1408,7 +1598,7 @@ def render_measure_plan(
 
     microphone = [ch for ch in input_channels if ch != loopback_channel]
     in_text = device_text(inp, _("system default")) + c.sep()
-    in_text += _("input {channels}").format(channels=", ".join(str(ch) for ch in microphone))
+    in_text += _("input {channels}").format(channels=list_join(str(ch) for ch in microphone))
     if loopback_channel is not None:
         in_text += c.sep() + _("loopback on input {channel}").format(channel=loopback_channel)
     out_text = device_text(out, _("system default")) + c.sep()
@@ -1438,8 +1628,13 @@ def render_measure_plan(
     lines += c.fields(rows)
 
     lines += c.section(_("Checks"), _("nothing has been played yet"))
-    lines += c.status("ok", _("Input and output use one host API"))
-    lines += c.status("ok", _("The selected channels exist"))
+    if inp is not None and out is not None:
+        if inp.host_api == out.host_api:
+            lines += c.status("ok", _("Input and output use one host API"))
+        lines += c.status("ok", _("The selected channels exist"))
+    else:
+        # "System default" with no default device: nothing could be checked.
+        lines += c.status("skip", _("Host API and channels not checked: no default device found"))
     for kind, device in (("input", inp), ("output", out)):
         if device is None:
             continue
@@ -1509,6 +1704,231 @@ def render_status(console: Console, kind: Status, text: str, *, keep: bool = Fal
     return console.fit("\n".join(console.status(kind, text, indent=0)))
 
 
+# --- Settings ----------------------------------------------------------------------------
+
+
+def _setting_rows(c: Console, rows: Sequence[tuple[str, str, str]]) -> list[str]:
+    """``key  value  meaning`` rows; the meaning wraps under itself.
+
+    A value too wide for its column (a folder) puts its meaning on the next
+    line; a narrow terminal puts every meaning under its key.
+    """
+    rows = [(c.readable(key), c.readable(value), c.readable(text)) for key, value, text in rows]
+    key_width = max(cell_width(key) for key, _value, _text in rows)
+    # A long value (a folder) does not widen the column for the others.
+    value_width = max([cell_width(v) for _k, v, _t in rows if cell_width(v) <= 12] or [12])
+    column = 2 + key_width + 2 + value_width + 2
+    stacked = c.width - column < 24
+    out: list[str] = []
+    for key, value, text in rows:
+        head = "  " + pad(key, key_width) + "  " + c.command(value)
+        if stacked:
+            out.append(head)
+            out += [c.muted(line) for line in wrap(text, c.width, first="    ")]
+            continue
+        if cell_width(value) > value_width:
+            out.append(head)
+            out += wrap(text, c.width, first=" " * column)
+            continue
+        lines = wrap(text, c.width, first=" " * column)
+        out.append(head + " " * (value_width - cell_width(value) + 2) + lines[0][column:])
+        out += lines[1:]
+    return out
+
+
+def _config_commands() -> list[tuple[str, str]]:
+    key, value = pgettext("metavar", "KEY"), pgettext("metavar", "VALUE")
+    return [
+        (f"reverbscope config {key} {value}", _("change a setting")),
+        (f"reverbscope config {key} auto", _("back to its default")),
+    ]
+
+
+def render_config(
+    console: Console,
+    settings: UserSettings,
+    path: Path,
+    choice: LanguageChoice,
+    *,
+    exists: bool,
+) -> str:
+    """``reverbscope config``: every setting, what its value means now, and the file."""
+    from reverbscope.cli import config
+
+    c = console
+    lines = c.title(_("ReverbScope settings"))
+    lines.append("")
+    rows = [(pgettext("setting", "Setting"), pgettext("setting", "Value"), _("Meaning"))]
+    rows += [
+        (
+            key,
+            config.typed_value(key, settings),
+            _("{setting}: {state}").format(
+                setting=config.title(key), state=config.state(key, settings, choice)
+            ),
+        )
+        for key in config.KEYS
+    ]
+    table = _setting_rows(c, rows)
+    lines += [c.muted(table[0]), *table[1:]]
+    lines.append("")
+    lines += c.commands(_config_commands())
+    lines.append("")
+    lines += c.fields([(_("Settings file"), Verbatim(str(path)))])
+    if not exists:
+        lines += c.paragraph(
+            _("Nothing is stored yet: every setting has its default."), style=("dim",)
+        )
+    return c.fit("\n".join(lines))
+
+
+def render_config_key(console: Console, key: str, settings: UserSettings) -> str:
+    """``reverbscope config KEY``: one setting, the values it takes, how to change it."""
+    from reverbscope.cli import config
+
+    c = console
+    lines = c.title(key)
+    lines.append("")
+    lines += c.fields(
+        [
+            (pgettext("setting", "Value"), c.command(config.typed_value(key, settings))),
+            (
+                _("Meaning"),
+                _("{setting}: {state}").format(
+                    setting=config.title(key), state=config.state(key, settings)
+                ),
+            ),
+            (_("Values"), config.choices(key)),
+        ]
+    )
+    lines.append("")
+    lines += c.commands(
+        [(f"reverbscope config {key} {pgettext('metavar', 'VALUE')}", _("change it"))]
+    )
+    if key == "theme":
+        lines += c.paragraph(_("The theme applies to the desktop app only."), style=("dim",))
+    return c.fit("\n".join(lines))
+
+
+def _other_language(lang: str) -> str:
+    return "en" if lang != "en" else "zh_CN"
+
+
+def render_config_language(
+    console: Console, settings: UserSettings, choice: LanguageChoice, in_effect: str
+) -> str:
+    """``reverbscope config language``: what is stored, what is in effect, and why."""
+    from reverbscope.cli import config
+    from reverbscope.i18n import available_locales
+
+    c = console
+    lines = c.title(config.title("language"))
+    lines.append("")
+    stored = settings.language
+    lines += c.fields(
+        [
+            (
+                _("Stored"),
+                _("{value}: {state}").format(
+                    value=stored or config.AUTO, state=config.state("language", settings)
+                ),
+            ),
+            (_("In effect"), config.language_name(in_effect)),
+            (_("Because"), config.language_reason(choice)),
+        ]
+    )
+    lines.append("")
+    rows = [
+        (
+            f"reverbscope config language {lang}",
+            _("always {language}").format(language=config.language_name(lang)),
+        )
+        for lang in config.languages()
+    ]
+    rows.append(("reverbscope config language auto", _("follow the system")))
+    other = _other_language(in_effect)
+    if other in available_locales():
+        rows.append(
+            (
+                f"reverbscope --lang {other} {pgettext('metavar', '<command>')}",
+                _("{language} for one command").format(language=config.language_name(other)),
+            )
+        )
+    lines += c.commands(rows)
+    return c.fit("\n".join(lines))
+
+
+def render_config_saved(
+    console: Console,
+    key: str,
+    settings: UserSettings,
+    path: Path,
+    *,
+    choice: LanguageChoice | None = None,
+) -> str:
+    """The confirmation after ``reverbscope config KEY VALUE``.
+
+    For the language it is written in the language now chosen, and says how
+    to go back to following the system.
+    """
+    from reverbscope.cli import config
+    from reverbscope.i18n import SOURCE_ENVIRONMENT
+
+    c = console
+    notes: list[str] = []
+    commands: list[tuple[str, str]] = []
+    if key == "language":
+        if settings.language:
+            text = _("ReverbScope uses {language} from now on.").format(
+                language=config.language_name(settings.language)
+            )
+            commands.append(("reverbscope config language auto", _("follow the system again")))
+        elif choice is not None and choice.source == SOURCE_ENVIRONMENT:
+            text = _(
+                "The language setting is cleared; {name}={value} still chooses {language}."
+            ).format(
+                name=choice.origin, value=choice.value, language=config.language_name(choice.lang)
+            )
+        else:
+            text = _("ReverbScope follows the system language again: {language}.").format(
+                language=config.language_name(choice.lang if choice else "en")
+            )
+            if choice is not None:
+                notes.append(_("Because: {reason}.").format(reason=config.language_reason(choice)))
+    else:
+        text = _("{setting}: {state}").format(
+            setting=config.title(key), state=config.state(key, settings)
+        )
+        if key == "theme":
+            notes.append(
+                _("The theme applies to the desktop app only, from the next time it opens.")
+            )
+        elif key == "developer-tools":
+            notes.append(_("The desktop app shows the change the next time it starts."))
+        elif key == "copy-recording":
+            # A root option: it goes before the command (after it is refused).
+            command = pgettext("metavar", "<command>")
+            if settings.copy_recording:
+                commands.append(
+                    (
+                        f"reverbscope --no-copy-recording {command}",
+                        _("do not copy it for one command"),
+                    )
+                )
+            else:
+                commands.append(
+                    (f"reverbscope --copy-recording {command}", _("copy it for one command"))
+                )
+    lines = c.status("ok", text, indent=0)
+    for note in notes:
+        lines += c.paragraph(note, indent=2)
+    if commands:
+        lines += c.commands(commands, indent=2)
+    # One line, whole: a path to copy.
+    lines.append("  " + c.muted(_("Saved in {path}").format(path=path)))
+    return c.fit("\n".join(lines))
+
+
 # --- Home screen -------------------------------------------------------------------------
 
 
@@ -1545,6 +1965,13 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
         indent=0,
         style=("dim",),
     )
+    from reverbscope.cli.config import language_hint_lines
+    from reverbscope.i18n import current_locale
+
+    # Not a paragraph: wrapping split the command to copy across two lines.
+    hint = language_hint_lines(current_locale(), c.width)
+    if hint and c.can_write("".join(hint)):
+        lines += [c.muted(line) for line in hint]
     return c.fit("\n".join(lines))
 
 

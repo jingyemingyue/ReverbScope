@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import sys
+from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import (
@@ -25,6 +26,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QMessageBox,
     QPushButton,
     QSizePolicy,
     QVBoxLayout,
@@ -58,6 +60,58 @@ def error_box(parent: QWidget | None, title: str, message: str) -> None:
     box.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
     box.addButton(_("OK"), QMessageBox.ButtonRole.AcceptRole)
     box.exec()
+
+
+def replace_file_box(parent: QWidget | None, path: Path) -> QMessageBox:
+    """``path`` already exists. The safe button is the default: keep it."""
+    box = QMessageBox(parent)
+    box.setIcon(QMessageBox.Icon.Warning)
+    box.setWindowTitle(_("Replace file?"))
+    box.setText(_("{name} already exists. Replace it?").format(name=path.name))
+    box.addButton(_("Replace"), QMessageBox.ButtonRole.AcceptRole)
+    cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
+    box.setDefaultButton(cancel)
+    box.setEscapeButton(cancel)
+    return box
+
+
+def ask_save_path(parent: QWidget, title: str, name: str, file_filter: str) -> Path | None:
+    """Ask where to save ``name``; ``None`` when the user cancels.
+
+    The path returned always ends in ``name``'s extension, and the user was
+    asked before it replaces a file. The dialog adds the extension to a
+    name typed without one before it asks about replacing a file; the
+    static ``getSaveFileName`` has no such default. Qt adds it only when
+    the name has no extension at all, so "sweep 2026.10.05" or "studio
+    v1.2" is checked as typed: the extension is added here, and here the
+    user is asked when that file exists.
+    """
+    from PySide6.QtWidgets import QFileDialog
+
+    suffix = Path(name).suffix
+    dialog = QFileDialog(parent, title, "", file_filter)
+    dialog.setAcceptMode(QFileDialog.AcceptMode.AcceptSave)
+    dialog.setDefaultSuffix(suffix.lstrip("."))
+    dialog.selectFile(name)
+    try:
+        if not dialog.exec():
+            return None
+        chosen = dialog.selectedFiles()
+    finally:
+        dialog.deleteLater()
+    if not chosen:
+        return None
+    path = Path(chosen[0])
+    if suffix and path.suffix.lower() != suffix.lower():
+        path = path.with_name(path.name + suffix)
+        if path.exists():
+            box = replace_file_box(parent, path)
+            box.exec()
+            clicked = box.clickedButton()
+            # By role, not by label, as in pages.ask_separate_clocks.
+            if clicked is None or box.buttonRole(clicked) != QMessageBox.ButtonRole.AcceptRole:
+                return None
+    return path
 
 
 def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:

@@ -157,3 +157,20 @@ def test_docs_index_says_which_documents_are_in_chinese() -> None:
     for _english, chinese in _pairs():
         if chinese.parent.as_posix().startswith("docs"):
             assert chinese.name in index, chinese
+
+
+@pytest.mark.parametrize(
+    "document",
+    [
+        "docs/INSTALLATION.md",
+        "docs/INSTALLATION.zh-CN.md",
+        "docs/user-guide/en.md",
+        "docs/user-guide/zh-CN.md",
+    ],
+)
+def test_the_powershell_utf8_switch_is_documented(document: str) -> None:
+    """Piped output is UTF-8 (0.4.1); Windows PowerShell decodes a program's
+    output in the console's code page and garbles a Chinese report unless the
+    window is switched to UTF-8 first."""
+    text = (ROOT / document).read_text(encoding="utf-8")
+    assert "$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()" in text

@@ -2,8 +2,9 @@
 
 ``make_rir`` lives here so the package does not import ``tests``. The fake
 backend convolves the playback with a configured room impulse response, honours
-``progress`` and ``cancel``, and can emit a second channel that is an electrical
-loopback of the playback.
+``progress`` and ``cancel``, and records an electrical loopback of the playback
+on the input the caller declares as the loopback; every other input hears the
+room.
 """
 
 from __future__ import annotations
@@ -73,6 +74,11 @@ class FakeBackend:
     rir: FloatArray | None = None
     interface_ir: FloatArray | None = None
     loopback_delay_s: float = 0.002
+    #: Loudspeaker-to-microphone delay of the default room (about 1.4 m). The
+    #: microphone also goes through the interface, so it hears the sweep
+    #: ``loopback_delay_s + acoustic_delay_s`` after it was played, never
+    #: before the loopback does. An explicit ``rir`` keeps its own timing.
+    acoustic_delay_s: float = 0.004
     noise_rms: float = 1e-5
     rt60_s: float = 0.4
     seed: int = 0
@@ -124,6 +130,7 @@ class FakeBackend:
         progress: Callable[[float], None] | None = None,
         cancel: threading.Event | None = None,
         options: StreamOptions | None = None,
+        loopback_input: int | None = None,
     ) -> AudioSignal:
         del options  # the synthetic backend has no host API
         if not input_channels:
@@ -132,12 +139,36 @@ class FakeBackend:
             raise ConfigurationError(_("channels are 1-based and must be >= 1"))
         if input_device not in (None, 0) or output_device not in (None, 0):
             raise AudioDeviceError(_("fake backend only has device 0"))
+        # The channels it advertises, as a real device would check them.
+        device = self.list_devices()[0]
+        for channel in input_channels:
+            if channel > device.max_input_channels:
+                raise AudioDeviceError(
+                    _(
+                        "input channel {channel} does not exist on {device} "
+                        "({count} input channel(s))"
+                    ).format(channel=channel, device=device.name, count=device.max_input_channels)
+                )
+        if output_channel > device.max_output_channels:
+            raise AudioDeviceError(
+                _(
+                    "output channel {channel} does not exist on {device} "
+                    "({count} output channel(s))"
+                ).format(
+                    channel=output_channel, device=device.name, count=device.max_output_channels
+                )
+            )
         supported_sample_rate(sample_rate)
         signal = prepare_playback(playback, sample_rate, level_dbfs, extra_record_s)
         room = (
             self.rir
             if self.rir is not None
-            else make_rir(sample_rate, rt60_s=self.rt60_s, seed=self.seed)
+            else make_rir(
+                sample_rate,
+                rt60_s=self.rt60_s,
+                seed=self.seed,
+                start_delay_s=self.loopback_delay_s + self.acoustic_delay_s,
+            )
         )
         mic = np.asarray(
             fftconvolve(signal, room, mode="full")[: signal.shape[0]], dtype=np.float64
@@ -160,7 +191,10 @@ class FakeBackend:
         n_ch = len(input_channels)
         recorded = np.zeros((signal.shape[0], n_ch), dtype=np.float64)
         for i, channel in enumerate(input_channels):
-            recorded[:, i] = loop if channel >= 2 else mic
+            # The cable goes where the caller plugged it (--loopback-channel,
+            # the Demo's loopback box) and nowhere else: a microphone on any
+            # other input, input 2 included, hears the room.
+            recorded[:, i] = loop if channel == loopback_input else mic
 
         n = signal.shape[0]
         for start in range(0, n, CALLBACK_BLOCK):

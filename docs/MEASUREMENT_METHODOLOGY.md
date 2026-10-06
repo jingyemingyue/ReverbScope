@@ -50,6 +50,20 @@ is *not* 1: it is roughly `2 · bandwidth / fs` (about 0.82 for the default
 48 kHz sweep) and drops further when the direct sound falls between samples.
 Levels are read from the frequency response, not from `peak_value`.
 
+**Excitation band of a sweep definition** (`excitation_band_hz`). The
+range swept at full amplitude, `f1·exp(fade_in/L)` to `f2·exp(−fade_out/L)`,
+narrowed to where the ideal loopback (the sweep deconvolved by its own
+analytic inverse) stays within 1 dB (`EXCITATION_BAND_TOLERANCE_DB`) of
+0 dB. The full-amplitude range alone is not enough: the spectrum of an ESS
+reaches its level over about `sqrt(f/L)` Hz with Fresnel ripple, much more
+than a 50 ms fade-in covers at 20 Hz. The default 10 s sweep's ideal
+loopback is −9.7 dB at 20.7 Hz and +2.6 dB at 23.7 Hz; its band starts at
+28 Hz (3 s: 34 Hz, 1 s: 39 Hz). Everything that trusts the band uses this
+range: the excited range in the report, withheld decay bands, the
+frequency-response and resonance ranges and the common band of a
+comparison, where two perfect chains measured with different sweep lengths
+no longer differ near the low edge.
+
 **Spectral inverse** (`inverse_filter_spectral` / `design_spectral_inverse`):
 when the reference is an arbitrary WAV without a ReverbScope sweep definition,
 a Kirkeby-type regularised spectral division is used (Farina 2007 [2]
@@ -59,13 +73,48 @@ reference and `b(f)` is small inside the estimated excitation band
 (`SPECTRAL_REG_IN_BAND_DB`) and large outside it
 (`SPECTRAL_REG_OUT_OF_BAND_DB`), with sin² transitions in log frequency.
 Same in-band normalisation as the analytic inverse. A constant `β` would
-boost the inverse just below `f1` and above `f2`.
+boost the inverse just below `f1` and above `f2`. Before the inverse is
+designed, the silences at the start and end of the WAV are removed: samples
+below −60 dB re its peak, or, when the first or last 50 ms of the file is a
+steady noise floor (five 10 ms frames within 6 dB of each other) at least
+30 dB below the peak, less than 20 dB above that floor. A threshold
+relative to the peak alone kept the silences of a dithered 16-bit copy of a
+quiet sweep (at −36 dBFS its dither reaches −54 dB re the peak), and the
+decay after the sweep was then taken for part of the reference.
 
 **Deconvolution** (`core/deconvolution.py`): full linear convolution of the
 whole recording with the inverse filter (FFT). Because the convolution is
 zero-padded (linear, not circular), harmonic distortion products of the
 loudspeaker land *before* the linear response at `Δt_k = L·ln(k)` for the
 k-th harmonic [1][3] and are never wrapped into the IR.
+
+**Harmonic distortion indicators** (`harmonic_distortion_levels`). For
+k = 2..5, the energy in a window around the k-th harmonic response (5 ms
+before to at most 50 ms after it) relative to the same window around the
+direct sound, over the part of the excitation band both share. A level is
+reported only when it stands 6 dB above a floor measured the same way on
+what a take without these harmonic responses holds there: the noise, and
+the artefacts the ideal pulse (the sweep deconvolved by its own inverse)
+has in the 0.5 s before its peak, convolved with the measured response so
+that the room spreads them as it spreads the direct sound. The 0.5 s before
+the direct sound itself is not used: it also holds the room's decay after
+each harmonic response, so with a sweep shorter than about 5 s (where H2
+and H3 lie inside it), or in a very reverberant room, the floor followed
+the distortion level and no harmonic was ever reported.
+
+The noise is stationary, so it is measured where no harmonic response
+lands, in two places, and the lower of the two is used. The 0.5 s before
+the earliest window holds none of the evaluated orders, but it holds the
+higher ones: with the default 10 s sweep the 6th and 7th harmonic responses
+(2.6 s and 2.8 s before the direct sound) lie in it, and a loudspeaker
+clipping hard enough to read H3 at −15 dB made them a floor 20 dB above the
+noise, hiding H2 and H4. The last 0.5 s of the valid record, from 0.5 s
+after the direct sound on, holds no harmonic response, but it holds what is
+left of the room's decay when the recording stops soon after the sweep, and
+the products a digital clipper folded back. Each stretch can only hold more
+than the noise, so the lower one is the better estimate. A take with less
+than about 0.6 s of record after the direct sound has only the first
+stretch, and a strongly distorted one can then not be told from its floor.
 
 **Impulse-response location.** The direct sound is taken as the strongest
 sample of the deconvolved signal. The IR keeps `ir_pre_delay_ms` (5 ms)
@@ -102,12 +151,15 @@ recording, music, noise, or an IR whose direct sound is weaker than a later
 arrival, which cannot serve as time zero — is refused rather than analysed.
 A file that starts at its peak cannot be checked and is analysed with
 confidence "low".
-Band metrics are computed only inside an excitation band the caller
-declares (`--band LO HI`); without one they are `not_computed`. Fed the
-`impulse_response.wav` of a sweep analysis with that analysis's band, the
-imported path reproduces its RT60 (±1 %), band T values (±2 %), reflection
-delay (±0.05 ms) and level (±0.2 dB) and its resonance candidates
-(`tests/integration/test_analyze_ir.py`).
+Decay and energy metrics, broadband and per band, are computed only inside
+an excitation band the caller declares (`--band LO HI`); without one they are
+all `not_computed`. A declared band that ends above half the file's sample
+rate is refused: the file holds nothing there, and a comparison with a
+session at a higher rate would read a difference made up from the last bin
+of this response. Fed the `impulse_response.wav` of a sweep analysis with
+that analysis's band, the imported path reproduces its RT60 (±1 %), band T
+values (±2 %), reflection delay (±0.05 ms) and level (±0.2 dB) and its
+resonance candidates (`tests/integration/test_analyze_ir.py`).
 
 ## 2b. Was the sweep played at the speed it was generated at?
 
@@ -133,7 +185,12 @@ is loudest in the frame where the sweep passed it — reverberation only adds
 later and weaker energy — and bins whose maximum is at least 20 dB above
 their median over time are kept. A Theil–Sen line [23, 24] through
 `(ln f, t)` of at least 12 such bins spanning at least 1.5 octaves gives the
-measured `L'`, and `speed = L / L'`. A speed within the estimate's own
+measured `L'`, and `speed = L / L'`. The line must explain the recording: of
+the searched bins it says the sweep crossed inside the recording, at least
+half must be among the kept ones. A take cut while the sweep was still in
+its lowest octaves leaves a few bins (hum, leakage) that peak together, a
+nearly flat line and a "speed" thousands of times too high; it is not
+measured. A speed within the estimate's own
 spread of 1 is "as generated": `max(1.25 %, 5.5 % / T^0.75)` for a sweep of
 `T` seconds (9.3 % at 0.5 s, 5.5 % at 1 s, 2.4 % at 3 s, 1.6 % at 5 s,
 1.25 % from about 9 s). Otherwise, when `speed × generated rate` is within
@@ -220,37 +277,114 @@ time-reversed filtering.
 **Procedure** (`core/decay.py`):
 
 1. Band filtering: Butterworth band-pass (3 poles per skirt, second-order
-   sections) for octave bands 63 Hz–8 kHz (base-2 edges `fc·2^(±1/2)`,
-   IEC 61260-1 [12]), applied *time-reversed* so that the filter's own decay
-   precedes the room decay. The filters are not certified IEC 61260 class 1.
-2. Lundeby truncation (iterative, max 6 passes): 20 ms local averages, noise
-   from the last 10 %, regression from the peak to noise + 10 dB, cross-point,
-   new interval (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated
-   from 7.5 dB of decay after the cross-point (at least the last 10 %), late
-   slope over 15 dB starting 7.5 dB above noise, repeat until the cross-point
-   moves < 1 ms. These parameter values are ReverbScope's choices within the
-   ranges published by Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB;
-   10–20 dB).
-3. Schroeder curve: `EDC(t) = Σ_{τ≥t} h²(τ)` from the decay start (peak of the
-   smoothed energy) to the truncation point, plus the late-decay
+   sections) for octave bands 63 Hz–8 kHz (base-10 exact mid-band frequencies
+   and edges `fm·G^(±1/2)` with `G = 10^(3/10)`, IEC 61260-1 [12]), applied
+   *time-reversed* so that the filter's own decay precedes the room decay.
+   The filters are not certified IEC 61260 class 1.
+2. Lundeby truncation (iterative, max 6 passes) on the squared response from
+   the decay start (step 3). Trailing digital silence (exact zeros, for
+   example an imported response padded or gated with zeros) is removed
+   first: it is not a noise floor, so "the last 10 %" below means the last
+   10 % before it. 20 ms local averages, noise from the last 10 %,
+   regression from the peak to noise + 10 dB (when fewer than two 20 ms
+   averages lie above that level, as for a decay with an RT below about
+   0.08 s and 30 dB of range that reaches the floor within one of them,
+   5 ms and then 1 ms averages are tried first, shorter than Lundeby's
+   range but used only when 20 ms cannot resolve the decay and only when the
+   average holds at least one inverse bandwidth of the band (B·T ≥ 1: 5 ms
+   from the 500 Hz octave band up, 1 ms from the 2 kHz band up, always for
+   the broadband curve. In the 125 Hz band, 88 Hz wide, a 1 ms average
+   holds B·T = 0.09, so it is a noise spike whose level would inflate the
+   range and let two or three random averages fit the decay); only when
+   those show no decay either is the response said to have none, and the
+   integration then ends at the first 20 ms average at the noise floor
+   instead of integrating the noise to the end), cross-point, new interval
+   (5 intervals per 10 dB, clamped 1–50 ms), noise re-estimated from 7.5 dB
+   of decay after the cross-point (at least the last 10 %), late slope over
+   15 dB starting 7.5 dB above noise, repeat until the cross-point moves
+   less than max(1 ms, the time the late slope takes to fall 1 dB). The late
+   slope is fitted to the decay only: from its first interval at or below
+   noise + 22.5 dB to the last one before it falls below noise + 7.5 dB. In
+   a narrow band the floor in 1–10 ms intervals swings by many dB, and floor
+   intervals seconds after the cross-point that rise into the level window
+   would otherwise drag the slope towards zero (up to v0.5.0b1 they were
+   fitted too, which rejected the estimate of many clean 63/125 Hz decays
+   with 50–60 dB of range and marked their T20 and T30 unreliable). These
+   parameter values are ReverbScope's choices within the ranges published by
+   Lundeby (10–50 ms; 3–10 intervals/10 dB; 5–10 dB; 10–20 dB). The
+   iterative estimate is rejected, and the preliminary cross-point, slope
+   and noise level are used instead, when a pass cannot estimate a late
+   slope (fewer than 3 intervals of decay between noise + 7.5 dB and
+   noise + 22.5 dB, or no fall across them; the warning says so rather than
+   "did not converge"), when it does not converge within 6
+   passes, when the late slope is less than half the preliminary slope, or
+   when the cross-point lies more than `10 dB / |preliminary slope|` plus
+   two intervals after the first interval at noise + 5 dB (a stationary
+   tonal floor such as mains hum drags the late slope towards zero and the
+   cross-point to the end of the response). Step 8 says when that makes the
+   metrics unreliable.
+3. Schroeder curve: `EDC(t) = Σ_{τ≥t} h²(τ)` from the decay start (the first
+   sample within 20 dB of the energy maximum, searched from shortly before the
+   direct sound) to the truncation point, plus the late-decay
    compensation `C = p(t_c)·(−10 / (slope·ln 10))` (energy of the extrapolated
    exponential tail). Normalised to 0 dB at the start.
 4. Least-squares line fits over the ISO 3382-1 ranges and extrapolation to
-   60 dB: EDT 0…−10 dB (×6), T20 −5…−25 dB (×3), T30 −5…−35 dB (×2). The
-   ISO "degree of non-linearity" `ξ = 1000·(1 − r²)` (‰) is reported.
-5. **Validity.** A metric is reported only when the available decay range
-   (peak level of the smoothed energy minus the estimated noise floor, in dB)
-   is at least `|lower limit| + 10 dB`: 20 dB for EDT, 35 dB for T20, 45 dB
-   for T30 (ISO 3382: the evaluation range must lie ≥ 10 dB above the noise
-   [9][10], restated by Hak et al. 2012 [17]). Otherwise the metric is
-   `insufficient_decay_range` with the numbers in `reason`.
-6. **B·T check.** With time-reversed filtering the bandwidth × reverberation
+   60 dB: EDT 0…−10 dB (×6), T20 −5…−25 dB (×3), T30 −5…−35 dB (×2). A fit
+   never starts before the end of the direct sound: the detected
+   direct-sound sample plus the excitation pulse spread `4/B_exc + 0.5 ms`
+   (`B_exc` the excitation bandwidth). Before it, a time-reversed band
+   response holds only the band filter's pre-ringing of the direct sound,
+   not room decay; the fit then gives what an ideal, non-smearing band filter
+   would give, where the direct sound is a step of the curve at time 0. For
+   the broadband curve it changes nothing. The ISO "degree of non-linearity"
+   `ξ = 1000·(1 − r²)` (‰) is reported for each fit and checked in step 7.
+5. **Validity: decay range.** A metric is reported only when the available
+   decay range (peak level of the smoothed energy minus the estimated noise
+   floor, in dB) is at least `|lower limit| + 10 dB`: 20 dB for EDT, 35 dB
+   for T20, 45 dB for T30 (ISO 3382: the evaluation range must lie ≥ 10 dB
+   above the noise [9][10], restated by Hak et al. 2012 [17]). Otherwise the
+   metric is `insufficient_decay_range` with the numbers in `reason`. Steps
+   6–9 mark a metric that has a number `unreliable`, with a warning that
+   says why.
+6. **Validity: EDT and the direct sound.** EDT is unreliable when the
+   Schroeder curve drops more than 5 dB across the direct sound, i.e. the
+   direct sound carries more than about 70 % of the band's energy. Less than
+   half of the 0…−10 dB range is then room decay, and EDT describes the
+   direct sound rather than the room at that position.
+7. **Validity: straight decay.** ISO 3382-2:2008 Annex B [10] introduces `ξ`
+   and the curvature `C = 100·(T30/T20 − 1)` % to warn that a single
+   reverberation time does not describe the decay (for example a double
+   slope). When `|C|` exceeds `max(10 %, 500 / √(B·T30))`, T20 and T30 are
+   both marked unreliable and no RT60 is estimated; when the `ξ` of one fit
+   exceeds `max(15 ‰, 1000 / √(B·T30))`, that metric is marked unreliable
+   (`B` the band's bandwidth in Hz, or the excitation bandwidth for the
+   broadband curve; `T30` in seconds). The limits are ReverbScope's choice;
+   the numerical guidance of Annex B was not verified against the standard
+   text. 10 % is the value the Annex is commonly cited with. The `ξ` floor is
+   15 ‰ rather than the commonly cited 10 ‰: in simulations of single-slope
+   rooms with strong early reflections the median T30 error stayed below
+   10 % up to about 15 ‰ and exceeded it above. The `1/√(B·T30)` terms
+   follow the scatter of band-limited noise decays, which falls with the
+   number of degrees of freedom `B·T`. The constants were set with a Monte
+   Carlo of single-slope decays so that fewer than 1 % of them are flagged
+   (at most about 2 % in any band), while a double slope of 0.3 s and 2.0 s
+   with the slow part 25 dB down is flagged in every run for the broadband
+   curve and the 250 Hz–8 kHz bands, and in 60–90 % of the runs at 63 and
+   125 Hz, where a single decay already scatters that much.
+8. **Validity: truncation sensitivity.** When the Lundeby estimate was
+   rejected (step 2), EDT, T20 and T30 are fitted again with the rejected
+   estimate. If a VALID one changes by more than 5 % or has no value with
+   it, or if the iteration left no estimate to compare with, the band's EDT,
+   T20 and T30 are all marked unreliable. Marking every rejected estimate
+   unreliable would flag most bands of clean measurements with more than
+   about 100 dB of range, where the late slope is fitted to a few intervals
+   and oscillates without affecting the metrics.
+9. **B·T check.** With time-reversed filtering the bandwidth × reverberation
    time product should exceed about 4 (about 16 with forward filtering) [6];
    below 4 the band's metrics are marked `unreliable` and a warning explains
    why. The numbers 16 / 4 are confirmed only through works citing [6].
-7. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
-   always reported. Curvature `C = 100·(T30/T20 − 1)` % is given when both
-   exist.
+10. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
+    always reported. Curvature `C` (step 7) is given when both exist.
 
 **Units.** Seconds; the Schroeder curve in dB relative to its start.
 
@@ -273,7 +407,16 @@ accuracy), and the rule that one averages *T values*, not decay curves
 **Procedure** (`core/averaging.py`). `average_decay(results)` takes the
 arithmetic mean of EDT, T20 and T30 per band over the metrics marked VALID
 only, with the count, the spread (max − min) and the contributing session
-labels. Decay curves (`edc_db`) are never averaged. The output names the
+labels. The averaged RT60 is the mean of the sessions' own RT60 estimates
+(each the VALID T30, else the VALID T20, as in §3 step 10), with its own
+count and contributing sessions; its basis is `T30`, `T20`, or `T30/T20`
+when the sessions differ. (Up to v0.5.0b1 it was the mean T30 whenever any
+session had one, so a single quiet position's T30 stood for the room and
+the positions with only a T20 were left out.) Each value averages only the
+sessions where it is VALID, so the counts of one band can differ: the
+`project average` table prints the largest as `n` and the count after any
+value that averages fewer sessions, for example `0.91 s (1)`. Decay curves
+(`edc_db`) are never averaged. The output names the
 ISO 3382-2 accuracy class reached by the source positions, microphone
 positions and source–microphone combinations; every row of the table must
 be met. `reverbscope project average` counts one microphone position per
@@ -321,9 +464,13 @@ figure-of-eight or a dummy head. STI is not computed.
 truncation and late-decay compensation as the Schroeder curve). Time zero is
 the detected direct-sound sample. Energy from the onset up to that sample
 (the rise, and for a band the time-reversed filter's pre-ringing of the
-direct sound) is counted at time zero. With `E_early` the energy before the
-split and `E_late` the energy from the split through the truncation plus the
-compensated tail:
+direct sound) is counted at time zero. Without a known direct sound (only
+through the library, `analyze_decay` without `direct_index`; the command line
+and the desktop app always pass one), time zero is each curve's onset
+instead, so leading silence does not move the ratios or `Ts`. `Ts` is then
+not on the result's `time_origin` axis, which starts at the first sample of
+the analysed signal. With `E_early` the energy before the split and `E_late`
+the energy from the split through the truncation plus the compensated tail:
 
 * `C50 = 10·log10(E_early / E_late)` at 50 ms, `C80` at 80 ms (dB).
 * `D50 = 100 · E_early / (E_early + E_late)` at 50 ms (percent).
@@ -375,11 +522,29 @@ full-scale sine); Welch (1967) for the PSD estimate.
 **Procedure** (`core/noise.py`). Quiet segment = recording from 50 ms after
 the start to 100 ms before the detected sweep start (≥ 0.5 s), else the file
 tail 3 s after the sweep end (flagged as possibly containing reverberation),
-else none. Reported: RMS in dBFS (sine reference), peak dBFS, octave-band RMS
-levels (zero-phase filtered), Welch PSD (Hann, 2 Hz resolution), and mains
-hum candidates: for 50 Hz and 60 Hz, harmonics up to 1 kHz whose PSD peak
-(±2 Hz) exceeds the median of the ±15 % neighbourhood by ≥ 10 dB; "detected"
-means ≥ 2 such harmonics.
+else none. Reported, all with the DC offset removed: RMS in dBFS (sine
+reference), peak dBFS, octave-band RMS levels (one forward filter pass, start
+transient discarded; the offset is removed first because the filters'
+response to it outlasts that transient), Welch PSD (Hann, 2 Hz resolution, at least two averaged
+segments; a segment shorter than 0.75 s gets coarser bins), and mains hum
+candidates: for 50 Hz and 60 Hz, harmonics up to the 12th and at most 1 kHz
+whose PSD peak (±max(2 Hz, 1.5 bins)) exceeds the median of the
+±max(10 Hz, 15 %) neighbourhood by ≥ 10 dB; "detected" means ≥ 2 such
+harmonics not shared with the other mains frequency.
+
+**Direct sound against the noise.** The notice "the direct sound is only
+N dB above the noise floor" (below 60 dB) compares the noise RMS with the
+level of the direct sound in the recording: the chain gain before loopback
+compensation plus the reference's peak level (the sweep's `level_dbfs`, or
+the peak of a reference audio file). The chain gain is the energy within
+±0.5 ms of the direct-sound peak relative to that of a perfect chain's
+pulse (the reference deconvolved by its own inverse). The IR peak itself is
+not the chain gain: a band-limited pulse peaks at about
+`2 * bandwidth / fs` times its in-band gain, so the same chain read 12 dB
+lower at 192 kHz than at 48 kHz, and up to 2.6 dB lower when the direct
+sound falls between two samples; the pulse's energy depends on neither. A
+result saved without this level (0.5.0b1) is read from its IR peak relative
+to `2 * bandwidth / fs` of its excitation band.
 
 **Units.** dBFS and dB re FS²/Hz. **Never dB SPL** without calibration, which
 v0.1 does not support.
@@ -413,11 +578,30 @@ Genelec patent US 7,742,607 expired in 2022 (see §10).
 smoothed response that stand ≥ 6 dB above the 1-octave smoothed baseline are
 candidates. For each, a 1/3-octave band-pass (2 poles per skirt,
 time-reversed) is applied and the time for the band envelope to fall 20 dB
-is compared with the same measure for the filter alone; the decay is called
-distinguishable only when it is ≥ 2× the filter ringing.
+is compared with the same measure for the filter alone and for the
+neighbouring 1/3-octave bands (with the candidate's own third and every other
+candidate's third notched out, 4 poles per skirt; a neighbouring band that
+overlaps another candidate's band is not used, so two modes an octave apart,
+like the first two axial modes of one dimension, do not read each other's
+decay as their surroundings). The median is taken over the four nearest
+usable neighbours, tried at ±2/3 and ±1 octave first and then at ±4/3, ±5/3
+and ±2 octave when other candidates cover the nearer ones, so that three or
+more candidates within an octave or so of each other still have a reference
+(with only the nearest four, up to two thirds of the genuinely ringing modes
+in rooms with 3 to 6 modes had none and were never called distinguishable).
+The candidate's own decay is measured with the other candidates notched out
+too, unless one overlaps its band. The decay is called distinguishable only
+when it is ≥ 2× the filter ringing and ≥ 2× the surroundings.
 
 **Limitations.** "Potential resonance" only. Identifying a room mode needs
-room dimensions and several positions; ReverbScope does not claim it.
+room dimensions and several positions; ReverbScope does not claim it. A peak
+that does not become a candidate cannot be notched and still leaks into the
+bands next to it. When the whole low end rings alike (many modes within a
+few octaves, all long) the surroundings ring too and no peak is called
+distinguishable: that is the verdict, not a gap. A reference taken up to two
+octaves away assumes the room's decay does not change much between them; the
+ratio at a resonance-free frequency still reaches 2 in 3 % to 5 % of
+synthetic cases when other long modes crowd it (1.8 % when it is alone).
 
 ## 7a. Placement geometry
 
@@ -605,8 +789,14 @@ random diffuse tail, the 4 / 8 / 16 kHz octave MADs are below 1.2 / 1.0 /
 recovered within 0.3 dB (`tests/unit/test_compare.py`).
 
 Early reflections. Matched by delay within ±0.5 ms
-(`CompareSettings.reflection_match_ms`). Unmatched arrivals are listed as
+(`CompareSettings.reflection_match_ms`), the closest pairs first and each
+arrival once, so an arrival 0.1 ms from a candidate is never left unmatched
+because an earlier one 0.5 ms away took it. Unmatched arrivals are listed as
 appeared or disappeared. Both sides must have high direct-sound confidence.
+The profile's finding compares the strongest reflection inside its window on
+each side, matched or not, so a dominant reflection that moved more than the
+tolerance is not hidden behind a weaker matched pair; when only one side has
+one, it is named if it reaches the profile's reflection threshold.
 
 Noise. RMS and band deltas are VALID only if both sessions have a verified
 quiet segment *and* the caller declares the input gain unchanged
@@ -614,7 +804,12 @@ quiet segment *and* the caller declares the input gain unchanged
 the reason "gain not declared equal".
 
 Resonances. Matched within 1/6 octave
-(`CompareSettings.resonance_match_octaves`). The decay-distinguishable flags
+(`CompareSettings.resonance_match_octaves`), the closest pairs (by frequency
+ratio) first, and only inside the range both searches covered
+(`searched_range_hz` of each side): an unmatched candidate outside it was
+never looked for on the other side, so it is left out with a note instead of
+being called disappeared or appeared. When one side did not search at all,
+nothing is compared and a note says so. The decay-distinguishable flags
 are compared, not a decay-time delta.
 
 Placement. Tier-2 heights are compared when both results are tier 2;

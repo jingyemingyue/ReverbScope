@@ -23,8 +23,8 @@ msgstr "ReverbScope：开源、不依赖 DAW 的录音环境分析器。"
 msgid "audio backend for Standalone Mode: portaudio (default) or fake"
 msgstr "独立模式的音频后端：portaudio（默认）或 fake"
 
-msgid "UI language (en, zh_CN). Overrides settings and REVERBSCOPE_LANG"
-msgstr "界面语言（en、zh_CN）。覆盖设置与 REVERBSCOPE_LANG"
+msgid "interface language for this command (en, zh_CN); reverbscope config language keeps one"
+msgstr "本条命令的界面语言（en、zh_CN）；要一直使用一种语言，请用 reverbscope config language"
 
 msgid "text report or JSON on stdout (diagnostics stay on stderr)"
 msgstr "标准输出为文本报告或 JSON（诊断信息仍走标准错误）"
@@ -44,14 +44,14 @@ msgstr "会话目录或 session.json"
 msgid "leave WAV files out of the zip"
 msgstr "ZIP 文件中不包含 WAV 录音"
 
-msgid "zip path (file or directory)"
-msgstr "ZIP 文件路径（文件或目录）"
+msgid "zip file (.zip) or folder"
+msgstr "ZIP 文件（.zip）或文件夹"
 
 msgid "export curves through an exporter"
 msgstr "通过导出器导出曲线"
 
 msgid "exporter name (default csv)"
-msgstr "导出器名称（默认 CSV）"
+msgstr "导出器名称（默认 csv）"
 
 msgid "output directory"
 msgstr "输出目录"
@@ -108,7 +108,7 @@ msgid "Language"
 msgstr "语言"
 
 msgid "Default profile"
-msgstr "默认配置"
+msgstr "默认录音配置"
 
 msgid "Audio backend"
 msgstr "音频后端"
@@ -368,8 +368,8 @@ msgstr "平面？"
 msgid "No placement result. Add a loudspeaker distance to raise the tier."
 msgstr "没有摆位结果。补上扬声器距离可提高档位。"
 
-msgid "Placement tier {tier}. No coordinates, room length, room width or named wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} C{assumed}."
-msgstr "摆位档位 {tier}。不推导坐标、房间长宽或具名墙面。声速 {speed:.1f} m/s，气温 {temp:.0f} C{assumed}。"
+msgid "Placement tier {tier}. No coordinates, room length, room width or named wall are derived. Speed of sound {speed:.1f} m/s at {temp:.0f} °C{assumed}."
+msgstr "摆位档位 {tier}。不推导坐标、房间长宽或具名墙面。声速 {speed:.1f} m/s，气温 {temp:.0f} °C{assumed}。"
 
 msgid " (assumed)"
 msgstr "（假定）"
@@ -448,9 +448,6 @@ msgstr "候选"
 
 msgid "Delta"
 msgstr "差值"
-
-msgid "Validity"
-msgstr "有效性"
 
 msgid "Status"
 msgstr "状态"
@@ -821,7 +818,7 @@ msgid "microphone capsule above the first solid horizontal surface below it (m) 
 msgstr "话筒振膜到其下方第一块水平固体表面的高度（米）——桌上是桌面，否则是地板。需要 --speaker-distance"
 
 msgid "air temperature (C); 20 C is assumed, and reported as assumed, without it"
-msgstr "气温（C）；未提供时假定 20 C，并报告为假定"
+msgstr "气温（摄氏度）；未提供时按 20 摄氏度计算，并在报告中注明是假定值"
 
 msgid "recording profile that shapes the interpretation (default: user settings)"
 msgstr "影响解读的录音配置（默认：用户设置）"
@@ -829,8 +826,8 @@ msgstr "影响解读的录音配置（默认：用户设置）"
 msgid "separate loopback WAV from the same take (same sample rate)"
 msgstr "同一次录音的单独回送（loopback）WAV（相同采样率）"
 
-msgid "0-based loopback channel of the recording (or of --loopback if it is multi-channel)"
-msgstr "录音（或多声道 --loopback 文件）中的回送声道（从 0 起）"
+msgid "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
+msgstr "回送声道（从 0 起）：给出 --loopback 时指该文件中的声道，否则指录音中的声道"
 
 msgid "write the ESS test signal WAV (+ JSON sidecar)"
 msgstr "写出 ESS 测试信号 WAV（及 JSON 附属文件）"
@@ -925,14 +922,14 @@ msgstr "分析其他工具给出的脉冲响应 WAV"
 msgid "impulse-response WAV"
 msgstr "脉冲响应 WAV"
 
-msgid "declared excitation band in Hz (required for band metrics)"
-msgstr "声明的激励频带（Hz；频带指标需要）"
+msgid "declared excitation band in Hz (required for every decay and clarity metric, broadband included)"
+msgstr "声明的激励频带（Hz；所有衰减与清晰度指标都需要，包括宽带）"
 
 msgid "n/a"
 msgstr "无"
 
-msgid "at {temp:.0f} C"
-msgstr "气温 {temp:.0f} C"
+msgid "at {temp:.0f} °C"
+msgstr "气温 {temp:.0f} °C"
 
 msgid "matched"
 msgstr "匹配"
@@ -1500,8 +1497,11 @@ msgstr "回送路径延迟"
 msgid "Broadband"
 msgstr "宽带"
 
+# Stored in comparison reasons by ReverbScope 0.5 and earlier ("candidate outside
+# the sweep's range"); an imported impulse response has no sweep, so it is shown
+# with the neutral word.
 msgid "outside the sweep's range"
-msgstr "超出扫频范围"
+msgstr "超出激励范围"
 
 msgid "not comparable"
 msgstr "不可比较"
@@ -1633,7 +1633,7 @@ msgid "expected at most one argument"
 msgstr "最多只能有一个参数值"
 
 msgid "invalid %(type)s value: %(value)r"
-msgstr "无效的 %(type)s 值：%(value)r"
+msgstr "无效的%(type)s值：%(value)r"
 
 msgid "invalid choice: %(value)r (choose from %(choices)s)"
 msgstr "无效选项：%(value)r（可选：%(choices)s）"
@@ -1652,6 +1652,139 @@ msgstr "无法识别的参数：%s"
 
 msgid "can't open '%(filename)s': %(error)s"
 msgstr "无法打开“%(filename)s”：%(error)s"
+
+msgid "ignored explicit argument %r"
+msgstr "该选项不接受值（给出了 %r）"
+
+msgid "unknown parser %(parser_name)r (choices: %(choices)s)"
+msgstr "未知的子命令 %(parser_name)r（可选：%(choices)s）"
+
+msgid "unexpected option string: %s"
+msgstr "意外的选项：%s"
+
+msgid "expected %s argument"
+msgstr "需要 %s 个参数值"
+
+msgid "expected %s arguments"
+msgstr "需要 %s 个参数值"
+
+msgctxt "argument type"
+msgid "int"
+msgstr "整数"
+
+msgctxt "argument type"
+msgid "float"
+msgstr "数字"
+
+# Placeholders in usage lines and option lists (argparse metavars).
+
+msgctxt "metavar"
+msgid "<command>"
+msgstr "<命令>"
+
+msgctxt "metavar"
+msgid "HZ"
+msgstr "赫兹"
+
+msgctxt "metavar"
+msgid "S"
+msgstr "秒"
+
+msgctxt "metavar"
+msgid "DBFS"
+msgstr "dBFS"
+
+msgctxt "metavar"
+msgid "N"
+msgstr "序号"
+
+msgctxt "channel metavar"
+msgid "N"
+msgstr "声道"
+
+msgctxt "count metavar"
+msgid "N"
+msgstr "数量"
+
+msgctxt "fraction metavar"
+msgid "N"
+msgstr "N"
+
+msgctxt "metavar"
+msgid "TEXT"
+msgstr "文字"
+
+msgctxt "metavar"
+msgid "M"
+msgstr "米"
+
+msgctxt "metavar"
+msgid "C"
+msgstr "摄氏度"
+
+msgctxt "metavar"
+msgid "WAV"
+msgstr "WAV文件"
+
+msgctxt "metavar"
+msgid "FILE"
+msgstr "文件"
+
+msgctxt "metavar"
+msgid "DIR"
+msgstr "目录"
+
+msgctxt "metavar"
+msgid "LIST"
+msgstr "列表"
+
+msgctxt "metavar"
+msgid "LO"
+msgstr "下限"
+
+msgctxt "metavar"
+msgid "HI"
+msgstr "上限"
+
+msgctxt "metavar"
+msgid "PATH"
+msgstr "路径"
+
+msgctxt "metavar"
+msgid "LABEL"
+msgstr "标签"
+
+msgctxt "metavar"
+msgid "NAME"
+msgstr "名称"
+
+msgctxt "metavar"
+msgid "LANG"
+msgstr "语言"
+
+msgctxt "metavar"
+msgid "WHEN"
+msgstr "何时"
+
+msgctxt "metavar"
+msgid "path"
+msgstr "路径"
+
+msgctxt "metavar"
+msgid "baseline"
+msgstr "基线"
+
+msgctxt "metavar"
+msgid "candidate"
+msgstr "候选"
+
+msgctxt "metavar"
+msgid "project"
+msgstr "项目"
+
+msgctxt "metavar"
+msgid "session"
+msgstr "会话"
 
 msgid "DEMO"
 msgstr "演示"
@@ -1769,8 +1902,13 @@ msgid "no VALID values to average"
 msgstr "没有可平均的有效（VALID）值"
 
 msgctxt "diagnostic"
+msgid "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance; ReverbScope does not identify room modes."
+msgstr "仅为候选：低频响应中窄带衰减较长的峰可能是房间共振；ReverbScope 不识别房间模式。"
+
+# Stored by ReverbScope 0.5 and earlier in result.json; still shown translated.
+msgctxt "diagnostic"
 msgid "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance, but room-mode identification is not attempted in v0.1."
-msgstr "仅为候选：低频响应中窄带衰减较长的峰可能是房间共振，但 v0.1 不尝试识别房间模式。"
+msgstr "仅为候选：低频响应中窄带衰减较长的峰可能是房间共振；ReverbScope 不识别房间模式。"
 
 msgctxt "diagnostic"
 msgid "the analysed response is {length_s:.2f} s long, so its resolution is {resolution_hz:.1f} Hz and peaks below {low:.0f} Hz cannot be separated"
@@ -1797,8 +1935,8 @@ msgid "candidates are envelope peaks standing above the local diffuse level; in 
 msgstr "候选是高出局部扩散声级的包络峰；在密集的早期尾部，部分候选可能是统计起伏，而不是离散的反射"
 
 msgctxt "diagnostic"
-msgid "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be searched"
-msgstr "脉冲响应在直达声之后 {analysed_ms:.1f} ms 就结束了，因此 {min_ms:.0f}-{max_ms:.0f} ms 窗口中只有这一部分得到搜索"
+msgid "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only that part of the {min_ms:g}-{max_ms:g} ms window could be searched"
+msgstr "脉冲响应在直达声之后 {analysed_ms:.1f} ms 就结束了，因此 {min_ms:g}-{max_ms:g} ms 窗口中只有这一部分得到搜索"
 
 msgctxt "diagnostic"
 msgid "impulse response is too short after the direct sound for reflection analysis"
@@ -1822,7 +1960,7 @@ msgstr "dB re（满幅正弦 RMS）^2 每 Hz：功率谱密度经过缩放，使
 
 msgctxt "diagnostic"
 msgid "c = 331.3 * sqrt(1 + T/273.15) m/s (adiabatic ideal-gas relation for dry air; 343.2 m/s at 20 C, numerically equal to the ISO 9613-1 form c = 343.2 * sqrt(T/293.15))"
-msgstr "c = 331.3 * sqrt(1 + T/273.15) m/s（干燥空气的绝热理想气体关系；20 C 时为 343.2 m/s，数值上与 ISO 9613-1 的形式 c = 343.2 * sqrt(T/293.15) 相同）"
+msgstr "c = 331.3 * sqrt(1 + T/273.15) m/s（干燥空气的绝热理想气体关系；20 °C 时为 343.2 m/s，数值上与 ISO 9613-1 的形式 c = 343.2 * sqrt(T/293.15) 相同）"
 
 msgctxt "diagnostic"
 msgid "No coordinate, room length, room width or wall distance is reported. One omnidirectional microphone at one position measures path lengths, not directions, and the deconvolved time origin contains the interface round-trip latency, so there is no absolute time of flight: the four independent arrival equations constrain six unknowns, a deficit of three without a tape-measured loudspeaker-to-microphone distance and two with it. The remaining freedom is the direction of the loudspeaker-to-microphone vector, and every direction reproduces the measured arrival times exactly. Only quantities invariant over that family are reported: the product of the two perpendicular distances to a plane, and the vertical axis once one perpendicular distance is supplied by the user."
@@ -2047,9 +2185,10 @@ msgstr "信号包含 NaN 或无穷大的采样"
 msgid "channel {index} does not exist (signal has {count} channel(s))"
 msgstr "声道 {index} 不存在（信号共有 {count} 个声道）"
 
+# Stored by ReverbScope 0.5 and earlier in result.json, counted from 0; still shown translated.
 msgctxt "diagnostic"
 msgid "recording has {count} channels; channel {chosen} (highest RMS) was analysed. Use the channel setting to choose explicitly."
-msgstr "录音有 {count} 个声道；已分析声道 {chosen}（RMS 最高）。可用声道设置明确指定。"
+msgstr "录音有 {count} 个声道；已分析从 0 开始编号的声道 {chosen}（RMS 最高）。可用声道设置明确指定。"
 
 msgid "sample_rate must be a positive integer"
 msgstr "sample_rate 必须是正整数"
@@ -2058,13 +2197,13 @@ msgid "sample_rate {rate} is not supported; use one of {supported}"
 msgstr "不支持 sample_rate {rate}；请使用以下之一：{supported}"
 
 msgid "duration_s must be >= 0.5 s"
-msgstr "duration_s 必须 >= 0.5 s"
+msgstr "duration_s 必须至少为 0.5 s"
 
 msgid "duration_s must be <= 120 s"
-msgstr "duration_s 必须 <= 120 s"
+msgstr "duration_s 不能超过 120 s"
 
 msgid "start_hz must be > 0"
-msgstr "start_hz 必须 > 0"
+msgstr "start_hz 必须大于 0"
 
 msgid "end_hz must be greater than start_hz"
 msgstr "end_hz 必须大于 start_hz"
@@ -2079,7 +2218,7 @@ msgid "fades must be shorter than the sweep"
 msgstr "淡入淡出必须短于扫频"
 
 msgid "level_dbfs must be <= 0 dBFS"
-msgstr "level_dbfs 必须 <= 0 dBFS"
+msgstr "level_dbfs 不能超过 0 dBFS"
 
 msgid "level_dbfs below -80 dBFS is not a usable test signal"
 msgstr "level_dbfs 低于 -80 dBFS 时不是可用的测试信号"
@@ -2088,7 +2227,7 @@ msgid "silences must be >= 0"
 msgstr "静音时长必须 >= 0"
 
 msgid "channel must be >= 0 or None"
-msgstr "channel 必须 >= 0 或为 None"
+msgstr "channel 不能为负数"
 
 msgid "ir_pre_delay_ms must be >= 0"
 msgstr "ir_pre_delay_ms 必须 >= 0"
@@ -2109,7 +2248,7 @@ msgid "fr_window_s must be > 0"
 msgstr "fr_window_s 必须 > 0"
 
 msgid "fr_smoothing_fraction must be >= 0"
-msgstr "fr_smoothing_fraction 必须 >= 0"
+msgstr "fr_smoothing_fraction 不能为负数"
 
 msgid "noise_min_segment_s must be > 0"
 msgstr "noise_min_segment_s 必须 > 0"
@@ -2138,14 +2277,14 @@ msgstr "placement_distance_m 必须在 0.20 m 到 15 m 之间"
 msgid "placement_mic_height_m must be between 0.02 m and 5 m"
 msgstr "placement_mic_height_m 必须在 0.02 m 到 5 m 之间"
 
-msgid "placement_temperature_c must be between -20 C and 50 C"
+msgid "placement_temperature_c must be between -20 °C and 50 °C"
 msgstr "placement_temperature_c 必须在 -20 °C 到 50 °C 之间"
 
 msgid "placement_mic_height_m needs placement_distance_m: a height on its own cannot be turned into geometry"
 msgstr "placement_mic_height_m 需要同时给出 placement_distance_m：仅有高度无法换算成几何位置"
 
 msgid "loopback_channel must be >= 0 or None"
-msgstr "loopback_channel 必须 >= 0 或为 None"
+msgstr "loopback_channel 不能为负数"
 
 msgctxt "file record"
 msgid "settings"
@@ -2561,9 +2700,10 @@ msgctxt "diagnostic"
 msgid "aliased distortion (folded harmonic {orders} at {level_db:.0f} dB re the direct sound) spreads over the impulse response after the direct sound and imitates a decay"
 msgstr "混叠失真（折叠回来的 {orders} 次谐波，相对直达声 {level_db:.0f} dB）散布在直达声之后的脉冲响应中，看起来像衰减"
 
+# Stored by ReverbScope 0.5 and earlier in result.json, counted from 0; still shown translated.
 msgctxt "diagnostic"
 msgid "recording has {count} channels; channel {channel} (highest RMS excluding loopback channel {loopback_channel}) was analysed"
-msgstr "录音有 {count} 个声道；已分析声道 {channel}（除回送声道 {loopback_channel} 外 RMS 最高）"
+msgstr "录音有 {count} 个声道；已分析从 0 开始编号的声道 {channel}（除回送声道 {loopback_channel} 外 RMS 最高）"
 
 msgctxt "diagnostic"
 msgid "the tape-measured loudspeaker distance ({distance_m:.2f} m) exceeds the loopback path-delay bound ({bound_m:.2f} m); the tape cannot be longer than what sound had time to travel"
@@ -2657,6 +2797,7 @@ msgctxt "diagnostic"
 msgid "the linear response has no energy in the common band"
 msgstr "线性响应在共同频带内没有能量"
 
+# Stored by ReverbScope 0.5 and earlier in result.json; still shown translated.
 msgctxt "diagnostic"
 msgid "no harmonic-free content before the direct sound to compare with"
 msgstr "直达声之前没有不含谐波的内容可供比较"
@@ -2812,8 +2953,13 @@ msgid "the reflection search was cut short at {end:.1f} ms, and truncation does 
 msgstr "反射搜索在 {end:.1f} ms 处被截断，而截断并不是随机丢弃到达声：它最先丢弃路径最长的反射，因此由剩余反射推算的任何高度都会偏低"
 
 msgctxt "diagnostic"
+msgid "no air temperature was supplied, so {temperature:.0f} °C ({speed:.1f} m/s) was assumed; a 5 °C error moves every distance by about 0.9 %"
+msgstr "未提供气温，因此假定为 {temperature:.0f} °C（声速 {speed:.1f} m/s）；气温误差 5 °C 会使每个距离偏差约 0.9 %"
+
+# Stored by ReverbScope 0.5 and earlier in result.json; still shown translated.
+msgctxt "diagnostic"
 msgid "no air temperature was supplied, so {temperature:.0f} C ({speed:.1f} m/s) was assumed; a 5 C error moves every distance by about 0.9 %"
-msgstr "未提供气温，因此假定为 {temperature:.0f} C（声速 {speed:.1f} m/s）；气温误差 5 C 会使每个距离偏差约 0.9 %"
+msgstr "未提供气温，因此假定为 {temperature:.0f} °C（声速 {speed:.1f} m/s）；气温误差 5 °C 会使每个距离偏差约 0.9 %"
 
 msgctxt "diagnostic"
 msgid "direct-sound detection confidence is low, so the time origin every delay is measured from was not established and no distance derived from it is reported"
@@ -3091,6 +3237,7 @@ msgctxt "diagnostic"
 msgid "Evaluation range covers fewer than 3 samples"
 msgstr "评估范围覆盖的样本少于 3 个"
 
+# Stored by ReverbScope 0.5 and earlier in result.json (two decimals); still shown translated.
 msgctxt "diagnostic"
 msgid "{metric} {seconds:.2f} s vs {other:.2f} s"
 msgstr "{metric} {seconds:.2f} s，对比 {other:.2f} s"
@@ -3354,8 +3501,8 @@ msgstr "ReverbScope 独立测量"
 msgid "ReverbScope test signal"
 msgstr "ReverbScope 测试信号"
 
-msgid "Run a command with --help for its options, for example: reverbscope measure --help"
-msgstr "在命令后加 --help 查看它的选项，例如：reverbscope measure --help"
+msgid "Run a command with --help for its options, for example:"
+msgstr "在命令后加 --help 可查看它的选项，例如："
 
 msgid "Segment"
 msgstr "片段"
@@ -3409,13 +3556,13 @@ msgid "candidates below {max_hz:.0f} Hz"
 msgstr "{max_hz:.0f} Hz 以下的候选"
 
 msgid "colour in the terminal: auto (default; off for pipes, files and NO_COLOR), always, never"
-msgstr "终端颜色：默认自动（输出到管道、文件或设置了 NO_COLOR 时不着色），也可以始终着色或从不着色"
+msgstr "终端颜色：auto（默认；输出到管道、文件或设置了 NO_COLOR 时不着色）、always（始终着色）或 never（从不着色）"
 
 msgid "commands"
 msgstr "命令"
 
 msgid "compensated{sep}path delay {delay}{sep}distance at most {bound}"
-msgstr "已补偿{sep}电路径延迟 {delay}{sep}距离上限 {bound}"
+msgstr "已补偿{sep}路径延迟 {delay}{sep}距离上限 {bound}"
 
 msgid "confidence {confidence}{sep}pre-peak margin {margin}"
 msgstr "置信度 {confidence}{sep}峰前裕量 {margin}"
@@ -3480,8 +3627,8 @@ msgstr "主文件夹显示为 ~"
 msgid "{inputs} in / {outputs} out"
 msgstr "{inputs} 入 / {outputs} 出"
 
-msgid "{lo:.0f}–{hi:.0f} ms, above {threshold:.0f} dB"
-msgstr "{lo:.0f}–{hi:.0f} ms，高于 {threshold:.0f} dB"
+msgid "{lo:g}–{hi:g} ms, above {threshold:.0f} dB"
+msgstr "{lo:g}–{hi:g} ms，高于 {threshold:.0f} dB"
 
 msgid "{n} more in result.json"
 msgstr "另有 {n} 个，见 result.json"
@@ -3723,8 +3870,8 @@ msgstr "没有高于 {threshold:.0f} dB 的反射"
 msgid "potential resonances at {listed}"
 msgstr "可能的共振：{listed}"
 
-msgid "no potential resonance below {max_hz:.0f} Hz"
-msgstr "{max_hz:.0f} Hz 以下没有可能的共振"
+msgid "no potential resonance at {low:.0f}–{high:.0f} Hz"
+msgstr "{low:.0f}–{high:.0f} Hz 内没有可能的共振"
 
 msgid "{n} warning(s), see Diagnostics"
 msgstr "{n} 条警告，见“诊断”"
@@ -3957,3 +4104,620 @@ msgstr "作为房间话筒，后期房间声偏少（C80 {value:.1f} dB，高于
 msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {threshold:.0f} dB). Some late sound suits a choir, but this much will blur diction. This is one position, not a room grade."
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
+
+msgid "loopback_channel {channel} does not exist (the loopback file has {count} channel(s))"
+msgstr "loopback_channel {channel} 不存在（回送文件只有 {count} 个声道）"
+
+msgctxt "diagnostic"
+msgid "the loopback and the microphone were located on different sweep passes; compensation is not applied"
+msgstr "回送与话筒定位到了不同遍的扫频上；未应用补偿"
+
+msgid "unknown recording profile {name}; available: {available}"
+msgstr "未知的录音配置 {name}；可用：{available}"
+
+msgid "{value} is not a comma-separated list of channel numbers (e.g. 1,2)"
+msgstr "{value} 不是以逗号分隔的声道编号列表（例如 1,2）"
+
+msgid "no project.json in {path}"
+msgstr "{path} 中没有 project.json"
+
+msgid "no sessions in {path}"
+msgstr "{path} 中没有会话"
+
+msgid "--sources must be at least 1"
+msgstr "--sources 至少为 1"
+
+msgid "Reference plane"
+msgstr "参考平面"
+
+msgid "No noise spectrum stored with this session"
+msgstr "此会话未保存噪声频谱"
+
+msgid "{session} is already listed under position '{label}'"
+msgstr "{session} 已列在位置“{label}”下"
+msgid "{field} must be true or false"
+msgstr "{field} 必须是 true 或 false"
+
+msgid "{field} must not be null"
+msgstr "{field} 不能为 null"
+
+msgid "{field} must be text"
+msgstr "{field} 必须是文本"
+
+msgid "expected a list of numbers"
+msgstr "此处应为数字列表"
+
+msgid "{field} has the wrong type"
+msgstr "{field} 的类型不正确"
+
+msgid "{field} must be a list"
+msgstr "{field} 必须是列表"
+
+msgid "{field} must be a list of numbers"
+msgstr "{field} 必须是数字列表"
+
+msgid "{field} is out of range"
+msgstr "{field} 超出范围"
+
+msgid "silences must be <= 60 s"
+msgstr "静音时长必须 <= 60 s"
+msgid "{error}. However, {explanation}"
+msgstr "{error}。不过，{explanation}"
+
+msgid "the reference sweep was not found in the recording: no response stands out from the noise. Check that the right input channel was recorded, that playback reached the loudspeaker, and that the reference is the sweep that was played"
+msgstr "录音中找不到参考扫频：没有任何响应高出噪声。请检查录制的输入声道是否正确、回放信号是否到达了扬声器，以及参考扫频是否就是实际播放的那一个"
+msgctxt "diagnostic"
+msgid "no common excitation band"
+msgstr "没有共同激励频带"
+
+msgid "No reflection was detected inside this profile's {window_ms:g} ms window in the candidate; the strongest in the baseline was {relative_db:.1f} dB at {delay_ms:.1f} ms."
+msgstr "候选中，此配置的 {window_ms:g} ms 窗口内未检测到反射；基线中最强的反射为 {delay_ms:.1f} ms 的 {relative_db:.1f} dB。"
+msgid "Background noise, {band}"
+msgstr "本底噪声，{band}"
+
+msgid "not compared: the direct-sound confidence is not high on both sides"
+msgstr "未比较：两侧的直达声置信度并非都为高"
+
+msgid "not searched: nothing below {max_hz:.0f} Hz was excited and resolved"
+msgstr "未搜索：{max_hz:.0f} Hz 以下没有既被激励又能分辨的部分"
+
+msgid "Not searched."
+msgstr "未搜索。"
+
+msgid "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
+msgstr "在可搜索的 {end:.1f} ms 内没有高于 {threshold:.0f} dB 的反射"
+msgid "The result was discarded because you left this page before it was ready."
+msgstr "结果完成前你离开了此页面，因此结果已丢弃。"
+
+msgid "Synthetic demo"
+msgstr "合成演示"
+
+msgid "Replace session?"
+msgstr "替换会话？"
+
+msgid "{path} already holds a saved session. Replace it?"
+msgstr "{path} 中已有一个保存的会话。要替换它吗？"
+
+msgid "Replace"
+msgstr "替换"
+
+msgid "the test signal lasts {seconds:.2f} s, but a recording must last at least 1 s to be analysed; lengthen the silence after the sweep (--post-silence)"
+msgstr "测试信号只有 {seconds:.2f} 秒，而录音至少要 1 秒才能分析；请加长扫频后的静音（--post-silence）"
+
+# reverbscope config
+
+msgid "show or change the settings (the same settings.json as the desktop app)"
+msgstr "查看或修改设置（与桌面版共用同一个 settings.json）"
+
+msgctxt "metavar"
+msgid "KEY"
+msgstr "设置项"
+
+msgctxt "metavar"
+msgid "VALUE"
+msgstr "值"
+
+msgid "the setting to show or change; without it every setting is listed"
+msgstr "要查看或修改的设置项；省略时列出所有设置"
+
+msgid "the new value; auto goes back to the default"
+msgstr "新的值；auto 表示恢复默认"
+
+msgid "settings"
+msgstr "设置项"
+
+msgid "system, light or dark (the desktop app only)"
+msgstr "system、light 或 dark（只影响桌面版）"
+
+msgid "portaudio, fake, or auto (PortAudio)"
+msgstr "portaudio、fake 或 auto（PortAudio）"
+
+msgid "an existing folder, or auto (none)"
+msgstr "一个已存在的文件夹，或 auto（不设置）"
+
+msgid "on or off (auto: on)"
+msgstr "on 或 off（auto：on）"
+
+msgid "on or off (auto: off; a source or pip install always has them)"
+msgstr "on 或 off（auto：off；源码或 pip 安装总会显示）"
+
+msgid "{languages}, or auto (follow the system)"
+msgstr "{languages} 或 auto（跟随系统）"
+
+msgid "{profiles}, or auto ({default})"
+msgstr "{profiles} 或 auto（{default}）"
+
+msgid "English"
+msgstr "英文"
+
+msgid "Simplified Chinese"
+msgstr "简体中文"
+
+msgid "follow the system"
+msgstr "跟随系统"
+
+msgid "Interface language"
+msgstr "界面语言"
+
+msgid "Default output folder (desktop app)"
+msgstr "默认输出文件夹（桌面版）"
+
+msgid "Copy recordings"
+msgstr "把录音复制进会话"
+
+msgid "Theme (desktop app)"
+msgstr "主题（桌面版）"
+
+msgid "simulated interface, for the demo and tests"
+msgstr "模拟的音频接口，用于演示和测试"
+
+msgid "PortAudio (the default)"
+msgstr "PortAudio（默认）"
+
+msgctxt "setting"
+msgid "on"
+msgstr "开"
+
+msgctxt "setting"
+msgid "off"
+msgstr "关"
+
+msgid "hidden in the installed app"
+msgstr "安装版中隐藏"
+
+msgid "light"
+msgstr "浅色"
+
+msgid "dark"
+msgstr "深色"
+
+msgid "--lang {value} on this command line"
+msgstr "本条命令中的 --lang {value}"
+
+msgid "; {lang} has no translation, so English is used"
+msgstr "；{lang} 没有译文，因此使用英文"
+
+msgid "the stored setting (reverbscope config language {value})"
+msgstr "已保存的设置（reverbscope config language {value}）"
+
+msgid "not stored; {name}={value} chooses {language}"
+msgstr "未保存；由 {name}={value} 选择{language}"
+
+msgid "follow the system (now {language})"
+msgstr "跟随系统（当前为{language}）"
+
+msgid "{name}={value} chooses the backend before this setting"
+msgstr "{name}={value} 优先于此设置选择后端"
+
+msgid "{name}={value} decides before this setting"
+msgstr "{name}={value} 优先于此设置"
+
+msgid "unknown setting {key}; the settings are: {keys}"
+msgstr "未知的设置项 {key}；可用的设置项：{keys}"
+
+msgid "{key} is on or off, not {value}"
+msgstr "{key} 只能是 on 或 off，不能是 {value}"
+
+msgid "unknown language {value}; available: {languages}, or auto"
+msgstr "未知的语言 {value}；可用：{languages} 或 auto"
+
+msgid "unknown profile {value}; available: {profiles}, or auto"
+msgstr "未知的录音配置 {value}；可用：{profiles} 或 auto"
+
+msgid "unknown audio backend {value}; choose portaudio, fake or auto"
+msgstr "未知的音频后端 {value}；请选择 portaudio、fake 或 auto"
+
+msgid "{path} is not an existing folder; give a folder, or auto"
+msgstr "{path} 不是已存在的文件夹；请给出一个文件夹，或 auto"
+
+msgid "unknown theme {value}; choose system, light, dark or auto"
+msgstr "未知的主题 {value}；请选择 system、light、dark 或 auto"
+
+msgid "the environment variable {name}={value}"
+msgstr "环境变量 {name}={value}"
+
+msgid "the Mac's preferred languages: {value}"
+msgstr "Mac 的首选语言：{value}"
+
+msgid "the Windows display language: {value}"
+msgstr "Windows 显示语言：{value}"
+
+msgid "the desktop's UI languages: {value}"
+msgstr "桌面环境的界面语言：{value}"
+
+msgid "the system locale: {value}"
+msgstr "系统区域设置：{value}"
+
+msgid "no language is set anywhere"
+msgstr "任何地方都没有设置语言"
+
+msgid "Nothing was changed."
+msgstr "没有做任何更改。"
+
+msgid "{error}; nothing was changed: correct or delete the file first"
+msgstr "{error}；没有做任何更改：请先修正或删除该文件"
+
+msgid "warning: {error}; the defaults are shown"
+msgstr "警告：{error}；下面显示的是默认值"
+
+msgid "ReverbScope settings"
+msgstr "ReverbScope 设置"
+
+msgid "change a setting"
+msgstr "修改一项设置"
+
+msgid "back to its default"
+msgstr "恢复为默认值"
+
+msgctxt "setting"
+msgid "Setting"
+msgstr "设置项"
+
+msgctxt "setting"
+msgid "Value"
+msgstr "值"
+
+msgid "Meaning"
+msgstr "说明"
+
+msgid "Settings file"
+msgstr "设置文件"
+
+msgid "Nothing is stored yet: every setting has its default."
+msgstr "尚未保存任何设置：每一项都是默认值。"
+
+msgid "Values"
+msgstr "可选值"
+
+msgid "change it"
+msgstr "修改它"
+
+msgid "The theme applies to the desktop app only."
+msgstr "主题只影响桌面版。"
+
+msgid "Stored"
+msgstr "已保存"
+
+msgid "In effect"
+msgstr "当前使用"
+
+msgid "Because"
+msgstr "原因"
+
+msgid "{value}: {state}"
+msgstr "{value}：{state}"
+
+msgid "always {language}"
+msgstr "一直使用{language}"
+
+msgid "{language} for one command"
+msgstr "只在一条命令中使用{language}"
+
+msgid "ReverbScope uses {language} from now on."
+msgstr "以后都会使用{language}。"
+
+msgid "follow the system again"
+msgstr "改回跟随系统"
+
+msgid "The language setting is cleared; {name}={value} still chooses {language}."
+msgstr "已清除语言设置；{name}={value} 仍会选择{language}。"
+
+msgid "ReverbScope follows the system language again: {language}."
+msgstr "已改回跟随系统语言：当前为{language}。"
+
+msgid "Because: {reason}."
+msgstr "原因：{reason}。"
+
+msgid "{setting}: {state}"
+msgstr "{setting}：{state}"
+
+msgid "The theme applies to the desktop app only, from the next time it opens."
+msgstr "主题只影响桌面版，下次打开时生效。"
+
+msgid "The desktop app shows the change the next time it starts."
+msgstr "桌面版下次启动时生效。"
+
+
+msgid "do not copy it for one command"
+msgstr "只在这一条命令中不复制"
+
+msgid "copy it for one command"
+msgstr "只在这一条命令中复制"
+
+msgid "Saved in {path}"
+msgstr "已保存到 {path}"
+
+# reverbscope config: output folder
+
+msgid "its Save dialog opens here"
+msgstr "保存对话框从这里打开"
+
+msgid "not set"
+msgstr "未设置"
+
+# reverbscope doctor: settings and paths
+
+msgid "set"
+msgstr "已设置"
+
+msgid "ReverbScope folder"
+msgstr "ReverbScope 文件夹"
+
+msgid "Log file"
+msgstr "日志文件"
+
+# reverbscope demo: the names a demo session stores
+
+msgid "Synthetic demo room"
+msgstr "合成演示房间"
+
+msgid "simulated omni"
+msgstr "模拟全指向话筒"
+
+msgid "{label}: {description}"
+msgstr "{label}：{description}"
+
+msgctxt "list separator"
+msgid ", "
+msgstr "、"
+
+msgid "invalid JSON at line {line}, column {column}"
+msgstr "第 {line} 行第 {column} 列不是有效的 JSON"
+
+# reverbscope project init: an existing project
+
+msgid "replace an existing project.json (its positions and notes are lost)"
+msgstr "替换已有的 project.json（其中的位置和备注会丢失）"
+
+msgid "{path} already contains a project.json; use --force to replace it"
+msgstr "{path} 中已有 project.json；如要替换，请使用 --force"
+
+# The automatic channel choice, numbered from 1 as the desktop app lists channels
+
+msgctxt "diagnostic"
+msgid "recording has {count} channels; channel {number} of {count} (highest RMS) was analysed. Use the channel setting to choose explicitly (on the command line --channel {index}, counted from 0)."
+msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（RMS 最高）。可用声道设置明确指定（命令行从 0 开始计数，即 --channel {index}）。"
+
+msgctxt "diagnostic"
+msgid "recording has {count} channels; channel {number} of {count} (highest RMS excluding loopback channel {loopback_number}) was analysed (on the command line --channel {index}, counted from 0)"
+msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（除回送声道 {loopback_number} 外 RMS 最高；命令行从 0 开始计数，即 --channel {index}）"
+
+msgid "{path} is not a session file; give the session folder or its session.json"
+msgstr "{path} 不是会话文件；请指定会话文件夹或其中的 session.json"
+# reverbscope measure: the take is copied into --out only with its session
+
+msgid "{path} already holds {name} and is not a ReverbScope session; the take would replace that file"
+msgstr "{path} 中已有 {name}，且它不是 ReverbScope 会话；这次测量会覆盖该文件"
+
+msgid "Recorded {seconds:.1f} s"
+msgstr "已录制 {seconds:.1f} s"
+
+# reverbscope measure: no device to play or record with
+
+msgid "no audio input device found"
+msgstr "没有找到音频输入设备"
+
+msgid "no audio output device found"
+msgstr "没有找到音频输出设备"
+
+msgid "Host API and channels not checked: no default device found"
+msgstr "未检查主机 API 和声道：没有找到默认设备"
+
+# The command line: an --out that is a file, and the operating system's reasons
+
+msgid "{path} is a file; --out needs a folder for the project"
+msgstr "{path} 是一个文件；--out 需要一个用来保存项目的文件夹"
+
+msgid "already exists"
+msgstr "已存在"
+
+msgid "permission denied"
+msgstr "没有权限"
+
+msgid "no space left on the disk"
+msgstr "磁盘空间不足"
+
+msgid "part of the path is a file, not a folder"
+msgstr "路径中有一级是文件，而不是文件夹"
+
+msgid "is a folder, not a file"
+msgstr "这是文件夹，而不是文件"
+
+msgid "no such file or folder"
+msgstr "文件或文件夹不存在"
+
+msgid "the disk is read-only"
+msgstr "磁盘是只读的"
+
+msgctxt "clause separator"
+msgid "; "
+msgstr "；"
+
+msgid "--band needs two frequencies in Hz, LO then HI, with HI above LO and LO above 0"
+msgstr "--band 需要两个频率（Hz）：先下限后上限，上限高于下限，下限大于 0"
+# Standalone Mode: the audio backend changed in Settings during a take
+
+msgid "Audio backend changed"
+msgstr "音频后端已更改"
+
+msgid "The audio backend was changed in Settings, so the device list has been made again. Check the devices, then start the measurement again."
+msgstr "设置中的音频后端已更改，设备列表已重新生成。请检查设备，然后重新开始测量。"
+
+# Standalone Mode: the backend lists no device at all
+
+msgid "No audio device found; Universal DAW Mode still works."
+msgstr "未找到音频设备；通用 DAW 模式仍然可用。"
+
+# Compare page: the two sessions compared, under the tabs
+
+msgid "{baseline}  vs  {candidate}"
+msgstr "{baseline}  对  {candidate}"
+
+# Results charts of a session saved without curves (--no-curves)
+
+msgid "No frequency response stored with this session"
+msgstr "此会话未保存频率响应曲线"
+
+msgid "No decay curves stored with this session"
+msgstr "此会话未保存衰减曲线"
+
+# Save dialogs: the extension added to a name typed with a dot names an existing file
+
+msgid "Replace file?"
+msgstr "替换文件？"
+
+msgid "{name} already exists. Replace it?"
+msgstr "{name} 已存在。要替换它吗？"
+# reverbscope devices --probe: a device that could not be opened to probe
+
+msgctxt "diagnostic"
+msgid "could not be opened for recording, so its sample rates are unknown (in use by another program, or disconnected?): {error}"
+msgstr "无法打开该设备录音，因此不知道它接受哪些采样率（是否正被其他程序占用，或已断开？）：{error}"
+
+msgctxt "diagnostic"
+msgid "could not be opened for playback, so its sample rates are unknown (in use by another program, or disconnected?): {error}"
+msgstr "无法打开该设备播放，因此不知道它接受哪些采样率（是否正被其他程序占用，或已断开？）：{error}"
+
+# PortAudio's status flags inside the buffer-problem warning
+
+msgid "input underflow"
+msgstr "输入欠载"
+
+msgid "input overflow"
+msgstr "输入溢出"
+
+msgid "output underflow"
+msgstr "输出欠载"
+
+msgid "output overflow"
+msgstr "输出溢出"
+
+msgid "priming output"
+msgstr "预填充输出"
+# Decay analysis: why the Lundeby late slope is missing
+
+msgctxt "diagnostic"
+msgid "the late decay slope could not be estimated: fewer than 3 intervals of decay lie between {lower:g} and {upper:g} dB above the noise"
+msgstr "无法估计后期衰减斜率：高于本底噪声 {lower:g} 至 {upper:g} dB 的范围内只有不到 3 个衰减区间"
+
+msgctxt "diagnostic"
+msgid "the late decay slope could not be estimated: the response does not fall between {lower:g} and {upper:g} dB above the noise"
+msgstr "无法估计后期衰减斜率：响应在高于本底噪声 {lower:g} 至 {upper:g} dB 的范围内没有下降"
+
+# reverbscope project average: counts per value
+
+msgid "n is the number of sessions averaged in the row; a value followed by (k) averages only k of them, as the others have no VALID value."
+msgstr "n 为该行参与平均的会话数；数值后带 (k) 表示只平均了其中 k 个会话，其余会话没有有效值。"
+
+# Decay analysis: truncation-sensitivity values with enough digits to tell them apart
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:#.3g} s vs {other:#.3g} s"
+msgstr "{metric} {seconds:#.3g} s，对比 {other:#.3g} s"
+# analysis: a silent loopback channel
+
+msgctxt "diagnostic"
+msgid "the loopback channel is silent (peak below {threshold_dbfs:g} dBFS); compensation is not applied"
+msgstr "回送声道无声（峰值低于 {threshold_dbfs:g} dBFS）；未应用补偿"
+
+# reverbscope analyze-ir: a declared band above the Nyquist frequency
+
+msgid "the declared band ends at {high_hz:g} Hz, but a {sample_rate} Hz impulse response contains nothing above {nyquist_hz:g} Hz (half its sample rate)"
+msgstr "声明的频带上限为 {high_hz:g} Hz，但采样率为 {sample_rate} Hz 的脉冲响应不含 {nyquist_hz:g} Hz（采样率的一半）以上的内容"
+
+# analysis: a recording that stops inside the sweep
+
+msgctxt "diagnostic"
+msgid "the recording ends about {missing_s:.2f} s before the sweep does, so the end of the sweep and the room decay after it were not recorded. Export the whole take, with the silence after the sweep"
+msgstr "录音比扫频早约 {missing_s:.2f} s 结束，扫频的末尾及其后的房间衰减都没有录下。请导出整条录音，包括扫频之后的静音"
+
+# analysis: the noise floor of the harmonic distortion indicator
+
+msgctxt "diagnostic"
+msgid "no harmonic-free content around the direct sound to compare with"
+msgstr "直达声前后没有不含谐波的内容可供比较"
+# Background noise: signal left out because only the longest part is measured
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of the pre-sweep segment were not used: only the longest stretch between digital silences is measured"
+msgstr "扫频前片段中另有 {unused:.2f} s 未被使用：只测量数字静音之间最长的一段"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of the tail segment were not used: only the longest stretch between digital silences is measured"
+msgstr "末尾片段中另有 {unused:.2f} s 未被使用：只测量数字静音之间最长的一段"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of the {source} segment were not used: only the longest stretch between digital silences is measured"
+msgstr "{source} 片段中另有 {unused:.2f} s 未被使用：只测量数字静音之间最长的一段"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of quiet signal in the pre-sweep segment were not used: only the longest quiet stretch is measured, and a louder part separates them from it"
+msgstr "扫频前片段中另有 {unused:.2f} s 安静的信号未被使用：只测量最长的连续安静部分，而它们与该部分之间隔着较响的部分"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of quiet signal in the tail segment were not used: only the longest quiet stretch is measured, and a louder part separates them from it"
+msgstr "末尾片段中另有 {unused:.2f} s 安静的信号未被使用：只测量最长的连续安静部分，而它们与该部分之间隔着较响的部分"
+
+msgctxt "diagnostic"
+msgid "{unused:.2f} s of quiet signal in the {source} segment were not used: only the longest quiet stretch is measured, and a louder part separates them from it"
+msgstr "{source} 片段中另有 {unused:.2f} s 安静的信号未被使用：只测量最长的连续安静部分，而它们与该部分之间隔着较响的部分"
+
+# Comparison: an RT60 change that rounds to 0.0 %
+
+msgctxt "RT60 change"
+msgid "unchanged"
+msgstr "未变"
+
+# Validity: a band outside the sweep's range or the --band declared for an
+# imported impulse response
+
+msgid "outside the excitation range"
+msgstr "超出激励范围"
+
+# Placement: competing heights for the plane above the devices
+
+msgctxt "diagnostic"
+msgid "more than one reflection could be the plane above the devices, and they disagree by more than {agreement_cm:.0f} cm: {values}. ReverbScope does not choose between them"
+msgstr "有不止一个反射可能来自设备上方平面，且它们之间相差超过 {agreement_cm:.0f} cm：{values}。ReverbScope 不会在其中做选择"
+
+# Placement: a plane above the devices that would arrive with the lower plane
+
+msgctxt "diagnostic"
+msgid "no separate arrival from a plane above the devices was found, and a plane {coincide:.2f} m up (plausible heights start at {lowest:.2f} m) would arrive at the same {used:.1f} ms as the arrival this height was solved from. That arrival may therefore be two arrivals merged into one peak, which would bias the height. Moving the microphone 20-30 cm up or down and measuring again separates them"
+msgstr "未找到来自设备上方平面的独立到达声，而高 {coincide:.2f} m 的平面（合理高度从 {lowest:.2f} m 起）的反射会与求解该高度所用的到达声一样在 {used:.1f} ms 到达。因此该到达声可能是合并为一个峰的两次到达，这会使高度产生偏差。将话筒上移或下移 20-30 cm 后重新测量即可将两者分开"
+
+# Comparison: resonances only where both sides searched
+
+msgctxt "diagnostic"
+msgid "low-frequency resonances are not compared: no frequency range was searched on both sides"
+msgstr "未比较低频共振：没有双方都搜索过的频率范围"
+
+msgctxt "diagnostic"
+msgid "low-frequency resonances are compared only at {low:.0f}-{high:.0f} Hz, the range both sides searched; {count} potential resonance(s) found outside it are left out"
+msgstr "低频共振只在双方都搜索过的 {low:.0f}-{high:.0f} Hz 范围内比较；在该范围之外发现的 {count} 个可能的共振未纳入比较"
+
+msgid "not compared: no frequency range was searched on both sides"
+msgstr "未比较：没有双方都搜索过的频率范围"
+
+msgid "no potential resonance in the range both sides searched"
+msgstr "双方都搜索过的范围内没有可能的共振"

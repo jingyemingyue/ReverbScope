@@ -12,17 +12,24 @@ on:
     tags: ["v*"]
     paths:
       - pyproject.toml
+      - requirements/**
       - .github/workflows/release.yml
       - packaging/**
+      - scripts/build_license_bundle.py
+      - scripts/compile_bundle_lock.py
+      - scripts/check_bundle_contents.py
+      - scripts/check_macos_dmg.py
       - scripts/smoke_bundle.py
       - scripts/release_draft.py
       - scripts/inno_chinese_messages.py
       - src/reverbscope/__main__.py
   pull_request:
     paths:
+      - requirements/**
       - .github/workflows/release.yml
       - packaging/**
       - scripts/build_license_bundle.py
+      - scripts/compile_bundle_lock.py
       - scripts/check_bundle_contents.py
       - scripts/check_macos_dmg.py
       - scripts/smoke_bundle.py
@@ -158,10 +165,12 @@ jobs:
           pip install -r requirements/bundle.lock
           pip install -e ".[dev,gui]" pyinstaller==6.22.3
           pip check
-      - name: License bundle
-        run: python scripts/build_license_bundle.py --out THIRD_PARTY_LICENSES
       - name: PyInstaller
         run: pyinstaller --noconfirm --clean packaging/reverbscope.spec
+      - name: License bundle
+        # After PyInstaller: the bundle also needs a notice for every native
+        # library PyInstaller copied from the runner (GLib, OpenSSL, ...).
+        run: python scripts/build_license_bundle.py --out THIRD_PARTY_LICENSES --frozen dist/reverbscope
       - name: Copy licenses and remove disallowed modules
         shell: bash
         run: |
@@ -347,8 +356,9 @@ jobs:
         env:
           REVERBSCOPE_PACKAGE: terminal
         run: |
-          python scripts/build_license_bundle.py --terminal --out THIRD_PARTY_LICENSES-terminal
           pyinstaller --noconfirm --clean --workpath build/terminal packaging/reverbscope.spec
+          python scripts/build_license_bundle.py --terminal --out THIRD_PARTY_LICENSES-terminal \
+            --frozen dist/reverbscope-terminal
           cp -R THIRD_PARTY_LICENSES-terminal dist/reverbscope-terminal/THIRD_PARTY_LICENSES
           python scripts/check_bundle_contents.py --root dist/reverbscope-terminal --strip --require-licenses --terminal
           if [[ "$RUNNER_OS" == Windows ]]; then
@@ -400,7 +410,7 @@ jobs:
               raise SystemExit(f'missing release files: {missing}')
           lines = [f'{hashlib.sha256((Path("dist") / name).read_bytes()).hexdigest()}  {name}'
                    for name in names]
-          (Path('dist') / sums_name).write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          (Path('dist') / sums_name).write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -422,9 +432,15 @@ jobs:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: requirements/bundle.lock
-      - run: pip install -r requirements/bundle.lock && pip install -e ".[gui]" cyclonedx-bom
+      - run: pip install -r requirements/bundle.lock && pip install -e ".[gui]"
       - run: python scripts/compile_bundle_lock.py --out generated-bundle.lock
-      - run: python -m cyclonedx_py environment -o cyclonedx.sbom.json
+      # The SBOM tool gets its own environment: installed next to the bundle's
+      # packages it would list itself and its dependencies, which ship nowhere.
+      - run: |
+          python -m venv "$RUNNER_TEMP/sbom-tool"
+          "$RUNNER_TEMP/sbom-tool/bin/pip" install cyclonedx-bom
+          "$RUNNER_TEMP/sbom-tool/bin/cyclonedx-py" environment "$(command -v python)" \
+            -o cyclonedx.sbom.json
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom

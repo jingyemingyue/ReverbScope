@@ -1,8 +1,11 @@
 """Device inventory, host-API resolution and stream options against a simulated
 Windows machine: one USB interface listed under MME, DirectSound, WASAPI and
 WDM-KS (PortAudio reports every device once per host API; MME truncates the
-name to 31 characters), plus the laptop's own speakers. Nothing is played and
-no PortAudio is loaded; this is not hardware evidence (docs/HARDWARE_TESTS.md).
+name to 31 characters), plus the laptop's own speakers and the system aliases
+every Windows list has: MME's Sound Mapper and DirectSound's primary drivers,
+which PortAudio makes DirectSound's default devices (MME's defaults are the
+preferred real devices). Nothing is played and no PortAudio is loaded; this
+is not hardware evidence (docs/HARDWARE_TESTS.md).
 """
 
 from __future__ import annotations
@@ -25,12 +28,17 @@ from reverbscope.audio.inventory import (
 from reverbscope.errors import AudioDeviceError, ConfigurationError
 
 HOST_APIS = [
-    {"name": "MME", "devices": [0, 1, 2], "default_input_device": 0, "default_output_device": 1},
+    {
+        "name": "MME",
+        "devices": [0, 1, 2, 10, 11],
+        "default_input_device": 0,
+        "default_output_device": 1,
+    },
     {
         "name": "Windows DirectSound",
-        "devices": [3, 4],
-        "default_input_device": 3,
-        "default_output_device": 4,
+        "devices": [3, 4, 12, 13],
+        "default_input_device": 12,
+        "default_output_device": 13,
     },
     {
         "name": "Windows WASAPI",
@@ -58,6 +66,10 @@ RAW = [
     (7, "Speakers (Realtek(R) Audio)", 2, 0, 2, {48000}),
     (8, "Line (Focusrite USB Audio Interface)", 3, 2, 0, {44100, 48000, 88200, 96000}),
     (9, "Speakers (Focusrite USB Audio Interface)", 3, 0, 2, {44100, 48000, 88200, 96000}),
+    (10, "Microsoft Sound Mapper - Input", 0, 2, 0, {44100, 48000, 96000}),
+    (11, "Microsoft Sound Mapper - Output", 0, 0, 2, {44100, 48000, 96000}),
+    (12, "Primary Sound Capture Driver", 1, 2, 0, {44100, 48000, 96000}),
+    (13, "Primary Sound Driver", 1, 0, 2, {44100, 48000, 96000}),
 ]
 
 
@@ -150,10 +162,188 @@ def test_the_preferred_host_api_is_recommended(windows: WindowsBackend) -> None:
     recommended_out = {p.device.index for p in inventory.recommended("output")}
     # WDM-KS bypasses the mixer (a direct path) and wins over WASAPI shared;
     # MME and DirectSound are never recommended while a better path exists.
+    # The Sound Mapper and the primary drivers are no device of their own:
+    # each was a group of its own and always won it.
     assert recommended_in == {8}
     assert recommended_out == {9, 7}
     mme = next(p for p in inventory.devices if p.device.index == 0)
     assert any("prefer WASAPI" in note for note in mme.notes)
+
+
+@dataclass
+class LinuxBackend:
+    """An ALSA list: two cards as hw: devices, plus PortAudio's plugin and
+    sound-server PCMs, all accepting every rate."""
+
+    name: str = "linux"
+
+    def list_devices(self) -> list[DeviceInfo]:
+        names = [
+            ("HDA Intel PCH: ALC892 Analog (hw:0,0)", 2, 2),
+            ("HDA Intel PCH: HDMI 0 (hw:0,3)", 0, 8),
+            ("Scarlett 2i2 USB: Audio (hw:1,0)", 2, 2),
+            ("sysdefault", 128, 128),
+            ("front", 0, 2),
+            ("pulse", 32, 32),
+            ("pipewire", 64, 64),
+            ("default", 64, 64),
+        ]
+        return [
+            DeviceInfo(
+                index=index,
+                name=name,
+                host_api="ALSA",
+                max_input_channels=n_in,
+                max_output_channels=n_out,
+                default_sample_rate=48000.0,
+                is_default_input=name == "default",
+                is_default_output=name == "default",
+            )
+            for index, (name, n_in, n_out) in enumerate(names)
+        ]
+
+    def check_sample_rate(self, *args: Any, **kwargs: Any) -> None:
+        return None
+
+    def play_and_record(self, *args: Any, **kwargs: Any) -> Any:  # pragma: no cover
+        raise AssertionError("nothing may be played")
+
+
+def test_alsa_plugins_and_sound_servers_are_never_recommended() -> None:
+    """Review finding: default, sysdefault, front, pulse and pipewire each came
+    out "recommended" right above their own note "may resample and mix"."""
+    inventory = build_inventory(LinuxBackend(), platform="linux")
+    assert {p.device.index for p in inventory.recommended("input")} == {0, 2}
+    assert {p.device.index for p in inventory.recommended("output")} == {0, 1, 2}
+    pulse = next(p for p in inventory.devices if p.device.name == "pulse")
+    assert any("sound-server" in note for note in pulse.notes)
+
+
+@pytest.mark.parametrize(
+    ("error", "busy"),
+    [
+        ("Error opening InputStream: Device unavailable [PaErrorCode -9985]", True),
+        (
+            "Unanticipated host error [PaErrorCode -9999]: 'Device or resource busy' "
+            "[ALSA error -16]",
+            True,
+        ),
+        ("Invalid sample rate [PaErrorCode -9997]", False),
+    ],
+)
+def test_a_device_that_cannot_be_opened_is_not_said_to_refuse_the_rates(
+    monkeypatch: pytest.MonkeyPatch, error: str, busy: bool
+) -> None:
+    """Review finding: an hw: device another program held open failed every
+    probe with "Device unavailable" and was reported as accepting none of
+    ReverbScope's sample rates. Its rates are unknown: it is still not
+    recommended, but the note names the cause."""
+    from reverbscope.audio import devices
+    from reverbscope.i18n import activate, localize
+
+    class Sd:
+        @staticmethod
+        def check_input_settings(**kwargs: Any) -> None:
+            if kwargs["device"] == 2:
+                raise RuntimeError(error)
+
+        check_output_settings = check_input_settings
+
+    class ProbedLinux(LinuxBackend):
+        def check_sample_rate(self, device: int, sample_rate: int, **kwargs: Any) -> None:
+            devices.check_sample_rate(device, sample_rate, kind=kwargs["kind"], channels=1)
+
+    monkeypatch.setattr(devices, "sounddevice_module", lambda: Sd)
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import render_inventory
+    from reverbscope.diagnostics import _format_devices
+
+    def scarlett_lines(text: str) -> str:
+        """The Scarlett's own block of the table: the rate rows sit under its name."""
+        return next(block for block in text.split("\n\n") if "Scarlett" in block)
+
+    activate("zh_CN")  # the stored note stays English whatever the language
+    try:
+        inventory = build_inventory(ProbedLinux(), platform="linux")
+        scarlett = inventory.devices[2]
+        shown = [localize(note) for note in scarlett.notes]
+        chinese_table = scarlett_lines(
+            render_inventory(Console(color=False, unicode=True, width=100), inventory)
+        )
+        chinese_report = "\n".join(_format_devices(inventory.to_dict()))
+        activate("en")
+        english_table = scarlett_lines(
+            render_inventory(Console(color=False, unicode=True, width=100), inventory)
+        )
+        english_report = "\n".join(_format_devices(inventory.to_dict()))
+    finally:
+        activate("en")
+    assert scarlett.input_rates == scarlett.output_rates == ()
+    # Review finding: the rate rows still read "none" right above the note that
+    # said the rates are unknown, the claim the note had just removed. A
+    # refusal keeps "none"; a device that could not be opened reads "unknown".
+    assert scarlett.input_rates_known is not busy
+    assert scarlett.output_rates_known is not busy
+    if busy:
+        assert "Record  unknown" in english_table and "Play    unknown" in english_table
+        assert "录音  未知" in chinese_table and "播放  未知" in chinese_table
+        assert "record unknown; play unknown" in english_report
+        assert "录制 未知; 播放 未知" in chinese_report
+        assert "none" not in english_table.split("i could not")[0]
+        assert "无" not in chinese_table.split("i 无法打开")[0]
+    else:
+        assert "Record  none" in english_table and "Play    none" in english_table
+        assert "录音  无" in chinese_table and "播放  无" in chinese_table
+        assert "record none; play none" in english_report
+        assert "录制 无; 播放 无" in chinese_report
+        assert "unknown" not in english_table
+    refused = [n for n in scarlett.notes if "accepts none of ReverbScope's sample rates" in n]
+    unopened = [n for n in scarlett.notes if n.startswith("could not be opened")]
+    if busy:
+        assert refused == [] and len(unopened) == 2
+        assert unopened[0] == (
+            "could not be opened for recording, so its sample rates are unknown "
+            f"(in use by another program, or disconnected?): {error}"
+        )
+        assert any(text.startswith("无法打开该设备录音") and error in text for text in shown)
+    else:
+        assert len(refused) == 2 and unopened == []
+    assert not scarlett.recommended_input and not scarlett.recommended_output
+
+
+@pytest.mark.parametrize(
+    ("index", "name", "api", "alias"),
+    [
+        # PortAudio's suffix stays English when Windows names the mapper in Chinese.
+        (10, "Microsoft 声音映射器 - Input", "MME", True),
+        (11, "Microsoft 声音映射器 - Output", "MME", True),
+        # Localized primary drivers are known by being DirectSound's defaults.
+        (12, "主声音捕获驱动程序", "Windows DirectSound", True),
+        (13, "主声音驱动程序", "Windows DirectSound", True),
+        (12, "Primary Sound Capture Driver", "Windows DirectSound", True),
+        (3, "Line (Focusrite USB Audio Interface)", "Windows DirectSound", False),
+        (0, "Line (Focusrite USB Audio Inter", "MME", False),
+        # MME's default devices are the preferred real devices, not aliases.
+        (5, "Line (Focusrite USB Audio Interface)", "Windows WASAPI", False),
+    ],
+)
+def test_windows_system_aliases_are_recognised_in_any_language(
+    windows: WindowsBackend, index: int, name: str, api: str, alias: bool
+) -> None:
+    from reverbscope.audio.inventory import is_system_alias
+
+    inventory = build_inventory(windows, probe_rates=False, platform="win32")
+    device = DeviceInfo(
+        index=index,
+        name=name,
+        host_api=api,
+        max_input_channels=2,
+        max_output_channels=0,
+        default_sample_rate=48000.0,
+        is_default_input=False,
+        is_default_output=False,
+    )
+    assert is_system_alias(device, inventory.host_apis) is alias
 
 
 def test_duplex_devices_are_kept_on_one_host_api(windows: WindowsBackend) -> None:
@@ -340,6 +530,39 @@ def test_separate_clocks_are_warned() -> None:
     assert separate_clocks_warning(devices, 0, 4) is None
     warning = separate_clocks_warning(devices, 5, 7)
     assert warning is not None and "separate sample clocks" in warning
+
+
+def test_system_aliases_are_compared_as_the_default_devices(windows: WindowsBackend) -> None:
+    """Review finding: every take on DirectSound's preselected defaults, "Primary
+    Sound Driver" and "Primary Sound Capture Driver", asked "Two devices, two
+    clocks: measure anyway?", although both follow the one default interface."""
+    from dataclasses import replace
+
+    inventory = build_inventory(windows, probe_rates=False, platform="win32")
+    apis = inventory.host_apis
+    devices = _devices()
+    assert separate_clocks_warning(devices, 12, 13, apis) is None
+    assert separate_clocks_warning(devices, 10, 11, apis) is None
+    # One alias next to a real device of the default interface.
+    assert separate_clocks_warning(devices, 12, 4, apis) is None
+    plan = preflight(
+        StreamCheckBackend(),
+        inventory,
+        input_device=None,
+        output_device=4,
+        input_channels=[1],
+        output_channel=1,
+        sample_rate=48000,
+    )
+    assert (plan.input_device, plan.output_device) == (12, 4) and plan.clock_warning is None
+    # The aliases still warn when the defaults are two devices: the Focusrite
+    # records and the laptop's Realtek speakers play.
+    realtek_out = [replace(d, is_default_output=d.index == 2) for d in devices]
+    warning = separate_clocks_warning(realtek_out, 12, 13, apis)
+    assert warning is not None and "(Speakers (Realtek(R) Audio))" in warning
+    # No real default device to stand in for an alias: nothing to compare.
+    no_defaults = [replace(d, is_default_input=False, is_default_output=False) for d in devices]
+    assert separate_clocks_warning(no_defaults, 12, 7, apis) is None
 
 
 def test_json_inventory_round_trips(windows: WindowsBackend) -> None:

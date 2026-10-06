@@ -55,7 +55,8 @@ reverbscope-env/bin/reverbscope gui
 
 演示中的任何内容都不是测量结果：终端第一行就会说明这一点；每个保存的会话的模式都是
 `synthetic_demo`，并附有说明它是模拟数据的备注；演示也绝不会覆盖不是它自己写出的文件夹。
-用 `reverbscope demo --out <文件夹>` 可以指定文件的位置。
+用 `reverbscope demo --out <文件夹>` 可以指定文件的位置。演示给会话起的房间、位置和话筒名称，
+用运行演示时的界面语言写入；打开、列出或生成报告时，则按当前界面语言显示。
 
 ## 通用 DAW 模式
 
@@ -63,13 +64,15 @@ reverbscope-env/bin/reverbscope gui
 2. 把 WAV 导入 DAW 的一条新轨道，关闭时间伸缩（Warp、Flex、Follow Tempo），信号通路上不要有插件。把它路由到一只扬声器。
 3. 在第二条轨道上接入测量话筒并开启录音待命，关闭输入监听，在扫频播放的同时录音。完整导出录音轨，不要裁切，也不要标准化。
 4. 可选回送（loopback）：导出双声道文件（话筒 + 电回送），并使用 `--channel 0 --loopback-channel 1`。
-5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`，或把这些文件拖进界面。
+5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`，或在界面的“通用 DAW 模式”中用“选择录音…”和“选择参考扫频…”选择这些文件。
 
 **Pro Tools、Logic Pro / GarageBand、Cubase / Nuendo、Studio One、Ableton Live、REAPER、FL Studio、Bitwig Studio 和 Audacity 的分步说明，以及报告中各条提示在 DAW 里对应的原因，见 [daw-setup.zh-CN.md](daw-setup.zh-CN.md)。**
 
 ## 独立模式与回送线
 
 `reverbscope devices` 列出音频接口。`reverbscope measure --out session/` 播放扫频并录音。`--input-channels 1,2 --loopback-channel 2` 在输入 2 上录制电回送。
+
+这次测量的 `sweep.wav` 和 `recording.wav` 只会连同描述它们的会话一起写入该文件夹：中途停止或被拒绝的测量不会改动文件夹。对已有会话的文件夹再次测量会替换该会话。文件夹里已有扫频或录音文件、却没有会话时（例如你用 `reverbscope sweep --out folder/sweep.wav` 生成的扫频），在播放任何声音之前就会被拒绝。
 
 先把监听电平调低。高于 −12 dBFS 的电平每次都需要 `--acknowledge-level` 确认；该确认从不保存。
 
@@ -87,13 +90,14 @@ reverbscope-env/bin/reverbscope gui
 
 每个指标都有有效性标记。`insufficient_decay_range`（衰减范围不足）表示数值被扣下不报，而不是等于零。没有单一总分。录音配置可能在宽带 C50 或 C80 不适合该类录音时给出一条提示；阈值是该配置的工程选择，不是评分。
 
-核心诊断（`warnings`、`notes`、`reason`）在 `result.json` 中保持英文，便于跨语言对照问题报告。界面会在注明这一点的标题下原样显示它们。
+核心诊断（`warnings`、`notes`、`reason`）在 `result.json` 中保持英文，便于跨语言对照问题报告。界面和文本报告按界面语言显示它们。
 
-结果页有七个标签页：
+结果页有八个标签页：
 
 | 标签页 | 显示内容 |
 | --- | --- |
-| 总览 | 宽带与倍频程频带的 EDT / T20 / T30 / RT60，以及 C50 / C80 / D50 / 重心时间，各自带有效性；文本报告；核心诊断（始终为英文）。 |
+| 总览 | 关键数值（混响、本底噪声、早期反射、直达声）及其可信程度、解读，以及宽带与倍频程频带的 EDT / T20 / T30 / RT60 和 C50 / C80 / D50 / 重心时间表格，各自带有效性。 |
+| 完整报告 | 与 `reverbscope analyze` 输出的文本报告相同，警告列在末尾。“复制报告”可复制全文。 |
 | 脉冲响应 | 反卷积得到的脉冲响应（IR）。峰值是直达声；不会归一化到 1.0。 |
 | 频率响应 | 原始（点线）与平滑（实线）幅度。进行了回送补偿时，虚线是电回送。0 dB 指音频接口，而不是“房间里是平直的”。 |
 | 衰减 | Schroeder / 能量衰减曲线。宽带为实线；各倍频程频带使用不同的虚线样式，不只靠颜色区分。 |
@@ -101,7 +105,7 @@ reverbscope-env/bin/reverbscope gui
 | 早期反射 | ETC 峰值（延时 ms，相对直达声的 dB）。候选用空心标记表示。 |
 | 摆位 | 多余路径；只有在输入了卷尺实测的扬声器距离时，才给出扬声器高度、两个设备上方的平面以及水平间距。不指明任何墙面。 |
 
-低频共振候选保留在总览的文本报告中（以及 `reverbscope export` 之后的 `resonances.csv`），没有单独的标签页。
+低频共振候选列在“完整报告”中（以及 `reverbscope export` 之后的 `resonances.csv`），没有单独的标签页。
 
 ## 摆位
 
@@ -113,21 +117,36 @@ reverbscope-env/bin/reverbscope gui
 
 `reverbscope compare baseline/ candidate/ --same-input-gain`（或界面的“对比”页面）。只有两侧都是 VALID 时，衰减差值才是 VALID。噪声差值需要明确声明“输入增益未变”。任何变化都不会被称为显著；ISO 3382-1 给出的 T 的刚可察觉差只作为参考背景引用。
 
-“对比”页面列出配对的早期反射（延时相差 ±0.5 ms 以内）和低频共振（相差 1/6 倍频程以内，并带有 decay-distinguishable 标志）。`reverbscope compare … --out comparison.json` 只写入数值；`reverbscope show comparison.json` 会再次打印报告并**重新推导**解读（解读从不存入该文件）。
+“对比”页面列出配对的早期反射（延时相差 ±0.5 ms 以内）和低频共振（相差 1/6 倍频程以内，并带有 decay-distinguishable 标志）。低频共振只在两次测量都搜索过的范围内比较：在另一次测量从未搜索的频率（例如其扫频起点更高）发现的共振既不算消失也不算新出现；若有一次测量根本没有搜索，低频一栏显示“未比较”（报告中如此，“共振”标签页的表格下方也有同样的说明；两次测量的直达声并非都可信时，“早期反射”标签页同样给出说明）。`reverbscope compare … --out comparison.json` 只写入数值；`reverbscope show comparison.json` 会再次打印报告并**重新推导**解读（解读从不存入该文件）。
 
 ## 项目与平均
 
 项目文件夹包含 `project.json` 和普通的会话文件夹。
 `reverbscope project init --out room/ --name Booth`，然后
-`reverbscope project add room/ session/ --position desk`。
-`reverbscope project average room/` 只平均有效（VALID）的 T 值，从不平均衰减曲线，并注明测量位置数达到的 ISO 3382-2 等级。
+`reverbscope project add room/ session/ --position desk`。对已有 `project.json` 的文件夹再次运行 `project init` 会被拒绝；加 `--force` 则重新开始这个项目，原有的位置不再保留。
+`reverbscope project average room/` 只平均有效（VALID）的 T 值，从不平均衰减曲线，并注明测量位置数达到的 ISO 3382-2 等级。RT60 一列是各会话自身 RT60（优先 T30，否则 T20）的平均值。`n` 是该行参与平均的会话数；参与会话较少的数值会附上自己的会话数，例如 `0.91 s (1)`。
 
 ## 导出与语言
 
-`reverbscope export session/ --format csv --out curves/` 导出每一条曲线。
-`--lang zh_CN`（或“设置 → 语言”，或 `REVERBSCOPE_LANG`）会翻译解读、文本报告的标签、图形界面和命令行帮助（`reverbscope --help` 及每个子命令）。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
+`reverbscope export session/ --format csv --out curves/` 导出每一条曲线。把另一个会话导出到同一文件夹时，该会话没有的曲线文件会被删除（`--no-curves` 会话没有任何曲线），因此文件夹里不会混有两个会话的数据。
+
+ReverbScope 跟随系统语言：Mac 上是首选语言（“系统设置 → 通用 → 语言与地区”；“终端”、iTerm 和 VS Code 不管首选语言是什么都会设置 `LANG=en_US.UTF-8`，所以 `LANG` 排在首选语言之后），Windows 上是显示语言，Linux 上是 `LANGUAGE`、`LC_ALL`、`LC_MESSAGES` 和 `LANG`。和其他程序一样，`LC_ALL=C`（或 `LC_MESSAGES=C`）在任何系统上都给出英文，例如提交错误报告时运行 `LC_ALL=C reverbscope show session/`。想不管系统怎么设置都固定使用一种语言，保存一次即可：
+
+```bash
+reverbscope config language zh_CN   # 中文
+reverbscope config language en      # English
+reverbscope config language auto    # 改回跟随系统
+```
+
+`reverbscope config language` 显示当前使用的语言以及原因。桌面版的“设置 → 语言”写入的是同一个设置。`--lang zh_CN` 只对一条命令指定语言，`REVERBSCOPE_LANG` 对一个终端会话指定语言；优先顺序是 `--lang`、已保存的设置、`REVERBSCOPE_LANG`、系统语言。主屏幕（直接运行 `reverbscope`）和 `reverbscope --help` 的最后一行用另一种语言写出切换到该语言的命令。
+
+中文界面会翻译解读、文本报告的标签、图形界面和全部命令行帮助（`reverbscope --help` 及每个子命令，包括占位符和 argparse 自己的提示）。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
+
+`reverbscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们，终端版也一样：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`、`copy-recording` 和 `developer-tools`（`on` 或 `off`），以及 `theme`（`system`、`light` 或 `dark`，只影响桌面版）。例如 `reverbscope config profile vocal`；`auto` 把一项设置恢复为默认值，`reverbscope --format json config` 以 JSON 输出所有设置。
 
 在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
+
+重定向或经过管道的输出是 UTF-8。Windows PowerShell 会按控制台代码页解码，中文因此变成乱码（`> report.txt`、`| Select-String`）；请先在该窗口运行一次 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`，详见[在 PowerShell 中保存报告](../INSTALLATION.zh-CN.md#终端版)。命令提示符不受影响。
 
 ## 故障排查
 
@@ -135,7 +154,7 @@ reverbscope-env/bin/reverbscope gui
 | --- | --- |
 | 直达声置信度不高 | 扫频配套文件不对；扬声器失真；想裁切录音？不要裁切。 |
 | 参考扫频不对 | WAV 旁边的 `.reverbscope-sweep.json` 必须是 ReverbScope 为*这一次*扫频写出的文件（相同的时长、频带和淡入淡出）。用另一个会话的扫频，或把录音本身当作参考，都会把脉冲响应定位错。 |
-| 一次导出中有多遍扫频 | 扫频只播放一次。同一个 WAV 中的两遍扫频看起来像两条脉冲响应；ReverbScope 保留最强的峰，其余部分会被当成“房间”。每次只导出一次录音。 |
+| 一次导出中有多遍扫频 | 扫频只播放一次。同一个 WAV 中有多遍扫频时，ReverbScope 只分析其中一遍（在与最响一遍电平相近的各遍中，选其后录到的衰减最长的一遍，通常是最后一遍），忽略其余各遍，脉冲响应在下一遍开始处截止，并给出警告。每次只导出一次录音。 |
 | 削波警告 | 降低回放增益或输入增益。 |
 | 衰减范围不足 | 加长扫频、稍微提高回放电平，或换一个更安静的房间。 |
 | 设备采样率不匹配 | 界面会在请求的采样率旁边显示设备采样率；请选择设备支持的采样率。 |
@@ -145,6 +164,6 @@ reverbscope-env/bin/reverbscope gui
 
 **帮助 ▸ 用于问题报告的环境报告**显示维护者首先需要的信息：ReverbScope 版本和构建提交、操作系统、库版本、设置和音频设备（*探测采样率*会加上每个设备接受的采样率；不会播放任何声音）。用*复制*把它粘贴到 issue 中；*打开 GitHub Issue 页面*会打开模板选择页。在终端中，同样的报告是 `reverbscope doctor`（`--probe`、`--json`）。ReverbScope 不会自动发送任何内容；发布之前请通读文本，因为设备名称中可能包含个人姓名。
 
-`reverbscope session bundle session/ --out report.zip` 把会话文件夹打包为 zip。如果不想分享房间录音，用 `--no-audio` 去掉 WAV 文件。把 zip 附在测量问题（measurement）类 issue 上。设置和滚动日志保存在 `$REVERBSCOPE_HOME`（默认为 `~/.reverbscope`）下；环境报告中的*打开数据文件夹*按钮会打开它。
+`reverbscope session bundle session/ --out report.zip` 把会话文件夹打包为 zip。如果不想分享房间录音，用 `--no-audio` 去掉 WAV 文件。和环境报告一样，其中 JSON 文件里的路径把你的主文件夹显示为 `~`。把 zip 附在测量问题（measurement）类 issue 上。设置和滚动日志保存在 `$REVERBSCOPE_HOME`（默认为 `~/.reverbscope`）下；环境报告中的*打开数据文件夹*按钮会打开它。
 
 用真实的音频接口或通过 DAW 运行过 ReverbScope？请用 *Audio interface test report*（[音频接口测试报告，中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)）或 *DAW compatibility report*（[DAW 兼容性报告，中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)）模板记录下来；这些真实运行是 [HARDWARE_TESTS.zh-CN.md](../HARDWARE_TESTS.zh-CN.md) 的唯一来源。

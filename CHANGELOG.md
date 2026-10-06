@@ -7,6 +7,25 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Settings from the command line.** `reverbscope config` lists the settings
+  the desktop app keeps in `settings.json`, says what each value means now
+  and where the file is; `reverbscope config KEY VALUE` changes one: `language`
+  (`zh_CN`, `en`, or `auto` to follow the system), `profile`, `backend`,
+  `output-folder`, `copy-recording`, `developer-tools` and `theme` (desktop
+  app only). `auto` goes back to a setting's default, a value is checked
+  before anything is written (exit code 2, nothing changed), a damaged
+  settings file is not replaced, and `--format json` prints the settings.
+  The Terminal Edition, which has no Settings dialog, can now keep a
+  language: after `reverbscope config language zh_CN` every command is in
+  Chinese, and the confirmation already is. `reverbscope config language`
+  shows the language in effect and why.
+- **The way to the other language.** The home screen and `reverbscope --help`
+  end with one line in the other language: `中文界面：reverbscope config
+  language zh_CN` in English, `English interface: reverbscope config language
+  en` in Chinese (left out where the terminal cannot write Chinese; on a
+  narrow terminal the command goes whole on a line of its own).
+
 ### Changed
 - **Renamed RoomScope → ReverbScope.** The project, the Python package
   (`roomscope` → `reverbscope`), the command line (`roomscope` →
@@ -15,6 +34,269 @@ All notable changes to ReverbScope are documented here. The format follows
   `$REVERBSCOPE_HOME`) and the default data directory (`~/.roomscope` →
   `~/.reverbscope`) were renamed. GitHub keeps redirecting the old repository
   URL to the new name.
+- **Language detection.** The command line follows the system's language
+  where the system keeps it: on macOS the preferred languages (also in
+  Terminal, iTerm and VS Code, which set `LANG=en_US.UTF-8` whatever the
+  display language is), on Windows the display language before a `LANG`
+  from Git Bash or MSYS, on Linux GNU `LANGUAGE` (`zh_CN:en`) as gettext
+  reads it. `--lang`, the stored setting and `REVERBSCOPE_LANG` still come
+  first, in that order. The desktop app reads Qt's UI languages first on
+  macOS, after a display language ReverbScope has on Windows, and after the
+  locale variables on Linux; a display language without a catalog (for
+  example Traditional Chinese) leaves the choice to the next of these.
+- **Chinese command line.** Every help screen is Chinese to the last word:
+  the placeholders (`--out 目录`, `--recording WAV文件`, `<命令>`), the
+  positional names and argparse's remaining messages ("expected 2
+  arguments", "ignored explicit argument", the type in "invalid int
+  value"), with the help column aligned by display width. The environment
+  report names its settings and paths in words. Lists are separated by
+  `、`, a wrapped line never ends with an opening bracket, `--color` names
+  `auto`, `always` and `never`, a refused value names the option that set
+  it (`--end-hz`, not `end_hz`), and a damaged JSON file is described in
+  Chinese. `reverbscope config` names the profile and output-folder settings
+  as the desktop app's Settings dialog does. A demo made in Chinese
+  names its room, position and microphone in Chinese. Temperatures read
+  `20 °C` (also on a cp1252 or GBK code page and in the classic Windows
+  console; `20 C` where the encoding has no degree sign), and the
+  resonance note no longer cites "v0.1".
+
+### Fixed
+- **Measurement.** With a loopback whose return is not at unity gain, the
+  folded-distortion probe was biased by that gain (a −20 dB return hid
+  folded products and left T30 valid); it now uses the response before
+  compensation. A separate `--loopback` file's channel is read from that
+  file, not checked against the recording, and a mono recording can no
+  longer be its own loopback. A loopback found on another sweep pass than
+  the microphone is refused instead of reporting a path delay of seconds;
+  a single-pass take with a long latency is no longer refused that way.
+  Of several sweep passes about as loud as the loudest, the one followed by
+  a recorded decay is analysed, instead of a random one that could leave
+  the take refused or T30 insufficient. A recording with no sweep in it is
+  refused as such, not as a late start, and a wrong playback speed is named
+  in the interface language. A take cut while the sweep was still in its
+  lowest octaves is no longer blamed on a DAW time-stretch "at 837043.2 %
+  of the speed it was generated at". Digital silence after an imported impulse
+  response is no longer taken for the noise floor (T30 read up to 16 %
+  long), and `analyze-ir` without `--band` no longer quotes the hidden
+  analysis' values in its warnings; `--band 20 inf` is refused. Smoothed
+  frequency responses above the sweep no longer read −3000 dB. A gated
+  response reports the resolution of its gate (50 Hz for 20 ms, not 2 Hz),
+  and a gate longer than the response no longer fades the direct sound. A
+  DC offset no longer counts as background noise, no longer stops the noise
+  from being measured and no longer hides a noise burst (14 dB too high);
+  a short quiet segment no longer reports mains hum from one unaveraged
+  spectrum. When nothing below 300 Hz was excited, the report says the
+  resonance search did not run instead of "no potential resonance". The
+  reflection window is no longer called truncated when it only rounds to a
+  sample, its heading shows its real start (0.8 ms) and a search cut short
+  by a short IR says so. Without a direct sound, C50, C80, D50 and centre
+  time are timed from the onset. A `measure` signal shorter than 1 s is
+  refused before playing. Loopback compensation no longer prints a NumPy
+  warning for a sweep starting at 1 Hz. The fake backend's room no longer
+  hears the sweep before its loopback (a path delay of −2 ms).
+- **Placement.** The 2 cm tape slack was subtracted instead of allowed, so a
+  steep but possible geometry was refused. The ceiling height and the
+  horizontal separation reported the loudspeaker height's uncertainty; each now
+  carries its own, and the height's is taken at the arrival it reports.
+- **Comparison and advice.** C50, C80, D50, noise and negative path-delay
+  changes are no longer given in percent (−2 → −1 dB read −50 %), also when
+  `show` reads a comparison saved by 0.5.0b1. An imported IR without
+  `--band` is no longer compared over a band nothing excited. A refused
+  comparison names its reason, in the interface language, also from a file
+  saved by 0.5.0b1, and no longer reports "none above the threshold" or "no
+  potential resonance" for what it never compared. Reasons name validities
+  in words. The direct-to-noise notice now includes the playback level, is
+  measured before loopback compensation (a −20 dB return hid it) and is
+  given again for a reference WAV without its sidecar. A 0 dB reflection is
+  ranked strongest, and the reflection finding weighs the strongest
+  reflection on each side, so one that disappeared is reported. Two
+  selected sessions are compared with the older one as the baseline, and
+  `show comparison.json` uses the candidate's profile. A change that rounds
+  to zero reads +0.0, not −0.0; a narrow table keeps the change column.
+- **Files.** Saving a session twice, or saving an opened session elsewhere, no
+  longer loses `recording.wav` or the sweep sidecar. Files are written under
+  unique temporary names and replaced only once everything has been written,
+  so a full disk keeps the previous session (its audio too), project or
+  settings, two programs saving at once no longer fail, a file keeps its
+  permissions and a linked `settings.json` stays a link. Saving an opened
+  session copies its recording and sidecar only from inside its own folder:
+  a received session could name `../../.ssh/id_rsa` and put it into the new
+  session and its bundle. Wrongly typed values in session, result,
+  comparison, project, sidecar and settings files are refused with a
+  translated ReverbScope error (or ignored, for settings) instead of a crash;
+  `"false"` is no longer true, and a 400-digit number, an infinite silence
+  or a number where a curve belongs no longer crashes `show`. One unreadable
+  session no longer hides a folder's others. A symlinked `result.json` is
+  checked even when `session.json` does not name it. A 192 kHz session with
+  a long post-roll (a result.json over 32 MiB) opens again. `session bundle
+  .` works, a session at a drive root and `--out folder/` are named
+  properly. A newer sweep sidecar is refused. NaN samples are refused by
+  `write_wav`. An exporter registered as a class is instantiated, and the
+  CSV export adds the interface response and the resonance decay times.
+  `--no-curves` leaves out the interface curve and keeps the point count. A
+  project lists a session once however it was added, and `project add`
+  refuses a folder without a session or one already under another
+  position. The result and comparison schemas require what the loaders
+  need.
+- **Command line.** A malformed `--input-channels` and an output channel of 0
+  are refused before anything is played. `measure` no longer accepts a
+  `--channel` it ignored, and `analyze --channel` refuses a channel a mono
+  file does not have. `show` opens a comparison saved under any name, and
+  `show --format json` prints paths as `session.json` stores them.
+  `session bundle` and `project init/add/show` say so when `--format json`
+  does not apply. Project errors are translated. Placement surfaces are named,
+  not shown as `lower_plane`. 999.7 Hz prints as 1 kHz, not `1e+03 Hz`.
+  `--backend fake measure` saves a session marked as a synthetic demo.
+  `--lang` applies to `gui`. The `--loopback-channel` and `analyze-ir
+  --band` help describe what the options do. Plain lines use the console's
+  ASCII signs on an ASCII-only stream. Help paragraphs are separated by a
+  blank line again, and the closing example of `reverbscope --help` is no
+  longer split across lines. `reverbscope project` or `reverbscope session`
+  without an action named the parser's internal `project_command` instead
+  of the actions. An unknown exporter lists the others by name, not as
+  `['csv']`.
+- **Desktop app.** A second take could start while one was running (after
+  Refresh devices), and closing the window during a take or an analysis
+  aborted the process; both are fixed, and leaving the page stops the take.
+  A late result no longer replaces a session opened meanwhile, also when you
+  went back to the page to wait. Ctrl+2/Ctrl+3 no longer switch the backend
+  under a running take, and the saved output channel is the one played.
+  Demo takes are saved marked as synthetic. Saving an opened session no
+  longer writes the previous take into it, and a live take's recording is
+  written with the rest of the session. Save dialogs add `.wav` / `.json`
+  and ask before replacing a file or a saved session. Home can select two
+  sessions for Compare. The default profile and output folder from Settings
+  are used, a new default profile without a restart. The decay legend and
+  the noise tab give the right reason when data is missing; every band has
+  its own dash pattern. The Compare table names noise bands.
+- **Packaging.** Neither edition freezes GNU readline any more (the 0.5.0b1
+  Linux bundles shipped libreadline, GPL-3.0, without its licence text); the
+  Desktop Edition also no longer freezes pytest, setuptools, pygments or
+  yaml. typing_extensions' licence is in `THIRD_PARTY_LICENSES`. The SBOM
+  lists the bundle's packages, not the SBOM tool's. Lock and gate-script
+  changes, `compile_bundle_lock.py` included, run the release checks. The
+  check scripts fail instead of passing when they checked nothing.
+  `compile_bundle_lock.py` refuses to write a lock without a runtime package
+  and keeps a dependency named `*-extra`. `build_release.py` says up front
+  that Inno Setup is missing, before deleting anything, keeps other
+  platforms' archives on Windows and writes `SHA256SUMS` with LF.
+  `build_docs_site.py --out docs` (or a folder inside it) refuses instead of
+  deleting the documentation.
+- **Other.** A failed log rotation on Windows no longer pushes the backups out,
+  and rotation elsewhere no longer renames the log away. A device warning
+  names each buffer flag once. In Chinese, joined diagnostics and ones with
+  their own semicolon are fully translated. The `.po` reader unescapes in one
+  pass and skips fuzzy entries; a duplicate catalog entry was removed.
+  `docs/MEASUREMENT_METHODOLOGY.md` now describes the band edges, the
+  Lundeby convergence, the decay start, the noise and hum parameters, the
+  resonance test and every rule that marks EDT, T20 or T30 unreliable. The
+  user guides describe the Results page and the DAW file choice as the app
+  has them.
+- **Decay, averaging and low bands (third review round).** A clean 63 or
+  125 Hz decay no longer loses its RT60 because floor blocks seconds after the
+  decay were fitted as its late slope (4 takes in 10 at 55 dB were marked
+  unreliable); the late slope is now fitted over the decay only, and a
+  truncation that is rejected says why ("no late slope could be estimated",
+  not "did not converge") in the interface language. A decay that reaches
+  the noise floor within the first 20 ms (a booth, a dead high band) is found
+  with 5 ms and then 1 ms first blocks, used only in bands where a block holds
+  at least one inverse bandwidth, so a narrow band never reads a noise spike
+  as a valid EDT; without any decay the response is no longer integrated to
+  its end. `project average` takes the RT60 as the mean of each session's own
+  RT60 (T30, else T20) instead of mixing T30 and T20 counts, gives it its own
+  `rt60` object in the JSON, shows `n` as the largest count of the row and
+  marks a value that averages fewer sessions with `(k)`. A truncation
+  sensitivity warning prints enough digits to tell its two values apart.
+- **Distortion, noise and findings (third review round).** In a real room the
+  harmonics' own decay no longer makes up the distortion floor, so a sweep
+  shorter than about 5 s, or a long one in a very reverberant room, reports
+  H2 and H3 again; the floor is the lower of the noise before the first
+  harmonic window and the quiet tail of the record. The direct-to-noise
+  notice no longer depends on the sample rate (it read 6.7 dB low at 96 kHz
+  and 12.4 dB at 192 kHz), the excitation band starts where a perfect chain
+  measures flat (two sweep lengths no longer show a change at 31.5 Hz), and a
+  quiet dithered reference WAV is trimmed to its sweep. A recording that ends
+  before the sweep says so and names a slowed sweep; a silent loopback
+  channel is no longer blamed on the microphone; an imported IR band above
+  the file's Nyquist frequency is refused. Smoothing a 28 Hz band at 192 kHz
+  runs in linear time (one analysis took 109 s). A DC offset no longer leaks
+  into the noise band levels and peak, and a noise note says how much of a
+  quiet segment was digital silence or a noise event. Two room modes an
+  octave apart no longer hide each other (the surroundings of a candidate
+  are taken from the nearest bands clear of the other candidates), a
+  ceiling-height refusal names the plane above the devices, and a third-party
+  profile that cannot be created is skipped with one warning instead of
+  stopping every command.
+- **Comparison (third review round).** Reflections and resonances are paired
+  by the closest match first (a strong reflection that vanished was shown as
+  matched and 6.6 dB weaker); resonances are compared only where both takes
+  searched for them, and the Resonances and Early Reflections tabs say when
+  a topic was not compared; an RT60 change that rounds to 0.0 % reads
+  "unchanged"; the note for a band outside the excitation range no longer
+  names a sweep for an imported IR.
+- **Files and sessions (third review round).** `project init` refuses to
+  replace an existing `project.json` (`--force` starts over), and `project
+  add` takes a project's `project.json` as show and average do. A copied
+  AIFF, CAF, FLAC, MP3 or ADPCM take is stored as a real WAV, losslessly where
+  WAV can hold it. A failed save puts the replaced files back instead of
+  leaving one take's recording beside another take's analysis, removes the
+  recording and sweep sidecar of an earlier take, and leaves alone a
+  `recording.wav` in a folder that holds no session. `session bundle` writes
+  files dated before 1980, keeps the earlier bundle when writing fails,
+  hides the home folder in the paths it publishes (also when no home can be
+  found); `show` and `project show` print the control characters of a text
+  from a received file as escapes, on the line the text belongs to, so a
+  crafted session can no longer forge report lines or drive the terminal;
+  `export` removes the curve files of an earlier export it does not write
+  again; a session is read only from its `session.json`, not from any JSON
+  file such as `result.json`; JSON files that start with a UTF-8 byte-order
+  mark (Notepad, PowerShell 5) are read; the automatically chosen channel is
+  numbered from 1, as the desktop app lists it.
+- **Command line (third review round).** `measure` checks its analysis
+  options and `--out` before anything is played, points a refused option to
+  `measure --help`, and writes the take into `--out` only together with its
+  session, so a stopped or refused take leaves the folder as it was. The
+  progress line fits the terminal, a number stays on the line of its unit
+  when a text wraps, copy-paste commands quote `( ) & ; $ |`, `~` is read as
+  the home folder, an `--out` that is a file is refused before the analysis,
+  and system errors are explained in the interface language. `devices` and
+  `doctor` warn about `--json` too, `compare --out` names the file it wrote,
+  and `doctor` ticks only the device checks that were made. Chinese report
+  lines are joined with Chinese punctuation. The docs say how to save a Chinese
+  report from Windows PowerShell.
+- **Desktop app (third review round).** Universal DAW Mode analyses only the
+  recording and sweep its page shows; Standalone Mode keeps the chosen
+  interface when it lists the devices again and lists the new backend's
+  devices after Settings changes it; a machine without an audio device says
+  so instead of running a take that fails. Compare shows the compared
+  sessions in Chinese, names both in a saved comparison, and returns to the
+  page it was opened from with the take kept. A save whose typed name holds a
+  dot asks before replacing a file; charts say when a session was saved
+  without curves; the theme switch redraws cards, tables and charts, and
+  "follow the system" follows a change while the app runs; closed windows are
+  freed, so a system colour change no longer takes minutes.
+- **Audio devices and language (third review round).** The loopback path delay
+  is "路径延迟", not an electrical delay; only real devices are recommended (no
+  Sound Mapper, no ALSA plugin); the two-clocks warning is no longer given
+  for DirectSound's primary drivers; a device that could not be opened reads
+  "unknown" instead of "none" for its rates; PortAudio's buffer flags are
+  named in Chinese; the fake backend hears the room on every input but its
+  loopback. `doctor --format json` stays English when the backend fails and
+  the environment report names its settings and paths in words. The macOS
+  app declares Simplified Chinese. `LC_ALL=C` and `LC_MESSAGES=C` give
+  English; `--lang` and `REVERBSCOPE_LANG` accept what `LANG` holds
+  (`zh_CN.UTF-8`, `zh_CN@pinyin`); abbreviated `--lang` and `--color` are read;
+  a hand-edited language in `settings.json` is named for what it selects; a
+  demo's room, position and microphone are shown in the language of the
+  command that shows them.
+- **Build and documentation (third review round).** The whole test suite runs
+  from an unpacked sdist; the installer's Chinese messages say why they could
+  not be fetched; `build_docs_site.py` refuses a folder of other files (but
+  builds into one that holds only Finder litter), its section links and links
+  outside `docs/` work, and the Chinese pages are Chinese; the bundles name
+  every native library they ship with its licence and source (including the
+  Windows C runtime), and the README images show the current demo and the
+  downloaded app.
 
 ## [0.5.0b1] - 2026-10-01
 

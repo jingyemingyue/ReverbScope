@@ -15,13 +15,16 @@ can never be mistaken for hardware evidence.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, replace
+from functools import lru_cache
 from pathlib import Path
 
 import numpy as np
 from scipy.signal import fftconvolve
 
 from reverbscope.audio.fake import make_rir
+from reverbscope.i18n import N_, _, available_locales, translator
 from reverbscope.models.audio import AudioSignal, FloatArray
 from reverbscope.models.comparison import ComparisonResult
 from reverbscope.models.configuration import SweepSettings
@@ -29,9 +32,21 @@ from reverbscope.models.result import AnalysisResult
 
 #: ``MeasurementSession.mode`` of every session the demo writes.
 DEMO_MODE = "synthetic_demo"
-DEMO_ROOM_NAME = "Synthetic demo room"
+#: The room, position and microphone names a demo session stores, written in
+#: the interface language like the names a user types (``--room``).
+DEMO_ROOM_NAME = N_("Synthetic demo room")
+DEMO_MICROPHONE = N_("simulated omni")
+#: How a position is named: its label, then what it is next to.
+POSITION_NAME = N_("{label}: {description}")
 DEMO_NOTES = (
     "SYNTHETIC DEMO: simulated with `reverbscope demo`. No audio hardware was used; "
+    "this is not a measurement of a real room."
+)
+#: Notes of a take recorded on the fake audio backend (the desktop Demo,
+#: ``reverbscope --backend fake measure``). Its session is marked
+#: :data:`DEMO_MODE` too: the "room" is simulated just the same.
+FAKE_BACKEND_NOTES = (
+    "SYNTHETIC DEMO: recorded with the fake audio backend. No audio hardware was used; "
     "this is not a measurement of a real room."
 )
 DEMO_PROFILE = "vocal"
@@ -60,7 +75,7 @@ DEMO_POSITIONS: tuple[DemoPosition, ...] = (
     DemoPosition(
         key="position-a",
         label="A",
-        description="close to the desk and the side wall",
+        description=N_("close to the desk and the side wall"),
         rt60_s=0.45,
         reflections=((0.0024, -3.0), (0.0071, -9.0)),
         mode_amplitude=0.012,
@@ -70,7 +85,7 @@ DEMO_POSITIONS: tuple[DemoPosition, ...] = (
     DemoPosition(
         key="position-b",
         label="B",
-        description="moved 1 m back from the desk",
+        description=N_("moved 1 m back from the desk"),
         rt60_s=0.45,
         reflections=((0.0093, -14.0),),
         mode_amplitude=0.004,
@@ -78,6 +93,49 @@ DEMO_POSITIONS: tuple[DemoPosition, ...] = (
         seed=2,
     ),
 )
+
+
+def position_name(position: DemoPosition, translate: Callable[[str], str] = _) -> str:
+    """The name a demo session stores for ``position``, written through ``translate``."""
+    return translate(POSITION_NAME).format(
+        label=position.label, description=translate(position.description)
+    )
+
+
+def _demo_names(translate: Callable[[str], str]) -> tuple[str, ...]:
+    """Room, microphone and each position, as ``translate``'s language writes them."""
+    return (
+        translate(DEMO_ROOM_NAME),
+        translate(DEMO_MICROPHONE),
+        *(position_name(position, translate) for position in DEMO_POSITIONS),
+    )
+
+
+@lru_cache(maxsize=4)
+def _written_names(languages: tuple[str, ...]) -> dict[str, int]:
+    """Every spelling of the demo's names in ``languages``, with its place in
+    :func:`_demo_names` (kept: reading a catalog is slow, a list shows many)."""
+    found: dict[str, int] = {}
+    for lang in languages:
+        for index, name in enumerate(_demo_names(translator(lang))):
+            found.setdefault(name, index)
+    return found
+
+
+def localize_demo_name(mode: str, name: str) -> str:
+    """A demo session's room, position or microphone, in the interface language.
+
+    The demo writes these names in the language it ran in, like names a user
+    types. Shown in the other language they would be a Chinese label beside an
+    English name (or the reverse), so the names the demo itself wrote are
+    recognised in every language and shown in the active one. A name of any
+    other session, or one a user typed into a demo take, is returned as it is.
+    """
+    if mode != DEMO_MODE or not name:
+        return name
+    index = _written_names(tuple(available_locales())).get(name)
+    return name if index is None else _demo_names(_)[index]
+
 
 #: Frequency and decay constant of the simulated room mode.
 MODE_HZ = 110.0
@@ -175,9 +233,9 @@ def run_demo(out_dir: Path, *, sample_rate: int = 48000, profile: str = DEMO_PRO
         result = analyze(AudioSignal(samples, settings.sample_rate), reference, analysis_settings)
         session = MeasurementSession(
             mode=DEMO_MODE,
-            room_name=DEMO_ROOM_NAME,
-            measurement_position=f"{position.label}: {position.description}",
-            microphone_name="simulated omni",
+            room_name=_(DEMO_ROOM_NAME),
+            measurement_position=position_name(position),
+            microphone_name=_(DEMO_MICROPHONE),
             notes=DEMO_NOTES,
             sweep_settings=settings,
             analysis_settings=analysis_settings,

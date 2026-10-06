@@ -107,3 +107,82 @@ def test_plot_chrome_follows_color_scheme(short_sweep, monkeypatch) -> None:
     monkeypatch.setenv("REVERBSCOPE_COLOR_SCHEME", "light")
     style_figure(fig)
     assert to_hex(fig.patch.get_facecolor()[:3]) == plot_colors()["bg"]
+
+
+def test_decay_legend_gives_the_reason_a_band_has_no_rt60() -> None:
+    """Every band without an RT60 was labelled "insufficient range", also the
+    ones outside the sweep (the table said n/a)."""
+    from reverbscope.models.configuration import SweepSettings
+
+    sweep = SweepSettings(duration_s=2.0, post_silence_s=1.5, start_hz=300.0)
+    result = analyze(
+        synthetic_recording(sweep, make_rir(48000, rt60_s=0.4), noise_rms=1e-5),
+        Reference.from_settings(sweep),
+    )
+    fig = Figure()
+    plot_decay(fig, result)
+    labels = fig.axes[0].get_legend_handles_labels()[1]
+    low = next(label for label in labels if label.startswith("63 Hz"))
+    assert "outside the excitation range" in low
+
+
+def test_placement_surfaces_have_names_not_ids() -> None:
+    from reverbscope.i18n import activate
+    from reverbscope.labels import surface_text
+
+    assert surface_text("lower_plane") == "Reference plane"
+    assert surface_text("upper_plane") == "Plane above the devices"
+    assert surface_text(None) == ""
+    activate("zh_CN")
+    try:
+        assert surface_text("lower_plane") == "参考平面"
+    finally:
+        activate("en")
+
+
+def test_every_octave_band_has_its_own_dash_pattern(short_sweep) -> None:
+    """The user guide: octave bands use changing dash patterns so colour is
+    not the only cue. Five styles for eight bands repeated three of them, and
+    1 kHz was solid like Broadband."""
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.35)),
+        Reference.from_settings(short_sweep),
+    )
+    fig = Figure()
+    plot_decay(fig, result)
+    lines = fig.axes[0].lines
+    assert len(lines) == 1 + len(result.decay.bands) >= 9
+    patterns = [tuple(line._unscaled_dash_pattern[1] or ()) for line in lines]
+    assert patterns[0] == ()  # Broadband is solid
+    assert all(patterns[1:]), "a band is drawn solid like Broadband"
+    assert len(set(patterns[1:])) == len(patterns) - 1
+
+
+def test_a_session_saved_without_curves_says_so_on_the_fr_and_decay_charts(
+    short_sweep, tmp_path
+) -> None:
+    """A session saved with --no-curves drew an empty Frequency Response
+    axis and an empty Decay axis with every band in its legend, as if the
+    measurement had failed; the Noise tab already said why it was empty."""
+    from reverbscope.io.session_store import load_measurement, save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(48000, rt60_s=0.35), noise_rms=1e-5),
+        Reference.from_settings(short_sweep),
+    )
+    folder = tmp_path / "no-curves"
+    save_measurement(
+        folder, MeasurementSession(), result, include_curves=False, copy_recording=False
+    )
+    loaded = load_measurement(folder).result
+    for plot, text in (
+        (plot_frequency_response, "No frequency response stored with this session"),
+        (plot_decay, "No decay curves stored with this session"),
+    ):
+        fig = Figure()
+        plot(fig, loaded)
+        axes = fig.axes[0]
+        assert [item.get_text() for item in axes.texts] == [text]
+        assert not axes.axison
+        assert axes.get_legend() is None

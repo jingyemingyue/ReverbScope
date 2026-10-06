@@ -22,11 +22,11 @@ from reverbscope.core.pipeline import (
     synthetic_recording,
 )
 from reverbscope.core.sweep import measurement_signal
-from reverbscope.errors import AnalysisError
+from reverbscope.errors import AnalysisError, ConfigurationError
 from reverbscope.io.wav import write_wav
 from reverbscope.models.audio import AudioSignal
 from reverbscope.models.configuration import AnalysisSettings, SweepSettings
-from reverbscope.models.result import Validity
+from reverbscope.models.result import AnalysisResult, Validity
 from tests.conftest import make_rir
 
 RT60_S = 0.45
@@ -242,6 +242,22 @@ def test_cli_analyze_ir_json_round_trip(
     assert "ReverbScope analysis" in capsys.readouterr().out
 
 
+def test_cli_analyze_ir_legend_names_no_sweep(
+    tmp_path: Path, full_and_ir: tuple, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Bands left out by --band were explained as "outside the sweep's range",
+    although an imported impulse response has no sweep."""
+    from reverbscope.cli.main import main
+
+    _full, ir = full_and_ir
+    ir_path = write_wav(tmp_path / "room_ir.wav", ir.samples, ir.sample_rate, subtype="FLOAT")
+    code = main(["analyze-ir", "--ir", str(ir_path), "--band", "100", "8000"])
+    captured = capsys.readouterr()
+    assert code == 0, captured.err
+    assert "– outside the excitation range" in captured.out
+    assert "sweep's range" not in captured.out
+
+
 def test_cli_analyze_ir_refuses_a_recording(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -251,3 +267,125 @@ def test_cli_analyze_ir_refuses_a_recording(
     path = write_wav(tmp_path / "noise.wav", samples, 48000, subtype="FLOAT")
     assert main(["analyze-ir", "--ir", str(path)]) == 1
     assert "cannot be analysed as an impulse response" in capsys.readouterr().err
+
+
+def test_digital_silence_after_an_imported_ir_is_not_a_noise_floor() -> None:
+    """Zeros after the response read as a -3000 dB floor: Lundeby never
+    converged, the real floor was integrated as decay (63 Hz T30 +16 %) and
+    the reported peak-to-noise ratio was about 2970 dB."""
+    from reverbscope.core.pipeline import analyze_impulse_response
+
+    rir = make_rir(48000, rt60_s=0.5, diffuse_level=0.03, length_s=2.0, seed=2, start_delay_s=0.01)
+    ir = rir + np.random.default_rng(5).normal(0.0, 1e-4, rir.shape[0])
+    padded = ir.copy()
+    padded[48000:] = 0.0
+    clean = analyze_impulse_response(AudioSignal(ir[:48000], 48000), excitation_band=(20, 20000))
+    zeros = analyze_impulse_response(AudioSignal(padded, 48000), excitation_band=(20, 20000))
+    assert zeros.decay.broadband.peak_to_noise_db is not None
+    assert zeros.decay.broadband.peak_to_noise_db < 100.0
+    for a, b in zip(
+        (clean.decay.broadband, *clean.decay.bands),
+        (zeros.decay.broadband, *zeros.decay.bands),
+        strict=True,
+    ):
+        if a.t30.seconds is not None and b.t30.seconds is not None:
+            assert b.t30.seconds == pytest.approx(a.t30.seconds, rel=0.03), a.band_label
+
+
+def test_decay_notes_of_an_imported_ir_reach_the_warnings() -> None:
+    from reverbscope.core.pipeline import analyze_impulse_response
+
+    rir = make_rir(48000, rt60_s=0.4, length_s=1.0, start_delay_s=0.01)
+    result = analyze_impulse_response(AudioSignal(rir, 48000), excitation_band=(100, 10000))
+    assert result.decay.notes
+    assert set(result.decay.notes) <= set(result.warnings)
+
+
+def test_an_undeclared_band_quotes_no_metric_it_does_not_report() -> None:
+    """Without --band every metric is not computed, yet the warnings quoted
+    the hidden per-band notes ("... the result depends on it (C50 31.4 dB vs
+    22.3 dB)")."""
+    rir = make_rir(48000, rt60_s=0.15, length_s=1.0, start_delay_s=0.01)
+    ir = rir + np.random.default_rng(0).normal(0.0, 1e-3, rir.shape[0])
+    result = analyze_impulse_response(AudioSignal(ir, 48000))
+    assert result.decay.broadband.c50.value is None
+    assert not [w for w in result.warnings if w.startswith("decay analysis,")]
+    assert result.decay.notes == (
+        "excitation band unknown (imported impulse response; declare --band)",
+    )
+
+
+@pytest.mark.parametrize("high_hz", [float("inf"), float("nan")])
+def test_a_band_without_a_finite_upper_edge_is_refused(high_hz: float) -> None:
+    """``--band 20 inf`` was accepted and stored "high_hz": Infinity, which
+    is not JSON."""
+    ir = np.zeros(48000)
+    ir[100] = 1.0
+    with pytest.raises(ConfigurationError, match="high > low > 0"):
+        analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, high_hz))
+
+
+def test_a_band_above_the_nyquist_frequency_is_refused() -> None:
+    """R3-21: ``--band 20 30000`` on a 48 kHz IR was stored as a 20 Hz-30 kHz
+    band that the file cannot contain."""
+    from reverbscope.i18n import activate
+
+    ir = np.zeros(48000)
+    ir[100] = 1.0
+    with pytest.raises(ConfigurationError) as refused:
+        analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 30000.0))
+    assert str(refused.value) == (
+        "the declared band ends at 30000 Hz, but a 48000 Hz impulse response contains "
+        "nothing above 24000 Hz (half its sample rate)"
+    )
+    activate("zh_CN")
+    with pytest.raises(ConfigurationError) as refused:
+        analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 30000.0))
+    assert str(refused.value) == (
+        "声明的频带上限为 30000 Hz，但采样率为 48000 Hz 的脉冲响应不含 24000 Hz"
+        "（采样率的一半）以上的内容"
+    )
+    # Up to the Nyquist frequency itself is a band the file can hold.
+    activate("en")
+    result = analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 24000.0))
+    assert result.excitation_band is not None
+    assert result.excitation_band.high_hz == 24000.0
+
+
+def _diagnostics_text(result: AnalysisResult) -> str:
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import _diagnostics
+
+    return "\n".join(_diagnostics(Console(width=100), result))
+
+
+def test_an_imported_ir_report_does_not_claim_a_sweep_was_found() -> None:
+    """The Diagnostics said "Sweep found 0.00 s into the recording" next to
+    the warning that the file had neither a sweep nor a recording."""
+    ir = make_rir(48000, rt60_s=0.05, length_s=0.5, start_delay_s=0.01)
+    declared = analyze_impulse_response(AudioSignal(ir, 48000), excitation_band=(20.0, 20000.0))
+    assert "Sweep found" not in _diagnostics_text(declared)
+    assert "Sweep found" not in _diagnostics_text(analyze_impulse_response(AudioSignal(ir, 48000)))
+
+
+def test_the_decay_shown_is_never_longer_than_the_analysed_response(
+    short_sweep: SweepSettings,
+) -> None:
+    """A take that kept recording long after the sweep printed "Analysed
+    6.01 s, of which 19.00 s is decay": the recording after the direct sound,
+    not the part of it that was analysed."""
+    import re
+
+    recording = synthetic_recording(
+        short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3), noise_rms=1e-5
+    )
+    result = analyze(
+        recording, Reference.from_settings(short_sweep), AnalysisSettings(ir_max_length_s=1.0)
+    )
+    assert result.impulse_response.valid_length_s > 1.2
+    text = _diagnostics_text(result)
+    assert "Sweep found" in text  # a measured take still has the row
+    line = next(line for line in text.splitlines() if "of which" in line)
+    analysed, decay = (float(value) for value in re.findall(r"(\d+\.\d+) s", line))
+    assert decay <= analysed
+    assert decay == pytest.approx(1.0, abs=0.01)

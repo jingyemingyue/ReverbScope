@@ -70,16 +70,19 @@ def detect_early_reflections(
     rel_db = env_db - reference
 
     start = direct_index + round(min_delay_ms * sample_rate / 1000.0)
-    stop = min(rel_db.shape[0], direct_index + round(max_delay_ms * sample_rate / 1000.0) + 1)
+    requested_stop = direct_index + round(max_delay_ms * sample_rate / 1000.0) + 1
+    stop = min(rel_db.shape[0], requested_stop)
     analysed_max_ms = max(0.0, (stop - 1 - direct_index) * 1000.0 / sample_rate)
-    truncated = analysed_max_ms < max_delay_ms - 1e-9
+    # Truncated means the response ended first, not that the window rounded
+    # to a whole sample (25 ms at 44.1 kHz is 1102.5 samples).
+    truncated = stop < requested_stop
     analysed_window = (min_delay_ms, analysed_max_ms)
     notes: list[str] = []
     if truncated:
         notes.append(
             diag(
                 "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only "
-                "that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be searched",
+                "that part of the {min_ms:g}-{max_ms:g} ms window could be searched",
                 analysed_ms=analysed_max_ms,
                 min_ms=min_delay_ms,
                 max_ms=max_delay_ms,

@@ -627,9 +627,9 @@ discovery follows files under `.dist-info/licenses/`; macOS
 | Public API | Lazy Tier 1 exports from `import reverbscope` (ARCHITECTURE_V1.md §5.1) |
 | Loopback | Optional electrical return: pulse validation (99 % energy settling over the valid record, net of noise), regularised compensation with the FIR peak as time origin and linear division, path-delay bound; refused room-like or clipped channels leave the analysis uncompensated |
 | Audio backends | `AudioBackend` protocol; PortAudio callback stream (progress polled from the waiting thread, Stop, callback errors and early stream end fail the take, buffer problems logged); `plan_input_channels` (1-based inputs → 0-based columns, validated before playback); fake backend for CI and Demo |
-| Averaging | `average_decay`: VALID T values only; ISO 3382-2 class from 4.3.1 Table 1 (combinations, source and microphone positions all checked); `project average` counts distinct position labels |
+| Averaging | `average_decay`: VALID T values only, each with its own count; RT60 = mean of each session's own RT60 (T30, else T20); ISO 3382-2 class from 4.3.1 Table 1 (combinations, source and microphone positions all checked); `project average` counts distinct position labels |
 | Export | CSV exporter for decay, FR, noise PSD, reflections, resonances; `reverbscope.exporters` entry points |
-| i18n | stdlib gettext with `pgettext` contexts; `zh_CN` catalog for report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles (a test requires a translation with matching placeholders for every extracted message); wheel ships a hashed `.mo`, nothing is written at run time; `--lang` / settings / `REVERBSCOPE_LANG` |
+| i18n | stdlib gettext with `pgettext` contexts; `zh_CN` catalog for report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles (a test requires a translation with matching placeholders for every extracted message); wheel ships a hashed `.mo`, nothing is written at run time; `--lang` / settings (`reverbscope config language`) / `REVERBSCOPE_LANG` / the system's language (the Mac's preferred languages, the Windows display language, GNU `LANGUAGE`, the POSIX locale variables) |
 | GUI | PySide6 window: Home, Universal DAW Mode, Standalone Mode, Results (including Placement), session save/open, Compare (difference curve, matched reflections and resonances, loopback deltas), Demo, Stop, Settings, project-folder browser, tape-measure fields, dark-mode plot chrome, device rate vs requested rate, `gui --smoke` |
 | Standalone Mode | Device enumeration and play+record through the selected backend with safety defaults |
 | Bundles | `scripts/build_license_bundle.py` (verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts from `packaging/licenses/`), `scripts/check_bundle_contents.py` (`--strip`, `--require-licenses`, `--installed-essentials`; GPL-only QML module directories matched, any `qml/` tree in a frozen bundle fails), `packaging/reverbscope.spec`, `release.yml` (the version-driven workflow on `main` since PR #18; it opened the v0.4.1 draft and refreshes it while `v0.4.1` has no tag, see RELEASE_PLAN.md §3), `scripts/smoke_bundle.py` |
@@ -788,8 +788,9 @@ algebra and the refusals, not the acoustics of any real surface.
   realisations of the same synthetic room), not a change of treatment.
 * Band filters are Butterworth, not certified IEC 61260 class 1; short
   decays in the 63/125 Hz bands are limited by B·T and are flagged.
-* Lundeby parameters (20 ms initial blocks, 5 intervals/10 dB, 7.5 dB
-  margins) are ReverbScope's choices within the published ranges; other tools
+* Lundeby parameters (20 ms initial blocks, 5 or 1 ms for a decay that
+  reaches the floor within one of them and a band wide enough for them
+  (B·T ≥ 1), 5 intervals/10 dB, 7.5 dB margins) are ReverbScope's choices within the published ranges; other tools
   will differ slightly.
 * Reflection and resonance outputs are candidates; in dense diffuse tails
   some reflection candidates are statistical; room modes are not identified.

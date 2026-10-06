@@ -70,10 +70,29 @@ the wheels, and must be checked again at packaging time:
    FreeType credit line (required by the FTL; FreeType appears in matplotlib,
    Pillow and Qt), the Qhull license and source pointer (SciPy, matplotlib),
    the PortAudio license (not included in the sounddevice wheel), the Agg
-   copyright line.
+   copyright line, and the licence of the Python that built the bundle
+   (`_notices/python.txt`).
+   The bundles also carry native libraries that no wheel ships: PyInstaller
+   copies them from the build machine or the Python installation
+   (libpython, OpenSSL, libffi, the C++ runtime and, on Linux, GLib, D-Bus,
+   X11 / XCB, fontconfig, FreeType, Kerberos, libsystemd, libgcrypt, ...).
+   `scripts/build_license_bundle.py --frozen <bundle>`, run after
+   PyInstaller, gives each one a notice: on Debian and Ubuntu (the Linux
+   runner) its package's copyright file with the licence texts it refers to
+   and the source package; elsewhere the files in `packaging/licenses/native/`
+   for the libraries a Python installation brings. `THIRD_PARTY_LICENSES/NATIVE.txt`
+   lists every library with its notice, and `check_bundle_contents.py
+   --require-licenses` fails on a native library that has none.
 2. **LGPL components must remain replaceable shared libraries:** libsndfile
-   (soundfile), Qt/PySide6/shiboken6, libquadmath. Do not statically link or
-   obfuscate them; prefer one-directory / `.app` bundle layouts.
+   (soundfile), Qt/PySide6/shiboken6, libquadmath and, in the Linux bundles,
+   the runner's GLib, libmount, libblkid, libsystemd, libgcrypt,
+   libgpg-error, libkeyutils and glibc's libmvec (LGPL-2.1 or later; each
+   notice names the Ubuntu source package). Do not statically link or
+   obfuscate them; prefer one-directory / `.app` bundle layouts. Qt's GTK3
+   platform theme (`platformthemes/libqgtk3.so`) is left out of the Linux
+   bundle: it only gives Qt's own dialogs a GTK look and pulled GTK, GDK,
+   Pango, Cairo, ATK and gdk-pixbuf, about thirty more libraries, most of
+   them LGPL, from the runner.
 3. **Qt / PySide6:** see §4.
 4. **Windows:** remove `libportaudio*-asio.dll` from the sounddevice wheel in
    the frozen build unless the Steinberg ASIO SDK license terms are accepted;
@@ -102,13 +121,22 @@ the wheels, and must be checked again at packaging time:
   a prominent notice that Qt/PySide6 are used under the LGPL with a pointer
   to the Qt and PySide6 source (https://download.qt.io/official_releases/qt/6.11/6.11.2/,
   https://code.qt.io/cgit/pyside/pyside-setup.git/), the Qt third-party
-  attributions for QtCore/QtGui/QtWidgets (PCRE2, zlib, libpng,
-  libjpeg-turbo, HarfBuzz, FreeType, SQLite, Unicode data, MD4C, simdutf),
-  and no EULA term restricting modification or reverse engineering of the
-  Qt parts. The GUI's About dialog already carries the notice text.
+  attributions for the Qt libraries and plug-ins a bundle ships (PCRE2,
+  zlib, libpng, libjpeg, HarfBuzz, FreeType, MD4C, the Unicode data and
+  CLDR, double-conversion, ... and ICU, which the Linux wheels bundle), and
+  no EULA term restricting modification or reverse engineering of the Qt
+  parts. The attributions are `packaging/licenses/qt-third-party.txt`,
+  written by `scripts/qt_third_party_notice.py` from the
+  `qt_attribution.json` files of the Qt 6.11.2 sources with every licence
+  text they name, and shipped as `THIRD_PARTY_LICENSES/_notices/qt-third-party.txt`.
+  (SQLite belongs to Qt SQL and is not shipped; Qt 6.11.2 has no simdutf.)
+  The GUI's About dialog carries the LGPL notice and points to
+  `THIRD_PARTY_LICENSES/`.
 * **Re-check before any binary release** (brief §2.8): confirm the PySide6
   version, that no GPL-only module is imported, and that the Qt libraries
-  are still separate files in the bundle.
+  are still separate files in the bundle. A new PySide6 pin needs a new
+  `qt-third-party.txt` (a test compares its Qt version with
+  `requirements/bundle.lock`).
 
 ## 5. Candidate evaluated and not adopted
 

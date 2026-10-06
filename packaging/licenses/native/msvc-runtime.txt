@@ -1,0 +1,16 @@
+Microsoft Visual C++ runtime and Universal C Runtime
+(VCRUNTIME140*.dll, MSVCP140*.dll, CONCRT140.dll, UCRTBASE.dll and the
+api-ms-win-core-*.dll / api-ms-win-crt-*.dll forwarders)
+
+Copyright (c) Microsoft Corporation. All rights reserved.
+
+The Windows builds of Python and of the extension modules in this bundle
+are compiled with Microsoft Visual C++ and load its runtime and the
+Universal C Runtime. PyInstaller copied these files unchanged from the
+Python installation that built the bundle (CPython's Windows installer
+ships the Visual C++ runtime) or from the Windows system folder. They are
+redistributable files of Microsoft Visual Studio and Windows, which lets
+applications built with them ship them; they remain subject to Microsoft's
+licence terms.
+https://learn.microsoft.com/cpp/windows/redistributing-visual-cpp-files
+https://learn.microsoft.com/cpp/windows/universal-crt-deployment

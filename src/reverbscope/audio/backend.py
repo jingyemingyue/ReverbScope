@@ -6,6 +6,7 @@ Standalone Mode can run against PortAudio or the synthetic ``fake`` backend.
 
 from __future__ import annotations
 
+import math
 import os
 import threading
 from collections.abc import Callable, Sequence
@@ -121,6 +122,10 @@ class AudioBackend(Protocol):
         progress: Callable[[float], None] | None = None,
         cancel: threading.Event | None = None,
         options: StreamOptions | None = None,
+        # The 1-based input the caller declared as the electrical loopback. A
+        # real interface is wired by hand and ignores it; the fake one puts
+        # its cable on that input and nowhere else.
+        loopback_input: int | None = None,
     ) -> AudioSignal: ...
 
 
@@ -192,10 +197,11 @@ def plan_input_channels(
 
 def scale_to_level(signal: FloatArray, level_dbfs: float) -> FloatArray:
     """Return ``signal`` peak-normalised to ``level_dbfs``."""
-    if level_dbfs > 0.0:
+    # NaN passes "> 0" and would turn the whole playback into NaN.
+    if not math.isfinite(level_dbfs) or level_dbfs > 0.0:
         raise ConfigurationError(_("playback level must be <= 0 dBFS"))
     peak = float(np.max(np.abs(signal)))
-    if peak <= 0.0:
+    if not math.isfinite(peak) or peak <= 0.0:
         raise ConfigurationError(_("signal is silent"))
     scale = float(10.0 ** (level_dbfs / 20.0) / peak)
     return np.asarray(np.asarray(signal, dtype=np.float64) * scale, dtype=np.float64)

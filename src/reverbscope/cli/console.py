@@ -32,8 +32,9 @@ import sys
 import time
 import unicodedata
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
-from typing import Literal, TextIO
+from dataclasses import dataclass, is_dataclass, replace
+from dataclasses import fields as dataclass_fields
+from typing import Any, Literal, TextIO
 
 ColorMode = Literal["auto", "always", "never"]
 COLOR_MODES: tuple[ColorMode, ...] = ("auto", "always", "never")
@@ -98,11 +99,26 @@ _ASCII_SIGNS = str.maketrans(
     }
 )
 
+#: Kept wherever the encoding can write it (cp1252, GBK, the classic Windows
+#: console), even when the other signs are not; dropped otherwise: 20 C.
+_DEGREE = "°"
+
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
+#: The escape sequences :meth:`Console.style` writes, and only those.
+_OWN_CODE = "|".join(sorted({*_SGR.values(), "0"}, key=len, reverse=True))
+_OWN_STYLE = re.compile(rf"(\x1b\[(?:{_OWN_CODE})(?:;(?:{_OWN_CODE}))*m)")
+#: Characters a terminal acts on instead of showing: C0 and C1 controls
+#: (ESC starts a sequence that clears the screen or retitles the window) and
+#: the bidirectional controls, which reorder what follows them.
+_CONTROL = re.compile(r"[\x00-\x1f\x7f-\x9f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]")
+_ESCAPES = {"\n": "\\n", "\r": "\\r", "\t": "\\t"}
 
 #: Characters a line should not start with (closing punctuation, CJK and
 #: Latin); a wrap lets them hang one step past the margin instead.
 _NO_LINE_START = frozenset("，。、；：！？）」』”’》〉】〕,.;:!?)]}%")
+#: Characters a line should not end with (opening brackets and quotes); a
+#: wrap carries them down with what they open.
+_NO_LINE_END = frozenset("（「『“‘《〈【〔([{")
 
 #: Symbols and rules that must survive the stream's encoding for the
 #: Unicode forms to be used.
@@ -125,27 +141,111 @@ class Verbatim(str):
     """
 
 
+def printable(text: str, *, single_line: bool = False, own_styles: bool = True) -> str:
+    """``text`` with the control characters in it shown as escapes (``\\x1b``).
+
+    Text from files, such as the room name of a session from someone else or
+    a warning stored in its result.json, must not reach the terminal as
+    control sequences: they could clear the screen, retitle the window, or
+    hide and forge lines of the report. ``single_line`` is for a name shown
+    on one line: line breaks and tabs are shown as escapes too, and every
+    escape sequence. Otherwise ReverbScope's own colour codes are kept
+    (``own_styles``): a stream that gets no colour has none, so an escape
+    code in its text is never one of ours.
+    """
+    keep = "" if single_line else "\n\t"
+
+    def escape(match: re.Match[str]) -> str:
+        char = match.group()
+        if char in keep:
+            return char
+        if char in _ESCAPES:
+            return _ESCAPES[char]
+        code = ord(char)
+        return f"\\x{code:02x}" if code < 0x100 else f"\\u{code:04x}"
+
+    if not _CONTROL.search(text):
+        return text
+    if single_line or not own_styles:
+        shown = _CONTROL.sub(escape, text)
+    else:
+        parts = _OWN_STYLE.split(text)
+        shown = "".join(
+            part if index % 2 else _CONTROL.sub(escape, part) for index, part in enumerate(parts)
+        )
+    return Verbatim(shown) if isinstance(text, Verbatim) else shown
+
+
+def printable_fields[T](value: T) -> T:
+    """``value`` with every text in it passed through :func:`printable` (one line).
+
+    For a result or comparison read from a file: its warnings, notes, labels
+    and reasons are laid out inside lines of ReverbScope's own, so a line break
+    or an escape code in one of them forges a row of the report. Lists,
+    tuples, dicts and dataclasses are followed; a record that needs no change
+    is returned as it is, and the one that was read is never modified.
+    """
+    shown: T = _printable_fields(value)
+    return shown
+
+
+def _printable_fields(value: Any) -> Any:
+    if type(value) is str:
+        return printable(value, single_line=True)
+    if type(value) in (list, tuple):
+        items = [_printable_fields(item) for item in value]
+        if all(new is old for new, old in zip(items, value, strict=True)):
+            return value
+        return type(value)(items)
+    if type(value) is dict:
+        pairs = {key: _printable_fields(item) for key, item in value.items()}
+        if all(pairs[key] is old for key, old in value.items()):
+            return value
+        return pairs
+    if is_dataclass(value) and not isinstance(value, type):
+        changes = {}
+        for field in dataclass_fields(value):
+            if not field.init:
+                continue
+            old = getattr(value, field.name)
+            new = _printable_fields(old)
+            if new is not old:
+                changes[field.name] = new
+        return replace(value, **changes) if changes else value
+    return value
+
+
 #: Joins a number to its unit inside the layout (``2.4<NBSP>ms``): wrapping
 #: never separates them, and :meth:`Console.fit` writes a plain space.
 GLUE = "\u00a0"
-_UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|%)(?![\w])")
+_UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|°C|%)(?![\w])")
 
 
 def glue_units(text: str) -> str:
-    """``110 Hz (+11.3 dB)`` with each number held to its unit."""
-    return _UNIT.sub(lambda match: match.group(1) + GLUE + match.group(2), text)
+    """``110 Hz (+11.3 dB)`` with each number held to its unit (and dB to SPL)."""
+    text = _UNIT.sub(lambda match: match.group(1) + GLUE + match.group(2), text)
+    return text.replace("dB SPL", "dB" + GLUE + "SPL")
 
 
-def _windows_cmdline_arg(text: str) -> str:
+#: Characters a POSIX shell splits, expands or globs at somewhere in a word.
+_POSIX_SPECIAL = frozenset(" \t\n'\"\\|&;<>()$`*?[]{}!#~")
+#: Characters cmd.exe or PowerShell split at or expand outside quotes.
+_WINDOWS_SPECIAL = frozenset(" \t\"'&|()<>^%;,{}@$`")
+#: ``<take.wav>``: an instruction, not a path.
+_PLACEHOLDER = re.compile(r"<[^<>\s]+>")
+
+
+def _windows_cmdline_arg(text: str, *, quote: bool = False) -> str:
     """One argv element quoted the way ``cmd.exe`` parses it.
 
-    Same rules as ``subprocess.list2cmdline`` for a single argument. Inlined
+    Same rules as ``subprocess.list2cmdline`` for a single argument; ``quote``
+    also quotes an argument that has no space (``room&booth``). Inlined
     because ``src/`` may not import ``subprocess`` (that module is for
     launching processes; this only prints a command the user can copy).
     """
     # A space, a tab, or an empty argument needs quotes. A quote is escaped
     # either way.
-    needs_quotes = (not text) or any(char in text for char in " \t")
+    needs_quotes = quote or (not text) or any(char in text for char in " \t")
     out: list[str] = ['"'] if needs_quotes else []
     backslashes: list[str] = []
     for char in text:
@@ -171,7 +271,8 @@ def _windows_cmdline_arg(text: str) -> str:
 
 
 def shell_command(argv: Iterable[str]) -> str:
-    """One copy-paste command. An argument with a space or a quote is quoted.
+    """One copy-paste command. An argument the shell would split, expand or
+    glob (a space, a quote, ``( ) & ; $ |`` …) is quoted.
 
     Placeholders such as ``<take.wav>`` stay bare: they are instructions, not
     a path, and quoting them would hide that. On Windows a backslash is
@@ -182,15 +283,16 @@ def shell_command(argv: Iterable[str]) -> str:
     """
     windows = os.name == "nt"
     parts: list[str] = []
+    special = _WINDOWS_SPECIAL if windows else _POSIX_SPECIAL
     for part in argv:
         text = str(part).replace("\\", "/") if windows else str(part)
-        needs_quotes = any(char.isspace() for char in text) or '"' in text or "'" in text
-        if not windows and "\\" in text:
-            needs_quotes = True
-        if not needs_quotes:
+        # "demo(1)&x/position-a" bare is a syntax error in bash and two
+        # commands in bash and cmd.
+        needs_quotes = not text or any(char.isspace() or char in special for char in text)
+        if not needs_quotes or _PLACEHOLDER.fullmatch(text):
             parts.append(text)
         elif windows:
-            parts.append(_windows_cmdline_arg(text))
+            parts.append(_windows_cmdline_arg(text, quote=True))
         else:
             parts.append(shlex.quote(text))
     return " ".join(parts)
@@ -275,8 +377,11 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
     ``first`` starts the first line and ``rest`` every following one (a
     hanging indent). Chinese text breaks between characters, Latin text at
     spaces; a word longer than a line is split. Explicit newlines are kept.
+    A number stays on the line of its unit (:func:`glue_units`): paragraphs,
+    status lines and fields are wrapped here, not only the at-a-glance rows.
     """
     rest = first if rest is None else rest
+    text = glue_units(text)
     lines: list[str] = []
     for paragraph in text.split("\n"):
         prefix = first if not lines else rest
@@ -301,6 +406,10 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                 # Closing punctuation does not start a line: the character
                 # before it moves down with it.
                 carry = parts.pop()
+            # An opening bracket does not end a line: it moves down with
+            # what it opens (and with the space after it, if any).
+            while len(parts) > 1 and parts[-1][-1] in _NO_LINE_END:
+                carry = parts.pop() + (carry or joiner)
             if parts:
                 lines.append(prefix + "".join(parts))
                 prefix = rest
@@ -315,7 +424,7 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                 prefix, piece = rest, piece[len(head) :]
             parts = [piece]
         lines.append(prefix + "".join(parts))
-    return lines
+    return [line.replace(GLUE, " ") for line in lines]
 
 
 # --- Environment -----------------------------------------------------------
@@ -365,6 +474,15 @@ def is_terminal(stream: TextIO | None) -> bool:
 
 
 _isatty = is_terminal
+
+
+def can_encode(text: str, encoding: str | None) -> bool:
+    """Whether ``encoding`` (UTF-8 when unknown) can write ``text``."""
+    try:
+        text.encode(encoding or "utf-8")
+    except (LookupError, UnicodeEncodeError):
+        return False
+    return True
 
 
 def _unicode_ok(stream: TextIO, interactive: bool, environ: Mapping[str, str]) -> bool:
@@ -430,6 +548,8 @@ class Console:
     width: int = PIPE_WIDTH
     #: A terminal (dynamic progress may redraw a line); False for pipes/files.
     interactive: bool = False
+    #: The stream's encoding, for text that is shown only where it can be written.
+    encoding: str = "utf-8"
 
     @classmethod
     def for_stream(
@@ -445,19 +565,36 @@ class Console:
             unicode=_unicode_ok(stream, interactive, env),
             width=terminal_width(stream, interactive, env),
             interactive=interactive,
+            encoding=getattr(stream, "encoding", None) or "utf-8",
         )
+
+    def can_write(self, text: str) -> bool:
+        """Whether the stream's encoding holds every character of ``text``."""
+        return can_encode(text, self.encoding)
 
     def readable(self, text: str) -> str:
         """Text as this stream will show it, before its width is measured.
 
-        :meth:`fit` still translates anything left. Doing it here keeps a
-        narrow encoding (``Δ`` becomes ``delta``) from running past the width
-        the line was wrapped to.
+        Control characters are shown as escapes (:func:`printable`), our
+        colour codes kept only where this stream gets colour; a
+        :class:`Verbatim` value stays on its one line. :meth:`fit` still
+        translates anything left. Doing it here keeps a narrow encoding
+        (``Δ`` becomes ``delta``) from running past the width the line was
+        wrapped to.
         """
-        if self.unicode or not text:
+        if not text:
             return text
-        shown = str(text).translate(_ASCII_SIGNS)
+        shown = printable(text, single_line=isinstance(text, Verbatim), own_styles=self.color)
+        if not self.unicode:
+            shown = self._ascii(str(shown))
         return Verbatim(shown) if isinstance(text, Verbatim) else shown
+
+    def _ascii(self, text: str) -> str:
+        """``text`` with the signs this stream cannot show in ASCII."""
+        text = text.translate(_ASCII_SIGNS)
+        if _DEGREE in text and not self.can_write(_DEGREE):
+            text = text.replace(_DEGREE, "")
+        return text
 
     # Styles -----------------------------------------------------------------
 
@@ -484,7 +621,7 @@ class Console:
         """``text`` as this stream can write it: typographic signs become ASCII
         where the encoding cannot hold them (see :data:`_ASCII_SIGNS`)."""
         text = text.replace(GLUE, " ")
-        return text if self.unicode else text.translate(_ASCII_SIGNS)
+        return text if self.unicode else self._ascii(text)
 
     def arrow(self) -> str:
         return "→" if self.unicode else "->"
@@ -793,15 +930,26 @@ class ProgressLine:
         width = max(MIN_WIDTH, min(MAX_WIDTH, width)) - 1
         percent = f"{fraction * 100:3.0f}%"
         timing = f"{clock(fraction * self.total_s)} / {clock(self.total_s)}"
+        # Every part is preceded by two spaces: "  label  bar  percent  timing".
+        # One column too many and a terminal wraps the line, so each redraw
+        # lands on a new row instead of over the last one.
         label = truncate(self.label, max(8, width // 2))
-        room = width - cell_width(label) - len(percent) - len(timing) - 6
+        room = width - cell_width(label) - len(percent) - len(timing) - 8
         bar = ""
         if room >= 10:
             size = min(32, room)
             filled = round(size * fraction)
             full, empty = ("━", "─") if self.console.unicode else ("#", "-")
             bar = self.console.accent(full * filled) + self.console.muted(empty * (size - filled))
-        text = f"  {label}  {bar}  {percent}  {self.console.muted(timing)}".replace("    ", "  ")
+        else:
+            # No bar: the label takes what is left; on a very narrow terminal
+            # the timing goes first.
+            if width - len(percent) - len(timing) - 6 < 8:
+                timing = ""
+            rest = len(percent) + (len(timing) + 2 if timing else 0)
+            label = truncate(self.label, max(1, width - rest - 4))
+        parts = (label, bar, percent, self.console.muted(timing))
+        text = "".join("  " + part for part in parts if part)
         visible = cell_width(text)
         self.stream.write("\r" + text + " " * max(0, self._drawn - visible))
         self.stream.flush()

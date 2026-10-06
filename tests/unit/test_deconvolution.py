@@ -65,6 +65,29 @@ def test_recording_without_tail_rejected(short_sweep: SweepSettings) -> None:
         analyze(sig, Reference.from_settings(short_sweep))
 
 
+def test_a_recording_that_stops_inside_the_sweep_says_so(short_sweep: SweepSettings) -> None:
+    """R3-7: an export that ends 0.5 s before the sweep did was told "the
+    direct sound was found at the very end of the recording"."""
+    from reverbscope.i18n import activate, localize
+
+    sr = short_sweep.sample_rate
+    sweep_end_s = short_sweep.pre_silence_s + short_sweep.duration_s
+    cut = AudioSignal(measurement_signal(short_sweep)[: round((sweep_end_s - 0.5) * sr)], sr)
+    with pytest.raises(InvalidAudioError) as refused:
+        analyze(cut, Reference.from_settings(short_sweep))
+    message = str(refused.value)
+    assert message == (
+        "the recording ends about 0.50 s before the sweep does, so the end of the sweep and "
+        "the room decay after it were not recorded. Export the whole take, with the silence "
+        "after the sweep"
+    )
+    activate("zh_CN")
+    assert localize(message) == (
+        "录音比扫频早约 0.50 s 结束，扫频的末尾及其后的房间衰减都没有录下。"
+        "请导出整条录音，包括扫频之后的静音"
+    )
+
+
 def test_locate_reports_truncation_and_margin(short_sweep: SweepSettings) -> None:
     sr = short_sweep.sample_rate
     rec = measurement_signal(short_sweep)

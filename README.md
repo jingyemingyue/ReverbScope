@@ -103,10 +103,11 @@ No microphone and no audio interface needed; nothing is played.
 
 ![reverbscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
-The demo simulates one room at two microphone positions, runs the real
-analysis and comparison on them and says what to do next. Every number it
-shows describes the simulation, and every session it saves is marked as a
-synthetic demo.
+`reverbscope demo` simulates one room at two microphone positions, runs the
+real analysis and comparison on them and says what to do next. The desktop
+**Demo** runs one Standalone Mode take on a simulated room instead. Every
+number either one shows describes the simulation, and every session either
+one saves is marked as a synthetic demo.
 
 **Then measure for real:** turn the monitors **down** (ReverbScope never
 changes system volume), then either let ReverbScope play and record through
@@ -253,8 +254,11 @@ reverbscope measure --out session1/ --input-device 2 --output-device 3 \
 reverbscope demo --out demo/
 reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
-# Language, bundle, CSV, project
-reverbscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav
+# Language (kept in settings.json; "auto" follows the system again), settings,
+# bundle, CSV, project
+reverbscope config language zh_CN
+reverbscope --lang en analyze --recording take.wav --sweep sweep.wav   # one command
+reverbscope config
 reverbscope session bundle session1/ --no-audio --out report.zip
 reverbscope export session1/ --format csv --out curves/
 reverbscope project init --out room/ --name Booth

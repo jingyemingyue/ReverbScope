@@ -21,6 +21,7 @@ import json
 import platform
 import sys
 import unicodedata
+from collections.abc import Sequence
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
@@ -128,10 +129,27 @@ def build_info(path: Path | None = None) -> dict[str, str] | None:
     return info or None
 
 
+def home_folder() -> Path | None:
+    """The home folder, or None when there is none to find.
+
+    ``Path.home()`` raises RuntimeError when HOME is unset and the account has
+    no passwd entry (``docker run --user N``, a CI job): a report that hides
+    the home folder has nothing to hide there, and must not stop for it.
+    """
+    try:
+        return Path.home()
+    except (RuntimeError, OSError):
+        return None
+
+
 def redact_home(path: str | Path, home: str | Path | None = None) -> str:
     """``path`` with the home folder replaced by ``~`` (the account name hidden)."""
     text = str(path)
-    prefix = str(home if home is not None else Path.home()).rstrip("/\\")
+    if home is None:
+        home = home_folder()
+    if home is None:
+        return text
+    prefix = str(home).rstrip("/\\")
     if not prefix:
         return text
     # Windows paths compare case-insensitively (C:\Users\Anna == c:\users\anna).
@@ -182,16 +200,26 @@ def _settings_summary() -> dict[str, Any]:
 
 
 def environment_report(
-    backend_name: str | None = None, *, probe_rates: bool = False
+    backend_name: str | None = None, *, probe_rates: bool = False, english_errors: bool = False
 ) -> dict[str, Any]:
-    """The report as a JSON-ready dict; ``probe_rates`` asks every device for its rates."""
+    """The report as a JSON-ready dict; ``probe_rates`` asks every device for its rates.
+
+    ``english_errors`` words a failed backend or settings file in English, as
+    the JSON report must be (an error is worded when it is raised); the text
+    report keeps the interface language and shows it as raised.
+    """
+    from contextlib import nullcontext
+
     from reverbscope import __version__
     from reverbscope.edition import edition
-    from reverbscope.i18n import current_locale
+    from reverbscope.i18n import current_locale, english
     from reverbscope.io.recent import reverbscope_home
     from reverbscope.logging_config import LOG_FILENAME
     from reverbscope.settings import settings_path
 
+    errors = english if english_errors else nullcontext
+    with errors():
+        settings = _settings_summary()
     report: dict[str, Any] = {
         "reverbscope": __version__,
         "edition": edition(),
@@ -204,7 +232,7 @@ def environment_report(
         "language": current_locale(),
         "packages": {name: _package_version(name, module) for name, module in PACKAGES.items()},
         "libsndfile": _libsndfile_version(),
-        "settings": _settings_summary(),
+        "settings": settings,
         "paths": {
             "reverbscope_home": redact_home(reverbscope_home()),
             "settings": redact_home(settings_path()),
@@ -215,7 +243,8 @@ def environment_report(
         from reverbscope.audio.backend import get_backend
         from reverbscope.audio.inventory import build_inventory
 
-        inventory = build_inventory(get_backend(backend_name), probe_rates=probe_rates)
+        with errors():
+            inventory = build_inventory(get_backend(backend_name), probe_rates=probe_rates)
     except Exception as exc:  # the report must print even without audio
         report["audio"] = {"error": str(exc)}
     else:
@@ -232,7 +261,9 @@ def privacy_note() -> str:
     )
 
 
-def _rates(rates: list[int]) -> str:
+def _rates(rates: list[int], known: bool = True) -> str:
+    if not known:  # the device could not be opened: "none" would claim it refuses them all
+        return _("unknown")
     return ", ".join(str(rate) for rate in rates) or pgettext("sample rates", "none")
 
 
@@ -269,9 +300,17 @@ def _format_devices(audio: dict[str, Any]) -> list[str]:
         lines.append("  " + row)
         details = []
         if probed and device["max_input_channels"] > 0:
-            details.append(_("record {rates}").format(rates=_rates(probe["input_rates"])))
+            details.append(
+                _("record {rates}").format(
+                    rates=_rates(probe["input_rates"], probe.get("input_rates_known", True))
+                )
+            )
         if probed and device["max_output_channels"] > 0:
-            details.append(_("play {rates}").format(rates=_rates(probe["output_rates"])))
+            details.append(
+                _("play {rates}").format(
+                    rates=_rates(probe["output_rates"], probe.get("output_rates_known", True))
+                )
+            )
         recommended_input = bool(probe.get("recommended_input"))
         recommended_output = bool(probe.get("recommended_output"))
         if recommended_input and recommended_output:
@@ -285,10 +324,49 @@ def _format_devices(audio: dict[str, Any]) -> list[str]:
     return lines
 
 
-def _field(label: str, value: object) -> str:
-    """``label`` padded to 20 terminal columns (a CJK character takes two)."""
-    width = sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in label)
-    return f"  {label}{' ' * max(1, 21 - width)}{value}"
+def _setting_label(key: str) -> str:
+    """A settings key of the report in words, as ``reverbscope config`` and the
+    Settings dialog name it (the JSON keeps the field names)."""
+    return {
+        "language": _("Interface language"),
+        "default_profile": _("Default profile"),
+        "audio_backend": _("Audio backend"),
+        "copy_recording": _("Copy recordings"),
+        "theme": _("Theme (desktop app)"),
+        "developer_tools": _("Developer tools"),
+        "output_dir_set": _("Default output folder (desktop app)"),
+    }.get(key, key)
+
+
+def _setting_value(key: str, value: object) -> str:
+    if key == "output_dir_set":
+        return _("set") if value else _("not set")
+    if isinstance(value, bool):
+        return pgettext("setting", "on") if value else pgettext("setting", "off")
+    return "-" if value in ("", None) else str(value)
+
+
+def _path_label(key: str) -> str:
+    return {
+        "reverbscope_home": _("ReverbScope folder"),
+        "settings": _("Settings file"),
+        "log": _("Log file"),
+    }.get(key, key)
+
+
+def _fields(rows: Sequence[tuple[str, object]]) -> list[str]:
+    """``label  value`` lines whose values start in one column.
+
+    The column is 21 terminal columns wide (a CJK character takes two), or one
+    space past the block's longest label: a title such as "Default output
+    folder (desktop app)" must not push its value out of line with the rest.
+    """
+
+    def width(label: str) -> int:
+        return sum(2 if unicodedata.east_asian_width(char) in "WF" else 1 for char in label)
+
+    column = max([21, *(width(label) + 1 for label, _value in rows)])
+    return [f"  {label}{' ' * (column - width(label))}{value}" for label, value in rows]
 
 
 def format_environment_report(report: dict[str, Any]) -> str:
@@ -317,15 +395,22 @@ def format_environment_report(report: dict[str, Any]) -> str:
         _("Language: {language}").format(language=report["language"]),
         _("Packages:"),
     ]
-    for name, found in report["packages"].items():
-        lines.append(_field(name, found or _("not installed")))
-    lines.append(_field("libsndfile", report.get("libsndfile") or _("unknown")))
+    lines += _fields(
+        [
+            *((name, found or _("not installed")) for name, found in report["packages"].items()),
+            ("libsndfile", report.get("libsndfile") or _("unknown")),
+        ]
+    )
     lines.append(_("Settings:"))
-    for key, value in report.get("settings", {}).items():
-        lines.append(_field(key, "-" if value in ("", None) else value))
+    settings = report.get("settings", {})
+    if "error" in settings:
+        lines.append("  " + localize(str(settings["error"])))
+    else:
+        lines += _fields(
+            [(_setting_label(key), _setting_value(key, value)) for key, value in settings.items()]
+        )
     lines.append(_("Paths:"))
-    for key, value in report["paths"].items():
-        lines.append(_field(key, value))
+    lines += _fields([(_path_label(key), value) for key, value in report["paths"].items()])
     audio = report.get("audio", {})
     callbacks = report.get("audio_callbacks")
     if callbacks is None:
@@ -348,12 +433,16 @@ def format_environment_report(report: dict[str, Any]) -> str:
         apis = ", ".join(
             f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
         )
-        lines.append(_field(pgettext("environment report", "backend"), audio.get("backend")))
-        lines.append(_field("PortAudio", audio.get("portaudio_version") or "-"))
-        lines.append(_field(pgettext("environment report", "host APIs"), apis or "-"))
-        lines.append(_field(pgettext("environment report", "devices"), len(devices)))
-        lines.append(_field(pgettext("environment report", "default input"), default_in or "-"))
-        lines.append(_field(pgettext("environment report", "default output"), default_out or "-"))
+        lines += _fields(
+            [
+                (pgettext("environment report", "backend"), audio.get("backend")),
+                ("PortAudio", audio.get("portaudio_version") or "-"),
+                (pgettext("environment report", "host APIs"), apis or "-"),
+                (pgettext("environment report", "devices"), len(devices)),
+                (pgettext("environment report", "default input"), default_in or "-"),
+                (pgettext("environment report", "default output"), default_out or "-"),
+            ]
+        )
         for note in audio.get("notes", []):
             lines.append("  " + _("note: {note}").format(note=localize(note)))
         lines.extend(_format_devices(audio))

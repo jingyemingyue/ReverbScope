@@ -9,9 +9,11 @@ from __future__ import annotations
 
 import argparse
 import html
+import posixpath
 import re
 import shutil
-from dataclasses import dataclass
+import unicodedata
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
@@ -22,6 +24,9 @@ INLINE_CODE = re.compile(r"`([^`]+)`")
 LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 BOLD = re.compile(r"\*\*([^*]+)\*\*")
 ITALIC = re.compile(r"(?<!\*)\*([^*]+)\*(?!\*)")
+#: Where a link that leaves docs/ (``../CONTRIBUTING.md``) is shown: the site
+#: holds only the pages rendered from docs/.
+REPO_BLOB = "https://github.com/jingyemingyue/ReverbScope/blob/main/"
 
 THEME_CSS = """
 :root {
@@ -104,26 +109,86 @@ class NavItem:
     section: str
 
 
-def rewrite_md_href(href: str) -> str:
-    """Turn a same-tree ``.md`` link into the generated ``.html`` page."""
+@dataclass(frozen=True)
+class Chrome:
+    """The text around a page's content, in the page's language."""
+
+    lang: str  # the <html lang> value
+    index: str  # the hub page, whose list items make the sidebar
+    tag: str
+    footer: str
+
+
+CHROME = {
+    "en": Chrome(
+        lang="en",
+        index="index.md",
+        tag="Documentation",
+        footer="Generated from <code>docs/</code> by <code>scripts/build_docs_site.py</code>. "
+        "Markdown on GitHub remains authoritative.",
+    ),
+    "zh-CN": Chrome(
+        lang="zh-CN",
+        index="index.zh-CN.md",
+        tag="文档",
+        footer="本站由 <code>scripts/build_docs_site.py</code> 根据 <code>docs/</code> 生成，"
+        "以 GitHub 上的 Markdown 为准。",
+    ),
+}
+
+
+def page_language(relative: Path) -> str:
+    """``zh-CN`` for ``*.zh-CN.md`` and ``user-guide/zh-CN.md``, else ``en``."""
+    stem = relative.stem
+    return "zh-CN" if stem == "zh-CN" or stem.endswith(".zh-CN") else "en"
+
+
+def rewrite_md_href(href: str, page: str = "index.md") -> str:
+    """Turn a same-tree ``.md`` link into the generated ``.html`` page.
+
+    ``page`` is the linking file's path inside docs/. A link that leaves
+    docs/ points to the file on GitHub, because the site has no copy of it.
+    """
     if href.startswith(("http://", "https://", "mailto:", "ftp://", "#")):
         return href
     path, frag = href, ""
     if "#" in href:
         path, frag = href.split("#", 1)
         frag = "#" + frag
+    in_repo = posixpath.normpath(posixpath.join("docs", posixpath.dirname(page), path))
+    if in_repo != "docs" and not in_repo.startswith("docs/"):
+        return REPO_BLOB + in_repo + frag
     if path.endswith(".md"):
         path = path[: -len(".md")] + ".html"
     return path + frag
 
 
-def inline_html(text: str) -> str:
+def heading_anchor(markdown: str) -> str:
+    """The anchor GitHub gives a heading, so ``#check-the-download`` links work.
+
+    Markdown marks are dropped and the text lower-cased; letters (CJK too),
+    digits, ``-`` and ``_`` are kept, each space becomes ``-`` and any other
+    character (punctuation, full-width or not) is removed.
+    """
+    text = LINK.sub(r"\1", markdown)
+    text = INLINE_CODE.sub(r"\1", text)
+    text = ITALIC.sub(r"\1", BOLD.sub(r"\1", text))
+    kept: list[str] = []
+    for char in text.strip().lower():
+        if char == " ":
+            kept.append("-")
+        elif char in "-_" or unicodedata.category(char)[0] in "LNM":
+            kept.append(char)
+    return "".join(kept)
+
+
+def inline_html(text: str, page: str = "index.md") -> str:
     pieces: list[str] = []
     cursor = 0
     for match in LINK.finditer(text):
         pieces.append(_inline_plain(text[cursor : match.start()]))
         label = _inline_plain(match.group(1))
-        href = html.escape(rewrite_md_href(match.group(2).split()[0]), quote=True)
+        href = html.escape(rewrite_md_href(match.group(2).split()[0], page), quote=True)
         pieces.append(f'<a href="{href}">{label}</a>')
         cursor = match.end()
     pieces.append(_inline_plain(text[cursor:]))
@@ -156,10 +221,16 @@ def _split_row(line: str) -> list[str]:
     return [cell.strip() for cell in body.split("|")]
 
 
-def markdown_to_html(text: str) -> str:
-    """Render a documentation Markdown subset to an HTML fragment."""
+def markdown_to_html(text: str, page: str = "index.md") -> str:
+    """Render a documentation Markdown subset to an HTML fragment.
+
+    ``page`` is the file's path inside docs/; relative links are resolved
+    from it.
+    """
     lines = text.replace("\r\n", "\n").split("\n")
     out: list[str] = []
+    # GitHub numbers a repeated anchor: "linux", "linux-1", "linux-2", ...
+    anchors: dict[str, int] = {}
     i = 0
     in_code = False
     code_lang = ""
@@ -175,8 +246,16 @@ def markdown_to_html(text: str) -> str:
 
     def flush_para() -> None:
         if para:
-            out.append(f"<p>{inline_html(' '.join(para))}</p>")
+            out.append(f"<p>{inline_html(' '.join(para), page)}</p>")
             para.clear()
+
+    def anchor(heading: str) -> str:
+        base = anchor_id = heading_anchor(heading)
+        while anchor_id in anchors:
+            anchors[base] += 1
+            anchor_id = f"{base}-{anchors[base]}"
+        anchors[anchor_id] = 0
+        return anchor_id
 
     def open_list(kind: str) -> None:
         nonlocal list_kind
@@ -213,7 +292,10 @@ def markdown_to_html(text: str) -> str:
             flush_para()
             close_list()
             level = len(heading.group(1))
-            out.append(f"<h{level}>{inline_html(heading.group(2).strip())}</h{level}>")
+            title = heading.group(2).strip()
+            anchor_id = anchor(title)
+            id_attr = f' id="{html.escape(anchor_id, quote=True)}"' if anchor_id else ""
+            out.append(f"<h{level}{id_attr}>{inline_html(title, page)}</h{level}>")
             i += 1
             continue
         if stripped in {"---", "***", "___"}:
@@ -230,7 +312,7 @@ def markdown_to_html(text: str) -> str:
             while i < len(lines) and lines[i].strip().startswith(">"):
                 quote.append(lines[i].strip()[1:].strip())
                 i += 1
-            out.append(f"<blockquote><p>{inline_html(' '.join(quote))}</p></blockquote>")
+            out.append(f"<blockquote><p>{inline_html(' '.join(quote), page)}</p></blockquote>")
             continue
         if (
             stripped.startswith("|")
@@ -245,10 +327,10 @@ def markdown_to_html(text: str) -> str:
             while i < len(lines) and lines[i].strip().startswith("|"):
                 rows.append(_split_row(lines[i].strip()))
                 i += 1
-            cells = "".join(f"<th>{inline_html(h)}</th>" for h in headers)
+            cells = "".join(f"<th>{inline_html(h, page)}</th>" for h in headers)
             body = []
             for row in rows:
-                tds = "".join(f"<td>{inline_html(c)}</td>" for c in row)
+                tds = "".join(f"<td>{inline_html(c, page)}</td>" for c in row)
                 body.append(f"<tr>{tds}</tr>")
             out.append(
                 f"<table><thead><tr>{cells}</tr></thead><tbody>{''.join(body)}</tbody></table>"
@@ -258,14 +340,14 @@ def markdown_to_html(text: str) -> str:
         if ul:
             flush_para()
             open_list("ul")
-            out.append(f"<li>{inline_html(ul.group(1))}</li>")
+            out.append(f"<li>{inline_html(ul.group(1), page)}</li>")
             i += 1
             continue
         ol = OL_ITEM.match(line)
         if ol:
             flush_para()
             open_list("ol")
-            out.append(f"<li>{inline_html(ol.group(2))}</li>")
+            out.append(f"<li>{inline_html(ol.group(2), page)}</li>")
             i += 1
             continue
         if not stripped:
@@ -304,25 +386,28 @@ def nav_items(index_text: str) -> list[NavItem]:
     return items
 
 
-def _sidebar(items: list[NavItem], current: str, css_prefix: str) -> str:
+def _sidebar(items: list[NavItem], current: str, css_prefix: str, chrome: Chrome) -> str:
+    home = rewrite_md_href(chrome.index)
     blocks = [
-        f'<h1><a href="{html.escape(css_prefix + "index.html")}">ReverbScope</a></h1>',
-        '<p class="tag">Documentation</p>',
+        f'<h1><a href="{html.escape(css_prefix + home)}">ReverbScope</a></h1>',
+        f'<p class="tag">{html.escape(chrome.tag)}</p>',
     ]
     last = ""
     for item in items:
         if item.section != last:
             blocks.append(f"<h2>{html.escape(item.section)}</h2>")
             last = item.section
-        href = html.escape(css_prefix + item.href)
+        # The Chinese hub links README.zh-CN.md and the issue forms on GitHub.
+        external = "://" in item.href or item.href.startswith("mailto:")
+        href = html.escape(item.href if external else css_prefix + item.href)
         current_attr = ' aria-current="page"' if item.href == current else ""
         blocks.append(f'<a href="{href}"{current_attr}>{html.escape(item.title)}</a>')
     return "\n".join(blocks)
 
 
-def _page(title: str, body: str, sidebar: str, css_href: str) -> str:
+def _page(title: str, body: str, sidebar: str, css_href: str, chrome: Chrome) -> str:
     return (
-        '<!DOCTYPE html>\n<html lang="en">\n<head>\n'
+        f'<!DOCTYPE html>\n<html lang="{chrome.lang}">\n<head>\n'
         '<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>{html.escape(title)} — ReverbScope</title>\n"
@@ -330,9 +415,7 @@ def _page(title: str, body: str, sidebar: str, css_href: str) -> str:
         '</head>\n<body>\n<div class="layout">\n'
         f'<nav class="sidebar">{sidebar}</nav>\n'
         f"<main><article>{body}</article>\n"
-        "<footer>Generated from <code>docs/</code> by "
-        "<code>scripts/build_docs_site.py</code>. Markdown on GitHub remains "
-        "authoritative.</footer>\n</main>\n</div>\n</body>\n</html>\n"
+        f"<footer>{chrome.footer}</footer>\n</main>\n</div>\n</body>\n</html>\n"
     )
 
 
@@ -349,17 +432,70 @@ def rel_prefix(relative: Path) -> str:
     return "" if depth == 0 else "../" * depth
 
 
+#: Files the desktop puts into a folder that was browsed (Finder, Explorer).
+OS_LITTER = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
+
+
+def holds_only_litter(folder: Path) -> bool:
+    """Whether ``folder`` is empty apart from what Finder or Explorer put there.
+
+    A folder that was just made and opened in Finder already holds ``.DS_Store``,
+    so it must count as empty. Only files count: a folder that carries one of
+    these names may hold the user's own files.
+    """
+    return all(entry.name in OS_LITTER and not entry.is_dir() for entry in folder.iterdir())
+
+
+def is_previous_site(folder: Path) -> bool:
+    """Whether ``folder`` holds nothing but what :func:`build_site` writes."""
+    if not (folder / "assets" / "theme.css").is_file():
+        return False
+    for path in folder.rglob("*"):
+        if path.is_dir() or path.name in OS_LITTER:
+            continue
+        relative = path.relative_to(folder)
+        if relative.as_posix() == "assets/theme.css":
+            continue
+        if path.is_symlink() or path.suffix != ".html" or relative.parts[0] == "assets":
+            return False
+    return True
+
+
 def build_site(docs: Path, dest: Path) -> list[Path]:
     """Render every Markdown file under ``docs`` into ``dest``. Returns HTML paths."""
-    if dest.exists():
+    resolved = dest.resolve()
+    sources = docs.resolve()
+    if resolved.is_relative_to(sources) or sources.is_relative_to(resolved):
+        # dest is removed first: "--out docs", "--out ." or "--out docs/images"
+        # would delete the sources.
+        raise SystemExit(
+            f"refusing to write the site into {dest}: it holds or is inside the documentation"
+        )
+    if dest.exists() or dest.is_symlink():
+        # dest is deleted before it is written, so "--out src" or a folder of
+        # the user's own files must be refused, not emptied.
+        if dest.is_symlink() or not dest.is_dir():
+            raise SystemExit(f"refusing to write the site into {dest}: it is not a folder")
+        if not holds_only_litter(dest) and not is_previous_site(dest):
+            raise SystemExit(
+                f"refusing to write the site into {dest}: the folder is not empty and "
+                "holds more than a site written by this script; choose a new folder"
+            )
         shutil.rmtree(dest)
     (dest / "assets").mkdir(parents=True)
     (dest / "assets" / "theme.css").write_text(THEME_CSS.lstrip(), encoding="utf-8")
-    index_text = (docs / "index.md").read_text(encoding="utf-8")
-    items = nav_items(index_text)
+    navigation = {
+        chrome.index: nav_items((docs / chrome.index).read_text(encoding="utf-8"))
+        for chrome in CHROME.values()
+        if (docs / chrome.index).is_file()
+    }
     written: list[Path] = []
     for source in sorted(docs.rglob("*.md")):
         relative = source.relative_to(docs)
+        chrome = CHROME[page_language(relative)]
+        if chrome.index not in navigation:
+            # No hub in this language: its pages use the English one.
+            chrome = replace(chrome, index=CHROME["en"].index)
         target = dest / relative.with_suffix(".html")
         target.parent.mkdir(parents=True, exist_ok=True)
         markdown = source.read_text(encoding="utf-8")
@@ -368,9 +504,10 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
         current = relative.with_suffix(".html").as_posix()
         page = _page(
             title,
-            markdown_to_html(markdown),
-            _sidebar(items, current, prefix),
+            markdown_to_html(markdown, relative.as_posix()),
+            _sidebar(navigation.get(chrome.index, []), current, prefix, chrome),
             prefix + "assets/theme.css",
+            chrome,
         )
         target.write_text(page, encoding="utf-8")
         written.append(target)
@@ -380,7 +517,12 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--docs", type=Path, default=Path("docs"), help="Markdown source")
-    parser.add_argument("--out", type=Path, default=Path("site"), help="HTML output directory")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=Path("site"),
+        help="HTML output folder: a new or empty one, or an earlier site, which is replaced",
+    )
     args = parser.parse_args(argv)
     written = build_site(args.docs, args.out)
     print(f"wrote {len(written)} pages under {args.out}")

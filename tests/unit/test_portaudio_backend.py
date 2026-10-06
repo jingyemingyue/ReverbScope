@@ -163,6 +163,28 @@ def _take(
     )
 
 
+def test_progress_starts_when_the_stream_runs_and_never_before(
+    script: _Script, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The CLI says "Nothing was played." until the first progress report, so
+    the stream reports 0 % as soon as it runs and nothing when it never opens."""
+    calls: list[float] = []
+    _take(progress=calls.append)
+    assert calls[0] == 0.0
+
+    def unopened(**_kwargs: object) -> None:
+        raise RuntimeError("Error querying device -1")
+
+    fake = SimpleNamespace(
+        Stream=unopened, CallbackStop=_CallbackStop, CallbackAbort=_CallbackAbort
+    )
+    monkeypatch.setattr(portaudio, "sounddevice_module", lambda: fake)
+    calls.clear()
+    with pytest.raises(AudioDeviceError, match="device -1"):
+        _take(progress=calls.append)
+    assert calls == []
+
+
 def test_progress_is_reported_from_the_waiting_thread(script: _Script) -> None:
     calls: list[tuple[int, float]] = []
     recording = _take(progress=lambda f: calls.append((threading.get_ident(), f)))
@@ -283,6 +305,16 @@ def test_buffer_problems_are_logged_and_kept_with_the_take(
     # Not only a log line: the analysis and the GUI see it (a finding).
     (warning,) = recording.device_warnings
     assert "2 buffer problem(s)" in warning and "input overflow" in warning
+
+
+def test_each_buffer_problem_flag_is_named_once(script: _Script) -> None:
+    """A block's status already joins its flags with ", ", so joining the
+    distinct blocks listed "input overflow" twice."""
+    script.status = {2: "input overflow", 7: "input overflow, output underflow"}
+    (warning,) = _take().device_warnings
+    assert "2 buffer problem(s)" in warning
+    assert warning.count("input overflow") == 1
+    assert "(input overflow, output underflow)" in warning
 
 
 def test_a_clean_take_has_no_device_warnings(script: _Script) -> None:

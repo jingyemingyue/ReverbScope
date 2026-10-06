@@ -1,9 +1,11 @@
 """Spatial average of reverberation-time values (SHOULD, ARCHITECTURE_V1 §5.3.4).
 
-Averages EDT, T20 and T30 per band over the VALID metrics only. Decay curves
-are never averaged. The output names the ISO 3382-2 accuracy class that the
-numbers of source positions, microphone positions and source–microphone
-combinations reach.
+Averages EDT, T20 and T30 per band over the VALID metrics only, each with its
+own count. The averaged RT60 is the mean of the sessions' own RT60 estimates
+(each the VALID T30, else the VALID T20), so a position with only a T20
+counts as well. Decay curves are never averaged. The output names the
+ISO 3382-2 accuracy class that the numbers of source positions, microphone
+positions and source–microphone combinations reach.
 """
 
 from __future__ import annotations
@@ -35,6 +37,8 @@ ISO_3382_2_TABLE1 = {
     "engineering": {"n_source": 2, "n_microphone": 2, "n_combinations": 6},
     "precision": {"n_source": 2, "n_microphone": 3, "n_combinations": 12},
 }
+#: ``AveragedBand.rt60_basis`` when some sessions' RT60 is a T30 and others' a T20.
+RT60_MIXED_BASIS = "T30/T20"
 ISO_3382_2_TABLE1_SOURCE = diag(
     "ISO 3382-2:2008, 4.3.1, Table 1, read from the standard's preview pages "
     "(cdn.standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnotes not implemented"
@@ -71,8 +75,16 @@ class AveragedBand:
     edt: AveragedMetric
     t20: AveragedMetric
     t30: AveragedMetric
-    rt60_estimate_s: float | None
+    #: Mean of the sessions' own RT60 estimates (each the VALID T30, else the
+    #: VALID T20), with its own count and contributing sessions.
+    rt60: AveragedMetric
+    #: "T30" or "T20" when every contributing session used that metric,
+    #: ``RT60_MIXED_BASIS`` when they differ; ``None`` without an RT60.
     rt60_basis: str | None
+
+    @property
+    def rt60_estimate_s(self) -> float | None:
+        return self.rt60.seconds
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -80,6 +92,7 @@ class AveragedBand:
             "edt": self.edt.to_dict(),
             "t20": self.t20.to_dict(),
             "t30": self.t30.to_dict(),
+            "rt60": self.rt60.to_dict(),
             "rt60_estimate_s": self.rt60_estimate_s,
             "rt60_basis": self.rt60_basis,
         }
@@ -141,7 +154,8 @@ def average_decay(
     n_combinations: int | None = None,
     session_labels: Sequence[str] | None = None,
 ) -> AveragedDecay:
-    """Arithmetic mean of VALID EDT / T20 / T30 per band.
+    """Arithmetic mean of VALID EDT / T20 / T30 per band, and of the
+    sessions' own RT60 estimates.
 
     ``n_source_positions`` defaults to 1 (ReverbScope measures one source).
     ``n_microphone_positions`` defaults to the number of results, i.e. it
@@ -217,20 +231,35 @@ def _average_band(
     edt = _average_metric(results, labels, band_label, "edt")
     t20 = _average_metric(results, labels, band_label, "t20")
     t30 = _average_metric(results, labels, band_label, "t30")
-    if t30.seconds is not None:
-        rt60, basis = t30.seconds, "T30"
-    elif t20.seconds is not None:
-        rt60, basis = t20.seconds, "T20"
-    else:
-        rt60, basis = None, None
+    # Each session's RT60 is its VALID T30, else its VALID T20. Taking the
+    # mean T30 whenever any session had one made a single quiet position the
+    # room's average and dropped every position with only a T20.
+    rt60 = _average_metric(results, labels, band_label, "rt60")
+    bases: set[str] = set()
+    for result in results:
+        band = _band(result, band_label)
+        if band is not None:
+            _value, session_basis = _session_rt60(band)
+            if session_basis is not None:
+                bases.add(session_basis)
+    basis = RT60_MIXED_BASIS if len(bases) > 1 else next(iter(bases), None)
     return AveragedBand(
         band_label=band_label,
         edt=edt,
         t20=t20,
         t30=t30,
-        rt60_estimate_s=rt60,
+        rt60=rt60,
         rt60_basis=basis,
     )
+
+
+def _session_rt60(band: Any) -> tuple[float | None, str | None]:
+    """A session's RT60 and its basis: the VALID T30, else the VALID T20."""
+    metric: DecayMetric
+    for metric, basis in ((band.t30, "T30"), (band.t20, "T20")):
+        if metric.validity is Validity.VALID and metric.seconds is not None:
+            return float(metric.seconds), basis
+    return None, None
 
 
 def _average_metric(
@@ -239,15 +268,22 @@ def _average_metric(
     band_label: str,
     attr: str,
 ) -> AveragedMetric:
+    """Mean of one VALID metric (``"edt"``, ``"t20"``, ``"t30"``, or ``"rt60"``
+    for each session's own RT60) across the sessions that have it."""
     values: list[float] = []
     contributing: list[str] = []
     for result, label in zip(results, labels, strict=True):
         band = _band(result, band_label)
         if band is None:
             continue
-        metric: DecayMetric = getattr(band, attr)
-        if metric.validity is Validity.VALID and metric.seconds is not None:
-            values.append(float(metric.seconds))
+        if attr == "rt60":
+            value, _basis = _session_rt60(band)
+        else:
+            metric: DecayMetric = getattr(band, attr)
+            valid = metric.validity is Validity.VALID
+            value = float(metric.seconds) if valid and metric.seconds is not None else None
+        if value is not None:
+            values.append(value)
             contributing.append(label)
     name = f"{band_label}.{attr}"
     if not values:

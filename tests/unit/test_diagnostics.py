@@ -33,6 +33,19 @@ def test_home_folder_is_redacted_on_posix_and_windows() -> None:
     )
 
 
+def test_a_path_is_shown_as_it_is_when_the_home_folder_is_unknown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Path.home() raises RuntimeError when HOME is unset and the account has
+    no passwd entry (a container run as a bare uid); nothing is hidden then."""
+
+    def no_home() -> Path:
+        raise RuntimeError("Could not determine home directory.")
+
+    monkeypatch.setattr(Path, "home", staticmethod(no_home))
+    assert redact_home("/srv/takes/a.wav") == "/srv/takes/a.wav"
+
+
 def test_build_info_is_read_from_the_bundle_file(tmp_path: Path) -> None:
     path = tmp_path / "build_info.json"
     assert build_info(path) is None  # source and pip installs have none
@@ -68,6 +81,71 @@ def test_report_survives_a_broken_settings_file(
     (tmp_path / "settings.json").write_text("{", encoding="utf-8")
     report = environment_report("fake")
     assert "Settings:" in format_environment_report(report)
+
+
+def test_the_text_report_names_settings_and_paths_in_words(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review finding: the GUI's Environment Report listed "default_profile",
+    "copy_recording  True" and "reverbscope_home" in the Chinese report."""
+    from reverbscope.i18n import activate
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    report = environment_report("fake")
+    activate("zh_CN")
+    try:
+        text = format_environment_report(report)
+    finally:
+        activate("en")
+    for label in ("界面语言", "默认录音配置", "把录音复制进会话", "ReverbScope 文件夹", "日志文件"):
+        assert label in text, label
+    for key in ("default_profile", "copy_recording", "output_dir_set", "reverbscope_home"):
+        assert key not in text, key
+    assert "True" not in text and "False" not in text
+    # The JSON keeps the field names and the stored values.
+    assert report["settings"]["copy_recording"] is True
+    assert set(report["paths"]) == {"reverbscope_home", "settings", "log"}
+    english = format_environment_report(report)
+    assert re.search(r"Copy recordings\s+on\n", english)
+    assert re.search(r"Default output folder \(desktop app\)\s+not set\n", english)
+
+
+@pytest.mark.parametrize("language", ["en", "zh_CN"])
+def test_the_values_of_each_block_of_the_text_report_line_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, language: str
+) -> None:
+    """Review finding: the Settings title "Default output folder (desktop app)"
+    was wider than the 20-column label field, so its value was glued after one
+    space while every other row kept its value at column 23. A block's value
+    column now follows its longest title (CJK characters count two columns)."""
+    from reverbscope.cli.console import cell_width
+    from reverbscope.diagnostics import _path_label, _setting_label
+    from reverbscope.i18n import activate
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    report = environment_report("fake")
+    activate(language)
+    try:
+        text = format_environment_report(report)
+        settings = [_setting_label(key) for key in report["settings"]]
+        paths = [_path_label(key) for key in report["paths"]]
+    finally:
+        activate("en")
+    lines = text.splitlines()
+
+    def value_columns(labels: list[str]) -> set[int]:
+        """The display column each of ``labels`` has its value at."""
+        columns = set()
+        for label in labels:
+            (line,) = (line for line in lines if line.startswith(f"  {label} "))
+            columns.add(cell_width(line[: len(line) - len(line[len(label) + 2 :].lstrip())]))
+        return columns
+
+    longest = max(cell_width(label) for label in settings)
+    assert longest > 21  # the title that used to break the block
+    assert value_columns(settings) == {2 + longest + 1}
+    assert value_columns(paths) == {2 + 21}
+    assert value_columns(["numpy", "scipy", "libsndfile"]) == {2 + 21}
 
 
 def test_report_lists_devices_and_probes_on_request() -> None:

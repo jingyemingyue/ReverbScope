@@ -7,11 +7,13 @@ either result. Every delta carries its own :class:`~reverbscope.models.result.Va
 from __future__ import annotations
 
 import math
+from collections.abc import Callable, Sequence
 
 import numpy as np
 
 from reverbscope.core.filters import fractional_octave_smooth, iec_band
 from reverbscope.i18n import diag
+from reverbscope.labels import VALIDITY_WORDS
 from reverbscope.models.comparison import (
     T_JND_PERCENT,
     CompareSettings,
@@ -20,14 +22,17 @@ from reverbscope.models.comparison import (
     MetricDelta,
     ReflectionMatch,
     ResonanceMatch,
+    percent_applies,
 )
 from reverbscope.models.result import (
+    EXCITATION_SOURCE_UNKNOWN,
     AnalysisResult,
     BandDecay,
     DecayMetric,
     EnergyMetric,
     FrequencyResponseResult,
     PlacementLength,
+    ResonanceResult,
     Validity,
 )
 from reverbscope.version import __version__
@@ -54,15 +59,21 @@ def _octave_ratio(octaves: float) -> float:
 def _common_band(
     baseline: AnalysisResult, candidate: AnalysisResult
 ) -> tuple[tuple[float, float] | None, tuple[str, ...]]:
+    # Every refusal note here and in compare() starts with one of
+    # REFUSAL_NOTE_PREFIXES (models/comparison.py): readers find it by them.
     notes: list[str] = []
     b1 = baseline.excitation_band
     b2 = candidate.excitation_band
-    if b1 is None or b2 is None:
+    # An imported IR without --band carries a 20 Hz-20 kHz placeholder (source
+    # "unknown") that the analysis itself never treats as measured.
+    if b1 is None or b2 is None or EXCITATION_SOURCE_UNKNOWN in (b1.source, b2.source):
         return None, (
             diag("one or both results have no excitation band, so they cannot be compared"),
         )
     low = max(b1.low_hz, b2.low_hz)
-    high = min(b1.high_hz, b2.high_hz)
+    # An imported IR could declare a band above its Nyquist frequency before
+    # that was refused; its curve ends there, and nothing above is compared.
+    high = min(b1.high_hz, b2.high_hz, baseline.sample_rate / 2.0, candidate.sample_rate / 2.0)
     if high <= low:
         return None, (diag("the excitation bands do not overlap"),)
     return (low, high), tuple(notes)
@@ -122,7 +133,7 @@ def _delta_from_values(
             unit=unit,
         )
     delta = candidate - baseline
-    percent = None if baseline == 0.0 else 100.0 * delta / baseline
+    percent = 100.0 * delta / baseline if percent_applies(unit, baseline) else None
     return MetricDelta(
         name=name,
         baseline=baseline,
@@ -140,30 +151,36 @@ def _side_reasons(
     baseline: DecayMetric | EnergyMetric | PlacementLength,
     candidate: DecayMetric | EnergyMetric | PlacementLength,
 ) -> list[str]:
-    """Why each side that is not VALID cannot be compared, one sentence per side."""
+    """Why each side that is not VALID cannot be compared, one sentence per side.
+
+    The validity is written as its word ("insufficient range"), not its id,
+    so the stored English reads well and is shown translated.
+    """
     reasons: list[str] = []
     if baseline.validity is not Validity.VALID:
         if baseline.reason:
             reasons.append(
                 diag(
                     "baseline {validity} ({reason})",
-                    validity=baseline.validity,
+                    validity=VALIDITY_WORDS[baseline.validity],
                     reason=baseline.reason,
                 )
             )
         else:
-            reasons.append(diag("baseline {validity}", validity=baseline.validity))
+            reasons.append(diag("baseline {validity}", validity=VALIDITY_WORDS[baseline.validity]))
     if candidate.validity is not Validity.VALID:
         if candidate.reason:
             reasons.append(
                 diag(
                     "candidate {validity} ({reason})",
-                    validity=candidate.validity,
+                    validity=VALIDITY_WORDS[candidate.validity],
                     reason=candidate.reason,
                 )
             )
         else:
-            reasons.append(diag("candidate {validity}", validity=candidate.validity))
+            reasons.append(
+                diag("candidate {validity}", validity=VALIDITY_WORDS[candidate.validity])
+            )
     return reasons
 
 
@@ -372,6 +389,36 @@ def _compare_frequency_response(
     )
 
 
+def _closest_pairs(
+    left: Sequence[float],
+    right: Sequence[float],
+    distance: Callable[[float, float], float | None],
+    tolerance: float,
+) -> dict[int, int]:
+    """Index in ``left`` -> index in ``right`` of the pairs within ``tolerance``,
+    the closest pairs first, each item used once.
+
+    Giving each baseline item in turn the nearest free candidate let an
+    earlier one take a candidate that a later one sits much closer to: two
+    reflections 0.6 ms apart and one that only moved by 0.1 ms read as the
+    strong one getting 6.6 dB weaker and the moved one disappearing.
+    """
+    pairs = sorted(
+        (gap, i, j)
+        for i, a in enumerate(left)
+        for j, b in enumerate(right)
+        if (gap := distance(a, b)) is not None and gap <= tolerance
+    )
+    chosen: dict[int, int] = {}
+    taken: set[int] = set()
+    for _gap, i, j in pairs:
+        if i in chosen or j in taken:
+            continue
+        chosen[i] = j
+        taken.add(j)
+    return chosen
+
+
 def _match_reflections(
     baseline: AnalysisResult,
     candidate: AnalysisResult,
@@ -388,18 +435,16 @@ def _match_reflections(
         )
     left = list(baseline.reflections.reflections)
     right = list(candidate.reflections.reflections)
-    used_right: set[int] = set()
+    paired = _closest_pairs(
+        [item.delay_ms for item in left],
+        [other.delay_ms for other in right],
+        lambda a, b: abs(b - a),
+        settings.reflection_match_ms,
+    )
+    used_right = set(paired.values())
     matches: list[ReflectionMatch] = []
-    for item in left:
-        best_i: int | None = None
-        best_d = settings.reflection_match_ms
-        for i, other in enumerate(right):
-            if i in used_right:
-                continue
-            d = abs(other.delay_ms - item.delay_ms)
-            if d <= best_d:
-                best_d = d
-                best_i = i
+    for index, item in enumerate(left):
+        best_i = paired.get(index)
         if best_i is None:
             matches.append(
                 ReflectionMatch(
@@ -410,7 +455,6 @@ def _match_reflections(
             )
             continue
         other = right[best_i]
-        used_right.add(best_i)
         matches.append(
             ReflectionMatch(
                 status="matched",
@@ -496,24 +540,60 @@ def _compare_noise(
     return tuple(items)
 
 
+def _searched_range(resonances: ResonanceResult) -> tuple[float, float] | None:
+    """The range a resonance search covered; ``None`` when it did not run.
+
+    A file older than the stored range has none (or an inverted one when no
+    search was made); one that found candidates searched up to its limit.
+    """
+    searched = resonances.searched_range_hz
+    if searched is not None and searched[1] > searched[0]:
+        return searched
+    if resonances.candidates:
+        return 0.0, resonances.max_frequency_hz
+    return None
+
+
 def _match_resonances(
     baseline: AnalysisResult, candidate: AnalysisResult, settings: CompareSettings
-) -> tuple[ResonanceMatch, ...]:
+) -> tuple[tuple[ResonanceMatch, ...], str | None]:
+    """Resonances matched inside the range both searches covered.
+
+    A candidate found where the other side never searched (its sweep started
+    above it, or its response was too short to resolve it) is neither gone
+    nor new, so it is left out and a note says so. Without a range searched
+    on both sides nothing is compared: an empty list would read as "no
+    potential resonance".
+    """
+    ranges = (_searched_range(baseline.resonances), _searched_range(candidate.resonances))
+    if ranges[0] is None or ranges[1] is None:
+        return (), diag(
+            "low-frequency resonances are not compared: no frequency range was searched on "
+            "both sides"
+        )
+    low = max(ranges[0][0], ranges[1][0])
+    high = min(ranges[0][1], ranges[1][1])
+    if high <= low:
+        return (), diag(
+            "low-frequency resonances are not compared: no frequency range was searched on "
+            "both sides"
+        )
     left = list(baseline.resonances.candidates)
     right = list(candidate.resonances.candidates)
-    used: set[int] = set()
+
+    def frequency_ratio(a: float, b: float) -> float | None:
+        return None if a <= 0.0 or b <= 0.0 else max(a / b, b / a)
+
+    paired = _closest_pairs(
+        [item.frequency_hz for item in left],
+        [other.frequency_hz for other in right],
+        frequency_ratio,
+        _octave_ratio(settings.resonance_match_octaves),
+    )
+    used = set(paired.values())
     matches: list[ResonanceMatch] = []
-    ratio = _octave_ratio(settings.resonance_match_octaves)
-    for item in left:
-        best_i: int | None = None
-        best_r = ratio
-        for i, other in enumerate(right):
-            if i in used or item.frequency_hz <= 0.0 or other.frequency_hz <= 0.0:
-                continue
-            r = max(item.frequency_hz / other.frequency_hz, other.frequency_hz / item.frequency_hz)
-            if r <= best_r:
-                best_r = r
-                best_i = i
+    for index, item in enumerate(left):
+        best_i = paired.get(index)
         if best_i is None:
             matches.append(
                 ResonanceMatch(
@@ -524,7 +604,6 @@ def _match_resonances(
             )
             continue
         other = right[best_i]
-        used.add(best_i)
         matches.append(
             ResonanceMatch(
                 status="matched",
@@ -544,7 +623,25 @@ def _match_resonances(
                 candidate_decay_distinguishable=other.decay_distinguishable,
             )
         )
-    return tuple(matches)
+    # A pair found on both sides stays wherever it is. An unmatched candidate
+    # lies inside its own side's range, so it was searched for on the other
+    # side only when it lies inside both.
+    kept = [
+        match
+        for match in matches
+        if match.status == "matched"
+        or low <= (match.baseline_hz or match.candidate_hz or 0.0) <= high
+    ]
+    left_out = len(matches) - len(kept)
+    if not left_out:
+        return tuple(kept), None
+    return tuple(kept), diag(
+        "low-frequency resonances are compared only at {low:.0f}-{high:.0f} Hz, the range "
+        "both sides searched; {count} potential resonance(s) found outside it are left out",
+        low=low,
+        high=high,
+        count=left_out,
+    )
 
 
 def _placement_length_delta(
@@ -633,8 +730,8 @@ def compare(
     settings = settings or CompareSettings()
     notes: list[str] = []
     notes.extend(_sweep_notes(baseline, candidate))
-    common, band_notes = _common_band(baseline, candidate)
-    notes.extend(band_notes)
+    # Why the pair is refused, if it is; empty when the bands overlap.
+    common, refusal = _common_band(baseline, candidate)
     notes.append(
         diag(
             "ISO 3382-1 quotes a just-noticeable difference for reverberation time of about "
@@ -651,7 +748,7 @@ def compare(
         if octaves + 1e-12 >= settings.min_common_band_octaves:
             comparable = True
         else:
-            notes.append(
+            refusal = (
                 diag(
                     "common excitation band {low:g}-{high:g} Hz is {octaves:.2f} octaves, "
                     "narrower than the required {required:g} octave",
@@ -659,7 +756,7 @@ def compare(
                     high=high,
                     octaves=octaves,
                     required=settings.min_common_band_octaves,
-                )
+                ),
             )
             common = None
 
@@ -667,7 +764,8 @@ def compare(
         return ComparisonResult(
             comparable=False,
             common_band=common,
-            notes=tuple(notes),
+            # The reason comes first: it is the note a refusal quotes.
+            notes=(*refusal, *notes),
             baseline_created_at=baseline.created_at,
             candidate_created_at=candidate.created_at,
             reverbscope_version=__version__,
@@ -683,6 +781,9 @@ def compare(
     reflections, refl_note = _match_reflections(baseline, candidate, settings)
     if refl_note:
         notes.append(refl_note)
+    resonances, resonance_note = _match_resonances(baseline, candidate, settings)
+    if resonance_note:
+        notes.append(resonance_note)
     return ComparisonResult(
         comparable=True,
         common_band=common,
@@ -691,7 +792,7 @@ def compare(
         frequency_response=fr_delta,
         reflections=reflections,
         noise=_compare_noise(baseline, candidate, settings),
-        resonances=_match_resonances(baseline, candidate, settings),
+        resonances=resonances,
         placement=_compare_placement(baseline, candidate),
         loopback=_compare_loopback(baseline, candidate),
         baseline_created_at=baseline.created_at,

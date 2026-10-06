@@ -19,5 +19,5 @@ Checks  nothing has been played yet
   a sine sweep at a conservative digital level; raise the level gradually
   between measurements only if the recording is too quiet.
 
-✓ Recorded # s to m/recording.wav
+✓ Recorded # s
 

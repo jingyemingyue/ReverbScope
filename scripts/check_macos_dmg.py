@@ -14,11 +14,27 @@ import tomllib
 from pathlib import Path
 
 
+def check_localizations(app: Path, info: dict) -> None:
+    """The bundle declares Simplified Chinese, so AppKit's own panels and menu
+    items follow a Chinese Mac, and the microphone prompt explains itself in
+    Chinese (packaging/macos/zh-Hans.lproj)."""
+    declared = info.get("CFBundleLocalizations") or []
+    assert {"en", "zh-Hans"} <= set(declared), declared
+    for language in declared:
+        if language == info.get("CFBundleDevelopmentRegion"):
+            continue
+        strings = app / "Contents" / "Resources" / f"{language}.lproj" / "InfoPlist.strings"
+        assert strings.is_file(), strings
+        purpose = plistlib.loads(strings.read_bytes())["NSMicrophoneUsageDescription"]
+        assert purpose and purpose != info["NSMicrophoneUsageDescription"], (language, purpose)
+
+
 def check_app(app: Path, version: str) -> Path:
     info = plistlib.loads((app / "Contents" / "Info.plist").read_bytes())
     assert info["CFBundleShortVersionString"] == version
     assert info["CFBundleVersion"] == version
     assert info["NSMicrophoneUsageDescription"]
+    check_localizations(app, info)
     # The bundled NumPy / SciPy wheels are built for macOS 14 (macosx_14_0).
     assert info["LSMinimumSystemVersion"] == "14.0", info.get("LSMinimumSystemVersion")
     executable = app / "Contents" / "MacOS" / info["CFBundleExecutable"]

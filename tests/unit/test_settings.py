@@ -39,3 +39,80 @@ def test_settings_ignore_unknown_and_unreadable(tmp_path: Path, monkeypatch) -> 
     settings_path().parent.mkdir(parents=True, exist_ok=True)
     settings_path().write_text("not json", encoding="utf-8")
     assert load_settings().language == ""
+
+
+def test_mistyped_settings_fall_back_to_the_defaults(tmp_path: Path, monkeypatch) -> None:
+    """``"language": 1`` stopped every command; ``"developer_tools": "false"``
+    read as True."""
+    import json
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    settings_path().write_text(
+        json.dumps(
+            {
+                "language": 1,
+                "audio_backend": ["fake"],
+                "developer_tools": "false",
+                "copy_recording": False,
+                "default_profile": "vocal",
+            }
+        ),
+        encoding="utf-8",
+    )
+    loaded = load_settings()
+    assert loaded == UserSettings(copy_recording=False, default_profile="vocal")
+
+
+def test_a_failed_settings_write_keeps_the_old_file(tmp_path: Path, monkeypatch) -> None:
+    import pytest
+
+    from reverbscope.errors import SessionError
+    from reverbscope.io import jsonutil
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    save_settings(UserSettings(language="zh_CN"))
+
+    def disk_full(_fd: int) -> None:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(jsonutil.os, "fsync", disk_full)
+    with pytest.raises(SessionError):
+        save_settings(UserSettings(language="en"))
+    monkeypatch.undo()
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    assert load_settings().language == "zh_CN"
+
+
+def test_saving_settings_keeps_a_symlinked_settings_file(tmp_path: Path, monkeypatch) -> None:
+    """settings.json kept as a link into a dotfiles folder became a plain
+    0644 file on the first save, and the dotfile kept the old settings."""
+    import json
+    import stat
+    import sys
+    from dataclasses import replace
+
+    import pytest
+
+    if sys.platform == "win32":
+        pytest.skip("symbolic links need a privilege on Windows")
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    real = tmp_path / "dotfiles" / "reverbscope-settings.json"
+    real.parent.mkdir()
+    real.write_text(json.dumps({"language": "zh_CN"}), encoding="utf-8")
+    real.chmod(0o600)
+    settings_path().parent.mkdir()
+    settings_path().symlink_to(real)
+    save_settings(replace(load_settings(), language="en"))
+    assert settings_path().is_symlink()
+    assert json.loads(real.read_text(encoding="utf-8"))["language"] == "en"
+    assert stat.S_IMODE(real.stat().st_mode) == 0o600
+
+
+def test_settings_saved_with_a_byte_order_mark_are_used(tmp_path: Path, monkeypatch) -> None:
+    """A settings.json edited in Notepad ("UTF-8 with BOM") was ignored
+    without a word: the chosen language was lost."""
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    (tmp_path / "settings.json").write_bytes(
+        b'\xef\xbb\xbf{"schema_version": 1, "language": "zh_CN"}'
+    )
+    assert load_settings().language == "zh_CN"

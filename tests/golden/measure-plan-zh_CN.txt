@@ -18,5 +18,5 @@ ReverbScope 独立测量
 ! 先把监听/接口输出开低。ReverbScope 会以保守的数字电平播放正弦扫频；只有录音太
   轻时才在两次测量之间逐步提高电平。
 
-✓ 已录制 # s 到 m/recording.wav
+✓ 已录制 # s
 

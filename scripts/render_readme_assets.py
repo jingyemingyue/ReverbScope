@@ -7,13 +7,15 @@ Writes:
 * ``cli-demo.svg``            -- ``reverbscope demo`` as a terminal screenshot (SVG text)
 * ``cli-demo.zh-CN.svg``      -- the same in Simplified Chinese
 * ``gui-results.png``         -- Results page, Overview tab, position A
+* ``gui-results.zh-CN.png``   -- the same in Simplified Chinese (README.zh-CN.md)
 * ``gui-frequency-response.png`` -- Results page, Frequency Response tab, position A
 * ``gui-compare.png``         -- Compare page, A -> B
 * ``social-preview.png``      -- 1280x640 card for the GitHub social preview
 
 Every image comes from ``reverbscope demo``: a simulated room, not a measurement.
 The GUI images carry a "Synthetic demo data" stamp so they stay labelled when
-they are shared out of context. Needs the ``gui`` extra.
+they are shared out of context, and show the user edition, as the downloaded
+app does (no Developer menu). Needs the ``gui`` extra.
 """
 
 from __future__ import annotations
@@ -31,6 +33,7 @@ import unicodedata
 from pathlib import Path
 
 STAMP = "Synthetic demo data (reverbscope demo) - not a real room measurement"
+STAMP_ZH = "合成演示数据（reverbscope demo），不是真实房间的测量"
 TERMINAL_COLUMNS = 80
 _SGR = re.compile(r"\x1b\[([\d;]*)m")
 _COLOURS = {"31": "#f07178", "32": "#a8d982", "33": "#e6c07b", "36": "#6cc4d9"}
@@ -129,17 +132,40 @@ def terminal_svg(command: str, output: str, *, title: str) -> str:
     )
 
 
+def demo_folder(workdir: Path, lang: str) -> Path:
+    """Where ``reverbscope demo`` runs in ``lang``.
+
+    The demo writes the room and position names in the active language, so
+    each language keeps its own sessions: the English window must not show
+    the names the Chinese run wrote. English stays at ``workdir``, whose path
+    the Compare screenshot shows.
+    """
+    return workdir if lang == "en" else workdir / lang
+
+
+def enter_language(workdir: Path, lang: str) -> Path:
+    """Use ``lang``'s demo folder and its own ReverbScope home; return the folder.
+
+    Each language has its own home so its sessions stay out of the other
+    language's recent-session list, which the Compare screenshot shows.
+    """
+    folder = demo_folder(workdir, lang)
+    folder.mkdir(parents=True, exist_ok=True)
+    os.environ["REVERBSCOPE_HOME"] = str(folder / "home")
+    return folder
+
+
 def render_cli(workdir: Path, out: Path) -> None:
     from reverbscope.cli.main import main
     from reverbscope.i18n import activate
 
     previous = Path.cwd()
-    os.chdir(workdir)
     try:
         for lang, name, title in (
             ("en", "cli-demo.svg", "reverbscope demo (synthetic data)"),
             ("zh_CN", "cli-demo.zh-CN.svg", "reverbscope demo（合成数据）"),
         ):
+            os.chdir(enter_language(workdir, lang))
             buffer = io.StringIO()
             with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(io.StringIO()):
                 code = main(["--lang", lang, "--color", "always", "demo"])
@@ -153,7 +179,7 @@ def render_cli(workdir: Path, out: Path) -> None:
         os.chdir(previous)
 
 
-def _stamp(pixmap: object) -> object:
+def _stamp(pixmap: object, stamp: str = STAMP) -> object:
     from PySide6.QtCore import QRect, Qt
     from PySide6.QtGui import QColor, QFont, QPainter
 
@@ -163,49 +189,65 @@ def _stamp(pixmap: object) -> object:
     font.setBold(True)
     painter.setFont(font)
     metrics = painter.fontMetrics()
-    text_w = metrics.horizontalAdvance(STAMP) + 16
+    text_w = metrics.horizontalAdvance(stamp) + 16
     text_h = metrics.height() + 8
     rect = QRect(pixmap.width() - text_w - 8, 8, text_w, text_h)  # type: ignore[attr-defined]
     painter.fillRect(rect, QColor(255, 196, 0, 235))
     painter.setPen(QColor(20, 20, 20))
-    painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, STAMP)
+    painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, stamp)
     painter.end()
     return pixmap
 
 
 def render_gui(workdir: Path, out: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    # The downloaded app is the user edition; a source checkout would show the
+    # Developer menu, which no reader of the README has.
+    os.environ["REVERBSCOPE_EDITION"] = "user"
     from PySide6.QtWidgets import QApplication
 
     from reverbscope.i18n import activate
-    from reverbscope.ui.main_window import MainWindow
+    from reverbscope.ui import main_window
     from reverbscope.ui.theme import apply_application_chrome
 
-    activate("en")
     app = QApplication.instance() or QApplication(sys.argv[:1])
     apply_application_chrome(app)  # type: ignore[arg-type]
-    window = MainWindow()
-    window.resize(1120, 820)
-    window.show()
-    demo = workdir / "reverbscope-demo"
+    demo = demo_folder(workdir, "en") / "reverbscope-demo"
 
-    def grab(name: str) -> None:
+    def window_in(lang: str) -> main_window.MainWindow:
+        # The window reads the language while it is built.
+        enter_language(workdir, lang)
+        activate(lang)
+        window = main_window.MainWindow()
+        window.resize(1120, 820)
+        window.show()
+        window.open_session_path(demo_folder(workdir, lang) / "reverbscope-demo" / "position-a")
+        window.results.tabs.setCurrentIndex(0)
+        return window
+
+    def grab(window: main_window.MainWindow, name: str, stamp: str = STAMP) -> None:
         for _ in range(5):
             app.processEvents()
-        _stamp(window.grab()).save(str(out / name))  # type: ignore[attr-defined]
+        _stamp(window.grab(), stamp).save(str(out / name))  # type: ignore[attr-defined]
 
-    window.open_session_path(demo / "position-a")
-    window.results.tabs.setCurrentIndex(0)
-    grab("gui-results.png")
-    window.results.tabs.setCurrentWidget(window.results.fr_tab)
-    grab("gui-frequency-response.png")
-    window.resize(1120, 1000)
-    window.show_compare()
-    window.compare.set_paths(demo / "position-a", demo / "position-b")
-    window.compare.same_gain.setChecked(True)
-    window.compare.run_compare()
-    grab("gui-compare.png")
-    window.close()
+    try:
+        window = window_in("en")
+        grab(window, "gui-results.png")
+        window.results.tabs.setCurrentWidget(window.results.fr_tab)
+        grab(window, "gui-frequency-response.png")
+        window.resize(1120, 1000)
+        window.show_compare()
+        window.compare.set_paths(demo / "position-a", demo / "position-b")
+        window.compare.same_gain.setChecked(True)
+        window.compare.run_compare()
+        grab(window, "gui-compare.png")
+        window.close()
+        # README.zh-CN.md shows the results page as a Chinese reader sees it.
+        window = window_in("zh_CN")
+        grab(window, "gui-results.zh-CN.png", STAMP_ZH)
+        window.close()
+    finally:
+        activate("en")
 
 
 def render_social_preview(out: Path) -> None:

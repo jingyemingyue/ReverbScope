@@ -6,7 +6,10 @@ A session directory contains::
     result.json             full AnalysisResult (metrics and curves)
     impulse_response.wav    raw impulse response, 32-bit float
     sweep.reverbscope-sweep.json   always copied when a sidecar is available
-    recording.wav           copied when copy_recording is on (GUI default)
+    recording.wav           copied when copy_recording is on (GUI default);
+                            a take that is not a WAV (AIFF, CAF, FLAC, MP3) is
+                            converted to WAV
+    sweep.wav               a Standalone take's test signal (reverbscope measure)
 
 Raw sweep and recording files are never modified in place.
 """
@@ -15,9 +18,12 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import os
 import shutil
+import stat
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -25,9 +31,19 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from reverbscope.models.comparison import ComparisonResult
 
-from reverbscope.errors import SessionError
+from reverbscope.errors import InvalidAudioError, ReverbScopeError, SessionError
 from reverbscope.i18n import _
-from reverbscope.io.wav import read_wav, write_wav
+from reverbscope.io.jsonutil import (
+    MAX_JSON_BYTES,
+    MAX_RESULT_JSON_BYTES,
+    discard,
+    keep_beside,
+    keep_mode,
+    temporary_beside,
+    write_text_atomic,
+)
+from reverbscope.io.wav import _soundfile, read_wav, write_wav
+from reverbscope.models.audio import AudioSignal
 from reverbscope.models.result import AnalysisResult, Validity
 from reverbscope.models.session import MeasurementSession
 
@@ -38,8 +54,11 @@ RESULT_FILE = "result.json"
 COMPARISON_FILE = "comparison.json"
 IR_FILE = "impulse_response.wav"
 RECORDING_FILE = "recording.wav"
+SWEEP_FILE = "sweep.wav"
 SWEEP_SIDECAR_NAME = "sweep.reverbscope-sweep.json"
-AUDIO_SUFFIXES = {".wav", ".flac", ".aiff", ".aif", ".ogg"}
+#: Left out of a ``--no-audio`` bundle: every container a DAW export or a
+#: recorder may have put into the folder.
+AUDIO_SUFFIXES = {".wav", ".flac", ".aiff", ".aif", ".aifc", ".caf", ".ogg", ".w64", ".rf64"}
 
 
 def _relative(path: str | Path | None, base: Path) -> str | None:
@@ -95,12 +114,23 @@ def save_measurement(
     *,
     include_curves: bool = True,
     copy_recording: bool | None = None,
+    recording: AudioSignal | None = None,
+    copy_sweep: bool = False,
 ) -> Path:
     """Write session.json, result.json and impulse_response.wav into ``directory``.
 
     The sweep sidecar is always copied when one can be found. The raw recording
     is copied when ``copy_recording`` is true, or when it is omitted and the
-    user settings default to copying (the GUI default).
+    user settings default to copying (the GUI default). ``recording`` is a take
+    that has no file yet (a live GUI take): it is written as recording.wav.
+    ``copy_sweep`` copies the sweep WAV as well, as sweep.wav: the test signal
+    written for this take (``reverbscope measure``), not a user's own sweep.
+
+    Nothing in ``directory`` is replaced until every file has been written,
+    and a rename that fails puts back the members already replaced, so a
+    failed save keeps the session that was there whole. A recording.wav or
+    sweep sidecar of an earlier take that this one does not have is removed;
+    a file of the same name in a folder with no session is not ReverbScope's.
     """
     base = Path(directory)
     base.mkdir(parents=True, exist_ok=True)
@@ -108,39 +138,191 @@ def save_measurement(
         from reverbscope.settings import load_settings
 
         copy_recording = load_settings().copy_recording
+    # The paths below are rewritten relative to ``base``. Rewrite a copy: the
+    # caller's session keeps paths that still resolve, so saving it again into
+    # another folder (the GUI's Save button, twice) still finds the recording.
+    session = replace(session)
     original_sweep = session.sweep_path
     original_recording = session.recording_path
-    ir_path = write_wav(
-        base / IR_FILE, result.impulse_response.samples, result.sample_rate, subtype="FLOAT"
-    )
+    # Every member is written under a temporary name first and only renamed
+    # into place once all of them have been written: a full disk half-way
+    # through keeps the previous take whole instead of mixing two takes.
+    staged: list[tuple[Path, Path]] = []
+
+    def stage(name: str) -> Path:
+        final = base / name
+        # A fresh name, created here: a link planted under a guessable name
+        # in a folder from someone else is never written through. The real
+        # suffix stays last: soundfile picks the format from it.
+        try:
+            temporary = temporary_beside(final, f".saving{final.suffix}")
+        except OSError as exc:
+            raise SessionError(
+                _("cannot write {path}: {error}").format(path=final, error=exc)
+            ) from exc
+        staged.append((temporary, final))
+        return temporary
+
+    ir_path = base / IR_FILE
     result_path = base / RESULT_FILE
-    try:
-        result_path.write_text(
-            json.dumps(result.to_dict(include_curves), indent=1), encoding="utf-8"
-        )
-    except (OSError, TypeError, ValueError) as exc:
-        raise SessionError(
-            _("cannot write {path}: {error}").format(path=result_path, error=exc)
-        ) from exc
-    _copy_sidecar(original_sweep, base)
-    if copy_recording:
-        copied = _copy_recording(original_recording, base)
-        if copied is not None:
-            session.recording_path = str(copied)
-    session.sample_rate = result.sample_rate
-    session.impulse_response_path = _relative(ir_path, base)
-    session.result_path = _relative(result_path, base)
-    session.sweep_path = _relative(session.sweep_path, base)
-    session.recording_path = _relative(session.recording_path, base)
-    session.analysis_summary = result_summary(result)
     session_path = base / SESSION_FILE
     try:
-        session_path.write_text(json.dumps(session.to_dict(), indent=2), encoding="utf-8")
-    except (OSError, TypeError, ValueError) as exc:
-        raise SessionError(
-            _("cannot write {path}: {error}").format(path=session_path, error=exc)
-        ) from exc
+        if recording is not None:
+            write_wav(
+                stage(RECORDING_FILE), recording.samples, recording.sample_rate, subtype="FLOAT"
+            )
+            session.recording_path = str(base / RECORDING_FILE)
+        write_wav(
+            stage(IR_FILE), result.impulse_response.samples, result.sample_rate, subtype="FLOAT"
+        )
+        _write_staged_text(
+            stage(RESULT_FILE), result_path, json.dumps(result.to_dict(include_curves), indent=1)
+        )
+        sidecar = _copy_sidecar(original_sweep, base, stage=stage)
+        if copy_sweep and original_sweep:
+            copied_sweep = _copy_into(Path(original_sweep), base / SWEEP_FILE, stage=stage)
+            if copied_sweep is not None:
+                session.sweep_path = str(copied_sweep)
+        if copy_recording and recording is None:
+            copied = _copy_recording(original_recording, base, stage=stage)
+            if copied is not None:
+                session.recording_path = str(copied)
+        session.sample_rate = result.sample_rate
+        session.impulse_response_path = _relative(ir_path, base)
+        session.result_path = _relative(result_path, base)
+        session.sweep_path = _relative(session.sweep_path, base)
+        session.recording_path = _relative(session.recording_path, base)
+        session.analysis_summary = result_summary(result)
+        # session.json is renamed last, after the files it describes.
+        _write_staged_text(
+            stage(SESSION_FILE), session_path, json.dumps(session.to_dict(), indent=2)
+        )
+        # The recording and sweep sidecar of an earlier take in this folder
+        # would stay beside the new one (its recording not copied, or no
+        # sidecar), and opening the session would adopt the old sidecar. Only
+        # a folder with a session in it has an earlier take: elsewhere a
+        # recording.wav (a very common name for a DAW export) or a sidecar
+        # that `reverbscope sweep` wrote is the user's own file.
+        ours = {final.name for _temporary, final in staged}
+        if sidecar is not None:
+            ours.add(SWEEP_SIDECAR_NAME)
+        if session.recording_path is not None and _same_file(
+            base / RECORDING_FILE, base / session.recording_path
+        ):
+            ours.add(RECORDING_FILE)
+        stale: list[Path] = []
+        earlier = _earlier_take(session_path)
+        if earlier is not None:
+            if SWEEP_SIDECAR_NAME not in ours and os.path.lexists(base / SWEEP_SIDECAR_NAME):
+                stale.append(base / SWEEP_SIDECAR_NAME)
+            # The recording is the earlier take's only when that session
+            # names it: another recording.wav in the folder is not ours.
+            named = earlier.get("recording_path")
+            if (
+                RECORDING_FILE not in ours
+                and isinstance(named, str)
+                and named
+                and _same_file(base / RECORDING_FILE, base / named)
+            ):
+                stale.append(base / RECORDING_FILE)
+        _replace_members(staged, remove=stale)
+    finally:
+        for temporary, _final in staged:
+            discard(temporary)
     return session_path
+
+
+def _earlier_take(session_path: Path) -> dict[str, Any] | None:
+    """The session.json an earlier save left at ``session_path``, as stored;
+    None when there is none or it cannot be read (nothing is then removed)."""
+    try:
+        return _read_json(session_path)
+    except (ReverbScopeError, OSError):
+        return None
+
+
+def _replace_members(staged: list[tuple[Path, Path]], *, remove: list[Path]) -> None:
+    """Rename every staged member into place and delete ``remove``, or leave
+    every member as it was.
+
+    Each member a save replaces or deletes is kept under a second name until
+    all of it has succeeded. When one step fails (Windows refuses to replace
+    a file another program has open), the members already replaced are put
+    back, so the folder never holds one take's recording beside another's
+    analysis.
+    """
+    steps: list[tuple[Path | None, Path]] = [*staged, *((None, final) for final in remove)]
+    replaced: list[tuple[Path, Path | None]] = []
+    kept: list[Path] = []
+    try:
+        for temporary, final in steps:
+            try:
+                previous = _keep_previous(final)
+                if previous is not None:
+                    kept.append(previous)
+                if temporary is None:
+                    final.unlink()
+                else:
+                    keep_mode(temporary, final)
+                    os.replace(temporary, final)
+            except OSError as exc:
+                for done, earlier in reversed(replaced):
+                    if not _put_back(done, earlier) and earlier is not None:
+                        kept.remove(earlier)  # its only copy now: never deleted
+                raise SessionError(
+                    _("cannot write {path}: {error}").format(path=final, error=exc)
+                ) from exc
+            replaced.append((final, previous))
+    finally:
+        for name in kept:
+            discard(name)
+
+
+def _keep_previous(final: Path) -> Path | None:
+    """The member at ``final`` under a second name; None when there is none.
+
+    A link planted under a member's name is replaced like any file, but never
+    kept: it is not part of a take.
+    """
+    try:
+        status = os.lstat(final)
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISREG(status.st_mode):
+        return None
+    return keep_beside(final, f".previous{final.suffix}")
+
+
+def _same_file(first: Path, second: Path) -> bool:
+    """Whether two paths name one file (also Recording.WAV and recording.wav
+    on a case-insensitive file system)."""
+    try:
+        return os.path.samefile(first, second)
+    except (OSError, ValueError):
+        return False
+
+
+def _put_back(final: Path, previous: Path | None) -> bool:
+    """Undo one rename of a failed save: the previous member, or none."""
+    try:
+        if previous is None:
+            final.unlink(missing_ok=True)
+        else:
+            os.replace(previous, final)
+    except OSError as exc:
+        log.warning("cannot restore %s after a failed save: %s", final, exc)
+        return False
+    return True
+
+
+def _write_staged_text(temporary: Path, final: Path, text: str) -> None:
+    try:
+        with temporary.open("w", encoding="utf-8") as handle:
+            handle.write(text)
+            handle.flush()
+            os.fsync(handle.fileno())
+    except (OSError, TypeError, ValueError) as exc:
+        raise SessionError(_("cannot write {path}: {error}").format(path=final, error=exc)) from exc
 
 
 def bundle_session(
@@ -149,12 +331,21 @@ def bundle_session(
     *,
     include_audio: bool = True,
 ) -> Path:
-    """Zip a session folder for a bug report. ``include_audio=False`` drops WAVs."""
+    """Zip a session folder for a bug report. ``include_audio=False`` drops WAVs.
+
+    Paths under the home folder in its JSON files are written as ``~/…``.
+    """
     session_file = _session_file(directory)
-    base = session_file.parent
-    target = Path(dest) if dest is not None else base.with_name(base.name + ".zip")
-    if target.is_dir():
-        target = target / f"{base.name}.zip"
+    # Absolute, so that "." (bundling the folder you are in) has a name; not
+    # resolved, so that a linked folder keeps its own name for the zip.
+    base = Path(os.path.abspath(session_file.parent))
+    # A folder at a drive or volume root (a recorder's USB stick) has no name.
+    name = base.name or "session"
+    target = Path(dest) if dest is not None else base.parent / f"{name}.zip"
+    # Like ``compare --out``: anything that is not a .zip file is a folder,
+    # also when it does not exist yet ("--out bundles/" loses its slash).
+    if target.is_dir() or target.suffix.lower() != ".zip":
+        target = target / f"{name}.zip"
     try:
         target.resolve().relative_to(base.resolve())
     except ValueError:
@@ -166,10 +357,18 @@ def bundle_session(
                 folder=base
             )
         )
-    target.parent.mkdir(parents=True, exist_ok=True)
     inside = base.resolve()
+    temporary: Path | None = None
     try:
-        with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # Written beside the target and renamed over it once complete: a
+        # failure half-way (a full disk) keeps an earlier bundle there whole.
+        temporary = temporary_beside(target, ".zip")
+        # strict_timestamps=False: a file dated before 1980 (a recorder whose
+        # clock was never set) is stored as 1980 instead of failing the zip.
+        with zipfile.ZipFile(
+            temporary, "w", zipfile.ZIP_DEFLATED, strict_timestamps=False
+        ) as archive:
             for path in sorted(base.rglob("*")):
                 if not path.is_file():
                     continue
@@ -180,15 +379,62 @@ def bundle_session(
                     # must not put one of your files into a public report.
                     log.warning("not bundling %s: it links outside the session folder", path)
                     continue
-                archive.write(path, path.relative_to(base).as_posix())
-    except OSError as exc:
+                name = path.relative_to(base).as_posix()
+                redacted = _without_home(path)
+                if redacted is None:
+                    archive.write(path, name)
+                else:
+                    info = zipfile.ZipInfo.from_file(path, name, strict_timestamps=False)
+                    archive.writestr(info, redacted, compress_type=zipfile.ZIP_DEFLATED)
+        os.replace(temporary, target)
+    except (OSError, ValueError) as exc:
         raise SessionError(
             _("cannot write bundle {path}: {error}").format(path=target, error=exc)
         ) from exc
+    finally:
+        if temporary is not None:
+            discard(temporary)
     return target
 
 
-def _copy_into(src: Path, dest: Path) -> Path | None:
+def _without_home(path: Path) -> bytes | None:
+    """A JSON member as it goes into a bundle, or None to bundle it unchanged.
+
+    session.json keeps the absolute path of a sweep or recording outside the
+    folder, and comparison.json the session paths as typed: the user's home
+    folder there would publish the account name with a bug report. It is
+    shown as ``~``, as in the doctor report. result.json names no files.
+    """
+    from reverbscope.diagnostics import home_folder
+
+    if path.suffix.lower() != ".json" or path.name == RESULT_FILE:
+        return None
+    home = home_folder()
+    if home is None:
+        return None  # no home folder to hide (HOME unset, no passwd entry)
+    try:
+        data = _read_json(path, kind="JSON")
+    except SessionError:
+        return None  # not ReverbScope's JSON: bundled as it is
+    shown = _redact_strings(data, home)
+    if shown == data:
+        return None
+    return (json.dumps(shown, indent=2) + "\n").encode("utf-8")
+
+
+def _redact_strings(value: Any, home: Path) -> Any:
+    from reverbscope.diagnostics import redact_home
+
+    if isinstance(value, str):
+        return redact_home(value, home)
+    if isinstance(value, list):
+        return [_redact_strings(item, home) for item in value]
+    if isinstance(value, dict):
+        return {key: _redact_strings(item, home) for key, item in value.items()}
+    return value
+
+
+def _copy_into(src: Path, dest: Path, *, stage: Callable[[str], Path] | None = None) -> Path | None:
     if not src.is_file():
         return None
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -197,7 +443,7 @@ def _copy_into(src: Path, dest: Path) -> Path | None:
         # where Recording.wav and recording.wav are one file.
         if dest.exists() and os.path.samefile(src, dest):
             return dest
-        shutil.copy2(src, dest)
+        shutil.copy2(src, dest if stage is None else stage(dest.name))
     except OSError as exc:
         raise SessionError(
             _("cannot copy {source} to {target}: {error}").format(
@@ -207,9 +453,8 @@ def _copy_into(src: Path, dest: Path) -> Path | None:
     return dest
 
 
-def _copy_sidecar(sweep_path: str | None, base: Path) -> Path | None:
-    if not sweep_path:
-        return None
+def _sidecar_source(sweep_path: str | Path) -> Path | None:
+    """The sweep sidecar that belongs to ``sweep_path`` (a sidecar or a sweep WAV)."""
     from reverbscope.io.wav import SIDECAR_SUFFIX, sidecar_path
 
     src = Path(sweep_path)
@@ -221,17 +466,82 @@ def _copy_sidecar(sweep_path: str | None, base: Path) -> Path | None:
         candidates.append(src.with_name(SWEEP_SIDECAR_NAME))
     for candidate in candidates:
         if candidate.is_file():
-            return _copy_into(candidate, base / SWEEP_SIDECAR_NAME)
+            return candidate
     return None
 
 
-def _copy_recording(recording_path: str | None, base: Path) -> Path | None:
+def _copy_sidecar(
+    sweep_path: str | None, base: Path, *, stage: Callable[[str], Path] | None = None
+) -> Path | None:
+    if not sweep_path:
+        return None
+    source = _sidecar_source(sweep_path)
+    if source is None:
+        return None
+    return _copy_into(source, base / SWEEP_SIDECAR_NAME, stage=stage)
+
+
+def _copy_recording(
+    recording_path: str | None, base: Path, *, stage: Callable[[str], Path] | None = None
+) -> Path | None:
     if not recording_path:
         return None
     src = Path(recording_path)
     if not src.is_file() and not src.is_absolute():
         src = base / src
-    return _copy_into(src, base / RECORDING_FILE)
+    dest = base / RECORDING_FILE
+    subtype = _wav_subtype(src)
+    if subtype is None:
+        return _copy_into(src, dest, stage=stage)
+    # An AIFF, CAF or FLAC export copied byte for byte under the name
+    # recording.wav is a "corrupt WAV" to every program that goes by the
+    # name; it is converted, with a sample format that keeps every sample.
+    target = dest if stage is None else stage(dest.name)
+    try:
+        signal = read_wav(src)
+        write_wav(target, signal.samples, signal.sample_rate, subtype=subtype)
+    except InvalidAudioError as exc:
+        # A take that cannot be converted (non-finite samples in a float
+        # AIFF, a decoder that gives up half-way) must not cost the whole
+        # save: it is copied as it is, as it was before conversions existed.
+        # The staged name is reused; it may hold what the failure left.
+        log.warning("copying %s without converting it to WAV: %s", src, exc)
+        try:
+            shutil.copy2(src, target)
+        except OSError as copy_exc:
+            raise SessionError(
+                _("cannot copy {source} to {target}: {error}").format(
+                    source=src, target=dest, error=copy_exc
+                )
+            ) from copy_exc
+    return dest
+
+
+#: The sample formats a WAV file keeps without changing a sample.
+_EXACT_WAV_SUBTYPES = frozenset({"PCM_16", "PCM_24", "PCM_32", "PCM_U8", "FLOAT", "DOUBLE"})
+
+
+def _wav_subtype(src: Path) -> str | None:
+    """None when ``src`` is a WAV file (or cannot be inspected): it is copied
+    as it is. Otherwise the WAV sample format that holds its samples exactly."""
+    if not src.is_file():
+        return None
+    sf = _soundfile()
+    try:
+        info = sf.info(str(src))
+    except Exception:  # libsndfile raises RuntimeError / soundfile.LibsndfileError
+        return None
+    if info.format in ("WAV", "WAVEX"):
+        return None
+    # ``check_format("WAV", subtype)`` is not the test: libsndfile lists
+    # every subtype WAV has a code for, and writing IMA/MS ADPCM or GSM 6.10
+    # encodes the decoded samples again (lossy), while MP3 cannot be written
+    # at all. Everything that is not plain PCM or float is decoded already,
+    # to values float32 holds exactly.
+    if info.subtype in _EXACT_WAV_SUBTYPES:
+        return str(info.subtype)
+    # float32 has 24 bits of mantissa: a 32-bit take would lose its low byte.
+    return "PCM_32" if info.subtype == "ALAC_32" else "FLOAT"
 
 
 def load_session(path: str | Path) -> MeasurementSession:
@@ -241,7 +551,11 @@ def load_session(path: str | Path) -> MeasurementSession:
 
 def load_result(path: str | Path) -> AnalysisResult:
     """Load an :class:`AnalysisResult` from ``result.json``."""
-    return AnalysisResult.from_dict(_read_json(Path(path), kind="result"))
+    # Every frequency-response bin is stored: a 192 kHz take is larger than
+    # the cap on the other JSON files.
+    return AnalysisResult.from_dict(
+        _read_json(Path(path), kind="result", max_bytes=MAX_RESULT_JSON_BYTES)
+    )
 
 
 @dataclass(frozen=True)
@@ -262,15 +576,27 @@ class SessionListing:
 
     @property
     def label(self) -> str:
-        room = self.session.room_name or _("(unnamed room)")
+        # Imported here: the demo module needs the session store to write its sessions.
+        from reverbscope.demo import localize_demo_name
+
+        room = localize_demo_name(self.session.mode, self.session.room_name) or _("(unnamed room)")
         created = self.session.created_at
-        rt60 = self.session.analysis_summary.get("broadband_rt60_estimate_s")
+        rt60 = _finite(self.session.analysis_summary.get("broadband_rt60_estimate_s"))
         rt60_text = (
-            _("RT60 {seconds:.2f} s").format(seconds=rt60)
-            if isinstance(rt60, (int, float))
-            else _("RT60 n/a")
+            _("RT60 {seconds:.2f} s").format(seconds=rt60) if rt60 is not None else _("RT60 n/a")
         )
         return f"{room}  ·  {created}  ·  {rt60_text}"
+
+
+def _finite(value: object) -> float | None:
+    """A number from session.json, or None (a crafted 400-digit integer too)."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    try:
+        number = float(value)
+    except OverflowError:
+        return None
+    return number if math.isfinite(number) else None
 
 
 def load_measurement(path: str | Path) -> LoadedMeasurement:
@@ -278,6 +604,7 @@ def load_measurement(path: str | Path) -> LoadedMeasurement:
     session_file = _session_file(path)
     directory = session_file.parent
     session = MeasurementSession.from_dict(_read_json(session_file))
+    _anchor_copied_files(session, directory)
     result_path = _resolve_member(directory, session.result_path, RESULT_FILE)
     if not result_path.is_file():
         raise SessionError(_("result.json not found next to {path}").format(path=session_file))
@@ -301,6 +628,31 @@ def load_measurement(path: str | Path) -> LoadedMeasurement:
     return LoadedMeasurement(directory=directory, session=session, result=result)
 
 
+def _anchor_copied_files(session: MeasurementSession, directory: Path) -> None:
+    """Point the sweep and recording paths of an opened session into its folder.
+
+    Saving the opened session into another folder (the GUI's Save button)
+    copies the sweep sidecar and the recording named here. Only files inside
+    the session folder are kept: a session from someone else must not make
+    ReverbScope copy one of your files (``../../.ssh/id_rsa``, or an absolute
+    path) into a new session, and from there into a bug-report bundle. A path
+    outside, such as the working sweep WAV, is dropped, and the folder's own
+    copy of the sweep sidecar takes its place.
+    """
+    recording = _inside(directory, session.recording_path)
+    session.recording_path = None if recording is None else str(recording)
+    sweep = _inside(directory, session.sweep_path)
+    sidecar = None if sweep is None else _sidecar_source(sweep)
+    if sidecar is not None and not _contains(directory.resolve(), sidecar.resolve()):
+        # A link next to the sweep that leads out of the folder.
+        sweep = sidecar = None
+    if sidecar is None:
+        own = _inside(directory, SWEEP_SIDECAR_NAME)
+        if own is not None and own.is_file():
+            sweep = own
+    session.sweep_path = None if sweep is None else str(sweep)
+
+
 def list_sessions(root: str | Path, *, max_depth: int = 2) -> list[SessionListing]:
     """Find ``session.json`` files under ``root``, newest ``created_at`` first."""
     base = Path(root)
@@ -318,25 +670,46 @@ def list_sessions(root: str | Path, *, max_depth: int = 2) -> list[SessionListin
             continue
         try:
             found.append(SessionListing(path=candidate.parent, session=load_session(candidate)))
-        except SessionError:
+        except ReverbScopeError:
+            # Unreadable, or settings this version refuses (ConfigurationError):
+            # one bad folder must not hide the others.
             continue
     found.sort(key=lambda item: item.session.created_at, reverse=True)
     return found
 
 
 def _session_file(path: str | Path) -> Path:
+    """The session.json that ``path`` names: that file, the one in a folder,
+    or the one beside another file of a session (result.json,
+    impulse_response.wav).
+
+    Any other file is refused. Read as a session, a result.json or
+    project.json became a made-up take: default mode and profile, a new
+    session id, and no "Synthetic demo" mark.
+    """
     p = Path(path)
     if p.is_dir():
         p = p / SESSION_FILE
+    elif p.name != SESSION_FILE and p.is_file():
+        beside = p.with_name(SESSION_FILE)
+        if not beside.is_file():
+            raise SessionError(
+                _(
+                    "{path} is not a session file; give the session folder or its session.json"
+                ).format(path=p)
+            )
+        p = beside
     if not p.is_file():
         raise SessionError(_("session file not found: {path}").format(path=p))
     return p
 
 
-def _read_json(path: Path, *, kind: str = "session") -> dict[str, Any]:
+def _read_json(
+    path: Path, *, kind: str = "session", max_bytes: int = MAX_JSON_BYTES
+) -> dict[str, Any]:
     from reverbscope.io.jsonutil import read_json_object
 
-    return read_json_object(path, kind=kind)
+    return read_json_object(path, kind=kind, max_bytes=max_bytes)
 
 
 def _resolve_member(directory: Path, stored: str | None, default_name: str) -> Path:
@@ -348,26 +721,48 @@ def _resolve_member(directory: Path, stored: str | None, default_name: str) -> P
     or crafted file, e.g. a received bug-report bundle. It is refused rather
     than read (#11).
     """
-    if not stored:
-        return directory / default_name
-    candidate = Path(stored)
+    # The default name is checked too: it can itself be a link out of the folder.
+    candidate = Path(stored or default_name)
     if candidate.is_absolute() or candidate.drive or candidate.root:
         raise SessionError(
             _(
                 "session.json names {name} at an absolute path ({path}); "
                 "session files must stay inside the session folder"
-            ).format(name=default_name, path=stored)
+            ).format(name=default_name, path=candidate)
         )
-    base = directory.resolve()
-    resolved = (base / candidate).resolve()
-    if resolved != base and base not in resolved.parents:
+    resolved = _inside(directory, candidate)
+    if resolved is None:
         raise SessionError(
             _(
                 "session.json names {name} outside the session folder ({path}); "
                 "session files must stay inside the session folder"
-            ).format(name=default_name, path=stored)
+            ).format(name=default_name, path=candidate)
         )
     return resolved
+
+
+def _inside(directory: Path, stored: str | Path | None) -> Path | None:
+    """``stored`` resolved inside ``directory``, or None when it is not there.
+
+    The rule of :func:`_resolve_member` without the error: an absolute path,
+    one that leads out of the folder (``..``, or a link to elsewhere), or
+    one that cannot be resolved (a NUL byte, a link loop) gives None.
+    """
+    if not stored:
+        return None
+    candidate = Path(stored)
+    if candidate.is_absolute() or candidate.drive or candidate.root:
+        return None
+    base = directory.resolve()
+    try:
+        resolved = (base / candidate).resolve()
+    except (OSError, RuntimeError, ValueError):
+        return None
+    return resolved if _contains(base, resolved) else None
+
+
+def _contains(base: Path, resolved: Path) -> bool:
+    return resolved == base or base in resolved.parents
 
 
 def save_comparison(path: str | Path, comparison: object) -> Path:
@@ -381,7 +776,7 @@ def save_comparison(path: str | Path, comparison: object) -> Path:
         target = target / COMPARISON_FILE
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
-        target.write_text(json.dumps(comparison.to_dict(), indent=1), encoding="utf-8")
+        write_text_atomic(target, json.dumps(comparison.to_dict(), indent=1))
     except (OSError, TypeError, ValueError) as exc:
         raise SessionError(
             _("cannot write {path}: {error}").format(path=target, error=exc)

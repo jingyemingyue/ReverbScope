@@ -88,9 +88,11 @@ class MeasureWorker(QThread):
         level_dbfs: float,
         backend: str | None = None,
         options: StreamOptions | None = None,
+        loopback_channel: int | None = None,
     ) -> None:
         super().__init__()
         self._options = options
+        self._loopback_channel = loopback_channel
         self._signal = signal
         self._sample_rate = sample_rate
         self._input_device = input_device
@@ -119,6 +121,7 @@ class MeasureWorker(QThread):
                 progress=self.progress.emit,
                 cancel=self._cancel,
                 options=self._options,
+                loopback_input=self._loopback_channel,
             )
         except MeasurementCancelledError:
             self.stopped.emit()

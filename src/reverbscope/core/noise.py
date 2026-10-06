@@ -256,7 +256,10 @@ def select_quiet_part(
         )
     notes: list[str] = []
     start, stop = max(pieces, key=lambda p: p[1] - p[0])
-    dropped = (x.shape[0] - (stop - start)) / sample_rate
+    # Only the longest piece is measured. The zeros and the other pieces are
+    # counted apart: the other pieces are signal, not digital silence.
+    signal = sum(piece_stop - piece_start for piece_start, piece_stop in pieces)
+    dropped = (x.shape[0] - signal) / sample_rate
     if dropped > ZERO_RUN_S:
         notes.append(
             _by_source(
@@ -278,6 +281,29 @@ def select_quiet_part(
                     "recorded region, or a gap between regions) were excluded from the "
                     "{source} segment",
                     dropped=dropped,
+                    source=source,
+                ),
+            )
+        )
+    unused = (signal - (stop - start)) / sample_rate
+    if unused > ZERO_RUN_S:
+        notes.append(
+            _by_source(
+                source,
+                pre_sweep=diag(
+                    "{unused:.2f} s of the pre-sweep segment were not used: only the longest "
+                    "stretch between digital silences is measured",
+                    unused=unused,
+                ),
+                tail=diag(
+                    "{unused:.2f} s of the tail segment were not used: only the longest "
+                    "stretch between digital silences is measured",
+                    unused=unused,
+                ),
+                other=diag(
+                    "{unused:.2f} s of the {source} segment were not used: only the longest "
+                    "stretch between digital silences is measured",
+                    unused=unused,
                     source=source,
                 ),
             )
@@ -310,11 +336,16 @@ def select_quiet_part(
     piece = x[start:stop]
     block = max(1, round(QUIET_BLOCK_S * sample_rate))
     if piece.shape[0] >= 3 * block:
-        levels = _block_levels(piece, block)
+        # A DC offset is not background noise (see analyze_noise): it would
+        # lift every block to its own level and hide a noise event.
+        levels = _block_levels(piece - float(np.mean(piece)), block)
         reference = float(np.percentile(levels, QUIET_REFERENCE_PERCENTILE))
         quiet = levels <= reference + QUIET_EXCESS_DB
         first, last = _longest_run(quiet)
-        excluded = (levels.shape[0] - (last - first)) * block / sample_rate
+        # Only the longest quiet run is measured; quiet blocks on the other
+        # side of a noise event are not loud, so they are counted apart.
+        excluded = int(np.count_nonzero(~quiet)) * block / sample_rate
+        unused_quiet = (int(np.count_nonzero(quiet)) - (last - first)) * block / sample_rate
         if (last - first) * block < min_len:
             quiet_part = {"quiet": (last - first) * block / sample_rate, "excess": QUIET_EXCESS_DB}
             notes.append(
@@ -368,6 +399,31 @@ def select_quiet_part(
                     ),
                 )
             )
+        if unused_quiet > QUIET_BLOCK_S:
+            notes.append(
+                _by_source(
+                    source,
+                    pre_sweep=diag(
+                        "{unused:.2f} s of quiet signal in the pre-sweep segment were not used: "
+                        "only the longest quiet stretch is measured, and a louder part "
+                        "separates them from it",
+                        unused=unused_quiet,
+                    ),
+                    tail=diag(
+                        "{unused:.2f} s of quiet signal in the tail segment were not used: only "
+                        "the longest quiet stretch is measured, and a louder part separates "
+                        "them from it",
+                        unused=unused_quiet,
+                    ),
+                    other=diag(
+                        "{unused:.2f} s of quiet signal in the {source} segment were not used: "
+                        "only the longest quiet stretch is measured, and a louder part "
+                        "separates them from it",
+                        unused=unused_quiet,
+                        source=source,
+                    ),
+                )
+            )
         start, stop = start + first * block, start + last * block
 
     if stop - start < round(min_segment_s * sample_rate):
@@ -393,7 +449,11 @@ def select_quiet_part(
                 ),
             )
         )
-    level = rms_dbfs(x[start:stop])
+    # Without its DC offset, like the level analyze_noise reports and like
+    # sweep_level_dbfs: a modest offset on a quiet take must not make the
+    # silence look as loud as the sweep.
+    segment = x[start:stop]
+    level = rms_dbfs(segment - float(np.mean(segment)))
     if sweep_level_dbfs is not None and level > sweep_level_dbfs - QUIET_MIN_BELOW_SWEEP_DB:
         margin = {"below": sweep_level_dbfs - level, "sweep": sweep_level_dbfs}
         notes.append(
@@ -611,7 +671,13 @@ def analyze_noise(
     x = np.asarray(recording[verified.start : verified.end], dtype=np.float64)
     if verified.note:
         notes.append(verified.note)
-    level = rms_dbfs(x)
+    # A DC offset is not background noise, so the level, the peak and the band
+    # levels are measured without it (the PSD is detrended, and must integrate
+    # to this level). The band filters would not remove it on their own: their
+    # response to the offset switching on at the segment start outlasts the
+    # discarded start transient and lifts the low bands by several dB.
+    centred = x - float(np.mean(x))
+    level = rms_dbfs(centred)
     if level <= NOISE_FLOOR_DBFS:
         notes.append(
             diag(
@@ -624,13 +690,15 @@ def analyze_noise(
         )
         return _unmeasured(verified.source, tuple(notes))
 
-    band_levels, band_notes = _band_levels(x, sample_rate, octave_bands_hz)
+    band_levels, band_notes = _band_levels(centred, sample_rate, octave_bands_hz)
     notes.extend(band_notes)
 
     # 2 Hz resolution with several averaged segments (Welch) keeps random
-    # spectral peaks small enough for the hum detector. The density is scaled
-    # to the AES17 full-scale sine so that its integral is the RMS level.
-    nperseg = int(min(x.shape[0], sample_rate // 2))
+    # spectral peaks small enough for the hum detector; a segment shorter than
+    # 0.75 s gets coarser bins but still two half-overlapping segments (one raw
+    # periodogram reads random peaks as hum). The density is scaled to the
+    # AES17 full-scale sine so that its integral is the RMS level.
+    nperseg = int(min((2 * x.shape[0]) // 3, sample_rate // 2))
     freqs, psd = welch(x, fs=sample_rate, window="hann", nperseg=nperseg, scaling="density")
     freqs = np.asarray(freqs, dtype=np.float64)
     psd_db = np.asarray(10.0 * np.log10(np.maximum(2.0 * psd, _EPS)), dtype=np.float64)
@@ -653,8 +721,9 @@ def analyze_noise(
         segment_duration_s=x.shape[0] / sample_rate,
         rms_dbfs=level,
         # The segment is above the level floor, so its peak is a measurement
-        # too (and front ends may print it next to the RMS level).
-        peak_dbfs=peak_dbfs(x),
+        # too (and front ends print it next to the RMS level, so both leave
+        # the offset out).
+        peak_dbfs=peak_dbfs(centred),
         band_levels_dbfs=tuple(band_levels),
         psd_frequencies_hz=freqs,
         psd_db=psd_db,
@@ -674,5 +743,7 @@ def sweep_level_dbfs(
     lo, hi = max(0, start), min(recording.shape[0], start + length)
     if hi - lo < max(1, round(0.1 * sample_rate)):
         return None
-    level = rms_dbfs(recording[lo:hi])
+    sweeping = np.asarray(recording[lo:hi], dtype=np.float64)
+    # Without a DC offset, like the noise levels it is compared with.
+    level = rms_dbfs(sweeping - float(np.mean(sweeping)))
     return level if math.isfinite(level) else None

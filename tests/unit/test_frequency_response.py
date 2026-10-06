@@ -98,7 +98,8 @@ def test_lead_in_is_analysed_and_reported(sample_rate: int) -> None:
     fr = frequency_response(ir, sample_rate, direct_index=direct, smoothing_fraction=0)
     assert fr.lead_in_s == pytest.approx(0.2, abs=1e-4)
     assert fr.window_s == pytest.approx((sample_rate - 1 - direct) / sample_rate, abs=1e-4)
-    assert fr.resolution_hz == pytest.approx(1.0, rel=0.02)
+    # The lead-in does not add resolution: 0.8 s after the direct sound.
+    assert fr.resolution_hz == pytest.approx(1.0 / 0.8, rel=0.02)
 
 
 def test_excitation_band_is_stored(sample_rate: int) -> None:
@@ -108,3 +109,30 @@ def test_excitation_band_is_stored(sample_rate: int) -> None:
     fr = frequency_response(ir, sample_rate, excitation_band=band, smoothing_fraction=0)
     assert fr.excitation_band is band
     assert fr.to_dict(include_curves=False)["excitation_band"]["low_hz"] == 30.0
+
+
+def test_gated_resolution_ignores_the_lead_in(sample_rate: int) -> None:
+    """The pipeline adds ~0.4 s of lead-in; a 20 ms gate was then reported as
+    resolving 2 Hz (and the resonance search limit moved with it)."""
+    direct = round(0.4 * sample_rate)
+    ir = np.zeros(sample_rate)
+    ir[direct] = 1.0
+    fr = frequency_response(
+        ir, sample_rate, direct_index=direct, window_s=0.02, smoothing_fraction=0
+    )
+    assert fr.resolution_hz == pytest.approx(50.0, rel=0.02)
+
+
+def test_a_gate_longer_than_the_impulse_response_keeps_the_direct_sound(
+    sample_rate: int,
+) -> None:
+    """The 5 ms end taper was laid over an IR that ends 2 ms after the direct
+    sound and attenuated it by 9 dB."""
+    direct = round(0.4 * sample_rate)  # the pipeline's lead-in
+    ir = np.zeros(direct + round(0.002 * sample_rate) + 1)
+    ir[direct] = 1.0
+    fr = frequency_response(
+        ir, sample_rate, direct_index=direct, window_s=0.05, smoothing_fraction=0
+    )
+    at_1k = fr.magnitude_db_raw[np.argmin(np.abs(fr.frequencies_hz - 1000.0))]
+    assert at_1k == pytest.approx(0.0, abs=0.01)

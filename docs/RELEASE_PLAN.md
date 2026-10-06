@@ -126,8 +126,9 @@ in `pyproject.toml`, and the maintainer keeps the last word.
 2. **CI opens a draft.** Because `pyproject.toml` changed on `main` and no
    tag `v<version>` exists, the workflow runs lint, type-check and the
    test suite, builds sdist and wheel, builds the unsigned bundles on the
-   three OS runners (license bundle → PyInstaller → strip GPL-only Qt
-   modules and ASIO DLLs → bundle gate → smoke test → archive → checksums),
+   three OS runners (PyInstaller → license bundle, with a notice for every
+   native library PyInstaller copied → strip GPL-only Qt modules and ASIO
+   DLLs → bundle gate → smoke test → archive → checksums),
    produces the SBOM and lock file, and opens or refreshes the **draft**
    GitHub Release named `v<version>` with the release notes
    (`packaging/release-notes-header.md` around the CHANGELOG section) as

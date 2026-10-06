@@ -84,3 +84,12 @@ def test_bad_sidecar_rejected(tmp_path: Path) -> None:
         read_sweep_sidecar(side)
     with pytest.raises(ConfigurationError):
         load_reference(tmp_path / "other.json")
+
+
+@pytest.mark.parametrize("subtype", ["PCM_24", "FLOAT"])
+def test_write_wav_refuses_non_finite_samples(tmp_path: Path, subtype: str) -> None:
+    """NaN passed the full-scale check and was written as a -1.0 click (PCM)
+    or as a file read_wav then refused (FLOAT)."""
+    with pytest.raises(InvalidAudioError, match="NaN"):
+        write_wav(tmp_path / "x.wav", np.array([0.0, np.nan, 0.5]), 48000, subtype=subtype)
+    assert not (tmp_path / "x.wav").exists()
