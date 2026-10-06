@@ -7,6 +7,31 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.5.0rc1] - 2026-10-06
+
+Release candidate 1 for 0.5.0, built for hardware and DAW validation. It
+is **not** the final 0.5.0 stable release: its feature set is frozen, and
+0.5.0 is cut only when the gate in `docs/RELEASE_PLAN.md` §2b has been met
+on real machines, interfaces, rooms and DAWs. On the beta line (`main`) the
+same code was prepared as 0.5.0b2; this section lists everything since the
+published v0.5.0b1, so a tester reads one list.
+
+这是 0.5.0 正式版之前的候选测试版（release candidate 1），不代表已经完成所有
+真实硬件和 DAW 验证。功能面已冻结；只有在真实电脑、音频接口、房间和 DAW 上满足
+`docs/RELEASE_PLAN.md` §2b 的门槛之后，才会切出 0.5.0。
+
+**Verified:** automated unit and integration tests, synthetic acoustic tests
+against closed-form decays, cross-platform CI (Linux, macOS, Windows; Python
+3.12–3.14), bundle smoke tests, the Windows installer install / smoke /
+uninstall, packaging and license checks, and the SBOM. **Not yet fully
+verified:** real audio interfaces, microphones, loudspeakers, rooms, every
+DAW, every driver and host API, and signing / notarization (the bundles are
+unsigned: macOS ad hoc, not notarized; Windows no Authenticode; nothing is
+on PyPI). `docs/HARDWARE_TESTS.md` and `docs/VALIDATION.md` are unchanged:
+every cell is still empty, i.e. not tested.
+
 ### Added
 - **A release-candidate line next to the beta line.** `release/0.5.0`
   carries `0.5.0rc1`: the 0.5.0b2 code with a frozen feature set, built so
@@ -35,35 +60,6 @@ All notable changes to ReverbScope are documented here. The format follows
   so. `docs/RELEASE_READINESS.md` records the release-readiness audit of
   the measurement path: for every reported number, how its validity,
   confidence or reason is carried and which tests prove it.
-
-### Changed
-- CI runs on pushes to `release/**` branches as well as `main`.
-
-## [0.5.0b2] - 2026-10-06
-
-Software beta 2: the stabilization release after the RoomScope → ReverbScope
-rename, and still **not** 0.5.0 (the release plan's 0.5.0 needs a dated
-hardware-matrix PASS; none exists). It brings together the stable line's
-defect fixes, an audit of the measurement path that withholds decay and
-energy numbers the measurement cannot support, and the checks that run
-without hardware. From this version every download is named
-`ReverbScope-*` / `reverbscope-*`; the published v0.5.0b1 keeps its
-`RoomScope-*` / `roomscope-*` files and is not rewritten.
-
-**How this version was verified, and how it was not.** Every entry below
-was reproduced and tested with synthetic signals, the fake audio backend and
-scripted stand-ins: the test suite (GitHub's Linux, macOS and Windows CI
-machines on Python 3.12–3.14, and a Linux container), the fake-backend
-Standalone flow, the offline command-line workflow, the sdist and wheel build
-and install, and the Release workflow's bundle smoke tests, which show that
-the bundles start and run the fake measurement on GitHub's machines and
-nothing more. **No real audio interface, microphone, loudspeaker, room or
-DAW was used.** `docs/HARDWARE_TESTS.md` and `docs/VALIDATION.md` are
-unchanged: every cell is still empty (not tested), and nothing in this
-version is hardware-validated. The bundles are unsigned (macOS: ad hoc, not notarized;
-Windows: no Authenticode) and nothing is on PyPI.
-
-### Added
 - **Settings from the command line.** `reverbscope config` lists the settings
   the desktop app keeps in `settings.json`, says what each value means now
   and where the file is; `reverbscope config KEY VALUE` changes one: `language`
@@ -97,6 +93,7 @@ Windows: no Authenticode) and nothing is on PyPI.
   interface, a DAW or a real room; none of this fills the hardware matrix.
 
 ### Changed
+- CI runs on pushes to `release/**` branches as well as `main`.
 - **Renamed RoomScope → ReverbScope.** The project, the Python package
   (`roomscope` → `reverbscope`), the command line (`roomscope` →
   `reverbscope`, `roomscope-gui` → `reverbscope-gui`), the `roomscope.exporters`

@@ -23,10 +23,13 @@ refuses to invent a number.**
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**Status: 0.5.0 beta 2 (pre-release)** — free, open source, for testing. **This is not
-the hardware release:** nothing has been measured through a real audio
-interface or DAW yet, so treat the numbers as unvalidated
-([help test it](#help-test-beta-2)). Neither edition needs Python.
+**Status: 0.5.0 release candidate 1 (pre-release)** — free, open source, for
+testing. **ReverbScope 0.5.0rc1 is a release candidate for hardware and DAW
+validation. It is not the final 0.5.0 stable release:** nothing has been
+measured through a real audio interface or DAW yet, so treat the numbers as
+unvalidated ([help test it](#help-test-the-release-candidate)). The builds
+are unsigned: macOS may ask for **Open Anyway**, Windows may show
+SmartScreen. Neither edition needs Python.
 
 Choose **one edition**, then the file for your computer under **Assets** on
 the newest release:
@@ -138,18 +141,18 @@ C50 or C80 is a poor fit for that kind of recording; the threshold is an
 engineering choice, not a grade. The GUI, the command line and the reports
 are available in English and Simplified Chinese.
 
-Status: **0.5.0 beta 2 (pre-release)** on the way to 1.0
+Status: **0.5.0 release candidate 1 (pre-release)** on the way to 1.0
 ([RELEASE_PLAN.md](docs/RELEASE_PLAN.md)). The DSP core, CLI, GUI, compare,
 loopback, zh-CN catalog, session bundles and both editions' bundles exist and are
 covered by synthetic tests on Linux, macOS and Windows. **Not yet:** any result
 measured on real hardware (the hardware matrix and the validation campaign are
-empty), signed bundles, a PyPI package. Beta 2 does not meet the 0.5.0 exit
-criteria in the release plan. Snapshot of what works:
+empty), signed bundles, a PyPI package. The candidate becomes 0.5.0 only when
+the gate in the release plan (§2b) is met by real testing. Snapshot of what works:
 [docs/STATUS.md](docs/STATUS.md).
 
-## Help test beta 2
+## Help test the release candidate
 
-The beta 2 builds exist so that people with real interfaces and DAWs can find
+The 0.5.0rc1 builds exist so that people with real interfaces and DAWs can find
 out what works. A failed check is as useful as a pass.
 
 1. Install a build ([Download](#download); the Gatekeeper / SmartScreen

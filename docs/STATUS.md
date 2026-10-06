@@ -6,6 +6,21 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 37: 2026-10-06 — **this is the release-candidate line
+(`release/0.5.0`), at 0.5.0rc1; not published.**
+
+This branch was cut from the rc-readiness head of the beta line (snapshot
+36) and differs from it only in what a candidate needs: `pyproject.toml` at
+`0.5.0rc1`, the `[0.5.0rc1]` changelog section (everything since the
+published v0.5.0b1, with the candidate statement in English and Chinese),
+the READMEs and the installation guide saying that this is a release
+candidate for hardware and DAW validation, unsigned, and not the final
+0.5.0. The feature set is frozen; `docs/RELEASE_PLAN.md` §2a says what may
+land here and §2b when 0.5.0 is cut. Pushing this branch runs CI and the
+Release workflow, which opens the draft `v0.5.0rc1` with the fourteen
+ReverbScope-named assets; publishing it (as a pre-release) and every later
+step is the maintainer's decision. Nothing on real hardware has been run.
+
 Snapshot 36: 2026-10-06 — **two lines from here on: the beta line on
 `main`, and a release-candidate line for hardware and DAW validation.**
 

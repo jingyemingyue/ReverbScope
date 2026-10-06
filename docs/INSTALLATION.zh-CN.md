@@ -225,7 +225,7 @@ ReverbScope **还没有发布到 PyPI**，所以 `pip install reverbscope` 装�
 ```bash
 python3 -m venv reverbscope-env
 source reverbscope-env/bin/activate          # Windows：reverbscope-env\Scripts\activate
-pip install "./reverbscope-0.5.0b2-py3-none-any.whl[gui]"
+pip install "./reverbscope-0.5.0rc1-py3-none-any.whl[gui]"
 reverbscope --help
 reverbscope gui                              # 或者：reverbscope-gui
 ```
@@ -238,7 +238,7 @@ reverbscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
 reverbscope show demo/
 ```
 
-`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-0.5.0b2.tar.gz[gui]"` 会在本地构建出同样的 wheel。
+`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-0.5.0rc1.tar.gz[gui]"` 会在本地构建出同样的 wheel。
 
 ### 开发者安装（从 Git）
 
@@ -273,7 +273,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 
 ## 未签名构建的警告
 
-**当前构建是未签名的开发版 / 预发布版构建。** macOS 应用只有临时签名（ad hoc），没有经过 Apple 公证；Windows 文件
+**当前构建（包括 0.5.0 候选测试版）都是未签名的预发布构建，仅供测试。** macOS 应用只有临时签名（ad hoc），没有经过 Apple 公证；Windows 文件
 没有 Authenticode 签名。所以系统无法确认发布者，会警告一次：
 
 | 系统 | 你会看到 | 怎么做 |
