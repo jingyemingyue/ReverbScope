@@ -339,6 +339,24 @@ def test_a_value_that_joins_several_diagnostics() -> None:
     assert _english_left(_shown_in_chinese(warning)) == []
 
 
+def test_truncation_values_are_shown_in_chinese_in_old_and_new_files() -> None:
+    """R3-1 follow-up: the changed values now carry three significant digits
+    ("EDT 0.0404 s vs 0.0384 s"); a result.json written with two decimals
+    ("EDT 0.04 s vs 0.04 s") is still shown in Chinese."""
+    from reverbscope.i18n import diag
+
+    problem = (
+        "the late decay slope could not be estimated: fewer than 3 intervals of decay "
+        "lie between 7.5 and 22.5 dB above the noise"
+    )
+    for changes in ("EDT 0.0404 s vs 0.0384 s", "EDT 0.04 s vs 0.04 s; T20 0.452 s vs 0.512 s"):
+        shown = _shown_in_chinese(diag(TRUNCATION, problem=problem, changes=changes))
+        assert _english_left(shown) == [], shown
+    assert "0.0404 s，对比 0.0384 s" in _shown_in_chinese(
+        diag(TRUNCATION, problem=problem, changes="EDT 0.0404 s vs 0.0384 s")
+    )
+
+
 def test_upper_plane_rejections_joined_before_a_literal_semicolon() -> None:
     from reverbscope.i18n import diag
 

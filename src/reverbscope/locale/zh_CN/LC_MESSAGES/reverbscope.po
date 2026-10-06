@@ -3233,6 +3233,7 @@ msgctxt "diagnostic"
 msgid "Evaluation range covers fewer than 3 samples"
 msgstr "评估范围覆盖的样本少于 3 个"
 
+# Stored by ReverbScope 0.5 and earlier in result.json (two decimals); still shown translated.
 msgctxt "diagnostic"
 msgid "{metric} {seconds:.2f} s vs {other:.2f} s"
 msgstr "{metric} {seconds:.2f} s，对比 {other:.2f} s"
@@ -4623,3 +4624,9 @@ msgstr "无法估计后期衰减斜率：响应在高于本底噪声 {lower:g} �
 
 msgid "n is the number of sessions averaged in the row; a value followed by (k) averages only k of them, as the others have no VALID value."
 msgstr "n 为该行参与平均的会话数；数值后带 (k) 表示只平均了其中 k 个会话，其余会话没有有效值。"
+
+# Decay analysis: truncation-sensitivity values with enough digits to tell them apart
+
+msgctxt "diagnostic"
+msgid "{metric} {seconds:#.3g} s vs {other:#.3g} s"
+msgstr "{metric} {seconds:#.3g} s，对比 {other:#.3g} s"

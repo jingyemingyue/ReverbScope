@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 
 import numpy as np
 import pytest
@@ -8,6 +9,7 @@ import pytest
 from reverbscope.core.decay import (
     LUNDEBY_MAX_ITERATIONS,
     MIN_BT_PRODUCT,
+    _truncation_sensitivity,
     analyze_band,
     analyze_decay,
     decay_lead_in_s,
@@ -589,6 +591,71 @@ def test_a_fast_decay_in_a_wide_band_is_still_found_by_the_short_blocks(
     assert band.edt.validity is Validity.VALID
     assert band.edt.seconds == pytest.approx(0.05, rel=0.3)
     assert band.truncation_time_s is not None and band.truncation_time_s < 0.1
+
+
+def _valid_metric(name: str, seconds: float) -> DecayMetric:
+    return DecayMetric(
+        name=name,
+        seconds=seconds,
+        validity=Validity.VALID,
+        evaluation_range_db=(-5.0, -15.0),
+    )
+
+
+@pytest.mark.parametrize(
+    ("seconds", "other", "text"),
+    [
+        (0.0404, 0.0384, "EDT 0.0404 s vs 0.0384 s"),
+        (0.452, 0.512, "EDT 0.452 s vs 0.512 s"),
+        (0.5, 0.6, "EDT 0.500 s vs 0.600 s"),
+        (1.234, 1.512, "EDT 1.23 s vs 1.51 s"),
+        (0.00400, 0.00380, "EDT 0.00400 s vs 0.00380 s"),
+    ],
+)
+def test_a_truncation_change_shows_values_that_differ(
+    seconds: float, other: float, text: str
+) -> None:
+    """R3-1 follow-up: with two decimals a 40 ms EDT that changed by 5 % read
+    "EDT 0.04 s vs 0.04 s", a warning that said the result depends on the
+    truncation and showed no difference."""
+    changes = _truncation_sensitivity(
+        (_valid_metric("EDT", seconds),), (_valid_metric("EDT", other),)
+    )
+    assert changes == [text]
+
+
+def test_a_truncation_change_is_never_shown_as_two_equal_values() -> None:
+    """Any change just above the 5 % gate prints differently, from 1 ms to 100 s."""
+    for seconds in np.geomspace(0.001, 100.0, 400):
+        for ratio in (1.0501, 0.9499, 1.3):  # chosen / alternative
+            changes = _truncation_sensitivity(
+                (_valid_metric("T20", float(seconds)),),
+                (_valid_metric("T20", float(seconds) / ratio),),
+            )
+            assert len(changes) == 1
+            shown = changes[0].removeprefix("T20 ").removesuffix(" s").split(" s vs ")
+            assert shown[0] != shown[1], (seconds, ratio, changes)
+
+
+def test_a_fast_decay_whose_truncation_matters_names_two_different_values(
+    sample_rate: int,
+) -> None:
+    """R3-1 follow-up: RT 0.05 s, 30 dB of range, seed 0, 1 kHz band: the warning
+    read "(EDT 0.04 s vs 0.04 s)"."""
+    rng = np.random.default_rng(0)
+    lead = int(0.3 * sample_rate)
+    n = lead + int(1.5 * sample_rate)
+    t = np.arange(n - lead) / sample_rate
+    ir = np.zeros(n)
+    ir[lead:] = rng.standard_normal(n - lead) * 10 ** (-3 * t / 0.05)
+    ir += 10 ** (-30 / 20) * rng.standard_normal(n)
+    settings = AnalysisSettings(octave_bands_hz=(1000.0,))
+    band = analyze_decay(ir, sample_rate, settings, direct_index=lead).bands[0]
+    assert band.edt.validity is Validity.UNRELIABLE
+    warning = band.warnings[0]
+    match = re.search(r"EDT (\d\.\d+) s vs (\d\.\d+) s", warning)
+    assert match is not None, warning
+    assert match.group(1) != match.group(2)
 
 
 @pytest.mark.parametrize("rate", [48000, 192000])

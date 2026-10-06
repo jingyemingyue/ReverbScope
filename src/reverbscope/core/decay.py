@@ -810,9 +810,11 @@ def _truncation_sensitivity(
                 )
             )
         elif abs(metric.seconds / other.seconds - 1.0) > TRUNCATION_SENSITIVITY:
+            # Three significant digits, not two decimals: a 5 % change of a
+            # 40 ms EDT is 2 ms, and with two decimals both read "0.04 s".
             changes.append(
                 diag(
-                    "{metric} {seconds:.2f} s vs {other:.2f} s",
+                    "{metric} {seconds:#.3g} s vs {other:#.3g} s",
                     metric=metric.name,
                     seconds=metric.seconds,
                     other=other.seconds,
