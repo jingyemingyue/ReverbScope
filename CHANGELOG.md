@@ -7,7 +7,37 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **A release-candidate line next to the beta line.** `release/0.5.0`
+  carries `0.5.0rc1`: the 0.5.0b2 code with a frozen feature set, built so
+  that anyone can download, install and report from real interfaces, rooms
+  and DAWs; `main` stays the beta line (`0.5.0b3`, …). The Release workflow
+  builds and drafts for `release/**` branches as it does for `main`, with
+  a candidate's own notes header that says, in English and Chinese, that
+  it is not the final 0.5.0. The rules of both lines, what may land on the
+  candidate and the gate for 0.5.0 itself are in `docs/RELEASE_PLAN.md`
+  §2a and §2b.
+- **Environment report for testers.** `reverbscope doctor --out FILE` also
+  writes the report (text, or JSON with `--format json`) as a UTF-8 file to
+  attach to a hardware or DAW report, whatever the console's code page. The
+  device listing names the driver's default input and output latency when
+  the device reports one (the desktop app's Environment Report too).
+- **Hardware and DAW reports.** The interface report form asks for the
+  ReverbScope version and build commit, the operating system and CPU, the
+  buffer size and latency setting, and whether the `audio stream:` log line
+  reported the latency; the DAW report form asks which workflow was
+  followed, the outcome (analysed with high confidence, with warnings, or
+  not at all) and for screenshots or log lines. `docs/HARDWARE_TESTS.md`
+  has a results log (date, version and commit, OS, interface, driver,
+  sample rate, buffer, check, PASS / FAIL, issue) that only a maintainer
+  fills from issues, the latency row, and the eleven DAWs the candidate
+  asks for first, none of which counts as supported until a report says
+  so. `docs/RELEASE_READINESS.md` records the release-readiness audit of
+  the measurement path: for every reported number, how its validity,
+  confidence or reason is carried and which tests prove it.
+
+### Changed
+- CI runs on pushes to `release/**` branches as well as `main`.
 
 ## [0.5.0b2] - 2026-10-06
 

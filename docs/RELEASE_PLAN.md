@@ -83,6 +83,7 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
 | **0.4.x** | Software readiness before community hardware validation (the maintainer's phase definition, 2026-09-24): the review follow-ups #9–#17 (all closed in 0.4.1), packaging, device diagnostics, the GUI, the DAW guide and the community report templates | CI and the Release workflow green on the release commit; every new behaviour has a synthetic or scripted test; `CHANGELOG.md` names what changed; no hardware or DAW claim | Any hardware or DAW result; signing; PyPI |
 | **0.5.0b1** | Software beta: ship the single-microphone algorithm and the desktop presentation that landed after 0.4.1, still without a hardware claim | CI and the Release workflow green on the release commit; every new behaviour has a synthetic test; CHANGELOG names the version; the notes say this is not 0.5.0 | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI |
 | **0.5.0b2** | Stabilization beta after the rename: the stable line's fixes, the acoustic audit (no number without the measurement to support it), the offline validation gates, every download named ReverbScope | CI and the Release workflow green on the release commit; every fix has a synthetic regression test; CHANGELOG names the version and separates synthetic/CI validation from hardware validation; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI; a working website until Pages is enabled |
+| **0.5.0rc1** | Release candidate for hardware and DAW validation: the 0.5.0b2 code with the tester-facing additions of §2a, feature set frozen, built so that anyone can download, install and report | CI and the Release workflow green on the release commit of the `release/0.5.0` branch; every download named for the project; the notes say it is a candidate, not 0.5.0, in English and Chinese; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; signing; PyPI; 0.5.0 itself |
 | **0.5.0** | "Trusted by a human": the first version whose Standalone Mode and DAW workflow were run on real hardware at least once | One dated PASS row per cell of the hardware matrix on at least one platform (device enumeration, sample-rate negotiation, channel mapping, loopback capture, Stop during playback, a full Standalone measurement, the same signal through one DAW); #12 and #13 (loopback time origin, real-time callback) closed; #14 (zh-CN catalog complete, safety warning translated) closed; #15 (ISO 3382-2 table source) closed | The validation campaign; API / schema freeze; signing |
 | **1.0.0rc1** | Freeze and prove (ARCHITECTURE_V1.md §10, row 1.0-rc) | No open MUST item of §3.1: hardware matrix executed at least once per platform (M10); validation campaign published with its data (M11); signed bundles or an explicit maintainer decision to ship unsigned (M9); public-repository checklist executed (M13, §9.1); API and schema integers frozen; SECURITY / CONTRIBUTING / STATUS updated for the freeze; PyPI pre-release if trusted publishing is configured | — |
 | **1.0.0** | Release | Fixes from the candidate only; release notes name the validation results and the known limitations | — |
@@ -90,6 +91,81 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
 Minor releases between these rows are allowed whenever a MUST or SHOULD
 item lands and CI is green on every platform; patch releases are for fixes
 only (ARCHITECTURE_V1.md §9.2).
+
+## 2a. Two lines: beta and release candidate (2026-10-06)
+
+From 0.5.0b2 on, the project runs two lines at once. Neither waits for the
+other.
+
+**The beta line is `main`.** It keeps moving: bug fixes, algorithm
+improvements, command-line and desktop changes, Chinese, UX, DAW workflow,
+new diagnostics and non-breaking features, as `0.5.0b3`, `0.5.0b4`, … A
+higher-risk algorithm or a larger behaviour change lands on `main` only with
+its own regression test and its own changelog entry, and never slips into
+the candidate line. (PEP 440 orders `0.5.0b3` *before* `0.5.0rc1`; the
+numbers say which line a build belongs to, not which is newer. `pip`
+installs from a file name, so the order has no effect while nothing is on
+PyPI.)
+
+**The release-candidate line is `release/0.5.0`.** It starts from the
+stabilized, CI-green commit of PR #44 and carries `0.5.0rc1`, then `rc2`, …
+until the gate in §2b is met, then `0.5.0` itself and its patch releases.
+Its feature set is frozen. A change is allowed on it only when it is a
+correctness fix, a crash fix, an installer or packaging fix, a cross-platform
+fix, a hardware-compatibility fix, a DAW-compatibility fix, a documentation
+correction, a localization correction, a release-engineering fix, or the fix
+of a serious UX regression, each with a regression test where a test can
+express it. Not allowed: a new feature of any size, an algorithm experiment,
+a command-line redesign, an architecture rewrite, a refactor unrelated to
+stability, or a major dependency upgrade. Those go to `main`.
+
+**How the two stay close.** A fix that applies to both lines is made on the
+candidate line first and then forward-ported to `main` (merge or cherry-pick
+of the same commit; never by hand). Nothing is backported from `main` to the
+candidate line except through that rule. A cherry-pick must not undo the
+rename, drop a test or revert a document; `check_cli_docs.py`, the catalog
+tests and the full suite run on both lines. The candidate line is
+conservative; `main` is where development happens.
+
+**What the workflows do with the two lines.** CI runs on pushes to `main`,
+to `release/**` and on every pull request. The Release workflow runs on
+pushes to `main` and `release/**` that touch a release file (the version,
+the workflow, `packaging/`, the bundle scripts), on `v*` tags, on pull
+requests that touch those files, and by hand; a documentation-only push
+builds nothing. On `main` or on a `release/*` branch it opens or refreshes
+the draft Release of that line's version while no tag `v<version>` exists;
+publishing the draft is the maintainer's click, which creates the tag. A
+candidate is published as a *pre-release*. The Actions budget rule: a
+release matrix runs only for release-related changes, a candidate branch or
+pull request, release preparation on `main`, a tag, or a manual validation;
+and the commit that is published must carry its own green CI and Release
+runs, not a neighbour's.
+
+## 2b. The 0.5.0 gate
+
+`0.5.0` is cut from the candidate line only when all of the following are
+recorded in [HARDWARE_TESTS.md](HARDWARE_TESTS.md) and
+[VALIDATION.md](VALIDATION.md) from real runs, each with its issue:
+
+* At least one real macOS machine and one real Windows machine (Linux is
+  welcome, not required for the gate).
+* At least two different models of real audio interface.
+* On each of those, at least: device enumeration, a full take at 44.1 kHz
+  and at 48 kHz, a full Standalone measurement, Stop during playback, and a
+  take without a buffer under/overflow; plus at least one real room
+  recording with a result a person could read.
+* At least two DAWs with the complete Universal DAW Mode workflow (sweep at
+  the project rate, record, export, analyse with direct-sound confidence
+  high), with the sample-rate negative check where the DAW allows it.
+* At least one comparison of ReverbScope against a reference instrument on
+  the same recording, recorded in VALIDATION.md §6 with the numbers, not a
+  verbal "close enough". Room EQ Wizard, or another clearly licensed
+  reference implementation, is the preferred comparison instrument.
+
+A correctness bug found by that testing is fixed on the candidate line, with
+a regression test, as `0.5.0rc2` (then `rc3`, …), and the affected rows are
+run again before the gate is judged. The maintainer publishes `0.5.0`; no
+workflow and no agent does.
 
 ## 3. How a release is produced
 
@@ -470,5 +546,6 @@ is closed when that pull request is merged.
 ## 7. What this plan does not do
 
 It does not make the repository public, create a numbered Release, change
-the license, push a tag, rewrite history, or claim any hardware result.
-Each of those is either a maintainer click or a person in a room.
+the license, push a tag, rewrite history, publish a candidate or 0.5.0, or
+claim any hardware result. Each of those is either a maintainer click or a
+person in a room.
