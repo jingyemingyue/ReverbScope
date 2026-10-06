@@ -273,6 +273,18 @@ def whole_number(text: str) -> int | None:
         return None
 
 
+#: The marks a prompt ends with when it has no default to show.
+_CLOSING = frozenset(":：?？")
+
+
+def _split_question(template: str, question: str, **fields: object) -> tuple[str, str]:
+    """``template`` (``{question} [{default}]: ``) as the question and what
+    follows it, so the layout can keep the second part whole."""
+    marker = "\x00"
+    head, _marker, tail = template.format(question=marker, **fields).partition(marker)
+    return head + question, tail
+
+
 def _exists(path: Path) -> bool:
     """Whether ``path`` exists; a name too long for the file system does not."""
     try:
@@ -580,14 +592,30 @@ class Menu:
 
     # Questions -----------------------------------------------------------------------------
 
-    def _input(self, prompt: str) -> str:
+    def _input(self, prompt: str, tail: str = "") -> str:
+        """Write ``prompt`` and read the answer.
+
+        A question longer than the screen is written in lines, so the answer
+        is typed on a line with room; only the last line is the prompt. The
+        ``tail`` (`` [48000]: ``, ``（默认：48000）：``) follows the question
+        on its last line when it fits there, else it is a line of its own, so
+        a default is never cut in two.
+        """
         c = self.console()
-        text = c.readable(prompt)
-        trailing = text[len(text.rstrip()) :]
+        text, tail = c.readable(prompt), c.readable(tail)
         margin = " " * (len(text) - len(text.lstrip(" ")))
-        # A question longer than the screen is written in lines, so the answer is
-        # typed on a line with room; only the last line is the prompt.
-        lines = wrap(text.strip(), max(c.width - _ANSWER_ROOM, 20), first=margin)
+        end = tail or text
+        trailing = end[len(end.rstrip()) :]
+        room = max(c.width - _ANSWER_ROOM, 20)
+        lines = wrap(text.strip(), room, first=margin, hang=4)
+        core = tail.strip()
+        if core:
+            joiner = " " if tail[:1].isspace() else ""
+            only_marks = all(char in _CLOSING for char in core)
+            if only_marks or cell_width(lines[-1] + joiner + core) <= room:
+                lines[-1] += joiner + core
+            else:
+                lines.append(margin + core)
         for line in lines[:-1]:
             self.out.write(c.fit(line) + "\n")
         try:
@@ -609,13 +637,13 @@ class Menu:
     ) -> T:
         """Ask until ``check`` takes the answer; an empty answer takes ``default``."""
         if default is None and shown is None:
-            prompt = _("{question}: ").format(question=question)
+            template, fields = _("{question}: "), {}
         else:
-            prompt = _("{question} [{default}]: ").format(
-                question=question, default=default if shown is None else shown
-            )
+            template = _("{question} [{default}]: ")
+            fields = {"default": default if shown is None else shown}
+        head, tail = _split_question(template, question, **fields)
         while True:
-            text = self._input("  " + prompt).strip()
+            text = self._input("  " + head, tail).strip()
             if not text and default is not None:
                 text = default
             try:
@@ -625,7 +653,8 @@ class Menu:
 
     def confirm(self, question: str) -> bool:
         """Yes only for an explicit yes; Enter is no."""
-        return is_yes(self._input("  " + _("{question} [y/N]: ").format(question=question)))
+        head, tail = _split_question(_("{question} [y/N]: "), question)
+        return is_yes(self._input("  " + head, tail))
 
     def pause(self) -> None:
         with contextlib.suppress(_BackToMenuError):

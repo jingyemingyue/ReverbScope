@@ -38,11 +38,11 @@
 
 > Early and late energy
   ratios from the same truncation as the decay; not a room score
-  C50 is early energy over late energy at ## ms (speech). C80 is the same at ##
-  ms (music). D50 is the share of energy in the first ## ms. Centre time is the
-  energy-weighted average time. Time zero is the detected direct sound. A ratio
-  is reported only when the decay range is at least ## dB, and it is not a room
-  score.
+  C50 is early energy over late energy at ## ms (speech). C80 is the same at
+  ## ms (music). D50 is the share of energy in the first ## ms. Centre time is
+  the energy-weighted average time. Time zero is the detected direct sound. A
+  ratio is reported only when the decay range is at least ## dB, and it is not a
+  room score.
 
 +===========+==========+==========+======+=============+
 | Band      |      C50 |      C80 |  D50 | Centre time |
@@ -64,8 +64,8 @@
 | Segment     | pre-sweep / #.## s                        |
 | Calibration | uncalibrated: levels are dBFS, not dB SPL |
 +-------------+-------------------------------------------+
-  [WARN] Potential mains hum at multiples of ## Hz: ## Hz (+## dB), ### Hz (+##
-         dB), ### Hz (+## dB)
+  [WARN] Potential mains hum at multiples of ## Hz: ## Hz (+## dB), ### Hz
+         (+## dB), ### Hz (+## dB)
 
 > Early reflections  #.#-## ms, above -## dB
 +========+=========+
@@ -89,8 +89,8 @@
   [INFO] inherited from the reflection search: candidates are envelope peaks
          standing above the local diffuse level; in a dense early tail some
          candidates may be statistical rather than discrete reflections
-  [INFO] no air temperature was supplied, so ## °C (###.# m/s) was assumed; a #
-         °C error moves every distance by about #.# %
+  [INFO] no air temperature was supplied, so ## °C (###.# m/s) was assumed; a
+         # °C error moves every distance by about #.# %
 
 > Spectrum  of the impulse response
 +---------------+---------------------+

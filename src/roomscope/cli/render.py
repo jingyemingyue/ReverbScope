@@ -22,7 +22,6 @@ from roomscope.cli.console import (
     Tone,
     Verbatim,
     cell_width,
-    glue_units,
     pad,
     shell_command,
     wrap,
@@ -241,7 +240,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
     rows: list[tuple[str, Status, str]] = []
 
     def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, status, glue_units(text)))
+        rows.append((label, status, text))
 
     broadband = result.decay.broadband
     if broadband.rt60_estimate_s is not None:
@@ -1104,7 +1103,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     arrow = f" {c.arrow()} "
 
     def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, status, glue_units(text)))
+        rows.append((label, status, text))
 
     rt = next((d for d in comparison.decay if d.name == "broadband.rt60_estimate"), None)
     if (

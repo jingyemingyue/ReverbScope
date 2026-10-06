@@ -352,21 +352,46 @@ def _tokens(text: str) -> Iterator[str]:
         yield buffer
 
 
-def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> list[str]:
+def _is_word_char(text: str) -> bool:
+    """One wide character that is part of a word (not punctuation): the first
+    half of a two-character word such as 路径 can be kept with the second."""
+    return (
+        len(text) == 1
+        and char_width(text) == 2
+        and text not in _NO_LINE_START
+        and text not in _NO_LINE_END
+        and unicodedata.category(text).startswith("L")
+    )
+
+
+def wrap(
+    text: str, width: int, *, first: str = "", rest: str | None = None, hang: int = 0
+) -> list[str]:
     """Plain ``text`` filled to ``width`` columns.
 
     ``first`` starts the first line and ``rest`` every following one (a
     hanging indent). Chinese text breaks between characters, Latin text at
     spaces; a word longer than a line is split. Explicit newlines are kept.
+
+    A number is never parted from its unit (``2.4 ms``, see
+    :func:`glue_units`). Closing punctuation does not start a line: the
+    character before it goes down with it (and the one before that, when it
+    is a closing character too, or when both are the two halves of a Chinese
+    word). With ``hang`` columns to spare (a prompt, which has room at the
+    right edge for the answer) closing punctuation stays on the line instead.
+    The last line is never a lone character.
     """
     rest = first if rest is None else rest
     lines: list[str] = []
     for paragraph in text.split("\n"):
+        paragraph = glue_units(paragraph)
+        start = len(lines)
         prefix = first if not lines else rest
         # The line as pieces: a token with the space before it, if any.
         parts: list[str] = []
         space = False
-        for token in _tokens(paragraph):
+        tokens = list(_tokens(paragraph))
+        for index, token in enumerate(tokens):
             if token.isspace():
                 space = bool(parts)
                 continue
@@ -378,12 +403,23 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                 continue
             carry = ""
             if parts and not joiner and token[0] in _NO_LINE_START:
-                if len(parts) == 1:
-                    parts.append(token)  # nothing to carry: let it hang
+                if len(parts) == 1 or cell_width("".join(parts) + token) <= room + hang:
+                    parts.append(token)  # nothing to carry (or room to spare): let it hang
                     continue
                 # Closing punctuation does not start a line: the character
-                # before it moves down with it.
+                # before it moves down with it, and a closing character
+                # before that, and the first half of a two-character word.
                 carry = parts.pop()
+                while len(parts) > 1 and carry[0] in _NO_LINE_START:
+                    carry = parts.pop() + carry
+                if len(parts) > 1 and _is_word_char(carry[:1]) and _is_word_char(parts[-1]):
+                    carry = parts.pop() + carry
+            elif parts and not joiner and _is_word_char(token) and len(parts) > 1:
+                # The line is full and the next one would start with one
+                # character and a closing mark (路 / 径：): keep the word whole.
+                after = tokens[index + 1] if index + 1 < len(tokens) else ""
+                if after[:1] in _NO_LINE_START and after and _is_word_char(parts[-1]):
+                    carry = parts.pop()
             # An opening bracket does not end a line: it moves down with
             # what it opens (and with the space after it, if any).
             while len(parts) > 1 and parts[-1][-1] in _NO_LINE_END:
@@ -401,8 +437,18 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                 lines.append(prefix + head)
                 prefix, piece = rest, piece[len(head) :]
             parts = [piece]
+        # A last line of one character (the second half of a word, or a
+        # word and its closing mark) takes the character before it along.
+        if (
+            len(lines) > start
+            and 0 < cell_width("".join(parts).rstrip("".join(_NO_LINE_START))) <= 2
+        ):
+            before = lines[-1]
+            if len(before) > len(rest) + 1 and _is_word_char(before[-1]):
+                lines[-1] = before[:-1]
+                parts = [before[-1], *parts]
         lines.append(prefix + "".join(parts))
-    return lines
+    return [line.replace(GLUE, " ") for line in lines]
 
 
 # --- Environment -----------------------------------------------------------

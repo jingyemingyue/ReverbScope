@@ -291,6 +291,32 @@ def test_a_question_longer_than_the_screen_is_written_in_lines(
     assert first.startswith("  Sample rate in Hz (44100,")
 
 
+@pytest.mark.parametrize("lang", ["zh_CN", "en"])
+@pytest.mark.parametrize("columns", ["80", "60", "40"])
+def test_a_default_is_never_cut_in_two_by_a_long_question(
+    here: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    lang: str,
+    columns: str,
+) -> None:
+    """ "采样率 Hz，可选 ……（默认：" / "48000）：" read as two questions: the
+    question is written in lines and "（默认：48000）：" stays whole on the last."""
+    monkeypatch.setenv("COLUMNS", columns)
+    activate(lang)
+    code, _script = drive("2", "wide sweep.wav", "", "", "", "0")
+    out = capsys.readouterr().out
+    assert code == 0
+    opening, closing = ("（", "）") if lang == "zh_CN" else ("[", "]")
+    hint = "（默认：48000）：" if lang == "zh_CN" else "[48000]:"
+    lines = out.splitlines()
+    assert any(hint in line for line in lines), out
+    for line in lines:
+        assert line.count(opening) == line.count(closing), line  # no hint is cut in two
+        assert not line.rstrip().endswith(("默认：", " [")), line
+    assert all(cell_width(line) <= int(columns) for line in lines if "48000" in line)
+
+
 def test_a_narrow_screen_lists_sessions_without_a_table(
     here: Path,
     capsys: pytest.CaptureFixture[str],

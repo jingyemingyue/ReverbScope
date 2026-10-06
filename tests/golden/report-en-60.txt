@@ -74,8 +74,8 @@
 │ Segment     │ pre-sweep · #.## s                        │
 │ Calibration │ uncalibrated: levels are dBFS, not dB SPL │
 └─────────────┴───────────────────────────────────────────┘
-  ! Potential mains hum at multiples of ## Hz: ## Hz (+##
-    dB), ### Hz (+## dB), ### Hz (+## dB)
+  ! Potential mains hum at multiples of ## Hz: ## Hz
+    (+## dB), ### Hz (+## dB), ### Hz (+## dB)
 
 ▌Early reflections  #.#–## ms, above -## dB
 ┏━━━━━━━━┳━━━━━━━━━┓

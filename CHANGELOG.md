@@ -145,9 +145,12 @@ All notable changes to RoomScope are documented here. The format follows
   drawn by `roomscope/cli/console.py` itself, with no new dependency (`rich`
   would add `pygments`, `markdown-it-py` and `mdurl` to both downloads).
   Everything is measured in display columns, so Chinese text, colour and the
-  ASCII forms keep every line of a frame the same width (tested). A path is
-  never cut: a path too long for a panel follows it on a line of its own, a
-  table that does not fit becomes one block per row. The next steps, hints
+  ASCII forms keep every line of a frame the same width (tested). A number
+  is never parted from its unit when a line wraps (`2.4 ms`, `-17.9 dB`),
+  closing marks and the two halves of a Chinese word stay together, and a
+  question of the menu keeps `（默认：48000）：` whole on its last line. A path
+  is never cut: a path too long for a panel follows it on a line of its own,
+  a table that does not fit becomes one block per row. The next steps, hints
   and examples stay bare, so a triple click copies the command alone. The
   desktop app's report panes and `roomscope.cli.report` have no frames:
   their text is byte for byte what it was. `show --list` keeps one
