@@ -146,7 +146,8 @@ from reverbscope.core.filters import (
     bandpass_sos,
     iec_band,
 )
-from reverbscope.i18n import diag
+from reverbscope.errors import ConfigurationError, InvalidAudioError
+from reverbscope.i18n import _, diag
 from reverbscope.models.audio import FloatArray
 from reverbscope.models.configuration import AnalysisSettings
 from reverbscope.models.result import (
@@ -270,6 +271,40 @@ DECAY_METHOD = (
 )
 
 
+def _require_sample_rate(sample_rate: int) -> int:
+    """Reject a rate that would divide by zero or invent a time base."""
+    if isinstance(sample_rate, bool) or not isinstance(sample_rate, (int, np.integer)):
+        raise ConfigurationError(_("sample_rate must be a positive integer"))
+    rate = int(sample_rate)
+    if rate <= 0:
+        raise ConfigurationError(_("sample_rate must be a positive integer"))
+    return rate
+
+
+def _as_decay_signal(signal: FloatArray) -> FloatArray:
+    """One finite channel. Non-finite samples are refused, not integrated."""
+    values = np.asarray(signal, dtype=np.float64)
+    if values.ndim != 1:
+        raise InvalidAudioError(_("impulse response must be one-dimensional"))
+    if values.size and not np.all(np.isfinite(values)):
+        raise InvalidAudioError(_("signal contains NaN or infinite samples"))
+    return values
+
+
+def _squared_power(signal: FloatArray) -> FloatArray:
+    """Square one finite channel.
+
+    A sample can be finite and still overflow when squared (around 1e154).
+    That is an error, not an infinite decay curve.
+    """
+    values = _as_decay_signal(signal)
+    with np.errstate(over="ignore", invalid="ignore"):
+        power = values * values
+    if power.size and not np.all(np.isfinite(power)):
+        raise InvalidAudioError(_("signal contains NaN or infinite samples"))
+    return power
+
+
 def _to_db(power: FloatArray) -> FloatArray:
     return np.asarray(10.0 * np.log10(np.maximum(power, _EPS)), dtype=np.float64)
 
@@ -365,6 +400,12 @@ def estimate_truncation(
     the shorter first blocks tried for a very fast decay must hold at least
     :data:`LUNDEBY_MIN_BLOCK_BT` inverse bandwidths.
     """
+    sample_rate = _require_sample_rate(sample_rate)
+    power = np.asarray(power, dtype=np.float64)
+    if power.ndim != 1:
+        raise InvalidAudioError(_("impulse response must be one-dimensional"))
+    if power.size and not np.all(np.isfinite(power)):
+        raise InvalidAudioError(_("signal contains NaN or infinite samples"))
     # Digital silence after the response (an imported IR padded or gated with
     # zeros) is not a noise floor: read as one it is -3000 dB, the iteration
     # never converges and the real floor before it is integrated as decay.
@@ -437,7 +478,7 @@ def estimate_truncation(
     start_t = start_index / sample_rate
     stop_block = start_block + above
     t = centres[start_block:stop_block] / sample_rate
-    slope, intercept, _ = _linear_fit(t, level_db[start_block:stop_block])
+    slope, intercept, _r2 = _linear_fit(t, level_db[start_block:stop_block])
     if not np.isfinite(slope) or slope >= 0.0:
         return TruncationEstimate(
             start_index,
@@ -498,7 +539,7 @@ def estimate_truncation(
                 upper=LUNDEBY_LATE_FIT_LOWER_DB + LUNDEBY_LATE_FIT_RANGE_DB,
             )
             break
-        new_slope, new_intercept, _ = _linear_fit(times[first:stop], level_db[first:stop])
+        new_slope, new_intercept, _r2 = _linear_fit(times[first:stop], level_db[first:stop])
         if not np.isfinite(new_slope) or new_slope >= 0.0:
             stalled = diag(
                 "the late decay slope could not be estimated: the response does not fall "
@@ -675,10 +716,12 @@ def schroeder_curve(
 ) -> SchroederCurve:
     """Energy decay curve (dB, 0 dB at the onset) with noise truncation.
 
-    ``onset_index`` defaults to :func:`find_onset` over the whole signal;
-    ``time_s`` is measured from ``time_origin_index``.
+    ``band_ir`` is one finite channel. ``onset_index`` defaults to
+    :func:`find_onset` over the whole signal; ``time_s`` is measured from
+    ``time_origin_index``.
     """
-    power = np.asarray(band_ir, dtype=np.float64) ** 2
+    sample_rate = _require_sample_rate(sample_rate)
+    power = _squared_power(band_ir)
     onset = find_onset(power) if onset_index is None else int(onset_index)
     trunc = estimate_truncation(power[onset:], sample_rate)
     return _curve_from_truncation(
@@ -929,8 +972,15 @@ def _insufficient_energy(available_db: float) -> tuple[EnergyMetric, ...]:
 
 
 def _split_index(origin: int, split_s: float, sample_rate: int) -> int:
-    """First sample at or after ``split_s`` measured from ``origin``."""
-    return origin + int(np.round(split_s * sample_rate))
+    """First sample at or after ``split_s`` measured from ``origin``.
+
+    ``round`` would put the cut up to half a sample early (at 22.05 kHz,
+    50 ms lands on sample 1102, whose time is 49.98 ms). An exact integer
+    number of samples stays on that sample.
+    """
+    samples = float(split_s) * int(sample_rate)
+    ahead = int(np.ceil(samples - 1e-9))
+    return int(origin) + max(0, ahead)
 
 
 def _early_late(
@@ -1139,8 +1189,8 @@ def analyze_band(
     ``broadband_bandwidth_hz`` (default: Nyquist) is the bandwidth used for
     the straightness limits when ``band`` is ``None``.
     """
-    signal = np.asarray(band_ir, dtype=np.float64)
-    power = signal**2
+    sample_rate = _require_sample_rate(sample_rate)
+    power = _squared_power(band_ir)
     if broadband_bandwidth_hz is None:
         broadband_bandwidth_hz = sample_rate / 2.0
     if direct_index is None:
@@ -1430,7 +1480,8 @@ def analyze_decay(
     ``Validity.OUTSIDE_EXCITATION`` and no numbers; bands above 0.9 * Nyquist
     are skipped.
     """
-    signal = np.asarray(ir, dtype=np.float64)
+    sample_rate = _require_sample_rate(sample_rate)
+    signal = _as_decay_signal(ir)
     known = direct_index is not None
     lead = round(decay_lead_in_s(settings) * sample_rate)
     pad = max(0, lead - (direct_index if direct_index is not None else 0))

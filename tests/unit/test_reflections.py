@@ -136,3 +136,52 @@ def test_a_window_that_rounds_to_half_a_sample_is_not_truncated() -> None:
         direct_sound_confidence="high",
     )
     assert short.window_truncated
+
+
+def _impulses(sample_rate: int, delays_ms: tuple[float, ...]) -> np.ndarray:
+    ir = np.zeros(int(0.2 * sample_rate))
+    ir[0] = 1.0
+    for delay_ms in delays_ms:
+        ir[round(delay_ms * sample_rate / 1000.0)] = 0.5
+    return ir
+
+
+@pytest.mark.parametrize("sample_rate", [44100, 48000, 96000])
+@pytest.mark.parametrize("hold_ms", [0.0, 0.1])
+def test_reflection_at_a_search_boundary_is_found(sample_rate: int, hold_ms: float) -> None:
+    """find_peaks drops a peak that has no neighbour, so cropping the search
+    exactly to the window used to lose arrivals on both bounds."""
+    res = detect_early_reflections(
+        _impulses(sample_rate, (5.0, 80.0)),
+        sample_rate,
+        0,
+        min_delay_ms=5.0,
+        max_delay_ms=80.0,
+        threshold_db=-20.0,
+        prominence_db=6.0,
+        direct_sound_confidence="high",
+        hold_ms=hold_ms,
+    )
+    assert [r.delay_ms for r in res.reflections] == pytest.approx([5.0, 80.0], abs=0.25)
+
+
+@pytest.mark.parametrize("sample_rate", [44100, 48000, 96000])
+def test_peaks_outside_the_window_are_not_reported(sample_rate: int) -> None:
+    res = detect_early_reflections(
+        _impulses(sample_rate, (4.0, 5.0, 80.0, 81.0)),
+        sample_rate,
+        0,
+        min_delay_ms=5.0,
+        max_delay_ms=80.0,
+        threshold_db=-20.0,
+        prominence_db=6.0,
+        direct_sound_confidence="high",
+        hold_ms=0.1,
+    )
+    delays = [r.delay_ms for r in res.reflections]
+    assert delays == pytest.approx([5.0, 80.0], abs=0.25)
+
+
+def test_default_window_keeps_arrivals_on_both_bounds(sample_rate: int) -> None:
+    res = _detect(_impulses(sample_rate, (0.8, 80.0)), sample_rate, 0)
+    assert [r.delay_ms for r in res.reflections] == pytest.approx([0.8, 80.0], abs=0.2)

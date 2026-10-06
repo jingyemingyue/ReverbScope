@@ -61,6 +61,24 @@ All notable changes to ReverbScope are documented here. The format follows
   resonance note no longer cites "v0.1".
 
 ### Fixed
+- **Boundary reflections.** An early reflection that landed on either end of
+  the search window was dropped, because peak picking needs a neighbour on
+  both sides. The window bounds stay inclusive.
+- **Rival arrival.** A distinct peak within 20 dB before the loudest sample,
+  separated by a quiet gap, is no longer ignored. Time zero is not moved
+  (a pre-echo and a quieter direct sound cannot be told apart); decay and
+  early/late metrics are marked unreliable instead of being reported as valid.
+- **Device timing.** Buffer under/overflows, or a stream rate that is not the
+  rate that was requested, mark decay and energy metrics unreliable. A
+  separate loopback with those faults is not used for compensation. The
+  opened stream's device IDs, requested and reported rates, channel counts,
+  block size and latency are written to the log.
+- **Early/late split.** C50, C80 and D50 cut at the first sample at or after
+  50 ms or 80 ms. Rounding could place the cut half a sample early.
+- **Non-finite input.** NaN, inf, a sample too large to square, and a
+  non-positive sample rate are refused by the decay and frequency-response
+  functions instead of raising `IndexError`, `ZeroDivisionError` or
+  `UnboundLocalError`.
 - **Measurement.** With a loopback whose return is not at unity gain, the
   folded-distortion probe was biased by that gain (a −20 dB return hid
   folded products and left T30 valid); it now uses the response before

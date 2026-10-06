@@ -4721,3 +4721,21 @@ msgstr "未比较：没有双方都搜索过的频率范围"
 
 msgid "no potential resonance in the range both sides searched"
 msgstr "双方都搜索过的范围内没有可能的共振"
+msgid "impulse response must be one-dimensional"
+msgstr "脉冲响应必须是一维的"
+
+msgctxt "diagnostic"
+msgid "an earlier arrival is only {level_db:.1f} dB below the loudest peak and is separated from it, so the loudest peak may be a reflection rather than the direct sound; decay and energy metrics are not trusted"
+msgstr "有一次更早的到达只比最强峰低 {level_db:.1f} dB，并且与它分开，因此最强峰可能是反射而不是直达声；衰减和能量指标不予采信"
+
+msgctxt "diagnostic"
+msgid "the audio device reported timing problems in this take, so its decay and energy metrics are unreliable. Check the stream settings and repeat the measurement"
+msgstr "这次录音的音频设备报告了时序问题，因此衰减和能量指标不可靠。请检查音频流设置后重新测量"
+
+msgctxt "diagnostic"
+msgid "the separate loopback recording has device timing problems; loopback compensation was not applied"
+msgstr "独立回环录音存在设备时序问题，未做回环补偿"
+
+msgctxt "diagnostic"
+msgid "the audio stream reported {actual:g} Hz instead of the requested {requested:g} Hz; the recording's time scale cannot be trusted"
+msgstr "音频流报告的采样率是 {actual:g} Hz，而不是请求的 {requested:g} Hz；录音的时间刻度不可信"
