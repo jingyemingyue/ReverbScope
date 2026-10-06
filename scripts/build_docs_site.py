@@ -436,6 +436,16 @@ def rel_prefix(relative: Path) -> str:
 OS_LITTER = frozenset({".DS_Store", "Thumbs.db", "desktop.ini"})
 
 
+def holds_only_litter(folder: Path) -> bool:
+    """Whether ``folder`` is empty apart from what Finder or Explorer put there.
+
+    A folder that was just made and opened in Finder already holds ``.DS_Store``,
+    so it must count as empty. Only files count: a folder that carries one of
+    these names may hold the user's own files.
+    """
+    return all(entry.name in OS_LITTER and not entry.is_dir() for entry in folder.iterdir())
+
+
 def is_previous_site(folder: Path) -> bool:
     """Whether ``folder`` holds nothing but what :func:`build_site` writes."""
     if not (folder / "assets" / "theme.css").is_file():
@@ -466,7 +476,7 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
         # the user's own files must be refused, not emptied.
         if dest.is_symlink() or not dest.is_dir():
             raise SystemExit(f"refusing to write the site into {dest}: it is not a folder")
-        if any(dest.iterdir()) and not is_previous_site(dest):
+        if not holds_only_litter(dest) and not is_previous_site(dest):
             raise SystemExit(
                 f"refusing to write the site into {dest}: the folder is not empty and "
                 "holds more than a site written by this script; choose a new folder"

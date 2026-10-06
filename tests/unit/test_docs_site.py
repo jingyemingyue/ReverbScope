@@ -112,6 +112,38 @@ def test_the_site_only_replaces_an_empty_folder_or_an_earlier_site(tmp_path: Pat
     assert (empty / "user-guide" / "my-notes.txt").is_file()
 
 
+def test_a_folder_holding_only_desktop_litter_counts_as_empty(tmp_path: Path) -> None:
+    """Finder writes ``.DS_Store`` as soon as a fresh folder is opened, so
+    "mkdir out, open it, run the script" was refused as "not empty"."""
+    import pytest
+
+    site = _load()
+    for name in sorted(site.OS_LITTER):
+        folder = tmp_path / f"litter-{name}"
+        folder.mkdir()
+        (folder / name).write_bytes(b"\0")
+        assert site.build_site(Path("docs"), folder)
+        assert (folder / "index.html").is_file()
+
+    # Litter beside a file of the user's own is still a folder to keep.
+    mixed = tmp_path / "mixed"
+    mixed.mkdir()
+    (mixed / ".DS_Store").write_bytes(b"\0")
+    (mixed / "thesis.docx").write_bytes(b"keep")
+    with pytest.raises(SystemExit, match="mixed"):
+        site.build_site(Path("docs"), mixed)
+    assert (mixed / "thesis.docx").read_bytes() == b"keep"
+
+    # Only a file counts as litter: a folder that happens to carry the name
+    # and holds the user's files must not be deleted with it.
+    disguised = tmp_path / "disguised"
+    (disguised / ".DS_Store").mkdir(parents=True)
+    (disguised / ".DS_Store" / "notes.txt").write_text("mine", encoding="utf-8")
+    with pytest.raises(SystemExit, match="disguised"):
+        site.build_site(Path("docs"), disguised)
+    assert (disguised / ".DS_Store" / "notes.txt").read_text(encoding="utf-8") == "mine"
+
+
 def test_headings_carry_the_anchors_github_gives_them() -> None:
     """Headings had no id, so every ``#section`` link opened the top of the page."""
     site = _load()
