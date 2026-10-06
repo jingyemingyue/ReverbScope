@@ -6532,3 +6532,6 @@ msgstr "パネルと枠線付きの表（既定）"
 
 msgid "Frames crooked? "
 msgstr "枠がずれる場合："
+
+msgid "Follows the DAW"
+msgstr "DAW に合わせる"

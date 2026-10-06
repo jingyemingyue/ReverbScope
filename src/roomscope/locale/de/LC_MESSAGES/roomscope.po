@@ -7187,3 +7187,6 @@ msgstr "Panels und Tabellen mit Rahmen (Standard)"
 
 msgid "Frames crooked? "
 msgstr "Rahmen schief? "
+
+msgid "Follows the DAW"
+msgstr "Folgt dem DAW"

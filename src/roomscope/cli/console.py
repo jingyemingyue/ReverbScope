@@ -797,11 +797,9 @@ class Console:
             content = inner.fields(held, indent=0, min_label=label)
             if body is not None:
                 content += body(inner, 0)
-            framed = (
-                self.frame(text, content, tone)
-                if content
-                else self.frame("", [inner.bold(text)], tone)
-            )
+            # Nothing under the title: a title in the top border and the bottom
+            # border, not a box round one word.
+            framed = self.frame(text, content, tone)
             if framed is not None:
                 return framed + self.fields(spilled, min_label=label)
         lines = [self.bold(text), self.faint(self.rule_char() * cell_width(text))]

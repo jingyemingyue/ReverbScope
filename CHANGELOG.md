@@ -159,7 +159,11 @@ All notable changes to RoomScope are documented here. The format follows
   (unreadable on some colour schemes); titles, status words, commands and
   the numbers of the menu are bold in the colour of the terminal's text. An
   unreliable decay time has its `?` before the number, so the digits of the
-  column stay under each other. The home screen and the menu of a Chinese,
+  column stay under each other. A title with nothing under it (`config`,
+  `devices --host-apis`, an empty project) is its title in a top border over
+  the bottom border, not a box round one word, and the `daw` panel's label
+  is "Follows the DAW", which keeps its value on the same line. The home
+  screen and the menu of a Chinese,
   Japanese or Korean interface end with "边框歪了？roomscope config style
   plain": the way out for a terminal that draws the box glyphs two columns
   wide, which was only in `config --help`. `roomscope config` and `doctor` describe

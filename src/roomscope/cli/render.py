@@ -1819,7 +1819,7 @@ def render_daw_projects(console: Console, projects: Sequence[object]) -> str:
         _("DAW to follow"),
         [
             (
-                _("Settings that follow the chosen DAW"),
+                _("Follows the DAW"),
                 list_join(
                     _("Sample rate") if name == "sample_rate" else name
                     for name in FOLLOWED_SETTINGS

@@ -7275,3 +7275,6 @@ msgstr "panneaux et tableaux encadrés (par défaut)"
 
 msgid "Frames crooked? "
 msgstr "Cadres de travers ? "
+
+msgid "Follows the DAW"
+msgstr "Suit le DAW"

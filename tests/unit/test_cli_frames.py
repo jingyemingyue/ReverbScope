@@ -98,9 +98,10 @@ def test_a_path_too_long_for_the_panel_follows_it_bare() -> None:
     assert c.frame("x" * 45, ["text"]) is None  # a title is never cut either
 
 
-def test_a_title_with_nothing_under_it_is_inside_its_panel() -> None:
+def test_a_title_with_nothing_under_it_is_a_titled_border_not_a_box_round_a_word() -> None:
     lines = Console(width=50, frames=True).title("Audio systems (host APIs)")
-    assert len(lines) == 3 and "Audio systems (host APIs)" in lines[1]
+    assert len(lines) == 2
+    assert lines[0].startswith("╭─ Audio systems (host APIs) ─") and lines[1].startswith("╰")
     _same_width(lines, 50)
 
 
@@ -396,4 +397,4 @@ def test_a_project_is_shown_under_its_name(
     monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "boxed")
     assert _run(capsys, "project", "init", "--out", "empty", "--name", "Empty")[0] == 0
     _code, out, _err = _run(capsys, "project", "show", "empty")
-    assert len(out.splitlines()) == 3 and "Empty" in out.splitlines()[1]
+    assert len(out.splitlines()) == 2 and "Empty" in out.splitlines()[0]

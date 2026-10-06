@@ -6566,3 +6566,6 @@ msgstr "패널과 테두리 있는 표(기본)"
 
 msgid "Frames crooked? "
 msgstr "테두리가 어긋나면: "
+
+msgid "Follows the DAW"
+msgstr "DAW를 따름"

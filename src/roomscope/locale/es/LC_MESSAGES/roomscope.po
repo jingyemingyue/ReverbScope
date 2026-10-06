@@ -7228,3 +7228,6 @@ msgstr "paneles y tablas con bordes (predeterminado)"
 
 msgid "Frames crooked? "
 msgstr "¿Marcos torcidos? "
+
+msgid "Follows the DAW"
+msgstr "Sigue al DAW"

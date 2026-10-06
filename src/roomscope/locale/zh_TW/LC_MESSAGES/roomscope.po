@@ -6414,3 +6414,6 @@ msgstr "面板和帶邊框的表格（預設）"
 
 msgid "Frames crooked? "
 msgstr "邊框歪了？"
+
+msgid "Follows the DAW"
+msgstr "跟隨 DAW"

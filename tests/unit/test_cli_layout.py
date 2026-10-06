@@ -588,3 +588,22 @@ def test_the_hint_keeps_its_command_whole_on_a_narrow_terminal() -> None:
         assert style_hint_lines("zh_CN", 80, boxed=False) == []
     finally:
         activate("en")
+
+
+def test_the_daw_panel_keeps_a_label_and_its_value_on_one_line(run: Call) -> None:
+    for lang, label, value in (
+        ("en", "Follows the DAW", "Sample rate"),
+        ("zh_CN", "跟随 DAW", "采样率"),
+    ):
+        text = run("--lang", lang, "daw", columns=80)
+        row = next(line for line in text.splitlines() if label in line)
+        assert value in row, text
+
+
+def test_a_title_with_nothing_under_it_is_a_titled_border_not_a_box_round_a_word(
+    run: Call,
+) -> None:
+    text = run("--backend", "fake", "devices", "--host-apis", columns=60)
+    top, bottom = text.splitlines()[:2]
+    assert top.startswith("╭─ Audio systems (host APIs) ─") and top.endswith("╮")
+    assert bottom.startswith("╰") and bottom.endswith("╯") and cell_width(top) == cell_width(bottom)
