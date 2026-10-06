@@ -6563,3 +6563,6 @@ msgstr "일반 텍스트, 테두리 없음"
 
 msgid "panels and bordered tables (the default)"
 msgstr "패널과 테두리 있는 표(기본)"
+
+msgid "Frames crooked? "
+msgstr "테두리가 어긋나면: "

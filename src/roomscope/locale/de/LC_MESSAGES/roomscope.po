@@ -7184,3 +7184,6 @@ msgstr "reiner Text, ohne Rahmen"
 
 msgid "panels and bordered tables (the default)"
 msgstr "Panels und Tabellen mit Rahmen (Standard)"
+
+msgid "Frames crooked? "
+msgstr "Rahmen schief? "

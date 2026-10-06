@@ -109,6 +109,25 @@ def language_hint_lines(current: str, width: int) -> list[str]:
     return [label.rstrip(), "  " + command]
 
 
+#: The interface languages whose readers often have a terminal that draws the
+#: box glyphs two columns wide (a CJK font or locale), which bends the frames.
+CJK_LANGUAGES = frozenset({"zh_CN", "zh_TW", "ja", "ko"})
+
+
+def style_hint_lines(current: str, width: int, *, boxed: bool) -> list[str]:
+    """How to leave the frames out, for a CJK interface that draws them
+    (``边框歪了？roomscope config style plain``): one line where it fits,
+    else the label and the command whole on a line of its own."""
+    from roomscope.cli.console import cell_width
+
+    if not boxed or current not in CJK_LANGUAGES:
+        return []
+    label, command = _("Frames crooked? "), "roomscope config style plain"
+    if cell_width(label + command) <= width:
+        return [label + command]
+    return [label.rstrip(), "  " + command]
+
+
 class SettingError(ValueError):
     """A key or value the settings cannot take; nothing was written."""
 

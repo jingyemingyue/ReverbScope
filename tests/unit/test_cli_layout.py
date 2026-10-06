@@ -536,3 +536,55 @@ def test_the_style_is_described_once_not_named_twice(run: Call, lang: str) -> No
     assert row.count("boxed") == 1, row
     saved = run("--lang", lang, "config", "style", "plain", columns=100)
     assert ("plain text, without borders" if lang == "en" else "纯文本，不带边框") in saved
+
+
+@pytest.mark.parametrize("lang", ["zh_CN", "zh_TW", "ja", "ko"])
+def test_a_cjk_interface_says_how_to_leave_the_frames_out(
+    run: Call, lang: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A terminal that draws ambiguous-width glyphs two columns wide bends the
+    frames; the only way out was in `config --help`."""
+    command = "roomscope config style plain"
+    home = run("--lang", lang, columns=80)
+    last = home.splitlines()
+    assert (
+        last[-2].endswith(command) and last[-1] == "English interface: roomscope config language en"
+    )
+    menu = _menu_screen(lang, monkeypatch)
+    assert command in menu
+    monkeypatch.setenv("ROOMSCOPE_CLI_STYLE", "plain")
+    assert command not in run("--lang", lang, columns=80)  # already plain: no hint
+    assert command not in _menu_screen(lang, monkeypatch)
+
+
+@pytest.mark.parametrize("lang", ["en", "fr", "de", "es"])
+def test_the_frames_hint_is_for_the_languages_whose_terminals_need_it(
+    run: Call, lang: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert "style plain" not in run("--lang", lang, columns=80)
+    assert "style plain" not in _menu_screen(lang, monkeypatch)
+
+
+def _menu_screen(lang: str, monkeypatch: pytest.MonkeyPatch) -> str:
+    from roomscope.cli.menu import run_menu
+
+    monkeypatch.setenv("COLUMNS", "80")
+    activate(lang)
+    out = io.StringIO()
+    run_menu(lambda _prompt: "0", out, terminal_edition=False)
+    return out.getvalue()
+
+
+def test_the_hint_keeps_its_command_whole_on_a_narrow_terminal() -> None:
+    from roomscope.cli.config import style_hint_lines
+
+    activate("zh_CN")
+    try:
+        assert style_hint_lines("zh_CN", 80, boxed=True) == [
+            "边框歪了？roomscope config style plain"
+        ]
+        narrow = style_hint_lines("zh_CN", 30, boxed=True)
+        assert narrow == ["边框歪了？", "  roomscope config style plain"]
+        assert style_hint_lines("zh_CN", 80, boxed=False) == []
+    finally:
+        activate("en")

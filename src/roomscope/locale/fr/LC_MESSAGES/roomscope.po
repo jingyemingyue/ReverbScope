@@ -7272,3 +7272,6 @@ msgstr "texte brut, sans bordures"
 
 msgid "panels and bordered tables (the default)"
 msgstr "panneaux et tableaux encadrés (par défaut)"
+
+msgid "Frames crooked? "
+msgstr "Cadres de travers ? "

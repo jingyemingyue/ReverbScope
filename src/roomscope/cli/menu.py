@@ -772,7 +772,7 @@ class Menu:
         ]
 
     def screen(self, groups: Sequence[tuple[str, Sequence[_Item]]]) -> list[str]:
-        from roomscope.cli.config import language_hint_lines
+        from roomscope.cli.config import language_hint_lines, style_hint_lines
         from roomscope.i18n import current_locale
 
         c = self.console()
@@ -793,11 +793,17 @@ class Menu:
             )
         lines.append("")
         lines += choice_lines(c, [quit_row], columns)
-        # The way to the other language, written in that language, as on the home screen.
+        # Frames drawn with glyphs that a CJK terminal may draw too wide, then
+        # the way to the other language, written in that language, as on the
+        # home screen, and last.
+        crooked = style_hint_lines(current_locale(), c.width, boxed=c.boxed)
         hint = language_hint_lines(current_locale(), c.width)
-        if hint and c.can_write("".join(hint)):
-            lines.append("")
-            lines += [c.muted(line) for line in hint]
+        footer = [
+            *(crooked if c.can_write("".join(crooked)) else []),
+            *([c.muted(line) for line in hint] if c.can_write("".join(hint)) else []),
+        ]
+        if footer:
+            lines += ["", *footer]
         return [line.rstrip() for line in lines]
 
     def loop(self) -> int:

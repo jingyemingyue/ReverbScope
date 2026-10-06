@@ -2364,9 +2364,14 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
         _("Run {command} for every command and option.").format(command="roomscope --help"),
         indent=0,
     )
-    from roomscope.cli.config import language_hint_lines
+    from roomscope.cli.config import language_hint_lines, style_hint_lines
     from roomscope.i18n import current_locale
 
+    # The frames are drawn with glyphs that some CJK terminals draw too wide.
+    crooked = style_hint_lines(current_locale(), c.width, boxed=c.boxed)
+    if crooked and c.can_write("".join(crooked)):
+        lines += crooked
+    # Last, so that it is always found: the way to the other language.
     # Not a paragraph: wrapping split the command to copy across two lines.
     hint = language_hint_lines(current_locale(), c.width)
     if hint and c.can_write("".join(hint)):

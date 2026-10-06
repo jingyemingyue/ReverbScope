@@ -67,6 +67,8 @@ ALLOWED = frozenset(
         "Thunderbolt",
         "fake",
         "portaudio",
+        # the values of "roomscope config style" (the name of a setting's value)
+        "plain",
         # the value of --format ("roomscope --format json")
         "json",
         "pip",

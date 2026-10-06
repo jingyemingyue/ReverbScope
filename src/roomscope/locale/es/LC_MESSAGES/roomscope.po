@@ -7225,3 +7225,6 @@ msgstr "texto sin formato, sin bordes"
 
 msgid "panels and bordered tables (the default)"
 msgstr "paneles y tablas con bordes (predeterminado)"
+
+msgid "Frames crooked? "
+msgstr "¿Marcos torcidos? "

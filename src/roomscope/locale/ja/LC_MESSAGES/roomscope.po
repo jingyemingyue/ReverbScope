@@ -6529,3 +6529,6 @@ msgstr "プレーンテキスト（枠線なし）"
 
 msgid "panels and bordered tables (the default)"
 msgstr "パネルと枠線付きの表（既定）"
+
+msgid "Frames crooked? "
+msgstr "枠がずれる場合："

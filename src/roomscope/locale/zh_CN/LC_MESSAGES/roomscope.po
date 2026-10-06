@@ -5314,3 +5314,6 @@ msgstr "纯文本，不带边框"
 
 msgid "panels and bordered tables (the default)"
 msgstr "面板和带边框的表格（默认）"
+
+msgid "Frames crooked? "
+msgstr "边框歪了？"
