@@ -478,7 +478,8 @@ def test_cli_devices_probe_and_doctor(capsys: pytest.CaptureFixture[str]) -> Non
     assert '"devices"' in capsys.readouterr().out
     assert main(["--backend", "fake", "doctor"]) == 0
     report = capsys.readouterr().out
-    assert "RoomScope" in report and "numpy" in report and "\nAudio\n" in report
+    assert "RoomScope" in report and "numpy" in report
+    assert "\n▌Audio\n" in report  # a section heading starts with a bar
     assert main(["--backend", "fake", "devices", "--referenced"]) == 0
     referenced = capsys.readouterr().out
     assert "Scarlett 2i2" in referenced and "not a HARDWARE_TESTS.md PASS" in referenced
