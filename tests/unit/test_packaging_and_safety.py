@@ -280,7 +280,10 @@ def test_the_sdist_carries_everything_the_test_suite_reads(tmp_path: Path) -> No
     tracked = subprocess.run(
         ["git", "ls-files"], cwd=root, capture_output=True, text=True, check=True
     ).stdout.splitlines()
-    wanted = {name.split("/", 1)[0] for name in tracked}
+    # site/ is the landing page the Pages workflow publishes, force-added to a
+    # folder .gitignore keeps for the generated docs site; hatch honours that
+    # rule, so it is not in the sdist and nothing the tests read lives there.
+    wanted = {name.split("/", 1)[0] for name in tracked} - {"site"}
     (artifact,) = SdistBuilder(str(root)).build(directory=str(tmp_path), versions=["standard"])
     with tarfile.open(artifact) as sdist:
         shipped = {name.split("/")[1] for name in sdist.getnames() if name.count("/") >= 1}
