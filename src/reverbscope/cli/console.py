@@ -32,8 +32,9 @@ import sys
 import time
 import unicodedata
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
-from typing import Literal, TextIO
+from dataclasses import dataclass, is_dataclass, replace
+from dataclasses import fields as dataclass_fields
+from typing import Any, Literal, TextIO
 
 ColorMode = Literal["auto", "always", "never"]
 COLOR_MODES: tuple[ColorMode, ...] = ("auto", "always", "never")
@@ -140,15 +141,17 @@ class Verbatim(str):
     """
 
 
-def printable(text: str, *, single_line: bool = False) -> str:
+def printable(text: str, *, single_line: bool = False, own_styles: bool = True) -> str:
     """``text`` with the control characters in it shown as escapes (``\\x1b``).
 
     Text from files, such as the room name of a session from someone else or
     a warning stored in its result.json, must not reach the terminal as
     control sequences: they could clear the screen, retitle the window, or
-    hide and forge lines of the report. ReverbScope's own colour codes are
-    kept. ``single_line`` is for a name shown on one line: line breaks and
-    tabs are shown as escapes too, and every escape sequence.
+    hide and forge lines of the report. ``single_line`` is for a name shown
+    on one line: line breaks and tabs are shown as escapes too, and every
+    escape sequence. Otherwise ReverbScope's own colour codes are kept
+    (``own_styles``): a stream that gets no colour has none, so an escape
+    code in its text is never one of ours.
     """
     keep = "" if single_line else "\n\t"
 
@@ -163,7 +166,7 @@ def printable(text: str, *, single_line: bool = False) -> str:
 
     if not _CONTROL.search(text):
         return text
-    if single_line:
+    if single_line or not own_styles:
         shown = _CONTROL.sub(escape, text)
     else:
         parts = _OWN_STYLE.split(text)
@@ -171,6 +174,45 @@ def printable(text: str, *, single_line: bool = False) -> str:
             part if index % 2 else _CONTROL.sub(escape, part) for index, part in enumerate(parts)
         )
     return Verbatim(shown) if isinstance(text, Verbatim) else shown
+
+
+def printable_fields[T](value: T) -> T:
+    """``value`` with every text in it passed through :func:`printable` (one line).
+
+    For a result or comparison read from a file: its warnings, notes, labels
+    and reasons are laid out inside lines of ReverbScope's own, so a line break
+    or an escape code in one of them forges a row of the report. Lists,
+    tuples, dicts and dataclasses are followed; a record that needs no change
+    is returned as it is, and the one that was read is never modified.
+    """
+    shown: T = _printable_fields(value)
+    return shown
+
+
+def _printable_fields(value: Any) -> Any:
+    if type(value) is str:
+        return printable(value, single_line=True)
+    if type(value) in (list, tuple):
+        items = [_printable_fields(item) for item in value]
+        if all(new is old for new, old in zip(items, value, strict=True)):
+            return value
+        return type(value)(items)
+    if type(value) is dict:
+        pairs = {key: _printable_fields(item) for key, item in value.items()}
+        if all(pairs[key] is old for key, old in value.items()):
+            return value
+        return pairs
+    if is_dataclass(value) and not isinstance(value, type):
+        changes = {}
+        for field in dataclass_fields(value):
+            if not field.init:
+                continue
+            old = getattr(value, field.name)
+            new = _printable_fields(old)
+            if new is not old:
+                changes[field.name] = new
+        return replace(value, **changes) if changes else value
+    return value
 
 
 #: Joins a number to its unit inside the layout (``2.4<NBSP>ms``): wrapping
@@ -518,7 +560,8 @@ class Console:
     def readable(self, text: str) -> str:
         """Text as this stream will show it, before its width is measured.
 
-        Control characters are shown as escapes (:func:`printable`); a
+        Control characters are shown as escapes (:func:`printable`), our
+        colour codes kept only where this stream gets colour; a
         :class:`Verbatim` value stays on its one line. :meth:`fit` still
         translates anything left. Doing it here keeps a narrow encoding
         (``Δ`` becomes ``delta``) from running past the width the line was
@@ -526,7 +569,7 @@ class Console:
         """
         if not text:
             return text
-        shown = printable(text, single_line=isinstance(text, Verbatim))
+        shown = printable(text, single_line=isinstance(text, Verbatim), own_styles=self.color)
         if not self.unicode:
             shown = self._ascii(str(shown))
         return Verbatim(shown) if isinstance(text, Verbatim) else shown

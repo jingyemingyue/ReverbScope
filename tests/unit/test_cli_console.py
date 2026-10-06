@@ -623,3 +623,53 @@ def test_control_characters_from_files_are_shown_as_escapes() -> None:
     assert shown.startswith("\x1b[32;1mok\x1b[0m ") and "\\x1b[8mhidden" in shown
     path = console.readable(Verbatim("sessions/a\nb"))
     assert isinstance(path, Verbatim) and path == "sessions/a\\nb"
+
+
+def test_a_console_without_colour_shows_every_escape_code_as_text() -> None:
+    """With colour off ReverbScope writes no escape code at all, so one in a
+    stored text is never its own: it was kept, and reached the stream."""
+    from reverbscope.cli.console import Verbatim, printable
+
+    plain = Console(color=False)
+    assert plain.readable("a\x1b[32mb\x1b[0m") == "a\\x1b[32mb\\x1b[0m"
+    assert printable("a\x1b[32mb", own_styles=False) == "a\\x1b[32mb"
+    assert printable("a\x1b[32mb") == "a\x1b[32mb"
+    assert plain.readable(Verbatim("x\x1b[0m")) == "x\\x1b[0m"
+
+
+def test_the_text_of_a_loaded_record_is_made_printable_in_place_of_its_layout() -> None:
+    """Every text field of a result read from a file is shown on one line,
+    whatever field it is, and a record that needs no change is the same object."""
+    from dataclasses import dataclass, field
+
+    from reverbscope.cli.console import printable_fields
+
+    @dataclass(frozen=True)
+    class Inner:
+        note: str | None = None
+        level: float = 1.0
+
+    @dataclass(frozen=True)
+    class Record:
+        label: str = "ok"
+        notes: tuple[str, ...] = ()
+        inner: Inner = field(default_factory=Inner)
+        by_name: dict[str, list[str]] = field(default_factory=dict)
+
+    clean = Record(notes=("a", "b"), by_name={"k": ["v"]})
+    assert printable_fields(clean) is clean
+    crafted = Record(
+        label="x\ny",
+        notes=("a", "b\x1b[32m"),
+        inner=Inner(note="n\tn", level=2.5),
+        by_name={"k": ["v\r"]},
+    )
+    shown = printable_fields(crafted)
+    assert shown == Record(
+        label="x\\ny",
+        notes=("a", "b\\x1b[32m"),
+        inner=Inner(note="n\\tn", level=2.5),
+        by_name={"k": ["v\\r"]},
+    )
+    assert crafted.label == "x\ny"  # the loaded record itself is not touched
+    assert printable_fields(7) == 7 and printable_fields(None) is None

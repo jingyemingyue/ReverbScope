@@ -584,3 +584,103 @@ def test_show_escapes_control_characters_from_a_received_session(
     assert "Booth\\x1b[2J\\x1b]0;pwned\\x07" in report and "Booth\\x1b[2J" in listing
     assert "A\\nRT60 0.30 s" in report and "stored\\x1b[2Jwarning" in report
     assert "P\\x1b[2J" in projects and "A\\x1b[8m" in projects
+
+
+def test_show_keeps_stored_text_to_its_own_line_and_free_of_escape_codes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A stored warning kept its line breaks and any escape code that looks
+    like one of ReverbScope's own colours: it forged a report row ("Data quality
+    ✓ ... no warnings"), and raw ESC[32m reached a stream with colour off. The
+    same went for every other text field of result.json."""
+    from dataclasses import replace
+
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    settings = SweepSettings(duration_s=1.0, pre_silence_s=0.5, post_silence_s=1.0)
+    rec = synthetic_recording(settings, make_rir(settings.sample_rate, rt60_s=0.3), noise_rms=1e-5)
+    analysed = analyze(rec, Reference.from_settings(settings))
+    forged = "harmless\n\n  Data quality       \x1b[32m✓ direct sound: no warnings\x1b[0m"
+    bands = tuple(
+        replace(band, band_label="500 Hz\nFORGED-BAND", rt60_basis="T30\x1b[1mbold\x1b[0m")
+        if index == 0
+        else band
+        for index, band in enumerate(analysed.decay.bands)
+    )
+    result = replace(
+        analysed,
+        warnings=(forged, "x"),
+        decay=replace(analysed.decay, bands=bands),
+        noise=replace(
+            analysed.noise, notes=("noise\n  Noise floor   \x1b[32m✓ FORGED-NOISE\x1b[0m",)
+        ),
+    )
+    session = tmp_path / "received"
+    save_measurement(session, MeasurementSession(), result, include_curves=False)
+    capsys.readouterr()
+
+    for mode in ("never", "always"):
+        assert main(["--color", mode, "show", str(session)]) == 0
+        report = capsys.readouterr().out
+        # The text is shown as typed, its control characters as escapes ...
+        assert "harmless\\n\\n" in report and "\\x1b[32m" in report
+        assert "500 Hz\\nFORGED-BAND" in report and "T30\\x1b[1mbold" in report
+        # ... on the line of its own warning, not as rows of the report.
+        rows = [line.strip() for line in report.splitlines()]
+        forged_rows = [
+            row
+            for row in rows
+            if row.startswith(("Data quality", "Noise floor", "FORGED-BAND"))
+            and ("no warnings" in row or "FORGED" in row)
+        ]
+        assert forged_rows == []
+        if mode == "never":
+            assert "\x1b" not in report
+        else:
+            # Only the codes ReverbScope writes itself: none after "harmless".
+            assert "\x1b[32m✓ direct sound" not in report and "\x1b[32m✓ FORGED-NOISE" not in report
+
+
+def test_project_average_keeps_a_stored_band_label_to_its_row(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The averaged table printed a band label from result.json as it was
+    stored: a line break in it forged a row of the table."""
+    from dataclasses import replace
+
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    settings = SweepSettings(duration_s=1.0, pre_silence_s=0.5, post_silence_s=1.0)
+    rec = synthetic_recording(settings, make_rir(settings.sample_rate, rt60_s=0.3), noise_rms=1e-5)
+    analysed = analyze(rec, Reference.from_settings(settings))
+    bands = (
+        replace(analysed.decay.bands[0], band_label="63 Hz\nFORGEDROW 9.99 s"),
+        *analysed.decay.bands[1:],
+    )
+    result = replace(analysed, decay=replace(analysed.decay, bands=bands))
+    project = tmp_path / "room"
+    for name in ("a", "b"):
+        save_measurement(project / name, MeasurementSession(), result, include_curves=False)
+    (project / "project.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "name": "room",
+                "positions": [
+                    {"label": "A", "session_dirs": ["a"]},
+                    {"label": "B", "session_dirs": ["b"]},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    capsys.readouterr()
+
+    assert main(["--color", "never", "project", "average", str(project)]) == 0
+    table = capsys.readouterr().out
+    assert "63 Hz\\nFORGEDROW 9.99 s" in table
+    assert not [line for line in table.splitlines() if line.startswith("FORGEDROW")]

@@ -22,6 +22,7 @@ from reverbscope.cli.console import (
     cell_width,
     glue_units,
     pad,
+    printable_fields,
     shell_command,
     wrap,
 )
@@ -164,6 +165,10 @@ def render_analysis(
     """The report of one analysis: context, "At a glance", results by topic,
     diagnostics, then the interpretation."""
     c = console
+    # A result read from someone else's file: its texts are laid out inside
+    # lines of our own, so none may carry a line break or an escape code.
+    result = printable_fields(result)
+    findings = printable_fields(tuple(findings))
     lines = c.title(_("ReverbScope analysis"))
     lines.append("")
     lines += c.fields(
@@ -748,6 +753,8 @@ def render_comparison(
 ) -> str:
     """Baseline against candidate: the sessions, "At a glance", every delta, findings."""
     c = console
+    comparison = printable_fields(comparison)  # as in render_analysis
+    findings = printable_fields(tuple(findings))
     lines = c.title(_("ReverbScope comparison"))
     lines.append("")
     rows: list[tuple[str, str]] = []

@@ -2152,7 +2152,8 @@ def cmd_project(args: argparse.Namespace) -> int:
 
             rows = [
                 [
-                    band_text(band.band_label),
+                    # A label read from a session file: one line, whatever it holds.
+                    printable(band_text(band.band_label), single_line=True),
                     seconds(band.edt.seconds),
                     seconds(band.t20.seconds),
                     seconds(band.t30.seconds),
