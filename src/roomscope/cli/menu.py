@@ -953,9 +953,12 @@ class Menu:
             for number, item in enumerate(listed, start=1)
         ]
         # A long position ("A: close to the desk and the side wall") is cut to
-        # the room the other columns leave, so each session keeps one line.
+        # the room the other columns leave, so each session keeps one line. A
+        # bordered table takes 3 cells a column and 1 more (the plain one 2 and
+        # 3 a gap): the room is reckoned for the wider, so with either the
+        # narrow columns keep their headers whole.
         widths = [max(cell_width(c.readable(row[i])) for row in [headers, *rows]) for i in range(4)]
-        room = c.width - 2 - 3 * 3 - widths[0] - widths[1] - widths[3]
+        room = c.width - (3 * len(headers) + 1) - widths[0] - widths[1] - widths[3]
         if room >= 12:  # narrower, and the table becomes blocks that show it whole
             for row in rows:
                 row[2] = truncate(row[2], room, "…" if c.unicode else "...")

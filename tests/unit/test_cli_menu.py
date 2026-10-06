@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from roomscope.cli import menu
-from roomscope.cli.console import shell_command
+from roomscope.cli.console import cell_width, shell_command
 from roomscope.cli.main import main
 from roomscope.cli.menu import Menu, clean_path, run_menu
 from roomscope.demo import run_demo
@@ -501,6 +501,23 @@ def test_sessions_here_and_in_the_output_folder_are_listed_and_shown(
     assert str(output.resolve() / "take-b") in table or str(output / "take-b") in table
     assert "Type a number from 1 to 3." in out
     assert "RoomScope analysis" in out  # roomscope show, run here
+
+
+def test_the_session_table_keeps_a_line_a_session_and_room_for_borders(
+    here: Path, capsys: pytest.CaptureFixture[str], demo_folder: Path
+) -> None:
+    shutil.copytree(demo_folder, here / "roomscope-demo")
+    code, _script = drive("5", "", dispatch=Commands(code=0), root=["--lang", "en"])
+    out = capsys.readouterr().out
+    assert code == 0
+    table = out[out.index("View results\n") : out.index("Session number")].splitlines()
+    rows = [line for line in table if "position-" in line]
+    assert len(rows) == 2  # one line a session, the long position cut, not wrapped
+    # A bordered table needs 2 cells more than the plain one: the widest line leaves them.
+    assert max(cell_width(line) for line in rows) <= 80 - 2
+    long_position = next(line for line in rows if "position-a" in line)
+    assert "close to the desk and the side wall" not in long_position
+    assert "…" in long_position or "..." in long_position
 
 
 def test_a_comparison_or_a_folder_can_be_typed_instead(
