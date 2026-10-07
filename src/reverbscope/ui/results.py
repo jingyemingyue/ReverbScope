@@ -14,6 +14,7 @@ from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QGuiApplication
 from PySide6.QtWidgets import (
+    QDialog,
     QFileDialog,
     QHBoxLayout,
     QHeaderView,
@@ -543,12 +544,16 @@ class ResultsPage(QWidget):
         self.save_button = primary(QPushButton(_("Save Session...")))
         self.save_button.setShortcut("Ctrl+S")
         self.save_button.clicked.connect(self._choose_save_directory)
+        self.profile_button = QPushButton(_("About this profile..."))
+        self.profile_button.setToolTip(_("What the recording profile watches for."))
+        self.profile_button.clicked.connect(self.show_profile_help)
         self.project_button = QPushButton(_("Project"))
         self.project_button.setToolTip(_("Back to the project this take belongs to."))
         self.project_button.clicked.connect(self.project_requested.emit)
         self.project_button.hide()
         self.header.action_row.addWidget(self.new_button)
         self.header.action_row.addWidget(self.project_button)
+        self.header.action_row.addWidget(self.profile_button)
         self.header.action_row.addWidget(self.copy_button)
         self.header.action_row.addWidget(self.save_button)
         layout.addWidget(self.header)
@@ -694,6 +699,11 @@ class ResultsPage(QWidget):
         project = self.state.project_path
         if project is not None:
             self._add_to_project(project, directory)
+
+    def show_profile_help(self) -> QDialog:
+        from reverbscope.ui.profile_dialog import show_profile_help
+
+        return show_profile_help(self.state.profile, self)
 
     def suggested_project_folder(self) -> str:
         """``<position>-<n>``: the next free folder name for the position."""

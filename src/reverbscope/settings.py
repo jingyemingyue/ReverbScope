@@ -45,6 +45,8 @@ class UserSettings:
     developer_tools: bool = False
     #: How the command line frames its reports: "" (auto), "boxed" or "plain".
     cli_style: str = ""
+    #: The first-measurement card on the Home page was dismissed.
+    walkthrough_dismissed: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)

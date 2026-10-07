@@ -169,6 +169,9 @@ class MainWindow(QMainWindow):
                 self.developer_menu.addAction(action)
 
         help_menu = self.menuBar().addMenu(_("&Help"))
+        self.getting_started_action = QAction(_("&Getting started"), self)
+        self.getting_started_action.triggered.connect(self.show_getting_started)
+        help_menu.addAction(self.getting_started_action)
         about_action = QAction(_("&About ReverbScope"), self)
         about_action.triggered.connect(self._about)
         licenses_action = QAction(_("&Third-party licenses..."), self)
@@ -243,6 +246,7 @@ class MainWindow(QMainWindow):
         # interface, not the demo's fake one.
         self.standalone.demo_mode = False
         self.home.refresh_recent()
+        self.home.show_walkthrough(not load_settings().walkthrough_dismissed)
         self.stack.setCurrentWidget(self.home)
         self._set_place(_("Home"))
 
@@ -308,6 +312,18 @@ class MainWindow(QMainWindow):
         else:
             self.stack.setCurrentWidget(self.daw)
             self._set_place(_("Universal DAW Mode"))
+
+    def show_getting_started(self) -> None:
+        """Home with the first-measurement card, and the card stays from now on."""
+        import contextlib
+        from dataclasses import replace
+
+        from reverbscope.settings import save_settings
+
+        with contextlib.suppress(ReverbScopeError, OSError):
+            save_settings(replace(load_settings(), walkthrough_dismissed=False))
+        self.show_home()
+        self.home.show_walkthrough(True)
 
     def choose_project(self) -> None:
         directory = QFileDialog.getExistingDirectory(self, _("Open project folder"))

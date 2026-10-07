@@ -134,6 +134,89 @@ def safe_findings(result: AnalysisResult, profile: str) -> tuple[list[Finding], 
         return [], unexpected_error_text()
 
 
+class WalkthroughCard(Card):
+    """The first-measurement card: three ways in, and where to read more."""
+
+    choose_mode = Signal(str)
+    dismissed = Signal()
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.body.addWidget(label(_("Your first measurement").upper(), "section"))
+        self.body.addWidget(
+            label(
+                _(
+                    "ReverbScope plays a sweep, records it and reads the room from the "
+                    "recording. Three ways in; the demo needs no hardware."
+                ),
+                "hint",
+                wrap=True,
+            )
+        )
+        steps = (
+            (
+                _("Try the demo first: a synthetic room, nothing is played."),
+                _("Try the demo"),
+                "demo",
+            ),
+            (
+                _(
+                    "In your DAW: write the test signal, play it and record it on a track, "
+                    "then import the recording here."
+                ),
+                _("Universal DAW Mode"),
+                "universal_daw",
+            ),
+            (
+                _(
+                    "With an audio interface: ReverbScope plays the sweep and records the "
+                    "microphone itself."
+                ),
+                _("Standalone Mode"),
+                "standalone",
+            ),
+        )
+        self.buttons: list[QPushButton] = []
+        for number, (text, caption, mode) in enumerate(steps, start=1):
+            row = QHBoxLayout()
+            row.setSpacing(10)
+            row.addWidget(label(f"{number}.  {text}", wrap=True), 1)
+            button = QPushButton(caption)
+            button.clicked.connect(lambda _checked=False, m=mode: self.choose_mode.emit(m))
+            row.addWidget(button)
+            self.buttons.append(button)
+            self.body.addLayout(row)
+        self.body.addWidget(
+            label(
+                _(
+                    "Choose the recording profile that matches what you record; its button says "
+                    "what it watches for. Every number carries a validity, and a result opens "
+                    "with its measurement health."
+                ),
+                "hint",
+                wrap=True,
+            )
+        )
+        bottom = QHBoxLayout()
+        self.guide_button = QPushButton(_("Read the user guide"))
+        self.guide_button.clicked.connect(self._open_guide)
+        bottom.addWidget(self.guide_button)
+        bottom.addStretch(1)
+        self.dismiss_button = QPushButton(_("Don't show this again"))
+        self.dismiss_button.clicked.connect(self.dismissed.emit)
+        bottom.addWidget(self.dismiss_button)
+        self.body.addLayout(bottom)
+
+    def _open_guide(self) -> None:
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+
+        from reverbscope.edition import user_guide_url
+        from reverbscope.i18n import current_locale
+
+        QDesktopServices.openUrl(QUrl(user_guide_url(current_locale())))
+
+
 class HomePage(QWidget):
     choose_mode = Signal(str)
     open_session = Signal()
@@ -167,6 +250,12 @@ class HomePage(QWidget):
         pills.addStretch(1)
         layout.addLayout(pills)
         layout.addSpacing(6)
+
+        # Shown until dismissed (a setting); Help ▸ Getting started brings it back.
+        self.walkthrough = WalkthroughCard()
+        self.walkthrough.choose_mode.connect(self.choose_mode.emit)
+        self.walkthrough.dismissed.connect(self.dismiss_walkthrough)
+        layout.addWidget(self.walkthrough)
 
         layout.addWidget(label(_("New Measurement").upper(), "section"))
         cards = QHBoxLayout()
@@ -235,6 +324,22 @@ class HomePage(QWidget):
     def list_folder(self, root: Path) -> None:
         self.browser.list_folder(root)
 
+    def show_walkthrough(self, visible: bool) -> None:
+        self.walkthrough.setVisible(visible)
+
+    def dismiss_walkthrough(self) -> None:
+        """Hide the card and remember it; a settings file that cannot be
+        written still hides it for this run."""
+        from dataclasses import replace
+
+        from reverbscope.settings import load_settings, save_settings
+
+        self.walkthrough.hide()
+        try:
+            save_settings(replace(load_settings(), walkthrough_dismissed=True))
+        except (ReverbScopeError, OSError) as exc:
+            log.info("the walkthrough stays for the next start: %s", exc)
+
 
 def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLineEdit, QLineEdit]:
     box = QGroupBox(_("Measurement metadata (optional)"))
@@ -249,11 +354,35 @@ def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLine
 
 
 def _profile_combo(state: MeasurementState) -> QComboBox:
+    from reverbscope.interpretation.explain import profile_description
+
     combo = QComboBox()
-    for name in available_profiles():
+    for index, name in enumerate(available_profiles()):
         combo.addItem(profile_title(name), name)
+        combo.setItemData(index, profile_description(name), Qt.ItemDataRole.ToolTipRole)
     combo.setCurrentIndex(max(combo.findData(state.profile), 0))
+
+    def describe(_index: int) -> None:
+        combo.setToolTip(profile_description(str(combo.currentData() or "")))
+
+    combo.currentIndexChanged.connect(describe)
+    describe(combo.currentIndex())
     return combo
+
+
+def _profile_row(combo: QComboBox, page: QWidget) -> QHBoxLayout:
+    """The profile selector with the button that says what the profile wants."""
+    from reverbscope.ui.profile_dialog import profile_of, show_profile_help
+
+    row = QHBoxLayout()
+    row.setSpacing(8)
+    row.addWidget(combo, 1)
+    button = QPushButton(_("What does it want?"))
+    button.setToolTip(_("What this profile watches for, and what it does not judge."))
+    button.clicked.connect(lambda: show_profile_help(profile_of(combo), page))
+    row.addWidget(button)
+    page.profile_help = button  # type: ignore[attr-defined]
+    return row
 
 
 class PlacementInputs(QGroupBox):
@@ -447,7 +576,7 @@ class DawModePage(QWidget):
         v4.addWidget(self.placement)
         profile_form = QFormLayout()
         self.profile = _profile_combo(state)
-        profile_form.addRow(_("Recording profile"), self.profile)
+        profile_form.addRow(_("Recording profile"), _profile_row(self.profile, self))
         v4.addLayout(profile_form)
         row = QHBoxLayout()
         self.analyze_button = primary(QPushButton(_("Analyze")))
@@ -793,7 +922,7 @@ class StandalonePage(QWidget):
         form2.addRow(_("Playback level"), self.level)
         form2.addRow(self.acknowledge)
         self.profile = _profile_combo(state)
-        form2.addRow(_("Recording profile"), self.profile)
+        form2.addRow(_("Recording profile"), _profile_row(self.profile, self))
         layout.addWidget(sweep)
 
         from reverbscope.edition import is_developer
