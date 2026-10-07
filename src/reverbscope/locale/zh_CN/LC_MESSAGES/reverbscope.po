@@ -4192,6 +4192,9 @@ msgstr "在可搜索的 {end:.1f} ms 内没有高于 {threshold:.0f} dB 的反�
 msgid "The result was discarded: a new measurement or another session replaced it before it was ready."
 msgstr "结果完成前已开始新的测量或打开了其他会话，结果已丢弃。"
 
+msgid "incomplete window"
+msgstr "窗口不完整"
+
 msgid "Synthetic demo"
 msgstr "合成演示"
 

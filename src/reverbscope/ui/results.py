@@ -372,6 +372,18 @@ class _Overview(QWidget):
                 _("above {threshold:g} dB").format(threshold=refl.threshold_db),
                 "info",
             )
+        elif refl.window_truncated and refl.analysed_window_ms is not None:
+            # The response ended before the window did: later arrivals were
+            # not seen, so an empty list is not a clean room (the command line
+            # says the same in its At-a-glance row).
+            self.reflections.show_value(
+                "0",
+                _(
+                    "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
+                ).format(threshold=refl.threshold_db, end=refl.analysed_window_ms[1]),
+                _("incomplete window"),
+                "warn",
+            )
         else:
             self.reflections.show_value(
                 "0",
