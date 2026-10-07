@@ -4766,3 +4766,16 @@ msgstr "无法把报告写入 {path}：{error}"
 
 msgid "Report written to {path}"
 msgstr "报告已写入 {path}"
+
+# Decay analysis: a gate or a noise burst is not a reverberation slope
+
+msgctxt "diagnostic"
+msgid "the decay stops abruptly: the regression ends {gap:.0f} dB above the noise floor (limit {limit:.0f} dB), so the slope is the end of the record rather than the reverberation"
+msgstr "衰减突然中断：回归在本底噪声以上 {gap:.0f} dB 处结束（上限 {limit:.0f} dB），因此这条斜率是记录的终点，而不是混响"
+
+msgctxt "diagnostic"
+msgid "the {metric} fit crosses its evaluation range in {late_ms:.0f} ms after the curve took {early_ms:.0f} ms to fall 5 dB: that step is not a reverberation slope, so {metric} is not a reliable reverberation time here"
+msgstr "{metric} 拟合在曲线用 {early_ms:.0f} ms 下降 5 dB 之后，仅用 {late_ms:.0f} ms 就穿过了整个评价区间：这是衰减曲线上的阶跃，不是混响斜率，因此此处 {metric} 不是可靠的混响时间"
+
+msgid "sweep rate is not positive: the frequency range is too small to sweep"
+msgstr "扫频速率不是正数：频率范围太小，无法生成扫频"
