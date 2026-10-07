@@ -5716,3 +5716,123 @@ msgstr "等价的命令行："
 
 msgid "The command ended with exit code {code}."
 msgstr "命令以退出码 {code} 结束。"
+
+msgid "the recording profiles, and what each one watches for"
+msgstr "各录音配置，以及每个配置关注什么"
+
+msgid "one profile to explain in full (default: list them all)"
+msgstr "要完整说明的一个配置（默认：列出全部）"
+
+msgid "explain every profile in full"
+msgstr "完整说明每个配置"
+
+msgid "ReverbScope recording profiles"
+msgstr "ReverbScope 录音配置"
+
+msgid "(default)"
+msgstr "（默认）"
+
+msgid "reverbscope profiles <name> says what a profile watches for; --profile <name> chooses it for one analysis, reverbscope config profile <name> for good."
+msgstr "reverbscope profiles <name> 说明一个配置关注什么；--profile <name> 为一次分析选择它，reverbscope config profile <name> 长期生效。"
+
+msgid "Thresholds are engineering choices for one kind of recording, not a grade; docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
+msgstr "阈值是针对一类录音的工程取舍，不是评分；docs/MEASUREMENT_METHODOLOGY.md §8 列出了每个配置的阈值。"
+
+msgid "Clarity (C50 / C80) is not judged: this kind of recording wants the room."
+msgstr "不判断清晰度（C50 / C80）：这类录音需要房间的声音。"
+
+msgid "Clarity: a {metric} below {low:+.0f} dB is not clear enough for this recording."
+msgstr "清晰度：{metric} 低于 {low:+.0f} dB 对这类录音来说不够清晰。"
+
+msgid "Clarity: a {metric} above {high:+.0f} dB means the room is too dry for this use."
+msgstr "清晰度：{metric} 高于 {high:+.0f} dB 说明房间对这种用途来说过干。"
+
+msgid "Clarity: {metric} is reported without a threshold."
+msgstr "清晰度：报告 {metric}，不设阈值。"
+
+msgid "Noise: the noise floor matters once the direct sound is less than {margin:.0f} dB above it (levels are dBFS, not dB SPL)."
+msgstr "噪声：当直达声高出本底噪声不足 {margin:.0f} dB 时，本底噪声开始影响录音（电平为 dBFS，不是 dB SPL）。"
+
+msgid "The noise floor is measured but not commented on for this recording."
+msgstr "本底噪声会被测量，但对这类录音不作评论。"
+
+msgid "Low end: bands up to {low:.0f} Hz decaying more than {ratio:.1f} times slower than the {mid_min:.0f}–{mid_max:.0f} Hz bands is an imbalance; a resonance is named only when its decay is distinguishable."
+msgstr "低频：{low:.0f} Hz 及以下频段的衰减比 {mid_min:.0f}–{mid_max:.0f} Hz 频段慢 {ratio:.1f} 倍以上即为失衡；只有衰减可区分时才会指出共振。"
+
+msgid "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
+msgstr "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
+
+msgid "General observations, not tied to a specific instrument or voice."
+msgstr "一般性观察，不针对特定乐器或人声。"
+
+msgid "Close-miked lead or backing vocals."
+msgstr "近距离拾音的主唱或和声。"
+
+msgid "Voice-over, narration and audiobook."
+msgstr "配音、旁白和有声书。"
+
+msgid "Acoustic guitar, single microphone or close pair."
+msgstr "原声吉他，单支话筒或近距离一对话筒。"
+
+msgid "Drums, close mics (kick, snare, toms) with or without overheads."
+msgstr "鼓，近距离话筒（底鼓、军鼓、通鼓），有无顶部话筒均可。"
+
+msgid "Room microphone or ambient pickup: the room is the instrument."
+msgstr "房间话筒或环境拾音：房间本身就是乐器。"
+
+msgid "Choir or small ensemble, one or more microphones."
+msgstr "合唱或小型合奏，一支或多支话筒。"
+
+msgid "Reverberation: an RT60 up to {long:.1f} s passes without comment; above it the decay is noticeable, above {very_long:.1f} s it is long (a warning)."
+msgstr "混响：RT60 不超过 {long:.1f} s 不作评论；超过则衰减明显，超过 {very_long:.1f} s 则过长（警告）。"
+
+msgid "Early reflections: a reflection at or above {level:.0f} dB relative to the direct sound within {window:.0f} ms is strong."
+msgstr "早期反射：{window:.0f} ms 内、相对直达声不低于 {level:.0f} dB 的反射算作强反射。"
+
+msgid "&Getting started"
+msgstr "入门(&G)"
+
+msgid "Your first measurement"
+msgstr "你的第一次测量"
+
+msgid "ReverbScope plays a sweep, records it and reads the room from the recording. Three ways in; the demo needs no hardware."
+msgstr "ReverbScope 播放扫频、录下它，再从录音中读出房间。有三种入口；演示不需要任何硬件。"
+
+msgid "Try the demo first: a synthetic room, nothing is played."
+msgstr "先试试演示：一个合成的房间，不播放任何声音。"
+
+msgid "In your DAW: write the test signal, play it and record it on a track, then import the recording here."
+msgstr "在你的 DAW 中：写出测试信号，播放并录到一条音轨上，再把录音导入这里。"
+
+msgid "With an audio interface: ReverbScope plays the sweep and records the microphone itself."
+msgstr "使用音频接口：ReverbScope 自己播放扫频并录制话筒。"
+
+msgid "Choose the recording profile that matches what you record; its button says what it watches for. Every number carries a validity, and a result opens with its measurement health."
+msgstr "选择与你所录内容匹配的录音配置；旁边的按钮会说明它关注什么。每个数字都带有效性标记，结果一开始就是它的测量健康。"
+
+msgid "Read the user guide"
+msgstr "阅读用户指南"
+
+msgid "Don't show this again"
+msgstr "不再显示"
+
+msgid "What does it want?"
+msgstr "它关注什么？"
+
+msgid "What this profile watches for, and what it does not judge."
+msgstr "这个配置关注什么，以及它不判断什么。"
+
+msgid "WHAT IT WATCHES FOR"
+msgstr "它关注什么"
+
+msgid "WHAT IT DOES NOT JUDGE"
+msgstr "它不判断什么"
+
+msgid "Thresholds are engineering choices for this kind of recording, not a grade; docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
+msgstr "阈值是针对这类录音的工程取舍，不是评分；docs/MEASUREMENT_METHODOLOGY.md §8 列出了每个配置的阈值。"
+
+msgid "About this profile..."
+msgstr "关于这个配置..."
+
+msgid "What the recording profile watches for."
+msgstr "这个录音配置关注什么。"

@@ -64,6 +64,19 @@ All notable changes to ReverbScope are documented here. The format follows
   question returns to the menu; a pipe or a script still gets the home
   screen and the usage exit code (`REVERBSCOPE_NO_MENU=1` keeps the menu off
   a terminal). Ideas taken from PR #42, implemented here without Rich.
+- **What a profile wants, before you measure.** `reverbscope profiles`
+  lists the recording profiles; `reverbscope profiles <name>` (or `--all`)
+  says what one watches for and what it does not judge, from its own
+  thresholds (`--format json` for the numbers). In the desktop app the
+  profile selector carries the same explanation behind **What does it
+  want?**, the Results page behind **About this profile...**, and each
+  profile's description as a tooltip. `reverbscope.interpretation.explain`
+  derives it from any profile, third-party ones included; profiles gain the
+  `judges_noise` attribute (false for drums).
+- **A first-measurement card** on the desktop app's Home page: the demo, the
+  DAW route and the standalone route with their buttons and a link to the
+  user guide, until **Don't show this again** (a setting); **Help ▸ Getting
+  started** brings it back.
 - **Dropouts in the recorded sweep** (runs of 2 ms or more of frozen or zero
   samples: a lost buffer, a DAW out of disk or CPU) are found, placed in time
   and at the frequency the sweep was at, noted in the warnings and stored in

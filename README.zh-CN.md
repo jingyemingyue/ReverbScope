@@ -221,6 +221,7 @@ reverbscope
 
 # 演示 / CI：不需要音频接口
 reverbscope demo --out demo/
+reverbscope profiles vocal           # 一个录音配置关注什么
 reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
 # 语言（保存在 settings.json 中；auto 改回跟随系统）、设置、打包、CSV、项目

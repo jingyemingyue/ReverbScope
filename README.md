@@ -256,6 +256,7 @@ reverbscope
 
 # Demo / CI: no interface
 reverbscope demo --out demo/
+reverbscope profiles vocal           # what a recording profile watches for
 reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
 # Language (kept in settings.json; "auto" follows the system again), settings,

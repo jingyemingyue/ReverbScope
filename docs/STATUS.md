@@ -9,7 +9,7 @@ measurement through a real interface or a real DAW
 Snapshot 37: 2026-10-07 — **the development line moves on while the
 candidate waits for hardware: bug hunt round 4, Measurement health, a
 regression corpus, verdicts on a comparison, the project overview, a
-boxed terminal and a menu** (branch `integration/post-rc-development`, cut from PR
+boxed terminal and a menu, profiles explained** (branch `integration/post-rc-development`, cut from PR
 #45's head `5d33753`; nothing merged, tagged or published; `release/0.5.0`
 untouched).
 
@@ -65,6 +65,11 @@ untouched).
   `REVERBSCOPE_CLI_STYLE`), and bare `reverbscope` on a terminal opens a
   numbered menu that prints the command it runs each time. Harvested from
   PR #42 without its dependencies.
+* **Profiles explained, and a first-measurement card** (fifth batch):
+  `reverbscope profiles [name]` and the "What does it want?" button say what
+  a recording profile watches for and what it does not judge, from its own
+  thresholds; Home opens with a card for the first measurement until it is
+  dismissed (Help ▸ Getting started brings it back).
 
 **What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
 PortAudio present, no audio device): ruff, ruff format, strict mypy, the

@@ -83,6 +83,11 @@ bundled licenses.
 
 ## Try it first: the demo
 
+On its first start the desktop app shows a **Your first measurement** card on
+the Home page: the demo, the DAW route and the standalone route, each with
+its button, and a link to this guide. **Don't show this again** hides it;
+**Help ▸ Getting started** brings it back.
+
 `reverbscope demo` shows the whole workflow without an interface or a
 microphone. It writes a sweep, simulates what a microphone would record at two
 positions in a made-up room (one close to a desk and a side wall, one moved
@@ -171,6 +176,18 @@ Each metric has a validity flag. `insufficient_decay_range` means the number is
 withheld, not that it is zero. There is no single score. A recording profile
 may add one notice when broadband C50 or C80 is a poor fit for that kind of
 recording; the threshold is an engineering choice for the profile, not a grade.
+
+**Recording profiles.** A profile is the kind of recording the room is judged
+for: vocals, voice-over, acoustic guitar, drums, a room microphone, a choir,
+or the general one. Each has its own thresholds for the decay, for a strong
+early reflection, for clarity (C50 or C80; drums judge neither clarity nor
+the noise floor) and for the low end. Before you measure, the **What does it
+want?** button beside the profile selector (and **About this profile...** on
+the Results page) says what the chosen profile watches for and what it does
+not judge, with the numbers; `reverbscope profiles` lists the profiles and
+`reverbscope profiles vocal` explains one (`--format json` for the numbers).
+The thresholds are engineering choices, stated in
+[MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8, never a grade.
 
 **Measurement health** comes first: the top card of the Overview tab, and the
 section right after "At a glance" in the text report. It lists the checks the
