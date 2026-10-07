@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, cast
 
@@ -40,7 +41,7 @@ from reverbscope.core.sweep import measurement_signal
 from reverbscope.demo import DEMO_MODE, FAKE_BACKEND_NOTES
 from reverbscope.errors import AudioDeviceError, ReverbScopeError
 from reverbscope.i18n import N_, _, localize
-from reverbscope.interpretation import available_profiles, interpret
+from reverbscope.interpretation import Finding, available_profiles, interpret
 from reverbscope.interpretation.profiles import profile_title
 from reverbscope.io.wav import load_reference, read_wav, write_sweep_file
 from reverbscope.models.audio import AudioSignal
@@ -59,7 +60,9 @@ from reverbscope.ui.widgets import (
     primary,
     set_banner_text,
 )
-from reverbscope.ui.workers import AnalysisWorker, MeasureWorker
+from reverbscope.ui.workers import AnalysisWorker, MeasureWorker, unexpected_error_text
+
+log = logging.getLogger(__name__)
 
 
 def separate_clocks_box(parent: QWidget, warning: str) -> QMessageBox:
@@ -103,8 +106,32 @@ def _find_data(combo: QComboBox, value: object) -> int:
 
 
 def late_result_text() -> str:
-    """Shown on a mode page whose take or analysis ended after the user left it."""
-    return _("The result was discarded because you left this page before it was ready.")
+    """Shown on a mode page whose take or analysis ended after the user moved on.
+
+    Not after any page switch: a visit to Compare or Settings keeps the result,
+    which then opens Results. Only a reset (New Measurement, Open Session) or a
+    measurement another page started meanwhile makes the result late.
+    """
+    return _(
+        "The result was discarded: a new measurement or another session replaced it "
+        "before it was ready."
+    )
+
+
+def safe_findings(result: AnalysisResult, profile: str) -> tuple[list[Finding], str]:
+    """The findings for ``result``, or none and the reason why.
+
+    A recording profile that fails (a third-party one from an entry point)
+    must not stop the result from being shown: the page stayed busy for good
+    and the measurement was never seen.
+    """
+    try:
+        return interpret(result, profile), ""
+    except ReverbScopeError as exc:
+        return [], localize(str(exc))
+    except Exception:
+        log.exception("recording profile %r failed to interpret the result", profile)
+        return [], unexpected_error_text()
 
 
 class HomePage(QWidget):
@@ -475,7 +502,7 @@ class DawModePage(QWidget):
         try:
             settings = self.current_sweep_settings()
             wav_path, sidecar = write_sweep_file(settings, path)
-        except ReverbScopeError as exc:
+        except (ReverbScopeError, OSError) as exc:
             QMessageBox.critical(self, _("Cannot write test signal"), localize(str(exc)))
             return
         self._sweep_settings = settings
@@ -551,6 +578,11 @@ class DawModePage(QWidget):
 
     # --- step 4 -----------------------------------------------------------------
     def start_analysis(self, *, blocking: bool = False) -> None:
+        if self._worker is not None and self._worker.isRunning():
+            # Analyze while busy: a second worker would drop the only
+            # reference to the running one, and Qt aborts the process when a
+            # QThread is destroyed while it runs.
+            return
         if self._recording is None:
             QMessageBox.warning(
                 self, _("No recording"), _("Choose the recorded WAV file first (Step 3).")
@@ -575,7 +607,8 @@ class DawModePage(QWidget):
             placement_temperature_c=place["placement_temperature_c"],
         )
         # The imported take and its sweep become the shared session's, which
-        # Save writes.
+        # Save writes; a take or analysis another page still runs is now late.
+        self._generation = self.state.claim()
         self.state.recording = self._recording
         self.state.recording_path = self._recording_path
         self.state.reference = self._reference
@@ -593,7 +626,6 @@ class DawModePage(QWidget):
             recording_profile=self.state.profile,
         )
         self._set_busy(True, _("Analyzing..."))
-        self._generation = self.state.generation
         self._worker = AnalysisWorker(
             self._recording, self._reference, self.state.analysis_settings
         )
@@ -629,22 +661,33 @@ class DawModePage(QWidget):
         self.progress.setVisible(busy)
         set_banner_text(self.status, text, tone)
 
+    def _stale(self) -> bool:
+        """The result that arrives now belongs to a session that is gone.
+
+        The shared state was reset (New Measurement, Open Session) or taken by
+        a measurement another page started since this one began, or the
+        window is closed. A visit to Compare or Settings meanwhile is not
+        that: the result is kept and opens Results.
+        """
+        return self._generation != self.state.generation or not self.window().isVisible()
+
     def _on_success(self, result: AnalysisResult) -> None:
-        if self._generation != self.state.generation or not self.isVisible():
-            # The user went elsewhere (a menu action) while this ran; the
-            # shared state now belongs to that page. Coming back to wait does
-            # not help after New Measurement or Open Session: the state was
-            # reset, and the result would join that other session.
+        if self._stale():
             self._set_busy(False, late_result_text(), tone="warn")
             return
+        findings, problem = safe_findings(result, self.state.profile)
         self.state.result = result
-        self.state.findings = interpret(result, self.state.profile)
+        self.state.findings = findings
+        self.state.findings_problem = problem
         self._set_busy(False, _("Done."))
         self.analysis_finished.emit()
 
     def _on_failure(self, message: str) -> None:
         self._set_busy(False, _("Analysis failed: {message}").format(message=message), tone="warn")
-        error_box(self, _("Analysis failed"), message)
+        if not self._stale():
+            # An analysis the user abandoned (New Measurement meanwhile) keeps
+            # its failure on this page; no dialog over the page they are on.
+            error_box(self, _("Analysis failed"), message)
 
 
 class StandalonePage(QWidget):
@@ -1201,14 +1244,20 @@ class StandalonePage(QWidget):
     def _on_stopped(self) -> None:
         self._set_busy(False, _("Stopped."))
 
+    def _stale(self) -> bool:
+        """As :meth:`DawModePage._stale`."""
+        return self._generation != self.state.generation or not self.window().isVisible()
+
     def _on_recorded(self, recording: AudioSignal) -> None:
-        if self._generation != self.state.generation or not self.isVisible():
-            # As in DawModePage._on_success.
+        if self._stale():
             self._set_busy(False, late_result_text(), tone="warn")
             return
         plan = self._channel_plan
         reference = self._take_reference
         assert plan is not None and reference is not None
+        # The take takes the shared state: an analysis another page started
+        # meanwhile is late from here on.
+        self._generation = self.state.claim()
         self.state.mode = "standalone"
         self.state.recording = recording
         self.state.recording_path = None
@@ -1255,11 +1304,13 @@ class StandalonePage(QWidget):
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
-        if self._generation != self.state.generation or not self.isVisible():
+        if self._stale():
             self._set_busy(False, late_result_text(), tone="warn")
             return
+        findings, problem = safe_findings(result, self.state.profile)
         self.state.result = result
-        self.state.findings = interpret(result, self.state.profile)
+        self.state.findings = findings
+        self.state.findings_problem = problem
         self._set_busy(False, _("Done."))
         self.analysis_finished.emit()
 
@@ -1267,4 +1318,5 @@ class StandalonePage(QWidget):
         self._set_busy(
             False, _("Measurement failed: {message}").format(message=message), tone="warn"
         )
-        error_box(self, _("Measurement failed"), message)
+        if not self._stale():
+            error_box(self, _("Measurement failed"), message)

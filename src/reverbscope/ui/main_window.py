@@ -22,12 +22,12 @@ from PySide6.QtWidgets import (
 from reverbscope import __version__
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
-from reverbscope.interpretation import available_profiles, interpret
+from reverbscope.interpretation import available_profiles
 from reverbscope.io.recent import remember_session
 from reverbscope.io.session_store import load_measurement
 from reverbscope.settings import load_settings
 from reverbscope.ui.compare_view import ComparePage
-from reverbscope.ui.pages import DawModePage, HomePage, StandalonePage
+from reverbscope.ui.pages import DawModePage, HomePage, StandalonePage, safe_findings
 from reverbscope.ui.results import ResultsPage
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.theme import apply_application_chrome, color_scheme
@@ -248,13 +248,13 @@ class MainWindow(QMainWindow):
         self.state.result = loaded.result
         self.state.mode = loaded.session.mode
         profile = loaded.session.recording_profile or "generic"
-        try:
-            findings = interpret(loaded.result, profile)
-        except ReverbScopeError:
+        if profile not in available_profiles():
+            # A profile this install does not have (a plugin, a newer version).
             profile = "generic"
-            findings = interpret(loaded.result, profile)
+        findings, problem = safe_findings(loaded.result, profile)
         self.state.profile = profile
         self.state.findings = findings
+        self.state.findings_problem = problem
         remember_session(loaded.directory)
         self.show_results()
 

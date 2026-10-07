@@ -319,7 +319,10 @@ class _Overview(QWidget):
         layout.addWidget(energy)
         layout.addStretch(1)
 
-    def show_result(self, result: AnalysisResult, findings: list[Finding], profile: str) -> None:
+    def show_result(
+        self, result: AnalysisResult, findings: list[Finding], profile: str, problem: str = ""
+    ) -> None:
+        """``problem`` says why there are no findings (the profile failed)."""
         broadband = result.decay.broadband
         if broadband.rt60_estimate_s is not None:
             word, tone = _validity_text(broadband.t30.validity)
@@ -418,7 +421,17 @@ class _Overview(QWidget):
                     severity_label=severity_text(str(finding.severity)),
                 )
             )
-        if not findings:
+        if not findings and problem:
+            self.findings.addWidget(
+                label(
+                    _("The {profile} profile could not interpret this result: {error}").format(
+                        profile=profile_title(profile), error=problem
+                    ),
+                    "hint",
+                    wrap=True,
+                )
+            )
+        elif not findings:
             self.findings.addWidget(label(_("No findings."), "hint"))
 
         rows = decay_table_rows(result)
@@ -550,7 +563,9 @@ class ResultsPage(QWidget):
             self._draw(self.state.result)
 
     def _draw(self, result: AnalysisResult) -> None:
-        self.overview.show_result(result, list(self.state.findings), self.state.profile)
+        self.overview.show_result(
+            result, list(self.state.findings), self.state.profile, self.state.findings_problem
+        )
         plot_impulse_response(self.ir_tab.figure, result)
         plot_frequency_response(self.fr_tab.figure, result)
         plot_decay(self.decay_tab.figure, result)
@@ -585,7 +600,7 @@ class ResultsPage(QWidget):
             )
             if unsaved is not None:
                 self.state.session.recording_path = str(directory / "recording.wav")
-        except ReverbScopeError as exc:
+        except (ReverbScopeError, OSError) as exc:
             QMessageBox.critical(self, _("Cannot save session"), localize(str(exc)))
             return
         remember_session(directory)
