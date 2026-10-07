@@ -9,7 +9,8 @@ measurement through a real interface or a real DAW
 Snapshot 37: 2026-10-07 — **the development line moves on while the
 candidate waits for hardware: bug hunt round 4, Measurement health, a
 regression corpus, verdicts on a comparison, the project overview, a
-boxed terminal and a menu, profiles explained** (branch `integration/post-rc-development`, cut from PR
+boxed terminal and a menu, profiles explained, a benchmark and the
+stability principles** (branch `integration/post-rc-development`, cut from PR
 #45's head `5d33753`; nothing merged, tagged or published; `release/0.5.0`
 untouched).
 
@@ -70,6 +71,13 @@ untouched).
   a recording profile watches for and what it does not judge, from its own
   thresholds; Home opens with a card for the first measurement until it is
   dismissed (Help ▸ Getting started brings it back).
+* **Performance, memory and stability** (sixth batch): `scripts/benchmark.py`
+  and `docs/PERFORMANCE.md` (reference numbers, what dominates); opening a
+  session is faster (the JSON guard) and repeated analyses skip the band
+  filters' settling computation (cached, numbers unchanged); the stored
+  frequency response's size and the 60 s / 96 kHz memory peak are documented
+  options, not changed. `docs/API_STABILITY.md` states the stability
+  principles and the checklist for a change to a stable surface.
 
 **What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
 PortAudio present, no audio device): ruff, ruff format, strict mypy, the

@@ -77,6 +77,16 @@ All notable changes to ReverbScope are documented here. The format follows
   DAW route and the standalone route with their buttons and a link to the
   user guide, until **Don't show this again** (a setting); **Help ▸ Getting
   started** brings it back.
+- **A benchmark and its findings.** `scripts/benchmark.py` times the
+  analysis, the save, the load, the report, a comparison and the plots on
+  synthetic recordings of 2 s to 60 s at 48 and 96 kHz and reports the peak
+  memory; `docs/PERFORMANCE.md` holds the reference numbers, what dominates
+  and what was left as it is (the stored frequency response's size, the FFT
+  peak of a 60 s sweep at 96 kHz).
+- **API and schema stability principles** (`docs/API_STABILITY.md`): the
+  surfaces and their tiers, additive changes, when `schema_version` moves,
+  interpretation derived at display time, deprecation before removal, and
+  the checklist a change to a stable surface carries.
 - **Dropouts in the recorded sweep** (runs of 2 ms or more of frozen or zero
   samples: a lost buffer, a DAW out of disk or CPU) are found, placed in time
   and at the frequency the sweep was at, noted in the warnings and stored in
@@ -111,6 +121,13 @@ All notable changes to ReverbScope are documented here. The format follows
   confidence or reason is carried and which tests prove it.
 
 ### Changed
+- Opening a session is faster: the JSON nesting guard that read every
+  character of `result.json` in Python (0.3 s of a 0.4 s load) now scans
+  with a regular expression and counts the same brackets.
+- The octave-band filters' settling lengths are cached per process, so a
+  comparison, a project overview or a second analysis at the same sample
+  rate no longer filters a 4 s impulse per band again (about 0.4 s saved per
+  analysis at 48 kHz); the numbers are unchanged.
 - CI runs on pushes to `release/**` branches as well as `main`.
 
 ### Fixed
