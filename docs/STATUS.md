@@ -6,6 +6,44 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 37: 2026-10-07 — **the development line moves on while the
+candidate waits for hardware: bug hunt round 4, Measurement health, a
+regression corpus** (branch `integration/post-rc-development`, cut from PR
+#45's head `5d33753`; nothing merged, tagged or published; `release/0.5.0`
+untouched).
+
+* **Bug hunt round 4** (state and lifecycle, file persistence, numerical
+  edge cases; a probe of 64 synthetic numerical cases and 70 file-system
+  cases, each listed in the pull request). Found and fixed, each with a
+  regression test first: every writer let a folder that could not be made
+  escape as a bare OSError (the desktop app called it a bug); a damaged or
+  foreign `impulse_response.wav` crashed the first plot or was drawn on the
+  wrong time axis; a NumPy integer sample rate broke `json.dumps` of a
+  result; in the desktop app a page switch to Compare threw a running
+  analysis away as late, a failing profile left the page busy for good, a
+  second Analyze could abort the process, and an abandoned analysis's
+  failure opened a dialog over another page. The numerical probe found no
+  crash and no non-finite number: the pipeline refuses what it cannot use.
+* **Measurement health**: every result opens with the checks made on the
+  take (reference, sweep, playback speed, direct sound, level, distortion,
+  dropouts, decay range, noise floor, recording length, loopback and device
+  when present), each good / warning / invalid / unknown with its reason,
+  the figures it affects and what to do next, with the DAW-by-DAW steps of
+  the DAW guide for a sweep played at the wrong speed (`docs/MEASUREMENT_METHODOLOGY.md`
+  §12). Dropouts in the recorded sweep are now detected and stored
+  (`result.json` gains the optional `dropouts` record).
+* **Regression corpus** (`tests/corpus/`): 47 manifest entries over 70
+  synthetic files (WAV headers wrong in turn, the DAW containers, sidecars,
+  a 0.5.0b2 session and its stale, cut, mis-encoded and crafted variants),
+  each with the reason it exists; `CONTRIBUTING.md` has the loop from a
+  community report to a corpus entry.
+
+**What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
+PortAudio present, no audio device): ruff, ruff format, strict mypy, the
+catalog, schema, CLI, GUI and health suites on every change, and the full
+suite before the push. **Not run:** anything on real hardware or in a DAW;
+the Release workflow (no packaging file changed).
+
 Snapshot 36: 2026-10-06 — **two lines from here on: the beta line on
 `main`, and a release-candidate line for hardware and DAW validation.**
 

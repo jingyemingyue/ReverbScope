@@ -1,0 +1,147 @@
+{
+ "session_id": "corpus-base",
+ "created_at": "2026-10-07T00:00:00+00:00",
+ "mode": "universal_daw",
+ "room_name": "Corpus",
+ "measurement_position": "",
+ "microphone_name": "",
+ "microphone_type": "",
+ "microphone_calibration": "uncalibrated",
+ "audio_interface": "",
+ "input_channel": null,
+ "output_channel": null,
+ "loudspeaker": "",
+ "sample_rate": 48000,
+ "bit_depth": null,
+ "sweep_settings": {
+  "sample_rate": 48000,
+  "duration_s": 0.5,
+  "start_hz": 20.0,
+  "end_hz": 20000.0,
+  "fade_in_s": 0.05,
+  "fade_out_s": 0.01,
+  "level_dbfs": -12.0,
+  "pre_silence_s": 1.0,
+  "post_silence_s": 1.5
+ },
+ "analysis_settings": {
+  "channel": null,
+  "ir_pre_delay_ms": 5.0,
+  "ir_max_length_s": 0.2,
+  "octave_bands_hz": [
+   63.0,
+   125.0,
+   250.0,
+   500.0,
+   1000.0,
+   2000.0,
+   4000.0,
+   8000.0
+  ],
+  "fr_window_s": null,
+  "fr_smoothing_fraction": 6,
+  "noise_min_segment_s": 0.5,
+  "reflections_min_delay_ms": 0.8,
+  "reflections_max_delay_ms": 80.0,
+  "reflections_threshold_db": -20.0,
+  "reflections_prominence_db": 6.0,
+  "resonance_max_hz": 300.0,
+  "resonance_min_prominence_db": 6.0,
+  "decay_noise_margin_db": 10.0,
+  "placement_distance_m": null,
+  "placement_mic_height_m": null,
+  "placement_temperature_c": null,
+  "loopback_channel": null,
+  "calibration": null
+ },
+ "sweep_path": null,
+ "recording_path": null,
+ "impulse_response_path": "impulse_response.wav",
+ "result_path": "result.json",
+ "analysis_summary": {
+  "created_at": "2026-10-07T05:31:51+00:00",
+  "sample_rate": 48000,
+  "broadband_rt60_estimate_s": 0.19876802215811992,
+  "broadband_rt60_basis": "T30",
+  "broadband_edt_s": null,
+  "broadband_peak_to_noise_db": 61.94664551660378,
+  "bands": {
+   "63 Hz": {
+    "rt60_estimate_s": 0.18139131309210219,
+    "rt60_basis": "T30",
+    "t20_s": 0.17547462385115858,
+    "t30_s": 0.18139131309210219,
+    "edt_s": null
+   },
+   "125 Hz": {
+    "rt60_estimate_s": 0.22095680893373765,
+    "rt60_basis": "T30",
+    "t20_s": 0.1534789620406465,
+    "t30_s": 0.22095680893373765,
+    "edt_s": null
+   },
+   "250 Hz": {
+    "rt60_estimate_s": 0.21366964309036693,
+    "rt60_basis": "T30",
+    "t20_s": 0.19424992023880971,
+    "t30_s": 0.21366964309036693,
+    "edt_s": null
+   },
+   "500 Hz": {
+    "rt60_estimate_s": 0.19470211539047386,
+    "rt60_basis": "T30",
+    "t20_s": 0.18564495480483287,
+    "t30_s": 0.19470211539047386,
+    "edt_s": null
+   },
+   "1 kHz": {
+    "rt60_estimate_s": 0.1957229120579743,
+    "rt60_basis": "T30",
+    "t20_s": 0.2095960128859481,
+    "t30_s": 0.1957229120579743,
+    "edt_s": null
+   },
+   "2 kHz": {
+    "rt60_estimate_s": 0.19186677139931624,
+    "rt60_basis": "T30",
+    "t20_s": 0.196035023494874,
+    "t30_s": 0.19186677139931624,
+    "edt_s": null
+   },
+   "4 kHz": {
+    "rt60_estimate_s": 0.20388853328747317,
+    "rt60_basis": "T30",
+    "t20_s": 0.20358363657842243,
+    "t30_s": 0.20388853328747317,
+    "edt_s": null
+   },
+   "8 kHz": {
+    "rt60_estimate_s": 0.20395227646943723,
+    "rt60_basis": "T30",
+    "t20_s": 0.2044301206661498,
+    "t30_s": 0.20395227646943723,
+    "edt_s": null
+   }
+  },
+  "noise_rms_dbfs": -96.9763696727467,
+  "hum_detected": [],
+  "early_reflections": [],
+  "resonance_candidates_hz": [],
+  "direct_sound_confidence": "high",
+  "warnings": []
+ },
+ "notes": "",
+ "recording_profile": "generic",
+ "reverbscope_version": "0.5.0b2",
+ "platform": "corpus",
+ "loopback_channel": null,
+ "schema_version": 0,
+ "future_field": {
+  "from": "a later ReverbScope",
+  "values": [
+   1,
+   2,
+   3
+  ]
+ }
+}

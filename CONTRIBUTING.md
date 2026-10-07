@@ -98,6 +98,45 @@ register it in `_PROFILES`, add a synthetic test in
 * `CHANGELOG.md` is updated in the same pull request.
 * Use the pull-request template; CI must be green before merge.
 
+## From a community report to a regression test
+
+Hardware, DAW and room reports are the only evidence ReverbScope cannot make
+for itself, so every bug found that way leaves a test behind. The loop, in
+order:
+
+1. **Issue.** The report form asks for the environment report
+   (`reverbscope doctor --out report.txt`), the version and build commit, the
+   files (sweep sidecar, recording, `result.json` or a session bundle) and
+   what was expected.
+2. **Reproduce.** A maintainer reproduces it from the attached files. A
+   report that cannot be reproduced stays open with what was tried.
+3. **Minimal sample.** Cut the failing file down to the smallest thing that
+   still fails: a WAV of a few hundred samples with the same header, a
+   `session.json` with the one field, a sidecar with the one value. No real
+   recording longer than a second, nothing identifying (a home folder, an
+   account, a device name), CC0 by the contributor. Put it under
+   `tests/corpus/files/<family>/` and list it in `tests/corpus/manifest.json`
+   with the issue number and the reason it exists
+   ([tests/corpus/README.md](tests/corpus/README.md)).
+4. **Regression test.** The corpus test runs every manifest entry. A bug
+   outside file handling gets its own test next to the code it exercises
+   (`tests/unit`, `tests/integration`, `tests/ui`), named after the failure,
+   with the issue in its docstring. The test fails before the fix.
+5. **Fix**, on the line it belongs to: the candidate branch (`release/0.5.0`)
+   when the release plan allows it (`docs/RELEASE_PLAN.md` §2a: correctness,
+   crash, packaging, compatibility, localization and documentation fixes),
+   the development line otherwise. A fix for the candidate is written there
+   first.
+6. **Forward-port.** A candidate fix is merged or cherry-picked into the
+   development line as the same commit, never redone by hand (§2a).
+7. **Re-verify.** The reporter runs the next build (a CI artefact or the next
+   candidate) and says in the issue whether it is fixed; only then is the
+   issue closed. A fix nobody could re-verify says so in the changelog entry.
+
+What never goes into the corpus: a recording longer than a second, a file
+from someone else's machine without their word, anything with a path or a
+name inside, a file that only reproduces with hardware.
+
 ## Reporting problems and test results
 
 Every issue template asks for the environment report: **Help → Environment
