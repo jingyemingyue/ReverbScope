@@ -22,14 +22,17 @@ from reverbscope.cli.console import (
     cell_width,
     glue_units,
     pad,
+    printable,
     printable_fields,
     shell_command,
     wrap,
 )
+from reverbscope.core.averaging import AveragedDecay, AveragedMetric
 from reverbscope.edition import RELEASES_URL, is_terminal_package
 from reverbscope.health import HealthReport, HealthStatus, affects_text, assess, status_word
 from reverbscope.i18n import _, list_join, localize, pgettext
 from reverbscope.interpretation import Finding
+from reverbscope.interpretation.overview import Fit, ProjectOverview, fit_word
 from reverbscope.interpretation.profiles import (
     band_text,
     confidence_text,
@@ -43,6 +46,7 @@ from reverbscope.interpretation.verdicts import (
     verdict_word,
 )
 from reverbscope.labels import (
+    accuracy_class_text,
     frequency_text,
     metric_label,
     noise_band_hz,
@@ -1115,6 +1119,190 @@ def _verdicts(c: Console, verdict: ComparisonVerdict) -> list[str]:
     for condition in verdict.conditions:
         lines += c.paragraph(condition, indent=4)
     return lines
+
+
+def averaged_table(c: Console, averaged: AveragedDecay) -> list[str]:
+    """The spatial average per band: EDT, T20, T30, RT60 and the count averaged.
+
+    Each value averages only the sessions where it is VALID, so its count can
+    differ along a row: n is the row's largest count, and a value from fewer
+    sessions shows its own.
+    """
+    dash = c.dash()
+    partial = False
+
+    def cell(metric: AveragedMetric, n: int) -> str:
+        nonlocal partial
+        if metric.seconds is None:
+            return dash
+        if metric.count < n:
+            partial = True
+            return f"{metric.seconds:.2f} s ({metric.count})"
+        return f"{metric.seconds:.2f} s"
+
+    rows = []
+    for band in averaged.bands:
+        metrics = (band.edt, band.t20, band.t30, band.rt60)
+        n = max(metric.count for metric in metrics)
+        # A label read from a session file: one line, whatever it holds.
+        label = printable(band_text(band.band_label), single_line=True)
+        rows.append([label, *(cell(m, n) for m in metrics), str(n)])
+    lines = [""]
+    lines += c.table([_("Band"), "EDT", "T20", "T30", "RT60", "n"], rows, align="lrrrrr")
+    if partial:
+        note = _(
+            "n is the number of sessions averaged in the row; a value followed by "
+            "(k) averages only k of them, as the others have no VALID value."
+        )
+        lines += c.paragraph(note, style=("dim",))
+    return lines
+
+
+_FIT_STATUS: dict[Fit, Status] = {
+    Fit.FITS: "ok",
+    Fit.WARNINGS: "warn",
+    Fit.UNKNOWN: "unsure",
+}
+
+
+def _overview_row(c: Console, take: Any, *, position: str) -> list[str]:
+    dash = c.dash()
+    health = status_word(HealthStatus(take.health))
+    if take.health_problems:
+        health += f" ({printable(list_join(take.health_problems), single_line=True)})"
+    rt60 = dash if take.rt60_s is None else f"{take.rt60_s:.2f} s"
+    clarity = dash if take.clarity_db is None else f"{take.clarity_db:+.1f} dB"
+    noise = (
+        f"{take.noise_rms_dbfs:.1f} dBFS"
+        if take.noise_verified and take.noise_rms_dbfs is not None
+        else dash
+    )
+    reflection = (
+        dash
+        if take.reflection_db is None
+        else f"{take.reflection_db:.0f} dB @ {take.reflection_ms:.1f} ms"
+    )
+    when = printable(str(take.created_at)[:16].replace("T", " "), single_line=True)
+    return [
+        printable(position, single_line=True),
+        printable(str(take.directory), single_line=True),
+        when,
+        health,
+        rt60,
+        clarity,
+        noise,
+        reflection,
+        fit_word(take.fit),
+    ]
+
+
+def render_overview(console: Console, overview: ProjectOverview) -> str:
+    """A project under one profile: every take, every position's agreement and
+    verdict, the spatial average, and what to measure next."""
+    c = console
+    lines = c.title(_("ReverbScope project overview"))
+    lines.append("")
+    n_sessions = sum(len(p.sessions) for p in overview.positions) + len(overview.unlisted)
+    lines += c.fields(
+        [
+            (_("Project"), printable(overview.name, single_line=True) or c.dash()),
+            (_("Profile"), profile_title(overview.profile)),
+            (
+                _("Positions"),
+                _("{positions} position(s), {sessions} session(s), {unlisted} unlisted").format(
+                    positions=len(overview.positions),
+                    sessions=n_sessions,
+                    unlisted=len(overview.unlisted),
+                ),
+            ),
+        ]
+    )
+    clarity = next(
+        (
+            take.clarity_metric
+            for p in overview.positions
+            for take in p.sessions
+            if take.clarity_metric
+        ),
+        None,
+    ) or next((take.clarity_metric for take in overview.unlisted if take.clarity_metric), "C50")
+    rows: list[list[str]] = []
+    for position in overview.positions:
+        for take in position.sessions:
+            rows.append(_overview_row(c, take, position=position.label))
+    for take in overview.unlisted:
+        rows.append(_overview_row(c, take, position=_("(unlisted)")))
+    if rows:
+        lines += c.section(_("Takes"))
+        lines += c.table(
+            [
+                _("Position"),
+                _("Session"),
+                _("When"),
+                _("Health"),
+                "RT60",
+                str(clarity),
+                _("Noise"),
+                _("Reflection"),
+                _("Fit"),
+            ],
+            rows,
+            align="lllllrrll",
+            title_columns=2,
+        )
+    for skipped, reason in overview.skipped:
+        lines += c.status(
+            "skip",
+            _("{session}: not read").format(session=printable(str(skipped), single_line=True)),
+            detail=localize(reason),
+        )
+    if overview.positions:
+        lines += c.section(_("Positions"))
+    for position in overview.positions:
+        take = position.representative_session
+        if position.repeatable is None:
+            agreement = (
+                _("one take")
+                if len(position.sessions) == 1
+                else _("{n} takes, no RT60 to compare").format(n=len(position.sessions))
+            )
+        elif position.repeatable:
+            agreement = _("{n} takes agree ({spread:.1f} % apart in RT60)").format(
+                n=len(position.sessions), spread=position.repeat_spread_percent
+            )
+        else:
+            agreement = _("{n} takes disagree ({spread:.0f} % apart in RT60)").format(
+                n=len(position.sessions), spread=position.repeat_spread_percent
+            )
+        head = f"{printable(position.label, single_line=True)}{c.sep()}{fit_word(take.fit)}"
+        detail = "\n".join([agreement, take.fit_reason, position.verdict_text])
+        lines += c.status(_FIT_STATUS[take.fit], c.bold(head), detail=detail)
+    averaged = overview.averaged
+    if averaged is not None:
+        lines += c.section(
+            _("Spatial average"),
+            _(
+                "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, {combos} combinations)"
+            ).format(
+                klass=accuracy_class_text(averaged.iso_3382_2_class),
+                sources=averaged.n_source_positions,
+                mics=averaged.n_microphone_positions,
+                combos=averaged.n_combinations,
+            ),
+        )
+        lines += averaged_table(c, averaged)
+        if overview.spatial_spread_percent is not None:
+            lines += c.paragraph(
+                _(
+                    "The positions' RT60 differ by {spread:.0f} % across the room (largest "
+                    "minus smallest, over the mean)."
+                ).format(spread=overview.spatial_spread_percent)
+            )
+    if overview.next_steps:
+        lines += c.section(_("Next"))
+        for step in overview.next_steps:
+            lines += c.status("next", step)
+    return "\n".join(lines)
 
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:

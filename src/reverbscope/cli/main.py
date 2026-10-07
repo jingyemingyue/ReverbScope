@@ -42,6 +42,7 @@ from reverbscope.cli.console import (
     truncate,
 )
 from reverbscope.cli.render import (
+    averaged_table,
     render_analysis,
     render_comparison,
     render_config,
@@ -56,6 +57,7 @@ from reverbscope.cli.render import (
     render_host_apis,
     render_inventory,
     render_measure_plan,
+    render_overview,
     render_saved_next_steps,
     render_status,
     render_sweep_written,
@@ -73,7 +75,6 @@ from reverbscope.errors import (
 from reverbscope.health import assess, failure_guidance
 from reverbscope.i18n import N_, _, activate, list_separator, localize, pgettext
 from reverbscope.interpretation import available_profiles
-from reverbscope.interpretation.profiles import band_text
 from reverbscope.interpretation.verdicts import judge_comparison
 from reverbscope.labels import accuracy_class_text
 from reverbscope.logging_config import configure_logging
@@ -1201,9 +1202,34 @@ def build_parser() -> argparse.ArgumentParser:
     p_show_proj.add_argument(
         "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
     )
+    p_over = _command(
+        proj_sub,
+        "overview",
+        _("every position's takes under the profile: health, fit, verdicts, next steps"),
+        examples=("reverbscope project overview studio-a",),
+    )
+    p_over.add_argument(
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
+    p_over.add_argument(
+        "--profile",
+        default=None,
+        choices=available_profiles(),
+        help=_("recording profile (default: the latest session's own, else user settings)"),
+    )
+    p_over.add_argument(
+        "--sources",
+        type=int,
+        default=1,
+        metavar=pgettext("count metavar", "N"),
+        help=_("number of source positions"),
+    )
     # Without a metavar argparse names the missing action by its dest
     # ("the following arguments are required: project_command").
     proj_sub.metavar = "{" + ",".join(proj_sub.choices) + "}"
+    # Five subcommands no longer fit a 60-column usage line after
+    # "usage: reverbscope project": the list goes on its own line.
+    p_proj.usage = "reverbscope project [-h]\n       " + proj_sub.metavar + " ..."
 
     p_ex = _command(
         sub,
@@ -2278,7 +2304,7 @@ def cmd_export(args: argparse.Namespace) -> int:
 
 
 def cmd_project(args: argparse.Namespace) -> int:
-    from reverbscope.core.averaging import AveragedMetric, average_decay
+    from reverbscope.core.averaging import average_decay
     from reverbscope.io.project_store import (
         PROJECT_FILE,
         add_session,
@@ -2362,43 +2388,40 @@ def cmd_project(args: argparse.Namespace) -> int:
                 combos=averaged.n_combinations,
             )
             print("\n".join(console.paragraph(iso_class, indent=0)))
-            dash = console.dash()
+            print("\n".join(averaged_table(console, averaged)))
+        return 0
+    if command == "overview":
+        from reverbscope.interpretation.overview import ProjectEntry, summarize_project
 
-            # Each value averages only the sessions where it is VALID, so its
-            # count can differ along a row: n is the row's largest count, and
-            # a value from fewer sessions shows its own.
-            partial = False
-
-            def cell(metric: AveragedMetric, n: int) -> str:
-                nonlocal partial
-                if metric.seconds is None:
-                    return dash
-                if metric.count < n:
-                    partial = True
-                    return f"{metric.seconds:.2f} s ({metric.count})"
-                return f"{metric.seconds:.2f} s"
-
-            rows = []
-            for band in averaged.bands:
-                metrics = (band.edt, band.t20, band.t30, band.rt60)
-                n = max(metric.count for metric in metrics)
-                # A label read from a session file: one line, whatever it holds.
-                label = printable(band_text(band.band_label), single_line=True)
-                rows.append([label, *(cell(m, n) for m in metrics), str(n)])
-            print()
-            print(
-                "\n".join(
-                    console.table(
-                        [_("Band"), "EDT", "T20", "T30", "RT60", "n"], rows, align="lrrrrr"
-                    )
-                )
-            )
-            if partial:
-                note = _(
-                    "n is the number of sessions averaged in the row; a value followed by "
-                    "(k) averages only k of them, as the others have no VALID value."
-                )
-                print("\n".join(console.paragraph(note, style=("dim",))))
+        if not is_project(args.project):
+            raise ReverbScopeError(_("no project.json in {path}").format(path=args.project))
+        project = load_project(args.project)
+        entries: list[ProjectEntry] = []
+        skipped: list[tuple[str, str]] = []
+        for label, path in list_project_sessions(args.project):
+            try:
+                measurement = load_measurement(path)
+            except ReverbScopeError as exc:
+                # One damaged session does not hide the others: it is listed as skipped.
+                skipped.append((str(path), str(exc)))
+                continue
+            entries.append(ProjectEntry(label, str(path), measurement.session, measurement.result))
+        latest = max(entries, key=lambda item: item.session.created_at, default=None)
+        profile = _resolve_profile(args, latest.session.recording_profile if latest else None)
+        sources = int(args.sources)
+        if sources < 1:
+            raise ConfigurationError(_("--sources must be at least 1"))
+        overview = summarize_project(
+            entries,
+            profile,
+            project_name=project.name or args.project.name,
+            n_source_positions=sources,
+            skipped=skipped,
+        )
+        if _use_json(args):
+            print(json.dumps(overview.to_dict(), indent=1))
+        else:
+            print(render_overview(_console(args), overview))
         return 0
     raise ReverbScopeError(_("unknown project command {command}").format(command=command))
 
