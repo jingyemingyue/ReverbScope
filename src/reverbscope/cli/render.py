@@ -27,6 +27,7 @@ from reverbscope.cli.console import (
     wrap,
 )
 from reverbscope.edition import RELEASES_URL, is_terminal_package
+from reverbscope.health import HealthReport, HealthStatus, affects_text, assess, status_word
 from reverbscope.i18n import _, list_join, localize, pgettext
 from reverbscope.interpretation import Finding
 from reverbscope.interpretation.profiles import (
@@ -188,6 +189,7 @@ def render_analysis(
         ]
     )
     lines += at_a_glance(c, result, findings)
+    lines += _health(c, assess(result))
     lines += _reverberation(c, result)
     lines += _noise(c, result)
     lines += _reflections(c, result)
@@ -197,6 +199,51 @@ def render_analysis(
     lines += _diagnostics(c, result)
     lines += _findings(c, findings, profile_name)
     return c.fit("\n".join(lines))
+
+
+#: The console symbol of each health status.
+_HEALTH_STATUS: dict[HealthStatus, Status] = {
+    HealthStatus.GOOD: "ok",
+    HealthStatus.WARNING: "warn",
+    HealthStatus.INVALID: "error",
+    HealthStatus.UNKNOWN: "unsure",
+}
+
+
+def _health(c: Console, report: HealthReport) -> list[str]:
+    """Measurement health: the overall status, then every check that is not
+    good with what it bears on and what to do next, then the checks that are."""
+    lines = c.section(_("Measurement health"))
+    summary = _("{status}: {good} of {total} checks good").format(
+        status=status_word(report.overall), good=len(report.good), total=len(report.checks)
+    )
+    if report.unavailable:
+        summary += c.sep() + _("not reported: {groups}").format(
+            groups=affects_text(report.unavailable)
+        )
+    lines += c.status(_HEALTH_STATUS[report.overall], c.bold(summary))
+    for check in report.problems:
+        lines.append("")
+        lines += c.status(
+            _HEALTH_STATUS[check.status],
+            c.bold(f"{check.title}{c.sep()}{status_word(check.status)}"),
+            detail=check.reason,
+        )
+        if check.affects:
+            lines += c.paragraph(
+                _("Affects: {groups}").format(groups=affects_text(check.affects)), indent=4
+            )
+        for step in check.fix:
+            lines += c.status("next", step, indent=4)
+        for line in check.details:
+            lines += c.paragraph(line, indent=6)
+    if report.problems and report.good:
+        lines.append("")
+        lines += c.paragraph(
+            _("Good: {titles}").format(titles=list_join(check.title for check in report.good)),
+            indent=2,
+        )
+    return lines
 
 
 def _topic_status(findings: Sequence[Finding], *topics: str) -> Status:

@@ -133,3 +133,50 @@ def test_alias_probe_inverse_is_flat_over_the_folded_band() -> None:
     tenth = magnitude.shape[0] // 10
     ends = 20.0 * np.log10([np.median(magnitude[:tenth]), np.median(magnitude[-tenth:])])
     assert np.all(np.abs(ends) < 0.2)
+
+
+# --------------------------------------------------------------- dropouts
+
+
+def test_detect_dropouts_finds_zero_and_frozen_runs_but_not_clipping() -> None:
+    from reverbscope.core.linearity import DROPOUT_MIN_MS, detect_dropouts
+    from reverbscope.core.sweep import measurement_signal
+    from reverbscope.models.configuration import SweepSettings
+
+    settings = SweepSettings(
+        sample_rate=48000, duration_s=1.0, pre_silence_s=0.2, post_silence_s=0.2
+    )
+    rate = settings.sample_rate
+    rng = np.random.default_rng(1)
+    signal = measurement_signal(settings) + rng.normal(0.0, 1e-4, settings.total_samples)
+    start = round(settings.pre_silence_s * rate)
+    zero = start + int(0.3 * rate)
+    signal[zero : zero + int(0.004 * rate)] = 0.0
+    frozen = start + int(0.6 * rate)
+    signal[frozen : frozen + int(0.0025 * rate)] = 0.05  # a held value below the peak
+    # A flat top at the file's own peak is clipping, not a dropout.
+    clipped = np.clip(signal, -0.2, 0.2)
+    check = detect_dropouts(
+        clipped, rate, sweep_start=start, sweep_length=settings.sweep_samples, settings=settings
+    )
+    assert check.min_duration_ms == pytest.approx(DROPOUT_MIN_MS)
+    assert [round(d.duration_ms, 1) for d in check.dropouts] == [4.0, 2.5]
+    assert check.dropouts[0].start_s == pytest.approx(zero / rate, abs=2 / rate)
+    assert check.dropouts[0].sweep_hz is not None
+    assert check.searched_s[0] > start / rate  # the fade-in is left out
+    assert check.total_ms == pytest.approx(6.5, abs=0.1)
+    # A run shorter than the limit, and a clean sweep, are no dropouts.
+    short = signal.copy()
+    short[zero : zero + int(0.004 * rate)] = measurement_signal(settings)[
+        zero : zero + int(0.004 * rate)
+    ]
+    short[frozen : frozen + 20] = short[frozen]
+    short[frozen + 20 : frozen + int(0.0025 * rate)] = measurement_signal(settings)[
+        frozen + 20 : frozen + int(0.0025 * rate)
+    ]
+    assert (
+        detect_dropouts(
+            short, rate, sweep_start=start, sweep_length=settings.sweep_samples, settings=settings
+        ).dropouts
+        == ()
+    )

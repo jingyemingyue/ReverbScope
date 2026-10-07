@@ -70,6 +70,7 @@ from reverbscope.errors import (
     ReverbScopeError,
     SessionError,
 )
+from reverbscope.health import assess, failure_guidance
 from reverbscope.i18n import N_, _, activate, list_separator, localize, pgettext
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.profiles import band_text
@@ -1591,6 +1592,7 @@ def _run_analysis(
     if _use_json(args):
         payload = result.to_dict(include_curves=not args.no_curves)
         payload["findings"] = [f.to_dict() for f in findings]
+        payload["health"] = assess(result).to_dict()
         print(json.dumps(payload, indent=1))
     else:
         console = _console(args)
@@ -2004,6 +2006,7 @@ def cmd_show(args: argparse.Namespace) -> int:
     if _use_json(args):
         payload = loaded.result.to_dict(include_curves=not args.no_curves)
         payload["findings"] = [f.to_dict() for f in findings]
+        payload["health"] = assess(loaded.result).to_dict()
         # As session.json stores it: load_measurement resolves the sweep and
         # recording paths for a later save, or drops them when they lead out.
         payload["session"] = load_session(args.path).to_dict()
@@ -2222,6 +2225,7 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
     if _use_json(args):
         payload = result.to_dict(include_curves=not args.no_curves)
         payload["findings"] = [f.to_dict() for f in findings]
+        payload["health"] = assess(result).to_dict()
         print(json.dumps(payload, indent=1))
     else:
         console = _console(args)
@@ -2652,7 +2656,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 2
     except ReverbScopeError as exc:
         trace()
-        detail = nothing_played()
+        # A cause the user can fix (the sweep played at the wrong speed) comes
+        # with the steps to take, DAW by DAW, under the error.
+        detail = "\n".join(part for part in (nothing_played(), *failure_guidance(exc)) if part)
         print(
             render_error(
                 err, localize(str(exc)), detail=detail, hints=_error_hints(exc, args.command)

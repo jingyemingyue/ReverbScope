@@ -32,6 +32,7 @@ from PySide6.QtWidgets import (
 from reverbscope.cli.render import REPORT_CONSOLE, render_analysis
 from reverbscope.demo import localize_demo_name
 from reverbscope.errors import ReverbScopeError
+from reverbscope.health import HealthStatus, affects_text, assess, status_word
 from reverbscope.i18n import _, localize
 from reverbscope.io.recent import remember_session
 from reverbscope.io.session_store import SESSION_FILE, save_measurement
@@ -56,7 +57,7 @@ from reverbscope.ui.plots import (
 )
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.theme import apply_report_font, tokens
-from reverbscope.ui.widgets import Card, FindingCard, PageHeader, StatTile, label, primary
+from reverbscope.ui.widgets import Card, Chip, FindingCard, PageHeader, StatTile, label, primary
 
 #: Display word and chip tone of a metric validity.
 VALIDITY_DISPLAY = {
@@ -68,6 +69,12 @@ VALIDITY_DISPLAY = {
     Validity.NOT_COMPARABLE: ("not comparable", "warn"),
 }
 CONFIDENCE_TONE = {"high": "good", "medium": "info", "low": "bad"}
+HEALTH_TONE = {
+    HealthStatus.GOOD: "good",
+    HealthStatus.WARNING: "warn",
+    HealthStatus.INVALID: "bad",
+    HealthStatus.UNKNOWN: "neutral",
+}
 
 
 class _PlacementTab(QWidget):
@@ -259,6 +266,20 @@ class _Overview(QWidget):
             tiles.addWidget(tile)
         layout.addLayout(tiles)
 
+        health = Card()
+        health_header = QHBoxLayout()
+        health_header.addWidget(label(_("MEASUREMENT HEALTH"), "section"))
+        self.health_chip = Chip("", "neutral")
+        health_header.addWidget(self.health_chip)
+        health_header.addStretch(1)
+        health.body.addLayout(health_header)
+        self.health_summary = label("", "hint", wrap=True)
+        health.body.addWidget(self.health_summary)
+        self.health_rows = QVBoxLayout()
+        self.health_rows.setSpacing(6)
+        health.body.addLayout(self.health_rows)
+        layout.addWidget(health)
+
         self.findings_title = label("", "section")
         layout.addWidget(self.findings_title)
         self.findings = QVBoxLayout()
@@ -404,6 +425,7 @@ class _Overview(QWidget):
                 CONFIDENCE_TONE.get(confidence, "neutral"),
             )
 
+        self._show_health(result)
         while self.findings.count():
             entry = self.findings.takeAt(0)
             widget = entry.widget() if entry is not None else None
@@ -437,6 +459,44 @@ class _Overview(QWidget):
         rows = decay_table_rows(result)
         self._fill_metric_table(self.table, rows)
         self._fill_metric_table(self.energy_table, energy_table_rows(result))
+
+    def _show_health(self, result: AnalysisResult) -> None:
+        """The measurement-health card: the overall status, the checks that
+        are not good with what to do, and the names of those that are."""
+        report = assess(result)
+        self.health_chip.setText(status_word(report.overall).upper())
+        self.health_chip.set_tone(HEALTH_TONE[report.overall])
+        summary = _("{good} of {total} checks good.").format(
+            good=len(report.good), total=len(report.checks)
+        )
+        if report.unavailable:
+            summary += " " + _("Not reported: {groups}.").format(
+                groups=affects_text(report.unavailable)
+            )
+        if report.good:
+            summary += " " + _("Good: {titles}.").format(
+                titles=", ".join(check.title for check in report.good)
+            )
+        self.health_summary.setText(summary)
+        while self.health_rows.count():
+            entry = self.health_rows.takeAt(0)
+            widget = entry.widget() if entry is not None else None
+            if widget is not None:
+                widget.deleteLater()
+        for check in report.problems:
+            parts = [check.reason]
+            if check.affects:
+                parts.append(_("Affects: {groups}").format(groups=affects_text(check.affects)))
+            parts.extend(check.fix)
+            parts.extend(check.details)
+            self.health_rows.addWidget(
+                FindingCard(
+                    str(check.status),
+                    check.title,
+                    "\n".join(parts),
+                    severity_label=status_word(check.status),
+                )
+            )
 
     def _fill_metric_table(self, table: QTableWidget, rows: Sequence[tuple[str, ...]]) -> None:
         colours = tokens()

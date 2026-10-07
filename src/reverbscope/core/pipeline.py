@@ -39,7 +39,7 @@ from reverbscope.core.deconvolution import (
     locate_impulse_response,
 )
 from reverbscope.core.frequency_response import frequency_response
-from reverbscope.core.linearity import aliased_distortion_levels, detect_clipping
+from reverbscope.core.linearity import aliased_distortion_levels, detect_clipping, detect_dropouts
 from reverbscope.core.loopback import (
     LOOPBACK_FR_REFERENCE,
     assess_loopback,
@@ -544,6 +544,7 @@ def _explain_playback_speed(
     """
     speed = _playback_speed(mono, sample_rate, reference, source)
     if speed is not None and exc.args:
+        exc.playback_speed = speed
         exc.args = (
             _("{error}. However, {explanation}").format(
                 error=localize(str(exc.args[0])), explanation=localize(speed.describe())
@@ -799,6 +800,30 @@ def analyze(
         _explain_playback_speed(exc, mono, sample_rate, reference, recording.source)
         raise
     loopback_result: LoopbackResult | None = None
+    # Runs of frozen or zero samples inside the recorded sweep (a lost buffer,
+    # a DAW out of disk or CPU): the response is dented where the sweep was
+    # interrupted. Searched on the raw recording, within the analysed pass.
+    dropouts = detect_dropouts(
+        mono,
+        sample_rate,
+        sweep_start=located.sweep_start_index_in_recording,
+        sweep_length=prepared.reference_length,
+        settings=prepared.sweep_settings,
+    )
+    if dropouts.dropouts:
+        longest = max(dropouts.dropouts, key=lambda d: d.duration_ms)
+        warnings.append(
+            diag(
+                "the recorded sweep has {count} dropout(s) ({total_ms:.0f} ms in all, the "
+                "longest {longest_ms:.0f} ms at {start_s:.2f} s): runs of frozen or zero samples "
+                "that a sweep never produces, so the frequency response is dented where the sweep "
+                "was interrupted. Check the buffer size and the disk and CPU load, and record again",
+                count=len(dropouts.dropouts),
+                total_ms=dropouts.total_ms,
+                longest_ms=longest.duration_ms,
+                start_s=longest.start_s,
+            )
+        )
     # The folded-product probe below runs on the raw recording, so its linear
     # reference must be the response before the loopback is divided out:
     # compensation rescales h_full by the return gain of the loopback.
@@ -913,7 +938,9 @@ def analyze(
         # sample says nothing about when the recording started.
         speed = _playback_speed(mono, sample_rate, reference, recording.source)
         if speed is not None:
-            raise InvalidAudioError(localize(speed.describe())) from exc
+            wrong_speed = InvalidAudioError(localize(speed.describe()))
+            wrong_speed.playback_speed = speed
+            raise wrong_speed from exc
         raise InvalidAudioError(
             _(
                 "the reference sweep was not found in the recording: no response stands out "
@@ -1184,6 +1211,7 @@ def analyze(
         resonances=resonances,
         clipping=clipping,
         placement=placement,
+        dropouts=dropouts,
         warnings=tuple(warnings),
         reverbscope_version=__version__,
     )

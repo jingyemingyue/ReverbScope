@@ -264,7 +264,15 @@ class StatTile(Card):
 
 
 #: Chip tone of an interpretation severity.
-SEVERITY_TONE = {"warning": "warn", "notice": "info", "info": "good"}
+#: Finding severities and measurement-health statuses to a chip tone.
+SEVERITY_TONE = {
+    "warning": "warn",
+    "notice": "info",
+    "info": "good",
+    "invalid": "bad",
+    "unknown": "neutral",
+    "good": "good",
+}
 
 
 class FindingCard(QFrame):

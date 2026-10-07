@@ -862,6 +862,60 @@ otherwise the placement deltas are `not_comparable`.
 Loopback. `path_delay_ms` is compared only when both results applied
 loopback compensation.
 
+## 12. Measurement health
+
+`reverbscope.health.assess` reads a result and never changes it. It gathers
+the checks the analysis already made on the take into one list a recording
+engineer reads first: each check is *good*, *warning*, *invalid* or
+*unknown*, with its reason, the metric groups it bears on (reverberation,
+clarity, frequency response, noise floor, early reflections, placement,
+resonances) and what to do next. There is no score: the worst check decides
+the overall status, and *unknown* means the check could not be made, not that
+it passed. Like the findings, the report is computed when a result is shown,
+in the interface language; `result.json` does not store it, so a file written
+by an earlier version gets one when it is opened. `--format json` carries it
+as `health` beside `findings`.
+
+| Check | good | warning | invalid | Limit and where it comes from |
+| --- | --- | --- | --- | --- |
+| Reference | the sweep definition (sidecar) | reference audio without a definition | - | §2: a definition regenerates the exact sweep; audio needs the regularised inverse, and the speed and distortion checks cannot run |
+| Sweep | found, one pass, the whole range | more than one pass; the recording started inside the sweep (band narrowed) | - | §2, `PASS_LEVEL_DB`; `RECORDING_START_TOLERANCE_S` |
+| Playback speed | no speed error | - | the sweep played at the wrong speed | §2b |
+| Direct sound | confidence high | medium (pre-peak margin 10 to 20 dB) | low (below 10 dB, no content to check, or an earlier arrival within 20 dB) | §2, `confidence_label`, `EARLIER_ARRIVAL_MAX_DB` |
+| Level | no flat tops, peak below -1 dBFS | peak within 1 dB of full scale | flat-topped peaks | `detect_clipping`; the 1 dB headroom limit is ReverbScope's own |
+| Distortion | every harmonic below -20 dB re the direct sound | a harmonic at -20 dB or above | folded (aliased) products | §2 harmonic levels; the -20 dB limit is ReverbScope's own: the harmonic responses are separated in time (Farina 2000), so the decay is not spoilt, but the chain is near clipping |
+| Audio device | (listed only when the device reported a problem) | - | timing problems reported by the device | PortAudio status flags, §2 |
+| Dropouts | none | up to 9 runs and under 50 ms in all | 10 runs, or 50 ms in all | runs of 2 ms or more of exactly equal samples inside the sweep (fades left out; flat tops at the peak are clipping); ReverbScope's own limits |
+| Decay range | 45 dB or more (T30) | 35 to 45 dB (T20 only); 20 to 35 dB (EDT only) | below 20 dB | §3: each metric's evaluation range plus the noise margin of the analysis settings (10 dB, ISO 3382-2) |
+| Noise floor | a verified quiet segment | no quiet segment | exact digital silence | §5 |
+| Recording length | 1 s or more of decay after the direct sound | less | - | the analysis's own note |
+| Loopback | compensation applied | offered but refused | - | §2a |
+
+Checks that cannot run are left out (no loopback was offered, no device
+reported a problem, no dropout search on an imported impulse response) or
+reported *unknown* (an imported impulse response for the reference, sweep
+and level checks; a reference without a sweep definition for the speed and
+distortion checks).
+
+The dropout limit: a sweep through a room, with the room's noise, never holds
+one sample value for 2 ms; a 16-bit file of a sweep at -60 dBFS moves by more
+than one quantisation step within 2 ms even at 20 Hz. A driver that lost a
+buffer repeats the last sample or writes zeros, and a DAW out of disk or CPU
+does the same. A dropout of length *T* while the sweep passes the frequency
+*f* deconvolves to a dent about 1/*T* wide around *f* in the frequency
+response; it does not move the direct sound, so a short dropout leaves the
+decay alone (a warning), while many or long ones do not (invalid). The
+record is stored in `result.json` as the optional `dropouts` object: the
+searched span, the shortest run that counts, and each run's start, length
+and the frequency the sweep was at.
+
+The steps under the playback-speed check (where each DAW sets its project
+sample rate, and where it switches time-stretching off) repeat
+`docs/user-guide/daw-setup.md`, menu names included; `tests/unit/test_health.py`
+checks that every menu path named by the module appears in that guide. The
+same steps are printed under the error when a sweep played at the wrong
+speed stops the analysis before a result exists.
+
 ## References
 
 1. A. Farina, "Simultaneous Measurement of Impulse Response and Distortion with a Swept-Sine Technique," AES 108th Convention, Paris, 2000, preprint 5093. (confirmed, primary text)

@@ -172,6 +172,20 @@ withheld, not that it is zero. There is no single score. A recording profile
 may add one notice when broadband C50 or C80 is a poor fit for that kind of
 recording; the threshold is an engineering choice for the profile, not a grade.
 
+**Measurement health** comes first: the top card of the Overview tab, and the
+section right after "At a glance" in the text report. It lists the checks the
+analysis made on the take itself (reference, sweep, playback speed, direct
+sound, level, distortion, dropouts, decay range, noise floor, recording
+length, and the loopback and the audio device when they took part), each
+*good*, *warning*, *invalid* or *unknown*, with the reason, the figures it
+affects and what to do next. *Invalid* means a figure cannot be trusted (the
+recording clipped, the sweep was played at the wrong speed); *unknown* means
+the check could not be made (an imported impulse response). A sweep played at
+the wrong speed lists where each DAW sets its sample rate or switches
+time-stretching off, the same steps as [Measuring through your
+DAW](daw-setup.md), also under the error when the analysis cannot finish.
+The worst check gives the overall status; there is no score.
+
 Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The interface and the
 text report show them in the interface language.

@@ -11,6 +11,7 @@ from PySide6.QtCore import QThread, Signal
 from reverbscope.audio.backend import StreamOptions
 from reverbscope.core.pipeline import Reference, analyze
 from reverbscope.errors import MeasurementCancelledError, ReverbScopeError
+from reverbscope.health import failure_guidance
 from reverbscope.i18n import _, localize
 from reverbscope.models.audio import AudioSignal, FloatArray
 from reverbscope.models.configuration import AnalysisSettings
@@ -38,6 +39,16 @@ def gui_failure_text(exc: BaseException) -> str:
     return unexpected_error_text()
 
 
+def analysis_failure_text(exc: ReverbScopeError) -> str:
+    """The error in the interface language and, when the cause is known (the
+    sweep played at the wrong speed), the steps to take under it."""
+    text = localize(str(exc))
+    steps = failure_guidance(exc)
+    if steps:
+        text += "\n\n" + "\n".join(steps)
+    return text
+
+
 class AnalysisWorker(QThread):
     succeeded = Signal(object)
     failed = Signal(str)
@@ -62,7 +73,7 @@ class AnalysisWorker(QThread):
                 self._recording, self._reference, self._settings, loopback=self._loopback
             )
         except ReverbScopeError as exc:
-            self.failed.emit(localize(str(exc)))
+            self.failed.emit(analysis_failure_text(exc))
         except Exception:
             log.exception("analysis failed unexpectedly")
             self.failed.emit(unexpected_error_text())

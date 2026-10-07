@@ -59,6 +59,9 @@ DYNAMIC_CALLS = {
     ("ui/app.py", "_(GUI_UNAVAILABLE)"),
     # Validity words, each extracted with N_() in VALIDITY_WORDS.
     ("labels.py", "_(word)"),
+    # Where each DAW keeps a setting, each extracted with N_() in
+    # DAW_SAMPLE_RATE_SETTINGS and DAW_STRETCH_SETTINGS.
+    ("health.py", "_(text)"),
     # The demo's room, microphone and position names, extracted with N_().
     ("demo.py", "_(DEMO_ROOM_NAME)"),
     ("demo.py", "_(DEMO_MICROPHONE)"),

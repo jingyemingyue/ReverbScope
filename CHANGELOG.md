@@ -8,6 +8,24 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Measurement health.** Every result now opens with the checks the analysis
+  made on the take itself (reference, sweep, playback speed, direct sound,
+  level, distortion, dropouts, decay range, noise floor, recording length,
+  and the loopback and audio device when they took part), each good, warning,
+  invalid or unknown with its reason, the figures it affects and what to do
+  next; the worst check gives the overall status and there is no score. In
+  the text report it follows "At a glance"; on the Results page it is the
+  first card; `--format json` carries it as `health` beside `findings`. A
+  sweep played at the wrong speed lists where each DAW sets its project
+  sample rate or switches time-stretching off (the steps of
+  `docs/user-guide/daw-setup.md`), also under the error when the analysis
+  cannot finish. Thresholds and their sources: `docs/MEASUREMENT_METHODOLOGY.md`
+  §12.
+- **Dropouts in the recorded sweep** (runs of 2 ms or more of frozen or zero
+  samples: a lost buffer, a DAW out of disk or CPU) are found, placed in time
+  and at the frequency the sweep was at, noted in the warnings and stored in
+  `result.json` as the optional `dropouts` record; a file from an earlier
+  version loads without it.
 - **A release-candidate line next to the beta line.** `release/0.5.0`
   carries `0.5.0rc1`: the 0.5.0b2 code with a frozen feature set, built so
   that anyone can download, install and report from real interfaces, rooms
@@ -38,6 +56,26 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ### Changed
 - CI runs on pushes to `release/**` branches as well as `main`.
+
+### Fixed
+- A folder that could not be created (a file of that name, a parent that is
+  a file, a name the file system refuses, a Windows reserved name such as
+  `CON`) escaped every writer (sessions, projects, comparisons, WAVs and
+  sweeps, settings, the CSV export) as a bare OSError, which the desktop app
+  reported as a bug in ReverbScope. It is a plain error that names the
+  folder.
+- Opening a session read `impulse_response.wav` as it was: a file cut off
+  before the direct sound failed the first plot with a bare error, and a file
+  at another sample rate was drawn on another time axis than the decay. Both
+  are refused with the file named.
+- A NumPy integer sample rate reached the result unchanged, and `json.dumps`
+  of the result failed.
+- Desktop app: opening Compare (or any page switch) during an analysis threw
+  the result away as late; a recording profile that failed left the page
+  busy for good; a second Analyze during an analysis could abort the
+  process; a failure of an abandoned analysis opened a dialog over another
+  page. A result is late only after New Measurement, Open Session or a
+  measurement another page started meanwhile.
 
 ## [0.5.0b2] - 2026-10-06
 

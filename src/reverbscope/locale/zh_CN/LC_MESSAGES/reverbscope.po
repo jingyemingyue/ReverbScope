@@ -4778,3 +4778,338 @@ msgstr "{path} 旁的 {name} 只有 {count} 个采样，但结果中的直达声
 
 msgid "The {profile} profile could not interpret this result: {error}"
 msgstr "{profile}配置无法解读此结果：{error}"
+
+# --- Measurement health (reverbscope.health). Menu names stay as the English
+# interfaces of the DAWs show them, as docs/user-guide/daw-setup.zh-CN.md does.
+msgid "Measurement health"
+msgstr "测量健康"
+
+msgid "{status}: {good} of {total} checks good"
+msgstr "{status}：{total} 项检查中 {good} 项良好"
+
+msgid "not reported: {groups}"
+msgstr "未报告：{groups}"
+
+msgid "Good: {titles}"
+msgstr "良好：{titles}"
+
+msgid "Affects: {groups}"
+msgstr "影响：{groups}"
+
+msgctxt "diagnostic"
+msgid "the recorded sweep has {count} dropout(s) ({total_ms:.0f} ms in all, the longest {longest_ms:.0f} ms at {start_s:.2f} s): runs of frozen or zero samples that a sweep never produces, so the frequency response is dented where the sweep was interrupted. Check the buffer size and the disk and CPU load, and record again"
+msgstr "录下的扫频有 {count} 处采样丢失（合计 {total_ms:.0f} ms，最长一处 {longest_ms:.0f} ms，位于 {start_s:.2f} s）：出现了扫频绝不会产生的连续冻结或全零采样，扫频中断处的频率响应因此出现凹陷。请检查缓冲区大小以及磁盘和 CPU 负载，然后重新录制"
+
+msgid "an imported impulse response: no sweep and no recording were seen, so how it was acquired could not be checked"
+msgstr "导入的脉冲响应：没有看到扫频和录音，因此无法检查它是如何获取的"
+
+msgid "Reference"
+msgstr "参考信号"
+
+msgid "Playback speed"
+msgstr "播放速度"
+
+msgid "Distortion"
+msgstr "失真"
+
+msgid "Dropouts"
+msgstr "采样丢失"
+
+msgid "Recording length"
+msgstr "录音长度"
+
+msgctxt "health"
+msgid "good"
+msgstr "良好"
+
+msgctxt "health"
+msgid "warning"
+msgstr "警告"
+
+msgctxt "health"
+msgid "invalid"
+msgstr "无效"
+
+msgctxt "health"
+msgid "unknown"
+msgstr "未知"
+
+msgctxt "metric group"
+msgid "reverberation"
+msgstr "混响"
+
+msgctxt "metric group"
+msgid "clarity"
+msgstr "清晰度"
+
+msgctxt "metric group"
+msgid "frequency response"
+msgstr "频率响应"
+
+msgctxt "metric group"
+msgid "noise floor"
+msgstr "本底噪声"
+
+msgctxt "metric group"
+msgid "early reflections"
+msgstr "早期反射"
+
+msgctxt "metric group"
+msgid "placement"
+msgstr "摆位"
+
+msgctxt "metric group"
+msgid "resonances"
+msgstr "共振"
+
+msgid "the reference is an audio file without a sweep definition: a regularised inverse was used, and the playback-speed and distortion checks could not run"
+msgstr "参考信号是一个没有扫频定义的音频文件：使用了正则化反滤波器，播放速度和失真检查无法进行"
+
+msgid "Session Setup shows the session rate; generate the sweep at that rate rather than enabling Apply SRC in File ▸ Import ▸ Audio"
+msgstr "Session Setup 中可见工程采样率；按该采样率生成扫频，而不要在 File ▸ Import ▸ Audio 中勾选 Apply SRC"
+
+msgid "File ▸ Project Settings ▸ Audio ▸ Sample Rate"
+msgstr "File ▸ Project Settings ▸ Audio ▸ Sample Rate"
+
+msgid "no sample-rate setting: generate the sweep at 44.1 kHz"
+msgstr "没有采样率设置：按 44.1 kHz 生成扫频"
+
+msgid "Project ▸ Project Setup"
+msgstr "Project ▸ Project Setup"
+
+msgid "Session ▸ Session Setup (Song ▸ Song Setup in Studio One before v8)"
+msgstr "Session ▸ Session Setup（v8 之前的 Studio One 为 Song ▸ Song Setup）"
+
+msgid "Settings (Options ▸ Settings on Windows, Live ▸ Settings on macOS) ▸ Audio ▸ In/Out Sample Rate"
+msgstr "Settings（Windows 上为 Options ▸ Settings，macOS 上为 Live ▸ Settings）▸ Audio ▸ In/Out Sample Rate"
+
+msgid "File ▸ Project Settings ▸ tick Project sample rate, and in Preferences ▸ Audio ▸ Device tick Request sample rate with the same rate"
+msgstr "File ▸ Project Settings ▸ 勾选 Project sample rate，并在 Preferences ▸ Audio ▸ Device 中勾选 Request sample rate，设为同一采样率"
+
+msgid "Options ▸ Audio settings (F10) ▸ Sample Rate"
+msgstr "Options ▸ Audio settings (F10) ▸ Sample Rate"
+
+msgid "Dashboard ▸ Settings ▸ Audio"
+msgstr "Dashboard ▸ Settings ▸ Audio"
+
+msgid "the Sample Rate setting in the Control Panel"
+msgstr "Control Panel 中的 Sample Rate 设置"
+
+msgid "Project Sample Rate in the Quality section of Audio Setup ▸ Audio Settings"
+msgstr "Audio Setup ▸ Audio Settings 的 Quality 部分中的 Project Sample Rate"
+
+msgid "the track's Elastic Audio selector reads None – Disable Elastic Audio; import with File ▸ Import rather than by dragging from the desktop"
+msgstr "轨道的 Elastic Audio 选择器显示 None – Disable Elastic Audio；用 File ▸ Import 导入，不要从桌面拖入"
+
+msgid "Region inspector: untick Flex and set Smart Tempo to Off (Logic 12.2 and earlier: Flex & Follow = Off); File ▸ Project Settings ▸ Smart Tempo ▸ Set Imported Files To = Flex Off"
+msgstr "Region inspector：取消勾选 Flex，并把 Smart Tempo 设为 Off（Logic 12.2 及更早：Flex & Follow = Off）；File ▸ Project Settings ▸ Smart Tempo ▸ Set Imported Files To = Flex Off"
+
+msgid "audio editor: untick Follow Tempo and Pitch, leave Enable Flex off"
+msgstr "音频编辑器：取消勾选 Follow Tempo and Pitch，保持 Enable Flex 关闭"
+
+msgid "Musical Mode off for the sweep clip (Sample Editor or Pool)"
+msgstr "扫频片段关闭 Musical Mode（在 Sample Editor 或 Pool 中）"
+
+msgid "Track Inspector: Tempo mode = Don't Follow; Event Inspector: Speedup 1, Transpose and Tune 0"
+msgstr "Track Inspector：Tempo 模式 = Don't Follow；Event Inspector：Speedup 为 1，Transpose 和 Tune 为 0"
+
+msgid "Clip View: Warp off; Settings ▸ Record, Warp & Launch: Auto-Warp Long Samples off"
+msgstr "Clip View：关闭 Warp；Settings ▸ Record, Warp & Launch：关闭 Auto-Warp Long Samples"
+
+msgid "Item Properties (F2): Playback rate 1.0 and no stretch markers; do not change the tempo after importing"
+msgstr "Item Properties（F2）：Playback rate 为 1.0，没有 stretch marker；导入后不要再改速度"
+
+msgid "channel settings: Time knob at (none); General settings ▸ Read sample tempo information off"
+msgstr "通道设置：Time 旋钮置于 (none)；关闭 General settings ▸ Read sample tempo information"
+
+msgid "Inspector: Stretch ▸ Mode = Raw (there is no Off)"
+msgstr "Inspector：Stretch ▸ Mode = Raw（没有 Off 选项）"
+
+msgid "untick Stretch in the Track Settings menu of the sweep track; soundbite Time Compress/Expand = Don't Time Scale"
+msgstr "在扫频轨道的 Track Settings 菜单中取消勾选 Stretch；soundbite 的 Time Compress/Expand = Don't Time Scale"
+
+msgid "the sweep deconvolved as generated; no speed error was found"
+msgstr "扫频按生成时的速度完成了反卷积；未发现速度误差"
+
+msgid "Check that the reference is the sweep that was played; lower the playback level if the loudspeaker distorts; keep the microphone away from surfaces nearer to it than the loudspeaker is; then measure again."
+msgstr "确认参考信号就是播放的那个扫频；扬声器失真时降低播放电平；让话筒远离比扬声器更靠近它的表面；然后重新测量。"
+
+msgid "not identified: the sweep was played at the wrong speed (see Playback speed)"
+msgstr "未能识别：扫频的播放速度不对（见“播放速度”）"
+
+msgid "no harmonic response stands out of the noise"
+msgstr "没有谐波响应从噪声中突显出来"
+
+msgid "Audio device"
+msgstr "音频设备"
+
+msgid "A longer sweep raises the range by 3 dB per doubling of its length; a higher playback level within the chain's headroom, a quieter room (ventilation and fans off) or the microphone nearer the loudspeaker raise it too."
+msgstr "扫频长度每加倍一次，范围提高 3 dB；在链路余量之内提高播放电平、让房间更安静（关闭通风和风扇）或把话筒靠近扬声器，也都能提高范围。"
+
+msgid "the sweep definition regenerated the exact reference sweep"
+msgstr "扫频定义精确地重新生成了参考扫频"
+
+msgid "Switch time-stretching off for the test-signal clip and keep the tempo unchanged after import: the clip must last exactly as long as the WAV file. Then measure again."
+msgstr "关闭测试信号片段的时间伸缩，导入后不要再改速度：片段的时长必须与 WAV 文件完全相同。然后重新测量。"
+
+msgid "Where each DAW switches it off:"
+msgstr "各 DAW 中关闭它的位置："
+
+msgid "could not be checked: the reference has no sweep definition"
+msgstr "无法检查：参考信号没有扫频定义"
+
+msgid "there is no content before the direct sound to check the detection against"
+msgstr "直达声之前没有内容可用来核对检测结果"
+
+msgid "{runs} flat-topped peaks ({samples} samples) at {peak:.1f} dBFS, the recording's highest level: it probably clipped before an export or a gain change"
+msgstr "在录音的最高电平 {peak:.1f} dBFS 处有 {runs} 个平顶峰（{samples} 个采样）：很可能在导出或增益改变之前就已削波"
+
+msgid "{runs} flat-topped peaks ({samples} samples) at {peak:.1f} dBFS: the measurement chain was not linear"
+msgstr "在 {peak:.1f} dBFS 处有 {runs} 个平顶峰（{samples} 个采样）：测量链路不是线性的"
+
+msgid "could not be checked: the harmonic responses cannot be separated without the sweep definition"
+msgstr "无法检查：没有扫频定义就无法分离谐波响应"
+
+msgid "no run of frozen or zero samples in the recorded sweep"
+msgstr "录下的扫频中没有连续冻结或全零的采样"
+
+msgid "{count} dropout(s) in the recorded sweep, {total:.0f} ms in all, the longest {longest:.0f} ms at {start:.2f} s{where}: samples were frozen or zero, and the frequency response is dented where the sweep was interrupted"
+msgstr "录下的扫频中有 {count} 处采样丢失，合计 {total:.0f} ms，最长一处 {longest:.0f} ms，位于 {start:.2f} s{where}：采样被冻结或为零，扫频中断处的频率响应出现凹陷"
+
+msgid "no decay range could be measured on the broadband response"
+msgstr "宽带响应上无法测得衰减范围"
+
+msgid "no quiet segment: the recording has no verified quiet part before the sweep or after the decay"
+msgstr "没有安静段：录音在扫频之前或衰减之后都没有经过验证的安静部分"
+
+msgid "only {seconds:.2f} s of decay before the next sweep pass: long reverberation times cannot be evaluated"
+msgstr "下一遍扫频开始前只有 {seconds:.2f} s 的衰减：无法评估较长的混响时间"
+
+msgid "only {seconds:.2f} s of decay after the direct sound: long reverberation times cannot be evaluated"
+msgstr "直达声之后只有 {seconds:.2f} s 的衰减：无法评估较长的混响时间"
+
+msgid "compensation was not applied"
+msgstr "未应用补偿"
+
+msgid "Keep the .reverbscope-sweep.json file next to the sweep WAV, or choose it as the reference, so that the exact sweep is regenerated."
+msgstr "把 .reverbscope-sweep.json 文件与扫频 WAV 放在一起，或直接选它作为参考信号，这样才能精确地重新生成扫频。"
+
+msgid "found {start:.2f} s into the recording, one pass, the whole swept range recorded"
+msgstr "在录音 {start:.2f} s 处找到，只有一遍，整个扫频范围都已录下"
+
+msgid "Where the project's sample rate is set:"
+msgstr "工程采样率的设置位置："
+
+msgid "peak {peak:.1f} dBFS, no flat-topped peaks"
+msgstr "峰值 {peak:.1f} dBFS，没有平顶峰"
+
+msgid "Choose a larger buffer size or a higher latency, close other audio programs, and measure again."
+msgstr "选择更大的缓冲区或更高的延迟，关闭其他音频程序，然后重新测量。"
+
+msgid " (where the sweep was at {hz:.0f} Hz)"
+msgstr "（当时扫频位于 {hz:.0f} Hz）"
+
+msgid "Choose a larger buffer size or a higher latency, close other audio programs, check the DAW's disk and CPU meters, and record again."
+msgstr "选择更大的缓冲区或更高的延迟，关闭其他音频程序，查看 DAW 的磁盘和 CPU 指示，然后重新录制。"
+
+msgid "{available:.0f} dB above the noise floor: no reverberation time can be evaluated (EDT needs {needed:.0f} dB)"
+msgstr "高于本底噪声 {available:.0f} dB：无法评估任何混响时间（EDT 需要 {needed:.0f} dB）"
+
+msgid "the quiet part of the recording is exact digital silence, which a microphone never records: a gate or noise reduction on the track, or the test-signal track exported instead of the microphone track"
+msgstr "录音的安静部分是精确的数字静音，而话筒绝不会录出这样的结果：轨道上有门限或降噪，或者导出的是测试信号轨道而不是话筒轨道"
+
+msgid "{rms:.1f} dBFS RMS, measured on the {segment} segment"
+msgstr "{rms:.1f} dBFS RMS，在{segment}段上测得"
+
+msgid "{seconds:.2f} s of decay after the direct sound"
+msgstr "直达声之后有 {seconds:.2f} s 的衰减"
+
+msgid "The loopback must be the interface's electrical return, recorded in the same pass as the microphone; export both channels from one take."
+msgstr "回送必须是音频接口的电回送，并与话筒在同一遍中录下；两条声道要从同一次录音导出。"
+
+msgid "the recording holds {passes} sweep passes; the pass starting at {start:.2f} s was analysed and the others were ignored"
+msgstr "录音中有 {passes} 遍扫频；分析了从 {start:.2f} s 开始的那一遍，其余忽略"
+
+msgid "Record one pass only: switch loop or cycle recording off."
+msgstr "只录一遍：关闭循环录音。"
+
+msgid "the recording starts after the sweep began: nothing below {low_hz:.0f} Hz was recorded, and the bands below it are withheld"
+msgstr "录音在扫频开始之后才开始：{low_hz:.0f} Hz 以下没有录到，低于它的频带被扣下不报"
+
+msgid "Start recording before playback (the test file begins with silence for this) and export the whole take."
+msgstr "在播放之前开始录音（测试文件开头的静音就是为此准备的），并导出整个录音。"
+
+msgid "identified with high confidence (pre-peak margin {margin:.1f} dB)"
+msgstr "以高置信度识别（峰前余量 {margin:.1f} dB）"
+
+msgid "content before the direct sound is only {margin:.1f} dB below it (noise, pre-ringing or a wrong reference): the delays and levels of reflections may be off"
+msgstr "直达声之前的内容只比它低 {margin:.1f} dB（噪声、预振铃或参考信号不对）：反射的延迟和电平可能有偏差"
+
+msgid "Lower the playback level (the test signal's level or the monitor level) or the input gain, and measure again."
+msgstr "降低播放电平（测试信号电平或监听电平）或输入增益，然后重新测量。"
+
+msgid "the recording peaks at {peak:.1f} dBFS, within {headroom:g} dB of full scale: no flat tops were found, but there is no headroom left"
+msgstr "录音峰值为 {peak:.1f} dBFS，距满刻度不到 {headroom:g} dB：没有发现平顶，但已没有余量"
+
+msgid "Lower the playback level or the input gain by about 6 dB and measure again."
+msgstr "把播放电平或输入增益降低约 6 dB，然后重新测量。"
+
+msgid "harmonic {orders} of the sweep folded back below the Nyquist frequency at {level:.0f} dB re the direct sound: a nonlinearity in the digital domain (a clipped playback bus or export, or a saturation plug-in) distorted the signal before the converter, and the folded products imitate a decay"
+msgstr "扫频的第 {orders} 次谐波折叠回奈奎斯特频率以下，相对直达声为 {level:.0f} dB：数字域中的非线性（削波的播放总线或导出，或饱和插件）在转换器之前就使信号失真，折叠产物会伪装成衰减"
+
+msgid "Lower the level in the playback path (the test signal's level, the track and master faders), bypass saturation and limiting plug-ins, and measure again."
+msgstr "降低播放链路中的电平（测试信号电平、轨道和主推子），旁通饱和与限幅插件，然后重新测量。"
+
+msgid "strongest harmonic {level:.0f} dB re the direct sound (harmonic {order})"
+msgstr "最强谐波相对直达声为 {level:.0f} dB（第 {order} 次谐波）"
+
+msgid "{available:.0f} dB above the noise floor: enough for T30 (needs {needed:.0f} dB)"
+msgstr "高于本底噪声 {available:.0f} dB：足够评估 T30（需要 {needed:.0f} dB）"
+
+msgid "{available:.0f} dB above the noise floor: enough for T20 but not for T30 (needs {needed:.0f} dB); RT60 is estimated from T20"
+msgstr "高于本底噪声 {available:.0f} dB：足够评估 T20 但不够 T30（需要 {needed:.0f} dB）；RT60 由 T20 估计"
+
+msgid "{available:.0f} dB above the noise floor: only EDT can be evaluated (T20 needs {needed:.0f} dB)"
+msgstr "高于本底噪声 {available:.0f} dB：只能评估 EDT（T20 需要 {needed:.0f} dB）"
+
+msgid "Start recording at least one second before playback and keep the silence after the sweep: the test file begins and ends with silence for this."
+msgstr "至少在播放前一秒开始录音，并保留扫频之后的静音：测试文件开头和结尾的静音就是为此准备的。"
+
+msgid "Export the whole take and keep at least three seconds of silence after the sweep (the test file ends with silence for this); record one pass only."
+msgstr "导出整个录音，并在扫频之后保留至少三秒静音（测试文件结尾的静音就是为此准备的）；只录一遍。"
+
+msgid " (path delay {delay:.2f} ms)"
+msgstr "（路径延迟 {delay:.2f} ms）"
+
+msgid "compensation applied: the frequency response is relative to the interface return{delay}"
+msgstr "已应用补偿：频率响应相对于音频接口的回送{delay}"
+
+msgid "Generate the test signal at the project's sample rate ({rate} Hz): in the app's Step 1, or with reverbscope sweep --sample-rate {rate}. Do not rely on the DAW converting the file on import (that puts its resampler into the measurement). Then measure again."
+msgstr "按工程采样率（{rate} Hz）生成测试信号：在应用的步骤 1 中，或用 reverbscope sweep --sample-rate {rate}。不要依赖 DAW 在导入时转换文件（那会把它的重采样器带进测量）。然后重新测量。"
+
+msgid "content before the direct sound is only {margin:.1f} dB below it (noise, pre-ringing or a wrong reference): the recording may not contain the reference sweep"
+msgstr "直达声之前的内容只比它低 {margin:.1f} dB（噪声、预振铃或参考信号不对）：录音可能不含参考扫频"
+
+msgid "harmonic {order} of the sweep at {level:.0f} dB re the direct sound: the loudspeaker or the chain distorts. The harmonic responses are separated in time from the room response, so the decay is not spoilt, but the chain is near its limit"
+msgstr "扫频的第 {order} 次谐波相对直达声为 {level:.0f} dB：扬声器或链路有失真。谐波响应在时间上与房间响应分离，衰减不受影响，但链路已接近极限"
+
+msgid "Lower the playback level by 6 to 10 dB and measure again."
+msgstr "把播放电平降低 6 到 10 dB，然后重新测量。"
+
+msgid "Export the microphone track with no gate or noise reduction on it, and measure again."
+msgstr "导出不带门限和降噪的话筒轨道，然后重新测量。"
+
+msgid "{field} must be a pair of numbers"
+msgstr "{field} 必须是一对数字"
+
+msgid "MEASUREMENT HEALTH"
+msgstr "测量健康"
+
+msgid "{good} of {total} checks good."
+msgstr "{total} 项检查中 {good} 项良好。"
+
+msgid "Not reported: {groups}."
+msgstr "未报告：{groups}。"
+
+msgid "Good: {titles}."
+msgstr "良好：{titles}。"

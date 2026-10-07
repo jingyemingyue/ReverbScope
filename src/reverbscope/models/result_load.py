@@ -23,6 +23,8 @@ from reverbscope.models.result import (
     ClippingCheck,
     DecayMetric,
     DecayResult,
+    Dropout,
+    DropoutCheck,
     EnergyMetric,
     ExcitationBand,
     FloatArray,
@@ -226,6 +228,33 @@ def clipping_from_dict(data: Any) -> ClippingCheck | None:
         samples=_int(payload["samples"], "samples"),
         clipped=read_flag(payload["clipped"], "clipped"),
         quantisation_step=_opt_float(payload.get("quantisation_step")),
+    )
+
+
+def dropouts_from_dict(data: Any) -> DropoutCheck | None:
+    if data is None:
+        return None
+    payload = _obj(data, "dropouts")
+    searched = _pair(payload.get("searched_s"))
+    if searched is None:
+        raise TypeError(_("{field} must be a pair of numbers").format(field="searched_s"))
+    runs = payload.get("dropouts") or []
+    if not isinstance(runs, list):
+        raise TypeError(_("{field} must be a list").format(field="dropouts"))
+    found = []
+    for item in runs:
+        run = _obj(item, "dropout")
+        found.append(
+            Dropout(
+                start_s=float(run["start_s"]),
+                duration_ms=float(run["duration_ms"]),
+                sweep_hz=_opt_float(run.get("sweep_hz")),
+            )
+        )
+    return DropoutCheck(
+        searched_s=searched,
+        min_duration_ms=float(payload.get("min_duration_ms", 0.0)),
+        dropouts=tuple(found),
     )
 
 
@@ -475,6 +504,7 @@ def analysis_result_from_dict(data: Any) -> AnalysisResult:
             warnings=_str_tuple(payload.get("warnings")),
             clipping=clipping_from_dict(payload.get("clipping")),
             placement=placement_from_dict(payload.get("placement")),
+            dropouts=dropouts_from_dict(payload.get("dropouts")),
             schema_version=version,
             reverbscope_version=str(payload.get("reverbscope_version", "")),
         )

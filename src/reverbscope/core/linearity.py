@@ -56,17 +56,23 @@ all, so the probe reports that it is not applicable.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
 from scipy import fft as sfft
 from scipy.signal import fftconvolve
 
-from reverbscope.core.sweep import sweep_time_axis
+from reverbscope.core.sweep import frequency_at_sweep_time, sweep_time_axis
 from reverbscope.i18n import diag
 from reverbscope.models.audio import FloatArray
 from reverbscope.models.configuration import SweepSettings
-from reverbscope.models.result import AliasedDistortion, ClippingCheck, ExcitationBand
+from reverbscope.models.result import (
+    AliasedDistortion,
+    ClippingCheck,
+    Dropout,
+    DropoutCheck,
+    ExcitationBand,
+)
 
 _TINY = 1e-300
 
@@ -142,6 +148,80 @@ def _runs(mask: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Start (inclusive) and stop (exclusive) indices of the runs of ``True``."""
     edges = np.flatnonzero(np.diff(np.concatenate([[0], mask.view(np.int8), [0]])))
     return edges[0::2], edges[1::2]
+
+
+#: A run of exactly equal samples inside the sweep at least this long is a
+#: dropout. A sweep through a room, with the room's noise, never holds one
+#: value for 2 ms; a 16-bit file of a sweep at -60 dBFS moves by more than one
+#: quantisation step within that time even at 20 Hz. ReverbScope's own limit.
+DROPOUT_MIN_MS = 2.0
+DROPOUT_MIN_SAMPLES = 16
+
+
+def detect_dropouts(
+    x: FloatArray,
+    sample_rate: int,
+    *,
+    sweep_start: int,
+    sweep_length: int,
+    settings: SweepSettings | None = None,
+) -> DropoutCheck:
+    """Runs of exactly equal samples inside the recorded sweep.
+
+    A driver that lost a buffer repeats the last sample or writes zeros, and a
+    DAW that ran out of disk or CPU does the same. ``sweep_start`` is the
+    sweep's first sample in ``x`` and ``sweep_length`` its length; the fades
+    are left out when ``settings`` gives them (the sweep begins and ends near
+    zero, where a quiet recording can hold a value). A run at the recording's
+    own peak is clipping, which :func:`detect_clipping` reports, not a dropout.
+    """
+    samples = np.asarray(x, dtype=np.float64)
+    n = int(samples.shape[0])
+    lo = max(0, int(sweep_start))
+    hi = min(n, int(sweep_start) + int(sweep_length))
+    if settings is not None:
+        lo += round(settings.fade_in_s * sample_rate)
+        hi -= round(settings.fade_out_s * sample_rate)
+    min_run = max(DROPOUT_MIN_SAMPLES, round(DROPOUT_MIN_MS / 1000.0 * sample_rate))
+    check = DropoutCheck(
+        searched_s=(lo / sample_rate, max(lo, hi) / sample_rate),
+        min_duration_ms=min_run / sample_rate * 1000.0,
+    )
+    if hi - lo < min_run:
+        return check
+    segment = samples[lo:hi]
+    magnitude = np.abs(samples)
+    peak = float(np.max(magnitude)) if n else 0.0
+    step = quantisation_step(magnitude)
+    tolerance = max(
+        CLIPPING_RELATIVE_TOLERANCE * peak,
+        CLIPPING_QUANTISATION_STEPS * step if step is not None else 0.0,
+    )
+    # same[i]: segment[i] equals segment[i - 1]; a run of k means k + 1 equal samples.
+    same = np.concatenate([[False], np.diff(segment) == 0.0])
+    starts, stops = _runs(same)
+    found: list[Dropout] = []
+    for start, stop in zip(starts.tolist(), stops.tolist(), strict=True):
+        count = (stop - start) + 1
+        if count < min_run:
+            continue
+        value = float(segment[start])
+        if peak > 0.0 and abs(value) >= peak - tolerance:
+            continue  # a flat-topped peak: clipping, reported elsewhere
+        first = lo + start - 1
+        sweep_hz = (
+            frequency_at_sweep_time(settings, (first - int(sweep_start)) / sample_rate)
+            if settings is not None
+            else None
+        )
+        found.append(
+            Dropout(
+                start_s=first / sample_rate,
+                duration_ms=count / sample_rate * 1000.0,
+                sweep_hz=sweep_hz,
+            )
+        )
+    return replace(check, dropouts=tuple(found))
 
 
 def detect_clipping(x: FloatArray) -> ClippingCheck:

@@ -73,6 +73,7 @@ def test_documented_workflow_uses_only_synthetic_data(
             if "session" in payload:
                 Draft202012Validator(load_schema("session")).validate(payload.pop("session"))
                 payload.pop("findings", None)
+                payload.pop("health", None)
                 Draft202012Validator(load_schema("result")).validate(payload)
         seen.update(arg for arg in argv if arg in COMMANDS)
 

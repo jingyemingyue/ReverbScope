@@ -554,8 +554,9 @@ class AudioBackend(Protocol):
 
 Exit codes: 0 success; 1 a `ReverbScopeError` (message on stderr); 2 usage
 error or a safety refusal (the level acknowledgement); 130 interrupted.
-`--format json` writes exactly the `result.json` payload plus `findings` to
-stdout and nothing else there; all diagnostics go to stderr. `--json` stays
+`--format json` writes exactly the `result.json` payload plus `findings` and
+`health` (both derived from the result when it is shown, in the interface
+language) to stdout and nothing else there; all diagnostics go to stderr. `--json` stays
 as an alias for one minor release, then is removed with a warning.
 
 Text output is laid out by `reverbscope/cli/console.py` (styles, status
