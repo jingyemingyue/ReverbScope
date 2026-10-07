@@ -22,7 +22,8 @@ merged, tagged or published.
 stacked on PR #44; the changelog's `[Unreleased]` lists it):
 
 * The policy: `main` keeps moving as the beta line (`0.5.0b3`, …); a
-  `release/0.5.0` branch, cut from PR #44's head, carries `0.5.0rc1` with a
+  `release/0.5.0` branch, cut from the head of this branch (PR #45,
+  `5d33753`, which stacks on PR #44), carries `0.5.0rc1` with a
   frozen feature set and only correctness, crash, packaging, cross-platform,
   hardware- and DAW-compatibility, documentation, localization and
   release-engineering fixes. Fixes go to the candidate first and are

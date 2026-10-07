@@ -108,7 +108,8 @@ installs from a file name, so the order has no effect while nothing is on
 PyPI.)
 
 **The release-candidate line is `release/0.5.0`.** It starts from the
-stabilized, CI-green commit of PR #44 and carries `0.5.0rc1`, then `rc2`, …
+stabilized, CI-green head of PR #45 (`5d33753`, `integration/rc-readiness`,
+which stacks on PR #44) and carries `0.5.0rc1`, then `rc2`, …
 until the gate in §2b is met, then `0.5.0` itself and its patch releases.
 Its feature set is frozen. A change is allowed on it only when it is a
 correctness fix, a crash fix, an installer or packaging fix, a cross-platform
