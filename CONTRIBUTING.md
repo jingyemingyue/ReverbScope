@@ -97,6 +97,8 @@ register it in `_PROFILES`, add a synthetic test in
   without maintainer approval.
 * `CHANGELOG.md` is updated in the same pull request.
 * Use the pull-request template; CI must be green before merge.
+* What the maintainer does with a green pull request, a red check, a draft
+  release or a tester's report is in [docs/MAINTAINING.md](docs/MAINTAINING.md).
 
 ## Reporting problems and test results
 

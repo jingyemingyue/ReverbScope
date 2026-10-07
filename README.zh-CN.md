@@ -135,8 +135,8 @@ DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、�
    它不播放任何声音，只展示一份结果是什么样子。
 3. 先把监听音量调低，然后用你的音频接口和一支话筒运行 **独立模式**，或通过你的 DAW 运行
    **通用 DAW 模式**（[DAW 说明](docs/user-guide/daw-setup.zh-CN.md)）。
-4. 报告实际情况，并附上 **帮助 → 用于问题报告的环境报告**（英文界面为
-   **Help → Environment Report for Bug Reports**）的内容：
+4. 报告实际情况，并附上 **帮助 → 用于问题报告的环境报告 → 探测采样率**（英文界面为
+   **Help → Environment Report for Bug Reports → Probe sample rates**）的内容：
    * 音频接口测试报告（[中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)
      / [English form](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)）：
      设备列表、44.1 / 48 / 96 kHz 下的完整测量、2 个以上的声道、回送、播放过程中点“停止”、丢帧、
@@ -272,7 +272,7 @@ reverbscope gui
 | [docs/COMPATIBILITY.zh-CN.md](docs/COMPATIBILITY.zh-CN.md) | 平台、Python 与依赖的最低版本、DAW 导出格式、音频系统，以及每一项的验证方式；[English](docs/COMPATIBILITY.md) |
 | [docs/EDITIONS.zh-CN.md](docs/EDITIONS.zh-CN.md) | 桌面版与终端版，以及开发者工具；[English](docs/EDITIONS.md) |
 | [docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md) | ReverbScope 与 REW、Open Sound Meter、ARTA、Smaart、SoundID 等工具的区别，以及什么情况下其他工具更合适；[English](docs/COMPARISON.md) |
-| [docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.md) | DAW 分步说明（Pro Tools、Logic、Cubase、Studio One、Live、REAPER、FL Studio、Bitwig、Audacity）；[English](docs/user-guide/daw-setup.md) |
+| [docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.md) | DAW 分步说明（Pro Tools、Logic、GarageBand、Cubase / Nuendo、Fender Studio Pro（Studio One）、Live、REAPER、FL Studio、Bitwig、Digital Performer、Audacity）；[English](docs/user-guide/daw-setup.md) |
 | [docs/PROJECT_BRIEF.zh-CN.md](docs/PROJECT_BRIEF.zh-CN.md) | 最初的项目简介（中文） |
 
 ## 开发安装

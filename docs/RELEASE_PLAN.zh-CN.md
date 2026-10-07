@@ -55,6 +55,11 @@
 ## 3. 一次发布怎么产生
 
 流水线是 `.github/workflows/release.yml`，由 `pyproject.toml` 里的版本号驱动，最后一步始终由维护者点击。
+下面的步骤按 beta 线（`main`）写；**在候选线**（`release/0.5.0`，§2a）上，发布提交做在该分支，说明头部用
+`packaging/release-notes-header-rc.md`（`scripts/release_draft.py` 对 PEP 440 候选版本自动选用），正文是 CHANGELOG
+的 `[0.5.0rcN]` 小节，草稿以 *pre-release* 发布。**切 `rc2`**（以及之后的每个候选版）：在 `release/0.5.0` 上一个提交，
+把 `project.version` 改成 `0.5.0rc2`、改名或新增 `[0.5.0rc2]` 小节、加一条 `docs/STATUS.md` 快照；推送后 Release 运行打开草稿
+`v0.5.0rc2`；发布由维护者点击，点击即创建 tag。维护手册见 [MAINTAINING.zh-CN.md](MAINTAINING.zh-CN.md)。
 
 > **工作流状态（2026-09-24）**：按版本号发布的工作流自 PR #18 起已在 `main`
 > 上；v0.4.1 草稿 Release 就是由它创建的。只要 `v0.4.1` 还没有 tag，`main`

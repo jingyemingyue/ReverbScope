@@ -162,8 +162,8 @@ out what works. A failed check is as useful as a pass.
 3. Turn the monitors down, then run **Standalone Mode** with your interface
    and a microphone, or **Universal DAW Mode** through your DAW
    ([DAW notes](docs/user-guide/daw-setup.md)).
-4. Report what happened, with **Help → Environment Report for Bug Reports**
-   pasted in:
+4. Report what happened, with **Help → Environment Report for Bug Reports →
+   Probe sample rates** pasted in:
    * [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml):
      device list, full takes at 44.1 / 48 / 96 kHz, channels above 2,
      loopback, Stop during playback, dropouts, unplugging during a take;
@@ -317,7 +317,7 @@ samples). Recently opened or saved sessions are remembered under
 | [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Platforms, Python and dependency floors, DAW export formats, host APIs — and what verified each; [中文](docs/COMPATIBILITY.zh-CN.md) |
 | [docs/EDITIONS.md](docs/EDITIONS.md) | Desktop Edition vs. Terminal Edition, and the developer tools; [中文](docs/EDITIONS.zh-CN.md) |
 | [docs/COMPARISON.md](docs/COMPARISON.md) | How ReverbScope differs from REW, Open Sound Meter, ARTA, Smaart, SoundID and others, and when another tool is the better choice; [中文](docs/COMPARISON.zh-CN.md) |
-| [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md) | Step-by-step DAW notes (Pro Tools, Logic, Cubase, Studio One, Live, REAPER, FL Studio, Bitwig, Audacity); [中文](docs/user-guide/daw-setup.zh-CN.md) |
+| [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md) | Step-by-step DAW notes (Pro Tools, Logic, GarageBand, Cubase / Nuendo, Fender Studio Pro (Studio One), Live, REAPER, FL Studio, Bitwig, Digital Performer, Audacity); [中文](docs/user-guide/daw-setup.zh-CN.md) |
 | [docs/PROJECT_BRIEF.zh-CN.md](docs/PROJECT_BRIEF.zh-CN.md) | Original project brief (Chinese) |
 
 ## Development install

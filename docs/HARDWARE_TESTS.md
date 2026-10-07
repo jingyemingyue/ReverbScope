@@ -138,7 +138,7 @@ run" with a reason is as useful as a "Pass".
 | Row | What to do | Pass when |
 | --- | --- | --- |
 | Device list | Open Standalone Mode (or run `reverbscope devices`) | The interface is listed with the right number of inputs and outputs |
-| Full take at 44.1 / 48 / 96 kHz | Standalone Mode, pick the interface for input and output, set the rate, press Start; repeat per rate the interface offers | A result opens, the direct-sound confidence is not "low", and no warning says the rate is unsupported or that the recording has dropouts |
+| Full take at 44.1 / 48 / 96 kHz | Standalone Mode, pick the interface for input and output, set the rate, press **Run Measurement**; repeat per rate the interface offers | A result opens, the direct-sound confidence is not "low", and no warning says the rate is unsupported or that the recording has dropouts |
 | Channels beyond 1–2 | Choose an input or output above channel 2 | The sweep comes out of, and is recorded from, the channels you chose |
 | Loopback capture | Cable one output back to one input and choose it as the loopback channel | The result says the loopback was compensated |
 | Stop during playback | Press Stop while the sweep plays | The sound stops at once, no tone keeps playing, no result is saved |
@@ -191,6 +191,8 @@ resolve the device problem and repeat the measurement.
 * The form: [audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)
   or [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml).
 * The environment report (step 4 above).
+* For a DAW run: a screenshot of the DAW's export dialog and of the clip's
+  stretch / warp setting (the form's optional "Screenshots or log" field).
 * For any failure, `reverbscope.log` from the data folder (`~/.reverbscope/`, or
   **Environment Report ▸ Open Data Folder**), and if a result was saved, a
   session bundle made with `reverbscope session bundle <session folder>

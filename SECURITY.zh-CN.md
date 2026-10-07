@@ -6,7 +6,7 @@
 
 ## 受支持的版本
 
-ReverbScope 目前是预发布版本（0.4.x，见 [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md)，中文摘要见 [docs/RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)）。只维护 `main` 分支和最新的 0.4.x 版本。仓库是公开的；发布版本都是 GitHub Releases 上的预发布版本，PyPI 上没有任何发布。
+ReverbScope 目前是预发布版本（0.5.0 候选测试版，见 [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md) §2a，中文摘要见 [docs/RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)）。维护两条线：`main`（开发线）和 `release/0.5.0`（候选线）；只支持 GitHub Releases 上最新的预发布版本。仓库是公开的；发布版本都是 GitHub Releases 上的预发布版本，PyPI 上没有任何发布。
 
 ## 报告漏洞
 
