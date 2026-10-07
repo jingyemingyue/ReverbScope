@@ -61,6 +61,7 @@ from reverbscope.cli.render import (
     render_inventory,
     render_measure_plan,
     render_overview,
+    render_profiles,
     render_saved_next_steps,
     render_status,
     render_sweep_written,
@@ -207,7 +208,7 @@ def _type_name(kind: object) -> str | None:
 #: The root help lists the commands in these groups, in the order of the
 #: workflow: try it, measure, look at the results, then troubleshoot.
 COMMAND_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
-    (N_("Get started"), ("demo", "gui")),
+    (N_("Get started"), ("demo", "gui", "profiles")),
     (N_("Measurement"), ("sweep", "analyze", "devices", "measure", "analyze-ir")),
     (N_("Results"), ("show", "compare", "project", "export", "session")),
     (N_("Settings"), ("config",)),
@@ -1328,6 +1329,21 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_cfg.epilog = "\n\n".join([_settings_block(settings_keys), str(p_cfg.epilog)])
 
+    p_profiles = _command(
+        sub,
+        "profiles",
+        _("the recording profiles, and what each one watches for"),
+        examples=("reverbscope profiles", "reverbscope profiles vocal"),
+    )
+    p_profiles.add_argument(
+        "name",
+        nargs="?",
+        default=None,
+        choices=available_profiles(),
+        metavar=pgettext("metavar", "NAME"),
+        help=_("one profile to explain in full (default: list them all)"),
+    )
+    p_profiles.add_argument("--all", action="store_true", help=_("explain every profile in full"))
     p_doc = _command(
         sub,
         "doctor",
@@ -2452,6 +2468,20 @@ def cmd_project(args: argparse.Namespace) -> int:
     raise ReverbScopeError(_("unknown project command {command}").format(command=command))
 
 
+def cmd_profiles(args: argparse.Namespace) -> int:
+    from reverbscope.interpretation.explain import explain_all, explain_profile
+    from reverbscope.settings import load_settings
+
+    full = bool(args.all or args.name)
+    items = [explain_profile(str(args.name))] if args.name else explain_all()
+    if _use_json(args):
+        print(json.dumps([item.to_dict() for item in items], indent=1))
+        return 0
+    default = load_settings().default_profile or "generic"
+    print(render_profiles(_console(args), items, full=full, default=default))
+    return 0
+
+
 def cmd_gui(args: argparse.Namespace) -> int:
     from reverbscope.edition import is_terminal_package
 
@@ -2574,6 +2604,7 @@ COMMANDS = {
     "export": cmd_export,
     "project": cmd_project,
     "config": cmd_config,
+    "profiles": cmd_profiles,
 }
 
 

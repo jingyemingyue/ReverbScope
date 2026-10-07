@@ -10,6 +10,7 @@ commands:
     demo        try ReverbScope with synthetic data: no audio hardware needed
     gui         start the desktop GUI (needs PySide6; the desktop download
                 includes it)
+    profiles    the recording profiles, and what each one watches for
   Measurement
     sweep       write the ESS test signal WAV (+ JSON sidecar)
     analyze     analyse a recording made with the sweep
@@ -520,6 +521,22 @@ examples:
   reverbscope config language zh_CN
   reverbscope config language auto
   reverbscope config profile vocal
+
+=== reverbscope profiles --help
+usage: reverbscope profiles [NAME] [options]
+
+the recording profiles, and what each one watches for
+
+positional arguments:
+  NAME        one profile to explain in full (default: list them all)
+
+options:
+  -h, --help  show this help message and exit
+  --all       explain every profile in full
+
+examples:
+  reverbscope profiles
+  reverbscope profiles vocal
 
 === reverbscope doctor --help
 usage: reverbscope doctor [options]

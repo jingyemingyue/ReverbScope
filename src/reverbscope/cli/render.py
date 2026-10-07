@@ -32,6 +32,7 @@ from reverbscope.edition import RELEASES_URL, is_terminal_package
 from reverbscope.health import HealthReport, HealthStatus, affects_text, assess, status_word
 from reverbscope.i18n import _, list_join, localize, pgettext
 from reverbscope.interpretation import Finding
+from reverbscope.interpretation.explain import ProfileExplanation
 from reverbscope.interpretation.overview import Fit, ProjectOverview, fit_word
 from reverbscope.interpretation.profiles import (
     band_text,
@@ -1303,6 +1304,52 @@ def render_overview(console: Console, overview: ProjectOverview) -> str:
         for step in overview.next_steps:
             lines += c.status("next", step)
     return "\n".join(lines)
+
+
+def render_profiles(
+    console: Console, items: Sequence[ProfileExplanation], *, full: bool, default: str = ""
+) -> str:
+    """The recording profiles: one line each, or everything one watches for."""
+    c = console
+    lines = c.title(_("ReverbScope recording profiles"))
+    if not full:
+        lines.append("")
+        lines += c.commands(
+            [
+                (
+                    item.name + (c.muted(" " + _("(default)")) if item.name == default else ""),
+                    f"{item.title}{c.sep()}{item.description}",
+                )
+                for item in items
+            ]
+        )
+        lines.append("")
+        lines += c.paragraph(
+            _(
+                "reverbscope profiles <name> says what a profile watches for; "
+                "--profile <name> chooses it for one analysis, "
+                "reverbscope config profile <name> for good."
+            ),
+            indent=0,
+            style=("dim",),
+        )
+        return c.fit("\n".join(lines))
+    for item in items:
+        lines += c.section(f"{item.title} ({item.name})", item.description)
+        for want in item.wants:
+            lines += c.status("ok", want)
+        for skip in item.skips:
+            lines += c.status("skip", skip)
+    lines.append("")
+    lines += c.paragraph(
+        _(
+            "Thresholds are engineering choices for one kind of recording, not a grade; "
+            "docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
+        ),
+        indent=0,
+        style=("dim",),
+    )
+    return c.fit("\n".join(lines))
 
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
