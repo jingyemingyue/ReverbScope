@@ -226,17 +226,29 @@ LUNDEBY_MIN_SLOPE_RATIO = 0.5
 #: ... or when the crosspoint lies more than this decay (dB, at the
 #: preliminary slope) plus two blocks after the first block at noise + 5 dB.
 LUNDEBY_CROSSPOINT_ALLOWANCE_DB = 10.0
-#: The preliminary regression (peak down to noise + 10 dB) of a decay that
-#: really meets its floor ends within about 10 dB of that floor: the fit stops
-#: at the first block at or below noise + 10 dB. A response cut off by a gate,
-#: or padded with digital silence that one residual sample keeps in the
-#: record, stops tens of dB above the floor those last samples imply, so the
-#: late-slope window (noise + 7.5 dB to noise + 22.5 dB) holds no decay at all.
-#: The iteration then stalls without moving the crosspoint, the rejected
-#: estimate is identical to the preliminary one, and a T30 fitted to the cliff
-#: is published as valid. 20 dB is above the ~17 dB a narrow-band exponential
-#: reaches (its blocks scatter) and below the ~30 dB of every such cliff.
+#: A response cut off by a gate, or padded with digital silence that one
+#: residual sample keeps in the record, leaves its own straight line and falls
+#: into a floor it had not approached, within one block (broadband) or a few
+#: (a narrow band smears the cut over its filter's ringing): the fall exceeds
+#: what the slope before it predicts by more than this. The decay is then
+#: known down to the level before the fall and no further: the floor, the
+#: truncation and the tail extrapolation are set there, so the usable range
+#: ends there (a cut 30 dB down withholds T20 and T30 as insufficient range;
+#: a cut 70 dB down changes nothing but the reported range). Fitting the cliff
+#: instead published the end of the record as a valid T30. A clean exponential
+#: stays on its line down to the floor (24 dB per 20 ms block at RT 0.05 s is
+#: its slope, not a fall); a double slope meets its floor above its line.
 ABRUPT_END_GAP_DB = 20.0
+#: A block this far below the straight line fitted to the blocks before it has
+#: left the decay: it belongs to the fall into the floor, not to the slope.
+#: Narrow-band blocks scatter by several dB around their line; a fall of a
+#: few blocks is still only a cut when it exceeds :data:`ABRUPT_END_GAP_DB`.
+CUT_RESIDUAL_DB = 10.0
+#: A fall that begins more than this far below the peak is not reported as a
+#: cut: no room measurement resolves that much decay (a 24-bit converter's
+#: whole range is about 120 dB), so the fall is the numerical silence after a
+#: synthetic or imported response, and the estimate proceeds as usual.
+CUT_SHORT_MAX_DB = 100.0
 _NOISE_REACHED_DB = 5.0
 #: With a rejected Lundeby estimate, metrics that change by more than this
 #: fraction between the preliminary and the rejected truncation are unreliable.
@@ -293,6 +305,13 @@ NONLINEARITY_SPREAD_PERMILLE = 1000.0
 #: below 0.25. EDT is not tested: its range starts at 0 dB, which the direct
 #: sound itself can cross in one sample.
 SUDDEN_DROP_RATIO = 0.25
+#: EDT is checked for straightness only when it is longer than this times the
+#: late decay (T30, else T20). A strong early reflection or a loud direct sound
+#: makes the first 10 dB legitimately non-straight and shorter than the late
+#: decay, and that is what EDT describes (ISO 3382-1 keeps EDT for that
+#: reason); a disturbance inside the 0..-10 dB range, such as a late noise
+#: burst, makes EDT many times longer than T30 instead.
+EDT_STRAIGHTNESS_RATIO = 1.5
 
 DECAY_METHOD = (
     "ISO 3382-1 onset (-20 dB) per band; Schroeder backward integration with Lundeby "
@@ -394,10 +413,11 @@ class TruncationEstimate:
     iterative_truncation_index: int | None = None
     iterative_slope_db_per_s: float | None = None
     iterative_noise_floor_db: float | None = None
-    #: How many dB above the noise floor the preliminary regression ends.
-    #: ``None`` when there was no preliminary slope. Above
-    #: :data:`ABRUPT_END_GAP_DB` the decay stops before it meets the floor.
-    preliminary_end_gap_db: float | None = None
+    #: dB below the peak at which the record ends while the decay is still
+    #: above its noise floor (a gate, or digital silence after an imported
+    #: response); the floor and the truncation are set there, see
+    #: :data:`ABRUPT_END_GAP_DB`. ``None`` when the decay meets its floor.
+    cut_short_db: float | None = None
 
     def rejected_estimate(self) -> TruncationEstimate | None:
         """The rejected iterative estimate, if there is one."""
@@ -534,10 +554,51 @@ def estimate_truncation(
             problem=diag("the response does not decay"),
         )
     cross_t = (noise_db - intercept) / slope
-    end_level_db = float(slope * t[-1] + intercept)
-    end_gap_db = end_level_db - noise_db
     preliminary = (cross_t, slope, noise_db)
-
+    if stop_block < level_db.shape[0]:
+        # A gate, or digital silence after an imported response: the decay
+        # leaves its own straight line downwards and falls into a floor it had
+        # not approached, within one block (broadband) or a few (a narrow band
+        # smears the cut over its filter's ringing). Walking back from the
+        # first block at or below noise + 10 dB, a block more than
+        # CUT_RESIDUAL_DB below the line fitted to the blocks before it is part
+        # of the fall; the last block still on the line is where the decay was
+        # cut. The decay is known down to that level and no further: the
+        # floor, the truncation and the tail extrapolation are set there
+        # (ABRUPT_END_GAP_DB). Iterating on the cliff instead would fit the end
+        # of the record as a reverberation time.
+        k = stop_block
+        fit_slope, fit_intercept = slope, intercept
+        while k - start_block >= 2:
+            fit_slope, fit_intercept, _r2 = _linear_fit(
+                centres[start_block:k] / sample_rate, level_db[start_block:k]
+            )
+            if not np.isfinite(fit_slope) or fit_slope >= 0.0:
+                break
+            predicted = fit_slope * centres[k] / sample_rate + fit_intercept
+            if level_db[k] < predicted - CUT_RESIDUAL_DB:
+                k -= 1
+                continue
+            break
+        if k < stop_block and np.isfinite(fit_slope) and fit_slope < 0.0:
+            cut_level_db = float(level_db[k])
+            fall_db = cut_level_db - float(level_db[stop_block])
+            expected_db = abs(fit_slope) * (centres[stop_block] - centres[k]) / sample_rate
+            if (
+                fall_db - expected_db > ABRUPT_END_GAP_DB
+                and peak_db - cut_level_db < CUT_SHORT_MAX_DB
+            ):
+                cut_index = int(np.clip(round(centres[k] + block / 2.0), start_index + 1, n))
+                return TruncationEstimate(
+                    start_index=start_index,
+                    truncation_index=cut_index,
+                    noise_floor_db=cut_level_db,
+                    peak_db=peak_db,
+                    late_slope_db_per_s=float(fit_slope),
+                    converged=True,
+                    iterations=0,
+                    cut_short_db=peak_db - cut_level_db,
+                )
     converged = False
     # Why the iteration stopped before converging, when it could not estimate
     # a late slope at all (it did not run out of passes).
@@ -631,19 +692,6 @@ def estimate_truncation(
                     crosspoint=cross_t,
                     reached=first_reached_t,
                 )
-    if end_gap_db > ABRUPT_END_GAP_DB:
-        # The regression never came near the floor it was measured against, so
-        # the late-slope window is empty (or holds only the cliff). This is
-        # why a pass reports that it could not estimate a late slope; say so
-        # directly. Keeping the preliminary crosspoint would fit T30 to that
-        # cliff, and the two truncation indices would be the same one.
-        problem = diag(
-            "the decay stops abruptly: the regression ends {gap:.0f} dB above the noise floor "
-            "(limit {limit:.0f} dB), so the slope is the end of the record rather than the "
-            "reverberation",
-            gap=end_gap_db,
-            limit=ABRUPT_END_GAP_DB,
-        )
 
     def index_of(t_s: float) -> int:
         return int(np.clip(round(t_s * sample_rate), start_index + 1, n))
@@ -657,21 +705,6 @@ def estimate_truncation(
             late_slope_db_per_s=late_slope,
             converged=converged,
             iterations=iterations,
-            preliminary_end_gap_db=end_gap_db,
-        )
-    if problem is not None and end_gap_db > ABRUPT_END_GAP_DB:
-        # No second estimate: it would be this same cliff, and comparing the
-        # two would report that the result does not depend on the truncation.
-        return TruncationEstimate(
-            start_index=start_index,
-            truncation_index=index_of(preliminary[0]),
-            noise_floor_db=preliminary[2],
-            peak_db=peak_db,
-            late_slope_db_per_s=preliminary[1],
-            converged=converged,
-            iterations=iterations,
-            problem=problem,
-            preliminary_end_gap_db=end_gap_db,
         )
     return TruncationEstimate(
         start_index=start_index,
@@ -685,7 +718,6 @@ def estimate_truncation(
         iterative_truncation_index=index_of(cross_t),
         iterative_slope_db_per_s=late_slope,
         iterative_noise_floor_db=noise_db,
-        preliminary_end_gap_db=end_gap_db,
     )
 
 
@@ -869,6 +901,27 @@ def fit_decay_metric(
                 else diag("Evaluation range covers fewer than 3 samples")
             ),
         )
+    if name != "EDT" and first_index > int(below_upper[0]):
+        # The fit starts after the direct sound, which has already taken part
+        # of the evaluation range (EDT has its own rule, _edt_direct_check).
+        # With more than half the range gone, the few dB left describe the
+        # direct sound's step rather than the room's slope.
+        covered = float(upper - edc[i0])
+        if covered > 0.5 * (upper - lower):
+            return DecayMetric(
+                name=name,
+                seconds=None,
+                validity=Validity.UNRELIABLE,
+                evaluation_range_db=evaluation_range_db,
+                reason=diag(
+                    "the direct sound covers {covered:.0f} dB of the {range:.0f} dB evaluation "
+                    "range (limit: half): {metric} would describe the direct sound rather than "
+                    "the room at this position",
+                    covered=covered,
+                    range=upper - lower,
+                    metric=name,
+                ),
+            )
     slope, _, r2 = _linear_fit(curve.time_s[i0 : i1 + 1], edc[i0 : i1 + 1])
     if not np.isfinite(slope) or slope >= 0.0:
         return DecayMetric(
@@ -993,8 +1046,11 @@ def _straightness_check(
     """Curvature from T20/T30 and the non-straight-decay rule on every fit.
 
     Curvature needs both T20 and T30 to be VALID. Non-linearity does not: a
-    T20 that is the RT60 fallback because T30 has no range, and an EDT, are
-    checked on their own. The limit uses :func:`_straightness_reference_s`.
+    T20 that is the RT60 fallback because T30 has no range is checked on its
+    own, and so is an EDT, but only when it is longer than
+    :data:`EDT_STRAIGHTNESS_RATIO` times the late decay (the first 10 dB of a
+    room with a strong early reflection are not straight, and that is what
+    EDT measures). The limit uses :func:`_straightness_reference_s`.
     """
     warnings: list[str] = []
     reference_s = _straightness_reference_s(t30, t20, edt)
@@ -1025,6 +1081,11 @@ def _straightness_check(
     checked: list[DecayMetric] = []
     for metric in (edt, t20, t30):
         xi = metric.nonlinearity_permille
+        if metric.name == "EDT" and not (
+            metric.seconds is not None and metric.seconds > EDT_STRAIGHTNESS_RATIO * reference_s
+        ):
+            checked.append(metric)
+            continue
         if metric.validity is Validity.VALID and xi is not None and xi > max_xi:
             warning = diag(
                 "the {metric} fit is not straight (xi = {xi:.0f} permille, limit "
@@ -1357,6 +1418,15 @@ def analyze_band(
         first_index = max(0, direct_index + round(direct_spread_s * sample_rate) + 1 - onset)
     edt, t20, t30 = _fit_all(curve, noise_margin_db, first_index)
     warnings: list[str] = []
+    if trunc.cut_short_db is not None:
+        warnings.append(
+            diag(
+                "the response is cut off {level:.0f} dB below its peak, before the decay reaches "
+                "the noise floor (a gate, or digital silence after an imported response): the "
+                "decay is evaluated down to that level only",
+                level=trunc.cut_short_db,
+            )
+        )
 
     direct_step_db: float | None = None
     if direct_index is not None and first_index < curve.edc_db.shape[0]:

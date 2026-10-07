@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 
 from reverbscope.core.decay import (
-    LUNDEBY_MAX_ITERATIONS,
     MIN_BT_PRODUCT,
     _truncation_sensitivity,
     analyze_band,
@@ -456,29 +455,39 @@ def test_rejected_truncation_that_does_not_change_the_result_keeps_it_valid(
 
 
 @pytest.mark.parametrize("rate", [48000, 192000])
-def test_a_late_slope_that_cannot_be_estimated_is_not_called_unconverged(rate: int) -> None:
-    """A response gated onto a floor far below the cut-off used to be reported
-    as "did not converge in 1 iteration(s)". The regression actually stops
-    tens of dB above that floor, so the slope is the end of the record."""
+def test_a_response_gated_far_above_its_floor_is_read_as_cut_short(rate: int) -> None:
+    """A response gated at -30 dB onto a floor 80 dB down used to be reported
+    as "did not converge in 1 iteration(s)", then as "the late decay slope
+    could not be estimated", and a T30 of the cliff was published as VALID.
+    The record is cut short: the floor is set at the cut, nothing is iterated
+    on the cliff, and T20 and T30 have insufficient range."""
     n = 2 * rate
     t = np.arange(n) / rate
     rng = np.random.default_rng(4)
     gated = rng.normal(0.0, 1.0, n) ** 2 * np.exp(-DECAY_CONSTANT * t / 0.6) * (t < 0.3)
     power = gated + 1e-8 * rng.normal(0.0, 1.0, n) ** 2
     trunc = estimate_truncation(power, rate)
-    assert "stops abruptly" in (trunc.problem or "")
-    assert "did not converge" not in (trunc.problem or "")
-    assert trunc.iterations < LUNDEBY_MAX_ITERATIONS
+    assert trunc.problem is None
+    assert trunc.cut_short_db is not None and trunc.cut_short_db == pytest.approx(30.0, abs=5.0)
+    assert trunc.truncation_index == pytest.approx(0.3 * rate, abs=0.03 * rate)
+    assert trunc.iterations == 0
+
+    band = analyze_band(np.sqrt(power), rate, None, noise_margin_db=10.0)
+    assert band.t30.validity is Validity.INSUFFICIENT_RANGE
+    assert band.t20.validity is Validity.INSUFFICIENT_RANGE
+    assert band.rt60_estimate_s is None
+    assert band.peak_to_noise_db == pytest.approx(30.0, abs=5.0)
+    cut = [w for w in band.warnings if "cut off" in w]
+    assert len(cut) == 1
 
     from reverbscope.i18n import activate, localize
 
     activate("zh_CN")
     try:
-        shown = localize(trunc.problem)
+        shown = localize(cut[0])
     finally:
         activate("en")
-    assert "突然中断" in shown
-    assert "无法估计后期衰减斜率" not in shown
+    assert "被截断" in shown and "cut off" not in shown
 
 
 def test_running_out_of_passes_is_called_unconverged(sample_rate: int) -> None:
