@@ -4147,6 +4147,9 @@ msgstr "{field} 必须是文本"
 msgid "expected a list of numbers"
 msgstr "此处应为数字列表"
 
+msgid "expected a list of text values"
+msgstr "此处应为文本列表"
+
 msgid "{field} has the wrong type"
 msgstr "{field} 的类型不正确"
 

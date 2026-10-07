@@ -590,9 +590,7 @@ def test_project_position_records_follow_the_project_schema(
 
 @pytest.mark.parametrize("value", ["1", 1.5, True], ids=["text", "fraction", "boolean"])
 @pytest.mark.parametrize("kind", ["session", "project", "comparison"])
-def test_schema_version_must_be_a_json_integer(
-    tmp_path: Path, kind: str, value: object
-) -> None:
+def test_schema_version_must_be_a_json_integer(tmp_path: Path, kind: str, value: object) -> None:
     """Do not coerce damaged schema metadata into a supported version."""
     path = tmp_path / f"{kind}.json"
     path.write_text(json.dumps({"schema_version": value}), encoding="utf-8")

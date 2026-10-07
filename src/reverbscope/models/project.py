@@ -55,9 +55,7 @@ class PositionEntry:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PositionEntry:
-        payload = record_payload(
-            data, {f.name for f in fields(cls)}, kind="position entry"
-        )
+        payload = record_payload(data, {f.name for f in fields(cls)}, kind="position entry")
         dirs = _list(payload.get("session_dirs"), "position entry", "session_dirs")
         if not all(isinstance(path, str) for path in dirs):
             raise SessionError(
