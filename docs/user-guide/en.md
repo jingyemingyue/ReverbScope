@@ -249,13 +249,44 @@ trusted on both sides). `reverbscope compare … --out comparison.json` writes t
 `reverbscope show comparison.json` prints the report again and **re-derives**
 findings (they are never stored in the file).
 
-## Projects and averaging
+## Projects, positions and the overview
 
-A project folder holds `project.json` and ordinary session folders.
-`reverbscope project init --out room/ --name Booth` then
-`reverbscope project add room/ session/ --position desk`. Running `project init`
-again on a folder that has a `project.json` is refused; `--force` starts the
-project over, without its positions.
+A project folder holds `project.json` and ordinary session folders; the file
+lists which position each session was taken at. Make one with
+`reverbscope project init --out room/ --name Booth` (or **Open Project...** on
+the Home page, which offers to make a project of a plain folder), then list
+sessions under positions: `reverbscope project add room/ session/ --position desk`.
+Running `project init` again on a folder that has a `project.json` is
+refused; `--force` starts the project over, without its positions.
+
+**Measuring several positions.** On the Project page, **Measure a new
+position...** names the position (A, B, desk, ...) and opens the mode you
+choose; keep the loudspeaker, its level and the input gain as they were and
+move only the microphone. **Save Session...** on the Results page then saves
+into the project, in a folder named after the position (`B-1`, `B-2`, ...),
+and lists the session under that position; **Project** leads back to the
+overview. Two takes at one position show whether the measurement repeats:
+the overview says whether they agree within the 5 % just-noticeable
+difference for T, and says so when they do not.
+
+**The overview** (`reverbscope project overview room/`; the Project page)
+reads every take under one recording profile (the latest take's own, or
+`--profile`): its measurement health, RT60, clarity, noise floor and
+strongest early reflection, and its *fit*: *fits* when the profile has no
+warning about it, *warnings* with the topics, *cannot say* when the
+measurement is invalid or has no VALID reverberation time. Each position is
+represented by its healthiest, latest take; every position after the first
+carries the verdicts of its take against the first position's (the same
+verdicts as Compare, with the health of both takes counted). The spatial
+average and the ISO 3382-2 class follow, with how far the positions' RT60
+differ across the room, and **Next** says what to measure: another
+microphone position for the next class (or a second loudspeaker position),
+a repeat take, a position to measure again, and which positions fit. The
+page does not rank positions: between two that fit, choose on the verdicts
+and on what the recording needs. `--format json` carries the whole overview;
+`project.json` stores nothing beyond the positions
+([MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §13).
+
 `reverbscope project average room/` averages VALID T values only, never decay
 curves, and names the ISO 3382-2 class the position counts reach. The RT60
 column is the mean of each session's own RT60 (T30, else T20). `n` is the

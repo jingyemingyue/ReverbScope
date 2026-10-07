@@ -264,6 +264,7 @@ reverbscope export session1/ --format csv --out curves/
 reverbscope project init --out room/ --name Booth
 reverbscope project add room/ session1/ --position desk
 reverbscope project average room/
+reverbscope project overview room/   # health, fit, verdicts, next steps per position
 
 # GUI (Desktop Edition, or a Python install with the gui extra)
 reverbscope gui
@@ -387,6 +388,10 @@ A sourced comparison with other tools is in [docs/COMPARISON.md](docs/COMPARISON
   invalid or unknown with the reason, the figures it affects and what to do
   next; a sweep played at the wrong speed lists where each DAW sets its
   sample rate.
+* **Several positions, one overview** – a project folder collects the takes
+  of a room by microphone position; the overview says per take whether the
+  room fits the recording profile, per position whether the takes repeat and
+  how it compares with the first, and what to measure next, without ranking.
 * **Clean-room implementation and license hygiene** – no third-party source is
   vendored ([docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)); every dependency and
   every reference repository is audited

@@ -33,6 +33,21 @@ All notable changes to ReverbScope are documented here. The format follows
   hand. No change is called statistically significant on one pair of
   positions. `--format json` carries it as `verdict`; `comparison.json` does
   not store it (`docs/MEASUREMENT_METHODOLOGY.md` §11a).
+- **Projects: the overview and the multi-position workflow.**
+  `reverbscope project overview` and the desktop app's Project page (Home ▸
+  Open Project...) read every take of a project under one recording profile:
+  its measurement health, RT60, clarity, noise floor, strongest early
+  reflection and its fit (fits / warnings / cannot say), each position's
+  repeatability (takes should agree within the 5 % just-noticeable
+  difference for T) and its verdicts against the first position, the spatial
+  average with its ISO 3382-2 class, how far the positions differ across the
+  room, and what to measure next. No ranking. On the Project page, *Measure
+  a new position...* names the position and opens the chosen mode; the save
+  on the Results page then goes into the project, in a folder named after
+  the position, and lists the session under it; *Add Session...* lists a
+  saved one; *Compare with first position* opens Compare on the pair.
+  `--format json` carries the overview (`docs/MEASUREMENT_METHODOLOGY.md`
+  §13); `project average` prints its table through the same renderer.
 - **Dropouts in the recorded sweep** (runs of 2 ms or more of frozen or zero
   samples: a lost buffer, a DAW out of disk or CPU) are found, placed in time
   and at the frequency the sweep was at, noted in the warnings and stored in

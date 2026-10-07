@@ -228,6 +228,7 @@ reverbscope export session1/ --format csv --out curves/
 reverbscope project init --out room/ --name Booth
 reverbscope project add room/ session1/ --position desk
 reverbscope project average room/
+reverbscope project overview room/   # 各位置的健康、契合度、判定与下一步
 
 # GUI（桌面版，或装了 gui 附加依赖的 Python 环境）
 reverbscope gui
@@ -331,6 +332,7 @@ for r in result.reflections.reflections:
   ISO 3382-1/-2 等）；见 [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md)。
 * **诚实的数字** —— 未经校准时一律使用 dBFS，每个指标都有有效性标记，不提供伪科学的房间评分。
 * **测量健康优先** —— 每个结果一开始就列出对这次录音本身的检查（扫频、播放速度、直达声、电平、失真、采样丢失、衰减范围、本底噪声、录音长度），每项为良好、警告、无效或未知，附原因、受影响的指标和下一步；扫频播放速度不对时会列出各 DAW 设置采样率的位置。
+* **多个位置，一份总览** —— 项目文件夹按话筒位置收集一个房间的多次测量；总览说明每次测量是否契合录音配置、每个位置的多次测量是否可重复、它与第一个位置相比如何，以及接下来该测什么，而不做排名。
 * **净室实现与许可证规范** —— 不内置任何第三方源代码（[docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)）；
   每一项依赖和每一个参考过的代码仓库都经过审查
   （[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)、

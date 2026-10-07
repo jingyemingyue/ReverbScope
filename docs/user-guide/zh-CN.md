@@ -123,11 +123,14 @@ reverbscope-env/bin/reverbscope gui
 
 “对比”页面列出配对的早期反射（延时相差 ±0.5 ms 以内）和低频共振（相差 1/6 倍频程以内，并带有 decay-distinguishable 标志）。低频共振只在两次测量都搜索过的范围内比较：在另一次测量从未搜索的频率（例如其扫频起点更高）发现的共振既不算消失也不算新出现；若有一次测量根本没有搜索，低频一栏显示“未比较”（报告中如此，“共振”标签页的表格下方也有同样的说明；两次测量的直达声并非都可信时，“早期反射”标签页同样给出说明）。`reverbscope compare … --out comparison.json` 只写入数值；`reverbscope show comparison.json` 会再次打印报告并**重新推导**解读（解读从不存入该文件）。
 
-## 项目与平均
+## 项目、位置与总览
 
-项目文件夹包含 `project.json` 和普通的会话文件夹。
-`reverbscope project init --out room/ --name Booth`，然后
-`reverbscope project add room/ session/ --position desk`。对已有 `project.json` 的文件夹再次运行 `project init` 会被拒绝；加 `--force` 则重新开始这个项目，原有的位置不再保留。
+项目文件夹包含 `project.json` 和普通的会话文件夹；该文件记录每个会话是在哪个位置测的。用 `reverbscope project init --out room/ --name Booth` 新建（或在首页点“打开项目...”，对普通文件夹它会提议建成项目），再把会话归入位置：`reverbscope project add room/ session/ --position desk`。对已有 `project.json` 的文件夹再次运行 `project init` 会被拒绝；加 `--force` 则重新开始这个项目，原有的位置不再保留。
+
+**测量多个位置。**在“项目”页面点“测量新位置...”，给位置起名（A、B、桌前……）并选择测量方式；扬声器、它的电平和输入增益保持不变，只移动话筒。随后“结果”页面的“保存会话...”会把会话保存到项目里、以位置命名的文件夹中（`B-1`、`B-2`……），并记入该位置；“项目”按钮回到总览。同一位置测两次可以看出测量是否可重复：总览会说明两次是否在 T 的 5 % 刚可察觉差之内一致，不一致时也会直说。
+
+**总览**（`reverbscope project overview room/`；“项目”页面）在一个录音配置下（默认为最新一次测量自身的配置，或 `--profile`）读取每次测量：测量健康、RT60、清晰度、本底噪声和最强早期反射，以及它的*契合度*：配置对它没有警告则为*契合*，有警告则列出主题，测量无效或没有有效（VALID）混响时间则为*无法判断*。每个位置由其最健康、最新的一次测量代表；第一个位置之后的每个位置都带有其测量相对第一个位置的判定（与“对比”页面相同的判定，并计入两次测量的健康）。随后是空间平均和 ISO 3382-2 等级，以及各位置 RT60 在房间内的差异；“下一步”说明接下来该测什么：为达到下一等级再测一个话筒位置（或第二个扬声器位置）、重复测量一次、重新测量某个位置、哪些位置契合。页面不为位置排名：两个都契合的位置之间，请根据判定和录音的需要来选。`--format json` 输出整个总览；`project.json` 除位置外不存储任何内容（[MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §13）。
+
 `reverbscope project average room/` 只平均有效（VALID）的 T 值，从不平均衰减曲线，并注明测量位置数达到的 ISO 3382-2 等级。RT60 一列是各会话自身 RT60（优先 T30，否则 T20）的平均值。`n` 是该行参与平均的会话数；参与会话较少的数值会附上自己的会话数，例如 `0.91 s (1)`。
 
 ## 导出与语言
