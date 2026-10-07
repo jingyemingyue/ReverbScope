@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterator
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -24,6 +25,43 @@ def isolate_reverbscope_home(
 ) -> None:
     """Keep recent-session writes out of the real ``~/.reverbscope``."""
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path_factory.mktemp("reverbscope_home")))
+
+
+def _snapshot(folder: Path) -> dict[str, bytes] | None:
+    if not folder.exists():
+        return None
+    return {
+        str(path.relative_to(folder)): path.read_bytes()
+        for path in folder.rglob("*")
+        if path.is_file()
+    }
+
+
+@pytest.fixture(autouse=True, scope="session")
+def real_reverbscope_home_untouched() -> Iterator[None]:
+    """No test writes to the developer's real ``~/.reverbscope``.
+
+    ``isolate_reverbscope_home`` points every test at a temporary home, but a
+    test that calls ``monkeypatch.undo()`` undoes that too: the suite then
+    left a pytest path in the real recent-sessions list on every run. This
+    guard fails the run (at teardown of its last test) naming what changed.
+    """
+    real_home = Path.home() / ".reverbscope"
+    before = _snapshot(real_home)
+    yield
+    after = _snapshot(real_home)
+    if after == before:
+        return
+    changed = sorted(
+        name
+        for name in set(before or {}) | set(after or {})
+        if (before or {}).get(name) != (after or {}).get(name)
+    )
+    pytest.fail(
+        f"a test wrote to the real ReverbScope home {real_home} ({', '.join(changed)}): "
+        "every test must keep REVERBSCOPE_HOME pointed at a temporary folder (a "
+        "monkeypatch.undo() also undoes that fixture; use pytest.MonkeyPatch.context())"
+    )
 
 
 @pytest.fixture(autouse=True)
