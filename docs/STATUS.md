@@ -8,7 +8,7 @@ measurement through a real interface or a real DAW
 
 Snapshot 37: 2026-10-07 — **the development line moves on while the
 candidate waits for hardware: bug hunt round 4, Measurement health, a
-regression corpus** (branch `integration/post-rc-development`, cut from PR
+regression corpus, verdicts on a comparison** (branch `integration/post-rc-development`, cut from PR
 #45's head `5d33753`; nothing merged, tagged or published; `release/0.5.0`
 untouched).
 
@@ -37,6 +37,19 @@ untouched).
   a 0.5.0b2 session and its stale, cut, mis-encoded and crafted variants),
   each with the reason it exists; `CONTRIBUTING.md` has the loop from a
   community report to a corpus entry.
+* **Verdicts on a comparison** (second batch): under the candidate's
+  recording profile, `reverbscope compare`, `show comparison.json` and the
+  Compare page say for reverberation, clarity, early reflections, noise
+  floor and low end whether the candidate is a meaningful improvement, a
+  meaningful degradation, probably insignificant, not comparable, or
+  whether the evidence is insufficient, with the reason: the profile's
+  thresholds (two short decays do not matter for a vocal booth), the
+  just-noticeable differences, the take's own T20/T30 spread, and both
+  takes' measurement health. No change is called statistically significant
+  on one pair of positions (`docs/MEASUREMENT_METHODOLOGY.md` §11a).
+* **Test isolation**: the suite wrote a pytest path into the developer's
+  real `~/.reverbscope/recent_sessions.json` on every run; fixed, and a
+  session-wide guard now fails the run if any test touches the real home.
 
 **What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
 PortAudio present, no audio device): ruff, ruff format, strict mypy, the
