@@ -23,7 +23,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
-    QScrollArea,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -58,6 +57,7 @@ from reverbscope.ui.widgets import (
     error_box,
     label,
     primary,
+    scroll_page,
     set_banner_text,
 )
 from reverbscope.ui.workers import AnalysisWorker, MeasureWorker, unexpected_error_text
@@ -229,27 +229,6 @@ class HomePage(QWidget):
         self.browser.list_folder(root)
 
 
-def _scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
-    """Give ``page`` a fixed header and a scrolling body; return the body layout."""
-    page.setProperty("page", True)
-    outer = QVBoxLayout(page)
-    outer.setContentsMargins(28, 20, 28, 12)
-    outer.setSpacing(8)
-    outer.addWidget(header)
-    scroll = QScrollArea()
-    scroll.setWidgetResizable(True)
-    scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-    body = QWidget()
-    body.setProperty("page", True)
-    layout = QVBoxLayout(body)
-    layout.setContentsMargins(0, 0, 8, 8)
-    layout.setSpacing(12)
-    scroll.setWidget(body)
-    outer.addWidget(scroll, 1)
-    return layout
-
-
 def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLineEdit, QLineEdit]:
     box = QGroupBox(_("Measurement metadata (optional)"))
     form = QFormLayout(box)
@@ -382,7 +361,7 @@ class DawModePage(QWidget):
         self._reference: Reference | None = None
         self._sweep_settings = state.sweep_settings
         self._sweep_path: Path | None = None
-        layout = _scroll_page(
+        layout = scroll_page(
             self,
             PageHeader(
                 _("Universal DAW Mode"),
@@ -719,7 +698,7 @@ class StandalonePage(QWidget):
         self._inventory_backend: str | None = None
         # The state generation the running take belongs to.
         self._generation = -1
-        layout = _scroll_page(
+        layout = scroll_page(
             self,
             PageHeader(
                 _("Standalone Mode"),

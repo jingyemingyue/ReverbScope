@@ -41,12 +41,22 @@ from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
 from reverbscope.interpretation import interpret_comparison
 from reverbscope.interpretation.interpreter import Finding
+from reverbscope.interpretation.profiles import profile_title
+from reverbscope.interpretation.verdicts import ComparisonVerdict, judge_comparison, verdict_chip
 from reverbscope.io.session_store import load_measurement, save_comparison
 from reverbscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
 from reverbscope.ui.browser import SessionBrowser
 from reverbscope.labels import metric_label, signed_number, status_text, validity_word
 from reverbscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
-from reverbscope.ui.widgets import Card, PageHeader, ask_save_path, label, primary
+from reverbscope.ui.widgets import (
+    Card,
+    FindingCard,
+    PageHeader,
+    ask_save_path,
+    label,
+    primary,
+    scroll_page,
+)
 
 
 def _decay_flags(match: ResonanceMatch) -> str:
@@ -80,12 +90,7 @@ class ComparePage(QWidget):
         super().__init__(parent)
         self._comparison: ComparisonResult | None = None
         # What the tabs show, to draw it again in another colour scheme.
-        self._shown: tuple[ComparisonResult, list[Finding], str] | None = None
-        self.setProperty("page", True)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 20, 28, 14)
-        layout.setSpacing(10)
-
+        self._shown: tuple[ComparisonResult, list[Finding], str, ComparisonVerdict] | None = None
         header = PageHeader(
             _("Compare two sessions"),
             _(
@@ -96,7 +101,9 @@ class ComparePage(QWidget):
         back = QPushButton(_("Back"))
         back.clicked.connect(self.back.emit)
         header.action_row.addWidget(back)
-        layout.addWidget(header)
+        # The verdict card and the tabs do not both fit a short window: the
+        # body scrolls, and the tabs never shrink below a usable height.
+        layout = scroll_page(self, header)
 
         picker = Card()
         picker.body.addWidget(
@@ -139,6 +146,21 @@ class ComparePage(QWidget):
         buttons.addWidget(run)
         picker.body.addLayout(buttons)
         layout.addWidget(picker)
+
+        # Did moving help: one row per aspect under the candidate's profile.
+        verdict_card = Card()
+        self.verdict_title = label("", "section")
+        verdict_card.body.addWidget(self.verdict_title)
+        self.verdict_headline = label("", "hint", wrap=True)
+        verdict_card.body.addWidget(self.verdict_headline)
+        self.verdict_rows = QVBoxLayout()
+        self.verdict_rows.setSpacing(6)
+        verdict_card.body.addLayout(self.verdict_rows)
+        self.verdict_conditions = label("", "hint", wrap=True)
+        verdict_card.body.addWidget(self.verdict_conditions)
+        verdict_card.hide()
+        self.verdict_card = verdict_card
+        layout.addWidget(verdict_card)
 
         def table(columns: list[str]) -> QTableWidget:
             widget = QTableWidget(0, len(columns))
@@ -196,6 +218,7 @@ class ComparePage(QWidget):
         )
         self.tabs.addTab(_with_note(self.resonances, self.resonances_note), _("Resonances"))
         self.tabs.addTab(self.text, _("Full report"))
+        self.tabs.setMinimumHeight(320)
         layout.addWidget(self.tabs, 2)
         self.status = label("", "hint", wrap=True)
         layout.addWidget(self.status)
@@ -237,8 +260,12 @@ class ComparePage(QWidget):
         except ReverbScopeError:
             findings = interpret_comparison(comparison, "generic")
             profile = "generic"
+        # Judged with both results at hand: each side's measurement health counts.
+        verdict = judge_comparison(
+            comparison, profile, baseline=left.result, candidate=right.result
+        )
         self._comparison = comparison
-        self._show(comparison, findings, profile)
+        self._show(comparison, findings, profile, verdict)
         self.status.setText(
             _("{baseline}  vs  {candidate}").format(
                 baseline=left.directory, candidate=right.directory
@@ -253,8 +280,18 @@ class ComparePage(QWidget):
             style_figure(self.figure)
             self.canvas.draw_idle()
 
-    def _show(self, comparison: ComparisonResult, findings: list[Finding], profile: str) -> None:
-        self._shown = (comparison, findings, profile)
+    def _show(
+        self,
+        comparison: ComparisonResult,
+        findings: list[Finding],
+        profile: str,
+        verdict: ComparisonVerdict | None = None,
+    ) -> None:
+        # Without the two results at hand the verdict rests on the comparison alone.
+        if verdict is None:
+            verdict = judge_comparison(comparison, profile)
+        self._shown = (comparison, findings, profile, verdict)
+        self._show_verdict(verdict)
         rows = (
             list(comparison.decay)
             + list(comparison.noise)
@@ -318,7 +355,9 @@ class ComparePage(QWidget):
                 cell.setFlags(cell.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.resonances.setItem(r, c, cell)
         self.resonances.resizeColumnsToContents()
-        self.text.setPlainText(render_comparison(REPORT_CONSOLE, comparison, findings, profile))
+        self.text.setPlainText(
+            render_comparison(REPORT_CONSOLE, comparison, findings, profile, verdict)
+        )
         self.figure.clear()
         ensure_plot_fonts()
         axes = self.figure.add_subplot(111)
@@ -342,6 +381,29 @@ class ComparePage(QWidget):
             self.band_mad.setText("")
         style_figure(self.figure)
         self.canvas.draw_idle()
+
+    def _show_verdict(self, verdict: ComparisonVerdict) -> None:
+        """The verdict card: the headline, one row per aspect, the conditions."""
+        self.verdict_title.setText(
+            _("VERDICT ({profile} PROFILE)").format(profile=profile_title(verdict.profile).upper())
+        )
+        self.verdict_headline.setText(verdict.headline())
+        while self.verdict_rows.count():
+            entry = self.verdict_rows.takeAt(0)
+            widget = entry.widget() if entry is not None else None
+            if widget is not None:
+                widget.deleteLater()
+        for aspect in verdict.aspects:
+            self.verdict_rows.addWidget(
+                FindingCard(
+                    str(aspect.verdict),
+                    aspect.title,
+                    aspect.reason,
+                    severity_label=verdict_chip(aspect.verdict),
+                )
+            )
+        self.verdict_conditions.setText("\n".join(verdict.conditions))
+        self.verdict_card.setVisible(bool(verdict.aspects))
 
     def _save(self) -> None:
         if self._comparison is None:

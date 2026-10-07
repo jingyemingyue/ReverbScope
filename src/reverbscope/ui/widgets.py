@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -112,6 +113,27 @@ def ask_save_path(parent: QWidget, title: str, name: str, file_filter: str) -> P
             if clicked is None or box.buttonRole(clicked) != QMessageBox.ButtonRole.AcceptRole:
                 return None
     return path
+
+
+def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
+    """Give ``page`` a fixed header and a scrolling body; return the body layout."""
+    page.setProperty("page", True)
+    outer = QVBoxLayout(page)
+    outer.setContentsMargins(28, 20, 28, 12)
+    outer.setSpacing(8)
+    outer.addWidget(header)
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    body = QWidget()
+    body.setProperty("page", True)
+    layout = QVBoxLayout(body)
+    layout.setContentsMargins(0, 0, 8, 8)
+    layout.setSpacing(12)
+    scroll.setWidget(body)
+    outer.addWidget(scroll, 1)
+    return layout
 
 
 def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:
@@ -272,6 +294,11 @@ SEVERITY_TONE = {
     "invalid": "bad",
     "unknown": "neutral",
     "good": "good",
+    "meaningful_improvement": "good",
+    "meaningful_degradation": "bad",
+    "probably_insignificant": "neutral",
+    "not_comparable": "warn",
+    "insufficient_evidence": "info",
 }
 
 
@@ -299,7 +326,9 @@ class FindingCard(QFrame):
         row.setContentsMargins(12, 8, 12, 8)
         row.setSpacing(10)
         chip = Chip((severity_label or severity).upper(), tone)
-        chip.setFixedWidth(82)
+        # A fixed width cut "NOT COMPARABLE" short; the column stays aligned
+        # for the usual one-word labels.
+        chip.setMinimumWidth(82)
         row.addWidget(chip, 0, Qt.AlignmentFlag.AlignTop)
         text = QVBoxLayout()
         text.setSpacing(1)

@@ -225,6 +225,19 @@ page). A decay delta is only VALID when both sides are VALID. The noise delta
 needs an explicit “input gain unchanged” declaration. A change is never called
 significant; ISO 3382-1’s just-noticeable difference for T is quoted as context.
 
+**Verdict.** Under the candidate's recording profile the comparison says, for
+reverberation, clarity, early reflections, noise floor and low end, whether
+the candidate is a *meaningful improvement*, a *meaningful degradation*,
+*probably insignificant*, *not comparable*, or whether the evidence is
+*insufficient*, with the reason each time (the card under the session
+picker on the Compare page; the section after "At a glance" in the report; `verdict` in
+`--format json`). The judgement uses the profile's thresholds (a vocal booth
+does not care whether 0.30 s became 0.22 s; a room microphone calls a room
+that became too dry a degradation), the just-noticeable differences, and the
+measurement health of both takes when they are at hand; it never calls a
+change statistically significant on one pair of positions
+([MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §11a).
+
 The Compare page lists matched early reflections (delay ±0.5 ms) and
 low-frequency resonances (within 1/6 octave, with decay-distinguishable
 flags). Resonances are compared only in the range both takes searched: one
