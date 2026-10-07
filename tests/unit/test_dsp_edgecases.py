@@ -40,7 +40,8 @@ def test_a_residual_sample_after_a_gate_is_not_a_valid_rt60(sample_rate: int) ->
     assert band.rt60_estimate_s is None
     assert band.t30.validity is not Validity.VALID
     assert band.t20.validity is not Validity.VALID
-    assert any("stops abruptly" in warning for warning in band.warnings)
+    assert band.t30.validity is Validity.INSUFFICIENT_RANGE
+    assert any("cut off" in warning for warning in band.warnings)
 
 
 def test_a_gate_onto_a_floor_is_not_a_valid_rt60(sample_rate: int) -> None:
@@ -51,7 +52,15 @@ def test_a_gate_onto_a_floor_is_not_a_valid_rt60(sample_rate: int) -> None:
     assert band.rt60_estimate_s is None
     assert band.t30.validity is not Validity.VALID
     result = analyze_decay(ir, sample_rate, AnalysisSettings())
-    assert all(band.rt60_estimate_s is None for band in result.bands)
+    # No band has 45 dB of decay above the cut, so no T30 anywhere. A narrow
+    # band's filter smears the gate into a few more dB of apparent decay; its
+    # T20, fitted over the real decay above the gate, is the true 2 s and not
+    # the cliff's, so it may stand.
+    assert all(band.t30.validity is not Validity.VALID for band in result.bands)
+    for band in result.bands:
+        if band.rt60_estimate_s is not None:
+            assert band.rt60_basis == "T20"
+            assert band.rt60_estimate_s == pytest.approx(2.0, rel=0.1)
 
 
 def test_an_empty_response_is_too_short_rather_than_an_exception() -> None:
@@ -126,3 +135,85 @@ def test_clean_exponential_and_room_stay_valid(sample_rate: int) -> None:
         assert band.rt60_estimate_s == pytest.approx(rt60, rel=0.05)
         assert band.t30.validity is Validity.VALID
         assert band.edt.validity is Validity.VALID
+
+
+def test_a_decay_cut_far_below_its_range_keeps_its_rt60(sample_rate: int) -> None:
+    """A synthetic or imported response that ends while its decay is still 70 dB
+    down (and 45 dB above the floor) is a cut, not a reverberation problem: the
+    floor is set at the cut, T30 is fitted on the decay above it, and a warning
+    names the cut. (Rejecting the whole band here withheld the RT60 of every
+    low band of the demo's second position.)"""
+    decay = exponential_decay_ir(sample_rate, 0.8, 1.0, seed=5)
+    floor = 1e-6 * np.random.default_rng(6).normal(0.0, 1.0, int(1.5 * sample_rate))
+    ir = np.concatenate([decay, floor])
+    band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0)
+    assert band.t30.validity is Validity.VALID
+    assert band.rt60_estimate_s == pytest.approx(0.8, rel=0.05)
+    assert band.peak_to_noise_db == pytest.approx(75.0, abs=6.0)
+    assert sum("cut off" in warning for warning in band.warnings) == 1
+
+
+def test_a_fast_decay_over_a_deep_floor_is_not_read_as_cut(sample_rate: int) -> None:
+    """RT 0.05 s falls 24 dB per 20 ms block, which is its slope and not a fall
+    off its line; with a white floor 80 dB down every metric stays valid."""
+    ir = exponential_decay_ir(sample_rate, 0.05, 0.5, seed=2)
+    ir = ir + 1e-4 * np.random.default_rng(7).normal(0.0, 1.0, ir.shape[0])
+    band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0)
+    assert band.t30.validity is Validity.VALID
+    assert band.rt60_estimate_s == pytest.approx(0.05, rel=0.1)
+    assert not any("cut off" in warning for warning in band.warnings)
+
+
+def test_a_strong_early_reflection_keeps_a_valid_edt(sample_rate: int) -> None:
+    """The first 10 dB of a room with a desk reflection are not straight (xi of
+    about 45 permille against a limit of 15), and that is what EDT measures:
+    shorter than T30, and valid. Only an EDT far longer than the late decay is
+    checked for straightness (test_a_late_noise_burst_is_not_a_valid_edt)."""
+    ir = make_rir(sample_rate, rt60_s=0.7, reflections=[(0.0024, 0.7)], seed=3)
+    band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0)
+    assert band.edt.validity is Validity.VALID
+    assert band.t30.validity is Validity.VALID
+    assert band.edt.seconds is not None and band.t30.seconds is not None
+    assert band.edt.seconds < band.t30.seconds
+
+
+def _direct_sound_then_decay(sample_rate: int, step_db: float) -> np.ndarray:
+    """A single-sample direct sound followed by an exactly exponential tail
+    (RT 0.5 s) whose energy sits ``step_db`` below the direct sound's."""
+    n = int(1.5 * sample_rate)
+    t = np.arange(n) / sample_rate
+    tail = np.exp(-DECAY_CONSTANT * t / 1.0) * np.where(np.arange(n) % 2 == 0, 1.0, -1.0)
+    fraction = 10.0 ** (-step_db / 10.0)
+    tail *= np.sqrt(fraction / (1.0 - fraction) / float(np.sum(tail**2)))
+    tail[0] = 1.0
+    tail[1] = 0.0
+    return tail + 10.0 ** (-90.0 / 20.0) * np.random.default_rng(0).normal(0.0, 1.0, n)
+
+
+def test_t20_and_t30_are_not_fitted_across_the_direct_sound(sample_rate: int) -> None:
+    """With the direct sound 22 dB above the room, the Schroeder curve has
+    already fallen 22 dB when the fit may start, so a T20 fit would cover 3 dB
+    of room decay and a T30 fit 13 dB: they described the direct sound's step
+    and were published as VALID (up to 27 % off). EDT already had this rule."""
+    band = analyze_band(
+        _direct_sound_then_decay(sample_rate, 22.0),
+        sample_rate,
+        None,
+        noise_margin_db=10.0,
+        direct_index=0,
+    )
+    for metric in (band.t20, band.t30):
+        assert metric.validity is Validity.UNRELIABLE
+        assert "direct sound covers" in (metric.reason or "")
+    assert band.rt60_estimate_s is None
+    # A direct sound 8 dB above the room leaves most of both ranges to the room.
+    band = analyze_band(
+        _direct_sound_then_decay(sample_rate, 8.0),
+        sample_rate,
+        None,
+        noise_margin_db=10.0,
+        direct_index=0,
+    )
+    assert band.t20.validity is Validity.VALID
+    assert band.t30.validity is Validity.VALID
+    assert band.rt60_estimate_s == pytest.approx(0.5, rel=0.1)
