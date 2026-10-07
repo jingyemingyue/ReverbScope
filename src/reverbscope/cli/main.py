@@ -43,6 +43,7 @@ from reverbscope.cli.console import (
     shell_command,
     truncate,
 )
+from reverbscope.cli.interactive import MENU_VARIABLE
 from reverbscope.cli.render import (
     averaged_table,
     render_analysis,
@@ -818,7 +819,6 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-    parser.add_argument(
         "--style",
         choices=STYLE_MODES,
         default="auto",
@@ -828,6 +828,7 @@ def build_parser() -> argparse.ArgumentParser:
             "terminal and plain in a pipe), boxed, plain"
         ),
     )
+    parser.add_argument(
         "--backend",
         default=None,
         metavar=pgettext("metavar", "NAME"),
@@ -1417,8 +1418,8 @@ _ROOT_LONG_OPTIONS = (
     "--lang",
     "--format",
     "--color",
-    "--backend",
     "--style",
+    "--backend",
     "--copy-recording",
     "--no-copy-recording",
     "--verbose",
@@ -2684,6 +2685,28 @@ def main(argv: Sequence[str] | None = None) -> int:
         from reverbscope.cli.console import is_terminal
         from reverbscope.edition import is_terminal_package
 
+        if is_terminal(sys.stdin) and is_terminal(sys.stdout) and not os.environ.get(MENU_VARIABLE):
+            # A person at a terminal: the menu, with the language, colour and
+            # style of this call in front of every command it runs.
+            from reverbscope.cli.interactive import run_menu
+            from reverbscope.i18n import current_locale
+
+            prefix = ["--lang", current_locale()]
+            if color in COLOR_MODES and color != "auto":
+                prefix += ["--color", color]
+            if getattr(args, "style", "auto") != "auto":
+                prefix += ["--style", str(args.style)]
+            return run_menu(
+                _console(args),
+                ask=input,
+                run=main,
+                out=sys.stdout,
+                terminal_edition=is_terminal_package(),
+                prefix=prefix,
+            )
+        # Bare ``reverbscope`` in a pipe or a script: a short home screen
+        # instead of argparse's error. A command is still required, so the
+        # exit code stays the usage error's.
         print(
             render_home(err, __version__, terminal_edition=is_terminal_package()), file=sys.stderr
         )
