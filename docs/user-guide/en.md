@@ -340,6 +340,28 @@ a file or another program it writes plain text. `--color never` or the
 `NO_COLOR` environment variable turns colour off, `--color always` keeps it
 in a pipe.
 
+**Boxed reports.** On a terminal at least 48 columns wide, a report's title
+sits in a frame, section headings in rules and tables between borders;
+status lines, commands and paths are never framed, and Chinese text is
+measured at two columns so every frame lines up. A pipe or a file always
+gets the plain ruled layout, and `--format json` is unaffected. `--style
+plain` or `--style boxed` decide for one command, `reverbscope config style
+plain|boxed|auto` for good, and the `REVERBSCOPE_CLI_STYLE` environment
+variable for a shell. Where a terminal's font draws the box glyphs two
+columns wide, choose `plain`; a stream that cannot write them gets `+ - |`.
+
+**Interactive menu.** `reverbscope` with no command on a terminal opens a
+numbered menu: the demo, the test signal, analysing a recording, measuring
+through the interface, showing and comparing sessions, the project
+overview, settings, the environment report and the desktop app. Each choice
+asks for what it needs (a dragged path with quotes or backslashes is
+understood), prints the equivalent command line to type next time, runs it
+and comes back. Measuring plays nothing until the question is answered `y`.
+Ctrl+C at a question returns to the menu; `q` or the end of input leaves.
+In a pipe or a script, `reverbscope` still prints the short home screen and
+exits with the usage code; `REVERBSCOPE_NO_MENU=1` keeps the menu off a
+terminal.
+
 Piped or redirected output is UTF-8. Windows PowerShell decodes it in the
 console's code page and garbles Chinese (`> report.txt`, `| Select-String`);
 run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`

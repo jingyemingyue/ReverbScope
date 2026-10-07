@@ -8,7 +8,8 @@ measurement through a real interface or a real DAW
 
 Snapshot 37: 2026-10-07 — **the development line moves on while the
 candidate waits for hardware: bug hunt round 4, Measurement health, a
-regression corpus, verdicts on a comparison, the project overview** (branch `integration/post-rc-development`, cut from PR
+regression corpus, verdicts on a comparison, the project overview, a
+boxed terminal and a menu** (branch `integration/post-rc-development`, cut from PR
 #45's head `5d33753`; nothing merged, tagged or published; `release/0.5.0`
 untouched).
 
@@ -58,6 +59,12 @@ untouched).
   ISO 3382-2 class, and what to measure next, without ranking. "Measure a
   new position..." opens the chosen mode and the save lists the session
   under that position (`docs/MEASUREMENT_METHODOLOGY.md` §13).
+* **The terminal** (fourth batch): reports are boxed on a wide terminal
+  (title frame, section rules, bordered tables; never a pipe, never a
+  command line, never JSON; `--style`, `config style`,
+  `REVERBSCOPE_CLI_STYLE`), and bare `reverbscope` on a terminal opens a
+  numbered menu that prints the command it runs each time. Harvested from
+  PR #42 without its dependencies.
 
 **What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
 PortAudio present, no audio device): ruff, ruff format, strict mypy, the

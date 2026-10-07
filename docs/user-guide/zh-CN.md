@@ -153,6 +153,10 @@ reverbscope config language auto    # 改回跟随系统
 
 在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
 
+**带边框的报告。**在至少 48 列宽的终端里，报告标题放在方框中，小节标题嵌在横线里，表格带边框；状态行、命令和路径从不加框，中文按两列宽度计算，所以每个边框都对齐。输出到管道或文件时总是纯横线版式，`--format json` 不受影响。`--style plain` 或 `--style boxed` 决定一次命令的样式，`reverbscope config style plain|boxed|auto` 长期生效，环境变量 `REVERBSCOPE_CLI_STYLE` 对一个 shell 生效。若终端字体把方框字符画成两列宽，请选 `plain`；无法写出这些字符的输出流会得到 `+ - |`。
+
+**交互菜单。**在终端里不带命令运行 `reverbscope` 会打开一个编号菜单：演示、测试信号、分析录音、通过音频接口测量、查看和比较会话、项目总览、设置、环境报告和桌面版。每一项会询问所需的信息（拖进终端的路径，带引号或反斜杠都能识别），打印等价的命令行以便下次直接输入，运行后回到菜单。测量在回答 `y` 之前不会播放任何声音。在提问处按 Ctrl+C 回到菜单；`q` 或输入结束则退出。在管道或脚本中，`reverbscope` 仍然打印简短的首页并以用法错误码退出；`REVERBSCOPE_NO_MENU=1` 可在终端里关闭菜单。
+
 重定向或经过管道的输出是 UTF-8。Windows PowerShell 会按控制台代码页解码，中文因此变成乱码（`> report.txt`、`| Select-String`）；请先在该窗口运行一次 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`，详见[在 PowerShell 中保存报告](../INSTALLATION.zh-CN.md#终端版)。命令提示符不受影响。
 
 ## 故障排查

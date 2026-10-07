@@ -5604,3 +5604,115 @@ msgstr "会话已保存在 {path}，但无法记入项目：{error}"
 
 msgid "Session saved to {path} and listed in project {project} under position {label}"
 msgstr "会话已保存到 {path}，并记入项目 {project} 的位置 {label}"
+
+msgid "Report style (command line)"
+msgstr "报告样式（命令行）"
+
+msgid "boxed, plain, or auto (frames on a terminal at least 48 columns wide; never in a pipe)"
+msgstr "boxed、plain 或 auto（在至少 48 列宽的终端上加边框；管道中从不加）"
+
+msgid "unknown style {value}; choose boxed, plain or auto"
+msgstr "未知样式 {value}；可选 boxed、plain 或 auto"
+
+msgid "frames around reports: auto (default; the style setting, else boxed on a wide terminal and plain in a pipe), boxed, plain"
+msgstr "报告的边框：auto（默认；遵循已保存的报告样式设置，否则宽终端上为 boxed、管道中为 plain）、boxed、plain"
+
+msgctxt "metavar"
+msgid "STYLE"
+msgstr "样式"
+
+msgid "{path} is not a folder; try again, or leave empty to go back."
+msgstr "{path} 不是文件夹；请重试，或留空返回。"
+
+msgid "{path} does not exist; try again, or leave empty to go back."
+msgstr "{path} 不存在；请重试，或留空返回。"
+
+msgctxt "answer"
+msgid "y"
+msgstr "y"
+
+msgctxt "answer"
+msgid "yes"
+msgstr "是"
+
+msgid "Where to write the test signal"
+msgstr "测试信号写到哪里"
+
+msgid "Sample rate of your DAW project (Hz)"
+msgstr "你的 DAW 工程采样率（Hz）"
+
+msgid "Choose one of {rates}."
+msgstr "请在 {rates} 中选择。"
+
+msgid "The recording exported from your DAW (WAV, AIFF, CAF, FLAC)"
+msgstr "从 DAW 导出的录音（WAV、AIFF、CAF、FLAC）"
+
+msgid "The test signal that was played"
+msgstr "播放的测试信号"
+
+msgid "Folder to save the session in (empty: show only)"
+msgstr "保存会话的文件夹（留空：只显示）"
+
+msgid "Folder for the new session"
+msgstr "新会话的文件夹"
+
+msgid "ReverbScope will play a sweep through the default output device at -12 dBFS and record the default input. Set a moderate monitor level first; nothing has been played yet."
+msgstr "ReverbScope 将通过默认输出设备以 -12 dBFS 播放扫频，并录制默认输入。请先把监听音量调到适中；现在还没有播放任何声音。"
+
+msgid "Play and record now?"
+msgstr "现在播放并录制？"
+
+msgid "A session folder, result.json or comparison.json"
+msgstr "会话文件夹、result.json 或 comparison.json"
+
+msgid "The baseline session (folder)"
+msgstr "基线会话（文件夹）"
+
+msgid "The candidate session (folder)"
+msgstr "候选会话（文件夹）"
+
+msgid "Was the input gain the same for both takes?"
+msgstr "两次测量的输入增益相同吗？"
+
+msgid "The project folder"
+msgstr "项目文件夹"
+
+msgid "Try the demo (synthetic room, no audio interface)"
+msgstr "试试演示（合成房间，不需要音频接口）"
+
+msgid "Analyse a recording of the test signal"
+msgstr "分析一段测试信号的录音"
+
+msgid "Measure through the audio interface (plays a sweep)"
+msgstr "通过音频接口测量（会播放扫频）"
+
+msgid "Show a saved session or comparison"
+msgstr "查看已保存的会话或对比"
+
+msgid "Project overview (several positions)"
+msgstr "项目总览（多个位置）"
+
+msgid "Environment report for bug reports"
+msgstr "用于报告问题的环境报告"
+
+msgid "Choose a number. Every choice shows the command it runs, so the next time you can type it directly. q leaves; Ctrl+C at a question comes back here."
+msgstr "输入编号选择。每个选项都会显示它运行的命令，下次可以直接输入。q 退出；在提问处按 Ctrl+C 回到这里。"
+
+msgid "Quit"
+msgstr "退出"
+
+msgctxt "menu prompt"
+msgid "Your choice"
+msgstr "你的选择"
+
+msgid "Choose a number from the list, or q."
+msgstr "请输入列表中的编号，或 q。"
+
+msgid "Back to the menu."
+msgstr "回到菜单。"
+
+msgid "The same from the command line:"
+msgstr "等价的命令行："
+
+msgid "The command ended with exit code {code}."
+msgstr "命令以退出码 {code} 结束。"

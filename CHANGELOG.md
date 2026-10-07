@@ -48,6 +48,22 @@ All notable changes to ReverbScope are documented here. The format follows
   saved one; *Compare with first position* opens Compare on the pair.
   `--format json` carries the overview (`docs/MEASUREMENT_METHODOLOGY.md`
   §13); `project average` prints its table through the same renderer.
+- **Boxed reports in the terminal.** On a terminal at least 48 columns wide
+  a report's title sits in a frame, section headings in rules and tables
+  between borders; status lines, commands and paths are never framed, CJK
+  text is measured at two columns, a stream that cannot write box glyphs
+  gets `+ - |`, and a pipe or a file keeps the plain ruled layout
+  (`--format json` is untouched). `--style auto|boxed|plain`, the `style`
+  setting (`reverbscope config style plain`) and `REVERBSCOPE_CLI_STYLE`
+  choose; the environment report lists the setting. No new dependency.
+- **An interactive menu.** `reverbscope` with no command on a terminal opens
+  a numbered menu (demo, test signal, analyse, measure, show, compare,
+  project overview, settings, environment report, desktop app). Each choice
+  asks for what it needs, prints the equivalent command line, runs it in
+  place and returns; measuring plays nothing before a `y`; Ctrl+C at a
+  question returns to the menu; a pipe or a script still gets the home
+  screen and the usage exit code (`REVERBSCOPE_NO_MENU=1` keeps the menu off
+  a terminal). Ideas taken from PR #42, implemented here without Rich.
 - **Dropouts in the recorded sweep** (runs of 2 ms or more of frozen or zero
   samples: a lost buffer, a DAW out of disk or CPU) are found, placed in time
   and at the frequency the sweep was at, noted in the warnings and stored in

@@ -1,6 +1,6 @@
 === reverbscope --help
 usage: reverbscope [-h] [--version] [--lang LANG] [--format {text,json}]
-                   [--color WHEN] [--backend NAME]
+                   [--color WHEN] [--style STYLE] [--backend NAME]
                    [--copy-recording | --no-copy-recording] [-v] <command> ...
 
 ReverbScope: an open-source, DAW-independent recording environment analyzer.
@@ -39,6 +39,9 @@ options:
                         stderr)
   --color WHEN          colour in the terminal: auto (default; off for pipes,
                         files and NO_COLOR), always, never
+  --style STYLE         frames around reports: auto (default; the style
+                        setting, else boxed on a wide terminal and plain in a
+                        pipe), boxed, plain
   --backend NAME        audio backend for Standalone Mode: portaudio (default)
                         or fake
   --copy-recording, --no-copy-recording
@@ -509,6 +512,8 @@ settings:
   developer-tools  on or off (auto: off; a source or pip install always has
                    them)
   theme            system, light or dark (the desktop app only)
+  style            boxed, plain, or auto (frames on a terminal at least 48
+                   columns wide; never in a pipe)
 
 examples:
   reverbscope config
