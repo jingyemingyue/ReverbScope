@@ -4186,8 +4186,8 @@ msgstr "未搜索。"
 
 msgid "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
 msgstr "在可搜索的 {end:.1f} ms 内没有高于 {threshold:.0f} dB 的反射"
-msgid "The result was discarded because you left this page before it was ready."
-msgstr "结果完成前你离开了此页面，因此结果已丢弃。"
+msgid "The result was discarded: a new measurement or another session replaced it before it was ready."
+msgstr "结果完成前已开始新的测量或打开了其他会话，结果已丢弃。"
 
 msgid "Synthetic demo"
 msgstr "合成演示"
@@ -4775,3 +4775,6 @@ msgstr "{path} 旁的 {name} 采样率为 {rate} Hz，但 result.json 描述的�
 
 msgid "{name} next to {path} holds {count} samples, but the result's direct sound is at sample {index}; the file is cut off or is not this session's impulse response"
 msgstr "{path} 旁的 {name} 只有 {count} 个采样，但结果中的直达声位于第 {index} 个采样；文件已被截断，或不是本会话的脉冲响应"
+
+msgid "The {profile} profile could not interpret this result: {error}"
+msgstr "{profile}配置无法解读此结果：{error}"
