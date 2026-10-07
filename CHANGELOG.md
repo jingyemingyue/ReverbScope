@@ -21,6 +21,18 @@ All notable changes to ReverbScope are documented here. The format follows
   `docs/user-guide/daw-setup.md`), also under the error when the analysis
   cannot finish. Thresholds and their sources: `docs/MEASUREMENT_METHODOLOGY.md`
   §12.
+- **Verdicts on a comparison.** Under the candidate's recording profile,
+  `reverbscope compare` and the Compare page say for reverberation,
+  clarity, early reflections, noise floor and low end whether the candidate
+  is a meaningful improvement, a meaningful degradation, probably
+  insignificant, not comparable, or whether the evidence is insufficient,
+  with the reason each time: the profile's thresholds (two short decays do
+  not matter for a vocal booth; a room microphone calls a room that became
+  too dry a degradation), the just-noticeable differences, the take's own
+  T20/T30 spread, and the measurement health of both takes when they are at
+  hand. No change is called statistically significant on one pair of
+  positions. `--format json` carries it as `verdict`; `comparison.json` does
+  not store it (`docs/MEASUREMENT_METHODOLOGY.md` §11a).
 - **Dropouts in the recorded sweep** (runs of 2 ms or more of frozen or zero
   samples: a lost buffer, a DAW out of disk or CPU) are found, placed in time
   and at the frequency the sweep was at, noted in the warnings and stored in

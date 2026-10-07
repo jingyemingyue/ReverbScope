@@ -5113,3 +5113,212 @@ msgstr "未报告：{groups}。"
 
 msgid "Good: {titles}."
 msgstr "良好：{titles}。"
+
+# --- Verdicts on a comparison (reverbscope.interpretation.verdicts).
+msgid "Verdict ({profile} profile)"
+msgstr "判定（{profile}配置）"
+
+msgid "no distinguishable low-frequency resonance appeared or disappeared"
+msgstr "没有可分辨的低频共振出现或消失"
+
+msgctxt "verdict"
+msgid "meaningful improvement"
+msgstr "有意义的改善"
+
+msgctxt "verdict"
+msgid "meaningful degradation"
+msgstr "有意义的退化"
+
+msgctxt "verdict"
+msgid "probably insignificant"
+msgstr "大概率无关紧要"
+
+msgctxt "verdict"
+msgid "not comparable"
+msgstr "不可比较"
+
+msgctxt "verdict"
+msgid "insufficient evidence"
+msgstr "证据不足"
+
+msgctxt "verdict chip"
+msgid "improved"
+msgstr "改善"
+
+msgctxt "verdict chip"
+msgid "degraded"
+msgstr "退化"
+
+msgctxt "verdict chip"
+msgid "unchanged"
+msgstr "无变化"
+
+msgctxt "verdict chip"
+msgid "not comparable"
+msgstr "不可比较"
+
+msgctxt "verdict chip"
+msgid "insufficient"
+msgstr "证据不足"
+
+msgctxt "aspect"
+msgid "Reverberation"
+msgstr "混响"
+
+msgctxt "aspect"
+msgid "Clarity"
+msgstr "清晰度"
+
+msgctxt "aspect"
+msgid "Early reflections"
+msgstr "早期反射"
+
+msgctxt "aspect"
+msgid "Noise floor"
+msgstr "本底噪声"
+
+msgctxt "aspect"
+msgid "Low end"
+msgstr "低频"
+
+msgid "One pair of positions: a verdict is about these two takes, not about the room in general, and no change is statistically significant on this evidence."
+msgstr "只有一对位置：判定只针对这两次测量，不代表整个房间，而且仅凭这些证据，任何变化都不具有统计显著性。"
+
+msgctxt "comparison side"
+msgid "baseline"
+msgstr "基准"
+
+msgctxt "comparison side"
+msgid "candidate"
+msgstr "候选"
+
+msgid "the broadband RT60 is not comparable"
+msgstr "宽带 RT60 不可比较"
+
+msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): {direction}, and still '{label}' for this profile"
+msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：{direction}，对此配置而言仍属“{label}”"
+
+msgid "{metric} {baseline:+.1f} dB to {candidate:+.1f} dB ({delta:+.1f} dB)"
+msgstr "{metric} 从 {baseline:+.1f} dB 变为 {candidate:+.1f} dB（{delta:+.1f} dB）"
+
+msgid "{values}: further from the range this profile wants; {where}"
+msgstr "{values}：离此配置希望的范围更远；{where}"
+
+msgid "the strongest reflection within {window:g} ms went from {before:.1f} dB at {before_ms:.1f} ms to {after:.1f} dB at {after_ms:.1f} ms"
+msgstr "{window:g} ms 内最强的反射从 {before_ms:.1f} ms 处的 {before:.1f} dB 变为 {after_ms:.1f} ms 处的 {after:.1f} dB"
+
+msgid "{values}: {change:.1f} dB stronger"
+msgstr "{values}：强了 {change:.1f} dB"
+
+msgid "the noise floor is not comparable"
+msgstr "本底噪声不可比较"
+
+msgid "the noise delta is not valid"
+msgstr "噪声差值无效"
+
+msgid "noise floor {baseline:.1f} dBFS to {candidate:.1f} dBFS ({delta:+.1f} dB)"
+msgstr "本底噪声从 {baseline:.1f} dBFS 变为 {candidate:.1f} dBFS（{delta:+.1f} dB）"
+
+msgid "{better} improved, {worse} degraded, {same} probably insignificant, {not_comparable} not comparable, {insufficient} with insufficient evidence"
+msgstr "{better} 项改善，{worse} 项退化，{same} 项大概率无关紧要，{not_comparable} 项不可比较，{insufficient} 项证据不足"
+
+msgid "the two sessions cannot be compared: {note}"
+msgstr "这两个会话无法比较：{note}"
+
+msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): a real change, but both takes are short for a {profile} recording (below {limit:.1f} s), so it does not matter for the recording"
+msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：变化是真实的，但对{profile}录音来说两次都算短（低于 {limit:.1f} s），因此对录音没有影响"
+
+msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): from '{before}' to '{after}' against this profile's decay thresholds"
+msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：按此配置的衰减阈值，从“{before}”变为“{after}”"
+
+msgctxt "decay"
+msgid "shorter"
+msgstr "更短"
+
+msgctxt "decay"
+msgid "longer"
+msgstr "更长"
+
+msgid "{values}: within the just-noticeable difference of about {jnd:g} dB"
+msgstr "{values}：在约 {jnd:g} dB 的刚可察觉差之内"
+
+msgid "{values}: a real change, but both takes are inside the range this profile wants, so it does not matter for the recording"
+msgstr "{values}：变化是真实的，但两次都在此配置希望的范围内，因此对录音没有影响"
+
+msgid "{values}: now inside the range this profile wants"
+msgstr "{values}：现已进入此配置希望的范围"
+
+msgid "{values}: now {where}"
+msgstr "{values}：现在{where}"
+
+msgid "too dry for a {profile} recording"
+msgstr "对{profile}录音来说过干"
+
+msgid "not clear enough for a {profile} recording"
+msgstr "对{profile}录音来说不够清晰"
+
+msgid "{values}: nearer the range this profile wants, but still {where}"
+msgstr "{values}：更接近此配置希望的范围，但仍然{where}"
+
+msgid "no reflection within {window:g} ms on either side"
+msgstr "两侧在 {window:g} ms 内都没有反射"
+
+msgid "the strongest reflection within {window:g} ms stays below this profile's {threshold:.0f} dB threshold on both sides"
+msgstr "两侧 {window:g} ms 内最强的反射都低于此配置的 {threshold:.0f} dB 阈值"
+
+msgid "a reflection of {level:.1f} dB at {delay:.1f} ms appeared inside this profile's {window:g} ms window (threshold {threshold:.0f} dB)"
+msgstr "此配置的 {window:g} ms 窗口内新出现了 {delay:.1f} ms 处 {level:.1f} dB 的反射（阈值 {threshold:.0f} dB）"
+
+msgid "the reflection of {level:.1f} dB at {delay:.1f} ms is gone from this profile's {window:g} ms window"
+msgstr "{delay:.1f} ms 处 {level:.1f} dB 的反射已从此配置的 {window:g} ms 窗口中消失"
+
+msgid "{values}: within {limit:g} dB"
+msgstr "{values}：在 {limit:g} dB 之内"
+
+msgid "{values}: {change:.1f} dB weaker{still}"
+msgstr "{values}：弱了 {change:.1f} dB{still}"
+
+msgid "{values}: louder"
+msgstr "{values}：更吵"
+
+msgid "{count} distinguishable low-frequency resonance(s) appeared at {frequencies} Hz"
+msgstr "新出现了 {count} 个可分辨的低频共振，位于 {frequencies} Hz"
+
+msgid "{count} distinguishable low-frequency resonance(s) disappeared ({frequencies} Hz)"
+msgstr "{count} 个可分辨的低频共振消失了（{frequencies} Hz）"
+
+msgid "{gone} distinguishable resonance(s) disappeared and {new} appeared: the low end changed rather than improved"
+msgstr "{gone} 个可分辨的共振消失，{new} 个新出现：低频只是变了，并未改善"
+
+msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): within the just-noticeable difference of about {jnd:g} %"
+msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：在约 {jnd:g} % 的刚可察觉差之内"
+
+msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): smaller than the {spread:.2f} s by which T20 and T30 disagree within one take"
+msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：小于单次测量内 T20 与 T30 相差的 {spread:.2f} s"
+
+msgid "{metric} is not comparable"
+msgstr "{metric} 不可比较"
+
+msgid ", still above the {threshold:.0f} dB threshold"
+msgstr "，但仍高于 {threshold:.0f} dB 阈值"
+
+msgid "{reason}: declare the input gain unchanged to compare the noise floor"
+msgstr "{reason}：请声明输入增益未变，才能比较本底噪声"
+
+msgid "{values}: quieter"
+msgstr "{values}：更安静"
+
+msgid "the {side} measurement is invalid ({checks}); no verdict is drawn from it"
+msgstr "{side}测量无效（{checks}）；不据此作出判定"
+
+msgid "The {side} measurement is invalid: {checks}."
+msgstr "{side}测量无效：{checks}。"
+
+msgid "The {side} measurement has health warnings: {checks}."
+msgstr "{side}测量有健康警告：{checks}。"
+
+msgid "The {side} measurement's health is unknown: {checks}."
+msgstr "{side}测量的健康状况未知：{checks}。"
+
+msgid "VERDICT ({profile} PROFILE)"
+msgstr "判定（{profile}配置）"

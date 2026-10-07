@@ -74,6 +74,7 @@ from reverbscope.health import assess, failure_guidance
 from reverbscope.i18n import N_, _, activate, list_separator, localize, pgettext
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.profiles import band_text
+from reverbscope.interpretation.verdicts import judge_comparison
 from reverbscope.labels import accuracy_class_text
 from reverbscope.logging_config import configure_logging
 from reverbscope.models.configuration import (
@@ -1992,12 +1993,15 @@ def cmd_show(args: argparse.Namespace) -> int:
         comparison = load_comparison(args.path)
         profile = _resolve_profile(args, _candidate_profile(comparison.candidate_session))
         findings = interpret_comparison(comparison, profile)
+        # From the file alone: the results' health is not stored in it.
+        verdict = judge_comparison(comparison, profile)
         if _use_json(args):
             payload = comparison.to_dict()
             payload["findings"] = [f.to_dict() for f in findings]
+            payload["verdict"] = verdict.to_dict()
             print(json.dumps(payload, indent=1))
         else:
-            print(render_comparison(_console(args), comparison, findings, profile))
+            print(render_comparison(_console(args), comparison, findings, profile, verdict))
         return 0
 
     loaded = load_measurement(args.path)
@@ -2076,15 +2080,20 @@ def cmd_compare(args: argparse.Namespace) -> int:
     )
     profile = _resolve_profile(args, candidate.session.recording_profile or "generic")
     findings = interpret_comparison(comparison, profile)
+    # Judged with both results at hand: each side's measurement health counts.
+    verdict = judge_comparison(
+        comparison, profile, baseline=baseline.result, candidate=candidate.result
+    )
     # --out without .json is a folder: name the file that was written in it.
     written = save_comparison(args.out, comparison) if args.out is not None else None
     if _use_json(args):
         payload = comparison.to_dict()
         payload["findings"] = [f.to_dict() for f in findings]
+        payload["verdict"] = verdict.to_dict()
         print(json.dumps(payload, indent=1))
     else:
         console = _console(args)
-        print(render_comparison(console, comparison, findings, profile))
+        print(render_comparison(console, comparison, findings, profile, verdict))
         if written is not None:
             print()
             print(

@@ -36,6 +36,12 @@ from reverbscope.interpretation.profiles import (
     noise_segment_text,
     profile_title,
 )
+from reverbscope.interpretation.verdicts import (
+    ComparisonVerdict,
+    Verdict,
+    judge_comparison,
+    verdict_word,
+)
 from reverbscope.labels import (
     frequency_text,
     metric_label,
@@ -806,11 +812,19 @@ def render_comparison(
     comparison: ComparisonResult,
     findings: Sequence[Finding] = (),
     profile_name: str = "generic",
+    verdict: ComparisonVerdict | None = None,
 ) -> str:
-    """Baseline against candidate: the sessions, "At a glance", every delta, findings."""
+    """Baseline against candidate: the sessions, "At a glance", the verdict,
+    every delta, findings.
+
+    ``verdict`` is the one judged with both results at hand (their health
+    counts); without it the verdict is judged from the comparison alone.
+    """
     c = console
     comparison = printable_fields(comparison)  # as in render_analysis
     findings = printable_fields(tuple(findings))
+    if verdict is None:
+        verdict = judge_comparison(comparison, profile_name)
     lines = c.title(_("ReverbScope comparison"))
     lines.append("")
     rows: list[tuple[str, str]] = []
@@ -837,6 +851,7 @@ def render_comparison(
         # A refused pair compared nothing: its empty lists are not findings
         # ("no potential resonance"); the notes say why it was refused.
         lines += comparison_at_a_glance(c, comparison)
+        lines += _verdicts(c, verdict)
         lines += _decay_deltas(c, comparison.decay)
 
     if comparison.frequency_response is not None:
@@ -1072,6 +1087,34 @@ REFLECTIONS_NOT_COMPARED = "early reflections are not compared unless"
 RESONANCES_NOT_COMPARED = "low-frequency resonances are not compared"
 #: ... whose resonances were compared over part of what one side searched.
 RESONANCES_NARROWED = "low-frequency resonances are compared only at"
+
+
+#: The console symbol of each verdict.
+_VERDICT_STATUS: dict[Verdict, Status] = {
+    Verdict.IMPROVEMENT: "ok",
+    Verdict.DEGRADATION: "error",
+    Verdict.INSIGNIFICANT: "info",
+    Verdict.NOT_COMPARABLE: "skip",
+    Verdict.INSUFFICIENT: "unsure",
+}
+
+
+def _verdicts(c: Console, verdict: ComparisonVerdict) -> list[str]:
+    """Did moving help: one line per aspect under the profile, then the
+    conditions that temper every verdict."""
+    lines = c.section(
+        _("Verdict ({profile} profile)").format(profile=profile_title(verdict.profile)),
+        verdict.headline(),
+    )
+    for aspect in verdict.aspects:
+        lines += c.status(
+            _VERDICT_STATUS[aspect.verdict],
+            c.bold(f"{aspect.title}{c.sep()}{verdict_word(aspect.verdict)}"),
+            detail=aspect.reason,
+        )
+    for condition in verdict.conditions:
+        lines += c.paragraph(condition, indent=4)
+    return lines
 
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:

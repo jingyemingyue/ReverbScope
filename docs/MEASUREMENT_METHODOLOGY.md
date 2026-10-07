@@ -862,6 +862,38 @@ otherwise the placement deltas are `not_comparable`.
 Loopback. `path_delay_ms` is compared only when both results applied
 loopback compensation.
 
+### 11a. Verdicts: did moving help?
+
+`reverbscope.interpretation.verdicts.judge_comparison` reads a comparison,
+the recording profile's thresholds and, when the two results are at hand,
+their measurement health (§12), and says for each aspect whether the
+candidate is a *meaningful improvement*, a *meaningful degradation*,
+*probably insignificant*, *not comparable*, or whether the evidence is
+*insufficient*. It changes nothing and is re-derived when a comparison is
+shown (`--format json` carries it as `verdict`; `comparison.json` does not
+store it). "Meaningful" is measured against the profile's own thresholds and
+the measurement's own spread, never against statistical significance, which
+one pair of positions cannot establish; the single-pair caveat is one of the
+conditions every verdict carries.
+
+| Aspect | Not comparable | Insufficient evidence | Probably insignificant | Improvement / degradation |
+| --- | --- | --- | --- | --- |
+| Reverberation (broadband RT60) | the delta is not VALID | either side's health is invalid | within the T JND (5 %) or within the larger of the two takes' \|T30 - T20\| (the take's own spread); or both takes below the profile's `long_decay_s` (short for that recording) | the candidate crosses a profile threshold (long, noticeable, short) downwards / upwards; with the same label on both sides, shorter / longer |
+| Clarity (the profile's C50 or C80; none for drums) | the delta is not VALID | either side's health is invalid | within 1 dB; or both takes inside the profile's range (`clarity_low_db` to `clarity_high_db`) | the candidate enters / leaves the range; outside on both sides, nearer / further from it (above `clarity_high_db` is "too dry") |
+| Early reflections (strongest inside the profile's window) | - | not compared (direct sound not high on both sides) or either side's health invalid | no reflection on either side; both below the profile's threshold; level within 3 dB | gone / appeared; 3 dB or more weaker / stronger |
+| Noise floor | no verified quiet segment on both sides | the input gain not declared equal, or either side's health invalid | within 3 dB | 3 dB or more quieter / louder |
+| Low end (distinguishable resonances in the range both searched) | - | not compared | none appeared or disappeared | some disappeared and none appeared / some appeared |
+
+Sources and limits. The just-noticeable differences are those ISO 3382-1
+lists (T 5 %, C80 1 dB; the table was not verified against the standard
+text, and the 1 dB figure is applied to C50 as well). The 3 dB limits for
+the noise floor and a reflection's level are ReverbScope's own, a factor of
+two in power. The take's own \|T30 - T20\| stands in for a single-take
+uncertainty, which ISO 3382-2 gives only for several positions. A profile
+with a dryness bound (room mic) judges a room that became too dry through
+its clarity aspect; the reverberation aspect judges against the "too long"
+thresholds only, so the two can disagree, each with its reason.
+
 ## 12. Measurement health
 
 `reverbscope.health.assess` reads a result and never changes it. It gathers

@@ -25,10 +25,18 @@ from reverbscope.interpretation.profiles import (
     VoiceOverProfile,
 )
 from reverbscope.interpretation.registry import available_profiles, get_profile, profile_origins
+from reverbscope.interpretation.verdicts import (
+    AspectVerdict,
+    ComparisonVerdict,
+    Verdict,
+    judge_comparison,
+)
 
 __all__ = [
     "AcousticGuitarProfile",
+    "AspectVerdict",
     "ChoirProfile",
+    "ComparisonVerdict",
     "DrumsProfile",
     "Finding",
     "GenericProfile",
@@ -36,11 +44,13 @@ __all__ = [
     "RecordingProfile",
     "RoomMicProfile",
     "Severity",
+    "Verdict",
     "VocalProfile",
     "VoiceOverProfile",
     "available_profiles",
     "get_profile",
     "interpret",
     "interpret_comparison",
+    "judge_comparison",
     "profile_origins",
 ]
