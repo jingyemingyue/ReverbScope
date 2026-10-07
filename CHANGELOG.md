@@ -88,6 +88,10 @@ All notable changes to ReverbScope are documented here. The format follows
   process; a failure of an abandoned analysis opened a dialog over another
   page. A result is late only after New Measurement, Open Session or a
   measurement another page started meanwhile.
+- The test suite wrote a pytest path into the developer's real
+  `~/.reverbscope/recent_sessions.json` on every run (a `monkeypatch.undo()`
+  in one GUI test also undid the fixture that isolates the home folder). A
+  session-wide guard now fails the run if any test touches the real home.
 
 ## [0.5.0b2] - 2026-10-06
 

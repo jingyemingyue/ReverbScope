@@ -77,11 +77,10 @@ def test_a_failed_settings_write_keeps_the_old_file(tmp_path: Path, monkeypatch)
     def disk_full(_fd: int) -> None:
         raise OSError(28, "No space left on device")
 
-    monkeypatch.setattr(jsonutil.os, "fsync", disk_full)
-    with pytest.raises(SessionError):
-        save_settings(UserSettings(language="en"))
-    monkeypatch.undo()
-    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    with pytest.MonkeyPatch.context() as full_disk:
+        full_disk.setattr(jsonutil.os, "fsync", disk_full)
+        with pytest.raises(SessionError):
+            save_settings(UserSettings(language="en"))
     assert load_settings().language == "zh_CN"
 
 
