@@ -503,3 +503,16 @@ def test_english_is_active_only_inside_the_block() -> None:
         assert _("Reverberation") == "混响"
     finally:
         activate("en")
+
+
+def test_a_language_name_the_file_system_refuses_is_english() -> None:
+    """A 300-character language (settings.json, --lang, REVERBSCOPE_LANG) made
+    the catalog probe raise OSError (file name too long) before any command
+    ran. It is no catalog, like an unknown language."""
+    from reverbscope.i18n import _, activate
+
+    try:
+        activate("z" * 300)
+        assert _("Cannot save settings") == "Cannot save settings"
+    finally:
+        activate("en")

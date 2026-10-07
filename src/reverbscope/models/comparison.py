@@ -219,7 +219,20 @@ class ResonanceMatch:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ResonanceMatch:
         payload = record_payload(data, {f.name for f in fields(cls)}, kind="resonance match")
-        return build_record(cls, payload, kind="resonance match")
+        record = build_record(cls, payload, kind="resonance match")
+        # The report prints the frequency of the side(s) the status names (the
+        # at-a-glance line formats it); any other status is shown with the
+        # baseline's. A match without it is a damaged file, not a bug.
+        sides = {"matched": ("baseline", "candidate"), "appeared": ("candidate",)}
+        for side in sides.get(record.status, ("baseline",)):
+            if getattr(record, f"{side}_hz") is None:
+                raise SessionError(
+                    _("invalid {kind} in file: {error}").format(
+                        kind=record_name("resonance match"),
+                        error=_("{field} must not be null").format(field=f"{side}_hz"),
+                    )
+                )
+        return record
 
 
 @dataclass(frozen=True)
