@@ -344,16 +344,19 @@ examples:
   reverbscope compare session-1 session-2 --same-input-gain --out comparison.json
 
 === reverbscope project --help
-usage: reverbscope project [-h] {init,add,average,show} ...
+usage: reverbscope project [-h]
+       {init,add,average,show,overview} ...
 
 project folders (one room, several positions)
 
 positional arguments:
-  {init,add,average,show}
+  {init,add,average,show,overview}
     init                create a project.json
     add                 add a session to a position
     average             spatial average of VALID T values
     show                list positions and sessions
+    overview            every position's takes under the profile: health, fit,
+                        verdicts, next steps
 
 options:
   -h, --help            show this help message and exit
@@ -420,6 +423,24 @@ positional arguments:
 
 options:
   -h, --help  show this help message and exit
+
+=== reverbscope project overview --help
+usage: reverbscope project overview project [options]
+
+every position's takes under the profile: health, fit, verdicts, next steps
+
+positional arguments:
+  project               project directory
+
+options:
+  -h, --help            show this help message and exit
+  --profile {acoustic_guitar,choir,drums,generic,room_mic,vocal,voiceover}
+                        recording profile (default: the latest session's own,
+                        else user settings)
+  --sources N           number of source positions (default: 1)
+
+examples:
+  reverbscope project overview studio-a
 
 === reverbscope export --help
 usage: reverbscope export session [options]
