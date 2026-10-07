@@ -540,3 +540,66 @@ def test_a_newer_sweep_sidecar_is_refused(tmp_path: Path) -> None:
     path.write_text(json.dumps({"reverbscope_sweep": {"duration_s": "10"}}), encoding="utf-8")
     with pytest.raises(ReverbScopeError, match="invalid sweep settings"):
         read_sweep_sidecar(path)
+
+
+@pytest.mark.parametrize(
+    ("path", "value"),
+    [
+        (("warnings",), "one warning"),
+        (("decay", "notes"), "one note"),
+        (("decay", "broadband", "warnings"), "one warning"),
+        (("decay", "broadband", "c50"), "corrupt metric"),
+    ],
+    ids=["result-warnings-text", "decay-notes-text", "band-warnings-text", "c50-text"],
+)
+def test_structured_result_fields_do_not_silently_accept_text(
+    saved_session: Path, tmp_path: Path, path: tuple[str, ...], value: object
+) -> None:
+    """A damaged result must not masquerade as an old or valid result.
+
+    Text in a list field used to be split into one-character notes/warnings,
+    while a non-object C50 record was silently treated as an older file with
+    no C50 measurement.
+    """
+    folder = _edited(saved_session, tmp_path, "result.json", _set(path, value))
+    with pytest.raises(SessionError):
+        load_measurement(folder)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"positions": ["desk"]},
+        {"positions": [5]},
+        {"positions": [{"label": 5, "session_dirs": []}]},
+        {"positions": [{"label": "desk", "session_dirs": [5]}]},
+    ],
+    ids=["position-text", "position-number", "label-number", "session-dir-number"],
+)
+def test_project_position_records_follow_the_project_schema(
+    tmp_path: Path, payload: dict[str, object]
+) -> None:
+    """Corrupted project records must not be coerced into plausible labels/paths."""
+    (tmp_path / "project.json").write_text(
+        json.dumps({"schema_version": 1, "name": "room", **payload}),
+        encoding="utf-8",
+    )
+    with pytest.raises(SessionError):
+        load_project(tmp_path)
+
+
+@pytest.mark.parametrize("value", ["1", 1.5, True], ids=["text", "fraction", "boolean"])
+@pytest.mark.parametrize("kind", ["session", "project", "comparison"])
+def test_schema_version_must_be_a_json_integer(
+    tmp_path: Path, kind: str, value: object
+) -> None:
+    """Do not coerce damaged schema metadata into a supported version."""
+    path = tmp_path / f"{kind}.json"
+    path.write_text(json.dumps({"schema_version": value}), encoding="utf-8")
+    loader = {
+        "session": lambda: load_session(path),
+        "project": lambda: load_project(path),
+        "comparison": lambda: load_comparison(path),
+    }[kind]
+    with pytest.raises(SessionError, match="schema_version"):
+        loader()
