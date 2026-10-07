@@ -1173,15 +1173,17 @@ def _overview_row(c: Console, take: Any, *, position: str) -> list[str]:
         health += f" ({printable(list_join(take.health_problems), single_line=True)})"
     rt60 = dash if take.rt60_s is None else f"{take.rt60_s:.2f} s"
     clarity = dash if take.clarity_db is None else f"{take.clarity_db:+.1f} dB"
+    # Whole decibels and a compact reflection: the nine columns then fit a
+    # 100-column terminal as a table; the report and the JSON keep the decimals.
     noise = (
-        f"{take.noise_rms_dbfs:.1f} dBFS"
+        f"{take.noise_rms_dbfs:.0f} dBFS"
         if take.noise_verified and take.noise_rms_dbfs is not None
         else dash
     )
     reflection = (
         dash
         if take.reflection_db is None
-        else f"{take.reflection_db:.0f} dB @ {take.reflection_ms:.1f} ms"
+        else f"{take.reflection_db:.0f} dB/{take.reflection_ms:.0f} ms"
     )
     # Month, day and time: the year is in the session and the JSON; the
     # column's width decides whether the table fits a 100-column terminal.
