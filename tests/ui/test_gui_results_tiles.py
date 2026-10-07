@@ -38,7 +38,10 @@ def test_a_cut_short_reflection_window_is_not_shown_as_a_clean_room(
     cut_short = replace(
         result,
         reflections=replace(
-            result.reflections, reflections=(), window_truncated=True, analysed_window_ms=(0.8, 12.0)
+            result.reflections,
+            reflections=(),
+            window_truncated=True,
+            analysed_window_ms=(0.8, 12.0),
         ),
     )
     overview = _Overview()
