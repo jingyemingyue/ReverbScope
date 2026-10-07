@@ -89,3 +89,8 @@ runs, with the pipeline's stage functions wrapped to record which one is
 active, attributes the peak to a stage (this is how the `_ideal_pulse`
 figure above was found). It is a diagnostic, not part of the script: the
 wrapping changes nothing in the numbers but is not something to ship.
+
+**DSP only.** `scripts/bench_dsp.py` (from PR #47) times `analyze` alone on
+three synthetic cases (48 kHz / 10 s, 96 kHz / 20 s, 192 kHz / 10 s) with
+`tracemalloc`'s peak, without files, rendering or the desktop app; use it to
+see whether a change to `core/` moved the numbers of the table above.

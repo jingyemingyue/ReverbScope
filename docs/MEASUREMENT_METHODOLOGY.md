@@ -408,6 +408,23 @@ time-reversed filtering.
    with the slow part 25 dB down is flagged in every run for the broadband
    curve and the 250 Hz–8 kHz bands, and in 60–90 % of the runs at 63 and
    125 Hz, where a single decay already scatters that much.
+   The `ξ` limit is scaled by T30 when T30 has a positive time (also after
+   an earlier rule marked it unreliable: its seconds are still the decay the
+   band measured), else by T20, else by EDT, so a T20 that is the only
+   candidate and an EDT are checked too. Two further shapes are not a
+   reverberation slope and are marked unreliable with a warning that says
+   so: *a step* (T20 and T30 only), when the curve crosses the fit's
+   evaluation range in less than `SUDDEN_DROP_RATIO` (0.25) times the time
+   it took to fall its first 5 dB (a late noise burst or a hard gate; a
+   clean exponential takes about 3.6 times as long, the fastest legitimate
+   octave-band decay about 1); and *an abrupt end*, when the preliminary
+   Lundeby regression stops more than `ABRUPT_END_GAP_DB` (20 dB) above the
+   noise floor it was measured against (a response cut off by a gate or
+   padded with digital silence kept alive by a residual sample): the
+   late-slope window then holds no decay, the iteration stalls on the same
+   crosspoint, and the preliminary slope is the end of the record, so T20
+   and T30 are withheld. A narrow-band exponential ends about 17 dB above
+   its floor because its blocks scatter; the cliffs end 30 dB or more above.
 8. **Validity: truncation sensitivity.** When the Lundeby estimate was
    rejected (step 2), EDT, T20 and T30 are fitted again with the rejected
    estimate. If a VALID one changes by more than 5 % or has no value with

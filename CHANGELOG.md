@@ -129,6 +129,14 @@ All notable changes to ReverbScope are documented here. The format follows
   rate no longer filters a 4 s impulse per band again (about 0.4 s saved per
   analysis at 48 kHz); the numbers are unchanged.
 - CI runs on pushes to `release/**` branches as well as `main`.
+- Finding the sweep passes in a recording is no longer quadratic in its
+  length when the reference is very short (a click rather than a sweep); a
+  normal sweep is unchanged. The band filters' settling length is computed
+  from an impulse that grows until its tail can no longer move the 0.999
+  crossing, instead of a fixed 4 s whose end is a denormal tail at high
+  rates: a 192 kHz analysis of a 10 s sweep takes about half the time, and
+  every band that settled inside 4 s keeps its value (from PR #47;
+  `scripts/bench_dsp.py` times `analyze` alone).
 
 ### Fixed
 - A folder that could not be created (a file of that name, a parent that is
@@ -153,6 +161,35 @@ All notable changes to ReverbScope are documented here. The format follows
   `~/.reverbscope/recent_sessions.json` on every run (a `monkeypatch.undo()`
   in one GUI test also undid the fixture that isolates the home folder). A
   session-wide guard now fails the run if any test touches the real home.
+- **Decay validity (PR #47).** A decay cut off by a gate, or ending in
+  trailing digital silence that one residual sample kept in the record, was
+  reported with a valid T30 fitted to the cliff (about 1.76 s for a true
+  2 s decay cut at 1 s): the preliminary Lundeby regression that ends more
+  than 20 dB above the noise floor now says the decay stops abruptly, and
+  T20 and T30 are withheld. A T20 that was the only candidate (T30 without
+  range) and an EDT were never checked for straightness, so a double slope
+  published a T20 that was neither slope and a late noise burst an EDT of
+  73 s; the ξ limit now applies to whichever of T30, T20 and EDT still has
+  a time. A step in the decay (a noise burst, a hard gate) that crosses the
+  T20 or T30 evaluation range in less than a quarter of the time the curve
+  took to fall its first 5 dB is not a reverberation slope and is marked
+  unreliable. An empty impulse response is reported as too short instead of
+  raising. A sweep whose frequency range underflows the logarithm is refused
+  instead of producing NaNs, and a band one ulp wide keeps its amplitude
+  (`expm1`). `docs/MEASUREMENT_METHODOLOGY.md` §3 step 7 describes the
+  rules.
+- **Files.** A `schema_version` that is not a JSON integer (text, a boolean,
+  a fraction) is refused instead of being coerced into a supported version;
+  a project whose position records carry a non-text label or session path
+  is refused as damaged instead of being read as text; a result whose
+  string lists or energy-metric objects have the wrong type is refused as
+  file corruption instead of being coerced (a damaged string no longer
+  becomes one entry per character).
+- Desktop app: the Early reflections tile showed "0 · clean" in green when
+  the response ended before the search window did and later arrivals were
+  never examined; it now says how many milliseconds could be searched, with
+  an "incomplete window" chip, as the command line's At-a-glance row does
+  (from PR #46).
 
 ## [0.5.0b2] - 2026-10-06
 
