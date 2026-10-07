@@ -275,6 +275,10 @@ def run_menu(
             code = run(full)
         except KeyboardInterrupt:
             code = 130
+        except SystemExit as exc:
+            # argparse refused the arguments (a path that starts with "-"): the
+            # usage error is on stderr already; the menu goes on.
+            code = exc.code if isinstance(exc.code, int) else 1
         if code:
             session.say(
                 c.status("warn", _("The command ended with exit code {code}.").format(code=code))

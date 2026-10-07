@@ -117,6 +117,18 @@ def test_ctrl_c_at_a_question_returns_and_at_the_menu_leaves() -> None:
     assert "Choose a number from the list" in out
 
 
+def test_a_command_that_exits_does_not_end_the_menu() -> None:
+    """argparse ends a bad command line with SystemExit; the menu must not go with it."""
+    pending = iter(["1", "q"])
+    out = io.StringIO()
+
+    def run(_argv: list[str]) -> int:
+        raise SystemExit(2)
+
+    code = run_menu(Console(width=80), ask=lambda _p: next(pending), run=run, out=out)
+    assert code == 0 and "exit code 2" in out.getvalue()
+
+
 def test_the_prefix_goes_before_every_command_shown_and_run() -> None:
     _code, runs, out = _menu(["1", "q"], prefix=["--lang", "zh_CN", "--style", "plain"])
     assert runs == [["--lang", "zh_CN", "--style", "plain", "demo"]]
