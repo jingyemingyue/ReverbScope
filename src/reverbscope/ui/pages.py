@@ -139,6 +139,7 @@ class HomePage(QWidget):
     open_session = Signal()
     open_recent = Signal(str)
     compare_requested = Signal()
+    open_project = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -212,7 +213,13 @@ class HomePage(QWidget):
         compare_button = QPushButton(_("Compare two sessions..."))
         compare_button.setToolTip(_("Pick two saved sessions and compare their metrics."))
         compare_button.clicked.connect(self.compare_requested.emit)
+        project_button = QPushButton(_("Open Project..."))
+        project_button.setToolTip(
+            _("One room, several microphone positions: open or make a project folder.")
+        )
+        project_button.clicked.connect(self.open_project.emit)
         header.addWidget(open_button)
+        header.addWidget(project_button)
         header.addWidget(compare_button)
         sessions.body.addLayout(header)
         # Two selected rows go straight into Compare (MainWindow.show_compare).

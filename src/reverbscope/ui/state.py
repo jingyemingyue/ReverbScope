@@ -36,6 +36,11 @@ class MeasurementState:
     #: third-party one from an entry point). Shown on the Results page.
     findings_problem: str = ""
     session: MeasurementSession = field(default_factory=MeasurementSession)
+    #: The project the next saved session is added to, under this position
+    #: (set by the Project page's "Measure a new position"). A project
+    #: outlives one session, so reset() keeps them; Home clears them.
+    project_path: Path | None = None
+    project_position: str = ""
     #: Bumped by every reset (New Measurement, Open Session). A take or an
     #: analysis that started under another generation belongs to a session
     #: that is gone, and its late result is dropped.
@@ -49,6 +54,10 @@ class MeasurementState:
         self.findings = []
         self.findings_problem = ""
         self.session = MeasurementSession(mode=self.mode)
+
+    def leave_project(self) -> None:
+        self.project_path = None
+        self.project_position = ""
 
     def claim(self) -> int:
         """A page takes the state for the measurement it starts.

@@ -299,6 +299,8 @@ SEVERITY_TONE = {
     "probably_insignificant": "neutral",
     "not_comparable": "warn",
     "insufficient_evidence": "info",
+    "fits": "good",
+    "warnings": "warn",
 }
 
 

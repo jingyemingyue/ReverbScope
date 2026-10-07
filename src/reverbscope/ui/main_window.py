@@ -28,6 +28,7 @@ from reverbscope.io.session_store import load_measurement
 from reverbscope.settings import load_settings
 from reverbscope.ui.compare_view import ComparePage
 from reverbscope.ui.pages import DawModePage, HomePage, StandalonePage, safe_findings
+from reverbscope.ui.project_view import ProjectPage
 from reverbscope.ui.results import ResultsPage
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.theme import apply_application_chrome, color_scheme
@@ -84,13 +85,27 @@ class MainWindow(QMainWindow):
         self.standalone = StandalonePage(self.state)
         self.results = ResultsPage(self.state)
         self.compare = ComparePage()
-        for page in (self.home, self.daw, self.standalone, self.results, self.compare):
+        self.project = ProjectPage(self.state)
+        for page in (
+            self.home,
+            self.daw,
+            self.standalone,
+            self.results,
+            self.compare,
+            self.project,
+        ):
             self.stack.addWidget(page)
 
         self.home.choose_mode.connect(self.show_mode)
         self.home.open_session.connect(self.choose_session)
         self.home.open_recent.connect(self.open_session_path)
         self.home.compare_requested.connect(self.show_compare)
+        self.home.open_project.connect(self.choose_project)
+        self.project.back.connect(self.show_home)
+        self.project.measure_requested.connect(self._measure_position)
+        self.project.open_session.connect(self.open_session_path)
+        self.project.compare_requested.connect(self._compare_from_project)
+        self.results.project_requested.connect(self.show_project)
         self.daw.analysis_finished.connect(self.show_results)
         self.standalone.analysis_finished.connect(self.show_results)
         self.daw.back.connect(self.show_home)
@@ -108,6 +123,9 @@ class MainWindow(QMainWindow):
         compare_action = QAction(_("&Compare Sessions..."), self)
         compare_action.setShortcut("Ctrl+Shift+C")
         compare_action.triggered.connect(self.show_compare)
+        project_action = QAction(_("Open &Project..."), self)
+        project_action.setShortcut("Ctrl+Shift+O")
+        project_action.triggered.connect(self.choose_project)
         settings_action = QAction(_("&Settings..."), self)
         settings_action.setShortcut("Ctrl+,")
         settings_action.triggered.connect(self.show_settings)
@@ -117,6 +135,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction(new_action)
         file_menu.addAction(open_action)
         file_menu.addAction(compare_action)
+        file_menu.addAction(project_action)
         file_menu.addSeparator()
         file_menu.addAction(settings_action)
         file_menu.addSeparator()
@@ -216,6 +235,9 @@ class MainWindow(QMainWindow):
 
     def show_home(self) -> None:
         self.state.reset()
+        # Home is a fresh start: the next measurement belongs to no project
+        # until the Project page starts one.
+        self.state.leave_project()
         self.daw.clear_recording()
         # Home's environment report and device inspector describe the real
         # interface, not the demo's fake one.
@@ -241,8 +263,10 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, _("Cannot open session"), localize(str(exc)))
             return
         # Drop the previous take: saving the opened session must not write
-        # that recording into it.
+        # that recording into it. An opened session belongs to no project
+        # workflow either: Save would otherwise list a copy of it there.
         self.state.reset()
+        self.state.leave_project()
         self.daw.clear_recording()
         self.state.session = loaded.session
         self.state.result = loaded.result
@@ -284,6 +308,38 @@ class MainWindow(QMainWindow):
         else:
             self.stack.setCurrentWidget(self.daw)
             self._set_place(_("Universal DAW Mode"))
+
+    def choose_project(self) -> None:
+        directory = QFileDialog.getExistingDirectory(self, _("Open project folder"))
+        if directory:
+            self.show_project(Path(directory))
+
+    def show_project(self, path: str | Path | None = None) -> None:
+        """The Project page: for ``path`` (opened, or offered to be made), or
+        the project it already shows, read again."""
+        if path is not None:
+            if not self.project.open_path(Path(path)):
+                return
+        else:
+            self.project.refresh()
+        self.stack.setCurrentWidget(self.project)
+        self._set_place(_("Project"))
+
+    def _measure_position(self, position: str, mode: str) -> None:
+        """Measure ``position`` of the project on the Project page with ``mode``:
+        the save on the Results page then adds the session to the project."""
+        self.state.project_path = self.project.path
+        self.state.project_position = position
+        self.show_mode(mode)
+        name = "" if self.project.overview is None else self.project.overview.name
+        for page in (self.daw, self.standalone):
+            page.position.setText(position)
+            if name and not page.room.text():
+                page.room.setText(name)
+
+    def _compare_from_project(self, baseline: str, candidate: str) -> None:
+        self.show_compare()
+        self.compare.set_paths(Path(baseline), Path(candidate))
 
     def show_results(self) -> None:
         self.results.refresh()

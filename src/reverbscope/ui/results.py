@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
     QHeaderView,
+    QInputDialog,
     QLabel,
     QMessageBox,
     QPlainTextEdit,
@@ -522,6 +523,8 @@ class _Overview(QWidget):
 
 class ResultsPage(QWidget):
     new_measurement = Signal()
+    #: The user wants the Project page (the session was saved into a project).
+    project_requested = Signal()
 
     def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -540,7 +543,12 @@ class ResultsPage(QWidget):
         self.save_button = primary(QPushButton(_("Save Session...")))
         self.save_button.setShortcut("Ctrl+S")
         self.save_button.clicked.connect(self._choose_save_directory)
+        self.project_button = QPushButton(_("Project"))
+        self.project_button.setToolTip(_("Back to the project this take belongs to."))
+        self.project_button.clicked.connect(self.project_requested.emit)
+        self.project_button.hide()
         self.header.action_row.addWidget(self.new_button)
+        self.header.action_row.addWidget(self.project_button)
         self.header.action_row.addWidget(self.copy_button)
         self.header.action_row.addWidget(self.save_button)
         layout.addWidget(self.header)
@@ -612,6 +620,7 @@ class ResultsPage(QWidget):
         )
         self._draw(result)
         self.status.setText("")
+        self.project_button.setVisible(self.state.project_path is not None)
 
     def restyle(self) -> None:
         """Draw the result again in the colour scheme now in force.
@@ -636,6 +645,23 @@ class ResultsPage(QWidget):
             tab.redraw()
 
     def _choose_save_directory(self) -> None:
+        project = self.state.project_path
+        if project is not None:
+            # Into the project, in a folder named after the position: the
+            # session is then listed under it.
+            name, ok = QInputDialog.getText(
+                self,
+                _("Save into the project"),
+                _("Folder name inside {project}").format(project=project),
+                text=self.suggested_project_folder(),
+            )
+            if not ok or not name.strip():
+                return
+            target = project / name.strip()
+            if (target / SESSION_FILE).exists() and not ask_replace_session(self, str(target)):
+                return
+            self.save_to(target)
+            return
         directory = QFileDialog.getExistingDirectory(
             self, _("Choose a folder for the session"), load_settings().output_dir
         )
@@ -665,3 +691,42 @@ class ResultsPage(QWidget):
             return
         remember_session(directory)
         self.status.setText(_("Session saved to {path}").format(path=session_path.parent))
+        project = self.state.project_path
+        if project is not None:
+            self._add_to_project(project, directory)
+
+    def suggested_project_folder(self) -> str:
+        """``<position>-<n>``: the next free folder name for the position."""
+        project = self.state.project_path
+        position = self.project_position_label()
+        stem = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in position) or "take"
+        n = 1
+        while project is not None and (project / f"{stem}-{n}").exists():
+            n += 1
+        return f"{stem}-{n}"
+
+    def project_position_label(self) -> str:
+        return self.state.project_position or self.state.session.measurement_position.strip() or "A"
+
+    def _add_to_project(self, project: Path, directory: Path) -> None:
+        from reverbscope.io.project_store import add_session
+
+        position = self.project_position_label()
+        try:
+            listed = add_session(project, directory, position=position)
+        except (ReverbScopeError, OSError) as exc:
+            QMessageBox.warning(
+                self,
+                _("Saved, but not added to the project"),
+                _(
+                    "The session is saved in {path}, but could not be listed in the project: "
+                    "{error}"
+                ).format(path=directory, error=localize(str(exc))),
+            )
+            return
+        self.status.setText(
+            _(
+                "Session saved to {path} and listed in project {project} under position {label}"
+            ).format(path=directory, project=listed.name or project.name, label=position)
+        )
+        self.project_button.show()
