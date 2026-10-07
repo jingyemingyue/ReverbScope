@@ -370,8 +370,13 @@ def _profile_combo(state: MeasurementState) -> QComboBox:
     return combo
 
 
-def _profile_row(combo: QComboBox, page: QWidget) -> QHBoxLayout:
-    """The profile selector with the button that says what the profile wants."""
+def _profile_row(combo: QComboBox, page: QWidget) -> tuple[QHBoxLayout, QPushButton]:
+    """The profile selector with the button that says what the profile wants.
+
+    Returns the row and the button; the page keeps the button as its
+    ``profile_help`` attribute (declared on the page, not set from here, so
+    the type checker sees it whether or not PySide6's stubs are installed).
+    """
     from reverbscope.ui.profile_dialog import profile_of, show_profile_help
 
     row = QHBoxLayout()
@@ -381,8 +386,7 @@ def _profile_row(combo: QComboBox, page: QWidget) -> QHBoxLayout:
     button.setToolTip(_("What this profile watches for, and what it does not judge."))
     button.clicked.connect(lambda: show_profile_help(profile_of(combo), page))
     row.addWidget(button)
-    page.profile_help = button  # type: ignore[attr-defined]
-    return row
+    return row, button
 
 
 class PlacementInputs(QGroupBox):
@@ -576,7 +580,8 @@ class DawModePage(QWidget):
         v4.addWidget(self.placement)
         profile_form = QFormLayout()
         self.profile = _profile_combo(state)
-        profile_form.addRow(_("Recording profile"), _profile_row(self.profile, self))
+        profile_row, self.profile_help = _profile_row(self.profile, self)
+        profile_form.addRow(_("Recording profile"), profile_row)
         v4.addLayout(profile_form)
         row = QHBoxLayout()
         self.analyze_button = primary(QPushButton(_("Analyze")))
@@ -922,7 +927,8 @@ class StandalonePage(QWidget):
         form2.addRow(_("Playback level"), self.level)
         form2.addRow(self.acknowledge)
         self.profile = _profile_combo(state)
-        form2.addRow(_("Recording profile"), _profile_row(self.profile, self))
+        profile_row, self.profile_help = _profile_row(self.profile, self)
+        form2.addRow(_("Recording profile"), profile_row)
         layout.addWidget(sweep)
 
         from reverbscope.edition import is_developer
