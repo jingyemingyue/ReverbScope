@@ -250,6 +250,7 @@ FrequencyResponseResult, NoiseResult, ReflectionsResult, Reflection,
 ResonanceResult, PlacementResult, LoopbackResult         # models.result
 MeasurementSession, Project                              # models.session, models.project
 interpret, interpret_comparison, Finding, Severity, available_profiles
+assess, HealthReport, HealthCheck, HealthStatus            # health
 read_wav, write_wav, write_sweep_file, load_reference     # io.wav
 save_measurement, load_measurement, load_session, list_sessions   # io.session_store
 ReverbScopeError and its subclasses                        # errors

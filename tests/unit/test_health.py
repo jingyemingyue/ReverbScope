@@ -78,6 +78,7 @@ def test_a_clipped_take_is_invalid_and_names_the_metrics_it_spoils(
         samples=np.clip(clean.samples * 4.0, -0.3, 0.3), sample_rate=clean.sample_rate, source="daw"
     )
     report = assess(_analysed(short_sweep, clipped))
+    assert json.dumps(report.to_dict())
     assert report.overall is HealthStatus.INVALID
     level = next(check for check in report.checks if check.id == "level")
     assert level.status is HealthStatus.INVALID
@@ -107,6 +108,7 @@ def test_dropouts_in_the_sweep_are_found_and_placed(short_sweep: SweepSettings) 
     assert second.duration_ms == pytest.approx(3.0, abs=0.1)
     assert any("dropout" in warning for warning in result.warnings)
     check = _by_id(result)["dropouts"]
+    assert json.dumps(assess(result).to_dict())  # evidence holds plain numbers only
     assert check.status is HealthStatus.WARNING  # 13 ms in all: below the invalid limit
     assert "2 dropout" in check.reason and "frequency_response" in check.affects
     assert check.evidence["count"] == 2

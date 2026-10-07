@@ -194,7 +194,7 @@ The Results page has eight tabs:
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
+| Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the measurement-health card, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
 | Full report | The same text report that `reverbscope analyze` prints, with the warnings at the end. “Copy report” copies it. |
 | Impulse Response | The deconvolved IR. The peak is the direct sound; it is not normalised to 1.0. |
 | Frequency Response | Raw (dotted) and smoothed (solid) magnitude. A dashed curve is the electrical loopback when compensation ran. 0 dB is the interface, not “flat in the room”. |

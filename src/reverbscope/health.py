@@ -630,7 +630,9 @@ def _distortion(result: AnalysisResult) -> HealthCheck | None:
     significant = [a for a in ir.aliased_distortion if a.significant]
     if significant:
         orders = ", ".join(str(a.order) for a in significant)
-        level = max(a.level_db for a in significant if a.level_db is not None)
+        level = max(
+            (a.level_db for a in significant if a.level_db is not None), default=float("nan")
+        )
         return HealthCheck(
             "distortion",
             HealthStatus.INVALID,

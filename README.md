@@ -381,6 +381,12 @@ A sourced comparison with other tools is in [docs/COMPARISON.md](docs/COMPARISON
   ISO 3382-1/-2, ...); see [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md).
 * **Honest numbers** – dBFS unless calibrated, validity flags on every metric,
   no pseudo-scientific room score.
+* **Measurement health first** – every result opens with the checks made on
+  the take itself (sweep, playback speed, direct sound, level, distortion,
+  dropouts, decay range, noise floor, recording length), each good, warning,
+  invalid or unknown with the reason, the figures it affects and what to do
+  next; a sweep played at the wrong speed lists where each DAW sets its
+  sample rate.
 * **Clean-room implementation and license hygiene** – no third-party source is
   vendored ([docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)); every dependency and
   every reference repository is audited
