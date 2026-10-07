@@ -44,6 +44,12 @@ from reverbscope.labels import (
     topic_text,
     validity_word,
 )
+from reverbscope.measurement_health import (
+    HealthStatus,
+    derive_measurement_health,
+    health_status_text,
+    health_summary,
+)
 from reverbscope.models.comparison import ComparisonResult, MetricDelta
 from reverbscope.models.result import (
     EXCITATION_SOURCE_DECLARED,
@@ -187,6 +193,7 @@ def render_analysis(
             (_("Created"), created_text(result.created_at)),
         ]
     )
+    lines += _measurement_health(c, result)
     lines += at_a_glance(c, result, findings)
     lines += _reverberation(c, result)
     lines += _noise(c, result)
@@ -197,6 +204,38 @@ def render_analysis(
     lines += _diagnostics(c, result)
     lines += _findings(c, findings, profile_name)
     return c.fit("\n".join(lines))
+
+
+def _health_status(status: HealthStatus) -> Status:
+    statuses: dict[HealthStatus, Status] = {
+        HealthStatus.GOOD: "ok",
+        HealthStatus.WARNING: "warn",
+        HealthStatus.INVALID: "error",
+        HealthStatus.UNKNOWN: "unsure",
+    }
+    return statuses[status]
+
+
+def _measurement_health(c: Console, result: AnalysisResult) -> list[str]:
+    health = derive_measurement_health(result)
+    lines = c.section(_("Measurement Health"))
+    lines += c.status(_health_status(health.status), health_status_text(health.status))
+    lines += c.paragraph(health_summary(health.status))
+    for finding in health.findings:
+        lines.append("")
+        lines += c.status(
+            _health_status(finding.severity),
+            _("{severity}: {problem}").format(
+                severity=health_status_text(finding.severity), problem=finding.title
+            ),
+        )
+        lines += c.paragraph(
+            _("Why: {explanation}").format(explanation=finding.explanation), indent=4
+        )
+        for evidence in finding.evidence:
+            lines += c.paragraph(_("Evidence: {evidence}").format(evidence=evidence), indent=4)
+        lines += c.paragraph(_("Next step: {step}").format(step=finding.next_step), indent=4)
+    return lines
 
 
 def _topic_status(findings: Sequence[Finding], *topics: str) -> Status:
@@ -341,6 +380,15 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
     if result.clipping is not None and result.clipping.clipped:
         quality += c.sep() + _("the recording clipped")
         status = "error"
+    # High direct-sound confidence cannot turn timing faults or missing
+    # diagnostics into a passed measurement in this summary either.
+    health_status = _health_status(derive_measurement_health(result).status)
+    if "error" in (status, health_status):
+        status = "error"
+    elif "warn" in (status, health_status):
+        status = "warn"
+    else:
+        status = health_status
     row(_("Data quality"), status, quality)
     return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
 

@@ -43,7 +43,9 @@ from reverbscope.interpretation.profiles import (
     profile_title,
 )
 from reverbscope.models.result import AnalysisResult, PlacementResult, Validity
+from reverbscope.measurement_health import HealthStatus, derive_measurement_health
 from reverbscope.settings import load_settings
+from reverbscope.ui.measurement_health import MeasurementHealthPanel
 from reverbscope.ui.plots import (
     decay_table_rows,
     energy_table_rows,
@@ -249,6 +251,9 @@ class _Overview(QWidget):
         scroll.setWidget(body)
         outer.addWidget(scroll)
 
+        self.health = MeasurementHealthPanel()
+        layout.addWidget(self.health)
+
         tiles = QHBoxLayout()
         tiles.setSpacing(10)
         self.rt60 = StatTile(_("Reverberation (RT60)"))
@@ -320,6 +325,8 @@ class _Overview(QWidget):
         layout.addStretch(1)
 
     def show_result(self, result: AnalysisResult, findings: list[Finding], profile: str) -> None:
+        health = derive_measurement_health(result)
+        self.health.show_health(health)
         broadband = result.decay.broadband
         if broadband.rt60_estimate_s is not None:
             word, tone = _validity_text(broadband.t30.validity)
@@ -359,7 +366,14 @@ class _Overview(QWidget):
             self.noise.show_value("-", _("no quiet segment to measure"), _("not computed"))
 
         refl = result.reflections
-        if refl.reflections:
+        if refl.window_truncated:
+            self.reflections.show_value(
+                str(len(refl.reflections)),
+                _("Response window is incomplete; later reflections were not examined."),
+                _("incomplete window"),
+                "warn",
+            )
+        elif refl.reflections:
             strongest = max(refl.reflections, key=lambda r: r.relative_db)
             self.reflections.show_value(
                 str(len(refl.reflections)),
@@ -400,6 +414,15 @@ class _Overview(QWidget):
                 _("confidence"),
                 CONFIDENCE_TONE.get(confidence, "neutral"),
             )
+
+        if health.status is HealthStatus.INVALID:
+            # Keep the measured numbers, but never present this take's
+            # decay/energy or reflection figures as a passed measurement.
+            if broadband.rt60_estimate_s is not None:
+                self.rt60.chip.setText(validity_word(Validity.UNRELIABLE))
+                self.rt60.chip.set_tone("bad")
+            self.reflections.chip.setText(validity_word(Validity.UNRELIABLE))
+            self.reflections.chip.set_tone("bad")
 
         while self.findings.count():
             entry = self.findings.takeAt(0)

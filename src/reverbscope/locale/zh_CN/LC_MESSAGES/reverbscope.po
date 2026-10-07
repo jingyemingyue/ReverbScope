@@ -4766,3 +4766,278 @@ msgstr "无法把报告写入 {path}：{error}"
 
 msgid "Report written to {path}"
 msgstr "报告已写入 {path}"
+
+# Derived Measurement Health and actionable diagnosis.
+
+msgid "Measurement Health"
+msgstr "测量健康"
+
+msgid "{severity}: {problem}"
+msgstr "{severity}：{problem}"
+
+msgid "Why: {explanation}"
+msgstr "为什么：{explanation}"
+
+msgid "Next step: {step}"
+msgstr "下一步：{step}"
+
+msgid "Evidence: {evidence}"
+msgstr "证据：{evidence}"
+
+msgid "Good"
+msgstr "正常"
+
+msgid "Invalid"
+msgstr "无效"
+
+msgid "Unknown"
+msgstr "未知"
+
+msgid "No measurement problems found in the available checks. This is not a room score."
+msgstr "现有检查未发现测量问题。这不是房间评分。"
+
+msgid "Some metrics or checks need attention. Follow the steps below before relying on them."
+msgstr "部分指标或检查需要处理。请先完成下面的操作，再使用相关结果。"
+
+msgid "Do not use this take for reliable decay or energy conclusions. Fix the reported problems and measure again."
+msgstr "请勿用本次录音得出可靠的衰减或能量结论。修复所列问题后重新测量。"
+
+msgid "Some checks lack evidence. Missing diagnostics do not mean a passed measurement."
+msgstr "部分检查缺少证据。缺失诊断不代表测量通过。"
+
+msgid "No measurement available"
+msgstr "暂无测量结果"
+
+msgid "There is no analysis result to check."
+msgstr "没有可供检查的分析结果。"
+
+msgid "Run a measurement or open an existing result to see its diagnostics."
+msgstr "进行一次测量，或打开已有结果以查看诊断。"
+
+msgid "Clipping / suspected clipping"
+msgstr "削波／疑似削波"
+
+msgid "Flat-topped peaks indicate a nonlinear measurement chain. Decay and energy results may be unreliable, even if the export was later attenuated."
+msgstr "平顶峰值表明测量链路存在非线性。即使导出后降低了音量，衰减和能量结果仍可能不可靠。"
+
+msgid "Lower preamp gain / playback level, remove limiting or saturation from the measurement path, and measure again."
+msgstr "降低话放增益／播放电平，移除测量链路中的限幅或饱和处理，然后重新测量。"
+
+msgid "Pre-peak margin is not checkable."
+msgstr "无法检查峰前裕量。"
+
+msgid "Reposition the microphone and loudspeaker for a clearer direct path, reduce background noise to improve SNR, verify the reference sweep and input channel, and measure again."
+msgstr "重新摆放麦克风和扬声器，让直达声路径更清晰；降低背景噪声以改善信噪比，核对参考扫频和输入通道，然后重新测量。"
+
+msgid "The sweep did not play at its generated speed. The deconvolved response cannot support reliable decay or energy conclusions."
+msgstr "扫频没有按照生成时的速度播放。反卷积响应无法支撑可靠的衰减或能量结论。"
+
+msgid "Device timing fault"
+msgstr "设备时序故障"
+
+msgid "Underflow, overflow, a reported sample-rate mismatch or another timing fault can change the recording's time scale or lose samples. This take may not support reliable decay or energy judgments."
+msgstr "缓冲欠载、溢出、设备报告的采样率不匹配或其他时序故障，可能改变录音的时间尺度或丢失采样。本次录音可能无法用于可靠的衰减或能量判断。"
+
+msgid "Increase the audio buffer / latency, close other audio programs, match the requested and interface sample rates, check the device clock and routing, and measure again."
+msgstr "增大音频缓冲区／延迟，关闭其他音频程序，使请求采样率与接口采样率一致，检查设备时钟和路由，然后重新测量。"
+
+msgid "Insufficient decay range"
+msgstr "衰减动态范围不足"
+
+msgid "This does not mean RT60 = 0. The recording lacks enough usable dynamic range to support the affected decay or energy metrics; missing values must not be treated as zero."
+msgstr "这不代表 RT60 = 0。当前录音没有足够的可用动态范围支撑受影响的衰减或能量指标；缺失数值不能当作零。"
+
+msgid "Lower environmental noise, increase the separation between the sweep and background noise, adjust playback level within the chain's headroom, improve microphone placement, and measure again."
+msgstr "降低环境噪声，增大扫频与背景噪声的电平差，在测量链路的电平余量内合理调整播放电平，改善麦克风位置，然后重新测量。"
+
+msgid "Unreliable decay / energy metrics"
+msgstr "衰减／能量指标不可靠"
+
+msgid "The analysis already marked these metrics unreliable. A displayed number does not make them valid."
+msgstr "分析已将这些指标标记为不可靠。显示了数字不代表它们有效。"
+
+msgid "Read the metric reasons below, check the direct path, noise and recording duration, correct the measurement setup, and measure again."
+msgstr "阅读下面的指标原因，检查直达声路径、噪声和录音时长，修正测量设置后重新测量。"
+
+msgid "Bands outside the excitation range"
+msgstr "频带超出激励范围"
+
+msgid "These bands were not fully excited. Their missing metrics do not describe the room's decay."
+msgstr "这些频带未被完整激励。缺失的指标不能用于描述房间衰减。"
+
+msgid "Use a sweep covering the required bands and a suitable sample rate, or limit conclusions to the actually excited range."
+msgstr "使用覆盖所需频带的扫频和合适的采样率，或仅对实际受到激励的频率范围作出结论。"
+
+msgid "Metrics were not computed"
+msgstr "指标未计算"
+
+msgid "No validity judgment is available for these metrics. Missing results are not measured zeros."
+msgstr "这些指标没有可用的有效性判断。缺失结果不是测量得到的零。"
+
+msgid "Analyze the original measurement again, or limit conclusions to metrics that were computed and marked valid."
+msgstr "重新分析原始测量录音，或仅使用已计算且标记为有效的指标作出结论。"
+
+msgid "Noise / decay range needs attention"
+msgstr "噪声／衰减范围需要处理"
+
+msgid "The existing decay validity flags and peak-to-noise data show limited usable range. Noise, recording length or placement may contribute; dBFS alone is not an acoustic noise rating."
+msgstr "现有衰减有效性标记和峰值与噪声之差表明，可用范围受限。噪声、录音长度或摆位可能是原因；仅凭 dBFS 不能评价声学噪声。"
+
+msgid "Reduce fans, traffic and other background noise, keep a quiet pre-sweep segment, improve placement, and adjust playback level without clipping before measuring again."
+msgstr "降低风扇、交通等背景噪声，保留安静的扫频前段，改善摆位，在不削波的前提下调整播放电平，然后重新测量。"
+
+msgid "Noise / SNR evidence is incomplete"
+msgstr "噪声／信噪比证据不完整"
+
+msgid "A missing quiet-segment noise level or peak-to-noise value does not mean silence or good SNR. No noise pass/fail threshold is inferred."
+msgstr "缺失安静片段的噪声电平或峰值与噪声之差，不代表静音或良好的信噪比。此处不会推断噪声是否合格。"
+
+msgid "Record a quiet segment before the sweep and a complete decay tail. Verify the microphone track, disable gates or noise reduction, and analyze the recording again."
+msgstr "录制安静的扫频前段和完整的衰减尾音。确认导出的是麦克风轨道，关闭噪声门或降噪，然后重新分析录音。"
+
+msgid "Reflection window was truncated"
+msgstr "反射窗口被截断"
+
+msgid "The recording ended too early or the response window is incomplete. Later reflections were not examined; no detected reflection does not mean a clean full window."
+msgstr "录音结束太早，或响应窗口不完整。较晚的反射未被检查；未检出反射不代表完整窗口没有反射。"
+
+msgid "Record a longer post-sweep tail, leave more space before another sweep, and keep the complete response when importing or exporting."
+msgstr "延长扫频后的尾音录制时间，在下一次扫频前留出更多间隔，并在导入或导出时保留完整响应。"
+
+msgid "Recorded decay tail is too short"
+msgstr "录制的衰减尾音太短"
+
+msgid "The analysis reports a short response or a response cut off by another sweep. Long decay times may not be measurable."
+msgstr "分析报告响应太短，或被下一次扫频截断。较长的衰减时间可能无法测量。"
+
+msgid "Loopback reference was rejected"
+msgstr "回环参考被拒绝"
+
+msgid "A loopback channel was supplied, but the analysis refused interface compensation. The result must not be presented as a compensated measurement."
+msgstr "已提供回环通道，但分析拒绝进行接口补偿。不能将结果显示为已经过补偿的测量。"
+
+msgid "Check loopback channel routing, reference level, clipping and clock alignment. Correct the electrical reference and measure again, or explicitly proceed without compensation."
+msgstr "检查回环通道路由、参考电平、削波和时钟同步。修正电气参考后重新测量，或明确选择不使用补偿。"
+
+msgid "Excitation range is unknown"
+msgstr "激励范围未知"
+
+msgid "The actually excited frequency range is unavailable, so band coverage cannot be confirmed."
+msgstr "没有实际激励频率范围的信息，无法确认频带覆盖情况。"
+
+msgid "Use the matching reference sweep, or supply the known excitation range for an imported impulse response."
+msgstr "使用匹配的参考扫频，或为导入的脉冲响应提供已知激励范围。"
+
+msgid "Additional analysis warnings"
+msgstr "其他分析警告"
+
+msgid "The analyzer reported additional limitations. They remain warnings even when no specific health diagnosis recognises them."
+msgstr "分析器报告了其他限制。即使没有对应的具体测量健康诊断，也会保留这些警告。"
+
+msgid "Review the reported evidence, correct the indicated setup or analysis settings, and repeat the measurement when the warning concerns the take."
+msgstr "查看报告中的证据，修正所指出的测量或分析设置；若警告涉及本次录音，请重新测量。"
+
+msgid "Analysis result is missing."
+msgstr "缺少分析结果。"
+
+msgid "Clipping was not checked"
+msgstr "未检查削波"
+
+msgid "This result contains no recording clipping check; it is not evidence of a clean recording."
+msgstr "本结果不包含录音削波检查；这不能证明录音没有削波。"
+
+msgid "For a full check, analyze the original microphone recording with its reference sweep."
+msgstr "要完成完整检查，请使用参考扫频分析原始麦克风录音。"
+
+msgid "Direct-sound confidence: {confidence}"
+msgstr "直达声置信度：{confidence}"
+
+msgid "Low direct-sound confidence"
+msgstr "直达声置信度低"
+
+msgid "Uncertain direct-sound detection"
+msgstr "直达声识别存在不确定性"
+
+msgid "The direct sound is uncertain. EDT, T20, T30, C50, C80 and D50, as well as reflection delays and levels, may be unreliable."
+msgstr "直达声识别不确定。EDT、T20、T30、C50、C80、D50，以及反射延迟和电平，可能不可靠。"
+
+msgid "Direct-sound identification has some uncertainty. Check placement and the reference before relying on timing-sensitive results."
+msgstr "直达声识别存在一定不确定性。使用对时序敏感的结果前，请检查摆位和参考信号。"
+
+msgid "Direct-sound confidence is unknown"
+msgstr "直达声置信度未知"
+
+msgid "The stored confidence is not a recognised measurement diagnostic."
+msgstr "保存的置信度不是可识别的测量诊断值。"
+
+msgid "Analyze the original recording again with the correct reference sweep."
+msgstr "使用正确的参考扫频重新分析原始录音。"
+
+msgid "Sample-rate / playback speed mismatch"
+msgstr "采样率／播放速度不匹配"
+
+msgid "Time stretch / playback speed mismatch"
+msgstr "时间拉伸／播放速度不匹配"
+
+msgid "Check the DAW project sample rate, import conversion, interface rate and playback conversion. Generate at the project rate or use proper sample-rate conversion on import, then measure again."
+msgstr "检查 DAW 工程采样率、导入转换、音频接口采样率和播放转换。按工程采样率生成扫频，或在导入时正确转换采样率，然后重新测量。"
+
+msgid "Disable Warp, Flex, Follow Tempo, Musical Mode and clip stretch for the sweep clip. Replay it at its original speed and measure again."
+msgstr "为扫频片段关闭 Warp、Flex、Follow Tempo（跟随速度）、音乐模式和片段拉伸。按原始速度重新播放，然后重新测量。"
+
+msgid "Quiet-segment noise or broadband peak-to-noise data is unavailable."
+msgstr "缺少安静片段噪声或全频峰值与噪声之差的数据。"
+
+msgid "No known excitation range is stored in this result."
+msgstr "本结果未保存已知的激励范围。"
+
+msgid "{band}: peak-to-noise {range:.1f} dB"
+msgstr "{band}：峰值与噪声之差 {range:.1f} dB"
+
+msgid "No clipping diagnostic is available."
+msgstr "没有可用的削波诊断。"
+
+msgid "Pre-peak margin: {margin:.1f} dB"
+msgstr "峰前裕量：{margin:.1f} dB"
+
+msgid "An existing playback-speed diagnostic reported a mismatch."
+msgstr "现有播放速度诊断报告了不匹配。"
+
+msgid "Quiet-segment noise: {level:.1f} dBFS RMS (uncalibrated)"
+msgstr "安静片段噪声：{level:.1f} dBFS RMS（未校准）"
+
+msgid "Requested reflection window: {start:.1f}–{end:.1f} ms"
+msgstr "请求的反射窗口：{start:.1f}–{end:.1f} ms"
+
+msgid "Loopback compensation was not applied."
+msgstr "未应用回环补偿。"
+
+msgid "Flat-topped peaks: {runs}; samples: {samples}; peak: {peak:.1f} dBFS"
+msgstr "平顶峰值：{runs} 处；采样：{samples} 个；峰值：{peak:.1f} dBFS"
+
+msgid "Playback speed: {percent:.1f} %; generated rate: {rate} Hz"
+msgstr "播放速度：{percent:.1f} %；生成采样率：{rate} Hz"
+
+msgid "Available reflection window: {start:.1f}–{end:.1f} ms"
+msgstr "可用的反射窗口：{start:.1f}–{end:.1f} ms"
+
+msgid "Diagnosed playback rate: {rate} Hz"
+msgstr "诊断出的播放采样率：{rate} Hz"
+
+msgid "{band}: {metrics} ({validity})"
+msgstr "{band}：{metrics}（{validity}）"
+
+msgid "Response window is incomplete; later reflections were not examined."
+msgstr "响应窗口不完整；较晚的反射未被检查。"
+
+msgid "incomplete window"
+msgstr "窗口不完整"
+
+msgid "Unrecognised playback-speed diagnosis"
+msgstr "无法识别的播放速度诊断"
+
+msgid "The stored speed diagnosis is not recognised. Its cause cannot be inferred from this result."
+msgstr "无法识别保存的速度诊断，不能根据本结果推断其原因。"
+
+msgid "Check the original sweep, DAW rate and stretch settings, then analyze the recording again."
+msgstr "检查原始扫频、DAW 采样率和拉伸设置，然后重新分析录音。"
