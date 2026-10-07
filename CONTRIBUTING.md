@@ -50,6 +50,7 @@ python scripts/check_cli_docs.py   # parse documentation examples; no commands r
 python scripts/check_src_safety.py
 python scripts/build_docs_site.py --out site   # themed docs (S7)
 python scripts/smoke_bundle.py --no-gui --out /tmp/smoke-session   # fake measure
+python scripts/benchmark.py --quick   # timings and peak memory (docs/PERFORMANCE.md)
 # add --no-gui only for a CLI-only install; bundles run gui --smoke offscreen
 ```
 
@@ -96,6 +97,9 @@ register it in `_PROFILES`, add a synthetic test in
 * Do not create tags/releases, change the license, or delete remote branches
   without maintainer approval.
 * `CHANGELOG.md` is updated in the same pull request.
+* A change to a stable surface (an export, a file key, a `--format json`
+  payload) follows the checklist in
+  [docs/API_STABILITY.md](docs/API_STABILITY.md).
 * Use the pull-request template; CI must be green before merge.
 
 ## From a community report to a regression test

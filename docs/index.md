@@ -62,6 +62,8 @@ the release plan and the v1.0 architecture have a Chinese digest.
 - [Architecture (v0.1)](ARCHITECTURE.md)
 - [Architecture v1.0](ARCHITECTURE_V1.md)
 - [Architecture v1.0 (中文摘要)](ARCHITECTURE_V1.zh-CN.md)
+- [API and schema stability](API_STABILITY.md)
+- [Performance and memory](PERFORMANCE.md)
 - [Measurement methodology](MEASUREMENT_METHODOLOGY.md)
 - [Status](STATUS.md)
 - [ADR 0001 — v1 architecture decisions](adr/0001-v1-architecture-decisions.md)
