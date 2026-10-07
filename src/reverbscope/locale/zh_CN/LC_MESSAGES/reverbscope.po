@@ -1387,13 +1387,11 @@ msgstr "开发者(&D)"
 msgid "Audio Device &Inspector..."
 msgstr "音频设备检查器(&I)…"
 
-
 msgid "Open &Data Folder"
 msgstr "打开数据文件夹(&D)"
 
 msgid "How ReverbScope talks to your interface: WASAPI, ASIO, WDM-KS, DirectSound or MME on Windows, Core Audio on macOS, ALSA or JACK on Linux. Input and output must use the same one. \"System default\" uses the devices your system uses; a star marks the entry recommended for each device."
 msgstr "ReverbScope 与声卡通信的方式：Windows 上为 WASAPI、ASIO、WDM-KS、DirectSound 或 MME，macOS 上为 Core Audio，Linux 上为 ALSA 或 JACK。输入和输出必须使用同一种。“系统默认”使用系统当前的设备；星号标出每个设备的推荐条目。"
-
 
 msgid "Advanced audio options (developer edition)"
 msgstr "高级音频选项（开发者版）"
@@ -4104,7 +4102,6 @@ msgstr "作为房间话筒，后期房间声偏少（C80 {value:.1f} dB，高于
 msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {threshold:.0f} dB). Some late sound suits a choir, but this much will blur diction. This is one position, not a room grade."
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
-
 msgid "loopback_channel {channel} does not exist (the loopback file has {count} channel(s))"
 msgstr "loopback_channel {channel} 不存在（回送文件只有 {count} 个声道）"
 
@@ -4436,7 +4433,6 @@ msgstr "主题只影响桌面版，下次打开时生效。"
 
 msgid "The desktop app shows the change the next time it starts."
 msgstr "桌面版下次启动时生效。"
-
 
 msgid "do not copy it for one command"
 msgstr "只在这一条命令中不复制"
@@ -5836,3 +5832,16 @@ msgstr "关于这个配置..."
 
 msgid "What the recording profile watches for."
 msgstr "这个录音配置关注什么。"
+
+# Decay analysis: a gate or a noise burst is not a reverberation slope
+
+msgctxt "diagnostic"
+msgid "the decay stops abruptly: the regression ends {gap:.0f} dB above the noise floor (limit {limit:.0f} dB), so the slope is the end of the record rather than the reverberation"
+msgstr "衰减突然中断：回归在本底噪声以上 {gap:.0f} dB 处结束（上限 {limit:.0f} dB），因此这条斜率是记录的终点，而不是混响"
+
+msgctxt "diagnostic"
+msgid "the {metric} fit crosses its evaluation range in {late_ms:.0f} ms after the curve took {early_ms:.0f} ms to fall 5 dB: that step is not a reverberation slope, so {metric} is not a reliable reverberation time here"
+msgstr "{metric} 拟合在曲线用 {early_ms:.0f} ms 下降 5 dB 之后，仅用 {late_ms:.0f} ms 就穿过了整个评价区间：这是衰减曲线上的阶跃，不是混响斜率，因此此处 {metric} 不是可靠的混响时间"
+
+msgid "sweep rate is not positive: the frequency range is too small to sweep"
+msgstr "扫频速率不是正数：频率范围太小，无法生成扫频"

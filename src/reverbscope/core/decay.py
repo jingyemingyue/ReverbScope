@@ -103,9 +103,23 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
      bands and short decays, see :func:`straightness_limits`), T20 and T30
      are both marked unreliable and no RT60 is estimated; when the xi of one
      fit exceeds its limit (15 permille, growing the same way), that metric
-     is marked unreliable. A band warning says why. The numerical guidance of
-     Annex B was not verified; the limits are ReverbScope's choice, calibrated
-     as documented next to the constants;
+     is marked unreliable. The limit uses T30 when T30 has a positive time,
+     otherwise T20, otherwise EDT, so a T20 that is the only candidate (T30
+     has no range) is still checked, and so is EDT. A band warning says why.
+     The numerical guidance of Annex B was not verified; the limits are
+     ReverbScope's choice, calibrated as documented next to the constants;
+   * *a step, not a slope* (T20 and T30 only): the time from -5 dB to the
+     bottom of the evaluation range is less than
+     ``SUDDEN_DROP_RATIO`` (0.25) times the time the curve took to fall the
+     first 5 dB. A late noise burst or a hard gate reaches -35 dB in one
+     step; a reverberant slope does not, including a legitimate fast decay
+     and a double slope whose later part is slower;
+   * *abrupt end*: the preliminary Lundeby regression stops more than
+     ``ABRUPT_END_GAP_DB`` (20 dB) above the noise floor it was measured
+     against (a decay cut off by a gate or by trailing digital silence with
+     one residual sample). There is then no decay across the range Lundeby
+     would iterate, the two truncation indices coincide, and the preliminary
+     slope is not a reverberation time;
    * the band is not fully inside the excitation range
      (``Validity.OUTSIDE_EXCITATION``, no numbers at all);
    * the caller marks everything unreliable
@@ -212,6 +226,17 @@ LUNDEBY_MIN_SLOPE_RATIO = 0.5
 #: ... or when the crosspoint lies more than this decay (dB, at the
 #: preliminary slope) plus two blocks after the first block at noise + 5 dB.
 LUNDEBY_CROSSPOINT_ALLOWANCE_DB = 10.0
+#: The preliminary regression (peak down to noise + 10 dB) of a decay that
+#: really meets its floor ends within about 10 dB of that floor: the fit stops
+#: at the first block at or below noise + 10 dB. A response cut off by a gate,
+#: or padded with digital silence that one residual sample keeps in the
+#: record, stops tens of dB above the floor those last samples imply, so the
+#: late-slope window (noise + 7.5 dB to noise + 22.5 dB) holds no decay at all.
+#: The iteration then stalls without moving the crosspoint, the rejected
+#: estimate is identical to the preliminary one, and a T30 fitted to the cliff
+#: is published as valid. 20 dB is above the ~17 dB a narrow-band exponential
+#: reaches (its blocks scatter) and below the ~30 dB of every such cliff.
+ABRUPT_END_GAP_DB = 20.0
 _NOISE_REACHED_DB = 5.0
 #: With a rejected Lundeby estimate, metrics that change by more than this
 #: fraction between the preliminary and the rejected truncation are unreliable.
@@ -260,6 +285,14 @@ MAX_CURVATURE_PERCENT = 10.0
 MAX_NONLINEARITY_PERMILLE = 15.0
 CURVATURE_SPREAD_PERCENT = 500.0
 NONLINEARITY_SPREAD_PERMILLE = 1000.0
+#: T20/T30 only. A reverberant slope takes several times longer to cross its
+#: evaluation range than it took to fall the first 5 dB (about 3.6 or more for
+#: a clean exponential, about 1 for the fastest legitimate octave-band decay
+#: that is still reported valid). A late noise burst or a hard gate crosses
+#: the -5..-25 dB or -5..-35 dB range in a single step, so that ratio falls
+#: below 0.25. EDT is not tested: its range starts at 0 dB, which the direct
+#: sound itself can cross in one sample.
+SUDDEN_DROP_RATIO = 0.25
 
 DECAY_METHOD = (
     "ISO 3382-1 onset (-20 dB) per band; Schroeder backward integration with Lundeby "
@@ -361,6 +394,10 @@ class TruncationEstimate:
     iterative_truncation_index: int | None = None
     iterative_slope_db_per_s: float | None = None
     iterative_noise_floor_db: float | None = None
+    #: How many dB above the noise floor the preliminary regression ends.
+    #: ``None`` when there was no preliminary slope. Above
+    #: :data:`ABRUPT_END_GAP_DB` the decay stops before it meets the floor.
+    preliminary_end_gap_db: float | None = None
 
     def rejected_estimate(self) -> TruncationEstimate | None:
         """The rejected iterative estimate, if there is one."""
@@ -414,11 +451,17 @@ def estimate_truncation(
         power = power[: int(nonzero[-1]) + 1]
     n = power.shape[0]
     if n < 16:
+        if n == 0:
+            peak_db = float("-inf")
+            noise_db = float("-inf")
+        else:
+            peak_db = float(_to_db(np.array([np.max(power)]))[0])
+            noise_db = _level_db(power)
         return TruncationEstimate(
             0,
             n,
-            _level_db(power),
-            float(_to_db(np.array([np.max(power)]))[0]),
+            noise_db,
+            peak_db,
             None,
             False,
             0,
@@ -491,6 +534,8 @@ def estimate_truncation(
             problem=diag("the response does not decay"),
         )
     cross_t = (noise_db - intercept) / slope
+    end_level_db = float(slope * t[-1] + intercept)
+    end_gap_db = end_level_db - noise_db
     preliminary = (cross_t, slope, noise_db)
 
     converged = False
@@ -586,6 +631,19 @@ def estimate_truncation(
                     crosspoint=cross_t,
                     reached=first_reached_t,
                 )
+    if end_gap_db > ABRUPT_END_GAP_DB:
+        # The regression never came near the floor it was measured against, so
+        # the late-slope window is empty (or holds only the cliff). This is
+        # why a pass reports that it could not estimate a late slope; say so
+        # directly. Keeping the preliminary crosspoint would fit T30 to that
+        # cliff, and the two truncation indices would be the same one.
+        problem = diag(
+            "the decay stops abruptly: the regression ends {gap:.0f} dB above the noise floor "
+            "(limit {limit:.0f} dB), so the slope is the end of the record rather than the "
+            "reverberation",
+            gap=end_gap_db,
+            limit=ABRUPT_END_GAP_DB,
+        )
 
     def index_of(t_s: float) -> int:
         return int(np.clip(round(t_s * sample_rate), start_index + 1, n))
@@ -599,6 +657,21 @@ def estimate_truncation(
             late_slope_db_per_s=late_slope,
             converged=converged,
             iterations=iterations,
+            preliminary_end_gap_db=end_gap_db,
+        )
+    if problem is not None and end_gap_db > ABRUPT_END_GAP_DB:
+        # No second estimate: it would be this same cliff, and comparing the
+        # two would report that the result does not depend on the truncation.
+        return TruncationEstimate(
+            start_index=start_index,
+            truncation_index=index_of(preliminary[0]),
+            noise_floor_db=preliminary[2],
+            peak_db=peak_db,
+            late_slope_db_per_s=preliminary[1],
+            converged=converged,
+            iterations=iterations,
+            problem=problem,
+            preliminary_end_gap_db=end_gap_db,
         )
     return TruncationEstimate(
         start_index=start_index,
@@ -612,6 +685,7 @@ def estimate_truncation(
         iterative_truncation_index=index_of(cross_t),
         iterative_slope_db_per_s=late_slope,
         iterative_noise_floor_db=noise_db,
+        preliminary_end_gap_db=end_gap_db,
     )
 
 
@@ -680,6 +754,8 @@ def _curve_from_truncation(
     segment = power[onset : onset + trunc.truncation_index]
     if segment.shape[0] == 0:
         segment = power[onset : onset + 1]
+    if segment.shape[0] == 0:
+        segment = np.zeros(1, dtype=np.float64)
     compensation = 0.0
     if (
         compensate
@@ -893,34 +969,61 @@ def straightness_limits(bandwidth_hz: float, t30_s: float) -> tuple[float, float
     )
 
 
+def _straightness_reference_s(*metrics: DecayMetric) -> float | None:
+    """Decay time the straightness limits are scaled by: T30, else T20, else EDT.
+
+    The bandwidth term needs one positive time. T30 is that time when it has
+    one, including after an earlier check marked it unreliable: its seconds
+    are still the decay the band actually measured. A T30 with no range (no
+    seconds) falls through to T20 and then to EDT, so a metric that is the
+    only candidate is still checked against a limit.
+    """
+    for metric in metrics:
+        if metric.seconds is not None and metric.seconds > 0.0:
+            return metric.seconds
+    return None
+
+
 def _straightness_check(
-    t20: DecayMetric, t30: DecayMetric, bandwidth_hz: float
-) -> tuple[DecayMetric, DecayMetric, float | None, list[str]]:
-    """Curvature from VALID T20/T30 and the non-straight-decay rules."""
-    if not (
+    edt: DecayMetric,
+    t20: DecayMetric,
+    t30: DecayMetric,
+    bandwidth_hz: float,
+) -> tuple[DecayMetric, DecayMetric, DecayMetric, float | None, list[str]]:
+    """Curvature from T20/T30 and the non-straight-decay rule on every fit.
+
+    Curvature needs both T20 and T30 to be VALID. Non-linearity does not: a
+    T20 that is the RT60 fallback because T30 has no range, and an EDT, are
+    checked on their own. The limit uses :func:`_straightness_reference_s`.
+    """
+    warnings: list[str] = []
+    reference_s = _straightness_reference_s(t30, t20, edt)
+    if reference_s is None:
+        return edt, t20, t30, None, warnings
+    _max_curvature, max_xi = straightness_limits(bandwidth_hz, reference_s)
+    curvature: float | None = None
+    if (
         t20.validity is Validity.VALID
         and t30.validity is Validity.VALID
         and t20.seconds is not None
         and t30.seconds is not None
         and t20.seconds > 0.0
     ):
-        return t20, t30, None, []
-    curvature = 100.0 * (t30.seconds / t20.seconds - 1.0)
-    max_curvature, max_xi = straightness_limits(bandwidth_hz, t30.seconds)
-    warnings: list[str] = []
-    if abs(curvature) > max_curvature:
-        warning = diag(
-            "the decay curve is not straight (curvature C = {curvature:.0f} %, limit "
-            "{limit:.0f} %): possibly a double slope, coupled volumes or strong early "
-            "reflections; no single reverberation time describes it",
-            curvature=curvature,
-            limit=max_curvature,
-        )
-        warnings.append(warning)
-        t20 = t20.marked_unreliable(warning)
-        t30 = t30.marked_unreliable(warning)
+        curvature = 100.0 * (t30.seconds / t20.seconds - 1.0)
+        max_curvature, _t30_xi = straightness_limits(bandwidth_hz, t30.seconds)
+        if abs(curvature) > max_curvature:
+            warning = diag(
+                "the decay curve is not straight (curvature C = {curvature:.0f} %, limit "
+                "{limit:.0f} %): possibly a double slope, coupled volumes or strong early "
+                "reflections; no single reverberation time describes it",
+                curvature=curvature,
+                limit=max_curvature,
+            )
+            warnings.append(warning)
+            t20 = t20.marked_unreliable(warning)
+            t30 = t30.marked_unreliable(warning)
     checked: list[DecayMetric] = []
-    for metric in (t20, t30):
+    for metric in (edt, t20, t30):
         xi = metric.nonlinearity_permille
         if metric.validity is Validity.VALID and xi is not None and xi > max_xi:
             warning = diag(
@@ -933,7 +1036,45 @@ def _straightness_check(
             warnings.append(warning)
             metric = metric.marked_unreliable(warning)
         checked.append(metric)
-    return checked[0], checked[1], curvature, warnings
+    return checked[0], checked[1], checked[2], curvature, warnings
+
+
+def _sudden_drop_check(metric: DecayMetric, curve: SchroederCurve) -> DecayMetric:
+    """Mark T20/T30 unreliable when the range below -5 dB is a step.
+
+    ``early`` is how long the curve took to fall from 0 dB to the top of the
+    evaluation range; ``late`` is how long it then took to reach the bottom.
+    A reverberant slope has ``late`` several times ``early``. A noise burst or
+    a hard gate crosses the whole range in a few samples, so the ratio falls
+    below :data:`SUDDEN_DROP_RATIO`. EDT is not a candidate: its range starts
+    at 0 dB.
+    """
+    if (
+        metric.validity is not Validity.VALID
+        or metric.name not in {"T20", "T30"}
+        or metric.seconds is None
+    ):
+        return metric
+    upper, lower = metric.evaluation_range_db
+    edc = curve.edc_db
+    at_upper = np.nonzero(edc <= upper)[0]
+    at_lower = np.nonzero(edc <= lower)[0]
+    if at_upper.shape[0] == 0 or at_lower.shape[0] == 0:
+        return metric
+    early_s = float(curve.time_s[int(at_upper[0])] - curve.time_s[0])
+    late_s = float(curve.time_s[int(at_lower[0])] - curve.time_s[int(at_upper[0])])
+    if early_s <= 0.0 or late_s >= SUDDEN_DROP_RATIO * early_s:
+        return metric
+    return metric.marked_unreliable(
+        diag(
+            "the {metric} fit crosses its evaluation range in {late_ms:.0f} ms after the curve "
+            "took {early_ms:.0f} ms to fall 5 dB: that step is not a reverberation slope, so "
+            "{metric} is not a reliable reverberation time here",
+            metric=metric.name,
+            late_ms=late_s * 1000.0,
+            early_ms=early_s * 1000.0,
+        )
+    )
 
 
 def _tail_compensation(trunc: TruncationEstimate, sample_rate: int) -> tuple[float, float]:
@@ -1299,7 +1440,17 @@ def analyze_band(
                     (c50, c80, d50, centre), filter_warning
                 )
 
-    t20, t30, curvature, straightness_warnings = _straightness_check(t20, t30, band_bandwidth_hz)
+    t20 = _sudden_drop_check(t20, curve)
+    t30 = _sudden_drop_check(t30, curve)
+    sudden_drop = [
+        metric.reason
+        for metric in (t20, t30)
+        if metric.reason is not None and "that step is not a reverberation slope" in metric.reason
+    ]
+    warnings.extend(sudden_drop)
+    edt, t20, t30, curvature, straightness_warnings = _straightness_check(
+        edt, t20, t30, band_bandwidth_hz
+    )
     warnings.extend(straightness_warnings)
 
     rt60: float | None = None
