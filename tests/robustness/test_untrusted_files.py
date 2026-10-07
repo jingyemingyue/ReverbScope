@@ -564,3 +564,25 @@ def test_structured_result_fields_do_not_silently_accept_text(
     folder = _edited(saved_session, tmp_path, "result.json", _set(path, value))
     with pytest.raises(SessionError):
         load_measurement(folder)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {"positions": ["desk"]},
+        {"positions": [5]},
+        {"positions": [{"label": 5, "session_dirs": []}]},
+        {"positions": [{"label": "desk", "session_dirs": [5]}]},
+    ],
+    ids=["position-text", "position-number", "label-number", "session-dir-number"],
+)
+def test_project_position_records_follow_the_project_schema(
+    tmp_path: Path, payload: dict[str, object]
+) -> None:
+    """Corrupted project records must not be coerced into plausible labels/paths."""
+    (tmp_path / "project.json").write_text(
+        json.dumps({"schema_version": 1, "name": "room", **payload}),
+        encoding="utf-8",
+    )
+    with pytest.raises(SessionError):
+        load_project(tmp_path)
