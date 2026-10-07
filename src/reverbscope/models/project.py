@@ -7,7 +7,12 @@ from typing import Any
 
 from reverbscope.errors import SessionError
 from reverbscope.i18n import _
-from reverbscope.models.loadutil import drop_unknown, read_schema_version, record_name
+from reverbscope.models.loadutil import (
+    drop_unknown,
+    read_schema_version,
+    record_name,
+    record_payload,
+)
 
 PROJECT_SCHEMA_VERSION = 1
 
@@ -26,6 +31,18 @@ def _list(value: Any, kind: str, name: str) -> list[Any]:
     return value
 
 
+def _text(value: Any, kind: str, name: str) -> str:
+    """A text field read from a project record, without lossy coercion."""
+    if not isinstance(value, str):
+        raise SessionError(
+            _("invalid {kind} in file: {error}").format(
+                kind=record_name(kind),
+                error=_("{field} has the wrong type").format(field=name),
+            )
+        )
+    return value
+
+
 @dataclass(frozen=True)
 class PositionEntry:
     """One labelled position that points at one or more session directories."""
@@ -38,9 +55,21 @@ class PositionEntry:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PositionEntry:
-        payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="position entry")
+        payload = record_payload(
+            data, {f.name for f in fields(cls)}, kind="position entry"
+        )
         dirs = _list(payload.get("session_dirs"), "position entry", "session_dirs")
-        return cls(label=str(payload.get("label", "")), session_dirs=tuple(str(p) for p in dirs))
+        if not all(isinstance(path, str) for path in dirs):
+            raise SessionError(
+                _("invalid {kind} in file: {error}").format(
+                    kind=record_name("position entry"),
+                    error=_("{field} has the wrong type").format(field="session_dirs"),
+                )
+            )
+        return cls(
+            label=_text(payload.get("label", ""), "position entry", "label"),
+            session_dirs=tuple(dirs),
+        )
 
 
 @dataclass
@@ -72,14 +101,14 @@ class Project:
         payload = drop_unknown(data, {f.name for f in fields(cls)}, kind="project")
         positions = tuple(
             PositionEntry.from_dict(item)
-            if isinstance(item, dict)
-            else PositionEntry(label=str(item))
             for item in _list(payload.get("positions"), "project", "positions")
         )
         return cls(
-            name=str(payload.get("name", "")),
-            notes=str(payload.get("notes", "")),
+            name=_text(payload.get("name", ""), "project", "name"),
+            notes=_text(payload.get("notes", ""), "project", "notes"),
             positions=positions,
             schema_version=version,
-            reverbscope_version=str(payload.get("reverbscope_version", "")),
+            reverbscope_version=_text(
+                payload.get("reverbscope_version", ""), "project", "reverbscope_version"
+            ),
         )

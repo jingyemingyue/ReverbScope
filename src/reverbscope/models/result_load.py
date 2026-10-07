@@ -99,9 +99,19 @@ def _opt_bool(value: Any, name: str) -> bool | None:
 
 
 def _str_tuple(values: Any) -> tuple[str, ...]:
-    if not values:
+    """A JSON list of strings.
+
+    Treat a missing value as an empty list for older files, but do not turn a
+    damaged string into one character per entry or coerce arbitrary values to
+    text. Those cases are file corruption and must fail at load time.
+    """
+    if values is None:
         return ()
-    return tuple(str(v) for v in values)
+    if not isinstance(values, (list, tuple)):
+        raise TypeError(_("expected a list of text values"))
+    if not all(isinstance(value, str) for value in values):
+        raise TypeError(_("expected a list of text values"))
+    return tuple(values)
 
 
 def _validity(value: Any) -> Validity:
@@ -125,9 +135,11 @@ def decay_metric_from_dict(data: Any) -> DecayMetric:
 
 
 def energy_metric_from_dict(data: Any, name: str, unit: str) -> EnergyMetric:
-    """An energy parameter; a missing object is an older file that has none."""
-    if not isinstance(data, dict):
+    """An energy parameter; a missing value is an older file that has none."""
+    if data is None:
         return EnergyMetric(name=name, value=None, unit=unit, validity=Validity.NOT_COMPUTED)
+    if not isinstance(data, dict):
+        raise SessionError(_("{kind} must be a JSON object").format(kind=record_name(name)))
     value = data.get("value")
     return EnergyMetric(
         name=str(data.get("name", name)),

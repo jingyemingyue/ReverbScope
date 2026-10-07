@@ -67,12 +67,14 @@ def record_name(kind: str) -> str:
 def read_schema_version(data: Mapping[str, Any], known: int, kind: str) -> int:
     """Return the file's schema version, or raise if it is newer than ``known``."""
     raw = data.get("schema_version", known)
-    try:
-        version = int(raw)
-    except (TypeError, ValueError, OverflowError) as exc:  # Overflow: Infinity
+    # JSON schema versions are integers. Do not coerce text, booleans or
+    # fractional numbers into a supported version: that would make damaged
+    # metadata look valid and can route a file through the wrong migration.
+    if isinstance(raw, bool) or not isinstance(raw, int):
         raise SessionError(
             _("{kind} schema_version is not an integer").format(kind=record_name(kind))
-        ) from exc
+        )
+    version = raw
     if version > known:
         raise SessionError(
             _(
