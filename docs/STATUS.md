@@ -6,6 +6,70 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 38: 2026-10-07 — **the post-RC line takes in the parallel audits,
+corrects the merged decay rules, fixes what three audits reproduced, and
+gets a maintainer's runbook** (branch `integration/post-rc-development`,
+PR #48; nothing tagged or published; `release/0.5.0` gets the stability
+fixes only, see its own snapshot).
+
+* **Parallel work integrated by merge, nothing retyped.**
+  `gpt/post-rc-persistence-corpus` (loader hardening: an integer
+  `schema_version`, typed project position records, typed result lists and
+  energy metrics) and `grok/post-rc-dsp-performance` (PR #47: the DSP
+  robustness and performance audit) are merged; the one conflict,
+  `settling_samples`, keeps both the per-process cache of this line and
+  PR #47's growing impulse. PR #46 (`claude/post-rc-measurement-health`)
+  implemented Measurement health in parallel to this line's own; its one
+  finding this line lacked, the Early reflections tile calling a cut-short
+  window "clean", is ported with a test. The unused `type: ignore` that
+  failed CI's mypy (needed only with PySide6's stubs) is gone.
+* **The merged decay rules corrected** (`core/decay.py`): PR #47's "stops
+  abruptly" rule judged the regression line and rejected every metric of
+  fast decays over a deep floor, of a noise-free synthetic room and of the
+  demo's 63 and 125 Hz bands; a cut-off response is now found by walking
+  back along the line and limits the range instead (a gate 30 dB down still
+  withholds T20 and T30, also at low bands). EDT's straightness is checked
+  only when EDT is far longer than the late decay (a desk reflection made
+  the demo's EDT unreliable). New: T20 and T30 are not fitted across a
+  direct sound that covers more than half their range. Methodology §3 step 7,
+  tests in `test_dsp_edgecases.py` and `test_decay.py`; the demo's synthetic
+  responses are long enough to reach the floor and its goldens are unchanged.
+* **Three audits, read-only, each finding reproduced before it was fixed.**
+  DSP (two defects, both above; settling, loopback, playback speed,
+  deconvolution, noise, frequency response, reflections, distortion and the
+  validity invariants checked and found correct). Desktop app and backend
+  (seven: Settings OK with an unwritable home, the theme switch on the
+  Project page, the walkthrough card within a run, an interface that comes
+  back under another index, the Project page's profile after a saved take,
+  Ctrl+2 from another page during an analysis, Open Data Folder with an
+  uncreatable home; thread lifecycle, late results, damaged sessions from
+  Home, the backend's device handling and the Chinese UI found correct).
+  Persistence, command line and i18n (three: a resonance match without its
+  frequency crashed `show`, a Unicode digit ended the menu, an over-long
+  language name aborted every command; about 250 crafted files, the exit
+  codes, JSON purity, cp1252/GBK streams, every menu item and the zh_CN
+  output found correct).
+* **For testers and maintainers**: the READMEs name the release candidate as
+  the build to test (not "beta 2"); the DAW form asks for the "Data quality"
+  line that the report prints; the checklist, the forms and the user guides
+  agree on buttons, versions, probes, screenshots and the eleven DAWs;
+  `docs/MAINTAINING.md` (and 中文) is the runbook for the two lines, the
+  workflows, the red checks, releases and reports.
+
+**What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
+PortAudio present, no audio device): ruff, ruff format, strict mypy in a venv
+with PySide6 and in one without (as CI's lint job), `check_doc_links.py`,
+`check_cli_docs.py`, `check_src_safety.py`, the docs-site build, the schema
+and CLI-schema checks, the fake-backend Standalone flow, the example script,
+`python -m build` and a fresh-venv wheel install, the license bundle and
+the PySide6 Essentials gate, and the full suite with the coverage gate on
+the final tree (the pull request records the numbers). The 0.5.0rc1 draft's
+14 assets were read back: every SHA-256 matches `SHA256SUMS`, the wheel and
+sdist rebuilt from `7098169` are byte-identical to the draft's, and the Linux
+Desktop and Terminal bundles pass `scripts/smoke_bundle.py` here. **Not
+run:** anything on real hardware or in a DAW; the macOS and Windows bundles
+(built and smoked on GitHub's runners only).
+
 Snapshot 37: 2026-10-07 — **the development line moves on while the
 candidate waits for hardware: bug hunt round 4, Measurement health, a
 regression corpus, verdicts on a comparison, the project overview, a
