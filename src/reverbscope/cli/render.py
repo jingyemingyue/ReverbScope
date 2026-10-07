@@ -1183,7 +1183,9 @@ def _overview_row(c: Console, take: Any, *, position: str) -> list[str]:
         if take.reflection_db is None
         else f"{take.reflection_db:.0f} dB @ {take.reflection_ms:.1f} ms"
     )
-    when = printable(str(take.created_at)[:16].replace("T", " "), single_line=True)
+    # Month, day and time: the year is in the session and the JSON; the
+    # column's width decides whether the table fits a 100-column terminal.
+    when = printable(str(take.created_at)[5:16].replace("T", " "), single_line=True)
     return [
         printable(position, single_line=True),
         # The folder's name, as the Project page shows it: a full path made
