@@ -287,14 +287,16 @@ class MainWindow(QMainWindow):
         self.show_results()
 
     def show_mode(self, mode: str) -> None:
-        if (
-            mode in ("demo", "standalone")
-            and self.stack.currentWidget() is self.standalone
-            and self.standalone.is_busy()
-        ):
-            # Ctrl+2 / Ctrl+3 on the page of a running take: switching the
-            # backend under it would show the demo banner over a real sweep
-            # (or the reverse). Leaving the page (Ctrl+1, Home) stops the take.
+        if mode in ("demo", "standalone") and self.standalone.is_busy():
+            # Ctrl+2 / Ctrl+3 while a take or its analysis runs on the
+            # Standalone page, from that page or from another: switching the
+            # backend under it would show the demo banner over a real sweep (or
+            # the reverse) and list devices over a running progress bar. The
+            # page is shown as it is; leaving it for Home stops the take.
+            self.stack.setCurrentWidget(self.standalone)
+            self._set_place(
+                _("Demo (no interface)") if self.standalone.demo_mode else _("Standalone Mode")
+            )
             return
         if mode == "demo":
             self.state.mode = "standalone"
@@ -323,7 +325,7 @@ class MainWindow(QMainWindow):
         with contextlib.suppress(ReverbScopeError, OSError):
             save_settings(replace(load_settings(), walkthrough_dismissed=False))
         self.show_home()
-        self.home.show_walkthrough(True)
+        self.home.restore_walkthrough()
 
     def choose_project(self) -> None:
         directory = QFileDialog.getExistingDirectory(self, _("Open project folder"))
@@ -337,7 +339,7 @@ class MainWindow(QMainWindow):
             if not self.project.open_path(Path(path)):
                 return
         else:
-            self.project.refresh()
+            self.project.reload()
         self.stack.setCurrentWidget(self.project)
         self._set_place(_("Project"))
 
@@ -419,6 +421,7 @@ class MainWindow(QMainWindow):
         self._scheme = color_scheme()
         self.results.restyle()
         self.compare.restyle()
+        self.project.restyle()
         for page in (self.daw, self.standalone):
             page.placement.redraw()
 
@@ -452,7 +455,17 @@ class MainWindow(QMainWindow):
         from reverbscope.io.recent import reverbscope_home
 
         home = reverbscope_home()
-        home.mkdir(parents=True, exist_ok=True)
+        try:
+            home.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                _("Cannot open the data folder"),
+                _("cannot create folder {path}: {error}").format(
+                    path=home, error=exc.strerror or str(exc)
+                ),
+            )
+            return
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(home)))
 
     def _about(self) -> None:

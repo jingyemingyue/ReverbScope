@@ -15,12 +15,14 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QHBoxLayout,
     QLineEdit,
+    QMessageBox,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
-from reverbscope.i18n import LANGUAGE_NAMES, _, available_locales
+from reverbscope.errors import ReverbScopeError
+from reverbscope.i18n import LANGUAGE_NAMES, _, available_locales, localize
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.profiles import profile_title
 from reverbscope.settings import load_settings, save_settings
@@ -117,7 +119,14 @@ class SettingsDialog(QDialog):
             theme=str(self.theme.currentData() or ""),
             developer_tools=self.developer_tools.isChecked(),
         )
-        save_settings(settings)
+        try:
+            save_settings(settings)
+        except (ReverbScopeError, OSError) as exc:
+            # A settings file that cannot be written (a read-only home, a file
+            # where the folder should be) is the user's problem to solve, not a
+            # bug: say so and keep the dialog open with its choices.
+            QMessageBox.critical(self, _("Cannot save settings"), localize(str(exc)))
+            return
         # A new theme is applied by the main window, which draws its cards
         # and charts again (MainWindow.restyle).
         # The new language is used from the next start: every window keeps the

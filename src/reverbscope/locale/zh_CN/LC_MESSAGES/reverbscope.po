@@ -5855,3 +5855,9 @@ msgstr "{metric} 拟合在曲线用 {early_ms:.0f} ms 下降 5 dB 之后，仅�
 
 msgid "sweep rate is not positive: the frequency range is too small to sweep"
 msgstr "扫频速率不是正数：频率范围太小，无法生成扫频"
+
+msgid "Cannot save settings"
+msgstr "无法保存设置"
+
+msgid "Cannot open the data folder"
+msgstr "无法打开数据文件夹"

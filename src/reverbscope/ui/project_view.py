@@ -355,11 +355,25 @@ class ProjectPage(QWidget):
         return True
 
     def refresh(self) -> None:
-        """Read the project again (a take was saved, the profile or the sources changed)."""
+        """Read the project again after the user changed the profile or the sources
+        (the profile combo is theirs from now on)."""
         if self.path is None:
             return
         self._profile_chosen = True
         self.load(self.path)
+
+    def reload(self) -> None:
+        """Read the project again after a take was saved or added, keeping the
+        rule for the profile combo: the latest take's profile unless the user
+        chose one."""
+        if self.path is not None:
+            self.load(self.path)
+
+    def restyle(self) -> None:
+        """Draw the cards again in the colour scheme now in force (their colours
+        are set when they are made, like the Results page's)."""
+        if self.overview is not None:
+            self._show(self.overview)
 
     def _summarize(self) -> None:
         assert self._project is not None and self.path is not None
@@ -429,7 +443,7 @@ class ProjectPage(QWidget):
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Cannot add session"), localize(str(exc)))
             return False
-        self.refresh()
+        self.reload()
         return True
 
     def _selected_take(self) -> SessionSummary | None:

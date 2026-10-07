@@ -255,6 +255,9 @@ class HomePage(QWidget):
         self.walkthrough = WalkthroughCard()
         self.walkthrough.choose_mode.connect(self.choose_mode.emit)
         self.walkthrough.dismissed.connect(self.dismiss_walkthrough)
+        #: "Don't show this again" was clicked in this run: the card stays
+        #: hidden even where the settings file could not record it.
+        self._walkthrough_dismissed = False
         layout.addWidget(self.walkthrough)
 
         layout.addWidget(label(_("New Measurement").upper(), "section"))
@@ -325,7 +328,12 @@ class HomePage(QWidget):
         self.browser.list_folder(root)
 
     def show_walkthrough(self, visible: bool) -> None:
-        self.walkthrough.setVisible(visible)
+        self.walkthrough.setVisible(visible and not self._walkthrough_dismissed)
+
+    def restore_walkthrough(self) -> None:
+        """Help > Getting started: the card is back, also after a dismissal."""
+        self._walkthrough_dismissed = False
+        self.walkthrough.show()
 
     def dismiss_walkthrough(self) -> None:
         """Hide the card and remember it; a settings file that cannot be
@@ -334,6 +342,7 @@ class HomePage(QWidget):
 
         from reverbscope.settings import load_settings, save_settings
 
+        self._walkthrough_dismissed = True
         self.walkthrough.hide()
         try:
             save_settings(replace(load_settings(), walkthrough_dismissed=True))
@@ -1068,13 +1077,18 @@ class StandalonePage(QWidget):
         return self.host_api.currentData(), device(self.input_device), device(self.output_device)
 
     def _row_of(self, combo: QComboBox, device: tuple[int, str] | None) -> int:
-        """The row of ``device`` in ``combo`` when it is still the same device."""
+        """The row of ``device`` in ``combo``: the same index and name, else the
+        one device of that name (an interface plugged in again comes back under
+        another index), else -1 (its index now names another device)."""
         if device is None:
             return _find_data(combo, None)
         index, name = device
-        if not any(d.index == index and d.name == name for d in self._devices):
-            return -1
-        return _find_data(combo, index)
+        if any(d.index == index and d.name == name for d in self._devices):
+            return _find_data(combo, index)
+        same_name = [d.index for d in self._devices if d.name == name]
+        if len(same_name) == 1:
+            return _find_data(combo, same_name[0])
+        return -1
 
     def _fill_device_lists(self) -> None:
         """Devices of the chosen host API; the recommended entries are starred.
