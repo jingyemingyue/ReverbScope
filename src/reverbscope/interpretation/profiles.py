@@ -195,6 +195,9 @@ class ProfileBase:
     very_long_decay_s = 1.0
     #: Dynamic range below the direct sound at which noise starts to matter.
     quiet_noise_margin_db = 60.0
+    #: Whether the profile comments on the noise floor at all (drums do not:
+    #: the kit wants the room). The level is measured either way.
+    judges_noise = True
     #: Low bands decaying more than this many times slower than mid bands is an imbalance.
     slow_low_ratio = 1.5
     #: Bands at or below this centre frequency count as "low".
@@ -1099,6 +1102,7 @@ class DrumsProfile(ProfileBase):
     very_long_decay_s = 1.2
     # The kit wants the room; a low clarity ratio is not a defect here.
     clarity_metric = None
+    judges_noise = False
     clarity_low_db = None
 
     def reflection_message(self, r: Reflection) -> str:
