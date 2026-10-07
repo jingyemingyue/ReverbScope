@@ -5861,3 +5861,6 @@ msgstr "无法保存设置"
 
 msgid "Cannot open the data folder"
 msgstr "无法打开数据文件夹"
+
+msgid "The question could not be completed ({error}). Back to the menu."
+msgstr "这个问题无法完成（{error}）。回到菜单。"

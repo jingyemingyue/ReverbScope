@@ -601,3 +601,27 @@ def test_schema_version_must_be_a_json_integer(tmp_path: Path, kind: str, value:
     }[kind]
     with pytest.raises(SessionError, match="schema_version"):
         loader()
+
+
+@pytest.mark.parametrize(
+    "match",
+    [
+        {"status": "matched"},
+        {"status": "matched", "baseline_hz": 110.0},
+        {"status": "appeared"},
+        {"status": "disappeared"},
+        {"status": "disappeared", "candidate_hz": 110.0},
+    ],
+)
+def test_a_resonance_match_without_its_frequency_is_a_damaged_file(
+    tmp_path: Path, match: dict[str, object]
+) -> None:
+    """The report formats the frequency the status names; a match without it
+    crashed `show` with a TypeError reported as a bug in ReverbScope."""
+    path = tmp_path / "comparison.json"
+    path.write_text(
+        json.dumps({"comparable": True, "common_band": [20, 2000], "resonances": [match]}),
+        encoding="utf-8",
+    )
+    with pytest.raises(SessionError, match="resonance match"):
+        load_comparison(path)

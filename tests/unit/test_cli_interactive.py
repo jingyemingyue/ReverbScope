@@ -177,3 +177,22 @@ def test_a_terminal_gets_the_menu_and_a_pipe_the_home_screen(
     # Unless the menu is switched off.
     monkeypatch.setenv(MENU_VARIABLE, "1")
     assert main([]) == 2
+
+
+def test_a_unicode_digit_at_the_rate_question_does_not_end_the_menu(tmp_path: Path) -> None:
+    """``"²".isdigit()`` is true and ``int("²")`` raises: the menu died with a
+    traceback. The question is asked again, and the sweep is written."""
+    out_file = tmp_path / "sweep.wav"
+    code, runs, text = _menu(["2", str(out_file), "²", "48000", "q"])
+    assert code == 0
+    assert [run[0] for run in runs] == ["sweep"]
+    assert "48000" in " ".join(runs[0])
+    assert "Choose one of" in text
+
+
+def test_an_unexpected_failure_while_asking_returns_to_the_menu() -> None:
+    """Whatever a question raises, the menu goes on (and says so)."""
+    code, runs, text = _menu(["2", ValueError("boom"), "q"])
+    assert code == 0
+    assert runs == []
+    assert "could not be completed" in text and "ValueError: boom" in text

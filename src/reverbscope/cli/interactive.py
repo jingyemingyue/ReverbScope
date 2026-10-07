@@ -14,6 +14,7 @@ do and the answer was ``y``.
 
 from __future__ import annotations
 
+import logging
 import os
 import shlex
 from collections.abc import Callable, Sequence
@@ -29,6 +30,8 @@ from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
 #: Set (to anything) to keep the menu off a terminal.
 MENU_VARIABLE = "REVERBSCOPE_NO_MENU"
+
+log = logging.getLogger(__name__)
 
 Asker = Callable[[str], str]
 Runner = Callable[[list[str]], int]
@@ -132,7 +135,7 @@ def _sweep(session: Session) -> list[str]:
     )
     while True:
         rate = session.ask(_("Sample rate of your DAW project (Hz)"), "48000")
-        if rate.isdigit() and int(rate) in SUPPORTED_SAMPLE_RATES:
+        if rate.isascii() and rate.isdigit() and int(rate) in SUPPORTED_SAMPLE_RATES:
             break
         session.say(
             session.console.status(
@@ -266,6 +269,17 @@ def run_menu(
         except EOFError:
             session.say([""])
             return 0
+        except Exception as exc:  # the menu must survive its own questions
+            log.exception("a menu question failed")
+            session.say(
+                c.status(
+                    "error",
+                    _("The question could not be completed ({error}). Back to the menu.").format(
+                        error=f"{type(exc).__name__}: {exc}"
+                    ),
+                )
+            )
+            continue
         if argv is None:
             continue
         full = [*prefix, *argv]
