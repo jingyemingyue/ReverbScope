@@ -540,3 +540,27 @@ def test_a_newer_sweep_sidecar_is_refused(tmp_path: Path) -> None:
     path.write_text(json.dumps({"reverbscope_sweep": {"duration_s": "10"}}), encoding="utf-8")
     with pytest.raises(ReverbScopeError, match="invalid sweep settings"):
         read_sweep_sidecar(path)
+
+
+@pytest.mark.parametrize(
+    ("path", "value"),
+    [
+        (("warnings",), "one warning"),
+        (("decay", "notes"), "one note"),
+        (("decay", "broadband", "warnings"), "one warning"),
+        (("decay", "broadband", "c50"), "corrupt metric"),
+    ],
+    ids=["result-warnings-text", "decay-notes-text", "band-warnings-text", "c50-text"],
+)
+def test_structured_result_fields_do_not_silently_accept_text(
+    saved_session: Path, tmp_path: Path, path: tuple[str, ...], value: object
+) -> None:
+    """A damaged result must not masquerade as an old or valid result.
+
+    Text in a list field used to be split into one-character notes/warnings,
+    while a non-object C50 record was silently treated as an older file with
+    no C50 measurement.
+    """
+    folder = _edited(saved_session, tmp_path, "result.json", _set(path, value))
+    with pytest.raises(SessionError):
+        load_measurement(folder)
