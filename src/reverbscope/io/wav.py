@@ -84,10 +84,12 @@ def write_wav(
         raise ConfigurationError(
             _("signal exceeds full scale; use subtype='FLOAT' or lower the level")
         )
-    file_path.parent.mkdir(parents=True, exist_ok=True)
     try:
+        file_path.parent.mkdir(parents=True, exist_ok=True)
         sf.write(str(file_path), data, sample_rate, subtype=subtype)
     except Exception as exc:
+        # OSError from the folder (a parent that is a file, a Windows reserved
+        # name) as much as libsndfile's own errors: the user's path, not a bug.
         raise InvalidAudioError(
             _("cannot write audio file {path}: {error}").format(path=file_path, error=exc)
         ) from exc
@@ -119,7 +121,12 @@ def write_sweep_file(settings: SweepSettings, path: str | Path) -> tuple[Path, P
         ),
     }
     side = sidecar_path(wav_path)
-    write_text_atomic(side, json.dumps(payload, indent=2))
+    try:
+        write_text_atomic(side, json.dumps(payload, indent=2))
+    except OSError as exc:
+        # The WAV is written; a disk that filled up between the two files
+        # must not escape as a bare OSError.
+        raise SessionError(_("cannot write {path}: {error}").format(path=side, error=exc)) from exc
     return wav_path, side
 
 

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from reverbscope.errors import SessionError
 from reverbscope.i18n import _
-from reverbscope.io.jsonutil import read_json_object, write_text_atomic
+from reverbscope.io.jsonutil import make_folder, read_json_object, write_text_atomic
 from reverbscope.io.session_store import SESSION_FILE, list_sessions, load_session
 from reverbscope.models.project import PositionEntry, Project
 from reverbscope.version import __version__
@@ -27,7 +27,7 @@ def is_project(path: str | Path) -> bool:
 
 def save_project(directory: str | Path, project: Project) -> Path:
     base = Path(directory)
-    base.mkdir(parents=True, exist_ok=True)
+    make_folder(base)
     if not project.reverbscope_version:
         project.reverbscope_version = __version__
     target = base / PROJECT_FILE

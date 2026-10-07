@@ -93,3 +93,42 @@ def test_write_wav_refuses_non_finite_samples(tmp_path: Path, subtype: str) -> N
     with pytest.raises(InvalidAudioError, match="NaN"):
         write_wav(tmp_path / "x.wav", np.array([0.0, np.nan, 0.5]), 48000, subtype=subtype)
     assert not (tmp_path / "x.wav").exists()
+
+
+def test_a_wav_whose_folder_cannot_be_created_is_invalid_audio(
+    tmp_path: Path, sample_rate: int
+) -> None:
+    """``write_wav`` made the folder with a bare ``mkdir``: a parent that is a
+    file (or a Windows reserved name) raised OSError through the desktop
+    app's "bug in ReverbScope" dialog."""
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x", encoding="utf-8")
+    with pytest.raises(InvalidAudioError, match="cannot write"):
+        write_wav(blocker / "a.wav", np.zeros(10), sample_rate)
+
+
+def test_a_sweep_whose_folder_cannot_be_created_is_a_reverbscope_error(
+    tmp_path: Path, sample_rate: int
+) -> None:
+    from reverbscope.errors import ReverbScopeError
+
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x", encoding="utf-8")
+    with pytest.raises(ReverbScopeError, match="cannot write"):
+        write_sweep_file(SweepSettings(sample_rate=sample_rate, duration_s=1.0), blocker / "s.wav")
+
+
+def test_a_sidecar_that_cannot_be_written_is_a_reverbscope_error(
+    tmp_path: Path, sample_rate: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The WAV was written and then the sidecar's atomic write raised a bare
+    OSError (a disk that filled up between the two files)."""
+    from reverbscope.errors import ReverbScopeError
+    from reverbscope.io import wav as wav_module
+
+    def full(*args: object, **kwargs: object) -> None:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(wav_module, "write_text_atomic", full)
+    with pytest.raises(ReverbScopeError, match="cannot write"):
+        write_sweep_file(SweepSettings(sample_rate=sample_rate, duration_s=1.0), tmp_path / "s.wav")

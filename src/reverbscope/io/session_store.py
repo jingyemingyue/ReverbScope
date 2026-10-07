@@ -39,6 +39,7 @@ from reverbscope.io.jsonutil import (
     discard,
     keep_beside,
     keep_mode,
+    make_folder,
     temporary_beside,
     write_text_atomic,
 )
@@ -133,7 +134,7 @@ def save_measurement(
     a file of the same name in a folder with no session is not ReverbScope's.
     """
     base = Path(directory)
-    base.mkdir(parents=True, exist_ok=True)
+    make_folder(base)
     if copy_recording is None:
         from reverbscope.settings import load_settings
 
@@ -437,7 +438,7 @@ def _redact_strings(value: Any, home: Path) -> Any:
 def _copy_into(src: Path, dest: Path, *, stage: Callable[[str], Path] | None = None) -> Path | None:
     if not src.is_file():
         return None
-    dest.parent.mkdir(parents=True, exist_ok=True)
+    make_folder(dest.parent)
     try:
         # samefile also matches on case-insensitive file systems (macOS, Windows)
         # where Recording.wav and recording.wav are one file.
@@ -613,6 +614,7 @@ def load_measurement(path: str | Path) -> LoadedMeasurement:
     if ir_path.is_file():
         ir = read_wav(ir_path)
         samples = ir.samples if ir.samples.ndim == 1 else ir.samples[:, 0]
+        _check_impulse_response_file(ir_path, ir.sample_rate, samples.shape[0], result)
         result = replace(
             result,
             impulse_response=replace(
@@ -626,6 +628,37 @@ def load_measurement(path: str | Path) -> LoadedMeasurement:
             ).format(path=session_file)
         )
     return LoadedMeasurement(directory=directory, session=session, result=result)
+
+
+def _check_impulse_response_file(
+    path: Path, sample_rate: int, length: int, result: AnalysisResult
+) -> None:
+    """Refuse an impulse_response.wav that is not the response result.json describes.
+
+    The WAV holds the samples the metrics were computed on, so it is at the
+    result's sample rate and reaches past the direct sound. A file at another
+    rate (another session's, or one made by another tool) would be drawn on
+    the wrong time axis; one cut off before the direct sound (a damaged copy)
+    failed the first plot with a bare ValueError.
+    """
+    if sample_rate != result.sample_rate:
+        raise SessionError(
+            _(
+                "{name} next to {path} is at {rate} Hz, but result.json describes a "
+                "{expected} Hz measurement; it is not this session's impulse response"
+            ).format(
+                name=path.name, path=path.parent, rate=sample_rate, expected=result.sample_rate
+            )
+        )
+    direct = result.impulse_response.direct_sound_index
+    if length <= direct:
+        raise SessionError(
+            _(
+                "{name} next to {path} holds {count} samples, but the result's direct sound "
+                "is at sample {index}; the file is cut off or is not this session's impulse "
+                "response"
+            ).format(name=path.name, path=path.parent, count=length, index=direct)
+        )
 
 
 def _anchor_copied_files(session: MeasurementSession, directory: Path) -> None:
@@ -774,7 +807,7 @@ def save_comparison(path: str | Path, comparison: object) -> Path:
     target = Path(path)
     if target.suffix.lower() != ".json":
         target = target / COMPARISON_FILE
-    target.parent.mkdir(parents=True, exist_ok=True)
+    make_folder(target.parent)
     try:
         write_text_atomic(target, json.dumps(comparison.to_dict(), indent=1))
     except (OSError, TypeError, ValueError) as exc:

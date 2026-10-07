@@ -147,6 +147,22 @@ def write_text_atomic(path: Path, text: str, *, follow_symlinks: bool = False) -
         discard(temporary)
 
 
+def make_folder(path: Path) -> None:
+    """``mkdir -p`` for a folder ReverbScope writes into.
+
+    A folder that cannot be made (a file of that name, a parent that is a
+    file, a name the file system refuses, a Windows reserved name such as
+    ``CON``, a disk that is full or read-only) is the user's to fix, not a
+    bug: it is reported as :class:`SessionError` instead of a bare OSError.
+    """
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise SessionError(
+            _("cannot create folder {path}: {error}").format(path=path, error=exc)
+        ) from exc
+
+
 def read_json_object(
     path: Path, *, kind: str = "JSON", max_bytes: int = MAX_JSON_BYTES
 ) -> dict[str, Any]:

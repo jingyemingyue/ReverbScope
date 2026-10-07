@@ -4766,3 +4766,12 @@ msgstr "无法把报告写入 {path}：{error}"
 
 msgid "Report written to {path}"
 msgstr "报告已写入 {path}"
+
+msgid "cannot create folder {path}: {error}"
+msgstr "无法创建文件夹 {path}：{error}"
+
+msgid "{name} next to {path} is at {rate} Hz, but result.json describes a {expected} Hz measurement; it is not this session's impulse response"
+msgstr "{path} 旁的 {name} 采样率为 {rate} Hz，但 result.json 描述的是 {expected} Hz 的测量；它不是本会话的脉冲响应"
+
+msgid "{name} next to {path} holds {count} samples, but the result's direct sound is at sample {index}; the file is cut off or is not this session's impulse response"
+msgstr "{path} 旁的 {name} 只有 {count} 个采样，但结果中的直达声位于第 {index} 个采样；文件已被截断，或不是本会话的脉冲响应"
