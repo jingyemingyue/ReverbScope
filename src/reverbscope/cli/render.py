@@ -1186,7 +1186,9 @@ def _overview_row(c: Console, take: Any, *, position: str) -> list[str]:
     when = printable(str(take.created_at)[:16].replace("T", " "), single_line=True)
     return [
         printable(position, single_line=True),
-        printable(str(take.directory), single_line=True),
+        # The folder's name, as the Project page shows it: a full path made
+        # the table fall back to blocks on every terminal; JSON keeps the path.
+        printable(Path(str(take.directory)).name or str(take.directory), single_line=True),
         when,
         health,
         rt60,
