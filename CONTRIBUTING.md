@@ -101,6 +101,8 @@ register it in `_PROFILES`, add a synthetic test in
   payload) follows the checklist in
   [docs/API_STABILITY.md](docs/API_STABILITY.md).
 * Use the pull-request template; CI must be green before merge.
+* What the maintainer does with a green pull request, a red check, a draft
+  release or a tester's report is in [docs/MAINTAINING.md](docs/MAINTAINING.md).
 
 ## From a community report to a regression test
 

@@ -13,7 +13,8 @@
 * **终端版（Terminal Edition）**——只有命令行，构建时不含图形界面（没有 Qt），体积约为桌面版的一半。适合脚本、
   自动化、服务器和没有图形桌面的电脑。
 
-ReverbScope 0.4.x 是**供测试用的早期公开预发布版本**。这些构建**没有签名**（见
+ReverbScope 是**供测试用的预发布版本**；供测试的构建是 Releases 页面上的 0.5.0 候选测试版（`0.5.0rc1`），
+`main` 是开发线。这些构建**没有签名**（见
 [未签名构建的警告](#未签名构建的警告)），而且**还没有任何测量在真实音频硬件上验证过**
 （[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)）。
 
@@ -284,7 +285,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 | 开启了“智能应用控制”的 Windows 11 | 应用被直接阻止，没有“仍要运行” | 这种情况下未签名构建无法运行；在有签名构建之前，请使用 [Python 安装](#python-wheel-和源码包) |
 
 构建来自公开的 [release workflow](https://github.com/jingyemingyue/ReverbScope/actions/workflows/release.yml)，每个构建都记录了
-它所基于的提交（**帮助 → 用于问题报告的环境报告**）。签名计划在 1.0 之前完成（[RELEASE_PLAN.zh-CN.md](RELEASE_PLAN.zh-CN.md)）。
+它所基于的提交（**帮助 → 用于问题报告的环境报告**）。签名计划在 1.0 之前完成（[RELEASE_PLAN.zh-CN.md](RELEASE_PLAN.zh-CN.md) §5）。
 
 ## 更新
 

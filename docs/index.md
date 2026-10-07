@@ -55,6 +55,7 @@ the release plan and the v1.0 architecture have a Chinese digest.
 
 ## For developers
 
+- [Maintaining the project (runbook)](MAINTAINING.md) · [维护手册](MAINTAINING.zh-CN.md)
 - [Checks without hardware](OFFLINE_CHECKS.md)
 - [Release-readiness audit of the measurement path](RELEASE_READINESS.md)
 - [Release plan](RELEASE_PLAN.md)

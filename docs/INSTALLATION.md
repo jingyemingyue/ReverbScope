@@ -14,7 +14,9 @@ neither needs Python or Git:
   Qt), about half the size. For scripts, automation, servers and computers
   without a desktop.
 
-ReverbScope 0.4.x is an **early public pre-release for testing**. The builds are
+ReverbScope is a **pre-release for testing**; the build to test is the 0.5.0
+release candidate (`0.5.0rc1`) on the Releases page, while `main` is the
+development line. The builds are
 **unsigned** (see [Unsigned-build warnings](#unsigned-build-warnings)) and
 **no measurement has been validated on real audio hardware yet**
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).

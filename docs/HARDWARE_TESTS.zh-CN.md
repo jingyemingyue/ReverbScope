@@ -108,4 +108,5 @@
 
 * 表单：[音频接口测试报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)或 [DAW 兼容性报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)；英文表单为 [audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml) 和 [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)。
 * 环境报告（上面第 4 步）。
+* DAW 测量请附上 DAW 导出对话框和片段伸缩 / Warp 设置的截图（表单中可选的“截图或日志”）。
 * 任何失败都请附上数据文件夹（`~/.reverbscope/`，或 **环境报告 ▸ 打开数据文件夹**）中的 `reverbscope.log`；如果保存了结果，再附上用 `reverbscope session bundle <session folder> --no-audio` 生成的会话打包文件（只有在你愿意分享房间录音时才去掉 `--no-audio`）。

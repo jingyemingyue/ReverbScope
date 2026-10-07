@@ -119,7 +119,7 @@ in the interface language when a session is opened, listed or reported.
    Recording...” and “Choose Reference Sweep...”.
 
 **Step-by-step notes for Pro Tools, Logic Pro / GarageBand, Cubase / Nuendo,
-Studio One, Ableton Live, REAPER, FL Studio, Bitwig Studio and Audacity, and
+Fender Studio Pro (formerly PreSonus Studio One), Ableton Live, REAPER, FL Studio, Bitwig Studio, Digital Performer and Audacity, and
 what each report message means in DAW terms:
 [daw-setup.md](daw-setup.md).**
 
