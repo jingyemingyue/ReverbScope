@@ -261,6 +261,9 @@ The text report (`cli/render.py`) is *not* an interface: its wording is
 localised and may change in any release. A test asserts that the Tier 1 list
 in `__init__.py` and the list in this document match, and a second test that
 `reverbscope.__version__` equals the `pyproject.toml` version.
+The principles behind the tiers (additive changes, when a `schema_version`
+moves, derived-at-display-time interpretation, deprecation) and the checklist
+for a change to a stable surface are in [API_STABILITY.md](API_STABILITY.md).
 
 ### 5.2 Schemas and file formats
 
