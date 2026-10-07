@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from reverbscope.settings import UserSettings, load_settings, save_settings, settings_path
 
 
@@ -116,3 +118,19 @@ def test_settings_saved_with_a_byte_order_mark_are_used(tmp_path: Path, monkeypa
         b'\xef\xbb\xbf{"schema_version": 1, "language": "zh_CN"}'
     )
     assert load_settings().language == "zh_CN"
+
+
+def test_settings_whose_folder_cannot_be_created_are_a_session_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``save_settings`` made the folder with a bare ``mkdir``: a file where
+    ``$REVERBSCOPE_HOME`` should be raised FileExistsError out of the Settings
+    dialog."""
+    from reverbscope.errors import SessionError
+    from reverbscope.settings import UserSettings, save_settings
+
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x", encoding="utf-8")
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(blocker))
+    with pytest.raises(SessionError, match="cannot create"):
+        save_settings(UserSettings())

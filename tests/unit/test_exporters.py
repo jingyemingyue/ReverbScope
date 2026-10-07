@@ -197,3 +197,22 @@ def test_an_export_removes_the_curves_of_an_earlier_export_it_does_not_have(
     written = {path.name for path in export_csv(slim, tmp_path)}
     assert "frequency_response.csv" not in written
     assert {path.name for path in tmp_path.iterdir()} == written | {"notes.txt"}
+
+
+def test_an_export_folder_that_cannot_be_created_is_a_session_error(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.errors import SessionError
+    from reverbscope.io.exporters.csv import export_csv
+    from tests.conftest import make_rir
+
+    rate = short_sweep.sample_rate
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(rate, rt60_s=0.3)),
+        Reference.from_settings(short_sweep),
+    )
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x", encoding="utf-8")
+    with pytest.raises(SessionError, match="cannot create"):
+        export_csv(result, blocker / "csv")
