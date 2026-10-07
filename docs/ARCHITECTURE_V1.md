@@ -234,7 +234,7 @@ from the package.
 | Tier | What | Promise for the 1.x line |
 | --- | --- | --- |
 | 1 -- public | The names exported by `reverbscope/__init__.py` (below); the JSON files and their schemas; `reverbscope <cmd> --format json`; the CLI exit codes | Semantic versioning. Removal or a changed meaning needs a major version; additions are minor; a deprecation is announced with a `DeprecationWarning` one minor release before the change |
-| 2 -- documented | Functions of `reverbscope.core.*` named in MEASUREMENT_METHODOLOGY.md; `reverbscope.audio.AudioBackend`; `RecordingProfile` / `ProfileBase`; the entry-point groups | Signatures may gain keyword parameters with defaults; every change is in CHANGELOG.md; algorithmic changes are also in the methodology document |
+| 2 -- documented | Functions of `reverbscope.core.*` named in MEASUREMENT_METHODOLOGY.md; `reverbscope.audio.AudioBackend`; `RecordingProfile` / `ProfileBase`; `reverbscope.interpretation.overview.summarize_project` (§13 of the methodology); the entry-point groups | Signatures may gain keyword parameters with defaults; every change is in CHANGELOG.md; algorithmic changes are also in the methodology document |
 | 3 -- internal | `reverbscope.ui`, `reverbscope.cli` internals, everything `_`-prefixed | None |
 
 Tier 1 exports, loaded lazily through a module-level `__getattr__` so that

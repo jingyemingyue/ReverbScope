@@ -948,6 +948,45 @@ checks that every menu path named by the module appears in that guide. The
 same steps are printed under the error when a sweep played at the wrong
 speed stops the analysis before a result exists.
 
+## 13. Project overview
+
+`reverbscope.interpretation.overview.summarize_project` reads the sessions a
+project lists (`reverbscope project overview`, the Project page), their
+results and their measurement health (§12), and describes the room position
+by position under one recording profile. It stores nothing and ranks nothing.
+
+* **Take.** Health (§12), the broadband RT60 (only ever from a VALID T30 or
+  T20), the profile's clarity index when VALID, the noise floor when it comes
+  from a verified quiet segment, the strongest reflection inside the
+  profile's window, and the profile's findings (§8). *Fit* is categorical:
+  *fits* when the profile raises no warning-severity finding and the
+  measurement is not invalid; *warnings* with the topics of the warnings;
+  *cannot say* when the measurement is invalid or has no VALID reverberation
+  time. There is no score and no ordering between two takes that fit.
+* **Position.** Its takes, represented by the healthiest (good before
+  warning before unknown before invalid), then the latest. *Repeatability*:
+  the largest difference between the takes' RT60 as a percentage of the
+  smaller, judged against the just-noticeable difference for T that
+  ISO 3382-1 lists (5 %, §11; the table was not verified against the
+  standard text). Takes further apart are reported as disagreeing, with a
+  step to check the microphone position, the level and the noise; they are
+  still averaged (§3a), since the overview changes no number.
+* **Against the first position.** Every position after the first carries the
+  verdicts (§11a) of its representative take against the first position's,
+  judged with both results at hand, so an invalid side leaves insufficient
+  evidence. The first position is the baseline by order, not by merit.
+* **Room.** The spatial average of §3a over every session (sessions outside a
+  position enter the average but not the position count), the ISO 3382-2
+  class of the counts, and the *spatial spread*: largest minus smallest of
+  the positions' representative RT60, over their mean, as a percentage. It
+  is descriptive; one pair of positions establishes nothing statistically.
+* **Next.** The microphone positions the next ISO 3382-2 class needs with the
+  declared number of source positions, or, when the table needs a second
+  source, that; a repeat take where a position has one; a position whose
+  takes disagree; a position whose representative take is invalid; which
+  positions fit (one, several without ranking, or none). Sessions outside a
+  position are counted.
+
 ## References
 
 1. A. Farina, "Simultaneous Measurement of Impulse Response and Distortion with a Swept-Sine Technique," AES 108th Convention, Paris, 2000, preprint 5093. (confirmed, primary text)

@@ -5322,3 +5322,285 @@ msgstr "{side}测量的健康状况未知：{checks}。"
 
 msgid "VERDICT ({profile} PROFILE)"
 msgstr "判定（{profile}配置）"
+
+msgid "every position's takes under the profile: health, fit, verdicts, next steps"
+msgstr "该配置下各位置的测量：健康、契合度、判定与下一步"
+
+msgid "recording profile (default: the latest session's own, else user settings)"
+msgstr "录音配置（默认：最新会话自身的配置，否则用户设置）"
+
+msgid "ReverbScope project overview"
+msgstr "ReverbScope 项目总览"
+
+msgid "Project"
+msgstr "项目"
+
+msgid "Profile"
+msgstr "配置"
+
+msgid "{positions} position(s), {sessions} session(s), {unlisted} unlisted"
+msgstr "{positions} 个位置，{sessions} 个会话，{unlisted} 个未归入位置"
+
+msgid "Takes"
+msgstr "测量"
+
+msgid "When"
+msgstr "时间"
+
+msgid "Health"
+msgstr "健康"
+
+msgid "Reflection"
+msgstr "反射"
+
+msgid "Fit"
+msgstr "契合度"
+
+msgid "{session}: not read"
+msgstr "{session}：未能读取"
+
+msgid "Positions"
+msgstr "位置"
+
+msgid "one take"
+msgstr "一次测量"
+
+msgid "{n} takes, no RT60 to compare"
+msgstr "{n} 次测量，没有可比较的 RT60"
+
+msgid "{n} takes agree ({spread:.1f} % apart in RT60)"
+msgstr "{n} 次测量一致（RT60 相差 {spread:.1f} %）"
+
+msgid "{n} takes disagree ({spread:.0f} % apart in RT60)"
+msgstr "{n} 次测量不一致（RT60 相差 {spread:.0f} %）"
+
+msgid "Spatial average"
+msgstr "空间平均"
+
+msgid "The positions' RT60 differ by {spread:.0f} % across the room (largest minus smallest, over the mean)."
+msgstr "各位置的 RT60 在房间内相差 {spread:.0f} %（最大值减最小值，除以平均值）。"
+
+msgid "Next"
+msgstr "下一步"
+
+msgid "the first position: the others are judged against it"
+msgstr "第一个位置：其他位置都以它为基准判定"
+
+msgid "the measurement is invalid ({checks})"
+msgstr "测量无效（{checks}）"
+
+msgid "no VALID reverberation time"
+msgstr "没有有效（VALID）的混响时间"
+
+msgid "the {profile} profile warns about {topics}"
+msgstr "{profile}配置对{topics}给出警告"
+
+msgid "no warning under the {profile} profile"
+msgstr "在{profile}配置下没有警告"
+
+msgid "not compared with position {label}: {error}"
+msgstr "未与位置 {label} 比较：{error}"
+
+msgid "not comparable with position {label}: {reason}"
+msgstr "无法与位置 {label} 比较：{reason}"
+
+msgid "against position {label}: {headline}"
+msgstr "相对位置 {label}：{headline}"
+
+msgid "No position yet: measure one from the Project page, or add a saved session with reverbscope project add <project> <session> --position <label>."
+msgstr "还没有位置：在“项目”页面测量一个，或用 reverbscope project add <project> <session> --position <label> 加入一个已保存的会话。"
+
+msgid "{n} microphone position(s) reach the ISO 3382-2 {now} class; {more} more (same source position and level) would reach {better}."
+msgstr "{n} 个话筒位置达到 ISO 3382-2 的{now}等级；再加 {more} 个（声源位置和电平不变）即可达到{better}。"
+
+msgid "measure every position again with the loudspeaker elsewhere, and pass --sources {sources}"
+msgstr "把扬声器换一个位置，再把每个位置测一遍，并传入 --sources {sources}"
+
+msgid "{more} more microphone position(s) ({total} in all), each measured with the loudspeaker in both places; pass --sources {sources}"
+msgstr "再加 {more} 个话筒位置（共 {total} 个），每个位置都在扬声器的两个位置各测一次；传入 --sources {sources}"
+
+msgid "{n} microphone position(s) reach the ISO 3382-2 {now} class; {better} needs a second source position: {how}."
+msgstr "{n} 个话筒位置达到 ISO 3382-2 的{now}等级；{better}需要第二个声源位置：{how}。"
+
+msgid "A second take at {labels} would show whether the measurement repeats (takes at one position should agree within {jnd:g} % in RT60)."
+msgstr "在 {labels} 再测一次可以看出测量是否可重复（同一位置的多次测量，RT60 应相差不超过 {jnd:g} %）。"
+
+msgid "The takes at {label} differ by {spread:.0f} % in RT60, more than the {jnd:g} % just-noticeable difference: check the microphone position, the level and the noise before trusting either."
+msgstr "{label} 的多次测量 RT60 相差 {spread:.0f} %，超过了 {jnd:g} % 的刚可察觉差：先检查话筒位置、电平和噪声，再决定相信哪一次。"
+
+msgid "Measure {label} again: {checks}."
+msgstr "重新测量 {label}：{checks}。"
+
+msgid "No position fits the {profile} profile yet: each take's findings say what to change (distance, treatment, level)."
+msgstr "还没有位置契合{profile}配置：每次测量的解读说明了需要改变什么（距离、声学处理、电平）。"
+
+msgid "{label} is the one position that fits the {profile} profile."
+msgstr "{label} 是唯一契合{profile}配置的位置。"
+
+msgid "Positions that fit the {profile} profile: {labels}. The overview does not rank them: choose on the verdicts and on what the recording needs."
+msgstr "契合{profile}配置的位置：{labels}。总览不为它们排名：请根据判定和录音的需要来选择。"
+
+msgctxt "fit"
+msgid "fits"
+msgstr "契合"
+
+msgid "{n} session(s) in the project folder belong to no position; they enter the average but not the position counts (reverbscope project add … --position)."
+msgstr "项目文件夹中有 {n} 个会话不属于任何位置；它们参与平均，但不计入位置数（reverbscope project add … --position）。"
+
+msgctxt "fit"
+msgid "warnings"
+msgstr "有警告"
+
+msgctxt "fit"
+msgid "cannot say"
+msgstr "无法判断"
+
+msgid "Open &Project..."
+msgstr "打开项目(&P)..."
+
+msgid "Open project folder"
+msgstr "打开项目文件夹"
+
+msgid "Open Project..."
+msgstr "打开项目..."
+
+msgid "One room, several microphone positions: open or make a project folder."
+msgstr "一个房间，多个话筒位置：打开或新建一个项目文件夹。"
+
+msgid "One room, several microphone positions. Every take keeps its own folder; the project lists which position it was taken at."
+msgstr "一个房间，多个话筒位置。每次测量仍保存在各自的文件夹中；项目记录它是在哪个位置测的。"
+
+msgid "New Project..."
+msgstr "新建项目..."
+
+msgid "Source positions"
+msgstr "声源位置数"
+
+msgid "Loudspeaker positions the takes were measured from (ISO 3382-2 counts them)."
+msgstr "测量时使用的扬声器位置数（ISO 3382-2 会计入）。"
+
+msgid "Copy overview"
+msgstr "复制总览"
+
+msgid "Add Session..."
+msgstr "加入会话..."
+
+msgid "List a saved session under a position of this project."
+msgstr "把一个已保存的会话归入本项目的某个位置。"
+
+msgid "Compare with first position"
+msgstr "与第一个位置对比"
+
+msgid "Open Compare with the first position as baseline and the selected take as candidate."
+msgstr "打开“对比”页面，以第一个位置为基线、所选测量为候选。"
+
+msgid "Measure a new position..."
+msgstr "测量新位置..."
+
+msgid "Open a project folder, or make one: a project is a folder with a project.json that lists the sessions saved in it by position."
+msgstr "打开或新建一个项目文件夹：项目是一个带 project.json 的文件夹，其中按位置列出了保存在里面的会话。"
+
+msgid "POSITIONS"
+msgstr "位置"
+
+msgid "TAKES"
+msgstr "测量"
+
+msgid "Double-click a take to open it. Health and fit are judged when the page is shown."
+msgstr "双击一次测量可打开它。健康和契合度在页面显示时判定。"
+
+msgid "SPATIAL AVERAGE"
+msgstr "空间平均"
+
+msgid "NEXT"
+msgstr "下一步"
+
+msgid "New project"
+msgstr "新建项目"
+
+msgid "{path} has no project.json. Make it a project?"
+msgstr "{path} 中没有 project.json。要把它变成项目吗？"
+
+msgid "Sessions already saved in the folder are listed, without a position."
+msgstr "文件夹中已保存的会话会被列出，但不属于任何位置。"
+
+msgid "Make project"
+msgstr "创建项目"
+
+msgid "Cannot create project"
+msgstr "无法创建项目"
+
+msgid "Choose a folder for the project"
+msgstr "选择项目文件夹"
+
+msgid "Cannot open project"
+msgstr "无法打开项目"
+
+msgid "Open or make a project first."
+msgstr "请先打开或新建一个项目。"
+
+msgid "Add a saved session to the project"
+msgstr "把已保存的会话加入项目"
+
+msgid "Session files (session.json);;All files (*)"
+msgstr "会话文件 (session.json);;所有文件 (*)"
+
+msgid "Cannot add session"
+msgstr "无法加入会话"
+
+msgid "Add session"
+msgstr "加入会话"
+
+msgid "Position label"
+msgstr "位置名称"
+
+msgid "Overview copied to the clipboard."
+msgstr "总览已复制到剪贴板。"
+
+msgid "{name}  ·  {path}  ·  {positions} position(s), {sessions} session(s)"
+msgstr "{name}  ·  {path}  ·  {positions} 个位置，{sessions} 个会话"
+
+msgid "No position yet. Measure a new position, or add a saved session under a position label."
+msgstr "还没有位置。测量一个新位置，或把已保存的会话归入某个位置名称下。"
+
+msgid "Fit is the absence of a warning under the {profile} profile; the page does not rank positions."
+msgstr "“契合”指在{profile}配置下没有警告；本页面不为位置排名。"
+
+msgid "{session}: not read ({reason})"
+msgstr "{session}：未能读取（{reason}）"
+
+msgid "No session to average yet."
+msgstr "还没有可平均的会话。"
+
+msgid "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, {combos} combinations). VALID T values only; decay curves are never averaged."
+msgstr "ISO 3382-2 等级：{klass}（{sources} 个声源 × {mics} 个话筒，{combos} 个组合）。只平均有效（VALID）的 T 值；从不平均衰减曲线。"
+
+msgid "Measure a new position"
+msgstr "测量新位置"
+
+msgid "A short name for the microphone position: A, B, desk, corner."
+msgstr "话筒位置的简短名称：A、B、桌前、墙角。"
+
+msgid "Measure with"
+msgstr "测量方式"
+
+msgid "Keep the loudspeaker, its level and the input gain as they were for the other positions; only the microphone moves."
+msgstr "扬声器、它的电平和输入增益保持与其他位置相同；只移动话筒。"
+
+msgid "Back to the project this take belongs to."
+msgstr "回到这次测量所属的项目。"
+
+msgid "Save into the project"
+msgstr "保存到项目中"
+
+msgid "Folder name inside {project}"
+msgstr "{project} 中的文件夹名称"
+
+msgid "Saved, but not added to the project"
+msgstr "已保存，但未加入项目"
+
+msgid "The session is saved in {path}, but could not be listed in the project: {error}"
+msgstr "会话已保存在 {path}，但无法记入项目：{error}"
+
+msgid "Session saved to {path} and listed in project {project} under position {label}"
+msgstr "会话已保存到 {path}，并记入项目 {project} 的位置 {label}"
