@@ -8,7 +8,7 @@ measurement through a real interface or a real DAW
 
 Snapshot 37: 2026-10-07 — **the development line moves on while the
 candidate waits for hardware: bug hunt round 4, Measurement health, a
-regression corpus, verdicts on a comparison** (branch `integration/post-rc-development`, cut from PR
+regression corpus, verdicts on a comparison, the project overview** (branch `integration/post-rc-development`, cut from PR
 #45's head `5d33753`; nothing merged, tagged or published; `release/0.5.0`
 untouched).
 
@@ -50,6 +50,14 @@ untouched).
 * **Test isolation**: the suite wrote a pytest path into the developer's
   real `~/.reverbscope/recent_sessions.json` on every run; fixed, and a
   session-wide guard now fails the run if any test touches the real home.
+* **Projects: the overview and the multi-position workflow** (third
+  batch): `reverbscope project overview` and the desktop app's Project page
+  read every take of a project under one profile (health, RT60, clarity,
+  noise, strongest reflection, fit), each position's repeatability and its
+  verdicts against the first position, the spatial average with its
+  ISO 3382-2 class, and what to measure next, without ranking. "Measure a
+  new position..." opens the chosen mode and the save lists the session
+  under that position (`docs/MEASUREMENT_METHODOLOGY.md` §13).
 
 **What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
 PortAudio present, no audio device): ruff, ruff format, strict mypy, the
