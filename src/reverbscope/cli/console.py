@@ -39,6 +39,48 @@ from typing import Any, Literal, TextIO
 ColorMode = Literal["auto", "always", "never"]
 COLOR_MODES: tuple[ColorMode, ...] = ("auto", "always", "never")
 
+#: How reports are framed: ``boxed`` draws a frame around a report's title,
+#: rules through its section headings and borders around its tables;
+#: ``plain`` is the ruled layout; ``auto`` boxes a terminal at least
+#: :data:`MIN_BOXED_WIDTH` columns wide and never a pipe or a file.
+StyleMode = Literal["auto", "boxed", "plain"]
+STYLE_MODES: tuple[StyleMode, ...] = ("auto", "boxed", "plain")
+#: The environment variable that chooses the style when the option is ``auto``.
+STYLE_VARIABLE = "REVERBSCOPE_CLI_STYLE"
+MIN_BOXED_WIDTH = 48
+
+#: Frame glyphs: (top-left, top, top-right, side, bottom-left, bottom-right)
+#: for a title panel, and the table set (corners, tees, cross).
+_PANEL = {True: ("╭", "─", "╮", "│", "╰", "╯"), False: ("+", "-", "+", "|", "+", "+")}
+_GRID = {
+    True: {
+        "tl": "┌",
+        "tr": "┐",
+        "bl": "└",
+        "br": "┘",
+        "t": "┬",
+        "b": "┴",
+        "l": "├",
+        "r": "┤",
+        "x": "┼",
+        "h": "─",
+        "v": "│",
+    },
+    False: {
+        "tl": "+",
+        "tr": "+",
+        "bl": "+",
+        "br": "+",
+        "t": "+",
+        "b": "+",
+        "l": "+",
+        "r": "+",
+        "x": "+",
+        "h": "-",
+        "v": "|",
+    },
+}
+
 #: Status kinds; each has a symbol, an ASCII fallback and a colour.
 Status = Literal["ok", "warn", "error", "info", "skip", "unsure", "next"]
 
@@ -499,6 +541,28 @@ def _unicode_ok(stream: TextIO, interactive: bool, environ: Mapping[str, str]) -
     return True
 
 
+def use_boxes(
+    style: StyleMode, interactive: bool, width: int, environ: Mapping[str, str] | None = None
+) -> bool:
+    """Whether to frame reports (see :data:`StyleMode`).
+
+    ``--style boxed`` / ``plain`` decide; ``auto`` follows
+    :data:`STYLE_VARIABLE`, else frames a terminal at least
+    :data:`MIN_BOXED_WIDTH` columns wide and never a pipe or a file, whose
+    text stays the stable ruled layout.
+    """
+    env = os.environ if environ is None else environ
+    if style == "auto":
+        asked = env.get(STYLE_VARIABLE, "").strip().lower()
+        if asked in ("boxed", "plain"):
+            style = asked  # type: ignore[assignment]
+    if style == "boxed":
+        return True
+    if style == "plain":
+        return False
+    return interactive and width >= MIN_BOXED_WIDTH
+
+
 def use_color(
     stream: TextIO, mode: ColorMode = "auto", environ: Mapping[str, str] | None = None
 ) -> bool:
@@ -550,6 +614,9 @@ class Console:
     interactive: bool = False
     #: The stream's encoding, for text that is shown only where it can be written.
     encoding: str = "utf-8"
+    #: Frames around titles and tables, rules through section headings
+    #: (:data:`StyleMode`). Commands, paths and status lines are never framed.
+    boxed: bool = False
 
     @classmethod
     def for_stream(
@@ -557,15 +624,18 @@ class Console:
         stream: TextIO,
         mode: ColorMode = "auto",
         environ: Mapping[str, str] | None = None,
+        style: StyleMode = "auto",
     ) -> Console:
         env = os.environ if environ is None else environ
         interactive = _isatty(stream) and env.get("TERM") != "dumb"
+        width = terminal_width(stream, interactive, env)
         return cls(
             color=use_color(stream, mode, env),
             unicode=_unicode_ok(stream, interactive, env),
-            width=terminal_width(stream, interactive, env),
+            width=width,
             interactive=interactive,
             encoding=getattr(stream, "encoding", None) or "utf-8",
+            boxed=use_boxes(style, interactive, width, env),
         )
 
     def can_write(self, text: str) -> bool:
@@ -644,15 +714,36 @@ class Console:
     # Blocks -------------------------------------------------------------------
 
     def title(self, text: str) -> list[str]:
-        """A command's heading: the title and a rule as wide as it."""
+        """A command's heading: the title and a rule as wide as it, or, boxed,
+        the title in a panel as wide as the terminal."""
         text = self.readable(text)
-        return [self.bold(text), self.muted(self.rule_char() * cell_width(text))]
+        if not self.boxed:
+            return [self.bold(text), self.muted(self.rule_char() * cell_width(text))]
+        left, top, right, side, bottom_left, bottom_right = _PANEL[self.unicode]
+        inner = max(1, self.width - 4)
+        lines = wrap(text, inner) or [""]
+        out = [self.muted(left + top * (inner + 2) + right)]
+        for line in lines:
+            out.append(
+                self.muted(side) + " " + pad(self.bold(line), inner) + " " + self.muted(side)
+            )
+        out.append(self.muted(bottom_left + top * (inner + 2) + bottom_right))
+        return out
 
     def section(self, text: str, note: str = "") -> list[str]:
-        """A blank line and a section heading, with an optional muted note."""
+        """A blank line and a section heading, with an optional muted note;
+        boxed, the heading sits in a rule across the terminal."""
         text = self.readable(text)
         note = self.readable(note) if note else ""
         head = self.style(text, "bold", "cyan")
+        if self.boxed:
+            rule = self.rule_char()
+            lead = self.muted(rule * 2) + " " + head + " "
+            tail = max(0, self.width - cell_width(text) - 4)
+            out = ["", lead + self.muted(rule * tail)]
+            if note:
+                out += self.paragraph(note, style=("dim",))
+            return out
         if not note:
             return ["", head]
         if cell_width(text) + 2 + cell_width(note) <= self.width:
@@ -847,8 +938,40 @@ class Console:
             ]
             return (margin + (" " * gap).join(parts)).rstrip()
 
+        if self.boxed and indent + sum(w + 3 for w in widths) + 1 <= self.width:
+            return self._grid(headers, rows, widths, align, margin)
         rule = [self.muted(self.rule_char() * width) for width in widths]
         return [line([self.muted(h) for h in headers]), line(rule), *(line(row) for row in rows)]
+
+    def _grid(
+        self,
+        headers: Sequence[str],
+        rows: Sequence[Sequence[str]],
+        widths: Sequence[int],
+        align: str,
+        margin: str,
+    ) -> list[str]:
+        """The bordered form of :meth:`table`: one space of padding in every cell."""
+        g = _GRID[self.unicode]
+        bar = self.muted(g["v"])
+
+        def rule(left: str, middle: str, right: str) -> str:
+            return margin + self.muted(left + middle.join(g["h"] * (w + 2) for w in widths) + right)
+
+        def row_line(cells: Sequence[str]) -> str:
+            parts = [
+                " " + pad(cell, widths[i], "right" if align[i] == "r" else "left") + " "
+                for i, cell in enumerate(cells)
+            ]
+            return margin + bar + bar.join(parts) + bar
+
+        return [
+            rule(g["tl"], g["t"], g["tr"]),
+            row_line([self.muted(h) for h in headers]),
+            rule(g["l"], g["x"], g["r"]),
+            *(row_line(row) for row in rows),
+            rule(g["bl"], g["b"], g["br"]),
+        ]
 
 
 def _styled_wrap(value: str, plain: str, styled: bool, width: int, prefix: str) -> list[str]:

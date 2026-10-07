@@ -33,8 +33,10 @@ from typing import TYPE_CHECKING, Any, cast
 from reverbscope import __version__
 from reverbscope.cli.console import (
     COLOR_MODES,
+    STYLE_MODES,
     Console,
     ProgressLine,
+    StyleMode,
     Verbatim,
     cell_width,
     printable,
@@ -816,6 +818,16 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+    parser.add_argument(
+        "--style",
+        choices=STYLE_MODES,
+        default="auto",
+        metavar=pgettext("metavar", "STYLE"),
+        help=_(
+            "frames around reports: auto (default; the style setting, else boxed on a wide "
+            "terminal and plain in a pipe), boxed, plain"
+        ),
+    )
         "--backend",
         default=None,
         metavar=pgettext("metavar", "NAME"),
@@ -1406,6 +1418,7 @@ _ROOT_LONG_OPTIONS = (
     "--format",
     "--color",
     "--backend",
+    "--style",
     "--copy-recording",
     "--no-copy-recording",
     "--verbose",
@@ -1443,8 +1456,20 @@ def _peek_option(argv: Sequence[str], names: tuple[str, ...]) -> str | None:
 
 
 def _console(args: argparse.Namespace, stream: Any = None) -> Console:
-    """How to lay out text for ``stream`` (stdout by default) under ``--color``."""
-    return Console.for_stream(stream or sys.stdout, getattr(args, "color", None) or "auto")
+    """How to lay out text for ``stream`` (stdout by default) under ``--color``
+    and ``--style`` (``auto`` follows the ``style`` setting, if one is set)."""
+    from reverbscope.settings import load_settings
+
+    style = str(getattr(args, "style", None) or "auto")
+    if style == "auto":
+        style = load_settings().cli_style or "auto"
+    if style not in STYLE_MODES:
+        style = "auto"
+    return Console.for_stream(
+        stream or sys.stdout,
+        getattr(args, "color", None) or "auto",
+        style=cast(StyleMode, style),
+    )
 
 
 def _warn_ignored_json(args: argparse.Namespace, command: str) -> None:
@@ -2656,8 +2681,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     configure_logging(logging.DEBUG if args.verbose else logging.WARNING)
     err = _console(args, sys.stderr)
     if args.command is None:
-        # Bare ``reverbscope``: a short home screen instead of argparse's error.
-        # A command is still required, so the exit code stays the usage error's.
+        from reverbscope.cli.console import is_terminal
         from reverbscope.edition import is_terminal_package
 
         print(

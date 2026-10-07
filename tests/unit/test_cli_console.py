@@ -853,3 +853,86 @@ def test_the_text_of_a_loaded_record_is_made_printable_in_place_of_its_layout() 
     )
     assert crafted.label == "x\ny"  # the loaded record itself is not touched
     assert printable_fields(7) == 7 and printable_fields(None) is None
+
+
+# --- The boxed style -----------------------------------------------------------------
+
+
+def _frame_widths(lines: list[str]) -> set[int]:
+    return {cell_width(line) for line in lines}
+
+
+def test_boxed_title_sections_and_tables_keep_one_width_with_chinese_cells() -> None:
+    c = Console(boxed=True, unicode=True, width=50, color=False)
+    title = c.title("ReverbScope 分析")
+    assert title[0].startswith("╭") and title[-1].startswith("╰")
+    assert _frame_widths(title) == {50}
+    section = c.section("测量健康", "10 项检查中 10 项良好")
+    assert section[0] == "" and section[1].startswith("── 测量健康 ──")
+    assert cell_width(section[1]) == 50
+    assert section[2].strip() == "10 项检查中 10 项良好"
+    table = c.table(["频段", "EDT", "T20"], [["宽带", "0.59 s", "0.53 s"], ["63 Hz", "—", "0.5 s"]])
+    assert table[0].strip().startswith("┌") and table[-1].strip().startswith("└")
+    assert len(_frame_widths(table)) == 1
+    assert "│ 宽带  │" in table[3]
+
+
+def test_boxed_frames_fall_back_to_ascii_and_to_the_ruled_table_when_too_wide() -> None:
+    a = Console(boxed=True, unicode=False, width=40, color=False)
+    assert a.title("ReverbScope analysis")[0] == "+" + "-" * 38 + "+"
+    assert (
+        a.table(["Band", "EDT"], [["Broadband", "0.59 s"]])[0].strip() == "+-----------+--------+"
+    )
+    # A table that fits only without borders keeps the ruled layout.
+    tight = Console(boxed=True, unicode=True, width=30, color=False)
+    lines = tight.table(["Band", "EDT", "T20"], [["Broadband", "0.59 s", "0.53 s"]])
+    assert not any("┌" in line for line in lines)
+    assert lines[2].startswith("  Broadband")
+    # Status lines, steps and commands are never framed.
+    assert Console(boxed=True, width=50).status("ok", "fine") == ["  ✓ fine"]
+    assert (
+        Console(boxed=True, width=50)
+        .commands([("reverbscope demo", "try")])[0]
+        .startswith("  reverbscope demo")
+    )
+
+
+def test_the_style_policy_boxes_only_a_wide_terminal_unless_asked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from reverbscope.cli.console import use_boxes
+
+    env: dict[str, str] = {}
+    assert use_boxes("auto", True, 80, env) is True
+    assert use_boxes("auto", True, 40, env) is False
+    assert use_boxes("auto", False, 100, env) is False  # a pipe stays plain
+    assert use_boxes("boxed", False, 100, env) is True
+    assert use_boxes("plain", True, 100, env) is False
+    assert use_boxes("auto", False, 100, {"REVERBSCOPE_CLI_STYLE": "boxed"}) is True
+    assert use_boxes("auto", True, 100, {"REVERBSCOPE_CLI_STYLE": "plain"}) is False
+    assert use_boxes("boxed", True, 100, {"REVERBSCOPE_CLI_STYLE": "plain"}) is True
+    pipe = Console.for_stream(_Stream(tty=False), environ=env)
+    assert pipe.boxed is False
+    tty = Console.for_stream(_Stream(tty=True), environ={"COLUMNS": "100"})
+    assert tty.boxed is True
+
+
+def test_style_boxed_frames_a_report_and_leaves_json_alone(
+    home: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert main(["--color", "never", "--style", "boxed", "demo", "--out", str(tmp_path / "d")]) == 0
+    assert "╭" in capsys.readouterr().out
+    assert (
+        main(["--color", "never", "--style", "boxed", "show", str(tmp_path / "d" / "position-a")])
+        == 0
+    )
+    out = capsys.readouterr().out
+    assert "╭" in out and "┌" in out and "──" in out
+    assert (
+        main(["--style", "boxed", "--format", "json", "show", str(tmp_path / "d" / "position-a")])
+        == 0
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["decay"]
+    assert main(["--style", "plain", "show", str(tmp_path / "d" / "position-a")]) == 0
+    assert "╭" not in capsys.readouterr().out

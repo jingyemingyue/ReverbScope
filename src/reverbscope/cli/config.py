@@ -47,6 +47,7 @@ KEYS: tuple[str, ...] = (
     "copy-recording",
     "developer-tools",
     "theme",
+    "style",
 )
 #: The :class:`~reverbscope.settings.UserSettings` field each key stores.
 FIELDS = {
@@ -57,17 +58,20 @@ FIELDS = {
     "copy-recording": "copy_recording",
     "developer-tools": "developer_tools",
     "theme": "theme",
+    "style": "cli_style",
 }
 #: The field names of settings.json are accepted for their keys too.
 _ALIASES = {
     "default-profile": "profile",
     "audio-backend": "backend",
     "output-dir": "output-folder",
+    "cli-style": "style",
 }
 #: The value that goes back to a setting's default, for every key.
 AUTO = "auto"
 BACKENDS = ("portaudio", "fake")
 THEMES = ("system", "light", "dark")
+STYLES = ("boxed", "plain")
 _ON = frozenset({"on", "true", "yes", "1"})
 _OFF = frozenset({"off", "false", "no", "0"})
 
@@ -195,6 +199,14 @@ def parse_value(key: str, raw: str) -> Any:
                 )
             )
         return word
+    if key == "style":
+        if word == AUTO:
+            return ""
+        if word not in STYLES:
+            raise SettingError(
+                _("unknown style {value}; choose boxed, plain or auto").format(value=repr(raw))
+            )
+        return word
     raise SettingError(f"unknown setting {key!r}")  # canonical_key() admits no other key
 
 
@@ -223,6 +235,7 @@ def title(key: str) -> str:
         "copy-recording": _("Copy recordings"),
         "developer-tools": _("Developer tools"),
         "theme": _("Theme (desktop app)"),
+        "style": _("Report style (command line)"),
     }[key]
 
 
@@ -244,6 +257,10 @@ def choices(key: str) -> str:
         return _("on or off (auto: on)")
     if key == "developer-tools":
         return _("on or off (auto: off; a source or pip install always has them)")
+    if key == "style":
+        return _(
+            "boxed, plain, or auto (frames on a terminal at least 48 columns wide; never in a pipe)"
+        )
     return _("system, light or dark (the desktop app only)")
 
 
