@@ -99,6 +99,23 @@ class ReleaseError(RuntimeError):
     """The files or the Release are not in a state the script may act on."""
 
 
+#: Release-notes headers in packaging/: the beta line's, and the one for a
+#: release candidate (``0.5.0rc1``), which says what a candidate is for.
+NOTES_HEADER = "release-notes-header.md"
+NOTES_HEADER_RC = "release-notes-header-rc.md"
+_RC_VERSION = re.compile(r"^\d+(\.\d+)*rc\d+$")
+
+
+def is_release_candidate(version: str) -> bool:
+    """``True`` for a PEP 440 release-candidate version such as ``0.5.0rc1``."""
+    return _RC_VERSION.match(version) is not None
+
+
+def release_notes_header(version: str) -> str:
+    """File name (under ``packaging/``) of the notes header for *version*."""
+    return NOTES_HEADER_RC if is_release_candidate(version) else NOTES_HEADER
+
+
 def python_dist_files(version: str) -> tuple[str, str]:
     """The wheel and sdist names hatchling gives ``reverbscope`` at *version*."""
     return (f"reverbscope-{version}-py3-none-any.whl", f"reverbscope-{version}.tar.gz")

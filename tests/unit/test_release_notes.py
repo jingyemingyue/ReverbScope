@@ -246,3 +246,76 @@ def test_readme_uses_its_own_language_demo_and_labels_synthetic_images(
     for alt, path in images:
         assert (ROOT / path).is_file(), path
         assert "synthetic" in alt.lower() or "合成" in alt, alt
+
+
+# --- the release-candidate header (packaging/release-notes-header-rc.md) ---
+
+HEADER_RC = ROOT / "packaging" / "release-notes-header-rc.md"
+
+
+def _rc_notes(version: str = "0.5.0rc1") -> str:
+    header = HEADER_RC.read_text(encoding="utf-8").replace("{version}", version)
+    changes = re.sub(r"(?m)^### ", "#### ", _changelog_section())
+    return header.replace("{changes}", "### Changes in this version\n\n" + changes)
+
+
+def test_the_header_is_chosen_by_the_version() -> None:
+    module = _release_draft()
+    assert module.release_notes_header("0.5.0b2") == HEADER.name
+    assert module.release_notes_header("0.5.0") == HEADER.name
+    assert module.release_notes_header("0.5.0rc1") == HEADER_RC.name
+    assert module.release_notes_header("1.0.0rc3") == HEADER_RC.name
+    assert module.release_notes_header("0.5.0rc1.dev1") == HEADER.name
+    assert (ROOT / "packaging" / module.release_notes_header("0.5.0rc1")).is_file()
+    # The workflow's draft job renders with that function, not a fixed name.
+    workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    assert "rd.release_notes_header(" in workflow
+
+
+def test_rc_notes_say_what_a_candidate_is_in_both_languages() -> None:
+    notes = _rc_notes()
+    lines = [line for line in notes.splitlines() if line.strip()]
+    assert lines[0] == "## ReverbScope v0.5.0rc1"
+    assert "Release candidate, for hardware and DAW validation." in lines[1]
+    for statement in (
+        "ReverbScope 0.5.0rc1 is a release candidate for hardware and DAW\n> validation. "
+        "It is not the final 0.5.0 stable release.",
+        "这是 0.5.0 正式版之前的候选测试版（release candidate），不代表已经完成\n> 所有真实硬件和 DAW 验证。",
+        "Its feature set is\n> frozen",
+        "Current builds are unsigned.",
+        "**What has been verified:**",
+        "**What has not been fully verified:**",
+        "real audio\n  interfaces, microphones, loudspeakers, rooms, every DAW, every driver and\n"
+        "  host API, and signing / notarization",
+        "should not\n  yet be treated as hardware-validated",
+        "not notarized",
+        "Authenticode",
+        "Open Anyway",
+        "Run anyway",
+        "docs/HARDWARE_TESTS.md",
+        "reverbscope doctor --probe --out report.txt",
+    ):
+        assert statement in notes, statement
+    # The header itself never calls the candidate a beta (the inserted
+    # changelog section may mention the beta line).
+    header = HEADER_RC.read_text(encoding="utf-8")
+    assert "beta" not in header.lower()
+    assert "spctl --master-disable" not in notes
+    assert "csrutil" not in notes
+
+
+def test_rc_notes_keep_the_download_tables_and_order_of_the_beta_notes() -> None:
+    notes = _rc_notes()
+    positions = [notes.index(section) for section in RELEASE_ORDER]
+    assert positions == sorted(positions)
+    choose, technical = notes.index(RELEASE_ORDER[0]), notes.index(RELEASE_ORDER[-1])
+    desktop = notes[notes.index(RELEASE_ORDER[1]) : notes.index(RELEASE_ORDER[2])]
+    terminal = notes[notes.index(RELEASE_ORDER[2]) : notes.index(RELEASE_ORDER[3])]
+    for name in _archives():
+        assert f"`{name}`" in (desktop if "-Desktop-" in name else terminal), name
+    for developer_file in ("cyclonedx.sbom.json", "generated-bundle.lock", ".whl"):
+        assert notes.index(developer_file) > technical, developer_file
+    assert "SBOM" not in notes[:choose] and "wheel" not in notes[:choose]
+    known = set(_release_draft().expected_assets("0.5.0rc1")) | IN_BUNDLE
+    unknown = sorted(set(_ASSET_NAME.findall(notes)) - known)
+    assert not unknown, unknown

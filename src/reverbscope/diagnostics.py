@@ -275,6 +275,39 @@ def _edition_name(edition: str) -> str:
     return edition
 
 
+def device_latency_text(device: dict[str, Any]) -> str | None:
+    """The driver's default input and output latency of a device, in milliseconds.
+
+    PortAudio reports a low and a high default per direction; the take's
+    actual latency is the ``audio stream:`` line in the log. ``None`` when the
+    device reports none (the fake backend, or a device that could not be
+    queried), so the report never shows an invented number.
+    """
+
+    def pair(low: object, high: object) -> str | None:
+        if not isinstance(low, (int, float)) or not isinstance(high, (int, float)):
+            return None
+        return _("{low:.1f}–{high:.1f} ms").format(low=low * 1000.0, high=high * 1000.0)
+
+    parts = []
+    if device.get("max_input_channels", 0) > 0:
+        text = pair(
+            device.get("default_low_input_latency_s"), device.get("default_high_input_latency_s")
+        )
+        if text:
+            parts.append(_("input latency {range}").format(range=text))
+    if device.get("max_output_channels", 0) > 0:
+        text = pair(
+            device.get("default_low_output_latency_s"),
+            device.get("default_high_output_latency_s"),
+        )
+        if text:
+            parts.append(_("output latency {range}").format(range=text))
+    if not parts:
+        return None
+    return _("driver default {parts}").format(parts=", ".join(parts))
+
+
 def _format_devices(audio: dict[str, Any]) -> list[str]:
     probed = bool(audio.get("rates_probed"))
     lines = [
@@ -311,6 +344,9 @@ def _format_devices(audio: dict[str, Any]) -> list[str]:
                     rates=_rates(probe["output_rates"], probe.get("output_rates_known", True))
                 )
             )
+        latency = device_latency_text(device)
+        if latency:
+            details.append(latency)
         recommended_input = bool(probe.get("recommended_input"))
         recommended_output = bool(probe.get("recommended_output"))
         if recommended_input and recommended_output:

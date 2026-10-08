@@ -1297,6 +1297,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--json", action="store_true", help=_("deprecated: use reverbscope --format json")
     )
     p_doc.add_argument(
+        "--out",
+        metavar=pgettext("metavar", "FILE"),
+        help=_(
+            "also write the report to this file (UTF-8), ready to attach to a bug or "
+            "hardware report"
+        ),
+    )
+    p_doc.add_argument(
         "--probe",
         action="store_true",
         help=_("also ask every device which sample rates it accepts (nothing is played)"),
@@ -1639,9 +1647,30 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         backend_name=args.backend, probe_rates=args.probe, english_errors=as_json
     )
     if as_json:
-        print(json.dumps(report, indent=1, default=str))
+        text = json.dumps(report, indent=1, default=str)
     else:
-        print(render_environment(_console(args), report))
+        text = render_environment(_console(args), report)
+    print(text)
+    out = getattr(args, "out", None)
+    if out:
+        # The same report, as a file a tester attaches to an issue: always
+        # UTF-8, whatever the console's code page (a PowerShell redirect
+        # would write UTF-16 or mojibake).
+        path = Path(out)
+        if path.is_dir():
+            refusal = ConfigurationError(
+                _("{path} is a folder; --out needs a file name for the report").format(path=out)
+            )
+            refusal.cli_hints = [f"reverbscope doctor --out {_('<file>')}"]  # type: ignore[attr-defined]
+            raise refusal
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text + "\n", encoding="utf-8")
+        except OSError as exc:
+            raise ConfigurationError(
+                _("cannot write the report to {path}: {error}").format(path=out, error=exc)
+            ) from exc
+        print(_("Report written to {path}").format(path=out), file=sys.stderr)
     return 0
 
 

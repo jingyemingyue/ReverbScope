@@ -6,6 +6,63 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 36: 2026-10-06 — **two lines from here on: the beta line on
+`main`, and a release-candidate line for hardware and DAW validation.**
+
+**State before this snapshot.** PR #44 (`integration/stabilization-0.5.0b2`,
+head `eeccf8d`) is open, draft, mergeable, and green on every check: CI
+(lint and type-check, JSON Schemas, sdist and wheel, the license and
+GPL-module gate, tests on Ubuntu 3.12 / 3.13 / 3.14, macOS 3.12 and Windows
+3.12) and Release (quality, sdist and wheel, SBOM, the four bundle jobs with
+the Windows installer install / smoke / uninstall and both macOS disk
+images, and the release file set). `main` is still `211654b`; nothing was
+merged, tagged or published.
+
+**What changed in this snapshot** (branch `integration/rc-readiness`,
+stacked on PR #44; the changelog's `[Unreleased]` lists it):
+
+* The policy: `main` keeps moving as the beta line (`0.5.0b3`, …); a
+  `release/0.5.0` branch, cut from PR #44's head, carries `0.5.0rc1` with a
+  frozen feature set and only correctness, crash, packaging, cross-platform,
+  hardware- and DAW-compatibility, documentation, localization and
+  release-engineering fixes. Fixes go to the candidate first and are
+  forward-ported to `main`; nothing comes back the other way. The 0.5.0
+  gate (real macOS and Windows machines, two interface models, the listed
+  rows, two DAWs, one reference-instrument comparison) is in
+  `docs/RELEASE_PLAN.md` §2a and §2b.
+* The Release workflow builds and drafts for `release/**` branches as it
+  does for `main` (version-driven, no tag), with a candidate's own notes
+  header (`packaging/release-notes-header-rc.md`) that says in English and
+  Chinese that the build is a candidate for validation and not 0.5.0, lists
+  what was and was not verified, and keeps the unsigned-build warnings. CI
+  runs on `release/**` pushes too. The paths filter still keeps a
+  documentation-only push from building four platforms.
+* For testers: `reverbscope doctor --out FILE` writes the report as a
+  UTF-8 file; the device listing shows the driver's default latency when
+  the device reports one; the interface report form asks for version and
+  commit, OS and CPU, buffer and latency setting and a latency row; the
+  DAW form asks for the workflow, the outcome and screenshots or log lines;
+  `docs/HARDWARE_TESTS.md` has the latency row, a record format with sample
+  rate and buffer, a results log and the eleven DAWs the candidate asks for
+  first. No DAW or interface is called supported.
+* `docs/RELEASE_READINESS.md`: the release-readiness audit of the
+  measurement path. Every reported number was traced to its validity,
+  confidence or reason carrier and to the tests that prove it; no number
+  without one was found, so no algorithm change was made.
+
+**What was run** (same container as snapshot 35): ruff, ruff format, strict
+mypy, the catalog, issue-form, release-notes, release-draft, action-pin,
+diagnostics and CLI tests on every change, `check_doc_links.py`,
+`check_cli_docs.py`, `check_src_safety.py`; the full suite with the coverage
+gate on the final tree of this branch and of the candidate branch is
+recorded in the stabilization report and in the pull request. **Not run:**
+anything on real hardware; the Release workflow for this branch and the
+candidate branch runs on GitHub when they are pushed.
+
+**Repository settings** (description, topics, homepage, Pages, the `main`
+ruleset) still need the maintainer: this session has no tool that changes
+them. The exact values are in PR #44 and in the stabilization report.
+
 Snapshot 35: 2026-10-06 — **0.5.0b2 stabilization prepared on
 `integration/stabilization-0.5.0b2`; nothing published, tagged or uploaded.**
 

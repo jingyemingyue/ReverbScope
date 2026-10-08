@@ -32,6 +32,17 @@ body:
       placeholder: "RME Babyface Pro FS, USB, driver 1.246 (Core Audio)"
     validations:
       required: true
+  - type: dropdown
+    id: workflow
+    attributes:
+      label: 工作流程
+      description: 你按照哪些步骤操作。指南为 docs/user-guide/daw-setup.zh-CN.md（英文版 docs/user-guide/daw-setup.md）。
+      options:
+        - 按指南中该 DAW 的步骤使用通用 DAW 模式
+        - 通用 DAW 模式，但用了自己的步骤（请在“结果”中说明）
+        - 用同一个音频接口以独立模式测量，作为对照
+    validations:
+      required: true
   - type: input
     id: rates
     attributes:
@@ -54,6 +65,17 @@ body:
         - 关闭（已在 DAW 中确认）
         - 开启（有意进行的反向测试）
         - 不确定
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: 结果类型
+      description: 'ReverbScope 对这段录音做了什么。“已分析但有警告”指打开了结果，但直达声置信度不是“高”，或出现了采样率 / 时间伸缩提示。'
+      options:
+        - 已分析，直达声置信度高，没有提示
+        - 已分析但有警告
+        - 未分析（被拒绝、出错或崩溃）
     validations:
       required: true
   - type: textarea
@@ -92,3 +114,10 @@ body:
       description: |
         `reverbscope session bundle <session> --out report.zip`（`--no-audio`
         可不含录音）。扫频附带的 JSON 文件和导出的录音是最有用的文件。
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: 截图或日志（可选）
+      description: |
+        DAW 导出对话框或片段设置的截图，以及 `reverbscope.log`（数据文件夹，或
+        环境报告 → 打开数据文件夹）中的相关行，在出问题时很有帮助。

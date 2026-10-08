@@ -206,3 +206,75 @@ def test_package_versions_fall_back_to_the_module(monkeypatch: pytest.MonkeyPatc
     monkeypatch.setattr(diagnostics, "version", no_metadata)
     assert diagnostics._package_version("numpy", "numpy") == numpy.__version__
     assert diagnostics._package_version("nothing-here", "not_a_listed_module") is None
+
+
+def test_driver_default_latency_is_shown_only_when_the_device_reports_it() -> None:
+    """A tester's report names the driver's default latency per direction; a
+    device that reports none (the fake backend, a device that could not be
+    queried) gets no invented number."""
+    from reverbscope.diagnostics import device_latency_text
+
+    device = {
+        "max_input_channels": 2,
+        "max_output_channels": 2,
+        "default_low_input_latency_s": 0.0058,
+        "default_high_input_latency_s": 0.0120,
+        "default_low_output_latency_s": 0.0100,
+        "default_high_output_latency_s": 0.0400,
+    }
+    assert device_latency_text(device) == (
+        "driver default input latency 5.8–12.0 ms, output latency 10.0–40.0 ms"
+    )
+    output_only = {**device, "max_input_channels": 0}
+    assert device_latency_text(output_only) == "driver default output latency 10.0–40.0 ms"
+    assert device_latency_text({**device, "default_low_input_latency_s": None}) == (
+        "driver default output latency 10.0–40.0 ms"
+    )
+    unknown = {k: (None if k.endswith("_s") else v) for k, v in device.items()}
+    assert device_latency_text(unknown) is None
+
+
+def test_the_text_reports_name_the_driver_latency(monkeypatch: pytest.MonkeyPatch) -> None:
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import render_environment
+    from reverbscope.diagnostics import environment_report, format_environment_report
+
+    monkeypatch.setenv("REVERBSCOPE_AUDIO_BACKEND", "fake")
+    report = environment_report("fake", probe_rates=True)
+    device = report["audio"]["devices"][0]["device"]
+    device["default_low_input_latency_s"] = 0.005
+    device["default_high_input_latency_s"] = 0.02
+    device["default_low_output_latency_s"] = 0.01
+    device["default_high_output_latency_s"] = 0.03
+    plain = format_environment_report(report)
+    assert "driver default input latency 5.0–20.0 ms, output latency 10.0–30.0 ms" in plain
+    console = Console(width=120)
+    boxed = render_environment(console, report)
+    assert "driver default input latency 5.0–20.0 ms, output latency 10.0–30.0 ms" in boxed
+    # The fake backend itself reports no latency, so a real run shows none.
+    bare = format_environment_report(environment_report("fake", probe_rates=True))
+    assert "driver default" not in bare
+
+
+def test_cli_doctor_out_writes_the_same_report_as_utf8(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``doctor --out`` gives a tester a file to attach, whatever the console's
+    code page; the JSON form stays pure JSON on stdout."""
+    from reverbscope.cli.main import main
+
+    out = tmp_path / "reports" / "environment.txt"
+    assert main(["--backend", "fake", "doctor", "--probe", "--out", str(out)]) == 0
+    captured = capsys.readouterr()
+    assert captured.out.rstrip("\n") == out.read_text(encoding="utf-8").rstrip("\n")
+    assert "ReverbScope environment report" in captured.out
+    assert str(out) in captured.err
+    json_out = tmp_path / "environment.json"
+    assert main(["--backend", "fake", "--format", "json", "doctor", "--out", str(json_out)]) == 0
+    captured = capsys.readouterr()
+    assert json.loads(captured.out) == json.loads(json_out.read_text(encoding="utf-8"))
+    # A folder is refused like every other unusable --out: a ReverbScope error
+    # (exit 1) with the command to try, not a usage error.
+    assert main(["--backend", "fake", "doctor", "--out", str(tmp_path)]) == 1
+    # The error block wraps to the terminal width; compare it unwrapped.
+    assert "needs a file name for the report" in " ".join(capsys.readouterr().err.split())

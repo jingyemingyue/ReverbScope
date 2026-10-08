@@ -26,7 +26,7 @@ refuses to invent a number.**
 **Status: 0.5.0 beta 2 (pre-release)** — free, open source, for testing. **This is not
 the hardware release:** nothing has been measured through a real audio
 interface or DAW yet, so treat the numbers as unvalidated
-([help test it](#help-test-beta-1)). Neither edition needs Python.
+([help test it](#help-test-beta-2)). Neither edition needs Python.
 
 Choose **one edition**, then the file for your computer under **Assets** on
 the newest release:

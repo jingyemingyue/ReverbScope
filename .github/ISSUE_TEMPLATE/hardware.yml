@@ -14,11 +14,34 @@ body:
         fake backend, a CI runner, or a virtual machine without a passed-through
         device.
   - type: input
+    id: version
+    attributes:
+      label: ReverbScope version and build commit
+      description: 'From the first lines of the environment report: `reverbscope doctor` or Help → Environment Report for Bug Reports.'
+      placeholder: "ReverbScope 0.5.0rc1, build 1a2b3c4d, Desktop Edition"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system and CPU
+      placeholder: "Windows 11 24H2 x64 / macOS 15.5 Apple silicon / Ubuntu 24.04 x86_64"
+    validations:
+      required: true
+  - type: input
     id: interface
     attributes:
       label: Audio interface and driver
       description: Model, how it is connected, and the driver (version if you know it).
       placeholder: "Focusrite Scarlett 2i2 (4th gen), USB, Focusrite Control 2 / ASIO driver 4.119"
+    validations:
+      required: true
+  - type: input
+    id: buffer
+    attributes:
+      label: Buffer size and latency setting
+      description: 'As set in the interface control panel (and the ReverbScope Latency: Low / High setting if you changed it). The `audio stream:` line of `reverbscope.log` shows what the stream reported.'
+      placeholder: "256 samples at 48 kHz; ReverbScope latency default; audio stream: latency_s=(0.012, 0.011)"
     validations:
       required: true
   - type: input
@@ -129,6 +152,18 @@ body:
     attributes:
       label: "Full take without a buffer under/overflow"
       description: 'Pass: no "reported ... buffer problem(s) ... may contain dropouts" warning in the result or in `reverbscope.log`. The log is in the data folder (`~/.reverbscope/`, or Environment Report → Open Data Folder).'
+      options:
+        - Not run
+        - Pass
+        - Fail
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: latency
+    attributes:
+      label: "Input/output latency reported"
+      description: 'After a full take, `reverbscope.log` (data folder) has an `audio stream:` line with `latency_s=(input, output)`. Pass: the line is there, both numbers are plausible for your buffer size, and the take had no dropouts. Paste the line in Result.'
       options:
         - Not run
         - Pass

@@ -8,6 +8,8 @@
 
 下面没有任何一项在未经真实硬件运行的情况下被标为 PASS。真实硬件指：一台实体电脑、一个实体音频接口及其实际驱动，检查需要时进行真实的播放和录制。演示模式、`fake` 后端、合成测试与脚本化 PortAudio 测试以及 CI 运行器都不算数。表格是有意留空的：还没有任何检查在真实硬件上运行过。
 
+**为什么现在重要。** `0.5.0rc1` 是候选测试版，它存在的唯一目的就是这张矩阵：代码已冻结，只有当真实的电脑、音频接口、房间和 DAW 填满发布计划中作为门槛的那些行（[RELEASE_PLAN.zh-CN.md §2b](RELEASE_PLAN.zh-CN.md#2b-050-的门槛)），才会切出 0.5.0。失败的一行和通过的一行同样有价值：它会变成一个修复和 `0.5.0rc2`。
+
 **提交结果。** 请提交 [音频接口测试报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)（英文：[Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)）或 [DAW 兼容性报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)（英文：[DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)）issue。两者都要求附上环境报告（**帮助 → 用于问题报告的环境报告**，或 `reverbscope doctor`；音频接口报告需要带探测采样率的版本，即 `reverbscope doctor --probe`），其中写明版本、构建提交、操作系统、音频系统（主机 API）和设备。音频接口报告要求对下表每一行回答 Pass（通过）/ Fail（失败）/ Not run（未运行）。维护者会把结果连同 issue 链接抄进下表对应的单元格。
 
 | 检查项 | macOS | Windows | Linux |
@@ -20,11 +22,20 @@
 | 回送（loopback）录制 | | | |
 | 播放中停止（一个回调周期内输出静音） | | | |
 | 完整测量且日志中没有缓冲区欠载/溢出（`reverbscope -v measure`） | | | |
+| 已记录输入/输出延迟（`reverbscope.log` 中的 `audio stream:` 行） | | | |
 | 测量中拔掉设备会报告为失败，而不是保存为录音 | | | |
 | 完整的独立模式测量 | | | |
 | 同一信号经过一个 DAW（通用 DAW 模式） | | | |
 
-单元格记录格式为 `PASS YYYY-MM-DD, ReverbScope x.y.z (commit), <OS version>, <interface and driver>, #issue` 或 `FAIL ... #issue`。不要根据 fake 后端、CI 运行器或测试结果填写单元格。
+单元格记录格式为 `PASS YYYY-MM-DD, ReverbScope x.y.z (commit), <OS version>, <interface, driver version>, <sample rate(s)> at <buffer size>, #issue` 或 `FAIL ... #issue`，并把同一次运行作为一行加入下面的结果日志。不要根据 fake 后端、CI 运行器或测试结果填写单元格。
+
+### 结果日志
+
+每次报告的运行占一行，由维护者从 issue 中抄录；上面的矩阵是这份日志的汇总。这里没有任何自动生成的内容：每一行都写明它来自哪个 issue。
+
+| 日期 | ReverbScope（commit） | 操作系统 | 音频接口 | 驱动 | 采样率 | 缓冲区 | 检查项 | PASS / FAIL | Issue |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| | | | | | | | | | |
 
 ## DAW 矩阵
 
@@ -57,7 +68,7 @@
 1. 把监听音箱或耳机的音量**调低**。测试信号是 20 Hz 到 20 kHz 的正弦扫频；从低音量开始，逐步调高到话筒处能清楚听到扫频为止，绝不要很响。高于 −12 dBFS 的电平，ReverbScope 会拒绝播放，除非你确认。
 2. 从最新的 Release 安装 ReverbScope（各系统的步骤见[用户指南](user-guide/zh-CN.md#安装)）。安装包还没有签名：在 macOS 上先打开一次，然后在 **系统设置 ▸ 隐私与安全性 ▸ 仍要打开** 中放行；在 Windows 上，于 SmartScreen 中点 **更多信息 ▸ 仍要运行**；在 Linux 上先安装 `libportaudio2`。在 macOS 上，系统询问时请允许麦克风访问（**系统设置 ▸ 隐私与安全性 ▸ 麦克风**）。
 3. 连接音频接口，按你平时的用法在它自己的控制面板中设置好，并记下驱动版本和在那里设置的缓冲区大小。
-4. 先点 **探测采样率**，再复制 **帮助 ▸ 用于问题报告的环境报告** 的内容（或运行 `reverbscope doctor --probe`）。这一步不会播放任何声音。把它粘贴到报告中；其中写明版本、构建提交、操作系统、音频系统和设备，你的主目录显示为 `~`。
+4. 先点 **探测采样率**，再复制 **帮助 ▸ 用于问题报告的环境报告** 的内容（或运行 `reverbscope doctor --probe --out report.txt`，它还会把报告写成一个可以直接附上的文件）。这一步不会播放任何声音。把它粘贴到报告中；其中写明版本、构建提交、版本类型、操作系统、CPU、音频系统、各设备及其声道数和可用采样率、驱动默认延迟、界面语言和日志文件位置，你的主目录显示为 `~`。
 
 **音频接口检查**（表单中每一行回答一次）
 
@@ -70,12 +81,15 @@
 | 播放中停止 | 扫频播放时点 **停止** | 声音立即停止，没有残留的持续音，不保存任何结果 |
 | 没有缓冲区欠载/溢出 | 用你平时的设置做一次完整测量 | 结果和 `reverbscope.log` 中都没有 “buffer problem(s) … may contain dropouts” 警告（中文界面中的相应提示以“音频设备在本次测量中报告了丢失或延迟的缓冲区”开头） |
 | 拔掉音频接口 | 先调低监听；在测量过程中拔掉线缆 | ReverbScope 报告错误且不保存任何内容；不会卡死或崩溃 |
+| 已记录输入/输出延迟 | 完整测量之后，打开 `reverbscope.log`（数据文件夹，或 **环境报告 ▸ 打开数据文件夹**），找到 `audio stream:` 那一行 | 这一行给出 `latency_s=(input, output)`；两个数值与你设置的缓冲区大小相符，且测量没有丢帧。把这一行粘贴到报告中 |
 | 完整的独立模式测量 | 在房间里使用话筒和扬声器 | 得到一个你能读懂的结果 |
 | 同一信号经过一个 DAW | 用同一个音频接口进行通用 DAW 模式测量 | 见下面的 DAW 步骤 |
 
 缓冲区与延迟：ReverbScope 使用音频接口驱动中的设置。如果某次测量报告了丢帧，请在音频接口的控制面板中调大缓冲区，关闭其他音频程序，然后再试；并在报告中写明这两项设置。开发者版（从源码安装，或打开 **文件 ▸ 设置 ▸ 显示开发者工具** 并重启）还提供 **延迟：低 / 高**，以及按系统提供的 WASAPI 独占模式（Windows）或让 ReverbScope 设置设备采样率（macOS）；如果改动了这些选项，请记录下来。安装包不使用 ASIO。
 
 **DAW 检查**（一个 DAW，一次测量）
+
+候选版本优先希望得到这些 DAW 的报告（不分先后）：Pro Tools、Logic Pro、GarageBand、Cubase / Nuendo、Fender Studio Pro（Studio One）、Ableton Live、REAPER、FL Studio、Bitwig Studio、Digital Performer 和 Audacity。指南中列出某个 DAW，只是因为其厂商文档记载了相应步骤，并不代表 ReverbScope 已经在它上面运行过：在有报告填入对应行之前，没有任何 DAW 算作“已支持”。
 
 1. 严格按照 [user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md) 中你所用 DAW 的说明操作；记下你的版本中与说明不同的菜单。
 2. 按工程采样率生成扫频，经扬声器播放，录下话筒，导出录音，然后在通用 DAW 模式中分析。

@@ -4739,3 +4739,30 @@ msgstr "独立回环录音存在设备时序问题，未做回环补偿"
 msgctxt "diagnostic"
 msgid "the audio stream reported {actual:g} Hz instead of the requested {requested:g} Hz; the recording's time scale cannot be trusted"
 msgstr "音频流报告的采样率是 {actual:g} Hz，而不是请求的 {requested:g} Hz；录音的时间刻度不可信"
+
+msgid "{low:.1f}–{high:.1f} ms"
+msgstr "{low:.1f}–{high:.1f} ms"
+
+msgid "input latency {range}"
+msgstr "输入延迟 {range}"
+
+msgid "output latency {range}"
+msgstr "输出延迟 {range}"
+
+msgid "driver default {parts}"
+msgstr "驱动默认 {parts}"
+
+msgid "also write the report to this file (UTF-8), ready to attach to a bug or hardware report"
+msgstr "同时把报告写入这个文件（UTF-8），可直接附到问题报告或硬件测试报告中"
+
+msgid "{path} is a folder; --out needs a file name for the report"
+msgstr "{path} 是一个文件夹；--out 需要一个报告文件名"
+
+msgid "<file>"
+msgstr "<文件>"
+
+msgid "cannot write the report to {path}: {error}"
+msgstr "无法把报告写入 {path}：{error}"
+
+msgid "Report written to {path}"
+msgstr "报告已写入 {path}"
