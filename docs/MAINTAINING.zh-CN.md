@@ -70,6 +70,7 @@ python -m build
 | Documentation links / CLI examples | 文件移动了，或示例命令解析器不再接受 | 改文档；`check_cli_docs.py` 会指出文件、行和解析器的消息 |
 | 只有某个操作系统上的 Tests 红 | 路径、编码或换行假设 | 作业日志指出测试名；用 `PYTHONIOENCODING=cp1252` 或单元测试里的 Windows 路径重现，修代码，保留测试 |
 | 所有 Tests 红，覆盖率那一行 | 套件通过了，但 `core`/`models` 覆盖率低于 85 % | 为新分支补合成测试；绝不降低门槛 |
+| Tests 在所有平台上每个测试都通过，随后进程在解释器退出时崩溃（`QObject: shared QObject was deleted directly`，Linux 退出码 134 / 139，Windows 127） | 新版 PySide6 改变了 Qt 在关闭阶段能容忍的顺序；`gui` extra 正因此设有版本上限（`docs/DEPENDENCIES.md` §4），`tests/conftest.py` 在会话结束时按已知顺序销毁 Qt 对象 | 在 venv 里装上新版 PySide6，用 `tests/ui` 重现（单个模块都能通过，整个目录不能）；先扩展 `tests/conftest.py` 里的会话结束销毁逻辑，再在两条线上放开上限（这是发布工程改动），绝不能靠跳过 GUI 测试 |
 | Release 的某个 bundle 作业 | PyInstaller 锁文件、没有许可证文本的原生库、GPL-only 的 Qt 模块 | `requirements/bundle.lock`（`scripts/compile_bundle_lock.py`）、`packaging/licenses/native/`、`packaging/pyinstaller_filters.py`；门槛脚本会指出是哪个文件 |
 | Release 的 draft 作业 | 两个草稿、tag 指向另一个提交、手工附加的文件 | `scripts/release_draft.py` 拒绝猜测；删掉多余的草稿或文件后重新运行 |
 
