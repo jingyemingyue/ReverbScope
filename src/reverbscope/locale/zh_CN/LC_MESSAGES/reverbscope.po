@@ -5864,3 +5864,27 @@ msgstr "无法打开数据文件夹"
 
 msgid "The question could not be completed ({error}). Back to the menu."
 msgstr "这个问题无法完成（{error}）。回到菜单。"
+
+msgctxt "status"
+msgid "good"
+msgstr "良好"
+
+msgctxt "status"
+msgid "check"
+msgstr "注意"
+
+msgctxt "status"
+msgid "problem"
+msgstr "问题"
+
+msgctxt "status"
+msgid "note"
+msgstr "说明"
+
+msgctxt "status"
+msgid "no data"
+msgstr "无数据"
+
+msgctxt "status"
+msgid "unsure"
+msgstr "不确定"

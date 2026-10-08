@@ -15,7 +15,9 @@ Rules the rest of the CLI relies on:
   word (``✓`` / ``!`` / ``×`` / ``→``), with ASCII forms (``[OK]`` /
   ``[WARN]`` / ``[ERROR]`` / ``->``) where the stream cannot show the symbols;
   :meth:`Console.fit` turns the remaining typographic signs (``Δ``, ``→``,
-  ``–``) into ASCII for such a stream as well.
+  ``–``) into ASCII for such a stream as well. Where a table has room for a
+  status column its cell is a badge (:meth:`Console.badge`), the mark and a
+  word (``✓ good``).
 * **Widths are display widths**: a CJK or full-width character takes two
   columns, a combining mark none (:func:`cell_width`); ``len()`` is never used
   to align text.
@@ -35,6 +37,8 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass, is_dataclass, replace
 from dataclasses import fields as dataclass_fields
 from typing import Any, Literal, TextIO
+
+from reverbscope.i18n import pgettext
 
 ColorMode = Literal["auto", "always", "never"]
 COLOR_MODES: tuple[ColorMode, ...] = ("auto", "always", "never")
@@ -116,6 +120,24 @@ _STATUS_STYLE: dict[str, tuple[str, ...]] = {
     "next": ("cyan",),
 }
 
+#: One-column marks for a badge (``✓ good``), which carries its word: Unicode,
+#: then ASCII. ``✗`` rather than the ``×`` of a status line, because ``×`` is
+#: an ambiguous-width character that a CJK terminal may draw two columns
+#: wide; ``✗`` is one column everywhere.
+_MARKS: dict[str, tuple[str, str]] = {
+    "ok": ("✓", "+"),
+    "warn": ("!", "!"),
+    "error": ("✗", "x"),
+    "info": ("i", "i"),
+    "skip": ("–", "-"),
+    "unsure": ("?", "?"),
+    "next": ("→", ">"),
+}
+
+#: The narrowest a wrapping column of a bordered table gets before the table
+#: is laid out another way.
+_WRAP_FLOOR = 16
+
 #: ASCII stand-ins for the typographic signs the reports use, for a stream
 #: whose encoding cannot write them (a cp1252 pipe, a Latin-1 terminal).
 _ASCII_SIGNS = str.maketrans(
@@ -172,6 +194,23 @@ PIPE_WIDTH = 100
 MIN_WIDTH = 20
 #: Wider terminals keep this width: longer lines are harder to read.
 MAX_WIDTH = 100
+
+
+def badge_word(kind: Status) -> str:
+    """The word a badge shows next to its mark (``✓ good``); empty for ``next``.
+
+    The words say how a result stands in an overview (``good``, ``check``,
+    ``problem``), not how a measurement is judged: the health and verdict
+    sections keep their own vocabulary.
+    """
+    return {
+        "ok": pgettext("status", "good"),
+        "warn": pgettext("status", "check"),
+        "error": pgettext("status", "problem"),
+        "info": pgettext("status", "note"),
+        "skip": pgettext("status", "no data"),
+        "unsure": pgettext("status", "unsure"),
+    }.get(kind, "")
 
 
 class Verbatim(str):
@@ -661,9 +700,22 @@ class Console:
 
     def _ascii(self, text: str) -> str:
         """``text`` with the signs this stream cannot show in ASCII."""
+        if self.boxed:
+            # "|" is the side of an ASCII frame: a separator inside one is "/",
+            # and |Δ| (the size of a change) is not drawn as two more sides.
+            text = text.replace("·", "/").replace("|Δ|", "abs(delta)")
         text = text.translate(_ASCII_SIGNS)
         if _DEGREE in text and not self.can_write(_DEGREE):
             text = text.replace(_DEGREE, "")
+        if self.boxed and not self.can_write(text.replace(GLUE, " ")):
+            # What the encoding cannot write is replaced by one "?" however
+            # wide the character is, and a frame's sides would come out
+            # ragged: one "?" per column keeps them straight. The glue
+            # between a number and its unit is not text: fit() writes a space.
+            text = "".join(
+                char if char == GLUE or self.can_write(char) else "?" * max(1, char_width(char))
+                for char in text
+            )
         return text
 
     # Styles -----------------------------------------------------------------
@@ -687,6 +739,20 @@ class Console:
         glyph, ascii_form = _SYMBOLS[status]
         return self.style(glyph if self.unicode else ascii_form, *_STATUS_STYLE[status])
 
+    def mark(self, status: Status) -> str:
+        """The one-column mark of a badge, unstyled."""
+        glyph, ascii_form = _MARKS[status]
+        return glyph if self.unicode else ascii_form
+
+    def badge(self, status: Status, word: str | None = None) -> str:
+        """``✓ good``, ``! check``, ``✗ problem``: the mark, coloured, and the
+        word (``word``, else the status's own), bold. Colour is only ever on
+        the mark: a letter or a digit coloured yellow or green cannot be read
+        on a light background."""
+        mark = self.style(self.mark(status), *_STATUS_STYLE[status])
+        word = self.readable(badge_word(status) if word is None else word)
+        return f"{mark} {self.bold(word)}" if word else mark
+
     def fit(self, text: str) -> str:
         """``text`` as this stream can write it: typographic signs become ASCII
         where the encoding cannot hold them (see :data:`_ASCII_SIGNS`)."""
@@ -709,7 +775,10 @@ class Console:
 
     def sep(self) -> str:
         """Separator between short facts on one line."""
-        return " · " if self.unicode else " | "
+        if self.unicode:
+            return " · "
+        # "|" is the side of an ASCII frame.
+        return " / " if self.boxed else " | "
 
     # Blocks -------------------------------------------------------------------
 
@@ -942,6 +1011,82 @@ class Console:
             return self._grid(headers, rows, widths, align, margin)
         rule = [self.muted(self.rule_char() * width) for width in widths]
         return [line([self.muted(h) for h in headers]), line(rule), *(line(row) for row in rows)]
+
+    def framed_table(
+        self,
+        headers: Sequence[str],
+        rows: Sequence[Sequence[str]],
+        *,
+        align: str = "",
+        indent: int = 2,
+        wrap_column: int | None = None,
+        expand: bool = False,
+        min_widths: Sequence[int] = (),
+    ) -> list[str] | None:
+        """Rows in a bordered grid, or ``None`` when no grid is drawn.
+
+        A grid is drawn only with frames (:attr:`boxed`) and when it fits the
+        console; the caller then lays the rows out another way. Cells may be
+        styled. The text of ``wrap_column`` (the last column unless given)
+        wraps inside its column when the grid would be wider than the console,
+        down to :data:`_WRAP_FLOOR` columns, and ``expand`` widens that column
+        so the grid's right border sits on the console's last column, under the
+        title panel's. ``min_widths`` holds a column at least that wide, so
+        that tables shown one under the other keep their first border in
+        step. A cell that cannot wrap (a path, or an unbreakable word wider
+        than the column) makes the grid give up rather than cut it.
+        """
+        if not self.boxed or not rows:
+            return None
+        headers = [self.readable(header) for header in headers]
+        rows = [[self.readable(cell) for cell in row] for row in rows]
+        widths = [cell_width(header) for header in headers]
+        for row in rows:
+            for index, cell in enumerate(row):
+                widths[index] = max(widths[index], cell_width(cell))
+        for index, least in enumerate(min_widths):
+            widths[index] = max(widths[index], least)
+        columns = len(widths)
+        align = (align or "l" * columns).ljust(columns, "l")
+        flex = columns - 1 if wrap_column is None else wrap_column
+        spare = self.width - (indent + sum(widths) + 3 * columns + 1)
+        if spare < 0:
+            # The wrapping column narrows, down to a readable width.
+            least = max(min(widths[flex], _WRAP_FLOOR), cell_width(headers[flex]))
+            shrunk = max(0, min(-spare, widths[flex] - least))
+            widths[flex] -= shrunk
+            spare += shrunk
+        if spare < 0:
+            return None
+        if expand:
+            widths[flex] += spare
+
+        def lines_of(cells: Sequence[str]) -> list[list[str]] | None:
+            """One row of cells as display lines; ``None`` when one cannot wrap."""
+            split: list[list[str]] = []
+            for index, cell in enumerate(cells):
+                if cell_width(cell) <= widths[index]:
+                    split.append([cell])
+                    continue
+                if isinstance(cell, Verbatim):
+                    return None
+                wrapped = wrap(strip_ansi(cell), widths[index])
+                if any(cell_width(line) > widths[index] for line in wrapped):
+                    return None  # an unbreakable word inside the text
+                split.append(wrapped)
+            height = max(len(lines) for lines in split)
+            return [[lines[k] if k < len(lines) else "" for lines in split] for k in range(height)]
+
+        body: list[list[str]] = []
+        for row in rows:
+            row_lines = lines_of(row)
+            if row_lines is None:
+                return None
+            body += row_lines
+        for index, width in enumerate(widths):
+            if any(cell_width(row[index]) > width for row in rows):
+                align = align[:index] + "l" + align[index + 1 :]  # wrapped text reads left
+        return self._grid(headers, body, widths, align, " " * indent)
 
     def _grid(
         self,
