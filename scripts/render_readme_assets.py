@@ -168,7 +168,8 @@ def render_cli(workdir: Path, out: Path) -> None:
             os.chdir(enter_language(workdir, lang))
             buffer = io.StringIO()
             with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(io.StringIO()):
-                code = main(["--lang", lang, "--color", "always", "demo"])
+                # As a terminal draws it: boxed, though this buffer is not a terminal.
+                code = main(["--lang", lang, "--color", "always", "--style", "boxed", "demo"])
             if code != 0:
                 raise SystemExit(f"reverbscope demo failed with {code}")
             command = "reverbscope demo" if lang == "en" else "reverbscope --lang zh_CN demo"

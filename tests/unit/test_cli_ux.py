@@ -251,9 +251,10 @@ def test_readme_demo_screenshots_show_what_the_demo_prints(
     svg: str, lang: str, command: str
 ) -> None:
     """README.md and README.zh-CN.md present these SVGs as the output of
-    ``reverbscope demo``; they still lacked the Clarity rows of 0.5.0b1. When
-    the demo golden changes, run ``python scripts/render_readme_assets.py``
-    (``--cli-only`` is enough here) and commit docs/images with the change."""
+    ``reverbscope demo`` on a terminal (boxed, 80 columns); they once lacked
+    the Clarity rows of 0.5.0b1. When the boxed demo golden changes, run
+    ``python scripts/render_readme_assets.py`` (``--cli-only`` is enough here)
+    and commit docs/images with the change."""
     import html
 
     path = Path(__file__).resolve().parents[2] / "docs" / "images" / svg
@@ -262,7 +263,7 @@ def test_readme_demo_screenshots_show_what_the_demo_prints(
         for row in _SVG_ROW.findall(path.read_text(encoding="utf-8"))
     ]
     assert rows[0] == f"$ {command}"
-    expected = (GOLDEN / f"demo-{lang}-80.txt").read_text(encoding="utf-8")
+    expected = (GOLDEN / f"demo-{lang}-boxed-80.txt").read_text(encoding="utf-8")
     shown = _normalise("\n".join(rows[1:]) + "\n")
     assert shown == expected, f"docs/images/{svg} is out of date: rerun render_readme_assets.py"
 
