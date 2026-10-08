@@ -29,7 +29,6 @@ from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 
 from reverbscope.audio.backend import AudioBackend, DeviceInfo, StreamOptions
-from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, diag
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
@@ -100,6 +99,13 @@ _ALSA_VIRTUAL = re.compile(
 _ALSA_HW = re.compile(r"\(hw:\s*\d+\s*,\s*\d+\)")
 #: MME truncates device names to 31 characters.
 _MME_NAME_LENGTH = 31
+#: PortAudio appends " - Input" / " - Output", in English whatever the
+#: Windows language, to the name of MME's WAVE_MAPPER ("Microsoft Sound
+#: Mapper - Input", "Microsoft 声音映射器 - Output"); no real device gets it.
+_MME_MAPPER = re.compile(r" - (Input|Output)$")
+#: DirectSound's primary drivers in English Windows; other languages name
+#: them in their own words, which only the host API's defaults reveal.
+_DIRECTSOUND_PRIMARY = re.compile(r"^Primary Sound (Capture )?Driver$", re.IGNORECASE)
 
 
 def host_api_kind(name: str) -> str:
@@ -143,6 +149,35 @@ def same_adapter(a: DeviceInfo, b: DeviceInfo) -> bool:
     return (long_.startswith(short) and len(short) >= 8) or ka == kb
 
 
+def is_system_alias(device: DeviceInfo, host_apis: Sequence[HostApiInfo] = ()) -> bool:
+    """True for a Windows entry that stands for the system default device.
+
+    MME's WAVE_MAPPER and DirectSound's primary drivers play and record
+    through whichever device Windows has as its default, so they are no
+    adapter of their own. PortAudio makes the primary drivers (the
+    ``lpGUID == NULL`` entries) DirectSound's default devices
+    (``pa_win_ds.c``); MME's defaults are the preferred real devices
+    (``DRVM_MAPPER_PREFERRED_GET`` in ``pa_win_wmme.c``), not the mapper.
+    """
+    kind = host_api_kind(device.host_api)
+    if kind == "mme":
+        return bool(_MME_MAPPER.search(device.name))
+    if kind != "directsound":
+        return False
+    if _DIRECTSOUND_PRIMARY.match(device.name.strip()):
+        return True
+    api = next((a for a in host_apis if a.name == device.host_api), None)
+    return api is not None and device.index in (api.default_input, api.default_output)
+
+
+def is_virtual_device(device: DeviceInfo, host_apis: Sequence[HostApiInfo] = ()) -> bool:
+    """True for an entry that is no physical device: a Windows system alias,
+    or an ALSA plugin or sound server (``default``, ``pulse``, ``dmix``...)."""
+    if host_api_kind(device.host_api) == "alsa" and _ALSA_VIRTUAL.match(device.name):
+        return True
+    return is_system_alias(device, host_apis)
+
+
 def is_direct_path(device: DeviceInfo) -> bool:
     """True for paths that do not go through a system mixer or resampler."""
     kind = host_api_kind(device.host_api)
@@ -180,6 +215,10 @@ class DeviceProbe:
     #: Sample rates (Hz) the host API accepts for 1 input / 1 output channel.
     input_rates: tuple[int, ...] = ()
     output_rates: tuple[int, ...] = ()
+    #: False when the device could not be opened to ask (busy, unplugged): the
+    #: empty rate list then means "unknown", not "accepts none".
+    input_rates_known: bool = True
+    output_rates_known: bool = True
     #: Entries sharing this key are the same physical device.
     group: str = ""
     direct_path: bool = False
@@ -232,19 +271,36 @@ def _rank(kind: str, platform: str) -> int | None:
     return order.index(kind) if kind in order else None
 
 
+#: PortAudio errors that say the device could not be opened at all, so its
+#: rates stay unknown: paDeviceUnavailable (-9985: another program holds it,
+#: or it was unplugged since the list was read), paInvalidDevice (-9996), and
+#: ALSA's EBUSY ("Device or resource busy") in an unanticipated host error.
+_UNAVAILABLE = re.compile(
+    r"PaErrorCode -99(85|96)\b|Device unavailable|Invalid device|resource busy", re.IGNORECASE
+)
+
+
 def _supported(
     backend: AudioBackend, device: DeviceInfo, rates: Sequence[int], kind: str
-) -> tuple[int, ...]:
+) -> tuple[tuple[int, ...], str | None]:
+    """The rates ``device`` accepts, and PortAudio's error when every probe
+    failed because the device could not be opened (``None`` otherwise)."""
     accepted: list[int] = []
+    unavailable: list[str] = []
     for rate in rates:
         try:
             backend.check_sample_rate(device.index, int(rate), kind=kind, channels=1)
-        except ReverbScopeError:
-            continue
-        except Exception:  # a driver that fails the query is "not supported"
+        except Exception as exc:  # a driver that fails the query is "not supported"
+            # check_sample_rate words its own sentence around PortAudio's error.
+            error = str(exc.__cause__ or exc)
+            if _UNAVAILABLE.search(error):
+                unavailable.append(error)
             continue
         accepted.append(int(rate))
-    return tuple(accepted)
+    if not accepted and unavailable and len(unavailable) == len(rates):
+        # Not one rate could be asked: the rates are unknown, not refused.
+        return (), unavailable[-1]
+    return tuple(accepted), None
 
 
 def _sort_key(probe: DeviceProbe, platform: str) -> tuple[int, int, int]:
@@ -272,15 +328,35 @@ def build_inventory(
             notes.append(note)
         if kind == "alsa" and _ALSA_VIRTUAL.match(device.name):
             notes.append(diag("ALSA plugin or sound-server device: may resample and mix"))
-        input_rates = (
-            _supported(backend, device, rates, "input") if probe_rates and device.is_input else ()
+        input_rates, input_error = (
+            _supported(backend, device, rates, "input")
+            if probe_rates and device.is_input
+            else ((), None)
         )
-        output_rates = (
-            _supported(backend, device, rates, "output") if probe_rates and device.is_output else ()
+        output_rates, output_error = (
+            _supported(backend, device, rates, "output")
+            if probe_rates and device.is_output
+            else ((), None)
         )
-        if probe_rates and device.is_input and not input_rates:
+        if input_error is not None:
+            notes.append(
+                diag(
+                    "could not be opened for recording, so its sample rates are unknown "
+                    "(in use by another program, or disconnected?): {error}",
+                    error=input_error,
+                )
+            )
+        elif probe_rates and device.is_input and not input_rates:
             notes.append(diag("accepts none of ReverbScope's sample rates for recording"))
-        if probe_rates and device.is_output and not output_rates:
+        if output_error is not None:
+            notes.append(
+                diag(
+                    "could not be opened for playback, so its sample rates are unknown "
+                    "(in use by another program, or disconnected?): {error}",
+                    error=output_error,
+                )
+            )
+        elif probe_rates and device.is_output and not output_rates:
             notes.append(diag("accepts none of ReverbScope's sample rates for playback"))
         probes.append(
             DeviceProbe(
@@ -288,12 +364,14 @@ def build_inventory(
                 host_api_kind=kind,
                 input_rates=input_rates,
                 output_rates=output_rates,
+                input_rates_known=input_error is None,
+                output_rates_known=output_error is None,
                 group=physical_key(device),
                 direct_path=is_direct_path(device),
                 notes=tuple(notes),
             )
         )
-    probes = _mark_recommended(probes, platform, probe_rates)
+    probes = _mark_recommended(probes, platform, probe_rates, host_apis)
     inventory_notes: list[str] = []
     if not probes:
         inventory_notes.append(diag("no audio device found; Universal DAW Mode still works"))
@@ -309,11 +387,21 @@ def build_inventory(
 
 
 def _mark_recommended(
-    probes: list[DeviceProbe], platform: str, probe_rates: bool
+    probes: list[DeviceProbe],
+    platform: str,
+    probe_rates: bool,
+    host_apis: Sequence[HostApiInfo] = (),
 ) -> list[DeviceProbe]:
-    """Recommend, per physical device and direction, the best-ranked usable entry."""
+    """Recommend, per physical device and direction, the best-ranked usable entry.
+
+    System aliases and ALSA plugins are never recommended: each forms a group
+    of its own and would always win it, although it is the path that
+    resamples and mixes (docs/AUDIO_DEVICES.md ranks it last).
+    """
     best: dict[tuple[str, str], DeviceProbe] = {}
     for probe in probes:
+        if is_virtual_device(probe.device, host_apis):
+            continue
         for direction in ("input", "output"):
             has = probe.device.is_input if direction == "input" else probe.device.is_output
             rates = probe.input_rates if direction == "input" else probe.output_rates
@@ -400,14 +488,19 @@ def _portaudio_version(backend: AudioBackend) -> str | None:
 
 
 def separate_clocks_warning(
-    devices: Sequence[DeviceInfo], input_device: int | None, output_device: int | None
+    devices: Sequence[DeviceInfo],
+    input_device: int | None,
+    output_device: int | None,
+    host_apis: Sequence[HostApiInfo] = (),
 ) -> str | None:
     """A warning when playback and recording use different physical devices.
 
     Two devices run on two sample clocks; the drift between them stretches the
     recorded sweep against the reference and smears the deconvolved response
     (Farina 2007). One interface for both, or an aggregate device with drift
-    correction, avoids it.
+    correction, avoids it. A system alias (:func:`is_system_alias`) is
+    compared as the system default device it plays through; without one that
+    is a real device there is nothing to compare, and no warning.
     """
     by_index = {device.index: device for device in devices}
     inp = by_index.get(input_device) if input_device is not None else None
@@ -416,6 +509,8 @@ def separate_clocks_warning(
         inp = next((d for d in devices if d.is_default_input), None)
     if out is None:
         out = next((d for d in devices if d.is_default_output), None)
+    inp = _behind_alias(inp, devices, host_apis, "is_default_input")
+    out = _behind_alias(out, devices, host_apis, "is_default_output")
     if inp is None or out is None or host_api_kind(inp.host_api) == "fake":
         return None
     if same_adapter(inp, out):
@@ -426,6 +521,26 @@ def separate_clocks_warning(
         "or an aggregate device with drift correction (macOS), and check the result with a "
         "loopback"
     ).format(output=out.name, input=inp.name)
+
+
+def _behind_alias(
+    device: DeviceInfo | None,
+    devices: Sequence[DeviceInfo],
+    host_apis: Sequence[HostApiInfo],
+    default_attr: str,
+) -> DeviceInfo | None:
+    """The device a system alias plays through: the system default device.
+
+    "Primary Sound Driver" and "Primary Sound Capture Driver" share no
+    adapter name, yet both follow the Windows defaults, which are usually
+    one interface.
+    """
+    if device is None or not is_system_alias(device, host_apis):
+        return device
+    default = next((d for d in devices if getattr(d, default_attr)), None)
+    if default is None or is_system_alias(default, host_apis):
+        return None
+    return default
 
 
 def check_channels(
@@ -446,6 +561,10 @@ def check_channels(
             return by_index.get(index)
         return next((d for d in devices if getattr(d, default_attr)), None)
 
+    if output_channel < 1 or any(channel < 1 for channel in input_channels):
+        # Otherwise only the stream (after the sweep file is written and the
+        # take has begun) would notice.
+        raise ConfigurationError(_("channels are 1-based and must be >= 1"))
     inp = pick(input_device, "is_default_input")
     out = pick(output_device, "is_default_output")
     if inp is not None and input_channels and max(input_channels) > inp.max_input_channels:
@@ -574,7 +693,7 @@ def preflight(
             backend.check_sample_rate(
                 device.index, sample_rate, kind=kind, channels=channels, options=options
             )
-    return DevicePlan(inp, out, separate_clocks_warning(devices, inp, out))
+    return DevicePlan(inp, out, separate_clocks_warning(devices, inp, out, inventory.host_apis))
 
 
 def check_host_api_options(device: DeviceInfo, options: StreamOptions | None) -> None:

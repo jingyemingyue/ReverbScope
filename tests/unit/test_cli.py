@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import errno
 import json
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -9,6 +11,7 @@ from scipy.signal import fftconvolve
 
 from reverbscope.cli.main import main
 from reverbscope.io.wav import read_wav, write_wav
+from reverbscope.models.configuration import SweepSettings
 from tests.conftest import make_rir
 
 
@@ -250,6 +253,37 @@ def test_measure_refuses_loud_level_without_acknowledgement(
     assert "acknowledge" in capsys.readouterr().err
 
 
+def test_show_json_reports_session_paths_as_stored(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+    short_sweep: SweepSettings,
+) -> None:
+    """``show --format json`` printed the recording as ``sess/recording.wav``
+    (relative to where you ran it) while session.json says ``recording.wav``
+    (relative to the session folder, like the other members)."""
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    rec = synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3))
+    result = analyze(rec, Reference.from_settings(short_sweep))
+    take = write_wav(tmp_path / "take.wav", rec.samples, rec.sample_rate, subtype="FLOAT")
+    save_measurement(
+        tmp_path / "sess",
+        MeasurementSession(recording_path=str(take)),
+        result,
+        include_curves=False,
+        copy_recording=True,
+    )
+    monkeypatch.chdir(tmp_path)
+    capsys.readouterr()
+    assert main(["--format", "json", "show", "sess", "--no-curves"]) == 0
+    session = json.loads(capsys.readouterr().out)["session"]
+    assert session["recording_path"] == "recording.wav"
+    assert session["impulse_response_path"] == "impulse_response.wav"
+
+
 def test_session_bundle_export_and_project(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
@@ -394,3 +428,511 @@ def test_fake_backend_devices_and_measure(
     assert (out / "session.json").is_file()
     assert (out / "recording.wav").is_file()
     assert "Loopback" in captured.out or "loopback" in captured.out.lower()
+
+
+def test_the_fake_cable_is_on_the_declared_loopback_input_only(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review finding: `--backend fake measure --input-channels 2` still
+    analysed a cable (RT60 0.07 s, "exact digital silence") because input 2 was
+    hard-wired as the loopback, and a loopback declared on input 3 was refused
+    as "a room". The cable is where --loopback-channel says, nowhere else."""
+    base = ["--backend", "fake", "measure", "--duration", "2", "--post-silence", "1.5"]
+    mic_on_2 = main([*base, "--out", str(tmp_path / "mic2"), "--input-channels", "2"])
+    plain = capsys.readouterr()
+    assert mic_on_2 == 0, plain.err
+    assert "RT60 0.40 s" in plain.out
+    assert "digital silence" not in plain.out
+    cable_on_3 = main(
+        [
+            *base,
+            "--out",
+            str(tmp_path / "cable3"),
+            "--input-channels",
+            "1,3",
+            "--loopback-channel",
+            "3",
+        ]
+    )
+    wired = capsys.readouterr()
+    assert cable_on_3 == 0, wired.err
+    assert "loopback on input 3" in wired.out
+    assert "compensated" in wired.out
+    assert "not applied" not in wired.out
+    assert "RT60 0.40 s" in wired.out
+
+
+def test_show_comparison_interprets_with_the_candidates_profile(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`show comparison.json` used the General profile, not the candidate
+    session's profile that `compare` used, and ignored the default profile."""
+    from reverbscope.settings import UserSettings, save_settings
+
+    for name, rt60 in (("a", 0.7), ("b", 0.4)):
+        ir = write_wav(tmp_path / f"{name}.wav", make_rir(48000, rt60_s=rt60) * 0.5, 48000)
+        argv = ["analyze-ir", "--ir", str(ir), "--band", "100", "8000", "--profile", "vocal"]
+        assert main([*argv, "--out", str(tmp_path / name)]) == 0
+    saved = tmp_path / "ab.json"
+    assert main(["compare", str(tmp_path / "a"), str(tmp_path / "b"), "--out", str(saved)]) == 0
+    assert "Vocals profile" in capsys.readouterr().out
+    assert main(["show", str(saved)]) == 0
+    assert "Vocals profile" in capsys.readouterr().out
+    # Without the candidate session, the default profile applies.
+    (tmp_path / "b").rename(tmp_path / "moved")
+    save_settings(UserSettings(default_profile="choir"))
+    assert main(["show", str(saved)]) == 0
+    assert "Choir / ensemble profile" in capsys.readouterr().out
+
+
+def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """reverbscope --backend fake measure saved an ordinary Standalone session,
+    indistinguishable from a take on real hardware."""
+    from reverbscope.demo import DEMO_MODE
+
+    out = tmp_path / "fake-take"
+    code = main(
+        [
+            "--backend",
+            "fake",
+            "measure",
+            "--out",
+            str(out),
+            "--duration",
+            "1",
+            "--post-silence",
+            "1",
+            "--notes",
+            "first try",
+        ]
+    )
+    assert code == 0, capsys.readouterr().err
+    saved = json.loads((out / "session.json").read_text(encoding="utf-8"))
+    assert saved["mode"] == DEMO_MODE
+    assert saved["notes"].startswith("SYNTHETIC DEMO")
+    assert saved["notes"].endswith("first try")
+    capsys.readouterr()
+    assert main(["show", str(out)]) == 0
+    assert "Synthetic demo" in capsys.readouterr().out
+
+
+def test_measure_refuses_a_test_signal_too_short_to_analyse_before_playing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A 0.9 s signal was played and recorded, then always refused by the
+    analysis ("recording is shorter than one second")."""
+    out = tmp_path / "m_short"
+    code = main(
+        [
+            "--backend",
+            "fake",
+            "measure",
+            "--duration",
+            "0.5",
+            "--pre-silence",
+            "0.1",
+            "--post-silence",
+            "0.3",
+            "--out",
+            str(out),
+        ]
+    )
+    err = capsys.readouterr().err
+    assert code == 1
+    assert "0.90 s" in err and "--post-silence" in err
+    assert "Nothing was played." in err
+    assert "devices --probe" not in err
+    assert not (out / "recording.wav").exists()
+
+
+def test_project_init_keeps_an_existing_project(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Running init again (shell history, or to set a name) must not drop the
+    positions: a fresh project.json lists none."""
+    project = tmp_path / "room"
+    assert main(["project", "init", "--out", str(project), "--name", "Studio"]) == 0
+    stored = (
+        (project / "project.json")
+        .read_text(encoding="utf-8")
+        .replace('"positions": []', '"positions": [{"label": "A", "session_dirs": ["position-a"]}]')
+    )
+    (project / "project.json").write_text(stored, encoding="utf-8")
+    capsys.readouterr()
+
+    assert main(["project", "init", "--out", str(project)]) == 1
+    err = " ".join(capsys.readouterr().err.split())
+    assert "already contains a project.json; use --force to replace it" in err
+    assert (project / "project.json").read_text(encoding="utf-8") == stored
+
+    assert main(["project", "init", "--out", str(project), "--force"]) == 0
+    payload = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    assert payload["name"] == "room" and payload["positions"] == []
+
+
+def test_show_escapes_control_characters_from_a_received_session(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`show`, `show --list` and `project show` printed a crafted room name,
+    stored warning or position label raw: ESC sequences cleared the screen
+    or retitled the terminal, and a line break forged a report line."""
+    from dataclasses import replace
+
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    settings = SweepSettings(duration_s=1.0, pre_silence_s=0.5, post_silence_s=1.0)
+    rec = synthetic_recording(settings, make_rir(settings.sample_rate, rt60_s=0.3), noise_rms=1e-5)
+    result = replace(
+        analyze(rec, Reference.from_settings(settings)), warnings=("stored\x1b[2Jwarning",)
+    )
+    project = tmp_path / "inbox"
+    session = project / "received"
+    crafted = MeasurementSession(
+        room_name="Booth\x1b[2J\x1b]0;pwned\x07", measurement_position="A\nRT60 0.30 s"
+    )
+    save_measurement(session, crafted, result, include_curves=False)
+    (project / "project.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "name": "P\x1b[2J",
+                "positions": [{"label": "A\x1b[8m", "session_dirs": ["received"]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    capsys.readouterr()
+
+    assert main(["--color", "always", "show", str(session)]) == 0
+    report = capsys.readouterr().out
+    assert main(["--color", "always", "show", "--list", str(project)]) == 0
+    listing = capsys.readouterr().out
+    assert main(["project", "show", str(project)]) == 0
+    projects = capsys.readouterr().out
+    for out in (report, listing, projects):
+        assert "\x1b[2J" not in out and "\x07" not in out and "\x1b[8m" not in out
+    assert "Booth\\x1b[2J\\x1b]0;pwned\\x07" in report and "Booth\\x1b[2J" in listing
+    assert "A\\nRT60 0.30 s" in report and "stored\\x1b[2Jwarning" in report
+    assert "P\\x1b[2J" in projects and "A\\x1b[8m" in projects
+
+
+def test_show_keeps_stored_text_to_its_own_line_and_free_of_escape_codes(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A stored warning kept its line breaks and any escape code that looks
+    like one of ReverbScope's own colours: it forged a report row ("Data quality
+    ✓ ... no warnings"), and raw ESC[32m reached a stream with colour off. The
+    same went for every other text field of result.json."""
+    from dataclasses import replace
+
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    settings = SweepSettings(duration_s=1.0, pre_silence_s=0.5, post_silence_s=1.0)
+    rec = synthetic_recording(settings, make_rir(settings.sample_rate, rt60_s=0.3), noise_rms=1e-5)
+    analysed = analyze(rec, Reference.from_settings(settings))
+    forged = "harmless\n\n  Data quality       \x1b[32m✓ direct sound: no warnings\x1b[0m"
+    bands = tuple(
+        replace(band, band_label="500 Hz\nFORGED-BAND", rt60_basis="T30\x1b[1mbold\x1b[0m")
+        if index == 0
+        else band
+        for index, band in enumerate(analysed.decay.bands)
+    )
+    result = replace(
+        analysed,
+        warnings=(forged, "x"),
+        decay=replace(analysed.decay, bands=bands),
+        noise=replace(
+            analysed.noise, notes=("noise\n  Noise floor   \x1b[32m✓ FORGED-NOISE\x1b[0m",)
+        ),
+    )
+    session = tmp_path / "received"
+    save_measurement(session, MeasurementSession(), result, include_curves=False)
+    capsys.readouterr()
+
+    for mode in ("never", "always"):
+        assert main(["--color", mode, "show", str(session)]) == 0
+        report = capsys.readouterr().out
+        # The text is shown as typed, its control characters as escapes ...
+        assert "harmless\\n\\n" in report and "\\x1b[32m" in report
+        assert "500 Hz\\nFORGED-BAND" in report and "T30\\x1b[1mbold" in report
+        # ... on the line of its own warning, not as rows of the report.
+        rows = [line.strip() for line in report.splitlines()]
+        forged_rows = [
+            row
+            for row in rows
+            if row.startswith(("Data quality", "Noise floor", "FORGED-BAND"))
+            and ("no warnings" in row or "FORGED" in row)
+        ]
+        assert forged_rows == []
+        if mode == "never":
+            assert "\x1b" not in report
+        else:
+            # Only the codes ReverbScope writes itself: none after "harmless".
+            assert "\x1b[32m✓ direct sound" not in report and "\x1b[32m✓ FORGED-NOISE" not in report
+
+
+def test_project_average_keeps_a_stored_band_label_to_its_row(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The averaged table printed a band label from result.json as it was
+    stored: a line break in it forged a row of the table."""
+    from dataclasses import replace
+
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    settings = SweepSettings(duration_s=1.0, pre_silence_s=0.5, post_silence_s=1.0)
+    rec = synthetic_recording(settings, make_rir(settings.sample_rate, rt60_s=0.3), noise_rms=1e-5)
+    analysed = analyze(rec, Reference.from_settings(settings))
+    bands = (
+        replace(analysed.decay.bands[0], band_label="63 Hz\nFORGEDROW 9.99 s"),
+        *analysed.decay.bands[1:],
+    )
+    result = replace(analysed, decay=replace(analysed.decay, bands=bands))
+    project = tmp_path / "room"
+    for name in ("a", "b"):
+        save_measurement(project / name, MeasurementSession(), result, include_curves=False)
+    (project / "project.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "name": "room",
+                "positions": [
+                    {"label": "A", "session_dirs": ["a"]},
+                    {"label": "B", "session_dirs": ["b"]},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    capsys.readouterr()
+
+    assert main(["--color", "never", "project", "average", str(project)]) == 0
+    table = capsys.readouterr().out
+    assert "63 Hz\\nFORGEDROW 9.99 s" in table
+    assert not [line for line in table.splitlines() if line.startswith("FORGEDROW")]
+
+
+@pytest.mark.parametrize(
+    ("option", "named"),
+    [
+        (["--mic-height", "1.2"], "--mic-height"),
+        (["--speaker-distance", "-1"], "--speaker-distance"),
+        (["--temperature", "80"], "--temperature"),
+        (["--smoothing", "-1"], "--smoothing"),
+    ],
+)
+def test_measure_refuses_an_analysis_option_before_playing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], option: list[str], named: str
+) -> None:
+    """--mic-height without --speaker-distance (and the other analysis
+    options) were checked only after the sweep had been played and recorded,
+    and the error then suggested the device commands."""
+    out = tmp_path / "m_option"
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    code = main([*argv, "--out", str(out), *option])
+    captured = capsys.readouterr()
+    assert code == 1
+    assert named in captured.err and "Nothing was played." in captured.err
+    assert "reverbscope measure --help" in captured.err
+    assert "devices --probe" not in captured.err
+    assert "Playing the sweep" not in captured.err and "Recorded" not in captured.out
+    assert not out.exists()
+
+
+@pytest.mark.parametrize(
+    ("option", "named"),
+    [
+        (["--duration", "0"], "--duration"),
+        (["--start-hz", "30000"], "--start-hz"),
+        (["--level", "-100"], "--level"),
+        (["--input-channel", "0"], "1-based"),
+        (["--input-channels", "1,1"], "listed once"),
+    ],
+)
+def test_measure_sends_a_refused_sweep_or_channel_option_to_its_help(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], option: list[str], named: str
+) -> None:
+    """measure answered every ConfigurationError with devices --probe and
+    doctor --probe; a --duration of 0 is not the devices' fault."""
+    code = main(["--backend", "fake", "measure", "--out", str(tmp_path / "m"), *option])
+    err = capsys.readouterr().err
+    assert code == 1
+    assert named in err and "Nothing was played." in err
+    assert "reverbscope measure --help" in err
+    assert "devices --probe" not in err and "doctor --probe" not in err
+
+
+def test_measure_still_sends_a_missing_device_to_the_device_commands(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Only the options are redirected: a device that is not there is not one."""
+    argv = ["--backend", "fake", "measure", "--out", str(tmp_path / "m"), "--input-device", "99"]
+    assert main(argv) == 1
+    err = capsys.readouterr().err
+    assert "no audio device 99" in err
+    assert "reverbscope devices --probe" in err and "reverbscope measure --help" not in err
+
+
+def _fingerprints(folder: Path) -> dict[str, bytes]:
+    return {path.name: path.read_bytes() for path in sorted(folder.iterdir())}
+
+
+def test_measure_refuses_a_folder_that_holds_a_sweep_but_no_session(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """measure --out on a folder with the user's own sweep replaced that sweep
+    and its sidecar with the take's, without a word."""
+    folder = tmp_path / "meas"
+    assert main(["sweep", "--out", str(folder / "sweep.wav"), "--sample-rate", "96000"]) == 0
+    before = _fingerprints(folder)
+    capsys.readouterr()
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    assert main([*argv, "--out", str(folder)]) == 1
+    err = capsys.readouterr().err
+    assert "sweep.wav" in err and "Nothing was played." in err
+    assert "reverbscope measure --out" in err
+    assert _fingerprints(folder) == before
+
+
+def test_a_take_that_fails_keeps_the_previous_session_whole(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A second take into a session folder wrote its sweep.wav, sidecar and
+    recording.wav before the analysis, so a take that was then refused left
+    the old session.json beside another take's audio."""
+    from reverbscope.core import pipeline
+    from reverbscope.errors import AnalysisError
+
+    folder = tmp_path / "session"
+    argv = ["--backend", "fake", "measure", "--post-silence", "1", "--out", str(folder)]
+    assert main([*argv, "--duration", "1"]) == 0
+    before = _fingerprints(folder)
+    assert {"sweep.wav", "sweep.reverbscope-sweep.json", "recording.wav"} <= set(before)
+    saved = json.loads((folder / "session.json").read_text(encoding="utf-8"))
+    assert (saved["sweep_path"], saved["recording_path"]) == ("sweep.wav", "recording.wav")
+    capsys.readouterr()
+
+    def refuse(*_args: object, **_kwargs: object) -> None:
+        raise AnalysisError("no sweep found in the recording")
+
+    monkeypatch.setattr(pipeline, "analyze", refuse)
+    assert main([*argv, "--duration", "2"]) == 1
+    assert "no sweep found" in capsys.readouterr().err
+    assert _fingerprints(folder) == before
+
+
+def test_measure_refuses_an_out_below_a_file_before_playing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--out below a file failed only when the take was saved: the sweep had
+    been played through the loudspeakers and the recording thrown away."""
+    blocker = tmp_path / "afile"
+    blocker.write_text("x", encoding="utf-8")
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    assert main([*argv, "--out", str(blocker / "sub" / "m")]) == 1
+    captured = capsys.readouterr()
+    assert "part of the path is a file, not a folder" in captured.err
+    assert "Nothing was played." in captured.err
+    assert "Playing the sweep" not in captured.err and "Recorded" not in captured.out
+    assert blocker.read_text(encoding="utf-8") == "x"
+
+
+def test_measure_refuses_an_out_it_cannot_create_before_playing(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A read-only location or a drive that is not mounted: the probe of the
+    nearest existing folder fails, and the error names that folder."""
+
+    def refuse(*_args: object, **_kwargs: object) -> None:
+        raise PermissionError(errno.EACCES, "Permission denied", "probe-file")
+
+    monkeypatch.setattr(tempfile, "TemporaryFile", refuse)
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    assert main([*argv, "--out", str(tmp_path / "Missing" / "room1")]) == 1
+    captured = capsys.readouterr()
+    err = " ".join(captured.err.split())
+    assert f"permission denied: {tmp_path}" in err and "probe-file" not in err
+    assert "Nothing was played." in err
+    assert "Playing the sweep" not in err and "Recorded" not in captured.out
+    assert not (tmp_path / "Missing").exists()
+
+
+def test_proving_out_usable_leaves_nothing_behind(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The check runs before the take for a folder that does not exist yet; a
+    take that is then refused must not have made it, nor left a probe file."""
+    from reverbscope.core import pipeline
+    from reverbscope.errors import AnalysisError
+
+    def refuse(*_args: object, **_kwargs: object) -> None:
+        raise AnalysisError("no sweep found in the recording")
+
+    monkeypatch.setattr(pipeline, "analyze", refuse)
+    existing = tmp_path / "existing"
+    existing.mkdir()
+    argv = ["--backend", "fake", "measure", "--duration", "1", "--post-silence", "1"]
+    assert main([*argv, "--out", str(existing / "new" / "m")]) == 1
+    assert "no sweep found" in capsys.readouterr().err
+    assert list(existing.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "command", [["devices"], ["devices", "--probe"], ["devices", "--host-apis"], ["doctor"]]
+)
+def test_devices_and_doctor_warn_that_json_is_deprecated(
+    capsys: pytest.CaptureFixture[str], command: list[str]
+) -> None:
+    """devices --json and doctor --json read the flag directly and never said
+    it will be removed, unlike show, compare, analyze and project average."""
+    assert main(["--backend", "fake", *command, "--json"]) == 0
+    captured = capsys.readouterr()
+    json.loads(captured.out)
+    assert captured.err.count("--json is deprecated") == 1
+    assert main(["--backend", "fake", "--format", "json", *command]) == 0
+    assert "deprecated" not in capsys.readouterr().err
+
+
+def test_compare_names_the_file_it_wrote_in_an_out_folder(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """--out report.txt is a folder (no .json suffix): the comparison went to
+    report.txt/comparison.json while the message said report.txt."""
+    for name, rt60 in (("a", 0.6), ("b", 0.4)):
+        ir = write_wav(tmp_path / f"{name}.wav", make_rir(48000, rt60_s=rt60) * 0.5, 48000)
+        argv = ["analyze-ir", "--ir", str(ir), "--band", "100", "8000"]
+        assert main([*argv, "--out", str(tmp_path / name)]) == 0
+    capsys.readouterr()
+    out = tmp_path / "report.txt"
+    assert main(["compare", str(tmp_path / "a"), str(tmp_path / "b"), "--out", str(out)]) == 0
+    written = out / "comparison.json"
+    assert written.is_file()
+    assert f"Wrote comparison to {written}" in capsys.readouterr().out
+
+
+def test_a_path_that_starts_with_a_tilde_is_in_the_home_folder(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """cmd.exe and Windows PowerShell pass "~" unexpanded: the demo help's
+    "--out ~/reverbscope-demo" made a folder named "~" in the current one."""
+    home = tmp_path / "home"
+    work = tmp_path / "work"
+    home.mkdir()
+    work.mkdir()
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("USERPROFILE", str(home))
+    monkeypatch.chdir(work)
+    assert main(["sweep", "--out", "~/sweep.wav", "--duration", "1"]) == 0
+    assert (home / "sweep.wav").is_file()
+    write_wav(home / "ir.wav", make_rir(48000, rt60_s=0.4) * 0.5, 48000)
+    assert main(["analyze-ir", "--ir", "~/ir.wav", "--band", "100", "8000"]) == 0
+    assert str(home / "ir.wav") in capsys.readouterr().out
+    assert not (work / "~").exists()

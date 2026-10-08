@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import re
 
 import numpy as np
 import pytest
 
 from reverbscope.core.decay import (
+    LUNDEBY_MAX_ITERATIONS,
     MIN_BT_PRODUCT,
+    _truncation_sensitivity,
     analyze_band,
     analyze_decay,
     decay_lead_in_s,
@@ -360,15 +363,76 @@ def _decay_with_gated_floor(
     return np.asarray(decay + floor, dtype=np.float64)
 
 
+def _decay_with_noise_burst(
+    sample_rate: int, floor_db: float, rise_db: float = 10.0, duration_s: float = 0.4
+) -> FloatArray:
+    """Squared response: RT 0.5 s noise decay, a steady floor and a noise burst
+    ``rise_db`` above it (a door, a cough) that starts as the decay falls to
+    4 dB above the burst, so the late decay runs straight into it."""
+    n = 3 * sample_rate
+    t = np.arange(n) / sample_rate
+    rng = np.random.default_rng(4)
+    decay = rng.normal(0.0, 1.0, n) ** 2 * np.exp(-DECAY_CONSTANT * t / 0.5)
+    burst_db = floor_db + rise_db
+    start = -(burst_db + 4.0) / 120.0
+    level = np.where((t >= start) & (t < start + duration_s), burst_db, floor_db)
+    floor = 10 ** (level / 10) * rng.normal(0.0, 1.0, n) ** 2
+    return np.asarray(decay + floor, dtype=np.float64)
+
+
+@pytest.mark.parametrize("rate", [48000, 192000])
+def test_floor_intervals_after_the_decay_stay_out_of_the_late_slope(rate: int) -> None:
+    """E1 / R3-0: the late slope was fitted to every interval in its level
+    window, so floor intervals seconds after the decay that rose into it (an
+    intermittent floor, or the short-interval floor of a narrow band) dragged
+    it to -3 dB/s; the estimate was rejected. Only the decay itself is fitted
+    now, and the iterative estimate stands."""
+    power = _decay_with_gated_floor(rate, -40.0)
+    trunc = estimate_truncation(power, rate)
+    assert trunc.problem is None
+    assert trunc.late_slope_db_per_s is not None and trunc.late_slope_db_per_s < -80.0
+    assert trunc.truncation_index / rate < 0.6
+
+    band = analyze_band(np.sqrt(power), rate, None, noise_margin_db=10.0)
+    assert band.t30.validity is Validity.VALID
+    assert band.t30.seconds == pytest.approx(0.5, rel=0.1)
+    assert band.rt60_estimate_s == band.t30.seconds
+    assert not band.warnings
+
+
+@pytest.mark.parametrize("length_s", [3.0, 6.0])
+def test_clean_low_band_decays_keep_their_reverberation_time(length_s: float) -> None:
+    """R3-0: in the 63 and 125 Hz bands the floor in 1-10 ms intervals swings by
+    many dB; floor intervals after the crosspoint entered the late-slope fit,
+    the estimate was rejected and T20/T30 of clean 55 dB decays were marked
+    unreliable with no RT60."""
+    rate = 48000
+    rng = np.random.default_rng(0)
+    lead = int(0.3 * rate)
+    n = lead + int(length_s * rate)
+    t = np.arange(n - lead) / rate
+    ir = np.zeros(n)
+    ir[lead:] = rng.standard_normal(n - lead) * 10 ** (-3 * t / 0.3)
+    ir += 10 ** (-55 / 20) * rng.standard_normal(n)
+    settings = AnalysisSettings(octave_bands_hz=(63.0, 125.0))
+    for band in analyze_decay(ir, rate, settings, direct_index=lead).bands:
+        assert band.t30.validity is Validity.VALID, band.warnings
+        assert band.t20.validity is Validity.VALID
+        assert band.rt60_estimate_s == pytest.approx(0.3, rel=0.25)
+        assert not band.warnings
+
+
 @pytest.mark.parametrize("rate", [48000, 192000])
 def test_runaway_noise_truncation_falls_back_and_is_marked_unreliable(rate: int) -> None:
-    """E1: the late slope was fitted to floor blocks (-3 dB/s), the truncation
-    ran to the end of the response and T30 = 9.8 s was reported as valid."""
-    power = _decay_with_gated_floor(rate, -40.0)
+    """E1: a noise burst right after the decay is fitted as its late slope
+    (-22 dB/s) and the iterative crosspoint runs to the end of the burst. The
+    preliminary estimate is used and the T values, which depend on it, are
+    marked unreliable."""
+    power = _decay_with_noise_burst(rate, -55.0)
     trunc = estimate_truncation(power, rate)
     assert trunc.problem is not None and "late decay slope" in trunc.problem
     assert trunc.iterative_truncation_index is not None
-    assert trunc.iterative_truncation_index / rate > 2.5
+    assert trunc.iterative_truncation_index / rate > 0.9
     assert trunc.truncation_index / rate < 0.6  # preliminary crosspoint
     assert trunc.late_slope_db_per_s is not None and trunc.late_slope_db_per_s < -80.0
 
@@ -383,12 +447,215 @@ def test_runaway_noise_truncation_falls_back_and_is_marked_unreliable(rate: int)
 def test_rejected_truncation_that_does_not_change_the_result_keeps_it_valid(
     sample_rate: int,
 ) -> None:
-    power = _decay_with_gated_floor(sample_rate, -50.0)
+    power = _decay_with_noise_burst(sample_rate, -70.0)
     assert estimate_truncation(power, sample_rate).problem is not None
     band = analyze_band(np.sqrt(power), sample_rate, None, noise_margin_db=10.0)
     assert band.t30.validity is Validity.VALID
     assert band.t30.seconds == pytest.approx(0.5, rel=0.05)
     assert not band.warnings
+
+
+@pytest.mark.parametrize("rate", [48000, 192000])
+def test_a_late_slope_that_cannot_be_estimated_is_not_called_unconverged(rate: int) -> None:
+    """R3-3: a pass that found too few intervals for the late slope rejected
+    the estimate as "did not converge in 1 iteration(s)", as if the passes had
+    run out. Here a response gated at -30 dB onto a floor 80 dB down (an
+    imported response cut off by a gate) falls through the whole late-slope
+    window within one interval."""
+    n = 2 * rate
+    t = np.arange(n) / rate
+    rng = np.random.default_rng(4)
+    gated = rng.normal(0.0, 1.0, n) ** 2 * np.exp(-DECAY_CONSTANT * t / 0.6) * (t < 0.3)
+    power = gated + 1e-8 * rng.normal(0.0, 1.0, n) ** 2
+    trunc = estimate_truncation(power, rate)
+    assert trunc.problem == (
+        "the late decay slope could not be estimated: fewer than 3 intervals of decay lie "
+        "between 7.5 and 22.5 dB above the noise"
+    )
+    assert trunc.iterations < LUNDEBY_MAX_ITERATIONS
+
+    from reverbscope.i18n import activate, localize
+
+    activate("zh_CN")
+    try:
+        shown = localize(trunc.problem)
+    finally:
+        activate("en")
+    assert (
+        shown == "无法估计后期衰减斜率：高于本底噪声 7.5 至 22.5 dB 的范围内只有不到 3 个衰减区间"
+    )
+
+
+def test_running_out_of_passes_is_called_unconverged(sample_rate: int) -> None:
+    rng = np.random.default_rng(4)
+    ir = exponential_decay_ir(sample_rate, 0.3, length_s=2.0)
+    power = ir**2 + 1e-7 * rng.normal(0.0, 1.0, ir.shape[0]) ** 2
+    assert estimate_truncation(power, sample_rate).problem is None
+    trunc = estimate_truncation(power, sample_rate, max_iterations=1)
+    assert trunc.problem == "the Lundeby noise-floor iteration did not converge in 1 iteration(s)"
+
+
+def test_a_decay_within_one_block_is_found(sample_rate: int) -> None:
+    """R3-1: a decay that reached the floor within one 20 ms block (RT 0.05 s,
+    30 dB of range) was reported as "no decay above the noise floor", the noise
+    was integrated to the end and EDT read 16 s and the centre time 368 ms."""
+    rng = np.random.default_rng(0)
+    n = 2 * sample_rate
+    t = np.arange(n) / sample_rate
+    ir = rng.standard_normal(n) * 10 ** (-3 * t / 0.05)
+    ir += 10 ** (-30 / 20) * rng.standard_normal(n)
+    band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0, direct_index=0)
+    assert not band.warnings
+    assert band.edt.validity is Validity.VALID
+    assert band.edt.seconds == pytest.approx(0.05, rel=0.15)
+    assert band.truncation_time_s is not None and band.truncation_time_s < 0.06
+    assert band.centre_time.value is not None and band.centre_time.value < 0.01
+    assert band.peak_to_noise_db is not None and band.peak_to_noise_db > 25.0
+
+
+def test_a_response_without_a_decay_is_not_integrated_to_the_end(sample_rate: int) -> None:
+    """R3-1: with no decay found, the Schroeder integration ran to the end of
+    the response and turned the noise floor into C50 and centre-time values."""
+    rng = np.random.default_rng(1)
+    ir = 1e-3 * rng.standard_normal(sample_rate)
+    ir[100] = 1.0  # an impulse with nothing after it but the floor
+    trunc = estimate_truncation(ir[100:] ** 2, sample_rate)
+    assert trunc.problem == "no decay above the noise floor was found"
+    assert trunc.truncation_index / sample_rate < 0.05
+    band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0, direct_index=100)
+    assert band.truncation_time_s is not None and band.truncation_time_s < 0.05
+    assert band.c50.value is None and band.c80.value is None
+
+
+def _fast_decay_power(sample_rate: int, rt60: float, noise_db: float) -> FloatArray:
+    rng = np.random.default_rng(0)
+    n = 2 * sample_rate
+    t = np.arange(n) / sample_rate
+    ir = rng.standard_normal(n) * 10 ** (-3 * t / rt60)
+    ir += 10 ** (-noise_db / 20) * rng.standard_normal(n)
+    return np.asarray(ir**2, dtype=np.float64)
+
+
+def test_short_first_blocks_hold_at_least_one_inverse_bandwidth(sample_rate: int) -> None:
+    """R3-1 follow-up: the 5 and 1 ms blocks that find a decay within one 20 ms
+    block hold only B*T = 0.44 and 0.09 in a 125 Hz band (88 Hz wide). Their
+    level is then a noise spike, so they are not tried there; a band that is
+    wide enough for them still finds the decay."""
+    power = _fast_decay_power(sample_rate, 0.05, 30.0)
+    assert estimate_truncation(power, sample_rate).problem is None
+    assert estimate_truncation(power, sample_rate, bandwidth_hz=2000.0).problem is None
+    narrow = estimate_truncation(power, sample_rate, bandwidth_hz=88.0)
+    assert narrow.problem == "no decay above the noise floor was found"
+    assert narrow.late_slope_db_per_s is None
+    # 5 ms blocks hold B*T = 1 from a bandwidth of 200 Hz up (the 500 Hz octave
+    # band is 353 Hz wide, the 250 Hz band 177 Hz).
+    assert estimate_truncation(power, sample_rate, bandwidth_hz=250.0).problem is None
+    assert estimate_truncation(power, sample_rate, bandwidth_hz=177.0).problem is not None
+
+
+def test_a_narrow_band_does_not_turn_a_noise_spike_into_a_valid_edt(sample_rate: int) -> None:
+    """R3-1 follow-up: in the 125 Hz band of an RT 0.15 s response with 20 dB of
+    range, 1 ms blocks made the loudest block a spike (20.9 dB of range instead
+    of 18.2) and fitted the decay to 2-4 random blocks: EDT read 0.046 s, valid,
+    where the same response with a clean floor gives 0.20 s. The band again says
+    that its range is insufficient."""
+    rng = np.random.default_rng(8)
+    lead = int(0.3 * sample_rate)
+    n = lead + 3 * sample_rate
+    t = np.arange(n - lead) / sample_rate
+    ir = np.zeros(n)
+    ir[lead:] = rng.standard_normal(n - lead) * 10 ** (-3 * t / 0.15)
+    ir += 10 ** (-20 / 20) * rng.standard_normal(n)
+    settings = AnalysisSettings(octave_bands_hz=(125.0,))
+    band = analyze_decay(ir, sample_rate, settings, direct_index=lead).bands[0]
+    assert band.peak_to_noise_db is not None and band.peak_to_noise_db < 19.5
+    assert band.edt.validity is Validity.INSUFFICIENT_RANGE
+    assert band.edt.seconds is None
+    assert band.t20.validity is Validity.INSUFFICIENT_RANGE
+
+
+def test_a_fast_decay_in_a_wide_band_is_still_found_by_the_short_blocks(
+    sample_rate: int,
+) -> None:
+    """The bandwidth rule keeps the R3-1 fix for the bands where 1-5 ms blocks
+    are meaningful: an RT 0.05 s response with 40 dB of range in the 4 kHz band."""
+    rng = np.random.default_rng(3)
+    lead = int(0.3 * sample_rate)
+    n = lead + int(1.5 * sample_rate)
+    t = np.arange(n - lead) / sample_rate
+    ir = np.zeros(n)
+    ir[lead:] = rng.standard_normal(n - lead) * 10 ** (-3 * t / 0.05)
+    ir += 10 ** (-40 / 20) * rng.standard_normal(n)
+    settings = AnalysisSettings(octave_bands_hz=(4000.0,))
+    band = analyze_decay(ir, sample_rate, settings, direct_index=lead).bands[0]
+    assert band.edt.validity is Validity.VALID
+    assert band.edt.seconds == pytest.approx(0.05, rel=0.3)
+    assert band.truncation_time_s is not None and band.truncation_time_s < 0.1
+
+
+def _valid_metric(name: str, seconds: float) -> DecayMetric:
+    return DecayMetric(
+        name=name,
+        seconds=seconds,
+        validity=Validity.VALID,
+        evaluation_range_db=(-5.0, -15.0),
+    )
+
+
+@pytest.mark.parametrize(
+    ("seconds", "other", "text"),
+    [
+        (0.0404, 0.0384, "EDT 0.0404 s vs 0.0384 s"),
+        (0.452, 0.512, "EDT 0.452 s vs 0.512 s"),
+        (0.5, 0.6, "EDT 0.500 s vs 0.600 s"),
+        (1.234, 1.512, "EDT 1.23 s vs 1.51 s"),
+        (0.00400, 0.00380, "EDT 0.00400 s vs 0.00380 s"),
+    ],
+)
+def test_a_truncation_change_shows_values_that_differ(
+    seconds: float, other: float, text: str
+) -> None:
+    """R3-1 follow-up: with two decimals a 40 ms EDT that changed by 5 % read
+    "EDT 0.04 s vs 0.04 s", a warning that said the result depends on the
+    truncation and showed no difference."""
+    changes = _truncation_sensitivity(
+        (_valid_metric("EDT", seconds),), (_valid_metric("EDT", other),)
+    )
+    assert changes == [text]
+
+
+def test_a_truncation_change_is_never_shown_as_two_equal_values() -> None:
+    """Any change just above the 5 % gate prints differently, from 1 ms to 100 s."""
+    for seconds in np.geomspace(0.001, 100.0, 400):
+        for ratio in (1.0501, 0.9499, 1.3):  # chosen / alternative
+            changes = _truncation_sensitivity(
+                (_valid_metric("T20", float(seconds)),),
+                (_valid_metric("T20", float(seconds) / ratio),),
+            )
+            assert len(changes) == 1
+            shown = changes[0].removeprefix("T20 ").removesuffix(" s").split(" s vs ")
+            assert shown[0] != shown[1], (seconds, ratio, changes)
+
+
+def test_a_fast_decay_whose_truncation_matters_names_two_different_values(
+    sample_rate: int,
+) -> None:
+    """R3-1 follow-up: RT 0.05 s, 30 dB of range, seed 0, 1 kHz band: the warning
+    read "(EDT 0.04 s vs 0.04 s)"."""
+    rng = np.random.default_rng(0)
+    lead = int(0.3 * sample_rate)
+    n = lead + int(1.5 * sample_rate)
+    t = np.arange(n - lead) / sample_rate
+    ir = np.zeros(n)
+    ir[lead:] = rng.standard_normal(n - lead) * 10 ** (-3 * t / 0.05)
+    ir += 10 ** (-30 / 20) * rng.standard_normal(n)
+    settings = AnalysisSettings(octave_bands_hz=(1000.0,))
+    band = analyze_decay(ir, sample_rate, settings, direct_index=lead).bands[0]
+    assert band.edt.validity is Validity.UNRELIABLE
+    warning = band.warnings[0]
+    match = re.search(r"EDT (\d\.\d+) s vs (\d\.\d+) s", warning)
+    assert match is not None, warning
+    assert match.group(1) != match.group(2)
 
 
 @pytest.mark.parametrize("rate", [48000, 192000])
@@ -576,3 +843,22 @@ def test_energy_parameters_round_trip_and_older_files_omit_them(sample_rate: int
     assert old.c50.value is None
     assert old.centre_time.validity is Validity.NOT_COMPUTED
     assert old.edt.seconds == pytest.approx(band.edt.seconds)
+
+
+def test_energy_ratios_without_a_direct_sound_are_timed_from_the_onset() -> None:
+    """Without direct_index, C50 and Ts were timed from the first sample, so
+    leading silence changed them while T30 stayed put."""
+    from reverbscope.core.decay import analyze_band
+
+    sample_rate = 48000
+    t = np.arange(sample_rate) / sample_rate
+    decay = np.exp(-3.0 * np.log(10.0) * t / 0.5) * np.random.default_rng(1).normal(size=t.shape)
+    values = []
+    for lead_ms in (0, 20, 60):
+        ir = np.concatenate([np.zeros(round(lead_ms * sample_rate / 1000)), decay])
+        band = analyze_band(ir, sample_rate, None, noise_margin_db=10.0)
+        values.append((band.c50.value, band.centre_time.value))
+    assert values[0][0] is not None
+    for c50, centre in values[1:]:
+        assert c50 == pytest.approx(values[0][0], abs=0.05)
+        assert centre == pytest.approx(values[0][1], abs=0.002)

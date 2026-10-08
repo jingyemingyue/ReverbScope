@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 from reverbscope.ui.qt import ensure_pyside6
@@ -16,6 +17,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
     QHeaderView,
+    QLabel,
     QLineEdit,
     QMessageBox,
     QPlainTextEdit,
@@ -27,7 +29,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from reverbscope.cli.render import REPORT_CONSOLE, render_comparison
+from reverbscope.cli.render import (
+    REFLECTIONS_NOT_COMPARED,
+    REPORT_CONSOLE,
+    RESONANCES_NARROWED,
+    RESONANCES_NOT_COMPARED,
+    render_comparison,
+)
 from reverbscope.core.compare import compare
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
@@ -36,9 +44,9 @@ from reverbscope.interpretation.interpreter import Finding
 from reverbscope.io.session_store import load_measurement, save_comparison
 from reverbscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
 from reverbscope.ui.browser import SessionBrowser
-from reverbscope.labels import metric_label, status_text, validity_word
+from reverbscope.labels import metric_label, signed_number, status_text, validity_word
 from reverbscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
-from reverbscope.ui.widgets import Card, PageHeader, label, primary
+from reverbscope.ui.widgets import Card, PageHeader, ask_save_path, label, primary
 
 
 def _decay_flags(match: ResonanceMatch) -> str:
@@ -50,12 +58,29 @@ def _decay_flags(match: ResonanceMatch) -> str:
     return f"{_flag(match.baseline_decay_distinguishable)} / {_flag(match.candidate_decay_distinguishable)}"
 
 
+def _with_note(table: QTableWidget, note: QLabel) -> QWidget:
+    """A tab page: ``table`` with a line of explanation (``note``) under it."""
+    page = QWidget()
+    box = QVBoxLayout(page)
+    box.setContentsMargins(0, 0, 0, 0)
+    box.addWidget(table, 1)
+    box.addWidget(note)
+    return page
+
+
+def _notes_starting(comparison: ComparisonResult, *prefixes: str) -> str:
+    """The comparison's notes that start with one of ``prefixes``, in the language shown."""
+    return "\n".join(localize(note) for note in comparison.notes if note.startswith(prefixes))
+
+
 class ComparePage(QWidget):
     back = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._comparison: ComparisonResult | None = None
+        # What the tabs show, to draw it again in another colour scheme.
+        self._shown: tuple[ComparisonResult, list[Finding], str] | None = None
         self.setProperty("page", True)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(28, 20, 28, 14)
@@ -159,10 +184,17 @@ class ComparePage(QWidget):
         self.text.setReadOnly(True)
         self.text.setProperty("report", True)
         apply_report_font(self.text)
+        # A table with no rows reads as "nothing found". When a topic was not
+        # compared (or only in part) the note says so under the table, as the
+        # report does, instead of leaving the tab blank.
+        self.reflections_note = label("", "hint", wrap=True)
+        self.resonances_note = label("", "hint", wrap=True)
         self.tabs.addTab(self.table, _("Metrics"))
         self.tabs.addTab(chart, _("Frequency response difference"))
-        self.tabs.addTab(self.reflections, _("Early Reflections"))
-        self.tabs.addTab(self.resonances, _("Resonances"))
+        self.tabs.addTab(
+            _with_note(self.reflections, self.reflections_note), _("Early Reflections")
+        )
+        self.tabs.addTab(_with_note(self.resonances, self.resonances_note), _("Resonances"))
         self.tabs.addTab(self.text, _("Full report"))
         layout.addWidget(self.tabs, 2)
         self.status = label("", "hint", wrap=True)
@@ -173,22 +205,28 @@ class ComparePage(QWidget):
         self.candidate_path.setText(str(candidate))
 
     def run_compare(self) -> None:
-        selected = self.browser.selected_paths()
         baseline = self.baseline_path.text().strip()
         candidate = self.candidate_path.text().strip()
-        if (not baseline or not candidate) and len(selected) == 2:
+        selected = self.browser.selected_pair() if not baseline or not candidate else None
+        if selected is not None:
             baseline, candidate = str(selected[0]), str(selected[1])
-            self.set_paths(Path(baseline), Path(candidate))
+            self.set_paths(*selected)
         if not baseline or not candidate:
             QMessageBox.information(self, _("Compare"), _("Choose two sessions first."))
             return
         try:
             left = load_measurement(baseline)
             right = load_measurement(candidate)
-            comparison = compare(
-                left.result,
-                right.result,
-                settings=CompareSettings(same_input_gain=self.same_gain.isChecked()),
+            # Named as `reverbscope compare` names them: `reverbscope show` lists
+            # the two sessions and reads the candidate's profile from them.
+            comparison = replace(
+                compare(
+                    left.result,
+                    right.result,
+                    settings=CompareSettings(same_input_gain=self.same_gain.isChecked()),
+                ),
+                baseline_session=str(left.directory),
+                candidate_session=str(right.directory),
             )
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Cannot compare"), localize(str(exc)))
@@ -201,9 +239,22 @@ class ComparePage(QWidget):
             profile = "generic"
         self._comparison = comparison
         self._show(comparison, findings, profile)
-        self.status.setText(f"{left.directory}  vs  {right.directory}")
+        self.status.setText(
+            _("{baseline}  vs  {candidate}").format(
+                baseline=left.directory, candidate=right.directory
+            )
+        )
+
+    def restyle(self) -> None:
+        """Draw the comparison again in the colour scheme now in force."""
+        if self._shown is not None:
+            self._show(*self._shown)
+        else:
+            style_figure(self.figure)
+            self.canvas.draw_idle()
 
     def _show(self, comparison: ComparisonResult, findings: list[Finding], profile: str) -> None:
+        self._shown = (comparison, findings, profile)
         rows = (
             list(comparison.decay)
             + list(comparison.noise)
@@ -216,8 +267,8 @@ class ComparePage(QWidget):
                 metric_label(item.name, item.unit),
                 "" if item.baseline is None else f"{item.baseline:.3f}",
                 "" if item.candidate is None else f"{item.candidate:.3f}",
-                "" if item.delta is None else f"{item.delta:+.3f}",
-                "" if item.delta_percent is None else f"{item.delta_percent:+.1f}",
+                "" if item.delta is None else signed_number(item.delta, 3),
+                "" if item.delta_percent is None else signed_number(item.delta_percent, 1),
                 validity_word(item.validity),
             ]
             for c, value in enumerate(values):
@@ -231,6 +282,7 @@ class ComparePage(QWidget):
                 self.table.setItem(r, c, cell)
         self.table.resizeColumnsToContents()
         self.reflections.setRowCount(len(comparison.reflections))
+        self.reflections_note.setText(_notes_starting(comparison, REFLECTIONS_NOT_COMPARED))
 
         def _pair(delay_ms: float | None, level_db: float | None) -> str:
             if delay_ms is None:
@@ -242,13 +294,16 @@ class ComparePage(QWidget):
         for r, match in enumerate(comparison.reflections):
             baseline = _pair(match.baseline_delay_ms, match.baseline_relative_db)
             candidate = _pair(match.candidate_delay_ms, match.candidate_relative_db)
-            delta = "" if match.level_delta_db is None else f"{match.level_delta_db:+.1f}"
+            delta = "" if match.level_delta_db is None else signed_number(match.level_delta_db, 1)
             for c, value in enumerate((status_text(match.status), baseline, candidate, delta)):
                 cell = QTableWidgetItem(value)
                 cell.setFlags(cell.flags() & ~Qt.ItemFlag.ItemIsEditable)
                 self.reflections.setItem(r, c, cell)
         self.reflections.resizeColumnsToContents()
         self.resonances.setRowCount(len(comparison.resonances))
+        self.resonances_note.setText(
+            _notes_starting(comparison, RESONANCES_NOT_COMPARED, RESONANCES_NARROWED)
+        )
         for r, resonance in enumerate(comparison.resonances):
             baseline_hz = "" if resonance.baseline_hz is None else f"{resonance.baseline_hz:.1f}"
             candidate_hz = "" if resonance.candidate_hz is None else f"{resonance.candidate_hz:.1f}"
@@ -292,17 +347,18 @@ class ComparePage(QWidget):
         if self._comparison is None:
             QMessageBox.information(self, _("Save comparison"), _("Run a comparison first."))
             return
-        path, _filter = QFileDialog.getSaveFileName(
+        target = ask_save_path(
             self, _("Save comparison.json"), "comparison.json", _("JSON files (*.json)")
         )
-        if not path:
+        if target is None:
             return
         try:
-            save_comparison(path, self._comparison)
+            # Always a .json name: save_comparison takes any other for a folder.
+            written = save_comparison(target, self._comparison)
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Cannot save"), localize(str(exc)))
             return
-        self.status.setText(_("Wrote {path}").format(path=path))
+        self.status.setText(_("Wrote {path}").format(path=written))
 
     def _pick_into(self, field: QLineEdit) -> None:
         path, _filter = QFileDialog.getOpenFileName(

@@ -215,6 +215,36 @@ def test_golden_demo(
     _golden(f"demo-{lang}-{columns}", _normalise(out))
 
 
+_SVG_ROW = re.compile(r'<text x="[^"]*" y="[^"]*" xml:space="preserve">(.*?)</text>')
+
+
+@pytest.mark.parametrize(
+    ("svg", "lang", "command"),
+    [
+        ("cli-demo.svg", "en", "reverbscope demo"),
+        ("cli-demo.zh-CN.svg", "zh_CN", "reverbscope --lang zh_CN demo"),
+    ],
+)
+def test_readme_demo_screenshots_show_what_the_demo_prints(
+    svg: str, lang: str, command: str
+) -> None:
+    """README.md and README.zh-CN.md present these SVGs as the output of
+    ``reverbscope demo``; they still lacked the Clarity rows of 0.5.0b1. When
+    the demo golden changes, run ``python scripts/render_readme_assets.py``
+    (``--cli-only`` is enough here) and commit docs/images with the change."""
+    import html
+
+    path = Path(__file__).resolve().parents[2] / "docs" / "images" / svg
+    rows = [
+        html.unescape(re.sub(r"<[^>]+>", "", row))
+        for row in _SVG_ROW.findall(path.read_text(encoding="utf-8"))
+    ]
+    assert rows[0] == f"$ {command}"
+    expected = (GOLDEN / f"demo-{lang}-80.txt").read_text(encoding="utf-8")
+    shown = _normalise("\n".join(rows[1:]) + "\n")
+    assert shown == expected, f"docs/images/{svg} is out of date: rerun render_readme_assets.py"
+
+
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
 @pytest.mark.parametrize("columns", [80, 60])
 def test_golden_sweep_next_steps(
@@ -243,8 +273,100 @@ def test_golden_home_screen(
     code, out, err = _run(["--lang", lang], capsys)
     assert code == 2 and out == ""
     assert "reverbscope demo" in err and "reverbscope --help" in err
-    assert len(err.splitlines()) <= 12  # "ReverbScope" is 2 chars longer than "RoomScope"
+    # The rename made the name two characters longer; the last line is the language hint.
+    assert len(err.splitlines()) <= 13
+    # The way to the other language, written in that language.
+    hint = {
+        "en": "中文界面：reverbscope config language zh_CN",
+        "zh_CN": "English interface: reverbscope config language en",
+    }[lang]
+    assert err.splitlines()[-1] == hint
     _golden(f"home-{lang}", _normalise(err))
+
+
+def test_the_language_hint_is_left_out_where_it_cannot_be_written(
+    cli: tuple[Path, pytest.MonkeyPatch],
+) -> None:
+    """A cp1252 or ASCII stream would print the Chinese hint as question marks."""
+    from reverbscope.cli.render import render_home
+
+    for encoding in ("cp1252", "ascii"):
+        text = render_home(Console(unicode=False, encoding=encoding), "1.0")
+        assert "reverbscope config language" not in text
+        text.encode(encoding)
+    assert "中文界面" in render_home(Console(encoding="gbk"), "1.0")
+    activate("zh_CN")
+    assert "English interface" in render_home(Console(unicode=False, encoding="ascii"), "1.0")
+
+
+@pytest.mark.parametrize(
+    ("lang", "label", "command"),
+    [
+        ("en", "中文界面：", "reverbscope config language zh_CN"),
+        ("zh_CN", "English interface:", "reverbscope config language en"),
+    ],
+)
+@pytest.mark.parametrize("columns", [20, 40])
+def test_the_language_hint_command_is_never_split(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    label: str,
+    command: str,
+    columns: int,
+) -> None:
+    """At 40 columns the home screen and --help ended with "…reverbscope config
+    language" and "zh_CN" on the next line: the command to copy was cut."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", str(columns))
+    _code, _out, home = _run(["--lang", lang], capsys)
+    _code, help_text, _err = _run(["--lang", lang, "--help"], capsys)
+    for text in (home, help_text):
+        lines = [line.strip() for line in text.splitlines()]
+        assert lines[-2:] == [label, command], text
+
+
+def test_the_language_hint_needs_the_other_catalog(
+    cli: tuple[Path, pytest.MonkeyPatch],
+) -> None:
+    from reverbscope.cli import config
+    from reverbscope.cli.main import build_parser
+    from reverbscope.cli.render import render_home
+
+    _root, monkeypatch = cli
+    assert "中文界面：reverbscope config language zh_CN" in build_parser().format_help()
+    monkeypatch.setattr(config, "available_locales", lambda: ["en"])
+    assert "config language" not in render_home(Console(), "1.0")
+    assert "中文界面" not in build_parser().format_help()
+
+
+def _help_screens() -> str:
+    """Every help screen, root first, as ``reverbscope … --help`` prints it."""
+    import argparse
+
+    from reverbscope.cli.main import _translate_argparse, build_parser
+
+    _translate_argparse()
+    screens: list[str] = []
+
+    def walk(parser: argparse.ArgumentParser, path: str) -> None:
+        screens.append(f"=== {path} --help\n{parser.format_help()}")
+        for action in parser._actions:
+            if isinstance(action, argparse._SubParsersAction):
+                for name, sub in action.choices.items():
+                    walk(sub, f"{path} {name}")
+
+    walk(build_parser(), "reverbscope")
+    return "\n".join(screens)
+
+
+def test_golden_english_help(cli: tuple[Path, pytest.MonkeyPatch]) -> None:
+    """The English help of every command, so that translating its
+    placeholders and argparse's texts for Chinese cannot change it."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", "80")
+    activate("en")
+    _golden("help-en", _help_screens())
 
 
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
@@ -294,8 +416,11 @@ def test_the_chinese_demo_and_home_show_no_english_prose(
         text = "\n".join(
             line
             for line in (out + err).splitlines()
-            # Paths and the pip command are data the user types, not prose.
-            if "reverbscope-demo" not in line and "pip install" not in line
+            # Paths and the pip command are data the user types, not prose;
+            # the way back to English is written in English on purpose.
+            if "reverbscope-demo" not in line
+            and "pip install" not in line
+            and line != "English interface: reverbscope config language en"
         )
         assert english_words(text) == [], (argv, text)
 
@@ -545,3 +670,85 @@ def test_format_report_prints_on_a_cp1252_stdout(
     assert "✓" in format_report(demo_run.takes[1].result) or "!" in format_report(
         demo_run.takes[1].result
     )
+
+
+# --- Input checks and less common files ---------------------------------------------
+
+
+@pytest.mark.parametrize("value", ["a,b", "1;2", ","])
+def test_a_malformed_channel_list_is_a_usage_error(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], value: str
+) -> None:
+    """It escaped as "unexpected ValueError ... This is a bug in ReverbScope"."""
+    code, out, err = _run(
+        ["--backend", "fake", "measure", "--out", "m", "--input-channels", value], capsys
+    )
+    assert code == 2 and out == ""
+    assert "comma-separated list of channel numbers" in err
+    assert "bug" not in err
+
+
+def test_output_channel_zero_is_refused_before_the_take(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The pre-flight passed it; the take then failed after sweep.wav was written."""
+    root, _monkeypatch = cli
+    code, _out, err = _run(
+        ["--backend", "fake", "measure", "--out", "m", "--output-channel", "0"], capsys
+    )
+    assert code == 1
+    assert "1-based" in err and "Nothing was played" in err
+    assert not (root / "m" / "sweep.wav").exists()
+
+
+def test_measure_has_no_channel_option_it_would_ignore(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    code, _out, err = _run(["--backend", "fake", "measure", "--out", "m", "--channel", "1"], capsys)
+    assert code == 2 and "--channel" in err
+
+
+def test_a_comparison_saved_under_any_name_can_be_shown(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``compare --out ab.json`` wrote it; ``show ab.json`` looked for result.json."""
+    for name in ("a", "b"):
+        argv = ["--backend", "fake", "measure", "--out", name, "--duration", "1"]
+        assert _run([*argv, "--post-silence", "1"], capsys)[0] == 0
+    assert _run(["compare", "a", "b", "--out", "ab.json"], capsys)[0] == 0
+    code, out, err = _run(["show", "ab.json"], capsys)
+    assert code == 0, err
+    assert "ReverbScope comparison" in out
+
+
+def test_commands_without_json_output_say_so(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, _monkeypatch = cli
+    argv = ["--backend", "fake", "measure", "--out", "s", "--duration", "1"]
+    assert _run([*argv, "--post-silence", "1"], capsys)[0] == 0
+    for command in (
+        ["session", "bundle", "s", "--out", "s.zip"],
+        ["project", "init", "--out", "p"],
+    ):
+        code, _out, err = _run(["--format", "json", *command], capsys)
+        assert code == 0
+        assert "--format json does not apply" in err, command
+    assert (root / "s.zip").is_file()
+
+
+def test_project_errors_are_translated(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    root, _monkeypatch = cli
+    (root / "empty").mkdir()
+    code, _out, err = _run(["--lang", "zh_CN", "project", "show", "empty"], capsys)
+    assert code == 1
+    assert "中没有 project.json" in err
+
+
+def test_frequencies_just_below_one_kilohertz_read_as_kilohertz() -> None:
+    from reverbscope.cli.render import frequency_text
+
+    assert frequency_text(999.7) == "1 kHz"
+    assert frequency_text(999.4) == "999 Hz"

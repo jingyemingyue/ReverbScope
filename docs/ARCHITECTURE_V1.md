@@ -291,7 +291,7 @@ can validate without cloning.
 | `impulse_response.wav` (float32) | The located impulse response | The measurement (curves are recomputable from it) |
 | `result.json` | Every metric with unit, validity and reason; curves unless `--no-curves`; `sweep_settings`, `analysis_settings`, `reverbscope_version`, `warnings` | Numbers as they were reported |
 | `session.json` | Metadata, paths, `analysis_summary`, `recording_profile` *(PR #2)*, `reverbscope_version`, `platform`, loopback channel used | Provenance |
-| `recording.wav` (copied, optional) | The raw recording, untouched | Re-analysis |
+| `recording.wav` (copied, optional) | The raw recording, untouched (a take that is not a WAV, such as AIFF, CAF, FLAC or MP3, is converted to WAV with every sample kept; one that cannot be converted is copied as it is) | Re-analysis |
 | `sweep.reverbscope-sweep.json` (copied) | The sweep definition | Re-analysis |
 | `comparison.json` | Two session references and the deltas | A comparison as reported |
 | `project.json` | Room name, notes, list of position entries and their session folders | The index; sessions remain standalone |
@@ -314,7 +314,8 @@ stream. Nothing changes for users without a loopback: every step below is
 skipped and the result says `"loopback": null`.
 
 *Inputs.* `AnalysisSettings.loopback_channel: int | None` (0-based channel of
-the recording) or `analyze(..., loopback=AudioSignal)` for a separate file.
+the recording) or `analyze(..., loopback=AudioSignal)` for a separate file;
+with a separate file, `loopback_channel` names a channel of that file instead.
 The two signals must have the same sample rate and, for a separate file, the
 same length within the recording-start tolerance; otherwise
 `InvalidAudioError`.
@@ -378,7 +379,7 @@ settings: CompareSettings | None = None) -> ComparisonResult` in
 | Frequency response | Both smoothed curves interpolated onto a shared logarithmic grid inside the common band, with the same smoothing fraction (the coarser of the two); difference curve plus the mean absolute difference per octave band | `difference_db` curve, `band_mad_db` |
 | Early reflections | Matched by delay within ±0.5 ms; level delta for matches; unmatched listed as appeared / disappeared. Requires high direct-sound confidence on both sides | `ReflectionMatch` list |
 | Noise | RMS and band deltas are VALID only if both sessions have a verified quiet segment *and* the user declares the input gain unchanged (`CompareSettings.same_input_gain`); otherwise UNRELIABLE with the reason "gain not declared equal" | `MetricDelta` per band |
-| Resonances | Matched within 1/6 octave; decay-distinguishable flags compared | `ResonanceMatch` list |
+| Resonances | Matched within 1/6 octave, inside the range both searches covered; decay-distinguishable flags compared | `ResonanceMatch` list |
 | Placement | Tier-2 heights compared when both present; refused otherwise | `MetricDelta` |
 | Loopback | `path_delay_ms` compared when both compensated | `MetricDelta` |
 
@@ -401,16 +402,20 @@ tuple[float, float] | None = None) -> AnalysisResult` skips deconvolution,
 sweep-position checks and distortion indicators, and runs decay, frequency
 response, reflections, resonances and placement on the given response. The
 excitation band is what the caller declares (`--band 20 20000`), recorded
-with `source = "declared by the user"`; without a declaration the band is
-marked unknown and every band metric is `NOT_COMPUTED` with that reason. The
-noise section is `None` with the note that no recording segment exists.
+with `source = "declared by the user"` (a band above half the file's sample
+rate is refused with `ConfigurationError`); without a declaration the band is
+marked unknown and every decay and energy metric, broadband included, is
+`NOT_COMPUTED` with that reason. The noise section is `None` with the note
+that no recording segment exists.
 CLI `reverbscope analyze-ir --ir <wav>`.
 
 #### 5.3.4 Spatial averaging (S2)
 
 `average_decay(results: Sequence[AnalysisResult]) -> AveragedDecay`:
 arithmetic mean of EDT, T20 and T30 per band over the VALID metrics only,
-with the count, the spread and the list of contributing sessions. Decay
+with the count, the spread and the list of contributing sessions. The
+averaged RT60 is the mean of the sessions' own RT60 estimates (VALID T30,
+else VALID T20), with its own count. Decay
 curves are never averaged (ARCHITECTURE.md §5). The output names the ISO
 3382-2 accuracy class the number of source and microphone positions
 reaches; the class thresholds are transcribed from the standard's Table 1
@@ -495,8 +500,31 @@ class AudioBackend(Protocol):
   Extraction and compilation use Babel (BSD-3-Clause, dev dependency; row to
   be added to DEPENDENCIES.md). English is the source language and needs no
   catalog.
-* Selection: `--lang` / `settings.language` / `REVERBSCOPE_LANG`, otherwise the
-  system locale; English when no catalog matches.
+* Selection: `--lang` / `settings.language` (the desktop app's Settings
+  dialog or `reverbscope config language zh_CN|en|auto`) / `REVERBSCOPE_LANG`,
+  otherwise the system's language; English when no catalog matches. The
+  home screen and `reverbscope --help` end with one line in the other
+  language that names the command to switch. `LC_ALL` or `LC_MESSAGES` set
+  to C or POSIX gives English on every system: it asks any program for
+  untranslated messages (`LC_ALL=C reverbscope …` for a bug report or a
+  script). Otherwise the system's language is read where each system keeps
+  the user's choice:
+  * macOS: the preferred languages (`AppleLanguages` in
+    `~/Library/Preferences/.GlobalPreferences.plist`, then
+    `/Library/Preferences/.GlobalPreferences.plist`; Qt's `uiLanguages` in
+    the GUI) before `LC_ALL` / `LC_MESSAGES` / `LANG`, which Terminal, iTerm
+    and VS Code set to `en_US.UTF-8` whatever the display language is;
+  * Windows: the display language (`GetUserDefaultUILanguage`) when it has
+    a catalog or is English, then Qt's `uiLanguages` (GUI; Windows' own
+    preferred-language list), then the POSIX variables, which only MSYS,
+    Git Bash or Cygwin set;
+  * Linux and other POSIX systems: GNU `LANGUAGE` (a priority list such as
+    `zh_CN:en`, read only when the locale is not C or POSIX, as gettext reads
+    it), then `LC_ALL`, `LC_MESSAGES`, `LANG`, then the desktop's UI languages
+    (GUI).
+
+  In a list of preferred languages the first entry that has a catalog or is
+  English wins.
 * What is translated in 1.0: interpretation findings, GUI chrome, CLI help
   and the labels of the text report, the user guide (zh-CN).
 * What is deliberately **not** translated: the diagnostic strings produced by
@@ -520,6 +548,7 @@ class AudioBackend(Protocol):
 | `session bundle <session> [--no-audio]` | zip for bug reports | M8 |
 | `export <session> --format csv [--out]` | curves and tables through an exporter | S4 |
 | `schema result\|session\|comparison\|project\|sidecar` | print the JSON Schema | M2 |
+| `config [KEY [VALUE]]` | show or change `settings.json` (language, profile, backend, output-folder, copy-recording, developer-tools, theme; `auto` restores a default) | landed |
 | `measure --input-channels 1,2 --loopback-channel 2`, `analyze --loopback-channel 1` / `--loopback <wav>` | loopback | M5 |
 | global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never` | global options | M7, M6, M8 |
 
@@ -589,7 +618,8 @@ an automated check).
   session.json
   result.json
   impulse_response.wav
-  recording.wav                 copied when --copy-recording / the GUI default (on)
+  recording.wav                 copied when --copy-recording / the GUI default (on);
+                                a take that is not a WAV (AIFF, CAF, FLAC, MP3) is converted
   sweep.reverbscope-sweep.json    always copied (tiny; makes the session re-analysable)
 
 <project>/                      SHOULD
@@ -665,7 +695,10 @@ is asked on every measurement, as the brief's safety rules require.
   `pyproject.toml`) so a bundle can be rebuilt from its tag; the library
   keeps its version ranges.
 * **macOS:** `Info.plist` with `NSMicrophoneUsageDescription` (without it the
-  system denies the microphone silently), hardened runtime, the
+  system denies the microphone silently) and `CFBundleLocalizations` `en`,
+  `zh-Hans`, with the Chinese purpose string in
+  `zh-Hans.lproj/InfoPlist.strings` (AppKit's own panels, menu items and the
+  microphone prompt follow only a language the bundle declares), hardened runtime, the
   `com.apple.security.device.audio-input` entitlement, Developer ID signing
   and notarization. **Windows:** Authenticode signing of the installer and
   the executable. Both need identities only the maintainer can hold

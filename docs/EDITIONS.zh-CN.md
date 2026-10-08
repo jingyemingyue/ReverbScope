@@ -32,7 +32,7 @@ ReverbScope 只有一套代码。它提供两个可下载的**版本**，而且�
 | 日常设置（语言、主题、默认录音配置、音频后端、输出文件夹） | 有 | 有 |
 | 扩展 ReverbScope | Python API、`reverbscope.exporters` 入口点、测试、`scripts/build_release.py` | — |
 
-可用 `REVERBSCOPE_EDITION=developer` 或 `REVERBSCOPE_EDITION=user` 临时覆盖；已安装的 ReverbScope 可在“设置 ▸ *显示开发者工具*”中永久开启开发者工具（重启后生效）。命令行工具在两个版本中相同：`reverbscope devices --probe`、`reverbscope doctor` 以及 `measure` 的 `--latency`、`--wasapi-exclusive`、`--coreaudio-set-rate` 选项始终可用。
+可用 `REVERBSCOPE_EDITION=developer` 或 `REVERBSCOPE_EDITION=user` 临时覆盖；已安装的 ReverbScope 可在“设置 ▸ *显示开发者工具*”中或用 `reverbscope config developer-tools on` 永久开启开发者工具（重启后生效）。命令行工具在两个版本中相同：`reverbscope devices --probe`、`reverbscope doctor` 以及 `measure` 的 `--latency`、`--wasapi-exclusive`、`--coreaudio-set-rate` 选项始终可用。
 
 ### 开发者默认配置的用途
 

@@ -16,9 +16,15 @@ from __future__ import annotations
 import math
 from typing import Protocol, runtime_checkable
 
-from reverbscope.i18n import _, current_locale, pgettext
+from reverbscope.i18n import _, current_locale, diag, localize, pgettext
 from reverbscope.interpretation.interpreter import Finding, Severity, finding
-from reverbscope.models.comparison import T_JND_PERCENT, ComparisonResult, MetricDelta
+from reverbscope.models.comparison import (
+    REFUSAL_NOTE_PREFIXES,
+    T_JND_PERCENT,
+    ComparisonResult,
+    MetricDelta,
+    ReflectionMatch,
+)
 from reverbscope.models.result import (
     KIND_SAMPLE_RATE,
     KIND_TIME_STRETCH,
@@ -72,10 +78,12 @@ def profile_title(name: str) -> str:
 
 
 def change_direction_text(direction: str) -> str:
-    """Translated word for the direction of an RT60 change (``"shorter"`` / ``"longer"``)."""
+    """Translated word for the direction of an RT60 change (``"shorter"`` /
+    ``"longer"`` / ``"unchanged"``)."""
     words = {
         "shorter": pgettext("RT60 change", "shorter"),
         "longer": pgettext("RT60 change", "longer"),
+        "unchanged": pgettext("RT60 change", "unchanged"),
     }
     return words.get(direction, direction)
 
@@ -88,6 +96,70 @@ def noise_segment_text(source: str | None) -> str:
         "quiet": pgettext("noise segment", "quiet"),
     }
     return words.get(source or "quiet", source or "quiet")
+
+
+def _db_or_floor(value: float | None) -> float:
+    """A level for ranking; ``or -99.0`` would rank a 0.0 dB reflection last."""
+    return value if value is not None else -99.0
+
+
+def _complete(match: ReflectionMatch) -> bool:
+    """Both delays and both levels of a pair (a lenient load can lack one)."""
+    return None not in (
+        match.baseline_delay_ms,
+        match.candidate_delay_ms,
+        match.baseline_relative_db,
+        match.candidate_relative_db,
+    )
+
+
+def _refusal_note(notes: tuple[str, ...]) -> str:
+    """The note that says why a pair cannot be compared.
+
+    A comparison saved by 0.5.0b1 or earlier lists the reason after the sweep
+    and ISO notes, so it is looked up rather than taken as the first note.
+    """
+    reason = next((note for note in notes if note.startswith(REFUSAL_NOTE_PREFIXES)), None)
+    if reason is not None:
+        return reason
+    return notes[0] if notes else diag("no common excitation band")
+
+
+def _ideal_pulse_peak_db(result: AnalysisResult) -> float:
+    """Peak of a perfect chain's pulse (dB), about ``2 * bandwidth / fs``.
+
+    The inverse filter gives the deconvolved pulse unit *in-band* gain, so
+    its peak depends on the excited bandwidth relative to the sample rate
+    (-1.6 dB at 48 kHz, -13.7 dB at 192 kHz for a 20 Hz-20 kHz sweep).
+    0 dB when the file holds no usable band.
+    """
+    band = result.excitation_band
+    rate = result.sample_rate
+    if band is None or not (0.0 < band.low_hz < band.high_hz <= rate / 2.0):
+        return 0.0
+    return 20.0 * math.log10(2.0 * (band.high_hz - band.low_hz) / rate)
+
+
+def _direct_level_dbfs(result: AnalysisResult, peak_db: float) -> float | None:
+    """Level of the direct sound in the recording (dBFS, like the noise floor).
+
+    The analysis stores it from the response before any loopback compensation
+    (a compensated IR peak also carries the inverse of the return gain). A
+    file without it (0.5.0b1 and earlier) falls back to the IR peak relative
+    to the peak of a perfect chain's pulse, which is about the chain gain,
+    plus the level the sweep was played at; that level is unknown for an
+    analysis against a reference WAV. The IR peak alone read the same chain
+    12 dB lower at 192 kHz than at 48 kHz.
+    """
+    stored = result.impulse_response.direct_level_dbfs
+    if stored is not None and math.isfinite(stored):
+        return stored
+    level = result.sweep_settings.get("level_dbfs")
+    # Only a level a sweep accepts: float() of a 400-digit integer in a
+    # crafted file raises OverflowError.
+    if isinstance(level, int | float) and not isinstance(level, bool) and -80.0 <= level <= 0.0:
+        return peak_db - _ideal_pulse_peak_db(result) + float(level)
+    return None
 
 
 @runtime_checkable
@@ -156,7 +228,7 @@ class ProfileBase:
         """
         findings: list[Finding] = []
         if not comparison.comparable:
-            notes = comparison.notes[0] if comparison.notes else "no common excitation band"
+            notes = _refusal_note(comparison.notes)
             findings.append(
                 finding(
                     "comparison",
@@ -164,6 +236,7 @@ class ProfileBase:
                     "comparison.not_comparable",
                     "These two sessions cannot be compared: {notes}",
                     evidence={"notes": list(comparison.notes)},
+                    display={"notes": localize(notes)},
                     notes=notes,
                 )
             )
@@ -184,7 +257,10 @@ class ProfileBase:
             and rt.candidate is not None
         ):
             percent = rt.delta_percent if rt.delta_percent is not None else 0.0
-            direction = "shorter" if rt.candidate < rt.baseline else "longer"
+            shown = round(percent, 1) + 0.0  # never "-0.0 %"
+            # The direction follows the percentage as printed: equal values read
+            # "longer" and a -0.04 % change "+0.0 %, shorter".
+            direction = "unchanged" if shown == 0.0 else "shorter" if shown < 0.0 else "longer"
             findings.append(
                 finding(
                     "reverberation",
@@ -204,7 +280,7 @@ class ProfileBase:
                     display={"direction": change_direction_text(direction)},
                     baseline_s=rt.baseline,
                     candidate_s=rt.candidate,
-                    delta_percent=percent,
+                    delta_percent=shown,
                     direction=direction,
                     jnd_percent=T_JND_PERCENT,
                 )
@@ -248,74 +324,106 @@ class ProfileBase:
         return "short"
 
     def _comparison_reflections(self, comparison: ComparisonResult) -> list[Finding]:
-        matched = [m for m in comparison.reflections if m.status == "matched"]
-        in_window = [
+        # The strongest reflection inside the window on each side, matched or
+        # not: moving the microphone often shifts a reflection by more than the
+        # match tolerance, so a dominant one that disappeared (or a strong new
+        # one) must not hide behind a weaker matched pair.
+        window = self.strong_reflection_window_ms
+        usable = [m for m in comparison.reflections if m.status != "matched" or _complete(m)]
+        before = [
             m
-            for m in matched
-            if m.baseline_delay_ms is not None
-            and m.baseline_delay_ms <= self.strong_reflection_window_ms
+            for m in usable
+            if m.status in ("matched", "disappeared")
+            and m.baseline_delay_ms is not None
+            and m.baseline_delay_ms <= window
             and m.baseline_relative_db is not None
+        ]
+        after = [
+            m
+            for m in usable
+            if m.status in ("matched", "appeared")
+            and m.candidate_delay_ms is not None
+            and m.candidate_delay_ms <= window
             and m.candidate_relative_db is not None
         ]
-        if not in_window:
-            appeared = [
-                m
-                for m in comparison.reflections
-                if m.status == "appeared"
-                and m.candidate_delay_ms is not None
-                and m.candidate_delay_ms <= self.strong_reflection_window_ms
-                and m.candidate_relative_db is not None
-                and m.candidate_relative_db >= self.strong_reflection_db
+        baseline = max(before, key=lambda m: _db_or_floor(m.baseline_relative_db), default=None)
+        candidate = max(after, key=lambda m: _db_or_floor(m.candidate_relative_db), default=None)
+        if baseline is not None and candidate is not None:
+            return [
+                finding(
+                    "early_reflections",
+                    Severity.NOTICE,
+                    "comparison.reflection_change",
+                    "The strongest reflection within {window_ms:g} ms "
+                    "went from {baseline_relative_db:.1f} dB at "
+                    "{baseline_delay_ms:.1f} ms to "
+                    "{candidate_relative_db:.1f} dB at "
+                    "{candidate_delay_ms:.1f} ms "
+                    "(threshold {threshold_db:.1f} dB for this profile).",
+                    evidence={
+                        "baseline_delay_ms": baseline.baseline_delay_ms,
+                        "candidate_delay_ms": candidate.candidate_delay_ms,
+                        "baseline_relative_db": baseline.baseline_relative_db,
+                        "candidate_relative_db": candidate.candidate_relative_db,
+                        "threshold_db": self.strong_reflection_db,
+                        "window_ms": window,
+                    },
+                    window_ms=window,
+                    baseline_relative_db=baseline.baseline_relative_db,
+                    baseline_delay_ms=baseline.baseline_delay_ms,
+                    candidate_relative_db=candidate.candidate_relative_db,
+                    candidate_delay_ms=candidate.candidate_delay_ms,
+                    threshold_db=self.strong_reflection_db,
+                )
             ]
-            if appeared:
-                first = max(appeared, key=lambda m: m.candidate_relative_db or -99.0)
-                return [
-                    finding(
-                        "early_reflections",
-                        Severity.NOTICE,
-                        "comparison.reflection_appeared",
-                        "A reflection appeared at {delay_ms:.1f} ms "
-                        "({relative_db:.1f} dB) inside this profile's "
-                        "{window_ms:g} ms window.",
-                        evidence={
-                            "delay_ms": first.candidate_delay_ms,
-                            "relative_db": first.candidate_relative_db,
-                            "window_ms": self.strong_reflection_window_ms,
-                        },
-                        delay_ms=first.candidate_delay_ms,
-                        relative_db=first.candidate_relative_db,
-                        window_ms=self.strong_reflection_window_ms,
-                    )
-                ]
-            return []
-        strongest = max(in_window, key=lambda m: m.baseline_relative_db or -99.0)
-        return [
-            finding(
-                "early_reflections",
-                Severity.NOTICE,
-                "comparison.reflection_change",
-                "The strongest reflection within {window_ms:g} ms "
-                "went from {baseline_relative_db:.1f} dB at "
-                "{baseline_delay_ms:.1f} ms to "
-                "{candidate_relative_db:.1f} dB at "
-                "{candidate_delay_ms:.1f} ms "
-                "(threshold {threshold_db:.1f} dB for this profile).",
-                evidence={
-                    "baseline_delay_ms": strongest.baseline_delay_ms,
-                    "candidate_delay_ms": strongest.candidate_delay_ms,
-                    "baseline_relative_db": strongest.baseline_relative_db,
-                    "candidate_relative_db": strongest.candidate_relative_db,
-                    "threshold_db": self.strong_reflection_db,
-                    "window_ms": self.strong_reflection_window_ms,
-                },
-                window_ms=self.strong_reflection_window_ms,
-                baseline_relative_db=strongest.baseline_relative_db,
-                baseline_delay_ms=strongest.baseline_delay_ms,
-                candidate_relative_db=strongest.candidate_relative_db,
-                candidate_delay_ms=strongest.candidate_delay_ms,
-                threshold_db=self.strong_reflection_db,
-            )
-        ]
+        if (
+            candidate is not None
+            and candidate.candidate_relative_db is not None
+            and candidate.candidate_relative_db >= self.strong_reflection_db
+        ):
+            return [
+                finding(
+                    "early_reflections",
+                    Severity.NOTICE,
+                    "comparison.reflection_appeared",
+                    "A reflection appeared at {delay_ms:.1f} ms "
+                    "({relative_db:.1f} dB) inside this profile's "
+                    "{window_ms:g} ms window.",
+                    evidence={
+                        "delay_ms": candidate.candidate_delay_ms,
+                        "relative_db": candidate.candidate_relative_db,
+                        "window_ms": window,
+                    },
+                    delay_ms=candidate.candidate_delay_ms,
+                    relative_db=candidate.candidate_relative_db,
+                    window_ms=window,
+                )
+            ]
+        if (
+            baseline is not None
+            and baseline.baseline_relative_db is not None
+            and baseline.baseline_relative_db >= self.strong_reflection_db
+        ):
+            return [
+                finding(
+                    "early_reflections",
+                    Severity.NOTICE,
+                    "comparison.reflection_disappeared",
+                    "No reflection was detected inside this profile's {window_ms:g} ms "
+                    "window in the candidate; the strongest in the baseline was "
+                    "{relative_db:.1f} dB at {delay_ms:.1f} ms.",
+                    evidence={
+                        "delay_ms": baseline.baseline_delay_ms,
+                        "relative_db": baseline.baseline_relative_db,
+                        "threshold_db": self.strong_reflection_db,
+                        "window_ms": window,
+                    },
+                    delay_ms=baseline.baseline_delay_ms,
+                    relative_db=baseline.baseline_relative_db,
+                    window_ms=window,
+                )
+            ]
+        return []
 
     def _comparison_noise(self, comparison: ComparisonResult) -> list[Finding]:
         rms = next((item for item in comparison.noise if item.name == "noise.rms_dbfs"), None)
@@ -337,7 +445,7 @@ class ProfileBase:
                 },
                 baseline_dbfs=rms.baseline,
                 candidate_dbfs=rms.candidate,
-                delta_db=rms.delta,
+                delta_db=round(rms.delta, 1) + 0.0,  # never "-0.0 dB"
             )
         ]
 
@@ -633,6 +741,7 @@ class ProfileBase:
                 )
         if noise.rms_dbfs is not None:
             peak_db = 20.0 * math.log10(max(abs(result.impulse_response.peak_value), 1e-12))
+            direct_dbfs = _direct_level_dbfs(result, peak_db)
             findings.append(
                 Finding(
                     topic="noise",
@@ -650,8 +759,11 @@ class ProfileBase:
                     locale=current_locale(),
                 )
             )
-            if peak_db - noise.rms_dbfs < self.quiet_noise_margin_db:
-                margin = peak_db - noise.rms_dbfs
+            if (
+                direct_dbfs is not None
+                and direct_dbfs - noise.rms_dbfs < self.quiet_noise_margin_db
+            ):
+                margin = direct_dbfs - noise.rms_dbfs
                 findings.append(
                     finding(
                         "noise",

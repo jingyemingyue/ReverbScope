@@ -215,6 +215,14 @@ Keep the `_internal` folder next to `reverbscope`. To type `reverbscope` from
 anywhere, add the folder to your `PATH` (for example
 `export PATH="$HOME/reverbscope-terminal:$PATH"` in `~/.zshrc` or `~/.bashrc`).
 
+**Language.** The command line follows the system's language: the Mac's
+preferred languages (also in Terminal, which sets `LANG=en_US.UTF-8`
+whatever they are), the Windows display language, or `LANGUAGE` / `LANG` on
+Linux. To keep Chinese or English whatever the system says, run
+`reverbscope config language zh_CN` (or `en`) once;
+`reverbscope config language auto` follows the system again, and
+`reverbscope config` lists every setting.
+
 On **macOS**, a browser marks downloaded files, and macOS refuses to run an
 unsigned command-line program with that mark (*“reverbscope” cannot be opened
 because the developer cannot be verified*). Clear the mark on this folder
@@ -237,6 +245,24 @@ for `reverbscope.exe demo` or `reverbscope.exe --help`. (Double-clicking
 `reverbscope.exe` itself closes its window as soon as it has printed.) From
 PowerShell, `.\reverbscope.exe demo` in the folder does the same.
 
+**Saving a report from PowerShell.** Sent to a file or to another program,
+the output of every `reverbscope` command is UTF-8. Command Prompt's `>`
+stores it as it is. Windows PowerShell 5.1, and PowerShell 7 when it hands
+the output to a command such as `Select-String` or `Out-File`, decodes it in
+the console's code page instead, so a Chinese report comes out garbled
+(`混响` becomes `娣峰搷`). Switch the PowerShell window to UTF-8 once before
+you redirect or pipe:
+
+```powershell
+$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()
+reverbscope show session > report.txt
+```
+
+Alternatively, have ReverbScope write the console's code page:
+`$env:PYTHONIOENCODING = "cp936"` on Chinese Windows
+(`[Console]::OutputEncoding` names the code page). Characters that code page
+lacks are then replaced.
+
 ## Python (wheel and source)
 
 ReverbScope is **not on PyPI yet**, so `pip install reverbscope` does not install
@@ -250,7 +276,7 @@ Python 3.12 or newer. Download `reverbscope-<version>-py3-none-any.whl`, then:
 ```bash
 python3 -m venv reverbscope-env
 source reverbscope-env/bin/activate          # Windows: reverbscope-env\Scripts\activate
-pip install "./reverbscope-0.5.0b1-py3-none-any.whl[gui]"
+pip install "./reverbscope-0.5.0b2-py3-none-any.whl[gui]"
 reverbscope --help
 reverbscope gui                              # or: reverbscope-gui
 ```
@@ -265,7 +291,7 @@ reverbscope show demo/
 ```
 
 `reverbscope-<version>.tar.gz` is the source archive: `pip install
-"./reverbscope-0.5.0b1.tar.gz[gui]"` builds the same wheel locally.
+"./reverbscope-0.5.0b2.tar.gz[gui]"` builds the same wheel locally.
 
 ### Developer install (from Git)
 
@@ -369,6 +395,7 @@ saved them.
 | Linux: Chinese chart labels show empty boxes | `sudo apt install fonts-noto-cjk` |
 | `reverbscope gui` says *This is the Terminal Edition* | The Terminal Edition has no GUI; download the Desktop Edition (the command line works in both). |
 | macOS: *“reverbscope” cannot be opened because the developer cannot be verified* (Terminal Edition) | Clear the download mark once: `xattr -dr com.apple.quarantine reverbscope-terminal` ([Terminal Edition](#terminal-edition)). |
+| Windows PowerShell: Chinese text is garbled in a file or after a pipe (`> report.txt`, `\| Select-String`) | Run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()` first ([Saving a report from PowerShell](#terminal-edition)). |
 | Windows: `reverbscope.exe` opens and closes at once | It is a command-line program: double-click `ReverbScope Terminal.cmd` instead, or run it from a Command Prompt. |
 | `reverbscope gui` says PySide6 could not be loaded | Install the GUI extra: `pip install "PySide6_Essentials>=6.6"` (or reinstall the wheel with `[gui]`). |
 | `pip install reverbscope` finds nothing, or something else | ReverbScope is not on PyPI yet; use the [wheel](#wheel-from-a-release). |

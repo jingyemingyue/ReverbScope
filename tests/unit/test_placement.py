@@ -15,7 +15,7 @@ from reverbscope.core.placement import (
     specular_ceiling_db,
     speed_of_sound_m_s,
 )
-from reverbscope.models.result import Reflection, ReflectionsResult, Validity
+from reverbscope.models.result import PlacementLength, Reflection, ReflectionsResult, Validity
 
 C20 = speed_of_sound_m_s(DEFAULT_TEMPERATURE_C)
 
@@ -191,6 +191,46 @@ def test_a_microphone_near_the_vertical_midpoint_is_refused_with_both_readings()
     assert "vertical midpoint" in (result.source_height_m.reason or "")
     assert "moving the microphone" in (result.source_height_m.reason or "")
     assert all(c.surface is None for c in result.candidates)
+
+
+def test_competing_upper_planes_are_refused_as_the_plane_above() -> None:
+    """Two ceiling readings were refused as "the surface the height was
+    measured from", with the vertical-midpoint advice, although the lower
+    plane had been found and only the plane above was in doubt."""
+    source_height, mic_height, horizontal = 0.90, 0.40, 1.0
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    arrivals = [(lower_ms, _lossy(distance, lower_ms))]
+    for ceiling in (2.5, 3.2):
+        upper_ms = _plane_arrival(
+            distance, ceiling - source_height, ceiling - mic_height, horizontal
+        )
+        arrivals.append((upper_ms, _lossy(distance, upper_ms)))
+    result = estimate_placement(
+        _reflections(arrivals),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    assert result.source_height_m.validity is Validity.VALID
+    assert result.source_height_m.metres == pytest.approx(source_height, abs=0.005)
+    ceiling_length = result.ceiling_height_m
+    assert ceiling_length.metres is None
+    assert ceiling_length.alternatives_m == pytest.approx((2.5, 3.2), abs=0.005)
+    assert ceiling_length.reason == (
+        "more than one reflection could be the plane above the devices, and they disagree by "
+        "more than 12 cm: 2.50 m or 3.20 m. ReverbScope does not choose between them"
+    )
+    from reverbscope.i18n import activate, localize
+
+    activate("zh_CN")
+    try:
+        assert localize(ceiling_length.reason) == (
+            "有不止一个反射可能来自设备上方平面，且它们之间相差超过 12 cm："
+            "2.50 m 或 3.20 m。ReverbScope 不会在其中做选择"
+        )
+    finally:
+        activate("en")
 
 
 def test_reported_uncertainty_is_labelled_as_input_only() -> None:
@@ -374,3 +414,147 @@ def test_export_never_contains_a_horizontal_claim() -> None:
     )
     assert "underdetermined by two" not in payload["coordinates_withheld"]  # it says the counts
     assert "deficit of three" in payload["coordinates_withheld"]
+
+
+def test_a_steep_but_possible_geometry_is_not_refused() -> None:
+    """The tape slack was subtracted instead of allowed: with d = 1.5 m every
+    geometry under ~0.24 m horizontal separation was refused as impossible."""
+    source_height, mic_height, horizontal, ceiling = 1.8866, 0.40, 0.20, 3.0
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    upper_ms = _plane_arrival(distance, ceiling - source_height, ceiling - mic_height, horizontal)
+    result = estimate_placement(
+        _reflections(
+            [(lower_ms, _lossy(distance, lower_ms)), (upper_ms, _lossy(distance, upper_ms))]
+        ),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    assert result.source_height_m.validity is Validity.VALID
+    assert result.source_height_m.metres == pytest.approx(source_height, abs=0.005)
+    assert result.horizontal_separation_m.metres == pytest.approx(horizontal, abs=0.005)
+
+
+@pytest.mark.parametrize(
+    ("source_height", "mic_height", "horizontal", "ceiling"),
+    [(1.20, 0.40, 1.44, 3.20), (1.80, 0.30, 0.45, 3.20), (1.60, 0.40, 0.50, 3.00)],
+)
+def test_each_length_carries_its_own_input_uncertainty(
+    source_height: float, mic_height: float, horizontal: float, ceiling: float
+) -> None:
+    """Ceiling and horizontal separation reported the loudspeaker height's
+    sigma; the horizontal one was understated up to 3.5 times."""
+    from reverbscope.core.placement import (
+        DISTANCE_SIGMA_M,
+        HEIGHT_SIGMA_M,
+        PEAK_LOCATION_SIGMA_MS,
+    )
+
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    upper_ms = _plane_arrival(distance, ceiling - source_height, ceiling - mic_height, horizontal)
+    result = estimate_placement(
+        _reflections(
+            [(lower_ms, _lossy(distance, lower_ms)), (upper_ms, _lossy(distance, upper_ms))]
+        ),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+
+    def lengths(
+        d: float, low: float, up: float, temperature: float, h: float
+    ) -> tuple[float, float]:
+        speed = speed_of_sound_m_s(temperature)
+        s = boundary_product_m2(d, low, speed) / h
+        mirror = d + speed * up / 1000.0
+        return math.sqrt(d**2 - (s - h) ** 2), (
+            s + h + math.sqrt(mirror**2 - d**2 + (s - h) ** 2)
+        ) / 2
+
+    nominal = (distance, lower_ms, upper_ms, DEFAULT_TEMPERATURE_C, mic_height)
+    sigmas = (DISTANCE_SIGMA_M, PEAK_LOCATION_SIGMA_MS, PEAK_LOCATION_SIGMA_MS, 1.0, HEIGHT_SIGMA_M)
+    variance = np.zeros(2)
+    for index, sigma in enumerate(sigmas):
+        step = max(abs(nominal[index]) * 1e-6, 1e-9)
+        moved = list(nominal)
+        moved[index] += step
+        slope = (np.array(lengths(*moved)) - np.array(lengths(*nominal))) / step
+        variance += (slope * sigma) ** 2
+    expected = np.sqrt(variance)
+    assert result.horizontal_separation_m.input_uncertainty_m == pytest.approx(
+        expected[0], rel=0.01
+    )
+    assert result.ceiling_height_m.input_uncertainty_m == pytest.approx(expected[1], rel=0.01)
+
+
+def test_height_uncertainty_is_taken_at_the_arrival_the_height_came_from() -> None:
+    """Agreeing lower-plane arrivals report their median, but the height's
+    input uncertainty was propagated at the earliest of them: detecting
+    other agreeing arrivals moved the sigma of the same reported height."""
+    h, d = 0.40, math.hypot(0.8, 1.0)
+
+    def delay(source: float) -> float:
+        # s * h = c * delta * (2 d + c * delta) / 4, solved for delta.
+        return (-d + math.sqrt(d * d + 4 * source * h)) / C20 * 1000.0
+
+    ceiling = _plane_arrival(d, 2.5 - 1.21, 2.5 - h, math.sqrt(d * d - (1.21 - h) ** 2))
+
+    def source_height(sources: tuple[float, ...]) -> PlacementLength:
+        arrivals = sorted([delay(s) for s in sources] + [ceiling])
+        reflections = _reflections([(a, _lossy(d, a)) for a in arrivals])
+        return estimate_placement(
+            reflections, distance_m=d, mic_height_m=h, temperature_c=20.0
+        ).source_height_m
+
+    alone = source_height((1.21,))
+    agreed = source_height((1.18, 1.21, 1.25))
+    assert alone.validity is Validity.VALID and agreed.validity is Validity.VALID
+    assert agreed.metres == pytest.approx(alone.metres)
+    assert agreed.input_uncertainty_m == pytest.approx(alone.input_uncertainty_m, rel=1e-9)
+
+
+@pytest.mark.parametrize(
+    ("source_height", "mic_height", "horizontal", "expected"),
+    [
+        (
+            1.5,
+            1.2,
+            1.0,
+            "and a plane 2.70 m up (plausible heights start at 1.80 m) would arrive at the "
+            "same 5.3 ms as the arrival this height was solved from",
+        ),
+        (
+            1.0,
+            0.9,
+            3.0,
+            "and one as low as 1.80 m would arrive at 1.3 ms -- within the 0.3 ms the "
+            "reflection search can resolve from the 1.6 ms arrival this height was solved from",
+        ),
+    ],
+    ids=["lowest plane arrives well before", "lowest plane within the resolution"],
+)
+def test_a_possible_merge_names_the_plane_that_would_merge(
+    source_height: float, mic_height: float, horizontal: float, expected: str
+) -> None:
+    """With the devices straddling mid-height, the lowest plausible plane above
+    arrives long before the lower plane's arrival, yet the reason said it
+    arrived "at 0.9 ms -- within the 0.3 ms ... from the 5.3 ms arrival". The
+    plane that would really merge is the one at u_z = s + h above the lower
+    plane, whose mirror path equals the lower plane's."""
+    distance = math.hypot(source_height - mic_height, horizontal)
+    lower_ms = _plane_arrival(distance, source_height, mic_height, horizontal)
+    result = estimate_placement(
+        _reflections([(lower_ms, _lossy(distance, lower_ms))]),
+        distance_m=distance,
+        mic_height_m=mic_height,
+        temperature_c=DEFAULT_TEMPERATURE_C,
+    )
+    assert result.source_height_m.validity is Validity.UNRELIABLE
+    assert result.source_height_m.metres == pytest.approx(source_height, abs=0.005)
+    reason = result.source_height_m.reason or ""
+    assert expected in reason
+    assert "may therefore be two arrivals merged into one peak" in reason
+    assert result.horizontal_separation_m.validity is Validity.UNRELIABLE
+    assert result.horizontal_separation_m.reason == reason

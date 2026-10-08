@@ -258,6 +258,116 @@ def test_resonances_are_matched_within_a_sixth_of_an_octave(short_sweep: SweepSe
     assert matched.candidate_decay_distinguishable is False
 
 
+def test_the_closest_pairs_are_matched_first(short_sweep: SweepSettings) -> None:
+    """Each baseline item took the nearest free candidate in turn, so a
+    reflection that vanished took the 10.5 ms arrival 0.5 ms away ("6.6 dB
+    weaker") and the 10.6 ms one it really was, 0.1 ms away, "disappeared".
+    Resonances were paired the same way."""
+    from reverbscope.models.result import Reflection, ResonanceCandidate
+
+    def resonance(frequency: float) -> ResonanceCandidate:
+        return ResonanceCandidate(
+            frequency_hz=frequency,
+            level_above_baseline_db=6.0,
+            narrowband_decay_20db_s=0.5,
+            filter_ringing_20db_s=0.1,
+            decay_distinguishable=True,
+            surroundings_decay_20db_s=0.2,
+        )
+
+    def take(reflections: list[tuple[float, float]], resonances: list[float]):
+        return replace(
+            result,
+            reflections=replace(
+                result.reflections,
+                reflections=tuple(Reflection(delay, level) for delay, level in reflections),
+            ),
+            resonances=replace(
+                result.resonances, candidates=tuple(resonance(f) for f in resonances)
+            ),
+        )
+
+    result = _room(short_sweep, seed=0)
+    assert result.reflections.direct_sound_confidence == "high"
+    baseline = take([(10.0, -8.1), (10.6, -15.1)], [50.0, 55.0])
+    candidate = take([(10.5, -14.7)], [54.0])
+    comparison = compare(baseline, candidate)
+    reflections = {
+        (m.status, m.baseline_delay_ms, m.candidate_delay_ms) for m in comparison.reflections
+    }
+    assert reflections == {("disappeared", 10.0, None), ("matched", 10.6, 10.5)}
+    matched = next(m for m in comparison.reflections if m.status == "matched")
+    assert matched.level_delta_db == pytest.approx(0.4)
+    resonances = {(m.status, m.baseline_hz, m.candidate_hz) for m in comparison.resonances}
+    assert resonances == {("disappeared", 50.0, None), ("matched", 55.0, 54.0)}
+
+
+def test_resonances_are_compared_only_where_both_sides_searched(
+    short_sweep: SweepSettings,
+) -> None:
+    """A 62 Hz mode found by a full-range take was "gone" against a take whose
+    sweep started at 400 Hz (and "new" the other way round), although that
+    take never searched below 441 Hz; two such takes read "no potential
+    resonance" at a glance, where each report said "not searched"."""
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import comparison_at_a_glance
+    from reverbscope.models.result import ResonanceCandidate
+
+    mode = ResonanceCandidate(
+        frequency_hz=62.0,
+        level_above_baseline_db=9.0,
+        narrowband_decay_20db_s=0.5,
+        filter_ringing_20db_s=0.1,
+        decay_distinguishable=True,
+        surroundings_decay_20db_s=0.1,
+    )
+    result = _room(short_sweep, seed=0)
+
+    def take(searched: tuple[float, float] | None, *candidates: ResonanceCandidate):
+        return replace(
+            result,
+            resonances=replace(
+                result.resonances, candidates=candidates, searched_range_hz=searched
+            ),
+        )
+
+    def low_end(comparison) -> str:
+        console = Console(color=False, unicode=True, width=100)
+        (line,) = [
+            line for line in comparison_at_a_glance(console, comparison) if "Low end" in line
+        ]
+        return " ".join(line.split())
+
+    full = take((26.7, 300.0), mode)
+    unsearched = take(None)
+    for pair in ((full, unsearched), (unsearched, full), (unsearched, unsearched)):
+        comparison = compare(*pair)
+        assert comparison.comparable and comparison.resonances == ()
+        assert (
+            "low-frequency resonances are not compared: no frequency range was searched on "
+            "both sides"
+        ) in comparison.notes
+        assert low_end(comparison) == (
+            "Low end – not compared: no frequency range was searched on both sides"
+        )
+
+    # A sweep that starts at 100 Hz searched from 116 Hz: 62 Hz is left out.
+    narrowed = compare(full, take((116.0, 300.0)))
+    assert narrowed.resonances == ()
+    assert (
+        "low-frequency resonances are compared only at 116-300 Hz, the range both sides "
+        "searched; 1 potential resonance(s) found outside it are left out"
+    ) in narrowed.notes
+    assert low_end(narrowed) == "Low end ✓ no potential resonance in the range both sides searched"
+
+    # A file older than the stored range still compares what it found.
+    older = compare(full, take(None, replace(mode, frequency_hz=63.0)))
+    assert [(m.status, m.baseline_hz, m.candidate_hz) for m in older.resonances] == [
+        ("matched", 62.0, 63.0)
+    ]
+    assert low_end(compare(full, full)) == "Low end ✓ at both: 62 Hz"
+
+
 def test_loopback_path_delay_is_compared_only_when_both_were_compensated(
     short_sweep: SweepSettings,
 ) -> None:
@@ -278,3 +388,153 @@ def test_loopback_path_delay_is_compared_only_when_both_were_compensated(
     assert refused[0].delta is None
     absent = compare(result, with_loopback(7.5, True)).loopback
     assert absent[0].validity is Validity.NOT_COMPARABLE
+
+
+def test_percent_change_only_for_ratio_scale_units() -> None:
+    """In percent of a level in dB the sign followed the baseline's: C50 going
+    from -2 to -1 dB read -50 %."""
+    from reverbscope.core.compare import _delta_from_values
+
+    assert _delta_from_values("broadband.c50", -2.0, -1.0, unit="dB").delta_percent is None
+    assert _delta_from_values("noise.rms_dbfs", -75.0, -70.0, unit="dBFS").delta_percent is None
+    assert _delta_from_values("broadband.d50", 90.0, 95.0, unit="%").delta_percent is None
+    assert _delta_from_values("broadband.t30", 0.5, 0.55, unit="s").delta_percent == (
+        pytest.approx(10.0)
+    )
+
+
+def test_no_percent_change_of_a_negative_baseline() -> None:
+    """A loopback path delay going from -0.50 to -0.25 ms read -50 %."""
+    from reverbscope.core.compare import _delta_from_values
+
+    delta = _delta_from_values("loopback.path_delay_ms", -0.5, -0.25, unit="ms")
+    assert delta.delta_percent is None
+    assert delta.delta == pytest.approx(0.25)
+
+
+def test_a_stored_percent_of_a_level_is_dropped_on_load() -> None:
+    """Comparisons saved by 0.5.0b1 stored a percent for every unit, and
+    ``reverbscope show`` printed "C50 (dB) ... +3.4 %"."""
+    import io
+
+    from reverbscope.cli.console import Console
+    from reverbscope.cli.render import render_comparison
+    from reverbscope.models.comparison import ComparisonResult
+
+    payload = ComparisonResult(comparable=True, common_band=(20.0, 20000.0)).to_dict()
+    common = {"validity": "valid", "reason": None}
+    payload["decay"] = [
+        {"name": "broadband.c50", "baseline": 9.814, "candidate": 10.146, "delta": 0.332}
+        | {"delta_percent": 3.38, "unit": "dB"}
+        | common,
+        {"name": "broadband.t30", "baseline": 0.5, "candidate": 0.55, "delta": 0.05}
+        | {"delta_s": 0.05, "delta_percent": 10.0, "unit": "s"}
+        | common,
+    ]
+    payload["loopback"] = [
+        {"name": "loopback.path_delay_ms", "baseline": -0.5, "candidate": -0.25}
+        | {"delta": 0.25, "delta_percent": -50.0, "unit": "ms"}
+        | common,
+    ]
+    loaded = ComparisonResult.from_dict(payload)
+    assert [d.delta_percent for d in loaded.decay] == [None, 10.0]
+    assert loaded.loopback[0].delta_percent is None
+    text = render_comparison(Console.for_stream(io.StringIO(), "never"), loaded)
+    assert "+3.4 %" not in text
+
+
+def test_an_undeclared_imported_band_is_not_compared(short_sweep: SweepSettings) -> None:
+    """The 20 Hz-20 kHz placeholder of an imported IR without --band was used
+    as a measured band (octave differences of 60 dB where nothing was excited)."""
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
+
+    swept = _result(short_sweep, rt60_s=0.4, reflections=[])
+    imported = analyze_impulse_response(AudioSignal(make_rir(48000, rt60_s=0.4), 48000))
+    comparison = compare(swept, imported)
+    assert not comparison.comparable
+    assert "no excitation band" in comparison.notes[0]
+
+
+def test_a_stored_band_above_the_nyquist_frequency_is_not_compared(
+    short_sweep: SweepSettings,
+) -> None:
+    """R3-21: an imported 48 kHz IR saved with --band 20 30000 was compared
+    with a 96 kHz session up to 30 kHz, from its curve clamped at 24 kHz."""
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
+    from reverbscope.models.result import EXCITATION_SOURCE_DECLARED, ExcitationBand
+
+    rir = make_rir(48000, rt60_s=0.4, diffuse_level=0.02, start_delay_s=0.05)
+    imported = analyze_impulse_response(AudioSignal(rir, 48000), excitation_band=(20.0, 20000.0))
+    # As an older version stored it, before the band was checked.
+    beyond = ExcitationBand(low_hz=20.0, high_hz=30000.0, source=EXCITATION_SOURCE_DECLARED)
+    imported = replace(
+        imported, impulse_response=replace(imported.impulse_response, excitation_band=beyond)
+    )
+    fast = replace(short_sweep, sample_rate=96000, end_hz=40000.0)
+    comparison = compare(imported, _result(fast, rt60_s=0.4, reflections=[]))
+    assert comparison.comparable
+    assert comparison.common_band is not None
+    assert comparison.common_band[1] == pytest.approx(24000.0)
+    assert comparison.frequency_response is not None
+    assert comparison.frequency_response.frequencies_hz.max() <= 24000.0 + 1e-6
+
+
+def test_two_perfect_chains_measured_with_different_sweeps_do_not_differ() -> None:
+    """R3-6: a 10 s and a 3 s ideal loopback compared with -7.1 dB at 22.5 Hz
+    and "largest change in the 31.5 Hz octave, 1.3 dB": both bands started
+    where the ideal loopback of its sweep was still 8-10 dB down."""
+    import numpy as np
+
+    chain = np.zeros(10)
+    chain[3] = 1.0
+    results = []
+    for duration_s in (10.0, 3.0):
+        sweep = SweepSettings(duration_s=duration_s, post_silence_s=2.0)
+        recording = synthetic_recording(sweep, chain, noise_rms=1e-6)
+        results.append(analyze(recording, Reference.from_settings(sweep)))
+    comparison = compare(*results)
+    assert comparison.frequency_response is not None
+    assert max(mad for _label, mad in comparison.frequency_response.band_mad_db) < 0.2
+    assert np.max(np.abs(comparison.frequency_response.difference_db)) < 1.0
+
+
+def test_a_refused_pair_names_its_reason_first(short_sweep: SweepSettings) -> None:
+    """The finding quoted notes[0], which was a sweep-difference or the ISO note."""
+    low = replace(short_sweep, start_hz=20.0, end_hz=1000.0)
+    high = replace(short_sweep, start_hz=700.0, end_hz=20000.0, sample_rate=96000)
+    comparison = compare(
+        _result(low, rt60_s=0.4, reflections=[]), _result(high, rt60_s=0.4, reflections=[])
+    )
+    assert not comparison.comparable
+    assert "narrower than the required" in comparison.notes[0]
+    finding = interpret_comparison(comparison)[0]
+    assert "narrower than the required" in finding.message
+
+
+def test_every_refusal_starts_with_a_known_prefix(short_sweep: SweepSettings) -> None:
+    """``show`` finds the reason of a refused comparison saved by 0.5.0b1 (where
+    it was not the first note) by these prefixes; a reworded refusal must
+    update them."""
+    from reverbscope.models.comparison import REFUSAL_NOTE_PREFIXES
+
+    base = _result(short_sweep, rt60_s=0.4, reflections=[])
+    band = base.impulse_response.excitation_band
+    assert band is not None
+
+    def banded(low_hz: float | None, high_hz: float = 20000.0):
+        new_band = None if low_hz is None else replace(band, low_hz=low_hz, high_hz=high_hz)
+        return replace(
+            base, impulse_response=replace(base.impulse_response, excitation_band=new_band)
+        )
+
+    for baseline, candidate in (
+        (banded(None), base),
+        (banded(20.0, 100.0), banded(200.0)),
+        (banded(100.0, 150.0), base),
+    ):
+        comparison = compare(baseline, candidate)
+        assert not comparison.comparable
+        refusals = [n for n in comparison.notes if n.startswith(REFUSAL_NOTE_PREFIXES)]
+        assert refusals == [comparison.notes[0]]

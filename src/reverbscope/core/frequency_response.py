@@ -20,8 +20,10 @@ costs about 1.5 dB at 31.5 Hz on a loopback.
 The FFT is zero-padded to a fine bin spacing, which *interpolates* the
 spectrum; it does not add resolution. Both numbers are reported:
 ``bin_spacing_hz`` (the distance between exported points) and
-``resolution_hz`` = 1 / analysed duration (the width of the narrowest feature
-that can be separated).
+``resolution_hz`` = 1 / analysed duration *after the direct sound* (the width
+of the narrowest feature that can be separated). The lead-in holds only the
+direct sound's own pre-ringing, so it does not refine the resolution: a 20 ms
+gate resolves 50 Hz whatever the lead-in.
 """
 
 from __future__ import annotations
@@ -29,7 +31,7 @@ from __future__ import annotations
 import numpy as np
 
 from reverbscope.core.filters import fractional_octave_smooth
-from reverbscope.errors import ConfigurationError
+from reverbscope.errors import ConfigurationError, InvalidAudioError
 from reverbscope.i18n import _, diag
 from reverbscope.models.audio import FloatArray
 from reverbscope.models.result import ExcitationBand, FrequencyResponseResult
@@ -78,7 +80,18 @@ def frequency_response(
     shorter than its own end taper plus :data:`MIN_DIRECT_SOUND_S`, which
     would attenuate or exclude the direct sound.
     """
-    if not 0 <= direct_index < ir.shape[0]:
+    if (
+        isinstance(sample_rate, bool)
+        or not isinstance(sample_rate, (int, np.integer))
+        or sample_rate <= 0
+    ):
+        raise ConfigurationError(_("sample_rate must be a positive integer"))
+    values = np.asarray(ir, dtype=np.float64)
+    if values.ndim != 1:
+        raise InvalidAudioError(_("impulse response must be one-dimensional"))
+    if values.size and not np.all(np.isfinite(values)):
+        raise InvalidAudioError(_("signal contains NaN or infinite samples"))
+    if not 0 <= direct_index < values.shape[0]:
         raise ConfigurationError("direct_index is outside the impulse response")
     taper_s = end_taper_ms / 1000.0
     if window_s is not None:
@@ -94,14 +107,17 @@ def frequency_response(
                     minimum_ms=MIN_DIRECT_SOUND_S * 1000.0,
                 )
             )
-        stop = min(ir.shape[0], direct_index + max(2, round(window_s * sample_rate)) + 1)
-        segment = _taper_end(ir[:stop], sample_rate, end_taper_ms)
+        stop = min(values.shape[0], direct_index + max(2, round(window_s * sample_rate)) + 1)
+        # The check above is on the requested window; an impulse response that
+        # ends sooner gets a shorter taper, never one that reaches the direct sound.
+        available_ms = ((stop - 1 - direct_index) / sample_rate - MIN_DIRECT_SOUND_S) * 1000.0
+        segment = _taper_end(values[:stop], sample_rate, min(end_taper_ms, max(0.0, available_ms)))
     else:
-        stop = ir.shape[0]
-        segment = np.asarray(ir, dtype=np.float64)
+        stop = values.shape[0]
+        segment = values
     lead_in_s = direct_index / sample_rate
     window_after_s = (stop - 1 - direct_index) / sample_rate
-    duration_s = segment.shape[0] / sample_rate
+    duration_s = (stop - direct_index) / sample_rate
 
     n_min = int(np.ceil(sample_rate / min_resolution_hz))
     nfft = 1 << max(segment.shape[0], n_min).bit_length()

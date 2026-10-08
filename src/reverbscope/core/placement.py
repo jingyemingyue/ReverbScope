@@ -203,6 +203,7 @@ def _resolve(
     *,
     empty_reason: str,
     uncertainty_m: float | None,
+    upper: bool = False,
 ) -> tuple[PlacementLength, int | None]:
     """The unique-or-refuse rule: agree, or say which values competed.
 
@@ -210,7 +211,10 @@ def _resolve(
     when nothing was resolved). There is deliberately no tie-break: picking the
     earliest is wrong exactly in the commonest setup (a desk edge arrives
     before the desk top) and picking the loudest is wrong whenever the lower
-    plane is carpeted.
+    plane is carpeted. ``upper`` resolves the plane above the devices, whose
+    refusal names that plane: the lower plane is already known by then, so the
+    competing values are ceiling heights, not the surface the height was
+    measured from.
     """
     if not hypotheses:
         return _refused(empty_reason), None
@@ -227,21 +231,31 @@ def _resolve(
             chosen.index,
         )
     listed = " or ".join(f"{v:.2f} m" for v in values)
+    if upper:
+        reason = diag(
+            "more than one reflection could be the plane above the devices, and they "
+            "disagree by more than {agreement_cm:.0f} cm: {values}. ReverbScope does not "
+            "choose between them",
+            agreement_cm=agreement_m * 100,
+            values=listed,
+        )
+    else:
+        reason = diag(
+            "more than one reflection could be the surface the height was measured "
+            "from, and they disagree by more than {agreement_cm:.0f} cm: {values}. "
+            "ReverbScope does not choose between them. This is the expected outcome when "
+            "the microphone sits near the vertical midpoint of the room, where the "
+            "arrival from the surface below and the one from the surface above are "
+            "interchangeable; moving the microphone 20-30 cm up or down and measuring "
+            "again separates them",
+            agreement_cm=agreement_m * 100,
+            values=listed,
+        )
     return (
         PlacementLength(
             metres=None,
             validity=_NOT_COMPUTED,
-            reason=diag(
-                "more than one reflection could be the surface the height was measured "
-                "from, and they disagree by more than {agreement_cm:.0f} cm: {values}. "
-                "ReverbScope does not choose between them. This is the expected outcome when "
-                "the microphone sits near the vertical midpoint of the room, where the "
-                "arrival from the surface below and the one from the surface above are "
-                "interchangeable; moving the microphone 20-30 cm up or down and measuring "
-                "again separates them",
-                agreement_cm=agreement_m * 100,
-                values=listed,
-            ),
+            reason=reason,
             alternatives_m=tuple(values),
         ),
         None,
@@ -409,8 +423,8 @@ def estimate_placement(
     if temperature_assumed:
         notes.append(
             diag(
-                "no air temperature was supplied, so {temperature:.0f} C ({speed:.1f} m/s) "
-                "was assumed; a 5 C error moves every distance by about 0.9 %",
+                "no air temperature was supplied, so {temperature:.0f} °C ({speed:.1f} m/s) "
+                "was assumed; a 5 °C error moves every distance by about 0.9 %",
                 temperature=DEFAULT_TEMPERATURE_C,
                 speed=speed,
             )
@@ -525,7 +539,7 @@ def estimate_placement(
                     high=MAX_SOURCE_HEIGHT_M,
                 )
             )
-        elif abs(separation) > distance_m - DISTANCE_SLACK_M:
+        elif abs(separation) > distance_m + DISTANCE_SLACK_M:
             rejections.append(
                 diag(
                     "the {delay:.1f} ms candidate implies a vertical separation of "
@@ -565,24 +579,27 @@ def estimate_placement(
         c = speed_of_sound_m_s(temperature_arg)
         return boundary_product_m2(distance, delay, c) / mic
 
-    chosen_delay = lower[0].delay_ms if lower else 0.0
-    height_sigma = _propagate(
-        _source_height,
-        {
-            "distance": distance_m,
-            "delay": chosen_delay,
-            "temperature_arg": temperature,
-            "mic": height,
-        },
-        {
-            "distance": DISTANCE_SIGMA_M,
-            "delay": PEAK_LOCATION_SIGMA_MS,
-            "temperature_arg": TEMPERATURE_SIGMA_C if temperature_assumed else 1.0,
-            "mic": HEIGHT_SIGMA_M,
-        },
-    )
+    def _horizontal(distance: float, delay: float, temperature_arg: float, mic: float) -> float:
+        lift = _source_height(distance, delay, temperature_arg, mic) - mic
+        return math.sqrt(distance**2 - lift**2)
+
+    def _upper_plane(
+        distance: float, delay: float, upper_delay: float, temperature_arg: float, mic: float
+    ) -> float:
+        source = _source_height(distance, delay, temperature_arg, mic)
+        mirror = distance + speed_of_sound_m_s(temperature_arg) * upper_delay / 1000.0
+        return (source + mic + math.sqrt(mirror**2 - distance**2 + (source - mic) ** 2)) / 2.0
+
+    input_sigmas = {
+        "distance": DISTANCE_SIGMA_M,
+        "delay": PEAK_LOCATION_SIGMA_MS,
+        "upper_delay": PEAK_LOCATION_SIGMA_MS,
+        "temperature_arg": TEMPERATURE_SIGMA_C if temperature_assumed else 1.0,
+        "mic": HEIGHT_SIGMA_M,
+    }
+
     source_length, source_index = _resolve(
-        lower, height_agreement_m, empty_reason=empty_reason, uncertainty_m=height_sigma
+        lower, height_agreement_m, empty_reason=empty_reason, uncertainty_m=None
     )
 
     ceiling_length = _refused(
@@ -599,10 +616,25 @@ def estimate_placement(
         u_z = source_height_value + height
         v_z = source_height_value - height
         horizontal = math.sqrt(max(distance_m**2 - v_z**2, 0.0))
+        # Each length gets its own propagation: q and the upper plane depend on
+        # the inputs differently from the loudspeaker height (q's sensitivity
+        # to the height grows as the devices approach the vertical).
+        source_nominal = {
+            "distance": distance_m,
+            "delay": tier1[source_index].delay_ms,
+            "temperature_arg": temperature,
+            "mic": height,
+        }
+        # At the arrival the reported height came from (the median of agreeing
+        # hypotheses), not the earliest one.
+        source_length = replace(
+            source_length,
+            input_uncertainty_m=_propagate(_source_height, source_nominal, input_sigmas),
+        )
         horizontal_length = PlacementLength(
             metres=horizontal,
             validity=Validity.VALID,
-            input_uncertainty_m=height_sigma,
+            input_uncertainty_m=_propagate(_horizontal, source_nominal, input_sigmas),
         )
         upper: list[_Hypothesis] = []
         upper_rejections: list[str] = []
@@ -692,8 +724,18 @@ def estimate_placement(
             upper,
             ceiling_agreement_m,
             empty_reason=upper_empty_reason,
-            uncertainty_m=height_sigma,
+            uncertainty_m=None,
+            upper=True,
         )
+        if ceiling_index is not None:
+            ceiling_length = replace(
+                ceiling_length,
+                input_uncertainty_m=_propagate(
+                    _upper_plane,
+                    {**source_nominal, "upper_delay": tier1[ceiling_index].delay_ms},
+                    input_sigmas,
+                ),
+            )
         # A height solved from a single arrival is only as good as that arrival
         # being ONE arrival. When no upper plane was established and a plausible
         # one would land within the detector's resolution of the arrival used
@@ -708,10 +750,8 @@ def estimate_placement(
             )
             used_delay = tier1[source_index].delay_ms
             if earliest_upper_ms <= used_delay + MERGE_RESOLUTION_MS:
-                source_length = replace(
-                    source_length,
-                    validity=Validity.UNRELIABLE,
-                    reason=diag(
+                if earliest_upper_ms >= used_delay - MERGE_RESOLUTION_MS:
+                    merge_reason = diag(
                         "no separate arrival from a plane above the devices was found, and one "
                         "as low as {lowest:.2f} m would arrive at {earliest:.1f} ms -- within "
                         "the {resolution:.1f} ms the reflection search can resolve from the "
@@ -723,7 +763,25 @@ def estimate_placement(
                         earliest=earliest_upper_ms,
                         resolution=MERGE_RESOLUTION_MS,
                         used=used_delay,
-                    ),
+                    )
+                else:
+                    # The lowest plausible plane arrives well before the used
+                    # arrival, and a higher one arrives later: the one whose
+                    # mirror path equals the lower plane's lies at H = u_z,
+                    # since sqrt((2H - u_z)^2 + q^2) = sqrt(u_z^2 + q^2) there.
+                    merge_reason = diag(
+                        "no separate arrival from a plane above the devices was found, and a "
+                        "plane {coincide:.2f} m up (plausible heights start at {lowest:.2f} m) "
+                        "would arrive at the same {used:.1f} ms as the arrival this height was "
+                        "solved from. That arrival may therefore be two arrivals merged into "
+                        "one peak, which would bias the height. Moving the microphone 20-30 cm "
+                        "up or down and measuring again separates them",
+                        coincide=u_z,
+                        lowest=lowest_upper,
+                        used=used_delay,
+                    )
+                source_length = replace(
+                    source_length, validity=Validity.UNRELIABLE, reason=merge_reason
                 )
                 horizontal_length = replace(
                     horizontal_length,

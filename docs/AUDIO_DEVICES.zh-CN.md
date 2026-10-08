@@ -66,6 +66,12 @@
 * **ASIO** DLL 因许可原因已从 ReverbScope 安装包中移除（[DEPENDENCIES.md](DEPENDENCIES.md)
   §3）；sounddevice 只有在设置 `SD_ENABLE_ASIO` 时才加载其 ASIO DLL [14]。一台 ASIO
   设备同时负责两个方向 [12]。
+* **系统别名。** PortAudio 会在真实设备旁列出 MME 的 *Microsoft Sound Mapper - Input*
+  / *- Output* 和 DirectSound 的 *Primary Sound Capture Driver* / *Primary Sound
+  Driver*（即 DirectSound 的默认设备；中文 Windows 上名为“Microsoft 声音映射器”和
+  “主声音捕获驱动程序”/“主声音驱动程序”）[12]；它们经由 Windows 当前的默认设备
+  播放和录音，所以 ReverbScope 从不把它们标为推荐，检查独立时钟时也按它们背后的默认
+  设备比较（第 3 节）。
 * **麦克风隐私：** 设置 ▸ 隐私和安全性 ▸ 麦克风 ▸ 打开*麦克风访问权限*和*允许桌面
   应用访问你的麦克风* [25]。
 
@@ -101,8 +107,8 @@ Core Audio 是唯一的主机 API（排名 1）。使用一块设为测量采样
 | 5 | `OSS` | 由驱动决定；PortAudio 接受 1 % 以内的采样率 [12] | 如使用 ALSA 的 OSS 仿真 [38] | 未评估 |
 
 * PortAudio 把 ALSA 硬件命名为 `card: device (hw:X,Y)`，同时也列出插件和服务器
-  PCM（`default`、`pulse`、`pipewire` 等）；设置 `PA_ALSA_PLUGHW=1` 会让它打开
-  `plughw:` 而不是 `hw:` [12]。
+  PCM（`default`、`pulse`、`pipewire` 等），ReverbScope 从不把这些标为推荐；设置
+  `PA_ALSA_PLUGHW=1` 会让它打开 `plughw:` 而不是 `hw:` [12]。
 * **PipeWire** 在流的采样率不同于图采样率时重采样，并把设备时钟自适应到图时钟；在
   *Pro Audio* 配置下，同一设备的节点被视为共用一个时钟，不做重采样 [35]。图采样率
   切换（`default.clock.allowed-rates`）默认关闭 [34]。
@@ -130,7 +136,8 @@ Core Audio 用两个回调之间的环形缓冲连接两个设备 [11]。两个�
 * **回送能暴露漂移。** 把输出设备回送到输入设备的第二个输入；回送会显示
   同样的倾斜。ReverbScope 会拒绝峰值后 10 ms 内能量不足 99 % 的回送，其补偿窗口
   只覆盖峰值前 5 ms 到峰值后 15 ms（`core/loopback.py`），因此无法吸收更大的倾斜。
-  播放和录音是不同物理设备时 ReverbScope 会给出警告（`audio/inventory.py`）。
+  播放和录音是不同物理设备时 ReverbScope 会给出警告（`audio/inventory.py`）；Windows
+  的系统别名按它所经由的默认设备计。
 
 ## 4. ReverbScope 如何探测设备
 
@@ -142,7 +149,7 @@ Core Audio 用两个回调之间的环形缓冲连接两个设备 [11]。两个�
   `sd.check_input_settings()` / `sd.check_output_settings()`，即
   `Pa_IsFormatSupported` [9][14]。界面在每次测量前检查所选设备的所选采样率，命令行
   检查 `--input-device` / `--output-device` 指定的设备，设备清单
-  （`audio/inventory.py`）检查 44.1、48、88.2、96、176.4 和 192 kHz。检查时只用**一个声道**（`channels=1`）；不指定声道数时 sounddevice 会补上设备的最大声道数，设备只在较少声道下才支持的采样率就会检查失败 [11][14]。检查使用 `'high'` 延迟且不带主机专用设置（WASAPI 共享、Core Audio“友好共享”）[14]。
+  （`audio/inventory.py`）检查 44.1、48、88.2、96、176.4 和 192 kHz。检查时只用**一个声道**（`channels=1`）；不指定声道数时 sounddevice 会补上设备的最大声道数，设备只在较少声道下才支持的采样率就会检查失败 [11][14]。检查使用 `'high'` 延迟且不带主机专用设置（WASAPI 共享、Core Audio“友好共享”）[14]。完全无法打开的设备（`paDeviceUnavailable`：被其他程序占用，或在读取列表后被拔出；ALSA 的“Device or resource busy”）会连同 PortAudio 的错误报告为采样率未知，而不是不接受任何采样率 [9]：它的采样率行显示“未知”而不是“无”，JSON 中的 `input_rates_known` / `output_rates_known` 为 `false`。
 * **不启动任何流**，但 ALSA 会打开 PCM 并应用硬件参数，Core Audio 会打开再关闭一个
   流来回答 [11][12]。建议延迟会被忽略 [9]。
 * **“支持”不等于“原生”。** MME 和 DirectSound 接受由 Windows 转换的采样率 [16]

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from reverbscope.core.averaging import (
@@ -11,7 +13,7 @@ from reverbscope.core.averaging import (
 from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
 from reverbscope.errors import ConfigurationError
 from reverbscope.models.configuration import SweepSettings
-from reverbscope.models.result import Validity
+from reverbscope.models.result import AnalysisResult, Validity
 from tests.conftest import make_rir
 
 
@@ -164,3 +166,96 @@ def test_project_average_counts_distinct_positions(
     assert "ISO 3382-2 class: survey (1 source × 2 mic, 2 combinations)" in text
     assert main(["project", "average", str(project), "--sources", "0"]) == 1
     assert "--sources must be at least 1" in capsys.readouterr().err
+
+
+def _with_broadband_t(result: AnalysisResult, t20: float, t30: float | None) -> AnalysisResult:
+    """``result`` with a VALID broadband T20 and a VALID T30, or none (too little range)."""
+    band = result.decay.broadband
+    if t30 is None:
+        t30_metric = replace(band.t30, seconds=None, validity=Validity.INSUFFICIENT_RANGE)
+    else:
+        t30_metric = replace(band.t30, seconds=t30, validity=Validity.VALID)
+    band = replace(
+        band, t20=replace(band.t20, seconds=t20, validity=Validity.VALID), t30=t30_metric
+    )
+    return replace(result, decay=replace(result.decay, broadband=band))
+
+
+def test_averaged_rt60_is_the_mean_of_each_session_s_own(short_sweep: SweepSettings) -> None:
+    """R3-2: the averaged RT60 was the mean T30 whenever any session had a
+    VALID T30, so one quiet position's T30 became the room's RT60 and the
+    positions with only a T20 were left out."""
+    result = analyze(
+        synthetic_recording(
+            short_sweep,
+            make_rir(short_sweep.sample_rate, rt60_s=0.4, diffuse_level=0.02),
+            noise_rms=1e-5,
+        ),
+        Reference.from_settings(short_sweep),
+    )
+    sessions = [
+        _with_broadband_t(result, 0.80, 0.91),
+        _with_broadband_t(result, 0.45, None),
+        _with_broadband_t(result, 0.47, None),
+        _with_broadband_t(result, 0.44, None),
+    ]
+    averaged = average_decay(sessions, session_labels=["a", "b", "c", "d"])
+    label = result.decay.broadband.band_label
+    broadband = next(band for band in averaged.bands if band.band_label == label)
+    assert broadband.t30.count == 1
+    assert broadband.t20.count == 4
+    assert broadband.rt60.count == 4
+    assert broadband.rt60.contributing == ("a", "b", "c", "d")
+    assert broadband.rt60_estimate_s == pytest.approx((0.91 + 0.45 + 0.47 + 0.44) / 4)
+    assert broadband.rt60_basis == "T30/T20"
+    payload = broadband.to_dict()
+    assert payload["rt60"]["count"] == 4
+    assert payload["rt60_estimate_s"] == broadband.rt60_estimate_s
+
+    every_t30 = average_decay([_with_broadband_t(result, 0.5, 0.6)] * 2)
+    broadband = next(band for band in every_t30.bands if band.band_label == label)
+    assert (broadband.rt60_estimate_s, broadband.rt60_basis) == (pytest.approx(0.6), "T30")
+
+
+def test_project_average_shows_the_count_of_each_value(
+    tmp_path, short_sweep: SweepSettings, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """R3-41: the table printed the T20 count as the only n, so a T30 (and an
+    RT60) from one of four sessions read as a four-session average."""
+    from reverbscope.cli.main import main
+    from reverbscope.io.project_store import add_session, save_project
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.project import Project
+    from reverbscope.models.session import MeasurementSession
+
+    result = analyze(
+        synthetic_recording(
+            short_sweep,
+            make_rir(short_sweep.sample_rate, rt60_s=0.4, diffuse_level=0.02),
+            noise_rms=1e-5,
+        ),
+        Reference.from_settings(short_sweep),
+    )
+    project = tmp_path / "room"
+    save_project(project, Project(name="room"))
+    for name, t20, t30 in (("a", 0.80, 0.91), ("b", 0.45, None), ("c", 0.47, None)):
+        folder = project / name
+        save_measurement(
+            folder,
+            MeasurementSession(sweep_settings=short_sweep),
+            _with_broadband_t(result, t20, t30),
+            copy_recording=False,
+        )
+        add_session(project, folder, position=name)
+
+    assert main(["project", "average", str(project)]) == 0
+    text = capsys.readouterr().out
+    row = next(line for line in text.splitlines() if line.strip().startswith("Broadband"))
+    assert "0.91 s (1)" in row and "0.61 s" in row and row.endswith(" 3"), row
+    assert "a value followed by (k) averages only k of them" in " ".join(text.split())
+
+    assert main(["--lang", "zh_CN", "project", "average", str(project)]) == 0
+    text = capsys.readouterr().out
+    assert "0.91 s (1)" in text
+    note = "n 为该行参与平均的会话数；数值后带 (k) 表示只平均了其中 k 个会话"
+    assert "".join(note.split()) in "".join(text.split())

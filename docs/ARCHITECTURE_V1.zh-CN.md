@@ -113,6 +113,14 @@ NumPy 进、dataclass 出，无 I/O、无 Qt。其他新增：
 
 Profile 注册表合并内置与 entry point；第三方名字与内置冲突时忽略并警告。`Finding` 增加 `message_id`、`params`、`locale`，句子通过 gettext `_()` 用命名占位符渲染，阈值变化不会让翻译失效。机制是标准库 gettext，`.po` 提交、`.mo` 打包时编译，Babel（BSD-3）仅作开发依赖。**刻意不翻译**的部分：`core` 产生的诊断字符串（warnings / notes / reason），它们存在 `result.json` 里、出现在 bug 报告里、跨版本比较，必须与界面语言无关；GUI 在一个翻译过的标题下原样显示，并记录为已知限制。数字在所有语言里保持 ASCII 数字与小数点，单位不翻译。
 
+界面语言的选择顺序：`--lang`、`settings.language`（桌面版的“设置”对话框或 `reverbscope config language zh_CN|en|auto`）、`REVERBSCOPE_LANG`，然后是系统语言；都没有对应译文时用英文。主屏幕和 `reverbscope --help` 的最后一行用另一种语言写出切换语言的命令。`LC_ALL` 或 `LC_MESSAGES` 设为 C 或 POSIX 时，在任何系统上都用英文：这是要求程序输出未翻译消息的通用做法（例如为错误报告或脚本运行 `LC_ALL=C reverbscope …`）。否则，系统语言从各系统保存用户选择的地方读取：
+
+* macOS：先读首选语言（`~/Library/Preferences/.GlobalPreferences.plist` 中的 `AppleLanguages`，其次是 `/Library/Preferences/.GlobalPreferences.plist`；图形界面用 Qt 的 `uiLanguages`），再看 `LC_ALL` / `LC_MESSAGES` / `LANG`——“终端”、iTerm 和 VS Code 不管显示语言是什么都会设置 `LANG=en_US.UTF-8`；
+* Windows：显示语言（`GetUserDefaultUILanguage`）有译文或是英文时用它，否则看 Qt 的 `uiLanguages`（图形界面；即 Windows 自己的首选语言列表），再看 POSIX 变量（只有 MSYS、Git Bash、Cygwin 会设置）；
+* Linux 等 POSIX 系统：按 gettext 的规则读 GNU `LANGUAGE`（如 `zh_CN:en`，区域设置为 C 或 POSIX 时忽略），再读 `LC_ALL`、`LC_MESSAGES`、`LANG`，最后是桌面的界面语言（图形界面）。
+
+首选语言列表中，取第一个有译文或是英文的条目。
+
 ### 5.7 CLI 契约
 
 退出码：0 成功；1 `ReverbScopeError`；2 用法错误或安全拒绝（电平确认）；130 中断。`--format json` 在 stdout 只输出 `result.json` 载荷加 `findings`，诊断全部走 stderr；`--json` 保留一个次版本作为别名后移除。
@@ -123,14 +131,14 @@ Profile 注册表合并内置与 entry point；第三方名字与内置冲突时
 
 ### 5.8 存储
 
-会话文件夹在现有三个文件之外，总是复制 `sweep.reverbscope-sweep.json`，按需（GUI 默认开）复制 `recording.wav`。项目文件夹 `project.json` 只是索引，会话仍可独立打开。`reverbscope session bundle` 打包会话供 bug 报告，`--no-audio` 可排除录音。`REVERBSCOPE_HOME`（默认 `~/.reverbscope`，PR #2 引入）存放最近会话、设置与日志。电平确认永不持久化。
+会话文件夹在现有三个文件之外，总是复制 `sweep.reverbscope-sweep.json`，按需（GUI 默认开）复制 `recording.wav`（非 WAV 录音，如 AIFF、CAF、FLAC 或 MP3，会转换为 WAV，每个采样都保持不变；无法转换的则原样复制）。项目文件夹 `project.json` 只是索引，会话仍可独立打开。`reverbscope session bundle` 打包会话供 bug 报告，`--no-audio` 可排除录音。`REVERBSCOPE_HOME`（默认 `~/.reverbscope`，PR #2 引入）存放最近会话、设置与日志。电平确认永不持久化。
 
 ## 6. 分发（M9）
 
 * **PyPI：** `reverbscope` 名称 2026-09-22 核实可用，应在第一个预发布前注册（**维护者决定**）。纯 Python wheel + sdist，trusted publishing（OIDC，无长期 token），发布环境需维护者批准。`pipx install "reverbscope[gui]"` 是有 Python 的用户的推荐路径；`gui-scripts` 提供 Windows 无控制台启动器。
 * **桌面包：** PyInstaller one-dir（macOS `.app` 装入 `.dmg`；Windows zip + Inno Setup；Linux AppImage 在最旧受支持 Ubuntu LTS 上构建），保持 Qt、libsndfile、libquadmath 为可替换的共享库以满足 LGPL。macOS 分 arm64 / x86_64 两个包。
 * **打包门禁（CI 阻断）：** 包内不得含 GPL-only Qt 模块（白名单 QtCore / QtGui / QtWidgets / Linux 上的 QtDBus）、不得含 `*asio*.dll`、必须含 `scripts/build_license_bundle.py` 生成的 `THIRD_PARTY_LICENSES/`（含 LGPL/GPL 文本、Qt 与 PySide6 源码指针、FreeType 致谢、PortAudio 许可证等）。DEPENDENCIES.md §6 中 UNKNOWN / NEEDS REVIEW 的条目必须在第一个包发布前解决。
-* **签名：** macOS 需 `NSMicrophoneUsageDescription`、hardened runtime、audio-input entitlement、Developer ID 签名与公证；Windows 需 Authenticode。身份只能由维护者持有（**维护者决定**）；未签名的包明确标注并在用户指南里给出绕过步骤。
+* **签名：** macOS 需 `NSMicrophoneUsageDescription`（并在 `CFBundleLocalizations` 中声明 `en` 和 `zh-Hans`，中文用途说明放在 `zh-Hans.lproj/InfoPlist.strings`：系统自带的面板、菜单项和麦克风授权提示只会使用应用包声明过的语言）、hardened runtime、audio-input entitlement、Developer ID 签名与公证；Windows 需 Authenticode。身份只能由维护者持有（**维护者决定**）；未签名的包明确标注并在用户指南里给出绕过步骤。
 * **发布流程：** 维护者推 `v*` tag 触发 `release.yml`：全矩阵测试 → PyPI（rc 作为预发布）→ 三平台打包与门禁 → `SHA256SUMS`、CycloneDX SBOM、许可证包 → 草稿 Release，由维护者发布。版本号唯一来源是 `pyproject.toml`，测试确保 `__version__` 一致。
 
 ## 7. 质量门槛（M10、M11）

@@ -161,7 +161,9 @@ class BandDecay:
     #: Band edges (IEC 61260-1 base-10, around :attr:`mid_band_hz`).
     low_hz: float | None
     high_hz: float | None
-    #: Level of the noise floor relative to the loudest 20 ms block after the onset (dB).
+    #: Level of the noise floor relative to the loudest 20 ms block after the
+    #: onset (dB); 5 or 1 ms blocks for a decay that reaches the floor within 20 ms
+    #: in a band wide enough for them.
     noise_floor_db: float | None
     #: Dynamic range available for decay evaluation (dB above the noise floor).
     peak_to_noise_db: float | None
@@ -337,8 +339,10 @@ class HarmonicDistortion:
     harmonic and the linear response overlap). It is a broadband indicator of
     loudspeaker/chain distortion, not a calibrated THD figure. ``level_db`` is
     ``None`` when the response is not at least ``DETECTION_MARGIN_DB`` above
-    ``floor_db`` (the same measure for harmonic-free content before the direct
-    sound) or cannot be measured; ``reason`` then says why.
+    ``floor_db`` (the same measure for what a take without these harmonic
+    responses holds there: the noise, measured where no harmonic response
+    lands, and the pulse's own artefacts, never a harmonic response or its
+    decay) or cannot be measured; ``reason`` then says why.
     """
 
     order: int
@@ -435,6 +439,8 @@ class LoopbackResult:
     channel: int | None
     compensation_applied: bool
     reason: str | None = None
+    #: Start of the sweep in the loopback recording (samples): the interface
+    #: I/O delay plus whatever preceded the sweep (pre-silence, DAW placement).
     latency_samples: int | None = None
     path_delay_ms: float | None = None
     distance_upper_bound_m: float | None = None
@@ -540,7 +546,8 @@ class ImpulseResponseResult:
     notes: tuple[str, ...] = ()
     #: Frequency range that the excitation actually covered.
     excitation_band: ExcitationBand | None = None
-    #: Number of sweep passes found in the recording (the strongest is analysed).
+    #: Number of sweep passes found in the recording (one is analysed; see
+    #: :func:`~reverbscope.core.deconvolution.locate_impulse_response`).
     sweep_passes: int = 1
     #: Start of the first sweep pass in the recording (s); equals
     #: ``sweep_start_in_recording_s`` for a single pass. ``None`` if unknown.
@@ -558,12 +565,22 @@ class ImpulseResponseResult:
     #: sample-rate mismatch or time-stretch). Only checked, and only set, when
     #: direct-sound detection confidence is low.
     playback_speed: PlaybackSpeed | None = None
+    #: Approximate level of the direct sound in the analysed recording (dBFS,
+    #: like the noise floor): the chain gain *before* loopback compensation
+    #: (the energy within 0.5 ms of the direct sound relative to that of a
+    #: perfect chain's pulse, so it does not depend on the sample rate or on
+    #: where the direct sound falls between samples) plus the peak level of
+    #: the reference. Only the direct-to-noise notice uses it. ``None`` for an
+    #: imported impulse response and in files written by 0.5.0b1 and earlier.
+    direct_level_dbfs: float | None = None
 
     @property
     def direct_sound_time_s(self) -> float:
         return self.direct_sound_index / self.sample_rate
 
-    def to_dict(self, include_curves: bool = False) -> dict[str, Any]:
+    def to_dict(self, include_curves: bool = False, loopback_curves: bool = True) -> dict[str, Any]:
+        """``include_curves`` adds the IR samples (``impulse_response.wav`` holds
+        them in a session); ``loopback_curves`` the interface response."""
         data: dict[str, Any] = {
             "sample_rate": self.sample_rate,
             "length_samples": int(self.samples.shape[0]),
@@ -571,6 +588,7 @@ class ImpulseResponseResult:
             "direct_sound_time_s": self.direct_sound_time_s,
             "pre_delay_samples": self.pre_delay_samples,
             "peak_value": self.peak_value,
+            "direct_level_dbfs": self.direct_level_dbfs,
             "valid_length_s": self.valid_length_s,
             "pre_peak_margin_db": self.pre_peak_margin_db,
             "direct_sound_confidence": self.direct_sound_confidence,
@@ -582,7 +600,11 @@ class ImpulseResponseResult:
             ),
             "harmonic_distortion": [h.to_dict() for h in self.harmonic_distortion],
             "aliased_distortion": [a.to_dict() for a in self.aliased_distortion],
-            "loopback": self.loopback.to_dict() if self.loopback is not None else None,
+            "loopback": (
+                self.loopback.to_dict(include_curves=loopback_curves)
+                if self.loopback is not None
+                else None
+            ),
             "playback_speed": (
                 self.playback_speed.to_dict() if self.playback_speed is not None else None
             ),
@@ -623,8 +645,14 @@ class FrequencyResponseResult:
     #: Frequency range the excitation actually covered.
     excitation_band: ExcitationBand | None = None
     reference: str = diag("relative dB (0 dB = flat loopback of the reference sweep)")
+    #: ``points`` of a file saved without its curves (``--no-curves``), so a
+    #: reloaded response still reports how many points it had.
+    stored_points: int | None = field(default=None, compare=False)
 
     def to_dict(self, include_curves: bool = True) -> dict[str, Any]:
+        points = int(self.frequencies_hz.shape[0])
+        if points == 0 and self.stored_points is not None:
+            points = self.stored_points
         data: dict[str, Any] = {
             "smoothing_fraction": self.smoothing_fraction,
             "window_s": self.window_s,
@@ -636,7 +664,7 @@ class FrequencyResponseResult:
                 self.excitation_band.to_dict() if self.excitation_band is not None else None
             ),
             "reference": self.reference,
-            "points": int(self.frequencies_hz.shape[0]),
+            "points": points,
         }
         if include_curves:
             data["frequencies_hz"] = _array_to_list(self.frequencies_hz, 3)
@@ -1057,7 +1085,9 @@ class AnalysisResult:
             "sample_rate": self.sample_rate,
             "sweep_settings": self.sweep_settings,
             "analysis_settings": self.analysis_settings,
-            "impulse_response": self.impulse_response.to_dict(include_curves=False),
+            "impulse_response": self.impulse_response.to_dict(
+                include_curves=False, loopback_curves=include_curves
+            ),
             "decay": self.decay.to_dict(include_curves),
             "frequency_response": self.frequency_response.to_dict(include_curves),
             "noise": self.noise.to_dict(include_curves),

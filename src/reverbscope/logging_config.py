@@ -8,6 +8,7 @@ import, so ReverbScope can be embedded without side effects.
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from logging.handlers import RotatingFileHandler
 from typing import IO
@@ -17,6 +18,8 @@ _FORMAT = "%(asctime)s %(levelname)-7s %(name)s: %(message)s"
 LOG_FILENAME = "reverbscope.log"
 LOG_MAX_BYTES = 1_000_000
 LOG_BACKUPS = 3
+# Windows refuses to rename a file another process has open; POSIX renames it.
+_RENAME_FAILS_WHILE_OPEN = sys.platform == "win32"
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
@@ -37,6 +40,26 @@ class _SharedRotatingFileHandler(RotatingFileHandler):
     """
 
     def doRollover(self) -> None:  # noqa: N802 - logging API
+        # Find out whether the file can be renamed *before* the backups move:
+        # the stdlib shifts .1 -> .2 -> .3 first and renames the live file
+        # last, so a rename that fails (again on every later record) would push
+        # the old logs out one by one. Our own handle must be closed to try.
+        # Only where that rename can fail: the probe leaves the log name vacant
+        # for a moment, and on POSIX another process that opened the log then
+        # would go on writing to a deleted file.
+        if _RENAME_FAILS_WHILE_OPEN:
+            if self.stream:
+                self.stream.close()
+                self.stream = None
+            probe = self.baseFilename + ".rotating"
+            try:
+                os.replace(self.baseFilename, probe)
+                os.replace(probe, self.baseFilename)
+            except FileNotFoundError:
+                pass
+            except PermissionError:
+                self.stream = self._open()
+                return
         try:
             super().doRollover()
         except PermissionError:
@@ -53,6 +76,9 @@ def configure_logging(
 ) -> logging.Logger:
     """Configure the ``reverbscope`` logger with a stream handler and a log file.
 
+    ``level`` is the console's level. The log file also keeps INFO diagnostics
+    (the settings of an opened audio stream, ignored settings fields) when the
+    console shows warnings only; a DEBUG console keeps DEBUG in the file too.
     The rotating file lives under ``$REVERBSCOPE_HOME/reverbscope.log``. Calling
     this more than once replaces the previous ReverbScope handlers instead of
     stacking them.
@@ -61,7 +87,10 @@ def configure_logging(
     for handler in list(logger.handlers):
         if getattr(handler, "_reverbscope_handler", False):
             logger.removeHandler(handler)
+            # Releases the log file; a StreamHandler leaves its stream open.
+            handler.close()
     handler = logging.StreamHandler(stream or sys.stderr)
+    handler.setLevel(level)
     handler.setFormatter(logging.Formatter(fmt))
     handler._reverbscope_handler = True  # type: ignore[attr-defined]
     logger.addHandler(handler)
@@ -79,6 +108,9 @@ def configure_logging(
             logger.addHandler(file_handler)
         except OSError:
             pass
-    logger.setLevel(level)
+    # The logger must not filter out INFO before the file handler sees it. The
+    # console handler keeps the requested level, so JSON and quiet command-line
+    # output stay unchanged and a GUI launch prints no routine diagnostics.
+    logger.setLevel(min(handler.level, logging.INFO) if log_file else handler.level)
     logger.propagate = False
     return logger

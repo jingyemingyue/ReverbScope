@@ -11,8 +11,10 @@ Method
    trend is used as its prominence.
 4. Peaks between ``min_delay_ms`` and ``max_delay_ms`` after the direct sound
    that are above ``threshold_db`` (relative to the direct sound) and have an
-   excess of at least ``prominence_db`` are reported. When the impulse
-   response ends before ``max_delay_ms``, the window that was actually
+   excess of at least ``prominence_db`` are reported. The delay bounds are
+   inclusive: neighbours just outside the window are kept so a peak that lands
+   on either bound still has both neighbours (``find_peaks`` drops an endpoint).
+   When the impulse response ends before ``max_delay_ms``, the window that was actually
    analysed is reported (``analysed_window_ms``, ``window_truncated``): a
    shorter search must not look like "no reflections found".
 
@@ -70,16 +72,19 @@ def detect_early_reflections(
     rel_db = env_db - reference
 
     start = direct_index + round(min_delay_ms * sample_rate / 1000.0)
-    stop = min(rel_db.shape[0], direct_index + round(max_delay_ms * sample_rate / 1000.0) + 1)
+    requested_stop = direct_index + round(max_delay_ms * sample_rate / 1000.0) + 1
+    stop = min(rel_db.shape[0], requested_stop)
     analysed_max_ms = max(0.0, (stop - 1 - direct_index) * 1000.0 / sample_rate)
-    truncated = analysed_max_ms < max_delay_ms - 1e-9
+    # Truncated means the response ended first, not that the window rounded
+    # to a whole sample (25 ms at 44.1 kHz is 1102.5 samples).
+    truncated = stop < requested_stop
     analysed_window = (min_delay_ms, analysed_max_ms)
     notes: list[str] = []
     if truncated:
         notes.append(
             diag(
                 "the impulse response ends {analysed_ms:.1f} ms after the direct sound, so only "
-                "that part of the {min_ms:.0f}-{max_ms:.0f} ms window could be searched",
+                "that part of the {min_ms:g}-{max_ms:g} ms window could be searched",
                 analysed_ms=analysed_max_ms,
                 min_ms=min_delay_ms,
                 max_ms=max_delay_ms,
@@ -103,16 +108,25 @@ def detect_early_reflections(
     trend_len = max(3, round(trend_ms * sample_rate / 1000.0))
     trend = uniform_filter1d(rel_db, size=trend_len, mode="nearest")
     excess = rel_db - trend
-    region = rel_db[start:stop]
+    # Cropping exactly to the delay window removes the neighbour a boundary
+    # peak needs, so that arrival disappears. Keep one peak-hold of context
+    # and reject out-of-window peaks by height before the distance rule, so
+    # they cannot suppress an in-window arrival.
+    context = max(1, int(np.ceil(hold_ms * sample_rate / 1000.0)))
+    region_start = max(0, start - context)
+    region_stop = min(rel_db.shape[0], stop + context)
+    region = rel_db[region_start:region_stop]
+    height = np.full(region.shape[0], np.inf)
+    height[start - region_start : stop - region_start] = threshold_db
     min_distance = max(1, round(0.3e-3 * sample_rate))
-    peaks, _ = find_peaks(region, height=threshold_db, distance=min_distance)
+    peaks, _props = find_peaks(region, height=height, distance=min_distance)
     found = [
         Reflection(
-            delay_ms=float((start + p - direct_index) * 1000.0 / sample_rate),
-            relative_db=float(region[p]),
+            delay_ms=float((region_start + int(p) - direct_index) * 1000.0 / sample_rate),
+            relative_db=float(region[int(p)]),
         )
         for p in peaks
-        if excess[start + p] >= prominence_db
+        if excess[region_start + int(p)] >= prominence_db
     ]
     if len(found) > MAX_REPORTED_REFLECTIONS:
         found.sort(key=lambda r: r.relative_db, reverse=True)

@@ -168,6 +168,8 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
     _check(_texts(window.results), "results")
     _check([window.results.text.toPlainText()], "full report")
     _check(_texts(window.compare), "compare")
+    # Two-letter words pass the English gate: "vs" between the two paths did.
+    assert window.compare.status.text() == f"{saved[0][0]}  对  {saved[1][0]}"
     _check([window.compare.text.toPlainText()], "comparison report")
     tabs = (
         window.results.ir_tab,
@@ -230,6 +232,47 @@ def _cjk_fonts() -> list[str]:
     from reverbscope.ui.theme import font_families
 
     return font_families()[1:]
+
+
+def test_a_demo_made_in_english_is_listed_and_titled_in_chinese(
+    zh: None, app: QApplication, tmp_path: Path
+) -> None:
+    """The recent list and the results title printed "房间 Synthetic demo room"
+    for a demo made before the language was changed: the names the demo wrote
+    are shown in the interface language, a name a user typed is not touched."""
+    from reverbscope.demo import DEMO_MODE
+    from reverbscope.interpretation import interpret
+    from reverbscope.io.recent import remember_session
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+    from reverbscope.ui.main_window import MainWindow
+
+    [(_folder, result)] = _measurements(tmp_path)[:1]
+    session = MeasurementSession(
+        mode=DEMO_MODE,
+        room_name="Synthetic demo room",
+        measurement_position="A: close to the desk and the side wall",
+        microphone_name="simulated omni",
+    )
+    saved = tmp_path / "demo-a"
+    save_measurement(saved, session, result)
+    remember_session(saved)
+    window = MainWindow()
+    window.home.refresh_recent()
+    listed = window.home.recent.item(0).text()
+    assert "合成演示房间" in listed and "A：靠近桌面和侧墙" in listed, listed
+    assert "Synthetic" not in listed and "desk" not in listed, listed
+    window.state.result = result
+    window.state.findings = interpret(result, "vocal")
+    window.state.session = session
+    window.show_results()
+    title = window.results.header.subtitle.text()
+    assert "合成演示房间" in title and "模拟全指向话筒" in title, title
+    assert "Synthetic" not in title and "omni" not in title, title
+    session.room_name = "Booth A"
+    window.show_results()
+    assert "Booth A" in window.results.header.subtitle.text()
+    window.close()
 
 
 def test_settings_and_developer_tools_are_chinese(zh: None, app: QApplication) -> None:

@@ -34,7 +34,8 @@ def pyside6_import_error() -> str | None:
     return None
 
 
-def run_app(argv: list[str] | None = None, *, smoke: bool = False) -> int:
+def run_app(argv: list[str] | None = None, *, smoke: bool = False, lang: str | None = None) -> int:
+    """Start the desktop app; ``lang`` is ``reverbscope --lang`` (else settings, then the system)."""
     from PySide6.QtCore import QLocale, Qt
     from PySide6.QtGui import QGuiApplication
     from PySide6.QtWidgets import QApplication
@@ -54,9 +55,12 @@ def run_app(argv: list[str] | None = None, *, smoke: bool = False) -> int:
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
     )
     app = QApplication.instance() or QApplication(argv if argv is not None else sys.argv)
-    # --lang, settings and REVERBSCOPE_LANG first; then the locale variables, and
-    # the desktop's UI languages when none is set (a Finder launch on macOS).
-    activate(None, system_languages=QLocale.system().uiLanguages())
+    # --lang, settings and REVERBSCOPE_LANG first; then the system's language.
+    # Qt's UI languages are the Mac's preferred languages (also for a Finder
+    # launch, which sets no LANG) and come first there. On Windows they are
+    # Windows' preferred-language list and follow a display language that
+    # ReverbScope has; on Linux they count when no locale variable is set.
+    activate(lang or None, system_languages=QLocale.system().uiLanguages())
     install_qt_translations(app)
     QGuiApplication.setDesktopFileName("reverbscope")
     apply_application_chrome(app)

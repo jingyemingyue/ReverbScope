@@ -45,7 +45,19 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
   (early/late energy, profile clarity notices, the placement picture, the
   desktop and command-line polish). It does **not** meet the 0.5.0 row:
   no hardware cell is PASS, so 0.5.0 itself is not cut. Publishing
-  `v0.5.0b1` does not republish `v0.4.1`.
+  `v0.5.0b1` does not republish `v0.4.1`. **Published (2026-10-01)** as a
+  pre-release from `2efcf42`; its downloads (11 of its 14 assets) still carry
+  the RoomScope names (`RoomScope-*`, `roomscope-*`) because the rename landed
+  afterwards. That release is left as it is.
+* **Software beta 2 (prepared 2026-10-06, not published):** `0.5.0b2` is the
+  stabilization release after the RoomScope → ReverbScope rename: the stable
+  line's defect fixes (PR #40), the acoustic measurement audit (PR #43: metrics
+  are withheld rather than reported as valid when the measurement cannot
+  support them), the offline validation gates (PR #38), the renamed downloads
+  and the Pages / Release workflow repairs. Still no hardware cell is PASS, so
+  0.5.0 is not cut. The draft is produced by the Release workflow when the
+  stabilization branch merges to `main`; publishing it is the maintainer's
+  decision (§3).
 * **Update (2026-09-24, later the same day):** the review follow-ups
   #9–#17 (#17, the QML part of the bundle gate, was found after this plan
   was written) are fixed on the branch `v0.4.1-review-followups`, which
@@ -70,6 +82,7 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
 | **0.4.0** | First pre-release: everything on `main` today, as a draft Release with unsigned bundles for the maintainer's own testing | CI green on Linux / macOS / Windows and Python 3.12–3.14; `ruff`, `mypy`, the schema job and the bundle gates pass; the license bundle carries the verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts; `CHANGELOG.md` has a `[0.4.0]` section; `docs/STATUS.md` has a dated snapshot | Any hardware result; a person installing a bundle on macOS / Windows; PyPI; public availability |
 | **0.4.x** | Software readiness before community hardware validation (the maintainer's phase definition, 2026-09-24): the review follow-ups #9–#17 (all closed in 0.4.1), packaging, device diagnostics, the GUI, the DAW guide and the community report templates | CI and the Release workflow green on the release commit; every new behaviour has a synthetic or scripted test; `CHANGELOG.md` names what changed; no hardware or DAW claim | Any hardware or DAW result; signing; PyPI |
 | **0.5.0b1** | Software beta: ship the single-microphone algorithm and the desktop presentation that landed after 0.4.1, still without a hardware claim | CI and the Release workflow green on the release commit; every new behaviour has a synthetic test; CHANGELOG names the version; the notes say this is not 0.5.0 | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI |
+| **0.5.0b2** | Stabilization beta after the rename: the stable line's fixes, the acoustic audit (no number without the measurement to support it), the offline validation gates, every download named ReverbScope | CI and the Release workflow green on the release commit; every fix has a synthetic regression test; CHANGELOG names the version and separates synthetic/CI validation from hardware validation; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI; a working website until Pages is enabled |
 | **0.5.0** | "Trusted by a human": the first version whose Standalone Mode and DAW workflow were run on real hardware at least once | One dated PASS row per cell of the hardware matrix on at least one platform (device enumeration, sample-rate negotiation, channel mapping, loopback capture, Stop during playback, a full Standalone measurement, the same signal through one DAW); #12 and #13 (loopback time origin, real-time callback) closed; #14 (zh-CN catalog complete, safety warning translated) closed; #15 (ISO 3382-2 table source) closed | The validation campaign; API / schema freeze; signing |
 | **1.0.0rc1** | Freeze and prove (ARCHITECTURE_V1.md §10, row 1.0-rc) | No open MUST item of §3.1: hardware matrix executed at least once per platform (M10); validation campaign published with its data (M11); signed bundles or an explicit maintainer decision to ship unsigned (M9); public-repository checklist executed (M13, §9.1); API and schema integers frozen; SECURITY / CONTRIBUTING / STATUS updated for the freeze; PyPI pre-release if trusted publishing is configured | — |
 | **1.0.0** | Release | Fixes from the candidate only; release notes name the validation results and the known limitations | — |
@@ -126,8 +139,9 @@ in `pyproject.toml`, and the maintainer keeps the last word.
 2. **CI opens a draft.** Because `pyproject.toml` changed on `main` and no
    tag `v<version>` exists, the workflow runs lint, type-check and the
    test suite, builds sdist and wheel, builds the unsigned bundles on the
-   three OS runners (license bundle → PyInstaller → strip GPL-only Qt
-   modules and ASIO DLLs → bundle gate → smoke test → archive → checksums),
+   three OS runners (PyInstaller → license bundle, with a notice for every
+   native library PyInstaller copied → strip GPL-only Qt modules and ASIO
+   DLLs → bundle gate → smoke test → archive → checksums),
    produces the SBOM and lock file, and opens or refreshes the **draft**
    GitHub Release named `v<version>` with the release notes
    (`packaging/release-notes-header.md` around the CHANGELOG section) as

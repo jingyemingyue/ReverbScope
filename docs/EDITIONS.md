@@ -48,7 +48,8 @@ same program.
 
 Override the choice for one run with `REVERBSCOPE_EDITION=developer` or
 `REVERBSCOPE_EDITION=user`; an installed ReverbScope switches the developer tools on
-permanently with Settings ▸ *Show developer tools* (after a restart). The
+permanently with Settings ▸ *Show developer tools* or
+`reverbscope config developer-tools on` (after a restart). The
 command-line tool is the same in both editions: `reverbscope devices --probe`,
 `reverbscope doctor` and the `measure` options `--latency`, `--wasapi-exclusive`
 and `--coreaudio-set-rate` are always available.

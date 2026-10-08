@@ -2,7 +2,7 @@
 
 Subcommands, in the order of the workflow: ``demo``, ``gui``, ``sweep``,
 ``analyze``, ``devices``, ``measure``, ``analyze-ir``, ``show``, ``compare``,
-``project``, ``export``, ``session``, ``doctor``, ``schema``.
+``project``, ``export``, ``session``, ``config``, ``doctor``, ``schema``.
 
 Reports go to stdout and diagnostics to stderr; all text is laid out by
 :mod:`reverbscope.cli.render` through :mod:`reverbscope.cli.console`. A user error
@@ -15,13 +15,17 @@ from __future__ import annotations
 import argparse
 import codecs
 import contextlib
+import errno
 import json
 import logging
+import math
 import os
+import re
 import shlex
 import sys
+import tempfile
 import traceback
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, cast
@@ -33,11 +37,17 @@ from reverbscope.cli.console import (
     ProgressLine,
     Verbatim,
     cell_width,
+    printable,
     shell_command,
+    truncate,
 )
 from reverbscope.cli.render import (
     render_analysis,
     render_comparison,
+    render_config,
+    render_config_key,
+    render_config_language,
+    render_config_saved,
     render_demo,
     render_devices,
     render_environment,
@@ -60,9 +70,9 @@ from reverbscope.errors import (
     ReverbScopeError,
     SessionError,
 )
-from reverbscope.i18n import N_, _, activate, localize
+from reverbscope.i18n import N_, _, activate, list_separator, localize, pgettext
 from reverbscope.interpretation import available_profiles
-from reverbscope.interpretation.profiles import band_text, profile_title
+from reverbscope.interpretation.profiles import band_text
 from reverbscope.labels import accuracy_class_text
 from reverbscope.logging_config import configure_logging
 from reverbscope.models.configuration import (
@@ -103,17 +113,89 @@ ARGPARSE_MESSAGES = frozenset(
         N_("show this help message and exit"),
         N_("show program's version number and exit"),
         N_("can't open '%(filename)s': %(error)s"),
+        N_("ignored explicit argument %r"),
+        N_("unknown parser %(parser_name)r (choices: %(choices)s)"),
+        N_("unexpected option string: %s"),
+        # ngettext: "--band 20" (two values expected). Chinese has one form.
+        N_("expected %s argument"),
+        N_("expected %s arguments"),
     }
 )
 
 
+#: argparse messages with a list argparse joined with ", " (all of it, or the
+#: named field); the list is re-joined with the language's separator.
+_LIST_ARGUMENTS: dict[str, str | None] = {
+    "the following arguments are required: %s": None,
+    "invalid choice: %(value)r (choose from %(choices)s)": "choices",
+    "unknown parser %(parser_name)r (choices: %(choices)s)": "choices",
+    "ambiguous option: %(option)s could match %(matches)s": "matches",
+}
+
+
+class _ListTemplate(str):
+    """A translated argparse template whose list argument, which argparse
+    joins with ``", "`` before filling it in, reads as a list of the active
+    language once filled in (``缺少必需的参数：项目、会话、--position``)."""
+
+    field: str | None
+
+    def __new__(cls, text: str, field: str | None) -> _ListTemplate:
+        made = super().__new__(cls, text)
+        made.field = field
+        return made
+
+    def __mod__(self, values: Any) -> str:
+        separator = list_separator()
+        if self.field is None and isinstance(values, str):
+            values = values.replace(", ", separator)
+        elif isinstance(values, dict) and isinstance(values.get(self.field), str):
+            items = values[self.field].split(", ")
+            if self.field == "choices":
+                items = [_quoted_choice(item) for item in items]
+            values = {**values, self.field: separator.join(items)}
+        filled: str = str(self) % values
+        return filled
+
+
+def _quoted_choice(item: str) -> str:
+    """One choice of an "invalid choice" error, quoted as the typed value is.
+
+    Python releases disagree: 3.12.3 quotes the choices, 3.12.11 and 3.14
+    do not, 3.13 quotes them again. One form keeps the message the same on
+    every Python.
+    """
+    if len(item) >= 2 and item[0] == item[-1] and item[0] in "'\"":
+        item = item[1:-1]
+    return repr(item)
+
+
 def _argparse_gettext(message: str) -> str:
+    if message not in ARGPARSE_MESSAGES:
+        return message
+    if message in _LIST_ARGUMENTS:
+        return _ListTemplate(_(message), _LIST_ARGUMENTS[message])
+    return _(message)
+
+
+def _argparse_ngettext(singular: str, plural: str, n: int) -> str:
+    message = singular if n == 1 else plural
     return _(message) if message in ARGPARSE_MESSAGES else message
 
 
 def _translate_argparse() -> None:
-    """Route argparse's module-level ``_`` through ReverbScope's catalog."""
+    """Route argparse's module-level ``_`` and ``ngettext`` through ReverbScope's catalog."""
     setattr(argparse, "_", _argparse_gettext)  # noqa: B010 - a module attribute, not ours
+    setattr(argparse, "ngettext", _argparse_ngettext)  # noqa: B010
+
+
+def _type_name(kind: object) -> str | None:
+    """The word for a value argparse could not convert ("invalid int value")."""
+    if kind is int:
+        return pgettext("argument type", "int")
+    if kind is float:
+        return pgettext("argument type", "float")
+    return None
 
 
 #: The root help lists the commands in these groups, in the order of the
@@ -122,6 +204,7 @@ COMMAND_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     (N_("Get started"), ("demo", "gui")),
     (N_("Measurement"), ("sweep", "analyze", "devices", "measure", "analyze-ir")),
     (N_("Results"), ("show", "compare", "project", "export", "session")),
+    (N_("Settings"), ("config",)),
     (N_("Diagnostics"), ("doctor", "schema")),
 )
 
@@ -165,8 +248,9 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
         """
         from reverbscope.cli.console import cell_width, wrap
 
-        rendered: list[str] = []
+        blocks: list[str] = []
         for block in text.split("\n\n"):
+            rendered: list[str] = []
             lines = block.split("\n")
             preformatted = any(line.startswith((" ", "\t")) for line in lines)
             if preformatted:
@@ -175,10 +259,54 @@ class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
                         rendered.append(indent + line)
                     else:
                         rendered.extend(indent + part for part in wrap(line, max(width, 11)))
-                continue
-            paragraph = " ".join(line.strip() for line in lines if line.strip())
-            rendered.extend(indent + part for part in wrap(paragraph, max(width, 11)))
-        return "\n".join(rendered)
+            else:
+                paragraph = " ".join(line.strip() for line in lines if line.strip())
+                rendered.extend(indent + part for part in wrap(paragraph, max(width, 11)))
+            blocks.append("\n".join(rendered))
+        # A blank line between paragraphs, as they were written.
+        return "\n\n".join(block for block in blocks if block)
+
+    def add_argument(self, action: argparse.Action) -> None:
+        """argparse sizes the option column with ``len()``; a translated
+        placeholder ("--out 目录") is wider on screen than it is long."""
+        super().add_argument(action)
+        if action.help is argparse.SUPPRESS:
+            return
+        from reverbscope.cli.console import cell_width
+
+        invocations = [self._format_action_invocation(action)]
+        invocations += [
+            self._format_action_invocation(a) for a in self._iter_indented_subactions(action)
+        ]
+        widest = max(cell_width(text) for text in invocations) + self._current_indent
+        self._action_max_length = max(self._action_max_length, widest)
+
+    def _format_action(self, action: argparse.Action) -> str:
+        """argparse's layout, with the help column aligned by display width.
+
+        argparse pads an option to the help column with ``%-*s``, which counts
+        characters: a row with a Chinese placeholder started its help two
+        columns further right for every Chinese character.
+        """
+        from reverbscope.cli.console import cell_width
+
+        text = super()._format_action(action)
+        header = self._format_action_invocation(action)
+        extra = cell_width(header) - len(header)
+        if extra <= 0 or not action.help:
+            return text
+        help_position = min(self._action_max_length + 2, self._max_help_position)
+        action_width = help_position - self._current_indent - 2
+        lead = " " * self._current_indent + header
+        first, newline, rest = text.partition("\n")
+        if len(header) > action_width or not first.startswith(lead):
+            return text  # argparse already put the help on the next line
+        after = first[len(lead) :]
+        if cell_width(header) <= action_width:
+            first = lead + after[extra:]
+        else:  # too wide on screen for the column: the help goes below, as argparse does
+            first = lead + "\n" + " " * help_position + after.lstrip(" ")
+        return first + newline + rest
 
     def _format_usage(self, usage: Any, actions: Any, groups: Any, prefix: Any) -> str:
         # argparse measures the prefix with len(); "用法：" takes six columns, not three.
@@ -221,6 +349,27 @@ class _Parser(argparse.ArgumentParser):
     followed by the command's ``--help`` to try.
     """
 
+    def _get_value(self, action: argparse.Action, arg_string: str) -> Any:
+        """argparse's conversion; the type is named in words ("整数"), not as int.
+
+        A path that starts with ``~`` is in the home folder: cmd.exe and
+        Windows PowerShell pass ``~`` to a program unexpanded (so does a POSIX
+        shell when it is quoted), and ``--out ~/reverbscope-demo`` made a folder
+        named ``~`` in the current one.
+        """
+        try:
+            value = super()._get_value(action, arg_string)
+        except argparse.ArgumentError:
+            name = _type_name(action.type)
+            if name is None:
+                raise
+            message = _("invalid %(type)s value: %(value)r") % {"type": name, "value": arg_string}
+            raise argparse.ArgumentError(action, message) from None
+        if isinstance(value, Path):
+            with contextlib.suppress(RuntimeError):  # no home folder to expand to
+                return value.expanduser()
+        return value
+
     def error(self, message: str) -> Any:
         console = Console.for_stream(sys.stderr, _COLOR_REQUEST["mode"])  # type: ignore[arg-type]
         text = render_error(console, message, hints=[f"{self.prog} --help"])
@@ -250,6 +399,19 @@ def _command(
     )
     parser.add_argument("-h", "--help", action="help", help=_("show this help message and exit"))
     return cast(argparse.ArgumentParser, parser)
+
+
+def _settings_block(keys: Any) -> str:
+    """``reverbscope config --help``: each setting and the values it takes."""
+    from reverbscope.cli.console import is_terminal, terminal_width, wrap
+
+    width = terminal_width(sys.stdout, is_terminal(sys.stdout), os.environ)
+    name_width = max(len(key) for key in keys.KEYS) + 2
+    lines = [_heading(_("settings"))]
+    for key in keys.KEYS:
+        prefix = f"  {key.ljust(name_width)}"
+        lines += wrap(keys.choices(key), width, first=prefix, rest=" " * len(prefix))
+    return "\n".join(lines)
 
 
 def _commands_block(helps: dict[str, str]) -> str:
@@ -283,7 +445,7 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
         type=int,
         default=DEFAULT_SAMPLE_RATE,
         choices=SUPPORTED_SAMPLE_RATES,
-        metavar="HZ",
+        metavar=pgettext("metavar", "HZ"),
         help=_("sample rate (Hz): {rates}").format(
             rates=", ".join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
         ),
@@ -292,88 +454,139 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
         "--duration",
         type=float,
         default=10.0,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("sweep duration in seconds (default 10)"),
     )
     group.add_argument(
         "--start-hz",
         type=float,
         default=20.0,
-        metavar="HZ",
+        metavar=pgettext("metavar", "HZ"),
         help=_("sweep start frequency (default 20)"),
     )
     group.add_argument(
         "--end-hz",
         type=float,
         default=20000.0,
-        metavar="HZ",
+        metavar=pgettext("metavar", "HZ"),
         help=_("sweep end frequency (default 20000)"),
     )
     group.add_argument(
         "--level",
         type=float,
         default=default_level,
-        metavar="DBFS",
+        metavar=pgettext("metavar", "DBFS"),
         help=_("peak level in dBFS (default {level:g})").format(level=default_level),
     )
     group.add_argument(
         "--fade-in",
         type=float,
         default=0.05,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("fade-in in seconds (default 0.05)"),
     )
     group.add_argument(
         "--fade-out",
         type=float,
         default=0.01,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("fade-out in seconds (default 0.01)"),
     )
     group.add_argument(
         "--pre-silence",
         type=float,
         default=1.0,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("silence before the sweep (s)"),
     )
     group.add_argument(
         "--post-silence",
         type=float,
         default=3.0,
-        metavar="S",
+        metavar=pgettext("metavar", "S"),
         help=_("silence after the sweep (s)"),
     )
 
 
+#: The settings fields the command line sets, as the options that set them.
+_FIELD_OPTIONS = {
+    "sample_rate": "--sample-rate",
+    "duration_s": "--duration",
+    "start_hz": "--start-hz",
+    "end_hz": "--end-hz",
+    "level_dbfs": "--level",
+    "channel": "--channel",
+    "fr_smoothing_fraction": "--smoothing",
+    "placement_distance_m": "--speaker-distance",
+    "placement_mic_height_m": "--mic-height",
+    "placement_temperature_c": "--temperature",
+    "loopback_channel": "--loopback-channel",
+}
+_FIELD_NAME = re.compile(
+    r"(?<![\w-])(" + "|".join(sorted(_FIELD_OPTIONS, key=len, reverse=True)) + r")(?!\w)"
+)
+
+
+def _name_options(exc: ConfigurationError) -> ConfigurationError:
+    """``exc`` with the settings fields it names given as their options.
+
+    The settings check their own values and name their fields ("end_hz must
+    be greater than start_hz"); on the command line the user typed --end-hz.
+    """
+    message = _FIELD_NAME.sub(lambda found: _FIELD_OPTIONS[found.group(1)], str(exc))
+    return ConfigurationError(message)
+
+
 def _sweep_settings(args: argparse.Namespace) -> SweepSettings:
-    return SweepSettings(
-        sample_rate=args.sample_rate,
-        duration_s=args.duration,
-        start_hz=args.start_hz,
-        end_hz=args.end_hz,
-        fade_in_s=args.fade_in,
-        fade_out_s=args.fade_out,
-        level_dbfs=args.level,
-        pre_silence_s=args.pre_silence,
-        post_silence_s=args.post_silence,
-    )
+    try:
+        return SweepSettings(
+            sample_rate=args.sample_rate,
+            duration_s=args.duration,
+            start_hz=args.start_hz,
+            end_hz=args.end_hz,
+            fade_in_s=args.fade_in,
+            fade_out_s=args.fade_out,
+            level_dbfs=args.level,
+            pre_silence_s=args.pre_silence,
+            post_silence_s=args.post_silence,
+        )
+    except ConfigurationError as exc:
+        raise _name_options(exc) from None
 
 
-def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
+@contextlib.contextmanager
+def _option_at_fault(command: str) -> Iterator[None]:
+    """Send a refused option to the command's help, not to the device commands.
+
+    ``measure`` answers a ConfigurationError with ``devices --probe`` and
+    ``doctor --probe`` (a device or channel that is not there is one), but a
+    --duration of 0 or an input channel listed twice is the option's fault:
+    the devices are fine. An error that already chose its hints keeps them.
+    """
+    try:
+        yield
+    except ConfigurationError as exc:
+        if not getattr(exc, "cli_hints", None):
+            exc.cli_hints = [f"reverbscope {command} --help"]  # type: ignore[attr-defined]
+        raise
+
+
+def _add_analysis_arguments(parser: argparse.ArgumentParser, *, channel: bool = True) -> None:
     analysis = parser.add_argument_group(_("analysis"))
-    analysis.add_argument(
-        "--channel",
-        type=int,
-        default=None,
-        metavar="N",
-        help=_("recording channel to analyse (0-based)"),
-    )
+    if channel:
+        # Not for measure: there the analysed column follows --input-channel(s).
+        analysis.add_argument(
+            "--channel",
+            type=int,
+            default=None,
+            metavar=pgettext("channel metavar", "N"),
+            help=_("recording channel to analyse (0-based)"),
+        )
     analysis.add_argument(
         "--smoothing",
         type=int,
         default=6,
-        metavar="N",
+        metavar=pgettext("fraction metavar", "N"),
         help=_("fractional-octave smoothing 1/N (0 = off)"),
     )
     analysis.add_argument(
@@ -383,18 +596,33 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
         help=_("recording profile that shapes the interpretation (default: user settings)"),
     )
     notes = parser.add_argument_group(_("session notes (stored in session.json)"))
-    notes.add_argument("--room", default="", metavar="TEXT", help=_("room name (metadata)"))
     notes.add_argument(
-        "--position", default="", metavar="TEXT", help=_("measurement position (metadata)")
+        "--room", default="", metavar=pgettext("metavar", "TEXT"), help=_("room name (metadata)")
     )
-    notes.add_argument("--mic", default="", metavar="TEXT", help=_("microphone name (metadata)"))
-    notes.add_argument("--notes", default="", metavar="TEXT", help=_("free-text notes (metadata)"))
+    notes.add_argument(
+        "--position",
+        default="",
+        metavar=pgettext("metavar", "TEXT"),
+        help=_("measurement position (metadata)"),
+    )
+    notes.add_argument(
+        "--mic",
+        default="",
+        metavar=pgettext("metavar", "TEXT"),
+        help=_("microphone name (metadata)"),
+    )
+    notes.add_argument(
+        "--notes",
+        default="",
+        metavar=pgettext("metavar", "TEXT"),
+        help=_("free-text notes (metadata)"),
+    )
     placement = parser.add_argument_group(_("placement (optional tape measurements)"))
     placement.add_argument(
         "--speaker-distance",
         type=float,
         default=None,
-        metavar="M",
+        metavar=pgettext("metavar", "M"),
         help=_(
             "straight line from the loudspeaker to the microphone capsule (m), measured "
             "with a tape. Without it no geometry can be derived from the reflections"
@@ -404,7 +632,7 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
         "--mic-height",
         type=float,
         default=None,
-        metavar="M",
+        metavar=pgettext("metavar", "M"),
         help=_(
             "microphone capsule above the first solid horizontal surface below it (m) -- "
             "the desk top at a desk, otherwise the floor. Needs --speaker-distance"
@@ -414,7 +642,7 @@ def _add_analysis_arguments(parser: argparse.ArgumentParser) -> None:
         "--temperature",
         type=float,
         default=None,
-        metavar="C",
+        metavar=pgettext("metavar", "C"),
         help=_("air temperature (C); 20 C is assumed, and reported as assumed, without it"),
     )
     output = parser.add_argument_group(_("output"))
@@ -430,16 +658,16 @@ def _add_loopback_file_arguments(parser: argparse.ArgumentParser) -> None:
         "--loopback",
         type=Path,
         default=None,
-        metavar="WAV",
+        metavar=pgettext("metavar", "WAV"),
         help=_("separate loopback WAV from the same take (same sample rate)"),
     )
     group.add_argument(
         "--loopback-channel",
         type=int,
         default=None,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         help=_(
-            "0-based loopback channel of the recording (or of --loopback if it is multi-channel)"
+            "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
         ),
     )
 
@@ -448,14 +676,17 @@ def _analysis_settings(
     args: argparse.Namespace, *, loopback_channel: int | None = None
 ) -> AnalysisSettings:
     channel = getattr(args, "loopback_channel", None)
-    return AnalysisSettings(
-        channel=args.channel,
-        fr_smoothing_fraction=args.smoothing,
-        placement_distance_m=args.speaker_distance,
-        placement_mic_height_m=args.mic_height,
-        placement_temperature_c=args.temperature,
-        loopback_channel=loopback_channel if loopback_channel is not None else channel,
-    )
+    try:
+        return AnalysisSettings(
+            channel=args.channel,
+            fr_smoothing_fraction=args.smoothing,
+            placement_distance_m=args.speaker_distance,
+            placement_mic_height_m=args.mic_height,
+            placement_temperature_c=args.temperature,
+            loopback_channel=loopback_channel if loopback_channel is not None else channel,
+        )
+    except ConfigurationError as exc:
+        raise _name_options(exc) from None
 
 
 def _shorten_usage(parser: argparse.ArgumentParser) -> None:
@@ -472,16 +703,24 @@ def _shorten_usage(parser: argparse.ArgumentParser) -> None:
                 _shorten_usage(sub)
                 continue
             parts = [sub.prog]
+            optional = 0  # positionals that may be left out: "[KEY [VALUE]]"
             for item in sub._actions:
                 if not item.option_strings:
                     if item.metavar is None and item.choices:
-                        parts.append("{" + ",".join(str(c) for c in item.choices) + "}")
+                        shown = "{" + ",".join(str(c) for c in item.choices) + "}"
                     else:
-                        parts.append(str(item.metavar or item.dest))
+                        shown = str(item.metavar or item.dest)
+                    if item.nargs == "?":
+                        optional += 1
+                        shown = "[" + shown
+                    parts.append(shown)
                 elif item.required:
                     metavar = item.metavar or item.dest.upper()
                     shown = " ".join(metavar) if isinstance(metavar, tuple) else metavar
                     parts.append(f"{item.option_strings[0]} {shown}")
+            if optional:
+                last = max(i for i, part in enumerate(parts) if part.startswith("["))
+                parts[last] += "]" * optional
             parts.append(_("[options]"))
             sub.usage = " ".join(parts)
 
@@ -494,6 +733,44 @@ def _required(parser: argparse.ArgumentParser) -> Any:
     parser._action_groups.remove(group)
     parser._action_groups.insert(1, group)
     return group
+
+
+#: argparse's split of a usage line into the pieces it keeps together.
+_USAGE_PART = re.compile(r"\(.*?\)+(?=\s|$)|\[.*?\]+(?=\s|$)|\S+")
+
+
+def _root_usage(parser: argparse.ArgumentParser) -> str:
+    """The root usage line, wrapped by display width.
+
+    The command list is printed grouped, so argparse's own list is hidden and
+    the command placeholder is added at the end. argparse wraps with
+    ``len()``: a translated prefix ("用法：") and placeholders ("[--lang 语言]")
+    are wider on screen, so the lines ran past the edge and the continuation
+    lines did not line up under the first. This is argparse's wrapping rule,
+    measured in columns.
+    """
+    from reverbscope.cli.console import cell_width
+
+    one_line = _HelpFormatter(parser.prog, width=100_000)
+    one_line.add_usage(None, parser._actions, parser._mutually_exclusive_groups, prefix="")
+    text = one_line.format_help().strip()
+    parts = [
+        parser.prog,
+        *_USAGE_PART.findall(text[len(parser.prog) :]),
+        f"{pgettext('metavar', '<command>')} ...",
+    ]
+    width = parser._get_formatter()._width
+    prefix = cell_width(_("usage: "))
+    hang = " " * (prefix + cell_width(parser.prog) + 1)
+    lines: list[list[str]] = [[]]
+    used = prefix - 1
+    for part in parts:
+        if used + 1 + cell_width(part) > width and lines[-1]:
+            lines.append([])
+            used = len(hang) - 1
+        lines[-1].append(part)
+        used += cell_width(part) + 1
+    return "\n".join((hang if number else "") + " ".join(line) for number, line in enumerate(lines))
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -515,8 +792,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--lang",
         default=None,
-        metavar="LANG",
-        help=_("UI language (en, zh_CN). Overrides settings and REVERBSCOPE_LANG"),
+        metavar=pgettext("metavar", "LANG"),
+        help=_(
+            "interface language for this command (en, zh_CN); reverbscope config language keeps one"
+        ),
     )
     parser.add_argument(
         "--format",
@@ -528,7 +807,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--color",
         choices=COLOR_MODES,
         default="auto",
-        metavar="WHEN",
+        metavar=pgettext("metavar", "WHEN"),
         help=_(
             "colour in the terminal: auto (default; off for pipes, files and NO_COLOR), always, never"
         ),
@@ -536,7 +815,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--backend",
         default=None,
-        metavar="NAME",
+        metavar=pgettext("metavar", "NAME"),
         help=_("audio backend for Standalone Mode: portaudio (default) or fake"),
     )
     parser.add_argument(
@@ -549,7 +828,10 @@ def build_parser() -> argparse.ArgumentParser:
         "-v", "--verbose", action="store_true", help=_("debug logging, and tracebacks on errors")
     )
     sub = parser.add_subparsers(
-        dest="command", required=False, metavar="<command>", help=argparse.SUPPRESS
+        dest="command",
+        required=False,
+        metavar=pgettext("metavar", "<command>"),
+        help=argparse.SUPPRESS,
     )
 
     # Registered in the order of the workflow; the root help groups them (COMMAND_GROUPS).
@@ -563,7 +845,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--out",
         type=Path,
         default=Path(DEMO_FOLDER),
-        metavar="DIR",
+        metavar=pgettext("metavar", "DIR"),
         help=_("folder for the demo files, created or replaced (default {folder})").format(
             folder=DEMO_FOLDER
         ),
@@ -572,8 +854,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--profile",
         default="vocal",
         choices=available_profiles(),
+        # The value to type, as for every other default (not its title, 人声).
         help=_("recording profile used to interpret the demo (default: {profile})").format(
-            profile=profile_title("vocal")
+            profile="vocal"
         ),
     )
 
@@ -599,7 +882,11 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     _required(p_sweep).add_argument(
-        "--out", required=True, type=Path, metavar="WAV", help=_("output WAV path")
+        "--out",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "WAV"),
+        help=_("output WAV path"),
     )
     _add_sweep_arguments(p_sweep, default_level=-12.0)
 
@@ -618,21 +905,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--recording",
         required=True,
         type=Path,
-        metavar="WAV",
+        metavar=pgettext("metavar", "WAV"),
         help=_("recorded WAV (any length, untrimmed)"),
     )
     required.add_argument(
         "--sweep",
         required=True,
         type=Path,
-        metavar="FILE",
+        metavar=pgettext("metavar", "FILE"),
         help=_("sweep WAV or its .reverbscope-sweep.json sidecar"),
     )
     p_an.add_argument(
         "--out",
         type=Path,
         default=None,
-        metavar="DIR",
+        metavar=pgettext("metavar", "DIR"),
         help=_("directory for session.json, result.json, IR WAV"),
     )
     _add_analysis_arguments(p_an)
@@ -670,44 +957,53 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     _required(p_me).add_argument(
-        "--out", required=True, type=Path, metavar="DIR", help=_("session directory (created)")
+        "--out",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("session directory (created)"),
     )
     iface = p_me.add_argument_group(_("audio interface"))
     iface.add_argument(
         "--input-device",
         type=int,
         default=None,
-        metavar="N",
+        metavar=pgettext("metavar", "N"),
         help=_("input device index (see 'devices')"),
     )
     iface.add_argument(
-        "--output-device", type=int, default=None, metavar="N", help=_("output device index")
+        "--output-device",
+        type=int,
+        default=None,
+        metavar=pgettext("metavar", "N"),
+        help=_("output device index"),
     )
     iface.add_argument(
         "--input-channel",
         type=int,
         default=1,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         help=_("input channel, 1-based (default 1)"),
     )
     iface.add_argument(
         "--input-channels",
+        type=_channel_list,
         default=None,
-        metavar="LIST",
+        metavar=pgettext("metavar", "LIST"),
         help=_("1-based input channels, comma-separated (e.g. 1,2); overrides --input-channel"),
     )
     iface.add_argument(
         "--output-channel",
         type=int,
         default=1,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         help=_("output channel, 1-based (default 1)"),
     )
     iface.add_argument(
         "--loopback-channel",
         type=int,
         default=None,
-        metavar="N",
+        metavar=pgettext("channel metavar", "N"),
         dest="measure_loopback_channel",
         help=_("1-based loopback input channel (recorded with the microphone)"),
     )
@@ -733,7 +1029,7 @@ def build_parser() -> argparse.ArgumentParser:
         help=_("required for levels above -12 dBFS; confirms the monitor level was set low first"),
     )
     _add_sweep_arguments(p_me, default_level=-20.0)
-    _add_analysis_arguments(p_me)
+    _add_analysis_arguments(p_me, channel=False)
 
     p_ir = _command(
         sub,
@@ -742,17 +1038,30 @@ def build_parser() -> argparse.ArgumentParser:
         examples=("reverbscope analyze-ir --ir room.wav --band 20 20000 --out session-ir",),
     )
     _required(p_ir).add_argument(
-        "--ir", required=True, type=Path, metavar="WAV", help=_("impulse-response WAV")
+        "--ir",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "WAV"),
+        help=_("impulse-response WAV"),
     )
     p_ir.add_argument(
         "--band",
         nargs=2,
         type=float,
-        metavar=("LO", "HI"),
+        metavar=(pgettext("metavar", "LO"), pgettext("metavar", "HI")),
         default=None,
-        help=_("declared excitation band in Hz (required for band metrics)"),
+        help=_(
+            "declared excitation band in Hz (required for every decay and clarity metric, "
+            "broadband included)"
+        ),
     )
-    p_ir.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("session directory"))
+    p_ir.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("session directory"),
+    )
     _add_analysis_arguments(p_ir)
 
     p_show = _command(
@@ -764,6 +1073,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_show.add_argument(
         "path",
         type=Path,
+        metavar=pgettext("metavar", "path"),
         help=_("session directory, session.json, comparison.json, or folder to list"),
     )
     p_show.add_argument(
@@ -794,18 +1104,20 @@ def build_parser() -> argparse.ArgumentParser:
     p_cmp.add_argument(
         "baseline",
         type=Path,
+        metavar=pgettext("metavar", "baseline"),
         help=_("baseline session directory or session.json"),
     )
     p_cmp.add_argument(
         "candidate",
         type=Path,
+        metavar=pgettext("metavar", "candidate"),
         help=_("candidate session directory or session.json"),
     )
     p_cmp.add_argument(
         "--out",
         type=Path,
         default=None,
-        metavar="PATH",
+        metavar=pgettext("metavar", "PATH"),
         help=_("write comparison.json here (file or directory)"),
     )
     p_cmp.add_argument(
@@ -832,20 +1144,37 @@ def build_parser() -> argparse.ArgumentParser:
         examples=("reverbscope project init --out studio-a",),
     )
     _required(p_init).add_argument(
-        "--out", required=True, type=Path, metavar="DIR", help=_("project directory")
+        "--out",
+        required=True,
+        type=Path,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("project directory"),
     )
-    p_init.add_argument("--name", default="", metavar="TEXT", help=_("room name"))
-    p_init.add_argument("--notes", default="", metavar="TEXT", help=_("free-text notes"))
+    p_init.add_argument(
+        "--name", default="", metavar=pgettext("metavar", "TEXT"), help=_("room name")
+    )
+    p_init.add_argument(
+        "--notes", default="", metavar=pgettext("metavar", "TEXT"), help=_("free-text notes")
+    )
+    p_init.add_argument(
+        "--force",
+        action="store_true",
+        help=_("replace an existing project.json (its positions and notes are lost)"),
+    )
     p_add = _command(
         proj_sub,
         "add",
         _("add a session to a position"),
         examples=("reverbscope project add studio-a session-1 --position A",),
     )
-    p_add.add_argument("project", type=Path, help=_("project directory"))
-    p_add.add_argument("session", type=Path, help=_("session directory"))
+    p_add.add_argument(
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
+    p_add.add_argument(
+        "session", type=Path, metavar=pgettext("metavar", "session"), help=_("session directory")
+    )
     _required(p_add).add_argument(
-        "--position", required=True, metavar="LABEL", help=_("position label")
+        "--position", required=True, metavar=pgettext("metavar", "LABEL"), help=_("position label")
     )
     p_avg = _command(
         proj_sub,
@@ -853,15 +1182,26 @@ def build_parser() -> argparse.ArgumentParser:
         _("spatial average of VALID T values"),
         examples=("reverbscope project average studio-a",),
     )
-    p_avg.add_argument("project", type=Path, help=_("project directory"))
     p_avg.add_argument(
-        "--sources", type=int, default=1, metavar="N", help=_("number of source positions")
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
+    p_avg.add_argument(
+        "--sources",
+        type=int,
+        default=1,
+        metavar=pgettext("count metavar", "N"),
+        help=_("number of source positions"),
     )
     p_avg.add_argument(
         "--json", action="store_true", help=_("deprecated: use reverbscope --format json")
     )
     p_show_proj = _command(proj_sub, "show", _("list positions and sessions"))
-    p_show_proj.add_argument("project", type=Path, help=_("project directory"))
+    p_show_proj.add_argument(
+        "project", type=Path, metavar=pgettext("metavar", "project"), help=_("project directory")
+    )
+    # Without a metavar argparse names the missing action by its dest
+    # ("the following arguments are required: project_command").
+    proj_sub.metavar = "{" + ",".join(proj_sub.choices) + "}"
 
     p_ex = _command(
         sub,
@@ -869,15 +1209,26 @@ def build_parser() -> argparse.ArgumentParser:
         _("export curves through an exporter"),
         examples=("reverbscope export session-1 --out session-1/csv",),
     )
-    p_ex.add_argument("session", type=Path, help=_("session directory or session.json"))
+    p_ex.add_argument(
+        "session",
+        type=Path,
+        metavar=pgettext("metavar", "session"),
+        help=_("session directory or session.json"),
+    )
     p_ex.add_argument(
         "--format",
         dest="export_format",
         default="csv",
-        metavar="NAME",
+        metavar=pgettext("metavar", "NAME"),
         help=_("exporter name (default csv)"),
     )
-    p_ex.add_argument("--out", type=Path, default=None, metavar="DIR", help=_("output directory"))
+    p_ex.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "DIR"),
+        help=_("output directory"),
+    )
 
     p_sess = _command(sub, "session", _("session folder tools"))
     sess_sub = p_sess.add_subparsers(dest="session_command", required=True)
@@ -887,15 +1238,54 @@ def build_parser() -> argparse.ArgumentParser:
         _("zip a session for a bug report"),
         examples=("reverbscope session bundle session-1 --no-audio",),
     )
-    p_bundle.add_argument("session", type=Path, help=_("session directory or session.json"))
+    p_bundle.add_argument(
+        "session",
+        type=Path,
+        metavar=pgettext("metavar", "session"),
+        help=_("session directory or session.json"),
+    )
     p_bundle.add_argument(
         "--no-audio",
         action="store_true",
         help=_("leave WAV files out of the zip"),
     )
     p_bundle.add_argument(
-        "--out", type=Path, default=None, metavar="PATH", help=_("zip path (file or directory)")
+        "--out",
+        type=Path,
+        default=None,
+        metavar=pgettext("metavar", "PATH"),
+        help=_("zip file (.zip) or folder"),
     )
+    sess_sub.metavar = "{" + ",".join(sess_sub.choices) + "}"
+
+    from reverbscope.cli import config as settings_keys
+
+    p_cfg = _command(
+        sub,
+        "config",
+        _("show or change the settings (the same settings.json as the desktop app)"),
+        examples=(
+            "reverbscope config",
+            "reverbscope config language zh_CN",
+            "reverbscope config language auto",
+            "reverbscope config profile vocal",
+        ),
+    )
+    p_cfg.add_argument(
+        "key",
+        nargs="?",
+        default=None,
+        metavar=pgettext("metavar", "KEY"),
+        help=_("the setting to show or change; without it every setting is listed"),
+    )
+    p_cfg.add_argument(
+        "value",
+        nargs="?",
+        default=None,
+        metavar=pgettext("metavar", "VALUE"),
+        help=_("the new value; auto goes back to the default"),
+    )
+    p_cfg.epilog = "\n\n".join([_settings_block(settings_keys), str(p_cfg.epilog)])
 
     p_doc = _command(
         sub,
@@ -915,19 +1305,17 @@ def build_parser() -> argparse.ArgumentParser:
     p_schema = _command(
         sub, "schema", _("print a shipped JSON Schema"), examples=("reverbscope schema result",)
     )
+    schemas = ["result", "session", "comparison", "project", "sidecar"]
     p_schema.add_argument(
         "name",
-        choices=["result", "session", "comparison", "project", "sidecar"],
+        choices=schemas,
+        # As for project and session: without a metavar argparse's errors
+        # name the argument by its dest ("argument name: invalid choice").
+        metavar="{" + ",".join(schemas) + "}",
         help=_("which schema to print"),
     )
     _shorten_usage(parser)
-    # The command list is printed grouped (below), so argparse's own list is
-    # hidden; put the command placeholder back into the usage line.
-    usage = parser.format_usage().strip()
-    prefix = _("usage: ")
-    if usage.startswith(prefix):
-        usage = usage[len(prefix) :]
-    parser.usage = usage + " <command> ..."
+    parser.usage = _root_usage(parser)
     helps = {action.dest: str(action.help) for action in sub._choices_actions}
     parser.description = "\n\n".join(
         [
@@ -935,13 +1323,31 @@ def build_parser() -> argparse.ArgumentParser:
             _commands_block(helps),
         ]
     )
-    parser.epilog = "\n\n".join(
-        [
-            _examples_block(ROOT_EXAMPLES),
-            _("Run a command with --help for its options, for example: reverbscope measure --help"),
-        ]
-    )
+    epilog = [
+        _examples_block(ROOT_EXAMPLES),
+        # The command on a line of its own: a wrapped sentence split it.
+        _("Run a command with --help for its options, for example:")
+        + "\n  reverbscope measure --help",
+    ]
+    # The width argparse lays this help out in: the command in the hint
+    # goes on a line of its own, whole, where the line would not hold it.
+    hint = _language_hint(parser._get_formatter()._width)
+    if hint:
+        epilog.append(hint)
+    parser.epilog = "\n\n".join(epilog)
     return parser
+
+
+def _language_hint(width: int) -> str | None:
+    """The way to the other interface language, where stdout can write it."""
+    from reverbscope.cli.config import language_hint_lines
+    from reverbscope.cli.console import can_encode
+    from reverbscope.i18n import current_locale
+
+    hint = "\n".join(language_hint_lines(current_locale(), width))
+    if hint and can_encode(hint, getattr(sys.stdout, "encoding", None)):
+        return hint
+    return None
 
 
 def cmd_sweep(args: argparse.Namespace) -> int:
@@ -954,14 +1360,49 @@ def cmd_sweep(args: argparse.Namespace) -> int:
     return 0
 
 
+#: The long options of the top-level parser (``build_parser``; a test keeps the
+#: two in step). argparse takes any unambiguous prefix of them for the option
+#: (``--lan zh_CN``), so the ones read before the parser exists must too.
+_ROOT_LONG_OPTIONS = (
+    "--help",
+    "--version",
+    "--lang",
+    "--format",
+    "--color",
+    "--backend",
+    "--copy-recording",
+    "--no-copy-recording",
+    "--verbose",
+)
+
+
+def _abbreviates(flag: str, names: tuple[str, ...]) -> bool:
+    """Whether ``flag`` is an abbreviation argparse resolves to one of ``names``."""
+    if len(flag) < 3 or not flag.startswith("--"):
+        return False
+    matches = [option for option in _ROOT_LONG_OPTIONS if option.startswith(flag)]
+    return len(matches) == 1 and matches[0] in names
+
+
 def _peek_option(argv: Sequence[str], names: tuple[str, ...]) -> str | None:
+    """The value of a top-level option, read before the parser is built.
+
+    ``--lang X``, ``--lang=X`` and what argparse accepts for them (``--lan X``,
+    ``--la=X``): the language and the colour policy have to be known before
+    the parser's own texts are made, and an option given by an abbreviation
+    would otherwise be dropped without a word.
+    """
+    # The top-level options come before the command; after it, ``--l`` may be
+    # the start of one of the command's own options.
+    command = next((index for index, arg in enumerate(argv) if arg in COMMANDS), len(argv))
     for index, arg in enumerate(argv):
-        for name in names:
-            if arg == name and index + 1 < len(argv):
-                return argv[index + 1]
-            prefix = name + "="
-            if arg.startswith(prefix):
-                return arg[len(prefix) :]
+        flag, has_value, value = arg.partition("=")
+        if flag not in names and not (index < command and _abbreviates(flag, names)):
+            continue
+        if has_value:
+            return value
+        if index + 1 < len(argv):
+            return argv[index + 1]
     return None
 
 
@@ -1021,6 +1462,49 @@ def _resolve_profile(args: argparse.Namespace, stored: str | None = None) -> str
     return name
 
 
+def _refuse_file_out(path: Path | None, command: str, *, project: bool = False) -> None:
+    """Refuse an --out that is an existing file before any work is done.
+
+    Otherwise the whole analysis runs first and the save fails with the
+    operating system's English "File exists".
+    """
+    if path is None or not path.exists() or path.is_dir():
+        return
+    message = (
+        _("{path} is a file; --out needs a folder for the project")
+        if project
+        else _("{path} is a file; --out needs a folder for the session")
+    )
+    refusal = ConfigurationError(message.format(path=path))
+    refusal.cli_hints = [f"reverbscope {command} --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
+    raise refusal
+
+
+def _prove_out_usable(path: Path) -> None:
+    """Fail before a take when --out cannot be created or written to.
+
+    ``measure`` copies the take into --out only after it was played, recorded
+    and analysed; a path below a file, a drive that is not mounted or a
+    read-only folder would otherwise fail only then, with the sweep played
+    through the loudspeakers and the take thrown away. A probe file in the
+    nearest folder that exists proves that --out (and the folders above it)
+    can be created there, and leaves nothing behind: a take that is stopped
+    must not have made --out.
+    """
+    folder = path
+    while not folder.exists() and folder.parent != folder:
+        folder = folder.parent
+    if not folder.is_dir():
+        # The text the save's own mkdir would give, naming --out.
+        raise NotADirectoryError(errno.ENOTDIR, os.strerror(errno.ENOTDIR), str(path))
+    try:
+        with tempfile.TemporaryFile(dir=folder):
+            pass
+    except OSError as exc:
+        # Name the folder that refused, not the probe's random file name.
+        raise OSError(exc.errno, exc.strerror, str(folder)) from None
+
+
 def _run_analysis(
     recording_path: Path,
     reference_path: Path | None,
@@ -1033,13 +1517,16 @@ def _run_analysis(
     output_channel: int | None = None,
     device_warnings: tuple[str, ...] = (),
     inputs: Sequence[tuple[str, str]] = (),
+    take: bool = False,
 ) -> int:
     """Analyse a recording and optionally save a session.
 
     ``hardware`` is the Standalone channel plan; the session then records the
     1-based interface channels. In Universal DAW Mode the DAW did the routing,
     so the session leaves them empty and the analysed WAV column stays in
-    ``analysis_settings`` (0-based).
+    ``analysis_settings`` (0-based). ``take`` marks a sweep and a recording
+    written for this session (``reverbscope measure``): both are copied into
+    ``out_dir`` together with it.
     """
     from reverbscope.core.pipeline import Reference, analyze
     from reverbscope.interpretation import interpret
@@ -1087,7 +1574,8 @@ def _run_analysis(
             session,
             result,
             include_curves=not args.no_curves,
-            copy_recording=getattr(args, "copy_recording", None),
+            copy_recording=True if take else getattr(args, "copy_recording", None),
+            copy_sweep=take,
         )
         remember_session(out_dir)
         log.info("session saved to %s", session_path)
@@ -1106,6 +1594,7 @@ def _run_analysis(
 
 
 def cmd_analyze(args: argparse.Namespace) -> int:
+    _refuse_file_out(args.out, "analyze")
     inputs = [
         (_("Recording"), Verbatim(str(args.recording))),
         (_("Sweep"), Verbatim(str(args.sweep))),
@@ -1119,12 +1608,8 @@ def cmd_devices(args: argparse.Namespace) -> int:
     from reverbscope.audio.backend import get_backend
 
     backend = get_backend(args.backend)
-    if (
-        getattr(args, "probe", False)
-        or getattr(args, "host_apis", False)
-        or getattr(args, "json", False)
-        or getattr(args, "format", None) == "json"
-    ):
+    # _use_json, not args.json: it warns that --json is going away.
+    if getattr(args, "probe", False) or getattr(args, "host_apis", False) or _use_json(args):
         return _print_inventory(backend, args)
     print(render_devices(_console(args), backend.list_devices()))
     return 0
@@ -1134,7 +1619,7 @@ def _print_inventory(backend: Any, args: argparse.Namespace) -> int:
     from reverbscope.audio.inventory import build_inventory
 
     inventory = build_inventory(backend, probe_rates=bool(getattr(args, "probe", False)))
-    if getattr(args, "json", False) or getattr(args, "format", None) == "json":
+    if _use_json(args):
         print(json.dumps(inventory.to_dict(), indent=1))
         return 0
     if getattr(args, "host_apis", False):
@@ -1147,8 +1632,13 @@ def _print_inventory(backend: Any, args: argparse.Namespace) -> int:
 def cmd_doctor(args: argparse.Namespace) -> int:
     from reverbscope.diagnostics import environment_report
 
-    report = environment_report(backend_name=args.backend, probe_rates=args.probe)
-    if getattr(args, "json", False) or getattr(args, "format", None) == "json":
+    as_json = _use_json(args)
+    # The JSON is pasted into issues and read by tools: English, like the
+    # diagnostics it stores, whatever the interface language.
+    report = environment_report(
+        backend_name=args.backend, probe_rates=args.probe, english_errors=as_json
+    )
+    if as_json:
         print(json.dumps(report, indent=1, default=str))
     else:
         print(render_environment(_console(args), report))
@@ -1173,15 +1663,50 @@ def cmd_measure(args: argparse.Namespace) -> int:
         plan_input_channels,
     )
     from reverbscope.core.sweep import measurement_signal
+    from reverbscope.demo import DEMO_MODE, FAKE_BACKEND_NOTES
+    from reverbscope.io.session_store import (
+        IR_FILE,
+        RECORDING_FILE,
+        RESULT_FILE,
+        SESSION_FILE,
+        SWEEP_FILE,
+        SWEEP_SIDECAR_NAME,
+    )
     from reverbscope.io.wav import write_sweep_file, write_wav
 
-    settings = _sweep_settings(args)
+    with _option_at_fault("measure"):
+        settings = _sweep_settings(args)
     err = _console(args, sys.stderr)
-    if Path(args.out).exists() and not Path(args.out).is_dir():
+    _refuse_file_out(Path(args.out), "measure")
+    if Path(args.out).is_dir() and not (Path(args.out) / SESSION_FILE).is_file():
+        # A session folder is measured again as a whole; any other folder may
+        # hold the user's own sweep (reverbscope sweep --out folder/sweep.wav),
+        # which the take's sweep.wav and sidecar would silently replace.
+        names = (SWEEP_FILE, SWEEP_SIDECAR_NAME, RECORDING_FILE, IR_FILE, RESULT_FILE)
+        clash = next((name for name in names if (Path(args.out) / name).exists()), None)
+        if clash is not None:
+            refusal = ConfigurationError(
+                _(
+                    "{path} already holds {name} and is not a ReverbScope session; "
+                    "the take would replace that file"
+                ).format(path=args.out, name=clash)
+            )
+            refusal.cli_hints = [f"reverbscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
+            raise refusal
+    # The take reaches --out only after it was played and analysed: prove now,
+    # while nothing has been played, that it can.
+    _prove_out_usable(Path(args.out))
+    if settings.total_samples < settings.sample_rate:
+        # The analysis refuses a recording shorter than one second: say so
+        # before the take, not after it was played and recorded for nothing.
         refusal = ConfigurationError(
-            _("{path} is a file; --out needs a folder for the session").format(path=args.out)
+            _(
+                "the test signal lasts {seconds:.2f} s, but a recording must last at least "
+                "1 s to be analysed; lengthen the silence after the sweep (--post-silence)"
+            ).format(seconds=settings.total_samples / settings.sample_rate)
         )
-        refusal.cli_hints = [f"reverbscope measure --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
+        # The settings are at fault, not the devices.
+        refusal.cli_hints = ["reverbscope measure --help"]  # type: ignore[attr-defined]
         raise refusal
     if settings.level_dbfs > SAFE_MAX_LEVEL_DBFS and not args.acknowledge_level:
         print(
@@ -1202,16 +1727,23 @@ def cmd_measure(args: argparse.Namespace) -> int:
     # note and the status lines go to stderr.
     status_stream = sys.stderr if as_json else sys.stdout
     backend = get_backend(args.backend)
-    if args.input_channels:
-        requested = [
-            int(part.strip()) for part in str(args.input_channels).split(",") if part.strip()
-        ]
-    else:
-        requested = [int(args.input_channel)]
+    # The fake backend (--backend fake, settings or REVERBSCOPE_AUDIO_BACKEND)
+    # simulates the room: the session is marked like reverbscope demo's.
+    synthetic = backend.name == "fake"
+    if synthetic:
+        args.notes = "\n".join(part for part in (FAKE_BACKEND_NOTES, args.notes) if part)
+    requested = list(args.input_channels or [int(args.input_channel)])
     # Hardware inputs are 1-based, recording columns 0-based; validate the
     # mapping before anything is played (#13).
-    plan = plan_input_channels(requested, getattr(args, "measure_loopback_channel", None))
+    with _option_at_fault("measure"):
+        plan = plan_input_channels(requested, getattr(args, "measure_loopback_channel", None))
     channels = list(plan.input_channels)
+    args.loopback_channel = plan.analysis_loopback_channel
+    args.channel = plan.analysis_channel
+    with _option_at_fault("measure"):
+        # --mic-height without --speaker-distance, a temperature out of range:
+        # refused after the take, the sweep was played and recorded for nothing.
+        _analysis_settings(args)
     options = _stream_options(args)
     # Device pre-flight, shared with the GUI: one host API for both
     # directions, channels that exist, the rate on the devices the stream will
@@ -1219,6 +1751,12 @@ def cmd_measure(args: argparse.Namespace) -> int:
     from reverbscope.audio.inventory import build_inventory, preflight
 
     inventory = build_inventory(backend, probe_rates=False)
+    # With no device at all PortAudio's "system default" fails only when the
+    # stream opens, after the plan and the sweep file.
+    if not any(probe.device.is_input for probe in inventory.devices):
+        raise AudioDeviceError(_("no audio input device found"))
+    if not any(probe.device.is_output for probe in inventory.devices):
+        raise AudioDeviceError(_("no audio output device found"))
     device_plan = preflight(
         backend,
         inventory,
@@ -1261,84 +1799,148 @@ def cmd_measure(args: argparse.Namespace) -> int:
         print()
         print("\n".join(out.status("warn", _(SAFETY_MESSAGE), indent=0)))
         print()
-    args.loopback_channel = plan.analysis_loopback_channel
-    args.channel = plan.analysis_channel
     out_dir: Path = args.out
-    out_dir.mkdir(parents=True, exist_ok=True)
-    sweep_path, _sidecar = write_sweep_file(settings, out_dir / "sweep.wav")
-    # Progress is drawn by the thread that waits for the stream, never by the
-    # audio callback; a failing display cannot stop the take (the backend
-    # catches it). JSON mode shows none.
-    progress = (
-        None
-        if as_json
-        else ProgressLine(
-            err,
-            sys.stderr,
-            _("Playing the sweep and recording"),
-            settings.total_samples / settings.sample_rate,
+    # The sweep and the take are written to a folder of their own and copied
+    # into --out only with the session that describes them: a take that is
+    # stopped or refused leaves --out as it was, the previous session's audio
+    # included, instead of beside a session from another take.
+    with tempfile.TemporaryDirectory(prefix="reverbscope-take-", ignore_cleanup_errors=True) as tmp:
+        take_dir = Path(tmp)
+        sweep_path, _sidecar = write_sweep_file(settings, take_dir / "sweep.wav")
+        # Progress is drawn by the thread that waits for the stream, never by
+        # the audio callback; a failing display cannot stop the take (the
+        # backend catches it). JSON mode shows none.
+        progress = (
+            None
+            if as_json
+            else ProgressLine(
+                err,
+                sys.stderr,
+                _("Playing the sweep and recording"),
+                settings.total_samples / settings.sample_rate,
+            )
         )
-    )
-    args.playback_started = True
-    completed = False
-    try:
-        recording = backend.play_and_record(
-            measurement_signal(settings),
-            settings.sample_rate,
-            input_device=args.input_device,
-            output_device=args.output_device,
-            input_channels=channels,
-            output_channel=args.output_channel,
-            level_dbfs=settings.level_dbfs,
-            progress=None if progress is None else progress.update,
-            options=options,
+
+        def report(fraction: float) -> None:
+            # The backends report progress only once the stream runs: until
+            # then a failure (a device PortAudio cannot open) played nothing.
+            args.playback_started = True
+            if progress is not None:
+                progress.update(fraction)
+
+        completed = False
+        try:
+            recording = backend.play_and_record(
+                measurement_signal(settings),
+                settings.sample_rate,
+                input_device=args.input_device,
+                output_device=args.output_device,
+                input_channels=channels,
+                output_channel=args.output_channel,
+                level_dbfs=settings.level_dbfs,
+                progress=report,
+                options=options,
+                loopback_input=plan.loopback_channel,
+            )
+            completed = True
+        finally:
+            if progress is not None:
+                progress.finish(completed)
+        recording_path = write_wav(
+            take_dir / "recording.wav", recording.samples, settings.sample_rate, subtype="FLOAT"
         )
-        completed = True
-    finally:
-        if progress is not None:
-            progress.finish(completed)
-    recording_path = write_wav(
-        out_dir / "recording.wav", recording.samples, settings.sample_rate, subtype="FLOAT"
-    )
-    print(
-        render_status(
-            err if as_json else out,
-            "ok",
-            _("Recorded {seconds:.1f} s to {path}").format(
-                seconds=recording.duration_s, path=recording_path
+        print(
+            render_status(
+                err if as_json else out,
+                "ok",
+                _("Recorded {seconds:.1f} s").format(seconds=recording.duration_s),
+                keep=True,
             ),
-            keep=True,
-        ),
-        file=status_stream,
-    )
-    if not as_json:
-        print()
-    return _run_analysis(
-        recording_path,
-        sweep_path,
-        args,
-        sweep_settings=settings,
-        mode="standalone",
-        out_dir=out_dir,
-        hardware=plan,
-        output_channel=int(args.output_channel),
-        device_warnings=recording.device_warnings,
-        inputs=[(_("Recording"), Verbatim(str(recording_path)))],
-    )
+            file=status_stream,
+        )
+        if not as_json:
+            print()
+        return _run_analysis(
+            recording_path,
+            sweep_path,
+            args,
+            sweep_settings=settings,
+            mode=DEMO_MODE if synthetic else "standalone",
+            out_dir=out_dir,
+            hardware=plan,
+            output_channel=int(args.output_channel),
+            device_warnings=recording.device_warnings,
+            inputs=[(_("Recording"), Verbatim(str(out_dir / RECORDING_FILE)))],
+            take=True,
+        )
+
+
+def _channel_list(text: str) -> list[int]:
+    """argparse type of ``--input-channels``: ``"1,2"`` -> ``[1, 2]``."""
+    try:
+        channels = [int(part) for part in text.split(",") if part.strip()]
+    except ValueError:
+        channels = []
+    if not channels:
+        raise argparse.ArgumentTypeError(
+            _("{value} is not a comma-separated list of channel numbers (e.g. 1,2)").format(
+                value=repr(text)
+            )
+        )
+    return channels
 
 
 def _is_comparison_path(path: Path) -> bool:
-    """True when ``path`` is ``comparison.json`` or a folder that holds only that file."""
+    """True when ``path`` is a comparison file or a folder that holds only
+    ``comparison.json``. ``compare --out ab.json`` writes any name, so a JSON
+    file other than ``session.json`` is recognised by its content."""
     if path.is_file():
-        return path.name == "comparison.json"
+        if path.name == "comparison.json":
+            return True
+        if path.suffix.lower() != ".json" or path.name == "session.json":
+            return False
+        from reverbscope.io.jsonutil import read_json_object
+
+        try:
+            data = read_json_object(path, kind="comparison")
+        except ReverbScopeError:
+            return False
+        return "comparable" in data and "common_band" in data
     if path.is_dir():
         return (path / "comparison.json").is_file() and not (path / "session.json").is_file()
     return False
 
 
+def _candidate_profile(candidate_session: object) -> str | None:
+    """The profile ``compare`` interpreted with: the candidate session's.
+
+    ``comparison.json`` does not store it. When the candidate session can no
+    longer be read (it moved, or its path is relative to where compare ran),
+    the settings' default profile applies, as for a session without one.
+    """
+    from reverbscope.io.session_store import load_session
+
+    # compare stores the session folder; nothing else is opened for it.
+    if (
+        not isinstance(candidate_session, str)
+        or not candidate_session
+        or not Path(candidate_session).is_dir()
+    ):
+        return None
+    try:
+        return load_session(candidate_session).recording_profile or None
+    except (ReverbScopeError, OSError):
+        return None
+
+
 def cmd_show(args: argparse.Namespace) -> int:
     from reverbscope.interpretation import interpret, interpret_comparison
-    from reverbscope.io.session_store import list_sessions, load_comparison, load_measurement
+    from reverbscope.io.session_store import (
+        list_sessions,
+        load_comparison,
+        load_measurement,
+        load_session,
+    )
 
     if args.list:
         _warn_ignored_json(args, "show --list")
@@ -1346,13 +1948,18 @@ def cmd_show(args: argparse.Namespace) -> int:
         if not listings:
             print(_("No session.json files under {root}").format(root=args.path))
             return 0
+        console = _console(args)
         for item in listings:
-            print(f"{item.path}\t{item.label}")
+            # Tab-separated for scripts: never wrapped, but "·" becomes "|"
+            # where the stream's encoding has no "·". A tab or a control
+            # character from a received session.json is shown as an escape.
+            path = printable(str(item.path), single_line=True)
+            print(f"{path}\t{console.fit(printable(item.label, single_line=True))}")
         return 0
 
     if _is_comparison_path(args.path):
         comparison = load_comparison(args.path)
-        profile = _resolve_profile(args, "generic")
+        profile = _resolve_profile(args, _candidate_profile(comparison.candidate_session))
         findings = interpret_comparison(comparison, profile)
         if _use_json(args):
             payload = comparison.to_dict()
@@ -1368,7 +1975,9 @@ def cmd_show(args: argparse.Namespace) -> int:
     if _use_json(args):
         payload = loaded.result.to_dict(include_curves=not args.no_curves)
         payload["findings"] = [f.to_dict() for f in findings]
-        payload["session"] = loaded.session.to_dict()
+        # As session.json stores it: load_measurement resolves the sweep and
+        # recording paths for a later save, or drops them when they lead out.
+        payload["session"] = load_session(args.path).to_dict()
         print(json.dumps(payload, indent=1))
     else:
         print(
@@ -1388,11 +1997,18 @@ SESSION_MODES = {
     "standalone": N_("Standalone Mode"),
     "universal_daw": N_("Universal DAW Mode"),
     "analyze_ir": N_("impulse-response file"),
+    "synthetic_demo": N_("Synthetic demo"),
 }
 
 
 def _session_inputs(session: Any, directory: Path) -> list[tuple[str, str]]:
-    """The saved session's folder and the names the user gave it, as entered."""
+    """The saved session's folder and the names the user gave it, as entered.
+
+    The names a demo wrote itself are shown in the interface language, whichever
+    it was made in.
+    """
+    from reverbscope.demo import localize_demo_name
+
     rows: list[tuple[str, str]] = [(_("Session"), Verbatim(str(directory)))]
     mode = SESSION_MODES.get(str(session.mode))
     if mode:
@@ -1403,7 +2019,10 @@ def _session_inputs(session: Any, directory: Path) -> list[tuple[str, str]]:
         (_("Microphone"), session.microphone_name),
     ):
         if value:
-            rows.append((label, str(value)))
+            # A session from someone else: a line break or escape sequence in
+            # a name must not forge report lines or drive the terminal.
+            shown = localize_demo_name(str(session.mode), str(value))
+            rows.append((label, printable(shown, single_line=True)))
     return rows
 
 
@@ -1425,8 +2044,8 @@ def cmd_compare(args: argparse.Namespace) -> int:
     )
     profile = _resolve_profile(args, candidate.session.recording_profile or "generic")
     findings = interpret_comparison(comparison, profile)
-    if args.out is not None:
-        save_comparison(args.out, comparison)
+    # --out without .json is a folder: name the file that was written in it.
+    written = save_comparison(args.out, comparison) if args.out is not None else None
     if _use_json(args):
         payload = comparison.to_dict()
         payload["findings"] = [f.to_dict() for f in findings]
@@ -1434,13 +2053,93 @@ def cmd_compare(args: argparse.Namespace) -> int:
     else:
         console = _console(args)
         print(render_comparison(console, comparison, findings, profile))
-        if args.out is not None:
+        if written is not None:
             print()
             print(
                 render_status(
-                    console, "ok", _("Wrote comparison to {path}").format(path=args.out), keep=True
+                    console, "ok", _("Wrote comparison to {path}").format(path=written), keep=True
                 )
             )
+    return 0
+
+
+def _stored_settings(args: argparse.Namespace) -> Any:
+    """The settings to show; a damaged file is named and the defaults shown."""
+    from reverbscope.settings import UserSettings, read_settings
+
+    try:
+        return read_settings()
+    except SessionError as exc:
+        print(
+            render_status(
+                _console(args, sys.stderr),
+                "warn",
+                _("warning: {error}; the defaults are shown").format(error=localize(str(exc))),
+            ),
+            file=sys.stderr,
+        )
+        return UserSettings()
+
+
+def _show_config(args: argparse.Namespace, key: str | None) -> int:
+    """``reverbscope config`` and ``reverbscope config KEY``: nothing is written."""
+    from reverbscope.i18n import current_locale, language_choice
+    from reverbscope.settings import settings_path
+
+    settings = _stored_settings(args)
+    if getattr(args, "format", None) == "json":
+        print(json.dumps(settings.to_dict(), indent=1))
+    elif key is None:
+        path = settings_path()
+        shown = render_config(
+            _console(args), settings, path, language_choice(None), exists=path.exists()
+        )
+        print(shown)
+    elif key == "language":
+        choice = language_choice(getattr(args, "lang", None))
+        print(render_config_language(_console(args), settings, choice, current_locale()))
+    else:
+        print(render_config_key(_console(args), key, settings))
+    return 0
+
+
+def cmd_config(args: argparse.Namespace) -> int:
+    from reverbscope.cli import config
+    from reverbscope.i18n import LanguageChoice, language_choice
+    from reverbscope.settings import read_settings, save_settings
+
+    try:
+        key = None if args.key is None else config.canonical_key(args.key)
+        value = None if args.value is None or key is None else config.parse_value(key, args.value)
+    except config.SettingError as exc:
+        changing = args.value is not None
+        detail = _("Nothing was changed.") if changing else ""
+        raise _UsageError(str(exc), detail=detail, hints=exc.hints) from None
+    if key is None or args.value is None:
+        return _show_config(args, key)
+    try:
+        # A damaged file is not replaced by the defaults and one new value.
+        stored = read_settings()
+    except SessionError as exc:
+        refusal = SessionError(
+            _("{error}; nothing was changed: correct or delete the file first").format(
+                error=localize(str(exc))
+            )
+        )
+        refusal.cli_hints = ["reverbscope config"]  # type: ignore[attr-defined]
+        raise refusal from exc
+    settings = config.changed(stored, key, value)
+    saved = save_settings(settings)
+    choice: LanguageChoice | None = None
+    if key == "language":
+        # The confirmation is written in the language just chosen; --lang
+        # applied to this command only.
+        activate(settings.language or None)
+        choice = language_choice(None)
+    if getattr(args, "format", None) == "json":
+        print(json.dumps(settings.to_dict(), indent=1))
+    else:
+        print(render_config_saved(_console(args), key, settings, saved, choice=choice))
     return 0
 
 
@@ -1459,9 +2158,16 @@ def cmd_analyze_ir(args: argparse.Namespace) -> int:
     from reverbscope.io.wav import read_wav
     from reverbscope.models.session import MeasurementSession
 
+    _refuse_file_out(args.out, "analyze-ir")
+    band = (float(args.band[0]), float(args.band[1])) if args.band else None
+    if band is not None and not (band[0] > 0.0 and band[1] > band[0] and math.isfinite(band[1])):
+        # The analysis would name its own parameter: "excitation_band must be
+        # a (low_hz, high_hz) pair".
+        raise ConfigurationError(
+            _("--band needs two frequencies in Hz, LO then HI, with HI above LO and LO above 0")
+        )
     ir = read_wav(args.ir)
     settings = _analysis_settings(args)
-    band = (float(args.band[0]), float(args.band[1])) if args.band else None
     result = analyze_impulse_response(ir, settings, excitation_band=band)
     profile = _resolve_profile(args)
     findings = interpret(result, profile)
@@ -1509,6 +2215,7 @@ def cmd_session(args: argparse.Namespace) -> int:
     from reverbscope.io.session_store import bundle_session
 
     if args.session_command == "bundle":
+        _warn_ignored_json(args, "session bundle")
         path = bundle_session(args.session, args.out, include_audio=not args.no_audio)
         print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path), keep=True))
         return 0
@@ -1529,8 +2236,9 @@ def cmd_export(args: argparse.Namespace) -> int:
 
 
 def cmd_project(args: argparse.Namespace) -> int:
-    from reverbscope.core.averaging import average_decay
+    from reverbscope.core.averaging import AveragedMetric, average_decay
     from reverbscope.io.project_store import (
+        PROJECT_FILE,
         add_session,
         is_project,
         list_project_sessions,
@@ -1541,7 +2249,18 @@ def cmd_project(args: argparse.Namespace) -> int:
     from reverbscope.models.project import Project
 
     command = args.project_command
+    if command in ("init", "add", "show"):
+        _warn_ignored_json(args, f"project {command}")
     if command == "init":
+        _refuse_file_out(args.out, "project init", project=True)
+        if (args.out / PROJECT_FILE).is_file() and not args.force:
+            # A fresh project.json lists no positions: run again by mistake
+            # (or to set a name), init would drop every position label.
+            raise ReverbScopeError(
+                _("{path} already contains a project.json; use --force to replace it").format(
+                    path=args.out
+                )
+            )
         project = Project(name=args.name or args.out.name, notes=args.notes)
         path = save_project(args.out, project)
         print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path), keep=True))
@@ -1558,19 +2277,20 @@ def cmd_project(args: argparse.Namespace) -> int:
         return 0
     if command == "show":
         if not is_project(args.project):
-            raise ReverbScopeError(f"no project.json in {args.project}")
+            raise ReverbScopeError(_("no project.json in {path}").format(path=args.project))
         project = load_project(args.project)
-        print(f"{project.name or args.project}")
+        # project.json may come from someone else (SECURITY.md).
+        print(printable(project.name or str(args.project), single_line=True))
         for label, path in list_project_sessions(args.project):
-            tag = label or _("(unlisted)")
-            print(f"  {tag}\t{path}")
+            tag = printable(label, single_line=True) if label else _("(unlisted)")
+            print(f"  {tag}\t{printable(str(path), single_line=True)}")
         return 0
     if command == "average":
         if not is_project(args.project):
-            raise ReverbScopeError(f"no project.json in {args.project}")
+            raise ReverbScopeError(_("no project.json in {path}").format(path=args.project))
         items = list_project_sessions(args.project)
         if not items:
-            raise ReverbScopeError(f"no sessions in {args.project}")
+            raise ReverbScopeError(_("no sessions in {path}").format(path=args.project))
         loaded = [load_measurement(path) for _label, path in items]
         # A position label is one microphone position; repeated takes there
         # add sessions, not positions (#15). Sessions not assigned to a
@@ -1579,7 +2299,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         n_mic = max(1, len(set(labelled)))
         sources = int(args.sources)
         if sources < 1:
-            raise ConfigurationError("--sources must be at least 1")
+            raise ConfigurationError(_("--sources must be at least 1"))
         averaged = average_decay(
             [item.result for item in loaded],
             n_source_positions=sources,
@@ -1590,34 +2310,39 @@ def cmd_project(args: argparse.Namespace) -> int:
         if _use_json(args) or args.json:
             print(json.dumps(averaged.to_dict(), indent=1))
         else:
-            print(
-                _(
-                    "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, "
-                    "{combos} combinations)"
-                ).format(
-                    klass=accuracy_class_text(averaged.iso_3382_2_class),
-                    sources=averaged.n_source_positions,
-                    mics=averaged.n_microphone_positions,
-                    combos=averaged.n_combinations,
-                )
-            )
             console = _console(args)
+            iso_class = _(
+                "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, {combos} combinations)"
+            ).format(
+                klass=accuracy_class_text(averaged.iso_3382_2_class),
+                sources=averaged.n_source_positions,
+                mics=averaged.n_microphone_positions,
+                combos=averaged.n_combinations,
+            )
+            print("\n".join(console.paragraph(iso_class, indent=0)))
             dash = console.dash()
 
-            def seconds(value: float | None) -> str:
-                return f"{value:.2f} s" if value is not None else dash
+            # Each value averages only the sessions where it is VALID, so its
+            # count can differ along a row: n is the row's largest count, and
+            # a value from fewer sessions shows its own.
+            partial = False
 
-            rows = [
-                [
-                    band_text(band.band_label),
-                    seconds(band.edt.seconds),
-                    seconds(band.t20.seconds),
-                    seconds(band.t30.seconds),
-                    seconds(band.rt60_estimate_s),
-                    str(band.t20.count),
-                ]
-                for band in averaged.bands
-            ]
+            def cell(metric: AveragedMetric, n: int) -> str:
+                nonlocal partial
+                if metric.seconds is None:
+                    return dash
+                if metric.count < n:
+                    partial = True
+                    return f"{metric.seconds:.2f} s ({metric.count})"
+                return f"{metric.seconds:.2f} s"
+
+            rows = []
+            for band in averaged.bands:
+                metrics = (band.edt, band.t20, band.t30, band.rt60)
+                n = max(metric.count for metric in metrics)
+                # A label read from a session file: one line, whatever it holds.
+                label = printable(band_text(band.band_label), single_line=True)
+                rows.append([label, *(cell(m, n) for m in metrics), str(n)])
             print()
             print(
                 "\n".join(
@@ -1626,6 +2351,12 @@ def cmd_project(args: argparse.Namespace) -> int:
                     )
                 )
             )
+            if partial:
+                note = _(
+                    "n is the number of sessions averaged in the row; a value followed by "
+                    "(k) averages only k of them, as the others have no VALID value."
+                )
+                print("\n".join(console.paragraph(note, style=("dim",))))
         return 0
     raise ReverbScopeError(_("unknown project command {command}").format(command=command))
 
@@ -1652,7 +2383,9 @@ def cmd_gui(args: argparse.Namespace) -> int:
             file=sys.stderr,
         )
         return 2
-    return int(run_app(smoke=bool(getattr(args, "smoke", False))))
+    # --lang was activated for the command line; the GUI resolves its
+    # language again and would otherwise drop it for settings or the system's.
+    return int(run_app(smoke=bool(getattr(args, "smoke", False)), lang=getattr(args, "lang", None)))
 
 
 def _is_demo_folder(path: Path) -> bool:
@@ -1701,8 +2434,13 @@ def cmd_demo(args: argparse.Namespace) -> int:
     if err.interactive and sys.stderr is not None:
         # A transient line while the two positions are simulated and analysed.
         # Cleared with spaces, never an escape sequence: --color never and
-        # NO_COLOR must not write ESC[2K.
-        note = err.fit(_("Simulating and analysing two microphone positions …"))
+        # NO_COLOR must not write ESC[2K. Cut to the terminal like the
+        # progress line: a wrapped note leaves its first row behind, as "\r"
+        # returns only to the start of the second.
+        note = truncate(
+            err.fit(_("Simulating and analysing two microphone positions …")),
+            max(8, err.width - 1),
+        )
         sys.stderr.write(note)
         sys.stderr.flush()
     try:
@@ -1744,6 +2482,7 @@ COMMANDS = {
     "session": cmd_session,
     "export": cmd_export,
     "project": cmd_project,
+    "config": cmd_config,
 }
 
 
@@ -1819,8 +2558,22 @@ def _error_hints(exc: BaseException, command: str | None) -> list[str]:
 
 
 def _os_error_text(exc: OSError) -> str:
-    """``cannot write: …/folder (Permission denied)`` from an OSError."""
-    reason = exc.strerror or str(exc)
+    """``permission denied: …/folder`` from an OSError, in the interface language.
+
+    Python gives ``strerror`` in English on Linux and macOS; the common
+    reasons are translated here, any other stays as the system gives it.
+    """
+    reasons = {
+        errno.EEXIST: _("already exists"),
+        errno.EACCES: _("permission denied"),
+        errno.EPERM: _("permission denied"),
+        errno.ENOSPC: _("no space left on the disk"),
+        errno.ENOTDIR: _("part of the path is a file, not a folder"),
+        errno.EISDIR: _("is a folder, not a file"),
+        errno.ENOENT: _("no such file or folder"),
+        errno.EROFS: _("the disk is read-only"),
+    }
+    reason = reasons.get(exc.errno or 0) or exc.strerror or str(exc)
     if exc.filename is not None:
         return _("{reason}: {path}").format(reason=reason, path=exc.filename)
     return reason

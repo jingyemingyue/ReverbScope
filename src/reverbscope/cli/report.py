@@ -24,7 +24,7 @@ from reverbscope.models.result import AnalysisResult
 def _console() -> Console:
     """The GUI's plain layout, with symbols ``sys.stdout`` can write."""
     probe = Console.for_stream(sys.stdout, "never")
-    return replace(REPORT_CONSOLE, unicode=probe.unicode)
+    return replace(REPORT_CONSOLE, unicode=probe.unicode, encoding=probe.encoding)
 
 
 def format_report(

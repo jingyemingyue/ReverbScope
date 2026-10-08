@@ -9,10 +9,12 @@ exit codes, and the Chinese command line.
 from __future__ import annotations
 
 import io
+import itertools
 import json
 import re
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pytest
@@ -86,6 +88,27 @@ def test_wrap_breaks_chinese_between_characters_and_never_starts_with_punctuatio
         assert "".join(line.strip() for line in lines).replace(" ", "") == text.replace(" ", "")
 
 
+OPENING = "（「『“‘《〈【〔([{"
+
+
+def test_wrap_never_ends_a_line_with_an_opening_bracket() -> None:
+    """ "…voiceover 或 auto（" then "generic）": the bracket went with the line
+    before what it opens."""
+    texts = (
+        "acoustic_guitar、choir、drums、generic、room_mic、vocal、voiceover 或 auto（generic）",
+        "列出音频设备，并标出每个物理设备的推荐条目（不会播放任何声音）" * 2,
+        "《设置》「语言」【中文】“引号”‘单引号’〈书名〉〔注〕『双引号』" * 3,
+    )
+    for text in texts:
+        for width in range(12, 70):
+            lines = wrap(text, width, first="  ", rest="  ")
+            assert not any(line.rstrip()[-1:] in OPENING for line in lines), (width, lines)
+            assert "".join("".join(line.split()) for line in lines) == "".join(text.split())
+    assert wrap(texts[0], 60, first="  ", rest="  ")[-1] == "  voiceover 或 auto（generic）"
+    # The space after an opening bracket goes down with it.
+    assert wrap("see ( the thing ) here", 8) == ["see", "( the", "thing )", "here"]
+
+
 def test_wrap_never_splits_a_path_or_url() -> None:
     path = "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\pytest-of-runneradmin\\session"
     url = "https://github.com/jingyemingyue/ReverbScope/actions/runs/36321028824"
@@ -98,6 +121,29 @@ def test_wrap_splits_a_word_longer_than_the_line() -> None:
     lines = wrap("a-very-long-file-name-without-any-spaces.wav", 12, first="", rest="")
     assert all(cell_width(line) <= 12 for line in lines)
     assert "".join(lines) == "a-very-long-file-name-without-any-spaces.wav"
+
+
+def test_wrapping_never_separates_a_number_from_its_unit() -> None:
+    """Only the at-a-glance rows held numbers to their units: paragraphs,
+    status lines and fields broke "至少有 20" / "dB 时", "-12" / "dBFS"."""
+    texts = [
+        "只有衰减范围至少有 20 dB 时才给出比值，而且它不是房间评分。",
+        "Background noise is -69.2 dBFS RMS (uncalibrated digital level, not dB SPL).",
+        "Potential mains hum at multiples of 50 Hz: 50 Hz (+57 dB), 100 Hz (+48 dB)",
+    ]
+    unit = re.compile(r"^\s*(dBFS|dB|kHz|Hz|s|SPL)\b")
+    for width in range(20, 90):
+        console = Console(width=width)
+        blocks = [
+            *(console.paragraph(text) for text in texts),
+            *(console.status("warn", text) for text in texts),
+            console.fields([("Sweep", "20 Hz – 20 kHz · 10 s · -12 dBFS")]),
+        ]
+        for lines in blocks:
+            assert "\u00a0" not in "".join(lines)  # no-break spaces are written back
+            for above, below in itertools.pairwise(lines):
+                assert not (above.rstrip()[-1:].isdigit() and unit.match(below)), (above, below)
+                assert not (above.endswith(" dB") and below.lstrip().startswith("SPL"))
 
 
 # --- Colour policy and fallbacks ------------------------------------------------------
@@ -142,6 +188,34 @@ def test_symbols_fall_back_to_ascii_words_where_unicode_cannot_be_written() -> N
     )
     assert "[OK]" in text and "[WARN]" in text and "[ERROR]" in text
     text.encode("ascii")
+
+
+@pytest.mark.parametrize(
+    ("encoding", "shown"),
+    [("cp1252", "20 °C"), ("gbk", "20 °C"), ("latin-1", "20 °C"), ("ascii", "20 C")],
+)
+def test_the_degree_sign_is_dropped_only_where_the_encoding_lacks_it(
+    encoding: str, shown: str
+) -> None:
+    """cp1252 and GBK (a Chinese Windows code page) cannot write ✓, so the
+    other signs become ASCII there, but they hold the degree sign."""
+    console = Console.for_stream(_Stream(tty=False, encoding=encoding), "auto", {})
+    assert not console.unicode
+    line = "343.2 m/s at 20 °C – assumed"
+    for text in (console.fit(line), console.readable(line), *console.paragraph(line)):
+        assert shown in text and "–" not in text, text
+        text.encode(encoding)
+
+
+def test_the_classic_windows_console_keeps_the_degree_sign(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Its fonts lack ✓ (so the ASCII signs are used) but have °."""
+    monkeypatch.setattr("sys.platform", "win32")
+    monkeypatch.setattr("reverbscope.cli.console._enable_windows_vt", lambda stream: False)
+    console = Console.for_stream(_Stream(tty=True, encoding="utf-8"), "auto", {})
+    assert not console.unicode
+    assert console.fit("20 °C – 5 °C") == "20 °C - 5 °C"
 
 
 @pytest.mark.parametrize("unicode", [True, False])
@@ -241,7 +315,57 @@ def test_progress_is_throttled() -> None:
     assert stream.getvalue().count("\r") == 1  # same instant: drawn once
 
 
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_progress_never_reaches_the_last_column(monkeypatch: pytest.MonkeyPatch, lang: str) -> None:
+    """The line counted six separating spaces but wrote eight: 81 columns on
+    an 80-column terminal, which wraps, so every redraw started a new row."""
+    from reverbscope.i18n import _
+
+    activate(lang)
+    try:
+        label = _("Playing the sweep and recording")
+        for columns in range(20, 121):
+            monkeypatch.setenv("COLUMNS", str(columns))
+            stream = _Stream(tty=True)
+            console = Console(interactive=True, width=columns)
+            progress = ProgressLine(console, stream, label, 7.0, interval=0.0)
+            for step in range(11):
+                progress.update(step / 10)
+            progress.finish()
+            frames = stream.getvalue().rstrip("\n").split("\r")[1:]
+            assert frames, columns
+            widest = max(cell_width(frame) for frame in frames)
+            assert widest <= min(columns, 100) - 1, (columns, frames)
+    finally:
+        activate("en")
+
+
 # --- The command line ------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_the_demo_note_fits_a_narrow_terminal(
+    home: Path, monkeypatch: pytest.MonkeyPatch, lang: str
+) -> None:
+    """The demo's transient note was written whole: on a terminal narrower
+    than it, it wrapped, "\r" returned to the second row only, and the first
+    row stayed above the report."""
+    import reverbscope.demo
+    from reverbscope.errors import ReverbScopeError
+
+    def stop(*_args: object, **_kwargs: object) -> None:
+        raise ReverbScopeError("stopped here")
+
+    monkeypatch.setattr(reverbscope.demo, "run_demo", stop)
+    for columns in (20, 24, 40):
+        stderr = _Stream(tty=True)
+        monkeypatch.setattr("sys.stderr", stderr)
+        monkeypatch.setenv("COLUMNS", str(columns))
+        monkeypatch.setenv("TERM", "xterm")
+        main(["--lang", lang, "--color", "never", "demo", "--out", str(home / "d")])
+        note, clear = stderr.getvalue().split("\r")[:2]
+        assert note and cell_width(note) <= columns - 1, (columns, note)
+        assert clear == " " * cell_width(note)
 
 
 def _take(root: Path, name: str = "take") -> tuple[Path, Path]:
@@ -360,13 +484,97 @@ def test_a_refused_measurement_says_nothing_was_played_only_before_playback(
     from reverbscope.audio.fake import FakeBackend
     from reverbscope.errors import AudioDeviceError
 
-    def broken(*_args: object, **_kwargs: object) -> None:
+    def broken(*_args: object, progress: Any = None, **_kwargs: object) -> None:
+        progress(0.25)  # the stream ran for a while
         raise AudioDeviceError("the stream stopped")
 
     monkeypatch.setattr(FakeBackend, "play_and_record", broken)
     assert main(["--backend", "fake", "measure", "--out", str(home / "m")]) == 1
     err = capsys.readouterr().err
     assert "the stream stopped" in err and "Nothing was played" not in err
+
+
+def test_a_stream_that_never_opened_played_nothing(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """playback_started was set before the stream was opened, so PortAudio's
+    "Error querying device -1" lost the line "Nothing was played."."""
+    from reverbscope.audio.fake import FakeBackend
+    from reverbscope.errors import AudioDeviceError
+
+    def unopened(*_args: object, **_kwargs: object) -> None:
+        raise AudioDeviceError("playback/recording failed: Error querying device -1")
+
+    monkeypatch.setattr(FakeBackend, "play_and_record", unopened)
+    assert main(["--backend", "fake", "measure", "--out", str(home / "m")]) == 1
+    err = capsys.readouterr().err
+    assert "device -1" in err and "Nothing was played." in err
+
+
+@pytest.mark.parametrize("missing", ["input", "output", "both"])
+def test_measure_refuses_a_machine_without_audio_devices_before_the_plan(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    """With no device the plan ticked "one host API" and "the selected
+    channels exist", wrote sweep.wav, and only the stream failed."""
+    from dataclasses import replace
+
+    from reverbscope.audio.fake import FakeBackend
+
+    listed = FakeBackend().list_devices()
+    if missing == "both":
+        devices = []
+    elif missing == "input":
+        devices = [replace(d, max_input_channels=0, is_default_input=False) for d in listed]
+    else:
+        devices = [replace(d, max_output_channels=0, is_default_output=False) for d in listed]
+    monkeypatch.setattr(FakeBackend, "list_devices", lambda _self: devices)
+    out = home / "m"
+    assert main(["--backend", "fake", "measure", "--out", str(out)]) == 1
+    captured = capsys.readouterr()
+    word = "output" if missing == "output" else "input"
+    assert f"no audio {word} device found" in captured.err
+    assert "Nothing was played." in captured.err
+    assert "Checks" not in captured.out and not out.exists()
+
+
+def test_the_plan_ticks_no_check_it_could_not_make() -> None:
+    from reverbscope.audio.backend import StreamOptions
+    from reverbscope.cli.render import render_measure_plan
+    from reverbscope.models.configuration import SweepSettings
+
+    def plan(devices: list[DeviceInfo]) -> str:
+        return render_measure_plan(
+            Console(),
+            devices=devices,
+            input_device=None,
+            output_device=None,
+            input_channels=[1],
+            loopback_channel=None,
+            output_channel=1,
+            settings=SweepSettings(),
+            backend="portaudio",
+            options=StreamOptions(),
+            clock_warning=None,
+            safe_max_level=-12.0,
+        )
+
+    unchecked = plan([])
+    assert "one host API" not in unchecked and "channels exist" not in unchecked
+    assert "not checked" in unchecked
+    interface = DeviceInfo(
+        index=0,
+        name="Interface",
+        host_api="Core Audio",
+        max_input_channels=2,
+        max_output_channels=2,
+        default_sample_rate=48000.0,
+        is_default_input=True,
+        is_default_output=True,
+    )
+    checked = plan([interface])
+    assert "one host API" in checked and "channels exist" in checked
+    assert "not checked" not in checked
 
 
 def test_the_chinese_command_line_shows_no_english_prose(
@@ -461,6 +669,27 @@ def test_a_posix_shell_quotes_a_backslash(monkeypatch: pytest.MonkeyPatch) -> No
     assert shown == "reverbscope show 'odd\\name'"
 
 
+@pytest.mark.parametrize("folder", ["take(1)", "room&booth", "mix;v2", "$tmp", "a|b", "x*"])
+def test_a_next_step_quotes_shell_metacharacters(
+    monkeypatch: pytest.MonkeyPatch, folder: str
+) -> None:
+    """A folder such as demo(1)&x was printed bare: the command to copy was a
+    syntax error in bash, and & split it in two in bash and cmd."""
+    import shlex
+
+    from reverbscope.cli import console as console_module
+
+    monkeypatch.setattr(console_module.os, "name", "posix")
+    shown = console_module.shell_command(["reverbscope", "show", f"{folder}/position-a", "<other>"])
+    assert shlex.split(shown) == ["reverbscope", "show", f"{folder}/position-a", "<other>"]
+    assert shown.startswith("reverbscope show '") and shown.endswith(" <other>")
+    monkeypatch.setattr(console_module.os, "name", "nt")
+    shown = console_module.shell_command(["reverbscope", "show", f"{folder}/position-a", "<other>"])
+    # cmd and PowerShell hand * to the program as it is.
+    quote = "" if folder == "x*" else '"'
+    assert shown == f"reverbscope show {quote}{folder}/position-a{quote} <other>"
+
+
 def test_every_help_example_is_a_valid_command(home: Path) -> None:
     import shlex
 
@@ -474,7 +703,28 @@ def test_every_help_example_is_a_valid_command(home: Path) -> None:
     ]
     assert len(examples) >= 10
     for example in examples:
+        if example.endswith(" --help"):
+            # "reverbscope measure --help": the command must exist; --help would exit.
+            example = example.removesuffix(" --help")
+            with pytest.raises(SystemExit) as exc:
+                build_parser().parse_args(shlex.split(example)[1:])
+            assert exc.value.code == 2  # measure without --out, not "invalid choice"
+            continue
         build_parser().parse_args(shlex.split(example)[1:])  # exits on an unknown flag
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_help_paragraphs_keep_their_blank_line(home: Path, lang: str) -> None:
+    """The description, the command list, the examples and the closing
+    sentence ran together: the blank lines between them were dropped."""
+    activate(lang)
+    root = _help_screens()["reverbscope"]
+    heading = "commands:" if lang == "en" else "命令："
+    examples = "examples:" if lang == "en" else "示例："
+    assert f"\n\n{heading}\n" in root
+    assert f"\n\n{examples}\n" in root
+    tail = root.split(examples, 1)[1]
+    assert "\n\n" in tail.strip(), tail
 
 
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
@@ -534,3 +784,72 @@ def test_the_windowed_bundle_has_no_stdout_and_still_runs(
     with pytest.raises(SystemExit) as exc:
         main(["--help"])
     assert exc.value.code == 0
+
+
+def test_control_characters_from_files_are_shown_as_escapes() -> None:
+    """A room name or stored warning from someone else's session reached the
+    terminal raw: ESC sequences cleared the screen or retitled the window,
+    and a line break forged a report line."""
+    from reverbscope.cli.console import Verbatim, printable
+
+    crafted = "Booth\x1b[2J\x1b]0;pwned\x07‮"
+    assert printable(crafted) == "Booth\\x1b[2J\\x1b]0;pwned\\x07\\u202e"
+    assert printable("A\nRT60 0.30 s\tVALID") == "A\nRT60 0.30 s\tVALID"
+    assert printable("A\nRT60\t0.30 s", single_line=True) == "A\\nRT60\\t0.30 s"
+    assert printable("录音棚 · 2 m") == "录音棚 · 2 m"
+    console = Console(color=True)
+    styled = console.style("ok", "green", "bold") + " \x1b[8mhidden\x1b[0m"
+    shown = console.readable(styled)
+    assert shown.startswith("\x1b[32;1mok\x1b[0m ") and "\\x1b[8mhidden" in shown
+    path = console.readable(Verbatim("sessions/a\nb"))
+    assert isinstance(path, Verbatim) and path == "sessions/a\\nb"
+
+
+def test_a_console_without_colour_shows_every_escape_code_as_text() -> None:
+    """With colour off ReverbScope writes no escape code at all, so one in a
+    stored text is never its own: it was kept, and reached the stream."""
+    from reverbscope.cli.console import Verbatim, printable
+
+    plain = Console(color=False)
+    assert plain.readable("a\x1b[32mb\x1b[0m") == "a\\x1b[32mb\\x1b[0m"
+    assert printable("a\x1b[32mb", own_styles=False) == "a\\x1b[32mb"
+    assert printable("a\x1b[32mb") == "a\x1b[32mb"
+    assert plain.readable(Verbatim("x\x1b[0m")) == "x\\x1b[0m"
+
+
+def test_the_text_of_a_loaded_record_is_made_printable_in_place_of_its_layout() -> None:
+    """Every text field of a result read from a file is shown on one line,
+    whatever field it is, and a record that needs no change is the same object."""
+    from dataclasses import dataclass, field
+
+    from reverbscope.cli.console import printable_fields
+
+    @dataclass(frozen=True)
+    class Inner:
+        note: str | None = None
+        level: float = 1.0
+
+    @dataclass(frozen=True)
+    class Record:
+        label: str = "ok"
+        notes: tuple[str, ...] = ()
+        inner: Inner = field(default_factory=Inner)
+        by_name: dict[str, list[str]] = field(default_factory=dict)
+
+    clean = Record(notes=("a", "b"), by_name={"k": ["v"]})
+    assert printable_fields(clean) is clean
+    crafted = Record(
+        label="x\ny",
+        notes=("a", "b\x1b[32m"),
+        inner=Inner(note="n\tn", level=2.5),
+        by_name={"k": ["v\r"]},
+    )
+    shown = printable_fields(crafted)
+    assert shown == Record(
+        label="x\\ny",
+        notes=("a", "b\\x1b[32m"),
+        inner=Inner(note="n\\tn", level=2.5),
+        by_name={"k": ["v\\r"]},
+    )
+    assert crafted.label == "x\ny"  # the loaded record itself is not touched
+    assert printable_fields(7) == 7 and printable_fields(None) is None

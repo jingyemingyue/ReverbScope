@@ -6,6 +6,125 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 35: 2026-10-06 — **0.5.0b2 stabilization prepared on
+`integration/stabilization-0.5.0b2`; nothing published, tagged or uploaded.**
+
+**Where the repository stands.** Two public pre-releases exist: v0.4.1
+(2026-09-30, `d97822a`) and v0.5.0b1 (2026-10-01, `2efcf42`). Both are
+unsigned (macOS ad hoc, no notarization; Windows no Authenticode) and nothing
+is on PyPI. v0.5.0b1 was built before the rename, so 11 of its 14 assets
+(the nine bundles, the wheel and the sdist) are named `RoomScope-*` /
+`roomscope-*`; that release is not rewritten. `main` is `211654b` (PR #39,
+the RoomScope → ReverbScope rename) with `pyproject.toml` still at 0.5.0b1;
+no `src/roomscope`, `roomscope` command, `roomscope.exporters` group or
+`$ROOMSCOPE_HOME` remains, and the only mentions of the old name are
+historical (CHANGELOG, this file, the release plan, the release-notes
+limitation line). GitHub Pages is **not enabled** (`has_pages: false`): run
+#1 of the Pages workflow failed with `tar: site: Cannot open: No such file
+or directory` because its build job never checked the repository out. The
+repository description, topics and homepage are empty and no ruleset
+protects `main`.
+
+**What the stabilization branch holds** (on top of `211654b`; all merges
+are merge commits, nothing rewritten):
+
+* `0874c49` merges PR #40 `claude/fix-code-errors`, the stable line (204
+  commits: three review rounds of reproduced defect fixes with regression
+  tests, `reverbscope config`, the Chinese-first command line).
+* `149c1c0` merges PR #43 `acoustic-measurement-audit` on top of it. Nine
+  files conflicted (`portaudio.py`, `decay.py`, `deconvolution.py`,
+  `frequency_response.py`, `pipeline.py`, the zh-CN catalog, the changelog,
+  the methodology and `test_reflections.py`); each was resolved so both sides'
+  behaviour survives: the stream is bound so #43 can log its settings and keep
+  a reported-rate mismatch, inside #40's per-flag buffer warning; #43's
+  input gates run before #40's trailing-silence trim in `estimate_truncation`
+  and the late slope keeps #40's decay-only interval; the rival-arrival search
+  runs on the pass #40 selects; a faulty separate loopback is refused for
+  device timing (#43) before silence (#40); the imported-IR gate runs before
+  the single `warnings.extend(decay.notes)`. The #43 regression tests
+  (`tests/unit/test_acoustic_oracle.py`, the rival-arrival, device-timing,
+  boundary-reflection and non-finite cases) pass on the merged code, so none
+  of its correctness fixes was overwritten by the stable line.
+* `4846217` ports what PR #36 had and #43 lacked: the log file keeps INFO
+  diagnostics (the opened stream's settings) while the console stays at the
+  requested level, eight regression tests, the HARDWARE_TESTS paragraph on
+  the `audio stream:` log line. With it every behaviour, test, log
+  diagnostic and document of #36 is on this line (#36 is superseded).
+* `2af356e` ports PR #38 on ReverbScope paths: `scripts/check_cli_docs.py`
+  (96 documented commands parse against the current parser; CI and the
+  Release quality job run it), check scripts that fail on a missing or empty
+  root instead of passing, a `smoke_bundle.py` whose failures name the
+  command, exit code or timeout and keep stdout/stderr, UTF-8 on its own
+  streams, `--no-gui` without Qt, `docs/OFFLINE_CHECKS.md` and
+  `tests/integration/test_offline_cli.py`, which runs its 14-command
+  workflow against the shipped schemas.
+* `615fe65` fixes the Pages workflow (pinned checkout, site-file check,
+  Pages permissions on the deploy job only); `086be12` makes the Release
+  workflow cancel only a pull request's superseded run, never a `main`, tag
+  or manual run; `cb7e079` aligns one stable-line test with the ported exit
+  semantics; `d7eefff` sets the version to 0.5.0b2 and prepares the
+  changelog section, the beta-2 release notes, the READMEs, the installation
+  and release-plan documents.
+
+**Lines deliberately not included.** PR #37 (preview: follow the chosen
+DAW, two downloads, docs SEO; 17 commits ahead of `main`, merges onto `main`
+but conflicts with this branch), PR #42 (CLI redesign, based on #37's branch,
+87 commits, still carries 100 `roomscope` paths and conflicts with #37's
+current head) and PR #41 (two-component decay fit with a 2,245-parameter
+initializer: based on the pre-rename `main`, 92 old-name paths, conflicts
+with `main`; its own benchmark reports no accuracy or speed gain over the
+physical initializer) stay open and unmerged. Dependabot #28–#31 (major
+bumps of checkout, upload-artifact, setup-python, download-artifact) are
+left for after this merge; #28, #29 and #30 were green on their last runs,
+#31's Release run failed its macOS bundle job and needs a re-run on current
+`main` before it is judged.
+
+**What was run** (this container: Ubuntu 24.04 x86_64, CPython 3.13.16,
+the `dev` and `gui` extras, `libportaudio2`, the Qt xcb/EGL libraries and
+Noto CJK fonts installed, no audio device):
+
+* Full pytest with the core + models branch-coverage gate (85 % required):
+  **1618 passed, 0 failed, 0 skipped** in 16 min 43 s (the GUI suite ran offscreen with a CJK font installed, so nothing was skipped), core + models branch coverage **92.80 %**. The same suite passed on the merged #40 state
+  (coverage 92.89 %) and on the #40 + #43 merge (92.78 %) before the ports.
+* `ruff check`, `ruff format --check`, `mypy` (strict, 80 files),
+  `check_doc_links.py`, `check_cli_docs.py` (96 commands), `check_src_safety.py`
+  and the themed docs site build (37 pages): pass.
+* `python -m build` → `reverbscope-0.5.0b2-py3-none-any.whl` and
+  `reverbscope-0.5.0b2.tar.gz`. Fresh virtual environment, wheel without Qt:
+  `--version`, `--help` in English and Chinese, `gui` refused with exit code
+  2 and no traceback in both languages, `demo` in English and Chinese,
+  `--format json show`, `scripts/smoke_bundle.py --no-gui`: pass. Fresh
+  virtual environment, sdist: install, `--version`, API import: pass.
+* CI's fake-backend Standalone flow, the example script, the schema-vs-CLI
+  consistency step, the license bundle and the PySide6 Essentials GPL-module
+  gate: pass (the license bundle was taken in a pip-only virtual
+  environment; this container's Debian-packaged `pyparsing` has no license
+  metadata, which the gate rightly reports).
+* Linux bundles, PyInstaller 6.22.3 from `requirements/bundle.lock` in a
+  virtual environment: the Desktop Edition (312 MB unpacked, 133 MB `ReverbScope-Desktop-Linux-x86_64.tar.gz`) and the Terminal Edition (146 MB, 57 MB `ReverbScope-Terminal-Linux-x86_64.tar.gz`) built, their license bundles resolved every package and native library, `check_bundle_contents.py --strip --require-licenses` (and `--terminal`) passed, and `smoke_bundle.py` passed for both (`--version`, `doctor --json` naming version 0.5.0b2, the commit it was built from and the edition, the fake measurement, the demo in English and Chinese, `--format json show`, `gui --smoke` offscreen through the console binary and the `reverbscope-gui` launcher, the launcher staying open, and the Terminal Edition's `gui` refusal in both languages). A Linux build on this container, not a download tested on a person's computer.
+
+**Not run, not claimed.** The Windows and macOS bundles, the installer and
+the disk images (the Release workflow builds and smokes them on GitHub's
+runners for the stabilization pull request and again on `main`); any real
+audio interface, microphone, loudspeaker, room or DAW
+([HARDWARE_TESTS.md](HARDWARE_TESTS.md) and [VALIDATION.md](VALIDATION.md)
+are unchanged: every cell is still empty, i.e. not tested); signing; PyPI; a bundle on a
+person's own computer; publishing. A Linux container result is not a
+Windows, macOS or hardware result.
+
+**What is left for v0.5.0b2** (the maintainer's steps): merge the
+stabilization pull request into `main` with a merge commit once CI and the
+Release workflow are green on its head; the push to `main` changes
+`pyproject.toml`, so the Release workflow opens (or refreshes) the draft
+`v0.5.0b2` with the 14 ReverbScope-named assets and the notes rendered from
+`packaging/release-notes-header.md` around the `[0.5.0b2]` section, and
+verifies it (`release_draft.py verify`); read the draft back, tick
+*pre-release*, publish; then enable Pages (Settings → Pages → Source:
+GitHub Actions) and re-run the Pages workflow, set the description, topics
+and homepage, add the `main` ruleset, open the tracking issue, close #36
+(superseded) and #38 (ported), and close #40 and #43 as merged through this
+line.
+
 Snapshot 34: 2026-10-01 — **software beta 0.5.0b1 prepared.** This is not
 0.5.0. The release plan's 0.5.0 still needs a dated hardware-matrix PASS, and
 every cell is still empty. v0.4.1 stays the published pre-release at
@@ -627,9 +746,9 @@ discovery follows files under `.dist-info/licenses/`; macOS
 | Public API | Lazy Tier 1 exports from `import reverbscope` (ARCHITECTURE_V1.md §5.1) |
 | Loopback | Optional electrical return: pulse validation (99 % energy settling over the valid record, net of noise), regularised compensation with the FIR peak as time origin and linear division, path-delay bound; refused room-like or clipped channels leave the analysis uncompensated |
 | Audio backends | `AudioBackend` protocol; PortAudio callback stream (progress polled from the waiting thread, Stop, callback errors and early stream end fail the take, buffer problems logged); `plan_input_channels` (1-based inputs → 0-based columns, validated before playback); fake backend for CI and Demo |
-| Averaging | `average_decay`: VALID T values only; ISO 3382-2 class from 4.3.1 Table 1 (combinations, source and microphone positions all checked); `project average` counts distinct position labels |
+| Averaging | `average_decay`: VALID T values only, each with its own count; RT60 = mean of each session's own RT60 (T30, else T20); ISO 3382-2 class from 4.3.1 Table 1 (combinations, source and microphone positions all checked); `project average` counts distinct position labels |
 | Export | CSV exporter for decay, FR, noise PSD, reflections, resonances; `reverbscope.exporters` entry points |
-| i18n | stdlib gettext with `pgettext` contexts; `zh_CN` catalog for report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles (a test requires a translation with matching placeholders for every extracted message); wheel ships a hashed `.mo`, nothing is written at run time; `--lang` / settings / `REVERBSCOPE_LANG` |
+| i18n | stdlib gettext with `pgettext` contexts; `zh_CN` catalog for report labels, GUI chrome, CLI help, the safety warning and the findings of all seven profiles (a test requires a translation with matching placeholders for every extracted message); wheel ships a hashed `.mo`, nothing is written at run time; `--lang` / settings (`reverbscope config language`) / `REVERBSCOPE_LANG` / the system's language (the Mac's preferred languages, the Windows display language, GNU `LANGUAGE`, the POSIX locale variables) |
 | GUI | PySide6 window: Home, Universal DAW Mode, Standalone Mode, Results (including Placement), session save/open, Compare (difference curve, matched reflections and resonances, loopback deltas), Demo, Stop, Settings, project-folder browser, tape-measure fields, dark-mode plot chrome, device rate vs requested rate, `gui --smoke` |
 | Standalone Mode | Device enumeration and play+record through the selected backend with safety defaults |
 | Bundles | `scripts/build_license_bundle.py` (verbatim LGPL-3.0 / GPL-3.0 / PortAudio texts from `packaging/licenses/`), `scripts/check_bundle_contents.py` (`--strip`, `--require-licenses`, `--installed-essentials`; GPL-only QML module directories matched, any `qml/` tree in a frozen bundle fails), `packaging/reverbscope.spec`, `release.yml` (the version-driven workflow on `main` since PR #18; it opened the v0.4.1 draft and refreshes it while `v0.4.1` has no tag, see RELEASE_PLAN.md §3), `scripts/smoke_bundle.py` |
@@ -788,8 +907,9 @@ algebra and the refusals, not the acoustics of any real surface.
   realisations of the same synthetic room), not a change of treatment.
 * Band filters are Butterworth, not certified IEC 61260 class 1; short
   decays in the 63/125 Hz bands are limited by B·T and are flagged.
-* Lundeby parameters (20 ms initial blocks, 5 intervals/10 dB, 7.5 dB
-  margins) are ReverbScope's choices within the published ranges; other tools
+* Lundeby parameters (20 ms initial blocks, 5 or 1 ms for a decay that
+  reaches the floor within one of them and a band wide enough for them
+  (B·T ≥ 1), 5 intervals/10 dB, 7.5 dB margins) are ReverbScope's choices within the published ranges; other tools
   will differ slightly.
 * Reflection and resonance outputs are candidates; in dense diffuse tails
   some reflection candidates are statistical; room modes are not identified.

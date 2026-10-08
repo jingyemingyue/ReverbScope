@@ -79,6 +79,12 @@ default suggestion (low / high), not a measured round trip.
 * **ASIO** DLLs are removed from ReverbScope's bundles for licensing
   ([DEPENDENCIES.md](DEPENDENCIES.md) §3); sounddevice loads its ASIO DLL only
   with `SD_ENABLE_ASIO` set [14]. One ASIO device serves both directions [12].
+* **System aliases.** PortAudio lists MME's *Microsoft Sound Mapper - Input*
+  / *- Output* and DirectSound's *Primary Sound Capture Driver* / *Primary
+  Sound Driver* (DirectSound's default devices) next to the real devices
+  [12]; they play through whatever device Windows uses by default, so
+  ReverbScope never marks them recommended and checks the default devices
+  behind them for separate clocks (§3).
 * **Microphone privacy:** Settings ▸ Privacy & security ▸ Microphone ▸
   *Microphone access* and *Let desktop apps access your microphone* [25].
 
@@ -118,7 +124,8 @@ measurement rate, or an aggregate device (§3).
 | 5 | `OSS` | driver; PortAudio accepts a rate within 1 % [12] | ALSA's OSS emulation, if used [38] | not assessed |
 
 * PortAudio names ALSA hardware `card: device (hw:X,Y)` and also lists
-  plug-in and server PCMs (`default`, `pulse`, `pipewire`, ...);
+  plug-in and server PCMs (`default`, `pulse`, `pipewire`, ...), which
+  ReverbScope never marks recommended;
   `PA_ALSA_PLUGHW=1` makes it open `plughw:` instead of `hw:` [12].
 * **PipeWire** resamples when a stream's rate differs from the graph rate
   and adapts device clocks to the graph clock; in the *Pro Audio* profile,
@@ -157,7 +164,8 @@ illustration, 50 ppm over 10 s is 0.5 ms, 24 samples at 48 kHz).
   loopback with less than 99 % of its energy within 10 ms after the peak, and
   its compensation window spans 5 ms before to 15 ms after the peak
   (`core/loopback.py`), so it cannot absorb a larger skew. ReverbScope warns if
-  playback and recording are different physical devices (`audio/inventory.py`).
+  playback and recording are different physical devices (`audio/inventory.py`);
+  a Windows system alias counts as the default device it plays through.
 
 ## 4. How ReverbScope probes devices
 
@@ -174,7 +182,12 @@ illustration, 50 ppm over 10 s is 0.5 ms, 24 samples at 48 kHz).
   a channel count sounddevice fills in the device's maximum, and a rate the
   device supports only with fewer channels would then fail [11][14]. Latency
   `'high'` and no host settings (WASAPI shared, Core Audio "play nice") are
-  used for the check [14].
+  used for the check [14]. A device that cannot be opened at all
+  (`paDeviceUnavailable`: another program holds it, or it was unplugged
+  after the list was read; ALSA's "Device or resource busy") is reported
+  with PortAudio's error as unknown, not as refusing every rate [9]: its rate
+  rows read "unknown" (not "none") and `input_rates_known` /
+  `output_rates_known` are `false` in the JSON.
 * **No stream is started**, but ALSA opens the PCM and applies hardware
   parameters and Core Audio opens and closes a stream to answer [11][12].
   The suggested latency is ignored [9].

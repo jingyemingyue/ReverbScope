@@ -35,9 +35,15 @@ into a `ReverbScopeError` rather than a crash (`tests/robustness/`), and reads a
 session's `result.json` and
 `impulse_response.wav` only from inside that session's folder (a path in
 `session.json` that is absolute or leads out of the folder is refused).
+Saving an opened session into another folder copies its sweep sidecar and
+recording only from inside its own folder. The command line shows control
+characters and line breaks in text from these files (a room name, a stored
+warning, a band label) as escapes such as `\x1b` and `\n`, with colour on or
+off, so they cannot drive the terminal or forge report lines.
 `reverbscope session bundle` leaves out any file that links out of the session
 folder, so a session from someone else cannot put one of your files into the
-zip you attach to a public issue. A
+zip you attach to a public issue, and writes the home folder in the paths of
+its JSON files as `~`, so the zip does not carry your account name. A
 `project.json` is different by design: it lists session folders, which may
 live anywhere, so opening someone else's project opens the session folders it
 names — look at it first. Apart from that, a way to make ReverbScope read or

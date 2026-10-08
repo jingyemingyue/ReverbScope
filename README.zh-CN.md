@@ -10,9 +10,9 @@
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.png)
+![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
 
-<sub>内置演示房间的结果页。合成数据：没有测量任何真实房间（截图为英文界面，程序可切换为简体中文）。</sub>
+<sub>内置演示房间的结果页。合成数据：没有测量任何真实房间。</sub>
 
 > 本文是 [README.md](README.md) 的简体中文版本；两者不一致时，以英文版为准。
 
@@ -20,7 +20,7 @@
 
 ### **[→ 从 GitHub Releases 下载](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**状态：0.5.0 beta 1（预发布）**——免费、开源，供测试使用。**这不是硬件验证版本：**
+**状态：0.5.0 beta 2（预发布）**——免费、开源，供测试使用。**这不是硬件验证版本：**
 还没有通过任何真实音频接口或 DAW 做过测量，请把所有数字视为未经验证
 （欢迎[帮助测试](#帮助测试-beta-1)）。两个版本都不需要安装 Python。
 
@@ -84,13 +84,18 @@
 * **任一版本，在终端中：**
 
   ```bash
-  reverbscope --lang zh_CN demo
+  reverbscope config language zh_CN   # 以后一直使用中文界面（只需运行一次）
+  reverbscope demo
   ```
+
+  ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
+  保存后不管系统怎么设置都使用中文，`reverbscope config language auto` 改回跟随系统。
 
 ![终端中的 reverbscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
-演示会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步做什么。
-它显示的每个数值都描述的是模拟结果，保存的每个会话都标记为合成演示。
+`reverbscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步
+做什么。桌面版的 **演示** 则是在一个模拟房间里完成一次独立模式测量。两者显示的每个数值都描述的是模拟
+结果，保存的每个会话都标记为合成演示。
 
 **然后进行真实测量：** 先把监听音箱音量**调低**（ReverbScope 不会改动系统音量），然后二选一：让
 ReverbScope 通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW
@@ -112,16 +117,16 @@ range*），而不是编造一个数字。ReverbScope 有意不提供任何“�
 不适合该类录音时给出一条提示；阈值是工程上的选择，不是评分。界面、命令行和报告都有英文和
 简体中文。
 
-状态：**0.5.0 beta 1（预发布）**，正在向 1.0 推进
+状态：**0.5.0 beta 2（预发布）**，正在向 1.0 推进
 （[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
 DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
 并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
-（硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。Beta 1 不满足发布计划里 0.5.0 的退出条件。当前可用功能的概况：
+（硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。Beta 2 不满足发布计划里 0.5.0 的退出条件。当前可用功能的概况：
 [docs/STATUS.md](docs/STATUS.md)。
 
-## 帮助测试 beta 1
+## 帮助测试 beta 2
 
-发布 beta 1 构建，是为了让手上有真实音频接口和 DAW 的人找出哪些地方能用、哪些不能用。检查失败和
+发布 beta 2 构建，是为了让手上有真实音频接口和 DAW 的人找出哪些地方能用、哪些不能用。检查失败和
 检查通过同样有价值。
 
 1. 安装一个构建（见[下载](#下载)；Gatekeeper / SmartScreen 警告属于预期情况）。
@@ -214,8 +219,10 @@ reverbscope measure --out session1/ --input-device 2 --output-device 3 \
 reverbscope demo --out demo/
 reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
-# 语言、打包、CSV、项目
-reverbscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav
+# 语言（保存在 settings.json 中；auto 改回跟随系统）、设置、打包、CSV、项目
+reverbscope config language zh_CN
+reverbscope --lang en analyze --recording take.wav --sweep sweep.wav   # 只对这一条命令
+reverbscope config
 reverbscope session bundle session1/ --no-audio --out report.zip
 reverbscope export session1/ --format csv --out curves/
 reverbscope project init --out room/ --name Booth

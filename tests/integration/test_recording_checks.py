@@ -8,11 +8,17 @@ import pytest
 from scipy.signal import fftconvolve
 
 from reverbscope.core.noise import NOISE_FLOOR_DBFS
-from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.core.pipeline import (
+    Reference,
+    analyze,
+    analyze_impulse_response,
+    synthetic_recording,
+)
 from reverbscope.core.sweep import measurement_signal
 from reverbscope.interpretation import interpret
 from reverbscope.models.audio import AudioSignal
 from reverbscope.models.configuration import AnalysisSettings, SweepSettings
+from reverbscope.models.result import Validity
 from tests.conftest import make_rir
 
 
@@ -188,6 +194,102 @@ def test_device_buffer_problems_reach_the_result_and_a_finding(
     assert len(dropouts) == 1 and dropouts[0].evidence == {"warning": warning}
     clean = analyze(AudioSignal(samples, sr), Reference.from_settings(short_sweep))
     assert not any(f.message_id == "measurement.dropouts" for f in interpret(clean))
+    assert clean.decay.broadband.t30.validity is Validity.VALID
+    assert clean.decay.broadband.c50.validity is Validity.VALID
+    # Every band, every decay and energy metric: nothing stays VALID.
+    for band in (result.decay.broadband, *result.decay.bands):
+        assert band.rt60_estimate_s is None
+        for metric in (
+            band.edt,
+            band.t20,
+            band.t30,
+            band.c50,
+            band.c80,
+            band.d50,
+            band.centre_time,
+        ):
+            assert metric is not None
+            assert metric.validity is not Validity.VALID
+            if metric.validity is Validity.UNRELIABLE:
+                assert "timing problems" in (metric.reason or "")
+
+
+def test_a_device_rate_warning_blocks_valid_clarity_advice(short_sweep: SweepSettings) -> None:
+    sr = short_sweep.sample_rate
+    samples = _room_recording(short_sweep)
+    warning = (
+        "the audio stream reported 47900 Hz instead of the requested 48000 Hz; "
+        "the recording's time scale cannot be trusted"
+    )
+    result = analyze(
+        AudioSignal(samples, sr, source="standalone", device_warnings=(warning,)),
+        Reference.from_settings(short_sweep),
+    )
+    assert warning in result.warnings
+    assert result.decay.broadband.c50.validity is Validity.UNRELIABLE
+    assert result.decay.broadband.c80.validity is Validity.UNRELIABLE
+    assert result.decay.broadband.rt60_estimate_s is None
+    clean = analyze(AudioSignal(samples, sr), Reference.from_settings(short_sweep))
+    assert any(f.topic == "clarity" for f in interpret(clean, "room_mic"))
+    assert not any(f.topic == "clarity" for f in interpret(result, "room_mic"))
+
+
+def test_a_faulty_separate_loopback_is_not_used_to_compensate(
+    short_sweep: SweepSettings,
+) -> None:
+    sr = short_sweep.sample_rate
+    samples = _room_recording(short_sweep)
+    return_samples = np.pad(
+        measurement_signal(short_sweep), (0, samples.shape[0] - short_sweep.total_samples)
+    )
+    warning = "the loopback device reported an input overflow"
+    result = analyze(
+        AudioSignal(samples, sr),
+        Reference.from_settings(short_sweep),
+        loopback=AudioSignal(return_samples, sr, device_warnings=(warning,)),
+    )
+    returned = result.impulse_response.loopback
+    assert returned is not None and not returned.compensation_applied
+    assert "timing problems" in (returned.reason or "")
+    assert warning in result.warnings
+    # The microphone's own take is clean: it is still evaluated, uncompensated.
+    assert result.decay.broadband.t30.validity is Validity.VALID
+
+
+def test_imported_ir_keeps_device_warnings_and_marks_energy_unreliable(sample_rate: int) -> None:
+    ir = np.pad(make_rir(sample_rate, rt60_s=0.4), (round(0.01 * sample_rate), 0))
+    result = analyze_impulse_response(
+        AudioSignal(ir, sample_rate, device_warnings=("input overflow",)),
+        excitation_band=(20.0, 20000.0),
+    )
+    assert "input overflow" in result.warnings
+    assert result.decay.broadband.c50.validity is Validity.UNRELIABLE
+    assert result.decay.broadband.rt60_estimate_s is None
+
+
+def test_device_timing_warnings_withhold_rt60(short_sweep: SweepSettings) -> None:
+    """An input overflow breaks the sweep's time base. The take is still
+    analysed, but decay and energy numbers are not offered as valid."""
+    sr = short_sweep.sample_rate
+    samples = _room_recording(short_sweep, noise_rms=1e-6)
+    warning = (
+        "the audio device reported 1 buffer problem(s) during the take (input overflow); "
+        "the recording may contain dropouts"
+    )
+    clean = analyze(
+        AudioSignal(samples, sr, source="standalone"), Reference.from_settings(short_sweep)
+    )
+    assert clean.decay.broadband.t30.validity is Validity.VALID
+    assert clean.decay.broadband.rt60_estimate_s is not None
+    faulty = analyze(
+        AudioSignal(samples, sr, source="standalone", device_warnings=(warning,)),
+        Reference.from_settings(short_sweep),
+    )
+    assert warning in faulty.warnings
+    assert faulty.decay.broadband.t30.validity is Validity.UNRELIABLE
+    assert faulty.decay.broadband.rt60_estimate_s is None
+    assert "timing" in (faulty.decay.broadband.t30.reason or "")
+    assert faulty.decay.broadband.c50.validity is Validity.UNRELIABLE
 
 
 def test_the_test_signal_exported_instead_of_the_microphone_is_flagged(
@@ -206,3 +308,101 @@ def test_the_test_signal_exported_instead_of_the_microphone_is_flagged(
         AudioSignal(_room_recording(short_sweep), sr), Reference.from_settings(short_sweep)
     )
     assert "measurement.digital_silence" not in [f.message_id for f in interpret(take)]
+
+
+@pytest.mark.parametrize("seed", [1, 4])
+def test_equal_passes_analyse_the_one_followed_by_a_recorded_decay(seed: int) -> None:
+    """Two identical passes back to back: the first has no decay recorded
+    after it, the second has 3 s. Which one is louder is down to noise, and
+    when the first won the take was refused ("the next sweep pass starts
+    right after this one")."""
+    from reverbscope.core.sweep import generate_ess
+    from reverbscope.models.result import Validity
+
+    sr = 48000
+    settings = SweepSettings(sample_rate=sr, duration_s=5.0, pre_silence_s=0.0, post_silence_s=0.0)
+    sweep = generate_ess(settings)
+    played = np.concatenate([np.zeros(sr), sweep, sweep, np.zeros(3 * sr)])
+    ir = make_rir(sr, rt60_s=0.5, start_delay_s=0.003, diffuse_level=0.03, seed=seed)
+    recording = np.asarray(fftconvolve(played, ir))
+    recording = recording + np.random.default_rng(seed).normal(0.0, 1e-5, recording.shape[0])
+    result = analyze(AudioSignal(recording, sr, source="file"), Reference.from_settings(settings))
+    assert result.impulse_response.sweep_passes == 2
+    assert result.impulse_response.sweep_start_in_recording_s == pytest.approx(6.0, abs=0.01)
+    assert result.decay.broadband.t30.validity is Validity.VALID
+
+
+def test_of_equal_passes_with_short_gaps_the_last_one_is_analysed() -> None:
+    """Three passes with 0.5 s gaps and a 1 s reverberation time: the pass
+    picked by its level had 0.5 s of decay after it, so T30 was not
+    computable, although the last pass has 5 s of recorded decay."""
+    from reverbscope.core.sweep import generate_ess
+    from reverbscope.models.result import Validity
+
+    sr = 48000
+    settings = SweepSettings(sample_rate=sr, duration_s=3.0, pre_silence_s=0.0, post_silence_s=0.0)
+    sweep, gap = generate_ess(settings), np.zeros(sr // 2)
+    played = np.concatenate([np.zeros(sr), sweep, gap, sweep, gap, sweep, np.zeros(3 * sr)])
+    ir = make_rir(sr, rt60_s=1.0, start_delay_s=0.003, diffuse_level=0.03, length_s=2.0)
+    recording = np.asarray(fftconvolve(played, ir))
+    recording = recording + np.random.default_rng(0).normal(0.0, 1e-5, recording.shape[0])
+    result = analyze(AudioSignal(recording, sr, source="file"), Reference.from_settings(settings))
+    assert result.impulse_response.sweep_passes == 3
+    assert result.impulse_response.sweep_start_in_recording_s == pytest.approx(8.0, abs=0.01)
+    assert result.decay.broadband.t30.validity is Validity.VALID
+
+
+def _quiet_take() -> tuple[SweepSettings, np.ndarray]:
+    """A take peaking at about -30 dBFS over a -87 dBFS noise floor."""
+    settings = SweepSettings(duration_s=3.0, post_silence_s=2.0)
+    ir = make_rir(settings.sample_rate, rt60_s=0.4, start_delay_s=0.003)
+    take = synthetic_recording(settings, ir, noise_rms=3e-5, gain=10 ** (-28 / 20))
+    return settings, take.samples[: settings.total_samples].copy()
+
+
+def test_a_dc_offset_does_not_reject_the_quiet_segment() -> None:
+    """With a DC offset at -46 dBFS the silence looked only 5.8 dB below the
+    sweep, so no noise level was measured and the note blamed "a sweep pass
+    without silence before it"."""
+    settings, take = _quiet_take()
+    reference = Reference.from_settings(settings)
+    clean = analyze(AudioSignal(take, settings.sample_rate, source="file"), reference).noise
+    offset = analyze(AudioSignal(take + 0.005, settings.sample_rate, source="file"), reference)
+    assert clean.rms_dbfs is not None
+    assert offset.noise.rms_dbfs == pytest.approx(clean.rms_dbfs, abs=0.1)
+    assert not any("not background noise" in n for n in offset.noise.notes)
+
+
+def test_a_dc_offset_does_not_hide_a_noise_event() -> None:
+    """A DC offset lifted every block of the pre-sweep segment to its own
+    level, so a noise burst was no longer excluded and the reported noise
+    level was 14 dB too high, without a note."""
+    settings, take = _quiet_take()
+    take[20000:30000] += np.random.default_rng(9).normal(0.0, 3e-4, 10000)
+    reference = Reference.from_settings(settings)
+    clean = analyze(AudioSignal(take, settings.sample_rate, source="file"), reference).noise
+    offset = analyze(AudioSignal(take + 0.002, settings.sample_rate, source="file"), reference)
+    assert clean.rms_dbfs is not None
+    assert offset.noise.rms_dbfs == pytest.approx(clean.rms_dbfs, abs=0.1)
+    assert any("above its quietest blocks" in n for n in offset.noise.notes)
+
+
+def test_a_take_without_the_sweep_is_not_blamed_on_a_late_start() -> None:
+    """Mains hum only (wrong input channel, muted monitors): the strongest
+    deconvolved sample sits anywhere, and the take was refused with "the
+    recording starts about 0.21 s after the sweep began ... Start the
+    recording before playback", which re-recording cannot fix."""
+    from reverbscope.errors import InvalidAudioError
+
+    settings = SweepSettings(duration_s=2.0, pre_silence_s=1.0, post_silence_s=1.5)
+    n = measurement_signal(settings).shape[0]
+    t = np.arange(n) / settings.sample_rate
+    hum = 3e-3 * np.sin(2 * np.pi * 50 * t) + 1e-3 * np.sin(2 * np.pi * 150 * t)
+    take = hum + np.random.default_rng(0).normal(0.0, 1e-5, n)
+    with pytest.raises(InvalidAudioError) as info:
+        analyze(
+            AudioSignal(take, settings.sample_rate, source="file"),
+            Reference.from_settings(settings),
+        )
+    assert "after the sweep began" not in str(info.value)
+    assert "reference sweep was not found" in str(info.value)

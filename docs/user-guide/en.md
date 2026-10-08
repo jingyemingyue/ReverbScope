@@ -93,7 +93,9 @@ reports, the comparison, the desktop app, and your own first measurement.
 Nothing in the demo is a measurement: the terminal says so first, each saved
 session has the mode `synthetic_demo` and a note saying it was simulated, and
 the demo never overwrites a folder it did not write. `reverbscope demo --out
-<folder>` chooses where the files go.
+<folder>` chooses where the files go. The room, position and microphone names
+the demo gives its sessions are written in the language it ran in, and shown
+in the interface language when a session is opened, listed or reported.
 
 ## Universal DAW Mode
 
@@ -107,8 +109,9 @@ the demo never overwrites a folder it did not write. `reverbscope demo --out
    trimming or normalising.
 4. Optional loopback: bounce a two-channel export (microphone + electrical
    return) and pass `--channel 0 --loopback-channel 1`.
-5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`
-   or drop the files in the GUI.
+5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`,
+   or in the GUI's “Universal DAW Mode” choose the files with “Choose
+   Recording...” and “Choose Reference Sweep...”.
 
 **Step-by-step notes for Pro Tools, Logic Pro / GarageBand, Cubase / Nuendo,
 Studio One, Ableton Live, REAPER, FL Studio, Bitwig Studio and Audacity, and
@@ -120,6 +123,13 @@ what each report message means in DAW terms:
 `reverbscope devices` lists interfaces. `reverbscope measure --out session/` plays
 the sweep and records. `--input-channels 1,2 --loopback-channel 2` records an
 electrical return on input 2.
+
+The take's `sweep.wav` and `recording.wav` reach the folder only together with
+the session that describes them: a take that is stopped or refused leaves the
+folder as it was. Measuring into a session folder again replaces that session.
+A folder that holds a sweep or a recording but no session (for example your
+own `reverbscope sweep --out folder/sweep.wav`) is refused before anything is
+played.
 
 Start at a low monitor level. Levels above −12 dBFS need `--acknowledge-level`
 every time; that confirmation is never saved.
@@ -163,14 +173,15 @@ may add one notice when broadband C50 or C80 is a poor fit for that kind of
 recording; the threshold is an engineering choice for the profile, not a grade.
 
 Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
-`result.json` so bug reports compare across languages. The UI shows them
-verbatim under a heading that says so.
+`result.json` so bug reports compare across languages. The interface and the
+text report show them in the interface language.
 
-The Results page has seven tabs:
+The Results page has eight tabs:
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | Broadband and octave-band EDT / T20 / T30 / RT60, plus C50 / C80 / D50 / centre time, each with validity; the text report; core diagnostics (always English). |
+| Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
+| Full report | The same text report that `reverbscope analyze` prints, with the warnings at the end. “Copy report” copies it. |
 | Impulse Response | The deconvolved IR. The peak is the direct sound; it is not normalised to 1.0. |
 | Frequency Response | Raw (dotted) and smoothed (solid) magnitude. A dashed curve is the electrical loopback when compensation ran. 0 dB is the interface, not “flat in the room”. |
 | Decay | Schroeder / energy-decay curves. Broadband is a solid line; octave bands use changing dash patterns so colour is not the only cue. |
@@ -178,7 +189,7 @@ The Results page has seven tabs:
 | Early Reflections | ETC peaks (delay ms, level dB re direct). Open markers for candidates. |
 | Placement | Excess path, and — only with a tape-measured loudspeaker distance — loudspeaker height, the plane above both devices, and horizontal separation. No wall is named. |
 
-Low-frequency resonance candidates stay in the Overview text report (and in
+Low-frequency resonance candidates are listed in the Full report (and in
 `resonances.csv` after `reverbscope export`). They are not a separate tab.
 
 ## Placement
@@ -202,7 +213,12 @@ significant; ISO 3382-1’s just-noticeable difference for T is quoted as contex
 
 The Compare page lists matched early reflections (delay ±0.5 ms) and
 low-frequency resonances (within 1/6 octave, with decay-distinguishable
-flags). `reverbscope compare … --out comparison.json` writes the numbers only;
+flags). Resonances are compared only in the range both takes searched: one
+found where the other take never looked (its sweep started higher) is
+neither gone nor new, and when one take did not search at all the low end
+reads "not compared" (in the report, and as a note under the Resonances tab;
+the Early Reflections tab explains the same way when the direct sound is not
+trusted on both sides). `reverbscope compare … --out comparison.json` writes the numbers only;
 `reverbscope show comparison.json` prints the report again and **re-derives**
 findings (they are never stored in the file).
 
@@ -210,23 +226,68 @@ findings (they are never stored in the file).
 
 A project folder holds `project.json` and ordinary session folders.
 `reverbscope project init --out room/ --name Booth` then
-`reverbscope project add room/ session/ --position desk`.
+`reverbscope project add room/ session/ --position desk`. Running `project init`
+again on a folder that has a `project.json` is refused; `--force` starts the
+project over, without its positions.
 `reverbscope project average room/` averages VALID T values only, never decay
-curves, and names the ISO 3382-2 class the position counts reach.
+curves, and names the ISO 3382-2 class the position counts reach. The RT60
+column is the mean of each session's own RT60 (T30, else T20). `n` is the
+number of sessions averaged in a row; a value that averages fewer shows its
+own count, for example `0.91 s (1)`.
 
 ## Export and language
 
 `reverbscope export session/ --format csv --out curves/` writes every curve.
-`--lang zh_CN` (or Settings → Language, or `REVERBSCOPE_LANG`) translates
-findings, the text-report labels, the GUI and CLI help (`reverbscope --help`
-and every subcommand). Units stay untranslated; digits stay ASCII.
-Diagnostic notes and warnings are stored in English in `result.json` and
-shown translated.
+Exporting another session into the same folder removes the curve files that
+session does not have (a `--no-curves` session has none), so the folder never
+mixes two sessions.
+
+ReverbScope follows the system's language: on a Mac the preferred languages
+(System Settings → General → Language & Region; Terminal, iTerm and VS Code
+set `LANG=en_US.UTF-8` whatever they are, so `LANG` comes after them), on
+Windows the display language, on Linux `LANGUAGE`, `LC_ALL`, `LC_MESSAGES`
+and `LANG`. `LC_ALL=C` (or `LC_MESSAGES=C`) gives English on every system,
+as it does for other programs: `LC_ALL=C reverbscope show session/` for a bug
+report. To keep one language whatever the system says, store it once:
+
+```bash
+reverbscope config language zh_CN   # 中文
+reverbscope config language en      # English
+reverbscope config language auto    # follow the system again
+```
+
+`reverbscope config language` shows the language in effect and why. The
+desktop app's Settings → Language writes the same setting. `--lang zh_CN`
+picks a language for one command and `REVERBSCOPE_LANG` for a shell; the
+order is `--lang`, the stored setting, `REVERBSCOPE_LANG`, the system. The
+home screen (bare `reverbscope`) and `reverbscope --help` end with the command
+for the other language, written in that language.
+
+Chinese translates findings, the text-report labels, the GUI and the whole
+CLI help (`reverbscope --help` and every subcommand, placeholders and
+argparse's own messages included). Units stay untranslated; digits stay
+ASCII. Diagnostic notes and warnings are stored in English in `result.json`
+and shown translated.
+
+`reverbscope config` lists the other settings the desktop app keeps and
+changes them from the command line, also in the Terminal Edition:
+`profile` (the default recording profile), `backend` (`portaudio` or
+`fake`), `output-folder`, `copy-recording` and `developer-tools` (`on` or
+`off`), and `theme` (`system`, `light` or `dark`; desktop app only). For
+example `reverbscope config profile vocal`; `auto` goes back to a setting's
+default, and `reverbscope --format json config` prints the settings as JSON.
 
 In a terminal the command line uses colour and the symbols ✓ ! ×; piped into
 a file or another program it writes plain text. `--color never` or the
 `NO_COLOR` environment variable turns colour off, `--color always` keeps it
 in a pipe.
+
+Piped or redirected output is UTF-8. Windows PowerShell decodes it in the
+console's code page and garbles Chinese (`> report.txt`, `| Select-String`);
+run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`
+once in that window first, or see
+[Saving a report from PowerShell](../INSTALLATION.md#terminal-edition).
+Command Prompt is not affected.
 
 ## Troubleshooting
 
@@ -234,7 +295,7 @@ in a pipe.
 | --- | --- |
 | Direct-sound confidence not high | Wrong sweep sidecar; loudspeaker distortion; trim the recording? Do not trim. |
 | Wrong reference | The `.reverbscope-sweep.json` next to the WAV must be the file ReverbScope wrote for *this* sweep (same duration, band and fades). A sweep from another session, or the recording used as the reference, will mis-locate the IR. |
-| Multiple passes in one bounce | Play the sweep once. Two passes in the same WAV look like two IRs; ReverbScope keeps the strongest peak and the rest becomes “room”. Bounce a single take. |
+| Multiple passes in one bounce | Play the sweep once. With several passes in the same WAV, ReverbScope analyses one of them (of the passes about as loud as the loudest, the one followed by the longest recorded decay, usually the last), ignores the others, ends the IR where the next pass starts and warns. Bounce a single take. |
 | Clipping warning | Lower playback or input gain. |
 | Insufficient decay range | Longer sweep, slightly louder playback, or a quieter room. |
 | Device rate mismatch | The GUI shows the device rate next to the requested one; pick a supported rate. |
@@ -252,7 +313,8 @@ read the text before posting, since device names can contain personal names.
 
 `reverbscope session bundle session/ --out report.zip` zips a session folder.
 `--no-audio` leaves the WAVs out if you do not want to share a recording of
-the room. Attach the zip to a measurement issue. Settings and the rotating
+the room. Paths in its JSON files show your home folder as `~`, as the
+environment report does. Attach the zip to a measurement issue. Settings and the rotating
 log live under `$REVERBSCOPE_HOME` (`~/.reverbscope` by default); the report's
 *Open Data Folder* button opens it.
 

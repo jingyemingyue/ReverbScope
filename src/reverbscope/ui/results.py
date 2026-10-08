@@ -30,12 +30,12 @@ from PySide6.QtWidgets import (
 )
 
 from reverbscope.cli.render import REPORT_CONSOLE, render_analysis
+from reverbscope.demo import localize_demo_name
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
 from reverbscope.io.recent import remember_session
-from reverbscope.io.session_store import save_measurement
-from reverbscope.io.wav import write_wav
-from reverbscope.labels import severity_text, topic_text, validity_word
+from reverbscope.io.session_store import SESSION_FILE, save_measurement
+from reverbscope.labels import severity_text, surface_text, topic_text, validity_word
 from reverbscope.interpretation import Finding
 from reverbscope.interpretation.profiles import (
     confidence_text,
@@ -43,6 +43,7 @@ from reverbscope.interpretation.profiles import (
     profile_title,
 )
 from reverbscope.models.result import AnalysisResult, PlacementResult, Validity
+from reverbscope.settings import load_settings
 from reverbscope.ui.plots import (
     decay_table_rows,
     energy_table_rows,
@@ -63,7 +64,7 @@ VALIDITY_DISPLAY = {
     Validity.UNRELIABLE: ("unreliable", "warn"),
     Validity.INSUFFICIENT_RANGE: ("insufficient range", "warn"),
     Validity.NOT_COMPUTED: ("not computed", "neutral"),
-    Validity.OUTSIDE_EXCITATION: ("outside the sweep's range", "neutral"),
+    Validity.OUTSIDE_EXCITATION: ("outside the excitation range", "neutral"),
     Validity.NOT_COMPARABLE: ("not comparable", "warn"),
 }
 CONFIDENCE_TONE = {"high": "good", "medium": "info", "low": "bad"}
@@ -123,7 +124,7 @@ class _PlacementTab(QWidget):
             _(
                 "Placement tier {tier}. No coordinates, room length, room width or "
                 "named wall are derived. Speed of sound {speed:.1f} m/s at "
-                "{temp:.0f} C{assumed}."
+                "{temp:.0f} °C{assumed}."
             ).format(
                 tier=placement.tier,
                 speed=placement.speed_of_sound_m_s,
@@ -141,7 +142,12 @@ class _PlacementTab(QWidget):
             if length.metres is None:
                 value = _("not determined")
                 if length.missing_input:
-                    value += f" ({length.missing_input})"
+                    # The core names the CLI option; here, the field to fill in.
+                    fields = {
+                        "--speaker-distance": _("Loudspeaker distance"),
+                        "--mic-height": _("Microphone height"),
+                    }
+                    value += f" ({fields.get(length.missing_input, length.missing_input)})"
             else:
                 value = f"{length.metres:.2f} m"
                 if length.input_uncertainty_m is not None:
@@ -161,7 +167,7 @@ class _PlacementTab(QWidget):
                 f"{candidate.delay_ms:.2f}",
                 f"{candidate.relative_db:.1f}",
                 f"{candidate.excess_path_m:.2f}",
-                candidate.surface or "",
+                surface_text(candidate.surface),
                 plane,
             ]
             for column, text in enumerate(values):
@@ -201,6 +207,27 @@ def validity_text(validity: Validity) -> tuple[str, str]:
 def _validity_text(validity: Validity) -> tuple[str, str]:
     _word, tone = VALIDITY_DISPLAY.get(validity, (str(validity), "neutral"))
     return validity_word(validity), tone
+
+
+def replace_session_box(parent: QWidget, directory: str) -> QMessageBox:
+    """The chosen folder already holds a session. The safe button is the default: keep it."""
+    box = QMessageBox(parent)
+    box.setIcon(QMessageBox.Icon.Warning)
+    box.setWindowTitle(_("Replace session?"))
+    box.setText(_("{path} already holds a saved session. Replace it?").format(path=directory))
+    box.addButton(_("Replace"), QMessageBox.ButtonRole.AcceptRole)
+    cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
+    box.setDefaultButton(cancel)
+    box.setEscapeButton(cancel)
+    return box
+
+
+def ask_replace_session(parent: QWidget, directory: str) -> bool:
+    box = replace_session_box(parent, directory)
+    box.exec()
+    clicked = box.clickedButton()
+    # By role, not by label, as in pages.ask_separate_clocks.
+    return clicked is not None and box.buttonRole(clicked) == QMessageBox.ButtonRole.AcceptRole
 
 
 class _Overview(QWidget):
@@ -499,7 +526,7 @@ class ResultsPage(QWidget):
             return
         session = self.state.session
         parts = [
-            part
+            localize_demo_name(session.mode, part)
             for part in (session.room_name, session.measurement_position, session.microphone_name)
             if part
         ]
@@ -507,10 +534,23 @@ class ResultsPage(QWidget):
         parts.append(f"{result.sample_rate} Hz")
         self.header.subtitle.setText("  ·  ".join(parts))
         self.header.subtitle.setVisible(True)
-        self.overview.show_result(result, list(self.state.findings), self.state.profile)
         self.text.setPlainText(
             render_analysis(REPORT_CONSOLE, result, self.state.findings, self.state.profile)
         )
+        self._draw(result)
+        self.status.setText("")
+
+    def restyle(self) -> None:
+        """Draw the result again in the colour scheme now in force.
+
+        The cards, the table colours and the charts take the scheme's colours
+        when they are drawn; the application style sheet does not reach them.
+        """
+        if self.state.result is not None:
+            self._draw(self.state.result)
+
+    def _draw(self, result: AnalysisResult) -> None:
+        self.overview.show_result(result, list(self.state.findings), self.state.profile)
         plot_impulse_response(self.ir_tab.figure, result)
         plot_frequency_response(self.fr_tab.figure, result)
         plot_decay(self.decay_tab.figure, result)
@@ -519,27 +559,32 @@ class ResultsPage(QWidget):
         self.place_tab.show_placement(result.placement)
         for tab in (self.ir_tab, self.fr_tab, self.decay_tab, self.noise_tab, self.refl_tab):
             tab.redraw()
-        self.status.setText("")
 
     def _choose_save_directory(self) -> None:
-        directory = QFileDialog.getExistingDirectory(self, _("Choose a folder for the session"))
-        if directory:
-            self.save_to(Path(directory))
+        directory = QFileDialog.getExistingDirectory(
+            self, _("Choose a folder for the session"), load_settings().output_dir
+        )
+        if not directory:
+            return
+        # The dialog opens at the default output folder: accepting it twice
+        # as offered would replace the first session without a word.
+        if (Path(directory) / SESSION_FILE).exists() and not ask_replace_session(self, directory):
+            return
+        self.save_to(Path(directory))
 
     def save_to(self, directory: Path) -> None:
         result = self.state.result
         if result is None:
             return
         try:
-            if self.state.recording is not None and self.state.recording_path is None:
-                path = write_wav(
-                    directory / "recording.wav",
-                    self.state.recording.samples,
-                    result.sample_rate,
-                    subtype="FLOAT",
-                )
-                self.state.session.recording_path = str(path)
-            session_path = save_measurement(directory, self.state.session, result)
+            # A live take has no file yet: it is written with the rest of the
+            # session, so a failed save cannot overwrite the previous take.
+            unsaved = self.state.recording if self.state.recording_path is None else None
+            session_path = save_measurement(
+                directory, self.state.session, result, recording=unsaved
+            )
+            if unsaved is not None:
+                self.state.session.recording_path = str(directory / "recording.wav")
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Cannot save session"), localize(str(exc)))
             return

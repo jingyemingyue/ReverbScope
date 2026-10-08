@@ -23,7 +23,7 @@ refuses to invent a number.**
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**Status: 0.5.0 beta 1 (pre-release)** — free, open source, for testing. **This is not
+**Status: 0.5.0 beta 2 (pre-release)** — free, open source, for testing. **This is not
 the hardware release:** nothing has been measured through a real audio
 interface or DAW yet, so treat the numbers as unvalidated
 ([help test it](#help-test-beta-1)). Neither edition needs Python.
@@ -103,10 +103,11 @@ No microphone and no audio interface needed; nothing is played.
 
 ![reverbscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
-The demo simulates one room at two microphone positions, runs the real
-analysis and comparison on them and says what to do next. Every number it
-shows describes the simulation, and every session it saves is marked as a
-synthetic demo.
+`reverbscope demo` simulates one room at two microphone positions, runs the
+real analysis and comparison on them and says what to do next. The desktop
+**Demo** runs one Standalone Mode take on a simulated room instead. Every
+number either one shows describes the simulation, and every session either
+one saves is marked as a synthetic demo.
 
 **Then measure for real:** turn the monitors **down** (ReverbScope never
 changes system volume), then either let ReverbScope play and record through
@@ -137,18 +138,18 @@ C50 or C80 is a poor fit for that kind of recording; the threshold is an
 engineering choice, not a grade. The GUI, the command line and the reports
 are available in English and Simplified Chinese.
 
-Status: **0.5.0 beta 1 (pre-release)** on the way to 1.0
+Status: **0.5.0 beta 2 (pre-release)** on the way to 1.0
 ([RELEASE_PLAN.md](docs/RELEASE_PLAN.md)). The DSP core, CLI, GUI, compare,
 loopback, zh-CN catalog, session bundles and both editions' bundles exist and are
 covered by synthetic tests on Linux, macOS and Windows. **Not yet:** any result
 measured on real hardware (the hardware matrix and the validation campaign are
-empty), signed bundles, a PyPI package. Beta 1 does not meet the 0.5.0 exit
+empty), signed bundles, a PyPI package. Beta 2 does not meet the 0.5.0 exit
 criteria in the release plan. Snapshot of what works:
 [docs/STATUS.md](docs/STATUS.md).
 
-## Help test beta 1
+## Help test beta 2
 
-The beta 1 builds exist so that people with real interfaces and DAWs can find
+The beta 2 builds exist so that people with real interfaces and DAWs can find
 out what works. A failed check is as useful as a pass.
 
 1. Install a build ([Download](#download); the Gatekeeper / SmartScreen
@@ -253,8 +254,11 @@ reverbscope measure --out session1/ --input-device 2 --output-device 3 \
 reverbscope demo --out demo/
 reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
-# Language, bundle, CSV, project
-reverbscope --lang zh_CN analyze --recording take.wav --sweep sweep.wav
+# Language (kept in settings.json; "auto" follows the system again), settings,
+# bundle, CSV, project
+reverbscope config language zh_CN
+reverbscope --lang en analyze --recording take.wav --sweep sweep.wav   # one command
+reverbscope config
 reverbscope session bundle session1/ --no-audio --out report.zip
 reverbscope export session1/ --format csv --out curves/
 reverbscope project init --out room/ --name Booth

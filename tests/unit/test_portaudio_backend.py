@@ -10,6 +10,7 @@ evidence (docs/HARDWARE_TESTS.md).
 
 from __future__ import annotations
 
+import io
 import logging
 import threading
 import time
@@ -55,6 +56,11 @@ class _Script:
     outputs: list[np.ndarray] = field(default_factory=list)
     stream_thread: list[int] = field(default_factory=list)
     aborted: list[bool] = field(default_factory=list)
+    #: Override the rate the opened stream reports. ``None`` reports the rate
+    #: that was requested, which is what a matching PortAudio stream does.
+    reported_samplerate: float | None = None
+    #: What the opened stream reports as its (input, output) latency.
+    latency_s: tuple[float, float] = (0.02, 0.03)
 
 
 def _input_block(start: int, frames: int, channels: int) -> np.ndarray:
@@ -77,8 +83,13 @@ def _fake_sounddevice(script: _Script) -> SimpleNamespace:
             callback: Callable[..., None],
             finished_callback: Callable[[], None],
         ) -> None:
-            del samplerate, dtype, device
             self.n_in, self.n_out = channels
+            self.samplerate = (
+                samplerate if script.reported_samplerate is None else script.reported_samplerate
+            )
+            self.latency = script.latency_s
+            self.device = device
+            del dtype
             self.blocksize = blocksize
             self.callback = callback
             self.finished_callback = finished_callback
@@ -161,6 +172,28 @@ def _take(
         progress=progress,
         cancel=cancel,
     )
+
+
+def test_progress_starts_when_the_stream_runs_and_never_before(
+    script: _Script, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The CLI says "Nothing was played." until the first progress report, so
+    the stream reports 0 % as soon as it runs and nothing when it never opens."""
+    calls: list[float] = []
+    _take(progress=calls.append)
+    assert calls[0] == 0.0
+
+    def unopened(**_kwargs: object) -> None:
+        raise RuntimeError("Error querying device -1")
+
+    fake = SimpleNamespace(
+        Stream=unopened, CallbackStop=_CallbackStop, CallbackAbort=_CallbackAbort
+    )
+    monkeypatch.setattr(portaudio, "sounddevice_module", lambda: fake)
+    calls.clear()
+    with pytest.raises(AudioDeviceError, match="device -1"):
+        _take(progress=calls.append)
+    assert calls == []
 
 
 def test_progress_is_reported_from_the_waiting_thread(script: _Script) -> None:
@@ -285,8 +318,72 @@ def test_buffer_problems_are_logged_and_kept_with_the_take(
     assert "2 buffer problem(s)" in warning and "input overflow" in warning
 
 
+def test_each_buffer_problem_flag_is_named_once(script: _Script) -> None:
+    """A block's status already joins its flags with ", ", so joining the
+    distinct blocks listed "input overflow" twice."""
+    script.status = {2: "input overflow", 7: "input overflow, output underflow"}
+    (warning,) = _take().device_warnings
+    assert "2 buffer problem(s)" in warning
+    assert warning.count("input overflow") == 1
+    assert "(input overflow, output underflow)" in warning
+
+
 def test_a_clean_take_has_no_device_warnings(script: _Script) -> None:
     assert _take().device_warnings == ()
+
+
+def test_a_stream_rate_mismatch_is_kept_with_the_take(script: _Script) -> None:
+    script.reported_samplerate = 44100.0
+    recording = _take()
+    # The take is not relabelled with the stream's rate: the warning travels with it.
+    assert recording.sample_rate == 48000
+    (warning,) = recording.device_warnings
+    assert "44100" in warning and "48000" in warning
+    assert "time scale" in warning
+
+
+def test_rate_rounding_does_not_flag_a_sub_hertz_difference(script: _Script) -> None:
+    script.reported_samplerate = 48000.1
+    assert _take().device_warnings == ()
+
+
+def test_opened_stream_settings_are_logged_outside_the_callback(
+    script: _Script, caplog: pytest.LogCaptureFixture
+) -> None:
+    script.latency_s = (0.035, 0.045)
+    caplog.set_level(logging.INFO, logger="reverbscope.audio.portaudio")
+    _take()
+    entry = next(r for r in caplog.records if r.getMessage().startswith("audio stream:"))
+    assert entry.thread == threading.get_ident()
+    assert "reported_rate_hz=48000" in entry.getMessage()
+    assert "latency_s=(0.035, 0.045)" in entry.getMessage()
+
+
+def test_default_log_keeps_stream_settings_without_printing_them(
+    script: _Script, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """The CLI and the GUI configure a WARNING console; the file still keeps
+    the opened stream's settings for a bug report."""
+    from reverbscope.logging_config import configure_logging
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path))
+    parent = logging.getLogger("reverbscope")
+    saved = (list(parent.handlers), parent.level, parent.propagate)
+    console = io.StringIO()
+    try:
+        configure_logging(logging.WARNING, stream=console)
+        _take()
+        assert "audio stream:" in (tmp_path / "reverbscope.log").read_text(encoding="utf-8")
+        assert console.getvalue() == ""
+    finally:
+        for handler in list(parent.handlers):
+            parent.removeHandler(handler)
+            if handler not in saved[0]:
+                handler.close()
+        for handler in saved[0]:
+            parent.addHandler(handler)
+        parent.setLevel(saved[1])
+        parent.propagate = saved[2]
 
 
 @pytest.mark.parametrize(

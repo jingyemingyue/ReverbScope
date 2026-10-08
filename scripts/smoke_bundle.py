@@ -25,9 +25,12 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shlex
 import subprocess
+import sys
 import time
 from pathlib import Path
+from typing import NoReturn
 
 
 def find_binary(root: Path | None, explicit: Path | None) -> Path:
@@ -100,6 +103,8 @@ def check_stays_open(
 
 #: Libraries only the Desktop Edition ships (``doctor`` package names).
 GUI_PACKAGES = frozenset({"matplotlib", "PySide6_Essentials", "shiboken6"})
+#: Optional Qt packages in a source/wheel CLI-only install; matplotlib is runtime.
+OPTIONAL_QT_PACKAGES = GUI_PACKAGES - {"matplotlib"}
 #: The sentence ``reverbscope gui`` prints in the Terminal Edition.
 TERMINAL_GUI_TEXT = {
     "en": "This is the Terminal Edition of ReverbScope. Install the Desktop Edition to use the GUI.",
@@ -117,6 +122,58 @@ def _cli_env(home: Path) -> dict[str, str]:
     return env
 
 
+def _fail_command(
+    argv: list[str],
+    reason: str,
+    stdout: str | bytes | None = None,
+    stderr: str | bytes | None = None,
+) -> NoReturn:
+    """Keep the failed command and its captured output in the CI log."""
+    lines = [reason, f"command: {shlex.join(argv)}"]
+    for label, output in (("stdout", stdout), ("stderr", stderr)):
+        if isinstance(output, bytes):
+            output = output.decode("utf-8", errors="replace")
+        if output:
+            lines.append(f"{label}:\n{output.rstrip()}")
+    raise SystemExit("\n".join(lines))
+
+
+def _run_command(
+    argv: list[str],
+    *,
+    env: dict[str, str] | None = None,
+    timeout: float = 120,
+    expected_code: int = 0,
+) -> subprocess.CompletedProcess[str]:
+    """Run a bounded smoke step; failures are actionable instead of tracebacks."""
+    try:
+        done = subprocess.run(
+            argv, capture_output=True, text=True, encoding="utf-8", env=env, timeout=timeout
+        )
+    except subprocess.TimeoutExpired as exc:
+        _fail_command(argv, f"command timed out after {timeout:g} s", exc.stdout, exc.stderr)
+    except OSError as exc:
+        _fail_command(argv, f"cannot start command: {exc}")
+    if done.returncode != expected_code:
+        _fail_command(
+            argv,
+            f"command failed (exit {done.returncode}, expected {expected_code})",
+            done.stdout,
+            done.stderr,
+        )
+    return done
+
+
+def _json_object(done: subprocess.CompletedProcess[str], step: str) -> dict[str, object]:
+    try:
+        value = json.loads(done.stdout)
+    except ValueError as exc:
+        _fail_command(done.args, f"{step} wrote invalid JSON: {exc}", done.stdout, done.stderr)
+    if not isinstance(value, dict):
+        _fail_command(done.args, f"{step} must write a JSON object", done.stdout, done.stderr)
+    return value
+
+
 def check_doctor(
     binary: Path,
     expect_commit: str | None = None,
@@ -124,33 +181,44 @@ def check_doctor(
     terminal: bool = False,
     expect_package: str | None = None,
     expect_machine: str | None = None,
+    env: dict[str, str] | None = None,
+    require_gui: bool = True,
 ) -> dict[str, object]:
     """``doctor --json`` runs, names NumPy's version and, if given, the build commit.
 
     In the Terminal Edition the GUI's libraries must be absent, not merely unused.
     """
-    done = subprocess.run(
+    done = _run_command(
         [str(binary), "--backend", "fake", "doctor", "--json"],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=120,
+        env=env,
     )
-    report = json.loads(done.stdout)
+    report = _json_object(done, "doctor")
     packages = report.get("packages", {})
+    if not isinstance(packages, dict) or not packages:
+        raise SystemExit(
+            "doctor reports no version for any package: packages must be a non-empty object"
+        )
     if terminal:
         present = sorted(name for name in GUI_PACKAGES if packages.get(name))
         if present:
             raise SystemExit(f"Terminal Edition carries GUI libraries: {', '.join(present)}")
         packages = {k: v for k, v in packages.items() if k not in GUI_PACKAGES}
-    missing = [name for name, found in packages.items() if not found]
-    if missing or not report.get("packages"):
+    elif not require_gui:
+        packages = {
+            k: v for k, v in packages.items() if k not in OPTIONAL_QT_PACKAGES or v is not None
+        }
+    missing = [name for name, found in packages.items() if not isinstance(found, str) or not found]
+    if missing:
         # A bundle carries little package metadata; doctor must still name them.
         raise SystemExit(f"doctor reports no version for: {', '.join(missing) or 'any package'}")
     if report.get("audio_callbacks") != "ok":
         # PortAudio's cffi callback could not be created: no recording works.
         raise SystemExit(f"audio callbacks: {report.get('audio_callbacks')}")
-    build = report.get("build") or {}
+    build = report.get("build")
+    if build is None:
+        build = {}
+    if not isinstance(build, dict):
+        raise SystemExit("doctor reports invalid build metadata: expected a JSON object or null")
     commit = build.get("commit")
     if expect_commit and commit != expect_commit:
         raise SystemExit(f"doctor reports build commit {commit!r}, expected {expect_commit!r}")
@@ -177,33 +245,21 @@ def check_first_run(binary: Path, work: Path) -> None:
     env = _cli_env(work / "home")
     for lang, marker in (("en", "Synthetic data"), ("zh_CN", "合成数据")):
         folder = work / f"demo-{lang}"
-        done = subprocess.run(
+        done = _run_command(
             [str(binary), "--lang", lang, "demo", "--out", str(folder)],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
             env=env,
             timeout=300,
         )
-        if done.returncode != 0 or marker not in done.stdout or "Traceback" in done.stderr:
+        if marker not in done.stdout or "Traceback" in done.stderr:
             raise SystemExit(
                 f"reverbscope --lang {lang} demo failed ({done.returncode}):\n"
                 f"{done.stdout}\n{done.stderr}"
             )
-    done = subprocess.run(
+    done = _run_command(
         [str(binary), "--format", "json", "show", str(work / "demo-en" / "position-a")],
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
         env=env,
-        timeout=120,
     )
-    if done.returncode != 0:
-        raise SystemExit(f"--format json show failed ({done.returncode}): {done.stderr}")
-    try:
-        json.loads(done.stdout)
-    except ValueError as exc:
-        raise SystemExit(f"--format json show wrote more than JSON to stdout: {exc}") from exc
+    _json_object(done, "--format json show")
     if "\x1b[" in done.stdout:
         raise SystemExit("--format json show wrote escape sequences to stdout")
 
@@ -212,18 +268,15 @@ def check_terminal_gui_refusal(binary: Path, work: Path) -> None:
     """``reverbscope gui`` in the Terminal Edition: a sentence and exit code 2, no traceback."""
     env = _cli_env(work / "home")
     for lang, sentence in TERMINAL_GUI_TEXT.items():
-        done = subprocess.run(
+        done = _run_command(
             [str(binary), "--lang", lang, "gui"],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
             env=env,
-            timeout=120,
+            expected_code=2,
         )
         # The sentence is wrapped to the terminal width; compare it unwrapped.
         flat = "".join(done.stderr.split()) if lang == "zh_CN" else " ".join(done.stderr.split())
         wanted = "".join(sentence.split()) if lang == "zh_CN" else sentence
-        if done.returncode != 2 or wanted not in flat or "Traceback" in done.stderr:
+        if wanted not in flat or "Traceback" in done.stderr:
             raise SystemExit(
                 f"reverbscope --lang {lang} gui in the Terminal Edition ({done.returncode}):\n"
                 f"{done.stderr}"
@@ -242,7 +295,8 @@ def smoke(
     expect_machine: str | None = None,
     first_run: bool = True,
 ) -> None:
-    version = subprocess.run([str(binary), "--version"], check=True, capture_output=True, text=True)
+    env = _cli_env(out.parent / f"{out.name}-home")
+    version = _run_command([str(binary), "--version"], env=env)
     if "reverbscope" not in version.stdout.lower() and "reverbscope" not in version.stderr.lower():
         raise SystemExit(f"--version did not name reverbscope: {version.stdout!r}")
     check_doctor(
@@ -251,13 +305,15 @@ def smoke(
         terminal=terminal,
         expect_package=expect_package,
         expect_machine=expect_machine,
+        env=env,
+        require_gui=gui,
     )
     if first_run:
         check_first_run(binary, out.parent / f"{out.name}-first-run")
     if terminal:
         check_terminal_gui_refusal(binary, out.parent / f"{out.name}-first-run")
         gui = False
-    subprocess.run(
+    measured = _run_command(
         [
             str(binary),
             "--backend",
@@ -272,24 +328,32 @@ def smoke(
             "--level",
             "-20",
         ],
-        check=True,
+        env=env,
     )
+    print(measured.stdout, end="")
+    if measured.stderr:
+        print(measured.stderr, end="", file=sys.stderr)
     if not (out / "session.json").is_file() and not any(out.rglob("session.json")):
         raise SystemExit(f"fake measure did not write session.json under {out}")
     if gui:
-        env = os.environ.copy()
         env.setdefault("QT_QPA_PLATFORM", "offscreen")
-        subprocess.run(smoke_gui_argv(binary), check=True, env=env, timeout=120)
+        _run_command(smoke_gui_argv(binary), env=env)
         launcher = find_gui_launcher(binary)
         if launcher is None and require_gui_launcher:
             raise SystemExit(f"no reverbscope-gui launcher next to {binary}")
         if launcher is not None:
-            subprocess.run(smoke_gui_argv(launcher), check=True, env=env, timeout=120)
+            _run_command(smoke_gui_argv(launcher), env=env)
             # What Explorer, the Start menu, AppRun and the desktop file do.
             check_stays_open([str(launcher)], env)
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Child pipes are UTF-8; redirected Windows logs may otherwise use cp1252.
+    # Configure both streams before argparse or a SystemExit can write a failure.
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8", errors="backslashreplace")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, help="bundle directory (dist/reverbscope)")
     parser.add_argument("--reverbscope", type=Path, help="path to the reverbscope binary")
@@ -331,7 +395,10 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     binary = find_binary(args.root, args.reverbscope)
     out = args.out or Path("smoke-session")
-    out.mkdir(parents=True, exist_ok=True)
+    try:
+        out.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise SystemExit(f"cannot create smoke output directory {out}: {exc}") from exc
     smoke(
         binary,
         out,

@@ -231,6 +231,10 @@ def test_a_clean_terminal_tree_passes_with_its_license_bundle(tmp_path: Path) ->
     licenses = root / "THIRD_PARTY_LICENSES"
     (licenses / "_texts").mkdir(parents=True)
     (licenses / "_texts" / "PortAudio-LICENSE.txt").write_text("x", encoding="utf-8")
+    (licenses / "_notices").mkdir()
+    for name in ("python.txt", "portaudio.txt"):
+        (licenses / "_notices" / name).write_text("x", encoding="utf-8")
+    (licenses / "NATIVE.txt").write_text("libportaudio.so\t_notices/portaudio.txt\n", "utf-8")
     (licenses / "INDEX.txt").write_text("unresolved: none\n", encoding="utf-8")
     assert gate.check(root, require_licenses=True, terminal=True) == []
     # The Desktop Edition still needs the Qt license texts.
@@ -246,6 +250,8 @@ def test_the_terminal_license_bundle_has_no_qt(tmp_path: Path) -> None:
     assert not {"PySide6", "PySide6_Essentials", "shiboken6", "matplotlib"} & names
     assert sorted(p.name for p in (out / "_texts").iterdir()) == ["PortAudio-LICENSE.txt"]
     assert not (out / "_notices" / "pyside6.txt").exists()
+    assert not (out / "_notices" / "qt-third-party.txt").exists()
+    assert "PYTHON SOFTWARE FOUNDATION" in (out / "_notices" / "python.txt").read_text("utf-8")
     assert "qt: not included (Terminal Edition)" in (out / "INDEX.txt").read_text(encoding="utf-8")
 
 

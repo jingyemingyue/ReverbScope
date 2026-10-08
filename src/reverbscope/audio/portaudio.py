@@ -22,7 +22,7 @@ import numpy as np
 from reverbscope.audio.backend import CALLBACK_BLOCK, DeviceInfo, StreamOptions, prepare_playback
 from reverbscope.audio.devices import check_sample_rate, list_devices, sounddevice_module
 from reverbscope.errors import AudioDeviceError, ConfigurationError, MeasurementCancelledError
-from reverbscope.i18n import _, diag
+from reverbscope.i18n import N_, _, diag
 from reverbscope.models.audio import AudioSignal, FloatArray
 
 log = logging.getLogger(__name__)
@@ -34,6 +34,16 @@ TIMEOUT_MARGIN_S = 5.0
 #: After Stop, how long to wait for the stream's next callback before giving
 #: up on a stalled device (s).
 CANCEL_GRACE_S = 0.5
+#: PortAudio's callback flags as python-sounddevice names them
+#: (``str(CallbackFlags)``). The device warning stores them in English;
+#: :func:`~reverbscope.i18n.localize` shows each in the interface language.
+STATUS_FLAG_NAMES = (
+    N_("input underflow"),
+    N_("input overflow"),
+    N_("output underflow"),
+    N_("output overflow"),
+    N_("priming output"),
+)
 
 
 def device_host_api(sd: Any, device: int | None, kind: str) -> str | None:
@@ -108,7 +118,11 @@ class PortAudioBackend:
         progress: Callable[[float], None] | None = None,
         cancel: threading.Event | None = None,
         options: StreamOptions | None = None,
+        loopback_input: int | None = None,
     ) -> AudioSignal:
+        # A real interface is wired by hand: the cable is whatever the user
+        # plugged into that input. Only the fake backend has to be told.
+        del loopback_input
         if not input_channels:
             raise ConfigurationError(_("at least one input channel is required"))
         if any(ch < 1 for ch in input_channels) or output_channel < 1:
@@ -125,6 +139,7 @@ class PortAudioBackend:
         finished = threading.Event()
         callback_error: list[BaseException] = []
         xruns: list[str] = []
+        device_warnings: list[str] = []
 
         def callback(
             indata: np.ndarray,
@@ -202,7 +217,34 @@ class PortAudioBackend:
                 callback=callback,
                 finished_callback=on_finished,
                 **stream_kwargs,
-            ):
+            ) as stream:
+                # The stream is open and running: from here on the take may
+                # reach the loudspeaker (the CLI's "Nothing was played." ends).
+                report(0.0)
+                # The opened stream can disagree with the rate that was asked
+                # for. Query it here, not in the callback.
+                reported_rate = getattr(stream, "samplerate", None)
+                log.info(
+                    "audio stream: devices=%s, requested_rate_hz=%s, reported_rate_hz=%s, "
+                    "channels=%s, blocksize=%s, latency_s=%s",
+                    getattr(stream, "device", (input_device, output_device)),
+                    sample_rate,
+                    reported_rate,
+                    (n_in, n_out),
+                    getattr(stream, "blocksize", CALLBACK_BLOCK),
+                    getattr(stream, "latency", None),
+                )
+                if reported_rate is not None and not np.isclose(
+                    float(reported_rate), sample_rate, rtol=0.0, atol=0.5
+                ):
+                    warning = diag(
+                        "the audio stream reported {actual:g} Hz instead of the requested "
+                        "{requested:g} Hz; the recording's time scale cannot be trusted",
+                        actual=float(reported_rate),
+                        requested=sample_rate,
+                    )
+                    device_warnings.append(warning)
+                    log.warning("%s", warning)
                 deadline = time.monotonic() + frames_total / max(sample_rate, 1) + TIMEOUT_MARGIN_S
                 cancelled_at: float | None = None
                 while not finished.wait(timeout=PROGRESS_POLL_S):
@@ -242,25 +284,27 @@ class PortAudioBackend:
                     done=position[0], total=frames_total
                 )
             )
-        device_warnings: tuple[str, ...] = ()
         if xruns:
             # PortAudio's status flags: an input overflow drops recorded
             # samples, an output underflow inserts a gap in the sweep. Either
-            # breaks the sweep's timing that deconvolution relies on.
-            device_warnings = (
-                diag(
-                    "the audio device reported {count} buffer problem(s) during the take "
-                    "({flags}); the recording may contain dropouts",
-                    count=len(xruns),
-                    flags="; ".join(sorted(set(xruns))),
-                ),
+            # breaks the sweep's timing that deconvolution relies on. Each
+            # entry is one block's flags, already joined with ", ".
+            flag_names = {name.strip() for entry in xruns for name in entry.split(",")}
+            flag_names.discard("")
+            warning = diag(
+                "the audio device reported {count} buffer problem(s) during the take "
+                "({flags}); the recording may contain dropouts",
+                count=len(xruns),
+                # Not "; ": that separates whole diagnostics for localize().
+                flags=", ".join(sorted(flag_names)),
             )
-            log.warning("%s; measure again if the result looks wrong", device_warnings[0])
+            device_warnings.append(warning)
+            log.warning("%s; check the stream settings and measure again", warning)
         report(1.0)
         samples = recorded[:, 0] if len(input_channels) == 1 else recorded
         return AudioSignal(
             samples=np.ascontiguousarray(samples),
             sample_rate=sample_rate,
             source="standalone",
-            device_warnings=device_warnings,
+            device_warnings=tuple(device_warnings),
         )

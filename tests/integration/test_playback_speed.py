@@ -252,3 +252,75 @@ def test_self_played_take_skips_the_check_even_when_stretched(sweep_signal: np.n
     assert (
         analyze(recording, Reference.from_settings(SWEEP)).impulse_response.playback_speed is None
     )
+
+
+def test_a_wrong_speed_is_the_message_when_no_response_stands_out(
+    sweep_signal: np.ndarray,
+) -> None:
+    """Played at twice the speed, the take seemed to start late; the speed
+    is the cause, not a late start."""
+    recording = AudioSignal(_played(sweep_signal, 96000)[: 96000 * 3], 96000)
+    with pytest.raises(InvalidAudioError) as info:
+        analyze(recording, Reference.from_settings(SWEEP))
+    assert "after the sweep began" not in str(info.value)
+    assert "runs at 200" in str(info.value)
+
+
+def test_a_slowed_sweep_that_outlasts_the_post_roll_is_explained(
+    sweep_signal: np.ndarray,
+) -> None:
+    """R3-7: the 48 kHz sweep played at 44.1 kHz runs 8.8 % longer; with
+    0.2 s after it the take was refused as ending at the direct sound,
+    without naming the playback speed (with 2 s it was diagnosed)."""
+    take = _played(sweep_signal, 44100)[: round((SWEEP.pre_silence_s + 3.0 + 0.2) * 44100)]
+    with pytest.raises(InvalidAudioError) as refused:
+        analyze(AudioSignal(take, 44100, source="take.wav"), Reference.from_settings(SWEEP))
+    message = str(refused.value)
+    assert "before the sweep does" in message
+    assert "However, the sweep in the recording runs at 91.9 %" in message
+    assert "played at 44100 Hz" in message
+
+
+def test_the_speed_explanation_is_shown_in_the_active_language(
+    sweep_signal: np.ndarray,
+) -> None:
+    """The explanation was glued to the error as ". However, " and the
+    English speed sentence, so a Chinese user read half the error in
+    English."""
+    from reverbscope.i18n import activate, localize
+
+    # Cut shorter than the reference: refused before the impulse response is
+    # located, with the speed appended.
+    recording = AudioSignal(_played(sweep_signal, 96000)[: 96000 * 2], 96000)
+    activate("zh_CN")
+    try:
+        with pytest.raises(InvalidAudioError) as info:
+            analyze(recording, Reference.from_settings(SWEEP))
+        shown = localize(str(info.value))
+    finally:
+        activate("en")
+    assert "However" not in shown and "the sweep" not in shown
+    assert "不过，录音中扫频的速度是生成时的 200" in shown
+    with pytest.raises(InvalidAudioError, match=r"full sweep\. However, the sweep in the"):
+        analyze(recording, Reference.from_settings(SWEEP))
+
+
+def test_a_recording_cut_in_the_lowest_octaves_is_not_called_stretched() -> None:
+    """Review finding: the demo's take cut to its first 1.6 s (1 s of silence
+    and 0.6 s of a 5 s sweep, which reaches 46 Hz) was diagnosed as a
+    time-stretch at 837043.2 % speed. The few bins the line was fitted
+    through all peaked at one moment; nothing the sweep would have crossed
+    there showed it."""
+    from reverbscope.demo import DEMO_POSITIONS, demo_sweep_settings, simulate_take
+
+    settings = demo_sweep_settings()
+    rate = settings.sample_rate
+    take = simulate_take(DEMO_POSITIONS[0], settings)
+    for cut_s in (1.2, 1.6, 1.8, 2.5):
+        assert measure_sweep_speed(take[: round(cut_s * rate)], rate, settings) is None, cut_s
+    with pytest.raises(InvalidAudioError, match="shorter than the reference") as info:
+        analyze(AudioSignal(take[: round(1.6 * rate)], rate), Reference.from_settings(settings))
+    assert "However" not in str(info.value)
+    # Cut once the sweep has crossed part of the searched band: measured.
+    speed = measure_sweep_speed(take[: 4 * rate], rate, settings)
+    assert speed == pytest.approx(1.0, abs=0.01)

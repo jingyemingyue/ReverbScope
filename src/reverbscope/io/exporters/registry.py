@@ -68,6 +68,13 @@ def _entry_points() -> dict[str, ResultExporter]:
         except Exception as exc:
             log.warning("exporter %r failed to import: %s", item.name, exc)
             continue
+        if isinstance(loaded, type):
+            # Registered the way pyproject.toml registers CsvExporter: a class.
+            try:
+                loaded = loaded()
+            except Exception as exc:
+                log.warning("exporter %r could not be created: %s", item.name, exc)
+                continue
         if callable(loaded) and not hasattr(loaded, "export"):
             found[item.name] = _CallableExporter(item.name, loaded)
         else:
@@ -86,6 +93,6 @@ def get_exporter(name: str) -> ResultExporter:
     except KeyError as exc:
         raise ConfigurationError(
             _("unknown exporter {name}; available: {available}").format(
-                name=repr(name), available=available_exporters()
+                name=repr(name), available=", ".join(available_exporters())
             )
         ) from exc
