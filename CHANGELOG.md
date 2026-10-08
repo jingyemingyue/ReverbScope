@@ -56,6 +56,23 @@ All notable changes to ReverbScope are documented here. The format follows
   (`--format json` is untouched). `--style auto|boxed|plain`, the `style`
   setting (`reverbscope config style plain`) and `REVERBSCOPE_CLI_STYLE`
   choose; the environment report lists the setting. No new dependency.
+- **The overview as a bordered table with a status word.** In a boxed report
+  "At a glance" (the analysis, each position of `reverbscope demo`, `show`,
+  `analyze`, `measure`) is a table of topic, status and result; the status
+  shows a mark and a word, so colour is never the only signal: `✓ good`,
+  `! check`, `✗ problem`, `i note` (in Chinese `✓ 良好`, `! 注意`, `✗ 问题`,
+  `i 说明`). The overview of a comparison says whether each topic was
+  compared (`✓ compared`, `– not compared`), never whether the change is good,
+  and the advice to add `--same-input-gain` follows the table on a line of its
+  own. A long result wraps inside its column and the table spans the
+  terminal; only when that cannot fit (English below about 56 columns) the
+  status column is left out and a line under the table says so, as it now
+  does when a narrow comparison leaves out the `Δ %` column. In an ASCII
+  frame the separator is `/` and `|Δ|` is `abs(delta)`, and a stream that
+  cannot write Chinese (cp1252) shows one `?` per column, so every frame line
+  keeps one width. A pipe, a file, a terminal narrower than 48 columns,
+  `--style plain`, `--format json` and the desktop app's report text are
+  unchanged. From the redesign of PR #42, drawn on this line's own frames.
 - **An interactive menu.** `reverbscope` with no command on a terminal opens
   a numbered menu (demo, test signal, analyse, measure, show, compare,
   project overview, settings, environment report, desktop app). Each choice

@@ -574,7 +574,13 @@ carriage return. Every status carries a symbol and a word (`✓` / `!` / `×` /
 them), so colour is never the only signal; on such a stream the other signs
 (`Δ`, `→`, `–`) are written in ASCII too, and a narrow terminal encoding
 replaces what it cannot show instead of failing. Widths count a CJK character
-as two columns; text is laid out for at most 100 columns.
+as two columns; text is laid out for at most 100 columns. On a terminal that
+draws frames ("boxed"; never a pipe, a file or the GUI's report panes) "At a
+glance" is a bordered table of topic, status and result whose status cell is
+a badge, the mark and a word (`✓ good`, `! check`, `✗ problem`, `i note`; in
+a comparison `✓ compared` and `– not compared`). Its result column wraps; if
+that is not enough the status column is dropped with a line saying so, and
+only when no table fits are the aligned lines of the plain layout used.
 
 Every command reads the same way: title and context, the result ("At a
 glance" first in an analysis or a comparison), the detail, then numbered

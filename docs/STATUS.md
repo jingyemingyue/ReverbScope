@@ -127,7 +127,8 @@ untouched).
 * **The terminal** (fourth batch): reports are boxed on a wide terminal
   (title frame, section rules, bordered tables; never a pipe, never a
   command line, never JSON; `--style`, `config style`,
-  `REVERBSCOPE_CLI_STYLE`), and bare `reverbscope` on a terminal opens a
+  `REVERBSCOPE_CLI_STYLE`), "At a glance" there is a table of topic, status
+  (a mark and a word) and result, and bare `reverbscope` on a terminal opens a
   numbered menu that prints the command it runs each time. Harvested from
   PR #42 without its dependencies.
 * **Profiles explained, and a first-measurement card** (fifth batch):

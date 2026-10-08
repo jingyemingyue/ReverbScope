@@ -105,13 +105,16 @@ No microphone and no audio interface needed; nothing is played.
   reverbscope demo
   ```
 
-![reverbscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
+![reverbscope demo in a terminal: at-a-glance tables for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
 `reverbscope demo` simulates one room at two microphone positions, runs the
 real analysis and comparison on them and says what to do next. The desktop
 **Demo** runs one Standalone Mode take on a simulated room instead. Every
 number either one shows describes the simulation, and every session either
-one saves is marked as a synthetic demo.
+one saves is marked as a synthetic demo. In a terminal each position's
+results, and their comparison, come as a table of topic, status and result;
+the status is a mark and a word (`✓ good`, `! check`, `✗ problem`), so colour
+is never the only signal, and a pipe or a file gets plain lines instead.
 
 **Then measure for real:** turn the monitors **down** (ReverbScope never
 changes system volume), then either let ReverbScope play and record through

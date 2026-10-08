@@ -367,6 +367,34 @@ plain|boxed|auto` for good, and the `REVERBSCOPE_CLI_STYLE` environment
 variable for a shell. Where a terminal's font draws the box glyphs two
 columns wide, choose `plain`; a stream that cannot write them gets `+ - |`.
 
+In a boxed report **"At a glance" is a table** of topic, status and result.
+The status cell shows a mark and a word, so colour is never the only signal:
+`✓ good`, `! check`, `✗ problem`, `i note`, `– no data` and `? unsure`; in
+the overview of a comparison the word says whether the topic was compared
+(`✓ compared`, `– not compared`), never whether the change is good (the
+verdicts say that). For example:
+
+```text
+  ┌────────────────────┬─────────┬─────────────────────────────┐
+  │ Topic              │ Status  │ Result                      │
+  ├────────────────────┼─────────┼─────────────────────────────┤
+  │ Reverberation      │ ! check │ RT60 0.70 s (T30) · EDT     │
+  │                    │         │ 0.45 s                      │
+  │ Clarity            │ ✓ good  │ C50 +9.8 dB · C80 +12.9 dB  │
+  │                    │         │ · D50 91 %                  │
+  │ Early reflections  │ ! check │ strongest -3.1 dB at 2.4 ms │
+  │                    │         │ · 2 above -20 dB            │
+  └────────────────────┴─────────┴─────────────────────────────┘
+```
+
+A long result wraps inside its column. Only when the table cannot fit even
+so (in English, below about 56 columns) does it leave out its status column,
+keeping the mark in front of each result, and a line under the table says so;
+the reverberation changes of a comparison say the same when their percentage
+column is left out. Without frames (a pipe or a file, a terminal narrower
+than 48 columns, `--style plain`) "At a glance" is the aligned lines it has
+always been, with a symbol and no word.
+
 **Interactive menu.** `reverbscope` with no command on a terminal opens a
 numbered menu: the demo, the test signal, analysing a recording, measuring
 through the interface, showing and comparing sessions, the project
