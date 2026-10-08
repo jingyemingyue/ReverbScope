@@ -94,6 +94,14 @@ every cell is still empty, i.e. not tested.
 
 ### Changed
 - CI runs on pushes to `release/**` branches as well as `main`.
+- The `gui` extra asks for `PySide6_Essentials>=6.6,<6.12`, and the hint
+  printed when PySide6 is missing says the same: PySide6_Essentials 6.12.0
+  (released 2026-10-08) ends the test suite's interpreter with "QObject:
+  shared QObject was deleted directly" and a heap abort on Linux and Windows
+  after every test has passed; the bundles lock 6.11.2 and the desktop app's
+  own smoke exits cleanly under 6.12.0. The bound is lifted once a 6.12.x has
+  been run through the suite and the app on all three platforms
+  (`docs/DEPENDENCIES.md` §4).
 - **Renamed RoomScope → ReverbScope.** The project, the Python package
   (`roomscope` → `reverbscope`), the command line (`roomscope` →
   `reverbscope`, `roomscope-gui` → `reverbscope-gui`), the `roomscope.exporters`

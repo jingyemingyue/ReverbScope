@@ -503,7 +503,7 @@ channel for the first public testers. What is ready and what is not:
 
 Until a version is on PyPI, no document may tell users to run
 `pip install reverbscope`; INSTALLATION.md says so explicitly, and
-`reverbscope gui` without PySide6 advises `pip install "PySide6_Essentials>=6.6"`
+`reverbscope gui` without PySide6 advises `pip install "PySide6_Essentials>=6.6,<6.12"`
 instead of the extra of a package that is not on PyPI.
 
 ## 4. Gates that apply to every release

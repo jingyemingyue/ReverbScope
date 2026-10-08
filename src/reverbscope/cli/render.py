@@ -2074,7 +2074,7 @@ def render_demo(
     else:
         gui_step = (
             _("Open them in the desktop app (download it, or add PySide6 to this Python):"),
-            'pip install "PySide6_Essentials>=6.6"',
+            'pip install "PySide6_Essentials>=6.6,<6.12"',
         )
     lines += c.steps(
         [
