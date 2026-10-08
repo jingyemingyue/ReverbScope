@@ -19,6 +19,7 @@ from reverbscope.cli.console import (
     Console,
     Status,
     Verbatim,
+    badge_word,
     cell_width,
     glue_units,
     pad,
@@ -286,13 +287,14 @@ def _glance_label_width() -> int:
 def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] = ()) -> list[str]:
     """One line per question a recording engineer asks first.
 
-    Every value is copied from the result; the symbol follows the profile's
-    findings on that topic. The sections below hold the detail.
+    Every value is copied from the result; the status follows the profile's
+    findings on that topic. The sections below hold the detail. With frames
+    the lines are a table whose status shows a mark and a word.
     """
-    rows: list[tuple[str, str]] = []
+    rows: list[tuple[str, Status, str]] = []
 
     def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, f"{c.symbol(status)} {glue_units(text)}"))
+        rows.append((label, status, text))
 
     broadband = result.decay.broadband
     if broadband.rt60_estimate_s is not None:
@@ -400,7 +402,61 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         quality += c.sep() + _("the recording clipped")
         status = "error"
     row(_("Data quality"), status, quality)
-    return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
+    return c.section(_("At a glance")) + _glance_rows(c, rows)
+
+
+def _compared_word(status: Status) -> str:
+    """What a status means in the overview of a comparison: whether the topic
+    was compared, never whether the change is good."""
+    return {
+        "ok": pgettext("comparison status", "compared"),
+        "skip": pgettext("comparison status", "not compared"),
+    }.get(status, badge_word(status))
+
+
+def _glance_rows(
+    c: Console, rows: Sequence[tuple[str, Status, str]], *, compared: bool = False
+) -> list[str]:
+    """The "At a glance" rows.
+
+    With frames a bordered table of three columns: the topic, a status (the
+    mark and a word, for a comparison whether the topic was compared) and the
+    result, which wraps inside its column. Where even that does not fit, the
+    status column is left out (its mark stays in front of the result) and a
+    line under the table says so; where no table fits, and without frames,
+    aligned fields with the status symbol, as they always were.
+    """
+    marked = [(label, f"{c.symbol(status)} {glue_units(text)}") for label, status, text in rows]
+    label_width = _glance_label_width()
+    if c.boxed:
+        topic, result = pgettext("at a glance", "Topic"), pgettext("at a glance", "Result")
+        table = c.framed_table(
+            [topic, _("Status"), result],
+            [
+                [
+                    label,
+                    c.badge(status, _compared_word(status) if compared else None),
+                    glue_units(text),
+                ]
+                for label, status, text in rows
+            ],
+            wrap_column=2,
+            expand=True,
+            min_widths=(label_width,),
+        )
+        if table is not None:
+            return table
+        table = c.framed_table(
+            [topic, result],
+            [list(pair) for pair in marked],
+            wrap_column=1,
+            expand=True,
+            min_widths=(label_width,),
+        )
+        if table is not None:
+            note = _("The status column is left out: widen the terminal to see it.")
+            return [*table, *c.paragraph(note, style=("dim",))]
+    return c.fields(marked, min_label=label_width)
 
 
 def _diagnostics(c: Console, result: AnalysisResult) -> list[str]:
@@ -1359,13 +1415,14 @@ def render_profiles(
 
 
 def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
-    """Baseline against candidate, one line per topic; the symbol says whether
+    """Baseline against candidate, one line per topic; the status says whether
     the topic could be compared, never whether the change is good."""
-    rows: list[tuple[str, str]] = []
+    rows: list[tuple[str, Status, str]] = []
     arrow = f" {c.arrow()} "
+    advice = ""
 
     def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, f"{c.symbol(status)} {glue_units(text)}"))
+        rows.append((label, status, text))
 
     rt = next((d for d in comparison.decay if d.name == "broadband.rt60_estimate"), None)
     if (
@@ -1458,7 +1515,11 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 validity=validity_word(rms.validity)
             )
             if not comparison.settings.get("same_input_gain", False):
-                text += c.sep() + _("add --same-input-gain if the input gain was unchanged")
+                hint = _("add --same-input-gain if the input gain was unchanged")
+                if c.boxed:
+                    advice = hint  # a flag to copy does not belong in a bordered cell
+                else:
+                    text += c.sep() + hint
             row(_("Noise floor"), validity_status(rms.validity), text)
     else:
         row(_("Noise floor"), "skip", _("no quiet segment on one or both sides"))
@@ -1473,7 +1534,8 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 band=band, mad=mad
             ),
         )
-    return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
+    lines = c.section(_("At a glance")) + _glance_rows(c, rows, compared=True)
+    return lines + c.status("info", advice) if advice else lines
 
 
 # --- Environment report -------------------------------------------------------------

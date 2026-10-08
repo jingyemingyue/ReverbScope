@@ -5888,3 +5888,22 @@ msgstr "无数据"
 msgctxt "status"
 msgid "unsure"
 msgstr "不确定"
+
+msgctxt "comparison status"
+msgid "compared"
+msgstr "已对比"
+
+msgctxt "comparison status"
+msgid "not compared"
+msgstr "未对比"
+
+msgctxt "at a glance"
+msgid "Topic"
+msgstr "项目"
+
+msgctxt "at a glance"
+msgid "Result"
+msgstr "结果"
+
+msgid "The status column is left out: widen the terminal to see it."
+msgstr "已省略状态列；把终端调宽即可看到。"

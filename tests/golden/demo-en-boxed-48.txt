@@ -1,0 +1,106 @@
+╭──────────────────────────────────────────────╮
+│ ReverbScope demo                             │
+╰──────────────────────────────────────────────╯
+
+  ! Synthetic data: a simulated room, not a
+    measurement.
+    No audio device was used and nothing was
+    played. The numbers below describe the
+    simulation; every session is marked as a
+    synthetic demo.
+
+── Files written ───────────────────────────────
+  Test signal  reverbscope-demo/sweep.wav
+  Position A   reverbscope-demo/position-a
+  Position B   reverbscope-demo/position-b
+  Comparison   reverbscope-demo/comparison.json
+  # s sweep · # Hz – # kHz · # kHz
+
+── Position A ──────────────────────────────────
+  close to the desk and the side wall
+  ┌────────────────────┬───────────────────────┐
+  │ Topic              │ Result                │
+  ├────────────────────┼───────────────────────┤
+  │ Reverberation      │ ! RT60 # s (T30) · │
+  │                    │ EDT # s            │
+  │ Clarity            │ ✓ C50 # dB · C80   │
+  │                    │ # dB · D50 # %   │
+  │ Early reflections  │ ! strongest # dB   │
+  │                    │ at # ms · # above   │
+  │                    │ # dB                │
+  │ Low end            │ ! potential           │
+  │                    │ resonances at # Hz  │
+  │                    │ (# dB)            │
+  │ Noise floor        │ ! # dBFS RMS ·    │
+  │                    │ mains hum at # Hz    │
+  │ Data quality       │ ✓ direct sound:       │
+  │                    │ confidence high · no  │
+  │                    │ warnings              │
+  └────────────────────┴───────────────────────┘
+  The status column is left out: widen the
+  terminal to see it.
+
+── Position B ──────────────────────────────────
+  moved # m back from the desk
+  ┌────────────────────┬───────────────────────┐
+  │ Topic              │ Result                │
+  ├────────────────────┼───────────────────────┤
+  │ Reverberation      │ ! RT60 # s (T30) · │
+  │                    │ EDT # s            │
+  │ Clarity            │ ✓ C50 # dB · C80  │
+  │                    │ # dB · D50 # %   │
+  │ Early reflections  │ ✓ strongest # dB  │
+  │                    │ at # ms · # above   │
+  │                    │ # dB                │
+  │ Low end            │ ! potential           │
+  │                    │ resonances at # Hz  │
+  │                    │ (# dB)            │
+  │ Noise floor        │ ! # dBFS RMS ·    │
+  │                    │ mains hum at # Hz    │
+  │ Data quality       │ ✓ direct sound:       │
+  │                    │ confidence high · no  │
+  │                    │ warnings              │
+  └────────────────────┴───────────────────────┘
+  The status column is left out: widen the
+  terminal to see it.
+
+── Comparison A → B ────────────────────────────
+  ┌────────────────────┬───────────────────────┐
+  │ Topic              │ Result                │
+  ├────────────────────┼───────────────────────┤
+  │ Reverberation      │ ✓ RT60 # s →       │
+  │                    │ # s (# %)      │
+  │ Clarity            │ ✓ C50 # dB →       │
+  │                    │ # dB · C80        │
+  │                    │ # dB → # dB   │
+  │ Early reflections  │ ✓ # gone · # new · #  │
+  │                    │ at both               │
+  │ Low end            │ ✓ at both: # Hz     │
+  │ Noise floor        │ ✓ # → # dBFS  │
+  │                    │ (# dB)            │
+  │ Frequency response │ ✓ largest change in   │
+  │                    │ the # Hz octave,   │
+  │                    │ # dB mean |Δ|       │
+  └────────────────────┴───────────────────────┘
+  The status column is left out: widen the
+  terminal to see it.
+
+── What the demo shows ─────────────────────────
+  i A strong desk reflection at # ms at
+    position A is gone at position B.
+  i The # Hz room mode stays at both
+    positions: it belongs to the room, not the
+    spot.
+  i Mains hum at # Hz is clearly lower at
+    position B.
+
+── Next steps ──────────────────────────────────
+  #. Read the full report of one position:
+     reverbscope show reverbscope-demo/position-a
+  #. See every delta between the two positions:
+     reverbscope compare reverbscope-demo/position-a reverbscope-demo/position-b --same-input-gain
+  #. Open the sessions in the desktop app:
+     reverbscope gui
+  #. Measure your own room: write the test
+     signal for your DAW.
+     reverbscope sweep --out sweep.wav

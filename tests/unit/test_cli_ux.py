@@ -215,6 +215,28 @@ def test_golden_demo(
     _golden(f"demo-{lang}-{columns}", _normalise(out))
 
 
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+@pytest.mark.parametrize("columns", [80, 48])
+def test_golden_boxed_demo(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    columns: int,
+) -> None:
+    """The demo as a terminal draws it (``--style boxed``): the title in a panel,
+    rules through the headings and each overview a table of topic, status
+    (mark and word) and result. 48 is the narrowest terminal that is boxed; in
+    English its overview gives up the status column and says so."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", str(columns))
+    code, out, _err = _run(["--lang", lang, "--style", "boxed", "demo"], capsys)
+    assert code == 0
+    assert all(
+        cell_width(line) <= columns for line in out.splitlines() if "reverbscope " not in line
+    )
+    _golden(f"demo-{lang}-boxed-{columns}", _normalise(out))
+
+
 _SVG_ROW = re.compile(r'<text x="[^"]*" y="[^"]*" xml:space="preserve">(.*?)</text>')
 
 
