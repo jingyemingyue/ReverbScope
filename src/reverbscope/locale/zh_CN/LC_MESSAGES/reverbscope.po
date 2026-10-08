@@ -5907,3 +5907,6 @@ msgstr "结果"
 
 msgid "The status column is left out: widen the terminal to see it."
 msgstr "已省略状态列；把终端调宽即可看到。"
+
+msgid "Δ % is left out: widen the terminal to see it."
+msgstr "已省略 Δ %；把终端调宽即可看到。"

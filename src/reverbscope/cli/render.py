@@ -1038,13 +1038,17 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         previous = band
     headers = [_("Band"), _("Metric"), _("Baseline"), _("Candidate"), "Δ", "Δ %", ""]
     align = "llrrrrl"
-    if not c.fits(headers, rows, gap=2):
+    dropped = not c.fits(headers, rows, gap=2)
+    if dropped:
         # A narrow terminal drops the percentage before the table has to fall
         # apart into blocks: it follows from baseline and Δ, and C50, C80 and
         # D50 have none, so without Δ their change would not be shown at all.
         headers, align = headers[:5] + headers[6:], align[:5] + align[6:]
         rows = [row[:5] + row[6:] for row in rows]
     lines += c.table(headers, rows, align=align, gap=2, title_columns=2)
+    if dropped and c.boxed:
+        # With frames the reader chose a layout with borders: say what it cost.
+        lines += c.paragraph(_("Δ % is left out: widen the terminal to see it."), style=("dim",))
     if seen:
         lines.append("")
         lines += _legend(c, sorted(seen, key=list(Validity).index))

@@ -405,6 +405,27 @@ def test_the_advice_to_declare_the_gain_is_a_line_of_its_own_under_the_table(ung
     assert not any(line.strip().startswith("i add --same") for line in plain)
 
 
+def test_the_delta_table_says_when_it_leaves_out_its_percentage(demo: DemoRun) -> None:
+    sentence = "Δ % is left out: widen the terminal to see it."
+
+    def report(width: int, boxed: bool) -> str:
+        console = Console(width=width, boxed=boxed)
+        return " ".join(render_comparison(console, demo.comparison, (), "vocal").split())
+
+    dropped = []
+    for width in range(48, 101, 4):
+        text = report(width, True)
+        has_column = "Δ %" in text.replace(sentence, "")
+        # The column is there, or the line under the table says it is not.
+        assert has_column != (sentence in text), width
+        dropped.append(not has_column)
+    assert dropped[0] and not dropped[-1]
+    # Without frames the layout is as it was: the column goes, nothing is said.
+    assert all(sentence not in report(width, False) for width in (48, 56, 64, 100))
+    with _in("zh_CN"):
+        assert "已省略 Δ %；把终端调宽即可看到。" in " ".join(report(48, True).split())
+
+
 def test_pipes_get_no_frames_and_no_status_column(
     demo: DemoRun, capsys: pytest.CaptureFixture[str]
 ) -> None:
