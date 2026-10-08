@@ -142,7 +142,7 @@ jobs:
           cache-dependency-path: pyproject.toml
       - run: pip install build && python -m build
       - run: pip install dist/*.whl && reverbscope --version
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: python-dist
           path: dist/*
@@ -421,7 +421,7 @@ jobs:
                    for name in names]
           (Path('dist') / sums_name).write_text('\n'.join(lines) + '\n', encoding='utf-8', newline='\n')
           PY
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bundle-${{ matrix.os }}
           path: |
@@ -450,7 +450,7 @@ jobs:
           "$RUNNER_TEMP/sbom-tool/bin/pip" install cyclonedx-bom
           "$RUNNER_TEMP/sbom-tool/bin/cyclonedx-py" environment "$(command -v python)" \
             -o cyclonedx.sbom.json
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: sbom
           path: |
