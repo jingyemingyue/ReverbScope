@@ -6,6 +6,38 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 38: 2026-10-07 — **the candidate line takes the stability fixes of
+the beta line, by merge and cherry-pick** (branch `release/0.5.0`, still
+`0.5.0rc1`; the Release workflow refreshes the draft `v0.5.0rc1` from this
+head; nothing published or tagged).
+
+* **Merged** `gpt/post-rc-persistence-corpus` (loader hardening with its
+  tests). **Cherry-picked** from `integration/post-rc-development`: the
+  folder-cannot-be-made error and the damaged `impulse_response.wav` refusal,
+  the Python-int sample rate, the desktop app's lifecycle fixes, the
+  test-suite home-folder guard, the Early reflections tile, four desktop-app
+  slots (Settings OK with an unwritable home, an interface kept by name,
+  Ctrl+2 during an analysis, Open Data Folder) and two command-line crashes
+  (a resonance match without its frequency, an over-long language name),
+  each with its regression test, and the documentation corrections for
+  testers plus the maintainer's runbook. **Not taken** (features or
+  algorithm changes, `docs/RELEASE_PLAN.md` §2a): Measurement health, the
+  comparison verdicts, projects and the overview, the boxed terminal and the
+  menu, the profile explanations, the first-measurement card, and PR #47's
+  decay rules with their corrections, which stay on `main` until the next
+  candidate series.
+
+**What was run** (a Linux container, Python 3.12, PySide6 6.11 offscreen,
+PortAudio present, no audio device): ruff, ruff format, strict mypy with and
+without PySide6's stubs, `check_doc_links.py`, `check_cli_docs.py`,
+`check_src_safety.py`, the docs-site build, and the full suite with the
+coverage gate on this head (the pull request or the branch's CI run records
+the numbers); the first draft's 14 assets were read back (every SHA-256
+matches `SHA256SUMS`, the wheel and sdist rebuilt from `7098169` are
+byte-identical, the Linux bundles pass `scripts/smoke_bundle.py`). **Not
+run:** anything on real hardware or in a DAW; the macOS and Windows bundles
+(GitHub's runners build and smoke them).
+
 Snapshot 37: 2026-10-06 — **this is the release-candidate line
 (`release/0.5.0`), at 0.5.0rc1; not published.**
 
@@ -37,7 +69,8 @@ merged, tagged or published.
 stacked on PR #44; the changelog's `[Unreleased]` lists it):
 
 * The policy: `main` keeps moving as the beta line (`0.5.0b3`, …); a
-  `release/0.5.0` branch, cut from PR #44's head, carries `0.5.0rc1` with a
+  `release/0.5.0` branch, cut from PR #45's head (which stacks on PR #44),
+  carries `0.5.0rc1` with a
   frozen feature set and only correctness, crash, packaging, cross-platform,
   hardware- and DAW-compatibility, documentation, localization and
   release-engineering fixes. Fixes go to the candidate first and are

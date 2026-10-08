@@ -1,6 +1,6 @@
 # 维护 ReverbScope
 
-写给接手维护的人：哪个分支是哪条线、自动化自己会做什么、哪些事只有维护者能做、以及某项检查变红时该怎么办。本文不假设有任何助手，每一步都写明对应的文件或页面。请与 [RELEASE_PLAN.zh-CN.md](RELEASE_PLAN.zh-CN.md)（两条线为何存在、发布如何产生、0.5.0 的门槛；英文全文 [RELEASE_PLAN.md](RELEASE_PLAN.md)）、[CONTRIBUTING.md](../CONTRIBUTING.md)（改动必须遵守的规则、从社区报告到回归测试的流程，英文）、[OFFLINE_CHECKS.md](OFFLINE_CHECKS.md)（没有硬件时能检查什么，英文）和 [API_STABILITY.md](API_STABILITY.md)（哪些东西不能悄悄改变，英文）一起阅读。英文版：[MAINTAINING.md](MAINTAINING.md)。
+写给接手维护的人：哪个分支是哪条线、自动化自己会做什么、哪些事只有维护者能做、以及某项检查变红时该怎么办。本文不假设有任何助手，每一步都写明对应的文件或页面。请与 [RELEASE_PLAN.zh-CN.md](RELEASE_PLAN.zh-CN.md)（两条线为何存在、发布如何产生、0.5.0 的门槛；英文全文 [RELEASE_PLAN.md](RELEASE_PLAN.md)）、[CONTRIBUTING.md](../CONTRIBUTING.md)（改动必须遵守的规则、从社区报告到回归测试的流程，英文）、[OFFLINE_CHECKS.md](OFFLINE_CHECKS.md)（没有硬件时能检查什么，英文）和 `docs/API_STABILITY.md` (on `main`)（哪些东西不能悄悄改变，英文）一起阅读。英文版：[MAINTAINING.md](MAINTAINING.md)。
 
 ## 1. 两条线
 
@@ -79,10 +79,10 @@ python -m build
 
 Issue 表单（`.github/ISSUE_TEMPLATE/`，中英文成对）会收集环境报告（`reverbscope doctor --probe --out report.txt`）、版本与构建提交、相关文件和预期结果。然后按顺序（CONTRIBUTING.md 的 “From a community report to a regression test”）：
 
-1. 用附件复现。把文件裁到仍然失败的最小样本，加入回归语料库（`tests/corpus/manifest.json`，由 `tests/corpus/generate.py` 生成），或者写合成测试（`tests/conftest.py` 里有房间和衰减的生成器）。
+1. 用附件复现。把文件裁到仍然失败的最小样本，加入回归语料库（`main` 上的 `tests/corpus/`），或者写合成测试（`tests/conftest.py` 里有房间和衰减的生成器）。
 2. 在报告所在的线上修：候选版的 bug 先修在 `release/0.5.0`，再把同一个提交 merge 或 cherry-pick 到 `main`。CHANGELOG 条目在同一个提交里。
 3. 在 issue 中记录结论；只有在真实设备上的运行才在 [HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md) 或 [VALIDATION.md](VALIDATION.md) 里写 PASS / FAIL 行并附 issue 编号。合成结果和 CI 结果永远不填这些表。
-4. 如果修复改变了存储的数字或文件字段，遵守 [API_STABILITY.md](API_STABILITY.md)（只做增量改动；读取方必须改时提升 `schema_version`；先弃用再移除）。
+4. 如果修复改变了存储的数字或文件字段，遵守 `docs/API_STABILITY.md` (on `main`)（只做增量改动；读取方必须改时提升 `schema_version`；先弃用再移除）。
 
 ## 6. 东西在哪里
 
@@ -93,5 +93,5 @@ Issue 表单（`.github/ISSUE_TEMPLATE/`，中英文成对）会收集环境报�
 | 哪些检查需要硬件 | [OFFLINE_CHECKS.md](OFFLINE_CHECKS.md)、[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)、[VALIDATION.md](VALIDATION.md) |
 | 依赖与许可证 | [DEPENDENCIES.md](DEPENDENCIES.md)、[THIRD_PARTY_REVIEW.md](THIRD_PARTY_REVIEW.md)、`scripts/build_license_bundle.py` |
 | 没有 Actions 分钟时构建发布 | RELEASE_PLAN §3a、`scripts/build_release.py` |
-| 耗时与内存 | [PERFORMANCE.md](PERFORMANCE.md)、`scripts/benchmark.py`、`scripts/bench_dsp.py` |
+| 耗时与内存 | `docs/PERFORMANCE.md` (on `main`)、`main` 上的 `scripts/benchmark.py` |
 | 翻译 | `src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po`；`tests/unit/test_i18n_catalog.py` 对任何未翻译的字串报错 |

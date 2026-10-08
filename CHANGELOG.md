@@ -407,6 +407,59 @@ every cell is still empty, i.e. not tested.
   every native library they ship with its licence and source (including the
   Windows C runtime), and the README images show the current demo and the
   downloaded app.
+- **Files.** A `schema_version` that is not a JSON integer (text, a boolean,
+  a fraction) is refused instead of being coerced into a supported version;
+  a project whose position records carry a non-text label or session path
+  is refused as damaged instead of being read as text; a result whose
+  string lists or energy-metric objects have the wrong type is refused as
+  file corruption instead of being coerced (a damaged string no longer
+  becomes one entry per character). A `comparison.json` whose resonance
+  match carries a status but no frequency crashed `show` and `compare` as
+  "a bug in ReverbScope"; it is refused as damaged. A language name longer
+  than a file name may be (`settings.json`, `--lang`, `REVERBSCOPE_LANG`)
+  aborted every command with an OSError; it is no catalog, like an unknown
+  language.
+- A folder that could not be created (a file of that name, a parent that is
+  a file, a name the file system refuses, a Windows reserved name such as
+  `CON`) escaped every writer (sessions, projects, comparisons, WAVs and
+  sweeps, settings, the CSV export) as a bare OSError, which the desktop app
+  reported as a bug in ReverbScope. It is a plain error that names the
+  folder.
+- Opening a session read `impulse_response.wav` as it was: a file cut off
+  before the direct sound failed the first plot with a bare error, and a file
+  at another sample rate was drawn on another time axis than the decay. Both
+  are refused with the file named.
+- A NumPy integer sample rate reached the result unchanged, and `json.dumps`
+  of the result failed.
+- Desktop app: opening Compare (or any page switch) during an analysis threw
+  the result away as late; a recording profile that failed left the page
+  busy for good; a second Analyze during an analysis could abort the
+  process; a failure of an abandoned analysis opened a dialog over another
+  page. A result is late only after New Measurement, Open Session or a
+  measurement another page started meanwhile. The Early reflections tile
+  showed "0 · clean" in green when the response ended before the search
+  window did and later arrivals were never examined; it now says how many
+  milliseconds could be searched, with an "incomplete window" chip, as the
+  command line's At-a-glance row does. Settings ▸ OK with a settings file
+  that cannot be written raised the error out of the dialog instead of
+  naming the folder and keeping the dialog open. An interface that came back
+  under another index after being plugged in again was dropped for the
+  system default instead of being kept by name. Ctrl+2 / Ctrl+3 from another
+  page while the Standalone page was still analysing switched its backend
+  and rewrote its status under the running progress bar. Open Data Folder
+  (Developer menu, Environment Report) raised an OSError when the home folder
+  could not be created; both warn and name the folder.
+- The test suite wrote a pytest path into the developer's real
+  `~/.reverbscope/recent_sessions.json` on every run (a `monkeypatch.undo()`
+  in one GUI test also undid the fixture that isolates the home folder). A
+  session-wide guard now fails the run if any test touches the real home.
+- Documentation for testers: the DAW report form asked for an "Impulse
+  response:" line the report does not print (the direct-sound confidence is
+  on the "Data quality" line); the checklist and the bug form named a
+  Start / Measure button (it is Run Measurement); the environment report to
+  paste carries the probed sample rates; the DAW lists name the guide's
+  eleven DAWs; INSTALLATION, SECURITY and COMPARISON no longer say 0.4.x.
+  `docs/MAINTAINING.md` (and 中文) is the maintainer's runbook.
 
 ## [0.5.0b1] - 2026-10-01
 
