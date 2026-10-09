@@ -278,3 +278,69 @@ def test_the_cli_prints_and_exports_the_verdict(
     assert aspects["reverberation"]["verdict"] == "meaningful_improvement"
     assert payload["verdict"]["profile"] == "vocal"
     assert "verdict" not in json.loads((tmp_path / "c.json").read_text(encoding="utf-8"))
+
+
+def _saved_pair(tmp_path, short_sweep: SweepSettings):  # type: ignore[no-untyped-def]
+    """A good take and a clipped (invalid) one, saved as sessions, and the comparison."""
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    rir = make_rir(short_sweep.sample_rate, rt60_s=0.4, reflections=[(0.010, 0.5)])
+    clean = synthetic_recording(short_sweep, rir, noise_rms=1e-5, seed=2)
+    good = _result(short_sweep, rt60_s=0.4, reflections=[(0.010, 0.5)], seed=1)
+    clipped = analyze(
+        AudioSignal(
+            samples=np.clip(clean.samples * 4.0, -0.3, 0.3),
+            sample_rate=clean.sample_rate,
+            source="daw",
+        ),
+        Reference.from_settings(short_sweep),
+    )
+    for name, result in (("a", good), ("b", clipped)):
+        save_measurement(
+            tmp_path / name,
+            MeasurementSession(recording_profile="vocal"),
+            result,
+            copy_recording=False,
+        )
+    return tmp_path / "a", tmp_path / "b"
+
+
+def test_show_on_a_saved_comparison_gives_the_verdict_compare_gave(
+    tmp_path, short_sweep: SweepSettings, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """One comparison, one verdict: `show comparison.json` read the saved
+    sessions' health no more, so an invalid take that `compare` left with
+    insufficient evidence was 'probably insignificant' there."""
+    from reverbscope.cli.main import main
+
+    a, b = _saved_pair(tmp_path, short_sweep)
+    assert (
+        main(["--format", "json", "compare", str(a), str(b), "--out", str(tmp_path / "c.json")])
+        == 0
+    )
+    compared = json.loads(capsys.readouterr().out)["verdict"]
+    assert main(["--format", "json", "show", str(tmp_path / "c.json")]) == 0
+    shown = json.loads(capsys.readouterr().out)["verdict"]
+    assert shown == compared
+    assert any("candidate measurement is invalid" in line for line in shown["conditions"])
+    assert main(["show", str(tmp_path / "c.json")]) == 0
+    assert "candidate measurement is invalid" in capsys.readouterr().out
+
+
+def test_show_says_when_the_sessions_of_a_saved_comparison_are_gone(
+    tmp_path, short_sweep: SweepSettings, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from reverbscope.cli.main import main
+
+    a, b = _saved_pair(tmp_path, short_sweep)
+    assert main(["compare", str(a), str(b), "--out", str(tmp_path / "c.json")]) == 0
+    capsys.readouterr()
+    b.rename(tmp_path / "moved")
+    assert main(["--format", "json", "show", str(tmp_path / "c.json")]) == 0
+    conditions = json.loads(capsys.readouterr().out)["verdict"]["conditions"]
+    assert any("health of the candidate take was not considered" in line for line in conditions)
+    a.rename(tmp_path / "moved-too")
+    assert main(["--format", "json", "show", str(tmp_path / "c.json")]) == 0
+    conditions = json.loads(capsys.readouterr().out)["verdict"]["conditions"]
+    assert any("health of the two takes was not considered" in line for line in conditions)

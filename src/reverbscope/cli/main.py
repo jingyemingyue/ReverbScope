@@ -1965,6 +1965,56 @@ def _candidate_profile(candidate_session: object) -> str | None:
         return None
 
 
+def _saved_results(comparison: Any) -> tuple[Any, Any]:
+    """The two results a saved comparison was made from, where they can still be read.
+
+    ``comparison.json`` stores the folders of the two sessions and not their
+    health, and ``compare`` judged with both results at hand. ``show`` reads
+    them again so that one comparison has one verdict; a folder that moved or
+    is damaged is not an error here: that side is ``None``.
+    """
+    from reverbscope.io.session_store import load_measurement
+
+    results = []
+    for folder in (comparison.baseline_session, comparison.candidate_session):
+        result = None
+        # compare stores the session folder; nothing else is opened for it.
+        if isinstance(folder, str) and folder and Path(folder).is_dir():
+            try:
+                result = load_measurement(folder).result
+            except (ReverbScopeError, OSError):
+                result = None
+        results.append(result)
+    return results[0], results[1]
+
+
+def _health_not_considered(verdict: Any, baseline: Any, candidate: Any) -> Any:
+    """``verdict``, naming in its conditions each side whose result could not be read."""
+    from dataclasses import replace
+
+    missing = [
+        side
+        for side, result in (
+            (pgettext("comparison side", "baseline"), baseline),
+            (pgettext("comparison side", "candidate"), candidate),
+        )
+        if result is None
+    ]
+    if not missing:
+        return verdict
+    if len(missing) == 2:
+        note = _(
+            "The measurement health of the two takes was not considered: their sessions are "
+            "no longer where the comparison was saved."
+        )
+    else:
+        note = _(
+            "The measurement health of the {side} take was not considered: its session is "
+            "no longer where the comparison was saved."
+        ).format(side=missing[0])
+    return replace(verdict, conditions=(*verdict.conditions, note))
+
+
 def cmd_show(args: argparse.Namespace) -> int:
     from reverbscope.interpretation import interpret, interpret_comparison
     from reverbscope.io.session_store import (
@@ -1993,8 +2043,16 @@ def cmd_show(args: argparse.Namespace) -> int:
         comparison = load_comparison(args.path)
         profile = _resolve_profile(args, _candidate_profile(comparison.candidate_session))
         findings = interpret_comparison(comparison, profile)
-        # From the file alone: the results' health is not stored in it.
-        verdict = judge_comparison(comparison, profile)
+        # Judged as `compare` judged it, with both results at hand, so that a
+        # comparison has one verdict: each side's measurement health counts.
+        # The health is not stored in comparison.json; where a session cannot
+        # be read any more, the verdict says that its health was not considered.
+        baseline, candidate = _saved_results(comparison)
+        verdict = _health_not_considered(
+            judge_comparison(comparison, profile, baseline=baseline, candidate=candidate),
+            baseline,
+            candidate,
+        )
         if _use_json(args):
             payload = comparison.to_dict()
             payload["findings"] = [f.to_dict() for f in findings]
