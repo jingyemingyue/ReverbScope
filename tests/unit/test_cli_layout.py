@@ -22,7 +22,7 @@ from reverbscope.cli.main import main
 from reverbscope.demo import run_demo
 from reverbscope.i18n import activate, annotated, clause_join, labelled, list_join, quoted
 from tests.frames import unframe
-from tests.zh_tokens import ascii_punctuation
+from tests.zh_tokens import ascii_punctuation, english_words
 
 WIDTHS = (40, 60, 80, 100)
 Call = Callable[..., str]
@@ -367,3 +367,55 @@ def test_no_chinese_screen_breaks_a_line_in_a_bad_place(
             if shown[0] in CLOSING or shown[-1] in OPENING or lone:
                 problems.setdefault(" ".join(argv[:3]), []).append(shown)
     assert problems == {}
+
+
+#: What a Chinese screen shows as it is: the name of the project, of the
+#: fake interface and of a setting, the ids of the recording profiles.
+SHOWN_AS_IT_IS = ("Studio", "ReverbScope fake interface")
+TYPED = (
+    "language",
+    "profile",
+    "backend",
+    "copy-recording",
+    "developer-tools",
+    "theme",
+    "style",
+    "choir",
+    "drums",
+    "generic",
+    "vocal",
+    "voiceover",
+    "auto",
+    "on",
+    "off",
+    "system",
+    "boxed",
+    "plain",
+    "nope",
+    "bogus",
+    "init",
+    "add",
+    "average",
+    "show",
+    "overview",
+)
+
+
+def test_no_chinese_screen_leaks_english(run: Call, workspace: Path, tmp_path: Path) -> None:
+    """Every screen, error included, is Chinese but for the names, units and
+    commands of tests/zh_tokens.py: libsndfile's sentence ended one."""
+    (tmp_path / "bad.wav").write_bytes(b"not a wav file at all")
+    screens = [
+        *(argv for argv in _screens(workspace) if "doctor" not in argv),  # package names
+        ("analyze-ir", "--ir", "bad.wav", "--band", "20", "20000"),
+        ("show", "missing-session"),
+        ("config", "style", "nope"),
+        ("project", "bogus"),
+    ]
+    leaks = {}
+    for argv in screens:
+        text = run("--lang", "zh_CN", *argv, columns=100, style="plain")
+        found = english_words(text, data=SHOWN_AS_IT_IS, values=TYPED)
+        if found:
+            leaks[" ".join(argv[:3])] = found
+    assert leaks == {}
