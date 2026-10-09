@@ -2772,24 +2772,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         from reverbscope.cli.console import is_terminal
         from reverbscope.edition import is_terminal_package
 
-        if is_terminal(sys.stdin) and is_terminal(sys.stdout) and not os.environ.get(MENU_VARIABLE):
-            # A person at a terminal: the menu, with the language, colour and
-            # style of this call in front of every command it runs.
-            from reverbscope.cli.interactive import run_menu
+        if (
+            is_terminal(sys.stdin)
+            and is_terminal(sys.stdout)
+            and not os.environ.get(MENU_VARIABLE)
+            and not _use_json(args)
+        ):
+            # A person at a terminal: the menu, with the options of this call
+            # (language, colour, style, backend …) in front of every command it
+            # runs. Not for ``--format json``: the menu prints text.
+            from reverbscope.cli.interactive import root_options, run_menu
             from reverbscope.i18n import current_locale
 
-            prefix = ["--lang", current_locale()]
-            if color in COLOR_MODES and color != "auto":
-                prefix += ["--color", color]
-            if getattr(args, "style", "auto") != "auto":
-                prefix += ["--style", str(args.style)]
             return run_menu(
                 _console(args),
                 ask=input,
                 run=main,
                 out=sys.stdout,
                 terminal_edition=is_terminal_package(),
-                prefix=prefix,
+                prefix=root_options(args, lang=current_locale(), color=color or "auto"),
             )
         # Bare ``reverbscope`` in a pipe or a script: a short home screen
         # instead of argparse's error. A command is still required, so the

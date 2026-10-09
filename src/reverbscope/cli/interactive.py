@@ -20,6 +20,7 @@ do and the answer was ``y``.
 
 from __future__ import annotations
 
+import argparse
 import logging
 import os
 import re
@@ -32,7 +33,7 @@ from pathlib import Path
 from typing import TextIO
 
 from reverbscope.cli.config import style_hint_lines
-from reverbscope.cli.console import Console, cell_width, shell_command, wrap
+from reverbscope.cli.console import COLOR_MODES, Console, cell_width, shell_command, wrap
 from reverbscope.cli.render import SAFETY_NOTE_SHOWN, render_error, render_safety_note
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, clause_join, current_locale, list_join, localize, pgettext
@@ -489,6 +490,30 @@ def option_value(options: Sequence[str], name: str) -> str | None:
     return None
 
 
+def root_options(args: argparse.Namespace, *, lang: str, color: str = "auto") -> list[str]:
+    """The options given before the command (``reverbscope --backend fake``),
+    which go before every command the menu runs and shows.
+
+    Without them the menu would measure on the real interface after the user
+    asked for the simulated one, copy the recording after ``--no-copy-recording``
+    and forget the colour, the style and the language that were asked for.
+    """
+    options = ["--lang", lang]
+    if color in COLOR_MODES and color != "auto":
+        options += ["--color", color]
+    style = getattr(args, "style", "auto")
+    if style != "auto":
+        options += ["--style", str(style)]
+    if getattr(args, "backend", None):
+        options += ["--backend", str(args.backend)]
+    copy = getattr(args, "copy_recording", None)
+    if copy is not None:
+        options.append("--copy-recording" if copy else "--no-copy-recording")
+    if getattr(args, "verbose", False):
+        options.append("--verbose")
+    return options
+
+
 def run_menu(
     console: Console,
     *,
@@ -598,6 +623,7 @@ __all__ = [
     "output_base",
     "parse_path",
     "quit_words",
+    "root_options",
     "run_menu",
     "whole_number",
 ]
