@@ -573,8 +573,12 @@ on a terminal: a pipe or a file never receives an escape sequence or a
 carriage return. Every status carries a symbol and a word (`✓` / `!` / `×` /
 `→`, or `[OK]` / `[WARN]` / `[ERROR]` / `->` where the stream cannot encode
 them), so colour is never the only signal; on such a stream the other signs
-(`Δ`, `→`, `–`) are written in ASCII too, and a narrow terminal encoding
-replaces what it cannot show instead of failing. Widths count a CJK character
+(`Δ`, `→`, `–`) are written in ASCII too (a Chinese sentence keeps its
+quotation marks and `…` where the stream, GBK say, can write them), and a
+narrow terminal encoding replaces what it cannot show instead of failing. On a
+framed screen the error mark of a status line is `✗`, as in the tables and the
+card titles (`×` is an ambiguous-width character); the lines without frames
+keep `×`. Widths count a CJK character
 as two columns; text is laid out for at most 100 columns. A wrapped line
 never starts with a closing mark (the character before it goes down with it,
 and with that the first half of a two-character word), a note in full-width
@@ -584,8 +588,11 @@ than one character; the Chinese is punctuated in Chinese by `annotated`,
 which leave English as it was. On a terminal that
 draws frames ("boxed"; never a pipe, a file or the GUI's report panes) "At a
 glance" is a bordered table of topic, status and result whose status cell is
-a badge, the mark and a word (`✓ good`, `! check`, `✗ problem`, `i note`; in
-a comparison `✓ compared` and `– not compared`). Its result column wraps; if
+a badge, the mark and a word (`✓ good`, `! warning`, `! notice`, `✗ problem`,
+`i note`; in a comparison `✓ compared` and `– not compared`; `? unsure` for a
+topic that a non-good health check bears on, `ComparisonVerdict.in_doubt` for a
+comparison, in the table only, so that the aligned lines of a pipe do not
+change). Its result column wraps, and is kept 28 columns wide; if
 that is not enough the status column is dropped with a line saying so, and
 only when no table fits are the aligned lines of the plain layout used. Under
 the same condition an interpretation finding is a card (`Console.frame`: a
