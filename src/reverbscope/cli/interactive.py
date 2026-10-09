@@ -3,10 +3,11 @@
 Numbered choices for the common tasks. Each asks for what its command
 needs, prints the equivalent command line (to type or paste next time),
 runs it in this process and returns to the menu. Ctrl+C at a question
-returns to the menu; the end of input (Ctrl+D, Ctrl+Z) and ``q`` leave.
-Only a terminal gets the menu: a pipe, a file or a script still gets the
-home screen on stderr and the usage exit code, so nothing that scripts
-ReverbScope changes. :data:`MENU_VARIABLE` switches it off on a terminal.
+returns to the menu, at the menu it leaves with exit code 130; the end of
+input (Ctrl+D, Ctrl+Z) and ``q`` leave with 0. Only a terminal gets the
+menu: a pipe, a file or a script still gets the home screen on stderr and
+the usage exit code, so nothing that scripts ReverbScope changes.
+:data:`MENU_VARIABLE` switches it off on a terminal.
 
 An answer is read as a person types it on a Chinese keyboard: ``９`` is 9,
 ``ｑ`` is q and ``退出`` is quit. An answer is never an exception: a number
@@ -38,6 +39,8 @@ from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
 #: Set (to anything) to keep the menu off a terminal.
 MENU_VARIABLE = "REVERBSCOPE_NO_MENU"
+#: The exit code of Ctrl+C at the menu: 128 + SIGINT, as a shell reports it.
+EXIT_INTERRUPTED = 130
 #: Columns a prompt leaves free at the right edge for the answer being typed.
 ANSWER_ROOM = 10
 
@@ -389,9 +392,12 @@ def run_menu(
         )
         try:
             choice = fold(session.ask(pgettext("menu prompt", "Your choice"))).casefold()
-        except (EOFError, KeyboardInterrupt):
+        except EOFError:
             session.say([""])
             return 0
+        except KeyboardInterrupt:
+            session.say([""])
+            return EXIT_INTERRUPTED
         if choice in quit_words():
             return 0
         item = by_key.get(choice)
@@ -407,7 +413,8 @@ def run_menu(
             session.say([""])
             return 0
         except Exception as exc:  # the menu must survive its own questions
-            log.exception("a menu question failed")
+            # The log file keeps the traceback; the screen gets the sentence.
+            log.info("a menu question failed", exc_info=True)
             session.say(
                 c.status(
                     "error",
@@ -437,6 +444,7 @@ def run_menu(
 
 
 __all__ = [
+    "EXIT_INTERRUPTED",
     "MENU_VARIABLE",
     "CancelledError",
     "MenuItem",

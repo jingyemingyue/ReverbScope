@@ -111,7 +111,7 @@ def test_a_sample_rate_outside_the_supported_list_is_refused(tmp_path: Path) -> 
 def test_ctrl_c_at_a_question_returns_and_at_the_menu_leaves() -> None:
     code, runs, out = _menu(["3", KeyboardInterrupt(), "q"])
     assert code == 0 and runs == [] and "Back to the menu." in out
-    assert _menu([KeyboardInterrupt()])[0] == 0
+    assert _menu([KeyboardInterrupt()])[0] == 130  # Ctrl+C at the menu: as a shell reports it
     assert _menu([])[0] == 0  # end of input
     code, runs, out = _menu(["x", "q"])
     assert "Choose a number from the list" in out
