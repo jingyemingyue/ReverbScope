@@ -7,10 +7,12 @@ read as two questions.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
 
+from reverbscope.cli import interactive
 from reverbscope.cli.console import cell_width
 from tests.menus import CTRL_C, drive
 
@@ -48,3 +50,29 @@ def test_a_question_that_fits_is_one_prompt_and_says_nothing_else() -> None:
     visit = drive(["2", CTRL_C, "q"], width=80)
     assert visit.prompts[1] == "Where to write the test signal [sweep.wav]: "
     assert not any(cell_width(line) > 80 for line in visit.lines)
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+def test_a_question_ends_in_one_colon_not_two(tmp_path: Path, lang: str) -> None:
+    """The label of a question is not followed by a colon of its own: the
+    prompt adds one ("Baseline (before): number or path:" had two)."""
+    for name in ("a", "b", "room"):
+        (tmp_path / name).mkdir()
+    (tmp_path / "rec.wav").write_bytes(b"RIFF")
+    answers = [
+        "2", "", "", "3", str(tmp_path / "rec.wav"), "", "", "5", "x", "", "6", "a", "b", "",
+        "7", "room", "4", "", "", "", "q",
+    ]  # fmt: skip
+    visit = drive(answers, lang=lang, prefix=["--backend", "fake"])
+    questions = [prompt.rstrip() for prompt in visit.prompts]
+    assert len(questions) > 12
+    for prompt in questions:
+        assert prompt.endswith((":", "：")), prompt
+        label = re.sub(r"[:：]$", "", prompt)
+        assert not label.endswith((":", "：")), prompt
+
+
+def test_the_menu_writes_only_through_the_console() -> None:
+    """The look comes from Console; the menu writes no escape sequence of its own."""
+    source = Path(interactive.__file__).read_text(encoding="utf-8")
+    assert "\\x1b" not in source and "\\033" not in source and "\x1b" not in source
