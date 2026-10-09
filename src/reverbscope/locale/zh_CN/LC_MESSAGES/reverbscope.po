@@ -5981,5 +5981,11 @@ msgstr "提示"
 msgid "{path} is a folder, not a file; try again, or leave empty to go back."
 msgstr "{path} 是文件夹，不是文件；请重试，或留空返回。"
 
+msgid "{path} is a folder; type a file name, for example {example}."
+msgstr "{path} 是文件夹；请输入文件名，例如 {example}。"
+
+msgid "{path} already exists. Replace it?"
+msgstr "{path} 已存在。要替换它吗？"
+
 msgid "{path} has no project.json; make a project first with reverbscope project init --out <folder>, or try another folder."
 msgstr "{path} 里没有 project.json；请先用 reverbscope project init --out <文件夹> 建立项目，或换一个文件夹。"

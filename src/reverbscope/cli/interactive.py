@@ -39,6 +39,7 @@ from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, clause_join, current_locale, list_join, localize, pgettext
 from reverbscope.io.project_store import is_project
 from reverbscope.io.session_store import SESSION_FILE
+from reverbscope.io.wav import has_audio_extension
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
 #: Set (to anything) to keep the menu off a terminal.
@@ -281,6 +282,47 @@ class Session:
                 text = _("{path} does not exist; try again, or leave empty to go back.")
             self.say(self.console.status("error", text.format(path=path)))
 
+    def ask_file_to_write(self, prompt: str, *, default: Path) -> Path:
+        """A file to create: ``.wav`` is added to a name without an audio
+        extension (libsndfile refuses it), a folder is refused in words and
+        a file that exists is replaced only after a yes."""
+        while True:
+            path = self.ask_path(prompt, default=default, exists=False)
+            if _is_dir(path):
+                example = path / default.name
+                self.say(
+                    self.console.status(
+                        "error",
+                        _("{path} is a folder; type a file name, for example {example}.").format(
+                            path=path, example=example
+                        ),
+                    )
+                )
+                continue
+            if not has_audio_extension(path):
+                path = path.with_name(path.name + ".wav")
+            if not _exists(path) or self.ask_yes(
+                _("{path} already exists. Replace it?").format(path=path)
+            ):
+                return path
+
+    def confirm_session_folder(self, folder: Path) -> bool:
+        """Whether a take or an analysis may be saved in ``folder``: it holds no
+        session yet, or the user said yes to replacing the one in it."""
+        if not _is_file(folder / SESSION_FILE):
+            return True
+        return self.ask_yes(
+            _("{path} already holds a saved session. Replace it?").format(path=folder)
+        )
+
+    def ask_session_folder(self, prompt: str, *, default: Path) -> Path:
+        """A folder for a new session, asked again while it holds a saved one
+        that the user does not want replaced."""
+        while True:
+            folder = self.ask_path(prompt, default=default, exists=False)
+            if self.confirm_session_folder(folder):
+                return folder
+
     def ask_yes(self, prompt: str) -> bool:
         """Yes only for an explicit yes; Enter, anything else, is no."""
         answer = fold(self._read(*_split_question(_("{question} [y/N]: "), prompt))).casefold()
@@ -306,9 +348,7 @@ def _plain(*argv: str) -> Callable[[Session], list[str] | None]:
 
 
 def _sweep(session: Session) -> list[str]:
-    out = session.ask_path(
-        _("Where to write the test signal"), default=Path("sweep.wav"), exists=False
-    )
+    out = session.ask_file_to_write(_("Where to write the test signal"), default=Path("sweep.wav"))
     while True:
         rate = whole_number(session.ask(_("Sample rate of your DAW project (Hz)"), "48000"))
         if rate in SUPPORTED_SAMPLE_RATES:
@@ -334,9 +374,11 @@ def _analyze(session: Session) -> list[str]:
         default=beside if beside.is_file() else None,
         file=True,
     )
-    out = session.ask(_("Folder to save the session in (empty: show only)"))
+    while True:
+        saved = parse_path(session.ask(_("Folder to save the session in (empty: show only)")))
+        if saved is None or session.confirm_session_folder(saved):
+            break
     argv = ["analyze", "--recording", path_arg(recording), "--sweep", path_arg(sweep)]
-    saved = parse_path(out)
     if saved is not None:
         argv += ["--out", path_arg(saved)]
     return argv
@@ -369,6 +411,19 @@ def output_base() -> Path:
     except (OSError, RuntimeError, ValueError):
         folder = None
     return folder if folder is not None and _is_dir(folder) else Path()
+
+
+def new_session_folder(base: Path, now: datetime | None = None) -> Path:
+    """``session-<date>-<time>`` in ``base``, or ``-2``, ``-3`` after it when
+    that folder exists: a take lasts longer than the minute the name is made
+    of, and the second one replaced the first in the same folder."""
+    stamp = (now or datetime.now()).strftime("%Y%m%d-%H%M")
+    folder = base / f"session-{stamp}"
+    number = 2
+    while _exists(folder):
+        folder = base / f"session-{stamp}-{number}"
+        number += 1
+    return folder
 
 
 def audio_problems(backend: str | None) -> list[str]:
@@ -406,9 +461,8 @@ def _measure(session: Session) -> list[str] | None:
             ]
         )
         return None
-    stamp = datetime.now().strftime("%Y%m%d-%H%M")
-    out = session.ask_path(
-        _("Folder for the new session"), default=output_base() / f"session-{stamp}", exists=False
+    out = session.ask_session_folder(
+        _("Folder for the new session"), default=new_session_folder(output_base())
     )
     acknowledged = False
     while True:

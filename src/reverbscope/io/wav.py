@@ -135,6 +135,12 @@ def read_wav(path: str | Path) -> AudioSignal:
     return AudioSignal(samples=samples, sample_rate=int(sample_rate), source=str(file_path))
 
 
+def has_audio_extension(path: str | Path) -> bool:
+    """Whether libsndfile can tell the format of a file to be written from its
+    name (``take.wav``, ``take.FLAC``): a name without one is refused by it."""
+    return Path(path).suffix[1:].upper() in _soundfile().available_formats()
+
+
 def write_wav(
     path: str | Path,
     samples: FloatArray,
