@@ -44,7 +44,7 @@
 维护者仍可以在发布 rc2 之前把它们拿掉。这是针对一个候选版的决定，不是对上面规则的修改：从 rc2 起功能面再次冻结。
 rc2 改了什么，见 changelog 的 `[0.5.0rc2]` 小节。
 
-**两条线如何保持接近。** 对两条线都适用的修复，先在候选线上做，再 forward-port 到 `main`（merge 或 cherry-pick 同一提交，绝不手工重做）。除了这条规则，`main` 上的东西不会反向进入候选线。cherry-pick 不能撤销改名、丢掉测试或回退文档；`check_cli_docs.py`、catalog 测试和完整测试套件在两条线上都要跑。候选线保守，`main` 负责开发。
+**两条线如何保持接近。** 对两条线都适用的修复，先在候选线上做，再 forward-port 到 `main`（merge 或 cherry-pick 同一提交，绝不手工重做）。如果一个修复属于允许的类别、却先在 `main` 上发现（审计是针对开发线进行的），而候选线有同样的缺陷，可以用 `git cherry-pick -x` 把它挑到候选线，绝不手工重做；除此之外，`main` 上的东西不会反向进入候选线。cherry-pick 不能撤销改名、丢掉测试或回退文档；`check_cli_docs.py`、catalog 测试和完整测试套件在两条线上都要跑。候选线保守，`main` 负责开发。
 
 **工作流怎么对待两条线。** CI 在推送到 `main`、`release/**` 和每个 pull request 时运行。Release 工作流在推送到 `main` 或 `release/**` 且触及发布文件（版本号、工作流、`packaging/`、打包脚本）时运行，也在 `v*` tag、触及这些文件的 pull request 和手动触发时运行；只改文档的推送什么都不构建。在 `main` 或 `release/*` 分支上，只要 `v<version>` 的 tag 还不存在，它就会打开或刷新该线版本的 draft Release；发布这个草稿是维护者的点击，点击时创建 tag。候选版以 *pre-release* 发布。Actions 额度规则：完整发布矩阵只为发布相关改动、候选分支或候选 PR、`main` 上的发布准备、tag 或手动验证运行；而被发布的那个提交必须拥有自己的绿色 CI 与 Release 运行，不能借用邻近提交的结果。
 

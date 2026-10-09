@@ -40,7 +40,7 @@ body:
     id: buffer
     attributes:
       label: Buffer size and latency setting
-      description: 'As set in the interface control panel (and the ReverbScope Latency: Low / High setting if you changed it). The `audio stream:` line of `reverbscope.log` shows what the stream reported.'
+      description: 'As set in the interface control panel (and the ReverbScope Latency: Low / High setting if you changed it). The `audio stream:` line of `reverbscope.log` shows what the stream reported. On Windows (WASAPI) there is no ASIO buffer: give the Windows Default Format and that line.'
       placeholder: "256 samples at 48 kHz; ReverbScope latency default; audio stream: latency_s=(0.012, 0.011)"
     validations:
       required: true

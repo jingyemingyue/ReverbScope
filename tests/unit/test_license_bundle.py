@@ -406,6 +406,101 @@ def test_the_licence_gate_fails_on_a_native_library_without_a_notice(tmp_path: P
     assert gate.check(root, require_licenses=True) == []
 
 
+def _licence_folder(root: Path) -> Path:
+    """THIRD_PARTY_LICENSES with everything the gate asks for except package-binary notices."""
+    licenses = root / "THIRD_PARTY_LICENSES"
+    (licenses / "_texts").mkdir(parents=True)
+    (licenses / "_notices" / "native").mkdir(parents=True)
+    (licenses / "INDEX.txt").write_text("unresolved: none\n", encoding="utf-8")
+    for name in ("LGPL-3.0.txt", "GPL-3.0.txt", "PortAudio-LICENSE.txt"):
+        (licenses / "_texts" / name).write_text("x", encoding="utf-8")
+    for name in ("python.txt", "qt-third-party.txt"):
+        (licenses / "_notices" / name).write_text("x", encoding="utf-8")
+    return licenses
+
+
+def test_the_licence_gate_fails_on_a_wheel_binary_that_is_not_the_wheels_code(
+    tmp_path: Path,
+) -> None:
+    """The Windows Desktop zip shipped PySide6/opengl32sw.dll, Qt's Mesa llvmpipe
+    build (MIT, made with LLVM under the NCSA licence), with no notice for either:
+    it sits in a wheel's package folder, which the loose-library scan skips."""
+    gate = _load("check_bundle_contents")
+    root = tmp_path / "reverbscope"
+    (root / "_internal" / "PySide6").mkdir(parents=True)
+    (root / "_internal" / "PySide6" / "opengl32sw.dll").write_bytes(b"Mesa 11.2.2 llvmpipe")
+    licenses = _licence_folder(root)
+    errors = gate.check(root, require_licenses=True)
+    assert len(errors) == 1
+    assert "third-party binary without its licence notice" in errors[0]
+    assert "_notices/native/mesa-llvmpipe.txt" in errors[0]
+    assert errors[0].endswith("opengl32sw.dll")
+    # The same file under another case, as a case-insensitive volume would list it.
+    (root / "_internal" / "PySide6" / "opengl32sw.dll").rename(
+        root / "_internal" / "PySide6" / "OpenGL32SW.DLL"
+    )
+    assert len(gate.check(root, require_licenses=True)) == 1
+    (licenses / "_notices" / "native" / "mesa-llvmpipe.txt").write_text("x", encoding="utf-8")
+    assert gate.check(root, require_licenses=True) == []
+
+
+def test_a_tree_without_the_software_opengl_library_needs_no_mesa_notice(tmp_path: Path) -> None:
+    gate = _load("check_bundle_contents")
+    root = tmp_path / "reverbscope"
+    (root / "_internal" / "PySide6").mkdir(parents=True)
+    (root / "_internal" / "PySide6" / "QtCore.abi3.so").write_bytes(b"wheel")
+    _licence_folder(root)
+    assert gate.package_binaries(root) == []
+    assert gate.check(root, require_licenses=True) == []
+
+
+def test_the_builder_writes_the_mesa_and_llvm_notice_next_to_the_library(
+    tmp_path: Path, monkeypatch
+) -> None:
+    bundle_mod = _load("build_license_bundle")
+    gate = _load("check_bundle_contents")
+    monkeypatch.setattr(bundle_mod, "system_package", lambda library: None)
+    root = _frozen_tree(tmp_path / "reverbscope")
+    (root / "_internal" / "PySide6" / "opengl32sw.dll").write_bytes(b"Mesa 11.2.2 llvmpipe")
+    out = root / "THIRD_PARTY_LICENSES"
+    unresolved = bundle_mod.build(out, frozen=root)
+    assert not [item for item in unresolved if "opengl32sw" in item]
+    notice = (out / "_notices" / "native" / "mesa-llvmpipe.txt").read_text(encoding="utf-8")
+    assert "opengl32sw.dll" in notice and "Mesa 11.2.2" in notice
+    assert "MIT licence" in notice and "Brian Paul" in notice
+    assert "University of Illinois/NCSA Open Source License" in notice
+    assert "Neither the names of the LLVM Team" in notice
+    index = (out / "INDEX.txt").read_text(encoding="utf-8")
+    assert "package binaries: opengl32sw.dll -> _notices/native/mesa-llvmpipe.txt" in index
+    # What the builder wrote is what the gate asks for.
+    assert gate.unlicensed_package_binaries(root, out) == []
+    (out / "_notices" / "native" / "mesa-llvmpipe.txt").unlink()
+    assert len(gate.unlicensed_package_binaries(root, out)) == 1
+
+
+def test_the_builder_reports_a_package_binary_it_has_no_notice_text_for(
+    tmp_path: Path, monkeypatch
+) -> None:
+    bundle_mod = _load("build_license_bundle")
+    monkeypatch.setattr(bundle_mod, "system_package", lambda library: None)
+    monkeypatch.setattr(bundle_mod, "TEXTS_DIR", tmp_path / "no-texts")
+    root = tmp_path / "reverbscope"
+    (root / "_internal" / "PySide6").mkdir(parents=True)
+    (root / "_internal" / "PySide6" / "opengl32sw.dll").write_bytes(b"Mesa 11.2.2 llvmpipe")
+    unresolved = bundle_mod.build(tmp_path / "out", frozen=root)
+    assert "native:opengl32sw.dll" in unresolved
+
+
+def test_a_frozen_tree_without_it_reports_no_package_binaries(tmp_path: Path, monkeypatch) -> None:
+    bundle_mod = _load("build_license_bundle")
+    monkeypatch.setattr(bundle_mod, "system_package", lambda library: None)
+    root = _frozen_tree(tmp_path / "reverbscope")
+    out = tmp_path / "out"
+    bundle_mod.build(out, frozen=root)
+    assert "package binaries: none" in (out / "INDEX.txt").read_text(encoding="utf-8")
+    assert not (out / "_notices" / "native" / "mesa-llvmpipe.txt").exists()
+
+
 def test_native_libraries_of_a_python_installation_get_their_notices(
     tmp_path: Path, monkeypatch
 ) -> None:

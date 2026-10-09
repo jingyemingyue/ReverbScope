@@ -6,6 +6,56 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 41: 2026-10-09 — **rc2 takes what the final independent audit
+found: a licence gap in the Windows bundle, a silent wrong average and a
+misleading failure message, plus the corrections to what testers read**
+(branch `release/0.5.0` through a pull request, still `0.5.0rc2`; the
+Release workflow refreshes the draft `v0.5.0rc2` from the merged head;
+nothing published or tagged).
+
+* **How it was found.** Seven read-only auditors (DSP numerics; command-line
+  and file robustness; the desktop app and its Chinese interface; candidate
+  purity; merge history and versions; the documents a tester follows against
+  the software; release engineering and supply chain), each finding re-checked
+  by a second, sceptical agent: 27 confirmed (none a blocker), 17 rejected.
+  The audit ran against `main` and the candidate while the candidate moved from
+  rc1 to rc2; the fixes below were re-applied on the rc2 head and re-tested.
+* **Fixed here, each with a regression test.** `PySide6/opengl32sw.dll` in the
+  Windows Desktop bundle (Mesa llvmpipe, MIT, built with LLVM under the
+  University of Illinois/NCSA licence) had no notice, in rc1 and in the first
+  rc2 draft: the notice is written into `THIRD_PARTY_LICENSES` whenever the
+  file is in the tree and the bundle gate fails without it (run against the
+  real zip of the rc1 draft, the gate named exactly that file and passed once
+  the notice was added). `project show` and `project average` dropped a
+  position whose session folder was gone without a word; they name it on
+  stderr now. A recording too long for the memory at hand ended as "a bug in
+  ReverbScope"; it now says there is not enough memory and what to do.
+* **Corrected in the documents**: where `reverbscope` is when the installer
+  does not put it on `PATH`, the five files `analyze --out` writes, Windows
+  WASAPI and the Default Format in the hardware steps and form, the bug form's
+  Version / Build lines, the host-API wording, the deprecated `doctor --json`,
+  the `.cmd` advice for Desktop Edition users, the buffer-check command, the
+  count of workflows, the direction of a fix between the lines, and the stale
+  milestone sentence.
+* **Written down instead of fixed** (not allowed on this line, or not worth
+  the risk): a live take is dropped without a question by New Measurement,
+  Open Session and closing the window; Ctrl+C in the first second prints a
+  traceback; a single 100 KB space-free field makes the text report take
+  seconds; a NaN written into `session.json` by hand comes back as a bare
+  `NaN` from `show --format json`. The development line's next merge carries a
+  linear-time text layout and a Save / Discard / Cancel question before a live
+  take is dropped.
+
+**What was run** (a Linux container, Python 3.12, PySide6 6.11 offscreen,
+PortAudio present, no audio device): ruff, ruff format, strict mypy with and
+without PySide6's stubs, `check_doc_links.py`, `check_cli_docs.py`,
+`check_src_safety.py`, the docs-site build, the schema checks, the fake-backend
+Standalone flow, the example script, `python -m build`, the license bundle and
+the full suite with the coverage gate on this head; the refreshed draft's 14
+assets are read back after the Release run. **Not run:** anything on real
+hardware or in a DAW; the macOS and Windows bundles (GitHub's runners build and
+smoke them).
+
 Snapshot 40: 2026-10-09 — **0.5.0rc2 prepared on the candidate line** (branch
 `release/0.5.0`, moved by fast-forward from `89d404d` to the convergence branch
 of snapshot 39 plus one commit; the Release workflow opens the draft
@@ -225,7 +275,9 @@ stacked on PR #44; the changelog's `[Unreleased]` lists it):
   frozen feature set and only correctness, crash, packaging, cross-platform,
   hardware- and DAW-compatibility, documentation, localization and
   release-engineering fixes. Fixes go to the candidate first and are
-  forward-ported to `main`; nothing comes back the other way. The 0.5.0
+  forward-ported to `main`; a fix of an allowed class that was found on
+  `main` first may be cherry-picked (`-x`) to the candidate; nothing else
+  comes back the other way. The 0.5.0
   gate (real macOS and Windows machines, two interface models, the listed
   rows, two DAWs, one reference-instrument comparison) is in
   `docs/RELEASE_PLAN.md` §2a and §2b.
@@ -1175,6 +1227,13 @@ algebra and the refusals, not the acoustics of any real surface.
   devices (Universal DAW Mode relies on the DAW/interface clocking).
 * `result.json` with curves is several MB for long IRs (`--no-curves` to
   shrink); the raw IR WAV is the authoritative record.
+* The analysis of a long recording holds roughly 140 bytes per sample in
+  memory (about 2 GB for 5 minutes at 48 kHz); a recording that does not fit
+  ends the command with a "not enough memory" message and should be cut to
+  the sweep plus a few seconds on each side.
+* A live take (Standalone or Demo) exists only in memory until **Save
+  Session...**: New Measurement, Open Session and closing the window discard
+  it without asking.
 * zh-CN: core diagnostics (`warnings`, `notes`, `reason`) and plot titles
   stay English by design; the Chinese text was written by the project, not
   reviewed by a second translator.
@@ -1243,9 +1302,10 @@ were not copied. `packaging/licenses/` holds verbatim license *texts*
 
 ## Next recommended milestone
 
-See [RELEASE_PLAN.md](RELEASE_PLAN.md): **0.5.0b1** is the software beta
-(early/late energy, profile clarity notices, the placement picture). It does
-not meet the 0.5.0 exit criteria. **0.5.0** is still the first version with
+See [RELEASE_PLAN.md](RELEASE_PLAN.md): **0.5.0rc2** is the release candidate
+(for hardware and DAW validation; the published 0.5.0b1 was the software beta
+before it). It does not meet the 0.5.0 exit criteria (§2b) until those runs
+exist. **0.5.0** is still the first version with
 dated hardware-matrix PASS rows. Then 1.0.0rc1 when every MUST item of
 ARCHITECTURE_V1.md §3.1 is closed. API and schema versions stay unfrozen
 until then.

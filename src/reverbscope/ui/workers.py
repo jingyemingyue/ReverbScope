@@ -32,10 +32,26 @@ def unexpected_error_text() -> str:
     )
 
 
+def out_of_memory_text() -> str:
+    """What the GUI says when a recording is too long for the memory at hand.
+
+    The analysis holds roughly 140 bytes per sample, so this is the user's to
+    fix (cut the recording, close other programs), not a bug.
+    """
+    return _(
+        "There is not enough memory to analyse this recording. A long recording needs "
+        "a lot of it: about 2 GB for 5 minutes at 48 kHz, in proportion to its length. "
+        "Cut it to the sweep plus a few seconds of silence on each side, or close other "
+        "programs, and try again."
+    )
+
+
 def gui_failure_text(exc: BaseException) -> str:
     """A dialog sentence for an exception that reached the GUI thread."""
     if isinstance(exc, ReverbScopeError):
         return localize(str(exc))
+    if isinstance(exc, MemoryError):
+        return out_of_memory_text()
     return unexpected_error_text()
 
 
@@ -74,6 +90,9 @@ class AnalysisWorker(QThread):
             )
         except ReverbScopeError as exc:
             self.failed.emit(analysis_failure_text(exc))
+        except MemoryError:
+            log.exception("analysis ran out of memory")
+            self.failed.emit(out_of_memory_text())
         except Exception:
             log.exception("analysis failed unexpectedly")
             self.failed.emit(unexpected_error_text())
