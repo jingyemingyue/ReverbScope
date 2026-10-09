@@ -267,7 +267,7 @@ def test_the_overview_of_an_analysis_has_a_status_word_in_chinese(demo: DemoRun)
         table = _table(at_a_glance(_console(100), first, interpret(first, "vocal")))
     assert table[1].startswith("  │ 方面     │ 状态   │ 结果")
     rows = {_cells(row)[0]: row for row in table[3:-1]}
-    assert rows["混响"].startswith("  │ 混响     │ ! 注意 │ RT60 0.70 s (T30) · EDT 0.45 s")
+    assert rows["混响"].startswith("  │ 混响     │ ! 注意 │ RT60 0.70 s（T30） · EDT 0.45 s")
     assert rows["清晰度"].startswith(
         "  │ 清晰度   │ ✓ 良好 │ C50 +9.8 dB · C80 +12.9 dB · D50 91 %"
     )
@@ -298,7 +298,7 @@ def test_the_comparison_overview_says_whether_a_topic_was_compared(demo: DemoRun
     with _in("zh_CN"):
         table = _table(comparison_at_a_glance(_console(100), demo.comparison))
     assert table[1].startswith("  │ 方面     │ 状态     │ 结果")
-    assert table[3].startswith("  │ 混响     │ ✓ 已对比 │ RT60 0.70 s → 0.51 s (-27.3 %)")
+    assert table[3].startswith("  │ 混响     │ ✓ 已对比 │ RT60 0.70 s → 0.51 s（-27.3 %）")
     english = _table(comparison_at_a_glance(_console(100), demo.comparison))
     assert english[3].startswith("  │ Reverberation      │ ✓ compared │ RT60 0.70 s → 0.51 s")
     # Whether a change is good is not what the column says.

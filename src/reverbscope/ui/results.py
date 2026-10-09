@@ -35,7 +35,7 @@ from reverbscope.cli.render import REPORT_CONSOLE, render_analysis
 from reverbscope.demo import localize_demo_name
 from reverbscope.errors import ReverbScopeError
 from reverbscope.health import HealthStatus, affects_text, assess, status_word
-from reverbscope.i18n import _, localize
+from reverbscope.i18n import _, list_join, localize
 from reverbscope.io.recent import remember_session
 from reverbscope.io.session_store import SESSION_FILE, save_measurement
 from reverbscope.labels import severity_text, surface_text, topic_text, validity_word
@@ -489,7 +489,7 @@ class _Overview(QWidget):
             )
         if report.good:
             summary += " " + _("Good: {titles}.").format(
-                titles=", ".join(check.title for check in report.good)
+                titles=list_join(check.title for check in report.good)
             )
         self.health_summary.setText(summary)
         while self.health_rows.count():

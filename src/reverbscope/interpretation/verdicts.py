@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from reverbscope.i18n import _, current_locale, localize, pgettext
+from reverbscope.i18n import _, current_locale, list_join, localize, pgettext
 from reverbscope.interpretation.profiles import decay_length_text, get_profile
 from reverbscope.models.comparison import T_JND_PERCENT, ComparisonResult, MetricDelta
 from reverbscope.models.result import AnalysisResult, Validity
@@ -267,7 +267,7 @@ def _invalid_sides(
         report = assess(result)
         if report.overall is HealthStatus.GOOD:
             continue
-        titles = ", ".join(check.title for check in report.problems) or report.overall
+        titles = list_join(check.title for check in report.problems) or report.overall
         if report.overall is HealthStatus.INVALID:
             invalid.append((side, titles))
             conditions.append(
@@ -688,14 +688,14 @@ def _low_end(comparison: ComparisonResult) -> AspectVerdict:
             "{count} distinguishable low-frequency resonance(s) appeared at {frequencies} Hz"
         ).format(
             count=len(appeared),
-            frequencies=", ".join(f"{hz:.0f}" for hz in appeared if hz is not None),
+            frequencies=list_join(f"{hz:.0f}" for hz in appeared if hz is not None),
         )
         return AspectVerdict(aspect, Verdict.DEGRADATION, title, reason, evidence)
     if gone and not appeared:
         reason = _(
             "{count} distinguishable low-frequency resonance(s) disappeared ({frequencies} Hz)"
         ).format(
-            count=len(gone), frequencies=", ".join(f"{hz:.0f}" for hz in gone if hz is not None)
+            count=len(gone), frequencies=list_join(f"{hz:.0f}" for hz in gone if hz is not None)
         )
         return AspectVerdict(aspect, Verdict.IMPROVEMENT, title, reason, evidence)
     if appeared and gone:

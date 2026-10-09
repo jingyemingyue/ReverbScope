@@ -39,7 +39,7 @@ from reverbscope.core.pipeline import Reference
 from reverbscope.core.sweep import measurement_signal
 from reverbscope.demo import DEMO_MODE, FAKE_BACKEND_NOTES
 from reverbscope.errors import AudioDeviceError, ReverbScopeError
-from reverbscope.i18n import N_, _, localize
+from reverbscope.i18n import N_, _, list_join, localize
 from reverbscope.interpretation import Finding, available_profiles, interpret
 from reverbscope.interpretation.profiles import profile_title
 from reverbscope.io.wav import load_reference, read_wav, write_sweep_file
@@ -1252,7 +1252,7 @@ class StandalonePage(QWidget):
             or abs(out.default_sample_rate - inp.default_sample_rate) > 0.5
         ):
             parts.append(_("out {rate:.0f} Hz").format(rate=out.default_sample_rate))
-        device_txt = ", ".join(parts) if parts else _("unknown")
+        device_txt = list_join(parts) if parts else _("unknown")
         text = _("Device rate: {device}  (requested {requested} Hz)").format(
             device=device_txt, requested=requested_hz
         )

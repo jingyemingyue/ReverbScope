@@ -38,7 +38,7 @@ from reverbscope.cli.render import (
 )
 from reverbscope.core.compare import compare
 from reverbscope.errors import ReverbScopeError
-from reverbscope.i18n import _, localize
+from reverbscope.i18n import _, list_join, localize
 from reverbscope.interpretation import interpret_comparison
 from reverbscope.interpretation.interpreter import Finding
 from reverbscope.interpretation.profiles import profile_title
@@ -369,7 +369,7 @@ class ComparePage(QWidget):
             axes.set_title(_("Frequency-response difference (candidate − baseline)"))
             axes.grid(True, which="both", alpha=0.3)
             if fr.band_mad_db:
-                bits = ", ".join(f"{name} {mad:.2f} dB" for name, mad in fr.band_mad_db)
+                bits = list_join(f"{name} {mad:.2f} dB" for name, mad in fr.band_mad_db)
                 self.band_mad.setText(
                     _("Mean absolute difference per octave: {bits}").format(bits=bits)
                 )

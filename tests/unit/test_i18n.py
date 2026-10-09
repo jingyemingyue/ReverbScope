@@ -451,7 +451,9 @@ def test_comparison_reasons_name_the_validity_in_words() -> None:
     assert reason == (
         "baseline insufficient range (too little decay); candidate outside the excitation range"
     )
-    assert _shown_in_chinese(reason) == "基准：衰减范围不足（too little decay）；对比项：超出激励范围"
+    assert (
+        _shown_in_chinese(reason) == "基准：衰减范围不足（too little decay）；对比项：超出激励范围"
+    )
     # A reason stored with the ids by an earlier version.
     stored = "baseline insufficient_decay_range; candidate outside_excitation_range"
     assert _shown_in_chinese(stored) == "基准：衰减范围不足；对比项：超出激励范围"

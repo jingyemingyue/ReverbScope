@@ -283,3 +283,12 @@ def test_channel_choices_stored_by_0_5_still_read_in_chinese(zh: None) -> None:
     )
     assert localize(plain).startswith("录音有 2 个声道；已分析从 0 开始编号的声道 1")
     assert localize(beside_loopback).startswith("录音有 3 个声道；已分析从 0 开始编号的声道 2")
+
+
+def test_a_list_of_numbers_in_a_stored_sentence_is_joined_the_chinese_way(zh: None) -> None:
+    """The orders of the folded harmonics are stored as "2, 3"."""
+    text = (
+        "aliased distortion (folded harmonic 2, 3 at -45 dB re the direct sound) spreads over "
+        "the impulse response after the direct sound and imitates a decay"
+    )
+    assert localize(text).startswith("混叠失真（折叠回来的 2、3 次谐波，相对直达声 -45 dB）")

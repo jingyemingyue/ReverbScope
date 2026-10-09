@@ -928,9 +928,6 @@ msgstr "声明的激励频带（Hz；所有衰减与清晰度指标都需要，�
 msgid "n/a"
 msgstr "无"
 
-msgid "at {temp:.0f} °C"
-msgstr "气温 {temp:.0f} °C"
-
 msgid "matched"
 msgstr "匹配"
 
@@ -3304,9 +3301,6 @@ msgstr "{name} - {count} 路输出"
 
 # Command-line presentation (reverbscope/cli/render.py, cli/main.py)
 
-msgid "(add {input})"
-msgstr "（需添加 {input}）"
-
 msgid "20 dB decay"
 msgstr "20 dB 衰减"
 
@@ -4629,7 +4623,7 @@ msgstr "无法估计后期衰减斜率：响应在高于本底噪声 {lower:g} �
 # reverbscope project average: counts per value
 
 msgid "n is the number of sessions averaged in the row; a value followed by (k) averages only k of them, as the others have no VALID value."
-msgstr "n 为该行参与平均的会话数；数值后带 (k) 表示只平均了其中 k 个会话，其余会话没有有效值。"
+msgstr "n 为该行参与平均的会话数；数值后带（k）表示只平均了其中 k 个会话，其余会话没有有效值。"
 
 # Decay analysis: truncation-sensitivity values with enough digits to tell them apart
 
@@ -5413,7 +5407,7 @@ msgid "No position yet: measure one from the Project page, or add a saved sessio
 msgstr "还没有位置：在“项目”页面测量一个，或用 reverbscope project add <project> <session> --position <label> 加入一个已保存的会话。"
 
 msgid "{n} microphone position(s) reach the ISO 3382-2 {now} class; {more} more (same source position and level) would reach {better}."
-msgstr "{n} 个话筒位置达到 ISO 3382-2 的{now}等级；再加 {more} 个（声源位置和电平不变）即可达到{better}。"
+msgstr "{n} 个话筒位置达到 ISO 3382-2 的{now}；再加 {more} 个（声源位置和电平不变）即可达到{better}。"
 
 msgid "measure every position again with the loudspeaker elsewhere, and pass --sources {sources}"
 msgstr "把扬声器换一个位置，再把每个位置测一遍，并传入 --sources {sources}"
@@ -5422,7 +5416,7 @@ msgid "{more} more microphone position(s) ({total} in all), each measured with t
 msgstr "再加 {more} 个话筒位置（共 {total} 个），每个位置都在扬声器的两个位置各测一次；传入 --sources {sources}"
 
 msgid "{n} microphone position(s) reach the ISO 3382-2 {now} class; {better} needs a second source position: {how}."
-msgstr "{n} 个话筒位置达到 ISO 3382-2 的{now}等级；{better}需要第二个声源位置：{how}。"
+msgstr "{n} 个话筒位置达到 ISO 3382-2 的{now}；{better}需要第二个声源位置：{how}。"
 
 msgid "A second take at {labels} would show whether the measurement repeats (takes at one position should agree within {jnd:g} % in RT60)."
 msgstr "在 {labels} 再测一次可以看出测量是否可重复（同一位置的多次测量，RT60 应相差不超过 {jnd:g} %）。"
@@ -5914,3 +5908,13 @@ msgstr "已省略 Δ %；把终端调宽即可看到。"
 msgctxt "error panel"
 msgid "Error"
 msgstr "错误"
+
+msgctxt "annotation"
+msgid "{value} ({note})"
+msgstr "{value}（{note}）"
+
+msgid "{speed:.1f} m/s at {temp:.0f} °C"
+msgstr "{speed:.1f} m/s，气温 {temp:.0f} °C"
+
+msgid "add {input}"
+msgstr "需添加 {input}"

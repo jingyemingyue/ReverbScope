@@ -26,7 +26,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from reverbscope.i18n import N_, _, current_locale, list_join, localize, pgettext
+from reverbscope.i18n import N_, _, current_locale, labelled, list_join, localize, pgettext
 from reverbscope.models.result import (
     EXCITATION_SOURCE_DECLARED,
     EXCITATION_SOURCE_UNKNOWN,
@@ -428,7 +428,7 @@ DAW_STRETCH_SETTINGS: tuple[tuple[str, str], ...] = (
 
 
 def _daw_lines(table: tuple[tuple[str, str], ...]) -> tuple[str, ...]:
-    return tuple(f"{daw}: {_(text)}" for daw, text in table)
+    return tuple(labelled(daw, _(text)) for daw, text in table)
 
 
 def speed_fix(speed: PlaybackSpeed) -> tuple[tuple[str, ...], tuple[str, ...]]:
@@ -629,7 +629,7 @@ def _distortion(result: AnalysisResult) -> HealthCheck | None:
         )
     significant = [a for a in ir.aliased_distortion if a.significant]
     if significant:
-        orders = ", ".join(str(a.order) for a in significant)
+        orders = list_join(str(a.order) for a in significant)
         level = max(
             (a.level_db for a in significant if a.level_db is not None), default=float("nan")
         )

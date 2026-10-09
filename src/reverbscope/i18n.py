@@ -284,6 +284,30 @@ def list_join(items: Iterable[str]) -> str:
     return list_separator().join(items)
 
 
+def clause_separator() -> str:
+    """What separates the clauses of one line: ``"; "`` in English, ``"；"`` in Chinese."""
+    return pgettext("clause separator", "; ")
+
+
+def clause_join(clauses: Iterable[str]) -> str:
+    """``clauses`` as the parts of one line in the active language (``x；y``)."""
+    return clause_separator().join(clauses)
+
+
+def annotated(value: str, note: str) -> str:
+    """``value`` with a ``note`` in the brackets of the active language.
+
+    ``110 Hz (+11.3 dB)`` in English, ``110 Hz（+11.3 dB）`` in Chinese, which
+    writes no space before a full-width bracket.
+    """
+    return pgettext("annotation", "{value} ({note})").format(value=value, note=note)
+
+
+def labelled(label: str, text: str) -> str:
+    """``label: text`` with the colon of the active language (``label：text``)."""
+    return _("{label}: {description}").format(label=label, description=text)
+
+
 def format_message(template: str, **params: Any) -> str:
     """gettext + ``str.format`` with ASCII digits (never locale-aware numbers)."""
     return _(template).format(**params)
@@ -424,7 +448,7 @@ def _join(text: str, depth: int, *, complete: bool) -> str | None:
                 return None
             shown.append(pieces[start])
             start += 1
-    return "；".join(shown) if recognised else None
+    return clause_join(shown) if recognised else None
 
 
 #: Translations of whole diagnostics, per (text, depth), for the catalog
@@ -490,6 +514,9 @@ def _localize_value(value: str, depth: int) -> str:
         words = [_localize_value(item, depth) for item in items]
         if all(word != item for item, word in zip(items, words, strict=True)):
             return list_join(words)
+        if all(_MEASURE.fullmatch(item) for item in items):
+            # Measured values listed in a stored sentence ("2, 3", "63 Hz, 125 Hz").
+            return list_join(items)
     if " or " in value:
         # Alternatives listed in a stored sentence ("1.20 m or 1.35 m"). An
         # error that says "or" ("Device or resource busy") is no list.

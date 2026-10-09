@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import TextIO
 
 from reverbscope.cli.console import Console, shell_command
-from reverbscope.i18n import _, pgettext
+from reverbscope.i18n import _, list_join, pgettext
 from reverbscope.io.session_store import SESSION_FILE
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
@@ -141,7 +141,7 @@ def _sweep(session: Session) -> list[str]:
             session.console.status(
                 "error",
                 _("Choose one of {rates}.").format(
-                    rates=", ".join(str(r) for r in SUPPORTED_SAMPLE_RATES)
+                    rates=list_join(str(r) for r in SUPPORTED_SAMPLE_RATES)
                 ),
             )
         )

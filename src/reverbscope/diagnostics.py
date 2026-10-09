@@ -26,7 +26,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any
 
-from reverbscope.i18n import N_, _, diag, localize, pgettext
+from reverbscope.i18n import N_, _, annotated, clause_join, diag, list_join, localize, pgettext
 
 #: Distribution name -> import name. A desktop bundle usually carries no
 #: package metadata (PyInstaller copies it only when a hook asks), so the
@@ -265,7 +265,7 @@ def privacy_note() -> str:
 def _rates(rates: list[int], known: bool = True) -> str:
     if not known:  # the device could not be opened: "none" would claim it refuses them all
         return _("unknown")
-    return ", ".join(str(rate) for rate in rates) or pgettext("sample rates", "none")
+    return list_join(str(rate) for rate in rates) or pgettext("sample rates", "none")
 
 
 def _edition_name(edition: str) -> str:
@@ -306,7 +306,7 @@ def device_latency_text(device: dict[str, Any]) -> str | None:
             parts.append(_("output latency {range}").format(range=text))
     if not parts:
         return None
-    return _("driver default {parts}").format(parts=", ".join(parts))
+    return _("driver default {parts}").format(parts=list_join(parts))
 
 
 def _format_devices(audio: dict[str, Any]) -> list[str]:
@@ -357,7 +357,7 @@ def _format_devices(audio: dict[str, Any]) -> list[str]:
         elif recommended_output:
             details.append(_("recommended output"))
         if details:
-            lines.append("       " + "; ".join(details))
+            lines.append("       " + clause_join(details))
     return lines
 
 
@@ -467,8 +467,9 @@ def format_environment_report(report: dict[str, Any]) -> str:
         default_out = next(
             (p["device"]["name"] for p in devices if p["device"].get("is_default_output")), None
         )
-        apis = ", ".join(
-            f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
+        apis = list_join(
+            annotated(str(api["name"]), str(api["device_count"]))
+            for api in audio.get("host_apis", [])
         )
         lines += _fields(
             [

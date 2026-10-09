@@ -32,7 +32,7 @@ from reverbscope.cli.console import (
 from reverbscope.core.averaging import AveragedDecay, AveragedMetric
 from reverbscope.edition import RELEASES_URL, is_terminal_package
 from reverbscope.health import HealthReport, HealthStatus, affects_text, assess, status_word
-from reverbscope.i18n import _, list_join, localize, pgettext
+from reverbscope.i18n import _, annotated, clause_join, labelled, list_join, localize, pgettext
 from reverbscope.interpretation import Finding
 from reverbscope.interpretation.explain import ProfileExplanation
 from reverbscope.interpretation.overview import Fit, ProjectOverview, fit_word
@@ -105,9 +105,11 @@ def rates_text(rates: Sequence[int], console: Console, *, known: bool = True) ->
     return console.sep().join(f"{rate / 1000:g}" for rate in rates) + " kHz"
 
 
-def _labelled(label: str, text: str) -> str:
-    """``label: text``, with the colon of the interface language (``扬声器高度：不可比较``)."""
-    return _("{label}: {description}").format(label=label, description=text)
+def _noted(c: Console, value: str, note: str) -> str:
+    """``value`` with a muted ``note`` in the brackets of the interface language
+    (``RT60 0.70 s（T30）``, where the text around it has full-width brackets too)."""
+    text = annotated(value, note)
+    return value + c.muted(text[len(value) :]) if text.startswith(value) else text
 
 
 def created_text(created: str) -> str:
@@ -331,7 +333,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
     if broadband.rt60_estimate_s is not None:
         text = _("RT60 {seconds:.2f} s").format(seconds=broadband.rt60_estimate_s)
         if broadband.rt60_basis:
-            text += c.muted(f" ({broadband.rt60_basis})")
+            text = _noted(c, text, broadband.rt60_basis)
         if broadband.edt.seconds is not None and broadband.edt.validity is Validity.VALID:
             text += c.sep() + f"EDT {broadband.edt.seconds:.2f} s"
         row(_("Reverberation"), _topic_status(findings, "reverberation"), text)
@@ -380,7 +382,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             res.candidates, key=lambda cand: cand.level_above_baseline_db, reverse=True
         )[:3]
         listed = list_join(
-            f"{cand.frequency_hz:.0f} Hz (+{cand.level_above_baseline_db:.1f} dB)"
+            annotated(f"{cand.frequency_hz:.0f} Hz", f"+{cand.level_above_baseline_db:.1f} dB")
             for cand in strongest_modes
         )
         row(
@@ -567,11 +569,12 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
     for band in (result.decay.broadband, *result.decay.bands):
         for metric in (band.edt, band.t20, band.t30):
             seen.add(metric.validity)
-        rt60 = (
-            f"{band.rt60_estimate_s:.2f} s " + c.muted(f"({band.rt60_basis})")
-            if band.rt60_estimate_s is not None
-            else c.symbol("skip")
-        )
+        if band.rt60_estimate_s is None:
+            rt60 = c.symbol("skip")
+        elif band.rt60_basis:
+            rt60 = _noted(c, f"{band.rt60_estimate_s:.2f} s", band.rt60_basis)
+        else:
+            rt60 = f"{band.rt60_estimate_s:.2f} s"
         span = f"{band.peak_to_noise_db:.1f} dB" if band.peak_to_noise_db is not None else c.dash()
         rows.append(
             [
@@ -584,7 +587,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
             ]
         )
         if band.filter_warning:
-            notes.append(_labelled(band_text(band.band_label), localize(band.filter_warning)))
+            notes.append(labelled(band_text(band.band_label), localize(band.filter_warning)))
     headers = [_("Band"), "EDT", "T20", "T30", "RT60", _("Decay range")]
     bases = {band.rt60_basis for band in (result.decay.broadband, *result.decay.bands)}
     basis_note = ""
@@ -726,7 +729,9 @@ def _noise(c: Console, result: AnalysisResult) -> list[str]:
         )
         hums = [h for h in noise.hum if h.detected]
         for hum in hums:
-            harmonics = list_join(f"{f:.0f} Hz (+{p:.0f} dB)" for f, p in hum.harmonics)
+            harmonics = list_join(
+                annotated(f"{f:.0f} Hz", f"+{p:.0f} dB") for f, p in hum.harmonics
+            )
             lines += c.status(
                 "warn",
                 _("Potential mains hum at multiples of {base:.0f} Hz: {harmonics}").format(
@@ -770,7 +775,7 @@ def _length_text(c: Console, length: PlacementLength) -> str:
     if length.metres is None:
         text = f"{c.symbol('skip')} {_('not determined')}"
         if length.missing_input:
-            text += c.muted("  " + _("(add {input})").format(input=length.missing_input))
+            text = _noted(c, text, _("add {input}").format(input=length.missing_input))
         return text
     value = f"{length.metres:.2f} m"
     if length.input_uncertainty_m is not None:
@@ -800,8 +805,9 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         [
             (
                 _("Speed of sound"),
-                f"{placement.speed_of_sound_m_s:.1f} m/s "
-                + _("at {temp:.0f} °C").format(temp=placement.temperature_c)
+                _("{speed:.1f} m/s at {temp:.0f} °C").format(
+                    speed=placement.speed_of_sound_m_s, temp=placement.temperature_c
+                )
                 + assumed,
             ),
             *(
@@ -817,7 +823,7 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         if length.reason:
             reasons.setdefault(localize(length.reason), []).append(name)
     for reason, names in reasons.items():
-        text = reason if len(names) == len(figures) else _labelled(list_join(names), reason)
+        text = reason if len(names) == len(figures) else labelled(list_join(names), reason)
         lines += c.status("info", text)
     named = [candidate for candidate in placement.candidates if candidate.surface]
     if named:
@@ -1046,7 +1052,7 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         band, metric = _split_decay_name(item.name)
         if metric and item.unit and item.unit != "s":
             # C50 (dB) and D50 (%) share the column with times in seconds.
-            metric = f"{metric} ({item.unit})"
+            metric = annotated(metric, item.unit)
         base = f"{item.baseline:.3f}" if item.baseline is not None else c.dash()
         cand = f"{item.candidate:.3f}" if item.candidate is not None else c.dash()
         if item.validity is Validity.VALID and item.delta is not None:
@@ -1164,7 +1170,7 @@ def _delta_statuses(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         names = list_join(metric_label(item.name) for item in members)
         lines += c.status(
             validity_status(validity),
-            _labelled(names, validity_word(validity)),
+            labelled(names, validity_word(validity)),
             detail=localize(reason) if reason else "",
         )
     return lines
@@ -1174,9 +1180,9 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
     unit = f" {item.unit}" if item.unit else ""
     base = f"{item.baseline:.2f}" if item.baseline is not None else c.dash()
     cand = f"{item.candidate:.2f}" if item.candidate is not None else c.dash()
-    text = _labelled(metric_label(item.name), f"{base} {c.arrow()} {cand}{unit}")
+    text = labelled(metric_label(item.name), f"{base} {c.arrow()} {cand}{unit}")
     if item.delta is not None:
-        text += f" ({signed_number(item.delta, 2)}{unit})"
+        text = annotated(text, f"{signed_number(item.delta, 2)}{unit}")
     return text
 
 
@@ -1234,7 +1240,7 @@ def averaged_table(c: Console, averaged: AveragedDecay) -> list[str]:
             return dash
         if metric.count < n:
             partial = True
-            return f"{metric.seconds:.2f} s ({metric.count})"
+            return annotated(f"{metric.seconds:.2f} s", str(metric.count))
         return f"{metric.seconds:.2f} s"
 
     rows = []
@@ -1266,7 +1272,7 @@ def _overview_row(c: Console, take: Any, *, position: str) -> list[str]:
     dash = c.dash()
     health = status_word(HealthStatus(take.health))
     if take.health_problems:
-        health += f" ({printable(list_join(take.health_problems), single_line=True)})"
+        health = annotated(health, printable(list_join(take.health_problems), single_line=True))
     rt60 = dash if take.rt60_s is None else f"{take.rt60_s:.2f} s"
     clarity = dash if take.clarity_db is None else f"{take.clarity_db:+.1f} dB"
     # Whole decibels and a compact reflection: the nine columns then fit a
@@ -1437,7 +1443,7 @@ def render_profiles(
         )
         return c.fit("\n".join(lines))
     for item in items:
-        lines += c.section(f"{item.title} ({item.name})", item.description)
+        lines += c.section(annotated(item.title, item.name), item.description)
         for want in item.wants:
             lines += c.status("ok", want)
         for skip in item.skips:
@@ -1473,7 +1479,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     ):
         text = f"RT60 {rt.baseline:.2f} s{arrow}{rt.candidate:.2f} s"
         if rt.delta_percent is not None:
-            text += f" ({signed_number(rt.delta_percent, 1)} %)"
+            text = annotated(text, f"{signed_number(rt.delta_percent, 1)} %")
         row(_("Reverberation"), "ok", text)
     else:
         row(_("Reverberation"), "unsure", _("broadband RT60 not comparable (see Reverberation)"))
@@ -1534,12 +1540,11 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         ]
         if found:
             parts.append(label.format(list=list_join(found)))
-    clauses = pgettext("clause separator", "; ")
     if any(note.startswith(RESONANCES_NOT_COMPARED) for note in comparison.notes):
         # Not "no potential resonance": one side, or both, never searched.
         row(_("Low end"), "skip", _("not compared: no frequency range was searched on both sides"))
     elif parts:
-        row(_("Low end"), "ok", clauses.join(parts))
+        row(_("Low end"), "ok", clause_join(parts))
     elif any(note.startswith(RESONANCES_NARROWED) for note in comparison.notes):
         row(_("Low end"), "ok", _("no potential resonance in the range both sides searched"))
     else:
@@ -1549,7 +1554,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     if rms is not None and rms.baseline is not None and rms.candidate is not None:
         text = f"{rms.baseline:.1f}{arrow}{rms.candidate:.1f} dBFS"
         if rms.validity is Validity.VALID and rms.delta is not None:
-            row(_("Noise floor"), "ok", text + f" ({signed_number(rms.delta, 1)} dB)")
+            row(_("Noise floor"), "ok", annotated(text, f"{signed_number(rms.delta, 1)} dB"))
         else:
             text += c.sep() + _("not compared: {validity}").format(
                 validity=validity_word(rms.validity)
@@ -1653,7 +1658,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         [
             (_("Platform"), str(report["platform"])),
             (_("Architecture"), str(report["machine"])),
-            ("Python", f"{report['python']} ({report['implementation']})"),
+            ("Python", annotated(str(report["python"]), str(report["implementation"]))),
             (_("Language"), str(report["language"])),
         ]
     )
@@ -1714,7 +1719,8 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
             (p["device"]["name"] for p in devices if p["device"].get("is_default_output")), None
         )
         apis = list_join(
-            f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
+            annotated(str(api["name"]), str(api["device_count"]))
+            for api in audio.get("host_apis", [])
         )
         lines += c.fields(
             [
@@ -1912,7 +1918,7 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
     )
     for api in inventory.host_apis:
         if api.note:
-            lines += console.status("info", _labelled(api.name, localize(api.note)))
+            lines += console.status("info", labelled(api.name, localize(api.note)))
     return console.fit("\n".join(lines))
 
 

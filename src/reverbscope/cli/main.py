@@ -77,7 +77,7 @@ from reverbscope.errors import (
     SessionError,
 )
 from reverbscope.health import assess, failure_guidance
-from reverbscope.i18n import N_, _, activate, list_separator, localize, pgettext
+from reverbscope.i18n import N_, _, activate, list_join, list_separator, localize, pgettext
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.verdicts import judge_comparison
 from reverbscope.labels import accuracy_class_text
@@ -455,7 +455,7 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
         choices=SUPPORTED_SAMPLE_RATES,
         metavar=pgettext("metavar", "HZ"),
         help=_("sample rate (Hz): {rates}").format(
-            rates=", ".join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
+            rates=list_join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
         ),
     )
     group.add_argument(

@@ -104,6 +104,15 @@ def check_card(card: Card, width: int) -> None:
         assert line[0] == side and line[-1] == side, line
 
 
+_FRAME = re.compile(r"[─━│┃┌┐└┘├┤┬┴┼┏┓┗┛┣┫┳┻╋╭╮╰╯]")
+
+
+def unframe(text: str) -> str:
+    """``text`` without its frames: the sides, corners and rules of the cards,
+    tables and headings are blanks, so the words can be read as they are."""
+    return "\n".join(_FRAME.sub(" ", strip_ansi(line)).rstrip() for line in text.splitlines())
+
+
 def invoke(argv: list[str], capsys: pytest.CaptureFixture[str]) -> tuple[int, str, str]:
     """Run the command line in this process: the exit code, stdout and stderr."""
     capsys.readouterr()
