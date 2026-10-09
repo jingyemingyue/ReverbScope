@@ -1,10 +1,10 @@
 ## ReverbScope v{version}
 
-**Beta 2, for testing.** ReverbScope measures a recording room
+**Beta 3, for testing.** ReverbScope measures a recording room
 with a sine sweep and tells you whether a microphone position is usable —
 next to any DAW, or on its own. Free and open source (Apache-2.0).
 
-> **This is beta 2 of the software, not the 0.5.0 hardware release.**
+> **This is beta 3 of the software, not the 0.5.0 hardware release.**
 > Current builds are unsigned, and **hardware validation has not started**:
 > nothing has been measured through a real audio interface or a real DAW yet.
 > Please read *Known limitations* below.
@@ -58,11 +58,13 @@ Full steps, checksums, updating, uninstalling and troubleshooting:
 [Installation guide](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.md)
 ([简体中文](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.zh-CN.md)).
 Then try it without a microphone: click **Demo (no interface)** in the app, or
-run `reverbscope demo`.
+run `reverbscope demo` in a terminal opened in the folder that holds it (the
+installers do not add it to `PATH`; on a Mac it is
+`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`).
 
 ### Known limitations
 
-* **This is beta 2**, not a finished product, and **not 0.5.0**. In the
+* **This is beta 3**, not a finished product, and **not 0.5.0**. In the
   release plan, 0.5.0 means a person has run the hardware matrix. No cell
   is PASS yet.
 * **Hardware validation has not started.** No measurement through a real

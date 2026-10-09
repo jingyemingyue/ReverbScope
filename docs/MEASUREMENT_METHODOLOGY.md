@@ -408,23 +408,17 @@ time-reversed filtering.
    with the slow part 25 dB down is flagged in every run for the broadband
    curve and the 250 Hz–8 kHz bands, and in 60–90 % of the runs at 63 and
    125 Hz, where a single decay already scatters that much.
-   The `ξ` limit is scaled by T30 when T30 has a positive time (also after
+   The `ξ` limit is scaled by the T30 when it has a positive time (also after
    an earlier rule marked it unreliable: its seconds are still the decay the
-   band measured), else by T20, else by EDT, so a T20 that is the only
-   candidate and an EDT are checked too. Two further shapes are not a
-   reverberation slope and are marked unreliable with a warning that says
-   so: *a step* (T20 and T30 only), when the curve crosses the fit's
-   evaluation range in less than `SUDDEN_DROP_RATIO` (0.25) times the time
-   it took to fall its first 5 dB (a late noise burst or a hard gate; a
-   clean exponential takes about 3.6 times as long, the fastest legitimate
-   octave-band decay about 1); and *an abrupt end*, when the preliminary
-   Lundeby regression stops more than `ABRUPT_END_GAP_DB` (20 dB) above the
-   noise floor it was measured against (a response cut off by a gate or
-   padded with digital silence kept alive by a residual sample): the
-   late-slope window then holds no decay, the iteration stalls on the same
-   crosspoint, and the preliminary slope is the end of the record, so T20
-   and T30 are withheld. A narrow-band exponential ends about 17 dB above
-   its floor because its blocks scatter; the cliffs end 30 dB or more above.
+   band measured), else by the T20, else by the EDT, so a T20 that is the
+   only candidate for RT60 because T30 has no range is checked too. EDT is
+   checked only when it is longer than 1.5 times that late decay: the first
+   10 dB of a room with a strong early reflection are not straight, and
+   that is what EDT measures (the demo's position A reads 45 ‰ broadband and
+   80–95 ‰ at 2–8 kHz, while its T30 fits are at 3–4 ‰), whereas a
+   disturbance inside the 0…−10 dB range, such as a late noise burst, makes
+   EDT many times longer than the late decay (73 s against 0.5 s in the test
+   that reproduces it).
 8. **Validity: truncation sensitivity.** When the Lundeby estimate was
    rejected (step 2), EDT, T20 and T30 are fitted again with the rejected
    estimate. If a VALID one changes by more than 5 % or has no value with
@@ -433,11 +427,77 @@ time-reversed filtering.
    unreliable would flag most bands of clean measurements with more than
    about 100 dB of range, where the late slope is fitted to a few intervals
    and oscillates without affecting the metrics.
-9. **B·T check.** With time-reversed filtering the bandwidth × reverberation
-   time product should exceed about 4 (about 16 with forward filtering) [6];
-   below 4 the band's metrics are marked `unreliable` and a warning explains
-   why. The numbers 16 / 4 are confirmed only through works citing [6].
-10. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
+9. **Validity: a step, not a slope.** For T20 and T30, the time the curve
+   takes from −5 dB to the bottom of the evaluation range is compared with
+   the time it took to fall the first 5 dB. A straight decay takes 4 times
+   as long (T20: 20 dB against 5 dB) or 6 times (T30); when the ratio is
+   below 0.25 the fit crossed its range in a step (a late noise burst, a hard
+   gate) and the metric is marked unreliable with the two times named. A
+   legitimate fast decay and a double slope whose later part is slower are
+   not steps. EDT is not checked this way: its range starts at 0 dB, which
+   the direct sound itself can cross in one sample.
+10. **A response cut short.** When the record ends while the decay is still
+    far above the noise floor (a gate, or digital silence after an imported
+    response), the last 10 % of the record is not a noise floor of the room
+    and the Lundeby iteration would fit the end of the record as a
+    reverberation time. The preliminary regression of step 2 is walked back
+    from the first block at or below noise + 10 dB: a block more than 10 dB
+    below the line fitted to the blocks before it belongs to the fall, and
+    the fall is a cut when it exceeds the slope's own drop by 20 dB and
+    begins less than 100 dB below the peak (no room measurement resolves
+    more: the numerical silence after a synthetic response is no cut). The
+    decay is then known down to the level before the fall and no further:
+    the floor, the truncation and the tail extrapolation are set there, so
+    the range rule of step 5 decides — a metric whose evaluation range plus
+    the noise margin reaches below the cut is withheld as
+    `insufficient_range` (a gate 30 dB down withholds T20 and T30), a cut
+    70 dB down changes only the reported range — and the band's warnings
+    name the cut. A clean exponential stays on its line down to the floor
+    and a double slope meets its floor above its line, so neither is a cut.
+
+    *Calibration of steps 7, 9 and 10.* A one-off Monte Carlo of 360
+    synthetic single-slope rooms (RT 0.3, 0.6 and 1.2 s; floors at −60 and
+    −80 dB; with and without strong early reflections; nine bands each, 3 240
+    band decays; the script is not part of the tree) gives the same values
+    with and without the rules, and the rules withhold nothing that was valid
+    except four EDTs at 63 and 125 Hz, which were 67 % to 75 % longer than the
+    room's reverberation time. A second grid of 3 061 rooms (sample rates
+    44.1–192 kHz, RT 0.05–4 s, floors from −40 dB to none, hum, DC, modes,
+    band-limited rooms, imported responses with trailing silence, direct
+    sounds up to 35 dB above the room) moved no published value by more than
+    0.05 %. Gated, burst and cut-short records are covered by
+    `tests/unit/test_dsp_edgecases.py` and `tests/unit/test_decay.py`; the
+    loudspeaker-distortion roundtrip (a noise-free decay of 70 dB or more)
+    and the demo's low bands are the cases a stricter rule broke.
+
+    *Known limits of the cut rule, not corrected in this version.* A narrow
+    low band (63 and 125 Hz) can still read a valid T20 from a response gated
+    25–30 dB below its peak: that band's peak-to-floor range comes from a few
+    20 ms blocks of a band-limited random process and can sit up to 12 dB
+    above the gate level, so the range rule does not withhold it (the
+    broadband curve and the bands from 250 Hz up do); the value then scatters
+    like any T20 of that band under the B·T limit of step 12, up to about
+    40 % in a synthetic test. In a very
+    dead octave band (RT 0.05 s at 125 Hz, a band narrower than the decay can
+    resolve) the walk-back can place the cut 6–9 dB below the peak and
+    withhold C50, D50 and Ts that do not depend on the late decay; and a
+    response whose decay reached a noise floor and was then padded with
+    digital silence holding a stray sample or dither is read as cut short, so
+    its bands carry the warning although no metric changes.
+
+    *Left out of this version: a rule for a loud direct sound.* Withholding
+    T20 and T30 when the direct sound has already taken more than half of
+    their evaluation range was tried on the development line. On the base
+    code an exactly exponential room reads 0.50 s at a direct sound 22 dB
+    above it, and on the grid above about two thirds of the octave-band
+    values the rule withheld, and nearly all the broadband ones, were within
+    10 % of the truth, so it is not applied until its threshold is
+    calibrated against recordings.
+11. **B·T check.** With time-reversed filtering the bandwidth × reverberation
+    time product should exceed about 4 (about 16 with forward filtering) [6];
+    below 4 the band's metrics are marked `unreliable` and a warning explains
+    why. The numbers 16 / 4 are confirmed only through works citing [6].
+12. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
     always reported. Curvature `C` (step 7) is given when both exist.
 
 **Units.** Seconds; the Schroeder curve in dB relative to its start.
@@ -462,7 +522,7 @@ accuracy), and the rule that one averages *T values*, not decay curves
 arithmetic mean of EDT, T20 and T30 per band over the metrics marked VALID
 only, with the count, the spread (max − min) and the contributing session
 labels. The averaged RT60 is the mean of the sessions' own RT60 estimates
-(each the VALID T30, else the VALID T20, as in §3 step 10), with its own
+(each the VALID T30, else the VALID T20, as in §3 step 12), with its own
 count and contributing sessions; its basis is `T30`, `T20`, or `T30/T20`
 when the sessions differ. (Up to v0.5.0b1 it was the mean T30 whenever any
 session had one, so a single quiet position's T30 stood for the room and
@@ -932,7 +992,7 @@ as `health` beside `findings`.
 | Playback speed | no speed error | - | the sweep played at the wrong speed | §2b |
 | Direct sound | confidence high | medium (pre-peak margin 10 to 20 dB) | low (below 10 dB, no content to check, or an earlier arrival within 20 dB) | §2, `confidence_label`, `EARLIER_ARRIVAL_MAX_DB` |
 | Level | no flat tops, peak below -1 dBFS | peak within 1 dB of full scale | flat-topped peaks | `detect_clipping`; the 1 dB headroom limit is ReverbScope's own |
-| Distortion | every harmonic below -20 dB re the direct sound | a harmonic at -20 dB or above | folded (aliased) products | §2 harmonic levels; the -20 dB limit is ReverbScope's own: the harmonic responses are separated in time (Farina 2000), so the decay is not spoilt, but the chain is near clipping |
+| Distortion | every harmonic below -20 dB re the direct sound | a harmonic at -20 dB or above | folded (aliased) products | §2 harmonic levels; the -20 dB limit is ReverbScope's own: the harmonic responses arrive ahead of the room response (Farina 2000), but their own decays run into it: a soft-clipping chain with its strongest harmonic at -18 dB lengthened some bands' T30 by 26 to 32 % in a synthetic room, so the decay of some bands can be affected, and the chain is near clipping |
 | Audio device | (listed only when the device reported a problem) | - | timing problems reported by the device | PortAudio status flags, §2 |
 | Dropouts | none | up to 9 runs and under 50 ms in all | 10 runs, or 50 ms in all | runs of 2 ms or more of exactly equal samples inside the sweep (fades left out; flat tops at the peak are clipping); ReverbScope's own limits |
 | Decay range | 45 dB or more (T30) | 35 to 45 dB (T20 only); 20 to 35 dB (EDT only) | below 20 dB | §3: each metric's evaluation range plus the noise margin of the analysis settings (10 dB, ISO 3382-2) |
@@ -952,11 +1012,18 @@ than one quantisation step within 2 ms even at 20 Hz. A driver that lost a
 buffer repeats the last sample or writes zeros, and a DAW out of disk or CPU
 does the same. A dropout of length *T* while the sweep passes the frequency
 *f* deconvolves to a dent about 1/*T* wide around *f* in the frequency
-response; it does not move the direct sound, so a short dropout leaves the
-decay alone (a warning), while many or long ones do not (invalid). The
-record is stored in `result.json` as the optional `dropouts` object: the
-searched span, the shortest run that counts, and each run's start, length
-and the frequency the sweep was at.
+response; it does not move the direct sound, but it also leaves a burst in
+the deconvolved response, at the delay between the dropout and the moment
+the sweep was at each lower frequency, so the decays and the energy
+parameters of the bands below *f* can be disturbed as well: in a synthetic
+room of RT 0.6 s, runs of 2 to 20 ms about 30 to 65 % into the sweep left a
+valid 63 to 250 Hz T30 or RT60 15 to 200 % too long (a run before about 25 %
+or after about 70 % of the sweep left it alone, and where the burst lands
+decides). Few and short runs are a warning, many or long ones invalid, and
+both list the decay and energy among the figures they affect. A run shorter
+than 2 ms is not detected. The record is stored in `result.json` as the
+optional `dropouts` object: the searched span, the shortest run that counts,
+and each run's start, length and the frequency the sweep was at.
 
 The steps under the playback-speed check (where each DAW sets its project
 sample rate, and where it switches time-stretching off) repeat

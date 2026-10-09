@@ -1111,3 +1111,31 @@ def test_a_framed_screen_marks_every_failure_with_one_glyph() -> None:
     lines = boxed.status("error", "no response")
     assert lines == ["  ✗ no response"]
     assert Console().status("error", "no response") == ["  × no response"]
+
+
+def test_a_word_wider_than_the_line_is_split_in_linear_time() -> None:
+    """The split re-measured and re-sliced what was left on every line: `show`
+    on a session whose room name was one 100 KB word took 17 s, 400 KB hung."""
+    import time
+
+    word = "R" * 100_000
+    started = time.perf_counter()
+    lines = wrap(word, 80, first="  Room  ", rest="        ")
+    elapsed = time.perf_counter() - started
+    assert elapsed < 3.0, f"{elapsed:.1f} s for 100 KB (about 0.05 s expected)"
+    assert lines[0].startswith("  Room  R") and all(
+        line.startswith("        ") for line in lines[1:]
+    )
+    assert all(cell_width(line) <= 80 for line in lines)
+    assert "".join(line[8:] for line in lines) == word  # both prefixes are 8 columns
+
+
+def test_splitting_a_long_word_keeps_wide_characters_whole() -> None:
+    # Two columns each: 40 characters fit an 80-column line, never half of one.
+    word = "混" * 100
+    lines = wrap(word, 80)
+    assert [len(line) for line in lines] == [40, 40, 20]
+    assert "".join(lines) == word
+    # A path is never split, however long.
+    path = "/" + "a" * 300
+    assert wrap(path, 80) == [path]

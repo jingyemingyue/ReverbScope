@@ -92,6 +92,23 @@ def test_project_overview_json_and_profile_override(
     assert payload["next_steps"]
 
 
+def test_project_overview_lists_a_position_whose_folder_is_gone_instead_of_dropping_it(
+    booth: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Deleting a session folder left the overview at "1 position(s)" with no
+    word about the position that had been listed."""
+    shutil.rmtree(booth / "b-1")
+    assert main(["--color", "never", "project", "overview", str(booth)]) == 0
+    out = " ".join(capsys.readouterr().out.split())
+    assert "b-1: not read" in out and "position B: no session.json there" in out
+    assert "1 position(s), 2 session(s), 0 unlisted" in out
+    assert main(["--format", "json", "project", "overview", str(booth)]) == 0
+    skipped = json.loads(capsys.readouterr().out)["skipped"]
+    assert ["b-1", "position B: no session.json there"] in skipped
+    assert main(["--lang", "zh_CN", "--color", "never", "project", "overview", str(booth)]) == 0
+    assert "那里没有 session.json" in capsys.readouterr().out
+
+
 def test_project_overview_refuses_a_folder_without_a_project(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:

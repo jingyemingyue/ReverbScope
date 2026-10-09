@@ -231,7 +231,7 @@ ReverbScope **还没有发布到 PyPI**，所以 `pip install reverbscope` 装�
 ```bash
 python3 -m venv reverbscope-env
 source reverbscope-env/bin/activate          # Windows：reverbscope-env\Scripts\activate
-pip install "./reverbscope-0.5.0b2-py3-none-any.whl[gui]"
+pip install "./reverbscope-<version>-py3-none-any.whl[gui]"   # 你下载的那个文件
 reverbscope --help
 reverbscope gui                              # 或者：reverbscope-gui
 ```
@@ -244,7 +244,7 @@ reverbscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
 reverbscope show demo/
 ```
 
-`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-0.5.0b2.tar.gz[gui]"` 会在本地构建出同样的 wheel。
+`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-<version>.tar.gz[gui]"` 会在本地构建出同样的 wheel。
 
 ### 开发者安装（从 Git）
 
@@ -332,7 +332,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 | `reverbscope gui` 提示*当前安装的是 ReverbScope 终端版* | 终端版没有图形界面；请下载桌面版（两个版本都有命令行）。 |
 | macOS：*无法打开“reverbscope”，因为无法验证开发者*（终端版） | 清除一次下载标记：`xattr -dr com.apple.quarantine reverbscope-terminal`（见[终端版](#终端版)）。 |
 | Windows PowerShell：重定向到文件或经过管道后中文变成乱码（`> report.txt`、`\| Select-String`） | 先运行 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`（见[在 PowerShell 中保存报告](#终端版)）。 |
-| Windows：`reverbscope.exe` 打开后立刻关闭 | 它是命令行程序：改为双击 `ReverbScope Terminal.cmd`，或在命令提示符里运行它。 |
+| Windows：`reverbscope.exe` 打开后立刻关闭 | 它是命令行程序：双击只会打开一个命令结束就关闭的窗口。请在它所在的文件夹（桌面版：安装文件夹）里打开**命令提示符**或 **PowerShell**，运行 `reverbscope.exe --help`。只有终端版带有可以双击的 `ReverbScope Terminal.cmd`。 |
 | `reverbscope gui` 提示无法加载 PySide6 | 安装界面组件：`pip install "PySide6_Essentials>=6.6,<6.12"`（或者带 `[gui]` 重新安装 wheel）。 |
 | `pip install reverbscope` 找不到，或者装到了别的东西 | ReverbScope 还没有发布到 PyPI；请使用 [wheel](#用发布页的-wheel-安装)。 |
 | 其他问题 | 提交一个 [问题报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug-zh-CN.yml)，并粘贴 **帮助 → 用于问题报告的环境报告**（或 `reverbscope doctor` 的输出）。不会自动发送任何内容。 |

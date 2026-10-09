@@ -144,11 +144,12 @@ synthetic room. Nothing is sent to a loudspeaker.
 
 ### Per platform
 
-`reverbscope devices` prints each device with its host API in brackets.
+`reverbscope devices` prints each device with its host API in a *Host API* column; the
+desktop app shows `[index] name (host API)`.
 
 * **Windows.** Every interface is listed once per host API. Prefer
-  `[Windows WASAPI]` (or `[Windows WDM-KS]`); avoid `[MME]` and
-  `[Windows DirectSound]`, which pass through the Windows mixer. In shared
+  the *Windows WASAPI* entry (or *Windows WDM-KS*); avoid *MME* and
+  *Windows DirectSound*, which pass through the Windows mixer. In shared
   mode WASAPI only runs at the device's shared-mode format
   ([Microsoft: Device formats](https://learn.microsoft.com/en-us/windows/win32/coreaudio/device-formats)):
   set it to the measurement rate in the Sound control panel (Control Panel ▸
@@ -189,8 +190,9 @@ not judge, with the numbers; `reverbscope profiles` lists the profiles and
 The thresholds are engineering choices, stated in
 [MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8, never a grade.
 
-**Measurement health** comes first: the top card of the Overview tab, and the
-section right after "At a glance" in the text report. It lists the checks the
+**Measurement health** sits right under the key figures: the card below the
+four tiles of the Overview tab, and the section right after "At a glance" in
+the text report. It lists the checks the
 analysis made on the take itself (reference, sweep, playback speed, direct
 sound, level, distortion, dropouts, decay range, noise floor, recording
 length, and the loopback and the audio device when they took part), each
@@ -555,7 +557,7 @@ first: the ReverbScope version and build commit, the OS, library versions,
 settings and audio devices (*Probe sample rates* adds the rates each device
 accepts; nothing is played). *Copy* it into the issue; *Open Issue Page*
 opens the template chooser. From a terminal the same report is
-`reverbscope doctor` (`--probe`, `--json`). Nothing is sent automatically;
+`reverbscope doctor` (`--probe`; `reverbscope --format json doctor` for JSON). Nothing is sent automatically;
 read the text before posting, since device names can contain personal names.
 
 `reverbscope session bundle session/ --out report.zip` zips a session folder.

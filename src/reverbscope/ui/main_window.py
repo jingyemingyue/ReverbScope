@@ -196,7 +196,7 @@ class MainWindow(QMainWindow):
         # colours while the window kept the light style sheet.
         QGuiApplication.styleHints().colorSchemeChanged.connect(self._follow_system_scheme)
         self._following_system = True
-        self.show_home()
+        self._go_home()
 
     def _show_mode_action(self, mode: str) -> Callable[[], None]:
         """What a Measure-menu action runs: open ``mode``.
@@ -216,6 +216,9 @@ class MainWindow(QMainWindow):
         return show
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt override
+        if not self._leave_take():
+            event.ignore()
+            return
         # The colour-scheme signal belongs to the application and outlives this
         # window: a closed window that stays connected still restyles the whole
         # application on every system change (the chrome and every chart are
@@ -236,7 +239,47 @@ class MainWindow(QMainWindow):
             _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
         )
 
+    def _leave_take(self) -> bool:
+        """True when the window may drop the result on screen.
+
+        A live Standalone take is the only copy of its recording until the
+        session is saved; New Measurement, Open Session and closing the window
+        used to drop it without a word.
+        """
+        if not (self.state.unsaved_take and self.state.result is not None):
+            return True
+        return self._ask_about_unsaved_take()
+
+    def _ask_about_unsaved_take(self) -> bool:
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            _("Unsaved measurement"),
+            _(
+                "This measurement has not been saved. Its recording exists only in "
+                "memory and is lost if you continue."
+            ),
+            parent=self,
+        )
+        save = box.addButton(_("Save Session..."), QMessageBox.ButtonRole.AcceptRole)
+        discard = box.addButton(_("Discard"), QMessageBox.ButtonRole.DestructiveRole)
+        cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(save)
+        box.setEscapeButton(cancel)
+        box.exec()
+        clicked = box.clickedButton()
+        if clicked is save:
+            # The folder chooser may be cancelled or the save may fail: the
+            # take is let go only once it is on disk.
+            self.results.save_button.click()
+            return not self.state.unsaved_take
+        return clicked is discard
+
     def show_home(self) -> None:
+        """Home (New Measurement); asks first when a live take is unsaved."""
+        if self._leave_take():
+            self._go_home()
+
+    def _go_home(self) -> None:
         self.state.reset()
         # Home is a fresh start: the next measurement belongs to no project
         # until the Project page starts one.
@@ -265,6 +308,8 @@ class MainWindow(QMainWindow):
             loaded = load_measurement(path)
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Cannot open session"), localize(str(exc)))
+            return
+        if not self._leave_take():
             return
         # Drop the previous take: saving the opened session must not write
         # that recording into it. An opened session belongs to no project

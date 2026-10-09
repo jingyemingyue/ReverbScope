@@ -83,6 +83,15 @@ the wheels, and must be checked again at packaging time:
    for the libraries a Python installation brings. `THIRD_PARTY_LICENSES/NATIVE.txt`
    lists every library with its notice, and `check_bundle_contents.py
    --require-licenses` fails on a native library that has none.
+   A binary that a wheel keeps inside its own package folder but that is not
+   the wheel's code needs its notice as well: PySide6 on Windows contains
+   `opengl32sw.dll`, Qt's software-OpenGL fallback (Mesa llvmpipe, MIT, built
+   with LLVM under the University of Illinois/NCSA licence; its version
+   string reads "Mesa 11.2.2"). ReverbScope never asks Qt for OpenGL, so Qt
+   does not load it, but the file is in the Windows Desktop bundle:
+   `build_license_bundle.py --frozen` writes
+   `_notices/native/mesa-llvmpipe.txt` for it and `check_bundle_contents.py
+   --require-licenses` fails without it (`PACKAGE_BINARY_NOTICES`).
 2. **LGPL components must remain replaceable shared libraries:** libsndfile
    (soundfile), Qt/PySide6/shiboken6, libquadmath and, in the Linux bundles,
    the runner's GLib, libmount, libblkid, libsystemd, libgcrypt,

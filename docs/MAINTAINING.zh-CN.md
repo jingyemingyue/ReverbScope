@@ -6,25 +6,25 @@
 
 | 线 | 分支 | `pyproject.toml` 中的版本 | 允许进入的改动 |
 | --- | --- | --- | --- |
-| 测试版（开发线） | `main` | `0.5.0b2`，之后 `0.5.0b3`…… | 一切：修复、新功能、交互、文档 |
+| 测试版（开发线） | `main` | `0.5.0b3`，之后 `0.5.0b4`…… | 一切：修复、新功能、交互、文档 |
 | 候选版 | `release/0.5.0` | `0.5.0rc1`，之后 `rc2`……直到 `0.5.0` | 只允许正确性、崩溃、打包、跨平台、硬件/DAW 兼容性、文档、本地化和发布工程方面的修复，能写测试的都带回归测试（见 RELEASE_PLAN §2a） |
 
 保持两条线一致的规则：
 
-* 两条线都需要的修复只提交一次，通过 `git merge` 或 `git cherry-pick -x` 同一个提交到达另一条线，绝不手工重打。候选线上的 bug 先在候选线修，同一次工作中再向前合并到 `main`。
+* 两条线都需要的修复只提交一次，通过 `git merge` 或 `git cherry-pick -x` 同一个提交到达另一条线，绝不手工重打。候选线上的 bug 先在候选线修，同一次工作中再向前合并到 `main`；属于允许类别、却先在 `main` 上发现的修复，如果候选线有同样的缺陷，可以用 `git cherry-pick -x` 挑到候选线。
 * 除此之外，没有任何改动从 `main` 进入候选线。新功能、命令行重新设计、算法实验、依赖升级都留在 `main`，等下一个候选系列再说。
 * 已发布的历史永不重写：不对 `main`、`release/**` 或已发布 tag 强推；合并使用 merge commit（每个 PR 的合并提交就是冲突如何解决的记录）。
 * 只有在真实设备上满足 RELEASE_PLAN §2b 的门槛、并由维护者发布时，候选版才成为 `0.5.0`。
 
 ## 2. 自动运行的部分
 
-两个工作流都在 `.github/workflows/` 下；每个 action 都固定到提交 SHA，版本写在注释里。
+三个工作流都在 `.github/workflows/` 下；每个 action 都固定到提交 SHA，版本写在注释里。
 
 **CI**（`ci.yml`）：每个 pull request、以及推送到 `main` 和 `release/**` 时运行，九个作业必须全绿才能合并：
 
 | 作业 | 证明什么 |
 | --- | --- |
-| Lint and type-check | `ruff check`、`ruff format --check`、严格 `mypy`（只装 `dev` 附加依赖，没有 PySide6 的类型存根：只有在存根存在时才通过类型检查的代码会在这里失败）、`scripts/check_doc_links.py`、`scripts/check_cli_docs.py`、文档站构建、`scripts/check_src_safety.py`（`src/` 下无网络导入、无 shell 调用） |
+| Lint and type-check | `ruff check`、`ruff format --check`、严格 `mypy`（只装 `dev` 附加依赖，没有 PySide6 的类型存根：只有在存根存在时才通过类型检查的代码会在这里失败）、`scripts/check_doc_links.py`、`scripts/check_cli_docs.py`、文档站构建、`scripts/check_src_safety.py`（`src/` 下无网络导入、无 shell 调用）、`scripts/check_action_pins.py`（每个固定的 action 都是其仓库里真实存在的提交；唯一需要联网的检查） |
 | JSON Schemas | schema 测试，以及 `reverbscope schema <名称>` 输出与随包文件逐字相同 |
 | Tests（Ubuntu 3.12 / 3.13 / 3.14、macOS 3.12、Windows 3.12） | 完整测试套件（离屏）；Ubuntu 3.12 上附带 `core` 与 `models` 85 % 分支覆盖率门槛；之后是伪后端的 Standalone 流程和 `examples/synthetic_measurement.py` |
 | sdist and wheel | `python -m build`，wheel 可安装，`reverbscope --help` 可运行 |
@@ -54,6 +54,7 @@ pip install -e ".[dev,gui]" build
 ruff check . && ruff format --check .
 mypy
 python scripts/check_doc_links.py && python scripts/check_cli_docs.py && python scripts/check_src_safety.py
+python scripts/check_action_pins.py   # 需要联网；改过工作流之后运行
 python scripts/build_docs_site.py --out /tmp/reverbscope-site
 QT_QPA_PLATFORM=offscreen pytest --cov=reverbscope.core --cov=reverbscope.models --cov-fail-under=85
 python -m build
@@ -66,6 +67,7 @@ python -m build
 | 红色的检查 | 通常原因 | 怎么做 |
 | --- | --- | --- |
 | Lint and type-check，只有 mypy | 某个 `type: ignore` 在有 PySide6 存根时需要、没有时多余，或反过来 | 让代码在两种环境下都能通过类型检查（声明属性、返回值），而不是忽略；在第二个 venv 里 `pip install -e ".[dev]"` 可以重现 CI 的作业 |
+| Lint and type-check，action 固定 | 某个固定值是 40 位十六进制，但不是该 action 仓库里的提交（作业一开始就会以 "Unable to resolve action" 失败；`pages.yml` 就发生过） | 报错信息给出文件、行号和仓库；用 `git ls-remote --tags https://github.com/<owner>/<repo>` 取发布 tag 的提交（附注 tag 取带 `^{}` 的那一行），把版本写在注释里；网络错误会重试三次，所以第二次仍失败说明是 GitHub 连不上，不是固定值有问题 |
 | Lint and type-check，Ruff | 格式 | `ruff format .` |
 | Documentation links / CLI examples | 文件移动了，或示例命令解析器不再接受 | 改文档；`check_cli_docs.py` 会指出文件、行和解析器的消息 |
 | 只有某个操作系统上的 Tests 红 | 路径、编码或换行假设 | 作业日志指出测试名；用 `PYTHONIOENCODING=cp1252` 或单元测试里的 Windows 路径重现，修代码，保留测试 |

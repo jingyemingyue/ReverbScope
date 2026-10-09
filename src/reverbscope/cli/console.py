@@ -505,7 +505,9 @@ def truncate(text: str, width: int, ellipsis: str = "…") -> str:
 #: sentence (``找不到会话文件：录音/会话/take.wav``) starts after the last of
 #: them and runs to the next one or a blank.
 _CJK_STOPS = "，。、；：！？（）「」『』“”‘’《》〈〉【】〔〕"
-_PATH_RUN = re.compile(rf"[^\s{_CJK_STOPS}]*[/\\][^\s{_CJK_STOPS}]*")
+# A match always starts where its run of non-blank text starts: the look-behind
+# keeps a long word without a separator from being re-read from every character.
+_PATH_RUN = re.compile(rf"(?<![^\s{_CJK_STOPS}])[^\s{_CJK_STOPS}]*[/\\][^\s{_CJK_STOPS}]*")
 _DRIVE = re.compile(r"[A-Za-z]:[/\\]")
 _EXTENSION = re.compile(r"\.\w{1,5}$")
 
@@ -525,6 +527,17 @@ def _is_wide_path(run: str) -> bool:
         or _DRIVE.match(run) is not None
         or _EXTENSION.search(run) is not None
     )
+
+
+def _fit_end(text: str, start: int, room: int) -> int:
+    """Where the characters of ``text`` from ``start`` stop fitting in ``room`` columns."""
+    used = 0
+    for index in range(start, len(text)):
+        step = char_width(text[index])
+        if used + step > room:
+            return index
+        used += step
+    return len(text)
 
 
 def _tokens(text: str) -> Iterator[str]:
@@ -652,15 +665,21 @@ def _hold_hints(tokens: list[str], room: int) -> list[str]:
 _GLUED = re.compile(rf"[-+]?\d[\d.,]*{GLUE}[A-Za-z°%\u3400-\u9fff]+")
 
 
-def _whole_number(piece: str, head: str) -> str:
-    """``head``, the part of ``piece`` that fits a line, without the number
-    whose unit (held to it by :data:`GLUE`) the cut would part from it: a word
-    longer than the line is cut where it must be, but never inside ``110 Hz``."""
-    cut = len(head)
-    for glued in _GLUED.finditer(piece):
-        if glued.start() < cut < glued.end():
-            return head[: glued.start()] or head
-    return head
+#: How far past a cut :func:`_whole_number` looks for the unit of a number.
+_UNIT_REACH = 16
+
+
+def _whole_number(piece: str, start: int, end: int) -> int:
+    """Where to cut ``piece[start:end]``: ``end``, or before the number whose
+    unit (held to it by :data:`GLUE`) the cut would part from it. A word
+    longer than the line is cut where it must be, but never inside ``110 Hz``.
+    Only the neighbourhood of the cut is searched, so splitting a long word
+    stays linear."""
+    reach = min(len(piece), end + _UNIT_REACH)
+    for glued in _GLUED.finditer(piece, start, reach):
+        if glued.start() < end < glued.end():
+            return glued.start() if glued.start() > start else end
+    return end
 
 
 def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> list[str]:
@@ -733,13 +752,20 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
             piece = carry.lstrip() + token
             # A single token wider than the line is split where it must be.
             room = max(1, width - cell_width(prefix))
-            while cell_width(piece) > room and len(piece) > 1 and not _unbreakable(piece):
-                head = truncate(piece, room, ellipsis="")
-                if not head:
-                    break
-                head = _whole_number(piece, head)
-                lines.append(prefix + head)
-                prefix, piece = rest, piece[len(head) :]
+            if len(piece) > 1 and cell_width(piece) > room and not _unbreakable(piece):
+                # A piece without a path separator has none in any later part
+                # either, so this is decided once; the split walks an index
+                # (re-measuring and re-slicing what is left on every line made
+                # a 100 KB word take seconds).
+                at = 0
+                while len(piece) - at > 1:
+                    end = _fit_end(piece, at, room)
+                    if end == len(piece) or end == at:
+                        break
+                    end = _whole_number(piece, at, end)
+                    lines.append(prefix + piece[at:end])
+                    prefix, at = rest, end
+                piece = piece[at:]
             parts = [piece]
         # A last line of one character (the second half of a word, or a
         # word and its closing mark) takes the character before it along.

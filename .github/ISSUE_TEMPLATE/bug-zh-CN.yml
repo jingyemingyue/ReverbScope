@@ -13,7 +13,7 @@ body:
     id: version
     attributes:
       label: ReverbScope 版本
-      description: 环境报告的前两行（版本号和构建号）。
+      description: 环境报告开头的“版本”和“构建”两行。
       placeholder: "0.5.0rc1, build 1a2b3c4d"
     validations:
       required: true

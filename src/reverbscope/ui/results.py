@@ -707,6 +707,7 @@ class ResultsPage(QWidget):
             QMessageBox.critical(self, _("Cannot save session"), localize(str(exc)))
             return
         remember_session(directory)
+        self.state.unsaved_take = False
         self.status.setText(_("Session saved to {path}").format(path=session_path.parent))
         project = self.state.project_path
         if project is not None:

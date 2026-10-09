@@ -399,6 +399,29 @@ def native_notices(out: Path, frozen: Path) -> tuple[dict[str, str], list[str]]:
     return notices, unresolved
 
 
+def package_binary_notices(out: Path, frozen: Path) -> tuple[dict[str, str], list[str]]:
+    """Write the notice of each binary a wheel keeps in its package folder.
+
+    ``check_bundle_contents.PACKAGE_BINARY_NOTICES`` names them (PySide6's
+    ``opengl32sw.dll`` on Windows). Returns each file's notice (a path inside
+    ``out``) and the files left without one (``native:<file name>``).
+    """
+    gate = _gate()
+    notices: dict[str, str] = {}
+    unresolved: list[str] = []
+    for path in gate.package_binaries(frozen):
+        notice = gate.PACKAGE_BINARY_NOTICES[path.name.lower()]
+        source = TEXTS_DIR / "native" / Path(notice).name
+        if not source.is_file():
+            unresolved.append(f"native:{path.name}")
+            continue
+        target = out / notice
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+        notices[path.name] = notice
+    return notices, unresolved
+
+
 def build(
     out: Path,
     *,
@@ -475,6 +498,8 @@ def build(
             *(f"{name}\t{notice}" for name, notice in sorted(native.items())),
         ]
         (out / _gate().NATIVE_INDEX).write_text("\n".join(lines) + "\n", encoding="utf-8")
+        packaged, missing_packaged = package_binary_notices(out, frozen)
+        unresolved.extend(missing_packaged)
     root = Path(__file__).resolve().parents[1]
     for name in ("LICENSE", "NOTICE"):
         src = root / name
@@ -494,6 +519,10 @@ def build(
         "native: not scanned (pass --frozen <bundle> after PyInstaller)"
         if native is None
         else f"native: {len(native)} libraries outside Python packages, notices in NATIVE.txt",
+        "package binaries: not scanned (pass --frozen <bundle> after PyInstaller)"
+        if native is None
+        else "package binaries: "
+        + (", ".join(f"{name} -> {notice}" for name, notice in sorted(packaged.items())) or "none"),
         "ASIO: Windows sounddevice ASIO DLLs must be stripped by check_bundle_contents.py",
     ]
     summary.write_text("\n".join(lines) + "\n", encoding="utf-8")

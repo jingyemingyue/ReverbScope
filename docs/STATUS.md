@@ -27,8 +27,9 @@ fixes only, see its own snapshot).
   abruptly" rule judged the regression line and rejected every metric of
   fast decays over a deep floor, of a noise-free synthetic room and of the
   demo's 63 and 125 Hz bands; a cut-off response is now found by walking
-  back along the line and limits the range instead (a gate 30 dB down still
-  withholds T20 and T30, also at low bands). EDT's straightness is checked
+  back along the line and limits the range instead (a gate 30 dB down withholds
+  T20 and T30 in the broadband curve and the bands from 250 Hz up; a narrow low
+  band can still read a T20 from the part before the cut, see the methodology). EDT's straightness is checked
   only when EDT is far longer than the late decay (a desk reflection made
   the demo's EDT unreliable). New: T20 and T30 are not fitted across a
   direct sound that covers more than half their range. Methodology §3 step 7,
@@ -1140,6 +1141,10 @@ algebra and the refusals, not the acoustics of any real surface.
   devices (Universal DAW Mode relies on the DAW/interface clocking).
 * `result.json` with curves is several MB for long IRs (`--no-curves` to
   shrink); the raw IR WAV is the authoritative record.
+* The analysis of a long recording holds roughly 140 bytes per sample in
+  memory (about 2 GB for 5 minutes at 48 kHz); a recording that does not fit
+  ends the command with a "not enough memory" message and should be cut to
+  the sweep plus a few seconds on each side.
 * zh-CN: core diagnostics (`warnings`, `notes`, `reason`) and plot titles
   stay English by design; the Chinese text was written by the project, not
   reviewed by a second translator.
@@ -1208,9 +1213,11 @@ were not copied. `packaging/licenses/` holds verbatim license *texts*
 
 ## Next recommended milestone
 
-See [RELEASE_PLAN.md](RELEASE_PLAN.md): **0.5.0b1** is the software beta
-(early/late energy, profile clarity notices, the placement picture). It does
-not meet the 0.5.0 exit criteria. **0.5.0** is still the first version with
+See [RELEASE_PLAN.md](RELEASE_PLAN.md): **0.5.0b3** is the software beta of
+the development line (Measurement health, verdicts on a comparison, the
+project overview, the boxed terminal and the menu, profiles explained); the
+release candidate is cut from it as `release/0.5.0` (now 0.5.0rc2). Neither
+meets the 0.5.0 exit criteria. **0.5.0** is still the first version with
 dated hardware-matrix PASS rows. Then 1.0.0rc1 when every MUST item of
 ARCHITECTURE_V1.md §3.1 is closed. API and schema versions stay unfrozen
 until then.

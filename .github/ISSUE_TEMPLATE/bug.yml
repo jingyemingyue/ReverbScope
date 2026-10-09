@@ -13,7 +13,7 @@ body:
     id: version
     attributes:
       label: ReverbScope version
-      description: The first two lines of the environment report (version and build).
+      description: The Version and Build lines near the top of the environment report.
       placeholder: "0.5.0rc1, build 1a2b3c4d"
     validations:
       required: true

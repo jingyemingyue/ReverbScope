@@ -2,7 +2,7 @@
 # English is the source language. Numbers stay ASCII; units are not translated.
 msgid ""
 msgstr ""
-"Project-Id-Version: reverbscope 0.5.0b2\n"
+"Project-Id-Version: reverbscope 0.5.0b3\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -748,6 +748,17 @@ msgstr "混响（外推到 60 dB）。“衰减范围不足”表示衰减对该
 
 msgid "Save Session..."
 msgstr "保存会话…"
+
+msgid "Unsaved measurement"
+msgstr "尚未保存的测量"
+
+msgid ""
+"This measurement has not been saved. Its recording exists only in memory and is "
+"lost if you continue."
+msgstr "这次测量还没有保存。它的录音只存在于内存中，继续的话就会丢失。"
+
+msgid "Discard"
+msgstr "放弃"
 
 msgid "Choose a folder for the session"
 msgstr "选择会话文件夹"
@@ -4115,6 +4126,37 @@ msgstr "没有找到 project.json：{path}"
 msgid "no sessions in {path}"
 msgstr "{path} 中没有会话"
 
+msgid "position {label}: no session.json there"
+msgstr "位置 {label}：那里没有 session.json"
+
+msgid "position {label}: {path} has no session.json; it is left out"
+msgstr "位置 {label}：{path} 中没有 session.json，已被略过"
+
+msgid "... and {n} more positions left out"
+msgstr "……另有 {n} 个位置被略过"
+
+msgid "not enough memory to finish this command"
+msgstr "内存不足，无法完成这条命令"
+
+msgid ""
+"A long recording needs a lot of memory: about 2 GB for 5 minutes at 48 kHz, in "
+"proportion to its length. Cut it to the sweep plus a few seconds of silence on "
+"each side (any audio editor or DAW does it), or close other programs, and run "
+"the command again."
+msgstr ""
+"较长的录音需要很多内存：48 kHz 下 5 分钟约需 2 GB，随长度成比例增加。请把它剪到"
+"只剩扫频信号加前后各几秒静音（任何音频编辑器或 DAW 都能做到），或者关闭其他程序，"
+"然后重新运行这条命令。"
+
+msgid ""
+"There is not enough memory to analyse this recording. A long recording needs a "
+"lot of it: about 2 GB for 5 minutes at 48 kHz, in proportion to its length. Cut "
+"it to the sweep plus a few seconds of silence on each side, or close other "
+"programs, and try again."
+msgstr ""
+"内存不足，无法分析这段录音。较长的录音需要很多内存：48 kHz 下 5 分钟约需 2 GB，随"
+"长度成比例增加。请把它剪到只剩扫频信号加前后各几秒静音，或者关闭其他程序，然后重试。"
+
 msgid "--sources must be at least 1"
 msgstr "--sources 至少为 1"
 
@@ -5086,8 +5128,8 @@ msgstr "按工程采样率（{rate} Hz）生成测试信号：在应用的步骤
 msgid "content before the direct sound is only {margin:.1f} dB below it (noise, pre-ringing or a wrong reference): the recording may not contain the reference sweep"
 msgstr "直达声之前的内容只比它低 {margin:.1f} dB（噪声、预振铃或参考信号不对）：录音可能不含参考扫频"
 
-msgid "harmonic {order} of the sweep at {level:.0f} dB re the direct sound: the loudspeaker or the chain distorts. The harmonic responses are separated in time from the room response, so the decay is not spoilt, but the chain is near its limit"
-msgstr "扫频的第 {order} 次谐波相对直达声为 {level:.0f} dB：扬声器或链路有失真。谐波响应在时间上与房间响应分离，衰减不受影响，但链路已接近极限"
+msgid "harmonic {order} of the sweep at {level:.0f} dB re the direct sound: the loudspeaker or the chain distorts. The harmonic responses arrive ahead of the room response, but their own decays run into it and can lengthen the decay of some bands, and the chain is near its limit"
+msgstr "扫频的第 {order} 次谐波相对直达声为 {level:.0f} dB：扬声器或链路有失真。谐波响应先于房间响应到达，但它们自己的衰减会延伸进房间响应，可能使某些频带的衰减变长，而且链路已接近极限"
 
 msgid "Lower the playback level by 6 to 10 dB and measure again."
 msgstr "把播放电平降低 6 到 10 dB，然后重新测量。"
@@ -5852,6 +5894,15 @@ msgstr "无法打开数据文件夹"
 
 msgid "The question could not be completed ({error}). Back to the menu."
 msgstr "这个问题无法完成（{error}）。回到菜单。"
+
+msgid "The cause of the speed error was not recognised ({kind}). Check the project's sample rate against the test signal's and switch time-stretching off for the clip, then measure again."
+msgstr "无法识别速度误差的原因（{kind}）。请核对工程采样率与测试信号的采样率是否一致，并关闭该片段的时间拉伸，然后重新测量。"
+
+msgid "The measurement health of the two takes was not considered: their sessions are no longer where the comparison was saved."
+msgstr "没有考虑两次录音的测量健康状况：它们的会话已不在保存这次对比时所在的位置。"
+
+msgid "The measurement health of the {side} take was not considered: its session is no longer where the comparison was saved."
+msgstr "没有考虑{side}录音的测量健康状况：它的会话已不在保存这次对比时所在的位置。"
 
 msgctxt "status"
 msgid "good"

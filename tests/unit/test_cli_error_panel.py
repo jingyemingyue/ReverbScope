@@ -233,8 +233,10 @@ def test_the_command_line_shows_the_error_card_where_the_style_says_so(
     code, out, err = invoke(["--style", "plain", "show", "no-such-session"], capsys)
     assert err.startswith("× error:")
     # A terminal wide enough: the card, by default.
-    # On Windows only Windows Terminal and alike show the symbols and the frames.
+    # On Windows only Windows Terminal and alike show the symbols and the frames, and
+    # colour needs a console handle that a pretend terminal does not have.
     monkeypatch.setenv("WT_SESSION", "1")
+    monkeypatch.setattr("reverbscope.cli.console._enable_windows_vt", lambda _stream: True)
     tty = Stream(tty=True)
     monkeypatch.setattr("sys.stderr", tty)
     monkeypatch.setenv("COLUMNS", "70")

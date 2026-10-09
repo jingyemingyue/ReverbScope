@@ -360,3 +360,40 @@ def test_a_project_folder_that_cannot_be_created_is_a_session_error(
         save_project(blocker, Project(name="p"))
     with pytest.raises(SessionError, match="cannot create"):
         add_session(blocker / "room", session, position="A")
+
+
+def _saved_project(tmp_path: Path, short_sweep: SweepSettings, names: tuple[str, ...]) -> Path:
+    ir = make_rir(short_sweep.sample_rate, rt60_s=0.3)
+    rec = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
+    result = analyze(rec, Reference.from_settings(short_sweep))
+    project_dir = tmp_path / "room"
+    save_project(project_dir, Project(name="Booth"))
+    for name in names:
+        folder = project_dir / "sessions" / name
+        save_measurement(
+            folder, MeasurementSession(room_name="Booth"), result, include_curves=False
+        )
+        add_session(project_dir, folder, position=name.upper())
+    return project_dir
+
+
+def test_a_listed_take_whose_folder_is_gone_is_reported_not_skipped_in_silence(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """`project average` kept working with fewer positions after a session
+    folder was deleted or moved, and printed nothing about the one it dropped."""
+    import shutil
+
+    from reverbscope.io.project_store import missing_project_sessions
+
+    project_dir = _saved_project(tmp_path, short_sweep, ("a", "b", "c"))
+    assert missing_project_sessions(project_dir) == []
+    shutil.rmtree(project_dir / "sessions" / "b")
+    assert [label for label, _stored in list_project_sessions(project_dir)] == ["A", "C"]
+    assert missing_project_sessions(project_dir) == [("B", "sessions/b")]
+    # A session.json that disappeared from a folder that stayed is just as missing.
+    (project_dir / "sessions" / "c" / "session.json").unlink()
+    assert [label for label, _stored in missing_project_sessions(project_dir)] == ["B", "C"]
+    assert missing_project_sessions(project_dir / "project.json") == missing_project_sessions(
+        project_dir
+    )
