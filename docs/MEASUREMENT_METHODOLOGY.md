@@ -408,23 +408,17 @@ time-reversed filtering.
    with the slow part 25 dB down is flagged in every run for the broadband
    curve and the 250 Hz–8 kHz bands, and in 60–90 % of the runs at 63 and
    125 Hz, where a single decay already scatters that much.
-   The `ξ` limit is scaled by T30 when T30 has a positive time (also after
+   The `ξ` limit is scaled by the T30 when it has a positive time (also after
    an earlier rule marked it unreliable: its seconds are still the decay the
-   band measured), else by T20, else by EDT, so a T20 that is the only
-   candidate and an EDT are checked too. Two further shapes are not a
-   reverberation slope and are marked unreliable with a warning that says
-   so: *a step* (T20 and T30 only), when the curve crosses the fit's
-   evaluation range in less than `SUDDEN_DROP_RATIO` (0.25) times the time
-   it took to fall its first 5 dB (a late noise burst or a hard gate; a
-   clean exponential takes about 3.6 times as long, the fastest legitimate
-   octave-band decay about 1); and *an abrupt end*, when the preliminary
-   Lundeby regression stops more than `ABRUPT_END_GAP_DB` (20 dB) above the
-   noise floor it was measured against (a response cut off by a gate or
-   padded with digital silence kept alive by a residual sample): the
-   late-slope window then holds no decay, the iteration stalls on the same
-   crosspoint, and the preliminary slope is the end of the record, so T20
-   and T30 are withheld. A narrow-band exponential ends about 17 dB above
-   its floor because its blocks scatter; the cliffs end 30 dB or more above.
+   band measured), else by the T20, else by the EDT, so a T20 that is the
+   only candidate for RT60 because T30 has no range is checked too. EDT is
+   checked only when it is longer than 1.5 times that late decay: the first
+   10 dB of a room with a strong early reflection are not straight, and
+   that is what EDT measures (the demo's position A reads 45 ‰ broadband and
+   80–95 ‰ at 2–8 kHz, while its T30 fits are at 3–4 ‰), whereas a
+   disturbance inside the 0…−10 dB range, such as a late noise burst, makes
+   EDT many times longer than the late decay (73 s against 0.5 s in the test
+   that reproduces it).
 8. **Validity: truncation sensitivity.** When the Lundeby estimate was
    rejected (step 2), EDT, T20 and T30 are fitted again with the rejected
    estimate. If a VALID one changes by more than 5 % or has no value with
@@ -433,11 +427,57 @@ time-reversed filtering.
    unreliable would flag most bands of clean measurements with more than
    about 100 dB of range, where the late slope is fitted to a few intervals
    and oscillates without affecting the metrics.
-9. **B·T check.** With time-reversed filtering the bandwidth × reverberation
-   time product should exceed about 4 (about 16 with forward filtering) [6];
-   below 4 the band's metrics are marked `unreliable` and a warning explains
-   why. The numbers 16 / 4 are confirmed only through works citing [6].
-10. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
+9. **Validity: a step, not a slope.** For T20 and T30, the time the curve
+   takes from −5 dB to the bottom of the evaluation range is compared with
+   the time it took to fall the first 5 dB. A straight decay takes 4 times
+   as long (T20: 20 dB against 5 dB) or 6 times (T30); when the ratio is
+   below 0.25 the fit crossed its range in a step (a late noise burst, a hard
+   gate) and the metric is marked unreliable with the two times named. A
+   legitimate fast decay and a double slope whose later part is slower are
+   not steps. EDT is not checked this way: its range starts at 0 dB, which
+   the direct sound itself can cross in one sample.
+10. **Validity: the direct sound covers the range.** T20 and T30 are fitted
+    from the first sample after the direct sound and its spread. When the
+    curve has already fallen through more than half of the evaluation range
+    by then, the few dB left describe the direct sound's step rather than
+    the room's slope, and the metric is marked unreliable with the dB
+    covered named (with the direct sound 22 dB above the room, T20 covered
+    3 dB of room decay and was off by up to 27 %). EDT has its own rule
+    (step 6).
+11. **A response cut short.** When the record ends while the decay is still
+    far above the noise floor (a gate, or digital silence after an imported
+    response), the last 10 % of the record is not a noise floor of the room
+    and the Lundeby iteration would fit the end of the record as a
+    reverberation time. The preliminary regression of step 2 is walked back
+    from the first block at or below noise + 10 dB: a block more than 10 dB
+    below the line fitted to the blocks before it belongs to the fall, and
+    the fall is a cut when it exceeds the slope's own drop by 20 dB and
+    begins less than 100 dB below the peak (no room measurement resolves
+    more: the numerical silence after a synthetic response is no cut). The
+    decay is then known down to the level before the fall and no further:
+    the floor, the truncation and the tail extrapolation are set there, so
+    the range rule of step 5 decides — a metric whose evaluation range plus
+    the noise margin reaches below the cut is withheld as
+    `insufficient_range` (a gate 30 dB down withholds T20 and T30), a cut
+    70 dB down changes only the reported range — and the band's warnings
+    name the cut. A clean exponential stays on its line down to the floor
+    and a double slope meets its floor above its line, so neither is a cut.
+
+    *Calibration of steps 7 and 9–11.* A Monte Carlo of 360 synthetic
+    single-slope rooms (RT 0.3, 0.6 and 1.2 s; floors at −60 and −80 dB; with
+    and without strong early reflections; nine bands each, 3 240 band decays)
+    gives the same values with and without the rules, and the rules withhold
+    nothing that was valid except four EDTs at 63 and 125 Hz, which were 67 %
+    to 75 % longer than the room's reverberation time. Gated, burst and
+    cut-short records are covered by `tests/unit/test_dsp_edgecases.py` and
+    `tests/unit/test_decay.py`; the loudspeaker-distortion roundtrip (a
+    noise-free decay of 70 dB or more) and the demo's low bands are the cases
+    a stricter rule broke.
+12. **B·T check.** With time-reversed filtering the bandwidth × reverberation
+    time product should exceed about 4 (about 16 with forward filtering) [6];
+    below 4 the band's metrics are marked `unreliable` and a warning explains
+    why. The numbers 16 / 4 are confirmed only through works citing [6].
+13. **Estimated RT60** is T30 when valid, else T20, else none; the basis is
     always reported. Curvature `C` (step 7) is given when both exist.
 
 **Units.** Seconds; the Schroeder curve in dB relative to its start.
@@ -462,7 +502,7 @@ accuracy), and the rule that one averages *T values*, not decay curves
 arithmetic mean of EDT, T20 and T30 per band over the metrics marked VALID
 only, with the count, the spread (max − min) and the contributing session
 labels. The averaged RT60 is the mean of the sessions' own RT60 estimates
-(each the VALID T30, else the VALID T20, as in §3 step 10), with its own
+(each the VALID T30, else the VALID T20, as in §3 step 13), with its own
 count and contributing sessions; its basis is `T30`, `T20`, or `T30/T20`
 when the sessions differ. (Up to v0.5.0b1 it was the mean T30 whenever any
 session had one, so a single quiet position's T30 stood for the room and
