@@ -390,6 +390,17 @@ def truncate(text: str, width: int, ellipsis: str = "…") -> str:
     return "".join(out) + ellipsis
 
 
+def _fit_end(text: str, start: int, room: int) -> int:
+    """Where the characters of ``text`` from ``start`` stop fitting in ``room`` columns."""
+    used = 0
+    for index in range(start, len(text)):
+        step = char_width(text[index])
+        if used + step > room:
+            return index
+        used += step
+    return len(text)
+
+
 def _tokens(text: str) -> Iterator[str]:
     """Spaces, Latin words and single wide characters, in order."""
     buffer, kind = "", ""
@@ -458,12 +469,19 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
             piece = carry.lstrip() + token
             # A single token wider than the line is split where it must be.
             room = max(1, width - cell_width(prefix))
-            while cell_width(piece) > room and len(piece) > 1 and not _unbreakable(piece):
-                head = truncate(piece, room, ellipsis="")
-                if not head:
-                    break
-                lines.append(prefix + head)
-                prefix, piece = rest, piece[len(head) :]
+            if len(piece) > 1 and cell_width(piece) > room and not _unbreakable(piece):
+                # A piece without a path separator has none in any later part
+                # either, so this is decided once; the split walks an index
+                # (re-measuring and re-slicing what is left on every line made
+                # a 100 KB word take seconds).
+                start = 0
+                while len(piece) - start > 1:
+                    end = _fit_end(piece, start, room)
+                    if end == len(piece) or end == start:
+                        break
+                    lines.append(prefix + piece[start:end])
+                    prefix, start = rest, end
+                piece = piece[start:]
             parts = [piece]
         lines.append(prefix + "".join(parts))
     return [line.replace(GLUE, " ") for line in lines]
