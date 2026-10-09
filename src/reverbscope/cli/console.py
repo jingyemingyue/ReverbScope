@@ -347,8 +347,9 @@ def glue_units(text: str) -> str:
     return text.replace("dB SPL", "dB" + GLUE + "SPL")
 
 
-#: Characters a POSIX shell splits, expands or globs at somewhere in a word.
-_POSIX_SPECIAL = frozenset(" \t\n'\"\\|&;<>()$`*?[]{}!#~")
+#: Characters a POSIX shell splits, expands or globs at somewhere in a word
+#: (``^`` is a pipe to the oldest shells and a negation to zsh).
+_POSIX_SPECIAL = frozenset(" \t\n'\"\\|&;<>()$`*?[]{}!#~^")
 #: Characters cmd.exe or PowerShell split at or expand outside quotes.
 _WINDOWS_SPECIAL = frozenset(" \t\"'&|()<>^%;,{}@$`")
 #: ``<take.wav>``: an instruction, not a path.
@@ -407,8 +408,12 @@ def shell_command(argv: Iterable[str]) -> str:
     for part in argv:
         text = str(part).replace("\\", "/") if windows else str(part)
         # "demo(1)&x/position-a" bare is a syntax error in bash and two
-        # commands in bash and cmd.
-        needs_quotes = not text or any(char.isspace() or char in special for char in text)
+        # commands in bash and cmd. A character that cannot be seen (a control
+        # character, a zero-width space, a right-to-left override) is quoted
+        # too: bare, it would pass for nothing in the line shown.
+        needs_quotes = not text or any(
+            char.isspace() or char in special or not char.isprintable() for char in text
+        )
         if not needs_quotes or _PLACEHOLDER.fullmatch(text):
             parts.append(text)
         elif windows:
