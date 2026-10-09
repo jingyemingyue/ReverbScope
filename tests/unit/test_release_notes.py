@@ -94,7 +94,21 @@ def _known_names() -> set[str]:
 def test_release_notes_open_with_the_version_and_the_pre_release_line() -> None:
     lines = [line for line in _notes().splitlines() if line.strip()]
     assert lines[0] == f"## ReverbScope v{_version()}"
-    assert "Beta 2, for testing." in lines[1]
+    assert "Beta 3, for testing." in lines[1]
+
+
+def test_the_beta_header_names_the_beta_it_ships_with() -> None:
+    """Version 0.5.0b3 went out with notes that said "Beta 2" because the
+    header's number was not part of the version bump."""
+    match = re.fullmatch(r"\d+\.\d+\.\d+b(\d+)", _version())
+    if match is None:
+        pytest.skip("not a beta version")
+    number = match.group(1)
+    text = HEADER.read_text(encoding="utf-8")
+    assert f"**Beta {number}, for testing.**" in text
+    assert f"This is beta {number} of the software" in text
+    assert f"**This is beta {number}**" in text
+    assert not re.search(rf"(?i)\bbeta (?!{number}\b)\d", text)
 
 
 def test_release_notes_name_every_download_that_the_release_carries() -> None:
@@ -135,10 +149,10 @@ def test_release_notes_put_the_user_choice_first() -> None:
 def test_release_notes_are_honest_about_signing_and_hardware() -> None:
     notes = _notes()
     for fact in (
-        "This is beta 2 of the software, not the 0.5.0 hardware release.",
+        "This is beta 3 of the software, not the 0.5.0 hardware release.",
         "hardware validation has not started",
         "should not yet be treated as hardware-validated",
-        "This is beta 2",
+        "This is beta 3",
         "not 0.5.0",
         "not notarized",
         "Authenticode",
