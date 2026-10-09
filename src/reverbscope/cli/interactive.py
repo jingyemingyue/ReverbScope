@@ -160,6 +160,18 @@ def _exists(path: Path) -> bool:
         return False
 
 
+#: The marks a prompt ends with when it has no default to show.
+_CLOSING = frozenset(":\uff1a?\uff1f")
+
+
+def _split_question(template: str, question: str, **fields: str) -> tuple[str, str]:
+    """``template`` (``{question} [{default}]: ``) as the question and what
+    follows it, so that the layout can keep the second part whole."""
+    marker = "\x00"
+    head, _marker, tail = template.format(question=marker, **fields).partition(marker)
+    return head + question, tail
+
+
 class Session:
     """The questions of one menu visit, on one console."""
 
@@ -171,17 +183,36 @@ class Session:
     def say(self, lines: Sequence[str]) -> None:
         print("\n".join(lines), file=self.out)
 
-    def _read(self, shown: str) -> str:
+    def _read(self, question: str, tail: str = "") -> str:
+        """``question`` followed by ``tail`` (the default hint and the colon),
+        and the answer.
+
+        A question longer than the screen ran past its edge, so that the
+        answer was typed after the terminal had wrapped the line, in the
+        middle of the text. It is written in lines that leave room at the
+        right, and only the last line is the prompt. The tail stays whole: it
+        follows the last line of the question when it fits there, else it is a
+        line of its own, so that a default (``[My Sessions/take 1]``,
+        ``（默认：48000）``) is never cut in two.
+        """
         c = self.console
-        text = c.readable(shown)
-        if cell_width(text) + ANSWER_ROOM <= c.width:
-            return self._ask(c.fit(shown)).strip()
-        # A question longer than the screen ran past its edge, so that the
-        # answer was typed after the terminal had wrapped the line, in the
-        # middle of the text: it is written in lines that leave room at the
-        # right, and only the last line is the prompt.
-        trailing = text[len(text.rstrip()) :]
-        lines = wrap(text.strip(), max(c.width - ANSWER_ROOM, 10))
+        text, hint = c.readable(question), c.readable(tail)
+        if cell_width(text + hint) + ANSWER_ROOM <= c.width:
+            return self._ask(c.fit(question + tail)).strip()
+        end = hint or text
+        trailing = end[len(end.rstrip()) :]
+        room = max(c.width - ANSWER_ROOM, 10)
+        lines = wrap(text.strip(), room)
+        core = hint.strip()
+        if core:
+            joiner = " " if hint[:1].isspace() else ""
+            # A colon alone cannot start a line; a hint is one piece or none.
+            if all(char in _CLOSING for char in core) or (
+                cell_width(lines[-1] + joiner + core) <= room
+            ):
+                lines[-1] += joiner + core
+            else:
+                lines.append(core)
         self.say([c.fit(line) for line in lines[:-1]])
         return self._ask(c.fit(lines[-1] + trailing)).strip()
 
@@ -191,11 +222,8 @@ class Session:
         The question, its default and its colon are written the way the
         interface language writes them (``测试信号写到哪里（默认：sweep.wav）：``).
         """
-        if default:
-            shown = _("{question} [{default}]: ").format(question=prompt, default=default)
-        else:
-            shown = _("{question}: ").format(question=prompt)
-        return self._read(shown) or default
+        template = _("{question} [{default}]: ") if default else _("{question}: ")
+        return self._read(*_split_question(template, prompt, default=default)) or default
 
     def ask_path(
         self,
@@ -230,7 +258,7 @@ class Session:
 
     def ask_yes(self, prompt: str) -> bool:
         """Yes only for an explicit yes; Enter, anything else, is no."""
-        answer = fold(self._read(_("{question} [y/N]: ").format(question=prompt))).casefold()
+        answer = fold(self._read(*_split_question(_("{question} [y/N]: "), prompt))).casefold()
         yes = ("y", "yes", pgettext("answer", "y"), pgettext("answer", "yes"))
         return answer in {word.casefold() for word in yes}
 
