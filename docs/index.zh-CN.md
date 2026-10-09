@@ -28,6 +28,7 @@ ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上�
 
 ## 中文摘要（开发者文档）
 
+- [维护手册](MAINTAINING.zh-CN.md)（[English](MAINTAINING.md)）
 - [发布计划（中文摘要）](RELEASE_PLAN.zh-CN.md)
 - [v1.0 架构设计（中文摘要）](ARCHITECTURE_V1.zh-CN.md)
 - [项目需求书（原文存档）](PROJECT_BRIEF.zh-CN.md)

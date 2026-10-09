@@ -2,7 +2,7 @@
 # English is the source language. Numbers stay ASCII; units are not translated.
 msgid ""
 msgstr ""
-"Project-Id-Version: reverbscope 0.5.0b2\n"
+"Project-Id-Version: reverbscope 0.5.0rc1\n"
 "Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -1011,12 +1011,12 @@ msgstr "RT60"
 msgid ""
 "The desktop GUI cannot start because PySide6 could not be loaded ({error}). "
 "Install it in this Python environment with: pip install "
-"\"PySide6_Essentials>=6.6\". On Linux the OpenGL/EGL and XCB system "
+"\"PySide6_Essentials>=6.6,<6.12\". On Linux the OpenGL/EGL and XCB system "
 "libraries are also needed; see docs/INSTALLATION.md. The command-line tool "
 "works without it."
 msgstr ""
 "无法启动桌面界面：无法加载 PySide6（{error}）。请在当前 Python 环境中安装："
-"pip install \"PySide6_Essentials>=6.6\"。在 Linux 上还需要系统的 OpenGL/EGL 和 "
+"pip install \"PySide6_Essentials>=6.6,<6.12\"。在 Linux 上还需要系统的 OpenGL/EGL 和 "
 "XCB 库，见 docs/INSTALLATION.zh-CN.md。命令行工具不需要它也能使用。"
 
 msgid "stopped: {message}"
@@ -1387,13 +1387,11 @@ msgstr "开发者(&D)"
 msgid "Audio Device &Inspector..."
 msgstr "音频设备检查器(&I)…"
 
-
 msgid "Open &Data Folder"
 msgstr "打开数据文件夹(&D)"
 
 msgid "How ReverbScope talks to your interface: WASAPI, ASIO, WDM-KS, DirectSound or MME on Windows, Core Audio on macOS, ALSA or JACK on Linux. Input and output must use the same one. \"System default\" uses the devices your system uses; a star marks the entry recommended for each device."
 msgstr "ReverbScope 与声卡通信的方式：Windows 上为 WASAPI、ASIO、WDM-KS、DirectSound 或 MME，macOS 上为 Core Audio，Linux 上为 ALSA 或 JACK。输入和输出必须使用同一种。“系统默认”使用系统当前的设备；星号标出每个设备的推荐条目。"
-
 
 msgid "Advanced audio options (developer edition)"
 msgstr "高级音频选项（开发者版）"
@@ -4104,7 +4102,6 @@ msgstr "作为房间话筒，后期房间声偏少（C80 {value:.1f} dB，高于
 msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {threshold:.0f} dB). Some late sound suits a choir, but this much will blur diction. This is one position, not a room grade."
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
-
 msgid "loopback_channel {channel} does not exist (the loopback file has {count} channel(s))"
 msgstr "loopback_channel {channel} 不存在（回送文件只有 {count} 个声道）"
 
@@ -4147,6 +4144,9 @@ msgstr "{field} 必须是文本"
 msgid "expected a list of numbers"
 msgstr "此处应为数字列表"
 
+msgid "expected a list of text values"
+msgstr "此处应为文本列表"
+
 msgid "{field} has the wrong type"
 msgstr "{field} 的类型不正确"
 
@@ -4188,6 +4188,9 @@ msgid "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
 msgstr "在可搜索的 {end:.1f} ms 内没有高于 {threshold:.0f} dB 的反射"
 msgid "The result was discarded: a new measurement or another session replaced it before it was ready."
 msgstr "结果完成前已开始新的测量或打开了其他会话，结果已丢弃。"
+
+msgid "incomplete window"
+msgstr "窗口不完整"
 
 msgid "Synthetic demo"
 msgstr "合成演示"
@@ -4436,7 +4439,6 @@ msgstr "主题只影响桌面版，下次打开时生效。"
 
 msgid "The desktop app shows the change the next time it starts."
 msgstr "桌面版下次启动时生效。"
-
 
 msgid "do not copy it for one command"
 msgstr "只在这一条命令中不复制"
@@ -5322,3 +5324,540 @@ msgstr "{side}测量的健康状况未知：{checks}。"
 
 msgid "VERDICT ({profile} PROFILE)"
 msgstr "判定（{profile}配置）"
+
+msgid "every position's takes under the profile: health, fit, verdicts, next steps"
+msgstr "该配置下各位置的测量：健康、契合度、判定与下一步"
+
+msgid "recording profile (default: the latest session's own, else user settings)"
+msgstr "录音配置（默认：最新会话自身的配置，否则用户设置）"
+
+msgid "ReverbScope project overview"
+msgstr "ReverbScope 项目总览"
+
+msgid "Project"
+msgstr "项目"
+
+msgid "Profile"
+msgstr "配置"
+
+msgid "{positions} position(s), {sessions} session(s), {unlisted} unlisted"
+msgstr "{positions} 个位置，{sessions} 个会话，{unlisted} 个未归入位置"
+
+msgid "Takes"
+msgstr "测量"
+
+msgid "When"
+msgstr "时间"
+
+msgid "Health"
+msgstr "健康"
+
+msgid "Reflection"
+msgstr "反射"
+
+msgid "Fit"
+msgstr "契合度"
+
+msgid "{session}: not read"
+msgstr "{session}：未能读取"
+
+msgid "Positions"
+msgstr "位置"
+
+msgid "one take"
+msgstr "一次测量"
+
+msgid "{n} takes, no RT60 to compare"
+msgstr "{n} 次测量，没有可比较的 RT60"
+
+msgid "{n} takes agree ({spread:.1f} % apart in RT60)"
+msgstr "{n} 次测量一致（RT60 相差 {spread:.1f} %）"
+
+msgid "{n} takes disagree ({spread:.0f} % apart in RT60)"
+msgstr "{n} 次测量不一致（RT60 相差 {spread:.0f} %）"
+
+msgid "Spatial average"
+msgstr "空间平均"
+
+msgid "The positions' RT60 differ by {spread:.0f} % across the room (largest minus smallest, over the mean)."
+msgstr "各位置的 RT60 在房间内相差 {spread:.0f} %（最大值减最小值，除以平均值）。"
+
+msgid "Next"
+msgstr "下一步"
+
+msgid "the first position: the others are judged against it"
+msgstr "第一个位置：其他位置都以它为基准判定"
+
+msgid "the measurement is invalid ({checks})"
+msgstr "测量无效（{checks}）"
+
+msgid "no VALID reverberation time"
+msgstr "没有有效（VALID）的混响时间"
+
+msgid "the {profile} profile warns about {topics}"
+msgstr "{profile}配置对{topics}给出警告"
+
+msgid "no warning under the {profile} profile"
+msgstr "在{profile}配置下没有警告"
+
+msgid "not compared with position {label}: {error}"
+msgstr "未与位置 {label} 比较：{error}"
+
+msgid "not comparable with position {label}: {reason}"
+msgstr "无法与位置 {label} 比较：{reason}"
+
+msgid "against position {label}: {headline}"
+msgstr "相对位置 {label}：{headline}"
+
+msgid "No position yet: measure one from the Project page, or add a saved session with reverbscope project add <project> <session> --position <label>."
+msgstr "还没有位置：在“项目”页面测量一个，或用 reverbscope project add <project> <session> --position <label> 加入一个已保存的会话。"
+
+msgid "{n} microphone position(s) reach the ISO 3382-2 {now} class; {more} more (same source position and level) would reach {better}."
+msgstr "{n} 个话筒位置达到 ISO 3382-2 的{now}等级；再加 {more} 个（声源位置和电平不变）即可达到{better}。"
+
+msgid "measure every position again with the loudspeaker elsewhere, and pass --sources {sources}"
+msgstr "把扬声器换一个位置，再把每个位置测一遍，并传入 --sources {sources}"
+
+msgid "{more} more microphone position(s) ({total} in all), each measured with the loudspeaker in both places; pass --sources {sources}"
+msgstr "再加 {more} 个话筒位置（共 {total} 个），每个位置都在扬声器的两个位置各测一次；传入 --sources {sources}"
+
+msgid "{n} microphone position(s) reach the ISO 3382-2 {now} class; {better} needs a second source position: {how}."
+msgstr "{n} 个话筒位置达到 ISO 3382-2 的{now}等级；{better}需要第二个声源位置：{how}。"
+
+msgid "A second take at {labels} would show whether the measurement repeats (takes at one position should agree within {jnd:g} % in RT60)."
+msgstr "在 {labels} 再测一次可以看出测量是否可重复（同一位置的多次测量，RT60 应相差不超过 {jnd:g} %）。"
+
+msgid "The takes at {label} differ by {spread:.0f} % in RT60, more than the {jnd:g} % just-noticeable difference: check the microphone position, the level and the noise before trusting either."
+msgstr "{label} 的多次测量 RT60 相差 {spread:.0f} %，超过了 {jnd:g} % 的刚可察觉差：先检查话筒位置、电平和噪声，再决定相信哪一次。"
+
+msgid "Measure {label} again: {checks}."
+msgstr "重新测量 {label}：{checks}。"
+
+msgid "No position fits the {profile} profile yet: each take's findings say what to change (distance, treatment, level)."
+msgstr "还没有位置契合{profile}配置：每次测量的解读说明了需要改变什么（距离、声学处理、电平）。"
+
+msgid "{label} is the one position that fits the {profile} profile."
+msgstr "{label} 是唯一契合{profile}配置的位置。"
+
+msgid "Positions that fit the {profile} profile: {labels}. The overview does not rank them: choose on the verdicts and on what the recording needs."
+msgstr "契合{profile}配置的位置：{labels}。总览不为它们排名：请根据判定和录音的需要来选择。"
+
+msgctxt "fit"
+msgid "fits"
+msgstr "契合"
+
+msgid "{n} session(s) in the project folder belong to no position; they enter the average but not the position counts (reverbscope project add … --position)."
+msgstr "项目文件夹中有 {n} 个会话不属于任何位置；它们参与平均，但不计入位置数（reverbscope project add … --position）。"
+
+msgctxt "fit"
+msgid "warnings"
+msgstr "有警告"
+
+msgctxt "fit"
+msgid "cannot say"
+msgstr "无法判断"
+
+msgid "Open &Project..."
+msgstr "打开项目(&P)..."
+
+msgid "Open project folder"
+msgstr "打开项目文件夹"
+
+msgid "Open Project..."
+msgstr "打开项目..."
+
+msgid "One room, several microphone positions: open or make a project folder."
+msgstr "一个房间，多个话筒位置：打开或新建一个项目文件夹。"
+
+msgid "One room, several microphone positions. Every take keeps its own folder; the project lists which position it was taken at."
+msgstr "一个房间，多个话筒位置。每次测量仍保存在各自的文件夹中；项目记录它是在哪个位置测的。"
+
+msgid "New Project..."
+msgstr "新建项目..."
+
+msgid "Source positions"
+msgstr "声源位置数"
+
+msgid "Loudspeaker positions the takes were measured from (ISO 3382-2 counts them)."
+msgstr "测量时使用的扬声器位置数（ISO 3382-2 会计入）。"
+
+msgid "Copy overview"
+msgstr "复制总览"
+
+msgid "Add Session..."
+msgstr "加入会话..."
+
+msgid "List a saved session under a position of this project."
+msgstr "把一个已保存的会话归入本项目的某个位置。"
+
+msgid "Compare with first position"
+msgstr "与第一个位置对比"
+
+msgid "Open Compare with the first position as baseline and the selected take as candidate."
+msgstr "打开“对比”页面，以第一个位置为基线、所选测量为候选。"
+
+msgid "Measure a new position..."
+msgstr "测量新位置..."
+
+msgid "Open a project folder, or make one: a project is a folder with a project.json that lists the sessions saved in it by position."
+msgstr "打开或新建一个项目文件夹：项目是一个带 project.json 的文件夹，其中按位置列出了保存在里面的会话。"
+
+msgid "POSITIONS"
+msgstr "位置"
+
+msgid "TAKES"
+msgstr "测量"
+
+msgid "Double-click a take to open it. Health and fit are judged when the page is shown."
+msgstr "双击一次测量可打开它。健康和契合度在页面显示时判定。"
+
+msgid "SPATIAL AVERAGE"
+msgstr "空间平均"
+
+msgid "NEXT"
+msgstr "下一步"
+
+msgid "New project"
+msgstr "新建项目"
+
+msgid "{path} has no project.json. Make it a project?"
+msgstr "{path} 中没有 project.json。要把它变成项目吗？"
+
+msgid "Sessions already saved in the folder are listed, without a position."
+msgstr "文件夹中已保存的会话会被列出，但不属于任何位置。"
+
+msgid "Make project"
+msgstr "创建项目"
+
+msgid "Cannot create project"
+msgstr "无法创建项目"
+
+msgid "Choose a folder for the project"
+msgstr "选择项目文件夹"
+
+msgid "Cannot open project"
+msgstr "无法打开项目"
+
+msgid "Open or make a project first."
+msgstr "请先打开或新建一个项目。"
+
+msgid "Add a saved session to the project"
+msgstr "把已保存的会话加入项目"
+
+msgid "Session files (session.json);;All files (*)"
+msgstr "会话文件 (session.json);;所有文件 (*)"
+
+msgid "Cannot add session"
+msgstr "无法加入会话"
+
+msgid "Add session"
+msgstr "加入会话"
+
+msgid "Position label"
+msgstr "位置名称"
+
+msgid "Overview copied to the clipboard."
+msgstr "总览已复制到剪贴板。"
+
+msgid "{name}  ·  {path}  ·  {positions} position(s), {sessions} session(s)"
+msgstr "{name}  ·  {path}  ·  {positions} 个位置，{sessions} 个会话"
+
+msgid "No position yet. Measure a new position, or add a saved session under a position label."
+msgstr "还没有位置。测量一个新位置，或把已保存的会话归入某个位置名称下。"
+
+msgid "Fit is the absence of a warning under the {profile} profile; the page does not rank positions."
+msgstr "“契合”指在{profile}配置下没有警告；本页面不为位置排名。"
+
+msgid "{session}: not read ({reason})"
+msgstr "{session}：未能读取（{reason}）"
+
+msgid "No session to average yet."
+msgstr "还没有可平均的会话。"
+
+msgid "ISO 3382-2 class: {klass} ({sources} source × {mics} mic, {combos} combinations). VALID T values only; decay curves are never averaged."
+msgstr "ISO 3382-2 等级：{klass}（{sources} 个声源 × {mics} 个话筒，{combos} 个组合）。只平均有效（VALID）的 T 值；从不平均衰减曲线。"
+
+msgid "Measure a new position"
+msgstr "测量新位置"
+
+msgid "A short name for the microphone position: A, B, desk, corner."
+msgstr "话筒位置的简短名称：A、B、桌前、墙角。"
+
+msgid "Measure with"
+msgstr "测量方式"
+
+msgid "Keep the loudspeaker, its level and the input gain as they were for the other positions; only the microphone moves."
+msgstr "扬声器、它的电平和输入增益保持与其他位置相同；只移动话筒。"
+
+msgid "Back to the project this take belongs to."
+msgstr "回到这次测量所属的项目。"
+
+msgid "Save into the project"
+msgstr "保存到项目中"
+
+msgid "Folder name inside {project}"
+msgstr "{project} 中的文件夹名称"
+
+msgid "Saved, but not added to the project"
+msgstr "已保存，但未加入项目"
+
+msgid "The session is saved in {path}, but could not be listed in the project: {error}"
+msgstr "会话已保存在 {path}，但无法记入项目：{error}"
+
+msgid "Session saved to {path} and listed in project {project} under position {label}"
+msgstr "会话已保存到 {path}，并记入项目 {project} 的位置 {label}"
+
+msgid "Report style (command line)"
+msgstr "报告样式（命令行）"
+
+msgid "boxed, plain, or auto (frames on a terminal at least 48 columns wide; never in a pipe)"
+msgstr "boxed、plain 或 auto（在至少 48 列宽的终端上加边框；管道中从不加）"
+
+msgid "unknown style {value}; choose boxed, plain or auto"
+msgstr "未知样式 {value}；可选 boxed、plain 或 auto"
+
+msgid "frames around reports: auto (default; the style setting, else boxed on a wide terminal and plain in a pipe), boxed, plain"
+msgstr "报告的边框：auto（默认；遵循已保存的报告样式设置，否则宽终端上为 boxed、管道中为 plain）、boxed、plain"
+
+msgctxt "metavar"
+msgid "STYLE"
+msgstr "样式"
+
+msgid "{path} is not a folder; try again, or leave empty to go back."
+msgstr "{path} 不是文件夹；请重试，或留空返回。"
+
+msgid "{path} does not exist; try again, or leave empty to go back."
+msgstr "{path} 不存在；请重试，或留空返回。"
+
+msgctxt "answer"
+msgid "y"
+msgstr "y"
+
+msgctxt "answer"
+msgid "yes"
+msgstr "是"
+
+msgid "Where to write the test signal"
+msgstr "测试信号写到哪里"
+
+msgid "Sample rate of your DAW project (Hz)"
+msgstr "你的 DAW 工程采样率（Hz）"
+
+msgid "Choose one of {rates}."
+msgstr "请在 {rates} 中选择。"
+
+msgid "The recording exported from your DAW (WAV, AIFF, CAF, FLAC)"
+msgstr "从 DAW 导出的录音（WAV、AIFF、CAF、FLAC）"
+
+msgid "The test signal that was played"
+msgstr "播放的测试信号"
+
+msgid "Folder to save the session in (empty: show only)"
+msgstr "保存会话的文件夹（留空：只显示）"
+
+msgid "Folder for the new session"
+msgstr "新会话的文件夹"
+
+msgid "ReverbScope will play a sweep through the default output device at -12 dBFS and record the default input. Set a moderate monitor level first; nothing has been played yet."
+msgstr "ReverbScope 将通过默认输出设备以 -12 dBFS 播放扫频，并录制默认输入。请先把监听音量调到适中；现在还没有播放任何声音。"
+
+msgid "Play and record now?"
+msgstr "现在播放并录制？"
+
+msgid "A session folder, result.json or comparison.json"
+msgstr "会话文件夹、result.json 或 comparison.json"
+
+msgid "The baseline session (folder)"
+msgstr "基线会话（文件夹）"
+
+msgid "The candidate session (folder)"
+msgstr "候选会话（文件夹）"
+
+msgid "Was the input gain the same for both takes?"
+msgstr "两次测量的输入增益相同吗？"
+
+msgid "The project folder"
+msgstr "项目文件夹"
+
+msgid "Try the demo (synthetic room, no audio interface)"
+msgstr "试试演示（合成房间，不需要音频接口）"
+
+msgid "Analyse a recording of the test signal"
+msgstr "分析一段测试信号的录音"
+
+msgid "Measure through the audio interface (plays a sweep)"
+msgstr "通过音频接口测量（会播放扫频）"
+
+msgid "Show a saved session or comparison"
+msgstr "查看已保存的会话或对比"
+
+msgid "Project overview (several positions)"
+msgstr "项目总览（多个位置）"
+
+msgid "Environment report for bug reports"
+msgstr "用于报告问题的环境报告"
+
+msgid "Choose a number. Every choice shows the command it runs, so the next time you can type it directly. q leaves; Ctrl+C at a question comes back here."
+msgstr "输入编号选择。每个选项都会显示它运行的命令，下次可以直接输入。q 退出；在提问处按 Ctrl+C 回到这里。"
+
+msgid "Quit"
+msgstr "退出"
+
+msgctxt "menu prompt"
+msgid "Your choice"
+msgstr "你的选择"
+
+msgid "Choose a number from the list, or q."
+msgstr "请输入列表中的编号，或 q。"
+
+msgid "Back to the menu."
+msgstr "回到菜单。"
+
+msgid "The same from the command line:"
+msgstr "等价的命令行："
+
+msgid "The command ended with exit code {code}."
+msgstr "命令以退出码 {code} 结束。"
+
+msgid "the recording profiles, and what each one watches for"
+msgstr "各录音配置，以及每个配置关注什么"
+
+msgid "one profile to explain in full (default: list them all)"
+msgstr "要完整说明的一个配置（默认：列出全部）"
+
+msgid "explain every profile in full"
+msgstr "完整说明每个配置"
+
+msgid "ReverbScope recording profiles"
+msgstr "ReverbScope 录音配置"
+
+msgid "(default)"
+msgstr "（默认）"
+
+msgid "reverbscope profiles <name> says what a profile watches for; --profile <name> chooses it for one analysis, reverbscope config profile <name> for good."
+msgstr "reverbscope profiles <name> 说明一个配置关注什么；--profile <name> 为一次分析选择它，reverbscope config profile <name> 长期生效。"
+
+msgid "Thresholds are engineering choices for one kind of recording, not a grade; docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
+msgstr "阈值是针对一类录音的工程取舍，不是评分；docs/MEASUREMENT_METHODOLOGY.md §8 列出了每个配置的阈值。"
+
+msgid "Clarity (C50 / C80) is not judged: this kind of recording wants the room."
+msgstr "不判断清晰度（C50 / C80）：这类录音需要房间的声音。"
+
+msgid "Clarity: a {metric} below {low:+.0f} dB is not clear enough for this recording."
+msgstr "清晰度：{metric} 低于 {low:+.0f} dB 对这类录音来说不够清晰。"
+
+msgid "Clarity: a {metric} above {high:+.0f} dB means the room is too dry for this use."
+msgstr "清晰度：{metric} 高于 {high:+.0f} dB 说明房间对这种用途来说过干。"
+
+msgid "Clarity: {metric} is reported without a threshold."
+msgstr "清晰度：报告 {metric}，不设阈值。"
+
+msgid "Noise: the noise floor matters once the direct sound is less than {margin:.0f} dB above it (levels are dBFS, not dB SPL)."
+msgstr "噪声：当直达声高出本底噪声不足 {margin:.0f} dB 时，本底噪声开始影响录音（电平为 dBFS，不是 dB SPL）。"
+
+msgid "The noise floor is measured but not commented on for this recording."
+msgstr "本底噪声会被测量，但对这类录音不作评论。"
+
+msgid "Low end: bands up to {low:.0f} Hz decaying more than {ratio:.1f} times slower than the {mid_min:.0f}–{mid_max:.0f} Hz bands is an imbalance; a resonance is named only when its decay is distinguishable."
+msgstr "低频：{low:.0f} Hz 及以下频段的衰减比 {mid_min:.0f}–{mid_max:.0f} Hz 频段慢 {ratio:.1f} 倍以上即为失衡；只有衰减可区分时才会指出共振。"
+
+msgid "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
+msgstr "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
+
+msgid "General observations, not tied to a specific instrument or voice."
+msgstr "一般性观察，不针对特定乐器或人声。"
+
+msgid "Close-miked lead or backing vocals."
+msgstr "近距离拾音的主唱或和声。"
+
+msgid "Voice-over, narration and audiobook."
+msgstr "配音、旁白和有声书。"
+
+msgid "Acoustic guitar, single microphone or close pair."
+msgstr "原声吉他，单支话筒或近距离一对话筒。"
+
+msgid "Drums, close mics (kick, snare, toms) with or without overheads."
+msgstr "鼓，近距离话筒（底鼓、军鼓、通鼓），有无顶部话筒均可。"
+
+msgid "Room microphone or ambient pickup: the room is the instrument."
+msgstr "房间话筒或环境拾音：房间本身就是乐器。"
+
+msgid "Choir or small ensemble, one or more microphones."
+msgstr "合唱或小型合奏，一支或多支话筒。"
+
+msgid "Reverberation: an RT60 up to {long:.1f} s passes without comment; above it the decay is noticeable, above {very_long:.1f} s it is long (a warning)."
+msgstr "混响：RT60 不超过 {long:.1f} s 不作评论；超过则衰减明显，超过 {very_long:.1f} s 则过长（警告）。"
+
+msgid "Early reflections: a reflection at or above {level:.0f} dB relative to the direct sound within {window:.0f} ms is strong."
+msgstr "早期反射：{window:.0f} ms 内、相对直达声不低于 {level:.0f} dB 的反射算作强反射。"
+
+msgid "&Getting started"
+msgstr "入门(&G)"
+
+msgid "Your first measurement"
+msgstr "你的第一次测量"
+
+msgid "ReverbScope plays a sweep, records it and reads the room from the recording. Three ways in; the demo needs no hardware."
+msgstr "ReverbScope 播放扫频、录下它，再从录音中读出房间。有三种入口；演示不需要任何硬件。"
+
+msgid "Try the demo first: a synthetic room, nothing is played."
+msgstr "先试试演示：一个合成的房间，不播放任何声音。"
+
+msgid "In your DAW: write the test signal, play it and record it on a track, then import the recording here."
+msgstr "在你的 DAW 中：写出测试信号，播放并录到一条音轨上，再把录音导入这里。"
+
+msgid "With an audio interface: ReverbScope plays the sweep and records the microphone itself."
+msgstr "使用音频接口：ReverbScope 自己播放扫频并录制话筒。"
+
+msgid "Choose the recording profile that matches what you record; its button says what it watches for. Every number carries a validity, and a result opens with its measurement health."
+msgstr "选择与你所录内容匹配的录音配置；旁边的按钮会说明它关注什么。每个数字都带有效性标记，结果一开始就是它的测量健康。"
+
+msgid "Read the user guide"
+msgstr "阅读用户指南"
+
+msgid "Don't show this again"
+msgstr "不再显示"
+
+msgid "What does it want?"
+msgstr "它关注什么？"
+
+msgid "What this profile watches for, and what it does not judge."
+msgstr "这个配置关注什么，以及它不判断什么。"
+
+msgid "WHAT IT WATCHES FOR"
+msgstr "它关注什么"
+
+msgid "WHAT IT DOES NOT JUDGE"
+msgstr "它不判断什么"
+
+msgid "Thresholds are engineering choices for this kind of recording, not a grade; docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
+msgstr "阈值是针对这类录音的工程取舍，不是评分；docs/MEASUREMENT_METHODOLOGY.md §8 列出了每个配置的阈值。"
+
+msgid "About this profile..."
+msgstr "关于这个配置..."
+
+msgid "What the recording profile watches for."
+msgstr "这个录音配置关注什么。"
+
+# Decay analysis: a gate or a noise burst is not a reverberation slope
+
+msgctxt "diagnostic"
+msgid "the response is cut off {level:.0f} dB below its peak, before the decay reaches the noise floor (a gate, or digital silence after an imported response): the decay is evaluated down to that level only"
+msgstr "响应在峰值以下 {level:.0f} dB 处被截断，衰减尚未到达本底噪声（门限处理，或导入响应之后的数字静音）：只评估到该电平为止的衰减"
+
+msgctxt "diagnostic"
+msgid "the direct sound covers {covered:.0f} dB of the {range:.0f} dB evaluation range (limit: half): {metric} would describe the direct sound rather than the room at this position"
+msgstr "直达声占据了 {range:.0f} dB 评价区间中的 {covered:.0f} dB（上限：一半）：{metric} 描述的将是直达声，而不是此位置的房间"
+
+msgctxt "diagnostic"
+msgid "the {metric} fit crosses its evaluation range in {late_ms:.0f} ms after the curve took {early_ms:.0f} ms to fall 5 dB: that step is not a reverberation slope, so {metric} is not a reliable reverberation time here"
+msgstr "{metric} 拟合在曲线用 {early_ms:.0f} ms 下降 5 dB 之后，仅用 {late_ms:.0f} ms 就穿过了整个评价区间：这是衰减曲线上的阶跃，不是混响斜率，因此此处 {metric} 不是可靠的混响时间"
+
+msgid "sweep rate is not positive: the frequency range is too small to sweep"
+msgstr "扫频速率不是正数：频率范围太小，无法生成扫频"
+
+msgid "Cannot save settings"
+msgstr "无法保存设置"
+
+msgid "Cannot open the data folder"
+msgstr "无法打开数据文件夹"

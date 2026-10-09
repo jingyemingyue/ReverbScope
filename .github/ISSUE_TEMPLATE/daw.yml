@@ -21,7 +21,7 @@ body:
     id: os
     attributes:
       label: Operating system and ReverbScope version
-      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.4.1 build 1a2b3c4"
+      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.5.0rc1 build 1a2b3c4d"
     validations:
       required: true
   - type: input
@@ -84,10 +84,10 @@ body:
       label: Result
       description: |
         Did ReverbScope analyse the recording? From the **Full report** tab (or
-        `reverbscope show <session>`), paste the line that starts with
-        "Impulse response:" (it names the direct-sound confidence; a matrix
-        cell needs "high") and any finding about sample rate or playback
-        speed. For a negative test (a
+        `reverbscope show <session>`), paste the "Data quality" line of "At a
+        glance" (or the "Direct sound" line under "Diagnostics"); it names
+        the direct-sound confidence, and a matrix cell needs "high". Add any
+        finding about sample rate or playback speed. For a negative test (a
         44.1 kHz project with a 48 kHz sweep, or stretching on), say whether
         ReverbScope reported it.
     validations:

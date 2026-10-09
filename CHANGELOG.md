@@ -7,37 +7,32 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.5.0rc1] - 2026-10-06
+
+Release candidate 1 for 0.5.0, built for hardware and DAW validation. It
+is **not** the final 0.5.0 stable release: its feature set is frozen, and
+0.5.0 is cut only when the gate in `docs/RELEASE_PLAN.md` §2b has been met
+on real machines, interfaces, rooms and DAWs. On the beta line (`main`) the
+same code was prepared as 0.5.0b2; this section lists everything since the
+published v0.5.0b1, so a tester reads one list.
+
+这是 0.5.0 正式版之前的候选测试版（release candidate 1），不代表已经完成所有
+真实硬件和 DAW 验证。功能面已冻结；只有在真实电脑、音频接口、房间和 DAW 上满足
+`docs/RELEASE_PLAN.md` §2b 的门槛之后，才会切出 0.5.0。
+
+**Verified:** automated unit and integration tests, synthetic acoustic tests
+against closed-form decays, cross-platform CI (Linux, macOS, Windows; Python
+3.12–3.14), bundle smoke tests, the Windows installer install / smoke /
+uninstall, packaging and license checks, and the SBOM. **Not yet fully
+verified:** real audio interfaces, microphones, loudspeakers, rooms, every
+DAW, every driver and host API, and signing / notarization (the bundles are
+unsigned: macOS ad hoc, not notarized; Windows no Authenticode; nothing is
+on PyPI). `docs/HARDWARE_TESTS.md` and `docs/VALIDATION.md` are unchanged:
+every cell is still empty, i.e. not tested.
+
 ### Added
-- **Measurement health.** Every result now opens with the checks the analysis
-  made on the take itself (reference, sweep, playback speed, direct sound,
-  level, distortion, dropouts, decay range, noise floor, recording length,
-  and the loopback and audio device when they took part), each good, warning,
-  invalid or unknown with its reason, the figures it affects and what to do
-  next; the worst check gives the overall status and there is no score. In
-  the text report it follows "At a glance"; on the Results page it is the
-  first card; `--format json` carries it as `health` beside `findings`. A
-  sweep played at the wrong speed lists where each DAW sets its project
-  sample rate or switches time-stretching off (the steps of
-  `docs/user-guide/daw-setup.md`), also under the error when the analysis
-  cannot finish. Thresholds and their sources: `docs/MEASUREMENT_METHODOLOGY.md`
-  §12.
-- **Verdicts on a comparison.** Under the candidate's recording profile,
-  `reverbscope compare` and the Compare page say for reverberation,
-  clarity, early reflections, noise floor and low end whether the candidate
-  is a meaningful improvement, a meaningful degradation, probably
-  insignificant, not comparable, or whether the evidence is insufficient,
-  with the reason each time: the profile's thresholds (two short decays do
-  not matter for a vocal booth; a room microphone calls a room that became
-  too dry a degradation), the just-noticeable differences, the take's own
-  T20/T30 spread, and the measurement health of both takes when they are at
-  hand. No change is called statistically significant on one pair of
-  positions. `--format json` carries it as `verdict`; `comparison.json` does
-  not store it (`docs/MEASUREMENT_METHODOLOGY.md` §11a).
-- **Dropouts in the recorded sweep** (runs of 2 ms or more of frozen or zero
-  samples: a lost buffer, a DAW out of disk or CPU) are found, placed in time
-  and at the frequency the sweep was at, noted in the warnings and stored in
-  `result.json` as the optional `dropouts` record; a file from an earlier
-  version loads without it.
 - **A release-candidate line next to the beta line.** `release/0.5.0`
   carries `0.5.0rc1`: the 0.5.0b2 code with a frozen feature set, built so
   that anyone can download, install and report from real interfaces, rooms
@@ -65,59 +60,6 @@ All notable changes to ReverbScope are documented here. The format follows
   so. `docs/RELEASE_READINESS.md` records the release-readiness audit of
   the measurement path: for every reported number, how its validity,
   confidence or reason is carried and which tests prove it.
-
-### Changed
-- CI runs on pushes to `release/**` branches as well as `main`.
-
-### Fixed
-- A folder that could not be created (a file of that name, a parent that is
-  a file, a name the file system refuses, a Windows reserved name such as
-  `CON`) escaped every writer (sessions, projects, comparisons, WAVs and
-  sweeps, settings, the CSV export) as a bare OSError, which the desktop app
-  reported as a bug in ReverbScope. It is a plain error that names the
-  folder.
-- Opening a session read `impulse_response.wav` as it was: a file cut off
-  before the direct sound failed the first plot with a bare error, and a file
-  at another sample rate was drawn on another time axis than the decay. Both
-  are refused with the file named.
-- A NumPy integer sample rate reached the result unchanged, and `json.dumps`
-  of the result failed.
-- Desktop app: opening Compare (or any page switch) during an analysis threw
-  the result away as late; a recording profile that failed left the page
-  busy for good; a second Analyze during an analysis could abort the
-  process; a failure of an abandoned analysis opened a dialog over another
-  page. A result is late only after New Measurement, Open Session or a
-  measurement another page started meanwhile.
-- The test suite wrote a pytest path into the developer's real
-  `~/.reverbscope/recent_sessions.json` on every run (a `monkeypatch.undo()`
-  in one GUI test also undid the fixture that isolates the home folder). A
-  session-wide guard now fails the run if any test touches the real home.
-
-## [0.5.0b2] - 2026-10-06
-
-Software beta 2: the stabilization release after the RoomScope → ReverbScope
-rename, and still **not** 0.5.0 (the release plan's 0.5.0 needs a dated
-hardware-matrix PASS; none exists). It brings together the stable line's
-defect fixes, an audit of the measurement path that withholds decay and
-energy numbers the measurement cannot support, and the checks that run
-without hardware. From this version every download is named
-`ReverbScope-*` / `reverbscope-*`; the published v0.5.0b1 keeps its
-`RoomScope-*` / `roomscope-*` files and is not rewritten.
-
-**How this version was verified, and how it was not.** Every entry below
-was reproduced and tested with synthetic signals, the fake audio backend and
-scripted stand-ins: the test suite (GitHub's Linux, macOS and Windows CI
-machines on Python 3.12–3.14, and a Linux container), the fake-backend
-Standalone flow, the offline command-line workflow, the sdist and wheel build
-and install, and the Release workflow's bundle smoke tests, which show that
-the bundles start and run the fake measurement on GitHub's machines and
-nothing more. **No real audio interface, microphone, loudspeaker, room or
-DAW was used.** `docs/HARDWARE_TESTS.md` and `docs/VALIDATION.md` are
-unchanged: every cell is still empty (not tested), and nothing in this
-version is hardware-validated. The bundles are unsigned (macOS: ad hoc, not notarized;
-Windows: no Authenticode) and nothing is on PyPI.
-
-### Added
 - **Settings from the command line.** `reverbscope config` lists the settings
   the desktop app keeps in `settings.json`, says what each value means now
   and where the file is; `reverbscope config KEY VALUE` changes one: `language`
@@ -151,6 +93,15 @@ Windows: no Authenticode) and nothing is on PyPI.
   interface, a DAW or a real room; none of this fills the hardware matrix.
 
 ### Changed
+- CI runs on pushes to `release/**` branches as well as `main`.
+- The `gui` extra asks for `PySide6_Essentials>=6.6,<6.12`, and the hint
+  printed when PySide6 is missing says the same: PySide6_Essentials 6.12.0
+  (released 2026-10-08) ends the test suite's interpreter with "QObject:
+  shared QObject was deleted directly" and a heap abort on Linux and Windows
+  after every test has passed; the bundles lock 6.11.2 and the desktop app's
+  own smoke exits cleanly under 6.12.0. The bound is lifted once a 6.12.x has
+  been run through the suite and the app on all three platforms
+  (`docs/DEPENDENCIES.md` §4).
 - **Renamed RoomScope → ReverbScope.** The project, the Python package
   (`roomscope` → `reverbscope`), the command line (`roomscope` →
   `reverbscope`, `roomscope-gui` → `reverbscope-gui`), the `roomscope.exporters`
@@ -464,6 +415,59 @@ Windows: no Authenticode) and nothing is on PyPI.
   every native library they ship with its licence and source (including the
   Windows C runtime), and the README images show the current demo and the
   downloaded app.
+- **Files.** A `schema_version` that is not a JSON integer (text, a boolean,
+  a fraction) is refused instead of being coerced into a supported version;
+  a project whose position records carry a non-text label or session path
+  is refused as damaged instead of being read as text; a result whose
+  string lists or energy-metric objects have the wrong type is refused as
+  file corruption instead of being coerced (a damaged string no longer
+  becomes one entry per character). A `comparison.json` whose resonance
+  match carries a status but no frequency crashed `show` and `compare` as
+  "a bug in ReverbScope"; it is refused as damaged. A language name longer
+  than a file name may be (`settings.json`, `--lang`, `REVERBSCOPE_LANG`)
+  aborted every command with an OSError; it is no catalog, like an unknown
+  language.
+- A folder that could not be created (a file of that name, a parent that is
+  a file, a name the file system refuses, a Windows reserved name such as
+  `CON`) escaped every writer (sessions, projects, comparisons, WAVs and
+  sweeps, settings, the CSV export) as a bare OSError, which the desktop app
+  reported as a bug in ReverbScope. It is a plain error that names the
+  folder.
+- Opening a session read `impulse_response.wav` as it was: a file cut off
+  before the direct sound failed the first plot with a bare error, and a file
+  at another sample rate was drawn on another time axis than the decay. Both
+  are refused with the file named.
+- A NumPy integer sample rate reached the result unchanged, and `json.dumps`
+  of the result failed.
+- Desktop app: opening Compare (or any page switch) during an analysis threw
+  the result away as late; a recording profile that failed left the page
+  busy for good; a second Analyze during an analysis could abort the
+  process; a failure of an abandoned analysis opened a dialog over another
+  page. A result is late only after New Measurement, Open Session or a
+  measurement another page started meanwhile. The Early reflections tile
+  showed "0 · clean" in green when the response ended before the search
+  window did and later arrivals were never examined; it now says how many
+  milliseconds could be searched, with an "incomplete window" chip, as the
+  command line's At-a-glance row does. Settings ▸ OK with a settings file
+  that cannot be written raised the error out of the dialog instead of
+  naming the folder and keeping the dialog open. An interface that came back
+  under another index after being plugged in again was dropped for the
+  system default instead of being kept by name. Ctrl+2 / Ctrl+3 from another
+  page while the Standalone page was still analysing switched its backend
+  and rewrote its status under the running progress bar. Open Data Folder
+  (Developer menu, Environment Report) raised an OSError when the home folder
+  could not be created; both warn and name the folder.
+- The test suite wrote a pytest path into the developer's real
+  `~/.reverbscope/recent_sessions.json` on every run (a `monkeypatch.undo()`
+  in one GUI test also undid the fixture that isolates the home folder). A
+  session-wide guard now fails the run if any test touches the real home.
+- Documentation for testers: the DAW report form asked for an "Impulse
+  response:" line the report does not print (the direct-sound confidence is
+  on the "Data quality" line); the checklist and the bug form named a
+  Start / Measure button (it is Run Measurement); the environment report to
+  paste carries the probed sample rates; the DAW lists name the guide's
+  eleven DAWs; INSTALLATION, SECURITY and COMPARISON no longer say 0.4.x.
+  `docs/MAINTAINING.md` (and 中文) is the maintainer's runbook.
 
 ## [0.5.0b1] - 2026-10-01
 

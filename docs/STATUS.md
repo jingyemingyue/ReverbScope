@@ -6,7 +6,39 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
-Snapshot 37: 2026-10-07 — **the development line moves on while the
+Snapshot 38: 2026-10-07 — **the candidate line takes the stability fixes of
+the beta line, by merge and cherry-pick** (branch `release/0.5.0`, still
+`0.5.0rc1`; the Release workflow refreshes the draft `v0.5.0rc1` from this
+head; nothing published or tagged).
+
+* **Merged** `gpt/post-rc-persistence-corpus` (loader hardening with its
+  tests). **Cherry-picked** from `integration/post-rc-development`: the
+  folder-cannot-be-made error and the damaged `impulse_response.wav` refusal,
+  the Python-int sample rate, the desktop app's lifecycle fixes, the
+  test-suite home-folder guard, the Early reflections tile, four desktop-app
+  slots (Settings OK with an unwritable home, an interface kept by name,
+  Ctrl+2 during an analysis, Open Data Folder) and two command-line crashes
+  (a resonance match without its frequency, an over-long language name),
+  each with its regression test, and the documentation corrections for
+  testers plus the maintainer's runbook. **Not taken** (features or
+  algorithm changes, `docs/RELEASE_PLAN.md` §2a): Measurement health, the
+  comparison verdicts, projects and the overview, the boxed terminal and the
+  menu, the profile explanations, the first-measurement card, and PR #47's
+  decay rules with their corrections, which stay on `main` until the next
+  candidate series.
+
+**What was run** (a Linux container, Python 3.12, PySide6 6.11 offscreen,
+PortAudio present, no audio device): ruff, ruff format, strict mypy with and
+without PySide6's stubs, `check_doc_links.py`, `check_cli_docs.py`,
+`check_src_safety.py`, the docs-site build, and the full suite with the
+coverage gate on this head (the pull request or the branch's CI run records
+the numbers); the first draft's 14 assets were read back (every SHA-256
+matches `SHA256SUMS`, the wheel and sdist rebuilt from `7098169` are
+byte-identical, the Linux bundles pass `scripts/smoke_bundle.py`). **Not
+run:** anything on real hardware or in a DAW; the macOS and Windows bundles
+(GitHub's runners build and smoke them).
+
+Snapshot 37 (development line): 2026-10-07 — **the development line moves on while the
 candidate waits for hardware: bug hunt round 4, Measurement health, a
 regression corpus, verdicts on a comparison** (branch `integration/post-rc-development`, cut from PR
 #45's head `5d33753`; nothing merged, tagged or published; `release/0.5.0`
@@ -57,6 +89,21 @@ catalog, schema, CLI, GUI and health suites on every change, and the full
 suite before the push. **Not run:** anything on real hardware or in a DAW;
 the Release workflow (no packaging file changed).
 
+Snapshot 37 (candidate line): 2026-10-06 — **this is the release-candidate line
+(`release/0.5.0`), at 0.5.0rc1; not published.**
+
+This branch was cut from the rc-readiness head of the beta line (snapshot
+36) and differs from it only in what a candidate needs: `pyproject.toml` at
+`0.5.0rc1`, the `[0.5.0rc1]` changelog section (everything since the
+published v0.5.0b1, with the candidate statement in English and Chinese),
+the READMEs and the installation guide saying that this is a release
+candidate for hardware and DAW validation, unsigned, and not the final
+0.5.0. The feature set is frozen; `docs/RELEASE_PLAN.md` §2a says what may
+land here and §2b when 0.5.0 is cut. Pushing this branch runs CI and the
+Release workflow, which opens the draft `v0.5.0rc1` with the fourteen
+ReverbScope-named assets; publishing it (as a pre-release) and every later
+step is the maintainer's decision. Nothing on real hardware has been run.
+
 Snapshot 36: 2026-10-06 — **two lines from here on: the beta line on
 `main`, and a release-candidate line for hardware and DAW validation.**
 
@@ -73,8 +120,8 @@ merged, tagged or published.
 stacked on PR #44; the changelog's `[Unreleased]` lists it):
 
 * The policy: `main` keeps moving as the beta line (`0.5.0b3`, …); a
-  `release/0.5.0` branch, cut from the head of this branch (PR #45,
-  `5d33753`, which stacks on PR #44), carries `0.5.0rc1` with a
+  `release/0.5.0` branch, cut from PR #45's head (which stacks on PR #44),
+  carries `0.5.0rc1` with a
   frozen feature set and only correctness, crash, packaging, cross-platform,
   hardware- and DAW-compatibility, documentation, localization and
   release-engineering fixes. Fixes go to the candidate first and are

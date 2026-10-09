@@ -926,13 +926,18 @@ class StandalonePage(QWidget):
         return self.host_api.currentData(), device(self.input_device), device(self.output_device)
 
     def _row_of(self, combo: QComboBox, device: tuple[int, str] | None) -> int:
-        """The row of ``device`` in ``combo`` when it is still the same device."""
+        """The row of ``device`` in ``combo``: the same index and name, else the
+        one device of that name (an interface plugged in again comes back under
+        another index), else -1 (its index now names another device)."""
         if device is None:
             return _find_data(combo, None)
         index, name = device
-        if not any(d.index == index and d.name == name for d in self._devices):
-            return -1
-        return _find_data(combo, index)
+        if any(d.index == index and d.name == name for d in self._devices):
+            return _find_data(combo, index)
+        same_name = [d.index for d in self._devices if d.name == name]
+        if len(same_name) == 1:
+            return _find_data(combo, same_name[0])
+        return -1
 
     def _fill_device_lists(self) -> None:
         """Devices of the chosen host API; the recommended entries are starred.

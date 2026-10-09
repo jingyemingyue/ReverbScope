@@ -13,7 +13,8 @@
 * **终端版（Terminal Edition）**——只有命令行，构建时不含图形界面（没有 Qt），体积约为桌面版的一半。适合脚本、
   自动化、服务器和没有图形桌面的电脑。
 
-ReverbScope 0.4.x 是**供测试用的早期公开预发布版本**。这些构建**没有签名**（见
+ReverbScope 是**供测试用的预发布版本**；供测试的构建是 Releases 页面上的 0.5.0 候选测试版（`0.5.0rc1`），
+`main` 是开发线。这些构建**没有签名**（见
 [未签名构建的警告](#未签名构建的警告)），而且**还没有任何测量在真实音频硬件上验证过**
 （[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)）。
 
@@ -225,7 +226,7 @@ ReverbScope **还没有发布到 PyPI**，所以 `pip install reverbscope` 装�
 ```bash
 python3 -m venv reverbscope-env
 source reverbscope-env/bin/activate          # Windows：reverbscope-env\Scripts\activate
-pip install "./reverbscope-0.5.0b2-py3-none-any.whl[gui]"
+pip install "./reverbscope-0.5.0rc1-py3-none-any.whl[gui]"
 reverbscope --help
 reverbscope gui                              # 或者：reverbscope-gui
 ```
@@ -238,7 +239,7 @@ reverbscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
 reverbscope show demo/
 ```
 
-`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-0.5.0b2.tar.gz[gui]"` 会在本地构建出同样的 wheel。
+`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-0.5.0rc1.tar.gz[gui]"` 会在本地构建出同样的 wheel。
 
 ### 开发者安装（从 Git）
 
@@ -273,7 +274,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 
 ## 未签名构建的警告
 
-**当前构建是未签名的开发版 / 预发布版构建。** macOS 应用只有临时签名（ad hoc），没有经过 Apple 公证；Windows 文件
+**当前构建（包括 0.5.0 候选测试版）都是未签名的预发布构建，仅供测试。** macOS 应用只有临时签名（ad hoc），没有经过 Apple 公证；Windows 文件
 没有 Authenticode 签名。所以系统无法确认发布者，会警告一次：
 
 | 系统 | 你会看到 | 怎么做 |
@@ -284,7 +285,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 | 开启了“智能应用控制”的 Windows 11 | 应用被直接阻止，没有“仍要运行” | 这种情况下未签名构建无法运行；在有签名构建之前，请使用 [Python 安装](#python-wheel-和源码包) |
 
 构建来自公开的 [release workflow](https://github.com/jingyemingyue/ReverbScope/actions/workflows/release.yml)，每个构建都记录了
-它所基于的提交（**帮助 → 用于问题报告的环境报告**）。签名计划在 1.0 之前完成（[RELEASE_PLAN.zh-CN.md](RELEASE_PLAN.zh-CN.md)）。
+它所基于的提交（**帮助 → 用于问题报告的环境报告**）。签名计划在 1.0 之前完成（[RELEASE_PLAN.zh-CN.md](RELEASE_PLAN.zh-CN.md) §5）。
 
 ## 更新
 
@@ -326,7 +327,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 | macOS：*无法打开“reverbscope”，因为无法验证开发者*（终端版） | 清除一次下载标记：`xattr -dr com.apple.quarantine reverbscope-terminal`（见[终端版](#终端版)）。 |
 | Windows PowerShell：重定向到文件或经过管道后中文变成乱码（`> report.txt`、`\| Select-String`） | 先运行 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`（见[在 PowerShell 中保存报告](#终端版)）。 |
 | Windows：`reverbscope.exe` 打开后立刻关闭 | 它是命令行程序：改为双击 `ReverbScope Terminal.cmd`，或在命令提示符里运行它。 |
-| `reverbscope gui` 提示无法加载 PySide6 | 安装界面组件：`pip install "PySide6_Essentials>=6.6"`（或者带 `[gui]` 重新安装 wheel）。 |
+| `reverbscope gui` 提示无法加载 PySide6 | 安装界面组件：`pip install "PySide6_Essentials>=6.6,<6.12"`（或者带 `[gui]` 重新安装 wheel）。 |
 | `pip install reverbscope` 找不到，或者装到了别的东西 | ReverbScope 还没有发布到 PyPI；请使用 [wheel](#用发布页的-wheel-安装)。 |
 | 其他问题 | 提交一个 [问题报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug-zh-CN.yml)，并粘贴 **帮助 → 用于问题报告的环境报告**（或 `reverbscope doctor` 的输出）。不会自动发送任何内容。 |
 

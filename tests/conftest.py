@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import gc
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -35,6 +36,41 @@ def _snapshot(folder: Path) -> dict[str, bytes] | None:
         for path in folder.rglob("*")
         if path.is_file()
     }
+
+
+@pytest.fixture(autouse=True, scope="session")
+def qt_torn_down_before_the_interpreter_exits() -> Iterator[None]:
+    """Destroy what the GUI tests left to Qt while the QApplication still runs.
+
+    The GUI test modules share one QApplication and leave closed windows,
+    dialogs and the application itself to the interpreter's shutdown. With
+    PySide6 6.12.0 that order ends the process after the last test has passed
+    ("QObject: shared QObject was deleted directly", then a heap abort, on
+    Linux and Windows; every module alone exits cleanly, the whole directory
+    does not). Closing and deleting the remaining top-level widgets, flushing
+    the deferred deletions and shutting the application down here, in a known
+    order, is what a long-running program does before it exits.
+    """
+    yield
+    try:
+        from PySide6.QtCore import QEvent
+        from PySide6.QtWidgets import QApplication
+    except ImportError:
+        return
+    app = QApplication.instance()
+    if app is None:
+        return
+    for widget in QApplication.topLevelWidgets():
+        widget.close()
+        widget.deleteLater()
+    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    app.processEvents()
+    gc.collect()
+    app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    app.processEvents()
+    shutdown = getattr(app, "shutdown", None)
+    if callable(shutdown):
+        shutdown()
 
 
 @pytest.fixture(autouse=True, scope="session")

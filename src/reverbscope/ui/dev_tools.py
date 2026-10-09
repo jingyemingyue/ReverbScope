@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QHBoxLayout,
     QHeaderView,
+    QMessageBox,
     QPlainTextEdit,
     QPushButton,
     QTableWidget,
@@ -247,7 +248,17 @@ class EnvironmentReport(QDialog):
         from reverbscope.io.recent import reverbscope_home
 
         home = reverbscope_home()
-        home.mkdir(parents=True, exist_ok=True)
+        try:
+            home.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                _("Cannot open the data folder"),
+                _("cannot create folder {path}: {error}").format(
+                    path=home, error=exc.strerror or str(exc)
+                ),
+            )
+            return
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(home)))
 
     def _copy(self) -> None:

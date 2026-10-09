@@ -23,10 +23,13 @@ refuses to invent a number.**
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**Status: 0.5.0 beta 2 (pre-release)** — free, open source, for testing. **This is not
-the hardware release:** nothing has been measured through a real audio
-interface or DAW yet, so treat the numbers as unvalidated
-([help test it](#help-test-beta-2)). Neither edition needs Python.
+**Status: 0.5.0 release candidate 1 (pre-release)** — free, open source, for
+testing. **ReverbScope 0.5.0rc1 is a release candidate for hardware and DAW
+validation. It is not the final 0.5.0 stable release:** nothing has been
+measured through a real audio interface or DAW yet, so treat the numbers as
+unvalidated ([help test it](#help-test-the-release-candidate)). The builds
+are unsigned: macOS may ask for **Open Anyway**, Windows may show
+SmartScreen. Neither edition needs Python.
 
 Choose **one edition**, then the file for your computer under **Assets** on
 the newest release:
@@ -138,18 +141,18 @@ C50 or C80 is a poor fit for that kind of recording; the threshold is an
 engineering choice, not a grade. The GUI, the command line and the reports
 are available in English and Simplified Chinese.
 
-Status: **0.5.0 beta 2 (pre-release)** on the way to 1.0
+Status: **0.5.0 release candidate 1 (pre-release)** on the way to 1.0
 ([RELEASE_PLAN.md](docs/RELEASE_PLAN.md)). The DSP core, CLI, GUI, compare,
 loopback, zh-CN catalog, session bundles and both editions' bundles exist and are
 covered by synthetic tests on Linux, macOS and Windows. **Not yet:** any result
 measured on real hardware (the hardware matrix and the validation campaign are
-empty), signed bundles, a PyPI package. Beta 2 does not meet the 0.5.0 exit
-criteria in the release plan. Snapshot of what works:
+empty), signed bundles, a PyPI package. The candidate becomes 0.5.0 only when
+the gate in the release plan (§2b) is met by real testing. Snapshot of what works:
 [docs/STATUS.md](docs/STATUS.md).
 
-## Help test beta 2
+## Help test the release candidate
 
-The beta 2 builds exist so that people with real interfaces and DAWs can find
+The 0.5.0rc1 builds exist so that people with real interfaces and DAWs can find
 out what works. A failed check is as useful as a pass.
 
 1. Install a build ([Download](#download); the Gatekeeper / SmartScreen
@@ -159,8 +162,8 @@ out what works. A failed check is as useful as a pass.
 3. Turn the monitors down, then run **Standalone Mode** with your interface
    and a microphone, or **Universal DAW Mode** through your DAW
    ([DAW notes](docs/user-guide/daw-setup.md)).
-4. Report what happened, with **Help → Environment Report for Bug Reports**
-   pasted in:
+4. Report what happened, with **Help → Environment Report for Bug Reports →
+   Probe sample rates** pasted in:
    * [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml):
      device list, full takes at 44.1 / 48 / 96 kHz, channels above 2,
      loopback, Stop during playback, dropouts, unplugging during a take;
@@ -314,7 +317,7 @@ samples). Recently opened or saved sessions are remembered under
 | [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Platforms, Python and dependency floors, DAW export formats, host APIs — and what verified each; [中文](docs/COMPATIBILITY.zh-CN.md) |
 | [docs/EDITIONS.md](docs/EDITIONS.md) | Desktop Edition vs. Terminal Edition, and the developer tools; [中文](docs/EDITIONS.zh-CN.md) |
 | [docs/COMPARISON.md](docs/COMPARISON.md) | How ReverbScope differs from REW, Open Sound Meter, ARTA, Smaart, SoundID and others, and when another tool is the better choice; [中文](docs/COMPARISON.zh-CN.md) |
-| [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md) | Step-by-step DAW notes (Pro Tools, Logic, Cubase, Studio One, Live, REAPER, FL Studio, Bitwig, Audacity); [中文](docs/user-guide/daw-setup.zh-CN.md) |
+| [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md) | Step-by-step DAW notes (Pro Tools, Logic, GarageBand, Cubase / Nuendo, Fender Studio Pro (Studio One), Live, REAPER, FL Studio, Bitwig, Digital Performer, Audacity); [中文](docs/user-guide/daw-setup.zh-CN.md) |
 | [docs/PROJECT_BRIEF.zh-CN.md](docs/PROJECT_BRIEF.zh-CN.md) | Original project brief (Chinese) |
 
 ## Development install

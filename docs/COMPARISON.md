@@ -16,7 +16,7 @@ what is wrong with this position, and did moving the microphone or the
 performer help?* ReverbScope measures, reports and compares. It does not correct
 a monitoring system, simulate a room or tune a PA.
 
-ReverbScope is a **pre-release (0.4.x)**. Synthetic tests cover its DSP on
+ReverbScope is a **pre-release (0.5.0 release candidate)**. Synthetic tests cover its DSP on
 Linux, macOS and Windows, but no result has yet been measured on real hardware
 and checked against a reference instrument ([STATUS.md](STATUS.md),
 [HARDWARE_TESTS.md](HARDWARE_TESTS.md)). Most tools below are mature products
