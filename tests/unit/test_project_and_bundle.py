@@ -339,3 +339,24 @@ def test_project_add_of_another_session_file_stores_the_session_folder(
     stored = json.loads((project / "project.json").read_text(encoding="utf-8"))
     assert stored["positions"] == [{"label": "desk", "session_dirs": ["sessions/a"]}]
     assert list_project_sessions(project) == [("desk", session)]
+
+
+def test_a_project_folder_that_cannot_be_created_is_a_session_error(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """``save_project`` and ``add_session`` made the folder with a bare
+    ``mkdir``; a file in the way escaped as FileExistsError."""
+    from reverbscope.errors import SessionError
+
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3)),
+        Reference.from_settings(short_sweep),
+    )
+    session = tmp_path / "take"
+    save_measurement(session, MeasurementSession(), result, copy_recording=False)
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x", encoding="utf-8")
+    with pytest.raises(SessionError, match="cannot create"):
+        save_project(blocker, Project(name="p"))
+    with pytest.raises(SessionError, match="cannot create"):
+        add_session(blocker / "room", session, position="A")

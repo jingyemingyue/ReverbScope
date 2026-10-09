@@ -14,7 +14,7 @@ body:
     attributes:
       label: ReverbScope version
       description: The first two lines of the environment report (version and build).
-      placeholder: "0.4.1, build 1a2b3c4"
+      placeholder: "0.5.0rc1, build 1a2b3c4d"
     validations:
       required: true
   - type: dropdown
@@ -46,7 +46,7 @@ body:
       placeholder: |
         1. Open Standalone Mode
         2. Choose ... as the input
-        3. Press Measure
+        3. Press Run Measurement
     validations:
       required: true
   - type: textarea

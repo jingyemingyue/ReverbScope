@@ -49,6 +49,8 @@ reverbscope-env/bin/reverbscope gui
 
 ## 先试一试：演示
 
+桌面版首次启动时，首页会显示一张“你的第一次测量”卡片：演示、DAW 路线和独立路线各有一个按钮，还有本指南的链接。“不再显示”会隐藏它；“帮助 ▸ 入门”可以把它找回来。
+
 `reverbscope demo` 不需要音频接口和话筒，就能演示完整的工作流程。它会写出扫频，模拟一个虚构房间里
 两个位置（一个靠近桌面和侧墙，一个向后移开）的话筒会录到什么，用与真实测量相同的代码分析这两个位置，
 并对比它们。输出的导览最后会给出查看完整报告、对比结果、打开桌面应用以及开始你自己第一次测量的命令。
@@ -66,7 +68,7 @@ reverbscope-env/bin/reverbscope gui
 4. 可选回送（loopback）：导出双声道文件（话筒 + 电回送），并使用 `--channel 0 --loopback-channel 1`。
 5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`，或在界面的“通用 DAW 模式”中用“选择录音…”和“选择参考扫频…”选择这些文件。
 
-**Pro Tools、Logic Pro / GarageBand、Cubase / Nuendo、Studio One、Ableton Live、REAPER、FL Studio、Bitwig Studio 和 Audacity 的分步说明，以及报告中各条提示在 DAW 里对应的原因，见 [daw-setup.zh-CN.md](daw-setup.zh-CN.md)。**
+**Pro Tools、Logic Pro / GarageBand、Cubase / Nuendo、Fender Studio Pro（原 PreSonus Studio One）、Ableton Live、REAPER、FL Studio、Bitwig Studio、Digital Performer 和 Audacity 的分步说明，以及报告中各条提示在 DAW 里对应的原因，见 [daw-setup.zh-CN.md](daw-setup.zh-CN.md)。**
 
 ## 独立模式与回送线
 
@@ -90,13 +92,17 @@ reverbscope-env/bin/reverbscope gui
 
 每个指标都有有效性标记。`insufficient_decay_range`（衰减范围不足）表示数值被扣下不报，而不是等于零。没有单一总分。录音配置可能在宽带 C50 或 C80 不适合该类录音时给出一条提示；阈值是该配置的工程选择，不是评分。
 
+**录音配置。**配置是指房间被用来判断的录音类型：人声、配音、原声吉他、鼓、房间话筒、合唱，或通用。每个配置对衰减、强早期反射、清晰度（C50 或 C80；鼓既不判断清晰度也不判断本底噪声）和低频都有自己的阈值。测量之前，配置选择框旁的“它关注什么？”按钮（以及“结果”页面的“关于这个配置...”）会说明所选配置关注什么、不判断什么，并给出具体数字；`reverbscope profiles` 列出所有配置，`reverbscope profiles vocal` 说明其中一个（`--format json` 输出数字）。这些阈值是工程取舍，见 [MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8，从不是评分。
+
+**测量健康**排在最前面：是“总览”选项卡的第一张卡片，也是文本报告中紧接“概览”之后的一节。它列出分析对这次录音本身所做的检查（参考信号、扫频、播放速度、直达声、电平、失真、采样丢失、衰减范围、本底噪声、录音长度，以及参与了测量时的回送和音频设备），每项为*良好*、*警告*、*无效*或*未知*，并给出原因、受影响的指标和下一步该做什么。*无效*表示某个数字不可信（录音削波、扫频播放速度不对）；*未知*表示无法进行该项检查（导入的脉冲响应）。扫频播放速度不对时，会列出各 DAW 设置采样率或关闭时间伸缩的位置，与[用 DAW 测量](daw-setup.zh-CN.md)中的步骤一致；分析无法完成时，这些步骤也会显示在错误信息之下。最差的一项决定整体状态；没有总分。
+
 核心诊断（`warnings`、`notes`、`reason`）在 `result.json` 中保持英文，便于跨语言对照问题报告。界面和文本报告按界面语言显示它们。
 
 结果页有八个标签页：
 
 | 标签页 | 显示内容 |
 | --- | --- |
-| 总览 | 关键数值（混响、本底噪声、早期反射、直达声）及其可信程度、解读，以及宽带与倍频程频带的 EDT / T20 / T30 / RT60 和 C50 / C80 / D50 / 重心时间表格，各自带有效性。 |
+| 总览 | 关键数值（混响、本底噪声、早期反射、直达声）及其可信程度、测量健康卡片、解读，以及宽带与倍频程频带的 EDT / T20 / T30 / RT60 和 C50 / C80 / D50 / 重心时间表格，各自带有效性。 |
 | 完整报告 | 与 `reverbscope analyze` 输出的文本报告相同，警告列在末尾。“复制报告”可复制全文。 |
 | 脉冲响应 | 反卷积得到的脉冲响应（IR）。峰值是直达声；不会归一化到 1.0。 |
 | 频率响应 | 原始（点线）与平滑（实线）幅度。进行了回送补偿时，虚线是电回送。0 dB 指音频接口，而不是“房间里是平直的”。 |
@@ -117,13 +123,18 @@ reverbscope-env/bin/reverbscope gui
 
 `reverbscope compare baseline/ candidate/ --same-input-gain`（或界面的“对比”页面）。只有两侧都是 VALID 时，衰减差值才是 VALID。噪声差值需要明确声明“输入增益未变”。任何变化都不会被称为显著；ISO 3382-1 给出的 T 的刚可察觉差只作为参考背景引用。
 
+**判定。**在候选会话的录音配置下，对比会对混响、清晰度、早期反射、本底噪声和低频分别给出：*有意义的改善*、*有意义的退化*、*大概率无关紧要*、*不可比较*，或*证据不足*，并每次说明原因（“对比”页面中会话选择框下方的卡片；报告中紧接“概览”之后的一节；`--format json` 中的 `verdict`）。判定依据配置的阈值（人声棚不在乎 0.30 s 变成 0.22 s；房间话筒会把变得过干的房间判为退化）、刚可察觉差，以及两次测量都在手时的测量健康；它从不根据一对位置就称某个变化“显著”（[MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §11a）。
+
 “对比”页面列出配对的早期反射（延时相差 ±0.5 ms 以内）和低频共振（相差 1/6 倍频程以内，并带有 decay-distinguishable 标志）。低频共振只在两次测量都搜索过的范围内比较：在另一次测量从未搜索的频率（例如其扫频起点更高）发现的共振既不算消失也不算新出现；若有一次测量根本没有搜索，低频一栏显示“未比较”（报告中如此，“共振”标签页的表格下方也有同样的说明；两次测量的直达声并非都可信时，“早期反射”标签页同样给出说明）。`reverbscope compare … --out comparison.json` 只写入数值；`reverbscope show comparison.json` 会再次打印报告并**重新推导**解读（解读从不存入该文件）。
 
-## 项目与平均
+## 项目、位置与总览
 
-项目文件夹包含 `project.json` 和普通的会话文件夹。
-`reverbscope project init --out room/ --name Booth`，然后
-`reverbscope project add room/ session/ --position desk`。对已有 `project.json` 的文件夹再次运行 `project init` 会被拒绝；加 `--force` 则重新开始这个项目，原有的位置不再保留。
+项目文件夹包含 `project.json` 和普通的会话文件夹；该文件记录每个会话是在哪个位置测的。用 `reverbscope project init --out room/ --name Booth` 新建（或在首页点“打开项目...”，对普通文件夹它会提议建成项目），再把会话归入位置：`reverbscope project add room/ session/ --position desk`。对已有 `project.json` 的文件夹再次运行 `project init` 会被拒绝；加 `--force` 则重新开始这个项目，原有的位置不再保留。
+
+**测量多个位置。**在“项目”页面点“测量新位置...”，给位置起名（A、B、桌前……）并选择测量方式；扬声器、它的电平和输入增益保持不变，只移动话筒。随后“结果”页面的“保存会话...”会把会话保存到项目里、以位置命名的文件夹中（`B-1`、`B-2`……），并记入该位置；“项目”按钮回到总览。同一位置测两次可以看出测量是否可重复：总览会说明两次是否在 T 的 5 % 刚可察觉差之内一致，不一致时也会直说。
+
+**总览**（`reverbscope project overview room/`；“项目”页面）在一个录音配置下（默认为最新一次测量自身的配置，或 `--profile`）读取每次测量：测量健康、RT60、清晰度、本底噪声和最强早期反射，以及它的*契合度*：配置对它没有警告则为*契合*，有警告则列出主题，测量无效或没有有效（VALID）混响时间则为*无法判断*。每个位置由其最健康、最新的一次测量代表；第一个位置之后的每个位置都带有其测量相对第一个位置的判定（与“对比”页面相同的判定，并计入两次测量的健康）。随后是空间平均和 ISO 3382-2 等级，以及各位置 RT60 在房间内的差异；“下一步”说明接下来该测什么：为达到下一等级再测一个话筒位置（或第二个扬声器位置）、重复测量一次、重新测量某个位置、哪些位置契合。页面不为位置排名：两个都契合的位置之间，请根据判定和录音的需要来选。`--format json` 输出整个总览；`project.json` 除位置外不存储任何内容（[MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §13）。
+
 `reverbscope project average room/` 只平均有效（VALID）的 T 值，从不平均衰减曲线，并注明测量位置数达到的 ISO 3382-2 等级。RT60 一列是各会话自身 RT60（优先 T30，否则 T20）的平均值。`n` 是该行参与平均的会话数；参与会话较少的数值会附上自己的会话数，例如 `0.91 s (1)`。
 
 ## 导出与语言
@@ -145,6 +156,10 @@ reverbscope config language auto    # 改回跟随系统
 `reverbscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们，终端版也一样：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`、`copy-recording` 和 `developer-tools`（`on` 或 `off`），以及 `theme`（`system`、`light` 或 `dark`，只影响桌面版）。例如 `reverbscope config profile vocal`；`auto` 把一项设置恢复为默认值，`reverbscope --format json config` 以 JSON 输出所有设置。
 
 在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
+
+**带边框的报告。**在至少 48 列宽的终端里，报告标题放在方框中，小节标题嵌在横线里，表格带边框；状态行、命令和路径从不加框，中文按两列宽度计算，所以每个边框都对齐。输出到管道或文件时总是纯横线版式，`--format json` 不受影响。`--style plain` 或 `--style boxed` 决定一次命令的样式，`reverbscope config style plain|boxed|auto` 长期生效，环境变量 `REVERBSCOPE_CLI_STYLE` 对一个 shell 生效。若终端字体把方框字符画成两列宽，请选 `plain`；无法写出这些字符的输出流会得到 `+ - |`。
+
+**交互菜单。**在终端里不带命令运行 `reverbscope` 会打开一个编号菜单：演示、测试信号、分析录音、通过音频接口测量、查看和比较会话、项目总览、设置、环境报告和桌面版。每一项会询问所需的信息（拖进终端的路径，带引号或反斜杠都能识别），打印等价的命令行以便下次直接输入，运行后回到菜单。测量在回答 `y` 之前不会播放任何声音。在提问处按 Ctrl+C 回到菜单；`q` 或输入结束则退出。在管道或脚本中，`reverbscope` 仍然打印简短的首页并以用法错误码退出；`REVERBSCOPE_NO_MENU=1` 可在终端里关闭菜单。
 
 重定向或经过管道的输出是 UTF-8。Windows PowerShell 会按控制台代码页解码，中文因此变成乱码（`> report.txt`、`| Select-String`）；请先在该窗口运行一次 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`，详见[在 PowerShell 中保存报告](../INSTALLATION.zh-CN.md#终端版)。命令提示符不受影响。
 

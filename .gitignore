@@ -67,6 +67,11 @@ sessions/
 measurements/
 recordings/
 !tests/fixtures/**/*.wav
+# The regression corpus: minimal synthetic files, each explained in its manifest.
+!tests/corpus/files/**/*.wav
+!tests/corpus/files/**/*.aif
+!tests/corpus/files/**/*.aiff
+!tests/corpus/files/**/*.flac
 
 # --- Temporary / scratch files ---
 tmp/

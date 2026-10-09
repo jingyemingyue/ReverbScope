@@ -1,6 +1,6 @@
 === reverbscope --help
 usage: reverbscope [-h] [--version] [--lang LANG] [--format {text,json}]
-                   [--color WHEN] [--backend NAME]
+                   [--color WHEN] [--style STYLE] [--backend NAME]
                    [--copy-recording | --no-copy-recording] [-v] <command> ...
 
 ReverbScope: an open-source, DAW-independent recording environment analyzer.
@@ -10,6 +10,7 @@ commands:
     demo        try ReverbScope with synthetic data: no audio hardware needed
     gui         start the desktop GUI (needs PySide6; the desktop download
                 includes it)
+    profiles    the recording profiles, and what each one watches for
   Measurement
     sweep       write the ESS test signal WAV (+ JSON sidecar)
     analyze     analyse a recording made with the sweep
@@ -39,6 +40,9 @@ options:
                         stderr)
   --color WHEN          colour in the terminal: auto (default; off for pipes,
                         files and NO_COLOR), always, never
+  --style STYLE         frames around reports: auto (default; the style
+                        setting, else boxed on a wide terminal and plain in a
+                        pipe), boxed, plain
   --backend NAME        audio backend for Standalone Mode: portaudio (default)
                         or fake
   --copy-recording, --no-copy-recording
@@ -344,16 +348,19 @@ examples:
   reverbscope compare session-1 session-2 --same-input-gain --out comparison.json
 
 === reverbscope project --help
-usage: reverbscope project [-h] {init,add,average,show} ...
+usage: reverbscope project [-h]
+       {init,add,average,show,overview} ...
 
 project folders (one room, several positions)
 
 positional arguments:
-  {init,add,average,show}
+  {init,add,average,show,overview}
     init                create a project.json
     add                 add a session to a position
     average             spatial average of VALID T values
     show                list positions and sessions
+    overview            every position's takes under the profile: health, fit,
+                        verdicts, next steps
 
 options:
   -h, --help            show this help message and exit
@@ -420,6 +427,24 @@ positional arguments:
 
 options:
   -h, --help  show this help message and exit
+
+=== reverbscope project overview --help
+usage: reverbscope project overview project [options]
+
+every position's takes under the profile: health, fit, verdicts, next steps
+
+positional arguments:
+  project               project directory
+
+options:
+  -h, --help            show this help message and exit
+  --profile {acoustic_guitar,choir,drums,generic,room_mic,vocal,voiceover}
+                        recording profile (default: the latest session's own,
+                        else user settings)
+  --sources N           number of source positions (default: 1)
+
+examples:
+  reverbscope project overview studio-a
 
 === reverbscope export --help
 usage: reverbscope export session [options]
@@ -488,12 +513,30 @@ settings:
   developer-tools  on or off (auto: off; a source or pip install always has
                    them)
   theme            system, light or dark (the desktop app only)
+  style            boxed, plain, or auto (frames on a terminal at least 48
+                   columns wide; never in a pipe)
 
 examples:
   reverbscope config
   reverbscope config language zh_CN
   reverbscope config language auto
   reverbscope config profile vocal
+
+=== reverbscope profiles --help
+usage: reverbscope profiles [NAME] [options]
+
+the recording profiles, and what each one watches for
+
+positional arguments:
+  NAME        one profile to explain in full (default: list them all)
+
+options:
+  -h, --help  show this help message and exit
+  --all       explain every profile in full
+
+examples:
+  reverbscope profiles
+  reverbscope profiles vocal
 
 === reverbscope doctor --help
 usage: reverbscope doctor [options]

@@ -22,12 +22,13 @@ from PySide6.QtWidgets import (
 from reverbscope import __version__
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
-from reverbscope.interpretation import available_profiles, interpret
+from reverbscope.interpretation import available_profiles
 from reverbscope.io.recent import remember_session
 from reverbscope.io.session_store import load_measurement
 from reverbscope.settings import load_settings
 from reverbscope.ui.compare_view import ComparePage
-from reverbscope.ui.pages import DawModePage, HomePage, StandalonePage
+from reverbscope.ui.pages import DawModePage, HomePage, StandalonePage, safe_findings
+from reverbscope.ui.project_view import ProjectPage
 from reverbscope.ui.results import ResultsPage
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.theme import apply_application_chrome, color_scheme
@@ -84,13 +85,27 @@ class MainWindow(QMainWindow):
         self.standalone = StandalonePage(self.state)
         self.results = ResultsPage(self.state)
         self.compare = ComparePage()
-        for page in (self.home, self.daw, self.standalone, self.results, self.compare):
+        self.project = ProjectPage(self.state)
+        for page in (
+            self.home,
+            self.daw,
+            self.standalone,
+            self.results,
+            self.compare,
+            self.project,
+        ):
             self.stack.addWidget(page)
 
         self.home.choose_mode.connect(self.show_mode)
         self.home.open_session.connect(self.choose_session)
         self.home.open_recent.connect(self.open_session_path)
         self.home.compare_requested.connect(self.show_compare)
+        self.home.open_project.connect(self.choose_project)
+        self.project.back.connect(self.show_home)
+        self.project.measure_requested.connect(self._measure_position)
+        self.project.open_session.connect(self.open_session_path)
+        self.project.compare_requested.connect(self._compare_from_project)
+        self.results.project_requested.connect(self.show_project)
         self.daw.analysis_finished.connect(self.show_results)
         self.standalone.analysis_finished.connect(self.show_results)
         self.daw.back.connect(self.show_home)
@@ -108,6 +123,9 @@ class MainWindow(QMainWindow):
         compare_action = QAction(_("&Compare Sessions..."), self)
         compare_action.setShortcut("Ctrl+Shift+C")
         compare_action.triggered.connect(self.show_compare)
+        project_action = QAction(_("Open &Project..."), self)
+        project_action.setShortcut("Ctrl+Shift+O")
+        project_action.triggered.connect(self.choose_project)
         settings_action = QAction(_("&Settings..."), self)
         settings_action.setShortcut("Ctrl+,")
         settings_action.triggered.connect(self.show_settings)
@@ -117,6 +135,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction(new_action)
         file_menu.addAction(open_action)
         file_menu.addAction(compare_action)
+        file_menu.addAction(project_action)
         file_menu.addSeparator()
         file_menu.addAction(settings_action)
         file_menu.addSeparator()
@@ -150,6 +169,9 @@ class MainWindow(QMainWindow):
                 self.developer_menu.addAction(action)
 
         help_menu = self.menuBar().addMenu(_("&Help"))
+        self.getting_started_action = QAction(_("&Getting started"), self)
+        self.getting_started_action.triggered.connect(self.show_getting_started)
+        help_menu.addAction(self.getting_started_action)
         about_action = QAction(_("&About ReverbScope"), self)
         about_action.triggered.connect(self._about)
         licenses_action = QAction(_("&Third-party licenses..."), self)
@@ -216,11 +238,15 @@ class MainWindow(QMainWindow):
 
     def show_home(self) -> None:
         self.state.reset()
+        # Home is a fresh start: the next measurement belongs to no project
+        # until the Project page starts one.
+        self.state.leave_project()
         self.daw.clear_recording()
         # Home's environment report and device inspector describe the real
         # interface, not the demo's fake one.
         self.standalone.demo_mode = False
         self.home.refresh_recent()
+        self.home.show_walkthrough(not load_settings().walkthrough_dismissed)
         self.stack.setCurrentWidget(self.home)
         self._set_place(_("Home"))
 
@@ -241,32 +267,36 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, _("Cannot open session"), localize(str(exc)))
             return
         # Drop the previous take: saving the opened session must not write
-        # that recording into it.
+        # that recording into it. An opened session belongs to no project
+        # workflow either: Save would otherwise list a copy of it there.
         self.state.reset()
+        self.state.leave_project()
         self.daw.clear_recording()
         self.state.session = loaded.session
         self.state.result = loaded.result
         self.state.mode = loaded.session.mode
         profile = loaded.session.recording_profile or "generic"
-        try:
-            findings = interpret(loaded.result, profile)
-        except ReverbScopeError:
+        if profile not in available_profiles():
+            # A profile this install does not have (a plugin, a newer version).
             profile = "generic"
-            findings = interpret(loaded.result, profile)
+        findings, problem = safe_findings(loaded.result, profile)
         self.state.profile = profile
         self.state.findings = findings
+        self.state.findings_problem = problem
         remember_session(loaded.directory)
         self.show_results()
 
     def show_mode(self, mode: str) -> None:
-        if (
-            mode in ("demo", "standalone")
-            and self.stack.currentWidget() is self.standalone
-            and self.standalone.is_busy()
-        ):
-            # Ctrl+2 / Ctrl+3 on the page of a running take: switching the
-            # backend under it would show the demo banner over a real sweep
-            # (or the reverse). Leaving the page (Ctrl+1, Home) stops the take.
+        if mode in ("demo", "standalone") and self.standalone.is_busy():
+            # Ctrl+2 / Ctrl+3 while a take or its analysis runs on the
+            # Standalone page, from that page or from another: switching the
+            # backend under it would show the demo banner over a real sweep (or
+            # the reverse) and list devices over a running progress bar. The
+            # page is shown as it is; leaving it for Home stops the take.
+            self.stack.setCurrentWidget(self.standalone)
+            self._set_place(
+                _("Demo (no interface)") if self.standalone.demo_mode else _("Standalone Mode")
+            )
             return
         if mode == "demo":
             self.state.mode = "standalone"
@@ -284,6 +314,50 @@ class MainWindow(QMainWindow):
         else:
             self.stack.setCurrentWidget(self.daw)
             self._set_place(_("Universal DAW Mode"))
+
+    def show_getting_started(self) -> None:
+        """Home with the first-measurement card, and the card stays from now on."""
+        import contextlib
+        from dataclasses import replace
+
+        from reverbscope.settings import save_settings
+
+        with contextlib.suppress(ReverbScopeError, OSError):
+            save_settings(replace(load_settings(), walkthrough_dismissed=False))
+        self.show_home()
+        self.home.restore_walkthrough()
+
+    def choose_project(self) -> None:
+        directory = QFileDialog.getExistingDirectory(self, _("Open project folder"))
+        if directory:
+            self.show_project(Path(directory))
+
+    def show_project(self, path: str | Path | None = None) -> None:
+        """The Project page: for ``path`` (opened, or offered to be made), or
+        the project it already shows, read again."""
+        if path is not None:
+            if not self.project.open_path(Path(path)):
+                return
+        else:
+            self.project.reload()
+        self.stack.setCurrentWidget(self.project)
+        self._set_place(_("Project"))
+
+    def _measure_position(self, position: str, mode: str) -> None:
+        """Measure ``position`` of the project on the Project page with ``mode``:
+        the save on the Results page then adds the session to the project."""
+        self.state.project_path = self.project.path
+        self.state.project_position = position
+        self.show_mode(mode)
+        name = "" if self.project.overview is None else self.project.overview.name
+        for page in (self.daw, self.standalone):
+            page.position.setText(position)
+            if name and not page.room.text():
+                page.room.setText(name)
+
+    def _compare_from_project(self, baseline: str, candidate: str) -> None:
+        self.show_compare()
+        self.compare.set_paths(Path(baseline), Path(candidate))
 
     def show_results(self) -> None:
         self.results.refresh()
@@ -347,6 +421,7 @@ class MainWindow(QMainWindow):
         self._scheme = color_scheme()
         self.results.restyle()
         self.compare.restyle()
+        self.project.restyle()
         for page in (self.daw, self.standalone):
             page.placement.redraw()
 
@@ -380,7 +455,17 @@ class MainWindow(QMainWindow):
         from reverbscope.io.recent import reverbscope_home
 
         home = reverbscope_home()
-        home.mkdir(parents=True, exist_ok=True)
+        try:
+            home.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                _("Cannot open the data folder"),
+                _("cannot create folder {path}: {error}").format(
+                    path=home, error=exc.strerror or str(exc)
+                ),
+            )
+            return
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(home)))
 
     def _about(self) -> None:

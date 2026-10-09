@@ -106,6 +106,13 @@ the wheels, and must be checked again at packaging time:
 
 * **Versions in use:** PySide6 6.11.2 and shiboken6 6.11.2, bundling Qt
   6.11.2 (verified from the wheel's `QtCore.framework/Resources/Info.plist`).
+  The `gui` extra asks for `>=6.6,<6.12`: PySide6_Essentials 6.12.0
+  (released 2026-10-08) ends the test suite's interpreter with "QObject:
+  shared QObject was deleted directly" and a heap abort on Linux (exit 134 /
+  139) and Windows (exit 127) after every test has passed, on both lines;
+  `reverbscope gui --smoke` itself exits cleanly under 6.12.0. The bundles
+  lock 6.11.2. To lift the bound: run the full suite and the desktop app on
+  Linux, macOS and Windows with a 6.12.x, and move this note to the changelog.
 * **Licensing options:** LGPL-3.0-only, GPL-2.0-only, GPL-3.0-only or a
   commercial license from The Qt Company. ReverbScope uses the **LGPL-3.0**
   option.

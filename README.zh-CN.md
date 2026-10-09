@@ -20,9 +20,11 @@
 
 ### **[→ 从 GitHub Releases 下载](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**状态：0.5.0 beta 2（预发布）**——免费、开源，供测试使用。**这不是硬件验证版本：**
+**状态：`main` 是开发线（beta 线）；供测试的构建是 0.5.0 候选测试版**（`0.5.0rc1`，来自
+`release/0.5.0` 分支，见 Releases 页面）：它是面向真实硬件和 DAW 验证的候选版，不是 0.5.0 正式版，
+且未签名。免费、开源，供测试使用。**这不是硬件验证版本：**
 还没有通过任何真实音频接口或 DAW 做过测量，请把所有数字视为未经验证
-（欢迎[帮助测试](#帮助测试-beta-2)）。两个版本都不需要安装 Python。
+（欢迎[帮助测试](#帮助测试候选版)）。两个版本都不需要安装 Python。
 
 先选**一个版本**，再在最新发布版本的 **Assets** 中选择适合你电脑的文件：
 
@@ -117,16 +119,16 @@ range*），而不是编造一个数字。ReverbScope 有意不提供任何“�
 不适合该类录音时给出一条提示；阈值是工程上的选择，不是评分。界面、命令行和报告都有英文和
 简体中文。
 
-状态：**0.5.0 beta 2（预发布）**，正在向 1.0 推进
+状态：**`main` 是 beta（开发）线，`release/0.5.0` 是候选版线（`0.5.0rc1`）**，正在向 1.0 推进
 （[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
 DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
 并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
 （硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。Beta 2 不满足发布计划里 0.5.0 的退出条件。当前可用功能的概况：
 [docs/STATUS.md](docs/STATUS.md)。
 
-## 帮助测试 beta 2
+## 帮助测试候选版
 
-发布 beta 2 构建，是为了让手上有真实音频接口和 DAW 的人找出哪些地方能用、哪些不能用。检查失败和
+发布 0.5.0 候选测试版，是为了让手上有真实音频接口和 DAW 的人找出哪些地方能用、哪些不能用。检查失败和
 检查通过同样有价值。
 
 1. 安装一个构建（见[下载](#下载)；Gatekeeper / SmartScreen 警告属于预期情况）。
@@ -134,8 +136,8 @@ DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、�
    它不播放任何声音，只展示一份结果是什么样子。
 3. 先把监听音量调低，然后用你的音频接口和一支话筒运行 **独立模式**，或通过你的 DAW 运行
    **通用 DAW 模式**（[DAW 说明](docs/user-guide/daw-setup.zh-CN.md)）。
-4. 报告实际情况，并附上 **帮助 → 用于问题报告的环境报告**（英文界面为
-   **Help → Environment Report for Bug Reports**）的内容：
+4. 报告实际情况，并附上 **帮助 → 用于问题报告的环境报告 → 探测采样率**（英文界面为
+   **Help → Environment Report for Bug Reports → Probe sample rates**）的内容：
    * 音频接口测试报告（[中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)
      / [English form](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)）：
      设备列表、44.1 / 48 / 96 kHz 下的完整测量、2 个以上的声道、回送、播放过程中点“停止”、丢帧、
@@ -215,8 +217,13 @@ reverbscope devices
 reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
+# 在终端里不带命令运行 reverbscope 会打开编号菜单；报告在终端里带边框
+# （reverbscope --style plain 或 config style plain 切换为横线版式）
+reverbscope
+
 # 演示 / CI：不需要音频接口
 reverbscope demo --out demo/
+reverbscope profiles vocal           # 一个录音配置关注什么
 reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
 # 语言（保存在 settings.json 中；auto 改回跟随系统）、设置、打包、CSV、项目
@@ -228,6 +235,7 @@ reverbscope export session1/ --format csv --out curves/
 reverbscope project init --out room/ --name Booth
 reverbscope project add room/ session1/ --position desk
 reverbscope project average room/
+reverbscope project overview room/   # 各位置的健康、契合度、判定与下一步
 
 # GUI（桌面版，或装了 gui 附加依赖的 Python 环境）
 reverbscope gui
@@ -271,7 +279,7 @@ reverbscope gui
 | [docs/COMPATIBILITY.zh-CN.md](docs/COMPATIBILITY.zh-CN.md) | 平台、Python 与依赖的最低版本、DAW 导出格式、音频系统，以及每一项的验证方式；[English](docs/COMPATIBILITY.md) |
 | [docs/EDITIONS.zh-CN.md](docs/EDITIONS.zh-CN.md) | 桌面版与终端版，以及开发者工具；[English](docs/EDITIONS.md) |
 | [docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md) | ReverbScope 与 REW、Open Sound Meter、ARTA、Smaart、SoundID 等工具的区别，以及什么情况下其他工具更合适；[English](docs/COMPARISON.md) |
-| [docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.md) | DAW 分步说明（Pro Tools、Logic、Cubase、Studio One、Live、REAPER、FL Studio、Bitwig、Audacity）；[English](docs/user-guide/daw-setup.md) |
+| [docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.md) | DAW 分步说明（Pro Tools、Logic、GarageBand、Cubase / Nuendo、Fender Studio Pro（Studio One）、Live、REAPER、FL Studio、Bitwig、Digital Performer、Audacity）；[English](docs/user-guide/daw-setup.md) |
 | [docs/PROJECT_BRIEF.zh-CN.md](docs/PROJECT_BRIEF.zh-CN.md) | 最初的项目简介（中文） |
 
 ## 开发安装
@@ -330,6 +338,8 @@ for r in result.reflections.reflections:
 * **科学正确性优先于功能** —— 算法来自已发表的论文和标准（Farina 2000、Schroeder 1965、Lundeby 1995、
   ISO 3382-1/-2 等）；见 [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md)。
 * **诚实的数字** —— 未经校准时一律使用 dBFS，每个指标都有有效性标记，不提供伪科学的房间评分。
+* **测量健康优先** —— 每个结果一开始就列出对这次录音本身的检查（扫频、播放速度、直达声、电平、失真、采样丢失、衰减范围、本底噪声、录音长度），每项为良好、警告、无效或未知，附原因、受影响的指标和下一步；扫频播放速度不对时会列出各 DAW 设置采样率的位置。
+* **多个位置，一份总览** —— 项目文件夹按话筒位置收集一个房间的多次测量；总览说明每次测量是否契合录音配置、每个位置的多次测量是否可重复、它与第一个位置相比如何，以及接下来该测什么，而不做排名。
 * **净室实现与许可证规范** —— 不内置任何第三方源代码（[docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)）；
   每一项依赖和每一个参考过的代码仓库都经过审查
   （[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)、

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any, cast
 
@@ -22,7 +23,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
-    QScrollArea,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -40,7 +40,7 @@ from reverbscope.core.sweep import measurement_signal
 from reverbscope.demo import DEMO_MODE, FAKE_BACKEND_NOTES
 from reverbscope.errors import AudioDeviceError, ReverbScopeError
 from reverbscope.i18n import N_, _, localize
-from reverbscope.interpretation import available_profiles, interpret
+from reverbscope.interpretation import Finding, available_profiles, interpret
 from reverbscope.interpretation.profiles import profile_title
 from reverbscope.io.wav import load_reference, read_wav, write_sweep_file
 from reverbscope.models.audio import AudioSignal
@@ -57,9 +57,12 @@ from reverbscope.ui.widgets import (
     error_box,
     label,
     primary,
+    scroll_page,
     set_banner_text,
 )
-from reverbscope.ui.workers import AnalysisWorker, MeasureWorker
+from reverbscope.ui.workers import AnalysisWorker, MeasureWorker, unexpected_error_text
+
+log = logging.getLogger(__name__)
 
 
 def separate_clocks_box(parent: QWidget, warning: str) -> QMessageBox:
@@ -103,8 +106,115 @@ def _find_data(combo: QComboBox, value: object) -> int:
 
 
 def late_result_text() -> str:
-    """Shown on a mode page whose take or analysis ended after the user left it."""
-    return _("The result was discarded because you left this page before it was ready.")
+    """Shown on a mode page whose take or analysis ended after the user moved on.
+
+    Not after any page switch: a visit to Compare or Settings keeps the result,
+    which then opens Results. Only a reset (New Measurement, Open Session) or a
+    measurement another page started meanwhile makes the result late.
+    """
+    return _(
+        "The result was discarded: a new measurement or another session replaced it "
+        "before it was ready."
+    )
+
+
+def safe_findings(result: AnalysisResult, profile: str) -> tuple[list[Finding], str]:
+    """The findings for ``result``, or none and the reason why.
+
+    A recording profile that fails (a third-party one from an entry point)
+    must not stop the result from being shown: the page stayed busy for good
+    and the measurement was never seen.
+    """
+    try:
+        return interpret(result, profile), ""
+    except ReverbScopeError as exc:
+        return [], localize(str(exc))
+    except Exception:
+        log.exception("recording profile %r failed to interpret the result", profile)
+        return [], unexpected_error_text()
+
+
+class WalkthroughCard(Card):
+    """The first-measurement card: three ways in, and where to read more."""
+
+    choose_mode = Signal(str)
+    dismissed = Signal()
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.body.addWidget(label(_("Your first measurement").upper(), "section"))
+        self.body.addWidget(
+            label(
+                _(
+                    "ReverbScope plays a sweep, records it and reads the room from the "
+                    "recording. Three ways in; the demo needs no hardware."
+                ),
+                "hint",
+                wrap=True,
+            )
+        )
+        steps = (
+            (
+                _("Try the demo first: a synthetic room, nothing is played."),
+                _("Try the demo"),
+                "demo",
+            ),
+            (
+                _(
+                    "In your DAW: write the test signal, play it and record it on a track, "
+                    "then import the recording here."
+                ),
+                _("Universal DAW Mode"),
+                "universal_daw",
+            ),
+            (
+                _(
+                    "With an audio interface: ReverbScope plays the sweep and records the "
+                    "microphone itself."
+                ),
+                _("Standalone Mode"),
+                "standalone",
+            ),
+        )
+        self.buttons: list[QPushButton] = []
+        for number, (text, caption, mode) in enumerate(steps, start=1):
+            row = QHBoxLayout()
+            row.setSpacing(10)
+            row.addWidget(label(f"{number}.  {text}", wrap=True), 1)
+            button = QPushButton(caption)
+            button.clicked.connect(lambda _checked=False, m=mode: self.choose_mode.emit(m))
+            row.addWidget(button)
+            self.buttons.append(button)
+            self.body.addLayout(row)
+        self.body.addWidget(
+            label(
+                _(
+                    "Choose the recording profile that matches what you record; its button says "
+                    "what it watches for. Every number carries a validity, and a result opens "
+                    "with its measurement health."
+                ),
+                "hint",
+                wrap=True,
+            )
+        )
+        bottom = QHBoxLayout()
+        self.guide_button = QPushButton(_("Read the user guide"))
+        self.guide_button.clicked.connect(self._open_guide)
+        bottom.addWidget(self.guide_button)
+        bottom.addStretch(1)
+        self.dismiss_button = QPushButton(_("Don't show this again"))
+        self.dismiss_button.clicked.connect(self.dismissed.emit)
+        bottom.addWidget(self.dismiss_button)
+        self.body.addLayout(bottom)
+
+    def _open_guide(self) -> None:
+        from PySide6.QtCore import QUrl
+        from PySide6.QtGui import QDesktopServices
+
+        from reverbscope.edition import user_guide_url
+        from reverbscope.i18n import current_locale
+
+        QDesktopServices.openUrl(QUrl(user_guide_url(current_locale())))
 
 
 class HomePage(QWidget):
@@ -112,6 +222,7 @@ class HomePage(QWidget):
     open_session = Signal()
     open_recent = Signal(str)
     compare_requested = Signal()
+    open_project = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -139,6 +250,15 @@ class HomePage(QWidget):
         pills.addStretch(1)
         layout.addLayout(pills)
         layout.addSpacing(6)
+
+        # Shown until dismissed (a setting); Help ▸ Getting started brings it back.
+        self.walkthrough = WalkthroughCard()
+        self.walkthrough.choose_mode.connect(self.choose_mode.emit)
+        self.walkthrough.dismissed.connect(self.dismiss_walkthrough)
+        #: "Don't show this again" was clicked in this run: the card stays
+        #: hidden even where the settings file could not record it.
+        self._walkthrough_dismissed = False
+        layout.addWidget(self.walkthrough)
 
         layout.addWidget(label(_("New Measurement").upper(), "section"))
         cards = QHBoxLayout()
@@ -185,7 +305,13 @@ class HomePage(QWidget):
         compare_button = QPushButton(_("Compare two sessions..."))
         compare_button.setToolTip(_("Pick two saved sessions and compare their metrics."))
         compare_button.clicked.connect(self.compare_requested.emit)
+        project_button = QPushButton(_("Open Project..."))
+        project_button.setToolTip(
+            _("One room, several microphone positions: open or make a project folder.")
+        )
+        project_button.clicked.connect(self.open_project.emit)
         header.addWidget(open_button)
+        header.addWidget(project_button)
         header.addWidget(compare_button)
         sessions.body.addLayout(header)
         # Two selected rows go straight into Compare (MainWindow.show_compare).
@@ -201,26 +327,27 @@ class HomePage(QWidget):
     def list_folder(self, root: Path) -> None:
         self.browser.list_folder(root)
 
+    def show_walkthrough(self, visible: bool) -> None:
+        self.walkthrough.setVisible(visible and not self._walkthrough_dismissed)
 
-def _scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
-    """Give ``page`` a fixed header and a scrolling body; return the body layout."""
-    page.setProperty("page", True)
-    outer = QVBoxLayout(page)
-    outer.setContentsMargins(28, 20, 28, 12)
-    outer.setSpacing(8)
-    outer.addWidget(header)
-    scroll = QScrollArea()
-    scroll.setWidgetResizable(True)
-    scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-    body = QWidget()
-    body.setProperty("page", True)
-    layout = QVBoxLayout(body)
-    layout.setContentsMargins(0, 0, 8, 8)
-    layout.setSpacing(12)
-    scroll.setWidget(body)
-    outer.addWidget(scroll, 1)
-    return layout
+    def restore_walkthrough(self) -> None:
+        """Help > Getting started: the card is back, also after a dismissal."""
+        self._walkthrough_dismissed = False
+        self.walkthrough.show()
+
+    def dismiss_walkthrough(self) -> None:
+        """Hide the card and remember it; a settings file that cannot be
+        written still hides it for this run."""
+        from dataclasses import replace
+
+        from reverbscope.settings import load_settings, save_settings
+
+        self._walkthrough_dismissed = True
+        self.walkthrough.hide()
+        try:
+            save_settings(replace(load_settings(), walkthrough_dismissed=True))
+        except (ReverbScopeError, OSError) as exc:
+            log.info("the walkthrough stays for the next start: %s", exc)
 
 
 def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLineEdit, QLineEdit]:
@@ -236,11 +363,39 @@ def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLine
 
 
 def _profile_combo(state: MeasurementState) -> QComboBox:
+    from reverbscope.interpretation.explain import profile_description
+
     combo = QComboBox()
-    for name in available_profiles():
+    for index, name in enumerate(available_profiles()):
         combo.addItem(profile_title(name), name)
+        combo.setItemData(index, profile_description(name), Qt.ItemDataRole.ToolTipRole)
     combo.setCurrentIndex(max(combo.findData(state.profile), 0))
+
+    def describe(_index: int) -> None:
+        combo.setToolTip(profile_description(str(combo.currentData() or "")))
+
+    combo.currentIndexChanged.connect(describe)
+    describe(combo.currentIndex())
     return combo
+
+
+def _profile_row(combo: QComboBox, page: QWidget) -> tuple[QHBoxLayout, QPushButton]:
+    """The profile selector with the button that says what the profile wants.
+
+    Returns the row and the button; the page keeps the button as its
+    ``profile_help`` attribute (declared on the page, not set from here, so
+    the type checker sees it whether or not PySide6's stubs are installed).
+    """
+    from reverbscope.ui.profile_dialog import profile_of, show_profile_help
+
+    row = QHBoxLayout()
+    row.setSpacing(8)
+    row.addWidget(combo, 1)
+    button = QPushButton(_("What does it want?"))
+    button.setToolTip(_("What this profile watches for, and what it does not judge."))
+    button.clicked.connect(lambda: show_profile_help(profile_of(combo), page))
+    row.addWidget(button)
+    return row, button
 
 
 class PlacementInputs(QGroupBox):
@@ -355,7 +510,7 @@ class DawModePage(QWidget):
         self._reference: Reference | None = None
         self._sweep_settings = state.sweep_settings
         self._sweep_path: Path | None = None
-        layout = _scroll_page(
+        layout = scroll_page(
             self,
             PageHeader(
                 _("Universal DAW Mode"),
@@ -434,7 +589,8 @@ class DawModePage(QWidget):
         v4.addWidget(self.placement)
         profile_form = QFormLayout()
         self.profile = _profile_combo(state)
-        profile_form.addRow(_("Recording profile"), self.profile)
+        profile_row, self.profile_help = _profile_row(self.profile, self)
+        profile_form.addRow(_("Recording profile"), profile_row)
         v4.addLayout(profile_form)
         row = QHBoxLayout()
         self.analyze_button = primary(QPushButton(_("Analyze")))
@@ -475,7 +631,7 @@ class DawModePage(QWidget):
         try:
             settings = self.current_sweep_settings()
             wav_path, sidecar = write_sweep_file(settings, path)
-        except ReverbScopeError as exc:
+        except (ReverbScopeError, OSError) as exc:
             QMessageBox.critical(self, _("Cannot write test signal"), localize(str(exc)))
             return
         self._sweep_settings = settings
@@ -551,6 +707,11 @@ class DawModePage(QWidget):
 
     # --- step 4 -----------------------------------------------------------------
     def start_analysis(self, *, blocking: bool = False) -> None:
+        if self._worker is not None and self._worker.isRunning():
+            # Analyze while busy: a second worker would drop the only
+            # reference to the running one, and Qt aborts the process when a
+            # QThread is destroyed while it runs.
+            return
         if self._recording is None:
             QMessageBox.warning(
                 self, _("No recording"), _("Choose the recorded WAV file first (Step 3).")
@@ -575,7 +736,8 @@ class DawModePage(QWidget):
             placement_temperature_c=place["placement_temperature_c"],
         )
         # The imported take and its sweep become the shared session's, which
-        # Save writes.
+        # Save writes; a take or analysis another page still runs is now late.
+        self._generation = self.state.claim()
         self.state.recording = self._recording
         self.state.recording_path = self._recording_path
         self.state.reference = self._reference
@@ -593,7 +755,6 @@ class DawModePage(QWidget):
             recording_profile=self.state.profile,
         )
         self._set_busy(True, _("Analyzing..."))
-        self._generation = self.state.generation
         self._worker = AnalysisWorker(
             self._recording, self._reference, self.state.analysis_settings
         )
@@ -629,22 +790,33 @@ class DawModePage(QWidget):
         self.progress.setVisible(busy)
         set_banner_text(self.status, text, tone)
 
+    def _stale(self) -> bool:
+        """The result that arrives now belongs to a session that is gone.
+
+        The shared state was reset (New Measurement, Open Session) or taken by
+        a measurement another page started since this one began, or the
+        window is closed. A visit to Compare or Settings meanwhile is not
+        that: the result is kept and opens Results.
+        """
+        return self._generation != self.state.generation or not self.window().isVisible()
+
     def _on_success(self, result: AnalysisResult) -> None:
-        if self._generation != self.state.generation or not self.isVisible():
-            # The user went elsewhere (a menu action) while this ran; the
-            # shared state now belongs to that page. Coming back to wait does
-            # not help after New Measurement or Open Session: the state was
-            # reset, and the result would join that other session.
+        if self._stale():
             self._set_busy(False, late_result_text(), tone="warn")
             return
+        findings, problem = safe_findings(result, self.state.profile)
         self.state.result = result
-        self.state.findings = interpret(result, self.state.profile)
+        self.state.findings = findings
+        self.state.findings_problem = problem
         self._set_busy(False, _("Done."))
         self.analysis_finished.emit()
 
     def _on_failure(self, message: str) -> None:
         self._set_busy(False, _("Analysis failed: {message}").format(message=message), tone="warn")
-        error_box(self, _("Analysis failed"), message)
+        if not self._stale():
+            # An analysis the user abandoned (New Measurement meanwhile) keeps
+            # its failure on this page; no dialog over the page they are on.
+            error_box(self, _("Analysis failed"), message)
 
 
 class StandalonePage(QWidget):
@@ -676,7 +848,7 @@ class StandalonePage(QWidget):
         self._inventory_backend: str | None = None
         # The state generation the running take belongs to.
         self._generation = -1
-        layout = _scroll_page(
+        layout = scroll_page(
             self,
             PageHeader(
                 _("Standalone Mode"),
@@ -764,7 +936,8 @@ class StandalonePage(QWidget):
         form2.addRow(_("Playback level"), self.level)
         form2.addRow(self.acknowledge)
         self.profile = _profile_combo(state)
-        form2.addRow(_("Recording profile"), self.profile)
+        profile_row, self.profile_help = _profile_row(self.profile, self)
+        form2.addRow(_("Recording profile"), profile_row)
         layout.addWidget(sweep)
 
         from reverbscope.edition import is_developer
@@ -904,13 +1077,18 @@ class StandalonePage(QWidget):
         return self.host_api.currentData(), device(self.input_device), device(self.output_device)
 
     def _row_of(self, combo: QComboBox, device: tuple[int, str] | None) -> int:
-        """The row of ``device`` in ``combo`` when it is still the same device."""
+        """The row of ``device`` in ``combo``: the same index and name, else the
+        one device of that name (an interface plugged in again comes back under
+        another index), else -1 (its index now names another device)."""
         if device is None:
             return _find_data(combo, None)
         index, name = device
-        if not any(d.index == index and d.name == name for d in self._devices):
-            return -1
-        return _find_data(combo, index)
+        if any(d.index == index and d.name == name for d in self._devices):
+            return _find_data(combo, index)
+        same_name = [d.index for d in self._devices if d.name == name]
+        if len(same_name) == 1:
+            return _find_data(combo, same_name[0])
+        return -1
 
     def _fill_device_lists(self) -> None:
         """Devices of the chosen host API; the recommended entries are starred.
@@ -1201,14 +1379,20 @@ class StandalonePage(QWidget):
     def _on_stopped(self) -> None:
         self._set_busy(False, _("Stopped."))
 
+    def _stale(self) -> bool:
+        """As :meth:`DawModePage._stale`."""
+        return self._generation != self.state.generation or not self.window().isVisible()
+
     def _on_recorded(self, recording: AudioSignal) -> None:
-        if self._generation != self.state.generation or not self.isVisible():
-            # As in DawModePage._on_success.
+        if self._stale():
             self._set_busy(False, late_result_text(), tone="warn")
             return
         plan = self._channel_plan
         reference = self._take_reference
         assert plan is not None and reference is not None
+        # The take takes the shared state: an analysis another page started
+        # meanwhile is late from here on.
+        self._generation = self.state.claim()
         self.state.mode = "standalone"
         self.state.recording = recording
         self.state.recording_path = None
@@ -1255,11 +1439,13 @@ class StandalonePage(QWidget):
         set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
-        if self._generation != self.state.generation or not self.isVisible():
+        if self._stale():
             self._set_busy(False, late_result_text(), tone="warn")
             return
+        findings, problem = safe_findings(result, self.state.profile)
         self.state.result = result
-        self.state.findings = interpret(result, self.state.profile)
+        self.state.findings = findings
+        self.state.findings_problem = problem
         self._set_busy(False, _("Done."))
         self.analysis_finished.emit()
 
@@ -1267,4 +1453,5 @@ class StandalonePage(QWidget):
         self._set_busy(
             False, _("Measurement failed: {message}").format(message=message), tone="warn"
         )
-        error_box(self, _("Measurement failed"), message)
+        if not self._stale():
+            error_box(self, _("Measurement failed"), message)

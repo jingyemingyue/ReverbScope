@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import json
 import os
+import re
 import secrets
 import shutil
 import stat
@@ -24,30 +25,27 @@ MAX_RESULT_JSON_BYTES = 128 * 1024 * 1024
 MAX_JSON_DEPTH = 32
 
 
+#: A JSON string (escapes kept whole), a string left open to the end of the
+#: text, or one bracket. Everything else (numbers, whitespace, names) is
+#: skipped by the regex engine, which reads a result.json of several
+#: megabytes in milliseconds where a Python loop over its characters took
+#: longer than parsing it.
+_JSON_TOKENS = re.compile(r'"(?:[^"\\]|\\.)*(?:"|\Z)|[{}\[\]]', re.DOTALL)
+
+
 def json_nesting_depth(text: str) -> int:
     """Return the maximum ``{`` / ``[`` nesting, ignoring characters inside strings."""
     depth = 0
     deepest = 0
-    in_string = False
-    escape = False
-    for char in text:
-        if in_string:
-            if escape:
-                escape = False
-            elif char == "\\":
-                escape = True
-            elif char == '"':
-                in_string = False
-            continue
-        if char == '"':
-            in_string = True
-            continue
-        if char in "{[":
+    for match in _JSON_TOKENS.finditer(text):
+        token = match.group()
+        if token == "{" or token == "[":
             depth += 1
             if depth > deepest:
                 deepest = depth
-        elif char in "}]":
+        elif token == "}" or token == "]":
             depth = max(0, depth - 1)
+        # A string: skipped whole, whatever brackets it holds.
     return deepest
 
 
@@ -145,6 +143,22 @@ def write_text_atomic(path: Path, text: str, *, follow_symlinks: bool = False) -
         os.replace(temporary, target)
     finally:
         discard(temporary)
+
+
+def make_folder(path: Path) -> None:
+    """``mkdir -p`` for a folder ReverbScope writes into.
+
+    A folder that cannot be made (a file of that name, a parent that is a
+    file, a name the file system refuses, a Windows reserved name such as
+    ``CON``, a disk that is full or read-only) is the user's to fix, not a
+    bug: it is reported as :class:`SessionError` instead of a bare OSError.
+    """
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise SessionError(
+            _("cannot create folder {path}: {error}").format(path=path, error=exc)
+        ) from exc
 
 
 def read_json_object(

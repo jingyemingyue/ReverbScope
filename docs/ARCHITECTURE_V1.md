@@ -234,7 +234,7 @@ from the package.
 | Tier | What | Promise for the 1.x line |
 | --- | --- | --- |
 | 1 -- public | The names exported by `reverbscope/__init__.py` (below); the JSON files and their schemas; `reverbscope <cmd> --format json`; the CLI exit codes | Semantic versioning. Removal or a changed meaning needs a major version; additions are minor; a deprecation is announced with a `DeprecationWarning` one minor release before the change |
-| 2 -- documented | Functions of `reverbscope.core.*` named in MEASUREMENT_METHODOLOGY.md; `reverbscope.audio.AudioBackend`; `RecordingProfile` / `ProfileBase`; the entry-point groups | Signatures may gain keyword parameters with defaults; every change is in CHANGELOG.md; algorithmic changes are also in the methodology document |
+| 2 -- documented | Functions of `reverbscope.core.*` named in MEASUREMENT_METHODOLOGY.md; `reverbscope.audio.AudioBackend`; `RecordingProfile` / `ProfileBase`; `reverbscope.interpretation.overview.summarize_project` (§13 of the methodology); the entry-point groups | Signatures may gain keyword parameters with defaults; every change is in CHANGELOG.md; algorithmic changes are also in the methodology document |
 | 3 -- internal | `reverbscope.ui`, `reverbscope.cli` internals, everything `_`-prefixed | None |
 
 Tier 1 exports, loaded lazily through a module-level `__getattr__` so that
@@ -250,6 +250,8 @@ FrequencyResponseResult, NoiseResult, ReflectionsResult, Reflection,
 ResonanceResult, PlacementResult, LoopbackResult         # models.result
 MeasurementSession, Project                              # models.session, models.project
 interpret, interpret_comparison, Finding, Severity, available_profiles
+assess, HealthReport, HealthCheck, HealthStatus            # health
+judge_comparison, ComparisonVerdict, Verdict               # interpretation.verdicts
 read_wav, write_wav, write_sweep_file, load_reference     # io.wav
 save_measurement, load_measurement, load_session, list_sessions   # io.session_store
 ReverbScopeError and its subclasses                        # errors
@@ -259,6 +261,9 @@ The text report (`cli/render.py`) is *not* an interface: its wording is
 localised and may change in any release. A test asserts that the Tier 1 list
 in `__init__.py` and the list in this document match, and a second test that
 `reverbscope.__version__` equals the `pyproject.toml` version.
+The principles behind the tiers (additive changes, when a `schema_version`
+moves, derived-at-display-time interpretation, deprecation) and the checklist
+for a change to a stable surface are in [API_STABILITY.md](API_STABILITY.md).
 
 ### 5.2 Schemas and file formats
 
@@ -554,8 +559,9 @@ class AudioBackend(Protocol):
 
 Exit codes: 0 success; 1 a `ReverbScopeError` (message on stderr); 2 usage
 error or a safety refusal (the level acknowledgement); 130 interrupted.
-`--format json` writes exactly the `result.json` payload plus `findings` to
-stdout and nothing else there; all diagnostics go to stderr. `--json` stays
+`--format json` writes exactly the `result.json` payload plus `findings` and
+`health` (both derived from the result when it is shown, in the interface
+language) to stdout and nothing else there; all diagnostics go to stderr. `--json` stays
 as an alias for one minor release, then is removed with a warning.
 
 Text output is laid out by `reverbscope/cli/console.py` (styles, status

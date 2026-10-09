@@ -865,3 +865,118 @@ def test_a_save_keeps_a_recording_wav_its_session_never_named(tmp_path: Path, an
     )
     assert (folder / "recording.wav").read_bytes() == b"a file put here afterwards"
     assert load_session(folder).room_name == "B"
+
+
+# --------------------------------------------------------------- round 4
+
+
+def _analysed(short_sweep: SweepSettings) -> AnalysisResult:
+    rec = synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3))
+    return analyze(rec, Reference.from_settings(short_sweep))
+
+
+@pytest.mark.parametrize("where", ["a file", "under a file"])
+def test_a_session_folder_that_cannot_be_created_is_a_session_error(
+    tmp_path: Path, short_sweep: SweepSettings, where: str
+) -> None:
+    """A folder that cannot be made (a file of that name, or a parent that is
+    a file; on Windows also a reserved name such as CON) escaped as a bare
+    OSError, which the desktop app reported as a bug in ReverbScope."""
+    blocker = tmp_path / "blocker"
+    blocker.write_text("not a folder", encoding="utf-8")
+    directory = blocker if where == "a file" else blocker / "session"
+    with pytest.raises(SessionError, match="cannot create"):
+        save_measurement(
+            directory,
+            MeasurementSession(sweep_settings=short_sweep),
+            _analysed(short_sweep),
+            copy_recording=False,
+        )
+    assert blocker.read_text(encoding="utf-8") == "not a folder"
+
+
+def test_a_folder_name_the_file_system_refuses_is_a_session_error(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """A 300-character folder name (ENAMETOOLONG) is the user's to shorten."""
+    import os
+
+    try:
+        os.mkdir(tmp_path / ("y" * 300))
+    except OSError:
+        pass
+    else:
+        pytest.skip("this file system accepts 300-character names")
+    with pytest.raises(SessionError, match="cannot create"):
+        save_measurement(
+            tmp_path / ("x" * 300),
+            MeasurementSession(sweep_settings=short_sweep),
+            _analysed(short_sweep),
+            copy_recording=False,
+        )
+
+
+def test_a_comparison_whose_folder_cannot_be_created_is_a_session_error(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    blocker = tmp_path / "blocker"
+    blocker.write_text("x", encoding="utf-8")
+    result = _analysed(short_sweep)
+    with pytest.raises(SessionError, match="cannot create"):
+        save_comparison(blocker / "comparison.json", compare(result, result))
+
+
+def test_an_impulse_response_wav_shorter_than_its_direct_sound_is_refused(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """A damaged (cut-off) impulse_response.wav loaded, and the first plot of
+    it failed with a bare ValueError (zero-size array): the whole session
+    looked like a bug instead of a damaged file."""
+    from reverbscope.io.wav import write_wav
+
+    result = _analysed(short_sweep)
+    folder = tmp_path / "damaged"
+    save_measurement(
+        folder, MeasurementSession(sweep_settings=short_sweep), result, copy_recording=False
+    )
+    write_wav(folder / IR_FILE, np.array([0.0, 1.0, 0.0]), short_sweep.sample_rate, subtype="FLOAT")
+    with pytest.raises(SessionError, match=IR_FILE):
+        load_measurement(folder)
+
+
+def test_an_impulse_response_wav_at_another_rate_is_refused(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """A WAV at another sample rate next to result.json was taken as it was,
+    so the impulse-response plot ran on another time axis than the decay."""
+    from reverbscope.io.wav import write_wav
+
+    result = _analysed(short_sweep)
+    folder = tmp_path / "rate"
+    save_measurement(
+        folder, MeasurementSession(sweep_settings=short_sweep), result, copy_recording=False
+    )
+    samples = read_wav(folder / IR_FILE).samples
+    write_wav(folder / IR_FILE, samples, 44100, subtype="FLOAT")
+    with pytest.raises(SessionError, match="44100"):
+        load_measurement(folder)
+
+
+def test_a_cut_off_impulse_response_wav_that_still_holds_the_direct_sound_loads(
+    tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """Half the file is still a usable picture of the response; only the
+    metrics in result.json count, and they were computed on the whole of it."""
+    from reverbscope.io.wav import write_wav
+
+    result = _analysed(short_sweep)
+    folder = tmp_path / "half"
+    save_measurement(
+        folder, MeasurementSession(sweep_settings=short_sweep), result, copy_recording=False
+    )
+    samples = read_wav(folder / IR_FILE).samples
+    write_wav(
+        folder / IR_FILE, samples[: samples.shape[0] // 2], short_sweep.sample_rate, subtype="FLOAT"
+    )
+    loaded = load_measurement(folder)
+    assert loaded.result.impulse_response.samples.shape[0] == samples.shape[0] // 2

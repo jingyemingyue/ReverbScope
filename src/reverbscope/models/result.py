@@ -395,6 +395,53 @@ class ClippingCheck:
 
 
 @dataclass(frozen=True)
+class Dropout:
+    """A run of frozen or zero samples inside the recorded sweep."""
+
+    #: Where the run starts in the recording (s).
+    start_s: float
+    duration_ms: float
+    #: The frequency the sweep was at when the run began (Hz), when the
+    #: sweep definition is known: the response is dented around it.
+    sweep_hz: float | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"start_s": self.start_s, "duration_ms": self.duration_ms, "sweep_hz": self.sweep_hz}
+
+
+@dataclass(frozen=True)
+class DropoutCheck:
+    """Dropouts in the recorded sweep (see ``core.linearity.detect_dropouts``).
+
+    A driver that lost a buffer repeats the last sample or writes zeros, and a
+    DAW that ran out of disk or CPU does the same: a run of exactly equal
+    samples that a sweep through a room, with its noise, never produces. The
+    search covers the analysed sweep pass only; ``None`` on a result means
+    the recording was not searched (an imported impulse response, or a file
+    written before the check existed).
+    """
+
+    #: Start and end of the searched part of the recording (s).
+    searched_s: tuple[float, float]
+    #: The shortest run that counts (ms).
+    min_duration_ms: float
+    dropouts: tuple[Dropout, ...] = ()
+
+    @property
+    def total_ms(self) -> float:
+        return float(sum(d.duration_ms for d in self.dropouts))
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "searched_s": list(self.searched_s),
+            "min_duration_ms": self.min_duration_ms,
+            "count": len(self.dropouts),
+            "total_ms": self.total_ms,
+            "dropouts": [d.to_dict() for d in self.dropouts],
+        }
+
+
+@dataclass(frozen=True)
 class AliasedDistortion:
     """Level of a *folded* (aliased) harmonic product, dB re the linear response.
 
@@ -1069,6 +1116,9 @@ class AnalysisResult:
     #: Vertical geometry from the early reflections (``None`` when the
     #: placement inputs were not supplied and no tier could be produced).
     placement: PlacementResult | None = None
+    #: Dropouts in the recorded sweep (``None`` when the recording was not
+    #: searched: an imported impulse response, or a file from before 0.5.0b3).
+    dropouts: DropoutCheck | None = None
     schema_version: int = RESULT_SCHEMA_VERSION
     reverbscope_version: str = ""
 
@@ -1095,6 +1145,7 @@ class AnalysisResult:
             "resonances": self.resonances.to_dict(),
             "clipping": self.clipping.to_dict() if self.clipping is not None else None,
             "placement": self.placement.to_dict() if self.placement is not None else None,
+            "dropouts": self.dropouts.to_dict() if self.dropouts is not None else None,
             "warnings": list(self.warnings),
         }
 

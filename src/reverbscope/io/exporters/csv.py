@@ -7,6 +7,7 @@ from pathlib import Path
 
 from reverbscope.errors import SessionError
 from reverbscope.i18n import _
+from reverbscope.io.jsonutil import make_folder
 from reverbscope.models.result import AnalysisResult, BandDecay
 
 
@@ -15,7 +16,7 @@ class CsvExporter:
 
     def export(self, result: AnalysisResult, directory: Path) -> list[Path]:
         base = Path(directory)
-        base.mkdir(parents=True, exist_ok=True)
+        make_folder(base)
         writers = {
             "decay_metrics.csv": _write_decay_metrics,
             "energy_metrics.csv": _write_energy_metrics,

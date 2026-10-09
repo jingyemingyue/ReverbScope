@@ -10,7 +10,7 @@
 
 ReverbScope 面向录音师、学生和家庭录音者。他们对一个房间和一个话筒位置有三个问题：*这里能录音吗？这个位置有什么问题？移动话筒或演奏者之后有没有改善？* ReverbScope 负责测量、报告和比较，不校正监听系统，不模拟房间，也不调试扩声系统。
 
-ReverbScope 目前是**预发布版（0.4.x）**。它的 DSP 在 Linux、macOS 和 Windows 上有合成测试覆盖，但还没有任何结果在真实硬件上测量并与参考仪器对照过（[STATUS.md](STATUS.md)、[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)）。下文的其他工具大多是成熟产品，已有多年实际使用经验。
+ReverbScope 目前是**预发布版（0.5.0 候选测试版）**。它的 DSP 在 Linux、macOS 和 Windows 上有合成测试覆盖，但还没有任何结果在真实硬件上测量并与参考仪器对照过（[STATUS.md](STATUS.md)、[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)）。下文的其他工具大多是成熟产品，已有多年实际使用经验。
 
 ## ReverbScope 的不同之处
 

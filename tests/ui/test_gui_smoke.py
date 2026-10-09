@@ -715,9 +715,11 @@ def test_a_live_take_is_saved_with_its_session(
         raise OSError(28, "No space left on device")
 
     window.state.recording, window.state.result = takes[1]
-    monkeypatch.setattr(os, "fsync", disk_full)
-    window.results.save_to(folder)
-    monkeypatch.undo()
+    # A context of its own: monkeypatch.undo() would also undo the fixture
+    # that keeps the recent-sessions list out of the real ~/.reverbscope.
+    with pytest.MonkeyPatch.context() as full_disk:
+        full_disk.setattr(os, "fsync", disk_full)
+        window.results.save_to(folder)
     assert errors and "No space left" in errors[0]
     assert (folder / RECORDING_FILE).read_bytes() == before
 

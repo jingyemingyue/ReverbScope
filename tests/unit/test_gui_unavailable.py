@@ -29,7 +29,7 @@ def test_reverbscope_gui_without_pyside6_prints_a_sentence(
     err = capsys.readouterr().err
     assert "Traceback" not in err
     assert MISSING in " ".join(err.split())  # the sentence is wrapped to the terminal
-    assert 'pip install "PySide6_Essentials>=6.6"' in err
+    assert 'pip install "PySide6_Essentials>=6.6,<6.12"' in err
     # PyPI has no reverbscope package yet: the advice must not send people there.
     assert "reverbscope[gui]" not in err
 

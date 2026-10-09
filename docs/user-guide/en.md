@@ -83,6 +83,11 @@ bundled licenses.
 
 ## Try it first: the demo
 
+On its first start the desktop app shows a **Your first measurement** card on
+the Home page: the demo, the DAW route and the standalone route, each with
+its button, and a link to this guide. **Don't show this again** hides it;
+**Help ▸ Getting started** brings it back.
+
 `reverbscope demo` shows the whole workflow without an interface or a
 microphone. It writes a sweep, simulates what a microphone would record at two
 positions in a made-up room (one close to a desk and a side wall, one moved
@@ -114,7 +119,7 @@ in the interface language when a session is opened, listed or reported.
    Recording...” and “Choose Reference Sweep...”.
 
 **Step-by-step notes for Pro Tools, Logic Pro / GarageBand, Cubase / Nuendo,
-Studio One, Ableton Live, REAPER, FL Studio, Bitwig Studio and Audacity, and
+Fender Studio Pro (formerly PreSonus Studio One), Ableton Live, REAPER, FL Studio, Bitwig Studio, Digital Performer and Audacity, and
 what each report message means in DAW terms:
 [daw-setup.md](daw-setup.md).**
 
@@ -172,6 +177,32 @@ withheld, not that it is zero. There is no single score. A recording profile
 may add one notice when broadband C50 or C80 is a poor fit for that kind of
 recording; the threshold is an engineering choice for the profile, not a grade.
 
+**Recording profiles.** A profile is the kind of recording the room is judged
+for: vocals, voice-over, acoustic guitar, drums, a room microphone, a choir,
+or the general one. Each has its own thresholds for the decay, for a strong
+early reflection, for clarity (C50 or C80; drums judge neither clarity nor
+the noise floor) and for the low end. Before you measure, the **What does it
+want?** button beside the profile selector (and **About this profile...** on
+the Results page) says what the chosen profile watches for and what it does
+not judge, with the numbers; `reverbscope profiles` lists the profiles and
+`reverbscope profiles vocal` explains one (`--format json` for the numbers).
+The thresholds are engineering choices, stated in
+[MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8, never a grade.
+
+**Measurement health** comes first: the top card of the Overview tab, and the
+section right after "At a glance" in the text report. It lists the checks the
+analysis made on the take itself (reference, sweep, playback speed, direct
+sound, level, distortion, dropouts, decay range, noise floor, recording
+length, and the loopback and the audio device when they took part), each
+*good*, *warning*, *invalid* or *unknown*, with the reason, the figures it
+affects and what to do next. *Invalid* means a figure cannot be trusted (the
+recording clipped, the sweep was played at the wrong speed); *unknown* means
+the check could not be made (an imported impulse response). A sweep played at
+the wrong speed lists where each DAW sets its sample rate or switches
+time-stretching off, the same steps as [Measuring through your
+DAW](daw-setup.md), also under the error when the analysis cannot finish.
+The worst check gives the overall status; there is no score.
+
 Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The interface and the
 text report show them in the interface language.
@@ -180,7 +211,7 @@ The Results page has eight tabs:
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
+| Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the measurement-health card, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
 | Full report | The same text report that `reverbscope analyze` prints, with the warnings at the end. “Copy report” copies it. |
 | Impulse Response | The deconvolved IR. The peak is the direct sound; it is not normalised to 1.0. |
 | Frequency Response | Raw (dotted) and smoothed (solid) magnitude. A dashed curve is the electrical loopback when compensation ran. 0 dB is the interface, not “flat in the room”. |
@@ -211,6 +242,19 @@ page). A decay delta is only VALID when both sides are VALID. The noise delta
 needs an explicit “input gain unchanged” declaration. A change is never called
 significant; ISO 3382-1’s just-noticeable difference for T is quoted as context.
 
+**Verdict.** Under the candidate's recording profile the comparison says, for
+reverberation, clarity, early reflections, noise floor and low end, whether
+the candidate is a *meaningful improvement*, a *meaningful degradation*,
+*probably insignificant*, *not comparable*, or whether the evidence is
+*insufficient*, with the reason each time (the card under the session
+picker on the Compare page; the section after "At a glance" in the report; `verdict` in
+`--format json`). The judgement uses the profile's thresholds (a vocal booth
+does not care whether 0.30 s became 0.22 s; a room microphone calls a room
+that became too dry a degradation), the just-noticeable differences, and the
+measurement health of both takes when they are at hand; it never calls a
+change statistically significant on one pair of positions
+([MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §11a).
+
 The Compare page lists matched early reflections (delay ±0.5 ms) and
 low-frequency resonances (within 1/6 octave, with decay-distinguishable
 flags). Resonances are compared only in the range both takes searched: one
@@ -222,13 +266,44 @@ trusted on both sides). `reverbscope compare … --out comparison.json` writes t
 `reverbscope show comparison.json` prints the report again and **re-derives**
 findings (they are never stored in the file).
 
-## Projects and averaging
+## Projects, positions and the overview
 
-A project folder holds `project.json` and ordinary session folders.
-`reverbscope project init --out room/ --name Booth` then
-`reverbscope project add room/ session/ --position desk`. Running `project init`
-again on a folder that has a `project.json` is refused; `--force` starts the
-project over, without its positions.
+A project folder holds `project.json` and ordinary session folders; the file
+lists which position each session was taken at. Make one with
+`reverbscope project init --out room/ --name Booth` (or **Open Project...** on
+the Home page, which offers to make a project of a plain folder), then list
+sessions under positions: `reverbscope project add room/ session/ --position desk`.
+Running `project init` again on a folder that has a `project.json` is
+refused; `--force` starts the project over, without its positions.
+
+**Measuring several positions.** On the Project page, **Measure a new
+position...** names the position (A, B, desk, ...) and opens the mode you
+choose; keep the loudspeaker, its level and the input gain as they were and
+move only the microphone. **Save Session...** on the Results page then saves
+into the project, in a folder named after the position (`B-1`, `B-2`, ...),
+and lists the session under that position; **Project** leads back to the
+overview. Two takes at one position show whether the measurement repeats:
+the overview says whether they agree within the 5 % just-noticeable
+difference for T, and says so when they do not.
+
+**The overview** (`reverbscope project overview room/`; the Project page)
+reads every take under one recording profile (the latest take's own, or
+`--profile`): its measurement health, RT60, clarity, noise floor and
+strongest early reflection, and its *fit*: *fits* when the profile has no
+warning about it, *warnings* with the topics, *cannot say* when the
+measurement is invalid or has no VALID reverberation time. Each position is
+represented by its healthiest, latest take; every position after the first
+carries the verdicts of its take against the first position's (the same
+verdicts as Compare, with the health of both takes counted). The spatial
+average and the ISO 3382-2 class follow, with how far the positions' RT60
+differ across the room, and **Next** says what to measure: another
+microphone position for the next class (or a second loudspeaker position),
+a repeat take, a position to measure again, and which positions fit. The
+page does not rank positions: between two that fit, choose on the verdicts
+and on what the recording needs. `--format json` carries the whole overview;
+`project.json` stores nothing beyond the positions
+([MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §13).
+
 `reverbscope project average room/` averages VALID T values only, never decay
 curves, and names the ISO 3382-2 class the position counts reach. The RT60
 column is the mean of each session's own RT60 (T30, else T20). `n` is the
@@ -281,6 +356,28 @@ In a terminal the command line uses colour and the symbols ✓ ! ×; piped into
 a file or another program it writes plain text. `--color never` or the
 `NO_COLOR` environment variable turns colour off, `--color always` keeps it
 in a pipe.
+
+**Boxed reports.** On a terminal at least 48 columns wide, a report's title
+sits in a frame, section headings in rules and tables between borders;
+status lines, commands and paths are never framed, and Chinese text is
+measured at two columns so every frame lines up. A pipe or a file always
+gets the plain ruled layout, and `--format json` is unaffected. `--style
+plain` or `--style boxed` decide for one command, `reverbscope config style
+plain|boxed|auto` for good, and the `REVERBSCOPE_CLI_STYLE` environment
+variable for a shell. Where a terminal's font draws the box glyphs two
+columns wide, choose `plain`; a stream that cannot write them gets `+ - |`.
+
+**Interactive menu.** `reverbscope` with no command on a terminal opens a
+numbered menu: the demo, the test signal, analysing a recording, measuring
+through the interface, showing and comparing sessions, the project
+overview, settings, the environment report and the desktop app. Each choice
+asks for what it needs (a dragged path with quotes or backslashes is
+understood), prints the equivalent command line to type next time, runs it
+and comes back. Measuring plays nothing until the question is answered `y`.
+Ctrl+C at a question returns to the menu; `q` or the end of input leaves.
+In a pipe or a script, `reverbscope` still prints the short home screen and
+exits with the usage code; `REVERBSCOPE_NO_MENU=1` keeps the menu off a
+terminal.
 
 Piped or redirected output is UTF-8. Windows PowerShell decodes it in the
 console's code page and garbles Chinese (`> report.txt`, `| Select-String`);

@@ -1,0 +1,18 @@
+﻿{
+  "schema_version": 1,
+  "reverbscope_sweep": {
+    "sample_rate": 48000,
+    "duration_s": 0.5,
+    "start_hz": 20.0,
+    "end_hz": 20000.0,
+    "fade_in_s": 0.05,
+    "fade_out_s": 0.01,
+    "level_dbfs": -12.0,
+    "pre_silence_s": 0.1,
+    "post_silence_s": 0.1
+  },
+  "reverbscope_version": "0.5.0b2",
+  "wav_file": "scratch.wav",
+  "signal_sha256_float32": "2c059d0e18ed466847964efccb2d42d38159659dd66ca796375cf335a6a47fae",
+  "note": "Keep this file next to the WAV. ReverbScope uses it to regenerate the exact reference sweep when analysing a recording."
+}

@@ -4,8 +4,10 @@
 
 ## Supported versions
 
-ReverbScope is a pre-release (0.4.x, see [docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md)).
-Only `main` and the newest 0.4.x version are maintained. The repository is
+ReverbScope is a pre-release (0.5.0 release candidates; see
+[docs/RELEASE_PLAN.md](docs/RELEASE_PLAN.md) §2a). Two lines are maintained:
+`main` (development) and `release/0.5.0` (the candidate); only the newest
+pre-release on GitHub Releases is supported. The repository is
 public; releases are pre-releases on GitHub Releases, and nothing is on
 PyPI.
 

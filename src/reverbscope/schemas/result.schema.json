@@ -32,6 +32,7 @@
     "resonances": { "$ref": "#/$defs/resonances" },
     "clipping": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/clipping" }] },
     "placement": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/placement" }] },
+    "dropouts": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/dropouts" }] },
     "warnings": { "type": "array", "items": { "type": "string" } }
   },
   "$defs": {
@@ -412,6 +413,26 @@
         "window_truncated": { "type": "boolean" },
         "coordinates_withheld": { "type": "string" },
         "notes": { "$ref": "#/$defs/string_array" }
+      }
+    },
+    "dropout": {
+      "type": "object",
+      "required": ["start_s", "duration_ms"],
+      "properties": {
+        "start_s": { "type": "number" },
+        "duration_ms": { "type": "number" },
+        "sweep_hz": { "$ref": "#/$defs/number_or_null" }
+      }
+    },
+    "dropouts": {
+      "type": "object",
+      "required": ["searched_s", "dropouts"],
+      "properties": {
+        "searched_s": { "$ref": "#/$defs/pair" },
+        "min_duration_ms": { "type": "number" },
+        "count": { "$ref": "#/$defs/count" },
+        "total_ms": { "type": "number" },
+        "dropouts": { "type": "array", "items": { "$ref": "#/$defs/dropout" } }
       }
     }
   }

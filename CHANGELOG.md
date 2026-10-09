@@ -8,6 +8,90 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Measurement health.** Every result now opens with the checks the analysis
+  made on the take itself (reference, sweep, playback speed, direct sound,
+  level, distortion, dropouts, decay range, noise floor, recording length,
+  and the loopback and audio device when they took part), each good, warning,
+  invalid or unknown with its reason, the figures it affects and what to do
+  next; the worst check gives the overall status and there is no score. In
+  the text report it follows "At a glance"; on the Results page it is the
+  first card; `--format json` carries it as `health` beside `findings`. A
+  sweep played at the wrong speed lists where each DAW sets its project
+  sample rate or switches time-stretching off (the steps of
+  `docs/user-guide/daw-setup.md`), also under the error when the analysis
+  cannot finish. Thresholds and their sources: `docs/MEASUREMENT_METHODOLOGY.md`
+  §12.
+- **Verdicts on a comparison.** Under the candidate's recording profile,
+  `reverbscope compare` and the Compare page say for reverberation,
+  clarity, early reflections, noise floor and low end whether the candidate
+  is a meaningful improvement, a meaningful degradation, probably
+  insignificant, not comparable, or whether the evidence is insufficient,
+  with the reason each time: the profile's thresholds (two short decays do
+  not matter for a vocal booth; a room microphone calls a room that became
+  too dry a degradation), the just-noticeable differences, the take's own
+  T20/T30 spread, and the measurement health of both takes when they are at
+  hand. No change is called statistically significant on one pair of
+  positions. `--format json` carries it as `verdict`; `comparison.json` does
+  not store it (`docs/MEASUREMENT_METHODOLOGY.md` §11a).
+- **Projects: the overview and the multi-position workflow.**
+  `reverbscope project overview` and the desktop app's Project page (Home ▸
+  Open Project...) read every take of a project under one recording profile:
+  its measurement health, RT60, clarity, noise floor, strongest early
+  reflection and its fit (fits / warnings / cannot say), each position's
+  repeatability (takes should agree within the 5 % just-noticeable
+  difference for T) and its verdicts against the first position, the spatial
+  average with its ISO 3382-2 class, how far the positions differ across the
+  room, and what to measure next. No ranking. On the Project page, *Measure
+  a new position...* names the position and opens the chosen mode; the save
+  on the Results page then goes into the project, in a folder named after
+  the position, and lists the session under it; *Add Session...* lists a
+  saved one; *Compare with first position* opens Compare on the pair.
+  `--format json` carries the overview (`docs/MEASUREMENT_METHODOLOGY.md`
+  §13); `project average` prints its table through the same renderer.
+- **Boxed reports in the terminal.** On a terminal at least 48 columns wide
+  a report's title sits in a frame, section headings in rules and tables
+  between borders; status lines, commands and paths are never framed, CJK
+  text is measured at two columns, a stream that cannot write box glyphs
+  gets `+ - |`, and a pipe or a file keeps the plain ruled layout
+  (`--format json` is untouched). `--style auto|boxed|plain`, the `style`
+  setting (`reverbscope config style plain`) and `REVERBSCOPE_CLI_STYLE`
+  choose; the environment report lists the setting. No new dependency.
+- **An interactive menu.** `reverbscope` with no command on a terminal opens
+  a numbered menu (demo, test signal, analyse, measure, show, compare,
+  project overview, settings, environment report, desktop app). Each choice
+  asks for what it needs, prints the equivalent command line, runs it in
+  place and returns; measuring plays nothing before a `y`; Ctrl+C at a
+  question returns to the menu; a pipe or a script still gets the home
+  screen and the usage exit code (`REVERBSCOPE_NO_MENU=1` keeps the menu off
+  a terminal). Ideas taken from PR #42, implemented here without Rich.
+- **What a profile wants, before you measure.** `reverbscope profiles`
+  lists the recording profiles; `reverbscope profiles <name>` (or `--all`)
+  says what one watches for and what it does not judge, from its own
+  thresholds (`--format json` for the numbers). In the desktop app the
+  profile selector carries the same explanation behind **What does it
+  want?**, the Results page behind **About this profile...**, and each
+  profile's description as a tooltip. `reverbscope.interpretation.explain`
+  derives it from any profile, third-party ones included; profiles gain the
+  `judges_noise` attribute (false for drums).
+- **A first-measurement card** on the desktop app's Home page: the demo, the
+  DAW route and the standalone route with their buttons and a link to the
+  user guide, until **Don't show this again** (a setting); **Help ▸ Getting
+  started** brings it back.
+- **A benchmark and its findings.** `scripts/benchmark.py` times the
+  analysis, the save, the load, the report, a comparison and the plots on
+  synthetic recordings of 2 s to 60 s at 48 and 96 kHz and reports the peak
+  memory; `docs/PERFORMANCE.md` holds the reference numbers, what dominates
+  and what was left as it is (the stored frequency response's size, the FFT
+  peak of a 60 s sweep at 96 kHz).
+- **API and schema stability principles** (`docs/API_STABILITY.md`): the
+  surfaces and their tiers, additive changes, when `schema_version` moves,
+  interpretation derived at display time, deprecation before removal, and
+  the checklist a change to a stable surface carries.
+- **Dropouts in the recorded sweep** (runs of 2 ms or more of frozen or zero
+  samples: a lost buffer, a DAW out of disk or CPU) are found, placed in time
+  and at the frequency the sweep was at, noted in the warnings and stored in
+  `result.json` as the optional `dropouts` record; a file from an earlier
+  version loads without it.
 - **A release-candidate line next to the beta line.** `release/0.5.0`
   carries `0.5.0rc1`: the 0.5.0b2 code with a frozen feature set, built so
   that anyone can download, install and report from real interfaces, rooms
@@ -37,7 +121,83 @@ All notable changes to ReverbScope are documented here. The format follows
   confidence or reason is carried and which tests prove it.
 
 ### Changed
+- Opening a session is faster: the JSON nesting guard that read every
+  character of `result.json` in Python (0.3 s of a 0.4 s load) now scans
+  with a regular expression and counts the same brackets.
+- The octave-band filters' settling lengths are cached per process, so a
+  comparison, a project overview or a second analysis at the same sample
+  rate no longer filters a 4 s impulse per band again (about 0.4 s saved per
+  analysis at 48 kHz); the numbers are unchanged.
 - CI runs on pushes to `release/**` branches as well as `main`.
+- The `gui` extra asks for `PySide6_Essentials>=6.6,<6.12`, and the hint
+  printed when PySide6 is missing says the same: PySide6_Essentials 6.12.0
+  (released 2026-10-08) ends the test suite's interpreter with "QObject:
+  shared QObject was deleted directly" and a heap abort on Linux and Windows
+  after every test has passed; the bundles lock 6.11.2 and the desktop app's
+  own smoke exits cleanly under 6.12.0. The bound is lifted once a 6.12.x has
+  been run through the suite and the app on all three platforms
+  (`docs/DEPENDENCIES.md` §4).
+- Finding the sweep passes in a recording is no longer quadratic in its
+  length when the reference is very short (a click rather than a sweep); a
+  normal sweep is unchanged. The band filters' settling length is computed
+  from an impulse that grows until its tail can no longer move the 0.999
+  crossing, instead of a fixed 4 s whose end is a denormal tail at high
+  rates: a 192 kHz analysis of a 10 s sweep takes about half the time, and
+  every band that settled inside 4 s keeps its value (from PR #47;
+  `scripts/bench_dsp.py` times `analyze` alone).
+
+### Fixed
+- A folder that could not be created (a file of that name, a parent that is
+  a file, a name the file system refuses, a Windows reserved name such as
+  `CON`) escaped every writer (sessions, projects, comparisons, WAVs and
+  sweeps, settings, the CSV export) as a bare OSError, which the desktop app
+  reported as a bug in ReverbScope. It is a plain error that names the
+  folder.
+- Opening a session read `impulse_response.wav` as it was: a file cut off
+  before the direct sound failed the first plot with a bare error, and a file
+  at another sample rate was drawn on another time axis than the decay. Both
+  are refused with the file named.
+- A NumPy integer sample rate reached the result unchanged, and `json.dumps`
+  of the result failed.
+- Desktop app: opening Compare (or any page switch) during an analysis threw
+  the result away as late; a recording profile that failed left the page
+  busy for good; a second Analyze during an analysis could abort the
+  process; a failure of an abandoned analysis opened a dialog over another
+  page. A result is late only after New Measurement, Open Session or a
+  measurement another page started meanwhile.
+- The test suite wrote a pytest path into the developer's real
+  `~/.reverbscope/recent_sessions.json` on every run (a `monkeypatch.undo()`
+  in one GUI test also undid the fixture that isolates the home folder). A
+  session-wide guard now fails the run if any test touches the real home.
+- **Decay validity (PR #47).** A decay cut off by a gate, or ending in
+  trailing digital silence that one residual sample kept in the record, was
+  reported with a valid T30 fitted to the cliff (about 1.76 s for a true
+  2 s decay cut at 1 s): the preliminary Lundeby regression that ends more
+  than 20 dB above the noise floor now says the decay stops abruptly, and
+  T20 and T30 are withheld. A T20 that was the only candidate (T30 without
+  range) and an EDT were never checked for straightness, so a double slope
+  published a T20 that was neither slope and a late noise burst an EDT of
+  73 s; the ξ limit now applies to whichever of T30, T20 and EDT still has
+  a time. A step in the decay (a noise burst, a hard gate) that crosses the
+  T20 or T30 evaluation range in less than a quarter of the time the curve
+  took to fall its first 5 dB is not a reverberation slope and is marked
+  unreliable. An empty impulse response is reported as too short instead of
+  raising. A sweep whose frequency range underflows the logarithm is refused
+  instead of producing NaNs, and a band one ulp wide keeps its amplitude
+  (`expm1`). `docs/MEASUREMENT_METHODOLOGY.md` §3 step 7 describes the
+  rules.
+- **Files.** A `schema_version` that is not a JSON integer (text, a boolean,
+  a fraction) is refused instead of being coerced into a supported version;
+  a project whose position records carry a non-text label or session path
+  is refused as damaged instead of being read as text; a result whose
+  string lists or energy-metric objects have the wrong type is refused as
+  file corruption instead of being coerced (a damaged string no longer
+  becomes one entry per character).
+- Desktop app: the Early reflections tile showed "0 · clean" in green when
+  the response ended before the search window did and later arrivals were
+  never examined; it now says how many milliseconds could be searched, with
+  an "incomplete window" chip, as the command line's At-a-glance row does
+  (from PR #46).
 
 ## [0.5.0b2] - 2026-10-06
 

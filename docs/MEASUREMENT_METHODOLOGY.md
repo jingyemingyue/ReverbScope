@@ -408,6 +408,23 @@ time-reversed filtering.
    with the slow part 25 dB down is flagged in every run for the broadband
    curve and the 250 Hz–8 kHz bands, and in 60–90 % of the runs at 63 and
    125 Hz, where a single decay already scatters that much.
+   The `ξ` limit is scaled by T30 when T30 has a positive time (also after
+   an earlier rule marked it unreliable: its seconds are still the decay the
+   band measured), else by T20, else by EDT, so a T20 that is the only
+   candidate and an EDT are checked too. Two further shapes are not a
+   reverberation slope and are marked unreliable with a warning that says
+   so: *a step* (T20 and T30 only), when the curve crosses the fit's
+   evaluation range in less than `SUDDEN_DROP_RATIO` (0.25) times the time
+   it took to fall its first 5 dB (a late noise burst or a hard gate; a
+   clean exponential takes about 3.6 times as long, the fastest legitimate
+   octave-band decay about 1); and *an abrupt end*, when the preliminary
+   Lundeby regression stops more than `ABRUPT_END_GAP_DB` (20 dB) above the
+   noise floor it was measured against (a response cut off by a gate or
+   padded with digital silence kept alive by a residual sample): the
+   late-slope window then holds no decay, the iteration stalls on the same
+   crosspoint, and the preliminary slope is the end of the record, so T20
+   and T30 are withheld. A narrow-band exponential ends about 17 dB above
+   its floor because its blocks scatter; the cliffs end 30 dB or more above.
 8. **Validity: truncation sensitivity.** When the Lundeby estimate was
    rejected (step 2), EDT, T20 and T30 are fitted again with the rejected
    estimate. If a VALID one changes by more than 5 % or has no value with
@@ -861,6 +878,131 @@ otherwise the placement deltas are `not_comparable`.
 
 Loopback. `path_delay_ms` is compared only when both results applied
 loopback compensation.
+
+### 11a. Verdicts: did moving help?
+
+`reverbscope.interpretation.verdicts.judge_comparison` reads a comparison,
+the recording profile's thresholds and, when the two results are at hand,
+their measurement health (§12), and says for each aspect whether the
+candidate is a *meaningful improvement*, a *meaningful degradation*,
+*probably insignificant*, *not comparable*, or whether the evidence is
+*insufficient*. It changes nothing and is re-derived when a comparison is
+shown (`--format json` carries it as `verdict`; `comparison.json` does not
+store it). "Meaningful" is measured against the profile's own thresholds and
+the measurement's own spread, never against statistical significance, which
+one pair of positions cannot establish; the single-pair caveat is one of the
+conditions every verdict carries.
+
+| Aspect | Not comparable | Insufficient evidence | Probably insignificant | Improvement / degradation |
+| --- | --- | --- | --- | --- |
+| Reverberation (broadband RT60) | the delta is not VALID | either side's health is invalid | within the T JND (5 %) or within the larger of the two takes' \|T30 - T20\| (the take's own spread); or both takes below the profile's `long_decay_s` (short for that recording) | the candidate crosses a profile threshold (long, noticeable, short) downwards / upwards; with the same label on both sides, shorter / longer |
+| Clarity (the profile's C50 or C80; none for drums) | the delta is not VALID | either side's health is invalid | within 1 dB; or both takes inside the profile's range (`clarity_low_db` to `clarity_high_db`) | the candidate enters / leaves the range; outside on both sides, nearer / further from it (above `clarity_high_db` is "too dry") |
+| Early reflections (strongest inside the profile's window) | - | not compared (direct sound not high on both sides) or either side's health invalid | no reflection on either side; both below the profile's threshold; level within 3 dB | gone / appeared; 3 dB or more weaker / stronger |
+| Noise floor | no verified quiet segment on both sides | the input gain not declared equal, or either side's health invalid | within 3 dB | 3 dB or more quieter / louder |
+| Low end (distinguishable resonances in the range both searched) | - | not compared | none appeared or disappeared | some disappeared and none appeared / some appeared |
+
+Sources and limits. The just-noticeable differences are those ISO 3382-1
+lists (T 5 %, C80 1 dB; the table was not verified against the standard
+text, and the 1 dB figure is applied to C50 as well). The 3 dB limits for
+the noise floor and a reflection's level are ReverbScope's own, a factor of
+two in power. The take's own \|T30 - T20\| stands in for a single-take
+uncertainty, which ISO 3382-2 gives only for several positions. A profile
+with a dryness bound (room mic) judges a room that became too dry through
+its clarity aspect; the reverberation aspect judges against the "too long"
+thresholds only, so the two can disagree, each with its reason.
+
+## 12. Measurement health
+
+`reverbscope.health.assess` reads a result and never changes it. It gathers
+the checks the analysis already made on the take into one list a recording
+engineer reads first: each check is *good*, *warning*, *invalid* or
+*unknown*, with its reason, the metric groups it bears on (reverberation,
+clarity, frequency response, noise floor, early reflections, placement,
+resonances) and what to do next. There is no score: the worst check decides
+the overall status, and *unknown* means the check could not be made, not that
+it passed. Like the findings, the report is computed when a result is shown,
+in the interface language; `result.json` does not store it, so a file written
+by an earlier version gets one when it is opened. `--format json` carries it
+as `health` beside `findings`.
+
+| Check | good | warning | invalid | Limit and where it comes from |
+| --- | --- | --- | --- | --- |
+| Reference | the sweep definition (sidecar) | reference audio without a definition | - | §2: a definition regenerates the exact sweep; audio needs the regularised inverse, and the speed and distortion checks cannot run |
+| Sweep | found, one pass, the whole range | more than one pass; the recording started inside the sweep (band narrowed) | - | §2, `PASS_LEVEL_DB`; `RECORDING_START_TOLERANCE_S` |
+| Playback speed | no speed error | - | the sweep played at the wrong speed | §2b |
+| Direct sound | confidence high | medium (pre-peak margin 10 to 20 dB) | low (below 10 dB, no content to check, or an earlier arrival within 20 dB) | §2, `confidence_label`, `EARLIER_ARRIVAL_MAX_DB` |
+| Level | no flat tops, peak below -1 dBFS | peak within 1 dB of full scale | flat-topped peaks | `detect_clipping`; the 1 dB headroom limit is ReverbScope's own |
+| Distortion | every harmonic below -20 dB re the direct sound | a harmonic at -20 dB or above | folded (aliased) products | §2 harmonic levels; the -20 dB limit is ReverbScope's own: the harmonic responses are separated in time (Farina 2000), so the decay is not spoilt, but the chain is near clipping |
+| Audio device | (listed only when the device reported a problem) | - | timing problems reported by the device | PortAudio status flags, §2 |
+| Dropouts | none | up to 9 runs and under 50 ms in all | 10 runs, or 50 ms in all | runs of 2 ms or more of exactly equal samples inside the sweep (fades left out; flat tops at the peak are clipping); ReverbScope's own limits |
+| Decay range | 45 dB or more (T30) | 35 to 45 dB (T20 only); 20 to 35 dB (EDT only) | below 20 dB | §3: each metric's evaluation range plus the noise margin of the analysis settings (10 dB, ISO 3382-2) |
+| Noise floor | a verified quiet segment | no quiet segment | exact digital silence | §5 |
+| Recording length | 1 s or more of decay after the direct sound | less | - | the analysis's own note |
+| Loopback | compensation applied | offered but refused | - | §2a |
+
+Checks that cannot run are left out (no loopback was offered, no device
+reported a problem, no dropout search on an imported impulse response) or
+reported *unknown* (an imported impulse response for the reference, sweep
+and level checks; a reference without a sweep definition for the speed and
+distortion checks).
+
+The dropout limit: a sweep through a room, with the room's noise, never holds
+one sample value for 2 ms; a 16-bit file of a sweep at -60 dBFS moves by more
+than one quantisation step within 2 ms even at 20 Hz. A driver that lost a
+buffer repeats the last sample or writes zeros, and a DAW out of disk or CPU
+does the same. A dropout of length *T* while the sweep passes the frequency
+*f* deconvolves to a dent about 1/*T* wide around *f* in the frequency
+response; it does not move the direct sound, so a short dropout leaves the
+decay alone (a warning), while many or long ones do not (invalid). The
+record is stored in `result.json` as the optional `dropouts` object: the
+searched span, the shortest run that counts, and each run's start, length
+and the frequency the sweep was at.
+
+The steps under the playback-speed check (where each DAW sets its project
+sample rate, and where it switches time-stretching off) repeat
+`docs/user-guide/daw-setup.md`, menu names included; `tests/unit/test_health.py`
+checks that every menu path named by the module appears in that guide. The
+same steps are printed under the error when a sweep played at the wrong
+speed stops the analysis before a result exists.
+
+## 13. Project overview
+
+`reverbscope.interpretation.overview.summarize_project` reads the sessions a
+project lists (`reverbscope project overview`, the Project page), their
+results and their measurement health (§12), and describes the room position
+by position under one recording profile. It stores nothing and ranks nothing.
+
+* **Take.** Health (§12), the broadband RT60 (only ever from a VALID T30 or
+  T20), the profile's clarity index when VALID, the noise floor when it comes
+  from a verified quiet segment, the strongest reflection inside the
+  profile's window, and the profile's findings (§8). *Fit* is categorical:
+  *fits* when the profile raises no warning-severity finding and the
+  measurement is not invalid; *warnings* with the topics of the warnings;
+  *cannot say* when the measurement is invalid or has no VALID reverberation
+  time. There is no score and no ordering between two takes that fit.
+* **Position.** Its takes, represented by the healthiest (good before
+  warning before unknown before invalid), then the latest. *Repeatability*:
+  the largest difference between the takes' RT60 as a percentage of the
+  smaller, judged against the just-noticeable difference for T that
+  ISO 3382-1 lists (5 %, §11; the table was not verified against the
+  standard text). Takes further apart are reported as disagreeing, with a
+  step to check the microphone position, the level and the noise; they are
+  still averaged (§3a), since the overview changes no number.
+* **Against the first position.** Every position after the first carries the
+  verdicts (§11a) of its representative take against the first position's,
+  judged with both results at hand, so an invalid side leaves insufficient
+  evidence. The first position is the baseline by order, not by merit.
+* **Room.** The spatial average of §3a over every session (sessions outside a
+  position enter the average but not the position count), the ISO 3382-2
+  class of the counts, and the *spatial spread*: largest minus smallest of
+  the positions' representative RT60, over their mean, as a percentage. It
+  is descriptive; one pair of positions establishes nothing statistically.
+* **Next.** The microphone positions the next ISO 3382-2 class needs with the
+  declared number of source positions, or, when the table needs a second
+  source, that; a repeat take where a position has one; a position whose
+  takes disagree; a position whose representative take is invalid; which
+  positions fit (one, several without ranking, or none). Sessions outside a
+  position are counted.
 
 ## References
 

@@ -55,6 +55,15 @@ DESKTOP_PACKAGE = "desktop"
 TERMINAL_PACKAGE = "terminal"
 #: Where both editions are downloaded.
 RELEASES_URL = "https://github.com/jingyemingyue/ReverbScope/releases"
+USER_GUIDE_URLS = {
+    "en": "https://github.com/jingyemingyue/ReverbScope/blob/main/docs/user-guide/en.md",
+    "zh_CN": "https://github.com/jingyemingyue/ReverbScope/blob/main/docs/user-guide/zh-CN.md",
+}
+
+
+def user_guide_url(locale: str) -> str:
+    """The user guide in ``locale``, or the English one."""
+    return USER_GUIDE_URLS.get(locale, USER_GUIDE_URLS["en"])
 
 
 def package(build_info: Path | None = None) -> str | None:

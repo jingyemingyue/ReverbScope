@@ -47,7 +47,12 @@ dependencies = [
 # Qt GUI. Depend on Essentials only (LGPL-3.0). The PySide6 meta-package also
 # pulls PySide6_Addons, which ships GPL-only modules ReverbScope must not import
 # (QtCharts, QtGraphs, …). See docs/DEPENDENCIES.md and CONTRIBUTING.md.
-gui = ["PySide6_Essentials>=6.6"]
+# Below 6.12: PySide6 6.12.0 (2026-10-08) ends the test suite's process with
+# "QObject: shared QObject was deleted directly" and a heap abort at
+# interpreter exit on Linux and Windows after every test passed; the bundles
+# lock 6.11.2. Lift the bound once a 6.12.x has been run through the suite and
+# the desktop app on all three platforms (docs/DEPENDENCIES.md §4).
+gui = ["PySide6_Essentials>=6.6,<6.12"]
 dev = [
   "pytest>=8",
   "pytest-cov>=5",

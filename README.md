@@ -23,10 +23,14 @@ refuses to invent a number.**
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**Status: 0.5.0 beta 2 (pre-release)** — free, open source, for testing. **This is not
-the hardware release:** nothing has been measured through a real audio
-interface or DAW yet, so treat the numbers as unvalidated
-([help test it](#help-test-beta-2)). Neither edition needs Python.
+**Status: `main` is the development (beta) line; the build to test is the
+0.5.0 release candidate** (`0.5.0rc1`, from the `release/0.5.0` line, on the
+Releases page): a candidate for hardware and DAW validation, not the final
+0.5.0, and unsigned. Free, open source, for testing. **This is not the
+hardware release:** nothing has been measured through a real audio interface
+or DAW yet, so treat the numbers as unvalidated
+([help test it](#help-test-the-release-candidate)). Neither edition needs
+Python.
 
 Choose **one edition**, then the file for your computer under **Assets** on
 the newest release:
@@ -138,19 +142,20 @@ C50 or C80 is a poor fit for that kind of recording; the threshold is an
 engineering choice, not a grade. The GUI, the command line and the reports
 are available in English and Simplified Chinese.
 
-Status: **0.5.0 beta 2 (pre-release)** on the way to 1.0
-([RELEASE_PLAN.md](docs/RELEASE_PLAN.md)). The DSP core, CLI, GUI, compare,
+Status: **`main` is the beta (development) line and `release/0.5.0` the
+release-candidate line (`0.5.0rc1`)** on the way to 1.0
+([RELEASE_PLAN.md](docs/RELEASE_PLAN.md) §2a). The DSP core, CLI, GUI, compare,
 loopback, zh-CN catalog, session bundles and both editions' bundles exist and are
 covered by synthetic tests on Linux, macOS and Windows. **Not yet:** any result
 measured on real hardware (the hardware matrix and the validation campaign are
-empty), signed bundles, a PyPI package. Beta 2 does not meet the 0.5.0 exit
-criteria in the release plan. Snapshot of what works:
+empty), signed bundles, a PyPI package. No build meets the 0.5.0 gate of the
+release plan yet. Snapshot of what works:
 [docs/STATUS.md](docs/STATUS.md).
 
-## Help test beta 2
+## Help test the release candidate
 
-The beta 2 builds exist so that people with real interfaces and DAWs can find
-out what works. A failed check is as useful as a pass.
+The 0.5.0 release candidate exists so that people with real interfaces and
+DAWs can find out what works. A failed check is as useful as a pass.
 
 1. Install a build ([Download](#download); the Gatekeeper / SmartScreen
    warning is expected).
@@ -159,8 +164,8 @@ out what works. A failed check is as useful as a pass.
 3. Turn the monitors down, then run **Standalone Mode** with your interface
    and a microphone, or **Universal DAW Mode** through your DAW
    ([DAW notes](docs/user-guide/daw-setup.md)).
-4. Report what happened, with **Help → Environment Report for Bug Reports**
-   pasted in:
+4. Report what happened, with **Help → Environment Report for Bug Reports →
+   Probe sample rates** pasted in:
    * [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml):
      device list, full takes at 44.1 / 48 / 96 kHz, channels above 2,
      loopback, Stop during playback, dropouts, unplugging during a take;
@@ -250,8 +255,13 @@ reverbscope devices
 reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
+# On a terminal, bare reverbscope opens a numbered menu; reports are boxed there
+# (reverbscope --style plain, or config style plain, for the ruled layout)
+reverbscope
+
 # Demo / CI: no interface
 reverbscope demo --out demo/
+reverbscope profiles vocal           # what a recording profile watches for
 reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
 
 # Language (kept in settings.json; "auto" follows the system again), settings,
@@ -264,6 +274,7 @@ reverbscope export session1/ --format csv --out curves/
 reverbscope project init --out room/ --name Booth
 reverbscope project add room/ session1/ --position desk
 reverbscope project average room/
+reverbscope project overview room/   # health, fit, verdicts, next steps per position
 
 # GUI (Desktop Edition, or a Python install with the gui extra)
 reverbscope gui
@@ -314,7 +325,7 @@ samples). Recently opened or saved sessions are remembered under
 | [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Platforms, Python and dependency floors, DAW export formats, host APIs — and what verified each; [中文](docs/COMPATIBILITY.zh-CN.md) |
 | [docs/EDITIONS.md](docs/EDITIONS.md) | Desktop Edition vs. Terminal Edition, and the developer tools; [中文](docs/EDITIONS.zh-CN.md) |
 | [docs/COMPARISON.md](docs/COMPARISON.md) | How ReverbScope differs from REW, Open Sound Meter, ARTA, Smaart, SoundID and others, and when another tool is the better choice; [中文](docs/COMPARISON.zh-CN.md) |
-| [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md) | Step-by-step DAW notes (Pro Tools, Logic, Cubase, Studio One, Live, REAPER, FL Studio, Bitwig, Audacity); [中文](docs/user-guide/daw-setup.zh-CN.md) |
+| [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md) | Step-by-step DAW notes (Pro Tools, Logic, GarageBand, Cubase / Nuendo, Fender Studio Pro (Studio One), Live, REAPER, FL Studio, Bitwig, Digital Performer, Audacity); [中文](docs/user-guide/daw-setup.zh-CN.md) |
 | [docs/PROJECT_BRIEF.zh-CN.md](docs/PROJECT_BRIEF.zh-CN.md) | Original project brief (Chinese) |
 
 ## Development install
@@ -381,6 +392,16 @@ A sourced comparison with other tools is in [docs/COMPARISON.md](docs/COMPARISON
   ISO 3382-1/-2, ...); see [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md).
 * **Honest numbers** – dBFS unless calibrated, validity flags on every metric,
   no pseudo-scientific room score.
+* **Measurement health first** – every result opens with the checks made on
+  the take itself (sweep, playback speed, direct sound, level, distortion,
+  dropouts, decay range, noise floor, recording length), each good, warning,
+  invalid or unknown with the reason, the figures it affects and what to do
+  next; a sweep played at the wrong speed lists where each DAW sets its
+  sample rate.
+* **Several positions, one overview** – a project folder collects the takes
+  of a room by microphone position; the overview says per take whether the
+  room fits the recording profile, per position whether the takes repeat and
+  how it compares with the first, and what to measure next, without ranking.
 * **Clean-room implementation and license hygiene** – no third-party source is
   vendored ([docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)); every dependency and
   every reference repository is audited

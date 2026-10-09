@@ -14,9 +14,11 @@ from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QGuiApplication
 from PySide6.QtWidgets import (
+    QDialog,
     QFileDialog,
     QHBoxLayout,
     QHeaderView,
+    QInputDialog,
     QLabel,
     QMessageBox,
     QPlainTextEdit,
@@ -32,6 +34,7 @@ from PySide6.QtWidgets import (
 from reverbscope.cli.render import REPORT_CONSOLE, render_analysis
 from reverbscope.demo import localize_demo_name
 from reverbscope.errors import ReverbScopeError
+from reverbscope.health import HealthStatus, affects_text, assess, status_word
 from reverbscope.i18n import _, localize
 from reverbscope.io.recent import remember_session
 from reverbscope.io.session_store import SESSION_FILE, save_measurement
@@ -56,7 +59,7 @@ from reverbscope.ui.plots import (
 )
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.theme import apply_report_font, tokens
-from reverbscope.ui.widgets import Card, FindingCard, PageHeader, StatTile, label, primary
+from reverbscope.ui.widgets import Card, Chip, FindingCard, PageHeader, StatTile, label, primary
 
 #: Display word and chip tone of a metric validity.
 VALIDITY_DISPLAY = {
@@ -68,6 +71,12 @@ VALIDITY_DISPLAY = {
     Validity.NOT_COMPARABLE: ("not comparable", "warn"),
 }
 CONFIDENCE_TONE = {"high": "good", "medium": "info", "low": "bad"}
+HEALTH_TONE = {
+    HealthStatus.GOOD: "good",
+    HealthStatus.WARNING: "warn",
+    HealthStatus.INVALID: "bad",
+    HealthStatus.UNKNOWN: "neutral",
+}
 
 
 class _PlacementTab(QWidget):
@@ -259,6 +268,20 @@ class _Overview(QWidget):
             tiles.addWidget(tile)
         layout.addLayout(tiles)
 
+        health = Card()
+        health_header = QHBoxLayout()
+        health_header.addWidget(label(_("MEASUREMENT HEALTH"), "section"))
+        self.health_chip = Chip("", "neutral")
+        health_header.addWidget(self.health_chip)
+        health_header.addStretch(1)
+        health.body.addLayout(health_header)
+        self.health_summary = label("", "hint", wrap=True)
+        health.body.addWidget(self.health_summary)
+        self.health_rows = QVBoxLayout()
+        self.health_rows.setSpacing(6)
+        health.body.addLayout(self.health_rows)
+        layout.addWidget(health)
+
         self.findings_title = label("", "section")
         layout.addWidget(self.findings_title)
         self.findings = QVBoxLayout()
@@ -319,7 +342,10 @@ class _Overview(QWidget):
         layout.addWidget(energy)
         layout.addStretch(1)
 
-    def show_result(self, result: AnalysisResult, findings: list[Finding], profile: str) -> None:
+    def show_result(
+        self, result: AnalysisResult, findings: list[Finding], profile: str, problem: str = ""
+    ) -> None:
+        """``problem`` says why there are no findings (the profile failed)."""
         broadband = result.decay.broadband
         if broadband.rt60_estimate_s is not None:
             word, tone = _validity_text(broadband.t30.validity)
@@ -369,6 +395,18 @@ class _Overview(QWidget):
                 _("above {threshold:g} dB").format(threshold=refl.threshold_db),
                 "info",
             )
+        elif refl.window_truncated and refl.analysed_window_ms is not None:
+            # The response ended before the window did: later arrivals were
+            # not seen, so an empty list is not a clean room (the command line
+            # says the same in its At-a-glance row).
+            self.reflections.show_value(
+                "0",
+                _(
+                    "none above {threshold:.0f} dB in the {end:.1f} ms that could be searched"
+                ).format(threshold=refl.threshold_db, end=refl.analysed_window_ms[1]),
+                _("incomplete window"),
+                "warn",
+            )
         else:
             self.reflections.show_value(
                 "0",
@@ -401,6 +439,7 @@ class _Overview(QWidget):
                 CONFIDENCE_TONE.get(confidence, "neutral"),
             )
 
+        self._show_health(result)
         while self.findings.count():
             entry = self.findings.takeAt(0)
             widget = entry.widget() if entry is not None else None
@@ -418,12 +457,60 @@ class _Overview(QWidget):
                     severity_label=severity_text(str(finding.severity)),
                 )
             )
-        if not findings:
+        if not findings and problem:
+            self.findings.addWidget(
+                label(
+                    _("The {profile} profile could not interpret this result: {error}").format(
+                        profile=profile_title(profile), error=problem
+                    ),
+                    "hint",
+                    wrap=True,
+                )
+            )
+        elif not findings:
             self.findings.addWidget(label(_("No findings."), "hint"))
 
         rows = decay_table_rows(result)
         self._fill_metric_table(self.table, rows)
         self._fill_metric_table(self.energy_table, energy_table_rows(result))
+
+    def _show_health(self, result: AnalysisResult) -> None:
+        """The measurement-health card: the overall status, the checks that
+        are not good with what to do, and the names of those that are."""
+        report = assess(result)
+        self.health_chip.setText(status_word(report.overall).upper())
+        self.health_chip.set_tone(HEALTH_TONE[report.overall])
+        summary = _("{good} of {total} checks good.").format(
+            good=len(report.good), total=len(report.checks)
+        )
+        if report.unavailable:
+            summary += " " + _("Not reported: {groups}.").format(
+                groups=affects_text(report.unavailable)
+            )
+        if report.good:
+            summary += " " + _("Good: {titles}.").format(
+                titles=", ".join(check.title for check in report.good)
+            )
+        self.health_summary.setText(summary)
+        while self.health_rows.count():
+            entry = self.health_rows.takeAt(0)
+            widget = entry.widget() if entry is not None else None
+            if widget is not None:
+                widget.deleteLater()
+        for check in report.problems:
+            parts = [check.reason]
+            if check.affects:
+                parts.append(_("Affects: {groups}").format(groups=affects_text(check.affects)))
+            parts.extend(check.fix)
+            parts.extend(check.details)
+            self.health_rows.addWidget(
+                FindingCard(
+                    str(check.status),
+                    check.title,
+                    "\n".join(parts),
+                    severity_label=status_word(check.status),
+                )
+            )
 
     def _fill_metric_table(self, table: QTableWidget, rows: Sequence[tuple[str, ...]]) -> None:
         colours = tokens()
@@ -449,6 +536,8 @@ class _Overview(QWidget):
 
 class ResultsPage(QWidget):
     new_measurement = Signal()
+    #: The user wants the Project page (the session was saved into a project).
+    project_requested = Signal()
 
     def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -467,7 +556,16 @@ class ResultsPage(QWidget):
         self.save_button = primary(QPushButton(_("Save Session...")))
         self.save_button.setShortcut("Ctrl+S")
         self.save_button.clicked.connect(self._choose_save_directory)
+        self.profile_button = QPushButton(_("About this profile..."))
+        self.profile_button.setToolTip(_("What the recording profile watches for."))
+        self.profile_button.clicked.connect(self.show_profile_help)
+        self.project_button = QPushButton(_("Project"))
+        self.project_button.setToolTip(_("Back to the project this take belongs to."))
+        self.project_button.clicked.connect(self.project_requested.emit)
+        self.project_button.hide()
         self.header.action_row.addWidget(self.new_button)
+        self.header.action_row.addWidget(self.project_button)
+        self.header.action_row.addWidget(self.profile_button)
         self.header.action_row.addWidget(self.copy_button)
         self.header.action_row.addWidget(self.save_button)
         layout.addWidget(self.header)
@@ -539,6 +637,7 @@ class ResultsPage(QWidget):
         )
         self._draw(result)
         self.status.setText("")
+        self.project_button.setVisible(self.state.project_path is not None)
 
     def restyle(self) -> None:
         """Draw the result again in the colour scheme now in force.
@@ -550,7 +649,9 @@ class ResultsPage(QWidget):
             self._draw(self.state.result)
 
     def _draw(self, result: AnalysisResult) -> None:
-        self.overview.show_result(result, list(self.state.findings), self.state.profile)
+        self.overview.show_result(
+            result, list(self.state.findings), self.state.profile, self.state.findings_problem
+        )
         plot_impulse_response(self.ir_tab.figure, result)
         plot_frequency_response(self.fr_tab.figure, result)
         plot_decay(self.decay_tab.figure, result)
@@ -561,6 +662,23 @@ class ResultsPage(QWidget):
             tab.redraw()
 
     def _choose_save_directory(self) -> None:
+        project = self.state.project_path
+        if project is not None:
+            # Into the project, in a folder named after the position: the
+            # session is then listed under it.
+            name, ok = QInputDialog.getText(
+                self,
+                _("Save into the project"),
+                _("Folder name inside {project}").format(project=project),
+                text=self.suggested_project_folder(),
+            )
+            if not ok or not name.strip():
+                return
+            target = project / name.strip()
+            if (target / SESSION_FILE).exists() and not ask_replace_session(self, str(target)):
+                return
+            self.save_to(target)
+            return
         directory = QFileDialog.getExistingDirectory(
             self, _("Choose a folder for the session"), load_settings().output_dir
         )
@@ -585,8 +703,52 @@ class ResultsPage(QWidget):
             )
             if unsaved is not None:
                 self.state.session.recording_path = str(directory / "recording.wav")
-        except ReverbScopeError as exc:
+        except (ReverbScopeError, OSError) as exc:
             QMessageBox.critical(self, _("Cannot save session"), localize(str(exc)))
             return
         remember_session(directory)
         self.status.setText(_("Session saved to {path}").format(path=session_path.parent))
+        project = self.state.project_path
+        if project is not None:
+            self._add_to_project(project, directory)
+
+    def show_profile_help(self) -> QDialog:
+        from reverbscope.ui.profile_dialog import show_profile_help
+
+        return show_profile_help(self.state.profile, self)
+
+    def suggested_project_folder(self) -> str:
+        """``<position>-<n>``: the next free folder name for the position."""
+        project = self.state.project_path
+        position = self.project_position_label()
+        stem = "".join(ch if ch.isalnum() or ch in "-_" else "-" for ch in position) or "take"
+        n = 1
+        while project is not None and (project / f"{stem}-{n}").exists():
+            n += 1
+        return f"{stem}-{n}"
+
+    def project_position_label(self) -> str:
+        return self.state.project_position or self.state.session.measurement_position.strip() or "A"
+
+    def _add_to_project(self, project: Path, directory: Path) -> None:
+        from reverbscope.io.project_store import add_session
+
+        position = self.project_position_label()
+        try:
+            listed = add_session(project, directory, position=position)
+        except (ReverbScopeError, OSError) as exc:
+            QMessageBox.warning(
+                self,
+                _("Saved, but not added to the project"),
+                _(
+                    "The session is saved in {path}, but could not be listed in the project: "
+                    "{error}"
+                ).format(path=directory, error=localize(str(exc))),
+            )
+            return
+        self.status.setText(
+            _(
+                "Session saved to {path} and listed in project {project} under position {label}"
+            ).format(path=directory, project=listed.name or project.name, label=position)
+        )
+        self.project_button.show()
