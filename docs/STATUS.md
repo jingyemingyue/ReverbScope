@@ -147,6 +147,9 @@ untouched).
   asks the level (a loud one needs its own yes) and shows the monitor note
   once, carries the options before the command along, and `reverbscope gui`
   on a Linux session without a display says so instead of letting Qt abort.
+  The README screenshots come from `scripts/render_readme_assets.py` on this
+  code, and every example line of the user guides' terminal blocks is a line
+  the command prints (a test runs them in both languages).
 * **Profiles explained, and a first-measurement card** (fifth batch):
   `reverbscope profiles [name]` and the "What does it want?" button say what
   a recording profile watches for and what it does not judge, from its own

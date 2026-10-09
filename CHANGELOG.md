@@ -262,6 +262,25 @@ All notable changes to ReverbScope are documented here. The format follows
   rates: a 192 kHz analysis of a 10 s sweep takes about half the time, and
   every band that settled inside 4 s keeps its value (from PR #47;
   `scripts/bench_dsp.py` times `analyze` alone).
+- **The README screenshots and the guides' terminal examples show what the
+  commands print.** The terminal screenshots (`docs/images/cli-demo*.svg`)
+  drew each row 18 px below the last, taller than the box glyphs of their
+  font, so every vertical border of a table was a dashed line; the rows are
+  16.5 px now and the borders run unbroken. The desktop screenshots were
+  taken before the Measurement health card, the About this profile button and
+  the verdicts of the Compare page existed and still said 0.5.0b1; they are
+  redrawn from the current app with `scripts/render_readme_assets.py`, and the
+  README's caption names the health card. The Chinese user guide's overview
+  table and finding card had been typed, not printed (a row broke between `2`
+  and its counter `个`, a card inside the word 检查); they are real output now,
+  and a test runs `reverbscope show`, the error panel and the progress bar in
+  both languages and requires every line of every example in both guides to
+  be one the command writes. The READMEs and the installation pages say how to
+  leave the frames out when a terminal draws the box glyphs two columns wide,
+  `docs/ARCHITECTURE_V1*.md` describes the menu, `--style` and the `style`
+  setting, `docs/DEPENDENCIES.md` records why rich was not adopted for them,
+  and `docs/SCREENSHOT_PLAN.md` how the screenshots are drawn. From the
+  redesign of PR #42, on this line's own code.
 
 ### Fixed
 - A folder that could not be created (a file of that name, a parent that is
