@@ -2444,8 +2444,10 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
     from reverbscope.cli.config import language_hint_lines, style_hint_lines
     from reverbscope.i18n import current_locale
 
-    # The frames are drawn with glyphs that some CJK terminals draw too wide.
-    crooked = style_hint_lines(current_locale(), c.width, boxed=c.boxed)
+    # The frames are drawn with glyphs that some CJK terminals draw too wide: a
+    # reader at a terminal is told; a file with frames (``--style boxed`` in a
+    # pipe) has no terminal to look crooked on.
+    crooked = style_hint_lines(current_locale(), c.width, boxed=c.boxed and c.interactive)
     if crooked and c.can_write("".join(crooked)):
         lines += crooked
     # Last, so that it is always found: the way to the other language. Not a

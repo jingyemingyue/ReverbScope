@@ -537,8 +537,10 @@ def run_menu(
     items = menu_items(terminal_edition=terminal_edition)
     by_key = {item.key: item for item in items}
     # The frames are drawn with glyphs that some CJK terminals draw too wide:
-    # a reader of such an interface is told how to leave them out.
-    crooked = style_hint_lines(current_locale(), c.width, boxed=c.boxed)
+    # a reader of such an interface is told how to leave them out, once, under
+    # the first list (the list comes back after every command, the hint would
+    # be the same line each time).
+    crooked = style_hint_lines(current_locale(), c.width, boxed=c.boxed and c.interactive)
     if not c.can_write("".join(crooked)):
         crooked = []
     session.say(c.title("ReverbScope"))
@@ -551,12 +553,18 @@ def run_menu(
             indent=0,
         )
     )
+    listed = False
     while True:
-        session.say([""])
-        session.say(
-            _choice_lines(c, [(item.key, item.title) for item in items] + [("q", _("Quit"))])
-            + (["", *crooked] if crooked else [])
-        )
+        # The list is shown again after a command or a cancelled question; after
+        # a choice that was not on it, it is still on the screen, a line above.
+        if not listed:
+            session.say([""])
+            session.say(
+                _choice_lines(c, [(item.key, item.title) for item in items] + [("q", _("Quit"))])
+                + (["", *crooked] if crooked else [])
+            )
+            crooked = []
+            listed = True
         try:
             choice = fold(session.ask(pgettext("menu prompt", "Your choice"))).casefold()
         except EOFError:
@@ -571,6 +579,7 @@ def run_menu(
         if item is None:
             session.say(c.status("error", _("Choose a number from the list, or q.")))
             continue
+        listed = False
         try:
             argv = item.build(session)
         except (CancelledError, KeyboardInterrupt):

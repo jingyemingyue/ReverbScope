@@ -154,7 +154,7 @@ def menu_screen(lang: str, *, boxed: bool, width: int = 80, color: bool = False)
     """What the menu writes before its first answer (``q``): the title, the list, the hint."""
     activate(lang)
     out = io.StringIO()
-    console = Console(width=width, boxed=boxed, color=color)
+    console = Console(width=width, boxed=boxed, color=color, interactive=True)
     run_menu(console, ask=lambda _prompt: "q", run=lambda _argv: 0, out=out)
     return out.getvalue()
 
