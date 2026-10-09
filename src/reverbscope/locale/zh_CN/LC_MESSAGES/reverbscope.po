@@ -5719,9 +5719,6 @@ msgstr "完整说明每个配置"
 msgid "ReverbScope recording profiles"
 msgstr "ReverbScope 录音配置"
 
-msgid "(default)"
-msgstr "（默认）"
-
 msgid "reverbscope profiles <name> says what a profile watches for; --profile <name> chooses it for one analysis, reverbscope config profile <name> for good."
 msgstr "reverbscope profiles <name> 说明一个配置关注什么；--profile <name> 为一次分析选择它，reverbscope config profile <name> 长期生效。"
 
@@ -5970,3 +5967,6 @@ msgstr "ReverbScope 将通过默认输出设备以 {level:g} dBFS 播放扫频�
 
 msgid "new sessions in the menu and the desktop app's Save dialog start here"
 msgstr "菜单中的新会话和桌面应用的保存对话框都从这里开始"
+
+msgid "default"
+msgstr "默认"

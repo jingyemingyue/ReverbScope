@@ -1425,7 +1425,7 @@ def render_profiles(
         lines += c.commands(
             [
                 (
-                    item.name + (" " + _("(default)") if item.name == default else ""),
+                    annotated(item.name, _("default")) if item.name == default else item.name,
                     f"{item.title}{c.sep()}{item.description}",
                 )
                 for item in items
