@@ -82,7 +82,16 @@ def settings_path() -> Path:
 def load_settings() -> UserSettings:
     """Read settings, or the defaults when the file is missing or unreadable."""
     path = settings_path()
-    if not path.is_file():
+    try:
+        present = path.is_file()
+    except OSError as exc:
+        # A home folder that cannot even be examined (a name longer than the file
+        # system allows, a parent that is not searchable) keeps the defaults, as
+        # an unreadable file does; every command reads the settings, and the
+        # style lookup runs before the error handling that would report it.
+        log.info("ignoring settings file %s: %s", path, exc)
+        return UserSettings()
+    if not present:
         return UserSettings()
     try:
         payload = read_json_object(path, kind="settings")

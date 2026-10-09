@@ -133,3 +133,27 @@ def test_settings_whose_folder_cannot_be_created_are_a_session_error(
     monkeypatch.setenv("REVERBSCOPE_HOME", str(blocker))
     with pytest.raises(SessionError, match="cannot create"):
         save_settings(UserSettings())
+
+
+def test_a_home_folder_that_cannot_be_examined_keeps_the_defaults(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Every command reads the settings before it can report anything; a
+    REVERBSCOPE_HOME longer than the file system's name limit made stat() raise
+    OSError there, and each command ended in a Python traceback."""
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / ("h" * 300)))
+    assert load_settings() == UserSettings()
+
+
+def test_commands_report_an_overlong_home_folder_without_a_traceback(
+    tmp_path: Path, monkeypatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    from reverbscope.cli.main import main
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / ("h" * 300)))
+    capsys.readouterr()
+    assert main(["doctor"]) == 0
+    assert "ReverbScope environment report" in capsys.readouterr().out
+    assert main(["config"]) == 1
+    err = capsys.readouterr().err
+    assert "File name too long" in err and "Traceback" not in err
