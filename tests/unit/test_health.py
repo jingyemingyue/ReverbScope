@@ -454,3 +454,24 @@ def test_assessing_a_result_changes_nothing_in_it(short_sweep: SweepSettings) ->
     before = json.dumps(result.to_dict(), sort_keys=True)
     assess(result)
     assert json.dumps(result.to_dict(), sort_keys=True) == before
+
+
+@pytest.mark.parametrize(
+    "flag", ["input underflow", "input overflow", "output underflow", "output overflow"]
+)
+def test_a_bare_device_flag_is_said_in_chinese(short_sweep: SweepSettings, flag: str) -> None:
+    """The flags older results carry were shown to a Chinese reader as two
+    English words, because localize() translates them only inside the
+    buffer-problem sentence."""
+    from dataclasses import replace
+
+    from reverbscope.i18n import activate
+
+    result = replace(_analysed(short_sweep, _clean(short_sweep)), warnings=(flag,))
+    activate("zh_CN")
+    try:
+        reason = _by_id(result)["device"].reason  # type: ignore[attr-defined]
+    finally:
+        activate("en")
+    assert flag not in reason
+    assert any("\u4e00" <= char <= "\u9fff" for char in reason)

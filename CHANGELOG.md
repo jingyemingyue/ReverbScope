@@ -101,6 +101,13 @@ All notable changes to ReverbScope are documented here. The format follows
   left a valid 63 to 250 Hz T30 or RT60 15 to 200 % too long. The warning
   said only that the frequency response and the resonances are affected; the
   methodology no longer says a short dropout leaves the decay alone.
+- **The distortion warning no longer says the decay is not spoilt.** The
+  harmonic responses of a distorting chain arrive ahead of the room response,
+  but their own decays run into it: with a soft-clipping chain whose strongest
+  harmonic was 18 dB below the direct sound, a synthetic room's T30 was 26 to
+  32 % too long in some bands. The warning says so and lists the decay among
+  the figures it affects. The bare overflow and underflow flags that older
+  results carry are now said in Chinese on the health card as well.
 
 ## [0.5.0rc1] - 2026-10-06
 
