@@ -322,7 +322,7 @@ def test_a_short_window_scrolls_home_and_does_not_squeeze_the_first_measurement_
     assert _step_buttons_overlap_or_leave_the_card(window) == []
     # The card keeps the height its content needs; the page scrolls instead.
     assert card.height() >= card.minimumSizeHint().height()
-    scroll = window.home.scroll
+    scroll = window.home.scroll_area
     body = scroll.widget()
     assert body.height() >= body.minimumSizeHint().height()
     if body.height() > scroll.viewport().height():
