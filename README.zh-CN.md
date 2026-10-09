@@ -10,7 +10,7 @@
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope 结果页：一个话筒位置的混响、带交流声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
+![ReverbScope 结果页：一个话筒位置的混响、带交流声的本底噪声、早期反射和直达声，下方是测量健康和解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
 
 <sub>内置演示房间的结果页。合成数据：没有测量任何真实房间。</sub>
 
@@ -101,7 +101,9 @@
 状态和结果；状态是一个符号加一个词（`✓ 良好`、`! 注意`、`✗ 问题`），所以颜色从不单独表达信息；输出到
 管道或文件时则是纯文本的对齐行。颜色只用在符号、进度条和边框上（文字和数字从不着色，浅色背景上每一行
 都读得清），输出流写不出方框字符时边框改用 `+ - |`。中文界面的标点按中文写，换行时一行不会以右括号、
-句号等开头。
+句号等开头。如果你的终端把方框字符画成两列宽（某些中日韩字体和区域设置），边框显得歪斜，运行一次
+`reverbscope config style plain`，或在一个终端会话里设置 `REVERBSCOPE_CLI_STYLE=plain`：文字内容不变，
+只是不画边框；`reverbscope config style auto` 改回默认。
 
 **然后进行真实测量：** 先把监听音箱音量**调低**（ReverbScope 不会改动系统音量），然后二选一：让
 ReverbScope 通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW

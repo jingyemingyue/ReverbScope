@@ -186,6 +186,11 @@ Windows 的显示语言，或 Linux 上的 `LANGUAGE` / `LANG`。想不管系统
 `reverbscope config language zh_CN`（英文用 `en`）；`reverbscope config language auto` 改回跟随系统，
 `reverbscope config` 列出所有设置。
 
+**边框。** 在至少 48 列宽的终端里，命令行会给报告标题画框、把小节标题嵌在横线里、给表格画边框；输出到管道或文件时
+不画。如果你的终端把方框字符画成两列宽（某些中日韩字体和区域设置），边框显得歪斜，运行
+`reverbscope config style plain`（或在一个终端会话里设置 `REVERBSCOPE_CLI_STYLE=plain`，或给一条命令加
+`--style plain`）即可得到同样的文字、不画边框；`reverbscope config style auto` 改回默认。
+
 在 **macOS** 上，浏览器会给下载的文件加上标记，macOS 会拒绝运行带这个标记的未签名命令行程序
 （*无法打开“reverbscope”，因为无法验证开发者*）。在包含 `reverbscope-terminal` 的文件夹里运行一次下面的命令，
 清除这个文件夹上的标记：

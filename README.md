@@ -15,7 +15,7 @@ refuses to invent a number.**
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope results page: reverberation, background noise with mains hum, early reflections and direct sound for one microphone position, with the interpretation below (synthetic demo data)](docs/images/gui-results.png)
+![ReverbScope results page: reverberation, background noise with mains hum, early reflections and direct sound for one microphone position, with the measurement health and the interpretation below (synthetic demo data)](docs/images/gui-results.png)
 
 <sub>The results page for the built-in demo room. Synthetic data: no real room was measured.</sub>
 
@@ -119,7 +119,11 @@ Colour sits on marks, bars and borders only (a word or a number is never
 coloured, so every line stays readable on a light background), and the frames
 shrink to `+ - |` where the stream cannot write the box glyphs. The Chinese
 text is punctuated in Chinese and wrapped so that a line never starts with a
-closing mark.
+closing mark. If your terminal draws the box glyphs two columns wide (some CJK
+fonts and locales) and the frames come out crooked, run
+`reverbscope config style plain` once, or set `REVERBSCOPE_CLI_STYLE=plain`
+for one shell: the same text, without frames. `reverbscope config style auto`
+brings them back.
 
 **Then measure for real:** turn the monitors **down** (ReverbScope never
 changes system volume), then either let ReverbScope play and record through

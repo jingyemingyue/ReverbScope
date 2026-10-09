@@ -225,6 +225,15 @@ Linux. To keep Chinese or English whatever the system says, run
 `reverbscope config language auto` follows the system again, and
 `reverbscope config` lists every setting.
 
+**Frames.** On a terminal at least 48 columns wide the command line draws a
+frame around a report's title, sets its section headings in rules and draws
+tables between borders; a pipe or a file never gets them. If your terminal
+draws the box glyphs two columns wide (some CJK fonts and locales) and the
+frames come out crooked, run `reverbscope config style plain` (or set
+`REVERBSCOPE_CLI_STYLE=plain` for one shell, or add `--style plain` to one
+command) for the same text without frames; `reverbscope config style auto`
+brings them back.
+
 On **macOS**, a browser marks downloaded files, and macOS refuses to run an
 unsigned command-line program with that mark (*“reverbscope” cannot be opened
 because the developer cannot be verified*). Clear the mark on this folder
