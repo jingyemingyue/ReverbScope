@@ -21,6 +21,7 @@ do and the answer was ``y``.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 import os
 import re
@@ -635,7 +636,51 @@ def run_menu(
     prefix: Sequence[str] = (),
 ) -> int:
     """The menu until the user leaves; ``prefix`` (``--lang``, ``--color``,
-    ``--style``) goes before every command run and shown."""
+    ``--style``) goes before every command run and shown.
+
+    Ctrl+C leaves with 130 wherever it arrives: at the prompt, and also while
+    the list is being drawn (a long paste, a slow link), where it was a
+    traceback."""
+    try:
+        return _run_menu(
+            console,
+            ask=ask,
+            run=run,
+            out=out,
+            terminal_edition=terminal_edition,
+            prefix=prefix,
+        )
+    except KeyboardInterrupt:
+        with contextlib.suppress(KeyboardInterrupt, OSError, ValueError):
+            print(file=out)
+        return EXIT_INTERRUPTED
+
+
+def _gui_note() -> str:
+    """What the menu says before it starts the desktop app: Qt runs in this
+    process (``src/`` does not launch processes), so a Qt that cannot start
+    (a missing system library) ends the program, the menu with it, and no
+    check can tell beforehand. Empty without a display: the command says so
+    itself and the menu goes on."""
+    from reverbscope.ui.app import display_missing
+
+    if display_missing():
+        return ""
+    return _(
+        "The desktop app starts in this program. If Qt cannot start it, the whole "
+        "program ends, and this menu with it."
+    )
+
+
+def _run_menu(
+    console: Console,
+    *,
+    ask: Asker,
+    run: Runner,
+    out: TextIO,
+    terminal_edition: bool,
+    prefix: Sequence[str],
+) -> int:
     c = console
     session = Session(c, ask, out, backend=option_value(prefix, "--backend"))
     items = menu_items(terminal_edition=terminal_edition)
@@ -709,6 +754,8 @@ def run_menu(
         full = [*prefix, *argv]
         session.say(c.status("next", _("The same from the command line:")))
         session.say(["    " + c.command(shell_command(["reverbscope", *full])), ""])
+        if argv[:1] == ["gui"] and (note := _gui_note()):
+            session.say(c.status("info", note))
         # The take is played after the note about the monitors was shown and a
         # "y" typed (see _measure): the command need not show it a second time.
         shown = SAFETY_NOTE_SHOWN.set(argv[:1] == ["measure"])

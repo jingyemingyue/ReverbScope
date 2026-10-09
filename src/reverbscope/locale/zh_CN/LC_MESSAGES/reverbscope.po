@@ -5992,6 +5992,10 @@ msgstr "没能理解为“是”（请输入 y）；按“否”处理。"
 
 msgid "{path} has no project.json; make a project first with reverbscope project init --out <folder>, or try another folder."
 msgstr "{path} 里没有 project.json；请先用 reverbscope project init --out <文件夹> 建立项目，或换一个文件夹。"
+
+msgid "The desktop app starts in this program. If Qt cannot start it, the whole program ends, and this menu with it."
+msgstr "桌面应用在本程序内启动。若 Qt 无法启动它，整个程序会结束，菜单也随之退出。"
+
 msgctxt "answer"
 msgid "n"
 msgstr "n"
