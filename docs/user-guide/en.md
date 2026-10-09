@@ -172,8 +172,9 @@ withheld, not that it is zero. There is no single score. A recording profile
 may add one notice when broadband C50 or C80 is a poor fit for that kind of
 recording; the threshold is an engineering choice for the profile, not a grade.
 
-**Measurement health** comes first: the top card of the Overview tab, and the
-section right after "At a glance" in the text report. It lists the checks the
+**Measurement health** sits right under the key figures: the card below the
+four tiles of the Overview tab, and the section right after "At a glance" in
+the text report. It lists the checks the
 analysis made on the take itself (reference, sweep, playback speed, direct
 sound, level, distortion, dropouts, decay range, noise floor, recording
 length, and the loopback and the audio device when they took part), each
