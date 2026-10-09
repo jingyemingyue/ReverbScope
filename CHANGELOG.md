@@ -7,6 +7,16 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.5.0b3] - 2026-10-09
+
+Software beta 3, the development line after the release candidate was cut:
+everything since 0.5.0b2's code, which is what `0.5.0rc1` is built from.
+Still **not** 0.5.0: no hardware cell of the release plan's matrix has a
+dated PASS. The `v0.5.0b2` draft of the Release workflow was refreshed from
+`main` after these changes landed and is superseded by this version.
+
 ### Added
 - **Measurement health.** Every result now opens with the checks the analysis
   made on the take itself (reference, sweep, playback speed, direct sound,
@@ -15,7 +25,8 @@ All notable changes to ReverbScope are documented here. The format follows
   invalid or unknown with its reason, the figures it affects and what to do
   next; the worst check gives the overall status and there is no score. In
   the text report it follows "At a glance"; on the Results page it is the
-  first card; `--format json` carries it as `health` beside `findings`. A
+  card under the four key figures; `--format json` carries it as `health`
+  beside `findings`. A
   sweep played at the wrong speed lists where each DAW sets its project
   sample rate or switches time-stretching off (the steps of
   `docs/user-guide/daw-setup.md`), also under the error when the analysis
@@ -145,6 +156,24 @@ All notable changes to ReverbScope are documented here. The format follows
   rates: a 192 kHz analysis of a 10 s sweep takes about half the time, and
   every band that settled inside 4 s keeps its value (from PR #47;
   `scripts/bench_dsp.py` times `analyze` alone).
+- Opening a session is faster: the JSON nesting guard that read every
+  character of `result.json` in Python (335 ms for a 4.9 MB result) scans with
+  a possessive regular expression (51 ms) and counts the same brackets as the
+  loop did on any text, valid or not; one 40 MB string in a file below the
+  size limit scans in 0.3 s.
+- The band filters' settling length is found from an impulse that grows until
+  its tail can no longer move the 0.999 crossing (instead of a fixed 4 s whose
+  end is a denormal tail at high rates) and is cached per process: the eight
+  octave bands settle in about 5 ms instead of 0.4 s at 48 kHz, and a 192 kHz
+  analysis of a 10 s sweep takes about a third less time (3.5 s against 5.2 s
+  on the test machine); every band that settled inside 4 s keeps its value.
+  Finding the sweep passes in a recording is no longer quadratic in its length
+  when the reference is very short (a click rather than a sweep); a normal
+  sweep is unchanged. `scripts/bench_dsp.py` times `analyze` alone.
+- Desktop app: a live Standalone take is no longer dropped without a question.
+  New Measurement, Open Session, a click on a recent session and closing the
+  window ask Save Session... / Discard / Cancel while such a take is unsaved
+  (a demo take and a DAW recording, whose file is on disk, never ask).
 
 ### Fixed
 - A folder that could not be created (a file of that name, a parent that is
@@ -169,23 +198,26 @@ All notable changes to ReverbScope are documented here. The format follows
   `~/.reverbscope/recent_sessions.json` on every run (a `monkeypatch.undo()`
   in one GUI test also undid the fixture that isolates the home folder). A
   session-wide guard now fails the run if any test touches the real home.
-- **Decay validity (PR #47).** A decay cut off by a gate, or ending in
-  trailing digital silence that one residual sample kept in the record, was
-  reported with a valid T30 fitted to the cliff (about 1.76 s for a true
-  2 s decay cut at 1 s): the preliminary Lundeby regression that ends more
-  than 20 dB above the noise floor now says the decay stops abruptly, and
-  T20 and T30 are withheld. A T20 that was the only candidate (T30 without
-  range) and an EDT were never checked for straightness, so a double slope
-  published a T20 that was neither slope and a late noise burst an EDT of
-  73 s; the ξ limit now applies to whichever of T30, T20 and EDT still has
-  a time. A step in the decay (a noise burst, a hard gate) that crosses the
-  T20 or T30 evaluation range in less than a quarter of the time the curve
-  took to fall its first 5 dB is not a reverberation slope and is marked
-  unreliable. An empty impulse response is reported as too short instead of
-  raising. A sweep whose frequency range underflows the logarithm is refused
-  instead of producing NaNs, and a band one ulp wide keeps its amplitude
-  (`expm1`). `docs/MEASUREMENT_METHODOLOGY.md` §3 step 7 describes the
-  rules.
+- **Decay validity.** A decay cut off by a gate, or ending in trailing digital
+  silence that one residual sample kept in the record, was reported with a
+  valid T30 fitted to the cliff (about 1.76 s for a true 2 s decay cut at 1
+  s). The cut is now found by walking back along the preliminary regression,
+  the decay is evaluated down to the level before it only, and the range rule
+  decides: a gate 30 dB down withholds T20 and T30 as insufficient range, a
+  cut 70 dB down changes only the reported range, a complete decay that ends
+  in digital silence is unchanged, and the band's warnings name the cut. A T20
+  that was the only candidate for RT60 (T30 without range) was never checked
+  for straightness, so a double slope published a T20 that was neither slope;
+  an EDT is checked when it is more than 1.5 times the late decay, which is
+  what a late noise burst does to it (73 s against 0.5 s) and an early
+  reflection never does. A step in the decay (a noise burst, a hard gate) that
+  crosses the T20 or T30 evaluation range in less than a quarter of the time
+  the curve took to fall its first 5 dB is not a reverberation slope. An empty
+  impulse response is reported as too short instead of raising. The demo's
+  synthetic responses are 2.5 s long so that their low bands reach the noise
+  floor as a recording's do. `docs/MEASUREMENT_METHODOLOGY.md` §3 steps 7, 9
+  and 10 (with the limits of the cut rule and the rule for a loud direct sound
+  that was left out).
 - **Files.** A `schema_version` that is not a JSON integer (text, a boolean,
   a fraction) is refused instead of being coerced into a supported version;
   a project whose position records carry a non-text label or session path
@@ -206,6 +238,80 @@ All notable changes to ReverbScope are documented here. The format follows
   commit it is pinned to and names the workflow file and line of any it does
   not have. Serving the site still needs Pages enabled once in the repository
   settings (Source: GitHub Actions).
+- **Sweep generation.** A sweep whose frequency range underflows the logarithm
+  is refused as a configuration error instead of producing NaNs, and a band
+  one ulp wide keeps its amplitude (`expm1`).
+- **Measurement health sees every device fault the recorder writes.** A
+  stream that ran at another sample rate than requested (the recording's time
+  scale cannot be trusted) and the bare `input overflow` / `output underflow`
+  flags that older results carry make the take invalid, like the buffer and
+  timing sentences, while a sentence that merely mentions underflow invents no
+  fault. A playback-speed error whose cause this version does not know gets
+  steps that fit (check the project's sample rate, switch time-stretching off)
+  instead of the time-stretch table.
+- **One verdict for one comparison.** `reverbscope show comparison.json`
+  judged the saved comparison without the takes' measurement health, so a
+  candidate with 60 ms of dropouts was "probably insignificant" there and
+  "insufficient evidence" in `compare` and on the Compare page. It now reads
+  the two saved sessions as `compare` did; where a session is no longer where
+  the comparison was saved, the verdict says that its health was not
+  considered.
+- **A dropout warning lists the decay and the energy parameters.** A dropout
+  in the recorded sweep leaves a burst in the deconvolved response as well as
+  a dent in the frequency response; in a synthetic room, runs of 2 to 20 ms
+  left a valid 63 to 250 Hz T30 or RT60 15 to 200 % too long. The warning
+  said only that the frequency response and the resonances are affected; the
+  methodology no longer says a short dropout leaves the decay alone.
+- **The distortion warning no longer says the decay is not spoilt.** The
+  harmonic responses of a distorting chain arrive ahead of the room response,
+  but their own decays run into it: with a soft-clipping chain whose strongest
+  harmonic was 18 dB below the direct sound, a synthetic room's T30 was 26 to
+  32 % too long in some bands. The warning says so and lists the decay among
+  the figures it affects. The bare overflow and underflow flags that older
+  results carry are now said in Chinese on the health card as well.
+- The Windows Desktop bundle shipped `PySide6/opengl32sw.dll`, Qt's
+  software-OpenGL fallback (Mesa llvmpipe, MIT, built with LLVM under the
+  University of Illinois/NCSA licence), with no notice for either: it sits
+  in a wheel's package folder, which the licence gate never looked into.
+  `build_license_bundle.py --frozen` now writes the notice
+  (`THIRD_PARTY_LICENSES/_notices/native/mesa-llvmpipe.txt`) whenever the
+  file is in the tree, and `check_bundle_contents.py --require-licenses`
+  fails a bundle that has the file without it. ReverbScope itself never
+  asks Qt for OpenGL.
+- `project show`, `project average` and `project overview` dropped a position
+  whose session folder had been deleted, moved or renamed, and the average
+  counted one position fewer, with exit code 0 and nothing said on either
+  stream. `show` and `average` now name each left-out position on stderr (ten
+  at most, then a count); stdout, JSON included, is unchanged.
+- A recording too long for the memory at hand (about 2 GB per 5 minutes at
+  48 kHz) ended as "unexpected MemoryError ... This is a bug in
+  ReverbScope". The command line and the desktop app now say that there is
+  not enough memory and what to do: cut the recording to the sweep plus a
+  few seconds on each side, or close other programs.
+- A `REVERBSCOPE_HOME` longer than the file system's name limit (or any
+  home that cannot be examined) made every command end in a Python
+  traceback, because the boxed terminal reads the style setting before the
+  error handling; the settings keep their defaults and the commands that
+  must write there report the folder.
+- Desktop app: on a window shorter than the Home page (a 1366x768 laptop,
+  or the 960x640 minimum) the first-measurement card was squeezed until its
+  three buttons overlapped; Home now scrolls like the other pages.
+- Text that is one very long word (a 100 KB room name, a 100 KB argument in
+  an error message) took seconds to minutes to lay out, because the split
+  re-measured what was left on every line; it is now linear (100 KB in
+  0.05 s).
+- Documentation corrections from the final audit: the READMEs and the
+  release notes say that the downloads do not put `reverbscope` on `PATH`
+  and where it is; `analyze --out` writes five files, not three; the Windows
+  hardware steps cover WASAPI and the Default Format instead of an ASIO
+  buffer; the bug form points at the Version and Build lines; the user guide
+  names the host API as the report prints it and no longer recommends the
+  deprecated `doctor --json`; `reverbscope.exe` troubleshooting no longer
+  sends Desktop Edition users to a Terminal Edition file; the buffer-check
+  command in the checklist has its `--out`; the installation guide's pip
+  examples name the downloaded file; the release plan, the runbook and
+  STATUS say that a fix found on `main` first may be cherry-picked to the
+  candidate.
 
 ## [0.5.0b2] - 2026-10-06
 

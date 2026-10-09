@@ -39,7 +39,7 @@ body:
     id: buffer
     attributes:
       label: 缓冲区大小和延迟设置
-      description: '以音频接口控制面板中的设置为准（如果改过 ReverbScope 的 延迟：低 / 高，也请写明）。`reverbscope.log` 中的 `audio stream:` 行会记录音频流实际报告的值。'
+      description: '以音频接口控制面板中的设置为准（如果改过 ReverbScope 的 延迟：低 / 高，也请写明）。`reverbscope.log` 中的 `audio stream:` 行会记录音频流实际报告的值。在 Windows（WASAPI）上没有 ASIO 缓冲区：请写明 Windows 的“默认格式”和这一行。'
       placeholder: "48 kHz 下 256 个采样；ReverbScope 延迟为默认；audio stream: latency_s=(0.012, 0.011)"
     validations:
       required: true

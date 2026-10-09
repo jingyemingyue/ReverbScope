@@ -82,9 +82,9 @@ reverbscope-env/bin/reverbscope gui
 
 ### 各平台注意事项
 
-`reverbscope devices` 会在方括号中显示每个设备所属的音频系统（主机 API）。
+`reverbscope devices` 在“主机 API”一列显示每个设备所属的音频系统；桌面应用把设备显示为 `[序号] 名称 (主机 API)`。
 
-* **Windows。** 每个音频接口会按每种主机 API 各列一次。优先选 `[Windows WASAPI]`（或 `[Windows WDM-KS]`）；避免 `[MME]` 和 `[Windows DirectSound]`，它们要经过 Windows 混音器。共享模式下 WASAPI 只能以设备的共享模式格式运行（[Microsoft：Device formats](https://learn.microsoft.com/en-us/windows/win32/coreaudio/device-formats)）：请在“声音”控制面板中把它设为测量采样率（控制面板 ▸ 硬件和声音 ▸ 声音 ▸ 该设备 ▸ 属性 ▸ 高级 ▸ *默认格式*），并把*音频增强*设为关闭（设置 ▸ 声音 ▸ 该设备）（[Microsoft 支持](https://support.microsoft.com/en-us/windows/fix-sound-or-audio-problems-in-windows-73025246-b61c-40fb-671a-2535c7cd56c8)）。允许桌面应用使用麦克风（设置 ▸ 隐私和安全性 ▸ 麦克风）。安装包不含 ASIO 支持（ASIO DLL 用 Steinberg 的专有 SDK 构建，已被移除，见 DEPENDENCIES.md §3）；只能通过 ASIO 工作的音频接口请用通用 DAW 模式测量。
+* **Windows。** 每个音频接口会按每种主机 API 各列一次。优先选主机 API 为 Windows WASAPI（或 Windows WDM-KS）的条目；避免 MME 和 Windows DirectSound，它们要经过 Windows 混音器。共享模式下 WASAPI 只能以设备的共享模式格式运行（[Microsoft：Device formats](https://learn.microsoft.com/en-us/windows/win32/coreaudio/device-formats)）：请在“声音”控制面板中把它设为测量采样率（控制面板 ▸ 硬件和声音 ▸ 声音 ▸ 该设备 ▸ 属性 ▸ 高级 ▸ *默认格式*），并把*音频增强*设为关闭（设置 ▸ 声音 ▸ 该设备）（[Microsoft 支持](https://support.microsoft.com/en-us/windows/fix-sound-or-audio-problems-in-windows-73025246-b61c-40fb-671a-2535c7cd56c8)）。允许桌面应用使用麦克风（设置 ▸ 隐私和安全性 ▸ 麦克风）。安装包不含 ASIO 支持（ASIO DLL 用 Steinberg 的专有 SDK 构建，已被移除，见 DEPENDENCIES.md §3）；只能通过 ASIO 工作的音频接口请用通用 DAW 模式测量。
 * **macOS。** Core Audio。在“系统设置 ▸ 隐私与安全性 ▸ 麦克风”中允许 ReverbScope；没有该权限时录音是静音，ReverbScope 会报告 *“recording is silent”*。在“音频 MIDI 设置”中设定音频接口的采样率；输入和输出是不同设备时，可在那里把它们合成一个聚合设备。
 * **Linux。** 通过系统的 PortAudio（`libportaudio2`）使用 ALSA。`hw:` 设备使用音频接口自身支持的采样率；`pipewire`、`pulse` 或 `default` 经过声音服务器，可能被重采样：ReverbScope 在测量前会把设备采样率显示在请求的采样率旁边。你的用户可能需要加入 `audio` 组。
 
@@ -94,7 +94,7 @@ reverbscope-env/bin/reverbscope gui
 
 **录音配置。**配置是指房间被用来判断的录音类型：人声、配音、原声吉他、鼓、房间话筒、合唱，或通用。每个配置对衰减、强早期反射、清晰度（C50 或 C80；鼓既不判断清晰度也不判断本底噪声）和低频都有自己的阈值。测量之前，配置选择框旁的“它关注什么？”按钮（以及“结果”页面的“关于这个配置...”）会说明所选配置关注什么、不判断什么，并给出具体数字；`reverbscope profiles` 列出所有配置，`reverbscope profiles vocal` 说明其中一个（`--format json` 输出数字）。这些阈值是工程取舍，见 [MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8，从不是评分。
 
-**测量健康**排在最前面：是“总览”选项卡的第一张卡片，也是文本报告中紧接“概览”之后的一节。它列出分析对这次录音本身所做的检查（参考信号、扫频、播放速度、直达声、电平、失真、采样丢失、衰减范围、本底噪声、录音长度，以及参与了测量时的回送和音频设备），每项为*良好*、*警告*、*无效*或*未知*，并给出原因、受影响的指标和下一步该做什么。*无效*表示某个数字不可信（录音削波、扫频播放速度不对）；*未知*表示无法进行该项检查（导入的脉冲响应）。扫频播放速度不对时，会列出各 DAW 设置采样率或关闭时间伸缩的位置，与[用 DAW 测量](daw-setup.zh-CN.md)中的步骤一致；分析无法完成时，这些步骤也会显示在错误信息之下。最差的一项决定整体状态；没有总分。
+**测量健康**紧跟在关键数值之后：是“总览”选项卡中四个关键数值下方的卡片，也是文本报告中紧接“概览”之后的一节。它列出分析对这次录音本身所做的检查（参考信号、扫频、播放速度、直达声、电平、失真、采样丢失、衰减范围、本底噪声、录音长度，以及参与了测量时的回送和音频设备），每项为*良好*、*警告*、*无效*或*未知*，并给出原因、受影响的指标和下一步该做什么。*无效*表示某个数字不可信（录音削波、扫频播放速度不对）；*未知*表示无法进行该项检查（导入的脉冲响应）。扫频播放速度不对时，会列出各 DAW 设置采样率或关闭时间伸缩的位置，与[用 DAW 测量](daw-setup.zh-CN.md)中的步骤一致；分析无法完成时，这些步骤也会显示在错误信息之下。最差的一项决定整体状态；没有总分。
 
 核心诊断（`warnings`、`notes`、`reason`）在 `result.json` 中保持英文，便于跨语言对照问题报告。界面和文本报告按界面语言显示它们。
 
@@ -177,7 +177,7 @@ reverbscope config language auto    # 改回跟随系统
 
 ## 报告问题
 
-**帮助 ▸ 用于问题报告的环境报告**显示维护者首先需要的信息：ReverbScope 版本和构建提交、操作系统、库版本、设置和音频设备（*探测采样率*会加上每个设备接受的采样率；不会播放任何声音）。用*复制*把它粘贴到 issue 中；*打开 GitHub Issue 页面*会打开模板选择页。在终端中，同样的报告是 `reverbscope doctor`（`--probe`、`--json`）。ReverbScope 不会自动发送任何内容；发布之前请通读文本，因为设备名称中可能包含个人姓名。
+**帮助 ▸ 用于问题报告的环境报告**显示维护者首先需要的信息：ReverbScope 版本和构建提交、操作系统、库版本、设置和音频设备（*探测采样率*会加上每个设备接受的采样率；不会播放任何声音）。用*复制*把它粘贴到 issue 中；*打开 GitHub Issue 页面*会打开模板选择页。在终端中，同样的报告是 `reverbscope doctor`（`--probe`；要 JSON 用 `reverbscope --format json doctor`）。ReverbScope 不会自动发送任何内容；发布之前请通读文本，因为设备名称中可能包含个人姓名。
 
 `reverbscope session bundle session/ --out report.zip` 把会话文件夹打包为 zip。如果不想分享房间录音，用 `--no-audio` 去掉 WAV 文件。和环境报告一样，其中 JSON 文件里的路径把你的主文件夹显示为 `~`。把 zip 附在测量问题（measurement）类 issue 上。设置和滚动日志保存在 `$REVERBSCOPE_HOME`（默认为 `~/.reverbscope`）下；环境报告中的*打开数据文件夹*按钮会打开它。
 

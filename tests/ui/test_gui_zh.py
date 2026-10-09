@@ -198,7 +198,7 @@ def _check_about_and_clocks(window: QWidget) -> None:
 
     from reverbscope.ui.main_window import about_box
     from reverbscope.ui.pages import separate_clocks_box
-    from reverbscope.ui.workers import unexpected_error_text
+    from reverbscope.ui.workers import out_of_memory_text, unexpected_error_text
 
     about = about_box(window)
     plain = re.sub(r"<[^>]+>", " ", about.text())
@@ -218,6 +218,7 @@ def _check_about_and_clocks(window: QWidget) -> None:
     assert default is not None and default.text() == _("Cancel")
     clocks.close()
     _check([unexpected_error_text()], "unexpected error")
+    _check([out_of_memory_text()], "out of memory")
     from PySide6.QtGui import QFontDatabase
 
     from reverbscope.ui.theme import CJK_FALLBACK_FONTS

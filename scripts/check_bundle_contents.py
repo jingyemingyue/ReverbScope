@@ -29,7 +29,10 @@ graph changed.
 ``--require-licenses`` also fails a tree with a native library that no Python
 package ships (PyInstaller copies GLib, OpenSSL, the C++ runtime, libpython
 ... from the build machine) unless ``THIRD_PARTY_LICENSES/NATIVE.txt`` names
-a notice for it, which ``build_license_bundle.py --frozen`` writes.
+a notice for it, which ``build_license_bundle.py --frozen`` writes. A binary
+that a wheel keeps inside its own package folder but that is not the wheel's
+code (PySide6's ``opengl32sw.dll`` is Mesa llvmpipe built with LLVM) is named
+in ``PACKAGE_BINARY_NOTICES`` and needs its notice as well.
 """
 
 from __future__ import annotations
@@ -262,6 +265,13 @@ LIBRARY_DIRS = ((), ("_internal",), ("Contents", "Frameworks"))
 #: Python extension modules: covered by their package's licence or Python's.
 _EXTENSION_MODULE = re.compile(r"\.(cpython-[^.]+|abi3|cp\d+-[^.]+)\.so$|\.pyd$", re.IGNORECASE)
 NATIVE_INDEX = "NATIVE.txt"
+#: Binaries that a wheel keeps in its own package folder, so the loose-library
+#: scan never sees them, but whose licence is not the wheel's: file name (lower
+#: case) -> the notice inside THIRD_PARTY_LICENSES that must come with it.
+#: PySide6 on Windows ships Qt's software OpenGL fallback, a Mesa llvmpipe build
+#: (MIT) made with LLVM (University of Illinois/NCSA); the wheel's licence files
+#: mention neither (the final audit found it in the Windows Desktop zip).
+PACKAGE_BINARY_NOTICES = {"opengl32sw.dll": "_notices/native/mesa-llvmpipe.txt"}
 
 
 def loose_native_libraries(root: Path) -> list[Path]:
@@ -311,6 +321,31 @@ def unlicensed_native_libraries(root: Path, licenses: Path) -> list[str]:
             )
         elif not (licenses / notice).is_file():
             errors.append(f"THIRD_PARTY_LICENSES/{notice} (for {path.name}) is missing")
+    return errors
+
+
+def package_binaries(root: Path) -> list[Path]:
+    """Files of ``root`` named in ``PACKAGE_BINARY_NOTICES``, outside the licence folder."""
+    found: list[Path] = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file() or path.name.lower() not in PACKAGE_BINARY_NOTICES:
+            continue
+        if "THIRD_PARTY_LICENSES" in path.relative_to(root).parts:
+            continue
+        found.append(path)
+    return found
+
+
+def unlicensed_package_binaries(root: Path, licenses: Path) -> list[str]:
+    errors: list[str] = []
+    for path in package_binaries(root):
+        notice = PACKAGE_BINARY_NOTICES[path.name.lower()]
+        if not (licenses / notice).is_file():
+            errors.append(
+                f"third-party binary without its licence notice "
+                f"(THIRD_PARTY_LICENSES/{notice} is missing; "
+                f"build_license_bundle.py --frozen writes it): {path}"
+            )
     return errors
 
 
@@ -369,6 +404,7 @@ def check(
                 if not (licenses / "_notices" / filename).is_file():
                     errors.append(f"THIRD_PARTY_LICENSES/_notices/{filename} is missing")
             errors.extend(unlicensed_native_libraries(root, licenses))
+            errors.extend(unlicensed_package_binaries(root, licenses))
     return errors
 
 

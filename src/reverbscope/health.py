@@ -31,6 +31,7 @@ from reverbscope.models.result import (
     EXCITATION_SOURCE_DECLARED,
     EXCITATION_SOURCE_UNKNOWN,
     KIND_SAMPLE_RATE,
+    KIND_TIME_STRETCH,
     AnalysisResult,
     DecayMetric,
     EnergyMetric,
@@ -446,6 +447,19 @@ def speed_fix(speed: PlaybackSpeed) -> tuple[tuple[str, ...], tuple[str, ...]]:
             ),
             (_("Where the project's sample rate is set:"), *_daw_lines(DAW_SAMPLE_RATE_SETTINGS)),
         )
+    if speed.kind not in (KIND_SAMPLE_RATE, KIND_TIME_STRETCH):
+        # A diagnosis this version does not know (a newer file): the speed
+        # error stands, its cause is not claimed, and both settings are named.
+        return (
+            (
+                _(
+                    "The cause of the speed error was not recognised ({kind}). Check the "
+                    "project's sample rate against the test signal's and switch time-stretching "
+                    "off for the clip, then measure again."
+                ).format(kind=speed.kind),
+            ),
+            (),
+        )
     return (
         (
             _(
@@ -664,10 +678,11 @@ def _distortion(result: AnalysisResult) -> HealthCheck | None:
                 title,
                 _(
                     "harmonic {order} of the sweep at {level:.0f} dB re the direct sound: the "
-                    "loudspeaker or the chain distorts. The harmonic responses are separated in "
-                    "time from the room response, so the decay is not spoilt, but the chain is "
-                    "near its limit"
+                    "loudspeaker or the chain distorts. The harmonic responses arrive ahead of "
+                    "the room response, but their own decays run into it and can lengthen the "
+                    "decay of some bands, and the chain is near its limit"
                 ).format(order=strongest.order, level=strongest.level_db),
+                affects=(METRIC_DECAY,),
                 evidence=evidence,
                 fix=(_("Lower the playback level by 6 to 10 dB and measure again."),),
             )
@@ -691,18 +706,48 @@ def _distortion(result: AnalysisResult) -> HealthCheck | None:
 
 #: Stored (English) device diagnostics: the take's warnings name buffer
 #: problems, and the decay's reason names timing problems.
+#: The stream's own flags, as older results stored them: a whole warning,
+#: never a substring ("no overflow was detected" is not a fault).
+_DEVICE_FLAGS = frozenset(
+    {"input underflow", "input overflow", "output underflow", "output overflow"}
+)
+#: The sentences today's producers write (audio/portaudio.py, core/pipeline.py).
 _DEVICE_MARKERS = ("buffer problem", "the audio device reported timing problems")
+#: The stream ran at another rate than requested: the time scale is wrong.
+_DEVICE_RATE_MARKER = ("the audio stream reported ", "instead of the requested")
+
+
+def _device_fault(warning: str) -> bool:
+    """Whether ``warning`` reports a fault of the audio device during the take.
+
+    A refused *separate* loopback recording with device problems is not
+    one: its sentence names the loopback, and the microphone take stands.
+    """
+    text = warning.strip()
+    if text in _DEVICE_FLAGS:
+        return True
+    if any(marker in text for marker in _DEVICE_MARKERS):
+        return True
+    return text.startswith(_DEVICE_RATE_MARKER[0]) and _DEVICE_RATE_MARKER[1] in text
 
 
 def _device(result: AnalysisResult) -> HealthCheck | None:
-    reported = [w for w in result.warnings if any(marker in w for marker in _DEVICE_MARKERS)]
+    reported = [w for w in result.warnings if _device_fault(w)]
     if not reported:
         return None
+    first = reported[0].strip()
+    if first in _DEVICE_FLAGS:
+        # An older result stores the bare flag, which localize() cannot
+        # translate on its own: say it as the recorder says it now.
+        first = (
+            "the audio device reported 1 buffer problem(s) during the take "
+            f"({first}); the recording may contain dropouts"
+        )
     return HealthCheck(
         "device",
         HealthStatus.INVALID,
         _("Audio device"),
-        localize(reported[0]),
+        localize(first),
         affects=(METRIC_DECAY, METRIC_ENERGY, METRIC_FREQUENCY_RESPONSE, METRIC_REFLECTIONS),
         evidence={"warnings": reported},
         fix=(
@@ -755,9 +800,11 @@ def _dropouts(result: AnalysisResult) -> HealthCheck | None:
         status,
         title,
         reason,
-        affects=(METRIC_FREQUENCY_RESPONSE, METRIC_RESONANCES)
-        if status is HealthStatus.WARNING
-        else (METRIC_FREQUENCY_RESPONSE, METRIC_RESONANCES, METRIC_DECAY, METRIC_ENERGY),
+        # A dropout also leaves a burst in the deconvolved response, which the
+        # decays and the energy parameters of the bands below it can read
+        # (docs/MEASUREMENT_METHODOLOGY.md, the dropout limit): a warning
+        # lists them too.
+        affects=(METRIC_FREQUENCY_RESPONSE, METRIC_RESONANCES, METRIC_DECAY, METRIC_ENERGY),
         evidence=evidence,
         fix=(
             _(

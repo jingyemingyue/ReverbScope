@@ -2033,6 +2033,56 @@ def _candidate_profile(candidate_session: object) -> str | None:
         return None
 
 
+def _saved_results(comparison: Any) -> tuple[Any, Any]:
+    """The two results a saved comparison was made from, where they can still be read.
+
+    ``comparison.json`` stores the folders of the two sessions and not their
+    health, and ``compare`` judged with both results at hand. ``show`` reads
+    them again so that one comparison has one verdict; a folder that moved or
+    is damaged is not an error here: that side is ``None``.
+    """
+    from reverbscope.io.session_store import load_measurement
+
+    results = []
+    for folder in (comparison.baseline_session, comparison.candidate_session):
+        result = None
+        # compare stores the session folder; nothing else is opened for it.
+        if isinstance(folder, str) and folder and Path(folder).is_dir():
+            try:
+                result = load_measurement(folder).result
+            except (ReverbScopeError, OSError):
+                result = None
+        results.append(result)
+    return results[0], results[1]
+
+
+def _health_not_considered(verdict: Any, baseline: Any, candidate: Any) -> Any:
+    """``verdict``, naming in its conditions each side whose result could not be read."""
+    from dataclasses import replace
+
+    missing = [
+        side
+        for side, result in (
+            (pgettext("comparison side", "baseline"), baseline),
+            (pgettext("comparison side", "candidate"), candidate),
+        )
+        if result is None
+    ]
+    if not missing:
+        return verdict
+    if len(missing) == 2:
+        note = _(
+            "The measurement health of the two takes was not considered: their sessions are "
+            "no longer where the comparison was saved."
+        )
+    else:
+        note = _(
+            "The measurement health of the {side} take was not considered: its session is "
+            "no longer where the comparison was saved."
+        ).format(side=missing[0])
+    return replace(verdict, conditions=(*verdict.conditions, note))
+
+
 def cmd_show(args: argparse.Namespace) -> int:
     from reverbscope.interpretation import interpret, interpret_comparison
     from reverbscope.io.session_store import (
@@ -2061,8 +2111,16 @@ def cmd_show(args: argparse.Namespace) -> int:
         comparison = load_comparison(args.path)
         profile = _resolve_profile(args, _candidate_profile(comparison.candidate_session))
         findings = interpret_comparison(comparison, profile)
-        # From the file alone: the results' health is not stored in it.
-        verdict = judge_comparison(comparison, profile)
+        # Judged as `compare` judged it, with both results at hand, so that a
+        # comparison has one verdict: each side's measurement health counts.
+        # The health is not stored in comparison.json; where a session cannot
+        # be read any more, the verdict says that its health was not considered.
+        baseline, candidate = _saved_results(comparison)
+        verdict = _health_not_considered(
+            judge_comparison(comparison, profile, baseline=baseline, candidate=candidate),
+            baseline,
+            candidate,
+        )
         if _use_json(args):
             payload = comparison.to_dict()
             payload["findings"] = [f.to_dict() for f in findings]
@@ -2345,6 +2403,35 @@ def cmd_export(args: argparse.Namespace) -> int:
     return 0
 
 
+#: How many left-out positions a project command names before it counts the rest.
+MISSING_POSITIONS_SHOW_LIMIT = 10
+
+
+def _warn_missing_positions(args: argparse.Namespace, project: Path) -> None:
+    """Say which listed positions a project command could not read (stderr).
+
+    ``project show`` and ``project average`` list the takes that still exist; a
+    folder that was moved, renamed or deleted would otherwise drop out of the
+    list, and out of the average, without a word.
+    """
+    from reverbscope.io.project_store import missing_project_sessions
+
+    missing = missing_project_sessions(project)
+    if not missing:
+        return
+    err = _console(args, sys.stderr)
+    for label, stored in missing[:MISSING_POSITIONS_SHOW_LIMIT]:
+        text = _("position {label}: {path} has no session.json; it is left out").format(
+            label=printable(label, single_line=True), path=printable(stored, single_line=True)
+        )
+        print(render_status(err, "warn", text, keep=True), file=sys.stderr)
+    if len(missing) > MISSING_POSITIONS_SHOW_LIMIT:
+        more = _("... and {n} more positions left out").format(
+            n=len(missing) - MISSING_POSITIONS_SHOW_LIMIT
+        )
+        print(render_status(err, "warn", more, keep=True), file=sys.stderr)
+
+
 def cmd_project(args: argparse.Namespace) -> int:
     from reverbscope.core.averaging import average_decay
     from reverbscope.io.project_store import (
@@ -2353,6 +2440,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         is_project,
         list_project_sessions,
         load_project,
+        missing_project_sessions,
         save_project,
     )
     from reverbscope.io.session_store import load_measurement
@@ -2394,11 +2482,14 @@ def cmd_project(args: argparse.Namespace) -> int:
         for label, path in list_project_sessions(args.project):
             tag = printable(label, single_line=True) if label else _("(unlisted)")
             print(f"  {tag}\t{printable(str(path), single_line=True)}")
+        _warn_missing_positions(args, args.project)
         return 0
     if command == "average":
         if not is_project(args.project):
             raise ReverbScopeError(_("no project.json in {path}").format(path=args.project))
         items = list_project_sessions(args.project)
+        # Before the "no sessions" error, which would otherwise not say why.
+        _warn_missing_positions(args, args.project)
         if not items:
             raise ReverbScopeError(_("no sessions in {path}").format(path=args.project))
         loaded = [load_measurement(path) for _label, path in items]
@@ -2440,6 +2531,12 @@ def cmd_project(args: argparse.Namespace) -> int:
         project = load_project(args.project)
         entries: list[ProjectEntry] = []
         skipped: list[tuple[str, str]] = []
+        # A position whose folder is gone is skipped like a damaged session, in
+        # the overview itself (it used to vanish: "3 position(s)" after four).
+        for label, stored in missing_project_sessions(args.project):
+            skipped.append(
+                (stored, _("position {label}: no session.json there").format(label=label))
+            )
         for label, path in list_project_sessions(args.project):
             try:
                 measurement = load_measurement(path)
@@ -2794,6 +2891,25 @@ def main(argv: Sequence[str] | None = None) -> int:
                 err,
                 _os_error_text(exc),
                 detail=nothing_played(),
+                hints=[f"reverbscope {args.command} --help"],
+            ),
+            file=sys.stderr,
+        )
+        return 1
+    except MemoryError:
+        # A long recording: the analysis holds roughly 140 bytes per sample. The
+        # user's to fix (cut it, free memory), not a bug in ReverbScope.
+        trace()
+        print(
+            render_error(
+                err,
+                _("not enough memory to finish this command"),
+                detail=_(
+                    "A long recording needs a lot of memory: about 2 GB for 5 minutes at "
+                    "48 kHz, in proportion to its length. Cut it to the sweep plus a few "
+                    "seconds of silence on each side (any audio editor or DAW does it), or "
+                    "close other programs, and run the command again."
+                ),
                 hints=[f"reverbscope {args.command} --help"],
             ),
             file=sys.stderr,

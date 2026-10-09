@@ -105,6 +105,12 @@ No microphone and no audio interface needed; nothing is played.
   reverbscope demo
   ```
 
+  The downloads do not put `reverbscope` on your `PATH`. Open the terminal in
+  the folder that holds it (the Windows installer: `%LOCALAPPDATA%\Programs\ReverbScope`)
+  or give its full path (macOS Desktop Edition:
+  `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`); see
+  [Command line](#command-line).
+
 ![reverbscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
 `reverbscope demo` simulates one room at two microphone positions, runs the
@@ -297,8 +303,11 @@ mistaken for room-agnostic truth. The GUI offers the same selector in both
 measurement modes.
 
 `results/` receives `result.json` (all metrics and curves),
-`impulse_response.wav` (raw IR, float32) and `session.json` (measurement
-metadata). Raw recordings are never modified. `reverbscope show` and the GUI
+`impulse_response.wav` (raw IR, float32), `session.json` (measurement
+metadata), the sweep's `sweep.reverbscope-sweep.json` and a copy of the
+recording as `recording.wav` (not with `--no-copy-recording` or
+`reverbscope config copy-recording off`). The recording you pass in is never
+modified. `reverbscope show` and the GUI
 **Open Session** / Home session list reopen that directory; the IR WAV is
 the authoritative sample record (`result.json` stores metrics, not IR
 samples). Recently opened or saved sessions are remembered under
@@ -392,7 +401,7 @@ A sourced comparison with other tools is in [docs/COMPARISON.md](docs/COMPARISON
   ISO 3382-1/-2, ...); see [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md).
 * **Honest numbers** – dBFS unless calibrated, validity flags on every metric,
   no pseudo-scientific room score.
-* **Measurement health first** – every result opens with the checks made on
+* **Measurement health on every result** – every result carries the checks made on
   the take itself (sweep, playback speed, direct sound, level, distortion,
   dropouts, decay range, noise floor, recording length), each good, warning,
   invalid or unknown with the reason, the figures it affects and what to do

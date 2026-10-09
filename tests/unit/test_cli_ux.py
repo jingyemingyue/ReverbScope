@@ -688,6 +688,30 @@ def test_a_malformed_channel_list_is_a_usage_error(
     assert "bug" not in err
 
 
+def test_running_out_of_memory_is_told_plainly_and_is_not_called_a_bug(
+    cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A 30-minute recording needs about 12 GB; the MemoryError then ended the
+    command as "unexpected MemoryError ... This is a bug in ReverbScope"."""
+    import importlib
+
+    cli_main = importlib.import_module("reverbscope.cli.main")
+    _root, monkeypatch = cli
+
+    def boom(_args: object) -> int:
+        raise MemoryError("Unable to allocate 5.15 GiB for an array with shape (337493, 2048)")
+
+    monkeypatch.setitem(cli_main.COMMANDS, "schema", boom)
+    code, out, err = _run(["schema", "result"], capsys)
+    assert code == 1 and out == ""
+    assert "not enough memory to finish this command" in err
+    assert "about 2 GB for 5 minutes at 48 kHz" in err
+    assert "bug" not in err and "unexpected" not in err and "Traceback" not in err
+    code, out, err = _run(["--lang", "zh_CN", "schema", "result"], capsys)
+    assert code == 1 and out == ""
+    assert "内存不足" in err and "bug" not in err.lower()
+
+
 def test_output_channel_zero_is_refused_before_the_take(
     cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
 ) -> None:

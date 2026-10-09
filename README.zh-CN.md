@@ -93,6 +93,10 @@
   ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
   保存后不管系统怎么设置都使用中文，`reverbscope config language auto` 改回跟随系统。
 
+  下载的安装包不会把 `reverbscope` 加入 `PATH`：请在它所在的文件夹里打开终端（Windows 安装程序：
+  `%LOCALAPPDATA%\Programs\ReverbScope`），或者写出它的完整路径（macOS 桌面版：
+  `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`），详见[命令行](#命令行)。
+
 ![终端中的 reverbscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
 `reverbscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步
@@ -250,8 +254,10 @@ reverbscope gui
 `drums`、`room_mic` 和 `choir` 各有针对该类录音的阈值和措辞）。报告会在 `Interpretation`（解读）旁边
 标出配置名称，以免有人把这些建议误当成与录音用途无关的客观结论。GUI 在两种测量模式中都提供同样的选择。
 
-`results/` 中会生成 `result.json`（全部指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）
-和 `session.json`（测量元数据）。原始录音永远不会被修改。`reverbscope show` 以及 GUI 中的
+`results/` 中会生成 `result.json`（全部指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）、
+`session.json`（测量元数据）、扫频的 `sweep.reverbscope-sweep.json`，以及录音的副本 `recording.wav`
+（用 `--no-copy-recording` 或 `reverbscope config copy-recording off` 可以不复制）。你传入的原始录音
+永远不会被修改。`reverbscope show` 以及 GUI 中的
 **打开会话**（**Open Session**）和主页的会话列表都可以重新打开该目录；脉冲响应 WAV 是权威的采样记录
 （`result.json` 保存的是指标，不保存脉冲响应的采样）。最近打开或保存过的会话记录在 `$REVERBSCOPE_HOME`
 下（默认为 `~/.reverbscope`）。
@@ -338,7 +344,7 @@ for r in result.reflections.reflections:
 * **科学正确性优先于功能** —— 算法来自已发表的论文和标准（Farina 2000、Schroeder 1965、Lundeby 1995、
   ISO 3382-1/-2 等）；见 [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md)。
 * **诚实的数字** —— 未经校准时一律使用 dBFS，每个指标都有有效性标记，不提供伪科学的房间评分。
-* **测量健康优先** —— 每个结果一开始就列出对这次录音本身的检查（扫频、播放速度、直达声、电平、失真、采样丢失、衰减范围、本底噪声、录音长度），每项为良好、警告、无效或未知，附原因、受影响的指标和下一步；扫频播放速度不对时会列出各 DAW 设置采样率的位置。
+* **每个结果都有测量健康** —— 每个结果都附有对这次录音本身的检查（扫频、播放速度、直达声、电平、失真、采样丢失、衰减范围、本底噪声、录音长度），每项为良好、警告、无效或未知，附原因、受影响的指标和下一步；扫频播放速度不对时会列出各 DAW 设置采样率的位置。
 * **多个位置，一份总览** —— 项目文件夹按话筒位置收集一个房间的多次测量；总览说明每次测量是否契合录音配置、每个位置的多次测量是否可重复、它与第一个位置相比如何，以及接下来该测什么，而不做排名。
 * **净室实现与许可证规范** —— 不内置任何第三方源代码（[docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)）；
   每一项依赖和每一个参考过的代码仓库都经过审查

@@ -39,7 +39,7 @@
 ## 2. 各平台的主机 API
 
 每个 PortAudio 设备只属于一种主机 API [9][13]，因此一个音频接口可经由几种主机 API 访问，
-就会出现几次（`reverbscope devices` 在方括号中显示主机 API）。排名 1 为最佳。“默认延迟”是 PortAudio 的默认建议值（低 / 高），
+就会出现几次（`reverbscope devices` 在单独一列显示主机 API）。排名 1 为最佳。“默认延迟”是 PortAudio 的默认建议值（低 / 高），
 不是实测的往返延迟。
 
 ### Windows

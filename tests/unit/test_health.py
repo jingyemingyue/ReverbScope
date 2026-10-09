@@ -111,6 +111,8 @@ def test_dropouts_in_the_sweep_are_found_and_placed(short_sweep: SweepSettings) 
     assert json.dumps(assess(result).to_dict())  # evidence holds plain numbers only
     assert check.status is HealthStatus.WARNING  # 13 ms in all: below the invalid limit
     assert "2 dropout" in check.reason and "frequency_response" in check.affects
+    # A burst in the deconvolved response disturbs the low bands' decays too.
+    assert "decay" in check.affects and "energy" in check.affects
     assert check.evidence["count"] == 2
     samples[gap : gap + int(DROPOUTS_INVALID_MS / 1000.0 * rate) + 10] = 0.0
     worse = _analysed(short_sweep, AudioSignal(samples=samples, sample_rate=rate, source="daw"))
@@ -351,3 +353,125 @@ def test_the_daw_steps_name_what_the_daw_guide_names() -> None:
     names = {daw for daw, _text in (*DAW_SAMPLE_RATE_SETTINGS, *DAW_STRETCH_SETTINGS)}
     for daw in names:
         assert daw.split(" / ")[0] in guide, daw
+
+
+# --- Cases taken over from the independent health implementation (PR #46) ----------
+
+
+DEVICE_WARNINGS = (
+    "the audio device reported 2 buffer problem(s) during the take (input overflow, output "
+    "underflow); the recording may contain dropouts",
+    "the audio stream reported 44100 Hz instead of the requested 48000 Hz; the recording's "
+    "time scale cannot be trusted",
+    "the audio device reported timing problems in this take, so its decay and energy metrics "
+    "are unreliable. Check the stream settings and repeat the measurement",
+    "input underflow",
+    "input overflow",
+    "output underflow",
+    "output overflow",
+)
+
+
+@pytest.mark.parametrize("warning", DEVICE_WARNINGS)
+def test_every_device_warning_is_invalid_even_with_a_high_confidence_direct_sound(
+    short_sweep: SweepSettings, warning: str
+) -> None:
+    """The stream's own flags (older results), the buffer and timing sentences
+    and a stream that ran at another rate than requested all invalidate the
+    take; the direct sound's confidence does not outrank a wrong time base."""
+    from dataclasses import replace
+
+    result = replace(_analysed(short_sweep, _clean(short_sweep)), warnings=(warning, warning))
+    report = assess(result)
+    device = _by_id(result)["device"]
+    assert report.overall is HealthStatus.INVALID
+    assert device.status is HealthStatus.INVALID  # type: ignore[attr-defined]
+    assert "buffer" in " ".join(device.fix)  # type: ignore[attr-defined]
+
+
+def test_incidental_timing_words_do_not_invent_a_device_fault(short_sweep: SweepSettings) -> None:
+    from dataclasses import replace
+
+    result = replace(
+        _analysed(short_sweep, _clean(short_sweep)),
+        warnings=("No underflow or overflow was detected; check another limitation.",),
+    )
+    assert "device" not in _by_id(result)
+    assert assess(result).overall is HealthStatus.GOOD
+
+
+def test_a_refused_separate_loopback_does_not_invalidate_the_microphone_take(
+    short_sweep: SweepSettings,
+) -> None:
+    """The loopback's own device problems refuse the compensation (a warning on
+    the loopback check); they are not a fault of the microphone take."""
+    from dataclasses import replace
+
+    from reverbscope.models.result import LoopbackResult
+
+    reason = (
+        "the separate loopback recording has device timing problems; loopback compensation "
+        "was not applied"
+    )
+    result = _analysed(short_sweep, _clean(short_sweep))
+    result = replace(
+        result,
+        warnings=(reason,),
+        impulse_response=replace(
+            result.impulse_response, loopback=LoopbackResult(2, False, reason)
+        ),
+    )
+    checks = _by_id(result)
+    assert "device" not in checks
+    assert checks["loopback"].status is HealthStatus.WARNING  # type: ignore[attr-defined]
+    assert assess(result).overall is HealthStatus.WARNING
+
+
+def test_an_unknown_playback_diagnosis_is_unknown_not_a_time_stretch(
+    short_sweep: SweepSettings,
+) -> None:
+    from dataclasses import replace
+
+    result = _analysed(short_sweep, _clean(short_sweep))
+    result = replace(
+        result,
+        impulse_response=replace(
+            result.impulse_response, playback_speed=PlaybackSpeed(0.92, "future_diagnosis", 48000)
+        ),
+    )
+    check = _by_id(result)["playback_speed"]
+    # The speed error itself is evidence: the take is invalid. Its cause is
+    # not claimed: no DAW stretch steps are given for a diagnosis this
+    # version does not know.
+    assert check.status is HealthStatus.INVALID  # type: ignore[attr-defined]
+    assert "not recognised" in " ".join(check.fix)  # type: ignore[attr-defined]
+    assert check.details == ()  # type: ignore[attr-defined]
+    assert not any("Warp" in line for line in check.fix)  # type: ignore[attr-defined]
+
+
+def test_assessing_a_result_changes_nothing_in_it(short_sweep: SweepSettings) -> None:
+    result = _analysed(short_sweep, _clean(short_sweep))
+    before = json.dumps(result.to_dict(), sort_keys=True)
+    assess(result)
+    assert json.dumps(result.to_dict(), sort_keys=True) == before
+
+
+@pytest.mark.parametrize(
+    "flag", ["input underflow", "input overflow", "output underflow", "output overflow"]
+)
+def test_a_bare_device_flag_is_said_in_chinese(short_sweep: SweepSettings, flag: str) -> None:
+    """The flags older results carry were shown to a Chinese reader as two
+    English words, because localize() translates them only inside the
+    buffer-problem sentence."""
+    from dataclasses import replace
+
+    from reverbscope.i18n import activate
+
+    result = replace(_analysed(short_sweep, _clean(short_sweep)), warnings=(flag,))
+    activate("zh_CN")
+    try:
+        reason = _by_id(result)["device"].reason  # type: ignore[attr-defined]
+    finally:
+        activate("en")
+    assert flag not in reason
+    assert any("\u4e00" <= char <= "\u9fff" for char in reason)
