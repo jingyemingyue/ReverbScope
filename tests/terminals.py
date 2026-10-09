@@ -109,7 +109,11 @@ class Terminal(io.TextIOWrapper):
 
     def __init__(self, *, tty: bool, encoding: str, errors: str = "strict") -> None:
         self.raw = io.BytesIO()
-        super().__init__(self.raw, encoding=encoding, errors=errors, write_through=True)
+        # newline="\n": write what the program wrote. The default turns every "\n" into
+        # os.linesep, so on Windows each line ended in "\r" and counted a column too wide.
+        super().__init__(
+            self.raw, encoding=encoding, errors=errors, write_through=True, newline="\n"
+        )
         self._tty = tty
 
     def isatty(self) -> bool:
