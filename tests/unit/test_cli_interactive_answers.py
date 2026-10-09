@@ -210,6 +210,7 @@ def test_a_file_name_that_starts_with_a_dash_is_not_taken_for_an_option() -> Non
     assert path_arg(Path("dir/-take.wav")) == str(Path("dir/-take.wav"))
     Path("-take.wav").write_bytes(b"RIFF")
     Path("-session").mkdir()
+    (Path("-session") / "project.json").write_text("{}")  # the menu asks for a project
     visit = drive(["5", "-take.wav", "6", "-session", "-session", "n", "7", "-session", "q"])
     dash = os.curdir + os.sep
     assert visit.runs == [

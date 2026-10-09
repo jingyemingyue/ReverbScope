@@ -37,6 +37,7 @@ from reverbscope.cli.console import COLOR_MODES, Console, cell_width, shell_comm
 from reverbscope.cli.render import SAFETY_NOTE_SHOWN, render_error, render_safety_note
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, clause_join, current_locale, list_join, localize, pgettext
+from reverbscope.io.project_store import is_project
 from reverbscope.io.session_store import SESSION_FILE
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
@@ -247,29 +248,38 @@ class Session:
         default: Path | None = None,
         exists: bool = True,
         folder: bool = False,
+        file: bool = False,
     ) -> Path:
-        """A path, asked again while it does not exist (when it must)."""
+        """A path, asked again while it does not exist (when it must).
+
+        ``folder`` asks for a folder (or a ``session.json``), ``file`` for a
+        file that exists: a folder is refused in words, not accepted and
+        reported as a missing file one step later.
+        """
+        shown = str(default) if default is not None else ""
         while True:
-            answer = self.ask(prompt, str(default) if default is not None else "")
-            path = parse_path(answer)
+            answer = self.ask(prompt, shown)
+            # The default is taken as it was offered: a path that was typed or
+            # dragged is cleaned (quotes, the backslashes of a drag and drop),
+            # one the menu offered is not text that anyone typed (``bs\dir``).
+            path = default if default is not None and answer == shown else parse_path(answer)
             if path is None:
                 raise CancelledError
             if not exists:
                 return path
             if folder and (_is_dir(path) or (path.name == SESSION_FILE and _is_file(path))):
                 return path
-            if not folder and _exists(path):
+            if file and _is_file(path):
                 return path
-            self.say(
-                self.console.status(
-                    "error",
-                    (
-                        _("{path} is not a folder; try again, or leave empty to go back.")
-                        if folder
-                        else _("{path} does not exist; try again, or leave empty to go back.")
-                    ).format(path=path),
-                )
-            )
+            if not folder and not file and _exists(path):
+                return path
+            if folder:
+                text = _("{path} is not a folder; try again, or leave empty to go back.")
+            elif file and _is_dir(path):
+                text = _("{path} is a folder, not a file; try again, or leave empty to go back.")
+            else:
+                text = _("{path} does not exist; try again, or leave empty to go back.")
+            self.say(self.console.status("error", text.format(path=path)))
 
     def ask_yes(self, prompt: str) -> bool:
         """Yes only for an explicit yes; Enter, anything else, is no."""
@@ -315,10 +325,14 @@ def _sweep(session: Session) -> list[str]:
 
 
 def _analyze(session: Session) -> list[str]:
-    recording = session.ask_path(_("The recording exported from your DAW (WAV, AIFF, CAF, FLAC)"))
+    recording = session.ask_path(
+        _("The recording exported from your DAW (WAV, AIFF, CAF, FLAC)"), file=True
+    )
     beside = recording.parent / "sweep.wav"
     sweep = session.ask_path(
-        _("The test signal that was played"), default=beside if beside.is_file() else None
+        _("The test signal that was played"),
+        default=beside if beside.is_file() else None,
+        file=True,
     )
     out = session.ask(_("Folder to save the session in (empty: show only)"))
     argv = ["analyze", "--recording", path_arg(recording), "--sweep", path_arg(sweep)]
@@ -455,8 +469,20 @@ def _compare(session: Session) -> list[str]:
 
 
 def _overview(session: Session) -> list[str]:
-    project = session.ask_path(_("The project folder"), folder=True)
-    return ["project", "overview", path_arg(project)]
+    while True:
+        project = session.ask_path(_("The project folder"), folder=True)
+        if is_project(project):
+            return ["project", "overview", path_arg(project)]
+        # The menu has no item that makes a project: the command is named.
+        session.say(
+            session.console.status(
+                "error",
+                _(
+                    "{path} has no project.json; make a project first with "
+                    "reverbscope project init --out <folder>, or try another folder."
+                ).format(path=project),
+            )
+        )
 
 
 def menu_items(*, terminal_edition: bool = False) -> list[MenuItem]:

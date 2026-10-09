@@ -4110,7 +4110,7 @@ msgid "{value} is not a comma-separated list of channel numbers (e.g. 1,2)"
 msgstr "{value} 不是以逗号分隔的声道编号列表（例如 1,2）"
 
 msgid "no project.json in {path}"
-msgstr "{path} 中没有 project.json"
+msgstr "没有找到 project.json：{path}"
 
 msgid "no sessions in {path}"
 msgstr "{path} 中没有会话"
@@ -5977,3 +5977,9 @@ msgstr "文件名必须以 .wav 等音频扩展名结尾"
 msgctxt "status"
 msgid "notice"
 msgstr "提示"
+
+msgid "{path} is a folder, not a file; try again, or leave empty to go back."
+msgstr "{path} 是文件夹，不是文件；请重试，或留空返回。"
+
+msgid "{path} has no project.json; make a project first with reverbscope project init --out <folder>, or try another folder."
+msgstr "{path} 里没有 project.json；请先用 reverbscope project init --out <文件夹> 建立项目，或换一个文件夹。"

@@ -54,6 +54,7 @@ def test_every_item_builds_its_command_and_shows_it(tmp_path: Path) -> None:
     sweep.write_bytes(b"RIFF")
     for name in ("a", "b", "room"):
         (tmp_path / name).mkdir()
+    (tmp_path / "room" / "project.json").write_text("{}")  # the menu asks for a project
     code, runs, out = _menu(
         [
             "1",
