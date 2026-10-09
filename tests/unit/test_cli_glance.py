@@ -47,6 +47,11 @@ from reverbscope.models.result import ClippingCheck
 
 WIDTHS = (48, 60, 80, 100)
 LANGS = ("en", "zh_CN")
+#: The narrowest console that draws the overview as a table, and the narrowest
+#: that gives it a status column as well: its result column is kept 28 columns
+#: wide, and an English topic and status are wider than a Chinese one.
+TABLE_FROM = {"en": 56, "zh_CN": 48}
+STATUS_FROM = {"en": 68, "zh_CN": 56}
 
 #: The ways a stream is drawn: Unicode frames, the same in colour, ASCII frames
 #: (a stream that cannot write the box glyphs) and the two legacy Windows code
@@ -124,7 +129,7 @@ def _tables(text: str) -> list[list[str]]:
     return blocks
 
 
-def _check_frames(text: str, width: int) -> list[list[str]]:
+def _check_frames(text: str, width: int, *, tables_expected: bool = True) -> list[list[str]]:
     """Every frame line of ``text`` is as wide as its siblings; returns the tables."""
     lines = [strip_ansi(line) for line in text.splitlines()]
     # The title's panel and the rules through the section headings span the console.
@@ -135,7 +140,7 @@ def _check_frames(text: str, width: int) -> list[list[str]]:
         if line.startswith(("── ", "-- ")):
             assert cell_width(line) == width, line
     tables = _tables(text)
-    assert tables, text
+    assert bool(tables) or not tables_expected, text
     for table in tables:
         assert len({cell_width(line) for line in table}) == 1, "\n".join(table)
         assert cell_width(table[0]) <= width, "\n".join(table)
@@ -196,13 +201,14 @@ def test_every_frame_line_has_the_display_width_of_its_siblings(
             # ASCII frames, marks and signs; "°" stays where the stream can write it.
             assert {char for char in shown if not char.isascii()} <= {"°"}, name
         if name in ("demo", "analysis", "second", "comparison"):
-            tables = _check_frames(text, width)
+            drawn = width >= TABLE_FROM[language]
+            tables = _check_frames(text, width, tables_expected=drawn)
             # The overviews are the tables that span the console: three in the demo.
             spanning = [t for t in tables if cell_width(t[0]) == width]
             if name == "demo":
-                assert len(spanning) == 3, name
+                assert len(spanning) == (3 if drawn else 0), name
             if name == "comparison":
-                assert spanning, name
+                assert bool(spanning) == drawn, name
         for line in _unframed(text):
             assert cell_width(line) <= width, (name, width, line)
         if variant in ("colour", "ascii-colour"):
@@ -221,9 +227,12 @@ def test_the_overview_table_spans_the_console_whatever_it_holds(
         comparison_at_a_glance(console, demo.comparison),
     ):
         text = "\n".join(lines)
+        if width < TABLE_FROM[language]:
+            assert _tables(text) == [], text  # the aligned lines of every release
+            continue
         (table,) = _tables(text)
         assert {cell_width(line) for line in table} == {width}, "\n".join(table)
-        if width >= 60 or language == "zh_CN":
+        if width >= STATUS_FROM[language]:
             # The status column is there, with the word.
             assert len(_positions(table[1], _SIDES)) == 4
 
@@ -405,9 +414,9 @@ def test_a_comparison_with_an_invalid_side_is_unsure_in_every_topic(demo: DemoRu
 
 def test_a_narrow_table_wraps_its_result_column_and_keeps_the_status(demo: DemoRun) -> None:
     with _in("zh_CN"):
-        lines = comparison_at_a_glance(_console(48), demo.comparison)
+        lines = comparison_at_a_glance(_console(56), demo.comparison)
     table = _table(lines)
-    assert all(cell_width(line) <= 48 for line in lines)
+    assert all(cell_width(line) <= 56 for line in lines)
     assert _cells(table[1])[1] == "状态" and _cells(table[3])[1] == "✓ 已对比"
     # A wrapped row continues under its result; the other cells stay empty.
     assert any(re.match(r"^  │ {10}│ {10}│ \S", line) for line in table), "\n".join(table)
@@ -418,24 +427,46 @@ def test_the_status_column_is_left_out_only_when_nothing_else_fits_and_the_table
 ) -> None:
     first = demo.takes[0].result
     findings = interpret(first, "vocal")
-    # English labels are the widest: at 48 columns the result column would be
-    # left under 16 columns, so the status column goes.
-    narrow = at_a_glance(_console(48), first, findings)
+    # The result column is kept 28 columns wide. English labels are the widest:
+    # up to 66 columns the status column goes.
+    narrow = at_a_glance(_console(60), first, findings)
     text = "\n".join(strip_ansi(line) for line in narrow)
     assert "Status" not in text and _cells(_table(narrow)[1]) == ["Topic", "Result"]
     assert "The status column is left out: widen the terminal to see it." in " ".join(text.split())
     assert "✓" in text and "!" in text  # the marks stay in front of the results
-    assert all(cell_width(line) <= 48 for line in narrow)
+    assert all(cell_width(line) <= 60 for line in narrow)
     # With room for it: the status column, and no note.
-    for width in (60, 80):
+    for width in (68, 80):
         wider = "\n".join(
             strip_ansi(line) for line in at_a_glance(_console(width), first, findings)
         )
         assert "Status" in wider and "left out" not in wider
-    # Chinese labels are short: the same 48 columns hold the status column.
+    # Chinese labels are short: 48 columns hold the table, 56 the status column too.
     with _in("zh_CN"):
-        chinese = "\n".join(strip_ansi(line) for line in at_a_glance(_console(48), first, findings))
+        lines = at_a_glance(_console(48), first, findings)
+        assert _cells(_table(lines)[1]) == ["方面", "结果"]
+        assert "已省略状态列" in "".join(strip_ansi("".join(lines)).split())
+        chinese = "\n".join(strip_ansi(line) for line in at_a_glance(_console(56), first, findings))
     assert "状态" in chinese and "已省略" not in chinese
+
+
+def test_a_terminal_too_narrow_for_a_readable_result_gets_the_aligned_lines(
+    demo: DemoRun,
+) -> None:
+    """A result squeezed into 16 columns wrapped into three or four lines of a few
+    words and the table was twice as tall as the lines (and cut words in two):
+    below 56 columns in English the overview is the aligned lines it always was."""
+    first = demo.takes[0].result
+    findings = interpret(first, "vocal")
+    for width in (48, 52, 54):
+        lines = at_a_glance(_console(width), first, findings)
+        assert _tables("\n".join(lines)) == [], width
+        assert lines[2].startswith("  Reverberation") and "!" in lines[2]
+        assert all(cell_width(line) <= width for line in lines)
+    # Where it is drawn, no result column is narrower than 28 columns.
+    for width in range(56, 70):
+        table = _table(at_a_glance(_console(width), first, findings))
+        assert cell_width(table[1].split("│")[-2]) - 2 >= 28, (width, table[1])
 
 
 def test_a_wrapped_result_keeps_the_colour_of_its_mark_when_the_status_column_is_left_out(
@@ -445,10 +476,10 @@ def test_a_wrapped_result_keeps_the_colour_of_its_mark_when_the_status_column_is
     is as coloured as the one in front of a result that fits."""
     first = demo.takes[0].result
     findings = interpret(first, "vocal")
-    boxed = at_a_glance(_console(48, "colour"), first, findings)
+    boxed = at_a_glance(_console(60, "colour"), first, findings)
     table = _table(boxed)
     assert "Status" not in "\n".join(table)
-    assert {cell_width(line) for line in table} == {48}
+    assert {cell_width(line) for line in table} == {60}
     # Six topics, each one's first line starts its result with a coloured mark.
     coloured = [line for line in boxed if re.search(r"\x1b\[[0-9;]*m[!✓]\x1b\[0m ", line)]
     assert len(coloured) == 6, "\n".join(boxed)

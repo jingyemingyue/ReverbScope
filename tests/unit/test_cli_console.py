@@ -136,6 +136,26 @@ def test_wrap_never_splits_a_path_that_has_chinese_in_it() -> None:
     assert all(cell_width(line) <= 12 for line in lines), lines
 
 
+def test_wrap_keeps_a_short_chinese_word_whole() -> None:
+    """``交|流声``, ``新出|现``, ``倍频|程``, ``换位|置``, ``调光|器`` and ``录|音长度``
+    were cut inside a table cell and in running text. A run of up to four
+    characters between spaces, Latin text and marks is a word; a sentence
+    still breaks wherever the line ends."""
+    for word in ("交流声", "倍频程", "新出现", "换位置", "调光器", "录音长度", "平均"):
+        text = f"-69.2 dBFS RMS · 50 Hz {word}，请检查接地、线材和电源，再重新测量一次"
+        for width in range(10, 40):
+            lines = wrap(text, width)
+            assert any(word in line for line in lines), (word, width, lines)
+            assert all(cell_width(line) <= width for line in lines), (word, width, lines)
+    # A longer run is a sentence: it fills the line.
+    assert wrap("这是一段没有任何标点的很长的中文句子", 10) == [
+        "这是一段没",
+        "有任何标点",
+        "的很长的中",
+        "文句子",
+    ]
+
+
 def test_wrap_splits_a_word_longer_than_the_line() -> None:
     lines = wrap("a-very-long-file-name-without-any-spaces.wav", 12, first="", rest="")
     assert all(cell_width(line) <= 12 for line in lines)

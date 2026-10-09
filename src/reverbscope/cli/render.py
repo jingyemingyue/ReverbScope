@@ -516,10 +516,11 @@ def _glance_rows(
 
     With frames a bordered table of three columns: the topic, a status (the
     mark and a word, for a comparison whether the topic was compared) and the
-    result, which wraps inside its column. Where even that does not fit, the
-    status column is left out (its mark stays in front of the result) and a
-    line under the table says so; where no table fits, and without frames,
-    aligned fields with the status symbol, as they always were.
+    result, which wraps inside its column but is kept at least
+    :data:`_RESULT_FLOOR` columns wide. Where it cannot be, the status column
+    is left out (its mark stays in front of the result) and a line under the
+    table says so; where no table fits, and without frames, aligned fields
+    with the status symbol, as they always were.
 
     A topic in ``doubtful`` (a check of the measurement health that bears on
     it is not good, or a side of a comparison is invalid) has ``? unsure`` in
@@ -559,6 +560,7 @@ def _glance_rows(
             wrap_column=2,
             expand=True,
             min_widths=(label_width,),
+            floor=_RESULT_FLOOR,
         )
         if table is not None:
             return table
@@ -568,6 +570,7 @@ def _glance_rows(
             wrap_column=1,
             expand=True,
             min_widths=(label_width,),
+            floor=_RESULT_FLOOR,
         )
         if table is not None:
             note = _("The status column is left out: widen the terminal to see it.")

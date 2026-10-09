@@ -18,72 +18,47 @@
 
 ── Position A ──────────────────────────────────
   close to the desk and the side wall
-  ┌────────────────────┬───────────────────────┐
-  │ Topic              │ Result                │
-  ├────────────────────┼───────────────────────┤
-  │ Reverberation      │ ! RT60 # s (T30) · │
-  │                    │ EDT # s            │
-  │ Clarity            │ ✓ C50 # dB · C80   │
-  │                    │ # dB · D50 # %   │
-  │ Early reflections  │ ! strongest # dB   │
-  │                    │ at # ms · # above   │
-  │                    │ # dB                │
-  │ Low end            │ ! potential           │
-  │                    │ resonances at # Hz  │
-  │                    │ (# dB)            │
-  │ Noise floor        │ ! # dBFS RMS ·    │
-  │                    │ mains hum at # Hz    │
-  │ Data quality       │ ✓ direct sound:       │
-  │                    │ confidence high · no  │
-  │                    │ warnings              │
-  └────────────────────┴───────────────────────┘
-  The status column is left out: widen the
-  terminal to see it.
+  Reverberation       ! RT60 # s (T30) · EDT
+                      # s
+  Clarity             ✓ C50 # dB · C80
+                      # dB · D50 # %
+  Early reflections   ! strongest # dB at
+                      # ms · # above # dB
+  Low end             ! potential resonances at
+                      # Hz (# dB)
+  Noise floor         ! # dBFS RMS · mains
+                      hum at # Hz
+  Data quality        ✓ direct sound: confidence
+                      high · no warnings
 
 ── Position B ──────────────────────────────────
   moved # m back from the desk
-  ┌────────────────────┬───────────────────────┐
-  │ Topic              │ Result                │
-  ├────────────────────┼───────────────────────┤
-  │ Reverberation      │ ! RT60 # s (T30) · │
-  │                    │ EDT # s            │
-  │ Clarity            │ ✓ C50 # dB · C80  │
-  │                    │ # dB · D50 # %   │
-  │ Early reflections  │ ✓ strongest # dB  │
-  │                    │ at # ms · # above   │
-  │                    │ # dB                │
-  │ Low end            │ ! potential           │
-  │                    │ resonances at # Hz  │
-  │                    │ (# dB)            │
-  │ Noise floor        │ ! # dBFS RMS ·    │
-  │                    │ mains hum at # Hz    │
-  │ Data quality       │ ✓ direct sound:       │
-  │                    │ confidence high · no  │
-  │                    │ warnings              │
-  └────────────────────┴───────────────────────┘
-  The status column is left out: widen the
-  terminal to see it.
+  Reverberation       ! RT60 # s (T30) · EDT
+                      # s
+  Clarity             ✓ C50 # dB · C80
+                      # dB · D50 # %
+  Early reflections   ✓ strongest # dB at
+                      # ms · # above # dB
+  Low end             ! potential resonances at
+                      # Hz (# dB)
+  Noise floor         ! # dBFS RMS · mains
+                      hum at # Hz
+  Data quality        ✓ direct sound: confidence
+                      high · no warnings
 
 ── Comparison A → B ────────────────────────────
-  ┌────────────────────┬───────────────────────┐
-  │ Topic              │ Result                │
-  ├────────────────────┼───────────────────────┤
-  │ Reverberation      │ ✓ RT60 # s →       │
-  │                    │ # s (# %)      │
-  │ Clarity            │ ✓ C50 # dB →       │
-  │                    │ # dB · C80        │
-  │                    │ # dB → # dB   │
-  │ Early reflections  │ ✓ # gone · # new · #  │
-  │                    │ at both               │
-  │ Low end            │ ✓ at both: # Hz     │
-  │ Noise floor        │ ✓ # → # dBFS  │
-  │                    │ (# dB)            │
-  │ Frequency response │ ✓ largest change in   │
-  │                    │ the # Hz octave,   │
-  │                    │ # dB mean |Δ|       │
-  └────────────────────┴───────────────────────┘
-  The status column is left out: widen the
-  terminal to see it.
+  Reverberation       ✓ RT60 # s → # s
+                      (# %)
+  Clarity             ✓ C50 # dB → # dB ·
+                      C80 # dB → # dB
+  Early reflections   ✓ # gone · # new · # at
+                      both
+  Low end             ✓ at both: # Hz
+  Noise floor         ✓ # → # dBFS
+                      (# dB)
+  Frequency response  ✓ largest change in the
+                      # Hz octave, # dB
+                      mean |Δ|
 
 ── What the demo shows ─────────────────────────
   i A strong desk reflection at # ms at

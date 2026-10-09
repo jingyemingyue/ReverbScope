@@ -534,10 +534,34 @@ def _tokens(text: str) -> Iterator[str]:
     start = 0
     for found in _PATH_RUN.finditer(text):
         if _is_wide_path(found.group()):
-            yield from _word_tokens(text[start : found.start()])
+            yield from _short_words(_word_tokens(text[start : found.start()]))
             yield found.group()
             start = found.end()
-    yield from _word_tokens(text[start:])
+    yield from _short_words(_word_tokens(text[start:]))
+
+
+#: A run of Chinese characters this short, between spaces, Latin text and
+#: marks, is a word (交流声, 倍频程, 新出现, 早期反射): a wrap does not break it.
+_WHOLE_WORD = 4
+
+
+def _short_words(tokens: Iterator[str]) -> Iterator[str]:
+    """``tokens`` with each run of at most :data:`_WHOLE_WORD` wide letters
+    joined into one token; a longer run (a sentence) stays one token per
+    character, to break wherever the line ends."""
+    run: list[str] = []
+    for token in tokens:
+        if _is_word_char(token):
+            run.append(token)
+            continue
+        yield from _join_run(run)
+        run = []
+        yield token
+    yield from _join_run(run)
+
+
+def _join_run(run: list[str]) -> list[str]:
+    return ["".join(run)] if 1 < len(run) <= _WHOLE_WORD else run
 
 
 def _word_tokens(text: str) -> Iterator[str]:
@@ -698,6 +722,11 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
             # what it opens (and with the space after it, if any).
             while len(parts) > 1 and parts[-1][-1] in _NO_LINE_END:
                 carry = parts.pop() + (carry or joiner)
+            if len(parts) == 1 and len(parts[0]) > 1 and parts[0][-1] in _NO_LINE_END:
+                # A line of one piece (a word and the mark that follows it) that
+                # ends with the opening mark: that mark goes down alone.
+                carry = parts[0][-1] + (carry or joiner)
+                parts[0] = parts[0][:-1]
             if parts:
                 lines.append(prefix + "".join(parts))
                 prefix = rest
@@ -1353,6 +1382,7 @@ class Console:
         wrap_column: int | None = None,
         expand: bool = False,
         min_widths: Sequence[int] = (),
+        floor: int = _WRAP_FLOOR,
     ) -> list[str] | None:
         """Rows in a bordered grid, or ``None`` when no grid is drawn.
 
@@ -1360,7 +1390,7 @@ class Console:
         console; the caller then lays the rows out another way. Cells may be
         styled. The text of ``wrap_column`` (the last column unless given)
         wraps inside its column when the grid would be wider than the console,
-        down to :data:`_WRAP_FLOOR` columns, and ``expand`` widens that column
+        down to ``floor`` columns, and ``expand`` widens that column
         so the grid's right border sits on the console's last column, under the
         title panel's. ``min_widths`` holds a column at least that wide, so
         that tables shown one under the other keep their first border in
@@ -1383,7 +1413,7 @@ class Console:
         spare = self.width - (indent + sum(widths) + 3 * columns + 1)
         if spare < 0:
             # The wrapping column narrows, down to a readable width.
-            least = max(min(widths[flex], _WRAP_FLOOR), cell_width(headers[flex]))
+            least = max(min(widths[flex], floor), cell_width(headers[flex]))
             shrunk = max(0, min(-spare, widths[flex] - least))
             widths[flex] -= shrunk
             spare += shrunk

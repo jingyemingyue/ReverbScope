@@ -69,10 +69,16 @@ All notable changes to ReverbScope are documented here. The format follows
   `– not compared`, or `? unsure` when the health of a side puts the topic in
   doubt, all of them when a side is invalid), never whether the change is good,
   and the advice to add `--same-input-gain` follows the table on a line of its
-  own. A long result wraps inside its column and the table spans the
-  terminal; only when that cannot fit (English below about 56 columns) the
-  status column is left out and a line under the table says so, as it now
-  does when a narrow comparison leaves out the `Δ %` column. In an ASCII
+  own. A long result wraps inside its column, which is kept at least 28
+  columns wide, and the table spans the terminal; where that cannot be
+  (English below about 68 columns, Chinese below 56) the status column is left
+  out and a line under the table says so, as it now does when a narrow
+  comparison leaves out the `Δ %` column, and below about 56 columns in English
+  (48 in Chinese) the overview is the aligned lines it has always been (a
+  result squeezed into 16 columns made the table twice as tall and cut words in
+  two). A Chinese term of up to four characters (`交流声`, `倍频程`, `新出现`)
+  is not broken across two lines in a table or in text, and a line of a word
+  and its closing mark no longer ends with an opening quotation mark. In an ASCII
   frame the separator is `/` and `|Δ|` is `abs(delta)`, and a stream that
   cannot write Chinese (cp1252) shows one `?` per column, so every frame line
   keeps one width. A pipe, a file, a terminal narrower than 48 columns,

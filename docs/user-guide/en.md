@@ -426,13 +426,16 @@ verdicts say that). For example:
   └────────────────────┴───────────┴───────────────────────────────────┘
 ```
 
-A long result wraps inside its column. Only when the table cannot fit even
-so (in English, below about 56 columns) does it leave out its status column,
-keeping the mark in front of each result, and a line under the table says so;
-the reverberation changes of a comparison say the same when their percentage
+A long result wraps inside its column, which is kept at least 28 columns wide:
+where it cannot be (in English below about 68 columns, in Chinese below 56)
+the table leaves out its status column, keeping the mark in front of each
+result, and a line under the table says so; below about 56 columns in English
+(48 in Chinese) the overview is the aligned lines it has always been. The
+reverberation changes of a comparison say the same when their percentage
 column is left out. Without frames (a pipe or a file, a terminal narrower
 than 48 columns, `--style plain`) "At a glance" is the aligned lines it has
-always been, with a symbol and no word.
+always been, with a symbol and no word. A Chinese term of up to four
+characters (`交流声`, `倍频程`, `新出现`) is not broken across two lines.
 
 In a boxed report each **finding** under "Interpretation" is a card: a frame
 titled with its severity word and topic, its border yellow for a warning,
