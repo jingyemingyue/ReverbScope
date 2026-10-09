@@ -25,9 +25,12 @@ Rules that keep them consistent:
   line by `git merge` or `git cherry-pick -x` of the same commit, never
   retyped. Fix the candidate first when the bug is in the candidate; the
   forward-port to `main` follows in the same session.
-* Nothing goes from `main` to the candidate except through that rule. A new
-  feature, a command-line redesign, an algorithm experiment or a dependency
-  upgrade stays on `main` until the next candidate series is cut.
+* Nothing goes from `main` to the candidate except through that rule: a fix of
+  an allowed class that was found on `main` first (the audits run against the
+  development line) may be cherry-picked with `-x` when the candidate has the
+  same defect. A new feature, a command-line redesign, an algorithm
+  experiment or a dependency upgrade stays on `main` until the next
+  candidate series is cut.
 * Published history is never rewritten: no force-push to `main`,
   `release/**` or a published tag; merges are merge commits (the per-PR
   merge commit is the record of how conflicts were resolved).
@@ -37,7 +40,7 @@ Rules that keep them consistent:
 
 ## 2. What runs on its own
 
-Both workflows live in `.github/workflows/`; every action is pinned to a
+The three workflows live in `.github/workflows/`; every action is pinned to a
 commit SHA with its version in a comment.
 
 **CI** (`ci.yml`), on every pull request and on pushes to `main` and

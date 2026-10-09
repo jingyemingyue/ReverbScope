@@ -136,8 +136,11 @@ above: from rc2 on, the feature set is frozen again. What rc2 changed is the
 
 **How the two stay close.** A fix that applies to both lines is made on the
 candidate line first and then forward-ported to `main` (merge or cherry-pick
-of the same commit; never by hand). Nothing is backported from `main` to the
-candidate line except through that rule. A cherry-pick must not undo the
+of the same commit; never by hand). A fix of an allowed class that was found
+on `main` first (the audits run against the development line) may be
+cherry-picked with `-x` to the candidate line when the candidate has the same
+defect; nothing else is backported from `main`, and a cherry-pick is never
+retyped. A cherry-pick must not undo the
 rename, drop a test or revert a document; `check_cli_docs.py`, the catalog
 tests and the full suite run on both lines. The candidate line is
 conservative; `main` is where development happens.

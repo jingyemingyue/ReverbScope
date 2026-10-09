@@ -399,7 +399,7 @@ saved them.
 | `reverbscope gui` says *This is the Terminal Edition* | The Terminal Edition has no GUI; download the Desktop Edition (the command line works in both). |
 | macOS: *“reverbscope” cannot be opened because the developer cannot be verified* (Terminal Edition) | Clear the download mark once: `xattr -dr com.apple.quarantine reverbscope-terminal` ([Terminal Edition](#terminal-edition)). |
 | Windows PowerShell: Chinese text is garbled in a file or after a pipe (`> report.txt`, `\| Select-String`) | Run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()` first ([Saving a report from PowerShell](#terminal-edition)). |
-| Windows: `reverbscope.exe` opens and closes at once | It is a command-line program: double-click `ReverbScope Terminal.cmd` instead, or run it from a Command Prompt. |
+| Windows: `reverbscope.exe` opens and closes at once | It is a command-line program: a double-click opens a window that closes when the command ends. Open **Command Prompt** or **PowerShell** in the folder that holds it (Desktop Edition: the install folder) and run `reverbscope.exe --help`. Only the Terminal Edition has `ReverbScope Terminal.cmd` for a double-click. |
 | `reverbscope gui` says PySide6 could not be loaded | Install the GUI extra: `pip install "PySide6_Essentials>=6.6,<6.12"` (or reinstall the wheel with `[gui]`). |
 | `pip install reverbscope` finds nothing, or something else | ReverbScope is not on PyPI yet; use the [wheel](#wheel-from-a-release). |
 | Anything else | Open a [bug report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug.yml) and paste **Help → Environment Report for Bug Reports** (or `reverbscope doctor`). Nothing is sent automatically. |

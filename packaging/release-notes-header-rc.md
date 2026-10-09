@@ -64,7 +64,9 @@ Full steps, checksums, updating, uninstalling and troubleshooting:
 [Installation guide](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.md)
 ([简体中文](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.zh-CN.md)).
 Then try it without a microphone: click **Demo (no interface)** in the app, or
-run `reverbscope demo`.
+run `reverbscope demo` in a terminal opened in the folder that holds it (the
+installers do not add it to `PATH`; on a Mac it is
+`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`).
 
 ### Known limitations
 
@@ -96,6 +98,16 @@ run `reverbscope demo`.
   machines, not yet on a tester's own Mac, Windows PC or Linux desktop, and
   nobody has seen the Windows installer's Simplified Chinese screens on a
   Chinese Windows yet.
+* **A take lives in memory until you save it.** In Standalone and Demo mode,
+  **New Measurement**, **Open Session** and closing the window drop a take
+  that has not been saved with **Save Session...**, without asking. Save the
+  take before you start the next one.
+* **Very long recordings need a lot of memory**: about 2 GB per 5 minutes at
+  48 kHz. Cut a long DAW export to the sweep plus a few seconds on each side.
+* **Known weaknesses of the decay analysis are written down**, not hidden:
+  for example a noise burst or a second event shortly after the onset can
+  still give a valid T20 / T30 up to twice too long in the 63 Hz to 1 kHz
+  bands. See "Post-0.5 backlog" in `docs/STATUS.md` (snapshot 39).
 * Not on PyPI yet: `pip install reverbscope` does not install this project.
 * The v0.5.0b1 downloads were still named `RoomScope-*` and `roomscope-*`;
   from this version every download carries the ReverbScope name. The
@@ -106,7 +118,7 @@ and DAWs can run the checks in
 [docs/HARDWARE_TESTS.md](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/HARDWARE_TESTS.md)
 ([简体中文](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/HARDWARE_TESTS.zh-CN.md)).
 Every report counts, a failure as much as a pass. **Help → Environment Report
-for Bug Reports → Probe sample rates → Copy** (or `reverbscope doctor --probe --out report.txt`)
+for Bug Reports → Probe sample rates → Copy** (or `reverbscope doctor --probe --out report.txt`, started the same way)
 gives the version, build commit, system, host APIs and devices to paste:
 [interface report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml) ·
 [DAW report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml) ·

@@ -140,6 +140,40 @@ tested.
   32 % too long in some bands. The warning says so and lists the decay among
   the figures it affects. The bare overflow and underflow flags that older
   results carry are now said in Chinese on the health card as well.
+- The Windows Desktop bundle shipped `PySide6/opengl32sw.dll`, Qt's
+  software-OpenGL fallback (Mesa llvmpipe, MIT, built with LLVM under the
+  University of Illinois/NCSA licence), with no notice for either: it sits
+  in a wheel's package folder, which the licence gate never looked into.
+  `build_license_bundle.py --frozen` now writes the notice
+  (`THIRD_PARTY_LICENSES/_notices/native/mesa-llvmpipe.txt`) whenever the
+  file is in the tree, and `check_bundle_contents.py --require-licenses`
+  fails a bundle that has the file without it. ReverbScope itself never
+  asks Qt for OpenGL.
+- `project show` and `project average` dropped a position whose session
+  folder had been deleted, moved or renamed, and the average counted one
+  position fewer, with exit code 0 and nothing said on either stream. Both
+  now name each left-out position on stderr (ten at most, then a count);
+  stdout, JSON included, is unchanged.
+- A recording too long for the memory at hand (about 2 GB per 5 minutes at
+  48 kHz) ended as "unexpected MemoryError ... This is a bug in
+  ReverbScope". The command line and the desktop app now say that there is
+  not enough memory and what to do: cut the recording to the sweep plus a
+  few seconds on each side, or close other programs.
+- Documentation corrections from the final audit: the README and the
+  release notes say that the downloads do not put `reverbscope` on `PATH`
+  and where it is; `analyze --out` writes five files, not three; the
+  Windows hardware steps cover WASAPI and the Default Format instead of an
+  ASIO buffer; the bug form points at the Version and Build lines; the
+  user guide names the host API as the report prints it and no longer
+  recommends the deprecated `doctor --json`; `reverbscope.exe` troubleshooting
+  no longer sends Desktop Edition users to a Terminal Edition file; the
+  buffer-check command in the checklist has its `--out`; the release plan,
+  the runbook and STATUS say that a fix found on `main` first may be
+  cherry-picked to the candidate.
+- Known limitations now written down for testers: a live take is lost
+  without a question by New Measurement, Open Session and closing the
+  window until it is saved; very long recordings need about 2 GB per
+  5 minutes at 48 kHz.
 
 ## [0.5.0rc1] - 2026-10-06
 
