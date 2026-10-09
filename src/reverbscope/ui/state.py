@@ -41,6 +41,11 @@ class MeasurementState:
     #: outlives one session, so reset() keeps them; Home clears them.
     project_path: Path | None = None
     project_position: str = ""
+    #: A live Standalone take whose recording exists only in memory until the
+    #: session is saved; New Measurement, Open Session and closing the window
+    #: ask before they drop it. Never set for the demo (nothing is lost) or for
+    #: a DAW recording (its file is on disk).
+    unsaved_take: bool = False
     #: Bumped by every reset (New Measurement, Open Session). A take or an
     #: analysis that started under another generation belongs to a session
     #: that is gone, and its late result is dropped.
@@ -53,6 +58,7 @@ class MeasurementState:
         self.result = None
         self.findings = []
         self.findings_problem = ""
+        self.unsaved_take = False
         self.session = MeasurementSession(mode=self.mode)
 
     def leave_project(self) -> None:

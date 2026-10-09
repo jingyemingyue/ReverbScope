@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -227,7 +228,20 @@ class HomePage(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setProperty("page", True)
-        layout = QVBoxLayout(self)
+        # A window shorter than the page (a 1366x768 laptop, or the 960x640
+        # minimum) scrolls it; without the scroll area the first-measurement
+        # card was squeezed until its buttons overlapped and were cut off.
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        body = QWidget()
+        body.setProperty("page", True)
+        self.scroll.setWidget(body)
+        outer.addWidget(self.scroll)
+        layout = QVBoxLayout(body)
         layout.setContentsMargins(28, 22, 28, 22)
         layout.setSpacing(14)
 
@@ -1446,6 +1460,11 @@ class StandalonePage(QWidget):
         self.state.result = result
         self.state.findings = findings
         self.state.findings_problem = problem
+        self.state.unsaved_take = (
+            not self.demo_mode
+            and self.state.recording is not None
+            and self.state.recording_path is None
+        )
         self._set_busy(False, _("Done."))
         self.analysis_finished.emit()
 

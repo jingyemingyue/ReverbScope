@@ -749,6 +749,17 @@ msgstr "混响（外推到 60 dB）。“衰减范围不足”表示衰减对该
 msgid "Save Session..."
 msgstr "保存会话…"
 
+msgid "Unsaved measurement"
+msgstr "尚未保存的测量"
+
+msgid ""
+"This measurement has not been saved. Its recording exists only in memory and is "
+"lost if you continue."
+msgstr "这次测量还没有保存。它的录音只存在于内存中，继续的话就会丢失。"
+
+msgid "Discard"
+msgstr "放弃"
+
 msgid "Choose a folder for the session"
 msgstr "选择会话文件夹"
 

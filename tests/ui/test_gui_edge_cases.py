@@ -283,3 +283,49 @@ def test_open_data_folder_with_an_uncreatable_home_warns_instead_of_raising(
     report.close()
     window.close()
     assert QUrl.fromLocalFile(str(home)).toString() not in opened
+
+
+def _step_buttons_overlap_or_leave_the_card(window: MainWindow) -> list[str]:
+    from PySide6.QtWidgets import QPushButton
+
+    card = window.home.walkthrough
+    buttons = [b for b in card.findChildren(QPushButton) if b.isVisible()]
+    rects = {b: b.rect().translated(b.mapTo(card, b.rect().topLeft())) for b in buttons}
+    problems = []
+    for index, first in enumerate(buttons):
+        for second in buttons[index + 1 :]:
+            if rects[first].intersects(rects[second]):
+                problems.append(f"{first.text()!r} overlaps {second.text()!r}")
+    for button, rect in rects.items():
+        if rect.bottom() > card.height() or rect.right() > card.width():
+            problems.append(f"{button.text()!r} extends beyond the card")
+    return problems
+
+
+@pytest.mark.parametrize("size", [(960, 640), (1180, 800), (1366, 700)])
+def test_a_short_window_scrolls_home_and_does_not_squeeze_the_first_measurement_card(
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, size: tuple[int, int]
+) -> None:
+    """At 960x640 (the window's own minimum) and on 1366x768 laptops the card's
+    three step buttons overlapped and its last row was cut off, because the
+    Home page had no scroll area to give the card the height it needs."""
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    apply_application_chrome(app)
+    window = MainWindow()
+    window.resize(*size)
+    window.show()
+    window.show_home()
+    for _ in range(10):
+        app.processEvents()
+    card = window.home.walkthrough
+    assert card.isVisible()
+    assert _step_buttons_overlap_or_leave_the_card(window) == []
+    # The card keeps the height its content needs; the page scrolls instead.
+    assert card.height() >= card.minimumSizeHint().height()
+    scroll = window.home.scroll
+    body = scroll.widget()
+    assert body.height() >= body.minimumSizeHint().height()
+    if body.height() > scroll.viewport().height():
+        # Everything below the fold can be reached.
+        assert scroll.verticalScrollBar().maximum() >= body.height() - scroll.viewport().height()
+    window.close()
