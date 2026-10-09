@@ -7,7 +7,92 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+- **Measurement health.** Every result now opens with the checks the analysis
+  made on the take itself (reference, sweep, playback speed, direct sound,
+  level, distortion, dropouts, decay range, noise floor, recording length,
+  and the loopback and audio device when they took part), each good, warning,
+  invalid or unknown with its reason, the figures it affects and what to do
+  next; the worst check gives the overall status and there is no score. In
+  the text report it follows "At a glance"; on the Results page it is the
+  first card; `--format json` carries it as `health` beside `findings`. A
+  sweep played at the wrong speed lists where each DAW sets its project
+  sample rate or switches time-stretching off (the steps of
+  `docs/user-guide/daw-setup.md`), also under the error when the analysis
+  cannot finish. Thresholds and their sources: `docs/MEASUREMENT_METHODOLOGY.md`
+  §12.
+- **Verdicts on a comparison.** Under the candidate's recording profile,
+  `reverbscope compare` and the Compare page say for reverberation,
+  clarity, early reflections, noise floor and low end whether the candidate
+  is a meaningful improvement, a meaningful degradation, probably
+  insignificant, not comparable, or whether the evidence is insufficient,
+  with the reason each time: the profile's thresholds (two short decays do
+  not matter for a vocal booth; a room microphone calls a room that became
+  too dry a degradation), the just-noticeable differences, the take's own
+  T20/T30 spread, and the measurement health of both takes when they are at
+  hand. No change is called statistically significant on one pair of
+  positions. `--format json` carries it as `verdict`; `comparison.json` does
+  not store it (`docs/MEASUREMENT_METHODOLOGY.md` §11a).
+- **Dropouts in the recorded sweep** (runs of 2 ms or more of frozen or zero
+  samples: a lost buffer, a DAW out of disk or CPU) are found, placed in time
+  and at the frequency the sweep was at, noted in the warnings and stored in
+  `result.json` as the optional `dropouts` record; a file from an earlier
+  version loads without it.
+
+### Changed
+- Opening a session is faster: the JSON nesting guard that read every
+  character of `result.json` in Python (0.3 s of a 0.4 s load; 335 ms for a
+  4.9 MB result) scans with a possessive regular expression and counts the
+  same brackets as the loop did on any text, valid or not (51 ms). The first
+  form of that pattern took 34 s and 4.8 GiB for one 40 MB string in a file
+  below the size limit; this one takes 0.3 s and the memory of the text.
+- The octave-band filters' settling lengths are cached per process, so a
+  comparison, a project overview or a second analysis at the same sample
+  rate no longer filters a 4 s impulse per band again (about 0.4 s saved per
+  analysis at 48 kHz); the numbers are unchanged.
+- Finding the sweep passes in a recording is no longer quadratic in its
+  length when the reference is very short (a click rather than a sweep); a
+  normal sweep is unchanged. The band filters' settling length is computed
+  from an impulse that grows until its tail can no longer move the 0.999
+  crossing, instead of a fixed 4 s whose end is a denormal tail at high
+  rates: a 192 kHz analysis of a 10 s sweep takes about half the time, and
+  every band that settled inside 4 s keeps its value (from PR #47;
+  `scripts/bench_dsp.py` times `analyze` alone).
+
+
+### Fixed
+- **Decay validity (PR #47, as corrected on the development line).** A decay
+  cut off by a gate, or ending in trailing digital silence that one residual
+  sample kept in the record, was reported with a valid T30 fitted to the cliff
+  (about 1.76 s for a true 2 s decay cut at 1 s). The cut is now found by
+  walking back along the preliminary regression, the decay is evaluated down
+  to the level before it only, and the range rule decides: a gate 30 dB down
+  withholds T20 and T30 as insufficient range, a cut 70 dB down changes only
+  the reported range, a complete decay that ends in digital silence is
+  unchanged, and the band's warnings name the cut. A T20 that was the only
+  candidate for RT60 (T30 without range) was never checked for straightness,
+  so a double slope published a T20 that was neither slope; an EDT is checked
+  when it is more than 1.5 times the late decay, which is what a late noise
+  burst does to it (73 s against 0.5 s) and an early reflection never does.
+  A step in the decay (a noise burst, a hard gate) that crosses the T20 or T30
+  evaluation range in less than a quarter of the time the curve took to fall
+  its first 5 dB is not a reverberation slope, and neither is a fit that
+  starts after the direct sound has taken more than half of its range (T20
+  covered 3 dB of room decay and was off by up to 27 %). An empty impulse
+  response is reported as too short instead of raising. The demo's synthetic
+  responses are 2.5 s long so that their low bands reach the noise floor as a
+  recording's do. `docs/MEASUREMENT_METHODOLOGY.md` §3 steps 7 and 9–11.
+- **Sweep generation.** A sweep whose frequency range underflows the logarithm
+  is refused as a configuration error instead of producing NaNs, and a band
+  one ulp wide keeps its amplitude (`expm1`).
+- **Measurement health sees every device fault the recorder writes.** A
+  stream that ran at another sample rate than requested (the recording's time
+  scale cannot be trusted) and the bare `input overflow` / `output underflow`
+  flags that older results carry make the take invalid, like the buffer and
+  timing sentences, while a sentence that merely mentions underflow invents no
+  fault. A playback-speed error whose cause this version does not know gets
+  steps that fit (check the project's sample rate, switch time-stretching off)
+  instead of the time-stretch table.
 
 ## [0.5.0rc1] - 2026-10-06
 

@@ -105,21 +105,44 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
      fit exceeds its limit (15 permille, growing the same way), that metric
      is marked unreliable. The limit uses T30 when T30 has a positive time,
      otherwise T20, otherwise EDT, so a T20 that is the only candidate (T30
-     has no range) is still checked, and so is EDT. A band warning says why.
-     The numerical guidance of Annex B was not verified; the limits are
-     ReverbScope's choice, calibrated as documented next to the constants;
+     has no range) is still checked. EDT is checked only when it is longer
+     than ``EDT_STRAIGHTNESS_RATIO`` (1.5) times that late decay: the first
+     10 dB of a room with a strong early reflection are not straight and
+     that is what EDT measures, while a disturbance inside the 0..-10 dB
+     range (a late noise burst) makes EDT many times longer than the late
+     decay. A band warning says why. The numerical guidance of Annex B was
+     not verified; the limits are ReverbScope's choice, calibrated as
+     documented next to the constants;
    * *a step, not a slope* (T20 and T30 only): the time from -5 dB to the
      bottom of the evaluation range is less than
      ``SUDDEN_DROP_RATIO`` (0.25) times the time the curve took to fall the
      first 5 dB. A late noise burst or a hard gate reaches -35 dB in one
      step; a reverberant slope does not, including a legitimate fast decay
      and a double slope whose later part is slower;
-   * *abrupt end*: the preliminary Lundeby regression stops more than
-     ``ABRUPT_END_GAP_DB`` (20 dB) above the noise floor it was measured
-     against (a decay cut off by a gate or by trailing digital silence with
-     one residual sample). There is then no decay across the range Lundeby
-     would iterate, the two truncation indices coincide, and the preliminary
-     slope is not a reverberation time;
+   * *the direct sound covers the range* (T20 and T30 only): the fit starts
+     after the direct sound (and its spread) and the curve has already
+     fallen through more than half of the evaluation range by then, so the
+     few dB left describe the direct sound's step, not the room's slope
+     (with the direct sound 22 dB above the room, T20 covered 3 dB of room
+     decay and was off by up to 27 %). EDT has its own rule above;
+   * *a response cut short*: the record ends while the decay is still far
+     above the noise floor (a gate, or digital silence after an imported
+     response). The preliminary Lundeby regression is walked back from the
+     first block at or below noise + 10 dB: a block more than
+     ``CUT_RESIDUAL_DB`` (10 dB) below the line fitted to the blocks before
+     it belongs to the fall, and the fall counts as a cut when it exceeds
+     the slope's own drop by ``ABRUPT_END_GAP_DB`` (20 dB) and begins less
+     than ``CUT_SHORT_MAX_DB`` (100 dB) below the peak (no room measurement
+     resolves more; the numerical silence after a synthetic response is no
+     cut). The decay is then known down to the level before the fall and no
+     further: the floor, the truncation and the tail extrapolation are set
+     there, so the existing range rule decides: a metric whose evaluation
+     range (plus the noise margin) reaches below the cut is
+     ``INSUFFICIENT_RANGE`` (a gate 30 dB down withholds T20 and T30), a cut
+     70 dB down changes only the reported range, and the band carries a
+     warning that names the cut. A clean exponential stays on its line down
+     to the floor and a double slope meets its floor above its line, so
+     neither is a cut;
    * the band is not fully inside the excitation range
      (``Validity.OUTSIDE_EXCITATION``, no numbers at all);
    * the caller marks everything unreliable
