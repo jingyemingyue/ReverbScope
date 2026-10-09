@@ -8,6 +8,11 @@ Only a terminal gets the menu: a pipe, a file or a script still gets the
 home screen on stderr and the usage exit code, so nothing that scripts
 ReverbScope changes. :data:`MENU_VARIABLE` switches it off on a terminal.
 
+An answer is read as a person types it on a Chinese keyboard: ``９`` is 9,
+``ｑ`` is q and ``退出`` is quit. An answer is never an exception: a number
+that is not one, a path the file system refuses, a key nobody expected, is
+refused in words and asked again.
+
 Nothing is played until the measurement item has printed what it will
 do and the answer was ``y``.
 """
@@ -16,7 +21,9 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import shlex
+import unicodedata
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -44,23 +51,110 @@ class CancelledError(Exception):
     """The user left a question: an empty answer, or Ctrl+C."""
 
 
-def parse_path(text: str) -> Path | None:
-    """A path as typed, or as a terminal pastes a dragged file: surrounding
-    quotes and backslash escapes removed, ``~`` expanded. ``None`` when empty."""
-    text = text.strip()
-    if not text:
+def fold(text: str) -> str:
+    """``text`` as ASCII where a Chinese input method typed a full-width digit,
+    letter or sign (``９``, ``ｙ``, ``．``), without the blanks around it.
+
+    For answers that are numbers or words, never for a path: NFKC would
+    rename a file.
+    """
+    return unicodedata.normalize("NFKC", text).strip()
+
+
+#: More digits than any answer needs: a longer string is not a number here.
+_MAX_DIGITS = 18
+
+
+def whole_number(text: str) -> int | None:
+    """``text`` as a whole number, or ``None`` for anything else.
+
+    ``①`` and ``²`` are digits to ``str.isdigit`` but not to ``int``, and a
+    string of thousands of digits is more than ``int`` takes (both raised
+    ``ValueError``): the first is read as the digit it is, the second is not a
+    number.
+    """
+    digits = fold(text)
+    if not digits.isdecimal() or len(digits) > _MAX_DIGITS:
         return None
-    if len(text) >= 2 and text[0] == text[-1] and text[0] in "\"'":
-        text = text[1:-1]
-    elif os.name != "nt" and ("\\" in text or '"' in text or "'" in text):
-        # A POSIX terminal drops a dragged file as "my\ room/take.wav".
+    try:
+        return int(digits)
+    except ValueError:
+        return None
+
+
+def quit_words() -> frozenset[str]:
+    """What leaves the menu: ``q``, ``quit``, ``exit``, 0, and the interface
+    language's own words (``退出``)."""
+    words = pgettext("answers meaning quit", "q quit exit").split()
+    return frozenset(word.casefold() for word in (*words, "0"))
+
+
+#: How ``shlex.quote`` and several terminals write an apostrophe inside quotes.
+_APOSTROPHE = "'\"'\"'"
+#: Quotes that wrap a pasted path, with the mark that closes each.
+_QUOTES = {'"': '"', "'": "'", "\u201c": "\u201d", "\u2018": "\u2019", "\u300c": "\u300d"}
+
+
+def clean_path(text: str, *, posix: bool | None = None) -> str:
+    """A path as typed, pasted or dragged into the terminal, as a plain path.
+
+    Spaces around it and one pair of surrounding quotes go (``"My Take.wav"``,
+    ``'My Take.wav'``, “…”); PowerShell's ``& '…'`` goes too. On macOS and
+    Linux a path that is not quoted loses the backslashes a drag and drop adds
+    (``My\\ Take.wav``), and a name the terminal quoted as a shell would
+    (``'it'\\''s a take.wav'``, which GNOME Terminal and KDE write) is read as
+    a shell reads it; on Windows a backslash separates folders and stays.
+    ``~`` is left for :func:`parse_path`.
+    """
+    posix = os.name != "nt" if posix is None else posix
+    text = text.strip()
+    if text.startswith("& ") and text[2:].lstrip()[:1] in _QUOTES:
+        text = text[2:].lstrip()
+    if posix and text[:1] in ("'", '"') and ("\\" in text or _APOSTROPHE in text):
         try:
-            parts = shlex.split(text)
+            words = shlex.split(text)
         except ValueError:
-            parts = []
-        if len(parts) == 1:
-            text = parts[0]
-    return Path(text).expanduser()
+            words = []
+        if len(words) == 1:
+            return words[0]
+    if len(text) >= 2 and _QUOTES.get(text[0]) == text[-1]:
+        return text[1:-1]
+    if posix and "\\" in text:
+        text = re.sub(r"\\(.)", r"\1", text)
+    return text
+
+
+def parse_path(text: str, *, posix: bool | None = None) -> Path | None:
+    """:func:`clean_path`, with ``~`` expanded; ``None`` for an empty answer."""
+    clean = clean_path(text, posix=posix).strip()
+    if not clean:
+        return None
+    path = Path(clean)
+    try:
+        return path.expanduser()
+    except RuntimeError:  # "~name" of nobody: the text stays as typed
+        return path
+
+
+def _is_dir(path: Path) -> bool:
+    try:
+        return path.is_dir()
+    except (OSError, ValueError):  # a name too long for the file system, a NUL byte
+        return False
+
+
+def _is_file(path: Path) -> bool:
+    try:
+        return path.is_file()
+    except (OSError, ValueError):
+        return False
+
+
+def _exists(path: Path) -> bool:
+    try:
+        return path.exists()
+    except (OSError, ValueError):
+        return False
 
 
 class Session:
@@ -116,9 +210,9 @@ class Session:
                 raise CancelledError
             if not exists:
                 return path
-            if folder and (path.is_dir() or (path.name == SESSION_FILE and path.is_file())):
+            if folder and (_is_dir(path) or (path.name == SESSION_FILE and _is_file(path))):
                 return path
-            if not folder and path.exists():
+            if not folder and _exists(path):
                 return path
             self.say(
                 self.console.status(
@@ -132,8 +226,10 @@ class Session:
             )
 
     def ask_yes(self, prompt: str) -> bool:
-        answer = self._read(_("{question} [y/N]: ").format(question=prompt)).lower()
-        return answer in ("y", "yes", pgettext("answer", "y"), pgettext("answer", "yes"))
+        """Yes only for an explicit yes; Enter, anything else, is no."""
+        answer = fold(self._read(_("{question} [y/N]: ").format(question=prompt))).casefold()
+        yes = ("y", "yes", pgettext("answer", "y"), pgettext("answer", "yes"))
+        return answer in {word.casefold() for word in yes}
 
 
 @dataclass(frozen=True)
@@ -158,8 +254,8 @@ def _sweep(session: Session) -> list[str]:
         _("Where to write the test signal"), default=Path("sweep.wav"), exists=False
     )
     while True:
-        rate = session.ask(_("Sample rate of your DAW project (Hz)"), "48000")
-        if rate.isascii() and rate.isdigit() and int(rate) in SUPPORTED_SAMPLE_RATES:
+        rate = whole_number(session.ask(_("Sample rate of your DAW project (Hz)"), "48000"))
+        if rate in SUPPORTED_SAMPLE_RATES:
             break
         session.say(
             session.console.status(
@@ -169,7 +265,7 @@ def _sweep(session: Session) -> list[str]:
                 ),
             )
         )
-    return ["sweep", "--out", str(out), "--sample-rate", rate]
+    return ["sweep", "--out", str(out), "--sample-rate", str(rate)]
 
 
 def _analyze(session: Session) -> list[str]:
@@ -292,11 +388,11 @@ def run_menu(
             + (["", *crooked] if crooked else [])
         )
         try:
-            choice = session.ask(pgettext("menu prompt", "Your choice")).lower()
+            choice = fold(session.ask(pgettext("menu prompt", "Your choice"))).casefold()
         except (EOFError, KeyboardInterrupt):
             session.say([""])
             return 0
-        if choice in ("q", "quit", "exit", "0"):
+        if choice in quit_words():
             return 0
         item = by_key.get(choice)
         if item is None:
@@ -345,7 +441,11 @@ __all__ = [
     "CancelledError",
     "MenuItem",
     "Session",
+    "clean_path",
+    "fold",
     "menu_items",
     "parse_path",
+    "quit_words",
     "run_menu",
+    "whole_number",
 ]
