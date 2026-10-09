@@ -2440,6 +2440,7 @@ def cmd_project(args: argparse.Namespace) -> int:
         is_project,
         list_project_sessions,
         load_project,
+        missing_project_sessions,
         save_project,
     )
     from reverbscope.io.session_store import load_measurement
@@ -2530,6 +2531,12 @@ def cmd_project(args: argparse.Namespace) -> int:
         project = load_project(args.project)
         entries: list[ProjectEntry] = []
         skipped: list[tuple[str, str]] = []
+        # A position whose folder is gone is skipped like a damaged session, in
+        # the overview itself (it used to vanish: "3 position(s)" after four).
+        for label, stored in missing_project_sessions(args.project):
+            skipped.append(
+                (stored, _("position {label}: no session.json there").format(label=label))
+            )
         for label, path in list_project_sessions(args.project):
             try:
                 measurement = load_measurement(path)

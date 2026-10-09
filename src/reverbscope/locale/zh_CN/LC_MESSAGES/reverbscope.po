@@ -4132,6 +4132,9 @@ msgstr "{path} 中没有 project.json"
 msgid "no sessions in {path}"
 msgstr "{path} 中没有会话"
 
+msgid "position {label}: no session.json there"
+msgstr "位置 {label}：那里没有 session.json"
+
 msgid "position {label}: {path} has no session.json; it is left out"
 msgstr "位置 {label}：{path} 中没有 session.json，已被略过"
 
