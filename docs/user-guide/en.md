@@ -405,22 +405,25 @@ never cut or wrapped, so it can run past the edge.
 
 In a boxed report **"At a glance" is a table** of topic, status and result.
 The status cell shows a mark and a word, so colour is never the only signal:
-`✓ good`, `! check`, `✗ problem`, `i note`, `– no data` and `? unsure`; in
-the overview of a comparison the word says whether the topic was compared
-(`✓ compared`, `– not compared`), never whether the change is good (the
+`✓ good`, `! warning`, `! notice` (the words of the finding cards and of the
+health section), `✗ problem`, `i note`, `– no data` and `? unsure`; a
+topic that a check of the measurement health puts in doubt (the topics under
+its "Affects") is `? unsure` rather than `✓ good`. In the overview of a
+comparison the word says whether the topic was compared (`✓ compared`,
+`– not compared`, or `? unsure` when the health of a side puts it in doubt, all
+topics when a side is invalid), never whether the change is good (the
 verdicts say that). For example:
 
 ```text
-  ┌────────────────────┬─────────┬─────────────────────────────┐
-  │ Topic              │ Status  │ Result                      │
-  ├────────────────────┼─────────┼─────────────────────────────┤
-  │ Reverberation      │ ! check │ RT60 0.70 s (T30) · EDT     │
-  │                    │         │ 0.45 s                      │
-  │ Clarity            │ ✓ good  │ C50 +9.8 dB · C80 +12.9 dB  │
-  │                    │         │ · D50 91 %                  │
-  │ Early reflections  │ ! check │ strongest -3.1 dB at 2.4 ms │
-  │                    │         │ · 2 above -20 dB            │
-  └────────────────────┴─────────┴─────────────────────────────┘
+  ┌────────────────────┬───────────┬───────────────────────────────────┐
+  │ Topic              │ Status    │ Result                            │
+  ├────────────────────┼───────────┼───────────────────────────────────┤
+  │ Reverberation      │ ! notice  │ RT60 0.70 s (T30) · EDT 0.45 s    │
+  │ Clarity            │ ✓ good    │ C50 +9.8 dB · C80 +12.9 dB · D50  │
+  │                    │           │ 91 %                              │
+  │ Early reflections  │ ! notice  │ strongest -3.1 dB at 2.4 ms · 2   │
+  │                    │           │ above -20 dB                      │
+  └────────────────────┴───────────┴───────────────────────────────────┘
 ```
 
 A long result wraps inside its column. Only when the table cannot fit even

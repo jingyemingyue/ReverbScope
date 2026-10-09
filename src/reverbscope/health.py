@@ -71,6 +71,8 @@ _EVERYTHING = (
     METRIC_PLACEMENT,
     METRIC_RESONANCES,
 )
+#: Every metric group, in the order a report names them.
+METRIC_GROUPS = _EVERYTHING
 
 #: Harmonic level (dB re the direct sound) from which the chain is called
 #: distorting. The harmonic responses of an exponential sweep are separated in
@@ -1028,6 +1030,7 @@ def affects_text(groups: tuple[str, ...]) -> str:
 __all__ = [
     "DAW_SAMPLE_RATE_SETTINGS",
     "DAW_STRETCH_SETTINGS",
+    "METRIC_GROUPS",
     "HealthCheck",
     "HealthReport",
     "HealthStatus",

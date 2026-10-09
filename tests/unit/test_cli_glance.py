@@ -2,8 +2,10 @@
 
 On a terminal that draws frames, "At a glance" of an analysis and of a
 comparison is a table of three columns (topic, status, result) whose status
-cell shows the mark and a word (``✓ 良好``, ``! 注意``, ``✗ 问题``, ``i 说明``;
-``✓ good``, ``! check``, ``✗ problem``, ``i note``), so that colour is never
+cell shows the mark and a word (``✓ 良好``, ``! 提示``, ``! 警告``, ``✗ 问题``,
+``i 说明``; ``✓ good``, ``! notice``, ``! warning``, ``✗ problem``, ``i note``;
+the warning and the notice are the words of the cards and of the health
+section, ``? unsure`` is for a topic the measurement health doubts), so that colour is never
 the only signal. Where the frames are off (a pipe, a file, a terminal narrower
 than ``use_boxes`` allows, ``--style plain``) the aligned lines of the plain
 layout stay exactly as they were.
@@ -267,11 +269,11 @@ def test_the_overview_of_an_analysis_has_a_status_word_in_chinese(demo: DemoRun)
         table = _table(at_a_glance(_console(100), first, interpret(first, "vocal")))
     assert table[1].startswith("  │ 方面     │ 状态   │ 结果")
     rows = {_cells(row)[0]: row for row in table[3:-1]}
-    assert rows["混响"].startswith("  │ 混响     │ ! 注意 │ RT60 0.70 s（T30） · EDT 0.45 s")
+    assert rows["混响"].startswith("  │ 混响     │ ! 提示 │ RT60 0.70 s（T30） · EDT 0.45 s")
     assert rows["清晰度"].startswith(
         "  │ 清晰度   │ ✓ 良好 │ C50 +9.8 dB · C80 +12.9 dB · D50 91 %"
     )
-    assert {_cells(row)[1] for row in table[3:-1]} == {"! 注意", "✓ 良好"}
+    assert {_cells(row)[1] for row in table[3:-1]} == {"! 提示", "! 警告", "✓ 良好"}
     assert {cell_width(line) for line in table} == {100}
 
 
@@ -280,8 +282,28 @@ def test_the_overview_of_an_analysis_has_a_status_word_in_english(demo: DemoRun)
     table = _table(at_a_glance(_console(100), first, interpret(first, "vocal")))
     assert _cells(table[1]) == ["Topic", "Status", "Result"]
     rows = {_cells(row)[0]: _cells(row)[1] for row in table[3:-1]}
-    assert rows["Reverberation"] == "! check" and rows["Clarity"] == "✓ good"
+    assert rows["Reverberation"] == "! notice" and rows["Clarity"] == "✓ good"
+    assert rows["Noise floor"] == "! warning"  # mains hum, a warning in its card too
     assert rows["Data quality"] == "✓ good"
+
+
+def test_a_mark_has_the_word_its_card_and_the_health_section_use(demo: DemoRun) -> None:
+    """``!`` was ``注意`` in the overview, ``警告`` in the health section and ``提示``
+    in the card of the same finding: three words for one mark."""
+    first = demo.takes[0].result
+    findings = interpret(first, "vocal")
+    severities = {(str(f.topic), str(f.severity)) for f in findings}
+    assert ("reverberation", "notice") in severities and ("noise", "warning") in severities
+    for lang, notice, warning in (("en", "notice", "warning"), ("zh_CN", "提示", "警告")):
+        with _in(lang):
+            glance = at_a_glance(_console(100), first, findings)
+            cards = "\n".join(render_analysis(_console(100), first, findings, "vocal").splitlines())
+        words = {_cells(row)[0]: _cells(row)[1] for row in _table(glance)[3:-1]}
+        assert notice in words[next(k for k in words if k in ("Reverberation", "混响"))]
+        assert warning in words[next(k for k in words if k in ("Noise floor", "本底噪声"))]
+        # The same words open the cards of the report.
+        assert f"! {notice.capitalize()} ·" in cards or f"! {notice} ·" in cards
+        assert f"! {warning.capitalize()} ·" in cards or f"! {warning} ·" in cards
 
 
 def test_a_problem_and_a_note_have_their_words_in_the_overview(demo: DemoRun) -> None:
@@ -319,6 +341,63 @@ def test_a_topic_that_was_not_compared_says_so_in_the_status(demo: DemoRun) -> N
         table = _table(comparison_at_a_glance(_console(100), one_sided))
     row = next(row for row in table if "早期反射" in row)
     assert _cells(row)[1] == "– 未对比"
+
+
+# --- A topic the measurement health puts in doubt --------------------------------------
+
+
+def _statuses(lines: Sequence[str]) -> dict[str, str]:
+    return {_cells(row)[0]: _cells(row)[1] for row in _table(lines)[3:-1] if _cells(row)[0]}
+
+
+def test_a_topic_a_health_check_puts_in_doubt_is_unsure_not_good(demo: DemoRun) -> None:
+    """A clipped recording lists clarity under "Affects" in the health section;
+    the overview next to it said ``✓ good`` for the same topic."""
+    first = demo.takes[0].result
+    assert _statuses(at_a_glance(_console(100), first, interpret(first, "vocal")))["Clarity"] == (
+        "✓ good"
+    )
+    clipping = ClippingCheck(peak_dbfs=0.0, runs=3, samples=40, clipped=True)
+    clipped = replace(first, clipping=clipping)
+    findings = interpret(clipped, "vocal")
+    assert _statuses(at_a_glance(_console(100), clipped, findings))["Clarity"] == "? unsure"
+    with _in("zh_CN"):
+        assert _statuses(at_a_glance(_console(100), clipped, findings))["清晰度"] == "? 不确定"
+    # A topic that carries its own mark keeps it, and so does the one no check bears on.
+    assert _statuses(at_a_glance(_console(100), clipped, findings))["Data quality"] == "✗ problem"
+    # Without the status column the mark is the same one.
+    narrow = at_a_glance(_console(48), clipped, findings)
+    assert any("? C50" in strip_ansi(line) for line in narrow), narrow
+
+
+def test_the_plain_overview_keeps_its_marks_whatever_the_health_says(demo: DemoRun) -> None:
+    """What a pipe or a file receives does not change."""
+    clipping = ClippingCheck(peak_dbfs=0.0, runs=3, samples=40, clipped=True)
+    clipped = replace(demo.takes[0].result, clipping=clipping)
+    plain = at_a_glance(Console(width=100), clipped, interpret(clipped, "vocal"))
+    assert any(line.startswith("  Clarity") and "✓ C50" in line for line in plain), plain
+
+
+def test_a_comparison_with_an_invalid_side_is_unsure_in_every_topic(demo: DemoRun) -> None:
+    from reverbscope.interpretation.verdicts import judge_comparison
+
+    clipping = ClippingCheck(peak_dbfs=0.0, runs=3, samples=40, clipped=True)
+    clipped = replace(demo.takes[1].result, clipping=clipping)
+    first = demo.takes[0].result
+    # Judged with the results at hand, as the compare command does.
+    verdict = judge_comparison(demo.comparison, baseline=first, candidate=clipped)
+    statuses = _statuses(comparison_at_a_glance(_console(100), demo.comparison, verdict))
+    assert set(statuses.values()) == {"? unsure"}, statuses
+    assert "Frequency response" in statuses
+    with _in("zh_CN"):
+        zh = _statuses(comparison_at_a_glance(_console(100), demo.comparison, verdict))
+    assert set(zh.values()) == {"? 不确定"}, zh
+    # From the file alone nothing is known of the results' health.
+    alone = _statuses(comparison_at_a_glance(_console(100), demo.comparison))
+    assert set(alone.values()) == {"✓ compared"}
+    healthy = judge_comparison(demo.comparison, baseline=first, candidate=demo.takes[1].result)
+    assert healthy.in_doubt == ()
+    assert "in_doubt" not in healthy.to_dict()
 
 
 # --- Narrow terminals: the table gives way, one thing at a time ------------------------
@@ -409,7 +488,9 @@ def test_the_advice_to_declare_the_gain_is_a_line_of_its_own_under_the_table(ung
     boxed = comparison_at_a_glance(_console(100), ungained)
     table = _table(boxed)
     noise = next(row for row in table if "Noise floor" in row)
-    assert _cells(noise)[1] == "? unsure"
+    # The result says "not compared: unreliable"; the status says the same.
+    assert _cells(noise)[1] == "? not compared"
+    assert "not compared:" in _cells(noise)[2]
     assert not any("--same-input-gain" in row for row in table)
     assert strip_ansi(boxed[-1]).strip() == (
         "i add --same-input-gain if the input gain was unchanged"

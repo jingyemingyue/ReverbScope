@@ -60,9 +60,14 @@ All notable changes to ReverbScope are documented here. The format follows
   "At a glance" (the analysis, each position of `reverbscope demo`, `show`,
   `analyze`, `measure`) is a table of topic, status and result; the status
   shows a mark and a word, so colour is never the only signal: `✓ good`,
-  `! check`, `✗ problem`, `i note` (in Chinese `✓ 良好`, `! 注意`, `✗ 问题`,
-  `i 说明`). The overview of a comparison says whether each topic was
-  compared (`✓ compared`, `– not compared`), never whether the change is good,
+  `! warning` or `! notice` (the words of the finding cards and the health
+  section), `✗ problem`, `i note` (in Chinese `✓ 良好`, `! 警告` or `! 提示`,
+  `✗ 问题`, `i 说明`). A topic whose numbers a check of the measurement health puts in
+  doubt (the topics under its "Affects") is `? unsure`, never `✓ good`; the
+  aligned lines of a pipe keep the mark they always had. The overview of a
+  comparison says whether each topic was compared (`✓ compared`,
+  `– not compared`, or `? unsure` when the health of a side puts the topic in
+  doubt, all of them when a side is invalid), never whether the change is good,
   and the advice to add `--same-input-gain` follows the table on a line of its
   own. A long result wraps inside its column and the table spans the
   terminal; only when that cannot fit (English below about 56 columns) the

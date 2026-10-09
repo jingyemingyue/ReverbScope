@@ -105,6 +105,12 @@ class ComparisonVerdict:
     #: the interface language.
     conditions: tuple[str, ...] = ()
     locale: str = "en"
+    #: The metric groups (``health.METRIC_*``) that the measurement health of
+    #: either side puts in doubt: all of them when a side is invalid. For the
+    #: overview of a report, so that a topic whose numbers are in doubt is not
+    #: ticked as compared. Empty when the results were not at hand; not part
+    #: of the JSON.
+    in_doubt: tuple[str, ...] = ()
 
     def count(self, verdict: Verdict) -> int:
         return sum(1 for aspect in self.aspects if aspect.verdict is verdict)
@@ -190,6 +196,7 @@ def judge_comparison(
     conditions = _shared_conditions(comparison)
     invalid = _invalid_sides(baseline, candidate, conditions)
     conditions.append(_single_pair_caveat())
+    in_doubt = _groups_in_doubt(baseline, candidate)
     if not comparison.comparable:
         reason = _("the two sessions cannot be compared: {note}").format(
             note=localize(_refusal(comparison))
@@ -198,7 +205,9 @@ def judge_comparison(
             AspectVerdict(aspect, Verdict.NOT_COMPARABLE, aspect_text(aspect), reason)
             for aspect in _aspects_of(profile)
         )
-        return ComparisonVerdict(profile_name, refused, tuple(conditions), current_locale())
+        return ComparisonVerdict(
+            profile_name, refused, tuple(conditions), current_locale(), in_doubt
+        )
     aspects: list[AspectVerdict | None] = [
         _reverberation(comparison, profile),
         _clarity(comparison, profile),
@@ -221,7 +230,9 @@ def judge_comparison(
                 aspect.evidence,
             )
         judged.append(aspect)
-    return ComparisonVerdict(profile_name, tuple(judged), tuple(conditions), current_locale())
+    return ComparisonVerdict(
+        profile_name, tuple(judged), tuple(conditions), current_locale(), in_doubt
+    )
 
 
 # --- conditions ----------------------------------------------------------------------
@@ -287,6 +298,24 @@ def _invalid_sides(
                 )
             )
     return invalid
+
+
+def _groups_in_doubt(
+    baseline: AnalysisResult | None, candidate: AnalysisResult | None
+) -> tuple[str, ...]:
+    """The metric groups that a check other than *good* bears on, on either
+    side; every group when a side is invalid (no verdict is drawn from it)."""
+    from reverbscope.health import METRIC_GROUPS, HealthStatus, assess
+
+    doubtful: set[str] = set()
+    for result in (baseline, candidate):
+        if result is None:
+            continue
+        report = assess(result)
+        if report.overall is HealthStatus.INVALID:
+            return tuple(METRIC_GROUPS)
+        doubtful.update(report.affected)
+    return tuple(group for group in METRIC_GROUPS if group in doubtful)
 
 
 def _aspects_of(profile: object) -> list[str]:

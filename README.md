@@ -113,7 +113,7 @@ real analysis and comparison on them and says what to do next. The desktop
 number either one shows describes the simulation, and every session either
 one saves is marked as a synthetic demo. In a terminal each position's
 results, and their comparison, come as a table of topic, status and result;
-the status is a mark and a word (`✓ good`, `! check`, `✗ problem`), so colour
+the status is a mark and a word (`✓ good`, `! warning`, `✗ problem`), so colour
 is never the only signal, and a pipe or a file gets plain lines instead.
 Colour sits on marks, bars and borders only (a word or a number is never
 coloured, so every line stays readable on a light background), and the frames

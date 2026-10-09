@@ -10,7 +10,7 @@ here changes a stored value.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Collection, Mapping, Sequence
 from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
@@ -21,7 +21,6 @@ from reverbscope.cli.console import (
     Status,
     Tone,
     Verbatim,
-    badge_word,
     cell_width,
     glue_units,
     pad,
@@ -33,7 +32,19 @@ from reverbscope.cli.console import (
 )
 from reverbscope.core.averaging import AveragedDecay, AveragedMetric
 from reverbscope.edition import RELEASES_URL, is_terminal_package
-from reverbscope.health import HealthReport, HealthStatus, affects_text, assess, status_word
+from reverbscope.health import (
+    METRIC_DECAY,
+    METRIC_ENERGY,
+    METRIC_FREQUENCY_RESPONSE,
+    METRIC_NOISE,
+    METRIC_REFLECTIONS,
+    METRIC_RESONANCES,
+    HealthReport,
+    HealthStatus,
+    affects_text,
+    assess,
+    status_word,
+)
 from reverbscope.i18n import _, annotated, clause_join, labelled, list_join, localize, pgettext
 from reverbscope.interpretation import Finding
 from reverbscope.interpretation.explain import ProfileExplanation
@@ -298,6 +309,23 @@ def _topic_status(findings: Sequence[Finding], *topics: str) -> Status:
     return "ok"
 
 
+def _topic_severity(findings: Sequence[Finding], topic: str) -> str:
+    """The severity the overview names for a topic that is marked ``warn``: the
+    worst of the profile's findings on it, as the cards below call it (a
+    warning, or a notice when that is all there is); a warning when the mark
+    came from somewhere else (mains hum, the core's warnings)."""
+    severities = {str(f.severity) for f in findings if f.topic == topic}
+    return "notice" if "notice" in severities and "warning" not in severities else "warning"
+
+
+def _severity_status_word(severity: str) -> str:
+    """``warning`` or ``notice`` as the status word of an overview row: the word
+    of the health section for a warning, and of the card for a notice."""
+    if severity == "notice":
+        return pgettext("status", "notice")
+    return status_word(HealthStatus.WARNING)
+
+
 def _glance_label_width() -> int:
     """One label column for every "At a glance" block, so they line up when shown together."""
     labels = (
@@ -320,9 +348,21 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
     the lines are a table whose status shows a mark and a word.
     """
     rows: list[tuple[str, Status, str]] = []
+    #: The rows whose numbers a check of the measurement health puts in doubt.
+    affected = frozenset(assess(result).affected)
+    doubtful: set[str] = set()
+    #: The word of a ``!`` row: the cards and the health section call the same
+    #: mark a warning or a notice, so the overview does too.
+    words: dict[str, str] = {}
 
-    def row(label: str, status: Status, text: str) -> None:
+    def row(
+        label: str, status: Status, text: str, group: str = "", topic: str = "", severity: str = ""
+    ) -> None:
         rows.append((label, status, text))
+        if group in affected:
+            doubtful.add(label)
+        if status == "warn":
+            words[label] = _severity_status_word(severity or _topic_severity(findings, topic))
 
     broadband = result.decay.broadband
     if broadband.rt60_estimate_s is not None:
@@ -331,13 +371,19 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             text = annotated(text, broadband.rt60_basis)
         if broadband.edt.seconds is not None and broadband.edt.validity is Validity.VALID:
             text += c.sep() + f"EDT {broadband.edt.seconds:.2f} s"
-        row(_("Reverberation"), _topic_status(findings, "reverberation"), text)
+        row(
+            _("Reverberation"),
+            _topic_status(findings, "reverberation"),
+            text,
+            METRIC_DECAY,
+            "reverberation",
+        )
     else:
         row(_("Reverberation"), "unsure", _("no reliable broadband RT60 (see Reverberation)"))
 
     clarity = _clarity_glance(c, broadband)
     if clarity is not None:
-        row(_("Clarity"), _topic_status(findings, "clarity"), clarity)
+        row(_("Clarity"), _topic_status(findings, "clarity"), clarity, METRIC_ENERGY, "clarity")
 
     refl = result.reflections
     if refl.reflections:
@@ -354,6 +400,8 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
                 count=len(refl.reflections),
                 threshold=refl.threshold_db,
             ),
+            METRIC_REFLECTIONS,
+            "early_reflections",
         )
     elif refl.window_truncated and refl.analysed_window_ms is not None:
         # The response ended before the window did: later arrivals were not seen.
@@ -363,12 +411,14 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             _("none above {threshold:.0f} dB in the {end:.1f} ms that could be searched").format(
                 threshold=refl.threshold_db, end=refl.analysed_window_ms[1]
             ),
+            METRIC_REFLECTIONS,
         )
     else:
         row(
             _("Early reflections"),
             "ok",
             _("none above {threshold:.0f} dB").format(threshold=refl.threshold_db),
+            METRIC_REFLECTIONS,
         )
 
     res = result.resonances
@@ -384,6 +434,8 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             _("Low end"),
             _topic_status(findings, "low_frequency"),
             _("potential resonances at {listed}").format(listed=listed),
+            METRIC_RESONANCES,
+            "low_frequency",
         )
     elif (searched := _resonance_range(res)) is not None:
         # The range actually searched: a sweep that starts high, or a short
@@ -394,6 +446,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             _("no potential resonance at {low:.0f}–{high:.0f} Hz").format(
                 low=searched[0], high=searched[1]
             ),
+            METRIC_RESONANCES,
         )
     else:
         row(
@@ -409,10 +462,11 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         text = _("{rms:.1f} dBFS RMS").format(rms=noise.rms_dbfs)
         hums = [hum for hum in noise.hum if hum.detected]
         status = _topic_status(findings, "noise")
+        severity = ""
         if hums:
             text += c.sep() + _("mains hum at {base:.0f} Hz").format(base=hums[0].base_hz)
-            status = "warn"
-        row(_("Noise floor"), status, text)
+            status, severity = "warn", "warning"
+        row(_("Noise floor"), status, text, METRIC_NOISE, "noise", severity)
     else:
         row(_("Noise floor"), "skip", _("no quiet segment in the recording"))
 
@@ -421,29 +475,42 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         confidence=confidence_text(ir.direct_sound_confidence)
     )
     status = _topic_status(findings, "measurement")
+    severity = ""
     if result.warnings:
         quality += c.sep() + _("{n} warning(s), see Diagnostics").format(n=len(result.warnings))
-        status = "warn"
+        status, severity = "warn", "warning"
     else:
         quality += c.sep() + _("no warnings")
     if result.clipping is not None and result.clipping.clipped:
         quality += c.sep() + _("the recording clipped")
         status = "error"
-    row(_("Data quality"), status, quality)
-    return c.section(_("At a glance")) + _glance_rows(c, rows)
+    row(_("Data quality"), status, quality, "", "measurement", severity)
+    return c.section(_("At a glance")) + _glance_rows(c, rows, doubtful=doubtful, words=words)
 
 
 def _compared_word(status: Status) -> str:
     """What a status means in the overview of a comparison: whether the topic
-    was compared, never whether the change is good."""
-    return {
-        "ok": pgettext("comparison status", "compared"),
-        "skip": pgettext("comparison status", "not compared"),
-    }.get(status, badge_word(status))
+    was compared, never whether the change is good. Every topic that has no
+    ``ok`` was not compared (it has no data, or its numbers could not be
+    compared), whatever mark its result carries."""
+    if status == "ok":
+        return pgettext("comparison status", "compared")
+    return pgettext("comparison status", "not compared")
+
+
+#: The narrowest the result column of the overview gets. Below it a result
+#: wraps into three or four lines of a few words and the table is twice as tall
+#: as the aligned lines: the status column goes first, then the table.
+_RESULT_FLOOR = 28
 
 
 def _glance_rows(
-    c: Console, rows: Sequence[tuple[str, Status, str]], *, compared: bool = False
+    c: Console,
+    rows: Sequence[tuple[str, Status, str]],
+    *,
+    compared: bool = False,
+    doubtful: Collection[str] = (),
+    words: Mapping[str, str] | None = None,
 ) -> list[str]:
     """The "At a glance" rows.
 
@@ -454,25 +521,41 @@ def _glance_rows(
     line under the table says so; where no table fits, and without frames,
     aligned fields with the status symbol, as they always were.
 
+    A topic in ``doubtful`` (a check of the measurement health that bears on
+    it is not good, or a side of a comparison is invalid) has ``? unsure`` in
+    the table instead of ``✓ good`` / ``✓ compared``: a word is a stronger
+    claim than a tick. The aligned lines keep the status of every release, so
+    that what a pipe or a file receives does not change. A ``!`` row has the
+    word of ``words`` (``warning``, ``notice``), the one its card below has.
+
     Only this overview is a table. The measurement-health and verdict sections
     keep their lines: each entry there is a sentence of advice or a reason of
     two or three lines, with a ``→`` step under it, and a cell would cut it up
     and repeat the overview directly above.
     """
-    marked = [(label, f"{c.symbol(status)} {glue_units(text)}") for label, status, text in rows]
+
+    def shown(label: str, status: Status) -> Status:
+        """The status as a table shows it."""
+        return "unsure" if status == "ok" and label in doubtful else status
+
+    def badge(label: str, status: Status) -> str:
+        if shown(label, status) != status:
+            return c.badge("unsure")
+        if compared:
+            return c.badge(status, _compared_word(status))
+        return c.badge(status, (words or {}).get(label) if status == "warn" else None)
+
+    mark = shown if c.boxed else lambda _label, status: status
+    marked = [
+        (label, f"{c.symbol(mark(label, status))} {glue_units(text)}")
+        for label, status, text in rows
+    ]
     label_width = _glance_label_width()
     if c.boxed:
         topic, result = pgettext("at a glance", "Topic"), pgettext("at a glance", "Result")
         table = c.framed_table(
             [topic, _("Status"), result],
-            [
-                [
-                    label,
-                    c.badge(status, _compared_word(status) if compared else None),
-                    glue_units(text),
-                ]
-                for label, status, text in rows
-            ],
+            [[label, badge(label, status), glue_units(text)] for label, status, text in rows],
             wrap_column=2,
             expand=True,
             min_widths=(label_width,),
@@ -953,7 +1036,7 @@ def render_comparison(
     if comparison.comparable:
         # A refused pair compared nothing: its empty lists are not findings
         # ("no potential resonance"); the notes say why it was refused.
-        lines += comparison_at_a_glance(c, comparison)
+        lines += comparison_at_a_glance(c, comparison, verdict)
         lines += _verdicts(c, verdict)
         lines += _decay_deltas(c, comparison.decay)
 
@@ -1458,15 +1541,25 @@ def render_profiles(
     return c.fit("\n".join(lines))
 
 
-def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
+def comparison_at_a_glance(
+    c: Console, comparison: ComparisonResult, verdict: ComparisonVerdict | None = None
+) -> list[str]:
     """Baseline against candidate, one line per topic; the status says whether
-    the topic could be compared, never whether the change is good."""
+    the topic could be compared, never whether the change is good.
+
+    With the verdict, judged with both results at hand, a topic whose numbers
+    the measurement health of a side puts in doubt (or all of them, when a
+    side is invalid) is ``unsure`` and not ``compared``."""
     rows: list[tuple[str, Status, str]] = []
     arrow = f" {c.arrow()} "
     advice = ""
+    in_doubt = frozenset(verdict.in_doubt if verdict is not None else ())
+    doubtful: set[str] = set()
 
-    def row(label: str, status: Status, text: str) -> None:
+    def row(label: str, status: Status, text: str, group: str = "") -> None:
         rows.append((label, status, text))
+        if group in in_doubt:
+            doubtful.add(label)
 
     rt = next((d for d in comparison.decay if d.name == "broadband.rt60_estimate"), None)
     if (
@@ -1478,7 +1571,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         text = f"RT60 {rt.baseline:.2f} s{arrow}{rt.candidate:.2f} s"
         if rt.delta_percent is not None:
             text = annotated(text, f"{signed_number(rt.delta_percent, 1)} %")
-        row(_("Reverberation"), "ok", text)
+        row(_("Reverberation"), "ok", text, METRIC_DECAY)
     else:
         row(_("Reverberation"), "unsure", _("broadband RT60 not comparable (see Reverberation)"))
 
@@ -1500,7 +1593,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
             text += c.sep() + (
                 f"C80 {signed_number(c80.baseline, 1)} dB{arrow}{signed_number(c80.candidate, 1)} dB"
             )
-        row(_("Clarity"), "ok", text)
+        row(_("Clarity"), "ok", text, METRIC_ENERGY)
 
     if comparison.reflections:
         counts = {"matched": 0, "appeared": 0, "disappeared": 0}
@@ -1515,6 +1608,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 kept=counts["matched"],
                 sep=c.sep(),
             ),
+            METRIC_REFLECTIONS,
         )
     elif any(note.startswith(REFLECTIONS_NOT_COMPARED) for note in comparison.notes):
         row(
@@ -1523,7 +1617,12 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
             _("not compared: the direct-sound confidence is not high on both sides"),
         )
     else:
-        row(_("Early reflections"), "ok", _("none above the threshold on either side"))
+        row(
+            _("Early reflections"),
+            "ok",
+            _("none above the threshold on either side"),
+            METRIC_REFLECTIONS,
+        )
 
     parts: list[str] = []
     for status, label in (
@@ -1542,17 +1641,27 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         # Not "no potential resonance": one side, or both, never searched.
         row(_("Low end"), "skip", _("not compared: no frequency range was searched on both sides"))
     elif parts:
-        row(_("Low end"), "ok", clause_join(parts))
+        row(_("Low end"), "ok", clause_join(parts), METRIC_RESONANCES)
     elif any(note.startswith(RESONANCES_NARROWED) for note in comparison.notes):
-        row(_("Low end"), "ok", _("no potential resonance in the range both sides searched"))
+        row(
+            _("Low end"),
+            "ok",
+            _("no potential resonance in the range both sides searched"),
+            METRIC_RESONANCES,
+        )
     else:
-        row(_("Low end"), "ok", _("no potential resonance"))
+        row(_("Low end"), "ok", _("no potential resonance"), METRIC_RESONANCES)
 
     rms = next((d for d in comparison.noise if d.name == "noise.rms_dbfs"), None)
     if rms is not None and rms.baseline is not None and rms.candidate is not None:
         text = f"{rms.baseline:.1f}{arrow}{rms.candidate:.1f} dBFS"
         if rms.validity is Validity.VALID and rms.delta is not None:
-            row(_("Noise floor"), "ok", annotated(text, f"{signed_number(rms.delta, 1)} dB"))
+            row(
+                _("Noise floor"),
+                "ok",
+                annotated(text, f"{signed_number(rms.delta, 1)} dB"),
+                METRIC_NOISE,
+            )
         else:
             text += c.sep() + _("not compared: {validity}").format(
                 validity=validity_word(rms.validity)
@@ -1576,8 +1685,9 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
             _("largest change in the {band} octave, {mad:.1f} dB mean |Δ|").format(
                 band=band, mad=mad
             ),
+            METRIC_FREQUENCY_RESPONSE,
         )
-    lines = c.section(_("At a glance")) + _glance_rows(c, rows, compared=True)
+    lines = c.section(_("At a glance")) + _glance_rows(c, rows, compared=True, doubtful=doubtful)
     return lines + c.status("info", advice) if advice else lines
 
 
@@ -2523,7 +2633,11 @@ def render_demo(
         lines += c.section(title, description) + glance[2:]
 
     first, second = run.takes[0], run.takes[1]
-    glance = comparison_at_a_glance(c, run.comparison)
+    glance = comparison_at_a_glance(
+        c,
+        run.comparison,
+        judge_comparison(run.comparison, baseline=first.result, candidate=second.result),
+    )
     lines += (
         c.section(
             _("Comparison {a} {arrow} {b}").format(

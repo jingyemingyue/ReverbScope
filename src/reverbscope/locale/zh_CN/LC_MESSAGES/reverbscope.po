@@ -5973,3 +5973,7 @@ msgstr "默认"
 
 msgid "the file name must end in an audio extension such as .wav"
 msgstr "文件名必须以 .wav 等音频扩展名结尾"
+
+msgctxt "status"
+msgid "notice"
+msgstr "提示"

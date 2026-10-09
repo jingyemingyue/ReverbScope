@@ -15,31 +15,33 @@
 
 ── Position A ──────────────────────────────────────────────────────────────────
   close to the desk and the side wall
-  ┌────────────────────┬─────────┬─────────────────────────────────────────────┐
-  │ Topic              │ Status  │ Result                                      │
-  ├────────────────────┼─────────┼─────────────────────────────────────────────┤
-  │ Reverberation      │ ! check │ RT60 # s (T30) · EDT # s              │
-  │ Clarity            │ ✓ good  │ C50 # dB · C80 # dB · D50 # %       │
-  │ Early reflections  │ ! check │ strongest # dB at # ms · # above       │
-  │                    │         │ # dB                                      │
-  │ Low end            │ ! check │ potential resonances at # Hz (# dB)   │
-  │ Noise floor        │ ! check │ # dBFS RMS · mains hum at # Hz         │
-  │ Data quality       │ ✓ good  │ direct sound: confidence high · no warnings │
-  └────────────────────┴─────────┴─────────────────────────────────────────────┘
+  ┌────────────────────┬───────────┬───────────────────────────────────────────┐
+  │ Topic              │ Status    │ Result                                    │
+  ├────────────────────┼───────────┼───────────────────────────────────────────┤
+  │ Reverberation      │ ! notice  │ RT60 # s (T30) · EDT # s            │
+  │ Clarity            │ ✓ good    │ C50 # dB · C80 # dB · D50 # %     │
+  │ Early reflections  │ ! notice  │ strongest # dB at # ms · # above     │
+  │                    │           │ # dB                                    │
+  │ Low end            │ ! notice  │ potential resonances at # Hz (# dB) │
+  │ Noise floor        │ ! warning │ # dBFS RMS · mains hum at # Hz       │
+  │ Data quality       │ ✓ good    │ direct sound: confidence high · no        │
+  │                    │           │ warnings                                  │
+  └────────────────────┴───────────┴───────────────────────────────────────────┘
 
 ── Position B ──────────────────────────────────────────────────────────────────
   moved # m back from the desk
-  ┌────────────────────┬─────────┬─────────────────────────────────────────────┐
-  │ Topic              │ Status  │ Result                                      │
-  ├────────────────────┼─────────┼─────────────────────────────────────────────┤
-  │ Reverberation      │ ! check │ RT60 # s (T30) · EDT # s              │
-  │ Clarity            │ ✓ good  │ C50 # dB · C80 # dB · D50 # %      │
-  │ Early reflections  │ ✓ good  │ strongest # dB at # ms · # above      │
-  │                    │         │ # dB                                      │
-  │ Low end            │ ! check │ potential resonances at # Hz (# dB)   │
-  │ Noise floor        │ ! check │ # dBFS RMS · mains hum at # Hz         │
-  │ Data quality       │ ✓ good  │ direct sound: confidence high · no warnings │
-  └────────────────────┴─────────┴─────────────────────────────────────────────┘
+  ┌────────────────────┬───────────┬───────────────────────────────────────────┐
+  │ Topic              │ Status    │ Result                                    │
+  ├────────────────────┼───────────┼───────────────────────────────────────────┤
+  │ Reverberation      │ ! notice  │ RT60 # s (T30) · EDT # s            │
+  │ Clarity            │ ✓ good    │ C50 # dB · C80 # dB · D50 # %    │
+  │ Early reflections  │ ✓ good    │ strongest # dB at # ms · # above    │
+  │                    │           │ # dB                                    │
+  │ Low end            │ ! notice  │ potential resonances at # Hz (# dB) │
+  │ Noise floor        │ ! warning │ # dBFS RMS · mains hum at # Hz       │
+  │ Data quality       │ ✓ good    │ direct sound: confidence high · no        │
+  │                    │           │ warnings                                  │
+  └────────────────────┴───────────┴───────────────────────────────────────────┘
 
 ── Comparison A → B ────────────────────────────────────────────────────────────
   ┌────────────────────┬────────────┬──────────────────────────────────────────┐
