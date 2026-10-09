@@ -6,6 +6,30 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 40: 2026-10-09 — **0.5.0rc2 prepared on the candidate line** (branch
+`release/0.5.0`, moved by fast-forward from `89d404d` to the convergence branch
+of snapshot 39 plus one commit; the Release workflow opens the draft
+`v0.5.0rc2` from this head; nothing published or tagged).
+
+* **What the commit adds** to the convergence branch whose pull request
+  (#50) was green on every job before the branch moved: the version
+  (`0.5.0rc2`, in `pyproject.toml` and the catalog header), the
+  `[0.5.0rc2]` changelog section with the candidate statement in English and
+  Chinese, "release candidate 2" in the READMEs, the installation guides, the
+  hardware-test page and the issue-form placeholders, a note on the readiness
+  audit (made on rc1), and the rc2 row and the recorded exception in the
+  release plan (`docs/RELEASE_PLAN.md` §2a, both languages).
+* **CI on the pull request** (head `44ecef3`): lint and type-check, JSON
+  schemas, sdist and wheel, the licence bundle and GPL-module gate, tests on
+  Ubuntu with Python 3.12, 3.13 and 3.14, on macOS and on Windows with Python
+  3.12: all nine passed. The suite counted 1811 tests locally.
+* **Still open for the maintainer** (listed in snapshot 39): whether rc2
+  keeps the comparison verdicts, the seven Tier-1 names and the `dropouts`
+  record that came with the base, which `docs/RELEASE_PLAN.md` §2a would not
+  otherwise allow on the candidate line; publishing the draft (as a
+  pre-release) and every later step is the maintainer's decision. Nothing on
+  real hardware or in a DAW has been run.
+
 Snapshot 39: 2026-10-09 — **rc2 convergence: the review branches brought onto
 the candidate line, one Measurement health, the decay rules audited** (branch
 `integration/rc2-convergence`; nothing merged, tagged or published;
