@@ -9,6 +9,7 @@ session never ask.
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 import pytest
@@ -20,7 +21,7 @@ from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication, QFileDialog, QMessageBox
 
 from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
-from reverbscope.i18n import activate
+from reverbscope.i18n import _, activate
 from reverbscope.io.session_store import save_measurement
 from reverbscope.models.configuration import SweepSettings
 from reverbscope.models.session import MeasurementSession
@@ -143,6 +144,12 @@ def test_a_saved_take_and_a_demo_take_never_ask(
     window.close()
 
 
+def _title_shown(title: str, expected: str) -> None:
+    """macOS message boxes carry no window title (Qt drops it, as the platform
+    guidelines require); everywhere else the dialog is named."""
+    assert title == ("" if sys.platform == "darwin" else expected)
+
+
 def _click_when_asked(button_text: str, seen: list[str] | None = None) -> list[str]:
     """Press a button of the dialog that opens while the event loop runs.
 
@@ -205,7 +212,7 @@ def test_the_real_dialog_cancel_discard_and_save(
     window.show_home()
     assert problems == []
     assert window.state.result is not None, "Cancel must keep the take"
-    assert seen[0] == "Unsaved measurement"
+    _title_shown(seen[0], "Unsaved measurement")
     assert "exists only in memory" in seen[1]
     # Qt orders the buttons by role and platform, so compare them as a set.
     assert sorted(seen[2:]) == sorted(["Save Session...", "Discard", "Cancel"])
@@ -252,7 +259,8 @@ def test_the_dialog_is_in_chinese_in_the_chinese_interface(
         window.show_home()
         assert problems == []
         assert window.state.result is not None
-        assert seen[0] == "尚未保存的测量"
+        _title_shown(seen[0], "尚未保存的测量")
+        assert _("Unsaved measurement") == "尚未保存的测量"
         assert sorted(seen[2:]) == sorted(["保存会话…", "放弃", "取消"])
         assert english_words(" ".join(seen)) == []
         window.state.unsaved_take = False
