@@ -168,4 +168,4 @@ version and build commit, the files and the expectation. Then, in order
 | Dependencies and licences | [DEPENDENCIES.md](DEPENDENCIES.md), [THIRD_PARTY_REVIEW.md](THIRD_PARTY_REVIEW.md), `scripts/build_license_bundle.py` |
 | Build a release without Actions minutes | [RELEASE_PLAN.md §3a](RELEASE_PLAN.md#3a-without-github-actions-minutes), `scripts/build_release.py` |
 | Timings and memory | [PERFORMANCE.md](PERFORMANCE.md), `scripts/benchmark.py`, `scripts/bench_dsp.py` |
-| Translations | `src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po`; `tests/unit/test_i18n_catalog.py` fails on any untranslated string |
+| Translations | `src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po`; `tests/unit/test_i18n_catalog.py` fails on any untranslated string, on a retired Chinese word (one word for each concept) and on ASCII punctuation beside Chinese; `tests/unit/test_cli_layout.py` checks the punctuation and wrapping of whole screens |

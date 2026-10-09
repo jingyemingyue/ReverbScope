@@ -132,7 +132,11 @@ untouched).
   and an error is a panel, a take's progress is a bar that never reaches
   the last column, and bare `reverbscope` on a terminal opens a
   numbered menu that prints the command it runs each time. Harvested from
-  PR #42 without its dependencies.
+  PR #42 without its dependencies. The Chinese says one word for each thing
+  (a catalog test keeps the retired words out), writes its lists, brackets,
+  colons and quotes in Chinese, keeps a closing mark, a hint and a word's two
+  halves together when it wraps, and explains why libsndfile could not open a
+  file.
 * **Profiles explained, and a first-measurement card** (fifth batch):
   `reverbscope profiles [name]` and the "What does it want?" button say what
   a recording profile watches for and what it does not judge, from its own

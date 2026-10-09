@@ -114,7 +114,9 @@ number either one shows describes the simulation, and every session either
 one saves is marked as a synthetic demo. In a terminal each position's
 results, and their comparison, come as a table of topic, status and result;
 the status is a mark and a word (`✓ good`, `! check`, `✗ problem`), so colour
-is never the only signal, and a pipe or a file gets plain lines instead.
+is never the only signal, and a pipe or a file gets plain lines instead. The
+Chinese text is punctuated in Chinese and wrapped so that a line never starts
+with a closing mark.
 
 **Then measure for real:** turn the monitors **down** (ReverbScope never
 changes system volume), then either let ReverbScope play and record through

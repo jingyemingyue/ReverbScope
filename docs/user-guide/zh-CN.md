@@ -153,6 +153,8 @@ reverbscope config language auto    # 改回跟随系统
 
 中文界面会翻译解读、文本报告的标签、图形界面和全部命令行帮助（`reverbscope --help` 及每个子命令，包括占位符和 argparse 自己的提示）。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
 
+中文界面一个概念只用一个词：音频接口、回采（loopback）、交流声、对比；对比的两个会话叫基准和对比项（基线指基线电平，候选指候选峰和候选反射）。标点也按中文写：列表用“、”，分句用“；”，括号里的说明用全角括号（`RT60 0.70 s（T30）`），“标签：内容”用全角冒号，输错的值放在“ ”里（`无效的选择：“bogus”`）。文字换行时，一行不会以句号、逗号、右括号等开头，紧挨着标点的两字词不会被拆开，`（默认：10）` 这样的默认值提示整体移到下一行，最后一行不会只剩一个字。libsndfile 打不开音频文件时，会用中文说明原因（不是音频文件、已损坏或被截断、编码不受支持、文件为空）；英文界面保留 libsndfile 的原话。
+
 `reverbscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们，终端版也一样：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`、`copy-recording` 和 `developer-tools`（`on` 或 `off`），以及 `theme`（`system`、`light` 或 `dark`，只影响桌面版）。例如 `reverbscope config profile vocal`；`auto` 把一项设置恢复为默认值，`reverbscope --format json config` 以 JSON 输出所有设置。
 
 在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。

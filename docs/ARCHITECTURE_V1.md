@@ -574,7 +574,13 @@ carriage return. Every status carries a symbol and a word (`✓` / `!` / `×` /
 them), so colour is never the only signal; on such a stream the other signs
 (`Δ`, `→`, `–`) are written in ASCII too, and a narrow terminal encoding
 replaces what it cannot show instead of failing. Widths count a CJK character
-as two columns; text is laid out for at most 100 columns. On a terminal that
+as two columns; text is laid out for at most 100 columns. A wrapped line
+never starts with a closing mark (the character before it goes down with it,
+and with that the first half of a two-character word), a note in full-width
+brackets such as `（默认：10）` moves down whole, and the last line is more
+than one character; the Chinese is punctuated in Chinese by `annotated`,
+`labelled`, `clause_join`, `list_join` and `quoted` of `reverbscope/i18n.py`,
+which leave English as it was. On a terminal that
 draws frames ("boxed"; never a pipe, a file or the GUI's report panes) "At a
 glance" is a bordered table of topic, status and result whose status cell is
 a badge, the mark and a word (`✓ good`, `! check`, `✗ problem`, `i note`; in

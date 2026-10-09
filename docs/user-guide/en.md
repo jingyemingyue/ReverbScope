@@ -344,6 +344,19 @@ argparse's own messages included). Units stay untranslated; digits stay
 ASCII. Diagnostic notes and warnings are stored in English in `result.json`
 and shown translated.
 
+The Chinese text says one word for each thing: 音频接口 for the audio
+interface, 回采 for a loopback, 交流声 for mains hum, 对比 for a comparison
+with 基准 and 对比项 for its two sessions (基线 is a baseline level, 候选 a
+candidate peak). It is punctuated in Chinese as well: a list is joined with
+`、`, clauses with `；`, a note sits in full-width brackets
+(`RT60 0.70 s（T30）`), `label：text` has the full-width colon, and a wrong
+value is quoted “like this” (`无效的选择：“bogus”`). When text wraps, a line
+never starts with a closing mark, a two-character word is not split before
+one, a default hint such as `（默认：10）` moves down whole and the last line
+is more than one character. When libsndfile cannot open an audio file the
+reason is given in Chinese (not an audio file, damaged or cut short, an
+encoding that is not supported, empty); English keeps libsndfile's words.
+
 `reverbscope config` lists the other settings the desktop app keeps and
 changes them from the command line, also in the Terminal Edition:
 `profile` (the default recording profile), `backend` (`portaudio` or

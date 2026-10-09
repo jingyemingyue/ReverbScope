@@ -93,6 +93,31 @@ All notable changes to ReverbScope are documented here. The format follows
   during a take. A pipe, a file, a terminal narrower than 48 columns, `--style
   plain`, `--format json` and the desktop app's report text are unchanged. From
   the redesign of PR #42, drawn on this line's own frames.
+- **Chinese terms, punctuation and wrapping.** The Chinese interface said
+  the same thing in two or three words on one screen: 声卡, 音频接口 and
+  音频硬件 for the audio interface, 回送 and 回环 for a loopback, 市电哼声
+  and 电源嗡声 for mains hum, 比较 and 对比 for a comparison (`不可比较`
+  beside `可对比`), 基线 and 候选 for the two sessions of a comparison (候选
+  means an election candidate), 项目 for the project and for a row of the
+  overview table. It is 音频接口, 回采 (the word of audio interfaces), 交流声
+  and 对比 now, 基准 and 对比项 for the two sessions (基线 stays the baseline
+  level, 候选 the candidate peak) and 方面 for a row of the table; a catalog
+  test keeps the retired words out and the guides use the same words. The
+  punctuation is Chinese too: a list is joined with `、`, a clause with `；`,
+  a note sits in full-width brackets (`RT60 0.70 s（T30）`,
+  `110 Hz（+11.3 dB）`, `警告（电平）`), `label：text` has the full-width colon,
+  the speed of sound reads `343.2 m/s，气温 20 °C（假定）`, the menu's
+  questions end in `（默认：48000）：`, and a catalog test finds any ASCII
+  bracket, comma, colon or quote beside Chinese. A wrong value is quoted
+  “like this” (`无效的选择：“bogus”（可选：“init”、“add”）`; argparse said
+  `无效选项` and used ASCII quotes). When Chinese text wraps, a line no longer
+  starts with a closing mark, a hint such as `（默认：10）` moves down whole, a
+  two-character word is not split before a mark and the last line is never a
+  lone character. When libsndfile cannot open an audio file the Chinese says
+  why (not an audio file, damaged or cut short, an encoding that is not
+  supported, empty) instead of ending in its English; English keeps its words,
+  and so does every English line, JSON and pipe. From the redesign of PR #42,
+  on this line's own code.
 - **An interactive menu.** `reverbscope` with no command on a terminal opens
   a numbered menu (demo, test signal, analyse, measure, show, compare,
   project overview, settings, environment report, desktop app). Each choice
