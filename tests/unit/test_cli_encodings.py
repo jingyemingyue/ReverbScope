@@ -12,6 +12,7 @@ from __future__ import annotations
 import pytest
 
 from reverbscope.cli.console import Console, cell_width, frames_writable
+from reverbscope.i18n import activate
 from tests.terminals import Workspace, capture, problems
 
 
@@ -68,3 +69,52 @@ def test_a_terminal_that_cannot_write_chinese_keeps_a_plain_table_straight() -> 
     pipe = Console(unicode=False, encoding="cp1252", width=60)
     assert pipe.readable("混响") == "混响"  # the stream writes its own "?"
     assert terminal.readable("混响 110") == "???? 110"
+
+
+@pytest.mark.parametrize("encoding", ["euc_jisx0213", "shift_jis_2004"])
+@pytest.mark.parametrize("columns", [48, 70, 80])
+def test_a_chinese_report_on_a_jis_x_0213_stream_keeps_its_frames_straight(
+    cli_workspace: Workspace, monkeypatch: pytest.MonkeyPatch, encoding: str, columns: int
+) -> None:
+    """The stream writes ✓ and ─ but not every Chinese character (态 is missing):
+    the character was written as one "?" for two columns and every side of a
+    table came out a column short. It is one "?" per column here too."""
+    for argv in (("compare", cli_workspace.a, cli_workspace.b), ("show", cli_workspace.a)):
+        text = capture(argv, monkeypatch, columns=columns, lang="zh_CN", encoding=encoding)
+        assert problems(text, columns) == [], text
+        assert "??" in text  # the stream cannot write 态 or 对, two columns each
+        assert not any(glyph in text for glyph in "╭╮╰╯┌┐└┘│")  # ASCII frames
+
+
+def test_a_chinese_sentence_keeps_its_quotation_marks_on_a_stream_that_writes_them() -> None:
+    """GBK cannot write ✓, so every sign became ASCII: ``仍属"偏长"`` and ``...``
+    in a Chinese sentence, though GBK writes “ ” and …. English keeps its rule."""
+    gbk = Console(unicode=False, encoding="gbk")
+    sentence = "对此配置而言仍属“偏长”，请稍候…"
+    activate("zh_CN")
+    try:
+        assert gbk.fit(sentence) == sentence
+        # The signs it writes but a sentence does not need stay ASCII, so that
+        # a table's columns do not depend on a double-width arrow.
+        assert gbk.fit("0.70 s → 0.51 s，|Δ| ≤ 3 dB") == "0.70 s -> 0.51 s，|delta| <= 3 dB"
+        # A stream that cannot write Chinese cannot write the sentence anyway.
+        assert Console(unicode=False, encoding="cp1252").fit(sentence) == (
+            '对此配置而言仍属"偏长"，请稍候...'
+        )
+    finally:
+        activate("en")
+    assert gbk.fit("a “b” …") == 'a "b" ...'
+
+
+def test_a_chinese_report_on_a_gbk_stream_has_chinese_quotation_marks(
+    cli_workspace: Workspace, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    text = capture(
+        ("compare", cli_workspace.a, cli_workspace.b),
+        monkeypatch,
+        columns=80,
+        lang="zh_CN",
+        encoding="cp936",
+    )
+    assert "仍属“偏长”" in text and '"偏长"' not in text
+    assert problems(text, 80) == []

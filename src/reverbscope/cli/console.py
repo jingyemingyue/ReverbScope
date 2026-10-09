@@ -47,7 +47,7 @@ from dataclasses import dataclass, is_dataclass, replace
 from dataclasses import fields as dataclass_fields
 from typing import Any, Literal, TextIO
 
-from reverbscope.i18n import pgettext
+from reverbscope.i18n import DEFAULT_LANG, current_locale, pgettext
 
 ColorMode = Literal["auto", "always", "never"]
 COLOR_MODES: tuple[ColorMode, ...] = ("auto", "always", "never")
@@ -191,6 +191,23 @@ _ASCII_SIGNS = str.maketrans(
 #: Kept wherever the encoding can write it (cp1252, GBK, the classic Windows
 #: console), even when the other signs are not; dropped otherwise: 20 C.
 _DEGREE = "°"
+
+#: The punctuation of a Chinese sentence among the signs above: quotation marks
+#: and the ellipsis. A stream that can write Chinese and these keeps them (GBK
+#: writes all of them, though not ``✓``); English text is turned into ASCII
+#: whenever one sign is missing, as it always was.
+_PROSE_SIGNS = "“”‘’…"
+
+
+@functools.lru_cache(maxsize=16)
+def _signs_for(encoding: str) -> dict[int, str]:
+    """:data:`_ASCII_SIGNS` without the prose punctuation that ``encoding``,
+    a stream for Chinese, can write."""
+    if not can_encode("中", encoding):
+        return _ASCII_SIGNS
+    keep = {ord(char) for char in _PROSE_SIGNS if can_encode(char, encoding)}
+    return {sign: ascii_form for sign, ascii_form in _ASCII_SIGNS.items() if sign not in keep}
+
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 #: The escape sequences :meth:`Console.style` writes, and only those.
@@ -916,9 +933,28 @@ class Console:
         shown = printable(text, single_line=isinstance(text, Verbatim), own_styles=self.color)
         if not self.unicode:
             shown = self._ascii(str(shown))
-        elif self.boxed and not self.unicode_frames:
-            shown = str(shown).replace("|Δ|", "abs(delta)")  # not two more sides
+        else:
+            if self.boxed and not self.unicode_frames:
+                shown = str(shown).replace("|Δ|", "abs(delta)")  # not two more sides
+            # A stream that writes the symbols but not every character (the JIS
+            # X 0213 encodings write ✓ and ─ but not 态): one "?" per column.
+            shown = self._question_marks(str(shown))
         return Verbatim(shown) if isinstance(text, Verbatim) else shown
+
+    def _question_marks(self, text: str) -> str:
+        """``text`` with each character the stream cannot write shown as one
+        "?" per display column, where a frame's sides or a table's columns
+        would come out ragged otherwise (a character replaced by the stream's
+        single "?" takes one column, whatever its width). A pipe or a file
+        keeps the stream's own "?": its text has no frames to keep straight.
+        The glue between a number and its unit is not text: fit() writes a
+        space."""
+        if (self.boxed or self.interactive) and not self.can_write(text.replace(GLUE, " ")):
+            return "".join(
+                char if char == GLUE or self.can_write(char) else "?" * max(1, char_width(char))
+                for char in text
+            )
+        return text
 
     def _ascii(self, text: str) -> str:
         """``text`` with the signs this stream cannot show in ASCII."""
@@ -926,21 +962,12 @@ class Console:
             # "|" is the side of an ASCII frame: a separator inside one is "/",
             # and |Δ| (the size of a change) is not drawn as two more sides.
             text = text.replace("·", "/").replace("|Δ|", "abs(delta)")
-        text = text.translate(_ASCII_SIGNS)
+        text = text.translate(
+            _ASCII_SIGNS if current_locale() == DEFAULT_LANG else _signs_for(self.encoding)
+        )
         if _DEGREE in text and not self.can_write(_DEGREE):
             text = text.replace(_DEGREE, "")
-        if (self.boxed or self.interactive) and not self.can_write(text.replace(GLUE, " ")):
-            # What the encoding cannot write is replaced by one "?" however
-            # wide the character is, and a frame's sides, a table's columns
-            # would come out ragged: one "?" per column keeps them straight.
-            # A pipe or a file keeps the stream's own "?" (its text has no
-            # frames to keep straight). The glue between a number and its
-            # unit is not text: fit() writes a space.
-            text = "".join(
-                char if char == GLUE or self.can_write(char) else "?" * max(1, char_width(char))
-                for char in text
-            )
-        return text
+        return self._question_marks(text)
 
     # Styles -----------------------------------------------------------------
 
