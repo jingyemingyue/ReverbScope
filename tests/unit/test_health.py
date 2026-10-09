@@ -111,6 +111,8 @@ def test_dropouts_in_the_sweep_are_found_and_placed(short_sweep: SweepSettings) 
     assert json.dumps(assess(result).to_dict())  # evidence holds plain numbers only
     assert check.status is HealthStatus.WARNING  # 13 ms in all: below the invalid limit
     assert "2 dropout" in check.reason and "frequency_response" in check.affects
+    # A burst in the deconvolved response disturbs the low bands' decays too.
+    assert "decay" in check.affects and "energy" in check.affects
     assert check.evidence["count"] == 2
     samples[gap : gap + int(DROPOUTS_INVALID_MS / 1000.0 * rate) + 10] = 0.0
     worse = _analysed(short_sweep, AudioSignal(samples=samples, sample_rate=rate, source="daw"))
