@@ -27,6 +27,7 @@ from reverbscope.cli.console import (
     printable,
     printable_fields,
     shell_command,
+    strip_ansi,
     wrap,
 )
 from reverbscope.core.averaging import AveragedDecay, AveragedMetric
@@ -616,17 +617,25 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
 
 def _legend(c: Console, validities: Sequence[Validity]) -> list[str]:
     """``? unreliable   – outside the excitation range``: what each symbol means,
-    as many entries per line as the width holds (an entry is never split)."""
+    as many entries per line as the width holds (an entry is never split, unless
+    it is wider than the terminal: then it wraps under its mark)."""
     lines: list[str] = []
     line = ""
     for validity in validities:
-        entry = f"{c.symbol(validity_status(validity))} {c.readable(validity_word(validity))}"
+        word = validity_word(validity)
+        entry = f"{c.symbol(validity_status(validity))} {c.readable(word)}"
+        if cell_width("  " + strip_ansi(entry)) > c.width:
+            if line:
+                lines.append("  " + line)
+                line = ""
+            lines += c.status(validity_status(validity), word)
+            continue
         joined = f"{line}   {entry}" if line else entry
         if line and cell_width("  " + joined) > c.width:
             lines.append("  " + line)
             joined = entry
         line = joined
-    return [*lines, "  " + line]
+    return [*lines, "  " + line] if line else lines
 
 
 def _clarity_glance(c: Console, band: BandDecay) -> str | None:
@@ -2151,10 +2160,12 @@ def render_status(console: Console, kind: Status, text: str, *, keep: bool = Fal
 
 
 def _setting_rows(c: Console, rows: Sequence[tuple[str, str, str]]) -> list[str]:
-    """``key  value  meaning`` rows; the meaning wraps under itself.
+    """``key  value  meaning`` rows, the first one the heading (bold); the
+    meaning wraps under itself.
 
     A value too wide for its column (a folder) puts its meaning on the next
-    line; a narrow terminal puts every meaning under its key.
+    line; a narrow terminal puts every meaning under its key, and a terminal
+    too narrow for a key and its value on one line puts the value under the key.
     """
     rows = [(c.readable(key), c.readable(value), c.readable(text)) for key, value, text in rows]
     key_width = max(cell_width(key) for key, _value, _text in rows)
@@ -2162,20 +2173,30 @@ def _setting_rows(c: Console, rows: Sequence[tuple[str, str, str]]) -> list[str]
     value_width = max([cell_width(v) for _k, v, _t in rows if cell_width(v) <= 12] or [12])
     column = 2 + key_width + 2 + value_width + 2
     stacked = c.width - column < 24
+    # Not even a key and its value fit one line: every value goes under its
+    # key (a path is never cut).
+    tight = 2 + key_width + 2 + value_width > c.width
     out: list[str] = []
-    for key, value, text in rows:
-        head = "  " + pad(key, key_width) + "  " + c.command(value)
-        if stacked:
+    for number, (key, value, text) in enumerate(rows):
+        start = len(out)
+        shown = c.bold(value) if number == 0 else c.command(value)
+        head = "  " + pad(key, key_width) + "  " + shown
+        if tight:
+            out.append("  " + key)
+            out.append("    " + shown)
+            out += wrap(text, c.width, first="    ")
+        elif stacked:
             out.append(head)
             out += wrap(text, c.width, first="    ")
-            continue
-        if cell_width(value) > value_width:
+        elif cell_width(value) > value_width:
             out.append(head)
             out += wrap(text, c.width, first=" " * column)
-            continue
-        lines = wrap(text, c.width, first=" " * column)
-        out.append(head + " " * (value_width - cell_width(value) + 2) + lines[0][column:])
-        out += lines[1:]
+        else:
+            lines = wrap(text, c.width, first=" " * column)
+            out.append(head + " " * (value_width - cell_width(value) + 2) + lines[0][column:])
+            out += lines[1:]
+        if number == 0:
+            out[start:] = [c.bold(strip_ansi(line)) for line in out[start:]]
     return out
 
 
@@ -2213,7 +2234,7 @@ def render_config(
         for key in config.KEYS
     ]
     table = _setting_rows(c, rows)
-    lines += [c.bold(table[0]), *table[1:]]
+    lines += table
     lines.append("")
     lines += c.commands(_config_commands())
     lines.append("")

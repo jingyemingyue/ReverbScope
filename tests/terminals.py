@@ -89,6 +89,21 @@ def screens(space: Workspace) -> list[tuple[str, ...]]:
     ]
 
 
+def layouts(space: Workspace) -> list[tuple[str, ...]]:
+    """One screen of each layout in :func:`screens`: the same renderers
+    behind two screens are tried once."""
+    skipped = {
+        ("show", space.b),
+        ("compare", space.a, space.b, "--same-input-gain"),
+        ("project", "show", str(space.room)),
+        ("--backend", "fake", "devices"),
+        ("config", "language"),
+        ("profiles",),
+        ("show", "--list", str(space.demo)),
+    }
+    return [argv for argv in screens(space) if argv not in skipped]
+
+
 class Terminal(io.TextIOWrapper):
     """A text stream in a given encoding that is, or is not, a terminal."""
 

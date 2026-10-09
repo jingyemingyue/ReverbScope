@@ -519,6 +519,13 @@ def _is_word_char(text: str) -> bool:
 _HINT_WIDTH = 30
 
 
+def _group(tokens: list[str], first: int, last: int) -> str:
+    """``tokens[first:last]`` as one piece (a space between words is a blank)."""
+    return "".join(
+        " " if piece.isspace() and piece != GLUE else piece for piece in tokens[first:last]
+    )
+
+
 def _hold_hints(tokens: list[str], room: int) -> list[str]:
     """``tokens`` with each short full-width bracket group made one token."""
     held: list[str] = []
@@ -529,17 +536,36 @@ def _hold_hints(tokens: list[str], room: int) -> list[str]:
             while end < len(tokens) and tokens[end] not in ("（", "）"):
                 end += 1
             if end < len(tokens) and tokens[end] == "）":
-                group = "".join(
-                    " " if piece.isspace() and piece != GLUE else piece
-                    for piece in tokens[index : end + 1]
-                )
-                if cell_width(group) <= min(_HINT_WIDTH, room):
+                # The marks that follow (，。) cannot start a line: they go
+                # with the group, and the line must hold them too.
+                stop = end + 1
+                while stop < len(tokens) and tokens[stop] in _NO_LINE_START:
+                    stop += 1
+                group = _group(tokens, index, stop)
+                if cell_width(_group(tokens, index, end + 1)) <= min(_HINT_WIDTH, room) and (
+                    cell_width(group) <= room
+                ):
                     held.append(group)
-                    index = end + 1
+                    index = stop
                     continue
         held.append(tokens[index])
         index += 1
     return held
+
+
+#: A number held to its unit (``110<glue>Hz``) inside one word.
+_GLUED = re.compile(rf"[-+]?\d[\d.,]*{GLUE}[A-Za-z°%\u3400-\u9fff]+")
+
+
+def _whole_number(piece: str, head: str) -> str:
+    """``head``, the part of ``piece`` that fits a line, without the number
+    whose unit (held to it by :data:`GLUE`) the cut would part from it: a word
+    longer than the line is cut where it must be, but never inside ``110 Hz``."""
+    cut = len(head)
+    for glued in _GLUED.finditer(piece):
+        if glued.start() < cut < glued.end():
+            return head[: glued.start()] or head
+    return head
 
 
 def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> list[str]:
@@ -611,6 +637,7 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                 head = truncate(piece, room, ellipsis="")
                 if not head:
                     break
+                head = _whole_number(piece, head)
                 lines.append(prefix + head)
                 prefix, piece = rest, piece[len(head) :]
             parts = [piece]
@@ -959,7 +986,10 @@ class Console:
         the title in a panel as wide as the terminal."""
         text = self.readable(text)
         if not self.boxed:
-            return [self.bold(text), self.faint(self.rule_char() * cell_width(text))]
+            # A title wider than the terminal wraps, its rule as wide as the longest line.
+            heads = wrap(text, self.width) or [""]
+            rule = self.rule_char() * max(cell_width(head) for head in heads)
+            return [*(self.bold(head) for head in heads), self.faint(rule)]
         left, top, right, side, bottom_left, bottom_right = _PANEL[self.unicode_frames]
         inner = max(1, self.width - 4)
         lines = wrap(text, inner) or [""]
@@ -1014,23 +1044,24 @@ class Console:
 
     def section(self, text: str, note: str = "") -> list[str]:
         """A blank line and a section heading, bold, with an optional note;
-        boxed, the heading sits in a rule across the terminal."""
+        boxed, the heading sits in a rule across the terminal. A heading wider
+        than the terminal wraps, without the rule."""
         text = self.readable(text)
         note = self.readable(note) if note else ""
-        head = self.bold(text)
-        if self.boxed:
-            rule = self.rule_char()
-            lead = self.faint(rule * 2) + " " + head + " "
-            tail = max(0, self.width - cell_width(text) - 4)
+        rule = self.rule_char()
+        if self.boxed and cell_width(text) + 5 <= self.width:
+            lead = self.faint(rule * 2) + " " + self.bold(text) + " "
+            tail = self.width - cell_width(text) - 4
             out = ["", lead + self.faint(rule * tail)]
             if note:
                 out += self.paragraph(note)
             return out
+        heads = [self.bold(line) for line in wrap(text, self.width)]
         if not note:
-            return ["", head]
-        if cell_width(text) + 2 + cell_width(note) <= self.width:
-            return ["", head + "  " + note]
-        return ["", head, *self.paragraph(note)]
+            return ["", *heads]
+        if len(heads) == 1 and cell_width(text) + 2 + cell_width(note) <= self.width:
+            return ["", heads[0] + "  " + note]
+        return ["", *heads, *self.paragraph(note)]
 
     def paragraph(self, text: str, indent: int = 2, *, style: tuple[str, ...] = ()) -> list[str]:
         """Plain ``text`` wrapped at ``indent``; ``style`` is applied per line."""
@@ -1134,12 +1165,12 @@ class Console:
             plain = strip_ansi(value)
             styled = value != plain
             if stacked:
-                out.append(margin + label)
+                out += wrap(label, self.width, first=margin)
                 out += _styled_wrap(value, plain, styled, self.width, margin + "  ")
                 continue
             head = margin + pad(label, label_width) + "  "
             if cell_width(label) > label_width:
-                out.append(margin + label)
+                out += wrap(label, self.width, first=margin)
                 head = " " * value_column
             body = _styled_wrap(value, plain, styled, self.width, " " * value_column)
             out.append(head + body[0][value_column:])

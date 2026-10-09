@@ -23,13 +23,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
-from reverbscope.cli.console import Console, shell_command
+from reverbscope.cli.console import Console, cell_width, shell_command, wrap
 from reverbscope.i18n import _, list_join, pgettext
 from reverbscope.io.session_store import SESSION_FILE
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
 #: Set (to anything) to keep the menu off a terminal.
 MENU_VARIABLE = "REVERBSCOPE_NO_MENU"
+#: Columns a prompt leaves free at the right edge for the answer being typed.
+ANSWER_ROOM = 10
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +74,18 @@ class Session:
         print("\n".join(lines), file=self.out)
 
     def _read(self, shown: str) -> str:
-        return self._ask(self.console.fit(shown)).strip()
+        c = self.console
+        text = c.readable(shown)
+        if cell_width(text) + ANSWER_ROOM <= c.width:
+            return self._ask(c.fit(shown)).strip()
+        # A question longer than the screen ran past its edge, so that the
+        # answer was typed after the terminal had wrapped the line, in the
+        # middle of the text: it is written in lines that leave room at the
+        # right, and only the last line is the prompt.
+        trailing = text[len(text.rstrip()) :]
+        lines = wrap(text.strip(), max(c.width - ANSWER_ROOM, 10))
+        self.say([c.fit(line) for line in lines[:-1]])
+        return self._ask(c.fit(lines[-1] + trailing)).strip()
 
     def ask(self, prompt: str, default: str = "") -> str:
         """A question and its answer; an empty answer takes ``default``.
@@ -228,6 +241,19 @@ def menu_items(*, terminal_edition: bool = False) -> list[MenuItem]:
     return items
 
 
+def _choice_lines(c: Console, rows: Sequence[tuple[str, str]]) -> list[str]:
+    """``  1  title`` rows, the number bold; a title longer than the line wraps
+    under itself."""
+    width = max(len(key) for key, _title in rows)
+    hang = " " * (width + 4)
+    out: list[str] = []
+    for key, title in rows:
+        lines = wrap(c.readable(title), c.width, first=hang, rest=hang)
+        out.append("  " + c.bold(key.rjust(width)) + "  " + lines[0][len(hang) :])
+        out += lines[1:]
+    return out
+
+
 def run_menu(
     console: Console,
     *,
@@ -255,10 +281,8 @@ def run_menu(
     )
     while True:
         session.say([""])
-        width = max(len(item.key) for item in items)
         session.say(
-            [f"  {c.bold(item.key.rjust(width))}  {c.fit(item.title)}" for item in items]
-            + [f"  {c.bold('q'.rjust(width))}  {_('Quit')}"]
+            _choice_lines(c, [(item.key, item.title) for item in items] + [("q", _("Quit"))])
         )
         try:
             choice = session.ask(pgettext("menu prompt", "Your choice")).lower()
