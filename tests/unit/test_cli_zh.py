@@ -90,7 +90,18 @@ def _typed_values(path: str) -> tuple[str, ...]:
         return values
     from reverbscope.interpretation import available_profiles
 
-    return (*values, *available_profiles(), "auto", "on", "off", "system", "light", "dark")
+    return (
+        *values,
+        *available_profiles(),
+        "auto",
+        "on",
+        "off",
+        "system",
+        "light",
+        "dark",
+        "boxed",
+        "plain",
+    )
 
 
 def test_every_help_screen_is_chinese(zh_cli: None) -> None:
@@ -177,8 +188,8 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
     [
         (
             ["project"],
-            "缺少必需的参数：{init,add,average,show}",
-            "the following arguments are required: {init,add,average,show}",
+            "缺少必需的参数：{init,add,average,show,overview}",
+            "the following arguments are required: {init,add,average,show,overview}",
         ),
         (["session"], "缺少必需的参数：{bundle}", "the following arguments are required: {bundle}"),
         (
@@ -199,8 +210,8 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
         ),
         (
             ["project", "bogus"],
-            "无效选项：'bogus'（可选：'init'、'add'、'average'、'show'）",
-            "invalid choice: 'bogus' (choose from 'init', 'add', 'average', 'show')",
+            "无效选项：'bogus'（可选：'init'、'add'、'average'、'show'、'overview'）",
+            "invalid choice: 'bogus' (choose from 'init', 'add', 'average', 'show', 'overview')",
         ),
         (
             ["analyze-ir", "--ir", "x.wav", "--band", "20"],
@@ -239,11 +250,12 @@ def test_every_argparse_error_is_translated(
             main(["--lang", lang, *argv])
         assert exc.value.code == 2
         err = capsys.readouterr().err
-        assert expected in " ".join(err.split()), err
+        # The console wraps a long message; a Chinese list wraps after "、".
+        assert expected in " ".join(err.split()).replace("、 ", "、"), err
         assert "_command" not in err
         if lang == "zh_CN":
             typed = ("bad", "bogus", "result", "session", "comparison", "project", "sidecar")
-            typed += ("init", "add", "average", "show")
+            typed += ("init", "add", "average", "show", "overview")
             data = ("x.wav", "abc", "long", "yes")
             assert english_words(_everything_shown(err), data=data, values=typed) == []
 

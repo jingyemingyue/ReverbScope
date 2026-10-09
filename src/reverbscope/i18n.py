@@ -820,19 +820,26 @@ def _load_translation(lang: str) -> gettext.NullTranslations:
     messages = _LOCALE_DIR / lang / "LC_MESSAGES"
     mo = messages / f"{DOMAIN}.mo"
     po = messages / f"{DOMAIN}.po"
-    if mo.is_file():
+    try:
+        has_mo, has_po = mo.is_file(), po.is_file()
+    except OSError:
+        # A name the file system refuses (longer than a file name may be, from
+        # settings.json, --lang or REVERBSCOPE_LANG) is no catalog, as an
+        # unknown language is; every command must still run.
+        return gettext.NullTranslations()
+    if has_mo:
         try:
             with mo.open("rb") as handle:
                 compiled = gettext.GNUTranslations(handle)
         except (OSError, struct.error, UnicodeDecodeError):
             compiled = None
         if compiled is not None:
-            if not po.is_file():
+            if not has_po:
                 return compiled
             recorded = compiled.info().get(SOURCE_HASH_HEADER.lower())
             if recorded == source_hash(po):
                 return compiled
-    if po.is_file():
+    if has_po:
         return _PoTranslations(parse_po(po))
     return gettext.NullTranslations()
 

@@ -6,6 +6,149 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 38: 2026-10-07 — **the post-RC line takes in the parallel audits,
+corrects the merged decay rules, fixes what three audits reproduced, and
+gets a maintainer's runbook** (branch `integration/post-rc-development`,
+PR #48; nothing tagged or published; `release/0.5.0` gets the stability
+fixes only, see its own snapshot).
+
+* **Parallel work integrated by merge, nothing retyped.**
+  `gpt/post-rc-persistence-corpus` (loader hardening: an integer
+  `schema_version`, typed project position records, typed result lists and
+  energy metrics) and `grok/post-rc-dsp-performance` (PR #47: the DSP
+  robustness and performance audit) are merged; the one conflict,
+  `settling_samples`, keeps both the per-process cache of this line and
+  PR #47's growing impulse. PR #46 (`claude/post-rc-measurement-health`)
+  implemented Measurement health in parallel to this line's own; its one
+  finding this line lacked, the Early reflections tile calling a cut-short
+  window "clean", is ported with a test. The unused `type: ignore` that
+  failed CI's mypy (needed only with PySide6's stubs) is gone.
+* **The merged decay rules corrected** (`core/decay.py`): PR #47's "stops
+  abruptly" rule judged the regression line and rejected every metric of
+  fast decays over a deep floor, of a noise-free synthetic room and of the
+  demo's 63 and 125 Hz bands; a cut-off response is now found by walking
+  back along the line and limits the range instead (a gate 30 dB down still
+  withholds T20 and T30, also at low bands). EDT's straightness is checked
+  only when EDT is far longer than the late decay (a desk reflection made
+  the demo's EDT unreliable). New: T20 and T30 are not fitted across a
+  direct sound that covers more than half their range. Methodology §3 step 7,
+  tests in `test_dsp_edgecases.py` and `test_decay.py`; the demo's synthetic
+  responses are long enough to reach the floor and its goldens are unchanged.
+* **Three audits, read-only, each finding reproduced before it was fixed.**
+  DSP (two defects, both above; settling, loopback, playback speed,
+  deconvolution, noise, frequency response, reflections, distortion and the
+  validity invariants checked and found correct). Desktop app and backend
+  (seven: Settings OK with an unwritable home, the theme switch on the
+  Project page, the walkthrough card within a run, an interface that comes
+  back under another index, the Project page's profile after a saved take,
+  Ctrl+2 from another page during an analysis, Open Data Folder with an
+  uncreatable home; thread lifecycle, late results, damaged sessions from
+  Home, the backend's device handling and the Chinese UI found correct).
+  Persistence, command line and i18n (three: a resonance match without its
+  frequency crashed `show`, a Unicode digit ended the menu, an over-long
+  language name aborted every command; about 250 crafted files, the exit
+  codes, JSON purity, cp1252/GBK streams, every menu item and the zh_CN
+  output found correct).
+* **For testers and maintainers**: the READMEs name the release candidate as
+  the build to test (not "beta 2"); the DAW form asks for the "Data quality"
+  line that the report prints; the checklist, the forms and the user guides
+  agree on buttons, versions, probes, screenshots and the eleven DAWs;
+  `docs/MAINTAINING.md` (and 中文) is the runbook for the two lines, the
+  workflows, the red checks, releases and reports.
+
+**What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
+PortAudio present, no audio device): ruff, ruff format, strict mypy in a venv
+with PySide6 and in one without (as CI's lint job), `check_doc_links.py`,
+`check_cli_docs.py`, `check_src_safety.py`, the docs-site build, the schema
+and CLI-schema checks, the fake-backend Standalone flow, the example script,
+`python -m build` and a fresh-venv wheel install, the license bundle and
+the PySide6 Essentials gate, and the full suite with the coverage gate on
+the final tree (the pull request records the numbers). The 0.5.0rc1 draft's
+14 assets were read back: every SHA-256 matches `SHA256SUMS`, the wheel and
+sdist rebuilt from `7098169` are byte-identical to the draft's, and the Linux
+Desktop and Terminal bundles pass `scripts/smoke_bundle.py` here. **Not
+run:** anything on real hardware or in a DAW; the macOS and Windows bundles
+(built and smoked on GitHub's runners only).
+
+Snapshot 37: 2026-10-07 — **the development line moves on while the
+candidate waits for hardware: bug hunt round 4, Measurement health, a
+regression corpus, verdicts on a comparison, the project overview, a
+boxed terminal and a menu, profiles explained, a benchmark and the
+stability principles** (branch `integration/post-rc-development`, cut from PR
+#45's head `5d33753`; nothing merged, tagged or published; `release/0.5.0`
+untouched).
+
+* **Bug hunt round 4** (state and lifecycle, file persistence, numerical
+  edge cases; a probe of 64 synthetic numerical cases and 70 file-system
+  cases, each listed in the pull request). Found and fixed, each with a
+  regression test first: every writer let a folder that could not be made
+  escape as a bare OSError (the desktop app called it a bug); a damaged or
+  foreign `impulse_response.wav` crashed the first plot or was drawn on the
+  wrong time axis; a NumPy integer sample rate broke `json.dumps` of a
+  result; in the desktop app a page switch to Compare threw a running
+  analysis away as late, a failing profile left the page busy for good, a
+  second Analyze could abort the process, and an abandoned analysis's
+  failure opened a dialog over another page. The numerical probe found no
+  crash and no non-finite number: the pipeline refuses what it cannot use.
+* **Measurement health**: every result opens with the checks made on the
+  take (reference, sweep, playback speed, direct sound, level, distortion,
+  dropouts, decay range, noise floor, recording length, loopback and device
+  when present), each good / warning / invalid / unknown with its reason,
+  the figures it affects and what to do next, with the DAW-by-DAW steps of
+  the DAW guide for a sweep played at the wrong speed (`docs/MEASUREMENT_METHODOLOGY.md`
+  §12). Dropouts in the recorded sweep are now detected and stored
+  (`result.json` gains the optional `dropouts` record).
+* **Regression corpus** (`tests/corpus/`): 47 manifest entries over 70
+  synthetic files (WAV headers wrong in turn, the DAW containers, sidecars,
+  a 0.5.0b2 session and its stale, cut, mis-encoded and crafted variants),
+  each with the reason it exists; `CONTRIBUTING.md` has the loop from a
+  community report to a corpus entry.
+* **Verdicts on a comparison** (second batch): under the candidate's
+  recording profile, `reverbscope compare`, `show comparison.json` and the
+  Compare page say for reverberation, clarity, early reflections, noise
+  floor and low end whether the candidate is a meaningful improvement, a
+  meaningful degradation, probably insignificant, not comparable, or
+  whether the evidence is insufficient, with the reason: the profile's
+  thresholds (two short decays do not matter for a vocal booth), the
+  just-noticeable differences, the take's own T20/T30 spread, and both
+  takes' measurement health. No change is called statistically significant
+  on one pair of positions (`docs/MEASUREMENT_METHODOLOGY.md` §11a).
+* **Test isolation**: the suite wrote a pytest path into the developer's
+  real `~/.reverbscope/recent_sessions.json` on every run; fixed, and a
+  session-wide guard now fails the run if any test touches the real home.
+* **Projects: the overview and the multi-position workflow** (third
+  batch): `reverbscope project overview` and the desktop app's Project page
+  read every take of a project under one profile (health, RT60, clarity,
+  noise, strongest reflection, fit), each position's repeatability and its
+  verdicts against the first position, the spatial average with its
+  ISO 3382-2 class, and what to measure next, without ranking. "Measure a
+  new position..." opens the chosen mode and the save lists the session
+  under that position (`docs/MEASUREMENT_METHODOLOGY.md` §13).
+* **The terminal** (fourth batch): reports are boxed on a wide terminal
+  (title frame, section rules, bordered tables; never a pipe, never a
+  command line, never JSON; `--style`, `config style`,
+  `REVERBSCOPE_CLI_STYLE`), and bare `reverbscope` on a terminal opens a
+  numbered menu that prints the command it runs each time. Harvested from
+  PR #42 without its dependencies.
+* **Profiles explained, and a first-measurement card** (fifth batch):
+  `reverbscope profiles [name]` and the "What does it want?" button say what
+  a recording profile watches for and what it does not judge, from its own
+  thresholds; Home opens with a card for the first measurement until it is
+  dismissed (Help ▸ Getting started brings it back).
+* **Performance, memory and stability** (sixth batch): `scripts/benchmark.py`
+  and `docs/PERFORMANCE.md` (reference numbers, what dominates); opening a
+  session is faster (the JSON guard) and repeated analyses skip the band
+  filters' settling computation (cached, numbers unchanged); the stored
+  frequency response's size and the 60 s / 96 kHz memory peak are documented
+  options, not changed. `docs/API_STABILITY.md` states the stability
+  principles and the checklist for a change to a stable surface.
+
+**What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
+PortAudio present, no audio device): ruff, ruff format, strict mypy, the
+catalog, schema, CLI, GUI and health suites on every change, and the full
+suite before the push. **Not run:** anything on real hardware or in a DAW;
+the Release workflow (no packaging file changed).
+
 Snapshot 36: 2026-10-06 — **two lines from here on: the beta line on
 `main`, and a release-candidate line for hardware and DAW validation.**
 
@@ -22,7 +165,8 @@ merged, tagged or published.
 stacked on PR #44; the changelog's `[Unreleased]` lists it):
 
 * The policy: `main` keeps moving as the beta line (`0.5.0b3`, …); a
-  `release/0.5.0` branch, cut from PR #44's head, carries `0.5.0rc1` with a
+  `release/0.5.0` branch, cut from the head of this branch (PR #45,
+  `5d33753`, which stacks on PR #44), carries `0.5.0rc1` with a
   frozen feature set and only correctness, crash, packaging, cross-platform,
   hardware- and DAW-compatibility, documentation, localization and
   release-engineering fixes. Fixes go to the candidate first and are

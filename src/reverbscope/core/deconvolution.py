@@ -20,6 +20,7 @@ a floor that holds no harmonic response nor the room's decay after one.
 from __future__ import annotations
 
 import math
+from bisect import bisect_left, insort
 from dataclasses import dataclass
 
 import numpy as np
@@ -328,9 +329,21 @@ def find_sweep_passes(
         candidates = candidates[magnitude[candidates] >= prior * ratio]
 
     accepted = [peak]
-    for c in candidates[np.argsort(-magnitude[candidates], kind="stable")]:
-        if all(abs(int(c) - a) >= separation for a in accepted):
-            accepted.append(int(c))
+    ordered = [peak]
+    ranking = np.argsort(-magnitude[candidates], kind="stable")
+    for raw in candidates[ranking]:
+        candidate = int(raw)
+        # The separation test is a 1-D nearest-neighbor query. Scanning every
+        # accepted pass is quadratic in the number of candidates, and a short
+        # reference (a click, not a sweep) makes almost every loud sample one.
+        place = bisect_left(ordered, candidate)
+        before = ordered[place - 1] if place else None
+        after = ordered[place] if place < len(ordered) else None
+        if (before is None or candidate - before >= separation) and (
+            after is None or after - candidate >= separation
+        ):
+            insort(ordered, candidate)
+            accepted.append(candidate)
     return tuple(sorted(accepted))
 
 

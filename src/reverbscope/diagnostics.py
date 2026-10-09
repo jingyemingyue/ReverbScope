@@ -59,6 +59,7 @@ _SETTINGS_KEYS = (
     "copy_recording",
     "theme",
     "developer_tools",
+    "cli_style",
 )
 
 

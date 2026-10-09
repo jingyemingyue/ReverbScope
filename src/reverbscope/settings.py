@@ -15,7 +15,7 @@ from typing import Any
 
 from reverbscope.errors import SessionError
 from reverbscope.i18n import _
-from reverbscope.io.jsonutil import read_json_object, write_text_atomic
+from reverbscope.io.jsonutil import make_folder, read_json_object, write_text_atomic
 from reverbscope.io.recent import reverbscope_home
 from reverbscope.models.loadutil import drop_unknown, read_schema_version
 
@@ -43,6 +43,10 @@ class UserSettings:
     theme: str = ""
     #: Show the developer tools in an installed (user-edition) ReverbScope.
     developer_tools: bool = False
+    #: How the command line frames its reports: "" (auto), "boxed" or "plain".
+    cli_style: str = ""
+    #: The first-measurement card on the Home page was dismissed.
+    walkthrough_dismissed: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -66,6 +70,8 @@ class UserSettings:
                 del payload[item.name]
         if payload.get("theme") not in (None, "", "light", "dark"):
             payload["theme"] = ""
+        if payload.get("cli_style") not in (None, "", "boxed", "plain"):
+            payload["cli_style"] = ""
         return cls(**payload)
 
 
@@ -106,7 +112,7 @@ def read_settings() -> UserSettings:
 def save_settings(settings: UserSettings) -> Path:
     """Write ``settings.json``. Never stores a level acknowledgement."""
     path = settings_path()
-    path.parent.mkdir(parents=True, exist_ok=True)
+    make_folder(path.parent)
     payload = settings.to_dict()
     payload.pop("acknowledge_level", None)
     try:

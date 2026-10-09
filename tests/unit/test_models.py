@@ -161,3 +161,22 @@ def test_the_automatic_channel_choice_is_numbered_as_the_desktop_app_lists_it() 
     finally:
         activate("en")
     assert "已分析声道 2" in shown and "--channel 1" in shown, shown
+
+
+def test_audio_signal_keeps_its_sample_rate_as_a_python_int() -> None:
+    """A NumPy integer (an interface's reported rate, a user's array) reached
+    the result's ``sample_rate`` unchanged, and ``json.dumps`` of the result
+    failed with "Object of type int64 is not JSON serializable"."""
+    import numpy as np
+
+    from reverbscope.errors import InvalidAudioError
+    from reverbscope.models.audio import AudioSignal
+
+    signal = AudioSignal(samples=np.zeros(8), sample_rate=np.int64(48000))
+    assert type(signal.sample_rate) is int and signal.sample_rate == 48000
+    whole = AudioSignal(samples=np.zeros(8), sample_rate=48000.0)
+    assert type(whole.sample_rate) is int
+    with pytest.raises(InvalidAudioError, match="integer"):
+        AudioSignal(samples=np.zeros(8), sample_rate=44100.5)
+    with pytest.raises(InvalidAudioError, match="integer"):
+        AudioSignal(samples=np.zeros(8), sample_rate=True)  # type: ignore[arg-type]

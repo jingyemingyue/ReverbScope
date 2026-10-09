@@ -108,7 +108,8 @@ installs from a file name, so the order has no effect while nothing is on
 PyPI.)
 
 **The release-candidate line is `release/0.5.0`.** It starts from the
-stabilized, CI-green commit of PR #44 and carries `0.5.0rc1`, then `rc2`, …
+stabilized, CI-green head of PR #45 (`5d33753`, `integration/rc-readiness`,
+which stacks on PR #44) and carries `0.5.0rc1`, then `rc2`, …
 until the gate in §2b is met, then `0.5.0` itself and its patch releases.
 Its feature set is frozen. A change is allowed on it only when it is a
 correctness fix, a crash fix, an installer or packaging fix, a cross-platform
@@ -171,9 +172,20 @@ workflow and no agent does.
 
 The pipeline is `.github/workflows/release.yml`
 ([source](../.github/workflows/release.yml)). It is driven by the version
-in `pyproject.toml`, and the maintainer keeps the last word.
+in `pyproject.toml`, and the maintainer keeps the last word. The steps below
+are written for the beta line (`main`); **on the candidate line**
+(`release/0.5.0`, §2a) the release commit is made on that branch, the notes
+header is `packaging/release-notes-header-rc.md` (chosen by
+`scripts/release_draft.py` for a PEP 440 candidate version), the body is the
+`[0.5.0rcN]` CHANGELOG section, and the draft is published as a
+*pre-release*. **Cutting `rc2`** (and every later candidate): one commit on
+`release/0.5.0` that sets `project.version` to `0.5.0rc2`, renames or adds
+the `[0.5.0rc2]` CHANGELOG section and adds a `docs/STATUS.md` snapshot;
+push; the Release run opens the draft `v0.5.0rc2`; publishing it is the
+maintainer's click, which creates the tag. The maintainer's runbook is
+[MAINTAINING.md](MAINTAINING.md).
 
-> **Workflow status (2026-09-24).** The version-driven workflow has been on
+> **Workflow status (2026-09-24, the v0.4.1 history).** The version-driven workflow has been on
 > `main` since PR #18; the v0.4.1 draft Release was opened from it and is
 > refreshed whenever `pyproject.toml`, the workflow, `packaging/`,
 > `scripts/smoke_bundle.py`, `scripts/release_draft.py`,
@@ -491,7 +503,7 @@ channel for the first public testers. What is ready and what is not:
 
 Until a version is on PyPI, no document may tell users to run
 `pip install reverbscope`; INSTALLATION.md says so explicitly, and
-`reverbscope gui` without PySide6 advises `pip install "PySide6_Essentials>=6.6"`
+`reverbscope gui` without PySide6 advises `pip install "PySide6_Essentials>=6.6,<6.12"`
 instead of the extra of a package that is not on PyPI.
 
 ## 4. Gates that apply to every release

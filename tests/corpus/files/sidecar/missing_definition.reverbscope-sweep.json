@@ -1,0 +1,1 @@
+{"schema_version": 1, "note": "Keep this file next to the WAV. ReverbScope uses it to regenerate the exact reference sweep when analysing a recording."}

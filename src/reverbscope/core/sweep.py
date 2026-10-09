@@ -147,7 +147,19 @@ def generate_ess(settings: SweepSettings, *, apply_level: bool = True) -> FloatA
     """Return the sweep only (no leading/trailing silence), peak-scaled to ``level_dbfs``."""
     t = sweep_time_axis(settings)
     rate = settings.sweep_rate
-    phase = 2.0 * np.pi * settings.start_hz * rate * (np.exp(t / rate) - 1.0)
+    if not math.isfinite(rate) or rate <= 0.0:
+        # ``L = T / ln(f2/f1)`` is 0 when the start frequency underflows the
+        # logarithm (a start of 1e-320 against an end of 1 kHz). Dividing by
+        # it below, and again in the inverse filter's envelope, would be a
+        # ZeroDivisionError or an all-NaN sweep.
+        raise ConfigurationError(
+            _("sweep rate is not positive: the frequency range is too small to sweep")
+        )
+    # ``exp(t/L) - 1`` cancels to zero in float64 once ``t/L`` drops below
+    # about 1e-16, so a band whose end is only a few ulps above its start
+    # becomes numerical silence (the sine of a vanished phase). ``expm1``
+    # evaluates that difference without the cancellation.
+    phase = 2.0 * np.pi * settings.start_hz * rate * np.expm1(t / rate)
     x = np.sin(phase)
     fade_in = round(settings.fade_in_s * settings.sample_rate)
     fade_out = round(settings.fade_out_s * settings.sample_rate)

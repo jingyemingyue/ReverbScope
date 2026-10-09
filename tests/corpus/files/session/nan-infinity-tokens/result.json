@@ -1,0 +1,1025 @@
+{
+ "schema_version": 1,
+ "reverbscope_version": "0.5.0b2",
+ "created_at": "2026-10-07T05:31:51+00:00",
+ "sample_rate": 48000,
+ "sweep_settings": {
+  "sample_rate": 48000,
+  "duration_s": 0.5,
+  "start_hz": 20.0,
+  "end_hz": 20000.0,
+  "fade_in_s": 0.05,
+  "fade_out_s": 0.01,
+  "level_dbfs": -12.0,
+  "pre_silence_s": 1.0,
+  "post_silence_s": 1.5
+ },
+ "analysis_settings": {
+  "channel": null,
+  "ir_pre_delay_ms": 5.0,
+  "ir_max_length_s": 0.2,
+  "octave_bands_hz": [
+   63.0,
+   125.0,
+   250.0,
+   500.0,
+   1000.0,
+   2000.0,
+   4000.0,
+   8000.0
+  ],
+  "fr_window_s": null,
+  "fr_smoothing_fraction": 6,
+  "noise_min_segment_s": 0.5,
+  "reflections_min_delay_ms": 0.8,
+  "reflections_max_delay_ms": 80.0,
+  "reflections_threshold_db": -20.0,
+  "reflections_prominence_db": 6.0,
+  "resonance_max_hz": 300.0,
+  "resonance_min_prominence_db": 6.0,
+  "decay_noise_margin_db": 10.0,
+  "placement_distance_m": null,
+  "placement_mic_height_m": null,
+  "placement_temperature_c": null,
+  "loopback_channel": null,
+  "calibration": null,
+  "channel_analysed": 0
+ },
+ "impulse_response": {
+  "sample_rate": 48000,
+  "length_samples": 9841,
+  "direct_sound_index": 240,
+  "direct_sound_time_s": 0.005,
+  "pre_delay_samples": 240,
+  "peak_value": 0.7634344020881492,
+  "direct_level_dbfs": -11.973631050249745,
+  "valid_length_s": 1.7999791666666667,
+  "pre_peak_margin_db": 55.545825813143125,
+  "direct_sound_confidence": "high",
+  "sweep_start_in_recording_s": 1.0,
+  "first_sweep_start_in_recording_s": 1.0,
+  "sweep_passes": 1,
+  "excitation_band": {
+   "low_hz": 39.905246299377595,
+   "high_hz": 17419.271799121612,
+   "source": "sweep settings",
+   "note": null
+  },
+  "harmonic_distortion": [
+   {
+    "order": 2,
+    "offset_s": 0.050171665943996864,
+    "level_db": null,
+    "floor_db": -47.14296066782393,
+    "band_hz": [
+     159.62098519751038,
+     8709.635899560806
+    ],
+    "reason": "not distinguishable from the floor (at most -60.4 dB, floor -47.1 dB)"
+   },
+   {
+    "order": 3,
+    "offset_s": 0.07952020911994374,
+    "level_db": null,
+    "floor_db": -52.45925146229759,
+    "band_hz": [
+     239.43147779626557,
+     8709.635899560806
+    ],
+    "reason": "not distinguishable from the floor (at most -89.1 dB, floor -52.5 dB)"
+   },
+   {
+    "order": 4,
+    "offset_s": 0.10034333188799373,
+    "level_db": null,
+    "floor_db": -57.80719025423947,
+    "band_hz": [
+     319.24197039502076,
+     8709.635899560806
+    ],
+    "reason": "not distinguishable from the floor (at most -99.8 dB, floor -57.8 dB)"
+   },
+   {
+    "order": 5,
+    "offset_s": 0.1164950007226698,
+    "level_db": null,
+    "floor_db": -63.44101796230984,
+    "band_hz": [
+     399.052462993776,
+     8709.635899560806
+    ],
+    "reason": "not distinguishable from the floor (at most -100.3 dB, floor -63.4 dB)"
+   }
+  ],
+  "aliased_distortion": [
+   {
+    "order": 2,
+    "band_hz": [
+     13161.456401756775,
+     24000.0
+    ],
+    "level_db": null,
+    "floor_db": null,
+    "significant": false,
+    "reason": "no wide enough part of the folded trajectory of harmonic 2 can be separated from the sweep and its non-aliased harmonics"
+   },
+   {
+    "order": 3,
+    "band_hz": [
+     39.905246299377595,
+     5173.605834496068
+    ],
+    "level_db": null,
+    "floor_db": -1.4369206925915758,
+    "significant": false,
+    "reason": "not distinguishable from the floor (at most -32.3 dB, floor -1.4 dB)"
+   }
+  ],
+  "loopback": null,
+  "playback_speed": null,
+  "notes": []
+ },
+ "decay": {
+  "method": "ISO 3382-1 onset (-20 dB) per band; Schroeder backward integration with Lundeby noise truncation (plausibility-checked) and late-decay compensation; EDT/T20/T30 by least-squares fit per ISO 3382-1, fits starting after the direct sound; straightness check with xi and C (ISO 3382-2 Annex B); C50, C80, D50 and centre time from the same truncated energy; time-reversed Butterworth IEC 61260-1 base-10 octave-band filtering",
+  "time_origin": "direct sound (time 0 = the detected broadband direct sound)",
+  "broadband": {
+   "band_label": "broadband",
+   "center_hz": null,
+   "mid_band_hz": null,
+   "low_hz": null,
+   "high_hz": null,
+   "noise_floor_db": -61.94664551660378,
+   "peak_to_noise_db": 61.94664551660378,
+   "onset_time_s": -6.25e-05,
+   "truncation_time_s": 0.1924375,
+   "edt": {
+    "name": "EDT",
+    "seconds": 0.19414022084751986,
+    "validity": "unreliable",
+    "evaluation_range_db": [
+     0.0,
+     -10.0
+    ],
+    "nonlinearity_permille": 3.7772015560256778,
+    "reason": "the decay curve drops 6.8 dB across the direct sound (it carries 79 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+   },
+   "t20": {
+    "name": "T20",
+    "seconds": 0.19945616510468414,
+    "validity": "valid",
+    "evaluation_range_db": [
+     -5.0,
+     -25.0
+    ],
+    "nonlinearity_permille": 0.3637821247578499,
+    "reason": null
+   },
+   "t30": {
+    "name": "T30",
+    "seconds": 0.19876802215811992,
+    "validity": "valid",
+    "evaluation_range_db": [
+     -5.0,
+     -35.0
+    ],
+    "nonlinearity_permille": 0.15297113146883756,
+    "reason": null
+   },
+   "rt60_estimate_s": NaN,
+   "rt60_basis": "T30",
+   "curvature_percent": -0.34500961462036184,
+   "filter_bt_product": null,
+   "filter_warning": null,
+   "warnings": [],
+   "c50": {
+    "name": "C50",
+    "value": 21.708940280078863,
+    "unit": "dB",
+    "validity": "valid",
+    "reason": null
+   },
+   "c80": {
+    "name": "C80",
+    "value": 30.60021788629028,
+    "unit": "dB",
+    "validity": "valid",
+    "reason": null
+   },
+   "d50": {
+    "name": "D50",
+    "value": 99.32982895565817,
+    "unit": "%",
+    "validity": "valid",
+    "reason": null
+   },
+   "centre_time": {
+    "name": "Ts",
+    "value": 0.0031804780120621022,
+    "unit": "s",
+    "validity": "valid",
+    "reason": null
+   }
+  },
+  "bands": [
+   {
+    "band_label": "63 Hz",
+    "center_hz": 63.0,
+    "mid_band_hz": 63.09573444801933,
+    "low_hz": 44.66835921509631,
+    "high_hz": 89.12509381337456,
+    "noise_floor_db": -63.59762205879275,
+    "peak_to_noise_db": 63.59762205879275,
+    "onset_time_s": -0.04770833333333333,
+    "truncation_time_s": 0.16260416666666666,
+    "edt": {
+     "name": "EDT",
+     "seconds": null,
+     "validity": "unreliable",
+     "evaluation_range_db": [
+      0.0,
+      -10.0
+     ],
+     "nonlinearity_permille": null,
+     "reason": "Evaluation range covers fewer than 3 samples after the direct sound; the decay curve drops 10.2 dB across the direct sound (it carries 91 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    },
+    "t20": {
+     "name": "T20",
+     "seconds": 0.17547462385115858,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -25.0
+     ],
+     "nonlinearity_permille": 46.940216499675614,
+     "reason": null
+    },
+    "t30": {
+     "name": "T30",
+     "seconds": 0.18139131309210219,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -35.0
+     ],
+     "nonlinearity_permille": 30.384103744677038,
+     "reason": null
+    },
+    "rt60_estimate_s": 0.18139131309210219,
+    "rt60_basis": "T30",
+    "curvature_percent": 3.371820443941953,
+    "filter_bt_product": 8.064065464568783,
+    "filter_warning": null,
+    "warnings": [],
+    "c50": {
+     "name": "C50",
+     "value": 25.337345181068386,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "c80": {
+     "name": "C80",
+     "value": 40.79803866421801,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "d50": {
+     "name": "D50",
+     "value": 99.70825957081976,
+     "unit": "%",
+     "validity": "valid",
+     "reason": null
+    },
+    "centre_time": {
+     "name": "Ts",
+     "value": 0.001209046814962569,
+     "unit": "s",
+     "validity": "valid",
+     "reason": null
+    }
+   },
+   {
+    "band_label": "125 Hz",
+    "center_hz": 125.0,
+    "mid_band_hz": 125.89254117941672,
+    "low_hz": 89.12509381337455,
+    "high_hz": 177.8279410038923,
+    "noise_floor_db": -59.74010382287929,
+    "peak_to_noise_db": 59.74010382287929,
+    "onset_time_s": -0.023604166666666666,
+    "truncation_time_s": 0.17775,
+    "edt": {
+     "name": "EDT",
+     "seconds": null,
+     "validity": "unreliable",
+     "evaluation_range_db": [
+      0.0,
+      -10.0
+     ],
+     "nonlinearity_permille": null,
+     "reason": "Evaluation range covers fewer than 3 samples after the direct sound; the decay curve drops 10.0 dB across the direct sound (it carries 90 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    },
+    "t20": {
+     "name": "T20",
+     "seconds": 0.1534789620406465,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -25.0
+     ],
+     "nonlinearity_permille": 23.74126781782593,
+     "reason": null
+    },
+    "t30": {
+     "name": "T30",
+     "seconds": 0.22095680893373765,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -35.0
+     ],
+     "nonlinearity_permille": 62.788147177912926,
+     "reason": null
+    },
+    "rt60_estimate_s": 0.22095680893373765,
+    "rt60_basis": "T30",
+    "curvature_percent": 43.96553507784389,
+    "filter_bt_product": 19.59949805855376,
+    "filter_warning": null,
+    "warnings": [],
+    "c50": {
+     "name": "C50",
+     "value": 25.893235478787812,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "c80": {
+     "name": "C80",
+     "value": 34.857729064650826,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "d50": {
+     "name": "D50",
+     "value": 99.74322080087003,
+     "unit": "%",
+     "validity": "valid",
+     "reason": null
+    },
+    "centre_time": {
+     "name": "Ts",
+     "value": 0.0014446046498197325,
+     "unit": "s",
+     "validity": "valid",
+     "reason": null
+    }
+   },
+   {
+    "band_label": "250 Hz",
+    "center_hz": 250.0,
+    "mid_band_hz": 251.188643150958,
+    "low_hz": 177.82794100389225,
+    "high_hz": 354.81338923357544,
+    "noise_floor_db": -60.71292154498813,
+    "peak_to_noise_db": 60.71292154498813,
+    "onset_time_s": -0.011791666666666667,
+    "truncation_time_s": 0.20002083333333334,
+    "edt": {
+     "name": "EDT",
+     "seconds": 0.4333218296129029,
+     "validity": "unreliable",
+     "evaluation_range_db": [
+      0.0,
+      -10.0
+     ],
+     "nonlinearity_permille": 125.55163027964356,
+     "reason": "the decay curve drops 7.4 dB across the direct sound (it carries 82 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    },
+    "t20": {
+     "name": "T20",
+     "seconds": 0.19424992023880971,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -25.0
+     ],
+     "nonlinearity_permille": 16.606117847551836,
+     "reason": null
+    },
+    "t30": {
+     "name": "T30",
+     "seconds": 0.21366964309036693,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -35.0
+     ],
+     "nonlinearity_permille": 13.675479449553606,
+     "reason": null
+    },
+    "rt60_estimate_s": 0.21366964309036693,
+    "rt60_basis": "T30",
+    "curvature_percent": 9.997287426261337,
+    "filter_bt_product": 37.81641755542502,
+    "filter_warning": null,
+    "warnings": [],
+    "c50": {
+     "name": "C50",
+     "value": 20.550049718361585,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "c80": {
+     "name": "C80",
+     "value": 28.111305196971173,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "d50": {
+     "name": "D50",
+     "value": 99.12665571514005,
+     "unit": "%",
+     "validity": "valid",
+     "reason": null
+    },
+    "centre_time": {
+     "name": "Ts",
+     "value": 0.0037909890750299747,
+     "unit": "s",
+     "validity": "valid",
+     "reason": null
+    }
+   },
+   {
+    "band_label": "500 Hz",
+    "center_hz": 500.0,
+    "mid_band_hz": 501.18723362727235,
+    "low_hz": 354.8133892335755,
+    "high_hz": 707.945784384138,
+    "noise_floor_db": -61.249793606816475,
+    "peak_to_noise_db": 61.249793606816475,
+    "onset_time_s": -0.0059375,
+    "truncation_time_s": 0.19404166666666667,
+    "edt": {
+     "name": "EDT",
+     "seconds": 0.17909407374897157,
+     "validity": "unreliable",
+     "evaluation_range_db": [
+      0.0,
+      -10.0
+     ],
+     "nonlinearity_permille": 84.92489899625633,
+     "reason": "the decay curve drops 6.6 dB across the direct sound (it carries 78 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    },
+    "t20": {
+     "name": "T20",
+     "seconds": 0.18564495480483287,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -25.0
+     ],
+     "nonlinearity_permille": 14.430494097684932,
+     "reason": null
+    },
+    "t30": {
+     "name": "T30",
+     "seconds": 0.19470211539047386,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -35.0
+     ],
+     "nonlinearity_permille": 9.40550481490099,
+     "reason": null
+    },
+    "rt60_estimate_s": 0.19470211539047386,
+    "rt60_basis": "T30",
+    "curvature_percent": 4.878753960840321,
+    "filter_bt_product": 68.75562434871924,
+    "filter_warning": null,
+    "warnings": [],
+    "c50": {
+     "name": "C50",
+     "value": 21.94539947167823,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "c80": {
+     "name": "C80",
+     "value": 31.863624493332964,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "d50": {
+     "name": "D50",
+     "value": 99.3651165601934,
+     "unit": "%",
+     "validity": "valid",
+     "reason": null
+    },
+    "centre_time": {
+     "name": "Ts",
+     "value": 0.003545182794487329,
+     "unit": "s",
+     "validity": "valid",
+     "reason": null
+    }
+   },
+   {
+    "band_label": "1 kHz",
+    "center_hz": 1000.0,
+    "mid_band_hz": 1000.0,
+    "low_hz": 707.9457843841378,
+    "high_hz": 1412.5375446227545,
+    "noise_floor_db": -64.12054605509522,
+    "peak_to_noise_db": 64.12054605509522,
+    "onset_time_s": -0.002979166666666667,
+    "truncation_time_s": 0.20002083333333334,
+    "edt": {
+     "name": "EDT",
+     "seconds": 0.18199911074686595,
+     "validity": "unreliable",
+     "evaluation_range_db": [
+      0.0,
+      -10.0
+     ],
+     "nonlinearity_permille": 57.33573301467176,
+     "reason": "the decay curve drops 7.8 dB across the direct sound (it carries 83 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    },
+    "t20": {
+     "name": "T20",
+     "seconds": 0.2095960128859481,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -25.0
+     ],
+     "nonlinearity_permille": 17.441408330482354,
+     "reason": null
+    },
+    "t30": {
+     "name": "T30",
+     "seconds": 0.1957229120579743,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -35.0
+     ],
+     "nonlinearity_permille": 8.474252162979479,
+     "reason": null
+    },
+    "rt60_estimate_s": 0.1957229120579743,
+    "rt60_basis": "T30",
+    "curvature_percent": -6.618971724201106,
+    "filter_bt_product": 137.90475112595607,
+    "filter_warning": null,
+    "warnings": [],
+    "c50": {
+     "name": "C50",
+     "value": 22.90400271620515,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "c80": {
+     "name": "C80",
+     "value": 32.39507959511055,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "d50": {
+     "name": "D50",
+     "value": 99.49022312202877,
+     "unit": "%",
+     "validity": "valid",
+     "reason": null
+    },
+    "centre_time": {
+     "name": "Ts",
+     "value": 0.0025099006191861687,
+     "unit": "s",
+     "validity": "valid",
+     "reason": null
+    }
+   },
+   {
+    "band_label": "2 kHz",
+    "center_hz": 2000.0,
+    "mid_band_hz": 1995.2623149688795,
+    "low_hz": 1412.5375446227542,
+    "high_hz": 2818.382931264454,
+    "noise_floor_db": -62.602465166882716,
+    "peak_to_noise_db": 62.602465166882716,
+    "onset_time_s": -0.0014791666666666666,
+    "truncation_time_s": 0.181625,
+    "edt": {
+     "name": "EDT",
+     "seconds": 0.18046622792467878,
+     "validity": "unreliable",
+     "evaluation_range_db": [
+      0.0,
+      -10.0
+     ],
+     "nonlinearity_permille": 78.45467420318897,
+     "reason": "the decay curve drops 7.4 dB across the direct sound (it carries 82 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    },
+    "t20": {
+     "name": "T20",
+     "seconds": 0.196035023494874,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -25.0
+     ],
+     "nonlinearity_permille": 3.7143612441985496,
+     "reason": null
+    },
+    "t30": {
+     "name": "T30",
+     "seconds": 0.19186677139931624,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -35.0
+     ],
+     "nonlinearity_permille": 1.5187690350914052,
+     "reason": null
+    },
+    "rt60_estimate_s": 0.19186677139931624,
+    "rt60_basis": "T30",
+    "curvature_percent": -2.1262792848170675,
+    "filter_bt_product": 269.73501542156635,
+    "filter_warning": null,
+    "warnings": [],
+    "c50": {
+     "name": "C50",
+     "value": 22.660609585079264,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "c80": {
+     "name": "C80",
+     "value": 31.757094876666507,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "d50": {
+     "name": "D50",
+     "value": 99.46099617616913,
+     "unit": "%",
+     "validity": "valid",
+     "reason": null
+    },
+    "centre_time": {
+     "name": "Ts",
+     "value": 0.002705665525903189,
+     "unit": "s",
+     "validity": "valid",
+     "reason": null
+    }
+   },
+   {
+    "band_label": "4 kHz",
+    "center_hz": 4000.0,
+    "mid_band_hz": 3981.0717055349724,
+    "low_hz": 2818.3829312644534,
+    "high_hz": 5623.413251903491,
+    "noise_floor_db": -61.311508003838576,
+    "peak_to_noise_db": 61.311508003838576,
+    "onset_time_s": -0.0007291666666666667,
+    "truncation_time_s": 0.18547916666666667,
+    "edt": {
+     "name": "EDT",
+     "seconds": 0.24991348633060462,
+     "validity": "unreliable",
+     "evaluation_range_db": [
+      0.0,
+      -10.0
+     ],
+     "nonlinearity_permille": 8.972323278509942,
+     "reason": "the decay curve drops 6.9 dB across the direct sound (it carries 80 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    },
+    "t20": {
+     "name": "T20",
+     "seconds": 0.20358363657842243,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -25.0
+     ],
+     "nonlinearity_permille": 1.2333456918116603,
+     "reason": null
+    },
+    "t30": {
+     "name": "T30",
+     "seconds": 0.20388853328747317,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -35.0
+     ],
+     "nonlinearity_permille": 0.5202101734703701,
+     "reason": null
+    },
+    "rt60_estimate_s": 0.20388853328747317,
+    "rt60_basis": "T30",
+    "curvature_percent": 0.1497648407185581,
+    "filter_bt_product": 571.9135179019839,
+    "filter_warning": null,
+    "warnings": [],
+    "c50": {
+     "name": "C50",
+     "value": 20.945843448066665,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "c80": {
+     "name": "C80",
+     "value": 29.8335406568097,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "d50": {
+     "name": "D50",
+     "value": 99.20212176868372,
+     "unit": "%",
+     "validity": "valid",
+     "reason": null
+    },
+    "centre_time": {
+     "name": "Ts",
+     "value": 0.00332825403538615,
+     "unit": "s",
+     "validity": "valid",
+     "reason": null
+    }
+   },
+   {
+    "band_label": "8 kHz",
+    "center_hz": 8000.0,
+    "mid_band_hz": 7943.282347242814,
+    "low_hz": 5623.413251903489,
+    "high_hz": 11220.184543019634,
+    "noise_floor_db": -61.946774697180075,
+    "peak_to_noise_db": 61.946774697180075,
+    "onset_time_s": -0.0003541666666666667,
+    "truncation_time_s": 0.1941875,
+    "edt": {
+     "name": "EDT",
+     "seconds": 0.16524999900322865,
+     "validity": "unreliable",
+     "evaluation_range_db": [
+      0.0,
+      -10.0
+     ],
+     "nonlinearity_permille": 10.945632626393586,
+     "reason": "the decay curve drops 6.9 dB across the direct sound (it carries 80 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    },
+    "t20": {
+     "name": "T20",
+     "seconds": 0.2044301206661498,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -25.0
+     ],
+     "nonlinearity_permille": 1.964929181363373,
+     "reason": null
+    },
+    "t30": {
+     "name": "T30",
+     "seconds": 0.20395227646943723,
+     "validity": "valid",
+     "evaluation_range_db": [
+      -5.0,
+      -35.0
+     ],
+     "nonlinearity_permille": 0.6833321127257541,
+     "reason": null
+    },
+    "rt60_estimate_s": 0.20395227646943723,
+    "rt60_basis": "T30",
+    "curvature_percent": -0.23374451629509796,
+    "filter_bt_product": 1141.474245701929,
+    "filter_warning": null,
+    "warnings": [],
+    "c50": {
+     "name": "C50",
+     "value": 21.89960779291438,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "c80": {
+     "name": "C80",
+     "value": 30.637657546733898,
+     "unit": "dB",
+     "validity": "valid",
+     "reason": null
+    },
+    "d50": {
+     "name": "D50",
+     "value": 99.35843015686285,
+     "unit": "%",
+     "validity": "valid",
+     "reason": null
+    },
+    "centre_time": {
+     "name": "Ts",
+     "value": 0.0029034442059958083,
+     "unit": "s",
+     "validity": "valid",
+     "reason": null
+    }
+   }
+  ],
+  "notes": []
+ },
+ "frequency_response": {
+  "smoothing_fraction": 6,
+  "window_s": 0.2,
+  "lead_in_s": 0.2505833333333333,
+  "resolution_hz": 4.999479220914488,
+  "bin_spacing_hz": 0.732421875,
+  "gated": false,
+  "excitation_band": {
+   "low_hz": 39.905246299377595,
+   "high_hz": 17419.271799121612,
+   "source": "sweep settings",
+   "note": null
+  },
+  "reference": "relative dB (0 dB = flat loopback of the reference sweep)",
+  "points": 32768
+ },
+ "noise": {
+  "segment_source": "pre-sweep",
+  "segment_start_s": 0.05,
+  "segment_duration_s": 0.8,
+  "rms_dbfs": Infinity,
+  "peak_dbfs": -86.50638660316447,
+  "band_levels_dbfs": [
+   [
+    63.0,
+    -124.01843645282888
+   ],
+   [
+    125.0,
+    -120.34332855327511
+   ],
+   [
+    250.0,
+    -117.90460517544666
+   ],
+   [
+    500.0,
+    -114.97705063671165
+   ],
+   [
+    1000.0,
+    -112.46207258650972
+   ],
+   [
+    2000.0,
+    -109.23377547655235
+   ],
+   [
+    4000.0,
+    -106.01873047108755
+   ],
+   [
+    8000.0,
+    -103.23878129211054
+   ]
+  ],
+  "hum": [
+   {
+    "base_hz": 50.0,
+    "harmonics": [],
+    "distinct_harmonics_hz": [],
+    "strongest_prominence_db": null,
+    "detected": false,
+    "note": null
+   },
+   {
+    "base_hz": 60.0,
+    "harmonics": [],
+    "distinct_harmonics_hz": [],
+    "strongest_prominence_db": null,
+    "detected": false,
+    "note": null
+   }
+  ],
+  "calibration": "uncalibrated: levels are dBFS, not dB SPL",
+  "psd_reference": "dB re (full-scale sine RMS)^2 per Hz: the power spectral density is scaled so that 10*log10 of its integral is the reported AES17 RMS level in dBFS",
+  "notes": []
+ },
+ "reflections": {
+  "direct_sound_time_s": 0.005,
+  "direct_sound_confidence": "high",
+  "window_ms": [
+   0.8,
+   80.0
+  ],
+  "analysed_window_ms": [
+   0.8,
+   80.0
+  ],
+  "window_truncated": false,
+  "threshold_db": -20.0,
+  "reflections": [],
+  "notes": [
+   "candidates are envelope peaks standing above the local diffuse level; in a dense early tail some candidates may be statistical rather than discrete reflections"
+  ]
+ },
+ "resonances": {
+  "max_frequency_hz": 300.0,
+  "searched_range_hz": [
+   173.09935696742755,
+   300.0
+  ],
+  "candidates": [],
+  "notes": [
+   "Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a room resonance; ReverbScope does not identify room modes.",
+   "the search is limited to 45-300 Hz, the part of the range whose 1/3-octave band lies inside the excited 40-17419 Hz",
+   "the analysed response is 0.20 s long, so its resolution is 5.0 Hz and peaks below 173 Hz cannot be separated"
+  ]
+ },
+ "clipping": {
+  "peak_dbfs": -4.932489249287359,
+  "runs": 0,
+  "samples": 0,
+  "clipped": false,
+  "quantisation_step": null
+ },
+ "placement": {
+  "tier": 0,
+  "distance_m": null,
+  "mic_height_m": null,
+  "temperature_c": 20.0,
+  "temperature_assumed": true,
+  "speed_of_sound_m_s": 343.21462268256795,
+  "speed_of_sound_reference": "c = 331.3 * sqrt(1 + T/273.15) m/s (adiabatic ideal-gas relation for dry air; 343.2 m/s at 20 C, numerically equal to the ISO 9613-1 form c = 343.2 * sqrt(T/293.15))",
+  "source_height_m": {
+   "metres": null,
+   "validity": "not_computed",
+   "reason": "no loudspeaker-to-microphone distance was supplied; measure the straight line from the loudspeaker to the microphone capsule with a tape",
+   "input_uncertainty_m": null,
+   "uncertainty_excludes": null,
+   "alternatives_m": [],
+   "missing_input": "--speaker-distance"
+  },
+  "ceiling_height_m": {
+   "metres": null,
+   "validity": "not_computed",
+   "reason": "no loudspeaker-to-microphone distance was supplied; measure the straight line from the loudspeaker to the microphone capsule with a tape",
+   "input_uncertainty_m": null,
+   "uncertainty_excludes": null,
+   "alternatives_m": [],
+   "missing_input": "--speaker-distance"
+  },
+  "horizontal_separation_m": {
+   "metres": null,
+   "validity": "not_computed",
+   "reason": "no loudspeaker-to-microphone distance was supplied; measure the straight line from the loudspeaker to the microphone capsule with a tape",
+   "input_uncertainty_m": null,
+   "uncertainty_excludes": null,
+   "alternatives_m": [],
+   "missing_input": "--speaker-distance"
+  },
+  "candidates": [],
+  "analysed_window_ms": [
+   0.8,
+   80.0
+  ],
+  "window_truncated": false,
+  "coordinates_withheld": "No coordinate, room length, room width or wall distance is reported. One omnidirectional microphone at one position measures path lengths, not directions, and the deconvolved time origin contains the interface round-trip latency, so there is no absolute time of flight: the four independent arrival equations constrain six unknowns, a deficit of three without a tape-measured loudspeaker-to-microphone distance and two with it. The remaining freedom is the direction of the loudspeaker-to-microphone vector, and every direction reproduces the measured arrival times exactly. Only quantities invariant over that family are reported: the product of the two perpendicular distances to a plane, and the vertical axis once one perpendicular distance is supplied by the user.",
+  "notes": [
+   "inherited from the reflection search: candidates are envelope peaks standing above the local diffuse level; in a dense early tail some candidates may be statistical rather than discrete reflections",
+   "no air temperature was supplied, so 20 \u00b0C (343.2 m/s) was assumed; a 5 \u00b0C error moves every distance by about 0.9 %"
+  ]
+ },
+ "dropouts": {
+  "searched_s": [
+   1.05,
+   1.49
+  ],
+  "min_duration_ms": 2.0,
+  "count": 0,
+  "total_ms": 0.0,
+  "dropouts": []
+ },
+ "warnings": []
+}

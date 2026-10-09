@@ -7,9 +7,19 @@ device, insufficient data) from programming errors.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from reverbscope.models.result import PlaybackSpeed
+
 
 class ReverbScopeError(Exception):
     """Base class for all ReverbScope errors."""
+
+    #: Set by the analysis when it measured the sweep at the wrong speed before
+    #: giving up: the cause the user can fix. ``health.failure_guidance`` turns
+    #: it into the steps to take, DAW by DAW.
+    playback_speed: PlaybackSpeed | None = None
 
 
 class ConfigurationError(ReverbScopeError, ValueError):

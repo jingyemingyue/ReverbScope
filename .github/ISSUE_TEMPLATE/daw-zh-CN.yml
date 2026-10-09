@@ -21,7 +21,7 @@ body:
     id: os
     attributes:
       label: 操作系统和 ReverbScope 版本
-      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.4.1 build 1a2b3c4"
+      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.5.0rc1 build 1a2b3c4d"
     validations:
       required: true
   - type: input
@@ -84,9 +84,10 @@ body:
       label: 结果
       description: |
         ReverbScope 是否分析了这段录音？请从**完整报告**选项卡（或
-        `reverbscope show <session>`）中粘贴以“脉冲响应：”开头的那一行
-        （英文界面为 "Impulse response:"；其中给出直达声置信度，矩阵单元格
-        要求为“高”（high）），以及任何关于采样率或播放速度的发现。
+        `reverbscope show <session>`）中粘贴“概览”里的“数据质量”一行
+        （或“诊断”里的“直达声”一行；英文界面为 "Data quality" / "Direct
+        sound"），其中给出直达声置信度，矩阵单元格要求为“高”（high）；再加上
+        任何关于采样率或播放速度的发现。
         如果是反向测试（44.1 kHz 工程配 48 kHz 扫频，或开启了时间伸缩），
         请说明 ReverbScope 是否报告了该问题。
     validations:

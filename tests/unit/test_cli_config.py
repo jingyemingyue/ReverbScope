@@ -368,6 +368,7 @@ def test_every_config_screen_is_chinese(
 
     monkeypatch.setenv("LANG", "zh_CN.UTF-8")
     typed = (*KEYS, *available_profiles(), "auto", "system", "zh_CN", "on", "off", "light", "dark")
+    typed += ("boxed", "plain")
     # Paths and environment variables are shown as they are.
     data = (str(settings_path()), str(home), "LANG=zh_CN.UTF-8")
     runs = [

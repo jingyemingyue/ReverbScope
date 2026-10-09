@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import numbers
 from dataclasses import dataclass
 
 import numpy as np
@@ -27,6 +28,19 @@ class AudioSignal:
     device_warnings: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
+        rate: object = self.sample_rate
+        # A NumPy integer (an interface's reported rate) or a whole float is
+        # kept as a Python int: a numpy.int64 reached the result unchanged and
+        # json.dumps of the result then failed. Anything else is refused.
+        if isinstance(rate, bool):
+            raise InvalidAudioError(_("sample_rate must be a positive integer"))
+        if isinstance(rate, numbers.Integral):
+            whole = int(rate)
+        elif isinstance(rate, numbers.Real) and float(rate).is_integer():
+            whole = int(float(rate))
+        else:
+            raise InvalidAudioError(_("sample_rate must be a positive integer"))
+        object.__setattr__(self, "sample_rate", whole)
         if self.sample_rate <= 0:
             raise InvalidAudioError(_("sample_rate must be positive"))
         if self.samples.ndim not in (1, 2):

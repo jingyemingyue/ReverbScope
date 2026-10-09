@@ -106,7 +106,7 @@ and DAWs can run the checks in
 [docs/HARDWARE_TESTS.md](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/HARDWARE_TESTS.md)
 ([简体中文](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/HARDWARE_TESTS.zh-CN.md)).
 Every report counts, a failure as much as a pass. **Help → Environment Report
-for Bug Reports → Copy** (or `reverbscope doctor --probe --out report.txt`)
+for Bug Reports → Probe sample rates → Copy** (or `reverbscope doctor --probe --out report.txt`)
 gives the version, build commit, system, host APIs and devices to paste:
 [interface report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml) ·
 [DAW report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml) ·
