@@ -1250,7 +1250,7 @@ msgid "confidence"
 msgstr "置信度"
 
 msgid "no hum"
-msgstr "无工频干扰"
+msgstr "无交流声"
 
 msgid "pre-peak margin {margin:.1f} dB"
 msgstr "峰前余量 {margin:.1f} dB"
@@ -1283,7 +1283,7 @@ msgid "sweep played at {percent:.1f} % speed"
 msgstr "扫频以 {percent:.1f} % 速度播放"
 
 msgid "hum {base:g} Hz"
-msgstr "工频干扰 {base:g} Hz"
+msgstr "{base:g} Hz 交流声"
 
 msgid "warning"
 msgstr "警告"
@@ -2169,7 +2169,7 @@ msgid "sample_rate must be positive"
 msgstr "sample_rate 必须为正数"
 
 msgid "samples must be 1-D (mono) or 2-D (frames, channels)"
-msgstr "samples 必须是一维（单声道）或二维（帧, 声道）数组"
+msgstr "samples 必须是一维（单声道）或二维（帧、声道）数组"
 
 msgid "signal is empty"
 msgstr "信号为空"
@@ -3218,7 +3218,7 @@ msgstr "{metric} 没有不受截断影响的值"
 
 msgctxt "diagnostic"
 msgid "B*T = {bt:.1f} < {minimum:g}: the band filter's own decay is comparable to the measured decay; values in this band are unreliable"
-msgstr "B*T = {bt:.1f} < {minimum:g}: 频带滤波器自身的衰减与实测衰减相当；此频带的数值不可靠"
+msgstr "B*T = {bt:.1f} < {minimum:g}：频带滤波器自身的衰减与实测衰减相当；此频带的数值不可靠"
 
 msgctxt "diagnostic"
 msgid "the noise crosspoint ({crosspoint:.2f} s after the onset) lies far beyond the first point where the decay reaches the noise floor ({reached:.2f} s)"
@@ -5937,3 +5937,12 @@ msgstr "文件是空的"
 
 msgid "the system could not create the file"
 msgstr "系统无法创建该文件"
+
+msgid "{question}: "
+msgstr "{question}："
+
+msgid "{question} [{default}]: "
+msgstr "{question}（默认：{default}）："
+
+msgid "{question} [y/N]: "
+msgstr "{question}（y/N）："

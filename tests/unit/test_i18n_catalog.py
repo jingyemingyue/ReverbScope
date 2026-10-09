@@ -365,6 +365,7 @@ RETIRED_CHINESE_WORDS = {
     "市电哼声": "交流声",
     "电源嗡声": "交流声",
     "交流哼声": "交流声",
+    "工频干扰": "交流声",
     "不可比较": "不可对比",
     "未比较": "未对比",
     "无法比较": "无法对比",
@@ -442,3 +443,40 @@ def test_two_concepts_do_not_share_a_chinese_word() -> None:
     topic = catalog["at a glance" + CONTEXT_SEPARATOR + "Topic"]
     assert topic != catalog["Project"] == "项目"
     assert "工程" in catalog["Where the project's sample rate is set:"]
+
+
+#: What the Chinese catalog may keep in ASCII beside Chinese: Qt's accelerators
+#: ("打开项目(&P)"), file filters ("WAV 文件 (*.wav)"), an argument tuple and a
+#: setting's literal value that the user reads in the program or the DAW.
+ASCII_PUNCTUATION_ALLOWED = (
+    r"\(&\w\)",
+    r"\([^()]*\*[^()]*\)",
+    r"\(session\.json\)",
+    r"\(low_hz, high_hz\)",
+    r"\(none\)",
+    r"sqrt\([^()]*\)",
+    r"Record, Warp & Launch",
+    r"hw:",
+)
+
+
+def test_the_chinese_catalog_punctuates_in_chinese() -> None:
+    """Brackets, commas, semicolons, colons and quotes beside Chinese are
+    full-width: "50 Hz (+57 dB), 100 Hz" and "B*T = 1.2 < 2: 频带…" were not."""
+    ascii_beside_chinese = re.compile(
+        r"[()]"
+        r"|[,;] "
+        r"|(?<=[一-鿿]):|:(?= ?[一-鿿])"
+        r"|['\"](?=[一-鿿])|(?<=[一-鿿])['\"]"
+    )
+    found = []
+    for msgid, msgstr in parse_po(CATALOG).items():
+        if not re.search(r"[一-鿿]", msgstr):
+            continue
+        shown = re.sub(r"\{[^{}]*\}|%\([^()]*\)\w", "{}", msgstr)
+        for allowed in ASCII_PUNCTUATION_ALLOWED:
+            shown = re.sub(allowed, "", shown)
+        shown = re.sub(r"https?://\S+|(?<![\w-])--?[A-Za-z][\w-]*", "", shown)
+        if ascii_beside_chinese.search(shown):
+            found.append((msgid.replace(CONTEXT_SEPARATOR, " | ")[:60], msgstr[:80]))
+    assert found == [], found

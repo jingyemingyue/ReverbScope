@@ -196,3 +196,44 @@ def test_an_unexpected_failure_while_asking_returns_to_the_menu() -> None:
     assert code == 0
     assert runs == []
     assert "could not be completed" in text and "ValueError: boom" in text
+
+
+def _prompts(answers: Sequence[object]) -> list[str]:
+    """The prompts the menu shows (the text before the cursor) for ``answers``."""
+    shown: list[str] = []
+    pending = iter(answers)
+
+    def ask(prompt: str) -> str:
+        shown.append(prompt)
+        try:
+            return str(next(pending))
+        except StopIteration:
+            raise EOFError from None
+
+    run_menu(Console(width=80), ask=ask, run=lambda _argv: 0, out=io.StringIO())
+    return shown
+
+
+def test_the_questions_are_punctuated_the_way_the_language_writes_them() -> None:
+    """`你的选择: ` and `你的 DAW 工程采样率（Hz） [48000]: ` ended in an ASCII colon, and
+    the default sat in ASCII brackets after a full-width one."""
+    answers = ["2", "", "", "4", "", "", "n", "q"]
+    try:
+        english = _prompts(answers)
+        activate("zh_CN")
+        chinese = _prompts(answers)
+    finally:
+        activate("en")
+    assert english[:3] == [
+        "Your choice: ",
+        "Where to write the test signal [sweep.wav]: ",
+        "Sample rate of your DAW project (Hz) [48000]: ",
+    ]
+    assert chinese[:3] == [
+        "你的选择：",
+        "测试信号写到哪里（默认：sweep.wav）：",
+        "你的 DAW 工程采样率（Hz）（默认：48000）：",
+    ]
+    assert any(prompt.endswith("[y/N]: ") for prompt in english)
+    assert any(prompt.endswith("（y/N）：") for prompt in chinese)
+    assert not [prompt for prompt in chinese if ": " in prompt or " [" in prompt]

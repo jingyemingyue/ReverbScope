@@ -71,10 +71,20 @@ class Session:
     def say(self, lines: Sequence[str]) -> None:
         print("\n".join(lines), file=self.out)
 
+    def _read(self, shown: str) -> str:
+        return self._ask(self.console.fit(shown)).strip()
+
     def ask(self, prompt: str, default: str = "") -> str:
-        shown = f"{prompt} [{default}]: " if default else f"{prompt}: "
-        answer = self._ask(self.console.fit(shown)).strip()
-        return answer or default
+        """A question and its answer; an empty answer takes ``default``.
+
+        The question, its default and its colon are written the way the
+        interface language writes them (``测试信号写到哪里（默认：sweep.wav）：``).
+        """
+        if default:
+            shown = _("{question} [{default}]: ").format(question=prompt, default=default)
+        else:
+            shown = _("{question}: ").format(question=prompt)
+        return self._read(shown) or default
 
     def ask_path(
         self,
@@ -108,7 +118,7 @@ class Session:
             )
 
     def ask_yes(self, prompt: str) -> bool:
-        answer = self.ask(f"{prompt} [y/N]").strip().lower()
+        answer = self._read(_("{question} [y/N]: ").format(question=prompt)).lower()
         return answer in ("y", "yes", pgettext("answer", "y"), pgettext("answer", "yes"))
 
 
