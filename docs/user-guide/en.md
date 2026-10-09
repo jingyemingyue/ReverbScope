@@ -370,6 +370,15 @@ a file or another program it writes plain text. `--color never` or the
 `NO_COLOR` environment variable turns colour off, `--color always` keeps it
 in a pipe.
 
+**Colour sits on marks, bars and borders only.** The ✓ ! ✗ marks, the
+progress bar, the frames and the rules are coloured; a word or a number never
+is, and nothing that carries information is dim, because yellow, green, cyan
+and dim text is hard to read on a light background. Status words, headings,
+titles, commands and the numbers of the menu are bold in the colour of the
+terminal's text, and labels, notes and descriptions are plain. A mark that is
+a letter (`[OK]`, `x` and `i`, where the stream cannot write ✓ and ✗) is bold
+too.
+
 **Boxed reports.** On a terminal at least 48 columns wide, a report's title
 sits in a frame, section headings in rules and tables between borders;
 status lines, commands and paths are never framed, and Chinese text is
@@ -378,7 +387,19 @@ gets the plain ruled layout, and `--format json` is unaffected. `--style
 plain` or `--style boxed` decide for one command, `reverbscope config style
 plain|boxed|auto` for good, and the `REVERBSCOPE_CLI_STYLE` environment
 variable for a shell. Where a terminal's font draws the box glyphs two
-columns wide, choose `plain`; a stream that cannot write them gets `+ - |`.
+columns wide, choose `plain` (a Chinese interface says so under the home
+screen and the menu: `边框歪了？reverbscope config style plain`); a stream
+that cannot write them gets `+ - |`. The frames follow what the stream's
+encoding can write, not only the symbols: one that has ✓ and ─ but no rounded
+corners (the Japanese JIS X 0213 encodings) gets `+ - |` too. A character the
+stream cannot write is shown as one `?` per display column, so the sides of a
+frame and the columns of a table stay straight, and `|Δ|` is written
+`abs(delta)` inside an ASCII frame, where `|` is a border.
+
+On a narrow terminal (down to 20 columns) a heading, a title or a label wider
+than the line wraps, a number is never parted from its unit, and the settings
+put each value under its key; only a path, a file name or a command to copy is
+never cut or wrapped, so it can run past the edge.
 
 In a boxed report **"At a glance" is a table** of topic, status and result.
 The status cell shows a mark and a word, so colour is never the only signal:

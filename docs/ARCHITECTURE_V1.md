@@ -594,7 +594,18 @@ titled `✗ Error` whose message and explanation sit inside it; the commands to
 try stay under the card, bare, and a text that a card cannot hold whole (a
 path is never cut) is laid out as lines, the cards of a section all or none.
 The usage errors argparse raises before the options are parsed read `--style`
-and the `style` setting by hand.
+and the `style` setting by hand. Colour is only ever on a mark, a bar or a
+border, never on a run of letters or digits, and nothing that carries
+information is dim (`Console.muted` is plain text, `Console.faint` the dim of
+decoration); a mark that is a letter (`[OK]`, `x`, `i`) is bold; a test lists
+every dim or coloured run of letters and digits on about twenty screens. The
+frames follow what the stream's encoding can write (`frames_writable`: the
+JIS X 0213 encodings write `✓` and `─` but not `╭`, and get `+ - |`), a
+character it cannot write becomes one `?` per display column where frames are
+drawn or the stream is a terminal, so that sides and columns stay straight,
+and `|Δ|` is `abs(delta)` inside an ASCII frame. A heading, a title or a label
+wider than the terminal wraps; only a path, a file name or a command to copy is
+never cut.
 
 Every command reads the same way: title and context, the result ("At a
 glance" first in an analysis or a comparison), the detail, then numbered

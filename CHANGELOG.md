@@ -118,6 +118,34 @@ All notable changes to ReverbScope are documented here. The format follows
   supported, empty) instead of ending in its English; English keeps its words,
   and so does every English line, JSON and pipe. From the redesign of PR #42,
   on this line's own code.
+- **Colour only on marks, frames that follow the stream, narrow terminals.**
+  Headings, field labels, notes, table headings, commands, the numbers of the
+  menu, a take's clock and an unreliable value were yellow, green, cyan or
+  dim, which is hard to read on a light background (a contrast of 1.7 to
+  3.7). Colour now sits on the status marks, the progress bar, the frames and
+  the rules only; status words, headings, titles, commands and menu numbers
+  are bold in the colour of the terminal's text, labels and notes are plain,
+  and a mark that is a letter (`[OK]`, `x`, `i`) is bold. A test lists every
+  dim or coloured run of letters and digits on about twenty screens, in both
+  languages and both styles. The frames follow what the stream's encoding can
+  write: one that has `✓` and `─` but no rounded corners (the Japanese JIS X
+  0213 encodings) gets `+ - |`, with `|Δ|` written `abs(delta)` inside; a
+  terminal that cannot write Chinese now shows one `?` per column in plain
+  tables as well, so their columns stay under each other (a pipe keeps the
+  stream's own text). Every command was run in both languages from 20 to 100
+  columns, with and without colour, as UTF-8, cp1252 and cp936, and what
+  broke was fixed: a heading, a title or a label wider than the terminal
+  wraps, `reverbscope config` fits 20 columns by putting each value under its
+  key, a note in full-width brackets keeps its closing mark inside the line,
+  a word cut where it must be (a run of `?` in cp1252) never parts `110` from
+  `Hz`, the legend of a comparison wraps, and the menu's items wrap under
+  their numbers and a question longer than the screen is written in lines.
+  The home screen and the menu of a Chinese interface end with
+  `边框歪了？reverbscope config style plain`, the way out for a terminal that
+  draws the box glyphs two columns wide, which was only in `config --help`. A
+  pipe or a file at its usual width, `--format json` and the desktop app's
+  report text are unchanged. From the redesign of PR #42, on this line's own
+  code.
 - **An interactive menu.** `reverbscope` with no command on a terminal opens
   a numbered menu (demo, test signal, analyse, measure, show, compare,
   project overview, settings, environment report, desktop app). Each choice

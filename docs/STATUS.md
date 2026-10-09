@@ -136,7 +136,11 @@ untouched).
   (a catalog test keeps the retired words out), writes its lists, brackets,
   colons and quotes in Chinese, keeps a closing mark, a hint and a word's two
   halves together when it wraps, and explains why libsndfile could not open a
-  file.
+  file. Colour sits on marks, bars and borders only (a test lists every dim
+  or coloured run of letters and digits on about twenty screens), the frames
+  follow what the stream's encoding can write, every command was run from 20
+  to 100 columns as UTF-8, cp1252 and cp936, and a Chinese interface says how
+  to leave the frames out.
 * **Profiles explained, and a first-measurement card** (fifth batch):
   `reverbscope profiles [name]` and the "What does it want?" button say what
   a recording profile watches for and what it does not judge, from its own
