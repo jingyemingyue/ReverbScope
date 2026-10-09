@@ -96,7 +96,8 @@ SAFE = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789./-_:,
 @pytest.mark.skipif(not POSIX, reason="a POSIX shell reads the command")
 @pytest.mark.parametrize(
     "char",
-    [chr(code) for code in range(1, 128) if chr(code) not in SAFE] + ["\u00a0", "\u200b", "\u202e"],
+    [chr(code) for code in range(1, 128) if chr(code) not in SAFE]
+    + ["\u00a0", "\u200b", "\u202e", "（", "，", "“", "—", "…", "\u3000"],
     ids=lambda char: f"U+{ord(char):04X}",
 )
 def test_every_character_outside_the_safe_ones_gets_the_argument_quoted(char: str) -> None:
@@ -107,5 +108,10 @@ def test_every_character_outside_the_safe_ones_gets_the_argument_quoted(char: st
 
 
 def test_a_plain_command_is_not_quoted() -> None:
+    """Letters and digits of any script and ``. / - _ : , = @ % +`` stay bare."""
     line = shell_command(["reverbscope", "analyze", "--out", "我的/录音_1.wav", "a@b+c=d,e:f%"])
     assert line == "reverbscope analyze --out 我的/录音_1.wav a@b+c=d,e:f%"
+    assert shell_command(["x", "naïve-é.wav", "Ünïcode", "日本語", "한국어"]) == (
+        "x naïve-é.wav Ünïcode 日本語 한국어"
+    )
+    assert shell_command(["x", "<take.wav>", ""]) == "x <take.wav> ''"

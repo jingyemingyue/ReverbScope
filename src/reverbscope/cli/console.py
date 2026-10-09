@@ -347,9 +347,10 @@ def glue_units(text: str) -> str:
     return text.replace("dB SPL", "dB" + GLUE + "SPL")
 
 
-#: Characters a POSIX shell splits, expands or globs at somewhere in a word
-#: (``^`` is a pipe to the oldest shells and a negation to zsh).
-_POSIX_SPECIAL = frozenset(" \t\n'\"\\|&;<>()$`*?[]{}!#~^")
+#: What a POSIX shell passes through untouched in a word, besides letters and
+#: digits of any script (so a Chinese name stays readable): everything else
+#: is quoted, whether or not some shell would do anything with it.
+_POSIX_PLAIN = frozenset("._-/:,=@%+")
 #: Characters cmd.exe or PowerShell split at or expand outside quotes.
 _WINDOWS_SPECIAL = frozenset(" \t\"'&|()<>^%;,{}@$`")
 #: ``<take.wav>``: an instruction, not a path.
@@ -392,8 +393,10 @@ def _windows_cmdline_arg(text: str, *, quote: bool = False) -> str:
 
 
 def shell_command(argv: Iterable[str]) -> str:
-    """One copy-paste command. An argument the shell would split, expand or
-    glob (a space, a quote, ``( ) & ; $ |`` …) is quoted.
+    """One copy-paste command. On macOS and Linux an argument with anything
+    but letters and digits of any script and ``. / - _ : , = @ % +`` in it is
+    quoted (a space, a quote, ``( ) & ; $ |``, a caret, a character nobody can
+    see); on Windows one that cmd or PowerShell would split or expand is.
 
     Placeholders such as ``<take.wav>`` stay bare: they are instructions, not
     a path, and quoting them would hide that. On Windows a backslash is
@@ -404,16 +407,24 @@ def shell_command(argv: Iterable[str]) -> str:
     """
     windows = os.name == "nt"
     parts: list[str] = []
-    special = _WINDOWS_SPECIAL if windows else _POSIX_SPECIAL
     for part in argv:
         text = str(part).replace("\\", "/") if windows else str(part)
-        # "demo(1)&x/position-a" bare is a syntax error in bash and two
-        # commands in bash and cmd. A character that cannot be seen (a control
-        # character, a zero-width space, a right-to-left override) is quoted
-        # too: bare, it would pass for nothing in the line shown.
-        needs_quotes = not text or any(
-            char.isspace() or char in special or not char.isprintable() for char in text
-        )
+        if windows:
+            # "demo(1)&x/position-a" bare is two commands in cmd; a character
+            # that cannot be seen is quoted too, for it would pass for nothing.
+            needs_quotes = not text or any(
+                char.isspace() or char in _WINDOWS_SPECIAL or not char.isprintable()
+                for char in text
+            )
+        else:
+            # "demo(1)&x/position-a" bare is a syntax error in bash. Anything
+            # but a letter, a digit or . / - _ : , = @ % + gets quotes: a caret
+            # (a pipe to the oldest shells), a control character, a zero-width
+            # space or a right-to-left override (which would pass for nothing in
+            # the line shown) as much as a bracket or a dollar.
+            needs_quotes = not text or not all(
+                char.isalnum() or char in _POSIX_PLAIN for char in text
+            )
         if not needs_quotes or _PLACEHOLDER.fullmatch(text):
             parts.append(text)
         elif windows:
