@@ -389,8 +389,9 @@ gets the plain ruled layout, and `--format json` is unaffected. `--style
 plain` or `--style boxed` decide for one command, `reverbscope config style
 plain|boxed|auto` for good, and the `REVERBSCOPE_CLI_STYLE` environment
 variable for a shell. Where a terminal's font draws the box glyphs two
-columns wide, choose `plain` (a Chinese interface says so under the home
-screen and the menu: `边框歪了？reverbscope config style plain`); a stream
+columns wide, choose `plain` (a Chinese interface says so at a terminal, under
+the home screen and under the first list of the menu, once:
+`边框歪了？reverbscope config style plain`); a stream
 that cannot write them gets `+ - |`. The frames follow what the stream's
 encoding can write, not only the symbols: one that has ✓ and ─ but no rounded
 corners (the Japanese JIS X 0213 encodings) gets `+ - |` too. A character the
@@ -400,8 +401,9 @@ frame and the columns of a table stay straight, and `|Δ|` is written
 
 On a narrow terminal (down to 20 columns) a heading, a title or a label wider
 than the line wraps, a number is never parted from its unit, and the settings
-put each value under its key; only a path, a file name or a command to copy is
-never cut or wrapped, so it can run past the edge.
+put each value under its key (a pipe too, when `COLUMNS` is set below 38; from
+38 up a pipe is laid out as it always was); only a path, a file name or a
+command to copy is never cut or wrapped, so it can run past the edge.
 
 In a boxed report **"At a glance" is a table** of topic, status and result.
 The status cell shows a mark and a word, so colour is never the only signal:
@@ -496,6 +498,14 @@ and `退出` leave, `ｙ` is yes), and a path the way a terminal drops a dragged
 file: with quotes, with backslashes, in curly quotes, or as GNOME Terminal
 and KDE write an apostrophe (`'it'\''s a take.wav'`). A number that is not
 one, or a name the file system refuses, is refused in words and asked again.
+A folder is not accepted where a file is wanted, a project overview wants a
+folder with a `project.json` (the menu names `reverbscope project init`), a
+name without an audio extension gets `.wav`, and an answer that is neither a
+yes (`y`, `yes`, `是`, `是的`, `确定`) nor a no (`n`, `no`, `否`, Enter) is said to
+be taken as no. The menu never replaces anything silently: the folder it
+proposes for a new session is a new one (`session-20261009-1850`, then
+`-2`), and a test signal, a recording or a session folder that exists is
+replaced only after a *yes*.
 
 Measuring starts by checking that the computer has an audio input and an
 output; without them it says so, plays nothing and points to `reverbscope
@@ -512,7 +522,9 @@ Ctrl+C at a question returns to the menu; at the menu it leaves with exit
 code 130; `q`, `退出` or the end of input leaves with 0. "Open the desktop
 app" on a Linux session without a screen (no `DISPLAY` or `WAYLAND_DISPLAY`)
 says that the desktop app needs a graphical display, exits with code 2 and
-leaves the menu running; Qt itself would end the whole process. In a pipe or
+leaves the menu running; Qt itself would end the whole process, and so it does
+when Qt cannot start for another reason (a missing system library): the menu
+says so before it starts the app, and leaves with it. In a pipe or
 a script, and with `--format json`, `reverbscope` still prints the short home
 screen and exits with the usage code; `REVERBSCOPE_NO_MENU=1` keeps the menu
 off a terminal.

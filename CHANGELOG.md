@@ -154,12 +154,15 @@ All notable changes to ReverbScope are documented here. The format follows
   a word cut where it must be (a run of `?` in cp1252) never parts `110` from
   `Hz`, the legend of a comparison wraps, and the menu's items wrap under
   their numbers and a question longer than the screen is written in lines.
-  The home screen and the menu of a Chinese interface end with
-  `边框歪了？reverbscope config style plain`, the way out for a terminal that
-  draws the box glyphs two columns wide, which was only in `config --help`. A
-  pipe or a file at its usual width, `--format json` and the desktop app's
-  report text are unchanged. From the redesign of PR #42, on this line's own
-  code.
+  The home screen of a Chinese interface at a terminal and the first list of
+  its menu end with `边框歪了？reverbscope config style plain`, once, the way
+  out for a terminal that draws the box glyphs two columns wide, which was only
+  in `config --help` (the menu does not draw its list again after a choice
+  that is not on it). A pipe or a file at its usual width or at any `COLUMNS`
+  from 38 up, `--format json` and the desktop app's report text are unchanged;
+  a pipe with a `COLUMNS` below 38 follows the narrow-terminal rules above (a
+  heading or a label wider than that wraps where it ran past the edge). From
+  the redesign of PR #42, on this line's own code.
 - **A sturdier menu.** The menu reads an answer the way a Chinese keyboard
   types it: `９`, `ｑ`, `ＹＥＳ` and `退出` mean 9, q, yes and quit, `①` and `²`
   are digits, and a number that is not one (`nan`, five thousand digits) is
@@ -181,12 +184,27 @@ All notable changes to ReverbScope are documented here. The format follows
   and Ctrl+D play nothing. The options before the command (`reverbscope
   --backend fake`) go in front of every command the menu runs and shows,
   `--format json` gets the home screen, new sessions start in the output
-  folder of the settings (which `reverbscope config` now says), and `reverbscope
-  gui` on a Linux session without `DISPLAY` or `WAYLAND_DISPLAY` says the
-  desktop app needs a graphical display and exits with 2, where Qt aborted the
-  process and the menu with it. Output typed by hand, a pipe, `--format json`
-  and the desktop app's report text are unchanged. From the review of PR #42,
-  on this line's own menu.
+  folder of the settings (the guides say so; the `config` screen keeps its
+  words), and `reverbscope gui` on a Linux session without `DISPLAY` or
+  `WAYLAND_DISPLAY` says the desktop app needs a graphical display and exits
+  with 2, where Qt aborted the process and the menu with it. Output typed by
+  hand, a pipe, `--format json` and the desktop app's report text are unchanged.
+  From the review of PR #42, on this line's own menu.
+- **The menu no longer replaces what is there, and says what is wrong.** The
+  folder it proposes for a new session is a new one (`-2`, `-3` after the
+  minute's name: two takes inside a minute got the same folder and the second
+  replaced the first), and a folder that holds a `session.json`, a test signal
+  or any file that exists is replaced only after a *yes* (Enter is no); a
+  name without an audio extension gets `.wav` (libsndfile refused it with
+  its English), a folder is refused for a file in words, and an offered default
+  with a backslash is taken as it is. The project overview asks for a
+  folder with a `project.json` and names `reverbscope project init`. An answer
+  that is neither yes nor no (`ok`, `好`) is said to be taken as no, and
+  `是的`, `确定` and `否` are understood. Ctrl+C while the list is being drawn
+  leaves with 130 where it was a traceback; the desktop app item says that a Qt
+  that cannot start ends the program, the menu with it (`src/` launches no
+  process, so the menu cannot protect itself). After a choice that is not on
+  the list the list is not drawn again.
 - **An interactive menu.** `reverbscope` with no command on a terminal opens
   a numbered menu (demo, test signal, analyse, measure, show, compare,
   project overview, settings, environment report, desktop app). Each choice
