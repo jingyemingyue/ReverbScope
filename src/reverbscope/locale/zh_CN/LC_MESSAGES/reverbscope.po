@@ -414,7 +414,7 @@ msgid "Baseline session"
 msgstr "基准会话"
 
 msgid "Candidate session"
-msgstr "对比会话"
+msgstr "对比项会话"
 
 msgid "Baseline..."
 msgstr "基准…"
@@ -899,7 +899,7 @@ msgid "baseline session directory or session.json"
 msgstr "基准会话目录或 session.json"
 
 msgid "candidate session directory or session.json"
-msgstr "对比会话目录或 session.json"
+msgstr "对比项会话目录或 session.json"
 
 msgid "write comparison.json here (file or directory)"
 msgstr "把 comparison.json 写到这里（文件或目录）"
@@ -908,7 +908,7 @@ msgid "declare that the input gain was unchanged (required for a VALID noise del
 msgstr "声明输入增益未变（要让本底噪声差值有效，必须声明）"
 
 msgid "recording profile for comparison findings (default: the candidate session's)"
-msgstr "对比解读所用的录音配置（默认：对比会话的配置）"
+msgstr "对比解读所用的录音配置（默认：对比项的配置）"
 
 msgid "print a shipped JSON Schema"
 msgstr "打印随附的 JSON Schema"
@@ -5659,7 +5659,7 @@ msgid "The baseline session (folder)"
 msgstr "基准会话（文件夹）"
 
 msgid "The candidate session (folder)"
-msgstr "对比会话（文件夹）"
+msgstr "对比项会话（文件夹）"
 
 msgid "Was the input gain the same for both takes?"
 msgstr "两次测量的输入增益相同吗？"

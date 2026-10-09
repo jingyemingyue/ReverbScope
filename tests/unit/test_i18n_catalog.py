@@ -433,6 +433,16 @@ def test_baseline_and_candidate_are_the_two_sessions_of_a_comparison() -> None:
     ]
     assert wrong_baseline == []
     assert catalog["Baseline"] == "基准" and catalog["Candidate"] == "对比项"
+    # 对比会话 is the verb phrase "compare sessions" (a menu command, the menu's
+    # item): the second session of a comparison is 对比项, or 对比项会话 where a
+    # word for the session itself is wanted ("对比项会话目录"), never 对比会话
+    # ("compare session", or "the compared sessions").
+    named_like_the_verb = [
+        msgid
+        for msgid, msgstr in catalog.items()
+        if "对比会话" in msgstr and ("andidate" in msgid or "ompar" not in msgid)
+    ]
+    assert named_like_the_verb == []
     side = "comparison side" + CONTEXT_SEPARATOR
     assert (catalog[side + "baseline"], catalog[side + "candidate"]) == ("基准", "对比项")
 
