@@ -43,3 +43,29 @@ def test_the_guides_do_not_promise_untranslated_diagnostics_or_file_drops() -> N
     if not accepts_drops:
         assert "drop the files" not in english
         assert "拖进界面" not in chinese
+
+
+CHINESE_DOCS = sorted(
+    (
+        *Path("docs").glob("*.zh-CN.md"),
+        *Path("docs/user-guide").glob("*zh-CN.md"),
+        Path("README.zh-CN.md"),
+        Path("SECURITY.zh-CN.md"),
+    ),
+    key=str,
+)
+
+
+def test_the_chinese_guides_use_the_words_of_the_chinese_interface() -> None:
+    """The interface says 音频接口, 回采, 交流声 and 对比; the guides said 声卡,
+    回送, 市电哼声 and 比较 for the same things."""
+    from tests.unit.test_i18n_catalog import RETIRED_CHINESE_WORDS
+
+    assert len(CHINESE_DOCS) >= 15
+    found = {
+        (path.as_posix(), match.group(0), better)
+        for path in CHINESE_DOCS
+        for pattern, better in RETIRED_CHINESE_WORDS.items()
+        for match in re.finditer(pattern, path.read_text(encoding="utf-8"))
+    }
+    assert found == set(), sorted(found)

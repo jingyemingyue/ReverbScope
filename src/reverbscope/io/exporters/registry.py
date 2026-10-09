@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 from reverbscope.errors import ConfigurationError
-from reverbscope.i18n import _
+from reverbscope.i18n import _, list_join, quoted
 from reverbscope.models.result import AnalysisResult
 
 if TYPE_CHECKING:
@@ -93,6 +93,6 @@ def get_exporter(name: str) -> ResultExporter:
     except KeyError as exc:
         raise ConfigurationError(
             _("unknown exporter {name}; available: {available}").format(
-                name=repr(name), available=", ".join(available_exporters())
+                name=quoted(name), available=list_join(available_exporters())
             )
         ) from exc

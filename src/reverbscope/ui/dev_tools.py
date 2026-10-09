@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (
 
 from reverbscope.audio.inventory import DeviceInventory, build_inventory
 from reverbscope.errors import ReverbScopeError
-from reverbscope.i18n import N_, _, localize
+from reverbscope.i18n import N_, _, clause_join, list_join, localize
 from reverbscope.ui.theme import apply_report_font
 from reverbscope.ui.widgets import label
 
@@ -60,7 +60,7 @@ def _rates_cell(rates: tuple[int, ...], known: bool, probed: bool) -> str:
     not be opened to ask (an empty cell would claim it accepts none)."""
     if not probed:
         return "…"
-    return ", ".join(str(r) for r in rates) if known else _("unknown")
+    return list_join(str(r) for r in rates) if known else _("unknown")
 
 
 class DeviceInspector(QDialog):
@@ -128,7 +128,7 @@ class DeviceInspector(QDialog):
         index = self.filter.findData(current)
         self.filter.setCurrentIndex(max(index, 0))
         self.filter.blockSignals(False)
-        apis = ", ".join(api.name for api in self.inventory.host_apis) or "-"
+        apis = list_join(api.name for api in self.inventory.host_apis) or "-"
         self.summary.setText(
             _("Backend {backend}; {version}; host APIs: {apis}; {n} device(s).").format(
                 backend=self.inventory.backend,
@@ -170,7 +170,7 @@ class DeviceInspector(QDialog):
                 _rates_cell(probe.output_rates, probe.output_rates_known, probed),
                 _("in {input}, out {output}").format(input=latency_in, output=latency_out),
                 " + ".join(recommended),
-                "; ".join(localize(note) for note in probe.notes),
+                clause_join(localize(note) for note in probe.notes),
             ]
             for column, text in enumerate(values):
                 item = QTableWidgetItem(text)

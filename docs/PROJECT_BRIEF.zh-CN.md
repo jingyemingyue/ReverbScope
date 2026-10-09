@@ -493,7 +493,7 @@ ReverbScope：
 
 生成标准 ESS Sweep WAV
 用户将 Sweep 导入任意 DAW
-DAW 通过声卡/监听音箱播放
+DAW 通过音频接口/监听音箱播放
 测量麦克风录制返回信号
 用户从 DAW 导出 recorded WAV
 将 recorded WAV 导入 ReverbScope
@@ -900,7 +900,7 @@ sample-rate tests
 ====================
 十二、安全原则
 
-Standalone 测量涉及音箱播放。
+Standalone 测量涉及扬声器播放。
 
 默认 Sweep level 必须保守。
 

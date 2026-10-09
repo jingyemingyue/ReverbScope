@@ -8,8 +8,10 @@ any sample rate; without it, the WAV itself is used as the reference signal.
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -19,11 +21,13 @@ from reverbscope import __version__
 from reverbscope.core.pipeline import Reference
 from reverbscope.core.sweep import measurement_signal
 from reverbscope.errors import ConfigurationError, InvalidAudioError, SessionError
-from reverbscope.i18n import _
+from reverbscope.i18n import DEFAULT_LANG, _, current_locale
 from reverbscope.io.jsonutil import read_json_object, write_text_atomic
 from reverbscope.models.audio import AudioSignal, FloatArray
 from reverbscope.models.configuration import SweepSettings
 from reverbscope.models.loadutil import read_schema_version
+
+log = logging.getLogger(__name__)
 
 SIDECAR_SUFFIX = ".reverbscope-sweep.json"
 SIDECAR_KEY = "reverbscope_sweep"
@@ -40,6 +44,69 @@ def _soundfile() -> Any:
     return soundfile
 
 
+def _system_reason(error: BaseException) -> str | None:
+    """Why the system refused a file, in the interface language (``None`` when it did not)."""
+    text = str(error).lower()
+    code = error.errno if isinstance(error, OSError) else None
+    if code in (errno.EACCES, errno.EPERM) or "permission denied" in text:
+        return _("permission denied")
+    if code == errno.ENOENT or "no such file" in text:
+        return _("no such file or folder")
+    if code == errno.ENOSPC or "no space left" in text:
+        return _("no space left on the disk")
+    if code == errno.EROFS or "read-only file system" in text:
+        return _("the disk is read-only")
+    if code == errno.EISDIR or "is a directory" in text:
+        return _("is a folder, not a file")
+    if code == errno.ENOTDIR or "not a directory" in text:
+        return _("part of the path is a file, not a folder")
+    return None
+
+
+def _failure_reason(error: BaseException, *, reading: bool, empty: bool = False) -> str:
+    """Why libsndfile could not open a file, in the interface language.
+
+    libsndfile's own sentences are English ("Error opening 'x.wav': Format not
+    recognised."); the usual ones are translated, the others are shown as
+    they are, and ``--verbose`` logs the original of each. English keeps
+    libsndfile's words. An ``empty`` file is called "Format not recognised" by
+    libsndfile; it is said to be empty.
+    """
+    original = str(error)
+    if current_locale() == DEFAULT_LANG:
+        return original
+    log.debug("libsndfile said: %s", original)
+    system = _system_reason(error)
+    if system is not None:
+        return system
+    if empty:
+        return _("the file is empty")
+    text = original.lower()
+    if reading:
+        if "format not recognised" in text or "unknown format" in text:
+            return _("it is not a WAV, FLAC or other audio file that ReverbScope can read")
+        if "unsupported encoding" in text or "unimplemented format" in text:
+            return _("its audio encoding is not supported")
+        if "error in wav" in text or "malformed" in text or "chunk" in text:
+            return _("the WAV file is damaged or was cut short")
+    elif "system error" in text:
+        return _("the system could not create the file")
+    elif "no format specified" in text or "format from file extension" in text:
+        return _("the file name must end in an audio extension such as .wav")
+    return original
+
+
+def _shown_name(path: Path) -> str:
+    """How a file that cannot be read is named in a message.
+
+    English names the file and lets libsndfile's own sentence say where it
+    looked (``Error opening 'a/take.wav': ...``). The Chinese sentence leaves
+    that out, so it carries the path as it was given: with two files of one
+    name (``a/take.wav``, ``b/take.wav``) the reader can tell which one.
+    """
+    return path.name if current_locale() == DEFAULT_LANG else str(path)
+
+
 def read_wav(path: str | Path) -> AudioSignal:
     """Read an audio file as float64. Multi-channel files keep their channels."""
     sf = _soundfile()
@@ -49,15 +116,29 @@ def read_wav(path: str | Path) -> AudioSignal:
     try:
         data, sample_rate = sf.read(str(file_path), dtype="float64", always_2d=True)
     except Exception as exc:  # libsndfile raises RuntimeError / soundfile.LibsndfileError
+        try:
+            empty = file_path.stat().st_size == 0
+        except OSError:
+            empty = False
         raise InvalidAudioError(
-            _("cannot read audio file {name}: {error}").format(name=file_path.name, error=exc)
+            _("cannot read audio file {name}: {error}").format(
+                name=_shown_name(file_path), error=_failure_reason(exc, reading=True, empty=empty)
+            )
         ) from exc
     samples = np.asarray(data, dtype=np.float64)
     if samples.shape[0] == 0:
-        raise InvalidAudioError(_("audio file is empty: {name}").format(name=file_path.name))
+        raise InvalidAudioError(
+            _("audio file is empty: {name}").format(name=_shown_name(file_path))
+        )
     if samples.shape[1] == 1:
         samples = np.ascontiguousarray(samples[:, 0])
     return AudioSignal(samples=samples, sample_rate=int(sample_rate), source=str(file_path))
+
+
+def has_audio_extension(path: str | Path) -> bool:
+    """Whether libsndfile can tell the format of a file to be written from its
+    name (``take.wav``, ``take.FLAC``): a name without one is refused by it."""
+    return Path(path).suffix[1:].upper() in _soundfile().available_formats()
 
 
 def write_wav(
@@ -91,7 +172,9 @@ def write_wav(
         # OSError from the folder (a parent that is a file, a Windows reserved
         # name) as much as libsndfile's own errors: the user's path, not a bug.
         raise InvalidAudioError(
-            _("cannot write audio file {path}: {error}").format(path=file_path, error=exc)
+            _("cannot write audio file {path}: {error}").format(
+                path=file_path, error=_failure_reason(exc, reading=False)
+            )
         ) from exc
     return file_path
 

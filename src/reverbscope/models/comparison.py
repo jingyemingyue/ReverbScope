@@ -12,7 +12,7 @@ from typing import Any
 import numpy as np
 
 from reverbscope.errors import SessionError
-from reverbscope.i18n import _
+from reverbscope.i18n import _, quoted
 from reverbscope.models.loadutil import (
     build_record,
     drop_unknown,
@@ -146,7 +146,9 @@ class MetricDelta:
         try:
             payload["validity"] = Validity(str(validity))
         except ValueError as exc:
-            raise SessionError(_("unknown validity {value}").format(value=repr(validity))) from exc
+            raise SessionError(
+                _("unknown validity {value}").format(value=quoted(validity))
+            ) from exc
         record = build_record(cls, payload, kind="metric delta")
         if record.delta_percent is not None and not percent_applies(record.unit, record.baseline):
             # Files written by 0.5.0b1 and earlier gave a percent for every

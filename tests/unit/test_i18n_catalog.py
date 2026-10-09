@@ -44,6 +44,7 @@ DYNAMIC_CALLS = {
     ("i18n.py", "_(template)"),
     ("interpretation/interpreter.py", "_(template)"),
     ("cli/main.py", "_(SAFETY_MESSAGE)"),
+    ("cli/render.py", "_(SAFETY_MESSAGE)"),
     # argparse's own texts, each extracted with N_() in ARGPARSE_MESSAGES.
     ("cli/main.py", "_(message)"),
     # Root-help command groups (COMMAND_GROUPS) and session modes
@@ -184,7 +185,7 @@ def test_safety_warning_and_level_refusal_are_translated() -> None:
 
     activate("zh_CN")
     try:
-        assert _(SAFETY_MESSAGE).startswith("先把监听")
+        assert _(SAFETY_MESSAGE).startswith("请先调低监听")
         refusal = _(
             "Level {level:g} dBFS is above {max_level:g} dBFS. "
             "Set the monitor level low first and pass --acknowledge-level to confirm."
@@ -350,3 +351,149 @@ def test_cli_zh_cn_analyze_prints_no_english_finding_text(
     for topic, message in findings:
         assert message, topic
         assert _english_words(message) == [], (topic, message)
+
+
+#: Words the Chinese catalog does not use: one word for each concept. Each is
+#: a pattern, with what to say instead: the audio interface (not the sound
+#: card), the loudspeaker, a loopback (the word of audio interfaces), mains
+#: hum, the comparison of two sessions, the noise floor, headroom, delay, the
+#: just-noticeable difference (最小可觉差), a band (频带, not 频段), turning
+#: the monitors down (调低音量, not 开低).
+RETIRED_CHINESE_WORDS = {
+    "声卡": "音频接口",
+    "音频硬件": "音频设备",
+    "音箱所用": "扬声器所用",
+    "回送": "回采",
+    "回环": "回采",
+    "市电哼声": "交流声",
+    "电源嗡声": "交流声",
+    "交流哼声": "交流声",
+    "工频干扰": "交流声",
+    "不可比较": "不可对比",
+    "未比较": "未对比",
+    "无法比较": "无法对比",
+    "才比较": "才对比",
+    "才能比较": "才能对比",
+    "比较两个": "对比两个",
+    "可比较": "可对比",
+    "(?<!本)底噪": "本底噪声",
+    "裕量": "余量",
+    "延时": "延迟",
+    "刚可察觉差": "最小可觉差",
+    "开低": "调低音量",
+    "频段": "频带",
+    "这样活的": "在这样混响偏长的房间里",
+}
+#: The messages that compare something with a level or with its surroundings
+#: (not the two sessions of a comparison): "比较" stays a verb there.
+COMPARES_WITH_A_LEVEL = (
+    "to compare with",
+    "for the surroundings comparison",
+    "Background noise in the {segment} segment",
+)
+#: The messages that are about candidate peaks, reflections and resonances,
+#: not about the second session of a comparison (where "对比项" is said).
+DETECTION_CANDIDATES = (
+    "candidates",
+    "candidate reflections",
+    "resonance candidate",
+    "boundary candidate",
+    "ms candidate",
+    "Candidates only",
+)
+
+
+def test_the_chinese_catalog_says_one_word_for_each_concept() -> None:
+    """The audio interface was said 声卡, 音频接口 and 音频硬件, the loopback 回送
+    and 回环, mains hum 市电哼声 and 电源嗡声, a comparison 对比 and 比较 ("可对比"
+    beside "不可比较" on one screen), and the two sessions of a comparison 基线
+    and 候选, where 候选 is an election candidate."""
+    catalog = parse_po(CATALOG)
+    found = {
+        (msgid.replace(CONTEXT_SEPARATOR, " | ")[:70], pattern, better)
+        for msgid, msgstr in catalog.items()
+        for pattern, better in RETIRED_CHINESE_WORDS.items()
+        if re.search(pattern, msgstr)
+    }
+    assert found == set(), sorted(found)
+    compares = [
+        msgid
+        for msgid, msgstr in catalog.items()
+        if "比较" in msgstr and not any(kind in msgid for kind in COMPARES_WITH_A_LEVEL)
+    ]
+    assert compares == []
+
+
+def test_baseline_and_candidate_are_the_two_sessions_of_a_comparison() -> None:
+    """基准 and 对比项 name the two sessions; 基线 is a baseline level and 候选
+    a candidate peak, reflection or resonance."""
+    catalog = parse_po(CATALOG)
+    wrong_candidate = [
+        msgid
+        for msgid, msgstr in catalog.items()
+        if "候选" in msgstr and not any(kind in msgid for kind in DETECTION_CANDIDATES)
+    ]
+    assert wrong_candidate == []
+    wrong_baseline = [
+        msgid for msgid, msgstr in catalog.items() if "基线" in msgstr and msgid != "Above baseline"
+    ]
+    assert wrong_baseline == []
+    assert catalog["Baseline"] == "基准" and catalog["Candidate"] == "对比项"
+    # 对比会话 is the verb phrase "compare sessions" (a menu command, the menu's
+    # item): the second session of a comparison is 对比项, or 对比项会话 where a
+    # word for the session itself is wanted ("对比项会话目录"), never 对比会话
+    # ("compare session", or "the compared sessions").
+    named_like_the_verb = [
+        msgid
+        for msgid, msgstr in catalog.items()
+        if "对比会话" in msgstr and ("andidate" in msgid or "ompar" not in msgid)
+    ]
+    assert named_like_the_verb == []
+    side = "comparison side" + CONTEXT_SEPARATOR
+    assert (catalog[side + "baseline"], catalog[side + "candidate"]) == ("基准", "对比项")
+
+
+def test_two_concepts_do_not_share_a_chinese_word() -> None:
+    """A project is 项目 and a row of the overview table, which used to be
+    headed 项目 as well, is a 方面; the project of a DAW is 工程."""
+    catalog = parse_po(CATALOG)
+    topic = catalog["at a glance" + CONTEXT_SEPARATOR + "Topic"]
+    assert topic != catalog["Project"] == "项目"
+    assert "工程" in catalog["Where the project's sample rate is set:"]
+
+
+#: What the Chinese catalog may keep in ASCII beside Chinese: Qt's accelerators
+#: ("打开项目(&P)"), file filters ("WAV 文件 (*.wav)"), an argument tuple and a
+#: setting's literal value that the user reads in the program or the DAW.
+ASCII_PUNCTUATION_ALLOWED = (
+    r"\(&\w\)",
+    r"\([^()]*\*[^()]*\)",
+    r"\(session\.json\)",
+    r"\(low_hz, high_hz\)",
+    r"\(none\)",
+    r"sqrt\([^()]*\)",
+    r"Record, Warp & Launch",
+    r"hw:",
+)
+
+
+def test_the_chinese_catalog_punctuates_in_chinese() -> None:
+    """Brackets, commas, semicolons, colons and quotes beside Chinese are
+    full-width: "50 Hz (+57 dB), 100 Hz" and "B*T = 1.2 < 2: 频带…" were not."""
+    ascii_beside_chinese = re.compile(
+        r"[()]"
+        r"|[,;] "
+        r"|(?<=[一-鿿]):|:(?= ?[一-鿿])"
+        r"|['\"](?=[一-鿿])|(?<=[一-鿿])['\"]"
+    )
+    found = []
+    for msgid, msgstr in parse_po(CATALOG).items():
+        if not re.search(r"[一-鿿]", msgstr):
+            continue
+        shown = re.sub(r"\{[^{}]*\}|%\([^()]*\)\w", "{}", msgstr)
+        for allowed in ASCII_PUNCTUATION_ALLOWED:
+            shown = re.sub(allowed, "", shown)
+        shown = re.sub(r"https?://\S+|(?<![\w-])--?[A-Za-z][\w-]*", "", shown)
+        if ascii_beside_chinese.search(shown):
+            found.append((msgid.replace(CONTEXT_SEPARATOR, " | ")[:60], msgstr[:80]))
+    assert found == [], found

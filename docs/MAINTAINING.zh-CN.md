@@ -97,4 +97,4 @@ Issue 表单（`.github/ISSUE_TEMPLATE/`，中英文成对）会收集环境报�
 | 依赖与许可证 | [DEPENDENCIES.md](DEPENDENCIES.md)、[THIRD_PARTY_REVIEW.md](THIRD_PARTY_REVIEW.md)、`scripts/build_license_bundle.py` |
 | 没有 Actions 分钟时构建发布 | RELEASE_PLAN §3a、`scripts/build_release.py` |
 | 耗时与内存 | [PERFORMANCE.md](PERFORMANCE.md)、`scripts/benchmark.py`、`scripts/bench_dsp.py` |
-| 翻译 | `src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po`；`tests/unit/test_i18n_catalog.py` 对任何未翻译的字串报错 |
+| 翻译 | `src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po`；`tests/unit/test_i18n_catalog.py` 对任何未翻译的字串、被弃用的中文词（一个概念一个词）和紧挨中文的 ASCII 标点报错；`tests/unit/test_cli_layout.py` 检查整屏输出的标点和换行 |

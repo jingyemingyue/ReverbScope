@@ -128,9 +128,29 @@ untouched).
 * **The terminal** (fourth batch): reports are boxed on a wide terminal
   (title frame, section rules, bordered tables; never a pipe, never a
   command line, never JSON; `--style`, `config style`,
-  `REVERBSCOPE_CLI_STYLE`), and bare `reverbscope` on a terminal opens a
+  `REVERBSCOPE_CLI_STYLE`), "At a glance" there is a table of topic, status
+  (a mark and a word) and result, each interpretation finding is a card
+  and an error is a panel, a take's progress is a bar that never reaches
+  the last column, and bare `reverbscope` on a terminal opens a
   numbered menu that prints the command it runs each time. Harvested from
-  PR #42 without its dependencies.
+  PR #42 without its dependencies. The Chinese says one word for each thing
+  (a catalog test keeps the retired words out), writes its lists, brackets,
+  colons and quotes in Chinese, keeps a closing mark, a hint and a word's two
+  halves together when it wraps, and explains why libsndfile could not open a
+  file. Colour sits on marks, bars and borders only (a test lists every dim
+  or coloured run of letters and digits on about twenty screens), the frames
+  follow what the stream's encoding can write, every command was run from 20
+  to 100 columns as UTF-8, cp1252 and cp936, and a Chinese interface says how
+  to leave the frames out. The menu reads a Chinese keyboard's `９`, `ｑ` and
+  `退出` and a dragged path in the GNOME and KDE forms, quotes the command it
+  prints for a shell, leaves with 130 on Ctrl+C at the menu, keeps a default
+  whole when a question wraps, checks for an audio device before it asks,
+  asks the level (a loud one needs its own yes) and shows the monitor note
+  once, carries the options before the command along, and `reverbscope gui`
+  on a Linux session without a display says so instead of letting Qt abort.
+  The README screenshots come from `scripts/render_readme_assets.py` on this
+  code, and every example line of the user guides' terminal blocks is a line
+  the command prints (a test runs them in both languages).
 * **Profiles explained, and a first-measurement card** (fifth batch):
   `reverbscope profiles [name]` and the "What does it want?" button say what
   a recording profile watches for and what it does not judge, from its own

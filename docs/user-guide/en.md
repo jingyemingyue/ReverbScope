@@ -346,10 +346,25 @@ argparse's own messages included). Units stay untranslated; digits stay
 ASCII. Diagnostic notes and warnings are stored in English in `result.json`
 and shown translated.
 
+The Chinese text says one word for each thing: 音频接口 for the audio
+interface, 回采 for a loopback, 交流声 for mains hum, 对比 for a comparison
+with 基准 and 对比项 for its two sessions (基线 is a baseline level, 候选 a
+candidate peak). It is punctuated in Chinese as well: a list is joined with
+`、`, clauses with `；`, a note sits in full-width brackets
+(`RT60 0.70 s（T30）`), `label：text` has the full-width colon, and a wrong
+value is quoted “like this” (`无效的选择：“bogus”`). When text wraps, a line
+never starts with a closing mark, a two-character word is not split before
+one, a default hint such as `（默认：10）` moves down whole and the last line
+is more than one character. When libsndfile cannot open an audio file the
+reason is given in Chinese (not an audio file, damaged or cut short, an
+encoding that is not supported, empty, a name with no audio extension) and the
+file is named with its path as given; English keeps libsndfile's words.
+
 `reverbscope config` lists the other settings the desktop app keeps and
 changes them from the command line, also in the Terminal Edition:
 `profile` (the default recording profile), `backend` (`portaudio` or
-`fake`), `output-folder`, `copy-recording` and `developer-tools` (`on` or
+`fake`), `output-folder` (where the menu proposes new sessions and the
+desktop app's Save dialog opens), `copy-recording` and `developer-tools` (`on` or
 `off`), and `theme` (`system`, `light` or `dark`; desktop app only). For
 example `reverbscope config profile vocal`; `auto` goes back to a setting's
 default, and `reverbscope --format json config` prints the settings as JSON.
@@ -359,6 +374,15 @@ a file or another program it writes plain text. `--color never` or the
 `NO_COLOR` environment variable turns colour off, `--color always` keeps it
 in a pipe.
 
+**Colour sits on marks, bars and borders only.** The ✓ ! ✗ marks, the
+progress bar, the frames and the rules are coloured; a word or a number never
+is, and nothing that carries information is dim, because yellow, green, cyan
+and dim text is hard to read on a light background. Status words, headings,
+titles, commands and the numbers of the menu are bold in the colour of the
+terminal's text, and labels, notes and descriptions are plain. A mark that is
+a letter (`[OK]`, `x` and `i`, where the stream cannot write ✓ and ✗) is bold
+too.
+
 **Boxed reports.** On a terminal at least 48 columns wide, a report's title
 sits in a frame, section headings in rules and tables between borders;
 status lines, commands and paths are never framed, and Chinese text is
@@ -367,19 +391,145 @@ gets the plain ruled layout, and `--format json` is unaffected. `--style
 plain` or `--style boxed` decide for one command, `reverbscope config style
 plain|boxed|auto` for good, and the `REVERBSCOPE_CLI_STYLE` environment
 variable for a shell. Where a terminal's font draws the box glyphs two
-columns wide, choose `plain`; a stream that cannot write them gets `+ - |`.
+columns wide, choose `plain` (a Chinese interface says so at a terminal, under
+the home screen and under the first list of the menu, once:
+`边框歪了？reverbscope config style plain`); a stream
+that cannot write them gets `+ - |`. The frames follow what the stream's
+encoding can write, not only the symbols: one that has ✓ and ─ but no rounded
+corners (the Japanese JIS X 0213 encodings) gets `+ - |` too. A character the
+stream cannot write is shown as one `?` per display column, so the sides of a
+frame and the columns of a table stay straight, and `|Δ|` is written
+`abs(delta)` inside an ASCII frame, where `|` is a border.
+
+On a narrow terminal (down to 20 columns) a heading, a title or a label wider
+than the line wraps, a number is never parted from its unit, and the settings
+put each value under its key (a pipe too, when `COLUMNS` is set below 38; from
+38 up a pipe is laid out as it always was); only a path, a file name or a
+command to copy is never cut or wrapped, so it can run past the edge.
+
+In a boxed report **"At a glance" is a table** of topic, status and result.
+The status cell shows a mark and a word, so colour is never the only signal:
+`✓ good`, `! warning`, `! notice` (the words of the finding cards and of the
+health section), `✗ problem`, `i note`, `– no data` and `? unsure`; a
+topic that a check of the measurement health puts in doubt (the topics under
+its "Affects") is `? unsure` rather than `✓ good`. In the overview of a
+comparison the word says whether the topic was compared (`✓ compared`,
+`– not compared`, or `? unsure` when the health of a side puts it in doubt, all
+topics when a side is invalid), never whether the change is good (the
+verdicts say that). For example:
+
+```text
+  ┌────────────────────┬───────────┬───────────────────────────────────┐
+  │ Topic              │ Status    │ Result                            │
+  ├────────────────────┼───────────┼───────────────────────────────────┤
+  │ Reverberation      │ ! notice  │ RT60 0.70 s (T30) · EDT 0.45 s    │
+  │ Clarity            │ ✓ good    │ C50 +9.8 dB · C80 +12.9 dB · D50  │
+  │                    │           │ 91 %                              │
+  │ Early reflections  │ ! notice  │ strongest -3.1 dB at 2.4 ms · 2   │
+  │                    │           │ above -20 dB                      │
+  └────────────────────┴───────────┴───────────────────────────────────┘
+```
+
+A long result wraps inside its column, which is kept at least 28 columns wide:
+where it cannot be (in English below about 68 columns, in Chinese below 56)
+the table leaves out its status column, keeping the mark in front of each
+result, and a line under the table says so; below about 56 columns in English
+(48 in Chinese) the overview is the aligned lines it has always been. The
+reverberation changes of a comparison say the same when their percentage
+column is left out. Without frames (a pipe or a file, a terminal narrower
+than 48 columns, `--style plain`) "At a glance" is the aligned lines it has
+always been, with a symbol and no word. A Chinese term of up to four
+characters (`交流声`, `倍频程`, `新出现`) is not broken across two lines.
+
+In a boxed report each **finding** under "Interpretation" is a card: a frame
+titled with its severity word and topic, its border yellow for a warning,
+cyan for a notice and dim for information. The mark and the word say the same
+without colour, and only the border and the mark are coloured, never the text.
+For example:
+
+```text
+╭─ ! Warning · noise ──────────────────────────────────────────╮
+│ Mains hum components at multiples of 50 Hz were detected in  │
+│ the quiet part of the recording. Check grounding, cables,    │
+│ dimmers and power supplies before treating the room.         │
+╰──────────────────────────────────────────────────────────────╯
+```
+
+**An error is a card too**, titled `✗ Error`, with the message and its
+explanation inside and the commands to try under it. A command is never
+framed or wrapped, so that it can be copied; a text that a card cannot hold
+whole (a path longer than the card, say, in Latin letters or in Chinese) is
+shown without the card, never cut; a path with a blank in it can wrap at the
+blank, as it always did.
+The errors of a mistyped command line follow `--style`, the `style` setting and
+`REVERBSCOPE_CLI_STYLE` as well.
+
+```text
+╭─ ✗ Error ────────────────────────────────────────────────────╮
+│ session file not found: take-1                               │
+╰──────────────────────────────────────────────────────────────╯
+
+  Try:
+    reverbscope show --list <folder>
+```
+
+While a take plays, the progress line on stderr is a bar with the percentage
+and the clock (`=====>-----` where the stream cannot write the box glyphs):
+
+```text
+  Playing the sweep and recording  ━━━━━━━━━╸─────────────   42%  00:03 / 00:09
+```
+
+The head `╸` shows where the bar stands without colour, and the bar turns green
+when it is full. The line is never wider than the terminal minus one column;
+on a narrow terminal it loses the bar first, then the clock, and the label is
+cut short. A pipe or a file still gets one line when the take starts. Without
+frames (a pipe or a file, a terminal narrower than 48 columns, `--style
+plain`) findings and errors are the status lines they have always been.
 
 **Interactive menu.** `reverbscope` with no command on a terminal opens a
 numbered menu: the demo, the test signal, analysing a recording, measuring
 through the interface, showing and comparing sessions, the project
 overview, settings, the environment report and the desktop app. Each choice
-asks for what it needs (a dragged path with quotes or backslashes is
-understood), prints the equivalent command line to type next time, runs it
-and comes back. Measuring plays nothing until the question is answered `y`.
-Ctrl+C at a question returns to the menu; `q` or the end of input leaves.
-In a pipe or a script, `reverbscope` still prints the short home screen and
-exits with the usage code; `REVERBSCOPE_NO_MENU=1` keeps the menu off a
-terminal.
+asks for what it needs, prints the equivalent command line to type next time
+and runs it, then comes back. The command line shown is meant to be pasted:
+every argument outside letters, digits and `. / - _ : , = @ % +` is quoted.
+
+Answers are read the way a Chinese keyboard types them (`９` is 9, `ｑ`
+and `退出` leave, `ｙ` is yes), and a path the way a terminal drops a dragged
+file: with quotes, with backslashes, in curly quotes, or as GNOME Terminal
+and KDE write an apostrophe (`'it'\''s a take.wav'`). A number that is not
+one, or a name the file system refuses, is refused in words and asked again.
+A folder is not accepted where a file is wanted, a project overview wants a
+folder with a `project.json` (the menu names `reverbscope project init`), a
+name without an audio extension gets `.wav`, and an answer that is neither a
+yes (`y`, `yes`, `是`, `是的`, `确定`) nor a no (`n`, `no`, `否`, Enter) is said to
+be taken as no. The menu never replaces anything silently: the folder it
+proposes for a new session is a new one (`session-20261009-1850`, then
+`-2`), and a test signal, a recording or a session folder that exists is
+replaced only after a *yes*.
+
+Measuring starts by checking that the computer has an audio input and an
+output; without them it says so, plays nothing and points to `reverbscope
+doctor`. It asks for the folder of the session (in the output folder of
+`reverbscope config`, when one is set) and the level of the sweep (-20 dBFS
+unless you type another; a level above -12 dBFS needs a *yes* of its own and
+adds `--acknowledge-level` to the command), shows the note about turning
+the monitors down once, and plays nothing until the last question is
+answered `y`: Enter, Ctrl+C, Ctrl+D and any other answer play nothing.
+
+The options given before the command carry over to every command the menu
+runs: `reverbscope --backend fake` is the menu on the simulated interface.
+Ctrl+C at a question returns to the menu; at the menu it leaves with exit
+code 130; `q`, `退出` or the end of input leaves with 0. "Open the desktop
+app" on a Linux session without a screen (no `DISPLAY` or `WAYLAND_DISPLAY`)
+says that the desktop app needs a graphical display, exits with code 2 and
+leaves the menu running; Qt itself would end the whole process, and so it does
+when Qt cannot start for another reason (a missing system library): the menu
+says so before it starts the app, and leaves with it. In a pipe or
+a script, and with `--format json`, `reverbscope` still prints the short home
+screen and exits with the usage code; `REVERBSCOPE_NO_MENU=1` keeps the menu
+off a terminal.
 
 Piped or redirected output is UTF-8. Windows PowerShell decodes it in the
 console's code page and garbles Chinese (`> report.txt`, `| Select-String`);

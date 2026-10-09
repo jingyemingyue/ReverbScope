@@ -10,7 +10,8 @@ here changes a stored value.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Collection, Mapping, Sequence
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -18,6 +19,7 @@ from typing import TYPE_CHECKING, Any
 from reverbscope.cli.console import (
     Console,
     Status,
+    Tone,
     Verbatim,
     cell_width,
     glue_units,
@@ -25,12 +27,25 @@ from reverbscope.cli.console import (
     printable,
     printable_fields,
     shell_command,
+    strip_ansi,
     wrap,
 )
 from reverbscope.core.averaging import AveragedDecay, AveragedMetric
 from reverbscope.edition import RELEASES_URL, is_terminal_package
-from reverbscope.health import HealthReport, HealthStatus, affects_text, assess, status_word
-from reverbscope.i18n import _, list_join, localize, pgettext
+from reverbscope.health import (
+    METRIC_DECAY,
+    METRIC_ENERGY,
+    METRIC_FREQUENCY_RESPONSE,
+    METRIC_NOISE,
+    METRIC_REFLECTIONS,
+    METRIC_RESONANCES,
+    HealthReport,
+    HealthStatus,
+    affects_text,
+    assess,
+    status_word,
+)
+from reverbscope.i18n import _, annotated, clause_join, labelled, list_join, localize, pgettext
 from reverbscope.interpretation import Finding
 from reverbscope.interpretation.explain import ProfileExplanation
 from reverbscope.interpretation.overview import Fit, ProjectOverview, fit_word
@@ -103,11 +118,6 @@ def rates_text(rates: Sequence[int], console: Console, *, known: bool = True) ->
     return console.sep().join(f"{rate / 1000:g}" for rate in rates) + " kHz"
 
 
-def _labelled(label: str, text: str) -> str:
-    """``label: text``, with the colon of the interface language (``扬声器高度：不可比较``)."""
-    return _("{label}: {description}").format(label=label, description=text)
-
-
 def created_text(created: str) -> str:
     """An ISO time stamp as ``2026-09-27 14:10 +00:00``; other text unchanged."""
     try:
@@ -150,10 +160,37 @@ def _metric_cell(console: Console, metric: DecayMetric) -> str:
     if metric.seconds is not None and metric.validity is Validity.VALID:
         return f"{metric.seconds:.2f} s"
     if metric.seconds is not None and metric.validity is Validity.UNRELIABLE:
-        return console.style(f"{metric.seconds:.2f} s", "yellow") + " " + console.symbol("unsure")
+        return f"{metric.seconds:.2f} s " + console.symbol("unsure")
     if metric.validity is Validity.INSUFFICIENT_RANGE:
         return console.symbol("warn")
     return console.symbol("skip")
+
+
+#: The border of a finding's card: how much attention the finding asks for.
+_SEVERITY_TONE: dict[str, Tone] = {"warning": "warn", "notice": "accent", "info": "muted"}
+
+
+def _finding_cards(console: Console, findings: Sequence[Finding]) -> list[str]:
+    """Each finding as a card, its title the severity and the topic, its border
+    coloured by the severity; empty without frames, or when one of the cards
+    cannot hold its text (all of them are then laid out unframed, so that the
+    section does not mix the two)."""
+    if not console.boxed:
+        return []
+    inner = console.inner()
+    lines: list[str] = []
+    for finding in findings:
+        severity = str(finding.severity)
+        card = console.frame(
+            f"{severity_word(severity)}{console.sep()}{topic_text(finding.topic)}",
+            inner.paragraph(finding.message, indent=0),
+            _SEVERITY_TONE.get(severity, "accent"),
+            mark=severity_status(severity),
+        )
+        if card is None:
+            return []
+        lines += card
+    return lines
 
 
 def _findings(console: Console, findings: Sequence[Finding], profile_name: str) -> list[str]:
@@ -162,6 +199,9 @@ def _findings(console: Console, findings: Sequence[Finding], profile_name: str) 
     lines = console.section(
         _("Interpretation ({profile} profile)").format(profile=profile_title(profile_name))
     )
+    cards = _finding_cards(console, findings)
+    if cards:
+        return lines + cards
     for number, finding in enumerate(findings):
         if number:
             lines.append("")
@@ -269,6 +309,23 @@ def _topic_status(findings: Sequence[Finding], *topics: str) -> Status:
     return "ok"
 
 
+def _topic_severity(findings: Sequence[Finding], topic: str) -> str:
+    """The severity the overview names for a topic that is marked ``warn``: the
+    worst of the profile's findings on it, as the cards below call it (a
+    warning, or a notice when that is all there is); a warning when the mark
+    came from somewhere else (mains hum, the core's warnings)."""
+    severities = {str(f.severity) for f in findings if f.topic == topic}
+    return "notice" if "notice" in severities and "warning" not in severities else "warning"
+
+
+def _severity_status_word(severity: str) -> str:
+    """``warning`` or ``notice`` as the status word of an overview row: the word
+    of the health section for a warning, and of the card for a notice."""
+    if severity == "notice":
+        return pgettext("status", "notice")
+    return status_word(HealthStatus.WARNING)
+
+
 def _glance_label_width() -> int:
     """One label column for every "At a glance" block, so they line up when shown together."""
     labels = (
@@ -286,28 +343,47 @@ def _glance_label_width() -> int:
 def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] = ()) -> list[str]:
     """One line per question a recording engineer asks first.
 
-    Every value is copied from the result; the symbol follows the profile's
-    findings on that topic. The sections below hold the detail.
+    Every value is copied from the result; the status follows the profile's
+    findings on that topic. The sections below hold the detail. With frames
+    the lines are a table whose status shows a mark and a word.
     """
-    rows: list[tuple[str, str]] = []
+    rows: list[tuple[str, Status, str]] = []
+    #: The rows whose numbers a check of the measurement health puts in doubt.
+    affected = frozenset(assess(result).affected)
+    doubtful: set[str] = set()
+    #: The word of a ``!`` row: the cards and the health section call the same
+    #: mark a warning or a notice, so the overview does too.
+    words: dict[str, str] = {}
 
-    def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, f"{c.symbol(status)} {glue_units(text)}"))
+    def row(
+        label: str, status: Status, text: str, group: str = "", topic: str = "", severity: str = ""
+    ) -> None:
+        rows.append((label, status, text))
+        if group in affected:
+            doubtful.add(label)
+        if status == "warn":
+            words[label] = _severity_status_word(severity or _topic_severity(findings, topic))
 
     broadband = result.decay.broadband
     if broadband.rt60_estimate_s is not None:
         text = _("RT60 {seconds:.2f} s").format(seconds=broadband.rt60_estimate_s)
         if broadband.rt60_basis:
-            text += c.muted(f" ({broadband.rt60_basis})")
+            text = annotated(text, broadband.rt60_basis)
         if broadband.edt.seconds is not None and broadband.edt.validity is Validity.VALID:
             text += c.sep() + f"EDT {broadband.edt.seconds:.2f} s"
-        row(_("Reverberation"), _topic_status(findings, "reverberation"), text)
+        row(
+            _("Reverberation"),
+            _topic_status(findings, "reverberation"),
+            text,
+            METRIC_DECAY,
+            "reverberation",
+        )
     else:
         row(_("Reverberation"), "unsure", _("no reliable broadband RT60 (see Reverberation)"))
 
     clarity = _clarity_glance(c, broadband)
     if clarity is not None:
-        row(_("Clarity"), _topic_status(findings, "clarity"), clarity)
+        row(_("Clarity"), _topic_status(findings, "clarity"), clarity, METRIC_ENERGY, "clarity")
 
     refl = result.reflections
     if refl.reflections:
@@ -324,6 +400,8 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
                 count=len(refl.reflections),
                 threshold=refl.threshold_db,
             ),
+            METRIC_REFLECTIONS,
+            "early_reflections",
         )
     elif refl.window_truncated and refl.analysed_window_ms is not None:
         # The response ended before the window did: later arrivals were not seen.
@@ -333,12 +411,14 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             _("none above {threshold:.0f} dB in the {end:.1f} ms that could be searched").format(
                 threshold=refl.threshold_db, end=refl.analysed_window_ms[1]
             ),
+            METRIC_REFLECTIONS,
         )
     else:
         row(
             _("Early reflections"),
             "ok",
             _("none above {threshold:.0f} dB").format(threshold=refl.threshold_db),
+            METRIC_REFLECTIONS,
         )
 
     res = result.resonances
@@ -347,13 +427,15 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             res.candidates, key=lambda cand: cand.level_above_baseline_db, reverse=True
         )[:3]
         listed = list_join(
-            f"{cand.frequency_hz:.0f} Hz (+{cand.level_above_baseline_db:.1f} dB)"
+            annotated(f"{cand.frequency_hz:.0f} Hz", f"+{cand.level_above_baseline_db:.1f} dB")
             for cand in strongest_modes
         )
         row(
             _("Low end"),
             _topic_status(findings, "low_frequency"),
             _("potential resonances at {listed}").format(listed=listed),
+            METRIC_RESONANCES,
+            "low_frequency",
         )
     elif (searched := _resonance_range(res)) is not None:
         # The range actually searched: a sweep that starts high, or a short
@@ -364,6 +446,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
             _("no potential resonance at {low:.0f}–{high:.0f} Hz").format(
                 low=searched[0], high=searched[1]
             ),
+            METRIC_RESONANCES,
         )
     else:
         row(
@@ -379,10 +462,11 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         text = _("{rms:.1f} dBFS RMS").format(rms=noise.rms_dbfs)
         hums = [hum for hum in noise.hum if hum.detected]
         status = _topic_status(findings, "noise")
+        severity = ""
         if hums:
             text += c.sep() + _("mains hum at {base:.0f} Hz").format(base=hums[0].base_hz)
-            status = "warn"
-        row(_("Noise floor"), status, text)
+            status, severity = "warn", "warning"
+        row(_("Noise floor"), status, text, METRIC_NOISE, "noise", severity)
     else:
         row(_("Noise floor"), "skip", _("no quiet segment in the recording"))
 
@@ -391,16 +475,107 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
         confidence=confidence_text(ir.direct_sound_confidence)
     )
     status = _topic_status(findings, "measurement")
+    severity = ""
     if result.warnings:
         quality += c.sep() + _("{n} warning(s), see Diagnostics").format(n=len(result.warnings))
-        status = "warn"
+        status, severity = "warn", "warning"
     else:
         quality += c.sep() + _("no warnings")
     if result.clipping is not None and result.clipping.clipped:
         quality += c.sep() + _("the recording clipped")
         status = "error"
-    row(_("Data quality"), status, quality)
-    return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
+    row(_("Data quality"), status, quality, "", "measurement", severity)
+    return c.section(_("At a glance")) + _glance_rows(c, rows, doubtful=doubtful, words=words)
+
+
+def _compared_word(status: Status) -> str:
+    """What a status means in the overview of a comparison: whether the topic
+    was compared, never whether the change is good. Every topic that has no
+    ``ok`` was not compared (it has no data, or its numbers could not be
+    compared), whatever mark its result carries."""
+    if status == "ok":
+        return pgettext("comparison status", "compared")
+    return pgettext("comparison status", "not compared")
+
+
+#: The narrowest the result column of the overview gets. Below it a result
+#: wraps into three or four lines of a few words and the table is twice as tall
+#: as the aligned lines: the status column goes first, then the table.
+_RESULT_FLOOR = 28
+
+
+def _glance_rows(
+    c: Console,
+    rows: Sequence[tuple[str, Status, str]],
+    *,
+    compared: bool = False,
+    doubtful: Collection[str] = (),
+    words: Mapping[str, str] | None = None,
+) -> list[str]:
+    """The "At a glance" rows.
+
+    With frames a bordered table of three columns: the topic, a status (the
+    mark and a word, for a comparison whether the topic was compared) and the
+    result, which wraps inside its column but is kept at least
+    :data:`_RESULT_FLOOR` columns wide. Where it cannot be, the status column
+    is left out (its mark stays in front of the result) and a line under the
+    table says so; where no table fits, and without frames, aligned fields
+    with the status symbol, as they always were.
+
+    A topic in ``doubtful`` (a check of the measurement health that bears on
+    it is not good, or a side of a comparison is invalid) has ``? unsure`` in
+    the table instead of ``✓ good`` / ``✓ compared``: a word is a stronger
+    claim than a tick. The aligned lines keep the status of every release, so
+    that what a pipe or a file receives does not change. A ``!`` row has the
+    word of ``words`` (``warning``, ``notice``), the one its card below has.
+
+    Only this overview is a table. The measurement-health and verdict sections
+    keep their lines: each entry there is a sentence of advice or a reason of
+    two or three lines, with a ``→`` step under it, and a cell would cut it up
+    and repeat the overview directly above.
+    """
+
+    def shown(label: str, status: Status) -> Status:
+        """The status as a table shows it."""
+        return "unsure" if status == "ok" and label in doubtful else status
+
+    def badge(label: str, status: Status) -> str:
+        if shown(label, status) != status:
+            return c.badge("unsure")
+        if compared:
+            return c.badge(status, _compared_word(status))
+        return c.badge(status, (words or {}).get(label) if status == "warn" else None)
+
+    mark = shown if c.boxed else lambda _label, status: status
+    marked = [
+        (label, f"{c.symbol(mark(label, status))} {glue_units(text)}")
+        for label, status, text in rows
+    ]
+    label_width = _glance_label_width()
+    if c.boxed:
+        topic, result = pgettext("at a glance", "Topic"), pgettext("at a glance", "Result")
+        table = c.framed_table(
+            [topic, _("Status"), result],
+            [[label, badge(label, status), glue_units(text)] for label, status, text in rows],
+            wrap_column=2,
+            expand=True,
+            min_widths=(label_width,),
+            floor=_RESULT_FLOOR,
+        )
+        if table is not None:
+            return table
+        table = c.framed_table(
+            [topic, result],
+            [list(pair) for pair in marked],
+            wrap_column=1,
+            expand=True,
+            min_widths=(label_width,),
+            floor=_RESULT_FLOOR,
+        )
+        if table is not None:
+            note = _("The status column is left out: widen the terminal to see it.")
+            return [*table, *c.paragraph(note)]
+    return c.fields(marked, min_label=label_width)
 
 
 def _diagnostics(c: Console, result: AnalysisResult) -> list[str]:
@@ -475,11 +650,12 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
     for band in (result.decay.broadband, *result.decay.bands):
         for metric in (band.edt, band.t20, band.t30):
             seen.add(metric.validity)
-        rt60 = (
-            f"{band.rt60_estimate_s:.2f} s " + c.muted(f"({band.rt60_basis})")
-            if band.rt60_estimate_s is not None
-            else c.symbol("skip")
-        )
+        if band.rt60_estimate_s is None:
+            rt60 = c.symbol("skip")
+        elif band.rt60_basis:
+            rt60 = annotated(f"{band.rt60_estimate_s:.2f} s", band.rt60_basis)
+        else:
+            rt60 = f"{band.rt60_estimate_s:.2f} s"
         span = f"{band.peak_to_noise_db:.1f} dB" if band.peak_to_noise_db is not None else c.dash()
         rows.append(
             [
@@ -492,7 +668,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
             ]
         )
         if band.filter_warning:
-            notes.append(_labelled(band_text(band.band_label), localize(band.filter_warning)))
+            notes.append(labelled(band_text(band.band_label), localize(band.filter_warning)))
     headers = [_("Band"), "EDT", "T20", "T30", "RT60", _("Decay range")]
     bases = {band.rt60_basis for band in (result.decay.broadband, *result.decay.bands)}
     basis_note = ""
@@ -506,7 +682,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
         basis_note = _("RT60 extrapolated from {basis} in every band").format(basis=basis)
     lines += c.table(headers, rows, align="lrrrrr")
     if basis_note:
-        lines += c.paragraph(basis_note, style=("dim",))
+        lines += c.paragraph(basis_note)
     legend = [
         v
         for v in (
@@ -528,17 +704,25 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
 
 def _legend(c: Console, validities: Sequence[Validity]) -> list[str]:
     """``? unreliable   – outside the excitation range``: what each symbol means,
-    as many entries per line as the width holds (an entry is never split)."""
+    as many entries per line as the width holds (an entry is never split, unless
+    it is wider than the terminal: then it wraps under its mark)."""
     lines: list[str] = []
     line = ""
     for validity in validities:
-        entry = f"{c.symbol(validity_status(validity))} {c.readable(validity_word(validity))}"
+        word = validity_word(validity)
+        entry = f"{c.symbol(validity_status(validity))} {c.readable(word)}"
+        if cell_width("  " + strip_ansi(entry)) > c.width:
+            if line:
+                lines.append("  " + line)
+                line = ""
+            lines += c.status(validity_status(validity), word)
+            continue
         joined = f"{line}   {entry}" if line else entry
         if line and cell_width("  " + joined) > c.width:
             lines.append("  " + line)
             joined = entry
         line = joined
-    return [*lines, "  " + line]
+    return [*lines, "  " + line] if line else lines
 
 
 def _clarity_glance(c: Console, band: BandDecay) -> str | None:
@@ -570,7 +754,7 @@ def _energy_cell(c: Console, metric: EnergyMetric) -> str:
     if number is not None and metric.validity is Validity.VALID:
         return number
     if number is not None and metric.validity is Validity.UNRELIABLE:
-        return c.style(number, "yellow") + " " + c.symbol("unsure")
+        return f"{number} " + c.symbol("unsure")
     if metric.validity is Validity.INSUFFICIENT_RANGE:
         return c.symbol("warn")
     return c.symbol("skip")
@@ -634,7 +818,9 @@ def _noise(c: Console, result: AnalysisResult) -> list[str]:
         )
         hums = [h for h in noise.hum if h.detected]
         for hum in hums:
-            harmonics = list_join(f"{f:.0f} Hz (+{p:.0f} dB)" for f, p in hum.harmonics)
+            harmonics = list_join(
+                annotated(f"{f:.0f} Hz", f"+{p:.0f} dB") for f, p in hum.harmonics
+            )
             lines += c.status(
                 "warn",
                 _("Potential mains hum at multiples of {base:.0f} Hz: {harmonics}").format(
@@ -668,7 +854,7 @@ def _reflections(c: Console, result: AnalysisResult) -> list[str]:
         lines += c.table([_("Delay"), _("Level")], rows, align="rr")
         hidden = len(refl.reflections) - 10
         if hidden > 0:
-            lines += c.paragraph(_("{n} more in result.json").format(n=hidden), style=("dim",))
+            lines += c.paragraph(_("{n} more in result.json").format(n=hidden))
     for note in refl.notes:
         lines += c.status("info", localize(note))
     return lines
@@ -678,15 +864,12 @@ def _length_text(c: Console, length: PlacementLength) -> str:
     if length.metres is None:
         text = f"{c.symbol('skip')} {_('not determined')}"
         if length.missing_input:
-            text += c.muted("  " + _("(add {input})").format(input=length.missing_input))
+            text = annotated(text, _("add {input}").format(input=length.missing_input))
         return text
     value = f"{length.metres:.2f} m"
     if length.input_uncertainty_m is not None:
-        value += c.muted(
-            "  "
-            + _("±{uncertainty:.2f} m from the stated inputs only").format(
-                uncertainty=length.input_uncertainty_m
-            )
+        value += "  " + _("±{uncertainty:.2f} m from the stated inputs only").format(
+            uncertainty=length.input_uncertainty_m
         )
     if length.validity is not Validity.VALID:
         value += "  " + validity_cell(c, length.validity)
@@ -708,8 +891,9 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         [
             (
                 _("Speed of sound"),
-                f"{placement.speed_of_sound_m_s:.1f} m/s "
-                + _("at {temp:.0f} °C").format(temp=placement.temperature_c)
+                _("{speed:.1f} m/s at {temp:.0f} °C").format(
+                    speed=placement.speed_of_sound_m_s, temp=placement.temperature_c
+                )
                 + assumed,
             ),
             *(
@@ -725,7 +909,7 @@ def _placement(c: Console, placement: PlacementResult) -> list[str]:
         if length.reason:
             reasons.setdefault(localize(length.reason), []).append(name)
     for reason, names in reasons.items():
-        text = reason if len(names) == len(figures) else _labelled(list_join(names), reason)
+        text = reason if len(names) == len(figures) else labelled(list_join(names), reason)
         lines += c.status("info", text)
     named = [candidate for candidate in placement.candidates if candidate.surface]
     if named:
@@ -855,7 +1039,7 @@ def render_comparison(
     if comparison.comparable:
         # A refused pair compared nothing: its empty lists are not findings
         # ("no potential resonance"); the notes say why it was refused.
-        lines += comparison_at_a_glance(c, comparison)
+        lines += comparison_at_a_glance(c, comparison, verdict)
         lines += _verdicts(c, verdict)
         lines += _decay_deltas(c, comparison.decay)
 
@@ -954,7 +1138,7 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         band, metric = _split_decay_name(item.name)
         if metric and item.unit and item.unit != "s":
             # C50 (dB) and D50 (%) share the column with times in seconds.
-            metric = f"{metric} ({item.unit})"
+            metric = annotated(metric, item.unit)
         base = f"{item.baseline:.3f}" if item.baseline is not None else c.dash()
         cand = f"{item.candidate:.3f}" if item.candidate is not None else c.dash()
         if item.validity is Validity.VALID and item.delta is not None:
@@ -982,13 +1166,17 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         previous = band
     headers = [_("Band"), _("Metric"), _("Baseline"), _("Candidate"), "Δ", "Δ %", ""]
     align = "llrrrrl"
-    if not c.fits(headers, rows, gap=2):
+    dropped = not c.fits(headers, rows, gap=2)
+    if dropped:
         # A narrow terminal drops the percentage before the table has to fall
         # apart into blocks: it follows from baseline and Δ, and C50, C80 and
         # D50 have none, so without Δ their change would not be shown at all.
         headers, align = headers[:5] + headers[6:], align[:5] + align[6:]
         rows = [row[:5] + row[6:] for row in rows]
     lines += c.table(headers, rows, align=align, gap=2, title_columns=2)
+    if dropped and c.boxed:
+        # With frames the reader chose a layout with borders: say what it cost.
+        lines += c.paragraph(_("Δ % is left out: widen the terminal to see it."))
     if seen:
         lines.append("")
         lines += _legend(c, sorted(seen, key=list(Validity).index))
@@ -1068,7 +1256,7 @@ def _delta_statuses(c: Console, items: Sequence[MetricDelta]) -> list[str]:
         names = list_join(metric_label(item.name) for item in members)
         lines += c.status(
             validity_status(validity),
-            _labelled(names, validity_word(validity)),
+            labelled(names, validity_word(validity)),
             detail=localize(reason) if reason else "",
         )
     return lines
@@ -1078,9 +1266,9 @@ def _delta_text(c: Console, item: MetricDelta) -> str:
     unit = f" {item.unit}" if item.unit else ""
     base = f"{item.baseline:.2f}" if item.baseline is not None else c.dash()
     cand = f"{item.candidate:.2f}" if item.candidate is not None else c.dash()
-    text = _labelled(metric_label(item.name), f"{base} {c.arrow()} {cand}{unit}")
+    text = labelled(metric_label(item.name), f"{base} {c.arrow()} {cand}{unit}")
     if item.delta is not None:
-        text += f" ({signed_number(item.delta, 2)}{unit})"
+        text = annotated(text, f"{signed_number(item.delta, 2)}{unit}")
     return text
 
 
@@ -1117,6 +1305,13 @@ def _verdicts(c: Console, verdict: ComparisonVerdict) -> list[str]:
             c.bold(f"{aspect.title}{c.sep()}{verdict_word(aspect.verdict)}"),
             detail=aspect.reason,
         )
+    if c.boxed and verdict.conditions:
+        # Under the last aspect they read as part of it ("对比项测量有健康警告：
+        # 电平。" under the low end): a blank line and a mark of their own.
+        lines.append("")
+        for condition in verdict.conditions:
+            lines += c.status("info", condition)
+        return lines
     for condition in verdict.conditions:
         lines += c.paragraph(condition, indent=4)
     return lines
@@ -1138,7 +1333,7 @@ def averaged_table(c: Console, averaged: AveragedDecay) -> list[str]:
             return dash
         if metric.count < n:
             partial = True
-            return f"{metric.seconds:.2f} s ({metric.count})"
+            return annotated(f"{metric.seconds:.2f} s", str(metric.count))
         return f"{metric.seconds:.2f} s"
 
     rows = []
@@ -1155,7 +1350,7 @@ def averaged_table(c: Console, averaged: AveragedDecay) -> list[str]:
             "n is the number of sessions averaged in the row; a value followed by "
             "(k) averages only k of them, as the others have no VALID value."
         )
-        lines += c.paragraph(note, style=("dim",))
+        lines += c.paragraph(note)
     return lines
 
 
@@ -1170,7 +1365,7 @@ def _overview_row(c: Console, take: Any, *, position: str) -> list[str]:
     dash = c.dash()
     health = status_word(HealthStatus(take.health))
     if take.health_problems:
-        health += f" ({printable(list_join(take.health_problems), single_line=True)})"
+        health = annotated(health, printable(list_join(take.health_problems), single_line=True))
     rt60 = dash if take.rt60_s is None else f"{take.rt60_s:.2f} s"
     clarity = dash if take.clarity_db is None else f"{take.clarity_db:+.1f} dB"
     # Whole decibels and a compact reflection: the nine columns then fit a
@@ -1323,7 +1518,7 @@ def render_profiles(
         lines += c.commands(
             [
                 (
-                    item.name + (c.muted(" " + _("(default)")) if item.name == default else ""),
+                    annotated(item.name, _("default")) if item.name == default else item.name,
                     f"{item.title}{c.sep()}{item.description}",
                 )
                 for item in items
@@ -1337,11 +1532,10 @@ def render_profiles(
                 "reverbscope config profile <name> for good."
             ),
             indent=0,
-            style=("dim",),
         )
         return c.fit("\n".join(lines))
     for item in items:
-        lines += c.section(f"{item.title} ({item.name})", item.description)
+        lines += c.section(annotated(item.title, item.name), item.description)
         for want in item.wants:
             lines += c.status("ok", want)
         for skip in item.skips:
@@ -1353,19 +1547,29 @@ def render_profiles(
             "docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
         ),
         indent=0,
-        style=("dim",),
     )
     return c.fit("\n".join(lines))
 
 
-def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str]:
-    """Baseline against candidate, one line per topic; the symbol says whether
-    the topic could be compared, never whether the change is good."""
-    rows: list[tuple[str, str]] = []
-    arrow = f" {c.arrow()} "
+def comparison_at_a_glance(
+    c: Console, comparison: ComparisonResult, verdict: ComparisonVerdict | None = None
+) -> list[str]:
+    """Baseline against candidate, one line per topic; the status says whether
+    the topic could be compared, never whether the change is good.
 
-    def row(label: str, status: Status, text: str) -> None:
-        rows.append((label, f"{c.symbol(status)} {glue_units(text)}"))
+    With the verdict, judged with both results at hand, a topic whose numbers
+    the measurement health of a side puts in doubt (or all of them, when a
+    side is invalid) is ``unsure`` and not ``compared``."""
+    rows: list[tuple[str, Status, str]] = []
+    arrow = f" {c.arrow()} "
+    advice = ""
+    in_doubt = frozenset(verdict.in_doubt if verdict is not None else ())
+    doubtful: set[str] = set()
+
+    def row(label: str, status: Status, text: str, group: str = "") -> None:
+        rows.append((label, status, text))
+        if group in in_doubt:
+            doubtful.add(label)
 
     rt = next((d for d in comparison.decay if d.name == "broadband.rt60_estimate"), None)
     if (
@@ -1376,8 +1580,8 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
     ):
         text = f"RT60 {rt.baseline:.2f} s{arrow}{rt.candidate:.2f} s"
         if rt.delta_percent is not None:
-            text += f" ({signed_number(rt.delta_percent, 1)} %)"
-        row(_("Reverberation"), "ok", text)
+            text = annotated(text, f"{signed_number(rt.delta_percent, 1)} %")
+        row(_("Reverberation"), "ok", text, METRIC_DECAY)
     else:
         row(_("Reverberation"), "unsure", _("broadband RT60 not comparable (see Reverberation)"))
 
@@ -1399,7 +1603,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
             text += c.sep() + (
                 f"C80 {signed_number(c80.baseline, 1)} dB{arrow}{signed_number(c80.candidate, 1)} dB"
             )
-        row(_("Clarity"), "ok", text)
+        row(_("Clarity"), "ok", text, METRIC_ENERGY)
 
     if comparison.reflections:
         counts = {"matched": 0, "appeared": 0, "disappeared": 0}
@@ -1414,6 +1618,7 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
                 kept=counts["matched"],
                 sep=c.sep(),
             ),
+            METRIC_REFLECTIONS,
         )
     elif any(note.startswith(REFLECTIONS_NOT_COMPARED) for note in comparison.notes):
         row(
@@ -1422,7 +1627,12 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
             _("not compared: the direct-sound confidence is not high on both sides"),
         )
     else:
-        row(_("Early reflections"), "ok", _("none above the threshold on either side"))
+        row(
+            _("Early reflections"),
+            "ok",
+            _("none above the threshold on either side"),
+            METRIC_REFLECTIONS,
+        )
 
     parts: list[str] = []
     for status, label in (
@@ -1437,28 +1647,41 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
         ]
         if found:
             parts.append(label.format(list=list_join(found)))
-    clauses = pgettext("clause separator", "; ")
     if any(note.startswith(RESONANCES_NOT_COMPARED) for note in comparison.notes):
         # Not "no potential resonance": one side, or both, never searched.
         row(_("Low end"), "skip", _("not compared: no frequency range was searched on both sides"))
     elif parts:
-        row(_("Low end"), "ok", clauses.join(parts))
+        row(_("Low end"), "ok", clause_join(parts), METRIC_RESONANCES)
     elif any(note.startswith(RESONANCES_NARROWED) for note in comparison.notes):
-        row(_("Low end"), "ok", _("no potential resonance in the range both sides searched"))
+        row(
+            _("Low end"),
+            "ok",
+            _("no potential resonance in the range both sides searched"),
+            METRIC_RESONANCES,
+        )
     else:
-        row(_("Low end"), "ok", _("no potential resonance"))
+        row(_("Low end"), "ok", _("no potential resonance"), METRIC_RESONANCES)
 
     rms = next((d for d in comparison.noise if d.name == "noise.rms_dbfs"), None)
     if rms is not None and rms.baseline is not None and rms.candidate is not None:
         text = f"{rms.baseline:.1f}{arrow}{rms.candidate:.1f} dBFS"
         if rms.validity is Validity.VALID and rms.delta is not None:
-            row(_("Noise floor"), "ok", text + f" ({signed_number(rms.delta, 1)} dB)")
+            row(
+                _("Noise floor"),
+                "ok",
+                annotated(text, f"{signed_number(rms.delta, 1)} dB"),
+                METRIC_NOISE,
+            )
         else:
             text += c.sep() + _("not compared: {validity}").format(
                 validity=validity_word(rms.validity)
             )
             if not comparison.settings.get("same_input_gain", False):
-                text += c.sep() + _("add --same-input-gain if the input gain was unchanged")
+                hint = _("add --same-input-gain if the input gain was unchanged")
+                if c.boxed:
+                    advice = hint  # a flag to copy does not belong in a bordered cell
+                else:
+                    text += c.sep() + hint
             row(_("Noise floor"), validity_status(rms.validity), text)
     else:
         row(_("Noise floor"), "skip", _("no quiet segment on one or both sides"))
@@ -1472,8 +1695,10 @@ def comparison_at_a_glance(c: Console, comparison: ComparisonResult) -> list[str
             _("largest change in the {band} octave, {mad:.1f} dB mean |Δ|").format(
                 band=band, mad=mad
             ),
+            METRIC_FREQUENCY_RESPONSE,
         )
-    return c.section(_("At a glance")) + c.fields(rows, min_label=_glance_label_width())
+    lines = c.section(_("At a glance")) + _glance_rows(c, rows, compared=True, doubtful=doubtful)
+    return lines + c.status("info", advice) if advice else lines
 
 
 # --- Environment report -------------------------------------------------------------
@@ -1551,7 +1776,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
         [
             (_("Platform"), str(report["platform"])),
             (_("Architecture"), str(report["machine"])),
-            ("Python", f"{report['python']} ({report['implementation']})"),
+            ("Python", annotated(str(report["python"]), str(report["implementation"]))),
             (_("Language"), str(report["language"])),
         ]
     )
@@ -1612,7 +1837,8 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
             (p["device"]["name"] for p in devices if p["device"].get("is_default_output")), None
         )
         apis = list_join(
-            f"{api['name']} ({api['device_count']})" for api in audio.get("host_apis", [])
+            annotated(str(api["name"]), str(api["device_count"]))
+            for api in audio.get("host_apis", [])
         )
         lines += c.fields(
             [
@@ -1765,9 +1991,7 @@ def render_devices(console: Console, devices: Sequence[DeviceInfo]) -> str:
     lines.append("")
     lines += _device_rows(console, payload, probed=False)
     lines.append("")
-    lines += console.paragraph(
-        _("Use the number with --input-device / --output-device."), style=("dim",)
-    )
+    lines += console.paragraph(_("Use the number with --input-device / --output-device."))
     return console.fit("\n".join(lines))
 
 
@@ -1810,7 +2034,7 @@ def render_host_apis(console: Console, inventory: DeviceInventory) -> str:
     )
     for api in inventory.host_apis:
         if api.note:
-            lines += console.status("info", _labelled(api.name, localize(api.note)))
+            lines += console.status("info", labelled(api.name, localize(api.note)))
     return console.fit("\n".join(lines))
 
 
@@ -1875,7 +2099,6 @@ def render_sweep_written(
     )
     lines += c.paragraph(
         _("Start with the monitors turned down and raise them between takes if needed."),
-        style=("dim",),
     )
     return c.fit("\n".join(lines))
 
@@ -1908,6 +2131,20 @@ def _find(devices: Sequence[DeviceInfo], index: int | None, default_attr: str) -
     if index is not None:
         return next((d for d in devices if d.index == index), None)
     return next((d for d in devices if getattr(d, default_attr)), None)
+
+
+#: Set by the menu around the ``measure`` it runs, after it has shown the note
+#: about the monitors and asked whether to play: the command does not repeat
+#: the note a screen later. Typed by hand, ``reverbscope measure`` always
+#: shows it.
+SAFETY_NOTE_SHOWN: ContextVar[bool] = ContextVar("reverbscope_safety_note_shown", default=False)
+
+
+def render_safety_note(console: Console) -> str:
+    """The note to turn the monitors down before a take: a warning line."""
+    from reverbscope.audio.backend import SAFETY_MESSAGE
+
+    return "\n".join(console.status("warn", _(SAFETY_MESSAGE), indent=0))
 
 
 def render_measure_plan(
@@ -2013,14 +2250,26 @@ def render_error(
 
           Try:
             reverbscope analyze --help
+
+    With frames the message and the explanation are in a red card titled
+    ``✗ Error``; the commands stay outside it, bare, to copy.
     """
     c = console
+    framed = None
+    if c.boxed:
+        inner = c.inner()
+        body = inner.paragraph(message, indent=0) + (
+            inner.paragraph(detail, indent=0) if detail else []
+        )
+        framed = c.frame(pgettext("error panel", "Error"), body, "error", mark="error")
     text = _("error: {message}").format(message=message)
-    if c.unicode:
-        lines = c.status("error", text, indent=0, style=("red", "bold"))
+    if framed is not None:
+        lines = framed
+    elif c.unicode:
+        lines = c.status("error", text, indent=0, style=("bold",))
     else:  # "[ERROR] error:" would say it twice
         lines = c.paragraph(text, indent=0)
-    if detail:
+    if detail and framed is None:
         lines += c.paragraph(detail, indent=2)
     if hints:
         lines.append("")
@@ -2046,10 +2295,12 @@ def render_status(console: Console, kind: Status, text: str, *, keep: bool = Fal
 
 
 def _setting_rows(c: Console, rows: Sequence[tuple[str, str, str]]) -> list[str]:
-    """``key  value  meaning`` rows; the meaning wraps under itself.
+    """``key  value  meaning`` rows, the first one the heading (bold); the
+    meaning wraps under itself.
 
     A value too wide for its column (a folder) puts its meaning on the next
-    line; a narrow terminal puts every meaning under its key.
+    line; a narrow terminal puts every meaning under its key, and a terminal
+    too narrow for a key and its value on one line puts the value under the key.
     """
     rows = [(c.readable(key), c.readable(value), c.readable(text)) for key, value, text in rows]
     key_width = max(cell_width(key) for key, _value, _text in rows)
@@ -2057,20 +2308,30 @@ def _setting_rows(c: Console, rows: Sequence[tuple[str, str, str]]) -> list[str]
     value_width = max([cell_width(v) for _k, v, _t in rows if cell_width(v) <= 12] or [12])
     column = 2 + key_width + 2 + value_width + 2
     stacked = c.width - column < 24
+    # Not even a key and its value fit one line: every value goes under its
+    # key (a path is never cut).
+    tight = 2 + key_width + 2 + value_width > c.width
     out: list[str] = []
-    for key, value, text in rows:
-        head = "  " + pad(key, key_width) + "  " + c.command(value)
-        if stacked:
+    for number, (key, value, text) in enumerate(rows):
+        start = len(out)
+        shown = c.bold(value) if number == 0 else c.command(value)
+        head = "  " + pad(key, key_width) + "  " + shown
+        if tight:
+            out.append("  " + key)
+            out.append("    " + shown)
+            out += wrap(text, c.width, first="    ")
+        elif stacked:
             out.append(head)
-            out += [c.muted(line) for line in wrap(text, c.width, first="    ")]
-            continue
-        if cell_width(value) > value_width:
+            out += wrap(text, c.width, first="    ")
+        elif cell_width(value) > value_width:
             out.append(head)
             out += wrap(text, c.width, first=" " * column)
-            continue
-        lines = wrap(text, c.width, first=" " * column)
-        out.append(head + " " * (value_width - cell_width(value) + 2) + lines[0][column:])
-        out += lines[1:]
+        else:
+            lines = wrap(text, c.width, first=" " * column)
+            out.append(head + " " * (value_width - cell_width(value) + 2) + lines[0][column:])
+            out += lines[1:]
+        if number == 0:
+            out[start:] = [c.bold(strip_ansi(line)) for line in out[start:]]
     return out
 
 
@@ -2108,15 +2369,13 @@ def render_config(
         for key in config.KEYS
     ]
     table = _setting_rows(c, rows)
-    lines += [c.muted(table[0]), *table[1:]]
+    lines += table
     lines.append("")
     lines += c.commands(_config_commands())
     lines.append("")
     lines += c.fields([(_("Settings file"), Verbatim(str(path)))])
     if not exists:
-        lines += c.paragraph(
-            _("Nothing is stored yet: every setting has its default."), style=("dim",)
-        )
+        lines += c.paragraph(_("Nothing is stored yet: every setting has its default."))
     return c.fit("\n".join(lines))
 
 
@@ -2144,7 +2403,7 @@ def render_config_key(console: Console, key: str, settings: UserSettings) -> str
         [(f"reverbscope config {key} {pgettext('metavar', 'VALUE')}", _("change it"))]
     )
     if key == "theme":
-        lines += c.paragraph(_("The theme applies to the desktop app only."), style=("dim",))
+        lines += c.paragraph(_("The theme applies to the desktop app only."))
     return c.fit("\n".join(lines))
 
 
@@ -2263,7 +2522,7 @@ def render_config_saved(
     if commands:
         lines += c.commands(commands, indent=2)
     # One line, whole: a path to copy.
-    lines.append("  " + c.muted(_("Saved in {path}").format(path=path)))
+    lines.append("  " + _("Saved in {path}").format(path=path))
     return c.fit("\n".join(lines))
 
 
@@ -2277,7 +2536,7 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
     """
     c = console
     name = "ReverbScope" + (" " + _("Terminal Edition") if terminal_edition else "")
-    lines = [c.bold(name) + " " + c.muted(version)]
+    lines = [c.bold(name) + " " + version]
     lines += c.paragraph(
         _(
             "Measure and compare the rooms you record in: reverberation, early reflections, "
@@ -2301,15 +2560,21 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
     lines += c.paragraph(
         _("Run {command} for every command and option.").format(command="reverbscope --help"),
         indent=0,
-        style=("dim",),
     )
-    from reverbscope.cli.config import language_hint_lines
+    from reverbscope.cli.config import language_hint_lines, style_hint_lines
     from reverbscope.i18n import current_locale
 
-    # Not a paragraph: wrapping split the command to copy across two lines.
+    # The frames are drawn with glyphs that some CJK terminals draw too wide: a
+    # reader at a terminal is told; a file with frames (``--style boxed`` in a
+    # pipe) has no terminal to look crooked on.
+    crooked = style_hint_lines(current_locale(), c.width, boxed=c.boxed and c.interactive)
+    if crooked and c.can_write("".join(crooked)):
+        lines += crooked
+    # Last, so that it is always found: the way to the other language. Not a
+    # paragraph: wrapping split the command to copy across two lines.
     hint = language_hint_lines(current_locale(), c.width)
     if hint and c.can_write("".join(hint)):
-        lines += [c.muted(line) for line in hint]
+        lines += hint
     return c.fit("\n".join(lines))
 
 
@@ -2368,7 +2633,6 @@ def render_demo(
             end=frequency_text(settings.end_hz),
             rate=rate_text(settings.sample_rate),
         ),
-        style=("dim",),
     )
 
     for take, take_findings in zip(run.takes, findings, strict=True):
@@ -2379,7 +2643,11 @@ def render_demo(
         lines += c.section(title, description) + glance[2:]
 
     first, second = run.takes[0], run.takes[1]
-    glance = comparison_at_a_glance(c, run.comparison)
+    glance = comparison_at_a_glance(
+        c,
+        run.comparison,
+        judge_comparison(run.comparison, baseline=first.result, candidate=second.result),
+    )
     lines += (
         c.section(
             _("Comparison {a} {arrow} {b}").format(

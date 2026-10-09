@@ -17,7 +17,7 @@
 5. **在单独的单声道轨道上录话筒**，关闭输入监听（否则话筒会经扬声器回授），轨道上不要有插件、发送或门限。在测试信号开始前开始录音，或一次录完整个片段：文件开头的一秒静音就是为此准备的。只录一遍：关闭循环录音。如果为了静音监听把话筒通道推子拉到底，在经过该通道渲染的导出（分轨或轨道导出）之前，请把推子恢复到 0 dB。
 6. **完整导出录音轨或片段**，采用工程采样率，格式为 WAV（Broadcast WAV、RF64、Wave64 均可）、AIFF、CAF 或 FLAC，24 位或 32 位浮点，**不要标准化**（标准化会掩盖你在不同录音之间比较的本底噪声电平）。单声道或立体声都可以；立体声文件请在界面中或用 `--channel` 选择话筒声道。不要裁切：ReverbScope 会自己找到扫频，扫频之后的静音就是衰减。
 7. **延迟无关紧要。** ReverbScope 会在录音中任何位置找到扫频，插件延迟补偿和音频接口延迟都无需设置。
-8. **可选回送（loopback）。** 在同一遍录音中用第二条轨道录下音频接口的电回送（一路输出用线接回一个空闲输入）。把两条轨道导出为一个双声道文件（`--channel 0 --loopback-channel 1`），或两个文件（`--loopback return.wav`）。
+8. **可选回采（loopback）。** 在同一遍录音中用第二条轨道录下音频接口的电信号回采（一路输出用线接回一个空闲输入）。把两条轨道导出为一个双声道文件（`--channel 0 --loopback-channel 1`），或两个文件（`--loopback return.wav`）。
 
 然后分析：
 
@@ -41,7 +41,7 @@ reverbscope analyze --recording "Mic_01.wav" --sweep sweep_44k.wav --out session
 * **导入：** Logic：File ▸ Import ▸ Audio File，或把 WAV 拖到轨道上 [G2]。GarageBand：把 WAV 拖到轨道上 [G8]。
 * **时间伸缩：** Logic 12.3：在片段检查器中取消勾选 *Flex*，并把 *Smart Tempo* 设为 *Off* [G3]（Logic 12.2 及更早版本：*Flex & Follow* = *Off* [G4]；*Smart Tempo* 弹出菜单是 12.3 新增的 [G14]）；在 File ▸ Project Settings ▸ Smart Tempo 中把 *Set Imported Files To* 设为 *Flex Off*，并取消勾选 *Trim start of new regions* [G5]。GarageBand：在音频编辑器中取消勾选 *Follow Tempo and Pitch*，保持 *Enable Flex* 关闭 [G10]。
 * **录音：** 单声道音频轨，输入为话筒。Logic 的软件监听默认开启，会播放录音轨的输入 [G6]：请将其关闭（Settings ▸ Audio ▸ General）或把该轨推子拉到底。关闭 Cycle。Logic 的录音文件（CAF、WAVE/BWF 或 AIFF）可以直接分析 [G7]。
-* **导出：** Logic：选中录好的片段，File ▸ Export ▸ *1 Region as Audio File*，WAV 或 AIFF，关闭 *Normalize*，勾选 *Bypass Effect Plug-ins* [G11]。GarageBand：静音扫频轨，关闭 *Export projects at full volume*（Settings ▸ Advanced；它会把导出标准化）[G12]，然后用 Share ▸ Export Song to Disk 导出 WAVE 或 AIFF [G13]。该导出会裁掉工程首尾的静音 [G13]；扫频前话筒录到的房间底噪不是数字静音，但请确认导出文件在扫频之前开始。
+* **导出：** Logic：选中录好的片段，File ▸ Export ▸ *1 Region as Audio File*，WAV 或 AIFF，关闭 *Normalize*，勾选 *Bypass Effect Plug-ins* [G11]。GarageBand：静音扫频轨，关闭 *Export projects at full volume*（Settings ▸ Advanced；它会把导出标准化）[G12]，然后用 Share ▸ Export Song to Disk 导出 WAVE 或 AIFF [G13]。该导出会裁掉工程首尾的静音 [G13]；扫频前话筒录到的房间本底噪声不是数字静音，但请确认导出文件在扫频之前开始。
 
 ## Steinberg Cubase 与 Nuendo
 

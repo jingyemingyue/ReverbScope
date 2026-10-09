@@ -29,7 +29,7 @@ from dataclasses import asdict, dataclass, field, replace
 from typing import Any
 
 from reverbscope.audio.backend import AudioBackend, DeviceInfo, StreamOptions
-from reverbscope.i18n import _, diag
+from reverbscope.i18n import _, diag, quoted
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
 #: PortAudio host API names (as PortAudio reports them) -> short kind.
@@ -614,9 +614,9 @@ def resolve_duplex(
                     "different host APIs; PortAudio records and plays in one stream only within "
                     "one host API. Choose both on the same host API"
                 ).format(
-                    input=repr(chosen_in.name),
+                    input=quoted(chosen_in.name),
                     input_api=chosen_in.host_api,
-                    output=repr(chosen_out.name),
+                    output=quoted(chosen_out.name),
                     output_api=chosen_out.host_api,
                 )
             )
@@ -714,12 +714,12 @@ def check_host_api_options(device: DeviceInfo, options: StreamOptions | None) ->
             _(
                 "WASAPI exclusive mode was requested, but {device} is a {api} device; "
                 "choose a Windows WASAPI device or drop --wasapi-exclusive"
-            ).format(device=repr(device.name), api=device.host_api)
+            ).format(device=quoted(device.name), api=device.host_api)
         )
     if options.coreaudio_change_device_rate and device.host_api != "Core Audio":
         raise ConfigurationError(
             _(
                 "setting the Core Audio device rate was requested, but {device} is a {api} "
                 "device; drop --coreaudio-set-rate"
-            ).format(device=repr(device.name), api=device.host_api)
+            ).format(device=quoted(device.name), api=device.host_api)
         )

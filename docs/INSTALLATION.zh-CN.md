@@ -15,7 +15,7 @@
 
 ReverbScope 是**供测试用的预发布版本**；供测试的构建是 Releases 页面上的 0.5.0 候选测试版（`0.5.0rc1`），
 `main` 是开发线。这些构建**没有签名**（见
-[未签名构建的警告](#未签名构建的警告)），而且**还没有任何测量在真实音频硬件上验证过**
+[未签名构建的警告](#未签名构建的警告)），而且**还没有任何测量在真实音频设备上验证过**
 （[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)）。
 
 ## 我该下载哪个文件？
@@ -186,6 +186,11 @@ Windows 的显示语言，或 Linux 上的 `LANGUAGE` / `LANG`。想不管系统
 `reverbscope config language zh_CN`（英文用 `en`）；`reverbscope config language auto` 改回跟随系统，
 `reverbscope config` 列出所有设置。
 
+**边框。** 在至少 48 列宽的终端里，命令行会给报告标题画框、把小节标题嵌在横线里、给表格画边框；输出到管道或文件时
+不画。如果你的终端把方框字符画成两列宽（某些中日韩字体和区域设置），边框显得歪斜，运行
+`reverbscope config style plain`（或在一个终端会话里设置 `REVERBSCOPE_CLI_STYLE=plain`，或给一条命令加
+`--style plain`）即可得到同样的文字、不画边框；`reverbscope config style auto` 改回默认。
+
 在 **macOS** 上，浏览器会给下载的文件加上标记，macOS 会拒绝运行带这个标记的未签名命令行程序
 （*无法打开“reverbscope”，因为无法验证开发者*）。在包含 `reverbscope-terminal` 的文件夹里运行一次下面的命令，
 清除这个文件夹上的标记：
@@ -323,6 +328,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 | Windows：没有“仍要运行”按钮 | “智能应用控制”或公司策略阻止了未签名应用；见[上面的表格](#未签名构建的警告)。 |
 | Linux：`libEGL.so.1`、`libportaudio` 或 *xcb* 插件报错 | 安装[系统库](#linux)。 |
 | Linux：图表里的中文显示成方框 | `sudo apt install fonts-noto-cjk` |
+| `reverbscope gui`（或菜单里的“打开桌面应用”）提示*桌面应用需要图形显示环境* | 当前会话没有 `DISPLAY` 或 `WAYLAND_DISPLAY`（ssh、容器、文本控制台）。请在桌面会话中启动；命令行不需要图形界面。 |
 | `reverbscope gui` 提示*当前安装的是 ReverbScope 终端版* | 终端版没有图形界面；请下载桌面版（两个版本都有命令行）。 |
 | macOS：*无法打开“reverbscope”，因为无法验证开发者*（终端版） | 清除一次下载标记：`xattr -dr com.apple.quarantine reverbscope-terminal`（见[终端版](#终端版)）。 |
 | Windows PowerShell：重定向到文件或经过管道后中文变成乱码（`> report.txt`、`\| Select-String`） | 先运行 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`（见[在 PowerShell 中保存报告](#终端版)）。 |

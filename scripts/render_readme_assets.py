@@ -99,7 +99,9 @@ def _ansi_to_tspans(line: str, *, x0: float, char_w: float) -> str:
 
 def terminal_svg(command: str, output: str, *, title: str) -> str:
     lines = [f"\x1b[32m$\x1b[0m \x1b[1m{command}\x1b[0m", *output.rstrip("\n").splitlines()]
-    char_w, line_h, pad, bar = 8.4, 18, 16, 30
+    # A row is as tall as the font's box-drawing glyphs (16.3 px at 14 px for
+    # DejaVu Sans Mono), so the vertical borders of a table join from row to row.
+    char_w, line_h, pad, bar = 8.4, 16.5, 16, 30
     columns = max(TERMINAL_COLUMNS, *(_cells(_SGR.sub("", line)) for line in lines))
     width = int(columns * char_w + 2 * pad)
     height = int(bar + pad + len(lines) * line_h + pad)
@@ -107,7 +109,7 @@ def terminal_svg(command: str, output: str, *, title: str) -> str:
     for index, line in enumerate(lines):
         y = bar + pad + (index + 1) * line_h - 4
         spans = _ansi_to_tspans(line, x0=pad, char_w=char_w)
-        rows.append(f'<text x="{pad}" y="{y}" xml:space="preserve">{spans}</text>')
+        rows.append(f'<text x="{pad}" y="{y:g}" xml:space="preserve">{spans}</text>')
     return "\n".join(
         [
             f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
@@ -168,7 +170,8 @@ def render_cli(workdir: Path, out: Path) -> None:
             os.chdir(enter_language(workdir, lang))
             buffer = io.StringIO()
             with contextlib.redirect_stdout(buffer), contextlib.redirect_stderr(io.StringIO()):
-                code = main(["--lang", lang, "--color", "always", "demo"])
+                # As a terminal draws it: boxed, though this buffer is not a terminal.
+                code = main(["--lang", lang, "--color", "always", "--style", "boxed", "demo"])
             if code != 0:
                 raise SystemExit(f"reverbscope demo failed with {code}")
             command = "reverbscope demo" if lang == "en" else "reverbscope --lang zh_CN demo"

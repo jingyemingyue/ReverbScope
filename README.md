@@ -15,7 +15,7 @@ refuses to invent a number.**
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope results page: reverberation, background noise with mains hum, early reflections and direct sound for one microphone position, with the interpretation below (synthetic demo data)](docs/images/gui-results.png)
+![ReverbScope results page: reverberation, background noise with mains hum, early reflections and direct sound for one microphone position, with the measurement health and the interpretation below (synthetic demo data)](docs/images/gui-results.png)
 
 <sub>The results page for the built-in demo room. Synthetic data: no real room was measured.</sub>
 
@@ -111,13 +111,25 @@ No microphone and no audio interface needed; nothing is played.
   `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`); see
   [Command line](#command-line).
 
-![reverbscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
+![reverbscope demo in a terminal: at-a-glance tables for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
 `reverbscope demo` simulates one room at two microphone positions, runs the
 real analysis and comparison on them and says what to do next. The desktop
 **Demo** runs one Standalone Mode take on a simulated room instead. Every
 number either one shows describes the simulation, and every session either
-one saves is marked as a synthetic demo.
+one saves is marked as a synthetic demo. In a terminal each position's
+results, and their comparison, come as a table of topic, status and result;
+the status is a mark and a word (`✓ good`, `! warning`, `✗ problem`), so colour
+is never the only signal, and a pipe or a file gets plain lines instead.
+Colour sits on marks, bars and borders only (a word or a number is never
+coloured, so every line stays readable on a light background), and the frames
+shrink to `+ - |` where the stream cannot write the box glyphs. The Chinese
+text is punctuated in Chinese and wrapped so that a line never starts with a
+closing mark. If your terminal draws the box glyphs two columns wide (some CJK
+fonts and locales) and the frames come out crooked, run
+`reverbscope config style plain` once, or set `REVERBSCOPE_CLI_STYLE=plain`
+for one shell: the same text, without frames. `reverbscope config style auto`
+brings them back.
 
 **Then measure for real:** turn the monitors **down** (ReverbScope never
 changes system volume), then either let ReverbScope play and record through
@@ -262,7 +274,8 @@ reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
 # On a terminal, bare reverbscope opens a numbered menu; reports are boxed there
-# (reverbscope --style plain, or config style plain, for the ruled layout)
+# (reverbscope --style plain, or config style plain, for the ruled layout;
+# reverbscope --backend fake is the menu on the simulated interface)
 reverbscope
 
 # Demo / CI: no interface
@@ -299,8 +312,10 @@ distance supplied. The result JSON carries that argument with it.
 (`generic` by default; `vocal`, `voiceover`, `acoustic_guitar`, `drums`,
 `room_mic` and `choir` have per-recording thresholds and wording). The report
 prints the profile name next to `Interpretation` so the advice is never
-mistaken for room-agnostic truth. The GUI offers the same selector in both
-measurement modes.
+mistaken for room-agnostic truth. In a terminal each finding there is a card
+titled with its severity and topic (`! Notice · reverberation`), an error is a
+panel titled `✗ Error`, and a take shows a progress bar; a pipe or a file gets
+plain lines. The GUI offers the same selector in both measurement modes.
 
 `results/` receives `result.json` (all metrics and curves),
 `impulse_response.wav` (raw IR, float32), `session.json` (measurement

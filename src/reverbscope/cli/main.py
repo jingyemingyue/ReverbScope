@@ -45,6 +45,7 @@ from reverbscope.cli.console import (
 )
 from reverbscope.cli.interactive import MENU_VARIABLE
 from reverbscope.cli.render import (
+    SAFETY_NOTE_SHOWN,
     averaged_table,
     render_analysis,
     render_comparison,
@@ -62,6 +63,7 @@ from reverbscope.cli.render import (
     render_measure_plan,
     render_overview,
     render_profiles,
+    render_safety_note,
     render_saved_next_steps,
     render_status,
     render_sweep_written,
@@ -77,7 +79,7 @@ from reverbscope.errors import (
     SessionError,
 )
 from reverbscope.health import assess, failure_guidance
-from reverbscope.i18n import N_, _, activate, list_separator, localize, pgettext
+from reverbscope.i18n import N_, _, activate, list_join, list_separator, localize, pgettext, quoted
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.verdicts import judge_comparison
 from reverbscope.labels import accuracy_class_text
@@ -140,28 +142,54 @@ _LIST_ARGUMENTS: dict[str, str | None] = {
 }
 
 
-class _ListTemplate(str):
-    """A translated argparse template whose list argument, which argparse
-    joins with ``", "`` before filling it in, reads as a list of the active
-    language once filled in (``缺少必需的参数：项目、会话、--position``)."""
+class _Quoted(str):
+    """A value argparse shows through ``%r``: written in the quotation marks of
+    the active language (``“bad”`` in Chinese, ``'bad'`` as Python writes it)."""
+
+    def __repr__(self) -> str:
+        return quoted(str(self))
+
+
+_REPR_FIELD = re.compile(r"%\((\w+)\)r")
+
+
+class _ArgTemplate(str):
+    """A translated argparse template, filled in the way the active language
+    writes it: a value that argparse shows with ``%r`` in the language's
+    quotation marks, and a list argument, which argparse joins with ``", "``
+    before filling it in, as a list of the language
+    (``缺少必需的参数：项目、会话、--position``,
+    ``无效的选择：“bogus”（可选：“init”、“add”）``)."""
 
     field: str | None
+    lists: bool
 
-    def __new__(cls, text: str, field: str | None) -> _ListTemplate:
+    def __new__(cls, text: str, field: str | None, *, lists: bool) -> _ArgTemplate:
         made = super().__new__(cls, text)
         made.field = field
+        made.lists = lists
         return made
 
     def __mod__(self, values: Any) -> str:
         separator = list_separator()
-        if self.field is None and isinstance(values, str):
-            values = values.replace(", ", separator)
-        elif isinstance(values, dict) and isinstance(values.get(self.field), str):
-            items = values[self.field].split(", ")
-            if self.field == "choices":
-                items = [_quoted_choice(item) for item in items]
-            values = {**values, self.field: separator.join(items)}
-        filled: str = str(self) % values
+        text = str(self)
+        if isinstance(values, dict):
+            values = dict(values)
+            for name in _REPR_FIELD.findall(text):
+                if isinstance(values.get(name), str):
+                    values[name] = _Quoted(values[name])
+            listed = values.get(self.field) if self.field else None
+            if self.lists and isinstance(listed, str):
+                items = listed.split(", ")
+                if self.field == "choices":
+                    items = [_quoted_choice(item) for item in items]
+                values[self.field] = separator.join(items)
+        elif isinstance(values, str):
+            if self.lists and self.field is None:
+                values = values.replace(", ", separator)
+            elif "%r" in text:
+                values = _Quoted(values)
+        filled: str = text % values
         return filled
 
 
@@ -174,15 +202,18 @@ def _quoted_choice(item: str) -> str:
     """
     if len(item) >= 2 and item[0] == item[-1] and item[0] in "'\"":
         item = item[1:-1]
-    return repr(item)
+    return quoted(item)
 
 
 def _argparse_gettext(message: str) -> str:
     if message not in ARGPARSE_MESSAGES:
         return message
+    translated = _(message)
     if message in _LIST_ARGUMENTS:
-        return _ListTemplate(_(message), _LIST_ARGUMENTS[message])
-    return _(message)
+        return _ArgTemplate(translated, _LIST_ARGUMENTS[message], lists=True)
+    if "%r" in message or _REPR_FIELD.search(message):
+        return _ArgTemplate(translated, None, lists=False)
+    return translated
 
 
 def _argparse_ngettext(singular: str, plural: str, n: int) -> str:
@@ -226,9 +257,10 @@ ROOT_EXAMPLES = (
 #: Where ``reverbscope demo`` writes unless told otherwise.
 DEMO_FOLDER = "reverbscope-demo"
 
-#: ``--color`` as given on the command line, for messages printed before the
-#: arguments are parsed (argparse's own errors).
+#: ``--color`` and ``--style`` as given on the command line, for messages
+#: printed before the arguments are parsed (argparse's own errors).
 _COLOR_REQUEST: dict[str, str] = {"mode": "auto"}
+_STYLE_REQUEST: dict[str, str] = {"mode": "auto"}
 
 
 class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
@@ -370,7 +402,8 @@ class _Parser(argparse.ArgumentParser):
             name = _type_name(action.type)
             if name is None:
                 raise
-            message = _("invalid %(type)s value: %(value)r") % {"type": name, "value": arg_string}
+            template = _argparse_gettext("invalid %(type)s value: %(value)r")
+            message = template % {"type": name, "value": arg_string}
             raise argparse.ArgumentError(action, message) from None
         if isinstance(value, Path):
             with contextlib.suppress(RuntimeError):  # no home folder to expand to
@@ -378,7 +411,7 @@ class _Parser(argparse.ArgumentParser):
         return value
 
     def error(self, message: str) -> Any:
-        console = Console.for_stream(sys.stderr, _COLOR_REQUEST["mode"])  # type: ignore[arg-type]
+        console = _stream_console(sys.stderr, _COLOR_REQUEST["mode"], _STYLE_REQUEST["mode"])
         text = render_error(console, message, hints=[f"{self.prog} --help"])
         self.exit(2, text + "\n")
 
@@ -454,7 +487,7 @@ def _add_sweep_arguments(parser: argparse.ArgumentParser, *, default_level: floa
         choices=SUPPORTED_SAMPLE_RATES,
         metavar=pgettext("metavar", "HZ"),
         help=_("sample rate (Hz): {rates}").format(
-            rates=", ".join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
+            rates=list_join(str(rate) for rate in SUPPORTED_SAMPLE_RATES)
         ),
     )
     group.add_argument(
@@ -1472,20 +1505,29 @@ def _peek_option(argv: Sequence[str], names: tuple[str, ...]) -> str | None:
     return None
 
 
-def _console(args: argparse.Namespace, stream: Any = None) -> Console:
-    """How to lay out text for ``stream`` (stdout by default) under ``--color``
-    and ``--style`` (``auto`` follows the ``style`` setting, if one is set)."""
+def _stream_console(stream: Any, color: str = "auto", style: str = "auto") -> Console:
+    """How to lay out text for ``stream`` under a colour mode and a style
+    (``auto`` follows the ``style`` setting, if one is set)."""
     from reverbscope.settings import load_settings
 
-    style = str(getattr(args, "style", None) or "auto")
     if style == "auto":
         style = load_settings().cli_style or "auto"
     if style not in STYLE_MODES:
         style = "auto"
     return Console.for_stream(
-        stream or sys.stdout,
-        getattr(args, "color", None) or "auto",
+        stream,
+        color if color in COLOR_MODES else "auto",
         style=cast(StyleMode, style),
+    )
+
+
+def _console(args: argparse.Namespace, stream: Any = None) -> Console:
+    """How to lay out text for ``stream`` (stdout by default) under ``--color``
+    and ``--style`` (``auto`` follows the ``style`` setting, if one is set)."""
+    return _stream_console(
+        stream or sys.stdout,
+        str(getattr(args, "color", None) or "auto"),
+        str(getattr(args, "style", None) or "auto"),
     )
 
 
@@ -1897,8 +1939,9 @@ def cmd_measure(args: argparse.Namespace) -> int:
             )
         )
         print()
-        print("\n".join(out.status("warn", _(SAFETY_MESSAGE), indent=0)))
-        print()
+        if not SAFETY_NOTE_SHOWN.get():
+            print(render_safety_note(out))
+            print()
     out_dir: Path = args.out
     # The sweep and the take are written to a folder of their own and copied
     # into --out only with the session that describes them: a take that is
@@ -1984,7 +2027,7 @@ def _channel_list(text: str) -> list[int]:
     if not channels:
         raise argparse.ArgumentTypeError(
             _("{value} is not a comma-separated list of channel numbers (e.g. 1,2)").format(
-                value=repr(text)
+                value=quoted(text)
             )
         )
     return channels
@@ -2586,7 +2629,13 @@ def cmd_gui(args: argparse.Namespace) -> int:
         # Built without Qt: say which download has the GUI, not that PySide6 is missing.
         print(render_terminal_edition_gui(_console(args, sys.stderr)), file=sys.stderr)
         return 2
-    from reverbscope.ui.app import GUI_UNAVAILABLE, pyside6_import_error, run_app
+    from reverbscope.ui.app import (
+        GUI_UNAVAILABLE,
+        display_missing,
+        display_missing_message,
+        pyside6_import_error,
+        run_app,
+    )
 
     # PySide6 is imported inside run_app, so check it first: without the gui
     # extra (or the Qt system libraries) the user gets a sentence, not a traceback.
@@ -2600,6 +2649,11 @@ def cmd_gui(args: argparse.Namespace) -> int:
             ),
             file=sys.stderr,
         )
+        return 2
+    if not getattr(args, "smoke", False) and display_missing():
+        # Qt ends the whole process when there is no screen, the menu that
+        # runs this command with it: a sentence and exit code 2 instead.
+        print(render_error(_console(args, sys.stderr), display_missing_message()), file=sys.stderr)
         return 2
     # --lang was activated for the command line; the GUI resolves its
     # language again and would otherwise drop it for settings or the system's.
@@ -2805,6 +2859,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     _translate_argparse()
     color = _peek_option(argv_list, ("--color",))
     _COLOR_REQUEST["mode"] = color if color in COLOR_MODES else "auto"
+    style = _peek_option(argv_list, ("--style",))
+    _STYLE_REQUEST["mode"] = style if style in STYLE_MODES else "auto"
     parser = build_parser()
     args = parser.parse_args(argv)
     configure_logging(logging.DEBUG if args.verbose else logging.WARNING)
@@ -2813,24 +2869,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         from reverbscope.cli.console import is_terminal
         from reverbscope.edition import is_terminal_package
 
-        if is_terminal(sys.stdin) and is_terminal(sys.stdout) and not os.environ.get(MENU_VARIABLE):
-            # A person at a terminal: the menu, with the language, colour and
-            # style of this call in front of every command it runs.
-            from reverbscope.cli.interactive import run_menu
+        if (
+            is_terminal(sys.stdin)
+            and is_terminal(sys.stdout)
+            and not os.environ.get(MENU_VARIABLE)
+            and not _use_json(args)
+        ):
+            # A person at a terminal: the menu, with the options of this call
+            # (language, colour, style, backend …) in front of every command it
+            # runs. Not for ``--format json``: the menu prints text.
+            from reverbscope.cli.interactive import root_options, run_menu
             from reverbscope.i18n import current_locale
 
-            prefix = ["--lang", current_locale()]
-            if color in COLOR_MODES and color != "auto":
-                prefix += ["--color", color]
-            if getattr(args, "style", "auto") != "auto":
-                prefix += ["--style", str(args.style)]
             return run_menu(
                 _console(args),
                 ask=input,
                 run=main,
                 out=sys.stdout,
                 terminal_edition=is_terminal_package(),
-                prefix=prefix,
+                prefix=root_options(args, lang=current_locale(), color=color or "auto"),
             )
         # Bare ``reverbscope`` in a pipe or a script: a short home screen
         # instead of argparse's error. A command is still required, so the

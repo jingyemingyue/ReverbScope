@@ -49,3 +49,21 @@ def test_an_unknown_profile_is_a_usage_error(
         main(["profiles", "banjo"])
     assert exc.value.code == 2
     assert "invalid choice" in capsys.readouterr().err
+
+
+def test_the_default_profile_is_marked_in_the_brackets_of_the_language(
+    home: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Chinese writes no space before a full-width bracket: ``generic（默认）``,
+    not ``generic （默认）``; English keeps ``generic (default)``."""
+    from reverbscope.i18n import activate
+
+    try:
+        assert main(["--lang", "zh_CN", "--color", "never", "profiles"]) == 0
+        zh = capsys.readouterr().out
+    finally:
+        activate("en")
+    assert "generic（默认）" in zh
+    assert "generic （默认）" not in zh
+    assert main(["--lang", "en", "--color", "never", "profiles"]) == 0
+    assert "generic (default)" in capsys.readouterr().out

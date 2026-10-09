@@ -225,6 +225,15 @@ Linux. To keep Chinese or English whatever the system says, run
 `reverbscope config language auto` follows the system again, and
 `reverbscope config` lists every setting.
 
+**Frames.** On a terminal at least 48 columns wide the command line draws a
+frame around a report's title, sets its section headings in rules and draws
+tables between borders; a pipe or a file never gets them. If your terminal
+draws the box glyphs two columns wide (some CJK fonts and locales) and the
+frames come out crooked, run `reverbscope config style plain` (or set
+`REVERBSCOPE_CLI_STYLE=plain` for one shell, or add `--style plain` to one
+command) for the same text without frames; `reverbscope config style auto`
+brings them back.
+
 On **macOS**, a browser marks downloaded files, and macOS refuses to run an
 unsigned command-line program with that mark (*“reverbscope” cannot be opened
 because the developer cannot be verified*). Clear the mark on this folder
@@ -395,6 +404,7 @@ saved them.
 | Windows: no *Run anyway* button | Smart App Control or a company policy blocks unsigned apps; see the [table above](#unsigned-build-warnings). |
 | Linux: `libEGL.so.1`, `libportaudio` or *xcb* plugin errors | Install the [system libraries](#linux). |
 | Linux: Chinese chart labels show empty boxes | `sudo apt install fonts-noto-cjk` |
+| `reverbscope gui` (or *Open the desktop app* in the menu) says *The desktop app needs a graphical display* | The session has no `DISPLAY` or `WAYLAND_DISPLAY` (ssh, a container, a text console). Start it from a desktop session; the command line works without one. |
 | `reverbscope gui` says *This is the Terminal Edition* | The Terminal Edition has no GUI; download the Desktop Edition (the command line works in both). |
 | macOS: *“reverbscope” cannot be opened because the developer cannot be verified* (Terminal Edition) | Clear the download mark once: `xattr -dr com.apple.quarantine reverbscope-terminal` ([Terminal Edition](#terminal-edition)). |
 | Windows PowerShell: Chinese text is garbled in a file or after a pipe (`> report.txt`, `\| Select-String`) | Run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()` first ([Saving a report from PowerShell](#terminal-edition)). |

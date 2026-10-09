@@ -136,6 +136,25 @@ def test_every_setting_is_stored_as_the_desktop_app_reads_it(
     assert "Saved in" in out or "保存" in out
 
 
+def test_the_output_folder_row_keeps_the_words_of_every_release(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """``reverbscope config`` piped to a file is the text of the #48 line: the
+    row says "its Save dialog opens here" (its title is "(desktop app)"). The
+    menu proposing new sessions in that folder is in the guides and in the
+    menu's own question, not in this row."""
+    (home / "sessions").mkdir()
+    monkeypatch.chdir(home)
+    assert _run(capsys, "config", "output-folder", "sessions")[0] == 0
+    text = " ".join(_run(capsys, "--lang", "en", "config")[1].split())
+    assert "its Save dialog opens here" in text
+    assert "start here" not in text
+    text = _run(capsys, "--lang", "zh_CN", "config")[1].replace(" ", "")
+    assert "保存对话框从这里打开" in text.replace("\n", "")
+    _run(capsys, "config", "output-folder", "auto")
+    assert "not set" in " ".join(_run(capsys, "--lang", "en", "config")[1].split())
+
+
 def test_the_output_folder_is_stored_as_an_absolute_path(
     home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -185,7 +204,7 @@ def test_a_value_a_setting_cannot_take_writes_nothing(
 def test_a_refusal_is_translated(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "language", "fr")
     assert code == 2
-    assert "未知的语言 'fr'；可用：zh_CN、en 或 auto" in err and "没有做任何更改" in err
+    assert "未知的语言 “fr”；可用：zh_CN、en 或 auto" in err and "没有做任何更改" in err
 
 
 def test_a_change_keeps_every_other_setting(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
@@ -235,8 +254,10 @@ def test_a_damaged_settings_file_is_described_in_the_interface_language(
         json.loads(damaged)
     line, column = parsed.value.lineno, parsed.value.colno
     code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "profile", "vocal")
-    shown = " ".join(err.split())
-    assert code == 1 and f"第 {line} 行第 {column} 列不是有效的 JSON" in shown, shown
+    # A long path (the length of the temporary folder's name) moves the line
+    # break: compare without the blanks.
+    shown = "".join(err.split())
+    assert code == 1 and f"第{line}行第{column}列不是有效的JSON" in shown, err
     assert "Expecting" not in shown and "Illegal" not in shown and "没有做任何更改" in shown
     _code, _out, err = _run(capsys, "--lang", "en", "config", "profile", "vocal")
     assert f"invalid JSON at line {line}, column {column}" in " ".join(err.split())

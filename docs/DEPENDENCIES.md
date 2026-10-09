@@ -159,6 +159,7 @@ the wheels, and must be checked again at packaging time:
 | Package | Version | License | Why not |
 | --- | --- | --- | --- |
 | pyroomacoustics | 0.10.1 | MIT (compiles Eigen MPL-2.0, nanoflann BSD-2, pybind11 BSD-3 into `libroom`; declares Cython as a runtime dependency) | ReverbScope needs only ESS, deconvolution and decay analysis, which are short clean-room functions; pyroomacoustics would add a compiled extension, an MPL-2.0 notice obligation and a large simulation library for no measurement benefit. Kept as a conceptual reference (THIRD_PARTY_REVIEW.md). |
+| rich | not installed | MIT (not audited: not adopted) | The command line's frames, tables, finding cards, error panel and progress bar are drawn by `reverbscope/cli/console.py` itself. rich would pull `pygments`, `markdown-it-py` and `mdurl` into both downloadable editions (`packaging/reverbscope.spec` keeps pygments out of both today), and each of them would need its own review and licence notice; the frames need only box glyphs, display widths (`cell_width`, already needed for CJK) and a few styles, which `console.py` has. |
 
 ## 6. Items marked UNKNOWN / NEEDS REVIEW
 

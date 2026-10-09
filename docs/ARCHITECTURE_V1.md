@@ -202,7 +202,8 @@ src/reverbscope/
     registry.py          + built-ins + entry-point group "reverbscope.profiles"
   cli/
     main.py              ~ + analyze-ir, compare, session, export, --format, --lang
-    console.py           + terminal layout: colour policy, symbols, widths, tables, progress
+    console.py           + terminal layout: colour policy, symbols, widths, frames, tables, progress
+    interactive.py       + the numbered menu that a bare `reverbscope` opens on a terminal
     render.py            + every report and message (also the GUI's "Full report" panes)
     report.py            ~ plain-text wrappers over render.py (kept for existing imports)
   ui/
@@ -553,9 +554,9 @@ class AudioBackend(Protocol):
 | `session bundle <session> [--no-audio]` | zip for bug reports | M8 |
 | `export <session> --format csv [--out]` | curves and tables through an exporter | S4 |
 | `schema result\|session\|comparison\|project\|sidecar` | print the JSON Schema | M2 |
-| `config [KEY [VALUE]]` | show or change `settings.json` (language, profile, backend, output-folder, copy-recording, developer-tools, theme; `auto` restores a default) | landed |
+| `config [KEY [VALUE]]` | show or change `settings.json` (language, profile, backend, output-folder, copy-recording, developer-tools, theme, style; `auto` restores a default) | landed |
 | `measure --input-channels 1,2 --loopback-channel 2`, `analyze --loopback-channel 1` / `--loopback <wav>` | loopback | M5 |
-| global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never` | global options | M7, M6, M8 |
+| global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never`, `--style auto\|boxed\|plain` | global options | M7, M6, M8 |
 
 Exit codes: 0 success; 1 a `ReverbScopeError` (message on stderr); 2 usage
 error or a safety refusal (the level acknowledgement); 130 interrupted.
@@ -572,17 +573,68 @@ on a terminal: a pipe or a file never receives an escape sequence or a
 carriage return. Every status carries a symbol and a word (`✓` / `!` / `×` /
 `→`, or `[OK]` / `[WARN]` / `[ERROR]` / `->` where the stream cannot encode
 them), so colour is never the only signal; on such a stream the other signs
-(`Δ`, `→`, `–`) are written in ASCII too, and a narrow terminal encoding
-replaces what it cannot show instead of failing. Widths count a CJK character
-as two columns; text is laid out for at most 100 columns.
+(`Δ`, `→`, `–`) are written in ASCII too (a Chinese sentence keeps its
+quotation marks and `…` where the stream, GBK say, can write them), and a
+narrow terminal encoding replaces what it cannot show instead of failing. On a
+framed screen the error mark of a status line is `✗`, as in the tables and the
+card titles (`×` is an ambiguous-width character); the lines without frames
+keep `×`. Widths count a CJK character
+as two columns; text is laid out for at most 100 columns. A wrapped line
+never starts with a closing mark (the character before it goes down with it,
+and with that the first half of a two-character word), a note in full-width
+brackets such as `（默认：10）` moves down whole, and the last line is more
+than one character; the Chinese is punctuated in Chinese by `annotated`,
+`labelled`, `clause_join`, `list_join` and `quoted` of `reverbscope/i18n.py`,
+which leave English as it was. On a terminal that
+draws frames ("boxed"; never a pipe, a file or the GUI's report panes) "At a
+glance" is a bordered table of topic, status and result whose status cell is
+a badge, the mark and a word (`✓ good`, `! warning`, `! notice`, `✗ problem`,
+`i note`; in a comparison `✓ compared` and `– not compared`; `? unsure` for a
+topic that a non-good health check bears on, `ComparisonVerdict.in_doubt` for a
+comparison, in the table only, so that the aligned lines of a pipe do not
+change). Its result column wraps, and is kept 28 columns wide; if
+that is not enough the status column is dropped with a line saying so, and
+only when no table fits are the aligned lines of the plain layout used. Under
+the same condition an interpretation finding is a card (`Console.frame`: a
+rounded frame as wide as the console with the severity and the topic in its
+top border, the border coloured by the severity) and an error is a red card
+titled `✗ Error` whose message and explanation sit inside it; the commands to
+try stay under the card, bare, and a text that a card cannot hold whole (a
+path is never cut, whether it is in Latin letters or has Chinese in it; a
+path with a blank in it still wraps at the blank) is laid out as lines, the
+cards of a section all or none.
+The usage errors argparse raises before the options are parsed read `--style`
+and the `style` setting by hand. Colour is only ever on a mark, a bar or a
+border, never on a run of letters or digits, and nothing that carries
+information is dim (`Console.muted` is plain text, `Console.faint` the dim of
+decoration); a mark that is a letter (`[OK]`, `x`, `i`) is bold; a test lists
+every dim or coloured run of letters and digits on about twenty screens. The
+frames follow what the stream's encoding can write (`frames_writable`: the
+JIS X 0213 encodings write `✓` and `─` but not `╭`, and get `+ - |`), a
+character it cannot write becomes one `?` per display column where frames are
+drawn or the stream is a terminal, so that sides and columns stay straight,
+and `|Δ|` is `abs(delta)` inside an ASCII frame. A heading, a title or a label
+wider than the terminal wraps; only a path, a file name or a command to copy is
+never cut.
 
 Every command reads the same way: title and context, the result ("At a
 glance" first in an analysis or a comparison), the detail, then numbered
-next steps. A user error is one block (`× error: …`, an explanation, the
-commands to try) with the documented exit code; a traceback appears only with
-`--verbose`. Bare `reverbscope` prints a short home screen on stderr and keeps
-the usage error's exit code 2. `measure` prints its device plan and checks on
-stdout and its progress on stderr (one redrawn line on a terminal, one stage
+next steps. A user error is one block (`× error: …` where frames are not
+drawn, the `✗ Error` card where they are; an explanation; the commands to try)
+with the documented exit code; a traceback appears only with `--verbose`. Bare
+`reverbscope` opens the numbered menu (`reverbscope/cli/interactive.py`) when
+stdin and stdout are terminals, `--format json` was not given and
+`REVERBSCOPE_NO_MENU` is unset: each item asks for what its command needs,
+prints the command line it stands for (`console.shell_command` quotes what a
+shell would split or expand; the options given before the command stay in
+front of it) and runs it through `main()` in the same process. Ctrl+C at the
+menu leaves with 130, `q` and the end of input with 0, and nothing is played
+before an answer of `y` to the last question of the measurement item.
+Anywhere else (a pipe, a script) it prints a short home screen on stderr and
+keeps the usage error's exit code 2. `measure` prints its device plan and
+checks on stdout and its progress on stderr (one redrawn line on a terminal, a
+bar with the percentage and the clock that is never wider than the terminal
+minus one column and loses the bar, then the clock, on a narrow one; one stage
 line otherwise; drawn by the waiting thread, never by the audio callback). The
 text layout is not a Tier 1 interface. The GUI's "Full report" panes show the
 same `render.py` reports as plain text; the environment report in the

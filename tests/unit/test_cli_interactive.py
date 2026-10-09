@@ -54,6 +54,7 @@ def test_every_item_builds_its_command_and_shows_it(tmp_path: Path) -> None:
     sweep.write_bytes(b"RIFF")
     for name in ("a", "b", "room"):
         (tmp_path / name).mkdir()
+    (tmp_path / "room" / "project.json").write_text("{}")  # the menu asks for a project
     code, runs, out = _menu(
         [
             "1",
@@ -87,11 +88,12 @@ def test_every_item_builds_its_command_and_shows_it(tmp_path: Path) -> None:
 
 
 def test_the_measurement_item_plays_nothing_without_a_yes(tmp_path: Path) -> None:
-    code, runs, out = _menu(["4", str(tmp_path / "s"), "n", "q"])
+    fake = ["--backend", "fake"]
+    code, runs, out = _menu(["4", str(tmp_path / "s"), "", "n", "q"], prefix=fake)
     assert code == 0 and runs == []
-    assert "nothing has been played yet" in out and "Nothing was played." in out
-    code, runs, out = _menu(["4", str(tmp_path / "s"), "y", "q"])
-    assert runs == [["measure", "--out", str(tmp_path / "s")]]
+    assert "Nothing has been played yet" in out and "Nothing was played." in out
+    code, runs, out = _menu(["4", str(tmp_path / "s"), "", "y", "q"], prefix=fake)
+    assert runs == [[*fake, "measure", "--out", str(tmp_path / "s")]]
 
 
 def test_a_missing_path_is_asked_again_and_an_empty_answer_goes_back(tmp_path: Path) -> None:
@@ -111,7 +113,7 @@ def test_a_sample_rate_outside_the_supported_list_is_refused(tmp_path: Path) -> 
 def test_ctrl_c_at_a_question_returns_and_at_the_menu_leaves() -> None:
     code, runs, out = _menu(["3", KeyboardInterrupt(), "q"])
     assert code == 0 and runs == [] and "Back to the menu." in out
-    assert _menu([KeyboardInterrupt()])[0] == 0
+    assert _menu([KeyboardInterrupt()])[0] == 130  # Ctrl+C at the menu: as a shell reports it
     assert _menu([])[0] == 0  # end of input
     code, runs, out = _menu(["x", "q"])
     assert "Choose a number from the list" in out
@@ -196,3 +198,50 @@ def test_an_unexpected_failure_while_asking_returns_to_the_menu() -> None:
     assert code == 0
     assert runs == []
     assert "could not be completed" in text and "ValueError: boom" in text
+
+
+def _prompts(answers: Sequence[object]) -> list[str]:
+    """The prompts the menu shows (the text before the cursor) for ``answers``."""
+    shown: list[str] = []
+    pending = iter(answers)
+
+    def ask(prompt: str) -> str:
+        shown.append(prompt)
+        try:
+            return str(next(pending))
+        except StopIteration:
+            raise EOFError from None
+
+    run_menu(
+        Console(width=80),
+        ask=ask,
+        run=lambda _argv: 0,
+        out=io.StringIO(),
+        prefix=["--backend", "fake"],  # a take can be made here, whatever the machine has
+    )
+    return shown
+
+
+def test_the_questions_are_punctuated_the_way_the_language_writes_them() -> None:
+    """`你的选择: ` and `你的 DAW 工程采样率（Hz） [48000]: ` ended in an ASCII colon, and
+    the default sat in ASCII brackets after a full-width one."""
+    answers = ["2", "", "", "4", "", "", "n", "q"]
+    try:
+        english = _prompts(answers)
+        activate("zh_CN")
+        chinese = _prompts(answers)
+    finally:
+        activate("en")
+    assert english[:3] == [
+        "Your choice: ",
+        "Where to write the test signal [sweep.wav]: ",
+        "Sample rate of your DAW project (Hz) [48000]: ",
+    ]
+    assert chinese[:3] == [
+        "你的选择：",
+        "测试信号写到哪里（默认：sweep.wav）：",
+        "你的 DAW 工程采样率（Hz）（默认：48000）：",
+    ]
+    assert any(prompt.endswith("[y/N]: ") for prompt in english)
+    assert any(prompt.endswith("（y/N）：") for prompt in chinese)
+    assert not [prompt for prompt in chinese if ": " in prompt or " [" in prompt]

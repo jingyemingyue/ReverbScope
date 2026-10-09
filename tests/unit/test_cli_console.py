@@ -24,8 +24,12 @@ from reverbscope.audio.backend import DeviceInfo
 from reverbscope.cli.console import (
     Console,
     ProgressLine,
+    Status,
+    Verbatim,
+    badge_word,
     cell_width,
     pad,
+    strip_ansi,
     truncate,
     use_color,
     wrap,
@@ -115,6 +119,41 @@ def test_wrap_never_splits_a_path_or_url() -> None:
     for token in (path, url, "/Users/me/Music/ReverbScope/2026-09-27/a-long-session-folder"):
         lines = wrap(f"Saved session to {token}", 30)
         assert token in lines, lines
+
+
+def test_wrap_never_splits_a_path_that_has_chinese_in_it() -> None:
+    """The path glued to ``找不到会话文件：`` was cut between characters (会|话),
+    though a path of Latin letters never is."""
+    folder = "不存在的文件夹/录音位置甲/会话/再加一层很长很长的目录名称/还有一层"
+    windows = "C:\\用户\\录音\\会话\\session.json"
+    for token in (folder, windows, "~/录音/会话.json", "录音/会话.json"):
+        for width in (20, 30, 44):
+            lines = wrap(f"找不到会话文件：{token}，请检查", width)
+            # (whole on one line, with the comma that follows it)
+            assert any(token in line for line in lines), (width, lines)
+    # A pair of words with a slash is text, not a path: it wraps as before.
+    lines = wrap("播放/录制在音频回调中失败，请检查设备并重新测量", 12)
+    assert all(cell_width(line) <= 12 for line in lines), lines
+
+
+def test_wrap_keeps_a_short_chinese_word_whole() -> None:
+    """``交|流声``, ``新出|现``, ``倍频|程``, ``换位|置``, ``调光|器`` and ``录|音长度``
+    were cut inside a table cell and in running text. A run of up to four
+    characters between spaces, Latin text and marks is a word; a sentence
+    still breaks wherever the line ends."""
+    for word in ("交流声", "倍频程", "新出现", "换位置", "调光器", "录音长度", "平均"):
+        text = f"-69.2 dBFS RMS · 50 Hz {word}，请检查接地、线材和电源，再重新测量一次"
+        for width in range(10, 40):
+            lines = wrap(text, width)
+            assert any(word in line for line in lines), (word, width, lines)
+            assert all(cell_width(line) <= width for line in lines), (word, width, lines)
+    # A longer run is a sentence: it fills the line.
+    assert wrap("这是一段没有任何标点的很长的中文句子", 10) == [
+        "这是一段没",
+        "有任何标点",
+        "的很长的中",
+        "文句子",
+    ]
 
 
 def test_wrap_splits_a_word_longer_than_the_line() -> None:
@@ -936,6 +975,142 @@ def test_style_boxed_frames_a_report_and_leaves_json_alone(
     assert payload["decay"]
     assert main(["--style", "plain", "show", str(tmp_path / "d" / "position-a")]) == 0
     assert "╭" not in capsys.readouterr().out
+
+
+# --- The status badge and the bordered table that wraps one column ---------------------
+
+
+@pytest.mark.parametrize(
+    ("lang", "kind", "shown"),
+    [
+        ("zh_CN", "ok", "✓ 良好"),
+        ("zh_CN", "warn", "! 注意"),
+        ("zh_CN", "error", "✗ 问题"),
+        ("zh_CN", "info", "i 说明"),
+        ("zh_CN", "skip", "– 无数据"),
+        ("zh_CN", "unsure", "? 不确定"),
+        ("en", "ok", "✓ good"),
+        ("en", "warn", "! check"),
+        ("en", "error", "✗ problem"),
+        ("en", "info", "i note"),
+        ("en", "skip", "– no data"),
+        ("en", "unsure", "? unsure"),
+    ],
+)
+def test_a_badge_is_the_mark_and_a_word(lang: str, kind: Status, shown: str) -> None:
+    """The owner's words: ✓ 良好, ! 注意, ✗ 问题, i 说明; the ASCII forms keep the word."""
+    activate(lang)
+    try:
+        assert Console().badge(kind) == shown
+        ascii_badge = Console(unicode=False).badge(kind)
+        assert ascii_badge.split(" ", 1)[1] == shown.split(" ", 1)[1]
+        assert ascii_badge.isascii() or lang == "zh_CN"
+    finally:
+        activate("en")
+
+
+def test_a_badge_has_a_one_column_mark_and_colour_only_on_it() -> None:
+    kinds: tuple[Status, ...] = ("ok", "warn", "error", "info", "skip", "unsure")
+    for kind in kinds:
+        for unicode in (True, False):
+            plain = Console(unicode=unicode).badge(kind)
+            assert cell_width(plain.split(" ", 1)[0]) == 1, plain
+            styled = Console(unicode=unicode, color=True).badge(kind)
+            assert strip_ansi(styled) == plain
+            mark, word = styled.split(" ", 1)
+            assert strip_ansi(mark) == plain.split(" ", 1)[0]
+            # The word is bold, never green, yellow or red: those are unreadable
+            # on a light background.
+            assert word.startswith("\x1b[1m") and not re.search(r"\x1b\[3\dm", word), repr(word)
+    assert Console().badge("ok", "已对比") == "✓ 已对比"
+    assert Console(unicode=False).badge("error") == "x " + badge_word("error")
+    assert Console().badge("next") == "→"  # a step has no word
+
+
+def test_framed_table_wraps_the_chosen_column_and_expands_it() -> None:
+    c = Console(boxed=True, width=40)
+    rows = [
+        ["a", "✓ good", "a long result that needs two lines or three to fit"],
+        ["b", "! check", "short"],
+    ]
+    table = c.framed_table(["Topic", "Status", "Result"], rows, wrap_column=2, expand=True)
+    assert table is not None
+    assert {cell_width(line) for line in table} == {40}
+    assert sum(line.startswith("  │ a ") for line in table) == 1
+    assert sum(line.startswith("  │       │") for line in table) >= 1
+    # Without expand the grid is as wide as it needs to be.
+    fitted = c.framed_table(["Topic", "Status", "Result"], [["a", "✓ good", "ok"]], wrap_column=2)
+    assert fitted is not None and len({cell_width(line) for line in fitted}) == 1
+    assert cell_width(fitted[0]) < 40
+    # A first column held at a width keeps two tables in step.
+    held = c.framed_table(["Topic", "Status"], [["a", "b"]], min_widths=(12,))
+    assert held is not None and held[1].startswith("  │ Topic        │")
+
+
+def test_framed_table_gives_up_instead_of_cutting_a_cell() -> None:
+    boxed = Console(boxed=True, width=40)
+    assert Console(width=100).framed_table(["a"], [["b"]]) is None  # no frames, no grid
+    assert boxed.framed_table(["a", "b"], []) is None
+    # A path never wraps.
+    path = Verbatim("/a/very/long/path/that/cannot/be/split/into/pieces")
+    assert boxed.framed_table(["Folder", "Path"], [["x", path]], wrap_column=1) is None
+    # An unbreakable word wider than the column.
+    word = "a/very/long/word/wider/than/the/column/of/this/narrow/terminal"
+    assert boxed.framed_table(["Folder", "Path"], [["x", word]], wrap_column=1) is None
+    # Columns that need more than the console has, whatever wraps.
+    tight = Console(boxed=True, width=20)
+    assert tight.framed_table(["a", "b", "c"], [["aaaaaaa", "bbbbbbb", "ccccc"]]) is None
+
+
+def test_framed_table_measures_chinese_cells_in_columns() -> None:
+    c = Console(boxed=True, width=44)
+    rows = [["混响", "✓ 良好", "RT60 0.70 s，EDT 0.45 s，C50 +9.8 dB，D50 91 %"]]
+    table = c.framed_table(["项目", "状态", "结果"], rows, wrap_column=2, expand=True)
+    assert table is not None
+    assert {cell_width(line) for line in table} == {44}
+    assert len(table) > 5  # the Chinese text wrapped between characters
+
+
+def test_an_ascii_frame_has_no_pipe_inside_a_cell() -> None:
+    c = Console(boxed=True, unicode=False, width=60)
+    assert c.sep() == " / " and Console(unicode=False).sep() == " | "
+    assert c.readable("mean |Δ| 8 dB · x") == "mean abs(delta) 8 dB / x"
+    # Without frames the text is as it was.
+    assert Console(unicode=False).readable("mean |Δ| 8 dB") == "mean |delta| 8 dB"
+
+
+def test_a_stream_that_cannot_write_chinese_gets_one_question_mark_per_column() -> None:
+    """cp1252 replaces a character with one "?", which left the side of a frame
+    short by a column for every Chinese character in the line."""
+    framed = Console(boxed=True, unicode=False, encoding="cp1252", width=60)
+    assert framed.readable("混响 x") == "???? x"
+    assert cell_width(framed.readable("混响 x")) == cell_width("混响 x")
+    # GBK writes Chinese: nothing is replaced, and the glue between a number and
+    # its unit (a no-break space, which GBK cannot write) is left for fit() to
+    # turn into a space, not made a "?".
+    gbk = Console(boxed=True, unicode=False, encoding="gbk")
+    assert gbk.readable("混响 x") == "混响 x"
+    assert gbk.readable("RT60 0.70\u00a0s") == "RT60 0.70\u00a0s"
+    assert gbk.fit(gbk.readable("RT60 0.70\u00a0s")) == "RT60 0.70 s"
+    # Without frames the text is as it was.
+    assert Console(unicode=False, encoding="cp1252").readable("混响 x") == "混响 x"
+
+
+def test_a_framed_screen_marks_every_failure_with_one_glyph() -> None:
+    """``✗`` in the tables and on the card titles, ``×`` in the health section and
+    in the unframed errors: two glyphs for one thing on one screen. ``×`` is an
+    ambiguous-width character that a CJK terminal may draw two columns wide;
+    ``✗`` is one column everywhere. Without frames the line is what it was."""
+    boxed = Console(boxed=True)
+    assert boxed.symbol("error") == "✗" == boxed.mark("error")
+    assert Console().symbol("error") == "×" and Console().mark("error") == "✗"
+    assert Console(boxed=True, unicode=False).symbol("error") == "[ERROR]"
+    # A stream that writes × but not ✗ (the JIS X 0213 encodings) keeps ×.
+    jis = Console(boxed=True, encoding="euc_jisx0213")
+    assert jis.symbol("error") == "×" and jis.mark("error") == "x"
+    lines = boxed.status("error", "no response")
+    assert lines == ["  ✗ no response"]
+    assert Console().status("error", "no response") == ["  × no response"]
 
 
 def test_a_word_wider_than_the_line_is_split_in_linear_time() -> None:

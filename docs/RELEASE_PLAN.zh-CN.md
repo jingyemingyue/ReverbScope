@@ -168,7 +168,7 @@ pypi.org 上会失效，首次上传前需要一份使用绝对链接的 README�
 
 ## 4. 每次发布都适用的门禁
 
-CI 全绿（lint、mypy、文档链接检查、文档站点构建、`check_src_safety.py`、schema、测试矩阵、`core`/`models` 85% 覆盖率、打包、已安装 Essentials 的 GPL 门禁）；发布工作流全绿（`--strip --require-licenses` 门禁、每个系统的冒烟测试）；DEPENDENCIES.md §6 没有影响所发二进制的 UNKNOWN / NEEDS REVIEW；STATUS 如实写明跑了什么、没跑什么，硬件格保持空白直到有人填上日期和声卡型号；CHANGELOG 有该版本段落，审查发现的夸大说法在同一版本里更正（0.4.0：中文目录只覆盖七个 profile 中的三个，见 #14，0.4.1 已补全）。
+CI 全绿（lint、mypy、文档链接检查、文档站点构建、`check_src_safety.py`、schema、测试矩阵、`core`/`models` 85% 覆盖率、打包、已安装 Essentials 的 GPL 门禁）；发布工作流全绿（`--strip --require-licenses` 门禁、每个系统的冒烟测试）；DEPENDENCIES.md §6 没有影响所发二进制的 UNKNOWN / NEEDS REVIEW；STATUS 如实写明跑了什么、没跑什么，硬件格保持空白直到有人填上日期和音频接口型号；CHANGELOG 有该版本段落，审查发现的夸大说法在同一版本里更正（0.4.0：中文目录只覆盖七个 profile 中的三个，见 #14，0.4.1 已补全）。
 
 ## 5. 仍待维护者决定
 

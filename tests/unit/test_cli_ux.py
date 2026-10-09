@@ -215,6 +215,28 @@ def test_golden_demo(
     _golden(f"demo-{lang}-{columns}", _normalise(out))
 
 
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+@pytest.mark.parametrize("columns", [80, 48])
+def test_golden_boxed_demo(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    columns: int,
+) -> None:
+    """The demo as a terminal draws it (``--style boxed``): the title in a panel,
+    rules through the headings and each overview a table of topic, status
+    (mark and word) and result. 48 is the narrowest terminal that is boxed; in
+    English its overview gives up the status column and says so."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", str(columns))
+    code, out, _err = _run(["--lang", lang, "--style", "boxed", "demo"], capsys)
+    assert code == 0
+    assert all(
+        cell_width(line) <= columns for line in out.splitlines() if "reverbscope " not in line
+    )
+    _golden(f"demo-{lang}-boxed-{columns}", _normalise(out))
+
+
 _SVG_ROW = re.compile(r'<text x="[^"]*" y="[^"]*" xml:space="preserve">(.*?)</text>')
 
 
@@ -229,9 +251,10 @@ def test_readme_demo_screenshots_show_what_the_demo_prints(
     svg: str, lang: str, command: str
 ) -> None:
     """README.md and README.zh-CN.md present these SVGs as the output of
-    ``reverbscope demo``; they still lacked the Clarity rows of 0.5.0b1. When
-    the demo golden changes, run ``python scripts/render_readme_assets.py``
-    (``--cli-only`` is enough here) and commit docs/images with the change."""
+    ``reverbscope demo`` on a terminal (boxed, 80 columns); they once lacked
+    the Clarity rows of 0.5.0b1. When the boxed demo golden changes, run
+    ``python scripts/render_readme_assets.py`` (``--cli-only`` is enough here)
+    and commit docs/images with the change."""
     import html
 
     path = Path(__file__).resolve().parents[2] / "docs" / "images" / svg
@@ -240,7 +263,7 @@ def test_readme_demo_screenshots_show_what_the_demo_prints(
         for row in _SVG_ROW.findall(path.read_text(encoding="utf-8"))
     ]
     assert rows[0] == f"$ {command}"
-    expected = (GOLDEN / f"demo-{lang}-80.txt").read_text(encoding="utf-8")
+    expected = (GOLDEN / f"demo-{lang}-boxed-80.txt").read_text(encoding="utf-8")
     shown = _normalise("\n".join(rows[1:]) + "\n")
     assert shown == expected, f"docs/images/{svg} is out of date: rerun render_readme_assets.py"
 
@@ -384,6 +407,30 @@ def test_golden_measure_plan_with_the_fake_interface(
     _golden(f"measure-plan-{lang}", _normalise(head))
 
 
+#: The user errors the goldens show: the arguments, the exit code they end with.
+_ERROR_CASES: tuple[tuple[list[str], int], ...] = (
+    (["analyze", "--recording", "take.wav", "--sweep", "sweep.wav"], 1),
+    (["sweep"], 2),
+    (["sweep", "--out", "x.wav", "--duration", "long"], 2),
+    (["--backend", "fake", "measure", "--out", "m", "--input-channel", "9"], 1),
+    (["show", "missing-session"], 1),
+    (["--backend", "fake", "measure", "--out", "sweep.wav"], 1),  # a file, not a folder
+)
+
+
+def _error_blocks(
+    root: Path, capsys: pytest.CaptureFixture[str], lang: str, *options: str
+) -> list[str]:
+    (root / "sweep.wav").write_bytes(b"")
+    blocks = []
+    for argv, expected in _ERROR_CASES:
+        code, out, err = _run(["--lang", lang, *options, *argv], capsys)
+        assert code == expected, (argv, err)
+        assert out == "" and "Traceback" not in err
+        blocks.append(err)
+    return blocks
+
+
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
 def test_golden_errors(
     cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], lang: str
@@ -391,21 +438,62 @@ def test_golden_errors(
     """User errors: one block with commands to try, no traceback, the documented codes."""
     root, monkeypatch = cli
     monkeypatch.setenv("COLUMNS", "80")
-    (root / "sweep.wav").write_bytes(b"")
-    blocks = []
-    for argv, expected in (
-        (["analyze", "--recording", "take.wav", "--sweep", "sweep.wav"], 1),
-        (["sweep"], 2),
-        (["sweep", "--out", "x.wav", "--duration", "long"], 2),
-        (["--backend", "fake", "measure", "--out", "m", "--input-channel", "9"], 1),
-        (["show", "missing-session"], 1),
-        (["--backend", "fake", "measure", "--out", "sweep.wav"], 1),  # a file, not a folder
-    ):
-        code, out, err = _run(["--lang", lang, *argv], capsys)
-        assert code == expected, (argv, err)
-        assert out == "" and "Traceback" not in err
-        blocks.append(err)
+    blocks = _error_blocks(root, capsys, lang)
     _golden(f"errors-{lang}", "\n".join(blocks).replace("\\", "/"))
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+@pytest.mark.parametrize("columns", [60, 48])
+def test_golden_boxed_errors(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    columns: int,
+) -> None:
+    """The same errors as a terminal draws them (``--style boxed``): a card
+    titled ``✗ Error`` (``✗ 错误``) holds the message and the explanation, and
+    the commands to try stay under it, bare, to copy. The usage errors, which
+    argparse raises before the options are parsed, follow the style as well."""
+    root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", str(columns))
+    blocks = _error_blocks(root, capsys, lang, "--style", "boxed")
+    for block in blocks:
+        assert block.startswith("╭─ ✗ ")
+        for line in block.splitlines():
+            if "reverbscope " not in line:  # a command is never wrapped
+                assert cell_width(line) <= columns, line
+    _golden(f"errors-{lang}-boxed-{columns}", "\n".join(blocks).replace("\\", "/"))
+
+
+_INTERPRETATION = re.compile(r"^── (Interpretation|解读)", re.MULTILINE)
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+@pytest.mark.parametrize("columns", [60, 48])
+def test_golden_boxed_findings(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    columns: int,
+) -> None:
+    """The interpretation of an analysis and of a comparison as a terminal draws
+    it (``--style boxed``): each finding a card titled with its severity and
+    topic. 48 is the narrowest terminal that is boxed."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", str(columns))
+    assert _run(["demo"], capsys)[0] == 0
+    a, b = "reverbscope-demo/position-a", "reverbscope-demo/position-b"
+    sections = []
+    for argv in (["show", a], ["compare", a, b]):
+        code, out, _err = _run(["--lang", lang, "--style", "boxed", *argv], capsys)
+        assert code == 0
+        match = _INTERPRETATION.search(out)
+        assert match, out
+        section = out[match.start() :]
+        assert all(cell_width(line) <= columns for line in section.splitlines())
+        assert section.count("╭─ ") == section.count("╰") >= 2
+        sections.append(section)
+    _golden(f"findings-{lang}-boxed-{columns}", _normalise("\n".join(sections)))
 
 
 def test_the_chinese_demo_and_home_show_no_english_prose(
@@ -768,7 +856,9 @@ def test_project_errors_are_translated(
     (root / "empty").mkdir()
     code, _out, err = _run(["--lang", "zh_CN", "project", "show", "empty"], capsys)
     assert code == 1
-    assert "中没有 project.json" in err
+    # The path comes after the sentence, not before 中没有: a long dragged path
+    # left a line that began with 中.
+    assert "没有找到 project.json：empty" in err
 
 
 def test_frequencies_just_below_one_kilohertz_read_as_kilohertz() -> None:

@@ -10,7 +10,7 @@
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
+![ReverbScope 结果页：一个话筒位置的混响、带交流声的本底噪声、早期反射和直达声，下方是测量健康和解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
 
 <sub>内置演示房间的结果页。合成数据：没有测量任何真实房间。</sub>
 
@@ -97,11 +97,17 @@
   `%LOCALAPPDATA%\Programs\ReverbScope`），或者写出它的完整路径（macOS 桌面版：
   `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`），详见[命令行](#命令行)。
 
-![终端中的 reverbscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
+![终端中的 reverbscope demo：两个模拟位置的概览表、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
 `reverbscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步
 做什么。桌面版的 **演示** 则是在一个模拟房间里完成一次独立模式测量。两者显示的每个数值都描述的是模拟
-结果，保存的每个会话都标记为合成演示。
+结果，保存的每个会话都标记为合成演示。在终端里，每个位置的结果以及两者的对比都是一张表，列为方面、
+状态和结果；状态是一个符号加一个词（`✓ 良好`、`! 警告`、`✗ 问题`），所以颜色从不单独表达信息；输出到
+管道或文件时则是纯文本的对齐行。颜色只用在符号、进度条和边框上（文字和数字从不着色，浅色背景上每一行
+都读得清），输出流写不出方框字符时边框改用 `+ - |`。中文界面的标点按中文写，换行时一行不会以右括号、
+句号等开头。如果你的终端把方框字符画成两列宽（某些中日韩字体和区域设置），边框显得歪斜，运行一次
+`reverbscope config style plain`，或在一个终端会话里设置 `REVERBSCOPE_CLI_STYLE=plain`：文字内容不变，
+只是不画边框；`reverbscope config style auto` 改回默认。
 
 **然后进行真实测量：** 先把监听音箱音量**调低**（ReverbScope 不会改动系统音量），然后二选一：让
 ReverbScope 通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW
@@ -125,7 +131,7 @@ range*），而不是编造一个数字。ReverbScope 有意不提供任何“�
 
 状态：**`main` 是 beta（开发）线，`release/0.5.0` 是候选版线（`0.5.0rc` 系列）**，正在向 1.0 推进
 （[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
-DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
+DSP 核心、CLI、GUI、对比、回采（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
 并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
 （硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。Beta 版本不满足发布计划里 0.5.0 的退出条件。当前可用功能的概况：
 [docs/STATUS.md](docs/STATUS.md)。
@@ -144,7 +150,7 @@ DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、�
    **Help → Environment Report for Bug Reports → Probe sample rates**）的内容：
    * 音频接口测试报告（[中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)
      / [English form](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)）：
-     设备列表、44.1 / 48 / 96 kHz 下的完整测量、2 个以上的声道、回送、播放过程中点“停止”、丢帧、
+     设备列表、44.1 / 48 / 96 kHz 下的完整测量、2 个以上的声道、回采、播放过程中点“停止”、丢帧、
      测量过程中拔出设备；
    * DAW 兼容性报告（[中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)
      / [English form](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)）：
@@ -213,16 +219,17 @@ reverbscope show results/ --list
 reverbscope compare results/ position-b/ --same-input-gain
 reverbscope schema result
 
-# 双声道 DAW 导出：话筒 + 电回送
+# 双声道 DAW 导出：话筒 + 电信号回采
 reverbscope analyze --recording take.wav --sweep sweep_48k.wav --channel 0 --loopback-channel 1
 
-# 独立模式：先列出设备，再测量（可选：在输入 2 上接回送）
+# 独立模式：先列出设备，再测量（可选：在输入 2 上接回采）
 reverbscope devices
 reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
 # 在终端里不带命令运行 reverbscope 会打开编号菜单；报告在终端里带边框
-# （reverbscope --style plain 或 config style plain 切换为横线版式）
+# （reverbscope --style plain 或 config style plain 切换为横线版式；
+# reverbscope --backend fake 是使用模拟接口的菜单）
 reverbscope
 
 # 演示 / CI：不需要音频接口
@@ -252,7 +259,9 @@ reverbscope gui
 
 `--profile` 决定如何把测得的数字转换为建议（默认 `generic`；`vocal`、`voiceover`、`acoustic_guitar`、
 `drums`、`room_mic` 和 `choir` 各有针对该类录音的阈值和措辞）。报告会在 `Interpretation`（解读）旁边
-标出配置名称，以免有人把这些建议误当成与录音用途无关的客观结论。GUI 在两种测量模式中都提供同样的选择。
+标出配置名称，以免有人把这些建议误当成与录音用途无关的客观结论。在终端里，每条发现是一张标有严重程度和
+主题的卡片（`! 提示 · 混响`），错误是标题为 `✗ 错误` 的面板，测量时有进度条；输出到管道或文件则是纯文本行。
+GUI 在两种测量模式中都提供同样的选择。
 
 `results/` 中会生成 `result.json`（全部指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）、
 `session.json`（测量元数据）、扫频的 `sweep.reverbscope-sweep.json`，以及录音的副本 `recording.wav`
@@ -269,7 +278,7 @@ reverbscope gui
 | [docs/INSTALLATION.zh-CN.md](docs/INSTALLATION.zh-CN.md) | 在 macOS、Windows、Linux 上下载安装或用 Python 安装；更新、卸载、未签名构建的警告、故障排查；[English](docs/INSTALLATION.md) |
 | [docs/index.md](docs/index.md) | 文档索引 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 包结构、数据流、扩展点 |
-| [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回送、打包、国际化、验证关卡 |
+| [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回采、打包、国际化、验证关卡 |
 | [docs/ARCHITECTURE_V1.zh-CN.md](docs/ARCHITECTURE_V1.zh-CN.md) | v1.0 设计的中文摘要 |
 | [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) | 算法、单位、有效性规则、参考文献 |
 | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | 每一项运行时/开发依赖的许可证和用途 |
@@ -363,7 +372,7 @@ for r in result.reflections.reflections:
 | 程序崩溃、报错或行为异常 | [问题报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug-zh-CN.yml) | [Bug report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug.yml) |
 | 某个数字看起来不对，或有效性标记出乎意料 | [测量问题](https://github.com/jingyemingyue/ReverbScope/issues/new?template=measurement-zh-CN.yml) | [Measurement problem](https://github.com/jingyemingyue/ReverbScope/issues/new?template=measurement.yml) |
 | 对测量、CLI、GUI 或文档的改进建议 | [功能建议](https://github.com/jingyemingyue/ReverbScope/issues/new?template=feature-zh-CN.yml) | [Feature request](https://github.com/jingyemingyue/ReverbScope/issues/new?template=feature.yml) |
-| 用真实声卡或音频接口运行过 ReverbScope | [音频接口测试报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml) | [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml) |
+| 用真实音频接口运行过 ReverbScope | [音频接口测试报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml) | [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml) |
 | 用通用 DAW 模式通过某个 DAW 测量过 | [DAW 兼容性报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml) | [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml) |
 
 可能被滥用的安全问题请不要公开提交 issue，按 [SECURITY.zh-CN.md](SECURITY.zh-CN.md)

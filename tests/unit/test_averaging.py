@@ -256,6 +256,6 @@ def test_project_average_shows_the_count_of_each_value(
 
     assert main(["--lang", "zh_CN", "project", "average", str(project)]) == 0
     text = capsys.readouterr().out
-    assert "0.91 s (1)" in text
-    note = "n 为该行参与平均的会话数；数值后带 (k) 表示只平均了其中 k 个会话"
+    assert "0.91 s（1）" in text
+    note = "n 为该行参与平均的会话数；数值后带（k）表示只平均了其中 k 个会话"
     assert "".join(note.split()) in "".join(text.split())

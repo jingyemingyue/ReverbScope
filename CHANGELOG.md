@@ -67,6 +67,155 @@ dated PASS. The `v0.5.0b2` draft of the Release workflow was refreshed from
   (`--format json` is untouched). `--style auto|boxed|plain`, the `style`
   setting (`reverbscope config style plain`) and `REVERBSCOPE_CLI_STYLE`
   choose; the environment report lists the setting. No new dependency.
+- **The overview as a bordered table with a status word.** In a boxed report
+  "At a glance" (the analysis, each position of `reverbscope demo`, `show`,
+  `analyze`, `measure`) is a table of topic, status and result; the status
+  shows a mark and a word, so colour is never the only signal: `✓ good`,
+  `! warning` or `! notice` (the words of the finding cards and the health
+  section), `✗ problem`, `i note` (in Chinese `✓ 良好`, `! 警告` or `! 提示`,
+  `✗ 问题`, `i 说明`). A topic whose numbers a check of the measurement health puts in
+  doubt (the topics under its "Affects") is `? unsure`, never `✓ good`; the
+  aligned lines of a pipe keep the mark they always had. The overview of a
+  comparison says whether each topic was compared (`✓ compared`,
+  `– not compared`, or `? unsure` when the health of a side puts the topic in
+  doubt, all of them when a side is invalid), never whether the change is good,
+  and the advice to add `--same-input-gain` follows the table on a line of its
+  own. A long result wraps inside its column, which is kept at least 28
+  columns wide, and the table spans the terminal; where that cannot be
+  (English below about 68 columns, Chinese below 56) the status column is left
+  out and a line under the table says so, as it now does when a narrow
+  comparison leaves out the `Δ %` column, and below about 56 columns in English
+  (48 in Chinese) the overview is the aligned lines it has always been (a
+  result squeezed into 16 columns made the table twice as tall and cut words in
+  two). A Chinese term of up to four characters (`交流声`, `倍频程`, `新出现`)
+  is not broken across two lines in a table or in text, and a line of a word
+  and its closing mark no longer ends with an opening quotation mark. In an ASCII
+  frame the separator is `/` and `|Δ|` is `abs(delta)`, and a stream that
+  cannot write Chinese (cp1252) shows one `?` per column, so every frame line
+  keeps one width. A pipe, a file, a terminal narrower than 48 columns,
+  `--style plain`, `--format json` and the desktop app's report text are
+  unchanged. From the redesign of PR #42, drawn on this line's own frames.
+- **Finding cards, the error panel and the progress bar.** In a boxed
+  report each interpretation finding of an analysis or a comparison is a
+  card: a frame titled with its severity word and topic (`! Notice ·
+  reverberation`, in Chinese `! 提示 · 混响`), its border yellow for a
+  warning, cyan for a notice and dim for information; the mark and the word
+  carry the severity without colour, and only the border and the mark are
+  coloured. An error is a red card titled `✗ Error` (`✗ 错误`) with the
+  message and its explanation inside; the commands to try stay under it, bare,
+  never framed or wrapped. A text a card cannot hold whole (a path is never
+  cut, in Latin letters or in Chinese; a path with a blank in it can wrap at
+  the blank, as it always did) is laid out as lines, as before, the findings of
+  a report all or none.
+  The usage errors argparse raises before the options are parsed now follow
+  `--style`, the `style` setting and `REVERBSCOPE_CLI_STYLE` too. While a take
+  plays, the progress line is a bar `━━━╸───` (`==>---` where the stream
+  cannot write it) with a head that shows the position without colour, green
+  when full, with the percentage and the clock; it never reaches the last
+  column, loses the bar and then the clock on a narrow terminal, and no longer
+  wraps the blanks that wipe a longer frame when the terminal is made narrower
+  during a take. A pipe, a file, a terminal narrower than 48 columns, `--style
+  plain`, `--format json` and the desktop app's report text are unchanged. From
+  the redesign of PR #42, drawn on this line's own frames.
+- **Chinese terms, punctuation and wrapping.** The Chinese interface said
+  the same thing in two or three words on one screen: 声卡, 音频接口 and
+  音频硬件 for the audio interface, 回送 and 回环 for a loopback, 市电哼声
+  and 电源嗡声 for mains hum, 比较 and 对比 for a comparison (`不可比较`
+  beside `可对比`), 基线 and 候选 for the two sessions of a comparison (候选
+  means an election candidate), 项目 for the project and for a row of the
+  overview table. It is 音频接口, 回采 (the word of audio interfaces), 交流声
+  and 对比 now, 基准 and 对比项 for the two sessions (基线 stays the baseline
+  level, 候选 the candidate peak) and 方面 for a row of the table; a catalog
+  test keeps the retired words out and the guides use the same words. The
+  punctuation is Chinese too: a list is joined with `、`, a clause with `；`,
+  a note sits in full-width brackets (`RT60 0.70 s（T30）`,
+  `110 Hz（+11.3 dB）`, `警告（电平）`), `label：text` has the full-width colon,
+  the speed of sound reads `343.2 m/s，气温 20 °C（假定）`, the menu's
+  questions end in `（默认：48000）：`, and a catalog test finds any ASCII
+  bracket, comma, colon or quote beside Chinese. A wrong value is quoted
+  “like this” (`无效的选择：“bogus”（可选：“init”、“add”）`; argparse said
+  `无效选项` and used ASCII quotes). When Chinese text wraps, a line no longer
+  starts with a closing mark, a hint such as `（默认：10）` moves down whole, a
+  two-character word is not split before a mark and the last line is never a
+  lone character. When libsndfile cannot open an audio file the Chinese says
+  why (not an audio file, damaged or cut short, an encoding that is not
+  supported, empty, a name with no audio extension) and names the file with the
+  path as given, instead of ending in its English; English keeps its words,
+  and so does every English line, JSON and pipe. From the redesign of PR #42,
+  on this line's own code.
+- **Colour only on marks, frames that follow the stream, narrow terminals.**
+  Headings, field labels, notes, table headings, commands, the numbers of the
+  menu, a take's clock and an unreliable value were yellow, green, cyan or
+  dim, which is hard to read on a light background (a contrast of 1.7 to
+  3.7). Colour now sits on the status marks, the progress bar, the frames and
+  the rules only; status words, headings, titles, commands and menu numbers
+  are bold in the colour of the terminal's text, labels and notes are plain,
+  and a mark that is a letter (`[OK]`, `x`, `i`) is bold. A test lists every
+  dim or coloured run of letters and digits on about twenty screens, in both
+  languages and both styles. The frames follow what the stream's encoding can
+  write: one that has `✓` and `─` but no rounded corners (the Japanese JIS X
+  0213 encodings) gets `+ - |`, with `|Δ|` written `abs(delta)` inside; a
+  terminal that cannot write Chinese now shows one `?` per column in plain
+  tables as well, so their columns stay under each other (a pipe keeps the
+  stream's own text). Every command was run in both languages from 20 to 100
+  columns, with and without colour, as UTF-8, cp1252 and cp936, and what
+  broke was fixed: a heading, a title or a label wider than the terminal
+  wraps, `reverbscope config` fits 20 columns by putting each value under its
+  key, a note in full-width brackets keeps its closing mark inside the line,
+  a word cut where it must be (a run of `?` in cp1252) never parts `110` from
+  `Hz`, the legend of a comparison wraps, and the menu's items wrap under
+  their numbers and a question longer than the screen is written in lines.
+  The home screen of a Chinese interface at a terminal and the first list of
+  its menu end with `边框歪了？reverbscope config style plain`, once, the way
+  out for a terminal that draws the box glyphs two columns wide, which was only
+  in `config --help` (the menu does not draw its list again after a choice
+  that is not on it). A pipe or a file at its usual width or at any `COLUMNS`
+  from 38 up, `--format json` and the desktop app's report text are unchanged;
+  a pipe with a `COLUMNS` below 38 follows the narrow-terminal rules above (a
+  heading or a label wider than that wraps where it ran past the edge). From
+  the redesign of PR #42, on this line's own code.
+- **A sturdier menu.** The menu reads an answer the way a Chinese keyboard
+  types it: `９`, `ｑ`, `ＹＥＳ` and `退出` mean 9, q, yes and quit, `①` and `²`
+  are digits, and a number that is not one (`nan`, five thousand digits) is
+  refused in words where it ended the question with a traceback on the
+  screen. A path dragged from GNOME Terminal or KDE (`'it'\''s a take.wav'`),
+  quoted, escaped or in curly quotes is read as a shell reads it, a name that
+  starts with `-` is not taken for an option, and the line shown as "the same
+  from the command line" quotes every argument outside letters, digits and
+  `. / - _ : , = @ % +` (a caret, a control character or a zero-width space
+  was left bare), so pasting it runs the same words. Ctrl+C at the menu leaves
+  with 130, the end of input with 0, and neither prints a traceback; a long
+  question is written in lines and its default hint (`[My Takes/sweep.wav]`,
+  `（默认：48000）`) is never cut across two. Measuring stops before it asks
+  anything when there is no audio input or output (or no PortAudio) and points
+  to `reverbscope doctor`; it asks the sweep's level (the menu said -12 dBFS
+  and the command plays at -20), a level above -12 dBFS needs a yes of its own
+  and adds `--acknowledge-level`, the note about the monitors is shown once
+  instead of again by the command, and only a typed yes plays: Enter, Ctrl+C
+  and Ctrl+D play nothing. The options before the command (`reverbscope
+  --backend fake`) go in front of every command the menu runs and shows,
+  `--format json` gets the home screen, new sessions start in the output
+  folder of the settings (the guides say so; the `config` screen keeps its
+  words), and `reverbscope gui` on a Linux session without `DISPLAY` or
+  `WAYLAND_DISPLAY` says the desktop app needs a graphical display and exits
+  with 2, where Qt aborted the process and the menu with it. Output typed by
+  hand, a pipe, `--format json` and the desktop app's report text are unchanged.
+  From the review of PR #42, on this line's own menu.
+- **The menu no longer replaces what is there, and says what is wrong.** The
+  folder it proposes for a new session is a new one (`-2`, `-3` after the
+  minute's name: two takes inside a minute got the same folder and the second
+  replaced the first), and a folder that holds a `session.json`, a test signal
+  or any file that exists is replaced only after a *yes* (Enter is no); a
+  name without an audio extension gets `.wav` (libsndfile refused it with
+  its English), a folder is refused for a file in words, and an offered default
+  with a backslash is taken as it is. The project overview asks for a
+  folder with a `project.json` and names `reverbscope project init`. An answer
+  that is neither yes nor no (`ok`, `好`) is said to be taken as no, and
+  `是的`, `确定` and `否` are understood. Ctrl+C while the list is being drawn
+  leaves with 130 where it was a traceback; the desktop app item says that a Qt
+  that cannot start ends the program, the menu with it (`src/` launches no
+  process, so the menu cannot protect itself). After a choice that is not on
+  the list the list is not drawn again.
 - **An interactive menu.** `reverbscope` with no command on a terminal opens
   a numbered menu (demo, test signal, analyse, measure, show, compare,
   project overview, settings, environment report, desktop app). Each choice
@@ -174,6 +323,25 @@ dated PASS. The `v0.5.0b2` draft of the Release workflow was refreshed from
   New Measurement, Open Session, a click on a recent session and closing the
   window ask Save Session... / Discard / Cancel while such a take is unsaved
   (a demo take and a DAW recording, whose file is on disk, never ask).
+- **The README screenshots and the guides' terminal examples show what the
+  commands print.** The terminal screenshots (`docs/images/cli-demo*.svg`)
+  drew each row 18 px below the last, taller than the box glyphs of their
+  font, so every vertical border of a table was a dashed line; the rows are
+  16.5 px now and the borders run unbroken. The desktop screenshots were
+  taken before the Measurement health card, the About this profile button and
+  the verdicts of the Compare page existed and still said 0.5.0b1; they are
+  redrawn from the current app with `scripts/render_readme_assets.py`, and the
+  README's caption names the health card. The Chinese user guide's overview
+  table and finding card had been typed, not printed (a row broke between `2`
+  and its counter `个`, a card inside the word 检查); they are real output now,
+  and a test runs `reverbscope show`, the error panel and the progress bar in
+  both languages and requires every line of every example in both guides to
+  be one the command writes. The READMEs and the installation pages say how to
+  leave the frames out when a terminal draws the box glyphs two columns wide,
+  `docs/ARCHITECTURE_V1*.md` describes the menu, `--style` and the `style`
+  setting, `docs/DEPENDENCIES.md` records why rich was not adopted for them,
+  and `docs/SCREENSHOT_PLAN.md` how the screenshots are drawn. From the
+  redesign of PR #42, on this line's own code.
 
 ### Fixed
 - A folder that could not be created (a file of that name, a parent that is
