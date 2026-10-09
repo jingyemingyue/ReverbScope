@@ -33,7 +33,9 @@ from typing import TextIO
 
 from reverbscope.cli.config import style_hint_lines
 from reverbscope.cli.console import Console, cell_width, shell_command, wrap
-from reverbscope.i18n import _, current_locale, list_join, pgettext
+from reverbscope.cli.render import render_error
+from reverbscope.errors import ReverbScopeError
+from reverbscope.i18n import _, clause_join, current_locale, list_join, localize, pgettext
 from reverbscope.io.session_store import SESSION_FILE
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
@@ -175,10 +177,15 @@ def _split_question(template: str, question: str, **fields: str) -> tuple[str, s
 class Session:
     """The questions of one menu visit, on one console."""
 
-    def __init__(self, console: Console, ask: Asker, out: TextIO) -> None:
+    def __init__(
+        self, console: Console, ask: Asker, out: TextIO, *, backend: str | None = None
+    ) -> None:
         self.console = console
         self._ask = ask
         self.out = out
+        #: The audio backend given before the command (``--backend fake``), else
+        #: the settings' and the environment's.
+        self.backend = backend
 
     def say(self, lines: Sequence[str]) -> None:
         print("\n".join(lines), file=self.out)
@@ -313,7 +320,39 @@ def _analyze(session: Session) -> list[str]:
     return argv
 
 
+def audio_problems(backend: str | None) -> list[str]:
+    """Why no take can be made here, one sentence for each reason; empty when
+    there is an input and an output device to make it with."""
+    from reverbscope.audio.backend import get_backend
+
+    try:
+        devices = get_backend(backend).list_devices()
+    except (ReverbScopeError, OSError) as exc:
+        return [localize(str(exc))]
+    problems = []
+    if not any(device.is_input for device in devices):
+        problems.append(_("no audio input device found"))
+    if not any(device.is_output for device in devices):
+        problems.append(_("no audio output device found"))
+    return problems
+
+
 def _measure(session: Session) -> list[str] | None:
+    # With nothing to record with or to play on, the questions would be asked
+    # and a take refused after them: say so first.
+    problems = audio_problems(session.backend)
+    if problems:
+        session.say(
+            [
+                render_error(
+                    session.console,
+                    clause_join(problems),
+                    detail=_("Nothing was played."),
+                    hints=["reverbscope doctor", "reverbscope demo"],
+                )
+            ]
+        )
+        return None
     stamp = datetime.now().strftime("%Y%m%d-%H%M")
     out = session.ask_path(
         _("Folder for the new session"), default=Path(f"session-{stamp}"), exists=False
@@ -382,6 +421,14 @@ def _choice_lines(c: Console, rows: Sequence[tuple[str, str]]) -> list[str]:
     return out
 
 
+def option_value(options: Sequence[str], name: str) -> str | None:
+    """The value after ``name`` in ``options`` (``--backend fake``), else ``None``."""
+    for index, option in enumerate(options[:-1]):
+        if option == name:
+            return options[index + 1]
+    return None
+
+
 def run_menu(
     console: Console,
     *,
@@ -394,7 +441,7 @@ def run_menu(
     """The menu until the user leaves; ``prefix`` (``--lang``, ``--color``,
     ``--style``) goes before every command run and shown."""
     c = console
-    session = Session(c, ask, out)
+    session = Session(c, ask, out, backend=option_value(prefix, "--backend"))
     items = menu_items(terminal_edition=terminal_edition)
     by_key = {item.key: item for item in items}
     # The frames are drawn with glyphs that some CJK terminals draw too wide:
@@ -460,11 +507,12 @@ def run_menu(
         try:
             code = run(full)
         except KeyboardInterrupt:
-            code = 130
+            code = EXIT_INTERRUPTED
         except SystemExit as exc:
             # argparse refused the arguments (a path that starts with "-"): the
             # usage error is on stderr already; the menu goes on.
             code = exc.code if isinstance(exc.code, int) else 1
+
         if code:
             session.say(
                 c.status("warn", _("The command ended with exit code {code}.").format(code=code))
@@ -477,9 +525,11 @@ __all__ = [
     "CancelledError",
     "MenuItem",
     "Session",
+    "audio_problems",
     "clean_path",
     "fold",
     "menu_items",
+    "option_value",
     "parse_path",
     "quit_words",
     "run_menu",

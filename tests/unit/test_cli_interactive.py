@@ -87,11 +87,12 @@ def test_every_item_builds_its_command_and_shows_it(tmp_path: Path) -> None:
 
 
 def test_the_measurement_item_plays_nothing_without_a_yes(tmp_path: Path) -> None:
-    code, runs, out = _menu(["4", str(tmp_path / "s"), "n", "q"])
+    fake = ["--backend", "fake"]
+    code, runs, out = _menu(["4", str(tmp_path / "s"), "n", "q"], prefix=fake)
     assert code == 0 and runs == []
     assert "nothing has been played yet" in out and "Nothing was played." in out
-    code, runs, out = _menu(["4", str(tmp_path / "s"), "y", "q"])
-    assert runs == [["measure", "--out", str(tmp_path / "s")]]
+    code, runs, out = _menu(["4", str(tmp_path / "s"), "y", "q"], prefix=fake)
+    assert runs == [[*fake, "measure", "--out", str(tmp_path / "s")]]
 
 
 def test_a_missing_path_is_asked_again_and_an_empty_answer_goes_back(tmp_path: Path) -> None:
@@ -210,7 +211,13 @@ def _prompts(answers: Sequence[object]) -> list[str]:
         except StopIteration:
             raise EOFError from None
 
-    run_menu(Console(width=80), ask=ask, run=lambda _argv: 0, out=io.StringIO())
+    run_menu(
+        Console(width=80),
+        ask=ask,
+        run=lambda _argv: 0,
+        out=io.StringIO(),
+        prefix=["--backend", "fake"],  # a take can be made here, whatever the machine has
+    )
     return shown
 
 
