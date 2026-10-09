@@ -5629,7 +5629,7 @@ msgstr "y"
 
 msgctxt "answer"
 msgid "yes"
-msgstr "是"
+msgstr "是 是的 确定"
 
 msgid "Where to write the test signal"
 msgstr "测试信号写到哪里"
@@ -5987,5 +5987,15 @@ msgstr "{path} 是文件夹；请输入文件名，例如 {example}。"
 msgid "{path} already exists. Replace it?"
 msgstr "{path} 已存在。要替换它吗？"
 
+msgid "Not understood as yes (type y); taken as no."
+msgstr "没能理解为“是”（请输入 y）；按“否”处理。"
+
 msgid "{path} has no project.json; make a project first with reverbscope project init --out <folder>, or try another folder."
 msgstr "{path} 里没有 project.json；请先用 reverbscope project init --out <文件夹> 建立项目，或换一个文件夹。"
+msgctxt "answer"
+msgid "n"
+msgstr "n"
+
+msgctxt "answer"
+msgid "no"
+msgstr "否 不 不是 不要"

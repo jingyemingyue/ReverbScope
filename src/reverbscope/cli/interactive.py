@@ -90,6 +90,15 @@ def whole_number(text: str) -> int | None:
         return None
 
 
+def answer_words(*ids: str) -> frozenset[str]:
+    """The words that answer yes (``y``, ``yes``) or no (``n``, ``no``): the
+    letters, and what the interface language adds (``是``, ``是的``, ``否``)."""
+    words = set(ids)
+    for msgid in ids:
+        words.update(pgettext("answer", msgid).split())
+    return frozenset(word.casefold() for word in words)
+
+
 def quit_words() -> frozenset[str]:
     """What leaves the menu: ``q``, ``quit``, ``exit``, 0, and the interface
     language's own words (``退出``)."""
@@ -323,11 +332,26 @@ class Session:
             if self.confirm_session_folder(folder):
                 return folder
 
-    def ask_yes(self, prompt: str) -> bool:
-        """Yes only for an explicit yes; Enter, anything else, is no."""
+    def ask_yes_no(self, prompt: str) -> bool | None:
+        """``True`` for an explicit yes, ``False`` for an explicit no or Enter,
+        ``None`` for an answer that is neither (said to be taken as no)."""
         answer = fold(self._read(*_split_question(_("{question} [y/N]: "), prompt))).casefold()
-        yes = ("y", "yes", pgettext("answer", "y"), pgettext("answer", "yes"))
-        return answer in {word.casefold() for word in yes}
+        if not answer:
+            return False
+        if answer in answer_words("y", "yes"):
+            return True
+        if answer in answer_words("n", "no"):
+            return False
+        return None
+
+    def ask_yes(self, prompt: str) -> bool:
+        """Yes only for an explicit yes; Enter, anything else, is no. An answer
+        that is neither is said not to have been understood, so that a yes
+        that was typed in other words is not taken for a no without a word."""
+        answer = self.ask_yes_no(prompt)
+        if answer is None:
+            self.say(self.console.status("info", _("Not understood as yes (type y); taken as no.")))
+        return answer is True
 
 
 @dataclass(frozen=True)
