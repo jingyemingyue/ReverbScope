@@ -184,7 +184,8 @@ def test_an_error_naming_a_path_too_long_for_the_card_is_unframed_and_keeps_it_w
     lines = text.splitlines()
     assert not any(TOP.match(line) for line in lines)
     assert any(line.endswith(path) for line in lines), "the path is on one line, whole"
-    assert lines[0].startswith("× error: no such file or folder:")
+    # The line that stands in for the card has the card's glyph.
+    assert lines[0].startswith("✗ error: no such file or folder:")
     # A path that fits is inside the card.
     short = render_error(boxed_console(80), f"no such file or folder: {path}")
     assert path in short and find_cards(short)

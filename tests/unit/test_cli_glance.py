@@ -451,3 +451,18 @@ def test_pipes_get_no_frames_and_no_status_column(
     piped = capsys.readouterr().out
     assert "At a glance" in piped and not any(glyph in piped for glyph in "┌│╭")
     assert "Status" not in piped
+
+
+def test_a_clipped_recording_has_one_error_glyph_on_a_framed_screen(demo: DemoRun) -> None:
+    """The table said ``✗ problem`` and the health section under it ``× invalid``."""
+    clipping = ClippingCheck(peak_dbfs=0.0, runs=3, samples=40, clipped=True)
+    clipped = replace(demo.takes[0].result, clipping=clipping)
+    findings = interpret(clipped, "vocal")
+    for lang in LANGS:
+        with _in(lang):
+            boxed = render_analysis(_console(80), clipped, findings, "vocal")
+            plain = render_analysis(Console(width=80), clipped, findings, "vocal")
+        marks = {line.lstrip()[:1] for line in boxed.splitlines()} & {"✗", "×"}
+        assert marks == {"✗"} and "×" not in boxed, (lang, marks)
+        # Without frames the lines are the ones they were.
+        assert "× " in plain and "✗" not in plain

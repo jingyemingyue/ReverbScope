@@ -975,6 +975,12 @@ class Console:
 
     def symbol(self, status: Status) -> str:
         glyph, ascii_form = _SYMBOLS[status]
+        if status == "error" and self.boxed:
+            # One glyph for a failure on a framed screen: the badge of a table
+            # and the title of a card have ``✗`` (one column everywhere); the
+            # ``×`` of the unframed lines may be drawn two columns wide by a CJK
+            # terminal and does not sit well beside them.
+            glyph = self.mark("error") if self.unicode and self.can_write("✗") else glyph
         return self._marked(glyph if self.unicode else ascii_form, *_STATUS_STYLE[status])
 
     def mark(self, status: Status) -> str:

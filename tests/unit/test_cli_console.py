@@ -1074,3 +1074,20 @@ def test_a_stream_that_cannot_write_chinese_gets_one_question_mark_per_column() 
     assert gbk.fit(gbk.readable("RT60 0.70\u00a0s")) == "RT60 0.70 s"
     # Without frames the text is as it was.
     assert Console(unicode=False, encoding="cp1252").readable("混响 x") == "混响 x"
+
+
+def test_a_framed_screen_marks_every_failure_with_one_glyph() -> None:
+    """``✗`` in the tables and on the card titles, ``×`` in the health section and
+    in the unframed errors: two glyphs for one thing on one screen. ``×`` is an
+    ambiguous-width character that a CJK terminal may draw two columns wide;
+    ``✗`` is one column everywhere. Without frames the line is what it was."""
+    boxed = Console(boxed=True)
+    assert boxed.symbol("error") == "✗" == boxed.mark("error")
+    assert Console().symbol("error") == "×" and Console().mark("error") == "✗"
+    assert Console(boxed=True, unicode=False).symbol("error") == "[ERROR]"
+    # A stream that writes × but not ✗ (the JIS X 0213 encodings) keeps ×.
+    jis = Console(boxed=True, encoding="euc_jisx0213")
+    assert jis.symbol("error") == "×" and jis.mark("error") == "x"
+    lines = boxed.status("error", "no response")
+    assert lines == ["  ✗ no response"]
+    assert Console().status("error", "no response") == ["  × no response"]
