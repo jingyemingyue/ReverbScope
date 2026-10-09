@@ -9,16 +9,18 @@ a yes of its own and adds ``--acknowledge-level``.
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
 import pytest
 
 from reverbscope.audio.backend import DeviceInfo
-from reverbscope.cli.interactive import audio_problems, level_dbfs
+from reverbscope.cli.interactive import audio_problems, level_dbfs, output_base
 from reverbscope.cli.main import main
 from reverbscope.cli.render import SAFETY_NOTE_SHOWN
 from reverbscope.errors import AudioBackendUnavailableError
+from reverbscope.settings import UserSettings, save_settings
 from tests.menus import CTRL_C, CTRL_D, drive
 
 FAKE = ["--backend", "fake"]
@@ -242,3 +244,21 @@ def test_the_note_is_in_the_menu_before_the_question_even_when_nothing_is_played
     assert visit.text.count(NOTE) == 1
     assert visit.text.index(NOTE) < visit.text.index("Nothing was played.")
     assert "at -20 dBFS" in visit.text and "-12 dBFS" not in visit.text
+
+
+# --- Where new sessions start ---------------------------------------------------------------
+
+
+def test_new_sessions_start_in_the_output_folder_of_the_settings(tmp_path: Path) -> None:
+    assert output_base() == Path()
+    folder = tmp_path / "My Takes 录音"
+    folder.mkdir()
+    save_settings(UserSettings(output_dir=str(folder)))
+    assert output_base() == folder
+    visit = drive(["4", "", "", "n", "q"], prefix=FAKE)
+    # The folder is a default that does not fit beside the question: the hint stays whole.
+    assert "Folder for the new session" in visit.lines
+    assert visit.prompts[1].startswith(f"[{folder}{os.sep}session-")
+    # An output folder that is gone is not a place to start.
+    folder.rmdir()
+    assert output_base() == Path()

@@ -364,7 +364,12 @@ def state(key: str, settings: UserSettings, choice: LanguageChoice | None = None
             return _("simulated interface, for the demo and tests")
         return "PortAudio" if value else _("PortAudio (the default)")
     if key == "output-folder":
-        return _("its Save dialog opens here") if value else _("not set")
+        # The menu starts its new sessions there, the desktop app its Save dialog.
+        return (
+            _("new sessions in the menu and the desktop app's Save dialog start here")
+            if value
+            else _("not set")
+        )
     if key == "copy-recording":
         return pgettext("setting", "on") if value else pgettext("setting", "off")
     if key == "developer-tools":

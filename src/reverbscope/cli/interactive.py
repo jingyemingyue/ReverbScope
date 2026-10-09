@@ -336,6 +336,19 @@ def level_dbfs(text: str) -> float | None:
     return value if MIN_LEVEL_DBFS <= value <= MAX_LEVEL_DBFS else None
 
 
+def output_base() -> Path:
+    """Where new sessions start: the output folder of the settings (the desktop
+    app's Save dialog opens there too), else the current folder."""
+    from reverbscope.settings import load_settings
+
+    try:
+        configured = load_settings().output_dir
+        folder = Path(configured).expanduser() if configured else None
+    except (OSError, RuntimeError, ValueError):
+        folder = None
+    return folder if folder is not None and _is_dir(folder) else Path()
+
+
 def audio_problems(backend: str | None) -> list[str]:
     """Why no take can be made here, one sentence for each reason; empty when
     there is an input and an output device to make it with."""
@@ -373,7 +386,7 @@ def _measure(session: Session) -> list[str] | None:
         return None
     stamp = datetime.now().strftime("%Y%m%d-%H%M")
     out = session.ask_path(
-        _("Folder for the new session"), default=Path(f"session-{stamp}"), exists=False
+        _("Folder for the new session"), default=output_base() / f"session-{stamp}", exists=False
     )
     acknowledged = False
     while True:
@@ -582,6 +595,7 @@ __all__ = [
     "level_dbfs",
     "menu_items",
     "option_value",
+    "output_base",
     "parse_path",
     "quit_words",
     "run_menu",
