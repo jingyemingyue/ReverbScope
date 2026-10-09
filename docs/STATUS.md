@@ -140,7 +140,13 @@ untouched).
   or coloured run of letters and digits on about twenty screens), the frames
   follow what the stream's encoding can write, every command was run from 20
   to 100 columns as UTF-8, cp1252 and cp936, and a Chinese interface says how
-  to leave the frames out.
+  to leave the frames out. The menu reads a Chinese keyboard's `９`, `ｑ` and
+  `退出` and a dragged path in the GNOME and KDE forms, quotes the command it
+  prints for a shell, leaves with 130 on Ctrl+C at the menu, keeps a default
+  whole when a question wraps, checks for an audio device before it asks,
+  asks the level (a loud one needs its own yes) and shows the monitor note
+  once, carries the options before the command along, and `reverbscope gui`
+  on a Linux session without a display says so instead of letting Qt abort.
 * **Profiles explained, and a first-measurement card** (fifth batch):
   `reverbscope profiles [name]` and the "What does it want?" button say what
   a recording profile watches for and what it does not judge, from its own

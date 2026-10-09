@@ -395,6 +395,7 @@ saved them.
 | Windows: no *Run anyway* button | Smart App Control or a company policy blocks unsigned apps; see the [table above](#unsigned-build-warnings). |
 | Linux: `libEGL.so.1`, `libportaudio` or *xcb* plugin errors | Install the [system libraries](#linux). |
 | Linux: Chinese chart labels show empty boxes | `sudo apt install fonts-noto-cjk` |
+| `reverbscope gui` (or *Open the desktop app* in the menu) says *The desktop app needs a graphical display* | The session has no `DISPLAY` or `WAYLAND_DISPLAY` (ssh, a container, a text console). Start it from a desktop session; the command line works without one. |
 | `reverbscope gui` says *This is the Terminal Edition* | The Terminal Edition has no GUI; download the Desktop Edition (the command line works in both). |
 | macOS: *“reverbscope” cannot be opened because the developer cannot be verified* (Terminal Edition) | Clear the download mark once: `xattr -dr com.apple.quarantine reverbscope-terminal` ([Terminal Edition](#terminal-edition)). |
 | Windows PowerShell: Chinese text is garbled in a file or after a pipe (`> report.txt`, `\| Select-String`) | Run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()` first ([Saving a report from PowerShell](#terminal-edition)). |

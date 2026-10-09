@@ -264,7 +264,8 @@ reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
 # On a terminal, bare reverbscope opens a numbered menu; reports are boxed there
-# (reverbscope --style plain, or config style plain, for the ruled layout)
+# (reverbscope --style plain, or config style plain, for the ruled layout;
+# reverbscope --backend fake is the menu on the simulated interface)
 reverbscope
 
 # Demo / CI: no interface

@@ -360,7 +360,8 @@ encoding that is not supported, empty); English keeps libsndfile's words.
 `reverbscope config` lists the other settings the desktop app keeps and
 changes them from the command line, also in the Terminal Edition:
 `profile` (the default recording profile), `backend` (`portaudio` or
-`fake`), `output-folder`, `copy-recording` and `developer-tools` (`on` or
+`fake`), `output-folder` (where the menu proposes new sessions and the
+desktop app's Save dialog opens), `copy-recording` and `developer-tools` (`on` or
 `off`), and `theme` (`system`, `light` or `dark`; desktop app only). For
 example `reverbscope config profile vocal`; `auto` goes back to a setting's
 default, and `reverbscope --format json config` prints the settings as JSON.
@@ -477,13 +478,35 @@ plain`) findings and errors are the status lines they have always been.
 numbered menu: the demo, the test signal, analysing a recording, measuring
 through the interface, showing and comparing sessions, the project
 overview, settings, the environment report and the desktop app. Each choice
-asks for what it needs (a dragged path with quotes or backslashes is
-understood), prints the equivalent command line to type next time, runs it
-and comes back. Measuring plays nothing until the question is answered `y`.
-Ctrl+C at a question returns to the menu; `q` or the end of input leaves.
-In a pipe or a script, `reverbscope` still prints the short home screen and
-exits with the usage code; `REVERBSCOPE_NO_MENU=1` keeps the menu off a
-terminal.
+asks for what it needs, prints the equivalent command line to type next time
+and runs it, then comes back. The command line shown is meant to be pasted:
+every argument outside letters, digits and `. / - _ : , = @ % +` is quoted.
+
+Answers are read the way a Chinese keyboard types them (`９` is 9, `ｑ`
+and `退出` leave, `ｙ` is yes), and a path the way a terminal drops a dragged
+file: with quotes, with backslashes, in curly quotes, or as GNOME Terminal
+and KDE write an apostrophe (`'it'\''s a take.wav'`). A number that is not
+one, or a name the file system refuses, is refused in words and asked again.
+
+Measuring starts by checking that the computer has an audio input and an
+output; without them it says so, plays nothing and points to `reverbscope
+doctor`. It asks for the folder of the session (in the output folder of
+`reverbscope config`, when one is set) and the level of the sweep (-20 dBFS
+unless you type another; a level above -12 dBFS needs a *yes* of its own and
+adds `--acknowledge-level` to the command), shows the note about turning
+the monitors down once, and plays nothing until the last question is
+answered `y`: Enter, Ctrl+C, Ctrl+D and any other answer play nothing.
+
+The options given before the command carry over to every command the menu
+runs: `reverbscope --backend fake` is the menu on the simulated interface.
+Ctrl+C at a question returns to the menu; at the menu it leaves with exit
+code 130; `q`, `退出` or the end of input leaves with 0. "Open the desktop
+app" on a Linux session without a screen (no `DISPLAY` or `WAYLAND_DISPLAY`)
+says that the desktop app needs a graphical display, exits with code 2 and
+leaves the menu running; Qt itself would end the whole process. In a pipe or
+a script, and with `--format json`, `reverbscope` still prints the short home
+screen and exits with the usage code; `REVERBSCOPE_NO_MENU=1` keeps the menu
+off a terminal.
 
 Piped or redirected output is UTF-8. Windows PowerShell decodes it in the
 console's code page and garbles Chinese (`> report.txt`, `| Select-String`);

@@ -146,6 +146,33 @@ All notable changes to ReverbScope are documented here. The format follows
   pipe or a file at its usual width, `--format json` and the desktop app's
   report text are unchanged. From the redesign of PR #42, on this line's own
   code.
+- **A sturdier menu.** The menu reads an answer the way a Chinese keyboard
+  types it: `９`, `ｑ`, `ＹＥＳ` and `退出` mean 9, q, yes and quit, `①` and `²`
+  are digits, and a number that is not one (`nan`, five thousand digits) is
+  refused in words where it ended the question with a traceback on the
+  screen. A path dragged from GNOME Terminal or KDE (`'it'\''s a take.wav'`),
+  quoted, escaped or in curly quotes is read as a shell reads it, a name that
+  starts with `-` is not taken for an option, and the line shown as "the same
+  from the command line" quotes every argument outside letters, digits and
+  `. / - _ : , = @ % +` (a caret, a control character or a zero-width space
+  was left bare), so pasting it runs the same words. Ctrl+C at the menu leaves
+  with 130, the end of input with 0, and neither prints a traceback; a long
+  question is written in lines and its default hint (`[My Takes/sweep.wav]`,
+  `（默认：48000）`) is never cut across two. Measuring stops before it asks
+  anything when there is no audio input or output (or no PortAudio) and points
+  to `reverbscope doctor`; it asks the sweep's level (the menu said -12 dBFS
+  and the command plays at -20), a level above -12 dBFS needs a yes of its own
+  and adds `--acknowledge-level`, the note about the monitors is shown once
+  instead of again by the command, and only a typed yes plays: Enter, Ctrl+C
+  and Ctrl+D play nothing. The options before the command (`reverbscope
+  --backend fake`) go in front of every command the menu runs and shows,
+  `--format json` gets the home screen, new sessions start in the output
+  folder of the settings (which `reverbscope config` now says), and `reverbscope
+  gui` on a Linux session without `DISPLAY` or `WAYLAND_DISPLAY` says the
+  desktop app needs a graphical display and exits with 2, where Qt aborted the
+  process and the menu with it. Output typed by hand, a pipe, `--format json`
+  and the desktop app's report text are unchanged. From the review of PR #42,
+  on this line's own menu.
 - **An interactive menu.** `reverbscope` with no command on a terminal opens
   a numbered menu (demo, test signal, analyse, measure, show, compare,
   project overview, settings, environment report, desktop app). Each choice

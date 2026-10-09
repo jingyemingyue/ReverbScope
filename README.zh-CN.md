@@ -222,7 +222,8 @@ reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
 # 在终端里不带命令运行 reverbscope 会打开编号菜单；报告在终端里带边框
-# （reverbscope --style plain 或 config style plain 切换为横线版式）
+# （reverbscope --style plain 或 config style plain 切换为横线版式；
+# reverbscope --backend fake 是使用模拟接口的菜单）
 reverbscope
 
 # 演示 / CI：不需要音频接口

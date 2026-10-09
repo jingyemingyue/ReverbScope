@@ -155,7 +155,7 @@ reverbscope config language auto    # 改回跟随系统
 
 中文界面一个概念只用一个词：音频接口、回采（loopback）、交流声、对比；对比的两个会话叫基准和对比项（基线指基线电平，候选指候选峰和候选反射）。标点也按中文写：列表用“、”，分句用“；”，括号里的说明用全角括号（`RT60 0.70 s（T30）`），“标签：内容”用全角冒号，输错的值放在“ ”里（`无效的选择：“bogus”`）。文字换行时，一行不会以句号、逗号、右括号等开头，紧挨着标点的两字词不会被拆开，`（默认：10）` 这样的默认值提示整体移到下一行，最后一行不会只剩一个字。libsndfile 打不开音频文件时，会用中文说明原因（不是音频文件、已损坏或被截断、编码不受支持、文件为空）；英文界面保留 libsndfile 的原话。
 
-`reverbscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们，终端版也一样：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`、`copy-recording` 和 `developer-tools`（`on` 或 `off`），以及 `theme`（`system`、`light` 或 `dark`，只影响桌面版）。例如 `reverbscope config profile vocal`；`auto` 把一项设置恢复为默认值，`reverbscope --format json config` 以 JSON 输出所有设置。
+`reverbscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们，终端版也一样：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`（菜单默认把新会话放在这里，桌面版的保存对话框也从这里打开）、`copy-recording` 和 `developer-tools`（`on` 或 `off`），以及 `theme`（`system`、`light` 或 `dark`，只影响桌面版）。例如 `reverbscope config profile vocal`；`auto` 把一项设置恢复为默认值，`reverbscope --format json config` 以 JSON 输出所有设置。
 
 在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
 
@@ -215,7 +215,13 @@ reverbscope config language auto    # 改回跟随系统
 再去掉时钟，标签则被截短。输出到管道或文件时，测量开始时只写一行提示。没有边框时（管道或文件、窄于 48 列的
 终端、`--style plain`），发现和错误仍是原来的状态行。
 
-**交互菜单。**在终端里不带命令运行 `reverbscope` 会打开一个编号菜单：演示、测试信号、分析录音、通过音频接口测量、查看和对比会话、项目总览、设置、环境报告和桌面版。每一项会询问所需的信息（拖进终端的路径，带引号或反斜杠都能识别），打印等价的命令行以便下次直接输入，运行后回到菜单。测量在回答 `y` 之前不会播放任何声音。在提问处按 Ctrl+C 回到菜单；`q` 或输入结束则退出。在管道或脚本中，`reverbscope` 仍然打印简短的首页并以用法错误码退出；`REVERBSCOPE_NO_MENU=1` 可在终端里关闭菜单。
+**交互菜单。**在终端里不带命令运行 `reverbscope` 会打开一个编号菜单：演示、测试信号、分析录音、通过音频接口测量、查看和对比会话、项目总览、设置、环境报告和桌面版。每一项会询问所需的信息，打印等价的命令行以便下次直接输入，运行后回到菜单。打印出来的命令行可以直接粘贴：凡是字母、数字和 `. / - _ : , = @ % +` 之外的字符，参数都会加引号。
+
+回答按中文键盘的输入习惯理解（`９` 就是 9，`ｑ` 和 `退出` 离开，`ｙ` 就是 yes）；路径按终端拖入文件的方式理解：带引号、带反斜杠、用中文引号，或是 GNOME Terminal 和 KDE 写撇号的方式（`'it'\''s a take.wav'`）。不是数字的数字、文件系统不接受的名字，会用文字说明并重新询问。
+
+测量先检查电脑上有没有音频输入和输出设备；没有就说明原因，不播放任何声音，并提示运行 `reverbscope doctor`。接着询问会话文件夹（`reverbscope config` 设置了输出文件夹时，默认放在其中）和扫频电平（默认 -20 dBFS；高于 -12 dBFS 要单独回答一次 yes，命令里会加上 `--acknowledge-level`），把调低监听音量的提示只显示一次，最后一个问题回答 `y` 之前不播放任何声音：回车、Ctrl+C、Ctrl+D 和其他任何回答都不会播放。
+
+写在命令前面的选项会带到菜单运行的每条命令里：`reverbscope --backend fake` 就是使用模拟接口的菜单。在提问处按 Ctrl+C 回到菜单；在菜单处按 Ctrl+C 以退出码 130 退出；`q`、`退出` 或输入结束则以 0 退出。在没有显示器的 Linux 会话（没有 `DISPLAY` 或 `WAYLAND_DISPLAY`）里选择“打开桌面应用”，会提示桌面应用需要图形显示环境，以退出码 2 结束该命令，菜单继续运行；Qt 自己会结束整个进程。在管道或脚本中，以及使用 `--format json` 时，`reverbscope` 仍然打印简短的首页并以用法错误码退出；`REVERBSCOPE_NO_MENU=1` 可在终端里关闭菜单。
 
 重定向或经过管道的输出是 UTF-8。Windows PowerShell 会按控制台代码页解码，中文因此变成乱码（`> report.txt`、`| Select-String`）；请先在该窗口运行一次 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`，详见[在 PowerShell 中保存报告](../INSTALLATION.zh-CN.md#终端版)。命令提示符不受影响。
 
