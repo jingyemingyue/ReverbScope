@@ -296,8 +296,10 @@ distance supplied. The result JSON carries that argument with it.
 (`generic` by default; `vocal`, `voiceover`, `acoustic_guitar`, `drums`,
 `room_mic` and `choir` have per-recording thresholds and wording). The report
 prints the profile name next to `Interpretation` so the advice is never
-mistaken for room-agnostic truth. The GUI offers the same selector in both
-measurement modes.
+mistaken for room-agnostic truth. In a terminal each finding there is a card
+titled with its severity and topic (`! Notice · reverberation`), an error is a
+panel titled `✗ Error`, and a take shows a progress bar; a pipe or a file gets
+plain lines. The GUI offers the same selector in both measurement modes.
 
 `results/` receives `result.json` (all metrics and curves),
 `impulse_response.wav` (raw IR, float32) and `session.json` (measurement

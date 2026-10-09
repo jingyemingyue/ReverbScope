@@ -250,7 +250,9 @@ reverbscope gui
 
 `--profile` 决定如何把测得的数字转换为建议（默认 `generic`；`vocal`、`voiceover`、`acoustic_guitar`、
 `drums`、`room_mic` 和 `choir` 各有针对该类录音的阈值和措辞）。报告会在 `Interpretation`（解读）旁边
-标出配置名称，以免有人把这些建议误当成与录音用途无关的客观结论。GUI 在两种测量模式中都提供同样的选择。
+标出配置名称，以免有人把这些建议误当成与录音用途无关的客观结论。在终端里，每条发现是一张标有严重程度和
+主题的卡片（`! 提示 · 混响`），错误是标题为 `✗ 错误` 的面板，测量时有进度条；输出到管道或文件则是纯文本行。
+GUI 在两种测量模式中都提供同样的选择。
 
 `results/` 中会生成 `result.json`（全部指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）
 和 `session.json`（测量元数据）。原始录音永远不会被修改。`reverbscope show` 以及 GUI 中的

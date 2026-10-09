@@ -128,7 +128,9 @@ untouched).
   (title frame, section rules, bordered tables; never a pipe, never a
   command line, never JSON; `--style`, `config style`,
   `REVERBSCOPE_CLI_STYLE`), "At a glance" there is a table of topic, status
-  (a mark and a word) and result, and bare `reverbscope` on a terminal opens a
+  (a mark and a word) and result, each interpretation finding is a card
+  and an error is a panel, a take's progress is a bar that never reaches
+  the last column, and bare `reverbscope` on a terminal opens a
   numbered menu that prints the command it runs each time. Harvested from
   PR #42 without its dependencies.
 * **Profiles explained, and a first-measurement card** (fifth batch):

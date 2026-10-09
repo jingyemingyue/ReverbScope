@@ -73,6 +73,26 @@ All notable changes to ReverbScope are documented here. The format follows
   keeps one width. A pipe, a file, a terminal narrower than 48 columns,
   `--style plain`, `--format json` and the desktop app's report text are
   unchanged. From the redesign of PR #42, drawn on this line's own frames.
+- **Finding cards, the error panel and the progress bar.** In a boxed
+  report each interpretation finding of an analysis or a comparison is a
+  card: a frame titled with its severity word and topic (`! Notice ·
+  reverberation`, in Chinese `! 提示 · 混响`), its border yellow for a
+  warning, cyan for a notice and dim for information; the mark and the word
+  carry the severity without colour, and only the border and the mark are
+  coloured. An error is a red card titled `✗ Error` (`✗ 错误`) with the
+  message and its explanation inside; the commands to try stay under it, bare,
+  never framed or wrapped. A text a card cannot hold whole (a path is never
+  cut) is laid out as lines, as before, the findings of a report all or none.
+  The usage errors argparse raises before the options are parsed now follow
+  `--style`, the `style` setting and `REVERBSCOPE_CLI_STYLE` too. While a take
+  plays, the progress line is a bar `━━━╸───` (`==>---` where the stream
+  cannot write it) with a head that shows the position without colour, green
+  when full, with the percentage and the clock; it never reaches the last
+  column, loses the bar and then the clock on a narrow terminal, and no longer
+  wraps the blanks that wipe a longer frame when the terminal is made narrower
+  during a take. A pipe, a file, a terminal narrower than 48 columns, `--style
+  plain`, `--format json` and the desktop app's report text are unchanged. From
+  the redesign of PR #42, drawn on this line's own frames.
 - **An interactive menu.** `reverbscope` with no command on a terminal opens
   a numbered menu (demo, test signal, analyse, measure, show, compare,
   project overview, settings, environment report, desktop app). Each choice

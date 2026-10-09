@@ -580,7 +580,15 @@ glance" is a bordered table of topic, status and result whose status cell is
 a badge, the mark and a word (`✓ good`, `! check`, `✗ problem`, `i note`; in
 a comparison `✓ compared` and `– not compared`). Its result column wraps; if
 that is not enough the status column is dropped with a line saying so, and
-only when no table fits are the aligned lines of the plain layout used.
+only when no table fits are the aligned lines of the plain layout used. Under
+the same condition an interpretation finding is a card (`Console.frame`: a
+rounded frame as wide as the console with the severity and the topic in its
+top border, the border coloured by the severity) and an error is a red card
+titled `✗ Error` whose message and explanation sit inside it; the commands to
+try stay under the card, bare, and a text that a card cannot hold whole (a
+path is never cut) is laid out as lines, the cards of a section all or none.
+The usage errors argparse raises before the options are parsed read `--style`
+and the `style` setting by hand.
 
 Every command reads the same way: title and context, the result ("At a
 glance" first in an analysis or a comparison), the detail, then numbered
@@ -588,8 +596,10 @@ next steps. A user error is one block (`× error: …`, an explanation, the
 commands to try) with the documented exit code; a traceback appears only with
 `--verbose`. Bare `reverbscope` prints a short home screen on stderr and keeps
 the usage error's exit code 2. `measure` prints its device plan and checks on
-stdout and its progress on stderr (one redrawn line on a terminal, one stage
-line otherwise; drawn by the waiting thread, never by the audio callback). The
+stdout and its progress on stderr (one redrawn line on a terminal, a bar with
+the percentage and the clock that is never wider than the terminal minus one
+column and loses the bar, then the clock, on a narrow one; one stage line
+otherwise; drawn by the waiting thread, never by the audio callback). The
 text layout is not a Tier 1 interface. The GUI's "Full report" panes show the
 same `render.py` reports as plain text; the environment report in the
 developer tools keeps `diagnostics.format_environment_report`.

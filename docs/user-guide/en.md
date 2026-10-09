@@ -395,6 +395,50 @@ column is left out. Without frames (a pipe or a file, a terminal narrower
 than 48 columns, `--style plain`) "At a glance" is the aligned lines it has
 always been, with a symbol and no word.
 
+In a boxed report each **finding** under "Interpretation" is a card: a frame
+titled with its severity word and topic, its border yellow for a warning,
+cyan for a notice and dim for information. The mark and the word say the same
+without colour, and only the border and the mark are coloured, never the text.
+For example:
+
+```text
+╭─ ! Warning · noise ──────────────────────────────────────────╮
+│ Mains hum components at multiples of 50 Hz were detected in  │
+│ the quiet part of the recording. Check grounding, cables,    │
+│ dimmers and power supplies before treating the room.         │
+╰──────────────────────────────────────────────────────────────╯
+```
+
+**An error is a card too**, titled `✗ Error`, with the message and its
+explanation inside and the commands to try under it. A command is never
+framed or wrapped, so that it can be copied; a text that a card cannot hold
+whole (a path longer than the card, say) is shown without the card, never cut.
+The errors of a mistyped command line follow `--style`, the `style` setting and
+`REVERBSCOPE_CLI_STYLE` as well.
+
+```text
+╭─ ✗ Error ────────────────────────────────────────────────────╮
+│ session file not found: take-1                               │
+╰──────────────────────────────────────────────────────────────╯
+
+  Try:
+    reverbscope show --list <folder>
+```
+
+While a take plays, the progress line on stderr is a bar with the percentage
+and the clock (`=====>-----` where the stream cannot write the box glyphs):
+
+```text
+  Playing the sweep and recording  ━━━━━━━━━╸─────────────   42%  00:03 / 00:09
+```
+
+The head `╸` shows where the bar stands without colour, and the bar turns green
+when it is full. The line is never wider than the terminal minus one column;
+on a narrow terminal it loses the bar first, then the clock, and the label is
+cut short. A pipe or a file still gets one line when the take starts. Without
+frames (a pipe or a file, a terminal narrower than 48 columns, `--style
+plain`) findings and errors are the status lines they have always been.
+
 **Interactive menu.** `reverbscope` with no command on a terminal opens a
 numbered menu: the demo, the test signal, analysing a recording, measuring
 through the interface, showing and comparing sessions, the project
