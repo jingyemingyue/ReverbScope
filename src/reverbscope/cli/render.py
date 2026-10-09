@@ -2115,14 +2115,26 @@ def render_error(
 
           Try:
             reverbscope analyze --help
+
+    With frames the message and the explanation are in a red card titled
+    ``✗ Error``; the commands stay outside it, bare, to copy.
     """
     c = console
+    framed = None
+    if c.boxed:
+        inner = c.inner()
+        body = inner.paragraph(message, indent=0) + (
+            inner.paragraph(detail, indent=0) if detail else []
+        )
+        framed = c.frame(pgettext("error panel", "Error"), body, "error", mark="error")
     text = _("error: {message}").format(message=message)
-    if c.unicode:
+    if framed is not None:
+        lines = framed
+    elif c.unicode:
         lines = c.status("error", text, indent=0, style=("red", "bold"))
     else:  # "[ERROR] error:" would say it twice
         lines = c.paragraph(text, indent=0)
-    if detail:
+    if detail and framed is None:
         lines += c.paragraph(detail, indent=2)
     if hints:
         lines.append("")

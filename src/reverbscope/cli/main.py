@@ -226,9 +226,10 @@ ROOT_EXAMPLES = (
 #: Where ``reverbscope demo`` writes unless told otherwise.
 DEMO_FOLDER = "reverbscope-demo"
 
-#: ``--color`` as given on the command line, for messages printed before the
-#: arguments are parsed (argparse's own errors).
+#: ``--color`` and ``--style`` as given on the command line, for messages
+#: printed before the arguments are parsed (argparse's own errors).
 _COLOR_REQUEST: dict[str, str] = {"mode": "auto"}
+_STYLE_REQUEST: dict[str, str] = {"mode": "auto"}
 
 
 class _HelpFormatter(argparse.RawDescriptionHelpFormatter):
@@ -378,7 +379,7 @@ class _Parser(argparse.ArgumentParser):
         return value
 
     def error(self, message: str) -> Any:
-        console = Console.for_stream(sys.stderr, _COLOR_REQUEST["mode"])  # type: ignore[arg-type]
+        console = _stream_console(sys.stderr, _COLOR_REQUEST["mode"], _STYLE_REQUEST["mode"])
         text = render_error(console, message, hints=[f"{self.prog} --help"])
         self.exit(2, text + "\n")
 
@@ -1472,20 +1473,29 @@ def _peek_option(argv: Sequence[str], names: tuple[str, ...]) -> str | None:
     return None
 
 
-def _console(args: argparse.Namespace, stream: Any = None) -> Console:
-    """How to lay out text for ``stream`` (stdout by default) under ``--color``
-    and ``--style`` (``auto`` follows the ``style`` setting, if one is set)."""
+def _stream_console(stream: Any, color: str = "auto", style: str = "auto") -> Console:
+    """How to lay out text for ``stream`` under a colour mode and a style
+    (``auto`` follows the ``style`` setting, if one is set)."""
     from reverbscope.settings import load_settings
 
-    style = str(getattr(args, "style", None) or "auto")
     if style == "auto":
         style = load_settings().cli_style or "auto"
     if style not in STYLE_MODES:
         style = "auto"
     return Console.for_stream(
-        stream or sys.stdout,
-        getattr(args, "color", None) or "auto",
+        stream,
+        color if color in COLOR_MODES else "auto",
         style=cast(StyleMode, style),
+    )
+
+
+def _console(args: argparse.Namespace, stream: Any = None) -> Console:
+    """How to lay out text for ``stream`` (stdout by default) under ``--color``
+    and ``--style`` (``auto`` follows the ``style`` setting, if one is set)."""
+    return _stream_console(
+        stream or sys.stdout,
+        str(getattr(args, "color", None) or "auto"),
+        str(getattr(args, "style", None) or "auto"),
     )
 
 
@@ -2708,6 +2718,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     _translate_argparse()
     color = _peek_option(argv_list, ("--color",))
     _COLOR_REQUEST["mode"] = color if color in COLOR_MODES else "auto"
+    style = _peek_option(argv_list, ("--style",))
+    _STYLE_REQUEST["mode"] = style if style in STYLE_MODES else "auto"
     parser = build_parser()
     args = parser.parse_args(argv)
     configure_logging(logging.DEBUG if args.verbose else logging.WARNING)

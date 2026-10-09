@@ -407,6 +407,30 @@ def test_golden_measure_plan_with_the_fake_interface(
     _golden(f"measure-plan-{lang}", _normalise(head))
 
 
+#: The user errors the goldens show: the arguments, the exit code they end with.
+_ERROR_CASES: tuple[tuple[list[str], int], ...] = (
+    (["analyze", "--recording", "take.wav", "--sweep", "sweep.wav"], 1),
+    (["sweep"], 2),
+    (["sweep", "--out", "x.wav", "--duration", "long"], 2),
+    (["--backend", "fake", "measure", "--out", "m", "--input-channel", "9"], 1),
+    (["show", "missing-session"], 1),
+    (["--backend", "fake", "measure", "--out", "sweep.wav"], 1),  # a file, not a folder
+)
+
+
+def _error_blocks(
+    root: Path, capsys: pytest.CaptureFixture[str], lang: str, *options: str
+) -> list[str]:
+    (root / "sweep.wav").write_bytes(b"")
+    blocks = []
+    for argv, expected in _ERROR_CASES:
+        code, out, err = _run(["--lang", lang, *options, *argv], capsys)
+        assert code == expected, (argv, err)
+        assert out == "" and "Traceback" not in err
+        blocks.append(err)
+    return blocks
+
+
 @pytest.mark.parametrize("lang", ["en", "zh_CN"])
 def test_golden_errors(
     cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str], lang: str
@@ -414,21 +438,31 @@ def test_golden_errors(
     """User errors: one block with commands to try, no traceback, the documented codes."""
     root, monkeypatch = cli
     monkeypatch.setenv("COLUMNS", "80")
-    (root / "sweep.wav").write_bytes(b"")
-    blocks = []
-    for argv, expected in (
-        (["analyze", "--recording", "take.wav", "--sweep", "sweep.wav"], 1),
-        (["sweep"], 2),
-        (["sweep", "--out", "x.wav", "--duration", "long"], 2),
-        (["--backend", "fake", "measure", "--out", "m", "--input-channel", "9"], 1),
-        (["show", "missing-session"], 1),
-        (["--backend", "fake", "measure", "--out", "sweep.wav"], 1),  # a file, not a folder
-    ):
-        code, out, err = _run(["--lang", lang, *argv], capsys)
-        assert code == expected, (argv, err)
-        assert out == "" and "Traceback" not in err
-        blocks.append(err)
+    blocks = _error_blocks(root, capsys, lang)
     _golden(f"errors-{lang}", "\n".join(blocks).replace("\\", "/"))
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+@pytest.mark.parametrize("columns", [60, 48])
+def test_golden_boxed_errors(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    columns: int,
+) -> None:
+    """The same errors as a terminal draws them (``--style boxed``): a card
+    titled ``✗ Error`` (``✗ 错误``) holds the message and the explanation, and
+    the commands to try stay under it, bare, to copy. The usage errors, which
+    argparse raises before the options are parsed, follow the style as well."""
+    root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", str(columns))
+    blocks = _error_blocks(root, capsys, lang, "--style", "boxed")
+    for block in blocks:
+        assert block.startswith("╭─ ✗ ")
+        for line in block.splitlines():
+            if "reverbscope " not in line:  # a command is never wrapped
+                assert cell_width(line) <= columns, line
+    _golden(f"errors-{lang}-boxed-{columns}", "\n".join(blocks).replace("\\", "/"))
 
 
 _INTERPRETATION = re.compile(r"^── (Interpretation|解读)", re.MULTILINE)
