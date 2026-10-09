@@ -832,7 +832,9 @@ def test_project_errors_are_translated(
     (root / "empty").mkdir()
     code, _out, err = _run(["--lang", "zh_CN", "project", "show", "empty"], capsys)
     assert code == 1
-    assert "中没有 project.json" in err
+    # The path comes after the sentence, not before 中没有: a long dragged path
+    # left a line that began with 中.
+    assert "没有找到 project.json：empty" in err
 
 
 def test_frequencies_just_below_one_kilohertz_read_as_kilohertz() -> None:
