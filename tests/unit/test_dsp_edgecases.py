@@ -296,30 +296,28 @@ def _direct_sound_then_decay(sample_rate: int, step_db: float) -> np.ndarray:
     return tail + 10.0 ** (-90.0 / 20.0) * np.random.default_rng(0).normal(0.0, 1.0, n)
 
 
-def test_t20_and_t30_are_not_fitted_across_the_direct_sound(sample_rate: int) -> None:
-    """With the direct sound 22 dB above the room, the Schroeder curve has
-    already fallen 22 dB when the fit may start, so a T20 fit would cover 3 dB
-    of room decay and a T30 fit 13 dB: they described the direct sound's step
-    and were published as VALID (up to 27 % off). EDT already had this rule."""
-    band = analyze_band(
-        _direct_sound_then_decay(sample_rate, 22.0),
-        sample_rate,
-        None,
-        noise_margin_db=10.0,
-        direct_index=0,
-    )
-    for metric in (band.t20, band.t30):
-        assert metric.validity is Validity.UNRELIABLE
-        assert "direct sound covers" in (metric.reason or "")
-    assert band.rt60_estimate_s is None
-    # A direct sound 8 dB above the room leaves most of both ranges to the room.
-    band = analyze_band(
-        _direct_sound_then_decay(sample_rate, 8.0),
-        sample_rate,
-        None,
-        noise_margin_db=10.0,
-        direct_index=0,
-    )
-    assert band.t20.validity is Validity.VALID
-    assert band.t30.validity is Validity.VALID
-    assert band.rt60_estimate_s == pytest.approx(0.5, rel=0.1)
+def test_a_loud_direct_sound_does_not_withhold_an_accurate_t20_or_t30(sample_rate: int) -> None:
+    """A direct sound 8 to 22 dB above an exactly exponential room leaves the
+    late decay in the T20 and T30 ranges straight, and both read 0.50 s.
+
+    A rule that called such fits "the direct sound's step" (a fit starting
+    after the direct sound with more than half of its range already gone) was
+    tried on the development line and is not in this candidate: on the base
+    tree both metrics read 0.50 s here (1 % off, not the 27 % its description
+    gave), and on a one-off grid of 3 061 synthetic rooms about two thirds of
+    the octave-band values it withheld, and nearly all the broadband ones,
+    were within 10 % of the truth. A close microphone is the common case, so
+    a rule that withholds it needs a calibrated threshold first."""
+    for step_db in (8.0, 15.0, 18.0, 22.0):
+        band = analyze_band(
+            _direct_sound_then_decay(sample_rate, step_db),
+            sample_rate,
+            None,
+            noise_margin_db=10.0,
+            direct_index=0,
+        )
+        assert band.t20.validity is Validity.VALID, step_db
+        assert band.t30.validity is Validity.VALID, step_db
+        assert band.t20.seconds == pytest.approx(0.5, rel=0.05), step_db
+        assert band.t30.seconds == pytest.approx(0.5, rel=0.05), step_db
+        assert band.rt60_estimate_s == pytest.approx(0.5, rel=0.05), step_db
