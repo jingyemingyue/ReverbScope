@@ -91,7 +91,20 @@ def _failure_reason(error: BaseException, *, reading: bool, empty: bool = False)
             return _("the WAV file is damaged or was cut short")
     elif "system error" in text:
         return _("the system could not create the file")
+    elif "no format specified" in text or "format from file extension" in text:
+        return _("the file name must end in an audio extension such as .wav")
     return original
+
+
+def _shown_name(path: Path) -> str:
+    """How a file that cannot be read is named in a message.
+
+    English names the file and lets libsndfile's own sentence say where it
+    looked (``Error opening 'a/take.wav': ...``). The Chinese sentence leaves
+    that out, so it carries the path as it was given: with two files of one
+    name (``a/take.wav``, ``b/take.wav``) the reader can tell which one.
+    """
+    return path.name if current_locale() == DEFAULT_LANG else str(path)
 
 
 def read_wav(path: str | Path) -> AudioSignal:
@@ -109,12 +122,14 @@ def read_wav(path: str | Path) -> AudioSignal:
             empty = False
         raise InvalidAudioError(
             _("cannot read audio file {name}: {error}").format(
-                name=file_path.name, error=_failure_reason(exc, reading=True, empty=empty)
+                name=_shown_name(file_path), error=_failure_reason(exc, reading=True, empty=empty)
             )
         ) from exc
     samples = np.asarray(data, dtype=np.float64)
     if samples.shape[0] == 0:
-        raise InvalidAudioError(_("audio file is empty: {name}").format(name=file_path.name))
+        raise InvalidAudioError(
+            _("audio file is empty: {name}").format(name=_shown_name(file_path))
+        )
     if samples.shape[1] == 1:
         samples = np.ascontiguousarray(samples[:, 0])
     return AudioSignal(samples=samples, sample_rate=int(sample_rate), source=str(file_path))

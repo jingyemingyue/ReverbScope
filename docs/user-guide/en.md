@@ -355,7 +355,8 @@ never starts with a closing mark, a two-character word is not split before
 one, a default hint such as `（默认：10）` moves down whole and the last line
 is more than one character. When libsndfile cannot open an audio file the
 reason is given in Chinese (not an audio file, damaged or cut short, an
-encoding that is not supported, empty); English keeps libsndfile's words.
+encoding that is not supported, empty, a name with no audio extension) and the
+file is named with its path as given; English keeps libsndfile's words.
 
 `reverbscope config` lists the other settings the desktop app keeps and
 changes them from the command line, also in the Terminal Edition:

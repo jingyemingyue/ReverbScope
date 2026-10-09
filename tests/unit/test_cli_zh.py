@@ -802,9 +802,44 @@ def test_libsndfiles_usual_sentences_are_explained_in_chinese(
     path = _broken_audio_files(tmp_path)[kind]
     argv = ["analyze-ir", "--ir", str(path), "--band", "20", "20000"]
     assert main(["--lang", "zh_CN", *argv]) == 1
-    err = " ".join(capsys.readouterr().err.split())
-    assert f"无法读取音频文件 {path.name}：{chinese}" in err, err
+    err = "".join(capsys.readouterr().err.split())
+    # The path as given: the Chinese sentence has no libsndfile text to say where.
+    # (A long path takes a line of its own: blanks are not compared.)
+    assert "".join(f"无法读取音频文件 {path}：{chinese}".split()) in err, err
     assert "Error opening" not in err and "Format not recognised" not in err
     assert main(["--lang", "en", *argv]) == 1
     english = " ".join(capsys.readouterr().err.split())
     assert f"cannot read audio file {path.name}: Error opening" in english, english
+
+
+def test_two_unreadable_files_of_one_name_can_be_told_apart(
+    zh_cli: None, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    """``analyze --recording a/take.wav --sweep b/take.wav`` names the file that
+    failed with its folder, as English does through libsndfile's own sentence."""
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    bad = tmp_path / "a" / "take.wav"
+    bad.write_bytes(b"not a wav file at all")
+    other = tmp_path / "b" / "take.wav"
+    other.write_bytes(b"")
+    argv = ["analyze", "--recording", str(bad), "--sweep", str(other)]
+    assert main(["--lang", "zh_CN", *argv]) == 1
+    err = "".join(capsys.readouterr().err.split())
+    assert "".join(f"无法读取音频文件 {bad}：".split()) in err, err
+
+
+def test_a_test_signal_without_an_audio_extension_is_explained_in_chinese(
+    zh_cli: None, capsys: pytest.CaptureFixture[str], tmp_path: Path
+) -> None:
+    """ "No format specified and unable to get format from file extension" was
+    left in libsndfile's English inside a Chinese error. English keeps its words."""
+    target = tmp_path / "测试信号"
+    assert main(["--lang", "zh_CN", "sweep", "--out", str(target)]) == 1
+    err = "".join(capsys.readouterr().err.split())
+    assert (
+        "".join(f"无法写入音频文件 {target}：文件名必须以 .wav 等音频扩展名结尾".split()) in err
+    ), err
+    assert "Noformatspecified" not in err
+    assert main(["--lang", "en", "sweep", "--out", str(target)]) == 1
+    assert "No format specified" in " ".join(capsys.readouterr().err.split())

@@ -5970,3 +5970,6 @@ msgstr "菜单中的新会话和桌面应用的保存对话框都从这里开始
 
 msgid "default"
 msgstr "默认"
+
+msgid "the file name must end in an audio extension such as .wav"
+msgstr "文件名必须以 .wav 等音频扩展名结尾"

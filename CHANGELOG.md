@@ -115,7 +115,8 @@ All notable changes to ReverbScope are documented here. The format follows
   two-character word is not split before a mark and the last line is never a
   lone character. When libsndfile cannot open an audio file the Chinese says
   why (not an audio file, damaged or cut short, an encoding that is not
-  supported, empty) instead of ending in its English; English keeps its words,
+  supported, empty, a name with no audio extension) and names the file with the
+  path as given, instead of ending in its English; English keeps its words,
   and so does every English line, JSON and pipe. From the redesign of PR #42,
   on this line's own code.
 - **Colour only on marks, frames that follow the stream, narrow terminals.**
