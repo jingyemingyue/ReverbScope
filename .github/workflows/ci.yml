@@ -44,6 +44,8 @@ jobs:
           test -f /tmp/reverbscope-site/assets/theme.css
       - name: No-network imports and no shell-outs under src/
         run: python scripts/check_src_safety.py
+      - name: Every pinned action is a commit its repository has
+        run: python scripts/check_action_pins.py
 
   schemas:
     name: JSON Schemas

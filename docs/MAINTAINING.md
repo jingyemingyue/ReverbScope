@@ -45,7 +45,7 @@ commit SHA with its version in a comment.
 
 | Job | What it proves |
 | --- | --- |
-| Lint and type-check | `ruff check`, `ruff format --check`, strict `mypy` (with the `dev` extra only, so PySide6's stubs are absent: code that type-checks only with them fails here), `scripts/check_doc_links.py`, `scripts/check_cli_docs.py`, the docs-site build, `scripts/check_src_safety.py` (no network imports, no shell-outs under `src/`) |
+| Lint and type-check | `ruff check`, `ruff format --check`, strict `mypy` (with the `dev` extra only, so PySide6's stubs are absent: code that type-checks only with them fails here), `scripts/check_doc_links.py`, `scripts/check_cli_docs.py`, the docs-site build, `scripts/check_src_safety.py` (no network imports, no shell-outs under `src/`), `scripts/check_action_pins.py` (every pinned action is a commit its repository has; the one check that needs the network) |
 | JSON Schemas | the schema tests, and that `reverbscope schema <name>` prints exactly the shipped files |
 | Tests (Ubuntu 3.12 / 3.13 / 3.14, macOS 3.12, Windows 3.12) | the full suite offscreen; on Ubuntu 3.12 with the 85 % branch-coverage gate on `core` and `models`; then the fake-backend Standalone flow and `examples/synthetic_measurement.py` |
 | sdist and wheel | `python -m build`, the wheel installs, `reverbscope --help` runs |
@@ -110,6 +110,7 @@ pip install -e ".[dev,gui]" build
 ruff check . && ruff format --check .
 mypy
 python scripts/check_doc_links.py && python scripts/check_cli_docs.py && python scripts/check_src_safety.py
+python scripts/check_action_pins.py   # needs the network; run it after touching a workflow
 python scripts/build_docs_site.py --out /tmp/reverbscope-site
 QT_QPA_PLATFORM=offscreen pytest --cov=reverbscope.core --cov=reverbscope.models --cov-fail-under=85
 python -m build
@@ -125,6 +126,7 @@ When a check is red:
 | Red check | Usually | Do |
 | --- | --- | --- |
 | Lint and type-check, mypy only | a `type: ignore` that is needed with PySide6 stubs but not without, or the reverse | make the code typecheck in both environments (declare the attribute, return the value) instead of ignoring; `pip install -e ".[dev]"` in a second venv reproduces the CI job |
+| Lint and type-check, action pins | a pin that is 40 hex digits but not a commit of the action's repository (a job would fail at start with "Unable to resolve action"; `pages.yml` did) | the message names file, line and repository; take the commit of the release tag with `git ls-remote --tags https://github.com/<owner>/<repo>` (the peeled `^{}` line for an annotated tag) and put the version in the comment; a network error is retried three times, so a second failure is GitHub being unreachable, not the pin |
 | Lint and type-check, Ruff | formatting | `ruff format .` |
 | Documentation links / CLI examples | a moved file or an example that the parser no longer accepts | fix the document; `check_cli_docs.py` names file, line and parser message |
 | Tests on one OS only | path, encoding or line-ending assumptions | the job log names the test; reproduce with `PYTHONIOENCODING=cp1252` or a Windows path in a unit test, fix the code, keep the test |
