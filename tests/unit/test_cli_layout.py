@@ -217,8 +217,8 @@ def test_lists_in_the_help_and_the_findings_use_the_chinese_comma(run: Call) -> 
 
 # --- A number stays with its unit ---------------------------------------------------------------
 
-#: The units a number is never parted from.
-UNITS = r"(?:dBFS|dB|kHz|Hz|ms|s|m|°C|%)"
+#: The units a number is never parted from, in Latin and in Chinese.
+UNITS = r"(?:dBFS|dB|kHz|Hz|ms|s|m|°C|%|摄氏度|赫兹|倍频程|分贝|[个项次条遍处])"
 CLOSING = "，。、；：！？）」』”’》〉】〕"
 OPENING = "（「『“‘《〈【〔"
 
@@ -229,7 +229,7 @@ def _split_units(text: str) -> list[tuple[str, str]]:
     return [
         (above, below)
         for above, below in pairwise(lines)
-        if re.search(r"\d$", above) and re.match(rf"{UNITS}(?![\w])", below)
+        if re.search(r"\d$", above) and re.match(rf"{UNITS}(?![A-Za-z])", below)
     ]
 
 
@@ -243,12 +243,24 @@ def _split_units(text: str) -> list[tuple[str, str]]:
         "C80 is the same at 80 ms (music). D50 is the share of energy in the first 50 ms.",
         "44.1 · 48 · 88.2 · 96 · 176.4 · 192 kHz · default input",
         "-69.2 dBFS RMS, peak -65.8 dBFS; 343.2 m/s at 20 °C, a 2 m path, RT60 0.51 s",
+        "数据质量：直达声置信度高 · 1 条警告，见“诊断”；未提供气温时按 20 摄氏度计算，共 3 个位置，2 项良好",
     ],
 )
 def test_wrapping_never_parts_a_number_from_its_unit(text: str, width: int) -> None:
     lines = wrap(text, width, first="  ")
     assert _split_units("\n".join(lines)) == []
     assert GLUE not in "".join(lines)  # the glue is only for the line breaks
+
+
+def test_glue_units_holds_a_number_to_its_chinese_counter_too() -> None:
+    from reverbscope.cli.console import glue_units
+
+    assert glue_units("1 条警告，20 摄氏度，3 个位置") == (
+        f"1{GLUE}条警告，20{GLUE}摄氏度，3{GLUE}个位置"
+    )
+    assert glue_units("RT60 and 2 seconds, 5 sec") == "RT60 and 2 seconds, 5 sec"
+    assert glue_units("Band s, a Hz") == "Band s, a Hz"  # no digit before the unit
+    assert glue_units("110 Hz (+11.3 dB)") == f"110{GLUE}Hz (+11.3{GLUE}dB)"
 
 
 @pytest.mark.parametrize("lang", ["zh_CN", "en"])

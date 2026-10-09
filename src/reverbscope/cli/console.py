@@ -317,11 +317,17 @@ def _printable_fields(value: Any) -> Any:
 #: never separates them, and :meth:`Console.fit` writes a plain space.
 GLUE = "\u00a0"
 _UNIT = re.compile(r"(\d) (dBFS|dB|kHz|Hz|ms|s|m|°C|%)(?![\w])")
+#: A Chinese counter or unit that follows a number (``3 个``, ``20 摄氏度``).
+_CJK_UNIT = "摄氏度|赫兹|倍频程|分贝|[个项次条遍处]"
+_COUNTED = re.compile(rf"(\d) ({_CJK_UNIT})")
+_CJK_UNIT_AT = re.compile(_CJK_UNIT)
 
 
 def glue_units(text: str) -> str:
-    """``110 Hz (+11.3 dB)`` with each number held to its unit (and dB to SPL)."""
+    """``110 Hz (+11.3 dB)`` and ``3 个`` with each number held to its unit
+    (and dB to SPL)."""
     text = _UNIT.sub(lambda match: match.group(1) + GLUE + match.group(2), text)
+    text = _COUNTED.sub(lambda match: match.group(1) + GLUE + match.group(2), text)
     return text.replace("dB SPL", "dB" + GLUE + "SPL")
 
 
@@ -447,16 +453,27 @@ def truncate(text: str, width: int, ellipsis: str = "…") -> str:
 
 
 def _tokens(text: str) -> Iterator[str]:
-    """Spaces, Latin words and single wide characters, in order."""
+    """Spaces, Latin words and single wide characters, in order. A number held
+    to a Chinese unit (``3<glue>个``, ``20<glue>摄氏度``) is one token."""
     buffer, kind = "", ""
-    for char in text:
+    skip = 0
+    for index, char in enumerate(text):
+        if skip:
+            skip -= 1
+            continue
         if char.isspace() and char != GLUE:
             this = "space"
         elif char_width(char) == 2:
-            if buffer:
-                yield buffer
+            if buffer.endswith(GLUE):
+                unit = _CJK_UNIT_AT.match(text, index)
+                piece = unit.group() if unit else char
+                skip = len(piece) - 1
+                yield buffer + piece
+            else:
+                if buffer:
+                    yield buffer
+                yield char
             buffer, kind = "", ""
-            yield char
             continue
         else:
             this = "word"
