@@ -75,7 +75,8 @@ src/reverbscope/
     registry.py          built-ins + reverbscope.profiles entry points
   cli/
     main.py              argparse subcommands, errors, exit codes
-    console.py           terminal layout: colour policy, symbols, widths, tables, progress
+    console.py           terminal layout: colour policy, symbols, widths, frames, tables, progress
+    interactive.py       the numbered menu of a bare reverbscope on a terminal
     render.py            every report and message (the GUI's "Full report" panes too)
     report.py            format_report / format_comparison_report: render.py as plain text
   demo.py                reverbscope demo: two simulated positions through the real pipeline

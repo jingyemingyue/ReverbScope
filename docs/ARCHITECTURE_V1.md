@@ -202,7 +202,8 @@ src/reverbscope/
     registry.py          + built-ins + entry-point group "reverbscope.profiles"
   cli/
     main.py              ~ + analyze-ir, compare, session, export, --format, --lang
-    console.py           + terminal layout: colour policy, symbols, widths, tables, progress
+    console.py           + terminal layout: colour policy, symbols, widths, frames, tables, progress
+    interactive.py       + the numbered menu that a bare `reverbscope` opens on a terminal
     render.py            + every report and message (also the GUI's "Full report" panes)
     report.py            ~ plain-text wrappers over render.py (kept for existing imports)
   ui/
@@ -553,9 +554,9 @@ class AudioBackend(Protocol):
 | `session bundle <session> [--no-audio]` | zip for bug reports | M8 |
 | `export <session> --format csv [--out]` | curves and tables through an exporter | S4 |
 | `schema result\|session\|comparison\|project\|sidecar` | print the JSON Schema | M2 |
-| `config [KEY [VALUE]]` | show or change `settings.json` (language, profile, backend, output-folder, copy-recording, developer-tools, theme; `auto` restores a default) | landed |
+| `config [KEY [VALUE]]` | show or change `settings.json` (language, profile, backend, output-folder, copy-recording, developer-tools, theme, style; `auto` restores a default) | landed |
 | `measure --input-channels 1,2 --loopback-channel 2`, `analyze --loopback-channel 1` / `--loopback <wav>` | loopback | M5 |
-| global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never` | global options | M7, M6, M8 |
+| global `--format text\|json`, `--lang <tag>`, `--backend <name>`, `--copy-recording`, `--color auto\|always\|never`, `--style auto\|boxed\|plain` | global options | M7, M6, M8 |
 
 Exit codes: 0 success; 1 a `ReverbScopeError` (message on stderr); 2 usage
 error or a safety refusal (the level acknowledgement); 130 interrupted.
@@ -609,14 +610,23 @@ never cut.
 
 Every command reads the same way: title and context, the result ("At a
 glance" first in an analysis or a comparison), the detail, then numbered
-next steps. A user error is one block (`× error: …`, an explanation, the
-commands to try) with the documented exit code; a traceback appears only with
-`--verbose`. Bare `reverbscope` prints a short home screen on stderr and keeps
-the usage error's exit code 2. `measure` prints its device plan and checks on
-stdout and its progress on stderr (one redrawn line on a terminal, a bar with
-the percentage and the clock that is never wider than the terminal minus one
-column and loses the bar, then the clock, on a narrow one; one stage line
-otherwise; drawn by the waiting thread, never by the audio callback). The
+next steps. A user error is one block (`× error: …` where frames are not
+drawn, the `✗ Error` card where they are; an explanation; the commands to try)
+with the documented exit code; a traceback appears only with `--verbose`. Bare
+`reverbscope` opens the numbered menu (`reverbscope/cli/interactive.py`) when
+stdin and stdout are terminals, `--format json` was not given and
+`REVERBSCOPE_NO_MENU` is unset: each item asks for what its command needs,
+prints the command line it stands for (`console.shell_command` quotes what a
+shell would split or expand; the options given before the command stay in
+front of it) and runs it through `main()` in the same process. Ctrl+C at the
+menu leaves with 130, `q` and the end of input with 0, and nothing is played
+before an answer of `y` to the last question of the measurement item.
+Anywhere else (a pipe, a script) it prints a short home screen on stderr and
+keeps the usage error's exit code 2. `measure` prints its device plan and
+checks on stdout and its progress on stderr (one redrawn line on a terminal, a
+bar with the percentage and the clock that is never wider than the terminal
+minus one column and loses the bar, then the clock, on a narrow one; one stage
+line otherwise; drawn by the waiting thread, never by the audio callback). The
 text layout is not a Tier 1 interface. The GUI's "Full report" panes show the
 same `render.py` reports as plain text; the environment report in the
 developer tools keeps `diagnostics.format_environment_report`.
