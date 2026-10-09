@@ -105,13 +105,6 @@ def rates_text(rates: Sequence[int], console: Console, *, known: bool = True) ->
     return console.sep().join(f"{rate / 1000:g}" for rate in rates) + " kHz"
 
 
-def _noted(c: Console, value: str, note: str) -> str:
-    """``value`` with a muted ``note`` in the brackets of the interface language
-    (``RT60 0.70 s（T30）``, where the text around it has full-width brackets too)."""
-    text = annotated(value, note)
-    return value + c.muted(text[len(value) :]) if text.startswith(value) else text
-
-
 def created_text(created: str) -> str:
     """An ISO time stamp as ``2026-09-27 14:10 +00:00``; other text unchanged."""
     try:
@@ -154,7 +147,7 @@ def _metric_cell(console: Console, metric: DecayMetric) -> str:
     if metric.seconds is not None and metric.validity is Validity.VALID:
         return f"{metric.seconds:.2f} s"
     if metric.seconds is not None and metric.validity is Validity.UNRELIABLE:
-        return console.style(f"{metric.seconds:.2f} s", "yellow") + " " + console.symbol("unsure")
+        return f"{metric.seconds:.2f} s " + console.symbol("unsure")
     if metric.validity is Validity.INSUFFICIENT_RANGE:
         return console.symbol("warn")
     return console.symbol("skip")
@@ -333,7 +326,7 @@ def at_a_glance(c: Console, result: AnalysisResult, findings: Sequence[Finding] 
     if broadband.rt60_estimate_s is not None:
         text = _("RT60 {seconds:.2f} s").format(seconds=broadband.rt60_estimate_s)
         if broadband.rt60_basis:
-            text = _noted(c, text, broadband.rt60_basis)
+            text = annotated(text, broadband.rt60_basis)
         if broadband.edt.seconds is not None and broadband.edt.validity is Validity.VALID:
             text += c.sep() + f"EDT {broadband.edt.seconds:.2f} s"
         row(_("Reverberation"), _topic_status(findings, "reverberation"), text)
@@ -493,7 +486,7 @@ def _glance_rows(
         )
         if table is not None:
             note = _("The status column is left out: widen the terminal to see it.")
-            return [*table, *c.paragraph(note, style=("dim",))]
+            return [*table, *c.paragraph(note)]
     return c.fields(marked, min_label=label_width)
 
 
@@ -572,7 +565,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
         if band.rt60_estimate_s is None:
             rt60 = c.symbol("skip")
         elif band.rt60_basis:
-            rt60 = _noted(c, f"{band.rt60_estimate_s:.2f} s", band.rt60_basis)
+            rt60 = annotated(f"{band.rt60_estimate_s:.2f} s", band.rt60_basis)
         else:
             rt60 = f"{band.rt60_estimate_s:.2f} s"
         span = f"{band.peak_to_noise_db:.1f} dB" if band.peak_to_noise_db is not None else c.dash()
@@ -601,7 +594,7 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
         basis_note = _("RT60 extrapolated from {basis} in every band").format(basis=basis)
     lines += c.table(headers, rows, align="lrrrrr")
     if basis_note:
-        lines += c.paragraph(basis_note, style=("dim",))
+        lines += c.paragraph(basis_note)
     legend = [
         v
         for v in (
@@ -665,7 +658,7 @@ def _energy_cell(c: Console, metric: EnergyMetric) -> str:
     if number is not None and metric.validity is Validity.VALID:
         return number
     if number is not None and metric.validity is Validity.UNRELIABLE:
-        return c.style(number, "yellow") + " " + c.symbol("unsure")
+        return f"{number} " + c.symbol("unsure")
     if metric.validity is Validity.INSUFFICIENT_RANGE:
         return c.symbol("warn")
     return c.symbol("skip")
@@ -765,7 +758,7 @@ def _reflections(c: Console, result: AnalysisResult) -> list[str]:
         lines += c.table([_("Delay"), _("Level")], rows, align="rr")
         hidden = len(refl.reflections) - 10
         if hidden > 0:
-            lines += c.paragraph(_("{n} more in result.json").format(n=hidden), style=("dim",))
+            lines += c.paragraph(_("{n} more in result.json").format(n=hidden))
     for note in refl.notes:
         lines += c.status("info", localize(note))
     return lines
@@ -775,15 +768,12 @@ def _length_text(c: Console, length: PlacementLength) -> str:
     if length.metres is None:
         text = f"{c.symbol('skip')} {_('not determined')}"
         if length.missing_input:
-            text = _noted(c, text, _("add {input}").format(input=length.missing_input))
+            text = annotated(text, _("add {input}").format(input=length.missing_input))
         return text
     value = f"{length.metres:.2f} m"
     if length.input_uncertainty_m is not None:
-        value += c.muted(
-            "  "
-            + _("±{uncertainty:.2f} m from the stated inputs only").format(
-                uncertainty=length.input_uncertainty_m
-            )
+        value += "  " + _("±{uncertainty:.2f} m from the stated inputs only").format(
+            uncertainty=length.input_uncertainty_m
         )
     if length.validity is not Validity.VALID:
         value += "  " + validity_cell(c, length.validity)
@@ -1090,7 +1080,7 @@ def _decay_deltas(c: Console, items: Sequence[MetricDelta]) -> list[str]:
     lines += c.table(headers, rows, align=align, gap=2, title_columns=2)
     if dropped and c.boxed:
         # With frames the reader chose a layout with borders: say what it cost.
-        lines += c.paragraph(_("Δ % is left out: widen the terminal to see it."), style=("dim",))
+        lines += c.paragraph(_("Δ % is left out: widen the terminal to see it."))
     if seen:
         lines.append("")
         lines += _legend(c, sorted(seen, key=list(Validity).index))
@@ -1257,7 +1247,7 @@ def averaged_table(c: Console, averaged: AveragedDecay) -> list[str]:
             "n is the number of sessions averaged in the row; a value followed by "
             "(k) averages only k of them, as the others have no VALID value."
         )
-        lines += c.paragraph(note, style=("dim",))
+        lines += c.paragraph(note)
     return lines
 
 
@@ -1425,7 +1415,7 @@ def render_profiles(
         lines += c.commands(
             [
                 (
-                    item.name + (c.muted(" " + _("(default)")) if item.name == default else ""),
+                    item.name + (" " + _("(default)") if item.name == default else ""),
                     f"{item.title}{c.sep()}{item.description}",
                 )
                 for item in items
@@ -1439,7 +1429,6 @@ def render_profiles(
                 "reverbscope config profile <name> for good."
             ),
             indent=0,
-            style=("dim",),
         )
         return c.fit("\n".join(lines))
     for item in items:
@@ -1455,7 +1444,6 @@ def render_profiles(
             "docs/MEASUREMENT_METHODOLOGY.md §8 lists them for every profile."
         ),
         indent=0,
-        style=("dim",),
     )
     return c.fit("\n".join(lines))
 
@@ -1873,9 +1861,7 @@ def render_devices(console: Console, devices: Sequence[DeviceInfo]) -> str:
     lines.append("")
     lines += _device_rows(console, payload, probed=False)
     lines.append("")
-    lines += console.paragraph(
-        _("Use the number with --input-device / --output-device."), style=("dim",)
-    )
+    lines += console.paragraph(_("Use the number with --input-device / --output-device."))
     return console.fit("\n".join(lines))
 
 
@@ -1983,7 +1969,6 @@ def render_sweep_written(
     )
     lines += c.paragraph(
         _("Start with the monitors turned down and raise them between takes if needed."),
-        style=("dim",),
     )
     return c.fit("\n".join(lines))
 
@@ -2137,7 +2122,7 @@ def render_error(
     if framed is not None:
         lines = framed
     elif c.unicode:
-        lines = c.status("error", text, indent=0, style=("red", "bold"))
+        lines = c.status("error", text, indent=0, style=("bold",))
     else:  # "[ERROR] error:" would say it twice
         lines = c.paragraph(text, indent=0)
     if detail and framed is None:
@@ -2182,7 +2167,7 @@ def _setting_rows(c: Console, rows: Sequence[tuple[str, str, str]]) -> list[str]
         head = "  " + pad(key, key_width) + "  " + c.command(value)
         if stacked:
             out.append(head)
-            out += [c.muted(line) for line in wrap(text, c.width, first="    ")]
+            out += wrap(text, c.width, first="    ")
             continue
         if cell_width(value) > value_width:
             out.append(head)
@@ -2228,15 +2213,13 @@ def render_config(
         for key in config.KEYS
     ]
     table = _setting_rows(c, rows)
-    lines += [c.muted(table[0]), *table[1:]]
+    lines += [c.bold(table[0]), *table[1:]]
     lines.append("")
     lines += c.commands(_config_commands())
     lines.append("")
     lines += c.fields([(_("Settings file"), Verbatim(str(path)))])
     if not exists:
-        lines += c.paragraph(
-            _("Nothing is stored yet: every setting has its default."), style=("dim",)
-        )
+        lines += c.paragraph(_("Nothing is stored yet: every setting has its default."))
     return c.fit("\n".join(lines))
 
 
@@ -2264,7 +2247,7 @@ def render_config_key(console: Console, key: str, settings: UserSettings) -> str
         [(f"reverbscope config {key} {pgettext('metavar', 'VALUE')}", _("change it"))]
     )
     if key == "theme":
-        lines += c.paragraph(_("The theme applies to the desktop app only."), style=("dim",))
+        lines += c.paragraph(_("The theme applies to the desktop app only."))
     return c.fit("\n".join(lines))
 
 
@@ -2383,7 +2366,7 @@ def render_config_saved(
     if commands:
         lines += c.commands(commands, indent=2)
     # One line, whole: a path to copy.
-    lines.append("  " + c.muted(_("Saved in {path}").format(path=path)))
+    lines.append("  " + _("Saved in {path}").format(path=path))
     return c.fit("\n".join(lines))
 
 
@@ -2397,7 +2380,7 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
     """
     c = console
     name = "ReverbScope" + (" " + _("Terminal Edition") if terminal_edition else "")
-    lines = [c.bold(name) + " " + c.muted(version)]
+    lines = [c.bold(name) + " " + version]
     lines += c.paragraph(
         _(
             "Measure and compare the rooms you record in: reverberation, early reflections, "
@@ -2421,7 +2404,6 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
     lines += c.paragraph(
         _("Run {command} for every command and option.").format(command="reverbscope --help"),
         indent=0,
-        style=("dim",),
     )
     from reverbscope.cli.config import language_hint_lines
     from reverbscope.i18n import current_locale
@@ -2429,7 +2411,7 @@ def render_home(console: Console, version: str, *, terminal_edition: bool = Fals
     # Not a paragraph: wrapping split the command to copy across two lines.
     hint = language_hint_lines(current_locale(), c.width)
     if hint and c.can_write("".join(hint)):
-        lines += [c.muted(line) for line in hint]
+        lines += hint
     return c.fit("\n".join(lines))
 
 
@@ -2488,7 +2470,6 @@ def render_demo(
             end=frequency_text(settings.end_hz),
             rate=rate_text(settings.sample_rate),
         ),
-        style=("dim",),
     )
 
     for take, take_findings in zip(run.takes, findings, strict=True):

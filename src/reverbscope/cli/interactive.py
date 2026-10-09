@@ -257,8 +257,8 @@ def run_menu(
         session.say([""])
         width = max(len(item.key) for item in items)
         session.say(
-            [f"  {c.accent(item.key.rjust(width))}  {c.fit(item.title)}" for item in items]
-            + [f"  {c.accent('q'.rjust(width))}  {_('Quit')}"]
+            [f"  {c.bold(item.key.rjust(width))}  {c.fit(item.title)}" for item in items]
+            + [f"  {c.bold('q'.rjust(width))}  {_('Quit')}"]
         )
         try:
             choice = session.ask(pgettext("menu prompt", "Your choice")).lower()

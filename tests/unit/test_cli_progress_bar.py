@@ -115,8 +115,9 @@ def test_the_bar_is_coloured_by_what_it_is_and_green_when_full() -> None:
     assert bar(1.0, 10) == f"{ESC}32m{'━' * 10}{ESC}0m"
     assert bar(0.0, 10) == f"{ESC}36m╸{ESC}0m{ESC}2m{'─' * 9}{ESC}0m"
     line = ProgressLine(_METERS["colour"], None, "Recording", 9.0).line(0.5, 79)
-    # The numbers are not coloured: the percentage is plain, the clock dim.
-    assert f"   50%  {ESC}2m00:04 / 00:09{ESC}0m" in line
+    # The numbers are not coloured and not dim: the percentage and the clock
+    # are plain.
+    assert "   50%  00:04 / 00:09" in line
     plain = ProgressLine(_METERS["unicode"], None, "Recording", 9.0).line(0.5, 79)
     assert ESC not in plain and strip_ansi(line) == plain
 

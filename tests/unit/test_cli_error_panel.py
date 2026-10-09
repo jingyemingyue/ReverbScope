@@ -121,9 +121,11 @@ def test_an_error_is_a_card_and_its_commands_stay_bare_after_it(
         ]
         assert not any(char in "".join(rest) for char in "│╭╰|+")
         if variant in ("colour", "ascii-colour"):
-            # A red border; the mark in the title is red and the title bold.
+            # A red border; the mark in the title is red (the ASCII "x", a letter,
+            # is bold instead) and the title bold.
             assert panel[0].startswith("\x1b[31m") and panel[-1].startswith("\x1b[31m")
-            assert f"\x1b[31m{mark}\x1b[0m \x1b[1m" in panel[0]
+            shown = f"\x1b[1m{mark}\x1b[0m" if mark.isalnum() else f"\x1b[31m{mark}\x1b[0m"
+            assert f"{shown} \x1b[1m" in panel[0]
             assert all(line.startswith("\x1b[31m") for line in panel)
             assert all(line.endswith("\x1b[0m") for line in panel)
             # The text itself is not coloured: only the sides of a line carry escapes.

@@ -201,9 +201,11 @@ def test_the_border_is_coloured_by_the_severity_and_the_text_is_not(
         title = console.readable(
             f"{severity_word(str(finding.severity))}{console.sep()}{topic_text(finding.topic)}"
         )
-        # The mark is in the border's colour, the title is bold.
+        # The mark is in the border's colour, the title is bold; a mark that is
+        # a letter (the "i" of a note) is bold too, never coloured.
         top = lines[index]
-        assert top.startswith(f"{edge}╭─{ESC}0m {edge}{mark}{ESC}0m {ESC}1m{title}{ESC}0m {edge}─")
+        shown = f"{ESC}1m{mark}{ESC}0m" if mark.isalnum() else f"{edge}{mark}{ESC}0m"
+        assert top.startswith(f"{edge}╭─{ESC}0m {shown} {ESC}1m{title}{ESC}0m {edge}─")
         assert top.endswith(f"╮{ESC}0m")
         stop = next(i for i in range(index + 1, len(lines)) if BOTTOM.match(strip_ansi(lines[i])))
         assert lines[stop].startswith(f"{edge}╰") and lines[stop].endswith(f"╯{ESC}0m")

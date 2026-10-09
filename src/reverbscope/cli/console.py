@@ -11,6 +11,14 @@ Rules the rest of the CLI relies on:
   ``TERM=dumb``, and in ``auto`` mode appears only on a terminal. A pipe or a
   file never receives an escape sequence or a carriage return unless colour
   was asked for.
+* **Colour sits on marks, bars and borders only**: never on a run of letters
+  or digits (yellow, green and cyan text has a contrast of 1.7 to 3.5 on the
+  usual light backgrounds, dim text 1.9 to 3.7), and nothing that carries
+  information is dim. Status words, titles, headings, commands and menu
+  numbers are bold in the colour of the terminal's text; labels, notes and
+  descriptions are plain; dim is for decoration (rules, borders, the rest of
+  a progress bar). A mark that is a letter (the ASCII ``[OK]``, ``x``, ``i``)
+  is bold, not coloured.
 * **Colour is never the only signal**: every status carries a symbol and a
   word (``✓`` / ``!`` / ``×`` / ``→``), with ASCII forms (``[OK]`` /
   ``[WARN]`` / ``[ERROR]`` / ``->``) where the stream cannot show the symbols;
@@ -101,7 +109,8 @@ _SYMBOLS: dict[str, tuple[str, str]] = {
 }
 
 #: SGR parameters. Kept to a restrained palette: bold for structure, one
-#: accent, and the three status colours.
+#: accent, and the three status colours, which only ever go on marks, bars and
+#: borders (see the module docstring); dim is for decoration alone.
 _SGR = {
     "bold": "1",
     "dim": "2",
@@ -840,14 +849,28 @@ class Console:
         return self.style(text, "bold")
 
     def muted(self, text: str) -> str:
+        """Secondary text (a note, a label, a description): not styled. Dim
+        text is too faint on many colour schemes and these words carry
+        information; only decoration is dimmed (:meth:`faint`)."""
+        return text
+
+    def faint(self, text: str) -> str:
+        """Decoration (rules, borders, the rest of a progress bar), dimmed."""
         return self.style(text, "dim")
 
     def accent(self, text: str) -> str:
         return self.style(text, "cyan")
 
+    def _marked(self, glyph: str, *names: str) -> str:
+        """A mark in ``names``; one that is a letter (the ASCII ``[OK]``, ``x``,
+        ``i``) is bold instead: coloured letters are hard to read."""
+        if any(char.isalnum() for char in glyph):
+            return self.style(glyph, "bold")
+        return self.style(glyph, *names)
+
     def symbol(self, status: Status) -> str:
         glyph, ascii_form = _SYMBOLS[status]
-        return self.style(glyph if self.unicode else ascii_form, *_STATUS_STYLE[status])
+        return self._marked(glyph if self.unicode else ascii_form, *_STATUS_STYLE[status])
 
     def mark(self, status: Status) -> str:
         """The one-column mark of a badge, unstyled."""
@@ -859,7 +882,7 @@ class Console:
         word (``word``, else the status's own), bold. Colour is only ever on
         the mark: a letter or a digit coloured yellow or green cannot be read
         on a light background."""
-        mark = self.style(self.mark(status), *_STATUS_STYLE[status])
+        mark = self._marked(self.mark(status), *_STATUS_STYLE[status])
         word = self.readable(badge_word(status) if word is None else word)
         return f"{mark} {self.bold(word)}" if word else mark
 
@@ -873,8 +896,8 @@ class Console:
         return "→" if self.unicode else "->"
 
     def command(self, text: str) -> str:
-        """A command to copy: accented, and never wrapped."""
-        return self.style(text, "cyan")
+        """A command to copy: bold, and never wrapped."""
+        return self.bold(text)
 
     def rule_char(self) -> str:
         return "─" if self.unicode else "-"
@@ -891,7 +914,7 @@ class Console:
         if fraction >= 1.0:
             return self.style(done_glyph * size, "green")
         done = min(size - 1, max(0, int(size * fraction)))
-        return self.accent(done_glyph * done + head) + self.muted(rest * (size - done - 1))
+        return self.accent(done_glyph * done + head) + self.faint(rest * (size - done - 1))
 
     def dash(self) -> str:
         """The mark for a value that is not there."""
@@ -911,16 +934,16 @@ class Console:
         the title in a panel as wide as the terminal."""
         text = self.readable(text)
         if not self.boxed:
-            return [self.bold(text), self.muted(self.rule_char() * cell_width(text))]
+            return [self.bold(text), self.faint(self.rule_char() * cell_width(text))]
         left, top, right, side, bottom_left, bottom_right = _PANEL[self.unicode]
         inner = max(1, self.width - 4)
         lines = wrap(text, inner) or [""]
-        out = [self.muted(left + top * (inner + 2) + right)]
+        out = [self.faint(left + top * (inner + 2) + right)]
         for line in lines:
             out.append(
-                self.muted(side) + " " + pad(self.bold(line), inner) + " " + self.muted(side)
+                self.faint(side) + " " + pad(self.bold(line), inner) + " " + self.faint(side)
             )
-        out.append(self.muted(bottom_left + top * (inner + 2) + bottom_right))
+        out.append(self.faint(bottom_left + top * (inner + 2) + bottom_right))
         return out
 
     def frame(
@@ -951,7 +974,7 @@ class Console:
             return None
         left, top, right, side, bottom_left, bottom_right = _PANEL[self.unicode]
         tone_style = _TONE_STYLE[tone]
-        head = self.style(lead.rstrip(), *tone_style) + " " if mark else ""
+        head = self._marked(lead.rstrip(), *tone_style) + " " if mark else ""
         edge = self.style(side, *tone_style)
         return [
             self.style(left + top, *tone_style)
@@ -965,24 +988,24 @@ class Console:
         ]
 
     def section(self, text: str, note: str = "") -> list[str]:
-        """A blank line and a section heading, with an optional muted note;
+        """A blank line and a section heading, bold, with an optional note;
         boxed, the heading sits in a rule across the terminal."""
         text = self.readable(text)
         note = self.readable(note) if note else ""
-        head = self.style(text, "bold", "cyan")
+        head = self.bold(text)
         if self.boxed:
             rule = self.rule_char()
-            lead = self.muted(rule * 2) + " " + head + " "
+            lead = self.faint(rule * 2) + " " + head + " "
             tail = max(0, self.width - cell_width(text) - 4)
-            out = ["", lead + self.muted(rule * tail)]
+            out = ["", lead + self.faint(rule * tail)]
             if note:
-                out += self.paragraph(note, style=("dim",))
+                out += self.paragraph(note)
             return out
         if not note:
             return ["", head]
         if cell_width(text) + 2 + cell_width(note) <= self.width:
-            return ["", head + "  " + self.muted(note)]
-        return ["", head, *self.paragraph(note, style=("dim",))]
+            return ["", head + "  " + note]
+        return ["", head, *self.paragraph(note)]
 
     def paragraph(self, text: str, indent: int = 2, *, style: tuple[str, ...] = ()) -> list[str]:
         """Plain ``text`` wrapped at ``indent``; ``style`` is applied per line."""
@@ -1055,7 +1078,7 @@ class Console:
         for command, text in items:
             if stacked:
                 out.append(margin + self.command(command))
-                out += [self.muted(line) for line in wrap(text, self.width, first=margin + "  ")]
+                out += wrap(text, self.width, first=margin + "  ")
                 continue
             lines = wrap(text, self.width, first=" " * column)
             first = margin + pad(self.command(command), column - indent) + lines[0][column:]
@@ -1086,12 +1109,12 @@ class Console:
             plain = strip_ansi(value)
             styled = value != plain
             if stacked:
-                out.append(margin + self.muted(label))
+                out.append(margin + label)
                 out += _styled_wrap(value, plain, styled, self.width, margin + "  ")
                 continue
-            head = margin + pad(self.muted(label), label_width) + "  "
+            head = margin + pad(label, label_width) + "  "
             if cell_width(label) > label_width:
-                out.append(margin + self.muted(label))
+                out.append(margin + label)
                 head = " " * value_column
             body = _styled_wrap(value, plain, styled, self.width, " " * value_column)
             out.append(head + body[0][value_column:])
@@ -1174,8 +1197,8 @@ class Console:
 
         if self.boxed and indent + sum(w + 3 for w in widths) + 1 <= self.width:
             return self._grid(headers, rows, widths, align, margin)
-        rule = [self.muted(self.rule_char() * width) for width in widths]
-        return [line([self.muted(h) for h in headers]), line(rule), *(line(row) for row in rows)]
+        rule = [self.faint(self.rule_char() * width) for width in widths]
+        return [line([self.bold(h) for h in headers]), line(rule), *(line(row) for row in rows)]
 
     def framed_table(
         self,
@@ -1268,10 +1291,10 @@ class Console:
     ) -> list[str]:
         """The bordered form of :meth:`table`: one space of padding in every cell."""
         g = _GRID[self.unicode]
-        bar = self.muted(g["v"])
+        bar = self.faint(g["v"])
 
         def rule(left: str, middle: str, right: str) -> str:
-            return margin + self.muted(left + middle.join(g["h"] * (w + 2) for w in widths) + right)
+            return margin + self.faint(left + middle.join(g["h"] * (w + 2) for w in widths) + right)
 
         def row_line(cells: Sequence[str]) -> str:
             parts = [
@@ -1282,7 +1305,7 @@ class Console:
 
         return [
             rule(g["tl"], g["t"], g["tr"]),
-            row_line([self.muted(h) for h in headers]),
+            row_line([self.bold(h) for h in headers]),
             rule(g["l"], g["x"], g["r"]),
             *(row_line(row) for row in rows),
             rule(g["bl"], g["b"], g["br"]),
@@ -1393,11 +1416,11 @@ class ProgressLine:
         shown = truncate(label, max(8, width // 2), ellipsis)
         size = min(32, width - cell_width(shown) - pct - clk - 8)
         if size >= 10:
-            return f"  {shown}  {c.meter(fraction, size)}  {percent}  {c.muted(timing)}"
+            return f"  {shown}  {c.meter(fraction, size)}  {percent}  {timing}"
         # No bar: the label takes what the numbers leave.
         room = width - pct - clk - 6
         if room >= 8:
-            return f"  {truncate(label, room, ellipsis)}  {percent}  {c.muted(timing)}"
+            return f"  {truncate(label, room, ellipsis)}  {percent}  {timing}"
         room = width - pct - 4
         if room >= 4:
             return f"  {truncate(label, room, ellipsis)}  {percent}"
