@@ -136,18 +136,21 @@ def test_every_setting_is_stored_as_the_desktop_app_reads_it(
     assert "Saved in" in out or "保存" in out
 
 
-def test_the_output_folder_is_said_to_be_where_new_sessions_and_the_save_dialog_start(
+def test_the_output_folder_row_keeps_the_words_of_every_release(
     home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The menu puts its new sessions there and the desktop app opens its Save
-    dialog there; the screen said only the second."""
+    """``reverbscope config`` piped to a file is the text of the #48 line: the
+    row says "its Save dialog opens here" (its title is "(desktop app)"). The
+    menu proposing new sessions in that folder is in the guides and in the
+    menu's own question, not in this row."""
     (home / "sessions").mkdir()
     monkeypatch.chdir(home)
     assert _run(capsys, "config", "output-folder", "sessions")[0] == 0
     text = " ".join(_run(capsys, "--lang", "en", "config")[1].split())
-    assert "new sessions in the menu and the desktop app's Save dialog start here" in text
+    assert "its Save dialog opens here" in text
+    assert "start here" not in text
     text = _run(capsys, "--lang", "zh_CN", "config")[1].replace(" ", "")
-    assert "菜单中的新会话和桌面应用的保存对话框都从这里开始" in text.replace("\n", "")
+    assert "保存对话框从这里打开" in text.replace("\n", "")
     _run(capsys, "config", "output-folder", "auto")
     assert "not set" in " ".join(_run(capsys, "--lang", "en", "config")[1].split())
 

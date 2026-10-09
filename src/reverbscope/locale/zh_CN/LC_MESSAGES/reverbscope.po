@@ -4445,6 +4445,9 @@ msgstr "已保存到 {path}"
 
 # reverbscope config: output folder
 
+msgid "its Save dialog opens here"
+msgstr "保存对话框从这里打开"
+
 msgid "not set"
 msgstr "未设置"
 
@@ -5964,9 +5967,6 @@ msgstr "{level:g} dBFS 高于 {max_level:g} dBFS。监听音量已经调低了�
 
 msgid "ReverbScope will play a sweep through the default output device at {level:g} dBFS and record the default input. Nothing has been played yet."
 msgstr "ReverbScope 将通过默认输出设备以 {level:g} dBFS 播放扫频，并录制默认输入。现在还没有播放任何声音。"
-
-msgid "new sessions in the menu and the desktop app's Save dialog start here"
-msgstr "菜单中的新会话和桌面应用的保存对话框都从这里开始"
 
 msgid "default"
 msgstr "默认"
