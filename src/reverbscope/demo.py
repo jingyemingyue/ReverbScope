@@ -151,12 +151,21 @@ def demo_sweep_settings(sample_rate: int = 48000) -> SweepSettings:
     )
 
 
+#: Length of the synthetic responses (s): the 110 Hz mode and the low bands
+#: have reached the take's noise floor well before this.
+DEMO_RESPONSE_LENGTH_S = 2.5
+
+
 def demo_room_response(position: DemoPosition, sample_rate: int) -> FloatArray:
     """Synthetic impulse response: direct sound, reflections, diffuse tail, one mode."""
     reflections = [(delay, 10.0 ** (level / 20.0)) for delay, level in position.reflections]
+    # Long enough for the low bands (the mode rings longest) to reach the
+    # recording's noise floor: a real take runs on until the room is quiet,
+    # and a response cut while still decaying is read as cut short.
     rir = make_rir(
         sample_rate,
         rt60_s=position.rt60_s,
+        length_s=DEMO_RESPONSE_LENGTH_S,
         reflections=reflections,
         diffuse_level=0.02,
         seed=position.seed,

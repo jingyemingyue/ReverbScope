@@ -186,14 +186,63 @@ def settling_samples(
     remaining fraction biases a measured level by
     ``10*log10(energy_fraction)`` at most (0.004 dB at the default 0.999).
     """
+    key = (
+        np.ascontiguousarray(sos, dtype=np.float64).tobytes(),
+        int(sample_rate),
+        float(energy_fraction),
+        float(max_s),
+    )
+    cached = _SETTLING.get(key)
+    if cached is not None:
+        return cached
     n = max(16, round(max_s * sample_rate))
-    impulse = np.zeros(n, dtype=np.float64)
-    impulse[0] = 1.0
-    energy = np.cumsum(np.asarray(sosfilt(sos, impulse), dtype=np.float64) ** 2)
-    total = float(energy[-1])
-    if total <= 0.0:
-        return 0
-    return int(np.searchsorted(energy, energy_fraction * total)) + 1
+    # A wide band at a high sample rate has delivered 0.999 of its energy
+    # within a millisecond, but the rest of a 4 s impulse is a denormal tail
+    # and filtering it dominates an analysis at 192 kHz. Grow the impulse
+    # until its second half no longer holds enough energy to move the point
+    # where the cumulative energy crosses the threshold; that point is then
+    # the same one a full-length impulse would give.
+    chunk = max(16, round(0.004 * sample_rate))
+    zi = np.zeros((sos.shape[0], 2), dtype=np.float64)
+    parts: list[FloatArray] = []
+    total = 0.0
+    produced = 0
+    impulse = True
+    while produced < n:
+        count = min(chunk, n - produced)
+        block = np.zeros(count, dtype=np.float64)
+        if impulse:
+            block[0] = 1.0
+            impulse = False
+        y, zi = sosfilt(sos, block, zi=zi)
+        y = np.asarray(y, dtype=np.float64)
+        energy = float(np.dot(y, y))
+        parts.append(y)
+        total += energy
+        produced += count
+        # The unseen tail has to be below both the threshold slack and a
+        # rounding margin before it can no longer move the crossing. The
+        # first block is never enough to decide that.
+        if len(parts) > 1 and energy <= (1.0 - energy_fraction) * total * 1e-6:
+            break
+        chunk = min(max(chunk * 2, 16), n)
+    response = parts[0] if len(parts) == 1 else np.concatenate(parts)
+    cumulative = np.cumsum(response * response)
+    full = float(cumulative[-1]) if cumulative.shape[0] else 0.0
+    settled = 0 if full <= 0.0 else int(np.searchsorted(cumulative, energy_fraction * full)) + 1
+    if len(_SETTLING) >= _SETTLING_CACHE_SIZE:
+        _SETTLING.clear()
+    _SETTLING[key] = settled
+    return settled
+
+
+#: Settling lengths by filter and rate: the same octave-band filters are
+#: asked for by every analysis (the noise levels alone filter a 4 s impulse
+#: per band), so a comparison, a project overview or the desktop app's
+#: second analysis skips that work. The result is a function of the key
+#: alone, so a cached value is the value that would be computed.
+_SETTLING: dict[tuple[bytes, int, float, float], int] = {}
+_SETTLING_CACHE_SIZE = 256
 
 
 def band_level_samples(
