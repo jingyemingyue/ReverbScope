@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -150,10 +151,28 @@ def test_commands_report_an_overlong_home_folder_without_a_traceback(
 ) -> None:
     from reverbscope.cli.main import main
 
-    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / ("h" * 300)))
+    home = tmp_path / ("h" * 300)
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(home))
     capsys.readouterr()
     assert main(["doctor"]) == 0
     assert "ReverbScope environment report" in capsys.readouterr().out
-    assert main(["config"]) == 1
+    # Reading: up to Python 3.13 Path.is_file() raises for a name the file system
+    # refuses and the command reports it; 3.14 answers False and shows the
+    # defaults. Neither ends in a traceback.
+    try:
+        (home / "settings.json").is_file()
+        examining_raises = False
+    except OSError:
+        examining_raises = True
+    code = main(["config"])
     err = capsys.readouterr().err
-    assert "File name too long" in err and "Traceback" not in err
+    assert "Traceback" not in err
+    assert code == (1 if examining_raises else 0)
+    if examining_raises:
+        assert "h" * 40 in err
+    # Writing fails on every version, with the plain error.
+    assert main(["config", "language", "en"]) == 1
+    err = capsys.readouterr().err
+    assert "h" * 40 in err and "Traceback" not in err
+    if sys.platform != "win32":  # Windows words the refusal differently
+        assert "File name too long" in err
