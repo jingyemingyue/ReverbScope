@@ -24,8 +24,8 @@ refuses to invent a number.**
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
 
 **Status: `main` is the development (beta) line; the build to test is the
-0.5.0 release candidate** (`0.5.0rc1`, from the `release/0.5.0` line, on the
-Releases page): a candidate for hardware and DAW validation, not the final
+0.5.0 release candidate** (the newest `0.5.0rc` release, from the `release/0.5.0`
+line, on the Releases page): a candidate for hardware and DAW validation, not the final
 0.5.0, and unsigned. Free, open source, for testing. **This is not the
 hardware release:** nothing has been measured through a real audio interface
 or DAW yet, so treat the numbers as unvalidated
@@ -149,7 +149,7 @@ engineering choice, not a grade. The GUI, the command line and the reports
 are available in English and Simplified Chinese.
 
 Status: **`main` is the beta (development) line and `release/0.5.0` the
-release-candidate line (`0.5.0rc1`)** on the way to 1.0
+release-candidate line (`0.5.0rc` releases)** on the way to 1.0
 ([RELEASE_PLAN.md](docs/RELEASE_PLAN.md) §2a). The DSP core, CLI, GUI, compare,
 loopback, zh-CN catalog, session bundles and both editions' bundles exist and are
 covered by synthetic tests on Linux, macOS and Windows. **Not yet:** any result

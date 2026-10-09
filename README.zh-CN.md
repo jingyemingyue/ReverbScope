@@ -20,7 +20,7 @@
 
 ### **[→ 从 GitHub Releases 下载](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**状态：`main` 是开发线（beta 线）；供测试的构建是 0.5.0 候选测试版**（`0.5.0rc1`，来自
+**状态：`main` 是开发线（beta 线）；供测试的构建是 0.5.0 候选测试版**（最新的 `0.5.0rc` 版本，来自
 `release/0.5.0` 分支，见 Releases 页面）：它是面向真实硬件和 DAW 验证的候选版，不是 0.5.0 正式版，
 且未签名。免费、开源，供测试使用。**这不是硬件验证版本：**
 还没有通过任何真实音频接口或 DAW 做过测量，请把所有数字视为未经验证
@@ -123,11 +123,11 @@ range*），而不是编造一个数字。ReverbScope 有意不提供任何“�
 不适合该类录音时给出一条提示；阈值是工程上的选择，不是评分。界面、命令行和报告都有英文和
 简体中文。
 
-状态：**`main` 是 beta（开发）线，`release/0.5.0` 是候选版线（`0.5.0rc1`）**，正在向 1.0 推进
+状态：**`main` 是 beta（开发）线，`release/0.5.0` 是候选版线（`0.5.0rc` 系列）**，正在向 1.0 推进
 （[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
 DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
 并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
-（硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。Beta 2 不满足发布计划里 0.5.0 的退出条件。当前可用功能的概况：
+（硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。Beta 版本不满足发布计划里 0.5.0 的退出条件。当前可用功能的概况：
 [docs/STATUS.md](docs/STATUS.md)。
 
 ## 帮助测试候选版
