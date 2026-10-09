@@ -5875,3 +5875,6 @@ msgstr "无法打开数据文件夹"
 
 msgid "The question could not be completed ({error}). Back to the menu."
 msgstr "这个问题无法完成（{error}）。回到菜单。"
+
+msgid "The cause of the speed error was not recognised ({kind}). Check the project's sample rate against the test signal's and switch time-stretching off for the clip, then measure again."
+msgstr "无法识别速度误差的原因（{kind}）。请核对工程采样率与测试信号的采样率是否一致，并关闭该片段的时间拉伸，然后重新测量。"
