@@ -199,7 +199,7 @@ def test_a_silent_loopback_channel_is_named_as_the_loopback(
     assert result.warnings == (expected,)
     assert result.decay.broadband.t30.seconds is not None
     activate("zh_CN")
-    assert localize(expected) == "回送声道无声（峰值低于 -80 dBFS）；未应用补偿"
+    assert localize(expected) == "回采声道无声（峰值低于 -80 dBFS）；未应用补偿"
 
 
 def test_path_delay_and_tape_bound(short_sweep: SweepSettings) -> None:

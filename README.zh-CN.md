@@ -10,7 +10,7 @@
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
+![ReverbScope 结果页：一个话筒位置的混响、带交流声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
 
 <sub>内置演示房间的结果页。合成数据：没有测量任何真实房间。</sub>
 
@@ -123,7 +123,7 @@ range*），而不是编造一个数字。ReverbScope 有意不提供任何“�
 
 状态：**`main` 是 beta（开发）线，`release/0.5.0` 是候选版线（`0.5.0rc1`）**，正在向 1.0 推进
 （[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
-DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
+DSP 核心、CLI、GUI、对比、回采（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
 并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
 （硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。Beta 2 不满足发布计划里 0.5.0 的退出条件。当前可用功能的概况：
 [docs/STATUS.md](docs/STATUS.md)。
@@ -142,7 +142,7 @@ DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、�
    **Help → Environment Report for Bug Reports → Probe sample rates**）的内容：
    * 音频接口测试报告（[中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)
      / [English form](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)）：
-     设备列表、44.1 / 48 / 96 kHz 下的完整测量、2 个以上的声道、回送、播放过程中点“停止”、丢帧、
+     设备列表、44.1 / 48 / 96 kHz 下的完整测量、2 个以上的声道、回采、播放过程中点“停止”、丢帧、
      测量过程中拔出设备；
    * DAW 兼容性报告（[中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)
      / [English form](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)）：
@@ -211,10 +211,10 @@ reverbscope show results/ --list
 reverbscope compare results/ position-b/ --same-input-gain
 reverbscope schema result
 
-# 双声道 DAW 导出：话筒 + 电回送
+# 双声道 DAW 导出：话筒 + 电信号回采
 reverbscope analyze --recording take.wav --sweep sweep_48k.wav --channel 0 --loopback-channel 1
 
-# 独立模式：先列出设备，再测量（可选：在输入 2 上接回送）
+# 独立模式：先列出设备，再测量（可选：在输入 2 上接回采）
 reverbscope devices
 reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
@@ -267,7 +267,7 @@ GUI 在两种测量模式中都提供同样的选择。
 | [docs/INSTALLATION.zh-CN.md](docs/INSTALLATION.zh-CN.md) | 在 macOS、Windows、Linux 上下载安装或用 Python 安装；更新、卸载、未签名构建的警告、故障排查；[English](docs/INSTALLATION.md) |
 | [docs/index.md](docs/index.md) | 文档索引 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 包结构、数据流、扩展点 |
-| [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回送、打包、国际化、验证关卡 |
+| [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回采、打包、国际化、验证关卡 |
 | [docs/ARCHITECTURE_V1.zh-CN.md](docs/ARCHITECTURE_V1.zh-CN.md) | v1.0 设计的中文摘要 |
 | [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) | 算法、单位、有效性规则、参考文献 |
 | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | 每一项运行时/开发依赖的许可证和用途 |
@@ -361,7 +361,7 @@ for r in result.reflections.reflections:
 | 程序崩溃、报错或行为异常 | [问题报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug-zh-CN.yml) | [Bug report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug.yml) |
 | 某个数字看起来不对，或有效性标记出乎意料 | [测量问题](https://github.com/jingyemingyue/ReverbScope/issues/new?template=measurement-zh-CN.yml) | [Measurement problem](https://github.com/jingyemingyue/ReverbScope/issues/new?template=measurement.yml) |
 | 对测量、CLI、GUI 或文档的改进建议 | [功能建议](https://github.com/jingyemingyue/ReverbScope/issues/new?template=feature-zh-CN.yml) | [Feature request](https://github.com/jingyemingyue/ReverbScope/issues/new?template=feature.yml) |
-| 用真实声卡或音频接口运行过 ReverbScope | [音频接口测试报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml) | [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml) |
+| 用真实音频接口运行过 ReverbScope | [音频接口测试报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml) | [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml) |
 | 用通用 DAW 模式通过某个 DAW 测量过 | [DAW 兼容性报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml) | [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml) |
 
 可能被滥用的安全问题请不要公开提交 issue，按 [SECURITY.zh-CN.md](SECURITY.zh-CN.md)

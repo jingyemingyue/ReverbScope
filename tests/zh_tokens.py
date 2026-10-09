@@ -135,7 +135,7 @@ def english_words(
     text = _URL.sub(" ", text)
     for phrase in PHRASES:
         text = text.replace(phrase, " ")
-    # The English term glossed once after the Chinese one: 回送（loopback）.
+    # The English term glossed once after the Chinese one: 回采（loopback）.
     text = text.replace("（loopback）", "")
     text = _COMMAND.sub(" ", text)
     return [word for word in _WORD.findall(text) if word not in ALLOWED]

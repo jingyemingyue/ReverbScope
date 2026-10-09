@@ -418,7 +418,7 @@ def test_an_operating_system_error_is_explained_in_chinese(
 def test_chinese_lines_join_their_parts_with_chinese_punctuation(
     zh_cli: None, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """ "扬声器高度: 不可比较", "输入, 输出", "两侧都有：110 Hz; 消失：…": the
+    """ "扬声器高度: 不可对比", "输入, 输出", "两侧都有：110 Hz; 消失：…": the
     renderers joined translated phrases with ASCII colons, commas and
     semicolons that never reached the catalog."""
     from reverbscope.cli.console import Console
@@ -437,7 +437,7 @@ def test_chinese_lines_join_their_parts_with_chinese_punctuation(
         for name in ("source_height_m", "ceiling_height_m")
     ]
     text = "\n".join(_delta_statuses(Console(), deltas))
-    assert "扬声器高度、" in text and "：不可比较" in text
+    assert "扬声器高度、" in text and "：不可对比" in text
     assert not re.search(r"[\u4e00-\u9fff][,;:] ", text), text
 
 

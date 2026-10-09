@@ -192,7 +192,7 @@ msgid "These two sessions cannot be compared: {notes}"
 msgstr "这两个会话无法对比：{notes}"
 
 msgid "Broadband estimated RT60 went from {baseline_s:.2f} s to {candidate_s:.2f} s ({delta_percent:+.1f} % of the baseline, {direction}). ISO 3382-1 quotes a just-noticeable difference for T of about {jnd_percent:g} %; a single pair of positions is not enough to call the change significant."
-msgstr "宽带估计 RT60 从 {baseline_s:.2f} s 变为 {candidate_s:.2f} s（相对基线 {delta_percent:+.1f} %，{direction}）。ISO 3382-1 给出的 T 的刚可察觉差约为 {jnd_percent:g} %；仅一对位置不足以把该变化称为显著。"
+msgstr "宽带估计 RT60 从 {baseline_s:.2f} s 变为 {candidate_s:.2f} s（相对基准 {delta_percent:+.1f} %，{direction}）。ISO 3382-1 给出的 T 的刚可察觉差约为 {jnd_percent:g} %；仅一对位置不足以把该变化称为显著。"
 
 msgid "Against this profile's decay thresholds the broadband RT60 moved from '{before}' ({baseline_s:.2f} s) to '{after}' ({candidate_s:.2f} s)."
 msgstr "按此配置的衰减阈值，宽带 RT60 从“{before}”（{baseline_s:.2f} s）变为“{after}”（{candidate_s:.2f} s）。"
@@ -207,7 +207,7 @@ msgid "Background noise went from {baseline_dbfs:.1f} dBFS to {candidate_dbfs:.1
 msgstr "在已声明输入增益不变的前提下，本底噪声从 {baseline_dbfs:.1f} dBFS 变为 {candidate_dbfs:.1f} dBFS（{delta_db:+.1f} dB）。"
 
 msgid "The direct sound could not be identified with confidence, so delays and levels of reflections may be off. Check that the correct reference sweep was used, lower the playback level if the loudspeaker distorts, and measure again."
-msgstr "无法可靠识别直达声，反射的延时和电平可能不准。请确认使用了正确的参考扫频信号；若扬声器失真请降低播放电平，然后重测。"
+msgstr "无法可靠识别直达声，反射的延迟和电平可能不准。请确认使用了正确的参考扫频信号；若扬声器失真请降低播放电平，然后重测。"
 
 msgid "The sweep was generated at {generated_rate_hz} Hz but played at {played_rate_hz} Hz: the DAW project runs at another sample rate and did not convert the file. Generate the sweep at the project's sample rate, or let the DAW convert it on import, and measure again."
 msgstr "扫频信号按 {generated_rate_hz} Hz 生成，却以 {played_rate_hz} Hz 播放：DAW 工程的采样率不同，且没有对文件做采样率转换。请按工程采样率生成扫频信号，或让 DAW 在导入时转换采样率，然后重测。"
@@ -279,7 +279,7 @@ msgid "Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs 
 msgstr "低频比中频衰减更慢（{low_max:.2f} s 对 {mid_mean:.2f} s），会让旁白发浑。低音陷阱或换位置会有帮助。"
 
 msgid "Mains hum components at multiples of {base_hz:.0f} Hz were detected in the quiet part of the recording. Check grounding, cables, dimmers and power supplies before treating the room."
-msgstr "在录音的安静段检测到 {base_hz:.0f} Hz 倍频的市电哼声。处理房间之前先检查接地、线材、调光器和电源。"
+msgstr "在录音的安静段检测到 {base_hz:.0f} Hz 倍频的交流声。处理房间之前先检查接地、线材、调光器和电源。"
 
 msgid "Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (uncalibrated digital level, not dB SPL). Compare it with the level of the sources you record at the same gain."
 msgstr "{segment}段的本底噪声为 {rms_dbfs:.1f} dBFS RMS（未校准的数字电平，不是 dB SPL）。请与同一增益下要录的声源电平比较。"
@@ -288,7 +288,7 @@ msgid "Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (unc
 msgstr "{segment}段的本底噪声为 {rms_dbfs:.1f} dBFS RMS（未校准的数字电平，不是 dB SPL）。人声轨道常被压缩，会把这层噪声抬上来；请与同一增益下链路噪声比较。"
 
 msgid "Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (uncalibrated digital level, not dB SPL). Voice-over is usually quiet and close-miked, so this floor will be audible under the narration."
-msgstr "{segment}段的本底噪声为 {rms_dbfs:.1f} dBFS RMS（未校准的数字电平，不是 dB SPL）。旁白通常轻声近麦，这层底噪会在叙述下面可闻。"
+msgstr "{segment}段的本底噪声为 {rms_dbfs:.1f} dBFS RMS（未校准的数字电平，不是 dB SPL）。旁白通常轻声近麦，这层噪声会在叙述下面可闻。"
 
 msgid "Potential low-frequency resonances around {listed}: these frequencies stand out in the response and ring longer than their surroundings. Measure one or two other positions to see whether they follow the room or the position."
 msgstr "可能的低频共振约在 {listed}：这些频率在响应中突出，余振也比周围更长。再测一两个位置，看它们跟房间走还是跟位置走。"
@@ -411,16 +411,16 @@ msgid "Compare two sessions. Select two rows, or pick each path."
 msgstr "对比两个会话。选中两行，或分别填写路径。"
 
 msgid "Baseline session"
-msgstr "基线会话"
+msgstr "基准会话"
 
 msgid "Candidate session"
-msgstr "候选会话"
+msgstr "对比会话"
 
 msgid "Baseline..."
-msgstr "基线…"
+msgstr "基准…"
 
 msgid "Candidate..."
-msgstr "候选…"
+msgstr "对比项…"
 
 msgid "Input gain unchanged"
 msgstr "输入增益未变"
@@ -441,10 +441,10 @@ msgid "Metric"
 msgstr "指标"
 
 msgid "Baseline"
-msgstr "基线"
+msgstr "基准"
 
 msgid "Candidate"
-msgstr "候选"
+msgstr "对比项"
 
 msgid "Delta"
 msgstr "差值"
@@ -453,19 +453,19 @@ msgid "Status"
 msgstr "状态"
 
 msgid "Baseline (ms / dB)"
-msgstr "基线（ms / dB）"
+msgstr "基准（ms / dB）"
 
 msgid "Candidate (ms / dB)"
-msgstr "候选（ms / dB）"
+msgstr "对比项（ms / dB）"
 
 msgid "Δ level (dB)"
 msgstr "电平差（dB）"
 
 msgid "Baseline (Hz)"
-msgstr "基线（Hz）"
+msgstr "基准（Hz）"
 
 msgid "Candidate (Hz)"
-msgstr "候选（Hz）"
+msgstr "对比项（Hz）"
 
 msgid "Decay distinguishable"
 msgstr "衰减可区分"
@@ -477,7 +477,7 @@ msgid "Cannot compare"
 msgstr "无法对比"
 
 msgid "Frequency-response difference (candidate − baseline)"
-msgstr "频率响应差值（候选 − 基线）"
+msgstr "频率响应差值（对比项 − 基准）"
 
 msgid "Mean absolute difference per octave: {bits}"
 msgstr "每个倍频程的平均绝对差：{bits}"
@@ -570,7 +570,7 @@ msgid "Microphone channel"
 msgstr "话筒声道"
 
 msgid "Loopback channel"
-msgstr "回送（loopback）声道"
+msgstr "回采（loopback）声道"
 
 msgid "Step 4 - Analyze"
 msgstr "步骤 4 — 分析"
@@ -672,7 +672,7 @@ msgid "Input channel (mic)"
 msgstr "输入声道（话筒）"
 
 msgid "Loopback channel (1-based)"
-msgstr "回送（loopback）声道（从 1 起）"
+msgstr "回采（loopback）声道（从 1 起）"
 
 msgid "Output channel (speaker)"
 msgstr "输出声道（扬声器）"
@@ -824,10 +824,10 @@ msgid "recording profile that shapes the interpretation (default: user settings)
 msgstr "影响解读的录音配置（默认：用户设置）"
 
 msgid "separate loopback WAV from the same take (same sample rate)"
-msgstr "同一次录音的单独回送（loopback）WAV（相同采样率）"
+msgstr "同一次录音的单独回采（loopback）WAV（相同采样率）"
 
 msgid "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
-msgstr "回送声道（从 0 起）：给出 --loopback 时指该文件中的声道，否则指录音中的声道"
+msgstr "回采声道（从 0 起）：给出 --loopback 时指该文件中的声道，否则指录音中的声道"
 
 msgid "write the ESS test signal WAV (+ JSON sidecar)"
 msgstr "写出 ESS 测试信号 WAV（及 JSON 附属文件）"
@@ -872,7 +872,7 @@ msgid "output channel, 1-based (default 1)"
 msgstr "输出声道，从 1 起（默认 1）"
 
 msgid "1-based loopback input channel (recorded with the microphone)"
-msgstr "回送输入声道，从 1 起（与话筒一同录制）"
+msgstr "回采输入声道，从 1 起（与话筒一同录制）"
 
 msgid "required for levels above -12 dBFS; confirms the monitor level was set low first"
 msgstr "高于 -12 dBFS 必须使用；确认已先把监听开低"
@@ -896,10 +896,10 @@ msgid "compare two saved sessions"
 msgstr "对比两个已保存的会话"
 
 msgid "baseline session directory or session.json"
-msgstr "基线会话目录或 session.json"
+msgstr "基准会话目录或 session.json"
 
 msgid "candidate session directory or session.json"
-msgstr "候选会话目录或 session.json"
+msgstr "对比会话目录或 session.json"
 
 msgid "write comparison.json here (file or directory)"
 msgstr "把 comparison.json 写到这里（文件或目录）"
@@ -908,7 +908,7 @@ msgid "declare that the input gain was unchanged (required for a VALID noise del
 msgstr "声明输入增益未变（要让本底噪声差值有效，必须声明）"
 
 msgid "recording profile for comparison findings (default: the candidate session's)"
-msgstr "对比解读所用的录音配置（默认：候选会话的配置）"
+msgstr "对比解读所用的录音配置（默认：对比会话的配置）"
 
 msgid "print a shipped JSON Schema"
 msgstr "打印随附的 JSON Schema"
@@ -1126,7 +1126,7 @@ msgid "Low frequencies decay more slowly than the mid range ({low_max:.2f} s vs 
 msgstr "低频比中频衰减更慢（{low_max:.2f} s 对 {mid_mean:.2f} s），在此位置房间声会偏重低频。低音陷阱或换一个话筒位置会有帮助。"
 
 msgid "Background noise in the {segment} segment is {rms_dbfs:.1f} dBFS RMS (uncalibrated digital level, not dB SPL). A room microphone captures everything, so this floor is part of what you record; it is audible whenever the source pauses."
-msgstr "{segment}段的本底噪声为 {rms_dbfs:.1f} dBFS RMS（未校准的数字电平，不是 dB SPL）。房间话筒什么都会拾到，这层底噪就是录音的一部分；声源一停顿就能听到。"
+msgstr "{segment}段的本底噪声为 {rms_dbfs:.1f} dBFS RMS（未校准的数字电平，不是 dB SPL）。房间话筒什么都会拾到，这层噪声就是录音的一部分；声源一停顿就能听到。"
 
 msgid "Potential low-frequency resonances around {listed}: these frequencies ring longer than their surroundings, so the room sound will be uneven there. Measure one or two other positions to see whether they follow the room."
 msgstr "可能的低频共振约在 {listed}：这些频率的余振比周围更长，房间声在这些频率上会不均匀。再测一两个位置，看它们是否跟房间走。"
@@ -1184,7 +1184,7 @@ msgid "Open a session.json or a folder that contains one."
 msgstr "打开 session.json，或包含它的文件夹。"
 
 msgid "Pick two saved sessions and compare their metrics."
-msgstr "选择两个已保存的会话并比较其指标。"
+msgstr "选择两个已保存的会话并对比其指标。"
 
 msgid "Four steps: generate the test signal, play and record it in your DAW, import the recording, analyse. ReverbScope never talks to the DAW."
 msgstr "四个步骤：生成测试信号、在 DAW 中播放并录音、导入录音、分析。ReverbScope 从不与 DAW 通信。"
@@ -1316,7 +1316,7 @@ msgid "measurement"
 msgstr "测量"
 
 msgid "comparison"
-msgstr "比较"
+msgstr "对比"
 
 msgid "print an environment report for bug reports and debugging"
 msgstr "打印用于问题报告和调试的环境报告"
@@ -1391,7 +1391,7 @@ msgid "Open &Data Folder"
 msgstr "打开数据文件夹(&D)"
 
 msgid "How ReverbScope talks to your interface: WASAPI, ASIO, WDM-KS, DirectSound or MME on Windows, Core Audio on macOS, ALSA or JACK on Linux. Input and output must use the same one. \"System default\" uses the devices your system uses; a star marks the entry recommended for each device."
-msgstr "ReverbScope 与声卡通信的方式：Windows 上为 WASAPI、ASIO、WDM-KS、DirectSound 或 MME，macOS 上为 Core Audio，Linux 上为 ALSA 或 JACK。输入和输出必须使用同一种。“系统默认”使用系统当前的设备；星号标出每个设备的推荐条目。"
+msgstr "ReverbScope 与音频接口通信的方式：Windows 上为 WASAPI、ASIO、WDM-KS、DirectSound 或 MME，macOS 上为 Core Audio，Linux 上为 ALSA 或 JACK。输入和输出必须使用同一种。“系统默认”使用系统当前的设备；星号标出每个设备的推荐条目。"
 
 msgid "Advanced audio options (developer edition)"
 msgstr "高级音频选项（开发者版）"
@@ -1436,10 +1436,10 @@ msgid "Theme"
 msgstr "主题"
 
 msgid "Compare two sessions"
-msgstr "比较两个会话"
+msgstr "对比两个会话"
 
 msgid "Every difference carries a validity: ReverbScope says when two takes cannot be compared rather than printing a delta."
-msgstr "每个差值都带有有效性：两次测量无法比较时，ReverbScope 会明确说明，而不是给出一个差值。"
+msgstr "每个差值都带有有效性：两次测量无法对比时，ReverbScope 会明确说明，而不是给出一个差值。"
 
 msgid "Metrics"
 msgstr "指标"
@@ -1490,7 +1490,7 @@ msgid "Background noise, RMS"
 msgstr "本底噪声，RMS"
 
 msgid "Loopback path delay"
-msgstr "回送路径延迟"
+msgstr "回采路径延迟"
 
 msgid "Broadband"
 msgstr "宽带"
@@ -1502,7 +1502,7 @@ msgid "outside the sweep's range"
 msgstr "超出激励范围"
 
 msgid "not comparable"
-msgstr "不可比较"
+msgstr "不可对比"
 
 msgid "Time after direct sound (ms)"
 msgstr "直达声之后的时间（ms）"
@@ -1529,7 +1529,7 @@ msgid "1/{fraction}-octave smoothed"
 msgstr "1/{fraction} 倍频程平滑"
 
 msgid "interface (loopback)"
-msgstr "音频接口（回送）"
+msgstr "音频接口（回采）"
 
 msgid "Frequency (Hz)"
 msgstr "频率（Hz）"
@@ -1770,11 +1770,11 @@ msgstr "路径"
 
 msgctxt "metavar"
 msgid "baseline"
-msgstr "基线"
+msgstr "基准"
 
 msgctxt "metavar"
 msgid "candidate"
-msgstr "候选"
+msgstr "对比项"
 
 msgctxt "metavar"
 msgid "project"
@@ -1797,7 +1797,7 @@ msgstr "未声明两次的输入增益相同"
 
 msgctxt "diagnostic"
 msgid "placement heights are compared only when both results are tier 2"
-msgstr "只有两个结果都达到档位 2 时才比较摆位高度"
+msgstr "只有两个结果都达到档位 2 时才对比摆位高度"
 
 msgctxt "diagnostic"
 msgid "ISO 3382-1 quotes a just-noticeable difference for reverberation time of about {jnd_percent:g} % (clause not verified against the standard text). A change is not called significant from a single pair of positions."
@@ -1805,7 +1805,7 @@ msgstr "ISO 3382-1 给出的混响时间刚可察觉差约为 {jnd_percent:g} %�
 
 msgctxt "diagnostic"
 msgid "sample rates differ ({baseline_rate} Hz vs {candidate_rate} Hz); comparison is still allowed"
-msgstr "采样率不同（{baseline_rate} Hz 对 {candidate_rate} Hz）；仍允许比较"
+msgstr "采样率不同（{baseline_rate} Hz 对 {candidate_rate} Hz）；仍允许对比"
 
 msgctxt "diagnostic"
 msgid "sweep durations differ ({baseline_s} s vs {candidate_s} s)"
@@ -1821,11 +1821,11 @@ msgstr "一方或双方没有数值"
 
 msgctxt "diagnostic"
 msgid "candidate minus baseline (dB) on a shared log grid inside the common excitation band"
-msgstr "候选减基线（dB），在共同激励频带内的同一对数频率网格上计算"
+msgstr "对比项减基准（dB），在共同激励频带内的同一对数频率网格上计算"
 
 msgctxt "diagnostic"
 msgid "early reflections are not compared unless both sides have high direct-sound confidence (baseline {baseline_confidence}, candidate {candidate_confidence})"
-msgstr "只有两侧的直达声置信度都为高时才比较早期反射（基线 {baseline_confidence}，候选 {candidate_confidence}）"
+msgstr "只有两侧的直达声置信度都为高时才对比早期反射（基准 {baseline_confidence}，对比项 {candidate_confidence}）"
 
 msgctxt "diagnostic"
 msgid "frequency-response curves are missing on one or both sides (--no-curves)"
@@ -1833,7 +1833,7 @@ msgstr "一方或双方缺少频率响应曲线（--no-curves）"
 
 msgctxt "diagnostic"
 msgid "one or both results have no excitation band, so they cannot be compared"
-msgstr "一方或双方结果没有激励频带，因此无法比较"
+msgstr "一方或双方结果没有激励频带，因此无法对比"
 
 msgctxt "diagnostic"
 msgid "the excitation bands do not overlap"
@@ -1841,19 +1841,19 @@ msgstr "两个结果的激励频带没有重叠"
 
 msgctxt "diagnostic"
 msgid "baseline {validity} ({reason})"
-msgstr "基线：{validity}（{reason}）"
+msgstr "基准：{validity}（{reason}）"
 
 msgctxt "diagnostic"
 msgid "baseline {validity}"
-msgstr "基线：{validity}"
+msgstr "基准：{validity}"
 
 msgctxt "diagnostic"
 msgid "candidate {validity} ({reason})"
-msgstr "候选：{validity}（{reason}）"
+msgstr "对比项：{validity}（{reason}）"
 
 msgctxt "diagnostic"
 msgid "candidate {validity}"
-msgstr "候选：{validity}"
+msgstr "对比项：{validity}"
 
 msgctxt "diagnostic"
 msgid "metrics are not both VALID"
@@ -1873,15 +1873,15 @@ msgstr "一方或双方缺少 RT60 估计值（RT60 估计值从不取自无效�
 
 msgctxt "diagnostic"
 msgid "band missing from the baseline"
-msgstr "基线结果中没有该频带"
+msgstr "基准结果中没有该频带"
 
 msgctxt "diagnostic"
 msgid "path delay is compared only when both results used a compensated loopback"
-msgstr "只有两个结果都使用了经过补偿的回送（loopback）时才比较路径延迟"
+msgstr "只有两个结果都使用了经过补偿的回采（loopback）时才对比路径延迟"
 
 msgctxt "diagnostic"
 msgid "band missing from the candidate"
-msgstr "候选结果中没有该频带"
+msgstr "对比项结果中没有该频带"
 
 msgctxt "diagnostic"
 msgid "ISO 3382-2:2008, 4.3.1, Table 1, read from the standard's preview pages (cdn.standards.iteh.ai sample of ISO 3382-2:2008) on 2026-09-24; footnotes not implemented"
@@ -1970,7 +1970,7 @@ msgstr "仅由所给的卷尺、温度和峰位置不确定度传播得出；不
 
 msgctxt "diagnostic"
 msgid "relative dB (0 dB = flat loopback of the reference sweep)"
-msgstr "相对 dB（0 dB = 参考扫频的平直回送）"
+msgstr "相对 dB（0 dB = 参考扫频的平直回采）"
 
 msgctxt "diagnostic"
 msgid "uncalibrated: levels are dBFS, not dB SPL"
@@ -2022,10 +2022,10 @@ msgid "each input channel may be listed once"
 msgstr "每个输入声道只能列出一次"
 
 msgid "the loopback channel is 1-based and must be >= 1"
-msgstr "回送声道从 1 起编号，必须 >= 1"
+msgstr "回采声道从 1 起编号，必须 >= 1"
 
 msgid "input {channel} cannot be both the microphone and the loopback; record the loopback on a different input"
-msgstr "输入 {channel} 不能同时用作话筒和回送；请把回送录到另一个输入上"
+msgstr "输入 {channel} 不能同时用作话筒和回采；请把回采录到另一个输入上"
 
 msgid "playback level must be <= 0 dBFS"
 msgstr "播放电平必须 <= 0 dBFS"
@@ -2142,7 +2142,7 @@ msgid "no audio device found; Universal DAW Mode still works"
 msgstr "未找到音频设备；通用 DAW 模式仍然可用"
 
 msgid "playback ({output}) and recording ({input}) use different devices, which run on separate sample clocks; their drift smears the measurement. Use one interface for both, or an aggregate device with drift correction (macOS), and check the result with a loopback"
-msgstr "播放（{output}）和录制（{input}）使用不同的设备，它们各自运行在独立的采样时钟上，时钟漂移会抹平测量结果。请用同一个音频接口完成播放和录制，或使用带漂移校正的聚合设备（macOS），并用回送检查结果"
+msgstr "播放（{output}）和录制（{input}）使用不同的设备，它们各自运行在独立的采样时钟上，时钟漂移会抹平测量结果。请用同一个音频接口完成播放和录制，或使用带漂移校正的聚合设备（macOS），并用回采检查结果"
 
 msgid "input channel {channel} does not exist on {device} ({count} input channel(s))"
 msgstr "{device} 上没有输入声道 {channel}（共 {count} 个输入声道）"
@@ -2378,11 +2378,11 @@ msgstr "削波检查"
 
 msgctxt "file record"
 msgid "loopback"
-msgstr "回送"
+msgstr "回采"
 
 msgctxt "file record"
 msgid "hum"
-msgstr "市电哼声"
+msgstr "交流声"
 
 msgctxt "file record"
 msgid "noise"
@@ -2701,15 +2701,15 @@ msgstr "混叠失真（折叠回来的 {orders} 次谐波，相对直达声 {lev
 # Stored by ReverbScope 0.5 and earlier in result.json, counted from 0; still shown translated.
 msgctxt "diagnostic"
 msgid "recording has {count} channels; channel {channel} (highest RMS excluding loopback channel {loopback_channel}) was analysed"
-msgstr "录音有 {count} 个声道；已分析从 0 开始编号的声道 {channel}（除回送声道 {loopback_channel} 外 RMS 最高）"
+msgstr "录音有 {count} 个声道；已分析从 0 开始编号的声道 {channel}（除回采声道 {loopback_channel} 外 RMS 最高）"
 
 msgctxt "diagnostic"
 msgid "the tape-measured loudspeaker distance ({distance_m:.2f} m) exceeds the loopback path-delay bound ({bound_m:.2f} m); the tape cannot be longer than what sound had time to travel"
-msgstr "卷尺测得的扬声器距离（{distance_m:.2f} m）超过了由回送路径延迟得出的上限（{bound_m:.2f} m）；卷尺量得的距离不可能比声音实际传播的距离更长"
+msgstr "卷尺测得的扬声器距离（{distance_m:.2f} m）超过了由回采路径延迟得出的上限（{bound_m:.2f} m）；卷尺量得的距离不可能比声音实际传播的距离更长"
 
 msgctxt "diagnostic"
 msgid "loopback compensation applied: the frequency response is relative to the interface return"
-msgstr "已应用回送补偿：频率响应以音频接口的回送信号为参考"
+msgstr "已应用回采补偿：频率响应以音频接口的回采信号为参考"
 
 msgctxt "diagnostic"
 msgid "the recording contains {passes} sweep passes (pulses within {pass_level_db:g} dB of the strongest); pass {order}, starting at {start_s:.2f} s, was analysed and the others were ignored. Record a single pass for a clean measurement"
@@ -2830,35 +2830,35 @@ msgstr "探测窗口之前没有可供比较的内容"
 
 msgctxt "diagnostic"
 msgid "relative dB (0 dB = the interface loopback)"
-msgstr "相对 dB（0 dB = 音频接口回送）"
+msgstr "相对 dB（0 dB = 音频接口回采）"
 
 msgctxt "diagnostic"
 msgid "the loopback channel clips; compensation is not applied"
-msgstr "回送声道削波；未应用补偿"
+msgstr "回采声道削波；未应用补偿"
 
 msgctxt "diagnostic"
 msgid "the loopback peak does not stand far enough above the content before it (confidence medium); the channel may be a microphone, not an electrical return. Compensation is not applied"
-msgstr "回送峰值没有明显高出其之前的内容（置信度中等）；该声道可能是话筒，而不是电信号回送。未应用补偿"
+msgstr "回采峰值没有明显高出其之前的内容（置信度中等）；该声道可能是话筒，而不是电信号回采。未应用补偿"
 
 msgctxt "diagnostic"
 msgid "the loopback peak does not stand far enough above the content before it (confidence low); the channel may be a microphone, not an electrical return. Compensation is not applied"
-msgstr "回送峰值没有明显高出其之前的内容（置信度低）；该声道可能是话筒，而不是电信号回送。未应用补偿"
+msgstr "回采峰值没有明显高出其之前的内容（置信度低）；该声道可能是话筒，而不是电信号回采。未应用补偿"
 
 msgctxt "diagnostic"
 msgid "the loopback recording is too short after the peak to check that the return is electrical; compensation is not applied"
-msgstr "回送录音在峰值之后太短，无法确认回送是电信号；未应用补偿"
+msgstr "回采录音在峰值之后太短，无法确认回采是电信号；未应用补偿"
 
 msgctxt "diagnostic"
 msgid "the loopback still carries energy {settle_ms:.1f} ms after the peak (late peak {drop_db:.1f} dB down); that looks like a room, not a cable. Compensation is not applied"
-msgstr "回送在峰值之后 {settle_ms:.1f} ms 仍有能量（后续峰值仅低 {drop_db:.1f} dB）；这更像房间而不是线缆。未应用补偿"
+msgstr "回采在峰值之后 {settle_ms:.1f} ms 仍有能量（后续峰值仅低 {drop_db:.1f} dB）；这更像房间而不是线缆。未应用补偿"
 
 msgctxt "diagnostic"
 msgid "loopback settled in {settle_ms:.1f} ms (late peak {drop_db:.1f} dB down); using a {fir_samples}-sample interface FIR around the peak"
-msgstr "回送在 {settle_ms:.1f} ms 内稳定（后续峰值低 {drop_db:.1f} dB）；使用峰值附近 {fir_samples} 个采样的音频接口 FIR"
+msgstr "回采在 {settle_ms:.1f} ms 内稳定（后续峰值低 {drop_db:.1f} dB）；使用峰值附近 {fir_samples} 个采样的音频接口 FIR"
 
 msgctxt "diagnostic"
 msgid "the microphone peak precedes the loopback peak by {lead_ms:.2f} ms; the path-delay bound is not reported"
-msgstr "话筒峰值比回送峰值早 {lead_ms:.2f} ms；不报告路径延迟上限"
+msgstr "话筒峰值比回采峰值早 {lead_ms:.2f} ms；不报告路径延迟上限"
 
 msgid "recording is at {sample_rate} Hz but the sweep cannot be regenerated at that rate: {error}"
 msgstr "录音采样率为 {sample_rate} Hz，但扫频无法按该采样率重新生成：{error}"
@@ -2876,7 +2876,7 @@ msgid "the recording starts after the swept range; no part of the sweep can be a
 msgstr "录音在扫频范围结束之后才开始；扫频的任何部分都无法分析"
 
 msgid "the loopback file and the recording have different sample rates; export both from the same take"
-msgstr "回送文件与录音的采样率不同；请从同一次录音中导出两者"
+msgstr "回采文件与录音的采样率不同；请从同一次录音中导出两者"
 
 msgid "loopback_channel {channel} does not exist (recording has {count} channel(s))"
 msgstr "loopback_channel {channel} 不存在（录音只有 {count} 个声道）"
@@ -2885,7 +2885,7 @@ msgid "loopback_channel must differ from the microphone channel"
 msgstr "loopback_channel 必须与话筒声道不同"
 
 msgid "the loopback file and the recording differ in length by more than {tolerance_ms:.0f} ms; export both from the same take"
-msgstr "回送文件与录音的长度相差超过 {tolerance_ms:.0f} ms；请从同一次录音中导出两者"
+msgstr "回采文件与录音的长度相差超过 {tolerance_ms:.0f} ms；请从同一次录音中导出两者"
 
 msgid "impulse response is shorter than 50 ms"
 msgstr "脉冲响应短于 50 ms"
@@ -3045,7 +3045,7 @@ msgstr "安静段低于 {floor:g} dBFS（{level:.0f} dBFS）：这低于 24 位�
 
 msgctxt "diagnostic"
 msgid "quiet segment is too short ({duration:.2f} s) for mains-hum detection"
-msgstr "安静段太短（{duration:.2f} s），无法检测电源嗡声"
+msgstr "安静段太短（{duration:.2f} s），无法检测交流声"
 
 msgctxt "diagnostic"
 msgid "quiet segment taken from the end of the recording; it may contain late reverberation, so the noise floor may be overestimated"
@@ -3416,7 +3416,7 @@ msgid "Libraries"
 msgstr "依赖库"
 
 msgid "Loopback"
-msgstr "回送"
+msgstr "回采"
 
 msgid "Low-frequency resonances"
 msgstr "低频共振"
@@ -3434,7 +3434,7 @@ msgid "No audio device found."
 msgstr "未找到音频设备。"
 
 msgid "No mains hum detected (50/60 Hz harmonics)."
-msgstr "未检测到市电哼声（50/60 Hz 谐波）。"
+msgstr "未检测到交流声（50/60 Hz 谐波）。"
 
 msgid "No quiet segment was available."
 msgstr "没有可用的安静片段。"
@@ -3470,7 +3470,7 @@ msgid "Playing the sweep and recording"
 msgstr "正在播放扫频并录音"
 
 msgid "Potential mains hum at multiples of {base:.0f} Hz: {harmonics}"
-msgstr "可能的市电哼声，基频 {base:.0f} Hz 的倍频：{harmonics}"
+msgstr "可能的交流声，基频 {base:.0f} Hz 的倍频：{harmonics}"
 
 msgid "Preference"
 msgstr "优先顺序"
@@ -3563,7 +3563,7 @@ msgid "compensated{sep}path delay {delay}{sep}distance at most {bound}"
 msgstr "已补偿{sep}路径延迟 {delay}{sep}距离上限 {bound}"
 
 msgid "confidence {confidence}{sep}pre-peak margin {margin}"
-msgstr "置信度 {confidence}{sep}峰前裕量 {margin}"
+msgstr "置信度 {confidence}{sep}峰前余量 {margin}"
 
 msgid "default {rate}"
 msgstr "默认 {rate}"
@@ -3584,7 +3584,7 @@ msgid "latency {latency}"
 msgstr "延迟 {latency}"
 
 msgid "loopback on input {channel}"
-msgstr "回送在输入 {channel}"
+msgstr "回采在输入 {channel}"
 
 msgid "mean |Δ| per octave"
 msgstr "每倍频程平均 |Δ|"
@@ -3662,13 +3662,13 @@ msgid "placement (optional tape measurements)"
 msgstr "摆位（可选，卷尺测量值）"
 
 msgid "loopback (optional)"
-msgstr "回送（可选）"
+msgstr "回采（可选）"
 
 msgid "required"
 msgstr "必需参数"
 
 msgid "try ReverbScope without audio hardware: simulate, analyse and compare two positions"
-msgstr "无需音频硬件体验 ReverbScope：模拟、分析并对比两个位置"
+msgstr "无需音频设备体验 ReverbScope：模拟、分析并对比两个位置"
 
 msgid "audio interface"
 msgstr "音频接口"
@@ -3752,7 +3752,7 @@ msgid "The 110 Hz room mode stays at both positions: it belongs to the room, not
 msgstr "110 Hz 的房间模式在两个位置都存在：它属于房间本身，而不是某个位置。"
 
 msgid "Mains hum at 50 Hz is clearly lower at position B."
-msgstr "50 Hz 市电哼声在位置 B 明显更低。"
+msgstr "50 Hz 交流声在位置 B 明显更低。"
 
 msgid "no reliable broadband RT60 (see Reverberation)"
 msgstr "没有可靠的宽带 RT60（见“混响”）"
@@ -3776,7 +3776,7 @@ msgid "At a glance"
 msgstr "概览"
 
 msgid "broadband RT60 not comparable (see Reverberation)"
-msgstr "宽带 RT60 无法比较（见“混响”）"
+msgstr "宽带 RT60 无法对比（见“混响”）"
 
 msgid "none above the threshold on either side"
 msgstr "两侧都没有高于阈值的反射"
@@ -3887,10 +3887,10 @@ msgid "Comparison {a} {arrow} {b}"
 msgstr "对比 {a} {arrow} {b}"
 
 msgid "mains hum at {base:.0f} Hz"
-msgstr "{base:.0f} Hz 市电哼声"
+msgstr "{base:.0f} Hz 交流声"
 
 msgid "not compared: {validity}"
-msgstr "未比较：{validity}"
+msgstr "未对比：{validity}"
 
 msgid "Import {name} into your DAW and play it through the monitors."
 msgstr "将 {name} 导入 DAW，并通过监听音箱播放。"
@@ -3908,7 +3908,7 @@ msgid "Geometry"
 msgstr "几何"
 
 msgid "try ReverbScope with synthetic data: no audio hardware needed"
-msgstr "用合成数据体验 ReverbScope：无需音频硬件"
+msgstr "用合成数据体验 ReverbScope：无需音频设备"
 
 msgid "recording profile used to interpret the demo (default: {profile})"
 msgstr "用于解读演示结果的录音配置（默认：{profile}）"
@@ -4103,11 +4103,11 @@ msgid "Speech clarity is low for an ensemble (C50 {value:.1f} dB, below {thresho
 msgstr "对合唱来说，语言清晰度偏低（C50 {value:.1f} dB，低于 {threshold:.0f} dB）。合奏可以保留一些后期声，但到这个程度吐字会糊。这是一个位置的结果，不是房间评分。"
 
 msgid "loopback_channel {channel} does not exist (the loopback file has {count} channel(s))"
-msgstr "loopback_channel {channel} 不存在（回送文件只有 {count} 个声道）"
+msgstr "loopback_channel {channel} 不存在（回采文件只有 {count} 个声道）"
 
 msgctxt "diagnostic"
 msgid "the loopback and the microphone were located on different sweep passes; compensation is not applied"
-msgstr "回送与话筒定位到了不同遍的扫频上；未应用补偿"
+msgstr "回采与话筒定位到了不同遍的扫频上；未应用补偿"
 
 msgid "unknown recording profile {name}; available: {available}"
 msgstr "未知的录音配置 {name}；可用：{available}"
@@ -4171,12 +4171,12 @@ msgid "no common excitation band"
 msgstr "没有共同激励频带"
 
 msgid "No reflection was detected inside this profile's {window_ms:g} ms window in the candidate; the strongest in the baseline was {relative_db:.1f} dB at {delay_ms:.1f} ms."
-msgstr "候选中，此配置的 {window_ms:g} ms 窗口内未检测到反射；基线中最强的反射为 {delay_ms:.1f} ms 的 {relative_db:.1f} dB。"
+msgstr "对比项中，此配置的 {window_ms:g} ms 窗口内未检测到反射；基准中最强的反射为 {delay_ms:.1f} ms 的 {relative_db:.1f} dB。"
 msgid "Background noise, {band}"
 msgstr "本底噪声，{band}"
 
 msgid "not compared: the direct-sound confidence is not high on both sides"
-msgstr "未比较：两侧的直达声置信度并非都为高"
+msgstr "未对比：两侧的直达声置信度并非都为高"
 
 msgid "not searched: nothing below {max_hz:.0f} Hz was excited and resolved"
 msgstr "未搜索：{max_hz:.0f} Hz 以下没有既被激励又能分辨的部分"
@@ -4502,7 +4502,7 @@ msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（RMS 最
 
 msgctxt "diagnostic"
 msgid "recording has {count} channels; channel {number} of {count} (highest RMS excluding loopback channel {loopback_number}) was analysed (on the command line --channel {index}, counted from 0)"
-msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（除回送声道 {loopback_number} 外 RMS 最高；命令行从 0 开始计数，即 --channel {index}）"
+msgstr "录音有 {count} 个声道；已分析声道 {number}/{count}（除回采声道 {loopback_number} 外 RMS 最高；命令行从 0 开始计数，即 --channel {index}）"
 
 msgid "{path} is not a session file; give the session folder or its session.json"
 msgstr "{path} 不是会话文件；请指定会话文件夹或其中的 session.json"
@@ -4640,7 +4640,7 @@ msgstr "{metric} {seconds:#.3g} s，对比 {other:#.3g} s"
 
 msgctxt "diagnostic"
 msgid "the loopback channel is silent (peak below {threshold_dbfs:g} dBFS); compensation is not applied"
-msgstr "回送声道无声（峰值低于 {threshold_dbfs:g} dBFS）；未应用补偿"
+msgstr "回采声道无声（峰值低于 {threshold_dbfs:g} dBFS）；未应用补偿"
 
 # reverbscope analyze-ir: a declared band above the Nyquist frequency
 
@@ -4712,14 +4712,14 @@ msgstr "未找到来自设备上方平面的独立到达声，而高 {coincide:.
 
 msgctxt "diagnostic"
 msgid "low-frequency resonances are not compared: no frequency range was searched on both sides"
-msgstr "未比较低频共振：没有双方都搜索过的频率范围"
+msgstr "未对比低频共振：没有双方都搜索过的频率范围"
 
 msgctxt "diagnostic"
 msgid "low-frequency resonances are compared only at {low:.0f}-{high:.0f} Hz, the range both sides searched; {count} potential resonance(s) found outside it are left out"
-msgstr "低频共振只在双方都搜索过的 {low:.0f}-{high:.0f} Hz 范围内比较；在该范围之外发现的 {count} 个可能的共振未纳入比较"
+msgstr "低频共振只在双方都搜索过的 {low:.0f}-{high:.0f} Hz 范围内对比；在该范围之外发现的 {count} 个可能的共振未纳入对比"
 
 msgid "not compared: no frequency range was searched on both sides"
-msgstr "未比较：没有双方都搜索过的频率范围"
+msgstr "未对比：没有双方都搜索过的频率范围"
 
 msgid "no potential resonance in the range both sides searched"
 msgstr "双方都搜索过的范围内没有可能的共振"
@@ -4736,7 +4736,7 @@ msgstr "这次录音的音频设备报告了时序问题，因此衰减和能量
 
 msgctxt "diagnostic"
 msgid "the separate loopback recording has device timing problems; loopback compensation was not applied"
-msgstr "独立回环录音存在设备时序问题，未做回环补偿"
+msgstr "独立回采录音存在设备时序问题，未做回采补偿"
 
 msgctxt "diagnostic"
 msgid "the audio stream reported {actual:g} Hz instead of the requested {requested:g} Hz; the recording's time scale cannot be trusted"
@@ -5027,7 +5027,7 @@ msgid "{seconds:.2f} s of decay after the direct sound"
 msgstr "直达声之后有 {seconds:.2f} s 的衰减"
 
 msgid "The loopback must be the interface's electrical return, recorded in the same pass as the microphone; export both channels from one take."
-msgstr "回送必须是音频接口的电回送，并与话筒在同一遍中录下；两条声道要从同一次录音导出。"
+msgstr "回采必须是音频接口的电信号回采，并与话筒在同一遍中录下；两条声道要从同一次录音导出。"
 
 msgid "the recording holds {passes} sweep passes; the pass starting at {start:.2f} s was analysed and the others were ignored"
 msgstr "录音中有 {passes} 遍扫频；分析了从 {start:.2f} s 开始的那一遍，其余忽略"
@@ -5084,7 +5084,7 @@ msgid " (path delay {delay:.2f} ms)"
 msgstr "（路径延迟 {delay:.2f} ms）"
 
 msgid "compensation applied: the frequency response is relative to the interface return{delay}"
-msgstr "已应用补偿：频率响应相对于音频接口的回送{delay}"
+msgstr "已应用补偿：频率响应相对于音频接口的回采{delay}"
 
 msgid "Generate the test signal at the project's sample rate ({rate} Hz): in the app's Step 1, or with reverbscope sweep --sample-rate {rate}. Do not rely on the DAW converting the file on import (that puts its resampler into the measurement). Then measure again."
 msgstr "按工程采样率（{rate} Hz）生成测试信号：在应用的步骤 1 中，或用 reverbscope sweep --sample-rate {rate}。不要依赖 DAW 在导入时转换文件（那会把它的重采样器带进测量）。然后重新测量。"
@@ -5137,7 +5137,7 @@ msgstr "大概率无关紧要"
 
 msgctxt "verdict"
 msgid "not comparable"
-msgstr "不可比较"
+msgstr "不可对比"
 
 msgctxt "verdict"
 msgid "insufficient evidence"
@@ -5157,7 +5157,7 @@ msgstr "无变化"
 
 msgctxt "verdict chip"
 msgid "not comparable"
-msgstr "不可比较"
+msgstr "不可对比"
 
 msgctxt "verdict chip"
 msgid "insufficient"
@@ -5192,10 +5192,10 @@ msgstr "基准"
 
 msgctxt "comparison side"
 msgid "candidate"
-msgstr "候选"
+msgstr "对比项"
 
 msgid "the broadband RT60 is not comparable"
-msgstr "宽带 RT60 不可比较"
+msgstr "宽带 RT60 不可对比"
 
 msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): {direction}, and still '{label}' for this profile"
 msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：{direction}，对此配置而言仍属“{label}”"
@@ -5213,7 +5213,7 @@ msgid "{values}: {change:.1f} dB stronger"
 msgstr "{values}：强了 {change:.1f} dB"
 
 msgid "the noise floor is not comparable"
-msgstr "本底噪声不可比较"
+msgstr "本底噪声不可对比"
 
 msgid "the noise delta is not valid"
 msgstr "噪声差值无效"
@@ -5222,10 +5222,10 @@ msgid "noise floor {baseline:.1f} dBFS to {candidate:.1f} dBFS ({delta:+.1f} dB)
 msgstr "本底噪声从 {baseline:.1f} dBFS 变为 {candidate:.1f} dBFS（{delta:+.1f} dB）"
 
 msgid "{better} improved, {worse} degraded, {same} probably insignificant, {not_comparable} not comparable, {insufficient} with insufficient evidence"
-msgstr "{better} 项改善，{worse} 项退化，{same} 项大概率无关紧要，{not_comparable} 项不可比较，{insufficient} 项证据不足"
+msgstr "{better} 项改善，{worse} 项退化，{same} 项大概率无关紧要，{not_comparable} 项不可对比，{insufficient} 项证据不足"
 
 msgid "the two sessions cannot be compared: {note}"
-msgstr "这两个会话无法比较：{note}"
+msgstr "这两个会话无法对比：{note}"
 
 msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): a real change, but both takes are short for a {profile} recording (below {limit:.1f} s), so it does not matter for the recording"
 msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：变化是真实的，但对{profile}录音来说两次都算短（低于 {limit:.1f} s），因此对录音没有影响"
@@ -5299,13 +5299,13 @@ msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): smaller th
 msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：小于单次测量内 T20 与 T30 相差的 {spread:.2f} s"
 
 msgid "{metric} is not comparable"
-msgstr "{metric} 不可比较"
+msgstr "{metric} 不可对比"
 
 msgid ", still above the {threshold:.0f} dB threshold"
 msgstr "，但仍高于 {threshold:.0f} dB 阈值"
 
 msgid "{reason}: declare the input gain unchanged to compare the noise floor"
-msgstr "{reason}：请声明输入增益未变，才能比较本底噪声"
+msgstr "{reason}：请声明输入增益未变，才能对比本底噪声"
 
 msgid "{values}: quieter"
 msgstr "{values}：更安静"
@@ -5368,7 +5368,7 @@ msgid "one take"
 msgstr "一次测量"
 
 msgid "{n} takes, no RT60 to compare"
-msgstr "{n} 次测量，没有可比较的 RT60"
+msgstr "{n} 次测量，没有可对比的 RT60"
 
 msgid "{n} takes agree ({spread:.1f} % apart in RT60)"
 msgstr "{n} 次测量一致（RT60 相差 {spread:.1f} %）"
@@ -5401,10 +5401,10 @@ msgid "no warning under the {profile} profile"
 msgstr "在{profile}配置下没有警告"
 
 msgid "not compared with position {label}: {error}"
-msgstr "未与位置 {label} 比较：{error}"
+msgstr "未与位置 {label} 对比：{error}"
 
 msgid "not comparable with position {label}: {reason}"
-msgstr "无法与位置 {label} 比较：{reason}"
+msgstr "无法与位置 {label} 对比：{reason}"
 
 msgid "against position {label}: {headline}"
 msgstr "相对位置 {label}：{headline}"
@@ -5494,7 +5494,7 @@ msgid "Compare with first position"
 msgstr "与第一个位置对比"
 
 msgid "Open Compare with the first position as baseline and the selected take as candidate."
-msgstr "打开“对比”页面，以第一个位置为基线、所选测量为候选。"
+msgstr "打开“对比”页面，以第一个位置为基准、所选测量为对比项。"
 
 msgid "Measure a new position..."
 msgstr "测量新位置..."
@@ -5668,10 +5668,10 @@ msgid "A session folder, result.json or comparison.json"
 msgstr "会话文件夹、result.json 或 comparison.json"
 
 msgid "The baseline session (folder)"
-msgstr "基线会话（文件夹）"
+msgstr "基准会话（文件夹）"
 
 msgid "The candidate session (folder)"
-msgstr "候选会话（文件夹）"
+msgstr "对比会话（文件夹）"
 
 msgid "Was the input gain the same for both takes?"
 msgstr "两次测量的输入增益相同吗？"
@@ -5899,7 +5899,7 @@ msgstr "未对比"
 
 msgctxt "at a glance"
 msgid "Topic"
-msgstr "项目"
+msgstr "方面"
 
 msgctxt "at a glance"
 msgid "Result"

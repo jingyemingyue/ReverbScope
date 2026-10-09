@@ -14,7 +14,7 @@ ReverbScope 能在哪些平台上运行、能与哪些东西配合，以及**每
 | Linux x86_64（CI 运行器的 glibc 或更新版本） | 桌面版：`ReverbScope-Desktop-Linux-x86_64.tar.gz`；终端版：`ReverbScope-Terminal-Linux-x86_64.tar.gz` | `ubuntu-latest` 上的发布工作流及本地构建（`scripts/build_release.py`）：两个版本的安装包门禁和冒烟测试、启动 `reverbscope-gui`；Ubuntu / Python 3.12–3.14 上的 CI 测试 |
 | 其他（ARM 版 Windows / Linux、更旧的 macOS） | 仅 wheel | 未验证；`scripts/build_release.py` 拒绝把 ARM 构建命名为 x86_64 |
 
-还没有任何安装包在个人自己的电脑上配合真实音频硬件使用过（[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)）；上表各行都是 CI 和本地构建的结果。
+还没有任何安装包在个人自己的电脑上配合真实音频设备使用过（[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)）；上表各行都是 CI 和本地构建的结果。
 
 ## Python 与依赖
 
