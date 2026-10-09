@@ -470,7 +470,14 @@ time-reversed filtering.
     loudspeaker-distortion roundtrip (a noise-free decay of 70 dB or more)
     and the demo's low bands are the cases a stricter rule broke.
 
-    *Known limits of the cut rule, not corrected in this version.* In a very
+    *Known limits of the cut rule, not corrected in this version.* A narrow
+    low band (63 and 125 Hz) can still read a valid T20 from a response gated
+    25–30 dB below its peak: that band's peak-to-floor range comes from a few
+    20 ms blocks of a band-limited random process and can sit up to 12 dB
+    above the gate level, so the range rule does not withhold it (the
+    broadband curve and the bands from 250 Hz up do); the value then scatters
+    like any T20 of that band under the B·T limit of step 12, up to about
+    40 % in a synthetic test. In a very
     dead octave band (RT 0.05 s at 125 Hz, a band narrower than the decay can
     resolve) the walk-back can place the cut 6–9 dB below the peak and
     withhold C50, D50 and Ts that do not depend on the late decay; and a

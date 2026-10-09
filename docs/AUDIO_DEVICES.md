@@ -46,7 +46,7 @@ adds is measured as if it were the room.
 
 Each PortAudio device belongs to one host API [9][13], so an interface
 appears once per host API it is reachable through (`reverbscope devices` shows
-the host API in brackets). Rank 1 is best. "Default latency" is PortAudio's
+the host API in its own column). Rank 1 is best. "Default latency" is PortAudio's
 default suggestion (low / high), not a measured round trip.
 
 ### Windows

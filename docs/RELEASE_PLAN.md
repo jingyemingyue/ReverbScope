@@ -58,6 +58,12 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
   0.5.0 is not cut. The draft is produced by the Release workflow when the
   stabilization branch merges to `main`; publishing it is the maintainer's
   decision (§3).
+* **Software beta 3 (prepared 2026-10-09, not published):** `0.5.0b3` is the
+  development line after the candidate was cut: Measurement health, verdicts
+  on a comparison, the project overview and the multi-position workflow, the
+  boxed terminal and the menu, profiles explained, the corrected decay rules
+  and the fixes of the final audit. The `v0.5.0b2` draft is superseded: it was
+  refreshed from `main` after these changes landed and must not be published.
 * **Update (2026-09-24, later the same day):** the review follow-ups
   #9–#17 (#17, the QML part of the bundle gate, was found after this plan
   was written) are fixed on the branch `v0.4.1-review-followups`, which
@@ -83,6 +89,7 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
 | **0.4.x** | Software readiness before community hardware validation (the maintainer's phase definition, 2026-09-24): the review follow-ups #9–#17 (all closed in 0.4.1), packaging, device diagnostics, the GUI, the DAW guide and the community report templates | CI and the Release workflow green on the release commit; every new behaviour has a synthetic or scripted test; `CHANGELOG.md` names what changed; no hardware or DAW claim | Any hardware or DAW result; signing; PyPI |
 | **0.5.0b1** | Software beta: ship the single-microphone algorithm and the desktop presentation that landed after 0.4.1, still without a hardware claim | CI and the Release workflow green on the release commit; every new behaviour has a synthetic test; CHANGELOG names the version; the notes say this is not 0.5.0 | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI |
 | **0.5.0b2** | Stabilization beta after the rename: the stable line's fixes, the acoustic audit (no number without the measurement to support it), the offline validation gates, every download named ReverbScope | CI and the Release workflow green on the release commit; every fix has a synthetic regression test; CHANGELOG names the version and separates synthetic/CI validation from hardware validation; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI; a working website until Pages is enabled |
+| **0.5.0b3** | Development beta while the candidate waits for hardware: the post-RC line (Measurement health, verdicts, the project overview, the boxed terminal and the menu, profiles explained) and the final audit's fixes | CI and the Release workflow green on the release commit; every new behaviour has a synthetic test | Not a candidate; nothing in it is claimed to be validated on hardware |
 | **0.5.0rc1** | Release candidate for hardware and DAW validation: the 0.5.0b2 code with the tester-facing additions of §2a, feature set frozen, built so that anyone can download, install and report | CI and the Release workflow green on the release commit of the `release/0.5.0` branch; every download named for the project; the notes say it is a candidate, not 0.5.0, in English and Chinese; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; signing; PyPI; 0.5.0 itself |
 | **0.5.0** | "Trusted by a human": the first version whose Standalone Mode and DAW workflow were run on real hardware at least once | One dated PASS row per cell of the hardware matrix on at least one platform (device enumeration, sample-rate negotiation, channel mapping, loopback capture, Stop during playback, a full Standalone measurement, the same signal through one DAW); #12 and #13 (loopback time origin, real-time callback) closed; #14 (zh-CN catalog complete, safety warning translated) closed; #15 (ISO 3382-2 table source) closed | The validation campaign; API / schema freeze; signing |
 | **1.0.0rc1** | Freeze and prove (ARCHITECTURE_V1.md §10, row 1.0-rc) | No open MUST item of §3.1: hardware matrix executed at least once per platform (M10); validation campaign published with its data (M11); signed bundles or an explicit maintainer decision to ship unsigned (M9); public-repository checklist executed (M13, §9.1); API and schema integers frozen; SECURITY / CONTRIBUTING / STATUS updated for the freeze; PyPI pre-release if trusted publishing is configured | — |
@@ -122,8 +129,11 @@ stability, or a major dependency upgrade. Those go to `main`.
 
 **How the two stay close.** A fix that applies to both lines is made on the
 candidate line first and then forward-ported to `main` (merge or cherry-pick
-of the same commit; never by hand). Nothing is backported from `main` to the
-candidate line except through that rule. A cherry-pick must not undo the
+of the same commit; never by hand). A fix of an allowed class that was found
+on `main` first (the audits run against the development line) may be
+cherry-picked with `-x` to the candidate line when the candidate has the same
+defect; nothing else is backported from `main`, and a cherry-pick is never
+retyped. A cherry-pick must not undo the
 rename, drop a test or revert a document; `check_cli_docs.py`, the catalog
 tests and the full suite run on both lines. The candidate line is
 conservative; `main` is where development happens.

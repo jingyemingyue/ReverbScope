@@ -93,6 +93,10 @@
   ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
   保存后不管系统怎么设置都使用中文，`reverbscope config language auto` 改回跟随系统。
 
+  下载的安装包不会把 `reverbscope` 加入 `PATH`：请在它所在的文件夹里打开终端（Windows 安装程序：
+  `%LOCALAPPDATA%\Programs\ReverbScope`），或者写出它的完整路径（macOS 桌面版：
+  `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`），详见[命令行](#命令行)。
+
 ![终端中的 reverbscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
 `reverbscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步
@@ -250,8 +254,10 @@ reverbscope gui
 `drums`、`room_mic` 和 `choir` 各有针对该类录音的阈值和措辞）。报告会在 `Interpretation`（解读）旁边
 标出配置名称，以免有人把这些建议误当成与录音用途无关的客观结论。GUI 在两种测量模式中都提供同样的选择。
 
-`results/` 中会生成 `result.json`（全部指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）
-和 `session.json`（测量元数据）。原始录音永远不会被修改。`reverbscope show` 以及 GUI 中的
+`results/` 中会生成 `result.json`（全部指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）、
+`session.json`（测量元数据）、扫频的 `sweep.reverbscope-sweep.json`，以及录音的副本 `recording.wav`
+（用 `--no-copy-recording` 或 `reverbscope config copy-recording off` 可以不复制）。你传入的原始录音
+永远不会被修改。`reverbscope show` 以及 GUI 中的
 **打开会话**（**Open Session**）和主页的会话列表都可以重新打开该目录；脉冲响应 WAV 是权威的采样记录
 （`result.json` 保存的是指标，不保存脉冲响应的采样）。最近打开或保存过的会话记录在 `$REVERBSCOPE_HOME`
 下（默认为 `~/.reverbscope`）。

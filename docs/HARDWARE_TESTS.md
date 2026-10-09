@@ -37,7 +37,7 @@ A maintainer copies the result into a cell below with a link to the issue.
 | Channel mapping beyond 1–2 | | | |
 | Loopback capture | | | |
 | Stop during playback (output silent within one callback) | | | |
-| Full take without a logged buffer under/overflow (`reverbscope -v measure`) | | | |
+| Full take without a logged buffer under/overflow (`reverbscope -v measure --out take/`) | | | |
 | Input/output latency reported (`audio stream:` line in `reverbscope.log`) | | | |
 | Device unplugged during a take is reported as a failure, not a recording | | | |
 | Full Standalone measurement | | | |
@@ -155,6 +155,15 @@ report. The developer edition (a source install, or **File ▸ Settings ▸ Show
 developer tools** and a restart) also offers **Latency: Low / High** and, per system, WASAPI
 exclusive mode (Windows) or letting ReverbScope set the device rate (macOS);
 record them if you change them. ASIO is not used by the bundles.
+
+**Windows.** The bundles use WASAPI and carry no ASIO. In the device list pick
+the interface's *Windows WASAPI* entry, and before each sample-rate row set its
+*Default Format* in the Windows Sound control panel to that rate
+([user guide, per platform](user-guide/en.md#per-platform)). Report the
+`audio stream:` line (`blocksize`, `latency_s`) instead of an ASIO
+control-panel buffer. A rate that fails only because the Default Format was
+not set is **Not run**, not Fail; an interface that works only through ASIO is
+tested through the DAW row.
 
 **DAW check** (one DAW, one take)
 
