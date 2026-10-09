@@ -26,11 +26,14 @@ MAX_JSON_DEPTH = 32
 
 
 #: A JSON string (escapes kept whole), a string left open to the end of the
-#: text, or one bracket. Everything else (numbers, whitespace, names) is
-#: skipped by the regex engine, which reads a result.json of several
-#: megabytes in milliseconds where a Python loop over its characters took
-#: longer than parsing it.
-_JSON_TOKENS = re.compile(r'"(?:[^"\\]|\\.)*(?:"|\Z)|[{}\[\]]', re.DOTALL)
+#: text (a lone backslash last included), or one bracket. Everything else
+#: (numbers, whitespace, names) is skipped by the regex engine, which reads a
+#: result.json of several megabytes in milliseconds where a Python loop over
+#: its characters took longer than parsing it. The quantifiers are possessive
+#: (Python 3.11 and later): with a backtracking alternation per character, one
+#: 40 MB string in a file below the size limit took 34 s and 4.8 GiB to scan,
+#: where the loop needs 2 s and 190 MiB and this pattern 0.3 s and 180 MiB.
+_JSON_TOKENS = re.compile(r'"[^"\\]*+(?:\\.[^"\\]*+)*+(?:"|\\?\Z)|[{}\[\]]', re.DOTALL)
 
 
 def json_nesting_depth(text: str) -> int:
