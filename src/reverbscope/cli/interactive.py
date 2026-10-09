@@ -23,8 +23,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
+from reverbscope.cli.config import style_hint_lines
 from reverbscope.cli.console import Console, cell_width, shell_command, wrap
-from reverbscope.i18n import _, list_join, pgettext
+from reverbscope.i18n import _, current_locale, list_join, pgettext
 from reverbscope.io.session_store import SESSION_FILE
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
@@ -269,6 +270,11 @@ def run_menu(
     session = Session(c, ask, out)
     items = menu_items(terminal_edition=terminal_edition)
     by_key = {item.key: item for item in items}
+    # The frames are drawn with glyphs that some CJK terminals draw too wide:
+    # a reader of such an interface is told how to leave them out.
+    crooked = style_hint_lines(current_locale(), c.width, boxed=c.boxed)
+    if not c.can_write("".join(crooked)):
+        crooked = []
     session.say(c.title("ReverbScope"))
     session.say(
         c.paragraph(
@@ -283,6 +289,7 @@ def run_menu(
         session.say([""])
         session.say(
             _choice_lines(c, [(item.key, item.title) for item in items] + [("q", _("Quit"))])
+            + (["", *crooked] if crooked else [])
         )
         try:
             choice = session.ask(pgettext("menu prompt", "Your choice")).lower()

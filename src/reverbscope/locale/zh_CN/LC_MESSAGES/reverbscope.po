@@ -5946,3 +5946,6 @@ msgstr "{question}（默认：{default}）："
 
 msgid "{question} [y/N]: "
 msgstr "{question}（y/N）："
+
+msgid "Frames crooked? "
+msgstr "边框歪了？"
