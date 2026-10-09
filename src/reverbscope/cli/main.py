@@ -2403,6 +2403,35 @@ def cmd_export(args: argparse.Namespace) -> int:
     return 0
 
 
+#: How many left-out positions a project command names before it counts the rest.
+MISSING_POSITIONS_SHOW_LIMIT = 10
+
+
+def _warn_missing_positions(args: argparse.Namespace, project: Path) -> None:
+    """Say which listed positions a project command could not read (stderr).
+
+    ``project show`` and ``project average`` list the takes that still exist; a
+    folder that was moved, renamed or deleted would otherwise drop out of the
+    list, and out of the average, without a word.
+    """
+    from reverbscope.io.project_store import missing_project_sessions
+
+    missing = missing_project_sessions(project)
+    if not missing:
+        return
+    err = _console(args, sys.stderr)
+    for label, stored in missing[:MISSING_POSITIONS_SHOW_LIMIT]:
+        text = _("position {label}: {path} has no session.json; it is left out").format(
+            label=printable(label, single_line=True), path=printable(stored, single_line=True)
+        )
+        print(render_status(err, "warn", text, keep=True), file=sys.stderr)
+    if len(missing) > MISSING_POSITIONS_SHOW_LIMIT:
+        more = _("... and {n} more positions left out").format(
+            n=len(missing) - MISSING_POSITIONS_SHOW_LIMIT
+        )
+        print(render_status(err, "warn", more, keep=True), file=sys.stderr)
+
+
 def cmd_project(args: argparse.Namespace) -> int:
     from reverbscope.core.averaging import average_decay
     from reverbscope.io.project_store import (
@@ -2452,11 +2481,14 @@ def cmd_project(args: argparse.Namespace) -> int:
         for label, path in list_project_sessions(args.project):
             tag = printable(label, single_line=True) if label else _("(unlisted)")
             print(f"  {tag}\t{printable(str(path), single_line=True)}")
+        _warn_missing_positions(args, args.project)
         return 0
     if command == "average":
         if not is_project(args.project):
             raise ReverbScopeError(_("no project.json in {path}").format(path=args.project))
         items = list_project_sessions(args.project)
+        # Before the "no sessions" error, which would otherwise not say why.
+        _warn_missing_positions(args, args.project)
         if not items:
             raise ReverbScopeError(_("no sessions in {path}").format(path=args.project))
         loaded = [load_measurement(path) for _label, path in items]
@@ -2852,6 +2884,25 @@ def main(argv: Sequence[str] | None = None) -> int:
                 err,
                 _os_error_text(exc),
                 detail=nothing_played(),
+                hints=[f"reverbscope {args.command} --help"],
+            ),
+            file=sys.stderr,
+        )
+        return 1
+    except MemoryError:
+        # A long recording: the analysis holds roughly 140 bytes per sample. The
+        # user's to fix (cut it, free memory), not a bug in ReverbScope.
+        trace()
+        print(
+            render_error(
+                err,
+                _("not enough memory to finish this command"),
+                detail=_(
+                    "A long recording needs a lot of memory: about 2 GB for 5 minutes at "
+                    "48 kHz, in proportion to its length. Cut it to the sweep plus a few "
+                    "seconds of silence on each side (any audio editor or DAW does it), or "
+                    "close other programs, and run the command again."
+                ),
                 hints=[f"reverbscope {args.command} --help"],
             ),
             file=sys.stderr,

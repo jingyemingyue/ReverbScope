@@ -329,3 +329,23 @@ def test_a_short_window_scrolls_home_and_does_not_squeeze_the_first_measurement_
         # Everything below the fold can be reached.
         assert scroll.verticalScrollBar().maximum() >= body.height() - scroll.viewport().height()
     window.close()
+
+
+def test_a_worker_that_runs_out_of_memory_says_so_and_does_not_call_it_a_bug(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reverbscope.models.configuration import AnalysisSettings
+    from reverbscope.ui import workers
+
+    def boom(*_args: object, **_kwargs: object) -> object:
+        raise MemoryError("Unable to allocate 5.15 GiB for an array")
+
+    monkeypatch.setattr(workers, "analyze", boom)
+    worker = workers.AnalysisWorker(object(), object(), AnalysisSettings())  # type: ignore[arg-type]
+    shown: list[str] = []
+    worker.failed.connect(shown.append)
+    worker.run()  # on this thread: the slot runs at once
+    assert shown == [workers.out_of_memory_text()]
+    assert "not enough memory" in shown[0].lower() and "bug" not in shown[0]
+    assert workers.gui_failure_text(MemoryError()) == workers.out_of_memory_text()
+    assert workers.gui_failure_text(RuntimeError("x")) == workers.unexpected_error_text()
