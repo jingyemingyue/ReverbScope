@@ -45,6 +45,7 @@ from reverbscope.cli.console import (
 )
 from reverbscope.cli.interactive import MENU_VARIABLE
 from reverbscope.cli.render import (
+    SAFETY_NOTE_SHOWN,
     averaged_table,
     render_analysis,
     render_comparison,
@@ -62,6 +63,7 @@ from reverbscope.cli.render import (
     render_measure_plan,
     render_overview,
     render_profiles,
+    render_safety_note,
     render_saved_next_steps,
     render_status,
     render_sweep_written,
@@ -1937,8 +1939,9 @@ def cmd_measure(args: argparse.Namespace) -> int:
             )
         )
         print()
-        print("\n".join(out.status("warn", _(SAFETY_MESSAGE), indent=0)))
-        print()
+        if not SAFETY_NOTE_SHOWN.get():
+            print(render_safety_note(out))
+            print()
     out_dir: Path = args.out
     # The sweep and the take are written to a folder of their own and copied
     # into --out only with the session that describes them: a take that is

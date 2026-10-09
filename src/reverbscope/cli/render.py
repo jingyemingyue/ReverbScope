@@ -11,6 +11,7 @@ here changes a stored value.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from contextvars import ContextVar
 from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -2010,6 +2011,20 @@ def _find(devices: Sequence[DeviceInfo], index: int | None, default_attr: str) -
     if index is not None:
         return next((d for d in devices if d.index == index), None)
     return next((d for d in devices if getattr(d, default_attr)), None)
+
+
+#: Set by the menu around the ``measure`` it runs, after it has shown the note
+#: about the monitors and asked whether to play: the command does not repeat
+#: the note a screen later. Typed by hand, ``reverbscope measure`` always
+#: shows it.
+SAFETY_NOTE_SHOWN: ContextVar[bool] = ContextVar("reverbscope_safety_note_shown", default=False)
+
+
+def render_safety_note(console: Console) -> str:
+    """The note to turn the monitors down before a take: a warning line."""
+    from reverbscope.audio.backend import SAFETY_MESSAGE
+
+    return "\n".join(console.status("warn", _(SAFETY_MESSAGE), indent=0))
 
 
 def render_measure_plan(

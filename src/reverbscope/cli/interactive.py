@@ -33,7 +33,7 @@ from typing import TextIO
 
 from reverbscope.cli.config import style_hint_lines
 from reverbscope.cli.console import Console, cell_width, shell_command, wrap
-from reverbscope.cli.render import render_error
+from reverbscope.cli.render import SAFETY_NOTE_SHOWN, render_error, render_safety_note
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, clause_join, current_locale, list_join, localize, pgettext
 from reverbscope.io.session_store import SESSION_FILE
@@ -320,6 +320,22 @@ def _analyze(session: Session) -> list[str]:
     return argv
 
 
+#: The levels a take can be played at (``reverbscope measure --level``).
+MIN_LEVEL_DBFS = -80.0
+MAX_LEVEL_DBFS = 0.0
+_LEVEL = re.compile(r"[+-]?\d{1,3}(?:\.\d{1,3})?")
+
+
+def level_dbfs(text: str) -> float | None:
+    """``text`` as a level from -80 to 0 dBFS, or ``None``. The minus of a
+    Chinese keyboard (``－``) and the typographic one (``−``) are minus signs."""
+    folded = fold(text).replace("\u2212", "-")
+    if not _LEVEL.fullmatch(folded):
+        return None
+    value = float(folded)
+    return value if MIN_LEVEL_DBFS <= value <= MAX_LEVEL_DBFS else None
+
+
 def audio_problems(backend: str | None) -> list[str]:
     """Why no take can be made here, one sentence for each reason; empty when
     there is an input and an output device to make it with."""
@@ -338,6 +354,8 @@ def audio_problems(backend: str | None) -> list[str]:
 
 
 def _measure(session: Session) -> list[str] | None:
+    from reverbscope.audio.backend import DEFAULT_STANDALONE_LEVEL_DBFS, SAFE_MAX_LEVEL_DBFS
+
     # With nothing to record with or to play on, the questions would be asked
     # and a take refused after them: say so first.
     problems = audio_problems(session.backend)
@@ -357,19 +375,48 @@ def _measure(session: Session) -> list[str] | None:
     out = session.ask_path(
         _("Folder for the new session"), default=Path(f"session-{stamp}"), exists=False
     )
+    acknowledged = False
+    while True:
+        level = level_dbfs(
+            session.ask(_("Level of the sweep in dBFS"), f"{DEFAULT_STANDALONE_LEVEL_DBFS:g}")
+        )
+        if level is None:
+            session.say(
+                session.console.status(
+                    "error",
+                    _("Type a level from {low:g} to {high:g} dBFS.").format(
+                        low=MIN_LEVEL_DBFS, high=MAX_LEVEL_DBFS
+                    ),
+                )
+            )
+        elif level <= SAFE_MAX_LEVEL_DBFS:
+            break
+        elif session.ask_yes(
+            _(
+                "{level:g} dBFS is above {max_level:g} dBFS. "
+                "Is the monitor level already turned down?"
+            ).format(level=level, max_level=SAFE_MAX_LEVEL_DBFS)
+        ):
+            acknowledged = True
+            break
     session.say(
         session.console.paragraph(
             _(
-                "ReverbScope will play a sweep through the default output device at -12 dBFS "
-                "and record the default input. Set a moderate monitor level first; nothing has "
-                "been played yet."
-            )
+                "ReverbScope will play a sweep through the default output device at "
+                "{level:g} dBFS and record the default input. Nothing has been played yet."
+            ).format(level=level)
         )
     )
+    session.say(["", render_safety_note(session.console), ""])
     if not session.ask_yes(_("Play and record now?")):
         session.say(session.console.status("info", _("Nothing was played.")))
         return None
-    return ["measure", "--out", str(out)]
+    argv = ["measure", "--out", str(out)]
+    if level != DEFAULT_STANDALONE_LEVEL_DBFS:
+        argv += ["--level", f"{level:g}"]
+    if acknowledged:
+        argv.append("--acknowledge-level")
+    return argv
 
 
 def _show(session: Session) -> list[str]:
@@ -504,6 +551,9 @@ def run_menu(
         full = [*prefix, *argv]
         session.say(c.status("next", _("The same from the command line:")))
         session.say(["    " + c.command(shell_command(["reverbscope", *full])), ""])
+        # The take is played after the note about the monitors was shown and a
+        # "y" typed (see _measure): the command need not show it a second time.
+        shown = SAFETY_NOTE_SHOWN.set(argv[:1] == ["measure"])
         try:
             code = run(full)
         except KeyboardInterrupt:
@@ -512,7 +562,8 @@ def run_menu(
             # argparse refused the arguments (a path that starts with "-"): the
             # usage error is on stderr already; the menu goes on.
             code = exc.code if isinstance(exc.code, int) else 1
-
+        finally:
+            SAFETY_NOTE_SHOWN.reset(shown)
         if code:
             session.say(
                 c.status("warn", _("The command ended with exit code {code}.").format(code=code))
@@ -528,6 +579,7 @@ __all__ = [
     "audio_problems",
     "clean_path",
     "fold",
+    "level_dbfs",
     "menu_items",
     "option_value",
     "parse_path",

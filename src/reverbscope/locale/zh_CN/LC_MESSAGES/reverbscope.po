@@ -5652,9 +5652,6 @@ msgstr "保存会话的文件夹（留空：只显示）"
 msgid "Folder for the new session"
 msgstr "新会话的文件夹"
 
-msgid "ReverbScope will play a sweep through the default output device at -12 dBFS and record the default input. Set a moderate monitor level first; nothing has been played yet."
-msgstr "ReverbScope 将通过默认输出设备以 -12 dBFS 播放扫频，并录制默认输入。请先把监听音量调到适中；现在还没有播放任何声音。"
-
 msgid "Play and record now?"
 msgstr "现在播放并录制？"
 
@@ -5961,3 +5958,15 @@ msgid ""
 msgstr ""
 "桌面应用需要图形显示环境，而当前会话没有（DISPLAY 和 WAYLAND_DISPLAY 均未设置）。"
 "请在桌面会话中启动它；命令行工具无需图形界面。"
+
+msgid "Level of the sweep in dBFS"
+msgstr "扫频电平（dBFS）"
+
+msgid "Type a level from {low:g} to {high:g} dBFS."
+msgstr "电平须在 {low:g} 到 {high:g} dBFS 之间。"
+
+msgid "{level:g} dBFS is above {max_level:g} dBFS. Is the monitor level already turned down?"
+msgstr "{level:g} dBFS 高于 {max_level:g} dBFS。监听音量已经调低了吗？"
+
+msgid "ReverbScope will play a sweep through the default output device at {level:g} dBFS and record the default input. Nothing has been played yet."
+msgstr "ReverbScope 将通过默认输出设备以 {level:g} dBFS 播放扫频，并录制默认输入。现在还没有播放任何声音。"

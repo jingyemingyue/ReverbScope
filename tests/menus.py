@@ -12,6 +12,7 @@ from __future__ import annotations
 import io
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
+from typing import TextIO
 
 from reverbscope.cli.console import Console
 from reverbscope.cli.interactive import run_menu
@@ -51,10 +52,15 @@ def drive(
     terminal_edition: bool = False,
     run: Callable[[list[str]], int] | None = None,
     console: Console | None = None,
+    out: TextIO | None = None,
 ) -> Visit:
+    """Run the menu on ``answers``. ``out`` is where it writes (default: a
+    buffer, which ``Visit.raw`` returns); pass ``sys.stdout`` to read the menu
+    and the commands it runs together."""
     pending = iter(answers)
     visit = Visit(code=-1)
-    out = io.StringIO()
+    buffer = io.StringIO()
+    out = out or buffer
 
     def ask(prompt: str) -> str:
         visit.prompts.append(prompt)
@@ -82,5 +88,5 @@ def drive(
         )
     finally:
         activate("en")
-    visit.raw = out.getvalue()
+    visit.raw = buffer.getvalue()
     return visit

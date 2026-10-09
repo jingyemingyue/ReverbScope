@@ -88,10 +88,10 @@ def test_every_item_builds_its_command_and_shows_it(tmp_path: Path) -> None:
 
 def test_the_measurement_item_plays_nothing_without_a_yes(tmp_path: Path) -> None:
     fake = ["--backend", "fake"]
-    code, runs, out = _menu(["4", str(tmp_path / "s"), "n", "q"], prefix=fake)
+    code, runs, out = _menu(["4", str(tmp_path / "s"), "", "n", "q"], prefix=fake)
     assert code == 0 and runs == []
-    assert "nothing has been played yet" in out and "Nothing was played." in out
-    code, runs, out = _menu(["4", str(tmp_path / "s"), "y", "q"], prefix=fake)
+    assert "Nothing has been played yet" in out and "Nothing was played." in out
+    code, runs, out = _menu(["4", str(tmp_path / "s"), "", "y", "q"], prefix=fake)
     assert runs == [[*fake, "measure", "--out", str(tmp_path / "s")]]
 
 

@@ -44,6 +44,7 @@ DYNAMIC_CALLS = {
     ("i18n.py", "_(template)"),
     ("interpretation/interpreter.py", "_(template)"),
     ("cli/main.py", "_(SAFETY_MESSAGE)"),
+    ("cli/render.py", "_(SAFETY_MESSAGE)"),
     # argparse's own texts, each extracted with N_() in ARGPARSE_MESSAGES.
     ("cli/main.py", "_(message)"),
     # Root-help command groups (COMMAND_GROUPS) and session modes
