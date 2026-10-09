@@ -6,6 +6,82 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 39: 2026-10-09 — **rc2 convergence: the review branches brought onto
+the candidate line, one Measurement health, the decay rules audited** (branch
+`integration/rc2-convergence`; nothing merged, tagged or published;
+`release/0.5.0` moves to this branch, by fast-forward, only after CI is green
+on it).
+
+* **Where it came from.** PR #48 (the development line) was merged into `main`
+  on 2026-10-09 while this was being built. The branch starts from
+  `integration/post-rc-development` at `7e81549` (Measurement health, the
+  regression corpus, verdicts, the test-isolation guard; not the project
+  overview, the boxed terminal, the menu, the profile explanations or the
+  walkthrough), takes `release/0.5.0` whole by merge (rc1; the loader
+  hardening of `gpt/post-rc-persistence-corpus`; the bug-hunt, lifecycle and
+  crash fixes; the PySide6 bound and the Qt teardown; the tester documents),
+  and takes the DSP files byte-identical from `main` (PR #47's gate, burst and
+  straightness rules as the development line corrected them; the settling
+  cache with the growing impulse; bisected sweep passes; `expm1` and the
+  sweep-rate guard; `scripts/bench_dsp.py`). PR #46 (`claude/post-rc-
+  measurement-health`) was compared rule by rule and not merged: one
+  `health.py` is the only Measurement health.
+* **Corrected on this branch**, each with a test that fails without it: the
+  JSON nesting guard that `main` carries took 34 s and 4.8 GiB for one 40 MB
+  string (possessive quantifiers: 0.3 s); the device check did not see a
+  stream at the wrong sample rate or the bare overflow/underflow flags of
+  older results (and showed the flags in English in Chinese); `show
+  comparison.json` judged without the takes' health and so contradicted
+  `compare`; a dropout warning left the decay out of what it affects, and the
+  distortion warning said the decay is not spoilt (both false, see the
+  methodology); and the documents that described PR #47's first rules.
+* **Left out, by the release gate.** The rule that withholds T20/T30 behind a
+  loud direct sound: an independent run found it withholds values within 6 %
+  of the truth for every broadband room with the direct sound 15 to 20 dB or
+  more above the tail, and about two thirds of what it withheld in octave
+  bands were within 10 % (`docs/MEASUREMENT_METHODOLOGY.md` §3, "Left out").
+* **Independent review** (five read-only reviewers, each skeptic-checked: DSP
+  false withholding on 3 061 synthetic rooms, DSP missed defects on gates,
+  bursts, double slopes and dropouts, file compatibility and refusal, one
+  health and one verdict on every surface, release scope and documents): no
+  value that both trees publish moved by more than 0.05 %; on 165 gate cases
+  the base code published a wrong valid number 44 times and this tree 0 times;
+  every file the base or the candidate loads loads here.
+* **Post-0.5 backlog** (not blockers; none is a regression against the
+  candidate unless said): the loud-direct-sound rule needs a calibrated
+  threshold; the cut rule withholds C50/D50/Ts in a very dead 125 Hz band
+  (RT 0.05 s) and warns falsely on a response whose decay reached the floor
+  and was padded with silence holding a stray sample; a noise burst or second
+  event 0.3 to 1.5 RT after the onset still gives a valid T20/T30/RT60 in the
+  63 Hz to 1 kHz bands, up to 2 times too long, and health cannot see it;
+  dropouts under 2 ms are not detected; a double slope with the slow part 30
+  to 45 dB down is partly missed; "At a glance" shows a Data quality symbol
+  that can disagree with the Measurement health block under it; an imported
+  response with under 3 ms of lead-in is rated invalid with sweep advice;
+  `comparison.json` notes given as one string are split into characters, the
+  numeric fields of `result.json` accept numeric text, and some refusals name
+  the file but not the field; `main`'s `decay.py` docstring, methodology
+  and changelog still describe PR #47's first rules (this branch's `decay.py`
+  differs from `main`'s by that docstring only, and by the rule above).
+* **Scope notes for the maintainer.** Compared with the candidate, rc2 also
+  carries comparison verdicts (a feature), seven new Tier-1 Python names
+  (`assess`, `HealthReport`, `HealthCheck`, `HealthStatus`, `judge_comparison`,
+  `ComparisonVerdict`, `Verdict`) with the `health` and `verdict` JSON keys,
+  and the optional `dropouts` record of `result.json`; the base named in the
+  instructions contains them, and `docs/RELEASE_PLAN.md` §2a does not list
+  them as allowed on the candidate line.
+
+**What was run** (a Linux container, Python 3.13, PySide6 6.11 offscreen,
+PortAudio present, no audio device): the full suite with the coverage gate
+(1811 passed, 93.32 % of `core` and `models`), ruff, ruff format and strict
+mypy in an environment without PySide6 (as the lint job has), the
+documentation-link, CLI-example and source-safety checks, the themed site
+build, the schema equality checks, the fake-backend Standalone flow and the
+example script, the sdist and wheel build with a fresh-environment install
+and demo, and a differential run of 3 240 synthetic band decays against the
+base. **Not run:** anything on real hardware or in a DAW; the macOS and
+Windows CI jobs and the Release workflow (the pull request runs them).
+
 Snapshot 38: 2026-10-07 — **the candidate line takes the stability fixes of
 the beta line, by merge and cherry-pick** (branch `release/0.5.0`, still
 `0.5.0rc1`; the Release workflow refreshes the draft `v0.5.0rc1` from this
