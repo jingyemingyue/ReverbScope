@@ -144,6 +144,7 @@ def capture(
     patch.setenv("COLUMNS", str(columns))
     patch.setenv("PYTHONIOENCODING", encoding)
     patch.setenv("TERM", "xterm-256color")
+    patch.setenv("WT_SESSION", "1")  # on Windows only Windows Terminal and alike show the symbols
     patch.setenv("REVERBSCOPE_NO_MENU", "1")  # the home screen, even if the tests run in a terminal
     out = Terminal(tty=tty, encoding=encoding)
     err = Terminal(tty=tty, encoding=encoding, errors="backslashreplace")

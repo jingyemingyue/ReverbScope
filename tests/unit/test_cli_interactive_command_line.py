@@ -109,9 +109,11 @@ def test_every_character_outside_the_safe_ones_gets_the_argument_quoted(char: st
 
 def test_a_plain_command_is_not_quoted() -> None:
     """Letters and digits of any script and ``. / - _ : , = @ % +`` stay bare."""
-    line = shell_command(["reverbscope", "analyze", "--out", "我的/录音_1.wav", "a@b+c=d,e:f%"])
-    assert line == "reverbscope analyze --out 我的/录音_1.wav a@b+c=d,e:f%"
+    # cmd and PowerShell expand "%" and split at "," and "@": quoted on Windows.
+    odd = "a@b+c=d,e:f%" if POSIX else "a+c=d:f"
+    line = shell_command(["reverbscope", "analyze", "--out", "我的/录音_1.wav", odd])
+    assert line == f"reverbscope analyze --out 我的/录音_1.wav {odd}"
     assert shell_command(["x", "naïve-é.wav", "Ünïcode", "日本語", "한국어"]) == (
         "x naïve-é.wav Ünïcode 日本語 한국어"
     )
-    assert shell_command(["x", "<take.wav>", ""]) == "x <take.wav> ''"
+    assert shell_command(["x", "<take.wav>", ""]) == "x <take.wav> " + ("''" if POSIX else '""')

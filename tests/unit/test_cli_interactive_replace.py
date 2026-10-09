@@ -117,7 +117,6 @@ def test_a_file_that_exists_is_replaced_only_after_a_yes(tmp_path: Path) -> None
 def test_a_folder_is_not_a_test_signal(tmp_path: Path) -> None:
     (tmp_path / "recordings").mkdir()
     visit = drive(["2", "recordings", CTRL_C, "q"])
-    assert (
-        "recordings is a folder; type a file name, for example recordings/sweep.wav." in visit.text
-    )
+    example = Path("recordings") / "sweep.wav"  # the separator of the platform
+    assert f"recordings is a folder; type a file name, for example {example}." in visit.text
     assert visit.runs == []

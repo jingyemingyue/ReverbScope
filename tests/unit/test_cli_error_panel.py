@@ -233,6 +233,8 @@ def test_the_command_line_shows_the_error_card_where_the_style_says_so(
     code, out, err = invoke(["--style", "plain", "show", "no-such-session"], capsys)
     assert err.startswith("× error:")
     # A terminal wide enough: the card, by default.
+    # On Windows only Windows Terminal and alike show the symbols and the frames.
+    monkeypatch.setenv("WT_SESSION", "1")
     tty = Stream(tty=True)
     monkeypatch.setattr("sys.stderr", tty)
     monkeypatch.setenv("COLUMNS", "70")
@@ -270,6 +272,7 @@ def test_a_usage_error_follows_the_style_that_was_asked_for(
     )
     assert err.startswith("╭─ ✗ 错误 ─")
     # A terminal that would frame it, asked not to.
+    monkeypatch.setenv("WT_SESSION", "1")  # Windows Terminal and alike show the symbols
     tty = Stream(tty=True)
     monkeypatch.setattr("sys.stderr", tty)
     monkeypatch.setenv("COLUMNS", "80")

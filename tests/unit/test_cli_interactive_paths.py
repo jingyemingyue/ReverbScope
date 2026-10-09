@@ -7,6 +7,7 @@ folder that is not a project ended with ``no project.json`` and no way on.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import pytest
@@ -32,6 +33,7 @@ def test_a_folder_is_refused_for_a_recording_in_words(tmp_path: Path) -> None:
     assert visit.runs == []
 
 
+@pytest.mark.skipif(os.name == "nt", reason="a backslash separates folders on Windows")
 def test_a_default_with_a_backslash_is_taken_as_it_is(tmp_path: Path) -> None:
     """Enter at ``[bs\\dir/sweep.wav]`` went through the cleaning of a pasted path,
     which removes backslashes: the file it offered did not exist."""

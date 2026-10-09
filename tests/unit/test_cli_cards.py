@@ -285,7 +285,9 @@ def test_a_text_from_a_file_cannot_forge_a_card(demo: DemoRun) -> None:
 @pytest.mark.parametrize("width", [30, 40, 47])
 def test_a_terminal_narrower_than_the_boxed_style_gets_nocards(demo: DemoRun, width: int) -> None:
     stream = Stream(tty=True)
-    console = Console.for_stream(stream, "never", {"COLUMNS": str(width)})
+    # WT_SESSION: on Windows only Windows Terminal and alike show the symbols.
+    env = {"COLUMNS": str(width), "WT_SESSION": "1"}
+    console = Console.for_stream(stream, "never", env)
     assert not console.boxed
     text = render_analysis(console, demo.takes[0].result, _findings(demo)["analysis"], "vocal")
     assert not any(TOP.match(line) for line in text.splitlines())

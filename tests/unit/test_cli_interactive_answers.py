@@ -174,8 +174,10 @@ def test_a_typed_or_dragged_path_is_read_as_a_shell_reads_it(
 def test_parse_path_expands_the_home_folder_and_ignores_an_empty_answer() -> None:
     assert parse_path("") is None and parse_path("   ") is None and parse_path("''") is None
     assert parse_path("~/take.wav") == Path.home() / "take.wav"
-    # No such user: the text stays as it was typed rather than raising.
-    assert parse_path("~no-such-user-here/take.wav") == Path("~no-such-user-here/take.wav")
+    if POSIX:
+        # No such user: the text stays as it was typed rather than raising. (Windows
+        # takes any "~name" for a folder next to the home folder.)
+        assert parse_path("~no-such-user-here/take.wav") == Path("~no-such-user-here/take.wav")
 
 
 @pytest.mark.skipif(not POSIX, reason="a POSIX terminal drops the file")
@@ -218,4 +220,5 @@ def test_a_file_name_that_starts_with_a_dash_is_not_taken_for_an_option() -> Non
         ["compare", f"{dash}-session", f"{dash}-session"],
         ["project", "overview", f"{dash}-session"],
     ]
-    assert f"reverbscope show {dash}-take.wav" in visit.text
+    # The command to copy has a slash for the separator on Windows.
+    assert f"reverbscope show {dash.replace(os.sep, '/')}-take.wav" in visit.text
