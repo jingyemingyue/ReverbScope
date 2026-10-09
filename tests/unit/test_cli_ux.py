@@ -190,7 +190,7 @@ def test_demo_on_a_cli_only_install(
     monkeypatch.setattr("reverbscope.ui.app.pyside6_import_error", lambda: "no PySide6")
     code, out, _err = _run(["demo"], capsys)
     assert code == 0
-    assert 'pip install "PySide6_Essentials>=6.6"' in out
+    assert 'pip install "PySide6_Essentials>=6.6,<6.12"' in out
     assert "     reverbscope gui" not in out
 
 

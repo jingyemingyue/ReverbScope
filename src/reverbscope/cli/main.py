@@ -2499,7 +2499,7 @@ def cmd_gui(args: argparse.Namespace) -> int:
             render_error(
                 _console(args, sys.stderr),
                 _(GUI_UNAVAILABLE).format(error=error),
-                hints=['pip install "PySide6_Essentials>=6.6"'],
+                hints=['pip install "PySide6_Essentials>=6.6,<6.12"'],
             ),
             file=sys.stderr,
         )

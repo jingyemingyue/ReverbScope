@@ -146,6 +146,14 @@ All notable changes to ReverbScope are documented here. The format follows
   rate no longer filters a 4 s impulse per band again (about 0.4 s saved per
   analysis at 48 kHz); the numbers are unchanged.
 - CI runs on pushes to `release/**` branches as well as `main`.
+- The `gui` extra asks for `PySide6_Essentials>=6.6,<6.12`, and the hint
+  printed when PySide6 is missing says the same: PySide6_Essentials 6.12.0
+  (released 2026-10-08) ends the test suite's interpreter with "QObject:
+  shared QObject was deleted directly" and a heap abort on Linux and Windows
+  after every test has passed; the bundles lock 6.11.2 and the desktop app's
+  own smoke exits cleanly under 6.12.0. The bound is lifted once a 6.12.x has
+  been run through the suite and the app on all three platforms
+  (`docs/DEPENDENCIES.md` §4).
 - Finding the sweep passes in a recording is no longer quadratic in its
   length when the reference is very short (a click rather than a sweep); a
   normal sweep is unchanged. The band filters' settling length is computed
