@@ -15,7 +15,8 @@ All notable changes to ReverbScope are documented here. The format follows
   invalid or unknown with its reason, the figures it affects and what to do
   next; the worst check gives the overall status and there is no score. In
   the text report it follows "At a glance"; on the Results page it is the
-  first card; `--format json` carries it as `health` beside `findings`. A
+  card under the four key figures; `--format json` carries it as `health`
+  beside `findings`. A
   sweep played at the wrong speed lists where each DAW sets its project
   sample rate or switches time-stretching off (the steps of
   `docs/user-guide/daw-setup.md`), also under the error when the analysis

@@ -189,8 +189,9 @@ not judge, with the numbers; `reverbscope profiles` lists the profiles and
 The thresholds are engineering choices, stated in
 [MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8, never a grade.
 
-**Measurement health** comes first: the top card of the Overview tab, and the
-section right after "At a glance" in the text report. It lists the checks the
+**Measurement health** sits right under the key figures: the card below the
+four tiles of the Overview tab, and the section right after "At a glance" in
+the text report. It lists the checks the
 analysis made on the take itself (reference, sweep, playback speed, direct
 sound, level, distortion, dropouts, decay range, noise floor, recording
 length, and the loopback and the audio device when they took part), each
