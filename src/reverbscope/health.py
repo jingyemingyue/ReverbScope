@@ -678,10 +678,11 @@ def _distortion(result: AnalysisResult) -> HealthCheck | None:
                 title,
                 _(
                     "harmonic {order} of the sweep at {level:.0f} dB re the direct sound: the "
-                    "loudspeaker or the chain distorts. The harmonic responses are separated in "
-                    "time from the room response, so the decay is not spoilt, but the chain is "
-                    "near its limit"
+                    "loudspeaker or the chain distorts. The harmonic responses arrive ahead of "
+                    "the room response, but their own decays run into it and can lengthen the "
+                    "decay of some bands, and the chain is near its limit"
                 ).format(order=strongest.order, level=strongest.level_db),
+                affects=(METRIC_DECAY,),
                 evidence=evidence,
                 fix=(_("Lower the playback level by 6 to 10 dB and measure again."),),
             )
@@ -734,11 +735,19 @@ def _device(result: AnalysisResult) -> HealthCheck | None:
     reported = [w for w in result.warnings if _device_fault(w)]
     if not reported:
         return None
+    first = reported[0].strip()
+    if first in _DEVICE_FLAGS:
+        # An older result stores the bare flag, which localize() cannot
+        # translate on its own: say it as the recorder says it now.
+        first = (
+            "the audio device reported 1 buffer problem(s) during the take "
+            f"({first}); the recording may contain dropouts"
+        )
     return HealthCheck(
         "device",
         HealthStatus.INVALID,
         _("Audio device"),
-        localize(reported[0]),
+        localize(first),
         affects=(METRIC_DECAY, METRIC_ENERGY, METRIC_FREQUENCY_RESPONSE, METRIC_REFLECTIONS),
         evidence={"warnings": reported},
         fix=(

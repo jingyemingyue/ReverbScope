@@ -5103,8 +5103,8 @@ msgstr "按工程采样率（{rate} Hz）生成测试信号：在应用的步骤
 msgid "content before the direct sound is only {margin:.1f} dB below it (noise, pre-ringing or a wrong reference): the recording may not contain the reference sweep"
 msgstr "直达声之前的内容只比它低 {margin:.1f} dB（噪声、预振铃或参考信号不对）：录音可能不含参考扫频"
 
-msgid "harmonic {order} of the sweep at {level:.0f} dB re the direct sound: the loudspeaker or the chain distorts. The harmonic responses are separated in time from the room response, so the decay is not spoilt, but the chain is near its limit"
-msgstr "扫频的第 {order} 次谐波相对直达声为 {level:.0f} dB：扬声器或链路有失真。谐波响应在时间上与房间响应分离，衰减不受影响，但链路已接近极限"
+msgid "harmonic {order} of the sweep at {level:.0f} dB re the direct sound: the loudspeaker or the chain distorts. The harmonic responses arrive ahead of the room response, but their own decays run into it and can lengthen the decay of some bands, and the chain is near its limit"
+msgstr "扫频的第 {order} 次谐波相对直达声为 {level:.0f} dB：扬声器或链路有失真。谐波响应先于房间响应到达，但它们自己的衰减会延伸进房间响应，可能使某些频带的衰减变长，而且链路已接近极限"
 
 msgid "Lower the playback level by 6 to 10 dB and measure again."
 msgstr "把播放电平降低 6 到 10 dB，然后重新测量。"
