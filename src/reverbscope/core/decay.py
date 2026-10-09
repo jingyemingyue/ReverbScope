@@ -119,12 +119,6 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
      first 5 dB. A late noise burst or a hard gate reaches -35 dB in one
      step; a reverberant slope does not, including a legitimate fast decay
      and a double slope whose later part is slower;
-   * *the direct sound covers the range* (T20 and T30 only): the fit starts
-     after the direct sound (and its spread) and the curve has already
-     fallen through more than half of the evaluation range by then, so the
-     few dB left describe the direct sound's step, not the room's slope
-     (with the direct sound 22 dB above the room, T20 covered 3 dB of room
-     decay and was off by up to 27 %). EDT has its own rule above;
    * *a response cut short*: the record ends while the decay is still far
      above the noise floor (a gate, or digital silence after an imported
      response). The preliminary Lundeby regression is walked back from the
@@ -924,27 +918,6 @@ def fit_decay_metric(
                 else diag("Evaluation range covers fewer than 3 samples")
             ),
         )
-    if name != "EDT" and first_index > int(below_upper[0]):
-        # The fit starts after the direct sound, which has already taken part
-        # of the evaluation range (EDT has its own rule, _edt_direct_check).
-        # With more than half the range gone, the few dB left describe the
-        # direct sound's step rather than the room's slope.
-        covered = float(upper - edc[i0])
-        if covered > 0.5 * (upper - lower):
-            return DecayMetric(
-                name=name,
-                seconds=None,
-                validity=Validity.UNRELIABLE,
-                evaluation_range_db=evaluation_range_db,
-                reason=diag(
-                    "the direct sound covers {covered:.0f} dB of the {range:.0f} dB evaluation "
-                    "range (limit: half): {metric} would describe the direct sound rather than "
-                    "the room at this position",
-                    covered=covered,
-                    range=upper - lower,
-                    metric=name,
-                ),
-            )
     slope, _, r2 = _linear_fit(curve.time_s[i0 : i1 + 1], edc[i0 : i1 + 1])
     if not np.isfinite(slope) or slope >= 0.0:
         return DecayMetric(
