@@ -235,8 +235,10 @@ def test_a_damaged_settings_file_is_described_in_the_interface_language(
         json.loads(damaged)
     line, column = parsed.value.lineno, parsed.value.colno
     code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "profile", "vocal")
-    shown = " ".join(err.split())
-    assert code == 1 and f"第 {line} 行第 {column} 列不是有效的 JSON" in shown, shown
+    # A long path (the length of the temporary folder's name) moves the line
+    # break: compare without the blanks.
+    shown = "".join(err.split())
+    assert code == 1 and f"第{line}行第{column}列不是有效的JSON" in shown, err
     assert "Expecting" not in shown and "Illegal" not in shown and "没有做任何更改" in shown
     _code, _out, err = _run(capsys, "--lang", "en", "config", "profile", "vocal")
     assert f"invalid JSON at line {line}, column {column}" in " ".join(err.split())
