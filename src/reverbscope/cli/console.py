@@ -34,6 +34,7 @@ Rules the rest of the CLI relies on:
 
 from __future__ import annotations
 
+import functools
 import os
 import re
 import shlex
@@ -213,6 +214,12 @@ _NO_LINE_END = frozenset("（「『“‘《〈【〔([{")
 #: Symbols and rules that must survive the stream's encoding for the
 #: Unicode forms to be used.
 _UNICODE_PROBE = "✓×–─━·…"
+
+#: Every glyph of the Unicode frames: the corners, sides, tees and cross of a
+#: card and of a table. An encoding that writes the symbols above but not
+#: these (the JIS X 0213 family has ``×`` and ``─`` but no rounded corners)
+#: gets the ASCII frames.
+_FRAME_PROBE = "".join(sorted({*_PANEL[True], *_GRID[True].values()}))
 
 #: Width used when the output is not a terminal (files and pipes get stable
 #: text), and the bounds for a terminal's width.
@@ -679,6 +686,12 @@ def can_encode(text: str, encoding: str | None) -> bool:
     return True
 
 
+@functools.lru_cache(maxsize=32)
+def frames_writable(encoding: str) -> bool:
+    """Whether ``encoding`` can write every glyph of the Unicode frames."""
+    return can_encode(_FRAME_PROBE, encoding)
+
+
 def _unicode_ok(stream: TextIO, interactive: bool, environ: Mapping[str, str]) -> bool:
     # An in-memory text stream (io.StringIO) has no encoding and holds any character.
     encoding = getattr(stream, "encoding", None) or "utf-8"
@@ -800,6 +813,13 @@ class Console:
         """Whether the stream's encoding holds every character of ``text``."""
         return can_encode(text, self.encoding)
 
+    @property
+    def unicode_frames(self) -> bool:
+        """Whether frames are drawn with box glyphs (``╭─╮``): the stream shows
+        Unicode and its encoding writes every glyph of them; otherwise the
+        frames are ASCII (``+-+``), though the symbols may stay Unicode."""
+        return self.unicode and frames_writable(self.encoding)
+
     def readable(self, text: str) -> str:
         """Text as this stream will show it, before its width is measured.
 
@@ -815,6 +835,8 @@ class Console:
         shown = printable(text, single_line=isinstance(text, Verbatim), own_styles=self.color)
         if not self.unicode:
             shown = self._ascii(str(shown))
+        elif self.boxed and not self.unicode_frames:
+            shown = str(shown).replace("|Δ|", "abs(delta)")  # not two more sides
         return Verbatim(shown) if isinstance(text, Verbatim) else shown
 
     def _ascii(self, text: str) -> str:
@@ -826,11 +848,13 @@ class Console:
         text = text.translate(_ASCII_SIGNS)
         if _DEGREE in text and not self.can_write(_DEGREE):
             text = text.replace(_DEGREE, "")
-        if self.boxed and not self.can_write(text.replace(GLUE, " ")):
+        if (self.boxed or self.interactive) and not self.can_write(text.replace(GLUE, " ")):
             # What the encoding cannot write is replaced by one "?" however
-            # wide the character is, and a frame's sides would come out
-            # ragged: one "?" per column keeps them straight. The glue
-            # between a number and its unit is not text: fit() writes a space.
+            # wide the character is, and a frame's sides, a table's columns
+            # would come out ragged: one "?" per column keeps them straight.
+            # A pipe or a file keeps the stream's own "?" (its text has no
+            # frames to keep straight). The glue between a number and its
+            # unit is not text: fit() writes a space.
             text = "".join(
                 char if char == GLUE or self.can_write(char) else "?" * max(1, char_width(char))
                 for char in text
@@ -873,9 +897,10 @@ class Console:
         return self._marked(glyph if self.unicode else ascii_form, *_STATUS_STYLE[status])
 
     def mark(self, status: Status) -> str:
-        """The one-column mark of a badge, unstyled."""
+        """The one-column mark of a badge, unstyled; its ASCII form where the
+        stream cannot write the glyph."""
         glyph, ascii_form = _MARKS[status]
-        return glyph if self.unicode else ascii_form
+        return glyph if self.unicode and self.can_write(glyph) else ascii_form
 
     def badge(self, status: Status, word: str | None = None) -> str:
         """``✓ good``, ``! check``, ``✗ problem``: the mark, coloured, and the
@@ -935,7 +960,7 @@ class Console:
         text = self.readable(text)
         if not self.boxed:
             return [self.bold(text), self.faint(self.rule_char() * cell_width(text))]
-        left, top, right, side, bottom_left, bottom_right = _PANEL[self.unicode]
+        left, top, right, side, bottom_left, bottom_right = _PANEL[self.unicode_frames]
         inner = max(1, self.width - 4)
         lines = wrap(text, inner) or [""]
         out = [self.faint(left + top * (inner + 2) + right)]
@@ -972,7 +997,7 @@ class Console:
         fill = self.width - 5 - cell_width(lead) - cell_width(title)
         if room < 1 or fill < 1 or any(cell_width(line) > room for line in lines):
             return None
-        left, top, right, side, bottom_left, bottom_right = _PANEL[self.unicode]
+        left, top, right, side, bottom_left, bottom_right = _PANEL[self.unicode_frames]
         tone_style = _TONE_STYLE[tone]
         head = self._marked(lead.rstrip(), *tone_style) + " " if mark else ""
         edge = self.style(side, *tone_style)
@@ -1290,7 +1315,7 @@ class Console:
         margin: str,
     ) -> list[str]:
         """The bordered form of :meth:`table`: one space of padding in every cell."""
-        g = _GRID[self.unicode]
+        g = _GRID[self.unicode_frames]
         bar = self.faint(g["v"])
 
         def rule(left: str, middle: str, right: str) -> str:
