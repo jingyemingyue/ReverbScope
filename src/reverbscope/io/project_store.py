@@ -91,19 +91,29 @@ def add_session(
     return project
 
 
+def _session_folder(candidate: Path) -> Path | None:
+    """The session folder a stored entry names, or None when there is none to read."""
+    if (candidate / SESSION_FILE).is_file() or (
+        candidate.name == SESSION_FILE and candidate.is_file()
+    ):
+        return candidate if candidate.is_dir() else candidate.parent
+    return None
+
+
 def list_project_sessions(path: str | Path) -> list[tuple[str, Path]]:
-    """``(position_label, session_directory)`` in project order, then leftovers."""
+    """``(position_label, session_directory)`` in project order, then leftovers.
+
+    An entry whose folder is gone is left out; :func:`missing_project_sessions`
+    names those, so a caller can say what the listing does not hold.
+    """
     base = project_file(path).parent
     project = load_project(base)
     seen: set[Path] = set()
     items: list[tuple[str, Path]] = []
     for entry in project.positions:
         for stored in entry.session_dirs:
-            candidate = _resolve(base, stored)
-            if (candidate / SESSION_FILE).is_file() or (
-                candidate.name == SESSION_FILE and candidate.is_file()
-            ):
-                folder = candidate if candidate.is_dir() else candidate.parent
+            folder = _session_folder(_resolve(base, stored))
+            if folder is not None:
                 if folder.resolve() in seen:
                     # Listed twice (or under two positions): average it once.
                     continue
@@ -113,6 +123,24 @@ def list_project_sessions(path: str | Path) -> list[tuple[str, Path]]:
         if listing.path.resolve() not in seen:
             items.append(("", listing.path))
     return items
+
+
+def missing_project_sessions(path: str | Path) -> list[tuple[str, str]]:
+    """``(position_label, stored_path)`` of every listed take that has no session to read.
+
+    A session folder that was moved, renamed or deleted after ``project add``
+    (or an absolute path whose project moved) is skipped by
+    :func:`list_project_sessions`; ``project show`` and ``project average`` use
+    this to say so, instead of quietly working with fewer positions.
+    """
+    base = project_file(path).parent
+    project = load_project(base)
+    return [
+        (entry.label, stored)
+        for entry in project.positions
+        for stored in entry.session_dirs
+        if _session_folder(_resolve(base, stored)) is None
+    ]
 
 
 def _relative(path: Path, base: Path) -> str:

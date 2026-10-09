@@ -720,6 +720,106 @@ def test_project_average_keeps_a_stored_band_label_to_its_row(
     assert not [line for line in table.splitlines() if line.startswith("FORGEDROW")]
 
 
+def _two_position_project(tmp_path: Path, count: int = 3) -> Path:
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.io.session_store import save_measurement
+    from reverbscope.models.session import MeasurementSession
+
+    settings = SweepSettings(duration_s=1.0, pre_silence_s=0.5, post_silence_s=1.0)
+    rec = synthetic_recording(settings, make_rir(settings.sample_rate, rt60_s=0.3), noise_rms=1e-5)
+    result = analyze(rec, Reference.from_settings(settings))
+    project = tmp_path / "room"
+    names = [f"s{i}" for i in range(count)]
+    for name in names:
+        save_measurement(project / name, MeasurementSession(), result, include_curves=False)
+    (project / "project.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "name": "room",
+                "positions": [{"label": name.upper(), "session_dirs": [name]} for name in names],
+            }
+        ),
+        encoding="utf-8",
+    )
+    return project
+
+
+def test_project_commands_say_which_position_a_deleted_folder_took_with_it(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`project show` and `project average` dropped a position whose session
+    folder had been deleted, and the average then counted one position fewer,
+    both with exit code 0 and not a word on either stream."""
+    import shutil
+
+    project = _two_position_project(tmp_path)
+    capsys.readouterr()
+    assert main(["--color", "never", "project", "average", str(project)]) == 0
+    whole = capsys.readouterr()
+    assert whole.err == "" and "3 mic" in whole.out
+
+    shutil.rmtree(project / "s1")
+    assert main(["--color", "never", "project", "average", str(project)]) == 0
+    reduced = capsys.readouterr()
+    assert "2 mic" in reduced.out
+    assert "position S1: s1 has no session.json; it is left out" in reduced.err
+    assert "S1" not in reduced.out
+    assert main(["--color", "never", "project", "show", str(project)]) == 0
+    shown = capsys.readouterr()
+    assert "S0" in shown.out and "S2" in shown.out and "S1" not in shown.out
+    assert "position S1: s1 has no session.json; it is left out" in shown.err
+
+    # JSON keeps stdout a single document; the warning stays on stderr.
+    assert main(["--format", "json", "project", "average", str(project)]) == 0
+    machine = capsys.readouterr()
+    assert json.loads(machine.out)["n_microphone_positions"] == 2
+    assert "left out" in machine.err
+
+
+def test_every_position_gone_still_says_why_before_the_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import shutil
+
+    project = _two_position_project(tmp_path, count=2)
+    for name in ("s0", "s1"):
+        shutil.rmtree(project / name)
+    capsys.readouterr()
+    assert main(["--color", "never", "project", "average", str(project)]) == 1
+    err = capsys.readouterr().err
+    assert err.index("position S0: s0 has no session.json") < err.index("no sessions in")
+
+
+def test_a_long_list_of_missing_positions_is_cut_and_counted(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import shutil
+
+    project = _two_position_project(tmp_path, count=14)
+    for i in range(1, 14):
+        shutil.rmtree(project / f"s{i}")
+    capsys.readouterr()
+    assert main(["--color", "never", "project", "show", str(project)]) == 0
+    err = capsys.readouterr().err
+    assert err.count("has no session.json") == 10
+    assert "... and 3 more positions left out" in err
+
+
+def test_a_crafted_position_label_cannot_forge_a_line_in_the_warning(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    project = _two_position_project(tmp_path, count=1)
+    stored = json.loads((project / "project.json").read_text(encoding="utf-8"))
+    stored["positions"].append({"label": "X\x1b[2J\nFORGED", "session_dirs": ["gone\nFORGED2"]})
+    (project / "project.json").write_text(json.dumps(stored), encoding="utf-8")
+    capsys.readouterr()
+    assert main(["--color", "never", "project", "show", str(project)]) == 0
+    err = capsys.readouterr().err
+    assert "\x1b" not in err
+    assert not [line for line in err.splitlines() if line.startswith(("FORGED", "FORGED2"))]
+
+
 @pytest.mark.parametrize(
     ("option", "named"),
     [
