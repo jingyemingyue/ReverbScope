@@ -308,6 +308,16 @@ def labelled(label: str, text: str) -> str:
     return _("{label}: {description}").format(label=label, description=text)
 
 
+def quoted(text: str) -> str:
+    """``text`` between the quotation marks of the active language.
+
+    ``'bad'`` as Python writes a string in English, ``“bad”`` in Chinese: the
+    value a user typed, named in a sentence of the interface language.
+    """
+    template = pgettext("argument value", "'{text}'")
+    return repr(text) if template == "'{text}'" else template.format(text=text)
+
+
 def format_message(template: str, **params: Any) -> str:
     """gettext + ``str.format`` with ASCII digits (never locale-aware numbers)."""
     return _(template).format(**params)

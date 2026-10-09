@@ -77,7 +77,7 @@ from reverbscope.errors import (
     SessionError,
 )
 from reverbscope.health import assess, failure_guidance
-from reverbscope.i18n import N_, _, activate, list_join, list_separator, localize, pgettext
+from reverbscope.i18n import N_, _, activate, list_join, list_separator, localize, pgettext, quoted
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.verdicts import judge_comparison
 from reverbscope.labels import accuracy_class_text
@@ -140,28 +140,54 @@ _LIST_ARGUMENTS: dict[str, str | None] = {
 }
 
 
-class _ListTemplate(str):
-    """A translated argparse template whose list argument, which argparse
-    joins with ``", "`` before filling it in, reads as a list of the active
-    language once filled in (``缺少必需的参数：项目、会话、--position``)."""
+class _Quoted(str):
+    """A value argparse shows through ``%r``: written in the quotation marks of
+    the active language (``“bad”`` in Chinese, ``'bad'`` as Python writes it)."""
+
+    def __repr__(self) -> str:
+        return quoted(str(self))
+
+
+_REPR_FIELD = re.compile(r"%\((\w+)\)r")
+
+
+class _ArgTemplate(str):
+    """A translated argparse template, filled in the way the active language
+    writes it: a value that argparse shows with ``%r`` in the language's
+    quotation marks, and a list argument, which argparse joins with ``", "``
+    before filling it in, as a list of the language
+    (``缺少必需的参数：项目、会话、--position``,
+    ``无效的选择：“bogus”（可选：“init”、“add”）``)."""
 
     field: str | None
+    lists: bool
 
-    def __new__(cls, text: str, field: str | None) -> _ListTemplate:
+    def __new__(cls, text: str, field: str | None, *, lists: bool) -> _ArgTemplate:
         made = super().__new__(cls, text)
         made.field = field
+        made.lists = lists
         return made
 
     def __mod__(self, values: Any) -> str:
         separator = list_separator()
-        if self.field is None and isinstance(values, str):
-            values = values.replace(", ", separator)
-        elif isinstance(values, dict) and isinstance(values.get(self.field), str):
-            items = values[self.field].split(", ")
-            if self.field == "choices":
-                items = [_quoted_choice(item) for item in items]
-            values = {**values, self.field: separator.join(items)}
-        filled: str = str(self) % values
+        text = str(self)
+        if isinstance(values, dict):
+            values = dict(values)
+            for name in _REPR_FIELD.findall(text):
+                if isinstance(values.get(name), str):
+                    values[name] = _Quoted(values[name])
+            listed = values.get(self.field) if self.field else None
+            if self.lists and isinstance(listed, str):
+                items = listed.split(", ")
+                if self.field == "choices":
+                    items = [_quoted_choice(item) for item in items]
+                values[self.field] = separator.join(items)
+        elif isinstance(values, str):
+            if self.lists and self.field is None:
+                values = values.replace(", ", separator)
+            elif "%r" in text:
+                values = _Quoted(values)
+        filled: str = text % values
         return filled
 
 
@@ -174,15 +200,18 @@ def _quoted_choice(item: str) -> str:
     """
     if len(item) >= 2 and item[0] == item[-1] and item[0] in "'\"":
         item = item[1:-1]
-    return repr(item)
+    return quoted(item)
 
 
 def _argparse_gettext(message: str) -> str:
     if message not in ARGPARSE_MESSAGES:
         return message
+    translated = _(message)
     if message in _LIST_ARGUMENTS:
-        return _ListTemplate(_(message), _LIST_ARGUMENTS[message])
-    return _(message)
+        return _ArgTemplate(translated, _LIST_ARGUMENTS[message], lists=True)
+    if "%r" in message or _REPR_FIELD.search(message):
+        return _ArgTemplate(translated, None, lists=False)
+    return translated
 
 
 def _argparse_ngettext(singular: str, plural: str, n: int) -> str:
@@ -371,7 +400,8 @@ class _Parser(argparse.ArgumentParser):
             name = _type_name(action.type)
             if name is None:
                 raise
-            message = _("invalid %(type)s value: %(value)r") % {"type": name, "value": arg_string}
+            template = _argparse_gettext("invalid %(type)s value: %(value)r")
+            message = template % {"type": name, "value": arg_string}
             raise argparse.ArgumentError(action, message) from None
         if isinstance(value, Path):
             with contextlib.suppress(RuntimeError):  # no home folder to expand to
@@ -1994,7 +2024,7 @@ def _channel_list(text: str) -> list[int]:
     if not channels:
         raise argparse.ArgumentTypeError(
             _("{value} is not a comma-separated list of channel numbers (e.g. 1,2)").format(
-                value=repr(text)
+                value=quoted(text)
             )
         )
     return channels

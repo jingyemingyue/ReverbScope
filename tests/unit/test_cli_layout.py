@@ -17,7 +17,7 @@ import pytest
 
 from reverbscope.cli.main import main
 from reverbscope.demo import run_demo
-from reverbscope.i18n import activate, annotated, clause_join, labelled, list_join
+from reverbscope.i18n import activate, annotated, clause_join, labelled, list_join, quoted
 from tests.frames import unframe
 from tests.zh_tokens import ascii_punctuation
 
@@ -91,25 +91,32 @@ def _screens(workspace: Path) -> list[tuple[str, ...]]:
 
 
 @pytest.mark.parametrize(
-    ("lang", "bracketed", "labelled_as", "clause", "listed"),
+    ("lang", "bracketed", "labelled_as", "clause", "listed", "quote"),
     [
-        ("en", "110 Hz (+11.3 dB)", "A: b", "x; y", "x, y"),
-        ("zh_CN", "110 Hz（+11.3 dB）", "A：b", "x；y", "x、y"),
+        ("en", "110 Hz (+11.3 dB)", "A: b", "x; y", "x, y", "'bad'"),
+        ("zh_CN", "110 Hz（+11.3 dB）", "A：b", "x；y", "x、y", "“bad”"),
     ],
 )
-def test_brackets_colons_clauses_and_lists_are_the_languages(
-    lang: str, bracketed: str, labelled_as: str, clause: str, listed: str
+def test_brackets_colons_clauses_lists_and_quotes_are_the_languages(
+    lang: str, bracketed: str, labelled_as: str, clause: str, listed: str, quote: str
 ) -> None:
     """Chinese writes full-width brackets (with no space before them), colons and
-    semicolons and a list with 、; English stays as it was."""
+    semicolons, a list with 、 and a typed value between “ ”; English stays
+    as it was."""
     activate(lang)
     try:
         assert annotated("110 Hz", "+11.3 dB") == bracketed
         assert labelled("A", "b") == labelled_as
         assert clause_join(["x", "y"]) == clause
         assert list_join(["x", "y"]) == listed
+        assert quoted("bad") == quote
     finally:
         activate("en")
+
+
+def test_a_quoted_value_is_what_python_writes_in_english() -> None:
+    assert quoted("it's") == repr("it's") == '"it\'s"'
+    assert quoted("a\\b") == repr("a\\b")
 
 
 def test_chinese_lists_and_notes_in_the_reports(run: Call, workspace: Path) -> None:

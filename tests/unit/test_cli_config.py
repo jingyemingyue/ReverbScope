@@ -185,7 +185,7 @@ def test_a_value_a_setting_cannot_take_writes_nothing(
 def test_a_refusal_is_translated(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
     code, _out, err = _run(capsys, "--lang", "zh_CN", "config", "language", "fr")
     assert code == 2
-    assert "未知的语言 'fr'；可用：zh_CN、en 或 auto" in err and "没有做任何更改" in err
+    assert "未知的语言 “fr”；可用：zh_CN、en 或 auto" in err and "没有做任何更改" in err
 
 
 def test_a_change_keeps_every_other_setting(home: Path, capsys: pytest.CaptureFixture[str]) -> None:

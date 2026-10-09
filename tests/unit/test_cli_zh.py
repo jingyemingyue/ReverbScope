@@ -180,7 +180,7 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
     with pytest.raises(SystemExit):
         main(["--lang", "zh_CN", "analyze", "--profile", "nope"])
     err = capsys.readouterr().err
-    assert "无效选项" in err, err
+    assert "无效的选择" in err, err
 
 
 @pytest.mark.parametrize(
@@ -199,7 +199,7 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
         ),
         (
             ["schema", "bad"],
-            "参数 {result,session,comparison,project,sidecar}：无效选项：'bad'",
+            "参数 {result,session,comparison,project,sidecar}：无效的选择：“bad”",
             "argument {result,session,comparison,project,sidecar}: invalid choice: 'bad'",
         ),
         (["show"], "缺少必需的参数：路径", "the following arguments are required: path"),
@@ -210,7 +210,7 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
         ),
         (
             ["project", "bogus"],
-            "无效选项：'bogus'（可选：'init'、'add'、'average'、'show'、'overview'）",
+            "无效的选择：“bogus”（可选：“init”、“add”、“average”、“show”、“overview”）",
             "invalid choice: 'bogus' (choose from 'init', 'add', 'average', 'show', 'overview')",
         ),
         (
@@ -220,17 +220,17 @@ def test_argparse_errors_are_chinese(zh_cli: None, capsys: pytest.CaptureFixture
         ),
         (
             ["devices", "--probe=yes"],
-            "参数 --probe：该选项不接受值（给出了 'yes'）",
+            "参数 --probe：该选项不接受值（给出了 “yes”）",
             "argument --probe: ignored explicit argument 'yes'",
         ),
         (
             ["sweep", "--out", "x.wav", "--sample-rate", "abc"],
-            "参数 --sample-rate：无效的整数值：'abc'",
+            "参数 --sample-rate：无效的整数值：“abc”",
             "argument --sample-rate: invalid int value: 'abc'",
         ),
         (
             ["sweep", "--out", "x.wav", "--duration", "long"],
-            "参数 --duration：无效的数字值：'long'",
+            "参数 --duration：无效的数字值：“long”",
             "argument --duration: invalid float value: 'long'",
         ),
     ],
@@ -482,7 +482,7 @@ def test_the_json_environment_report_stays_english(
         assert report["language"] == "zh_CN" and current_locale() == "zh_CN"
     # The text report keeps the interface language.
     assert main([*chinese, "doctor"]) == 0
-    assert "未知的音频后端 'bogus'" in capsys.readouterr().out
+    assert "未知的音频后端 “bogus”" in capsys.readouterr().out
 
 
 def _take(tmp_path: Path, rt60_s: float, name: str) -> Path:
@@ -732,3 +732,79 @@ def test_the_root_options_peeked_at_are_the_parsers() -> None:
     parser = build_parser()
     actual = {s for a in parser._actions for s in a.option_strings if s.startswith("--")}
     assert set(_ROOT_LONG_OPTIONS) == actual
+
+
+@pytest.mark.parametrize(
+    ("lang", "quoted"),
+    [("zh_CN", "“bogus”"), ("en", "'bogus'")],
+)
+def test_a_wrong_value_is_quoted_the_way_the_language_quotes(
+    zh_cli: None, capsys: pytest.CaptureFixture[str], lang: str, quoted: str
+) -> None:
+    """The error said `无效选项：'frobnicate'`: ASCII quotes around the value and,
+    in the choices, 选项 (an option) for a choice."""
+    with pytest.raises(SystemExit):
+        main(["--lang", lang, "project", "bogus"])
+    err = " ".join(capsys.readouterr().err.split())
+    assert quoted in err
+    if lang == "zh_CN":
+        assert "无效的选择" in err and "无效选项" not in err
+        assert "“init”、“add”、“average”、“show”、“overview”" in err.replace("、 ", "、")
+
+
+def test_the_values_of_our_own_messages_are_quoted_the_way_the_language_quotes(
+    zh_cli: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    for lang, expected in (
+        ("zh_CN", "未知样式 “nope”；可选 boxed、plain 或 auto"),
+        ("en", "unknown style 'nope'; choose boxed, plain or auto"),
+    ):
+        assert main(["--lang", lang, "config", "style", "nope"]) == 2
+        assert expected in " ".join(capsys.readouterr().err.split())
+    assert main(["--lang", "zh_CN", "--backend", "nope", "devices"]) == 1
+    assert "未知的音频后端 “nope”" in " ".join(capsys.readouterr().err.split())
+
+
+def _broken_audio_files(folder: Path) -> dict[str, Path]:
+    """Files that libsndfile cannot open, by what is wrong with them."""
+    import struct
+
+    files = {
+        "not audio": b"not a wav file at all",
+        "empty": b"",
+        "cut short": b"RIFF"
+        + struct.pack("<I", 28)
+        + b"WAVEfmt "
+        + struct.pack("<IHHIIHH", 16, 1, 1, 48000, 96000, 2, 16),
+        "unsupported": b"fLaC\x00\x00\x00\x22" + b"\x00" * 40,
+    }
+    paths = {}
+    for kind, data in files.items():
+        paths[kind] = folder / f"{kind.replace(' ', '-')}.wav"
+        paths[kind].write_bytes(data)
+    return paths
+
+
+@pytest.mark.parametrize(
+    ("kind", "chinese"),
+    [
+        ("not audio", "这不是 ReverbScope 能读取的 WAV、FLAC 等音频文件"),
+        ("empty", "文件是空的"),
+        ("cut short", "WAV 文件已损坏，或被截断了"),
+        ("unsupported", "不支持它的音频编码"),
+    ],
+)
+def test_libsndfiles_usual_sentences_are_explained_in_chinese(
+    zh_cli: None, capsys: pytest.CaptureFixture[str], tmp_path: Path, kind: str, chinese: str
+) -> None:
+    """ "无法读取音频文件 bad.wav：Error opening 'bad.wav': Format not recognised."
+    ended a Chinese sentence in libsndfile's English. English keeps its words."""
+    path = _broken_audio_files(tmp_path)[kind]
+    argv = ["analyze-ir", "--ir", str(path), "--band", "20", "20000"]
+    assert main(["--lang", "zh_CN", *argv]) == 1
+    err = " ".join(capsys.readouterr().err.split())
+    assert f"无法读取音频文件 {path.name}：{chinese}" in err, err
+    assert "Error opening" not in err and "Format not recognised" not in err
+    assert main(["--lang", "en", *argv]) == 1
+    english = " ".join(capsys.readouterr().err.split())
+    assert f"cannot read audio file {path.name}: Error opening" in english, english

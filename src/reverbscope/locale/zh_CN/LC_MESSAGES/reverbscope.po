@@ -1631,7 +1631,7 @@ msgid "invalid %(type)s value: %(value)r"
 msgstr "无效的%(type)s值：%(value)r"
 
 msgid "invalid choice: %(value)r (choose from %(choices)s)"
-msgstr "无效选项：%(value)r（可选：%(choices)s）"
+msgstr "无效的选择：%(value)r（可选：%(choices)s）"
 
 msgid "not allowed with argument %s"
 msgstr "不能与参数 %s 同时使用"
@@ -5913,8 +5913,27 @@ msgctxt "annotation"
 msgid "{value} ({note})"
 msgstr "{value}（{note}）"
 
+msgctxt "argument value"
+msgid "'{text}'"
+msgstr "“{text}”"
+
 msgid "{speed:.1f} m/s at {temp:.0f} °C"
 msgstr "{speed:.1f} m/s，气温 {temp:.0f} °C"
 
 msgid "add {input}"
 msgstr "需添加 {input}"
+
+msgid "it is not a WAV, FLAC or other audio file that ReverbScope can read"
+msgstr "这不是 ReverbScope 能读取的 WAV、FLAC 等音频文件"
+
+msgid "its audio encoding is not supported"
+msgstr "不支持它的音频编码"
+
+msgid "the WAV file is damaged or was cut short"
+msgstr "WAV 文件已损坏，或被截断了"
+
+msgid "the file is empty"
+msgstr "文件是空的"
+
+msgid "the system could not create the file"
+msgstr "系统无法创建该文件"
