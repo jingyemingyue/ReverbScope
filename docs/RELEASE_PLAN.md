@@ -84,6 +84,7 @@ No dates. The exit criteria are the schedule (ARCHITECTURE_V1.md §10).
 | **0.5.0b1** | Software beta: ship the single-microphone algorithm and the desktop presentation that landed after 0.4.1, still without a hardware claim | CI and the Release workflow green on the release commit; every new behaviour has a synthetic test; CHANGELOG names the version; the notes say this is not 0.5.0 | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI |
 | **0.5.0b2** | Stabilization beta after the rename: the stable line's fixes, the acoustic audit (no number without the measurement to support it), the offline validation gates, every download named ReverbScope | CI and the Release workflow green on the release commit; every fix has a synthetic regression test; CHANGELOG names the version and separates synthetic/CI validation from hardware validation; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; the 0.5.0 exit criteria; signing; PyPI; a working website until Pages is enabled |
 | **0.5.0rc1** | Release candidate for hardware and DAW validation: the 0.5.0b2 code with the tester-facing additions of §2a, feature set frozen, built so that anyone can download, install and report | CI and the Release workflow green on the release commit of the `release/0.5.0` branch; every download named for the project; the notes say it is a candidate, not 0.5.0, in English and Chinese; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; signing; PyPI; 0.5.0 itself |
+| **0.5.0rc2** | Release candidate 2: rc1 plus Measurement health, the regression corpus, comparison verdicts, the corrected decay rules, the loader hardening and the fixes of an independent review (the exception recorded in §2a); feature set frozen from here | CI green on the pull request that brought it to `release/0.5.0`, and CI and the Release workflow green on the release commit; the notes say what changed since rc1, in English and Chinese; `docs/STATUS.md` has a dated snapshot | Any hardware or DAW result; signing; PyPI; 0.5.0 itself |
 | **0.5.0** | "Trusted by a human": the first version whose Standalone Mode and DAW workflow were run on real hardware at least once | One dated PASS row per cell of the hardware matrix on at least one platform (device enumeration, sample-rate negotiation, channel mapping, loopback capture, Stop during playback, a full Standalone measurement, the same signal through one DAW); #12 and #13 (loopback time origin, real-time callback) closed; #14 (zh-CN catalog complete, safety warning translated) closed; #15 (ISO 3382-2 table source) closed | The validation campaign; API / schema freeze; signing |
 | **1.0.0rc1** | Freeze and prove (ARCHITECTURE_V1.md §10, row 1.0-rc) | No open MUST item of §3.1: hardware matrix executed at least once per platform (M10); validation campaign published with its data (M11); signed bundles or an explicit maintainer decision to ship unsigned (M9); public-repository checklist executed (M13, §9.1); API and schema integers frozen; SECURITY / CONTRIBUTING / STATUS updated for the freeze; PyPI pre-release if trusted publishing is configured | — |
 | **1.0.0** | Release | Fixes from the candidate only; release notes name the validation results and the known limitations | — |
@@ -119,6 +120,19 @@ of a serious UX regression, each with a regression test where a test can
 express it. Not allowed: a new feature of any size, an algorithm experiment,
 a command-line redesign, an architecture rewrite, a refactor unrelated to
 stability, or a major dependency upgrade. Those go to `main`.
+
+**The rc2 exception (2026-10-09).** `0.5.0rc2` is cut from the base the
+maintainer named for it (the development line at `7e81549`), so it carries
+more than fixes. The maintainer's list for rc2 names Measurement health, the
+regression corpus, the DSP correctness rules and speed-ups the development
+line had merged, the loader hardening, and the lifecycle and crash fixes.
+Comparison verdicts (with the seven Tier-1 names and the `health` / `verdict`
+JSON keys that Measurement health and verdicts bring) and the optional
+`dropouts` record of `result.json` come with that base and are recorded here
+as part of the exception; the maintainer can still take them out before rc2 is
+published. It is a decision about one candidate, not a change of the rule
+above: from rc2 on, the feature set is frozen again. What rc2 changed is the
+`[0.5.0rc2]` section of the changelog.
 
 **How the two stay close.** A fix that applies to both lines is made on the
 candidate line first and then forward-ported to `main` (merge or cherry-pick

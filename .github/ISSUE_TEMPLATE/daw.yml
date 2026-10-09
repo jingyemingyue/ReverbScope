@@ -21,7 +21,7 @@ body:
     id: os
     attributes:
       label: Operating system and ReverbScope version
-      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.5.0rc1 build 1a2b3c4d"
+      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.5.0rc2 build 1a2b3c4d"
     validations:
       required: true
   - type: input

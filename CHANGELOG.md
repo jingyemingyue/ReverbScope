@@ -7,6 +7,38 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.5.0rc2] - 2026-10-09
+
+Release candidate 2 for 0.5.0, built for hardware and DAW validation like
+rc1. It is **not** the final 0.5.0 stable release: 0.5.0 is cut only when the
+gate in `docs/RELEASE_PLAN.md` §2b has been met on real machines, interfaces,
+rooms and DAWs. rc2 is the first candidate to carry Measurement health, the
+comparison verdicts and the regression corpus, and the decay rules as audited
+since rc1; its feature set is frozen from here on (the exception is recorded
+in `docs/RELEASE_PLAN.md` §2a). The list below is what changed since rc1; the
+`[0.5.0rc1]` section after it is the rest of the list since the published
+v0.5.0b1.
+
+这是 0.5.0 正式版之前的第二个候选测试版（release candidate 2），不代表已经完成所有
+真实硬件和 DAW 验证。它是第一个带有测量健康、比较判定和回归语料库的候选版，并包含 rc1
+之后经过审查的衰减规则；功能面从此冻结。只有在真实电脑、音频接口、房间和 DAW 上满足
+`docs/RELEASE_PLAN.md` §2b 的门槛之后，才会切出 0.5.0。
+
+**Verified:** the full automated test suite (1811 tests on the pull request's
+tree), synthetic acoustic tests against closed-form decays, a differential run
+of 3 240 synthetic band decays against the previous rules and an independent
+review of 3 061 synthetic rooms, gates, bursts, double slopes, dropouts and
+files of earlier versions, and cross-platform CI (Linux, macOS, Windows;
+Python 3.12–3.14) on the pull request; the Release workflow builds and smoke
+tests the bundles on the release commit. **Not yet verified:** real audio
+interfaces, microphones, loudspeakers, rooms, every DAW, every driver and host
+API, and signing / notarization (the bundles are unsigned: macOS ad hoc, not
+notarized; Windows no Authenticode; nothing is on PyPI). `docs/HARDWARE_TESTS.md`
+and `docs/VALIDATION.md` are unchanged: every cell is still empty, i.e. not
+tested.
+
 ### Added
 - **Measurement health.** Every result now opens with the checks the analysis
   made on the take itself (reference, sweep, playback speed, direct sound,

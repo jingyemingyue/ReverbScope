@@ -15,7 +15,7 @@ neither needs Python or Git:
   without a desktop.
 
 ReverbScope is a **pre-release for testing**; the build to test is the 0.5.0
-release candidate (`0.5.0rc1`) on the Releases page, while `main` is the
+release candidate (`0.5.0rc2`) on the Releases page, while `main` is the
 development line. The builds are
 **unsigned** (see [Unsigned-build warnings](#unsigned-build-warnings)) and
 **no measurement has been validated on real audio hardware yet**
@@ -278,7 +278,7 @@ Python 3.12 or newer. Download `reverbscope-<version>-py3-none-any.whl`, then:
 ```bash
 python3 -m venv reverbscope-env
 source reverbscope-env/bin/activate          # Windows: reverbscope-env\Scripts\activate
-pip install "./reverbscope-0.5.0rc1-py3-none-any.whl[gui]"
+pip install "./reverbscope-0.5.0rc2-py3-none-any.whl[gui]"
 reverbscope --help
 reverbscope gui                              # or: reverbscope-gui
 ```
@@ -293,7 +293,7 @@ reverbscope show demo/
 ```
 
 `reverbscope-<version>.tar.gz` is the source archive: `pip install
-"./reverbscope-0.5.0rc1.tar.gz[gui]"` builds the same wheel locally.
+"./reverbscope-0.5.0rc2.tar.gz[gui]"` builds the same wheel locally.
 
 ### Developer install (from Git)
 

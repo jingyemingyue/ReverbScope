@@ -13,7 +13,7 @@
 * **终端版（Terminal Edition）**——只有命令行，构建时不含图形界面（没有 Qt），体积约为桌面版的一半。适合脚本、
   自动化、服务器和没有图形桌面的电脑。
 
-ReverbScope 是**供测试用的预发布版本**；供测试的构建是 Releases 页面上的 0.5.0 候选测试版（`0.5.0rc1`），
+ReverbScope 是**供测试用的预发布版本**；供测试的构建是 Releases 页面上的 0.5.0 候选测试版（`0.5.0rc2`），
 `main` 是开发线。这些构建**没有签名**（见
 [未签名构建的警告](#未签名构建的警告)），而且**还没有任何测量在真实音频硬件上验证过**
 （[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)）。
@@ -226,7 +226,7 @@ ReverbScope **还没有发布到 PyPI**，所以 `pip install reverbscope` 装�
 ```bash
 python3 -m venv reverbscope-env
 source reverbscope-env/bin/activate          # Windows：reverbscope-env\Scripts\activate
-pip install "./reverbscope-0.5.0rc1-py3-none-any.whl[gui]"
+pip install "./reverbscope-0.5.0rc2-py3-none-any.whl[gui]"
 reverbscope --help
 reverbscope gui                              # 或者：reverbscope-gui
 ```
@@ -239,7 +239,7 @@ reverbscope --backend fake measure --out demo/ --duration 2 --post-silence 1.5
 reverbscope show demo/
 ```
 
-`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-0.5.0rc1.tar.gz[gui]"` 会在本地构建出同样的 wheel。
+`reverbscope-<version>.tar.gz` 是源码包：`pip install "./reverbscope-0.5.0rc2.tar.gz[gui]"` 会在本地构建出同样的 wheel。
 
 ### 开发者安装（从 Git）
 

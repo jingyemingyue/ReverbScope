@@ -18,7 +18,7 @@ body:
     attributes:
       label: ReverbScope version and build commit
       description: 'From the first lines of the environment report: `reverbscope doctor` or Help → Environment Report for Bug Reports.'
-      placeholder: "ReverbScope 0.5.0rc1, build 1a2b3c4d, Desktop Edition"
+      placeholder: "ReverbScope 0.5.0rc2, build 1a2b3c4d, Desktop Edition"
     validations:
       required: true
   - type: input

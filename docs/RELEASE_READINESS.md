@@ -1,5 +1,13 @@
 # Release-readiness audit of the measurement path (0.5.0rc1)
 
+> **Read with 0.5.0rc2.** This audit was made on the code of `0.5.0rc1`. rc2
+> changed the decay, filter and sweep code afterwards (the rules for a
+> response that is cut short, a step in the decay and an EDT far longer than
+> the late decay; the settling cache; the sweep-rate guard) and added
+> Measurement health, comparison verdicts and the dropout detector, which
+> carry their own rows in `docs/MEASUREMENT_METHODOLOGY.md` §3 and §12; the
+> audit below was not repeated for them.
+
 Audited on 2026-10-06 against the code of the `0.5.0rc1` candidate (the
 0.5.0b2 line). The question for each number ReverbScope reports is not
 "does a test pass" but: **does the number travel with a validity,

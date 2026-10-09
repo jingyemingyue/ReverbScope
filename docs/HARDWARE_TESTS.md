@@ -12,11 +12,11 @@ capture where the check needs them. The Demo mode, the `fake` backend, the
 synthetic and scripted-PortAudio tests, and CI runners do not count. The
 cells are empty on purpose; no check has been run on real hardware yet.
 
-**Why this matters now.** `0.5.0rc1` is a release candidate whose only
-purpose is this matrix: the code is frozen, and 0.5.0 is cut when real
+**Why this matters now.** `0.5.0rc2` is a release candidate whose only
+purpose is this matrix: the code is frozen as of this candidate, and 0.5.0 is cut when real
 machines, interfaces, rooms and DAWs have filled the rows the release plan
 names as the gate ([RELEASE_PLAN.md §2b](RELEASE_PLAN.md#2b-the-050-gate)).
-A failed row is as valuable as a passed one: it becomes a fix and `0.5.0rc2`.
+A failed row is as valuable as a passed one: it becomes a fix and `0.5.0rc3`.
 
 **Contributing a result.** Open an
 [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)
