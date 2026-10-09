@@ -469,24 +469,73 @@ def _tokens(text: str) -> Iterator[str]:
         yield buffer
 
 
+def _is_word_char(text: str) -> bool:
+    """One wide character that is part of a word (not punctuation): the first
+    half of a two-character word such as 路径 can be kept with the second."""
+    return (
+        len(text) == 1
+        and char_width(text) == 2
+        and text not in _NO_LINE_START
+        and text not in _NO_LINE_END
+        and unicodedata.category(text).startswith("L")
+    )
+
+
+#: A note in full-width brackets this short (a default hint such as
+#: ``（默认：10）``) is never broken across two lines when a line can hold it.
+_HINT_WIDTH = 30
+
+
+def _hold_hints(tokens: list[str], room: int) -> list[str]:
+    """``tokens`` with each short full-width bracket group made one token."""
+    held: list[str] = []
+    index = 0
+    while index < len(tokens):
+        if tokens[index] == "（":
+            end = index + 1
+            while end < len(tokens) and tokens[end] not in ("（", "）"):
+                end += 1
+            if end < len(tokens) and tokens[end] == "）":
+                group = "".join(
+                    " " if piece.isspace() and piece != GLUE else piece
+                    for piece in tokens[index : end + 1]
+                )
+                if cell_width(group) <= min(_HINT_WIDTH, room):
+                    held.append(group)
+                    index = end + 1
+                    continue
+        held.append(tokens[index])
+        index += 1
+    return held
+
+
 def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> list[str]:
     """Plain ``text`` filled to ``width`` columns.
 
     ``first`` starts the first line and ``rest`` every following one (a
     hanging indent). Chinese text breaks between characters, Latin text at
     spaces; a word longer than a line is split. Explicit newlines are kept.
+
     A number stays on the line of its unit (:func:`glue_units`): paragraphs,
     status lines and fields are wrapped here, not only the at-a-glance rows.
+    Closing punctuation does not start a line: the character before it goes
+    down with it (and the one before that, when it is a closing character
+    too, or when both are the two halves of a Chinese word). A short note in
+    full-width brackets, a default hint such as ``（默认：10）``, is not broken
+    across two lines. The last line is never a lone character.
     """
     rest = first if rest is None else rest
     text = glue_units(text)
     lines: list[str] = []
     for paragraph in text.split("\n"):
+        start = len(lines)
         prefix = first if not lines else rest
         # The line as pieces: a token with the space before it, if any.
         parts: list[str] = []
         space = False
-        for token in _tokens(paragraph):
+        room_of_a_line = max(1, width - max(cell_width(first), cell_width(rest)))
+        tokens = _hold_hints(list(_tokens(paragraph)), room_of_a_line)
+        for index, token in enumerate(tokens):
             if token.isspace():
                 space = bool(parts)
                 continue
@@ -502,8 +551,19 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                     parts.append(token)  # nothing to carry: let it hang
                     continue
                 # Closing punctuation does not start a line: the character
-                # before it moves down with it.
+                # before it moves down with it, and a closing character
+                # before that, and the first half of a two-character word.
                 carry = parts.pop()
+                while len(parts) > 1 and carry[0] in _NO_LINE_START:
+                    carry = parts.pop() + carry
+                if len(parts) > 1 and _is_word_char(carry[:1]) and _is_word_char(parts[-1]):
+                    carry = parts.pop() + carry
+            elif parts and not joiner and _is_word_char(token) and len(parts) > 1:
+                # The line is full and the next one would start with one
+                # character and a closing mark (路 / 径：): keep the word whole.
+                after = tokens[index + 1] if index + 1 < len(tokens) else ""
+                if after[:1] in _NO_LINE_START and after and _is_word_char(parts[-1]):
+                    carry = parts.pop()
             # An opening bracket does not end a line: it moves down with
             # what it opens (and with the space after it, if any).
             while len(parts) > 1 and parts[-1][-1] in _NO_LINE_END:
@@ -521,6 +581,16 @@ def wrap(text: str, width: int, *, first: str = "", rest: str | None = None) -> 
                 lines.append(prefix + head)
                 prefix, piece = rest, piece[len(head) :]
             parts = [piece]
+        # A last line of one character (the second half of a word, or a
+        # word and its closing mark) takes the character before it along.
+        if (
+            len(lines) > start
+            and 0 < cell_width("".join(parts).rstrip("".join(_NO_LINE_START))) <= 2
+        ):
+            before = lines[-1]
+            if len(before) > len(rest) + 1 and _is_word_char(before[-1]):
+                lines[-1] = before[:-1]
+                parts = [before[-1], *parts]
         lines.append(prefix + "".join(parts))
     return [line.replace(GLUE, " ") for line in lines]
 
