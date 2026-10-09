@@ -791,9 +791,11 @@ def _dropouts(result: AnalysisResult) -> HealthCheck | None:
         status,
         title,
         reason,
-        affects=(METRIC_FREQUENCY_RESPONSE, METRIC_RESONANCES)
-        if status is HealthStatus.WARNING
-        else (METRIC_FREQUENCY_RESPONSE, METRIC_RESONANCES, METRIC_DECAY, METRIC_ENERGY),
+        # A dropout also leaves a burst in the deconvolved response, which the
+        # decays and the energy parameters of the bands below it can read
+        # (docs/MEASUREMENT_METHODOLOGY.md, the dropout limit): a warning
+        # lists them too.
+        affects=(METRIC_FREQUENCY_RESPONSE, METRIC_RESONANCES, METRIC_DECAY, METRIC_ENERGY),
         evidence=evidence,
         fix=(
             _(
