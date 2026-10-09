@@ -171,6 +171,8 @@ _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 #: The escape sequences :meth:`Console.style` writes, and only those.
 _OWN_CODE = "|".join(sorted({*_SGR.values(), "0"}, key=len, reverse=True))
 _OWN_STYLE = re.compile(rf"(\x1b\[(?:{_OWN_CODE})(?:;(?:{_OWN_CODE}))*m)")
+#: A styled word at the start of a cell: the escape, the text, the reset.
+_LEADING_STYLE = re.compile(r"(?:\x1b\[[0-9;]*m)+(?P<text>[^\x1b\s]+)\x1b\[0m")
 #: Characters a terminal acts on instead of showing: C0 and C1 controls
 #: (ESC starts a sequence that clears the screen or retitles the window) and
 #: the bidirectional controls, which reorder what follows them.
@@ -1073,6 +1075,11 @@ class Console:
                 wrapped = wrap(strip_ansi(cell), widths[index])
                 if any(cell_width(line) > widths[index] for line in wrapped):
                     return None  # an unbreakable word inside the text
+                # Wrapping works on bare text: a coloured mark in front of it
+                # (the overview without its status column) keeps its colour.
+                lead = _LEADING_STYLE.match(cell)
+                if lead and wrapped[0].startswith(lead["text"]):
+                    wrapped[0] = lead[0] + wrapped[0][len(lead["text"]) :]
                 split.append(wrapped)
             height = max(len(lines) for lines in split)
             return [[lines[k] if k < len(lines) else "" for lines in split] for k in range(height)]

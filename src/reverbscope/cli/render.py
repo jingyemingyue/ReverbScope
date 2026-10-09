@@ -425,6 +425,11 @@ def _glance_rows(
     status column is left out (its mark stays in front of the result) and a
     line under the table says so; where no table fits, and without frames,
     aligned fields with the status symbol, as they always were.
+
+    Only this overview is a table. The measurement-health and verdict sections
+    keep their lines: each entry there is a sentence of advice or a reason of
+    two or three lines, with a ``→`` step under it, and a cell would cut it up
+    and repeat the overview directly above.
     """
     marked = [(label, f"{c.symbol(status)} {glue_units(text)}") for label, status, text in rows]
     label_width = _glance_label_width()

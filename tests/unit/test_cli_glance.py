@@ -359,6 +359,22 @@ def test_the_status_column_is_left_out_only_when_nothing_else_fits_and_the_table
     assert "状态" in chinese and "已省略" not in chinese
 
 
+def test_a_wrapped_result_keeps_the_colour_of_its_mark_when_the_status_column_is_left_out(
+    demo: DemoRun,
+) -> None:
+    """Colour is only ever on the mark: the mark in front of a result that wraps
+    is as coloured as the one in front of a result that fits."""
+    first = demo.takes[0].result
+    findings = interpret(first, "vocal")
+    boxed = at_a_glance(_console(48, "colour"), first, findings)
+    table = _table(boxed)
+    assert "Status" not in "\n".join(table)
+    assert {cell_width(line) for line in table} == {48}
+    # Six topics, each one's first line starts its result with a coloured mark.
+    coloured = [line for line in boxed if re.search(r"\x1b\[[0-9;]*m[!✓]\x1b\[0m ", line)]
+    assert len(coloured) == 6, "\n".join(boxed)
+
+
 def test_nothing_fits_at_all_and_the_plain_lines_come_back(demo: DemoRun) -> None:
     first = demo.takes[0].result
     findings = interpret(first, "vocal")
