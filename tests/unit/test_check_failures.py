@@ -19,7 +19,7 @@ def _script(name: str) -> ModuleType:
     return module
 
 
-@pytest.mark.parametrize("name", ["check_doc_links", "check_src_safety"])
+@pytest.mark.parametrize("name", ["check_doc_links", "check_src_safety", "check_action_pins"])
 @pytest.mark.parametrize("kind", ["missing", "file", "empty"])
 def test_unscannable_roots_fail(
     name: str, kind: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
@@ -39,7 +39,12 @@ def test_unscannable_roots_fail(
 
 
 @pytest.mark.parametrize(
-    ("name", "filename"), [("check_doc_links", "guide.md"), ("check_src_safety", "module.py")]
+    ("name", "filename"),
+    [
+        ("check_doc_links", "guide.md"),
+        ("check_src_safety", "module.py"),
+        ("check_action_pins", "workflow.yml"),
+    ],
 )
 def test_invalid_utf8_is_a_located_failure(name: str, filename: str, tmp_path: Path) -> None:
     path = tmp_path / filename

@@ -198,6 +198,14 @@ All notable changes to ReverbScope are documented here. The format follows
   never examined; it now says how many milliseconds could be searched, with
   an "incomplete window" chip, as the command line's At-a-glance row does
   (from PR #46).
+- The Pages workflow's deploy job failed before it started ("Unable to resolve
+  action actions/deploy-pages@d6db9010..."): the pinned commit did not exist in
+  that repository, and the test that guards the pins only checks their shape.
+  The action is pinned to the commit of v4.0.5, and the CI lint job now runs
+  `scripts/check_action_pins.py`, which asks each action's repository for the
+  commit it is pinned to and names the workflow file and line of any it does
+  not have. Serving the site still needs Pages enabled once in the repository
+  settings (Source: GitHub Actions).
 
 ## [0.5.0b2] - 2026-10-06
 
