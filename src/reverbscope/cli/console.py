@@ -149,6 +149,10 @@ _MARKS: dict[str, tuple[str, str]] = {
 #: is laid out another way.
 _WRAP_FLOOR = 16
 
+#: The progress bar: the part done, its head and the part to come, Unicode
+#: then ASCII. The head says where the bar stands without colour.
+_METER = {True: ("━", "╸", "─"), False: ("=", ">", "-")}
+
 #: ASCII stand-ins for the typographic signs the reports use, for a stream
 #: whose encoding cannot write them (a cp1252 pipe, a Latin-1 terminal).
 _ASCII_SIGNS = str.maketrans(
@@ -788,6 +792,20 @@ class Console:
     def rule_char(self) -> str:
         return "─" if self.unicode else "-"
 
+    def meter(self, fraction: float, size: int) -> str:
+        """A progress bar ``size`` columns wide: ``━━━━╸────`` (the part done
+        in the accent colour, the rest dim), green when full; ``====>----``
+        where the stream cannot write the glyphs. The head shows where the
+        bar stands without colour."""
+        done_glyph, head, rest = _METER[self.unicode]
+        if self.unicode and not self.can_write(head):
+            head = done_glyph
+        size = max(1, size)
+        if fraction >= 1.0:
+            return self.style(done_glyph * size, "green")
+        done = min(size - 1, max(0, int(size * fraction)))
+        return self.accent(done_glyph * done + head) + self.muted(rest * (size - done - 1))
+
     def dash(self) -> str:
         """The mark for a value that is not there."""
         return "—" if self.unicode else "-"
@@ -1261,32 +1279,42 @@ class ProgressLine:
             return
         width = shutil.get_terminal_size((self.console.width, 24)).columns
         width = max(MIN_WIDTH, min(MAX_WIDTH, width)) - 1
-        percent = f"{fraction * 100:3.0f}%"
-        timing = f"{clock(fraction * self.total_s)} / {clock(self.total_s)}"
-        # Every part is preceded by two spaces: "  label  bar  percent  timing".
-        # One column too many and a terminal wraps the line, so each redraw
-        # lands on a new row instead of over the last one.
-        label = truncate(self.label, max(8, width // 2))
-        room = width - cell_width(label) - len(percent) - len(timing) - 8
-        bar = ""
-        if room >= 10:
-            size = min(32, room)
-            filled = round(size * fraction)
-            full, empty = ("━", "─") if self.console.unicode else ("#", "-")
-            bar = self.console.accent(full * filled) + self.console.muted(empty * (size - filled))
-        else:
-            # No bar: the label takes what is left; on a very narrow terminal
-            # the timing goes first.
-            if width - len(percent) - len(timing) - 6 < 8:
-                timing = ""
-            rest = len(percent) + (len(timing) + 2 if timing else 0)
-            label = truncate(self.label, max(1, width - rest - 4))
-        parts = (label, bar, percent, self.console.muted(timing))
-        text = "".join("  " + part for part in parts if part)
+        text = self.line(fraction, width)
         visible = cell_width(text)
-        self.stream.write("\r" + text + " " * max(0, self._drawn - visible))
+        # Wipe what a longer earlier line left, but never past the last
+        # column: a terminal that was made narrower would wrap the blanks.
+        wipe = max(0, min(self._drawn, width) - visible)
+        self.stream.write("\r" + text + " " * wipe)
         self.stream.flush()
         self._drawn = visible
+
+    def line(self, fraction: float, width: int) -> str:
+        """The line at ``fraction``, never wider than ``width`` columns:
+        ``  label  ━━━━╸────  42%  00:04 / 00:09``. A narrow terminal loses
+        the bar first, then the clock; the label is cut short, and gives way
+        last, never the percentage."""
+        c = self.console
+        percent = f"{fraction * 100:3.0f}%"
+        timing = f"{clock(fraction * self.total_s)} / {clock(self.total_s)}"
+        ellipsis = "…" if c.unicode else "..."
+        label = c.readable(self.label)
+        pct, clk = cell_width(percent), cell_width(timing)
+        # Every part is preceded by two spaces: "  label  bar  percent  timing".
+        # One column too many and a terminal wraps the line, so each redraw
+        # lands on a new row instead of over the last one. With a bar the
+        # label keeps at most half of the line.
+        shown = truncate(label, max(8, width // 2), ellipsis)
+        size = min(32, width - cell_width(shown) - pct - clk - 8)
+        if size >= 10:
+            return f"  {shown}  {c.meter(fraction, size)}  {percent}  {c.muted(timing)}"
+        # No bar: the label takes what the numbers leave.
+        room = width - pct - clk - 6
+        if room >= 8:
+            return f"  {truncate(label, room, ellipsis)}  {percent}  {c.muted(timing)}"
+        room = width - pct - 4
+        if room >= 4:
+            return f"  {truncate(label, room, ellipsis)}  {percent}"
+        return f"  {percent}"
 
     def finish(self, completed: bool = True) -> None:
         """End the line (terminal) so later output starts on its own row.
