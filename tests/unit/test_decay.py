@@ -457,21 +457,17 @@ def test_rejected_truncation_that_does_not_change_the_result_keeps_it_valid(
 
 @pytest.mark.parametrize("rate", [48000, 192000])
 def test_a_late_slope_that_cannot_be_estimated_is_not_called_unconverged(rate: int) -> None:
-    """R3-3: a pass that found too few intervals for the late slope rejected
-    the estimate as "did not converge in 1 iteration(s)", as if the passes had
-    run out. Here a response gated at -30 dB onto a floor 80 dB down (an
-    imported response cut off by a gate) falls through the whole late-slope
-    window within one interval."""
+    """A response gated onto a floor far below the cut-off used to be reported
+    as "did not converge in 1 iteration(s)". The regression actually stops
+    tens of dB above that floor, so the slope is the end of the record."""
     n = 2 * rate
     t = np.arange(n) / rate
     rng = np.random.default_rng(4)
     gated = rng.normal(0.0, 1.0, n) ** 2 * np.exp(-DECAY_CONSTANT * t / 0.6) * (t < 0.3)
     power = gated + 1e-8 * rng.normal(0.0, 1.0, n) ** 2
     trunc = estimate_truncation(power, rate)
-    assert trunc.problem == (
-        "the late decay slope could not be estimated: fewer than 3 intervals of decay lie "
-        "between 7.5 and 22.5 dB above the noise"
-    )
+    assert "stops abruptly" in (trunc.problem or "")
+    assert "did not converge" not in (trunc.problem or "")
     assert trunc.iterations < LUNDEBY_MAX_ITERATIONS
 
     from reverbscope.i18n import activate, localize
@@ -481,9 +477,8 @@ def test_a_late_slope_that_cannot_be_estimated_is_not_called_unconverged(rate: i
         shown = localize(trunc.problem)
     finally:
         activate("en")
-    assert (
-        shown == "无法估计后期衰减斜率：高于本底噪声 7.5 至 22.5 dB 的范围内只有不到 3 个衰减区间"
-    )
+    assert "突然中断" in shown
+    assert "无法估计后期衰减斜率" not in shown
 
 
 def test_running_out_of_passes_is_called_unconverged(sample_rate: int) -> None:
