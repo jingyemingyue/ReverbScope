@@ -82,7 +82,9 @@ All notable changes to ReverbScope are documented here. The format follows
   coloured. An error is a red card titled `✗ Error` (`✗ 错误`) with the
   message and its explanation inside; the commands to try stay under it, bare,
   never framed or wrapped. A text a card cannot hold whole (a path is never
-  cut) is laid out as lines, as before, the findings of a report all or none.
+  cut, in Latin letters or in Chinese; a path with a blank in it can wrap at
+  the blank, as it always did) is laid out as lines, as before, the findings of
+  a report all or none.
   The usage errors argparse raises before the options are parsed now follow
   `--style`, the `style` setting and `REVERBSCOPE_CLI_STYLE` too. While a take
   plays, the progress line is a bar `━━━╸───` (`==>---` where the stream

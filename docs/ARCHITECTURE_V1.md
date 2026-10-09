@@ -593,7 +593,9 @@ rounded frame as wide as the console with the severity and the topic in its
 top border, the border coloured by the severity) and an error is a red card
 titled `✗ Error` whose message and explanation sit inside it; the commands to
 try stay under the card, bare, and a text that a card cannot hold whole (a
-path is never cut) is laid out as lines, the cards of a section all or none.
+path is never cut, whether it is in Latin letters or has Chinese in it; a
+path with a blank in it still wraps at the blank) is laid out as lines, the
+cards of a section all or none.
 The usage errors argparse raises before the options are parsed read `--style`
 and the `style` setting by hand. Colour is only ever on a mark, a bar or a
 border, never on a run of letters or digits, and nothing that carries

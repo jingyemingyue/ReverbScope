@@ -190,6 +190,23 @@ def test_an_error_naming_a_path_too_long_for_the_card_is_unframed_and_keeps_it_w
     assert path in short and find_cards(short)
 
 
+def test_a_chinese_path_too_long_for_the_card_is_kept_whole_too() -> None:
+    """The card cut ``不存在的文件夹/录音位置甲/会话/…`` between 会 and 话 at 48
+    columns; a path of Latin letters was never cut."""
+    path = "不存在的文件夹/录音位置甲/会话/再加一层很长很长的目录名称/还有一层"
+    with _in("zh_CN"):
+        for width in (48, 60, 100):
+            text = render_error(
+                boxed_console(width), f"找不到会话文件：{path}", hints=["reverbscope show --help"]
+            )
+            lines = text.splitlines()
+            if width < 100:
+                assert not any(TOP.match(line) for line in lines), text
+                assert any(line.endswith(path) for line in lines), text
+            else:
+                assert find_cards(text), text  # it fits: inside the card
+
+
 def test_the_detail_of_an_error_is_inside_the_card_under_the_message() -> None:
     guidance = "Set the project's sample rate to 48 kHz.\nTurn off time stretching."
     text = render_error(boxed_console(60), "the sweep was played too fast", detail=guidance)

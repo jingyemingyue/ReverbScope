@@ -484,9 +484,47 @@ def truncate(text: str, width: int, ellipsis: str = "…") -> str:
     return "".join(out) + ellipsis
 
 
+#: Full-width marks that end a run of Chinese text; a path in a Chinese
+#: sentence (``找不到会话文件：录音/会话/take.wav``) starts after the last of
+#: them and runs to the next one or a blank.
+_CJK_STOPS = "，。、；：！？（）「」『』“”‘’《》〈〉【】〔〕"
+_PATH_RUN = re.compile(rf"[^\s{_CJK_STOPS}]*[/\\][^\s{_CJK_STOPS}]*")
+_DRIVE = re.compile(r"[A-Za-z]:[/\\]")
+_EXTENSION = re.compile(r"\.\w{1,5}$")
+
+
+def _is_wide_path(run: str) -> bool:
+    """Whether ``run`` (non-blank text with a ``/`` or ``\\`` in it) is a path
+    that has Chinese in it, which is never cut: a path of Latin letters is one
+    word already. ``输入/输出`` is a pair of words, not a path, so a run needs a
+    second separator, a start that only a path has (``/``, ``~``, ``C:\\``) or
+    a file extension."""
+    if not any(char_width(char) == 2 for char in run):
+        return False
+    separators = run.count("/") + run.count("\\")
+    return (
+        separators >= 2
+        or run[0] in "/\\~"
+        or _DRIVE.match(run) is not None
+        or _EXTENSION.search(run) is not None
+    )
+
+
 def _tokens(text: str) -> Iterator[str]:
-    """Spaces, Latin words and single wide characters, in order. A number held
-    to a Chinese unit (``3<glue>个``, ``20<glue>摄氏度``) is one token."""
+    """Spaces, Latin words, single wide characters and paths, in order. A number
+    held to a Chinese unit (``3<glue>个``, ``20<glue>摄氏度``) is one token, and
+    so is a path that has Chinese in it: it is not cut between characters."""
+    start = 0
+    for found in _PATH_RUN.finditer(text):
+        if _is_wide_path(found.group()):
+            yield from _word_tokens(text[start : found.start()])
+            yield found.group()
+            start = found.end()
+    yield from _word_tokens(text[start:])
+
+
+def _word_tokens(text: str) -> Iterator[str]:
+    """Spaces, Latin words and single wide characters, in order."""
     buffer, kind = "", ""
     skip = 0
     for index, char in enumerate(text):

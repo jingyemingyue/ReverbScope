@@ -448,7 +448,9 @@ For example:
 **An error is a card too**, titled `✗ Error`, with the message and its
 explanation inside and the commands to try under it. A command is never
 framed or wrapped, so that it can be copied; a text that a card cannot hold
-whole (a path longer than the card, say) is shown without the card, never cut.
+whole (a path longer than the card, say, in Latin letters or in Chinese) is
+shown without the card, never cut; a path with a blank in it can wrap at the
+blank, as it always did.
 The errors of a mistyped command line follow `--style`, the `style` setting and
 `REVERBSCOPE_CLI_STYLE` as well.
 

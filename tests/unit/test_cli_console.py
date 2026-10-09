@@ -121,6 +121,21 @@ def test_wrap_never_splits_a_path_or_url() -> None:
         assert token in lines, lines
 
 
+def test_wrap_never_splits_a_path_that_has_chinese_in_it() -> None:
+    """The path glued to ``找不到会话文件：`` was cut between characters (会|话),
+    though a path of Latin letters never is."""
+    folder = "不存在的文件夹/录音位置甲/会话/再加一层很长很长的目录名称/还有一层"
+    windows = "C:\\用户\\录音\\会话\\session.json"
+    for token in (folder, windows, "~/录音/会话.json", "录音/会话.json"):
+        for width in (20, 30, 44):
+            lines = wrap(f"找不到会话文件：{token}，请检查", width)
+            # (whole on one line, with the comma that follows it)
+            assert any(token in line for line in lines), (width, lines)
+    # A pair of words with a slash is text, not a path: it wraps as before.
+    lines = wrap("播放/录制在音频回调中失败，请检查设备并重新测量", 12)
+    assert all(cell_width(line) <= 12 for line in lines), lines
+
+
 def test_wrap_splits_a_word_longer_than_the_line() -> None:
     lines = wrap("a-very-long-file-name-without-any-spaces.wav", 12, first="", rest="")
     assert all(cell_width(line) <= 12 for line in lines)
