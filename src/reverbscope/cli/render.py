@@ -1305,6 +1305,13 @@ def _verdicts(c: Console, verdict: ComparisonVerdict) -> list[str]:
             c.bold(f"{aspect.title}{c.sep()}{verdict_word(aspect.verdict)}"),
             detail=aspect.reason,
         )
+    if c.boxed and verdict.conditions:
+        # Under the last aspect they read as part of it ("对比项测量有健康警告：
+        # 电平。" under the low end): a blank line and a mark of their own.
+        lines.append("")
+        for condition in verdict.conditions:
+            lines += c.status("info", condition)
+        return lines
     for condition in verdict.conditions:
         lines += c.paragraph(condition, indent=4)
     return lines

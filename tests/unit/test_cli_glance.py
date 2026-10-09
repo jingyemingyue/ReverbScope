@@ -578,3 +578,36 @@ def test_a_clipped_recording_has_one_error_glyph_on_a_framed_screen(demo: DemoRu
         assert marks == {"✗"} and "×" not in boxed, (lang, marks)
         # Without frames the lines are the ones they were.
         assert "× " in plain and "✗" not in plain
+
+
+def test_the_conditions_of_a_verdict_are_lines_of_their_own_on_a_framed_screen(
+    demo: DemoRun,
+) -> None:
+    """``对比项测量有健康警告：电平。`` sat unmarked under the low end's verdict, so
+    it read as part of that item. On a framed screen the conditions follow a
+    blank line and have the mark of a note; without frames they are as they were."""
+    from reverbscope.interpretation.verdicts import judge_comparison
+
+    clipping = ClippingCheck(peak_dbfs=0.0, runs=3, samples=40, clipped=True)
+    clipped = replace(demo.takes[1].result, clipping=clipping)
+    for lang, marker in (("en", "measurement"), ("zh_CN", "测量")):
+        with _in(lang):
+            verdict = judge_comparison(
+                demo.comparison, baseline=demo.takes[0].result, candidate=clipped
+            )
+            assert verdict.conditions
+            framed = render_comparison(_console(100), demo.comparison, (), "vocal", verdict)
+            plain = render_comparison(Console(width=100), demo.comparison, (), "vocal", verdict)
+        lines = framed.splitlines()
+        first = next(
+            i for i, line in enumerate(lines) if line.startswith("  i ") and marker in line
+        )
+        assert lines[first - 1] == "", lang  # not under the last aspect
+        notes = [line for line in lines[first:] if line.startswith("  i ")]
+        assert len(notes) == len(verdict.conditions), lang
+        # Without frames: indented under the last aspect, no mark, as they were.
+        flat = "".join(plain.split())
+        assert all("".join(condition.split()) in flat for condition in verdict.conditions), lang
+        head = verdict.conditions[0][:12]
+        assert any(line.startswith("    " + head) for line in plain.splitlines()), lang
+        assert not any(line.startswith("  i " + head) for line in plain.splitlines()), lang

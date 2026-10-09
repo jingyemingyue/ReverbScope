@@ -192,7 +192,7 @@ msgid "These two sessions cannot be compared: {notes}"
 msgstr "这两个会话无法对比：{notes}"
 
 msgid "Broadband estimated RT60 went from {baseline_s:.2f} s to {candidate_s:.2f} s ({delta_percent:+.1f} % of the baseline, {direction}). ISO 3382-1 quotes a just-noticeable difference for T of about {jnd_percent:g} %; a single pair of positions is not enough to call the change significant."
-msgstr "宽带估计 RT60 从 {baseline_s:.2f} s 变为 {candidate_s:.2f} s（相对基准 {delta_percent:+.1f} %，{direction}）。ISO 3382-1 给出的 T 的刚可察觉差约为 {jnd_percent:g} %；仅一对位置不足以把该变化称为显著。"
+msgstr "宽带估计 RT60 从 {baseline_s:.2f} s 变为 {candidate_s:.2f} s（相对基准 {delta_percent:+.1f} %，{direction}）。ISO 3382-1 给出的 T 的最小可觉差约为 {jnd_percent:g} %；仅一对位置不足以把该变化称为显著。"
 
 msgid "Against this profile's decay thresholds the broadband RT60 moved from '{before}' ({baseline_s:.2f} s) to '{after}' ({candidate_s:.2f} s)."
 msgstr "按此配置的衰减阈值，宽带 RT60 从“{before}”（{baseline_s:.2f} s）变为“{after}”（{candidate_s:.2f} s）。"
@@ -252,10 +252,10 @@ msgid "The broadband decay is short (estimated RT60 {rt:.2f} s from {basis}). A 
 msgstr "宽带衰减较短（估计 RT60 {rt:.2f} s，来自 {basis}）。这样的干房间适合近距离人声录音。"
 
 msgid "The broadband decay is {text} (estimated RT60 {rt:.2f} s). A vocal that is this live picks up room colour between phrases; add absorption or move to a drier position."
-msgstr "宽带衰减{text}（估计 RT60 {rt:.2f} s）。这样活的人声会在乐句之间拾到房间染色；请增加吸声或换到更干的位置。"
+msgstr "宽带衰减{text}（估计 RT60 {rt:.2f} s）。在这样混响偏长的房间里，人声会在乐句之间带上房间染色；请增加吸声或换到更干的位置。"
 
 msgid "The broadband decay is {text} (estimated RT60 {rt:.2f} s from {basis}). A vocal that is this live picks up room colour between phrases; add absorption or move to a drier position."
-msgstr "宽带衰减{text}（估计 RT60 {rt:.2f} s，来自 {basis}）。这样活的人声会在乐句之间拾到房间染色；请增加吸声或换到更干的位置。"
+msgstr "宽带衰减{text}（估计 RT60 {rt:.2f} s，来自 {basis}）。在这样混响偏长的房间里，人声会在乐句之间带上房间染色；请增加吸声或换到更干的位置。"
 
 msgid "The broadband decay is short (estimated RT60 {rt:.2f} s). This suits voice-over: the narration stays dry and close."
 msgstr "宽带衰减较短（估计 RT60 {rt:.2f} s）。适合旁白：叙述保持干、近。"
@@ -543,7 +543,7 @@ msgid "Step 2 - Record Through Your DAW"
 msgstr "步骤 2 — 在 DAW 中录音"
 
 msgid "1. Generate the test signal at your DAW project's sample rate (Step 1).\n2. Import it on a new track. Switch time-stretching off for that clip (Warp, Flex, Follow Tempo, elastic audio) and bypass plug-ins on its track and on the master bus, including room-correction plug-ins.\n3. Route that track to the one loudspeaker you want to test.\n4. Arm a second track with the measurement microphone (input monitoring off) and record while the test signal plays.\n5. Export the recorded track as WAV, AIFF, CAF or FLAC at the project sample rate, without normalising.\n   Do not trim it - ReverbScope finds the sweep automatically.\nStart with a low monitor level; the sweep should be clearly audible but not loud.\nThe user guide has step-by-step notes for Pro Tools, Logic Pro, Cubase, Studio One, Ableton Live, REAPER, FL Studio and Bitwig Studio."
-msgstr "1. 按 DAW 工程的采样率生成测试信号（步骤 1）。\n2. 把它导入新轨道。关闭该片段的时间伸缩（Warp、Flex、Follow Tempo、Elastic Audio），并旁通该轨道和主输出总线上的插件，包括房间校正插件。\n3. 将该轨道只路由到要测的那一只扬声器。\n4. 用测量话筒武装第二条轨道（关闭输入监听），在测试信号播放时录音。\n5. 按工程采样率把录音轨导出为 WAV、AIFF、CAF 或 FLAC，不要做标准化。\n   不要裁切——ReverbScope 会自动找到扫频。\n先把监听开低；扫频应清楚可闻，但不要很大声。\n用户指南里有 Pro Tools、Logic Pro、Cubase、Studio One、Ableton Live、REAPER、FL Studio 和 Bitwig Studio 的分步说明。"
+msgstr "1. 按 DAW 工程的采样率生成测试信号（步骤 1）。\n2. 把它导入新轨道。关闭该片段的时间伸缩（Warp、Flex、Follow Tempo、Elastic Audio），并旁通该轨道和主输出总线上的插件，包括房间校正插件。\n3. 将该轨道只路由到要测的那一只扬声器。\n4. 用测量话筒武装第二条轨道（关闭输入监听），在测试信号播放时录音。\n5. 按工程采样率把录音轨导出为 WAV、AIFF、CAF 或 FLAC，不要做标准化。\n   不要裁切——ReverbScope 会自动找到扫频。\n先调低监听音量；扫频应清楚可闻，但不要很大声。\n用户指南里有 Pro Tools、Logic Pro、Cubase、Studio One、Ableton Live、REAPER、FL Studio 和 Bitwig Studio 的分步说明。"
 
 msgid "Step 3 - Import Recording"
 msgstr "步骤 3 — 导入录音"
@@ -648,7 +648,7 @@ msgid "Demo mode: the fake backend synthesises a room. Nothing is sent to a loud
 msgstr "演示模式：假后端合成一个房间。不会对扬声器发声。"
 
 msgid "Start with your monitor/interface output at a low level. ReverbScope will play a sine sweep at a conservative digital level; raise the level gradually between measurements only if the recording is too quiet."
-msgstr "先把监听/接口输出开低。ReverbScope 会以保守的数字电平播放正弦扫频；只有录音太轻时才在两次测量之间逐步提高电平。"
+msgstr "请先调低监听音箱或音频接口的输出音量。ReverbScope 会以保守的数字电平播放正弦扫频；只有录音太轻时，才在两次测量之间逐步提高电平。"
 
 msgid "Audio devices"
 msgstr "音频设备"
@@ -681,7 +681,7 @@ msgid "Test signal"
 msgstr "测试信号"
 
 msgid "I have set the monitor level low (required above {level:g} dBFS)"
-msgstr "我已把监听开低（高于 {level:g} dBFS 必须勾选）"
+msgstr "我已调低监听音量（高于 {level:g} dBFS 必须勾选）"
 
 msgid "Playback level"
 msgstr "播放电平"
@@ -717,7 +717,7 @@ msgid "Level too high"
 msgstr "电平过高"
 
 msgid "Levels above {level:g} dBFS need the acknowledgement checkbox. Set the monitor level low first."
-msgstr "高于 {level:g} dBFS 需要勾选确认。请先把监听开低。"
+msgstr "高于 {level:g} dBFS 需要勾选确认。请先调低监听音量。"
 
 msgid "Sample rate not supported"
 msgstr "不支持该采样率"
@@ -875,7 +875,7 @@ msgid "1-based loopback input channel (recorded with the microphone)"
 msgstr "回采输入声道，从 1 起（与话筒一同录制）"
 
 msgid "required for levels above -12 dBFS; confirms the monitor level was set low first"
-msgstr "高于 -12 dBFS 必须使用；确认已先把监听开低"
+msgstr "高于 -12 dBFS 必须使用；确认已先调低监听音量"
 
 msgid "print a saved session or comparison.json report, or list sessions"
 msgstr "打印已保存会话或 comparison.json 报告，或列出会话"
@@ -979,7 +979,7 @@ msgid "host API"
 msgstr "主机 API"
 
 msgid "Level {level:g} dBFS is above {max_level:g} dBFS. Set the monitor level low first and pass --acknowledge-level to confirm."
-msgstr "电平 {level:g} dBFS 高于 {max_level:g} dBFS。请先把监听开低，并加上 --acknowledge-level 确认。"
+msgstr "电平 {level:g} dBFS 高于 {max_level:g} dBFS。请先调低监听音量，并加上 --acknowledge-level 确认。"
 
 msgid "Playing sweep on output channel {output}, recording input channel(s) {channels} via {backend} ..."
 msgstr "正在输出声道 {output} 播放扫频，经 {backend} 录制输入声道 {channels} …"
@@ -1798,7 +1798,7 @@ msgstr "只有两个结果都达到档位 2 时才对比摆位高度"
 
 msgctxt "diagnostic"
 msgid "ISO 3382-1 quotes a just-noticeable difference for reverberation time of about {jnd_percent:g} % (clause not verified against the standard text). A change is not called significant from a single pair of positions."
-msgstr "ISO 3382-1 给出的混响时间刚可察觉差约为 {jnd_percent:g} %（条款未对照标准原文核实）。仅凭一对位置不会把变化判定为显著。"
+msgstr "ISO 3382-1 给出的混响时间最小可觉差约为 {jnd_percent:g} %（条款未对照标准原文核实）。仅凭一对位置不会把变化判定为显著。"
 
 msgctxt "diagnostic"
 msgid "sample rates differ ({baseline_rate} Hz vs {candidate_rate} Hz); comparison is still allowed"
@@ -5236,7 +5236,7 @@ msgid "longer"
 msgstr "更长"
 
 msgid "{values}: within the just-noticeable difference of about {jnd:g} dB"
-msgstr "{values}：在约 {jnd:g} dB 的刚可察觉差之内"
+msgstr "{values}：在约 {jnd:g} dB 的最小可觉差之内"
 
 msgid "{values}: a real change, but both takes are inside the range this profile wants, so it does not matter for the recording"
 msgstr "{values}：变化是真实的，但两次都在此配置希望的范围内，因此对录音没有影响"
@@ -5287,7 +5287,7 @@ msgid "{gone} distinguishable resonance(s) disappeared and {new} appeared: the l
 msgstr "{gone} 个可分辨的共振消失，{new} 个新出现：低频只是变了，并未改善"
 
 msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): within the just-noticeable difference of about {jnd:g} %"
-msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：在约 {jnd:g} % 的刚可察觉差之内"
+msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：在约 {jnd:g} % 的最小可觉差之内"
 
 msgid "RT60 {baseline:.2f} s to {candidate:.2f} s ({percent:+.1f} %): smaller than the {spread:.2f} s by which T20 and T30 disagree within one take"
 msgstr "RT60 从 {baseline:.2f} s 变为 {candidate:.2f} s（{percent:+.1f} %）：小于单次测量内 T20 与 T30 相差的 {spread:.2f} s"
@@ -5422,7 +5422,7 @@ msgid "A second take at {labels} would show whether the measurement repeats (tak
 msgstr "在 {labels} 再测一次可以看出测量是否可重复（同一位置的多次测量，RT60 应相差不超过 {jnd:g} %）。"
 
 msgid "The takes at {label} differ by {spread:.0f} % in RT60, more than the {jnd:g} % just-noticeable difference: check the microphone position, the level and the noise before trusting either."
-msgstr "{label} 的多次测量 RT60 相差 {spread:.0f} %，超过了 {jnd:g} % 的刚可察觉差：先检查话筒位置、电平和噪声，再决定相信哪一次。"
+msgstr "{label} 的多次测量 RT60 相差 {spread:.0f} %，超过了 {jnd:g} % 的最小可觉差：先检查话筒位置、电平和噪声，再决定相信哪一次。"
 
 msgid "Measure {label} again: {checks}."
 msgstr "重新测量 {label}：{checks}。"
@@ -5747,7 +5747,7 @@ msgid "The noise floor is measured but not commented on for this recording."
 msgstr "本底噪声会被测量，但对这类录音不作评论。"
 
 msgid "Low end: bands up to {low:.0f} Hz decaying more than {ratio:.1f} times slower than the {mid_min:.0f}–{mid_max:.0f} Hz bands is an imbalance; a resonance is named only when its decay is distinguishable."
-msgstr "低频：{low:.0f} Hz 及以下频段的衰减比 {mid_min:.0f}–{mid_max:.0f} Hz 频段慢 {ratio:.1f} 倍以上即为失衡；只有衰减可区分时才会指出共振。"
+msgstr "低频：{low:.0f} Hz 及以下频带的衰减比 {mid_min:.0f}–{mid_max:.0f} Hz 频带慢 {ratio:.1f} 倍以上即为失衡；只有衰减可区分时才会指出共振。"
 
 msgid "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
 msgstr "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"

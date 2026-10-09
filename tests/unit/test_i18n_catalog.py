@@ -185,7 +185,7 @@ def test_safety_warning_and_level_refusal_are_translated() -> None:
 
     activate("zh_CN")
     try:
-        assert _(SAFETY_MESSAGE).startswith("先把监听")
+        assert _(SAFETY_MESSAGE).startswith("请先调低监听")
         refusal = _(
             "Level {level:g} dBFS is above {max_level:g} dBFS. "
             "Set the monitor level low first and pass --acknowledge-level to confirm."
@@ -356,7 +356,9 @@ def test_cli_zh_cn_analyze_prints_no_english_finding_text(
 #: Words the Chinese catalog does not use: one word for each concept. Each is
 #: a pattern, with what to say instead: the audio interface (not the sound
 #: card), the loudspeaker, a loopback (the word of audio interfaces), mains
-#: hum, the comparison of two sessions, the noise floor, headroom, delay.
+#: hum, the comparison of two sessions, the noise floor, headroom, delay, the
+#: just-noticeable difference (最小可觉差), a band (频带, not 频段), turning
+#: the monitors down (调低音量, not 开低).
 RETIRED_CHINESE_WORDS = {
     "声卡": "音频接口",
     "音频硬件": "音频设备",
@@ -377,6 +379,10 @@ RETIRED_CHINESE_WORDS = {
     "(?<!本)底噪": "本底噪声",
     "裕量": "余量",
     "延时": "延迟",
+    "刚可察觉差": "最小可觉差",
+    "开低": "调低音量",
+    "频段": "频带",
+    "这样活的": "在这样混响偏长的房间里",
 }
 #: The messages that compare something with a level or with its surroundings
 #: (not the two sessions of a comparison): "比较" stays a verb there.
