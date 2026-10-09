@@ -87,6 +87,8 @@ _GRID = {
 
 #: Status kinds; each has a symbol, an ASCII fallback and a colour.
 Status = Literal["ok", "warn", "error", "info", "skip", "unsure", "next"]
+#: The colour of a card's border and of the mark in its title.
+Tone = Literal["accent", "ok", "warn", "error", "muted"]
 
 _SYMBOLS: dict[str, tuple[str, str]] = {
     "next": ("→", "->"),
@@ -120,10 +122,19 @@ _STATUS_STYLE: dict[str, tuple[str, ...]] = {
     "next": ("cyan",),
 }
 
-#: One-column marks for a badge (``✓ good``), which carries its word: Unicode,
-#: then ASCII. ``✗`` rather than the ``×`` of a status line, because ``×`` is
-#: an ambiguous-width character that a CJK terminal may draw two columns
-#: wide; ``✗`` is one column everywhere.
+_TONE_STYLE: dict[str, tuple[str, ...]] = {
+    "accent": ("cyan",),
+    "ok": ("green",),
+    "warn": ("yellow",),
+    "error": ("red",),
+    "muted": ("dim",),
+}
+
+#: One-column marks for a badge (``✓ good``) and for the title of a card
+#: (``✗ Error``), which carry their word: Unicode, then ASCII. ``✗`` rather
+#: than the ``×`` of a status line, because ``×`` is an ambiguous-width
+#: character that a CJK terminal may draw two columns wide; ``✗`` is one
+#: column everywhere.
 _MARKS: dict[str, tuple[str, str]] = {
     "ok": ("✓", "+"),
     "warn": ("!", "!"),
@@ -655,8 +666,8 @@ class Console:
     interactive: bool = False
     #: The stream's encoding, for text that is shown only where it can be written.
     encoding: str = "utf-8"
-    #: Frames around titles and tables, rules through section headings
-    #: (:data:`StyleMode`). Commands, paths and status lines are never framed.
+    #: Frames around titles, tables, findings and errors, rules through
+    #: section headings (:data:`StyleMode`). A command or a path is never framed.
     boxed: bool = False
 
     @classmethod
@@ -678,6 +689,12 @@ class Console:
             encoding=getattr(stream, "encoding", None) or "utf-8",
             boxed=use_boxes(style, interactive, width, env),
         )
+
+    def inner(self) -> Console:
+        """How the body of a card is laid out: four columns narrower, for the
+        sides and their padding. Its text reads like the rest of the output
+        (the same marks and separators); it does not draw frames itself."""
+        return replace(self, width=max(1, self.width - 4))
 
     def can_write(self, text: str) -> bool:
         """Whether the stream's encoding holds every character of ``text``."""
@@ -800,6 +817,47 @@ class Console:
             )
         out.append(self.muted(bottom_left + top * (inner + 2) + bottom_right))
         return out
+
+    def frame(
+        self,
+        title: str,
+        lines: Sequence[str],
+        tone: Tone = "accent",
+        *,
+        mark: Status | None = None,
+    ) -> list[str] | None:
+        """A card: ``lines`` (laid out by :meth:`inner`) in a rounded frame as
+        wide as the console, with ``title`` in its top border. The border and
+        ``mark`` (the status mark in front of the title, if any) are coloured
+        by ``tone``, the title is bold. ``╭─ ! Notice · reverberation ──╮``
+
+        ``None`` without frames, or when the title or a line is wider than the
+        frame holds (a path is never cut): the caller lays the text out
+        unframed. A command or a path to copy never goes inside: the caller
+        prints it bare, after the card.
+        """
+        if not self.boxed:
+            return None
+        room = self.width - 4
+        title = self.readable(title)
+        lead = self.mark(mark) + " " if mark else ""
+        fill = self.width - 5 - cell_width(lead) - cell_width(title)
+        if room < 1 or fill < 1 or any(cell_width(line) > room for line in lines):
+            return None
+        left, top, right, side, bottom_left, bottom_right = _PANEL[self.unicode]
+        tone_style = _TONE_STYLE[tone]
+        head = self.style(lead.rstrip(), *tone_style) + " " if mark else ""
+        edge = self.style(side, *tone_style)
+        return [
+            self.style(left + top, *tone_style)
+            + " "
+            + head
+            + self.bold(title)
+            + " "
+            + self.style(top * fill + right, *tone_style),
+            *(f"{edge} {pad(line, room)} {edge}" for line in lines),
+            self.style(bottom_left + top * (self.width - 2) + bottom_right, *tone_style),
+        ]
 
     def section(self, text: str, note: str = "") -> list[str]:
         """A blank line and a section heading, with an optional muted note;

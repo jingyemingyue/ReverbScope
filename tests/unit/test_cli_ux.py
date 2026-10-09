@@ -431,6 +431,37 @@ def test_golden_errors(
     _golden(f"errors-{lang}", "\n".join(blocks).replace("\\", "/"))
 
 
+_INTERPRETATION = re.compile(r"^── (Interpretation|解读)", re.MULTILINE)
+
+
+@pytest.mark.parametrize("lang", ["en", "zh_CN"])
+@pytest.mark.parametrize("columns", [60, 48])
+def test_golden_boxed_findings(
+    cli: tuple[Path, pytest.MonkeyPatch],
+    capsys: pytest.CaptureFixture[str],
+    lang: str,
+    columns: int,
+) -> None:
+    """The interpretation of an analysis and of a comparison as a terminal draws
+    it (``--style boxed``): each finding a card titled with its severity and
+    topic. 48 is the narrowest terminal that is boxed."""
+    _root, monkeypatch = cli
+    monkeypatch.setenv("COLUMNS", str(columns))
+    assert _run(["demo"], capsys)[0] == 0
+    a, b = "reverbscope-demo/position-a", "reverbscope-demo/position-b"
+    sections = []
+    for argv in (["show", a], ["compare", a, b]):
+        code, out, _err = _run(["--lang", lang, "--style", "boxed", *argv], capsys)
+        assert code == 0
+        match = _INTERPRETATION.search(out)
+        assert match, out
+        section = out[match.start() :]
+        assert all(cell_width(line) <= columns for line in section.splitlines())
+        assert section.count("╭─ ") == section.count("╰") >= 2
+        sections.append(section)
+    _golden(f"findings-{lang}-boxed-{columns}", _normalise("\n".join(sections)))
+
+
 def test_the_chinese_demo_and_home_show_no_english_prose(
     cli: tuple[Path, pytest.MonkeyPatch], capsys: pytest.CaptureFixture[str]
 ) -> None:

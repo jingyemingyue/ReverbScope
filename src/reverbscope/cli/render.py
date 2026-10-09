@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Any
 from reverbscope.cli.console import (
     Console,
     Status,
+    Tone,
     Verbatim,
     badge_word,
     cell_width,
@@ -157,12 +158,42 @@ def _metric_cell(console: Console, metric: DecayMetric) -> str:
     return console.symbol("skip")
 
 
+#: The border of a finding's card: how much attention the finding asks for.
+_SEVERITY_TONE: dict[str, Tone] = {"warning": "warn", "notice": "accent", "info": "muted"}
+
+
+def _finding_cards(console: Console, findings: Sequence[Finding]) -> list[str]:
+    """Each finding as a card, its title the severity and the topic, its border
+    coloured by the severity; empty without frames, or when one of the cards
+    cannot hold its text (all of them are then laid out unframed, so that the
+    section does not mix the two)."""
+    if not console.boxed:
+        return []
+    inner = console.inner()
+    lines: list[str] = []
+    for finding in findings:
+        severity = str(finding.severity)
+        card = console.frame(
+            f"{severity_word(severity)}{console.sep()}{topic_text(finding.topic)}",
+            inner.paragraph(finding.message, indent=0),
+            _SEVERITY_TONE.get(severity, "accent"),
+            mark=severity_status(severity),
+        )
+        if card is None:
+            return []
+        lines += card
+    return lines
+
+
 def _findings(console: Console, findings: Sequence[Finding], profile_name: str) -> list[str]:
     if not findings:
         return []
     lines = console.section(
         _("Interpretation ({profile} profile)").format(profile=profile_title(profile_name))
     )
+    cards = _finding_cards(console, findings)
+    if cards:
+        return lines + cards
     for number, finding in enumerate(findings):
         if number:
             lines.append("")

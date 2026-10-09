@@ -1,0 +1,60 @@
+── Interpretation (Vocals profile) ─────────────────────────
+╭─ ! Notice · early reflections ───────────────────────────╮
+│ A strong early reflection is present approximately # ms  │
+│ after the direct sound (# dB). Close-miked vocals are │
+│ coloured by reflections this early; move the microphone  │
+│ closer to the singer and farther from the nearest hard   │
+│ surface, or treat that surface, then measure again.      │
+╰──────────────────────────────────────────────────────────╯
+╭─ ! Notice · reverberation ───────────────────────────────╮
+│ The broadband decay is noticeable (estimated RT60 # s │
+│ from T30). A vocal that is this live picks up room       │
+│ colour between phrases; add absorption or move to a      │
+│ drier position.                                          │
+╰──────────────────────────────────────────────────────────╯
+╭─ ! Notice · reverberation ───────────────────────────────╮
+│ Low frequencies decay more slowly than the mid range     │
+│ (# s vs # s), which makes vocals sound boxy at     │
+│ this position. Bass trapping or a different position     │
+│ helps.                                                   │
+╰──────────────────────────────────────────────────────────╯
+╭─ ! Warning · noise ──────────────────────────────────────╮
+│ Mains hum components at multiples of # Hz were detected │
+│ in the quiet part of the recording. Check grounding,     │
+│ cables, dimmers and power supplies before treating the   │
+│ room.                                                    │
+╰──────────────────────────────────────────────────────────╯
+╭─ i Info · noise ─────────────────────────────────────────╮
+│ Background noise in the pre-sweep segment is # dBFS  │
+│ RMS (uncalibrated digital level, not dB SPL). Vocal      │
+│ tracks are often compressed, which brings this noise up; │
+│ compare it with your chain's noise at the same gain.     │
+╰──────────────────────────────────────────────────────────╯
+╭─ ! Notice · noise ───────────────────────────────────────╮
+│ The direct sound is only # dB above the noise floor in  │
+│ the quiet segment. Sources quieter than this will be     │
+│ recorded with audible noise; lower the noise at the      │
+│ source or increase the playback level within the         │
+│ headroom of the chain.                                   │
+╰──────────────────────────────────────────────────────────╯
+╭─ ! Notice · low frequency ───────────────────────────────╮
+│ Potential low-frequency resonances around # Hz: these  │
+│ frequencies stand out in the response and ring longer    │
+│ than their surroundings. Measure one or two other        │
+│ positions to see whether they follow the room or the     │
+│ position.                                                │
+╰──────────────────────────────────────────────────────────╯
+
+── Interpretation (Vocals profile) ─────────────────────────
+╭─ ! Notice · reverberation ───────────────────────────────╮
+│ Broadband estimated RT60 went from # s to # s      │
+│ (# % of the baseline, shorter). ISO #-# quotes a  │
+│ just-noticeable difference for T of about # %; a single  │
+│ pair of positions is not enough to call the change       │
+│ significant.                                             │
+╰──────────────────────────────────────────────────────────╯
+╭─ ! Notice · early reflections ───────────────────────────╮
+│ The strongest reflection within # ms went from # dB  │
+│ at # ms to # dB at # ms (threshold # dB for  │
+│ this profile).                                           │
+╰──────────────────────────────────────────────────────────╯
