@@ -15,7 +15,7 @@ from pathlib import Path
 
 import pytest
 
-from reverbscope.cli.interactive import clean_path, fold, parse_path, whole_number
+from reverbscope.cli.interactive import clean_path, fold, parse_path, path_arg, whole_number
 from tests.menus import drive
 
 POSIX = os.name != "nt"
@@ -200,3 +200,21 @@ def test_a_name_the_file_system_refuses_does_not_exist(
     assert "does not exist; try again, or leave empty to go back." in visit.text
     assert "could not be completed" not in visit.text
     assert "Traceback" not in caplog.text
+
+
+def test_a_file_name_that_starts_with_a_dash_is_not_taken_for_an_option() -> None:
+    """``reverbscope show -take.wav`` is an unknown option to argparse: the menu
+    gave the command the name as it was typed and the usage error ended it."""
+    assert path_arg(Path("-take.wav")) == os.curdir + os.sep + "-take.wav"
+    assert path_arg(Path("take.wav")) == "take.wav"
+    assert path_arg(Path("dir/-take.wav")) == str(Path("dir/-take.wav"))
+    Path("-take.wav").write_bytes(b"RIFF")
+    Path("-session").mkdir()
+    visit = drive(["5", "-take.wav", "6", "-session", "-session", "n", "7", "-session", "q"])
+    dash = os.curdir + os.sep
+    assert visit.runs == [
+        ["show", f"{dash}-take.wav"],
+        ["compare", f"{dash}-session", f"{dash}-session"],
+        ["project", "overview", f"{dash}-session"],
+    ]
+    assert f"reverbscope show {dash}-take.wav" in visit.text

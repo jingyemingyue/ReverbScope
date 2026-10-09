@@ -142,6 +142,13 @@ def parse_path(text: str, *, posix: bool | None = None) -> Path | None:
         return path
 
 
+def path_arg(path: Path) -> str:
+    """``path`` as one argument of a command. A name that starts with ``-`` would
+    be read as an option (``reverbscope show -take.wav``), so it gets ``./``."""
+    text = str(path)
+    return os.curdir + os.sep + text if text.startswith("-") else text
+
+
 def _is_dir(path: Path) -> bool:
     try:
         return path.is_dir()
@@ -304,7 +311,7 @@ def _sweep(session: Session) -> list[str]:
                 ),
             )
         )
-    return ["sweep", "--out", str(out), "--sample-rate", str(rate)]
+    return ["sweep", "--out", path_arg(out), "--sample-rate", str(rate)]
 
 
 def _analyze(session: Session) -> list[str]:
@@ -314,10 +321,10 @@ def _analyze(session: Session) -> list[str]:
         _("The test signal that was played"), default=beside if beside.is_file() else None
     )
     out = session.ask(_("Folder to save the session in (empty: show only)"))
-    argv = ["analyze", "--recording", str(recording), "--sweep", str(sweep)]
+    argv = ["analyze", "--recording", path_arg(recording), "--sweep", path_arg(sweep)]
     saved = parse_path(out)
     if saved is not None:
-        argv += ["--out", str(saved)]
+        argv += ["--out", path_arg(saved)]
     return argv
 
 
@@ -425,7 +432,7 @@ def _measure(session: Session) -> list[str] | None:
     if not session.ask_yes(_("Play and record now?")):
         session.say(session.console.status("info", _("Nothing was played.")))
         return None
-    argv = ["measure", "--out", str(out)]
+    argv = ["measure", "--out", path_arg(out)]
     if level != DEFAULT_STANDALONE_LEVEL_DBFS:
         argv += ["--level", f"{level:g}"]
     if acknowledged:
@@ -435,13 +442,13 @@ def _measure(session: Session) -> list[str] | None:
 
 def _show(session: Session) -> list[str]:
     path = session.ask_path(_("A session folder, result.json or comparison.json"))
-    return ["show", str(path)]
+    return ["show", path_arg(path)]
 
 
 def _compare(session: Session) -> list[str]:
     baseline = session.ask_path(_("The baseline session (folder)"), folder=True)
     candidate = session.ask_path(_("The candidate session (folder)"), folder=True)
-    argv = ["compare", str(baseline), str(candidate)]
+    argv = ["compare", path_arg(baseline), path_arg(candidate)]
     if session.ask_yes(_("Was the input gain the same for both takes?")):
         argv.append("--same-input-gain")
     return argv
@@ -449,7 +456,7 @@ def _compare(session: Session) -> list[str]:
 
 def _overview(session: Session) -> list[str]:
     project = session.ask_path(_("The project folder"), folder=True)
-    return ["project", "overview", str(project)]
+    return ["project", "overview", path_arg(project)]
 
 
 def menu_items(*, terminal_edition: bool = False) -> list[MenuItem]:
@@ -622,6 +629,7 @@ __all__ = [
     "option_value",
     "output_base",
     "parse_path",
+    "path_arg",
     "quit_words",
     "root_options",
     "run_menu",

@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 from reverbscope.cli.console import shell_command
+from reverbscope.cli.interactive import path_arg
 from tests.menus import drive
 
 POSIX = os.name != "nt"
@@ -68,7 +69,7 @@ def test_the_command_to_copy_is_the_same_words_in_a_shell(name: str, tmp_path: P
     # Typed the way a terminal drops it: quoted for a shell, which a backslash needs.
     visit = drive(["3", str(recording), "", shlex.quote(name), "q"])
     argv = ["analyze", "--recording", str(recording), "--sweep", str(tmp_path / "sweep.wav")]
-    argv += ["--out", name]
+    argv += ["--out", path_arg(Path(name))]
     assert visit.runs == [argv]
     line = next(
         raw.strip()
