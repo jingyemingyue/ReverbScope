@@ -49,15 +49,15 @@ from reverbscope.interpretation.profiles import profile_title
 from reverbscope.io.project_store import (
     add_session,
     is_project,
-    list_project_sessions,
-    load_project,
     save_project,
 )
-from reverbscope.io.session_store import load_measurement, load_session
+from reverbscope.io.session_store import load_session
 from reverbscope.labels import accuracy_class_text
 from reverbscope.models.project import Project
 from reverbscope.ui.state import MeasurementState
+from reverbscope.ui.views.base import AnalysisView
 from reverbscope.ui.widgets import Card, FindingCard, PageHeader, label, primary, scroll_page
+from reverbscope.ui.workspace import WorkspaceModel
 
 
 def suggest_label(taken: list[str] | tuple[str, ...]) -> str:
@@ -111,8 +111,15 @@ class NewPositionDialog(QDialog):
         return self.label_edit.text().strip(), str(self.mode.currentData())
 
 
-class ProjectPage(QWidget):
-    back = Signal()
+class ProjectPage(AnalysisView):
+    """The project view of the workspace (``view_id`` ``project``).
+
+    It reads the open project from the workspace model, which loads the takes
+    in the background: drawing the overview never reads a session folder on
+    the GUI thread.
+    """
+
+    view_id = "project"
     #: Position label and mode: the main window opens the mode page for it.
     measure_requested = Signal(str, str)
     #: A take's directory: the main window opens it on the Results page.
@@ -120,14 +127,16 @@ class ProjectPage(QWidget):
     #: Baseline and candidate directories: the main window opens Compare on them.
     compare_requested = Signal(str, str)
 
-    def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+    def __init__(
+        self, state: MeasurementState, model: WorkspaceModel, parent: QWidget | None = None
+    ) -> None:
+        super().__init__(model, parent)
         self.state = state
-        self.path: Path | None = None
         self.overview: ProjectOverview | None = None
-        self._project: Project | None = None
         self._entries: list[ProjectEntry] = []
         self._skipped: list[tuple[str, str]] = []
+        #: The project folder the profile combo was last set for.
+        self._profile_for: Path | None = None
         #: The user picked a profile: a reload keeps it instead of the latest take's.
         self._profile_chosen = False
         header = PageHeader(
@@ -137,9 +146,6 @@ class ProjectPage(QWidget):
                 "the project lists which position it was taken at."
             ),
         )
-        back = QPushButton(_("Back"))
-        back.clicked.connect(self.back.emit)
-        header.action_row.addWidget(back)
         self.open_button = QPushButton(_("Open Project..."))
         self.open_button.clicked.connect(self.choose)
         header.action_row.addWidget(self.open_button)
@@ -157,7 +163,7 @@ class ProjectPage(QWidget):
         for name in available_profiles():
             self.profile.addItem(profile_title(name), name)
         self.profile.setCurrentIndex(max(self.profile.findData(state.profile), 0))
-        self.profile.currentIndexChanged.connect(lambda _index: self.refresh())
+        self.profile.currentIndexChanged.connect(lambda _index: self.choose_profile())
         row.addWidget(self.profile)
         row.addWidget(label(_("Source positions")))
         self.sources = QSpinBox()
@@ -165,7 +171,7 @@ class ProjectPage(QWidget):
         self.sources.setToolTip(
             _("Loudspeaker positions the takes were measured from (ISO 3382-2 counts them).")
         )
-        self.sources.valueChanged.connect(lambda _value: self.refresh())
+        self.sources.valueChanged.connect(lambda _value: self.choose_profile())
         row.addWidget(self.sources)
         row.addStretch(1)
         self.copy_button = QPushButton(_("Copy overview"))
@@ -275,6 +281,19 @@ class ProjectPage(QWidget):
         layout.addWidget(nxt)
         layout.addStretch(1)
         self._show(None)
+        for signal in (model.project_changed, model.entries_changed):
+            signal.connect(self.refresh)
+        model.loading_changed.connect(lambda _busy: self.refresh())
+
+    def title(self) -> str:
+        return _("Project")
+
+    @property
+    def path(self) -> Path | None:
+        return self.model.project_path
+
+    def redraw(self) -> None:
+        self._summarize()
 
     # --- loading -------------------------------------------------------------------
 
@@ -319,55 +338,29 @@ class ProjectPage(QWidget):
         self.create_project(Path(directory))
 
     def load(self, path: Path) -> bool:
-        """Read the project at ``path`` and show its overview."""
-        try:
-            project = load_project(path)
-            items = list_project_sessions(path)
-        except ReverbScopeError as exc:
-            QMessageBox.critical(self, _("Cannot open project"), localize(str(exc)))
+        """Open the project at ``path``; the model reads its takes in the background."""
+        if not is_project(path):
+            QMessageBox.critical(
+                self,
+                _("Cannot open project"),
+                _("{path} has no project.json. Make it a project?").format(path=path),
+            )
             return False
-        base = path if path.is_dir() else path.parent
-        if base != self.path:
-            # Another project: its latest take's profile applies again.
-            self._profile_chosen = False
-        entries: list[ProjectEntry] = []
-        skipped: list[tuple[str, str]] = []
-        for position, folder in items:
-            try:
-                loaded = load_measurement(folder)
-            except ReverbScopeError as exc:
-                skipped.append((str(folder), str(exc)))
-                continue
-            entries.append(ProjectEntry(position, str(folder), loaded.session, loaded.result))
-        self.path = base
-        self._entries = entries
-        self._skipped = skipped
-        self._project = project
-        # The profile the latest take was interpreted with, unless the user chose one.
-        latest = max(entries, key=lambda item: item.session.created_at, default=None)
-        if latest is not None and not self._profile_chosen:
-            index = self.profile.findData(latest.session.recording_profile)
-            if index >= 0:
-                self.profile.blockSignals(True)
-                self.profile.setCurrentIndex(index)
-                self.profile.blockSignals(False)
-        self._summarize()
+        from reverbscope.ui.ui_state import read_selection
+
+        # The selection left in this project last time comes back once its
+        # takes are read (ui.ini; nothing breaks without it).
+        self.model.open_project(path, selection=read_selection(path))
         return True
 
-    def refresh(self) -> None:
-        """Read the project again after the user changed the profile or the sources
-        (the profile combo is theirs from now on)."""
-        if self.path is None:
-            return
+    def choose_profile(self) -> None:
+        """The user picked a profile or a source count: the combo is theirs now."""
         self._profile_chosen = True
-        self.load(self.path)
+        self.refresh()
 
     def reload(self) -> None:
-        """Read the project again after a take was saved or added, keeping the
-        rule for the profile combo: the latest take's profile unless the user
-        chose one."""
-        if self.path is not None:
-            self.load(self.path)
+        """Read the project again after a take was saved or added."""
+        self.model.reload_project()
 
     def restyle(self) -> None:
         """Draw the cards again in the colour scheme now in force (their colours
@@ -376,15 +369,45 @@ class ProjectPage(QWidget):
             self._show(self.overview)
 
     def _summarize(self) -> None:
-        assert self._project is not None and self.path is not None
+        base = self.model.project_path
+        if base is None:
+            self._show(None)
+            return
+        if base != self._profile_for:
+            # Another project: its latest take's profile applies again.
+            self._profile_for = base
+            self._profile_chosen = False
+        entries: list[ProjectEntry] = []
+        skipped: list[tuple[str, str]] = []
+        for entry in self.model.entries():
+            if entry.directory is None or entry.unsaved or not entry.in_project:
+                continue
+            if entry.error:
+                skipped.append((str(entry.directory), entry.error))
+            elif entry.result is not None and entry.session is not None:
+                entries.append(
+                    ProjectEntry(entry.position, str(entry.directory), entry.session, entry.result)
+                )
+        self._entries = entries
+        self._skipped = skipped
+        latest = max(entries, key=lambda item: item.session.created_at, default=None)
+        if latest is not None and not self._profile_chosen:
+            index = self.profile.findData(latest.session.recording_profile)
+            if index >= 0:
+                self.profile.blockSignals(True)
+                self.profile.setCurrentIndex(index)
+                self.profile.blockSignals(False)
+        project = self.model.project
         overview = summarize_project(
-            self._entries,
+            entries,
             str(self.profile.currentData() or "generic"),
-            project_name=self._project.name or self.path.name,
+            project_name=(project.name if project is not None else "") or base.name,
             n_source_positions=int(self.sources.value()),
-            skipped=self._skipped,
+            skipped=skipped,
         )
         self._show(overview)
+        if self.model.loading:
+            self.status.setText(_("Reading the project's sessions..."))
 
     # --- the workflow --------------------------------------------------------------
 

@@ -37,3 +37,32 @@ def without_plugin(
     needed = {name for entry in staying for name in loads(entry[1])}
     unused = candidates - needed
     return [entry for entry in kept if not (_top_level(entry) and entry[0] in unused)]
+
+
+#: pyqtgraph colour maps the desktop app draws with (``reverbscope.ui.pg.COLORMAPS``).
+PYQTGRAPH_COLORMAPS = ("viridis", "inferno")
+_COLORMAP_DIR = "pyqtgraph/colors/maps/"
+#: The licence of the kept tables (viridis, magma, plasma, inferno and cividis
+#: are CC0); the CET tables and their CC-BY text go together.
+_COLORMAP_LICENCE = "CC0 legal code"
+
+
+def without_unused_colormaps(
+    datas: Sequence[Entry], keep: Iterable[str] = PYQTGRAPH_COLORMAPS
+) -> list[Entry]:
+    """``datas`` without pyqtgraph's colour-map tables other than ``keep``.
+
+    pyqtgraph ships about seventy tables (``pyqtgraph/colors/maps/*.csv``,
+    ``*.hex``); the app asks for ``keep`` only. Their CC0 licence stays.
+    """
+    wanted = set(keep)
+    kept: list[Entry] = []
+    for entry in datas:
+        path = entry[0].replace("\\", "/")
+        if path.startswith(_COLORMAP_DIR):
+            name = path[len(_COLORMAP_DIR) :]
+            stem = name.rsplit(".", 1)[0]
+            if "/" not in name and stem not in wanted and not name.startswith(_COLORMAP_LICENCE):
+                continue
+        kept.append(entry)
+    return kept

@@ -13,8 +13,8 @@ windowed ``reverbscope-gui`` launcher when the bundle has one (Windows, Linux),
 and that launcher started without arguments, as a double-click does,
 requiring the GUI to stay open.
 
-Terminal Edition (``--terminal``): ``doctor`` must report no Qt, PySide6 or
-matplotlib, and ``reverbscope gui`` must refuse with the Terminal Edition
+Terminal Edition (``--terminal``): ``doctor`` must report no Qt, PySide6,
+pyqtgraph or matplotlib, and ``reverbscope gui`` must refuse with the Terminal Edition
 sentence in English and Chinese (exit code 2) instead of a traceback.
 
 Nothing is sent to a loudspeaker.
@@ -102,8 +102,9 @@ def check_stays_open(
 
 
 #: Libraries only the Desktop Edition ships (``doctor`` package names).
-GUI_PACKAGES = frozenset({"matplotlib", "PySide6_Essentials", "shiboken6"})
-#: Optional Qt packages in a source/wheel CLI-only install; matplotlib is runtime.
+GUI_PACKAGES = frozenset({"matplotlib", "PySide6_Essentials", "shiboken6", "pyqtgraph"})
+#: Optional packages (the gui extra) in a source/wheel CLI-only install;
+#: matplotlib is a runtime dependency.
 OPTIONAL_QT_PACKAGES = GUI_PACKAGES - {"matplotlib"}
 #: The sentence ``reverbscope gui`` prints in the Terminal Edition.
 TERMINAL_GUI_TEXT = {

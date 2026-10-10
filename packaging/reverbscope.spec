@@ -5,8 +5,9 @@
 #
 #   REVERBSCOPE_PACKAGE=desktop (default)  GUI + CLI: dist/reverbscope (and
 #                                        dist/ReverbScope.app on macOS)
-#   REVERBSCOPE_PACKAGE=terminal           CLI only, no Qt / PySide6 and no
-#                                        matplotlib: dist/reverbscope-terminal
+#   REVERBSCOPE_PACKAGE=terminal           CLI only, no Qt / PySide6, no
+#                                        pyqtgraph and no matplotlib:
+#                                        dist/reverbscope-terminal
 #
 # Build the terminal edition with its own work folder so the two builds do
 # not share PyInstaller's cache:
@@ -85,6 +86,8 @@ TERMINAL_EXCLUDES = [
     "PySide6",
     "shiboken6",
     "reverbscope.ui",
+    "pyqtgraph",
+    "colorama",
     "matplotlib",
     "PIL",
     "kiwisolver",
@@ -93,6 +96,24 @@ TERMINAL_EXCLUDES = [
     "tkinter",
     "_tkinter",
     *DEV_ONLY_EXCLUDES,
+]
+
+# The desktop charts (GUI_2_ARCHITECTURE.md §9): pyqtgraph draws with
+# QPainter. Its 3D package (PyOpenGL), examples, Jupyter widget and numba
+# kernels stay out, and so do the optional libraries they would pull in.
+# pyqtgraph imports QtTest only for its own test helpers, inside try/except.
+PYQTGRAPH_EXCLUDES = [
+    "PySide6.QtTest",
+    "pyqtgraph.opengl",
+    "pyqtgraph.examples",
+    "pyqtgraph.jupyter",
+    "pyqtgraph.functions_numba",
+    "OpenGL",
+    "OpenGL_accelerate",
+    "jupyter_rfb",
+    "numba",
+    "cupy",
+    "h5py",
 ]
 
 a = Analysis(
@@ -112,6 +133,7 @@ a = Analysis(
     if TERMINAL
     else [
         *DEV_ONLY_EXCLUDES,
+        *PYQTGRAPH_EXCLUDES,
         "PySide6.QtCharts",
         "PySide6.QtDataVisualization",
         "PySide6.QtGraphs",
@@ -125,6 +147,12 @@ a = Analysis(
     ],
     noarchive=False,
 )
+sys.path.insert(0, str(ROOT / "packaging"))
+from pyinstaller_filters import without_plugin, without_unused_colormaps
+
+# pyqtgraph's hook copies all of its ~70 colour-map tables; the app uses
+# viridis and inferno (reverbscope.ui.pg.COLORMAPS).
+a.datas = without_unused_colormaps(a.datas)
 # Linux: use the distribution's PortAudio, ALSA and JACK libraries, as the
 # user guide says (libportaudio2). The sounddevice hook would otherwise copy
 # the build runner's libportaudio with libasound and libjack (and Berkeley DB,
@@ -140,9 +168,7 @@ if sys.platform.startswith("linux"):
     # thirty of the build runner's libraries, most of them LGPL, into the
     # tarball and carried Ubuntu's GTK to other distributions. Without it Qt
     # draws its own dialogs; the libraries that only it loads go with it.
-    sys.path.insert(0, str(ROOT / "packaging"))
     from PyInstaller.depend.bindepend import get_imports
-    from pyinstaller_filters import without_plugin
 
     def _loads(path):
         return {Path(name).name for name, _resolved in get_imports(path)}

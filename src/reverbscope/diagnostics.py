@@ -3,7 +3,7 @@
 Everything a maintainer asks first: ReverbScope's version, edition and build
 (the commit a desktop bundle was built from), the Python and platform, the
 versions of the libraries that carry the measurement (NumPy, SciPy,
-libsndfile, PortAudio, Qt), the settings that change a measurement, where
+libsndfile, PortAudio, Qt, pyqtgraph), the settings that change a measurement, where
 ReverbScope keeps its files, and which host APIs and devices PortAudio sees,
 optionally with the sample rates each device accepts (probed; nothing is
 played).
@@ -39,6 +39,7 @@ PACKAGES = {
     "matplotlib": "matplotlib",
     "PySide6_Essentials": "PySide6",
     "shiboken6": "shiboken6",
+    "pyqtgraph": "pyqtgraph",
 }
 
 #: Written next to this module by packaging/reverbscope.spec (desktop bundles only).
@@ -105,6 +106,11 @@ def _import(module: str) -> Any:
         import shiboken6
 
         return shiboken6
+    if module == "pyqtgraph":
+        # Only reverbscope.ui.pg imports pyqtgraph (GUI_2_ARCHITECTURE.md §6.1).
+        from reverbscope.ui.pg import pyqtgraph
+
+        return pyqtgraph()
     raise ImportError(module)
 
 

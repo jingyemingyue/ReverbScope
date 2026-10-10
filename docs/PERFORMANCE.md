@@ -12,14 +12,14 @@ after a change. The script never touches a real room.
 ```bash
 python scripts/benchmark.py            # five cases, a few minutes
 python scripts/benchmark.py --quick    # 2 s and 10 s at 48 kHz
-python scripts/benchmark.py --gui      # also the Results page's plots (Agg)
+python scripts/benchmark.py --gui      # also the five chart views (pyqtgraph, offscreen)
 python scripts/benchmark.py --json     # for a spreadsheet or a diff
 ```
 
 Each case builds a synthetic room (`reverbscope.audio.fake.make_rir`), the
 recording of a sweep in it, and then times `analyze`, the interpretation,
 the text report, `save_measurement`, `load_measurement`, `compare` and the
-five plots. Peak memory is `tracemalloc`'s peak over a run of its own,
+five chart views of the workstation. Peak memory is `tracemalloc`'s peak over a run of its own,
 because tracing slows allocation-heavy code several times over and would
 inflate the timings. Timings are wall-clock, one run; the second case of a
 run benefits from caches the first one filled (see below), which is what
@@ -61,7 +61,7 @@ set-up.
   strings.
 * **The frequency response** is 89 % of `result.json`: three arrays of
   131072 points at 48 kHz (262144 at 96 kHz), 4.6 MiB and 9.4 MiB of text.
-  It is also what the Results page draws. Storing it on a log-spaced grid of
+  It is also what the Frequency response view draws. Storing it on a log-spaced grid of
   a few thousand points would cut the file, the save, the load and the plot
   by most of that, at the price of a different (coarser) stored curve for new
   sessions; it is a documented option, not done, because the stored curve is
@@ -80,7 +80,9 @@ set-up.
   arrays is most of the 0.2–0.4 s.
 * **Everything else** is fast: the interpretation, health, verdicts and the
   text report take milliseconds; `compare` tens of milliseconds; the five
-  plots under half a second.
+  chart views (pyqtgraph, built and drawn offscreen with `--gui`) about
+  0.75–0.85 s together, most of it building the widgets the first time
+  (2026-10-10, same container).
 
 ## Attributing memory
 

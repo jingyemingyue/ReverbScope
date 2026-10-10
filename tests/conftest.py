@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gc
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -54,15 +55,30 @@ def qt_torn_down_before_the_interpreter_exits() -> Iterator[None]:
     yield
     try:
         from PySide6.QtCore import QEvent
-        from PySide6.QtWidgets import QApplication
+        from PySide6.QtWidgets import QApplication, QMessageBox
+        from shiboken6 import isValid
     except ImportError:
         return
     app = QApplication.instance()
     if app is None:
         return
+    # A window a failed test left open may ask about an unsaved take when it
+    # is closed here; a modal box at teardown blocks or crashes the run.
+    QMessageBox.exec = lambda _box: int(QMessageBox.StandardButton.Cancel)  # type: ignore[method-assign]
+    plotkit = sys.modules.get("reverbscope.ui.plotkit")
+    if plotkit is not None:
+        # pyqtgraph charts are torn down in pyqtgraph's order before their
+        # windows go (a window a failed test left open never disposed them).
+        for widget in QApplication.topLevelWidgets():
+            if isValid(widget):
+                plotkit.dispose_charts(widget)
     for widget in QApplication.topLevelWidgets():
-        widget.close()
-        widget.deleteLater()
+        # Closing one window can delete another in the list (a chart's
+        # pyqtgraph menus go with its plot), so check each before touching it.
+        if isValid(widget):
+            widget.close()
+        if isValid(widget):
+            widget.deleteLater()
     app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     app.processEvents()
     gc.collect()
@@ -184,3 +200,16 @@ def short_sweep(sample_rate: int) -> SweepSettings:
         post_silence_s=1.5,
         level_dbfs=-12.0,
     )
+
+
+@pytest.fixture(scope="session")
+def analysed_result(short_sweep: SweepSettings) -> AnalysisResult:
+    """One analysed synthetic room with an 18 ms reflection, shared by the display tests."""
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.models.configuration import AnalysisSettings
+
+    ir = make_rir(
+        short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)], diffuse_level=0.01
+    )
+    recording = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
+    return analyze(recording, Reference.from_settings(short_sweep), AnalysisSettings())

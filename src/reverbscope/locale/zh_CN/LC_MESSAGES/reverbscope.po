@@ -5915,3 +5915,1122 @@ msgstr "没有考虑两次录音的测量健康状况：它们的会话已不在
 
 msgid "The measurement health of the {side} take was not considered: its session is no longer where the comparison was saved."
 msgstr "没有考虑{side}录音的测量健康状况：它的会话已不在保存这次比较时所在的位置。"
+
+# GUI 2.0 workspace: display. Entries for this part go directly below.
+msgid "display smoothing must be 0 or a positive fraction"
+msgstr "显示平滑必须为 0 或正的倍频程分数"
+
+msgid "the curve's axes do not have the same length"
+msgstr "曲线的两个坐标轴长度不同"
+
+msgid "one of the two curves has no frequency response"
+msgstr "两条曲线中有一条没有频率响应"
+
+msgid "the two curves share no frequency range"
+msgstr "两条曲线没有共同的频率范围"
+
+msgid "no impulse response is stored with this measurement"
+msgstr "这次测量没有保存脉冲响应"
+
+msgid "the stored impulse response holds invalid samples"
+msgstr "保存的脉冲响应含有无效采样"
+
+msgid "the direct sound lies outside the stored impulse response"
+msgstr "直达声位置超出了保存的脉冲响应"
+
+# GUI 2.0 workspace: timefreq. Entries for this part go directly below.
+msgid "dB re peak"
+msgstr "dB（相对峰值）"
+
+msgid "dB re direct sound"
+msgstr "dB（相对直达声）"
+
+msgid "dB re full scale²"
+msgstr "dB（相对满刻度²）"
+
+msgid "dB re first slice peak"
+msgstr "dB（相对首个切片峰值）"
+
+msgid "Levels below {floor_db:g} dB are drawn at {floor_db:g} dB ({clipped} values, display only)."
+msgstr "低于 {floor_db:g} dB 的电平显示为 {floor_db:g} dB（{clipped} 个值，仅用于显示）。"
+
+msgid "The lower frequency must be above 0 Hz, not {fmin_hz:g} Hz."
+msgstr "下限频率必须高于 0 Hz，而不是 {fmin_hz:g} Hz。"
+
+msgid "Points per octave must be between 1 and {maximum}, not {value}."
+msgstr "每倍频程点数必须在 1 到 {maximum} 之间，而不是 {value}。"
+
+msgid "The sample rate must be above 0 Hz, not {sample_rate} Hz."
+msgstr "采样率必须高于 0 Hz，而不是 {sample_rate} Hz。"
+
+msgid "The impulse response must have a single channel."
+msgstr "脉冲响应必须是单声道。"
+
+msgid "The impulse response is empty."
+msgstr "脉冲响应为空。"
+
+msgid "The impulse response contains values that are not finite."
+msgstr "脉冲响应含有非有限数值。"
+
+msgid "The direct sound index {index} is outside the impulse response (0 to {last})."
+msgstr "直达声位置 {index} 超出脉冲响应范围（0 到 {last}）。"
+
+msgid "The lower frequency ({fmin_hz:g} Hz) must be below the upper frequency ({fmax_hz:g} Hz)."
+msgstr "下限频率（{fmin_hz:g} Hz）必须低于上限频率（{fmax_hz:g} Hz）。"
+
+msgid "No grid frequency lies between {fmin_hz:g} Hz and {fmax_hz:g} Hz."
+msgstr "{fmin_hz:g} Hz 与 {fmax_hz:g} Hz 之间没有网格频率。"
+
+msgid "Frequencies {fmin_hz:g} Hz to {fmax_hz:g} Hz, {points_per_octave} points per octave anchored at 1 kHz."
+msgstr "频率 {fmin_hz:g} Hz 至 {fmax_hz:g} Hz，每倍频程 {points_per_octave} 个点，以 1 kHz 为锚点。"
+
+msgid "FFT bins are mapped to the grid in power: averaged where a grid cell holds two or more bins, interpolated linearly between bins elsewhere."
+msgstr "快速傅里叶变换的频点按功率映射到网格：网格单元含两个或更多频点时取平均，其余位置在频点之间线性插值。"
+
+msgid "The window of {window_ms:g} ms is shorter than 4 samples at {sample_rate} Hz."
+msgstr "{window_ms:g} ms 的窗口在 {sample_rate} Hz 下短于 4 个采样点。"
+
+msgid "The impulse response is too short for one spectrogram frame in the chosen time range (a frame needs {needed_ms:g} ms of data)."
+msgstr "在所选时间范围内，脉冲响应太短，不足一帧时频谱（每帧需要 {needed_ms:g} ms 的数据）。"
+
+msgid "Levels in dB re the largest value shown ({reference_db:.1f} dB re full scale²)."
+msgstr "电平以显示中的最大值为 0 dB 参考（{reference_db:.1f} dB，相对满刻度²）。"
+
+msgid "Hann window of {window_ms:g} ms ({window_samples} samples), FFT length {nfft}, hop {hop_ms:g} ms."
+msgstr "Hann 窗 {window_ms:g} ms（{window_samples} 个采样点），变换长度 {nfft}，步进 {hop_ms:g} ms。"
+
+msgid "Frame centres {start_ms:g} ms to {end_ms:g} ms after the direct sound ({frames} frames)."
+msgstr "帧中心位于直达声之后 {start_ms:g} ms 至 {end_ms:g} ms（共 {frames} 帧）。"
+
+msgid "The impulse response ends before the first waterfall slice starts ({start_ms:g} ms after the direct sound)."
+msgstr "脉冲响应在第一个瀑布图切片开始（直达声之后 {start_ms:g} ms）之前就已结束。"
+
+msgid "Slice window of {window_ms:g} ms: half-Hann rise of {rise_ms:g} ms, flat, half-Hann fall over the last {taper_percent:g} %; FFT length {nfft}."
+msgstr "切片窗口 {window_ms:g} ms：开头 {rise_ms:g} ms 半 Hann 上升，中间平坦，最后 {taper_percent:g} % 半 Hann 下降；变换长度 {nfft}。"
+
+msgid "{slices} slices starting {start_ms:g} ms to {end_ms:g} ms after the direct sound, every {step_ms:g} ms; samples past the end of the impulse response count as zero."
+msgstr "{slices} 个切片，起点位于直达声之后 {start_ms:g} ms 至 {end_ms:g} ms，每隔 {step_ms:g} ms 一个；超出脉冲响应末尾的采样按零计。"
+
+msgid "Levels in dB re the peak of the first slice ({reference_db:.1f} dB re full scale²)."
+msgstr "电平以第一个切片的峰值为 0 dB 参考（{reference_db:.1f} dB，相对满刻度²）。"
+
+msgid "The parameter {name} must be a finite number, not {value}."
+msgstr "参数 {name} 必须是有限数值，而不是 {value}。"
+
+msgid "The upper frequency ({fmax_hz:g} Hz) must be above the lower frequency ({fmin_hz:g} Hz)."
+msgstr "上限频率（{fmax_hz:g} Hz）必须高于下限频率（{fmin_hz:g} Hz）。"
+
+msgid "The window must be longer than 0 ms, not {window_ms:g} ms."
+msgstr "窗口必须长于 0 ms，而不是 {window_ms:g} ms。"
+
+msgid "The hop must be longer than 0 ms and no longer than the window ({window_ms:g} ms), not {hop_ms:g} ms."
+msgstr "步进必须长于 0 ms 且不超过窗口长度（{window_ms:g} ms），而不是 {hop_ms:g} ms。"
+
+msgid "The longest time range must be above 0 ms, not {value:g} ms."
+msgstr "最长时间范围必须大于 0 ms，而不是 {value:g} ms。"
+
+msgid "Unknown normalisation {value!r}; use peak, direct or none."
+msgstr "未知的归一化方式 {value!r}；可选：按峰值、按直达声或不归一化。"
+
+msgid "The display floor must be below 0 dB, not {floor_db:g} dB."
+msgstr "显示下限必须低于 0 dB，而不是 {floor_db:g} dB。"
+
+msgid "The taper must be between 0 % and 100 %, not {value:g} %."
+msgstr "渐变比例必须在 0 % 到 100 % 之间，而不是 {value:g} %。"
+
+msgid "The rise ({rise_ms:g} ms) must be at least 0 ms and fit in the window ({window_ms:g} ms) together with the taper ({fall_ms:g} ms)."
+msgstr "上升段（{rise_ms:g} ms）不能小于 0 ms，且与渐变段（{fall_ms:g} ms）一起必须能放进窗口（{window_ms:g} ms）。"
+
+msgid "The step between slices must be longer than 0 ms, not {step_ms:g} ms."
+msgstr "切片间隔必须长于 0 ms，而不是 {step_ms:g} ms。"
+
+msgid "There must be at least one slice, not {value}."
+msgstr "至少需要一个切片，而不是 {value}。"
+
+msgid "Smoothing must be 0 (none) or 1/N octave with N from 1 to {maximum}, not {value}."
+msgstr "平滑必须为 0（不平滑）或 1/N 倍频程，N 取 1 到 {maximum}，而不是 {value}。"
+
+msgid "The upper frequency {fmax_hz:g} Hz is above the Nyquist frequency {nyquist_hz:g} Hz."
+msgstr "上限频率 {fmax_hz:g} Hz 高于奈奎斯特频率 {nyquist_hz:g} Hz。"
+
+msgid "Levels in dB re the frame that holds the direct sound ({reference_db:.1f} dB re full scale²)."
+msgstr "电平以含直达声的那一帧为 0 dB 参考（{reference_db:.1f} dB，相对满刻度²）。"
+
+msgid "Levels in dB re full scale²: a full-scale sine reads 0 dB."
+msgstr "电平单位为 dB（相对满刻度²）：满刻度正弦波读数为 0 dB。"
+
+msgid "The time range stops at {max_ms:g} ms; the impulse response runs to {end_ms:g} ms."
+msgstr "时间范围止于 {max_ms:g} ms；脉冲响应持续到 {end_ms:g} ms。"
+
+msgid "Frames dropped because less than half of their window lies inside the impulse response: {dropped}."
+msgstr "因窗口内不足一半位于脉冲响应之内而舍弃的帧数：{dropped}。"
+
+msgid "Display smoothing: 1/{fraction} octave, averaged in power."
+msgstr "显示平滑：1/{fraction} 倍频程，按功率平均。"
+
+msgid "Slices dropped because they start after the end of the impulse response: {dropped}."
+msgstr "因起点在脉冲响应末尾之后而舍弃的切片数：{dropped}。"
+
+msgid "The end of the time range ({end_ms:g} ms) must be after its start ({start_ms:g} ms)."
+msgstr "时间范围的终点（{end_ms:g} ms）必须晚于起点（{start_ms:g} ms）。"
+
+# GUI 2.0 workspace: workspace. Entries for this part go directly below.
+msgid "It is not overwritten; changes here are not saved."
+msgstr "该文件不会被覆盖；此处的修改不会保存。"
+
+msgid "Replace the room and loudspeaker entered here with the example?"
+msgstr "用示例替换此处已输入的房间和扬声器？"
+
+msgid "The example is saved in {path}."
+msgstr "示例会保存到 {path}。"
+
+msgid "No curve: {bands}."
+msgstr "无曲线：{bands}。"
+
+msgid ""
+"Enter this position's microphone to see the ring of loudspeaker positions "
+"the measurement allows."
+msgstr "输入此位置的话筒坐标后，可看到测量允许的扬声器位置环。"
+
+msgid ""
+"The thick dashed ring is every loudspeaker position the measurement allows; "
+"one microphone cannot say where on it the loudspeaker is."
+msgstr "粗虚线环是测量允许的全部扬声器位置；单支话筒无法判断扬声器在环上的哪一点。"
+
+msgid "&Save Session..."
+msgstr "保存会话(&S)..."
+
+msgid "&View"
+msgstr "视图(&V)"
+
+msgid "1/{fraction} octave"
+msgstr "1/{fraction} 倍频程"
+
+msgid "<b>ReverbScope {version}</b><br>An open-source, DAW-independent recording environment analyzer.<br><br>Licensed under the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses. Charts are drawn with pyqtgraph (MIT License, © 2012 University of North Carolina at Chapel Hill, Luke Campagnola).<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the executable (and inside <code>ReverbScope.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; ReverbScope never reports dB SPL."
+msgstr "<b>ReverbScope {version}</b><br>开源、不依赖 DAW 的录音环境分析器。<br><br>采用 Apache 许可证 2.0。<br>本程序使用 Qt 与 PySide6（版权归 Qt 公司及其贡献者所有），遵循 GNU LGPL 第 3 版；Qt 库以独立共享库加载，可以替换为接口兼容的版本。NumPy、SciPy、matplotlib、soundfile（libsndfile，LGPL-2.1）和 sounddevice（PortAudio）按其各自的许可证使用。图表由 pyqtgraph 绘制（MIT 许可证，© 2012 University of North Carolina at Chapel Hill, Luke Campagnola）。<br><br>桌面安装包在可执行文件旁边附带 <code>THIRD_PARTY_LICENSES/</code> 目录（在 macOS 上则位于 <code>ReverbScope.app</code> 内）。从源码目录查看 docs/DEPENDENCIES.md。电平是数字电平（dBFS），除非提供了校准；ReverbScope 从不报告 dB SPL。"
+
+msgid "Acoustic path delay"
+msgstr "声学路径延迟"
+
+msgid "Add a saved session to the list (session.json or its folder)."
+msgstr "把已保存的会话加入列表（session.json 或其所在文件夹）。"
+
+msgid "Align levels at 500 Hz to 2 kHz"
+msgstr "按 500 Hz 至 2 kHz 对齐电平"
+
+msgid "All bands of the current measurement"
+msgstr "当前测量的全部频带"
+
+msgid "All bands of {name}; overlays are not drawn in this mode."
+msgstr "{name} 的全部频带；此模式下不绘制叠加曲线。"
+
+msgid "All settings of this mode: level, sweep, profile, room and placement."
+msgstr "此模式的全部设置：电平、扫频、配置、房间和摆位。"
+
+msgid "Audio interface"
+msgstr "音频接口"
+
+msgid "Back to the default angle (R)."
+msgstr "回到默认视角（R）。"
+
+msgid "Band centre (Hz)"
+msgstr "频带中心（Hz）"
+
+msgid "Band chart: filled = VALID, hollow = not VALID (the value is shown, not trusted)."
+msgstr "频带图：实心为有效，空心为无效（数值仅供显示，不可采信）。"
+
+msgid "Baseline: {name}"
+msgstr "基准：{name}"
+
+msgid "CSV files (*.csv)"
+msgstr "CSV 文件 (*.csv)"
+
+msgid "Cannot compare: {error}"
+msgstr "无法对比：{error}"
+
+msgid "Cannot import the scan: {error}"
+msgstr "无法导入扫描：{error}"
+
+msgid "Cannot read the room file: {error}"
+msgstr "无法读取房间文件：{error}"
+
+msgid "Cannot save the room: {error}"
+msgstr "无法保存房间：{error}"
+
+msgid "Chart as PNG..."
+msgstr "图表存为 PNG..."
+
+msgid "Chart as SVG..."
+msgstr "图表存为 SVG..."
+
+msgid "Choose a baseline and a measurement to compare."
+msgstr "请选择基准和要对比的测量。"
+
+msgid "Choose a measurement in the list."
+msgstr "请在列表中选择一条测量。"
+
+msgid "Choose file..."
+msgstr "选择文件..."
+
+msgid "Clear the baseline"
+msgstr "取消基准"
+
+msgid "Click a measurement to show it. Tick it to draw it with the current one. Right-click for the baseline and more."
+msgstr "点击测量即可显示。勾选后与当前测量一起绘制。右键可设为基准等。"
+
+msgid "Click a reflection marker in the impulse response or the room view."
+msgstr "在脉冲响应或房间视图中点击一个反射标记。"
+
+msgid "Click to hide or show this curve."
+msgstr "点击隐藏或显示这条曲线。"
+
+msgid "Close Project"
+msgstr "关闭项目"
+
+msgid "Comparisons and difference panes compare against it."
+msgstr "对比和差值图都以它为基准。"
+
+msgid "Computing for {name}..."
+msgstr "正在为 {name} 计算..."
+
+msgid "Conditions"
+msgstr "测量条件"
+
+msgid "Copy {name} into {folder} so the room opens with its scan next time."
+msgstr "请把 {name} 复制到 {folder}，下次打开房间时才会带上扫描。"
+
+msgid "Curves as CSV..."
+msgstr "曲线存为 CSV..."
+
+msgid "DAW recording"
+msgstr "DAW 录音"
+
+msgid "Difference (current − baseline)"
+msgstr "差值（当前 − 基准）"
+
+msgid "Difference (dB)"
+msgstr "差值（dB）"
+
+msgid "Difference: {current} − {baseline}"
+msgstr "差值：{current} − {baseline}"
+
+msgid "Display smoothing averages the stored curve in power over a fraction of an octave. It changes the picture only; exports say which was applied."
+msgstr "显示平滑在若干分之一倍频程内对存储的曲线做功率平均。它只改变显示；导出时会注明用了哪种平滑。"
+
+msgid "Draw the unsmoothed stored curve of the current measurement."
+msgstr "绘制当前测量存储的未平滑曲线。"
+
+msgid "Energy decay curves"
+msgstr "能量衰减曲线"
+
+msgid "Enter the room and the device positions in the Room view to check them."
+msgstr "在房间视图中输入房间和设备位置后即可检查。"
+
+msgid "Enter the room box and the device positions on the right, import a scan, or try the example room."
+msgstr "在右侧输入房间尺寸和设备位置，导入扫描，或试用示例房间。"
+
+msgid "Entered"
+msgstr "输入值"
+
+msgid "Example room"
+msgstr "示例房间"
+
+msgid "Export"
+msgstr "导出"
+
+msgid "Fill in a 5 x 4 x 2.7 m example to try the view; a room already entered is replaced only after you confirm."
+msgstr "填入一个 5 × 4 × 2.7 m 的示例试用此视图；已输入的房间只有在你确认后才会被替换。"
+
+msgid "Fit the chart again (R or double-click)."
+msgstr "重新适配图表（R 或双击）。"
+
+msgid "Frame the room (F or double-click)."
+msgstr "让房间充满画面（F 或双击）。"
+
+msgid "Frequency response: no measurement selected"
+msgstr "频率响应：未选择测量"
+
+msgid "Geometric assumption"
+msgstr "几何假设"
+
+msgid "Height (z)"
+msgstr "高（z）"
+
+msgid "Hide"
+msgstr "隐藏"
+
+msgid "How the next measurement is made."
+msgstr "下一次测量的方式。"
+
+msgid "Hum at {base:g} Hz: {count} harmonics marked."
+msgstr "{base:g} Hz 哼声：已标出 {count} 个谐波。"
+
+msgid "Import"
+msgstr "导入"
+
+msgid "Import a room scan"
+msgstr "导入房间扫描"
+
+msgid "Import recording..."
+msgstr "导入录音..."
+
+msgid "Import scan..."
+msgstr "导入扫描..."
+
+msgid "Impulse response waveform"
+msgstr "脉冲响应波形"
+
+msgid "Key figures"
+msgstr "关键数值"
+
+msgid "Length (x)"
+msgstr "长（x）"
+
+msgid "Level (dB re first slice peak)"
+msgstr "电平（dB，相对首个切片峰值）"
+
+msgid "Levels"
+msgstr "电平"
+
+msgid "Look straight down, to scale; drag the loudspeaker or a microphone to move it."
+msgstr "按比例垂直俯视；拖动扬声器或话筒即可移动。"
+
+msgid "Make the current measurement the baseline and back."
+msgstr "把当前测量与基准互换。"
+
+msgid "Match"
+msgstr "匹配"
+
+msgid "Measure at {position}"
+msgstr "在 {position} 测量"
+
+msgid "Measured constraint"
+msgstr "测量约束"
+
+msgid "Measured layer withheld: {reason}."
+msgstr "未绘制测量层：{reason}。"
+
+msgid "Mic"
+msgstr "话筒"
+
+msgid "Microphone at {position}"
+msgstr "{position} 处的话筒"
+
+msgid "Microphone input"
+msgstr "话筒输入"
+
+msgid "Microphone {position}"
+msgstr "话筒 {position}"
+
+msgid "No baseline chosen"
+msgstr "未选择基准"
+
+msgid "No detected reflection matches the predicted path off this face."
+msgstr "没有检测到的反射与这个面的预测路径相符。"
+
+msgid "No difference: one of the two has no frequency response."
+msgstr "无差值：两者之一没有频率响应。"
+
+msgid "No measurement selected. Open a project or a session, or measure with the strip below."
+msgstr "未选择测量。请打开项目或会话，或用下方的测量栏测量。"
+
+msgid "No project open"
+msgstr "未打开项目"
+
+msgid "No temperature entered; {temperature:.0f} °C is assumed."
+msgstr "未输入温度；按 {temperature:.0f} °C 估算。"
+
+msgid "Noise floor {floor:.0f} dB re peak."
+msgstr "本底噪声比峰值低 {floor:.0f} dB。"
+
+msgid "Not in the project"
+msgstr "不在项目中"
+
+msgid "Not saved: open a project or a saved session to keep the room."
+msgstr "未保存：打开项目或已保存的会话后才能保留房间。"
+
+msgid "Nothing is deleted on disk."
+msgstr "不会删除磁盘上的任何文件。"
+
+msgid "Nothing selected"
+msgstr "未选择"
+
+msgid "Offset later slices up and to the right, as a three-dimensional waterfall."
+msgstr "把后面的切片向右上方错开，呈现立体瀑布图。"
+
+msgid "Only a measurement made in this window can be saved; opened sessions are already on disk."
+msgstr "只能保存在本窗口中完成的测量；打开的会话已经在磁盘上。"
+
+msgid "Open a project or a session, or measure with the strip at the bottom of the window. Measurements open in the list on the left."
+msgstr "打开项目或会话，或用窗口底部的测量栏测量。测量会出现在左侧列表中。"
+
+msgid "Open a project or a session, or measure with the strip below."
+msgstr "打开项目或会话，或用下方的测量栏测量。"
+
+msgid "Open the DAW recording page to import the recorded WAV file."
+msgstr "打开 DAW 录音页面，导入录好的 WAV 文件。"
+
+msgid "Open the comparison"
+msgstr "打开对比"
+
+msgid "Overall"
+msgstr "总体"
+
+msgid "PLY or OBJ, up to {megabytes} MB and {vertices:,} vertices. The scan is drawn as entered geometry; nothing is measured from it."
+msgstr "PLY 或 OBJ，最大 {megabytes} MB、{vertices:,} 个顶点。扫描按输入的几何绘制，不从中测量任何数值。"
+
+msgid "PNG images (*.png)"
+msgstr "PNG 图像 (*.png)"
+
+msgid "Perspective"
+msgstr "立体"
+
+msgid "Plan view"
+msgstr "平面图"
+
+msgid "Play the sweep and record it (Ctrl+Return)."
+msgstr "播放扫频并录音（Ctrl+Return）。"
+
+msgid "Project..."
+msgstr "项目..."
+
+msgid "Put the scan's lowest corner on the room's floor corner"
+msgstr "把扫描的最低角对齐房间的地面角"
+
+msgid "Reading the project's sessions..."
+msgstr "正在读取项目的会话..."
+
+msgid "Reading {name}..."
+msgstr "正在读取 {name}..."
+
+msgid "Recorded"
+msgstr "录制时间"
+
+msgid "Remove from the list"
+msgstr "从列表中移除"
+
+msgid "Reset the layout"
+msgstr "重置布局"
+
+msgid "Reset view"
+msgstr "重置视图"
+
+msgid "Reverberation by band"
+msgstr "各频带混响时间"
+
+msgid "Reverberation time (s)"
+msgstr "混响时间（s）"
+
+msgid "Right-click a measurement in the list and choose Use as baseline to compare."
+msgstr "在列表中右键一条测量并选择“设为基准”即可对比。"
+
+msgid "Right-click a measurement in the list and choose Use as baseline, then select the measurement to compare with it. Or pick two saved sessions below."
+msgstr "在列表中右键一条测量并选择“设为基准”，再选中要与它对比的测量。也可以在下方选两个已保存的会话。"
+
+msgid "Rise"
+msgstr "上升"
+
+msgid "Room box (inside, metres)"
+msgstr "房间尺寸（内部，米）"
+
+msgid "Room checks"
+msgstr "房间检查"
+
+msgid "Room scans (*.ply *.obj)"
+msgstr "房间扫描 (*.ply *.obj)"
+
+msgid "SVG images (*.svg)"
+msgstr "SVG 图像 (*.svg)"
+
+msgid "Save Session"
+msgstr "保存会话"
+
+msgid "Schroeder integral, Lundeby-truncated"
+msgstr "Schroeder 积分，按 Lundeby 截断"
+
+msgid "Select a measurement to draw what it constrains."
+msgstr "选择一条测量即可绘制它所约束的范围。"
+
+msgid "Select another measurement in the list to compare it."
+msgstr "在列表中选择另一条测量即可对比。"
+
+msgid "Select two rows below, then compare them."
+msgstr "在下方选中两行，然后对比。"
+
+msgid "Selected reflection"
+msgstr "选中的反射"
+
+msgid "Session..."
+msgstr "会话..."
+
+msgid "Set up..."
+msgstr "设置..."
+
+msgid "Shaded: outside the sweep's range ({low:.0f} Hz to {high:.0f} Hz); the curve there is not a measurement."
+msgstr "阴影：扫频范围（{low:.0f} Hz 至 {high:.0f} Hz）之外；那里的曲线不是测量值。"
+
+msgid "Shaded: the searched window ({start:.1f} to {stop:.1f} ms). Dashed: the {threshold:.0f} dB threshold. Direct-sound confidence: {confidence}."
+msgstr "阴影：搜索窗口（{start:.1f} 至 {stop:.1f} ms）。虚线：{threshold:.0f} dB 阈值。直达声置信度：{confidence}。"
+
+msgid "Shaded: the {metric} evaluation range ({top:.0f} to {bottom:.0f} dB) of the current measurement; {metric} = {value}."
+msgstr "阴影：当前测量的 {metric} 评估范围（{top:.0f} 至 {bottom:.0f} dB）；{metric} = {value}。"
+
+msgid "Shift every curve so its mean level between 500 Hz and 2 kHz is 0 dB. The shift is shown in the legend."
+msgstr "平移每条曲线，使其 500 Hz 至 2 kHz 的平均电平为 0 dB。平移量显示在图例中。"
+
+msgid "Show"
+msgstr "显示"
+
+msgid "Show folder"
+msgstr "显示文件夹"
+
+msgid "Show the stored curve"
+msgstr "显示存储的曲线"
+
+msgid "Slice"
+msgstr "切片"
+
+msgid "Slices"
+msgstr "切片数"
+
+msgid "Smoothing"
+msgstr "平滑"
+
+msgid "Span"
+msgstr "范围"
+
+msgid "Spectrogram"
+msgstr "时频谱"
+
+msgid "Spectrogram: {name}"
+msgstr "时频谱：{name}"
+
+msgid "Start"
+msgstr "开始"
+
+msgid "Start panel"
+msgstr "开始面板"
+
+msgid "Step"
+msgstr "步长"
+
+msgid "Stop the take and silence the output (Esc)."
+msgstr "停止测量并静音输出（Esc）。"
+
+msgid "Swap"
+msgstr "互换"
+
+msgid "The position this take belongs to; Save lists it under it in the project."
+msgstr "这次测量所属的位置；保存时会在项目中归到该位置下。"
+
+msgid "The scan {name} is not in {folder}."
+msgstr "{folder} 中没有扫描文件 {name}。"
+
+msgid "This session's take"
+msgstr "本次运行的测量"
+
+msgid "Time"
+msgstr "时间"
+
+msgid "Turn about the vertical"
+msgstr "绕竖直轴旋转"
+
+msgid "Units in the file"
+msgstr "文件中的单位"
+
+msgid "Up axis in the file"
+msgstr "文件中的向上轴"
+
+msgid "Use as baseline"
+msgstr "设为基准"
+
+msgid "Values in brackets are shown, not trusted (not VALID)."
+msgstr "括号中的数值仅供显示，不可采信（无效）。"
+
+msgid "Waiting for both measurements to load."
+msgstr "正在等待两条测量加载完成。"
+
+msgid "Waterfall"
+msgstr "瀑布图"
+
+msgid "Waterfall: {name}"
+msgstr "瀑布图：{name}"
+
+msgid "Waveform"
+msgstr "波形"
+
+msgid "Welch power spectral density of the quiet segment"
+msgstr "安静段的 Welch 功率谱密度"
+
+msgid "Width (y)"
+msgstr "宽（y）"
+
+msgid "Window"
+msgstr "窗长"
+
+msgid "Window {window:.2f} s, resolution {resolution:.1f} Hz."
+msgstr "窗长 {window:.2f} s，分辨率 {resolution:.1f} Hz。"
+
+msgid "Window {window:.2f} s."
+msgstr "窗长 {window:.2f} s。"
+
+msgid "Written by a newer ReverbScope: shown, but not overwritten."
+msgstr "由更新版本的 ReverbScope 写入：只显示，不覆盖。"
+
+msgid "aligned by {offset:+.1f} dB"
+msgstr "已平移 {offset:+.1f} dB"
+
+msgid "analysis smoothing"
+msgstr "分析平滑"
+
+msgid "analysis smoothing (1/{fraction} octave)"
+msgstr "分析平滑（1/{fraction} 倍频程）"
+
+msgid "as computed by reverbscope compare"
+msgstr "与 reverbscope compare 的计算相同"
+
+msgid "as stored"
+msgstr "按存储值"
+
+msgid "audio interface (loopback)"
+msgstr "音频接口（回采）"
+
+msgid "candidate reflection"
+msgstr "候选反射"
+
+msgid "candidate − baseline"
+msgstr "对比项 − 基准"
+
+msgid "check this"
+msgstr "请检查"
+
+msgid "consistent"
+msgstr "一致"
+
+msgid "current minus baseline, both as drawn above"
+msgstr "当前减基准，两者均按上图所绘"
+
+msgid "demo"
+msgstr "演示"
+
+msgid "difference"
+msgstr "差值"
+
+msgid "display smoothing 1/{fraction} octave"
+msgstr "显示平滑 1/{fraction} 倍频程"
+
+msgid "first {ms:g} ms"
+msgstr "前 {ms:g} ms"
+
+msgid "no measurement yet"
+msgstr "尚无测量"
+
+msgid "no noise spectrum stored with this session"
+msgstr "此会话未存储噪声频谱"
+
+msgid "no quiet segment available"
+msgstr "没有可用的安静段"
+
+msgid "no smoothing"
+msgstr "不平滑"
+
+msgid "no smoothing (stored curve)"
+msgstr "不平滑（存储的曲线）"
+
+msgid "not checkable"
+msgstr "无法检查"
+
+msgid "not saved yet"
+msgstr "尚未保存"
+
+msgid "re direct sound"
+msgstr "相对直达声"
+
+msgid "re full scale"
+msgstr "相对满量程"
+
+msgid "re peak"
+msgstr "相对峰值"
+
+msgid "scaled to the peak"
+msgstr "按峰值缩放"
+
+msgid "synthetic demo, not a room"
+msgstr "合成演示，不是真实房间"
+
+msgid "the reflection detector's envelope, 0.1 ms peak hold"
+msgstr "反射检测器的包络，峰值保持 0.1 ms"
+
+msgid "unsaved"
+msgstr "未保存"
+
+msgid "whole response"
+msgstr "完整响应"
+
+msgid "{candidate}  against the baseline  {baseline}"
+msgstr "{candidate}  对比基准  {baseline}"
+
+msgid "{candidate} against the baseline {baseline}."
+msgstr "{candidate} 对比基准 {baseline}。"
+
+msgid "{delay:.2f} ms, {level:.1f} dB"
+msgstr "{delay:.2f} ms，{level:.1f} dB"
+
+msgid "{duration:g} s, {low:g} Hz to {high:g} Hz, {level:g} dBFS"
+msgstr "{duration:g} s，{low:g} Hz 至 {high:g} Hz，{level:g} dBFS"
+
+msgid "{freq:.0f} Hz, {prominence:.0f} dB above its surroundings"
+msgstr "{freq:.0f} Hz，比周围高 {prominence:.0f} dB"
+
+msgid "{good} of {total} checks good"
+msgstr "{total} 项检查中 {good} 项良好"
+
+msgid "{length} at the centre"
+msgstr "画面中心处 {length}"
+
+msgid "{metres:.2f} m at {speed:.1f} m/s"
+msgstr "{metres:.2f} m（声速 {speed:.1f} m/s）"
+
+msgid "{name} (cannot be read)"
+msgstr "{name}（无法读取）"
+
+msgid "{name} (loading)"
+msgstr "{name}（加载中）"
+
+msgid "{name} (stored)"
+msgstr "{name}（存储值）"
+
+msgid "{name} changed since it was placed (its SHA-256 differs); import it again to place it"
+msgstr "{name} 在放置之后已改变（SHA-256 不同）；请重新导入并放置"
+
+msgid "{name} is the baseline. Select another measurement to compare it."
+msgstr "{name} 是基准。选择另一条测量即可对比。"
+
+msgid "{name}: no decay curve stored for this band"
+msgstr "{name}：此频带未存储衰减曲线"
+
+msgid "{name}: no frequency response stored with this session"
+msgstr "{name}：此会话未存储频率响应"
+
+msgid "{name}: {unit}"
+msgstr "{name}：{unit}"
+
+msgid "{rms:.1f} dBFS RMS, uncalibrated"
+msgstr "{rms:.1f} dBFS RMS，未校准"
+
+msgid "{time:.1f} ms"
+msgstr "{time:.1f} ms"
+
+msgid "{time:.1f} ms   {freq}   {level:.1f} dB"
+msgstr "{time:.1f} ms   {freq}   {level:.1f} dB"
+
+msgid "{time:.1f} ms   {freq}   {level:.1f} {unit}"
+msgstr "{time:.1f} ms   {freq}   {level:.1f} {unit}"
+
+msgid "{time:.1f} ms: peak {level:.1f} dB at {freq}"
+msgstr "{time:.1f} ms：峰值 {level:.1f} dB，位于 {freq}"
+
+msgid "{value:.2f} s from {basis}"
+msgstr "{value:.2f} s，由 {basis} 推算"
+
+msgid "{vertices:,} vertices, {faces:,} triangles. {note}"
+msgstr "{vertices:,} 个顶点，{faces:,} 个三角形。{note}"
+
+msgid "{who}: x = {x:.2f} m, y = {y:.2f} m, z = {z:.2f} m"
+msgstr "{who}：x = {x:.2f} m，y = {y:.2f} m，z = {z:.2f} m"
+
+msgctxt "workspace"
+msgid "Baseline"
+msgstr "基准"
+
+msgid "New take"
+msgstr "新测量"
+
+msgid "Unsaved take"
+msgstr "未保存的测量"
+
+# GUI 2.0 workspace: geometry. Entries for this part go directly below.
+msgid "a position label must not be empty"
+msgstr "位置名称不能为空"
+
+msgid "invalid room geometry: {error}"
+msgstr "房间几何数据无效：{error}"
+
+msgid "the scan file name must not be empty"
+msgstr "扫描文件名不能为空"
+
+msgid "sha256 must be 64 lower-case hexadecimal digits"
+msgstr "sha256 必须是 64 位小写十六进制数字"
+
+msgid "schema_version must be a positive integer"
+msgstr "schema_version 必须是正整数"
+
+msgid "{field} must be a number"
+msgstr "{field} 必须是数字"
+
+msgid "{field} must be a finite number"
+msgstr "{field} 必须是有限数值"
+
+msgid "{field} is {value:g} m; values beyond {limit:g} m are refused"
+msgstr "{field} 为 {value:g} m；超过 {limit:g} m 的值不予接受"
+
+msgid "{field} must be a JSON object"
+msgstr "{field} 必须是 JSON 对象"
+
+msgid "{path} was written by a newer ReverbScope (schema {version}); this version does not overwrite it"
+msgstr "{path} 由更新版本的 ReverbScope 写入（架构 {version}）；此版本不会覆盖它"
+
+msgid "position '{label}' already has a microphone"
+msgstr "位置“{label}”已有话筒"
+
+msgid "{field} is missing {keys}"
+msgstr "{field} 缺少 {keys}"
+
+msgid "{field} must be one of {values}"
+msgstr "{field} 必须是以下之一：{values}"
+
+msgid "position '{label}' is listed twice"
+msgstr "位置“{label}”出现了两次"
+
+msgid "{field} must not repeat a known key"
+msgstr "{field} 不能重复已知的键"
+
+msgid "{field} must be greater than 0 m"
+msgstr "{field} 必须大于 0 m"
+
+msgid "one microphone cannot locate a wall: one reflection fixes an ellipsoid of possible reflection points, not a point"
+msgstr "一支话筒无法定位墙面：一次反射只能确定可能反射点构成的椭球面，而不是一个点"
+
+msgid "the face at z = the room's height"
+msgstr "位于 z = 房间高度 的面"
+
+msgid "the face at x = the room's length"
+msgstr "位于 x = 房间长度 的面"
+
+msgid "the face at y = the room's width"
+msgstr "位于 y = 房间宽度 的面"
+
+msgid "no impulse response is stored with this result, so nothing measured is drawn"
+msgstr "此结果没有保存脉冲响应，因此不绘制任何测量内容"
+
+msgid "the sweep was played at the wrong speed, so the delays in this result are not reliable and nothing measured is drawn"
+msgstr "扫频以错误的速度播放，此结果中的延迟不可靠，因此不绘制任何测量内容"
+
+msgid "the direct sound was not detected with confidence, so the reflection delays may be measured from the wrong peak and nothing measured is drawn"
+msgstr "直达声的检测置信度不足，反射延迟可能是从错误的峰值起算的，因此不绘制任何测量内容"
+
+msgid "no reflections were searched in this result, so nothing measured is drawn"
+msgstr "此结果没有搜索反射，因此不绘制任何测量内容"
+
+msgid "the face at {axis} = {value:.2f} m"
+msgstr "位于 {axis} = {value:.2f} m 的面"
+
+msgid "a reflection delay must be a finite number of ms, 0 or more"
+msgstr "反射延迟必须是不小于 0 的有限毫秒数"
+
+msgid "the speed of sound must be a positive number"
+msgstr "声速必须是正数"
+
+msgid "the direct distance must be a finite number of m, 0 or more"
+msgstr "直达距离必须是不小于 0 的有限米数"
+
+msgid "the sample rate must be a positive number"
+msgstr "采样率必须是正数"
+
+msgid "the position uncertainty must be 0 m or more"
+msgstr "位置不确定度必须不小于 0 m"
+
+msgid "the loudspeaker or the microphone position is not entered, so the direct distance cannot be compared"
+msgstr "未输入扬声器或话筒的位置，因此无法核对直达距离"
+
+msgid "the microphone position is not entered, so its height cannot be compared"
+msgstr "未输入话筒位置，因此无法核对其高度"
+
+msgid "this result has no loopback distance bound to compare the entered distance with"
+msgstr "此结果没有回采距离上限，无法核对输入的距离"
+
+msgid "the room box, the loudspeaker or the microphone is not entered, so no first-order path can be predicted"
+msgstr "未输入房间尺寸、扬声器或话筒，因此无法预测一阶路径"
+
+msgid "no reflection was detected, so the predicted paths cannot be compared"
+msgstr "未检测到反射，因此无法核对预测路径"
+
+msgid "the loudspeaker is inside the entered room box"
+msgstr "扬声器位于输入的房间范围内"
+
+msgid "the loudspeaker is outside the entered room box"
+msgstr "扬声器位于输入的房间范围之外"
+
+msgid "the room box or the loudspeaker position is not entered"
+msgstr "未输入房间尺寸或扬声器位置"
+
+msgid "the microphone is inside the entered room box"
+msgstr "话筒位于输入的房间范围内"
+
+msgid "the microphone is outside the entered room box"
+msgstr "话筒位于输入的房间范围之外"
+
+msgid "the room box or the microphone position is not entered"
+msgstr "未输入房间尺寸或话筒位置"
+
+msgid "the face at {axis} = 0"
+msgstr "位于 {axis} = 0 的面"
+
+msgid "ambiguous: {count} first-order paths arrive within ±{tolerance:.2f} ms: {paths}"
+msgstr "无法区分：有 {count} 条一阶路径在 ±{tolerance:.2f} ms 内到达：{paths}"
+
+msgid "speed of sound {speed:.1f} m/s for the entered {temperature:.1f} °C"
+msgstr "按输入的 {temperature:.1f} °C 计算，声速为 {speed:.1f} m/s"
+
+msgid "the entered positions are {entered:.2f} m apart, but {taped:.2f} m was measured for this result ({difference:+.2f} m); check the positions"
+msgstr "输入的位置相距 {entered:.2f} m，但此结果测得的距离为 {taped:.2f} m（{difference:+.2f} m）；请检查位置"
+
+msgid "the microphone is entered at z = {entered:.2f} m, but a height of {measured:.2f} m was measured for this result ({difference:+.2f} m)"
+msgstr "输入的话筒位于 z = {entered:.2f} m，但此结果测得的高度为 {measured:.2f} m（{difference:+.2f} m）"
+
+msgid "the entered distance of {entered:.2f} m is more than the {bound:.2f} m the loopback allows: sound cannot arrive before it was sent, so a position is wrong"
+msgstr "输入的距离 {entered:.2f} m 超过回采允许的 {bound:.2f} m：声音不可能在发出之前到达，因此有位置输入错误"
+
+msgid "the earliest detected reflection ({detected:.2f} ms) arrives after the earliest predicted path ({predicted:.2f} ms): that face may absorb, or an entered position is off"
+msgstr "检测到的最早反射（{detected:.2f} ms）晚于最早的预测路径（{predicted:.2f} ms）：该面可能有吸声，或输入的位置有偏差"
+
+msgid "unknown face '{face}'"
+msgstr "未知的面“{face}”"
+
+msgid "reflected path {total:.2f} m ({excess:.2f} m longer than the direct sound): the reflection point lies on an ellipsoid around the loudspeaker and the microphone, {low:.2f} to {high:.2f} m from the microphone"
+msgstr "反射路径 {total:.2f} m（比直达声长 {excess:.2f} m）：反射点位于以扬声器和话筒为焦点的椭球面上，距话筒 {low:.2f} 至 {high:.2f} m"
+
+msgid "no first-order path of the entered room arrives within ±{tolerance:.2f} ms of {delay:.2f} ms"
+msgstr "输入的房间没有一阶路径在 {delay:.2f} ms 的 ±{tolerance:.2f} ms 内到达"
+
+msgid "agrees with the first-order path off {face} (residual {residual:+.2f} ms); this is the entered room's prediction, not a located wall"
+msgstr "与经{face}的一阶路径相符（残差 {residual:+.2f} ms）；这是根据输入的房间做出的预测，并非定位到的墙面"
+
+msgid "{face} ({residual:+.2f} ms)"
+msgstr "{face}（{residual:+.2f} ms）"
+
+msgid "no temperature was entered for this measurement; {temperature:.0f} °C ({speed:.1f} m/s) is assumed"
+msgstr "此次测量未输入温度；按 {temperature:.0f} °C（{speed:.1f} m/s）假定"
+
+msgid "the entered positions are {entered:.2f} m apart; no measured distance was stored with this result to compare it with"
+msgstr "输入的位置相距 {entered:.2f} m；此结果没有保存测得的距离可供核对"
+
+msgid "the entered positions are {entered:.2f} m apart, as the {taped:.2f} m measured for this result"
+msgstr "输入的位置相距 {entered:.2f} m，与此结果测得的 {taped:.2f} m 一致"
+
+msgid "the microphone is entered at z = {entered:.2f} m; no microphone height was stored with this result to compare it with"
+msgstr "输入的话筒位于 z = {entered:.2f} m；此结果没有保存话筒高度可供核对"
+
+msgid "the microphone is entered at z = {entered:.2f} m, as the {measured:.2f} m height measured for this result"
+msgstr "输入的话筒位于 z = {entered:.2f} m，与此结果测得的 {measured:.2f} m 高度一致"
+
+msgid "the loopback allows at most {bound:.2f} m; the loudspeaker or the microphone position is not entered"
+msgstr "回采允许的距离最多为 {bound:.2f} m；未输入扬声器或话筒的位置"
+
+msgid "the entered distance of {entered:.2f} m is within the {bound:.2f} m the loopback allows"
+msgstr "输入的距离 {entered:.2f} m 在回采允许的 {bound:.2f} m 之内"
+
+msgid "no predicted first-order path falls in the searched window of {start:.1f} to {stop:.1f} ms"
+msgstr "没有预测的一阶路径落在已搜索的 {start:.1f} 至 {stop:.1f} ms 窗口内"
+
+msgid "the earliest detected reflection ({detected:.2f} ms) agrees with the earliest predicted path, off {face} ({predicted:.2f} ms, residual {residual:+.2f} ms)"
+msgstr "检测到的最早反射（{detected:.2f} ms）与最早的预测路径相符，经{face}（{predicted:.2f} ms，残差 {residual:+.2f} ms）"
+
+msgid "the earliest detected reflection ({detected:.2f} ms) arrives before the earliest predicted path ({predicted:.2f} ms): something nearer than the room's faces (a desk, a stand) reflects, or an entered position is off"
+msgstr "检测到的最早反射（{detected:.2f} ms）早于最早的预测路径（{predicted:.2f} ms）：比房间各面更近的物体（桌面、支架）产生了反射，或输入的位置有偏差"
+
+msgid "the reflected sound travelled {excess:.2f} m further than the direct sound; without the loudspeaker-to-microphone distance nothing more is known"
+msgstr "反射声比直达声多传播了 {excess:.2f} m；没有扬声器到话筒的距离，无法得知更多"
+
+msgid "the scan import was cancelled"
+msgstr "扫描导入已取消"
+
+msgid "a face refers to a vertex that does not exist"
+msgstr "有面引用了不存在的顶点"
+
+msgid "the file contains no vertices"
+msgstr "文件不含顶点"
+
+msgid "a vertex coordinate is not a finite number"
+msgstr "有顶点坐标不是有限数值"
+
+msgid "the PLY header does not end"
+msgstr "PLY 文件头没有结束标记"
+
+msgid "the file does not start with a PLY header"
+msgstr "文件不是以 PLY 文件头开始"
+
+msgid "the PLY header has no format line"
+msgstr "PLY 文件头缺少格式行"
+
+msgid "the PLY vertices have no x, y and z"
+msgstr "PLY 顶点缺少 x、y、z 坐标"
+
+msgid "an element has the wrong number of values"
+msgstr "有元素的数值个数不正确"
+
+msgid "the file ends before all its elements were read"
+msgstr "文件在所有元素读完之前就结束了"
+
+msgid "the file declares more faces than its vertices can form"
+msgstr "文件声明的面数超出其顶点所能构成的数量"
+
+msgid "the file does not record its units or which axis is up; choose them when importing"
+msgstr "文件没有记录单位和朝上的轴；请在导入时选择"
+
+msgid "the scan has no vertices to align"
+msgstr "扫描没有可用于对齐的顶点"
+
+msgid "the voxel size must be a positive number"
+msgstr "体素尺寸必须是正数"
+
+msgid "at least one point must be kept"
+msgstr "至少要保留一个点"
+
+msgid "{name} cannot be read as a scan: {detail}"
+msgstr "无法将 {name} 读取为扫描：{detail}"
+
+msgid "{name} has more than {limit} vertices; larger scans are refused"
+msgstr "{name} 的顶点超过 {limit} 个；更大的扫描不予接受"
+
+msgid "a value in the file is not a number"
+msgstr "文件中有值不是数字"
+
+msgid "PLY vertices with list properties are not supported"
+msgstr "不支持带列表属性的 PLY 顶点"
+
+msgid "{name} is {size} bytes; scan files larger than {limit} bytes are refused"
+msgstr "{name} 为 {size} 字节；大于 {limit} 字节的扫描文件不予接受"
+
+msgid "unknown PLY property type '{type}'"
+msgstr "未知的 PLY 属性类型“{type}”"
+
+msgid "unsupported PLY format"
+msgstr "不支持的 PLY 格式"
+
+msgid "{name} is not a PLY or OBJ file; only these scan formats can be read"
+msgstr "{name} 不是 PLY 或 OBJ 文件；只能读取这两种扫描格式"
+
+msgid "a PLY element line is malformed"
+msgstr "PLY 元素行格式错误"
+
+msgid "unexpected line in the PLY header"
+msgstr "PLY 文件头中有意外的行"
+
+msgid "a PLY property comes before any element"
+msgstr "PLY 属性出现在任何元素之前"
+
+msgid "line {line} has a vertex without three coordinates"
+msgstr "第 {line} 行的顶点不足三个坐标"
+
+msgid "a PLY property line is malformed"
+msgstr "PLY 属性行格式错误"
+
+msgid "line {line} has a value that is not a number"
+msgstr "第 {line} 行有值不是数字"
+
+msgid "line {line} cannot be read"
+msgstr "无法读取第 {line} 行"
+
+msgid "line {line} has a face index that is not valid"
+msgstr "第 {line} 行的面索引无效"
