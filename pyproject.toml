@@ -52,7 +52,13 @@ dependencies = [
 # interpreter exit on Linux and Windows after every test passed; the bundles
 # lock 6.11.2. Lift the bound once a 6.12.x has been run through the suite and
 # the desktop app on all three platforms (docs/DEPENDENCIES.md §4).
-gui = ["PySide6_Essentials>=6.6,<6.12"]
+gui = [
+  "PySide6_Essentials>=6.6,<6.12",
+  # Charts (GUI_2_ARCHITECTURE.md §6.1). Pinned exactly: ui/pg.py relies on
+  # pyqtgraph internals (PlotItem's auto-range button, the ViewBox menu, the
+  # scene it paints into SVG), so every upgrade is reviewed, not floated.
+  "pyqtgraph==0.14.0",
+]
 dev = [
   "pytest>=8",
   "pytest-cov>=5",
@@ -92,6 +98,7 @@ packages = ["src/reverbscope"]
 "src/reverbscope/schemas/comparison.schema.json" = "reverbscope/schemas/comparison.schema.json"
 "src/reverbscope/schemas/project.schema.json" = "reverbscope/schemas/project.schema.json"
 "src/reverbscope/schemas/sweep-sidecar.schema.json" = "reverbscope/schemas/sweep-sidecar.schema.json"
+"src/reverbscope/schemas/room-geometry.schema.json" = "reverbscope/schemas/room-geometry.schema.json"
 "src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po"
 
 [tool.hatch.build.hooks.custom]
@@ -215,5 +222,8 @@ module = [
   "scipy.*",
   "matplotlib",
   "matplotlib.*",
+  # The gui extra; no py.typed marker, and the lint job installs dev only.
+  "pyqtgraph",
+  "pyqtgraph.*",
 ]
 ignore_missing_imports = true

@@ -1558,7 +1558,7 @@ def render_environment(console: Console, report: dict[str, Any]) -> str:
 
     lines += c.section(_("Libraries"))
     # The Terminal Edition is built without the GUI and its charts.
-    gui_only = {"matplotlib", "PySide6_Essentials", "shiboken6"}
+    gui_only = {"matplotlib", "PySide6_Essentials", "shiboken6", "pyqtgraph"}
     packages = [
         (
             name,

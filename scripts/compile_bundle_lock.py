@@ -22,6 +22,7 @@ DIRECT = [
     "matplotlib",
     "PySide6_Essentials",
     "shiboken6",
+    "pyqtgraph",
 ]
 
 

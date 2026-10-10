@@ -1,7 +1,8 @@
 """Fail a bundle that contains GPL-only Qt modules or ASIO DLLs.
 
 ``--terminal`` also fails a Terminal Edition bundle that contains any file of
-the GUI: PySide6, shiboken6, a Qt library, matplotlib or ``reverbscope/ui``.
+the GUI: PySide6, shiboken6, a Qt library, pyqtgraph, matplotlib or
+``reverbscope/ui``.
 
 ARCHITECTURE_V1.md §6.2: a frozen tree must not ship GPL-only Qt modules or
 ``*asio*.dll``. PySide6 Essentials wheels still contain ``.pyi`` stubs, a
@@ -228,6 +229,7 @@ def strip(root: Path) -> list[Path]:
 TERMINAL_FORBIDDEN = (
     ("pyside6", "PySide6"),
     ("shiboken6", "shiboken6"),
+    ("pyqtgraph", "pyqtgraph"),
     ("matplotlib", "matplotlib"),
     ("reverbscope/ui/", "reverbscope.ui (the GUI)"),
 )
