@@ -80,9 +80,17 @@ src/reverbscope/
     report.py            format_report / format_comparison_report: render.py as plain text
   demo.py                reverbscope demo: two simulated positions through the real pipeline
   ui/                    optional (needs PySide6)
-    app.py, main_window.py, pages.py, results.py, plots.py, workers.py, state.py
+    app.py, main_window.py (the workspace: navigation, context bar, details, status line)
+    workspace.py         the frame's panes; state.py the shared measurement state
+    home_page.py, daw_page.py, standalone_page.py   the start page and the two step flows
+    measure_flow.py      the worker threads and the state generation a run belongs to
+    measure_widgets.py   placement inputs, profile row, metadata form, action area
+    results_page.py, results_overview.py, results_analysis.py, placement_view.py
+    results_presenter.py what the results page shows, computed without Qt
+    plots.py, export.py, workers.py
     browser.py           session list (Home and Compare); project.json folders
     compare_view.py      two-session comparison
+    project_view.py      one room, several positions
     settings_dialog.py   language, profile, backend, copy-recording
 ```
 

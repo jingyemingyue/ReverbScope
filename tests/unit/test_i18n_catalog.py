@@ -52,8 +52,8 @@ DYNAMIC_CALLS = {
     ("cli/main.py", "_(mode)"),
     # Device Inspector column headings, each extracted with N_() in COLUMNS.
     ("ui/dev_tools.py", "_(column)"),
-    ("ui/pages.py", "_(SAFETY_MESSAGE)"),
-    ("ui/pages.py", "_(DAW_INSTRUCTIONS)"),
+    ("ui/standalone_page.py", "_(SAFETY_MESSAGE)"),
+    ("ui/daw_page.py", "_(DAW_INSTRUCTIONS)"),
     # The "GUI cannot start" sentence, extracted with N_() in ui/app.py.
     ("cli/main.py", "_(GUI_UNAVAILABLE)"),
     ("ui/app.py", "_(GUI_UNAVAILABLE)"),

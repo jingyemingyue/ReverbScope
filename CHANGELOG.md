@@ -7,7 +7,54 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- **Desktop workspace.** The desktop app is one window with a stable frame:
+  the navigation on the left (pages, the open project's positions and
+  sessions, recent sessions), the context bar on top (the session, its
+  recording configuration and the page's main actions), the page in the
+  middle, a collapsible details pane on the right and the status line at
+  the bottom with the real take progress and a **Stop** that stays on screen
+  while a take runs. Going to another page keeps the measurement, the
+  imported recording and the device choices; only New Measurement and Open
+  Session start afresh.
+- **Measurement flows as steps.** Universal DAW Mode is four steps
+  (generate the test signal, record in the DAW, import and choose channels,
+  check and analyse) and Standalone Mode four (devices and channels, test
+  signal, optional dimensions, run), each step returnable, the summary of
+  the earlier ones on the last, the long DAW notes folded away, and the
+  Run / Stop / Analyze buttons with the status and progress in a fixed
+  action area that never scrolls out of view.
+- **Results around the chart.** The Results page has no tabs: the key
+  figures stand over the chart, the Charts list and the overview (is the
+  measurement trustworthy, what the main problems are, what to check next)
+  stand beside it, and the chart shows one group at a time (frequency and
+  low end, decay, noise, impulse and early reflections, placement
+  geometry), drawn when shown and opened on the group behind the worst
+  finding. Tables, findings and tiles feed the details pane; the full text
+  report opens there too, and Export copies it.
+- **Placement geometry in two dimensions.** The default picture is a side
+  view over the reflection timeline: the side view draws measured lengths
+  solid, model-derived lengths dashed (with their input uncertainty and
+  every alternative) and example lengths dotted; the timeline shows the
+  direct sound, every candidate, the threshold and the analysed window, and
+  selecting a candidate highlights it and explains it in the details pane; the 3D picture is an auxiliary view with a fixed viewpoint and
+  Reset. A missing input names the field and leads back to it. No wall or
+  room shape is drawn.
+- **Compare and project.** Baseline and candidate are labelled everywhere;
+  the frequency responses of both takes are drawn on one dB scale with the
+  difference under them, the broadband decays likewise; aspects and deltas
+  feed the details pane. The Project page selects a position (also from the
+  navigation), measures it again, opens a take and compares it with the
+  first position.
+- **Export and theme.** Export in the Results context bar writes the CSV
+  tables, the chart on screen as PNG, or copies the report, and says why
+  when it fails. A quieter look: neutral panels with one accent, square
+  corners, status glyphs beside every colour.
+- The GUI modules are split by responsibility (`home_page`, `daw_page`,
+  `standalone_page`, `measure_flow`, `results_page`, `results_overview`,
+  `results_analysis`, `results_presenter`, `placement_view`, `workspace`,
+  `export`); `ui/pages.py` and `ui/results.py` are gone. The command line,
+  the file formats and the JSON schemas are unchanged.
 
 ## [0.5.0b3] - 2026-10-09
 

@@ -46,6 +46,9 @@ class MeasurementState:
     #: ask before they drop it. Never set for the demo (nothing is lost) or for
     #: a DAW recording (its file is on disk).
     unsaved_take: bool = False
+    #: Where the session on the Results page was saved or opened from, so
+    #: Compare can offer it as the baseline. ``None`` until it is on disk.
+    saved_path: Path | None = None
     #: Bumped by every reset (New Measurement, Open Session). A take or an
     #: analysis that started under another generation belongs to a session
     #: that is gone, and its late result is dropped.
@@ -59,6 +62,7 @@ class MeasurementState:
         self.findings = []
         self.findings_problem = ""
         self.unsaved_take = False
+        self.saved_path = None
         self.session = MeasurementSession(mode=self.mode)
 
     def leave_project(self) -> None:

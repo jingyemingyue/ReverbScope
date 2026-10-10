@@ -155,9 +155,8 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         window.show_results()
-        for index in range(window.results.tabs.count()):
-            window.results.tabs.setCurrentIndex(index)
-            settle()
+        window.results.report_button.setChecked(True)
+        settle()
         window.show_compare()
         window.compare.set_paths(saved[0][0], saved[1][0])
         window.compare.run_compare()
@@ -171,15 +170,11 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
     # Two-letter words pass the English gate: "vs" between the two paths did.
     assert window.compare.status.text() == f"{saved[0][0]}  对  {saved[1][0]}"
     _check([window.compare.text.toPlainText()], "comparison report")
-    tabs = (
-        window.results.ir_tab,
-        window.results.fr_tab,
-        window.results.decay_tab,
-        window.results.noise_tab,
-        window.results.refl_tab,
-        window.results.place_tab,
-    )
-    figures = [tab.figure for tab in tabs] + [
+    for key in window.results.groups:
+        # Every chart is drawn when its group is shown.
+        window.results.show_group(key)
+        settle()
+    figures = [group.figure for group in window.results.groups.values()] + [
         window.compare.figure,
         window.daw.placement.figure,
         window.standalone.placement.figure,
@@ -197,7 +192,7 @@ def _check_about_and_clocks(window: QWidget) -> None:
     import re
 
     from reverbscope.ui.main_window import about_box
-    from reverbscope.ui.pages import separate_clocks_box
+    from reverbscope.ui.measure_flow import separate_clocks_box
     from reverbscope.ui.workers import out_of_memory_text, unexpected_error_text
 
     about = about_box(window)
@@ -267,12 +262,12 @@ def test_a_demo_made_in_english_is_listed_and_titled_in_chinese(
     window.state.findings = interpret(result, "vocal")
     window.state.session = session
     window.show_results()
-    title = window.results.header.subtitle.text()
+    title = window.results.session_line()
     assert "合成演示房间" in title and "模拟全指向话筒" in title, title
     assert "Synthetic" not in title and "omni" not in title, title
     session.room_name = "Booth A"
     window.show_results()
-    assert "Booth A" in window.results.header.subtitle.text()
+    assert "Booth A" in window.results.session_line()
     window.close()
 
 

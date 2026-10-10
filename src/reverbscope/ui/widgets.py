@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
@@ -26,10 +27,12 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -37,9 +40,13 @@ from PySide6.QtWidgets import (
 from reverbscope.i18n import _
 from reverbscope.ui.theme import LIGHT_TOKENS, tokens, tone_color
 
+#: A glyph per tone, so a status reads without its colour (ARCHITECTURE_V1 §5.8).
+TONE_GLYPH = {"good": "✓", "warn": "!", "bad": "✕", "info": "i", "neutral": "–"}
+
 
 def set_banner_text(widget: QLabel, text: str, tone: str = "") -> None:
-    """Show ``text`` on a label, as a ``warn`` or ``info`` banner when ``tone`` is set.
+    """Show ``text`` on a label, as a ``warn``, ``info``, ``bad`` or ``good``
+    banner when ``tone`` is set.
 
     A dynamic property is read when the style is polished, so changing it
     after the widget is shown does nothing until the style is reapplied.
@@ -52,8 +59,6 @@ def set_banner_text(widget: QLabel, text: str, tone: str = "") -> None:
 
 def error_box(parent: QWidget | None, title: str, message: str) -> None:
     """A critical dialog: selectable text, and a button we translate ourselves."""
-    from PySide6.QtWidgets import QMessageBox
-
     box = QMessageBox(parent)
     box.setIcon(QMessageBox.Icon.Critical)
     box.setWindowTitle(title)
@@ -109,19 +114,27 @@ def ask_save_path(parent: QWidget, title: str, name: str, file_filter: str) -> P
             box = replace_file_box(parent, path)
             box.exec()
             clicked = box.clickedButton()
-            # By role, not by label, as in pages.ask_separate_clocks.
+            # By role, not by label: some desktops insert "&" accelerators.
             if clicked is None or box.buttonRole(clicked) != QMessageBox.ButtonRole.AcceptRole:
                 return None
     return path
 
 
-def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
-    """Give ``page`` a fixed header and a scrolling body; return the body layout."""
+def scroll_body(
+    page: QWidget, *, margins: tuple[int, int, int, int] = (0, 0, 8, 8)
+) -> tuple[QVBoxLayout, QScrollArea]:
+    """Give ``page`` a scrolling body; return the body layout and the scroll area.
+
+    The page's own layout is created here with no margins when it has none.
+    """
     page.setProperty("page", True)
-    outer = QVBoxLayout(page)
-    outer.setContentsMargins(28, 20, 28, 12)
-    outer.setSpacing(8)
-    outer.addWidget(header)
+    existing = page.layout()
+    if isinstance(existing, QVBoxLayout):
+        outer = existing
+    else:
+        outer = QVBoxLayout(page)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
     scroll.setFrameShape(QScrollArea.Shape.NoFrame)
@@ -129,10 +142,22 @@ def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
     body = QWidget()
     body.setProperty("page", True)
     layout = QVBoxLayout(body)
-    layout.setContentsMargins(0, 0, 8, 8)
-    layout.setSpacing(12)
+    layout.setContentsMargins(*margins)
+    layout.setSpacing(10)
     scroll.setWidget(body)
     outer.addWidget(scroll, 1)
+    return layout, scroll
+
+
+def scroll_page(page: QWidget, header: QWidget | None = None) -> QVBoxLayout:
+    """A page with an optional fixed ``header`` and a scrolling body."""
+    page.setProperty("page", True)
+    outer = QVBoxLayout(page)
+    outer.setContentsMargins(20, 14, 20, 10)
+    outer.setSpacing(8)
+    if header is not None:
+        outer.addWidget(header)
+    layout, _scroll = scroll_body(page)
     return layout
 
 
@@ -167,14 +192,21 @@ def primary(button: QPushButton) -> QPushButton:
     return button
 
 
+def flat(button: QPushButton) -> QPushButton:
+    """A link-like button for a secondary action (``Show all``, ``Back to settings``)."""
+    button.setProperty("flat", True)
+    button.setCursor(Qt.CursorShape.PointingHandCursor)
+    return button
+
+
 class Card(QFrame):
-    """A rounded surface with padding; children go into :attr:`body`."""
+    """A bordered surface with padding; children go into :attr:`body`."""
 
     def __init__(self, parent: QWidget | None = None, *, spacing: int = 8) -> None:
         super().__init__(parent)
         self.setProperty("card", True)
         self.body = QVBoxLayout(self)
-        self.body.setContentsMargins(16, 14, 16, 14)
+        self.body.setContentsMargins(14, 12, 14, 12)
         self.body.setSpacing(spacing)
 
 
@@ -184,7 +216,7 @@ class PageHeader(QWidget):
     def __init__(self, title: str, subtitle: str = "", parent: QWidget | None = None) -> None:
         super().__init__(parent)
         row = QHBoxLayout(self)
-        row.setContentsMargins(0, 0, 0, 4)
+        row.setContentsMargins(0, 0, 0, 2)
         text = QVBoxLayout()
         text.setSpacing(2)
         self.title = label(title, "page-title")
@@ -194,12 +226,12 @@ class PageHeader(QWidget):
         text.addWidget(self.subtitle)
         row.addLayout(text, 1)
         self.action_row = QHBoxLayout()
-        self.action_row.setSpacing(8)
+        self.action_row.setSpacing(6)
         row.addLayout(self.action_row)
 
 
 class ModeCard(Card):
-    """A large clickable card that starts a workflow."""
+    """A clickable card that starts a workflow."""
 
     clicked = Signal()
 
@@ -217,7 +249,7 @@ class ModeCard(Card):
         self.setProperty("hover", True)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        self.setMinimumWidth(220)
+        self.setMinimumWidth(200)
         top = QHBoxLayout()
         icon = label(glyph, "pill")
         top.addWidget(icon)
@@ -229,7 +261,7 @@ class ModeCard(Card):
         self.body.addLayout(top)
         self.body.addWidget(label(title, "card-title", wrap=True))
         description = label(text, "hint", wrap=True)
-        description.setMinimumHeight(48)
+        description.setMinimumHeight(40)
         self.body.addWidget(description, 1)
         self.button = primary(QPushButton(action))
         self.button.clicked.connect(self.clicked.emit)
@@ -243,28 +275,58 @@ class ModeCard(Card):
 
 
 class Chip(QLabel):
-    """A small rounded tag coloured by tone: good, warn, bad, info or neutral."""
+    """A small tag coloured by tone: good, warn, bad, info or neutral.
 
-    def __init__(self, text: str = "", tone: str = "neutral", parent: QWidget | None = None):
+    The glyph of the tone goes before the text when ``glyph`` is set, so a
+    status reads in greyscale too.
+    """
+
+    def __init__(
+        self,
+        text: str = "",
+        tone: str = "neutral",
+        parent: QWidget | None = None,
+        *,
+        glyph: bool = False,
+    ):
         super().__init__(text, parent)
+        self._glyph = glyph
+        self._text = text
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.set_tone(tone)
 
+    def setText(self, text: str) -> None:  # noqa: N802 - Qt override
+        self._text = text
+        super().setText(self._decorated(text))
+
+    def _decorated(self, text: str) -> str:
+        if self._glyph and text:
+            return f"{TONE_GLYPH.get(self._tone, '')} {text}".strip()
+        return text
+
     def set_tone(self, tone: str) -> None:
+        self._tone = tone
         fg, bg = tone_color(tone)
         self.setStyleSheet(
-            f"background: {bg}; color: {fg}; border: 1px solid {bg}; border-radius: 9px;"
-            " padding: 2px 9px;"
-            "font-size: 11px; font-weight: 700;"
+            f"background: {bg}; color: {fg}; border: 1px solid {fg}; border-radius: 3px;"
+            " padding: 1px 7px; font-size: 11px; font-weight: 700;"
         )
+        super().setText(self._decorated(self._text))
 
 
 class StatTile(Card):
-    """One key figure: caption, value, a qualifier line and a trust chip."""
+    """One key figure: caption, value, a qualifier line and a trust chip.
+
+    Clicking it emits :attr:`activated`: the page opens the chart behind it.
+    """
+
+    activated = Signal()
 
     def __init__(self, caption: str, parent: QWidget | None = None) -> None:
         super().__init__(parent, spacing=2)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.setProperty("hover", True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
         top = QHBoxLayout()
         self.caption = label(caption, "kpi-label")
         top.addWidget(self.caption)
@@ -284,9 +346,13 @@ class StatTile(Card):
         self.chip.set_tone(tone)
         self.chip.setVisible(bool(chip))
 
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: N802 - Qt override
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.activated.emit()
+        super().mouseReleaseEvent(event)
 
-#: Chip tone of an interpretation severity.
-#: Finding severities and measurement-health statuses to a chip tone.
+
+#: Finding severities, measurement-health statuses, fits and verdicts to a chip tone.
 SEVERITY_TONE = {
     "warning": "warn",
     "notice": "info",
@@ -305,7 +371,13 @@ SEVERITY_TONE = {
 
 
 class FindingCard(QFrame):
-    """One interpretation finding with a coloured severity edge."""
+    """One interpretation finding with a coloured severity edge.
+
+    Clicking the card emits :attr:`activated`; a page uses it to open the
+    chart the finding points at and to show its evidence.
+    """
+
+    activated = Signal()
 
     def __init__(
         self,
@@ -315,30 +387,214 @@ class FindingCard(QFrame):
         parent: QWidget | None = None,
         *,
         severity_label: str | None = None,
+        clickable: bool = False,
     ) -> None:
         super().__init__(parent)
-        tone = SEVERITY_TONE.get(severity, "neutral")
-        fg, bg = tone_color(tone)
+        self.tone = SEVERITY_TONE.get(severity, "neutral")
+        fg, bg = tone_color(self.tone)
         self.setObjectName("finding")
-        self.setStyleSheet(
-            f"QFrame#finding {{ background: {bg}; border-left: 4px solid {fg};"
-            " border-radius: 6px; }"
+        self._style = (
+            f"QFrame#finding {{ background: {bg}; border: 1px solid {bg};"
+            f" border-left: 4px solid {fg}; border-radius: 3px; }}"
         )
+        self._selected_style = (
+            f"QFrame#finding {{ background: {bg}; border: 1px solid {fg};"
+            f" border-left: 4px solid {fg}; border-radius: 3px; }}"
+        )
+        self.setStyleSheet(self._style)
+        self._clickable = clickable
+        if clickable:
+            self.setCursor(Qt.CursorShape.PointingHandCursor)
         row = QHBoxLayout(self)
-        row.setContentsMargins(12, 8, 12, 8)
+        row.setContentsMargins(10, 7, 10, 7)
         row.setSpacing(10)
-        chip = Chip((severity_label or severity).upper(), tone)
+        self.chip = Chip((severity_label or severity).upper(), self.tone, glyph=True)
         # A fixed width cut "NOT COMPARABLE" short; the column stays aligned
         # for the usual one-word labels.
-        chip.setMinimumWidth(82)
-        row.addWidget(chip, 0, Qt.AlignmentFlag.AlignTop)
+        self.chip.setMinimumWidth(72)
+        row.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignTop)
         text = QVBoxLayout()
         text.setSpacing(1)
-        text.addWidget(label(topic, "kpi-label"))
+        self.topic = label(topic, "kpi-label")
+        text.addWidget(self.topic)
         self.message = label(message, wrap=True)
         self.message.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         text.addWidget(self.message)
         row.addLayout(text, 1)
+
+    def set_selected(self, selected: bool) -> None:
+        self.setStyleSheet(self._selected_style if selected else self._style)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: N802 - Qt override
+        if self._clickable and event.button() == Qt.MouseButton.LeftButton:
+            self.activated.emit()
+        super().mouseReleaseEvent(event)
+
+
+class CollapsibleSection(QWidget):
+    """A heading that opens and closes the content under it (help, advanced options)."""
+
+    toggled = Signal(bool)
+
+    def __init__(
+        self, title: str, content: QWidget, parent: QWidget | None = None, *, open: bool = False
+    ) -> None:
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
+        self.button = QToolButton()
+        self.button.setText(title)
+        self.button.setCheckable(True)
+        self.button.setChecked(open)
+        self.button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.button.setArrowType(Qt.ArrowType.DownArrow if open else Qt.ArrowType.RightArrow)
+        self.button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.button.toggled.connect(self._toggle)
+        layout.addWidget(self.button, 0, Qt.AlignmentFlag.AlignLeft)
+        self.content = content
+        self.content.setVisible(open)
+        layout.addWidget(self.content)
+
+    def _toggle(self, checked: bool) -> None:
+        self.content.setVisible(checked)
+        self.button.setArrowType(Qt.ArrowType.DownArrow if checked else Qt.ArrowType.RightArrow)
+        self.toggled.emit(checked)
+
+    def set_open(self, open: bool) -> None:
+        self.button.setChecked(open)
+
+
+class StepBar(QFrame):
+    """The numbered steps of a workflow; the current one is marked, done ones ticked.
+
+    Every step stays clickable so the user can go back and change an earlier
+    choice; the page decides what a step needs before it is *done*.
+    """
+
+    step_chosen = Signal(int)
+
+    def __init__(self, titles: Sequence[str], parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setProperty("stepbar", True)
+        column = QVBoxLayout(self)
+        column.setContentsMargins(6, 4, 6, 4)
+        column.setSpacing(2)
+        row = QHBoxLayout()
+        row.setSpacing(4)
+        column.addLayout(row)
+        self.summary = label("", "hint", wrap=True)
+        self.summary.setContentsMargins(6, 0, 6, 2)
+        self.summary.hide()
+        column.addWidget(self.summary)
+        self.buttons: list[QToolButton] = []
+        self._done: list[bool] = [False] * len(titles)
+        self._summaries: list[str] = [""] * len(titles)
+        for index, title in enumerate(titles):
+            button = QToolButton()
+            button.setProperty("step", True)
+            button.setCheckable(True)
+            button.setAutoExclusive(True)
+            button.setText(f"{index + 1}  {title}")
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.clicked.connect(lambda _checked=False, i=index: self.step_chosen.emit(i))
+            row.addWidget(button)
+            self.buttons.append(button)
+            if index + 1 < len(titles):
+                arrow = label("›", "hint")
+                row.addWidget(arrow)
+        row.addStretch(1)
+        self._titles = list(titles)
+        if self.buttons:
+            self.buttons[0].setChecked(True)
+
+    def set_current(self, index: int) -> None:
+        if 0 <= index < len(self.buttons):
+            self.buttons[index].setChecked(True)
+
+    def current(self) -> int:
+        return next((i for i, b in enumerate(self.buttons) if b.isChecked()), 0)
+
+    def set_done(self, index: int, done: bool) -> None:
+        if not 0 <= index < len(self.buttons):
+            return
+        self._done[index] = done
+        button = self.buttons[index]
+        mark = "✓ " if done else ""
+        button.setText(f"{mark}{index + 1}  {self._titles[index]}")
+        button.setProperty("done", done)
+        button.style().unpolish(button)
+        button.style().polish(button)
+        self.set_summary(index, self._summaries[index])
+
+    def is_done(self, index: int) -> bool:
+        return self._done[index]
+
+    def set_summary(self, index: int, text: str) -> None:
+        """What a done step settled, in one line under the steps (``""`` clears it)."""
+        if not 0 <= index < len(self.buttons):
+            return
+        self._summaries[index] = text
+        self.buttons[index].setToolTip(text)
+        lines = [
+            f"✓ {i + 1} {self._titles[i]}: {summary}"
+            for i, summary in enumerate(self._summaries)
+            if summary and self._done[i]
+        ]
+        self.summary.setText("    ".join(lines))
+        self.summary.setVisible(bool(lines))
+
+    def title(self, index: int) -> str:
+        return self._titles[index] if 0 <= index < len(self._titles) else ""
+
+
+class KeyValueList(QWidget):
+    """Rows of ``name: value`` for the details pane (a metric's evidence, a
+    candidate's numbers); every row selectable so it can be copied."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._layout = QVBoxLayout(self)
+        self._layout.setContentsMargins(0, 0, 0, 0)
+        self._layout.setSpacing(3)
+
+    def set_rows(self, rows: Sequence[tuple[str, str]]) -> None:
+        clear_layout(self._layout)
+        for name, value in rows:
+            row = QWidget()
+            box = QHBoxLayout(row)
+            box.setContentsMargins(0, 0, 0, 0)
+            box.setSpacing(8)
+            key = label(name, "kpi-label", wrap=True)
+            key.setMinimumWidth(110)
+            key.setMaximumWidth(160)
+            key.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+            box.addWidget(key)
+            text = label(value, wrap=True)
+            text.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            box.addWidget(text, 1)
+            self._layout.addWidget(row)
+
+
+def clear_layout(layout: QLayout) -> None:
+    """Delete every widget (and nested layout) a layout holds.
+
+    A widget is hidden at once: ``deleteLater`` waits for the event loop, and
+    until then a removed row still painted over the new one.
+    """
+    while layout.count():
+        entry = layout.takeAt(0)
+        if entry is None:
+            continue
+        widget = entry.widget()
+        if widget is not None:
+            widget.hide()
+            widget.setParent(None)
+            widget.deleteLater()
+            continue
+        nested = entry.layout()
+        if isinstance(nested, QLayout):
+            clear_layout(nested)
 
 
 def separator() -> QFrame:

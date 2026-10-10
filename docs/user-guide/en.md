@@ -191,7 +191,7 @@ The thresholds are engineering choices, stated in
 [MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8, never a grade.
 
 **Measurement health** sits right under the key figures: the card below the
-four tiles of the Overview tab, and the section right after "At a glance" in
+four key figures on the Results page, and the section right after "At a glance" in
 the text report. It lists the checks the
 analysis made on the take itself (reference, sweep, playback speed, direct
 sound, level, distortion, dropouts, decay range, noise floor, recording
@@ -209,29 +209,63 @@ Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The interface and the
 text report show them in the interface language.
 
-The Results page has eight tabs:
+The window is one workspace: the navigation on the left (the pages, the
+open project's positions and sessions, recent sessions), the context bar on
+top (what you are looking at and the page's main actions), the page in the
+middle, the details pane on the right (what you selected: a figure, a
+finding, a band, a reflection, with its evidence and reasons; **View →
+Details pane** or F10 folds it away, and it folds by itself in a narrow
+window) and the status line at the bottom, which shows the real take
+progress and keeps **Stop** on screen while a take runs. Going to another
+page keeps everything; only **New Measurement** (Ctrl+N) and **Open
+Session** start afresh, and an unsaved take is protected by a question.
 
-| Tab | What it shows |
+The Results page is built around the chart. The four key figures
+(reverberation, background noise, early reflections, direct sound) stand
+over it with their trust level, each opening its chart; on a short window
+they fold away. On the left, **Charts** lists the groups and the overview
+below it answers *Is this measurement trustworthy?* (the measurement-health
+card: failed, limited or good, with what to do), *What are the main
+problems?* (the findings, the most important first; *Show all* for the
+rest) and *What next?* (the checks' own fixes, then the chart behind each
+warning); every card opens its chart and its evidence in the details pane.
+The chart in the middle is one group at a time, drawn when shown, and the
+page opens on the group behind the worst finding:
+
+| Group | What it shows |
 | --- | --- |
-| Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the measurement-health card, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
-| Full report | The same text report that `reverbscope analyze` prints, with the warnings at the end. “Copy report” copies it. |
-| Impulse Response | The deconvolved IR. The peak is the direct sound; it is not normalised to 1.0. |
-| Frequency Response | Raw (dotted) and smoothed (solid) magnitude. A dashed curve is the electrical loopback when compensation ran. 0 dB is the interface, not “flat in the room”. |
-| Decay | Schroeder / energy-decay curves. Broadband is a solid line; octave bands use changing dash patterns so colour is not the only cue. |
-| Noise | Quiet-segment spectrum and 50/60 Hz hum candidates. |
-| Early Reflections | ETC peaks (delay ms, level dB re direct). Open markers for candidates. |
-| Placement | Excess path, and — only with a tape-measured loudspeaker distance — loudspeaker height, the plane above both devices, and horizontal separation. No wall is named. |
+| Frequency and low end | The raw and smoothed response, the loopback when compensation ran, and the resonance candidates, marked on the curve when selected. |
+| Decay | The Schroeder curves and the EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time tables, each with validity; selecting a band highlights its curve and lists its reasons. |
+| Noise | The quiet-segment spectrum, the octave-band levels and the hum. |
+| Impulse and early reflections | The impulse response and the ETC peaks, or the reflection timeline. |
+| Placement geometry | The side view and the reflection timeline (below). |
 
-Low-frequency resonance candidates are listed in the Full report (and in
-`resonances.csv` after `reverbscope export`). They are not a separate tab.
+**Full report** in the context bar opens the same text report that
+`reverbscope analyze` prints (the warnings at the end) in the details pane;
+**Copy report** under Export copies it.
+
+**Export** in the context bar writes the CSV tables of the result into a
+folder (the same files as `reverbscope export`), saves the chart on screen
+as a PNG, or copies the text report; a failure says why. **Compare...**
+opens the Compare page with this session as the baseline once it is saved.
 
 ## Placement
 
-The Results page has a Placement tab. Without a tape-measured loudspeaker
-distance ReverbScope only reports each arrival's excess path. With the
-distance (and, for the vertical axis, the microphone height) it reports
-loudspeaker height, the plane above both devices and the horizontal
-separation. It never names a wall or gives room length or width.
+The **Placement geometry** group shows, by default, a side view over the
+reflection timeline. The side view draws
+the microphone height and the loudspeaker distance you measured as solid
+lines, what the reflections allow (loudspeaker height, horizontal
+separation, the plane above both devices, each with its input uncertainty
+and every alternative the model keeps) as dashed lines, and example lengths
+as dotted lines where nothing was entered. The **Reflection timeline** puts
+the direct sound, every candidate, the threshold and the analysed window on
+one time axis; selecting a candidate in the table highlights it and lists
+its numbers, its validity and why it was excluded. The **3D (auxiliary)**
+view draws only what was solved (a ring of possible loudspeaker positions,
+one cabinet as an illustration) and has a **Reset view** button. Without a
+tape-measured loudspeaker distance ReverbScope only reports each arrival's
+excess path, says which field to fill in, and offers the way back to the
+measurement page. It never names a wall or gives room length or width.
 
 Enter the tape numbers in Universal DAW Mode or Standalone Mode before
 Analyze, or pass `--speaker-distance` / `--mic-height` / `--temperature`

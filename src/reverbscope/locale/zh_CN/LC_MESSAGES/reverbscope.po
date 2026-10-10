@@ -5915,3 +5915,839 @@ msgstr "没有考虑两次录音的测量健康状况：它们的会话已不在
 
 msgid "The measurement health of the {side} take was not considered: its session is no longer where the comparison was saved."
 msgstr "没有考虑{side}录音的测量健康状况：它的会话已不在保存这次比较时所在的位置。"
+
+# --- Desktop workspace (0.5.0b4): navigation, steps, results workspace, placement, export ---
+
+msgid "Baseline is the take you compare against; candidate is the new one. Select two rows (the older becomes the baseline), or pick each path."
+msgstr "基线是用来对照的那次测量，候选是新的那次。选中两行（较早的一次作为基线），或分别选择路径。"
+
+msgid "BASELINE"
+msgstr "基线"
+
+msgid "CANDIDATE"
+msgstr "候选"
+
+msgid "Swap baseline and candidate"
+msgstr "交换基线与候选"
+
+msgid "Open baseline"
+msgstr "打开基线"
+
+msgid "Open candidate"
+msgstr "打开候选"
+
+msgid "Baseline and candidate"
+msgstr "基线与候选"
+
+msgid "Difference only"
+msgstr "仅差值"
+
+msgid "Every difference carries a validity."
+msgstr "每个差值都带有有效性。"
+
+msgid "Judged under the candidate's recording profile from the deltas above."
+msgstr "按候选会话的录音配置，根据上方的差值判定。"
+
+msgid "Reason"
+msgstr "原因"
+
+msgid "Generate test signal"
+msgstr "生成测试信号"
+
+msgid "Record in the DAW"
+msgstr "在 DAW 中录制"
+
+msgid "Import and choose channels"
+msgstr "导入并选择声道"
+
+msgid "Check and analyse"
+msgstr "检查并分析"
+
+msgid "Deconvolve the recording and read the room (Ctrl+Return)."
+msgstr "对录音做反卷积并读取房间。"
+
+msgid "Generate the test signal"
+msgstr "生成测试信号"
+
+msgid "Write the sine sweep as a WAV file at your DAW project's sample rate. A sidecar JSON next to it stores the sweep definition; keep both together."
+msgstr "按 DAW 工程的采样率把正弦扫频写成 WAV 文件。旁边的 JSON 附属文件保存扫频定义；两个文件要放在一起。"
+
+msgid "Must equal the DAW project's sample rate."
+msgstr "必须与 DAW 工程的采样率一致。"
+
+msgid "Already have the test signal?"
+msgstr "已经有测试信号了？"
+
+msgid "Record it in your DAW"
+msgstr "在你的 DAW 中录制"
+
+msgid "ReverbScope never talks to the DAW: you play the file and record the room."
+msgstr "ReverbScope 不与 DAW 通信：由你播放文件并录下房间。"
+
+msgid "What matters"
+msgstr "关键要求"
+
+msgid "Project sample rate = the test signal's sample rate; time-stretching off for the clip."
+msgstr "工程采样率等于测试信号的采样率；关闭该片段的时间伸缩。"
+
+msgid "No plug-ins on the sweep track or the master bus, room correction included."
+msgstr "扫频轨道和总线上不挂任何插件，包括房间校正插件。"
+
+msgid "Play the sweep through the one loudspeaker under test; record the microphone on a second track."
+msgstr "只通过待测的那只扬声器播放扫频；用第二条轨道录制话筒。"
+
+msgid "Export that track as WAV, AIFF, CAF or FLAC without normalising or trimming."
+msgstr "把该轨道导出为 WAV、AIFF、CAF 或 FLAC，不要归一化，也不要裁剪。"
+
+msgid "Keep the monitor level low: clearly audible, not loud."
+msgstr "监听音量保持较低：清楚可闻即可，不要大声。"
+
+msgid "Step-by-step notes"
+msgstr "分步说明"
+
+msgid "When the recording is exported, go on to the next step."
+msgstr "录音导出后，进入下一步。"
+
+msgid "Import the recording"
+msgstr "导入录音"
+
+msgid "Choose the exported track. ReverbScope finds the sweep in it; pick the microphone channel and, if one was recorded, the loopback channel."
+msgstr "选择导出的轨道。ReverbScope 会在其中找到扫频；选择话筒声道，如果录了回送（loopback），再选择回送声道。"
+
+msgid "The channel with the measurement microphone."
+msgstr "接测量话筒的声道。"
+
+msgid "The channel with the electrical loopback cable, if one was recorded."
+msgstr "接电气回送线的声道（如果录了）。"
+
+msgid "Check the configuration and analyse"
+msgstr "检查配置并分析"
+
+msgid "What the analysis will use. Go back to a step to change it."
+msgstr "分析将使用的内容。回到对应步骤即可修改。"
+
+msgid "Summary"
+msgstr "摘要"
+
+msgid "Change test signal"
+msgstr "更改测试信号"
+
+msgid "Change recording or channels"
+msgstr "更改录音或声道"
+
+msgid "Interpretation"
+msgstr "解读"
+
+msgid "Optional tape measurements (placement geometry)"
+msgstr "可选的卷尺测量（摆位几何）"
+
+msgid "The sweep rises from 20 Hz to the Nyquist frequency at the sample rate chosen. The peak level is digital (dBFS); -12 dBFS leaves headroom for the DAW's monitoring. The sidecar JSON holds the exact definition the analysis deconvolves with, so keep it next to the WAV."
+msgstr "扫频从 20 Hz 升到所选采样率的奈奎斯特频率。峰值电平是数字电平（dBFS）；-12 dBFS 为 DAW 的监听留出余量。JSON 附属文件保存分析反卷积所用的精确定义，请与 WAV 放在一起。"
+
+msgid "A sweep played at another sample rate or through time-stretching arrives at the wrong speed; the measurement health check then says so and lists where each DAW keeps the setting."
+msgstr "以其他采样率或经过时间伸缩播放的扫频会以错误的速度到达；测量健康检查会指出这一点，并列出各 DAW 中该设置的位置。"
+
+msgid "\"Auto\" picks the channel with the highest level. A loopback channel is the interface output wired straight back to an input: it removes the interface's own response and latency from the result."
+msgstr "“自动”选取电平最高的声道。回送声道是把接口输出直接接回输入：它能从结果中去掉接口自身的响应和延迟。"
+
+msgid "Room, position and microphone are stored with the session so a project can list it. The recording profile decides which thresholds the findings use; the numbers themselves do not depend on it."
+msgstr "房间、位置和话筒随会话保存，项目才能列出它。录音配置决定诊断所用的阈值；数字本身与配置无关。"
+
+msgid "none yet (Step 1)"
+msgstr "尚无（第 1 步）"
+
+msgid "{name}: {rate} Hz, {seconds:.1f} s, {level:g} dBFS"
+msgstr "{name}：{rate} Hz，{seconds:.1f} s，{level:g} dBFS"
+
+msgid "none yet (Step 3)"
+msgstr "尚无（第 3 步）"
+
+msgid "recording"
+msgstr "录音"
+
+msgid "the recording is at {recording} Hz but the test signal at {sweep} Hz: the analysis will report the playback speed"
+msgstr "录音为 {recording} Hz，而测试信号为 {sweep} Hz：分析会报告播放速度"
+
+msgid "Reference sweep: {name}"
+msgstr "参考扫频：{name}"
+
+msgid "Choose a folder for the CSV files"
+msgstr "选择存放 CSV 文件的文件夹"
+
+msgid "The CSV export failed: {error}"
+msgstr "CSV 导出失败：{error}"
+
+msgid "Cannot export"
+msgstr "无法导出"
+
+msgid "Wrote {n} CSV file(s) to {path}: {names}"
+msgstr "已向 {path} 写入 {n} 个 CSV 文件：{names}"
+
+msgid "Save chart as PNG"
+msgstr "将图表保存为 PNG"
+
+msgid "PNG images (*.png)"
+msgstr "PNG 图片 (*.png)"
+
+msgid "The chart could not be written: {error}"
+msgstr "无法写入图表：{error}"
+
+msgid "Recent projects"
+msgstr "最近的项目"
+
+msgid "A project folder you saved a session into is listed here."
+msgstr "你保存过会话的项目文件夹会列在这里。"
+
+msgid "Recent sessions"
+msgstr "最近的会话"
+
+msgid "Double-click a session to open it; select two and compare."
+msgstr "双击会话即可打开；选中两个即可对比。"
+
+msgid "&View"
+msgstr "视图(&V)"
+
+msgid "&Navigation pane"
+msgstr "导航栏(&N)"
+
+msgid "&Details pane"
+msgstr "详情栏(&D)"
+
+msgid "&Results"
+msgstr "结果(&R)"
+
+msgid "Step {n} of {total}: {title}"
+msgstr "第 {n} 步，共 {total} 步：{title}"
+
+msgid "Start a measurement, open a project or a saved session."
+msgstr "开始一次测量，或打开项目、已保存的会话。"
+
+msgid "Save this session first to compare it; a comparison reads sessions from disk."
+msgstr "请先保存这个会话再对比；对比从磁盘读取会话。"
+
+msgid "<b>ReverbScope {version}</b><br>An open-source, DAW-independent recording environment analyzer.<br>A validity flag on every number · any DAW: WAV in, WAV out · no room score, no invented figures.<br><br>Licensed under the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses.<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the executable (and inside <code>ReverbScope.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; ReverbScope never reports dB SPL."
+msgstr "<b>ReverbScope {version}</b><br>开源、不依赖 DAW 的录音环境分析器。<br>每个数字都带有效性标记 · 任何 DAW：WAV 进、WAV 出 · 没有房间评分，不编造数字。<br><br>以 Apache 许可证 2.0 版发布。<br>本程序使用 Qt 与 PySide6（版权归 Qt 公司及其贡献者所有），遵循 GNU LGPL 第 3 版；Qt 库以独立共享库加载，可以替换为接口兼容的版本。NumPy、SciPy、matplotlib、soundfile（libsndfile，LGPL-2.1）和 sounddevice（PortAudio）按各自的许可证使用。<br><br>桌面版程序包在可执行文件旁（macOS 上在 <code>ReverbScope.app</code> 内）附带 <code>THIRD_PARTY_LICENSES/</code> 目录。源码检出请看 docs/DEPENDENCIES.md。除非提供校准，电平均为数字电平（dBFS）；ReverbScope 从不报告 dB SPL。"
+
+msgid "With the distance, every early reflection gets its path length in metres; with the microphone height as well, the loudspeaker height, the horizontal separation and the plane above can be solved."
+msgstr "有了距离，每个早期反射都能得到以米计的路径长度；再加上话筒高度，就能解出扬声器高度、水平间距和上方平面。"
+
+msgid "loudspeaker distance {metres:.2f} m"
+msgstr "扬声器距离 {metres:.2f} m"
+
+msgid "microphone height {metres:.2f} m"
+msgstr "话筒高度 {metres:.2f} m"
+
+msgid "air {celsius:.1f} °C"
+msgstr "气温 {celsius:.1f} °C"
+
+msgid "No tape measurement entered (the placement geometry stays at tier 0)."
+msgstr "未输入卷尺测量值（摆位几何停留在第 0 级）。"
+
+msgid "Back to the start page; the fields keep their values."
+msgstr "回到起始页；各字段保留当前值。"
+
+msgid "‹ Previous"
+msgstr "‹ 上一步"
+
+msgid "Next ›"
+msgstr "下一步 ›"
+
+msgid "Booth A, living room, studio B"
+msgstr "录音间 A、客厅、工作室 B"
+
+msgid "A, desk, corner"
+msgstr "A、桌面、墙角"
+
+msgid "Reset view"
+msgstr "重置视角"
+
+msgid "Back to the fixed viewpoint of the 3D picture."
+msgstr "回到三维图的固定视角。"
+
+msgid "Solved lengths"
+msgstr "已解出的长度"
+
+msgid "Reflection candidates"
+msgstr "反射候选"
+
+msgid "Every arrival above the threshold inside the analysed window; the hatched part was not searched. Colour and marker say whether the model attributed the arrival to a plane; a cross is an arrival it refused."
+msgstr "分析窗口内所有高于阈值的到达声；阴影部分未被搜索。颜色和标记表示模型是否把该到达声归属于某个平面；叉号表示模型拒绝归属的到达声。"
+
+msgid "To go further, fill in: {fields}."
+msgstr "若要更进一步，请填写：{fields}。"
+
+msgid "Placement geometry"
+msgstr "摆位几何"
+
+msgid "± is propagated from the stated tape-measure, temperature and peak-location uncertainties only; it excludes model error."
+msgstr "± 仅由所述的卷尺、温度和峰值定位不确定度传播而来；不包括模型误差。"
+
+msgid "Reflection at {delay:.1f} ms"
+msgstr "{delay:.1f} ms 处的反射"
+
+msgid "The geometric fields describe a flat first-order reflector; read \"Plane reflection?\" first."
+msgstr "几何字段描述的是平坦的一阶反射面；请先看“是否平面反射？”。"
+
+msgid "Back to the measurement settings"
+msgstr "返回测量设置"
+
+msgid "Side view"
+msgstr "侧视图"
+
+msgid "Reflection timeline"
+msgstr "反射时间线"
+
+msgid "3D (auxiliary)"
+msgstr "3D（辅助）"
+
+msgid "resonance candidates"
+msgstr "共振候选"
+
+msgid "or {values}"
+msgstr "或 {values}"
+
+msgid "(illustrative)"
+msgstr "（示意）"
+
+msgid "distance {metres:.2f} m"
+msgstr "距离 {metres:.2f} m"
+
+msgid "distance (not measured)"
+msgstr "距离（未测量）"
+
+msgid "horizontal {metres:.2f} m"
+msgstr "水平 {metres:.2f} m"
+
+msgid "plane above {metres:.2f} m"
+msgstr "上方平面 {metres:.2f} m"
+
+msgid "horizontal (m)"
+msgstr "水平（m）"
+
+msgid "height above the reference plane (m)"
+msgstr "相对参考平面的高度（m）"
+
+msgid "measured (tape)"
+msgstr "实测（卷尺）"
+
+msgid "derived (model)"
+msgstr "推导（模型）"
+
+msgid "example only"
+msgstr "仅为示例"
+
+msgid "Side view: no wall or room shape is drawn"
+msgstr "侧视图：不绘制任何墙面或房间形状"
+
+msgid "Solid lines are what you measured; dashed lines are what the reflections and your two tape measures allow. ± is the input uncertainty only, not the model error. Every alternative is drawn: ReverbScope does not pick one."
+msgstr "实线是你实测的长度；虚线是反射和你的两次卷尺测量所允许的长度。± 只是输入不确定度，不是模型误差。所有候选值都画出来：ReverbScope 不替你挑选。"
+
+msgid "analysed window"
+msgstr "分析窗口"
+
+msgid "not searched (response ended)"
+msgstr "未搜索（响应已结束）"
+
+msgid "direct sound"
+msgstr "直达声"
+
+msgid "Reflection timeline (direct-sound confidence: {confidence})"
+msgstr "反射时间线（直达声置信度：{confidence}）"
+
+msgid "attributed: reference plane"
+msgstr "归属：参考平面"
+
+msgid "attributed: plane above"
+msgstr "归属：上方平面"
+
+msgid "not a plane reflection"
+msgstr "不是平面反射"
+
+msgid "Placement picture (nothing solved). Drag to rotate."
+msgstr "摆位示意图（尚未解出任何量）。拖动可旋转。"
+
+msgid "The vertical axis was not solved, so this is the tape-measure picture: the loudspeaker position is an example. No room and no wall are drawn."
+msgstr "竖直轴尚未解出，所以这只是卷尺示意图：扬声器位置是示例。不绘制房间和墙面。"
+
+msgid "baseline"
+msgstr "基线"
+
+msgid "candidate"
+msgstr "候选"
+
+msgid "Frequency response: one scale for both takes"
+msgstr "频率响应：两次测量共用同一刻度"
+
+msgid "Broadband decay: baseline and candidate"
+msgstr "宽带衰减：基线与候选"
+
+msgid "Measure this position again..."
+msgstr "再次测量此位置…"
+
+msgid "Another take at the selected position, listed under the same label."
+msgstr "在所选位置再测一次，列在同一标签下。"
+
+msgid "Open result"
+msgstr "打开结果"
+
+msgid "Open the selected take on the Results page."
+msgstr "在结果页打开所选的测量。"
+
+msgid "One room, several microphone positions."
+msgstr "一个房间，多个话筒位置。"
+
+msgid "{path}  ·  {positions} position(s), {sessions} session(s)"
+msgstr "{path}  ·  {positions} 个位置，{sessions} 个会话"
+
+msgid "Representative"
+msgstr "代表测量"
+
+msgid "Repeat spread"
+msgstr "重复偏差"
+
+msgid "Select a position first."
+msgstr "请先选择一个位置。"
+
+msgid "Folder"
+msgstr "文件夹"
+
+msgid "Warnings"
+msgstr "警告"
+
+msgid "Fit is the absence of a warning under the {profile} profile; the page does not rank positions. Click a position to select it."
+msgstr "“适合”指在{profile}配置下没有警告；本页不给位置排名。点击位置即可选中。"
+
+msgid "Measure again"
+msgstr "再次测量"
+
+msgid "Low-frequency resonance candidates"
+msgstr "低频共振候选"
+
+msgid "Above baseline (dB)"
+msgstr "高于基准（dB）"
+
+msgid "Decay 20 dB"
+msgstr "衰减 20 dB"
+
+msgid "Window"
+msgstr "窗口"
+
+msgid "Smoothing"
+msgstr "平滑"
+
+msgid "1/{fraction} octave"
+msgstr "1/{fraction} 倍频程"
+
+msgid "Candidates"
+msgstr "候选数"
+
+msgid "Excitation band"
+msgstr "激励频带"
+
+msgid "Resonance candidate {hz:.1f} Hz"
+msgstr "共振候选 {hz:.1f} Hz"
+
+msgid "A candidate is a resonance only when its decay is clearly longer than both the filter ringing and the surroundings."
+msgstr "只有当衰减明显长于滤波器振铃和周围频带时，候选才算共振。"
+
+msgid "Reverberation by band"
+msgstr "各频带混响"
+
+msgid "A value in brackets is unreliable; 'insufficient range' means the decay could not be evaluated over the range that metric needs. Select a band for the reasons."
+msgstr "括号中的值不可靠；“范围不足”表示衰减无法在该指标所需的范围内评估。选中频带可查看原因。"
+
+msgid "Every metric with its validity and, when it is not valid, the reason."
+msgstr "每个指标及其有效性；无效时附原因。"
+
+msgid "Octave-band levels (dBFS)"
+msgstr "倍频程电平（dBFS）"
+
+msgid "Level (dBFS)"
+msgstr "电平（dBFS）"
+
+msgid "No quiet segment could be verified, so no level is reported."
+msgstr "无法确认安静段，因此不报告电平。"
+
+msgid "Levels are digital (dBFS), not dB SPL: uncalibrated."
+msgstr "电平为数字电平（dBFS），不是 dB SPL：未校准。"
+
+msgid "Level re direct (dB)"
+msgstr "相对直达声电平（dB）"
+
+msgid "The response ended at {end:.1f} ms, before the {window:.0f} ms window: later arrivals could not be seen."
+msgstr "响应在 {end:.1f} ms 处结束，早于 {window:.0f} ms 的窗口：更晚的到达声无法看到。"
+
+msgid "Arrivals above {threshold:g} dB re the direct sound inside the window."
+msgstr "窗口内相对直达声高于 {threshold:g} dB 的到达声。"
+
+msgid "Level re direct"
+msgstr "相对直达声电平"
+
+msgid "The placement geometry group says what this arrival may be."
+msgstr "“摆位几何”分组说明这个到达声可能是什么。"
+
+msgid "What are the main problems?"
+msgstr "主要问题是什么？"
+
+msgid "What next?"
+msgstr "接下来做什么？"
+
+msgid "Open {chart}"
+msgstr "打开{chart}"
+
+msgid "Open"
+msgstr "打开"
+
+msgid "Nothing to do: save the session or compare it."
+msgstr "没有要处理的：保存会话或进行对比。"
+
+msgid "Show all {n} findings"
+msgstr "显示全部 {n} 条诊断"
+
+msgid "Show the most important only"
+msgstr "只显示最重要的"
+
+msgid "Is this measurement trustworthy?"
+msgstr "这次测量可信吗？"
+
+msgid "Back to the start page for another measurement (Ctrl+N)."
+msgstr "回到起始页开始另一次测量。"
+
+msgid "Compare..."
+msgstr "对比…"
+
+msgid "Compare this session with another saved one."
+msgstr "把这个会话与另一个已保存的会话对比。"
+
+msgid "Export"
+msgstr "导出"
+
+msgid "CSV tables..."
+msgstr "CSV 表格…"
+
+msgid "Current chart as PNG..."
+msgstr "当前图表为 PNG…"
+
+msgid "Analysis"
+msgstr "分析"
+
+msgid "unsaved"
+msgstr "未保存"
+
+msgid "Click a figure, a finding or a table row."
+msgstr "点击关键数字、诊断或表格行。"
+
+msgid "Evidence: the measured values the sentence rests on."
+msgstr "证据：这句话所依据的测量值。"
+
+msgid "Nothing to export yet."
+msgstr "还没有可导出的内容。"
+
+msgid "No: the measurement itself failed ({checks}). Fix the measurement and measure again before reading the room from these numbers."
+msgstr "不可信：测量本身失败（{checks}）。先修正测量并重新测量，再从这些数字读取房间。"
+
+msgid "With limits: the measurement is usable but {checks} put some figures in doubt. Those figures are marked below and in the charts."
+msgstr "有限制：测量可用，但{checks}使部分数字存疑。这些数字在下方和图表中已标出。"
+
+msgid "Partly: {checks} could not be checked, so the figures they bear on are unverified."
+msgstr "部分：{checks}无法检查，相关数字未经验证。"
+
+msgid "Yes: every check on the take itself is good."
+msgstr "可信：对这次录音本身的每项检查都良好。"
+
+msgid "No findings under the {profile} profile."
+msgstr "在{profile}配置下没有诊断。"
+
+msgid "{n} warning(s) ({topics}) and {m} notice(s) under the {profile} profile."
+msgstr "在{profile}配置下有 {n} 条警告（{topics}）和 {m} 条提示。"
+
+msgid "No warning; {m} notice(s) under the {profile} profile."
+msgstr "没有警告；在{profile}配置下有 {m} 条提示。"
+
+msgid "Nothing to warn about under the {profile} profile."
+msgstr "在{profile}配置下没有需要警告的内容。"
+
+msgid "{check}: {fix}"
+msgstr "{check}：{fix}"
+
+msgid "Open {chart} for the {topic} warning."
+msgstr "查看“{chart}”以了解{topic}警告。"
+
+msgid "Nothing to fix; move the microphone or treat the room and compare."
+msgstr "无需修正；移动话筒或处理房间后再做对比。"
+
+msgid "not available"
+msgstr "不可用"
+
+msgid "Severity"
+msgstr "严重程度"
+
+msgid "Topic"
+msgstr "主题"
+
+msgid "Identifier"
+msgstr "标识符"
+
+msgid "Affects"
+msgstr "影响"
+
+msgid "What to do"
+msgstr "怎么做"
+
+msgid "Where"
+msgstr "位置"
+
+msgid "No placement result: no loudspeaker distance was entered, so the reflections stay in milliseconds."
+msgstr "没有摆位结果：未输入扬声器距离，反射仍以毫秒表示。"
+
+msgid "Image-source path"
+msgstr "镜像声源路径"
+
+msgid "Product of the two distances"
+msgstr "两段距离之积"
+
+msgid "Geometric mean distance"
+msgstr "几何平均距离"
+
+msgid "Mean distance bracket"
+msgstr "平均距离区间"
+
+msgid "Specular ceiling"
+msgstr "镜面反射上限"
+
+msgid "Plane reflection?"
+msgstr "是否平面反射？"
+
+msgid "untested (the tier did not allow it)"
+msgstr "未检验（该级别不允许）"
+
+msgid "Attributed to"
+msgstr "归属于"
+
+msgid "no surface"
+msgstr "无表面"
+
+msgid "Why excluded"
+msgstr "排除原因"
+
+msgid "Level above baseline"
+msgstr "高于基准的电平"
+
+msgid "Narrow-band decay (20 dB)"
+msgstr "窄带衰减（20 dB）"
+
+msgid "Filter ringing (20 dB)"
+msgstr "滤波器振铃（20 dB）"
+
+msgid "Surroundings decay (20 dB)"
+msgstr "周围频带衰减（20 dB）"
+
+msgid "Searched {low:.0f}–{high:.0f} Hz."
+msgstr "已搜索 {low:.0f}–{high:.0f} Hz。"
+
+msgid "No frequency range could be searched for resonances."
+msgstr "没有可供搜索共振的频率范围。"
+
+msgid "{seconds:.2f} s from {basis}"
+msgstr "{seconds:.2f} s，来自 {basis}"
+
+msgid "Curvature"
+msgstr "曲率"
+
+msgid "Filter"
+msgstr "滤波器"
+
+msgid "Segment length"
+msgstr "片段长度"
+
+msgid "RMS"
+msgstr "RMS"
+
+msgid "Peak"
+msgstr "峰值"
+
+msgid "Hum"
+msgstr "哼声"
+
+msgid "{base:g} Hz and {n} harmonic(s)"
+msgstr "{base:g} Hz 及 {n} 个谐波"
+
+msgid "Direct-sound confidence"
+msgstr "直达声置信度"
+
+msgid "Pre-peak margin"
+msgstr "峰前余量"
+
+msgid "not checkable"
+msgstr "无法检查"
+
+msgid "Valid length"
+msgstr "有效长度"
+
+msgid "Sweep passes found"
+msgstr "找到的扫频次数"
+
+msgid "{percent:.1f} % of the generated speed"
+msgstr "生成速度的 {percent:.1f} %"
+
+msgid "Direct level"
+msgstr "直达声电平"
+
+msgid "Reflection window"
+msgstr "反射窗口"
+
+msgid "Threshold"
+msgstr "阈值"
+
+msgid "cut short: the response ended before the window did"
+msgstr "被截短：响应在窗口结束前就结束了"
+
+msgid "compensated"
+msgstr "已补偿"
+
+msgid "not applied"
+msgstr "未应用"
+
+msgid "Frequency and low end"
+msgstr "频率与低频"
+
+msgid "Impulse and early reflections"
+msgstr "脉冲与早期反射"
+
+msgid "Optional dimensions"
+msgstr "可选尺寸"
+
+msgid "Run measurement"
+msgstr "运行测量"
+
+msgid "Play the sweep and record the microphone (Ctrl+Return)."
+msgstr "播放扫频并录制话筒。"
+
+msgid "Devices and channels"
+msgstr "设备与声道"
+
+msgid "The interface that plays the sweep and records the microphone. Input and output must use the same audio system."
+msgstr "播放扫频并录制话筒的接口。输入和输出必须使用同一个音频系统。"
+
+msgid "Channels (1-based, as on the interface)"
+msgstr "声道（从 1 起，与接口面板一致）"
+
+msgid "The input the interface output is wired back into, if you use a loopback cable."
+msgstr "如果使用回送线，这是接口输出接回的那个输入。"
+
+msgid "Advanced audio options"
+msgstr "高级音频选项"
+
+msgid "How long the sweep is, how loud it plays, and which profile reads the result."
+msgstr "扫频多长、播放多响，以及由哪个配置解读结果。"
+
+msgid "Longer sweeps give more signal above the noise floor; 10 s is a good start."
+msgstr "更长的扫频能在本底噪声之上获得更多信号；10 s 是不错的起点。"
+
+msgid "Optional dimensions and metadata"
+msgstr "可选尺寸与元数据"
+
+msgid "Name the room and the position so a project can list the take, and enter the tape measurements if you want the placement geometry."
+msgstr "填写房间和位置，项目才能列出这次测量；想要摆位几何就输入卷尺测量值。"
+
+msgid "Run the measurement"
+msgstr "运行测量"
+
+msgid "ReverbScope plays the sweep once, records the microphone, then analyses the take. Stop ends the take at once and nothing is kept."
+msgstr "ReverbScope 播放一次扫频、录制话筒，然后分析这次录音。停止会立即结束录音，不保留任何内容。"
+
+msgid "The result opens on the Results page. A take recorded through a real interface exists only in memory until the session is saved."
+msgstr "结果会在结果页打开。通过真实接口录下的录音在保存会话前只存在于内存中。"
+
+msgid "Pick the interface the loudspeaker and the microphone are connected to. The device rate under the sample rate says what the interface runs at; a difference means the interface resamples. Two different devices run on two clocks and ReverbScope asks before measuring across them."
+msgstr "选择扬声器和话筒所连接的接口。采样率下方的设备采样率显示接口实际运行的采样率；不一致意味着接口会重采样。两台不同设备使用两个时钟，跨设备测量前 ReverbScope 会先询问。"
+
+msgid "The playback level is digital. Above {level:g} dBFS ReverbScope asks you to confirm that the monitor level is low; it never changes the system volume."
+msgstr "播放电平是数字电平。高于 {level:g} dBFS 时，ReverbScope 会要求你确认监听音量已调低；它从不改变系统音量。"
+
+msgid "Nothing here is required. With the loudspeaker distance every early reflection gets a path length; with the microphone height too, the vertical axis can be solved. No wall or room shape is ever derived."
+msgstr "这里没有必填项。有了扬声器距离，每个早期反射都能得到路径长度；再加上话筒高度，就能解出竖直轴。从不推导墙面或房间形状。"
+
+msgid "The progress bar follows the take. The analysis after it has no percentage: the bar then shows that it is busy. Stop (or Esc) ends a take; the analysis cannot be stopped and takes a few seconds."
+msgstr "进度条跟随录音进度。之后的分析没有百分比：进度条只显示忙碌。停止（或 Esc 键）会结束录音；分析无法停止，需要几秒钟。"
+
+msgid "Audio system"
+msgstr "音频系统"
+
+msgid "none"
+msgstr "无"
+
+msgid "Channels"
+msgstr "声道"
+
+msgid "mic in {mic}, loopback {loopback}, speaker out {out}"
+msgstr "话筒输入 {mic}，回送 {loopback}，扬声器输出 {out}"
+
+msgid "{seconds:.1f} s at {level:g} dBFS"
+msgstr "{seconds:.1f} s，{level:g} dBFS"
+
+msgid "Tape measurements"
+msgstr "卷尺测量"
+
+msgid "Metadata"
+msgstr "元数据"
+
+msgid "Results: {name}"
+msgstr "结果：{name}"
+
+msgid "None yet"
+msgstr "暂无"
+
+msgid "Details"
+msgstr "详情"
+
+msgid "Hide the details pane"
+msgstr "隐藏详情栏"
+
+msgid "Select a metric, a finding or a reflection to see its details."
+msgstr "选中指标、诊断或反射即可查看详情。"
+
+msgid "Stop the take that is playing (Esc on the measurement page)."
+msgstr "停止正在播放的录音（测量页上也可按 Esc 键）。"
+
+msgid "Start"
+msgstr "开始"
+
+msgid "Measure"
+msgstr "测量"
+
+msgid "Current measurement"
+msgstr "当前测量"
+
+msgid "No project open"
+msgstr "未打开项目"
+
+msgid "recorded and exported"
+msgstr "已在 DAW 中录制并导出"
+
+msgid "analysed; the result is on the Results page"
+msgstr "已分析；结果在结果页"
+
+msgid "Side view and timeline"
+msgstr "侧视图与时间线"
+
+msgid "Timeline only"
+msgstr "仅时间线"
+
+msgid "Show the text report in the details pane (the same as reverbscope analyze)."
+msgstr "在详情栏显示文本报告（与 reverbscope analyze 相同）。"
+
+msgid "Back to the selection"
+msgstr "返回所选内容"
+
+msgid "Charts"
+msgstr "图表"
+
+msgid "{seconds:.1f} s at {level:g} dBFS, {profile}"
+msgstr "{seconds:.1f} s，{level:g} dBFS，{profile}"
+
+msgid "{inp} → {out}, {rate}"
+msgstr "{inp} → {out}，{rate}"
+
+msgid "Go to the settings"
+msgstr "前往测量设置"

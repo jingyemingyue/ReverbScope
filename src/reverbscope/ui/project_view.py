@@ -6,6 +6,8 @@ position's agreement and its verdict against the first; the spatial average
 and the ISO 3382-2 class; what to measure next), and starts the next take:
 *Measure a new position* names the position, opens the chosen mode, and the
 save on the Results page adds the session to the project under that name.
+A position can be measured again, a take opened, and a take compared with
+the first position.
 """
 
 from __future__ import annotations
@@ -39,6 +41,7 @@ from reverbscope.health import HealthStatus, status_word
 from reverbscope.i18n import _, list_join, localize
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.overview import (
+    PositionSummary,
     ProjectEntry,
     ProjectOverview,
     SessionSummary,
@@ -57,7 +60,17 @@ from reverbscope.io.session_store import load_measurement, load_session
 from reverbscope.labels import accuracy_class_text
 from reverbscope.models.project import Project
 from reverbscope.ui.state import MeasurementState
-from reverbscope.ui.widgets import Card, FindingCard, PageHeader, label, primary, scroll_page
+from reverbscope.ui.widgets import (
+    Card,
+    FindingCard,
+    KeyValueList,
+    PageHeader,
+    clear_layout,
+    label,
+    primary,
+    scroll_body,
+)
+from reverbscope.ui.workspace import action_row
 
 
 def suggest_label(taken: list[str] | tuple[str, ...]) -> str:
@@ -75,14 +88,17 @@ def suggest_label(taken: list[str] | tuple[str, ...]) -> str:
 class NewPositionDialog(QDialog):
     """Name the position and pick how to measure it."""
 
-    def __init__(self, suggested: str, mode: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, suggested: str, mode: str, parent: QWidget | None = None, *, again: bool = False
+    ) -> None:
         super().__init__(parent)
-        self.setWindowTitle(_("Measure a new position"))
+        self.setWindowTitle(_("Measure again") if again else _("Measure a new position"))
         form = QFormLayout(self)
         self.label_edit = QLineEdit(suggested)
         self.label_edit.setToolTip(
             _("A short name for the microphone position: A, B, desk, corner.")
         )
+        self.label_edit.setReadOnly(again)
         form.addRow(_("Position"), self.label_edit)
         self.mode = QComboBox()
         self.mode.addItem(_("Universal DAW Mode"), "universal_daw")
@@ -111,6 +127,30 @@ class NewPositionDialog(QDialog):
         return self.label_edit.text().strip(), str(self.mode.currentData())
 
 
+class PositionDetail(QWidget):
+    """The details pane of the Project page: the selected position or take."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 4, 12, 12)
+        layout.setSpacing(8)
+        self.heading = label("", "card-title", wrap=True)
+        layout.addWidget(self.heading)
+        self.rows = KeyValueList()
+        layout.addWidget(self.rows)
+        self.note = label("", "hint", wrap=True)
+        self.note.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        layout.addWidget(self.note)
+        layout.addStretch(1)
+
+    def show_rows(self, heading: str, rows: list[tuple[str, str]], note: str = "") -> None:
+        self.heading.setText(heading)
+        self.rows.set_rows(rows)
+        self.note.setText(note)
+        self.note.setVisible(bool(note))
+
+
 class ProjectPage(QWidget):
     back = Signal()
     #: Position label and mode: the main window opens the mode page for it.
@@ -119,6 +159,8 @@ class ProjectPage(QWidget):
     open_session = Signal(str)
     #: Baseline and candidate directories: the main window opens Compare on them.
     compare_requested = Signal(str, str)
+    #: The overview was read again (the navigation lists the positions).
+    changed = Signal()
 
     def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -128,26 +170,34 @@ class ProjectPage(QWidget):
         self._project: Project | None = None
         self._entries: list[ProjectEntry] = []
         self._skipped: list[tuple[str, str]] = []
+        self._selected_position: str = ""
         #: The user picked a profile: a reload keeps it instead of the latest take's.
         self._profile_chosen = False
-        header = PageHeader(
-            _("Project"),
-            _(
-                "One room, several microphone positions. Every take keeps its own folder; "
-                "the project lists which position it was taken at."
-            ),
-        )
-        back = QPushButton(_("Back"))
-        back.clicked.connect(self.back.emit)
-        header.action_row.addWidget(back)
+        self.setProperty("page", True)
+
+        self.back_button = QPushButton(_("Home"))
+        self.back_button.clicked.connect(self.back.emit)
         self.open_button = QPushButton(_("Open Project..."))
         self.open_button.clicked.connect(self.choose)
-        header.action_row.addWidget(self.open_button)
         self.new_button = QPushButton(_("New Project..."))
         self.new_button.clicked.connect(self._choose_new)
-        header.action_row.addWidget(self.new_button)
-        self.header = header
-        layout = scroll_page(self, header)
+        self.copy_button = QPushButton(_("Copy overview"))
+        self.copy_button.clicked.connect(self._copy)
+        self.measure_button = primary(QPushButton(_("Measure a new position...")))
+        self.measure_button.clicked.connect(self._choose_position)
+        self.context_actions = action_row(
+            self.back_button,
+            self.open_button,
+            self.new_button,
+            self.copy_button,
+            self.measure_button,
+        )
+        self.detail = PositionDetail()
+
+        layout, self.scroll_area = scroll_body(self, margins=(16, 10, 16, 8))
+        self.header = PageHeader("")
+        self.header.title.hide()
+        layout.addWidget(self.header)
 
         tools = Card()
         row = QHBoxLayout()
@@ -168,24 +218,10 @@ class ProjectPage(QWidget):
         self.sources.valueChanged.connect(lambda _value: self.refresh())
         row.addWidget(self.sources)
         row.addStretch(1)
-        self.copy_button = QPushButton(_("Copy overview"))
-        self.copy_button.clicked.connect(self._copy)
-        row.addWidget(self.copy_button)
         self.add_button = QPushButton(_("Add Session..."))
         self.add_button.setToolTip(_("List a saved session under a position of this project."))
         self.add_button.clicked.connect(self._choose_existing)
         row.addWidget(self.add_button)
-        self.compare_button = QPushButton(_("Compare with first position"))
-        self.compare_button.setToolTip(
-            _(
-                "Open Compare with the first position as baseline and the selected take as candidate."
-            )
-        )
-        self.compare_button.clicked.connect(self._compare_selected)
-        row.addWidget(self.compare_button)
-        self.measure_button = primary(QPushButton(_("Measure a new position...")))
-        self.measure_button.clicked.connect(self._choose_position)
-        row.addWidget(self.measure_button)
         tools.body.addLayout(row)
         self.status = label("", "hint", wrap=True)
         tools.body.addWidget(self.status)
@@ -208,6 +244,15 @@ class ProjectPage(QWidget):
         self.position_rows = QVBoxLayout()
         self.position_rows.setSpacing(6)
         positions.body.addLayout(self.position_rows)
+        position_actions = QHBoxLayout()
+        self.remeasure_button = QPushButton(_("Measure this position again..."))
+        self.remeasure_button.setToolTip(
+            _("Another take at the selected position, listed under the same label.")
+        )
+        self.remeasure_button.clicked.connect(self._remeasure)
+        position_actions.addWidget(self.remeasure_button)
+        position_actions.addStretch(1)
+        positions.body.addLayout(position_actions)
         self.positions_card = positions
         layout.addWidget(positions)
 
@@ -236,8 +281,23 @@ class ProjectPage(QWidget):
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.setMinimumHeight(160)
         self.table.itemDoubleClicked.connect(self._open_row)
-        self.table.itemSelectionChanged.connect(self._update_buttons)
+        self.table.itemSelectionChanged.connect(self._take_selected)
         takes.body.addWidget(self.table)
+        take_actions = QHBoxLayout()
+        self.open_take_button = QPushButton(_("Open result"))
+        self.open_take_button.setToolTip(_("Open the selected take on the Results page."))
+        self.open_take_button.clicked.connect(self._open_selected)
+        self.compare_button = QPushButton(_("Compare with first position"))
+        self.compare_button.setToolTip(
+            _(
+                "Open Compare with the first position as baseline and the selected take as candidate."
+            )
+        )
+        self.compare_button.clicked.connect(self._compare_selected)
+        take_actions.addWidget(self.open_take_button)
+        take_actions.addWidget(self.compare_button)
+        take_actions.addStretch(1)
+        takes.body.addLayout(take_actions)
         self.takes_hint = label(
             _("Double-click a take to open it. Health and fit are judged when the page is shown."),
             "hint",
@@ -330,6 +390,7 @@ class ProjectPage(QWidget):
         if base != self.path:
             # Another project: its latest take's profile applies again.
             self._profile_chosen = False
+            self._selected_position = ""
         entries: list[ProjectEntry] = []
         skipped: list[tuple[str, str]] = []
         for position, folder in items:
@@ -386,10 +447,75 @@ class ProjectPage(QWidget):
         )
         self._show(overview)
 
+    def context_text(self) -> tuple[str, str]:
+        if self.overview is None or self.path is None:
+            return _("Project"), _("One room, several microphone positions.")
+        n_sessions = sum(len(p.sessions) for p in self.overview.positions) + len(
+            self.overview.unlisted
+        )
+        return (
+            self.overview.name or self.path.name,
+            _("{path}  ·  {positions} position(s), {sessions} session(s)").format(
+                path=self.path, positions=len(self.overview.positions), sessions=n_sessions
+            ),
+        )
+
     # --- the workflow --------------------------------------------------------------
 
     def labels(self) -> list[str]:
         return [] if self.overview is None else [p.label for p in self.overview.positions]
+
+    def current_position(self) -> str:
+        return self._selected_position
+
+    def select_position(self, position: str) -> None:
+        """Select ``position``: its card, its representative take and its details."""
+        if self.overview is None:
+            return
+        summary = next((p for p in self.overview.positions if p.label == position), None)
+        if summary is None:
+            return
+        self._selected_position = position
+        self._mark_position_cards(position)
+        take = summary.representative_session
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 1)
+            if item is not None and item.data(Qt.ItemDataRole.UserRole) == take.directory:
+                self.table.selectRow(row)
+                break
+        self._show_position_detail(summary)
+        self.remeasure_button.setEnabled(True)
+
+    def _mark_position_cards(self, position: str) -> None:
+        for index in range(self.position_rows.count()):
+            entry = self.position_rows.itemAt(index)
+            widget = entry.widget() if entry is not None else None
+            if isinstance(widget, FindingCard):
+                widget.set_selected(widget.topic.text() == position)
+
+    def _show_position_detail(self, summary: PositionSummary) -> None:
+        take = summary.representative_session
+        rows = [
+            (_("Takes"), str(len(summary.sessions))),
+            (_("Representative"), Path(take.directory).name),
+            (_("Health"), status_word(HealthStatus(take.health))),
+            (_("Fit"), f"{fit_word(take.fit)}: {take.fit_reason}"),
+        ]
+        if take.rt60_s is not None:
+            rows.append((_("RT60"), f"{take.rt60_s:.2f} s ({take.rt60_basis})"))
+        if take.clarity_db is not None:
+            rows.append((take.clarity_metric or _("Clarity"), f"{take.clarity_db:+.1f} dB"))
+        if take.noise_verified and take.noise_rms_dbfs is not None:
+            rows.append((_("Noise"), f"{take.noise_rms_dbfs:.1f} dBFS"))
+        if take.reflection_db is not None and take.reflection_ms is not None:
+            rows.append(
+                (_("Reflection"), f"{take.reflection_db:.0f} dB @ {take.reflection_ms:.1f} ms")
+            )
+        if summary.repeat_spread_percent is not None:
+            rows.append((_("Repeat spread"), f"{summary.repeat_spread_percent:.1f} %"))
+        self.detail.show_rows(
+            _("Position {label}").format(label=summary.label), rows, summary.verdict_text
+        )
 
     def _choose_position(self) -> None:
         if self.path is None:
@@ -404,6 +530,17 @@ class ProjectPage(QWidget):
         if not name:
             return
         self.start_position(name, mode)
+
+    def _remeasure(self) -> None:
+        if self.path is None or not self._selected_position:
+            QMessageBox.information(self, _("Measure again"), _("Select a position first."))
+            return
+        dialog = NewPositionDialog(self._selected_position, self.state.mode, self, again=True)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        name, mode = dialog.values()
+        if name:
+            self.start_position(name, mode)
 
     def start_position(self, name: str, mode: str) -> None:
         """Measure ``name`` with ``mode``: the main window takes over."""
@@ -464,12 +601,36 @@ class ProjectPage(QWidget):
         takes = [take for p in self.overview.positions for take in p.sessions]
         return takes + list(self.overview.unlisted)
 
-    def _update_buttons(self) -> None:
+    def _take_selected(self) -> None:
         take = self._selected_take()
         first = self.overview.positions[0] if self.overview and self.overview.positions else None
         self.compare_button.setEnabled(
             take is not None and first is not None and take.position != first.label
         )
+        self.open_take_button.setEnabled(take is not None)
+        if take is None:
+            return
+        rows = [
+            (_("Position"), take.position or _("(unlisted)")),
+            (_("Folder"), take.directory),
+            (_("When"), str(take.created_at)[:16].replace("T", " ")),
+            (_("Health"), status_word(HealthStatus(take.health))),
+            (_("Fit"), f"{fit_word(take.fit)}: {take.fit_reason}"),
+        ]
+        if take.health_problems:
+            rows.append((_("Checks"), list_join(take.health_problems)))
+        if take.warnings:
+            rows.append((_("Warnings"), list_join(take.warnings)))
+        self.detail.show_rows(Path(take.directory).name, rows)
+        if take.position and take.position != self._selected_position:
+            self._selected_position = take.position
+            self._mark_position_cards(take.position)
+            self.remeasure_button.setEnabled(True)
+
+    def _open_selected(self) -> None:
+        take = self._selected_take()
+        if take is not None:
+            self.open_session.emit(take.directory)
 
     def _compare_selected(self) -> None:
         take = self._selected_take()
@@ -506,6 +667,8 @@ class ProjectPage(QWidget):
         for button in (self.measure_button, self.add_button, self.copy_button):
             button.setEnabled(has)
         self.compare_button.setEnabled(False)
+        self.open_take_button.setEnabled(False)
+        self.remeasure_button.setEnabled(False)
         if overview is None or self.path is None:
             self.header.subtitle.setText(
                 _(
@@ -513,6 +676,8 @@ class ProjectPage(QWidget):
                     "the project lists which position it was taken at."
                 )
             )
+            self.header.subtitle.setVisible(True)
+            self.changed.emit()
             return
         n_sessions = sum(len(p.sessions) for p in overview.positions) + len(overview.unlisted)
         self.header.subtitle.setText(
@@ -523,18 +688,18 @@ class ProjectPage(QWidget):
                 sessions=n_sessions,
             )
         )
+        self.header.subtitle.setVisible(True)
         self.status.setText("")
         self._show_positions(overview)
         self._show_takes(overview)
         self._show_average(overview)
         self.next_steps.setText("\n".join(f"→  {step}" for step in overview.next_steps))
+        if self._selected_position in self.labels():
+            self.select_position(self._selected_position)
+        self.changed.emit()
 
     def _show_positions(self, overview: ProjectOverview) -> None:
-        while self.position_rows.count():
-            entry = self.position_rows.takeAt(0)
-            widget = entry.widget() if entry is not None else None
-            if widget is not None:
-                widget.deleteLater()
+        clear_layout(self.position_rows)
         if not overview.positions:
             self.positions_hint.setText(
                 _(
@@ -546,7 +711,7 @@ class ProjectPage(QWidget):
         self.positions_hint.setText(
             _(
                 "Fit is the absence of a warning under the {profile} profile; the page does "
-                "not rank positions."
+                "not rank positions. Click a position to select it."
             ).format(profile=profile_title(overview.profile))
         )
         for position in overview.positions:
@@ -565,20 +730,22 @@ class ProjectPage(QWidget):
                 agreement = _("{n} takes disagree ({spread:.0f} % apart in RT60)").format(
                     n=len(position.sessions), spread=position.repeat_spread_percent
                 )
-            self.position_rows.addWidget(
-                FindingCard(
-                    str(take.fit),
-                    position.label,
-                    "\n".join([agreement, take.fit_reason, position.verdict_text]),
-                    severity_label=fit_word(take.fit),
-                )
+            card = FindingCard(
+                str(take.fit),
+                position.label,
+                "\n".join([agreement, take.fit_reason, position.verdict_text]),
+                severity_label=fit_word(take.fit),
+                clickable=True,
             )
+            card.activated.connect(lambda p=position.label: self.select_position(p))
+            self.position_rows.addWidget(card)
 
     def _show_takes(self, overview: ProjectOverview) -> None:
         rows: list[tuple[str, SessionSummary]] = [
             (p.label, take) for p in overview.positions for take in p.sessions
         ]
         rows += [(_("(unlisted)"), take) for take in overview.unlisted]
+        self.table.blockSignals(True)
         self.table.setRowCount(len(rows))
         dash = "-"
         for r, (position, take) in enumerate(rows):
@@ -612,6 +779,7 @@ class ProjectPage(QWidget):
                     item.setToolTip(take.fit_reason)
                 self.table.setItem(r, c, item)
         self.table.resizeRowsToContents()
+        self.table.blockSignals(False)
         if overview.skipped:
             self.skipped.setText(
                 "\n".join(
