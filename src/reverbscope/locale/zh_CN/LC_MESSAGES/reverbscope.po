@@ -6080,3 +6080,289 @@ msgstr "新测量"
 
 msgid "Unsaved take"
 msgstr "未保存的测量"
+
+# GUI 2.0 workspace: geometry. Entries for this part go directly below.
+msgid "a position label must not be empty"
+msgstr "位置名称不能为空"
+
+msgid "invalid room geometry: {error}"
+msgstr "房间几何数据无效：{error}"
+
+msgid "the scan file name must not be empty"
+msgstr "扫描文件名不能为空"
+
+msgid "sha256 must be 64 lower-case hexadecimal digits"
+msgstr "sha256 必须是 64 位小写十六进制数字"
+
+msgid "schema_version must be a positive integer"
+msgstr "schema_version 必须是正整数"
+
+msgid "{field} must be a number"
+msgstr "{field} 必须是数字"
+
+msgid "{field} must be a finite number"
+msgstr "{field} 必须是有限数值"
+
+msgid "{field} is {value:g} m; values beyond {limit:g} m are refused"
+msgstr "{field} 为 {value:g} m；超过 {limit:g} m 的值不予接受"
+
+msgid "{field} must be a JSON object"
+msgstr "{field} 必须是 JSON 对象"
+
+msgid "{path} was written by a newer ReverbScope (schema {version}); this version does not overwrite it"
+msgstr "{path} 由更新版本的 ReverbScope 写入（架构 {version}）；此版本不会覆盖它"
+
+msgid "position '{label}' already has a microphone"
+msgstr "位置“{label}”已有话筒"
+
+msgid "{field} is missing {keys}"
+msgstr "{field} 缺少 {keys}"
+
+msgid "{field} must be one of {values}"
+msgstr "{field} 必须是以下之一：{values}"
+
+msgid "position '{label}' is listed twice"
+msgstr "位置“{label}”出现了两次"
+
+msgid "{field} must not repeat a known key"
+msgstr "{field} 不能重复已知的键"
+
+msgid "{field} must be greater than 0 m"
+msgstr "{field} 必须大于 0 m"
+
+msgid "one microphone cannot locate a wall: one reflection fixes an ellipsoid of possible reflection points, not a point"
+msgstr "一支话筒无法定位墙面：一次反射只能确定可能反射点构成的椭球面，而不是一个点"
+
+msgid "the face at z = the room's height"
+msgstr "位于 z = 房间高度 的面"
+
+msgid "the face at x = the room's length"
+msgstr "位于 x = 房间长度 的面"
+
+msgid "the face at y = the room's width"
+msgstr "位于 y = 房间宽度 的面"
+
+msgid "no impulse response is stored with this result, so nothing measured is drawn"
+msgstr "此结果没有保存脉冲响应，因此不绘制任何测量内容"
+
+msgid "the sweep was played at the wrong speed, so the delays in this result are not reliable and nothing measured is drawn"
+msgstr "扫频以错误的速度播放，此结果中的延迟不可靠，因此不绘制任何测量内容"
+
+msgid "the direct sound was not detected with confidence, so the reflection delays may be measured from the wrong peak and nothing measured is drawn"
+msgstr "直达声的检测置信度不足，反射延迟可能是从错误的峰值起算的，因此不绘制任何测量内容"
+
+msgid "no reflections were searched in this result, so nothing measured is drawn"
+msgstr "此结果没有搜索反射，因此不绘制任何测量内容"
+
+msgid "the face at {axis} = {value:.2f} m"
+msgstr "位于 {axis} = {value:.2f} m 的面"
+
+msgid "a reflection delay must be a finite number of ms, 0 or more"
+msgstr "反射延迟必须是不小于 0 的有限毫秒数"
+
+msgid "the speed of sound must be a positive number"
+msgstr "声速必须是正数"
+
+msgid "the direct distance must be a finite number of m, 0 or more"
+msgstr "直达距离必须是不小于 0 的有限米数"
+
+msgid "the sample rate must be a positive number"
+msgstr "采样率必须是正数"
+
+msgid "the position uncertainty must be 0 m or more"
+msgstr "位置不确定度必须不小于 0 m"
+
+msgid "the loudspeaker or the microphone position is not entered, so the direct distance cannot be compared"
+msgstr "未输入扬声器或话筒的位置，因此无法核对直达距离"
+
+msgid "the microphone position is not entered, so its height cannot be compared"
+msgstr "未输入话筒位置，因此无法核对其高度"
+
+msgid "this result has no loopback distance bound to compare the entered distance with"
+msgstr "此结果没有回采距离上限，无法核对输入的距离"
+
+msgid "the room box, the loudspeaker or the microphone is not entered, so no first-order path can be predicted"
+msgstr "未输入房间尺寸、扬声器或话筒，因此无法预测一阶路径"
+
+msgid "no reflection was detected, so the predicted paths cannot be compared"
+msgstr "未检测到反射，因此无法核对预测路径"
+
+msgid "the loudspeaker is inside the entered room box"
+msgstr "扬声器位于输入的房间范围内"
+
+msgid "the loudspeaker is outside the entered room box"
+msgstr "扬声器位于输入的房间范围之外"
+
+msgid "the room box or the loudspeaker position is not entered"
+msgstr "未输入房间尺寸或扬声器位置"
+
+msgid "the microphone is inside the entered room box"
+msgstr "话筒位于输入的房间范围内"
+
+msgid "the microphone is outside the entered room box"
+msgstr "话筒位于输入的房间范围之外"
+
+msgid "the room box or the microphone position is not entered"
+msgstr "未输入房间尺寸或话筒位置"
+
+msgid "the face at {axis} = 0"
+msgstr "位于 {axis} = 0 的面"
+
+msgid "ambiguous: {count} first-order paths arrive within ±{tolerance:.2f} ms: {paths}"
+msgstr "无法区分：有 {count} 条一阶路径在 ±{tolerance:.2f} ms 内到达：{paths}"
+
+msgid "speed of sound {speed:.1f} m/s for the entered {temperature:.1f} °C"
+msgstr "按输入的 {temperature:.1f} °C 计算，声速为 {speed:.1f} m/s"
+
+msgid "the entered positions are {entered:.2f} m apart, but {taped:.2f} m was measured for this result ({difference:+.2f} m); check the positions"
+msgstr "输入的位置相距 {entered:.2f} m，但此结果测得的距离为 {taped:.2f} m（{difference:+.2f} m）；请检查位置"
+
+msgid "the microphone is entered at z = {entered:.2f} m, but a height of {measured:.2f} m was measured for this result ({difference:+.2f} m)"
+msgstr "输入的话筒位于 z = {entered:.2f} m，但此结果测得的高度为 {measured:.2f} m（{difference:+.2f} m）"
+
+msgid "the entered distance of {entered:.2f} m is more than the {bound:.2f} m the loopback allows: sound cannot arrive before it was sent, so a position is wrong"
+msgstr "输入的距离 {entered:.2f} m 超过回采允许的 {bound:.2f} m：声音不可能在发出之前到达，因此有位置输入错误"
+
+msgid "the earliest detected reflection ({detected:.2f} ms) arrives after the earliest predicted path ({predicted:.2f} ms): that face may absorb, or an entered position is off"
+msgstr "检测到的最早反射（{detected:.2f} ms）晚于最早的预测路径（{predicted:.2f} ms）：该面可能有吸声，或输入的位置有偏差"
+
+msgid "unknown face '{face}'"
+msgstr "未知的面“{face}”"
+
+msgid "reflected path {total:.2f} m ({excess:.2f} m longer than the direct sound): the reflection point lies on an ellipsoid around the loudspeaker and the microphone, {low:.2f} to {high:.2f} m from the microphone"
+msgstr "反射路径 {total:.2f} m（比直达声长 {excess:.2f} m）：反射点位于以扬声器和话筒为焦点的椭球面上，距话筒 {low:.2f} 至 {high:.2f} m"
+
+msgid "no first-order path of the entered room arrives within ±{tolerance:.2f} ms of {delay:.2f} ms"
+msgstr "输入的房间没有一阶路径在 {delay:.2f} ms 的 ±{tolerance:.2f} ms 内到达"
+
+msgid "agrees with the first-order path off {face} (residual {residual:+.2f} ms); this is the entered room's prediction, not a located wall"
+msgstr "与经{face}的一阶路径相符（残差 {residual:+.2f} ms）；这是根据输入的房间做出的预测，并非定位到的墙面"
+
+msgid "{face} ({residual:+.2f} ms)"
+msgstr "{face}（{residual:+.2f} ms）"
+
+msgid "no temperature was entered for this measurement; {temperature:.0f} °C ({speed:.1f} m/s) is assumed"
+msgstr "此次测量未输入温度；按 {temperature:.0f} °C（{speed:.1f} m/s）假定"
+
+msgid "the entered positions are {entered:.2f} m apart; no measured distance was stored with this result to compare it with"
+msgstr "输入的位置相距 {entered:.2f} m；此结果没有保存测得的距离可供核对"
+
+msgid "the entered positions are {entered:.2f} m apart, as the {taped:.2f} m measured for this result"
+msgstr "输入的位置相距 {entered:.2f} m，与此结果测得的 {taped:.2f} m 一致"
+
+msgid "the microphone is entered at z = {entered:.2f} m; no microphone height was stored with this result to compare it with"
+msgstr "输入的话筒位于 z = {entered:.2f} m；此结果没有保存话筒高度可供核对"
+
+msgid "the microphone is entered at z = {entered:.2f} m, as the {measured:.2f} m height measured for this result"
+msgstr "输入的话筒位于 z = {entered:.2f} m，与此结果测得的 {measured:.2f} m 高度一致"
+
+msgid "the loopback allows at most {bound:.2f} m; the loudspeaker or the microphone position is not entered"
+msgstr "回采允许的距离最多为 {bound:.2f} m；未输入扬声器或话筒的位置"
+
+msgid "the entered distance of {entered:.2f} m is within the {bound:.2f} m the loopback allows"
+msgstr "输入的距离 {entered:.2f} m 在回采允许的 {bound:.2f} m 之内"
+
+msgid "no predicted first-order path falls in the searched window of {start:.1f} to {stop:.1f} ms"
+msgstr "没有预测的一阶路径落在已搜索的 {start:.1f} 至 {stop:.1f} ms 窗口内"
+
+msgid "the earliest detected reflection ({detected:.2f} ms) agrees with the earliest predicted path, off {face} ({predicted:.2f} ms, residual {residual:+.2f} ms)"
+msgstr "检测到的最早反射（{detected:.2f} ms）与最早的预测路径相符，经{face}（{predicted:.2f} ms，残差 {residual:+.2f} ms）"
+
+msgid "the earliest detected reflection ({detected:.2f} ms) arrives before the earliest predicted path ({predicted:.2f} ms): something nearer than the room's faces (a desk, a stand) reflects, or an entered position is off"
+msgstr "检测到的最早反射（{detected:.2f} ms）早于最早的预测路径（{predicted:.2f} ms）：比房间各面更近的物体（桌面、支架）产生了反射，或输入的位置有偏差"
+
+msgid "the reflected sound travelled {excess:.2f} m further than the direct sound; without the loudspeaker-to-microphone distance nothing more is known"
+msgstr "反射声比直达声多传播了 {excess:.2f} m；没有扬声器到话筒的距离，无法得知更多"
+
+msgid "the scan import was cancelled"
+msgstr "扫描导入已取消"
+
+msgid "a face refers to a vertex that does not exist"
+msgstr "有面引用了不存在的顶点"
+
+msgid "the file contains no vertices"
+msgstr "文件不含顶点"
+
+msgid "a vertex coordinate is not a finite number"
+msgstr "有顶点坐标不是有限数值"
+
+msgid "the PLY header does not end"
+msgstr "PLY 文件头没有结束标记"
+
+msgid "the file does not start with a PLY header"
+msgstr "文件不是以 PLY 文件头开始"
+
+msgid "the PLY header has no format line"
+msgstr "PLY 文件头缺少格式行"
+
+msgid "the PLY vertices have no x, y and z"
+msgstr "PLY 顶点缺少 x、y、z 坐标"
+
+msgid "an element has the wrong number of values"
+msgstr "有元素的数值个数不正确"
+
+msgid "the file ends before all its elements were read"
+msgstr "文件在所有元素读完之前就结束了"
+
+msgid "the file declares more faces than its vertices can form"
+msgstr "文件声明的面数超出其顶点所能构成的数量"
+
+msgid "the file does not record its units or which axis is up; choose them when importing"
+msgstr "文件没有记录单位和朝上的轴；请在导入时选择"
+
+msgid "the scan has no vertices to align"
+msgstr "扫描没有可用于对齐的顶点"
+
+msgid "the voxel size must be a positive number"
+msgstr "体素尺寸必须是正数"
+
+msgid "at least one point must be kept"
+msgstr "至少要保留一个点"
+
+msgid "{name} cannot be read as a scan: {detail}"
+msgstr "无法将 {name} 读取为扫描：{detail}"
+
+msgid "{name} has more than {limit} vertices; larger scans are refused"
+msgstr "{name} 的顶点超过 {limit} 个；更大的扫描不予接受"
+
+msgid "a value in the file is not a number"
+msgstr "文件中有值不是数字"
+
+msgid "PLY vertices with list properties are not supported"
+msgstr "不支持带列表属性的 PLY 顶点"
+
+msgid "{name} is {size} bytes; scan files larger than {limit} bytes are refused"
+msgstr "{name} 为 {size} 字节；大于 {limit} 字节的扫描文件不予接受"
+
+msgid "unknown PLY property type '{type}'"
+msgstr "未知的 PLY 属性类型“{type}”"
+
+msgid "unsupported PLY format"
+msgstr "不支持的 PLY 格式"
+
+msgid "{name} is not a PLY or OBJ file; only these scan formats can be read"
+msgstr "{name} 不是 PLY 或 OBJ 文件；只能读取这两种扫描格式"
+
+msgid "a PLY element line is malformed"
+msgstr "PLY 元素行格式错误"
+
+msgid "unexpected line in the PLY header"
+msgstr "PLY 文件头中有意外的行"
+
+msgid "a PLY property comes before any element"
+msgstr "PLY 属性出现在任何元素之前"
+
+msgid "line {line} has a vertex without three coordinates"
+msgstr "第 {line} 行的顶点不足三个坐标"
+
+msgid "a PLY property line is malformed"
+msgstr "PLY 属性行格式错误"
+
+msgid "line {line} has a value that is not a number"
+msgstr "第 {line} 行有值不是数字"
+
+msgid "line {line} cannot be read"
+msgstr "无法读取第 {line} 行"
+
+msgid "line {line} has a face index that is not valid"
+msgstr "第 {line} 行的面索引无效"
