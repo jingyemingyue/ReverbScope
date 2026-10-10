@@ -101,16 +101,24 @@ def test_cancel_keeps_the_take_on_every_way_out(
     recording, result = _take(short_sweep)
     save_measurement(other, MeasurementSession(), result, recording=recording)
 
+    take = window.model.current()
+    assert take is not None and take.unsaved
     window.show_home()  # New Measurement
-    window.open_session_path(other)  # Open Session / a recent-session click
+    # Open Session adds the session beside the take: nothing is dropped, so
+    # nothing is asked, and the take stays in the list.
+    window.open_session_path(other)
+    assert window.model.entry(take.key) is take and take.unsaved
     window.close()  # closing the window
-    assert asked == [True, True, True]
+    assert asked == [True, True]
     assert window.state.result is not None and window.state.unsaved_take is True
-    assert window.stack.currentWidget() is window.results
+    assert window.stack.currentWidget() is window.views["overview"]
     assert window.isVisible()
-    monkeypatch.undo()
-    window.state.unsaved_take = False
+    # Discard at last, so the window may close. (monkeypatch.undo() would also
+    # undo the fixture that keeps the real ~/.reverbscope out of the test.)
+    monkeypatch.setattr(window, "_ask_about_unsaved_take", lambda: True)
+    window._discard_take()
     window.close()
+    assert not window.isVisible()
 
 
 def test_discard_lets_the_take_go(
@@ -137,7 +145,7 @@ def test_a_saved_take_and_a_demo_take_never_ask(
     _finish_take(window, short_sweep, demo=True)
     window.show_home()
     _finish_take(window, short_sweep)
-    window.results.save_to(tmp_path / "saved")  # Save Session...
+    window.save_to(tmp_path / "saved")  # Save Session...
     assert window.state.unsaved_take is False
     assert (tmp_path / "saved" / "recording.wav").is_file()
     window.show_home()

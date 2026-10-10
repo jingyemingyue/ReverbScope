@@ -112,6 +112,7 @@ def test_the_project_page_follows_the_theme_switch(
     window = MainWindow()
     window.show()
     window.show_project(project)
+    assert window.model.wait_until_loaded()
     page = window.project
 
     def card_styles() -> list[str]:
@@ -218,6 +219,7 @@ def test_the_project_page_follows_the_newest_take_until_the_user_chooses_a_profi
     window = MainWindow()
     window.show()
     window.show_project(project)
+    assert window.model.wait_until_loaded()
     page = window.project
     assert page.profile.currentData() == "vocal"
     # A take with another profile is saved into the project (the Results page's
@@ -231,10 +233,12 @@ def test_the_project_page_follows_the_newest_take_until_the_user_chooses_a_profi
     save_measurement(project / "b-1", session, _result(short_sweep, 0.9, 2), copy_recording=False)
     add_session(project, project / "b-1", position="B")
     window.show_project()
+    assert window.model.wait_until_loaded()
     assert page.profile.currentData() == "drums"
     # The user's own choice is kept across the same reload.
     page.profile.setCurrentIndex(page.profile.findData("generic"))
     window.show_project()
+    assert window.model.wait_until_loaded()
     assert page.profile.currentData() == "generic"
     window.close()
 

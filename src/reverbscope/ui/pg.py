@@ -58,6 +58,53 @@ def pyqtgraph() -> ModuleType:
     return module
 
 
+#: Set on the widgets pyqtgraph builds for a plot and the app never shows.
+INTERNAL_PROPERTY = "pyqtgraphInternal"
+
+
+def plot_widget(**kwargs: Any) -> Any:
+    """A ``PlotWidget`` that owns the menus and panels pyqtgraph builds for it.
+
+    pyqtgraph builds its context menus and the plot's settings panel as
+    parentless widgets that only its Python objects hold. They are then
+    top-level windows of their own, and code that closes every top-level
+    widget (a test teardown, a shutdown sweep) deleted them under pyqtgraph,
+    which crashed when the plot went. Parented to the plot they go with it.
+    """
+    from PySide6.QtWidgets import QApplication
+    from shiboken6 import getCppPointer
+
+    before = {getCppPointer(widget)[0] for widget in QApplication.topLevelWidgets()}
+    widget = pyqtgraph().PlotWidget(**kwargs)
+    for orphan in QApplication.topLevelWidgets():
+        if (
+            getCppPointer(orphan)[0] not in before
+            and orphan is not widget
+            and orphan.parentWidget() is None
+        ):
+            orphan.setParent(widget, orphan.windowFlags())
+            # pyqtgraph's own (English) menus and settings panel, never shown:
+            # the menus are switched off (disable_menus).
+            orphan.setProperty(INTERNAL_PROPERTY, True)
+    return widget
+
+
+def close_plot_widget(widget: Any) -> None:
+    """Tear a :func:`plot_widget` down in pyqtgraph's order, once.
+
+    ``PlotWidget.close`` does this but also unparents the widget, which then
+    lingers as a top-level window that a second ``close`` breaks (it drops its
+    ``PlotItem`` the first time). Here the widget stays where it is, hidden,
+    and goes with its parent.
+    """
+    if getattr(widget, "closed", False):
+        return
+    if widget.plotItem is not None:
+        widget.plotItem.close()
+        widget.plotItem = None
+    pyqtgraph().GraphicsView.close(widget)
+
+
 def colormap(name: str) -> ColorMap:
     """The ``pyqtgraph.ColorMap`` called ``name``: one of :data:`COLORMAPS`."""
     if name not in COLORMAPS:

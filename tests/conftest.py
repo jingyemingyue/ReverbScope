@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import gc
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -54,15 +55,30 @@ def qt_torn_down_before_the_interpreter_exits() -> Iterator[None]:
     yield
     try:
         from PySide6.QtCore import QEvent
-        from PySide6.QtWidgets import QApplication
+        from PySide6.QtWidgets import QApplication, QMessageBox
+        from shiboken6 import isValid
     except ImportError:
         return
     app = QApplication.instance()
     if app is None:
         return
+    # A window a failed test left open may ask about an unsaved take when it
+    # is closed here; a modal box at teardown blocks or crashes the run.
+    QMessageBox.exec = lambda _box: int(QMessageBox.StandardButton.Cancel)  # type: ignore[method-assign]
+    plotkit = sys.modules.get("reverbscope.ui.plotkit")
+    if plotkit is not None:
+        # pyqtgraph charts are torn down in pyqtgraph's order before their
+        # windows go (a window a failed test left open never disposed them).
+        for widget in QApplication.topLevelWidgets():
+            if isValid(widget):
+                plotkit.dispose_charts(widget)
     for widget in QApplication.topLevelWidgets():
-        widget.close()
-        widget.deleteLater()
+        # Closing one window can delete another in the list (a chart's
+        # pyqtgraph menus go with its plot), so check each before touching it.
+        if isValid(widget):
+            widget.close()
+        if isValid(widget):
+            widget.deleteLater()
     app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
     app.processEvents()
     gc.collect()

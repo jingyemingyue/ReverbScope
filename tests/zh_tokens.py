@@ -27,6 +27,8 @@ ALLOWED = frozenset(
         "Lundeby",
         "Schroeder",
         "Hann",
+        # Welch's method (the noise view's power spectral density)
+        "Welch",
         "ESS",
         "PSD",
         "IR",
@@ -93,6 +95,12 @@ ALLOWED = frozenset(
         "soundfile",
         "libsndfile",
         "sounddevice",
+        "pyqtgraph",
+        "MIT",
+        # Key names in shortcut hints ("Ctrl+Return", "Esc"), as on the keyboard.
+        "Ctrl",
+        "Return",
+        "Esc",
     }
 )
 
@@ -113,6 +121,9 @@ PHRASES = (
     "Elastic Audio",
     "JSON Schema",
     "GitHub Issue",
+    # pyqtgraph's copyright holders, named in the About box as its license asks.
+    "University of North Carolina at Chapel Hill",
+    "Luke Campagnola",
 )
 _URL = re.compile(r"https?://\S+")
 # A command and, for "project" and "session", its action ("reverbscope project init").

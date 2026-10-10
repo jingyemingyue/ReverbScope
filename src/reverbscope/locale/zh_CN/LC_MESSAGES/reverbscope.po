@@ -6075,6 +6075,665 @@ msgid "The end of the time range ({end_ms:g} ms) must be after its start ({start
 msgstr "时间范围的终点（{end_ms:g} ms）必须晚于起点（{start_ms:g} ms）。"
 
 # GUI 2.0 workspace: workspace. Entries for this part go directly below.
+msgid "No curve: {bands}."
+msgstr "无曲线：{bands}。"
+
+msgid ""
+"Enter this position's microphone to see the ring of loudspeaker positions "
+"the measurement allows."
+msgstr "输入此位置的话筒坐标后，可看到测量允许的扬声器位置环。"
+
+msgid ""
+"The thick dashed ring is every loudspeaker position the measurement allows; "
+"one microphone cannot say where on it the loudspeaker is."
+msgstr "粗虚线环是测量允许的全部扬声器位置；单支话筒无法判断扬声器在环上的哪一点。"
+
+msgid "&Save Session..."
+msgstr "保存会话(&S)..."
+
+msgid "&View"
+msgstr "视图(&V)"
+
+msgid "1/{fraction} octave"
+msgstr "1/{fraction} 倍频程"
+
+msgid "<b>ReverbScope {version}</b><br>An open-source, DAW-independent recording environment analyzer.<br><br>Licensed under the Apache License, Version 2.0.<br>This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) under the GNU Lesser General Public License v3; the Qt libraries are loaded as separate shared libraries and may be replaced by interface-compatible versions. NumPy, SciPy, matplotlib, soundfile (libsndfile, LGPL-2.1) and sounddevice (PortAudio) are used under their respective licenses. Charts are drawn with pyqtgraph (MIT License, © 2012 University of North Carolina at Chapel Hill, Luke Campagnola).<br><br>A desktop bundle ships a <code>THIRD_PARTY_LICENSES/</code> directory next to the executable (and inside <code>ReverbScope.app</code> on macOS). From a source checkout see docs/DEPENDENCIES.md. Levels are digital (dBFS) unless a calibration is provided; ReverbScope never reports dB SPL."
+msgstr "<b>ReverbScope {version}</b><br>开源、不依赖 DAW 的录音环境分析器。<br><br>采用 Apache 许可证 2.0。<br>本程序使用 Qt 与 PySide6（版权归 Qt 公司及其贡献者所有），遵循 GNU LGPL 第 3 版；Qt 库以独立共享库加载，可以替换为接口兼容的版本。NumPy、SciPy、matplotlib、soundfile（libsndfile，LGPL-2.1）和 sounddevice（PortAudio）按其各自的许可证使用。图表由 pyqtgraph 绘制（MIT 许可证，© 2012 University of North Carolina at Chapel Hill, Luke Campagnola）。<br><br>桌面安装包在可执行文件旁边附带 <code>THIRD_PARTY_LICENSES/</code> 目录（在 macOS 上则位于 <code>ReverbScope.app</code> 内）。从源码目录查看 docs/DEPENDENCIES.md。电平是数字电平（dBFS），除非提供了校准；ReverbScope 从不报告 dB SPL。"
+
+msgid "Acoustic path delay"
+msgstr "声学路径延迟"
+
+msgid "Add a saved session to the list (session.json or its folder)."
+msgstr "把已保存的会话加入列表（session.json 或其所在文件夹）。"
+
+msgid "Align levels at 500 Hz to 2 kHz"
+msgstr "按 500 Hz 至 2 kHz 对齐电平"
+
+msgid "All bands of the current measurement"
+msgstr "当前测量的全部频带"
+
+msgid "All bands of {name}; overlays are not drawn in this mode."
+msgstr "{name} 的全部频带；此模式下不绘制叠加曲线。"
+
+msgid "All settings of this mode: level, sweep, profile, room and placement."
+msgstr "此模式的全部设置：电平、扫频、配置、房间和摆位。"
+
+msgid "Audio interface"
+msgstr "音频接口"
+
+msgid "Back to the default angle (R)."
+msgstr "回到默认视角（R）。"
+
+msgid "Band centre (Hz)"
+msgstr "频带中心（Hz）"
+
+msgid "Band chart: filled = VALID, hollow = not VALID (the value is shown, not trusted)."
+msgstr "频带图：实心为有效，空心为无效（数值仅供显示，不可采信）。"
+
+msgid "Baseline: {name}"
+msgstr "基准：{name}"
+
+msgid "CSV files (*.csv)"
+msgstr "CSV 文件 (*.csv)"
+
+msgid "Cannot compare: {error}"
+msgstr "无法对比：{error}"
+
+msgid "Cannot import the scan: {error}"
+msgstr "无法导入扫描：{error}"
+
+msgid "Cannot read the room file: {error}"
+msgstr "无法读取房间文件：{error}"
+
+msgid "Cannot save the room: {error}"
+msgstr "无法保存房间：{error}"
+
+msgid "Chart as PNG..."
+msgstr "图表存为 PNG..."
+
+msgid "Chart as SVG..."
+msgstr "图表存为 SVG..."
+
+msgid "Choose a baseline and a measurement to compare."
+msgstr "请选择基准和要对比的测量。"
+
+msgid "Choose a measurement in the list."
+msgstr "请在列表中选择一条测量。"
+
+msgid "Choose file..."
+msgstr "选择文件..."
+
+msgid "Clear the baseline"
+msgstr "取消基准"
+
+msgid "Click a measurement to show it. Tick it to draw it with the current one. Right-click for the baseline and more."
+msgstr "点击测量即可显示。勾选后与当前测量一起绘制。右键可设为基准等。"
+
+msgid "Click a reflection marker in the impulse response or the room view."
+msgstr "在脉冲响应或房间视图中点击一个反射标记。"
+
+msgid "Click to hide or show this curve."
+msgstr "点击隐藏或显示这条曲线。"
+
+msgid "Close Project"
+msgstr "关闭项目"
+
+msgid "Comparisons and difference panes compare against it."
+msgstr "对比和差值图都以它为基准。"
+
+msgid "Computing for {name}..."
+msgstr "正在为 {name} 计算..."
+
+msgid "Conditions"
+msgstr "测量条件"
+
+msgid "Copy {name} into {folder} so the room opens with its scan next time."
+msgstr "请把 {name} 复制到 {folder}，下次打开房间时才会带上扫描。"
+
+msgid "Curves as CSV..."
+msgstr "曲线存为 CSV..."
+
+msgid "DAW recording"
+msgstr "DAW 录音"
+
+msgid "Difference (current − baseline)"
+msgstr "差值（当前 − 基准）"
+
+msgid "Difference (dB)"
+msgstr "差值（dB）"
+
+msgid "Difference: {current} − {baseline}"
+msgstr "差值：{current} − {baseline}"
+
+msgid "Display smoothing averages the stored curve in power over a fraction of an octave. It changes the picture only; exports say which was applied."
+msgstr "显示平滑在若干分之一倍频程内对存储的曲线做功率平均。它只改变显示；导出时会注明用了哪种平滑。"
+
+msgid "Draw the unsmoothed stored curve of the current measurement."
+msgstr "绘制当前测量存储的未平滑曲线。"
+
+msgid "Energy decay curves"
+msgstr "能量衰减曲线"
+
+msgid "Enter the room and the device positions in the Room view to check them."
+msgstr "在房间视图中输入房间和设备位置后即可检查。"
+
+msgid "Enter the room box and the device positions on the right, import a scan, or try the example room."
+msgstr "在右侧输入房间尺寸和设备位置，导入扫描，或试用示例房间。"
+
+msgid "Entered"
+msgstr "输入值"
+
+msgid "Example room"
+msgstr "示例房间"
+
+msgid "Export"
+msgstr "导出"
+
+msgid "Fill in a 5 x 4 x 2.7 m example to try the view; it is saved only if you keep it."
+msgstr "填入一个 5 × 4 × 2.7 m 的示例试用此视图；只有保留它时才会保存。"
+
+msgid "Fit the chart again (R or double-click)."
+msgstr "重新适配图表（R 或双击）。"
+
+msgid "Frame the room (F or double-click)."
+msgstr "让房间充满画面（F 或双击）。"
+
+msgid "Frequency response: no measurement selected"
+msgstr "频率响应：未选择测量"
+
+msgid "Geometric assumption"
+msgstr "几何假设"
+
+msgid "Height (z)"
+msgstr "高（z）"
+
+msgid "Hide"
+msgstr "隐藏"
+
+msgid "How the next measurement is made."
+msgstr "下一次测量的方式。"
+
+msgid "Hum at {base:g} Hz: {count} harmonics marked."
+msgstr "{base:g} Hz 哼声：已标出 {count} 个谐波。"
+
+msgid "Import"
+msgstr "导入"
+
+msgid "Import a room scan"
+msgstr "导入房间扫描"
+
+msgid "Import recording..."
+msgstr "导入录音..."
+
+msgid "Import scan..."
+msgstr "导入扫描..."
+
+msgid "Impulse response waveform"
+msgstr "脉冲响应波形"
+
+msgid "Key figures"
+msgstr "关键数值"
+
+msgid "Length (x)"
+msgstr "长（x）"
+
+msgid "Level (dB re first slice peak)"
+msgstr "电平（dB，相对首个切片峰值）"
+
+msgid "Levels"
+msgstr "电平"
+
+msgid "Look straight down, to scale; drag the loudspeaker or a microphone to move it."
+msgstr "按比例垂直俯视；拖动扬声器或话筒即可移动。"
+
+msgid "Make the current measurement the baseline and back."
+msgstr "把当前测量与基准互换。"
+
+msgid "Match"
+msgstr "匹配"
+
+msgid "Measure at {position}"
+msgstr "在 {position} 测量"
+
+msgid "Measured constraint"
+msgstr "测量约束"
+
+msgid "Measured layer withheld: {reason}."
+msgstr "未绘制测量层：{reason}。"
+
+msgid "Mic"
+msgstr "话筒"
+
+msgid "Microphone at {position}"
+msgstr "{position} 处的话筒"
+
+msgid "Microphone input"
+msgstr "话筒输入"
+
+msgid "Microphone {position}"
+msgstr "话筒 {position}"
+
+msgid "No baseline chosen"
+msgstr "未选择基准"
+
+msgid "No detected reflection matches the predicted path off this face."
+msgstr "没有检测到的反射与这个面的预测路径相符。"
+
+msgid "No difference: one of the two has no frequency response."
+msgstr "无差值：两者之一没有频率响应。"
+
+msgid "No measurement selected. Open a project or a session, or measure with the strip below."
+msgstr "未选择测量。请打开项目或会话，或用下方的测量栏测量。"
+
+msgid "No project open"
+msgstr "未打开项目"
+
+msgid "No temperature entered; {temperature:.0f} °C is assumed."
+msgstr "未输入温度；按 {temperature:.0f} °C 估算。"
+
+msgid "Noise floor {floor:.0f} dB re peak."
+msgstr "本底噪声比峰值低 {floor:.0f} dB。"
+
+msgid "Not in the project"
+msgstr "不在项目中"
+
+msgid "Not saved: open a project or a saved session to keep the room."
+msgstr "未保存：打开项目或已保存的会话后才能保留房间。"
+
+msgid "Nothing is deleted on disk."
+msgstr "不会删除磁盘上的任何文件。"
+
+msgid "Nothing selected"
+msgstr "未选择"
+
+msgid "Offset later slices up and to the right, as a three-dimensional waterfall."
+msgstr "把后面的切片向右上方错开，呈现立体瀑布图。"
+
+msgid "Only a measurement made in this window can be saved; opened sessions are already on disk."
+msgstr "只能保存在本窗口中完成的测量；打开的会话已经在磁盘上。"
+
+msgid "Open a project or a session, or measure with the strip at the bottom of the window. Measurements open in the list on the left."
+msgstr "打开项目或会话，或用窗口底部的测量栏测量。测量会出现在左侧列表中。"
+
+msgid "Open a project or a session, or measure with the strip below."
+msgstr "打开项目或会话，或用下方的测量栏测量。"
+
+msgid "Open the DAW recording page to import the recorded WAV file."
+msgstr "打开 DAW 录音页面，导入录好的 WAV 文件。"
+
+msgid "Open the comparison"
+msgstr "打开对比"
+
+msgid "Overall"
+msgstr "总体"
+
+msgid "PLY or OBJ, up to {megabytes} MB and {vertices:,} vertices. The scan is drawn as entered geometry; nothing is measured from it."
+msgstr "PLY 或 OBJ，最大 {megabytes} MB、{vertices:,} 个顶点。扫描按输入的几何绘制，不从中测量任何数值。"
+
+msgid "PNG images (*.png)"
+msgstr "PNG 图像 (*.png)"
+
+msgid "Perspective"
+msgstr "立体"
+
+msgid "Plan view"
+msgstr "平面图"
+
+msgid "Play the sweep and record it (Ctrl+Return)."
+msgstr "播放扫频并录音（Ctrl+Return）。"
+
+msgid "Project..."
+msgstr "项目..."
+
+msgid "Put the scan's lowest corner on the room's floor corner"
+msgstr "把扫描的最低角对齐房间的地面角"
+
+msgid "Reading the project's sessions..."
+msgstr "正在读取项目的会话..."
+
+msgid "Reading {name}..."
+msgstr "正在读取 {name}..."
+
+msgid "Recorded"
+msgstr "录制时间"
+
+msgid "Remove from the list"
+msgstr "从列表中移除"
+
+msgid "Reset the layout"
+msgstr "重置布局"
+
+msgid "Reset view"
+msgstr "重置视图"
+
+msgid "Reverberation by band"
+msgstr "各频带混响时间"
+
+msgid "Reverberation time (s)"
+msgstr "混响时间（s）"
+
+msgid "Right-click a measurement in the list and choose Use as baseline to compare."
+msgstr "在列表中右键一条测量并选择“设为基准”即可对比。"
+
+msgid "Right-click a measurement in the list and choose Use as baseline, then select the measurement to compare with it. Or pick two saved sessions below."
+msgstr "在列表中右键一条测量并选择“设为基准”，再选中要与它对比的测量。也可以在下方选两个已保存的会话。"
+
+msgid "Rise"
+msgstr "上升"
+
+msgid "Room box (inside, metres)"
+msgstr "房间尺寸（内部，米）"
+
+msgid "Room checks"
+msgstr "房间检查"
+
+msgid "Room scans (*.ply *.obj)"
+msgstr "房间扫描 (*.ply *.obj)"
+
+msgid "SVG images (*.svg)"
+msgstr "SVG 图像 (*.svg)"
+
+msgid "Save Session"
+msgstr "保存会话"
+
+msgid "Schroeder integral, Lundeby-truncated"
+msgstr "Schroeder 积分，按 Lundeby 截断"
+
+msgid "Select a measurement to draw what it constrains."
+msgstr "选择一条测量即可绘制它所约束的范围。"
+
+msgid "Select another measurement in the list to compare it."
+msgstr "在列表中选择另一条测量即可对比。"
+
+msgid "Select two rows below, then compare them."
+msgstr "在下方选中两行，然后对比。"
+
+msgid "Selected reflection"
+msgstr "选中的反射"
+
+msgid "Session..."
+msgstr "会话..."
+
+msgid "Set up..."
+msgstr "设置..."
+
+msgid "Shaded: outside the sweep's range ({low:.0f} Hz to {high:.0f} Hz); the curve there is not a measurement."
+msgstr "阴影：扫频范围（{low:.0f} Hz 至 {high:.0f} Hz）之外；那里的曲线不是测量值。"
+
+msgid "Shaded: the searched window ({start:.1f} to {stop:.1f} ms). Dashed: the {threshold:.0f} dB threshold. Direct-sound confidence: {confidence}."
+msgstr "阴影：搜索窗口（{start:.1f} 至 {stop:.1f} ms）。虚线：{threshold:.0f} dB 阈值。直达声置信度：{confidence}。"
+
+msgid "Shaded: the {metric} evaluation range ({top:.0f} to {bottom:.0f} dB) of the current measurement; {metric} = {value}."
+msgstr "阴影：当前测量的 {metric} 评估范围（{top:.0f} 至 {bottom:.0f} dB）；{metric} = {value}。"
+
+msgid "Shift every curve so its mean level between 500 Hz and 2 kHz is 0 dB. The shift is shown in the legend."
+msgstr "平移每条曲线，使其 500 Hz 至 2 kHz 的平均电平为 0 dB。平移量显示在图例中。"
+
+msgid "Show"
+msgstr "显示"
+
+msgid "Show folder"
+msgstr "显示文件夹"
+
+msgid "Show the stored curve"
+msgstr "显示存储的曲线"
+
+msgid "Slice"
+msgstr "切片"
+
+msgid "Slices"
+msgstr "切片数"
+
+msgid "Smoothing"
+msgstr "平滑"
+
+msgid "Span"
+msgstr "范围"
+
+msgid "Spectrogram"
+msgstr "时频谱"
+
+msgid "Spectrogram: {name}"
+msgstr "时频谱：{name}"
+
+msgid "Start"
+msgstr "开始"
+
+msgid "Start panel"
+msgstr "开始面板"
+
+msgid "Step"
+msgstr "步长"
+
+msgid "Stop the take and silence the output (Esc)."
+msgstr "停止测量并静音输出（Esc）。"
+
+msgid "Swap"
+msgstr "互换"
+
+msgid "The position this take belongs to; Save lists it under it in the project."
+msgstr "这次测量所属的位置；保存时会在项目中归到该位置下。"
+
+msgid "The scan {name} is not in {folder}."
+msgstr "{folder} 中没有扫描文件 {name}。"
+
+msgid "This session's take"
+msgstr "本次运行的测量"
+
+msgid "Time"
+msgstr "时间"
+
+msgid "Turn about the vertical"
+msgstr "绕竖直轴旋转"
+
+msgid "Units in the file"
+msgstr "文件中的单位"
+
+msgid "Up axis in the file"
+msgstr "文件中的向上轴"
+
+msgid "Use as baseline"
+msgstr "设为基准"
+
+msgid "Values in brackets are shown, not trusted (not VALID)."
+msgstr "括号中的数值仅供显示，不可采信（无效）。"
+
+msgid "Waiting for both measurements to load."
+msgstr "正在等待两条测量加载完成。"
+
+msgid "Waterfall"
+msgstr "瀑布图"
+
+msgid "Waterfall: {name}"
+msgstr "瀑布图：{name}"
+
+msgid "Waveform"
+msgstr "波形"
+
+msgid "Welch power spectral density of the quiet segment"
+msgstr "安静段的 Welch 功率谱密度"
+
+msgid "Width (y)"
+msgstr "宽（y）"
+
+msgid "Window"
+msgstr "窗长"
+
+msgid "Window {window:.2f} s, resolution {resolution:.1f} Hz."
+msgstr "窗长 {window:.2f} s，分辨率 {resolution:.1f} Hz。"
+
+msgid "Window {window:.2f} s."
+msgstr "窗长 {window:.2f} s。"
+
+msgid "Written by a newer ReverbScope: shown, but not overwritten."
+msgstr "由更新版本的 ReverbScope 写入：只显示，不覆盖。"
+
+msgid "aligned by {offset:+.1f} dB"
+msgstr "已平移 {offset:+.1f} dB"
+
+msgid "analysis smoothing"
+msgstr "分析平滑"
+
+msgid "analysis smoothing (1/{fraction} octave)"
+msgstr "分析平滑（1/{fraction} 倍频程）"
+
+msgid "as computed by reverbscope compare"
+msgstr "与 reverbscope compare 的计算相同"
+
+msgid "as stored"
+msgstr "按存储值"
+
+msgid "audio interface (loopback)"
+msgstr "音频接口（回采）"
+
+msgid "candidate reflection"
+msgstr "候选反射"
+
+msgid "candidate − baseline"
+msgstr "对比项 − 基准"
+
+msgid "check this"
+msgstr "请检查"
+
+msgid "consistent"
+msgstr "一致"
+
+msgid "current minus baseline, both as drawn above"
+msgstr "当前减基准，两者均按上图所绘"
+
+msgid "demo"
+msgstr "演示"
+
+msgid "difference"
+msgstr "差值"
+
+msgid "display smoothing 1/{fraction} octave"
+msgstr "显示平滑 1/{fraction} 倍频程"
+
+msgid "first {ms:g} ms"
+msgstr "前 {ms:g} ms"
+
+msgid "no measurement yet"
+msgstr "尚无测量"
+
+msgid "no noise spectrum stored with this session"
+msgstr "此会话未存储噪声频谱"
+
+msgid "no quiet segment available"
+msgstr "没有可用的安静段"
+
+msgid "no smoothing"
+msgstr "不平滑"
+
+msgid "no smoothing (stored curve)"
+msgstr "不平滑（存储的曲线）"
+
+msgid "not checkable"
+msgstr "无法检查"
+
+msgid "not saved yet"
+msgstr "尚未保存"
+
+msgid "re direct sound"
+msgstr "相对直达声"
+
+msgid "re full scale"
+msgstr "相对满量程"
+
+msgid "re peak"
+msgstr "相对峰值"
+
+msgid "scaled to the peak"
+msgstr "按峰值缩放"
+
+msgid "synthetic demo, not a room"
+msgstr "合成演示，不是真实房间"
+
+msgid "the reflection detector's envelope, 0.1 ms peak hold"
+msgstr "反射检测器的包络，峰值保持 0.1 ms"
+
+msgid "unsaved"
+msgstr "未保存"
+
+msgid "whole response"
+msgstr "完整响应"
+
+msgid "{candidate}  against the baseline  {baseline}"
+msgstr "{candidate}  对比基准  {baseline}"
+
+msgid "{candidate} against the baseline {baseline}."
+msgstr "{candidate} 对比基准 {baseline}。"
+
+msgid "{delay:.2f} ms, {level:.1f} dB"
+msgstr "{delay:.2f} ms，{level:.1f} dB"
+
+msgid "{duration:g} s, {low:g} Hz to {high:g} Hz, {level:g} dBFS"
+msgstr "{duration:g} s，{low:g} Hz 至 {high:g} Hz，{level:g} dBFS"
+
+msgid "{freq:.0f} Hz, {prominence:.0f} dB above its surroundings"
+msgstr "{freq:.0f} Hz，比周围高 {prominence:.0f} dB"
+
+msgid "{good} of {total} checks good"
+msgstr "{total} 项检查中 {good} 项良好"
+
+msgid "{length} at the centre"
+msgstr "画面中心处 {length}"
+
+msgid "{metres:.2f} m at {speed:.1f} m/s"
+msgstr "{metres:.2f} m（声速 {speed:.1f} m/s）"
+
+msgid "{name} (cannot be read)"
+msgstr "{name}（无法读取）"
+
+msgid "{name} (loading)"
+msgstr "{name}（加载中）"
+
+msgid "{name} (stored)"
+msgstr "{name}（存储值）"
+
+msgid "{name} changed since it was placed (its SHA-256 differs); import it again to place it"
+msgstr "{name} 在放置之后已改变（SHA-256 不同）；请重新导入并放置"
+
+msgid "{name} is the baseline. Select another measurement to compare it."
+msgstr "{name} 是基准。选择另一条测量即可对比。"
+
+msgid "{name}: no decay curve stored for this band"
+msgstr "{name}：此频带未存储衰减曲线"
+
+msgid "{name}: no frequency response stored with this session"
+msgstr "{name}：此会话未存储频率响应"
+
+msgid "{name}: {unit}"
+msgstr "{name}：{unit}"
+
+msgid "{rms:.1f} dBFS RMS, uncalibrated"
+msgstr "{rms:.1f} dBFS RMS，未校准"
+
+msgid "{time:.1f} ms"
+msgstr "{time:.1f} ms"
+
+msgid "{time:.1f} ms   {freq}   {level:.1f} dB"
+msgstr "{time:.1f} ms   {freq}   {level:.1f} dB"
+
+msgid "{time:.1f} ms   {freq}   {level:.1f} {unit}"
+msgstr "{time:.1f} ms   {freq}   {level:.1f} {unit}"
+
+msgid "{time:.1f} ms: peak {level:.1f} dB at {freq}"
+msgstr "{time:.1f} ms：峰值 {level:.1f} dB，位于 {freq}"
+
+msgid "{value:.2f} s from {basis}"
+msgstr "{value:.2f} s，由 {basis} 推算"
+
+msgid "{vertices:,} vertices, {faces:,} triangles. {note}"
+msgstr "{vertices:,} 个顶点，{faces:,} 个三角形。{note}"
+
+msgid "{who}: x = {x:.2f} m, y = {y:.2f} m, z = {z:.2f} m"
+msgstr "{who}：x = {x:.2f} m，y = {y:.2f} m，z = {z:.2f} m"
+
+msgctxt "workspace"
+msgid "Baseline"
+msgstr "基准"
+
 msgid "New take"
 msgstr "新测量"
 

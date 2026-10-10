@@ -1,4 +1,4 @@
-"""The Measurement health card on the Results page."""
+"""The Measurement health card of the Overview view and the inspector."""
 
 from __future__ import annotations
 
@@ -18,8 +18,8 @@ from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
 from reverbscope.io.wav import write_wav
 from reverbscope.models.configuration import SweepSettings
 from reverbscope.ui.main_window import MainWindow
-from reverbscope.ui.results import _Overview
 from reverbscope.ui.theme import tone_color
+from reverbscope.ui.views.overview import _Overview
 from tests.conftest import make_rir
 
 pytestmark = pytest.mark.gui
@@ -44,7 +44,7 @@ def _analyse_file(
     page.set_recording(write_wav(tmp_path / "take.wav", samples, rate, subtype="FLOAT"))
     page.start_analysis(blocking=True)
     app.processEvents()
-    assert window.stack.currentWidget() is window.results
+    assert window.stack.currentWidget() is window.views["overview"]
     return window
 
 
@@ -54,16 +54,19 @@ def test_the_results_page_shows_the_health_card(
     rate = short_sweep.sample_rate
     take = synthetic_recording(short_sweep, make_rir(rate, rt60_s=0.3), noise_rms=1e-5)
     window = _analyse_file(app, tmp_path, short_sweep, take.samples)
-    overview = window.results.overview
+    overview = window.views["overview"].overview
     assert overview.health_chip.text() == "GOOD"
     assert "10 of 10 checks good" in overview.health_summary.text()
     assert overview.health_rows.count() == 0
-    assert "Measurement health" in window.results.text.toPlainText()
+    window.show_view("report")
+    assert "Measurement health" in window.views["report"].text.toPlainText()
+    # The inspector leads with the same overall status.
+    assert window.inspector.health.isVisible()
     window.close()
 
     clipped = np.clip(take.samples * 4.0, -0.3, 0.3)
     window = _analyse_file(app, tmp_path, short_sweep, clipped)
-    overview = window.results.overview
+    overview = window.views["overview"].overview
     assert overview.health_chip.text() == "INVALID"
     assert overview.health_rows.count() >= 1
     cards = [overview.health_rows.itemAt(i).widget() for i in range(overview.health_rows.count())]

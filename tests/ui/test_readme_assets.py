@@ -59,9 +59,9 @@ def test_gui_screenshots_are_the_user_edition_and_chinese_for_the_chinese_readme
 
     class Recorded(main_window.MainWindow):  # type: ignore[misc]
         def grab(self, *args: Any) -> Any:
-            tab = self.results.tabs.tabText(0)
+            tab = self.workspace.views["overview"].title()
             grabbed.append((current_locale(), self.developer_menu is None, tab))
-            subtitles.append(self.results.header.subtitle.text())
+            subtitles.append(self.inspector.subtitle.text())
             homes.append(os.environ["REVERBSCOPE_HOME"])
             return super().grab(*args)
 

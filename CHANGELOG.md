@@ -7,7 +7,49 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- **The desktop app is one workstation window** (GUI 2.0,
+  `docs/design/GUI_2_ARCHITECTURE.md`). A navigator lists the project's
+  positions and every open measurement, each with its colour, an overlay
+  check box and a baseline mark; a view bar switches between Overview,
+  Frequency response, Impulse response, Decay, Noise, Spectrogram,
+  Waterfall, Room, Project, Compare and the full report (Ctrl+1 … Ctrl+9);
+  an inspector shows the current measurement's health, key figures with
+  validity, conditions, the comparison with the baseline and the room
+  checks; a measure strip along the bottom carries the mode, devices, rate,
+  channels, loopback, position and Start / Stop (Ctrl+Return, Esc). The
+  column sizes, the view and, per project, the selection are restored at the
+  next start (`ui.ini` in the ReverbScope home folder). The Results page and
+  the Home page's mode cards are gone; the first-measurement card stays on
+  the start panel. Open Session adds the session to the list instead of
+  replacing what is open; switching views no longer stops a take.
+- **Charts are pyqtgraph** (0.14.0, MIT, in the `gui` extra and the desktop
+  bundles; nothing uses OpenGL). Overlays are drawn in the list's colours
+  with the current measurement on top; every chart zooms about the cursor,
+  pans, resets, reads out the value under the cursor with its unit, names
+  its display processing in the legend, and exports PNG, SVG or the drawn
+  curves as CSV. With a baseline, the Frequency response view adds a
+  difference pane. Decay draws all bands of a measurement with a dash
+  pattern each, and says why a band has no curve.
+- The tape-measure picture beside the placement inputs is the only
+  matplotlib drawing left; `scripts/benchmark.py --gui` times the chart
+  views instead of the 0.5 plots.
+
+### Added
+- **Spectrogram and waterfall** views of the impulse response, computed on a
+  worker thread with a cache per measurement.
+- **Room view.** A three-dimensional drawing of the room box you enter, the
+  loudspeaker and a microphone per position, an example room and optional
+  PLY / OBJ scans (read on a worker thread with size and vertex limits),
+  with three layers: what you entered (solid), what a measurement constrains
+  (dashed: the direct-distance sphere, the selected reflection's ellipsoid,
+  the ring of loudspeaker positions a placement result allows) and what
+  follows only from assuming a rectangular room (dotted: first-order
+  reflection paths, the faces matching the selected reflection
+  highlighted). It says that one microphone cannot locate a wall. The
+  geometry is saved in `room-geometry.json`, apart from the measurements.
+- `docs/design/GUI_REFERENCE_AUDIT.md`: what the workstation borrows from
+  other programs (conventions only, no code or assets).
 
 ## [0.5.0b3] - 2026-10-09
 

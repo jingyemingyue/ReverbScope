@@ -196,3 +196,30 @@ def test_png_export_refuses_a_bad_scale(pg: ModuleType, plot: Any, tmp_path: Pat
     with pytest.raises(ValueError, match="scale"):
         pg.png_export(plot, tmp_path / "chart.png", scale=0)
     assert not (tmp_path / "chart.png").exists()
+
+
+@pytest.mark.gui
+def test_plot_widget_owns_pyqtgraph_menus_and_closes_once(pg: ModuleType) -> None:
+    """pyqtgraph builds its menus and settings panel as parentless windows; a
+    sweep that closed every top-level widget deleted them under pyqtgraph and
+    crashed. ``close_plot_widget`` may be called twice (``PlotWidget.close``
+    may not)."""
+    from PySide6.QtCore import QEvent
+    from PySide6.QtWidgets import QApplication, QWidget
+    from shiboken6 import getCppPointer
+
+    before = {getCppPointer(w)[0] for w in QApplication.topLevelWidgets()}
+    widget = pg.plot_widget()
+    orphans = [
+        w
+        for w in QApplication.topLevelWidgets()
+        if getCppPointer(w)[0] not in before and w is not widget and w.parentWidget() is None
+    ]
+    assert orphans == []
+    adopted = [w for w in widget.findChildren(QWidget) if w.property(pg.INTERNAL_PROPERTY)]
+    assert adopted, "pyqtgraph built no menus? the adoption has nothing to do"
+    pg.close_plot_widget(widget)
+    pg.close_plot_widget(widget)
+    assert widget.closed and widget.plotItem is None
+    widget.deleteLater()
+    QApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)

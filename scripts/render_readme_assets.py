@@ -6,10 +6,10 @@ Writes:
 
 * ``cli-demo.svg``            -- ``reverbscope demo`` as a terminal screenshot (SVG text)
 * ``cli-demo.zh-CN.svg``      -- the same in Simplified Chinese
-* ``gui-results.png``         -- Results page, Overview tab, position A
+* ``gui-results.png``         -- the workstation, Overview view, position A
 * ``gui-results.zh-CN.png``   -- the same in Simplified Chinese (README.zh-CN.md)
-* ``gui-frequency-response.png`` -- Results page, Frequency Response tab, position A
-* ``gui-compare.png``         -- Compare page, A -> B
+* ``gui-frequency-response.png`` -- the workstation, Frequency response view, position A
+* ``gui-compare.png``         -- the workstation, Compare view, A -> B
 * ``social-preview.png``      -- 1280x640 card for the GitHub social preview
 
 Every image comes from ``reverbscope demo``: a simulated room, not a measurement.
@@ -219,10 +219,10 @@ def render_gui(workdir: Path, out: Path) -> None:
         enter_language(workdir, lang)
         activate(lang)
         window = main_window.MainWindow()
-        window.resize(1120, 820)
+        window.resize(1366, 820)
         window.show()
         window.open_session_path(demo_folder(workdir, lang) / "reverbscope-demo" / "position-a")
-        window.results.tabs.setCurrentIndex(0)
+        window.show_view("overview")
         return window
 
     def grab(window: main_window.MainWindow, name: str, stamp: str = STAMP) -> None:
@@ -233,9 +233,9 @@ def render_gui(workdir: Path, out: Path) -> None:
     try:
         window = window_in("en")
         grab(window, "gui-results.png")
-        window.results.tabs.setCurrentWidget(window.results.fr_tab)
+        window.show_view("fr")
         grab(window, "gui-frequency-response.png")
-        window.resize(1120, 1000)
+        window.resize(1366, 1000)
         window.show_compare()
         window.compare.set_paths(demo / "position-a", demo / "position-b")
         window.compare.same_gain.setChecked(True)

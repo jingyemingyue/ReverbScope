@@ -3,7 +3,7 @@
 Measures what a user waits for: ``analyze`` on a 2 s, 10 s and 60 s sweep
 at 48 kHz and 96 kHz (the peak memory it allocates, through tracemalloc),
 the result's JSON round trip, a comparison, the text report and, with
-``--gui``, the Results page's plots drawn offscreen. Synthetic rooms only:
+``--gui``, the workstation's chart views drawn offscreen. Synthetic rooms only:
 the numbers say how long ReverbScope takes, never anything about a room.
 
     python scripts/benchmark.py            # the full set (a few minutes)
@@ -114,32 +114,36 @@ def analysis_case(duration_s: float, sample_rate: int, *, gui: bool) -> dict[str
 
 
 def plots_seconds(result: Any) -> float:
-    """The Results page's five figures drawn offscreen (Agg), in seconds."""
-    import matplotlib
+    """The workstation's five chart views drawn offscreen (pyqtgraph), in seconds."""
+    import os
 
-    matplotlib.use("Agg")
-    from matplotlib.figure import Figure
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication
 
-    from reverbscope.ui.plots import (
-        plot_decay,
-        plot_frequency_response,
-        plot_impulse_response,
-        plot_noise,
-        plot_reflections,
-    )
+    from reverbscope.models.session import MeasurementSession
+    from reverbscope.ui.views.decay import DecayView
+    from reverbscope.ui.views.frequency import FrequencyView
+    from reverbscope.ui.views.impulse import ImpulseView
+    from reverbscope.ui.views.noise import NoiseView
+    from reverbscope.ui.views.overview import OverviewView
+    from reverbscope.ui.workspace import WorkspaceModel
 
+    app = QApplication.instance() or QApplication([])
+    model = WorkspaceModel()
+    model.add_take(MeasurementSession(), result, [], "", "generic", unsaved=False, synthetic=True)
     start = time.perf_counter()
-    for plot in (
-        plot_impulse_response,
-        plot_frequency_response,
-        plot_decay,
-        plot_noise,
-        plot_reflections,
-    ):
-        figure = Figure(figsize=(8.0, 3.6), dpi=100)
-        plot(figure, result)
-        figure.canvas.draw()  # type: ignore[attr-defined]
-    return time.perf_counter() - start
+    for view_type in (OverviewView, ImpulseView, FrequencyView, DecayView, NoiseView):
+        view = view_type(model)
+        view.resize(1000, 600)
+        view.show()
+        view.redraw()
+        app.processEvents()
+        view.grab()
+        view.close()
+        view.deleteLater()
+    seconds = time.perf_counter() - start
+    model.shutdown()
+    return seconds
 
 
 def environment() -> dict[str, Any]:
@@ -158,7 +162,9 @@ def environment() -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--quick", action="store_true", help="2 s and 10 s at 48 kHz only")
-    parser.add_argument("--gui", action="store_true", help="also time the Results page's plots")
+    parser.add_argument(
+        "--gui", action="store_true", help="also time the workstation's chart views"
+    )
     parser.add_argument("--json", action="store_true", help="print JSON instead of a table")
     args = parser.parse_args(argv)
     cases = QUICK if args.quick else CASES

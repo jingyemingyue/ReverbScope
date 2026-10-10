@@ -12,6 +12,10 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtWidgets import QApplication
 
+from reverbscope.audio.fake import make_rir
+from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.models.configuration import SweepSettings
+from reverbscope.models.session import MeasurementSession
 from reverbscope.settings import load_settings
 from reverbscope.ui.main_window import MainWindow
 
@@ -56,9 +60,13 @@ def test_the_card_shows_on_a_first_start_and_stays_away_once_dismissed(
 
 
 def test_the_profile_selector_explains_the_profile(
-    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, short_sweep: SweepSettings
 ) -> None:
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    result = analyze(
+        synthetic_recording(short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.3)),
+        Reference.from_settings(short_sweep),
+    )
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
@@ -73,9 +81,13 @@ def test_the_profile_selector_explains_the_profile(
     assert "not judged" in " ".join(dialogs[0].item.skips)
     for dialog in dialogs:
         dialog.close()
-    # The Results page explains the profile the result was interpreted with.
-    window.state.profile = "vocal"
-    dialog = window.results.show_profile_help()
+    # The inspector explains the profile the result was interpreted with.
+    window.model.add_take(
+        MeasurementSession(), result, [], "", "vocal", unsaved=False, synthetic=True
+    )
+    assert window.inspector.profile_button.isVisibleTo(window.inspector)
+    dialog = window.inspector.show_profile_help()
+    assert dialog is not None
     assert dialog.item.name == "vocal" and "Vocals" in dialog.windowTitle()
     dialog.close()
     window.close()

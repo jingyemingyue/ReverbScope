@@ -83,9 +83,21 @@ the selection and the chart state: the workspace model (§3) owns them, not
 the views.
 
 The unsaved-take protection of 0.5 is kept and widened: every action that
-would replace an unsaved take (New Measurement, Open Session, opening a
-project, a new take, closing the window, removing the take from the list)
-asks first, with Save, Discard and Cancel.
+would drop an unsaved take (New Measurement, a new take, closing the window,
+removing the take from the list) asks first, with Save, Discard and Cancel.
+Open Session and opening a project no longer replace anything: the session
+is added to the list beside the take, and a project keeps the unsaved take
+(it may be saved into that project). The take is the only live entry; a new
+take replaces the previous one once the previous one is saved or
+discarded.
+
+The measure strip mirrors the active set-up page: its device, rate and
+channel controls share the page's models, so a choice in either place is
+the same choice. **Set up...** opens the page for what the strip does not
+carry (sweep length, level, tape measurements, the DAW files). In DAW mode
+Start reads "Import recording..." and analyses the chosen files. Choosing a
+position in the navigator's menu ("Measure at …") or in the project view
+fills the strip's position and the pages' position and room fields.
 
 ## 3. Workspace model
 
@@ -148,8 +160,21 @@ makes it current.
   report (`report`) follow without a number.
 * The 0.5 Results tabs are gone. Their content moved: the key figures,
   health and findings to Overview and the inspector; each chart to its view;
-  the placement table to the room view's inspector section; the text report
-  to the report view.
+  the placement table to the room view's side panel (and, with a VALID
+  height and separation, the ring of loudspeaker positions in the room's
+  measured layer); the text report to the report view. "About this
+  profile..." is in the inspector's Conditions section; Save Session is in
+  the File menu and the navigator's menu.
+* The compare view compares the model's baseline with the current entry.
+  Its session picker (two saved sessions, as on the 0.5 Compare page) opens
+  both into the list, makes the first the baseline and the second current,
+  and folds away once a pair is shown.
+* The inspector (`ui/inspector.py`) shows, for the current entry: the
+  subtitle (room, position, microphone, profile, sample rate, folder),
+  measurement health, key figures with validity, conditions, the comparison
+  with the baseline (verdict per topic, "Input gain unchanged", "Open the
+  comparison"), the selected reflection, and the room view's consistency
+  checks.
 
 ## 5. Display data
 
@@ -330,6 +355,12 @@ microphone. It runs offscreen, so it is tested and screenshotted in CI.
   closed) is dropped without touching the model.
 * No analysis is re-run for display. Zooming, panning, moving the cursor and
   changing display smoothing work on cached display data.
+* pyqtgraph builds its context menus and plot-settings panel as parentless
+  widgets that only its Python objects hold. `ui.pg.plot_widget` parents
+  them to the plot (marked internal), and `ChartPanel.dispose` tears the plot
+  down in pyqtgraph's order (`ui.pg.close_plot_widget`) when the window
+  closes for good; left to the destructors, the scene deleted its items in
+  whatever order the collector left them and crashed now and then.
 
 ## 8. Saved interface state
 
