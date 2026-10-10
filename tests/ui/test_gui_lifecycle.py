@@ -22,7 +22,7 @@ from reverbscope.core.pipeline import synthetic_recording
 from reverbscope.errors import AnalysisError
 from reverbscope.io.wav import write_wav
 from reverbscope.models.configuration import SweepSettings
-from reverbscope.ui import pages, workers
+from reverbscope.ui import daw_page, measure_flow, workers
 from reverbscope.ui.main_window import MainWindow
 from tests.conftest import make_rir
 
@@ -140,7 +140,7 @@ def test_a_profile_that_fails_does_not_leave_the_page_busy(
     def broken(result: object, profile: str) -> list[object]:
         raise RuntimeError("plugin bug")
 
-    monkeypatch.setattr(pages, "interpret", broken)
+    monkeypatch.setattr(measure_flow, "interpret", broken)
     window = _daw_ready(app, tmp_path, short_sweep)
     page = window.daw
     page.start_analysis(blocking=True)
@@ -167,7 +167,7 @@ def test_a_failure_after_new_measurement_shows_no_dialog(
 
     boxes: list[tuple[object, ...]] = []
     monkeypatch.setattr(workers, "analyze", failing)
-    monkeypatch.setattr(pages, "error_box", lambda *args, **kwargs: boxes.append(args))
+    monkeypatch.setattr(daw_page, "error_box", lambda *args, **kwargs: boxes.append(args))
     window = _daw_ready(app, tmp_path, short_sweep)
     page = window.daw
     try:

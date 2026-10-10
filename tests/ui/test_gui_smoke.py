@@ -255,11 +255,13 @@ def test_placement_tab_uses_tape_measurements(
     placement = window.state.result.placement
     assert placement is not None
     assert placement.tier == 2
-    assert window.results.tabs.tabText(window.results.tabs.count() - 1) == "Placement"
-    summary = window.results.place_tab.summary.text()
+    window.results.show_group("placement")
+    placement_view = window.results.analysis.placement
+    assert placement_view.isVisible()
+    summary = placement_view.summary.text()
     assert "tier 2" in summary.lower()
-    assert window.results.place_tab.table.rowCount() == 3
-    height_item = window.results.place_tab.table.item(0, 1)
+    assert placement_view.table.rowCount() == 3
+    height_item = placement_view.table.item(0, 1)
     assert height_item is not None
     assert "m" in height_item.text()
     assert window.state.analysis_settings.placement_distance_m == pytest.approx(distance, abs=0.01)
@@ -583,7 +585,7 @@ def test_compare_metrics_have_readable_names() -> None:
     """The compare table showed ids such as ``band.63 Hz.t20`` and ``not_comparable``."""
     from reverbscope.models.result import Validity
     from reverbscope.ui.compare_view import metric_label, status_text
-    from reverbscope.ui.results import validity_text
+    from reverbscope.ui.results_presenter import validity_text
 
     assert metric_label("broadband.t30", "s") == "Broadband T30 (s)"
     assert metric_label("band.63 Hz.rt60_estimate", "s") == "63 Hz RT60 estimate (s)"
@@ -689,12 +691,12 @@ def test_a_live_take_is_saved_with_its_session(
     from reverbscope.core.pipeline import Reference, analyze
     from reverbscope.io.session_store import RECORDING_FILE, load_session
     from reverbscope.io.wav import read_wav
-    from reverbscope.ui import results
+    from reverbscope.ui import results_page
 
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     errors: list[str] = []
     monkeypatch.setattr(
-        results.QMessageBox, "critical", lambda _parent, _title, text: errors.append(text)
+        results_page.QMessageBox, "critical", lambda _parent, _title, text: errors.append(text)
     )
     rate = short_sweep.sample_rate
     window = MainWindow()
@@ -1210,12 +1212,12 @@ def test_daw_mode_analyses_only_the_recording_it_shows(
     import json
 
     from reverbscope.io.wav import read_wav
-    from reverbscope.ui import pages
+    from reverbscope.ui import daw_page
 
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     refused: list[str] = []
     monkeypatch.setattr(
-        pages.QMessageBox, "warning", staticmethod(lambda _p, title, _m: refused.append(title))
+        daw_page.QMessageBox, "warning", staticmethod(lambda _p, title, _m: refused.append(title))
     )
     window = MainWindow()
     window.show()
@@ -1257,10 +1259,10 @@ def test_a_standalone_take_never_replaces_the_daw_reference(
     time-stretched sweep and marked every decay metric unreliable."""
     import json
 
-    from reverbscope.ui import pages
+    from reverbscope.ui import standalone_page
 
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
-    monkeypatch.setattr(pages.QMessageBox, "critical", staticmethod(lambda *_a: None))
+    monkeypatch.setattr(standalone_page.QMessageBox, "critical", staticmethod(lambda *_a: None))
     rate = short_sweep.sample_rate
     window = MainWindow()
     window.show()
@@ -1367,7 +1369,7 @@ def test_a_new_audio_backend_in_settings_reaches_the_standalone_page(
     from reverbscope.audio.backend import DeviceInfo
     from reverbscope.audio.fake import FakeBackend
     from reverbscope.settings import UserSettings, load_settings, save_settings
-    from reverbscope.ui import pages, settings_dialog
+    from reverbscope.ui import settings_dialog, standalone_page
 
     class Interface:
         name = "test"
@@ -1393,7 +1395,9 @@ def test_a_new_audio_backend_in_settings_reaches_the_standalone_page(
     )
     warned: list[str] = []
     monkeypatch.setattr(
-        pages.QMessageBox, "warning", staticmethod(lambda _p, title, _m: warned.append(title))
+        standalone_page.QMessageBox,
+        "warning",
+        staticmethod(lambda _p, title, _m: warned.append(title)),
     )
 
     def accept_with_backend(self: settings_dialog.SettingsDialog) -> int:
@@ -1635,7 +1639,7 @@ def _theme_colours(window: MainWindow) -> dict[str, str]:
     cards = window.results.findChildren(FindingCard)
     assert cards
     return {
-        "results chart": to_hex(window.results.ir_tab.figure.get_facecolor()),
+        "results chart": to_hex(window.results.analysis.current_figure().get_facecolor()),
         "compare chart": to_hex(window.compare.figure.get_facecolor()),
         "placement picture": to_hex(window.daw.placement.figure.get_facecolor()),
         "finding card": cards[-1].styleSheet(),
@@ -1681,6 +1685,7 @@ def test_a_new_theme_in_settings_redraws_cards_and_charts(
     window.state.result = result
     window.state.findings = interpret(result, "generic")
     window.show_results()
+    window.results.show_group("impulse")  # drawn now: charts draw when shown
     window.compare._show(compare(result, result), [], "generic")
     before = _theme_colours(window)
     assert before["results chart"] == LIGHT_TOKENS["surface"]
@@ -1723,6 +1728,7 @@ def test_following_the_system_redraws_the_window_when_the_system_turns_dark(
     window.state.result = result
     window.state.findings = interpret(result, "generic")
     window.show_results()
+    window.results.show_group("decay")
     window.compare._show(compare(result, result), [], "generic")
     # The offscreen platform cannot change its scheme: the variable stands
     # in for the system's answer, and the signal is the one Qt sends.

@@ -219,10 +219,10 @@ def render_gui(workdir: Path, out: Path) -> None:
         enter_language(workdir, lang)
         activate(lang)
         window = main_window.MainWindow()
-        window.resize(1120, 820)
+        window.resize(1280, 820)
         window.show()
         window.open_session_path(demo_folder(workdir, lang) / "reverbscope-demo" / "position-a")
-        window.results.tabs.setCurrentIndex(0)
+        window.results.tabs.setCurrentIndex(0)  # the overview
         return window
 
     def grab(window: main_window.MainWindow, name: str, stamp: str = STAMP) -> None:
@@ -233,9 +233,9 @@ def render_gui(workdir: Path, out: Path) -> None:
     try:
         window = window_in("en")
         grab(window, "gui-results.png")
-        window.results.tabs.setCurrentWidget(window.results.fr_tab)
+        window.results.show_group("frequency")
         grab(window, "gui-frequency-response.png")
-        window.resize(1120, 1000)
+        window.resize(1280, 1000)
         window.show_compare()
         window.compare.set_paths(demo / "position-a", demo / "position-b")
         window.compare.same_gain.setChecked(True)

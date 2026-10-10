@@ -1,4 +1,12 @@
-"""Main window: a stacked layout of Home -> Mode page -> Results."""
+"""Main window: the workspace frame around the pages.
+
+Left, the navigation (pages, the open project's positions and sessions,
+recent sessions); top, the context bar with the page's title and its main
+actions; centre, the page; right, the details pane; bottom, the status
+line with the real take progress and Stop. Pages keep their widgets and
+their data when another page is shown: only New Measurement and Open
+Session reset the measurement state.
+"""
 
 from __future__ import annotations
 
@@ -8,14 +16,16 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import Qt, QUrl
-from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplication
+from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplication, QResizeEvent
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QMainWindow,
     QMessageBox,
+    QSplitter,
     QStackedWidget,
     QStatusBar,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -27,19 +37,40 @@ from reverbscope.io.recent import remember_session
 from reverbscope.io.session_store import load_measurement
 from reverbscope.settings import load_settings
 from reverbscope.ui.compare_view import ComparePage
-from reverbscope.ui.pages import DawModePage, HomePage, StandalonePage, safe_findings
+from reverbscope.ui.daw_page import STEP_ANALYSE, DawModePage
+from reverbscope.ui.home_page import HomePage
 from reverbscope.ui.project_view import ProjectPage
-from reverbscope.ui.results import ResultsPage
+from reverbscope.ui.results_page import ResultsPage
+from reverbscope.ui.standalone_page import STEP_DIMENSIONS, StandalonePage
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.theme import apply_application_chrome, color_scheme
 from reverbscope.ui.widgets import app_icon
+from reverbscope.ui.workspace import (
+    NAV_COMPARE,
+    NAV_DAW,
+    NAV_DEMO,
+    NAV_HOME,
+    NAV_PROJECT,
+    NAV_RESULTS,
+    NAV_STANDALONE,
+    ContextBar,
+    DetailPane,
+    NavigationPane,
+    RunStatusBar,
+)
+
+#: Below this window width the details pane folds away by itself (it comes
+#: back with the View menu); the navigation stays.
+NARROW_WIDTH = 1180
 
 
 def about_html() -> str:
     """About box body, translated when it is shown (not when this module loads)."""
     return _(
         "<b>ReverbScope {version}</b><br>"
-        "An open-source, DAW-independent recording environment analyzer.<br><br>"
+        "An open-source, DAW-independent recording environment analyzer.<br>"
+        "A validity flag on every number · any DAW: WAV in, WAV out · "
+        "no room score, no invented figures.<br><br>"
         "Licensed under the Apache License, Version 2.0.<br>"
         "This program uses Qt and PySide6 (Copyright The Qt Company Ltd. and contributors) "
         "under the GNU Lesser General Public License v3; the Qt libraries are loaded as "
@@ -71,15 +102,40 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"ReverbScope {__version__}")
         self.setWindowIcon(app_icon())
         self.setMinimumSize(960, 640)
-        self.resize(1180, 800)
+        self.resize(1280, 800)
         self.state = MeasurementState()
         # The default profile chosen in Settings, as the CLI reads it.
         default_profile = load_settings().default_profile
         if default_profile in available_profiles():
             self.state.profile = default_profile
-        self.stack = QStackedWidget()
-        self.setCentralWidget(self.stack)
 
+        # --- the frame ------------------------------------------------------------
+        self.nav = NavigationPane()
+        self.context_bar = ContextBar()
+        self.details = DetailPane()
+        self.stack = QStackedWidget()
+        centre = QWidget()
+        centre_layout = QVBoxLayout(centre)
+        centre_layout.setContentsMargins(0, 0, 0, 0)
+        centre_layout.setSpacing(0)
+        centre_layout.addWidget(self.context_bar)
+        centre_layout.addWidget(self.stack, 1)
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.addWidget(self.nav)
+        self.splitter.addWidget(centre)
+        self.splitter.addWidget(self.details)
+        self.splitter.setCollapsible(0, True)
+        self.splitter.setCollapsible(1, False)
+        self.splitter.setCollapsible(2, True)
+        self.splitter.setStretchFactor(0, 0)
+        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setStretchFactor(2, 0)
+        self.splitter.setSizes([230, 760, 290])
+        self.setCentralWidget(self.splitter)
+        self._details_wanted = True
+        self._details_auto_hidden = False
+
+        # --- the pages ------------------------------------------------------------
         self.home = HomePage()
         self.daw = DawModePage(self.state)
         self.standalone = StandalonePage(self.state)
@@ -95,24 +151,67 @@ class MainWindow(QMainWindow):
             self.project,
         ):
             self.stack.addWidget(page)
+        for page in (self.daw, self.standalone, self.results, self.compare, self.project):
+            self.context_bar.add_actions(page.context_actions)
+            self.details.add_detail(page.detail)
 
         self.home.choose_mode.connect(self.show_mode)
         self.home.open_session.connect(self.choose_session)
         self.home.open_recent.connect(self.open_session_path)
         self.home.compare_requested.connect(self.show_compare)
         self.home.open_project.connect(self.choose_project)
-        self.project.back.connect(self.show_home)
+        self.home.open_project_path.connect(self.show_project)
+        self.project.back.connect(self.show_start)
         self.project.measure_requested.connect(self._measure_position)
         self.project.open_session.connect(self.open_session_path)
         self.project.compare_requested.connect(self._compare_from_project)
+        self.project.changed.connect(self._update_project_nav)
         self.results.project_requested.connect(self.show_project)
+        self.results.compare_requested.connect(self._compare_current)
+        self.results.settings_requested.connect(self._back_to_dimensions)
+        self.results.context_changed.connect(self._results_context)
         self.daw.analysis_finished.connect(self.show_results)
         self.standalone.analysis_finished.connect(self.show_results)
-        self.daw.back.connect(self.show_home)
-        self.standalone.back.connect(self.show_home)
+        self.daw.back.connect(self.show_start)
+        self.standalone.back.connect(self.show_start)
+        self.daw.activity_changed.connect(self._on_activity)
+        self.standalone.activity_changed.connect(self._on_activity)
+        self.daw.step_changed.connect(self._step_changed)
+        self.standalone.step_changed.connect(self._step_changed)
         self.results.new_measurement.connect(self.show_home)
         self.compare.back.connect(self._leave_compare)
+        self.compare.open_session.connect(self.open_session_path)
+        self.compare.context_changed.connect(self._compare_context)
+        self.nav.page_requested.connect(self._navigate)
+        self.nav.session_requested.connect(self.open_session_path)
+        self.nav.position_requested.connect(self._show_position)
+        self.details.closed.connect(self._hide_details)
 
+        # --- the status line ------------------------------------------------------
+        self._status = QStatusBar()
+        self.setStatusBar(self._status)
+        self.run_status = RunStatusBar()
+        self.run_status.stop_requested.connect(self.standalone.stop_measurement)
+        self._status.addPermanentWidget(self.run_status)
+        self._place = ""
+
+        self._build_menus()
+        # The page Compare was opened from, and its status-bar place: Back
+        # returns there. Going Home instead reset the state, so an unsaved
+        # result (the only copy of a live take) was gone.
+        self._before_compare: tuple[QWidget, str] = (self.home, "")
+        # The colour scheme the window was last drawn in.
+        self._scheme = color_scheme()
+        # "Follow the system": macOS (Auto appearance) or Windows can turn
+        # dark while ReverbScope runs. Widgets drawn after that took the dark
+        # colours while the window kept the light style sheet.
+        QGuiApplication.styleHints().colorSchemeChanged.connect(self._follow_system_scheme)
+        self._following_system = True
+        self._go_home()
+
+    # --- menus ------------------------------------------------------------------------
+
+    def _build_menus(self) -> None:
         file_menu = self.menuBar().addMenu(_("&File"))
         new_action = QAction(_("&New Measurement"), self)
         new_action.setShortcut("Ctrl+N")
@@ -155,6 +254,25 @@ class MainWindow(QMainWindow):
         measure_menu.addAction(standalone_action)
         measure_menu.addAction(demo_action)
 
+        view_menu = self.menuBar().addMenu(_("&View"))
+        self.nav_action = QAction(_("&Navigation pane"), self)
+        self.nav_action.setCheckable(True)
+        self.nav_action.setChecked(True)
+        self.nav_action.setShortcut("F9")
+        self.nav_action.toggled.connect(self.nav.setVisible)
+        self.details_action = QAction(_("&Details pane"), self)
+        self.details_action.setCheckable(True)
+        self.details_action.setChecked(True)
+        self.details_action.setShortcut("F10")
+        self.details_action.toggled.connect(self.set_details_visible)
+        results_action = QAction(_("&Results"), self)
+        results_action.setShortcut("Ctrl+4")
+        results_action.triggered.connect(self._show_results_from_menu)
+        view_menu.addAction(self.nav_action)
+        view_menu.addAction(self.details_action)
+        view_menu.addSeparator()
+        view_menu.addAction(results_action)
+
         from reverbscope.edition import is_developer
 
         self.developer_menu = None
@@ -182,21 +300,6 @@ class MainWindow(QMainWindow):
         help_menu.addSeparator()
         help_menu.addAction(about_action)
         help_menu.addAction(licenses_action)
-        self._status = QStatusBar()
-        self.setStatusBar(self._status)
-        self._place = ""
-        # The page Compare was opened from, and its status-bar place: Back
-        # returns there. Going Home instead reset the state, so an unsaved
-        # result (the only copy of a live take) was gone.
-        self._before_compare: tuple[QWidget, str] = (self.home, "")
-        # The colour scheme the window was last drawn in.
-        self._scheme = color_scheme()
-        # "Follow the system": macOS (Auto appearance) or Windows can turn
-        # dark while ReverbScope runs. Widgets drawn after that took the dark
-        # colours while the window kept the light style sheet.
-        QGuiApplication.styleHints().colorSchemeChanged.connect(self._follow_system_scheme)
-        self._following_system = True
-        self._go_home()
 
     def _show_mode_action(self, mode: str) -> Callable[[], None]:
         """What a Measure-menu action runs: open ``mode``.
@@ -215,6 +318,135 @@ class MainWindow(QMainWindow):
 
         return show
 
+    # --- the frame ------------------------------------------------------------------
+
+    def _hide_details(self) -> None:
+        self.set_details_visible(False)
+
+    def _show_results_from_menu(self) -> None:
+        self._navigate(NAV_RESULTS)
+
+    def _step_changed(self, _index: int) -> None:
+        self._mode_context()
+
+    def set_details_visible(self, visible: bool) -> None:
+        self._details_wanted = visible
+        self._details_auto_hidden = False
+        self.details.setVisible(visible)
+        if self.details_action.isChecked() != visible:
+            self.details_action.blockSignals(True)
+            self.details_action.setChecked(visible)
+            self.details_action.blockSignals(False)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        narrow = event.size().width() < NARROW_WIDTH
+        if narrow and self._details_wanted and self.details.isVisible():
+            self.details.hide()
+            self._details_auto_hidden = True
+        elif not narrow and self._details_auto_hidden and self._details_wanted:
+            self.details.show()
+            self._details_auto_hidden = False
+
+    def _show_page(self, page: QWidget, place: str, nav_key: str | None) -> None:
+        self.stack.setCurrentWidget(page)
+        self._set_place(place)
+        self.context_bar.show_actions(getattr(page, "context_actions", None))
+        self.details.show_detail(getattr(page, "detail", None))
+        if nav_key is not None:
+            self.nav.set_current_page(nav_key)
+        self._update_nav_state()
+
+    def _set_place(self, place: str) -> None:
+        self._place = place
+        self._status.showMessage(
+            _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
+        )
+
+    def _update_nav_state(self) -> None:
+        session = self.state.session
+        from reverbscope.demo import localize_demo_name
+
+        title = localize_demo_name(session.mode, session.room_name) if self.state.result else ""
+        self.nav.set_result_available(self.state.result is not None, title)
+
+    def _update_project_nav(self) -> None:
+        overview = self.project.overview
+        if overview is None or self.project.path is None:
+            self.nav.set_project(None)
+            return
+        positions = [
+            (
+                position.label,
+                [(Path(take.directory).name, take.directory) for take in position.sessions],
+            )
+            for position in overview.positions
+        ]
+        if overview.unlisted:
+            positions.append(
+                ("", [(Path(take.directory).name, take.directory) for take in overview.unlisted])
+            )
+        self.nav.set_project(
+            overview.name or self.project.path.name, positions, self.project.current_position()
+        )
+
+    def _navigate(self, key: str) -> None:
+        if key == NAV_HOME:
+            self.show_start()
+        elif key in (NAV_DAW, NAV_STANDALONE, NAV_DEMO):
+            self.show_mode(key)
+        elif key == NAV_RESULTS:
+            if self.state.result is not None:
+                self.show_results()
+        elif key == NAV_COMPARE:
+            self.show_compare()
+        elif key == NAV_PROJECT:
+            if self.project.path is not None:
+                self.show_project()
+            else:
+                self.choose_project()
+
+    def _on_activity(self, busy: bool, text: str, fraction: object, stoppable: bool) -> None:
+        if busy:
+            self.run_status.set_running(
+                text, fraction if isinstance(fraction, float) else None, stoppable=stoppable
+            )
+        else:
+            self.run_status.set_idle(text)
+
+    def _mode_context(self) -> None:
+        current = self.stack.currentWidget()
+        if current is self.daw:
+            index = self.daw.steps.current()
+            self.context_bar.set_context(
+                _("Universal DAW Mode"),
+                _("Step {n} of {total}: {title}").format(
+                    n=index + 1,
+                    total=len(self.daw.steps.buttons),
+                    title=self.daw.steps.title(index),
+                ),
+            )
+        elif current is self.standalone:
+            index = self.standalone.steps.current()
+            self.context_bar.set_context(
+                _("Demo (no interface)") if self.standalone.demo_mode else _("Standalone Mode"),
+                _("Step {n} of {total}: {title}").format(
+                    n=index + 1,
+                    total=len(self.standalone.steps.buttons),
+                    title=self.standalone.steps.title(index),
+                ),
+            )
+
+    def _compare_context(self, title: str, subtitle: str) -> None:
+        if self.stack.currentWidget() is self.compare:
+            self.context_bar.set_context(title, subtitle)
+
+    def _results_context(self, title: str, subtitle: str) -> None:
+        if self.stack.currentWidget() is self.results:
+            self.context_bar.set_context(title, subtitle)
+
+    # --- lifecycle ------------------------------------------------------------------
+
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt override
         if not self._leave_take():
             event.ignore()
@@ -232,12 +464,6 @@ class MainWindow(QMainWindow):
         self.standalone.shutdown_workers()
         self.daw.shutdown_workers()
         super().closeEvent(event)
-
-    def _set_place(self, place: str) -> None:
-        self._place = place
-        self._status.showMessage(
-            _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
-        )
 
     def _leave_take(self) -> bool:
         """True when the window may drop the result on screen.
@@ -274,8 +500,22 @@ class MainWindow(QMainWindow):
             return not self.state.unsaved_take
         return clicked is discard
 
+    # --- pages ----------------------------------------------------------------------
+
+    def show_start(self) -> None:
+        """The start page without dropping anything: the result, the imported
+        recording and the device choices stay where they are."""
+        self.home.refresh_recent()
+        self.nav.refresh_recent()
+        self.home.show_walkthrough(not load_settings().walkthrough_dismissed)
+        self.context_bar.set_context(
+            "ReverbScope", _("Start a measurement, open a project or a saved session.")
+        )
+        self._show_page(self.home, _("Home"), NAV_HOME)
+
     def show_home(self) -> None:
-        """Home (New Measurement); asks first when a live take is unsaved."""
+        """New Measurement: Home with a fresh state; asks first when a live
+        take is unsaved."""
         if self._leave_take():
             self._go_home()
 
@@ -288,10 +528,8 @@ class MainWindow(QMainWindow):
         # Home's environment report and device inspector describe the real
         # interface, not the demo's fake one.
         self.standalone.demo_mode = False
-        self.home.refresh_recent()
-        self.home.show_walkthrough(not load_settings().walkthrough_dismissed)
-        self.stack.setCurrentWidget(self.home)
-        self._set_place(_("Home"))
+        self.run_status.set_idle()
+        self.show_start()
 
     def choose_session(self) -> None:
         path, _filter = QFileDialog.getOpenFileName(
@@ -320,15 +558,19 @@ class MainWindow(QMainWindow):
         self.state.session = loaded.session
         self.state.result = loaded.result
         self.state.mode = loaded.session.mode
+        self.state.saved_path = loaded.directory
         profile = loaded.session.recording_profile or "generic"
         if profile not in available_profiles():
             # A profile this install does not have (a plugin, a newer version).
             profile = "generic"
+        from reverbscope.ui.measure_flow import safe_findings
+
         findings, problem = safe_findings(loaded.result, profile)
         self.state.profile = profile
         self.state.findings = findings
         self.state.findings_problem = problem
         remember_session(loaded.directory)
+        self.nav.refresh_recent()
         self.show_results()
 
     def show_mode(self, mode: str) -> None:
@@ -338,27 +580,44 @@ class MainWindow(QMainWindow):
             # backend under it would show the demo banner over a real sweep (or
             # the reverse) and list devices over a running progress bar. The
             # page is shown as it is; leaving it for Home stops the take.
-            self.stack.setCurrentWidget(self.standalone)
-            self._set_place(
-                _("Demo (no interface)") if self.standalone.demo_mode else _("Standalone Mode")
+            self._show_page(
+                self.standalone,
+                _("Demo (no interface)") if self.standalone.demo_mode else _("Standalone Mode"),
+                NAV_DEMO if self.standalone.demo_mode else NAV_STANDALONE,
             )
+            self._mode_context()
             return
         if mode == "demo":
             self.state.mode = "standalone"
             self.standalone.demo_mode = True
             self.standalone.refresh_devices()
-            self.stack.setCurrentWidget(self.standalone)
-            self._set_place(_("Demo (no interface)"))
+            self._show_page(self.standalone, _("Demo (no interface)"), NAV_DEMO)
+            self._mode_context()
             return
         self.state.mode = mode
         self.standalone.demo_mode = False
         if mode == "standalone":
             self.standalone.refresh_devices()
-            self.stack.setCurrentWidget(self.standalone)
-            self._set_place(_("Standalone Mode"))
+            self._show_page(self.standalone, _("Standalone Mode"), NAV_STANDALONE)
         else:
-            self.stack.setCurrentWidget(self.daw)
-            self._set_place(_("Universal DAW Mode"))
+            self._show_page(self.daw, _("Universal DAW Mode"), NAV_DAW)
+        self._mode_context()
+
+    def _back_to_dimensions(self) -> None:
+        """The Results page asks for a missing placement input: the mode page
+        the result came from, on its dimensions step, with everything kept."""
+        if self.state.mode == "universal_daw":
+            self.daw.show_step(STEP_ANALYSE)
+            self.daw.placement_section.set_open(True)
+            self._show_page(self.daw, _("Universal DAW Mode"), NAV_DAW)
+        else:
+            self.standalone.show_step(STEP_DIMENSIONS)
+            self._show_page(
+                self.standalone,
+                _("Demo (no interface)") if self.standalone.demo_mode else _("Standalone Mode"),
+                NAV_DEMO if self.standalone.demo_mode else NAV_STANDALONE,
+            )
+        self._mode_context()
 
     def show_getting_started(self) -> None:
         """Home with the first-measurement card, and the card stays from now on."""
@@ -385,8 +644,15 @@ class MainWindow(QMainWindow):
                 return
         else:
             self.project.reload()
-        self.stack.setCurrentWidget(self.project)
-        self._set_place(_("Project"))
+        self.context_bar.set_context(*self.project.context_text())
+        self._show_page(self.project, _("Project"), NAV_PROJECT)
+        self._update_project_nav()
+
+    def _show_position(self, position: str) -> None:
+        if self.project.path is None:
+            return
+        self.show_project()
+        self.project.select_position(position)
 
     def _measure_position(self, position: str, mode: str) -> None:
         """Measure ``position`` of the project on the Project page with ``mode``:
@@ -404,10 +670,21 @@ class MainWindow(QMainWindow):
         self.show_compare()
         self.compare.set_paths(Path(baseline), Path(candidate))
 
+    def _compare_current(self) -> None:
+        """Compare the result on screen: a saved one is the baseline already."""
+        self.show_compare()
+        saved = self.state.saved_path
+        if saved is not None and not self.compare.baseline_path.text().strip():
+            self.compare.baseline_path.setText(str(saved))
+        elif saved is None:
+            self.compare.status.setText(
+                _("Save this session first to compare it; a comparison reads sessions from disk.")
+            )
+
     def show_results(self) -> None:
         self.results.refresh()
-        self.stack.setCurrentWidget(self.results)
-        self._set_place(_("Results"))
+        self.context_bar.set_context(*self.results.context_text())
+        self._show_page(self.results, _("Results"), NAV_RESULTS)
 
     def show_compare(self) -> None:
         current = self.stack.currentWidget()
@@ -417,18 +694,23 @@ class MainWindow(QMainWindow):
         selected = self.home.browser.selected_pair()
         if selected is not None:
             self.compare.set_paths(*selected)
-        self.stack.setCurrentWidget(self.compare)
-        self._set_place(_("Compare"))
+        self.context_bar.set_context(*self.compare.context_text())
+        self._show_page(self.compare, _("Compare"), NAV_COMPARE)
 
     def _leave_compare(self) -> None:
         """Back: to the page Compare was opened from, with its measurement kept."""
         page, place = self._before_compare
         if page is self.home:
             # Nothing to keep there; Home lists the sessions saved meanwhile.
-            self.show_home()
+            self.show_start()
             return
-        self.stack.setCurrentWidget(page)
-        self._set_place(place)
+        if page is self.results:
+            self.show_results()
+            return
+        if page is self.project:
+            self.show_project()
+            return
+        self._show_page(page, place, None)
 
     def show_settings(self) -> None:
         from reverbscope.ui.settings_dialog import SettingsDialog

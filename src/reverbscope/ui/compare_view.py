@@ -1,9 +1,17 @@
-"""Compare two saved sessions: side-by-side deltas and a difference curve."""
+"""Compare two saved sessions: the verdict per aspect, the deltas, and the
+curves of both takes on one scale with their difference.
+
+The baseline and the candidate are named and coloured the same way
+everywhere (baseline solid, candidate dashed); nothing is normalised per
+take. The comparison and the verdicts come from ``core.compare`` and
+``interpretation.verdicts``; this page only shows them.
+"""
 
 from __future__ import annotations
 
 from dataclasses import replace
 from pathlib import Path
+from typing import Any, cast
 
 from reverbscope.ui.qt import ensure_pyside6
 
@@ -25,6 +33,7 @@ from PySide6.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -38,25 +47,37 @@ from reverbscope.cli.render import (
 )
 from reverbscope.core.compare import compare
 from reverbscope.errors import ReverbScopeError
-from reverbscope.i18n import _, localize
+from reverbscope.i18n import _, list_join, localize
 from reverbscope.interpretation import interpret_comparison
 from reverbscope.interpretation.interpreter import Finding
 from reverbscope.interpretation.profiles import profile_title
-from reverbscope.interpretation.verdicts import ComparisonVerdict, judge_comparison, verdict_chip
+from reverbscope.interpretation.verdicts import (
+    AspectVerdict,
+    ComparisonVerdict,
+    judge_comparison,
+    verdict_chip,
+)
 from reverbscope.io.session_store import load_measurement, save_comparison
-from reverbscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
-from reverbscope.ui.browser import SessionBrowser
 from reverbscope.labels import metric_label, signed_number, status_text, validity_word
+from reverbscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
+from reverbscope.models.result import AnalysisResult
+from reverbscope.ui.browser import SessionBrowser
+from reverbscope.ui.plots import plot_decay_overlay, plot_frequency_overlay
 from reverbscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
 from reverbscope.ui.widgets import (
     Card,
+    Chip,
     FindingCard,
-    PageHeader,
+    KeyValueList,
     ask_save_path,
+    clear_layout,
     label,
     primary,
-    scroll_page,
+    scroll_body,
 )
+from reverbscope.ui.workspace import action_row
+
+CURVE_VIEWS = ("both", "baseline", "candidate", "difference")
 
 
 def _decay_flags(match: ResonanceMatch) -> str:
@@ -83,37 +104,102 @@ def _notes_starting(comparison: ComparisonResult, *prefixes: str) -> str:
     return "\n".join(localize(note) for note in comparison.notes if note.startswith(prefixes))
 
 
+class CompareDetail(QWidget):
+    """The details pane of the Compare page: the selected aspect or delta."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(12, 4, 12, 12)
+        layout.setSpacing(8)
+        head = QHBoxLayout()
+        self.heading = label("", "card-title", wrap=True)
+        head.addWidget(self.heading, 1)
+        self.chip = Chip("", "neutral", glyph=True)
+        self.chip.hide()
+        head.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignTop)
+        layout.addLayout(head)
+        self.message = label("", wrap=True)
+        self.message.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        layout.addWidget(self.message)
+        self.rows = KeyValueList()
+        layout.addWidget(self.rows)
+        self.note = label("", "hint", wrap=True)
+        layout.addWidget(self.note)
+        layout.addStretch(1)
+
+    def show_rows(
+        self,
+        heading: str,
+        rows: list[tuple[str, str]],
+        note: str = "",
+        *,
+        message: str = "",
+        chip: tuple[str, str] | None = None,
+    ) -> None:
+        self.heading.setText(heading)
+        self.message.setText(message)
+        self.message.setVisible(bool(message))
+        if chip is None:
+            self.chip.hide()
+        else:
+            self.chip.setText(chip[0])
+            self.chip.set_tone(chip[1])
+            self.chip.show()
+        self.rows.set_rows(rows)
+        self.note.setText(note)
+        self.note.setVisible(bool(note))
+
+
 class ComparePage(QWidget):
     back = Signal()
+    #: Open one of the two sessions on the Results page.
+    open_session = Signal(str)
+    #: What the context bar should say for this page.
+    context_changed = Signal(str, str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._comparison: ComparisonResult | None = None
         # What the tabs show, to draw it again in another colour scheme.
         self._shown: tuple[ComparisonResult, list[Finding], str, ComparisonVerdict] | None = None
-        header = PageHeader(
-            _("Compare two sessions"),
-            _(
-                "Every difference carries a validity: ReverbScope says when two takes cannot "
-                "be compared rather than printing a delta."
-            ),
-        )
-        back = QPushButton(_("Back"))
-        back.clicked.connect(self.back.emit)
-        header.action_row.addWidget(back)
-        # The verdict card and the tabs do not both fit a short window: the
-        # body scrolls, and the tabs never shrink below a usable height.
-        layout = scroll_page(self, header)
+        self._results: tuple[AnalysisResult, AnalysisResult] | None = None
+        self._curve_view = "both"
+        self._curves_dirty = False
+        self.setProperty("page", True)
+        layout, self.scroll_area = scroll_body(self, margins=(16, 10, 16, 8))
+
+        # The context bar's actions.
+        self.back_button = QPushButton(_("Back"))
+        self.back_button.clicked.connect(self.back.emit)
+        self.save_button = QPushButton(_("Save comparison.json..."))
+        self.save_button.clicked.connect(self._save)
+        self.run_button = primary(QPushButton(_("Compare")))
+        self.run_button.setShortcut("Ctrl+Return")
+        self.run_button.clicked.connect(self.run_compare)
+        self.context_actions = action_row(self.back_button, self.save_button, self.run_button)
+        self.detail = CompareDetail()
 
         picker = Card()
         picker.body.addWidget(
-            label(_("Compare two sessions. Select two rows, or pick each path."), "hint", wrap=True)
+            label(
+                _(
+                    "Baseline is the take you compare against; candidate is the new one. "
+                    "Select two rows (the older becomes the baseline), or pick each path."
+                ),
+                "hint",
+                wrap=True,
+            )
         )
         self.browser = SessionBrowser(multi_select=True)
         self.browser.list.setMinimumHeight(90)
+        self.browser.list.setMaximumHeight(160)
         self.browser.open_session.connect(self._fill_next_path)
         picker.body.addWidget(self.browser, 1)
         paths = QHBoxLayout()
+        paths.setSpacing(6)
+        baseline_tag = Chip(_("BASELINE"), "info")
+        candidate_tag = Chip(_("CANDIDATE"), "warn")
         self.baseline_path = QLineEdit()
         self.baseline_path.setPlaceholderText(_("Baseline session"))
         self.candidate_path = QLineEdit()
@@ -122,12 +208,18 @@ class ComparePage(QWidget):
         pick_b = QPushButton(_("Candidate..."))
         pick_a.clicked.connect(lambda: self._pick_into(self.baseline_path))
         pick_b.clicked.connect(lambda: self._pick_into(self.candidate_path))
-        paths.addWidget(self.baseline_path)
+        swap = QPushButton("⇄")
+        swap.setToolTip(_("Swap baseline and candidate"))
+        swap.clicked.connect(self._swap)
+        paths.addWidget(baseline_tag)
+        paths.addWidget(self.baseline_path, 1)
         paths.addWidget(pick_a)
-        paths.addWidget(self.candidate_path)
+        paths.addWidget(swap)
+        paths.addWidget(candidate_tag)
+        paths.addWidget(self.candidate_path, 1)
         paths.addWidget(pick_b)
         picker.body.addLayout(paths)
-        buttons = QHBoxLayout()
+        conditions = QHBoxLayout()
         self.same_gain = QCheckBox(_("Input gain unchanged"))
         self.same_gain.setToolTip(
             _(
@@ -135,23 +227,22 @@ class ComparePage(QWidget):
                 "may have changed."
             )
         )
-        buttons.addWidget(self.same_gain)
-        buttons.addStretch(1)
-        save = QPushButton(_("Save comparison.json..."))
-        save.clicked.connect(self._save)
-        run = primary(QPushButton(_("Compare")))
-        run.setShortcut("Ctrl+Return")
-        run.clicked.connect(self.run_compare)
-        buttons.addWidget(save)
-        buttons.addWidget(run)
-        picker.body.addLayout(buttons)
+        conditions.addWidget(self.same_gain)
+        conditions.addStretch(1)
+        self.open_baseline = QPushButton(_("Open baseline"))
+        self.open_baseline.clicked.connect(lambda: self._open(self.baseline_path))
+        self.open_candidate = QPushButton(_("Open candidate"))
+        self.open_candidate.clicked.connect(lambda: self._open(self.candidate_path))
+        conditions.addWidget(self.open_baseline)
+        conditions.addWidget(self.open_candidate)
+        picker.body.addLayout(conditions)
         layout.addWidget(picker)
 
         # Did moving help: one row per aspect under the candidate's profile.
         verdict_card = Card()
         self.verdict_title = label("", "section")
         verdict_card.body.addWidget(self.verdict_title)
-        self.verdict_headline = label("", "hint", wrap=True)
+        self.verdict_headline = label("", wrap=True)
         verdict_card.body.addWidget(self.verdict_headline)
         self.verdict_rows = QVBoxLayout()
         self.verdict_rows.setSpacing(6)
@@ -169,13 +260,17 @@ class ComparePage(QWidget):
             widget.verticalHeader().setVisible(False)
             widget.setAlternatingRowColors(True)
             widget.setShowGrid(False)
+            widget.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+            widget.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
             widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
             return widget
 
         self.tabs = QTabWidget()
+        self.tabs.setDocumentMode(True)
         self.table = table(
             [_("Metric"), _("Baseline"), _("Candidate"), _("Delta"), "%", _("Validity")]
         )
+        self.table.itemSelectionChanged.connect(self._metric_selected)
         self.reflections = table(
             [
                 _("Status"),
@@ -192,16 +287,45 @@ class ComparePage(QWidget):
                 _("Decay distinguishable"),
             ]
         )
-        chart = QWidget()
-        chart_layout = QVBoxLayout(chart)
+        curves = QWidget()
+        curves_layout = QVBoxLayout(curves)
+        curves_layout.setContentsMargins(0, 6, 0, 0)
+        view_row = QHBoxLayout()
+        view_row.setSpacing(4)
+        self.view_buttons: dict[str, QToolButton] = {}
+        for key, title in (
+            ("both", _("Baseline and candidate")),
+            ("baseline", _("Baseline")),
+            ("candidate", _("Candidate")),
+            ("difference", _("Difference only")),
+        ):
+            button = QToolButton()
+            button.setText(title)
+            button.setCheckable(True)
+            button.setAutoExclusive(True)
+            button.clicked.connect(lambda _checked=False, k=key: self._set_curve_view(k))
+            view_row.addWidget(button)
+            self.view_buttons[key] = button
+        self.view_buttons["both"].setChecked(True)
+        view_row.addStretch(1)
+        curves_layout.addLayout(view_row)
         # Laid out again at every draw: the chart is drawn while its tab is
         # hidden, at a size it does not keep.
-        self.figure = Figure(figsize=(7.0, 3.2), dpi=100, layout="tight")
-        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.figure = Figure(figsize=(7.0, 4.6), dpi=100, layout="tight")
+        self.canvas: Any = cast(Any, FigureCanvasQTAgg)(self.figure)
+        self.canvas.setMinimumHeight(300)
         style_figure(self.figure)
-        chart_layout.addWidget(self.canvas, 1)
+        curves_layout.addWidget(self.canvas, 1)
         self.band_mad = label("", "hint", wrap=True)
-        chart_layout.addWidget(self.band_mad)
+        curves_layout.addWidget(self.band_mad)
+        decay = QWidget()
+        decay_layout = QVBoxLayout(decay)
+        decay_layout.setContentsMargins(0, 6, 0, 0)
+        self.decay_figure = Figure(figsize=(7.0, 4.0), dpi=100, layout="tight")
+        self.decay_canvas: Any = cast(Any, FigureCanvasQTAgg)(self.decay_figure)
+        self.decay_canvas.setMinimumHeight(280)
+        style_figure(self.decay_figure)
+        decay_layout.addWidget(self.decay_canvas, 1)
         self.text = QPlainTextEdit()
         self.text.setReadOnly(True)
         self.text.setProperty("report", True)
@@ -212,20 +336,46 @@ class ComparePage(QWidget):
         self.reflections_note = label("", "hint", wrap=True)
         self.resonances_note = label("", "hint", wrap=True)
         self.tabs.addTab(self.table, _("Metrics"))
-        self.tabs.addTab(chart, _("Frequency response difference"))
+        self.tabs.addTab(curves, _("Frequency response"))
+        self.tabs.addTab(decay, _("Decay"))
         self.tabs.addTab(
             _with_note(self.reflections, self.reflections_note), _("Early Reflections")
         )
         self.tabs.addTab(_with_note(self.resonances, self.resonances_note), _("Resonances"))
         self.tabs.addTab(self.text, _("Full report"))
-        self.tabs.setMinimumHeight(320)
+        self.tabs.currentChanged.connect(lambda _i: self._ensure_curves())
+        self.tabs.setMinimumHeight(360)
         layout.addWidget(self.tabs, 2)
         self.status = label("", "hint", wrap=True)
+        self.status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         layout.addWidget(self.status)
+
+    # --- paths -------------------------------------------------------------------------
 
     def set_paths(self, baseline: Path, candidate: Path) -> None:
         self.baseline_path.setText(str(baseline))
         self.candidate_path.setText(str(candidate))
+
+    def context_text(self) -> tuple[str, str]:
+        if self._comparison is None:
+            return _("Compare two sessions"), _("Every difference carries a validity.")
+        return (
+            _("Compare"),
+            _("{baseline}  vs  {candidate}").format(
+                baseline=Path(self._comparison.baseline_session or "").name or "?",
+                candidate=Path(self._comparison.candidate_session or "").name or "?",
+            ),
+        )
+
+    def _swap(self) -> None:
+        baseline, candidate = self.baseline_path.text(), self.candidate_path.text()
+        self.baseline_path.setText(candidate)
+        self.candidate_path.setText(baseline)
+
+    def _open(self, field: QLineEdit) -> None:
+        path = field.text().strip()
+        if path:
+            self.open_session.emit(path)
 
     def run_compare(self) -> None:
         baseline = self.baseline_path.text().strip()
@@ -265,7 +415,9 @@ class ComparePage(QWidget):
             comparison, profile, baseline=left.result, candidate=right.result
         )
         self._comparison = comparison
+        self._results = (left.result, right.result)
         self._show(comparison, findings, profile, verdict)
+        self.context_changed.emit(*self.context_text())
         self.status.setText(
             _("{baseline}  vs  {candidate}").format(
                 baseline=left.directory, candidate=right.directory
@@ -279,6 +431,8 @@ class ComparePage(QWidget):
         else:
             style_figure(self.figure)
             self.canvas.draw_idle()
+            style_figure(self.decay_figure)
+            self.decay_canvas.draw_idle()
 
     def _show(
         self,
@@ -298,6 +452,7 @@ class ComparePage(QWidget):
             + list(comparison.placement)
             + list(comparison.loopback)
         )
+        self.table.blockSignals(True)
         self.table.setRowCount(len(rows))
         for r, item in enumerate(rows):
             values = [
@@ -318,6 +473,7 @@ class ComparePage(QWidget):
                     cell.setToolTip(localize(item.reason))
                 self.table.setItem(r, c, cell)
         self.table.resizeColumnsToContents()
+        self.table.blockSignals(False)
         self.reflections.setRowCount(len(comparison.reflections))
         self.reflections_note.setText(_notes_starting(comparison, REFLECTIONS_NOT_COMPARED))
 
@@ -358,29 +514,80 @@ class ComparePage(QWidget):
         self.text.setPlainText(
             render_comparison(REPORT_CONSOLE, comparison, findings, profile, verdict)
         )
-        self.figure.clear()
-        ensure_plot_fonts()
-        axes = self.figure.add_subplot(111)
         fr = comparison.frequency_response
-        if fr is not None and fr.frequencies_hz.size:
-            axes.semilogx(fr.frequencies_hz, fr.difference_db, linestyle="-")
-            axes.set_xlabel(_("Frequency (Hz)"))
-            axes.set_ylabel("Δ dB")
-            axes.set_title(_("Frequency-response difference (candidate − baseline)"))
-            axes.grid(True, which="both", alpha=0.3)
-            if fr.band_mad_db:
-                bits = ", ".join(f"{name} {mad:.2f} dB" for name, mad in fr.band_mad_db)
-                self.band_mad.setText(
-                    _("Mean absolute difference per octave: {bits}").format(bits=bits)
-                )
-            else:
-                self.band_mad.setText("")
+        if fr is not None and fr.band_mad_db:
+            bits = list_join(f"{name} {mad:.2f} dB" for name, mad in fr.band_mad_db)
+            self.band_mad.setText(
+                _("Mean absolute difference per octave: {bits}").format(bits=bits)
+            )
         else:
-            axes.text(0.5, 0.5, _("No difference curve"), ha="center", va="center")
-            axes.set_axis_off()
             self.band_mad.setText("")
-        style_figure(self.figure)
+        self._curves_dirty = True
+        self._ensure_curves()
+        self.detail.show_rows(
+            _("Comparison"),
+            [
+                (_("Baseline"), comparison.baseline_session or "?"),
+                (_("Candidate"), comparison.candidate_session or "?"),
+                (_("Profile"), profile_title(profile)),
+            ],
+            verdict.headline(),
+        )
+
+    def _ensure_curves(self) -> None:
+        """Draw the curve tabs when one of them is shown (not every time)."""
+        if not self._curves_dirty or self._shown is None:
+            return
+        index = self.tabs.currentIndex()
+        if index not in (1, 2):
+            # Not on a curve tab: only the colours are brought up to date (a
+            # theme change), the curves themselves wait until the tab is shown.
+            style_figure(self.figure)
+            style_figure(self.decay_figure)
+            return
+        comparison = self._shown[0]
+        self.figure.clear()
+        self.decay_figure.clear()
+        ensure_plot_fonts()
+        if self._results is not None:
+            baseline, candidate = self._results
+            plot_frequency_overlay(
+                self.figure,
+                baseline,
+                candidate,
+                comparison.frequency_response,
+                view=self._curve_view,
+            )
+            plot_decay_overlay(self.decay_figure, baseline, candidate)
+        else:
+            # Only the comparison at hand (restyle after the sessions went): the
+            # difference curve alone.
+            axes = self.figure.add_subplot(111)
+            fr = comparison.frequency_response
+            if fr is not None and fr.frequencies_hz.size:
+                axes.semilogx(fr.frequencies_hz, fr.difference_db, linestyle="-")
+                axes.set_xlabel(_("Frequency (Hz)"))
+                axes.set_ylabel("Δ dB")
+                axes.set_title(_("Frequency-response difference (candidate − baseline)"))
+                axes.grid(True, which="both", alpha=0.3)
+            else:
+                axes.text(0.5, 0.5, _("No difference curve"), ha="center", va="center")
+                axes.set_axis_off()
+            style_figure(self.figure)
+            decay_axes = self.decay_figure.add_subplot(111)
+            decay_axes.text(
+                0.5, 0.5, _("No decay curves stored with this session"), ha="center", va="center"
+            )
+            decay_axes.set_axis_off()
+            style_figure(self.decay_figure)
         self.canvas.draw_idle()
+        self.decay_canvas.draw_idle()
+        self._curves_dirty = False
+
+    def _set_curve_view(self, key: str) -> None:
+        self._curve_view = key
+        self._curves_dirty = True
+        self._ensure_curves()
 
     def _show_verdict(self, verdict: ComparisonVerdict) -> None:
         """The verdict card: the headline, one row per aspect, the conditions."""
@@ -388,22 +595,61 @@ class ComparePage(QWidget):
             _("VERDICT ({profile} PROFILE)").format(profile=profile_title(verdict.profile).upper())
         )
         self.verdict_headline.setText(verdict.headline())
-        while self.verdict_rows.count():
-            entry = self.verdict_rows.takeAt(0)
-            widget = entry.widget() if entry is not None else None
-            if widget is not None:
-                widget.deleteLater()
+        clear_layout(self.verdict_rows)
         for aspect in verdict.aspects:
-            self.verdict_rows.addWidget(
-                FindingCard(
-                    str(aspect.verdict),
-                    aspect.title,
-                    aspect.reason,
-                    severity_label=verdict_chip(aspect.verdict),
-                )
+            card = FindingCard(
+                str(aspect.verdict),
+                aspect.title,
+                aspect.reason,
+                severity_label=verdict_chip(aspect.verdict),
+                clickable=True,
             )
+            card.activated.connect(lambda a=aspect: self._aspect_selected(a))
+            self.verdict_rows.addWidget(card)
         self.verdict_conditions.setText("\n".join(verdict.conditions))
         self.verdict_card.setVisible(bool(verdict.aspects))
+
+    def _aspect_selected(self, aspect: AspectVerdict) -> None:
+        from reverbscope.ui.results_presenter import evidence_rows
+        from reverbscope.ui.widgets import SEVERITY_TONE
+
+        self.detail.show_rows(
+            aspect.title,
+            evidence_rows(aspect.evidence),
+            _("Judged under the candidate's recording profile from the deltas above."),
+            message=aspect.reason,
+            chip=(verdict_chip(aspect.verdict), SEVERITY_TONE.get(str(aspect.verdict), "neutral")),
+        )
+
+    def _metric_selected(self) -> None:
+        if self._shown is None:
+            return
+        rows = {index.row() for index in self.table.selectedIndexes()}
+        if len(rows) != 1:
+            return
+        comparison = self._shown[0]
+        deltas = (
+            list(comparison.decay)
+            + list(comparison.noise)
+            + list(comparison.placement)
+            + list(comparison.loopback)
+        )
+        row = rows.pop()
+        if not 0 <= row < len(deltas):
+            return
+        item = deltas[row]
+        detail = [
+            (_("Baseline"), "" if item.baseline is None else f"{item.baseline:.3f} {item.unit}"),
+            (_("Candidate"), "" if item.candidate is None else f"{item.candidate:.3f} {item.unit}"),
+            (
+                _("Delta"),
+                "" if item.delta is None else f"{signed_number(item.delta, 3)} {item.unit}",
+            ),
+            (_("Validity"), validity_word(item.validity)),
+        ]
+        if item.reason:
+            detail.append((_("Reason"), localize(item.reason)))
+        self.detail.show_rows(metric_label(item.name, item.unit), detail)
 
     def _save(self) -> None:
         if self._comparison is None:

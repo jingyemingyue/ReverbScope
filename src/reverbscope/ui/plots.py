@@ -7,16 +7,20 @@ so they work in the Qt canvas and in scripts alike.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import mpl_toolkits.mplot3d  # noqa: F401  registers the 3d projection
 import numpy as np
 from matplotlib.figure import Figure
+from matplotlib.lines import Line2D
+from matplotlib.patches import Rectangle
 
 from reverbscope.core.reflections import reflection_envelope_db
 from reverbscope.i18n import _
 from reverbscope.interpretation.profiles import band_text, confidence_text, noise_segment_text
 from reverbscope.labels import validity_word
+from reverbscope.models.comparison import FrequencyResponseDelta
 from reverbscope.models.result import AnalysisResult, EnergyMetric, PlacementResult, Validity
 from reverbscope.ui.theme import PLOT_SERIES, ensure_plot_fonts, plot_colors, style_figure, tokens
 
@@ -73,7 +77,11 @@ def _not_stored(fig: Figure, ax: Any, text: str) -> None:
     style_figure(fig)
 
 
-def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
+def plot_frequency_response(
+    fig: Figure, result: AnalysisResult, *, selected_resonance: int | None = None
+) -> None:
+    """The smoothed and raw response; the low-frequency resonance candidates
+    are marked on the curve, the selected one (an index) filled in."""
     fig.clear()
     ensure_plot_fonts()
     fr = result.frequency_response
@@ -83,6 +91,7 @@ def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
         # empty axes with a legend looked like a broken measurement.
         _not_stored(fig, ax, _("No frequency response stored with this session"))
         return
+    _mark_resonances(ax, result, selected_resonance)
     ax.semilogx(
         fr.frequencies_hz,
         fr.magnitude_db_raw,
@@ -129,7 +138,40 @@ def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
     style_figure(fig)
 
 
-def plot_decay(fig: Figure, result: AnalysisResult) -> None:
+def _mark_resonances(ax: Any, result: AnalysisResult, selected: int | None) -> None:
+    fr = result.frequency_response
+    curve = (
+        fr.magnitude_db_smoothed if fr.magnitude_db_smoothed is not None else fr.magnitude_db_raw
+    )
+    if curve is None or curve.size == 0:
+        return
+    colors = plot_colors()
+    for index, candidate in enumerate(result.resonances.candidates):
+        position = int(np.argmin(np.abs(fr.frequencies_hz - candidate.frequency_hz)))
+        level = float(curve[position])
+        if not np.isfinite(level):
+            continue
+        chosen = selected is not None and index == selected
+        ax.plot(
+            candidate.frequency_hz,
+            level,
+            "v" if candidate.decay_distinguishable else "^",
+            markersize=9 if chosen else 7,
+            markerfacecolor=PLOT_SERIES[1] if chosen else "none",
+            markeredgecolor=PLOT_SERIES[1],
+            label=_("resonance candidates") if index == 0 else None,
+        )
+        ax.annotate(
+            f"{candidate.frequency_hz:.0f} Hz",
+            (candidate.frequency_hz, level),
+            xytext=(4, 6),
+            textcoords="offset points",
+            fontsize="x-small",
+            color=colors["fg"],
+        )
+
+
+def plot_decay(fig: Figure, result: AnalysisResult, *, highlight: int | None = None) -> None:
     fig.clear()
     ensure_plot_fonts()
     ax = fig.add_subplot(1, 1, 1)
@@ -138,7 +180,15 @@ def plot_decay(fig: Figure, result: AnalysisResult) -> None:
         # As for the frequency response: the RT60s are in the decay table.
         _not_stored(fig, ax, _("No decay curves stored with this session"))
         return
-    ax.plot(bb.edc_time_s, bb.edc_db, linewidth=2.4, linestyle="-", label=_("Broadband"))
+    # ``highlight`` is a row of the decay table: 0 is broadband, then the bands.
+    ax.plot(
+        bb.edc_time_s,
+        bb.edc_db,
+        linewidth=3.2 if highlight == 0 else 2.4,
+        linestyle="-",
+        alpha=1.0 if highlight in (None, 0) else 0.45,
+        label=_("Broadband"),
+    )
     for index, band in enumerate(result.decay.bands):
         rt = band.rt60_estimate_s
         # Without an RT60 say why (outside the sweep, unreliable, ...), as the
@@ -146,11 +196,12 @@ def plot_decay(fig: Figure, result: AnalysisResult) -> None:
         label = band.band_label + (
             f"  RT60~{rt:.2f} s" if rt is not None else f"  ({validity_word(band.t30.validity)})"
         )
+        chosen = highlight == index + 1
         ax.plot(
             band.edc_time_s,
             band.edc_db,
-            linewidth=0.9,
-            alpha=0.8,
+            linewidth=2.0 if chosen else 0.9,
+            alpha=1.0 if chosen or highlight is None else 0.35,
             linestyle=_BAND_DASHES[index % len(_BAND_DASHES)],
             label=label,
         )
@@ -248,37 +299,278 @@ def plot_reflections(fig: Figure, result: AnalysisResult) -> None:
 _EXAMPLE_DISTANCE_M = 2.0
 _EXAMPLE_HEIGHT_M = 1.2
 
+#: Line styles that say where a length comes from, so the picture reads in
+#: greyscale: measured by the user (solid), derived by the model (dashed),
+#: an example with no measurement behind it (dotted).
+STYLE_MEASURED: dict[str, Any] = {"linestyle": "-", "linewidth": 2.0}
+STYLE_DERIVED: dict[str, Any] = {"linestyle": "--", "linewidth": 1.6}
+STYLE_EXAMPLE: dict[str, Any] = {"linestyle": ":", "linewidth": 1.4}
 
-def plot_placement_illustration(
-    fig: Figure, *, distance_m: float | None, mic_height_m: float | None
-) -> str:
-    """A rotatable picture of the two tape measures. Not a room, and not a result.
 
-    The loudspeaker is drawn at the microphone height so the distance tape is
-    the straight line the user is asked to measure. That height is an example
-    until a measurement solves the vertical axis.
+@dataclass(frozen=True)
+class SideView:
+    """What the side-view picture draws: each length with its provenance.
+
+    ``None`` means not known; the picture then says so rather than drawing
+    a number. ``example`` marks lengths that stand in for a missing input.
     """
-    distance_entered = distance_m is not None
-    height_entered = mic_height_m is not None
-    distance = distance_m if distance_m is not None else _EXAMPLE_DISTANCE_M
-    height = mic_height_m if mic_height_m is not None else _EXAMPLE_HEIGHT_M
-    _draw_placement(
-        fig,
-        mic_z=height,
-        source_z=height,
-        horizontal_m=distance,
-        ceiling_z=None,
-        ring=False,
-        title=_("Placement picture. Drag to rotate."),
+
+    mic_height_m: float | None
+    mic_height_example: bool
+    distance_m: float | None
+    distance_example: bool
+    source_height_m: float | None
+    source_height_sigma_m: float | None = None
+    source_alternatives_m: tuple[float, ...] = ()
+    horizontal_m: float | None = None
+    horizontal_sigma_m: float | None = None
+    ceiling_m: float | None = None
+    ceiling_sigma_m: float | None = None
+    ceiling_alternatives_m: tuple[float, ...] = ()
+    #: The side is an example picture: nothing was solved.
+    illustrative: bool = True
+
+
+def side_view_from_inputs(distance_m: float | None, mic_height_m: float | None) -> SideView:
+    """The picture for the inputs form: what was typed, examples for the rest."""
+    return SideView(
+        mic_height_m=mic_height_m if mic_height_m is not None else _EXAMPLE_HEIGHT_M,
+        mic_height_example=mic_height_m is None,
+        distance_m=distance_m if distance_m is not None else _EXAMPLE_DISTANCE_M,
+        distance_example=distance_m is None,
+        source_height_m=None,
+        illustrative=True,
     )
-    if distance_entered and height_entered:
+
+
+def side_view_from_placement(placement: PlacementResult) -> SideView:
+    """The picture for a result: the user's inputs as measured, the model's
+    lengths as derived, with their input uncertainty and every alternative."""
+    source = placement.source_height_m
+    horizontal = placement.horizontal_separation_m
+    ceiling = placement.ceiling_height_m
+    solved = (
+        placement.mic_height_m is not None
+        and source.validity is Validity.VALID
+        and source.metres is not None
+        and horizontal.validity is Validity.VALID
+        and horizontal.metres is not None
+    )
+    return SideView(
+        mic_height_m=placement.mic_height_m
+        if placement.mic_height_m is not None
+        else _EXAMPLE_HEIGHT_M,
+        mic_height_example=placement.mic_height_m is None,
+        distance_m=placement.distance_m
+        if placement.distance_m is not None
+        else _EXAMPLE_DISTANCE_M,
+        distance_example=placement.distance_m is None,
+        source_height_m=source.metres if solved else None,
+        source_height_sigma_m=source.input_uncertainty_m if solved else None,
+        source_alternatives_m=tuple(source.alternatives_m) if solved else (),
+        horizontal_m=horizontal.metres if solved else None,
+        horizontal_sigma_m=horizontal.input_uncertainty_m if solved else None,
+        ceiling_m=ceiling.metres if ceiling.validity is Validity.VALID else None,
+        ceiling_sigma_m=ceiling.input_uncertainty_m if ceiling.validity is Validity.VALID else None,
+        ceiling_alternatives_m=tuple(ceiling.alternatives_m)
+        if ceiling.validity is Validity.VALID
+        else (),
+        illustrative=not solved,
+    )
+
+
+def plot_side_view(fig: Figure, view: SideView) -> str:
+    """A two-dimensional side view of the microphone and the loudspeaker.
+
+    Heights are drawn above the plane the user measured the microphone
+    height from. Returns the sentence that says what is measured, what is
+    derived and what is only an example; no wall is ever drawn.
+    """
+    fig.clear()
+    ensure_plot_fonts()
+    ax = fig.add_subplot(1, 1, 1)
+    colors = plot_colors()
+    accent = tokens()["accent"]
+    speaker = PLOT_SERIES[1]
+    mic_z = view.mic_height_m if view.mic_height_m is not None else _EXAMPLE_HEIGHT_M
+    distance = view.distance_m if view.distance_m is not None else _EXAMPLE_DISTANCE_M
+    if view.source_height_m is not None and view.horizontal_m is not None:
+        source_z = view.source_height_m
+        horizontal = view.horizontal_m
+    else:
+        # Nothing solved: the loudspeaker is drawn at the microphone height
+        # only so the distance tape is the straight line the user measures.
+        source_z = mic_z
+        horizontal = distance
+    top = max(mic_z, source_z, view.ceiling_m or 0.0, *view.source_alternatives_m, 1.0)
+    right = max(horizontal, 1.0) * 1.25
+    # The reference plane.
+    ax.axhline(0.0, color=colors["muted"], linewidth=1.2)
+    ax.text(-0.05 * right, 0.03, _("reference plane"), fontsize=8, color=colors["muted"])
+    # Microphone stand.
+    mic_style = STYLE_EXAMPLE if view.mic_height_example else STYLE_MEASURED
+    ax.plot([0.0, 0.0], [0.0, mic_z], color=accent, **mic_style)
+    ax.plot(0.0, mic_z, "o", color=accent, markersize=7)
+    ax.annotate(
+        _("Microphone") + (f"\n{mic_z:.2f} m" if not view.mic_height_example else ""),
+        (0.0, mic_z),
+        xytext=(-8, 6),
+        textcoords="offset points",
+        ha="right",
+        fontsize=8,
+        color=colors["fg"],
+    )
+    # Loudspeaker: solved (derived) or illustrative.
+    source_style = STYLE_EXAMPLE if view.illustrative else STYLE_DERIVED
+    ax.plot([horizontal, horizontal], [0.0, source_z], color=speaker, **source_style)
+    ax.add_patch(
+        Rectangle(
+            (horizontal - 0.12, source_z - 0.15),
+            0.24,
+            0.30,
+            fill=not view.illustrative,
+            facecolor=speaker if not view.illustrative else "none",
+            edgecolor=speaker,
+            alpha=0.85,
+            linestyle=source_style["linestyle"],
+        )
+    )
+    for alternative in view.source_alternatives_m:
+        ax.add_patch(
+            Rectangle(
+                (horizontal - 0.12, alternative - 0.15),
+                0.24,
+                0.30,
+                fill=False,
+                edgecolor=speaker,
+                linestyle=":",
+                alpha=0.7,
+            )
+        )
+    speaker_text = _("Loudspeaker")
+    if not view.illustrative:
+        speaker_text += f"\n{source_z:.2f} m"
+        if view.source_height_sigma_m is not None:
+            speaker_text += f" ±{view.source_height_sigma_m:.2f}"
+        if view.source_alternatives_m:
+            speaker_text += "\n" + _("or {values}").format(
+                values=" / ".join(f"{alt:.2f} m" for alt in view.source_alternatives_m)
+            )
+    else:
+        speaker_text += "\n" + _("(illustrative)")
+    ax.annotate(
+        speaker_text,
+        (horizontal, source_z),
+        xytext=(10, 6),
+        textcoords="offset points",
+        fontsize=8,
+        color=colors["fg"],
+    )
+    # The straight-line distance (what the user measures).
+    distance_style = STYLE_EXAMPLE if view.distance_example else STYLE_MEASURED
+    ax.plot([0.0, horizontal], [mic_z, source_z], color=colors["fg"], **distance_style)
+    mid_x, mid_z = horizontal * 0.5, (mic_z + source_z) * 0.5
+    distance_text = (
+        _("distance {metres:.2f} m").format(metres=distance)
+        if not view.distance_example
+        else _("distance (not measured)")
+    )
+    ax.annotate(
+        distance_text,
+        (mid_x, mid_z),
+        xytext=(0, 8),
+        textcoords="offset points",
+        ha="center",
+        fontsize=8,
+        color=colors["fg"],
+    )
+    # Horizontal separation, derived.
+    if not view.illustrative and view.horizontal_m is not None:
+        y = -0.12 * top
+        ax.annotate(
+            "",
+            xy=(horizontal, y),
+            xytext=(0.0, y),
+            arrowprops={"arrowstyle": "<->", "color": colors["muted"], "linestyle": "--"},
+        )
+        text = _("horizontal {metres:.2f} m").format(metres=horizontal)
+        if view.horizontal_sigma_m is not None:
+            text += f" ±{view.horizontal_sigma_m:.2f}"
+        ax.text(
+            horizontal * 0.5,
+            y - 0.04 * top,
+            text,
+            ha="center",
+            va="top",
+            fontsize=8,
+            color=colors["muted"],
+        )
+    # The plane above the devices, derived; never a wall.
+    if view.ceiling_m is not None:
+        ax.plot(
+            [-0.1 * right, right],
+            [view.ceiling_m, view.ceiling_m],
+            color=colors["muted"],
+            **STYLE_DERIVED,
+        )
+        text = _("plane above {metres:.2f} m").format(metres=view.ceiling_m)
+        if view.ceiling_sigma_m is not None:
+            text += f" ±{view.ceiling_sigma_m:.2f}"
+        if view.ceiling_alternatives_m:
+            text += " " + _("or {values}").format(
+                values=" / ".join(f"{alt:.2f} m" for alt in view.ceiling_alternatives_m)
+            )
+        ax.text(
+            right * 0.98,
+            view.ceiling_m + 0.03 * top,
+            text,
+            ha="right",
+            fontsize=8,
+            color=colors["muted"],
+        )
+        for alternative in view.ceiling_alternatives_m:
+            ax.plot(
+                [-0.1 * right, right],
+                [alternative, alternative],
+                color=colors["muted"],
+                linestyle=":",
+                linewidth=1.0,
+                alpha=0.7,
+            )
+        top = max(top, view.ceiling_m, *view.ceiling_alternatives_m)
+    # One scale for both axes without a fixed aspect (which shrinks the axes
+    # box and warns): the axes box is about twice as wide as high, so the
+    # horizontal span is twice the vertical one.
+    height = top * 1.5
+    span = max(right * 1.35, 2.0 * height)
+    ax.set_xlim(-0.35 * right, -0.35 * right + span)
+    ax.set_ylim(-0.25 * top, -0.25 * top + span / 2.0)
+    ax.set_xlabel(_("horizontal (m)"))
+    ax.set_ylabel(_("height above the reference plane (m)"))
+    ax.grid(True, alpha=0.25)
+    legend_items = [
+        Line2D([0], [0], color=colors["fg"], **STYLE_MEASURED, label=_("measured (tape)")),
+        Line2D([0], [0], color=colors["fg"], **STYLE_DERIVED, label=_("derived (model)")),
+        Line2D([0], [0], color=colors["fg"], **STYLE_EXAMPLE, label=_("example only")),
+    ]
+    ax.legend(handles=legend_items, loc="upper right", fontsize="x-small")
+    ax.set_title(_("Side view: no wall or room shape is drawn"))
+    fig.tight_layout()
+    style_figure(fig)
+    if not view.illustrative:
+        return _(
+            "Solid lines are what you measured; dashed lines are what the reflections and "
+            "your two tape measures allow. ± is the input uncertainty only, not the model "
+            "error. Every alternative is drawn: ReverbScope does not pick one."
+        )
+    if not view.distance_example and not view.mic_height_example:
         return _(
             "The line is the loudspeaker distance you entered, and the stand is the "
             "microphone height you entered. The loudspeaker is drawn at that same height "
             "only so the tape can be seen; its real height comes from a measurement. "
             "No room and no wall are drawn."
         )
-    if distance_entered:
+    if not view.distance_example:
         return _(
             "The line is the loudspeaker distance you entered. Both heights in this "
             "picture are an example. No room and no wall are drawn."
@@ -289,19 +581,168 @@ def plot_placement_illustration(
     )
 
 
+def plot_placement_illustration(
+    fig: Figure, *, distance_m: float | None, mic_height_m: float | None
+) -> str:
+    """The inputs picture: a side view of the two tape measures. Not a result."""
+    return plot_side_view(fig, side_view_from_inputs(distance_m, mic_height_m))
+
+
 def plot_placement_result(fig: Figure, placement: PlacementResult | None) -> str:
-    """The measured vertical axis, or the tape-measure picture when it is not known.
+    """The side view of a result, or the tape-measure picture when nothing was solved."""
+    if placement is None:
+        return plot_placement_illustration(fig, distance_m=None, mic_height_m=None)
+    return plot_side_view(fig, side_view_from_placement(placement))
+
+
+def plot_reflection_timeline(
+    fig: Figure,
+    result: AnalysisResult,
+    *,
+    selected: int | None = None,
+    candidate_index: int | None = None,
+) -> None:
+    """Direct sound, every early-reflection candidate, the threshold and the
+    analysed window on one time axis; the selected candidate is filled.
+
+    ``selected`` is an index into ``result.reflections.reflections``;
+    ``candidate_index`` one into ``result.placement.candidates`` (the same
+    arrivals, re-expressed as geometry), whichever the caller has.
+    """
+    fig.clear()
+    ensure_plot_fonts()
+    ax = fig.add_subplot(1, 1, 1)
+    colors = plot_colors()
+    refl = result.reflections
+    placement = result.placement
+    window = refl.analysed_window_ms or refl.window_ms
+    ax.axvspan(window[0], window[1], color=colors["grid"], alpha=0.35, label=_("analysed window"))
+    if refl.window_truncated and refl.analysed_window_ms is not None:
+        ax.axvspan(
+            refl.analysed_window_ms[1],
+            refl.window_ms[1],
+            color=colors["muted"],
+            alpha=0.12,
+            hatch="//",
+            label=_("not searched (response ended)"),
+        )
+    ax.axhline(refl.threshold_db, color="gray", linestyle="--", linewidth=0.8, label=_("threshold"))
+    ax.stem([0.0], [0.0], linefmt=colors["fg"], markerfmt="D", basefmt=" ", label=_("direct sound"))
+    if selected is None and candidate_index is not None:
+        selected = candidate_index
+    for index, reflection in enumerate(refl.reflections):
+        chosen = selected is not None and index == selected
+        colour = PLOT_SERIES[0]
+        marker = "o"
+        if placement is not None and index < len(placement.candidates):
+            candidate = placement.candidates[index]
+            if candidate.interpretable_as_plane is False:
+                colour = colors["muted"]
+                marker = "x"
+            elif candidate.surface is not None:
+                colour = PLOT_SERIES[1] if candidate.surface == "upper_plane" else PLOT_SERIES[3]
+        ax.plot(
+            [reflection.delay_ms, reflection.delay_ms],
+            [-80.0, reflection.relative_db],
+            color=colour,
+            linewidth=2.2 if chosen else 1.0,
+            alpha=1.0 if chosen or selected is None else 0.5,
+        )
+        ax.plot(
+            reflection.delay_ms,
+            reflection.relative_db,
+            marker,
+            color=colour,
+            markersize=9 if chosen else 6,
+            markerfacecolor=colour if chosen else "none",
+        )
+        ax.annotate(
+            f"{reflection.delay_ms:.1f} ms / {reflection.relative_db:.1f} dB",
+            (reflection.delay_ms, reflection.relative_db),
+            xytext=(4, 4),
+            textcoords="offset points",
+            fontsize="x-small",
+            color=colors["fg"],
+        )
+    ax.set_ylim(-60.0, 5.0)
+    ax.set_xlim(-1.0, window[1] * 1.05)
+    ax.set_xlabel(_("Time after direct sound (ms)"))
+    ax.set_ylabel(_("Level re direct sound (dB)"))
+    ax.set_title(
+        _("Reflection timeline (direct-sound confidence: {confidence})").format(
+            confidence=confidence_text(refl.direct_sound_confidence)
+        )
+    )
+    ax.grid(True, alpha=0.3)
+    handles = [
+        Line2D(
+            [0],
+            [0],
+            color=PLOT_SERIES[0],
+            marker="o",
+            markerfacecolor="none",
+            linestyle="",
+            label=_("candidate"),
+        ),
+        Line2D(
+            [0],
+            [0],
+            color=PLOT_SERIES[3],
+            marker="o",
+            markerfacecolor="none",
+            linestyle="",
+            label=_("attributed: reference plane"),
+        ),
+        Line2D(
+            [0],
+            [0],
+            color=PLOT_SERIES[1],
+            marker="o",
+            markerfacecolor="none",
+            linestyle="",
+            label=_("attributed: plane above"),
+        ),
+        Line2D(
+            [0],
+            [0],
+            color=colors["muted"],
+            marker="x",
+            linestyle="",
+            label=_("not a plane reflection"),
+        ),
+    ]
+    ax.legend(handles=handles, loc="upper right", fontsize="x-small")
+    fig.tight_layout()
+    style_figure(fig)
+
+
+def plot_placement_3d(fig: Figure, placement: PlacementResult | None) -> str:
+    """The auxiliary three-dimensional view: only what the model solved.
 
     A single microphone does not decide which way the loudspeaker sits. When
     the horizontal separation and the loudspeaker height are both valid, every
     position on the ring is equally consistent with the measurement; one
-    cabinet is drawn so the direct path can be seen.
+    cabinet is drawn so the direct path can be seen, and said to be illustrative.
     """
     if placement is None or not _placement_axis_known(placement):
-        return plot_placement_illustration(
+        _draw_placement(
             fig,
-            distance_m=None if placement is None else placement.distance_m,
-            mic_height_m=None if placement is None else placement.mic_height_m,
+            mic_z=placement.mic_height_m
+            if placement is not None and placement.mic_height_m is not None
+            else _EXAMPLE_HEIGHT_M,
+            source_z=placement.mic_height_m
+            if placement is not None and placement.mic_height_m is not None
+            else _EXAMPLE_HEIGHT_M,
+            horizontal_m=placement.distance_m
+            if placement is not None and placement.distance_m is not None
+            else _EXAMPLE_DISTANCE_M,
+            ceiling_z=None,
+            ring=False,
+            title=_("Placement picture (nothing solved). Drag to rotate."),
+        )
+        return _(
+            "The vertical axis was not solved, so this is the tape-measure picture: "
+            "the loudspeaker position is an example. No room and no wall are drawn."
         )
     source = placement.source_height_m.metres
     horizontal = placement.horizontal_separation_m.metres
@@ -323,6 +764,118 @@ def plot_placement_result(fig: Figure, placement: PlacementResult | None) -> str
         "The ring is every loudspeaker position this measurement allows. The cabinet "
         "is one of them, drawn so the direct path can be seen. No wall is drawn."
     )
+
+
+def plot_frequency_overlay(
+    fig: Figure,
+    baseline: AnalysisResult,
+    candidate: AnalysisResult,
+    delta: FrequencyResponseDelta | None,
+    *,
+    view: str = "both",
+) -> None:
+    """Baseline and candidate on one dB axis (no normalisation of either),
+    and the difference under them; ``view`` is ``baseline``, ``candidate``,
+    ``both`` or ``difference``."""
+    fig.clear()
+    ensure_plot_fonts()
+    colors = plot_colors()
+    curves = [
+        (_("baseline"), baseline, PLOT_SERIES[0], "-"),
+        (_("candidate"), candidate, PLOT_SERIES[1], "--"),
+    ]
+    if view == "baseline":
+        curves = curves[:1]
+    elif view == "candidate":
+        curves = curves[1:]
+    if view == "difference":
+        ax_curves = None
+        ax_diff = fig.add_subplot(1, 1, 1)
+    else:
+        ax_curves = fig.add_subplot(2, 1, 1)
+        ax_diff = fig.add_subplot(2, 1, 2, sharex=ax_curves)
+    finite: list[float] = []
+    if ax_curves is not None:
+        for name, result, colour, style in curves:
+            fr = result.frequency_response
+            if fr.frequencies_hz.size == 0:
+                continue
+            curve = (
+                fr.magnitude_db_smoothed
+                if fr.magnitude_db_smoothed is not None
+                else fr.magnitude_db_raw
+            )
+            ax_curves.semilogx(
+                fr.frequencies_hz, curve, color=colour, linestyle=style, linewidth=1.5, label=name
+            )
+            finite.extend(float(v) for v in curve[np.isfinite(curve)])
+        if finite:
+            top = float(np.percentile(finite, 99.5))
+            ax_curves.set_ylim(top - 50.0, top + 8.0)
+        ax_curves.set_ylabel(_("Magnitude (dB, relative)"))
+        ax_curves.set_title(_("Frequency response: one scale for both takes"))
+        ax_curves.grid(True, which="both", alpha=0.3)
+        ax_curves.legend(loc="lower left")
+        if not finite:
+            ax_curves.text(
+                0.5,
+                0.5,
+                _("No frequency response stored with this session"),
+                ha="center",
+                va="center",
+                transform=ax_curves.transAxes,
+            )
+    if delta is not None and delta.frequencies_hz.size:
+        ax_diff.semilogx(
+            delta.frequencies_hz, delta.difference_db, color=PLOT_SERIES[2], linestyle="-"
+        )
+        ax_diff.axhline(0.0, color=colors["muted"], linewidth=0.8)
+        ax_diff.set_ylabel("Δ dB")
+        ax_diff.set_title(_("Frequency-response difference (candidate − baseline)"))
+        ax_diff.grid(True, which="both", alpha=0.3)
+    else:
+        ax_diff.text(
+            0.5,
+            0.5,
+            _("No difference curve"),
+            ha="center",
+            va="center",
+            transform=ax_diff.transAxes,
+        )
+        ax_diff.set_axis_off()
+    ax_diff.set_xlabel(_("Frequency (Hz)"))
+    fig.tight_layout()
+    style_figure(fig)
+
+
+def plot_decay_overlay(fig: Figure, baseline: AnalysisResult, candidate: AnalysisResult) -> None:
+    """The broadband decay curves of both takes on one time and dB axis."""
+    fig.clear()
+    ensure_plot_fonts()
+    ax = fig.add_subplot(1, 1, 1)
+    drawn = False
+    for name, result, colour, style in (
+        (_("baseline"), baseline, PLOT_SERIES[0], "-"),
+        (_("candidate"), candidate, PLOT_SERIES[1], "--"),
+    ):
+        bb = result.decay.broadband
+        if bb.edc_db.size == 0:
+            continue
+        drawn = True
+        rt = bb.rt60_estimate_s
+        label = name + (f"  RT60~{rt:.2f} s" if rt is not None else "")
+        ax.plot(bb.edc_time_s, bb.edc_db, color=colour, linestyle=style, linewidth=1.8, label=label)
+    if not drawn:
+        _not_stored(fig, ax, _("No decay curves stored with this session"))
+        return
+    ax.set_ylim(-70.0, 5.0)
+    ax.set_xlabel(_("Time (s)"))
+    ax.set_ylabel(_("Schroeder decay (dB)"))
+    ax.set_title(_("Broadband decay: baseline and candidate"))
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc="upper right")
+    fig.tight_layout()
+    style_figure(fig)
 
 
 def _placement_axis_known(placement: PlacementResult) -> bool:

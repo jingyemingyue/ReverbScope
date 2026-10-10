@@ -236,8 +236,10 @@ def stylesheet(t: dict[str, str] | None = None) -> str:
     """The Qt style sheet for the tokens ``t`` (default: the current scheme).
 
     Widgets opt into roles with dynamic properties: ``role`` on labels
-    (``title``, ``subtitle``, ``section``, ``kpi-value``, ``kpi-label``,
-    ``hint``), ``card`` on frames, ``primary`` on buttons, ``tone`` on chips.
+    (``title``, ``page-title``, ``subtitle``, ``section``, ``kpi-value``,
+    ``kpi-label``, ``hint``, ``mono``), ``card`` and ``panel`` on frames,
+    ``primary`` and ``danger`` on buttons, ``tone`` on chips, ``workspace``
+    on the side panes and ``stepbar`` on the step indicators.
     """
     t = t or tokens()
     images = _arrow_images(t["muted"])
@@ -246,50 +248,65 @@ def stylesheet(t: dict[str, str] | None = None) -> str:
     return f"""
 QWidget {{ color: {t["text"]}; }}
 QMainWindow, QStackedWidget, QScrollArea, QScrollArea > QWidget > QWidget,
-QWidget[page="true"] {{ background: {t["bg"]}; }}
+QWidget[page="true"], QSplitter {{ background: {t["bg"]}; }}
+QSplitter::handle {{ background: {t["border"]}; }}
+QSplitter::handle:horizontal {{ width: 1px; }}
+QSplitter::handle:vertical {{ height: 1px; }}
 QMenuBar {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; }}
 QMenuBar::item {{ padding: 4px 10px; background: transparent; }}
-QMenuBar::item:selected {{ background: {t["accent_soft"]}; border-radius: 4px; }}
+QMenuBar::item:selected {{ background: {t["accent_soft"]}; border-radius: 3px; }}
 QMenu {{ background: {t["surface"]}; border: 1px solid {t["border"]}; padding: 4px; }}
-QMenu::item {{ padding: 5px 22px 5px 14px; border-radius: 4px; }}
+QMenu::item {{ padding: 5px 22px 5px 14px; border-radius: 3px; }}
 QMenu::item:selected {{ background: {t["accent_soft"]}; color: {t["text"]}; }}
+QMenu::separator {{ height: 1px; background: {t["border"]}; margin: 4px 6px; }}
 QStatusBar {{ background: {t["surface"]}; color: {t["muted"]}; border-top: 1px solid {t["border"]}; }}
 QStatusBar::item {{ border: none; }}
 QToolTip {{ background: {t["surface"]}; color: {t["text"]}; border: 1px solid {t["border"]};
     padding: 4px 6px; }}
 
-QLabel[role="title"] {{ font-size: 24px; font-weight: 700; }}
-QLabel[role="page-title"] {{ font-size: 19px; font-weight: 700; }}
-QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 13px; }}
-QLabel[role="section"] {{ color: {t["muted"]}; font-size: 12px; font-weight: 700; }}
+QLabel[role="title"] {{ font-size: 22px; font-weight: 700; }}
+QLabel[role="page-title"] {{ font-size: 17px; font-weight: 700; }}
+QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 12px; }}
+QLabel[role="section"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.4px; }}
 QLabel[role="hint"] {{ color: {t["muted"]}; }}
 QLabel[role="kpi-label"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 600; }}
-QLabel[role="kpi-value"] {{ font-size: 22px; font-weight: 700; }}
+QLabel[role="kpi-value"] {{ font-size: 20px; font-weight: 700; }}
 QLabel[role="kpi-sub"] {{ color: {t["muted"]}; font-size: 11px; }}
-QLabel[role="card-title"] {{ font-size: 15px; font-weight: 700; }}
+QLabel[role="card-title"] {{ font-size: 14px; font-weight: 700; }}
+QLabel[role="mono"] {{ font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; }}
 QLabel[role="badge"] {{ background: {t["accent"]}; color: {t["accent_text"]};
-    border-radius: 11px; min-width: 22px; min-height: 22px; max-height: 22px;
-    padding: 0 7px; font-size: 12px; font-weight: 700;
+    border-radius: 3px; min-width: 22px; min-height: 20px; max-height: 20px;
+    padding: 0 6px; font-size: 11px; font-weight: 700;
     qproperty-alignment: AlignCenter; }}
-QLabel[role="pill"] {{ background: {t["accent_soft"]}; color: {t["text"]};
-    border: 1px solid {t["accent_soft"]}; border-radius: 11px; padding: 3px 10px;
-    font-size: 12px; }}
+QLabel[role="pill"] {{ background: {t["surface_alt"]}; color: {t["text"]};
+    border: 1px solid {t["border"]}; border-radius: 3px; padding: 2px 8px;
+    font-size: 11px; font-weight: 600; }}
+QLabel[role="nav-title"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 700;
+    padding: 8px 10px 2px 10px; }}
 
 QFrame[card="true"], QGroupBox {{ background: {t["surface"]}; border: 1px solid {t["border"]};
-    border-radius: 10px; }}
-QFrame[card="true"][hover="true"]:hover {{ border: 1px solid {t["accent"]};
+    border-radius: 4px; }}
+QFrame[panel="true"] {{ background: {t["surface"]}; border: 1px solid {t["border"]};
+    border-radius: 0px; }}
+QFrame[card="true"][hover="true"]:hover {{ border: 1px solid {t["accent"]}; }}
+QFrame[card="true"][selected="true"] {{ border: 1px solid {t["accent"]};
     background: {t["accent_soft"]}; }}
 QLabel[banner="warn"] {{ background: {t["warn_soft"]}; border: 1px solid {t["warn"]};
-    border-radius: 8px; padding: 8px 12px; }}
+    border-left: 4px solid {t["warn"]}; border-radius: 3px; padding: 6px 10px; }}
 QLabel[banner="info"] {{ background: {t["info_soft"]}; border: 1px solid {t["info"]};
-    border-radius: 8px; padding: 8px 12px; }}
-QGroupBox {{ margin-top: 14px; padding: 18px 14px 12px 14px; font-weight: 600; }}
-QGroupBox::title {{ subcontrol-origin: margin; subcontrol-position: top left; left: 12px;
-    top: 2px; padding: 0 6px; color: {t["text"]}; background: transparent; }}
-QGroupBox QGroupBox {{ background: {t["surface_alt"]}; border-radius: 8px; }}
+    border-left: 4px solid {t["info"]}; border-radius: 3px; padding: 6px 10px; }}
+QLabel[banner="bad"] {{ background: {t["bad_soft"]}; border: 1px solid {t["bad"]};
+    border-left: 4px solid {t["bad"]}; border-radius: 3px; padding: 6px 10px; }}
+QLabel[banner="good"] {{ background: {t["good_soft"]}; border: 1px solid {t["good"]};
+    border-left: 4px solid {t["good"]}; border-radius: 3px; padding: 6px 10px; }}
+QGroupBox {{ margin-top: 12px; padding: 16px 12px 10px 12px; font-weight: 600; }}
+QGroupBox::title {{ subcontrol-origin: margin; subcontrol-position: top left; left: 10px;
+    top: 1px; padding: 0 5px; color: {t["text"]}; background: transparent; }}
+QGroupBox QGroupBox {{ background: {t["surface_alt"]}; border-radius: 3px; }}
 
-QPushButton {{ background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 6px;
-    padding: 6px 14px; min-height: 18px; }}
+QPushButton {{ background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 3px;
+    padding: 5px 12px; min-height: 18px; }}
 QPushButton:hover {{ border-color: {t["accent"]}; background: {t["accent_soft"]}; }}
 QPushButton:pressed {{ background: {t["surface_alt"]}; }}
 QPushButton:disabled {{ color: {t["muted"]}; background: {t["surface_alt"]}; }}
@@ -299,10 +316,19 @@ QPushButton[primary="true"]:hover {{ background: {t["accent_hover"]};
     border-color: {t["accent_hover"]}; }}
 QPushButton[primary="true"]:disabled {{ background: {t["border"]}; border-color: {t["border"]};
     color: {t["muted"]}; }}
-QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; }}
+QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; font-weight: 600; }}
+QPushButton[danger="true"]:disabled {{ color: {t["muted"]}; border-color: {t["border"]}; }}
+QPushButton[flat="true"] {{ border: none; background: transparent; padding: 3px 6px;
+    color: {t["accent"]}; text-align: left; }}
+QPushButton[flat="true"]:hover {{ background: {t["accent_soft"]}; }}
+QToolButton {{ background: transparent; border: 1px solid transparent; border-radius: 3px;
+    padding: 3px 8px; }}
+QToolButton:hover {{ border-color: {t["border"]}; background: {t["surface_alt"]}; }}
+QToolButton:checked {{ background: {t["accent_soft"]}; border-color: {t["accent"]};
+    color: {t["text"]}; font-weight: 600; }}
 
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit {{
-    background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 6px;
+    background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 3px;
     padding: 4px 8px; selection-background-color: {t["accent"]};
     selection-color: {t["accent_text"]}; }}
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus,
@@ -324,38 +350,51 @@ QComboBox QAbstractItemView {{ background: {t["surface"]}; border: 1px solid {t[
     selection-background-color: {t["accent_soft"]}; selection-color: {t["text"]}; }}
 QPlainTextEdit[report="true"] {{ background: {t["surface_alt"]}; }}
 QCheckBox::indicator:checked {{ background: {t["accent"]}; border: 1px solid {t["accent"]};
-    border-radius: 3px; }}
+    border-radius: 2px; }}
 
 QTabWidget::pane {{ background: {t["surface"]}; border: 1px solid {t["border"]};
-    border-radius: 10px; top: -1px; }}
-QTabBar::tab {{ background: transparent; color: {t["muted"]}; padding: 8px 14px;
+    border-radius: 0px; top: -1px; }}
+QTabBar::tab {{ background: transparent; color: {t["muted"]}; padding: 7px 14px;
     border: none; border-bottom: 2px solid transparent; margin-right: 2px; }}
 QTabBar::tab:selected {{ color: {t["text"]}; border-bottom: 2px solid {t["accent"]};
     font-weight: 600; }}
 QTabBar::tab:hover:!selected {{ color: {t["text"]}; }}
 
-QTableWidget, QTableView, QListWidget {{ background: {t["surface"]};
+QTableWidget, QTableView, QListWidget, QTreeWidget, QTreeView {{ background: {t["surface"]};
     alternate-background-color: {t["surface_alt"]}; border: 1px solid {t["border"]};
-    border-radius: 8px; gridline-color: {t["border"]};
+    border-radius: 0px; gridline-color: {t["border"]};
     selection-background-color: {t["accent_soft"]}; selection-color: {t["text"]}; }}
+QTableWidget::item, QTableView::item {{ padding: 3px 6px; }}
 QHeaderView::section {{ background: {t["surface_alt"]}; color: {t["muted"]};
     font-weight: 600; border: none; border-bottom: 1px solid {t["border"]};
-    padding: 6px 8px; }}
-QListWidget::item {{ padding: 8px 10px; border-bottom: 1px solid {t["surface_alt"]}; }}
-QListWidget::item:selected {{ background: {t["accent_soft"]}; color: {t["text"]}; }}
-QListWidget::item:hover {{ background: {t["surface_alt"]}; }}
+    border-right: 1px solid {t["border"]}; padding: 5px 8px; }}
+QListWidget::item {{ padding: 6px 8px; border-bottom: 1px solid {t["surface_alt"]}; }}
+QListWidget::item:selected, QTreeWidget::item:selected, QTreeView::item:selected {{
+    background: {t["accent_soft"]}; color: {t["text"]}; }}
+QListWidget::item:hover, QTreeWidget::item:hover {{ background: {t["surface_alt"]}; }}
+QTreeWidget::item {{ padding: 4px 2px; }}
+QTreeWidget[workspace="true"] {{ border: none; background: {t["surface"]}; }}
+QFrame[workspace="true"] {{ background: {t["surface"]}; border: none; }}
+QFrame[workspace="left"] {{ border-right: 1px solid {t["border"]}; }}
+QFrame[workspace="right"] {{ border-left: 1px solid {t["border"]}; }}
+QFrame[workspace="top"] {{ border-bottom: 1px solid {t["border"]}; }}
+QFrame[workspace="actions"] {{ background: {t["surface"]}; border-top: 1px solid {t["border"]}; }}
+QFrame[stepbar="true"] {{ background: {t["surface"]}; border: 1px solid {t["border"]};
+    border-radius: 3px; }}
+QToolButton[step="true"] {{ padding: 6px 12px; color: {t["muted"]}; border-radius: 3px; }}
+QToolButton[step="true"]:checked {{ color: {t["text"]}; background: {t["accent_soft"]};
+    border: 1px solid {t["accent"]}; }}
+QToolButton[step="true"][done="true"] {{ color: {t["good"]}; }}
 
-QProgressBar {{ background: {t["surface_alt"]}; border: none; border-radius: 4px;
-    min-height: 8px; max-height: 8px; text-align: center; }}
-QProgressBar::chunk {{ background: {t["accent"]}; border-radius: 4px; }}
+QProgressBar {{ background: {t["surface_alt"]}; border: 1px solid {t["border"]}; border-radius: 3px;
+    min-height: 10px; max-height: 10px; text-align: center; color: transparent; }}
+QProgressBar::chunk {{ background: {t["accent"]}; border-radius: 2px; }}
 QScrollBar:vertical {{ background: transparent; width: 10px; margin: 2px; }}
 QScrollBar::handle:vertical {{ background: {t["border"]}; border-radius: 4px; min-height: 30px; }}
 QScrollBar::handle:vertical:hover {{ background: {t["muted"]}; }}
 QScrollBar:horizontal {{ background: transparent; height: 10px; margin: 2px; }}
 QScrollBar::handle:horizontal {{ background: {t["border"]}; border-radius: 4px; min-width: 30px; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
-QStatusBar {{ background: {t["surface"]}; border-top: 1px solid {t["border"]};
-    color: {t["muted"]}; }}
 """
 
 

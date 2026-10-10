@@ -31,10 +31,10 @@ when the two `cli-demo` SVGs no longer match the demo's golden output.
 | --- | --- | --- | --- |
 | `docs/images/cli-demo.svg` | 80 columns | `reverbscope demo` (colour on) | README, "Command line" |
 | `docs/images/cli-demo.zh-CN.svg` | 80 columns | `reverbscope --lang zh_CN demo` | README.zh-CN, "命令行" |
-| `docs/images/gui-results.png` | 1120×820 | `reverbscope gui` → open `reverbscope-demo/position-a` → Overview | README, social preview |
-| `docs/images/gui-results.zh-CN.png` | 1120×820 | the same in Simplified Chinese (`reverbscope --lang zh_CN gui`) | README.zh-CN |
-| `docs/images/gui-compare.png` | 1120×1000 | Compare page, A → B, "Input gain unchanged" ticked | available for the README |
-| `docs/images/gui-frequency-response.png` | 1120×820 | Results → Frequency Response tab, position A | available for the README |
+| `docs/images/gui-results.png` | 1280×820 | `reverbscope gui` → open `reverbscope-demo/position-a` → Overview | README, social preview |
+| `docs/images/gui-results.zh-CN.png` | 1280×820 | the same in Simplified Chinese (`reverbscope --lang zh_CN gui`) | README.zh-CN |
+| `docs/images/gui-compare.png` | 1280×1000 | Compare page, A → B, "Input gain unchanged" ticked | available for the README |
+| `docs/images/gui-frequency-response.png` | 1280×820 | Results → Analysis → Frequency and low end, position A | available for the README |
 | `docs/images/social-preview.png` | 1280×640 | Composed from `gui-results.png` | GitHub Settings → Social preview |
 
 `docs/images/results-overview.png` (the README's first image) is the GUI's own
