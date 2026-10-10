@@ -65,6 +65,8 @@ DYNAMIC_CALLS = {
     # The demo's room, microphone and position names, extracted with N_().
     ("demo.py", "_(DEMO_ROOM_NAME)"),
     ("demo.py", "_(DEMO_MICROPHONE)"),
+    # A display error's sentence, extracted with N_() where it is raised.
+    ("display/__init__.py", "_(self.template)"),
 }
 
 #: ASCII tokens a Chinese finding may legitimately contain: units, metric

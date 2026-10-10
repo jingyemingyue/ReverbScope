@@ -184,3 +184,16 @@ def short_sweep(sample_rate: int) -> SweepSettings:
         post_silence_s=1.5,
         level_dbfs=-12.0,
     )
+
+
+@pytest.fixture(scope="session")
+def analysed_result(short_sweep: SweepSettings) -> AnalysisResult:
+    """One analysed synthetic room with an 18 ms reflection, shared by the display tests."""
+    from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+    from reverbscope.models.configuration import AnalysisSettings
+
+    ir = make_rir(
+        short_sweep.sample_rate, rt60_s=0.35, reflections=[(0.018, 0.35)], diffuse_level=0.01
+    )
+    recording = synthetic_recording(short_sweep, ir, noise_rms=1e-5)
+    return analyze(recording, Reference.from_settings(short_sweep), AnalysisSettings())

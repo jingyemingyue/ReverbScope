@@ -5915,3 +5915,168 @@ msgstr "没有考虑两次录音的测量健康状况：它们的会话已不在
 
 msgid "The measurement health of the {side} take was not considered: its session is no longer where the comparison was saved."
 msgstr "没有考虑{side}录音的测量健康状况：它的会话已不在保存这次比较时所在的位置。"
+
+# GUI 2.0 workspace: display. Entries for this part go directly below.
+msgid "display smoothing must be 0 or a positive fraction"
+msgstr "显示平滑必须为 0 或正的倍频程分数"
+
+msgid "the curve's axes do not have the same length"
+msgstr "曲线的两个坐标轴长度不同"
+
+msgid "one of the two curves has no frequency response"
+msgstr "两条曲线中有一条没有频率响应"
+
+msgid "the two curves share no frequency range"
+msgstr "两条曲线没有共同的频率范围"
+
+msgid "no impulse response is stored with this measurement"
+msgstr "这次测量没有保存脉冲响应"
+
+msgid "the stored impulse response holds invalid samples"
+msgstr "保存的脉冲响应含有无效采样"
+
+msgid "the direct sound lies outside the stored impulse response"
+msgstr "直达声位置超出了保存的脉冲响应"
+
+# GUI 2.0 workspace: timefreq. Entries for this part go directly below.
+msgid "dB re peak"
+msgstr "dB（相对峰值）"
+
+msgid "dB re direct sound"
+msgstr "dB（相对直达声）"
+
+msgid "dB re full scale²"
+msgstr "dB（相对满刻度²）"
+
+msgid "dB re first slice peak"
+msgstr "dB（相对首个切片峰值）"
+
+msgid "Levels below {floor_db:g} dB are drawn at {floor_db:g} dB ({clipped} values, display only)."
+msgstr "低于 {floor_db:g} dB 的电平显示为 {floor_db:g} dB（{clipped} 个值，仅用于显示）。"
+
+msgid "The lower frequency must be above 0 Hz, not {fmin_hz:g} Hz."
+msgstr "下限频率必须高于 0 Hz，而不是 {fmin_hz:g} Hz。"
+
+msgid "Points per octave must be between 1 and {maximum}, not {value}."
+msgstr "每倍频程点数必须在 1 到 {maximum} 之间，而不是 {value}。"
+
+msgid "The sample rate must be above 0 Hz, not {sample_rate} Hz."
+msgstr "采样率必须高于 0 Hz，而不是 {sample_rate} Hz。"
+
+msgid "The impulse response must have a single channel."
+msgstr "脉冲响应必须是单声道。"
+
+msgid "The impulse response is empty."
+msgstr "脉冲响应为空。"
+
+msgid "The impulse response contains values that are not finite."
+msgstr "脉冲响应含有非有限数值。"
+
+msgid "The direct sound index {index} is outside the impulse response (0 to {last})."
+msgstr "直达声位置 {index} 超出脉冲响应范围（0 到 {last}）。"
+
+msgid "The lower frequency ({fmin_hz:g} Hz) must be below the upper frequency ({fmax_hz:g} Hz)."
+msgstr "下限频率（{fmin_hz:g} Hz）必须低于上限频率（{fmax_hz:g} Hz）。"
+
+msgid "No grid frequency lies between {fmin_hz:g} Hz and {fmax_hz:g} Hz."
+msgstr "{fmin_hz:g} Hz 与 {fmax_hz:g} Hz 之间没有网格频率。"
+
+msgid "Frequencies {fmin_hz:g} Hz to {fmax_hz:g} Hz, {points_per_octave} points per octave anchored at 1 kHz."
+msgstr "频率 {fmin_hz:g} Hz 至 {fmax_hz:g} Hz，每倍频程 {points_per_octave} 个点，以 1 kHz 为锚点。"
+
+msgid "FFT bins are mapped to the grid in power: averaged where a grid cell holds two or more bins, interpolated linearly between bins elsewhere."
+msgstr "快速傅里叶变换的频点按功率映射到网格：网格单元含两个或更多频点时取平均，其余位置在频点之间线性插值。"
+
+msgid "The window of {window_ms:g} ms is shorter than 4 samples at {sample_rate} Hz."
+msgstr "{window_ms:g} ms 的窗口在 {sample_rate} Hz 下短于 4 个采样点。"
+
+msgid "The impulse response is too short for one spectrogram frame in the chosen time range (a frame needs {needed_ms:g} ms of data)."
+msgstr "在所选时间范围内，脉冲响应太短，不足一帧时频谱（每帧需要 {needed_ms:g} ms 的数据）。"
+
+msgid "Levels in dB re the largest value shown ({reference_db:.1f} dB re full scale²)."
+msgstr "电平以显示中的最大值为 0 dB 参考（{reference_db:.1f} dB，相对满刻度²）。"
+
+msgid "Hann window of {window_ms:g} ms ({window_samples} samples), FFT length {nfft}, hop {hop_ms:g} ms."
+msgstr "Hann 窗 {window_ms:g} ms（{window_samples} 个采样点），变换长度 {nfft}，步进 {hop_ms:g} ms。"
+
+msgid "Frame centres {start_ms:g} ms to {end_ms:g} ms after the direct sound ({frames} frames)."
+msgstr "帧中心位于直达声之后 {start_ms:g} ms 至 {end_ms:g} ms（共 {frames} 帧）。"
+
+msgid "The impulse response ends before the first waterfall slice starts ({start_ms:g} ms after the direct sound)."
+msgstr "脉冲响应在第一个瀑布图切片开始（直达声之后 {start_ms:g} ms）之前就已结束。"
+
+msgid "Slice window of {window_ms:g} ms: half-Hann rise of {rise_ms:g} ms, flat, half-Hann fall over the last {taper_percent:g} %; FFT length {nfft}."
+msgstr "切片窗口 {window_ms:g} ms：开头 {rise_ms:g} ms 半 Hann 上升，中间平坦，最后 {taper_percent:g} % 半 Hann 下降；变换长度 {nfft}。"
+
+msgid "{slices} slices starting {start_ms:g} ms to {end_ms:g} ms after the direct sound, every {step_ms:g} ms; samples past the end of the impulse response count as zero."
+msgstr "{slices} 个切片，起点位于直达声之后 {start_ms:g} ms 至 {end_ms:g} ms，每隔 {step_ms:g} ms 一个；超出脉冲响应末尾的采样按零计。"
+
+msgid "Levels in dB re the peak of the first slice ({reference_db:.1f} dB re full scale²)."
+msgstr "电平以第一个切片的峰值为 0 dB 参考（{reference_db:.1f} dB，相对满刻度²）。"
+
+msgid "The parameter {name} must be a finite number, not {value}."
+msgstr "参数 {name} 必须是有限数值，而不是 {value}。"
+
+msgid "The upper frequency ({fmax_hz:g} Hz) must be above the lower frequency ({fmin_hz:g} Hz)."
+msgstr "上限频率（{fmax_hz:g} Hz）必须高于下限频率（{fmin_hz:g} Hz）。"
+
+msgid "The window must be longer than 0 ms, not {window_ms:g} ms."
+msgstr "窗口必须长于 0 ms，而不是 {window_ms:g} ms。"
+
+msgid "The hop must be longer than 0 ms and no longer than the window ({window_ms:g} ms), not {hop_ms:g} ms."
+msgstr "步进必须长于 0 ms 且不超过窗口长度（{window_ms:g} ms），而不是 {hop_ms:g} ms。"
+
+msgid "The longest time range must be above 0 ms, not {value:g} ms."
+msgstr "最长时间范围必须大于 0 ms，而不是 {value:g} ms。"
+
+msgid "Unknown normalisation {value!r}; use peak, direct or none."
+msgstr "未知的归一化方式 {value!r}；可选：按峰值、按直达声或不归一化。"
+
+msgid "The display floor must be below 0 dB, not {floor_db:g} dB."
+msgstr "显示下限必须低于 0 dB，而不是 {floor_db:g} dB。"
+
+msgid "The taper must be between 0 % and 100 %, not {value:g} %."
+msgstr "渐变比例必须在 0 % 到 100 % 之间，而不是 {value:g} %。"
+
+msgid "The rise ({rise_ms:g} ms) must be at least 0 ms and fit in the window ({window_ms:g} ms) together with the taper ({fall_ms:g} ms)."
+msgstr "上升段（{rise_ms:g} ms）不能小于 0 ms，且与渐变段（{fall_ms:g} ms）一起必须能放进窗口（{window_ms:g} ms）。"
+
+msgid "The step between slices must be longer than 0 ms, not {step_ms:g} ms."
+msgstr "切片间隔必须长于 0 ms，而不是 {step_ms:g} ms。"
+
+msgid "There must be at least one slice, not {value}."
+msgstr "至少需要一个切片，而不是 {value}。"
+
+msgid "Smoothing must be 0 (none) or 1/N octave with N from 1 to {maximum}, not {value}."
+msgstr "平滑必须为 0（不平滑）或 1/N 倍频程，N 取 1 到 {maximum}，而不是 {value}。"
+
+msgid "The upper frequency {fmax_hz:g} Hz is above the Nyquist frequency {nyquist_hz:g} Hz."
+msgstr "上限频率 {fmax_hz:g} Hz 高于奈奎斯特频率 {nyquist_hz:g} Hz。"
+
+msgid "Levels in dB re the frame that holds the direct sound ({reference_db:.1f} dB re full scale²)."
+msgstr "电平以含直达声的那一帧为 0 dB 参考（{reference_db:.1f} dB，相对满刻度²）。"
+
+msgid "Levels in dB re full scale²: a full-scale sine reads 0 dB."
+msgstr "电平单位为 dB（相对满刻度²）：满刻度正弦波读数为 0 dB。"
+
+msgid "The time range stops at {max_ms:g} ms; the impulse response runs to {end_ms:g} ms."
+msgstr "时间范围止于 {max_ms:g} ms；脉冲响应持续到 {end_ms:g} ms。"
+
+msgid "Frames dropped because less than half of their window lies inside the impulse response: {dropped}."
+msgstr "因窗口内不足一半位于脉冲响应之内而舍弃的帧数：{dropped}。"
+
+msgid "Display smoothing: 1/{fraction} octave, averaged in power."
+msgstr "显示平滑：1/{fraction} 倍频程，按功率平均。"
+
+msgid "Slices dropped because they start after the end of the impulse response: {dropped}."
+msgstr "因起点在脉冲响应末尾之后而舍弃的切片数：{dropped}。"
+
+msgid "The end of the time range ({end_ms:g} ms) must be after its start ({start_ms:g} ms)."
+msgstr "时间范围的终点（{end_ms:g} ms）必须晚于起点（{start_ms:g} ms）。"
+
+# GUI 2.0 workspace: workspace. Entries for this part go directly below.
+msgid "New take"
+msgstr "新测量"
+
+msgid "Unsaved take"
+msgstr "未保存的测量"
