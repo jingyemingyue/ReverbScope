@@ -6721,3 +6721,33 @@ msgstr "当前测量"
 
 msgid "No project open"
 msgstr "未打开项目"
+
+msgid "recorded and exported"
+msgstr "已在 DAW 中录制并导出"
+
+msgid "analysed; the result is on the Results page"
+msgstr "已分析；结果在结果页"
+
+msgid "Side view and timeline"
+msgstr "侧视图与时间线"
+
+msgid "Timeline only"
+msgstr "仅时间线"
+
+msgid "Show the text report in the details pane (the same as reverbscope analyze)."
+msgstr "在详情栏显示文本报告（与 reverbscope analyze 相同）。"
+
+msgid "Back to the selection"
+msgstr "返回所选内容"
+
+msgid "Charts"
+msgstr "图表"
+
+msgid "{seconds:.1f} s at {level:g} dBFS, {profile}"
+msgstr "{seconds:.1f} s，{level:g} dBFS，{profile}"
+
+msgid "{inp} → {out}, {rate}"
+msgstr "{inp} → {out}，{rate}"
+
+msgid "Go to the settings"
+msgstr "前往测量设置"

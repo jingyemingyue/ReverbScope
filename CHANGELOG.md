@@ -24,19 +24,20 @@ All notable changes to ReverbScope are documented here. The format follows
   the earlier ones on the last, the long DAW notes folded away, and the
   Run / Stop / Analyze buttons with the status and progress in a fixed
   action area that never scrolls out of view.
-- **Results as overview, analysis and details.** The Overview answers
-  whether the measurement is trustworthy (failed, limited or good, with the
-  fix first), what the main problems are (the findings, the most important
-  first) and what to check next; every card and tile opens its chart. The
-  Analysis tab shows one group at a time (frequency and low end, decay,
-  noise, impulse and early reflections, placement geometry), drawn when
-  shown, with the tables linked to the details pane. The full text report
-  keeps its own tab.
-- **Placement geometry in two dimensions.** A side view draws measured
-  lengths solid, model-derived lengths dashed (with their input uncertainty
-  and every alternative) and example lengths dotted; a reflection timeline
-  shows the direct sound, every candidate, the threshold and the analysed
-  window; the 3D picture is an auxiliary view with a fixed viewpoint and
+- **Results around the chart.** The Results page has no tabs: the key
+  figures stand over the chart, the Charts list and the overview (is the
+  measurement trustworthy, what the main problems are, what to check next)
+  stand beside it, and the chart shows one group at a time (frequency and
+  low end, decay, noise, impulse and early reflections, placement
+  geometry), drawn when shown and opened on the group behind the worst
+  finding. Tables, findings and tiles feed the details pane; the full text
+  report opens there too, and Export copies it.
+- **Placement geometry in two dimensions.** The default picture is a side
+  view over the reflection timeline: the side view draws measured lengths
+  solid, model-derived lengths dashed (with their input uncertainty and
+  every alternative) and example lengths dotted; the timeline shows the
+  direct sound, every candidate, the threshold and the analysed window, and
+  selecting a candidate highlights it and explains it in the details pane; the 3D picture is an auxiliary view with a fixed viewpoint and
   Reset. A missing input names the field and leads back to it. No wall or
   room shape is drawn.
 - **Compare and project.** Baseline and candidate are labelled everywhere;

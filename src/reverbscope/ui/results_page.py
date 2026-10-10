@@ -8,18 +8,20 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtGui import QGuiApplication, QResizeEvent
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
     QHBoxLayout,
     QInputDialog,
     QLabel,
+    QListWidget,
+    QListWidgetItem,
     QMenu,
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
-    QTabWidget,
+    QSplitter,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -39,13 +41,18 @@ from reverbscope.settings import load_settings
 from reverbscope.ui.export import export_csv_tables, export_figure_png
 from reverbscope.ui.results_analysis import AnalysisWorkspace
 from reverbscope.ui.results_overview import Overview
-from reverbscope.ui.results_presenter import check_rows, finding_group, finding_rows
+from reverbscope.ui.results_presenter import (
+    GROUPS,
+    check_rows,
+    finding_group,
+    finding_rows,
+    group_title,
+    ranked_findings,
+)
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.theme import apply_report_font
 from reverbscope.ui.widgets import Chip, KeyValueList, flat, label, primary
 from reverbscope.ui.workspace import action_row
-
-TAB_OVERVIEW, TAB_ANALYSIS, TAB_REPORT = range(3)
 
 
 def replace_session_box(parent: QWidget, directory: str) -> QMessageBox:
@@ -69,10 +76,16 @@ def ask_replace_session(parent: QWidget, directory: str) -> bool:
     return clicked is not None and box.buttonRole(clicked) == QMessageBox.ButtonRole.AcceptRole
 
 
+# Below this page height the key-figure tiles fold so the chart keeps its room.
+SHORT_PAGE_HEIGHT = 600
+
+
 class ResultDetail(QWidget):
-    """What the details pane shows for a result: the selected thing's rows."""
+    """What the details pane shows for a result: the selected thing's rows,
+    or the full text report."""
 
     open_chart = Signal(str)
+    report_closed = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -98,6 +111,40 @@ class ResultDetail(QWidget):
         layout.addWidget(self.chart_button, 0, Qt.AlignmentFlag.AlignLeft)
         self._group: str | None = None
         self.chart_button.clicked.connect(self._open)
+        # The full text report, shown instead of the selection on request.
+        self.report_box = QWidget()
+        report_layout = QVBoxLayout(self.report_box)
+        report_layout.setContentsMargins(0, 0, 0, 0)
+        report_layout.setSpacing(6)
+        report_head = QHBoxLayout()
+        report_head.addWidget(label(_("Full report"), "card-title"), 1)
+        self.report_close = flat(QPushButton(_("Back to the selection")))
+        self.report_close.clicked.connect(lambda: self.show_report(False))
+        report_head.addWidget(self.report_close)
+        report_layout.addLayout(report_head)
+        self.report_heading = label(
+            _("The same report that reverbscope analyze prints; warnings are at the end."),
+            "hint",
+            wrap=True,
+        )
+        report_layout.addWidget(self.report_heading)
+        self.report = QPlainTextEdit()
+        self.report.setReadOnly(True)
+        self.report.setProperty("report", True)
+        self.report.setMinimumHeight(420)
+        self.report.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
+        apply_report_font(self.report)
+        report_layout.addWidget(self.report, 1)
+        self.report_box.hide()
+        layout.addWidget(self.report_box, 1)
+        self._selection = [
+            self.heading,
+            self.chip,
+            self.message,
+            self.rows,
+            self.note,
+            self.chart_button,
+        ]
         layout.addStretch(1)
 
     def show_rows(
@@ -110,6 +157,8 @@ class ResultDetail(QWidget):
         chip: tuple[str, str] | None = None,
         group: str | None = None,
     ) -> None:
+        if self.report_box.isVisible():
+            self.show_report(False)
         self.heading.setText(heading)
         self.message.setText(message)
         self.message.setVisible(bool(message))
@@ -135,6 +184,18 @@ class ResultDetail(QWidget):
         if self._group is not None:
             self.open_chart.emit(self._group)
 
+    def show_report(self, visible: bool) -> None:
+        """The text report instead of the selection (and back)."""
+        self.report_box.setVisible(visible)
+        self.heading.setVisible(not visible)
+        self.message.setVisible(not visible and bool(self.message.text()))
+        self.chip.setVisible(not visible and bool(self.chip.text()))
+        self.rows.setVisible(not visible)
+        self.note.setVisible(not visible and bool(self.note.text()))
+        self.chart_button.setVisible(not visible and self._group is not None)
+        if not visible:
+            self.report_closed.emit()
+
 
 class ResultsPage(QWidget):
     new_measurement = Signal()
@@ -146,6 +207,9 @@ class ResultsPage(QWidget):
     settings_requested = Signal()
     #: What the context bar should say for this page.
     context_changed = Signal(str, str)
+    #: The full report was opened (True) or closed in the details pane: the
+    #: window gives the pane more room while it is open.
+    report_toggled = Signal(bool)
 
     def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -182,45 +246,59 @@ class ResultsPage(QWidget):
         self.project_button.hide()
         self.copy_action = self.export_menu.addAction(_("Copy report"))
         self.copy_action.triggered.connect(self._copy_report)
-        self.context_actions = action_row(
-            self.new_button,
-            self.project_button,
-            self.compare_button,
-            self.export_button,
-            self.save_button,
-        )
 
-        self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(True)
-        self.overview = Overview()
+        # The chart is the page: the groups and the overview stand beside it,
+        # the details pane explains what is selected, the report is a detail.
+        self.overview = Overview(with_tiles=False)
         self.overview.group_requested.connect(self.show_group)
         self.overview.finding_selected.connect(self._show_finding_detail)
         self.overview.check_selected.connect(self._show_check_detail)
-        self.overview.profile_row.addWidget(self.profile_button)
-        self.tabs.addTab(self.overview, _("Overview"))
-        self.analysis = AnalysisWorkspace()
+        self.overview.profile_row.insertWidget(0, flat(self.profile_button))
+        self.analysis = AnalysisWorkspace(with_list=False)
         self.analysis.detail_changed.connect(self._show_detail_rows)
         self.analysis.settings_requested.connect(self.settings_requested.emit)
-        self.tabs.addTab(self.analysis, _("Analysis"))
+        self.analysis.group_changed.connect(self._group_shown)
         self.groups = self.analysis.groups
         self.table = self.analysis.groups["decay"].table  # type: ignore[union-attr]
 
-        report = QWidget()
-        report_layout = QVBoxLayout(report)
-        report_layout.setContentsMargins(12, 10, 12, 10)
-        self.diagnostics_heading = label(
-            _("The same report that reverbscope analyze prints; warnings are at the end."),
-            "hint",
-            wrap=True,
+        # The four key figures stand over the chart; on a short window they
+        # fold away so the chart keeps its height (they stay in the overview's
+        # health card, the metric tables and the full report).
+        self.tiles_row = QWidget()
+        tiles = QHBoxLayout(self.tiles_row)
+        tiles.setContentsMargins(0, 0, 0, 0)
+        tiles.setSpacing(8)
+        for tile in self.overview.tiles.values():
+            tiles.addWidget(tile)
+        layout.addWidget(self.tiles_row)
+
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        sidebar = QWidget()
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_layout.setSpacing(4)
+        sidebar_layout.addWidget(label(_("Charts"), "section"))
+        self.group_list = QListWidget()
+        self.group_list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        for key in self.groups:
+            item = QListWidgetItem(group_title(key))
+            item.setData(Qt.ItemDataRole.UserRole, key)
+            self.group_list.addItem(item)
+        self.group_list.setFixedHeight(
+            self.group_list.sizeHintForRow(0) * self.group_list.count() + 8
         )
-        report_layout.addWidget(self.diagnostics_heading)
-        self.text = QPlainTextEdit()
-        self.text.setReadOnly(True)
-        self.text.setProperty("report", True)
-        apply_report_font(self.text)
-        report_layout.addWidget(self.text, 1)
-        self.tabs.addTab(report, _("Full report"))
-        layout.addWidget(self.tabs, 1)
+        self.group_list.currentRowChanged.connect(self._group_row_changed)
+        sidebar_layout.addWidget(self.group_list)
+        sidebar_layout.addWidget(self.overview, 1)
+        sidebar.setMinimumWidth(250)
+        self.splitter.addWidget(sidebar)
+        self.splitter.addWidget(self.analysis)
+        self.splitter.setCollapsible(0, True)
+        self.splitter.setCollapsible(1, False)
+        self.splitter.setStretchFactor(0, 0)
+        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setSizes([330, 670])
+        layout.addWidget(self.splitter, 1)
 
         self.status = QLabel("")
         self.status.setProperty("role", "hint")
@@ -229,6 +307,25 @@ class ResultsPage(QWidget):
         layout.addWidget(self.status)
         self.detail = ResultDetail()
         self.detail.open_chart.connect(self.show_group)
+        # The full text report lives in the details pane and in Export.
+        self.text = self.detail.report
+        self.diagnostics_heading = self.detail.report_heading
+        self.report_button = QPushButton(_("Full report"))
+        self.report_button.setCheckable(True)
+        self.report_button.setToolTip(
+            _("Show the text report in the details pane (the same as reverbscope analyze).")
+        )
+        self.report_button.toggled.connect(self.detail.show_report)
+        self.report_button.toggled.connect(self.report_toggled.emit)
+        self.detail.report_closed.connect(self._report_closed)
+        self.context_actions = action_row(
+            self.new_button,
+            self.project_button,
+            self.report_button,
+            self.compare_button,
+            self.export_button,
+            self.save_button,
+        )
 
     # --- showing --------------------------------------------------------------------
 
@@ -275,8 +372,8 @@ class ResultsPage(QWidget):
         self._draw(result)
         self.status.setText("")
         self.project_button.setVisible(self.state.project_path is not None)
-        self.tabs.setCurrentIndex(TAB_OVERVIEW)
         self.detail.show_rows(_("Results"), [], _("Click a figure, a finding or a table row."))
+        self.show_group(self._first_group())
         self.context_changed.emit(*self.context_text())
 
     def restyle(self) -> None:
@@ -301,10 +398,46 @@ class ResultsPage(QWidget):
         # The charts are drawn when their group is shown, not all at once.
         self.analysis.set_result(result)
 
+    def _first_group(self) -> str:
+        """The chart a result opens on: the one behind its worst finding, else
+        the first group."""
+        for _index, finding in ranked_findings(self.state.findings):
+            group = finding_group(finding)
+            if group is not None:
+                return group
+        return GROUPS[0]
+
     def show_group(self, key: str) -> None:
-        """Open the analysis workspace on ``key``."""
-        self.tabs.setCurrentIndex(TAB_ANALYSIS)
-        self.analysis.show_group(key)
+        """Show the chart group ``key`` in the centre."""
+        for row in range(self.group_list.count()):
+            if self.group_list.item(row).data(Qt.ItemDataRole.UserRole) == key:
+                if self.group_list.currentRow() != row:
+                    self.group_list.setCurrentRow(row)
+                else:
+                    self.analysis.show_group(key)
+                return
+
+    def _group_row_changed(self, row: int) -> None:
+        if row >= 0:
+            self.analysis.show_group(str(self.group_list.item(row).data(Qt.ItemDataRole.UserRole)))
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self.tiles_row.setVisible(event.size().height() >= SHORT_PAGE_HEIGHT)
+
+    def _group_shown(self, key: str) -> None:
+        for row in range(self.group_list.count()):
+            if self.group_list.item(row).data(Qt.ItemDataRole.UserRole) == key:
+                self.group_list.blockSignals(True)
+                self.group_list.setCurrentRow(row)
+                self.group_list.blockSignals(False)
+
+    def _report_closed(self) -> None:
+        if self.report_button.isChecked():
+            self.report_button.blockSignals(True)
+            self.report_button.setChecked(False)
+            self.report_button.blockSignals(False)
+            self.report_toggled.emit(False)
 
     def session_line(self) -> str:
         """Room, position, microphone, profile and rate on one line."""
@@ -363,8 +496,6 @@ class ResultsPage(QWidget):
         if self.state.result is None:
             self.status.setText(_("Nothing to export yet."))
             return
-        if self.tabs.currentIndex() != TAB_ANALYSIS:
-            self.tabs.setCurrentIndex(TAB_ANALYSIS)
         self.analysis.ensure_current_drawn()
         group = self.analysis.current_group()
         stem = (

@@ -155,9 +155,8 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         window.show_results()
-        for index in range(window.results.tabs.count()):
-            window.results.tabs.setCurrentIndex(index)
-            settle()
+        window.results.report_button.setChecked(True)
+        settle()
         window.show_compare()
         window.compare.set_paths(saved[0][0], saved[1][0])
         window.compare.run_compare()

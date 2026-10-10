@@ -119,15 +119,21 @@ class NavigationPane(QFrame):
     def set_current_page(self, key: str) -> None:
         item = self._pages.get(key)
         self.tree.blockSignals(True)
-        if item is None:
-            self.tree.clearSelection()
-        else:
+        # A disabled entry keeps its selection through setCurrentItem: clear first.
+        self.tree.clearSelection()
+        if item is not None:
             self.tree.setCurrentItem(item)
+            item.setSelected(True)
         self.tree.blockSignals(False)
 
     def set_result_available(self, available: bool, title: str = "") -> None:
         item = self._pages[NAV_RESULTS]
         item.setText(0, _("Results: {name}").format(name=title) if title else _("Results"))
+        if not available and item.isSelected():
+            # Drop the highlight while the entry can still be deselected.
+            self.tree.blockSignals(True)
+            item.setSelected(False)
+            self.tree.blockSignals(False)
         flags = Qt.ItemFlag.ItemIsEnabled | Qt.ItemFlag.ItemIsSelectable
         item.setFlags(flags if available else Qt.ItemFlag.ItemIsSelectable)
         item.setDisabled(not available)
@@ -251,7 +257,19 @@ class ContextBar(QFrame):
         self.action_stack.addWidget(widget)
 
     def show_actions(self, widget: QWidget | None) -> None:
-        self.action_stack.setCurrentWidget(widget if widget is not None else self._blank)
+        current = widget if widget is not None else self._blank
+        # A stack is as wide as its widest page unless the hidden ones are
+        # ignored: the title would be clipped on pages with few actions.
+        for index in range(self.action_stack.count()):
+            page = self.action_stack.widget(index)
+            if page is None:
+                continue
+            if page is current:
+                page.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Preferred)
+            else:
+                page.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+        self.action_stack.setCurrentWidget(current)
+        self.action_stack.updateGeometry()
 
     def set_context(self, title: str, subtitle: str = "") -> None:
         self.title.setText(title)

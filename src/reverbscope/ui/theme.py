@@ -267,8 +267,7 @@ QToolTip {{ background: {t["surface"]}; color: {t["text"]}; border: 1px solid {t
 QLabel[role="title"] {{ font-size: 22px; font-weight: 700; }}
 QLabel[role="page-title"] {{ font-size: 17px; font-weight: 700; }}
 QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 12px; }}
-QLabel[role="section"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 700;
-    letter-spacing: 0.4px; }}
+QLabel[role="section"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 700; }}
 QLabel[role="hint"] {{ color: {t["muted"]}; }}
 QLabel[role="kpi-label"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 600; }}
 QLabel[role="kpi-value"] {{ font-size: 20px; font-weight: 700; }}
@@ -276,7 +275,7 @@ QLabel[role="kpi-sub"] {{ color: {t["muted"]}; font-size: 11px; }}
 QLabel[role="card-title"] {{ font-size: 14px; font-weight: 700; }}
 QLabel[role="mono"] {{ font-family: "DejaVu Sans Mono", Menlo, Consolas, monospace; }}
 QLabel[role="badge"] {{ background: {t["accent"]}; color: {t["accent_text"]};
-    border-radius: 3px; min-width: 22px; min-height: 20px; max-height: 20px;
+    border-radius: 3px; min-width: 22px; min-height: 22px; max-height: 22px;
     padding: 0 6px; font-size: 11px; font-weight: 700;
     qproperty-alignment: AlignCenter; }}
 QLabel[role="pill"] {{ background: {t["surface_alt"]}; color: {t["text"]};

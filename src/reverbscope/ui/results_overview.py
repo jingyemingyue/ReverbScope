@@ -56,10 +56,11 @@ class Overview(QWidget):
     #: A health check was clicked.
     check_selected = Signal(object)
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self, parent: QWidget | None = None, *, with_tiles: bool = True) -> None:
         super().__init__(parent)
-        layout, self.scroll_area = scroll_body(self, margins=(14, 12, 14, 12))
-        layout.setSpacing(10)
+        layout, self.scroll_area = scroll_body(self, margins=(10, 8, 10, 8))
+        layout.setSpacing(8)
+        self._with_tiles = with_tiles
         self._report: HealthReport | None = None
         self._findings: list[Finding] = []
         self._show_all = False
@@ -97,16 +98,18 @@ class Overview(QWidget):
         self._tile_columns = 0
         for key, tile in self.tiles.items():
             tile.activated.connect(lambda k=key: self._tile_clicked(k))
-        self._lay_out_tiles(4)
-        layout.addLayout(self.tiles_grid)
+        if with_tiles:
+            self._lay_out_tiles(4)
+            layout.addLayout(self.tiles_grid)
 
         problems = Card()
-        self.profile_row = QHBoxLayout()
-        self.profile_row.addWidget(label(_("What are the main problems?").upper(), "section"))
-        self.profile_row.addStretch(1)
-        problems.body.addLayout(self.profile_row)
+        problems.body.addWidget(label(_("What are the main problems?").upper(), "section"))
         self.findings_title = label("", "hint", wrap=True)
         problems.body.addWidget(self.findings_title)
+        # The page puts its "About this profile..." button here, under the title.
+        self.profile_row = QHBoxLayout()
+        self.profile_row.addStretch(1)
+        problems.body.addLayout(self.profile_row)
         self.findings = QVBoxLayout()
         self.findings.setSpacing(6)
         problems.body.addLayout(self.findings)
@@ -139,6 +142,8 @@ class Overview(QWidget):
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
+        if not self._with_tiles:
+            return
         needed = sum(tile.minimumSizeHint().width() for tile in self.tiles.values()) + 3 * 8 + 40
         self._lay_out_tiles(4 if self.scroll_area.viewport().width() >= needed else 2)
 

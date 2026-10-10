@@ -24,7 +24,7 @@ from PySide6.QtWidgets import (
     QHeaderView,
     QLabel,
     QPushButton,
-    QSplitter,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QToolButton,
@@ -34,7 +34,15 @@ from PySide6.QtWidgets import (
 
 from reverbscope.i18n import _, list_join
 from reverbscope.models.result import AnalysisResult
-from reverbscope.ui.plots import plot_placement_3d, plot_placement_result, plot_reflection_timeline
+from reverbscope.ui.plots import (
+    plot_placement_3d,
+    plot_placement_overview,
+    plot_placement_result,
+    plot_reflection_timeline,
+    side_view_from_inputs,
+    side_view_from_placement,
+    side_view_hint,
+)
 from reverbscope.ui.results_presenter import (
     candidate_detail_rows,
     candidate_rows,
@@ -78,22 +86,20 @@ class PlacementView(QWidget):
         self.summary.setWordWrap(True)
         layout.addWidget(self.summary)
         self.missing = QLabel("")
-        self.missing.setWordWrap(True)
+        self.missing.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self.missing.hide()
-        missing_row = QHBoxLayout()
-        missing_row.addWidget(self.missing, 1)
-        self.settings_button = flat(QPushButton(_("Back to the measurement settings")))
+        self.settings_button = flat(QPushButton(_("Go to the settings")))
+        self.settings_button.setToolTip(_("Back to the measurement settings"))
         self.settings_button.clicked.connect(self.settings_requested.emit)
         self.settings_button.hide()
-        missing_row.addWidget(self.settings_button)
-        layout.addLayout(missing_row)
 
+        # One row: the three views on the left, what is missing on the right.
         bar = QHBoxLayout()
         bar.setSpacing(4)
         self.view_buttons: dict[str, QToolButton] = {}
         for key, title in (
-            (VIEW_SIDE, _("Side view")),
-            (VIEW_TIMELINE, _("Reflection timeline")),
+            (VIEW_SIDE, _("Side view and timeline")),
+            (VIEW_TIMELINE, _("Timeline only")),
             (VIEW_3D, _("3D (auxiliary)")),
         ):
             button = QToolButton()
@@ -104,43 +110,49 @@ class PlacementView(QWidget):
             bar.addWidget(button)
             self.view_buttons[key] = button
         self.view_buttons[VIEW_SIDE].setChecked(True)
-        bar.addStretch(1)
         self.reset_button = QPushButton(_("Reset view"))
         self.reset_button.setToolTip(_("Back to the fixed viewpoint of the 3D picture."))
         self.reset_button.clicked.connect(self._redraw)
         self.reset_button.hide()
         bar.addWidget(self.reset_button)
+        bar.addSpacing(12)
+        bar.addWidget(self.missing, 1)
+        bar.addWidget(self.settings_button)
         layout.addLayout(bar)
 
-        splitter = QSplitter(Qt.Orientation.Vertical)
-        chart = QWidget()
-        chart_layout = QVBoxLayout(chart)
-        chart_layout.setContentsMargins(0, 0, 0, 0)
+        # The picture is the reading area: it takes every pixel the two short
+        # tables under it leave, so the side view and the timeline stay legible
+        # at 1280x800 (the tables scroll, the picture never shrinks below 240 px).
         self.figure = Figure(figsize=(7.2, 3.6), dpi=100)
         self.canvas: Any = cast(Any, FigureCanvasQTAgg)(self.figure)
-        self.canvas.setMinimumHeight(220)
-        chart_layout.addWidget(self.canvas, 1)
+        self.canvas.setMinimumHeight(240)
+        layout.addWidget(self.canvas, 1)
+        # What is measured, derived or only an example: the picture's legend
+        # says it; the sentence is the picture's tooltip and goes into the
+        # details pane with the model's notes, not under the chart.
         self.scene_hint = QLabel("")
         self.scene_hint.setWordWrap(True)
         self.scene_hint.setProperty("role", "hint")
-        chart_layout.addWidget(self.scene_hint)
-        splitter.addWidget(chart)
+        self.scene_hint.hide()
 
-        tables = QWidget()
-        tables_layout = QVBoxLayout(tables)
-        tables_layout.setContentsMargins(0, 0, 0, 0)
-        tables_layout.setSpacing(4)
-        tables_layout.addWidget(label(_("Solved lengths"), "section"))
+        tables = QHBoxLayout()
+        tables.setSpacing(12)
+        lengths_column = QVBoxLayout()
+        lengths_column.setSpacing(4)
+        lengths_column.addWidget(label(_("Solved lengths"), "section"))
         self.table = QTableWidget(0, 4)
         self.table.setHorizontalHeaderLabels([_("Figure"), _("Value"), _("Validity"), _("Note")])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.verticalHeader().setVisible(False)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
-        self.table.setMaximumHeight(130)
+        self.table.setFixedHeight(92)
         self.table.itemSelectionChanged.connect(self._length_selected)
-        tables_layout.addWidget(self.table)
-        tables_layout.addWidget(label(_("Reflection candidates"), "section"))
+        lengths_column.addWidget(self.table)
+        tables.addLayout(lengths_column, 1)
+        candidates_column = QVBoxLayout()
+        candidates_column.setSpacing(4)
+        candidates_column.addWidget(label(_("Reflection candidates"), "section"))
         self.candidates = QTableWidget(0, 5)
         self.candidates.setHorizontalHeaderLabels(
             [_("Delay (ms)"), _("Level (dB)"), _("Excess path (m)"), _("Surface"), _("Plane?")]
@@ -151,16 +163,17 @@ class PlacementView(QWidget):
         self.candidates.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.candidates.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self.candidates.itemSelectionChanged.connect(self._candidate_selected)
-        tables_layout.addWidget(self.candidates, 1)
+        self.candidates.setFixedHeight(92)
+        candidates_column.addWidget(self.candidates)
+        tables.addLayout(candidates_column, 1)
+        layout.addLayout(tables)
+        # The model's notes are long: they go to the details pane (and the
+        # tooltip of the summary), not under the tables.
         self.notes = QLabel("")
         self.notes.setWordWrap(True)
         self.notes.setProperty("role", "hint")
         self.notes.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        tables_layout.addWidget(self.notes)
-        splitter.addWidget(tables)
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 2)
-        layout.addWidget(splitter, 1)
+        self.notes.hide()
 
     # --- data -----------------------------------------------------------------------
 
@@ -212,11 +225,16 @@ class PlacementView(QWidget):
             )
         elif self._view == VIEW_3D:
             self.scene_hint.setText(plot_placement_3d(self.figure, placement))
+        elif result is not None:
+            self.scene_hint.setText(
+                plot_placement_overview(self.figure, result, candidate_index=self._selected)
+            )
         else:
             self.scene_hint.setText(plot_placement_result(self.figure, placement))
         # The two-dimensional pictures are laid out again at every draw (the
-        # size changes with the splitter); the 3D view keeps its own margins.
+        # size changes with the window); the 3D view keeps its own margins.
         self.figure.set_layout_engine("tight" if self._view != VIEW_3D else "none")
+        self.canvas.setToolTip(self.scene_hint.text())
         self.canvas.draw_idle()
 
     def _fill_tables(self) -> None:
@@ -230,6 +248,7 @@ class PlacementView(QWidget):
                 _("To go further, fill in: {fields}.").format(fields=list_join(missing)),
                 "info",
             )
+            self.missing.setToolTip(self.missing.text())
             self.missing.show()
             self.settings_button.show()
         else:
@@ -239,7 +258,13 @@ class PlacementView(QWidget):
             self.table.setRowCount(0)
             self.candidates.setRowCount(0)
             self.notes.setText("")
-            self.detail_changed.emit(_("Placement geometry"), [], placement_summary(None))
+            self.detail_changed.emit(
+                _("Placement geometry"),
+                [],
+                placement_summary(None)
+                + "\n\n"
+                + side_view_hint(side_view_from_inputs(None, None)),
+            )
             return
         rows = placement_length_rows(placement)
         self.table.setRowCount(len(rows))
@@ -254,10 +279,19 @@ class PlacementView(QWidget):
                 self.candidates.setItem(r, c, _item(text))
         self.candidates.blockSignals(False)
         self.notes.setText("\n".join(placement_notes(placement)))
+        self.summary.setToolTip(self.notes.text())
         self.detail_changed.emit(
             _("Placement geometry"),
             [(caption, f"{value} ({validity})") for caption, value, validity, _note in rows],
-            placement_summary(placement),
+            "\n\n".join(
+                part
+                for part in (
+                    placement_summary(placement),
+                    side_view_hint(side_view_from_placement(placement)),
+                    self.notes.text(),
+                )
+                if part
+            ),
         )
 
     # --- selection ------------------------------------------------------------------
@@ -304,7 +338,7 @@ class PlacementView(QWidget):
                 '"Plane reflection?" first.'
             ),
         )
-        if self._view == VIEW_TIMELINE:
+        if self._view in (VIEW_TIMELINE, VIEW_SIDE):
             self._redraw()
 
     def select_candidate(self, index: int) -> None:

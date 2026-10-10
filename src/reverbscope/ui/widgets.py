@@ -410,7 +410,7 @@ class FindingCard(QFrame):
         self.chip = Chip((severity_label or severity).upper(), self.tone, glyph=True)
         # A fixed width cut "NOT COMPARABLE" short; the column stays aligned
         # for the usual one-word labels.
-        self.chip.setMinimumWidth(82)
+        self.chip.setMinimumWidth(72)
         row.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignTop)
         text = QVBoxLayout()
         text.setSpacing(1)
@@ -476,11 +476,19 @@ class StepBar(QFrame):
     def __init__(self, titles: Sequence[str], parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setProperty("stepbar", True)
-        row = QHBoxLayout(self)
-        row.setContentsMargins(6, 4, 6, 4)
+        column = QVBoxLayout(self)
+        column.setContentsMargins(6, 4, 6, 4)
+        column.setSpacing(2)
+        row = QHBoxLayout()
         row.setSpacing(4)
+        column.addLayout(row)
+        self.summary = label("", "hint", wrap=True)
+        self.summary.setContentsMargins(6, 0, 6, 2)
+        self.summary.hide()
+        column.addWidget(self.summary)
         self.buttons: list[QToolButton] = []
         self._done: list[bool] = [False] * len(titles)
+        self._summaries: list[str] = [""] * len(titles)
         for index, title in enumerate(titles):
             button = QToolButton()
             button.setProperty("step", True)
@@ -516,9 +524,24 @@ class StepBar(QFrame):
         button.setProperty("done", done)
         button.style().unpolish(button)
         button.style().polish(button)
+        self.set_summary(index, self._summaries[index])
 
     def is_done(self, index: int) -> bool:
         return self._done[index]
+
+    def set_summary(self, index: int, text: str) -> None:
+        """What a done step settled, in one line under the steps (``""`` clears it)."""
+        if not 0 <= index < len(self.buttons):
+            return
+        self._summaries[index] = text
+        self.buttons[index].setToolTip(text)
+        lines = [
+            f"✓ {i + 1} {self._titles[i]}: {summary}"
+            for i, summary in enumerate(self._summaries)
+            if summary and self._done[i]
+        ]
+        self.summary.setText("    ".join(lines))
+        self.summary.setVisible(bool(lines))
 
     def title(self, index: int) -> str:
         return self._titles[index] if 0 <= index < len(self._titles) else ""

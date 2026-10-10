@@ -202,7 +202,6 @@ def test_the_overview_answers_the_three_questions_and_links_the_charts(
     ]
     assert cards
     cards[0].activated.emit()
-    assert window.results.tabs.currentIndex() == 1
     assert window.results.detail.heading.text()
     assert window.results.analysis.current_group() in window.results.groups
     # A tile opens its group too.
@@ -547,4 +546,22 @@ def test_a_position_can_be_selected_measured_again_opened_and_listed_in_the_navi
     window.nav.position_requested.emit("A")
     assert window.stack.currentWidget() is window.project
     assert page.current_position() == "A"
+    window.close()
+
+
+def test_navigation_highlights_the_results_page_when_a_session_opens(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """The Results entry is enabled and selected in one go: the highlight
+    follows the page that is shown, not the one before it."""
+    session = MeasurementSession(room_name="Booth", measurement_position="A")
+    save_measurement(tmp_path / "take", session, _result(short_sweep), copy_recording=False)
+    window = MainWindow()
+    window.show()
+    app.processEvents()
+    assert window.nav.tree.currentItem() is window.nav._pages[NAV_HOME]
+    window.open_session_path(tmp_path / "take")
+    app.processEvents()
+    assert window.nav.tree.currentItem() is window.nav._pages[NAV_RESULTS]
+    assert not window.nav._pages[NAV_RESULTS].isDisabled()
     window.close()

@@ -6,9 +6,9 @@ Writes:
 
 * ``cli-demo.svg``            -- ``reverbscope demo`` as a terminal screenshot (SVG text)
 * ``cli-demo.zh-CN.svg``      -- the same in Simplified Chinese
-* ``gui-results.png``         -- Results page, Overview tab, position A
+* ``gui-results.png``         -- Results page, Decay chart, position A
 * ``gui-results.zh-CN.png``   -- the same in Simplified Chinese (README.zh-CN.md)
-* ``gui-frequency-response.png`` -- Results page, Frequency Response tab, position A
+* ``gui-frequency-response.png`` -- Results page, Frequency and low end chart, position A
 * ``gui-compare.png``         -- Compare page, A -> B
 * ``social-preview.png``      -- 1280x640 card for the GitHub social preview
 
@@ -222,7 +222,7 @@ def render_gui(workdir: Path, out: Path) -> None:
         window.resize(1280, 820)
         window.show()
         window.open_session_path(demo_folder(workdir, lang) / "reverbscope-demo" / "position-a")
-        window.results.tabs.setCurrentIndex(0)  # the overview
+        window.results.show_group("decay")
         return window
 
     def grab(window: main_window.MainWindow, name: str, stamp: str = STAMP) -> None:

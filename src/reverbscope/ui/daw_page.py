@@ -320,6 +320,7 @@ class DawModePage(QWidget):
         current = self.steps.current()
         if current == STEP_RECORD:
             # The DAW step has nothing to check: reading it is doing it.
+            self.steps.set_summary(STEP_RECORD, _("recorded and exported"))
             self.steps.set_done(STEP_RECORD, True)
         self.show_step(current + 1)
 
@@ -455,6 +456,16 @@ class DawModePage(QWidget):
             self.reference_summary.setText(
                 _("Reference sweep: {name}").format(name=self._sweep_path.name)
             )
+            settings = self._sweep_settings
+            self.steps.set_summary(
+                STEP_GENERATE,
+                _("{name}: {rate} Hz, {seconds:.1f} s, {level:g} dBFS").format(
+                    name=self._sweep_path.name,
+                    rate=settings.sample_rate,
+                    seconds=settings.duration_s,
+                    level=settings.level_dbfs,
+                ),
+            )
         self.action_area.set_status("")
 
     # --- step 3 -----------------------------------------------------------------
@@ -495,6 +506,16 @@ class DawModePage(QWidget):
                 channels=recording.n_channels,
             )
         )
+        self.steps.set_summary(
+            STEP_IMPORT,
+            _("{name}: {seconds:.1f} s, {rate} Hz, {channels} channel(s)").format(
+                name=path.name,
+                seconds=recording.duration_s,
+                rate=recording.sample_rate,
+                channels=recording.n_channels,
+            ),
+        )
+        self.steps.set_summary(STEP_RECORD, _("recorded and exported"))
         self.steps.set_done(STEP_IMPORT, True)
         self.steps.set_done(STEP_RECORD, True)
         self.action_area.set_status("")
@@ -601,6 +622,7 @@ class DawModePage(QWidget):
         self._recording_path = None
         self.recording_label.setText(_("No recording selected."))
         self._reset_channel_lists()
+        self.steps.set_summary(STEP_IMPORT, "")
         self.steps.set_done(STEP_IMPORT, False)
         self.steps.set_done(STEP_ANALYSE, False)
 
@@ -625,6 +647,7 @@ class DawModePage(QWidget):
             self._set_busy(False, late_result_text(), tone="warn")
             return
         accept_result(self.state, result)
+        self.steps.set_summary(STEP_ANALYSE, _("analysed; the result is on the Results page"))
         self.steps.set_done(STEP_ANALYSE, True)
         self._set_busy(False, _("Done."))
         self.analysis_finished.emit()

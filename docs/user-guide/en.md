@@ -191,7 +191,7 @@ The thresholds are engineering choices, stated in
 [MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8, never a grade.
 
 **Measurement health** sits right under the key figures: the card below the
-four tiles of the Overview tab, and the section right after "At a glance" in
+four key figures on the Results page, and the section right after "At a glance" in
 the text report. It lists the checks the
 analysis made on the take itself (reference, sweep, playback speed, direct
 sound, level, distortion, dropouts, decay range, noise floor, recording
@@ -220,13 +220,29 @@ progress and keeps **Stop** on screen while a take runs. Going to another
 page keeps everything; only **New Measurement** (Ctrl+N) and **Open
 Session** start afresh, and an unsaved take is protected by a question.
 
-The Results page has three tabs:
+The Results page is built around the chart. The four key figures
+(reverberation, background noise, early reflections, direct sound) stand
+over it with their trust level, each opening its chart; on a short window
+they fold away. On the left, **Charts** lists the groups and the overview
+below it answers *Is this measurement trustworthy?* (the measurement-health
+card: failed, limited or good, with what to do), *What are the main
+problems?* (the findings, the most important first; *Show all* for the
+rest) and *What next?* (the checks' own fixes, then the chart behind each
+warning); every card opens its chart and its evidence in the details pane.
+The chart in the middle is one group at a time, drawn when shown, and the
+page opens on the group behind the worst finding:
 
-| Tab | What it shows |
+| Group | What it shows |
 | --- | --- |
-| Overview | *Is this measurement trustworthy?* (the measurement-health card: failed, limited or good, with what to do), the four key figures (reverberation, background noise, early reflections, direct sound) with their trust level, *What are the main problems?* (the findings, the most important first; *Show all* for the rest) and *What next?* (the checks' own fixes, then the chart behind each warning). Every card and tile opens its chart. |
-| Analysis | One chart group at a time: **Frequency and low end** (raw and smoothed response, the loopback when compensation ran, the resonance candidates), **Decay** (Schroeder curves and the EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time tables, each with validity; select a band for its reasons), **Noise** (quiet-segment spectrum, octave-band levels, hum), **Impulse and early reflections** (the IR and the ETC peaks) and **Placement geometry** (below). A chart is drawn when its group is shown. |
-| Full report | The same text report that `reverbscope analyze` prints, with the warnings at the end. |
+| Frequency and low end | The raw and smoothed response, the loopback when compensation ran, and the resonance candidates, marked on the curve when selected. |
+| Decay | The Schroeder curves and the EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time tables, each with validity; selecting a band highlights its curve and lists its reasons. |
+| Noise | The quiet-segment spectrum, the octave-band levels and the hum. |
+| Impulse and early reflections | The impulse response and the ETC peaks, or the reflection timeline. |
+| Placement geometry | The side view and the reflection timeline (below). |
+
+**Full report** in the context bar opens the same text report that
+`reverbscope analyze` prints (the warnings at the end) in the details pane;
+**Copy report** under Export copies it.
 
 **Export** in the context bar writes the CSV tables of the result into a
 folder (the same files as `reverbscope export`), saves the chart on screen
@@ -235,7 +251,8 @@ opens the Compare page with this session as the baseline once it is saved.
 
 ## Placement
 
-The **Placement geometry** group of the Analysis tab shows a side view:
+The **Placement geometry** group shows, by default, a side view over the
+reflection timeline. The side view draws
 the microphone height and the loudspeaker distance you measured as solid
 lines, what the reflections allow (loudspeaker height, horizontal
 separation, the plane above both devices, each with its input uncertainty

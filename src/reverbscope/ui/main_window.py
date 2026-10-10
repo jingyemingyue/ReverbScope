@@ -170,6 +170,7 @@ class MainWindow(QMainWindow):
         self.results.compare_requested.connect(self._compare_current)
         self.results.settings_requested.connect(self._back_to_dimensions)
         self.results.context_changed.connect(self._results_context)
+        self.results.report_toggled.connect(self._report_toggled)
         self.daw.analysis_finished.connect(self.show_results)
         self.standalone.analysis_finished.connect(self.show_results)
         self.daw.back.connect(self.show_start)
@@ -341,7 +342,9 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
         narrow = event.size().width() < NARROW_WIDTH
-        if narrow and self._details_wanted and self.details.isVisible():
+        # ``isHidden`` rather than ``isVisible``: the first resize comes before
+        # the window is shown, and a window opened small must open folded.
+        if narrow and self._details_wanted and not self.details.isHidden():
             self.details.hide()
             self._details_auto_hidden = True
         elif not narrow and self._details_auto_hidden and self._details_wanted:
@@ -353,9 +356,11 @@ class MainWindow(QMainWindow):
         self._set_place(place)
         self.context_bar.show_actions(getattr(page, "context_actions", None))
         self.details.show_detail(getattr(page, "detail", None))
+        # Enable the Results entry before selecting it: a disabled item cannot
+        # become current, and the highlight would stay on the previous page.
+        self._update_nav_state()
         if nav_key is not None:
             self.nav.set_current_page(nav_key)
-        self._update_nav_state()
 
     def _set_place(self, place: str) -> None:
         self._place = place
@@ -440,6 +445,24 @@ class MainWindow(QMainWindow):
     def _compare_context(self, title: str, subtitle: str) -> None:
         if self.stack.currentWidget() is self.compare:
             self.context_bar.set_context(title, subtitle)
+
+    def _report_toggled(self, open: bool) -> None:
+        """The text report needs a wide pane: widen the details while it is open."""
+        sizes = self.splitter.sizes()
+        if len(sizes) != 3:
+            return
+        if open:
+            self._details_before_report = sizes
+            if not self.details.isVisible():
+                self.set_details_visible(True)
+            wanted = min(560, max(sizes[2], self.width() // 2))
+            self.details.setMaximumWidth(wanted)
+            self.splitter.setSizes([sizes[0], sizes[1] - (wanted - sizes[2]), wanted])
+        else:
+            self.details.setMaximumWidth(460)
+            before = getattr(self, "_details_before_report", None)
+            if before is not None:
+                self.splitter.setSizes(before)
 
     def _results_context(self, title: str, subtitle: str) -> None:
         if self.stack.currentWidget() is self.results:

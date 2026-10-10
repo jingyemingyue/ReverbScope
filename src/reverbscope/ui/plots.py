@@ -379,16 +379,19 @@ def side_view_from_placement(placement: PlacementResult) -> SideView:
     )
 
 
-def plot_side_view(fig: Figure, view: SideView) -> str:
+def plot_side_view(fig: Figure, view: SideView, *, ax: Any = None) -> str:
     """A two-dimensional side view of the microphone and the loudspeaker.
 
     Heights are drawn above the plane the user measured the microphone
     height from. Returns the sentence that says what is measured, what is
-    derived and what is only an example; no wall is ever drawn.
+    derived and what is only an example; no wall is ever drawn. With ``ax``
+    the picture goes into that axes and the caller lays the figure out.
     """
-    fig.clear()
-    ensure_plot_fonts()
-    ax = fig.add_subplot(1, 1, 1)
+    own_figure = ax is None
+    if own_figure:
+        fig.clear()
+        ensure_plot_fonts()
+        ax = fig.add_subplot(1, 1, 1)
     colors = plot_colors()
     accent = tokens()["accent"]
     speaker = PLOT_SERIES[1]
@@ -544,7 +547,8 @@ def plot_side_view(fig: Figure, view: SideView) -> str:
     height = top * 1.5
     span = max(right * 1.35, 2.0 * height)
     ax.set_xlim(-0.35 * right, -0.35 * right + span)
-    ax.set_ylim(-0.25 * top, -0.25 * top + span / 2.0)
+    # A little headroom so the loudspeaker label clears the title and legend.
+    ax.set_ylim(-0.25 * top, -0.25 * top + span / 2.0 + 0.3 * top)
     ax.set_xlabel(_("horizontal (m)"))
     ax.set_ylabel(_("height above the reference plane (m)"))
     ax.grid(True, alpha=0.25)
@@ -554,9 +558,15 @@ def plot_side_view(fig: Figure, view: SideView) -> str:
         Line2D([0], [0], color=colors["fg"], **STYLE_EXAMPLE, label=_("example only")),
     ]
     ax.legend(handles=legend_items, loc="upper right", fontsize="x-small")
-    ax.set_title(_("Side view: no wall or room shape is drawn"))
-    fig.tight_layout()
-    style_figure(fig)
+    ax.set_title(_("Side view: no wall or room shape is drawn"), fontsize=10)
+    if own_figure:
+        fig.tight_layout()
+        style_figure(fig)
+    return side_view_hint(view)
+
+
+def side_view_hint(view: SideView) -> str:
+    """The sentence under a side view: what is measured, derived, or an example."""
     if not view.illustrative:
         return _(
             "Solid lines are what you measured; dashed lines are what the reflections and "
@@ -601,17 +611,21 @@ def plot_reflection_timeline(
     *,
     selected: int | None = None,
     candidate_index: int | None = None,
+    ax: Any = None,
 ) -> None:
     """Direct sound, every early-reflection candidate, the threshold and the
     analysed window on one time axis; the selected candidate is filled.
 
     ``selected`` is an index into ``result.reflections.reflections``;
     ``candidate_index`` one into ``result.placement.candidates`` (the same
-    arrivals, re-expressed as geometry), whichever the caller has.
+    arrivals, re-expressed as geometry), whichever the caller has. With
+    ``ax`` the timeline goes into that axes.
     """
-    fig.clear()
-    ensure_plot_fonts()
-    ax = fig.add_subplot(1, 1, 1)
+    own_figure = ax is None
+    if own_figure:
+        fig.clear()
+        ensure_plot_fonts()
+        ax = fig.add_subplot(1, 1, 1)
     colors = plot_colors()
     refl = result.reflections
     placement = result.placement
@@ -671,7 +685,8 @@ def plot_reflection_timeline(
     ax.set_title(
         _("Reflection timeline (direct-sound confidence: {confidence})").format(
             confidence=confidence_text(refl.direct_sound_confidence)
-        )
+        ),
+        fontsize=10,
     )
     ax.grid(True, alpha=0.3)
     handles = [
@@ -711,9 +726,31 @@ def plot_reflection_timeline(
             label=_("not a plane reflection"),
         ),
     ]
-    ax.legend(handles=handles, loc="upper right", fontsize="x-small")
+    ax.legend(handles=handles, loc="lower right", fontsize="x-small", ncol=2)
+    if own_figure:
+        fig.tight_layout()
+        style_figure(fig)
+
+
+def plot_placement_overview(
+    fig: Figure, result: AnalysisResult, *, candidate_index: int | None = None
+) -> str:
+    """The side view above the reflection timeline: the default placement
+    picture. Returns the side view's sentence."""
+    fig.clear()
+    ensure_plot_fonts()
+    side_ax, time_ax = fig.subplots(2, 1, gridspec_kw={"height_ratios": [0.85, 1.15]})
+    placement = result.placement
+    view = (
+        side_view_from_placement(placement)
+        if placement is not None
+        else side_view_from_inputs(None, None)
+    )
+    hint = plot_side_view(fig, view, ax=side_ax)
+    plot_reflection_timeline(fig, result, candidate_index=candidate_index, ax=time_ax)
     fig.tight_layout()
     style_figure(fig)
+    return hint
 
 
 def plot_placement_3d(fig: Figure, placement: PlacementResult | None) -> str:

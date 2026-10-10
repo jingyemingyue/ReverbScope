@@ -365,6 +365,7 @@ class StandalonePage(QWidget):
         self.pages.setCurrentIndex(index)
         self.steps.set_current(index)
         self.action_area.set_step_buttons(index, self.pages.count())
+        self._update_step_summaries()
         if index == STEP_RUN:
             self._refresh_summary()
         heading, text = self._step_help(index)
@@ -408,6 +409,38 @@ class StandalonePage(QWidget):
             ),
         }
         return helps[index]
+
+    def _update_step_summaries(self) -> None:
+        """What the earlier steps settled, under the step bar."""
+        if self._devices:
+            self.steps.set_summary(
+                STEP_DEVICES,
+                _("{inp} → {out}, {rate}").format(
+                    inp=self.input_device.currentText() or _("none"),
+                    out=self.output_device.currentText() or _("none"),
+                    rate=self.sample_rate.currentText(),
+                ),
+            )
+        self.steps.set_summary(
+            STEP_SIGNAL,
+            _("{seconds:.1f} s at {level:g} dBFS, {profile}").format(
+                seconds=self.duration.value(),
+                level=self.level.value(),
+                profile=self.profile.currentText(),
+            ),
+        )
+        parts = [p for p in (self.room.text(), self.position.text()) if p]
+        self.steps.set_summary(
+            STEP_DIMENSIONS,
+            list_join(parts) + ("; " if parts else "") + self.placement.summary(),
+        )
+        self.steps.set_done(
+            STEP_SIGNAL, self.steps.current() > STEP_SIGNAL or self.steps.is_done(STEP_SIGNAL)
+        )
+        self.steps.set_done(
+            STEP_DIMENSIONS,
+            self.steps.current() > STEP_DIMENSIONS or self.steps.is_done(STEP_DIMENSIONS),
+        )
 
     def _refresh_summary(self) -> None:
         rows: list[tuple[str, str]] = [
@@ -909,6 +942,7 @@ class StandalonePage(QWidget):
             and self.state.recording is not None
             and self.state.recording_path is None
         )
+        self.steps.set_summary(STEP_RUN, _("analysed; the result is on the Results page"))
         self.steps.set_done(STEP_RUN, True)
         self._set_busy(False, _("Done."))
         self.analysis_finished.emit()

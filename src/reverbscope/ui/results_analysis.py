@@ -432,7 +432,10 @@ class AnalysisWorkspace(QWidget):
     detail_changed = Signal(str, object, str)
     settings_requested = Signal()
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    #: The group shown changed (its key).
+    group_changed = Signal(str)
+
+    def __init__(self, parent: QWidget | None = None, *, with_list: bool = True) -> None:
         super().__init__(parent)
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -441,6 +444,7 @@ class AnalysisWorkspace(QWidget):
         self.list.setFixedWidth(190)
         self.list.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.list.currentRowChanged.connect(self._row_changed)
+        self.list.setVisible(with_list)
         layout.addWidget(self.list)
         self.stack = QStackedWidget()
         layout.addWidget(self.stack, 1)
@@ -452,7 +456,7 @@ class AnalysisWorkspace(QWidget):
             view.detail_changed.connect(self.detail_changed.emit)
             page = QWidget()
             page_layout = QVBoxLayout(page)
-            page_layout.setContentsMargins(12, 10, 12, 10)
+            page_layout.setContentsMargins(8, 4, 0, 0)
             page_layout.addWidget(view)
             self.stack.addWidget(page)
             item = QListWidgetItem(group_title(view.key))
@@ -487,10 +491,12 @@ class AnalysisWorkspace(QWidget):
         if row < 0:
             return
         self.stack.setCurrentIndex(row)
-        view = self.groups[str(self.list.item(row).data(Qt.ItemDataRole.UserRole))]
+        key = str(self.list.item(row).data(Qt.ItemDataRole.UserRole))
+        view = self.groups[key]
         view.ensure_drawn()
         if isinstance(view, GroupView):
             view.show_overview_detail()
+        self.group_changed.emit(key)
 
     def ensure_current_drawn(self) -> None:
         self.groups[self.current_group()].ensure_drawn()
