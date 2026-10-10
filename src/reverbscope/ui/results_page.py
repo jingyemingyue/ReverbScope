@@ -6,6 +6,7 @@ bar (save, export, copy, compare, project).
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QGuiApplication, QResizeEvent
@@ -39,7 +40,7 @@ from reverbscope.labels import topic_text
 from reverbscope.models.result import AnalysisResult
 from reverbscope.settings import load_settings
 from reverbscope.ui.export import export_csv_tables, export_figure_png
-from reverbscope.ui.results_analysis import AnalysisWorkspace
+from reverbscope.ui.results_analysis import AnalysisWorkspace, DecayGroup
 from reverbscope.ui.results_overview import Overview
 from reverbscope.ui.results_presenter import (
     GROUPS,
@@ -259,7 +260,7 @@ class ResultsPage(QWidget):
         self.analysis.settings_requested.connect(self.settings_requested.emit)
         self.analysis.group_changed.connect(self._group_shown)
         self.groups = self.analysis.groups
-        self.table = self.analysis.groups["decay"].table  # type: ignore[union-attr]
+        self.table = cast(DecayGroup, self.analysis.groups["decay"]).table
 
         # The four key figures stand over the chart; on a short window they
         # fold away so the chart keeps its height (they stay in the overview's

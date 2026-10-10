@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QMessageBox,
     QPushButton,
     QScrollArea,
@@ -575,7 +576,7 @@ class KeyValueList(QWidget):
             self._layout.addWidget(row)
 
 
-def clear_layout(layout: QVBoxLayout | QHBoxLayout) -> None:
+def clear_layout(layout: QLayout) -> None:
     """Delete every widget (and nested layout) a layout holds.
 
     A widget is hidden at once: ``deleteLater`` waits for the event loop, and
@@ -592,8 +593,8 @@ def clear_layout(layout: QVBoxLayout | QHBoxLayout) -> None:
             widget.deleteLater()
             continue
         nested = entry.layout()
-        if nested is not None:
-            clear_layout(nested)  # type: ignore[arg-type]
+        if isinstance(nested, QLayout):
+            clear_layout(nested)
 
 
 def separator() -> QFrame:
