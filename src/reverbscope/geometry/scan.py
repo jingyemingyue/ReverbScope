@@ -291,7 +291,10 @@ class _AsciiBody:
     """Whitespace-separated tokens of an ASCII PLY body, read line by line."""
 
     def __init__(self, data: bytes, start: int) -> None:
-        self.lines = data[start:].decode("ascii", errors="replace").splitlines()
+        text = data[start:].decode("ascii", errors="replace")
+        # Blank lines carry no element; "\r\r\n" (a file converted to CRLF
+        # twice) would otherwise read as one.
+        self.lines = [line for line in text.splitlines() if line.strip()]
         self.position = 0
 
     def take(self, count: int, path: Path) -> list[str]:

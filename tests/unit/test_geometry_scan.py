@@ -44,7 +44,8 @@ def _ascii_ply(path: Path, vertices: np.ndarray, faces: list[list[int]], extra: 
     lines = [line for line in lines if line]
     lines += [f"{v[0]} {v[1]} {v[2]} 255" for v in vertices]
     lines += [" ".join([str(len(f))] + [str(i) for i in f]) for f in faces]
-    path.write_text("\n".join(lines) + "\n", encoding="ascii")
+    # newline="\n": the CRLF test makes its own line ends, also on Windows.
+    path.write_text("\n".join(lines) + "\n", encoding="ascii", newline="\n")
     return path
 
 
