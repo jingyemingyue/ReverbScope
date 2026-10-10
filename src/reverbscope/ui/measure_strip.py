@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QComboBox,
@@ -53,8 +53,22 @@ def _mirror_combo(strip: QComboBox, page: QComboBox) -> None:
         if page.currentIndex() != index:
             page.setCurrentIndex(index)
 
+    def resync() -> None:
+        # The page refills its list with its own signals blocked and then
+        # picks the system's default row: show that row, not row 0.
+        strip.blockSignals(True)
+        strip.setCurrentIndex(page.currentIndex())
+        strip.blockSignals(False)
+
+    def later(*_args: object) -> None:
+        QTimer.singleShot(0, strip, resync)
+
     page.currentIndexChanged.connect(from_page)
     strip.currentIndexChanged.connect(from_strip)
+    model = page.model()
+    model.rowsInserted.connect(later)
+    model.rowsRemoved.connect(later)
+    model.modelReset.connect(later)
 
 
 def _mirror_spin(strip: QSpinBox, page: QSpinBox) -> None:
@@ -219,6 +233,9 @@ class MeasureStrip(QWidget):
         for widget in self.device_widgets:
             widget.setVisible(live)
         self.start_button.setText(_("Start") if live else _("Import recording..."))
+        # In DAW mode Ctrl+Return belongs to the DAW page's Analyze: two
+        # visible buttons with one shortcut would make Qt fire neither.
+        self.start_button.setShortcut("Ctrl+Return" if live else "")
         self.start_button.setToolTip(
             _("Play the sweep and record it (Ctrl+Return).")
             if live
@@ -255,6 +272,7 @@ class MeasureStrip(QWidget):
     def _busy(self, busy: bool) -> None:
         self.start_button.setEnabled(not busy)
         self.mode.setEnabled(not busy)
+        self.position.setEnabled(not busy)
         # The page's Stop is on exactly while the sweep plays (the worker may
         # not have started yet when the busy signal arrives).
         running = busy and self.standalone.stop_button.isEnabled()

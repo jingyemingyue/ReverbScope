@@ -380,7 +380,7 @@ class ProjectPage(AnalysisView):
         entries: list[ProjectEntry] = []
         skipped: list[tuple[str, str]] = []
         for entry in self.model.entries():
-            if entry.directory is None or entry.unsaved:
+            if entry.directory is None or entry.unsaved or not entry.in_project:
                 continue
             if entry.error:
                 skipped.append((str(entry.directory), entry.error))

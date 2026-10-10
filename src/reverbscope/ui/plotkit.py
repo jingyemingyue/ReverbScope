@@ -171,6 +171,9 @@ class Series:
     px: np.ndarray = field(default_factory=lambda: np.zeros(0))
     visible: bool = True
     dash: tuple[float, ...] | None = None
+    #: (x factor, y offset) the caller applied to draw the curve displaced,
+    #: as a waterfall's perspective does; CSV export undoes it.
+    shift: tuple[float, float] = (1.0, 0.0)
 
 
 #: Dash patterns (in pen widths) for curves of one measurement that differ by
@@ -281,7 +284,7 @@ class ChartPanel(QWidget):
         menu = QMenu(self.export_button)
         menu.addAction(_("Chart as PNG..."), lambda: self._ask_export("png"))
         menu.addAction(_("Chart as SVG..."), lambda: self._ask_export("svg"))
-        menu.addAction(_("Curves as CSV..."), lambda: self._ask_export("csv"))
+        self.csv_action = menu.addAction(_("Curves as CSV..."), lambda: self._ask_export("csv"))
         self.export_menu = menu
         self.export_button.setMenu(menu)
         top.addWidget(self.export_button)
@@ -445,6 +448,7 @@ class ChartPanel(QWidget):
         z: float = 0.0,
         alpha: int = 255,
         dash: Sequence[float] | None = None,
+        shift: tuple[float, float] = (1.0, 0.0),
     ) -> Series:
         xa = np.asarray(x, dtype=np.float64)
         ya = np.asarray(y, dtype=np.float64)
@@ -471,6 +475,7 @@ class ChartPanel(QWidget):
             style=style,
             px=px,
             dash=tuple(dash) if dash else None,
+            shift=shift,
         )
         self.series.append(series)
         self._draw_series(series, None)
@@ -735,7 +740,9 @@ class ChartPanel(QWidget):
             writer = csv.writer(handle)
             writer.writerow(["curve", "x", "y"])
             for series in visible:
-                for xv, yv in zip(series.x.tolist(), series.y.tolist(), strict=True):
+                factor, offset = series.shift
+                xs, ys = series.x / factor, series.y - offset
+                for xv, yv in zip(xs.tolist(), ys.tolist(), strict=True):
                     if math.isfinite(xv) and math.isfinite(yv):
                         writer.writerow([series.name, f"{xv:.6g}", f"{yv:.6g}"])
         return path

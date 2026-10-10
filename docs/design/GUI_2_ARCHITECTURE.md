@@ -398,3 +398,14 @@ reworded here.
 * Ordinary desktop run, real Retina displays and measurements with a real
   audio interface and DAW are separate acceptance steps and are recorded as
   such in the pull request; offscreen tests do not stand in for them.
+
+## 12. Screenshots
+
+`docs/images/gui2/` holds offscreen screenshots of the workstation in
+Simplified Chinese, at 1366×768 and 1920×1080, light and dark, from the
+synthetic demo opened as a two-position project, named
+`<lang>_<width>x<height>_<scheme>_<view>.png`. The `@2x`
+files are rendered at a device pixel ratio of 2 as a high-DPI check; they
+are not captures from a Retina display. Regenerate them with
+
+    QT_QPA_PLATFORM=offscreen python scripts/render_gui2_screenshots.py

@@ -36,7 +36,7 @@ COLORMAPS = ("viridis", "inferno")
 
 #: A chart to export: a ``PlotWidget`` / ``GraphicsLayoutWidget`` (a
 #: ``QGraphicsView``) or a ``PlotItem`` inside one (a ``QGraphicsItem``).
-Chart = QGraphicsView | QGraphicsItem
+type Chart = QGraphicsView | QGraphicsItem
 
 
 @functools.cache

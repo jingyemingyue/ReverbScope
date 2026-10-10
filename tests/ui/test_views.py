@@ -24,6 +24,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication
 
 from reverbscope.core.pipeline import Reference, analyze, synthetic_recording
+from reverbscope.i18n import _
 from reverbscope.models.configuration import SweepSettings
 from reverbscope.models.result import AnalysisResult
 from reverbscope.models.session import MeasurementSession
@@ -254,3 +255,47 @@ def test_baseline_and_comparison_are_cached_per_pair(
     model.set_current(first)
     # The baseline against itself is not a comparison.
     assert current_comparison(model, same_gain=False) is None
+
+
+def test_waterfall_csv_holds_the_slices_without_the_perspective_shift(
+    app: Any, result: AnalysisResult, tmp_path: Path
+) -> None:
+    from reverbscope.ui.views.timefreq import WaterfallView
+
+    view = WaterfallView(_model(result))
+    view.perspective.setChecked(True)
+    _shown(view, app)
+    deadline = time.monotonic() + 30
+    while view.result is None and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(0.01)
+    assert view.result is not None
+    path = view.chart.export_csv(tmp_path / "waterfall.csv")
+    rows = [line.split(",") for line in path.read_text(encoding="utf-8").splitlines()]
+    last = _("{time:.1f} ms").format(time=float(view.result.times_ms[-1]))
+    xs = [float(row[1]) for row in rows if row[0] == last]
+    ys = [float(row[2]) for row in rows if row[0] == last]
+    finite = np.isfinite(view.result.levels_db[-1])
+    assert xs[0] == pytest.approx(float(view.result.freqs_hz[finite][0]), rel=1e-5)
+    assert max(ys) == pytest.approx(float(np.nanmax(view.result.levels_db[-1])), abs=1e-3)
+    view.shutdown()
+    view.close()
+
+
+def test_the_strip_shows_the_device_the_page_picked_after_a_refill(app: Any) -> None:
+    from PySide6.QtWidgets import QComboBox
+
+    from reverbscope.ui.measure_strip import _mirror_combo
+
+    page, strip = QComboBox(), QComboBox()
+    page.addItems(["a", "b"])
+    _mirror_combo(strip, page)
+    page.blockSignals(True)
+    page.clear()
+    page.addItems(["x", "y", "z"])
+    page.setCurrentIndex(2)  # the host API's default device
+    page.blockSignals(False)
+    app.processEvents()
+    assert strip.currentText() == "z"
+    strip.setCurrentIndex(0)
+    assert page.currentText() == "x"

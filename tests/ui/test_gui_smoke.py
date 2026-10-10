@@ -66,16 +66,18 @@ def test_daw_mode_end_to_end(app: QApplication, tmp_path: Path, short_sweep: Swe
     page.start_analysis(blocking=True)
     app.processEvents()
     assert window.state.result is not None
-    assert window.stack.currentWidget() is window.results
-    assert "ReverbScope analysis" in window.results.text.toPlainText()
-    assert window.results.table.rowCount() == 1 + len(window.state.result.decay.bands)
+    assert window.stack.currentWidget() is window.views["overview"]
+    overview = window.views["overview"]
+    assert overview.table.rowCount() == 1 + len(window.state.result.decay.bands)
     assert window.state.findings
+    window.show_view("report")
+    assert "ReverbScope analysis" in window.views["report"].text.toPlainText()
 
     out = tmp_path / "session"
-    window.results.save_to(out)
+    assert window.save_to(out)
     assert (out / "session.json").is_file()
     assert (out / "impulse_response.wav").is_file()
-    assert "saved" in window.results.status.text()
+    assert "saved" in window.statusBar().currentMessage()
 
     window.show_home()
     assert window.state.result is None
@@ -107,7 +109,7 @@ def test_reopen_saved_session(
     page.start_analysis(blocking=True)
     app.processEvents()
     out = tmp_path / "session"
-    window.results.save_to(out)
+    assert window.save_to(out)
     saved_rt60 = window.state.result.decay.broadband.rt60_estimate_s
     assert window.state.session.recording_profile == "vocal"
 
@@ -121,19 +123,27 @@ def test_reopen_saved_session(
     assert window.home.recent.count() == 1
     assert "Booth A" in window.home.recent.item(0).text()
 
-    window.open_session_path(out)
+    assert window.open_session_path(out)
     app.processEvents()
-    assert window.stack.currentWidget() is window.results
-    assert window.state.result is not None
-    assert window.state.session.room_name == "Booth A"
-    assert window.state.profile == "vocal"
-    assert window.state.result.decay.broadband.rt60_estimate_s == saved_rt60
-    assert window.state.result.impulse_response.samples.size > 0
-    assert "ReverbScope analysis" in window.results.text.toPlainText()
-    assert "Interpretation (Vocals profile)" in window.results.text.toPlainText()
-    window.results._copy_report()
-    assert app.clipboard().text() == window.results.text.toPlainText()
-    assert window.results.status.text()
+    assert window.stack.currentWidget() is window.views["overview"]
+    # The opened session is an entry of the workspace; the window's state only
+    # holds a live take.
+    opened = window.model.current()
+    assert opened is not None and opened.result is not None and opened.session is not None
+    assert opened.directory == out
+    assert opened.session.room_name == "Booth A"
+    assert opened.profile == "vocal"
+    assert opened.result.decay.broadband.rt60_estimate_s == saved_rt60
+    assert opened.result.impulse_response.samples.size > 0
+    subtitle = window.inspector.subtitle.text()
+    assert "Booth A" in subtitle and "Vocals profile" in subtitle
+    window.show_view("report")
+    report = window.views["report"]
+    assert "ReverbScope analysis" in report.text.toPlainText()
+    assert "Interpretation (Vocals profile)" in report.text.toPlainText()
+    report.copy_button.click()
+    assert app.clipboard().text() == report.text.toPlainText()
+    assert report.status.text()
     window.close()
 
 
@@ -146,23 +156,18 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
         for action in window.findChildren(QAction)
         if not action.shortcut().isEmpty()
     }
-    for needed in ("Ctrl+N", "Ctrl+O", "Ctrl+Shift+C", "Ctrl+,", "Ctrl+1", "Ctrl+2", "Ctrl+3"):
-        assert needed in shortcuts, shortcuts
-    from PySide6.QtWidgets import QLabel
-
-    from reverbscope.ui.widgets import shortcut_badge
-
-    badges = sorted(
-        child.text()
-        for child in window.home.findChildren(QLabel)
-        if child.property("role") == "badge"
-    )
-    expected = sorted(shortcut_badge(sequence) for sequence in ("Ctrl+1", "Ctrl+2", "Ctrl+3"))
-    assert badges == expected
-    assert "Home" in window.statusBar().currentMessage()
+    # The three modes moved to Ctrl+Shift+1/2/3; Ctrl+1 ... Ctrl+9 open the views.
+    needed = ("Ctrl+N", "Ctrl+O", "Ctrl+Shift+C", "Ctrl+,", "Ctrl+S", "Ctrl+1", "Ctrl+0")
+    for sequence in (*needed, "Ctrl+Shift+1", "Ctrl+Shift+2", "Ctrl+Shift+3"):
+        assert sequence in shortcuts, shortcuts
+    # The start panel has no mode cards any more (by design), so no shortcut
+    # badges to check against the Measure menu: the menu carries the keys.
+    assert "Start" in window.statusBar().currentMessage()
     assert window.daw.analyze_button.shortcut().toString() == "Ctrl+Return"
-    assert window.standalone.stop_button.shortcut().toString() == "Esc"
-    assert window.results.save_button.shortcut().toString() == "Ctrl+S"
+    # Stop and Esc live on the measure strip now, not on the Standalone page.
+    assert window.strip.stop_shortcut.key().toString() == "Esc"
+    # Results' Save button is gone: File > Save Session... carries Ctrl+S.
+    assert window.save_action.shortcut().toString() == "Ctrl+S"
     window.close()
 
 
@@ -255,11 +260,14 @@ def test_placement_tab_uses_tape_measurements(
     placement = window.state.result.placement
     assert placement is not None
     assert placement.tier == 2
-    assert window.results.tabs.tabText(window.results.tabs.count() - 1) == "Placement"
-    summary = window.results.place_tab.summary.text()
+    # The Placement tab moved to the Room view's side panel.
+    window.show_view("room")
+    assert window.current_view_id() == "room"
+    room = window.views["room"]
+    summary = room.placement_summary.text()
     assert "tier 2" in summary.lower()
-    assert window.results.place_tab.table.rowCount() == 3
-    height_item = window.results.place_tab.table.item(0, 1)
+    assert room.placement_table.rowCount() == 3
+    height_item = room.placement_table.item(0, 1)
     assert height_item is not None
     assert "m" in height_item.text()
     assert window.state.analysis_settings.placement_distance_m == pytest.approx(distance, abs=0.01)
@@ -288,7 +296,7 @@ def test_compare_two_saved_sessions(
     page.start_analysis(blocking=True)
     app.processEvents()
     first = tmp_path / "session-a"
-    window.results.save_to(first)
+    assert window.save_to(first)
     window.show_home()
     window.show_mode("universal_daw")
     page = window.daw
@@ -299,7 +307,7 @@ def test_compare_two_saved_sessions(
     page.start_analysis(blocking=True)
     app.processEvents()
     second = tmp_path / "session-b"
-    window.results.save_to(second)
+    assert window.save_to(second)
 
     window.show_compare()
     assert window.stack.currentWidget() is window.compare
@@ -307,6 +315,11 @@ def test_compare_two_saved_sessions(
     window.compare.same_gain.setChecked(True)
     window.compare.run_compare()
     app.processEvents()
+    # Compare opens the pair into the workspace: baseline against current.
+    baseline, current = window.model.baseline(), window.model.current()
+    assert baseline is not None and baseline.directory == first
+    assert current is not None and current.directory == second
+    assert window.stack.currentWidget() is window.compare
     assert "ReverbScope comparison" in window.compare.text.toPlainText()
     assert window.compare.table.rowCount() > 0
     assert window.compare.reflections.columnCount() == 4
@@ -330,8 +343,10 @@ def test_compare_tabs_say_when_a_topic_was_not_compared(
     from reverbscope.core.compare import compare
     from reverbscope.core.pipeline import Reference, analyze
     from reverbscope.i18n import activate
+    from reverbscope.interpretation.verdicts import judge_comparison
     from reverbscope.models.result import ResonanceCandidate
     from reverbscope.ui.compare_view import ComparePage
+    from reverbscope.ui.workspace import WorkspaceModel
 
     recording = synthetic_recording(
         short_sweep, make_rir(short_sweep.sample_rate, rt60_s=0.4, reflections=[(0.018, 0.35)])
@@ -352,11 +367,13 @@ def test_compare_tabs_say_when_a_topic_was_not_compared(
             resonances=replace(room.resonances, candidates=found, searched_range_hz=searched),
         )
 
-    page = ComparePage()
+    page = ComparePage(WorkspaceModel())
     full = take((26.7, 300.0), mode)
 
     def show(baseline, candidate):  # type: ignore[no-untyped-def]
-        page._show(compare(baseline, candidate), [], "generic")
+        comparison = compare(baseline, candidate)
+        verdict = judge_comparison(comparison, "generic", baseline=baseline, candidate=candidate)
+        page._show(comparison, [], "generic", verdict)
 
     show(full, take(None))
     assert page.resonances.rowCount() == 0
@@ -417,8 +434,11 @@ def test_help_licenses_and_report_heading(app: QApplication) -> None:
     ]
     assert any("license" in text.lower() or "许可" in text for text in texts)
     # Diagnostics are shown in the interface language now; the heading names
-    # the CLI command that prints the same report.
-    assert "reverbscope analyze" in window.results.diagnostics_heading.text()
+    # the CLI command that prints the same report (the Full report view now).
+    from PySide6.QtWidgets import QLabel
+
+    headings = [child.text() for child in window.views["report"].findChildren(QLabel)]
+    assert any("reverbscope analyze" in text for text in headings), headings
     window.close()
 
 
@@ -583,7 +603,7 @@ def test_compare_metrics_have_readable_names() -> None:
     """The compare table showed ids such as ``band.63 Hz.t20`` and ``not_comparable``."""
     from reverbscope.models.result import Validity
     from reverbscope.ui.compare_view import metric_label, status_text
-    from reverbscope.ui.results import validity_text
+    from reverbscope.ui.views.overview import validity_text
 
     assert metric_label("broadband.t30", "s") == "Broadband T30 (s)"
     assert metric_label("band.63 Hz.rt60_estimate", "s") == "63 Hz RT60 estimate (s)"
@@ -674,9 +694,19 @@ def test_opening_a_session_forgets_the_previous_take(
     window = MainWindow()
     window.show()
     window.state.recording = AudioSignal(np.full(4800, 0.1), 48000)
-    window.open_session_path(folder)
-    assert window.state.recording is None
-    assert window.state.session.room_name == "Studio A"
+    assert window.open_session_path(folder)
+    # Opening adds the session to the list (it no longer resets the window's
+    # live-take state, so state.recording is not checked); the opened entry
+    # is current with its own session.
+    opened = window.model.current()
+    assert opened is not None and opened.directory == folder
+    assert opened.session is not None and opened.session.room_name == "Studio A"
+    # An opened session is not saved again, so the earlier recording can never
+    # be written as its recording.wav.
+    assert not window.save_to(folder)
+    assert not window.save_to(tmp_path / "elsewhere")
+    assert not (folder / "recording.wav").exists()
+    assert not (tmp_path / "elsewhere").exists()
     window.close()
 
 
@@ -689,12 +719,12 @@ def test_a_live_take_is_saved_with_its_session(
     from reverbscope.core.pipeline import Reference, analyze
     from reverbscope.io.session_store import RECORDING_FILE, load_session
     from reverbscope.io.wav import read_wav
-    from reverbscope.ui import results
+    from reverbscope.ui import main_window
 
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     errors: list[str] = []
     monkeypatch.setattr(
-        results.QMessageBox, "critical", lambda _parent, _title, text: errors.append(text)
+        main_window.QMessageBox, "critical", lambda _parent, _title, text: errors.append(text)
     )
     rate = short_sweep.sample_rate
     window = MainWindow()
@@ -707,7 +737,8 @@ def test_a_live_take_is_saved_with_its_session(
     folder = tmp_path / "studio"
     window.state.recording, window.state.result = takes[0]
     window.state.recording_path = None
-    window.results.save_to(folder)
+    window.standalone.analysis_finished.emit()  # the take joins the list
+    assert window.save_to(folder)
     assert load_session(folder).recording_path == RECORDING_FILE
     before = (folder / RECORDING_FILE).read_bytes()
 
@@ -715,16 +746,17 @@ def test_a_live_take_is_saved_with_its_session(
         raise OSError(28, "No space left on device")
 
     window.state.recording, window.state.result = takes[1]
+    window.standalone.analysis_finished.emit()
     # A context of its own: monkeypatch.undo() would also undo the fixture
     # that keeps the recent-sessions list out of the real ~/.reverbscope.
     with pytest.MonkeyPatch.context() as full_disk:
         full_disk.setattr(os, "fsync", disk_full)
-        window.results.save_to(folder)
+        assert not window.save_to(folder)
     assert errors and "No space left" in errors[0]
     assert (folder / RECORDING_FILE).read_bytes() == before
 
     elsewhere = tmp_path / "elsewhere"
-    window.results.save_to(elsewhere)
+    assert window.save_to(elsewhere)
     assert len(read_wav(elsewhere / RECORDING_FILE).samples) == len(takes[1][0].samples)
     window.close()
 
@@ -810,16 +842,28 @@ def test_a_late_analysis_never_joins_a_session_opened_meanwhile(
     page.room.setText("Booth A")
     try:
         page.start_analysis()
-        window.open_session_path(folder)  # Ctrl+O while it runs
-        studio_x = window.state.result
+        assert window.open_session_path(folder)  # Ctrl+O while it runs
+        opened = window.model.current()
+        assert opened is not None
+        studio_x = opened.result
         window.show_mode("universal_daw")  # back to the page to wait for it
     finally:
         held_analysis.set()
         _settle(app, page._worker)
-    assert window.stack.currentWidget() is page
-    assert window.state.session.room_name == "Studio X"
-    assert window.state.result is studio_x
-    assert "discarded" in page.status.text()
+    # Opening a session adds it to the list instead of replacing the take, so
+    # the late result is no longer discarded: it joins the list as a take of
+    # its own, under its own room, and the opened session keeps its result.
+    assert window.model.entry(opened.key) is opened
+    assert opened.session is not None and opened.session.room_name == "Studio X"
+    assert opened.result is studio_x
+    takes = [entry for entry in window.model.entries() if entry.is_take]
+    assert len(takes) == 1
+    take_entry = takes[0]
+    assert take_entry.session is not None and take_entry.session.room_name == "Booth A"
+    assert take_entry.result is not None and take_entry.result is not studio_x
+    assert take_entry.result is window.state.result
+    assert window.state.session.room_name == "Booth A"
+    assert take_entry.result.decay.broadband.rt60_estimate_s == pytest.approx(0.3, abs=0.1)
     assert page.analyze_button.isEnabled()
     window.close()
 
@@ -877,7 +921,7 @@ def test_the_measure_menu_does_not_switch_backend_under_a_running_take(
         held_take.set()
         _settle(app, page._measure_worker)
         _settle(app, page._analysis_worker)
-    assert window.stack.currentWidget() is window.results
+    assert window.stack.currentWidget() is window.views["overview"]
     assert window.state.session.output_channel == 1
     window.close()
 
@@ -905,8 +949,8 @@ def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
     page.run_button.click()
     _settle(app, page._measure_worker)
     _settle(app, page._analysis_worker)
-    assert window.stack.currentWidget() is window.results
-    window.results.save_to(tmp_path / "take")
+    assert window.stack.currentWidget() is window.views["overview"]
+    assert window.save_to(tmp_path / "take")
     saved = json.loads((tmp_path / "take" / "session.json").read_text(encoding="utf-8"))
     assert saved["mode"] == DEMO_MODE
     assert saved["notes"].startswith("SYNTHETIC DEMO")
@@ -932,7 +976,7 @@ def test_the_demo_cable_is_on_the_loopback_channel_the_box_says(
         page.run_button.click()
         _settle(app, page._measure_worker)
         _settle(app, page._analysis_worker)
-        assert window.stack.currentWidget() is window.results
+        assert window.stack.currentWidget() is window.views["overview"]
         assert window.state.result is not None
         return window.state.result
 
@@ -1174,8 +1218,9 @@ def test_saving_over_a_saved_session_asks_first(
         window.state.session = MeasurementSession(room_name=room)
         window.state.result = result
         window.state.findings = interpret(result, "generic")
+        window.daw.analysis_finished.emit()  # the take joins the list
         window.show_results()
-        window.results._choose_save_directory()
+        window.save_action.trigger()  # File > Save Session... (Ctrl+S)
         saved = json.loads((folder / "session.json").read_text(encoding="utf-8"))
         return str(saved["room_name"])
 
@@ -1197,7 +1242,7 @@ def _demo_take(app: QApplication, window: MainWindow, seconds: float = 1.0) -> N
     page.run_button.click()
     _settle(app, page._measure_worker)
     _settle(app, page._analysis_worker)
-    assert window.stack.currentWidget() is window.results
+    assert window.stack.currentWidget() is window.views["overview"]
 
 
 def test_daw_mode_analyses_only_the_recording_it_shows(
@@ -1238,9 +1283,9 @@ def test_daw_mode_analyses_only_the_recording_it_shows(
     window.show_mode("universal_daw")
     assert daw.recording_label.text().startswith("daw_take.wav")
     daw.start_analysis(blocking=True)
-    assert window.stack.currentWidget() is window.results
+    assert window.stack.currentWidget() is window.views["overview"]
     assert window.state.recording_path == take_path
-    window.results.save_to(tmp_path / "session")
+    assert window.save_to(tmp_path / "session")
     saved = json.loads((tmp_path / "session" / "session.json").read_text(encoding="utf-8"))
     assert saved["mode"] == "universal_daw"
     copied = read_wav(tmp_path / "session" / saved["recording_path"])
@@ -1288,7 +1333,7 @@ def test_a_standalone_take_never_replaces_the_daw_reference(
     assert result is not None
     assert result.sweep_settings["duration_s"] == short_sweep.duration_s
     assert result.decay.broadband.rt60_estimate_s == pytest.approx(0.4, rel=0.1)
-    window.results.save_to(tmp_path / "session")
+    assert window.save_to(tmp_path / "session")
     saved = json.loads((tmp_path / "session" / "session.json").read_text(encoding="utf-8"))
     assert saved["sweep_settings"]["duration_s"] == short_sweep.duration_s
     window.close()
@@ -1511,9 +1556,13 @@ def test_a_comparison_saved_from_the_app_names_its_sessions(
     target = tmp_path / "gui_comparison.json"
     monkeypatch.setattr(compare_view, "ask_save_path", lambda *_a, **_k: target)
     window = MainWindow()
+    # The compare view computes the comparison when it is drawn, which needs
+    # it on screen (as it is when its Save button is clicked).
+    window.show()
     page = window.compare
     page.set_paths(tmp_path / "base", tmp_path / "cand")
     page.run_compare()
+    assert window.stack.currentWidget() is page
     page._save()
     saved = load_comparison(target)
     assert saved.baseline_session == str(tmp_path / "base")
@@ -1539,18 +1588,19 @@ def test_back_from_compare_returns_to_the_unsaved_result(
     result, recording = window.state.result, window.state.recording
     assert recording is not None and window.state.recording_path is None
     window.show_compare()
-    window.compare.back.emit()
-    assert window.stack.currentWidget() is window.results
+    assert window.stack.currentWidget() is window.compare
+    # Compare has no Back button any more: it is a view like the others, and
+    # the way back is the Overview view (Ctrl+1). Going home is New
+    # Measurement, so the old "Back from Compare opened from Home" check is gone.
+    window.view_actions["overview"].trigger()
+    assert window.stack.currentWidget() is window.views["overview"]
     assert window.state.result is result
     assert window.state.recording is recording
-    assert window.statusBar().currentMessage().endswith("Results")
-    window.results.save_to(tmp_path / "take")
+    current = window.model.current()
+    assert current is not None and current.is_take and current.result is result
+    assert window.statusBar().currentMessage().endswith("Overview")
+    assert window.save_to(tmp_path / "take")
     assert (tmp_path / "take" / "recording.wav").is_file()
-
-    window.show_home()
-    window.show_compare()
-    window.compare.back.emit()
-    assert window.stack.currentWidget() is window.home
     window.close()
 
 
@@ -1632,14 +1682,16 @@ def _theme_colours(window: MainWindow) -> dict[str, str]:
 
     from reverbscope.ui.widgets import FindingCard
 
-    cards = window.results.findChildren(FindingCard)
+    overview = window.views["overview"]
+    cards = overview.findChildren(FindingCard)
     assert cards
+    # The result and compare charts are pyqtgraph panels now: their background.
     return {
-        "results chart": to_hex(window.results.ir_tab.figure.get_facecolor()),
-        "compare chart": to_hex(window.compare.figure.get_facecolor()),
+        "results chart": window.views["etc"].chart.plot.backgroundBrush().color().name(),
+        "compare chart": window.compare.diff_chart.plot.backgroundBrush().color().name(),
         "placement picture": to_hex(window.daw.placement.figure.get_facecolor()),
         "finding card": cards[-1].styleSheet(),
-        "chip": window.results.overview.rt60.chip.styleSheet(),
+        "chip": overview.overview.rt60.chip.styleSheet(),
     }
 
 
@@ -1658,6 +1710,7 @@ def test_a_new_theme_in_settings_redraws_cards_and_charts(
     from reverbscope.core.compare import compare
     from reverbscope.core.pipeline import Reference, analyze
     from reverbscope.interpretation import interpret
+    from reverbscope.interpretation.verdicts import judge_comparison
     from reverbscope.settings import UserSettings, save_settings
     from reverbscope.ui import settings_dialog
     from reverbscope.ui.theme import DARK_TOKENS, LIGHT_TOKENS, apply_application_chrome
@@ -1678,10 +1731,14 @@ def test_a_new_theme_in_settings_redraws_cards_and_charts(
         Reference.from_settings(short_sweep),
     )
     window = MainWindow()
+    window.show()
     window.state.result = result
     window.state.findings = interpret(result, "generic")
-    window.show_results()
-    window.compare._show(compare(result, result), [], "generic")
+    window.daw.analysis_finished.emit()  # the take joins the list
+    window.show_view("overview")
+    comparison = compare(result, result)
+    verdict = judge_comparison(comparison, "generic", baseline=result, candidate=result)
+    window.compare._show(comparison, [], "generic", verdict)
     before = _theme_colours(window)
     assert before["results chart"] == LIGHT_TOKENS["surface"]
     window.show_settings()
@@ -1710,6 +1767,7 @@ def test_following_the_system_redraws_the_window_when_the_system_turns_dark(
     from reverbscope.core.compare import compare
     from reverbscope.core.pipeline import Reference, analyze
     from reverbscope.interpretation import interpret
+    from reverbscope.interpretation.verdicts import judge_comparison
     from reverbscope.ui.theme import DARK_TOKENS, ENV_COLOR_SCHEME, apply_application_chrome
 
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
@@ -1720,10 +1778,14 @@ def test_following_the_system_redraws_the_window_when_the_system_turns_dark(
         Reference.from_settings(short_sweep),
     )
     window = MainWindow()
+    window.show()
     window.state.result = result
     window.state.findings = interpret(result, "generic")
-    window.show_results()
-    window.compare._show(compare(result, result), [], "generic")
+    window.daw.analysis_finished.emit()  # the take joins the list
+    window.show_view("overview")
+    comparison = compare(result, result)
+    verdict = judge_comparison(comparison, "generic", baseline=result, candidate=result)
+    window.compare._show(comparison, [], "generic", verdict)
     # The offscreen platform cannot change its scheme: the variable stands
     # in for the system's answer, and the signal is the one Qt sends.
     monkeypatch.setenv(ENV_COLOR_SCHEME, "dark")
@@ -1781,14 +1843,17 @@ def test_the_measure_menu_opens_each_mode(app: QApplication) -> None:
         for action in window.findChildren(QAction)
         if not action.shortcut().isEmpty()
     }
-    by_shortcut["Ctrl+2"].trigger()
+    # The Measure menu moved to Ctrl+Shift+1/2/3 (Ctrl+<n> opens the views).
+    by_shortcut["Ctrl+Shift+2"].trigger()
     assert window.stack.currentWidget() is window.standalone
     assert not window.standalone.demo_mode
-    by_shortcut["Ctrl+3"].trigger()
+    by_shortcut["Ctrl+Shift+3"].trigger()
     assert window.stack.currentWidget() is window.standalone
     assert window.standalone.demo_mode
-    by_shortcut["Ctrl+1"].trigger()
+    by_shortcut["Ctrl+Shift+1"].trigger()
     assert window.stack.currentWidget() is window.daw
+    by_shortcut["Ctrl+1"].trigger()
+    assert window.stack.currentWidget() is window.views["overview"]
     window.close()
 
 

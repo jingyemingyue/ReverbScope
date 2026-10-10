@@ -12,6 +12,7 @@ import sys
 import weakref
 from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplication, QKeySequence
@@ -162,13 +163,13 @@ class MainWindow(QMainWindow):
         self.navigator.open_project_requested.connect(self.choose_project)
         self.navigator.measure_position_requested.connect(self._measure_at)
         self.navigator.remove_requested.connect(self.remove_entry)
-        self.navigator.save_requested.connect(lambda _key: self.save_take())
+        self.navigator.save_requested.connect(self._weak(lambda window, _key: window.save_take()))
         self.inspector.compare_requested.connect(self.show_compare)
         self.inspector.same_gain.toggled.connect(self.compare.same_gain.setChecked)
         self.compare.same_gain.toggled.connect(self.inspector.same_gain.setChecked)
         self.compare.open_pair.connect(self._open_pair)
-        room = self.views["room"]
-        room.checks_changed.connect(self.inspector.set_room_checks)  # type: ignore[attr-defined]
+        room: Any = self.views["room"]  # a RoomView
+        room.checks_changed.connect(self.inspector.set_room_checks)
         self.project.measure_requested.connect(self._measure_position)
         self.project.open_session.connect(self._show_session)
         self.project.compare_requested.connect(self._compare_from_project)
@@ -177,7 +178,7 @@ class MainWindow(QMainWindow):
         self.daw.back.connect(self._leave_setup)
         self.standalone.back.connect(self._leave_setup)
         for page in (self.daw, self.standalone):
-            page.before_take = self._before_take
+            page.before_take = self._weak(lambda window: window._before_take(), default=True)
         self.strip.mode_changed.connect(self._strip_mode)
         self.strip.setup_requested.connect(self.show_mode)
         self.strip.start_requested.connect(self._strip_start)
@@ -301,6 +302,20 @@ class MainWindow(QMainWindow):
         help_menu.addSeparator()
         help_menu.addAction(about_action)
         help_menu.addAction(licenses_action)
+
+    def _weak(self, call: Callable[..., Any], default: Any = None) -> Callable[..., Any]:
+        """``call(window, *args)`` holding the window by a weak reference only.
+
+        A lambda or bound method of the window kept by its own children (a Qt
+        connection, a page's hook) keeps a closed window alive for good.
+        """
+        window = weakref.ref(self)
+
+        def run(*args: Any) -> Any:
+            target = window()
+            return default if target is None else call(target, *args)
+
+        return run
 
     def _show_mode_action(self, mode: str) -> Callable[[], None]:
         """What a Measure-menu action runs: open ``mode``.
@@ -451,6 +466,10 @@ class MainWindow(QMainWindow):
             self._go_home()
 
     def _go_home(self) -> None:
+        if self.standalone.is_busy():
+            # The page stays alive behind the start panel: stop the sweep, as
+            # leaving the page always did.
+            self.standalone.stop_measurement()
         for entry in self.model.entries():
             if entry.is_take:
                 self.model.remove(entry.key)
@@ -511,7 +530,6 @@ class MainWindow(QMainWindow):
             loaded.session,
             loaded.result,
             profile=profile,
-            position=loaded.session.measurement_position if self.model.project_path else "",
         )
         remember_session(loaded.directory)
         self.show_view(
@@ -650,7 +668,8 @@ class MainWindow(QMainWindow):
         if result is None:
             return
         session = self.state.session
-        position = self.strip.position.currentText().strip() or session.measurement_position
+        # The position the take was started at, not what the strip shows now.
+        position = session.measurement_position.strip() or self.strip.position.currentText().strip()
         self.model.add_take(
             session,
             result,

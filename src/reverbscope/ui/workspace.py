@@ -89,6 +89,9 @@ class Entry:
     error: str = ""
     #: A take on the fake backend (the demo): never a measurement of a room.
     synthetic: bool = False
+    #: Read from (or saved into) the open project; a session opened on its
+    #: own beside a project is not one of its positions.
+    in_project: bool = False
 
     @property
     def loading(self) -> bool:
@@ -341,8 +344,17 @@ class WorkspaceModel(QObject):
         index = self._next_color(entry.key)
         entry.color_index = index
         entry.color = ENTRY_COLORS[index]
+        replaced = self._entries.get(entry.key)
         self._entries[entry.key] = entry
         self._cache.pop(entry.key, None)
+        # The selected reflection indexed the old result's list.
+        if (
+            replaced is not None
+            and replaced.result is not entry.result
+            and self._reflection[0] == entry.key
+        ):
+            self._reflection = ("", -1)
+            self.reflection_changed.emit("", -1)
         return entry
 
     def add_session(
@@ -438,6 +450,7 @@ class WorkspaceModel(QObject):
         entry.unsaved = False
         if position:
             entry.position = position
+            entry.in_project = self.project_path is not None
         rebuilt: dict[str, Entry] = {}
         for k, value in self._entries.items():
             rebuilt[new_key if k == key else k] = value
@@ -567,15 +580,20 @@ class WorkspaceModel(QObject):
     def open_project(self, path: Path, *, selection: dict[str, Any] | None = None) -> None:
         """Read the project at ``path`` in the background.
 
-        Saved sessions of the previous project and loose sessions are closed;
-        an unsaved take stays (the window asked about it, and it may be saved
+        Saved sessions of the previous project and loose sessions are closed
+        (reading the same project again keeps the loose ones); an unsaved take
+        stays (the window asked about it, and it may be saved
         into this project). ``selection`` (from ``ui.ini``) is restored once
         the takes it names are loaded.
         """
         self._stop_loader()
         self.generation += 1
         same = self.project_path is not None and path.resolve() == self.project_path.resolve()
-        for key in [entry.key for entry in self._entries.values() if not entry.unsaved]:
+        for key in [
+            entry.key
+            for entry in self._entries.values()
+            if not entry.unsaved and (entry.in_project or not same)
+        ]:
             self._drop(key, notify=False, keep_color=same)
         if not same:
             self._colors = {k: v for k, v in self._colors.items() if k in self._entries}
@@ -623,13 +641,7 @@ class WorkspaceModel(QObject):
         self.project_changed.emit()
 
     def _in_project(self, entry: Entry) -> bool:
-        if self.project_path is None or entry.directory is None:
-            return False
-        try:
-            entry.directory.resolve().relative_to(self.project_path.resolve())
-        except ValueError:
-            return bool(entry.position)
-        return True
+        return self.project_path is not None and entry.in_project
 
     def add_position(self, label: str) -> None:
         """A position named in the window before its first take is saved."""
@@ -664,6 +676,7 @@ class WorkspaceModel(QObject):
                 profile=loaded.profile,
                 error=localize(loaded.error) if loaded.error else "",
                 synthetic=loaded.session is not None and loaded.session.mode == "demo",
+                in_project=True,
             )
         )
         self.entries_changed.emit()

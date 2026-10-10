@@ -6075,6 +6075,15 @@ msgid "The end of the time range ({end_ms:g} ms) must be after its start ({start
 msgstr "时间范围的终点（{end_ms:g} ms）必须晚于起点（{start_ms:g} ms）。"
 
 # GUI 2.0 workspace: workspace. Entries for this part go directly below.
+msgid "It is not overwritten; changes here are not saved."
+msgstr "该文件不会被覆盖；此处的修改不会保存。"
+
+msgid "Replace the room and loudspeaker entered here with the example?"
+msgstr "用示例替换此处已输入的房间和扬声器？"
+
+msgid "The example is saved in {path}."
+msgstr "示例会保存到 {path}。"
+
 msgid "No curve: {bands}."
 msgstr "无曲线：{bands}。"
 
@@ -6229,8 +6238,8 @@ msgstr "示例房间"
 msgid "Export"
 msgstr "导出"
 
-msgid "Fill in a 5 x 4 x 2.7 m example to try the view; it is saved only if you keep it."
-msgstr "填入一个 5 × 4 × 2.7 m 的示例试用此视图；只有保留它时才会保存。"
+msgid "Fill in a 5 x 4 x 2.7 m example to try the view; a room already entered is replaced only after you confirm."
+msgstr "填入一个 5 × 4 × 2.7 m 的示例试用此视图；已输入的房间只有在你确认后才会被替换。"
 
 msgid "Fit the chart again (R or double-click)."
 msgstr "重新适配图表（R 或双击）。"

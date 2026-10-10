@@ -108,6 +108,10 @@ class _TimeFrequencyView(AnalysisView):
         self._generation = 0
         self._worker: TransformWorker | None = None
         self._old_workers: list[TransformWorker] = []
+        # The result the running transform reads: a late answer for an entry
+        # that was replaced meanwhile (saved over, project read again) is dropped.
+        self._source: object = None
+        self._shown_key = ""
         self.result: TimeFrequencyResult | None = None
         self._debounce = QTimer(self)
         self._debounce.setSingleShot(True)
@@ -175,6 +179,12 @@ class _TimeFrequencyView(AnalysisView):
         assert entry.result is not None
         self._cancel_running()
         self._generation += 1
+        self._source = entry.result
+        if self._shown_key != entry.key:
+            # Not the previous measurement's picture under this one's name.
+            self.clear_chart()
+            self.notes.setText("")
+            self._shown_key = ""
         ir = entry.result.impulse_response
         worker = TransformWorker(
             self._generation,
@@ -201,6 +211,9 @@ class _TimeFrequencyView(AnalysisView):
     def _on_done(self, generation: int, key: str, params: object, result: object) -> None:
         if generation != self._generation or not isinstance(result, TimeFrequencyResult):
             return
+        source = self.model.entry(key)
+        if source is None or source.result is not self._source:
+            return
         self.model.cache_put(key, (self.kind, params), result)
         entry = self.model.current()
         if entry is not None and entry.key == key:
@@ -222,6 +235,7 @@ class _TimeFrequencyView(AnalysisView):
 
     def _show(self, entry: Entry, result: TimeFrequencyResult) -> None:
         self.result = result
+        self._shown_key = entry.key
         self.status.setText(
             _("{name}: {unit}").format(name=entry_label(entry), unit=_(result.unit))
         )
@@ -280,6 +294,7 @@ class SpectrogramView(_TimeFrequencyView):
             y_frequency=True,
         )
         self.chart.export_name = "spectrogram"
+        self.chart.csv_action.setVisible(False)  # an image: no curves to list
         self.chart.readout_hook = self._readout
         self.image = pg.ImageItem(axisOrder="col-major")
         self.chart.plot_item.addItem(self.image)
@@ -314,6 +329,7 @@ class SpectrogramView(_TimeFrequencyView):
 
     def clear_chart(self) -> None:
         self.image.clear()
+        self.chart.set_title("")
 
     def draw_result(self, entry: Entry, result: TimeFrequencyResult) -> None:
         levels = np.asarray(result.levels_db, dtype=np.float64)
@@ -443,6 +459,7 @@ class WaterfallView(_TimeFrequencyView):
 
     def clear_chart(self) -> None:
         self.chart.clear()
+        self.chart.set_title("")
         self.slice_label.setText("")
 
     def offsets(self, index: int, count: int) -> tuple[float, float]:
@@ -476,6 +493,7 @@ class WaterfallView(_TimeFrequencyView):
                 readout=selected,
                 legend=index in (0, count - 1) or selected,
                 z=100 if selected else count - index,
+                shift=(10.0**dx, dy),
             )
         top_dx, top_dy = self.offsets(count - 1, count)
         fmin = float(result.freqs_hz[0])

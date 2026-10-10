@@ -142,9 +142,7 @@ def test_a_valid_placement_draws_the_ring_of_loudspeaker_positions() -> None:
     centre, radius = placement_ring(placement, mic) or (None, None)
     assert centre == Point(2.0, 1.0, 1.2) and radius == 1.5
     assert placement_ring(placement, None) is None
-    unknown = replace(
-        placement, source_height_m=PlacementLength(None, Validity.INSUFFICIENT_RANGE)
-    )
+    unknown = replace(placement, source_height_m=PlacementLength(None, Validity.INSUFFICIENT_RANGE))
     assert placement_ring(unknown, mic) is None
 
 
@@ -251,3 +249,72 @@ def test_closing_the_window_waits_for_the_spectrogram_and_the_project_load(
     running = [thread for thread in window.findChildren(QThread) if thread.isRunning()]
     assert running == []
     assert not window.model.loading
+
+
+def test_example_room_never_silently_replaces_a_saved_room(
+    app: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The Example room button overwrote a room already saved in the project."""
+    from PySide6.QtWidgets import QMessageBox
+
+    from reverbscope.geometry.room import Point, RoomBox, RoomGeometry, load_geometry, save_geometry
+    from reverbscope.ui.room.view import RoomView
+    from reverbscope.ui.workspace import WorkspaceModel
+
+    save_geometry(tmp_path, RoomGeometry(room=RoomBox(9.0, 7.0, 3.5), source=Point(1, 1, 1)))
+    model = WorkspaceModel()
+    model.project_path = tmp_path
+    view = RoomView(model)
+    view.load(tmp_path)
+    monkeypatch.setattr(QMessageBox, "exec", lambda self: QMessageBox.StandardButton.Cancel)
+    view.use_example()
+    _pump(app, 0.7)
+    stored = load_geometry(tmp_path)
+    assert stored is not None and stored.room == RoomBox(9.0, 7.0, 3.5)
+    assert view.room_geometry.room == RoomBox(9.0, 7.0, 3.5)
+    view.shutdown()
+    view.close()
+
+
+def test_a_room_file_that_cannot_be_read_is_never_overwritten(app: Any, tmp_path: Path) -> None:
+    from reverbscope.ui.room.view import RoomView
+    from reverbscope.ui.workspace import WorkspaceModel
+
+    text = (
+        '{"schema_version": 1, "room": {"length_m": 5, "width_m": 4, "height_m": 2.7},'
+        ' "microphones": {"A": {"x": 1}}}'
+    )
+    (tmp_path / "room-geometry.json").write_text(text, encoding="utf-8")
+    model = WorkspaceModel()
+    model.project_path = tmp_path
+    view = RoomView(model)
+    view.load(tmp_path)
+    assert "Cannot read the room file" in view.save_status.text()
+    view.source_box.setChecked(True)
+    view.length_spin.setValue(6.0)
+    view.use_example()
+    _pump(app, 0.7)
+    assert not view.save()
+    assert (tmp_path / "room-geometry.json").read_text(encoding="utf-8") == text
+    view.shutdown()
+    view.close()
+
+
+def test_replacing_an_entry_clears_its_reflection_selection(
+    app: Any, result: AnalysisResult, tmp_path: Path
+) -> None:
+    """Index 1 of the old result's reflections means nothing in a new result."""
+    from reverbscope.ui.inspector import Inspector
+    from reverbscope.ui.workspace import WorkspaceModel
+
+    folder = tmp_path / "a-1"
+    model = WorkspaceModel()
+    entry = model.add_session(folder, MeasurementSession(), result)
+    inspector = Inspector(model)
+    assert len(result.reflections.reflections) >= 2
+    model.select_reflection(entry.key, 1)
+    fewer = replace(result, reflections=replace(result.reflections, reflections=()))
+    model.add_session(folder, MeasurementSession(), fewer)
+    assert model.selected_reflection() == ("", -1)
+    inspector.refresh()  # raised IndexError
+    inspector.close()

@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QHeaderView,
+    QMessageBox,
     QPushButton,
     QScrollArea,
     QSplitter,
@@ -230,6 +231,9 @@ class RoomView(AnalysisView):
         self._old_loaders: list[ScanLoader] = []
         self._generation = 0
         self._filling = False
+        # A room file this version cannot read is shown as empty and never
+        # overwritten: a save would drop every position it holds.
+        self._read_only = False
         self._predicted: list[PredictedPath] = []
         self._save_timer = QTimer(self)
         self._save_timer.setSingleShot(True)
@@ -269,7 +273,10 @@ class RoomView(AnalysisView):
         self.import_button.clicked.connect(self.import_scan)
         self.example_button = QPushButton(_("Example room"))
         self.example_button.setToolTip(
-            _("Fill in a 5 x 4 x 2.7 m example to try the view; it is saved only if you keep it.")
+            _(
+                "Fill in a 5 x 4 x 2.7 m example to try the view; a room already entered "
+                "is replaced only after you confirm."
+            )
         )
         self.example_button.clicked.connect(self.use_example)
         tools.addWidget(self.import_button)
@@ -390,11 +397,14 @@ class RoomView(AnalysisView):
         self._stop_scan_loader()
         geometry = RoomGeometry()
         message = ""
+        self._read_only = False
         if directory is not None:
             try:
                 geometry = load_geometry(directory) or RoomGeometry()
             except GeometryError as exc:
+                self._read_only = True
                 message = _("Cannot read the room file: {error}").format(error=localize(str(exc)))
+                message += " " + _("It is not overwritten; changes here are not saved.")
         self.room_geometry = geometry
         if geometry.scan is not None and directory is not None:
             path = directory / geometry.scan.file
@@ -451,7 +461,7 @@ class RoomView(AnalysisView):
         self.room_geometry = geometry
         self.refresh()
         self._emit_checks()
-        if self.directory is not None and not geometry.newer:
+        if self._writable():
             self._save_timer.start()
 
     def _geometry_from_inputs(self) -> RoomGeometry:
@@ -470,8 +480,11 @@ class RoomView(AnalysisView):
             return without_microphone(geometry, position)
         return with_microphone(geometry, position, mic)
 
+    def _writable(self) -> bool:
+        return self.directory is not None and not self._read_only and not self.room_geometry.newer
+
     def save(self) -> bool:
-        if self.directory is None:
+        if self.directory is None or not self._writable():
             return False
         try:
             save_geometry(self.directory, self.room_geometry)
@@ -486,6 +499,9 @@ class RoomView(AnalysisView):
         return True
 
     def use_example(self) -> None:
+        entered = self.room_geometry.room is not None or self.room_geometry.source is not None
+        if entered and self._writable() and not self._confirm_example():
+            return
         example = example_room()
         position = position_of(self.model.current())
         mic = example.microphone("A")
@@ -499,6 +515,20 @@ class RoomView(AnalysisView):
         self._fill_inputs()
         self._edited()
         self.canvas.fit()
+
+    def _confirm_example(self) -> bool:
+        assert self.directory is not None
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Icon.Question)
+        box.setWindowTitle(_("Example room"))
+        box.setText(_("Replace the room and loudspeaker entered here with the example?"))
+        box.setInformativeText(
+            _("The example is saved in {path}.").format(path=self.directory / "room-geometry.json")
+        )
+        replace_button = box.addButton(_("Replace"), QMessageBox.ButtonRole.AcceptRole)
+        box.addButton(QMessageBox.StandardButton.Cancel)
+        box.exec()
+        return box.clickedButton() is replace_button
 
     def import_scan(self) -> None:
         from reverbscope.ui.room.scan_import import ScanImportDialog
@@ -521,7 +551,7 @@ class RoomView(AnalysisView):
                 ),
                 "warn",
             )
-        if self.directory is not None:
+        if self._writable():
             self._save_timer.start()
         self.canvas.set_scene(self._scene(), refit=True)
 
@@ -581,7 +611,11 @@ class RoomView(AnalysisView):
         key, index = self.model.selected_reflection()
         mic = self.room_geometry.microphone(position)
         scene.placement_ring = placement_ring(result.placement, mic)
-        if entry is not None and key == entry.key and index >= 0:
+        if (
+            entry is not None
+            and key == entry.key
+            and 0 <= index < len(result.reflections.reflections)
+        ):
             reflection = result.reflections.reflections[index]
             distance = direct_distance(self.room_geometry, position)
             constraint = constraint_for(reflection.delay_ms, distance, speed)
@@ -651,7 +685,12 @@ class RoomView(AnalysisView):
             if refusal is not None:
                 notes.append(_("Measured layer withheld: {reason}.").format(reason=refusal))
             key, index = self.model.selected_reflection()
-            if entry is not None and key == entry.key and index >= 0 and refusal is None:
+            if (
+                entry is not None
+                and key == entry.key
+                and 0 <= index < len(result.reflections.reflections)
+                and refusal is None
+            ):
                 reflection = result.reflections.reflections[index]
                 speed, _t, _a = speed_for(result)
                 constraint = constraint_for(

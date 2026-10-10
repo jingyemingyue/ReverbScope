@@ -145,7 +145,7 @@ class _Section(QWidget):
 
     def add_widget(self, widget: QWidget) -> None:
         self.extra.addWidget(widget)
-        # A reused widget was taken out with setParent(None), which hides it.
+        # A reused widget was parked while the section was cleared, hidden.
         widget.show()
 
 
@@ -159,6 +159,10 @@ class Inspector(QWidget):
         super().__init__(parent)
         self.model = model
         self.setMinimumWidth(220)
+        # Holds the reused buttons while their section is rebuilt, so they
+        # are never parentless (and never outlive the window).
+        self._parking = QWidget(self)
+        self._parking.hide()
         self._room_checks: list[ConsistencyCheck] = []
         self._room_note = ""
         outer = QVBoxLayout(self)
@@ -345,7 +349,7 @@ class Inspector(QWidget):
         assert entry.result is not None
         section = self.conditions
         # The button is reused; take it out before clearing.
-        self.profile_button.setParent(None)
+        self.profile_button.setParent(self._parking)
         section.clear()
         result = entry.result
         session = entry.session
@@ -396,7 +400,7 @@ class Inspector(QWidget):
         section = self.comparison
         # The check box and the button are reused; take them out before clearing.
         for widget in (self.same_gain, self.details_button):
-            widget.setParent(None)
+            widget.setParent(self._parking)
         section.clear()
         baseline = self.model.baseline()
         current = self.model.current()
@@ -442,7 +446,11 @@ class Inspector(QWidget):
         section.clear()
         key, index = self.model.selected_reflection()
         entry = self.model.entry(key) if key else None
-        if entry is None or entry.result is None or index < 0:
+        if (
+            entry is None
+            or entry.result is None
+            or not 0 <= index < len(entry.result.reflections.reflections)
+        ):
             section.set_note(
                 _("Click a reflection marker in the impulse response or the room view.")
             )

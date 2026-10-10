@@ -273,6 +273,7 @@ class Navigator(QWidget):
         menu = self.context_menu(item)
         if menu is not None:
             menu.exec(self.tree.viewport().mapToGlobal(point))
+            menu.deleteLater()
 
     def context_menu(self, item: QTreeWidgetItem) -> QMenu | None:
         """The menu of a row (built separately so tests can read it)."""

@@ -235,8 +235,8 @@ microphone and loopback inputs, the position, and Start / Stop
 The three columns can be resized; their sizes, the view and the window are
 restored at the next start (**View ▸ Reset the layout** goes back to the
 default). A take that has not been saved is marked *unsaved*: starting a new
-take, opening a project, removing it or quitting asks first whether to save
-it.
+take, **New Measurement**, removing it or quitting asks first whether to
+save it (opening a session or a project keeps it in the list).
 
 The workstation has eleven views:
 
@@ -244,7 +244,7 @@ The workstation has eleven views:
 | --- | --- |
 | Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the measurement-health card, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
 | Frequency response | The magnitude of every drawn measurement, in its list colour, with the display smoothing named in the legend (the stored curve is unchanged). **Show the stored curve** adds the unsmoothed stored curve (dotted). A dashed curve is the electrical loopback when compensation ran. With a baseline set, a difference pane shows the current measurement minus the baseline. 0 dB is the interface, not “flat in the room”. |
-| Impulse response | The deconvolved IR and its energy-time curve with the early reflections (delay ms, level dB re direct; open markers for candidates). Click a reflection to select it: the inspector and the Room view show the same one. The peak is the direct sound; it is not normalised to 1.0. |
+| Impulse response | The deconvolved IR and its energy-time curve with the early reflections (delay ms, level dB re direct; open markers for candidates). Click a reflection to select it: the inspector and the Room view show the same one. The peak is the direct sound; the waveform is drawn scaled to that peak, and the curve's legend says so. |
 | Decay | Schroeder / energy-decay curves of the drawn measurements for one band, the evaluation range of the chosen metric shaded, and the T values by band. **All bands of the current measurement** draws Broadband solid and each octave band with its own dash pattern, so colour is not the only cue; a band without a curve or an RT60 says why. |
 | Noise | Quiet-segment spectrum and 50/60 Hz hum candidates. |
 | Spectrogram | Time against frequency of the impulse response, computed in the background. |
@@ -257,7 +257,8 @@ The workstation has eleven views:
 Every chart zooms with the wheel (about the cursor), pans with a drag,
 fits again with a double-click, R or **Reset view**, and shows the value
 under the cursor with its unit. **Export** saves the chart as PNG or SVG,
-or the drawn curves as CSV.
+or the drawn curves as CSV (the waterfall's slices without the perspective
+shift; the spectrogram is an image and has no CSV).
 
 Low-frequency resonance candidates are listed in the Full report (and in
 `resonances.csv` after `reverbscope export`). They are not a separate view.
