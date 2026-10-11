@@ -16,6 +16,10 @@ from numpy.typing import NDArray
 
 DEFAULT_YAW_DEG = -55.0
 DEFAULT_PITCH_DEG = 28.0
+#: Front and side stay recognisable, but a little pitch shows the top of the
+#: box so height can be judged. The near face is still the one the preset names.
+FRONT_PITCH_DEG = 18.0
+SIDE_PITCH_DEG = 18.0
 FIELD_OF_VIEW_DEG = 45.0
 #: Points closer to the eye than this (m) are not drawn.
 NEAR_M = 0.05
@@ -31,6 +35,8 @@ class OrbitCamera:
     target: tuple[float, float, float] = (0.0, 0.0, 0.0)
     #: True: look straight down, orthographic (the plan view).
     plan: bool = False
+    #: ``top``, ``front``, ``side``, or ``""`` once the user orbits away.
+    preset_name: str = ""
     #: Pixels per metre in the plan view.
     plan_scale: float = 60.0
     width: int = 640
@@ -107,6 +113,7 @@ class OrbitCamera:
         if self.plan:
             self.pan(dx_px, dy_px)
             return
+        self.preset_name = ""
         self.yaw_deg = (self.yaw_deg - 0.4 * dx_px) % 360.0
         self.pitch_deg = max(-85.0, min(85.0, self.pitch_deg + 0.4 * dy_px))
 
@@ -161,17 +168,20 @@ class OrbitCamera:
         """
         if name == "top":
             self.plan = True
+            self.preset_name = "top"
             return
         self.plan = False
+        self.preset_name = name
         if name == "front":
             self.yaw_deg = -90.0
-            self.pitch_deg = 8.0
+            self.pitch_deg = FRONT_PITCH_DEG
         elif name == "side":
             self.yaw_deg = 180.0
-            self.pitch_deg = 8.0
+            self.pitch_deg = SIDE_PITCH_DEG
 
     def reset(self, low: NDArray[np.float64], high: NDArray[np.float64]) -> None:
         self.plan = False
+        self.preset_name = ""
         self.yaw_deg = DEFAULT_YAW_DEG
         self.pitch_deg = DEFAULT_PITCH_DEG
         self.fit(low, high)

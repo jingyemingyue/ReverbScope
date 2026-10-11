@@ -316,7 +316,8 @@ def compensate(
     nfft = int(sfft.next_fast_len(h_mic.shape[0] + 2 * pad, real=True))
     spec_mic = sfft.rfft(h_mic, nfft)
     spec_lb = sfft.rfft(_two_sided_frame(fir, fir_peak_index, nfft))
-    freqs = np.fft.rfftfreq(nfft, 1.0 / sample_rate)
+    # ``rfftfreq`` is float64; the stub says any floating dtype.
+    freqs = np.asarray(np.fft.rfftfreq(nfft, 1.0 / sample_rate), dtype=np.float64)
     lo = float(excitation_band.low_hz)
     hi = float(excitation_band.high_hz)
     ratio = 2.0 ** float(SPECTRAL_REG_TRANSITION_OCTAVES)

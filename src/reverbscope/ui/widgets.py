@@ -145,6 +145,17 @@ def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:
     return widget
 
 
+def native_shortcut(sequence: str) -> str:
+    """How the platform shows ``sequence`` (Command on macOS, Ctrl elsewhere).
+
+    ``QKeySequence.toString`` returns a Python ``str``. The lint job does not
+    install PySide6, so the stub is missing and mypy sees ``Any``. ``str()``
+    is the value the method actually produces.
+    """
+    shown = QKeySequence(sequence).toString(QKeySequence.SequenceFormat.NativeText)
+    return str(shown)
+
+
 def shortcut_badge(sequence: str) -> str:
     """Key mark for a card: ``⌃1``, or ``⌘1`` on macOS.
 
@@ -153,7 +164,7 @@ def shortcut_badge(sequence: str) -> str:
     """
     key = sequence.rsplit("+", 1)[-1]
     if sys.platform == "darwin":
-        native = QKeySequence(sequence).toString(QKeySequence.SequenceFormat.NativeText)
+        native = native_shortcut(sequence)
         if native and "Ctrl" not in native:
             return native
         return f"⌘{key}"
@@ -174,7 +185,7 @@ class Card(QFrame):
         super().__init__(parent)
         self.setProperty("card", True)
         self.body = QVBoxLayout(self)
-        self.body.setContentsMargins(16, 14, 16, 14)
+        self.body.setContentsMargins(12, 10, 12, 10)
         self.body.setSpacing(spacing)
 
 
@@ -265,15 +276,16 @@ class StatTile(Card):
     def __init__(self, caption: str, parent: QWidget | None = None) -> None:
         super().__init__(parent, spacing=2)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        top = QHBoxLayout()
-        self.caption = label(caption, "kpi-label")
-        top.addWidget(self.caption)
-        top.addStretch(1)
-        self.chip = Chip()
-        top.addWidget(self.chip)
-        self.body.addLayout(top)
+        # The caption wraps on its own line. Sharing the row with the chip
+        # clipped Chinese captions once the tile got narrow.
+        self.caption = label(caption, "kpi-label", wrap=True)
+        self.body.addWidget(self.caption)
+        row = QHBoxLayout()
         self.value = label("-", "kpi-value")
-        self.body.addWidget(self.value)
+        row.addWidget(self.value, 1)
+        self.chip = Chip()
+        row.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.body.addLayout(row)
         self.sub = label("", "kpi-sub", wrap=True)
         self.body.addWidget(self.sub)
 
@@ -322,10 +334,10 @@ class FindingCard(QFrame):
         self.setObjectName("finding")
         self.setStyleSheet(
             f"QFrame#finding {{ background: {bg}; border-left: 4px solid {fg};"
-            " border-radius: 6px; }"
+            " border-radius: 2px; }"
         )
         row = QHBoxLayout(self)
-        row.setContentsMargins(12, 8, 12, 8)
+        row.setContentsMargins(10, 6, 10, 6)
         row.setSpacing(10)
         chip = Chip((severity_label or severity).upper(), tone)
         # A fixed width cut "NOT COMPARABLE" short; the column stays aligned

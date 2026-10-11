@@ -190,7 +190,8 @@ def test_room_pick_reset_and_presets(
     app: QApplication, result: AnalysisResult, tmp_path: Path
 ) -> None:
     from reverbscope.geometry.room import Point
-    from reverbscope.ui.room.camera import DEFAULT_PITCH_DEG, DEFAULT_YAW_DEG
+    from reverbscope.ui.room.camera import DEFAULT_PITCH_DEG, DEFAULT_YAW_DEG, FRONT_PITCH_DEG
+    from reverbscope.ui.room.canvas import view_caption
     from reverbscope.ui.room.view import RoomView
     from reverbscope.ui.workspace import WorkspaceModel
 
@@ -222,6 +223,9 @@ def test_room_pick_reset_and_presets(
     view.look("front")
     assert view.canvas.camera.plan is False
     assert view.canvas.camera.yaw_deg == pytest.approx(-90.0)
+    assert view.canvas.camera.pitch_deg == pytest.approx(FRONT_PITCH_DEG)
+    assert view.front_button.isChecked()
+    assert view.canvas.camera.preset_name == "front"
     centre = np.array([[2.5, 0.0, 1.35]])
     screen, visible = view.canvas.camera.project(centre)
     assert bool(visible[0])
@@ -235,8 +239,19 @@ def test_room_pick_reset_and_presets(
     assert view.canvas.camera.yaw_deg == pytest.approx(180.0)
     view.reset_view()
     assert view.canvas.camera.plan is False
+    assert view.canvas.camera.preset_name == ""
     assert view.canvas.camera.yaw_deg == pytest.approx(DEFAULT_YAW_DEG)
     assert view.canvas.camera.pitch_deg == pytest.approx(DEFAULT_PITCH_DEG)
+    assert "y = 0" in view_caption("front")
+    assert "lower edge" in view_caption("top")
+    # Orbiting leaves the named view, so the buttons no longer claim it.
+    view.look("side")
+    assert view.side_button.isChecked()
+    view.canvas.camera.orbit(40, 0)
+    view.canvas.camera_changed.emit()
+    assert view.canvas.camera.preset_name == ""
+    assert not view.side_button.isChecked()
+    assert "Microphone at A" in view.mic_box.detail.text()
     # The plan view still reports the floor of the entered box.
     view.canvas.set_plan(True)
     floor = Point(2.5, 2.0, 0.0)
@@ -244,6 +259,33 @@ def test_room_pick_reset_and_presets(
     assert view.canvas.surface_at(QPointF(float(screen[0, 0]), float(screen[0, 1]))) == "z0"
     view.shutdown()
     view.close()
+
+
+def test_native_shortcut_is_text_and_the_strip_names_its_phase(app: QApplication) -> None:
+    from reverbscope.ui.main_window import MainWindow
+    from reverbscope.ui.widgets import native_shortcut
+
+    shown = native_shortcut("Ctrl+1")
+    assert isinstance(shown, str) and "1" in shown
+    window = MainWindow()
+    window.resize(1100, 700)
+    window.show()
+    app.processEvents()
+    assert window.strip.phase.property("phase") == "idle"
+    assert window.strip.phase.text() == "Ready"
+    window.standalone.stop_button.setEnabled(True)
+    window.standalone.busy_changed.emit(True)
+    app.processEvents()
+    assert window.strip.phase.property("phase") == "measure"
+    assert window.strip.progress.isVisible()
+    assert window.strip.stop_button.isEnabled()
+    window.standalone.stop_button.setEnabled(False)
+    window.standalone.busy_changed.emit(True)
+    assert window.strip.phase.property("phase") == "analyze"
+    window.standalone.busy_changed.emit(False)
+    assert window.strip.phase.property("phase") == "idle"
+    assert not window.strip.stop_button.isEnabled()
+    window.close()
 
 
 def test_themes_swap_the_same_tokens(app: QApplication, monkeypatch: pytest.MonkeyPatch) -> None:

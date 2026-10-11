@@ -79,8 +79,8 @@ class _Overview(QWidget):
         body = QWidget()
         body.setProperty("page", True)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(14, 14, 14, 14)
-        layout.setSpacing(12)
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(8)
         scroll.setWidget(body)
         outer.addWidget(scroll)
 
@@ -377,8 +377,8 @@ class OverviewView(AnalysisView):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 10, 14, 6)
-        layout.setSpacing(6)
+        layout.setContentsMargins(8, 6, 8, 4)
+        layout.setSpacing(4)
         self.header = PageHeader(_("Overview"))
         layout.addWidget(self.header)
         self.empty = label(

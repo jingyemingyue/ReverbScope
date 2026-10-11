@@ -110,7 +110,10 @@ the same choice. **Set up...** opens the page for what the strip does not
 carry (sweep length, level, tape measurements, the DAW files). In DAW mode
 Start reads "Import recording..." and analyses the chosen files. Choosing a
 position in the navigator's menu ("Measure at …") or in the project view
-fills the strip's position and the pages' position and room fields.
+fills the strip's position and the pages' position and room fields. The
+strip names the phase (ready, measuring, analyzing) and puts the page's
+status on its own line, so a long message is not squeezed out of the
+control row. Stop looks armed only while a sweep can still be stopped.
 
 ## 3. Workspace model
 
@@ -359,9 +362,14 @@ thinning for display. The import dialog asks for the units, the up axis,
 the yaw and the alignment; the choice is stored with the file's SHA-256.
 
 **Rendering.** `ui/room/` draws with `QPainter` only: an orbit camera
-(rotate, pan, zoom about the cursor, fit, reset), an axis triad and a metre
-scale bar. The plan view allows dragging the loudspeaker and the
-microphone. It runs offscreen, so it is tested and screenshotted in CI.
+(rotate, pan, zoom about the cursor, fit, reset), an axis triad labelled
+length / width / up, a metre scale bar, the entered floor filled faintly,
+and a mark on the front edge (the face at y = 0). The canvas names the
+camera: plan (true to scale, front along the lower edge), front, side, or
+a free perspective after the user orbits. Front and side are pitched enough
+that the box reads as a volume; the near face is still the one the preset
+names. The plan view allows dragging the loudspeaker and the microphone.
+It runs offscreen, so it is tested and screenshotted in CI.
 
 ## 7. Threads and lifetimes
 

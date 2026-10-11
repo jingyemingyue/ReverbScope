@@ -239,7 +239,10 @@ their validity, the recording conditions and profile, the comparison with
 the baseline when one is set, the selected early reflection and the room
 checks. Along the bottom, the **measure strip** holds the mode (audio
 interface or DAW recording), the input, the sample rate, the microphone
-channel, the position, and Start / Stop (Ctrl+Return, Esc). **Advanced**
+channel, the position, and Start / Stop (Ctrl+Return, Esc). A label says
+Ready, Measuring or Analyzing, and the status line under the controls
+repeats what the set-up page would say (devices found, the sweep playing,
+analysis, stopped). **Advanced**
 opens the output device and the loopback channel. **Set up...** opens the
 full settings of the mode.
 
@@ -284,7 +287,10 @@ metres; x length, y width, z up), the loudspeaker and a microphone for each
 position. Start from the example room, or import a PLY or OBJ scan (drawn
 as entered geometry; nothing is measured from it). **Plan view**, **Front**
 and **Side** are predictable cameras; **Reset view** returns to the default
-angle. Drag rotates, right-drag pans, the wheel zooms about the cursor, and
+angle. The picture names which one is active. Orbiting leaves that name.
+The axes read as length (x), width (y) and up (z), the entered floor is
+filled, and the front edge (y = 0) is marked; in the plan that edge is the
+lower one. Drag rotates, right-drag pans, the wheel zooms about the cursor, and
 a double-click frames the room. In the plan view you can drag the
 loudspeaker and the microphones. Click a loudspeaker, a microphone, an
 entered face or a predicted reflection point. The face you typed is labelled

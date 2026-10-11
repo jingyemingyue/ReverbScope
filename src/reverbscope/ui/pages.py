@@ -909,16 +909,20 @@ class StandalonePage(QWidget):
         # With no device at all a take would only end in PortAudio's own
         # English error ("Error querying device -1").
         self.run_button.setEnabled(not self.is_busy() and bool(self._devices))
+        # A refresh while a take is running must not replace "Playing the sweep...".
+        if self.is_busy():
+            return
         if self.demo_mode:
-            set_banner_text(self.status, _("Demo mode: fake backend, no loudspeaker."))
+            self._report_status(_("Demo mode: fake backend, no loudspeaker."))
         elif not self._devices:
-            set_banner_text(
-                self.status, _("No audio device found; Universal DAW Mode still works."), "warn"
-            )
+            self._report_status(_("No audio device found; Universal DAW Mode still works."), "warn")
         else:
-            set_banner_text(
-                self.status, _("{n} audio device(s) found.").format(n=len(self._devices))
-            )
+            self._report_status(_("{n} audio device(s) found.").format(n=len(self._devices)))
+
+    def _report_status(self, text: str, tone: str = "") -> None:
+        """The page banner and the measure strip (``status_changed``)."""
+        set_banner_text(self.status, text, tone)
+        self.status_changed.emit(text, tone)
 
     def _chosen_devices(
         self,

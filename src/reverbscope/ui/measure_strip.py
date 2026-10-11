@@ -29,7 +29,7 @@ from PySide6.QtWidgets import (
 
 from reverbscope.i18n import N_, _
 from reverbscope.ui.pages import DawModePage, StandalonePage
-from reverbscope.ui.widgets import label, primary, set_banner_text
+from reverbscope.ui.widgets import label, native_shortcut, primary, set_banner_text
 from reverbscope.ui.workspace import WorkspaceModel
 
 #: Strip modes, in the order of the mode list. The product has no demo mode;
@@ -221,6 +221,10 @@ class MeasureStrip(QWidget):
         self.stop_button.setToolTip(_("Stop the take and silence the output (Esc)."))
         self.stop_button.clicked.connect(standalone.stop_measurement)
         row.addWidget(self.stop_button)
+        self.phase = QLabel(_("Ready"))
+        self.phase.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.phase.setMinimumWidth(72)
+        row.addWidget(self.phase)
         # Esc stops a take from any view; a QShortcut on the strip, which is
         # always visible, so it never competes with a hidden page's button.
         self.stop_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
@@ -228,25 +232,36 @@ class MeasureStrip(QWidget):
         self.stop_shortcut.activated.connect(self._escape)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
-        self.progress.setMaximumWidth(120)
+        self.progress.setMaximumWidth(160)
+        self.progress.setFormat("%p%")
         self.progress.setTextVisible(False)
         self.progress.hide()
-        row.addWidget(self.progress)
         self.status = QLabel("")
         self.status.setProperty("role", "hint")
-        self.status.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
-        self.status.setMinimumWidth(60)
-        row.addWidget(self.status, 2)
+        self.status.setWordWrap(True)
+        self.status.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.status.setMinimumWidth(80)
+        self.detail = QWidget()
+        detail = QHBoxLayout(self.detail)
+        detail.setContentsMargins(0, 0, 0, 0)
+        detail.setSpacing(8)
+        detail.addWidget(self.progress)
+        detail.addWidget(self.status, 1)
+        self.detail.hide()
+        outer.addWidget(self.detail)
 
         standalone.busy_changed.connect(self._busy)
         standalone.progress_changed.connect(self.progress.setValue)
-        standalone.status_changed.connect(self._status)
+        standalone.status_changed.connect(
+            lambda text, tone: self._status_if("standalone", text, tone)
+        )
         daw.busy_changed.connect(self._busy)
-        daw.status_changed.connect(self._status)
+        daw.status_changed.connect(lambda text, tone: self._status_if("universal_daw", text, tone))
         standalone.position.textChanged.connect(self._page_position)
         model.project_changed.connect(self._fill_positions)
         self._fill_positions()
         self._mode_selected()
+        self._set_phase("idle")
 
     # --- mode -----------------------------------------------------------------------
 
@@ -270,13 +285,14 @@ class MeasureStrip(QWidget):
         # visible buttons with one shortcut would make Qt fire neither.
         shortcut = QKeySequence("Ctrl+Return") if live else QKeySequence()
         self.start_button.setShortcut(shortcut)
-        native = shortcut.toString(QKeySequence.SequenceFormat.NativeText)
+        native = native_shortcut("Ctrl+Return") if live else ""
         self.start_button.setToolTip(
             _("Play the sweep and record it ({shortcut}).").format(shortcut=native)
             if live
             else _("Open the DAW recording page to import the recorded WAV file.")
         )
         self.mode_changed.emit(mode)
+        self._show_page_status()
 
     # --- position -------------------------------------------------------------------
 
@@ -316,12 +332,60 @@ class MeasureStrip(QWidget):
         if busy and not running:
             # The analysis has no progress of its own: a busy bar.
             self.progress.setRange(0, 0)
+            self._set_phase("analyze")
+        elif running:
+            self.progress.setRange(0, 100)
+            self._set_phase("measure")
         else:
             self.progress.setRange(0, 100)
+            self._set_phase("idle")
+        self._sync_detail()
+
+    def _set_phase(self, phase: str) -> None:
+        """``idle``, ``measure`` (sweep playing) or ``analyze``."""
+        texts = {
+            "idle": (_("Ready"), _("Not measuring.")),
+            "measure": (
+                _("Measuring"),
+                _("The sweep is playing. Stop ends it and silences the output."),
+            ),
+            "analyze": (
+                _("Analyzing"),
+                _("The recording is being analyzed. Playback has already finished."),
+            ),
+        }
+        caption, tip = texts[phase]
+        self.phase.setText(caption)
+        self.phase.setToolTip(tip)
+        self.phase.setProperty("phase", phase)
+        self.phase.style().unpolish(self.phase)
+        self.phase.style().polish(self.phase)
+        measuring = phase != "idle"
+        if bool(self.property("measuring")) != measuring:
+            self.setProperty("measuring", measuring)
+            self.style().unpolish(self)
+            self.style().polish(self)
+        self.progress.setProperty("phase", "measure" if phase == "measure" else "")
+        self.progress.setTextVisible(phase == "measure")
+        self.progress.style().unpolish(self.progress)
+        self.progress.style().polish(self.progress)
+
+    def _show_page_status(self) -> None:
+        page = self.standalone if self.current_mode() == "standalone" else self.daw
+        banner = page.status.property("banner")
+        self._status(page.status.text(), banner if isinstance(banner, str) else "")
+
+    def _status_if(self, mode: str, text: str, tone: str) -> None:
+        if mode == self.current_mode():
+            self._status(text, tone)
 
     def _status(self, text: str, tone: str) -> None:
         set_banner_text(self.status, text, tone)
         self.status.setToolTip(text)
+        self._sync_detail()
+
+    def _sync_detail(self) -> None:
+        self.detail.setVisible(bool(self.status.text()) or self.progress.isVisible())
 
     def _escape(self) -> None:
         if self.stop_button.isEnabled():

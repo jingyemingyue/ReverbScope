@@ -182,6 +182,7 @@ def _spin(maximum: float, special: str = "") -> QDoubleSpinBox:
     if special:
         spin.setSpecialValueText(special)
     spin.setKeyboardTracking(False)
+    spin.setMinimumWidth(108)
     return spin
 
 
@@ -194,6 +195,10 @@ class _PointBox(QGroupBox):
         self.setChecked(False)
         form = QFormLayout(self)
         form.setContentsMargins(6, 4, 6, 4)
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        self.detail = label("", "hint", wrap=True)
+        self.detail.hide()
+        form.addRow(self.detail)
         self.x_spin = _spin(1000.0)
         self.y_spin = _spin(1000.0)
         self.z_spin = _spin(1000.0)
@@ -211,6 +216,11 @@ class _PointBox(QGroupBox):
             self.x_spin.setValue(point.x)
             self.y_spin.setValue(point.y)
             self.z_spin.setValue(point.z)
+
+    def set_detail(self, text: str) -> None:
+        """A wrapping line under the title. Long position names do not fit the title."""
+        self.detail.setText(text)
+        self.detail.setVisible(bool(text))
 
     def spins(self) -> tuple[QDoubleSpinBox, ...]:
         return (self.x_spin, self.y_spin, self.z_spin)
@@ -244,8 +254,8 @@ class RoomView(AnalysisView):
         self._save_timer.timeout.connect(self.save)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 6, 8, 6)
-        layout.setSpacing(6)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(4)
         tools = QHBoxLayout()
         self.plan_button = QToolButton()
         self.plan_button.setText(_("Plan view"))
@@ -256,11 +266,13 @@ class RoomView(AnalysisView):
         self.plan_button.toggled.connect(self._toggle_plan)
         self.front_button = QToolButton()
         self.front_button.setText(_("Front"))
+        self.front_button.setCheckable(True)
         self.front_button.setToolTip(
             _("Look along the width. The entered face at y = 0 is nearest.")
         )
         self.side_button = QToolButton()
         self.side_button.setText(_("Side"))
+        self.side_button.setCheckable(True)
         self.side_button.setToolTip(
             _("Look along the length. The entered face at x = 0 is nearest.")
         )
@@ -275,15 +287,17 @@ class RoomView(AnalysisView):
         tools.addWidget(self.side_button)
         tools.addWidget(fit)
         tools.addWidget(reset)
-        tools.addSpacing(12)
+        tools.addStretch(1)
+        layers = QHBoxLayout()
+        layers.setSpacing(10)
         self.layer_boxes: dict[str, QCheckBox] = {}
         for layer in (LAYER_ENTERED, LAYER_MEASURED, LAYER_ASSUMED):
             box = QCheckBox(_(LAYER_NAMES[layer]))
             box.setChecked(True)
             box.toggled.connect(self._layers_changed)
-            tools.addWidget(box)
+            layers.addWidget(box)
             self.layer_boxes[layer] = box
-        tools.addStretch(1)
+        layers.addStretch(1)
         self.import_button = QPushButton(_("Import scan..."))
         self.import_button.clicked.connect(self.import_scan)
         self.example_button = QPushButton(_("Example room"))
@@ -294,9 +308,8 @@ class RoomView(AnalysisView):
             )
         )
         self.example_button.clicked.connect(self.use_example)
-        tools.addWidget(self.import_button)
-        tools.addWidget(self.example_button)
         layout.addLayout(tools)
+        layout.addLayout(layers)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
         self.canvas = RoomCanvas()
@@ -308,17 +321,23 @@ class RoomView(AnalysisView):
         self.canvas.device_moved.connect(self._device_moved)
         self.canvas.face_clicked.connect(self._face_clicked)
         self.canvas.surface_clicked.connect(self._surface_clicked)
+        self.canvas.camera_changed.connect(self._sync_camera_buttons)
         splitter.addWidget(self.canvas)
 
         side = QWidget()
         side_layout = QVBoxLayout(side)
         side_layout.setContentsMargins(6, 0, 0, 0)
         side_layout.setSpacing(6)
+        file_row = QHBoxLayout()
+        file_row.addWidget(self.import_button)
+        file_row.addWidget(self.example_button)
+        side_layout.addLayout(file_row)
         self.room_box = QGroupBox(_("Room box (inside, metres)"))
         self.room_box.setCheckable(True)
         self.room_box.setChecked(False)
         room_form = QFormLayout(self.room_box)
         room_form.setContentsMargins(6, 4, 6, 4)
+        room_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
         self.length_spin = _spin(200.0)
         self.width_spin = _spin(200.0)
         self.height_spin = _spin(200.0)
@@ -373,9 +392,9 @@ class RoomView(AnalysisView):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setMinimumWidth(250)
+        scroll.setMinimumWidth(220)
         splitter.addWidget(scroll)
-        splitter.setStretchFactor(0, 3)
+        splitter.setStretchFactor(0, 5)
         splitter.setStretchFactor(1, 2)
         layout.addWidget(splitter, 1)
 
@@ -447,6 +466,7 @@ class RoomView(AnalysisView):
     def _set_save_status(self, message: str = "") -> None:
         if message:
             set_banner_text(self.save_status, message, "warn")
+            self.save_status.setToolTip(message)
             return
         if self.directory is None:
             text = _("Not saved: open a project or a saved session to keep the room.")
@@ -455,6 +475,8 @@ class RoomView(AnalysisView):
         else:
             text = _("Saved in {path}").format(path=self.directory / "room-geometry.json")
         set_banner_text(self.save_status, text)
+        # The path is the whole point of the line; a narrow panel must not hide it.
+        self.save_status.setToolTip(text)
 
     # --- inputs -----------------------------------------------------------------------
 
@@ -468,7 +490,10 @@ class RoomView(AnalysisView):
             self.height_spin.setValue(box.height_m)
         self.source_box.set_point(self.room_geometry.source)
         position = position_of(self.model.current())
-        self.mic_box.setTitle(_("Microphone at {position}").format(position=position))
+        self.mic_box.setTitle(_("Microphone"))
+        detail = _("Microphone at {position}").format(position=position)
+        self.mic_box.set_detail(detail)
+        self.mic_box.setToolTip(detail)
         self.mic_box.set_point(self.room_geometry.microphone(position))
         self._filling = False
 
@@ -598,6 +623,17 @@ class RoomView(AnalysisView):
 
     def _toggle_plan(self, plan: bool) -> None:
         self.canvas.set_plan(plan)
+
+    def _sync_camera_buttons(self) -> None:
+        name = self.canvas.camera.preset_name
+        for button, preset in (
+            (self.plan_button, "top"),
+            (self.front_button, "front"),
+            (self.side_button, "side"),
+        ):
+            button.blockSignals(True)
+            button.setChecked(name == preset)
+            button.blockSignals(False)
 
     def look(self, preset: str) -> None:
         """``front`` or ``side``. The plan button is the top view."""

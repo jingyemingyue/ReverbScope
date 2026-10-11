@@ -259,19 +259,22 @@ class ChartPanel(QWidget):
         self.title_text = title
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
+        layout.setSpacing(2)
 
         top = QHBoxLayout()
         top.setSpacing(6)
         self.title = QLabel(title)
         self.title.setProperty("role", "section")
-        self.title.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.title.setMinimumWidth(48)
+        self.title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._title_full = title
         top.addWidget(self.title, 1)
         self.readout = QLabel("")
         self.readout.setProperty("role", "hint")
-        self.readout.setMinimumWidth(180)
+        self.readout.setMinimumWidth(72)
         self.readout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self.readout.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        self.readout.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self._readout_full = ""
         top.addWidget(self.readout, 1)
         self.reset_button = QToolButton()
         self.reset_button.setText(_("Reset view"))
@@ -302,7 +305,7 @@ class ChartPanel(QWidget):
         self.legend_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.legend_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.legend_area.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
-        self.legend_area.setFixedHeight(30)
+        self.legend_area.setFixedHeight(26)
         layout.addWidget(self.legend_area)
 
         axis_items: dict[str, Any] = {}
@@ -316,7 +319,7 @@ class ChartPanel(QWidget):
         self.plot.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.plot_item = self.plot.getPlotItem()
         disable_menus(self.plot_item)
-        self.plot_item.showGrid(x=True, y=True, alpha=0.25)
+        self.plot_item.showGrid(x=True, y=True, alpha=0.9)
         self.plot.setMinimumHeight(140)
         layout.addWidget(self.plot, 1)
         # Why the chart is empty (nothing stored, nothing selected), over the plot.
@@ -390,10 +393,24 @@ class ChartPanel(QWidget):
     def resizeEvent(self, event: Any) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
         self._place_message()
+        self._elide(self.title, self._title_full)
+        self._elide(self.readout, self._readout_full)
 
     def set_title(self, text: str) -> None:
         self.title_text = text
-        self.title.setText(text)
+        self._title_full = text
+        self._elide(self.title, text)
+
+    def _elide(self, label: QLabel, text: str) -> None:
+        """Keep the full string in the tooltip when the label is narrower than it."""
+        label.setToolTip(text)
+        width = label.width()
+        if width < 24:
+            label.setText(text)
+            return
+        shown = label.fontMetrics().elidedText(text, Qt.TextElideMode.ElideRight, max(8, width - 2))
+        label.setText(shown)
+        label.setToolTip("" if shown == text else text)
 
     def restyle(self) -> None:
         if self._disposed:
@@ -402,8 +419,9 @@ class ChartPanel(QWidget):
         self.plot.setBackground(QColor(t["surface"]))
         for name in ("bottom", "left"):
             axis = self.plot_item.getAxis(name)
-            axis.setPen(pg.mkPen(QColor(t["muted"])))
+            axis.setPen(pg.mkPen(QColor(t["grid"])))
             axis.setTextPen(pg.mkPen(QColor(t["text"])))
+        self.plot_item.showGrid(x=True, y=True, alpha=0.9)
         self.cursor_line.setPen(pg.mkPen(QColor(t["muted"]), width=1, style=Qt.PenStyle.DashLine))
         self.plot_item.setLabel("bottom", self.x_label, color=t["text"])
         self.plot_item.setLabel("left", self.y_label, color=t["text"])
@@ -682,7 +700,8 @@ class ChartPanel(QWidget):
             return
         self.cursor_line.setPos(plot_x)
         self.cursor_line.show()
-        self.readout.setText(self.readout_text(plot_x, plot_y))
+        self._readout_full = self.readout_text(plot_x, plot_y)
+        self._elide(self.readout, self._readout_full)
         series = self.readout_series()
         value = self.value_at(series, plot_x) if series is not None else None
         if series is not None and value is not None:

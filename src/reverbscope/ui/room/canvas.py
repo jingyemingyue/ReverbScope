@@ -16,7 +16,6 @@ from numpy.typing import NDArray
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import (
     QColor,
-    QFont,
     QMouseEvent,
     QPainter,
     QPaintEvent,
@@ -46,6 +45,25 @@ LAYER_STYLE = {
     LAYER_MEASURED: Qt.PenStyle.DashLine,
     LAYER_ASSUMED: Qt.PenStyle.DotLine,
 }
+
+
+def view_caption(name: str) -> str:
+    """What the camera is doing, in the active language.
+
+    ``name`` is :attr:`OrbitCamera.preset_name`. An empty name is a free orbit.
+    """
+    captions = {
+        "top": _("Plan, true to scale · front is the lower edge"),
+        "front": _("Front · the face at y = 0 is nearest"),
+        "side": _("Side · the face at x = 0 is nearest"),
+    }
+    return captions.get(name, _("Perspective · drag to orbit, right-drag to pan"))
+
+
+def _metres(value: float) -> str:
+    return _("{metres:.2f} m").format(metres=value)
+
+
 #: Pixels within which a click picks a device or a reflection point.
 PICK_PX = 12.0
 
@@ -187,6 +205,8 @@ class RoomCanvas(QWidget):
     face_clicked = Signal(str)
     #: An entered room face was clicked (``x0`` … ``z1``). Not a measured surface.
     surface_clicked = Signal(str)
+    #: The named view changed (orbit, a preset, plan, reset).
+    camera_changed = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -205,6 +225,7 @@ class RoomCanvas(QWidget):
         #: Coordinates of the last picked object, drawn on the canvas.
         self.hud = ""
         self.camera.reset(*self.scene.bounds())
+        self._sync_tooltip()
 
     # --- content ------------------------------------------------------------------------
 
@@ -215,8 +236,15 @@ class RoomCanvas(QWidget):
         self.update()
 
     def set_plan(self, plan: bool) -> None:
-        self.camera.plan = plan
+        if plan:
+            self.camera.preset("top")
+        else:
+            self.camera.plan = False
+            if self.camera.preset_name == "top":
+                self.camera.preset_name = ""
         self.fit()
+        self._sync_tooltip()
+        self.camera_changed.emit()
 
     def fit(self) -> None:
         self.camera.width, self.camera.height = self.width(), self.height()
@@ -226,6 +254,8 @@ class RoomCanvas(QWidget):
     def reset(self) -> None:
         self.camera.width, self.camera.height = self.width(), self.height()
         self.camera.reset(*self.scene.bounds())
+        self._sync_tooltip()
+        self.camera_changed.emit()
         self.update()
 
     def look(self, preset: str) -> None:
@@ -233,6 +263,21 @@ class RoomCanvas(QWidget):
         self.camera.width, self.camera.height = self.width(), self.height()
         self.camera.preset(preset)
         self.fit()
+        self._sync_tooltip()
+        self.camera_changed.emit()
+
+    def _sync_tooltip(self) -> None:
+        if self.camera.plan:
+            self.setToolTip(
+                _("Drag to pan. Drag a loudspeaker or microphone to move it. The wheel zooms.")
+            )
+            return
+        self.setToolTip(
+            _(
+                "Drag to orbit, right-drag to pan, wheel to zoom. "
+                "F frames the room, R resets the angle."
+            )
+        )
 
     # --- painting -----------------------------------------------------------------------
 
@@ -256,6 +301,8 @@ class RoomCanvas(QWidget):
         measured = QColor(t["warn"])
         assumed = QColor(t["muted"])
         self._draw_floor_grid(painter, QColor(t["border"]))
+        if layers.get(LAYER_ENTERED, True) and scene.box is not None:
+            self._draw_floor(painter, scene.box)
         if layers.get(LAYER_ENTERED, True):
             if scene.scan_points is not None and scene.scan_points.size:
                 self._draw_points(painter, scene.scan_points, QColor(t["muted"]))
@@ -314,16 +361,18 @@ class RoomCanvas(QWidget):
                     painter, scene.box, scene.selection.removeprefix("face:"), QColor(t["bad"])
                 )
         self._draw_dimensions(painter, text)
+        if layers.get(LAYER_ENTERED, True) and scene.box is not None:
+            self._draw_edge_labels(painter, scene.box, text)
+            self._draw_front_edge(painter, scene.box, entered)
         self._draw_triad(painter)
         self._draw_scale_bar(painter, text)
-        self._draw_legend(painter, text, entered, measured, assumed)
+        legend_bottom = self._draw_legend(painter, text, entered, measured, assumed)
+        self._draw_view_caption(painter, text, legend_bottom)
         if self.hud:
             painter.setPen(text)
             painter.drawText(
-                QRectF(70, self.height() - 72, max(40.0, self.width() - 200.0), 32),
-                Qt.AlignmentFlag.AlignLeft
-                | Qt.AlignmentFlag.AlignBottom
-                | Qt.TextFlag.TextWordWrap,
+                QRectF(12, legend_bottom + 36, max(40.0, self.width() * 0.62), 40),
+                Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextWordWrap,
                 self.hud,
             )
         if self.empty_text:
@@ -446,7 +495,7 @@ class RoomCanvas(QWidget):
         painter.drawText(centre + QPointF(9, -8), name)
 
     def _draw_triad(self, painter: QPainter) -> None:
-        origin = QPointF(42, self.height() - 42)
+        origin = QPointF(36, self.height() - 36)
         t = tokens()
         colors = {"x": QColor(t["bad"]), "y": QColor(t["good"]), "z": QColor(t["accent"])}
         if self.camera.plan:
@@ -457,10 +506,12 @@ class RoomCanvas(QWidget):
                 name: (float(right[i]), float(-up[i])) for i, name in enumerate(("x", "y", "z"))
             }
         for name, (dx, dy) in vectors.items():
-            end = origin + QPointF(dx * 26, dy * 26)
-            painter.setPen(QPen(colors[name], 2.0))
+            end = origin + QPointF(dx * 32, dy * 32)
+            painter.setPen(QPen(colors[name], 2.2))
             painter.drawLine(origin, end)
             painter.drawText(end + QPointF(3, 4), name)
+        painter.setPen(QColor(t["text"]))
+        painter.drawText(QPointF(78, self.height() - 28), _("x length · y width · z up"))
 
     def _draw_scale_bar(self, painter: QPainter, text: QColor) -> None:
         per_px = self.camera.metres_per_pixel()
@@ -484,9 +535,8 @@ class RoomCanvas(QWidget):
 
     def _draw_legend(
         self, painter: QPainter, text: QColor, entered: QColor, measured: QColor, assumed: QColor
-    ) -> None:
-        font = QFont(painter.font())
-        painter.setFont(font)
+    ) -> float:
+        """Draw the layer key and return the y under the last line."""
         y = 18.0
         for layer, color in (
             (LAYER_ENTERED, entered),
@@ -500,6 +550,58 @@ class RoomCanvas(QWidget):
             painter.setPen(text)
             painter.drawText(QPointF(46, y + 4), _(LAYER_NAMES[layer]))
             y += 18.0
+        return y
+
+    def _draw_view_caption(self, painter: QPainter, text: QColor, top: float) -> None:
+        painter.setPen(text)
+        painter.drawText(
+            QRectF(12, top + 2, min(340.0, max(80.0, self.width() - 160.0)), 34),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop | Qt.TextFlag.TextWordWrap,
+            view_caption(self.camera.preset_name),
+        )
+
+    def _draw_floor(self, painter: QPainter, box: RoomBox) -> None:
+        """A faint fill on the entered floor so the ground plane reads."""
+        indices = _FACE_CORNERS["z0"]
+        corners = _box_corners(box)
+        screen, visible = self.camera.project(corners)
+        if not all(bool(visible[i]) for i in indices):
+            return
+        color = QColor(tokens()["accent"])
+        color.setAlpha(36)
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(color)
+        painter.drawPolygon(
+            QPolygonF([QPointF(float(screen[i][0]), float(screen[i][1])) for i in indices])
+        )
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+
+    def _label_world(self, painter: QPainter, point: tuple[float, float, float], text: str) -> None:
+        screen, visible = self.camera.project(np.array([point]))
+        if not bool(visible[0]) or not math.isfinite(screen[0][0]):
+            return
+        painter.drawText(QPointF(float(screen[0][0]) + 6, float(screen[0][1]) - 4), text)
+
+    def _draw_edge_labels(self, painter: QPainter, box: RoomBox, text: QColor) -> None:
+        """Length, width and height written on the edges they measure."""
+        length, width, height = box.dimensions
+        painter.setPen(text)
+        self._label_world(painter, (length / 2.0, 0.0, 0.0), _metres(length))
+        self._label_world(painter, (0.0, width / 2.0, 0.0), _metres(width))
+        if not self.camera.plan:
+            self._label_world(painter, (0.0, 0.0, height / 2.0), _metres(height))
+
+    def _draw_front_edge(self, painter: QPainter, box: RoomBox, color: QColor) -> None:
+        """Mark the entered face at y = 0. It is not a wall the measurement found."""
+        length, _width, _height = box.dimensions
+        pen = QPen(color, 1.8, Qt.PenStyle.SolidLine)
+        self._draw_polyline(
+            painter,
+            np.array([[length / 2.0, -0.72, 0.0], [length / 2.0, -0.12, 0.0]]),
+            pen,
+        )
+        painter.setPen(color)
+        self._label_world(painter, (length / 2.0, -0.78, 0.0), _("Front edge"))
 
     # --- picking --------------------------------------------------------------------------
 
@@ -591,6 +693,7 @@ class RoomCanvas(QWidget):
             self.camera.orbit(delta.x(), delta.y())
         else:
             self.camera.pan(delta.x(), delta.y())
+        self.camera_changed.emit()
         self.update()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # noqa: N802 - Qt override
@@ -623,6 +726,7 @@ class RoomCanvas(QWidget):
         if steps:
             pos = event.position()
             self.camera.zoom_at(pos.x(), pos.y(), 0.85**steps)
+            self.camera_changed.emit()
             self.update()
         event.accept()
 

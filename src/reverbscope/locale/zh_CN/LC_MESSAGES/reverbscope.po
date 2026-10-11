@@ -7162,3 +7162,48 @@ msgstr "选中的测量已隐藏。在列表中勾选它即可绘制。"
 msgid "{name} · baseline"
 msgstr "{name} · 基准"
 
+msgid "Plan, true to scale · front is the lower edge"
+msgstr "平面图，按真实比例 · 正面在下沿"
+
+msgid "Front · the face at y = 0 is nearest"
+msgstr "正视 · 最近的是 y = 0 面"
+
+msgid "Side · the face at x = 0 is nearest"
+msgstr "侧视 · 最近的是 x = 0 面"
+
+msgid "Perspective · drag to orbit, right-drag to pan"
+msgstr "透视 · 拖动环视，右键拖动平移"
+
+msgid "{metres:.2f} m"
+msgstr "{metres:.2f} 米"
+
+msgid "x length · y width · z up"
+msgstr "x 长度 · y 宽度 · z 朝上"
+
+msgid "Front edge"
+msgstr "正面"
+
+msgid "Drag to pan. Drag a loudspeaker or microphone to move it. The wheel zooms."
+msgstr "拖动可平移。拖动扬声器或话筒可移动它。滚轮缩放。"
+
+msgid "Drag to orbit, right-drag to pan, wheel to zoom. F frames the room, R resets the angle."
+msgstr "拖动环视，右键拖动平移，滚轮缩放。F 适配房间，R 恢复默认角度。"
+
+msgid "Ready"
+msgstr "就绪"
+
+msgid "Not measuring."
+msgstr "当前没有在测量。"
+
+msgid "Measuring"
+msgstr "测量中"
+
+msgid "The sweep is playing. Stop ends it and silences the output."
+msgstr "正在播放扫频。停止会结束测量，并让输出静音。"
+
+msgid "Analyzing"
+msgstr "分析中"
+
+msgid "The recording is being analyzed. Playback has already finished."
+msgstr "正在分析录音。播放已经结束。"
+

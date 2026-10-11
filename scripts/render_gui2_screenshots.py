@@ -117,6 +117,12 @@ def _render(
     window.resize(width, height)
     window.show()
     pump(0.3)
+    # The first scheme saves the example room into the demo folder. The next
+    # scheme would ask before replacing it, and an offscreen run cannot click
+    # that dialog. Drop the file so every scheme starts from an empty room.
+    saved_room = demo / "room-geometry.json"
+    if saved_room.is_file():
+        saved_room.unlink()
     suffix = "" if scale == 1.0 else f"@{scale:g}x"
     if "empty" in views:
         window.grab().save(str(out / f"{lang}_{width}x{height}_{scheme}_empty{suffix}.png"))

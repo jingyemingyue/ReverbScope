@@ -122,10 +122,12 @@ def frequency_response(
     n_min = int(np.ceil(sample_rate / min_resolution_hz))
     nfft = 1 << max(segment.shape[0], n_min).bit_length()
     spectrum = np.fft.rfft(segment, nfft)
-    freqs = np.fft.rfftfreq(nfft, 1.0 / sample_rate)
+    # A second assignment to the same name keeps mypy on the wider ``floating``
+    # stub of ``rfftfreq``. The values are already float64; this names the axis.
+    bin_hz = np.fft.rfftfreq(nfft, 1.0 / sample_rate)
     magnitude_db = 20.0 * np.log10(np.maximum(np.abs(spectrum), _EPS))
     # Drop the DC bin: it is meaningless on a logarithmic frequency axis.
-    freqs = np.asarray(freqs[1:], dtype=np.float64)
+    freqs = np.asarray(bin_hz[1:], dtype=np.float64)
     magnitude_db = np.asarray(magnitude_db[1:], dtype=np.float64)
     smoothed: FloatArray | None = None
     if smoothing_fraction > 0:

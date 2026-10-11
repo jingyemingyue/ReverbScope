@@ -208,7 +208,7 @@ def _ideal_loopback(settings: SweepSettings) -> _IdealLoopback:
     inv = np.asarray(unit[::-1] * envelope, dtype=np.float64)
     nfft = int(sfft.next_fast_len(reference.shape[0], real=True))
     return _IdealLoopback(
-        freqs=np.fft.rfftfreq(nfft, 1.0 / settings.sample_rate),
+        freqs=np.asarray(np.fft.rfftfreq(nfft, 1.0 / settings.sample_rate), dtype=np.float64),
         reference=sfft.rfft(reference, nfft),
         inverse=sfft.rfft(inv, nfft),
         inverse_samples=inv,
@@ -401,7 +401,8 @@ def _reference_spectrum(
     reference: FloatArray, nfft: int, sample_rate: int
 ) -> tuple[FloatArray, np.ndarray]:
     spectrum = sfft.rfft(reference, nfft)
-    freqs = np.fft.rfftfreq(nfft, 1.0 / sample_rate)
+    # ``rfftfreq`` is float64; the stub says any floating dtype.
+    freqs = np.asarray(np.fft.rfftfreq(nfft, 1.0 / sample_rate), dtype=np.float64)
     return freqs, spectrum
 
 

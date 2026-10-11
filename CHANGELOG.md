@@ -8,6 +8,17 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Workstation readability.** The measure strip says whether a take is
+  ready, playing or being analysed, and the status sits on its own line.
+  Stop looks armed only while the sweep can still be stopped. The room view
+  names the camera, marks the front edge (y = 0) and labels the axes as
+  length, width and up; front and side are pitched so the box reads as a
+  volume. Hints and status chips clear WCAG AA on both themes, and chart
+  titles elide instead of clipping.   A `QKeySequence` shown in the view bar
+  is typed as text, which is what the lint job (no PySide6 installed) needs.
+  Frequency axes from `numpy.fft.rfftfreq` are passed on as `float64`; the
+  current stub types that function as any floating dtype. The values do not
+  change.
 - **The desktop app is one workstation window** (GUI 2.0,
   `docs/design/GUI_2_ARCHITECTURE.md`). A navigator lists the project's
   positions and every open measurement, each with its colour. The check box

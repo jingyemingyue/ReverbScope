@@ -13,12 +13,12 @@ measurement list and does not stop a take.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal
-from PySide6.QtGui import QKeySequence
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
     QHBoxLayout,
+    QScrollArea,
     QSizePolicy,
     QStackedWidget,
     QToolButton,
@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 from reverbscope.i18n import _
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.views.base import AnalysisView
+from reverbscope.ui.widgets import native_shortcut
 from reverbscope.ui.workspace import WorkspaceModel
 
 #: View ids with a Ctrl+<n> shortcut, in order (Ctrl+1 … Ctrl+9).
@@ -82,7 +83,7 @@ def group_of(view_id: str) -> str:
 
 def _native(sequence: str) -> str:
     """``sequence`` as the platform shows it (Command on macOS, Ctrl elsewhere)."""
-    return QKeySequence(sequence).toString(QKeySequence.SequenceFormat.NativeText)
+    return native_shortcut(sequence)
 
 
 def _shortcut_for(view_id: str) -> str:
@@ -139,6 +140,20 @@ class AnalysisWorkspace(QWidget):
         self.bar_layout.setContentsMargins(4, 2, 4, 0)
         self.bar_layout.setSpacing(0)
         layout.addWidget(bar)
+        # The groups scroll when the window is narrow, so a Chinese label is
+        # not clipped. List and Inspector stay pinned.
+        self.group_bar = QWidget()
+        self.group_layout = QHBoxLayout(self.group_bar)
+        self.group_layout.setContentsMargins(0, 0, 0, 0)
+        self.group_layout.setSpacing(0)
+        self.group_scroll = QScrollArea()
+        self.group_scroll.setWidget(self.group_bar)
+        self.group_scroll.setWidgetResizable(True)
+        self.group_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.group_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.group_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.group_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.group_scroll.setProperty("viewscroll", True)
         self.stack = QStackedWidget()
         layout.addWidget(self.stack, 1)
 
@@ -174,14 +189,14 @@ class AnalysisWorkspace(QWidget):
             button.clicked.connect(lambda _checked=False, g=group_id: self._group_clicked(g))
             self.group.addButton(button)
             self.buttons[group_id] = button
-            self.bar_layout.addWidget(button)
+            self.group_layout.addWidget(button)
         self.subview = QComboBox()
         self.subview.setVisible(False)
         self.subview.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.subview.setToolTip(_("The chart inside this group."))
         self.subview.currentIndexChanged.connect(self._subview_chosen)
-        self.bar_layout.addWidget(self.subview)
-        self.bar_layout.addStretch(1)
+        self.group_layout.addWidget(self.subview)
+        self.group_layout.addStretch(1)
 
         self.project_button = QToolButton()
         self.project_button.setCheckable(True)
@@ -198,7 +213,8 @@ class AnalysisWorkspace(QWidget):
             else _("The open project, apart from the analysis charts.")
         )
         self.project_button.clicked.connect(lambda _checked=False: self.view_chosen.emit("project"))
-        self.bar_layout.addWidget(self.project_button)
+        self.group_layout.addWidget(self.project_button)
+        self.bar_layout.addWidget(self.group_scroll, 1)
 
         self.inspector_button = QToolButton()
         self.inspector_button.setCheckable(True)
@@ -213,6 +229,7 @@ class AnalysisWorkspace(QWidget):
         )
         self.bar_layout.addWidget(self.inspector_button)
         bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.group_scroll.setFixedHeight(self.navigator_button.sizeHint().height() + 10)
         self.stack.currentChanged.connect(self._sync_buttons)
 
     def _group_tip(self, group_id: str, view_ids: tuple[str, ...]) -> str:

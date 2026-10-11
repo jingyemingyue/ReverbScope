@@ -25,14 +25,14 @@ LIGHT_TOKENS: dict[str, str] = {
     "surface_alt": "#eef2f6",
     "border": "#d9dfe6",
     "text": "#1b2430",
-    "muted": "#5a6676",
+    "muted": "#4a5563",
     "accent": "#177e89",
     "accent_hover": "#12656e",
     "accent_text": "#ffffff",
     "accent_soft": "#e1f1f3",
-    "good": "#2e7d32",
+    "good": "#1e6b24",
     "good_soft": "#e5f3e7",
-    "warn": "#a35a00",
+    "warn": "#8a4e00",
     "warn_soft": "#fdf0dc",
     "bad": "#c62828",
     "bad_soft": "#fbe7e7",
@@ -46,7 +46,7 @@ DARK_TOKENS: dict[str, str] = {
     "surface_alt": "#232a32",
     "border": "#313a45",
     "text": "#e6eaef",
-    "muted": "#9aa6b4",
+    "muted": "#b4bec9",
     "accent": "#4fb6c3",
     "accent_hover": "#6cc6d1",
     "accent_text": "#0d1216",
@@ -55,11 +55,11 @@ DARK_TOKENS: dict[str, str] = {
     "good_soft": "#1d3322",
     "warn": "#f0b35a",
     "warn_soft": "#3a2e1a",
-    "bad": "#ef6a6a",
+    "bad": "#f08a8a",
     "bad_soft": "#3d2020",
     "info": "#7fb2ee",
     "info_soft": "#1c2c40",
-    "grid": "#3a444f",
+    "grid": "#5c6a78",
 }
 #: Series colours for plots, in drawing order; distinct in both schemes and
 #: paired with line styles so they survive greyscale printing.
@@ -155,6 +155,29 @@ def style_figure(fig: Figure) -> None:
 def tokens() -> dict[str, str]:
     """The design tokens of the current colour scheme."""
     return dict(DARK_TOKENS if color_scheme() == "dark" else LIGHT_TOKENS)
+
+
+def _srgb_channel(hex_color: str, index: int) -> float:
+    value = int(hex_color[1 + 2 * index : 3 + 2 * index], 16) / 255.0
+    if value <= 0.04045:
+        return value / 12.92
+    # ``float ** float`` is typed as ``Any`` (a negative base can be complex).
+    return float(((value + 0.055) / 1.055) ** 2.4)
+
+
+def relative_luminance(hex_color: str) -> float:
+    """WCAG relative luminance of ``#rrggbb``."""
+    red = _srgb_channel(hex_color, 0)
+    green = _srgb_channel(hex_color, 1)
+    blue = _srgb_channel(hex_color, 2)
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+
+def contrast_ratio(foreground: str, background: str) -> float:
+    """WCAG 2 contrast of two ``#rrggbb`` colours."""
+    lighter = max(relative_luminance(foreground), relative_luminance(background))
+    darker = min(relative_luminance(foreground), relative_luminance(background))
+    return (lighter + 0.05) / (darker + 0.05)
 
 
 def tone_color(tone: str) -> tuple[str, str]:
@@ -299,7 +322,9 @@ QPushButton[primary="true"]:hover {{ background: {t["accent_hover"]};
     border-color: {t["accent_hover"]}; }}
 QPushButton[primary="true"]:disabled {{ background: {t["border"]}; border-color: {t["border"]};
     color: {t["muted"]}; }}
-QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; }}
+QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; font-weight: 600; }}
+QPushButton[danger="true"]:disabled {{ color: {t["muted"]}; border-color: {t["border"]};
+    background: {t["surface_alt"]}; font-weight: 400; }}
 
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit {{
     background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 2px;
@@ -345,9 +370,10 @@ QListWidget::item {{ padding: 8px 10px; border-bottom: 1px solid {t["surface_alt
 QListWidget::item:selected {{ background: {t["accent_soft"]}; color: {t["text"]}; }}
 QListWidget::item:hover {{ background: {t["surface_alt"]}; }}
 
-QProgressBar {{ background: {t["surface_alt"]}; border: none; border-radius: 4px;
-    min-height: 8px; max-height: 8px; text-align: center; }}
-QProgressBar::chunk {{ background: {t["accent"]}; border-radius: 4px; }}
+QProgressBar {{ background: {t["surface_alt"]}; border: none; border-radius: 2px;
+    min-height: 8px; max-height: 8px; text-align: center; color: {t["text"]}; }}
+QProgressBar[phase="measure"] {{ min-height: 16px; max-height: 16px; }}
+QProgressBar::chunk {{ background: {t["accent"]}; border-radius: 2px; }}
 QScrollBar:vertical {{ background: transparent; width: 10px; margin: 2px; }}
 QScrollBar::handle:vertical {{ background: {t["border"]}; border-radius: 4px; min-height: 30px; }}
 QScrollBar::handle:vertical:hover {{ background: {t["muted"]}; }}
@@ -358,7 +384,16 @@ QStatusBar {{ background: {t["surface"]}; border-top: 1px solid {t["border"]};
     color: {t["muted"]}; }}
 
 QWidget[viewbar="true"] {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; }}
+QScrollArea[viewscroll="true"], QScrollArea[viewscroll="true"] > QWidget > QWidget {{
+    background: transparent; border: none; }}
 QWidget[strip="true"] {{ background: {t["surface"]}; border-top: 1px solid {t["border"]}; }}
+QWidget[strip="true"][measuring="true"] {{ border-top: 2px solid {t["accent"]}; }}
+QLabel[phase="idle"] {{ color: {t["text"]}; background: {t["surface_alt"]};
+    border: 1px solid {t["border"]}; border-radius: 2px; padding: 2px 8px; font-weight: 600; }}
+QLabel[phase="measure"] {{ color: {t["accent_text"]}; background: {t["accent"]};
+    border: 1px solid {t["accent"]}; border-radius: 2px; padding: 2px 8px; font-weight: 600; }}
+QLabel[phase="analyze"] {{ color: {t["text"]}; background: {t["warn_soft"]};
+    border: 1px solid {t["warn"]}; border-radius: 2px; padding: 2px 8px; font-weight: 600; }}
 QToolButton[viewtab="true"] {{ background: transparent; color: {t["muted"]}; border: none;
     border-bottom: 2px solid transparent; border-radius: 0; padding: 5px 8px; }}
 QToolButton[viewtab="true"]:hover {{ color: {t["text"]}; background: {t["surface_alt"]}; }}
