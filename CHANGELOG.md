@@ -8,53 +8,53 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
-- **Desktop workspace.** The desktop app is one window with a stable frame:
-  the navigation on the left (pages, the open project's positions and
-  sessions, recent sessions), the context bar on top (the session, its
-  recording configuration and the page's main actions), the page in the
-  middle, a collapsible details pane on the right and the status line at
-  the bottom with the real take progress and a **Stop** that stays on screen
-  while a take runs. Going to another page keeps the measurement, the
-  imported recording and the device choices; only New Measurement and Open
-  Session start afresh.
-- **Measurement flows as steps.** Universal DAW Mode is four steps
-  (generate the test signal, record in the DAW, import and choose channels,
-  check and analyse) and Standalone Mode four (devices and channels, test
-  signal, optional dimensions, run), each step returnable, the summary of
-  the earlier ones on the last, the long DAW notes folded away, and the
-  Run / Stop / Analyze buttons with the status and progress in a fixed
-  action area that never scrolls out of view.
-- **Results around the chart.** The Results page has no tabs: the key
-  figures stand over the chart, the Charts list and the overview (is the
-  measurement trustworthy, what the main problems are, what to check next)
-  stand beside it, and the chart shows one group at a time (frequency and
-  low end, decay, noise, impulse and early reflections, placement
-  geometry), drawn when shown and opened on the group behind the worst
-  finding. Tables, findings and tiles feed the details pane; the full text
-  report opens there too, and Export copies it.
-- **Placement geometry in two dimensions.** The default picture is a side
-  view over the reflection timeline: the side view draws measured lengths
-  solid, model-derived lengths dashed (with their input uncertainty and
-  every alternative) and example lengths dotted; the timeline shows the
-  direct sound, every candidate, the threshold and the analysed window, and
-  selecting a candidate highlights it and explains it in the details pane; the 3D picture is an auxiliary view with a fixed viewpoint and
-  Reset. A missing input names the field and leads back to it. No wall or
-  room shape is drawn.
-- **Compare and project.** Baseline and candidate are labelled everywhere;
-  the frequency responses of both takes are drawn on one dB scale with the
-  difference under them, the broadband decays likewise; aspects and deltas
-  feed the details pane. The Project page selects a position (also from the
-  navigation), measures it again, opens a take and compares it with the
-  first position.
-- **Export and theme.** Export in the Results context bar writes the CSV
-  tables, the chart on screen as PNG, or copies the report, and says why
-  when it fails. A quieter look: neutral panels with one accent, square
-  corners, status glyphs beside every colour.
-- The GUI modules are split by responsibility (`home_page`, `daw_page`,
-  `standalone_page`, `measure_flow`, `results_page`, `results_overview`,
-  `results_analysis`, `results_presenter`, `placement_view`, `workspace`,
-  `export`); `ui/pages.py` and `ui/results.py` are gone. The command line,
-  the file formats and the JSON schemas are unchanged.
+- **Desktop workbench.** The desktop app is one workbench window, modelled
+  on the chart-area / measurement-list / properties layout of open-source
+  audio analysers (see docs/GUI_DESIGN_REFERENCES.md; independent
+  implementation, nothing copied): native menus and a compact toolbar on
+  top, one or two stacked charts in the middle, the list of open
+  measurements on the right (grouped by position, with each measurement's
+  curve colour, visibility checkbox, quality status and baseline /
+  synthetic / unsaved tags), the inspector at the bottom on demand
+  (Measurement quality, Diagnostics, Properties, Tables, Comparison,
+  Report) and the status line with the take's real progress and Stop.
+  The window opens on the workbench; there is no home page, no results
+  page, no compare or project page.
+- **Measurements, not pages.** Every opened session, imported recording or
+  finished take joins the list and stays there; selecting one shows its
+  properties and draws its curve on top without hiding the others; the
+  checkbox hides a curve without closing the measurement; "Set as baseline"
+  marks one, and the selected other one becomes the candidate: the charts
+  draw the difference (frequency response, decay) and the Comparison tab
+  the verdict and deltas, with "Input gain unchanged" as before. A running
+  take keeps its own identity: its result is added as a new entry whatever
+  is selected meanwhile, a result after Stop or after the window closed is
+  dropped, and a live take is protected until it is saved.
+- **Charts as the working surface.** Each chart panel has a one-row control
+  bar (kind, scope, options, difference, reset zoom, cursor readout,
+  export PNG / CSV); wheel zooms, drag pans, double-click resets; linked
+  zoom only between panels with the same axis (Hz, s, ms); dBFS and
+  relative dB are named on every axis; a hidden panel does not redraw.
+  Impulse, early reflections and placement draw the selected measurement.
+- **Measurement entry as dialogs.** Measure... (Standalone: devices and
+  channels with the recommended entries starred, device-rate check,
+  playback-level limit, profile, metadata, tape measurements) and Import
+  DAW Recording... (test signal, reference, recording, channels, profile,
+  metadata, placement, folded DAW notes) keep every check and confirmation
+  of the former pages; the workbench stays the only workplace.
+- **Placement geometry** is the side view over the reflection timeline;
+  the solved lengths and candidates are in the Tables tab; a missing input
+  names the field. The 3D picture is gone.
+- **Layout** (geometry, docks, chart kinds and count, split) is saved with
+  QSettings on a normal launch and restored; View → Reset layout.
+
+### Removed
+- **Demo mode in the GUI.** The Demo navigation entry, home-page button,
+  Ctrl+3 shortcut, first-run walkthrough and Getting-started entry are
+  gone, and the Settings dialog no longer offers the fake audio backend.
+  `reverbscope demo` and the fake backend remain automated-test
+  facilities; a synthetic session that is opened is marked "synthetic
+  data" in the list, the inspector and the window title.
 
 ## [0.5.0b3] - 2026-10-09
 

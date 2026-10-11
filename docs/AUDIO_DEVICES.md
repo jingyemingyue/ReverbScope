@@ -102,8 +102,8 @@ measurement rate, or an aggregate device (§3).
   lets PortAudio set the nominal rate (possibly disrupting other programs,
   even when only querying); `fail_if_conversion_required=True` then refuses
   any conversion [11][14]. ReverbScope passes no CoreAudioSettings by default:
-  set the rate in Audio MIDI Setup; the GUI flags a device rate that differs
-  (`ui/standalone_page.py`). `reverbscope measure --coreaudio-set-rate` passes
+  set the rate in Audio MIDI Setup; the GUI's Measure dialog flags a device
+  rate that differs (`ui/measure_dialog.py`). `reverbscope measure --coreaudio-set-rate` passes
   `change_device_parameters=True, fail_if_conversion_required=True`, so the
   take runs at the requested rate or fails instead of converting.
 * **Latency.** Default low = the device's fixed latency + 64 frames; high =

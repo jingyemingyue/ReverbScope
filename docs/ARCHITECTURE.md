@@ -76,23 +76,39 @@ src/reverbscope/
   cli/
     main.py              argparse subcommands, errors, exit codes
     console.py           terminal layout: colour policy, symbols, widths, tables, progress
-    render.py            every report and message (the GUI's "Full report" panes too)
+    render.py            every report and message (the GUI's Report tab too)
     report.py            format_report / format_comparison_report: render.py as plain text
   demo.py                reverbscope demo: two simulated positions through the real pipeline
-  ui/                    optional (needs PySide6)
-    app.py, main_window.py (the workspace: navigation, context bar, details, status line)
-    workspace.py         the frame's panes; state.py the shared measurement state
-    home_page.py, daw_page.py, standalone_page.py   the start page and the two step flows
-    measure_flow.py      the worker threads and the state generation a run belongs to
-    measure_widgets.py   placement inputs, profile row, metadata form, action area
-    results_page.py, results_overview.py, results_analysis.py, placement_view.py
-    results_presenter.py what the results page shows, computed without Qt
-    plots.py, export.py, workers.py
-    browser.py           session list (Home and Compare); project.json folders
-    compare_view.py      two-session comparison
-    project_view.py      one room, several positions
-    settings_dialog.py   language, profile, backend, copy-recording
+  ui/                    optional (needs PySide6): the measurement workbench
+    app.py               run_app: QApplication, chrome, the window (layout restored on a real launch)
+    qt.py                ensure_pyside6() before any Qt or matplotlib-Qt import
+    theme.py             colour tokens, light / dark plot chrome, fonts, the series palette
+    widgets.py           Chip, KeyValueList, CollapsibleSection, small dialog helpers
+    document.py          WorkspaceDocument: the open measurements, selection, visible set, baseline, project
+    measurement_model.py MeasurementListModel: position groups → measurements, for the list dock
+    controller.py        WorkspaceController: open, save, close (unsaved-take question), project, comparison
+    measurement_controller.py  MeasurementController: the take and analysis jobs, Stop, late results dropped
+    measure_flow.py      the runners the jobs use (worker threads, preflight, the clocks question)
+    workers.py           QThread workers for the take and the analysis
+    measure_dialog.py    StandaloneMeasureDialog, DawAnalysisDialog → TakeRequest / AnalysisRequest
+    measure_widgets.py   placement inputs, profile row, metadata form
+    plot_data.py         curves and chart kinds (PLOT_KINDS, axis kinds) computed without Qt
+    plot_panel.py        PlotPanel (control bar, canvas, zoom, cursor, export), ZoomLink
+    plots.py             the matplotlib plot functions
+    results_presenter.py rows, groups and summaries for the inspector, computed without Qt
+    inspector.py         InspectorPanel: Measurement quality, Diagnostics, Properties, Tables, Comparison, Report
+    status_line.py       RunStatusBar: the take's progress and Stop
+    workbench.py         WorkbenchWindow: menus, toolbar, chart splitter, list dock, inspector dock, QSettings layout
+    export.py            CSV tables and chart PNG
+    settings_dialog.py   language, theme, profile, backend, output folder, copy-recording
+    profile_dialog.py    what a recording profile watches for
+    dev_tools.py         Audio Device Inspector, Environment Report for Bug Reports
 ```
+
+The workbench's layout and interaction model (one window: charts, the
+measurement list, the inspector on demand, the status line; no demo mode),
+and the open-source tools it was designed after without copying anything,
+are recorded in [GUI_DESIGN_REFERENCES.md](GUI_DESIGN_REFERENCES.md).
 
 Dependency direction (arrows point at what may be imported):
 
@@ -210,5 +226,8 @@ noise floors give exact expectations: sweep formula checks, unit-pulse
 inverse filters, loopback = unit impulse, RT60 recovery within 5-10 %,
 insufficient-range flags at low SNR, hum detection, stereo/mono and
 sample-rate handling, invalid-file handling, CLI round trip, session
-save/load/re-open, offscreen GUI smoke test (including reopening a saved
-session). Real-room recordings are never the only evidence.
+save/load/re-open, offscreen GUI tests of the workbench (several
+measurements selected, hidden and baselined independently, diagnostics that
+locate their chart, a take on the fake backend with Stop, a live take saved
+and reopened, a result after the window closed dropped, the layout at the
+minimum size). Real-room recordings are never the only evidence.

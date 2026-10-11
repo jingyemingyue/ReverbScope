@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from reverbscope.health import HealthCheck, HealthReport, HealthStatus, affects_text, status_word
-from reverbscope.i18n import _, list_join, localize
+from reverbscope.i18n import _, list_join, localize, pgettext
 from reverbscope.interpretation import Finding
 from reverbscope.interpretation.profiles import confidence_text, noise_segment_text
 from reverbscope.labels import severity_text, surface_text, topic_text, validity_word
@@ -359,16 +359,101 @@ def next_steps(report: HealthReport, findings: list[Finding]) -> list[tuple[str,
 # --- details --------------------------------------------------------------------
 
 
+def _evidence_names() -> dict[str, str]:
+    """The evidence keys (their unit suffix stripped) as words the screen shows.
+
+    Built at every call so the words follow the active language; a key not
+    listed here is shown as its words.
+    """
+    return {
+        "aliased_distortion": pgettext("evidence", "aliased distortion"),
+        "appeared": pgettext("evidence", "appeared"),
+        "base": pgettext("evidence", "base frequency"),
+        "baseline": pgettext("evidence", "baseline"),
+        "baseline_label": pgettext("evidence", "baseline label"),
+        "baseline_relative": pgettext("evidence", "baseline, relative"),
+        "basis": pgettext("evidence", "basis"),
+        "candidate": pgettext("evidence", "candidate"),
+        "candidate_label": pgettext("evidence", "candidate label"),
+        "candidate_relative": pgettext("evidence", "candidate, relative"),
+        "candidates": pgettext("evidence", "candidates"),
+        "clarity_high": pgettext("evidence", "clarity, upper bound"),
+        "clarity_low": pgettext("evidence", "clarity, lower bound"),
+        "count_within_window": pgettext("evidence", "count within the window"),
+        "delay": pgettext("evidence", "delay"),
+        "delta": pgettext("evidence", "delta"),
+        "direct_sound_confidence": pgettext("evidence", "direct-sound confidence"),
+        "direct_to_noise": pgettext("evidence", "direct sound to noise"),
+        "disappeared": pgettext("evidence", "disappeared"),
+        "excitation_low": pgettext("evidence", "excitation, lower edge"),
+        "harmonic_distortion": pgettext("evidence", "harmonic distortion"),
+        "harmonics": pgettext("evidence", "harmonics"),
+        "ir_peak": pgettext("evidence", "impulse-response peak"),
+        "jnd": pgettext("evidence", "just-noticeable difference"),
+        "level": pgettext("evidence", "level"),
+        "long_decay": pgettext("evidence", "long decay from"),
+        "low_max_rt60": pgettext("evidence", "low-band RT60, maximum"),
+        "matched": pgettext("evidence", "matched"),
+        "meaningful": pgettext("evidence", "meaningful from"),
+        "metric": pgettext("evidence", "metric"),
+        "mid_mean_rt60": pgettext("evidence", "mid-band RT60, mean"),
+        "needed_edt": pgettext("evidence", "range needed for EDT"),
+        "needed_t20": pgettext("evidence", "range needed for T20"),
+        "needed_t30": pgettext("evidence", "range needed for T30"),
+        "notes": pgettext("evidence", "notes"),
+        "own_spread": pgettext("evidence", "own spread"),
+        "peak_to_noise": pgettext("evidence", "peak to noise"),
+        "pre_peak_margin": pgettext("evidence", "pre-peak margin"),
+        "reason": pgettext("evidence", "reason"),
+        "relative": pgettext("evidence", "relative level"),
+        "rms": pgettext("evidence", "RMS"),
+        "rt60_estimate": pgettext("evidence", "RT60 estimate"),
+        "segment_source": pgettext("evidence", "noise segment"),
+        "side": pgettext("evidence", "side"),
+        "sweep_passes": pgettext("evidence", "sweep passes"),
+        "sweep_start_in_recording": pgettext("evidence", "sweep start in the recording"),
+        "threshold": pgettext("evidence", "threshold"),
+        "valid_length": pgettext("evidence", "valid length"),
+        "value": pgettext("evidence", "value"),
+        "very_long_decay": pgettext("evidence", "very long decay from"),
+        "warning": pgettext("evidence", "warning"),
+        "warnings": pgettext("evidence", "warnings"),
+        "window": pgettext("evidence", "window"),
+    }
+
+
+def _evidence_words() -> dict[str, str]:
+    """Words an evidence value can be (labels of a profile, a side, a segment)."""
+    return {
+        "short": pgettext("evidence value", "short"),
+        "noticeable": pgettext("evidence value", "noticeable"),
+        "long": pgettext("evidence value", "long"),
+        "very long": pgettext("evidence value", "very long"),
+        "high": pgettext("evidence value", "high"),
+        "medium": pgettext("evidence value", "medium"),
+        "low": pgettext("evidence value", "low"),
+        "pre-sweep": pgettext("evidence value", "pre-sweep"),
+        "tail": pgettext("evidence value", "tail"),
+        "quiet": pgettext("evidence value", "quiet"),
+    }
+
+
 def _format_value(value: Any) -> str:
     if isinstance(value, bool):
         return _("yes") if value else _("no")
     if isinstance(value, float):
         return f"{value:.3g}" if abs(value) < 0.01 and value != 0 else f"{value:.2f}"
+    if isinstance(value, dict):
+        return list_join(f"{name} {text}" for name, text in evidence_rows(value))
     if isinstance(value, (list, tuple)):
         return list_join(_format_value(item) for item in value)
     if value is None:
         return _("not available")
-    return localize(str(value))
+    text = str(value)
+    words = _evidence_words()
+    if text in words:
+        return words[text]
+    return localize(text)
 
 
 _UNIT_SUFFIXES = {
@@ -385,8 +470,10 @@ _UNIT_SUFFIXES = {
 
 def evidence_rows(evidence: dict[str, Any]) -> list[tuple[str, str]]:
     """``(name, value)`` rows from a finding's or check's evidence dict: the
-    key names the unit (``rt60_s``), which is moved into the value."""
+    key names the unit (``rt60_s``), which is moved into the value, and the
+    key's words are shown in the interface language."""
     rows: list[tuple[str, str]] = []
+    names = _evidence_names()
     for key, value in evidence.items():
         unit = ""
         name = key
@@ -396,9 +483,9 @@ def evidence_rows(evidence: dict[str, Any]) -> list[tuple[str, str]]:
                 name = key[: -len(suffix)]
                 break
         text = _format_value(value)
-        if unit and not isinstance(value, (bool, str)) and value is not None:
+        if unit and not isinstance(value, (bool, str, dict)) and value is not None:
             text = f"{text} {unit}"
-        rows.append((name.replace("_", " "), text))
+        rows.append((names.get(name, name.replace("_", " ")), text))
     return rows
 
 

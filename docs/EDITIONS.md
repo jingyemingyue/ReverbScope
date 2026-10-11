@@ -42,7 +42,7 @@ same program.
 | Detected by | not a frozen bundle (`sys.frozen` unset) | a PyInstaller bundle |
 | Help ▸ Environment Report for Bug Reports (with sample-rate probe) | yes | yes |
 | Developer menu (Audio Device Inspector, Open Data Folder) | yes | no, unless switched on |
-| Advanced audio options in Standalone Mode (latency, WASAPI exclusive, Core Audio set-rate) | yes | no, unless switched on |
+| Advanced audio options in the Measure dialog (Standalone Mode: latency, WASAPI exclusive, Core Audio set-rate) | yes | no, unless switched on |
 | Everyday settings (language, theme, default profile, audio backend, output folder) | yes | yes |
 | Extending ReverbScope | Python API, `reverbscope.exporters` entry points, tests, `scripts/build_release.py` | — |
 
@@ -74,10 +74,16 @@ and `--coreaudio-set-rate` are always available.
 
 ### Installed defaults: what they keep simple
 
-An installed Desktop Edition opens on the Home page with the three workflows, and
-its Settings dialog holds only what a user changes: language, theme (system,
-light, dark), default recording profile, audio backend, default output folder
-and whether the raw recording is copied into each session. Standalone Mode
-still lists devices per host API, preselects the platform's recommended one,
-stars the recommended input and output, and checks the host API, the channels
-and separate clocks before anything is played.
+An installed Desktop Edition opens straight on the workbench (the charts,
+the measurement list, the inspector on demand, the status line) with the
+menus File, Measure, Project, View and Help; the two ways in are
+**Measure → Measure...** (Standalone Mode) and **Measure → Import DAW
+Recording...** (Universal DAW Mode), and there is no demo entry in either
+default (the synthetic sessions of `reverbscope demo` open like any saved
+session and are marked *synthetic data*). Its Settings dialog holds only what
+a user changes: language, theme (system, light, dark), default recording
+profile, audio backend, default output folder and whether the raw recording
+is copied into each session. The Measure dialog still lists devices per host
+API, preselects the platform's recommended one, stars the recommended input
+and output, and checks the host API, the channels and separate clocks before
+anything is played.

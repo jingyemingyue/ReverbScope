@@ -6,10 +6,10 @@ Writes:
 
 * ``cli-demo.svg``            -- ``reverbscope demo`` as a terminal screenshot (SVG text)
 * ``cli-demo.zh-CN.svg``      -- the same in Simplified Chinese
-* ``gui-results.png``         -- Results page, Decay chart, position A
+* ``gui-results.png``         -- the workbench with both demo positions open
 * ``gui-results.zh-CN.png``   -- the same in Simplified Chinese (README.zh-CN.md)
-* ``gui-frequency-response.png`` -- Results page, Frequency and low end chart, position A
-* ``gui-compare.png``         -- Compare page, A -> B
+* ``gui-frequency-response.png`` -- one chart, the inspector on the diagnostics
+* ``gui-compare.png``         -- position A as baseline, B as candidate: difference and verdict
 * ``social-preview.png``      -- 1280x640 card for the GitHub social preview
 
 Every image comes from ``reverbscope demo``: a simulated room, not a measurement.
@@ -207,25 +207,26 @@ def render_gui(workdir: Path, out: Path) -> None:
     from PySide6.QtWidgets import QApplication
 
     from reverbscope.i18n import activate
-    from reverbscope.ui import main_window
+    from reverbscope.ui import workbench
     from reverbscope.ui.theme import apply_application_chrome
 
     app = QApplication.instance() or QApplication(sys.argv[:1])
     apply_application_chrome(app)  # type: ignore[arg-type]
-    demo = demo_folder(workdir, "en") / "reverbscope-demo"
 
-    def window_in(lang: str) -> main_window.MainWindow:
-        # The window reads the language while it is built.
+    def window_in(lang: str) -> workbench.WorkbenchWindow:
+        # The window reads the language while it is built. Both demo positions
+        # are open: the workbench draws them together, position B selected.
         enter_language(workdir, lang)
         activate(lang)
-        window = main_window.MainWindow()
+        window = workbench.WorkbenchWindow()
         window.resize(1280, 820)
         window.show()
-        window.open_session_path(demo_folder(workdir, lang) / "reverbscope-demo" / "position-a")
-        window.results.show_group("decay")
+        demo = demo_folder(workdir, lang) / "reverbscope-demo"
+        window.controller.open_session(demo / "position-a")
+        window.controller.open_session(demo / "position-b")
         return window
 
-    def grab(window: main_window.MainWindow, name: str, stamp: str = STAMP) -> None:
+    def grab(window: workbench.WorkbenchWindow, name: str, stamp: str = STAMP) -> None:
         for _ in range(5):
             app.processEvents()
         _stamp(window.grab(), stamp).save(str(out / name))  # type: ignore[attr-defined]
@@ -233,16 +234,22 @@ def render_gui(workdir: Path, out: Path) -> None:
     try:
         window = window_in("en")
         grab(window, "gui-results.png")
-        window.results.show_group("frequency")
+        # One chart with the inspector open on the diagnostics.
+        window.set_dual(False)
+        window.set_inspector_visible(True)
+        window.inspector.show_tab("diagnostics")
         grab(window, "gui-frequency-response.png")
+        # Baseline and candidate: the difference view and the comparison tab.
         window.resize(1280, 1000)
-        window.show_compare()
-        window.compare.set_paths(demo / "position-a", demo / "position-b")
-        window.compare.same_gain.setChecked(True)
-        window.compare.run_compare()
+        window.set_dual(True)
+        first = window.document.measurements[0]
+        window.document.set_baseline(first.id)
+        window.inspector.set_same_gain(True)
+        window.inspector.show_tab("comparison")
+        window.panels[0].difference_button.setChecked(True)
         grab(window, "gui-compare.png")
         window.close()
-        # README.zh-CN.md shows the results page as a Chinese reader sees it.
+        # README.zh-CN.md shows the workbench as a Chinese reader sees it.
         window = window_in("zh_CN")
         grab(window, "gui-results.zh-CN.png", STAMP_ZH)
         window.close()

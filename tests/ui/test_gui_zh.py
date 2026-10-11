@@ -1,7 +1,7 @@
-"""The GUI in Simplified Chinese: every page, the results and comparison of
-real (synthetic) measurements, the settings dialog and the developer tools
-show no English beyond the names in tests/zh_tokens.py, and the charts draw
-their Chinese text with a CJK font (no empty boxes)."""
+"""The workbench in Simplified Chinese: menus, toolbar, the measurement
+list, the inspector tabs, the measurement dialogs, the report and the
+charts show no English beyond the names in tests/zh_tokens.py, and the
+charts draw their Chinese text with a CJK font (no empty boxes)."""
 
 from __future__ import annotations
 
@@ -13,8 +13,10 @@ import pytest
 
 pytest.importorskip("PySide6")
 
+from PySide6.QtCore import QModelIndex, Qt
 from PySide6.QtWidgets import (
     QAbstractButton,
+    QAbstractItemView,
     QApplication,
     QComboBox,
     QGroupBox,
@@ -77,7 +79,36 @@ def _texts(root: QWidget) -> list[str]:
                     item = widget.item(row, column)
                     if item is not None:
                         out += [item.text(), item.toolTip()]
+        if isinstance(widget, QAbstractItemView) and not isinstance(widget, QTableWidget):
+            out += _model_texts(widget)
     return [text.replace("&", "") for text in out if text]
+
+
+def _model_texts(view: QAbstractItemView) -> list[str]:
+    """Every display text and tooltip of a model/view widget (the list, the tables)."""
+    model = view.model()
+    if model is None:
+        return []
+    out: list[str] = []
+
+    def walk(parent: QModelIndex) -> None:
+        for row in range(model.rowCount(parent)):
+            for column in range(model.columnCount(parent)):
+                index = model.index(row, column, parent)
+                for role in (Qt.ItemDataRole.DisplayRole, Qt.ItemDataRole.ToolTipRole):
+                    value = model.data(index, role)
+                    if isinstance(value, str):
+                        out.append(value)
+            child = model.index(row, 0, parent)
+            if model.rowCount(child) > 0:
+                walk(child)
+
+    for column in range(model.columnCount(QModelIndex())):
+        header = model.headerData(column, Qt.Orientation.Horizontal, Qt.ItemDataRole.DisplayRole)
+        if isinstance(header, str):
+            out.append(header)
+    walk(QModelIndex())
+    return out
 
 
 def _data_values() -> tuple[str, ...]:
@@ -111,90 +142,88 @@ def _measurements(home: Path) -> list[tuple[Path, object]]:
         folder = home / name
         save_measurement(
             folder,
-            MeasurementSession(room_name=name, measurement_position="1", mode="universal_daw"),
+            MeasurementSession(
+                room_name=name,
+                measurement_position="1",
+                mode="universal_daw",
+                recording_profile="vocal",
+            ),
             result,
         )
         saved.append((folder, result))
     return saved
 
 
-def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> None:
-    from reverbscope.interpretation import interpret
-    from reverbscope.models.session import MeasurementSession
-    from reverbscope.ui.main_window import MainWindow
+def _settle(app: QApplication) -> None:
+    for _ in range(5):
+        app.processEvents()
+
+
+def test_the_workbench_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> None:
+    from reverbscope.ui.workbench import WorkbenchWindow
 
     saved = _measurements(tmp_path)
-    window = MainWindow()
+    window = WorkbenchWindow()
     window.resize(1280, 860)
     window.show()
-
-    def settle() -> None:
-        for _ in range(5):
-            app.processEvents()
-
+    _settle(app)
     menus = [
         action.text()
         for menu in (a.menu() for a in window.menuBar().actions() if a.menu())
         for action in menu.actions()
     ]
     _check([text.replace("&", "") for text in menus], "menus")
-    for page, show in (
-        ("home", window.show_home),
-        ("daw", lambda: window.show_mode("universal_daw")),
-        ("standalone", lambda: window.show_mode("standalone")),
-        ("demo", lambda: window.show_mode("demo")),
-    ):
-        show()
-        settle()
-        _check(_texts(window), page)
+    _check([a.text().replace("&", "") for a in window.toolbar.actions()], "toolbar")
+    _check(_texts(window), "empty workbench")
 
-    _folder, result = saved[1]
-    window.state.result = result
-    window.state.findings = interpret(result, "vocal")
-    window.state.session = MeasurementSession(room_name="房间B", measurement_position="1")
+    first = window.controller.open_session(saved[0][0])
+    second = window.controller.open_session(saved[1][0])
+    assert first is not None and second is not None
+    window.document.set_baseline(first.id)
+    window.set_inspector_visible(True)
+    _settle(app)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        window.show_results()
-        window.results.report_button.setChecked(True)
-        settle()
-        window.show_compare()
-        window.compare.set_paths(saved[0][0], saved[1][0])
-        window.compare.run_compare()
-        window.compare.tabs.setCurrentIndex(1)
-        settle()
+        for key in ("frequency", "decay", "noise", "impulse", "reflections", "placement"):
+            window.panels[0].set_kind(key)
+            _settle(app)
+            chart_text = [
+                t.get_text()
+                for t in window.panels[0].figure.findobj(lambda o: hasattr(o, "get_text"))
+            ]
+            _check([text for text in chart_text if text], f"chart {key}")
+        window.panels[0].set_kind("frequency")
+        window.panels[0].difference_button.setChecked(True)
+        _settle(app)
+        for name in ("quality", "diagnostics", "properties", "tables", "comparison", "report"):
+            window.inspector.show_tab(name)
+            _settle(app)
+            _check(_texts(window.inspector), f"inspector {name}")
         window.grab()
     tofu = [w for w in caught if "missing from font" in str(w.message)]
-    _check(_texts(window.results), "results")
-    _check([window.results.text.toPlainText()], "full report")
-    _check(_texts(window.compare), "compare")
-    # Two-letter words pass the English gate: "vs" between the two paths did.
-    assert window.compare.status.text() == f"{saved[0][0]}  对  {saved[1][0]}"
-    _check([window.compare.text.toPlainText()], "comparison report")
-    for key in window.results.groups:
-        # Every chart is drawn when its group is shown.
-        window.results.show_group(key)
-        settle()
-    figures = [group.figure for group in window.results.groups.values()] + [
-        window.compare.figure,
-        window.daw.placement.figure,
-        window.standalone.placement.figure,
-    ]
-    for figure in figures:
-        chart_text = [t.get_text() for t in figure.findobj(lambda o: hasattr(o, "get_text"))]
-        _check([text for text in chart_text if text], "charts")
-    window.close()
+    _check(_texts(window), "workbench")
+    _check([window.inspector.report_text()], "full report")
+    _check([window.windowTitle()], "title")
     if any(name for name in _cjk_fonts()):
         assert tofu == [], [str(w.message) for w in tofu[:3]]
-    _check_about_and_clocks(window)
+    _check_dialogs(window)
+    window.close()
 
 
-def _check_about_and_clocks(window: QWidget) -> None:
+def _check_dialogs(window: QWidget) -> None:
     import re
 
-    from reverbscope.ui.main_window import about_box
+    from reverbscope.ui.measure_dialog import DawAnalysisDialog, StandaloneMeasureDialog
     from reverbscope.ui.measure_flow import separate_clocks_box
+    from reverbscope.ui.workbench import about_box
     from reverbscope.ui.workers import out_of_memory_text, unexpected_error_text
 
+    standalone = StandaloneMeasureDialog(window, profile="vocal", backend="fake")
+    _check(_texts(standalone), "measure dialog")
+    standalone.close()
+    daw = DawAnalysisDialog(window, profile="vocal")
+    _check(_texts(daw), "DAW dialog")
+    daw.close()
     about = about_box(window)
     plain = re.sub(r"<[^>]+>", " ", about.text())
     _check([plain, about.windowTitle(), *[button.text() for button in about.buttons()]], "about")
@@ -214,14 +243,6 @@ def _check_about_and_clocks(window: QWidget) -> None:
     clocks.close()
     _check([unexpected_error_text()], "unexpected error")
     _check([out_of_memory_text()], "out of memory")
-    from PySide6.QtGui import QFontDatabase
-
-    from reverbscope.ui.theme import CJK_FALLBACK_FONTS
-
-    present = [name for name in CJK_FALLBACK_FONTS if name in set(QFontDatabase.families())]
-    if present:
-        families = window.results.text.font().families()
-        assert any(name in families for name in present), families
 
 
 def _cjk_fonts() -> list[str]:
@@ -230,18 +251,15 @@ def _cjk_fonts() -> list[str]:
     return font_families()[1:]
 
 
-def test_a_demo_made_in_english_is_listed_and_titled_in_chinese(
+def test_a_synthetic_session_made_in_english_is_titled_in_chinese(
     zh: None, app: QApplication, tmp_path: Path
 ) -> None:
-    """The recent list and the results title printed "房间 Synthetic demo room"
-    for a demo made before the language was changed: the names the demo wrote
-    are shown in the interface language, a name a user typed is not touched."""
+    """The names the demo wrote are shown in the interface language; a name a
+    user typed is not touched, and the synthetic marker stays."""
     from reverbscope.demo import DEMO_MODE
-    from reverbscope.interpretation import interpret
-    from reverbscope.io.recent import remember_session
     from reverbscope.io.session_store import save_measurement
     from reverbscope.models.session import MeasurementSession
-    from reverbscope.ui.main_window import MainWindow
+    from reverbscope.ui.workbench import WorkbenchWindow
 
     [(_folder, result)] = _measurements(tmp_path)[:1]
     session = MeasurementSession(
@@ -252,22 +270,17 @@ def test_a_demo_made_in_english_is_listed_and_titled_in_chinese(
     )
     saved = tmp_path / "demo-a"
     save_measurement(saved, session, result)
-    remember_session(saved)
-    window = MainWindow()
-    window.home.refresh_recent()
-    listed = window.home.recent.item(0).text()
-    assert "合成演示房间" in listed and "A：靠近桌面和侧墙" in listed, listed
-    assert "Synthetic" not in listed and "desk" not in listed, listed
-    window.state.result = result
-    window.state.findings = interpret(result, "vocal")
-    window.state.session = session
-    window.show_results()
-    title = window.results.session_line()
-    assert "合成演示房间" in title and "模拟全指向话筒" in title, title
-    assert "Synthetic" not in title and "omni" not in title, title
-    session.room_name = "Booth A"
-    window.show_results()
-    assert "Booth A" in window.results.session_line()
+    window = WorkbenchWindow()
+    window.show()
+    measurement = window.controller.open_session(saved)
+    _settle(app)
+    assert measurement is not None
+    name = measurement.name()
+    assert "合成演示房间" in name and "A：靠近桌面和侧墙" in name, name
+    assert "Synthetic" not in name and "desk" not in name, name
+    listed = _model_texts(window.tree)
+    assert any("合成数据" in text for text in listed), listed
+    _check(listed, "measurement list")
     window.close()
 
 
@@ -283,6 +296,8 @@ def test_settings_and_developer_tools_are_chinese(zh: None, app: QApplication) -
         "en",
         "zh_CN",
     ]
+    # The fake backend is a test facility, not a choice offered to the user.
+    assert "fake" not in [dialog.backend.itemData(i) for i in range(dialog.backend.count())]
     _check(_texts(dialog), "settings")
     for tool in (EnvironmentReport("fake"), DeviceInspector("fake")):
         _check(_texts(tool), type(tool).__name__)

@@ -394,6 +394,18 @@ QScrollBar::handle:vertical:hover {{ background: {t["muted"]}; }}
 QScrollBar:horizontal {{ background: transparent; height: 10px; margin: 2px; }}
 QScrollBar::handle:horizontal {{ background: {t["border"]}; border-radius: 4px; min-width: 30px; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
+
+QToolBar {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; spacing: 2px;
+    padding: 2px 6px; }}
+QToolBar QToolButton {{ padding: 4px 10px; min-height: 18px; }}
+QToolBar QToolButton:checked {{ background: {t["accent_soft"]}; border-color: {t["accent"]}; }}
+QToolBar::separator {{ width: 1px; background: {t["border"]}; margin: 4px 6px; }}
+QDockWidget {{ color: {t["muted"]}; font-size: 11px; font-weight: 700; }}
+QDockWidget::title {{ background: {t["surface_alt"]}; padding: 5px 8px; text-align: left;
+    border-bottom: 1px solid {t["border"]}; }}
+QTreeView::item {{ padding: 3px 2px; }}
+QTreeView::branch {{ background: {t["surface"]}; }}
+QTabBar::tab {{ padding: 5px 12px; }}
 """
 
 

@@ -1,5 +1,5 @@
-"""Widgets the two measurement pages share: the recording profile row, the
-metadata form, the optional tape measurements and the fixed action area.
+"""Widgets the measurement dialogs share: the recording profile row, the
+metadata form and the optional tape measurements with their side view.
 """
 
 from __future__ import annotations
@@ -12,18 +12,16 @@ ensure_pyside6()
 
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFormLayout,
-    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QProgressBar,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -32,32 +30,35 @@ from PySide6.QtWidgets import (
 from reverbscope.i18n import _
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.profiles import profile_title
-from reverbscope.ui.state import MeasurementState
-from reverbscope.ui.widgets import label, set_banner_text
+from reverbscope.ui.widgets import label
 
 
-def metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLineEdit, QLineEdit]:
+def metadata_form(
+    room: str = "", position: str = "", mic: str = ""
+) -> tuple[QGroupBox, QLineEdit, QLineEdit, QLineEdit]:
+    """Room, position and microphone: what a project lists a take under."""
     box = QGroupBox(_("Measurement metadata (optional)"))
     form = QFormLayout(box)
-    room = QLineEdit(state.session.room_name)
-    room.setPlaceholderText(_("Booth A, living room, studio B"))
-    position = QLineEdit(state.session.measurement_position)
-    position.setPlaceholderText(_("A, desk, corner"))
-    mic = QLineEdit(state.session.microphone_name)
-    form.addRow(_("Room"), room)
-    form.addRow(_("Position"), position)
-    form.addRow(_("Microphone"), mic)
-    return box, room, position, mic
+    room_edit = QLineEdit(room)
+    room_edit.setPlaceholderText(_("Booth A, living room, studio B"))
+    position_edit = QLineEdit(position)
+    position_edit.setPlaceholderText(_("A, desk, corner"))
+    mic_edit = QLineEdit(mic)
+    form.addRow(_("Room"), room_edit)
+    form.addRow(_("Position"), position_edit)
+    form.addRow(_("Microphone"), mic_edit)
+    return box, room_edit, position_edit, mic_edit
 
 
-def profile_combo(state: MeasurementState) -> QComboBox:
+def profile_combo(profile: str) -> QComboBox:
+    """The recording profiles, ``profile`` preselected, each with its description."""
     from reverbscope.interpretation.explain import profile_description
 
     combo = QComboBox()
     for index, name in enumerate(available_profiles()):
         combo.addItem(profile_title(name), name)
         combo.setItemData(index, profile_description(name), Qt.ItemDataRole.ToolTipRole)
-    combo.setCurrentIndex(max(combo.findData(state.profile), 0))
+    combo.setCurrentIndex(max(combo.findData(profile), 0))
 
     def describe(_index: int) -> None:
         combo.setToolTip(profile_description(str(combo.currentData() or "")))
@@ -68,17 +69,13 @@ def profile_combo(state: MeasurementState) -> QComboBox:
 
 
 def profile_row(combo: QComboBox, page: QWidget) -> tuple[QHBoxLayout, QPushButton]:
-    """The profile selector with the button that says what the profile wants.
-
-    Returns the row and the button; the page keeps the button as its
-    ``profile_help`` attribute.
-    """
+    """The profile selector with the button that says what the profile wants."""
     from reverbscope.ui.profile_dialog import profile_of, show_profile_help
 
     row = QHBoxLayout()
     row.setSpacing(8)
     row.addWidget(combo, 1)
-    button = QPushButton(_("What does it want?"))
+    button = QPushButton(_("Profile details"))
     button.setToolTip(_("What this profile watches for, and what it does not judge."))
     button.clicked.connect(lambda: show_profile_help(profile_of(combo), page))
     row.addWidget(button)
@@ -145,7 +142,7 @@ class PlacementInputs(QGroupBox):
         scene = QVBoxLayout()
         self.figure = Figure(figsize=(5.0, 2.8), dpi=100)
         self.canvas: Any = cast(Any, FigureCanvasQTAgg)(self.figure)
-        self.canvas.setMinimumHeight(200)
+        self.canvas.setMinimumHeight(180)
         self.scene_hint = QLabel("")
         self.scene_hint.setWordWrap(True)
         self.scene_hint.setProperty("role", "hint")
@@ -195,7 +192,7 @@ class PlacementInputs(QGroupBox):
         }
 
     def summary(self) -> str:
-        """One line for a step summary: what was entered."""
+        """One line: what was entered."""
         distance_m, mic_height_m, temperature_c = self.values()
         parts: list[str] = []
         if distance_m is not None:
@@ -209,91 +206,3 @@ class PlacementInputs(QGroupBox):
         from reverbscope.i18n import list_join
 
         return list_join(parts)
-
-
-class ActionArea(QFrame):
-    """The fixed strip under a measurement page: status, progress and the buttons.
-
-    It never scrolls away: Run, Stop, Analyze and the step buttons stay where
-    they are whatever the page above shows.
-    """
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setProperty("workspace", "actions")
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(16, 8, 16, 8)
-        layout.setSpacing(6)
-        self.status = QLabel("")
-        self.status.setWordWrap(True)
-        self.status.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        layout.addWidget(self.status)
-        self.progress = QProgressBar()
-        self.progress.setRange(0, 100)
-        self.progress.setTextVisible(False)
-        self.progress.hide()
-        layout.addWidget(self.progress)
-        row = QHBoxLayout()
-        row.setSpacing(6)
-        self.back_button = QPushButton(_("Home"))
-        self.back_button.setToolTip(_("Back to the start page; the fields keep their values."))
-        self.prev_button = QPushButton(_("‹ Previous"))
-        self.next_button = QPushButton(_("Next ›"))
-        row.addWidget(self.back_button)
-        row.addSpacing(8)
-        row.addWidget(self.prev_button)
-        row.addWidget(self.next_button)
-        row.addStretch(1)
-        self.right = QHBoxLayout()
-        self.right.setSpacing(6)
-        row.addLayout(self.right)
-        layout.addLayout(row)
-
-    def set_status(self, text: str, tone: str = "") -> None:
-        set_banner_text(self.status, text, tone)
-        self.status.setVisible(bool(text))
-
-    def set_step_buttons(self, index: int, count: int) -> None:
-        self.prev_button.setEnabled(index > 0)
-        self.next_button.setEnabled(index + 1 < count)
-
-
-class StepPanel(QWidget):
-    """One step of a flow: a heading, a sentence on what it needs, its content."""
-
-    def __init__(self, title: str, lead: str, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.setProperty("page", True)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(8)
-        self.title = label(title, "page-title")
-        layout.addWidget(self.title)
-        self.lead = label(lead, "hint", wrap=True)
-        layout.addWidget(self.lead)
-        self.body = QVBoxLayout()
-        self.body.setSpacing(10)
-        layout.addLayout(self.body)
-        layout.addStretch(1)
-
-
-class StepHelp(QWidget):
-    """What the details pane shows for a measurement page: the step's help."""
-
-    changed = Signal()
-
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 4, 12, 12)
-        layout.setSpacing(8)
-        self.heading = label("", "card-title", wrap=True)
-        layout.addWidget(self.heading)
-        self.text = label("", wrap=True)
-        self.text.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        layout.addWidget(self.text)
-        layout.addStretch(1)
-
-    def show_step(self, heading: str, text: str) -> None:
-        self.heading.setText(heading)
-        self.text.setText(text)

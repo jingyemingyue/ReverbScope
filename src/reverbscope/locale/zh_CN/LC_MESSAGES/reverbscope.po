@@ -5230,7 +5230,7 @@ msgstr "只有一对位置：判定只针对这两次测量，不代表整个房
 
 msgctxt "comparison side"
 msgid "baseline"
-msgstr "基准"
+msgstr "基线"
 
 msgctxt "comparison side"
 msgid "candidate"
@@ -5428,7 +5428,7 @@ msgid "Next"
 msgstr "下一步"
 
 msgid "the first position: the others are judged against it"
-msgstr "第一个位置：其他位置都以它为基准判定"
+msgstr "第一个位置：其他位置都以它为基线判定"
 
 msgid "the measurement is invalid ({checks})"
 msgstr "测量无效（{checks}）"
@@ -6324,7 +6324,7 @@ msgid "Low-frequency resonance candidates"
 msgstr "低频共振候选"
 
 msgid "Above baseline (dB)"
-msgstr "高于基准（dB）"
+msgstr "高于基线（dB）"
 
 msgid "Decay 20 dB"
 msgstr "衰减 20 dB"
@@ -6531,7 +6531,7 @@ msgid "Why excluded"
 msgstr "排除原因"
 
 msgid "Level above baseline"
-msgstr "高于基准的电平"
+msgstr "高于基线的电平"
 
 msgid "Narrow-band decay (20 dB)"
 msgstr "窄带衰减（20 dB）"
@@ -6751,3 +6751,597 @@ msgstr "{inp} → {out}，{rate}"
 
 msgid "Go to the settings"
 msgstr "前往测量设置"
+
+msgid "Project {name}: {n} session(s) listed."
+msgstr "项目 {name}：已列出 {n} 个会话。"
+
+msgid "No measurement selected."
+msgstr "未选中测量。"
+
+msgid "{names}: the recording exists only in memory and is lost if you continue."
+msgstr "{names}：录音只存在于内存中，继续将会丢失。"
+
+msgid "Cannot compare: {error}"
+msgstr "无法对比：{error}"
+
+msgid "Unnamed measurement"
+msgstr "未命名测量"
+
+msgid "No position"
+msgstr "无位置"
+
+msgid "Set a baseline and select another measurement."
+msgstr "请设为基线并选中另一条测量。"
+
+msgid "Decay (EDT/T20/T30/RT60)"
+msgstr "衰减（EDT/T20/T30/RT60）"
+
+msgid "Energy (C50/C80/D50/Ts)"
+msgstr "能量（C50/C80/D50/Ts）"
+
+msgid "Noise bands"
+msgstr "噪声频带"
+
+msgid "Placement lengths"
+msgstr "摆位长度"
+
+msgid "Placement candidates"
+msgstr "摆位候选"
+
+msgid "Plane"
+msgstr "平面"
+
+msgid "synthetic data"
+msgstr "合成数据"
+
+msgid "{duration:g} s, {level:g} dBFS"
+msgstr "{duration:g} s，{level:g} dBFS"
+
+msgid "Saved path"
+msgstr "保存路径"
+
+msgid "not saved"
+msgstr "未保存"
+
+msgid "Check"
+msgstr "检查项"
+
+msgid "Message"
+msgstr "说明"
+
+msgid "Show in chart"
+msgstr "在图表中显示"
+
+msgid "Measurement quality"
+msgstr "测量质量"
+
+msgid "Properties"
+msgstr "测量属性"
+
+msgid "Tables"
+msgstr "数据表"
+
+msgid "Verdict"
+msgstr "判定"
+
+msgid "Aspect"
+msgstr "方面"
+
+msgid "Reflections"
+msgstr "反射"
+
+msgid "Report"
+msgstr "报告"
+
+msgid "The result was discarded: the measurement was stopped before it was ready."
+msgstr "结果已丢弃：测量在完成前被停止。"
+
+msgid "{name} (raw)"
+msgstr "{name}（原始）"
+
+msgid "{name}, {band}, RT60~{rt60:.2f} s"
+msgstr "{name}，{band}，RT60~{rt60:.2f} s"
+
+msgid "{name}, {band} ({validity})"
+msgstr "{name}，{band}（{validity}）"
+
+msgid "{name}, RT60~{rt60:.2f} s"
+msgstr "{name}，RT60~{rt60:.2f} s"
+
+msgid "{name}, {rms:.1f} dBFS RMS"
+msgstr "{name}，{rms:.1f} dBFS RMS"
+
+msgid "No curves to export"
+msgstr "没有可导出的曲线"
+
+msgid "Save curves as CSV"
+msgstr "将曲线保存为 CSV"
+
+msgid "CSV files (*.csv)"
+msgstr "CSV 文件 (*.csv)"
+
+msgid "The CSV file could not be written: {error}"
+msgstr "无法写入 CSV 文件：{error}"
+
+msgid "Chart"
+msgstr "图表"
+
+msgid "Measurements shown"
+msgstr "显示的测量"
+
+msgid "All visible measurements"
+msgstr "所有显示的测量"
+
+msgid "Selected only"
+msgstr "仅选中"
+
+msgid "Baseline and selected"
+msgstr "基线与选中"
+
+msgid "Raw curve"
+msgstr "原始曲线"
+
+msgid "Also draw the unsmoothed response"
+msgstr "同时绘制未平滑的响应"
+
+msgid "Octave bands"
+msgstr "倍频程频带"
+
+msgid "Also draw the octave-band decays of the selected measurement"
+msgstr "同时绘制选中测量的各倍频程衰减"
+
+msgid "Difference"
+msgstr "差异"
+
+msgid "Candidate minus baseline"
+msgstr "候选减去基线"
+
+msgid "Reset zoom"
+msgstr "复位缩放"
+
+msgid "Back to the full range (double-click does the same)"
+msgstr "回到完整范围（双击效果相同）"
+
+msgid "Chart as PNG..."
+msgstr "图表另存为 PNG…"
+
+msgid "Curves as CSV..."
+msgstr "曲线另存为 CSV…"
+
+msgid "No measurement loaded"
+msgstr "未载入测量"
+
+msgid "No visible measurement"
+msgstr "没有显示的测量"
+
+msgid "No measurement selected"
+msgstr "未选中测量"
+
+msgid "{name} (selected measurement only)"
+msgstr "{name}（仅选中测量）"
+
+msgid "Frequency response, {n} measurements"
+msgstr "频率响应，{n} 条测量"
+
+msgid "{name} (baseline)"
+msgstr "{name}（基线）"
+
+msgid "{name} (candidate)"
+msgstr "{name}（候选）"
+
+msgid "Schroeder decay (dB, relative)"
+msgstr "Schroeder 衰减（dB，相对）"
+
+msgid "Background noise (dBFS, uncalibrated)"
+msgstr "本底噪声（dBFS，未校准）"
+
+msgid "Stop the take that is playing (Esc)."
+msgstr "停止正在播放的录音（Esc）。"
+
+msgid "Quality: {glyph} {status}"
+msgstr "质量：{glyph} {status}"
+
+msgid "Project overview"
+msgstr "项目概览"
+
+msgid "Close"
+msgstr "关闭"
+
+msgid "No measurement loaded."
+msgstr "未载入测量。"
+
+msgid "Set as baseline"
+msgstr "设为基线"
+
+msgid "Measurements"
+msgstr "测量"
+
+msgid "Properties and diagnostics"
+msgstr "属性与诊断"
+
+msgid "&Measure..."
+msgstr "测量(&M)…"
+
+msgid "Play the sweep through an audio interface and record"
+msgstr "通过音频接口播放扫频并录音"
+
+msgid "&Import DAW Recording..."
+msgstr "导入 DAW 录音(&I)…"
+
+msgid "Analyse a recording exported from a DAW"
+msgstr "分析从 DAW 导出的录音"
+
+msgid "&New Project..."
+msgstr "新建项目(&N)…"
+
+msgid "&Add Saved Session to Project..."
+msgstr "将已保存的会话加入项目(&A)…"
+
+msgid "Project &Overview..."
+msgstr "项目概览(&O)…"
+
+msgid "Measure a New &Position..."
+msgstr "测量新位置(&P)…"
+
+msgid "&Save Session..."
+msgstr "保存会话(&S)…"
+
+msgid "&Close Measurement"
+msgstr "关闭测量(&C)"
+
+msgid "CSV &Tables..."
+msgstr "CSV 表格(&T)…"
+
+msgid "Current Chart as &PNG..."
+msgstr "当前图表另存为 PNG(&P)…"
+
+msgid "Copy &Report"
+msgstr "复制报告(&R)"
+
+msgid "Save &comparison.json..."
+msgstr "保存 comparison.json(&C)…"
+
+msgid "Se&ttings..."
+msgstr "设置(&T)…"
+
+msgid "&Stop Take"
+msgstr "停止录音(&S)"
+
+msgid "Set as &Baseline"
+msgstr "设为基线(&B)"
+
+msgid "&One chart"
+msgstr "单图(&O)"
+
+msgid "&Two charts"
+msgstr "双图(&T)"
+
+msgid "&Measurement list"
+msgstr "测量列表(&M)"
+
+msgid "&Properties and diagnostics"
+msgstr "属性与诊断(&P)"
+
+msgid "&Linked zoom"
+msgstr "联动缩放(&L)"
+
+msgid "&Reset layout"
+msgstr "恢复默认布局(&R)"
+
+msgid "&User guide"
+msgstr "用户指南(&U)"
+
+msgid "Recent &Sessions"
+msgstr "最近的会话(&S)"
+
+msgid "Recent Pro&jects"
+msgstr "最近的项目(&J)"
+
+msgid "&Export"
+msgstr "导出(&E)"
+
+msgid "&Project"
+msgstr "项目(&P)"
+
+msgid "Main toolbar"
+msgstr "主工具栏"
+
+msgid "1 chart"
+msgstr "单图"
+
+msgid "2 charts"
+msgstr "双图"
+
+msgid "Inspector"
+msgstr "属性与诊断"
+
+msgid "{name}: analysed."
+msgstr "{name}：已分析。"
+
+msgid "Set a baseline and select another measurement first."
+msgstr "请先设为基线并选中另一条测量。"
+
+msgid "No recent sessions yet."
+msgstr "还没有最近的会话。"
+
+msgid "No recent projects yet."
+msgstr "还没有最近的项目。"
+
+msgid "Choose the recorded file first."
+msgstr "请先选择录好的文件。"
+
+msgid "Write the test signal or choose the sweep file first."
+msgstr "请先写出测试信号或选择扫频文件。"
+
+msgid "No reference sweep yet."
+msgstr "还没有参考扫频。"
+
+msgid "Quality"
+msgstr "质量"
+
+msgid "Role"
+msgstr "角色"
+
+msgid "Profile details"
+msgstr "配置说明"
+
+msgctxt "evidence"
+msgid "aliased distortion"
+msgstr "混叠失真"
+
+msgctxt "evidence"
+msgid "appeared"
+msgstr "出现"
+
+msgctxt "evidence"
+msgid "base frequency"
+msgstr "基频"
+
+msgctxt "evidence"
+msgid "baseline"
+msgstr "基线"
+
+msgctxt "evidence"
+msgid "baseline label"
+msgstr "基线标签"
+
+msgctxt "evidence"
+msgid "baseline, relative"
+msgstr "基线（相对）"
+
+msgctxt "evidence"
+msgid "basis"
+msgstr "依据"
+
+msgctxt "evidence"
+msgid "candidate"
+msgstr "候选"
+
+msgctxt "evidence"
+msgid "candidate label"
+msgstr "候选标签"
+
+msgctxt "evidence"
+msgid "candidate, relative"
+msgstr "候选（相对）"
+
+msgctxt "evidence"
+msgid "candidates"
+msgstr "候选项"
+
+msgctxt "evidence"
+msgid "clarity, upper bound"
+msgstr "清晰度上限"
+
+msgctxt "evidence"
+msgid "clarity, lower bound"
+msgstr "清晰度下限"
+
+msgctxt "evidence"
+msgid "count within the window"
+msgstr "窗口内数量"
+
+msgctxt "evidence"
+msgid "delay"
+msgstr "延时"
+
+msgctxt "evidence"
+msgid "delta"
+msgstr "差值"
+
+msgctxt "evidence"
+msgid "direct-sound confidence"
+msgstr "直达声置信度"
+
+msgctxt "evidence"
+msgid "direct sound to noise"
+msgstr "直达声与噪声之比"
+
+msgctxt "evidence"
+msgid "disappeared"
+msgstr "消失"
+
+msgctxt "evidence"
+msgid "excitation, lower edge"
+msgstr "激励下限"
+
+msgctxt "evidence"
+msgid "harmonic distortion"
+msgstr "谐波失真"
+
+msgctxt "evidence"
+msgid "harmonics"
+msgstr "谐波"
+
+msgctxt "evidence"
+msgid "impulse-response peak"
+msgstr "脉冲响应峰值"
+
+msgctxt "evidence"
+msgid "just-noticeable difference"
+msgstr "刚可察觉差"
+
+msgctxt "evidence"
+msgid "level"
+msgstr "电平"
+
+msgctxt "evidence"
+msgid "long decay from"
+msgstr "较长衰减起点"
+
+msgctxt "evidence"
+msgid "low-band RT60, maximum"
+msgstr "低频段 RT60 最大值"
+
+msgctxt "evidence"
+msgid "matched"
+msgstr "已匹配"
+
+msgctxt "evidence"
+msgid "meaningful from"
+msgstr "有意义的起点"
+
+msgctxt "evidence"
+msgid "metric"
+msgstr "指标"
+
+msgctxt "evidence"
+msgid "mid-band RT60, mean"
+msgstr "中频段 RT60 均值"
+
+msgctxt "evidence"
+msgid "range needed for EDT"
+msgstr "EDT 所需范围"
+
+msgctxt "evidence"
+msgid "range needed for T20"
+msgstr "T20 所需范围"
+
+msgctxt "evidence"
+msgid "range needed for T30"
+msgstr "T30 所需范围"
+
+msgctxt "evidence"
+msgid "notes"
+msgstr "说明"
+
+msgctxt "evidence"
+msgid "own spread"
+msgstr "自身离散"
+
+msgctxt "evidence"
+msgid "peak to noise"
+msgstr "峰值与噪声之差"
+
+msgctxt "evidence"
+msgid "pre-peak margin"
+msgstr "峰前余量"
+
+msgctxt "evidence"
+msgid "reason"
+msgstr "原因"
+
+msgctxt "evidence"
+msgid "relative level"
+msgstr "相对电平"
+
+msgctxt "evidence"
+msgid "RMS"
+msgstr "RMS"
+
+msgctxt "evidence"
+msgid "RT60 estimate"
+msgstr "RT60 估计"
+
+msgctxt "evidence"
+msgid "noise segment"
+msgstr "噪声片段"
+
+msgctxt "evidence"
+msgid "side"
+msgstr "方向"
+
+msgctxt "evidence"
+msgid "sweep passes"
+msgstr "扫频次数"
+
+msgctxt "evidence"
+msgid "sweep start in the recording"
+msgstr "扫频在录音中的起点"
+
+msgctxt "evidence"
+msgid "threshold"
+msgstr "阈值"
+
+msgctxt "evidence"
+msgid "valid length"
+msgstr "有效长度"
+
+msgctxt "evidence"
+msgid "value"
+msgstr "数值"
+
+msgctxt "evidence"
+msgid "very long decay from"
+msgstr "很长衰减起点"
+
+msgctxt "evidence"
+msgid "warning"
+msgstr "警告"
+
+msgctxt "evidence"
+msgid "warnings"
+msgstr "警告"
+
+msgctxt "evidence"
+msgid "window"
+msgstr "窗口"
+
+msgctxt "evidence value"
+msgid "short"
+msgstr "较短"
+
+msgctxt "evidence value"
+msgid "noticeable"
+msgstr "偏长"
+
+msgctxt "evidence value"
+msgid "long"
+msgstr "很长"
+
+msgctxt "evidence value"
+msgid "very long"
+msgstr "非常长"
+
+msgctxt "evidence value"
+msgid "high"
+msgstr "高"
+
+msgctxt "evidence value"
+msgid "medium"
+msgstr "中"
+
+msgctxt "evidence value"
+msgid "low"
+msgstr "低"
+
+msgctxt "evidence value"
+msgid "pre-sweep"
+msgstr "扫频前"
+
+msgctxt "evidence value"
+msgid "tail"
+msgstr "尾段"
+
+msgctxt "evidence value"
+msgid "quiet"
+msgstr "安静段"
+
+msgid "Import DAW recording"
+msgstr "导入 DAW 录音"
+
+msgid "Save session"
+msgstr "保存会话"
+
+msgid "{n} measurement(s) open."
+msgstr "已打开 {n} 条测量。"

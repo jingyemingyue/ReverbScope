@@ -10,9 +10,9 @@
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
+![ReverbScope 工作台：演示房间的两个话筒位置同时打开，上方是频率响应，下方是衰减曲线，右侧的测量列表显示每个位置的质量状态（合成演示数据）](docs/images/gui-results.zh-CN.png)
 
-<sub>内置演示房间的结果页。合成数据：没有测量任何真实房间。</sub>
+<sub>同时打开演示房间两个位置的工作台。合成数据：没有测量任何真实房间。</sub>
 
 > 本文是 [README.md](README.md) 的简体中文版本；两者不一致时，以英文版为准。
 
@@ -80,32 +80,31 @@
 
 ## 30 秒体验
 
-不需要话筒和音频接口，也不会播放任何声音。
+不需要话筒和音频接口，也不会播放任何声音。任一版本，在终端中：
 
-* **桌面版：** 打开 ReverbScope，点 **演示（无需音频接口）**。
-* **任一版本，在终端中：**
+```bash
+reverbscope config language zh_CN   # 以后一直使用中文界面（只需运行一次）
+reverbscope demo
+```
 
-  ```bash
-  reverbscope config language zh_CN   # 以后一直使用中文界面（只需运行一次）
-  reverbscope demo
-  ```
+ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
+保存后不管系统怎么设置都使用中文，`reverbscope config language auto` 改回跟随系统。
 
-  ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
-  保存后不管系统怎么设置都使用中文，`reverbscope config language auto` 改回跟随系统。
-
-  下载的安装包不会把 `reverbscope` 加入 `PATH`：请在它所在的文件夹里打开终端（Windows 安装程序：
-  `%LOCALAPPDATA%\Programs\ReverbScope`），或者写出它的完整路径（macOS 桌面版：
-  `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`），详见[命令行](#命令行)。
+下载的安装包不会把 `reverbscope` 加入 `PATH`：请在它所在的文件夹里打开终端（Windows 安装程序：
+`%LOCALAPPDATA%\Programs\ReverbScope`），或者写出它的完整路径（macOS 桌面版：
+`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`），详见[命令行](#命令行)。
 
 ![终端中的 reverbscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
 `reverbscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步
-做什么。桌面版的 **演示** 则是在一个模拟房间里完成一次独立模式测量。两者显示的每个数值都描述的是模拟
-结果，保存的每个会话都标记为合成演示。
+做什么。桌面版像打开任何已保存的会话一样打开它写出的会话（**文件 → 打开会话…**，或
+`reverbscope demo` 打印出的那些文件夹），并把它们标为**合成数据**；桌面版本身没有演示模式。演示显示的
+每个数值都描述的是模拟结果，保存的每个会话都标记为合成演示。
 
 **然后进行真实测量：** 先把监听音箱音量**调低**（ReverbScope 不会改动系统音量），然后二选一：让
-ReverbScope 通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW
-模式**）。[用户指南](docs/user-guide/zh-CN.md)（[English](docs/user-guide/en.md)）逐页说明各项功能。
+ReverbScope 通过你的音频接口自己播放并录音（**独立模式**，**测量 → 测量…**），或者在 DAW 中播放它的
+扫频（**通用 DAW 模式**，**测量 → 导入 DAW 录音…**）。[用户指南](docs/user-guide/zh-CN.md)
+（[English](docs/user-guide/en.md)）说明工作台的各项功能。
 
 ## 这是什么
 
@@ -136,8 +135,8 @@ DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、�
 检查通过同样有价值。
 
 1. 安装一个构建（见[下载](#下载)；Gatekeeper / SmartScreen 警告属于预期情况）。
-2. 打开 ReverbScope，先运行一次 **演示（无需音频接口）**（英文界面为 **Demo (no interface)**）：
-   它不播放任何声音，只展示一份结果是什么样子。
+2. 先运行一次 `reverbscope demo`，再在 ReverbScope 中打开它写出的一个会话（**文件 → 打开会话…**，
+   英文界面为 **File → Open Session...**）：它不播放任何声音，只展示一份结果是什么样子。
 3. 先把监听音量调低，然后用你的音频接口和一支话筒运行 **独立模式**，或通过你的 DAW 运行
    **通用 DAW 模式**（[DAW 说明](docs/user-guide/daw-setup.zh-CN.md)）。
 4. 报告实际情况，并附上 **帮助 → 用于问题报告的环境报告 → 探测采样率**（英文界面为
@@ -252,13 +251,14 @@ reverbscope gui
 
 `--profile` 决定如何把测得的数字转换为建议（默认 `generic`；`vocal`、`voiceover`、`acoustic_guitar`、
 `drums`、`room_mic` 和 `choir` 各有针对该类录音的阈值和措辞）。报告会在 `Interpretation`（解读）旁边
-标出配置名称，以免有人把这些建议误当成与录音用途无关的客观结论。GUI 在两种测量模式中都提供同样的选择。
+标出配置名称，以免有人把这些建议误当成与录音用途无关的客观结论。GUI 在两个测量对话框中都提供同样的选择。
 
 `results/` 中会生成 `result.json`（全部指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）、
 `session.json`（测量元数据）、扫频的 `sweep.reverbscope-sweep.json`，以及录音的副本 `recording.wav`
 （用 `--no-copy-recording` 或 `reverbscope config copy-recording off` 可以不复制）。你传入的原始录音
 永远不会被修改。`reverbscope show` 以及 GUI 中的
-**打开会话**（**Open Session**）和主页的会话列表都可以重新打开该目录；脉冲响应 WAV 是权威的采样记录
+**文件 → 打开会话…**（**File → Open Session...**，或**最近的会话**）都可以重新打开该目录，打开的每个会话
+都会加入工作台的测量列表，与已打开的并列；脉冲响应 WAV 是权威的采样记录
 （`result.json` 保存的是指标，不保存脉冲响应的采样）。最近打开或保存过的会话记录在 `$REVERBSCOPE_HOME`
 下（默认为 `~/.reverbscope`）。
 
@@ -269,6 +269,7 @@ reverbscope gui
 | [docs/INSTALLATION.zh-CN.md](docs/INSTALLATION.zh-CN.md) | 在 macOS、Windows、Linux 上下载安装或用 Python 安装；更新、卸载、未签名构建的警告、故障排查；[English](docs/INSTALLATION.md) |
 | [docs/index.md](docs/index.md) | 文档索引 |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 包结构、数据流、扩展点 |
+| [docs/GUI_DESIGN_REFERENCES.md](docs/GUI_DESIGN_REFERENCES.md) | 桌面工作台的布局与交互模型，以及设计时参考的开源工具（未复制任何内容） |
 | [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回送、打包、国际化、验证关卡 |
 | [docs/ARCHITECTURE_V1.zh-CN.md](docs/ARCHITECTURE_V1.zh-CN.md) | v1.0 设计的中文摘要 |
 | [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) | 算法、单位、有效性规则、参考文献 |

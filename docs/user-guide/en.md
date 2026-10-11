@@ -83,11 +83,6 @@ bundled licenses.
 
 ## Try it first: the demo
 
-On its first start the desktop app shows a **Your first measurement** card on
-the Home page: the demo, the DAW route and the standalone route, each with
-its button, and a link to this guide. **Don't show this again** hides it;
-**Help ▸ Getting started** brings it back.
-
 `reverbscope demo` shows the whole workflow without an interface or a
 microphone. It writes a sweep, simulates what a microphone would record at two
 positions in a made-up room (one close to a desk and a side wall, one moved
@@ -102,11 +97,17 @@ the demo never overwrites a folder it did not write. `reverbscope demo --out
 the demo gives its sessions are written in the language it ran in, and shown
 in the interface language when a session is opened, listed or reported.
 
+The desktop app has no demo mode of its own. It opens the sessions the demo
+wrote like any saved session (**File → Open Session...**, or the folders
+`reverbscope demo` prints) and marks each of them *synthetic data* in the
+measurement list, in the inspector and in the window title.
+
 ## Universal DAW Mode
 
-1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav` (or the GUI
-   “Universal DAW Mode” generate button, with the project's sample rate).
-   Keep the `.reverbscope-sweep.json` sidecar next to the WAV.
+1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav` (or, in
+   the desktop app, **Measure → Import DAW Recording...**, whose test-signal
+   section writes the same WAV and sidecar at the sample rate you choose:
+   the project's). Keep the `.reverbscope-sweep.json` sidecar next to the WAV.
 2. Import the WAV on a new DAW track, with time-stretching (Warp, Flex,
    Follow Tempo) off and no plug-in on its path. Route it to one loudspeaker.
 3. Arm a second track with the measurement microphone, input monitoring off,
@@ -115,8 +116,13 @@ in the interface language when a session is opened, listed or reported.
 4. Optional loopback: bounce a two-channel export (microphone + electrical
    return) and pass `--channel 0 --loopback-channel 1`.
 5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`,
-   or in the GUI's “Universal DAW Mode” choose the files with “Choose
-   Recording...” and “Choose Reference Sweep...”.
+   or in the desktop app's **Import DAW Recording** dialog choose the files
+   with **Choose Recording...** and **Choose Reference Sweep...** (the test
+   signal generated in the same dialog is the reference by default), pick the
+   microphone and loopback channels, the recording profile and the metadata,
+   and click **Analyze**: the dialog closes, the status line shows the
+   analysis, and the result joins the measurement list. The DAW step-by-step
+   notes are folded into the dialog.
 
 **Step-by-step notes for Pro Tools, Logic Pro / GarageBand, Cubase / Nuendo,
 Fender Studio Pro (formerly PreSonus Studio One), Ableton Live, REAPER, FL Studio, Bitwig Studio, Digital Performer and Audacity, and
@@ -139,8 +145,25 @@ played.
 Start at a low monitor level. Levels above −12 dBFS need `--acknowledge-level`
 every time; that confirmation is never saved.
 
-**Demo** (GUI or `reverbscope --backend fake measure`) runs the same flow on a
-synthetic room. Nothing is sent to a loudspeaker.
+In the desktop app, **Measure → Measure...** (Ctrl+M) opens the Standalone
+dialog: the audio system and the devices with the recommended entries
+starred, the channels, the sample rate with the device-rate check, the test
+signal with the playback-level limit and its acknowledgement, the recording
+profile, room, position and microphone, and the optional tape measurements
+with the side-view picture. **Run** starts the take: the dialog closes, the
+status line shows the real progress and keeps **Stop** (Esc) on screen, and
+the finished take joins the measurement list as a new entry, whatever you
+selected meanwhile. The device checks, the question about two separate
+clocks and the channel validation happen before anything is played, as on
+the command line. The take exists only in memory until **File → Save
+Session...** writes it; closing it or the window asks first (*Save
+Session...* / *Discard* / *Cancel*). A result that arrives after **Stop**,
+or after the window was closed, is dropped.
+
+`reverbscope --backend fake measure` runs the same flow on a synthetic room,
+and `REVERBSCOPE_AUDIO_BACKEND=fake` does the same for the desktop app's
+automated tests. Nothing is sent to a loudspeaker, and a session made that
+way is marked *synthetic data*. The desktop app has no demo entry.
 
 ### Per platform
 
@@ -183,16 +206,17 @@ for: vocals, voice-over, acoustic guitar, drums, a room microphone, a choir,
 or the general one. Each has its own thresholds for the decay, for a strong
 early reflection, for clarity (C50 or C80; drums judge neither clarity nor
 the noise floor) and for the low end. Before you measure, the **What does it
-want?** button beside the profile selector (and **About this profile...** on
-the Results page) says what the chosen profile watches for and what it does
-not judge, with the numbers; `reverbscope profiles` lists the profiles and
+want?** button beside the profile selector in the measurement dialogs says
+what the chosen profile watches for and what it does not judge, with the
+numbers; the **Properties** tab of the inspector names the profile a
+measurement was read under; `reverbscope profiles` lists the profiles and
 `reverbscope profiles vocal` explains one (`--format json` for the numbers).
 The thresholds are engineering choices, stated in
 [MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8, never a grade.
 
-**Measurement health** sits right under the key figures: the card below the
-four key figures on the Results page, and the section right after "At a glance" in
-the text report. It lists the checks the
+**Measurement health** is the **Measurement quality** tab of the inspector
+(the quality status in the toolbar opens it) and the section right after
+"At a glance" in the text report. It lists the checks the
 analysis made on the take itself (reference, sweep, playback speed, direct
 sound, level, distortion, dropouts, decay range, noise floor, recording
 length, and the loopback and the audio device when they took part), each
@@ -209,81 +233,121 @@ Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The interface and the
 text report show them in the interface language.
 
-The window is one workspace: the navigation on the left (the pages, the
-open project's positions and sessions, recent sessions), the context bar on
-top (what you are looking at and the page's main actions), the page in the
-middle, the details pane on the right (what you selected: a figure, a
-finding, a band, a reflection, with its evidence and reasons; **View →
-Details pane** or F10 folds it away, and it folds by itself in a narrow
-window) and the status line at the bottom, which shows the real take
-progress and keeps **Stop** on screen while a take runs. Going to another
-page keeps everything; only **New Measurement** (Ctrl+N) and **Open
-Session** start afresh, and an unsaved take is protected by a question.
+The window opens straight on the workbench. The menu bar holds **File**,
+**Measure**, **Project**, **View** and **Help** (and **Developer** in the
+developer edition); the compact toolbar under it offers **Measure**,
+**Import DAW Recording**, **Open Session**, **Project** and **Save**, then
+**Baseline**, **1 chart** / **2 charts**, the quality status of the selected
+measurement and the **Inspector** toggle. The chart area in the middle
+shows one or two stacked charts (by default the frequency response above
+the decay). The **Measurements** dock on the right lists every open
+measurement, grouped by position; each row carries the measurement's colour
+swatch, its name, a visibility checkbox, its quality status and its role
+tags (*baseline*, *synthetic data*, *unsaved*). The **Properties and
+diagnostics** inspector opens in a dock at the bottom when you ask for it
+(the toolbar button, F10, a double-click on a row or a click on the quality
+status) with the tabs **Measurement quality**, **Diagnostics**,
+**Properties**, **Tables**, **Comparison** and **Report**. The status line
+at the bottom shows the real take progress and keeps **Stop** on screen
+while a take runs. With nothing open the charts say *No measurement
+loaded.* and the toolbar offers Measure, Import and Open Project.
 
-The Results page is built around the chart. The four key figures
-(reverberation, background noise, early reflections, direct sound) stand
-over it with their trust level, each opening its chart; on a short window
-they fold away. On the left, **Charts** lists the groups and the overview
-below it answers *Is this measurement trustworthy?* (the measurement-health
-card: failed, limited or good, with what to do), *What are the main
-problems?* (the findings, the most important first; *Show all* for the
-rest) and *What next?* (the checks' own fixes, then the chart behind each
-warning); every card opens its chart and its evidence in the details pane.
-The chart in the middle is one group at a time, drawn when shown, and the
-page opens on the group behind the worst finding:
+Measurements are managed, not pages switched: every session you open, every
+recording you import and every finished take joins the list, and a new one
+never replaces an old one. Selecting a row shows that measurement's
+properties and diagnostics and draws its curves thicker, on top of the
+others; the checkbox hides or shows its curves without closing it; **File →
+Close Measurement** (Ctrl+W) removes it. **Set as baseline** (toolbar, the
+list dock or Ctrl+B) marks one measurement as the baseline; the other one
+you then select is the candidate (see [Comparing two
+positions](#comparing-two-positions)). The window remembers its size, the
+docks, the chart kinds, the chart count and the split between the charts;
+**View → Reset layout** restores the default, **View → Measurement list**
+(F9) and **View → Properties and diagnostics** (F10) hide or show the docks,
+and the charts keep at least 70 % of the width at 1280×800 (the window is
+never smaller than 960×640).
 
-| Group | What it shows |
+The workbench charts draw every visible measurement in its own colour, the
+same colour as in the list, with the selected one thicker and on top. Each
+chart panel has a one-row control bar: the chart kind, the scope (*All
+visible measurements*, *Selected only*, *Baseline and selected*), the
+kind's options (*Raw curve* for the response, *Octave bands* for the
+decay), **Difference**, **Reset zoom**, the cursor readout and **Export**
+(*Chart as PNG...*, *Curves as CSV...*). The mouse wheel zooms, a drag pans
+and a double-click resets; **View → Linked zoom** links the zoom of panels
+that share an axis (frequency in Hz, time in s, time in ms) and never across
+axes. Every axis names its unit, dBFS or relative dB included. A hidden
+second chart is not redrawn until it is shown.
+
+| Chart | What it shows |
 | --- | --- |
-| Frequency and low end | The raw and smoothed response, the loopback when compensation ran, and the resonance candidates, marked on the curve when selected. |
-| Decay | The Schroeder curves and the EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time tables, each with validity; selecting a band highlights its curve and lists its reasons. |
-| Noise | The quiet-segment spectrum, the octave-band levels and the hum. |
-| Impulse and early reflections | The impulse response and the ETC peaks, or the reflection timeline. |
-| Placement geometry | The side view and the reflection timeline (below). |
+| Frequency response | The smoothed response of every visible measurement, the raw curve on request, and the resonance candidates of the selected one, marked on its curve when one is selected in the inspector; with a baseline, **Difference** draws candidate − baseline under the two responses on one scale. |
+| Decay | The broadband Schroeder curves (Lundeby-truncated) of every visible measurement, the octave bands on request; selecting a band in the Tables tab highlights its curve; with a baseline, **Difference** draws the baseline's and the candidate's broadband decay together. |
+| Noise | The quiet-segment spectrum of every visible measurement, with the RMS level in dBFS (uncalibrated) and the hum harmonics of the selected one. |
+| Impulse response | The impulse response of the selected measurement only. |
+| Early reflections | The ETC peaks of the selected measurement only, with the direct sound, every candidate, the threshold and the analysed window on one time axis; the highlighted candidate is the one selected in the inspector. |
+| Placement geometry | The side view over the reflection timeline for the selected measurement only (see [Placement](#placement)). |
 
-**Full report** in the context bar opens the same text report that
-`reverbscope analyze` prints (the warnings at the end) in the details pane;
-**Copy report** under Export copies it.
+The inspector explains the selected measurement. **Measurement quality** is
+the overall status, its summary and the checks with their reason, the
+figures they affect and the fix; **Diagnostics** lists the findings of the
+recording profile, the worst first, with their evidence, and a double-click
+(or **Show in chart**) opens the chart, band or reflection behind a row;
+**Properties** holds the room, position, microphone, mode, profile, sample
+rate, sweep, channels, saved path and the synthetic marker; **Tables** holds
+the metric tables (decay, energy, noise bands, reflections, resonances,
+placement lengths and candidates), each row linked to its chart; **Report**
+is the same text report that `reverbscope analyze` prints (the warnings at
+the end), with **Copy report**. Headings are functional; validity, missing
+data and "not comparable" reasons stay visible.
 
-**Export** in the context bar writes the CSV tables of the result into a
-folder (the same files as `reverbscope export`), saves the chart on screen
-as a PNG, or copies the text report; a failure says why. **Compare...**
-opens the Compare page with this session as the baseline once it is saved.
+**File → Export** writes the CSV tables of the selected measurement into a
+folder (*CSV Tables...*, the same files as `reverbscope export`), saves the
+chart you last clicked as a PNG (*Current Chart as PNG...*), copies the text
+report (*Copy Report*) or writes the comparison of the baseline and the
+candidate (*Save comparison.json...*); a failure says why.
 
 ## Placement
 
-The **Placement geometry** group shows, by default, a side view over the
-reflection timeline. The side view draws
-the microphone height and the loudspeaker distance you measured as solid
-lines, what the reflections allow (loudspeaker height, horizontal
-separation, the plane above both devices, each with its input uncertainty
-and every alternative the model keeps) as dashed lines, and example lengths
-as dotted lines where nothing was entered. The **Reflection timeline** puts
-the direct sound, every candidate, the threshold and the analysed window on
-one time axis; selecting a candidate in the table highlights it and lists
-its numbers, its validity and why it was excluded. The **3D (auxiliary)**
-view draws only what was solved (a ring of possible loudspeaker positions,
-one cabinet as an illustration) and has a **Reset view** button. Without a
+The **Placement geometry** chart shows the side view over the reflection
+timeline for the selected measurement. The side view draws the microphone
+height and the loudspeaker distance you measured as solid lines, what the
+reflections allow (loudspeaker height, horizontal separation, the plane
+above both devices, each with its input uncertainty and every alternative
+the model keeps) as dashed lines, and example lengths as dotted lines where
+nothing was entered; no wall and no room outline is drawn. The reflection
+timeline below it puts the direct sound, every candidate, the threshold and
+the analysed window on one time axis. The **Tables** tab of the inspector
+lists the solved lengths (*Placement lengths*) and the candidates
+(*Placement candidates*) with their numbers, their validity and why one was
+excluded; selecting a row highlights it in the chart. Without a
 tape-measured loudspeaker distance ReverbScope only reports each arrival's
-excess path, says which field to fill in, and offers the way back to the
-measurement page. It never names a wall or gives room length or width.
+excess path and names the field to fill in the measurement dialog. It never
+names a wall or gives room length or width.
 
-Enter the tape numbers in Universal DAW Mode or Standalone Mode before
-Analyze, or pass `--speaker-distance` / `--mic-height` / `--temperature`
-on the CLI.
+Enter the tape numbers in the **Measure** or **Import DAW Recording**
+dialog (*Tape measurements*, with the side-view picture) before Run or
+Analyze, or pass `--speaker-distance` / `--mic-height` / `--temperature` on
+the CLI.
 
 ## Comparing two positions
 
-`reverbscope compare baseline/ candidate/ --same-input-gain` (or the GUI Compare
-page). A decay delta is only VALID when both sides are VALID. The noise delta
-needs an explicit “input gain unchanged” declaration. A change is never called
-significant; ISO 3382-1’s just-noticeable difference for T is quoted as context.
+`reverbscope compare baseline/ candidate/ --same-input-gain`, or in the
+desktop app: open both measurements, select the reference one and click
+**Set as baseline** (toolbar, the list dock or Ctrl+B), then select the
+other, which becomes the candidate; the **Comparison** tab of the inspector
+shows the verdict and the deltas, and **Input gain unchanged** stays a
+condition you tick there. A decay delta is only VALID when both sides are
+VALID. The noise delta needs that explicit “input gain unchanged”
+declaration. A change is never called significant; ISO 3382-1’s
+just-noticeable difference for T is quoted as context.
 
 **Verdict.** Under the candidate's recording profile the comparison says, for
 reverberation, clarity, early reflections, noise floor and low end, whether
 the candidate is a *meaningful improvement*, a *meaningful degradation*,
 *probably insignificant*, *not comparable*, or whether the evidence is
-*insufficient*, with the reason each time (the card under the session
-picker on the Compare page; the section after "At a glance" in the report; `verdict` in
+*insufficient*, with the reason each time (the headline of the Comparison
+tab; the section after "At a glance" in the report; `verdict` in
 `--format json`). The judgement uses the profile's thresholds (a vocal booth
 does not care whether 0.30 s became 0.22 s; a room microphone calls a room
 that became too dry a degradation), the just-noticeable differences, and the
@@ -291,38 +355,47 @@ measurement health of both takes when they are at hand; it never calls a
 change statistically significant on one pair of positions
 ([MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §11a).
 
-The Compare page lists matched early reflections (delay ±0.5 ms) and
+The Comparison tab lists matched early reflections (delay ±0.5 ms) and
 low-frequency resonances (within 1/6 octave, with decay-distinguishable
-flags). Resonances are compared only in the range both takes searched: one
-found where the other take never looked (its sweep started higher) is
-neither gone nor new, and when one take did not search at all the low end
-reads "not compared" (in the report, and as a note under the Resonances tab;
-the Early Reflections tab explains the same way when the direct sound is not
-trusted on both sides). `reverbscope compare … --out comparison.json` writes the numbers only;
-`reverbscope show comparison.json` prints the report again and **re-derives**
-findings (they are never stored in the file).
+flags) in its *Reflections* and *Resonances* tables. Resonances are compared
+only in the range both takes searched: one found where the other take never
+looked (its sweep started higher) is neither gone nor new, and when one take
+did not search at all the low end reads "not compared" (in the report, and
+as a note under the Resonances table; the Reflections table explains the
+same way when the direct sound is not trusted on both sides). The charts'
+**Difference** view draws candidate − baseline for the frequency response
+and both broadband decays for the decay. **File → Export → Save
+comparison.json...** (or `reverbscope compare … --out comparison.json`)
+writes the numbers only; `reverbscope show comparison.json` prints the
+report again and **re-derives** findings (they are never stored in the
+file).
 
 ## Projects, positions and the overview
 
 A project folder holds `project.json` and ordinary session folders; the file
 lists which position each session was taken at. Make one with
-`reverbscope project init --out room/ --name Booth` (or **Open Project...** on
-the Home page, which offers to make a project of a plain folder), then list
-sessions under positions: `reverbscope project add room/ session/ --position desk`.
+`reverbscope project init --out room/ --name Booth` (or **Project → New
+Project...**; **Open Project...** on a plain folder offers to make it a
+project), then list sessions under positions: `reverbscope project add room/
+session/ --position desk` (**Project → Add Saved Session to Project...**).
 Running `project init` again on a folder that has a `project.json` is
-refused; `--force` starts the project over, without its positions.
+refused; `--force` starts the project over, without its positions. In the
+desktop app, **Open Project...** (Ctrl+Shift+O) lists every session of the
+project in the Measurements dock, grouped by position, and draws them
+together; the project's name joins the window title.
 
-**Measuring several positions.** On the Project page, **Measure a new
-position...** names the position (A, B, desk, ...) and opens the mode you
-choose; keep the loudspeaker, its level and the input gain as they were and
-move only the microphone. **Save Session...** on the Results page then saves
-into the project, in a folder named after the position (`B-1`, `B-2`, ...),
-and lists the session under that position; **Project** leads back to the
-overview. Two takes at one position show whether the measurement repeats:
-the overview says whether they agree within the 5 % just-noticeable
-difference for T, and says so when they do not.
+**Measuring several positions.** **Project → Measure a New Position...**
+opens the Measure dialog with the project's room and the next free label
+(A, B, ...; change it to desk, corner, ... if you like); keep the
+loudspeaker, its level and the input gain as they were and move only the
+microphone. **Save Session...** then saves the take into the project, in a
+folder named after the position (`B-1`, `B-2`, ...), and lists it under
+that position in the dock. Two takes at one position show whether the
+measurement repeats: the overview says whether they agree within the 5 %
+just-noticeable difference for T, and says so when they do not.
 
-**The overview** (`reverbscope project overview room/`; the Project page)
+**The overview** (`reverbscope project overview room/`; **Project → Project
+Overview...** in the desktop app, the same text with **Copy overview**)
 reads every take under one recording profile (the latest take's own, or
 `--profile`): its measurement health, RT60, clarity, noise floor and
 strongest early reflection, and its *fit*: *fits* when the profile has no
@@ -330,12 +403,12 @@ warning about it, *warnings* with the topics, *cannot say* when the
 measurement is invalid or has no VALID reverberation time. Each position is
 represented by its healthiest, latest take; every position after the first
 carries the verdicts of its take against the first position's (the same
-verdicts as Compare, with the health of both takes counted). The spatial
+verdicts as the Comparison tab, with the health of both takes counted). The spatial
 average and the ISO 3382-2 class follow, with how far the positions' RT60
 differ across the room, and **Next** says what to measure: another
 microphone position for the next class (or a second loudspeaker position),
 a repeat take, a position to measure again, and which positions fit. The
-page does not rank positions: between two that fit, choose on the verdicts
+overview does not rank positions: between two that fit, choose on the verdicts
 and on what the recording needs. `--format json` carries the whole overview;
 `project.json` stores nothing beyond the positions
 ([MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §13).
@@ -368,7 +441,7 @@ reverbscope config language auto    # follow the system again
 ```
 
 `reverbscope config language` shows the language in effect and why. The
-desktop app's Settings → Language writes the same setting. `--lang zh_CN`
+desktop app's **File → Settings...** → Language writes the same setting. `--lang zh_CN`
 picks a language for one command and `REVERBSCOPE_LANG` for a shell; the
 order is `--lang`, the stored setting, `REVERBSCOPE_LANG`, the system. The
 home screen (bare `reverbscope`) and `reverbscope --help` end with the command
