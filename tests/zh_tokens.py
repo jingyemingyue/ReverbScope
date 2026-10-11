@@ -97,8 +97,9 @@ ALLOWED = frozenset(
         "sounddevice",
         "pyqtgraph",
         "MIT",
-        # Key names in shortcut hints ("Ctrl+Return", "Esc"), as on the keyboard.
+        # Key names in shortcut hints ("Ctrl+Return", "Ctrl+Shift+Left", "Esc").
         "Ctrl",
+        "Shift",
         "Return",
         "Esc",
     }

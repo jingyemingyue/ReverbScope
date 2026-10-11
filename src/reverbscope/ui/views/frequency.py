@@ -22,10 +22,17 @@ from reverbscope.display.curves import (
     smooth_fractional_octave,
 )
 from reverbscope.i18n import _
-from reverbscope.ui.plotkit import DASHES, X_FREQUENCY, ChartPanel
+from reverbscope.ui.plotkit import DASHES, X_FREQUENCY, ChartPanel, follow_chart_visibility
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
-from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
+from reverbscope.ui.workspace import (
+    Entry,
+    WorkspaceModel,
+    curve_legend,
+    curve_width,
+    entry_label,
+    hidden_selection_note,
+)
 
 #: The smoothing combo: ``-1`` = the analysis' own smoothed curve.
 STORED_SMOOTHING = -1
@@ -110,8 +117,10 @@ class FrequencyView(AnalysisView):
             model.overlay_changed,
             model.baseline_changed,
             model.entries_changed,
+            model.entry_updated,
         ):
             signal.connect(self.refresh)
+        follow_chart_visibility(self.chart, model)
 
     def title(self) -> str:
         return _("Frequency response")
@@ -169,12 +178,13 @@ class FrequencyView(AnalysisView):
             f, db, processing = data
             curves[entry.key] = (f, db)
             is_current = current is not None and entry.key == current.key
+            is_baseline = entry.key == self.model.baseline_key
             self.chart.add_curve(
-                entry_label(entry),
+                curve_legend(entry, baseline=is_baseline),
                 f,
                 db,
                 color=entry.color,
-                width=2.2 if is_current else 1.2,
+                width=curve_width(current=is_current, baseline=is_baseline),
                 style=DASHES[entry.color_index % len(DASHES)],
                 key=entry.key,
                 processing=processing,
@@ -243,8 +253,13 @@ class FrequencyView(AnalysisView):
         self._x_default = (low, nyquist)
         self.chart.set_default_range(self._x_default, (top - 60.0, top + 10.0))
         self._draw_difference(curves, notes)
+        hidden = hidden_selection_note(self.model)
+        if hidden:
+            notes.append(hidden)
+            if not self.model.drawn():
+                self.chart.set_message(hidden)
         self.notes.setText("  ".join(notes))
-        if not self.model.drawn():
+        if not self.model.drawn() and self.model.current() is None:
             self.chart.set_title(_("Frequency response: no measurement selected"))
         else:
             self.chart.set_title(_("Frequency response"))
@@ -269,6 +284,11 @@ class FrequencyView(AnalysisView):
             data = self.curve_for(baseline)
             base = (data[0], data[1]) if data is not None else None
         cur = curves.get(current.key)
+        if cur is None:
+            data = self.curve_for(current)
+            cur = (data[0], data[1]) if data is not None else None
+        if baseline.key not in curves or current.key not in curves:
+            notes.append(_("A hidden measurement is still used for the difference."))
         if base is None or cur is None:
             notes.append(_("No difference: one of the two has no frequency response."))
             return

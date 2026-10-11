@@ -746,3 +746,17 @@ class ChartPanel(QWidget):
                     if math.isfinite(xv) and math.isfinite(yv):
                         writer.writerow([series.name, f"{xv:.6g}", f"{yv:.6g}"])
         return path
+
+
+def follow_chart_visibility(chart: ChartPanel, model: Any) -> None:
+    """A legend chip shows or hides that measurement on every chart.
+
+    Curves with no measurement key (a stored overlay, the difference) are
+    left to the chart. The model is the only place visibility is stored.
+    """
+
+    def on_visible(key: str, visible: bool) -> None:
+        if key and model.entry(key) is not None and model.is_visible(key) != visible:
+            model.set_overlay(key, visible)
+
+    chart.visibility_changed.connect(on_visible)

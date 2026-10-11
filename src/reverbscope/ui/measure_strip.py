@@ -22,6 +22,8 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSizePolicy,
     QSpinBox,
+    QToolButton,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -30,10 +32,10 @@ from reverbscope.ui.pages import DawModePage, StandalonePage
 from reverbscope.ui.widgets import label, primary, set_banner_text
 from reverbscope.ui.workspace import WorkspaceModel
 
-#: Strip modes, in the order of the mode list.
+#: Strip modes, in the order of the mode list. The product has no demo mode;
+#: synthetic takes stay a command-line and test facility.
 MODES = (
     ("standalone", N_("Audio interface")),
-    ("demo", N_("Demo (no interface)")),
     ("universal_daw", N_("DAW recording")),
 )
 
@@ -90,11 +92,11 @@ def _mirror_spin(strip: QSpinBox, page: QSpinBox) -> None:
 class MeasureStrip(QWidget):
     """One row of take controls under the three columns."""
 
-    #: The strip's mode list changed: ``standalone``, ``demo`` or ``universal_daw``.
+    #: The strip's mode list changed: ``standalone`` or ``universal_daw``.
     mode_changed = Signal(str)
     #: Show the full set-up page of the strip's mode.
     setup_requested = Signal(str)
-    #: Start: a take (interface, demo) or the DAW import page.
+    #: Start: a take on the interface, or the DAW import page.
     start_requested = Signal(str)
 
     def __init__(
@@ -110,9 +112,12 @@ class MeasureStrip(QWidget):
         self.daw = daw
         self.setProperty("strip", True)
         self.setAutoFillBackground(True)
-        row = QHBoxLayout(self)
-        row.setContentsMargins(8, 4, 8, 4)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(8, 3, 8, 3)
+        outer.setSpacing(2)
+        row = QHBoxLayout()
         row.setSpacing(6)
+        outer.addLayout(row)
 
         self.mode = QComboBox()
         for value, text in MODES:
@@ -123,6 +128,7 @@ class MeasureStrip(QWidget):
         row.addWidget(self.mode)
 
         self.device_widgets: list[QWidget] = []
+        self.advanced_widgets: list[QWidget] = []
         self.input_device = QComboBox()
         self.output_device = QComboBox()
         self.sample_rate = QComboBox()
@@ -146,10 +152,8 @@ class MeasureStrip(QWidget):
         self.loopback_channel.setToolTip(_("Loopback channel (1-based)"))
         for caption, widget in (
             (_("In"), self.input_device),
-            (_("Out"), self.output_device),
             (None, self.sample_rate),
             (_("Mic"), self.input_channel),
-            (_("Loopback"), self.loopback_channel),
         ):
             if caption:
                 caption_label = label(caption, "hint")
@@ -157,6 +161,25 @@ class MeasureStrip(QWidget):
                 self.device_widgets.append(caption_label)
             row.addWidget(widget, 1 if isinstance(widget, QComboBox) else 0)
             self.device_widgets.append(widget)
+
+        self.advanced_bar = QWidget()
+        advanced = QHBoxLayout(self.advanced_bar)
+        advanced.setContentsMargins(0, 0, 0, 0)
+        advanced.setSpacing(6)
+        for caption, widget in (
+            (_("Out"), self.output_device),
+            (_("Loopback"), self.loopback_channel),
+        ):
+            caption_label = label(caption, "hint")
+            advanced.addWidget(caption_label)
+            advanced.addWidget(widget, 1 if isinstance(widget, QComboBox) else 0)
+            self.device_widgets.append(caption_label)
+            self.device_widgets.append(widget)
+            self.advanced_widgets.append(caption_label)
+            self.advanced_widgets.append(widget)
+        advanced.addStretch(1)
+        self.advanced_bar.hide()
+        outer.addWidget(self.advanced_bar)
 
         self.position_label = label(_("Position"), "hint")
         row.addWidget(self.position_label)
@@ -170,6 +193,14 @@ class MeasureStrip(QWidget):
         self.position.currentTextChanged.connect(self._position_edited)
         row.addWidget(self.position)
 
+        self.advanced_button = QToolButton()
+        self.advanced_button.setCheckable(True)
+        self.advanced_button.setAutoRaise(True)
+        self.advanced_button.setText(_("Advanced"))
+        self.advanced_button.setToolTip(_("Output device and loopback channel."))
+        self.advanced_button.toggled.connect(self.advanced_bar.setVisible)
+        row.addWidget(self.advanced_button)
+
         self.setup_button = QPushButton(_("Set up..."))
         self.setup_button.setToolTip(
             _("All settings of this mode: level, sweep, profile, room and placement.")
@@ -179,7 +210,7 @@ class MeasureStrip(QWidget):
         )
         row.addWidget(self.setup_button)
         self.start_button = primary(QPushButton(_("Start")))
-        self.start_button.setShortcut("Ctrl+Return")
+        self.start_button.setShortcut(QKeySequence("Ctrl+Return"))
         self.start_button.clicked.connect(
             lambda: self.start_requested.emit(str(self.mode.currentData()))
         )
@@ -229,15 +260,19 @@ class MeasureStrip(QWidget):
 
     def _mode_selected(self, _index: int = 0) -> None:
         mode = self.current_mode()
-        live = mode in ("standalone", "demo")
+        live = mode == "standalone"
         for widget in self.device_widgets:
             widget.setVisible(live)
+        self.advanced_button.setVisible(live)
+        self.advanced_bar.setVisible(live and self.advanced_button.isChecked())
         self.start_button.setText(_("Start") if live else _("Import recording..."))
         # In DAW mode Ctrl+Return belongs to the DAW page's Analyze: two
         # visible buttons with one shortcut would make Qt fire neither.
-        self.start_button.setShortcut("Ctrl+Return" if live else "")
+        shortcut = QKeySequence("Ctrl+Return") if live else QKeySequence()
+        self.start_button.setShortcut(shortcut)
+        native = shortcut.toString(QKeySequence.SequenceFormat.NativeText)
         self.start_button.setToolTip(
-            _("Play the sweep and record it (Ctrl+Return).")
+            _("Play the sweep and record it ({shortcut}).").format(shortcut=native)
             if live
             else _("Open the DAW recording page to import the recorded WAV file.")
         )

@@ -7,10 +7,16 @@ from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from reverbscope.i18n import _
 from reverbscope.interpretation.profiles import noise_segment_text
-from reverbscope.ui.plotkit import DASHES, X_FREQUENCY, ChartPanel
+from reverbscope.ui.plotkit import DASHES, X_FREQUENCY, ChartPanel, follow_chart_visibility
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
-from reverbscope.ui.workspace import WorkspaceModel, entry_label
+from reverbscope.ui.workspace import (
+    WorkspaceModel,
+    curve_legend,
+    curve_width,
+    entry_label,
+    hidden_selection_note,
+)
 
 
 class NoiseView(AnalysisView):
@@ -33,8 +39,14 @@ class NoiseView(AnalysisView):
         self.notes.setProperty("role", "hint")
         self.notes.setWordWrap(True)
         layout.addWidget(self.notes)
-        for signal in (model.current_changed, model.overlay_changed, model.entries_changed):
+        for signal in (
+            model.current_changed,
+            model.overlay_changed,
+            model.entries_changed,
+            model.entry_updated,
+        ):
             signal.connect(self.refresh)
+        follow_chart_visibility(self.chart, model)
 
     def title(self) -> str:
         return _("Noise")
@@ -50,6 +62,7 @@ class NoiseView(AnalysisView):
             assert entry.result is not None
             noise = entry.result.noise
             is_current = current is not None and entry.key == current.key
+            is_baseline = entry.key == self.model.baseline_key
             if noise.psd_frequencies_hz is None or noise.psd_db is None:
                 reason = (
                     _("no quiet segment available")
@@ -64,11 +77,11 @@ class NoiseView(AnalysisView):
             if is_current:
                 nyquist = entry.result.sample_rate / 2.0
             self.chart.add_curve(
-                entry_label(entry),
+                curve_legend(entry, baseline=is_baseline),
                 f[keep],
                 db[keep],
                 color=entry.color,
-                width=1.5 if is_current else 1.0,
+                width=curve_width(current=is_current, baseline=is_baseline),
                 style=DASHES[entry.color_index % len(DASHES)],
                 key=entry.key,
                 processing=_("Welch power spectral density of the quiet segment"),
@@ -106,6 +119,11 @@ class NoiseView(AnalysisView):
             self.chart.set_title(_("Background noise"))
         top = max(tops) if tops else 0.0
         self.chart.set_default_range((10.0, nyquist), (top - 80.0, top + 10.0))
+        hidden = hidden_selection_note(self.model)
+        if hidden:
+            notes.append(hidden)
+            if not self.model.drawn():
+                self.chart.set_message(hidden)
         self.notes.setText("  ".join(notes))
 
     def restyle(self) -> None:

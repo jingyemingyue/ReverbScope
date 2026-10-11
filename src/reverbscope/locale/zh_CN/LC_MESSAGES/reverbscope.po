@@ -7034,3 +7034,131 @@ msgstr "无法读取第 {line} 行"
 
 msgid "line {line} has a face index that is not valid"
 msgstr "第 {line} 行的面索引无效"
+
+# Workstation polish
+msgid "Spectral"
+msgstr "频谱"
+
+msgid "Report"
+msgstr "报告"
+
+msgid "List"
+msgstr "列表"
+
+msgid "The chart inside this group."
+msgstr "这一组里的图表。"
+
+msgid "Inspector"
+msgstr "检查器"
+
+msgid "The open project, apart from the analysis charts."
+msgstr "打开的项目，与分析图表分开。"
+
+msgid "{group}: {names}."
+msgstr "{group}：{names}。"
+
+msgid "Show or hide the measurement list ({shortcut})."
+msgstr "显示或隐藏测量列表（{shortcut}）。"
+
+msgid "Show or hide the inspector ({shortcut})."
+msgstr "显示或隐藏检查器（{shortcut}）。"
+
+msgid "{group}: {names} ({keys})."
+msgstr "{group}：{names}（{keys}）。"
+
+msgid "The open project, apart from the analysis charts ({shortcut})."
+msgstr "打开的项目，与分析图表分开（{shortcut}）。"
+
+msgid "Open the chart this check is about. The measurement stays selected."
+msgstr "打开这项检查对应的图表。测量保持选中。"
+
+msgid "Affects {what}."
+msgstr "影响{what}。"
+
+msgid "Next: {step}"
+msgstr "下一步：{step}"
+
+msgid "Show {name}"
+msgstr "显示{name}"
+
+msgid "Measurement list"
+msgstr "测量列表"
+
+msgid "Advanced"
+msgstr "高级"
+
+msgid "Output device and loopback channel."
+msgstr "输出设备和回采通道。"
+
+msgid "Play the sweep and record it ({shortcut})."
+msgstr "播放扫频并录下来（{shortcut}）。"
+
+msgid "Click a measurement to select it. Tick it to draw it. Selection, visibility and the baseline are separate. Right-click for more."
+msgstr "单击一次测量以选中它。勾选则绘制它。选中、可见和基准彼此独立。右键单击可查看更多操作。"
+
+msgid "Rename..."
+msgstr "重命名..."
+
+msgid "A display name for this list. The session file is not changed."
+msgstr "列表中的显示名称。会话文件不会被修改。"
+
+msgid "Rename"
+msgstr "重命名"
+
+msgid "Display name"
+msgstr "显示名称"
+
+msgid "synthetic"
+msgstr "合成"
+
+msgid "Hide on charts"
+msgstr "在图表中隐藏"
+
+msgid "Show on charts"
+msgstr "在图表中显示"
+
+msgid "Comparisons use it. It does not change what is selected or drawn."
+msgstr "对比使用它。这不会改变选中项，也不会改变绘制哪些曲线。"
+
+msgid "ReverbScope plays a sweep, records it and reads the room from the recording. Measure with an audio interface, or import a DAW recording."
+msgstr "ReverbScope 播放扫频、录下它，并从录音中读出房间。用音频接口测量，或导入 DAW 录音。"
+
+msgid "{length:.2f} × {width:.2f} × {height:.2f} m"
+msgstr "{length:.2f} × {width:.2f} × {height:.2f} 米"
+
+msgid "Frame"
+msgstr "适配"
+
+msgid "Front"
+msgstr "正视"
+
+msgid "Look along the width. The entered face at y = 0 is nearest."
+msgstr "沿宽度方向看。最近的是输入的 y = 0 面。"
+
+msgid "Side"
+msgstr "侧视"
+
+msgid "Look along the length. The entered face at x = 0 is nearest."
+msgstr "沿长度方向看。最近的是输入的 x = 0 面。"
+
+msgid "x is length, y is width, z is up. Entered size, in metres."
+msgstr "x 是长度，y 是宽度，z 朝上。这是输入的尺寸，单位为米。"
+
+msgid "Entered geometry, {face}. Not a surface found by the measurement."
+msgstr "输入的几何：{face}。这不是测量找到的表面。"
+
+msgid "A hidden measurement is still used for the difference."
+msgstr "差值仍使用已隐藏的测量。"
+
+msgid "Shift later slices up and to the right so depth is easier to read. Display only: levels and frequencies are unchanged, and CSV export removes the shift."
+msgstr "把较晚的切片向上、向右错开，便于看出深度。仅用于显示：电平和频率不变，CSV 导出会去掉这份偏移。"
+
+msgid "This measurement is hidden. Tick it in the list to draw it."
+msgstr "这次测量已隐藏。在列表中勾选它即可绘制。"
+
+msgid "The selected measurement is hidden. Tick it in the list to draw it."
+msgstr "选中的测量已隐藏。在列表中勾选它即可绘制。"
+
+msgid "{name} · baseline"
+msgstr "{name} · 基准"
+

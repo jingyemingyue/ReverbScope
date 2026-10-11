@@ -49,6 +49,36 @@ LAYER_STYLE = {
 #: Pixels within which a click picks a device or a reflection point.
 PICK_PX = 12.0
 
+#: Corner order matches :meth:`RoomCanvas._draw_box`.
+_FACE_CORNERS = {
+    "x0": (0, 2, 6, 4),
+    "x1": (1, 3, 7, 5),
+    "y0": (0, 1, 5, 4),
+    "y1": (2, 3, 7, 6),
+    "z0": (0, 1, 3, 2),
+    "z1": (4, 5, 7, 6),
+}
+
+
+def _box_corners(box: RoomBox) -> NDArray[np.float64]:
+    length, width, height = box.dimensions
+    return np.array(
+        [[x, y, z] for z in (0.0, height) for y in (0.0, width) for x in (0.0, length)],
+        dtype=np.float64,
+    )
+
+
+def _point_in_polygon(x: float, y: float, polygon: list[tuple[float, float]]) -> bool:
+    inside = False
+    j = len(polygon) - 1
+    for i, (xi, yi) in enumerate(polygon):
+        xj, yj = polygon[j]
+        crosses = (yi > y) != (yj > y)
+        if crosses and yj != yi and x < (xj - xi) * (y - yi) / (yj - yi) + xi:
+            inside = not inside
+        j = i
+    return inside
+
 
 @dataclass
 class RoomScene:
@@ -59,6 +89,8 @@ class RoomScene:
     microphones: dict[str, Point] = field(default_factory=dict)
     #: The position of the current measurement (its microphone is highlighted).
     current_microphone: str = ""
+    #: ``"source"``, a microphone label, or ``"face:<id>"`` of the entered box.
+    selection: str = ""
     scan_points: NDArray[np.float64] | None = None
     #: ``(centre, radius)``: the measured direct distance around the loudspeaker.
     sphere: tuple[Point, float] | None = None
@@ -153,6 +185,8 @@ class RoomCanvas(QWidget):
     device_moved = Signal(str, object)
     #: A predicted reflection point was clicked (its face).
     face_clicked = Signal(str)
+    #: An entered room face was clicked (``x0`` … ``z1``). Not a measured surface.
+    surface_clicked = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -168,6 +202,8 @@ class RoomCanvas(QWidget):
         self._dragging_device = ""
         self._moved = False
         self.empty_text = ""
+        #: Coordinates of the last picked object, drawn on the canvas.
+        self.hud = ""
         self.camera.reset(*self.scene.bounds())
 
     # --- content ------------------------------------------------------------------------
@@ -191,6 +227,12 @@ class RoomCanvas(QWidget):
         self.camera.width, self.camera.height = self.width(), self.height()
         self.camera.reset(*self.scene.bounds())
         self.update()
+
+    def look(self, preset: str) -> None:
+        """Frame the room from ``top``, ``front`` or ``side``."""
+        self.camera.width, self.camera.height = self.width(), self.height()
+        self.camera.preset(preset)
+        self.fit()
 
     # --- painting -----------------------------------------------------------------------
 
@@ -249,7 +291,14 @@ class RoomCanvas(QWidget):
                 )
         if layers.get(LAYER_ENTERED, True):
             if scene.source is not None:
-                self._draw_device(painter, scene.source, _("Loudspeaker"), entered, square=True)
+                self._draw_device(
+                    painter,
+                    scene.source,
+                    _("Loudspeaker"),
+                    entered,
+                    square=True,
+                    key="source",
+                )
             for name, mic in scene.microphones.items():
                 current = name == scene.current_microphone
                 self._draw_device(
@@ -258,10 +307,25 @@ class RoomCanvas(QWidget):
                     _("Microphone {position}").format(position=name),
                     entered if current else assumed,
                     square=False,
+                    key=name,
                 )
+            if scene.box is not None and scene.selection.startswith("face:"):
+                self._draw_face(
+                    painter, scene.box, scene.selection.removeprefix("face:"), QColor(t["bad"])
+                )
+        self._draw_dimensions(painter, text)
         self._draw_triad(painter)
         self._draw_scale_bar(painter, text)
         self._draw_legend(painter, text, entered, measured, assumed)
+        if self.hud:
+            painter.setPen(text)
+            painter.drawText(
+                QRectF(70, self.height() - 72, max(40.0, self.width() - 200.0), 32),
+                Qt.AlignmentFlag.AlignLeft
+                | Qt.AlignmentFlag.AlignBottom
+                | Qt.TextFlag.TextWordWrap,
+                self.hud,
+            )
         if self.empty_text:
             painter.setPen(QColor(t["muted"]))
             painter.drawText(
@@ -286,10 +350,7 @@ class RoomCanvas(QWidget):
             painter.drawPolyline(QPolygonF(run))
 
     def _draw_box(self, painter: QPainter, box: RoomBox, pen: QPen) -> None:
-        lx, wy, hz = box.dimensions
-        corners = np.array(
-            [[x, y, z] for z in (0.0, hz) for y in (0.0, wy) for x in (0.0, lx)], dtype=np.float64
-        )
+        corners = _box_corners(box)
         edges = [(0, 1), (2, 3), (4, 5), (6, 7), (0, 2), (1, 3), (4, 6), (5, 7)]
         edges += [(0, 4), (1, 5), (2, 6), (3, 7)]
         for a, b in edges:
@@ -330,8 +391,36 @@ class RoomCanvas(QWidget):
         painter.drawEllipse(QPointF(*screen[0]), radius, radius)
         painter.setBrush(Qt.BrushStyle.NoBrush)
 
+    def _draw_dimensions(self, painter: QPainter, text: QColor) -> None:
+        box = self.scene.box
+        if box is None:
+            return
+        length, width, height = box.dimensions
+        painter.setPen(text)
+        painter.drawText(
+            QRectF(self.width() - 230, 8, 218, 32),
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop,
+            _("{length:.2f} × {width:.2f} × {height:.2f} m").format(
+                length=length, width=width, height=height
+            ),
+        )
+
+    def _draw_face(self, painter: QPainter, box: RoomBox, face: str, color: QColor) -> None:
+        corners = _box_corners(box)
+        indices = _FACE_CORNERS.get(face)
+        if indices is None:
+            return
+        self._draw_polyline(painter, corners[list(indices + indices[:1])], QPen(color, 2.6))
+
     def _draw_device(
-        self, painter: QPainter, point: Point, name: str, color: QColor, *, square: bool
+        self,
+        painter: QPainter,
+        point: Point,
+        name: str,
+        color: QColor,
+        *,
+        square: bool,
+        key: str,
     ) -> None:
         screen, visible = self.camera.project(np.array([point.as_tuple()]))
         if not visible[0]:
@@ -350,6 +439,9 @@ class RoomCanvas(QWidget):
         else:
             painter.drawEllipse(centre, 6.5, 6.5)
         painter.setBrush(Qt.BrushStyle.NoBrush)
+        if self.scene.selection == key:
+            painter.setPen(QPen(color, 2.2))
+            painter.drawEllipse(centre, 12, 12)
         painter.setPen(QColor(tokens()["text"]))
         painter.drawText(centre + QPointF(9, -8), name)
 
@@ -426,6 +518,37 @@ class RoomCanvas(QWidget):
                 best = (distance, name, point)
         return None if best is None else (best[1], best[2])
 
+    def surface_at(self, pos: QPointF) -> str:
+        """The entered face under ``pos``, or ``""``.
+
+        A hit names the box the user typed. It is not a surface a measurement
+        located. In the plan view the footprint is the floor (z = 0).
+        """
+        box = self.scene.box
+        if box is None or not self.scene.layers.get(LAYER_ENTERED, True):
+            return ""
+        if self.camera.plan:
+            x, y = self.camera.unproject_plan(pos.x(), pos.y())
+            length, width, _height = box.dimensions
+            if 0.0 <= x <= length and 0.0 <= y <= width:
+                return "z0"
+            return ""
+        corners = _box_corners(box)
+        screen, visible = self.camera.project(corners)
+        eye = self.camera.eye()
+        _right, _up, forward = self.camera.basis()
+        best: tuple[float, str] | None = None
+        for face, indices in _FACE_CORNERS.items():
+            if not all(bool(visible[i]) for i in indices):
+                continue
+            polygon = [(float(screen[i][0]), float(screen[i][1])) for i in indices]
+            if not _point_in_polygon(pos.x(), pos.y(), polygon):
+                continue
+            depth = float(np.mean((corners[list(indices)] - eye) @ forward))
+            if best is None or depth < best[0]:
+                best = (depth, face)
+        return "" if best is None else best[1]
+
     def face_at(self, pos: QPointF) -> str:
         if not self.scene.layers.get(LAYER_ASSUMED, True):
             return ""
@@ -483,6 +606,10 @@ class RoomCanvas(QWidget):
                 face = self.face_at(event.position())
                 if face:
                     self.face_clicked.emit(face)
+                else:
+                    surface = self.surface_at(event.position())
+                    if surface:
+                        self.surface_clicked.emit(surface)
         self._press = None
         self._last = None
         self._dragging_device = ""

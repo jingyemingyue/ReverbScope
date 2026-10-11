@@ -26,13 +26,14 @@ from PySide6.QtWidgets import (
 
 from reverbscope.errors import ReverbScopeError
 from reverbscope.geometry.paths import ConsistencyCheck, speed_for
-from reverbscope.health import assess, status_word
+from reverbscope.health import affects_text, assess, status_word
 from reverbscope.i18n import _, localize
 from reverbscope.interpretation.profiles import confidence_text, profile_title
 from reverbscope.interpretation.verdicts import verdict_chip
 from reverbscope.labels import validity_word
 from reverbscope.models.result import AnalysisResult, DecayMetric, EnergyMetric, Validity
 from reverbscope.ui.comparison import current_comparison
+from reverbscope.ui.health_nav import view_for_check, view_title
 from reverbscope.ui.theme import tone_color
 from reverbscope.ui.views.overview import CONFIDENCE_TONE, HEALTH_TONE, VALIDITY_DISPLAY
 from reverbscope.ui.widgets import label, separator
@@ -154,6 +155,8 @@ class Inspector(QWidget):
 
     #: Open the compare view (the verdict's "Details" button).
     compare_requested = Signal()
+    #: A health check asked to open this view id.
+    locate_requested = Signal(str)
 
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -291,7 +294,22 @@ class Inspector(QWidget):
             HEALTH_TONE[report.overall],
         )
         for check in report.problems:
-            section.add_row(check.title, check.reason, status_word(check.status), "warn")
+            tone = HEALTH_TONE.get(check.status, "warn")
+            section.add_row(check.title, check.reason, status_word(check.status), tone)
+            if check.affects:
+                section.add_text(_("Affects {what}.").format(what=affects_text(check.affects)))
+            for step in check.fix:
+                section.add_text(_("Next: {step}").format(step=step))
+            view_id = view_for_check(check)
+            if view_id:
+                button = QPushButton(_("Show {name}").format(name=view_title(view_id)))
+                button.setToolTip(
+                    _("Open the chart this check is about. The measurement stays selected.")
+                )
+                button.clicked.connect(
+                    lambda _checked=False, v=view_id: self.locate_requested.emit(v)
+                )
+                section.add_widget(button)
 
     def _draw_figures(self, result: AnalysisResult) -> None:
         section = self.figures

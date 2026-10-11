@@ -14,7 +14,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt, QUrl
+from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplication, QKeySequence
 from PySide6.QtWidgets import (
     QApplication,
@@ -139,13 +139,17 @@ class MainWindow(QMainWindow):
 
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
         self.splitter.setChildrenCollapsible(False)
+        self.splitter.setOpaqueResize(True)
+        self.splitter.setHandleWidth(6)
         self.splitter.addWidget(self.navigator)
         self.splitter.addWidget(self.workspace)
         self.splitter.addWidget(self.inspector)
         self.splitter.setStretchFactor(0, 0)
         self.splitter.setStretchFactor(1, 1)
         self.splitter.setStretchFactor(2, 0)
-        self.splitter.setSizes([230, 820, 300])
+        self.splitter.setSizes([220, 860, 260])
+        self.navigator.setMinimumWidth(168)
+        self.inspector.setMinimumWidth(200)
         central = QWidget()
         column = QVBoxLayout(central)
         column.setContentsMargins(0, 0, 0, 0)
@@ -183,6 +187,12 @@ class MainWindow(QMainWindow):
         self.strip.setup_requested.connect(self.show_mode)
         self.strip.start_requested.connect(self._strip_start)
         self.workspace.view_chosen.connect(self.show_view)
+        self.inspector.locate_requested.connect(self.show_view)
+        from reverbscope.ui.views.overview import OverviewView
+
+        overview = self.views["overview"]
+        assert isinstance(overview, OverviewView)
+        overview.locate_requested.connect(self.show_view)
         self.model.project_failed.connect(self._project_failed)
         self.model.current_changed.connect(self._current_changed)
 
@@ -194,6 +204,7 @@ class MainWindow(QMainWindow):
         self._preferred_view = ui_state.read_text("workspace/view", "overview")
         if self._preferred_view not in self.views:
             self._preferred_view = "overview"
+        self._layout_checked = False
         self._restore_layout()
         # The colour scheme the window was last drawn in.
         self._scheme = color_scheme()
@@ -254,26 +265,36 @@ class MainWindow(QMainWindow):
             view_menu.addAction(action)
             self.view_actions[view_id] = action
         view_menu.addSeparator()
+        self.navigator_action = QAction(_("Measurement list"), self)
+        self.navigator_action.setCheckable(True)
+        self.navigator_action.setChecked(True)
+        self.navigator_action.setShortcut(QKeySequence("Ctrl+Shift+Left"))
+        self.inspector_action = QAction(_("Inspector"), self)
+        self.inspector_action.setCheckable(True)
+        self.inspector_action.setChecked(True)
+        self.inspector_action.setShortcut(QKeySequence("Ctrl+Shift+Right"))
+        view_menu.addAction(self.navigator_action)
+        view_menu.addAction(self.inspector_action)
         start_action = QAction(_("Start panel"), self)
         start_action.triggered.connect(self._show_start)
         view_menu.addAction(start_action)
         reset_layout = QAction(_("Reset the layout"), self)
         reset_layout.triggered.connect(self.reset_layout)
         view_menu.addAction(reset_layout)
+        self.navigator_action.toggled.connect(self.set_navigator_open)
+        self.inspector_action.toggled.connect(self.set_inspector_open)
+        self.workspace.navigator_button.toggled.connect(self.set_navigator_open)
+        self.workspace.inspector_button.toggled.connect(self.set_inspector_open)
 
         measure_menu = self.menuBar().addMenu(_("&Measure"))
         daw_action = QAction(_("Universal DAW Mode"), self)
-        daw_action.setShortcut("Ctrl+Shift+1")
+        daw_action.setShortcut(QKeySequence("Ctrl+Shift+1"))
         daw_action.triggered.connect(self._show_mode_action("universal_daw"))
         standalone_action = QAction(_("Standalone Mode"), self)
-        standalone_action.setShortcut("Ctrl+Shift+2")
+        standalone_action.setShortcut(QKeySequence("Ctrl+Shift+2"))
         standalone_action.triggered.connect(self._show_mode_action("standalone"))
-        demo_action = QAction(_("Demo (no interface)"), self)
-        demo_action.setShortcut("Ctrl+Shift+3")
-        demo_action.triggered.connect(self._show_mode_action("demo"))
         measure_menu.addAction(daw_action)
         measure_menu.addAction(standalone_action)
-        measure_menu.addAction(demo_action)
 
         from reverbscope.edition import is_developer
 
@@ -346,17 +367,45 @@ class MainWindow(QMainWindow):
 
     # --- layout state --------------------------------------------------------------------
 
+    def set_navigator_open(self, open_: bool) -> None:
+        """Show or hide the measurement list. The chart keeps the freed space."""
+        self.navigator.setVisible(open_)
+        if self.navigator_action.isChecked() != open_:
+            self.navigator_action.setChecked(open_)
+        button = self.workspace.navigator_button
+        if button.isChecked() != open_:
+            button.setChecked(open_)
+
+    def set_inspector_open(self, open_: bool) -> None:
+        """Show or hide the inspector. The chart keeps the freed space."""
+        self.inspector.setVisible(open_)
+        if self.inspector_action.isChecked() != open_:
+            self.inspector_action.setChecked(open_)
+        button = self.workspace.inspector_button
+        if button.isChecked() != open_:
+            button.setChecked(open_)
+
     def _restore_layout(self) -> None:
-        geometry = ui_state.read_bytes("window/geometry")
-        if geometry is not None:
-            self.restoreGeometry(geometry)
-        splitter = ui_state.read_bytes("window/splitter")
-        if splitter is not None:
-            self.splitter.restoreState(splitter)
+        try:
+            geometry = ui_state.read_bytes("window/geometry")
+            if geometry is not None:
+                self.restoreGeometry(geometry)
+            splitter = ui_state.read_bytes("window/splitter")
+            restored = True
+            if splitter is not None:
+                restored = bool(self.splitter.restoreState(splitter))
+            self.set_navigator_open(ui_state.read_text("window/navigator", "1") != "0")
+            self.set_inspector_open(ui_state.read_text("window/inspector", "1") != "0")
+            if splitter is not None and not restored:
+                self.reset_layout()
+        except Exception:
+            self.reset_layout()
 
     def _save_layout(self) -> None:
         ui_state.write("window/geometry", self.saveGeometry())
         ui_state.write("window/splitter", self.splitter.saveState())
+        ui_state.write("window/navigator", "1" if self.navigator.isVisible() else "0")
+        ui_state.write("window/inspector", "1" if self.inspector.isVisible() else "0")
         view = self.workspace.current_view_id() or self._preferred_view
         ui_state.write("workspace/view", view)
         self._save_selection()
@@ -366,7 +415,29 @@ class MainWindow(QMainWindow):
             ui_state.write_selection(self.model.project_path, self.model.selection_state())
 
     def reset_layout(self) -> None:
-        self.splitter.setSizes([230, max(400, self.width() - 560), 300])
+        """The default columns: list, a wide chart, inspector. Both sides open."""
+        self.set_navigator_open(True)
+        self.set_inspector_open(True)
+        side_l, side_r = 220, 260
+        center = max(480, self.width() - side_l - side_r)
+        self.splitter.setSizes([side_l, center, side_r])
+
+    def _ensure_chart_space(self) -> None:
+        """A restored layout that crushes the chart falls back to the default."""
+        sizes = self.splitter.sizes()
+        if len(sizes) != 3 or sum(sizes) <= 0:
+            return
+        if sizes[1] < 320:
+            self.reset_layout()
+
+    def showEvent(self, event: object) -> None:  # noqa: N802 - Qt override
+        from PySide6.QtGui import QShowEvent
+
+        assert isinstance(event, QShowEvent)
+        super().showEvent(event)
+        if not self._layout_checked:
+            self._layout_checked = True
+            QTimer.singleShot(0, self._ensure_chart_space)
 
     # --- closing -------------------------------------------------------------------------
 
@@ -621,9 +692,7 @@ class MainWindow(QMainWindow):
             # backend under it would show the demo banner over a real sweep (or
             # the reverse). The page is shown as it is.
             self.stack.setCurrentWidget(self.standalone)
-            self._set_place(
-                _("Demo (no interface)") if self.standalone.demo_mode else _("Standalone Mode")
-            )
+            self._set_place(_("Standalone Mode"))
             return
         self.strip.set_mode(mode)
         self._apply_mode(mode)
@@ -632,7 +701,10 @@ class MainWindow(QMainWindow):
             self._set_place(_("Universal DAW Mode"))
         else:
             self.stack.setCurrentWidget(self.standalone)
-            self._set_place(_("Demo (no interface)") if mode == "demo" else _("Standalone Mode"))
+            # ``demo`` stays reachable for tests and the fake backend. It is
+            # not a Measure-menu or strip mode, and the status line does not
+            # advertise it as one.
+            self._set_place(_("Standalone Mode"))
 
     def _apply_mode(self, mode: str) -> None:
         if mode == "universal_daw":

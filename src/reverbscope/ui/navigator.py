@@ -92,8 +92,8 @@ class Navigator(QWidget):
         header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
         self.tree.setToolTip(
             _(
-                "Click a measurement to show it. Tick it to draw it with the current one. "
-                "Right-click for the baseline and more."
+                "Click a measurement to select it. Tick it to draw it. "
+                "Selection, visibility and the baseline are separate. Right-click for more."
             )
         )
         self.tree.currentItemChanged.connect(self._row_selected)
@@ -204,7 +204,7 @@ class Navigator(QWidget):
         if entry.unsaved:
             marks.append(_("unsaved"))
         if entry.synthetic:
-            marks.append(_("demo"))
+            marks.append(_("synthetic"))
         return "  ".join(marks)
 
     # --- following the model --------------------------------------------------------
@@ -294,15 +294,33 @@ class Navigator(QWidget):
         if entry is None:
             return None
         if entry.result is not None:
+            if self.model.is_visible(key):
+                hide = QAction(_("Hide on charts"), menu)
+                hide.triggered.connect(
+                    lambda _checked=False, k=key: self.model.set_overlay(k, False)
+                )
+                menu.addAction(hide)
+            else:
+                show = QAction(_("Show on charts"), menu)
+                show.triggered.connect(
+                    lambda _checked=False, k=key: self.model.set_overlay(k, True)
+                )
+                menu.addAction(show)
             if key == self.model.baseline_key:
                 clear = QAction(_("Clear the baseline"), menu)
                 clear.triggered.connect(lambda: self.model.set_baseline(""))
                 menu.addAction(clear)
             else:
                 base = QAction(_("Use as baseline"), menu)
-                base.setToolTip(_("Comparisons and difference panes compare against it."))
+                base.setToolTip(
+                    _("Comparisons use it. It does not change what is selected or drawn.")
+                )
                 base.triggered.connect(lambda _checked=False, k=key: self.model.set_baseline(k))
                 menu.addAction(base)
+        rename = QAction(_("Rename..."), menu)
+        rename.setToolTip(_("A display name for this list. The session file is not changed."))
+        rename.triggered.connect(lambda _checked=False, k=key: self._rename(k))
+        menu.addAction(rename)
         if entry.unsaved:
             save = QAction(_("Save Session..."), menu)
             save.triggered.connect(lambda _checked=False, k=key: self.save_requested.emit(k))
@@ -325,6 +343,18 @@ class Navigator(QWidget):
         remove.triggered.connect(lambda _checked=False, k=key: self.remove_requested.emit(k))
         menu.addAction(remove)
         return menu
+
+    def _rename(self, key: str) -> None:
+        from PySide6.QtWidgets import QInputDialog
+
+        entry = self.model.entry(key)
+        if entry is None:
+            return
+        text, ok = QInputDialog.getText(
+            self, _("Rename"), _("Display name"), text=entry_label(entry)
+        )
+        if ok:
+            self.model.set_alias(key, text.strip())
 
 
 def _open_folder(directory: Path) -> None:

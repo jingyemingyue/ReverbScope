@@ -152,7 +152,26 @@ class OrbitCamera:
         span_y = max(0.5, float(high[1] - low[1]))
         self.plan_scale = 0.85 * min(self.width / span_x, self.height / span_y)
 
+    def preset(self, name: str) -> None:
+        """A named view. ``top`` is the plan; ``front`` and ``side`` are 3D.
+
+        Front looks along the width, with the face at y = 0 nearest.
+        Side looks along the length, with the face at x = 0 nearest.
+        Neither name is a wall the measurement found.
+        """
+        if name == "top":
+            self.plan = True
+            return
+        self.plan = False
+        if name == "front":
+            self.yaw_deg = -90.0
+            self.pitch_deg = 8.0
+        elif name == "side":
+            self.yaw_deg = 180.0
+            self.pitch_deg = 8.0
+
     def reset(self, low: NDArray[np.float64], high: NDArray[np.float64]) -> None:
+        self.plan = False
         self.yaw_deg = DEFAULT_YAW_DEG
         self.pitch_deg = DEFAULT_PITCH_DEG
         self.fit(low, high)

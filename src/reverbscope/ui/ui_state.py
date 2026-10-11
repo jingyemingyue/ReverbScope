@@ -73,3 +73,18 @@ def read_selection(project: Path) -> dict[str, Any] | None:
 
 def write_selection(project: Path, selection: dict[str, Any]) -> None:
     write(f"{project_key(project)}/selection", json.dumps(selection, ensure_ascii=False))
+
+
+def _alias_key(key: str) -> str:
+    digest = hashlib.sha1(key.encode("utf-8"), usedforsecurity=False)
+    return f"alias/{digest.hexdigest()}"
+
+
+def read_alias(key: str) -> str:
+    """The display name saved for a measurement key, or ``""``."""
+    return read_text(_alias_key(key))
+
+
+def write_alias(key: str, alias: str) -> None:
+    """Remember a display name. Empty clears it. The session file is not touched."""
+    write(_alias_key(key), alias)

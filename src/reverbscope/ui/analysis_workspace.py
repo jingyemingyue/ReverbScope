@@ -1,18 +1,24 @@
-"""The centre column: the view bar and the stack of views and pages.
+"""The centre column: grouped analysis views over the stack.
 
-``default_views()`` builds the analysis views in shortcut order
-(docs/design/GUI_2_ARCHITECTURE.md §4). The stack also holds the start
-panel and the two measurement set-up pages; showing one of those leaves no
-view button checked.
+The bar groups the analysis so eleven views are not one flat row
+(docs/design/GUI_2_ARCHITECTURE.md §4):
+
+Overview · Frequency · Time · Decay · Spectral · Room · Compare · Report
+
+Spectral keeps a second selector (spectrogram, waterfall, noise). Project
+sits apart from the analysis groups. ``Ctrl+1`` … ``Ctrl+9`` and ``Ctrl+0``
+still open the same views as before. Switching a view does not clear the
+measurement list and does not stop a take.
 """
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Signal
+from PySide6.QtGui import QKeySequence
 from PySide6.QtWidgets import (
     QButtonGroup,
+    QComboBox,
     QHBoxLayout,
-    QScrollArea,
     QSizePolicy,
     QStackedWidget,
     QToolButton,
@@ -37,6 +43,54 @@ NUMBERED_VIEWS = (
     "room",
     "project",
 )
+
+#: Analysis groups shown on the bar, in order. Project is not one of them.
+VIEW_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("overview", ("overview",)),
+    ("frequency", ("fr",)),
+    ("time", ("etc",)),
+    ("decay", ("decay",)),
+    ("spectral", ("spectrogram", "waterfall", "noise")),
+    ("room", ("room",)),
+    ("compare", ("compare",)),
+    ("report", ("report",)),
+)
+
+
+def group_label(group_id: str) -> str:
+    """Short name of a bar group. Not the view's own title when that title is long."""
+    labels = {
+        "overview": _("Overview"),
+        "frequency": _("Frequency"),
+        "time": _("Time"),
+        "decay": _("Decay"),
+        "spectral": _("Spectral"),
+        "room": _("Room"),
+        "compare": _("Compare"),
+        "report": _("Report"),
+    }
+    return labels.get(group_id, group_id)
+
+
+def group_of(view_id: str) -> str:
+    """The bar group that contains ``view_id``, or ``""``."""
+    for group_id, view_ids in VIEW_GROUPS:
+        if view_id in view_ids:
+            return group_id
+    return ""
+
+
+def _native(sequence: str) -> str:
+    """``sequence`` as the platform shows it (Command on macOS, Ctrl elsewhere)."""
+    return QKeySequence(sequence).toString(QKeySequence.SequenceFormat.NativeText)
+
+
+def _shortcut_for(view_id: str) -> str:
+    if view_id in NUMBERED_VIEWS:
+        return _native(f"Ctrl+{NUMBERED_VIEWS.index(view_id) + 1}")
+    if view_id == "compare":
+        return _native("Ctrl+0")
+    return ""
 
 
 def default_views(model: WorkspaceModel, state: MeasurementState) -> list[AnalysisView]:
@@ -68,58 +122,120 @@ def default_views(model: WorkspaceModel, state: MeasurementState) -> list[Analys
 
 
 class AnalysisWorkspace(QWidget):
-    """View bar over a stack; the stack is the window's ``stack``."""
+    """Grouped view bar over a stack; the stack is the window's ``stack``."""
 
-    #: A view button was clicked (``view_id``).
+    #: A view button or the secondary selector chose ``view_id``.
     view_chosen = Signal(str)
 
     def __init__(self, views: list[AnalysisView], parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setMinimumWidth(420)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         bar = QWidget()
         bar.setProperty("viewbar", True)
         self.bar_layout = QHBoxLayout(bar)
-        self.bar_layout.setContentsMargins(6, 4, 6, 4)
-        self.bar_layout.setSpacing(2)
-        scroll = QScrollArea()
-        scroll.setWidget(bar)
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
-        scroll.setFixedHeight(40)
-        self.bar_scroll = scroll
-        layout.addWidget(scroll)
+        self.bar_layout.setContentsMargins(4, 2, 4, 0)
+        self.bar_layout.setSpacing(0)
+        layout.addWidget(bar)
         self.stack = QStackedWidget()
         layout.addWidget(self.stack, 1)
+
+        self.navigator_button = QToolButton()
+        self.navigator_button.setCheckable(True)
+        self.navigator_button.setChecked(True)
+        self.navigator_button.setAutoRaise(True)
+        self.navigator_button.setProperty("viewtab", True)
+        self.navigator_button.setText(_("List"))
+        self.navigator_button.setToolTip(
+            _("Show or hide the measurement list ({shortcut}).").format(
+                shortcut=_native("Ctrl+Shift+Left")
+            )
+        )
+        self.bar_layout.addWidget(self.navigator_button)
+
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
         self.views: dict[str, AnalysisView] = {}
         self.buttons: dict[str, QToolButton] = {}
+        self._last: dict[str, str] = {}
         for view in views:
-            self._add_view(view)
+            self.views[view.view_id] = view
+            self.stack.addWidget(view)
+        for group_id, view_ids in VIEW_GROUPS:
+            self._last[group_id] = view_ids[0]
+            button = QToolButton()
+            button.setCheckable(True)
+            button.setAutoRaise(True)
+            button.setProperty("viewtab", True)
+            button.setText(group_label(group_id))
+            button.setToolTip(self._group_tip(group_id, view_ids))
+            button.clicked.connect(lambda _checked=False, g=group_id: self._group_clicked(g))
+            self.group.addButton(button)
+            self.buttons[group_id] = button
+            self.bar_layout.addWidget(button)
+        self.subview = QComboBox()
+        self.subview.setVisible(False)
+        self.subview.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
+        self.subview.setToolTip(_("The chart inside this group."))
+        self.subview.currentIndexChanged.connect(self._subview_chosen)
+        self.bar_layout.addWidget(self.subview)
         self.bar_layout.addStretch(1)
+
+        self.project_button = QToolButton()
+        self.project_button.setCheckable(True)
+        self.project_button.setAutoRaise(True)
+        self.project_button.setProperty("viewtab", True)
+        self.project_button.setProperty("projecttab", True)
+        self.project_button.setText(_("Project"))
+        project_key = _shortcut_for("project")
+        self.project_button.setToolTip(
+            _("The open project, apart from the analysis charts ({shortcut}).").format(
+                shortcut=project_key
+            )
+            if project_key
+            else _("The open project, apart from the analysis charts.")
+        )
+        self.project_button.clicked.connect(lambda _checked=False: self.view_chosen.emit("project"))
+        self.bar_layout.addWidget(self.project_button)
+
+        self.inspector_button = QToolButton()
+        self.inspector_button.setCheckable(True)
+        self.inspector_button.setChecked(True)
+        self.inspector_button.setAutoRaise(True)
+        self.inspector_button.setProperty("viewtab", True)
+        self.inspector_button.setText(_("Inspector"))
+        self.inspector_button.setToolTip(
+            _("Show or hide the inspector ({shortcut}).").format(
+                shortcut=_native("Ctrl+Shift+Right")
+            )
+        )
+        self.bar_layout.addWidget(self.inspector_button)
+        bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.stack.currentChanged.connect(self._sync_buttons)
 
-    def _add_view(self, view: AnalysisView) -> None:
-        self.views[view.view_id] = view
-        self.stack.addWidget(view)
-        button = QToolButton()
-        button.setCheckable(True)
-        button.setAutoRaise(True)
-        button.setProperty("viewtab", True)
-        button.setText(view.title())
-        if view.view_id in NUMBERED_VIEWS:
-            number = NUMBERED_VIEWS.index(view.view_id) + 1
-            button.setToolTip(f"{view.title()}  (Ctrl+{number})")
-        elif view.view_id == "compare":
-            button.setToolTip(f"{view.title()}  (Ctrl+0)")
-        button.clicked.connect(lambda _checked=False, v=view.view_id: self.view_chosen.emit(v))
-        self.group.addButton(button)
-        self.buttons[view.view_id] = button
-        self.bar_layout.addWidget(button)
+    def _group_tip(self, group_id: str, view_ids: tuple[str, ...]) -> str:
+        names = ", ".join(self.views[view_id].title() for view_id in view_ids)
+        keys = ", ".join(key for view_id in view_ids if (key := _shortcut_for(view_id)))
+        label = group_label(group_id)
+        if keys:
+            return _("{group}: {names} ({keys}).").format(group=label, names=names, keys=keys)
+        return _("{group}: {names}.").format(group=label, names=names)
+
+    def _group_clicked(self, group_id: str) -> None:
+        view_ids = dict(VIEW_GROUPS)[group_id]
+        current = self.current_view_id()
+        if current in view_ids:
+            return
+        self.view_chosen.emit(self._last.get(group_id, view_ids[0]))
+
+    def _subview_chosen(self, index: int) -> None:
+        if index < 0:
+            return
+        view_id = str(self.subview.itemData(index))
+        if view_id and view_id != self.current_view_id():
+            self.view_chosen.emit(view_id)
 
     def add_page(self, page: QWidget) -> None:
         """A page that is not a view (start panel, set-up pages)."""
@@ -136,18 +252,37 @@ class AnalysisWorkspace(QWidget):
 
     def _sync_buttons(self, _index: int) -> None:
         view_id = self.current_view_id()
-        if view_id:
-            self.buttons[view_id].setChecked(True)
+        group_id = group_of(view_id)
+        self.project_button.setChecked(view_id == "project")
+        if not group_id:
+            self.group.setExclusive(False)
+            for button in self.buttons.values():
+                button.setChecked(False)
+            self.group.setExclusive(True)
+            self.subview.setVisible(False)
             return
-        # A page that is not a view: no button stays checked.
-        self.group.setExclusive(False)
-        for button in self.buttons.values():
-            button.setChecked(False)
-        self.group.setExclusive(True)
+        self._last[group_id] = view_id
+        self.buttons[group_id].setChecked(True)
+        view_ids = dict(VIEW_GROUPS)[group_id]
+        self.subview.blockSignals(True)
+        self.subview.clear()
+        if len(view_ids) > 1:
+            for item_id in view_ids:
+                self.subview.addItem(self.views[item_id].title(), item_id)
+            self.subview.setCurrentIndex(max(self.subview.findData(view_id), 0))
+            self.subview.setVisible(True)
+        else:
+            self.subview.setVisible(False)
+        self.subview.blockSignals(False)
 
     def retitle(self) -> None:
-        for view_id, view in self.views.items():
-            self.buttons[view_id].setText(view.title())
+        for group_id, button in self.buttons.items():
+            button.setText(group_label(group_id))
+            view_ids = dict(VIEW_GROUPS)[group_id]
+            button.setToolTip(self._group_tip(group_id, view_ids))
+        if "project" in self.views:
+            self.project_button.setText(self.views["project"].title())
+        self._sync_buttons(self.stack.currentIndex())
 
     def view_title(self, view_id: str) -> str:
         view = self.views.get(view_id)

@@ -43,6 +43,7 @@ from reverbscope.geometry.paths import (
     consistency_checks,
     constraint_for,
     direct_distance,
+    face_text,
     match_reflection,
     overlay_refusal,
     predict_first_order,
@@ -235,6 +236,8 @@ class RoomView(AnalysisView):
         # overwritten: a save would drop every position it holds.
         self._read_only = False
         self._predicted: list[PredictedPath] = []
+        #: ``"source"``, a microphone label, or ``"face:<id>"``.
+        self._selection = ""
         self._save_timer = QTimer(self)
         self._save_timer.setSingleShot(True)
         self._save_timer.setInterval(400)
@@ -251,13 +254,25 @@ class RoomView(AnalysisView):
             _("Look straight down, to scale; drag the loudspeaker or a microphone to move it.")
         )
         self.plan_button.toggled.connect(self._toggle_plan)
+        self.front_button = QToolButton()
+        self.front_button.setText(_("Front"))
+        self.front_button.setToolTip(
+            _("Look along the width. The entered face at y = 0 is nearest.")
+        )
+        self.side_button = QToolButton()
+        self.side_button.setText(_("Side"))
+        self.side_button.setToolTip(
+            _("Look along the length. The entered face at x = 0 is nearest.")
+        )
         fit = QToolButton()
-        fit.setText(_("Fit"))
+        fit.setText(_("Frame"))
         fit.setToolTip(_("Frame the room (F or double-click)."))
         reset = QToolButton()
         reset.setText(_("Reset view"))
         reset.setToolTip(_("Back to the default angle (R)."))
         tools.addWidget(self.plan_button)
+        tools.addWidget(self.front_button)
+        tools.addWidget(self.side_button)
         tools.addWidget(fit)
         tools.addWidget(reset)
         tools.addSpacing(12)
@@ -286,10 +301,13 @@ class RoomView(AnalysisView):
         splitter = QSplitter(Qt.Orientation.Horizontal)
         self.canvas = RoomCanvas()
         fit.clicked.connect(self.canvas.fit)
-        reset.clicked.connect(self.canvas.reset)
+        reset.clicked.connect(self.reset_view)
+        self.front_button.clicked.connect(lambda: self.look("front"))
+        self.side_button.clicked.connect(lambda: self.look("side"))
         self.canvas.device_clicked.connect(self._device_clicked)
         self.canvas.device_moved.connect(self._device_moved)
         self.canvas.face_clicked.connect(self._face_clicked)
+        self.canvas.surface_clicked.connect(self._surface_clicked)
         splitter.addWidget(self.canvas)
 
         side = QWidget()
@@ -321,7 +339,11 @@ class RoomView(AnalysisView):
         self.reflections.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.reflections.setSelectionMode(QTableWidget.SelectionMode.SingleSelection)
         self.reflections.verticalHeader().setVisible(False)
-        self.reflections.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        reflection_header = self.reflections.horizontalHeader()
+        reflection_header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        reflection_header.setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        reflection_header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+        reflection_header.setMinimumSectionSize(56)
         self.reflections.setMinimumHeight(110)
         self.reflections.itemSelectionChanged.connect(self._table_selected)
         side_layout.addWidget(self.reflections)
@@ -577,6 +599,20 @@ class RoomView(AnalysisView):
     def _toggle_plan(self, plan: bool) -> None:
         self.canvas.set_plan(plan)
 
+    def look(self, preset: str) -> None:
+        """``front`` or ``side``. The plan button is the top view."""
+        self.plan_button.blockSignals(True)
+        self.plan_button.setChecked(False)
+        self.plan_button.blockSignals(False)
+        self.canvas.look(preset)
+
+    def reset_view(self) -> None:
+        """The default three-dimensional angle, framed on the room."""
+        self.plan_button.blockSignals(True)
+        self.plan_button.setChecked(False)
+        self.plan_button.blockSignals(False)
+        self.canvas.reset()
+
     def _scene(self) -> RoomScene:
         entry = self.model.current()
         position = position_of(entry)
@@ -585,6 +621,7 @@ class RoomView(AnalysisView):
             source=self.room_geometry.source,
             microphones=dict(self.room_geometry.microphones),
             current_microphone=position,
+            selection=self._selection,
             scan_points=self._scan_points,
             layers=self._layers(),
         )
@@ -799,6 +836,14 @@ class RoomView(AnalysisView):
             _("No detected reflection matches the predicted path off this face."),
         )
 
+    def _remember_pick(self, selection: str, text: str) -> None:
+        """Highlight ``selection`` and say what it is. No acoustic recalculation."""
+        self._selection = selection
+        self.canvas.scene.selection = selection
+        self.canvas.hud = text
+        self.canvas.update()
+        set_banner_text(self.save_status, text)
+
     def _device_clicked(self, name: str, point: object) -> None:
         assert isinstance(point, Point)
         who = (
@@ -806,10 +851,21 @@ class RoomView(AnalysisView):
             if name == "source"
             else _("Microphone {position}").format(position=name)
         )
-        set_banner_text(
-            self.save_status,
+        self._remember_pick(
+            name,
             _("{who}: x = {x:.2f} m, y = {y:.2f} m, z = {z:.2f} m").format(
                 who=who, x=point.x, y=point.y, z=point.z
+            ),
+        )
+
+    def _surface_clicked(self, face: str) -> None:
+        box = self.room_geometry.room
+        if box is None:
+            return
+        self._remember_pick(
+            f"face:{face}",
+            _("Entered geometry, {face}. Not a surface found by the measurement.").format(
+                face=face_text(face, box)
             ),
         )
 

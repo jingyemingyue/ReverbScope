@@ -10,10 +10,25 @@ from reverbscope.i18n import _
 from reverbscope.interpretation.profiles import band_text
 from reverbscope.labels import validity_word
 from reverbscope.models.result import BandDecay, DecayMetric, Validity
-from reverbscope.ui.plotkit import BAND_DASHES, DASHES, X_FREQUENCY, X_TIME_S, ChartPanel, pg
+from reverbscope.ui.plotkit import (
+    BAND_DASHES,
+    DASHES,
+    X_FREQUENCY,
+    X_TIME_S,
+    ChartPanel,
+    follow_chart_visibility,
+    pg,
+)
 from reverbscope.ui.theme import PLOT_SERIES, tokens
 from reverbscope.ui.views.base import AnalysisView
-from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
+from reverbscope.ui.workspace import (
+    Entry,
+    WorkspaceModel,
+    curve_legend,
+    curve_width,
+    entry_label,
+    hidden_selection_note,
+)
 
 METRICS = ("edt", "t20", "t30")
 BROADBAND = "__broadband__"
@@ -73,8 +88,14 @@ class DecayView(AnalysisView):
         self.notes.setWordWrap(True)
         layout.addWidget(self.notes)
         self._bands_of = ""
-        for signal in (model.current_changed, model.overlay_changed, model.entries_changed):
+        for signal in (
+            model.current_changed,
+            model.overlay_changed,
+            model.entries_changed,
+            model.entry_updated,
+        ):
             signal.connect(self.refresh)
+        follow_chart_visibility(self.chart, model)
 
     def title(self) -> str:
         return _("Decay")
@@ -111,22 +132,26 @@ class DecayView(AnalysisView):
         metric_name = str(self.metric_combo.currentData())
         notes: list[str] = []
         longest = 0.0
-        if (
-            current is not None
+        shown = (
+            current
+            if current is not None
             and current.result is not None
-            and not any(
-                band.edc_db.size
-                for band in (current.result.decay.broadband, *current.result.decay.bands)
-            )
+            and self.model.is_visible(current.key)
+            else None
+        )
+        decay = shown.result.decay if shown is not None and shown.result is not None else None
+        if decay is not None and not any(
+            band.edc_db.size for band in (decay.broadband, *decay.bands)
         ):
             # A session saved without curves keeps the figures only; an empty
             # chart with a legend looked like a broken measurement.
             self.chart.set_message(_("No decay curves stored with this session"))
-        if self.band.currentData() == ALL_BANDS:
-            longest = self._draw_all_bands(current, notes)
+        if self.band.currentData() == ALL_BANDS and shown is not None:
+            longest = self._draw_all_bands(shown, notes)
         for entry in [] if self.band.currentData() == ALL_BANDS else self.model.drawn():
             band = self._band_of(entry)
             is_current = current is not None and entry.key == current.key
+            is_baseline = entry.key == self.model.baseline_key
             if band is None or band.edc_db.size == 0:
                 notes.append(
                     _("{name}: no decay curve stored for this band").format(name=entry_label(entry))
@@ -134,11 +159,11 @@ class DecayView(AnalysisView):
                 continue
             longest = max(longest, float(band.edc_time_s[-1]))
             self.chart.add_curve(
-                entry_label(entry),
+                curve_legend(entry, baseline=is_baseline),
                 band.edc_time_s,
                 band.edc_db,
                 color=entry.color,
-                width=2.0 if is_current else 1.1,
+                width=curve_width(current=is_current, baseline=is_baseline),
                 style=DASHES[entry.color_index % len(DASHES)],
                 key=entry.key,
                 processing=_("Schroeder integral, Lundeby-truncated"),
@@ -183,6 +208,11 @@ class DecayView(AnalysisView):
         notes.append(
             _("Band chart: filled = VALID, hollow = not VALID (the value is shown, not trusted).")
         )
+        hidden = hidden_selection_note(self.model)
+        if hidden:
+            notes.append(hidden)
+            if not self.model.drawn():
+                self.chart.set_message(hidden)
         self.notes.setText("  ".join(notes))
 
     def _draw_all_bands(self, entry: Entry | None, notes: list[str]) -> float:

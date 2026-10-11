@@ -8,11 +8,12 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
+    QPushButton,
     QScrollArea,
     QTableWidget,
     QTableWidgetItem,
@@ -26,6 +27,7 @@ from reverbscope.interpretation import Finding
 from reverbscope.interpretation.profiles import confidence_text, noise_segment_text, profile_title
 from reverbscope.labels import severity_text, topic_text, validity_word
 from reverbscope.models.result import AnalysisResult, Validity
+from reverbscope.ui.health_nav import view_for_check, view_title
 from reverbscope.ui.tables import decay_table_rows, energy_table_rows
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
@@ -62,6 +64,9 @@ def _validity_text(validity: Validity) -> tuple[str, str]:
 
 class _Overview(QWidget):
     """Key figures with their trust level, the findings, and the decay table."""
+
+    #: A health check asked to open this view id.
+    locate = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -332,6 +337,14 @@ class _Overview(QWidget):
                     severity_label=status_word(check.status),
                 )
             )
+            view_id = view_for_check(check)
+            if view_id:
+                button = QPushButton(_("Show {name}").format(name=view_title(view_id)))
+                button.setToolTip(
+                    _("Open the chart this check is about. The measurement stays selected.")
+                )
+                button.clicked.connect(lambda _checked=False, v=view_id: self.locate.emit(v))
+                self.health_rows.addWidget(button)
 
     def _fill_metric_table(self, table: QTableWidget, rows: Sequence[tuple[str, ...]]) -> None:
         colours = tokens()
@@ -358,6 +371,9 @@ class _Overview(QWidget):
 class OverviewView(AnalysisView):
     view_id = "overview"
 
+    #: A health check asked to open this view id.
+    locate_requested = Signal(str)
+
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         layout = QVBoxLayout(self)
@@ -374,6 +390,7 @@ class OverviewView(AnalysisView):
         )
         layout.addWidget(self.empty)
         self.overview = _Overview()
+        self.overview.locate.connect(self.locate_requested.emit)
         self.table = self.overview.table
         layout.addWidget(self.overview, 1)
         for signal in (model.current_changed, model.entries_changed):

@@ -37,7 +37,8 @@ def test_the_card_shows_on_a_first_start_and_stays_away_once_dismissed(
     assert card.isVisible()
     # Its buttons lead into the modes.
     card.buttons[0].click()
-    assert window.stack.currentWidget() is window.standalone and window.standalone.demo_mode
+    assert window.stack.currentWidget() is window.standalone
+    assert not window.standalone.demo_mode
     window.show_home()
     card.buttons[1].click()
     assert window.stack.currentWidget() is window.daw

@@ -156,10 +156,12 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
         for action in window.findChildren(QAction)
         if not action.shortcut().isEmpty()
     }
-    # The three modes moved to Ctrl+Shift+1/2/3; Ctrl+1 ... Ctrl+9 open the views.
+    # Ctrl+Shift+1/2 open the two measurement modes. There is no demo shortcut.
+    # Ctrl+1 ... Ctrl+9 open the views.
     needed = ("Ctrl+N", "Ctrl+O", "Ctrl+Shift+C", "Ctrl+,", "Ctrl+S", "Ctrl+1", "Ctrl+0")
-    for sequence in (*needed, "Ctrl+Shift+1", "Ctrl+Shift+2", "Ctrl+Shift+3"):
+    for sequence in (*needed, "Ctrl+Shift+1", "Ctrl+Shift+2"):
         assert sequence in shortcuts, shortcuts
+    assert "Ctrl+Shift+3" not in shortcuts
     # The start panel has no mode cards any more (by design), so no shortcut
     # badges to check against the Measure menu: the menu carries the keys.
     assert "Start" in window.statusBar().currentMessage()
@@ -1843,13 +1845,11 @@ def test_the_measure_menu_opens_each_mode(app: QApplication) -> None:
         for action in window.findChildren(QAction)
         if not action.shortcut().isEmpty()
     }
-    # The Measure menu moved to Ctrl+Shift+1/2/3 (Ctrl+<n> opens the views).
+    # The Measure menu is Ctrl+Shift+1/2 (Ctrl+<n> opens the views). No demo entry.
     by_shortcut["Ctrl+Shift+2"].trigger()
     assert window.stack.currentWidget() is window.standalone
     assert not window.standalone.demo_mode
-    by_shortcut["Ctrl+Shift+3"].trigger()
-    assert window.stack.currentWidget() is window.standalone
-    assert window.standalone.demo_mode
+    assert "Ctrl+Shift+3" not in by_shortcut
     by_shortcut["Ctrl+Shift+1"].trigger()
     assert window.stack.currentWidget() is window.daw
     by_shortcut["Ctrl+1"].trigger()

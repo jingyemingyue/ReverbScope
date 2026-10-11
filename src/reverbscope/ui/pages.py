@@ -130,7 +130,7 @@ class WalkthroughCard(Card):
             label(
                 _(
                     "ReverbScope plays a sweep, records it and reads the room from the "
-                    "recording. Three ways in; the demo needs no hardware."
+                    "recording. Measure with an audio interface, or import a DAW recording."
                 ),
                 "hint",
                 wrap=True,
@@ -138,9 +138,12 @@ class WalkthroughCard(Card):
         )
         steps = (
             (
-                _("Try the demo first: a synthetic room, nothing is played."),
-                _("Try the demo"),
-                "demo",
+                _(
+                    "With an audio interface: ReverbScope plays the sweep and records the "
+                    "microphone itself."
+                ),
+                _("Standalone Mode"),
+                "standalone",
             ),
             (
                 _(
@@ -149,14 +152,6 @@ class WalkthroughCard(Card):
                 ),
                 _("Universal DAW Mode"),
                 "universal_daw",
-            ),
-            (
-                _(
-                    "With an audio interface: ReverbScope plays the sweep and records the "
-                    "microphone itself."
-                ),
-                _("Standalone Mode"),
-                "standalone",
             ),
         )
         self.buttons: list[QPushButton] = []

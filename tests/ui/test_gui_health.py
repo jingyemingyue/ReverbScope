@@ -69,8 +69,10 @@ def test_the_results_page_shows_the_health_card(
     overview = window.views["overview"].overview
     assert overview.health_chip.text() == "INVALID"
     assert overview.health_rows.count() >= 1
+    from reverbscope.ui.widgets import FindingCard
+
     cards = [overview.health_rows.itemAt(i).widget() for i in range(overview.health_rows.count())]
-    texts = [card.message.text() for card in cards]
+    texts = [card.message.text() for card in cards if isinstance(card, FindingCard)]
     assert any("flat-topped" in text and "Affects:" in text for text in texts)
     window.close()
 

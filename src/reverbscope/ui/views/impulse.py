@@ -22,10 +22,17 @@ from reverbscope.display import DisplayDataError
 from reverbscope.display.etc import EtcCurve, etc_curve, marker_points
 from reverbscope.i18n import _
 from reverbscope.interpretation.profiles import confidence_text
-from reverbscope.ui.plotkit import DASHES, X_TIME_MS, ChartPanel
+from reverbscope.ui.plotkit import DASHES, X_TIME_MS, ChartPanel, follow_chart_visibility
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
-from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
+from reverbscope.ui.workspace import (
+    Entry,
+    WorkspaceModel,
+    curve_legend,
+    curve_width,
+    entry_label,
+    hidden_selection_note,
+)
 
 MODE_ETC = "etc"
 MODE_WAVE = "wave"
@@ -87,8 +94,14 @@ class ImpulseView(AnalysisView):
         self.notes.setWordWrap(True)
         layout.addWidget(self.notes)
         self._filling = False
-        for signal in (model.current_changed, model.overlay_changed, model.entries_changed):
+        for signal in (
+            model.current_changed,
+            model.overlay_changed,
+            model.entries_changed,
+            model.entry_updated,
+        ):
             signal.connect(self.refresh)
+        follow_chart_visibility(self.chart, model)
         model.reflection_changed.connect(self._reflection_changed)
 
     def title(self) -> str:
@@ -124,6 +137,7 @@ class ImpulseView(AnalysisView):
         for entry in self.model.drawn():
             assert entry.result is not None
             is_current = current is not None and entry.key == current.key
+            is_baseline = entry.key == self.model.baseline_key
             ir = entry.result.impulse_response
             try:
                 curve = self.curve(entry)
@@ -139,11 +153,11 @@ class ImpulseView(AnalysisView):
                 y = curve.level_db
                 processing = _("the reflection detector's envelope, 0.1 ms peak hold")
             self.chart.add_curve(
-                entry_label(entry),
+                curve_legend(entry, baseline=is_baseline),
                 curve.time_ms,
                 y,
                 color=entry.color,
-                width=1.6 if is_current else 1.0,
+                width=curve_width(current=is_current, baseline=is_baseline),
                 style=DASHES[entry.color_index % len(DASHES)],
                 key=entry.key,
                 processing=processing,
@@ -151,7 +165,12 @@ class ImpulseView(AnalysisView):
                 z=10 if is_current else 0,
             )
         span = float(self.span.currentData())
-        if current is not None and current.result is not None and not wave:
+        if (
+            current is not None
+            and current.result is not None
+            and not wave
+            and self.model.is_visible(current.key)
+        ):
             self._draw_reflections(current, notes)
         if current is not None and current.result is not None:
             refl = current.result.reflections
@@ -164,6 +183,11 @@ class ImpulseView(AnalysisView):
             self.chart.set_default_range(None, None)
         if not wave:
             self.chart.add_hline(0.0, color=t["muted"], style=Qt.PenStyle.DotLine)
+        hidden = hidden_selection_note(self.model)
+        if hidden:
+            notes.append(hidden)
+            if not self.model.drawn():
+                self.chart.set_message(hidden)
         self.notes.setText("  ".join(notes))
         self._fill_table(current)
 

@@ -181,18 +181,32 @@ def test_overlays_are_drawn_in_list_colours_with_the_current_on_top(
 
     model = _model(result, result, result, folder=tmp_path)
     keys = [entry.key for entry in model.entries()]
+    # Opening shows each measurement. Hide the third; selection does not draw it back.
+    model.set_overlay(keys[2], False)
     model.set_current(keys[0])
-    model.set_overlay(keys[1], True)
+    assert model.current_key == keys[0]
+    assert model.is_visible(keys[0]) and model.is_visible(keys[1])
+    assert not model.is_visible(keys[2])
     view = _shown(FrequencyView(model), app)
     drawn = [s for s in view.chart.series if s.key in keys]
     assert [s.key for s in drawn] == [keys[1], keys[0]]
     assert [s.color for s in drawn] == [model.entry(k).color for k in (keys[1], keys[0])]
     assert drawn[-1].readout and not drawn[0].readout
     assert drawn[-1].width > drawn[0].width
-    # Unticking removes the curve; the third entry was never drawn.
+    # Unticking removes the curve and does not clear the selection.
     model.set_overlay(keys[1], False)
     app.processEvents()
     assert [s.key for s in view.chart.series if s.key in keys] == [keys[0]]
+    model.set_overlay(keys[0], False)
+    app.processEvents()
+    assert model.current_key == keys[0]
+    assert [s.key for s in view.chart.series if s.key in keys] == []
+    # The baseline does not select the measurement or turn it back on.
+    model.set_baseline(keys[1])
+    app.processEvents()
+    assert model.current_key == keys[0]
+    assert not model.is_visible(keys[1])
+    assert model.baseline_key == keys[1]
     view.close()
 
 

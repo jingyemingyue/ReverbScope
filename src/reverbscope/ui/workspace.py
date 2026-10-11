@@ -87,8 +87,11 @@ class Entry:
     unsaved: bool = False
     #: Why the folder could not be read (shown in the list, never drawn).
     error: str = ""
-    #: A take on the fake backend (the demo): never a measurement of a room.
+    #: A take on the fake backend: never a measurement of a room.
     synthetic: bool = False
+    #: A display name for this run of the app. Empty uses :func:`entry_label`'s
+    #: default. It is not written into the session.
+    alias: str = ""
     #: Read from (or saved into) the open project; a session opened on its
     #: own beside a project is not one of its positions.
     in_project: bool = False
@@ -106,8 +109,11 @@ def entry_label(entry: Entry) -> str:
     """The name the list, the legend and the inspector show for ``entry``.
 
     The only implementation: the navigator and every chart call it, so a
-    curve's legend always reads like its row in the list.
+    curve's legend always reads like its row in the list. A display alias,
+    when the user has set one, replaces that name everywhere.
     """
+    if entry.alias:
+        return entry.alias
     from reverbscope.demo import localize_demo_name
 
     session = entry.session
@@ -130,6 +136,29 @@ def entry_label(entry: Entry) -> str:
     else:
         text = entry.key
     return text
+
+
+def curve_legend(entry: Entry, *, baseline: bool) -> str:
+    """Legend text: the list name, with a baseline mark when ``entry`` is the baseline."""
+    name = entry_label(entry)
+    if not baseline:
+        return name
+    return _("{name} · baseline").format(name=name)
+
+
+def curve_width(*, current: bool, baseline: bool) -> float:
+    """Stroke width: the selected curve is heaviest, then the baseline, then the rest."""
+    if current:
+        return 2.4
+    return 1.8 if baseline else 1.15
+
+
+def hidden_selection_note(model: WorkspaceModel) -> str:
+    """Said when the selected measurement is kept but not drawn."""
+    current = model.current()
+    if current is None or current.result is None or model.is_visible(current.key):
+        return ""
+    return _("The selected measurement is hidden. Tick it in the list to draw it.")
 
 
 @dataclass(frozen=True)
@@ -295,20 +324,31 @@ class WorkspaceModel(QObject):
     def baseline_key(self) -> str:
         return self._baseline
 
-    def is_overlaid(self, key: str) -> bool:
+    def is_visible(self, key: str) -> bool:
+        """Whether charts draw ``key``.
+
+        Independent of which entry is selected and of which entry is the
+        baseline. A hidden selection stays selected; the inspector still
+        describes it.
+        """
         return key in self._overlay
+
+    def is_overlaid(self, key: str) -> bool:
+        """Same as :meth:`is_visible`. Kept so existing callers stay readable."""
+        return self.is_visible(key)
 
     def overlay_keys(self) -> list[str]:
         return [key for key in self._entries if key in self._overlay]
 
     def drawn(self) -> list[Entry]:
-        """The entries a chart draws: the overlays in list order, then the current one.
+        """The entries a chart draws: the visible ones, the selected one last.
 
-        The current entry is always drawn and drawn last (on top). Entries
-        still loading or that could not be read are skipped.
+        The selected entry is drawn only when it is visible, and then last
+        so it sits on top. Entries still loading or that could not be read
+        are skipped.
         """
         keys = [key for key in self._entries if key in self._overlay and key != self._current]
-        if self._current:
+        if self._current in self._overlay:
             keys.append(self._current)
         return [
             self._entries[key]
@@ -345,6 +385,10 @@ class WorkspaceModel(QObject):
         entry.color_index = index
         entry.color = ENTRY_COLORS[index]
         replaced = self._entries.get(entry.key)
+        if not entry.alias:
+            from reverbscope.ui import ui_state
+
+            entry.alias = ui_state.read_alias(entry.key)
         self._entries[entry.key] = entry
         self._cache.pop(entry.key, None)
         # The selected reflection indexed the old result's list.
@@ -368,8 +412,13 @@ class WorkspaceModel(QObject):
         findings_problem: str = "",
         profile: str | None = None,
         make_current: bool = True,
+        visible: bool | None = None,
     ) -> Entry:
-        """A saved session; opening the same folder again replaces its entry."""
+        """A saved session; opening the same folder again replaces its entry.
+
+        ``visible`` defaults to ``make_current``: opening a session shows it.
+        Selecting it later does not change visibility.
+        """
         key = folder_key(directory)
         chosen = profile or usable_profile(session)
         if findings is None:
@@ -387,11 +436,16 @@ class WorkspaceModel(QObject):
                 synthetic=session.mode == "demo",
             )
         )
+        show = make_current if visible is None else visible
+        if show and entry.result is not None:
+            self._overlay.add(entry.key)
         self.entries_changed.emit()
         if make_current:
             self.set_current(key)
         else:
             self.entry_updated.emit(key)
+        if show and entry.result is not None:
+            self.overlay_changed.emit()
         return entry
 
     def add_take(
@@ -430,9 +484,28 @@ class WorkspaceModel(QObject):
                 synthetic=synthetic,
             )
         )
+        if result is not None:
+            self._overlay.add(key)
         self.entries_changed.emit()
         self.set_current(key)
+        if result is not None:
+            self.overlay_changed.emit()
         return self._entries[key]
+
+    def set_alias(self, key: str, alias: str) -> None:
+        """The display name of ``key``. Empty restores the default label.
+
+        Stored beside the layout, not in the session, so renaming never
+        rewrites a measurement.
+        """
+        entry = self._entries.get(key)
+        if entry is None:
+            return
+        entry.alias = alias.strip()
+        from reverbscope.ui import ui_state
+
+        ui_state.write_alias(key, entry.alias)
+        self.entry_updated.emit(key)
 
     def mark_saved(self, key: str, directory: Path, *, position: str = "") -> str:
         """The take ``key`` was saved into ``directory``: it keeps its colour,
@@ -680,10 +753,15 @@ class WorkspaceModel(QObject):
             )
         )
         self.entries_changed.emit()
-        pending = self._pending_selection or {}
+        saved = self._pending_selection if isinstance(self._pending_selection, dict) else None
+        pending = saved or {}
         if key == pending.get("current") or (not self._current and entry.result is not None):
             self.set_current(key)
         if key in pending.get("overlay", ()):
+            self.set_overlay(key, True)
+        elif saved is None and entry.result is not None and key == self._current:
+            # No saved visibility: show the measurement that became current.
+            # Later selection changes do not turn visibility on.
             self.set_overlay(key, True)
         if key == pending.get("baseline"):
             self.set_baseline(key)

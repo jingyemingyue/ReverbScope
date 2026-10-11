@@ -163,6 +163,11 @@ class _TimeFrequencyView(AnalysisView):
             self.status.setText(_("Choose a measurement in the list."))
             self.notes.setText("")
             return
+        if not self.model.is_visible(entry.key):
+            self.clear_chart()
+            self.status.setText(_("This measurement is hidden. Tick it in the list to draw it."))
+            self.notes.setText("")
+            return
         try:
             params = self.params()
         except DisplayDataError as exc:
@@ -407,7 +412,11 @@ class WaterfallView(_TimeFrequencyView):
         c.addWidget(self.smoothing)
         self.perspective = QCheckBox(_("Perspective"))
         self.perspective.setToolTip(
-            _("Offset later slices up and to the right, as a three-dimensional waterfall.")
+            _(
+                "Shift later slices up and to the right so depth is easier to read. "
+                "Display only: levels and frequencies are unchanged, and CSV export "
+                "removes the shift."
+            )
         )
         self.perspective.setChecked(True)
         self.perspective.toggled.connect(self.refresh)
@@ -466,7 +475,9 @@ class WaterfallView(_TimeFrequencyView):
         """Perspective shift of slice ``index``: (log10 Hz, dB)."""
         if not self.perspective.isChecked() or count <= 1:
             return 0.0, 0.0
-        return 0.35 * index / (count - 1), 25.0 * index / (count - 1)
+        # Display shift only. A larger level step and a smaller frequency step
+        # keep neighbouring slices from sitting on top of each other.
+        return 0.22 * index / (count - 1), 40.0 * index / (count - 1)
 
     def draw_result(self, entry: Entry, result: TimeFrequencyResult) -> None:
         self._entry_key = entry.key
