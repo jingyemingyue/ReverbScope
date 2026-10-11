@@ -15,9 +15,9 @@ refuses to invent a number.**
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope results page: reverberation, background noise with mains hum, early reflections and direct sound for one microphone position, with the interpretation below (synthetic demo data)](docs/images/gui-results.png)
+![ReverbScope workbench: the two microphone positions of the demo room open together, frequency response above the decay curves, the measurement list with each position's quality status on the right (synthetic demo data)](docs/images/gui-results.png)
 
-<sub>The results page for the built-in demo room. Synthetic data: no real room was measured.</sub>
+<sub>The workbench with both positions of the demo room open. Synthetic data: no real room was measured.</sub>
 
 ## Download
 
@@ -96,34 +96,35 @@ Step-by-step install, checksums (`SHA256SUMS`), updating and uninstalling:
 
 ## Try it in 30 seconds
 
-No microphone and no audio interface needed; nothing is played.
+No microphone and no audio interface needed; nothing is played. In a
+terminal, with either edition:
 
-* **Desktop Edition:** open ReverbScope and click **Demo (no interface)**.
-* **Either edition, in a terminal:**
+```bash
+reverbscope demo
+```
 
-  ```bash
-  reverbscope demo
-  ```
-
-  The downloads do not put `reverbscope` on your `PATH`. Open the terminal in
-  the folder that holds it (the Windows installer: `%LOCALAPPDATA%\Programs\ReverbScope`)
-  or give its full path (macOS Desktop Edition:
-  `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`); see
-  [Command line](#command-line).
+The downloads do not put `reverbscope` on your `PATH`. Open the terminal in
+the folder that holds it (the Windows installer: `%LOCALAPPDATA%\Programs\ReverbScope`)
+or give its full path (macOS Desktop Edition:
+`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`); see
+[Command line](#command-line).
 
 ![reverbscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
 `reverbscope demo` simulates one room at two microphone positions, runs the
-real analysis and comparison on them and says what to do next. The desktop
-**Demo** runs one Standalone Mode take on a simulated room instead. Every
-number either one shows describes the simulation, and every session either
-one saves is marked as a synthetic demo.
+real analysis and comparison on them and says what to do next. The Desktop
+Edition opens the sessions it writes like any saved session (**File → Open
+Session...**, or the folders `reverbscope demo` prints) and marks them
+*synthetic data*; it has no demo mode of its own. Every number the demo
+shows describes the simulation, and every session it saves is marked as a
+synthetic demo.
 
 **Then measure for real:** turn the monitors **down** (ReverbScope never
 changes system volume), then either let ReverbScope play and record through
-your interface (**Standalone Mode**) or play its sweep in your DAW
-(**Universal DAW Mode**). The [user guide](docs/user-guide/en.md)
-([简体中文](docs/user-guide/zh-CN.md)) explains every page.
+your interface (**Standalone Mode**, **Measure → Measure...**) or play its
+sweep in your DAW (**Universal DAW Mode**, **Measure → Import DAW
+Recording...**). The [user guide](docs/user-guide/en.md)
+([简体中文](docs/user-guide/zh-CN.md)) explains the workbench.
 
 ## What ReverbScope measures
 
@@ -165,8 +166,9 @@ DAWs can find out what works. A failed check is as useful as a pass.
 
 1. Install a build ([Download](#download); the Gatekeeper / SmartScreen
    warning is expected).
-2. Open ReverbScope and run **Demo (no interface)** once: it shows what a
-   result looks like without playing anything.
+2. Run `reverbscope demo` once and open one of its sessions in ReverbScope
+   (**File → Open Session...**): it shows what a result looks like without
+   playing anything.
 3. Turn the monitors down, then run **Standalone Mode** with your interface
    and a microphone, or **Universal DAW Mode** through your DAW
    ([DAW notes](docs/user-guide/daw-setup.md)).
@@ -300,15 +302,16 @@ distance supplied. The result JSON carries that argument with it.
 `room_mic` and `choir` have per-recording thresholds and wording). The report
 prints the profile name next to `Interpretation` so the advice is never
 mistaken for room-agnostic truth. The GUI offers the same selector in both
-measurement modes.
+measurement dialogs.
 
 `results/` receives `result.json` (all metrics and curves),
 `impulse_response.wav` (raw IR, float32), `session.json` (measurement
 metadata), the sweep's `sweep.reverbscope-sweep.json` and a copy of the
 recording as `recording.wav` (not with `--no-copy-recording` or
 `reverbscope config copy-recording off`). The recording you pass in is never
-modified. `reverbscope show` and the GUI
-**Open Session** / Home session list reopen that directory; the IR WAV is
+modified. `reverbscope show` and the GUI's **File → Open Session...** (or
+**Recent Sessions**) reopen that directory, and every session opened joins
+the workbench's measurement list next to the ones already there; the IR WAV is
 the authoritative sample record (`result.json` stores metrics, not IR
 samples). Recently opened or saved sessions are remembered under
 `$REVERBSCOPE_HOME` (default `~/.reverbscope`).
@@ -320,6 +323,7 @@ samples). Recently opened or saved sessions are remembered under
 | [docs/INSTALLATION.md](docs/INSTALLATION.md) | Download and install on macOS, Windows, Linux or with Python; updating, uninstalling, unsigned-build warnings, troubleshooting; [中文](docs/INSTALLATION.zh-CN.md) |
 | [docs/index.md](docs/index.md) | Documentation hub |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Package layout, data flow, extension points |
+| [docs/GUI_DESIGN_REFERENCES.md](docs/GUI_DESIGN_REFERENCES.md) | The desktop workbench's layout and interaction model, and the open-source tools it was designed after (nothing copied) |
 | [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | v1.0 design being executed: API tiers, comparison, loopback, packaging, i18n, validation gates |
 | [docs/ARCHITECTURE_V1.zh-CN.md](docs/ARCHITECTURE_V1.zh-CN.md) | Chinese digest of the v1.0 design |
 | [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) | Algorithms, units, validity rules, references |

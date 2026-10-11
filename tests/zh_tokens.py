@@ -40,6 +40,7 @@ ALLOWED = frozenset(
         "W64",
         "JSON",
         "CSV",
+        "PNG",
         "ZIP",
         "UTF",
         # audio systems and platforms
@@ -59,6 +60,8 @@ ALLOWED = frozenset(
         "Linux",
         "USB",
         "Thunderbolt",
+        # The key named on the Stop button's tooltip.
+        "Esc",
         "fake",
         "portaudio",
         # the value of --format ("reverbscope --format json")

@@ -11,9 +11,9 @@ GUIDES = (Path("docs/user-guide/en.md"), Path("docs/user-guide/zh-CN.md"))
 UI = Path("src/reverbscope/ui")
 
 
-def _results_tab_rows(text: str) -> list[str]:
-    """Rows of the table that follows "The Results page has ... tabs"."""
-    start = re.search(r"^(The Results page has \w+ tabs|结果页有\S+个标签页)", text, re.M)
+def _chart_rows(text: str) -> list[str]:
+    """Rows of the table that follows "The workbench charts" / "工作台图表"."""
+    start = re.search(r"^#*\s*\**(The workbench charts|工作台图表)", text, re.M)
     assert start is not None
     rows: list[str] = []
     for line in text[start.end() :].splitlines()[1:]:
@@ -26,11 +26,15 @@ def _results_tab_rows(text: str) -> list[str]:
 
 
 @pytest.mark.parametrize("guide", GUIDES, ids=lambda path: path.name)
-def test_the_guides_list_every_results_tab(guide: Path) -> None:
-    """The guides said seven tabs, with the text report in the Overview; the
-    page has eight, the report in its own tab."""
-    tabs = (UI / "results.py").read_text(encoding="utf-8").count("self.tabs.addTab(")
-    assert len(_results_tab_rows(guide.read_text(encoding="utf-8"))) == tabs
+def test_the_guides_list_every_chart_kind(guide: Path) -> None:
+    """The guides list every chart kind a workbench panel offers, one row each,
+    and no longer describe pages, result tabs, a demo entry or a home page."""
+    from reverbscope.ui.plot_data import PLOT_KINDS
+
+    text = guide.read_text(encoding="utf-8")
+    assert len(_chart_rows(text)) == len(PLOT_KINDS)
+    for stale in ("Results page", "Demo (no interface)", "Home page", "演示（无需音频接口）"):
+        assert stale not in text, stale
 
 
 def test_the_guides_do_not_promise_untranslated_diagnostics_or_file_drops() -> None:

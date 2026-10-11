@@ -112,12 +112,13 @@ def created_text(created: str) -> str:
     """An ISO time stamp as ``2026-09-27 14:10 +00:00``; other text unchanged."""
     try:
         moment = datetime.fromisoformat(created.replace("Z", "+00:00"))
-    except ValueError:
+        offset = moment.strftime("%z")
+        if len(offset) == 5:
+            offset = f"{offset[:3]}:{offset[3:]}"
+        return f"{moment:%Y-%m-%d %H:%M} {offset}".strip()
+    except (TypeError, ValueError, OSError, OverflowError):
+        # Windows' C runtime refuses to format dates before 1970 or far in the future.
         return created
-    offset = moment.strftime("%z")
-    if len(offset) == 5:
-        offset = f"{offset[:3]}:{offset[3:]}"
-    return f"{moment:%Y-%m-%d %H:%M} {offset}".strip()
 
 
 def validity_status(validity: Validity) -> Status:

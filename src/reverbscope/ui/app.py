@@ -42,8 +42,8 @@ def run_app(argv: list[str] | None = None, *, smoke: bool = False, lang: str | N
 
     from reverbscope.i18n import activate
     from reverbscope.logging_config import configure_logging
-    from reverbscope.ui.main_window import MainWindow
     from reverbscope.ui.theme import apply_application_chrome
+    from reverbscope.ui.workbench import WorkbenchWindow
 
     # Warnings and unexpected failures go to $REVERBSCOPE_HOME/reverbscope.log.
     # The desktop launcher does not pass through the command line, which is
@@ -67,7 +67,9 @@ def run_app(argv: list[str] | None = None, *, smoke: bool = False, lang: str | N
     from reverbscope.ui.widgets import app_icon
 
     QApplication.setWindowIcon(app_icon())
-    window = MainWindow()
+    # The saved layout is restored only for a real session, so a smoke test
+    # and the GUI tests always start from the default arrangement.
+    window = WorkbenchWindow(restore_layout=not smoke)
     window.show()
     if smoke:
         app.processEvents()

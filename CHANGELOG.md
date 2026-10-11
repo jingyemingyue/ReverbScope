@@ -7,7 +7,54 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- **Desktop workbench.** The desktop app is one workbench window, modelled
+  on the chart-area / measurement-list / properties layout of open-source
+  audio analysers (see docs/GUI_DESIGN_REFERENCES.md; independent
+  implementation, nothing copied): native menus and a compact toolbar on
+  top, one or two stacked charts in the middle, the list of open
+  measurements on the right (grouped by position, with each measurement's
+  curve colour, visibility checkbox, quality status and baseline /
+  synthetic / unsaved tags), the inspector at the bottom on demand
+  (Measurement quality, Diagnostics, Properties, Tables, Comparison,
+  Report) and the status line with the take's real progress and Stop.
+  The window opens on the workbench; there is no home page, no results
+  page, no compare or project page.
+- **Measurements, not pages.** Every opened session, imported recording or
+  finished take joins the list and stays there; selecting one shows its
+  properties and draws its curve on top without hiding the others; the
+  checkbox hides a curve without closing the measurement; "Set as baseline"
+  marks one, and the selected other one becomes the candidate: the charts
+  draw the difference (frequency response, decay) and the Comparison tab
+  the verdict and deltas, with "Input gain unchanged" as before. A running
+  take keeps its own identity: its result is added as a new entry whatever
+  is selected meanwhile, a result after Stop or after the window closed is
+  dropped, and a live take is protected until it is saved.
+- **Charts as the working surface.** Each chart panel has a one-row control
+  bar (kind, scope, options, difference, reset zoom, cursor readout,
+  export PNG / CSV); wheel zooms, drag pans, double-click resets; linked
+  zoom only between panels with the same axis (Hz, s, ms); dBFS and
+  relative dB are named on every axis; a hidden panel does not redraw.
+  Impulse, early reflections and placement draw the selected measurement.
+- **Measurement entry as dialogs.** Measure... (Standalone: devices and
+  channels with the recommended entries starred, device-rate check,
+  playback-level limit, profile, metadata, tape measurements) and Import
+  DAW Recording... (test signal, reference, recording, channels, profile,
+  metadata, placement, folded DAW notes) keep every check and confirmation
+  of the former pages; the workbench stays the only workplace.
+- **Placement geometry** is the side view over the reflection timeline;
+  the solved lengths and candidates are in the Tables tab; a missing input
+  names the field. The 3D picture is gone.
+- **Layout** (geometry, docks, chart kinds and count, split) is saved with
+  QSettings on a normal launch and restored; View → Reset layout.
+
+### Removed
+- **Demo mode in the GUI.** The Demo navigation entry, home-page button,
+  Ctrl+3 shortcut, first-run walkthrough and Getting-started entry are
+  gone, and the Settings dialog no longer offers the fake audio backend.
+  `reverbscope demo` and the fake backend remain automated-test
+  facilities; a synthetic session that is opened is marked "synthetic
+  data" in the list, the inspector and the window title.
 
 ## [0.5.0b3] - 2026-10-09
 

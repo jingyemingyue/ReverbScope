@@ -23,22 +23,33 @@ def test_stylesheet_keeps_chinese_section_labels_and_shortcut_badges() -> None:
 
 
 def test_placement_picture_is_a_schematic_not_a_room() -> None:
-    """The 3D picture may show the tapes and, once solved, the position ring.
-
-    It must not invent a room. In Chinese, the labels stay in Chinese.
+    """The side view draws the tapes (dotted while they are examples) and,
+    once solved, the derived lengths dashed; the 3D picture draws the
+    position ring. Neither invents a room. In Chinese, the labels stay in
+    Chinese.
     """
     import numpy as np
     from matplotlib.figure import Figure
 
     from reverbscope.i18n import activate
     from reverbscope.models.result import PlacementLength, PlacementResult, Validity
-    from reverbscope.ui.plots import plot_placement_illustration, plot_placement_result
+    from reverbscope.ui.plots import (
+        plot_placement_3d,
+        plot_placement_illustration,
+        plot_placement_result,
+    )
     from tests.zh_tokens import english_words
 
     fig = Figure()
     hint = plot_placement_illustration(fig, distance_m=None, mic_height_m=None)
     assert "not your room" in hint
-    assert fig.axes and fig.axes[0].name == "3d"
+    assert fig.axes and fig.axes[0].name == "rectilinear"
+    # Nothing measured: every line that is not the reference plane is an example.
+    styles = {line.get_linestyle() for line in fig.axes[0].lines if len(line.get_xdata()) == 2}
+    assert ":" in styles and "--" not in styles
+    hint = plot_placement_illustration(fig, distance_m=2.0, mic_height_m=1.1)
+    assert "you entered" in hint
+    assert "-" in {line.get_linestyle() for line in fig.axes[0].lines}
 
     measured = PlacementResult(
         tier=2,
@@ -54,6 +65,10 @@ def test_placement_picture_is_a_schematic_not_a_room() -> None:
     )
     fig = Figure()
     hint = plot_placement_result(fig, measured)
+    assert "dashed" in hint and "does not pick one" in hint
+    assert "--" in {line.get_linestyle() for line in fig.axes[0].lines}
+    fig = Figure()
+    hint = plot_placement_3d(fig, measured)
     assert "ring" in hint and "No wall" in hint
     rings = []
     for line in fig.axes[0].lines:
@@ -71,6 +86,8 @@ def test_placement_picture_is_a_schematic_not_a_room() -> None:
             plot_placement_illustration(fig, distance_m=2.0, mic_height_m=1.1),
             plot_placement_result(fig, measured),
             plot_placement_result(fig, None),
+            plot_placement_3d(fig, measured),
+            plot_placement_3d(fig, None),
         ]
         texts = [t.get_text() for t in fig.findobj(lambda o: hasattr(o, "get_text"))]
         texts = [text for text in [*texts, *hints] if text]

@@ -58,8 +58,12 @@ class SettingsDialog(QDialog):
         self.backend = QComboBox()
         self.backend.addItem(_("Default (PortAudio)"), "")
         self.backend.addItem("portaudio", "portaudio")
-        self.backend.addItem("fake", "fake")
+        # The fake backend is an automated-test facility (REVERBSCOPE_AUDIO_BACKEND),
+        # not a choice offered here; a settings file that names it keeps its value.
         backend_index = self.backend.findData(self._settings.audio_backend)
+        if backend_index < 0 and self._settings.audio_backend:
+            self.backend.addItem(self._settings.audio_backend, self._settings.audio_backend)
+            backend_index = self.backend.count() - 1
         self.backend.setCurrentIndex(max(backend_index, 0))
         folder_row = QHBoxLayout()
         self.output_dir = QLineEdit(self._settings.output_dir)

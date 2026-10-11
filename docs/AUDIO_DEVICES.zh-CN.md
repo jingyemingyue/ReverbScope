@@ -87,8 +87,8 @@ Core Audio 是唯一的主机 API（排名 1）。使用一块设为测量采样
   `CoreAudioSettings(change_device_parameters=True)` 允许 PortAudio 设置标称采样率
   （可能干扰正在使用该设备的其他程序，即使只是查询）；再加
   `fail_if_conversion_required=True` 则拒绝任何转换 [11][14]。ReverbScope 默认不传
-  CoreAudioSettings：请在“音频 MIDI 设置”中设定采样率；界面会标出与请求不一致的
-  设备采样率（`ui/pages.py`）。`reverbscope measure --coreaudio-set-rate` 会传入
+  CoreAudioSettings：请在“音频 MIDI 设置”中设定采样率；界面的“测量”对话框会标出与请求不一致的
+  设备采样率（`ui/measure_dialog.py`）。`reverbscope measure --coreaudio-set-rate` 会传入
   `change_device_parameters=True, fail_if_conversion_required=True`，测量要么以请求的采样率运行，要么失败，而不会转换。
 * **延迟。** 默认低延迟 = 设备固定延迟 + 64 帧；高延迟 = 固定延迟 + 当前缓冲大小；
   读不到时为 10 / 100 ms [11]。

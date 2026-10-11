@@ -167,23 +167,20 @@ def test_os_language_tags_are_normalised(tag: str, expected: str) -> None:
 def test_session_list_survives_dates_windows_cannot_convert(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    pytest.importorskip("PySide6")
+    """The measurement list's "Created" tooltip and the CLI share created_text;
+    a time stamp Windows cannot format is shown as stored, not as a crash."""
     from datetime import datetime
 
-    from reverbscope.ui import browser
-
-    def refuse(self: datetime, tz: object = None) -> datetime:
-        raise OSError(22, "Invalid argument")
+    from reverbscope.cli import render
 
     class Moment(datetime):
-        astimezone = refuse  # type: ignore[assignment]
+        def strftime(self, fmt: str) -> str:
+            # Windows' C runtime refuses dates before 1970 or far in the future.
+            raise OSError(22, "Invalid argument")
 
-    monkeypatch.setattr(browser, "_when", browser._when)
-    import datetime as datetime_module
-
-    monkeypatch.setattr(datetime_module, "datetime", Moment)
-    assert browser._when("1900-01-01T00:00:00+00:00") == "1900-01-01T00:00:00+00:00"
-    assert browser._when("not a date") == "not a date"
+    monkeypatch.setattr(render, "datetime", Moment)
+    assert render.created_text("1900-01-01T00:00:00+00:00") == "1900-01-01T00:00:00+00:00"
+    assert render.created_text("not a date") == "not a date"
 
 
 def test_log_rotation_keeps_logging_when_the_file_is_locked(

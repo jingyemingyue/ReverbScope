@@ -33,13 +33,12 @@ def _script() -> Any:
 def test_gui_screenshots_are_the_user_edition_and_chinese_for_the_chinese_readme(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The screenshots showed the Developer menu, which the downloaded app does
-    not have, and README.zh-CN.md showed the English window. The English
-    window must also show the English demo's names, not those the Chinese
-    demo run wrote last."""
+    """The screenshots must show the user edition (no Developer menu), the
+    Chinese window for README.zh-CN.md, and in each language the names that
+    language's demo run wrote. Every window shows the synthetic marker."""
     from reverbscope.demo import run_demo
     from reverbscope.i18n import activate, current_locale
-    from reverbscope.ui import main_window
+    from reverbscope.ui import workbench
 
     QApplication.instance() or QApplication([])
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
@@ -53,19 +52,29 @@ def test_gui_screenshots_are_the_user_edition_and_chinese_for_the_chinese_readme
             run_demo(script.demo_folder(tmp_path, lang) / "reverbscope-demo")
     finally:
         activate("en")
-    grabbed: list[tuple[str, bool, str]] = []
-    subtitles: list[str] = []
+    grabbed: list[tuple[str, bool, str, int, bool]] = []
+    names: list[str] = []
     homes: list[str] = []
 
-    class Recorded(main_window.MainWindow):  # type: ignore[misc]
+    class Recorded(workbench.WorkbenchWindow):  # type: ignore[misc]
         def grab(self, *args: Any) -> Any:
-            tab = self.results.tabs.tabText(0)
-            grabbed.append((current_locale(), self.developer_menu is None, tab))
-            subtitles.append(self.results.header.subtitle.text())
+            kind = self.panels[0].kind()
+            selected = self.document.selected()
+            assert selected is not None and selected.synthetic
+            grabbed.append(
+                (
+                    current_locale(),
+                    self.developer_menu is None,
+                    kind,
+                    len(self.document),
+                    self.document.baseline() is not None,
+                )
+            )
+            names.append(selected.name())
             homes.append(os.environ["REVERBSCOPE_HOME"])
             return super().grab(*args)
 
-    monkeypatch.setattr(main_window, "MainWindow", Recorded)
+    monkeypatch.setattr(workbench, "WorkbenchWindow", Recorded)
     out = tmp_path / "images"
     out.mkdir()
     script.render_gui(tmp_path, out)
@@ -75,17 +84,16 @@ def test_gui_screenshots_are_the_user_edition_and_chinese_for_the_chinese_readme
         "gui-results.png",
         "gui-results.zh-CN.png",
     ]
-    assert [(lang, user) for lang, user, _tab in grabbed] == [
-        ("en", True),
-        ("en", True),
-        ("en", True),
-        ("zh_CN", True),
+    assert [(lang, user, count) for lang, user, _kind, count, _base in grabbed] == [
+        ("en", True, 2),
+        ("en", True, 2),
+        ("en", True, 2),
+        ("zh_CN", True, 2),
     ]
-    english_tab, chinese_tab = grabbed[0][2], grabbed[-1][2]
-    assert english_tab != chinese_tab
-    assert not any(char.isascii() and char.isalpha() for char in chinese_tab)
-    assert subtitles[0].startswith("Synthetic demo room")
-    assert subtitles[-1].startswith("合成演示房间")
+    # The comparison screenshot has a baseline; the others do not.
+    assert [base for *_rest, base in grabbed] == [False, False, True, False]
+    assert names[0].startswith("Synthetic demo room")
+    assert names[-1].startswith("合成演示房间")
     # Each language's sessions stay out of the other's recent list.
     assert len(set(homes[:3])) == 1 and homes[0] != homes[-1]
     assert current_locale() == "en"
