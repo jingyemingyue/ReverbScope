@@ -23,16 +23,24 @@ import time
 from pathlib import Path
 
 #: (width, height, scheme, views): what the pull request and the docs show.
+_VIEWS = (
+    "empty",
+    "start",
+    "overview",
+    "fr",
+    "etc",
+    "decay",
+    "spectrogram",
+    "waterfall",
+    "room",
+    "compare",
+    "project",
+)
 SHOTS: tuple[tuple[int, int, str, tuple[str, ...]], ...] = (
-    (
-        1366,
-        768,
-        "light",
-        ("start", "overview", "fr", "etc", "decay", "spectrogram", "waterfall", "room", "project"),
-    ),
-    (1366, 768, "dark", ("overview", "fr", "room", "compare")),
-    (1920, 1080, "light", ("overview", "fr", "room", "compare")),
-    (1920, 1080, "dark", ("etc", "decay", "waterfall", "room")),
+    (1366, 768, "light", _VIEWS),
+    (1366, 768, "dark", _VIEWS),
+    (1920, 1080, "light", _VIEWS),
+    (1920, 1080, "dark", _VIEWS),
 )
 
 
@@ -41,6 +49,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, default=Path("docs/images/gui2"))
     parser.add_argument("--lang", default="zh_CN")
     parser.add_argument("--scale", type=float, default=1.0, help="device pixel ratio")
+    parser.add_argument("--width", type=int, default=0, help="render only this width")
+    parser.add_argument("--height", type=int, default=0, help="render only this height")
+    parser.add_argument("--scheme", default="", help="render only light or dark")
     args = parser.parse_args(argv)
     if args.scale != 1.0:
         os.environ["QT_SCALE_FACTOR"] = str(args.scale)
@@ -53,6 +64,12 @@ def main(argv: list[str] | None = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     try:
         for width, height, scheme, views in SHOTS:
+            if args.width and width != args.width:
+                continue
+            if args.height and height != args.height:
+                continue
+            if args.scheme and scheme != args.scheme:
+                continue
             _render(work, out, args.lang, width, height, scheme, views, args.scale)
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -100,12 +117,17 @@ def _render(
     window.resize(width, height)
     window.show()
     pump(0.3)
+    suffix = "" if scale == 1.0 else f"@{scale:g}x"
+    if "empty" in views:
+        window.grab().save(str(out / f"{lang}_{width}x{height}_{scheme}_empty{suffix}.png"))
     window.show_project(demo)
     window.model.wait_until_loaded()
     keys = [entry.key for entry in window.model.entries() if entry.result is not None]
     window.model.set_baseline(keys[0])
     window.model.set_current(keys[-1])
+    # Visibility is independent of selection: draw the baseline and the current one.
     window.model.set_overlay(keys[0], True)
+    window.model.set_overlay(keys[-1], True)
     current = window.model.current()
     if (
         current is not None
@@ -114,8 +136,9 @@ def _render(
     ):
         window.model.select_reflection(current.key, 0)
     window.views["room"].use_example()
-    suffix = "" if scale == 1.0 else f"@{scale:g}x"
     for view in views:
+        if view == "empty":
+            continue
         if view == "start":
             window._show_start()
             pump(0.4)

@@ -140,8 +140,10 @@ played.
 Start at a low monitor level. Levels above −12 dBFS need `--acknowledge-level`
 every time; that confirmation is never saved.
 
-**Demo** (GUI or `reverbscope --backend fake measure`) runs the same flow on a
-synthetic room. Nothing is sent to a loudspeaker.
+**Synthetic data** (`reverbscope demo`, or `reverbscope --backend fake measure`)
+runs the same flow on a synthetic room. Nothing is sent to a loudspeaker.
+The desktop app has no demo mode. A session recorded that way is marked
+synthetic in the measurement list.
 
 ### Per platform
 
@@ -217,24 +219,36 @@ project's positions and every measurement that is open: saved sessions, the
 take just measured, and sessions opened with **File ▸ Open Session...**
 (they are added to the list; nothing open is replaced). Each row has a
 colour, which is the colour of its curves in every chart, and a check box
-that draws it together with the current measurement (an overlay). Click a
-row to make it current; right-click it to use it as the baseline, save an
-unsaved take, show its folder, measure again at its position, or remove it
-from the list (nothing is deleted on disk).
+that shows or hides those curves. The check box, the selection and the
+baseline are separate: selecting a measurement does not force it onto the
+chart, hiding it does not deselect it, and the baseline does not change
+what is drawn. Click a row to select it; right-click it to show or hide it,
+use it as the baseline, rename its display name, save an unsaved take, show
+its folder, measure again at its position, or remove it from the list
+(nothing is deleted on disk, and a display name is not written into the
+session).
 
-In the middle, the view bar switches between the views below (also
-**View** menu, Ctrl+1 to Ctrl+9). On the right, the **inspector** shows the
-current measurement: its measurement health, key figures with their
-validity, the recording conditions and profile, the comparison with the
-baseline when one is set, the selected early reflection and the room
+In the middle, the view bar groups the views below: Overview, Frequency,
+Time, Decay, Spectral (spectrogram, waterfall and noise), Room, Compare and
+Report. Project is a separate button. The **View** menu and Ctrl+1 to
+Ctrl+9 (Command on macOS) still open each view. On the right, the
+**inspector** shows the current measurement even when its curves are
+hidden: its measurement health (what was detected, what it affects, what
+to do next, and a button that opens the related chart), key figures with
+their validity, the recording conditions and profile, the comparison with
+the baseline when one is set, the selected early reflection and the room
 checks. Along the bottom, the **measure strip** holds the mode (audio
-interface, demo or DAW recording), the devices, the sample rate, the
-microphone and loopback inputs, the position, and Start / Stop
-(Ctrl+Return, Esc). **Set up...** opens the full settings of the mode.
+interface or DAW recording), the input, the sample rate, the microphone
+channel, the position, and Start / Stop (Ctrl+Return, Esc). **Advanced**
+opens the output device and the loopback channel. **Set up...** opens the
+full settings of the mode.
 
-The three columns can be resized; their sizes, the view and the window are
+The three columns can be resized. **List** and **Inspector** on the view
+bar, or View ▸ Measurement list / Inspector, hide a side so the chart can
+use the width. Sizes, which sides are open, the view and the window are
 restored at the next start (**View ▸ Reset the layout** goes back to the
-default). A take that has not been saved is marked *unsaved*: starting a new
+default; a layout that cannot be restored does the same). A take that has
+not been saved is marked *unsaved*: starting a new
 take, **New Measurement**, removing it or quitting asks first whether to
 save it (opening a session or a project keeps it in the list).
 
@@ -266,13 +280,17 @@ Low-frequency resonance candidates are listed in the Full report (and in
 ### The room view
 
 The Room view draws the room box you enter (length, width, height in
-metres), the loudspeaker and a microphone for each position, with an
-example room to start from and an optional PLY or OBJ scan (drawn as
-entered geometry; nothing is measured from it). Drag to orbit, right-drag
-to pan, scroll to zoom, double-click to fit; the plan view lets you drag
-the loudspeaker and the microphones. What you enter is saved in
-`room-geometry.json` next to the project (or the session), never in a
-session.
+metres; x length, y width, z up), the loudspeaker and a microphone for each
+position. Start from the example room, or import a PLY or OBJ scan (drawn
+as entered geometry; nothing is measured from it). **Plan view**, **Front**
+and **Side** are predictable cameras; **Reset view** returns to the default
+angle. Drag rotates, right-drag pans, the wheel zooms about the cursor, and
+a double-click frames the room. In the plan view you can drag the
+loudspeaker and the microphones. Click a loudspeaker, a microphone, an
+entered face or a predicted reflection point. The face you typed is labelled
+as entered geometry, not as a surface the measurement found. What you enter
+is saved in `room-geometry.json` next to the project (or the session), never
+in a session.
 
 With a measurement, the dashed layer shows what it constrains: the direct
 distance as a sphere around the loudspeaker (with a loopback), the

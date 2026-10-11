@@ -57,19 +57,32 @@ measurements, OpenGL rendering, or any change to the command line.
 ```
 
 * The three columns are one horizontal `QSplitter`; the measure strip sits
-  under it. Splitter sizes, the current view and the window geometry are
-  saved in `ui.ini` (§8).
+  under it. `QDockWidget` was considered and not used: floating and tabbed
+  docks cost more to restore and to test, and they do not make the chart
+  any larger than a splitter whose side panels can be hidden. The chart
+  column has the stretch factor. The navigator and the inspector collapse
+  from the view bar and from View (Ctrl+Shift+Left / Ctrl+Shift+Right, which
+  Qt shows as Command on macOS). Splitter sizes, which sides are open, the
+  current view and the window geometry are saved in `ui.ini` (§8). A
+  splitter state that does not restore, or that leaves the chart under
+  320 px, is replaced by the default sizes.
 * `MainWindow.stack` is the workspace's `QStackedWidget`. It holds the start
-  panel, the two measurement set-up pages (Universal DAW Mode, Standalone
-  Mode, which Demo shares), every analysis view, the project view and the
-  compare view.
+  panel, the two measurement set-up pages (Universal DAW Mode and Standalone
+  Mode), every analysis view, the project view and the compare view. The
+  product GUI has no Demo mode. `show_mode("demo")` remains for tests and
+  the fake backend; it is not in the Measure menu, the strip, or the
+  first-measurement card.
 * The start panel replaces the old home page. The marketing pills and the
   large mode cards are gone; the first-measurement card stays, can be
   dismissed, and comes back from Help ▸ Getting started.
 * Shortcuts: `Ctrl+1` … `Ctrl+9` select the analysis views in the order of
-  `default_views()`; `Ctrl+0` opens Compare. The measurement set-up pages
-  moved to `Ctrl+Shift+1` (Universal DAW Mode), `Ctrl+Shift+2` (Standalone
-  Mode) and `Ctrl+Shift+3` (Demo).
+  `default_views()`; `Ctrl+0` opens Compare. The view bar groups them
+  (Overview, Frequency, Time, Decay, Spectral, Room, Compare, Report).
+  Spectral has a second selector for the spectrogram, the waterfall and
+  noise. Project is a separate button, not an analysis group. The
+  measurement set-up pages are `Ctrl+Shift+1` (Universal DAW Mode) and
+  `Ctrl+Shift+2` (Standalone Mode). `QKeySequence` is used so macOS shows
+  Command where other systems show Ctrl.
 * Switching views never stops a take. The Standalone page used to stop the
   take when it was hidden; the measure strip now carries Stop (and `Esc`),
   so the take keeps running while the user looks at another view.
@@ -104,21 +117,27 @@ fills the strip's position and the pages' position and room fields.
 `ui/workspace.py` (`WorkspaceModel`, `Entry`, `ProjectLoader`).
 
 The model is the single owner of what is open. Views and panels read it and
-send requests to it; they never hold a measurement of their own.
+send requests to it; they never hold a measurement of their own. The
+navigator stays a `QTreeWidget` filled from this model. A
+`QAbstractItemModel` would only mirror the same entries; a project is tens
+of measurements, not a database, so the extra model would not make selection
+or visibility any more reliable.
 
 * **Entry**: one measurement. `key` (the resolved session folder, or
   `take:<n>` for a live take that has no folder yet), `label`, `position`,
   `directory`, `session`, `result` (`None` while it loads), `findings`,
   `findings_problem`, `profile`, `color`, `unsaved`, `error` (why it could
   not be read) and `synthetic` (a demo take).
-* **Current entry**: the one the inspector and the single-curve views
-  describe.
-* **Overlay**: the entries drawn together in the chart views. The current
-  entry is always drawn; the others are drawn when their list check box is
-  on.
+* **Current entry**: the one the inspector and the single-measurement
+  summaries describe. Selecting it does not change visibility.
+* **Visible** (the overlay set): the entries drawn in the chart views.
+  Hiding the current entry keeps it selected. The inspector still describes
+  it; the charts do not draw it. A measurement is made visible when it is
+  opened or when a take finishes, not when the user merely selects it.
 * **Baseline**: the entry a comparison is made against (`set_baseline`).
-  The compare view and the difference panes compare the current entry with
-  it.
+  Setting it does not change visibility or selection. The compare view and
+  the difference panes compare the current entry with it. A baseline curve
+  is named in the legend.
 * **Colours**: each entry keeps one colour for its whole life, chosen when
   it is added from an eight-colour palette safe for colour-blind readers
   (Okabe–Ito order). Reloading a project keeps the colour of every entry
@@ -365,7 +384,8 @@ microphone. It runs offscreen, so it is tested and screenshotted in CI.
 ## 8. Saved interface state
 
 `ui.ini` in the ReverbScope home folder (`QSettings`, INI format):
-`window/geometry`, `window/splitter`, `workspace/view`, and per project
+`window/geometry`, `window/splitter`, `window/navigator`, `window/inspector`,
+`workspace/view`, a display alias per measurement key, and per project
 (`project/<sha1 of the folder>/…`) the current entry, the overlay set and
 the baseline, restored when that project is opened again. Missing or
 unreadable keys fall back to defaults; nothing in `ui.ini` is needed to
