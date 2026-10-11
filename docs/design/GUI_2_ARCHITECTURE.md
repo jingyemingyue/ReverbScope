@@ -424,8 +424,8 @@ reworded here.
 `docs/images/gui2/` holds offscreen screenshots of the workstation in
 Simplified Chinese, at 1366×768 and 1920×1080, light and dark, from the
 synthetic demo opened as a two-position project, named
-`<lang>_<width>x<height>_<scheme>_<view>.png`. The `@2x`
-files are rendered at a device pixel ratio of 2 as a high-DPI check; they
-are not captures from a Retina display. Regenerate them with
+`<lang>_<width>x<height>_<scheme>_<view>.png`, including an empty
+workspace. `--scale 2` renders at a device pixel ratio of 2 as a high-DPI
+check; that is not a capture from a Retina display. Regenerate them with
 
     QT_QPA_PLATFORM=offscreen python scripts/render_gui2_screenshots.py

@@ -122,7 +122,10 @@ class _TimeFrequencyView(AnalysisView):
         self.root.setSpacing(6)
         self.controls = QHBoxLayout()
         self.controls.setSpacing(6)
+        self.more = QHBoxLayout()
+        self.more.setSpacing(6)
         self.root.addLayout(self.controls)
+        self.root.addLayout(self.more)
         self.status = QLabel("")
         self.status.setProperty("role", "hint")
         self.status.setWordWrap(True)
@@ -140,6 +143,8 @@ class _TimeFrequencyView(AnalysisView):
         spin.setDecimals(decimals)
         spin.setValue(value)
         spin.setSuffix(suffix)
+        # The suffix is the unit. A squeezed box clips "ms" to "m" and "Hz" to "H".
+        spin.setMinimumWidth(118 if "Hz" in suffix else 96)
         spin.valueChanged.connect(lambda _v: self._debounce.start())
         return spin
 
@@ -276,21 +281,23 @@ class SpectrogramView(_TimeFrequencyView):
         c.addWidget(QLabel(_("Time")))
         self.end_ms = self._spin(10.0, 5000.0, 500.0, " ms", 0)
         c.addWidget(self.end_ms)
-        c.addWidget(QLabel(_("Frequency")))
+        c.addStretch(1)
+        m = self.more
+        m.addWidget(QLabel(_("Frequency")))
         self.fmin = self._spin(1.0, 20_000.0, 20.0, " Hz", 0)
         self.fmax = self._spin(100.0, 96_000.0, 20_000.0, " Hz", 0)
-        c.addWidget(self.fmin)
-        c.addWidget(self.fmax)
-        c.addWidget(QLabel(_("Levels")))
+        m.addWidget(self.fmin)
+        m.addWidget(self.fmax)
+        m.addWidget(QLabel(_("Levels")))
         self.normalization = QComboBox()
         self.normalization.addItem(_("re peak"), "peak")
         self.normalization.addItem(_("re direct sound"), "direct")
         self.normalization.addItem(_("re full scale"), "none")
         self.normalization.currentIndexChanged.connect(lambda _i: self._debounce.start())
-        c.addWidget(self.normalization)
+        m.addWidget(self.normalization)
         self.floor = self._spin(-160.0, -10.0, -80.0, " dB", 0)
-        c.addWidget(self.floor)
-        c.addStretch(1)
+        m.addWidget(self.floor)
+        m.addStretch(1)
         self.chart = ChartPanel(
             X_TIME_MS,
             x_label=_("Time after direct sound (ms)"),
@@ -394,11 +401,13 @@ class WaterfallView(_TimeFrequencyView):
         self.slices.setValue(30)
         self.slices.valueChanged.connect(lambda _v: self._debounce.start())
         c.addWidget(self.slices)
-        c.addWidget(QLabel(_("Frequency")))
+        c.addStretch(1)
+        m = self.more
+        m.addWidget(QLabel(_("Frequency")))
         self.fmin = self._spin(1.0, 20_000.0, 20.0, " Hz", 0)
         self.fmax = self._spin(100.0, 96_000.0, 20_000.0, " Hz", 0)
-        c.addWidget(self.fmin)
-        c.addWidget(self.fmax)
+        m.addWidget(self.fmin)
+        m.addWidget(self.fmax)
         self.smoothing = QComboBox()
         for fraction in (0, 24, 12, 6, 3):
             text = (
@@ -409,7 +418,7 @@ class WaterfallView(_TimeFrequencyView):
             self.smoothing.addItem(text, fraction)
         self.smoothing.setCurrentIndex(2)
         self.smoothing.currentIndexChanged.connect(lambda _i: self._debounce.start())
-        c.addWidget(self.smoothing)
+        m.addWidget(self.smoothing)
         self.perspective = QCheckBox(_("Perspective"))
         self.perspective.setToolTip(
             _(
@@ -420,8 +429,8 @@ class WaterfallView(_TimeFrequencyView):
         )
         self.perspective.setChecked(True)
         self.perspective.toggled.connect(self.refresh)
-        c.addWidget(self.perspective)
-        c.addStretch(1)
+        m.addWidget(self.perspective)
+        m.addStretch(1)
         self.chart = ChartPanel(
             X_FREQUENCY,
             x_label=_("Frequency (Hz)"),

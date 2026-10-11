@@ -10,27 +10,31 @@ All notable changes to ReverbScope are documented here. The format follows
 ### Changed
 - **The desktop app is one workstation window** (GUI 2.0,
   `docs/design/GUI_2_ARCHITECTURE.md`). A navigator lists the project's
-  positions and every open measurement, each with its colour, an overlay
-  check box and a baseline mark; a view bar switches between Overview,
-  Frequency response, Impulse response, Decay, Noise, Spectrogram,
-  Waterfall, Room, Project, Compare and the full report (Ctrl+1 … Ctrl+9);
-  an inspector shows the current measurement's health, key figures with
-  validity, conditions, the comparison with the baseline and the room
-  checks; a measure strip along the bottom carries the mode, devices, rate,
-  channels, loopback, position and Start / Stop (Ctrl+Return, Esc). The
-  column sizes, the view and, per project, the selection are restored at the
-  next start (`ui.ini` in the ReverbScope home folder). The Results page and
-  the Home page's mode cards are gone; the first-measurement card stays on
-  the start panel. Open Session adds the session to the list instead of
-  replacing what is open; switching views no longer stops a take.
+  positions and every open measurement, each with its colour. The check box
+  (what is drawn), the selection and the baseline are independent. The view
+  bar groups the analysis: Overview, Frequency, Time, Decay, Spectral
+  (spectrogram, waterfall, noise), Room, Compare and Report; Project is a
+  separate button. Ctrl+1 … Ctrl+9 still open each view (Command on macOS).
+  The inspector shows the current measurement even when its curves are
+  hidden, and a health problem can open the chart it is about. The measure
+  strip carries audio-interface or DAW-recording mode, the input, the rate,
+  the microphone channel and Start / Stop; output and loopback are under
+  Advanced. There is no demo mode in the product window. The list and the
+  inspector can be hidden; sizes, which sides are open, the view and, per
+  project, the selection are restored (`ui.ini`), and a layout that cannot
+  be restored falls back to the default. The room view frames from the plan,
+  the front and the side, and a click names an entered face as entered
+  geometry, not as a surface the measurement found. Open Session adds the
+  session to the list; switching views does not stop a take.
 - **Charts are pyqtgraph** (0.14.0, MIT, in the `gui` extra and the desktop
-  bundles; nothing uses OpenGL). Overlays are drawn in the list's colours
-  with the current measurement on top; every chart zooms about the cursor,
-  pans, resets, reads out the value under the cursor with its unit, names
-  its display processing in the legend, and exports PNG, SVG or the drawn
-  curves as CSV. With a baseline, the Frequency response view adds a
-  difference pane. Decay draws all bands of a measurement with a dash
-  pattern each, and says why a band has no curve.
+  bundles; nothing uses OpenGL). Overlays are drawn in the list's colours,
+  and only when that measurement is visible; the selected curve is thicker
+  and a baseline is named in the legend. A legend chip shows or hides that
+  measurement. Every chart zooms about the cursor, pans, resets, reads out
+  the value under the cursor with its unit, names its display processing,
+  and exports PNG, SVG or the drawn curves as CSV. With a baseline, the
+  Frequency response view adds a difference pane. Decay draws all bands of
+  a measurement with a dash pattern each, and says why a band has no curve.
 - The tape-measure picture beside the placement inputs is the only
   matplotlib drawing left; `scripts/benchmark.py --gui` times the chart
   views instead of the 0.5 plots.
