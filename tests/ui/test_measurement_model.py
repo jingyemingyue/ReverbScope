@@ -193,3 +193,48 @@ def test_the_view_and_the_document_select_each_other(
     document.set_selected(None)
     assert not view.selectionModel().hasSelection()
     view.close()
+
+
+def test_the_highlight_survives_a_removed_group_and_a_moved_row(
+    app: QApplication, result: AnalysisResult
+) -> None:
+    """A row's index names its measurement, not its group's row: closing a
+    measurement of an earlier position, or relabelling the selected one
+    into a new group, keeps the selected row current and highlighted."""
+    document = WorkspaceDocument()
+    model = MeasurementListModel(document)
+    view = QTreeView()
+    view.setModel(model)
+    style_tree(view)
+    connect_selection(view, document)
+    first = document.add(_measurement(result, "A"))
+    second = document.add(_measurement(result, "B"))
+    view.show()
+    app.processEvents()
+    assert document.selected_id() == second
+    document.remove(first)  # group A goes; group B becomes row 0
+    app.processEvents()
+    assert model.measurement_at(view.currentIndex()) is document.get(second)
+    assert view.selectionModel().isSelected(model.index_for(second))
+    assert model.index_for(second).parent().row() == 0
+    measurement = document.get(second)
+    assert measurement is not None
+    measurement.position = "C"
+    document.touch(second)  # the row moves to a new group C; group B goes
+    app.processEvents()
+    assert _rows(model) == [("C", ["Booth / C"])]
+    assert model.measurement_at(view.currentIndex()) is document.get(second)
+    assert view.selectionModel().isSelected(model.index_for(second))
+    assert document.selected_id() == second
+    view.close()
+
+
+def test_a_closed_measurement_frees_its_colour(result: AnalysisResult) -> None:
+    document = WorkspaceDocument()
+    first = document.add(_measurement(result, "A"))
+    second = document.add(_measurement(result, "B"))
+    assert [document.get(i).colour_index for i in (first, second)] == [0, 1]  # type: ignore[union-attr]
+    document.remove(first)
+    third = document.add(_measurement(result, "C"))
+    assert document.get(third).colour_index == 0  # type: ignore[union-attr]
+    assert document.get(second).colour_index == 1  # type: ignore[union-attr]

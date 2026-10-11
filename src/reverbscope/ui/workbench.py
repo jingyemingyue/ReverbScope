@@ -959,14 +959,21 @@ class WorkbenchWindow(QMainWindow):
     # --- lifecycle ----------------------------------------------------------------
 
     def closeEvent(self, event: QCloseEvent) -> None:  # noqa: N802 - Qt override
+        # A running job is stopped first, with the user's leave: a result that
+        # arrived while the question about unsaved takes was open would
+        # otherwise be a take the question never covered. (A QThread destroyed
+        # while it runs would abort the process: shutdown lets the workers end.)
+        if self.measurements.is_busy():
+            if not self.controller.ask_to_stop_running():
+                event.ignore()
+                return
+            self.measurements.shutdown()
         if not self.controller.ask_about_unsaved(self.document.unsaved_takes()):
             event.ignore()
             return
         if self._following_system:
             self._following_system = False
             QGuiApplication.styleHints().colorSchemeChanged.disconnect(self._follow_system_scheme)
-        # A QThread destroyed while it runs aborts the process (Ctrl+Q during a
-        # take or an analysis): stop the take and let the workers finish.
         self.measurements.shutdown()
         if self._restore_layout:
             self._save_layout()

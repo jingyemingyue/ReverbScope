@@ -122,7 +122,13 @@ class WorkspaceController(QObject):
         return measurement
 
     def _measurement_from(
-        self, session: object, result: object, directory: Path, *, position: str = ""
+        self,
+        session: object,
+        result: object,
+        directory: Path,
+        *,
+        position: str = "",
+        project: Path | None = None,
     ) -> Measurement:
         from reverbscope.models.result import AnalysisResult
         from reverbscope.models.session import MeasurementSession
@@ -141,7 +147,9 @@ class WorkspaceController(QObject):
             profile=profile,
             path=directory,
             position=position or session.measurement_position.strip(),
-            project=self.document.project,
+            # Only a session the project lists (or one added to it) belongs
+            # to the project; one opened on its own beside it does not.
+            project=project,
         )
 
     def choose_session(self) -> None:
@@ -226,9 +234,8 @@ class WorkspaceController(QObject):
                 )
                 continue
             measurement = self._measurement_from(
-                loaded.session, loaded.result, loaded.directory, position=position
+                loaded.session, loaded.result, loaded.directory, position=position, project=base
             )
-            measurement.project = base
             self.document.add(measurement, select=False)
             first = first or measurement
         if first is not None and self.document.selected() is None:
@@ -366,6 +373,11 @@ class WorkspaceController(QObject):
             return False
         remember_session(directory)
         self.document.mark_saved(measurement_id, session_path.parent)
+        for other in self.document.at_path(session_path.parent):
+            if other.id != measurement_id:
+                # The folder now holds this take: a measurement opened from it
+                # before no longer matches what is on disk, so it is closed.
+                self.document.remove(other.id)
         self.message.emit(_("Session saved to {path}").format(path=session_path.parent))
         project = measurement.project
         if project is not None:
@@ -418,6 +430,25 @@ class WorkspaceController(QObject):
             return False
         self.document.remove(measurement_id)
         return True
+
+    def ask_to_stop_running(self) -> bool:
+        """True when the user lets a take or analysis that runs now be stopped
+        and lost (closing the window)."""
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            _("Measurement running"),
+            _(
+                "A take is playing or being analyzed: its recording exists only in "
+                "memory and is lost if you close now."
+            ),
+            parent=self._parent,
+        )
+        stop = box.addButton(_("Stop and Close"), QMessageBox.ButtonRole.DestructiveRole)
+        cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(cancel)
+        box.setEscapeButton(cancel)
+        box.exec()
+        return box.clickedButton() is stop
 
     def ask_about_unsaved(self, takes: list[Measurement]) -> bool:
         """True when the caller may drop these live takes (saved first, or discarded)."""

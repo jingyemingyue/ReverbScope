@@ -153,15 +153,86 @@ def test_closing_the_window_as_the_analysis_completes_is_quiet(
 ) -> None:
     shown: list[str] = []
     monkeypatch.setattr(workbench, "error_box", lambda parent, title, text: shown.append(text))
+    asked: list[int] = []
+    monkeypatch.setattr(
+        workbench.WorkspaceController, "ask_to_stop_running", lambda self: asked.append(1) or True
+    )
     window = WorkbenchWindow()
     window.show()
     assert window.measurements.start_analysis(_request(short_sweep))
     held_analysis.set()
-    # close() waits for the thread; the late result is dropped, no dialog.
+    # close() asks (the job runs), then waits for the thread; the late result
+    # is dropped, no dialog.
     window.close()
     _settle(app, window.measurements.analysis_worker)
+    assert asked == [1]
     assert shown == []
     assert len(window.document) == 0
+
+
+def test_closing_while_a_job_runs_is_refused_until_the_user_stops_it(
+    app: QApplication,
+    held_analysis: threading.Event,
+    short_sweep: SweepSettings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A running take or analysis is asked about before the unsaved takes, so
+    a result cannot land behind the question and be lost unasked."""
+    answers: list[bool] = [False, True]
+    monkeypatch.setattr(
+        workbench.WorkspaceController, "ask_to_stop_running", lambda self: answers.pop(0)
+    )
+    monkeypatch.setattr(workbench, "error_box", lambda parent, title, text: None)
+    window = WorkbenchWindow()
+    window.show()
+    assert window.measurements.start_analysis(_request(short_sweep))
+    assert not window.close()  # Cancel: the window stays, the job goes on
+    assert window.isVisible() and window.measurements.is_busy()
+    held_analysis.set()
+    assert window.close()  # Stop and Close: the job is shut down
+    _settle(app, window.measurements.analysis_worker)
+    assert not window.isVisible() and not window.measurements.is_busy()
+    assert answers == [] and len(window.document) == 0
+
+
+def test_a_failure_while_building_the_measurement_leaves_the_window_idle(
+    app: QApplication, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from reverbscope.ui import measurement_controller
+
+    def broken(self: object) -> None:
+        raise RuntimeError("assess broke")
+
+    monkeypatch.setattr(measurement_controller.Measurement, "__post_init__", broken)
+    shown: list[str] = []
+    monkeypatch.setattr(workbench, "error_box", lambda parent, title, text: shown.append(text))
+    window = WorkbenchWindow()
+    window.show()
+    assert window.measurements.start_analysis(_request(short_sweep), blocking=True)
+    _settle(app)
+    assert len(shown) == 1 and "assess broke" not in shown[0]
+    assert len(window.document) == 0
+    assert not window.measurements.is_busy() and not window.run_status.is_running()
+    assert window.measure_action.isEnabled() and window.import_action.isEnabled()
+    window.close()
+
+
+def test_a_take_is_filed_under_the_project_it_was_started_for(
+    app: QApplication,
+    held_analysis: threading.Event,
+    short_sweep: SweepSettings,
+    tmp_path: Path,
+) -> None:
+    window = WorkbenchWindow()
+    window.show()
+    window.document.set_project(tmp_path / "p1", "P1")
+    assert window.measurements.start_analysis(_request(short_sweep))
+    window.document.set_project(tmp_path / "p2", "P2")
+    held_analysis.set()
+    _settle(app, window.measurements.analysis_worker)
+    measurement = window.document.selected()
+    assert measurement is not None and measurement.project == tmp_path / "p1"
+    window.close()
 
 
 def test_open_data_folder_with_an_uncreatable_home_warns_instead_of_raising(

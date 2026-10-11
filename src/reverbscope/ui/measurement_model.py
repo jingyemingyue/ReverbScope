@@ -46,7 +46,9 @@ COLUMN_QUALITY = 1
 COLUMN_ROLE = 2
 COLUMN_COUNT = 3
 
-#: ``internalId`` of a group row; a measurement row carries its group's row + 1.
+#: ``internalId`` of a group row. A measurement row carries its measurement's
+#: key (>= 1, never reused), so an index stays right when groups are removed
+#: or a row moves to another group: Qt keeps the internal id through both.
 _GROUP_ID = 0
 
 _SWATCH_WIDTH = 18
@@ -93,6 +95,9 @@ class MeasurementListModel(QAbstractItemModel):
         super().__init__(parent)
         self._document = document
         self._groups: list[_Group] = []
+        self._keys: dict[str, int] = {}
+        self._ids: dict[int, str] = {}
+        self._next_key = 1
         self._baseline_id: str | None = document.baseline_id()
         self._swatches: dict[tuple[str, str], QPixmap] = {}
         #: True between begin/end of an insert, remove or move: the view
@@ -128,21 +133,28 @@ class MeasurementListModel(QAbstractItemModel):
         """The measurement of a row, ``None`` for a group row or no row."""
         if not index.isValid() or index.internalId() == _GROUP_ID:
             return None
-        group_row = int(index.internalId()) - 1
-        if not 0 <= group_row < len(self._groups):
+        measurement_id = self._ids.get(int(index.internalId()))
+        if measurement_id is None or self._position(measurement_id) is None:
             return None
-        ids = self._groups[group_row].ids
-        if not 0 <= index.row() < len(ids):
-            return None
-        return self._document.get(ids[index.row()])
+        return self._document.get(measurement_id)
 
     def index_for(self, measurement_id: str, column: int = COLUMN_NAME) -> QModelIndex:
         """The row of a measurement; an invalid index when it is not listed."""
         position = self._position(measurement_id)
         if position is None:
             return QModelIndex()
-        group_row, row = position
-        return self.createIndex(row, column, group_row + 1)
+        _group_row, row = position
+        return self.createIndex(row, column, self._key(measurement_id))
+
+    def _key(self, measurement_id: str) -> int:
+        """The measurement's ``internalId``, given once and kept."""
+        key = self._keys.get(measurement_id)
+        if key is None:
+            key = self._next_key
+            self._next_key += 1
+            self._keys[measurement_id] = key
+            self._ids[key] = measurement_id
+        return key
 
     def group_index(self, label: str) -> QModelIndex:
         for row, group in enumerate(self._groups):
@@ -186,12 +198,16 @@ class MeasurementListModel(QAbstractItemModel):
         assert parent is not None
         if parent.internalId() != _GROUP_ID or row >= self.rowCount(parent):
             return QModelIndex()
-        return self.createIndex(row, column, parent.row() + 1)
+        return self.createIndex(row, column, self._key(self._groups[parent.row()].ids[row]))
 
     def parent(self, child: _Index | None = None) -> QModelIndex:  # type: ignore[override]
         if child is None or not child.isValid() or child.internalId() == _GROUP_ID:
             return QModelIndex()
-        return self.createIndex(int(child.internalId()) - 1, COLUMN_NAME, _GROUP_ID)
+        measurement_id = self._ids.get(int(child.internalId()))
+        position = self._position(measurement_id) if measurement_id is not None else None
+        if position is None:
+            return QModelIndex()
+        return self.createIndex(position[0], COLUMN_NAME, _GROUP_ID)
 
     def hasChildren(self, parent: _Index | None = None) -> bool:  # noqa: N802 - Qt override
         return self.rowCount(parent) > 0
@@ -337,8 +353,10 @@ class MeasurementListModel(QAbstractItemModel):
             group_index = self.createIndex(group_row, COLUMN_NAME, _GROUP_ID)
             self.dataChanged.emit(group_index, group_index)
             if group.ids:
-                first = self.createIndex(0, COLUMN_NAME, group_row + 1)
-                last = self.createIndex(len(group.ids) - 1, COLUMN_COUNT - 1, group_row + 1)
+                first = self.createIndex(0, COLUMN_NAME, self._key(group.ids[0]))
+                last = self.createIndex(
+                    len(group.ids) - 1, COLUMN_COUNT - 1, self._key(group.ids[-1])
+                )
                 self.dataChanged.emit(first, last)
 
     def _emit_row_changed(
@@ -347,9 +365,10 @@ class MeasurementListModel(QAbstractItemModel):
         position = self._position(measurement_id)
         if position is None:
             return
-        group_row, row = position
-        first = self.createIndex(row, first_column, group_row + 1)
-        last = self.createIndex(row, last_column, group_row + 1)
+        _group_row, row = position
+        key = self._key(measurement_id)
+        first = self.createIndex(row, first_column, key)
+        last = self.createIndex(row, last_column, key)
         self.dataChanged.emit(first, last)
 
     def _emit_group_changed(self, group_row: int) -> None:
@@ -457,7 +476,7 @@ class MeasurementListModel(QAbstractItemModel):
         if position is None:
             return
         group_row, row = position
-        index = self.createIndex(row, COLUMN_NAME, group_row + 1)
+        index = self.createIndex(row, COLUMN_NAME, self._key(measurement_id))
         self.dataChanged.emit(index, index, [Qt.ItemDataRole.CheckStateRole])
         self._emit_group_changed(group_row)
 

@@ -155,7 +155,6 @@ class WorkspaceDocument(QObject):
         self._baseline: str | None = None
         self._project: Path | None = None
         self._project_name: str = ""
-        self._next_colour = 0
 
     # --- the list -------------------------------------------------------------------
 
@@ -182,14 +181,22 @@ class WorkspaceDocument(QObject):
             None,
         )
 
+    def at_path(self, path: Path) -> list[Measurement]:
+        """Every measurement opened from or saved to ``path``, in list order."""
+        wanted = _canonical(path)
+        return [
+            m for m in self._measurements if m.path is not None and _canonical(m.path) == wanted
+        ]
+
     def add(self, measurement: Measurement, *, select: bool = True, visible: bool = True) -> str:
-        """Add ``measurement``; it gets the next free colour and, by default,
+        """Add ``measurement``; it gets the lowest colour no open measurement
+        uses (a closed measurement's colour is free again) and, by default,
         becomes the selected one and is drawn. The others stay as they are."""
         used = {m.colour_index for m in self._measurements}
-        while self._next_colour in used:
-            self._next_colour += 1
-        measurement.colour_index = self._next_colour
-        self._next_colour += 1
+        colour_index = 0
+        while colour_index in used:
+            colour_index += 1
+        measurement.colour_index = colour_index
         self._measurements.append(measurement)
         if visible:
             self._visible.add(measurement.id)

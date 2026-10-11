@@ -473,14 +473,26 @@ def test_the_layout_works_at_the_minimum_size_and_resets(
 
 
 def test_a_result_after_the_window_closed_is_dropped(
-    app: QApplication, fake_backend: None, held_take: threading.Event, short_sweep: SweepSettings
+    app: QApplication,
+    fake_backend: None,
+    held_take: threading.Event,
+    short_sweep: SweepSettings,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from reverbscope.ui.controller import WorkspaceController
+
+    asked: list[int] = []
+    monkeypatch.setattr(
+        WorkspaceController, "ask_to_stop_running", lambda self: asked.append(1) or True
+    )
     window = WorkbenchWindow()
     window.show()
     assert window.measurements.start_take(_take_request(window, short_sweep))
     _settle(app, rounds=3)
-    # Closing stops the take and waits for the thread: no abort, no dialog.
+    # Closing asks about the running take, stops it and waits for the
+    # thread: no abort, no other dialog.
     window.close()
+    assert asked == [1]
     _settle(app, window.measurements.take_worker)
     assert len(window.document) == 0
     assert not window.isVisible()
@@ -522,4 +534,55 @@ def test_a_synthetic_session_keeps_its_marker(
     window.set_inspector_visible(True)
     _settle(app)
     assert "synthetic" in window.inspector.header_text().lower()
+    window.close()
+
+
+# --- 8. projects and saving beside open measurements ----------------------------------
+
+
+def test_a_session_opened_beside_a_project_is_not_a_member(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """Only the sessions a project lists belong to it: one opened with Open
+    Session while the project is open stays outside its overview."""
+    from reverbscope.io.project_store import add_session, save_project
+    from reverbscope.models.project import Project
+
+    room = tmp_path / "room"
+    listed = _saved(room, short_sweep, "A-1")
+    save_project(room, Project(name="Room"))
+    add_session(room, listed, position="A")
+    foreign = _saved(tmp_path / "other", short_sweep, "hall", rt60_s=0.5)
+    window = WorkbenchWindow()
+    window.show()
+    assert window.controller.open_project(room)
+    member = window.document.find_by_path(listed)
+    assert member is not None and member.project == room
+    outside = window.controller.open_session(foreign)
+    assert outside is not None and outside.project is None
+    overview = window.controller.project_overview("generic")
+    assert overview is not None
+    assert [p.label for p in overview.positions] == ["A"]
+    assert window.controller.position_labels() == ["A"]
+    window.close()
+
+
+def test_saving_over_the_folder_of_an_open_session_closes_the_stale_copy(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings
+) -> None:
+    """After a take is saved into a folder another open measurement came
+    from, the folder has one owner: the stale in-memory copy is closed."""
+    folder = _saved(tmp_path, short_sweep, "A")
+    window = WorkbenchWindow()
+    window.show()
+    stale = window.controller.open_session(folder)
+    assert stale is not None
+    fresh_id = window.document.add(_measurement(short_sweep, position="A", rt60_s=0.5))
+    assert window.controller.save_to(fresh_id, folder)
+    assert window.document.get(stale.id) is None
+    fresh = window.document.get(fresh_id)
+    assert fresh is not None and fresh.path == folder and not fresh.unsaved
+    assert window.document.find_by_path(folder) is fresh
+    assert window.controller.open_session(folder) is fresh
+    assert window.document.selected_id() == fresh_id
     window.close()

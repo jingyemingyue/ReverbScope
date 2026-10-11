@@ -7345,3 +7345,12 @@ msgstr "保存会话"
 
 msgid "{n} measurement(s) open."
 msgstr "已打开 {n} 条测量。"
+
+msgid "Measurement running"
+msgstr "测量进行中"
+
+msgid "A take is playing or being analyzed: its recording exists only in memory and is lost if you close now."
+msgstr "正在播放测试信号或分析录音：其录音仅存在于内存中，现在关闭将丢失。"
+
+msgid "Stop and Close"
+msgstr "停止并关闭"

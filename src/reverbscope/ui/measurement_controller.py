@@ -10,7 +10,9 @@ time; the status bar shows its real progress (the take) or a busy bar
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
+from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtWidgets import QWidget
@@ -22,6 +24,9 @@ from reverbscope.models.result import AnalysisResult
 from reverbscope.ui.document import Measurement, WorkspaceDocument
 from reverbscope.ui.measure_dialog import AnalysisRequest, TakeRequest
 from reverbscope.ui.measure_flow import AnalysisRun, TakeRun, late_result_text, safe_findings
+from reverbscope.ui.workers import unexpected_error_text
+
+log = logging.getLogger(__name__)
 
 
 @dataclass
@@ -32,6 +37,9 @@ class Job:
     take: TakeRequest | None = None
     analysis: AnalysisRequest | None = None
     recording: AudioSignal | None = None
+    #: The project open when the job started: the measurement is filed under
+    #: it, whatever project is open when the result arrives.
+    project: Path | None = None
 
     @property
     def kind(self) -> str:
@@ -103,7 +111,7 @@ class MeasurementController(QObject):
     def start_take(self, request: TakeRequest) -> bool:
         if self.is_busy():
             return False
-        job = Job(self._next_job, take=request)
+        job = Job(self._next_job, take=request, project=self.document.project)
         self._next_job += 1
         self._job = job
         self.status_changed.emit(True, _("Playing the sweep and recording..."), 0.0, True)
@@ -125,7 +133,7 @@ class MeasurementController(QObject):
     def start_analysis(self, request: AnalysisRequest, *, blocking: bool = False) -> bool:
         if self.is_busy():
             return False
-        job = Job(self._next_job, analysis=request)
+        job = Job(self._next_job, analysis=request, project=self.document.project)
         self._next_job += 1
         self._job = job
         self.status_changed.emit(True, _("Analyzing..."), None, False)
@@ -181,7 +189,17 @@ class MeasurementController(QObject):
         job = self._job
         assert job is not None
         self._job = None
-        measurement = self._measurement_for(job, result)
+        try:
+            measurement = self._measurement_for(job, result)
+        except Exception:
+            # The worker is done: the window must not stay busy without a job.
+            log.exception("The measurement could not be built from the result")
+            message = unexpected_error_text()
+            self.status_changed.emit(
+                False, _("Analysis failed: {message}").format(message=message), None, False
+            )
+            self.failed.emit(message)
+            return
         self.status_changed.emit(False, _("Done."), None, False)
         self.document.add(measurement)
         self.measurement_ready.emit(measurement.id)
@@ -201,7 +219,7 @@ class MeasurementController(QObject):
                 recording=job.recording,
                 reference=request.reference,
                 unsaved_take=not request.synthetic,
-                project=self.document.project,
+                project=job.project,
             )
         assert job.analysis is not None
         request_a = job.analysis
@@ -214,7 +232,7 @@ class MeasurementController(QObject):
             profile=request_a.profile,
             recording_path=request_a.recording_path,
             reference=request_a.reference,
-            project=self.document.project,
+            project=job.project,
         )
 
     def _on_failure(self, message: str, job_number: int) -> None:
