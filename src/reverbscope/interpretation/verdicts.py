@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
-from reverbscope.i18n import _, current_locale, localize, pgettext
+from reverbscope.i18n import _, current_locale, list_join, localize, pgettext
 from reverbscope.interpretation.profiles import decay_length_text, get_profile
 from reverbscope.models.comparison import T_JND_PERCENT, ComparisonResult, MetricDelta
 from reverbscope.models.result import AnalysisResult, Validity
@@ -105,6 +105,12 @@ class ComparisonVerdict:
     #: the interface language.
     conditions: tuple[str, ...] = ()
     locale: str = "en"
+    #: The metric groups (``health.METRIC_*``) that the measurement health of
+    #: either side puts in doubt: all of them when a side is invalid. For the
+    #: overview of a report, so that a topic whose numbers are in doubt is not
+    #: ticked as compared. Empty when the results were not at hand; not part
+    #: of the JSON.
+    in_doubt: tuple[str, ...] = ()
 
     def count(self, verdict: Verdict) -> int:
         return sum(1 for aspect in self.aspects if aspect.verdict is verdict)
@@ -190,6 +196,7 @@ def judge_comparison(
     conditions = _shared_conditions(comparison)
     invalid = _invalid_sides(baseline, candidate, conditions)
     conditions.append(_single_pair_caveat())
+    in_doubt = _groups_in_doubt(baseline, candidate)
     if not comparison.comparable:
         reason = _("the two sessions cannot be compared: {note}").format(
             note=localize(_refusal(comparison))
@@ -198,7 +205,9 @@ def judge_comparison(
             AspectVerdict(aspect, Verdict.NOT_COMPARABLE, aspect_text(aspect), reason)
             for aspect in _aspects_of(profile)
         )
-        return ComparisonVerdict(profile_name, refused, tuple(conditions), current_locale())
+        return ComparisonVerdict(
+            profile_name, refused, tuple(conditions), current_locale(), in_doubt
+        )
     aspects: list[AspectVerdict | None] = [
         _reverberation(comparison, profile),
         _clarity(comparison, profile),
@@ -221,7 +230,9 @@ def judge_comparison(
                 aspect.evidence,
             )
         judged.append(aspect)
-    return ComparisonVerdict(profile_name, tuple(judged), tuple(conditions), current_locale())
+    return ComparisonVerdict(
+        profile_name, tuple(judged), tuple(conditions), current_locale(), in_doubt
+    )
 
 
 # --- conditions ----------------------------------------------------------------------
@@ -267,7 +278,7 @@ def _invalid_sides(
         report = assess(result)
         if report.overall is HealthStatus.GOOD:
             continue
-        titles = ", ".join(check.title for check in report.problems) or report.overall
+        titles = list_join(check.title for check in report.problems) or report.overall
         if report.overall is HealthStatus.INVALID:
             invalid.append((side, titles))
             conditions.append(
@@ -287,6 +298,24 @@ def _invalid_sides(
                 )
             )
     return invalid
+
+
+def _groups_in_doubt(
+    baseline: AnalysisResult | None, candidate: AnalysisResult | None
+) -> tuple[str, ...]:
+    """The metric groups that a check other than *good* bears on, on either
+    side; every group when a side is invalid (no verdict is drawn from it)."""
+    from reverbscope.health import METRIC_GROUPS, HealthStatus, assess
+
+    doubtful: set[str] = set()
+    for result in (baseline, candidate):
+        if result is None:
+            continue
+        report = assess(result)
+        if report.overall is HealthStatus.INVALID:
+            return tuple(METRIC_GROUPS)
+        doubtful.update(report.affected)
+    return tuple(group for group in METRIC_GROUPS if group in doubtful)
 
 
 def _aspects_of(profile: object) -> list[str]:
@@ -688,14 +717,14 @@ def _low_end(comparison: ComparisonResult) -> AspectVerdict:
             "{count} distinguishable low-frequency resonance(s) appeared at {frequencies} Hz"
         ).format(
             count=len(appeared),
-            frequencies=", ".join(f"{hz:.0f}" for hz in appeared if hz is not None),
+            frequencies=list_join(f"{hz:.0f}" for hz in appeared if hz is not None),
         )
         return AspectVerdict(aspect, Verdict.DEGRADATION, title, reason, evidence)
     if gone and not appeared:
         reason = _(
             "{count} distinguishable low-frequency resonance(s) disappeared ({frequencies} Hz)"
         ).format(
-            count=len(gone), frequencies=", ".join(f"{hz:.0f}" for hz in gone if hz is not None)
+            count=len(gone), frequencies=list_join(f"{hz:.0f}" for hz in gone if hz is not None)
         )
         return AspectVerdict(aspect, Verdict.IMPROVEMENT, title, reason, evidence)
     if appeared and gone:

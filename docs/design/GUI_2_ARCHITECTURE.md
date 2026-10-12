@@ -154,7 +154,12 @@ or visibility any more reliable.
   token; a result that arrives for an older generation is dropped.
 * **Cache**: `cache_get(key, name)` / `cache_put(key, name, value)` keep
   display data per entry (decimated curves, spectrograms). An entry's cache
-  is dropped when it is reloaded or removed.
+  is dropped when it is reloaded or removed, and it moves with the entry
+  when a take is saved under a folder key. The cache is bounded
+  (`DISPLAY_CACHE_BUDGET`, 8 MB). A default spectrogram of a short sweep is
+  about 1.9 MB and a default waterfall about 115 KB, so older pictures are
+  dropped as parameters are changed. The stored measurements are not in
+  this cache.
 
 Signals: `entries_changed`, `entry_updated(key)`, `current_changed(key)`,
 `overlay_changed`, `baseline_changed`, `reflection_changed(key, index)`,
@@ -261,6 +266,12 @@ recording, on a frequency grid anchored at 1 kHz (`1000 · 2^(k/n)` for
   transform raises `TransformCancelledError`. The views run the transforms
   in a `QThread` with a generation token and pass
   `cancelled=thread.isInterruptionRequested`.
+* The spectrogram and the waterfall also follow `overlay_changed`. Hiding
+  the current measurement clears the picture at once. A worker that finishes
+  afterwards may keep its result in the display cache when the impulse
+  response it read is still that entry's result. It draws only when the
+  generation, the measurement, the source result, the parameters and the
+  visibility still match. "Cached" and "allowed to draw" are separate.
 * A single decaying mode of known T60 is used as a physical check in the
   tests: the waterfall's level at the mode frequency falls at 60 / T60 dB/s.
 
@@ -360,6 +371,14 @@ one and reports each check in the inspector.
 worker thread with a size limit, a vertex limit, cancellation and voxel
 thinning for display. The import dialog asks for the units, the up axis,
 the yaw and the alignment; the choice is stored with the file's SHA-256.
+
+**What is on at first.** Entered geometry and the measured layer are on.
+Predicted paths (the geometric assumption) are off until that layer is
+ticked. **All constraints** is off: the selected reflection is a short
+ellipsoid, and other predicted paths are not drawn. Turning it on draws the
+direct-distance sphere, the full ellipsoid and every predicted path, still
+dotted and labelled as an assumption. **Restore default view** puts the
+layers and the camera back. The choice is saved in `ui.ini`.
 
 **Rendering.** `ui/room/` draws with `QPainter` only: an orbit camera
 (rotate, pan, zoom about the cursor, fit, reset), an axis triad labelled

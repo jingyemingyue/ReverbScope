@@ -44,6 +44,7 @@ DYNAMIC_CALLS = {
     ("i18n.py", "_(template)"),
     ("interpretation/interpreter.py", "_(template)"),
     ("cli/main.py", "_(SAFETY_MESSAGE)"),
+    ("cli/render.py", "_(SAFETY_MESSAGE)"),
     # argparse's own texts, each extracted with N_() in ARGPARSE_MESSAGES.
     ("cli/main.py", "_(message)"),
     # Root-help command groups (COMMAND_GROUPS) and session modes
@@ -201,7 +202,7 @@ def test_safety_warning_and_level_refusal_are_translated() -> None:
 
     activate("zh_CN")
     try:
-        assert _(SAFETY_MESSAGE).startswith("先把监听")
+        assert _(SAFETY_MESSAGE).startswith("请先调低监听")
         refusal = _(
             "Level {level:g} dBFS is above {max_level:g} dBFS. "
             "Set the monitor level low first and pass --acknowledge-level to confirm."

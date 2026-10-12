@@ -85,6 +85,25 @@ def read_alias(key: str) -> str:
     return read_text(_alias_key(key))
 
 
+def read_room_layers(default: str) -> str:
+    """Comma-separated layer ids, ``-`` when the user turned them all off, or
+    ``default`` when nothing has been saved."""
+    return read_text("room/layers", default)
+
+
+def write_room_layers(value: str) -> None:
+    write("room/layers", value)
+
+
+def read_room_constraints_full(default: bool = False) -> bool:
+    stored = read_text("room/constraints", "1" if default else "0")
+    return stored == "1"
+
+
+def write_room_constraints_full(full: bool) -> None:
+    write("room/constraints", "1" if full else "0")
+
+
 def write_alias(key: str, alias: str) -> None:
     """Remember a display name. Empty clears it. The session file is not touched."""
     write(_alias_key(key), alias)

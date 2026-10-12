@@ -6,6 +6,7 @@ import gc
 import sys
 from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
@@ -19,6 +20,9 @@ __all__ = ["make_rir"]
 from reverbscope.models.audio import FloatArray
 from reverbscope.models.configuration import SweepSettings
 from reverbscope.models.result import AnalysisResult
+
+if TYPE_CHECKING:
+    from tests.terminals import Workspace
 
 
 @pytest.fixture(autouse=True)
@@ -137,6 +141,15 @@ def pin_language(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     activate("en")
     yield
     activate("en")
+
+
+@pytest.fixture(scope="session")
+def cli_workspace(tmp_path_factory: pytest.TempPathFactory) -> Workspace:
+    """A demo (two sessions and their comparison) and a project made of them,
+    built once: the screens the colour and narrow-terminal tests read."""
+    from tests.terminals import build_workspace
+
+    return build_workspace(tmp_path_factory.mktemp("cli_workspace"))
 
 
 DECAY_CONSTANT = 3.0 * np.log(10.0) * 2.0  # 60 dB in natural-log units: ln(10^6) = 13.8155

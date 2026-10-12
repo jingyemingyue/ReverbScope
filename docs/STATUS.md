@@ -6,6 +6,36 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 39: 2026-10-12 — **the workstation line fixes time-frequency
+state, bounds the display cache, simplifies the room picture, and takes
+the command-line hardening from #54 without a second GUI** (branch
+`grok/gui2-professional-polish`, PR #57; nothing merged, tagged or
+published; `release/0.5.0` untouched).
+
+* **Time-frequency views.** Hiding the current measurement clears the
+  spectrogram and the waterfall immediately. A worker that finishes after
+  the measurement was hidden, removed, switched or given parameters the
+  view rejects does not draw and does not replace the status. The result
+  may stay in the display cache when it still belongs to that impulse
+  response. Tests release the worker with events, in a chosen order.
+* **Display cache.** 8 MB. Measured here on a 0.5 s synthetic sweep: default
+  spectrogram 1,975,784 bytes (503×491 float64), default waterfall 117,840
+  bytes (30×491). Reloading a session drops that entry's cache; saving a
+  take moves the cache to the folder key; removing the measurement drops it.
+* **Room.** Default layers are entered geometry and the measured layer.
+  Geometric assumption and All constraints start off. Restore default view
+  is saved in `ui.ini`. Fit leaves margin for the front mark and dimensions.
+* **PR #54's command line** (menu, terminal layout, 基准/对比项) is on this
+  branch. PR #56 is already contained here and is the GUI this branch
+  continues. PR #55 is a different window and is not merged. No PR was closed.
+* **What was run** (Linux container, Python 3.12, PySide6 6.11 offscreen, no
+  audio device): ruff, ruff format, mypy, the full pytest suite, and an
+  offscreen Chinese screenshot pass. A `reverbscope` help check with PySide6
+  hidden is recorded in the pull request when it was run. **Not run:** a
+  macOS window server, Retina, file dialogs, or a sweep through a real
+  interface. A macOS Apple Silicon bundle from GitHub Actions, when the
+  Release workflow uploads it, is a build of this commit, not a GUI pass.
+
 Snapshot 38: 2026-10-07 — **the post-RC line takes in the parallel audits,
 corrects the merged decay rules, fixes what three audits reproduced, and
 gets a maintainer's runbook** (branch `integration/post-rc-development`,

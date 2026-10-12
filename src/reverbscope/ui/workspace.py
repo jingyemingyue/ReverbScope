@@ -27,6 +27,31 @@ from reverbscope.models.session import MeasurementSession
 
 log = logging.getLogger(__name__)
 
+#: Regenerated pictures (curves, spectrograms, waterfalls). Measured on a
+#: 0.5 s synthetic sweep: a default spectrogram is about 1.9 MB (503×491
+#: float64) and a default waterfall about 115 KB, so 8 MB keeps the newest few
+#: pictures. Parameter sweeps evict the oldest. The measurements themselves
+#: are not stored here.
+DISPLAY_CACHE_BUDGET = 8 * 1024 * 1024
+
+
+def _display_nbytes(value: object, depth: int = 0) -> int:
+    """Bytes of array storage inside a display-cache value."""
+    if depth > 4:
+        return 0
+    nbytes = getattr(value, "nbytes", None)
+    if isinstance(nbytes, int) and not isinstance(value, str | bytes):
+        return nbytes
+    if isinstance(value, tuple | list):
+        return sum(_display_nbytes(item, depth + 1) for item in value)
+    total = 0
+    for name in ("levels_db", "times_ms", "freqs_hz"):
+        child = getattr(value, name, None)
+        if child is not None:
+            total += _display_nbytes(child, depth + 1)
+    return total
+
+
 #: One colour per entry, kept for the entry's life: Okabe–Ito-like hues that
 #: stay apart for colour-blind readers and readable on light and dark charts.
 ENTRY_COLORS = (
@@ -284,6 +309,8 @@ class WorkspaceModel(QObject):
         self._baseline: str = ""
         self._reflection: tuple[str, int] = ("", -1)
         self._cache: dict[str, dict[Any, Any]] = {}
+        #: ``(entry key, cache name)`` oldest first. Display data only.
+        self._cache_lru: list[tuple[str, Any]] = []
         self._colors: dict[str, int] = {}
         self._takes = 0
         self.project_path: Path | None = None
@@ -391,6 +418,7 @@ class WorkspaceModel(QObject):
             entry.alias = ui_state.read_alias(entry.key)
         self._entries[entry.key] = entry
         self._cache.pop(entry.key, None)
+        self._cache_lru = [item for item in self._cache_lru if item[0] != entry.key]
         # The selected reflection indexed the old result's list.
         if (
             replaced is not None
@@ -539,6 +567,10 @@ class WorkspaceModel(QObject):
             self._reflection = (new_key, self._reflection[1])
         if key in self._cache:
             self._cache[new_key] = self._cache.pop(key)
+            self._cache_lru = [
+                (new_key if item_key == key else item_key, name)
+                for item_key, name in self._cache_lru
+            ]
         self.entries_changed.emit()
         self.current_changed.emit(self._current)
         return new_key
@@ -551,6 +583,7 @@ class WorkspaceModel(QObject):
     def _drop(self, key: str, *, notify: bool = True, keep_color: bool = False) -> None:
         self._entries.pop(key, None)
         self._cache.pop(key, None)
+        self._cache_lru = [item for item in self._cache_lru if item[0] != key]
         if not keep_color:
             self._colors.pop(key, None)
         changed_overlay = key in self._overlay
@@ -576,6 +609,7 @@ class WorkspaceModel(QObject):
         self.generation += 1
         self._entries.clear()
         self._cache.clear()
+        self._cache_lru.clear()
         self._colors.clear()
         self._overlay.clear()
         self._baseline = ""
@@ -638,11 +672,47 @@ class WorkspaceModel(QObject):
     # --- cache -----------------------------------------------------------------
 
     def cache_get(self, key: str, name: Any) -> Any:
-        return self._cache.get(key, {}).get(name)
+        value = self._cache.get(key, {}).get(name)
+        if value is not None:
+            item = (key, name)
+            if item in self._cache_lru:
+                self._cache_lru.remove(item)
+                self._cache_lru.append(item)
+        return value
 
     def cache_put(self, key: str, name: Any, value: Any) -> None:
-        if key in self._entries:
-            self._cache.setdefault(key, {})[name] = value
+        if key not in self._entries:
+            return
+        self._cache.setdefault(key, {})[name] = value
+        item = (key, name)
+        if item in self._cache_lru:
+            self._cache_lru.remove(item)
+        self._cache_lru.append(item)
+        self._trim_display_cache()
+
+    def display_cache_bytes(self) -> int:
+        """Bytes of array data in the display cache. Measurements are not included."""
+        total = 0
+        for bucket in self._cache.values():
+            for value in bucket.values():
+                total += _display_nbytes(value)
+        return total
+
+    def _trim_display_cache(self) -> None:
+        """Drop the oldest display values until the cache fits, keeping the newest.
+
+        A single result larger than the budget stays: the view that just built
+        it still needs it, and it can be built again. Raw measurements are not
+        in this cache.
+        """
+        while len(self._cache_lru) > 1 and self.display_cache_bytes() > DISPLAY_CACHE_BUDGET:
+            old_key, old_name = self._cache_lru.pop(0)
+            bucket = self._cache.get(old_key)
+            if bucket is None or old_name not in bucket:
+                continue
+            del bucket[old_name]
+            if not bucket:
+                self._cache.pop(old_key, None)
 
     # --- projects --------------------------------------------------------------
 

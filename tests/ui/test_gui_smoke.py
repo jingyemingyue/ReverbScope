@@ -399,9 +399,9 @@ def test_compare_tabs_say_when_a_topic_was_not_compared(
 
     activate("zh_CN")
     show(full, take(None))
-    assert page.resonances_note.text() == "未比较低频共振：没有双方都搜索过的频率范围"
+    assert page.resonances_note.text() == "未对比低频共振：没有双方都搜索过的频率范围"
     show(unsure, room)
-    assert page.reflections_note.text().startswith("只有两侧的直达声置信度都为高时才比较早期反射")
+    assert page.reflections_note.text().startswith("只有两侧的直达声置信度都为高时才对比早期反射")
 
 
 def test_standalone_shows_requested_and_device_rate(app: QApplication) -> None:

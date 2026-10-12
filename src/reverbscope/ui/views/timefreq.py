@@ -50,8 +50,10 @@ log = logging.getLogger(__name__)
 class TransformWorker(QThread):
     """Runs one time-frequency transform; ``cancelled`` is the thread's interruption flag."""
 
-    succeeded = Signal(int, str, object, object)
-    failed = Signal(int, str)
+    #: generation, key, params, the result object the samples came from, levels.
+    succeeded = Signal(int, str, object, object, object)
+    #: generation, key, params, message. A late failure must not replace a newer state.
+    failed = Signal(int, str, object, str)
 
     def __init__(
         self,
@@ -67,6 +69,8 @@ class TransformWorker(QThread):
         self.generation = generation
         self.key = key
         self.params = params
+        #: The analysis result whose impulse response is being transformed.
+        self.source: object = None
         self._function = function
         self._args = (samples, sample_rate, direct_index)
 
@@ -78,16 +82,16 @@ class TransformWorker(QThread):
         except TransformCancelledError:
             return
         except DisplayDataError as exc:
-            self.failed.emit(self.generation, exc.text())
+            self.failed.emit(self.generation, self.key, self.params, exc.text())
         except MemoryError:
             from reverbscope.ui.workers import out_of_memory_text
 
-            self.failed.emit(self.generation, out_of_memory_text())
+            self.failed.emit(self.generation, self.key, self.params, out_of_memory_text())
         except Exception:
             log.exception("time-frequency transform failed unexpectedly")
-            self.failed.emit(self.generation, unexpected_error_text())
+            self.failed.emit(self.generation, self.key, self.params, unexpected_error_text())
         else:
-            self.succeeded.emit(self.generation, self.key, self.params, result)
+            self.succeeded.emit(self.generation, self.key, self.params, self.source, result)
 
 
 def note_lines(result: TimeFrequencyResult) -> list[str]:
@@ -132,7 +136,7 @@ class _TimeFrequencyView(AnalysisView):
         self.notes = QLabel("")
         self.notes.setProperty("role", "hint")
         self.notes.setWordWrap(True)
-        for signal in (model.current_changed, model.entries_changed):
+        for signal in (model.current_changed, model.entries_changed, model.overlay_changed):
             signal.connect(self.refresh)
 
     def _spin(
@@ -160,15 +164,44 @@ class _TimeFrequencyView(AnalysisView):
     def clear_chart(self) -> None:
         raise NotImplementedError
 
+    def _stop_showing(self) -> None:
+        """The picture on screen is no longer the computation in flight.
+
+        The generation moves on so a late callback is not this view's current
+        request. The callback may still cache that result for its own parameters.
+        """
+        self._cancel_running()
+        self._generation += 1
+        self.result = None
+
+    def _drawable(self, key: str, params: object, source: object) -> bool:
+        """Whether ``key`` at ``params`` from ``source`` may be drawn now.
+
+        A cached result can stay valid after this returns false: hiding the
+        measurement, picking another one, or typing parameters the view rejects
+        does not make the finished transform wrong for the parameters it used.
+        """
+        entry = self.model.current()
+        if entry is None or entry.key != key or entry.result is not source:
+            return False
+        if not self.model.is_visible(key):
+            return False
+        try:
+            return self.params() == params
+        except DisplayDataError:
+            return False
+
     def redraw(self) -> None:
         entry = self.model.current()
         self.result = None
         if entry is None or entry.result is None:
+            self._stop_showing()
             self.clear_chart()
             self.status.setText(_("Choose a measurement in the list."))
             self.notes.setText("")
             return
         if not self.model.is_visible(entry.key):
+            self._stop_showing()
             self.clear_chart()
             self.status.setText(_("This measurement is hidden. Tick it in the list to draw it."))
             self.notes.setText("")
@@ -176,11 +209,14 @@ class _TimeFrequencyView(AnalysisView):
         try:
             params = self.params()
         except DisplayDataError as exc:
+            self._stop_showing()
             self.clear_chart()
             self.status.setText(exc.text())
+            self.notes.setText("")
             return
         cached = self.model.cache_get(entry.key, (self.kind, params))
         if isinstance(cached, TimeFrequencyResult):
+            self._cancel_running()
             self._show(entry, cached)
             return
         self._start(entry, params)
@@ -205,6 +241,7 @@ class _TimeFrequencyView(AnalysisView):
             ir.sample_rate,
             ir.direct_sound_index,
         )
+        worker.source = entry.result
         worker.succeeded.connect(self._on_done)
         worker.failed.connect(self._on_failed)
         worker.finished.connect(self._on_finished)
@@ -218,19 +255,26 @@ class _TimeFrequencyView(AnalysisView):
             self._old_workers.append(self._worker)
         self._worker = None
 
-    def _on_done(self, generation: int, key: str, params: object, result: object) -> None:
-        if generation != self._generation or not isinstance(result, TimeFrequencyResult):
+    def _on_done(
+        self, generation: int, key: str, params: object, source: object, result: object
+    ) -> None:
+        if not isinstance(result, TimeFrequencyResult):
             return
-        source = self.model.entry(key)
-        if source is None or source.result is not self._source:
+        entry = self.model.entry(key)
+        # The samples belonged to a result that has since been replaced or removed.
+        if entry is None or entry.result is not source:
             return
         self.model.cache_put(key, (self.kind, params), result)
-        entry = self.model.current()
-        if entry is not None and entry.key == key:
-            self._show(entry, result)
+        if generation != self._generation or not self._drawable(key, params, source):
+            return
+        self._show(entry, result)
 
-    def _on_failed(self, generation: int, message: str) -> None:
+    def _on_failed(self, generation: int, key: str, params: object, message: str) -> None:
         if generation != self._generation:
+            return
+        entry = self.model.entry(key)
+        source = entry.result if entry is not None else None
+        if not self._drawable(key, params, source):
             return
         self.clear_chart()
         self.status.setText(message)

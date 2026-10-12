@@ -212,6 +212,43 @@ Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The interface and the
 text report show them in the interface language.
 
+The text report (``reverbscope show --style boxed``) prints an overview, then
+one card per finding. A missing file is an error panel, and a take in progress
+is one line:
+
+```text
+  ┌────────────────────┬───────────┬───────────────────────────────────────────┐
+  │ Topic              │ Status    │ Result                                    │
+  ├────────────────────┼───────────┼───────────────────────────────────────────┤
+  │ Reverberation      │ ! notice  │ RT60 0.70 s (T30) · EDT 0.45 s            │
+  │ Clarity            │ ✓ good    │ C50 +9.8 dB · C80 +12.9 dB · D50 91 %     │
+  │ Early reflections  │ ! notice  │ strongest -3.1 dB at 2.4 ms · 2 above     │
+  │                    │           │ -20 dB                                    │
+  │ Low end            │ ! notice  │ potential resonances at 110 Hz (+11.3 dB) │
+  │ Noise floor        │ ! warning │ -69.2 dBFS RMS · mains hum at 50 Hz       │
+  │ Data quality       │ ✓ good    │ direct sound: confidence high · no        │
+  │                    │           │ warnings                                  │
+  └────────────────────┴───────────┴───────────────────────────────────────────┘
+```
+
+```text
+╭─ ! Warning · noise ──────────────────────────────────────────────────────────╮
+│ Mains hum components at multiples of 50 Hz were detected in the quiet part   │
+│ of the recording. Check grounding, cables, dimmers and power supplies before │
+│ treating the room.                                                           │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
+```text
+╭─ ✗ Error ────────────────────────────────────────────────────────────────────╮
+│ session file not found: take-1                                               │
+╰──────────────────────────────────────────────────────────────────────────────╯
+```
+
+```text
+  Playing the sweep and recording  ━━━━━━━━━╸─────────────   42%  00:03 / 00:09
+```
+
 ### The workstation
 
 The desktop app is one window. On the left, the **navigator** lists the open
@@ -285,7 +322,11 @@ Low-frequency resonance candidates are listed in the Full report (and in
 The Room view draws the room box you enter (length, width, height in
 metres; x length, y width, z up), the loudspeaker and a microphone for each
 position. Start from the example room, or import a PLY or OBJ scan (drawn
-as entered geometry; nothing is measured from it). **Plan view**, **Front**
+as entered geometry; nothing is measured from it). The picture starts with the room you entered, the loudspeaker, the current
+microphone and the selected reflection. **Geometric assumption** and **All
+constraints** are off until you turn them on; a predicted path is not a wall
+the measurement found. **Restore default view** returns to that picture.
+**Plan view**, **Front**
 and **Side** are predictable cameras; **Reset view** returns to the default
 angle. The picture names which one is active. Orbiting leaves that name.
 The axes read as length (x), width (y) and up (z), the entered floor is

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 
 from reverbscope.errors import ConfigurationError
-from reverbscope.i18n import _
+from reverbscope.i18n import _, quoted
 from reverbscope.interpretation.profiles import (
     AcousticGuitarProfile,
     ChoirProfile,
@@ -103,6 +103,6 @@ def get_profile(name: str) -> RecordingProfile:
     except KeyError as exc:
         raise ConfigurationError(
             _("unknown recording profile {name}; available: {available}").format(
-                name=repr(name), available=available_profiles()
+                name=quoted(name), available=available_profiles()
             )
         ) from exc

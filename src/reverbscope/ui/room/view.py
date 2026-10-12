@@ -79,6 +79,12 @@ from reverbscope.ui.room.canvas import (
     RoomCanvas,
     RoomScene,
 )
+from reverbscope.ui.ui_state import (
+    read_room_constraints_full,
+    read_room_layers,
+    write_room_constraints_full,
+    write_room_layers,
+)
 from reverbscope.ui.views.base import AnalysisView
 from reverbscope.ui.widgets import label, set_banner_text
 from reverbscope.ui.workspace import Entry, WorkspaceModel
@@ -90,6 +96,30 @@ SCAN_DISPLAY_POINTS = 20_000
 SCAN_VOXEL_M = 0.05
 #: Position label used when the measurement names none.
 DEFAULT_POSITION = "A"
+#: What the picture shows until the user asks for more: the room they typed,
+#: the devices, and the selected reflection. Predicted paths stay off.
+DEFAULT_LAYERS: dict[str, bool] = {
+    LAYER_ENTERED: True,
+    LAYER_MEASURED: True,
+    LAYER_ASSUMED: False,
+}
+
+
+def _layer_text(layers: dict[str, bool]) -> str:
+    chosen = [layer for layer, on in layers.items() if on]
+    return ",".join(chosen) if chosen else "-"
+
+
+def _layer_state(text: str) -> dict[str, bool]:
+    """``text`` from ``ui.ini``. Empty means the default; ``-`` means all off."""
+    if not text:
+        return dict(DEFAULT_LAYERS)
+    if text == "-":
+        return dict.fromkeys(DEFAULT_LAYERS, False)
+    chosen = set(text.split(","))
+    if not chosen <= set(DEFAULT_LAYERS):
+        return dict(DEFAULT_LAYERS)
+    return {layer: layer in chosen for layer in DEFAULT_LAYERS}
 
 
 def placement_ring(
@@ -290,13 +320,39 @@ class RoomView(AnalysisView):
         tools.addStretch(1)
         layers = QHBoxLayout()
         layers.setSpacing(10)
+        saved = _layer_state(read_room_layers(_layer_text(DEFAULT_LAYERS)))
         self.layer_boxes: dict[str, QCheckBox] = {}
         for layer in (LAYER_ENTERED, LAYER_MEASURED, LAYER_ASSUMED):
             box = QCheckBox(_(LAYER_NAMES[layer]))
-            box.setChecked(True)
+            box.blockSignals(True)
+            box.setChecked(saved[layer])
+            box.blockSignals(False)
             box.toggled.connect(self._layers_changed)
             layers.addWidget(box)
             self.layer_boxes[layer] = box
+        self.full_constraints = QCheckBox(_("All constraints"))
+        self.full_constraints.blockSignals(True)
+        self.full_constraints.setChecked(read_room_constraints_full(False))
+        self.full_constraints.blockSignals(False)
+        self.full_constraints.setToolTip(
+            _(
+                "Draw the direct-distance sphere, the full ellipsoid and every predicted "
+                "path. Off: the room, the loudspeaker, the current microphone and the "
+                "selected reflection. A predicted path is an assumption, not a located wall."
+            )
+        )
+        self.full_constraints.toggled.connect(self._layers_changed)
+        layers.addWidget(self.full_constraints)
+        restore = QToolButton()
+        restore.setText(_("Restore default view"))
+        restore.setToolTip(
+            _(
+                "Room, loudspeaker, current microphone and the selected reflection. "
+                "Predicted paths turn off. The camera returns to the default angle."
+            )
+        )
+        restore.clicked.connect(self.restore_default_view)
+        layers.addWidget(restore)
         layers.addStretch(1)
         self.import_button = QPushButton(_("Import scan..."))
         self.import_button.clicked.connect(self.import_scan)
@@ -617,9 +673,32 @@ class RoomView(AnalysisView):
     def _layers(self) -> dict[str, bool]:
         return {layer: box.isChecked() for layer, box in self.layer_boxes.items()}
 
-    def _layers_changed(self, _checked: bool) -> None:
+    def _layers_changed(self, _checked: bool = False) -> None:
+        self._remember_layers()
         self.canvas.scene.layers = self._layers()
+        self.canvas.scene.constraints_full = self.full_constraints.isChecked()
         self.canvas.update()
+        self.refresh()
+
+    def _remember_layers(self) -> None:
+        layers = self._layers()
+        chosen = [layer for layer, on in layers.items() if on]
+        write_room_layers(",".join(chosen) if chosen else "-")
+        write_room_constraints_full(self.full_constraints.isChecked())
+
+    def restore_default_view(self) -> None:
+        """The first picture: the entered room and the selected reflection."""
+        for layer, on in DEFAULT_LAYERS.items():
+            box = self.layer_boxes[layer]
+            box.blockSignals(True)
+            box.setChecked(on)
+            box.blockSignals(False)
+        self.full_constraints.blockSignals(True)
+        self.full_constraints.setChecked(False)
+        self.full_constraints.blockSignals(False)
+        self._remember_layers()
+        self.reset_view()
+        self.refresh()
 
     def _toggle_plan(self, plan: bool) -> None:
         self.canvas.set_plan(plan)
@@ -660,6 +739,7 @@ class RoomView(AnalysisView):
             selection=self._selection,
             scan_points=self._scan_points,
             layers=self._layers(),
+            constraints_full=self.full_constraints.isChecked(),
         )
         result = entry.result if entry is not None else None
         self._predicted = []

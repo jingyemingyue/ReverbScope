@@ -110,9 +110,14 @@ def test_a_selected_reflection_draws_its_ellipsoid_and_highlights_matching_faces
     # Layers switch independently; the drawing still renders offscreen.
     from reverbscope.ui.room.canvas import LAYER_ASSUMED, LAYER_MEASURED
 
+    assert view.layer_boxes[LAYER_ASSUMED].isChecked() is False
+    view.layer_boxes[LAYER_ASSUMED].setChecked(True)
     view.layer_boxes[LAYER_MEASURED].setChecked(False)
     assert view.canvas.scene.layers[LAYER_MEASURED] is False
     assert view.canvas.scene.layers[LAYER_ASSUMED] is True
+    view.restore_default_view()
+    assert view.layer_boxes[LAYER_ASSUMED].isChecked() is False
+    assert view.full_constraints.isChecked() is False
     image = view.canvas.grab().toImage()
     assert image.width() > 100 and image.height() > 100
     # The inspector receives the consistency checks with the one-microphone note.

@@ -8,6 +8,25 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Spectrogram and waterfall follow the measurement list.** Hiding the
+  current measurement clears the picture at once. A transform that finishes
+  later is cached only for the impulse response it read, and it is drawn
+  only when that measurement, those parameters and the visibility are still
+  current. The display cache is limited to 8 MB (a default spectrogram of a
+  short sweep is about 1.9 MB; a default waterfall about 115 KB). Stored
+  measurements are not evicted.
+- **Room view opens on the room.** Entered geometry and the selected
+  reflection are shown; predicted paths and the full constraint mesh stay
+  off until **Geometric assumption** or **All constraints** is turned on.
+  The choice is restored from `ui.ini`. **Restore default view** puts it
+  back and frames the camera with room for the front mark and the dimensions.
+- **Command line from the #42/#54 line, without replacing the workstation.**
+  Menu answers accept 是的 and 确定, Ctrl+C leaves with status 130, a folder
+  is not replaced before a yes, and the terminal keeps Chinese paths and
+  list punctuation in one piece. Comparison JSON does not gain fields.
+  Baseline/candidate are 基准/对比项 in Simplified Chinese. The desktop
+  window is still the #57 workstation. PR #55's separate workbench is not
+  merged. PR #56's workstation is the one this branch continues.
 - **Workstation readability.** The measure strip says whether a take is
   ready, playing or being analysed, and the status sits on its own line.
   Stop looks armed only while the sweep can still be stopped. The room view

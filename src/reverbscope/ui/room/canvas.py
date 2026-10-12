@@ -121,6 +121,9 @@ class RoomScene:
     predicted: list[PredictedPath] = field(default_factory=list)
     #: Faces of predicted paths matched by the selected reflection.
     highlighted_faces: set[str] = field(default_factory=set)
+    #: Off: the selected reflection only, drawn with a few lines. On: the sphere,
+    #: the full ellipsoid and every predicted path the assumption layer allows.
+    constraints_full: bool = False
     layers: dict[str, bool] = field(
         default_factory=lambda: {LAYER_ENTERED: True, LAYER_MEASURED: True, LAYER_ASSUMED: True}
     )
@@ -143,7 +146,9 @@ class RoomScene:
         return array.min(axis=0), array.max(axis=0)
 
 
-def ellipsoid_lines(a: Point, b: Point, semi_major: float) -> list[NDArray[np.float64]]:
+def ellipsoid_lines(
+    a: Point, b: Point, semi_major: float, *, detail: bool = True
+) -> list[NDArray[np.float64]]:
     """Meridians and parallels of the prolate spheroid with foci ``a``, ``b``."""
     pa = np.array(a.as_tuple())
     pb = np.array(b.as_tuple())
@@ -159,15 +164,17 @@ def ellipsoid_lines(a: Point, b: Point, semi_major: float) -> list[NDArray[np.fl
     e3 = np.cross(e1, e2)
     theta = np.linspace(0.0, math.pi, 40)
     lines = []
-    for phi in np.linspace(0.0, 2 * math.pi, 8, endpoint=False):
+    meridians = np.linspace(0.0, 2 * math.pi, 8 if detail else 2, endpoint=False)
+    for phi in meridians:
         ring = np.cos(phi) * e2 + np.sin(phi) * e3
         lines.append(
             centre
             + np.outer(semi_major * np.cos(theta), e1)
             + np.outer(semi_minor * np.sin(theta), ring)
         )
-    phis = np.linspace(0.0, 2 * math.pi, 48)
-    for t in (math.pi / 4, math.pi / 2, 3 * math.pi / 4):
+    phis = np.linspace(0.0, 2 * math.pi, 48 if detail else 24)
+    parallels = (math.pi / 4, math.pi / 2, 3 * math.pi / 4) if detail else (math.pi / 2,)
+    for t in parallels:
         ring = np.outer(np.cos(phis), e2) + np.outer(np.sin(phis), e3)
         lines.append(centre + semi_major * math.cos(t) * e1 + semi_minor * math.sin(t) * ring)
     return lines
@@ -248,7 +255,10 @@ class RoomCanvas(QWidget):
 
     def fit(self) -> None:
         self.camera.width, self.camera.height = self.width(), self.height()
-        self.camera.fit(*self.scene.bounds())
+        low, high = self.scene.bounds()
+        # The front-edge mark and the dimension labels sit outside the box.
+        pad = np.array([0.55, 1.2, 0.5])
+        self.camera.fit(low - pad, high + pad)
         self.update()
 
     def reset(self) -> None:
@@ -313,9 +323,15 @@ class RoomCanvas(QWidget):
             if mic is not None:
                 for path in scene.predicted:
                     highlighted = path.face in scene.highlighted_faces
+                    # Unselected paths are the assumption, and only when asked for in full.
+                    if not highlighted and not scene.constraints_full:
+                        continue
+                    color = QColor(measured if highlighted else assumed)
+                    if not highlighted:
+                        color.setAlpha(70)
                     pen = QPen(
-                        measured if highlighted else assumed,
-                        2.0 if highlighted else 1.0,
+                        color,
+                        2.2 if highlighted else 1.0,
                         LAYER_STYLE[LAYER_ASSUMED],
                     )
                     self._draw_polyline(
@@ -323,18 +339,23 @@ class RoomCanvas(QWidget):
                         np.array([scene.source.as_tuple(), path.point.as_tuple(), mic.as_tuple()]),
                         pen,
                     )
-                    self._draw_dot(painter, path.point, measured if highlighted else assumed, 4)
+                    self._draw_dot(painter, path.point, color, 5 if highlighted else 3)
         if layers.get(LAYER_MEASURED, True):
             pen = QPen(measured, 1.3, LAYER_STYLE[LAYER_MEASURED])
-            if scene.sphere is not None:
+            if scene.constraints_full and scene.sphere is not None:
                 for line in circle_lines(*scene.sphere):
                     self._draw_polyline(painter, line, pen)
             if scene.ellipsoid is not None:
-                for line in ellipsoid_lines(*scene.ellipsoid):
-                    self._draw_polyline(painter, line, pen)
+                for line in ellipsoid_lines(*scene.ellipsoid, detail=scene.constraints_full):
+                    self._draw_polyline(painter, line, QPen(measured, 1.8, pen.style()))
             if scene.placement_ring is not None:
+                ring_color = QColor(measured)
+                if not scene.constraints_full:
+                    ring_color.setAlpha(110)
                 self._draw_polyline(
-                    painter, ring_line(*scene.placement_ring), QPen(measured, 2.0, pen.style())
+                    painter,
+                    ring_line(*scene.placement_ring),
+                    QPen(ring_color, 2.0 if scene.constraints_full else 1.2, pen.style()),
                 )
         if layers.get(LAYER_ENTERED, True):
             if scene.source is not None:
@@ -488,11 +509,13 @@ class RoomCanvas(QWidget):
         else:
             painter.drawEllipse(centre, 6.5, 6.5)
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        if self.scene.selection == key:
+        if self.scene.selection == key or key == self.scene.current_microphone:
             painter.setPen(QPen(color, 2.2))
             painter.drawEllipse(centre, 12, 12)
-        painter.setPen(QColor(tokens()["text"]))
-        painter.drawText(centre + QPointF(9, -8), name)
+        # Other microphones stay dots. The loudspeaker and the current one are named.
+        if key == "source" or key == self.scene.current_microphone or self.scene.selection == key:
+            painter.setPen(QColor(tokens()["text"]))
+            painter.drawText(centre + QPointF(9, -8), name)
 
     def _draw_triad(self, painter: QPainter) -> None:
         origin = QPointF(36, self.height() - 36)
@@ -586,10 +609,11 @@ class RoomCanvas(QWidget):
         """Length, width and height written on the edges they measure."""
         length, width, height = box.dimensions
         painter.setPen(text)
-        self._label_world(painter, (length / 2.0, 0.0, 0.0), _metres(length))
-        self._label_world(painter, (0.0, width / 2.0, 0.0), _metres(width))
+        # Length sits on the far edge so it does not cover the front mark.
+        self._label_world(painter, (length / 2.0, width, 0.08), _metres(length))
+        self._label_world(painter, (length, width / 2.0, 0.08), _metres(width))
         if not self.camera.plan:
-            self._label_world(painter, (0.0, 0.0, height / 2.0), _metres(height))
+            self._label_world(painter, (length, 0.0, height / 2.0), _metres(height))
 
     def _draw_front_edge(self, painter: QPainter, box: RoomBox, color: QColor) -> None:
         """Mark the entered face at y = 0. It is not a wall the measurement found."""

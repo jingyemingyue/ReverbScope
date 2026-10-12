@@ -34,6 +34,7 @@ from reverbscope.i18n import (
     available_locales,
     list_join,
     pgettext,
+    quoted,
     supported_language,
 )
 from reverbscope.settings import UserSettings
@@ -108,6 +109,26 @@ def language_hint_lines(current: str, width: int) -> list[str]:
     return [label.rstrip(), "  " + command]
 
 
+#: The interface languages whose readers often have a terminal that draws the
+#: box glyphs two columns wide (a CJK font or locale setting), which bends the
+#: frames. Only the languages with a catalog on this line.
+CJK_LANGUAGES = frozenset({"zh_CN"})
+
+
+def style_hint_lines(current: str, width: int, *, boxed: bool) -> list[str]:
+    """How to leave the frames out, for a CJK interface that draws them
+    (``边框歪了？reverbscope config style plain``): one line where it fits,
+    else the label and the command whole on a line of its own."""
+    from reverbscope.cli.console import cell_width
+
+    if not boxed or current not in CJK_LANGUAGES:
+        return []
+    label, command = _("Frames crooked? "), "reverbscope config style plain"
+    if cell_width(label + command) <= width:
+        return [label + command]
+    return [label.rstrip(), "  " + command]
+
+
 class SettingError(ValueError):
     """A key or value the settings cannot take; nothing was written."""
 
@@ -123,7 +144,7 @@ def canonical_key(raw: str) -> str:
     if key not in KEYS:
         raise SettingError(
             _("unknown setting {key}; the settings are: {keys}").format(
-                key=repr(raw), keys=list_join(KEYS)
+                key=quoted(raw), keys=list_join(KEYS)
             )
         )
     return key
@@ -146,7 +167,7 @@ def parse_value(key: str, raw: str) -> Any:
         if lang is None:
             raise SettingError(
                 _("unknown language {value}; available: {languages}, or auto").format(
-                    value=repr(raw), languages=list_join(languages())
+                    value=quoted(raw), languages=list_join(languages())
                 )
             )
         return lang
@@ -157,7 +178,7 @@ def parse_value(key: str, raw: str) -> Any:
         if name not in _profiles():
             raise SettingError(
                 _("unknown profile {value}; available: {profiles}, or auto").format(
-                    value=repr(raw), profiles=list_join(_profiles())
+                    value=quoted(raw), profiles=list_join(_profiles())
                 )
             )
         return name
@@ -168,7 +189,7 @@ def parse_value(key: str, raw: str) -> Any:
         if name not in BACKENDS:
             raise SettingError(
                 _("unknown audio backend {value}; choose portaudio, fake or auto").format(
-                    value=repr(raw)
+                    value=quoted(raw)
                 )
             )
         return name
@@ -178,7 +199,9 @@ def parse_value(key: str, raw: str) -> Any:
         folder = Path(text).expanduser() if text else Path()
         if not text or not folder.is_dir():
             raise SettingError(
-                _("{path} is not an existing folder; give a folder, or auto").format(path=repr(raw))
+                _("{path} is not an existing folder; give a folder, or auto").format(
+                    path=quoted(raw)
+                )
             )
         return str(folder.resolve())
     if key in ("copy-recording", "developer-tools"):
@@ -188,14 +211,14 @@ def parse_value(key: str, raw: str) -> Any:
             return True
         if word in _OFF:
             return False
-        raise SettingError(_("{key} is on or off, not {value}").format(key=key, value=repr(raw)))
+        raise SettingError(_("{key} is on or off, not {value}").format(key=key, value=quoted(raw)))
     if key == "theme":
         if word in (AUTO, "system"):
             return ""
         if word not in THEMES:
             raise SettingError(
                 _("unknown theme {value}; choose system, light, dark or auto").format(
-                    value=repr(raw)
+                    value=quoted(raw)
                 )
             )
         return word
@@ -204,7 +227,7 @@ def parse_value(key: str, raw: str) -> Any:
             return ""
         if word not in STYLES:
             raise SettingError(
-                _("unknown style {value}; choose boxed, plain or auto").format(value=repr(raw))
+                _("unknown style {value}; choose boxed, plain or auto").format(value=quoted(raw))
             )
         return word
     raise SettingError(f"unknown setting {key!r}")  # canonical_key() admits no other key
