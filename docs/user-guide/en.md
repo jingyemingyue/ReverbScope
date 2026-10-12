@@ -309,15 +309,35 @@ The workstation has eleven views:
 | Full report | The same text report that `reverbscope analyze` prints, with the warnings at the end. “Copy report” copies it. |
 
 Every chart zooms with the wheel (about the cursor), pans with a drag,
-fits again with a double-click, R or **Reset view**, and shows the value
+fits again with a double-click, R or **Frame**, and shows the value
 under the cursor with its unit. **Export** saves the chart as PNG or SVG,
 or the drawn curves as CSV (the waterfall's slices without the perspective
 shift; the spectrogram is an image and has no CSV).
+
+**Axes...** sets exact lower and upper limits in the units printed on the
+chart. Frequency limits are in Hz, including on logarithmic axes. Lower
+limits must be below upper limits. A range chosen by mouse or by this
+dialog stays in place when changing display smoothing, alignment or the
+measurement; **Frame** restores the default limits. The frequency and
+difference panes share horizontal limits.
+
+Overview shows the band tables before the expandable interpretation.
+Click the interpretation heading to open the longer findings. Measurement
+warnings remain visible. **Conditions** expands the inspector's setup and
+profile details. Long paths occupy one line; hover to read the complete path.
+The empty desk shows saved sessions and open/compare actions. **Getting
+started** expands the first-measurement guide; Help can bring it back after
+it was dismissed.
 
 Low-frequency resonance candidates are listed in the Full report (and in
 `resonances.csv` after `reverbscope export`). They are not a separate view.
 
 ### The room view
+
+**Room parameters** opens the dimensions, device positions, scan import
+and reflection list. The panel starts closed to leave the canvas available
+for reading the room. Opening or closing it reframes an untouched camera;
+a view you rotated, panned or zoomed stays where you left it.
 
 The Room view draws the room box you enter (length, width, height in
 metres; x length, y width, z up), the loudspeaker and a microphone for each

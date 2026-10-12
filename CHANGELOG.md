@@ -8,6 +8,24 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **A compact measurement desk.** Tool buttons now share the same flat
+  chrome as the input controls. Body text uses a consistent 12 logical pixels,
+  with the existing Chinese font fallbacks. Panel switches are visually
+  separate from analysis views. Findings use neutral rows and coloured status
+  text instead of filled cards; the overview puts the band tables before the
+  expandable interpretation. Conditions in the inspector are expandable.
+  Project and measurement paths occupy one line with the full path on hover.
+  The empty desk shows session operations; the first-measurement guide opens
+  on demand and keeps the existing dismissal preference.
+- **Exact chart ranges.** Axes opens lower and upper limits in the axis units,
+  including Hz on logarithmic axes. Mouse zoom, pan and exact ranges survive
+  display processing and measurement redraws; Frame returns to the defaults.
+  The frequency and difference panes keep their horizontal limits linked.
+  A redraw clears the previous measurement's cursor readout.
+- **Room parameters no longer occupy the default canvas.** Room parameters
+  opens the existing geometry, scan and reflection controls on demand. When
+  the room view first becomes visible, its camera fits after layout completes;
+  a camera the user moved is preserved when switching views.
 - **Spectrogram and waterfall follow the measurement list.** Hiding the
   current measurement clears the picture at once. A transform that finishes
   later is cached only for the impulse response it read, and it is drawn

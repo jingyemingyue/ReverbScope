@@ -161,7 +161,7 @@ class AnalysisWorkspace(QWidget):
         self.navigator_button.setCheckable(True)
         self.navigator_button.setChecked(True)
         self.navigator_button.setAutoRaise(True)
-        self.navigator_button.setProperty("viewtab", True)
+        self.navigator_button.setProperty("panelswitch", True)
         self.navigator_button.setText(_("List"))
         self.navigator_button.setToolTip(
             _("Show or hide the measurement list ({shortcut}).").format(
@@ -220,7 +220,7 @@ class AnalysisWorkspace(QWidget):
         self.inspector_button.setCheckable(True)
         self.inspector_button.setChecked(True)
         self.inspector_button.setAutoRaise(True)
-        self.inspector_button.setProperty("viewtab", True)
+        self.inspector_button.setProperty("panelswitch", True)
         self.inspector_button.setText(_("Inspector"))
         self.inspector_button.setToolTip(
             _("Show or hide the inspector ({shortcut}).").format(

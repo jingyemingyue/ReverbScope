@@ -7260,3 +7260,47 @@ msgstr "已省略 Δ %；把终端调宽即可看到。"
 
 msgid "Δ level (dB)"
 msgstr "电平差（dB）"
+
+#: ui/plotkit.py
+msgid "Axes..."
+msgstr "坐标轴…"
+
+#: ui/plotkit.py
+msgid "Set the visible axis ranges in the labelled units."
+msgstr "按坐标轴标注的单位设置显示范围。"
+
+#: ui/axis_ranges.py
+msgid "Axis ranges"
+msgstr "坐标轴范围"
+
+#: ui/axis_ranges.py
+msgid "Lower limit"
+msgstr "下限"
+
+#: ui/axis_ranges.py
+msgid "Upper limit"
+msgstr "上限"
+
+#: ui/axis_ranges.py
+msgid "Each lower limit must be below its upper limit."
+msgstr "每个坐标轴的下限必须小于上限。"
+
+#: ui/axis_ranges.py
+msgid "Apply"
+msgstr "应用"
+
+#: ui/room/view.py
+msgid "Room parameters"
+msgstr "房间参数"
+
+#: ui/room/view.py
+msgid "Edit room dimensions, device positions and reflection selection."
+msgstr "编辑房间尺寸、设备位置及反射选择。"
+
+#: ui/room/view.py
+msgid "Open Room parameters to enter dimensions and device positions, import a scan, or use the example room."
+msgstr "打开“房间参数”输入尺寸与设备位置、导入扫描或使用示例房间。"
+
+#: ui/start_panel.py
+msgid "Getting started"
+msgstr "首次测量说明"

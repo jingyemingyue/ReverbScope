@@ -102,7 +102,7 @@ class FrequencyView(AnalysisView):
             title=_("Difference (current − baseline)"),
         )
         self.diff.export_name = "frequency-difference"
-        self.diff.plot_item.setXLink(self.chart.plot_item)
+        self.diff.link_x(self.chart)
         self.splitter.addWidget(self.chart)
         self.splitter.addWidget(self.diff)
         self.splitter.setStretchFactor(0, 3)

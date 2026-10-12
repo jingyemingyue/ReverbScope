@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 
 from reverbscope.i18n import N_, _, pgettext
 from reverbscope.ui.plotkit import DASHES, swatch_icon
-from reverbscope.ui.widgets import label
+from reverbscope.ui.widgets import PathLabel, label
 from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
 
 KEY_ROLE = Qt.ItemDataRole.UserRole
@@ -59,7 +59,7 @@ class Navigator(QWidget):
         self.project_title = label(_("No project open"), "section")
         self.project_title.setWordWrap(True)
         layout.addWidget(self.project_title)
-        self.project_hint = label("", "hint", wrap=True)
+        self.project_hint = PathLabel()
         layout.addWidget(self.project_hint)
 
         buttons = QHBoxLayout()

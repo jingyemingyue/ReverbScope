@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -36,7 +37,7 @@ from reverbscope.ui.comparison import current_comparison
 from reverbscope.ui.health_nav import view_for_check, view_title
 from reverbscope.ui.theme import tone_color
 from reverbscope.ui.views.overview import CONFIDENCE_TONE, HEALTH_TONE, VALIDITY_DISPLAY
-from reverbscope.ui.widgets import label, separator
+from reverbscope.ui.widgets import PathLabel, label, separator
 from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
 
 #: Chip tone of a room consistency check.
@@ -79,10 +80,16 @@ class _Section(QWidget):
     def __init__(self, title: str, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout(self)
+        self.outer = layout
         layout.setContentsMargins(0, 4, 0, 4)
         layout.setSpacing(4)
         self.title = label(title.upper(), "section")
         layout.addWidget(self.title)
+        self.body = QWidget()
+        layout.addWidget(self.body)
+        layout = QVBoxLayout(self.body)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(4)
         self.note = label("", "hint", wrap=True)
         self.note.hide()
         layout.addWidget(self.note)
@@ -96,6 +103,24 @@ class _Section(QWidget):
         self.extra.setSpacing(4)
         layout.addLayout(self.extra)
         self.rows = 0
+
+    def make_collapsible(self) -> None:
+        """Keep secondary measurement conditions available without filling the inspector."""
+        self.title.hide()
+        toggle = QToolButton()
+        toggle.setText(self.title.text())
+        toggle.setCheckable(True)
+        self.toggle = toggle
+        toggle.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        toggle.setArrowType(Qt.ArrowType.RightArrow)
+        toggle.toggled.connect(self.body.setVisible)
+        toggle.toggled.connect(
+            lambda opened: toggle.setArrowType(
+                Qt.ArrowType.DownArrow if opened else Qt.ArrowType.RightArrow
+            )
+        )
+        self.outer.insertWidget(0, toggle)
+        self.body.hide()
 
     def clear(self) -> None:
         for layout in (self.grid, self.extra):
@@ -190,11 +215,14 @@ class Inspector(QWidget):
         layout.addWidget(self.heading)
         self.subtitle = label("", "hint", wrap=True)
         layout.addWidget(self.subtitle)
+        self.path = PathLabel()
+        layout.addWidget(self.path)
 
         self.health = _Section(_("Measurement health"))
         self.figures = _Section(_("Key figures"))
         self.figures.set_note("")
         self.conditions = _Section(_("Conditions"))
+        self.conditions.make_collapsible()
         self.comparison = _Section(_("Comparison"))
         self.same_gain = QCheckBox(_("Input gain unchanged"))
         self.same_gain.setToolTip(
@@ -218,7 +246,7 @@ class Inspector(QWidget):
             self.reflection,
             self.room,
         ):
-            layout.addWidget(separator())
+            section.outer.insertWidget(0, separator())
             layout.addWidget(section)
         layout.addStretch(1)
 
@@ -237,6 +265,9 @@ class Inspector(QWidget):
 
     def refresh(self) -> None:
         entry = self.model.current()
+        path = str(entry.directory) if entry is not None and entry.directory is not None else ""
+        self.path.setText(path)
+        self.path.setVisible(bool(path))
         if entry is None:
             self.heading.setText(_("Nothing selected"))
             self.subtitle.setText(
@@ -279,8 +310,6 @@ class Inspector(QWidget):
             bits.append(_("not saved yet"))
         if entry.synthetic:
             bits.append(_("synthetic demo, not a room"))
-        if entry.directory is not None:
-            bits.append(str(entry.directory))
         return "  ·  ".join(bits)
 
     # --- sections ---------------------------------------------------------------------
@@ -434,6 +463,7 @@ class Inspector(QWidget):
         section.clear()
         baseline = self.model.baseline()
         current = self.model.current()
+        section.setVisible(baseline is not None and current is not None)
         if baseline is None:
             section.set_note(
                 _("Right-click a measurement in the list and choose Use as baseline to compare.")
@@ -481,10 +511,12 @@ class Inspector(QWidget):
             or entry.result is None
             or not 0 <= index < len(entry.result.reflections.reflections)
         ):
+            section.hide()
             section.set_note(
                 _("Click a reflection marker in the impulse response or the room view.")
             )
             return
+        section.show()
         reflection = entry.result.reflections.reflections[index]
         speed, temperature, assumed = speed_for(entry.result)
         excess = reflection.delay_ms / 1000.0 * speed
@@ -511,6 +543,9 @@ class Inspector(QWidget):
     def _draw_room(self) -> None:
         section = self.room
         section.clear()
+        section.setVisible(
+            bool(self._room_checks or self._room_note) and self.model.current() is not None
+        )
         if not self._room_checks:
             section.set_note(
                 self._room_note

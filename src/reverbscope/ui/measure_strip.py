@@ -147,6 +147,8 @@ class MeasureStrip(QWidget):
         self.input_channel = QSpinBox()
         _mirror_spin(self.input_channel, standalone.input_channel)
         self.input_channel.setToolTip(_("Input channel (mic)"))
+        self.input_channel.setMaximumWidth(64)
+        self.sample_rate.setMaximumWidth(130)
         self.loopback_channel = QSpinBox()
         _mirror_spin(self.loopback_channel, standalone.loopback_channel)
         self.loopback_channel.setToolTip(_("Loopback channel (1-based)"))
@@ -159,7 +161,7 @@ class MeasureStrip(QWidget):
                 caption_label = label(caption, "hint")
                 row.addWidget(caption_label)
                 self.device_widgets.append(caption_label)
-            row.addWidget(widget, 1 if isinstance(widget, QComboBox) else 0)
+            row.addWidget(widget, 1 if widget is self.input_device else 0)
             self.device_widgets.append(widget)
 
         self.advanced_bar = QWidget()
@@ -190,6 +192,7 @@ class MeasureStrip(QWidget):
             _("The position this take belongs to; Save lists it under it in the project.")
         )
         self.position.setMinimumContentsLength(6)
+        self.position.setMaximumWidth(140)
         self.position.currentTextChanged.connect(self._position_edited)
         row.addWidget(self.position)
 

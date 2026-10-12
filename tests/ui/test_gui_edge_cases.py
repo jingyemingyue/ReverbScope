@@ -122,8 +122,8 @@ def test_the_project_page_follows_the_theme_switch(
             if isinstance(page.position_rows.itemAt(i).widget(), FindingCard)
         ]
 
-    light = {LIGHT_TOKENS[k] for k in LIGHT_TOKENS if k.endswith("_soft")}
-    dark = {DARK_TOKENS[k] for k in DARK_TOKENS if k.endswith("_soft")}
+    light = {LIGHT_TOKENS["surface"], LIGHT_TOKENS["border"]}
+    dark = {DARK_TOKENS["surface"], DARK_TOKENS["border"]}
     before = card_styles()
     assert before and any(colour in before[0] for colour in light)
     save_settings(UserSettings(theme="dark"))
@@ -143,6 +143,7 @@ def test_a_dismissed_walkthrough_stays_hidden_for_the_run_without_a_settings_fil
     window = MainWindow()
     window.show()
     window.show_home()
+    window.home.guide_button.click()
     assert window.home.walkthrough.isVisibleTo(window.home)
     window.home.dismiss_walkthrough()  # the settings file cannot record it
     assert not window.home.walkthrough.isVisibleTo(window.home)
@@ -319,6 +320,7 @@ def test_a_short_window_scrolls_home_and_does_not_squeeze_the_first_measurement_
     window.resize(*size)
     window.show()
     window.show_home()
+    window.home.guide_button.click()
     for _ in range(10):
         app.processEvents()
     card = window.home.walkthrough

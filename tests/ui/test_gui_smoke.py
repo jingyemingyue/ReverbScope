@@ -1748,7 +1748,8 @@ def test_a_new_theme_in_settings_redraws_cards_and_charts(
     assert DARK_TOKENS["bg"] in app.styleSheet()
     for part in ("results chart", "compare chart", "placement picture"):
         assert after[part] == DARK_TOKENS["surface"], part
-    assert any(DARK_TOKENS[f"{tone}_soft"] in after["finding card"] for tone in ("info", "good"))
+    assert DARK_TOKENS["surface"] in after["finding card"]
+    assert DARK_TOKENS["border"] in after["finding card"]
     assert after["chip"] != before["chip"]
     window.close()
 

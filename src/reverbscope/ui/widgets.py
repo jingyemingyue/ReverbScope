@@ -21,6 +21,7 @@ from PySide6.QtGui import (
     QPainterPath,
     QPen,
     QPixmap,
+    QResizeEvent,
 )
 from PySide6.QtWidgets import (
     QFrame,
@@ -36,6 +37,35 @@ from PySide6.QtWidgets import (
 
 from reverbscope.i18n import _
 from reverbscope.ui.theme import LIGHT_TOKENS, tokens, tone_color
+
+
+class PathLabel(QLabel):
+    """One line with a preserved filename; the complete path stays in a tooltip."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.full_path = ""
+        self.setProperty("role", "hint")
+        self.setTextFormat(Qt.TextFormat.PlainText)
+        self.setMinimumWidth(0)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+
+    def setText(self, text: str) -> None:  # noqa: N802 - Qt override
+        self.full_path = text
+        self.setToolTip(text)
+        self.setAccessibleName(text)
+        self._elide_path()
+
+    def _elide_path(self) -> None:
+        super().setText(
+            self.fontMetrics().elidedText(
+                self.full_path, Qt.TextElideMode.ElideMiddle, max(1, self.contentsRect().width())
+            )
+        )
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._elide_path()
 
 
 def set_banner_text(widget: QLabel, text: str, tone: str = "") -> None:
@@ -163,12 +193,13 @@ def shortcut_badge(sequence: str) -> str:
     ``sequence`` is a Qt shortcut such as ``Ctrl+1``.
     """
     key = sequence.rsplit("+", 1)[-1]
+    mark = "⌃"
     if sys.platform == "darwin":
+        mark = "⌘"
         native = native_shortcut(sequence)
         if native and "Ctrl" not in native:
             return native
-        return f"⌘{key}"
-    return f"⌃{key}"
+    return f"{mark}{key}"
 
 
 def primary(button: QPushButton) -> QPushButton:
@@ -262,10 +293,10 @@ class Chip(QLabel):
         self.set_tone(tone)
 
     def set_tone(self, tone: str) -> None:
-        fg, bg = tone_color(tone)
+        fg, _bg = tone_color(tone)
         self.setStyleSheet(
-            f"background: {bg}; color: {fg}; border: 1px solid {bg}; border-radius: 2px;"
-            " padding: 1px 6px; font-size: 11px; font-weight: 600;"
+            f"background: transparent; color: {fg}; border: none;"
+            " padding: 0 3px; font-size: 11px; font-weight: 600;"
         )
 
 
@@ -335,19 +366,18 @@ class FindingCard(QFrame):
     ) -> None:
         super().__init__(parent)
         tone = SEVERITY_TONE.get(severity, "neutral")
-        fg, bg = tone_color(tone)
         self.setObjectName("finding")
         self.setStyleSheet(
-            f"QFrame#finding {{ background: {bg}; border-left: 4px solid {fg};"
-            " border-radius: 2px; }"
+            f"QFrame#finding {{ background: {tokens()['surface']}; "
+            f"border: none; border-bottom: 1px solid {tokens()['border']}; }}"
         )
         row = QHBoxLayout(self)
-        row.setContentsMargins(10, 6, 10, 6)
-        row.setSpacing(10)
+        row.setContentsMargins(6, 4, 6, 4)
+        row.setSpacing(6)
         chip = Chip((severity_label or severity).upper(), tone)
         # A fixed width cut "NOT COMPARABLE" short; the column stays aligned
         # for the usual one-word labels.
-        chip.setMinimumWidth(82)
+        chip.setMinimumWidth(48)
         row.addWidget(chip, 0, Qt.AlignmentFlag.AlignTop)
         text = QVBoxLayout()
         text.setSpacing(1)

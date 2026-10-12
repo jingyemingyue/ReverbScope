@@ -27,13 +27,16 @@ def app() -> QApplication:
     return QApplication.instance() or QApplication([])
 
 
-def test_the_card_shows_on_a_first_start_and_stays_away_once_dismissed(
+def test_the_guide_expands_on_demand_and_stays_away_once_dismissed(
     app: QApplication, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
     window = MainWindow()
     window.show()
     card = window.home.walkthrough
+    assert card.isHidden()
+    assert window.home.guide_button.isVisible()
+    window.home.guide_button.click()
     assert card.isVisible()
     # Its buttons lead into the modes.
     card.buttons[0].click()
@@ -86,6 +89,8 @@ def test_the_profile_selector_explains_the_profile(
     window.model.add_take(
         MeasurementSession(), result, [], "", "vocal", unsaved=False, synthetic=True
     )
+    assert not window.inspector.profile_button.isVisibleTo(window.inspector)
+    window.inspector.conditions.toggle.click()
     assert window.inspector.profile_button.isVisibleTo(window.inspector)
     dialog = window.inspector.show_profile_help()
     assert dialog is not None

@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QTableWidget,
     QTableWidgetItem,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -111,11 +112,21 @@ class _Overview(QWidget):
         health_layout.addLayout(self.health_rows)
         layout.addWidget(health)
 
-        self.findings_title = label("", "section")
-        layout.addWidget(self.findings_title)
-        self.findings = QVBoxLayout()
-        self.findings.setSpacing(6)
-        layout.addLayout(self.findings)
+        self.findings_title = QToolButton()
+        self.findings_title.setCheckable(True)
+        self.findings_title.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.findings_title.setArrowType(Qt.ArrowType.RightArrow)
+        self.findings_body = QWidget()
+        self.findings = QVBoxLayout(self.findings_body)
+        self.findings.setContentsMargins(0, 0, 0, 0)
+        self.findings.setSpacing(0)
+        self.findings_body.hide()
+        self.findings_title.toggled.connect(self.findings_body.setVisible)
+        self.findings_title.toggled.connect(
+            lambda opened: self.findings_title.setArrowType(
+                Qt.ArrowType.DownArrow if opened else Qt.ArrowType.RightArrow
+            )
+        )
 
         decay = QWidget()
         decay_layout = QVBoxLayout(decay)
@@ -167,6 +178,8 @@ class _Overview(QWidget):
         self.energy_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         energy_layout.addWidget(self.energy_table)
         layout.addWidget(energy)
+        layout.addWidget(self.findings_title, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.findings_body)
         layout.addStretch(1)
 
     def show_result(
@@ -318,7 +331,12 @@ class _Overview(QWidget):
             summary += " " + _("Good: {titles}.").format(
                 titles=", ".join(check.title for check in report.good)
             )
-        self.health_summary.setText(summary)
+        self.health_summary.setText(
+            _("{good} of {total} checks good.").format(
+                good=len(report.good), total=len(report.checks)
+            )
+        )
+        self.health_summary.setToolTip(summary)
         while self.health_rows.count():
             entry = self.health_rows.takeAt(0)
             widget = entry.widget() if entry is not None else None

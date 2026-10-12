@@ -305,7 +305,11 @@ README image renderer.
 Every chart (`plotkit.ChartPanel`) offers:
 
 * wheel zoom about the cursor, drag to pan, a box zoom with the right
-  button, double-click or `R` / the Reset button to fit;
+  button, double-click or `R` / the Frame button to fit;
+* Axes opens exact lower and upper limits in the labelled units, with
+  positive limits for logarithmic frequency axes and strictly increasing
+  limits on both axes. A chosen range survives display processing and
+  redraws until Frame; linked frequency and difference charts share x limits;
 * a cursor readout with units (`1.23 kHz  −4.5 dB`, `12.4 ms  −18.0 dB`)
   that reads the curve under the cursor, the current entry's by default;
 * a legend whose names and colours match the measurement list, with the
@@ -315,6 +319,18 @@ Every chart (`plotkit.ChartPanel`) offers:
   99.5th percentile on level axes, the stored length on time axes;
 * Export ▸ chart PNG, chart SVG, curve CSV (with a header that says which
   display processing was applied).
+
+The overview keeps band tables ahead of an expandable interpretation.
+Findings are neutral rows; status text carries validity or severity. The
+inspector's conditions expand on demand. Paths use a single elided line
+with the full path in a tooltip and the accessible name. Tool buttons,
+inputs and table headings share compact dimensions; body text is 12 logical
+pixels with per-glyph Chinese fallbacks.
+
+Room parameters starts closed and reveals the existing inputs, scan import
+and reflection selection in a resizable side panel. The room camera fits
+after a hidden view's layout becomes visible, unless the user already moved
+it. This does not change geometry, predictions or saved measurement data.
 
 ### 6.3 Frequency, impulse, decay and noise
 

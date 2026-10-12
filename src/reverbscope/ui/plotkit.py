@@ -255,6 +255,8 @@ class ChartPanel(QWidget):
         self._extra_items: list[Any] = []
         self._default_x: tuple[float, float] | None = None
         self._default_y: tuple[float, float] | None = None
+        self._manual_range = False
+        self._x_master: ChartPanel | None = None
         self.export_name = "chart"
         self.title_text = title
         layout = QVBoxLayout(self)
@@ -281,6 +283,11 @@ class ChartPanel(QWidget):
         self.reset_button.setToolTip(_("Fit the chart again (R or double-click)."))
         self.reset_button.clicked.connect(self.reset_view)
         top.addWidget(self.reset_button)
+        self.axes_button = QToolButton()
+        self.axes_button.setText(_("Axes..."))
+        self.axes_button.setToolTip(_("Set the visible axis ranges in the labelled units."))
+        self.axes_button.clicked.connect(self.edit_axis_ranges)
+        top.addWidget(self.axes_button)
         self.export_button = QToolButton()
         self.export_button.setText(_("Export"))
         self.export_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
@@ -315,6 +322,7 @@ class ChartPanel(QWidget):
             axis_items["left"] = LogFrequencyAxis(orientation="left")
         self.view_box = ChartViewBox()
         self.view_box.reset_requested.connect(self.reset_view)
+        self.view_box.sigRangeChangedManually.connect(self._range_changed_manually)
         self.plot = plot_widget(viewBox=self.view_box, axisItems=axis_items)
         self.plot.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.plot_item = self.plot.getPlotItem()
@@ -447,6 +455,10 @@ class ChartPanel(QWidget):
         self.series = []
         self._extra_items = []
         self.cursor_dot.setData([], [])
+        self.cursor_line.hide()
+        self._readout_full = ""
+        self.readout.clear()
+        self.readout.setToolTip("")
         self.set_message("")
         self._rebuild_legend()
 
@@ -570,25 +582,79 @@ class ChartPanel(QWidget):
     def set_default_range(
         self, x_range: tuple[float, float] | None, y_range: tuple[float, float] | None
     ) -> None:
-        """The range Reset returns to (natural units); applied now."""
+        """Update the Frame range; preserve a range the user has chosen."""
         if x_range is not None:
             lo, hi = (float(v) for v in self.to_plot_x(np.array(x_range, dtype=np.float64)))
             self._default_x = (lo, hi)
         else:
             self._default_x = None
         self._default_y = y_range
-        self.reset_view()
+        if not self._manual_range:
+            self._apply_default_ranges()
+
+    def link_x(self, chart: ChartPanel) -> None:
+        """Share horizontal limits without a redraw of this panel reframing its master."""
+        self._x_master = chart
+        self.plot_item.setXLink(chart.plot_item)
+
+    def _range_changed_manually(self, _axes: Any) -> None:
+        self._manual_range = True
+        if self._x_master is not None:
+            self._x_master._manual_range = True
+
+    def set_axis_ranges(self, x_range: tuple[float, float], y_range: tuple[float, float]) -> None:
+        """Set exact ranges in labelled units, including logarithmic frequency axes."""
+        values = (*x_range, *y_range)
+        if not all(math.isfinite(v) for v in values):
+            raise ValueError("Axis limits must be finite")
+        if x_range[0] >= x_range[1] or y_range[0] >= y_range[1]:
+            raise ValueError("Axis limits must increase")
+        if (self.x_kind == X_FREQUENCY and x_range[0] <= 0) or (
+            self.y_frequency and y_range[0] <= 0
+        ):
+            raise ValueError("Frequency limits must be positive")
+        px = self.to_plot_x(np.asarray(x_range))
+        py = np.log10(y_range) if self.y_frequency else y_range
+        self._manual_range = True
+        if self._x_master is not None:
+            self._x_master._manual_range = True
+            self._x_master.view_box.setXRange(*px, padding=0.0)
+        self.view_box.setRange(xRange=tuple(px), yRange=tuple(py), padding=0.0)
+        self._redecimate()
+
+    def edit_axis_ranges(self) -> None:
+        from reverbscope.ui.axis_ranges import AxisRangesDialog
+
+        x, y = self.view_box.viewRange()
+        dialog = AxisRangesDialog(
+            self.x_label,
+            self.y_label,
+            tuple(self.from_plot_x(v) for v in x),
+            tuple(float(10.0**v) if self.y_frequency else float(v) for v in y),
+            x_frequency=self.x_kind == X_FREQUENCY,
+            y_frequency=self.y_frequency,
+            parent=self,
+        )
+        if dialog.exec():
+            self.set_axis_ranges(*dialog.ranges())
 
     def reset_view(self) -> None:
         if self._disposed:
             return
+        self._manual_range = False
+        self._apply_default_ranges()
+        if self._x_master is not None:
+            self._x_master.reset_view()
+
+    def _apply_default_ranges(self) -> None:
         if self._default_x is None and self._default_y is None:
             self.view_box.autoRange(padding=0.02)
         else:
-            if self._default_x is not None:
-                self.view_box.setXRange(*self._default_x, padding=0.0)
-            else:
-                self.view_box.enableAutoRange(axis=pg.ViewBox.XAxis)
+            if self._x_master is None:
+                if self._default_x is not None:
+                    self.view_box.setXRange(*self._default_x, padding=0.0)
+                else:
+                    self.view_box.enableAutoRange(axis=pg.ViewBox.XAxis)
             if self._default_y is not None:
                 self.view_box.setYRange(*self._default_y, padding=0.0)
             else:
@@ -689,7 +755,7 @@ class ChartPanel(QWidget):
         if self._disposed:
             return
         pos = args[0]
-        if not self.plot.sceneBoundingRect().contains(pos):
+        if not self.view_box.sceneBoundingRect().contains(pos):
             return
         point = self.view_box.mapSceneToView(pos)
         x, y = float(point.x()), float(point.y())

@@ -267,7 +267,7 @@ def stylesheet(t: dict[str, str] | None = None) -> str:
     arrow_up = f'image: url("{images[0]}");' if images else ""
     arrow_down = f'image: url("{images[1]}");' if images else ""
     return f"""
-QWidget {{ color: {t["text"]}; }}
+QWidget {{ color: {t["text"]}; font-size: 12px; }}
 QMainWindow, QStackedWidget, QScrollArea, QScrollArea > QWidget > QWidget,
 QWidget[page="true"] {{ background: {t["bg"]}; }}
 QMenuBar {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; }}
@@ -306,7 +306,7 @@ QLabel[banner="warn"] {{ background: {t["warn_soft"]}; border: 1px solid {t["war
     border-radius: 2px; padding: 6px 8px; }}
 QLabel[banner="info"] {{ background: {t["info_soft"]}; border: 1px solid {t["info"]};
     border-radius: 2px; padding: 6px 8px; }}
-QGroupBox {{ margin-top: 12px; padding: 14px 10px 8px 10px; font-weight: 600; }}
+QGroupBox {{ margin-top: 10px; padding: 9px 6px 5px 6px; font-weight: 600; }}
 QGroupBox::title {{ subcontrol-origin: margin; subcontrol-position: top left; left: 12px;
     top: 2px; padding: 0 6px; color: {t["text"]}; background: transparent; }}
 QGroupBox QGroupBox {{ background: {t["surface_alt"]}; border-radius: 2px; }}
@@ -326,9 +326,15 @@ QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; font-
 QPushButton[danger="true"]:disabled {{ color: {t["muted"]}; border-color: {t["border"]};
     background: {t["surface_alt"]}; font-weight: 400; }}
 
+QToolButton {{ background: {t["surface"]}; border: 1px solid {t["border"]};
+    border-radius: 2px; padding: 3px 6px; min-height: 16px; }}
+QToolButton:hover {{ background: {t["surface_alt"]}; border-color: {t["muted"]}; }}
+QToolButton:checked {{ background: {t["accent_soft"]}; border-color: {t["accent"]}; }}
+QToolButton:disabled {{ color: {t["muted"]}; background: {t["surface_alt"]}; }}
+QToolButton::menu-indicator {{ subcontrol-position: bottom right; }}
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit {{
     background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 2px;
-    padding: 4px 8px; selection-background-color: {t["accent"]};
+    padding: 3px 6px; selection-background-color: {t["accent"]};
     selection-color: {t["accent_text"]}; }}
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus,
 QPlainTextEdit:focus {{ border: 1px solid {t["accent"]}; }}
@@ -348,8 +354,7 @@ QComboBox::down-arrow {{ {arrow_down} width: 10px; height: 10px; }}
 QComboBox QAbstractItemView {{ background: {t["surface"]}; border: 1px solid {t["border"]};
     selection-background-color: {t["accent_soft"]}; selection-color: {t["text"]}; }}
 QPlainTextEdit[report="true"] {{ background: {t["surface_alt"]}; }}
-QCheckBox::indicator:checked {{ background: {t["accent"]}; border: 1px solid {t["accent"]};
-    border-radius: 3px; }}
+QCheckBox {{ spacing: 4px; }}
 
 QTabWidget::pane {{ background: {t["surface"]}; border: 1px solid {t["border"]};
     border-radius: 2px; top: -1px; }}
@@ -365,7 +370,7 @@ QTableWidget, QTableView, QListWidget, QTreeWidget {{ background: {t["surface"]}
     selection-background-color: {t["accent_soft"]}; selection-color: {t["text"]}; }}
 QHeaderView::section {{ background: {t["surface_alt"]}; color: {t["muted"]};
     font-weight: 600; border: none; border-bottom: 1px solid {t["border"]};
-    padding: 6px 8px; }}
+    padding: 4px 6px; }}
 QListWidget::item {{ padding: 8px 10px; border-bottom: 1px solid {t["surface_alt"]}; }}
 QListWidget::item:selected {{ background: {t["accent_soft"]}; color: {t["text"]}; }}
 QListWidget::item:hover {{ background: {t["surface_alt"]}; }}
@@ -395,10 +400,13 @@ QLabel[phase="measure"] {{ color: {t["accent_text"]}; background: {t["accent"]};
 QLabel[phase="analyze"] {{ color: {t["text"]}; background: {t["warn_soft"]};
     border: 1px solid {t["warn"]}; border-radius: 2px; padding: 2px 8px; font-weight: 600; }}
 QToolButton[viewtab="true"] {{ background: transparent; color: {t["muted"]}; border: none;
-    border-bottom: 2px solid transparent; border-radius: 0; padding: 5px 8px; }}
+    border-bottom: 2px solid transparent; border-radius: 0; padding: 4px 8px; }}
 QToolButton[viewtab="true"]:hover {{ color: {t["text"]}; background: {t["surface_alt"]}; }}
 QToolButton[viewtab="true"]:checked {{ color: {t["text"]}; font-weight: 600;
-    border-bottom: 2px solid {t["accent"]}; background: transparent; }}
+    border-bottom: 2px solid {t["muted"]}; background: {t["surface_alt"]}; }}
+QToolButton[panelswitch="true"] {{ background: transparent; border: none;
+    padding: 4px 8px; color: {t["muted"]}; }}
+QToolButton[panelswitch="true"]:checked {{ color: {t["text"]}; background: {t["surface_alt"]}; }}
 QToolButton[projecttab="true"] {{ margin-left: 8px; }}
 QSplitter::handle {{ background: {t["border"]}; }}
 QSplitter::handle:horizontal {{ width: 6px; }}
@@ -470,7 +478,8 @@ def install_cjk_ui_font(app: Any) -> None:
             families.append(name)
     if len(families) > 1:
         font.setFamilies(families)
-        app.setFont(font)
+    font.setPixelSize(12)
+    app.setFont(font)
 
 
 def apply_report_font(widget: Any) -> None:

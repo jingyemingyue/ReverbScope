@@ -71,6 +71,85 @@ def _shown(view: Any, app: Any) -> Any:
     return view
 
 
+def test_exact_ranges_survive_processing_and_frame_restores_defaults(
+    app: Any, result: AnalysisResult
+) -> None:
+    from reverbscope.ui.views.frequency import FrequencyView
+
+    model = _model(result, result)
+    model.set_baseline(model.entries()[0].key)
+    view = _shown(FrequencyView(model), app)
+    chart = view.chart
+    chart.set_axis_ranges((80.0, 300.0), (-20.0, 15.0))
+    view.smoothing.setCurrentIndex(view.smoothing.findData(6))
+    app.processEvents()
+    assert chart.visible_x_range() == pytest.approx((80.0, 300.0))
+    assert chart.view_box.viewRange()[1] == pytest.approx((-20.0, 15.0))
+    assert view.diff.visible_x_range() == pytest.approx((80.0, 300.0))
+    # Mouse zoom/pan uses the same retention path as exact limits.
+    chart.reset_view()
+    chart.view_box.setXRange(np.log10(100), np.log10(500), padding=0)
+    chart.view_box.sigRangeChangedManually.emit([True, False])
+    view.show_raw.setChecked(True)
+    app.processEvents()
+    assert chart.visible_x_range() == pytest.approx((100.0, 500.0))
+    chart.reset_button.click()
+    assert chart.visible_x_range() == pytest.approx(view._x_default)
+    view.diff.set_axis_ranges((120.0, 800.0), (-3.0, 3.0))
+    view.align.setChecked(True)
+    app.processEvents()
+    assert chart.visible_x_range() == pytest.approx((120.0, 800.0))
+    assert view.diff.view_box.viewRange()[1] == pytest.approx((-3.0, 3.0))
+    view.diff.reset_button.click()
+    assert chart.visible_x_range() == pytest.approx(view._x_default)
+    view.close()
+
+
+def test_frequency_axis_limits_use_hz_and_reject_invalid_ranges(app: Any) -> None:
+    from reverbscope.ui.axis_ranges import AxisRangesDialog
+    from reverbscope.ui.plotkit import X_TIME_MS, ChartPanel
+
+    chart = ChartPanel(X_TIME_MS, y_frequency=True)
+    chart.set_axis_ranges((-5.0, 200.0), (100.0, 8000.0))
+    assert chart.view_box.viewRange()[0] == pytest.approx((-5.0, 200.0))
+    assert chart.view_box.viewRange()[1] == pytest.approx(np.log10([100.0, 8000.0]))
+    before = chart.view_box.viewRange()
+    for x, y in (
+        ((10.0, -10.0), (100.0, 8000.0)),
+        ((-5.0, 200.0), (0.0, 8000.0)),
+        ((-5.0, float("nan")), (100.0, 8000.0)),
+    ):
+        with pytest.raises(ValueError):
+            chart.set_axis_ranges(x, y)
+        assert chart.view_box.viewRange() == before
+    dialog = AxisRangesDialog(
+        "Time (ms)", "Frequency (Hz)", (-5, 200), (100, 8000), y_frequency=True
+    )
+    dialog.fields[0][0].setValue(300)
+    assert not dialog.apply_button.isEnabled()
+    dialog.accept()
+    assert dialog.result() == 0
+    dialog.fields[0][0].setValue(-5)
+    assert dialog.apply_button.isEnabled()
+    assert dialog.ranges() == ((-5, 200), (100, 8000))
+    dialog.reject()
+    chart.dispose()
+
+
+def test_redrawing_a_chart_clears_the_previous_cursor_readout(app: Any) -> None:
+    from reverbscope.ui.plotkit import ChartPanel
+
+    chart = ChartPanel()
+    chart.add_curve("Old take", [1, 2, 3], [4, 5, 6], color="#177e89")
+    chart.show_cursor(2, 0)
+    assert "Old take" in chart._readout_full
+    chart.clear()
+    assert chart.readout.text() == ""
+    assert chart.readout.toolTip() == ""
+    assert not chart.cursor_line.isVisible()
+    chart.dispose()
+
+
 def test_all_bands_mode_draws_broadband_solid_and_each_band_with_its_own_dashes(
     app: Any, result: AnalysisResult
 ) -> None:

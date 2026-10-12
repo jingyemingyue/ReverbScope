@@ -13,13 +13,20 @@ import logging
 from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtWidgets import QHBoxLayout, QPushButton, QScrollArea, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QHBoxLayout,
+    QPushButton,
+    QScrollArea,
+    QToolButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _
 from reverbscope.ui.browser import SessionBrowser
 from reverbscope.ui.pages import WalkthroughCard
-from reverbscope.ui.widgets import Card, label
+from reverbscope.ui.widgets import label
 
 log = logging.getLogger(__name__)
 
@@ -47,19 +54,8 @@ class StartPanel(QWidget):
         self.scroll_area.setWidget(body)
         outer.addWidget(self.scroll_area)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(20, 14, 20, 14)
-        layout.setSpacing(10)
-        layout.addWidget(label(_("Start"), "title"))
-        layout.addWidget(
-            label(
-                _(
-                    "Open a project or a session, or measure with the strip at the bottom of "
-                    "the window. Measurements open in the list on the left."
-                ),
-                "hint",
-                wrap=True,
-            )
-        )
+        layout.setContentsMargins(8, 8, 8, 8)
+        layout.setSpacing(6)
 
         # Shown until dismissed (a setting); Help ▸ Getting started brings it back.
         self.walkthrough = WalkthroughCard()
@@ -68,9 +64,23 @@ class StartPanel(QWidget):
         #: "Don't show this again" was clicked in this run: the card stays
         #: hidden even where the settings file could not record it.
         self._walkthrough_dismissed = False
-        layout.addWidget(self.walkthrough)
+        self.guide_button = QToolButton()
+        self.guide_button.setText(_("Getting started"))
+        self.guide_button.setCheckable(True)
+        self.guide_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.guide_button.setArrowType(Qt.ArrowType.RightArrow)
+        self.guide_button.toggled.connect(self.walkthrough.setVisible)
+        self.guide_button.toggled.connect(
+            lambda opened: self.guide_button.setArrowType(
+                Qt.ArrowType.DownArrow if opened else Qt.ArrowType.RightArrow
+            )
+        )
+        self.walkthrough.hide()
 
-        sessions = Card()
+        sessions = QWidget()
+        sessions_layout = QVBoxLayout(sessions)
+        sessions_layout.setContentsMargins(0, 0, 0, 0)
+        sessions_layout.setSpacing(6)
         header = QHBoxLayout()
         header.addWidget(label(_("Saved sessions").upper(), "section"))
         header.addStretch(1)
@@ -87,13 +97,15 @@ class StartPanel(QWidget):
         compare_button.clicked.connect(self.compare_requested.emit)
         for button in (open_button, project_button, compare_button):
             header.addWidget(button)
-        sessions.body.addLayout(header)
+        sessions_layout.addLayout(header)
         # Two selected rows go straight into Compare (MainWindow.show_compare).
         self.browser = SessionBrowser(multi_select=True)
         self.browser.open_session.connect(self.open_recent.emit)
         self.recent = self.browser.list
-        sessions.body.addWidget(self.browser, 1)
+        sessions_layout.addWidget(self.browser, 1)
         layout.addWidget(sessions, 1)
+        layout.addWidget(self.guide_button, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(self.walkthrough)
 
     def refresh_recent(self) -> None:
         self.browser.refresh_recent()
@@ -102,11 +114,15 @@ class StartPanel(QWidget):
         self.browser.list_folder(root)
 
     def show_walkthrough(self, visible: bool) -> None:
-        self.walkthrough.setVisible(visible and not self._walkthrough_dismissed)
+        enabled = visible and not self._walkthrough_dismissed
+        self.guide_button.setVisible(enabled)
+        self.walkthrough.setVisible(enabled and self.guide_button.isChecked())
 
     def restore_walkthrough(self) -> None:
         """Help > Getting started: the card is back, also after a dismissal."""
         self._walkthrough_dismissed = False
+        self.guide_button.show()
+        self.guide_button.setChecked(True)
         self.walkthrough.show()
 
     def dismiss_walkthrough(self) -> None:
@@ -117,6 +133,8 @@ class StartPanel(QWidget):
         from reverbscope.settings import load_settings, save_settings
 
         self._walkthrough_dismissed = True
+        self.guide_button.setChecked(False)
+        self.guide_button.hide()
         self.walkthrough.hide()
         try:
             save_settings(replace(load_settings(), walkthrough_dismissed=True))

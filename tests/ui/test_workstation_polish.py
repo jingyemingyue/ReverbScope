@@ -288,6 +288,44 @@ def test_native_shortcut_is_text_and_the_strip_names_its_phase(app: QApplication
     window.close()
 
 
+def test_room_opens_framed_and_parameters_do_not_take_the_canvas(
+    app: QApplication, result: AnalysisResult, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    from reverbscope.ui.main_window import MainWindow
+
+    window = MainWindow()
+    window.resize(1366, 768)
+    window.show()
+    window.model.add_session(tmp_path / "take", MeasurementSession(), result)
+    room = window.views["room"]
+    room.use_example()
+    window.show_view("fr")
+    app.processEvents()
+    window.show_view("room")
+    app.processEvents()
+    app.processEvents()
+    assert room.parameters.isHidden()
+    assert room.canvas._framed(room.canvas._frame_points(), room.canvas._fit_margins())
+    width = room.canvas.width()
+    room.parameters_button.click()
+    app.processEvents()
+    assert room.parameters.isVisible()
+    assert room.canvas.width() < width
+    room.parameters_button.click()
+    app.processEvents()
+    assert room.canvas.width() == width
+    room.canvas.camera.orbit(30, 10)
+    distance = room.canvas.camera.distance_m
+    yaw = room.canvas.camera.yaw_deg
+    window.show_view("fr")
+    window.show_view("room")
+    app.processEvents()
+    assert room.canvas.camera.distance_m == distance
+    assert room.canvas.camera.yaw_deg == yaw
+    window.close()
+
+
 def test_themes_swap_the_same_tokens(app: QApplication, monkeypatch: pytest.MonkeyPatch) -> None:
     from reverbscope.ui.theme import color_scheme, stylesheet, tokens
 

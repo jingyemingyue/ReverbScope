@@ -19,6 +19,7 @@ from typing import Any
 
 import numpy as np
 from PySide6.QtCore import Qt, QThread, QTimer, Signal
+from PySide6.QtGui import QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QDoubleSpinBox,
@@ -318,6 +319,13 @@ class RoomView(AnalysisView):
         tools.addWidget(fit)
         tools.addWidget(reset)
         tools.addStretch(1)
+        self.parameters_button = QToolButton()
+        self.parameters_button.setText(_("Room parameters"))
+        self.parameters_button.setCheckable(True)
+        self.parameters_button.setToolTip(
+            _("Edit room dimensions, device positions and reflection selection.")
+        )
+        tools.addWidget(self.parameters_button)
         layers = QHBoxLayout()
         layers.setSpacing(10)
         saved = _layer_state(read_room_layers(_layer_text(DEFAULT_LAYERS)))
@@ -368,6 +376,7 @@ class RoomView(AnalysisView):
         layout.addLayout(layers)
 
         splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter = splitter
         self.canvas = RoomCanvas()
         fit.clicked.connect(self.canvas.fit)
         reset.clicked.connect(self.reset_view)
@@ -448,11 +457,15 @@ class RoomView(AnalysisView):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setMinimumWidth(220)
+        scroll.setMinimumWidth(240)
+        scroll.setMaximumWidth(360)
+        self.parameters = scroll
         splitter.addWidget(scroll)
         splitter.setStretchFactor(0, 5)
         splitter.setStretchFactor(1, 2)
         layout.addWidget(splitter, 1)
+        self.parameters_button.toggled.connect(self.parameters.setVisible)
+        self.parameters.hide()
 
         for spin in (self.length_spin, self.width_spin, self.height_spin):
             spin.valueChanged.connect(self._edited)
@@ -795,14 +808,24 @@ class RoomView(AnalysisView):
             ""
             if scene.box is not None or scene.source is not None or scene.microphones
             else _(
-                "Enter the room box and the device positions on the right, import a scan, or "
-                "try the example room."
+                "Open Room parameters to enter dimensions and device positions, import a scan, "
+                "or use the example room."
             )
         )
         self.canvas.set_scene(scene)
         self._fill_reflections(entry)
         self._fill_notes(entry)
         self._fill_placement(entry.result.placement if entry and entry.result else None)
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802 - Qt override
+        super().showEvent(event)
+        # Hidden views are laid out again when shown. Frame after that layout,
+        # and preserve a camera the user already moved.
+        QTimer.singleShot(0, self.canvas, self._frame_on_show)
+
+    def _frame_on_show(self) -> None:
+        if not self.canvas.camera.user_adjusted:
+            self.canvas.fit()
 
     def _fill_reflections(self, entry: Entry | None) -> None:
         result = entry.result if entry is not None else None

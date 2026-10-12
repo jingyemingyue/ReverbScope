@@ -6,6 +6,45 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 40: 2026-10-12 — **the workstation becomes a compact measurement
+desk with exact chart limits and room parameters on demand** (continuing
+PR #57 on `grok/gui2-professional-polish`).
+
+* Tool buttons, inputs and table headings share flat, compact chrome.
+  Body text is 12 logical pixels with the existing per-glyph Chinese
+  fallbacks. Panel switches are separate from analysis tabs. Severity and
+  validity are coloured text; findings are neutral rows. The overview puts
+  band tables before expandable interpretation, and inspector conditions
+  expand on demand. Empty inspector sections are withheld. Paths use a
+  single elided line with the full path on hover.
+* The empty desk is a session operation area. The first-measurement guide
+  expands when requested and still honours dismissal and Help > Getting
+  started. No demo data is presented as a real measurement.
+* Axes accepts exact lower and upper limits in the axis units, including
+  Hz on logarithmic axes. Invalid or reversed ranges cannot be applied.
+  Chosen ranges survive smoothing, alignment, overlays and measurement
+  redraws. Frame restores defaults. Frequency and difference panes share
+  horizontal limits. Redraw clears the previous cursor readout.
+* Room parameters reveals the existing geometry, scan and reflection
+  controls; it starts closed. The first visible room fits after layout,
+  correcting a crop reproduced on the native macOS window. A camera the
+  user moved is kept across view switches.
+* Checks on Apple Silicon macOS, Python 3.12.14, PySide6 6.11.2:
+  3,423 tests passed, two platform-specific tests skipped. Ruff, formatting,
+  mypy, documentation links, CLI-documentation syntax and source safety
+  checks passed. Final GUI regression checks cover the last layout changes.
+  Synthetic screenshot matrix: English and Simplified Chinese, light and
+  dark, 1366×768 and 1920×1080 offscreen. A separate Cocoa window run checked
+  the main views at the physical display's available size and native pixel
+  ratio. Requested oversized windows are constrained by macOS; their names
+  do not prove a 1920×1080 native canvas. Real audio interfaces, a DAW,
+  playback/Stop and packaged-application acceptance remain untested.
+* No acoustic algorithm, measurement format, runtime dependency, main
+  branch, release branch, tag or published release changed. The earlier
+  worker-generation checks and the 8 MiB display-cache budget remain.
+  Remote checks belong to the new commit; the old #57 bundle is not a
+  build of this update.
+
 Snapshot 39: 2026-10-12 — **the workstation line fixes time-frequency
 state, budgets the display cache, simplifies the room picture, and takes
 the command-line hardening from #54 without a second GUI** (branch
