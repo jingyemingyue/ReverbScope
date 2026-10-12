@@ -31,7 +31,7 @@ from reverbscope.ui.health_nav import view_for_check, view_title
 from reverbscope.ui.tables import decay_table_rows, energy_table_rows
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
-from reverbscope.ui.widgets import Card, Chip, FindingCard, PageHeader, StatTile, label
+from reverbscope.ui.widgets import Chip, FindingCard, PageHeader, StatTile, label
 from reverbscope.ui.workspace import WorkspaceModel, entry_label
 
 #: Display word and chip tone of a metric validity.
@@ -85,7 +85,7 @@ class _Overview(QWidget):
         outer.addWidget(scroll)
 
         tiles = QHBoxLayout()
-        tiles.setSpacing(10)
+        tiles.setSpacing(12)
         self.rt60 = StatTile(_("Reverberation (RT60)"))
         self.noise = StatTile(_("Background noise"))
         self.reflections = StatTile(_("Early reflections"))
@@ -94,18 +94,21 @@ class _Overview(QWidget):
             tiles.addWidget(tile)
         layout.addLayout(tiles)
 
-        health = Card()
+        health = QWidget()
+        health_layout = QVBoxLayout(health)
+        health_layout.setContentsMargins(0, 4, 0, 0)
+        health_layout.setSpacing(4)
         health_header = QHBoxLayout()
         health_header.addWidget(label(_("MEASUREMENT HEALTH"), "section"))
         self.health_chip = Chip("", "neutral")
         health_header.addWidget(self.health_chip)
         health_header.addStretch(1)
-        health.body.addLayout(health_header)
+        health_layout.addLayout(health_header)
         self.health_summary = label("", "hint", wrap=True)
-        health.body.addWidget(self.health_summary)
+        health_layout.addWidget(self.health_summary)
         self.health_rows = QVBoxLayout()
-        self.health_rows.setSpacing(6)
-        health.body.addLayout(self.health_rows)
+        self.health_rows.setSpacing(4)
+        health_layout.addLayout(self.health_rows)
         layout.addWidget(health)
 
         self.findings_title = label("", "section")
@@ -114,18 +117,17 @@ class _Overview(QWidget):
         self.findings.setSpacing(6)
         layout.addLayout(self.findings)
 
-        decay = Card()
-        decay.body.addWidget(label(_("REVERBERATION BY BAND"), "section"))
-        decay.body.addWidget(
-            label(
-                _(
-                    "Reverberation (extrapolated to 60 dB). 'insufficient range' means "
-                    "the decay is not clean enough for that metric."
-                ),
-                "hint",
-                wrap=True,
-            )
+        decay = QWidget()
+        decay_layout = QVBoxLayout(decay)
+        decay_layout.setContentsMargins(0, 4, 0, 0)
+        decay_layout.setSpacing(4)
+        decay_heading = label(_("REVERBERATION BY BAND"), "section")
+        decay_note = _(
+            "Reverberation (extrapolated to 60 dB). 'insufficient range' means "
+            "the decay is not clean enough for that metric."
         )
+        decay_heading.setToolTip(decay_note)
+        decay_layout.addWidget(decay_heading)
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels([_("Band"), "EDT", "T20", "T30", _("RT60 estimate")])
         self.table.horizontalHeader().setStretchLastSection(True)
@@ -135,24 +137,23 @@ class _Overview(QWidget):
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        decay.body.addWidget(self.table)
+        decay_layout.addWidget(self.table)
         layout.addWidget(decay)
 
-        energy = Card()
-        energy.body.addWidget(label(_("EARLY AND LATE ENERGY"), "section"))
-        energy.body.addWidget(
-            label(
-                _(
-                    "C50 is early energy over late energy at 50 ms (speech). C80 is the same "
-                    "at 80 ms (music). D50 is the share of energy in the first 50 ms. Centre "
-                    "time is the energy-weighted average time. Time zero is the detected "
-                    "direct sound. A ratio is reported only when the decay range is at least "
-                    "20 dB, and it is not a room score."
-                ),
-                "hint",
-                wrap=True,
-            )
+        energy = QWidget()
+        energy_layout = QVBoxLayout(energy)
+        energy_layout.setContentsMargins(0, 4, 0, 0)
+        energy_layout.setSpacing(4)
+        energy_heading = label(_("EARLY AND LATE ENERGY"), "section")
+        energy_note = _(
+            "C50 is early energy over late energy at 50 ms (speech). C80 is the same "
+            "at 80 ms (music). D50 is the share of energy in the first 50 ms. Centre "
+            "time is the energy-weighted average time. Time zero is the detected "
+            "direct sound. A ratio is reported only when the decay range is at least "
+            "20 dB, and it is not a room score."
         )
+        energy_heading.setToolTip(energy_note)
+        energy_layout.addWidget(energy_heading)
         self.energy_table = QTableWidget(0, 5)
         self.energy_table.setHorizontalHeaderLabels(
             [_("Band"), "C50", "C80", "D50", _("Centre time")]
@@ -164,7 +165,7 @@ class _Overview(QWidget):
         self.energy_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         self.energy_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.energy_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
-        energy.body.addWidget(self.energy_table)
+        energy_layout.addWidget(self.energy_table)
         layout.addWidget(energy)
         layout.addStretch(1)
 

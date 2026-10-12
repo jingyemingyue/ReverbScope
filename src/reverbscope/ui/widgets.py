@@ -264,30 +264,35 @@ class Chip(QLabel):
     def set_tone(self, tone: str) -> None:
         fg, bg = tone_color(tone)
         self.setStyleSheet(
-            f"background: {bg}; color: {fg}; border: 1px solid {bg}; border-radius: 9px;"
-            " padding: 2px 9px;"
-            "font-size: 11px; font-weight: 700;"
+            f"background: {bg}; color: {fg}; border: 1px solid {bg}; border-radius: 2px;"
+            " padding: 1px 6px; font-size: 11px; font-weight: 600;"
         )
 
 
-class StatTile(Card):
-    """One key figure: caption, value, a qualifier line and a trust chip."""
+class StatTile(QWidget):
+    """One key figure: caption, value, a qualifier line and a trust chip.
+
+    Not a card. The four figures sit in one row, like a parameter strip.
+    """
 
     def __init__(self, caption: str, parent: QWidget | None = None) -> None:
-        super().__init__(parent, spacing=2)
+        super().__init__(parent)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 10, 0)
+        layout.setSpacing(1)
         # The caption wraps on its own line. Sharing the row with the chip
         # clipped Chinese captions once the tile got narrow.
         self.caption = label(caption, "kpi-label", wrap=True)
-        self.body.addWidget(self.caption)
+        layout.addWidget(self.caption)
         row = QHBoxLayout()
         self.value = label("-", "kpi-value")
         row.addWidget(self.value, 1)
         self.chip = Chip()
         row.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self.body.addLayout(row)
+        layout.addLayout(row)
         self.sub = label("", "kpi-sub", wrap=True)
-        self.body.addWidget(self.sub)
+        layout.addWidget(self.sub)
 
     def show_value(self, value: str, sub: str = "", chip: str = "", tone: str = "neutral") -> None:
         self.value.setText(value)

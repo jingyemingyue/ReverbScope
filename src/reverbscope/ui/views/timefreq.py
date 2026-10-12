@@ -453,6 +453,12 @@ class WaterfallView(_TimeFrequencyView):
         m.addWidget(self.fmin)
         m.addWidget(self.fmax)
         self.smoothing = QComboBox()
+        self.smoothing.setToolTip(
+            _(
+                "Display smoothing averages the stored curve in power over a fraction of an "
+                "octave. It changes the picture only; exports say which was applied."
+            )
+        )
         for fraction in (0, 24, 12, 6, 3):
             text = (
                 _("no smoothing")

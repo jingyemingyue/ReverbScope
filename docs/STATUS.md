@@ -31,20 +31,32 @@ published; `release/0.5.0` untouched).
   Geometric assumption and All constraints start off. Restore default view
   is saved in `ui.ini`. Fit leaves margin for the front mark and dimensions.
   Device names and the length, width and height captions are placed so their
-  boxes do not cover one another. Checked for the plan, front, side and the
-  default perspective, light and dark, at the canvas size of a 1366×768
-  window and on the full 1366×768 canvas, in English and Simplified Chinese.
+  boxes do not cover one another. Fit includes the visible room, the drawn
+  measured constraint and those captions, then steps back so they stay inside
+  a margin (the right and bottom were clipped). Checked for the plan, front,
+  side and the default perspective, light and dark, at the canvas size of a
+  1366×768 window and on the full 1366×768 canvas, in English and Simplified
+  Chinese.
+* **Desk.** Overview figures are a strip, not metric cards. Frequency-chart
+  level alignment is marked display-only. References for the working layout,
+  not for artwork: REW measurements panel, overlays and graph panel
+  (roomeqwizard.com/help), Open Sound Meter 1.5 manual (charts, stored
+  series, bottom properties), Smaart v9 data bar / cursor readout / command
+  bar (Rational Acoustics user guide). No icons, code or branding taken.
 * **PR #54's command line** (menu, terminal layout, 基准/对比项) is on this
   branch. PR #56 is already contained here and is the GUI this branch
   continues. PR #55 is a different window and is not merged. No PR was closed.
 * **What was run** (Linux container, Python 3.12, PySide6 6.11 offscreen, no
-  audio device): ruff, ruff format, mypy, the doc-link, CLI-doc, source-safety
-  and action-pin checks, the docs site build, `tests/ui/test_timefreq_state.py`,
-  `tests/ui/test_room_view.py` (label placement), and offscreen Chinese room
-  screenshots at 1366×768 and 1920×1080, light and dark, including plan, front,
-  side and the default perspective. The full pytest suite is the CI test job
-  for this commit. **Not run, and not a pass:** a macOS window server, Retina,
-  file dialogs, a sound card, or a DAW. A macOS Apple Silicon bundle from the
+  audio device): ruff, ruff format, mypy, doc links, CLI-doc syntax, the
+  catalog test, the room frame and label tests, the time-frequency state
+  tests, the health-card test and the theme redraw test. Offscreen screenshots
+  at 1366×768 and 1920×1080, light and dark, Simplified Chinese, for the empty
+  desk, overview, frequency response and difference, decay, spectrogram,
+  waterfall and room; plan, front and side were checked the same way.
+  English was checked offscreen at 1366×768 light for the room, the frequency
+  chart and the overview. The full pytest suite is the CI test job for this
+  commit. **Not run, and not a pass:** a macOS window server, Retina, file
+  dialogs, a sound card, or a DAW. A macOS Apple Silicon bundle from the
   Release workflow is a build of this commit, not a GUI pass.
 
 Snapshot 38: 2026-10-07 — **the post-RC line takes in the parallel audits,

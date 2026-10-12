@@ -384,7 +384,12 @@ layers and the camera back. The choice is saved in `ui.ini`.
 **Rendering.** `ui/room/` draws with `QPainter` only: an orbit camera
 (rotate, pan, zoom about the cursor, fit, reset), an axis triad labelled
 length / width / up, a metre scale bar, the entered floor filled faintly,
-and a mark on the front edge (the face at y = 0). The canvas names the
+and a mark on the front edge (the face at y = 0). Fit frames the entered
+box, the loudspeaker, the current microphone, the dimension captions and
+whatever measured constraint or highlighted assumption is actually drawn.
+It then steps the camera back until those points sit inside a margin, so
+the near corner and the captions are not cut off on the right or the
+bottom. A resize refits until the user orbits, pans or zooms. The canvas names the
 camera: plan (true to scale, front along the lower edge), front, side, or
 a free perspective after the user orbits. Front and side are pitched enough
 that the box reads as a volume; the near face is still the one the preset

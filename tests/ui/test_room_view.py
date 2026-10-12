@@ -348,6 +348,49 @@ def _label_boxes(canvas: Any, width: int, height: int, preset: str) -> list[Any]
     return rects
 
 
+def test_the_frame_keeps_the_room_and_the_constraint_inside(app: Any) -> None:
+    """Default fit at the 1366×768 canvas size does not crop the room.
+
+    The measured constraint and the dimension anchors stay inside the margin
+    on the plan, the front, the side and the default perspective.
+    """
+    from reverbscope.geometry.room import example_room
+    from reverbscope.ui.room.canvas import (
+        LAYER_ASSUMED,
+        LAYER_ENTERED,
+        LAYER_MEASURED,
+        RoomCanvas,
+        RoomScene,
+    )
+
+    example = example_room()
+    microphone = example.microphone("A")
+    assert example.room is not None and example.source is not None and microphone is not None
+    scene = RoomScene(
+        box=example.room,
+        source=example.source,
+        microphones={"B": microphone},
+        current_microphone="B",
+        ellipsoid=(example.source, microphone, 3.2),
+        layers={LAYER_ENTERED: True, LAYER_MEASURED: True, LAYER_ASSUMED: False},
+    )
+    canvas = RoomCanvas()
+    canvas.set_scene(scene)
+    canvas.show()
+    app.processEvents()
+    for width, height in ((640, 560), (1366, 768)):
+        for preset in ("perspective", "top", "front", "side"):
+            canvas.resize(width, height)
+            canvas.camera.user_adjusted = False
+            if preset == "perspective":
+                canvas.reset()
+            else:
+                canvas.look(preset)
+            points = canvas._frame_points()
+            assert canvas._framed(points, canvas._fit_margins()), (preset, width, height)
+    canvas.close()
+
+
 def test_room_labels_stay_apart_at_laptop_size(app: Any) -> None:
     """Names and dimension captions do not cover each other.
 

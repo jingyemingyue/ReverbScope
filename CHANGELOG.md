@@ -24,7 +24,15 @@ All notable changes to ReverbScope are documented here. The format follows
   back and frames the camera with room for the front mark and the dimensions.
   The loudspeaker name, the current microphone name and the length, width
   and height captions move apart in screen space when the projection would
-  stack them (plan, front, side and the default perspective).
+  stack them (plan, front, side and the default perspective). Fit keeps the
+  room, the visible measured constraint and those captions inside the canvas
+  with a margin; a resize refits until the user moves the camera.
+- **Overview reads as figures, not a dashboard.** The four headline numbers
+  sit in one strip. Band tables are not wrapped in cards. The long
+  definition of each table is on the heading's tooltip. Level alignment on
+  the frequency chart is labelled display-only. Chart **Frame** restores
+  the axes (R or double-click). The inspector keeps the fault and the chart
+  button; the longer "affects / next" note is on that row's tooltip.
 - **Command line from the #42/#54 line, without replacing the workstation.**
   Menu answers accept 是的 and 确定, Ctrl+C leaves with status 130, a folder
   is not replaced before a yes, and the terminal keeps Chinese paths and

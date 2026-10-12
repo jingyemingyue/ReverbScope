@@ -71,7 +71,7 @@ class FrequencyView(AnalysisView):
         )
         self.smoothing.currentIndexChanged.connect(self.refresh)
         controls.addWidget(self.smoothing)
-        self.align = QCheckBox(_("Align levels at 500 Hz to 2 kHz"))
+        self.align = QCheckBox(_("Align levels at 500 Hz to 2 kHz (display only)"))
         self.align.setToolTip(
             _(
                 "Shift every curve so its mean level between 500 Hz and 2 kHz is 0 dB. The "

@@ -277,7 +277,7 @@ class ChartPanel(QWidget):
         self._readout_full = ""
         top.addWidget(self.readout, 1)
         self.reset_button = QToolButton()
-        self.reset_button.setText(_("Reset view"))
+        self.reset_button.setText(_("Frame"))
         self.reset_button.setToolTip(_("Fit the chart again (R or double-click)."))
         self.reset_button.clicked.connect(self.reset_view)
         top.addWidget(self.reset_button)

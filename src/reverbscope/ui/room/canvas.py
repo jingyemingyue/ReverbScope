@@ -29,7 +29,12 @@ from PySide6.QtWidgets import QSizePolicy, QWidget
 from reverbscope.geometry.paths import PredictedPath
 from reverbscope.geometry.room import Point, RoomBox
 from reverbscope.i18n import N_, _
-from reverbscope.ui.room.camera import OrbitCamera
+from reverbscope.ui.room.camera import (
+    DEFAULT_PITCH_DEG,
+    DEFAULT_YAW_DEG,
+    MAX_DISTANCE_M,
+    OrbitCamera,
+)
 from reverbscope.ui.theme import tokens
 
 LAYER_ENTERED = "entered"
@@ -353,19 +358,28 @@ class RoomCanvas(QWidget):
         self.camera_changed.emit()
 
     def fit(self) -> None:
-        self.camera.width, self.camera.height = self.width(), self.height()
-        low, high = self.scene.bounds()
-        # The front-edge mark and the dimension labels sit outside the box.
-        pad = np.array([0.55, 1.2, 0.5])
+        """Frame the room, the visible constraints and the dimension captions.
+
+        The first guess is the bounding box. The camera then steps back until
+        those points sit inside a margin, so a near corner in perspective and
+        a caption beside it are not cut off on the right or the bottom.
+        """
+        self.camera.width, self.camera.height = max(1, self.width()), max(1, self.height())
+        points = self._frame_points()
+        low, high = points.min(axis=0), points.max(axis=0)
+        pad = np.array([0.35, 0.45, 0.25])
         self.camera.fit(low - pad, high + pad)
+        self._contain(points)
         self.update()
 
     def reset(self) -> None:
-        self.camera.width, self.camera.height = self.width(), self.height()
-        self.camera.reset(*self.scene.bounds())
+        self.camera.plan = False
+        self.camera.preset_name = ""
+        self.camera.yaw_deg = DEFAULT_YAW_DEG
+        self.camera.pitch_deg = DEFAULT_PITCH_DEG
+        self.fit()
         self._sync_tooltip()
         self.camera_changed.emit()
-        self.update()
 
     def look(self, preset: str) -> None:
         """Frame the room from ``top``, ``front`` or ``side``."""
@@ -392,10 +406,11 @@ class RoomCanvas(QWidget):
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
-        first = self.camera.width == 640 and self.camera.height == 480
-        self.camera.width, self.camera.height = self.width(), self.height()
-        if first:
-            self.camera.fit(*self.scene.bounds())
+        if self.camera.user_adjusted:
+            self.camera.width, self.camera.height = self.width(), self.height()
+            return
+        if self.width() >= 40 and self.height() >= 40:
+            self.fit()
 
     def paintEvent(self, _event: QPaintEvent) -> None:  # noqa: N802 - Qt override
         t = tokens()
@@ -703,6 +718,88 @@ class RoomCanvas(QWidget):
             QPolygonF([QPointF(float(screen[i][0]), float(screen[i][1])) for i in indices])
         )
         painter.setBrush(Qt.BrushStyle.NoBrush)
+
+    def _frame_points(self) -> NDArray[np.float64]:
+        """World points the current picture must keep on screen."""
+        scene = self.scene
+        points: list[tuple[float, float, float]] = []
+        entered = scene.layers.get(LAYER_ENTERED, True)
+        if scene.box is not None and entered:
+            points.extend(tuple(corner) for corner in _box_corners(scene.box))
+            length, width, height = scene.box.dimensions
+            points.append((length / 2.0, -0.78, 0.0))
+            points.append((length / 2.0, width, 0.08))
+            points.append((length, width / 2.0, 0.08))
+            if not self.camera.plan:
+                points.append((length, 0.0, height / 2.0))
+        if entered:
+            if scene.source is not None:
+                points.append(scene.source.as_tuple())
+            points.extend(mic.as_tuple() for mic in scene.microphones.values())
+            if scene.scan_points is not None and scene.scan_points.size:
+                low = scene.scan_points.min(axis=0)
+                high = scene.scan_points.max(axis=0)
+                points.append((float(low[0]), float(low[1]), float(low[2])))
+                points.append((float(high[0]), float(high[1]), float(high[2])))
+        if scene.layers.get(LAYER_MEASURED, True):
+            if scene.ellipsoid is not None:
+                for line in ellipsoid_lines(*scene.ellipsoid, detail=False):
+                    points.extend(
+                        (float(row[0]), float(row[1]), float(row[2])) for row in line[::6]
+                    )
+            if scene.constraints_full and scene.sphere is not None:
+                centre, radius = scene.sphere
+                base = centre.as_tuple()
+                for axis in range(3):
+                    for sign in (-1.0, 1.0):
+                        point = [base[0], base[1], base[2]]
+                        point[axis] += sign * radius
+                        points.append((point[0], point[1], point[2]))
+            if scene.placement_ring is not None:
+                ring = ring_line(*scene.placement_ring)
+                points.extend((float(row[0]), float(row[1]), float(row[2])) for row in ring[::12])
+        if scene.layers.get(LAYER_ASSUMED, True) and scene.source is not None:
+            for path in scene.predicted:
+                if path.face in scene.highlighted_faces or scene.constraints_full:
+                    points.append(path.point.as_tuple())
+        if not points:
+            low, high = scene.bounds()
+            return np.vstack((low, high))
+        return np.asarray(points, dtype=np.float64)
+
+    def _fit_margins(self) -> tuple[float, float, float, float]:
+        """Clear pixels at the left, top, right and bottom of the canvas.
+
+        Dimension captions sit to the right and along the bottom, and the
+        scale bar occupies the lower edge.
+        """
+        return (32.0, 16.0, 78.0, 56.0)
+
+    def _framed(
+        self, points: NDArray[np.float64], margins: tuple[float, float, float, float]
+    ) -> bool:
+        left, top, right, bottom = margins
+        screen, visible = self.camera.project(points)
+        width = float(self.camera.width)
+        height = float(self.camera.height)
+        if width <= left + right or height <= top + bottom:
+            return True
+        for (x, y), ok in zip(screen, visible, strict=True):
+            if not bool(ok) or not math.isfinite(x) or not math.isfinite(y):
+                return False
+            if x < left or y < top or x > width - right or y > height - bottom:
+                return False
+        return True
+
+    def _contain(self, points: NDArray[np.float64]) -> None:
+        margins = self._fit_margins()
+        for _step in range(16):
+            if self._framed(points, margins):
+                return
+            if self.camera.plan:
+                self.camera.plan_scale = max(2.0, self.camera.plan_scale * 0.92)
+            else:
+                self.camera.distance_m = min(MAX_DISTANCE_M, self.camera.distance_m * 1.08)
 
     def _open_labels(self, painter: QPainter) -> None:
         """Reserve the corner summary, the legend and the scale before captions."""

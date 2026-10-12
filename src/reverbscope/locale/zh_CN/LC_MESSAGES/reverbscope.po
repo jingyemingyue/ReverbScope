@@ -242,6 +242,9 @@ msgstr "按此配置的衰减阈值，宽带 RT60 从“{before}”（{baseline_
 msgid "Align levels at 500 Hz to 2 kHz"
 msgstr "按 500 Hz 至 2 kHz 对齐电平"
 
+msgid "Align levels at 500 Hz to 2 kHz (display only)"
+msgstr "按 500 Hz 至 2 kHz 对齐电平（仅显示）"
+
 msgid "All bands of the current measurement"
 msgstr "当前测量的全部频带"
 

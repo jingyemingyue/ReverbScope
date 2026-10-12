@@ -41,6 +41,8 @@ class OrbitCamera:
     plan_scale: float = 60.0
     width: int = 640
     height: int = 480
+    #: Set when the user orbits, pans or zooms. A plain resize may refit until then.
+    user_adjusted: bool = False
 
     # --- basis ------------------------------------------------------------------------
 
@@ -114,11 +116,13 @@ class OrbitCamera:
             self.pan(dx_px, dy_px)
             return
         self.preset_name = ""
+        self.user_adjusted = True
         self.yaw_deg = (self.yaw_deg - 0.4 * dx_px) % 360.0
         self.pitch_deg = max(-85.0, min(85.0, self.pitch_deg + 0.4 * dy_px))
 
     def pan(self, dx_px: float, dy_px: float) -> None:
         scale = self.metres_per_pixel()
+        self.user_adjusted = True
         if self.plan:
             tx, ty, tz = self.target
             self.target = (tx - dx_px * scale, ty + dy_px * scale, tz)
@@ -129,6 +133,7 @@ class OrbitCamera:
 
     def zoom_at(self, sx: float, sy: float, factor: float) -> None:
         """Zoom by ``factor`` (<1 closer) keeping the point under ``(sx, sy)`` in place."""
+        self.user_adjusted = True
         if self.plan:
             before = self.unproject_plan(sx, sy)
             self.plan_scale = max(2.0, min(5000.0, self.plan_scale / factor))
@@ -153,6 +158,7 @@ class OrbitCamera:
         high = np.asarray(high, dtype=np.float64)
         centre = (low + high) / 2.0
         radius = max(0.5, float(np.linalg.norm(high - low)) / 2.0)
+        self.user_adjusted = False
         self.target = (float(centre[0]), float(centre[1]), float(centre[2]))
         self.distance_m = radius / math.sin(math.radians(FIELD_OF_VIEW_DEG) / 2.0) * 1.05
         span_x = max(0.5, float(high[0] - low[0]))
@@ -166,6 +172,7 @@ class OrbitCamera:
         Side looks along the length, with the face at x = 0 nearest.
         Neither name is a wall the measurement found.
         """
+        self.user_adjusted = False
         if name == "top":
             self.plan = True
             self.preset_name = "top"
@@ -182,6 +189,7 @@ class OrbitCamera:
     def reset(self, low: NDArray[np.float64], high: NDArray[np.float64]) -> None:
         self.plan = False
         self.preset_name = ""
+        self.user_adjusted = False
         self.yaw_deg = DEFAULT_YAW_DEG
         self.pitch_deg = DEFAULT_PITCH_DEG
         self.fit(low, high)

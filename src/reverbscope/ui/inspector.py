@@ -115,7 +115,9 @@ class _Section(QWidget):
         self.note.setText(text)
         self.note.setVisible(bool(text))
 
-    def add_row(self, caption: str, value: str, chip: str = "", tone: str = "neutral") -> None:
+    def add_row(
+        self, caption: str, value: str, chip: str = "", tone: str = "neutral", tip: str = ""
+    ) -> None:
         """``caption`` over two columns: the value, then the chip word in its tone.
 
         The chip is inline text rather than a pill so a narrow inspector wraps
@@ -133,7 +135,9 @@ class _Section(QWidget):
             color, _soft = tone_color(tone)
             text += f' <span style="color:{color}; font-weight:600">· {html.escape(chip)}</span>'
         shown.setText(text)
-        shown.setToolTip(f"{value}  {chip}".strip())
+        shown.setToolTip(tip or f"{value}  {chip}".strip())
+        if tip:
+            name.setToolTip(tip)
         self.grid.addWidget(name, self.rows, 0, Qt.AlignmentFlag.AlignTop)
         self.grid.addWidget(shown, self.rows, 1, Qt.AlignmentFlag.AlignTop)
         self.rows += 1
@@ -295,11 +299,19 @@ class Inspector(QWidget):
         )
         for check in report.problems:
             tone = HEALTH_TONE.get(check.status, "warn")
-            section.add_row(check.title, check.reason, status_word(check.status), tone)
+            # The overview already prints the long note. Here the reason is the
+            # row; the effect and the next step stay on the tooltip.
+            notes: list[str] = []
             if check.affects:
-                section.add_text(_("Affects {what}.").format(what=affects_text(check.affects)))
-            for step in check.fix:
-                section.add_text(_("Next: {step}").format(step=step))
+                notes.append(_("Affects {what}.").format(what=affects_text(check.affects)))
+            notes.extend(_("Next: {step}").format(step=step) for step in check.fix)
+            section.add_row(
+                check.title,
+                check.reason,
+                status_word(check.status),
+                tone,
+                tip="\n".join(notes),
+            )
             view_id = view_for_check(check)
             if view_id:
                 button = QPushButton(_("Show {name}").format(name=view_title(view_id)))
