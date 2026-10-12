@@ -12,14 +12,19 @@ All notable changes to ReverbScope are documented here. The format follows
   current measurement clears the picture at once. A transform that finishes
   later is cached only for the impulse response it read, and it is drawn
   only when that measurement, those parameters and the visibility are still
-  current. The display cache is limited to 8 MB (a default spectrogram of a
-  short sweep is about 1.9 MB; a default waterfall about 115 KB). Stored
-  measurements are not evicted.
+  current. The display cache has an 8 MiB budget. Pictures past that budget
+  are dropped oldest first, but one picture larger than the budget is kept.
+  It is not a hard memory cap. A default spectrogram of a short sweep is
+  about 1.9 MiB; a default waterfall about 115 KiB. Stored measurements are
+  not evicted.
 - **Room view opens on the room.** Entered geometry and the selected
   reflection are shown; predicted paths and the full constraint mesh stay
   off until **Geometric assumption** or **All constraints** is turned on.
   The choice is restored from `ui.ini`. **Restore default view** puts it
   back and frames the camera with room for the front mark and the dimensions.
+  The loudspeaker name, the current microphone name and the length, width
+  and height captions move apart in screen space when the projection would
+  stack them (plan, front, side and the default perspective).
 - **Command line from the #42/#54 line, without replacing the workstation.**
   Menu answers accept 是的 and 确定, Ctrl+C leaves with status 130, a folder
   is not replaced before a yes, and the terminal keeps Chinese paths and

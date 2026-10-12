@@ -27,11 +27,13 @@ from reverbscope.models.session import MeasurementSession
 
 log = logging.getLogger(__name__)
 
-#: Regenerated pictures (curves, spectrograms, waterfalls). Measured on a
-#: 0.5 s synthetic sweep: a default spectrogram is about 1.9 MB (503×491
-#: float64) and a default waterfall about 115 KB, so 8 MB keeps the newest few
-#: pictures. Parameter sweeps evict the oldest. The measurements themselves
-#: are not stored here.
+#: Regenerated pictures (curves, spectrograms, waterfalls). An 8 MiB budget,
+#: not a hard cap: while more than one picture is stored, the oldest are
+#: dropped until the total fits. One picture larger than the budget is kept,
+#: because the view that just built it still needs it and it can be built
+#: again. Measured on a 0.5 s synthetic sweep: a default spectrogram is about
+#: 1.9 MiB (503×491 float64) and a default waterfall about 115 KiB. The
+#: measurements themselves are not stored here.
 DISPLAY_CACHE_BUDGET = 8 * 1024 * 1024
 
 
@@ -699,11 +701,11 @@ class WorkspaceModel(QObject):
         return total
 
     def _trim_display_cache(self) -> None:
-        """Drop the oldest display values until the cache fits, keeping the newest.
+        """Drop the oldest display values while more than one is over the budget.
 
-        A single result larger than the budget stays: the view that just built
-        it still needs it, and it can be built again. Raw measurements are not
-        in this cache.
+        One result larger than the budget stays: the view that just built it
+        still needs it, and it can be built again. The budget is not a hard
+        memory cap. Raw measurements are not in this cache.
         """
         while len(self._cache_lru) > 1 and self.display_cache_bytes() > DISPLAY_CACHE_BUDGET:
             old_key, old_name = self._cache_lru.pop(0)

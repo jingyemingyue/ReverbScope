@@ -155,11 +155,12 @@ or visibility any more reliable.
 * **Cache**: `cache_get(key, name)` / `cache_put(key, name, value)` keep
   display data per entry (decimated curves, spectrograms). An entry's cache
   is dropped when it is reloaded or removed, and it moves with the entry
-  when a take is saved under a folder key. The cache is bounded
-  (`DISPLAY_CACHE_BUDGET`, 8 MB). A default spectrogram of a short sweep is
-  about 1.9 MB and a default waterfall about 115 KB, so older pictures are
-  dropped as parameters are changed. The stored measurements are not in
-  this cache.
+  when a take is saved under a folder key. The cache has an 8 MiB budget
+  (`DISPLAY_CACHE_BUDGET`), not a hard memory cap. While more than one
+  picture is stored, the oldest are dropped until the total fits. One
+  picture larger than the budget is kept. A default spectrogram of a short
+  sweep is about 1.9 MiB and a default waterfall about 115 KiB. The stored
+  measurements are not in this cache.
 
 Signals: `entries_changed`, `entry_updated(key)`, `current_changed(key)`,
 `overlay_changed`, `baseline_changed`, `reflection_changed(key, index)`,
@@ -387,8 +388,11 @@ and a mark on the front edge (the face at y = 0). The canvas names the
 camera: plan (true to scale, front along the lower edge), front, side, or
 a free perspective after the user orbits. Front and side are pitched enough
 that the box reads as a volume; the near face is still the one the preset
-names. The plan view allows dragging the loudspeaker and the microphone.
-It runs offscreen, so it is tested and screenshotted in CI.
+names. Device names and the length, width and height captions are placed
+in screen space so a loudspeaker and the current microphone, or two
+dimension captions, do not cover each other. The plan view allows dragging
+the loudspeaker and the microphone. It runs offscreen, so it is tested and
+screenshotted in CI.
 
 ## 7. Threads and lifetimes
 
@@ -456,3 +460,6 @@ workspace. `--scale 2` renders at a device pixel ratio of 2 as a high-DPI
 check; that is not a capture from a Retina display. Regenerate them with
 
     QT_QPA_PLATFORM=offscreen python scripts/render_gui2_screenshots.py
+
+`--view room` renders the room only. `--cameras` also writes the plan,
+front, side and default perspective beside that shot.

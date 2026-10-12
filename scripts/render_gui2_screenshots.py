@@ -20,7 +20,9 @@ import shutil
 import sys
 import tempfile
 import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Any
 
 #: (width, height, scheme, views): what the pull request and the docs show.
 _VIEWS = (
@@ -52,6 +54,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--width", type=int, default=0, help="render only this width")
     parser.add_argument("--height", type=int, default=0, help="render only this height")
     parser.add_argument("--scheme", default="", help="render only light or dark")
+    parser.add_argument(
+        "--view",
+        action="append",
+        default=[],
+        help="render only these views (repeatable); default is every view",
+    )
+    parser.add_argument(
+        "--cameras",
+        action="store_true",
+        help="also save the room view from the plan, front, side and default perspective",
+    )
     args = parser.parse_args(argv)
     if args.scale != 1.0:
         os.environ["QT_SCALE_FACTOR"] = str(args.scale)
@@ -70,10 +83,56 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             if args.scheme and scheme != args.scheme:
                 continue
-            _render(work, out, args.lang, width, height, scheme, views, args.scale)
+            chosen = tuple(view for view in views if view in args.view) if args.view else views
+            _render(
+                work,
+                out,
+                args.lang,
+                width,
+                height,
+                scheme,
+                chosen,
+                args.scale,
+                cameras=args.cameras,
+            )
     finally:
         shutil.rmtree(work, ignore_errors=True)
     return 0
+
+
+def _room_cameras(
+    window: Any,
+    out: Path,
+    lang: str,
+    width: int,
+    height: int,
+    scheme: str,
+    suffix: str,
+    pump: Callable[[float], None],
+) -> None:
+    """Plan, front, side and the default perspective, after the default shot."""
+    room = window.views["room"]
+    canvas = room.canvas
+    print(f"canvas {canvas.width()}x{canvas.height()}", flush=True)
+    for label, preset in (
+        ("perspective", ""),
+        ("plan", "top"),
+        ("front", "front"),
+        ("side", "side"),
+    ):
+        if preset == "":
+            room.reset_view()
+            canvas.fit()
+        elif preset == "top":
+            room.plan_button.setChecked(True)
+        else:
+            room.look(preset)
+        pump(0.15)
+        path = out / f"{lang}_{width}x{height}_{scheme}_room_{label}{suffix}.png"
+        window.grab().save(str(path))
+        print(path, flush=True)
+    room.reset_view()
+    canvas.fit()
 
 
 def _render(
@@ -85,6 +144,8 @@ def _render(
     scheme: str,
     views: tuple[str, ...],
     scale: float,
+    *,
+    cameras: bool = False,
 ) -> None:
     os.environ["REVERBSCOPE_COLOR_SCHEME"] = scheme
     from PySide6.QtWidgets import QApplication
@@ -154,6 +215,8 @@ def _render(
         name = f"{lang}_{width}x{height}_{scheme}_{view}{suffix}.png"
         window.grab().save(str(out / name))
         print(out / name)
+        if view == "room" and cameras:
+            _room_cameras(window, out, lang, width, height, scheme, suffix, pump)
     window.views["room"].load(None)  # leave the demo's folder as the demo wrote it
     window.close()
     pump(0.2)

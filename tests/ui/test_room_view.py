@@ -323,3 +323,81 @@ def test_replacing_an_entry_clears_its_reflection_selection(
     assert model.selected_reflection() == ("", -1)
     inspector.refresh()  # raised IndexError
     inspector.close()
+
+
+def _label_boxes(canvas: Any, width: int, height: int, preset: str) -> list[Any]:
+    from PySide6.QtCore import QRectF
+
+    canvas.resize(width, height)
+    canvas.camera.width = width
+    canvas.camera.height = height
+    if preset == "perspective":
+        canvas.reset()
+        canvas.fit()
+    else:
+        canvas.look(preset)
+    canvas.grab()
+    rects = list(canvas.label_rects)
+    bounds = QRectF(canvas.rect()).adjusted(-0.5, -0.5, 0.5, 0.5)
+    for rect in rects:
+        assert bounds.contains(rect), (preset, width, height, rect)
+    for index, left in enumerate(rects):
+        for right in rects[index + 1 :]:
+            hit = left.intersected(right)
+            assert hit.width() <= 0.5 or hit.height() <= 0.5, (preset, width, height, left, right)
+    return rects
+
+
+def test_room_labels_stay_apart_at_laptop_size(app: Any) -> None:
+    """Names and dimension captions do not cover each other.
+
+    Measured offscreen: the room canvas in a 1366×768 window is 640×560, and
+    in a 1920×1080 window 1194×872. The full 1366×768 canvas is checked as
+    well. Plan, front, side and the default perspective, both themes, English
+    and Simplified Chinese.
+    """
+    from reverbscope.geometry.room import example_room
+    from reverbscope.i18n import activate
+    from reverbscope.ui.room.canvas import (
+        LAYER_ASSUMED,
+        LAYER_ENTERED,
+        LAYER_MEASURED,
+        RoomCanvas,
+        RoomScene,
+    )
+    from reverbscope.ui.theme import install_cjk_ui_font
+
+    example = example_room()
+    microphone = example.microphone("A")
+    assert example.room is not None and example.source is not None and microphone is not None
+    # The screenshot that overlapped used the example loudspeaker and microphone
+    # under the current position's name.
+    scene = RoomScene(
+        box=example.room,
+        source=example.source,
+        microphones={"B": microphone},
+        current_microphone="B",
+        layers={LAYER_ENTERED: True, LAYER_MEASURED: True, LAYER_ASSUMED: False},
+    )
+    canvas = RoomCanvas()
+    install_cjk_ui_font(canvas)
+    canvas.set_scene(scene)
+    canvas.show()
+    app.processEvents()
+    previous = os.environ.get("REVERBSCOPE_COLOR_SCHEME")
+    try:
+        for scheme in ("light", "dark"):
+            os.environ["REVERBSCOPE_COLOR_SCHEME"] = scheme
+            for language in ("zh_CN", "en"):
+                assert activate(language) == language
+                for width, height in ((640, 560), (1194, 872), (1366, 768)):
+                    for preset in ("perspective", "top", "front", "side"):
+                        rects = _label_boxes(canvas, width, height, preset)
+                        expect = 6 if preset == "top" else 7
+                        assert len(rects) >= expect, (scheme, language, preset, len(rects))
+    finally:
+        if previous is None:
+            os.environ.pop("REVERBSCOPE_COLOR_SCHEME", None)
+        else:
+            os.environ["REVERBSCOPE_COLOR_SCHEME"] = previous
+    canvas.close()

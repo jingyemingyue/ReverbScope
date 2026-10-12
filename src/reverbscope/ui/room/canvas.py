@@ -200,6 +200,101 @@ def ring_line(centre: Point, radius: float) -> NDArray[np.float64]:
     return c + np.column_stack((np.cos(t) * radius, np.sin(t) * radius, np.zeros_like(t)))
 
 
+def _unit(delta: QPointF) -> QPointF:
+    length = math.hypot(delta.x(), delta.y())
+    if length < 1e-3:
+        return QPointF(1.0, -1.0)
+    return QPointF(delta.x() / length, delta.y() / length)
+
+
+def _away_from(anchors: list[QPointF], index: int) -> QPointF:
+    """Screen direction from ``anchors[index]`` away from the other anchors."""
+    here = anchors[index]
+    if len(anchors) < 2:
+        return QPointF(1.0, -1.0)
+    others = [point for number, point in enumerate(anchors) if number != index]
+    cx = sum(point.x() for point in others) / len(others)
+    cy = sum(point.y() for point in others) / len(others)
+    delta = QPointF(here.x() - cx, here.y() - cy)
+    if math.hypot(delta.x(), delta.y()) < 1.0:
+        return QPointF(1.0 if index % 2 == 0 else -1.0, -1.0)
+    return delta
+
+
+class _LabelField:
+    """Screen-space boxes for names and dimensions, kept off one another.
+
+    The projection can put the loudspeaker and the current microphone on the
+    same pixels, and the width and height captions on the same corner. Each
+    caption takes the nearest free spot in the direction it prefers.
+    """
+
+    def __init__(self, painter: QPainter, width: int, height: int) -> None:
+        self.painter = painter
+        self.metrics = painter.fontMetrics()
+        self.bounds = QRectF(2.0, 2.0, max(1.0, width - 4.0), max(1.0, height - 4.0))
+        self.blocked: list[QRectF] = []
+        self.placed: list[QRectF] = []
+        self.watched: list[QRectF] = []
+
+    def block(self, rect: QRectF) -> None:
+        self.blocked.append(rect)
+
+    def watch(self, rect: QRectF) -> None:
+        """A caption the caller draws. Overlap checks include it."""
+        self.watched.append(rect)
+        self.blocked.append(rect)
+
+    def place(self, anchor: QPointF, text: str, outward: QPointF | None = None) -> QRectF | None:
+        cleaned = text.strip()
+        if not cleaned:
+            return None
+        rect = self._best(anchor, cleaned, outward)
+        self.placed.append(rect)
+        self.blocked.append(rect.adjusted(-4.0, -3.0, 4.0, 3.0))
+        baseline = QPointF(rect.left(), rect.top() + float(self.metrics.ascent()))
+        self.painter.drawText(baseline, cleaned)
+        return rect
+
+    def _best(self, anchor: QPointF, text: str, outward: QPointF | None) -> QRectF:
+        width = max(1.0, float(self.metrics.horizontalAdvance(text)))
+        height = max(1.0, float(self.metrics.ascent() + self.metrics.descent()))
+        preferred = _unit(outward) if outward is not None else QPointF(1.0, -1.0)
+        directions = [(preferred.x(), preferred.y())]
+        for step in range(16):
+            angle = step * math.pi / 8.0
+            directions.append((math.cos(angle), math.sin(angle)))
+        best: QRectF | None = None
+        best_cost = float("inf")
+        for ring in range(7):
+            gap = 20.0 + ring * 16.0
+            for dx, dy in directions:
+                half = abs(dx) * width / 2.0 + abs(dy) * height / 2.0
+                cx = anchor.x() + dx * (gap + half)
+                cy = anchor.y() + dy * (gap + half)
+                rect = QRectF(cx - width / 2.0, cy - height / 2.0, width, height)
+                overlap, outside = self._pressure(rect)
+                if overlap <= 0.0 and outside <= 0.5:
+                    return rect
+                cost = overlap * 1000.0 + outside * 100.0 + ring
+                if cost < best_cost:
+                    best_cost = cost
+                    best = rect
+        assert best is not None
+        return best
+
+    def _pressure(self, rect: QRectF) -> tuple[float, float]:
+        overlap = 0.0
+        for blocked in self.blocked:
+            hit = rect.intersected(blocked)
+            if hit.width() > 0.0 and hit.height() > 0.0:
+                overlap += hit.width() * hit.height()
+        inside = rect.intersected(self.bounds)
+        inside_area = max(0.0, inside.width()) * max(0.0, inside.height())
+        outside = max(0.0, rect.width() * rect.height() - inside_area)
+        return overlap, outside
+
+
 class RoomCanvas(QWidget):
     """Orbit (left drag), pan (right or middle drag), zoom about the cursor (wheel),
     fit (double-click, F). In the plan view, devices are dragged with the left button."""
@@ -231,6 +326,10 @@ class RoomCanvas(QWidget):
         self.empty_text = ""
         #: Coordinates of the last picked object, drawn on the canvas.
         self.hud = ""
+        #: Every caption box from the last paint, including the corner summary.
+        self.label_rects: tuple[QRectF, ...] = ()
+        self._labels: _LabelField | None = None
+        self._pending_names: list[tuple[QPointF, str]] = []
         self.camera.reset(*self.scene.bounds())
         self._sync_tooltip()
 
@@ -357,6 +456,7 @@ class RoomCanvas(QWidget):
                     ring_line(*scene.placement_ring),
                     QPen(ring_color, 2.0 if scene.constraints_full else 1.2, pen.style()),
                 )
+        self._open_labels(painter)
         if layers.get(LAYER_ENTERED, True):
             if scene.source is not None:
                 self._draw_device(
@@ -381,10 +481,12 @@ class RoomCanvas(QWidget):
                 self._draw_face(
                     painter, scene.box, scene.selection.removeprefix("face:"), QColor(t["bad"])
                 )
+        self._place_names()
         self._draw_dimensions(painter, text)
         if layers.get(LAYER_ENTERED, True) and scene.box is not None:
-            self._draw_edge_labels(painter, scene.box, text)
+            # The front mark keeps its spot; length, width and height move aside.
             self._draw_front_edge(painter, scene.box, entered)
+            self._draw_edge_labels(painter, scene.box, text)
         self._draw_triad(painter)
         self._draw_scale_bar(painter, text)
         legend_bottom = self._draw_legend(painter, text, entered, measured, assumed)
@@ -403,6 +505,8 @@ class RoomCanvas(QWidget):
                 Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap,
                 self.empty_text,
             )
+        field = self._labels
+        self.label_rects = tuple(field.placed + field.watched) if field is not None else ()
         painter.end()
 
     def _draw_polyline(self, painter: QPainter, points: NDArray[np.float64], pen: QPen) -> None:
@@ -513,9 +617,10 @@ class RoomCanvas(QWidget):
             painter.setPen(QPen(color, 2.2))
             painter.drawEllipse(centre, 12, 12)
         # Other microphones stay dots. The loudspeaker and the current one are named.
+        if self._labels is not None:
+            self._labels.block(QRectF(centre.x() - 13, centre.y() - 13, 26, 26))
         if key == "source" or key == self.scene.current_microphone or self.scene.selection == key:
-            painter.setPen(QColor(tokens()["text"]))
-            painter.drawText(centre + QPointF(9, -8), name)
+            self._pending_names.append((centre, name))
 
     def _draw_triad(self, painter: QPainter) -> None:
         origin = QPointF(36, self.height() - 36)
@@ -599,25 +704,70 @@ class RoomCanvas(QWidget):
         )
         painter.setBrush(Qt.BrushStyle.NoBrush)
 
-    def _label_world(self, painter: QPainter, point: tuple[float, float, float], text: str) -> None:
-        screen, visible = self.camera.project(np.array([point]))
-        if not bool(visible[0]) or not math.isfinite(screen[0][0]):
+    def _open_labels(self, painter: QPainter) -> None:
+        """Reserve the corner summary, the legend and the scale before captions."""
+        field = _LabelField(painter, self.width(), self.height())
+        self._labels = field
+        self._pending_names = []
+        if self.scene.box is not None:
+            field.watch(QRectF(self.width() - 230, 8, 218, 32))
+        field.block(QRectF(0, 0, min(280.0, self.width() * 0.46), 108))
+        field.block(QRectF(0, self.height() - 58, min(230.0, self.width() * 0.4), 58))
+        field.block(QRectF(max(0, self.width() - 170), max(0, self.height() - 46), 170, 46))
+
+    def _place_names(self) -> None:
+        field = self._labels
+        if field is None or not self._pending_names:
             return
-        painter.drawText(QPointF(float(screen[0][0]) + 6, float(screen[0][1]) - 4), text)
+        field.painter.setPen(QColor(tokens()["text"]))
+        anchors = [anchor for anchor, _name in self._pending_names]
+        for index, (anchor, name) in enumerate(self._pending_names):
+            field.place(anchor, name, _away_from(anchors, index))
+        self._pending_names = []
+
+    def _screen_point(self, point: tuple[float, float, float]) -> QPointF | None:
+        screen, visible = self.camera.project(np.array([point], dtype=np.float64))
+        if not bool(visible[0]) or not math.isfinite(float(screen[0][0])):
+            return None
+        return QPointF(float(screen[0][0]), float(screen[0][1]))
+
+    def _outward(self, point: tuple[float, float, float], centre: QPointF | None) -> QPointF | None:
+        anchor = self._screen_point(point)
+        if anchor is None or centre is None:
+            return None
+        return QPointF(anchor.x() - centre.x(), anchor.y() - centre.y())
+
+    def _label_world(
+        self,
+        painter: QPainter,
+        point: tuple[float, float, float],
+        text: str,
+        outward: QPointF | None = None,
+    ) -> None:
+        anchor = self._screen_point(point)
+        field = self._labels
+        if anchor is None or field is None:
+            return
+        field.painter = painter
+        field.place(anchor, text, outward)
 
     def _draw_edge_labels(self, painter: QPainter, box: RoomBox, text: QColor) -> None:
-        """Length, width and height written on the edges they measure."""
+        """Length, width and height written beside the edges they measure."""
         length, width, height = box.dimensions
         painter.setPen(text)
+        centre = self._screen_point((length / 2.0, width / 2.0, height / 2.0))
         # Length sits on the far edge so it does not cover the front mark.
-        self._label_world(painter, (length / 2.0, width, 0.08), _metres(length))
-        self._label_world(painter, (length, width / 2.0, 0.08), _metres(width))
+        far = (length / 2.0, width, 0.08)
+        side = (length, width / 2.0, 0.08)
+        self._label_world(painter, far, _metres(length), self._outward(far, centre))
+        self._label_world(painter, side, _metres(width), self._outward(side, centre))
         if not self.camera.plan:
-            self._label_world(painter, (length, 0.0, height / 2.0), _metres(height))
+            upright = (length, 0.0, height / 2.0)
+            self._label_world(painter, upright, _metres(height), self._outward(upright, centre))
 
     def _draw_front_edge(self, painter: QPainter, box: RoomBox, color: QColor) -> None:
         """Mark the entered face at y = 0. It is not a wall the measurement found."""
-        length, _width, _height = box.dimensions
+        length, width, height = box.dimensions
         pen = QPen(color, 1.8, Qt.PenStyle.SolidLine)
         self._draw_polyline(
             painter,
@@ -625,7 +775,9 @@ class RoomCanvas(QWidget):
             pen,
         )
         painter.setPen(color)
-        self._label_world(painter, (length / 2.0, -0.78, 0.0), _("Front edge"))
+        mark = (length / 2.0, -0.78, 0.0)
+        centre = self._screen_point((length / 2.0, width / 2.0, height / 2.0))
+        self._label_world(painter, mark, _("Front edge"), self._outward(mark, centre))
 
     # --- picking --------------------------------------------------------------------------
 
