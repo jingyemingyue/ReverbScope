@@ -153,6 +153,7 @@ class _Section(QWidget):
         name.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         shown = QLabel()
         shown.setWordWrap(True)
+        shown.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignTop)
         shown.setTextFormat(Qt.TextFormat.RichText)
         shown.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         text = html.escape(value)
@@ -190,6 +191,7 @@ class Inspector(QWidget):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.model = model
+        self.setProperty("panel", True)
         self.setMinimumWidth(220)
         # Holds the reused buttons while their section is rebuilt, so they
         # are never parentless (and never outlive the window).
@@ -204,12 +206,13 @@ class Inspector(QWidget):
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         body = QWidget()
-        body.setProperty("page", True)
+        body.setProperty("panel", True)
         scroll.setWidget(body)
         outer.addWidget(scroll)
         layout = QVBoxLayout(body)
         layout.setContentsMargins(10, 8, 10, 8)
         layout.setSpacing(6)
+        layout.addWidget(label(_("Inspector"), "panel-title"))
         self.heading = label(_("Nothing selected"), "section")
         self.heading.setWordWrap(True)
         layout.addWidget(self.heading)

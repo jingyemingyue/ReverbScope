@@ -320,8 +320,8 @@ class StatTile(QWidget):
         self.value = label("-", "kpi-value")
         row.addWidget(self.value, 1)
         self.chip = Chip()
-        row.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addLayout(row)
+        layout.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignLeft)
         self.sub = label("", "kpi-sub", wrap=True)
         layout.addWidget(self.sub)
 

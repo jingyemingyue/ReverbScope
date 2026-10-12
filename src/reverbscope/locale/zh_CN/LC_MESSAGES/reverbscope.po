@@ -7304,3 +7304,27 @@ msgstr "打开“房间参数”输入尺寸与设备位置、导入扫描或使
 #: ui/start_panel.py
 msgid "Getting started"
 msgstr "首次测量说明"
+
+#. Compact workstation control label.
+msgid "Measurements"
+msgstr "测量记录"
+
+#. Compact workstation control label.
+msgid "Range..."
+msgstr "坐标范围…"
+
+#. Compact workstation control label.
+msgid "Align levels"
+msgstr "电平对齐"
+
+#. Compact workstation control label.
+msgid "Raw curve"
+msgstr "原始曲线"
+
+#. Compact workstation control label.
+msgid "View"
+msgstr "视图"
+
+#. Chart viewport action; distinct from acoustic fit.
+msgid "Fit chart"
+msgstr "适配图表"

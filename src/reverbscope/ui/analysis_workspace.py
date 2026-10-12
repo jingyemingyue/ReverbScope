@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
     QHBoxLayout,
+    QLabel,
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
@@ -195,7 +196,17 @@ class AnalysisWorkspace(QWidget):
         self.subview.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.subview.setToolTip(_("The chart inside this group."))
         self.subview.currentIndexChanged.connect(self._subview_chosen)
-        self.group_layout.addWidget(self.subview)
+        # Secondary charts get their own row instead of widening the view bar.
+        self.subview_bar = QWidget()
+        self.subview_bar.setProperty("subviewbar", True)
+        subview_layout = QHBoxLayout(self.subview_bar)
+        subview_layout.setContentsMargins(8, 3, 8, 3)
+        subview_layout.setSpacing(6)
+        subview_layout.addWidget(QLabel(_("View")))
+        subview_layout.addWidget(self.subview)
+        subview_layout.addStretch(1)
+        self.subview_bar.hide()
+        layout.insertWidget(1, self.subview_bar)
         self.group_layout.addStretch(1)
 
         self.project_button = QToolButton()
@@ -277,6 +288,7 @@ class AnalysisWorkspace(QWidget):
                 button.setChecked(False)
             self.group.setExclusive(True)
             self.subview.setVisible(False)
+            self.subview_bar.hide()
             return
         self._last[group_id] = view_id
         self.buttons[group_id].setChecked(True)
@@ -288,8 +300,10 @@ class AnalysisWorkspace(QWidget):
                 self.subview.addItem(self.views[item_id].title(), item_id)
             self.subview.setCurrentIndex(max(self.subview.findData(view_id), 0))
             self.subview.setVisible(True)
+            self.subview_bar.show()
         else:
             self.subview.setVisible(False)
+            self.subview_bar.hide()
         self.subview.blockSignals(False)
 
     def retitle(self) -> None:

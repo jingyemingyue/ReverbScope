@@ -71,7 +71,7 @@ class FrequencyView(AnalysisView):
         )
         self.smoothing.currentIndexChanged.connect(self.refresh)
         controls.addWidget(self.smoothing)
-        self.align = QCheckBox(_("Align levels at 500 Hz to 2 kHz (display only)"))
+        self.align = QCheckBox(_("Align levels"))
         self.align.setToolTip(
             _(
                 "Shift every curve so its mean level between 500 Hz and 2 kHz is 0 dB. The "
@@ -80,7 +80,7 @@ class FrequencyView(AnalysisView):
         )
         self.align.toggled.connect(self.refresh)
         controls.addWidget(self.align)
-        self.show_raw = QCheckBox(_("Show the stored curve"))
+        self.show_raw = QCheckBox(_("Raw curve"))
         self.show_raw.setToolTip(_("Draw the unsmoothed stored curve of the current measurement."))
         self.show_raw.toggled.connect(self.refresh)
         controls.addWidget(self.show_raw)

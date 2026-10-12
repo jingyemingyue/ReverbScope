@@ -20,16 +20,16 @@ ENV_COLOR_SCHEME = "REVERBSCOPE_COLOR_SCHEME"
 #: one tone per validity / severity so a number's trust level reads at a glance.
 #: Both schemes keep body text above WCAG AA contrast on their surfaces.
 LIGHT_TOKENS: dict[str, str] = {
-    "bg": "#f3f5f8",
+    "bg": "#f1f1f0",
     "surface": "#ffffff",
-    "surface_alt": "#eef2f6",
-    "border": "#d9dfe6",
-    "text": "#1b2430",
-    "muted": "#4a5563",
+    "surface_alt": "#e9e9e7",
+    "border": "#cececb",
+    "text": "#242526",
+    "muted": "#545659",
     "accent": "#177e89",
     "accent_hover": "#12656e",
     "accent_text": "#ffffff",
-    "accent_soft": "#e1f1f3",
+    "accent_soft": "#e6eeee",
     "good": "#1e6b24",
     "good_soft": "#e5f3e7",
     "warn": "#8a4e00",
@@ -41,16 +41,16 @@ LIGHT_TOKENS: dict[str, str] = {
     "grid": "#d5dbe2",
 }
 DARK_TOKENS: dict[str, str] = {
-    "bg": "#14181d",
-    "surface": "#1c2229",
-    "surface_alt": "#232a32",
-    "border": "#313a45",
-    "text": "#e6eaef",
-    "muted": "#b4bec9",
-    "accent": "#4fb6c3",
-    "accent_hover": "#6cc6d1",
+    "bg": "#1b1c1e",
+    "surface": "#222325",
+    "surface_alt": "#2b2c2f",
+    "border": "#404145",
+    "text": "#ededeb",
+    "muted": "#b6b7bb",
+    "accent": "#71b7bc",
+    "accent_hover": "#8dc8cc",
     "accent_text": "#0d1216",
-    "accent_soft": "#1b3a40",
+    "accent_soft": "#293c3e",
     "good": "#6cc070",
     "good_soft": "#1d3322",
     "warn": "#f0b35a",
@@ -59,7 +59,7 @@ DARK_TOKENS: dict[str, str] = {
     "bad_soft": "#3d2020",
     "info": "#7fb2ee",
     "info_soft": "#1c2c40",
-    "grid": "#5c6a78",
+    "grid": "#67696d",
 }
 #: Series colours for plots, in drawing order; distinct in both schemes and
 #: paired with line styles so they survive greyscale printing.
@@ -267,7 +267,7 @@ def stylesheet(t: dict[str, str] | None = None) -> str:
     arrow_up = f'image: url("{images[0]}");' if images else ""
     arrow_down = f'image: url("{images[1]}");' if images else ""
     return f"""
-QWidget {{ color: {t["text"]}; font-size: 12px; }}
+QWidget {{ color: {t["text"]}; font-size: 13px; }}
 QMainWindow, QStackedWidget, QScrollArea, QScrollArea > QWidget > QWidget,
 QWidget[page="true"] {{ background: {t["bg"]}; }}
 QMenuBar {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; }}
@@ -284,10 +284,10 @@ QToolTip {{ background: {t["surface"]}; color: {t["text"]}; border: 1px solid {t
 QLabel[role="title"] {{ font-size: 16px; font-weight: 600; }}
 QLabel[role="page-title"] {{ font-size: 15px; font-weight: 600; }}
 QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 12px; }}
-QLabel[role="section"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 600; }}
+QLabel[role="section"] {{ color: {t["muted"]}; font-size: 12px; font-weight: 600; }}
 QLabel[role="hint"] {{ color: {t["muted"]}; }}
 QLabel[role="kpi-label"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 600; }}
-QLabel[role="kpi-value"] {{ font-size: 16px; font-weight: 600; }}
+QLabel[role="kpi-value"] {{ font-size: 20px; font-weight: 500; }}
 QLabel[role="kpi-sub"] {{ color: {t["muted"]}; font-size: 11px; }}
 QLabel[role="card-title"] {{ font-size: 15px; font-weight: 700; }}
 QLabel[role="badge"] {{ background: {t["accent"]}; color: {t["accent_text"]};
@@ -326,12 +326,22 @@ QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; font-
 QPushButton[danger="true"]:disabled {{ color: {t["muted"]}; border-color: {t["border"]};
     background: {t["surface_alt"]}; font-weight: 400; }}
 
-QToolButton {{ background: {t["surface"]}; border: 1px solid {t["border"]};
-    border-radius: 2px; padding: 3px 6px; min-height: 16px; }}
+QToolButton {{ background: transparent; border: 1px solid transparent;
+    border-radius: 2px; padding: 3px 6px; min-height: 18px; }}
 QToolButton:hover {{ background: {t["surface_alt"]}; border-color: {t["muted"]}; }}
 QToolButton:checked {{ background: {t["accent_soft"]}; border-color: {t["accent"]}; }}
 QToolButton:disabled {{ color: {t["muted"]}; background: {t["surface_alt"]}; }}
 QToolButton::menu-indicator {{ subcontrol-position: bottom right; }}
+QPushButton:focus, QToolButton:focus {{ border: 1px solid {t["accent"]}; }}
+QWidget[panel="true"] {{ background: {t["surface_alt"]}; }}
+QWidget[subviewbar="true"] {{ background: {t["surface"]};
+    border-bottom: 1px solid {t["border"]}; }}
+QLabel[role="panel-title"] {{ font-size: 12px; font-weight: 600; }}
+QTreeWidget[measurements="true"] {{ border: none; border-radius: 0; }}
+QTreeWidget[measurements="true"]::item {{ min-height: 24px; padding: 3px 2px; }}
+QTreeWidget[measurements="true"]::item:hover {{ background: {t["surface_alt"]}; }}
+QTreeWidget[measurements="true"]::item:selected {{ background: {t["accent_soft"]}; }}
+QLabel[role="count"] {{ color: {t["muted"]}; font-size: 11px; }}
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit {{
     background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 2px;
     padding: 3px 6px; selection-background-color: {t["accent"]};
@@ -403,12 +413,12 @@ QToolButton[viewtab="true"] {{ background: transparent; color: {t["muted"]}; bor
     border-bottom: 2px solid transparent; border-radius: 0; padding: 4px 8px; }}
 QToolButton[viewtab="true"]:hover {{ color: {t["text"]}; background: {t["surface_alt"]}; }}
 QToolButton[viewtab="true"]:checked {{ color: {t["text"]}; font-weight: 600;
-    border-bottom: 2px solid {t["muted"]}; background: {t["surface_alt"]}; }}
+    border-bottom: 2px solid {t["accent"]}; background: transparent; }}
 QToolButton[panelswitch="true"] {{ background: transparent; border: none;
     padding: 4px 8px; color: {t["muted"]}; }}
 QToolButton[panelswitch="true"]:checked {{ color: {t["text"]}; background: {t["surface_alt"]}; }}
 QToolButton[projecttab="true"] {{ margin-left: 8px; }}
-QSplitter::handle {{ background: {t["border"]}; }}
+QSplitter::handle {{ background: {t["bg"]}; }}
 QSplitter::handle:horizontal {{ width: 6px; }}
 QSplitter::handle:vertical {{ height: 6px; }}
 QSplitter::handle:hover {{ background: {t["accent"]}; }}
@@ -478,7 +488,7 @@ def install_cjk_ui_font(app: Any) -> None:
             families.append(name)
     if len(families) > 1:
         font.setFamilies(families)
-    font.setPixelSize(12)
+    font.setPixelSize(13)
     app.setFont(font)
 
 
