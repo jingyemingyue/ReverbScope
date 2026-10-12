@@ -102,6 +102,10 @@ class FrequencyView(AnalysisView):
             title=_("Difference (current − baseline)"),
         )
         self.diff.export_name = "frequency-difference"
+        # Keep equal data coordinates aligned in screen space as well, even
+        # when the two level axes need different tick-label widths.
+        for panel in (self.chart, self.diff):
+            panel.plot_item.getAxis("left").setWidth(64)
         self.diff.link_x(self.chart)
         self.splitter.addWidget(self.chart)
         self.splitter.addWidget(self.diff)

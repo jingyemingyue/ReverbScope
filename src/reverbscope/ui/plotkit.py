@@ -257,6 +257,7 @@ class ChartPanel(QWidget):
         self._default_y: tuple[float, float] | None = None
         self._manual_range = False
         self._x_master: ChartPanel | None = None
+        self._syncing_x = False
         self.export_name = "chart"
         self.title_text = title
         layout = QVBoxLayout(self)
@@ -593,9 +594,31 @@ class ChartPanel(QWidget):
             self._apply_default_ranges()
 
     def link_x(self, chart: ChartPanel) -> None:
-        """Share horizontal limits without a redraw of this panel reframing its master."""
+        """Share exact horizontal limits, independent of plot geometry during resize."""
         self._x_master = chart
-        self.plot_item.setXLink(chart.plot_item)
+        chart.view_box.sigXRangeChanged.connect(self._sync_x_from_master)
+        self.view_box.sigXRangeChanged.connect(self._sync_x_to_master)
+        self._sync_x_from_master()
+
+    def _sync_x_from_master(self, *_args: Any) -> None:
+        master = self._x_master
+        if master is None or self._disposed or master._disposed or self._syncing_x:
+            return
+        self._syncing_x = True
+        try:
+            self.view_box.setXRange(*master.view_box.viewRange()[0], padding=0.0)
+        finally:
+            self._syncing_x = False
+
+    def _sync_x_to_master(self, *_args: Any) -> None:
+        master = self._x_master
+        if master is None or self._disposed or master._disposed or self._syncing_x:
+            return
+        self._syncing_x = True
+        try:
+            master.view_box.setXRange(*self.view_box.viewRange()[0], padding=0.0)
+        finally:
+            self._syncing_x = False
 
     def _range_changed_manually(self, _axes: Any) -> None:
         self._manual_range = True

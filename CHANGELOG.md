@@ -21,6 +21,8 @@ All notable changes to ReverbScope are documented here. The format follows
   including Hz on logarithmic axes. Mouse zoom, pan and exact ranges survive
   display processing and measurement redraws; Frame returns to the defaults.
   The frequency and difference panes keep their horizontal limits linked.
+  Both left axes reserve the same width so the linked plot areas also
+  align when a platform's font gives their tick labels different widths.
   A redraw clears the previous measurement's cursor readout.
 - **Room parameters no longer occupy the default canvas.** Room parameters
   opens the existing geometry, scan and reflection controls on demand. When

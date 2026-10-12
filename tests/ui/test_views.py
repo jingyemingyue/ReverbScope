@@ -102,6 +102,12 @@ def test_exact_ranges_survive_processing_and_frame_restores_defaults(
     assert view.diff.view_box.viewRange()[1] == pytest.approx((-3.0, 3.0))
     view.diff.reset_button.click()
     assert chart.visible_x_range() == pytest.approx(view._x_default)
+    view.resize(760, 480)
+    chart.set_axis_ranges((80.0, 300.0), (-100.0, 20.0))
+    for _step in range(3):
+        app.processEvents()
+    assert view.diff.visible_x_range() == pytest.approx((80.0, 300.0))
+    assert view.diff.plot_item.getAxis("left").width() == chart.plot_item.getAxis("left").width()
     view.close()
 
 
