@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QLabel,
+    QScrollArea,
     QSplitter,
     QVBoxLayout,
     QWidget,
@@ -25,6 +26,7 @@ from reverbscope.i18n import _
 from reverbscope.ui.plotkit import DASHES, X_FREQUENCY, ChartPanel, follow_chart_visibility
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
+from reverbscope.ui.widgets import PlotBody
 from reverbscope.ui.workspace import (
     Entry,
     WorkspaceModel,
@@ -55,7 +57,15 @@ class FrequencyView(AnalysisView):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         self._x_default = (20.0, 24_000.0)
-        layout = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        self.content_scroll = QScrollArea()
+        self.content_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.content_scroll.setWidgetResizable(True)
+        body = PlotBody()
+        self.content_scroll.setWidget(body)
+        outer.addWidget(self.content_scroll)
+        layout = QVBoxLayout(body)
         layout.setContentsMargins(6, 4, 6, 4)
         layout.setSpacing(4)
         controls = QHBoxLayout()
@@ -88,6 +98,7 @@ class FrequencyView(AnalysisView):
         layout.addLayout(controls)
 
         self.splitter = QSplitter(Qt.Orientation.Vertical)
+        self.splitter.setChildrenCollapsible(False)
         self.chart = ChartPanel(
             X_FREQUENCY,
             x_label=_("Frequency (Hz)"),

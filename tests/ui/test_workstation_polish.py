@@ -15,7 +15,7 @@ import pytest
 pytest.importorskip("PySide6")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QByteArray, QPointF
+from PySide6.QtCore import QByteArray, QPoint, QPointF
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QApplication
 
@@ -157,6 +157,129 @@ def test_a_broken_splitter_state_uses_the_default(
     window.splitter.setSizes([800, 40, 200])
     window._ensure_chart_space()
     assert window.splitter.sizes()[1] >= 320
+    window.close()
+
+
+@pytest.mark.parametrize("language", ["en", "zh_CN"])
+def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, language: str) -> None:
+    from reverbscope.i18n import activate
+    from reverbscope.ui.main_window import MainWindow
+    from reverbscope.ui.theme import apply_application_chrome
+
+    activate(language)
+    apply_application_chrome(app)
+    window = MainWindow()
+    window.resize(960, 640)
+    window.show()
+    strip = window.strip
+    device = "MOTU UltraLite-mk5 — Core Audio — microphone inputs 1–18"
+    strip.input_device.addItem(device, "test-device")
+    strip.input_device.setCurrentIndex(strip.input_device.count() - 1)
+    strip.advanced_button.setChecked(True)
+    for _step in range(4):
+        app.processEvents()
+    # The requested window can remain narrow; the strip must not force it wider.
+    assert window.minimumSizeHint().width() <= window.width()
+    assert strip.mode.width() >= strip.mode.minimumSizeHint().width()
+    assert strip.sample_rate.width() >= (
+        strip.sample_rate.fontMetrics().horizontalAdvance(strip.sample_rate.currentText()) + 24
+    )
+    assert device in strip.input_device.toolTip()
+    assert strip.input_device.accessibleName()
+    for widget in (strip.start_button, strip.stop_button, strip.phase):
+        rect = widget.rect().translated(widget.mapTo(strip, QPoint()))
+        assert strip.rect().contains(rect)
+        assert not rect.intersects(strip.settings_bar.geometry())
+    # Mirroring is still two-way after the settings have moved to another row.
+    strip.input_channel.setValue(2)
+    assert window.standalone.input_channel.value() == 2
+    window.standalone.input_channel.setValue(1)
+    assert strip.input_channel.value() == 1
+    window.resize(1920, 1080)
+    for _step in range(4):
+        app.processEvents()
+    assert strip.settings_bar.geometry().top() == strip.transport_bar.geometry().top()
+    strip.set_mode("universal_daw")
+    app.processEvents()
+    assert not strip.input_device.isVisible()
+    assert strip.start_button.isVisible()
+    assert strip.start_button.shortcut().isEmpty()
+    window.close()
+
+
+def test_keyboard_view_choice_stays_visible_in_narrow_tab_bar(app: QApplication) -> None:
+    from reverbscope.ui.main_window import MainWindow
+
+    window = MainWindow()
+    window.resize(960, 640)
+    window.show()
+    for view_id, group_id in (
+        ("report", "report"),
+        ("spectrogram", "spectral"),
+        ("fr", "frequency"),
+    ):
+        # Use the QAction path taken by menu/shortcut navigation, not a tab click.
+        window.view_actions[view_id].trigger()
+        for _step in range(4):
+            app.processEvents()
+        workspace = window.workspace
+        button = workspace.buttons[group_id]
+        viewport = workspace.group_scroll.viewport()
+        rect = button.rect().translated(button.mapTo(viewport, QPoint()))
+        assert viewport.rect().contains(rect)
+        assert button.isChecked()
+    window.view_actions["project"].trigger()
+    for _step in range(4):
+        app.processEvents()
+    button = window.workspace.project_button
+    viewport = window.workspace.group_scroll.viewport()
+    assert viewport.rect().contains(button.rect().translated(button.mapTo(viewport, QPoint())))
+    assert button.isChecked()
+    window.close()
+
+
+@pytest.mark.parametrize("view_id", ["fr", "spectrogram", "waterfall"])
+def test_small_window_scrolls_instead_of_clipping_plot_axes(
+    app: QApplication, result: AnalysisResult, tmp_path: Path, view_id: str
+) -> None:
+    from reverbscope.i18n import activate
+    from reverbscope.ui.main_window import MainWindow
+    from reverbscope.ui.theme import apply_application_chrome
+
+    activate("zh_CN")
+    apply_application_chrome(app)
+    window = MainWindow()
+    for index in range(2):
+        window.model.add_session(tmp_path / f"take-{index}", MeasurementSession(), result)
+    window.model.set_baseline(window.model.entries()[0].key)
+    window.resize(960, 640)
+    window.strip.advanced_button.setChecked(True)
+    window.show()
+    window.show_view(view_id)
+    view = window.views[view_id]
+    for _step in range(4):
+        app.processEvents()
+    worker = getattr(view, "_worker", None)
+    if worker is not None:
+        assert worker.wait(10_000)
+    for _step in range(4):
+        app.processEvents()
+    charts = [view.chart] + ([view.diff] if view_id == "fr" else [])
+    for panel in charts:
+        # A 140 px PlotWidget was previously assigned outside its smaller
+        # panel: the axes existed in the scene but the parent cut them off.
+        plot_rect = panel.plot.rect().translated(panel.plot.mapTo(panel, QPoint()))
+        assert panel.rect().contains(plot_rect)
+        # The scrollbars can reach every edge, even if controls make the
+        # content wider than the viewport. The plot is not permanently cut.
+        viewport = view.content_scroll.viewport()
+        for x, y in ((0, 0), (panel.plot.width() - 1, panel.plot.height() - 1)):
+            point = panel.plot.mapTo(view.content_scroll.widget(), QPoint(x, y))
+            view.content_scroll.ensureVisible(point.x(), point.y(), 2, 2)
+            app.processEvents()
+            visible = panel.plot.mapTo(viewport, QPoint(x, y))
+            assert viewport.rect().contains(visible)
+    assert window.height() == 640
     window.close()
 
 

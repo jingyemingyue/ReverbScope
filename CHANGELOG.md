@@ -8,6 +8,14 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Narrow-window controls remain readable.** The measurement settings and
+  transport use two rows when platform font metrics need more width; wide
+  windows keep one row. Device controls expose the complete selection on
+  hover. Menu and keyboard view changes scroll the active tab into view.
+  Frequency and time-frequency views scroll when their plots and notes
+  cannot fit; chart parents retain enough height for the axes.
+  The Apple Silicon workstation checklist combines the two GUI PRs in
+  `docs/MAC_GUI_ACCEPTANCE.zh-CN.md` without claiming hardware passes.
 - **Cursor readouts keep their units.** Coordinates have their own line below
   the chart toolbar; long measurement names elide in the middle, with the
   complete readout on hover.

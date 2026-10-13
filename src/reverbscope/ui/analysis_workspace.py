@@ -13,7 +13,8 @@ measurement list and does not stop a take.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
@@ -282,6 +283,7 @@ class AnalysisWorkspace(QWidget):
         view_id = self.current_view_id()
         group_id = group_of(view_id)
         self.project_button.setChecked(view_id == "project")
+        QTimer.singleShot(0, self, self._reveal_active_view)
         if not group_id:
             self.group.setExclusive(False)
             for button in self.buttons.values():
@@ -305,6 +307,20 @@ class AnalysisWorkspace(QWidget):
             self.subview.setVisible(False)
             self.subview_bar.hide()
         self.subview.blockSignals(False)
+
+    def _reveal_active_view(self) -> None:
+        """Menu and keyboard navigation keep the selected tab in the viewport."""
+        view_id = self.current_view_id()
+        button = (
+            self.project_button if view_id == "project" else self.buttons.get(group_of(view_id))
+        )
+        if button is not None:
+            self.group_scroll.ensureWidgetVisible(button, 4, 0)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        # QScrollArea needs the new viewport geometry before it scrolls.
+        QTimer.singleShot(0, self, self._reveal_active_view)
 
     def retitle(self) -> None:
         for group_id, button in self.buttons.items():

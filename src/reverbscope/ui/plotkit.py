@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QMenu,
     QScrollArea,
     QSizePolicy,
@@ -261,6 +262,9 @@ class ChartPanel(QWidget):
         self.export_name = "chart"
         self.title_text = title
         layout = QVBoxLayout(self)
+        # QSplitter may allocate less than a child's minimumSizeHint after
+        # legends/readouts grow. Keep the plot and its axes inside the panel.
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
