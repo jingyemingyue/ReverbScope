@@ -13,6 +13,8 @@ All notable changes to ReverbScope are documented here. The format follows
   complete readout on hover.
 - **POSIX menu interrupts.** Menu input uses Python streams so Ctrl+C
   between the prompt and the read does not leave the menu waiting for Enter.
+- **Stable timing checks.** The time-frequency check keeps its one-second budget and uses
+  the median of five runs after warm-up to avoid a single CI scheduling pause.
 - **A compact measurement desk.** Tool buttons now share the same flat
   chrome as the input controls. Body text uses a consistent 12 logical pixels,
   with the existing Chinese font fallbacks. Panel switches are visually
