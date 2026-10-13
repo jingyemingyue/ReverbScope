@@ -344,13 +344,17 @@ def test_cursor_units_survive_toolbar_and_long_names(app: Any, width: int, name:
 
     chart = ChartPanel(X_FREQUENCY, x_label="Hz", y_label="dB", y_unit="dB")
     chart.resize(width, 400)
-    chart.add_curve(name, [1000, 20000], [1.0, 8.0], color="#3366cc")
     chart.show()
+    app.processEvents()
+    # Qt's platform style may impose a minimum wider than the requested size
+    # (494 px on Windows). The name must not widen that actual viewport.
+    initial_width = chart.width()
+    chart.add_curve(name, [1000, 20000], [1.0, 8.0], color="#3366cc")
     app.processEvents()
     chart.show_cursor(float(np.log10(20000)), 0.0)
     shown = chart.readout.text()
     assert shown.startswith("20 kHz") and shown.endswith("8.0 dB"), shown
-    assert chart.width() == width  # a long name must not widen the window
+    assert chart.width() == initial_width
     assert chart.readout.geometry().top() > chart.reset_button.geometry().bottom()
     assert chart.readout.fontMetrics().horizontalAdvance(shown) <= chart.readout.width()
     full = chart.readout_text(float(np.log10(20000)), 0.0)
