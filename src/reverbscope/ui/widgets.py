@@ -79,9 +79,9 @@ class PlotBody(QWidget):
     def heightForWidth(self, width: int) -> int:  # noqa: N802 - Qt override
         layout = self.layout()
         if layout is None:
-            return super().heightForWidth(width)
+            return int(super().heightForWidth(width))
         height = layout.minimumHeightForWidth(width)
-        return max(layout.minimumSize().height(), height)
+        return int(max(layout.minimumSize().height(), height))
 
 
 def set_banner_text(widget: QLabel, text: str, tone: str = "") -> None:

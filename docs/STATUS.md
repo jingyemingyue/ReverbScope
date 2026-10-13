@@ -27,8 +27,11 @@ an Apple Silicon acceptance checklist**, continuing PR #58 from
   still historical.
 * Linux, Python 3.12.14, PySide6 Essentials 6.11.2: 198 GUI, chart-adapter,
   plotting, theme, catalog and guide tests passed. After renaming the scroll
-  field to avoid shadowing QWidget.scroll, 54 targeted tests passed again.
-  Ruff, formatting, strict mypy across 121 source modules, doc links,
+  field to avoid shadowing QWidget.scroll and making its height return
+  explicitly integer for the no-Qt lint environment, 54 targeted tests
+  passed again.
+  Ruff, formatting, strict mypy across 121 source modules with and without
+  Qt installed, doc links,
   CLI-doc syntax and source-safety checks passed. The 960×640 and 1366×768
   Chinese screenshots were inspected. No real interface, DAW, Cocoa,
   Retina, packaged interaction or final-head macOS build was run here.
