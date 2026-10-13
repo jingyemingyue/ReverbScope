@@ -276,9 +276,8 @@ class ChartPanel(QWidget):
         self.readout.setProperty("role", "hint")
         self.readout.setMinimumWidth(72)
         self.readout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self.readout.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.readout.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self._readout_full = ""
-        top.addWidget(self.readout, 1)
         self.reset_button = QToolButton()
         self.reset_button.setText(_("Fit chart"))
         self.reset_button.setToolTip(_("Fit the chart again (R or double-click)."))
@@ -300,6 +299,9 @@ class ChartPanel(QWidget):
         self.export_button.setMenu(menu)
         top.addWidget(self.export_button)
         layout.addLayout(top)
+        # Cursor coordinates need the chart's width, not what the platform's
+        # toolbar font leaves over. A long curve name must not hide its units.
+        layout.addWidget(self.readout)
         # The legend scrolls sideways rather than widening the chart: ten
         # bands or eight overlays must not push the window past a laptop screen.
         legend_box = QWidget()
@@ -417,7 +419,10 @@ class ChartPanel(QWidget):
         if width < 24:
             label.setText(text)
             return
-        shown = label.fontMetrics().elidedText(text, Qt.TextElideMode.ElideRight, max(8, width - 2))
+        mode = (
+            Qt.TextElideMode.ElideMiddle if label is self.readout else Qt.TextElideMode.ElideRight
+        )
+        shown = label.fontMetrics().elidedText(text, mode, max(8, width - 2))
         label.setText(shown)
         label.setToolTip("" if shown == text else text)
 
