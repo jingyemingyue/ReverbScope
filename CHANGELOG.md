@@ -11,6 +11,8 @@ All notable changes to ReverbScope are documented here. The format follows
 - **Cursor readouts keep their units.** Coordinates have their own line below
   the chart toolbar; long measurement names elide in the middle, with the
   complete readout on hover.
+- **POSIX menu interrupts.** Menu input uses Python streams so Ctrl+C
+  between the prompt and the read does not leave the menu waiting for Enter.
 - **A compact measurement desk.** Tool buttons now share the same flat
   chrome as the input controls. Body text uses a consistent 12 logical pixels,
   with the existing Chinese font fallbacks. Panel switches are visually

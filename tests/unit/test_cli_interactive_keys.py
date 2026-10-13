@@ -8,11 +8,53 @@ traceback.
 from __future__ import annotations
 
 import logging
+import os
+import sys
+from io import StringIO
 from pathlib import Path
 
 import pytest
 
 from tests.menus import CTRL_C, CTRL_D, drive
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Windows uses native console input")
+@pytest.mark.parametrize("line", ["\n", "退出\n", " take.wav \r\n", "q"])
+def test_terminal_reader_preserves_answers(line: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    from reverbscope.cli.interactive import terminal_input
+
+    out = StringIO()
+    monkeypatch.setattr(sys, "stdin", StringIO(line))
+    monkeypatch.setattr(sys, "stdout", out)
+    answer = terminal_input("Your choice: ")
+    assert answer == line.removesuffix("\n").removesuffix("\r")
+    assert out.getvalue() == "Your choice: "
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Windows uses native console input")
+def test_terminal_reader_distinguishes_eof_from_enter(monkeypatch: pytest.MonkeyPatch) -> None:
+    from reverbscope.cli.interactive import terminal_input
+
+    monkeypatch.setattr(sys, "stdin", StringIO(""))
+    monkeypatch.setattr(sys, "stdout", StringIO())
+    with pytest.raises(EOFError):
+        terminal_input("Your choice: ")
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Windows uses native console input")
+def test_interrupt_at_prompt_flush_does_not_read_stdin(monkeypatch: pytest.MonkeyPatch) -> None:
+    from reverbscope.cli.interactive import terminal_input
+
+    class InterruptedPrompt(StringIO):
+        def flush(self) -> None:
+            raise KeyboardInterrupt
+
+    stdin = StringIO("q\n")
+    monkeypatch.setattr(sys, "stdin", stdin)
+    monkeypatch.setattr(sys, "stdout", InterruptedPrompt())
+    with pytest.raises(KeyboardInterrupt):
+        terminal_input("Your choice: ")
+    assert stdin.tell() == 0
 
 
 @pytest.fixture(autouse=True)

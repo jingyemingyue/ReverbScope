@@ -26,6 +26,7 @@ import logging
 import os
 import re
 import shlex
+import sys
 import unicodedata
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
@@ -54,6 +55,24 @@ log = logging.getLogger(__name__)
 
 Asker = Callable[[str], str]
 Runner = Callable[[list[str]], int]
+
+
+def terminal_input(prompt: str) -> str:
+    """Read a terminal answer without the POSIX stdio prompt/SIGINT race.
+
+    CPython's stdio input path prints its prompt with the GIL released;
+    SIGINT just after that flush can arrive before fgets starts blocking.
+    Python streams check pending signals between writing and reading instead.
+    Keep input() on Windows for its native console and Ctrl+Z handling.
+    """
+    if os.name == "nt":
+        return input(prompt)
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    line = sys.stdin.readline()
+    if not line:
+        raise EOFError
+    return line.removesuffix("\n").removesuffix("\r")
 
 
 class CancelledError(Exception):
@@ -793,5 +812,6 @@ __all__ = [
     "quit_words",
     "root_options",
     "run_menu",
+    "terminal_input",
     "whole_number",
 ]

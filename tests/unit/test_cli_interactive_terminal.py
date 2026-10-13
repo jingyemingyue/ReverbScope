@@ -1,7 +1,7 @@
 """The menu on a real pseudo-terminal.
 
-The scripted tests replace ``input()``; here the program runs as a person
-runs it: ``input()`` reads the terminal's line, Ctrl+C is the signal the
+The scripted tests replace the answer reader; here the program runs as a person
+runs it: the reader reads the terminal's line, Ctrl+C is the signal the
 terminal sends, and Qt really is asked to open a window. Linux and macOS only.
 """
 
@@ -51,11 +51,12 @@ def terminal(tmp_path: Path) -> Iterator[Start]:
             session.close()
 
 
-def test_ctrl_c_at_the_menu_leaves_with_130_and_no_traceback(terminal: Start) -> None:
+@pytest.mark.parametrize("attempt", range(5))
+def test_ctrl_c_at_the_menu_leaves_with_130_and_no_traceback(terminal: Start, attempt: int) -> None:
     session = terminal("--lang", "en")
     session.expect(PROMPT["en"])
     session.send(CTRL_C)
-    assert session.finish() == 130
+    assert session.finish(timeout=10) == 130
     assert "Traceback" not in session.output
 
 

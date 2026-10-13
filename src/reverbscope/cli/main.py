@@ -2878,12 +2878,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             # A person at a terminal: the menu, with the options of this call
             # (language, colour, style, backend …) in front of every command it
             # runs. Not for ``--format json``: the menu prints text.
-            from reverbscope.cli.interactive import root_options, run_menu
+            from reverbscope.cli.interactive import root_options, run_menu, terminal_input
             from reverbscope.i18n import current_locale
 
             return run_menu(
                 _console(args),
-                ask=input,
+                ask=terminal_input,
                 run=main,
                 out=sys.stdout,
                 terminal_edition=is_terminal_package(),
