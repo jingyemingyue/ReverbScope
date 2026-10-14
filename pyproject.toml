@@ -124,6 +124,7 @@ include = [
   "LICENSE",
   "NOTICE",
   "CONTRIBUTING.md",
+  "AGENTS.md",
   "CHANGELOG.md",
   "CODE_OF_CONDUCT.md",
   "SECURITY.md",

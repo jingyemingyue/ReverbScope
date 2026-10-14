@@ -107,3 +107,11 @@ python scripts/render_gui_baseline.py --source /path/to/checkout --demo /path/to
 - Windows 布局缺陷在独立 `gui/p0-narrow-settings` 任务中处理；本台账的源码
   和 GUI 没有改动，基线截图仍对应原始 #58。新 head 的远端 CI 尚未运行。
 - 实机、声卡、DAW、旁白、打包应用：未运行。
+
+## 提交后打包门补测
+
+新 head 的 CI #205 在 Linux/macOS 指出新跟踪的 `AGENTS.md` 未进入 sdist。
+此前本地完整测试时该文件尚未被 Git 跟踪，未覆盖这项交付检查。已在提交状态下
+重现失败，补入 sdist 清单，保留原测试断言；打包/文档相关 53 项补测通过，
+重新构建 sdist/wheel 成功。新 head CI 仍须验证，3443 全量结果属于补测前的
+源码检查，不冒充补测后全量或远端通过。

@@ -27,6 +27,10 @@ Snapshot 42: 2026-10-14 — **GUI redesign Phase 0 governance and baseline**
   source safety, 48-page docs site, license bundle, installed Essentials gate
   and sdist/wheel build passed. Two new documentation-navigation failures in
   the first full run were corrected; existing assertions were retained.
+* After committing AGENTS.md, CI #205 found it missing from the sdist.
+  The earlier full run had not tracked that new file yet. Reproduced on the
+  committed tree, added it to the sdist include list and passed 53 packaging/
+  documentation checks plus a fresh sdist/wheel build. New-head CI pending.
 * Phase 0 is not complete: new-head cross-platform CI, the separate peak
   wording/localization/layout fixes and independent review remain. No PR was
   merged or closed; no native/audio/DAW/VoiceOver/packaged check was run.
