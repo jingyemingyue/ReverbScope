@@ -1358,3 +1358,12 @@ Maintainer-only actions that this work does not do: publishing a GitHub
 Release (which creates the tag), a PyPI upload, signing, a license change,
 or rewriting published history. (The repository was made public by the
 maintainer on 2026-09-24.)
+
+
+CI #210 follow-up: the portable dynamic reflow regression passes on Windows;
+only the inherited English 986>960 assertion fails (3,320 passes, 111 platform
+skips). The splitter minimum hint is 800, so its workspace hint of 1,216 is
+not proof that the splitter causes 986. Pytest abbreviates dictionary details;
+the failure message now expands minimum/preferred/actual dimensions line by
+line, evaluated only after the unchanged assertion fails. Seventeen local
+checks pass; P1 stays open and no Windows repair is claimed.

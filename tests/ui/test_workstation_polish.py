@@ -178,14 +178,29 @@ def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, langu
     strip.advanced_button.setChecked(True)
     for _step in range(4):
         app.processEvents()
+
     # The requested window can remain narrow; the strip must not force it wider.
-    assert window.minimumSizeHint().width() <= window.width(), {
-        name: getattr(window, name).minimumSizeHint().toTuple()
-        for name in ("splitter", "navigator", "workspace", "inspector", "strip")
-    } | {
-        name: getattr(strip, name).minimumSizeHint().toTuple()
-        for name in ("settings_bar", "transport_bar", "advanced_bar")
-    }
+    def diagnostic() -> str:
+        metrics = {
+            "window": window,
+            "strip": strip,
+            "settings_bar": strip.settings_bar,
+            "transport_bar": strip.transport_bar,
+            "advanced_bar": strip.advanced_bar,
+            "splitter": window.splitter,
+            "workspace": window.workspace,
+            "navigator": window.navigator,
+            "inspector": window.inspector,
+            "detail": strip.detail,
+            "menu": window.menuBar(),
+            "status": window.statusBar(),
+        }
+        return "\n".join(
+            f"{name}: minimum={widget.minimumSizeHint().toTuple()}, preferred={widget.sizeHint().toTuple()}, actual={widget.size().toTuple()}"
+            for name, widget in metrics.items()
+        )
+
+    assert window.minimumSizeHint().width() <= window.width(), diagnostic()
     assert strip.mode.width() >= strip.mode.minimumSizeHint().width()
     assert strip.sample_rate.width() >= (
         strip.sample_rate.fontMetrics().horizontalAdvance(strip.sample_rate.currentText()) + 24
