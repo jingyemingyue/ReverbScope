@@ -6,6 +6,28 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 42: 2026-10-14 — **restart hint follows the active locale**
+(`gui/p0-settings-language` against `gui/redesign`, #58 baseline).
+
+* Settings no longer hard-codes Chinese and English in the same restart
+  notice. An extracted gettext template uses the current locale; selecting
+  a different language still affects the next launch. The Chinese gate's
+  old exemption for the English sentence is removed. Existing persistence
+  and no-live-switch assertions stay. No data/CLI/numerical change.
+* Before the fix, two exact-language cases and the tightened Chinese gate
+  failed. After: 23 GUI-language/catalog checks passed. Complete offscreen
+  suite on Apple Silicon, Python 3.12.14 / PySide6 Essentials 6.11.2:
+  3,445 passed, 2 existing platform skips, core/models branch coverage 93.43%.
+  Ruff, format, strict mypy with Qt and without Qt/Linux semantics and
+  documentation/CLI/source-safety checks passed.
+* Eight before/after synthetic offscreen pairs cover both languages/themes
+  and parent sizes 960x640/1280x800. The dialog retains its natural size;
+  image filenames do not establish native window dimensions. The record is
+  design/GUI_P0_SETTINGS_REVIEW.zh-CN.md.
+* The same five pinned old acceptance-image links as the baseline task keep
+  this branch's docs gate independently runnable. New-head CI, independent
+  review, native, hardware, DAW, VoiceOver and packaged checks remain pending.
+
 Snapshot 41: 2026-10-14 (UTC+8) — **narrow-window workstation controls and
 an Apple Silicon acceptance checklist**, continuing PR #58 from
 `987d66268888b60d6e9e6b54f379b4ec7c50ceb8`.

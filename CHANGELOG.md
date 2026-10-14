@@ -8,6 +8,9 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Localized language hint.** Settings show the restart notice only in the
+  active language. Choosing another locale still takes effect next launch.
+  The Chinese gate no longer exempts a hard-coded English restart notice.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on
