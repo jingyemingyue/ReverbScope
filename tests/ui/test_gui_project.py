@@ -109,11 +109,12 @@ def test_measuring_a_new_position_saves_the_take_into_the_project(
     window.show_project(project)
     assert suggest_label(window.project.labels()) == "C"
     window.project.start_position("C", "universal_daw")
-    assert window.stack.currentWidget() is window.daw
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route == "universal_daw"
     assert window.state.project_path == project and window.state.project_position == "C"
-    assert window.daw.position.text() == "C" and window.daw.room.text() == "Booth"
+    assert window.measure.position.text() == "C" and window.measure.room.text() == "Booth"
 
-    page = window.daw
+    page = window.measure
     rate = short_sweep.sample_rate
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(rate))
     page.duration.setValue(short_sweep.duration_s)

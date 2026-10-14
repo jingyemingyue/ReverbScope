@@ -188,7 +188,7 @@ def test_the_chosen_interface_is_kept_when_it_comes_back_under_another_index(
     window = MainWindow()
     window.show()
     window.show_mode("standalone")
-    page = window.standalone
+    page = window.measure
     page.input_device.setCurrentIndex(page.input_device.findData(1))
     page.output_device.setCurrentIndex(page.output_device.findData(1))
     # Another device unplugged: the Scarlett keeps its index.
@@ -246,7 +246,7 @@ def test_switching_modes_from_another_page_leaves_a_busy_standalone_page_alone(
     window = MainWindow()
     window.show()
     window.show_mode("demo")
-    page = window.standalone
+    page = window.measure
     assert page.demo_mode
     page.status.setText("Recorded. Analyzing...")
     monkeypatch.setattr(page, "is_busy", lambda: True)

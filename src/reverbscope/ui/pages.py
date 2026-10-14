@@ -1,4 +1,9 @@
-"""Home, Universal DAW Mode and Standalone Mode pages."""
+"""Home and New Measurement pages.
+
+New Measurement holds both routes, Universal DAW Mode and Standalone Mode, on
+one page: the same four numbered steps, the same footer with the action, and
+one place for the position and the analysis. Only step 2 differs by route.
+"""
 
 from __future__ import annotations
 
@@ -11,12 +16,13 @@ from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QHideEvent
 from PySide6.QtWidgets import (
+    QButtonGroup,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
-    QGroupBox,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -54,6 +60,7 @@ from reverbscope.ui.widgets import (
     Card,
     ModeCard,
     PageHeader,
+    StepCard,
     ask_save_path,
     error_box,
     label,
@@ -64,6 +71,10 @@ from reverbscope.ui.widgets import (
 from reverbscope.ui.workers import AnalysisWorker, MeasureWorker, unexpected_error_text
 
 log = logging.getLogger(__name__)
+
+#: The two routes of New Measurement. The values are the session modes.
+ROUTE_DAW = "universal_daw"
+ROUTE_STANDALONE = "standalone"
 
 
 def separate_clocks_box(parent: QWidget, warning: str) -> QMessageBox:
@@ -107,7 +118,8 @@ def _find_data(combo: QComboBox, value: object) -> int:
 
 
 def late_result_text() -> str:
-    """Shown on a mode page whose take or analysis ended after the user moved on.
+    """Shown on the New Measurement page whose take or analysis ended after the
+    user moved on.
 
     Not after any page switch: a visit to Compare or Settings keeps the result,
     which then opens Results. Only a reset (New Measurement, Open Session) or a
@@ -136,63 +148,19 @@ def safe_findings(result: AnalysisResult, profile: str) -> tuple[list[Finding], 
 
 
 class WalkthroughCard(Card):
-    """The first-measurement card: three ways in, and where to read more."""
+    """The first-run hint on Home. The demo card below is the way in; this says
+    what it is for and where the guide is."""
 
-    choose_mode = Signal(str)
     dismissed = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+        super().__init__(parent, spacing=10)
         self.body.addWidget(label(_("Your first measurement").upper(), "section"))
         self.body.addWidget(
             label(
                 _(
-                    "ReverbScope plays a sweep, records it and reads the room from the "
-                    "recording. Three ways in; the demo needs no hardware."
-                ),
-                "hint",
-                wrap=True,
-            )
-        )
-        steps = (
-            (
-                _("Try the demo first: a synthetic room, nothing is played."),
-                _("Try the demo"),
-                "demo",
-            ),
-            (
-                _(
-                    "In your DAW: write the test signal, play it and record it on a track, "
-                    "then import the recording here."
-                ),
-                _("Universal DAW Mode"),
-                "universal_daw",
-            ),
-            (
-                _(
-                    "With an audio interface: ReverbScope plays the sweep and records the "
-                    "microphone itself."
-                ),
-                _("Standalone Mode"),
-                "standalone",
-            ),
-        )
-        self.buttons: list[QPushButton] = []
-        for number, (text, caption, mode) in enumerate(steps, start=1):
-            row = QHBoxLayout()
-            row.setSpacing(10)
-            row.addWidget(label(f"{number}.  {text}", wrap=True), 1)
-            button = QPushButton(caption)
-            button.clicked.connect(lambda _checked=False, m=mode: self.choose_mode.emit(m))
-            row.addWidget(button)
-            self.buttons.append(button)
-            self.body.addLayout(row)
-        self.body.addWidget(
-            label(
-                _(
-                    "Choose the recording profile that matches what you record; its button says "
-                    "what it watches for. Every number carries a validity, and a result opens "
-                    "with its measurement health."
+                    "Run the demo first: it walks the whole workflow on a synthetic room, "
+                    "and nothing is played."
                 ),
                 "hint",
                 wrap=True,
@@ -267,7 +235,6 @@ class HomePage(QWidget):
 
         # Shown until dismissed (a setting); Help ▸ Getting started brings it back.
         self.walkthrough = WalkthroughCard()
-        self.walkthrough.choose_mode.connect(self.choose_mode.emit)
         self.walkthrough.dismissed.connect(self.dismiss_walkthrough)
         #: "Don't show this again" was clicked in this run: the card stays
         #: hidden even where the settings file could not record it.
@@ -290,15 +257,18 @@ class HomePage(QWidget):
             _(
                 "ReverbScope plays the sweep and records the microphone through your audio interface."
             ),
-            _("Measure now"),
+            _("Start with my interface"),
             shortcut="Ctrl+2",
         )
+        # The demo is the Standalone route on the fake backend: a trial of the
+        # same page, so its card is the secondary one.
         demo = ModeCard(
             _("DEMO"),
             _("Demo (no interface)"),
             _("Run Standalone Mode on the fake backend. Nothing is sent to a loudspeaker."),
             _("Try the demo"),
             shortcut="Ctrl+3",
+            emphasis=False,
         )
         daw.clicked.connect(lambda: self.choose_mode.emit("universal_daw"))
         standalone.clicked.connect(lambda: self.choose_mode.emit("standalone"))
@@ -364,18 +334,6 @@ class HomePage(QWidget):
             log.info("the walkthrough stays for the next start: %s", exc)
 
 
-def _metadata_form(state: MeasurementState) -> tuple[QGroupBox, QLineEdit, QLineEdit, QLineEdit]:
-    box = QGroupBox(_("Measurement metadata (optional)"))
-    form = QFormLayout(box)
-    room = QLineEdit(state.session.room_name)
-    position = QLineEdit(state.session.measurement_position)
-    mic = QLineEdit(state.session.microphone_name)
-    form.addRow(_("Room"), room)
-    form.addRow(_("Position"), position)
-    form.addRow(_("Microphone"), mic)
-    return box, room, position, mic
-
-
 def _profile_combo(state: MeasurementState) -> QComboBox:
     from reverbscope.interpretation.explain import profile_description
 
@@ -412,13 +370,17 @@ def _profile_row(combo: QComboBox, page: QWidget) -> tuple[QHBoxLayout, QPushBut
     return row, button
 
 
-class PlacementInputs(QGroupBox):
+class PlacementInputs(QWidget):
     """Optional tape measurements that raise the placement tier (S5)."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        self.setTitle(_("Tape measurements (optional)"))
-        row = QHBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(6)
+        outer.addWidget(label(_("Tape measurements (optional)").upper(), "section"))
+        row = QHBoxLayout()
+        outer.addLayout(row)
         form = QFormLayout()
         self.distance = QDoubleSpinBox()
         self.distance.setRange(0.0, 15.0)
@@ -502,79 +464,272 @@ class PlacementInputs(QGroupBox):
         }
 
 
-class DawModePage(QWidget):
+class MeasurePage(QWidget):
+    """New Measurement: Universal DAW Mode and Standalone Mode on one page.
+
+    Both routes share the test signal, the position and the analysis; only
+    step 2 differs (the interface's devices and channels, or the export and
+    import of a DAW take). The footer holds the one action of the route, so
+    the Run or Analyze button stays in view however long the page is. A take
+    or an analysis locks the route switch, so no measurement is replaced
+    while it runs.
+    """
+
     analysis_finished = Signal()
     back = Signal()
 
     def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.state = state
-        self._worker: AnalysisWorker | None = None
-        # The state generation the running analysis belongs to.
-        self._generation = -1
-        # The recording this page imported. The shared state holds the take
-        # of the session on the Results page, which a Standalone or Demo take
-        # replaces: analysing that one put a take the page never showed
-        # (a synthetic demo among them) into a Universal DAW session.
+        #: The Demo: the Standalone route on the fake backend.
+        self.demo_mode = False
+        self.route = state.mode if state.mode in (ROUTE_DAW, ROUTE_STANDALONE) else ROUTE_DAW
+        # Standalone route: the devices of the interface, the take and its workers.
+        self._devices: list[DeviceInfo] = []
+        self._inventory: DeviceInventory | None = None
+        # The backend that listed :attr:`_inventory`: device indices of
+        # another one (the Demo's fake interface) name other devices.
+        self._inventory_backend: str | None = None
+        self._measure_worker: MeasureWorker | None = None
+        self._analysis_worker: AnalysisWorker | None = None
+        #: A take is playing or recording; an analysis is running. Set by the
+        #: page, cleared by the worker's own signal (a finished thread may
+        #: still report itself as running for a moment).
+        self._taking = False
+        self._analysing = False
+        #: The route the running (or last) take or analysis belongs to.
+        self._analysis_route = self.route
+        self._channel_plan: ChannelPlan | None = None
+        # The output channel the take plays on: the spin box stays editable.
+        self._take_output_channel = 1
+        # The take runs on the fake backend: its session is a synthetic demo.
+        self._take_synthetic = False
+        # The take's sweep, analysis settings and profile. They join the
+        # shared state with its recording, not before: a refused or stopped
+        # Run replaced the reference the Universal DAW analysis used.
+        self._take_settings = state.sweep_settings
+        self._take_reference: Reference | None = None
+        self._take_analysis_settings = AnalysisSettings()
+        self._take_profile = state.profile
+        # Universal DAW Mode: the recording imported, and the sweep of step 1
+        # (or the reference file chosen), kept here until an analysis starts.
+        # A take on the Standalone route replaces the shared state, not these.
         self._recording: AudioSignal | None = None
         self._recording_path: Path | None = None
-        # The sweep of Step 1 (or the reference file chosen), kept here for
-        # the same reason: a Standalone take used to replace it, and the
-        # recording was deconvolved with a sweep the page did not show.
         self._reference: Reference | None = None
         self._sweep_settings = state.sweep_settings
         self._sweep_path: Path | None = None
-        layout = scroll_page(
-            self,
-            PageHeader(
-                _("Universal DAW Mode"),
-                _(
-                    "Four steps: generate the test signal, play and record it in your DAW, "
-                    "import the recording, analyse. ReverbScope never talks to the DAW."
-                ),
-            ),
-        )
+        # The state generation the running take or analysis belongs to.
+        self._generation = -1
 
-        # Step 1
-        step1 = QGroupBox(_("Step 1 - Generate Test Signal"))
-        form1 = QFormLayout(step1)
+        header = PageHeader(_("New Measurement"))
+        self._header = header
+        # The route switch sits where the page's actions are, as on Results.
+        self.route_buttons: dict[str, QPushButton] = {}
+        self._route_group = QButtonGroup(self)
+        self._route_group.setExclusive(True)
+        for route, caption, edge in (
+            (ROUTE_DAW, _("Universal DAW Mode"), "left"),
+            (ROUTE_STANDALONE, _("Standalone Mode"), "right"),
+        ):
+            button = QPushButton(caption)
+            button.setCheckable(True)
+            button.setProperty("segment", edge)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.clicked.connect(lambda _checked=False, r=route: self._choose_route(r))
+            self._route_group.addButton(button)
+            header.action_row.addWidget(button)
+            self.route_buttons[route] = button
+
+        footer = self._build_footer()
+        layout = scroll_page(self, header, footer=footer)
+
+        self.demo_bar = QWidget()
+        demo_row = QHBoxLayout(self.demo_bar)
+        demo_row.setContentsMargins(0, 0, 0, 0)
+        demo_row.setSpacing(10)
+        self.demo_banner = label(
+            _("Demo mode: the fake backend synthesises a room. Nothing is sent to a loudspeaker."),
+            wrap=True,
+        )
+        self.demo_banner.setProperty("banner", "info")
+        demo_row.addWidget(self.demo_banner, 1)
+        self.leave_demo_button = QPushButton(_("Use my audio interface"))
+        self.leave_demo_button.clicked.connect(lambda: self.leave_demo())
+        demo_row.addWidget(self.leave_demo_button)
+        self.demo_bar.hide()
+        layout.addWidget(self.demo_bar)
+
+        layout.addWidget(self._build_test_signal_step())
+        layout.addWidget(self._build_capture_step())
+        layout.addWidget(self._build_position_step())
+        layout.addWidget(self._build_analysis_step())
+        layout.addStretch(1)
+
+        self.refresh_devices()
+        self.set_route(self.route)
+
+    # --- layout -----------------------------------------------------------------
+
+    def _build_footer(self) -> QFrame:
+        footer = QFrame()
+        footer.setProperty("footer", True)
+        bar = QVBoxLayout(footer)
+        bar.setContentsMargins(16, 10, 16, 10)
+        bar.setSpacing(8)
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 100)
+        self.progress.setTextVisible(False)
+        self.progress.setFixedHeight(6)
+        self.progress.hide()
+        bar.addWidget(self.progress)
+        row = QHBoxLayout()
+        row.setSpacing(10)
+        self.back_button = QPushButton(_("Back"))
+        self.back_button.clicked.connect(self.back.emit)
+        self.status = QLabel("")
+        self.status.setWordWrap(True)
+        self.stop_button = QPushButton(_("Stop"))
+        self.stop_button.setProperty("danger", True)
+        self.stop_button.setShortcut("Esc")
+        self.stop_button.setEnabled(False)
+        self.stop_button.clicked.connect(self.stop_measurement)
+        self.run_button = primary(QPushButton(_("Run Measurement")))
+        self.run_button.setShortcut("Ctrl+Return")
+        self.run_button.clicked.connect(self._run)
+        row.addWidget(self.back_button)
+        row.addWidget(self.status, 1)
+        row.addWidget(self.stop_button)
+        row.addWidget(self.run_button)
+        bar.addLayout(row)
+        return footer
+
+    def _build_test_signal_step(self) -> StepCard:
+        """Step 1: the sweep. Its level belongs to the route: the DAW's peak
+        level of the file it writes, or the playback level of the interface
+        (which starts low: the safety rule of the Standalone route)."""
+        step = StepCard(1)
         self.sample_rate = QComboBox()
         for sr in SUPPORTED_SAMPLE_RATES:
             self.sample_rate.addItem(f"{sr} Hz", sr)
         self.sample_rate.setCurrentIndex(
-            list(SUPPORTED_SAMPLE_RATES).index(state.sweep_settings.sample_rate)
+            list(SUPPORTED_SAMPLE_RATES).index(self.state.sweep_settings.sample_rate)
         )
         self.duration = QDoubleSpinBox()
         self.duration.setRange(1.0, 60.0)
-        self.duration.setValue(state.sweep_settings.duration_s)
+        self.duration.setValue(self.state.sweep_settings.duration_s)
         self.duration.setSuffix(" s")
         self.level = QDoubleSpinBox()
         self.level.setRange(-40.0, 0.0)
-        self.level.setValue(state.sweep_settings.level_dbfs)
+        self.level.setValue(self.state.sweep_settings.level_dbfs)
         self.level.setSuffix(" dBFS")
-        form1.addRow(_("Sample rate"), self.sample_rate)
-        form1.addRow(_("Sweep duration"), self.duration)
-        form1.addRow(_("Peak level"), self.level)
+        self.playback_level = QDoubleSpinBox()
+        self.playback_level.setRange(-40.0, 0.0)
+        self.playback_level.setValue(DEFAULT_STANDALONE_LEVEL_DBFS)
+        self.playback_level.setSuffix(" dBFS")
+        self.safety = label(_(SAFETY_MESSAGE), wrap=True)
+        self.safety.setProperty("banner", "warn")
+        self.acknowledge = QCheckBox(
+            _("I have set the monitor level low (required above {level:g} dBFS)").format(
+                level=SAFE_MAX_LEVEL_DBFS
+            )
+        )
         self.save_sweep_button = primary(QPushButton(_("Save Test Signal WAV...")))
         self.save_sweep_button.clicked.connect(self._choose_sweep_target)
         self.sweep_label = QLabel(_("No test signal written yet."))
         self.sweep_label.setWordWrap(True)
-        form1.addRow(self.save_sweep_button)
-        form1.addRow(self.sweep_label)
-        layout.addWidget(step1)
+        self._signal_form = QFormLayout()
+        self._signal_form.addRow(_("Sample rate"), self.sample_rate)
+        self._signal_form.addRow(_("Sweep duration"), self.duration)
+        self._signal_form.addRow(_("Peak level"), self.level)
+        self._signal_form.addRow(_("Playback level"), self.playback_level)
+        self.step1 = step
+        step.body.addWidget(self.safety)
+        step.body.addLayout(self._signal_form)
+        step.body.addWidget(self.acknowledge)
+        step.body.addWidget(self.save_sweep_button)
+        step.body.addWidget(self.sweep_label)
+        self.sample_rate.currentIndexChanged.connect(self._update_device_rate)
+        return step
 
-        # Step 2
-        step2 = QGroupBox(_("Step 2 - Record Through Your DAW"))
-        v2 = QVBoxLayout(step2)
+    def _build_capture_step(self) -> StepCard:
+        """Step 2, by route: the devices and channels of the interface, or the
+        DAW's instructions, the recording and the reference to import."""
+        step = StepCard(2)
+        self.capture_step = step
+
+        self.devices_panel = QWidget()
+        devices = QFormLayout(self.devices_panel)
+        devices.setContentsMargins(0, 0, 0, 0)
+        self.host_api = QComboBox()
+        self.host_api.setToolTip(
+            _(
+                "How ReverbScope talks to your interface: WASAPI, ASIO, WDM-KS, DirectSound or "
+                "MME on Windows, Core Audio on macOS, ALSA or JACK on Linux. Input and output "
+                'must use the same one. "System default" uses the devices your system '
+                "uses; a star marks the entry recommended for each device."
+            )
+        )
+        self.host_api.currentIndexChanged.connect(self._fill_device_lists)
+        self.input_device = QComboBox()
+        self.output_device = QComboBox()
+        self.refresh_button = QPushButton(_("Refresh devices"))
+        self.refresh_button.clicked.connect(self.refresh_devices)
+        self.device_rate = QLabel(_("Device rate: unknown"))
+        self.device_rate.setWordWrap(True)
+        self.input_device.currentIndexChanged.connect(self._update_device_rate)
+        self.output_device.currentIndexChanged.connect(self._update_device_rate)
+        self.input_channel = QSpinBox()
+        self.input_channel.setRange(1, 64)
+        self.loopback_channel = QSpinBox()
+        self.loopback_channel.setRange(0, 64)
+        self.loopback_channel.setSpecialValueText(_("unused"))
+        self.output_channel = QSpinBox()
+        self.output_channel.setRange(1, 64)
+        devices.addRow(_("Audio system (host API)"), self.host_api)
+        devices.addRow(_("Input device"), self.input_device)
+        devices.addRow(_("Output device"), self.output_device)
+        devices.addRow(self.refresh_button)
+        devices.addRow(self.device_rate)
+        devices.addRow(_("Input channel (mic)"), self.input_channel)
+        devices.addRow(_("Loopback channel (1-based)"), self.loopback_channel)
+        devices.addRow(_("Output channel (speaker)"), self.output_channel)
+
+        from reverbscope.edition import is_developer
+
+        self.advanced = QWidget()
+        adv_layout = QVBoxLayout(self.advanced)
+        adv_layout.setContentsMargins(0, 8, 0, 0)
+        adv_layout.setSpacing(6)
+        adv_layout.addWidget(
+            label(_("Advanced audio options (developer edition)").upper(), "section")
+        )
+        adv = QFormLayout()
+        self.latency = QComboBox()
+        self.latency.addItem(_("PortAudio default (high)"), None)
+        self.latency.addItem(_("Low"), "low")
+        self.latency.addItem(_("High"), "high")
+        self.wasapi_exclusive = QCheckBox(
+            _("WASAPI exclusive mode (bypasses the Windows audio engine)")
+        )
+        self.coreaudio_set_rate = QCheckBox(
+            _("Core Audio: set the device to the requested rate, never convert")
+        )
+        adv.addRow(_("Latency"), self.latency)
+        adv.addRow(self.wasapi_exclusive)
+        adv.addRow(self.coreaudio_set_rate)
+        adv_layout.addLayout(adv)
+        self.advanced.setVisible(is_developer())
+        devices.addRow(self.advanced)
+
+        self.recording_panel = QWidget()
+        recording = QVBoxLayout(self.recording_panel)
+        recording.setContentsMargins(0, 0, 0, 0)
+        recording.setSpacing(10)
         instructions = QLabel(_(DAW_INSTRUCTIONS))
         instructions.setWordWrap(True)
         instructions.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        v2.addWidget(instructions)
-        layout.addWidget(step2)
-
-        # Step 3
-        step3 = QGroupBox(_("Step 3 - Import Recording"))
-        form3 = QFormLayout(step3)
+        recording.addWidget(instructions)
         self.recording_button = QPushButton(_("Choose Recording..."))
         self.recording_button.clicked.connect(self._choose_recording)
         self.recording_label = QLabel(_("No recording selected."))
@@ -586,53 +741,239 @@ class DawModePage(QWidget):
         )
         self.reference_label.setWordWrap(True)
         self.channel = QComboBox()
-        self.loopback_channel = QComboBox()
+        self.recording_loopback = QComboBox()
         self._reset_channel_lists()
-        form3.addRow(self.recording_button, self.recording_label)
-        form3.addRow(self.reference_button, self.reference_label)
-        form3.addRow(_("Microphone channel"), self.channel)
-        form3.addRow(_("Loopback channel"), self.loopback_channel)
-        layout.addWidget(step3)
+        import_form = QFormLayout()
+        import_form.addRow(self.recording_button, self.recording_label)
+        import_form.addRow(self.reference_button, self.reference_label)
+        import_form.addRow(_("Microphone channel"), self.channel)
+        import_form.addRow(_("Loopback channel"), self.recording_loopback)
+        recording.addLayout(import_form)
 
-        # Step 4
-        step4 = QGroupBox(_("Step 4 - Analyze"))
-        v4 = QVBoxLayout(step4)
-        meta, self.room, self.position, self.mic = _metadata_form(state)
-        v4.addWidget(meta)
+        step.body.addWidget(self.devices_panel)
+        step.body.addWidget(self.recording_panel)
+        return step
+
+    def _build_position_step(self) -> StepCard:
+        step = StepCard(3)
+        step.set_text(
+            _("Position (optional)"),
+            _(
+                "Where the loudspeaker and the microphone stood. The names are saved with the session."
+            ),
+        )
+        meta = QFormLayout()
+        self.room = QLineEdit(self.state.session.room_name)
+        self.position = QLineEdit(self.state.session.measurement_position)
+        self.mic = QLineEdit(self.state.session.microphone_name)
+        meta.addRow(_("Room"), self.room)
+        meta.addRow(_("Position"), self.position)
+        meta.addRow(_("Microphone"), self.mic)
         self.placement = PlacementInputs()
-        v4.addWidget(self.placement)
-        profile_form = QFormLayout()
-        self.profile = _profile_combo(state)
-        profile_row, self.profile_help = _profile_row(self.profile, self)
-        profile_form.addRow(_("Recording profile"), profile_row)
-        v4.addLayout(profile_form)
-        row = QHBoxLayout()
-        self.analyze_button = primary(QPushButton(_("Analyze")))
-        self.analyze_button.setShortcut("Ctrl+Return")
-        self.analyze_button.clicked.connect(self.start_analysis)
-        self.back_button = QPushButton(_("Back"))
-        self.back_button.clicked.connect(self.back.emit)
-        row.addWidget(self.back_button)
-        row.addStretch(1)
-        row.addWidget(self.analyze_button)
-        v4.addLayout(row)
-        self.progress = QProgressBar()
-        self.progress.setRange(0, 0)
-        self.progress.hide()
-        self.status = QLabel("")
-        self.status.setWordWrap(True)
-        v4.addWidget(self.progress)
-        v4.addWidget(self.status)
-        layout.addWidget(step4)
-        layout.addStretch(1)
+        step.body.addLayout(meta)
+        step.body.addWidget(self.placement)
+        return step
 
-    # --- step 1 -----------------------------------------------------------------
+    def _build_analysis_step(self) -> StepCard:
+        step = StepCard(4)
+        step.set_text(
+            _("Analysis"),
+            _(
+                "The recording profile says what the room is judged for. Every number "
+                "still carries its own validity."
+            ),
+        )
+        form = QFormLayout()
+        self.profile = _profile_combo(self.state)
+        profile_row, self.profile_help = _profile_row(self.profile, self)
+        form.addRow(_("Recording profile"), profile_row)
+        step.body.addLayout(form)
+        return step
+
+    # --- route and state --------------------------------------------------------
+
+    def set_route(self, route: str) -> None:
+        """Show ``route``: the step texts, the step 2 panel, the action and the
+        controls that belong to it. A route the page is not on loses the Demo."""
+        self.route = route
+        interface = route == ROUTE_STANDALONE
+        if not interface:
+            self.demo_mode = False
+        self.demo_bar.setVisible(self.demo_mode)
+        for name, button in self.route_buttons.items():
+            button.setChecked(name == route)
+        self._header.subtitle.setText(
+            _(
+                "ReverbScope plays the sweep and records the microphone through your audio "
+                "interface, then runs the same analysis as Universal DAW Mode."
+            )
+            if interface
+            else _(
+                "Four steps: generate the test signal, play and record it in your DAW, "
+                "import the recording, analyse. ReverbScope never talks to the DAW."
+            )
+        )
+        self._header.subtitle.setVisible(True)
+        self._signal_form.setRowVisible(self.level, not interface)
+        self._signal_form.setRowVisible(self.playback_level, interface)
+        self.safety.setVisible(interface)
+        self.acknowledge.setVisible(interface)
+        self.save_sweep_button.setVisible(not interface)
+        self.sweep_label.setVisible(not interface)
+        self.devices_panel.setVisible(interface)
+        self.recording_panel.setVisible(not interface)
+        if interface:
+            self.capture_step.set_text(
+                _("Play and record through your interface"),
+                _(
+                    "ReverbScope plays the test signal and records the microphone when you run the measurement."
+                ),
+            )
+            self.step1.set_text(
+                _("Test signal"),
+                _("The sweep ReverbScope plays through your interface, at the level below."),
+            )
+        else:
+            self.capture_step.set_text(
+                _("Record in your DAW, then import the take"),
+                _(
+                    "Play the test signal in your DAW and record it. ReverbScope never talks to the DAW."
+                ),
+            )
+            self.step1.set_text(
+                _("Test signal"),
+                _("The sweep ReverbScope writes as a WAV file for your DAW, at the level below."),
+            )
+        self.run_button.setText(_("Run Measurement") if interface else _("Analyze"))
+        # Changing the text of a button drops its shortcut: the key is set again.
+        self.run_button.setShortcut("Ctrl+Return")
+        if not interface and not self.is_busy():
+            set_banner_text(self.status, "")
+        self.refresh_controls()
+
+    def open_route(self, route: str, *, demo: bool = False) -> None:
+        """Show New Measurement on ``route`` (the menu, the cards, a project's
+        position). ``demo`` is the Standalone route on the fake backend."""
+        demo = demo and route == ROUTE_STANDALONE
+        changed = demo != self.demo_mode
+        self.demo_mode = demo
+        self.set_route(route)
+        if route == ROUTE_STANDALONE or changed:
+            self.refresh_devices()
+
+    def leave_demo(self) -> None:
+        """The Demo off: the same route on the interface (not while it runs)."""
+        if self.demo_mode and not self.is_busy():
+            self.open_route(ROUTE_STANDALONE)
+
+    def _choose_route(self, route: str) -> None:
+        if route == self.route or self.is_busy():
+            # Keep the button of the route on the page checked.
+            self.route_buttons[self.route].setChecked(True)
+            return
+        self.open_route(route)
+
+    def _run(self) -> None:
+        if self.route == ROUTE_STANDALONE:
+            self.start_measurement()
+        else:
+            self.start_analysis()
+
     def current_sweep_settings(self) -> SweepSettings:
+        """The sweep of the route the page shows."""
+        if self.route == ROUTE_STANDALONE:
+            return self._sweep_at(self.playback_level.value())
+        return self._sweep_at(self.level.value())
+
+    def _sweep_at(self, level_dbfs: float) -> SweepSettings:
         return SweepSettings(
             sample_rate=int(self.sample_rate.currentData()),
             duration_s=float(self.duration.value()),
-            level_dbfs=float(self.level.value()),
+            level_dbfs=float(level_dbfs),
         )
+
+    def refresh_controls(self) -> None:
+        """Enable what the page's state allows. A take or an analysis locks
+        the route switch, Back, the demo and the devices until it ends."""
+        busy = self.is_busy()
+        interface = self.route == ROUTE_STANDALONE
+        self.run_button.setEnabled(not busy and (not interface or bool(self._devices)))
+        self.stop_button.setVisible(interface)
+        self.stop_button.setEnabled(self._taking)
+        self.back_button.setEnabled(not busy)
+        self.leave_demo_button.setEnabled(not busy)
+        for button in self.route_buttons.values():
+            button.setEnabled(not busy)
+        self.refresh_button.setEnabled(not busy)
+        self.progress.setVisible(busy)
+
+    def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
+        set_banner_text(self.status, text, tone)
+        if not busy:
+            self.progress.setValue(0)
+        self.refresh_controls()
+
+    def is_busy(self) -> bool:
+        """A take or its analysis is still running."""
+        return self._taking or self._analysing
+
+    def shutdown_workers(self) -> None:
+        """Stop a take (silencing the output) and let both workers finish."""
+        if self._measure_worker is not None:
+            self._measure_worker.request_stop()
+        for worker in (self._measure_worker, self._analysis_worker):
+            if worker is not None:
+                worker.wait()
+
+    def hideEvent(self, event: QHideEvent) -> None:  # noqa: N802 - Qt override
+        # Leaving the page (not minimising the window) stops a take: Stop and
+        # Esc live on this page, so the sweep must not go on playing unseen.
+        if not event.spontaneous() and self._measure_worker is not None:
+            self._measure_worker.request_stop()
+        super().hideEvent(event)
+
+    def _stale(self) -> bool:
+        """The result that arrives now belongs to a session that is gone.
+
+        The shared state was reset (New Measurement, Open Session) or taken by
+        a measurement another page started since this one began, or the
+        window is closed. A visit to Compare or Settings meanwhile is not
+        that: the result is kept and opens Results.
+        """
+        return self._generation != self.state.generation or not self.window().isVisible()
+
+    def _may_replace_unsaved_take(self) -> bool:
+        """A new take or analysis replaces the live take that is not saved yet.
+
+        Its recording exists only in memory, so the page asks first, as New
+        Measurement, Open Session and closing the window do.
+        """
+        if not (self.state.unsaved_take and self.state.result is not None):
+            return True
+        box = QMessageBox(
+            QMessageBox.Icon.Question,
+            _("Unsaved measurement"),
+            _(
+                "This measurement has not been saved. Its recording exists only in "
+                "memory and is lost if you continue."
+            ),
+            parent=self,
+        )
+        discard = box.addButton(_("Discard"), QMessageBox.ButtonRole.DestructiveRole)
+        cancel = box.addButton(_("Cancel"), QMessageBox.ButtonRole.RejectRole)
+        box.setDefaultButton(cancel)
+        box.setEscapeButton(cancel)
+        box.exec()
+        return box.clickedButton() is discard
+
+    def clear_recording(self) -> None:
+        """Forget the imported take (New Measurement, Open Session)."""
+        self._recording = None
+        self._recording_path = None
+        self.recording_label.setText(_("No recording selected."))
+        self._reset_channel_lists()
+
+    # --- step 1: the test signal (Universal DAW Mode) ---------------------------
 
     def _choose_sweep_target(self) -> None:
         target = ask_save_path(
@@ -643,7 +984,7 @@ class DawModePage(QWidget):
 
     def generate_sweep_to(self, path: Path) -> None:
         try:
-            settings = self.current_sweep_settings()
+            settings = self._sweep_at(self.level.value())
             wav_path, sidecar = write_sweep_file(settings, path)
         except (ReverbScopeError, OSError) as exc:
             QMessageBox.critical(self, _("Cannot write test signal"), localize(str(exc)))
@@ -658,7 +999,8 @@ class DawModePage(QWidget):
         )
         self.reference_label.setText(_("Reference: {name}").format(name=wav_path.name))
 
-    # --- step 3 -----------------------------------------------------------------
+    # --- step 2: the recording (Universal DAW Mode) -----------------------------
+
     def _choose_recording(self) -> None:
         path, _filter = QFileDialog.getOpenFileName(
             self,
@@ -685,9 +1027,9 @@ class DawModePage(QWidget):
         self._recording_path = path
         self._reset_channel_lists()
         for index in range(recording.n_channels):
-            label = _("Channel {n}").format(n=index + 1)
-            self.channel.addItem(label, index)
-            self.loopback_channel.addItem(label, index)
+            label_text = _("Channel {n}").format(n=index + 1)
+            self.channel.addItem(label_text, index)
+            self.recording_loopback.addItem(label_text, index)
         self.recording_label.setText(
             _("{name}: {seconds:.1f} s, {rate} Hz, {channels} channel(s)").format(
                 name=path.name,
@@ -719,16 +1061,23 @@ class DawModePage(QWidget):
             self._sweep_settings = reference.settings
         self.reference_label.setText(_("Reference: {name}").format(name=path.name))
 
-    # --- step 4 -----------------------------------------------------------------
+    def _reset_channel_lists(self) -> None:
+        self.channel.clear()
+        self.channel.addItem(_("Auto (highest level)"), None)
+        self.recording_loopback.clear()
+        self.recording_loopback.addItem(_("None"), None)
+
+    # --- analysis of a DAW recording ---------------------------------------------
+
     def start_analysis(self, *, blocking: bool = False) -> None:
-        if self._worker is not None and self._worker.isRunning():
+        if self.is_busy():
             # Analyze while busy: a second worker would drop the only
             # reference to the running one, and Qt aborts the process when a
             # QThread is destroyed while it runs.
             return
         if self._recording is None:
             QMessageBox.warning(
-                self, _("No recording"), _("Choose the recorded WAV file first (Step 3).")
+                self, _("No recording"), _("Choose the recorded WAV file first (Step 2).")
             )
             return
         if self._reference is None:
@@ -738,8 +1087,10 @@ class DawModePage(QWidget):
                 _("Generate the test signal (Step 1) or choose the sweep file."),
             )
             return
+        if not self._may_replace_unsaved_take():
+            return
         channel = self.channel.currentData()
-        loopback = self.loopback_channel.currentData()
+        loopback = self.recording_loopback.currentData()
         self.state.profile = str(self.profile.currentData())
         place = self.placement.analysis_kwargs()
         self.state.analysis_settings = AnalysisSettings(
@@ -758,7 +1109,7 @@ class DawModePage(QWidget):
         self.state.sweep_settings = self._sweep_settings
         self.state.sweep_path = self._sweep_path
         self.state.session = MeasurementSession(
-            mode="universal_daw",
+            mode=ROUTE_DAW,
             room_name=self.room.text(),
             measurement_position=self.position.text(),
             microphone_name=self.mic.text(),
@@ -768,248 +1119,26 @@ class DawModePage(QWidget):
             recording_path=str(self._recording_path) if self._recording_path else None,
             recording_profile=self.state.profile,
         )
+        self._analysing = True
+        self._analysis_route = ROUTE_DAW
+        self.progress.setRange(0, 0)
         self._set_busy(True, _("Analyzing..."))
-        self._worker = AnalysisWorker(
+        self._analysis_worker = AnalysisWorker(
             self._recording, self._reference, self.state.analysis_settings
         )
-        self._worker.succeeded.connect(self._on_success)
-        self._worker.failed.connect(self._on_failure)
+        self._analysis_worker.succeeded.connect(self._on_success)
+        self._analysis_worker.failed.connect(self._on_failure)
         if blocking:
-            self._worker.run()
+            self._analysis_worker.run()
         else:
-            self._worker.start()
+            self._analysis_worker.start()
 
-    def _reset_channel_lists(self) -> None:
-        self.channel.clear()
-        self.channel.addItem(_("Auto (highest level)"), None)
-        self.loopback_channel.clear()
-        self.loopback_channel.addItem(_("None"), None)
-
-    def clear_recording(self) -> None:
-        """Forget the imported take (New Measurement, Open Session)."""
-        self._recording = None
-        self._recording_path = None
-        self.recording_label.setText(_("No recording selected."))
-        self._reset_channel_lists()
-
-    def shutdown_workers(self) -> None:
-        """Let a running analysis finish: a QThread destroyed while it runs aborts."""
-        if self._worker is not None:
-            self._worker.wait()
-
-    def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
-        self.analyze_button.setEnabled(not busy)
-        # Leaving mid-analysis would let the late result replace another session.
-        self.back_button.setEnabled(not busy)
-        self.progress.setVisible(busy)
-        set_banner_text(self.status, text, tone)
-
-    def _stale(self) -> bool:
-        """The result that arrives now belongs to a session that is gone.
-
-        The shared state was reset (New Measurement, Open Session) or taken by
-        a measurement another page started since this one began, or the
-        window is closed. A visit to Compare or Settings meanwhile is not
-        that: the result is kept and opens Results.
-        """
-        return self._generation != self.state.generation or not self.window().isVisible()
-
-    def _on_success(self, result: AnalysisResult) -> None:
-        if self._stale():
-            self._set_busy(False, late_result_text(), tone="warn")
-            return
-        findings, problem = safe_findings(result, self.state.profile)
-        self.state.result = result
-        self.state.findings = findings
-        self.state.findings_problem = problem
-        self._set_busy(False, _("Done."))
-        self.analysis_finished.emit()
-
-    def _on_failure(self, message: str) -> None:
-        self._set_busy(False, _("Analysis failed: {message}").format(message=message), tone="warn")
-        if not self._stale():
-            # An analysis the user abandoned (New Measurement meanwhile) keeps
-            # its failure on this page; no dialog over the page they are on.
-            error_box(self, _("Analysis failed"), message)
-
-
-class StandalonePage(QWidget):
-    analysis_finished = Signal()
-    back = Signal()
-
-    def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.state = state
-        self.demo_mode = False
-        self._devices: list[DeviceInfo] = []
-        self._measure_worker: MeasureWorker | None = None
-        self._analysis_worker: AnalysisWorker | None = None
-        self._channel_plan: ChannelPlan | None = None
-        # The output channel the take plays on: the spin box stays editable.
-        self._take_output_channel = 1
-        # The take runs on the fake backend: its session is a synthetic demo.
-        self._take_synthetic = False
-        # The take's sweep, analysis settings and profile. They join the
-        # shared state with its recording, not before: a refused or stopped
-        # Run replaced the reference the Universal DAW page analyses with.
-        self._take_settings = state.sweep_settings
-        self._take_reference: Reference | None = None
-        self._take_analysis_settings = AnalysisSettings()
-        self._take_profile = state.profile
-        self._inventory: DeviceInventory | None = None
-        # The backend that listed :attr:`_inventory`: device indices of
-        # another one (the Demo's fake interface) name other devices.
-        self._inventory_backend: str | None = None
-        # The state generation the running take belongs to.
-        self._generation = -1
-        layout = scroll_page(
-            self,
-            PageHeader(
-                _("Standalone Mode"),
-                _(
-                    "ReverbScope plays the sweep and records the microphone through your audio "
-                    "interface, then runs the same analysis as Universal DAW Mode."
-                ),
-            ),
-        )
-
-        self.demo_banner = QLabel(
-            _("Demo mode: the fake backend synthesises a room. Nothing is sent to a loudspeaker.")
-        )
-        self.demo_banner.setWordWrap(True)
-        self.demo_banner.setProperty("banner", "info")
-        self.demo_banner.hide()
-        layout.addWidget(self.demo_banner)
-
-        safety = QLabel(_(SAFETY_MESSAGE))
-        safety.setWordWrap(True)
-        safety.setProperty("banner", "warn")
-        layout.addWidget(safety)
-
-        devices = QGroupBox(_("Audio devices"))
-        form = QFormLayout(devices)
-        self.host_api = QComboBox()
-        self.host_api.setToolTip(
-            _(
-                "How ReverbScope talks to your interface: WASAPI, ASIO, WDM-KS, DirectSound or "
-                "MME on Windows, Core Audio on macOS, ALSA or JACK on Linux. Input and output "
-                'must use the same one. "System default" uses the devices your system '
-                "uses; a star marks the entry recommended for each device."
-            )
-        )
-        self.host_api.currentIndexChanged.connect(self._fill_device_lists)
-        self.input_device = QComboBox()
-        self.output_device = QComboBox()
-        self.refresh_button = QPushButton(_("Refresh devices"))
-        self.refresh_button.clicked.connect(self.refresh_devices)
-        self.sample_rate = QComboBox()
-        for sr in SUPPORTED_SAMPLE_RATES:
-            self.sample_rate.addItem(f"{sr} Hz", sr)
-        self.sample_rate.setCurrentIndex(
-            list(SUPPORTED_SAMPLE_RATES).index(state.sweep_settings.sample_rate)
-        )
-        self.input_channel = QSpinBox()
-        self.input_channel.setRange(1, 64)
-        self.loopback_channel = QSpinBox()
-        self.loopback_channel.setRange(0, 64)
-        self.loopback_channel.setSpecialValueText(_("unused"))
-        self.output_channel = QSpinBox()
-        self.output_channel.setRange(1, 64)
-        self.device_rate = QLabel(_("Device rate: unknown"))
-        self.device_rate.setWordWrap(True)
-        self.input_device.currentIndexChanged.connect(self._update_device_rate)
-        self.output_device.currentIndexChanged.connect(self._update_device_rate)
-        self.sample_rate.currentIndexChanged.connect(self._update_device_rate)
-        form.addRow(_("Audio system (host API)"), self.host_api)
-        form.addRow(_("Input device"), self.input_device)
-        form.addRow(_("Output device"), self.output_device)
-        form.addRow(self.refresh_button)
-        form.addRow(_("Sample rate"), self.sample_rate)
-        form.addRow(self.device_rate)
-        form.addRow(_("Input channel (mic)"), self.input_channel)
-        form.addRow(_("Loopback channel (1-based)"), self.loopback_channel)
-        form.addRow(_("Output channel (speaker)"), self.output_channel)
-        layout.addWidget(devices)
-
-        sweep = QGroupBox(_("Test signal"))
-        form2 = QFormLayout(sweep)
-        self.duration = QDoubleSpinBox()
-        self.duration.setRange(1.0, 60.0)
-        self.duration.setValue(state.sweep_settings.duration_s)
-        self.duration.setSuffix(" s")
-        self.level = QDoubleSpinBox()
-        self.level.setRange(-40.0, 0.0)
-        self.level.setValue(DEFAULT_STANDALONE_LEVEL_DBFS)
-        self.level.setSuffix(" dBFS")
-        self.acknowledge = QCheckBox(
-            _("I have set the monitor level low (required above {level:g} dBFS)").format(
-                level=SAFE_MAX_LEVEL_DBFS
-            )
-        )
-        form2.addRow(_("Sweep duration"), self.duration)
-        form2.addRow(_("Playback level"), self.level)
-        form2.addRow(self.acknowledge)
-        self.profile = _profile_combo(state)
-        profile_row, self.profile_help = _profile_row(self.profile, self)
-        form2.addRow(_("Recording profile"), profile_row)
-        layout.addWidget(sweep)
-
-        from reverbscope.edition import is_developer
-
-        self.advanced = QGroupBox(_("Advanced audio options (developer edition)"))
-        adv = QFormLayout(self.advanced)
-        self.latency = QComboBox()
-        self.latency.addItem(_("PortAudio default (high)"), None)
-        self.latency.addItem(_("Low"), "low")
-        self.latency.addItem(_("High"), "high")
-        self.wasapi_exclusive = QCheckBox(
-            _("WASAPI exclusive mode (bypasses the Windows audio engine)")
-        )
-        self.coreaudio_set_rate = QCheckBox(
-            _("Core Audio: set the device to the requested rate, never convert")
-        )
-        adv.addRow(_("Latency"), self.latency)
-        adv.addRow(self.wasapi_exclusive)
-        adv.addRow(self.coreaudio_set_rate)
-        self.advanced.setVisible(is_developer())
-        layout.addWidget(self.advanced)
-
-        meta, self.room, self.position, self.mic = _metadata_form(state)
-        layout.addWidget(meta)
-        self.placement = PlacementInputs()
-        layout.addWidget(self.placement)
-
-        row = QHBoxLayout()
-        self.back_button = QPushButton(_("Back"))
-        self.back_button.clicked.connect(self.back.emit)
-        self.run_button = primary(QPushButton(_("Run Measurement")))
-        self.run_button.setShortcut("Ctrl+Return")
-        self.run_button.clicked.connect(self.start_measurement)
-        self.stop_button = QPushButton(_("Stop"))
-        self.stop_button.setProperty("danger", True)
-        self.stop_button.setShortcut("Esc")
-        self.stop_button.setEnabled(False)
-        self.stop_button.clicked.connect(self.stop_measurement)
-        row.addWidget(self.back_button)
-        row.addStretch(1)
-        row.addWidget(self.stop_button)
-        row.addWidget(self.run_button)
-        layout.addLayout(row)
-        self.progress = QProgressBar()
-        self.progress.setRange(0, 100)
-        self.progress.hide()
-        self.status = QLabel("")
-        self.status.setWordWrap(True)
-        layout.addWidget(self.progress)
-        layout.addWidget(self.status)
-        layout.addStretch(1)
-        self.refresh_devices()
+    # --- step 2: devices and the take (Standalone Mode) -------------------------
 
     def refresh_devices(self) -> None:
         from reverbscope.audio.backend import get_backend
         from reverbscope.audio.inventory import build_inventory
 
-        self.demo_banner.setVisible(self.demo_mode)
         chosen = self._chosen_devices()
         try:
             backend = get_backend("fake" if self.demo_mode else None)
@@ -1020,12 +1149,11 @@ class StandalonePage(QWidget):
             self._inventory_backend = None
             self.host_api.clear()
             self._fill_device_lists()
-            set_banner_text(
-                self.status,
+            self._device_status(
                 _("Audio backend unavailable: {error}").format(error=localize(str(exc))),
                 "warn",
             )
-            self.run_button.setEnabled(False)
+            self.refresh_controls()
             return
         if backend.name != self._inventory_backend:
             chosen = None
@@ -1060,17 +1188,19 @@ class StandalonePage(QWidget):
         # must stay off then, or a second take replaces the running thread.
         # With no device at all a take would only end in PortAudio's own
         # English error ("Error querying device -1").
-        self.run_button.setEnabled(not self.is_busy() and bool(self._devices))
+        self.refresh_controls()
         if self.demo_mode:
-            set_banner_text(self.status, _("Demo mode: fake backend, no loudspeaker."))
+            self._device_status(_("Demo mode: fake backend, no loudspeaker."))
         elif not self._devices:
-            set_banner_text(
-                self.status, _("No audio device found; Universal DAW Mode still works."), "warn"
-            )
+            self._device_status(_("No audio device found; Universal DAW Mode still works."), "warn")
         else:
-            set_banner_text(
-                self.status, _("{n} audio device(s) found.").format(n=len(self._devices))
-            )
+            self._device_status(_("{n} audio device(s) found.").format(n=len(self._devices)))
+
+    def _device_status(self, text: str, tone: str = "") -> None:
+        """The footer's line about the devices: the Standalone route's, so the
+        DAW route never shows an interface's status."""
+        if self.route == ROUTE_STANDALONE:
+            set_banner_text(self.status, text, tone)
 
     def _chosen_devices(
         self,
@@ -1125,12 +1255,12 @@ class StandalonePage(QWidget):
             d = probe.device
             if api is not None and d.host_api != api:
                 continue
-            label = f"[{d.index}] {d.name} ({d.host_api})"
+            label_text = f"[{d.index}] {d.name} ({d.host_api})"
             if d.is_input:
                 star = "★ " if probe.recommended_input else ""
                 self.input_device.addItem(
                     _("{name} - {count} in").format(
-                        name=f"{star}{label}", count=d.max_input_channels
+                        name=f"{star}{label_text}", count=d.max_input_channels
                     ),
                     d.index,
                 )
@@ -1138,7 +1268,7 @@ class StandalonePage(QWidget):
                 star = "★ " if probe.recommended_output else ""
                 self.output_device.addItem(
                     _("{name} - {count} out").format(
-                        name=f"{star}{label}", count=d.max_output_channels
+                        name=f"{star}{label_text}", count=d.max_output_channels
                     ),
                     d.index,
                 )
@@ -1282,42 +1412,13 @@ class StandalonePage(QWidget):
             text += _(" — rates differ; the interface may resample")
         self.device_rate.setText(text)
 
-    def current_sweep_settings(self) -> SweepSettings:
-        return SweepSettings(
-            sample_rate=int(self.sample_rate.currentData()),
-            duration_s=float(self.duration.value()),
-            level_dbfs=float(self.level.value()),
-        )
-
-    def is_busy(self) -> bool:
-        """A take or its analysis is still running."""
-        return any(
-            worker is not None and worker.isRunning()
-            for worker in (self._measure_worker, self._analysis_worker)
-        )
-
-    def shutdown_workers(self) -> None:
-        """Stop a take (silencing the output) and let both workers finish."""
-        if self._measure_worker is not None:
-            self._measure_worker.request_stop()
-        for worker in (self._measure_worker, self._analysis_worker):
-            if worker is not None:
-                worker.wait()
-
-    def hideEvent(self, event: QHideEvent) -> None:  # noqa: N802 - Qt override
-        # Leaving the page (not minimising the window) stops a take: Stop and
-        # Esc live on this page, so the sweep must not go on playing unseen.
-        if not event.spontaneous() and self._measure_worker is not None:
-            self._measure_worker.request_stop()
-        super().hideEvent(event)
-
     def start_measurement(self) -> None:
         from reverbscope.audio.backend import get_backend
 
         if self.is_busy():
             return
         try:
-            settings = self.current_sweep_settings()
+            settings = self._sweep_at(self.playback_level.value())
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
             return
@@ -1342,6 +1443,8 @@ class StandalonePage(QWidget):
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
             return
+        if not self._may_replace_unsaved_take():
+            return
         devices = self._preflight(list(plan.input_channels), settings.sample_rate)
         if devices is None:
             return
@@ -1363,6 +1466,9 @@ class StandalonePage(QWidget):
             placement_temperature_c=place["placement_temperature_c"],
         )
         self._take_profile = str(self.profile.currentData())
+        self._taking = True
+        self._analysis_route = ROUTE_STANDALONE
+        self.progress.setRange(0, 100)
         self._set_busy(True, _("Playing the sweep and recording..."))
         self._generation = self.state.generation
         self._measure_worker = MeasureWorker(
@@ -1391,13 +1497,11 @@ class StandalonePage(QWidget):
         self.progress.setValue(int(fraction * 100.0))
 
     def _on_stopped(self) -> None:
+        self._taking = False
         self._set_busy(False, _("Stopped."))
 
-    def _stale(self) -> bool:
-        """As :meth:`DawModePage._stale`."""
-        return self._generation != self.state.generation or not self.window().isVisible()
-
     def _on_recorded(self, recording: AudioSignal) -> None:
+        self._taking = False
         if self._stale():
             self._set_busy(False, late_result_text(), tone="warn")
             return
@@ -1407,7 +1511,7 @@ class StandalonePage(QWidget):
         # The take takes the shared state: an analysis another page started
         # meanwhile is late from here on.
         self._generation = self.state.claim()
-        self.state.mode = "standalone"
+        self.state.mode = ROUTE_STANDALONE
         self.state.recording = recording
         self.state.recording_path = None
         self.state.reference = reference
@@ -1419,7 +1523,7 @@ class StandalonePage(QWidget):
         # take on the fake backend is marked like `reverbscope demo`'s sessions,
         # so it is never mistaken for a measurement of a real room.
         self.state.session = MeasurementSession(
-            mode=DEMO_MODE if self._take_synthetic else "standalone",
+            mode=DEMO_MODE if self._take_synthetic else ROUTE_STANDALONE,
             room_name=self.room.text(),
             measurement_position=self.position.text(),
             microphone_name=self.mic.text(),
@@ -1431,28 +1535,16 @@ class StandalonePage(QWidget):
             analysis_settings=self._take_analysis_settings,
             recording_profile=self._take_profile,
         )
-        set_banner_text(self.status, _("Recorded. Analyzing..."))
+        self._analysing = True
+        self.progress.setRange(0, 0)
+        self._set_busy(True, _("Recorded. Analyzing..."))
         self._analysis_worker = AnalysisWorker(recording, reference, self._take_analysis_settings)
         self._analysis_worker.succeeded.connect(self._on_success)
         self._analysis_worker.failed.connect(self._on_failure)
         self._analysis_worker.start()
-        # The take is over; Stop cannot cancel the analysis.
-        self.stop_button.setEnabled(False)
-
-    def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
-        self.run_button.setEnabled(not busy)
-        if hasattr(self, "stop_button"):
-            self.stop_button.setEnabled(busy)
-        if hasattr(self, "back_button"):
-            self.back_button.setEnabled(not busy)
-        if hasattr(self, "refresh_button"):
-            self.refresh_button.setEnabled(not busy)
-        self.progress.setVisible(busy)
-        if not busy and hasattr(self, "progress") and self.progress.maximum() == 100:
-            self.progress.setValue(0)
-        set_banner_text(self.status, text, tone)
 
     def _on_success(self, result: AnalysisResult) -> None:
+        self._analysing = False
         if self._stale():
             self._set_busy(False, late_result_text(), tone="warn")
             return
@@ -1460,6 +1552,8 @@ class StandalonePage(QWidget):
         self.state.result = result
         self.state.findings = findings
         self.state.findings_problem = problem
+        # A live take that is not a demo has no file until it is saved: New
+        # Measurement and Open Session ask first. A DAW recording is a file.
         self.state.unsaved_take = (
             not self.demo_mode
             and self.state.recording is not None
@@ -1469,8 +1563,16 @@ class StandalonePage(QWidget):
         self.analysis_finished.emit()
 
     def _on_failure(self, message: str) -> None:
-        self._set_busy(
-            False, _("Measurement failed: {message}").format(message=message), tone="warn"
-        )
+        self._taking = False
+        self._analysing = False
+        if self._analysis_route == ROUTE_DAW:
+            text = _("Analysis failed: {message}").format(message=message)
+            title = _("Analysis failed")
+        else:
+            text = _("Measurement failed: {message}").format(message=message)
+            title = _("Measurement failed")
+        self._set_busy(False, text, tone="warn")
         if not self._stale():
-            error_box(self, _("Measurement failed"), message)
+            # An analysis the user abandoned (New Measurement meanwhile) keeps
+            # its failure on this page; no dialog over the page they are on.
+            error_box(self, title, message)

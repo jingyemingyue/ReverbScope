@@ -199,15 +199,19 @@ Audacity: [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md).
 ([HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md)); a DAW compatibility report is
 the most useful contribution you can make.
 
-1. **Generate Test Signal** – ReverbScope writes a sweep WAV (plus a small JSON
+1. **Test signal** – ReverbScope writes a sweep WAV (plus a small JSON
    sidecar with the exact sweep definition).
-2. **Record Through Your DAW** – import the WAV on a track, play it through
+2. **Record in your DAW** – import the WAV on a track, play it through
    your interface and monitors, record the measurement microphone on another
    track.
-3. **Import Recording** – export the recorded track as WAV (same sample rate
-   as the project; any length, no trimming needed).
+3. **Import the take** – export the recorded track as WAV (same sample rate
+   as the project; any length, no trimming needed), then choose it in the
+   same New Measurement page.
 4. **Analyze** – ReverbScope finds the sweep automatically, deconvolves it and
    produces the report.
+
+The DAW steps and the Standalone steps are two routes of one page, **New
+Measurement**: the same four numbered steps, with the action at the bottom.
 
 ## Standalone workflow
 

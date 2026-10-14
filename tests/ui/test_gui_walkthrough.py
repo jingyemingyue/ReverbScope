@@ -31,12 +31,14 @@ def test_the_card_shows_on_a_first_start_and_stays_away_once_dismissed(
     window.show()
     card = window.home.walkthrough
     assert card.isVisible()
-    # Its buttons lead into the modes.
-    card.buttons[0].click()
-    assert window.stack.currentWidget() is window.standalone and window.standalone.demo_mode
+    # The card points at the demo card on Home; its guide button is the other way out.
+    assert card.guide_button.isVisible()
+    window.home.mode_cards[2].button.click()
+    assert window.stack.currentWidget() is window.measure and window.measure.demo_mode
     window.show_home()
-    card.buttons[1].click()
-    assert window.stack.currentWidget() is window.daw
+    window.home.mode_cards[0].button.click()
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route == "universal_daw" and not window.measure.demo_mode
     window.show_home()
     card.dismiss_button.click()
     assert card.isHidden()
@@ -62,7 +64,7 @@ def test_the_profile_selector_explains_the_profile(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     page.profile.setCurrentIndex(page.profile.findData("drums"))
     assert "Drums" in page.profile.toolTip()
     from reverbscope.ui.profile_dialog import ProfileDialog

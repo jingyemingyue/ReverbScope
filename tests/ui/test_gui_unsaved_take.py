@@ -51,7 +51,7 @@ def _take(short_sweep: SweepSettings):  # type: ignore[no-untyped-def]
 def _finish_take(window: MainWindow, short_sweep: SweepSettings, *, demo: bool = False) -> None:
     """What the Standalone page does when a take's analysis comes back."""
     recording, result = _take(short_sweep)
-    page = window.standalone
+    page = window.measure
     page.demo_mode = demo
     window.state.recording = recording
     window.state.recording_path = None
@@ -76,9 +76,9 @@ def test_a_finished_live_take_is_unsaved_but_a_demo_and_a_daw_file_are_not(
     window.state.recording_path = tmp_path / "take.wav"
     recording, result = _take(short_sweep)
     window.state.recording = recording
-    window.standalone.demo_mode = False
-    window.standalone._stale = lambda: False  # type: ignore[method-assign]
-    window.standalone._on_success(result)
+    window.measure.demo_mode = False
+    window.measure._stale = lambda: False  # type: ignore[method-assign]
+    window.measure._on_success(result)
     assert window.state.unsaved_take is False
     window.close()
 

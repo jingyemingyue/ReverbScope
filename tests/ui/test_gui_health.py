@@ -36,7 +36,7 @@ def _analyse_file(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     rate = short_sweep.sample_rate
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(rate))
     page.duration.setValue(short_sweep.duration_s)

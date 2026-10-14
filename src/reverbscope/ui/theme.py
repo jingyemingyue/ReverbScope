@@ -300,6 +300,20 @@ QPushButton[primary="true"]:hover {{ background: {t["accent_hover"]};
 QPushButton[primary="true"]:disabled {{ background: {t["border"]}; border-color: {t["border"]};
     color: {t["muted"]}; }}
 QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; }}
+/* The route switch: two joined buttons, one checked. */
+QPushButton[segment="left"] {{ border-top-right-radius: 0px; border-bottom-right-radius: 0px;
+    border-right: none; padding: 6px 16px; }}
+QPushButton[segment="right"] {{ border-top-left-radius: 0px; border-bottom-left-radius: 0px;
+    padding: 6px 16px; }}
+QPushButton[segment]:checked {{ background: {t["accent"]}; color: {t["accent_text"]};
+    border-color: {t["accent"]}; font-weight: 600; }}
+QPushButton[segment]:checked:hover {{ background: {t["accent_hover"]};
+    border-color: {t["accent_hover"]}; }}
+QPushButton[segment]:checked:disabled {{ background: {t["border"]}; border-color: {t["border"]};
+    color: {t["muted"]}; }}
+/* The action bar at the foot of a workflow page. */
+QFrame[footer="true"] {{ background: {t["surface"]}; border: 1px solid {t["border"]};
+    border-radius: 10px; }}
 
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit {{
     background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 6px;
