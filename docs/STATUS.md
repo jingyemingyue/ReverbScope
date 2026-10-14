@@ -6,6 +6,28 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 42: 2026-10-14 — **full-scale peak wording**, proposed on
+`fix/full-scale-peak-wording` against `release/0.5.0`.
+
+* Generated unclipped floating-point recordings with peaks at -0.5, 0.0
+  and +12.4 dBFS. The two positive-peak English/Chinese cases failed before
+  the fix; the other four cases passed. The corrected positive peak says
+  it exceeds full scale by 12.4 dB, preserving the warning status, evidence
+  and serialized acoustic result. Flat-topped recordings keep priority.
+* Apple Silicon, Python 3.12.14 / PySide6 Essentials 6.11.2: 53 health,
+  catalog and GUI-health checks passed after the fix. Ruff and formatting
+  passed. Strict mypy passed with Linux platform semantics, with and without
+  Qt, matching the CI lint environment (82 source modules). Native macOS
+  mypy reports an existing unreachable fallback in unchanged ui/widgets.py;
+  that unrelated candidate baseline issue is not modified here. Final full
+  suite: 1,828 passed, 1 platform skip; core/models coverage 93.32%, above
+  the 85% gate. The first run had a version-metadata mismatch from using the
+  beta environment; the final run uses an isolated rc2 installation.
+  sdist/wheel built successfully; new-head remote CI remains pending.
+* No real audio, DAW or packaged interaction was tested. No merge, tag or
+  release occurred. After candidate review/merge, forward-port the same
+  commit with `cherry-pick -x`; do not reimplement it in the GUI branch.
+
 Snapshot 41: 2026-10-09 — **rc2 takes what the final independent audit
 found: a licence gap in the Windows bundle, a silent wrong average and a
 misleading failure message, plus the corrections to what testers read**

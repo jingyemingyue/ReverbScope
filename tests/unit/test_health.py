@@ -90,6 +90,36 @@ def test_a_clipped_take_is_invalid_and_names_the_metrics_it_spoils(
     assert "decay" in report.affected
 
 
+@pytest.mark.parametrize("language", ["en", "zh_CN"])
+@pytest.mark.parametrize("peak_dbfs", [-0.5, 0.0, 12.4])
+def test_unclipped_float_peaks_describe_the_correct_side_of_full_scale(
+    short_sweep: SweepSettings, language: str, peak_dbfs: float
+) -> None:
+    from reverbscope.i18n import activate
+
+    clean = _clean(short_sweep)
+    scale = 10 ** (peak_dbfs / 20) / np.max(np.abs(clean.samples))
+    recording = AudioSignal(clean.samples * scale, clean.sample_rate, source="float-export")
+    result = _analysed(short_sweep, recording)
+    assert result.clipping is not None and not result.clipping.clipped
+    assert result.clipping.peak_dbfs == pytest.approx(peak_dbfs)
+    before = result.to_dict()
+    activate(language)
+    level = next(check for check in assess(result).checks if check.id == "level")
+    assert level.status is HealthStatus.WARNING
+    assert level.evidence["peak_dbfs"] == pytest.approx(peak_dbfs)
+    assert result.to_dict() == before
+    if peak_dbfs > 0:
+        assert (
+            "exceeding full scale by 12.4 dB" if language == "en" else "超过满刻度 12.4 dB"
+        ) in level.reason
+        assert ("within" if language == "en" else "距满刻度不到") not in level.reason
+    else:
+        assert (
+            "within 1 dB of full scale" if language == "en" else "距满刻度不到 1 dB"
+        ) in level.reason
+
+
 def test_dropouts_in_the_sweep_are_found_and_placed(short_sweep: SweepSettings) -> None:
     clean = _clean(short_sweep)
     rate = clean.sample_rate
