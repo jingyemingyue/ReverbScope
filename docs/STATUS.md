@@ -24,11 +24,16 @@ Snapshot 42: 2026-10-14 — **responsive measurement strip when hints change**
   960x640. Synthetic offscreen stamps name the code source revisions.
   README assets were regenerated. The image commit is pinned in
   design/GUI_P0_NARROW_REVIEW.zh-CN.md.
-* Windows CI #204 had a separate 986>960 width failure. New-head Windows CI
-  remains unrun locally; this fix is a candidate, not a Windows hardware pass.
+* Windows CI #207 still fails the inherited 986>960 width assertion. Its
+  new regression also assumed 1280 pixels always fits one row; the test now
+  derives the starting width from platform hints, preserving all transition
+  and geometry checks. Seventeen local targeted checks pass. The inherited
+  width assertion now includes component hints for diagnosis and remains
+  enforced. Independent review does not pass #61 while Windows remains red.
   The same five pinned acceptance-image links as the baseline task keep this
   branch's document-site gate independently runnable. No native, real audio,
-  DAW, VoiceOver or packaged interaction was tested; independent review pending.
+  DAW, VoiceOver or packaged interaction was tested. Review confirms event
+  convergence, but static Mac images do not establish a Windows repair.
 
 Snapshot 41: 2026-10-14 (UTC+8) — **narrow-window workstation controls and
 an Apple Silicon acceptance checklist**, continuing PR #58 from

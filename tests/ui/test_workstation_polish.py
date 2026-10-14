@@ -179,7 +179,13 @@ def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, langu
     for _step in range(4):
         app.processEvents()
     # The requested window can remain narrow; the strip must not force it wider.
-    assert window.minimumSizeHint().width() <= window.width()
+    assert window.minimumSizeHint().width() <= window.width(), {
+        name: getattr(window, name).minimumSizeHint().toTuple()
+        for name in ("splitter", "navigator", "workspace", "inspector", "strip")
+    } | {
+        name: getattr(strip, name).minimumSizeHint().toTuple()
+        for name in ("settings_bar", "transport_bar", "advanced_bar")
+    }
     assert strip.mode.width() >= strip.mode.minimumSizeHint().width()
     assert strip.sample_rate.width() >= (
         strip.sample_rate.fontMetrics().horizontalAdvance(strip.sample_rate.currentText()) + 24
@@ -214,17 +220,36 @@ def test_strip_reflows_when_control_hints_change_without_a_resize(app: QApplicat
     from reverbscope.ui.main_window import MainWindow
 
     window = MainWindow()
-    window.resize(1280, 800)
     window.show()
     for _step in range(4):
         app.processEvents()
     strip = window.strip
+    margin = strip.outer_layout.contentsMargins()
+    frame = margin.left() + margin.right() + strip.control_layout.spacing()
+    # Font metrics differ across platforms. Choose an actual one-row width,
+    # then enlarge only the caption so each row still fits on its own.
+    window.resize(
+        strip.settings_bar.sizeHint().width() + strip.transport_bar.sizeHint().width() + frame,
+        800,
+    )
+    for _step in range(4):
+        app.processEvents()
     assert strip.control_layout.direction() == QBoxLayout.Direction.LeftToRight
     original_width = strip.width()
     # A device control's metrics change after it is shown, without resizing
     # the window. Each row still fits individually; together they do not.
     original_caption = strip.mode.itemText(0)
-    strip.mode.setItemText(0, original_caption * 4)
+    strip.mode.setItemText(0, original_caption * 2)
+    for _step in range(4):
+        app.processEvents()
+    assert (
+        strip.settings_bar.sizeHint().width() + strip.transport_bar.sizeHint().width() + frame
+        > original_width
+    )
+    assert (
+        strip.settings_bar.minimumSizeHint().width() + margin.left() + margin.right()
+        <= original_width
+    )
     for _step in range(4):
         app.processEvents()
     assert strip.width() == original_width
