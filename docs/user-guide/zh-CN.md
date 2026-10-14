@@ -49,7 +49,7 @@ reverbscope-env/bin/reverbscope gui
 
 ## 先试一试：演示
 
-桌面版首次启动时，首页会显示一张“你的第一次测量”卡片：演示、DAW 路线和独立路线各有一个按钮，还有本指南的链接。“不再显示”会隐藏它；“帮助 ▸ 入门”可以把它找回来。
+桌面版首次启动时，首页会显示一张“你的第一次测量”卡片，指向演示（不需要硬件，走完整个流程），并提供本指南的链接。“不再显示”会隐藏它；“帮助 ▸ 入门”可以把它找回来。卡片下方的“新测量”有三个入口：“通用 DAW 模式”、“独立模式”和“演示”。
 
 `reverbscope demo` 不需要音频接口和话筒，就能演示完整的工作流程。它会写出扫频，模拟一个虚构房间里
 两个位置（一个靠近桌面和侧墙，一个向后移开）的话筒会录到什么，用与真实测量相同的代码分析这两个位置，
@@ -60,13 +60,24 @@ reverbscope-env/bin/reverbscope gui
 用 `reverbscope demo --out <文件夹>` 可以指定文件的位置。演示给会话起的房间、位置和话筒名称，
 用运行演示时的界面语言写入；打开、列出或生成报告时，则按当前界面语言显示。
 
+## 新测量：两条路线共用一个页面
+
+通用 DAW 模式和独立模式是同一个页面“新测量”的两条路线。路线切换按钮在页面右上角；首页的卡片和“测量”菜单会把页面打开在对应的路线上。两条路线遵循同样的四个编号步骤，启动测量的按钮位于页面底部的操作栏中，页面再长也一直可见：
+
+1. **测试信号**：采样率、扫频时长和电平。通用 DAW 模式的峰值电平默认为 −12 dBFS；独立模式的播放电平从 −20 dBFS 开始，即[独立模式](#独立模式与回送线)的安全起点。
+2. **在 DAW 中录制，然后导入录音**（通用 DAW 模式），或 **通过音频接口播放和录音**（独立模式）。
+3. **位置（可选）**：房间、位置和话筒的名称，以及卷尺测量数值。
+4. **分析**：录音配置。通用 DAW 模式用“分析”，独立模式用“开始测量”来启动分析。
+
+正在进行的测量或分析会锁定路线切换，因此运行期间不会有测量被替换。尚未保存的测量存在时，开始新的测量或分析会先询问。**演示**是在模拟后端上运行的独立模式：页面会显示横幅，点“改用我的音频接口”即可退出演示。
+
 ## 通用 DAW 模式
 
-1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav`（或在界面的“通用 DAW 模式”中用“步骤 1 — 生成测试信号”生成，采样率选工程采样率）。把 `.reverbscope-sweep.json` 配套文件和 WAV 放在一起。
+1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav`（或在界面中打开“新测量”并选择“通用 DAW 模式”路线，在步骤 1 中点“保存测试信号 WAV…”，采样率选工程采样率）。把 `.reverbscope-sweep.json` 配套文件和 WAV 放在一起。
 2. 把 WAV 导入 DAW 的一条新轨道，关闭时间伸缩（Warp、Flex、Follow Tempo），信号通路上不要有插件。把它路由到一只扬声器。
 3. 在第二条轨道上接入测量话筒并开启录音待命，关闭输入监听，在扫频播放的同时录音。完整导出录音轨，不要裁切，也不要标准化。
 4. 可选回送（loopback）：导出双声道文件（话筒 + 电回送），并使用 `--channel 0 --loopback-channel 1`。
-5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`，或在界面的“通用 DAW 模式”中用“选择录音…”和“选择参考扫频…”选择这些文件。
+5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`，或在界面中，于“新测量”的通用 DAW 模式路线的步骤 2 中用“选择录音…”和“选择参考扫频…”选择这些文件，然后点“分析”。
 
 **Pro Tools、Logic Pro / GarageBand、Cubase / Nuendo、Fender Studio Pro（原 PreSonus Studio One）、Ableton Live、REAPER、FL Studio、Bitwig Studio、Digital Performer 和 Audacity 的分步说明，以及报告中各条提示在 DAW 里对应的原因，见 [daw-setup.zh-CN.md](daw-setup.zh-CN.md)。**
 

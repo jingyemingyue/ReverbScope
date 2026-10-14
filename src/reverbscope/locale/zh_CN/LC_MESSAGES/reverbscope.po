@@ -509,9 +509,6 @@ msgstr "打开会话"
 msgid "Session files (session.json);;JSON files (*.json);;All files (*)"
 msgstr "会话文件 (session.json);;JSON 文件 (*.json);;所有文件 (*)"
 
-msgid "Measurement metadata (optional)"
-msgstr "测量元数据（可选）"
-
 msgid "Room"
 msgstr "房间"
 
@@ -520,9 +517,6 @@ msgstr "位置"
 
 msgid "Microphone"
 msgstr "话筒"
-
-msgid "Step 1 - Generate Test Signal"
-msgstr "步骤 1 — 生成测试信号"
 
 msgid "Sample rate"
 msgstr "采样率"
@@ -539,14 +533,8 @@ msgstr "保存测试信号 WAV…"
 msgid "No test signal written yet."
 msgstr "尚未写出测试信号。"
 
-msgid "Step 2 - Record Through Your DAW"
-msgstr "步骤 2 — 在 DAW 中录音"
-
 msgid "1. Generate the test signal at your DAW project's sample rate (Step 1).\n2. Import it on a new track. Switch time-stretching off for that clip (Warp, Flex, Follow Tempo, elastic audio) and bypass plug-ins on its track and on the master bus, including room-correction plug-ins.\n3. Route that track to the one loudspeaker you want to test.\n4. Arm a second track with the measurement microphone (input monitoring off) and record while the test signal plays.\n5. Export the recorded track as WAV, AIFF, CAF or FLAC at the project sample rate, without normalising.\n   Do not trim it - ReverbScope finds the sweep automatically.\nStart with a low monitor level; the sweep should be clearly audible but not loud.\nThe user guide has step-by-step notes for Pro Tools, Logic Pro, Cubase, Studio One, Ableton Live, REAPER, FL Studio and Bitwig Studio."
 msgstr "1. 按 DAW 工程的采样率生成测试信号（步骤 1）。\n2. 把它导入新轨道。关闭该片段的时间伸缩（Warp、Flex、Follow Tempo、Elastic Audio），并旁通该轨道和主输出总线上的插件，包括房间校正插件。\n3. 将该轨道只路由到要测的那一只扬声器。\n4. 用测量话筒武装第二条轨道（关闭输入监听），在测试信号播放时录音。\n5. 按工程采样率把录音轨导出为 WAV、AIFF、CAF 或 FLAC，不要做标准化。\n   不要裁切——ReverbScope 会自动找到扫频。\n先把监听开低；扫频应清楚可闻，但不要很大声。\n用户指南里有 Pro Tools、Logic Pro、Cubase、Studio One、Ableton Live、REAPER、FL Studio 和 Bitwig Studio 的分步说明。"
-
-msgid "Step 3 - Import Recording"
-msgstr "步骤 3 — 导入录音"
 
 msgid "Choose Recording..."
 msgstr "选择录音…"
@@ -571,9 +559,6 @@ msgstr "话筒声道"
 
 msgid "Loopback channel"
 msgstr "回送（loopback）声道"
-
-msgid "Step 4 - Analyze"
-msgstr "步骤 4 — 分析"
 
 msgid "Recording profile"
 msgstr "录音配置"
@@ -623,8 +608,8 @@ msgstr "无法读取参考扫频"
 msgid "No recording"
 msgstr "没有录音"
 
-msgid "Choose the recorded WAV file first (Step 3)."
-msgstr "请先选择录好的 WAV（步骤 3）。"
+msgid "Choose the recorded WAV file first (Step 2)."
+msgstr "请先选择录好的 WAV（步骤 2）。"
 
 msgid "No reference"
 msgstr "没有参考"
@@ -1181,9 +1166,6 @@ msgstr "在我的 DAW 中开始"
 
 msgid "ReverbScope plays the sweep and records the microphone through your audio interface."
 msgstr "ReverbScope 通过你的音频接口播放扫频并录制话筒。"
-
-msgid "Measure now"
-msgstr "立即测量"
 
 msgid "Run Standalone Mode on the fake backend. Nothing is sent to a loudspeaker."
 msgstr "在模拟后端上运行独立模式，不会向扬声器发送任何信号。"
@@ -5839,21 +5821,6 @@ msgstr "入门(&G)"
 msgid "Your first measurement"
 msgstr "你的第一次测量"
 
-msgid "ReverbScope plays a sweep, records it and reads the room from the recording. Three ways in; the demo needs no hardware."
-msgstr "ReverbScope 播放扫频、录下它，再从录音中读出房间。有三种入口；演示不需要任何硬件。"
-
-msgid "Try the demo first: a synthetic room, nothing is played."
-msgstr "先试试演示：一个合成的房间，不播放任何声音。"
-
-msgid "In your DAW: write the test signal, play it and record it on a track, then import the recording here."
-msgstr "在你的 DAW 中：写出测试信号，播放并录到一条音轨上，再把录音导入这里。"
-
-msgid "With an audio interface: ReverbScope plays the sweep and records the microphone itself."
-msgstr "使用音频接口：ReverbScope 自己播放扫频并录制话筒。"
-
-msgid "Choose the recording profile that matches what you record; its button says what it watches for. Every number carries a validity, and a result opens with its measurement health."
-msgstr "选择与你所录内容匹配的录音配置；旁边的按钮会说明它关注什么。每个数字都带有效性标记，结果一开始就是它的测量健康。"
-
 msgid "Read the user guide"
 msgstr "阅读用户指南"
 
@@ -5915,3 +5882,42 @@ msgstr "没有考虑两次录音的测量健康状况：它们的会话已不在
 
 msgid "The measurement health of the {side} take was not considered: its session is no longer where the comparison was saved."
 msgstr "没有考虑{side}录音的测量健康状况：它的会话已不在保存这次比较时所在的位置。"
+
+msgid "Run the demo first: it walks the whole workflow on a synthetic room, and nothing is played."
+msgstr "先试试演示：它在合成房间里走完整个流程，不播放任何声音。"
+
+msgid "Start with my interface"
+msgstr "用我的音频接口开始"
+
+msgid "Use my audio interface"
+msgstr "改用我的音频接口"
+
+msgid "The sweep ReverbScope plays through your interface, at the level below."
+msgstr "ReverbScope 通过你的音频接口播放的扫频，电平见下方。"
+
+msgid "The sweep ReverbScope writes as a WAV file for your DAW, at the level below."
+msgstr "ReverbScope 为你的 DAW 写出的 WAV 扫频文件，电平见下方。"
+
+msgid "Play and record through your interface"
+msgstr "通过音频接口播放和录音"
+
+msgid "ReverbScope plays the test signal and records the microphone when you run the measurement."
+msgstr "运行测量时，ReverbScope 播放测试信号并录制话筒。"
+
+msgid "Record in your DAW, then import the take"
+msgstr "在 DAW 中录制，然后导入录音"
+
+msgid "Play the test signal in your DAW and record it. ReverbScope never talks to the DAW."
+msgstr "在 DAW 中播放测试信号并录音。ReverbScope 从不与 DAW 通信。"
+
+msgid "Position (optional)"
+msgstr "位置（可选）"
+
+msgid "Where the loudspeaker and the microphone stood. The names are saved with the session."
+msgstr "扬声器和话筒所在的位置。名称会随会话一起保存。"
+
+msgid "Analysis"
+msgstr "分析"
+
+msgid "The recording profile says what the room is judged for. Every number still carries its own validity."
+msgstr "录音配置决定房间按什么标准评判。每个数值仍附带自己的有效性标记。"

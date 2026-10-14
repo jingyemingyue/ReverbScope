@@ -84,9 +84,11 @@ bundled licenses.
 ## Try it first: the demo
 
 On its first start the desktop app shows a **Your first measurement** card on
-the Home page: the demo, the DAW route and the standalone route, each with
-its button, and a link to this guide. **Don't show this again** hides it;
-**Help ▸ Getting started** brings it back.
+the Home page. It points at the demo, which runs the whole workflow with no
+hardware, and links to this guide. **Don't show this again** hides it;
+**Help ▸ Getting started** brings it back. Under it, the **New Measurement**
+cards start a measurement: **Universal DAW Mode**, **Standalone Mode** or the
+**Demo**.
 
 `reverbscope demo` shows the whole workflow without an interface or a
 microphone. It writes a sweep, simulates what a microphone would record at two
@@ -102,10 +104,35 @@ the demo never overwrites a folder it did not write. `reverbscope demo --out
 the demo gives its sessions are written in the language it ran in, and shown
 in the interface language when a session is opened, listed or reported.
 
+## New Measurement: one page for both routes
+
+Universal DAW Mode and Standalone Mode are two routes of one page, **New
+Measurement**. The route switch is at its top right; the Home cards and the
+Measure menu open the page on a route. Both routes follow the same four
+numbered steps, and the button that starts the measurement is in a bar at the
+bottom of the page, in view whatever the length of the page:
+
+1. **Test signal**: the sample rate, the sweep duration and the level. The
+   DAW route's peak level is −12 dBFS by default; the Standalone route's
+   playback level starts at −20 dBFS, the safe start of
+   [Standalone Mode](#standalone-mode-and-the-loopback-cable).
+2. **Record in your DAW, then import the take** (Universal DAW Mode), or
+   **Play and record through your interface** (Standalone Mode).
+3. **Position (optional)**: the room, position and microphone names, and the
+   tape measurements.
+4. **Analysis**: the recording profile. **Analyze** (Universal DAW Mode) or
+   **Run Measurement** (Standalone Mode) starts the analysis.
+
+A take or an analysis that is running locks the route switch, so no measurement
+is replaced while it runs. A new take or analysis while a measurement is not
+saved yet asks first. **Demo** is the Standalone route on the fake backend: the
+page shows a banner, and **Use my audio interface** leaves the demo.
+
 ## Universal DAW Mode
 
-1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav` (or the GUI
-   “Universal DAW Mode” generate button, with the project's sample rate).
+1. `reverbscope sweep --sample-rate <project rate> --out sweep.wav` (or, in the
+   GUI, New Measurement on the Universal DAW Mode route: step 1, **Save Test
+   Signal WAV...**, with the project's sample rate).
    Keep the `.reverbscope-sweep.json` sidecar next to the WAV.
 2. Import the WAV on a new DAW track, with time-stretching (Warp, Flex,
    Follow Tempo) off and no plug-in on its path. Route it to one loudspeaker.
@@ -115,8 +142,9 @@ in the interface language when a session is opened, listed or reported.
 4. Optional loopback: bounce a two-channel export (microphone + electrical
    return) and pass `--channel 0 --loopback-channel 1`.
 5. `reverbscope analyze --recording take.wav --sweep sweep.wav --out session/`,
-   or in the GUI's “Universal DAW Mode” choose the files with “Choose
-   Recording...” and “Choose Reference Sweep...”.
+   or in the GUI, on the Universal DAW Mode route of New Measurement, choose the
+   files in step 2 with “Choose Recording...” and “Choose Reference Sweep...”,
+   then press **Analyze**.
 
 **Step-by-step notes for Pro Tools, Logic Pro / GarageBand, Cubase / Nuendo,
 Fender Studio Pro (formerly PreSonus Studio One), Ableton Live, REAPER, FL Studio, Bitwig Studio, Digital Performer and Audacity, and

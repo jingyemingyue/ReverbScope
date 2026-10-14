@@ -61,7 +61,9 @@ def test_numbers_stay_ascii() -> None:
 def test_daw_chrome_is_in_the_chinese_catalog() -> None:
     activate("zh_CN")
     assert _("Analyze") == "分析"
-    assert _("Step 1 - Generate Test Signal").startswith("步骤")
+    # The New Measurement steps: the test signal, and the DAW route's capture step.
+    assert _("Test signal").startswith("测试")
+    assert _("Record in your DAW, then import the take").startswith("在")
     activate("en")
 
 

@@ -95,7 +95,7 @@ def _daw_ready(app: QApplication, tmp_path: Path, short_sweep: SweepSettings) ->
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     rate = short_sweep.sample_rate
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(rate))
     page.duration.setValue(short_sweep.duration_s)
@@ -115,18 +115,18 @@ def test_a_visit_to_compare_does_not_discard_a_running_analysis(
     arrived meanwhile was thrown away as "late" although nothing had
     replaced it; the user had to run the analysis again."""
     window = _daw_ready(app, tmp_path, short_sweep)
-    page = window.daw
+    page = window.measure
     try:
         page.start_analysis()
         window.show_compare()
         assert window.stack.currentWidget() is window.compare
     finally:
         held_analysis.set()
-        _settle(app, page._worker)
+        _settle(app, page._analysis_worker)
     assert window.state.result is not None
     assert window.stack.currentWidget() is window.results
     assert "discarded" not in page.status.text()
-    assert page.analyze_button.isEnabled()
+    assert page.run_button.isEnabled()
     window.close()
 
 
@@ -142,10 +142,10 @@ def test_a_profile_that_fails_does_not_leave_the_page_busy(
 
     monkeypatch.setattr(pages, "interpret", broken)
     window = _daw_ready(app, tmp_path, short_sweep)
-    page = window.daw
+    page = window.measure
     page.start_analysis(blocking=True)
     app.processEvents()
-    assert page.analyze_button.isEnabled()
+    assert page.run_button.isEnabled()
     assert not page.progress.isVisible()
     assert window.state.result is not None
     assert window.state.findings == []
@@ -169,16 +169,16 @@ def test_a_failure_after_new_measurement_shows_no_dialog(
     monkeypatch.setattr(workers, "analyze", failing)
     monkeypatch.setattr(pages, "error_box", lambda *args, **kwargs: boxes.append(args))
     window = _daw_ready(app, tmp_path, short_sweep)
-    page = window.daw
+    page = window.measure
     try:
         page.start_analysis()
         window.show_home()
     finally:
         gate.set()
-        _settle(app, page._worker)
+        _settle(app, page._analysis_worker)
     assert boxes == []
     assert "failed" in page.status.text().lower()
-    assert page.analyze_button.isEnabled()
+    assert page.run_button.isEnabled()
     assert window.stack.currentWidget() is window.home
     window.close()
 
@@ -190,16 +190,16 @@ def test_a_second_analyze_during_an_analysis_is_ignored(
     to the running QThread (Qt aborts the process when such a thread is
     destroyed); the button is disabled, but the call is reachable."""
     window = _daw_ready(app, tmp_path, short_sweep)
-    page = window.daw
+    page = window.measure
     try:
         page.start_analysis()
-        first = page._worker
+        first = page._analysis_worker
         assert first is not None and first.isRunning()
         page.start_analysis()
-        assert page._worker is first
+        assert page._analysis_worker is first
     finally:
         held_analysis.set()
-        _settle(app, page._worker)
+        _settle(app, page._analysis_worker)
     assert window.state.result is not None
     window.close()
 
@@ -210,15 +210,15 @@ def test_closing_the_window_as_the_analysis_completes_is_quiet(
     """Close the window the instant the analysis is released: the result
     arrives on a closed window and must neither crash nor open a page."""
     window = _daw_ready(app, tmp_path, short_sweep)
-    page = window.daw
+    page = window.measure
     page.start_analysis()
-    worker = page._worker
+    worker = page._analysis_worker
     held_analysis.set()
     window.close()  # waits for the worker
     assert worker is not None and not worker.isRunning()
     _settle(app)
     assert not window.isVisible()
-    assert page.analyze_button.isEnabled()
+    assert page.run_button.isEnabled()
 
 
 def test_stop_then_run_again_at_once(app: QApplication, held_take) -> None:
@@ -228,7 +228,7 @@ def test_stop_then_run_again_at_once(app: QApplication, held_take) -> None:
     window.show()
     window.show_mode("demo")
     app.processEvents()
-    page = window.standalone
+    page = window.measure
     page.duration.setValue(1.0)
     seen = []
     for _ in range(3):
@@ -288,7 +288,7 @@ def test_saving_into_a_folder_that_cannot_be_created_is_a_dialog_not_a_bug(
         QMessageBox, "critical", lambda parent, title, text, *a, **k: shown.append(text)
     )
     window = _daw_ready(app, tmp_path, short_sweep)
-    window.daw.start_analysis(blocking=True)
+    window.measure.start_analysis(blocking=True)
     app.processEvents()
     assert window.stack.currentWidget() is window.results
     blocker = tmp_path / "blocker"
@@ -313,7 +313,7 @@ def test_a_test_signal_that_cannot_be_written_is_a_dialog_not_a_bug(
     window.show_mode("universal_daw")
     blocker = tmp_path / "blocker"
     blocker.write_text("x", encoding="utf-8")
-    window.daw.generate_sweep_to(blocker / "sweep.wav")
+    window.measure.generate_sweep_to(blocker / "sweep.wav")
     assert shown and "cannot write" in shown[-1]
-    assert "No test signal" in window.daw.sweep_label.text()
+    assert "No test signal" in window.measure.sweep_label.text()
     window.close()

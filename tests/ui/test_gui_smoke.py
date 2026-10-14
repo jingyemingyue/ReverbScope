@@ -43,9 +43,10 @@ def test_daw_mode_end_to_end(app: QApplication, tmp_path: Path, short_sweep: Swe
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    assert window.stack.currentWidget() is window.daw
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route == "universal_daw"
 
-    page = window.daw
+    page = window.measure
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(short_sweep.sample_rate))
     page.duration.setValue(short_sweep.duration_s)
     page.generate_sweep_to(tmp_path / "sweep.wav")
@@ -89,7 +90,7 @@ def test_reopen_saved_session(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(short_sweep.sample_rate))
     page.duration.setValue(short_sweep.duration_s)
     page.generate_sweep_to(tmp_path / "sweep.wav")
@@ -160,8 +161,13 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
     expected = sorted(shortcut_badge(sequence) for sequence in ("Ctrl+1", "Ctrl+2", "Ctrl+3"))
     assert badges == expected
     assert "Home" in window.statusBar().currentMessage()
-    assert window.daw.analyze_button.shortcut().toString() == "Ctrl+Return"
-    assert window.standalone.stop_button.shortcut().toString() == "Esc"
+    assert window.measure.run_button.shortcut().toString() == "Ctrl+Return"
+    # The route changes the button's text, which used to drop the shortcut.
+    window.show_mode("standalone")
+    assert window.measure.run_button.shortcut().toString() == "Ctrl+Return"
+    window.show_mode("universal_daw")
+    assert window.measure.run_button.shortcut().toString() == "Ctrl+Return"
+    assert window.measure.stop_button.shortcut().toString() == "Esc"
     assert window.results.save_button.shortcut().toString() == "Ctrl+S"
     window.close()
 
@@ -169,9 +175,10 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
 def test_standalone_page_builds(app: QApplication) -> None:
     window = MainWindow()
     window.show_mode("standalone")
-    assert window.stack.currentWidget() is window.standalone
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route == "standalone"
     # Either devices were listed or the backend is reported unavailable; both are acceptable.
-    assert window.standalone.status.text()
+    assert window.measure.status.text()
     window.close()
 
 
@@ -180,11 +187,12 @@ def test_demo_mode_uses_fake_backend(app: QApplication) -> None:
     window.show()
     window.show_mode("demo")
     app.processEvents()
-    assert window.stack.currentWidget() is window.standalone
-    assert window.standalone.demo_mode is True
-    assert not window.standalone.demo_banner.isHidden()
-    assert window.standalone.stop_button is not None
-    assert "fake" in window.standalone.status.text().lower()
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route == "standalone"
+    assert window.measure.demo_mode is True
+    assert window.measure.demo_banner.isVisibleTo(window.measure)
+    assert window.measure.stop_button is not None
+    assert "fake" in window.measure.status.text().lower()
     window.close()
 
 
@@ -226,7 +234,7 @@ def test_placement_tab_uses_tape_measurements(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(short_sweep.sample_rate))
     page.duration.setValue(short_sweep.duration_s)
     page.generate_sweep_to(tmp_path / "sweep.wav")
@@ -273,7 +281,7 @@ def test_compare_two_saved_sessions(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(short_sweep.sample_rate))
     page.duration.setValue(short_sweep.duration_s)
     page.generate_sweep_to(tmp_path / "sweep.wav")
@@ -291,7 +299,7 @@ def test_compare_two_saved_sessions(
     window.results.save_to(first)
     window.show_home()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(short_sweep.sample_rate))
     page.duration.setValue(short_sweep.duration_s)
     page.generate_sweep_to(tmp_path / "sweep2.wav")
@@ -389,7 +397,7 @@ def test_standalone_shows_requested_and_device_rate(app: QApplication) -> None:
     window = MainWindow()
     window.show_mode("demo")
     app.processEvents()
-    page = window.standalone
+    page = window.measure
     assert "48000" in page.device_rate.text()
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(44100))
     app.processEvents()
@@ -438,7 +446,7 @@ def test_developer_menu_and_device_inspector(
 
     window = MainWindow()
     assert window.developer_menu is not None
-    assert not window.standalone.advanced.isHidden() or not window.isVisible()
+    assert not window.measure.advanced.isHidden() or not window.isVisible()
     inspector = DeviceInspector("fake", window)
     assert inspector.table.rowCount() == 1
     inspector.refresh(probe=True)
@@ -492,7 +500,7 @@ def test_user_edition_hides_developer_tools(
     monkeypatch.setenv("REVERBSCOPE_EDITION", "user")
     window = MainWindow()
     assert window.developer_menu is None
-    assert window.standalone.advanced.isHidden()
+    assert window.measure.advanced.isHidden()
     # The environment report is for everyone who files a bug.
     assert window.report_action.isEnabled()
     window.close()
@@ -501,7 +509,7 @@ def test_user_edition_hides_developer_tools(
 def test_standalone_host_api_filter_and_options(app: QApplication) -> None:
     window = MainWindow()
     window.show_mode("demo")
-    page = window.standalone
+    page = window.measure
     assert page.host_api.count() >= 1
     # The fake interface is the recommended input and output.
     assert page.input_device.currentText().startswith("★") or page.host_api.currentData() is None
@@ -543,7 +551,7 @@ def test_standalone_preselects_the_system_default_devices(
         lambda backend, **kwargs: real_build(backend, probe_rates=False, platform="darwin"),
     )
     window = MainWindow()
-    page = window.standalone
+    page = window.measure
     page.refresh_devices()
     assert page.host_api.currentData() is None
     assert page.input_device.currentData() is None
@@ -641,7 +649,7 @@ def test_a_running_take_cannot_be_replaced_and_closing_waits_for_it(
     window.show()
     window.show_mode("demo")
     app.processEvents()
-    page = window.standalone
+    page = window.measure
     page.duration.setValue(1.0)
     page.run_button.click()
     first = page._measure_worker
@@ -743,8 +751,8 @@ def test_home_selects_two_sessions_for_compare_and_settings_reach_the_gui(
         window.home.browser.list.selectionMode()
         is QAbstractItemView.SelectionMode.ExtendedSelection
     )
-    assert window.daw.profile.currentData() == "vocal"
-    assert window.standalone.profile.currentData() == "vocal"
+    assert window.measure.profile.currentData() == "vocal"
+    assert window.measure.profile.currentData() == "vocal"
     window.close()
 
 
@@ -799,7 +807,7 @@ def test_a_late_analysis_never_joins_a_session_opened_meanwhile(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     page.sample_rate.setCurrentIndex(page.sample_rate.findData(rate))
     page.duration.setValue(short_sweep.duration_s)
     page.generate_sweep_to(tmp_path / "sweep.wav")
@@ -815,12 +823,12 @@ def test_a_late_analysis_never_joins_a_session_opened_meanwhile(
         window.show_mode("universal_daw")  # back to the page to wait for it
     finally:
         held_analysis.set()
-        _settle(app, page._worker)
+        _settle(app, page._analysis_worker)
     assert window.stack.currentWidget() is page
     assert window.state.session.room_name == "Studio X"
     assert window.state.result is studio_x
     assert "discarded" in page.status.text()
-    assert page.analyze_button.isEnabled()
+    assert page.run_button.isEnabled()
     window.close()
 
 
@@ -833,7 +841,7 @@ def test_a_late_standalone_analysis_is_not_shown_after_new_measurement(
     window.show()
     window.show_mode("demo")
     app.processEvents()
-    page = window.standalone
+    page = window.measure
     page.duration.setValue(1.0)
     page.room.setText("Live room")
     try:
@@ -862,7 +870,7 @@ def test_the_measure_menu_does_not_switch_backend_under_a_running_take(
     window.show()
     window.show_mode("demo")
     app.processEvents()
-    page = window.standalone
+    page = window.measure
     page.duration.setValue(1.0)
     page.output_channel.setValue(1)
     try:
@@ -900,7 +908,7 @@ def test_a_take_on_the_fake_backend_is_saved_as_a_synthetic_demo(
     window.show()
     window.show_mode(mode)
     app.processEvents()
-    page = window.standalone
+    page = window.measure
     page.duration.setValue(1.0)
     page.run_button.click()
     _settle(app, page._measure_worker)
@@ -925,7 +933,7 @@ def test_the_demo_cable_is_on_the_loopback_channel_the_box_says(
     window.show()
     window.show_mode("demo")
     app.processEvents()
-    page = window.standalone
+    page = window.measure
     page.duration.setValue(1.0)
 
     def take() -> object:
@@ -993,14 +1001,14 @@ def test_a_new_default_profile_applies_without_a_restart(
 
     monkeypatch.setattr(settings_dialog.SettingsDialog, "exec", accept_with_profile)
     window = MainWindow()
-    assert window.daw.profile.currentData() == "generic"
+    assert window.measure.profile.currentData() == "generic"
     window.show_settings()
-    assert window.daw.profile.currentData() == "vocal"
-    assert window.standalone.profile.currentData() == "vocal"
+    assert window.measure.profile.currentData() == "vocal"
+    assert window.measure.profile.currentData() == "vocal"
     # Settings accepted again without a new default keep this measurement's choice.
-    window.daw.profile.setCurrentIndex(window.daw.profile.findData("generic"))
+    window.measure.profile.setCurrentIndex(window.measure.profile.findData("generic"))
     window.show_settings()
-    assert window.daw.profile.currentData() == "generic"
+    assert window.measure.profile.currentData() == "generic"
     window.close()
 
 
@@ -1111,7 +1119,7 @@ def test_saving_a_file_asks_before_replacing_it_when_the_extension_is_added(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     page.generate_sweep_to(tmp_path / "reverbscope_sweep.wav")
     sweep = (tmp_path / "reverbscope_sweep.wav").read_bytes()
     page.duration.setValue(3.0)
@@ -1192,7 +1200,7 @@ def _demo_take(app: QApplication, window: MainWindow, seconds: float = 1.0) -> N
     """Run a take on the Demo page and wait until Results shows it."""
     window.show_mode("demo")
     app.processEvents()
-    page = window.standalone
+    page = window.measure
     page.duration.setValue(seconds)
     page.run_button.click()
     _settle(app, page._measure_worker)
@@ -1221,7 +1229,7 @@ def test_daw_mode_analyses_only_the_recording_it_shows(
     window.show()
     _demo_take(app, window)
     window.show_mode("universal_daw")  # Ctrl+1 from Results
-    daw = window.daw
+    daw = window.measure
     assert daw.recording_label.text() == "No recording selected."
     daw.start_analysis(blocking=True)
     assert refused == ["No recording"]
@@ -1265,7 +1273,7 @@ def test_a_standalone_take_never_replaces_the_daw_reference(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    daw = window.daw
+    daw = window.measure
     daw.sample_rate.setCurrentIndex(daw.sample_rate.findData(rate))
     daw.duration.setValue(short_sweep.duration_s)
     daw.generate_sweep_to(tmp_path / "daw_sweep.wav")
@@ -1275,11 +1283,11 @@ def test_a_standalone_take_never_replaces_the_daw_reference(
     daw.set_recording(write_wav(tmp_path / "daw_take.wav", take.samples, rate, subtype="FLOAT"))
 
     window.show_mode("demo")
-    window.standalone.input_channel.setValue(40)  # refused: the fake interface has 8 inputs
-    window.standalone.duration.setValue(1.5)
-    window.standalone.run_button.click()
-    assert window.standalone._measure_worker is None
-    window.standalone.input_channel.setValue(1)
+    window.measure.input_channel.setValue(40)  # refused: the fake interface has 8 inputs
+    window.measure.duration.setValue(1.5)
+    window.measure.run_button.click()
+    assert window.measure._measure_worker is None
+    window.measure.input_channel.setValue(1)
     _demo_take(app, window, seconds=1.5)
     window.show_mode("universal_daw")
     assert daw.reference_label.text() == "Reference: daw_sweep.wav"
@@ -1329,7 +1337,7 @@ def test_standalone_keeps_the_chosen_devices_when_it_lists_them_again(
     )
     window = MainWindow()
     window.show_mode("standalone")
-    page = window.standalone
+    page = window.measure
 
     def chosen() -> tuple[object, object, object]:
         return (
@@ -1405,7 +1413,7 @@ def test_a_new_audio_backend_in_settings_reaches_the_standalone_page(
     save_settings(UserSettings(audio_backend="fake"))
     window = MainWindow()
     window.show_mode("standalone")
-    page = window.standalone
+    page = window.measure
 
     def listed() -> str:
         return " ".join(page.input_device.itemText(i) for i in range(page.input_device.count()))
@@ -1444,7 +1452,7 @@ def test_standalone_without_any_audio_device_says_so_and_does_not_run(
     monkeypatch.setattr(backend_module, "get_backend", lambda name=None: Silent())
     window = MainWindow()
     window.show_mode("standalone")
-    page = window.standalone
+    page = window.measure
     assert not page.run_button.isEnabled()
     assert page.status.text() == "No audio device found; Universal DAW Mode still works."
     assert page.status.property("banner") == "warn"
@@ -1567,7 +1575,7 @@ def test_saving_a_name_with_a_dot_asks_before_replacing_the_file_written(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     page.generate_sweep_to(tmp_path / "sweep 2026.10.05.wav")
     sweep = (tmp_path / "sweep 2026.10.05.wav").read_bytes()
     page.duration.setValue(3.0)
@@ -1605,7 +1613,7 @@ def test_a_confirmed_replace_writes_the_file_a_dotted_name_names(
     window = MainWindow()
     window.show()
     window.show_mode("universal_daw")
-    page = window.daw
+    page = window.measure
     page.generate_sweep_to(tmp_path / "sweep 2026.10.05.wav")
     old = (tmp_path / "sweep 2026.10.05.wav").read_bytes()
     page.duration.setValue(3.0)
@@ -1637,7 +1645,7 @@ def _theme_colours(window: MainWindow) -> dict[str, str]:
     return {
         "results chart": to_hex(window.results.ir_tab.figure.get_facecolor()),
         "compare chart": to_hex(window.compare.figure.get_facecolor()),
-        "placement picture": to_hex(window.daw.placement.figure.get_facecolor()),
+        "placement picture": to_hex(window.measure.placement.figure.get_facecolor()),
         "finding card": cards[-1].styleSheet(),
         "chip": window.results.overview.rt60.chip.styleSheet(),
     }
@@ -1781,14 +1789,16 @@ def test_the_measure_menu_opens_each_mode(app: QApplication) -> None:
         for action in window.findChildren(QAction)
         if not action.shortcut().isEmpty()
     }
+    # One page, three ways in: the route and the demo flag say which.
     by_shortcut["Ctrl+2"].trigger()
-    assert window.stack.currentWidget() is window.standalone
-    assert not window.standalone.demo_mode
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route == "standalone" and not window.measure.demo_mode
     by_shortcut["Ctrl+3"].trigger()
-    assert window.stack.currentWidget() is window.standalone
-    assert window.standalone.demo_mode
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route == "standalone" and window.measure.demo_mode
     by_shortcut["Ctrl+1"].trigger()
-    assert window.stack.currentWidget() is window.daw
+    assert window.stack.currentWidget() is window.measure
+    assert window.measure.route == "universal_daw" and not window.measure.demo_mode
     window.close()
 
 

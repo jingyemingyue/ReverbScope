@@ -7,7 +7,18 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- The desktop app's Universal DAW Mode and Standalone Mode are one **New
+  Measurement** page: a route switch at its top right, the same four numbered
+  steps for both routes (test signal, capture, position, analysis), and the
+  Run or Analyze button in a bar that stays in view. Each route keeps its own
+  level default (the interface starts at −20 dBFS). A running take or analysis
+  locks the route switch.
+- The Home page's first-measurement card no longer repeats the mode cards; the
+  demo card is the secondary action there.
+- Starting a new take, or a DAW analysis, while a live measurement is not saved
+  asks first, as New Measurement, Open Session and closing the window already do.
 
 ## [0.5.0b3] - 2026-10-09
 

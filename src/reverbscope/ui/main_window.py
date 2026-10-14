@@ -27,7 +27,7 @@ from reverbscope.io.recent import remember_session
 from reverbscope.io.session_store import load_measurement
 from reverbscope.settings import load_settings
 from reverbscope.ui.compare_view import ComparePage
-from reverbscope.ui.pages import DawModePage, HomePage, StandalonePage, safe_findings
+from reverbscope.ui.pages import ROUTE_STANDALONE, HomePage, MeasurePage, safe_findings
 from reverbscope.ui.project_view import ProjectPage
 from reverbscope.ui.results import ResultsPage
 from reverbscope.ui.state import MeasurementState
@@ -81,15 +81,13 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stack)
 
         self.home = HomePage()
-        self.daw = DawModePage(self.state)
-        self.standalone = StandalonePage(self.state)
+        self.measure = MeasurePage(self.state)
         self.results = ResultsPage(self.state)
         self.compare = ComparePage()
         self.project = ProjectPage(self.state)
         for page in (
             self.home,
-            self.daw,
-            self.standalone,
+            self.measure,
             self.results,
             self.compare,
             self.project,
@@ -106,10 +104,8 @@ class MainWindow(QMainWindow):
         self.project.open_session.connect(self.open_session_path)
         self.project.compare_requested.connect(self._compare_from_project)
         self.results.project_requested.connect(self.show_project)
-        self.daw.analysis_finished.connect(self.show_results)
-        self.standalone.analysis_finished.connect(self.show_results)
-        self.daw.back.connect(self.show_home)
-        self.standalone.back.connect(self.show_home)
+        self.measure.analysis_finished.connect(self.show_results)
+        self.measure.back.connect(self.show_home)
         self.results.new_measurement.connect(self.show_home)
         self.compare.back.connect(self._leave_compare)
 
@@ -229,8 +225,7 @@ class MainWindow(QMainWindow):
             QGuiApplication.styleHints().colorSchemeChanged.disconnect(self._follow_system_scheme)
         # A QThread destroyed while it runs aborts the process (Ctrl+Q during a
         # take or an analysis): stop the take and let the workers finish.
-        self.standalone.shutdown_workers()
-        self.daw.shutdown_workers()
+        self.measure.shutdown_workers()
         super().closeEvent(event)
 
     def _set_place(self, place: str) -> None:
@@ -284,10 +279,10 @@ class MainWindow(QMainWindow):
         # Home is a fresh start: the next measurement belongs to no project
         # until the Project page starts one.
         self.state.leave_project()
-        self.daw.clear_recording()
+        self.measure.clear_recording()
         # Home's environment report and device inspector describe the real
         # interface, not the demo's fake one.
-        self.standalone.demo_mode = False
+        self.measure.leave_demo()
         self.home.refresh_recent()
         self.home.show_walkthrough(not load_settings().walkthrough_dismissed)
         self.stack.setCurrentWidget(self.home)
@@ -316,7 +311,7 @@ class MainWindow(QMainWindow):
         # workflow either: Save would otherwise list a copy of it there.
         self.state.reset()
         self.state.leave_project()
-        self.daw.clear_recording()
+        self.measure.clear_recording()
         self.state.session = loaded.session
         self.state.result = loaded.result
         self.state.mode = loaded.session.mode
@@ -332,33 +327,33 @@ class MainWindow(QMainWindow):
         self.show_results()
 
     def show_mode(self, mode: str) -> None:
-        if mode in ("demo", "standalone") and self.standalone.is_busy():
-            # Ctrl+2 / Ctrl+3 while a take or its analysis runs on the
-            # Standalone page, from that page or from another: switching the
-            # backend under it would show the demo banner over a real sweep (or
-            # the reverse) and list devices over a running progress bar. The
-            # page is shown as it is; leaving it for Home stops the take.
-            self.stack.setCurrentWidget(self.standalone)
-            self._set_place(
-                _("Demo (no interface)") if self.standalone.demo_mode else _("Standalone Mode")
-            )
+        """New Measurement on ``mode``: a route, or ``demo`` (the Standalone
+        route on the fake backend)."""
+        if self.measure.is_busy():
+            # Ctrl+1/2/3 while a take or its analysis runs: the page is shown
+            # as it is. Switching the route or the backend under it would show
+            # the demo banner over a real sweep (or the reverse), and list
+            # devices over a running progress bar. Leaving the page for Home
+            # stops a take.
+            self.stack.setCurrentWidget(self.measure)
+            self._set_place(self._measure_place())
             return
         if mode == "demo":
-            self.state.mode = "standalone"
-            self.standalone.demo_mode = True
-            self.standalone.refresh_devices()
-            self.stack.setCurrentWidget(self.standalone)
-            self._set_place(_("Demo (no interface)"))
-            return
-        self.state.mode = mode
-        self.standalone.demo_mode = False
-        if mode == "standalone":
-            self.standalone.refresh_devices()
-            self.stack.setCurrentWidget(self.standalone)
-            self._set_place(_("Standalone Mode"))
+            self.state.mode = ROUTE_STANDALONE
+            self.measure.open_route(ROUTE_STANDALONE, demo=True)
         else:
-            self.stack.setCurrentWidget(self.daw)
-            self._set_place(_("Universal DAW Mode"))
+            self.state.mode = mode
+            self.measure.open_route(mode)
+        self.stack.setCurrentWidget(self.measure)
+        self._set_place(self._measure_place())
+
+    def _measure_place(self) -> str:
+        """The status-bar place of the New Measurement page: its route, or the demo."""
+        if self.measure.demo_mode:
+            return _("Demo (no interface)")
+        if self.measure.route == ROUTE_STANDALONE:
+            return _("Standalone Mode")
+        return _("Universal DAW Mode")
 
     def show_getting_started(self) -> None:
         """Home with the first-measurement card, and the card stays from now on."""
@@ -395,10 +390,9 @@ class MainWindow(QMainWindow):
         self.state.project_position = position
         self.show_mode(mode)
         name = "" if self.project.overview is None else self.project.overview.name
-        for page in (self.daw, self.standalone):
-            page.position.setText(position)
-            if name and not page.room.text():
-                page.room.setText(name)
+        self.measure.position.setText(position)
+        if name and not self.measure.room.text():
+            self.measure.room.setText(name)
 
     def _compare_from_project(self, baseline: str, candidate: str) -> None:
         self.show_compare()
@@ -443,14 +437,14 @@ class MainWindow(QMainWindow):
         if profile != before.default_profile and profile in available_profiles():
             # A new default profile applies now, as the output folder does.
             # Only the combos: a running take keeps the profile it started with.
-            for combo in (self.daw.profile, self.standalone.profile):
-                combo.setCurrentIndex(max(combo.findData(profile), 0))
-        if settings.audio_backend != before.audio_backend and not self.standalone.is_busy():
-            # The Standalone page lists the new backend's devices: a take
-            # would otherwise open that backend's device of the number
-            # chosen from the old list. A running take keeps its list, and
-            # the page makes it again before the next one.
-            self.standalone.refresh_devices()
+            combo = self.measure.profile
+            combo.setCurrentIndex(max(combo.findData(profile), 0))
+        if settings.audio_backend != before.audio_backend and not self.measure.is_busy():
+            # The page lists the new backend's devices: a take would otherwise
+            # open that backend's device of the number chosen from the old
+            # list. A running take keeps its list, and the page makes it again
+            # before the next one.
+            self.measure.refresh_devices()
 
     def restyle(self) -> None:
         """Apply the colour scheme now in force to the whole window.
@@ -467,8 +461,7 @@ class MainWindow(QMainWindow):
         self.results.restyle()
         self.compare.restyle()
         self.project.restyle()
-        for page in (self.daw, self.standalone):
-            page.placement.redraw()
+        self.measure.placement.redraw()
 
     def _follow_system_scheme(self, *_scheme: object) -> None:
         # A theme chosen in Settings (or REVERBSCOPE_COLOR_SCHEME) does not
@@ -483,7 +476,7 @@ class MainWindow(QMainWindow):
         flag after a take, and a bug report sent from Results or Compare
         must describe the user's real interface.
         """
-        on_demo = self.stack.currentWidget() is self.standalone and self.standalone.demo_mode
+        on_demo = self.stack.currentWidget() is self.measure and self.measure.demo_mode
         return "fake" if on_demo else None
 
     def show_device_inspector(self) -> None:

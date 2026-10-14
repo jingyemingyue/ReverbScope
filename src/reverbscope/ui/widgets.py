@@ -115,8 +115,9 @@ def ask_save_path(parent: QWidget, title: str, name: str, file_filter: str) -> P
     return path
 
 
-def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
-    """Give ``page`` a fixed header and a scrolling body; return the body layout."""
+def scroll_page(page: QWidget, header: PageHeader, *, footer: QWidget | None = None) -> QVBoxLayout:
+    """Give ``page`` a fixed header, a scrolling body and an optional fixed
+    ``footer`` (an action bar that stays in view); return the body layout."""
     page.setProperty("page", True)
     outer = QVBoxLayout(page)
     outer.setContentsMargins(28, 20, 28, 12)
@@ -133,6 +134,8 @@ def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
     layout.setSpacing(12)
     scroll.setWidget(body)
     outer.addWidget(scroll, 1)
+    if footer is not None:
+        outer.addWidget(footer)
     return layout
 
 
@@ -198,6 +201,33 @@ class PageHeader(QWidget):
         row.addLayout(self.action_row)
 
 
+class StepCard(Card):
+    """One numbered step of a workflow page: a badge, a title and a hint line.
+
+    The body takes the step's controls; :meth:`set_text` changes the title and
+    hint when the step means something else (a route switch).
+    """
+
+    def __init__(self, number: int, parent: QWidget | None = None) -> None:
+        super().__init__(parent, spacing=12)
+        head = QHBoxLayout()
+        head.setSpacing(12)
+        head.addWidget(label(str(number), "badge"), 0, Qt.AlignmentFlag.AlignTop)
+        text = QVBoxLayout()
+        text.setSpacing(2)
+        self.title = label("", "card-title", wrap=True)
+        self.hint = label("", "hint", wrap=True)
+        text.addWidget(self.title)
+        text.addWidget(self.hint)
+        head.addLayout(text, 1)
+        self.body.addLayout(head)
+
+    def set_text(self, title: str, hint: str = "") -> None:
+        self.title.setText(title)
+        self.hint.setText(hint)
+        self.hint.setVisible(bool(hint))
+
+
 class ModeCard(Card):
     """A large clickable card that starts a workflow."""
 
@@ -212,6 +242,7 @@ class ModeCard(Card):
         parent: QWidget | None = None,
         *,
         shortcut: str = "",
+        emphasis: bool = True,
     ) -> None:
         super().__init__(parent, spacing=6)
         self.setProperty("hover", True)
@@ -231,7 +262,11 @@ class ModeCard(Card):
         description = label(text, "hint", wrap=True)
         description.setMinimumHeight(48)
         self.body.addWidget(description, 1)
-        self.button = primary(QPushButton(action))
+        # One card is the main way in; the others are secondary, so the page
+        # has one clear first step rather than three equal buttons.
+        self.button = QPushButton(action)
+        if emphasis:
+            primary(self.button)
         self.button.clicked.connect(self.clicked.emit)
         self.body.addWidget(self.button)
         self.setToolTip(text)

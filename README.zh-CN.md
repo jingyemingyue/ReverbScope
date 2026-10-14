@@ -168,10 +168,12 @@ Audacity：[docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.
 **这些 DAW 目前都还没有在真实 DAW 中与 ReverbScope 一起实际运行过**
 （[HARDWARE_TESTS.zh-CN.md](docs/HARDWARE_TESTS.zh-CN.md)）；提交一份 DAW 兼容性报告是你能做的最有用的贡献。
 
-1. **生成测试信号** —— ReverbScope 写出一个扫频 WAV（外加一个记录扫频精确参数的小 JSON 附属文件）。
+1. **测试信号** —— ReverbScope 写出一个扫频 WAV（外加一个记录扫频精确参数的小 JSON 附属文件）。
 2. **在 DAW 中录音** —— 把 WAV 导入一条轨道，通过音频接口和监听音箱播放，在另一条轨道上录制测量话筒。
-3. **导入录音** —— 把录好的轨道导出为 WAV（采样率与工程相同；长度不限，无需裁切）。
+3. **导入录音** —— 把录好的轨道导出为 WAV（采样率与工程相同；长度不限，无需裁切），然后在同一个“新测量”页面中选择它。
 4. **分析** —— ReverbScope 自动找到扫频，完成解卷积并生成报告。
+
+通用 DAW 模式和独立模式是同一个页面“新测量”的两条路线：四个编号步骤相同，启动按钮位于页面底部。
 
 ## 独立工作流程（独立模式）
 
