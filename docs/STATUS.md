@@ -6,6 +6,30 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 42: 2026-10-14 — **responsive measurement strip when hints change**
+(`gui/p0-narrow-settings` against `gui/redesign`, #58 baseline).
+
+* Reflow on layout requests as well as resize, and use preferred widths,
+  which can change while a combo's minimum hint remains unchanged. An
+  unchanged direction does not trigger another layout. No timer/polling,
+  dependency, style literal or visible string was added. A reproducer fails
+  before the fix and checks Stop/Start/phase visibility without a resize,
+  then returning to one row when the caption shrinks. Existing assertions stay.
+* Apple Silicon, Python 3.12.14 / PySide6 Essentials 6.11.2: 17 targeted
+  checks, 166 GUI/document-site checks and the full suite passed. Full result:
+  3,444 passed, 2 existing platform skips, core/models branch coverage 93.43%.
+  Ruff, format, strict mypy with Qt and without Qt/Linux semantics,
+  documentation links, CLI docs and source safety passed.
+* Eight before/after pairs cover English/Chinese, light/dark, 1280x800 and
+  960x640. Synthetic offscreen stamps name the code source revisions.
+  README assets were regenerated. The image commit is pinned in
+  design/GUI_P0_NARROW_REVIEW.zh-CN.md.
+* Windows CI #204 had a separate 986>960 width failure. New-head Windows CI
+  remains unrun locally; this fix is a candidate, not a Windows hardware pass.
+  The same five pinned acceptance-image links as the baseline task keep this
+  branch's document-site gate independently runnable. No native, real audio,
+  DAW, VoiceOver or packaged interaction was tested; independent review pending.
+
 Snapshot 41: 2026-10-14 (UTC+8) — **narrow-window workstation controls and
 an Apple Silicon acceptance checklist**, continuing PR #58 from
 `987d66268888b60d6e9e6b54f379b4ec7c50ceb8`.
