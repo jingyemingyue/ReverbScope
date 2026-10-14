@@ -7328,3 +7328,7 @@ msgstr "视图"
 #. Chart viewport action; distinct from acoustic fit.
 msgid "Fit chart"
 msgstr "适配图表"
+
+#. Settings hint; shown in the active language, not the pending language.
+msgid "The language change takes full effect after ReverbScope restarts."
+msgstr "语言设置将在重新启动 ReverbScope 后完全生效。"

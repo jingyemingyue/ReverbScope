@@ -97,11 +97,11 @@ def _texts(root: QWidget) -> list[str]:
 
 def _data_values() -> tuple[str, ...]:
     from reverbscope.audio.backend import get_backend
-    from reverbscope.ui.settings_dialog import LANGUAGE_NAMES, RESTART_FOR_LANGUAGE
+    from reverbscope.ui.settings_dialog import LANGUAGE_NAMES
 
     devices = tuple(device.name for device in get_backend("fake").list_devices())
     # Language names are written in their own language on purpose.
-    return (*devices, *RESTART_FOR_LANGUAGE.splitlines(), *LANGUAGE_NAMES.values())
+    return (*devices, *LANGUAGE_NAMES.values())
 
 
 def _check(texts: list[str], where: str) -> None:
@@ -308,6 +308,24 @@ def test_settings_and_developer_tools_are_chinese(zh: None, app: QApplication) -
     for tool in (EnvironmentReport("fake"), DeviceInspector("fake")):
         _check(_texts(tool), type(tool).__name__)
         tool.close()
+    dialog.close()
+
+
+@pytest.mark.parametrize(
+    ("language", "expected"),
+    [
+        ("en", "The language change takes full effect after ReverbScope restarts."),
+        ("zh_CN", "语言设置将在重新启动 ReverbScope 后完全生效。"),
+    ],
+)
+def test_restart_hint_uses_only_the_active_language(
+    app: QApplication, language: str, expected: str
+) -> None:
+    from reverbscope.ui.settings_dialog import SettingsDialog
+
+    activate(language)
+    dialog = SettingsDialog()
+    assert dialog.language_hint.text() == expected
     dialog.close()
 
 

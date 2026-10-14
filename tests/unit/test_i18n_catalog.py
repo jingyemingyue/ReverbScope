@@ -41,6 +41,8 @@ CONTEXT_SEPARATOR = "\x04"
 #: that is itself extracted elsewhere (a ``N_()`` constant or a ``finding()``
 #: template). A new entry here needs the same justification.
 DYNAMIC_CALLS = {
+    # Settings restart hint, extracted with N_() in the same module.
+    ("ui/settings_dialog.py", "_(RESTART_FOR_LANGUAGE)"),
     ("i18n.py", "_(template)"),
     ("interpretation/interpreter.py", "_(template)"),
     ("cli/main.py", "_(SAFETY_MESSAGE)"),
