@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, Qt, QTimer, Signal
 from PySide6.QtGui import QKeySequence, QResizeEvent, QShortcut
 from PySide6.QtWidgets import (
     QBoxLayout,
@@ -288,22 +288,32 @@ class MeasureStrip(QWidget):
         super().resizeEvent(event)
         self._reflow(event.size().width())
 
+    def event(self, event: QEvent) -> bool:
+        handled = super().event(event)
+        # Platform font metrics and combo contents can invalidate the row's
+        # hints after its first resize, while the window width stays fixed.
+        if event.type() == QEvent.Type.LayoutRequest:
+            self._reflow(self.width())
+        return bool(handled)
+
     def _reflow(self, width: int) -> None:
         # Use the current platform's font/style metrics, including the wider
         # DAW import caption. Start and Stop never join a scrolling area.
         margin = self.outer_layout.contentsMargins()
         required = (
-            self.settings_bar.minimumSizeHint().width()
-            + self.transport_bar.minimumSizeHint().width()
+            self.settings_bar.sizeHint().width()
+            + self.transport_bar.sizeHint().width()
             + self.control_layout.spacing()
             + margin.left()
             + margin.right()
         )
-        self.control_layout.setDirection(
+        direction = (
             QBoxLayout.Direction.TopToBottom
             if width < required
             else QBoxLayout.Direction.LeftToRight
         )
+        if self.control_layout.direction() != direction:
+            self.control_layout.setDirection(direction)
 
     # --- mode -----------------------------------------------------------------------
 

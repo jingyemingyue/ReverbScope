@@ -207,6 +207,39 @@ def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, langu
     window.close()
 
 
+def test_strip_reflows_when_control_hints_change_without_a_resize(app: QApplication) -> None:
+    """Qt can resolve platform font/control hints after the initial resize."""
+    from PySide6.QtWidgets import QBoxLayout
+
+    from reverbscope.ui.main_window import MainWindow
+
+    window = MainWindow()
+    window.resize(1280, 800)
+    window.show()
+    for _step in range(4):
+        app.processEvents()
+    strip = window.strip
+    assert strip.control_layout.direction() == QBoxLayout.Direction.LeftToRight
+    original_width = strip.width()
+    # A device control's metrics change after it is shown, without resizing
+    # the window. Each row still fits individually; together they do not.
+    original_caption = strip.mode.itemText(0)
+    strip.mode.setItemText(0, original_caption * 4)
+    for _step in range(4):
+        app.processEvents()
+    assert strip.width() == original_width
+    assert strip.control_layout.direction() == QBoxLayout.Direction.TopToBottom
+    for widget in (strip.start_button, strip.stop_button, strip.phase):
+        rect = widget.rect().translated(widget.mapTo(strip, QPoint()))
+        assert strip.rect().contains(rect)
+        assert not rect.intersects(strip.settings_bar.geometry())
+    strip.mode.setItemText(0, original_caption)
+    for _step in range(4):
+        app.processEvents()
+    assert strip.control_layout.direction() == QBoxLayout.Direction.LeftToRight
+    window.close()
+
+
 def test_keyboard_view_choice_stays_visible_in_narrow_tab_bar(app: QApplication) -> None:
     from reverbscope.ui.main_window import MainWindow
 
