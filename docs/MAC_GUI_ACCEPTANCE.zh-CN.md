@@ -59,15 +59,15 @@ Release 工作流的路径过滤不会因为仅修改 GUI 文件就自动重新�
 ### 本次视觉证据
 
 1. 窄窗口频率图：测量条分行，开始/停止保持可见；两个图表可竖向滚动，坐标轴不被图表父控件截断。设备名是测试夹具，无真实声卡。
-   ![960×640 中文深色频率图](images/gui2/acceptance/zh_CN_960x640_dark_fr.png)
+   ![960×640 中文深色频率图](https://github.com/jingyemingyue/ReverbScope/blob/2560124b3875112995eda021f46a7da7c772f9bc/docs/images/gui2/acceptance/zh_CN_960x640_dark_fr.png)
 2. 窄窗口频谱：选中的频谱标签自动进入可见区域；图表、超宽参数和完整说明可滚动查看。
-   ![960×640 中文深色时频谱](images/gui2/acceptance/zh_CN_960x640_dark_spectrogram.png)
+   ![960×640 中文深色时频谱](https://github.com/jingyemingyue/ReverbScope/blob/2560124b3875112995eda021f46a7da7c772f9bc/docs/images/gui2/acceptance/zh_CN_960x640_dark_spectrogram.png)
 3. 宽窗口频率图：保持单行测量条。
-   ![1366×768 中文深色频率图](images/gui2/acceptance/zh_CN_1366x768_dark_fr.png)
+   ![1366×768 中文深色频率图](https://github.com/jingyemingyue/ReverbScope/blob/2560124b3875112995eda021f46a7da7c772f9bc/docs/images/gui2/acceptance/zh_CN_1366x768_dark_fr.png)
 4. 总览：数值表在主要阅读区域，长内容可滚动。
-   ![1366×768 中文浅色总览](images/gui2/acceptance/zh_CN_1366x768_light_overview.png)
+   ![1366×768 中文浅色总览](https://github.com/jingyemingyue/ReverbScope/blob/2560124b3875112995eda021f46a7da7c772f9bc/docs/images/gui2/acceptance/zh_CN_1366x768_light_overview.png)
 5. 房间平面图：尺寸与设备标签在画布内；原生窗口仍需第 3 步验证。
-   ![1366×768 中文深色房间平面图](images/gui2/acceptance/zh_CN_1366x768_dark_room_plan.png)
+   ![1366×768 中文深色房间平面图](https://github.com/jingyemingyue/ReverbScope/blob/2560124b3875112995eda021f46a7da7c772f9bc/docs/images/gui2/acceptance/zh_CN_1366x768_dark_room_plan.png)
 
 ## 什么阻止推进
 

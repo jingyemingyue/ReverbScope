@@ -8,6 +8,9 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **GUI redesign baseline.** Adopt the desktop GUI execution guidelines,
+  record maintainer choices and phase gates, and keep acceptance screenshots
+  linked to their immutable source revision in the generated documentation.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on
