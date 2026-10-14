@@ -37,6 +37,17 @@ go through [SECURITY.md](SECURITY.md), not public issues.
 8. **Only LGPL Qt modules** (QtCore, QtGui, QtWidgets). Never import
    GPL-only modules such as QtCharts, QtDataVisualization or QtGraphs.
 
+## Desktop GUI redesign
+
+Before changing desktop UI, display transforms, user-facing copy or screenshots,
+read [the GUI execution guidelines](docs/design/GUI_GUIDELINES.zh-CN.md)
+([English summary](docs/design/GUI_GUIDELINES.md)) and the
+[Phase 0 decision and evidence ledger](docs/design/GUI_REDESIGN_STATUS.zh-CN.md).
+`ARCHITECTURE_V1.md` product principles take precedence. Work starts from the
+latest `gui/redesign`; one task uses one `gui/p<N>-<topic>` branch and a PR back
+to that integration branch. Keep existing behavioral assertions, isolate all
+synthetic runs from user settings, and record only checks actually run.
+
 ## Development setup
 
 ```bash

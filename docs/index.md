@@ -82,3 +82,9 @@ the release plan and the v1.0 architecture have a Chinese digest.
 - [Literature](research/literature.md)
 - [Reference repositories](research/reference_repos.md)
 - [Dependency research](research/dependencies.md)
+
+## GUI redesign execution baseline
+
+- [GUI execution guidelines: 简体中文](design/GUI_GUIDELINES.zh-CN.md)
+- [English summary](design/GUI_GUIDELINES.md)
+- [Phase 0 决策与证据台账](design/GUI_REDESIGN_STATUS.zh-CN.md)

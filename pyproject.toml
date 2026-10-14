@@ -186,6 +186,9 @@ ignore = [
 
 [tool.ruff.format]
 quote-style = "double"
+# The maintainer-supplied guideline is an immutable v1.0 source snapshot.
+# Its illustrative Appendix D snippet is not executable repository code.
+exclude = ["docs/design/GUI_GUIDELINES.zh-CN.md"]
 
 [tool.mypy]
 python_version = "3.12"

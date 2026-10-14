@@ -6,6 +6,31 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 42: 2026-10-14 — **GUI redesign Phase 0 governance and baseline**
+(`gui/p0-baseline-governance` against `gui/redesign`, based on #58 `2560124`).
+
+* Added the maintainer-supplied GUI guideline, English summary, contributor
+  and agent entry points, and a decision/evidence ledger. The guideline's
+  v1.0 body is retained verbatim; repository navigation is outside that body.
+  D2/D5/D6/D7/D13 and recommended terminology are approved; PySide6 6.6
+  remains supported with a tabular-numeral fallback. No new asset was bundled.
+* Archived 992 synthetic offscreen screenshots of main and #58: four sizes,
+  English/Chinese, both themes and 1x/2x. Actual logical sizes and DPR are
+  recorded, not inferred from filenames. Source timings are initial baseline
+  observations with an isolated warmed font cache, not packaged acceptance.
+* Reproduced the five broken acceptance-image links in baseline CI #204.
+  Pinned them to their original source commit rather than treating historical
+  CI as current. Windows also has a narrow-layout failure, tracked separately.
+* Apple Silicon / Python 3.12.14 / PySide6 Essentials 6.11.2: final full suite
+  3,443 passed, 2 platform skips; core/models branch coverage 93.43% (85% gate).
+  Ruff, formatting, strict mypy (121 source modules), doc links, CLI docs,
+  source safety, 48-page docs site, license bundle, installed Essentials gate
+  and sdist/wheel build passed. Two new documentation-navigation failures in
+  the first full run were corrected; existing assertions were retained.
+* Phase 0 is not complete: new-head cross-platform CI, the separate peak
+  wording/localization/layout fixes and independent review remain. No PR was
+  merged or closed; no native/audio/DAW/VoiceOver/packaged check was run.
+
 Snapshot 41: 2026-10-14 (UTC+8) — **narrow-window workstation controls and
 an Apple Silicon acceptance checklist**, continuing PR #58 from
 `987d66268888b60d6e9e6b54f379b4ec7c50ceb8`.

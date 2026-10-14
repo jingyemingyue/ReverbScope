@@ -42,3 +42,9 @@ ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上�
 - [贡献指南](https://github.com/jingyemingyue/ReverbScope/blob/main/CONTRIBUTING.md)（欢迎在 issue 中使用中文）
 - [更新日志](https://github.com/jingyemingyue/ReverbScope/blob/main/CHANGELOG.md)
 - 其余开发者文档见[英文文档索引](index.md)。
+
+## GUI 重构执行基线
+
+- [桌面 GUI 执行准则](design/GUI_GUIDELINES.zh-CN.md)
+- [英文摘要](design/GUI_GUIDELINES.md)
+- [Phase 0 决策与证据台账](design/GUI_REDESIGN_STATUS.zh-CN.md)
