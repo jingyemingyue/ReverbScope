@@ -178,8 +178,29 @@ def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, langu
     strip.advanced_button.setChecked(True)
     for _step in range(4):
         app.processEvents()
+
     # The requested window can remain narrow; the strip must not force it wider.
-    assert window.minimumSizeHint().width() <= window.width()
+    def diagnostic() -> str:
+        metrics = {
+            "window": window,
+            "strip": strip,
+            "settings_bar": strip.settings_bar,
+            "transport_bar": strip.transport_bar,
+            "advanced_bar": strip.advanced_bar,
+            "splitter": window.splitter,
+            "workspace": window.workspace,
+            "navigator": window.navigator,
+            "inspector": window.inspector,
+            "detail": strip.detail,
+            "menu": window.menuBar(),
+            "status": window.statusBar(),
+        }
+        return "\n".join(
+            f"{name}: minimum={widget.minimumSizeHint().toTuple()}, preferred={widget.sizeHint().toTuple()}, actual={widget.size().toTuple()}"
+            for name, widget in metrics.items()
+        )
+
+    assert window.minimumSizeHint().width() <= window.width(), diagnostic()
     assert strip.mode.width() >= strip.mode.minimumSizeHint().width()
     assert strip.sample_rate.width() >= (
         strip.sample_rate.fontMetrics().horizontalAdvance(strip.sample_rate.currentText()) + 24
@@ -204,6 +225,58 @@ def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, langu
     assert not strip.input_device.isVisible()
     assert strip.start_button.isVisible()
     assert strip.start_button.shortcut().isEmpty()
+    window.close()
+
+
+def test_strip_reflows_when_control_hints_change_without_a_resize(app: QApplication) -> None:
+    """Qt can resolve platform font/control hints after the initial resize."""
+    from PySide6.QtWidgets import QBoxLayout
+
+    from reverbscope.ui.main_window import MainWindow
+
+    window = MainWindow()
+    window.show()
+    for _step in range(4):
+        app.processEvents()
+    strip = window.strip
+    margin = strip.outer_layout.contentsMargins()
+    frame = margin.left() + margin.right() + strip.control_layout.spacing()
+    # Font metrics differ across platforms. Choose an actual one-row width,
+    # then enlarge only the caption so each row still fits on its own.
+    window.resize(
+        strip.settings_bar.sizeHint().width() + strip.transport_bar.sizeHint().width() + frame,
+        800,
+    )
+    for _step in range(4):
+        app.processEvents()
+    assert strip.control_layout.direction() == QBoxLayout.Direction.LeftToRight
+    original_width = strip.width()
+    # A device control's metrics change after it is shown, without resizing
+    # the window. Each row still fits individually; together they do not.
+    original_caption = strip.mode.itemText(0)
+    strip.mode.setItemText(0, original_caption * 2)
+    for _step in range(4):
+        app.processEvents()
+    assert (
+        strip.settings_bar.sizeHint().width() + strip.transport_bar.sizeHint().width() + frame
+        > original_width
+    )
+    assert (
+        strip.settings_bar.minimumSizeHint().width() + margin.left() + margin.right()
+        <= original_width
+    )
+    for _step in range(4):
+        app.processEvents()
+    assert strip.width() == original_width
+    assert strip.control_layout.direction() == QBoxLayout.Direction.TopToBottom
+    for widget in (strip.start_button, strip.stop_button, strip.phase):
+        rect = widget.rect().translated(widget.mapTo(strip, QPoint()))
+        assert strip.rect().contains(rect)
+        assert not rect.intersects(strip.settings_bar.geometry())
+    strip.mode.setItemText(0, original_caption)
+    for _step in range(4):
+        app.processEvents()
+    assert strip.control_layout.direction() == QBoxLayout.Direction.LeftToRight
     window.close()
 
 

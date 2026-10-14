@@ -8,6 +8,10 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Responsive measurement controls.** Re-evaluate the strip layout when
+  control size hints change without a window resize, and use preferred
+  widths so captions remain readable. Stop stays outside scrolling areas.
+  Acceptance screenshots link to their immutable source revision.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on
