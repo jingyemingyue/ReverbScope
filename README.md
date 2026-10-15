@@ -15,9 +15,9 @@ refuses to invent a number.**
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope results page: reverberation, background noise with mains hum, early reflections and direct sound for one microphone position, with the interpretation below (synthetic demo data)](docs/images/gui-results.png)
+![ReverbScope results workspace: reverberation time by octave band with a crosshair readout, and the inspector with the four key figures and the measurement-health verdict for one microphone position (synthetic demo data)](docs/images/gui-results.png)
 
-<sub>The results page for the built-in demo room. Synthetic data: no real room was measured.</sub>
+<sub>The results workspace for the built-in demo room: an interactive graph (crosshair, wheel zoom, pan) beside an inspector that keeps the key figures and their trust level in view. Synthetic data: no real room was measured.</sub>
 
 ## Download
 

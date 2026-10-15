@@ -170,6 +170,7 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "src/reverbscope/cli/*" = ["T20"]
 "src/reverbscope/ui/results.py" = ["E402", "I001"]
+"src/reverbscope/ui/plotview.py" = ["E402", "I001"]
 "src/reverbscope/ui/compare_view.py" = ["E402", "I001"]
 "examples/*" = ["T20"]
 "scripts/*" = ["T20"]
@@ -190,7 +191,7 @@ show_error_codes = true
 
 [[tool.mypy.overrides]]
 # matplotlib's Qt canvas is not fully typed; the GUI results page only wraps it.
-module = ["reverbscope.ui.results", "reverbscope.ui.compare_view"]
+module = ["reverbscope.ui.results", "reverbscope.ui.compare_view", "reverbscope.ui.plotview"]
 disallow_untyped_calls = false
 
 [[tool.mypy.overrides]]

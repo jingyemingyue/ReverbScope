@@ -190,8 +190,9 @@ not judge, with the numbers; `reverbscope profiles` lists the profiles and
 The thresholds are engineering choices, stated in
 [MEASUREMENT_METHODOLOGY.md](../MEASUREMENT_METHODOLOGY.md) §8, never a grade.
 
-**Measurement health** sits right under the key figures: the card below the
-four tiles of the Overview tab, and the section right after "At a glance" in
+**Measurement health** sits right under the key figures: the verdict at the
+foot of the Results page's inspector (with the checks that are not good listed
+on the Overview tab), and the section right after "At a glance" in
 the text report. It lists the checks the
 analysis made on the take itself (reference, sweep, playback speed, direct
 sound, level, distortion, dropouts, decay range, noise floor, recording
@@ -209,15 +210,36 @@ Core diagnostics (`warnings`, `notes`, `reason`) stay in English in
 `result.json` so bug reports compare across languages. The interface and the
 text report show them in the interface language.
 
-The Results page has eight tabs:
+**The window.** The rail down the left edge is always there: Home, Measure
+(the mode you used last), Results (once there is one), Project, Compare and
+Settings. **Measure** pages are split: the settings on the left, and on the
+right the test signal as it will be played (a log sweep, with the silences
+that give the noise floor and the room's decay), the run controls and the
+status; the segmented control in the page header switches between Universal
+DAW, Standalone and Demo. The Results page keeps an **inspector** on the
+right (the session, the four key figures with their trust level, and the
+measurement-health verdict) beside whichever graph is open; **View ▸ Show
+Inspector** (Ctrl+I) hides it.
+
+**The graphs** are instruments rather than pictures. The crosshair follows the
+pointer, and the readout under the graph gives the position and the value of
+every trace there (interpolated from the plotted curve; nothing is
+re-measured). The wheel zooms about the pointer (Shift: vertical, Ctrl: both),
+a drag pans (**Zoom** draws a box instead), a double click or **View ▸ Fit
+Graph** (Ctrl+0) shows the whole graph again, and **Copy image** and **Save
+image...** export it. A view can never leave the range the graph was drawn
+with.
+
+The Results page has nine tabs:
 
 | Tab | What it shows |
 | --- | --- |
-| Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the measurement-health card, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
+| Overview | The tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity, the measurement-health checks that are not good, and the findings. The key figures (reverberation, background noise, early reflections, direct sound) with their trust level are in the inspector beside every tab. |
 | Full report | The same text report that `reverbscope analyze` prints, with the warnings at the end. “Copy report” copies it. |
 | Impulse Response | The deconvolved IR. The peak is the direct sound; it is not normalised to 1.0. |
 | Frequency Response | Raw (dotted) and smoothed (solid) magnitude. A dashed curve is the electrical loopback when compensation ran. 0 dB is the interface, not “flat in the room”. |
 | Decay | Schroeder / energy-decay curves. Broadband is a solid line; octave bands use changing dash patterns so colour is not the only cue. |
+| RT60 by Band | EDT, T20 and T30 against octave band, with the broadband RT60 as a dashed line. A line joins only values the analysis marked valid; an open marker is an unreliable value, and a metric without a number is not drawn. |
 | Noise | Quiet-segment spectrum and 50/60 Hz hum candidates. |
 | Early Reflections | ETC peaks (delay ms, level dB re direct). Open markers for candidates. |
 | Placement | Excess path, and — only with a tape-measured loudspeaker distance — loudspeaker height, the plane above both devices, and horizontal separation. No wall is named. |

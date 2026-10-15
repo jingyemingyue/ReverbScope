@@ -175,6 +175,7 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
         window.results.ir_tab,
         window.results.fr_tab,
         window.results.decay_tab,
+        window.results.bands_tab,
         window.results.noise_tab,
         window.results.refl_tab,
         window.results.place_tab,
@@ -183,6 +184,8 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
         window.compare.figure,
         window.daw.placement.figure,
         window.standalone.placement.figure,
+        window.daw.preview.figure,
+        window.standalone.preview.figure,
     ]
     for figure in figures:
         chart_text = [t.get_text() for t in figure.findobj(lambda o: hasattr(o, "get_text"))]

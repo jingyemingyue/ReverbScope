@@ -7,7 +7,44 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- **The desktop app is now a measurement workstation, not a set of forms.**
+  A navigation rail down the left edge (Home, Measure, Results, Project,
+  Compare, Settings) is always one click away; the status bar names the
+  session on screen; a **View** menu hides the inspector (Ctrl+I) and fits the
+  graph (Ctrl+0). The visual language is an instrument's: compact controls
+  with 3 to 4 px corners, a graph "screen" darker (or whiter) than the panel
+  around it, monospace figures that line up in columns, hairline frames, and
+  one accent colour. The graph colours are lifted on the dark screen; the line
+  styles that keep a plot readable without colour are unchanged.
+- **Results is a workspace.** The graphs fill the left; an inspector on the
+  right keeps the session, the four key figures with their trust level and the
+  measurement-health verdict in view beside every tab. The Overview tab now
+  holds the decay and energy tables (numbers right-aligned), the health checks
+  that are not good, and the findings; a healthy measurement shows no health
+  card there.
+- **The measure pages are two panes.** The Universal DAW and Standalone pages
+  no longer scroll as one long form: the settings are on the left, and on the
+  right are the test signal as it will be played (a log sweep with the
+  silences that give the noise floor and the room's decay, drawn from the
+  settings alone), the run controls and the status. A segmented control in the
+  header switches between Universal DAW, Standalone and Demo. Home puts the
+  saved sessions beside the three ways to start a measurement.
+
+### Added
+- **Interactive graphs** (`reverbscope.ui.plotview.PlotView`): a crosshair
+  with a readout of every trace at the pointer (interpolated from the plotted
+  curve, so no number is invented), wheel zoom about the pointer (Shift:
+  vertical, Ctrl: both), drag to pan or a zoom box, double click to fit, copy
+  as an image and save as PNG. A view cannot leave the range the graph was
+  drawn with. The Compare page's difference curve uses the same widget.
+- **RT60 by Band** tab: EDT, T20 and T30 against octave band with the
+  broadband RT60 as a dashed line. A line joins only values the analysis
+  marked valid; an unreliable value is an open marker; a metric without a
+  number is not drawn.
+- Frequency axes are labelled 20 50 100 ... 1k 2k ... 20k, as on an analyser.
+- Simplified Chinese for all of it; the user guides describe the new window,
+  graphs and tab.
 
 ## [0.5.0b3] - 2026-10-09
 

@@ -17,10 +17,21 @@ from reverbscope.core.reflections import reflection_envelope_db
 from reverbscope.i18n import _
 from reverbscope.interpretation.profiles import band_text, confidence_text, noise_segment_text
 from reverbscope.labels import validity_word
+from reverbscope.models.configuration import SweepSettings
 from reverbscope.models.result import AnalysisResult, EnergyMetric, PlacementResult, Validity
-from reverbscope.ui.theme import PLOT_SERIES, ensure_plot_fonts, plot_colors, style_figure, tokens
+from reverbscope.ui.theme import (
+    ensure_plot_fonts,
+    plot_colors,
+    series_colors,
+    style_figure,
+    tokens,
+)
 
 _EPS = 1e-300
+
+#: Frequencies labelled on a log-frequency axis, as on an analyser's screen.
+_FREQ_TICKS = (20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000)
+
 
 # Dash patterns so a plot is readable when colour is not (ARCHITECTURE_V1 §5.8):
 # one per octave band, none solid like Broadband. The palette has six colours,
@@ -39,28 +50,46 @@ _BAND_DASHES = (
 )
 
 
+def frequency_axis(ax: Any, low: float, high: float, *, axis: str = "x") -> None:
+    """Log frequency from ``low`` to ``high`` Hz, labelled 20 50 100 ... 1k 2k ... 20k."""
+    from matplotlib.ticker import FixedLocator, FuncFormatter, NullFormatter
+
+    target = ax.xaxis if axis == "x" else ax.yaxis
+    (ax.set_xscale if axis == "x" else ax.set_yscale)("log")
+    ticks = [f for f in _FREQ_TICKS if low <= f <= high]
+    target.set_major_locator(FixedLocator(ticks))
+    target.set_major_formatter(
+        FuncFormatter(lambda v, _pos: f"{v / 1000:g}k" if v >= 1000 else f"{v:g}")
+    )
+    target.set_minor_formatter(NullFormatter())
+    (ax.set_xlim if axis == "x" else ax.set_ylim)(low, high)
+
+
 def plot_impulse_response(fig: Figure, result: AnalysisResult) -> None:
     fig.clear()
     ensure_plot_fonts()
     ir = result.impulse_response
     sr = ir.sample_rate
+    series = series_colors()
     t_ms = (np.arange(ir.samples.shape[0]) - ir.direct_sound_index) * 1000.0 / sr
     ax1 = fig.add_subplot(2, 1, 1)
     n_zoom = min(ir.samples.shape[0], int(0.1 * sr) + ir.direct_sound_index)
-    ax1.plot(t_ms[:n_zoom], ir.samples[:n_zoom], linewidth=0.8)
+    ax1.plot(t_ms[:n_zoom], ir.samples[:n_zoom], linewidth=0.8, color=series[0], label=_("IR"))
+    ax1.axvline(0.0, color=plot_colors()["muted"], linewidth=0.7, linestyle=":")
     ax1.set_xlabel(_("Time after direct sound (ms)"))
     ax1.set_ylabel(_("Amplitude (relative)"))
     ax1.set_title(_("Impulse response, first 100 ms"))
-    ax1.grid(True, alpha=0.3)
+    ax1.grid(True, alpha=0.5)
     ax2 = fig.add_subplot(2, 1, 2)
     env = reflection_envelope_db(ir.samples, sr, hold_ms=0.5)
     env = env - float(np.max(env))
-    ax2.plot(t_ms / 1000.0, env, linewidth=0.8)
+    ax2.plot(t_ms / 1000.0, env, linewidth=0.8, color=series[0], label=_("ETC"))
+    ax2.fill_between(t_ms / 1000.0, env, -100.0, color=series[0], alpha=0.12, linewidth=0)
     ax2.set_xlabel(_("Time after direct sound (s)"))
     ax2.set_ylabel(_("Envelope (dB re direct)"))
     ax2.set_ylim(-100.0, 5.0)
     ax2.set_title(_("Energy-time curve"))
-    ax2.grid(True, alpha=0.3)
+    ax2.grid(True, alpha=0.5)
     fig.tight_layout()
     style_figure(fig)
 
@@ -83,11 +112,12 @@ def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
         # empty axes with a legend looked like a broken measurement.
         _not_stored(fig, ax, _("No frequency response stored with this session"))
         return
+    series = series_colors()
     ax.semilogx(
         fr.frequencies_hz,
         fr.magnitude_db_raw,
         linewidth=0.5,
-        alpha=0.35,
+        alpha=0.55,
         linestyle=":",
         color=plot_colors()["muted"],
         label=_("raw"),
@@ -96,9 +126,9 @@ def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
         ax.semilogx(
             fr.frequencies_hz,
             fr.magnitude_db_smoothed,
-            linewidth=1.6,
+            linewidth=1.7,
             linestyle="-",
-            color=PLOT_SERIES[0],
+            color=series[0],
             label=_("1/{fraction}-octave smoothed").format(fraction=fr.smoothing_fraction),
         )
     loopback = result.impulse_response.loopback
@@ -111,11 +141,12 @@ def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
             loopback.interface_response_hz,
             loopback.interface_response_db,
             linewidth=1.0,
-            alpha=0.8,
+            alpha=0.9,
             linestyle="--",
+            color=series[1],
             label=_("interface (loopback)"),
         )
-    ax.set_xlim(20.0, result.sample_rate / 2.0)
+    frequency_axis(ax, 20.0, result.sample_rate / 2.0)
     finite = fr.magnitude_db_raw[np.isfinite(fr.magnitude_db_raw)]
     if finite.shape[0]:
         top = float(np.percentile(finite, 99.5))
@@ -123,7 +154,8 @@ def plot_frequency_response(fig: Figure, result: AnalysisResult) -> None:
     ax.set_xlabel(_("Frequency (Hz)"))
     ax.set_ylabel(_("Magnitude (dB, relative)"))
     ax.set_title(_("Frequency response ({window:.2f} s window)").format(window=fr.window_s))
-    ax.grid(True, which="both", alpha=0.3)
+    ax.grid(True, which="major", alpha=0.7)
+    ax.grid(True, which="minor", axis="x", alpha=0.25)
     ax.legend(loc="lower left")
     fig.tight_layout()
     style_figure(fig)
@@ -138,7 +170,15 @@ def plot_decay(fig: Figure, result: AnalysisResult) -> None:
         # As for the frequency response: the RT60s are in the decay table.
         _not_stored(fig, ax, _("No decay curves stored with this session"))
         return
-    ax.plot(bb.edc_time_s, bb.edc_db, linewidth=2.4, linestyle="-", label=_("Broadband"))
+    series = series_colors()
+    ax.plot(
+        bb.edc_time_s,
+        bb.edc_db,
+        linewidth=2.4,
+        linestyle="-",
+        color=series[0],
+        label=_("Broadband"),
+    )
     for index, band in enumerate(result.decay.bands):
         rt = band.rt60_estimate_s
         # Without an RT60 say why (outside the sweep, unreliable, ...), as the
@@ -149,17 +189,95 @@ def plot_decay(fig: Figure, result: AnalysisResult) -> None:
         ax.plot(
             band.edc_time_s,
             band.edc_db,
-            linewidth=0.9,
-            alpha=0.8,
+            linewidth=1.0,
+            alpha=0.9,
             linestyle=_BAND_DASHES[index % len(_BAND_DASHES)],
+            color=series[(index + 1) % len(series)],
             label=label,
         )
     ax.set_ylim(-70.0, 5.0)
     ax.set_xlabel(_("Time (s)"))
     ax.set_ylabel(_("Schroeder decay (dB)"))
     ax.set_title(_("Energy decay curves (Lundeby-truncated)"))
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, alpha=0.6)
     ax.legend(loc="upper right", fontsize="small")
+    fig.tight_layout()
+    style_figure(fig)
+
+
+def plot_reverb_bands(fig: Figure, result: AnalysisResult) -> None:
+    """EDT, T20 and T30 against octave band: the reverberation at a glance.
+
+    Only a number the core marked valid is joined by the line; an unreliable
+    one is a hollow marker, and a metric without a number is not drawn.
+    """
+    fig.clear()
+    ensure_plot_fonts()
+    ax = fig.add_subplot(1, 1, 1)
+    bands = [band for band in result.decay.bands if band.center_hz]
+    if not bands:
+        _not_stored(fig, ax, _("No octave-band reverberation to show"))
+        return
+    series = series_colors()
+    muted = plot_colors()["muted"]
+    top = 0.0
+    for key, name, colour, marker in (
+        ("edt", "EDT", series[1], "s"),
+        ("t20", "T20", series[2], "D"),
+        ("t30", "T30", series[0], "o"),
+    ):
+        valid: list[tuple[float, float]] = []
+        shaky: list[tuple[float, float]] = []
+        for band in bands:
+            metric = getattr(band, key)
+            if metric.seconds is None or band.center_hz is None:
+                continue
+            if metric.validity is Validity.VALID:
+                valid.append((band.center_hz, metric.seconds))
+            elif metric.validity is Validity.UNRELIABLE:
+                shaky.append((band.center_hz, metric.seconds))
+        if valid:
+            fx, fy = zip(*valid, strict=True)
+            ax.plot(fx, fy, marker=marker, markersize=5.5, linewidth=1.5, color=colour, label=name)
+            top = max(top, *fy)
+        if shaky:
+            sx, sy = zip(*shaky, strict=True)
+            ax.plot(
+                sx,
+                sy,
+                marker=marker,
+                markersize=6.5,
+                linestyle="none",
+                markerfacecolor="none",
+                markeredgewidth=1.3,
+                color=colour,
+                label=_("{metric} (unreliable)").format(metric=name),
+            )
+            top = max(top, *sy)
+    broadband = result.decay.broadband.rt60_estimate_s
+    if broadband is not None:
+        ax.axhline(
+            broadband,
+            color=muted,
+            linestyle="--",
+            linewidth=0.9,
+            label=_("Broadband RT60 {value:.2f} s").format(value=broadband),
+        )
+        top = max(top, broadband)
+    centres = [float(band.center_hz) for band in bands if band.center_hz]
+    ax.set_xscale("log")
+    ax.set_xticks(centres)
+    ax.set_xticklabels([band_text(band.band_label) for band in bands if band.center_hz])
+    ax.minorticks_off()
+    low, high = min(centres), max(centres)
+    ax.set_xlim(low / 1.35, high * 1.35)
+    ax.set_ylim(0.0, max(top, 0.1) * 1.2)
+    ax.set_xlabel(_("Octave band centre (Hz)"))
+    ax.set_ylabel(_("Reverberation time (s)"))
+    ax.set_title(_("Reverberation time by octave band"))
+    ax.grid(True, axis="y", alpha=0.7)
+    ax.grid(True, axis="x", alpha=0.35)
+    ax.legend(loc="upper right")
     fig.tight_layout()
     style_figure(fig)
 
@@ -179,20 +297,22 @@ def plot_noise(fig: Figure, result: AnalysisResult) -> None:
             else _("No noise spectrum stored with this session"),
         )
         return
+    series = series_colors()
     f = noise.psd_frequencies_hz
     mask = f > 0
-    ax.semilogx(f[mask], noise.psd_db[mask], linewidth=0.7)
+    ax.semilogx(f[mask], noise.psd_db[mask], linewidth=0.8, color=series[0], label=_("noise"))
     for hum in noise.hum:
         if hum.detected:
             for freq, prominence in hum.harmonics:
                 idx = int(np.argmin(np.abs(f - freq)))
-                ax.plot(freq, noise.psd_db[idx], "v", markerfacecolor="none")
+                ax.plot(freq, noise.psd_db[idx], "v", color=series[1], markerfacecolor="none")
                 ax.annotate(
                     f"{freq:.0f} Hz +{prominence:.0f} dB",
                     (freq, noise.psd_db[idx]),
                     fontsize="x-small",
+                    color=series[1],
                 )
-    ax.set_xlim(10.0, result.sample_rate / 2.0)
+    frequency_axis(ax, 20.0, result.sample_rate / 2.0)
     ax.set_xlabel(_("Frequency (Hz)"))
     ax.set_ylabel(_("PSD (dB re FS^2/Hz)"))
     ax.set_title(
@@ -200,7 +320,8 @@ def plot_noise(fig: Figure, result: AnalysisResult) -> None:
             rms=noise.rms_dbfs, segment=noise_segment_text(noise.segment_source)
         )
     )
-    ax.grid(True, which="both", alpha=0.3)
+    ax.grid(True, which="major", alpha=0.7)
+    ax.grid(True, which="minor", axis="x", alpha=0.25)
     fig.tight_layout()
     style_figure(fig)
 
@@ -212,6 +333,7 @@ def plot_reflections(fig: Figure, result: AnalysisResult) -> None:
     sr = ir.sample_rate
     refl = result.reflections
     ax = fig.add_subplot(1, 1, 1)
+    series = series_colors()
     env = reflection_envelope_db(ir.samples, sr, hold_ms=0.1)
     half = max(1, round(0.5e-3 * sr))
     lo = max(0, ir.direct_sound_index - half)
@@ -220,16 +342,26 @@ def plot_reflections(fig: Figure, result: AnalysisResult) -> None:
     start = max(0, ir.direct_sound_index - round(2e-3 * sr))
     stop = min(env.shape[0], ir.direct_sound_index + round(refl.window_ms[1] * sr / 1000.0) + 1)
     t_ms = (np.arange(start, stop) - ir.direct_sound_index) * 1000.0 / sr
-    ax.plot(t_ms, env[start:stop], linewidth=0.8, label=_("envelope"))
+    ax.plot(t_ms, env[start:stop], linewidth=0.9, color=series[0], label=_("envelope"))
+    ax.fill_between(t_ms, env[start:stop], -60.0, color=series[0], alpha=0.1, linewidth=0)
     if refl.reflections:
         ax.plot(
             [r.delay_ms for r in refl.reflections],
             [r.relative_db for r in refl.reflections],
             "o",
+            color=series[1],
+            markersize=6,
             markerfacecolor="none",
+            markeredgewidth=1.4,
             label=_("candidate reflections"),
         )
-    ax.axhline(refl.threshold_db, color="gray", linestyle="--", linewidth=0.8, label=_("threshold"))
+    ax.axhline(
+        refl.threshold_db,
+        color=plot_colors()["muted"],
+        linestyle="--",
+        linewidth=0.9,
+        label=_("threshold"),
+    )
     ax.set_ylim(-60.0, 5.0)
     ax.set_xlabel(_("Time after direct sound (ms)"))
     ax.set_ylabel(_("Level re direct sound (dB)"))
@@ -238,8 +370,60 @@ def plot_reflections(fig: Figure, result: AnalysisResult) -> None:
             confidence=confidence_text(refl.direct_sound_confidence)
         )
     )
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, alpha=0.6)
     ax.legend(loc="upper right")
+    fig.tight_layout()
+    style_figure(fig)
+
+
+def plot_sweep_plan(fig: Figure, settings: SweepSettings | None) -> None:
+    """The test signal as it will be played: silence, a log sweep, silence.
+
+    Drawn from the settings alone (nothing is measured): the frequency the
+    sweep passes at each second, with the silences that give the noise floor
+    before it and the room's decay after it.
+    """
+    fig.clear()
+    ensure_plot_fonts()
+    ax = fig.add_subplot(1, 1, 1)
+    if settings is None:
+        _not_stored(fig, ax, _("These settings do not make a valid test signal"))
+        return
+    series = series_colors()
+    colors = plot_colors()
+    pre, sweep, post = settings.pre_silence_s, settings.duration_s, settings.post_silence_s
+    total = pre + sweep + post
+    t = np.linspace(pre, pre + sweep, 240)
+    f = settings.start_hz * (settings.end_hz / settings.start_hz) ** ((t - pre) / sweep)
+    ax.plot(t, f, color=series[0], linewidth=2.0, label=_("sweep"))
+    ax.set_xlim(0.0, total)
+    frequency_axis(ax, settings.start_hz / 1.4, settings.end_hz * 1.4, axis="y")
+    for start, stop, text in (
+        (0.0, pre, _("noise floor")),
+        (pre + sweep, total, _("room decay")),
+    ):
+        if stop - start > 0:
+            ax.axvspan(start, stop, color=colors["muted"], alpha=0.12, linewidth=0)
+            ax.text(
+                start + 0.08,
+                settings.end_hz,
+                text,
+                ha="left",
+                va="center",
+                fontsize=8,
+                color=colors["muted"],
+            )
+    ax.set_xlabel(_("Time (s)"))
+    ax.set_ylabel(_("Frequency (Hz)"))
+    ax.set_title(
+        _("Test signal: {start:g} Hz to {end:g} Hz in {duration:g} s, {level:g} dBFS peak").format(
+            start=settings.start_hz,
+            end=settings.end_hz,
+            duration=settings.duration_s,
+            level=settings.level_dbfs,
+        )
+    )
+    ax.grid(True, which="major", alpha=0.7)
     fig.tight_layout()
     style_figure(fig)
 
@@ -351,7 +535,7 @@ def _draw_placement(
     ax: Any = fig.add_subplot(111, projection="3d")
     colors = plot_colors()
     accent = tokens()["accent"]
-    speaker = PLOT_SERIES[1]
+    speaker = series_colors()[1]
     radius = max(horizontal_m, mic_z, source_z, 0.8) * 1.35
     _disc(ax, radius, 0.0, colors["muted"], 0.28)
     ax.plot(
