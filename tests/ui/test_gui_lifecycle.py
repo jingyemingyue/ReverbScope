@@ -317,3 +317,53 @@ def test_a_test_signal_that_cannot_be_written_is_a_dialog_not_a_bug(
     assert shown and "cannot write" in shown[-1]
     assert "No test signal" in window.daw.sweep_label.text()
     window.close()
+
+
+def test_entry_busy_page_asks_once_and_ignores_the_second(
+    app: QApplication,
+    tmp_path: Path,
+    short_sweep: SweepSettings,
+    held_analysis,
+    held_take,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A second start while a take is running must not ask again or build another worker.
+
+    The question belongs to the first start only. Asking from the busy guard
+    would put a save dialog over a measurement that is already playing.
+    """
+    daw = _daw_ready(app, tmp_path, short_sweep)
+    asked: list[bool] = []
+    monkeypatch.setattr(daw, "_leave_take", lambda: asked.append(True) or True)
+    page = daw.daw
+    try:
+        page.start_analysis()
+        running = page._worker
+        assert running is not None and running.isRunning()
+        page.start_analysis()
+        assert page._worker is running
+        assert asked == [True]
+    finally:
+        held_analysis.set()
+        _settle(app, page._worker)
+        daw.close()
+
+    standalone = MainWindow()
+    standalone.show()
+    standalone.show_mode("demo")
+    app.processEvents()
+    measure = standalone.standalone
+    measure.duration.setValue(1.0)
+    asked.clear()
+    monkeypatch.setattr(standalone, "_leave_take", lambda: asked.append(True) or True)
+    try:
+        measure.start_measurement()
+        running_take = measure._measure_worker
+        assert running_take is not None and running_take.isRunning()
+        measure.start_measurement()
+        assert measure._measure_worker is running_take
+        assert asked == [True]
+    finally:
+        measure.stop_measurement()
+        _settle(app, measure._measure_worker)
+        standalone.close()

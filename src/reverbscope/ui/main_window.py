@@ -80,9 +80,19 @@ class MainWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.setCentralWidget(self.stack)
 
+        # A strong reference from the page back to this window would keep every
+        # closed window alive (same reason the Measure menu uses a weak ref).
+        held = weakref.ref(self)
+
+        def may_replace_take() -> bool:
+            window = held()
+            if window is None:
+                return False
+            return window._leave_take()
+
         self.home = HomePage()
-        self.daw = DawModePage(self.state)
-        self.standalone = StandalonePage(self.state)
+        self.daw = DawModePage(self.state, may_replace_take=may_replace_take)
+        self.standalone = StandalonePage(self.state, may_replace_take=may_replace_take)
         self.results = ResultsPage(self.state)
         self.compare = ComparePage()
         self.project = ProjectPage(self.state)

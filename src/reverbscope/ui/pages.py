@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, cast
 
@@ -506,9 +507,16 @@ class DawModePage(QWidget):
     analysis_finished = Signal()
     back = Signal()
 
-    def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        state: MeasurementState,
+        parent: QWidget | None = None,
+        *,
+        may_replace_take: Callable[[], bool],
+    ) -> None:
         super().__init__(parent)
         self.state = state
+        self._may_replace_take = may_replace_take
         self._worker: AnalysisWorker | None = None
         # The state generation the running analysis belongs to.
         self._generation = -1
@@ -738,6 +746,10 @@ class DawModePage(QWidget):
                 _("Generate the test signal (Step 1) or choose the sweep file."),
             )
             return
+        # Before shared settings, the claim, or the worker. Cancel leaves the
+        # live take, its generation and the page's own recording untouched.
+        if not self._may_replace_take():
+            return
         channel = self.channel.currentData()
         loopback = self.loopback_channel.currentData()
         self.state.profile = str(self.profile.currentData())
@@ -752,6 +764,10 @@ class DawModePage(QWidget):
         # The imported take and its sweep become the shared session's, which
         # Save writes; a take or analysis another page still runs is now late.
         self._generation = self.state.claim()
+        # The file on disk is now the session's recording, so the live take it
+        # replaces is no longer the only copy. Clear the flag here, not when
+        # the question is answered and not merely because this page is shown.
+        self.state.unsaved_take = False
         self.state.recording = self._recording
         self.state.recording_path = self._recording_path
         self.state.reference = self._reference
@@ -837,9 +853,16 @@ class StandalonePage(QWidget):
     analysis_finished = Signal()
     back = Signal()
 
-    def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        state: MeasurementState,
+        parent: QWidget | None = None,
+        *,
+        may_replace_take: Callable[[], bool],
+    ) -> None:
         super().__init__(parent)
         self.state = state
+        self._may_replace_take = may_replace_take
         self.demo_mode = False
         self._devices: list[DeviceInfo] = []
         self._measure_worker: MeasureWorker | None = None
@@ -1341,6 +1364,10 @@ class StandalonePage(QWidget):
             )
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
+            return
+        # Before preflight and the worker. A refused preflight or Stop keeps
+        # the live take: this start does not clear unsaved_take.
+        if not self._may_replace_take():
             return
         devices = self._preflight(list(plan.input_channels), settings.sample_rate)
         if devices is None:

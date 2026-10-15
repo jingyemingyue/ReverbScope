@@ -7,6 +7,14 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Unsaved live takes.** Starting a standalone measurement or a DAW analysis
+  now asks Save, Discard or Cancel before it replaces a recording that exists
+  only in memory. Cancelling, closing that question or a failed save keeps the
+  take. A DAW analysis clears the unsaved flag only once it takes over the
+  recording on disk; starting a standalone measurement does not. Ported from #63.
+
 ### Added
 
 - **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.1) is the single
