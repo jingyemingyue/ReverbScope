@@ -1,5 +1,7 @@
 # 兼容性
 
+> 版本范围：更名后的源码/候选构建。公开包仍为旧名 RoomScope v0.5.0b1；rc2/b3 为 Draft。公开版请按[对应指南](PUBLIC_TESTING.zh-CN.md)操作。
+
 [English](COMPATIBILITY.md) | **简体中文**
 
 ReverbScope 能在哪些平台上运行、能与哪些东西配合，以及**每一行是用什么方式验证的**。写着“未验证”的行是一个还没有人检查过的说法。本文是 [COMPATIBILITY.md](COMPATIBILITY.md) 的简体中文翻译；两者不一致时以英文版为准。最后审查：2026-09-29。

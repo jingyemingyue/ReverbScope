@@ -1,5 +1,7 @@
 # Editions: Desktop, Terminal and developer tools
 
+> Version scope: renamed source/candidate builds. The public download is still RoomScope v0.5.0b1; rc2/b3 are Draft. Use the [public-beta guide](PUBLIC_TESTING.md) for that release.
+
 **English** | [简体中文](EDITIONS.zh-CN.md)
 
 ReverbScope is one code base. It is downloaded in two **editions**, and any

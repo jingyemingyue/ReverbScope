@@ -7,7 +7,17 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Documentation and tester tooling
+- Separate the public RoomScope beta from renamed Draft releases in both
+  READMEs, installation guides and site copy; label source screenshots.
+- Add an evidence-linked OSS readiness audit, application draft, roadmap,
+  public-beta install guide and bilingual physical-test workflow.
+- Add a report preparer that captures a reviewed environment snapshot, preserves
+  earlier run directories and leaves every hardware/DAW check NOT RUN.
+- Keep JSON evidence links usable in the generated docs site by linking to their
+  repository source; refresh labelled screenshots from the current source version.
+- Extend paired issue forms with evidence scope, save/reopen and reproducible
+  feature acceptance criteria. No DSP, GUI, schema or license change.
 
 ## [0.5.0b3] - 2026-10-09
 

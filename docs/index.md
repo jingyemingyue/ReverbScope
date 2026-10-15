@@ -1,5 +1,13 @@
 # ReverbScope documentation
 
+## Current testing and maintenance
+
+- [Public beta installation](PUBLIC_TESTING.md) · [简体中文](PUBLIC_TESTING.zh-CN.md)
+- [Community testing](COMMUNITY_TESTING.md) · [简体中文](COMMUNITY_TESTING.zh-CN.md)
+- [Roadmap](ROADMAP.md) · [简体中文](ROADMAP.zh-CN.md)
+- [Contributor tasks](COMMUNITY_TASKS.md)
+- [OSS readiness audit](OSS_READINESS.md) · [Application draft](OSS_APPLICATION_DRAFT.md)
+
 **English** | [简体中文](index.zh-CN.md)
 
 This is the documentation hub. GitHub renders the Markdown. A themed HTML

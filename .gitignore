@@ -66,6 +66,7 @@ reverbscope.local.toml
 sessions/
 measurements/
 recordings/
+test-reports/
 !tests/fixtures/**/*.wav
 # The regression corpus: minimal synthetic files, each explained in its manifest.
 !tests/corpus/files/**/*.wav

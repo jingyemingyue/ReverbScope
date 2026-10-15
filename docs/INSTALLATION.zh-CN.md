@@ -6,14 +6,19 @@
 
 **下载页面：** <https://github.com/jingyemingyue/ReverbScope/releases>
 
-打开这个页面，选最上方的最新版本，展开 **Assets**，只下载适合你电脑的那一个文件。ReverbScope 有两个版本，
+**版本范围：** 本文介绍更名后的 ReverbScope 源码/候选构建。截至 2026-10-15，公开版仍是
+**RoomScope v0.5.0b1**，准确的文件名和命令见[公开 beta 指南](PUBLIC_TESTING.zh-CN.md)。
+rc2 与 b3 都是 **Draft**。下列文件名与编号步骤适用于维护者明确分享的候选文件，或未来通过验收后
+公开的更名预发布包；旧公开 beta 中没有这些文件。
+
+ReverbScope 有两个版本，
 都不需要 Python 或 Git：
 
 * **桌面版（Desktop Edition）**——带窗口和图表的应用程序，同时包含命令行。适合大多数人。
 * **终端版（Terminal Edition）**——只有命令行，构建时不含图形界面（没有 Qt），体积约为桌面版的一半。适合脚本、
   自动化、服务器和没有图形桌面的电脑。
 
-ReverbScope 是**供测试用的预发布版本**；供测试的构建是 Releases 页面上的 0.5.0 候选测试版（`0.5.0rc1`），
+ReverbScope 是**供测试用的预发布版本**；`release/0.5.0` 是候选版线，
 `main` 是开发线。这些构建**没有签名**（见
 [未签名构建的警告](#未签名构建的警告)），而且**还没有任何测量在真实音频硬件上验证过**
 （[HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md)）。

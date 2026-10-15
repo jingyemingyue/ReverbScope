@@ -17,7 +17,7 @@ body:
     attributes:
       label: ReverbScope 版本和构建提交
       description: '取自环境报告的前几行：`reverbscope doctor`，或 帮助 → 用于问题报告的环境报告。'
-      placeholder: "ReverbScope 0.5.0rc1，build 1a2b3c4d，桌面版"
+      placeholder: "ReverbScope 0.5.0rc2，build 1a2b3c4d，桌面版"
     validations:
       required: true
   - type: input
@@ -69,9 +69,9 @@ body:
       label: "设备列表"
       description: '音频接口出现在独立模式 / `reverbscope devices` 中，且输入和输出声道数正确。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -81,9 +81,9 @@ body:
       label: "44.1 kHz 下的完整测量"
       description: '采样率设为 44100 Hz 的一次独立模式测量（仅做探测不算）。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -93,9 +93,9 @@ body:
       label: "48 kHz 下的完整测量"
       description: '采样率设为 48000 Hz 的一次独立模式测量。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -105,9 +105,9 @@ body:
       label: "96 kHz 下的完整测量"
       description: '采样率设为 96000 Hz 的一次独立模式测量（如果音频接口支持该采样率）。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -117,9 +117,9 @@ body:
       label: "第 1–2 声道以外的声道"
       description: '使用第 2 声道以上的输入或输出完成一次测量（例如输入 3 或输出 4）；请在“结果”中说明用了哪些声道。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -129,9 +129,9 @@ body:
       label: "回送（loopback）录制"
       description: '用线缆把一路输出接回一路输入，并把该输入选为回送声道。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -141,9 +141,9 @@ body:
       label: "播放期间停止"
       description: '在扫频播放时点击“停止”。通过：声音立即停止（没有尾音，也没有持续不断的音），且不保存任何结果。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -153,9 +153,9 @@ body:
       label: "完整测量且无缓冲区欠载/溢出"
       description: '通过：结果和 `reverbscope.log` 中都没有缓冲区问题警告，即没有“音频设备在本次测量中报告了丢失或延迟的缓冲区”，也没有英文的 "reported ... buffer problem(s) ... may contain dropouts"。日志位于数据文件夹（`~/.reverbscope/`，或 环境报告 → 打开数据文件夹）。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -165,9 +165,9 @@ body:
       label: "输入/输出延迟已记录"
       description: '完整测量之后，数据文件夹中的 `reverbscope.log` 会有一行 `audio stream:`，其中 `latency_s=(input, output)`。通过条件：这一行存在，两个数值与你的缓冲区大小相符，且测量没有丢帧。请把这一行粘贴到“结果”中。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -177,9 +177,9 @@ body:
       label: "测量期间拔出音频接口"
       description: '在扫频播放时拔掉 USB/Thunderbolt 线缆（请先把监听音箱音量调低）。通过：ReverbScope 报告错误且不保存结果；不会卡死或崩溃。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -189,9 +189,9 @@ body:
       label: "完整的独立模式测量"
       description: '在房间中使用话筒和扬声器，完成一次测量，并得到可以读取的结果。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -201,9 +201,9 @@ body:
       label: "同一信号经过一个 DAW"
       description: '通过 DAW 以通用 DAW 模式使用同一音频接口（也欢迎另外提交一份附带细节的 DAW 兼容性报告）。'
       options:
-        - 未运行（Not run）
-        - 通过（Pass）
-        - 失败（Fail）
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -236,3 +236,33 @@ body:
         拖入会话打包文件（`reverbscope session bundle <session> --out
         report.zip`，加 `--no-audio` 可不含录音），或粘贴
         `reverbscope.log` 中的相关行。
+  - type: dropdown
+    id: evidence_scope
+    attributes:
+      label: 证据范围
+      description: Automated PASS 不能替代真实 Hardware PASS；未执行为 NOT RUN。演示 / fake / CI 不填硬件矩阵。
+      options:
+      - NOT RUN
+      - Hardware：真实设备 / DAW
+      - Automated：Synthetic / 演示 / fake / CI
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: asset_hash
+    attributes:
+      label: 安装包文件名和 SHA256（源码安装写提交 SHA）
+      description: 公开 beta 仍叫 RoomScope；Draft 构建需注明分享来源。
+    validations:
+      required: true
+  - type: dropdown
+    id: save_reopen
+    attributes:
+      label: 保存、退出、重新打开后的数值/有效性一致
+      options:
+      - NOT RUN
+      - Hardware PASS
+      - FAIL
+      default: 0
+    validations:
+      required: true

@@ -1,15 +1,17 @@
 **English** | [简体中文](README.zh-CN.md)
 
-> 🌐 Official website coming soon — it will go live once GitHub Pages is enabled.
-
 # ReverbScope
 
-**ReverbScope is a free, open-source room acoustics measurement tool: measure
-your recording room with an exponential sine sweep, derive the room impulse
-response, and find out whether a microphone position is usable — reverberation
-time (RT60), early reflections, background noise and direct sound, next to any
-DAW, or on its own. A free REW alternative for the recording studio that
-refuses to invent a number.**
+ReverbScope helps recording students, independent engineers and small studios
+inspect room impulse responses, reverberation, reflections and microphone positions.
+Use its sweep through a DAW or capture directly through an audio interface.
+
+**Early testing software.** No real interface or DAW compatibility report is recorded yet.
+[Public download and first demo](docs/PUBLIC_TESTING.md) ·
+[Help test](docs/COMMUNITY_TESTING.md) · [Roadmap](docs/ROADMAP.md)
+
+Public build: **RoomScope v0.5.0b1** (former name). Its `roomscope demo` uses
+Synthetic / Demo data and plays nothing. Renamed rc2/b3 packages remain Draft.
 
 [![Latest pre-release](https://img.shields.io/github/v/release/jingyemingyue/ReverbScope?include_prereleases&label=pre-release&color=1a7f8e)](https://github.com/jingyemingyue/ReverbScope/releases)
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
@@ -17,23 +19,28 @@ refuses to invent a number.**
 
 ![ReverbScope results page: reverberation, background noise with mains hum, early reflections and direct sound for one microphone position, with the interpretation below (synthetic demo data)](docs/images/gui-results.png)
 
-<sub>The results page for the built-in demo room. Synthetic data: no real room was measured.</sub>
+<sub>Development-source GUI (`main`, 0.5.0b3). Synthetic / Demo data; no real room was measured. This is not a screenshot of the public beta or draft PR #64.</sub>
 
 ## Download
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**Status: `main` is the development (beta) line; the build to test is the
-0.5.0 release candidate** (the newest `0.5.0rc` release, from the `release/0.5.0`
-line, on the Releases page): a candidate for hardware and DAW validation, not the final
-0.5.0, and unsigned. Free, open source, for testing. **This is not the
-hardware release:** nothing has been measured through a real audio interface
-or DAW yet, so treat the numbers as unvalidated
-([help test it](#help-test-the-release-candidate)). Neither edition needs
-Python.
+**Public as of 2026-10-15:** [v0.5.0b1](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b1),
+published under the old **RoomScope** name. Download its `RoomScope` assets and
+use `roomscope demo` (no audio is played). Follow the
+[public-beta installation guide](docs/PUBLIC_TESTING.md) for exact names,
+checksums and first launch on macOS, Windows and Linux.
 
-Choose **one edition**, then the file for your computer under **Assets** on
-the newest release:
+**Not public:** `v0.5.0rc2` (`release/0.5.0`) and `v0.5.0b3` (`main`) remain
+Draft releases. They cannot be downloaded by unauthenticated visitors.
+No stable 0.5.0 release, signed/notarized build or PyPI package is claimed.
+
+### Candidate build reference (not a public download)
+
+The tables and `reverbscope` commands below describe renamed candidate/source
+builds. They become download instructions only when the maintainer publishes
+an accepted pre-release. For the public beta use the guide above; its app and
+command are still named RoomScope / `roomscope`. Neither bundled edition needs Python.
 
 ### 🖥 Desktop Edition
 
@@ -95,6 +102,10 @@ Step-by-step install, checksums (`SHA256SUMS`), updating and uninstalling:
 **[Installation guide](docs/INSTALLATION.md)** ([简体中文](docs/INSTALLATION.zh-CN.md)).
 
 ## Try it in 30 seconds
+
+Public beta: launch **RoomScope**, or run `roomscope demo` from its extracted
+Terminal Edition. The following labels/commands refer to renamed source/candidate
+builds; see [public-beta steps](docs/PUBLIC_TESTING.md).
 
 No microphone and no audio interface needed; nothing is played.
 
@@ -160,8 +171,10 @@ release plan yet. Snapshot of what works:
 
 ## Help test the release candidate
 
-The 0.5.0 release candidate exists so that people with real interfaces and
-DAWs can find out what works. A failed check is as useful as a pass.
+The candidate is prepared but still private as a Draft release. Start with the
+[public beta](docs/PUBLIC_TESTING.md) or an explicitly shared build with its SHA;
+report which one you used. Follow the [short test guide](docs/COMMUNITY_TESTING.md).
+A failed check is as useful as a pass.
 
 1. Install a build ([Download](#download); the Gatekeeper / SmartScreen
    warning is expected).

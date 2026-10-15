@@ -21,7 +21,7 @@ body:
     id: os
     attributes:
       label: 操作系统和 ReverbScope 版本
-      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.5.0rc1 build 1a2b3c4d"
+      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.5.0rc2 build 1a2b3c4d"
     validations:
       required: true
   - type: input
@@ -73,6 +73,7 @@ body:
       label: 结果类型
       description: 'ReverbScope 对这段录音做了什么。“已分析但有警告”指打开了结果，但直达声置信度不是“高”，或出现了采样率 / 时间伸缩提示。'
       options:
+        - NOT RUN
         - 已分析，直达声置信度高，没有提示
         - 已分析但有警告
         - 未分析（被拒绝、出错或崩溃）
@@ -122,3 +123,33 @@ body:
       description: |
         DAW 导出对话框或片段设置的截图，以及 `reverbscope.log`（数据文件夹，或
         环境报告 → 打开数据文件夹）中的相关行，在出问题时很有帮助。
+  - type: dropdown
+    id: evidence_scope
+    attributes:
+      label: 证据范围
+      description: Automated PASS 不能替代真实 Hardware PASS；未执行为 NOT RUN。演示 / fake / CI 不填硬件矩阵。
+      options:
+      - NOT RUN
+      - Hardware：真实设备 / DAW
+      - Automated：Synthetic / 演示 / fake / CI
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: asset_hash
+    attributes:
+      label: 安装包文件名和 SHA256（源码安装写提交 SHA）
+      description: 公开 beta 仍叫 RoomScope；Draft 构建需注明分享来源。
+    validations:
+      required: true
+  - type: dropdown
+    id: save_reopen
+    attributes:
+      label: 保存、退出、重新打开后的数值/有效性一致
+      options:
+      - NOT RUN
+      - Hardware PASS
+      - FAIL
+      default: 0
+    validations:
+      required: true

@@ -4,8 +4,14 @@
 
 **Download page:** <https://github.com/jingyemingyue/ReverbScope/releases>
 
-Open that page, take the newest release at the top, expand **Assets** and
-download the one file for your computer. ReverbScope comes in two editions;
+**Version scope:** this page describes renamed ReverbScope source/candidate builds.
+As of 2026-10-15 the public release is **RoomScope v0.5.0b1**; use the
+[public-beta guide](PUBLIC_TESTING.md) for its exact filenames and commands.
+rc2 and b3 remain **Draft**. The filenames and numbered steps below apply to
+candidate files explicitly shared by the maintainer, or to a future accepted
+renamed pre-release; those files are absent from the older public beta.
+
+ReverbScope comes in two editions;
 neither needs Python or Git:
 
 * **Desktop Edition** — the app with windows and charts, plus the command
@@ -14,9 +20,8 @@ neither needs Python or Git:
   Qt), about half the size. For scripts, automation, servers and computers
   without a desktop.
 
-ReverbScope is a **pre-release for testing**; the build to test is the 0.5.0
-release candidate (`0.5.0rc1`) on the Releases page, while `main` is the
-development line. The builds are
+ReverbScope is a **pre-release for testing**; `release/0.5.0` is the candidate
+line and `main` is the development line. The builds are
 **unsigned** (see [Unsigned-build warnings](#unsigned-build-warnings)) and
 **no measurement has been validated on real audio hardware yet**
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).

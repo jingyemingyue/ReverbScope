@@ -1,5 +1,7 @@
 # 硬件测试矩阵
 
+> 当前实测状态：**NOT RUN**。最短 Apple Silicon 与 DAW 验收见[社区测试指南](COMMUNITY_TESTING.zh-CN.md)。Automated PASS 不能填入本矩阵；只有真实执行后的 Hardware PASS 或 FAIL 才能引用报告入表。下方空白单元格均代表 NOT RUN。
+
 [English](HARDWARE_TESTS.md) | **简体中文**
 
 本文是 [HARDWARE_TESTS.md](HARDWARE_TESTS.md) 的简体中文翻译。测试结果由维护者填入英文版的表格；本页表格随翻译同步，两者不一致时以英文版为准。
@@ -8,9 +10,9 @@
 
 下面没有任何一项在未经真实硬件运行的情况下被标为 PASS。真实硬件指：一台实体电脑、一个实体音频接口及其实际驱动，检查需要时进行真实的播放和录制。演示模式、`fake` 后端、合成测试与脚本化 PortAudio 测试以及 CI 运行器都不算数。表格是有意留空的：还没有任何检查在真实硬件上运行过。
 
-**为什么现在重要。** `0.5.0rc1` 是候选测试版，它存在的唯一目的就是这张矩阵：代码已冻结，只有当真实的电脑、音频接口、房间和 DAW 填满发布计划中作为门槛的那些行（[RELEASE_PLAN.zh-CN.md §2b](RELEASE_PLAN.zh-CN.md#2b-050-的门槛)），才会切出 0.5.0。失败的一行和通过的一行同样有价值：它会变成一个修复和 `0.5.0rc2`。
+**为什么现在重要。** `0.5.0rc2` 是当前仍为 Draft 的候选测试版，它存在的唯一目的就是这张矩阵：代码已冻结，只有当真实的电脑、音频接口、房间和 DAW 填满发布计划中作为门槛的那些行（[RELEASE_PLAN.zh-CN.md §2b](RELEASE_PLAN.zh-CN.md#2b-050-的门槛)），才会切出 0.5.0。失败的一行和通过的一行同样有价值：它会变成一个修复和下一份候选版。
 
-**提交结果。** 请提交 [音频接口测试报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)（英文：[Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)）或 [DAW 兼容性报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)（英文：[DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)）issue。两者都要求附上环境报告（**帮助 → 用于问题报告的环境报告**，或 `reverbscope doctor`；音频接口报告需要带探测采样率的版本，即 `reverbscope doctor --probe`），其中写明版本、构建提交、操作系统、音频系统（主机 API）和设备。音频接口报告要求对下表每一行回答 Pass（通过）/ Fail（失败）/ Not run（未运行）。维护者会把结果连同 issue 链接抄进下表对应的单元格。
+**提交结果。** 请提交 [音频接口测试报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)（英文：[Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)）或 [DAW 兼容性报告（中文表单）](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)（英文：[DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)）issue。两者都要求附上环境报告（**帮助 → 用于问题报告的环境报告**，或 `reverbscope doctor`；音频接口报告需要带探测采样率的版本，即 `reverbscope doctor --probe`），其中写明版本、构建提交、操作系统、音频系统（主机 API）和设备。音频接口报告要求对下表每一行回答 Hardware PASS（实机通过）/ FAIL（失败）/ NOT RUN（未运行）。维护者会把结果连同 issue 链接抄进下表对应的单元格。
 
 | 检查项 | macOS | Windows | Linux |
 | --- | --- | --- | --- |

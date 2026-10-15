@@ -14,7 +14,7 @@ body:
     attributes:
       label: ReverbScope version
       description: The Version and Build lines near the top of the environment report.
-      placeholder: "0.5.0rc1, build 1a2b3c4d"
+      placeholder: "0.5.0rc2, build 1a2b3c4d"
     validations:
       required: true
   - type: dropdown
@@ -85,3 +85,16 @@ body:
         error. A session bundle (`reverbscope session bundle <session> --out
         report.zip`) is welcome when a session misbehaves.
       render: text
+  - type: dropdown
+    id: evidence_scope
+    attributes:
+      label: Evidence scope
+      description: Automated PASS never replaces Hardware PASS. Synthetic Demo/fake/CI never fills the hardware
+        matrix.
+      options:
+      - NOT RUN
+      - 'Hardware: physical device / DAW'
+      - 'Automated: Synthetic / Demo / fake / CI'
+      default: 0
+    validations:
+      required: true

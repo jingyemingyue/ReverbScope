@@ -8,6 +8,17 @@ below exist so that every number ReverbScope prints stays defensible.
 Please also follow the [Code of Conduct](CODE_OF_CONDUCT.md). Security reports
 go through [SECURITY.md](SECURITY.md), not public issues.
 
+New here? Start with the [public install and silent demo](docs/PUBLIC_TESTING.md),
+the [community test guide](docs/COMMUNITY_TESTING.md) ([完整中文](docs/COMMUNITY_TESTING.zh-CN.md))
+or a [small contributor task](docs/COMMUNITY_TASKS.md). The [roadmap](docs/ROADMAP.md)
+separates implemented source, validation and plans. A useful failure report is
+a contribution; stars and code volume are not contribution goals.
+
+Keep physical outcomes distinct: **Automated PASS**, **Hardware PASS**, **FAIL**,
+**NOT RUN**. Use `scripts/prepare_test_report.py` for a fresh run folder. It never
+plays audio or fills physical PASS rows; inspect attachments before posting.
+Local `test-reports/` directories are ignored by Git to protect private evidence.
+
 ## Ground rules
 
 1. **Correctness before features.** A metric that cannot be computed reliably

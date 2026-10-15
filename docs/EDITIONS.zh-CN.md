@@ -1,5 +1,7 @@
 # 版本：桌面版、终端版与开发者工具
 
+> 版本范围：更名后的源码/候选构建。公开包仍为旧名 RoomScope v0.5.0b1；rc2/b3 为 Draft。公开版请按[对应指南](PUBLIC_TESTING.zh-CN.md)操作。
+
 [English](EDITIONS.md) | **简体中文**
 
 ReverbScope 只有一套代码。它提供两个可下载的**版本**，而且任何一份都可以显示或隐藏**开发者工具**。所有形式运行同一套分析（`reverbscope.core.pipeline.analyze`），读写同样的会话文件，给出同样的数字。本文是 [EDITIONS.md](EDITIONS.md) 的简体中文翻译；两者不一致时以英文版为准。

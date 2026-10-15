@@ -1,10 +1,16 @@
 [English](README.md) | **简体中文**
 
-> 🌐 官网即将上线（Pages 开启后生效）。
-
 # ReverbScope
 
-**ReverbScope 是一款免费开源的房间声学测量工具：用指数扫频（sine sweep）测量你的录音房间，还原房间脉冲响应（impulse response），判断一个话筒位置能不能用——混响时间（RT60 / reverberation time）、早期反射、背景噪声与直达声，可以配合任何 DAW，也可以单独使用。录音棚的免费 REW 替代品，从不编造数字。**
+ReverbScope 帮助录音专业学生、独立录音师和小型工作室检查房间脉冲响应、混响、反射与话筒位置。
+可以通过 DAW 播放扫频并录音，也可以直接用音频接口测量。
+
+**早期测试软件。** 当前尚未通过真实硬件验证，也没有 DAW 兼容性实测报告。
+[公开下载与首次演示](docs/PUBLIC_TESTING.zh-CN.md) ·
+[参与测试](docs/COMMUNITY_TESTING.zh-CN.md) · [路线图](docs/ROADMAP.zh-CN.md)
+
+公开包：**RoomScope v0.5.0b1**（旧名）。`roomscope demo` 使用 Synthetic / Demo 合成数据，不播放声音。
+更名后的 rc2/b3 安装包仍为 Draft。
 
 [![最新预发布版](https://img.shields.io/github/v/release/jingyemingyue/ReverbScope?include_prereleases&label=pre-release&color=1a7f8e)](https://github.com/jingyemingyue/ReverbScope/releases)
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
@@ -12,7 +18,7 @@
 
 ![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
 
-<sub>内置演示房间的结果页。合成数据：没有测量任何真实房间。</sub>
+<sub>开发源码 GUI（`main`，0.5.0b3）。Synthetic / Demo 合成演示数据，没有测量真实房间；不是公开 beta 或 PR #64 草稿的截图。</sub>
 
 > 本文是 [README.md](README.md) 的简体中文版本；两者不一致时，以英文版为准。
 
@@ -20,13 +26,18 @@
 
 ### **[→ 从 GitHub Releases 下载](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**状态：`main` 是开发线（beta 线）；供测试的构建是 0.5.0 候选测试版**（最新的 `0.5.0rc` 版本，来自
-`release/0.5.0` 分支，见 Releases 页面）：它是面向真实硬件和 DAW 验证的候选版，不是 0.5.0 正式版，
-且未签名。免费、开源，供测试使用。**这不是硬件验证版本：**
-还没有通过任何真实音频接口或 DAW 做过测量，请把所有数字视为未经验证
-（欢迎[帮助测试](#帮助测试候选版)）。两个版本都不需要安装 Python。
+**截至 2026-10-15 已公开：** [v0.5.0b1](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b1)，
+沿用旧名 **RoomScope**。请下载该版本的 `RoomScope` 文件，使用 `roomscope demo`（不会播放声音）。
+[公开 beta 安装指南](docs/PUBLIC_TESTING.zh-CN.md) 提供各平台准确文件名、校验和与首次启动步骤。
 
-先选**一个版本**，再在最新发布版本的 **Assets** 中选择适合你电脑的文件：
+**尚未公开：** `release/0.5.0` 的 `v0.5.0rc2` 和 `main` 的 `v0.5.0b3` 都是 Draft，
+未登录访客无法下载。当前没有 0.5.0 稳定版、已签名/公证构建或 PyPI 包。
+
+### 候选构建参考（尚非公开下载）
+
+下列表格和 `reverbscope` 命令对应更名后的候选版/源码构建，只有维护者公开通过验收的预发布包后，
+才成为该包的下载说明。公开 beta 请按上方指南操作，其应用和命令仍是 RoomScope / `roomscope`。
+两个打包版本都不需要 Python。
 
 ### 🖥 桌面版（Desktop Edition）
 
@@ -80,6 +91,9 @@
 
 ## 30 秒体验
 
+公开 beta：启动 **RoomScope**，或在解压后的终端版运行 `roomscope demo`。
+以下按钮与命令适用于更名后的源码/候选版，公开包的步骤见[公开 beta 指南](docs/PUBLIC_TESTING.zh-CN.md)。
+
 不需要话筒和音频接口，也不会播放任何声音。
 
 * **桌面版：** 打开 ReverbScope，点 **演示（无需音频接口）**。
@@ -132,8 +146,8 @@ DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、�
 
 ## 帮助测试候选版
 
-发布 0.5.0 候选测试版，是为了让手上有真实音频接口和 DAW 的人找出哪些地方能用、哪些不能用。检查失败和
-检查通过同样有价值。
+候选包已准备但仍为 Draft。可以从[公开 beta](docs/PUBLIC_TESTING.zh-CN.md) 开始，或使用维护者明确分享并注明 SHA 的构建，
+报告中写清版本。按[最短测试指南](docs/COMMUNITY_TESTING.zh-CN.md) 操作；失败与通过同样有价值。
 
 1. 安装一个构建（见[下载](#下载)；Gatekeeper / SmartScreen 警告属于预期情况）。
 2. 打开 ReverbScope，先运行一次 **演示（无需音频接口）**（英文界面为 **Demo (no interface)**）：
