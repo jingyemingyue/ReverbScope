@@ -54,6 +54,11 @@ def view(app: QApplication) -> PlotView:
     return widget
 
 
+def _title(ax: object) -> str:
+    """The graph's title, wherever the style put it (left once the app chrome was applied)."""
+    return str(ax.get_title(loc="left") or ax.get_title())  # type: ignore[attr-defined]
+
+
 def _point(view: PlotView, fx: float, fy: float) -> tuple[float, float]:
     """Pixel position of a fraction of the axes' width and height."""
     box = view.data_axes()[0].bbox
@@ -293,10 +298,10 @@ def test_the_test_signal_preview_follows_the_settings(app: QApplication) -> None
     window.show_mode("universal_daw")
     page = window.daw
     ax = page.preview.figure.axes[0]
-    assert "10 s" in ax.get_title()
+    assert "10 s" in _title(ax)
     page.duration.setValue(20.0)
     ax = page.preview.figure.axes[0]
-    assert "20 s" in ax.get_title()
+    assert "20 s" in _title(ax)
     t, f = ax.lines[0].get_data()
     assert f[0] == pytest.approx(20.0) and f[-1] == pytest.approx(20000.0)
     assert t[0] == pytest.approx(1.0) and t[-1] == pytest.approx(21.0)
@@ -316,7 +321,7 @@ def test_the_results_workspace_has_graphs_and_an_inspector(
     assert results.figures.health_chip.text()
     results.tabs.setCurrentWidget(results.bands_tab)
     ax = results.bands_tab.figure.axes[0]
-    assert "octave band" in ax.get_title()
+    assert "octave band" in _title(ax)
     labels = [line.get_label() for line in ax.get_lines()]
     assert "T30" in labels
     # View menu: hide the inspector, fit the graph.
