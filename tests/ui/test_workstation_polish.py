@@ -172,6 +172,12 @@ def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, langu
     window.resize(960, 640)
     window.show()
     strip = window.strip
+    for _step in range(4):
+        app.processEvents()
+    # Qt's platform style and system fonts may calculate a minimum wider than
+    # the requested 960 px (986 px on Windows); the strip's content must not
+    # widen it further.
+    baseline = window.minimumSizeHint().width()
     device = "MOTU UltraLite-mk5 — Core Audio — microphone inputs 1–18"
     strip.input_device.addItem(device, "test-device")
     strip.input_device.setCurrentIndex(strip.input_device.count() - 1)
@@ -179,7 +185,7 @@ def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, langu
     for _step in range(4):
         app.processEvents()
     # The requested window can remain narrow; the strip must not force it wider.
-    assert window.minimumSizeHint().width() <= window.width()
+    assert window.minimumSizeHint().width() <= max(baseline, window.width())
     assert strip.mode.width() >= strip.mode.minimumSizeHint().width()
     assert strip.sample_rate.width() >= (
         strip.sample_rate.fontMetrics().horizontalAdvance(strip.sample_rate.currentText()) + 24
