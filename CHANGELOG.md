@@ -13,9 +13,11 @@ All notable changes to ReverbScope are documented here. The format follows
   standard for the open-source application path and the GUI redesign.
   `docs/GUIDELINES.md` is an English summary; the Chinese text wins if they
   differ. `docs/AI_ASSISTANCE.md` says what an AI session may prepare and
-  which actions stay with the maintainer. `CONTRIBUTING.md`, `AGENTS.md`,
-  `CLAUDE.md` and `.cursor/rules/` point at those documents. Appendix F of
-  the guidelines is not filled in by this change.
+  which actions stay with the maintainer.   `CONTRIBUTING.md`, `AGENTS.md`,
+  `CLAUDE.md` and `.cursor/rules/` point at those documents. Those root
+  files are in the sdist, which already ships every other tracked top-level
+  entry the packaging test requires. Appendix F of the guidelines is not
+  filled in by this change.
 
 ## [0.5.0b3] - 2026-10-09
 
