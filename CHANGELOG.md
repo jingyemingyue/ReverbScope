@@ -7,7 +7,18 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.1) is the single
+  standard for the open-source application path and the GUI redesign.
+  `docs/GUIDELINES.md` is an English summary; the Chinese text wins if they
+  differ. `docs/AI_ASSISTANCE.md` says what an AI session may prepare and
+  which actions stay with the maintainer. `CONTRIBUTING.md`, `AGENTS.md`,
+  `CLAUDE.md` and `.cursor/rules/` (seven rule files: core, workflow, GUI,
+  analysis core, docs, Git and CI, and self-check) point at those documents.
+  Those root files are in the sdist, which already ships every other tracked
+  top-level entry the packaging test requires. Appendix F of the guidelines
+  is not filled in by this change.
 
 ## [0.5.0b3] - 2026-10-09
 

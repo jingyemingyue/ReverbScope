@@ -8,6 +8,21 @@ below exist so that every number ReverbScope prints stays defensible.
 Please also follow the [Code of Conduct](CODE_OF_CONDUCT.md). Security reports
 go through [SECURITY.md](SECURITY.md), not public issues.
 
+## Execution standard
+
+Product direction, the hard constraints, the open-source application path and
+the GUI redesign are governed by
+[docs/GUIDELINES.zh-CN.md](docs/GUIDELINES.zh-CN.md) (v2.1.1).
+[docs/GUIDELINES.md](docs/GUIDELINES.md) is an English summary. Where the two
+differ, the Chinese text wins. [docs/AI_ASSISTANCE.md](docs/AI_ASSISTANCE.md)
+says what an AI session may prepare and which actions stay with the
+maintainer. `AGENTS.md`, `CLAUDE.md` and `.cursor/rules/` point at those
+documents; they do not add a second set of product rules.
+
+Appendix F of the guidelines (the maintainer's confirmations) is still open.
+Landing the text does not check those boxes. One task is one branch and one
+pull request. Do not open a second full GUI redesign.
+
 ## Ground rules
 
 1. **Correctness before features.** A metric that cannot be computed reliably

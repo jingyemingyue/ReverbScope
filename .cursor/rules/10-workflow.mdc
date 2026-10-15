@@ -1,0 +1,105 @@
+---
+description: ReverbScope 工作流程：八个步骤、三个必停点、输出模板。每次对话都生效。
+alwaysApply: true
+---
+
+# 八个步骤（准则附录 J 的执行版）
+
+除非用户在本次任务里明确说“这个任务不用停”，否则三个必停点一个都不能跳过。用户说“继续”不等于跳过下一个必停点。
+
+## 步骤 1：读
+
+- 读准则 §0、§2、§3、§4、§6、附录 J，以及任务相关章节。
+- 读这些文件（存在的话）：`CONTRIBUTING.md`、`docs/MAINTAINING.md`、`docs/ARCHITECTURE_V1.md`、与任务相关的测试文件。
+- 运行 `git status`、`git branch --show-current`、`git log -1 --oneline`，确认工作区干净、当前在哪个分支。
+- 运行 `git fetch origin`，确认目标分支（`main` / `release/0.5.0` / `gui/redesign`）的最新提交。
+
+## 步骤 2：复述 —— 必停点 ①
+
+用下面的模板输出，然后**停止，等用户回复“确认”**。在此之前不改任何文件、不建分支。
+
+```text
+## 任务理解
+- 任务：<一句话>（准则 §x.x / 附录 G 的 #xx）
+- 目标分支：<main | release/0.5.0 | gui/redesign>；任务分支：<名称>
+- 范围内：<逐条>
+- 范围外（不会做）：<逐条>
+- 完成标准：<可检查的条件，逐条>
+- 已读章节：<列表>
+- 当前仓库状态：<分支、最新提交、工作区是否干净>
+- 疑问：<没有就写“无”>
+请回复“确认”后我开始勘察。
+```
+
+## 步骤 3：勘察（只读）
+
+- 只能读文件、搜索、运行现有测试。不改文件。
+- 找出要改的文件、相关的测试、可能受影响的地方。
+- 如果发现任务和准则冲突、或必须改到 `00-core.mdc` 第 7 条列出的区域：停下问。
+
+## 步骤 4：计划 —— 必停点 ②
+
+```text
+## 改动计划
+| 文件 | 改什么 | 原因 |
+| --- | --- | --- |
+新增或修改的测试：<测试文件::测试名；写明哪个是“先失败后通过”的回归测试>
+要运行的检查：<命令列表>
+不会改的东西：<逐条>
+风险和与准则的关系：<逐条，没有就写“无”>
+请回复“开始”后我动手。
+```
+
+**停止，等用户回复“开始”。**
+
+## 步骤 5：实施
+
+- 从最新的目标分支切任务分支：`git switch -c <任务分支> origin/<目标分支>`。
+- 只改计划里列出的文件。需要多改一个文件：先停下说明原因，得到同意再改。
+- 修缺陷时，先写回归测试并运行，确认它**失败**；再改代码，确认它**通过**。两次运行的结果都要记下来。
+- 每完成一小步就跑相关测试，不要攒到最后。
+
+## 步骤 6：验证
+
+在仓库根目录运行（准则 §6 第 8 条）。如果 `.venv/` 已经存在就直接激活；不存在就先用 Python 3.12 创建并安装依赖：
+
+```bash
+test -d .venv || (python3.12 -m venv .venv && .venv/bin/pip install -e ".[dev,gui]" build)
+source .venv/bin/activate
+ruff check . && ruff format --check .
+mypy --platform linux
+python scripts/check_doc_links.py && python scripts/check_cli_docs.py && python scripts/check_src_safety.py
+QT_QPA_PLATFORM=offscreen pytest --cov=reverbscope.core --cov=reverbscope.models --cov-fail-under=85
+```
+
+- `mypy` 必须带 `--platform linux`：CI 在 Linux 上跑，macOS 上不带这个参数会在 `ui/widgets.py` 多报一个 unreachable，那不是你造成的。
+- `ruff format --check .` 也检查 Markdown 里的 ```python 代码块；改了文档里的示例代码也要跑。
+- 只改文档时，至少运行 `check_doc_links.py` 和 `ruff format --check .`；跳过其他检查要写明原因，标“未运行”。
+- 每条命令记录：通过 / 失败 / 未运行。失败的贴关键输出，不要自己判定“无关”就略过——先停下问。
+
+## 步骤 7：提交 —— 必停点 ③
+
+- 提交信息：英文；第一行 ≤ 72 字符；正文写原因和来源（如 `Ported from #63`）；最后一行 `Assisted-by: Cursor (<模型名>)`。
+- 提交后输出：`git diff --stat origin/<目标分支>...HEAD` 的结果，以及每个文件一句话说明。
+- **停止，等用户回复“推送”。**
+
+## 步骤 8：交接
+
+- `git push -u origin <任务分支>`（只推自己的任务分支，绝不加 `--force`）。
+- 能用 `gh` 就开**草稿** PR：`gh pr create --draft --base <目标分支> --title "<英文标题>" --body-file <文件>`；不能用就给出比较链接 `https://github.com/jingyemingyue/ReverbScope/compare/<目标分支>...<任务分支>` 和 PR 描述全文，由用户自己开。
+- PR 描述用仓库的 PR 模板，末尾附交接说明：
+
+```text
+## 交接说明
+- 任务：<一句话>（准则 §x.x）
+- 分支 / 提交：<分支名> @ <短 SHA>
+- 改动：<文件 + 一句话说明>
+- 检查：<命令> → 通过 / 失败 / 未运行（每条一行）
+- 证据级别：自动化 | 合成演示（本机只能做到这两级）
+- 没做的：<逐条>
+- 发现但未处理：<逐条，没有就写“无”>
+- 下一步建议：<逐条>
+- AI 工具：Cursor（<模型名>）；需要维护者审阅后才能合并
+```
+
+- 交接后**结束**。不要接着做下一个任务，等用户给新任务。

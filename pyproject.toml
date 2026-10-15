@@ -101,11 +101,14 @@ path = "hatch_build.py"
 # .github is shipped because the release tests read the workflows: without
 # it pytest stops at collection in an unpacked sdist. .gitattributes is
 # shipped because test_editions checks its line-ending rule for the .cmd
-# launcher.
+# launcher. AGENTS.md, CLAUDE.md and .cursor are the working copy of the
+# execution guidelines (docs/GUIDELINES.zh-CN.md); the sdist test ships every
+# tracked top-level entry except site/.
 include = [
   "src/reverbscope",
   "tests",
   ".github",
+  ".cursor",
   ".gitattributes",
   "docs",
   "examples",
@@ -117,6 +120,8 @@ include = [
   "LICENSE",
   "NOTICE",
   "CONTRIBUTING.md",
+  "AGENTS.md",
+  "CLAUDE.md",
   "CHANGELOG.md",
   "CODE_OF_CONDUCT.md",
   "SECURITY.md",
