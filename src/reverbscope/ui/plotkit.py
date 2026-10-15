@@ -30,6 +30,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QHBoxLayout,
     QLabel,
+    QLayout,
     QMenu,
     QScrollArea,
     QSizePolicy,
@@ -261,13 +262,16 @@ class ChartPanel(QWidget):
         self.export_name = "chart"
         self.title_text = title
         layout = QVBoxLayout(self)
+        # QSplitter may allocate less than a child's minimumSizeHint after
+        # legends/readouts grow. Keep the plot and its axes inside the panel.
+        layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(2)
 
         top = QHBoxLayout()
         top.setSpacing(6)
         self.title = QLabel(title)
-        self.title.setProperty("role", "section")
+        self.title.setProperty("role", "panel-title")
         self.title.setMinimumWidth(48)
         self.title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._title_full = title
@@ -276,16 +280,15 @@ class ChartPanel(QWidget):
         self.readout.setProperty("role", "hint")
         self.readout.setMinimumWidth(72)
         self.readout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        self.readout.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        self.readout.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self._readout_full = ""
-        top.addWidget(self.readout, 1)
         self.reset_button = QToolButton()
-        self.reset_button.setText(_("Frame"))
+        self.reset_button.setText(_("Fit chart"))
         self.reset_button.setToolTip(_("Fit the chart again (R or double-click)."))
         self.reset_button.clicked.connect(self.reset_view)
         top.addWidget(self.reset_button)
         self.axes_button = QToolButton()
-        self.axes_button.setText(_("Axes..."))
+        self.axes_button.setText(_("Range..."))
         self.axes_button.setToolTip(_("Set the visible axis ranges in the labelled units."))
         self.axes_button.clicked.connect(self.edit_axis_ranges)
         top.addWidget(self.axes_button)
@@ -300,6 +303,9 @@ class ChartPanel(QWidget):
         self.export_button.setMenu(menu)
         top.addWidget(self.export_button)
         layout.addLayout(top)
+        # Cursor coordinates need the chart's width, not what the platform's
+        # toolbar font leaves over. A long curve name must not hide its units.
+        layout.addWidget(self.readout)
         # The legend scrolls sideways rather than widening the chart: ten
         # bands or eight overlays must not push the window past a laptop screen.
         legend_box = QWidget()
@@ -328,7 +334,7 @@ class ChartPanel(QWidget):
         self.plot.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.plot_item = self.plot.getPlotItem()
         disable_menus(self.plot_item)
-        self.plot_item.showGrid(x=True, y=True, alpha=0.9)
+        self.plot_item.showGrid(x=True, y=True, alpha=0.28)
         self.plot.setMinimumHeight(140)
         layout.addWidget(self.plot, 1)
         # Why the chart is empty (nothing stored, nothing selected), over the plot.
@@ -417,7 +423,10 @@ class ChartPanel(QWidget):
         if width < 24:
             label.setText(text)
             return
-        shown = label.fontMetrics().elidedText(text, Qt.TextElideMode.ElideRight, max(8, width - 2))
+        mode = (
+            Qt.TextElideMode.ElideMiddle if label is self.readout else Qt.TextElideMode.ElideRight
+        )
+        shown = label.fontMetrics().elidedText(text, mode, max(8, width - 2))
         label.setText(shown)
         label.setToolTip("" if shown == text else text)
 
@@ -430,7 +439,7 @@ class ChartPanel(QWidget):
             axis = self.plot_item.getAxis(name)
             axis.setPen(pg.mkPen(QColor(t["grid"])))
             axis.setTextPen(pg.mkPen(QColor(t["text"])))
-        self.plot_item.showGrid(x=True, y=True, alpha=0.9)
+        self.plot_item.showGrid(x=True, y=True, alpha=0.28)
         self.cursor_line.setPen(pg.mkPen(QColor(t["muted"]), width=1, style=Qt.PenStyle.DashLine))
         self.plot_item.setLabel("bottom", self.x_label, color=t["text"])
         self.plot_item.setLabel("left", self.y_label, color=t["text"])

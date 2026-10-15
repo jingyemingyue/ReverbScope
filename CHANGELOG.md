@@ -8,6 +8,21 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Narrow-window controls remain readable.** The measurement settings and
+  transport use two rows when platform font metrics need more width; wide
+  windows keep one row. Device controls expose the complete selection on
+  hover. Menu and keyboard view changes scroll the active tab into view.
+  Frequency and time-frequency views scroll when their plots and notes
+  cannot fit; chart parents retain enough height for the axes.
+  The Apple Silicon workstation checklist combines the two GUI PRs in
+  `docs/MAC_GUI_ACCEPTANCE.zh-CN.md` without claiming hardware passes.
+- **Cursor readouts keep their units.** Coordinates have their own line below
+  the chart toolbar; long measurement names elide in the middle, with the
+  complete readout on hover.
+- **POSIX menu interrupts.** Menu input uses Python streams so Ctrl+C
+  between the prompt and the read does not leave the menu waiting for Enter.
+- **Stable timing checks.** The time-frequency check keeps its one-second budget and uses
+  the median of five runs after warm-up to avoid a single CI scheduling pause.
 - **A compact measurement desk.** Tool buttons now share the same flat
   chrome as the input controls. Body text uses a consistent 12 logical pixels,
   with the existing Chinese font fallbacks. Panel switches are visually

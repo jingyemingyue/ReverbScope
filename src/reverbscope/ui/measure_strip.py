@@ -13,8 +13,9 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import Qt, QTimer, Signal
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QKeySequence, QResizeEvent, QShortcut
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QComboBox,
     QHBoxLayout,
     QLabel,
@@ -113,16 +114,23 @@ class MeasureStrip(QWidget):
         self.setProperty("strip", True)
         self.setAutoFillBackground(True)
         outer = QVBoxLayout(self)
+        self.outer_layout = outer
         outer.setContentsMargins(8, 3, 8, 3)
         outer.setSpacing(2)
-        row = QHBoxLayout()
+        self.control_layout = QBoxLayout(QBoxLayout.Direction.TopToBottom)
+        self.control_layout.setSpacing(6)
+        outer.addLayout(self.control_layout)
+        self.settings_bar = QWidget()
+        row = QHBoxLayout(self.settings_bar)
+        row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(6)
-        outer.addLayout(row)
+        self.control_layout.addWidget(self.settings_bar, 1)
 
         self.mode = QComboBox()
         for value, text in MODES:
             self.mode.addItem(_(text), value)
         self.mode.setToolTip(_("How the next measurement is made."))
+        self.mode.setAccessibleName(_("Mode"))
         self.mode.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.mode.currentIndexChanged.connect(self._mode_selected)
         row.addWidget(self.mode)
@@ -138,7 +146,11 @@ class MeasureStrip(QWidget):
             (self.sample_rate, standalone.sample_rate, _("Sample rate")),
         ):
             _mirror_combo(combo, page_combo)
-            combo.setToolTip(tip)
+            combo.setAccessibleName(tip)
+            combo.setToolTip(f"{tip}: {combo.currentText()}")
+            combo.currentTextChanged.connect(
+                lambda text, c=combo, caption=tip: c.setToolTip(f"{caption}: {text}")
+            )
             combo.setSizeAdjustPolicy(
                 QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
             )
@@ -196,6 +208,12 @@ class MeasureStrip(QWidget):
         self.position.currentTextChanged.connect(self._position_edited)
         row.addWidget(self.position)
 
+        self.transport_bar = QWidget()
+        row = QHBoxLayout(self.transport_bar)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(6)
+        row.addStretch(1)
+        self.control_layout.addWidget(self.transport_bar)
         self.advanced_button = QToolButton()
         self.advanced_button.setCheckable(True)
         self.advanced_button.setAutoRaise(True)
@@ -266,6 +284,27 @@ class MeasureStrip(QWidget):
         self._mode_selected()
         self._set_phase("idle")
 
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._reflow(event.size().width())
+
+    def _reflow(self, width: int) -> None:
+        # Use the current platform's font/style metrics, including the wider
+        # DAW import caption. Start and Stop never join a scrolling area.
+        margin = self.outer_layout.contentsMargins()
+        required = (
+            self.settings_bar.minimumSizeHint().width()
+            + self.transport_bar.minimumSizeHint().width()
+            + self.control_layout.spacing()
+            + margin.left()
+            + margin.right()
+        )
+        self.control_layout.setDirection(
+            QBoxLayout.Direction.TopToBottom
+            if width < required
+            else QBoxLayout.Direction.LeftToRight
+        )
+
     # --- mode -----------------------------------------------------------------------
 
     def set_mode(self, mode: str) -> None:
@@ -296,6 +335,7 @@ class MeasureStrip(QWidget):
         )
         self.mode_changed.emit(mode)
         self._show_page_status()
+        self._reflow(self.width())
 
     # --- position -------------------------------------------------------------------
 

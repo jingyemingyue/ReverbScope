@@ -82,7 +82,7 @@ class StartPanel(QWidget):
         sessions_layout.setContentsMargins(0, 0, 0, 0)
         sessions_layout.setSpacing(6)
         header = QHBoxLayout()
-        header.addWidget(label(_("Saved sessions").upper(), "section"))
+        header.addWidget(label(_("Saved sessions"), "panel-title"))
         header.addStretch(1)
         open_button = QPushButton(_("Open Session..."))
         open_button.setToolTip(_("Open a session.json or a folder that contains one."))
@@ -95,7 +95,7 @@ class StartPanel(QWidget):
         compare_button = QPushButton(_("Compare two sessions..."))
         compare_button.setToolTip(_("Select two rows below, then compare them."))
         compare_button.clicked.connect(self.compare_requested.emit)
-        for button in (open_button, project_button, compare_button):
+        for button in (open_button, project_button):
             header.addWidget(button)
         sessions_layout.addLayout(header)
         # Two selected rows go straight into Compare (MainWindow.show_compare).
@@ -104,7 +104,11 @@ class StartPanel(QWidget):
         self.recent = self.browser.list
         sessions_layout.addWidget(self.browser, 1)
         layout.addWidget(sessions, 1)
-        layout.addWidget(self.guide_button, 0, Qt.AlignmentFlag.AlignLeft)
+        footer = QHBoxLayout()
+        footer.addWidget(compare_button)
+        footer.addStretch(1)
+        footer.addWidget(self.guide_button)
+        layout.addLayout(footer)
         layout.addWidget(self.walkthrough)
 
     def refresh_recent(self) -> None:

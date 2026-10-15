@@ -52,11 +52,18 @@ class Navigator(QWidget):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.model = model
+        self.setProperty("panel", True)
         self.setMinimumWidth(180)
         layout = QVBoxLayout(self)
         layout.setContentsMargins(8, 8, 4, 6)
         layout.setSpacing(6)
-        self.project_title = label(_("No project open"), "section")
+        heading = QHBoxLayout()
+        heading.addWidget(label(_("Measurements"), "panel-title"))
+        heading.addStretch(1)
+        self.count = label("0", "count")
+        heading.addWidget(self.count)
+        layout.addLayout(heading)
+        self.project_title = label(_("No project open"), "hint")
         self.project_title.setWordWrap(True)
         layout.addWidget(self.project_title)
         self.project_hint = PathLabel()
@@ -76,9 +83,9 @@ class Navigator(QWidget):
         self.open_session_button.clicked.connect(self.open_session_requested.emit)
         buttons.addWidget(self.open_project_button)
         buttons.addWidget(self.open_session_button)
-        layout.addLayout(buttons)
 
         self.tree = QTreeWidget()
+        self.tree.setProperty("measurements", True)
         self.tree.setColumnCount(2)
         self.tree.setHeaderHidden(True)
         self.tree.setRootIsDecorated(False)
@@ -102,6 +109,7 @@ class Navigator(QWidget):
         layout.addWidget(self.tree, 1)
         self.loading = label("", "hint", wrap=True)
         layout.addWidget(self.loading)
+        layout.addLayout(buttons)
         self._filling = False
         self._items: dict[str, QTreeWidgetItem] = {}
 
@@ -121,6 +129,7 @@ class Navigator(QWidget):
         self.tree.clear()
         self._items.clear()
         model = self.model
+        self.count.setText(str(len(model.entries())))
         if model.project_path is not None:
             name = model.project.name if model.project is not None and model.project.name else ""
             self.project_title.setText(name or model.project_path.name)

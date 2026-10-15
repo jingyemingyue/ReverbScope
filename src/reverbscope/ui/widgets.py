@@ -68,6 +68,22 @@ class PathLabel(QLabel):
         self._elide_path()
 
 
+class PlotBody(QWidget):
+    """Scrollable plot content whose wrapped notes reserve only required height.
+
+    A QGraphicsView's preferred size follows its current viewport. Feeding
+    that preferred height back into QScrollArea's height-for-width calculation
+    makes the chart grow on every layout pass. Minimum height is stable.
+    """
+
+    def heightForWidth(self, width: int) -> int:  # noqa: N802 - Qt override
+        layout = self.layout()
+        if layout is None:
+            return int(super().heightForWidth(width))
+        height = layout.minimumHeightForWidth(width)
+        return int(max(layout.minimumSize().height(), height))
+
+
 def set_banner_text(widget: QLabel, text: str, tone: str = "") -> None:
     """Show ``text`` on a label, as a ``warn`` or ``info`` banner when ``tone`` is set.
 
@@ -320,8 +336,8 @@ class StatTile(QWidget):
         self.value = label("-", "kpi-value")
         row.addWidget(self.value, 1)
         self.chip = Chip()
-        row.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addLayout(row)
+        layout.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignLeft)
         self.sub = label("", "kpi-sub", wrap=True)
         layout.addWidget(self.sub)
 

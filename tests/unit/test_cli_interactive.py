@@ -173,7 +173,7 @@ def test_a_terminal_gets_the_menu_and_a_pipe_the_home_screen(
     assert "ReverbScope" in captured.err and captured.out == ""
     # On a terminal: the menu, which q leaves.
     monkeypatch.setattr("reverbscope.cli.console.is_terminal", lambda _stream: True)
-    monkeypatch.setattr("builtins.input", lambda _prompt="": "q")
+    monkeypatch.setattr("reverbscope.cli.interactive.terminal_input", lambda _prompt="": "q")
     assert main([]) == 0
     assert "Try the demo" in capsys.readouterr().out
     # Unless the menu is switched off.

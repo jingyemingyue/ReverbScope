@@ -404,10 +404,17 @@ def test_inputs_are_not_mutated(transform: Any) -> None:
 
 def test_two_seconds_at_48_khz_is_fast() -> None:
     ir = decaying_mode(length_s=2.0)
-    started = time.perf_counter()
+    # Keep the one-second budget, but measure steady-state work rather than
+    # BLAS/FFT startup or a single scheduling pause on a shared CI runner.
     spectrogram(ir, SR, PRE)
     cumulative_spectral_decay(ir, SR, PRE)
-    assert time.perf_counter() - started < 1.0
+    times = []
+    for _ in range(5):
+        started = time.perf_counter()
+        spectrogram(ir, SR, PRE)
+        cumulative_spectral_decay(ir, SR, PRE)
+        times.append(time.perf_counter() - started)
+    assert float(np.median(times)) < 1.0, times
 
 
 def test_analysis_result_is_unchanged(short_sweep: SweepSettings) -> None:

@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QHBoxLayout,
     QLabel,
+    QScrollArea,
     QSlider,
     QSpinBox,
     QVBoxLayout,
@@ -41,6 +42,7 @@ from reverbscope.ui.pg import colormap
 from reverbscope.ui.plotkit import X_FREQUENCY, X_TIME_MS, ChartPanel, format_frequency, pg
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
+from reverbscope.ui.widgets import PlotBody
 from reverbscope.ui.workers import unexpected_error_text
 from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
 
@@ -121,7 +123,15 @@ class _TimeFrequencyView(AnalysisView):
         self._debounce.setSingleShot(True)
         self._debounce.setInterval(250)
         self._debounce.timeout.connect(self.refresh)
-        self.root = QVBoxLayout(self)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        self.content_scroll = QScrollArea()
+        self.content_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.content_scroll.setWidgetResizable(True)
+        body = PlotBody()
+        self.content_scroll.setWidget(body)
+        outer.addWidget(self.content_scroll)
+        self.root = QVBoxLayout(body)
         self.root.setContentsMargins(10, 8, 10, 8)
         self.root.setSpacing(6)
         self.controls = QHBoxLayout()

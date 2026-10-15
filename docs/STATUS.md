@@ -6,6 +6,37 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 41: 2026-10-14 (UTC+8) — **narrow-window workstation controls and
+an Apple Silicon acceptance checklist**, continuing PR #58 from
+`987d66268888b60d6e9e6b54f379b4ec7c50ceb8`.
+
+* Measurement settings and transport use two rows when the platform's
+  metrics require it. Wide windows retain one row. Device selections have
+  full-name tooltips and accessible field names. Menu/keyboard selection
+  scrolls the active view tab into sight.
+* Frequency, spectrogram and waterfall pages scroll when their chart and
+  notes cannot fit. Chart parents enforce their minimum content height,
+  so a short splitter allocation does not clip the axes. Height-for-width
+  uses the required height, avoiding feedback from the graphics view's
+  current preferred viewport size.
+* `MAC_GUI_ACCEPTANCE.zh-CN.md` combines #57 and #58 in six on-machine
+  steps, separates existing evidence from missing native/audio checks,
+  identifies the old #57 package, and keeps the formal release gate
+  distinct from this one-Mac checklist. Five fresh synthetic/offscreen
+  screenshots live in `images/gui2/acceptance/`; the old main gallery is
+  still historical.
+* Linux, Python 3.12.14, PySide6 Essentials 6.11.2: 198 GUI, chart-adapter,
+  plotting, theme, catalog and guide tests passed. After renaming the scroll
+  field to avoid shadowing QWidget.scroll and making its height return
+  explicitly integer for the no-Qt lint environment, 54 targeted tests
+  passed again.
+  Ruff, formatting, strict mypy across 121 source modules with and without
+  Qt installed, doc links,
+  CLI-doc syntax and source-safety checks passed. The 960×640 and 1366×768
+  Chinese screenshots were inspected. No real interface, DAW, Cocoa,
+  Retina, packaged interaction or final-head macOS build was run here.
+  Remote CI belongs to the resulting commit, not the previous nine-job pass.
+
 Snapshot 40: 2026-10-12 — **the workstation becomes a compact measurement
 desk with exact chart limits and room parameters on demand** (continuing
 PR #57 on `grok/gui2-professional-polish`).

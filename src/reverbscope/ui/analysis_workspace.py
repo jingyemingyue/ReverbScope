@@ -13,11 +13,13 @@ measurement list and does not stop a take.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
     QHBoxLayout,
+    QLabel,
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
@@ -195,7 +197,17 @@ class AnalysisWorkspace(QWidget):
         self.subview.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
         self.subview.setToolTip(_("The chart inside this group."))
         self.subview.currentIndexChanged.connect(self._subview_chosen)
-        self.group_layout.addWidget(self.subview)
+        # Secondary charts get their own row instead of widening the view bar.
+        self.subview_bar = QWidget()
+        self.subview_bar.setProperty("subviewbar", True)
+        subview_layout = QHBoxLayout(self.subview_bar)
+        subview_layout.setContentsMargins(8, 3, 8, 3)
+        subview_layout.setSpacing(6)
+        subview_layout.addWidget(QLabel(_("View")))
+        subview_layout.addWidget(self.subview)
+        subview_layout.addStretch(1)
+        self.subview_bar.hide()
+        layout.insertWidget(1, self.subview_bar)
         self.group_layout.addStretch(1)
 
         self.project_button = QToolButton()
@@ -271,12 +283,14 @@ class AnalysisWorkspace(QWidget):
         view_id = self.current_view_id()
         group_id = group_of(view_id)
         self.project_button.setChecked(view_id == "project")
+        QTimer.singleShot(0, self, self._reveal_active_view)
         if not group_id:
             self.group.setExclusive(False)
             for button in self.buttons.values():
                 button.setChecked(False)
             self.group.setExclusive(True)
             self.subview.setVisible(False)
+            self.subview_bar.hide()
             return
         self._last[group_id] = view_id
         self.buttons[group_id].setChecked(True)
@@ -288,9 +302,25 @@ class AnalysisWorkspace(QWidget):
                 self.subview.addItem(self.views[item_id].title(), item_id)
             self.subview.setCurrentIndex(max(self.subview.findData(view_id), 0))
             self.subview.setVisible(True)
+            self.subview_bar.show()
         else:
             self.subview.setVisible(False)
+            self.subview_bar.hide()
         self.subview.blockSignals(False)
+
+    def _reveal_active_view(self) -> None:
+        """Menu and keyboard navigation keep the selected tab in the viewport."""
+        view_id = self.current_view_id()
+        button = (
+            self.project_button if view_id == "project" else self.buttons.get(group_of(view_id))
+        )
+        if button is not None:
+            self.group_scroll.ensureWidgetVisible(button, 4, 0)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        # QScrollArea needs the new viewport geometry before it scrolls.
+        QTimer.singleShot(0, self, self._reveal_active_view)
 
     def retitle(self) -> None:
         for group_id, button in self.buttons.items():
