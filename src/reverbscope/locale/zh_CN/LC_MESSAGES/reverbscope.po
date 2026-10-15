@@ -1030,6 +1030,14 @@ msgstr ""
 "pip install \"PySide6_Essentials>=6.6,<6.12\"。在 Linux 上还需要系统的 OpenGL/EGL 和 "
 "XCB 库，见 docs/INSTALLATION.zh-CN.md。命令行工具不需要它也能使用。"
 
+msgid ""
+"The desktop app needs a graphical display, and this session has none "
+"(DISPLAY and WAYLAND_DISPLAY are not set). Start it from a desktop session; "
+"the command-line tool works without one."
+msgstr ""
+"桌面应用需要图形显示环境，但当前会话没有（未设置 DISPLAY 和 WAYLAND_DISPLAY）。"
+"请从桌面会话启动；命令行工具无需图形显示环境。"
+
 msgid "stopped: {message}"
 msgstr "已停止：{message}"
 

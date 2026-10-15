@@ -7,6 +7,14 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Headless Linux.** `reverbscope gui` and the `reverbscope-gui` entry point
+  now explain that a graphical display is required when a Linux session has
+  no `DISPLAY`, `WAYLAND_DISPLAY` or `QT_QPA_PLATFORM`. `gui --smoke` and an
+  explicit Qt platform still start. This does not detect a broken display
+  server. Ported from #54.
+
 ### Added
 
 - **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.1) is the single

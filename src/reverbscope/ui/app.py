@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from types import TracebackType
 from typing import TYPE_CHECKING
 
@@ -32,6 +32,34 @@ def pyside6_import_error() -> str | None:
     except ImportError as exc:
         return str(exc)
     return None
+
+
+def display_missing(environ: Mapping[str, str] | None = None, platform: str | None = None) -> bool:
+    """True when a Linux session has no display variable and no Qt platform.
+
+    This only looks at ``DISPLAY``, ``WAYLAND_DISPLAY`` and ``QT_QPA_PLATFORM``.
+    It does not contact an X server, a Wayland socket or a Qt platform plugin.
+    An empty value counts as unset. macOS and Windows are never missing here.
+    """
+    env = os.environ if environ is None else environ
+    system = sys.platform if platform is None else platform
+    return (
+        system.startswith("linux")
+        and not env.get("QT_QPA_PLATFORM")
+        and not env.get("DISPLAY")
+        and not env.get("WAYLAND_DISPLAY")
+    )
+
+
+def display_missing_message() -> str:
+    """The sentence for :func:`display_missing`, in the active language."""
+    from reverbscope.i18n import _
+
+    return _(
+        "The desktop app needs a graphical display, and this session has none "
+        "(DISPLAY and WAYLAND_DISPLAY are not set). Start it from a desktop session; "
+        "the command-line tool works without one."
+    )
 
 
 def run_app(argv: list[str] | None = None, *, smoke: bool = False, lang: str | None = None) -> int:
@@ -146,5 +174,11 @@ def main() -> None:
 
         activate(None)
         sys.stderr.write(_(GUI_UNAVAILABLE).format(error=error) + "\n")
+        raise SystemExit(2)
+    if display_missing():
+        from reverbscope.i18n import activate
+
+        activate(None)
+        sys.stderr.write(display_missing_message() + "\n")
         raise SystemExit(2)
     raise SystemExit(run_app())
