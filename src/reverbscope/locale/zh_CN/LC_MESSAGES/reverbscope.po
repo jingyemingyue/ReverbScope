@@ -4243,6 +4243,9 @@ msgstr "替换会话？"
 msgid "{path} already holds a saved session. Replace it?"
 msgstr "{path} 中已有一个保存的会话。要替换它吗？"
 
+msgid "{path} already has files in it. Use it anyway?"
+msgstr "{path} 里已经有文件。仍要使用它吗？"
+
 msgid "Replace"
 msgstr "替换"
 

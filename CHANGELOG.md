@@ -7,6 +7,15 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Menu overwrite.** The interactive menu now asks before it reuses an
+  existing test-signal file (including its sidecar), a saved session, or a
+  folder that already has files. No and Enter keep the old files. A default
+  session folder that is already taken gets the next free name (`-2`, `-3`,
+  …). Direct commands such as `reverbscope sweep --out` are unchanged.
+  Ported from #54.
+
 ### Added
 
 - **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.1) is the single

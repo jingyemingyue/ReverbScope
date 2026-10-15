@@ -26,6 +26,7 @@ from typing import TextIO
 from reverbscope.cli.console import Console, shell_command
 from reverbscope.i18n import _, pgettext
 from reverbscope.io.session_store import SESSION_FILE
+from reverbscope.io.wav import sidecar_path
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
 #: Set (to anything) to keep the menu off a terminal.
@@ -111,6 +112,64 @@ class Session:
         answer = self.ask(f"{prompt} [y/N]").strip().lower()
         return answer in ("y", "yes", pgettext("answer", "y"), pgettext("answer", "yes"))
 
+    def ask_file_to_write(self, prompt: str, *, default: Path | None = None) -> Path:
+        """A WAV path. An existing file or its sweep sidecar must be confirmed.
+
+        No, Enter, or any other answer asks for a different path. Nothing is
+        written here. A yes returns the path for the command that already
+        knows how to replace a file.
+        """
+        while True:
+            path = self.ask_path(prompt, default=default, exists=False)
+            blocked = False
+            for target in (path, sidecar_path(path)):
+                if not (target.exists() or target.is_symlink()):
+                    continue
+                question = _("{name} already exists. Replace it?").format(name=str(target))
+                if not self.ask_yes(question):
+                    blocked = True
+                    break
+            if not blocked:
+                return path
+
+    def ask_session_folder(
+        self,
+        prompt: str,
+        *,
+        default: Path | None = None,
+        allow_empty: bool = False,
+    ) -> Path | None:
+        """A session directory. Empty is allowed only when ``allow_empty`` is set.
+
+        A saved session, or any other non-empty directory, has to be confirmed.
+        An empty directory or a path that does not exist yet is used as given.
+        No and Enter ask again. A stat error is not treated as "empty".
+        """
+        while True:
+            if allow_empty:
+                path = parse_path(self.ask(prompt, "" if default is None else str(default)))
+                if path is None:
+                    return None
+            else:
+                path = self.ask_path(prompt, default=default, exists=False)
+            if self._confirm_output_dir(path):
+                return path
+
+    def _confirm_output_dir(self, path: Path) -> bool:
+        if not path.exists() and not path.is_symlink():
+            return True
+        if not path.is_dir():
+            return self.ask_yes(_("{name} already exists. Replace it?").format(name=str(path)))
+        if (path / SESSION_FILE).is_file():
+            return self.ask_yes(
+                _("{path} already holds a saved session. Replace it?").format(path=str(path))
+            )
+        if not any(path.iterdir()):
+            return True
+        return self.ask_yes(
+            _("{path} already has files in it. Use it anyway?").format(path=str(path))
+        )
+
 
 @dataclass(frozen=True)
 class MenuItem:
@@ -129,10 +188,29 @@ def _plain(*argv: str) -> Callable[[Session], list[str] | None]:
     return build
 
 
+def _occupied(path: Path) -> bool:
+    """True for a real file or directory and for a symlink, including a dangling one."""
+    return path.exists() or path.is_symlink()
+
+
+def new_session_folder(base: Path, now: datetime | None = None) -> Path:
+    """``session-YYYYMMDD-HHMM`` under ``base``, or ``-2``, ``-3``, … if that name is taken.
+
+    This only chooses a name. It does not create the directory, and two menus
+    choosing at the same moment can still pick the same free name.
+    """
+    stamp = (datetime.now() if now is None else now).strftime("%Y%m%d-%H%M")
+    plain = base / f"session-{stamp}"
+    if not _occupied(plain):
+        return plain
+    number = 2
+    while _occupied(base / f"session-{stamp}-{number}"):
+        number += 1
+    return base / f"session-{stamp}-{number}"
+
+
 def _sweep(session: Session) -> list[str]:
-    out = session.ask_path(
-        _("Where to write the test signal"), default=Path("sweep.wav"), exists=False
-    )
+    out = session.ask_file_to_write(_("Where to write the test signal"), default=Path("sweep.wav"))
     while True:
         rate = session.ask(_("Sample rate of your DAW project (Hz)"), "48000")
         if rate.isascii() and rate.isdigit() and int(rate) in SUPPORTED_SAMPLE_RATES:
@@ -154,19 +232,21 @@ def _analyze(session: Session) -> list[str]:
     sweep = session.ask_path(
         _("The test signal that was played"), default=beside if beside.is_file() else None
     )
-    out = session.ask(_("Folder to save the session in (empty: show only)"))
+    saved = session.ask_session_folder(
+        _("Folder to save the session in (empty: show only)"), allow_empty=True
+    )
     argv = ["analyze", "--recording", str(recording), "--sweep", str(sweep)]
-    saved = parse_path(out)
     if saved is not None:
         argv += ["--out", str(saved)]
     return argv
 
 
 def _measure(session: Session) -> list[str] | None:
-    stamp = datetime.now().strftime("%Y%m%d-%H%M")
-    out = session.ask_path(
-        _("Folder for the new session"), default=Path(f"session-{stamp}"), exists=False
+    out = session.ask_session_folder(
+        _("Folder for the new session"), default=new_session_folder(Path())
     )
+    if out is None:
+        raise CancelledError
     session.say(
         session.console.paragraph(
             _(
