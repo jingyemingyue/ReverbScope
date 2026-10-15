@@ -1,0 +1,30 @@
+---
+description: ReverbScope execution standard for every session
+alwaysApply: true
+---
+
+The execution standard is `docs/GUIDELINES.zh-CN.md` (v2.1.1).
+`docs/GUIDELINES.md` is an English summary. `AGENTS.md` is the working copy
+of Appendix J. If these files disagree, the Chinese guidelines win.
+
+Before editing, read guidelines §0, §2, §3, §4, §6, and Appendix J, plus the
+sections the task names. One task, one branch, one pull request. Do not open
+a second full GUI redesign. Do not commit on `main`, `release/0.5.0`, or
+`gui/redesign`.
+
+Do not change `core/`, `models/`, `interpretation/`, `health.py`, file
+formats, CLI output, dependencies, `.github/`, or the license unless that is
+the task. Stop and ask when the task conflicts with the guidelines.
+
+Do not merge, publish, tag, close a pull request, force-push, or delete a
+remote branch. Do not delete or weaken a test to go green. Do not edit the
+guidelines or their version number.
+
+Name the evidence level. Hardware or DAW is above CI, the fake backend, and
+offscreen screenshots, which are above a synthetic demo. Unrun checks are
+"not run". Never write an email address, an OpenAI organization id, or a
+token into the tree, a commit, or a pull request.
+
+Commit messages end with `Assisted-by:`. The pull request ends with the
+Appendix J handoff, in Chinese for the maintainer, and stays a draft until
+the maintainer reviews it.

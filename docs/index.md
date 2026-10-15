@@ -20,7 +20,11 @@ text is authoritative; each Chinese page links back to it. Developer and
 internal documents (architecture, ADRs, research notes, dependency and
 licence reviews, code provenance, status, release plan) are English-only;
 the release plan and the v1.0 architecture have a Chinese digest.
+One exception: [GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) is the execution
+standard for the whole project, and [GUIDELINES.md](GUIDELINES.md) is an
+English summary of it.
 用户文档提供英文和简体中文两种版本，以英文版为准；开发者与内部文档只提供英文版。
+执行准则例外：以 GUIDELINES.zh-CN.md 为准，GUIDELINES.md 是它的英文摘要。
 
 | Document / 文档 | English | 简体中文 |
 | --- | --- | --- |
@@ -55,6 +59,8 @@ the release plan and the v1.0 architecture have a Chinese digest.
 
 ## For developers
 
+- [Execution guidelines (English summary)](GUIDELINES.md) · [执行准则（中文，以此为准）](GUIDELINES.zh-CN.md)
+- [How the project uses AI](AI_ASSISTANCE.md)
 - [Maintaining the project (runbook)](MAINTAINING.md) · [维护手册](MAINTAINING.zh-CN.md)
 - [Checks without hardware](OFFLINE_CHECKS.md)
 - [Release-readiness audit of the measurement path](RELEASE_READINESS.md)
