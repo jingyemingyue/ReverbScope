@@ -6,9 +6,10 @@ Writes:
 
 * ``cli-demo.svg``            -- ``reverbscope demo`` as a terminal screenshot (SVG text)
 * ``cli-demo.zh-CN.svg``      -- the same in Simplified Chinese
-* ``gui-results.png``         -- Results page, Overview tab, position A
+* ``gui-results.png``         -- Results page, RT60 by Band tab, position A (dark, crosshair on)
 * ``gui-results.zh-CN.png``   -- the same in Simplified Chinese (README.zh-CN.md)
 * ``gui-frequency-response.png`` -- Results page, Frequency Response tab, position A
+* ``gui-measure.png``         -- the Demo measure page: settings and the planned test signal
 * ``gui-compare.png``         -- Compare page, A -> B
 * ``social-preview.png``      -- 1280x640 card for the GitHub social preview
 
@@ -199,11 +200,26 @@ def _stamp(pixmap: object, stamp: str = STAMP) -> object:
     return pixmap
 
 
+def _hover(view: object, x_fraction: float, y_fraction: float) -> None:
+    """Put the graph's crosshair at a fraction of its axes, as a pointer would."""
+    from matplotlib.backend_bases import MouseEvent
+
+    view.canvas.draw()  # type: ignore[attr-defined]
+    box = view.data_axes()[0].bbox  # type: ignore[attr-defined]
+    x = box.x0 + box.width * x_fraction
+    y = box.y0 + box.height * y_fraction
+    MouseEvent("motion_notify_event", view.canvas, x, y)._process()  # type: ignore[attr-defined, arg-type]
+
+
 def render_gui(workdir: Path, out: Path) -> None:
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     # The downloaded app is the user edition; a source checkout would show the
     # Developer menu, which no reader of the README has.
     os.environ["REVERBSCOPE_EDITION"] = "user"
+    # The instrument look: dark screens show a trace best, and the images sit on
+    # GitHub's dark social-preview card.
+    previous_scheme = os.environ.get("REVERBSCOPE_COLOR_SCHEME")
+    os.environ["REVERBSCOPE_COLOR_SCHEME"] = "dark"
     from PySide6.QtWidgets import QApplication
 
     from reverbscope.i18n import activate
@@ -219,23 +235,35 @@ def render_gui(workdir: Path, out: Path) -> None:
         enter_language(workdir, lang)
         activate(lang)
         window = main_window.MainWindow()
-        window.resize(1120, 820)
+        window.resize(1280, 820)
         window.show()
         window.open_session_path(demo_folder(workdir, lang) / "reverbscope-demo" / "position-a")
         window.results.tabs.setCurrentIndex(0)
         return window
 
-    def grab(window: main_window.MainWindow, name: str, stamp: str = STAMP) -> None:
-        for _ in range(5):
+    def grab(
+        window: main_window.MainWindow,
+        name: str,
+        stamp: str = STAMP,
+        pointer: tuple[object, float, float] | None = None,
+    ) -> None:
+        for _ in range(8):
             app.processEvents()
+        if pointer is not None:
+            # After the last repaint: a draw that is still pending would wipe the crosshair.
+            _hover(*pointer)
         _stamp(window.grab(), stamp).save(str(out / name))  # type: ignore[attr-defined]
 
     try:
         window = window_in("en")
-        grab(window, "gui-results.png")
-        window.results.tabs.setCurrentWidget(window.results.fr_tab)
-        grab(window, "gui-frequency-response.png")
-        window.resize(1120, 1000)
+        results = window.results
+        results.tabs.setCurrentWidget(results.bands_tab)
+        grab(window, "gui-results.png", pointer=(results.bands_tab, 0.5, 0.45))
+        results.tabs.setCurrentWidget(results.fr_tab)
+        grab(window, "gui-frequency-response.png", pointer=(results.fr_tab, 0.62, 0.5))
+        window.show_mode("demo")
+        grab(window, "gui-measure.png")
+        window.resize(1280, 1000)
         window.show_compare()
         window.compare.set_paths(demo / "position-a", demo / "position-b")
         window.compare.same_gain.setChecked(True)
@@ -244,10 +272,22 @@ def render_gui(workdir: Path, out: Path) -> None:
         window.close()
         # README.zh-CN.md shows the results page as a Chinese reader sees it.
         window = window_in("zh_CN")
-        grab(window, "gui-results.zh-CN.png", STAMP_ZH)
+        window.results.tabs.setCurrentWidget(window.results.bands_tab)
+        grab(
+            window,
+            "gui-results.zh-CN.png",
+            STAMP_ZH,
+            pointer=(window.results.bands_tab, 0.5, 0.45),
+        )
         window.close()
     finally:
         activate("en")
+        if previous_scheme is None:
+            os.environ.pop("REVERBSCOPE_COLOR_SCHEME", None)
+        else:
+            os.environ["REVERBSCOPE_COLOR_SCHEME"] = previous_scheme
+        # Leave the application in the colour scheme the caller had.
+        apply_application_chrome(app)  # type: ignore[arg-type]
 
 
 def render_social_preview(out: Path) -> None:

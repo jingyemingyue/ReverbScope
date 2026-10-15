@@ -9,8 +9,6 @@ from reverbscope.ui.qt import ensure_pyside6
 
 ensure_pyside6()
 
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -47,7 +45,15 @@ from reverbscope.io.session_store import load_measurement, save_comparison
 from reverbscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
 from reverbscope.ui.browser import SessionBrowser
 from reverbscope.labels import metric_label, signed_number, status_text, validity_word
-from reverbscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
+from reverbscope.ui.plots import frequency_axis
+from reverbscope.ui.plotview import PlotView
+from reverbscope.ui.theme import (
+    apply_report_font,
+    ensure_plot_fonts,
+    plot_colors,
+    series_colors,
+    style_figure,
+)
 from reverbscope.ui.widgets import (
     Card,
     FindingCard,
@@ -196,10 +202,13 @@ class ComparePage(QWidget):
         chart_layout = QVBoxLayout(chart)
         # Laid out again at every draw: the chart is drawn while its tab is
         # hidden, at a size it does not keep.
-        self.figure = Figure(figsize=(7.0, 3.2), dpi=100, layout="tight")
-        self.canvas = FigureCanvasQTAgg(self.figure)
+        self.chart = PlotView(figsize=(7.0, 3.2))
+        self.figure = self.chart.figure
+        self.canvas = self.chart.canvas
         style_figure(self.figure)
-        chart_layout.addWidget(self.canvas, 1)
+        chart_layout.setContentsMargins(0, 0, 0, 0)
+        chart_layout.setSpacing(0)
+        chart_layout.addWidget(self.chart, 1)
         self.band_mad = label("", "hint", wrap=True)
         chart_layout.addWidget(self.band_mad)
         self.text = QPlainTextEdit()
@@ -278,7 +287,7 @@ class ComparePage(QWidget):
             self._show(*self._shown)
         else:
             style_figure(self.figure)
-            self.canvas.draw_idle()
+            self.chart.redraw()
 
     def _show(
         self,
@@ -363,11 +372,20 @@ class ComparePage(QWidget):
         axes = self.figure.add_subplot(111)
         fr = comparison.frequency_response
         if fr is not None and fr.frequencies_hz.size:
-            axes.semilogx(fr.frequencies_hz, fr.difference_db, linestyle="-")
+            axes.axhline(0.0, color=plot_colors()["muted"], linewidth=0.8, linestyle="--")
+            axes.semilogx(
+                fr.frequencies_hz,
+                fr.difference_db,
+                linestyle="-",
+                linewidth=1.5,
+                color=series_colors()[0],
+                label=_("difference"),
+            )
+            frequency_axis(axes, 20.0, float(max(fr.frequencies_hz[-1], 21.0)))
             axes.set_xlabel(_("Frequency (Hz)"))
             axes.set_ylabel("Δ dB")
             axes.set_title(_("Frequency-response difference (candidate − baseline)"))
-            axes.grid(True, which="both", alpha=0.3)
+            axes.grid(True, which="major", alpha=0.7)
             if fr.band_mad_db:
                 bits = ", ".join(f"{name} {mad:.2f} dB" for name, mad in fr.band_mad_db)
                 self.band_mad.setText(
@@ -380,7 +398,7 @@ class ComparePage(QWidget):
             axes.set_axis_off()
             self.band_mad.setText("")
         style_figure(self.figure)
-        self.canvas.draw_idle()
+        self.chart.redraw()
 
     def _show_verdict(self, verdict: ComparisonVerdict) -> None:
         """The verdict card: the headline, one row per aspect, the conditions."""

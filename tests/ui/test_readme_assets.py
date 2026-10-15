@@ -46,6 +46,8 @@ def test_gui_screenshots_are_the_user_edition_and_chinese_for_the_chinese_readme
     monkeypatch.setenv("REVERBSCOPE_AUDIO_BACKEND", "fake")
     # A source checkout is the developer edition; the script must not inherit it.
     monkeypatch.setenv("REVERBSCOPE_EDITION", "developer")
+    # The script draws the images in the dark scheme and puts the caller's back.
+    monkeypatch.delenv("REVERBSCOPE_COLOR_SCHEME", raising=False)
     script = _script()
     try:
         for lang in ("en", "zh_CN"):
@@ -72,10 +74,12 @@ def test_gui_screenshots_are_the_user_edition_and_chinese_for_the_chinese_readme
     assert sorted(path.name for path in out.iterdir()) == [
         "gui-compare.png",
         "gui-frequency-response.png",
+        "gui-measure.png",
         "gui-results.png",
         "gui-results.zh-CN.png",
     ]
     assert [(lang, user) for lang, user, _tab in grabbed] == [
+        ("en", True),
         ("en", True),
         ("en", True),
         ("en", True),
@@ -87,7 +91,7 @@ def test_gui_screenshots_are_the_user_edition_and_chinese_for_the_chinese_readme
     assert subtitles[0].startswith("Synthetic demo room")
     assert subtitles[-1].startswith("合成演示房间")
     # Each language's sessions stay out of the other's recent list.
-    assert len(set(homes[:3])) == 1 and homes[0] != homes[-1]
+    assert len(set(homes[:4])) == 1 and homes[0] != homes[-1]
     assert current_locale() == "en"
 
 

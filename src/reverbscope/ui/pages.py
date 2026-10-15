@@ -49,17 +49,19 @@ from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES, AnalysisSet
 from reverbscope.models.result import AnalysisResult
 from reverbscope.models.session import MeasurementSession
 from reverbscope.ui.browser import SessionBrowser
+from reverbscope.ui.plotview import SweepPreview
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.widgets import (
     Card,
     ModeCard,
+    ModeSwitch,
     PageHeader,
     ask_save_path,
     error_box,
     label,
     primary,
-    scroll_page,
     set_banner_text,
+    split_page,
 )
 from reverbscope.ui.workers import AnalysisWorker, MeasureWorker, unexpected_error_text
 
@@ -99,6 +101,22 @@ DAW_INSTRUCTIONS = N_(
     "Start with a low monitor level; the sweep should be clearly audible but not loud.\n"
     "The user guide has step-by-step notes for Pro Tools, Logic Pro, Cubase, Studio One, Ableton Live, REAPER, FL Studio and Bitwig Studio."
 )
+
+
+def _fit_form_widgets(root: QWidget) -> None:
+    """Let a settings column be narrower than its widest item.
+
+    A combo box asks for the width of its longest entry (a device name can be
+    sixty characters), which pushed the column's right edge out of its pane.
+    The entries are elided instead, and a row that is still too wide wraps its
+    caption above the field.
+    """
+    for combo in root.findChildren(QComboBox):
+        combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+        combo.setMinimumContentsLength(10)
+    for form in root.findChildren(QFormLayout):
+        form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.AllNonFixedFieldsGrow)
 
 
 def _find_data(combo: QComboBox, value: object) -> int:
@@ -233,6 +251,25 @@ class HomePage(QWidget):
         # card was squeezed until its buttons overlapped and were cut off.
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+        header = PageHeader(
+            "ReverbScope",
+            _("An open-source, DAW-independent recording environment analyzer"),
+        )
+        open_button = QPushButton(_("Open Session..."))
+        open_button.setToolTip(_("Open a session.json or a folder that contains one."))
+        open_button.clicked.connect(self.open_session.emit)
+        project_button = QPushButton(_("Open Project..."))
+        project_button.setToolTip(
+            _("One room, several microphone positions: open or make a project folder.")
+        )
+        project_button.clicked.connect(self.open_project.emit)
+        compare_button = QPushButton(_("Compare two sessions..."))
+        compare_button.setToolTip(_("Pick two saved sessions and compare their metrics."))
+        compare_button.clicked.connect(self.compare_requested.emit)
+        for button in (open_button, project_button, compare_button):
+            header.action_row.addWidget(button)
+        outer.addWidget(header)
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setFrameShape(QScrollArea.Shape.NoFrame)
@@ -240,30 +277,10 @@ class HomePage(QWidget):
         body = QWidget()
         body.setProperty("page", True)
         self.scroll_area.setWidget(body)
-        outer.addWidget(self.scroll_area)
+        outer.addWidget(self.scroll_area, 1)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(28, 22, 28, 22)
+        layout.setContentsMargins(20, 16, 20, 16)
         layout.setSpacing(14)
-
-        layout.addWidget(label("ReverbScope", "title"))
-        layout.addWidget(
-            label(
-                _("An open-source, DAW-independent recording environment analyzer"),
-                "subtitle",
-                wrap=True,
-            )
-        )
-        pills = QHBoxLayout()
-        pills.setSpacing(8)
-        for text in (
-            _("A validity flag on every number"),
-            _("Any DAW: WAV in, WAV out"),
-            _("No room score, no invented figures"),
-        ):
-            pills.addWidget(label(text, "pill"))
-        pills.addStretch(1)
-        layout.addLayout(pills)
-        layout.addSpacing(6)
 
         # Shown until dismissed (a setting); Help ▸ Getting started brings it back.
         self.walkthrough = WalkthroughCard()
@@ -274,9 +291,23 @@ class HomePage(QWidget):
         self._walkthrough_dismissed = False
         layout.addWidget(self.walkthrough)
 
-        layout.addWidget(label(_("New Measurement").upper(), "section"))
-        cards = QHBoxLayout()
-        cards.setSpacing(12)
+        # Sessions on the left, where a measurement starts on the right.
+        columns = QHBoxLayout()
+        columns.setSpacing(16)
+        layout.addLayout(columns, 1)
+
+        sessions = Card()
+        sessions.body.addWidget(label(_("Saved sessions").upper(), "section"))
+        # Two selected rows go straight into Compare (MainWindow.show_compare).
+        self.browser = SessionBrowser(multi_select=True)
+        self.browser.open_session.connect(self.open_recent.emit)
+        self.recent = self.browser.list
+        sessions.body.addWidget(self.browser, 1)
+        columns.addWidget(sessions, 1)
+
+        starts = QVBoxLayout()
+        starts.setSpacing(10)
+        starts.addWidget(label(_("New Measurement").upper(), "section"))
         daw = ModeCard(
             "DAW",
             _("Universal DAW Mode"),
@@ -305,35 +336,26 @@ class HomePage(QWidget):
         demo.clicked.connect(lambda: self.choose_mode.emit("demo"))
         self.mode_cards = (daw, standalone, demo)
         for card in self.mode_cards:
-            cards.addWidget(card)
-        layout.addLayout(cards)
-        layout.addSpacing(6)
-
-        sessions = Card()
-        header = QHBoxLayout()
-        header.addWidget(label(_("Saved sessions").upper(), "section"))
-        header.addStretch(1)
-        open_button = QPushButton(_("Open Session..."))
-        open_button.setToolTip(_("Open a session.json or a folder that contains one."))
-        open_button.clicked.connect(self.open_session.emit)
-        compare_button = QPushButton(_("Compare two sessions..."))
-        compare_button.setToolTip(_("Pick two saved sessions and compare their metrics."))
-        compare_button.clicked.connect(self.compare_requested.emit)
-        project_button = QPushButton(_("Open Project..."))
-        project_button.setToolTip(
-            _("One room, several microphone positions: open or make a project folder.")
+            starts.addWidget(card)
+        principles = label(
+            "  ·  ".join(
+                (
+                    _("A validity flag on every number"),
+                    _("Any DAW: WAV in, WAV out"),
+                    _("No room score, no invented figures"),
+                )
+            ),
+            "hint",
+            wrap=True,
         )
-        project_button.clicked.connect(self.open_project.emit)
-        header.addWidget(open_button)
-        header.addWidget(project_button)
-        header.addWidget(compare_button)
-        sessions.body.addLayout(header)
-        # Two selected rows go straight into Compare (MainWindow.show_compare).
-        self.browser = SessionBrowser(multi_select=True)
-        self.browser.open_session.connect(self.open_recent.emit)
-        self.recent = self.browser.list
-        sessions.body.addWidget(self.browser, 1)
-        layout.addWidget(sessions, 1)
+        starts.addWidget(principles)
+        starts.addStretch(1)
+        side = QWidget()
+        side.setProperty("page", True)
+        side.setFixedWidth(380)
+        side.setLayout(starts)
+        starts.setContentsMargins(0, 0, 0, 0)
+        columns.addWidget(side)
 
     def refresh_recent(self) -> None:
         self.browser.refresh_recent()
@@ -418,7 +440,7 @@ class PlacementInputs(QGroupBox):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.setTitle(_("Tape measurements (optional)"))
-        row = QHBoxLayout(self)
+        row = QVBoxLayout(self)
         form = QFormLayout()
         self.distance = QDoubleSpinBox()
         self.distance.setRange(0.0, 15.0)
@@ -453,17 +475,17 @@ class PlacementInputs(QGroupBox):
         form.addRow(_("Loudspeaker distance"), self.distance)
         form.addRow(_("Microphone height"), self.mic_height)
         form.addRow(self.temperature_measured, self.temperature)
-        row.addLayout(form, 1)
+        row.addLayout(form)
         scene = QVBoxLayout()
         self.figure = Figure(figsize=(5.6, 3.3), dpi=100)
         self.canvas: Any = cast(Any, FigureCanvasQTAgg)(self.figure)
-        self.canvas.setMinimumHeight(240)
+        self.canvas.setMinimumHeight(220)
         self.scene_hint = QLabel("")
         self.scene_hint.setWordWrap(True)
         self.scene_hint.setProperty("role", "hint")
         scene.addWidget(self.canvas, 1)
         scene.addWidget(self.scene_hint)
-        row.addLayout(scene, 2)
+        row.addLayout(scene)
         self._redraw_scene()
 
     def _sync_height(self, value: float) -> None:
@@ -505,6 +527,8 @@ class PlacementInputs(QGroupBox):
 class DawModePage(QWidget):
     analysis_finished = Signal()
     back = Signal()
+    #: The mode switch in the header was clicked: ``universal_daw``, ``standalone`` or ``demo``.
+    choose_mode = Signal(str)
 
     def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -524,16 +548,18 @@ class DawModePage(QWidget):
         self._reference: Reference | None = None
         self._sweep_settings = state.sweep_settings
         self._sweep_path: Path | None = None
-        layout = scroll_page(
-            self,
-            PageHeader(
-                _("Universal DAW Mode"),
-                _(
-                    "Four steps: generate the test signal, play and record it in your DAW, "
-                    "import the recording, analyse. ReverbScope never talks to the DAW."
-                ),
+        header = PageHeader(
+            _("Universal DAW Mode"),
+            _(
+                "Four steps: generate the test signal, play and record it in your DAW, "
+                "import the recording, analyse. ReverbScope never talks to the DAW."
             ),
         )
+        self.mode_switch = ModeSwitch()
+        self.mode_switch.set_mode("universal_daw")
+        self.mode_switch.chosen.connect(self.choose_mode.emit)
+        header.action_row.addWidget(self.mode_switch)
+        layout, right = split_page(self, header)
 
         # Step 1
         step1 = QGroupBox(_("Step 1 - Generate Test Signal"))
@@ -563,14 +589,25 @@ class DawModePage(QWidget):
         form1.addRow(self.sweep_label)
         layout.addWidget(step1)
 
-        # Step 2
+        # Step 2 sits in the working area: it is read, not filled in.
         step2 = QGroupBox(_("Step 2 - Record Through Your DAW"))
         v2 = QVBoxLayout(step2)
         instructions = QLabel(_(DAW_INSTRUCTIONS))
         instructions.setWordWrap(True)
         instructions.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         v2.addWidget(instructions)
-        layout.addWidget(step2)
+        right.addWidget(step2)
+        self.preview = SweepPreview()
+        self.preview.setMinimumHeight(260)
+        right.addWidget(self.preview, 1)
+        for control in (self.sample_rate, self.duration, self.level):
+            signal = (
+                control.currentIndexChanged
+                if isinstance(control, QComboBox)
+                else control.valueChanged
+            )
+            signal.connect(self._update_preview)
+        self._update_preview()
 
         # Step 3
         step3 = QGroupBox(_("Step 3 - Import Recording"))
@@ -606,8 +643,11 @@ class DawModePage(QWidget):
         profile_row, self.profile_help = _profile_row(self.profile, self)
         profile_form.addRow(_("Recording profile"), profile_row)
         v4.addLayout(profile_form)
+        layout.addWidget(step4)
+        layout.addStretch(1)
         row = QHBoxLayout()
         self.analyze_button = primary(QPushButton(_("Analyze")))
+        self.analyze_button.setMinimumSize(150, 32)
         self.analyze_button.setShortcut("Ctrl+Return")
         self.analyze_button.clicked.connect(self.start_analysis)
         self.back_button = QPushButton(_("Back"))
@@ -615,16 +655,15 @@ class DawModePage(QWidget):
         row.addWidget(self.back_button)
         row.addStretch(1)
         row.addWidget(self.analyze_button)
-        v4.addLayout(row)
+        right.addLayout(row)
         self.progress = QProgressBar()
         self.progress.setRange(0, 0)
         self.progress.hide()
         self.status = QLabel("")
         self.status.setWordWrap(True)
-        v4.addWidget(self.progress)
-        v4.addWidget(self.status)
-        layout.addWidget(step4)
-        layout.addStretch(1)
+        right.addWidget(self.progress)
+        right.addWidget(self.status)
+        _fit_form_widgets(self)
 
     # --- step 1 -----------------------------------------------------------------
     def current_sweep_settings(self) -> SweepSettings:
@@ -633,6 +672,14 @@ class DawModePage(QWidget):
             duration_s=float(self.duration.value()),
             level_dbfs=float(self.level.value()),
         )
+
+    def _update_preview(self, _value: object = None) -> None:
+        """Draw the test signal the settings now describe."""
+        try:
+            settings: SweepSettings | None = self.current_sweep_settings()
+        except ReverbScopeError:
+            settings = None
+        self.preview.show_settings(settings)
 
     def _choose_sweep_target(self) -> None:
         target = ask_save_path(
@@ -836,6 +883,8 @@ class DawModePage(QWidget):
 class StandalonePage(QWidget):
     analysis_finished = Signal()
     back = Signal()
+    #: The mode switch in the header was clicked: ``universal_daw``, ``standalone`` or ``demo``.
+    choose_mode = Signal(str)
 
     def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -862,16 +911,18 @@ class StandalonePage(QWidget):
         self._inventory_backend: str | None = None
         # The state generation the running take belongs to.
         self._generation = -1
-        layout = scroll_page(
-            self,
-            PageHeader(
-                _("Standalone Mode"),
-                _(
-                    "ReverbScope plays the sweep and records the microphone through your audio "
-                    "interface, then runs the same analysis as Universal DAW Mode."
-                ),
+        header = PageHeader(
+            _("Standalone Mode"),
+            _(
+                "ReverbScope plays the sweep and records the microphone through your audio "
+                "interface, then runs the same analysis as Universal DAW Mode."
             ),
         )
+        self.mode_switch = ModeSwitch()
+        self.mode_switch.set_mode("standalone")
+        self.mode_switch.chosen.connect(self.choose_mode.emit)
+        header.action_row.addWidget(self.mode_switch)
+        layout, right = split_page(self, header)
 
         self.demo_banner = QLabel(
             _("Demo mode: the fake backend synthesises a room. Nothing is sent to a loudspeaker.")
@@ -879,12 +930,15 @@ class StandalonePage(QWidget):
         self.demo_banner.setWordWrap(True)
         self.demo_banner.setProperty("banner", "info")
         self.demo_banner.hide()
-        layout.addWidget(self.demo_banner)
+        right.addWidget(self.demo_banner)
 
         safety = QLabel(_(SAFETY_MESSAGE))
         safety.setWordWrap(True)
         safety.setProperty("banner", "warn")
-        layout.addWidget(safety)
+        right.addWidget(safety)
+        self.preview = SweepPreview()
+        self.preview.setMinimumHeight(260)
+        right.addWidget(self.preview, 1)
 
         devices = QGroupBox(_("Audio devices"))
         form = QFormLayout(devices)
@@ -979,10 +1033,12 @@ class StandalonePage(QWidget):
         self.placement = PlacementInputs()
         layout.addWidget(self.placement)
 
+        layout.addStretch(1)
         row = QHBoxLayout()
         self.back_button = QPushButton(_("Back"))
         self.back_button.clicked.connect(self.back.emit)
         self.run_button = primary(QPushButton(_("Run Measurement")))
+        self.run_button.setMinimumSize(170, 32)
         self.run_button.setShortcut("Ctrl+Return")
         self.run_button.clicked.connect(self.start_measurement)
         self.stop_button = QPushButton(_("Stop"))
@@ -994,15 +1050,23 @@ class StandalonePage(QWidget):
         row.addStretch(1)
         row.addWidget(self.stop_button)
         row.addWidget(self.run_button)
-        layout.addLayout(row)
+        right.addLayout(row)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.hide()
         self.status = QLabel("")
         self.status.setWordWrap(True)
-        layout.addWidget(self.progress)
-        layout.addWidget(self.status)
-        layout.addStretch(1)
+        right.addWidget(self.progress)
+        right.addWidget(self.status)
+        _fit_form_widgets(self)
+        for control in (self.sample_rate, self.duration, self.level):
+            signal = (
+                control.currentIndexChanged
+                if isinstance(control, QComboBox)
+                else control.valueChanged
+            )
+            signal.connect(self._update_preview)
+        self._update_preview()
         self.refresh_devices()
 
     def refresh_devices(self) -> None:
@@ -1010,6 +1074,7 @@ class StandalonePage(QWidget):
         from reverbscope.audio.inventory import build_inventory
 
         self.demo_banner.setVisible(self.demo_mode)
+        self.mode_switch.set_mode("demo" if self.demo_mode else "standalone")
         chosen = self._chosen_devices()
         try:
             backend = get_backend("fake" if self.demo_mode else None)
@@ -1288,6 +1353,14 @@ class StandalonePage(QWidget):
             duration_s=float(self.duration.value()),
             level_dbfs=float(self.level.value()),
         )
+
+    def _update_preview(self, _value: object = None) -> None:
+        """Draw the test signal the settings now describe."""
+        try:
+            settings: SweepSettings | None = self.current_sweep_settings()
+        except ReverbScopeError:
+            settings = None
+        self.preview.show_settings(settings)
 
     def is_busy(self) -> bool:
         """A take or its analysis is still running."""

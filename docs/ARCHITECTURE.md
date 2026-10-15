@@ -81,6 +81,12 @@ src/reverbscope/
   demo.py                reverbscope demo: two simulated positions through the real pipeline
   ui/                    optional (needs PySide6)
     app.py, main_window.py, pages.py, results.py, plots.py, workers.py, state.py
+    theme.py             design tokens, style sheet, graph "screen" styling, fonts
+    nav.py               the navigation rail and its run-time drawn icons
+    plotview.py          PlotView: a matplotlib figure as an instrument (crosshair
+                         readout, wheel zoom, pan, fit, copy/save); draws nothing
+                         itself, so no number is made here
+    widgets.py           cards, chips, key-figure tiles, split_page, mode switch
     browser.py           session list (Home and Compare); project.json folders
     compare_view.py      two-session comparison
     settings_dialog.py   language, profile, backend, copy-recording

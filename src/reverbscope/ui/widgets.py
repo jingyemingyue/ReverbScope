@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import math
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
@@ -23,19 +24,22 @@ from PySide6.QtGui import (
     QPixmap,
 )
 from PySide6.QtWidgets import (
+    QButtonGroup,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMessageBox,
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QSplitter,
     QVBoxLayout,
     QWidget,
 )
 
 from reverbscope.i18n import _
-from reverbscope.ui.theme import LIGHT_TOKENS, tokens, tone_color
+from reverbscope.ui.theme import LIGHT_TOKENS, apply_mono_font, tokens, tone_color
 
 
 def set_banner_text(widget: QLabel, text: str, tone: str = "") -> None:
@@ -116,11 +120,11 @@ def ask_save_path(parent: QWidget, title: str, name: str, file_filter: str) -> P
 
 
 def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
-    """Give ``page`` a fixed header and a scrolling body; return the body layout."""
+    """Give ``page`` a header strip across the top and a scrolling body; return the body layout."""
     page.setProperty("page", True)
     outer = QVBoxLayout(page)
-    outer.setContentsMargins(28, 20, 28, 12)
-    outer.setSpacing(8)
+    outer.setContentsMargins(0, 0, 0, 0)
+    outer.setSpacing(0)
     outer.addWidget(header)
     scroll = QScrollArea()
     scroll.setWidgetResizable(True)
@@ -129,11 +133,86 @@ def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
     body = QWidget()
     body.setProperty("page", True)
     layout = QVBoxLayout(body)
-    layout.setContentsMargins(0, 0, 8, 8)
+    layout.setContentsMargins(20, 16, 20, 16)
     layout.setSpacing(12)
     scroll.setWidget(body)
     outer.addWidget(scroll, 1)
     return layout
+
+
+def split_page(
+    page: QWidget, header: PageHeader, *, left_width: int = 440
+) -> tuple[QVBoxLayout, QVBoxLayout]:
+    """Give ``page`` a header strip over two panes; return the layouts of the (left, right) pane.
+
+    The left pane holds the settings and scrolls on its own; the right pane
+    is the working area (a graph, the run controls, the status) and takes the
+    rest of the width. A form never has to be scrolled past to reach Run.
+    """
+    page.setProperty("page", True)
+    outer = QVBoxLayout(page)
+    outer.setContentsMargins(0, 0, 0, 0)
+    outer.setSpacing(0)
+    outer.addWidget(header)
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+    scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    scroll.setMinimumWidth(380)
+    left = QWidget()
+    left.setProperty("page", True)
+    left_layout = QVBoxLayout(left)
+    left_layout.setContentsMargins(16, 14, 12, 14)
+    left_layout.setSpacing(12)
+    scroll.setWidget(left)
+    right = QWidget()
+    right.setProperty("page", True)
+    right_layout = QVBoxLayout(right)
+    right_layout.setContentsMargins(12, 14, 16, 14)
+    right_layout.setSpacing(10)
+    splitter = QSplitter(Qt.Orientation.Horizontal)
+    splitter.setChildrenCollapsible(False)
+    splitter.addWidget(scroll)
+    splitter.addWidget(right)
+    splitter.setStretchFactor(0, 0)
+    splitter.setStretchFactor(1, 1)
+    splitter.setSizes([left_width, 900])
+    outer.addWidget(splitter, 1)
+    return left_layout, right_layout
+
+
+class ModeSwitch(QWidget):
+    """The three ways to measure as a segmented control: one click to change mode."""
+
+    chosen = Signal(str)
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        row = QHBoxLayout(self)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(0)
+        self._buttons: dict[str, QPushButton] = {}
+        self._group = QButtonGroup(self)
+        self._group.setExclusive(True)
+        modes = (
+            ("universal_daw", _("Universal DAW Mode")),
+            ("standalone", _("Standalone Mode")),
+            ("demo", _("Demo (no interface)")),
+        )
+        for mode, caption in modes:
+            button = QPushButton(caption)
+            button.setCheckable(True)
+            button.setProperty("segment", True)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            button.clicked.connect(lambda _checked=False, m=mode: self.chosen.emit(m))
+            self._group.addButton(button)
+            self._buttons[mode] = button
+            row.addWidget(button)
+
+    def set_mode(self, mode: str) -> None:
+        button = self._buttons.get(mode)
+        if button is not None:
+            button.setChecked(True)
 
 
 def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:
@@ -178,15 +257,16 @@ class Card(QFrame):
         self.body.setSpacing(spacing)
 
 
-class PageHeader(QWidget):
-    """Page title, one-line explanation and optional actions on the right."""
+class PageHeader(QFrame):
+    """A strip across the top of a page: title, one-line explanation, actions on the right."""
 
     def __init__(self, title: str, subtitle: str = "", parent: QWidget | None = None) -> None:
         super().__init__(parent)
+        self.setProperty("toolbar", True)
         row = QHBoxLayout(self)
-        row.setContentsMargins(0, 0, 0, 4)
+        row.setContentsMargins(20, 10, 20, 10)
         text = QVBoxLayout()
-        text.setSpacing(2)
+        text.setSpacing(1)
         self.title = label(title, "page-title")
         text.addWidget(self.title)
         self.subtitle = label(subtitle, "subtitle", wrap=True)
@@ -194,7 +274,7 @@ class PageHeader(QWidget):
         text.addWidget(self.subtitle)
         row.addLayout(text, 1)
         self.action_row = QHBoxLayout()
-        self.action_row.setSpacing(8)
+        self.action_row.setSpacing(6)
         row.addLayout(self.action_row)
 
 
@@ -218,6 +298,7 @@ class ModeCard(Card):
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.setMinimumWidth(220)
+        self.body.setContentsMargins(14, 12, 14, 12)
         top = QHBoxLayout()
         icon = label(glyph, "pill")
         top.addWidget(icon)
@@ -229,9 +310,8 @@ class ModeCard(Card):
         self.body.addLayout(top)
         self.body.addWidget(label(title, "card-title", wrap=True))
         description = label(text, "hint", wrap=True)
-        description.setMinimumHeight(48)
         self.body.addWidget(description, 1)
-        self.button = primary(QPushButton(action))
+        self.button = QPushButton(action)
         self.button.clicked.connect(self.clicked.emit)
         self.body.addWidget(self.button)
         self.setToolTip(text)
@@ -253,9 +333,9 @@ class Chip(QLabel):
     def set_tone(self, tone: str) -> None:
         fg, bg = tone_color(tone)
         self.setStyleSheet(
-            f"background: {bg}; color: {fg}; border: 1px solid {bg}; border-radius: 9px;"
-            " padding: 2px 9px;"
-            "font-size: 11px; font-weight: 700;"
+            f"background: {bg}; color: {fg}; border: 1px solid {fg}; border-radius: 3px;"
+            " padding: 1px 7px;"
+            "font-size: 10px; font-weight: 700;"
         )
 
 
@@ -264,6 +344,7 @@ class StatTile(Card):
 
     def __init__(self, caption: str, parent: QWidget | None = None) -> None:
         super().__init__(parent, spacing=2)
+        self.body.setContentsMargins(12, 9, 12, 9)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         top = QHBoxLayout()
         self.caption = label(caption, "kpi-label")
@@ -273,6 +354,7 @@ class StatTile(Card):
         top.addWidget(self.chip)
         self.body.addLayout(top)
         self.value = label("-", "kpi-value")
+        apply_mono_font(self.value, pixel_size=22, bold=True)
         self.body.addWidget(self.value)
         self.sub = label("", "kpi-sub", wrap=True)
         self.body.addWidget(self.sub)
@@ -283,6 +365,38 @@ class StatTile(Card):
         self.chip.setText(chip)
         self.chip.set_tone(tone)
         self.chip.setVisible(bool(chip))
+
+
+class KeyValueList(QWidget):
+    """Captions on the left, monospace values on the right: a property sheet."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._grid = QGridLayout(self)
+        self._grid.setContentsMargins(0, 0, 0, 0)
+        self._grid.setHorizontalSpacing(12)
+        self._grid.setVerticalSpacing(4)
+        self._grid.setColumnStretch(1, 1)
+        self._rows: list[tuple[QLabel, QLabel]] = []
+
+    def set_rows(self, rows: Sequence[tuple[str, str]]) -> None:
+        """Show ``rows`` (caption, value); a row with no value is left out."""
+        shown = [(key, value) for key, value in rows if value]
+        while len(self._rows) < len(shown):
+            key_label = label("", "kpi-label")
+            value_label = label("", wrap=True)
+            apply_mono_font(value_label, pixel_size=11)
+            value_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            row = len(self._rows)
+            self._grid.addWidget(key_label, row, 0, Qt.AlignmentFlag.AlignTop)
+            self._grid.addWidget(value_label, row, 1)
+            self._rows.append((key_label, value_label))
+        for index, (key_label, value_label) in enumerate(self._rows):
+            if index < len(shown):
+                key_label.setText(shown[index][0])
+                value_label.setText(shown[index][1])
+            key_label.setVisible(index < len(shown))
+            value_label.setVisible(index < len(shown))
 
 
 #: Chip tone of an interpretation severity.
@@ -321,11 +435,11 @@ class FindingCard(QFrame):
         fg, bg = tone_color(tone)
         self.setObjectName("finding")
         self.setStyleSheet(
-            f"QFrame#finding {{ background: {bg}; border-left: 4px solid {fg};"
-            " border-radius: 6px; }"
+            f"QFrame#finding {{ background: {bg}; border-left: 3px solid {fg};"
+            " border-radius: 3px; }"
         )
         row = QHBoxLayout(self)
-        row.setContentsMargins(12, 8, 12, 8)
+        row.setContentsMargins(10, 7, 12, 7)
         row.setSpacing(10)
         chip = Chip((severity_label or severity).upper(), tone)
         # A fixed width cut "NOT COMPARABLE" short; the column stays aligned

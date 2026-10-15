@@ -5915,3 +5915,140 @@ msgstr "没有考虑两次录音的测量健康状况：它们的会话已不在
 
 msgid "The measurement health of the {side} take was not considered: its session is no longer where the comparison was saved."
 msgstr "没有考虑{side}录音的测量健康状况：它的会话已不在保存这次比较时所在的位置。"
+
+# The workstation shell: navigation rail, interactive graphs, View menu.
+msgid "difference"
+msgstr "差值"
+
+msgid "&View"
+msgstr "视图(&V)"
+
+msgid "Show &Inspector"
+msgstr "显示信息面板(&I)"
+
+msgid "&Fit Graph"
+msgstr "缩放至全图(&F)"
+
+msgid "Home: start a new measurement or open a saved one"
+msgstr "首页：开始新的测量，或打开已保存的会话"
+
+msgid "Measure"
+msgstr "测量"
+
+msgid "Measure a room: Universal DAW, Standalone or Demo"
+msgstr "测量房间：通用 DAW 模式、独立模式或演示"
+
+msgid "The result on screen"
+msgstr "当前显示的结果"
+
+msgid "One room, several microphone positions"
+msgstr "一个房间，多个话筒位置"
+
+msgid "Compare two saved sessions"
+msgstr "对比两个已保存的会话"
+
+msgid "Octave band centre (Hz)"
+msgstr "倍频程中心频率（Hz）"
+
+msgid "Reverberation time (s)"
+msgstr "混响时间（s）"
+
+msgid "Reverberation time by octave band"
+msgstr "各倍频程的混响时间"
+
+msgid "IR"
+msgstr "脉冲响应"
+
+msgid "ETC"
+msgstr "能量时间曲线"
+
+msgid "No octave-band reverberation to show"
+msgstr "没有可显示的分频段混响"
+
+msgid "These settings do not make a valid test signal"
+msgstr "这些设置无法生成有效的测试信号"
+
+msgid "sweep"
+msgstr "扫频"
+
+msgid "noise floor"
+msgstr "本底噪声"
+
+msgid "room decay"
+msgstr "房间衰减"
+
+msgid "Test signal: {start:g} Hz to {end:g} Hz in {duration:g} s, {level:g} dBFS peak"
+msgstr "测试信号：{start:g} Hz 至 {end:g} Hz，{duration:g} s，峰值 {level:g} dBFS"
+
+msgid "Broadband RT60 {value:.2f} s"
+msgstr "宽带 RT60 {value:.2f} s"
+
+msgid "{metric} (unreliable)"
+msgstr "{metric}（不可靠）"
+
+msgid "Pan"
+msgstr "平移"
+
+msgid "Drag to move the view. Wheel: zoom."
+msgstr "拖动以移动视图；滚轮缩放。"
+
+msgid "Zoom"
+msgstr "缩放"
+
+msgid "Drag a box to zoom into it."
+msgstr "拖出一个方框，放大其中的区域。"
+
+msgctxt "graph view"
+msgid "Fit"
+msgstr "全图"
+
+msgid "Show the whole graph again (double-click)."
+msgstr "重新显示整幅图表（双击）。"
+
+msgid "Copy image"
+msgstr "复制图像"
+
+msgid "Copy the graph as an image."
+msgstr "把图表作为图像复制。"
+
+msgid "Save image..."
+msgstr "保存图像…"
+
+msgid "Save the graph as a PNG file."
+msgstr "把图表保存为图像文件。"
+
+msgid "Wheel: zoom  ·  Drag: pan  ·  Double-click: fit"
+msgstr "滚轮：缩放  ·  拖动：平移  ·  双击：全图"
+
+msgid "Save image"
+msgstr "保存图像"
+
+msgid "PNG images (*.png)"
+msgstr "PNG 图像 (*.png)"
+
+msgid "Cannot save image"
+msgstr "无法保存图像"
+
+msgid "RT60 by Band"
+msgstr "分频段 RT60"
+
+msgid "SESSION"
+msgstr "会话"
+
+msgid "KEY FIGURES"
+msgstr "关键数据"
+
+msgid "ROOM"
+msgstr "房间"
+
+msgid "POSITION"
+msgstr "位置"
+
+msgid "MICROPHONE"
+msgstr "话筒"
+
+msgid "PROFILE"
+msgstr "配置"
+
+msgid "SAMPLE RATE"
+msgstr "采样率"

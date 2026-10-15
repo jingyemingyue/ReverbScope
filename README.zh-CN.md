@@ -10,9 +10,9 @@
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
+![ReverbScope 结果工作区：各倍频程的混响时间（带十字光标读数），以及显示四个关键数值和测量健康结论的信息面板（合成演示数据）](docs/images/gui-results.zh-CN.png)
 
-<sub>内置演示房间的结果页。合成数据：没有测量任何真实房间。</sub>
+<sub>内置演示房间的结果工作区：可交互的图表（十字光标、滚轮缩放、平移），旁边的信息面板始终显示关键数值及其可信程度。合成数据：没有测量任何真实房间。</sub>
 
 > 本文是 [README.md](README.md) 的简体中文版本；两者不一致时，以英文版为准。
 

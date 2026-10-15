@@ -12,6 +12,8 @@ from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplicatio
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
+    QHBoxLayout,
+    QLabel,
     QMainWindow,
     QMessageBox,
     QStackedWidget,
@@ -20,6 +22,7 @@ from PySide6.QtWidgets import (
 )
 
 from reverbscope import __version__
+from reverbscope.demo import localize_demo_name
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
 from reverbscope.interpretation import available_profiles
@@ -27,6 +30,7 @@ from reverbscope.io.recent import remember_session
 from reverbscope.io.session_store import load_measurement
 from reverbscope.settings import load_settings
 from reverbscope.ui.compare_view import ComparePage
+from reverbscope.ui.nav import NavRail
 from reverbscope.ui.pages import DawModePage, HomePage, StandalonePage, safe_findings
 from reverbscope.ui.project_view import ProjectPage
 from reverbscope.ui.results import ResultsPage
@@ -71,14 +75,25 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"ReverbScope {__version__}")
         self.setWindowIcon(app_icon())
         self.setMinimumSize(960, 640)
-        self.resize(1180, 800)
+        self.resize(1280, 820)
         self.state = MeasurementState()
         # The default profile chosen in Settings, as the CLI reads it.
         default_profile = load_settings().default_profile
         if default_profile in available_profiles():
             self.state.profile = default_profile
         self.stack = QStackedWidget()
-        self.setCentralWidget(self.stack)
+        # The rail is always there; the page beside it changes.
+        self.rail = NavRail()
+        shell = QWidget()
+        shell_row = QHBoxLayout(shell)
+        shell_row.setContentsMargins(0, 0, 0, 0)
+        shell_row.setSpacing(0)
+        shell_row.addWidget(self.rail)
+        shell_row.addWidget(self.stack, 1)
+        self.setCentralWidget(shell)
+        self.rail.requested.connect(self._on_nav)
+        #: The mode the rail's Measure button opens (the one used last).
+        self._measure_mode = "standalone"
 
         self.home = HomePage()
         self.daw = DawModePage(self.state)
@@ -108,6 +123,8 @@ class MainWindow(QMainWindow):
         self.results.project_requested.connect(self.show_project)
         self.daw.analysis_finished.connect(self.show_results)
         self.standalone.analysis_finished.connect(self.show_results)
+        self.daw.choose_mode.connect(self.show_mode)
+        self.standalone.choose_mode.connect(self.show_mode)
         self.daw.back.connect(self.show_home)
         self.standalone.back.connect(self.show_home)
         self.results.new_measurement.connect(self.show_home)
@@ -155,6 +172,18 @@ class MainWindow(QMainWindow):
         measure_menu.addAction(standalone_action)
         measure_menu.addAction(demo_action)
 
+        view_menu = self.menuBar().addMenu(_("&View"))
+        self.inspector_action = QAction(_("Show &Inspector"), self)
+        self.inspector_action.setCheckable(True)
+        self.inspector_action.setChecked(True)
+        self.inspector_action.setShortcut("Ctrl+I")
+        self.inspector_action.toggled.connect(self.results.set_inspector_visible)
+        fit_action = QAction(_("&Fit Graph"), self)
+        fit_action.setShortcut("Ctrl+0")
+        fit_action.triggered.connect(self.results.fit_graph)
+        view_menu.addAction(self.inspector_action)
+        view_menu.addAction(fit_action)
+
         from reverbscope.edition import is_developer
 
         self.developer_menu = None
@@ -184,6 +213,10 @@ class MainWindow(QMainWindow):
         help_menu.addAction(licenses_action)
         self._status = QStatusBar()
         self.setStatusBar(self._status)
+        # What the session on screen is, at the right of the bar: always in the
+        # same place, whatever page is shown.
+        self._status_info = QLabel("")
+        self._status.addPermanentWidget(self._status_info)
         self._place = ""
         # The page Compare was opened from, and its status-bar place: Back
         # returns there. Going Home instead reset the state, so an unsaved
@@ -238,6 +271,60 @@ class MainWindow(QMainWindow):
         self._status.showMessage(
             _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
         )
+        self._sync_shell()
+
+    def _rail_key(self, page: QWidget | None) -> str | None:
+        """The rail button the page ``page`` belongs to."""
+        if page is self.home:
+            return "home"
+        if page in (self.daw, self.standalone):
+            return "measure"
+        if page is self.results:
+            return "results"
+        if page is self.project:
+            return "project"
+        if page is self.compare:
+            return "compare"
+        return None
+
+    def _sync_shell(self) -> None:
+        """The rail shows the page on screen, and the status bar the session."""
+        self.rail.set_current(self._rail_key(self.stack.currentWidget()))
+        self.rail.set_available("results", self.state.result is not None)
+        result = self.state.result
+        if result is None:
+            self._status_info.setText("")
+            return
+        session = self.state.session
+        parts = [
+            localize_demo_name(session.mode, part)
+            for part in (session.room_name, session.measurement_position)
+            if part
+        ]
+        parts.append(f"{result.sample_rate} Hz")
+        self._status_info.setText("  ·  ".join(parts))
+
+    def _on_nav(self, key: str) -> None:
+        """A rail button was clicked."""
+        if key == "home":
+            self.show_home()
+        elif key == "measure":
+            if self.stack.currentWidget() not in (self.daw, self.standalone):
+                self.show_mode(self._measure_mode)
+        elif key == "results":
+            if self.state.result is not None:
+                self.show_results()
+        elif key == "project":
+            if self.project.path is not None:
+                self.show_project()
+            else:
+                self.choose_project()
+        elif key == "compare":
+            self.show_compare()
+        elif key == "settings":
+            self.show_settings()
+        # A click on a button that did not change the page leaves it checked.
+        self._sync_shell()
 
     def _leave_take(self) -> bool:
         """True when the window may drop the result on screen.
@@ -332,6 +419,7 @@ class MainWindow(QMainWindow):
         self.show_results()
 
     def show_mode(self, mode: str) -> None:
+        self._measure_mode = mode
         if mode in ("demo", "standalone") and self.standalone.is_busy():
             # Ctrl+2 / Ctrl+3 while a take or its analysis runs on the
             # Standalone page, from that page or from another: switching the
@@ -464,6 +552,7 @@ class MainWindow(QMainWindow):
         if app is not None:
             apply_application_chrome(app)
         self._scheme = color_scheme()
+        self.rail.restyle()
         self.results.restyle()
         self.compare.restyle()
         self.project.restyle()

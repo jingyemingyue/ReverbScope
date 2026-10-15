@@ -16,6 +16,7 @@ from PySide6.QtGui import QColor, QGuiApplication
 from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QHeaderView,
     QInputDialog,
@@ -24,6 +25,7 @@ from PySide6.QtWidgets import (
     QPlainTextEdit,
     QPushButton,
     QScrollArea,
+    QSplitter,
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
@@ -56,10 +58,21 @@ from reverbscope.ui.plots import (
     plot_noise,
     plot_placement_result,
     plot_reflections,
+    plot_reverb_bands,
 )
+from reverbscope.ui.plotview import PlotView
 from reverbscope.ui.state import MeasurementState
-from reverbscope.ui.theme import apply_report_font, tokens
-from reverbscope.ui.widgets import Card, Chip, FindingCard, PageHeader, StatTile, label, primary
+from reverbscope.ui.theme import apply_mono_font, apply_report_font, tokens
+from reverbscope.ui.widgets import (
+    Card,
+    Chip,
+    FindingCard,
+    KeyValueList,
+    PageHeader,
+    StatTile,
+    label,
+    primary,
+)
 
 #: Display word and chip tone of a metric validity.
 VALIDITY_DISPLAY = {
@@ -192,22 +205,6 @@ class _PlacementTab(QWidget):
         self.canvas.draw_idle()
 
 
-class _PlotTab(QWidget):
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
-        self.figure = Figure(figsize=(7.0, 4.5), dpi=100)
-        self.canvas = FigureCanvasQTAgg(self.figure)
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.canvas)
-
-    def redraw(self) -> None:
-        # The plot functions lay the figure out once, for the size it has then;
-        # the tight layout engine repeats that at every draw, so the axis labels
-        # still fit once the tab is shown or the window is resized.
-        self.figure.set_layout_engine("tight")
-        self.canvas.draw_idle()
-
-
 def validity_text(validity: Validity) -> tuple[str, str]:
     """The translated word and colour tone shown for a validity."""
     return _validity_text(validity)
@@ -239,10 +236,41 @@ def ask_replace_session(parent: QWidget, directory: str) -> bool:
     return clicked is not None and box.buttonRole(clicked) == QMessageBox.ButtonRole.AcceptRole
 
 
-class _Overview(QWidget):
-    """Key figures with their trust level, the findings, and the decay table."""
+class KeyFigures(QWidget):
+    """The four key figures and the health verdict: the inspector's top.
+
+    They stay on screen beside every graph, so the number a graph is about
+    is never a tab away.
+    """
 
     def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        column = QVBoxLayout(self)
+        column.setContentsMargins(0, 0, 0, 0)
+        column.setSpacing(8)
+        self.rt60 = StatTile(_("Reverberation (RT60)"))
+        self.noise = StatTile(_("Background noise"))
+        self.reflections = StatTile(_("Early reflections"))
+        self.direct = StatTile(_("Direct sound"))
+        for tile in (self.rt60, self.noise, self.reflections, self.direct):
+            column.addWidget(tile)
+        health = Card(spacing=4)
+        health.body.setContentsMargins(12, 9, 12, 9)
+        health_header = QHBoxLayout()
+        health_header.addWidget(label(_("MEASUREMENT HEALTH"), "section"))
+        health_header.addStretch(1)
+        self.health_chip = Chip("", "neutral")
+        health_header.addWidget(self.health_chip)
+        health.body.addLayout(health_header)
+        self.health_summary = label("", "kpi-sub", wrap=True)
+        health.body.addWidget(self.health_summary)
+        column.addWidget(health)
+
+
+class _Overview(QWidget):
+    """The decay and energy tables, what is wrong with the measurement, and the findings."""
+
+    def __init__(self, parent: QWidget | None = None, *, figures: KeyFigures | None = None) -> None:
         super().__init__(parent)
         self.setProperty("page", True)
         outer = QVBoxLayout(self)
@@ -258,35 +286,17 @@ class _Overview(QWidget):
         scroll.setWidget(body)
         outer.addWidget(scroll)
 
-        tiles = QHBoxLayout()
-        tiles.setSpacing(10)
-        self.rt60 = StatTile(_("Reverberation (RT60)"))
-        self.noise = StatTile(_("Background noise"))
-        self.reflections = StatTile(_("Early reflections"))
-        self.direct = StatTile(_("Direct sound"))
-        for tile in (self.rt60, self.noise, self.reflections, self.direct):
-            tiles.addWidget(tile)
-        layout.addLayout(tiles)
-
-        health = Card()
-        health_header = QHBoxLayout()
-        health_header.addWidget(label(_("MEASUREMENT HEALTH"), "section"))
-        self.health_chip = Chip("", "neutral")
-        health_header.addWidget(self.health_chip)
-        health_header.addStretch(1)
-        health.body.addLayout(health_header)
-        self.health_summary = label("", "hint", wrap=True)
-        health.body.addWidget(self.health_summary)
-        self.health_rows = QVBoxLayout()
-        self.health_rows.setSpacing(6)
-        health.body.addLayout(self.health_rows)
-        layout.addWidget(health)
-
-        self.findings_title = label("", "section")
-        layout.addWidget(self.findings_title)
-        self.findings = QVBoxLayout()
-        self.findings.setSpacing(6)
-        layout.addLayout(self.findings)
+        # The figures live in the inspector when the page has one; a bare
+        # overview (a test, an embedding) carries its own.
+        self.figures = figures if figures is not None else KeyFigures()
+        if figures is None:
+            layout.addWidget(self.figures)
+        self.rt60 = self.figures.rt60
+        self.noise = self.figures.noise
+        self.reflections = self.figures.reflections
+        self.direct = self.figures.direct
+        self.health_chip = self.figures.health_chip
+        self.health_summary = self.figures.health_summary
 
         decay = Card()
         decay.body.addWidget(label(_("REVERBERATION BY BAND"), "section"))
@@ -300,15 +310,7 @@ class _Overview(QWidget):
                 wrap=True,
             )
         )
-        self.table = QTableWidget(0, 5)
-        self.table.setHorizontalHeaderLabels([_("Band"), "EDT", "T20", "T30", _("RT60 estimate")])
-        self.table.horizontalHeader().setStretchLastSection(True)
-        self.table.verticalHeader().setVisible(False)
-        self.table.setAlternatingRowColors(True)
-        self.table.setShowGrid(False)
-        self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.table = self._metric_table([_("Band"), "EDT", "T20", "T30", _("RT60 estimate")])
         decay.body.addWidget(self.table)
         layout.addWidget(decay)
 
@@ -327,20 +329,46 @@ class _Overview(QWidget):
                 wrap=True,
             )
         )
-        self.energy_table = QTableWidget(0, 5)
-        self.energy_table.setHorizontalHeaderLabels(
-            [_("Band"), "C50", "C80", "D50", _("Centre time")]
-        )
-        self.energy_table.horizontalHeader().setStretchLastSection(True)
-        self.energy_table.verticalHeader().setVisible(False)
-        self.energy_table.setAlternatingRowColors(True)
-        self.energy_table.setShowGrid(False)
-        self.energy_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
-        self.energy_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.energy_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.energy_table = self._metric_table([_("Band"), "C50", "C80", "D50", _("Centre time")])
         energy.body.addWidget(self.energy_table)
         layout.addWidget(energy)
+
+        # Only what is not good: a healthy measurement shows no card here, and
+        # its verdict is in the inspector.
+        self.health_card = Card()
+        self.health_card.body.addWidget(label(_("MEASUREMENT HEALTH"), "section"))
+        self.health_rows = QVBoxLayout()
+        self.health_rows.setSpacing(6)
+        self.health_card.body.addLayout(self.health_rows)
+        layout.addWidget(self.health_card)
+
+        self.findings_title = label("", "section")
+        layout.addWidget(self.findings_title)
+        self.findings = QVBoxLayout()
+        self.findings.setSpacing(6)
+        layout.addLayout(self.findings)
         layout.addStretch(1)
+
+    def _metric_table(self, headers: list[str]) -> QTableWidget:
+        table = QTableWidget(0, len(headers))
+        table.setHorizontalHeaderLabels(headers)
+        table.horizontalHeader().setStretchLastSection(True)
+        table.horizontalHeader().setDefaultAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
+        first = table.horizontalHeaderItem(0)
+        if first is not None:
+            first.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        table.verticalHeader().setVisible(False)
+        table.verticalHeader().setDefaultSectionSize(24)
+        table.setAlternatingRowColors(True)
+        table.setShowGrid(False)
+        table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
+        table.setSelectionMode(QTableWidget.SelectionMode.NoSelection)
+        table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        apply_mono_font(table, pixel_size=11)
+        return table
 
     def show_result(
         self, result: AnalysisResult, findings: list[Finding], profile: str, problem: str = ""
@@ -497,6 +525,7 @@ class _Overview(QWidget):
             widget = entry.widget() if entry is not None else None
             if widget is not None:
                 widget.deleteLater()
+        self.health_card.setVisible(bool(report.problems))
         for check in report.problems:
             parts = [check.reason]
             if check.affects:
@@ -515,10 +544,13 @@ class _Overview(QWidget):
     def _fill_metric_table(self, table: QTableWidget, rows: Sequence[tuple[str, ...]]) -> None:
         colours = tokens()
         table.setRowCount(len(rows))
+        number = Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
         for r, row in enumerate(rows):
             for c, value in enumerate(row):
                 item = QTableWidgetItem(value)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
+                if c > 0:
+                    item.setTextAlignment(number)
                 if c > 0 and (value.startswith("(") or value == _("insufficient range")):
                     item.setForeground(QColor(colours["warn"]))
                 elif c > 0 and value in {_("n/a"), "-"}:
@@ -544,8 +576,8 @@ class ResultsPage(QWidget):
         self.state = state
         self.setProperty("page", True)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(28, 20, 28, 14)
-        layout.setSpacing(10)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         self.header = PageHeader(_("Results"))
         self.new_button = QPushButton(_("New Measurement"))
@@ -570,9 +602,12 @@ class ResultsPage(QWidget):
         self.header.action_row.addWidget(self.save_button)
         layout.addWidget(self.header)
 
+        # The workspace: the graphs on the left, the figures that stay in view
+        # on the right.
+        self.figures = KeyFigures()
         self.tabs = QTabWidget()
-        self.tabs.setDocumentMode(False)
-        self.overview = _Overview()
+        self.tabs.setDocumentMode(True)
+        self.overview = _Overview(figures=self.figures)
         self.table = self.overview.table
         self.tabs.addTab(self.overview, _("Overview"))
 
@@ -592,22 +627,63 @@ class ResultsPage(QWidget):
         report_layout.addWidget(self.text, 1)
         self.tabs.addTab(report, _("Full report"))
 
-        self.ir_tab = _PlotTab()
-        self.fr_tab = _PlotTab()
-        self.decay_tab = _PlotTab()
-        self.noise_tab = _PlotTab()
-        self.refl_tab = _PlotTab()
+        self.ir_tab = PlotView()
+        self.fr_tab = PlotView()
+        self.decay_tab = PlotView()
+        self.bands_tab = PlotView()
+        self.noise_tab = PlotView()
+        self.refl_tab = PlotView()
         self.place_tab = _PlacementTab()
         self.tabs.addTab(self.ir_tab, _("Impulse Response"))
         self.tabs.addTab(self.fr_tab, _("Frequency Response"))
         self.tabs.addTab(self.decay_tab, _("Decay"))
+        self.tabs.addTab(self.bands_tab, _("RT60 by Band"))
         self.tabs.addTab(self.noise_tab, _("Noise"))
         self.tabs.addTab(self.refl_tab, _("Early Reflections"))
         self.tabs.addTab(self.place_tab, _("Placement"))
-        layout.addWidget(self.tabs, 1)
+
+        self.session_info = KeyValueList()
+        inspector = QFrame()
+        inspector.setProperty("panel", True)
+        inspector_column = QVBoxLayout(inspector)
+        inspector_column.setContentsMargins(12, 12, 12, 12)
+        inspector_column.setSpacing(8)
+        inspector_column.addWidget(label(_("SESSION"), "section"))
+        inspector_column.addWidget(self.session_info)
+        inspector_column.addSpacing(4)
+        inspector_column.addWidget(label(_("KEY FIGURES"), "section"))
+        inspector_column.addWidget(self.figures)
+        inspector_column.addStretch(1)
+        self.inspector = QScrollArea()
+        self.inspector.setWidgetResizable(True)
+        self.inspector.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.inspector.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.inspector.setWidget(inspector)
+        self.inspector.setMinimumWidth(300)
+        self.inspector.setMaximumWidth(420)
+
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setChildrenCollapsible(False)
+        self.splitter.addWidget(self.tabs)
+        self.splitter.addWidget(self.inspector)
+        self.splitter.setStretchFactor(0, 1)
+        self.splitter.setStretchFactor(1, 0)
+        self.splitter.setSizes([940, 330])
+        layout.addWidget(self.splitter, 1)
 
         self.status = label("", "hint", wrap=True)
+        self.status.setContentsMargins(20, 4, 20, 4)
         layout.addWidget(self.status)
+
+    def set_inspector_visible(self, visible: bool) -> None:
+        """Show or hide the inspector (View > Show Inspector); the graphs take the room."""
+        self.inspector.setVisible(visible)
+
+    def fit_graph(self) -> None:
+        """Show the whole of the graph on the current tab again (View > Fit Graph)."""
+        view = self.tabs.currentWidget()
+        if isinstance(view, PlotView):
+            view.reset_view()
 
     def _copy_report(self) -> None:
         text = self.text.toPlainText().strip()
@@ -632,6 +708,15 @@ class ResultsPage(QWidget):
         parts.append(f"{result.sample_rate} Hz")
         self.header.subtitle.setText("  ·  ".join(parts))
         self.header.subtitle.setVisible(True)
+        self.session_info.set_rows(
+            [
+                (_("ROOM"), localize_demo_name(session.mode, session.room_name)),
+                (_("POSITION"), localize_demo_name(session.mode, session.measurement_position)),
+                (_("MICROPHONE"), localize_demo_name(session.mode, session.microphone_name)),
+                (_("PROFILE"), profile_title(self.state.profile)),
+                (_("SAMPLE RATE"), f"{result.sample_rate} Hz"),
+            ]
+        )
         self.text.setPlainText(
             render_analysis(REPORT_CONSOLE, result, self.state.findings, self.state.profile)
         )
@@ -655,10 +740,18 @@ class ResultsPage(QWidget):
         plot_impulse_response(self.ir_tab.figure, result)
         plot_frequency_response(self.fr_tab.figure, result)
         plot_decay(self.decay_tab.figure, result)
+        plot_reverb_bands(self.bands_tab.figure, result)
         plot_noise(self.noise_tab.figure, result)
         plot_reflections(self.refl_tab.figure, result)
         self.place_tab.show_placement(result.placement)
-        for tab in (self.ir_tab, self.fr_tab, self.decay_tab, self.noise_tab, self.refl_tab):
+        for tab in (
+            self.ir_tab,
+            self.fr_tab,
+            self.decay_tab,
+            self.bands_tab,
+            self.noise_tab,
+            self.refl_tab,
+        ):
             tab.redraw()
 
     def _choose_save_directory(self) -> None:
