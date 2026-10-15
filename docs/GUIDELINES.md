@@ -196,7 +196,8 @@ workflows, or the license. If the guidelines do not cover the case, or they
 conflict with the task, stop and write a guidelines-change proposal. Do not
 edit the guidelines to match the code.
 
-Local checks are §6 item 8 of the Chinese text. On Linux CI, mypy is run as
-`mypy --platform linux`. Say which commands ran, and write "not run" for the
-rest. Commit messages stay in the repository's English style and end with an
-`Assisted-by:` line. Notes for the maintainer are in Chinese.
+Local checks are §6 item 8 of the Chinese text. CI runs `mypy` on Linux. On
+macOS, run `mypy --platform linux` to match it. Say which commands ran, and
+write "not run" for the rest. Commit messages stay in the repository's
+English style and end with an `Assisted-by:` line. Notes for the maintainer
+are in Chinese.

@@ -1,0 +1,26 @@
+---
+description: 触碰分析核心（core、models、interpretation、health、schema、CLI 输出）时的规则
+globs: src/reverbscope/core/**,src/reverbscope/models/**,src/reverbscope/interpretation/**,src/reverbscope/health.py,src/reverbscope/cli/**,schemas/**,tests/golden/**
+alwaysApply: false
+---
+
+# 分析核心的规则
+
+这些区域决定 ReverbScope 给出的每一个数字。**默认你不应该改它们。**
+
+## 打开这些文件之前
+
+1. 确认任务说明里**明确写了**要改这里。没写：停下，告诉用户“这个任务需要改 <文件>，原因是……，是否单独开一个 PR？”
+2. GUI 任务、文档任务、CI 任务一律不得改这里（准则 D11）。
+
+## 如果任务确实要求改这里
+
+- 单独一个 PR，不和 GUI 或文档改动混在一起。
+- 每个 DSP 或数值行为的改动都要有合成测试，期望结果是已知的、可以手算或有公开来源的。
+- 新的或改变的指标，要在 `docs/MEASUREMENT_METHODOLOGY.md` 写明算法来源、单位、有效性条件。
+- 改变数值行为要写 ADR（`docs/adr/` 或仓库现有的位置）。
+- CLI 的 golden 输出变了：停下，告诉用户哪些输出变了、为什么，等确认后再更新 golden。不得为了让测试通过而直接重新生成 golden。
+- 不改 JSON Schema 和存盘格式，除非任务明确要求并且维护者已同意。
+- 保留“宁可不给数，也不猜一个数”的原则：拿不准的值标有效性，不要硬算。
+- 不引入网络访问、shell 调用（`scripts/check_src_safety.py` 会检查）。
+- 不新增依赖。
