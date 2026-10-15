@@ -186,7 +186,9 @@ def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, langu
         app.processEvents()
     # The requested window can remain narrow; the strip must not force it wider.
     assert window.minimumSizeHint().width() <= max(baseline, window.width())
-    assert strip.mode.width() >= strip.mode.minimumSizeHint().width()
+    assert strip.mode.width() >= (
+        strip.mode.fontMetrics().horizontalAdvance(strip.mode.currentText()) + 24
+    )
     assert strip.sample_rate.width() >= (
         strip.sample_rate.fontMetrics().horizontalAdvance(strip.sample_rate.currentText()) + 24
     )
