@@ -164,7 +164,8 @@ class PlotView(QFrame):
             ("figure_leave_event", self._on_leave),
             ("axes_leave_event", self._on_leave),
         ):
-            self.canvas.mpl_connect(name, self._guarded(handler))
+            connect: Any = self.canvas.mpl_connect  # one call for event names of several types
+            connect(name, self._guarded(handler))
 
     @staticmethod
     def _guarded(handler: Callable[[Any], None]) -> Callable[[Any], None]:
