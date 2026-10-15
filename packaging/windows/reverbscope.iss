@@ -37,6 +37,9 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 LicenseFile=..\..\LICENSE
+; The setup program's own icon; the shortcuts and Apps & features take the
+; executables' icon, which PyInstaller embeds (packaging/reverbscope.spec).
+SetupIconFile=..\icons\ReverbScope.ico
 UninstallDisplayIcon={app}\{#MyAppExeName}
 UninstallDisplayName={#MyAppName} {#MyAppVersion}
 ; English and Simplified Chinese. Setup picks the language of the Windows UI

@@ -19,6 +19,16 @@ All notable changes to ReverbScope are documented here. The format follows
   Those root files are in the sdist, which already ships every other tracked
   top-level entry the packaging test requires. Appendix F of the guidelines
   is not filled in by this change.
+- **Application icon.** The downloads had none: `ReverbScope.app`, the
+  Windows executables and the setup program showed the system's default
+  icon, and the Linux desktop entry named an icon that did not exist. A new
+  icon (a scope with a decaying trace and its echoes, `packaging/icons`,
+  drawn by `scripts/make_app_icon.py`) is now the `.app`'s `.icns`, the
+  `.ico` of `reverbscope.exe`, `reverbscope-gui.exe` and the installer, and
+  the window icon on every platform (it replaces the icon drawn at run time,
+  which stays as a fallback). The Linux Desktop Edition carries
+  `reverbscope.desktop` and `reverbscope.png` next to the launchers;
+  `docs/INSTALLATION.md` says how to install them.
 
 ## [0.5.0b3] - 2026-10-09
 

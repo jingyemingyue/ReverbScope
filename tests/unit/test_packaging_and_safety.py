@@ -291,3 +291,42 @@ def test_the_sdist_carries_everything_the_test_suite_reads(tmp_path: Path) -> No
     assert wanted - shipped == set()
     prefix = Path(artifact).name.removesuffix(".tar.gz")
     assert f"{prefix}/.github/workflows/release.yml" in names
+
+
+def test_the_downloads_carry_the_application_icon() -> None:
+    """The .app, the Windows executables and installer, and the Linux bundle
+    showed the system's default icon: the spec passed ``icon=None``."""
+    icons = Path("packaging/icons")
+    spec = Path("packaging/reverbscope.spec").read_text(encoding="utf-8")
+    assert "icon=None" not in spec
+    assert 'icon=str(ICONS / "ReverbScope.icns")' in spec
+    assert spec.count("icon=WINDOWS_ICON") == 2  # reverbscope.exe and reverbscope-gui.exe
+    assert '"reverbscope/ui/icons"' in spec
+    assert 'shutil.copy2(ICONS / "reverbscope.png", bundle)' in spec
+    iss = Path("packaging/windows/reverbscope.iss").read_text(encoding="utf-8-sig")
+    assert "SetupIconFile=..\\icons\\ReverbScope.ico" in iss
+    desktop = Path("packaging/linux/reverbscope.desktop").read_text(encoding="utf-8")
+    assert "Icon=reverbscope\n" in desktop
+
+    assert (icons / "ReverbScope.icns").read_bytes()[:4] == b"icns"
+    ico = (icons / "ReverbScope.ico").read_bytes()
+    assert ico[:4] == b"\x00\x00\x01\x00"
+    count = int.from_bytes(ico[4:6], "little")
+    # A 0 in the directory's width byte means 256 px.
+    sizes = {ico[6 + 16 * i] or 256 for i in range(count)}
+    assert {16, 32, 48, 256} <= sizes
+    png = (icons / "reverbscope.png").read_bytes()
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert int.from_bytes(png[16:20], "big") == int.from_bytes(png[20:24], "big") == 512
+
+
+def test_window_icon_files_exist_for_every_platform(monkeypatch: pytest.MonkeyPatch) -> None:
+    pytest.importorskip("PySide6")
+    from reverbscope.ui import widgets
+
+    for platform in ("darwin", "win32", "linux"):
+        monkeypatch.setattr(sys, "platform", platform)
+        files = widgets.app_icon_files()
+        assert files
+        for path in files:
+            assert path.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n", path

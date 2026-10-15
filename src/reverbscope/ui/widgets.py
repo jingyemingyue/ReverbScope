@@ -348,16 +348,39 @@ def separator() -> QFrame:
     return line
 
 
+#: The window icons ``scripts/make_app_icon.py`` exports next to this module.
+ICON_DIR = Path(__file__).resolve().parent / "icons"
+
+
+def app_icon_files() -> list[Path]:
+    """The icon images for this platform: on macOS the artwork with Apple's
+    margin, so the Dock shows it at the size of the bundle's ``.icns``; on
+    Windows and Linux the full tile, as their title bars and taskbars expect."""
+    if sys.platform == "darwin":
+        names = ["app-macos-128.png", "app-macos-512.png"]
+    else:
+        names = [f"app-{size}.png" for size in (16, 24, 32, 48, 64, 128, 256)]
+    return [ICON_DIR / name for name in names]
+
+
 def app_icon() -> QIcon:
-    """ReverbScope's icon, drawn at runtime (no binary asset to package):
-    a rounded accent tile with a scope ring and a decaying sine."""
+    """ReverbScope's icon: a scope with a decaying trace and its echoes
+    (``packaging/icons``). If the image files are missing, the drawing below
+    stands in so a damaged install still has an icon."""
     icon = QIcon()
-    for size in (16, 24, 32, 48, 64, 128, 256):
-        icon.addPixmap(_icon_pixmap(size))
+    for path in app_icon_files():
+        pixmap = QPixmap(str(path))
+        if not pixmap.isNull():
+            icon.addPixmap(pixmap)
+    if icon.isNull():
+        for size in (16, 24, 32, 48, 64, 128, 256):
+            icon.addPixmap(_icon_pixmap(size))
     return icon
 
 
 def _icon_pixmap(size: int) -> QPixmap:
+    """The fallback icon, drawn at runtime: an accent tile, a scope ring and a
+    decaying sine."""
     pixmap = QPixmap(size, size)
     pixmap.fill(Qt.GlobalColor.transparent)
     painter = QPainter(pixmap)

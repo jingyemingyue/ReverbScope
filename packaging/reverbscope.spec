@@ -30,6 +30,10 @@ MACOS_INFO = plistlib.loads((ROOT / "packaging" / "macos" / "Info.plist").read_b
 VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 MACOS_INFO["CFBundleShortVersionString"] = VERSION
 MACOS_INFO["CFBundleVersion"] = VERSION
+# Application icon (scripts/make_app_icon.py): the .app's .icns, the Windows
+# executables' .ico, and the window icons under reverbscope/ui/icons.
+ICONS = ROOT / "packaging" / "icons"
+WINDOWS_ICON = str(ICONS / "ReverbScope.ico") if sys.platform == "win32" else None
 
 
 def _commit():
@@ -103,7 +107,8 @@ a = Analysis(
         (str(ROOT / "src" / "reverbscope" / "schemas"), "reverbscope/schemas"),
         (str(ROOT / "src" / "reverbscope" / "locale"), "reverbscope/locale"),
         (str(BUILD_INFO_FILE), "reverbscope"),
-    ],
+    ]
+    + ([] if TERMINAL else [(str(ROOT / "src" / "reverbscope" / "ui" / "icons"), "reverbscope/ui/icons")]),
     hiddenimports=["reverbscope.cli.main"] if TERMINAL else ["reverbscope.cli.main", "reverbscope.ui.app"],
     hookspath=[],
     hooksconfig={},
@@ -161,6 +166,7 @@ exe = EXE(
     strip=False,
     upx=False,
     console=True,
+    icon=WINDOWS_ICON,
 )
 # Windows and Linux: a windowed ``reverbscope-gui`` launcher next to the console
 # executable, sharing its libraries. Explorer, the Start menu and desktop files
@@ -180,6 +186,7 @@ if sys.platform != "darwin" and not TERMINAL:
             strip=False,
             upx=False,
             console=False,
+            icon=WINDOWS_ICON,
         )
     )
 coll = COLLECT(
@@ -190,6 +197,14 @@ coll = COLLECT(
     upx=False,
     name="reverbscope-terminal" if TERMINAL else "reverbscope",
 )
+# Linux: the desktop entry and its icon next to the launchers, for a user to
+# install into ~/.local/share (docs/INSTALLATION.md, Linux).
+if sys.platform.startswith("linux") and not TERMINAL:
+    import shutil
+
+    bundle = Path(DISTPATH) / "reverbscope"  # noqa: F821
+    shutil.copy2(ROOT / "packaging" / "linux" / "reverbscope.desktop", bundle)
+    shutil.copy2(ICONS / "reverbscope.png", bundle)
 
 # Keep the console executable for CLI users. Finder needs a separate windowed
 # bootloader so the .app opens the GUI and receives normal macOS app events.
@@ -228,7 +243,7 @@ if sys.platform == "darwin" and not TERMINAL:
         gui_coll,
         localized,
         name="ReverbScope.app",
-        icon=None,
+        icon=str(ICONS / "ReverbScope.icns"),
         bundle_identifier="org.reverbscope.ReverbScope",
         info_plist=MACOS_INFO,
     )

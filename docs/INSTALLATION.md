@@ -189,9 +189,19 @@ sudo apt install libportaudio2 libegl1 libgl1 libxkbcommon-x11-0 libxcb-cursor0
 sudo apt install fonts-noto-cjk   # only for Chinese text in charts
 ```
 
-`packaging/linux/reverbscope.desktop` in the source tree is a desktop entry you
-can adapt. The bundle needs glibc 2.39 or newer (Ubuntu 24.04, Debian 13,
-Fedora 40 or later).
+The bundle carries a desktop entry and the application icon
+(`reverbscope/reverbscope.desktop`, `reverbscope/reverbscope.png`). To list
+ReverbScope among your applications, from the folder you extracted into:
+
+```bash
+mkdir -p ~/.local/share/icons/hicolor/512x512/apps ~/.local/share/applications
+cp reverbscope/reverbscope.png ~/.local/share/icons/hicolor/512x512/apps/
+sed "s|^Exec=.*|Exec=$PWD/reverbscope/reverbscope-gui|" reverbscope/reverbscope.desktop \
+  > ~/.local/share/applications/reverbscope.desktop
+```
+
+The bundle needs glibc 2.39 or newer (Ubuntu 24.04, Debian 13, Fedora 40 or
+later).
 
 ## Terminal Edition
 

@@ -1807,3 +1807,15 @@ def test_a_closed_window_is_freed(app: QApplication) -> None:
     del window
     gc.collect()
     assert freed() is None
+
+
+def test_app_icon_comes_from_the_packaged_images(app: QApplication) -> None:
+    from PySide6.QtGui import QPixmap
+
+    from reverbscope.ui.widgets import app_icon, app_icon_files
+
+    icon = app_icon()
+    assert not icon.isNull()
+    assert len(icon.availableSizes()) == len(app_icon_files())
+    largest = max(QPixmap(str(path)).width() for path in app_icon_files())
+    assert max(size.width() for size in icon.availableSizes()) == largest

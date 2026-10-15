@@ -110,6 +110,11 @@ the wheels, and must be checked again at packaging time:
    QtGraphs, QtLottie, QtQuickTimeline, QtVirtualKeyboard, QtQuick3D,
    QtHttpServer, QtNetworkAuth, QtShaderTools). ReverbScope uses only QtCore,
    QtGui and QtWidgets; plots are matplotlib.
+6. **Artwork:** the application icon (`packaging/icons`, the window icons in
+   `src/reverbscope/ui/icons`) is original work for this repository under
+   its Apache-2.0 licence, drawn by `scripts/make_app_icon.py`. It contains
+   no third-party icon, font or image, so it adds no notice. Pillow is used
+   only by that script, at development time.
 
 ## 4. PySide6 / Qt check (project brief §2.8)
 

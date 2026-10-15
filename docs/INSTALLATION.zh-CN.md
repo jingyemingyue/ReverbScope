@@ -158,8 +158,16 @@ sudo apt install libportaudio2 libegl1 libgl1 libxkbcommon-x11-0 libxcb-cursor0
 sudo apt install fonts-noto-cjk   # 仅在图表里显示中文时需要
 ```
 
-源码里的 `packaging/linux/reverbscope.desktop` 是一个可以按需修改的桌面入口文件。程序包需要 glibc 2.39 或更新
-（Ubuntu 24.04、Debian 13、Fedora 40 或更新）。
+程序包里带有桌面入口文件和应用图标（`reverbscope/reverbscope.desktop`、`reverbscope/reverbscope.png`）。要让 ReverbScope 出现在应用列表里，在解压所在的文件夹中运行：
+
+```bash
+mkdir -p ~/.local/share/icons/hicolor/512x512/apps ~/.local/share/applications
+cp reverbscope/reverbscope.png ~/.local/share/icons/hicolor/512x512/apps/
+sed "s|^Exec=.*|Exec=$PWD/reverbscope/reverbscope-gui|" reverbscope/reverbscope.desktop \
+  > ~/.local/share/applications/reverbscope.desktop
+```
+
+程序包需要 glibc 2.39 或更新（Ubuntu 24.04、Debian 13、Fedora 40 或更新）。
 
 ## 终端版
 
