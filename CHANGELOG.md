@@ -7,7 +7,11 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+- **Floating-point peaks above full scale.** Measurement health now says how
+  far a positive dBFS peak exceeds full scale, instead of calling it within
+  1 dB of full scale. English and Chinese reports share the correction;
+  clipping evidence, severity and acoustic results are unchanged.
 
 ## [0.5.0rc2] - 2026-10-09
 
