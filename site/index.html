@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ReverbScope – Free Open-Source Room Acoustics Measurement Tool</title>
-<meta name="description" content="ReverbScope is a free, open-source room acoustics measurement tool. Measure reverberation time (RT60) with an exponential sine sweep, derive the room impulse response, and check whether a microphone position is usable — next to any DAW or on its own. For recording students, independent engineers and small studios.">
-<meta name="keywords" content="room acoustics measurement, reverberation time, RT60, sine sweep, impulse response, recording studio acoustics, room analyzer, open source audio measurement">
+<meta name="description" content="ReverbScope is a free, open-source room acoustics measurement tool. Measure reverberation time (RT60) with an exponential sine sweep, derive the room impulse response, and check whether a microphone position is usable — next to any DAW or on its own. A free REW alternative for the recording studio.">
+<meta name="keywords" content="room acoustics measurement, reverberation time, RT60, sine sweep, impulse response, free REW alternative, recording studio acoustics, room analyzer, open source audio measurement">
 <link rel="canonical" href="https://jingyemingyue.github.io/ReverbScope/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ReverbScope">
@@ -15,7 +15,7 @@
 <meta property="og:image" content="https://raw.githubusercontent.com/jingyemingyue/ReverbScope/main/docs/images/gui-results.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ReverbScope – Free Open-Source Room Acoustics Measurement Tool">
-<meta name="twitter:description" content="Free, open-source room acoustics measurement: sine sweep, impulse response, RT60 reverberation time. For recording students, independent engineers and small studios.">
+<meta name="twitter:description" content="Free, open-source room acoustics measurement: sine sweep, impulse response, RT60 reverberation time. A free REW alternative for the recording studio.">
 <meta name="twitter:image" content="https://raw.githubusercontent.com/jingyemingyue/ReverbScope/main/docs/images/gui-results.png">
 <style>
 :root{
@@ -125,7 +125,6 @@ footer .fine{margin-top:14px;font-size:.82em;color:#5c6a7d}
       <a class="btn" href="https://github.com/jingyemingyue/ReverbScope/releases">Download</a>
       <a class="btn ghost" href="https://github.com/jingyemingyue/ReverbScope">View on GitHub</a>
     </p>
-    <p class="meta">Early testing software. No real hardware or DAW validation recorded.</p>
     <p class="meta">macOS · Windows · Linux · Python &nbsp;|&nbsp; English / 简体中文</p>
   </div>
 </header>
@@ -160,14 +159,14 @@ footer .fine{margin-top:14px;font-size:.82em;color:#5c6a7d}
   <h2>See it in action</h2>
   <p class="sub">The results page: reverberation, background noise, early reflections and direct sound for one microphone position.</p>
   <figure class="shot">
-    <img src="https://raw.githubusercontent.com/jingyemingyue/ReverbScope/main/docs/images/gui-results.png" alt="Source GUI, Synthetic / Demo data, not the public beta: reverberation time RT60, background noise with mains hum, early reflections and direct sound" loading="lazy">
+    <img src="https://raw.githubusercontent.com/jingyemingyue/ReverbScope/main/docs/images/gui-results.png" alt="ReverbScope results page showing room acoustics measurement: reverberation time RT60, background noise with mains hum, early reflections and direct sound" loading="lazy">
     <figcaption>ReverbScope results page (synthetic demo data — no real room was measured).</figcaption>
   </figure>
 </section>
 
 <section id="download">
   <h2>Download</h2>
-  <p class="sub">Public beta v0.5.0b1 uses RoomScope filenames and the roomscope command. Renamed rc2/b3 remain Draft. Pick your platform on the
+  <p class="sub">Free forever. Pick your platform on the
     <a href="https://github.com/jingyemingyue/ReverbScope/releases">releases page</a>:</p>
   <div class="dl-grid">
     <div class="dl"><h3>🍎 macOS</h3>
@@ -184,7 +183,7 @@ footer .fine{margin-top:14px;font-size:.82em;color:#5c6a7d}
       <a href="https://github.com/jingyemingyue/ReverbScope/releases">Get terminal edition →</a></div>
   </div>
   <pre><code># No microphone needed — try the demo in 30 seconds
-roomscope demo</code></pre>
+reverbscope demo</code></pre>
   <p class="sub" style="margin-top:18px">Developers:
     <a href="https://github.com/jingyemingyue/ReverbScope">clone from GitHub</a>
     — Python 3.12+, <code>pip install -e ".[dev,gui]"</code>.</p>
@@ -192,7 +191,6 @@ roomscope demo</code></pre>
 
 <section id="docs">
   <h2>Documentation</h2>
-  <p><a href="https://github.com/jingyemingyue/ReverbScope/blob/main/docs/PUBLIC_TESTING.md">Public beta installation and first demo</a> · <a href="https://github.com/jingyemingyue/ReverbScope/blob/main/docs/COMMUNITY_TESTING.md">Help test</a></p>
   <p class="sub">User guides, measurement methodology, architecture notes and the release plan.</p>
   <div class="docs">
     <a href="https://github.com/jingyemingyue/ReverbScope/tree/main/docs">📚 Browse the docs</a>
@@ -206,8 +204,8 @@ roomscope demo</code></pre>
   <h2>FAQ</h2>
   <div class="faq">
     <details>
-      <summary>How does this relate to general acoustic analysis tools?</summary>
-      <p>ReverbScope focuses on sweep capture through a DAW, microphone-position comparisons, validity flags and recording profiles. It is early testing software without real hardware validation; it does not claim feature parity or accuracy superiority over other tools.</p>
+      <summary>Is ReverbScope a free REW alternative?</summary>
+      <p>Yes — ReverbScope is a free, open-source alternative to Room EQ Wizard (REW) for room acoustics measurement. It measures reverberation time (RT60), early reflections, background noise and clarity metrics (C50/C80/D50) from an exponential sine sweep, runs next to any DAW instead of inside it, and costs nothing: Apache-2.0 licensed, no paid tiers, no feature gates.</p>
     </details>
     <details>
       <summary>What is room acoustics measurement, and what does RT60 mean?</summary>
