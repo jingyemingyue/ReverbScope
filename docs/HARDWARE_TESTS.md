@@ -1,5 +1,7 @@
 # Hardware test matrix
 
+> Current physical-test status: **NOT RUN**. Start with the [short Apple Silicon / DAW guide](COMMUNITY_TESTING.md). Automated PASS never fills this matrix; only a linked physical run can record Hardware PASS or FAIL. Empty cells below mean NOT RUN.
+
 **English** | [简体中文](HARDWARE_TESTS.zh-CN.md)
 
 ARCHITECTURE_V1.md §7.3: executed at least once per platform before 1.0
@@ -12,11 +14,11 @@ capture where the check needs them. The Demo mode, the `fake` backend, the
 synthetic and scripted-PortAudio tests, and CI runners do not count. The
 cells are empty on purpose; no check has been run on real hardware yet.
 
-**Why this matters now.** `0.5.0rc1` is a release candidate whose only
+**Why this matters now.** `0.5.0rc2` is the current draft candidate whose only
 purpose is this matrix: the code is frozen, and 0.5.0 is cut when real
 machines, interfaces, rooms and DAWs have filled the rows the release plan
 names as the gate ([RELEASE_PLAN.md §2b](RELEASE_PLAN.md#2b-the-050-gate)).
-A failed row is as valuable as a passed one: it becomes a fix and `0.5.0rc2`.
+A failed row is as valuable as a passed one: it becomes a fix and the next candidate.
 
 **Contributing a result.** Open an
 [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)
@@ -25,7 +27,7 @@ issue. Both ask for the environment report
 (**Help → Environment Report for Bug Reports**, or `reverbscope doctor`; the
 interface report with probed sample rates, `reverbscope doctor --probe`),
 which names the version, build commit, OS, host APIs and devices. The
-interface report asks Pass / Fail / Not run for each row of the table below.
+interface report asks Hardware PASS / FAIL / NOT RUN for each row of the table below.
 A maintainer copies the result into a cell below with a link to the issue.
 
 | Check | macOS | Windows | Linux |

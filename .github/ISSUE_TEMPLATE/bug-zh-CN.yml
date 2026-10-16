@@ -14,7 +14,7 @@ body:
     attributes:
       label: ReverbScope 版本
       description: 环境报告开头的“版本”和“构建”两行。
-      placeholder: "0.5.0rc1, build 1a2b3c4d"
+      placeholder: "0.5.0rc2, build 1a2b3c4d"
     validations:
       required: true
   - type: dropdown
@@ -84,3 +84,15 @@ body:
         如果某个会话表现异常，欢迎附上会话打包文件（`reverbscope session bundle
         <session> --out report.zip`）。
       render: text
+  - type: dropdown
+    id: evidence_scope
+    attributes:
+      label: 证据范围
+      description: Automated PASS 不能替代真实 Hardware PASS；未执行为 NOT RUN。演示 / fake / CI 不填硬件矩阵。
+      options:
+      - NOT RUN
+      - Hardware：真实设备 / DAW
+      - Automated：Synthetic / 演示 / fake / CI
+      default: 0
+    validations:
+      required: true

@@ -1,5 +1,7 @@
 # 维护 ReverbScope
 
+> 当前 OSS 审计与 PR 整理顺序见 [OSS_READINESS.md](OSS_READINESS.md)。真实验收按[社区测试指南](COMMUNITY_TESTING.zh-CN.md)执行。About/Topics 管理员命令见 [REPOSITORY_SETTINGS.md](REPOSITORY_SETTINGS.md)；当前连接器没有相应写入操作，部分设置可由有权限的 gh/API 管理。
+
 写给接手维护的人：哪个分支是哪条线、自动化自己会做什么、哪些事只有维护者能做、以及某项检查变红时该怎么办。本文不假设有任何助手，每一步都写明对应的文件或页面。请与 [RELEASE_PLAN.zh-CN.md](RELEASE_PLAN.zh-CN.md)（两条线为何存在、发布如何产生、0.5.0 的门槛；英文全文 [RELEASE_PLAN.md](RELEASE_PLAN.md)）、[CONTRIBUTING.md](../CONTRIBUTING.md)（改动必须遵守的规则、从社区报告到回归测试的流程，英文）、[OFFLINE_CHECKS.md](OFFLINE_CHECKS.md)（没有硬件时能检查什么，英文）和 [API_STABILITY.md](API_STABILITY.md)（哪些东西不能悄悄改变，英文）一起阅读。英文版：[MAINTAINING.md](MAINTAINING.md)。
 
 ## 1. 两条线

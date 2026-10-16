@@ -1,5 +1,13 @@
 # ReverbScope 文档索引
 
+## 当前测试与维护入口
+
+- [公开 beta 安装](PUBLIC_TESTING.zh-CN.md)
+- [完整社区测试指南](COMMUNITY_TESTING.zh-CN.md)
+- [路线图](ROADMAP.zh-CN.md)
+- [贡献者任务](COMMUNITY_TASKS.md)
+- [OSS 准备审计](OSS_READINESS.md)与[申请初稿](OSS_APPLICATION_DRAFT.md)（英文）
+
 [English](index.md) | **简体中文**
 
 ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上测量并与参考仪器对照过，安装包没有用于分发的签名，通用 DAW 模式的各 DAW 步骤是按厂商文档编写、尚未在 DAW 中实测的流程。ReverbScope 不给房间打分。

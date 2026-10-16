@@ -1,43 +1,45 @@
 **English** | [简体中文](README.zh-CN.md)
 
-> 🌐 Official website coming soon — it will go live once GitHub Pages is enabled.
-
 # ReverbScope
 
-**ReverbScope is a free, open-source room acoustics measurement tool: measure
-your recording room with an exponential sine sweep, derive the room impulse
-response, and find out whether a microphone position is usable — reverberation
-time (RT60), early reflections, background noise and direct sound, next to any
-DAW, or on its own. A free REW alternative for the recording studio that
-refuses to invent a number.**
+**Before you record, find out whether this room and this microphone position
+are usable.** ReverbScope plays an exponential sine sweep in your room, derives
+the room impulse response and reports reverberation (RT60), early reflections,
+background noise and direct sound, in plain language and with a validity flag
+on every number. Free, open source (Apache-2.0), next to any DAW or on its own.
+
+**Pre-release software, built by one student developer.** The analysis,
+the desktop workstation and the command line are in place and covered by
+automated tests on Linux, macOS and Windows. **Nothing has been measured
+through a real audio interface or DAW yet**, so treat every number as
+unvalidated. [Help test it](#help-test-it).
 
 [![Latest pre-release](https://img.shields.io/github/v/release/jingyemingyue/ReverbScope?include_prereleases&label=pre-release&color=1a7f8e)](https://github.com/jingyemingyue/ReverbScope/releases)
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope results page: reverberation, background noise with mains hum, early reflections and direct sound for one microphone position, with the interpretation below (synthetic demo data)](docs/images/gui-results.png)
+![ReverbScope desktop workstation showing the overview of one microphone position: reverberation, background noise, early reflections and direct sound, with the measurement health and the inspector beside it (synthetic demo data)](docs/images/gui-results.png)
 
-<sub>The results page for the built-in demo room. Synthetic data: no real room was measured.</sub>
+<sub>The desktop workstation (`main`, 0.5.0b3) on the built-in simulated room.
+Synthetic demo data: no real room was measured.</sub>
 
 ## Download
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**Status: `main` is the development (beta) line; the build to test is the
-0.5.0 release candidate** (the newest `0.5.0rc` release, from the `release/0.5.0`
-line, on the Releases page): a candidate for hardware and DAW validation, not the final
-0.5.0, and unsigned. Free, open source, for testing. **This is not the
-hardware release:** nothing has been measured through a real audio interface
-or DAW yet, so treat the numbers as unvalidated
-([help test it](#help-test-the-release-candidate)). Neither edition needs
-Python.
+**What is public today (2026-10-17):** [v0.5.0b1](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b1),
+published under the old **RoomScope** name. Use its `RoomScope` assets and
+`roomscope demo` (nothing is played); exact file names, checksums and first
+launch are in the [public-beta guide](docs/PUBLIC_TESTING.md).
 
-Choose **one edition**, then the file for your computer under **Assets** on
-the newest release:
+**Not public yet:** the renamed `v0.5.0rc2` and `v0.5.0b3` builds are Draft
+releases that visitors cannot download. No stable 0.5.0, signed or notarized
+build, or PyPI package exists. The tables below name the renamed builds; they
+become download instructions when an accepted pre-release is published.
 
 ### 🖥 Desktop Edition
 
-For most people: the app with windows and charts, plus the `reverbscope`
+For most people: the workstation window with charts, plus the `reverbscope`
 command line.
 
 | Platform | Download | Architecture | Notes |
@@ -52,8 +54,8 @@ command line.
 Authenticode signature), so the system warns once:
 
 * **macOS:** click **Done**, then **System Settings → Privacy & Security →
-  Open Anyway**. Do not turn off Gatekeeper or System Integrity Protection;
-  it is not necessary.
+  Open Anyway**. You do not need to turn off Gatekeeper or System Integrity
+  Protection.
 * **Windows:** SmartScreen → **More info → Run anyway**.
 
 Not sure which Mac you have? Apple menu → **About This Mac**: *Chip: Apple M…*
@@ -61,9 +63,8 @@ means Apple silicon, *Processor: Intel* means Intel.
 
 ### ⌨️ Terminal Edition
 
-For the command line, scripts and automation, servers and computers without
-a desktop: the same measurement and analysis without the GUI, about half the
-size.
+For scripts, automation, servers and computers without a desktop: the same
+measurement and analysis without the window, about half the size.
 
 | Platform | Download | Architecture | Command |
 | --- | --- | --- | --- |
@@ -75,267 +76,222 @@ size.
 Extract the archive first (`tar xzf <file>`; on Windows **Extract All…**). On
 macOS, if a downloaded `reverbscope` is refused, run
 `xattr -dr com.apple.quarantine reverbscope-terminal` once: it clears the
-download mark on those files only and does not turn off Gatekeeper. It is a
-stop-gap for these unsigned pre-release builds.
+download mark on those files only and does not turn off Gatekeeper.
 
 ### Which one?
 
 | | Desktop Edition | Terminal Edition |
 | --- | --- | --- |
-| GUI (windows, charts) | ✅ | — |
+| Workstation window with charts | ✅ | — |
 | Command line (`reverbscope`) | ✅ | ✅ |
 | Room analysis and comparison | ✅ | ✅ |
 | Standalone measurement (plays and records) | ✅ | ✅ |
 | English / 简体中文 | ✅ | ✅ |
 | Python required | No | No |
-| Best for | Most users | Command line, automation, lightweight or headless computers |
+| Best for | Most users | Automation, lightweight or headless computers |
 
 Not sure? Take the **Desktop Edition**: it contains the command line too.
-Step-by-step install, checksums (`SHA256SUMS`), updating and uninstalling:
+Install, checksums (`SHA256SUMS`), updating and uninstalling:
 **[Installation guide](docs/INSTALLATION.md)** ([简体中文](docs/INSTALLATION.zh-CN.md)).
 
 ## Try it in 30 seconds
 
-No microphone and no audio interface needed; nothing is played.
+No microphone and no audio interface needed; nothing is played. In a terminal:
 
-* **Either edition, in a terminal:**
+```bash
+reverbscope demo
+```
 
-  ```bash
-  reverbscope demo
-  ```
-
-  The downloads do not put `reverbscope` on your `PATH`. Open the terminal in
-  the folder that holds it (the Windows installer: `%LOCALAPPDATA%\Programs\ReverbScope`)
-  or give its full path (macOS Desktop Edition:
-  `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`); see
-  [Command line](#command-line).
+The downloads do not put `reverbscope` on your `PATH`. Open the terminal in
+the folder that holds it (the Windows installer:
+`%LOCALAPPDATA%\Programs\ReverbScope`) or give its full path (macOS Desktop
+Edition: `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`).
 
 ![reverbscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
 `reverbscope demo` simulates one room at two microphone positions, runs the
-real analysis and comparison on them and says what to do next. The desktop
-**Demo** runs one Standalone Mode take on a simulated room instead. Every
-number either one shows describes the simulation, and every session either
-one saves is marked as a synthetic demo.
+real analysis and comparison on them and says what to do next. Every number it
+shows describes the simulation, and every session it saves is marked as a
+synthetic demo. The desktop app has no demo button; open that saved session
+with **Session…** to see the workstation on the same data.
 
-**Then measure for real:** turn the monitors **down** (ReverbScope never
-changes system volume), then either let ReverbScope play and record through
-your interface (**Standalone Mode**) or play its sweep in your DAW
-(**Universal DAW Mode**). The [user guide](docs/user-guide/en.md)
+**Then measure for real.** Turn the monitors **down** (ReverbScope never
+changes system volume), then let ReverbScope play and record through your
+interface (**Standalone Mode**) or play its sweep in your DAW (**Universal DAW
+Mode**). The [user guide](docs/user-guide/en.md)
 ([简体中文](docs/user-guide/zh-CN.md)) explains every page.
 
-## What ReverbScope measures
+## What it does
 
-ReverbScope is an open-source, DAW-independent recording environment analyzer.
-It answers practical questions a recording engineer asks about a room and a
-microphone position:
+ReverbScope answers the questions a recording engineer asks before pressing
+record:
 
-* Is this room usable for recording?
-* What acoustic problems does this position have (strong early reflections,
-  long decay, low-frequency build-up, mains hum, high noise floor)?
+* Is this room usable for recording, and what is wrong with it (strong early
+  reflections, long decay, low-frequency build-up, mains hum, a high noise
+  floor)?
+* Is this position usable for a vocal, a drum room mic or a choir?
 * Did moving the microphone or the performer improve things?
 
-It measures the room with an exponential sine sweep (ESS), derives the room
-impulse response by deconvolution, and reports reverberation (EDT / T20 /
-T30 / estimated RT60), early/late energy (C50, C80, D50, centre time),
-frequency response, background noise, early reflections and potential
-low-frequency resonances. Every number carries its unit, its algorithm
-source and a validity flag; when the data is not good enough, ReverbScope
-says *"Insufficient decay range"* instead of inventing a figure. There is
-deliberately no "room score". A recording profile may add one notice when
-C50 or C80 is a poor fit for that kind of recording; the threshold is an
-engineering choice, not a grade. The GUI, the command line and the reports
-are available in English and Simplified Chinese.
+It measures with an exponential sine sweep, derives the impulse response by
+deconvolution and reports EDT / T20 / T30 and an estimated RT60, early and
+late energy (C50, C80, D50, centre time), frequency response, background
+noise, early reflections and possible low-frequency resonances.
 
-Status: **`main` is the beta (development) line and `release/0.5.0` the
-release-candidate line (`0.5.0rc` releases)** on the way to 1.0
-([RELEASE_PLAN.md](docs/RELEASE_PLAN.md) §2a). The DSP core, CLI, GUI, compare,
-loopback, zh-CN catalog, session bundles and both editions' bundles exist and are
-covered by synthetic tests on Linux, macOS and Windows. **Not yet:** any result
-measured on real hardware (the hardware matrix and the validation campaign are
-empty), signed bundles, a PyPI package. No build meets the 0.5.0 gate of the
-release plan yet. Snapshot of what works:
-[docs/STATUS.md](docs/STATUS.md).
+**The desktop workstation** keeps everything in one window:
 
-## Help test the release candidate
+* A **navigator** lists the open project's positions and every open
+  measurement, each with a colour and a tick to overlay it on the charts.
+* **Views** for the overview, frequency response, impulse response and energy
+  decay, noise, spectrogram and waterfall, the room, a comparison against a
+  baseline and the full report.
+* An **inspector** with the measurement's health, key figures with trust
+  chips and the selected reflection.
+* **Interactive charts**: zoom about the cursor, pan, exact axis limits, a
+  readout with units under the pointer, export to image or CSV.
+* A **measure strip** at the bottom: mode, interface, rate, channels, position,
+  Start and Stop. Light and dark themes; English and 简体中文.
 
-The 0.5.0 release candidate exists so that people with real interfaces and
-DAWs can find out what works. A failed check is as useful as a pass.
+**What it refuses to do.** Every number carries its unit, its algorithm source
+and a validity flag. When the data is not good enough, ReverbScope says
+*"Insufficient decay range"* instead of inventing a figure. There is
+deliberately no room score. One omnidirectional microphone measures path
+lengths, not directions, so the room view shows what a measurement
+*constrains* and never names a wall. A recording profile (vocal, voiceover,
+acoustic guitar, drums, room mic, choir) may add one notice when C50 or C80 is
+a poor fit; that threshold is an engineering choice, not a grade.
 
-1. Install a build ([Download](#download); the Gatekeeper / SmartScreen
-   warning is expected).
-2. In a terminal, run `reverbscope demo` once: it shows what a result looks
-   like without playing anything. The desktop app has no demo mode; a
-   synthetic session opened in it is marked synthetic.
+A sourced comparison with REW, Open Sound Meter, ARTA, Smaart and others, and
+when another tool is the better choice, is in
+[docs/COMPARISON.md](docs/COMPARISON.md).
+
+## Status
+
+The version on `main` is **0.5.0b3**; `release/0.5.0` carries the release
+candidate. The analysis core, command line, desktop workstation, comparison,
+loopback, Simplified Chinese catalog, session bundles and both editions'
+bundles exist and are tested with synthetic data on Linux, macOS and Windows.
+
+**Not yet:** any result measured on real hardware (the hardware matrix and the
+validation campaign are empty), any DAW run, signed or notarized bundles, a PyPI
+package. No build meets the 0.5.0 gate of the [release plan](docs/RELEASE_PLAN.md).
+What works, dated: [docs/STATUS.md](docs/STATUS.md). What comes next:
+[docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Help test it
+
+The most useful thing anyone can do now is run it on a real interface or in a
+real DAW and report what happened. A failed check is as useful as a pass.
+
+1. Install a build ([Download](#download); the Gatekeeper or SmartScreen
+   warning is expected). Start with the [public beta](docs/PUBLIC_TESTING.md).
+2. In a terminal, run `reverbscope demo` once to see what a result looks like.
 3. Turn the monitors down, then run **Standalone Mode** with your interface
    and a microphone, or **Universal DAW Mode** through your DAW
    ([DAW notes](docs/user-guide/daw-setup.md)).
 4. Report what happened, with **Help → Environment Report for Bug Reports →
    Probe sample rates** pasted in:
    * [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml):
-     device list, full takes at 44.1 / 48 / 96 kHz, channels above 2,
-     loopback, Stop during playback, dropouts, unplugging during a take;
+     device list, takes at 44.1 / 48 / 96 kHz, channels above 2, loopback,
+     Stop during playback, dropouts, unplugging during a take;
    * [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml):
      the same sweep recorded and exported through one DAW.
 
-Results go into [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md) with a link
-to the report. Only runs on a physical interface count there.
+The short [test guide](docs/COMMUNITY_TESTING.md)
+([中文](docs/COMMUNITY_TESTING.zh-CN.md)) says exactly what to run. Results go
+into [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md) with a link to your
+report; only runs on a physical interface count there. Small first
+contributions are listed in [docs/COMMUNITY_TASKS.md](docs/COMMUNITY_TASKS.md).
 
-## DAW workflow (Universal DAW Mode)
+## How a measurement works
 
-Designed for any DAW that can import, play, record and export WAV files.
-ReverbScope never talks to the DAW. It reads what DAWs export (Broadcast WAV,
-RF64, Wave64, AIFF, CAF, FLAC; 16/24/32-bit PCM or 32-bit float; mono or
-multi-channel) and, when the sweep's sidecar file is used, names the usual
-cause when the DAW played the sweep at the wrong speed (a project at another
-sample rate, or a Warp / Flex / Follow Tempo stretch larger than the
-estimate's own spread: about 1.3 % for the default 10 s sweep, more for
-shorter sweeps).
-Step-by-step notes, written from each vendor's documentation, cover Pro
-Tools, Logic Pro / GarageBand, Cubase / Nuendo, Fender Studio Pro (Studio
-One), Ableton Live, REAPER, FL Studio, Bitwig, Digital Performer and
-Audacity: [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md).
-**None of them has been run with ReverbScope in a real DAW yet**
-([HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md)); a DAW compatibility report is
-the most useful contribution you can make.
+**Universal DAW Mode** works with any DAW that can import, play, record and
+export WAV files. ReverbScope never talks to the DAW: it reads what the DAW
+exports (Broadcast WAV, RF64, Wave64, AIFF, CAF, FLAC; 16/24/32-bit PCM or
+32-bit float; mono or multi-channel) and, when the sweep's sidecar file is
+used, names the usual cause when the sweep was played at the wrong speed.
+Step-by-step notes, written from each vendor's documentation, cover Pro Tools,
+Logic Pro / GarageBand, Cubase / Nuendo, Fender Studio Pro (Studio One),
+Ableton Live, REAPER, FL Studio, Bitwig, Digital Performer and Audacity:
+[docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md). **None of them
+has been run with ReverbScope in a real DAW yet.**
 
-1. **Generate Test Signal** – ReverbScope writes a sweep WAV (plus a small JSON
-   sidecar with the exact sweep definition).
-2. **Record Through Your DAW** – import the WAV on a track, play it through
-   your interface and monitors, record the measurement microphone on another
-   track.
-3. **Import Recording** – export the recorded track as WAV (same sample rate
-   as the project; any length, no trimming needed).
-4. **Analyze** – ReverbScope finds the sweep automatically, deconvolves it and
-   produces the report.
+1. **Generate Test Signal**: a sweep WAV plus a small JSON sidecar.
+2. **Record Through Your DAW**: import the WAV, play it through your
+   interface and monitors, record the measurement microphone on another track.
+3. **Import Recording**: export the recorded track as WAV.
+4. **Analyze**: ReverbScope finds the sweep, deconvolves it and reports.
 
-## Standalone workflow
+**Standalone Mode** plays the sweep and records the microphone itself through
+the interface you select (PortAudio via `sounddevice`). The default sweep
+level is conservative and ReverbScope does not touch system volume or audio
+settings (the one opt-in exception, a macOS option that sets the device's
+sample rate, is described in [SECURITY.md](SECURITY.md#safety-of-standalone-mode)).
 
-ReverbScope plays the sweep and records the microphone itself through the
-audio interface you select (PortAudio via `sounddevice`). Start with the
-monitor level low: the default sweep level is conservative and ReverbScope
-does not touch system volume or audio settings (the one opt-in exception, a
-macOS option that sets the device's sample rate, is described in
-[SECURITY.md](SECURITY.md#safety-of-standalone-mode)).
-
-Both modes call exactly the same analysis pipeline
-(`reverbscope.core.pipeline.analyze`).
+Both modes call the same analysis pipeline (`reverbscope.core.pipeline.analyze`).
 
 ## Command line
 
-Both editions include the command line. It is `reverbscope` in the Terminal
-Edition, in the Windows / Linux Desktop Edition (next to `reverbscope-gui`) and
-in a Python install; in the macOS Desktop Edition it is
+Both editions include the command line: `reverbscope` in the Terminal Edition,
+next to `reverbscope-gui` in the Windows and Linux Desktop Edition and in a
+Python install; in the macOS Desktop Edition it is
 `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope`.
 
 ```bash
-# 1. Generate the test signal (48 kHz, 20 Hz–20 kHz, 10 s sweep, -12 dBFS)
+# Generate the test signal, play it through your DAW, record, then analyze
 reverbscope sweep --out sweep_48k.wav
-
-# 2. Play it through your DAW, record the mic, export recording.wav
-
-# 3. Analyze
 reverbscope analyze --recording recording.wav --sweep sweep_48k.wav --out results/
 
-# Optional: two tape measurements unlock the vertical geometry
+# Two tape measurements unlock the vertical geometry; a profile tunes the advice
 reverbscope analyze --recording recording.wav --sweep sweep_48k.wav \
   --speaker-distance 1.65 --mic-height 0.40 --temperature 21
-
-# Optional: interpret for a kind of recording (generic | vocal | voiceover |
-# acoustic_guitar | drums | room_mic | choir)
 reverbscope analyze --recording recording.wav --sweep sweep_48k.wav --profile voiceover
 
-# Re-open a saved session (same report; --profile overrides the stored one)
+# Re-open a saved session, compare two positions
 reverbscope show results/
-reverbscope show results/ --list
-
-# Compare two saved sessions (every delta carries a validity)
 reverbscope compare results/ position-b/ --same-input-gain
-reverbscope schema result
 
-# Two-channel DAW export: microphone + electrical loopback
-reverbscope analyze --recording take.wav --sweep sweep_48k.wav --channel 0 --loopback-channel 1
-
-# Standalone: list devices, then measure (optional loopback on input 2)
+# Standalone: list devices, then measure
 reverbscope devices
 reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
-# On a terminal, bare reverbscope opens a numbered menu; reports are boxed there
-# (reverbscope --style plain, or config style plain, for the ruled layout)
-reverbscope
-
-# Demo / CI: no interface
-reverbscope demo --out demo/
-reverbscope profiles vocal           # what a recording profile watches for
-reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
-
-# Language (kept in settings.json; "auto" follows the system again), settings,
-# bundle, CSV, project
-reverbscope config language zh_CN
-reverbscope --lang en analyze --recording take.wav --sweep sweep.wav   # one command
-reverbscope config
-reverbscope session bundle session1/ --no-audio --out report.zip
-reverbscope export session1/ --format csv --out curves/
+# Several positions of one room
 reverbscope project init --out room/ --name Booth
 reverbscope project add room/ session1/ --position desk
-reverbscope project average room/
 reverbscope project overview room/   # health, fit, verdicts, next steps per position
 
-# GUI (Desktop Edition, or a Python install with the gui extra)
+# No interface needed
+reverbscope demo --out demo/
+reverbscope profiles vocal           # what a recording profile watches for
+
+# The desktop workstation (Desktop Edition, or a Python install with the gui extra)
 reverbscope gui
 ```
 
-`--speaker-distance` is the straight line from the loudspeaker to the
-microphone capsule; `--mic-height` is the capsule above the first solid
-horizontal surface below it. With both, ReverbScope reports the loudspeaker
-height, the plane above the devices and the horizontal separation. It reports
-**no coordinates, no room length or width, and never names a wall**: one
-omnidirectional microphone at one position measures path lengths, not
-directions, which leaves the geometry underdetermined by two even with the
-distance supplied. The result JSON carries that argument with it.
-
-`--profile` chooses how the measured numbers are turned into advice
-(`generic` by default; `vocal`, `voiceover`, `acoustic_guitar`, `drums`,
-`room_mic` and `choir` have per-recording thresholds and wording). The report
-prints the profile name next to `Interpretation` so the advice is never
-mistaken for room-agnostic truth. The GUI offers the same selector in both
-measurement modes.
-
-`results/` receives `result.json` (all metrics and curves),
-`impulse_response.wav` (raw IR, float32), `session.json` (measurement
-metadata), the sweep's `sweep.reverbscope-sweep.json` and a copy of the
-recording as `recording.wav` (not with `--no-copy-recording` or
-`reverbscope config copy-recording off`). The recording you pass in is never
-modified. `reverbscope show` and the GUI
-**Open Session** / Home session list reopen that directory; the IR WAV is
-the authoritative sample record (`result.json` stores metrics, not IR
-samples). Recently opened or saved sessions are remembered under
-`$REVERBSCOPE_HOME` (default `~/.reverbscope`).
+A result folder holds `result.json` (all metrics and curves),
+`impulse_response.wav` (raw IR, float32), `session.json`, the sweep's sidecar
+and a copy of the recording. The recording you pass in is never modified.
+Every option, the language and style settings, CSV and bundle export are in the
+[user guide](docs/user-guide/en.md).
 
 ## Documentation
 
 | Document | Content |
 | --- | --- |
-| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Download and install on macOS, Windows, Linux or with Python; updating, uninstalling, unsigned-build warnings, troubleshooting; [中文](docs/INSTALLATION.zh-CN.md) |
-| [docs/index.md](docs/index.md) | Documentation hub |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Package layout, data flow, extension points |
-| [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | v1.0 design being executed: API tiers, comparison, loopback, packaging, i18n, validation gates |
-| [docs/ARCHITECTURE_V1.zh-CN.md](docs/ARCHITECTURE_V1.zh-CN.md) | Chinese digest of the v1.0 design |
+| [docs/INSTALLATION.md](docs/INSTALLATION.md) | Install on macOS, Windows, Linux or with Python; unsigned-build warnings, troubleshooting; [中文](docs/INSTALLATION.zh-CN.md) |
+| [docs/user-guide/en.md](docs/user-guide/en.md) | User guide: install, measure, read, compare, bundle; [简体中文](docs/user-guide/zh-CN.md) |
+| [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md) | Step-by-step DAW notes; [中文](docs/user-guide/daw-setup.zh-CN.md) |
 | [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) | Algorithms, units, validity rules, references |
-| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | Every runtime/dev dependency with license and purpose |
-| [docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md) | Audit of external repositories that were studied |
-| [docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md) | Provenance of any adapted or copied code (currently none) |
+| [docs/STATUS.md](docs/STATUS.md) | Implemented, tested, known limits, next milestone |
+| [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md) | The hardware and DAW test matrix, still empty; [中文](docs/HARDWARE_TESTS.zh-CN.md) |
+| [docs/COMPARISON.md](docs/COMPARISON.md) | How ReverbScope differs from REW, ARTA, Smaart and others; [中文](docs/COMPARISON.zh-CN.md) |
+| [docs/AUDIO_DEVICES.md](docs/AUDIO_DEVICES.md) | Host APIs and how devices are probed and chosen; [中文](docs/AUDIO_DEVICES.zh-CN.md) |
+| [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Platforms, DAW export formats, host APIs and what verified each; [中文](docs/COMPATIBILITY.zh-CN.md) |
+| [docs/EDITIONS.md](docs/EDITIONS.md) | Desktop vs. Terminal Edition; [中文](docs/EDITIONS.zh-CN.md) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Package layout, data flow, extension points |
+| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | Every dependency with license and purpose |
 | [docs/LICENSE_DECISION.md](docs/LICENSE_DECISION.md) | Why ReverbScope is Apache-2.0 |
-| [docs/STATUS.md](docs/STATUS.md) | Implemented / tested / known limitations / next milestone |
-| [docs/user-guide/en.md](docs/user-guide/en.md) | User guide (English): install, measure, read, compare, bundle |
-| [docs/user-guide/zh-CN.md](docs/user-guide/zh-CN.md) | 用户指南（简体中文） |
-| [docs/AUDIO_DEVICES.md](docs/AUDIO_DEVICES.md) | Host APIs (WASAPI, WDM-KS, MME, Core Audio, ALSA, JACK, …), what each does to a measurement, and how ReverbScope probes and chooses devices, with sources; [中文](docs/AUDIO_DEVICES.zh-CN.md) |
-| [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Platforms, Python and dependency floors, DAW export formats, host APIs — and what verified each; [中文](docs/COMPATIBILITY.zh-CN.md) |
-| [docs/EDITIONS.md](docs/EDITIONS.md) | Desktop Edition vs. Terminal Edition, and the developer tools; [中文](docs/EDITIONS.zh-CN.md) |
-| [docs/COMPARISON.md](docs/COMPARISON.md) | How ReverbScope differs from REW, Open Sound Meter, ARTA, Smaart, SoundID and others, and when another tool is the better choice; [中文](docs/COMPARISON.zh-CN.md) |
-| [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md) | Step-by-step DAW notes (Pro Tools, Logic, GarageBand, Cubase / Nuendo, Fender Studio Pro (Studio One), Live, REAPER, FL Studio, Bitwig, Digital Performer, Audacity); [中文](docs/user-guide/daw-setup.zh-CN.md) |
-| [docs/PROJECT_BRIEF.zh-CN.md](docs/PROJECT_BRIEF.zh-CN.md) | Original project brief (Chinese) |
+| [docs/index.md](docs/index.md) | The full documentation hub |
 
 ## Development install
 
@@ -373,65 +329,39 @@ for r in result.reflections.reflections:
     print(f"{r.delay_ms:.1f} ms  {r.relative_db:.1f} dB")
 ```
 
-### What makes ReverbScope different
-
-* **It refuses to invent a number.** Every metric carries its unit, its
-  algorithm source and a validity flag; a decay too short for T30 says
-  *insufficient range* instead of a figure. There is no single "room score".
-* **It lives next to your DAW, not inside it.** It needs only a DAW that
-  plays and records WAV, and it names the usual cause when the DAW played the
-  sweep at the wrong speed (sample-rate mismatch or Warp / Flex / Follow
-  Tempo). The per-DAW steps are documented, not yet tested in each DAW.
-* **It speaks the recording engineer's question** — "is this position usable
-  for a vocal, a drum room mic, a choir?" — through labelled interpretation
-  profiles, and compares two positions with a validity on every delta.
-* **It says what one microphone cannot know.** Placement geometry never names
-  a wall or derives coordinates the measurement cannot support.
-
-A sourced comparison with other tools is in [docs/COMPARISON.md](docs/COMPARISON.md).
-
 ### Design principles
 
-* **DAW-independent** – no DAW SDKs, ever. WAV in, WAV out.
-* **Core-first** – DSP functions are pure NumPy/SciPy functions with no GUI,
-  device or file-format dependencies, so a CLI, a desktop app, a plug-in or
-  a Python API can share them.
-* **Scientific correctness over features** – algorithms come from published
+* **DAW-independent**: no DAW SDKs, ever. WAV in, WAV out.
+* **Core-first**: DSP functions are pure NumPy/SciPy functions with no GUI,
+  device or file-format dependencies, so a CLI, a desktop app, a plug-in or a
+  Python API can share them.
+* **Scientific correctness over features**: algorithms come from published
   papers and standards (Farina 2000, Schroeder 1965, Lundeby 1995,
-  ISO 3382-1/-2, ...); see [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md).
-* **Honest numbers** – dBFS unless calibrated, validity flags on every metric,
+  ISO 3382-1/-2); see [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md).
+* **Honest numbers**: dBFS unless calibrated, a validity flag on every metric,
   no pseudo-scientific room score.
-* **Measurement health on every result** – every result carries the checks made on
-  the take itself (sweep, playback speed, direct sound, level, distortion,
-  dropouts, decay range, noise floor, recording length), each good, warning,
-  invalid or unknown with the reason, the figures it affects and what to do
-  next; a sweep played at the wrong speed lists where each DAW sets its
-  sample rate.
-* **Several positions, one overview** – a project folder collects the takes
-  of a room by microphone position; the overview says per take whether the
-  room fits the recording profile, per position whether the takes repeat and
-  how it compares with the first, and what to measure next, without ranking.
-* **Clean-room implementation and license hygiene** – no third-party source is
-  vendored ([docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)); every dependency and
-  every reference repository is audited
-  ([docs/DEPENDENCIES.md](docs/DEPENDENCIES.md),
-  [docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md)).
+* **Measurement health on every result**: the checks made on the take itself
+  (sweep, playback speed, direct sound, level, distortion, dropouts, decay
+  range, noise floor, recording length), each good, warning, invalid or
+  unknown with the reason and what to do next.
+* **Several positions, one overview**: a project folder collects the takes of
+  a room by microphone position and says per position what to measure next,
+  without ranking.
+* **Clean-room implementation**: no third-party source is vendored
+  ([docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)); every dependency and
+  reference repository is audited ([docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md)).
 
 ## Contributing
 
-This is the version intended for other developers to read, clone and review.
 Pull requests are welcome once you have run the checks in
 [CONTRIBUTING.md](CONTRIBUTING.md). Please also read the
-[code of conduct](CODE_OF_CONDUCT.md).
+[code of conduct](CODE_OF_CONDUCT.md). Useful starting points:
 
-Useful starting points:
-
-* [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — package layout and the one
-  analysis entry point (`reverbscope.core.pipeline.analyze`)
-* [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) — every
+* [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): package layout and the one
+  analysis entry point
+* [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md): every
   metric's algorithm, units and validity rules
-* [docs/STATUS.md](docs/STATUS.md) — implemented / tested / next milestone
-* `examples/synthetic_measurement.py` — end-to-end run with no hardware
+* `examples/synthetic_measurement.py`: an end-to-end run with no hardware
 
 ```bash
 pytest
@@ -439,9 +369,9 @@ ruff check . && ruff format --check .
 mypy
 ```
 
-CI (pytest on Ubuntu 3.12–3.14 plus macOS/Windows 3.12, ruff, mypy,
+CI (pytest on Ubuntu 3.12–3.14 plus macOS and Windows 3.12, ruff, mypy,
 sdist/wheel) runs on every push and pull request.
 
 ## License
 
-Apache License 2.0 – see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).

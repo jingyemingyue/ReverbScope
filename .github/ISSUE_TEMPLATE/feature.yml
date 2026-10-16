@@ -28,3 +28,11 @@ body:
     attributes:
       label: Validity
       description: When would the new number be refused rather than guessed?
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Reproducible acceptance criteria
+      description: Give a concrete use case, success criterion, behavior to preserve and a check possible
+        without hardware. Mark unexecuted checks NOT RUN.
+    validations:
+      required: true

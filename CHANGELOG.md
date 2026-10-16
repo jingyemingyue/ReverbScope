@@ -143,6 +143,24 @@ All notable changes to ReverbScope are documented here. The format follows
   top-level entry the packaging test requires. Appendix F of the guidelines
   is not filled in by this change.
 
+### Documentation and tester tooling
+- Separate the public RoomScope beta from renamed Draft releases in both
+  READMEs, installation guides and site copy; label source screenshots.
+- Add an evidence-linked OSS readiness audit, application draft, roadmap,
+  public-beta install guide and bilingual physical-test workflow.
+- Add a report preparer that captures a reviewed environment snapshot, preserves
+  earlier run directories and leaves every hardware/DAW check NOT RUN.
+- Keep JSON evidence links usable in the generated docs site by linking to their
+  repository source; refresh labelled screenshots from the current source version.
+- Extend paired issue forms with evidence scope, save/reopen and reproducible
+  feature acceptance criteria. No DSP, GUI, schema or license change.
+- Rewrite both READMEs around the desktop workstation and the real state of
+  the project: what it does, what has and has not been validated, and how to
+  help test it. Retake the GUI screenshots on the native macOS platform at
+  Retina resolution. `scripts/render_readme_assets.py` placed the synthetic-
+  data stamp outside the image on a high-DPI display; it now measures in
+  logical pixels.
+
 ## [0.5.0b3] - 2026-10-09
 
 Software beta 3, the development line after the release candidate was cut:

@@ -18,7 +18,7 @@ body:
     attributes:
       label: ReverbScope version and build commit
       description: 'From the first lines of the environment report: `reverbscope doctor` or Help → Environment Report for Bug Reports.'
-      placeholder: "ReverbScope 0.5.0rc1, build 1a2b3c4d, Desktop Edition"
+      placeholder: "ReverbScope 0.5.0rc2, build 1a2b3c4d, Desktop Edition"
     validations:
       required: true
   - type: input
@@ -69,9 +69,9 @@ body:
       label: "Device list"
       description: 'The interface appears in Standalone Mode / `reverbscope devices` with the right number of input and output channels.'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -81,9 +81,9 @@ body:
       label: "Full take at 44.1 kHz"
       description: 'A Standalone measurement with the sample rate set to 44100 Hz (not only the probe).'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -93,9 +93,9 @@ body:
       label: "Full take at 48 kHz"
       description: 'A Standalone measurement with the sample rate set to 48000 Hz.'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -105,9 +105,9 @@ body:
       label: "Full take at 96 kHz"
       description: 'A Standalone measurement with the sample rate set to 96000 Hz, if the interface offers it.'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -117,9 +117,9 @@ body:
       label: "Channels beyond 1–2"
       description: 'A take using an input or output above channel 2 (for example input 3 or output 4); say which channels in Result.'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -129,9 +129,9 @@ body:
       label: "Loopback capture"
       description: 'One output cabled back to one input and chosen as the loopback channel.'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -141,9 +141,9 @@ body:
       label: "Stop during playback"
       description: 'Stop pressed while the sweep plays. Pass: the sound stops at once (no tail or stuck tone) and no result is saved.'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -153,9 +153,9 @@ body:
       label: "Full take without a buffer under/overflow"
       description: 'Pass: no "reported ... buffer problem(s) ... may contain dropouts" warning in the result or in `reverbscope.log`. The log is in the data folder (`~/.reverbscope/`, or Environment Report → Open Data Folder).'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -165,9 +165,9 @@ body:
       label: "Input/output latency reported"
       description: 'After a full take, `reverbscope.log` (data folder) has an `audio stream:` line with `latency_s=(input, output)`. Pass: the line is there, both numbers are plausible for your buffer size, and the take had no dropouts. Paste the line in Result.'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -177,9 +177,9 @@ body:
       label: "Interface unplugged during a take"
       description: 'Unplug the USB/Thunderbolt cable while the sweep plays (turn the monitors down first). Pass: ReverbScope reports an error and saves no result; it does not hang or crash.'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -189,9 +189,9 @@ body:
       label: "Full Standalone measurement"
       description: 'Microphone and loudspeaker in a room, a complete take with a result you could read.'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -201,9 +201,9 @@ body:
       label: "Same signal through one DAW"
       description: 'The same interface used through a DAW with Universal DAW Mode (a DAW report with details is welcome too).'
       options:
-        - Not run
-        - Pass
-        - Fail
+        - NOT RUN
+        - Hardware PASS
+        - FAIL
       default: 0
     validations:
       required: true
@@ -236,3 +236,34 @@ body:
         Drag in a session bundle (`reverbscope session bundle <session> --out
         report.zip`, add `--no-audio` to leave the recordings out), or paste the
         relevant lines of `reverbscope.log`.
+  - type: dropdown
+    id: evidence_scope
+    attributes:
+      label: Evidence scope
+      description: Automated PASS never replaces Hardware PASS. Synthetic Demo/fake/CI never fills the hardware
+        matrix.
+      options:
+      - NOT RUN
+      - 'Hardware: physical device / DAW'
+      - 'Automated: Synthetic / Demo / fake / CI'
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: asset_hash
+    attributes:
+      label: Asset filename and SHA256 (or source commit)
+      description: Public beta is still named RoomScope; identify explicitly shared Draft builds.
+    validations:
+      required: true
+  - type: dropdown
+    id: save_reopen
+    attributes:
+      label: 'Save, quit and reopen: values/validity agree'
+      options:
+      - NOT RUN
+      - Hardware PASS
+      - FAIL
+      default: 0
+    validations:
+      required: true

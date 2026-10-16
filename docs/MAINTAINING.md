@@ -79,6 +79,13 @@ it) and the draft refreshed from `main` afterwards still holds 14 files.
 
 ## 3. What only a maintainer does
 
+For the 2026-10-15 inventory, competing GUI PR order and application evidence,
+start with [OSS_READINESS.md](OSS_READINESS.md). Use the [community testing
+guide](COMMUNITY_TESTING.md) and keep every physical row NOT RUN until a linked
+report exists. Exact About/Topics CLI commands and settings still needing an
+admin check are in [REPOSITORY_SETTINGS.md](REPOSITORY_SETTINGS.md). Presence
+of a policy file does not prove that private reporting or branch rules are enabled.
+
 * **Publish a release.** Open the draft `v<version>` on the Releases page,
   read the notes, download at least one bundle and start it on a real
   machine, then **Publish release** (as a *pre-release* for a beta or a
@@ -95,8 +102,8 @@ it) and the draft refreshed from `main` afterwards still holds 14 files.
   candidate line.
 * **Cut the next beta** on `main`: the same commit shape with `0.5.0b3`;
   move the `[Unreleased]` entries under the new heading.
-* **Repository settings** (not reachable from the command line or a
-  workflow): the `main` ruleset (require the nine CI jobs, block force
+* **Repository settings** (require appropriate admin permission; some can be
+  managed with `gh`/API, not this session's connector): the `main` ruleset (require the nine CI jobs, block force
   pushes and deletions, require a pull request with 0 approvals while there
   is one maintainer), the same for `release/**`, Pages, description, topics,
   homepage; the macOS Developer ID secrets ([RELEASE_PLAN.md §3b](RELEASE_PLAN.md#3b-macos-signing-today-and-with-a-developer-id)).

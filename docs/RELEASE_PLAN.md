@@ -1,5 +1,7 @@
 # ReverbScope release plan
 
+> Current inventory (2026-10-15): v0.4.1 / v0.5.0b1 are public under RoomScope names; rc1, rc2, b2 and b3 are Draft. Older dated sections below are historical preparation notes, not current download instructions. See [OSS readiness](OSS_READINESS.md) and [public testing](PUBLIC_TESTING.md).
+
 **English** | [简体中文](RELEASE_PLAN.zh-CN.md)
 
 Status: adopted 2026-09-24. This document says which versions ReverbScope

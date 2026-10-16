@@ -1,5 +1,7 @@
 # Compatibility
 
+> Version scope: renamed source/candidate builds. The public download is still RoomScope v0.5.0b1; rc2/b3 are Draft. Use the [public-beta guide](PUBLIC_TESTING.md) for that release.
+
 **English** | [简体中文](COMPATIBILITY.zh-CN.md)
 
 What ReverbScope runs on and works with, and **what verified each row**. A row

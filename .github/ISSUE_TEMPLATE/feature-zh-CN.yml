@@ -28,3 +28,10 @@ body:
     attributes:
       label: 有效性
       description: 在什么情况下，新数值应当被拒绝给出，而不是靠猜测给出？
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 可复现的验收标准
+      description: 给出一个具体使用场景、成功标准、应保持的行为及不需要真实设备即可执行的检查。尚未执行的检查写 NOT RUN。
+    validations:
+      required: true

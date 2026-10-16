@@ -1,5 +1,7 @@
 # ReverbScope 用户指南
 
+> 版本范围：更名后的源码/候选构建。公开包仍为旧名 RoomScope v0.5.0b1；rc2/b3 为 Draft。公开版请按[对应指南](../PUBLIC_TESTING.zh-CN.md)操作。
+
 [English](en.md) | **简体中文**
 
 ReverbScope 用来测量录音房间，让你听清房间对近距离拾音的声源做了什么。它不给房间打分，也不做校正。

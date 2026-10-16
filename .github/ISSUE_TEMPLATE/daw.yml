@@ -21,7 +21,7 @@ body:
     id: os
     attributes:
       label: Operating system and ReverbScope version
-      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.5.0rc1 build 1a2b3c4d"
+      placeholder: "macOS 15.5 (Apple silicon), ReverbScope 0.5.0rc2 build 1a2b3c4d"
     validations:
       required: true
   - type: input
@@ -73,6 +73,7 @@ body:
       label: Outcome
       description: 'What ReverbScope did with the recording. "Analysed with warnings" means a result opened but the direct-sound confidence was not high, or a sample-rate / time-stretch finding appeared.'
       options:
+        - NOT RUN
         - Analysed, direct-sound confidence high, no finding
         - Analysed with warnings
         - Not analysed (refused, error or crash)
@@ -124,3 +125,34 @@ body:
         A screenshot of the DAW's export dialog or clip settings, and the
         relevant lines of `reverbscope.log` (data folder, or Environment
         Report → Open Data Folder), help when something went wrong.
+  - type: dropdown
+    id: evidence_scope
+    attributes:
+      label: Evidence scope
+      description: Automated PASS never replaces Hardware PASS. Synthetic Demo/fake/CI never fills the hardware
+        matrix.
+      options:
+      - NOT RUN
+      - 'Hardware: physical device / DAW'
+      - 'Automated: Synthetic / Demo / fake / CI'
+      default: 0
+    validations:
+      required: true
+  - type: input
+    id: asset_hash
+    attributes:
+      label: Asset filename and SHA256 (or source commit)
+      description: Public beta is still named RoomScope; identify explicitly shared Draft builds.
+    validations:
+      required: true
+  - type: dropdown
+    id: save_reopen
+    attributes:
+      label: 'Save, quit and reopen: values/validity agree'
+      options:
+      - NOT RUN
+      - Hardware PASS
+      - FAIL
+      default: 0
+    validations:
+      required: true

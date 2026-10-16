@@ -193,6 +193,17 @@ def test_links_that_leave_docs_point_to_the_repository() -> None:
     assert f'href="{blob}README.md"' in nested
 
 
+def test_json_evidence_links_point_to_source_when_not_copied_into_site() -> None:
+    site = _load()
+    blob = "https://github.com/jingyemingyue/ReverbScope/blob/main/docs/"
+    assert site.rewrite_md_href("evidence/snapshot.json", page="OSS_READINESS.md") == (
+        blob + "evidence/snapshot.json"
+    )
+    assert site.rewrite_md_href("snapshot.json", page="evidence/checks.md") == (
+        blob + "evidence/snapshot.json"
+    )
+
+
 def test_every_link_of_the_generated_site_resolves(tmp_path: Path) -> None:
     import re
     from urllib.parse import unquote
