@@ -5098,6 +5098,9 @@ msgstr "录音峰值超过满刻度 {over:.1f} dB：没有发现平顶，但已�
 msgid "the recording peaks at {peak:.1f} dBFS, within {headroom:g} dB of full scale: no flat tops were found, but there is no headroom left"
 msgstr "录音峰值为 {peak:.1f} dBFS，距满刻度不到 {headroom:g} dB：没有发现平顶，但已没有余量"
 
+msgid "position '{label}' is listed twice"
+msgstr "位置“{label}”出现了两次"
+
 msgid "Lower the playback level or the input gain by about 6 dB and measure again."
 msgstr "把播放电平或输入增益降低约 6 dB，然后重新测量。"
 
