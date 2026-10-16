@@ -143,6 +143,13 @@ All notable changes to ReverbScope are documented here. The format follows
   top-level entry the packaging test requires. Appendix F of the guidelines
   is not filled in by this change.
 
+### Fixed
+- **Measurement health.** Float recordings whose peaks exceed 0 dBFS without
+  flat tops now say how far above full scale they peak, in English and
+  Simplified Chinese, instead of "within 1 dB of full scale". The warning
+  status and headroom limits are unchanged. Peaks that round to 0.0 dBFS keep
+  the existing headroom warning.
+
 ### Documentation and tester tooling
 - Separate the public RoomScope beta from renamed Draft releases in both
   READMEs, installation guides and site copy; label source screenshots.

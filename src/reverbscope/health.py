@@ -608,6 +608,18 @@ def _clipping(result: AnalysisResult) -> HealthCheck:
                 ),
             ),
         )
+    if round(clipping.peak_dbfs, 1) > 0:
+        return HealthCheck(
+            "level",
+            HealthStatus.WARNING,
+            title,
+            _(
+                "the recording peaks {over:.1f} dB above full scale: "
+                "no flat tops were found, but there is no headroom left"
+            ).format(over=clipping.peak_dbfs),
+            evidence=evidence,
+            fix=(_("Lower the playback level or the input gain by about 6 dB and measure again."),),
+        )
     if clipping.peak_dbfs > -HEADROOM_DB:
         return HealthCheck(
             "level",
