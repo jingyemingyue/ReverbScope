@@ -1,17 +1,18 @@
-"""Compare two saved sessions: side-by-side deltas and a difference curve."""
+"""Compare: the current measurement against the baseline.
+
+The pair comes from the workspace model (the navigator's baseline and the
+current entry), so measuring a new position and selecting it gives its
+verdict straight away. Two saved sessions can still be picked from the
+list or by path; they are opened into the workspace and compared there.
+The difference curve is an interactive chart like every other.
+"""
 
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 
-from reverbscope.ui.qt import ensure_pyside6
-
-ensure_pyside6()
-
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
@@ -22,6 +23,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
@@ -36,27 +38,21 @@ from reverbscope.cli.render import (
     RESONANCES_NOT_COMPARED,
     render_comparison,
 )
-from reverbscope.core.compare import compare
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
-from reverbscope.interpretation import interpret_comparison
 from reverbscope.interpretation.interpreter import Finding
 from reverbscope.interpretation.profiles import profile_title
-from reverbscope.interpretation.verdicts import ComparisonVerdict, judge_comparison, verdict_chip
-from reverbscope.io.session_store import load_measurement, save_comparison
-from reverbscope.models.comparison import CompareSettings, ComparisonResult, ResonanceMatch
-from reverbscope.ui.browser import SessionBrowser
+from reverbscope.interpretation.verdicts import ComparisonVerdict, verdict_chip
+from reverbscope.io.session_store import save_comparison
 from reverbscope.labels import metric_label, signed_number, status_text, validity_word
-from reverbscope.ui.theme import apply_report_font, ensure_plot_fonts, style_figure
-from reverbscope.ui.widgets import (
-    Card,
-    FindingCard,
-    PageHeader,
-    ask_save_path,
-    label,
-    primary,
-    scroll_page,
-)
+from reverbscope.models.comparison import ComparisonResult, ResonanceMatch
+from reverbscope.ui.browser import SessionBrowser
+from reverbscope.ui.comparison import EntryComparison, current_comparison
+from reverbscope.ui.plotkit import X_FREQUENCY, ChartPanel
+from reverbscope.ui.theme import apply_report_font, tokens
+from reverbscope.ui.views.base import AnalysisView
+from reverbscope.ui.widgets import Card, FindingCard, ask_save_path, label, primary
+from reverbscope.ui.workspace import WorkspaceModel, entry_label
 
 
 def _decay_flags(match: ResonanceMatch) -> str:
@@ -83,36 +79,92 @@ def _notes_starting(comparison: ComparisonResult, *prefixes: str) -> str:
     return "\n".join(localize(note) for note in comparison.notes if note.startswith(prefixes))
 
 
-class ComparePage(QWidget):
-    back = Signal()
+class ComparePage(AnalysisView):
+    """The compare view (``compare``): verdict, metrics, difference, report."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
-        super().__init__(parent)
+    view_id = "compare"
+    #: Open the two sessions at these paths into the workspace and compare them
+    #: (the window loads them; ``(baseline, candidate)``).
+    open_pair = Signal(str, str)
+
+    def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
+        super().__init__(model, parent)
         self._comparison: ComparisonResult | None = None
-        # What the tabs show, to draw it again in another colour scheme.
-        self._shown: tuple[ComparisonResult, list[Finding], str, ComparisonVerdict] | None = None
-        header = PageHeader(
-            _("Compare two sessions"),
+        self._shown: EntryComparison | None = None
+        # The verdict card and the tabs do not both fit a short window: the
+        # body scrolls, and the tabs never shrink below a usable height.
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        body = QWidget()
+        body.setProperty("page", True)
+        scroll.setWidget(body)
+        outer.addWidget(scroll)
+        layout = QVBoxLayout(body)
+        layout.setContentsMargins(14, 10, 14, 8)
+        layout.setSpacing(8)
+
+        top = QHBoxLayout()
+        self.pair = label("", "section")
+        self.pair.setWordWrap(True)
+        top.addWidget(self.pair, 1)
+        self.swap_button = QPushButton(_("Swap"))
+        self.swap_button.setToolTip(_("Make the current measurement the baseline and back."))
+        self.swap_button.clicked.connect(self.swap)
+        top.addWidget(self.swap_button)
+        self.same_gain = QCheckBox(_("Input gain unchanged"))
+        self.same_gain.setToolTip(
+            _(
+                "Required for a VALID noise delta. Leave unchecked if the preamp gain "
+                "may have changed."
+            )
+        )
+        self.same_gain.toggled.connect(self.refresh)
+        top.addWidget(self.same_gain)
+        save = QPushButton(_("Save comparison.json..."))
+        save.clicked.connect(self._save)
+        top.addWidget(save)
+        copy = QPushButton(_("Copy report"))
+        copy.clicked.connect(self._copy)
+        top.addWidget(copy)
+        layout.addLayout(top)
+        self.hint = label(
             _(
                 "Every difference carries a validity: ReverbScope says when two takes cannot "
                 "be compared rather than printing a delta."
             ),
+            "hint",
+            wrap=True,
         )
-        back = QPushButton(_("Back"))
-        back.clicked.connect(self.back.emit)
-        header.action_row.addWidget(back)
-        # The verdict card and the tabs do not both fit a short window: the
-        # body scrolls, and the tabs never shrink below a usable height.
-        layout = scroll_page(self, header)
+        layout.addWidget(self.hint)
 
-        picker = Card()
-        picker.body.addWidget(
-            label(_("Compare two sessions. Select two rows, or pick each path."), "hint", wrap=True)
+        # Two saved sessions from the list or by path, for a pair not open yet.
+        self.picker = Card()
+        picker_head = QHBoxLayout()
+        picker_head.addWidget(
+            label(
+                _("Compare two sessions. Select two rows, or pick each path."), "hint", wrap=True
+            ),
+            1,
         )
+        self.picker_toggle = QPushButton(_("Hide"))
+        self.picker_toggle.setCheckable(True)
+        self.picker_toggle.toggled.connect(self._toggle_picker)
+        self.picker_toggle.clicked.connect(lambda: setattr(self, "_picker_touched", True))
+        #: The user opened or closed the picker: it stays as they left it.
+        self._picker_touched = False
+        picker_head.addWidget(self.picker_toggle)
+        self.picker.body.addLayout(picker_head)
+        self.picker_body = QWidget()
+        picker_layout = QVBoxLayout(self.picker_body)
+        picker_layout.setContentsMargins(0, 0, 0, 0)
         self.browser = SessionBrowser(multi_select=True)
         self.browser.list.setMinimumHeight(90)
         self.browser.open_session.connect(self._fill_next_path)
-        picker.body.addWidget(self.browser, 1)
+        picker_layout.addWidget(self.browser, 1)
         paths = QHBoxLayout()
         self.baseline_path = QLineEdit()
         self.baseline_path.setPlaceholderText(_("Baseline session"))
@@ -126,26 +178,12 @@ class ComparePage(QWidget):
         paths.addWidget(pick_a)
         paths.addWidget(self.candidate_path)
         paths.addWidget(pick_b)
-        picker.body.addLayout(paths)
-        buttons = QHBoxLayout()
-        self.same_gain = QCheckBox(_("Input gain unchanged"))
-        self.same_gain.setToolTip(
-            _(
-                "Required for a VALID noise delta. Leave unchecked if the preamp gain "
-                "may have changed."
-            )
-        )
-        buttons.addWidget(self.same_gain)
-        buttons.addStretch(1)
-        save = QPushButton(_("Save comparison.json..."))
-        save.clicked.connect(self._save)
-        run = primary(QPushButton(_("Compare")))
-        run.setShortcut("Ctrl+Return")
-        run.clicked.connect(self.run_compare)
-        buttons.addWidget(save)
-        buttons.addWidget(run)
-        picker.body.addLayout(buttons)
-        layout.addWidget(picker)
+        self.run_button = primary(QPushButton(_("Compare")))
+        self.run_button.clicked.connect(self.run_compare)
+        paths.addWidget(self.run_button)
+        picker_layout.addLayout(paths)
+        self.picker.body.addWidget(self.picker_body)
+        layout.addWidget(self.picker)
 
         # Did moving help: one row per aspect under the candidate's profile.
         verdict_card = Card()
@@ -194,12 +232,15 @@ class ComparePage(QWidget):
         )
         chart = QWidget()
         chart_layout = QVBoxLayout(chart)
-        # Laid out again at every draw: the chart is drawn while its tab is
-        # hidden, at a size it does not keep.
-        self.figure = Figure(figsize=(7.0, 3.2), dpi=100, layout="tight")
-        self.canvas = FigureCanvasQTAgg(self.figure)
-        style_figure(self.figure)
-        chart_layout.addWidget(self.canvas, 1)
+        chart_layout.setContentsMargins(0, 4, 0, 0)
+        self.diff_chart = ChartPanel(
+            X_FREQUENCY,
+            x_label=_("Frequency (Hz)"),
+            y_label="Δ dB",
+            title=_("Frequency-response difference (candidate − baseline)"),
+        )
+        self.diff_chart.export_name = "comparison-difference"
+        chart_layout.addWidget(self.diff_chart, 1)
         self.band_mad = label("", "hint", wrap=True)
         chart_layout.addWidget(self.band_mad)
         self.text = QPlainTextEdit()
@@ -218,16 +259,28 @@ class ComparePage(QWidget):
         )
         self.tabs.addTab(_with_note(self.resonances, self.resonances_note), _("Resonances"))
         self.tabs.addTab(self.text, _("Full report"))
-        self.tabs.setMinimumHeight(320)
+        self.tabs.setMinimumHeight(340)
         layout.addWidget(self.tabs, 2)
         self.status = label("", "hint", wrap=True)
         layout.addWidget(self.status)
+        for signal in (
+            model.current_changed,
+            model.baseline_changed,
+            model.entries_changed,
+        ):
+            signal.connect(self.refresh)
+
+    def title(self) -> str:
+        return _("Compare")
+
+    # --- the pair ---------------------------------------------------------------------
 
     def set_paths(self, baseline: Path, candidate: Path) -> None:
         self.baseline_path.setText(str(baseline))
         self.candidate_path.setText(str(candidate))
 
     def run_compare(self) -> None:
+        """Open the picked pair into the workspace; the comparison follows."""
         baseline = self.baseline_path.text().strip()
         candidate = self.candidate_path.text().strip()
         selected = self.browser.selected_pair() if not baseline or not candidate else None
@@ -237,60 +290,91 @@ class ComparePage(QWidget):
         if not baseline or not candidate:
             QMessageBox.information(self, _("Compare"), _("Choose two sessions first."))
             return
+        self.open_pair.emit(baseline, candidate)
+        self.refresh()
+
+    def swap(self) -> None:
+        baseline = self.model.baseline_key
+        current = self.model.current_key
+        if baseline and current and baseline != current:
+            self.model.set_baseline(current)
+            self.model.set_current(baseline)
+
+    def _toggle_picker(self, hidden: bool) -> None:
+        self.picker_body.setVisible(not hidden)
+        self.picker_toggle.setText(_("Show") if hidden else _("Hide"))
+
+    # --- drawing ----------------------------------------------------------------------
+
+    def redraw(self) -> None:
+        baseline = self.model.baseline()
+        current = self.model.current()
+        self.swap_button.setEnabled(baseline is not None and current is not None)
         try:
-            left = load_measurement(baseline)
-            right = load_measurement(candidate)
-            # Named as `reverbscope compare` names them: `reverbscope show` lists
-            # the two sessions and reads the candidate's profile from them.
-            comparison = replace(
-                compare(
-                    left.result,
-                    right.result,
-                    settings=CompareSettings(same_input_gain=self.same_gain.isChecked()),
-                ),
-                baseline_session=str(left.directory),
-                candidate_session=str(right.directory),
-            )
+            compared = current_comparison(self.model, same_gain=self.same_gain.isChecked())
         except ReverbScopeError as exc:
-            QMessageBox.critical(self, _("Cannot compare"), localize(str(exc)))
+            compared = None
+            self.status.setText(_("Cannot compare: {error}").format(error=localize(str(exc))))
+        else:
+            self.status.setText("")
+        if compared is None:
+            self._comparison = None
+            self._shown = None
+            if baseline is None:
+                self.pair.setText(_("No baseline chosen"))
+                self.hint.setText(
+                    _(
+                        "Right-click a measurement in the list and choose Use as baseline, then "
+                        "select the measurement to compare with it. Or pick two saved sessions "
+                        "below."
+                    )
+                )
+            elif current is None or current.key == baseline.key:
+                self.pair.setText(_("Baseline: {name}").format(name=entry_label(baseline)))
+                self.hint.setText(_("Select another measurement in the list to compare it."))
+            else:
+                self.pair.setText(_("Waiting for both measurements to load."))
+            self.verdict_card.hide()
+            self._clear_tables()
             return
-        profile = right.session.recording_profile or "generic"
-        try:
-            findings = interpret_comparison(comparison, profile)
-        except ReverbScopeError:
-            findings = interpret_comparison(comparison, "generic")
-            profile = "generic"
-        # Judged with both results at hand: each side's measurement health counts.
-        verdict = judge_comparison(
-            comparison, profile, baseline=left.result, candidate=right.result
-        )
-        self._comparison = comparison
-        self._show(comparison, findings, profile, verdict)
-        self.status.setText(
-            _("{baseline}  vs  {candidate}").format(
-                baseline=left.directory, candidate=right.directory
+        self.pair.setText(
+            _("{candidate}  against the baseline  {baseline}").format(
+                candidate=entry_label(compared.candidate), baseline=entry_label(compared.baseline)
             )
         )
+        self.hint.setText(
+            _(
+                "Every difference carries a validity: ReverbScope says when two takes cannot "
+                "be compared rather than printing a delta."
+            )
+        )
+        self._comparison = compared.comparison
+        self._shown = compared
+        if not self._picker_touched:
+            self.picker_toggle.setChecked(True)
+        self._show(compared.comparison, compared.findings, compared.profile, compared.verdict)
+
+    def _clear_tables(self) -> None:
+        for widget in (self.table, self.reflections, self.resonances):
+            widget.setRowCount(0)
+        self.reflections_note.setText("")
+        self.resonances_note.setText("")
+        self.text.setPlainText("")
+        self.diff_chart.clear()
+        self.diff_chart.set_message(_("No difference curve"))
+        self.band_mad.setText("")
 
     def restyle(self) -> None:
-        """Draw the comparison again in the colour scheme now in force."""
-        if self._shown is not None:
-            self._show(*self._shown)
-        else:
-            style_figure(self.figure)
-            self.canvas.draw_idle()
+        self.diff_chart.restyle()
+        self.refresh()
 
     def _show(
         self,
         comparison: ComparisonResult,
         findings: list[Finding],
         profile: str,
-        verdict: ComparisonVerdict | None = None,
+        verdict: ComparisonVerdict,
     ) -> None:
-        # Without the two results at hand the verdict rests on the comparison alone.
-        if verdict is None:
-            verdict = judge_comparison(comparison, profile)
-        self._shown = (comparison, findings, profile, verdict)
         self._show_verdict(verdict)
         rows = (
             list(comparison.decay)
@@ -358,29 +442,50 @@ class ComparePage(QWidget):
         self.text.setPlainText(
             render_comparison(REPORT_CONSOLE, comparison, findings, profile, verdict)
         )
-        self.figure.clear()
-        ensure_plot_fonts()
-        axes = self.figure.add_subplot(111)
+        self._draw_difference(comparison)
+
+    def _draw_difference(self, comparison: ComparisonResult) -> None:
+        chart = self.diff_chart
+        chart.clear()
         fr = comparison.frequency_response
-        if fr is not None and fr.frequencies_hz.size:
-            axes.semilogx(fr.frequencies_hz, fr.difference_db, linestyle="-")
-            axes.set_xlabel(_("Frequency (Hz)"))
-            axes.set_ylabel("Δ dB")
-            axes.set_title(_("Frequency-response difference (candidate − baseline)"))
-            axes.grid(True, which="both", alpha=0.3)
-            if fr.band_mad_db:
-                bits = ", ".join(f"{name} {mad:.2f} dB" for name, mad in fr.band_mad_db)
-                self.band_mad.setText(
-                    _("Mean absolute difference per octave: {bits}").format(bits=bits)
-                )
-            else:
-                self.band_mad.setText("")
-        else:
-            axes.text(0.5, 0.5, _("No difference curve"), ha="center", va="center")
-            axes.set_axis_off()
+        if fr is None or not fr.frequencies_hz.size:
+            chart.set_message(_("No difference curve"))
             self.band_mad.setText("")
-        style_figure(self.figure)
-        self.canvas.draw_idle()
+            return
+        t = tokens()
+        candidate = self._shown.candidate if self._shown is not None else None
+        chart.add_curve(
+            _("candidate − baseline"),
+            fr.frequencies_hz,
+            fr.difference_db,
+            color=candidate.color if candidate is not None else t["accent"],
+            width=1.6,
+            processing=_("as computed by reverbscope compare"),
+            readout=True,
+        )
+        chart.add_hline(0.0, color=t["muted"])
+        chart.set_default_range(
+            (
+                max(20.0, float(fr.frequencies_hz[fr.frequencies_hz > 0].min(initial=20.0))),
+                float(fr.frequencies_hz.max()),
+            ),
+            None,
+        )
+        if fr.band_mad_db:
+            bits = ", ".join(f"{name} {mad:.2f} dB" for name, mad in fr.band_mad_db)
+            self.band_mad.setText(
+                _("Mean absolute difference per octave: {bits}").format(bits=bits)
+            )
+        else:
+            self.band_mad.setText("")
+
+    def _copy(self) -> None:
+        text = self.text.toPlainText()
+        if not text.strip():
+            self.status.setText(_("Nothing to copy yet."))
+            return
+        QGuiApplication.clipboard().setText(text)
+        self.status.setText(_("Report copied to the clipboard."))
 
     def _show_verdict(self, verdict: ComparisonVerdict) -> None:
         """The verdict card: the headline, one row per aspect, the conditions."""
@@ -407,7 +512,9 @@ class ComparePage(QWidget):
 
     def _save(self) -> None:
         if self._comparison is None:
-            QMessageBox.information(self, _("Save comparison"), _("Run a comparison first."))
+            QMessageBox.information(
+                self, _("Save comparison"), _("Choose a baseline and a measurement to compare.")
+            )
             return
         target = ask_save_path(
             self, _("Save comparison.json"), "comparison.json", _("JSON files (*.json)")

@@ -5,6 +5,7 @@ their Chinese text with a CJK font (no empty boxes)."""
 
 from __future__ import annotations
 
+import re
 import warnings
 from collections.abc import Iterator
 from pathlib import Path
@@ -51,12 +52,26 @@ def zh(app: QApplication, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> It
         activate("en")
 
 
+def _internal(widget: QWidget) -> bool:
+    """pyqtgraph's own menus and settings panel: switched off, never shown."""
+    from reverbscope.ui.pg import INTERNAL_PROPERTY
+
+    while widget is not None:
+        if widget.property(INTERNAL_PROPERTY):
+            return True
+        widget = widget.parentWidget()
+    return False
+
+
 def _texts(root: QWidget) -> list[str]:
     out: list[str] = []
     for widget in [root, *root.findChildren(QWidget)]:
+        if _internal(widget):
+            continue
         out += [widget.toolTip(), widget.windowTitle()]
         if isinstance(widget, QLabel):
-            out.append(widget.text())
+            # Rich text (the inspector's coloured chips): the markup is not read.
+            out.append(re.sub(r"<[^>]+>", " ", widget.text()))
         if isinstance(widget, QAbstractButton):
             out.append(widget.text())
         if isinstance(widget, QGroupBox):
@@ -119,8 +134,6 @@ def _measurements(home: Path) -> list[tuple[Path, object]]:
 
 
 def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> None:
-    from reverbscope.interpretation import interpret
-    from reverbscope.models.session import MeasurementSession
     from reverbscope.ui.main_window import MainWindow
 
     saved = _measurements(tmp_path)
@@ -148,43 +161,45 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
         settle()
         _check(_texts(window), page)
 
-    _folder, result = saved[1]
-    window.state.result = result
-    window.state.findings = interpret(result, "vocal")
-    window.state.session = MeasurementSession(room_name="房间B", measurement_position="1")
+    # Both measurements in the list, the first as the baseline, a reflection
+    # selected and the example room entered: every view and the inspector
+    # have something to say.
+    assert window.open_session_path(saved[0][0])
+    assert window.open_session_path(saved[1][0])
+    first, second = (entry.key for entry in window.model.entries())
+    window.model.set_baseline(first)
+    window.model.set_current(second)
+    window.model.select_reflection(second, 0)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        window.show_results()
-        for index in range(window.results.tabs.count()):
-            window.results.tabs.setCurrentIndex(index)
+        for view_id in window.views:
+            window.show_view(view_id)
             settle()
-        window.show_compare()
-        window.compare.set_paths(saved[0][0], saved[1][0])
-        window.compare.run_compare()
+        window.views["room"].use_example()
+        settle()
         window.compare.tabs.setCurrentIndex(1)
         settle()
         window.grab()
     tofu = [w for w in caught if "missing from font" in str(w.message)]
-    _check(_texts(window.results), "results")
-    _check([window.results.text.toPlainText()], "full report")
-    _check(_texts(window.compare), "compare")
-    # Two-letter words pass the English gate: "vs" between the two paths did.
-    assert window.compare.status.text() == f"{saved[0][0]}  对  {saved[1][0]}"
+    for view_id, view in window.views.items():
+        _check(_texts(view), view_id)
+    _check(_texts(window.navigator), "navigator")
+    _check(_texts(window.inspector), "inspector")
+    _check(_texts(window.strip), "measure strip")
+    _check([window.views["report"].text.toPlainText()], "full report")
     _check([window.compare.text.toPlainText()], "comparison report")
-    tabs = (
-        window.results.ir_tab,
-        window.results.fr_tab,
-        window.results.decay_tab,
-        window.results.noise_tab,
-        window.results.refl_tab,
-        window.results.place_tab,
-    )
-    figures = [tab.figure for tab in tabs] + [
-        window.compare.figure,
-        window.daw.placement.figure,
-        window.standalone.placement.figure,
-    ]
-    for figure in figures:
+    from reverbscope.ui.plotkit import ChartPanel
+
+    charts = window.findChildren(ChartPanel)
+    assert len(charts) >= 8
+    for chart in charts:
+        axes = [chart.plot_item.getAxis(name).labelText for name in ("bottom", "left")]
+        legend = [series.name for series in chart.series] + [
+            series.processing for series in chart.series
+        ]
+        _check([chart.title.text(), chart.readout.text(), *axes, *legend], "charts")
+    # The two placement pictures beside the tape-measure inputs stay matplotlib.
+    for figure in (window.daw.placement.figure, window.standalone.placement.figure):
         chart_text = [t.get_text() for t in figure.findobj(lambda o: hasattr(o, "get_text"))]
         _check([text for text in chart_text if text], "charts")
     window.close()
@@ -225,7 +240,7 @@ def _check_about_and_clocks(window: QWidget) -> None:
 
     present = [name for name in CJK_FALLBACK_FONTS if name in set(QFontDatabase.families())]
     if present:
-        families = window.results.text.font().families()
+        families = window.views["report"].text.font().families()
         assert any(name in families for name in present), families
 
 
@@ -242,11 +257,11 @@ def test_a_demo_made_in_english_is_listed_and_titled_in_chinese(
     for a demo made before the language was changed: the names the demo wrote
     are shown in the interface language, a name a user typed is not touched."""
     from reverbscope.demo import DEMO_MODE
-    from reverbscope.interpretation import interpret
     from reverbscope.io.recent import remember_session
     from reverbscope.io.session_store import save_measurement
     from reverbscope.models.session import MeasurementSession
     from reverbscope.ui.main_window import MainWindow
+    from reverbscope.ui.workspace import entry_label
 
     [(_folder, result)] = _measurements(tmp_path)[:1]
     session = MeasurementSession(
@@ -263,16 +278,17 @@ def test_a_demo_made_in_english_is_listed_and_titled_in_chinese(
     listed = window.home.recent.item(0).text()
     assert "合成演示房间" in listed and "A：靠近桌面和侧墙" in listed, listed
     assert "Synthetic" not in listed and "desk" not in listed, listed
-    window.state.result = result
-    window.state.findings = interpret(result, "vocal")
-    window.state.session = session
-    window.show_results()
-    title = window.results.header.subtitle.text()
+    assert window.open_session_path(saved)
+    title = window.inspector.subtitle.text()
     assert "合成演示房间" in title and "模拟全指向话筒" in title, title
     assert "Synthetic" not in title and "omni" not in title, title
+    # The navigator and the chart legends name it the same way.
+    current = window.model.current()
+    assert current is not None and "Synthetic" not in entry_label(current)
     session.room_name = "Booth A"
-    window.show_results()
-    assert "Booth A" in window.results.header.subtitle.text()
+    save_measurement(saved, session, result)
+    assert window.open_session_path(saved)
+    assert "Booth A" in window.inspector.subtitle.text()
     window.close()
 
 

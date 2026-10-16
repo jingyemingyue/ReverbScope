@@ -12,7 +12,7 @@ from typing import Any
 import numpy as np
 
 from reverbscope.errors import SessionError
-from reverbscope.i18n import _
+from reverbscope.i18n import _, quoted
 from reverbscope.models.loadutil import read_flag, read_schema_version, record_name
 from reverbscope.models.result import (
     RESULT_SCHEMA_VERSION,
@@ -120,7 +120,7 @@ def _validity(value: Any) -> Validity:
     try:
         return Validity(str(value))
     except ValueError as exc:
-        raise SessionError(_("unknown validity {value}").format(value=repr(value))) from exc
+        raise SessionError(_("unknown validity {value}").format(value=quoted(value))) from exc
 
 
 def decay_metric_from_dict(data: Any) -> DecayMetric:

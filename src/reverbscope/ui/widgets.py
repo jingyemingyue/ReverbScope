@@ -21,6 +21,7 @@ from PySide6.QtGui import (
     QPainterPath,
     QPen,
     QPixmap,
+    QResizeEvent,
 )
 from PySide6.QtWidgets import (
     QFrame,
@@ -36,6 +37,51 @@ from PySide6.QtWidgets import (
 
 from reverbscope.i18n import _
 from reverbscope.ui.theme import LIGHT_TOKENS, tokens, tone_color
+
+
+class PathLabel(QLabel):
+    """One line with a preserved filename; the complete path stays in a tooltip."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.full_path = ""
+        self.setProperty("role", "hint")
+        self.setTextFormat(Qt.TextFormat.PlainText)
+        self.setMinimumWidth(0)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+
+    def setText(self, text: str) -> None:  # noqa: N802 - Qt override
+        self.full_path = text
+        self.setToolTip(text)
+        self.setAccessibleName(text)
+        self._elide_path()
+
+    def _elide_path(self) -> None:
+        super().setText(
+            self.fontMetrics().elidedText(
+                self.full_path, Qt.TextElideMode.ElideMiddle, max(1, self.contentsRect().width())
+            )
+        )
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._elide_path()
+
+
+class PlotBody(QWidget):
+    """Scrollable plot content whose wrapped notes reserve only required height.
+
+    A QGraphicsView's preferred size follows its current viewport. Feeding
+    that preferred height back into QScrollArea's height-for-width calculation
+    makes the chart grow on every layout pass. Minimum height is stable.
+    """
+
+    def heightForWidth(self, width: int) -> int:  # noqa: N802 - Qt override
+        layout = self.layout()
+        if layout is None:
+            return int(super().heightForWidth(width))
+        height = layout.minimumHeightForWidth(width)
+        return int(max(layout.minimumSize().height(), height))
 
 
 def set_banner_text(widget: QLabel, text: str, tone: str = "") -> None:
@@ -145,6 +191,17 @@ def label(text: str, role: str | None = None, *, wrap: bool = False) -> QLabel:
     return widget
 
 
+def native_shortcut(sequence: str) -> str:
+    """How the platform shows ``sequence`` (Command on macOS, Ctrl elsewhere).
+
+    ``QKeySequence.toString`` returns a Python ``str``. The lint job does not
+    install PySide6, so the stub is missing and mypy sees ``Any``. ``str()``
+    is the value the method actually produces.
+    """
+    shown = QKeySequence(sequence).toString(QKeySequence.SequenceFormat.NativeText)
+    return str(shown)
+
+
 def shortcut_badge(sequence: str) -> str:
     """Key mark for a card: ``⌃1``, or ``⌘1`` on macOS.
 
@@ -152,12 +209,13 @@ def shortcut_badge(sequence: str) -> str:
     ``sequence`` is a Qt shortcut such as ``Ctrl+1``.
     """
     key = sequence.rsplit("+", 1)[-1]
+    mark = "⌃"
     if sys.platform == "darwin":
-        native = QKeySequence(sequence).toString(QKeySequence.SequenceFormat.NativeText)
+        mark = "⌘"
+        native = native_shortcut(sequence)
         if native and "Ctrl" not in native:
             return native
-        return f"⌘{key}"
-    return f"⌃{key}"
+    return f"{mark}{key}"
 
 
 def primary(button: QPushButton) -> QPushButton:
@@ -174,7 +232,7 @@ class Card(QFrame):
         super().__init__(parent)
         self.setProperty("card", True)
         self.body = QVBoxLayout(self)
-        self.body.setContentsMargins(16, 14, 16, 14)
+        self.body.setContentsMargins(12, 10, 12, 10)
         self.body.setSpacing(spacing)
 
 
@@ -251,31 +309,37 @@ class Chip(QLabel):
         self.set_tone(tone)
 
     def set_tone(self, tone: str) -> None:
-        fg, bg = tone_color(tone)
+        fg, _bg = tone_color(tone)
         self.setStyleSheet(
-            f"background: {bg}; color: {fg}; border: 1px solid {bg}; border-radius: 9px;"
-            " padding: 2px 9px;"
-            "font-size: 11px; font-weight: 700;"
+            f"background: transparent; color: {fg}; border: none;"
+            " padding: 0 3px; font-size: 11px; font-weight: 600;"
         )
 
 
-class StatTile(Card):
-    """One key figure: caption, value, a qualifier line and a trust chip."""
+class StatTile(QWidget):
+    """One key figure: caption, value, a qualifier line and a trust chip.
+
+    Not a card. The four figures sit in one row, like a parameter strip.
+    """
 
     def __init__(self, caption: str, parent: QWidget | None = None) -> None:
-        super().__init__(parent, spacing=2)
+        super().__init__(parent)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
-        top = QHBoxLayout()
-        self.caption = label(caption, "kpi-label")
-        top.addWidget(self.caption)
-        top.addStretch(1)
-        self.chip = Chip()
-        top.addWidget(self.chip)
-        self.body.addLayout(top)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 10, 0)
+        layout.setSpacing(1)
+        # The caption wraps on its own line. Sharing the row with the chip
+        # clipped Chinese captions once the tile got narrow.
+        self.caption = label(caption, "kpi-label", wrap=True)
+        layout.addWidget(self.caption)
+        row = QHBoxLayout()
         self.value = label("-", "kpi-value")
-        self.body.addWidget(self.value)
+        row.addWidget(self.value, 1)
+        self.chip = Chip()
+        layout.addLayout(row)
+        layout.addWidget(self.chip, 0, Qt.AlignmentFlag.AlignLeft)
         self.sub = label("", "kpi-sub", wrap=True)
-        self.body.addWidget(self.sub)
+        layout.addWidget(self.sub)
 
     def show_value(self, value: str, sub: str = "", chip: str = "", tone: str = "neutral") -> None:
         self.value.setText(value)
@@ -318,19 +382,18 @@ class FindingCard(QFrame):
     ) -> None:
         super().__init__(parent)
         tone = SEVERITY_TONE.get(severity, "neutral")
-        fg, bg = tone_color(tone)
         self.setObjectName("finding")
         self.setStyleSheet(
-            f"QFrame#finding {{ background: {bg}; border-left: 4px solid {fg};"
-            " border-radius: 6px; }"
+            f"QFrame#finding {{ background: {tokens()['surface']}; "
+            f"border: none; border-bottom: 1px solid {tokens()['border']}; }}"
         )
         row = QHBoxLayout(self)
-        row.setContentsMargins(12, 8, 12, 8)
-        row.setSpacing(10)
+        row.setContentsMargins(6, 4, 6, 4)
+        row.setSpacing(6)
         chip = Chip((severity_label or severity).upper(), tone)
         # A fixed width cut "NOT COMPARABLE" short; the column stays aligned
         # for the usual one-word labels.
-        chip.setMinimumWidth(82)
+        chip.setMinimumWidth(48)
         row.addWidget(chip, 0, Qt.AlignmentFlag.AlignTop)
         text = QVBoxLayout()
         text.setSpacing(1)

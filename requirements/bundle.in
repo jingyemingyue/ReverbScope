@@ -6,3 +6,5 @@ soundfile>=0.12
 sounddevice>=0.4.6
 matplotlib>=3.10
 PySide6_Essentials>=6.6
+# Pinned exactly like the gui extra in pyproject.toml; brings colorama.
+pyqtgraph==0.14.0

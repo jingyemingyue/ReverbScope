@@ -20,19 +20,19 @@ ENV_COLOR_SCHEME = "REVERBSCOPE_COLOR_SCHEME"
 #: one tone per validity / severity so a number's trust level reads at a glance.
 #: Both schemes keep body text above WCAG AA contrast on their surfaces.
 LIGHT_TOKENS: dict[str, str] = {
-    "bg": "#f3f5f8",
+    "bg": "#f1f1f0",
     "surface": "#ffffff",
-    "surface_alt": "#eef2f6",
-    "border": "#d9dfe6",
-    "text": "#1b2430",
-    "muted": "#5a6676",
+    "surface_alt": "#e9e9e7",
+    "border": "#cececb",
+    "text": "#242526",
+    "muted": "#545659",
     "accent": "#177e89",
     "accent_hover": "#12656e",
     "accent_text": "#ffffff",
-    "accent_soft": "#e1f1f3",
-    "good": "#2e7d32",
+    "accent_soft": "#e6eeee",
+    "good": "#1e6b24",
     "good_soft": "#e5f3e7",
-    "warn": "#a35a00",
+    "warn": "#8a4e00",
     "warn_soft": "#fdf0dc",
     "bad": "#c62828",
     "bad_soft": "#fbe7e7",
@@ -41,25 +41,25 @@ LIGHT_TOKENS: dict[str, str] = {
     "grid": "#d5dbe2",
 }
 DARK_TOKENS: dict[str, str] = {
-    "bg": "#14181d",
-    "surface": "#1c2229",
-    "surface_alt": "#232a32",
-    "border": "#313a45",
-    "text": "#e6eaef",
-    "muted": "#9aa6b4",
-    "accent": "#4fb6c3",
-    "accent_hover": "#6cc6d1",
+    "bg": "#1b1c1e",
+    "surface": "#222325",
+    "surface_alt": "#2b2c2f",
+    "border": "#404145",
+    "text": "#ededeb",
+    "muted": "#b6b7bb",
+    "accent": "#71b7bc",
+    "accent_hover": "#8dc8cc",
     "accent_text": "#0d1216",
-    "accent_soft": "#1b3a40",
+    "accent_soft": "#293c3e",
     "good": "#6cc070",
     "good_soft": "#1d3322",
     "warn": "#f0b35a",
     "warn_soft": "#3a2e1a",
-    "bad": "#ef6a6a",
+    "bad": "#f08a8a",
     "bad_soft": "#3d2020",
     "info": "#7fb2ee",
     "info_soft": "#1c2c40",
-    "grid": "#3a444f",
+    "grid": "#67696d",
 }
 #: Series colours for plots, in drawing order; distinct in both schemes and
 #: paired with line styles so they survive greyscale printing.
@@ -157,6 +157,29 @@ def tokens() -> dict[str, str]:
     return dict(DARK_TOKENS if color_scheme() == "dark" else LIGHT_TOKENS)
 
 
+def _srgb_channel(hex_color: str, index: int) -> float:
+    value = int(hex_color[1 + 2 * index : 3 + 2 * index], 16) / 255.0
+    if value <= 0.04045:
+        return value / 12.92
+    # ``float ** float`` is typed as ``Any`` (a negative base can be complex).
+    return float(((value + 0.055) / 1.055) ** 2.4)
+
+
+def relative_luminance(hex_color: str) -> float:
+    """WCAG relative luminance of ``#rrggbb``."""
+    red = _srgb_channel(hex_color, 0)
+    green = _srgb_channel(hex_color, 1)
+    blue = _srgb_channel(hex_color, 2)
+    return 0.2126 * red + 0.7152 * green + 0.0722 * blue
+
+
+def contrast_ratio(foreground: str, background: str) -> float:
+    """WCAG 2 contrast of two ``#rrggbb`` colours."""
+    lighter = max(relative_luminance(foreground), relative_luminance(background))
+    darker = min(relative_luminance(foreground), relative_luminance(background))
+    return (lighter + 0.05) / (darker + 0.05)
+
+
 def tone_color(tone: str) -> tuple[str, str]:
     """``(foreground, soft background)`` for ``good``, ``warn``, ``bad``, ``info``
     or ``neutral``."""
@@ -244,7 +267,7 @@ def stylesheet(t: dict[str, str] | None = None) -> str:
     arrow_up = f'image: url("{images[0]}");' if images else ""
     arrow_down = f'image: url("{images[1]}");' if images else ""
     return f"""
-QWidget {{ color: {t["text"]}; }}
+QWidget {{ color: {t["text"]}; font-size: 13px; }}
 QMainWindow, QStackedWidget, QScrollArea, QScrollArea > QWidget > QWidget,
 QWidget[page="true"] {{ background: {t["bg"]}; }}
 QMenuBar {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; }}
@@ -258,13 +281,13 @@ QStatusBar::item {{ border: none; }}
 QToolTip {{ background: {t["surface"]}; color: {t["text"]}; border: 1px solid {t["border"]};
     padding: 4px 6px; }}
 
-QLabel[role="title"] {{ font-size: 24px; font-weight: 700; }}
-QLabel[role="page-title"] {{ font-size: 19px; font-weight: 700; }}
-QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 13px; }}
-QLabel[role="section"] {{ color: {t["muted"]}; font-size: 12px; font-weight: 700; }}
+QLabel[role="title"] {{ font-size: 16px; font-weight: 600; }}
+QLabel[role="page-title"] {{ font-size: 15px; font-weight: 600; }}
+QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 12px; }}
+QLabel[role="section"] {{ color: {t["muted"]}; font-size: 12px; font-weight: 600; }}
 QLabel[role="hint"] {{ color: {t["muted"]}; }}
 QLabel[role="kpi-label"] {{ color: {t["muted"]}; font-size: 11px; font-weight: 600; }}
-QLabel[role="kpi-value"] {{ font-size: 22px; font-weight: 700; }}
+QLabel[role="kpi-value"] {{ font-size: 20px; font-weight: 500; }}
 QLabel[role="kpi-sub"] {{ color: {t["muted"]}; font-size: 11px; }}
 QLabel[role="card-title"] {{ font-size: 15px; font-weight: 700; }}
 QLabel[role="badge"] {{ background: {t["accent"]}; color: {t["accent_text"]};
@@ -276,20 +299,20 @@ QLabel[role="pill"] {{ background: {t["accent_soft"]}; color: {t["text"]};
     font-size: 12px; }}
 
 QFrame[card="true"], QGroupBox {{ background: {t["surface"]}; border: 1px solid {t["border"]};
-    border-radius: 10px; }}
+    border-radius: 2px; }}
 QFrame[card="true"][hover="true"]:hover {{ border: 1px solid {t["accent"]};
     background: {t["accent_soft"]}; }}
 QLabel[banner="warn"] {{ background: {t["warn_soft"]}; border: 1px solid {t["warn"]};
-    border-radius: 8px; padding: 8px 12px; }}
+    border-radius: 2px; padding: 6px 8px; }}
 QLabel[banner="info"] {{ background: {t["info_soft"]}; border: 1px solid {t["info"]};
-    border-radius: 8px; padding: 8px 12px; }}
-QGroupBox {{ margin-top: 14px; padding: 18px 14px 12px 14px; font-weight: 600; }}
+    border-radius: 2px; padding: 6px 8px; }}
+QGroupBox {{ margin-top: 10px; padding: 9px 6px 5px 6px; font-weight: 600; }}
 QGroupBox::title {{ subcontrol-origin: margin; subcontrol-position: top left; left: 12px;
     top: 2px; padding: 0 6px; color: {t["text"]}; background: transparent; }}
-QGroupBox QGroupBox {{ background: {t["surface_alt"]}; border-radius: 8px; }}
+QGroupBox QGroupBox {{ background: {t["surface_alt"]}; border-radius: 2px; }}
 
-QPushButton {{ background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 6px;
-    padding: 6px 14px; min-height: 18px; }}
+QPushButton {{ background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 2px;
+    padding: 3px 10px; min-height: 16px; }}
 QPushButton:hover {{ border-color: {t["accent"]}; background: {t["accent_soft"]}; }}
 QPushButton:pressed {{ background: {t["surface_alt"]}; }}
 QPushButton:disabled {{ color: {t["muted"]}; background: {t["surface_alt"]}; }}
@@ -299,11 +322,29 @@ QPushButton[primary="true"]:hover {{ background: {t["accent_hover"]};
     border-color: {t["accent_hover"]}; }}
 QPushButton[primary="true"]:disabled {{ background: {t["border"]}; border-color: {t["border"]};
     color: {t["muted"]}; }}
-QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; }}
+QPushButton[danger="true"] {{ color: {t["bad"]}; border-color: {t["bad"]}; font-weight: 600; }}
+QPushButton[danger="true"]:disabled {{ color: {t["muted"]}; border-color: {t["border"]};
+    background: {t["surface_alt"]}; font-weight: 400; }}
 
+QToolButton {{ background: transparent; border: 1px solid transparent;
+    border-radius: 2px; padding: 3px 6px; min-height: 18px; }}
+QToolButton:hover {{ background: {t["surface_alt"]}; border-color: {t["muted"]}; }}
+QToolButton:checked {{ background: {t["accent_soft"]}; border-color: {t["accent"]}; }}
+QToolButton:disabled {{ color: {t["muted"]}; background: {t["surface_alt"]}; }}
+QToolButton::menu-indicator {{ subcontrol-position: bottom right; }}
+QPushButton:focus, QToolButton:focus {{ border: 1px solid {t["accent"]}; }}
+QWidget[panel="true"] {{ background: {t["surface_alt"]}; }}
+QWidget[subviewbar="true"] {{ background: {t["surface"]};
+    border-bottom: 1px solid {t["border"]}; }}
+QLabel[role="panel-title"] {{ font-size: 12px; font-weight: 600; }}
+QTreeWidget[measurements="true"] {{ border: none; border-radius: 0; }}
+QTreeWidget[measurements="true"]::item {{ min-height: 24px; padding: 3px 2px; }}
+QTreeWidget[measurements="true"]::item:hover {{ background: {t["surface_alt"]}; }}
+QTreeWidget[measurements="true"]::item:selected {{ background: {t["accent_soft"]}; }}
+QLabel[role="count"] {{ color: {t["muted"]}; font-size: 11px; }}
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox, QPlainTextEdit, QTextEdit {{
-    background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 6px;
-    padding: 4px 8px; selection-background-color: {t["accent"]};
+    background: {t["surface"]}; border: 1px solid {t["border"]}; border-radius: 2px;
+    padding: 3px 6px; selection-background-color: {t["accent"]};
     selection-color: {t["accent_text"]}; }}
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus,
 QPlainTextEdit:focus {{ border: 1px solid {t["accent"]}; }}
@@ -323,31 +364,31 @@ QComboBox::down-arrow {{ {arrow_down} width: 10px; height: 10px; }}
 QComboBox QAbstractItemView {{ background: {t["surface"]}; border: 1px solid {t["border"]};
     selection-background-color: {t["accent_soft"]}; selection-color: {t["text"]}; }}
 QPlainTextEdit[report="true"] {{ background: {t["surface_alt"]}; }}
-QCheckBox::indicator:checked {{ background: {t["accent"]}; border: 1px solid {t["accent"]};
-    border-radius: 3px; }}
+QCheckBox {{ spacing: 4px; }}
 
 QTabWidget::pane {{ background: {t["surface"]}; border: 1px solid {t["border"]};
-    border-radius: 10px; top: -1px; }}
+    border-radius: 2px; top: -1px; }}
 QTabBar::tab {{ background: transparent; color: {t["muted"]}; padding: 8px 14px;
     border: none; border-bottom: 2px solid transparent; margin-right: 2px; }}
 QTabBar::tab:selected {{ color: {t["text"]}; border-bottom: 2px solid {t["accent"]};
     font-weight: 600; }}
 QTabBar::tab:hover:!selected {{ color: {t["text"]}; }}
 
-QTableWidget, QTableView, QListWidget {{ background: {t["surface"]};
+QTableWidget, QTableView, QListWidget, QTreeWidget {{ background: {t["surface"]};
     alternate-background-color: {t["surface_alt"]}; border: 1px solid {t["border"]};
-    border-radius: 8px; gridline-color: {t["border"]};
+    border-radius: 2px; gridline-color: {t["border"]};
     selection-background-color: {t["accent_soft"]}; selection-color: {t["text"]}; }}
 QHeaderView::section {{ background: {t["surface_alt"]}; color: {t["muted"]};
     font-weight: 600; border: none; border-bottom: 1px solid {t["border"]};
-    padding: 6px 8px; }}
+    padding: 4px 6px; }}
 QListWidget::item {{ padding: 8px 10px; border-bottom: 1px solid {t["surface_alt"]}; }}
 QListWidget::item:selected {{ background: {t["accent_soft"]}; color: {t["text"]}; }}
 QListWidget::item:hover {{ background: {t["surface_alt"]}; }}
 
-QProgressBar {{ background: {t["surface_alt"]}; border: none; border-radius: 4px;
-    min-height: 8px; max-height: 8px; text-align: center; }}
-QProgressBar::chunk {{ background: {t["accent"]}; border-radius: 4px; }}
+QProgressBar {{ background: {t["surface_alt"]}; border: none; border-radius: 2px;
+    min-height: 8px; max-height: 8px; text-align: center; color: {t["text"]}; }}
+QProgressBar[phase="measure"] {{ min-height: 16px; max-height: 16px; }}
+QProgressBar::chunk {{ background: {t["accent"]}; border-radius: 2px; }}
 QScrollBar:vertical {{ background: transparent; width: 10px; margin: 2px; }}
 QScrollBar::handle:vertical {{ background: {t["border"]}; border-radius: 4px; min-height: 30px; }}
 QScrollBar::handle:vertical:hover {{ background: {t["muted"]}; }}
@@ -356,6 +397,31 @@ QScrollBar::handle:horizontal {{ background: {t["border"]}; border-radius: 4px; 
 QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
 QStatusBar {{ background: {t["surface"]}; border-top: 1px solid {t["border"]};
     color: {t["muted"]}; }}
+
+QWidget[viewbar="true"] {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; }}
+QScrollArea[viewscroll="true"], QScrollArea[viewscroll="true"] > QWidget > QWidget {{
+    background: transparent; border: none; }}
+QWidget[strip="true"] {{ background: {t["surface"]}; border-top: 1px solid {t["border"]}; }}
+QWidget[strip="true"][measuring="true"] {{ border-top: 2px solid {t["accent"]}; }}
+QLabel[phase="idle"] {{ color: {t["text"]}; background: {t["surface_alt"]};
+    border: 1px solid {t["border"]}; border-radius: 2px; padding: 2px 8px; font-weight: 600; }}
+QLabel[phase="measure"] {{ color: {t["accent_text"]}; background: {t["accent"]};
+    border: 1px solid {t["accent"]}; border-radius: 2px; padding: 2px 8px; font-weight: 600; }}
+QLabel[phase="analyze"] {{ color: {t["text"]}; background: {t["warn_soft"]};
+    border: 1px solid {t["warn"]}; border-radius: 2px; padding: 2px 8px; font-weight: 600; }}
+QToolButton[viewtab="true"] {{ background: transparent; color: {t["muted"]}; border: none;
+    border-bottom: 2px solid transparent; border-radius: 0; padding: 4px 8px; }}
+QToolButton[viewtab="true"]:hover {{ color: {t["text"]}; background: {t["surface_alt"]}; }}
+QToolButton[viewtab="true"]:checked {{ color: {t["text"]}; font-weight: 600;
+    border-bottom: 2px solid {t["accent"]}; background: transparent; }}
+QToolButton[panelswitch="true"] {{ background: transparent; border: none;
+    padding: 4px 8px; color: {t["muted"]}; }}
+QToolButton[panelswitch="true"]:checked {{ color: {t["text"]}; background: {t["surface_alt"]}; }}
+QToolButton[projecttab="true"] {{ margin-left: 8px; }}
+QSplitter::handle {{ background: {t["bg"]}; }}
+QSplitter::handle:horizontal {{ width: 6px; }}
+QSplitter::handle:vertical {{ height: 6px; }}
+QSplitter::handle:hover {{ background: {t["accent"]}; }}
 """
 
 
@@ -422,7 +488,8 @@ def install_cjk_ui_font(app: Any) -> None:
             families.append(name)
     if len(families) > 1:
         font.setFamilies(families)
-        app.setFont(font)
+    font.setPixelSize(13)
+    app.setFont(font)
 
 
 def apply_report_font(widget: Any) -> None:

@@ -82,7 +82,6 @@
 
 不需要话筒和音频接口，也不会播放任何声音。
 
-* **桌面版：** 打开 ReverbScope，点 **演示（无需音频接口）**。
 * **任一版本，在终端中：**
 
   ```bash
@@ -136,7 +135,7 @@ DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、�
 检查通过同样有价值。
 
 1. 安装一个构建（见[下载](#下载)；Gatekeeper / SmartScreen 警告属于预期情况）。
-2. 打开 ReverbScope，先运行一次 **演示（无需音频接口）**（英文界面为 **Demo (no interface)**）：
+2. 在终端里先运行一次 `reverbscope demo`：
    它不播放任何声音，只展示一份结果是什么样子。
 3. 先把监听音量调低，然后用你的音频接口和一支话筒运行 **独立模式**，或通过你的 DAW 运行
    **通用 DAW 模式**（[DAW 说明](docs/user-guide/daw-setup.zh-CN.md)）。

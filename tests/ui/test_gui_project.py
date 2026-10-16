@@ -21,7 +21,7 @@ from reverbscope.models.configuration import SweepSettings
 from reverbscope.models.project import Project
 from reverbscope.models.result import AnalysisResult
 from reverbscope.models.session import MeasurementSession
-from reverbscope.ui.main_window import MainWindow
+from reverbscope.ui.main_window import MainWindow, suggested_folder
 from reverbscope.ui.project_view import suggest_label
 from tests.conftest import make_rir
 
@@ -69,6 +69,7 @@ def test_the_project_page_shows_positions_takes_average_and_next_steps(
     window = MainWindow()
     window.show()
     window.show_project(project)
+    assert window.model.wait_until_loaded()
     page = window.project
     assert window.stack.currentWidget() is page
     assert page.path == project
@@ -91,10 +92,14 @@ def test_the_project_page_shows_positions_takes_average_and_next_steps(
     assert page.compare_button.isEnabled()
     page.compare_button.click()
     assert window.stack.currentWidget() is window.compare
-    assert window.compare.baseline_path.text().endswith("a-2")  # the latest good take of A
-    assert window.compare.candidate_path.text().endswith("b-1")
+    baseline, candidate = window.model.baseline(), window.model.current()
+    assert baseline is not None and baseline.directory is not None
+    assert candidate is not None and candidate.directory is not None
+    assert baseline.directory.name == "a-2"  # the latest good take of A
+    assert candidate.directory.name == "b-1"
     # Another profile re-judges the same takes.
     window.show_project()
+    assert window.model.wait_until_loaded()
     page.profile.setCurrentIndex(page.profile.findData("generic"))
     assert page.overview is not None and page.overview.profile == "generic"
     window.close()
@@ -107,10 +112,12 @@ def test_measuring_a_new_position_saves_the_take_into_the_project(
     window = MainWindow()
     window.show()
     window.show_project(project)
+    assert window.model.wait_until_loaded()
     assert suggest_label(window.project.labels()) == "C"
     window.project.start_position("C", "universal_daw")
     assert window.stack.currentWidget() is window.daw
-    assert window.state.project_path == project and window.state.project_position == "C"
+    assert window.model.project_path == project
+    assert window.strip.position.currentText() == "C"
     assert window.daw.position.text() == "C" and window.daw.room.text() == "Booth"
 
     page = window.daw
@@ -122,22 +129,30 @@ def test_measuring_a_new_position_saves_the_take_into_the_project(
     page.set_recording(write_wav(tmp_path / "take.wav", take.samples, rate, subtype="FLOAT"))
     page.start_analysis(blocking=True)
     app.processEvents()
-    assert window.stack.currentWidget() is window.results
-    results = window.results
-    assert results.project_button.isVisible()
-    assert results.suggested_project_folder() == "C-1"
-    results.save_to(project / results.suggested_project_folder())
-    assert "listed in project Booth under position C" in results.status.text()
+    assert window.stack.currentWidget() is window.views["overview"]
+    take = window.model.current()
+    assert take is not None and take.is_take and take.position == "C"
+    assert suggested_folder(project, "C") == "C-1"
+    assert window.save_to(project / suggested_folder(project, "C"))
+    assert "listed in project Booth under position C" in window.statusBar().currentMessage()
     listed = {label: path.name for label, path in list_project_sessions(project)}
     assert listed["C"] == "C-1"
-    assert results.suggested_project_folder() == "C-2"
+    assert suggested_folder(project, "C") == "C-2"
+    # The saved take stays current, now under position C of the project.
+    assert window.model.wait_until_loaded()
+    saved = window.model.current()
+    assert saved is not None and not saved.is_take and saved.position == "C"
     # Back to the project: the new position is there, judged with the others.
-    results.project_button.click()
+    window.show_project()
+    assert window.model.wait_until_loaded()
     assert window.stack.currentWidget() is window.project
     assert window.project.labels() == ["A", "B", "C"]
-    # Home is a fresh start: the next save belongs to no project.
+    # The project stays open until it is closed; then a save belongs to no project.
     window.show_home()
-    assert window.state.project_path is None and window.state.project_position == ""
+    assert window.model.project_path == project
+    window.close_project()
+    assert window.model.project_path is None
+    assert all(not entry.position for entry in window.model.entries())
     window.close()
 
 
@@ -152,8 +167,10 @@ def test_a_plain_folder_becomes_a_project_and_takes_are_added(
     )
     window = MainWindow()
     window.show()
+    window.show_view("project")
     page = window.project
     assert page.create_project(tmp_path / "room")
+    assert window.model.wait_until_loaded()
     assert (tmp_path / "room" / "project.json").is_file()
     assert page.labels() == [] and page.empty.isHidden()
     assert "No position yet" in page.next_steps.text()
@@ -163,6 +180,7 @@ def test_a_plain_folder_becomes_a_project_and_takes_are_added(
         tmp_path / "desk-take", session, _result(short_sweep, 0.5, 7), copy_recording=False
     )
     assert page.add_existing(tmp_path / "desk-take" / "session.json", "desk")
+    assert window.model.wait_until_loaded()
     assert page.labels() == ["desk"]
     assert page.table.rowCount() == 1 and page.table.item(0, 0).text() == "desk"
     # A folder that is not a session is refused with a message, not a crash.

@@ -1,0 +1,46 @@
+╭─ ✗ Error ────────────────────────────────────────────────╮
+│ audio file not found: take.wav                           │
+╰──────────────────────────────────────────────────────────╯
+
+  Try:
+    reverbscope analyze --help
+
+╭─ ✗ Error ────────────────────────────────────────────────╮
+│ the following arguments are required: --out              │
+╰──────────────────────────────────────────────────────────╯
+
+  Try:
+    reverbscope sweep --help
+
+╭─ ✗ Error ────────────────────────────────────────────────╮
+│ argument --duration: invalid float value: 'long'         │
+╰──────────────────────────────────────────────────────────╯
+
+  Try:
+    reverbscope sweep --help
+
+╭─ ✗ Error ────────────────────────────────────────────────╮
+│ input channel 9 does not exist on ReverbScope fake       │
+│ interface (8 input channel(s))                           │
+│ Nothing was played.                                      │
+╰──────────────────────────────────────────────────────────╯
+
+  Try:
+    reverbscope devices --probe
+    reverbscope doctor --probe
+
+╭─ ✗ Error ────────────────────────────────────────────────╮
+│ session file not found: missing-session                  │
+╰──────────────────────────────────────────────────────────╯
+
+  Try:
+    reverbscope show --list <folder>
+
+╭─ ✗ Error ────────────────────────────────────────────────╮
+│ sweep.wav is a file; --out needs a folder for the        │
+│ session                                                  │
+│ Nothing was played.                                      │
+╰──────────────────────────────────────────────────────────╯
+
+  Try:
+    reverbscope measure --out <new-folder>

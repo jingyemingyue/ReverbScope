@@ -27,6 +27,8 @@ ALLOWED = frozenset(
         "Lundeby",
         "Schroeder",
         "Hann",
+        # Welch's method (the noise view's power spectral density)
+        "Welch",
         "ESS",
         "PSD",
         "IR",
@@ -41,6 +43,9 @@ ALLOWED = frozenset(
         "JSON",
         "CSV",
         "ZIP",
+        # room scans the desktop room view imports
+        "PLY",
+        "OBJ",
         "UTF",
         # audio systems and platforms
         "API",
@@ -90,6 +95,13 @@ ALLOWED = frozenset(
         "soundfile",
         "libsndfile",
         "sounddevice",
+        "pyqtgraph",
+        "MIT",
+        # Key names in shortcut hints ("Ctrl+Return", "Ctrl+Shift+Left", "Esc").
+        "Ctrl",
+        "Shift",
+        "Return",
+        "Esc",
     }
 )
 
@@ -110,6 +122,9 @@ PHRASES = (
     "Elastic Audio",
     "JSON Schema",
     "GitHub Issue",
+    # pyqtgraph's copyright holders, named in the About box as its license asks.
+    "University of North Carolina at Chapel Hill",
+    "Luke Campagnola",
 )
 _URL = re.compile(r"https?://\S+")
 # A command and, for "project" and "session", its action ("reverbscope project init").
@@ -139,3 +154,41 @@ def english_words(
     text = text.replace("（loopback）", "")
     text = _COMMAND.sub(" ", text)
     return [word for word in _WORD.findall(text) if word not in ALLOWED]
+
+
+#: Chinese, and the full-width marks around it.
+CJK = re.compile(r"[一-鿿　-〿＀-￯]")
+#: A ``--flag`` or ``-h`` the user types as it is.
+_FLAG = re.compile(r"(?<![\w-])--?[A-Za-z][\w-]*")
+#: What the Chinese interface writes full-width: an ASCII bracket, a comma or
+#: semicolon followed by a space, a colon beside Chinese, a quote beside Chinese.
+_ASCII_PUNCTUATION = re.compile(
+    r"[()]"
+    r"|[,;] "
+    r"|(?<=[一-鿿]):"
+    r"|:(?= ?[一-鿿])"
+    r"|['\"](?=[一-鿿])"
+    r"|(?<=[一-鿿])['\"]"
+)
+
+
+def ascii_punctuation(text: str, *, allowed: tuple[str, ...] = ()) -> list[str]:
+    """Lines of ``text`` that hold Chinese and ASCII punctuation: ``50 Hz (+57 dB),
+    100 Hz`` where the interface writes ``50 Hz（+57 dB）、100 Hz``.
+
+    URLs, commands and flags are removed first (``-h, --help`` is argparse's);
+    ``allowed`` are literal pieces to remove as well (an example the user is
+    told to type, ``1,2``).
+    """
+    found = []
+    for line in text.splitlines():
+        if not CJK.search(line):
+            continue
+        shown = _URL.sub(" ", line)
+        for piece in allowed:
+            shown = shown.replace(piece, " ")
+        shown = _COMMAND.sub(" ", shown)
+        shown = _FLAG.sub(" ", shown)
+        if _ASCII_PUNCTUATION.search(shown):
+            found.append(line.strip())
+    return found

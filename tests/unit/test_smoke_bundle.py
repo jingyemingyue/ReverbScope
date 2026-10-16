@@ -138,11 +138,18 @@ def test_cli_only_smoke_does_not_require_optional_qt(
 ) -> None:
     report = _report()
     report["packages"].update(
-        {"matplotlib": "3.11.2", "PySide6_Essentials": None, "shiboken6": None}
+        {
+            "matplotlib": "3.11.2",
+            "PySide6_Essentials": None,
+            "shiboken6": None,
+            "pyqtgraph": None,
+        }
     )
     _reply(smoke, monkeypatch, json.dumps(report))
     assert smoke.check_doctor(BINARY, require_gui=False) == report
-    with pytest.raises(SystemExit, match="no version for: PySide6_Essentials, shiboken6"):
+    with pytest.raises(
+        SystemExit, match="no version for: PySide6_Essentials, shiboken6, pyqtgraph"
+    ):
         smoke.check_doctor(BINARY)
     report["packages"]["matplotlib"] = None
     _reply(smoke, monkeypatch, json.dumps(report))
@@ -166,9 +173,10 @@ def test_terminal_smoke_refuses_bundled_gui_libraries(
 ) -> None:
     report = _report()
     report["packages"]["PySide6_Essentials"] = "6.11.2"
+    report["packages"]["pyqtgraph"] = "0.14.0"
     _reply(smoke, monkeypatch, json.dumps(report))
     with pytest.raises(
-        SystemExit, match="Terminal Edition carries GUI libraries: PySide6_Essentials"
+        SystemExit, match="Terminal Edition carries GUI libraries: PySide6_Essentials, pyqtgraph"
     ):
         smoke.check_doctor(BINARY, terminal=True)
 

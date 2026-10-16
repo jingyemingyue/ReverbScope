@@ -22,7 +22,7 @@ from reverbscope.core.pipeline import synthetic_recording
 from reverbscope.errors import AnalysisError
 from reverbscope.io.wav import write_wav
 from reverbscope.models.configuration import SweepSettings
-from reverbscope.ui import pages, workers
+from reverbscope.ui import pages, workers, workspace
 from reverbscope.ui.main_window import MainWindow
 from tests.conftest import make_rir
 
@@ -124,7 +124,11 @@ def test_a_visit_to_compare_does_not_discard_a_running_analysis(
         held_analysis.set()
         _settle(app, page._worker)
     assert window.state.result is not None
-    assert window.stack.currentWidget() is window.results
+    # The take joins the list as the current measurement; the window stays on
+    # the view the user chose (Compare now shows the take against the baseline).
+    current = window.model.current()
+    assert current is not None and current.result is window.state.result
+    assert window.stack.currentWidget() is window.compare
     assert "discarded" not in page.status.text()
     assert page.analyze_button.isEnabled()
     window.close()
@@ -140,7 +144,7 @@ def test_a_profile_that_fails_does_not_leave_the_page_busy(
     def broken(result: object, profile: str) -> list[object]:
         raise RuntimeError("plugin bug")
 
-    monkeypatch.setattr(pages, "interpret", broken)
+    monkeypatch.setattr(workspace, "interpret", broken)
     window = _daw_ready(app, tmp_path, short_sweep)
     page = window.daw
     page.start_analysis(blocking=True)
@@ -149,7 +153,7 @@ def test_a_profile_that_fails_does_not_leave_the_page_busy(
     assert not page.progress.isVisible()
     assert window.state.result is not None
     assert window.state.findings == []
-    assert window.stack.currentWidget() is window.results
+    assert window.stack.currentWidget() is window.views["overview"]
     assert page.status.text()
     window.close()
 
@@ -268,7 +272,7 @@ def test_a_recent_session_deleted_meanwhile_is_reported_not_crashed(
     window = MainWindow()
     window.show()
     window.open_session_path(folder)
-    assert window.stack.currentWidget() is window.results
+    assert window.stack.currentWidget() is window.views["overview"]
     shutil.rmtree(folder)
     window.show_home()
     window.open_session_path(folder)
@@ -290,13 +294,13 @@ def test_saving_into_a_folder_that_cannot_be_created_is_a_dialog_not_a_bug(
     window = _daw_ready(app, tmp_path, short_sweep)
     window.daw.start_analysis(blocking=True)
     app.processEvents()
-    assert window.stack.currentWidget() is window.results
+    assert window.stack.currentWidget() is window.views["overview"]
     blocker = tmp_path / "blocker"
     blocker.write_text("x", encoding="utf-8")
-    window.results.save_to(blocker / "session")
+    window.save_to(blocker / "session")
     assert shown and "cannot create" in shown[-1]
     # A folder whose parents went missing meanwhile is made again.
-    window.results.save_to(tmp_path / "deleted" / "again" / "session")
+    window.save_to(tmp_path / "deleted" / "again" / "session")
     assert (tmp_path / "deleted" / "again" / "session" / "session.json").is_file()
     window.close()
 

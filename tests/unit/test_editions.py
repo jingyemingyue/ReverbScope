@@ -94,7 +94,7 @@ def test_the_spec_builds_both_editions_and_leaves_the_gui_out_of_one() -> None:
     excludes = spec[
         spec.index("TERMINAL_EXCLUDES = [") : spec.index("]", spec.index("TERMINAL_EXCLUDES"))
     ]
-    for module in ("PySide6", "shiboken6", "reverbscope.ui", "matplotlib"):
+    for module in ("PySide6", "shiboken6", "reverbscope.ui", "pyqtgraph", "matplotlib"):
         assert f'"{module}"' in excludes, module
     assert 'name="reverbscope-terminal" if TERMINAL else "reverbscope"' in spec
     assert 'if sys.platform != "darwin" and not TERMINAL:' in spec  # no windowed launcher
@@ -167,12 +167,14 @@ def test_doctor_names_the_edition_and_the_missing_gui_libraries(
     monkeypatch.setattr(
         diagnostics,
         "_package_version",
-        lambda name, module: None if module in ("matplotlib", "PySide6", "shiboken6") else "1.0",
+        lambda name, module: (
+            None if module in ("matplotlib", "PySide6", "shiboken6", "pyqtgraph") else "1.0"
+        ),
     )
     code, out, _err = _run(["--backend", "fake", "doctor"], capsys)
     assert code == 0
     assert "Terminal Edition" in out
-    assert out.count("not included (Terminal Edition)") == 3
+    assert out.count("not included (Terminal Edition)") == 4
     code, out, _err = _run(["--format", "json", "--backend", "fake", "doctor"], capsys)
     report = json.loads(out)
     assert report["build"]["package"] == "terminal"

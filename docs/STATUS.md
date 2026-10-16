@@ -6,6 +6,129 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 41: 2026-10-14 (UTC+8) — **narrow-window workstation controls and
+an Apple Silicon acceptance checklist**, continuing PR #58 from
+`987d66268888b60d6e9e6b54f379b4ec7c50ceb8`.
+
+* Measurement settings and transport use two rows when the platform's
+  metrics require it. Wide windows retain one row. Device selections have
+  full-name tooltips and accessible field names. Menu/keyboard selection
+  scrolls the active view tab into sight.
+* Frequency, spectrogram and waterfall pages scroll when their chart and
+  notes cannot fit. Chart parents enforce their minimum content height,
+  so a short splitter allocation does not clip the axes. Height-for-width
+  uses the required height, avoiding feedback from the graphics view's
+  current preferred viewport size.
+* `MAC_GUI_ACCEPTANCE.zh-CN.md` combines #57 and #58 in six on-machine
+  steps, separates existing evidence from missing native/audio checks,
+  identifies the old #57 package, and keeps the formal release gate
+  distinct from this one-Mac checklist. Five fresh synthetic/offscreen
+  screenshots live in `images/gui2/acceptance/`; the old main gallery is
+  still historical.
+* Linux, Python 3.12.14, PySide6 Essentials 6.11.2: 198 GUI, chart-adapter,
+  plotting, theme, catalog and guide tests passed. After renaming the scroll
+  field to avoid shadowing QWidget.scroll and making its height return
+  explicitly integer for the no-Qt lint environment, 54 targeted tests
+  passed again.
+  Ruff, formatting, strict mypy across 121 source modules with and without
+  Qt installed, doc links,
+  CLI-doc syntax and source-safety checks passed. The 960×640 and 1366×768
+  Chinese screenshots were inspected. No real interface, DAW, Cocoa,
+  Retina, packaged interaction or final-head macOS build was run here.
+  Remote CI belongs to the resulting commit, not the previous nine-job pass.
+
+Snapshot 40: 2026-10-12 — **the workstation becomes a compact measurement
+desk with exact chart limits and room parameters on demand** (continuing
+PR #57 on `grok/gui2-professional-polish`).
+
+* Tool buttons, inputs and table headings share flat, compact chrome.
+  Body text is 12 logical pixels with the existing per-glyph Chinese
+  fallbacks. Panel switches are separate from analysis tabs. Severity and
+  validity are coloured text; findings are neutral rows. The overview puts
+  band tables before expandable interpretation, and inspector conditions
+  expand on demand. Empty inspector sections are withheld. Paths use a
+  single elided line with the full path on hover.
+* The empty desk is a session operation area. The first-measurement guide
+  expands when requested and still honours dismissal and Help > Getting
+  started. No demo data is presented as a real measurement.
+* Axes accepts exact lower and upper limits in the axis units, including
+  Hz on logarithmic axes. Invalid or reversed ranges cannot be applied.
+  Chosen ranges survive smoothing, alignment, overlays and measurement
+  redraws. Frame restores defaults. Frequency and difference panes share
+  horizontal limits. Redraw clears the previous cursor readout.
+* Room parameters reveals the existing geometry, scan and reflection
+  controls; it starts closed. The first visible room fits after layout,
+  correcting a crop reproduced on the native macOS window. A camera the
+  user moved is kept across view switches.
+* Checks on Apple Silicon macOS, Python 3.12.14, PySide6 6.11.2:
+  3,423 tests passed, two platform-specific tests skipped. Ruff, formatting,
+  mypy, documentation links, CLI-documentation syntax and source safety
+  checks passed. Final GUI regression checks cover the last layout changes.
+  Synthetic screenshot matrix: English and Simplified Chinese, light and
+  dark, 1366×768 and 1920×1080 offscreen. A separate Cocoa window run checked
+  the main views at the physical display's available size and native pixel
+  ratio. Requested oversized windows are constrained by macOS; their names
+  do not prove a 1920×1080 native canvas. Real audio interfaces, a DAW,
+  playback/Stop and packaged-application acceptance remain untested.
+* No acoustic algorithm, measurement format, runtime dependency, main
+  branch, release branch, tag or published release changed. The earlier
+  worker-generation checks and the 8 MiB display-cache budget remain.
+  Remote checks belong to the new commit; the old #57 bundle is not a
+  build of this update.
+
+Snapshot 39: 2026-10-12 — **the workstation line fixes time-frequency
+state, budgets the display cache, simplifies the room picture, and takes
+the command-line hardening from #54 without a second GUI** (branch
+`grok/gui2-professional-polish`, PR #57; nothing merged, tagged or
+published; `release/0.5.0` untouched).
+
+* **Time-frequency views.** Hiding the current measurement clears the
+  spectrogram and the waterfall immediately. A worker that finishes after
+  the measurement was hidden, removed, switched or given parameters the
+  view rejects does not draw and does not replace the status. The result
+  may stay in the display cache when it still belongs to that impulse
+  response. The same cases are tested on both views: hide, switch, remove,
+  illegal parameters, a late success and a late failure. Tests release the
+  worker with events, in a chosen order.
+* **Display cache.** An 8 MiB budget, not a hard cap. One result larger than
+  the budget is kept; once another picture is stored and the total is over
+  the budget, the oldest pictures are dropped. Measured here on a 0.5 s
+  synthetic sweep: default spectrogram 1,975,784 bytes (503×491 float64),
+  default waterfall 117,840 bytes (30×491). Reloading a session drops that
+  entry's cache; saving a take moves the cache to the folder key; removing
+  the measurement drops it.
+* **Room.** Default layers are entered geometry and the measured layer.
+  Geometric assumption and All constraints start off. Restore default view
+  is saved in `ui.ini`. Fit leaves margin for the front mark and dimensions.
+  Device names and the length, width and height captions are placed so their
+  boxes do not cover one another. Fit includes the visible room, the drawn
+  measured constraint and those captions, then steps back so they stay inside
+  a margin (the right and bottom were clipped). Checked for the plan, front,
+  side and the default perspective, light and dark, at the canvas size of a
+  1366×768 window and on the full 1366×768 canvas, in English and Simplified
+  Chinese.
+* **Desk.** Overview figures are a strip, not metric cards. Frequency-chart
+  level alignment is marked display-only. References for the working layout,
+  not for artwork: REW measurements panel, overlays and graph panel
+  (roomeqwizard.com/help), Open Sound Meter 1.5 manual (charts, stored
+  series, bottom properties), Smaart v9 data bar / cursor readout / command
+  bar (Rational Acoustics user guide). No icons, code or branding taken.
+* **PR #54's command line** (menu, terminal layout, 基准/对比项) is on this
+  branch. PR #56 is already contained here and is the GUI this branch
+  continues. PR #55 is a different window and is not merged. No PR was closed.
+* **What was run** (Linux container, Python 3.12, PySide6 6.11 offscreen, no
+  audio device): ruff, ruff format, mypy, doc links, CLI-doc syntax, the
+  catalog test, the room frame and label tests, the time-frequency state
+  tests, the health-card test and the theme redraw test. Offscreen screenshots
+  at 1366×768 and 1920×1080, light and dark, Simplified Chinese, for the empty
+  desk, overview, frequency response and difference, decay, spectrogram,
+  waterfall and room; plan, front and side were checked the same way.
+  English was checked offscreen at 1366×768 light for the room, the frequency
+  chart and the overview. The full pytest suite is the CI test job for this
+  commit. **Not run, and not a pass:** a macOS window server, Retina, file
+  dialogs, a sound card, or a DAW. A macOS Apple Silicon bundle from the
+  Release workflow is a build of this commit, not a GUI pass.
+
 Snapshot 38: 2026-10-07 — **the post-RC line takes in the parallel audits,
 corrects the merged decay rules, fixes what three audits reproduced, and
 gets a maintainer's runbook** (branch `integration/post-rc-development`,
