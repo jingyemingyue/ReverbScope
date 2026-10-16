@@ -128,7 +128,7 @@ def test_joined_reasons_keep_their_own_parts(zh: None) -> None:
         "baseline unreliable (the response does not decay); "
         "candidate unreliable (Decay slope is not negative)"
     )
-    assert localize(text) == "基线：不可靠（响应没有衰减）；候选：不可靠（衰减斜率不为负）"
+    assert localize(text) == "基准：不可靠（响应没有衰减）；对比项：不可靠（衰减斜率不为负）"
 
 
 def test_a_nested_diagnostic_with_its_own_semicolon_is_one_value(zh: None) -> None:
@@ -155,8 +155,8 @@ def test_names_and_unknown_text_stay_as_they_are(zh: None) -> None:
 
 
 def test_stored_words_inside_a_sentence_are_translated(zh: None) -> None:
-    assert localize("baseline not_computed") == "基线：未计算"
-    assert localize("candidate unreliable") == "候选：不可靠"
+    assert localize("baseline not_computed") == "基准：未计算"
+    assert localize("candidate unreliable") == "对比项：不可靠"
 
 
 def test_only_a_list_of_values_has_its_or_translated(zh: None) -> None:
@@ -283,3 +283,12 @@ def test_channel_choices_stored_by_0_5_still_read_in_chinese(zh: None) -> None:
     )
     assert localize(plain).startswith("录音有 2 个声道；已分析从 0 开始编号的声道 1")
     assert localize(beside_loopback).startswith("录音有 3 个声道；已分析从 0 开始编号的声道 2")
+
+
+def test_a_list_of_numbers_in_a_stored_sentence_is_joined_the_chinese_way(zh: None) -> None:
+    """The orders of the folded harmonics are stored as "2, 3"."""
+    text = (
+        "aliased distortion (folded harmonic 2, 3 at -45 dB re the direct sound) spreads over "
+        "the impulse response after the direct sound and imitates a decay"
+    )
+    assert localize(text).startswith("混叠失真（折叠回来的 2、3 次谐波，相对直达声 -45 dB）")

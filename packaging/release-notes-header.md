@@ -57,10 +57,10 @@ Not sure? Take the **Desktop Edition**: it contains the command line too.
 Full steps, checksums, updating, uninstalling and troubleshooting:
 [Installation guide](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.md)
 ([简体中文](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.zh-CN.md)).
-Then try it without a microphone: click **Demo (no interface)** in the app, or
-run `reverbscope demo` in a terminal opened in the folder that holds it (the
-installers do not add it to `PATH`; on a Mac it is
-`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`).
+Then try it without a microphone: run `reverbscope demo` in a terminal opened
+in the folder that holds the program (the desktop app has no demo mode).
+Installers do not add it to `PATH`; on a Mac it is
+`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`.
 
 ### Known limitations
 

@@ -288,14 +288,14 @@ def test_a_device_that_cannot_be_opened_is_not_said_to_refuse_the_rates(
         assert "Record  unknown" in english_table and "Play    unknown" in english_table
         assert "录音  未知" in chinese_table and "播放  未知" in chinese_table
         assert "record unknown; play unknown" in english_report
-        assert "录制 未知; 播放 未知" in chinese_report
+        assert "录制 未知；播放 未知" in chinese_report
         assert "none" not in english_table.split("i could not")[0]
         assert "无" not in chinese_table.split("i 无法打开")[0]
     else:
         assert "Record  none" in english_table and "Play    none" in english_table
         assert "录音  无" in chinese_table and "播放  无" in chinese_table
         assert "record none; play none" in english_report
-        assert "录制 无; 播放 无" in chinese_report
+        assert "录制 无；播放 无" in chinese_report
         assert "unknown" not in english_table
     refused = [n for n in scarlett.notes if "accepts none of ReverbScope's sample rates" in n]
     unopened = [n for n in scarlett.notes if n.startswith("could not be opened")]

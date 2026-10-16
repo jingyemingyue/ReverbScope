@@ -552,7 +552,7 @@ def test_the_rt60_change_direction_follows_the_printed_percentage(
     assert f"({shown} % of the baseline, {direction})" in english.message
     activate("zh_CN")
     try:
-        assert f"（相对基线 {shown} %，{chinese}）" in decay_finding().message
+        assert f"（相对基准 {shown} %，{chinese}）" in decay_finding().message
     finally:
         activate("en")
 

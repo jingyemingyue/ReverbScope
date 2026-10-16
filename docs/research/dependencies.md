@@ -3,7 +3,7 @@
 - Project: ReverbScope (Python >= 3.12, intended license Apache-2.0; distributed as PyPI sdist/wheel and later as a frozen PySide6 desktop app for macOS / Windows / Linux).
 - Audit date: 2026-09-17.
 - Method: for every package, (1) PyPI JSON API read for latest stable version, `License` field, `License-Expression`, `License-File` list and classifiers; (2) the upstream repository LICENSE file was fetched from the raw GitHub / code.qt.io URL and its first line + copyright line quoted; (3) for packages that ship native code, the actual macOS (arm64 / universal2, cp312 or abi3) wheel from PyPI was downloaded and its contents listed (`.dylibs`, frameworks, plugins, and every LICENSE / COPYING / NOTICE file inside the wheel). Linux x86_64 cp312 wheels of numpy/scipy/soundfile/sounddevice/matplotlib/Pillow were opened on 2026-09-22 (`scripts/audit_wheel_contents.py`); Windows win_amd64 cp312 wheels of those packages plus the sounddevice 0.5.6 wheel were downloaded the same day and listed. See DEPENDENCIES.md §6.
-- Versions audited are the ones installed in the project venv (confirmed identical to PyPI latest stable on the audit date): numpy 2.5.3, scipy 1.18.1, soundfile 0.14.0, sounddevice 0.5.6, matplotlib 3.11.2, PySide6 6.11.2, shiboken6 6.11.2, cffi 2.1.1, pycparser 3.0, contourpy 1.4.0, cycler 0.12.1, fonttools 4.65.0, kiwisolver 1.5.1, packaging 26.3, pillow 12.3.0, pyparsing 3.3.2, python-dateutil 2.9.0.post0, six 1.17.0, pytest 9.1.1, pytest-cov 7.1.0, ruff 0.16.8, mypy 2.3.1.
+- Versions audited are the ones installed in the project venv (confirmed identical to PyPI latest stable on the audit date): numpy 2.5.3, scipy 1.18.1, soundfile 0.14.0, sounddevice 0.5.6, matplotlib 3.11.2, PySide6 6.11.2, shiboken6 6.11.2, cffi 2.1.1, pycparser 3.0, contourpy 1.4.0, cycler 0.12.1, fonttools 4.65.0, kiwisolver 1.5.1, packaging 26.3, pillow 12.3.0, pyparsing 3.3.2, python-dateutil 2.9.0.post0, six 1.17.0, pyqtgraph 0.14.0 (added later for the desktop charts), colorama 0.4.6, pytest 9.1.1, pytest-cov 7.1.0, ruff 0.16.8, mypy 2.3.1.
 - Compatibility legend: **Yes** = permissive, only notice retention; **Yes with obligations** = compatible but concrete redistribution duties (notice files, LGPL relinkability, credit lines); **Risk** = needs a decision before shipping.
 
 ## Direct runtime dependencies
@@ -101,6 +101,18 @@
 | Purpose in ReverbScope | GUI (optional extra `gui`). Direct, runtime (optional). |
 | Apache-2.0 compatibility | **Yes with obligations** under LGPL-3.0-only (dynamic linking through normal Python import; ship LGPL-3.0 + GPL-3.0 texts, Qt copyright notice, Qt third-party attributions; keep Qt libraries replaceable; never import GPL-only modules). |
 
+### pyqtgraph
+
+| Field | Value |
+|---|---|
+| Version | 0.14.0 (wheel `pyqtgraph-0.14.0-py3-none-any.whl`, uploaded 2025-11-16); runtime requires `numpy>=1.25.0`, `colorama` (no markers: colorama is installed on every platform) |
+| Homepage / repository | https://www.pyqtgraph.org / https://github.com/pyqtgraph/pyqtgraph |
+| Repo license file | `LICENSE.txt` (https://raw.githubusercontent.com/pyqtgraph/pyqtgraph/pyqtgraph-0.14.0/LICENSE.txt): `Copyright (c) 2012  University of North Carolina at Chapel Hill` / `Luke Campagnola`, then `The MIT License` text. Identical to the wheel's `pyqtgraph-0.14.0.dist-info/licenses/LICENSE.txt`. |
+| PyPI metadata | `License: MIT`, `License-File: LICENSE.txt` |
+| Bundled data | `pyqtgraph/colors/maps/`: colour-map tables; viridis, magma, plasma, inferno, cividis are CC0 (legal code alongside), the CET maps CC-BY-4.0 (attribution text alongside). The desktop bundle keeps viridis and inferno and the CC0 text only (`packaging/pyinstaller_filters.py`). |
+| Native code | None (pure Python; draws with QPainter through PySide6). `pyqtgraph.opengl` needs PyOpenGL and is excluded from the bundle. |
+| Compatibility | Yes (MIT). |
+
 ### pyroomacoustics (candidate, evaluate only)
 
 | Field | Value |
@@ -133,6 +145,7 @@
 | python-dateutil | 2.9.0.post0 (2024-03-01) | matplotlib | `Copyright 2017- Paul Ganssle <paul@ganssle.io>` / `Copyright 2017- dateutil contributors (see AUTHORS file)` / "Licensed under the Apache License, Version 2.0" for contributions after 2017-12-01; older code `Copyright (c) 2003-2011 - Gustavo Niemeyer` under BSD-3. https://raw.githubusercontent.com/dateutil/dateutil/master/LICENSE | Apache-2.0 AND BSD-3-Clause (dual, by contribution date) | `License: Dual License`; classifiers `Apache Software License` + `BSD License` | No (classifier pair matches) | Pure Python; depends on `six`. Repo root has `AUTHORS.md` + `LICENSE` only — no NOTICE file, so Apache §4(d) adds nothing beyond the LICENSE text. | Yes |
 | six | 1.17.0 (2024-12-04) | python-dateutil | `Copyright (c) 2010-2024 Benjamin Peterson` / MIT text. https://raw.githubusercontent.com/benjaminp/six/main/LICENSE | MIT | `License: MIT`; classifier MIT | No | Pure Python | Yes |
 | shiboken6 | 6.11.2 (2026-08-18) | PySide6 | Same repo and `LICENSES/` as PySide6 (pyside-setup); `README.shiboken6.md` fetched. | LicenseRef-Qt-Commercial OR LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only | `License: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only` | Commercial option omitted on PyPI (harmless) | `shiboken6/libshiboken6.abi3.6.11.dylib`, `Shiboken.abi3.so`; **no license file in the wheel**. | Yes with obligations (LGPL-3.0, same as PySide6) |
+| colorama | 0.4.6 (2022-10-25) | pyqtgraph 0.14.0 (unconditional) | `Copyright (c) 2010 Jonathan Hartley` / `All rights reserved.` (BSD-3 text). https://raw.githubusercontent.com/tartley/colorama/master/LICENSE.txt | BSD-3-Clause | `License-File: LICENSE.txt`; classifier BSD | No | Pure Python | Yes |
 | PySide6_Essentials / PySide6_Addons | 6.11.2 | PySide6 | as PySide6 | as PySide6 | `License: LGPL-3.0-only OR GPL-2.0-only OR GPL-3.0-only` | see PySide6 | Essentials verified above; Addons not downloaded (contains GPL-only modules). | Yes with obligations / Risk if a GPL-only module is imported |
 
 ## Dev dependencies

@@ -55,6 +55,10 @@ REQUIRED = [
     "six",
     # soundfile imports it at run time (DEPENDENCIES.md).
     "typing-extensions",
+    # The desktop charts (GUI_2_ARCHITECTURE.md §9); pyqtgraph imports colorama
+    # on every platform (pyqtgraph.util.cprint).
+    "pyqtgraph",
+    "colorama",
 ]
 
 OPTIONAL = ["PySide6_Essentials", "shiboken6", "PySide6"]
@@ -104,8 +108,18 @@ _COMMON_LICENSE = re.compile(r"/usr/share/common-licenses/([A-Za-z0-9.+_-]+)")
 # and list the source of libsndfile's own components (mpg123, LAME, FLAC, Ogg,
 # Vorbis, Opus) in licensing/license_notes.md (DEPENDENCIES.md §3).
 # (path, required when the library is bundled)
+# pyqtgraph's colour-map data is not its own: the viridis and inferno tables
+# the desktop bundle keeps (packaging/pyinstaller_filters.py) are CC0, whose
+# legal code sits next to them in the package.
 PACKAGE_LICENSE_FILES = {
     "soundfile": (("_soundfile_data/COPYING", True), ("licensing/license_notes.md", False)),
+    "pyqtgraph": (
+        (
+            "pyqtgraph/colors/maps/CC0 legal code - applies to virids, magma, plasma, "
+            "inferno and cividis.txt",
+            False,
+        ),
+    ),
 }
 #: Package files that mean a bundled library needs the files above.
 BUNDLED_LIBRARY_MARKERS = {"soundfile": "_soundfile_data/libsndfile"}

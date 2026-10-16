@@ -63,8 +63,8 @@ Not sure? Take the **Desktop Edition**: it contains the command line too.
 Full steps, checksums, updating, uninstalling and troubleshooting:
 [Installation guide](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.md)
 ([简体中文](https://github.com/jingyemingyue/ReverbScope/blob/v{version}/docs/INSTALLATION.zh-CN.md)).
-Then try it without a microphone: click **Demo (no interface)** in the app, or
-run `reverbscope demo`.
+Then try it without a microphone: run `reverbscope demo` (the desktop app has
+no demo mode).
 
 ### Known limitations
 
