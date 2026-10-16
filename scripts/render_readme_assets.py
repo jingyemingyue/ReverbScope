@@ -191,7 +191,9 @@ def _stamp(pixmap: object, stamp: str = STAMP) -> object:
     metrics = painter.fontMetrics()
     text_w = metrics.horizontalAdvance(stamp) + 16
     text_h = metrics.height() + 8
-    rect = QRect(pixmap.width() - text_w - 8, 8, text_w, text_h)  # type: ignore[attr-defined]
+    # QPainter works in logical pixels; a grab on a high-DPI display is larger.
+    logical_w = round(pixmap.width() / pixmap.devicePixelRatio())  # type: ignore[attr-defined]
+    rect = QRect(logical_w - text_w - 8, 8, text_w, text_h)
     painter.fillRect(rect, QColor(255, 196, 0, 235))
     painter.setPen(QColor(20, 20, 20))
     painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, stamp)

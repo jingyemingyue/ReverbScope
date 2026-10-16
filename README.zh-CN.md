@@ -2,23 +2,21 @@
 
 # ReverbScope
 
-ReverbScope 帮助录音专业学生、独立录音师和小型工作室检查房间脉冲响应、混响、反射与话筒位置。
-可以通过 DAW 播放扫频并录音，也可以直接用音频接口测量。
+**录音之前，先弄清楚这个房间和这个话筒位置能不能用。** ReverbScope 在你的房间里播放一段指数正弦扫频，
+解出房间脉冲响应，并报告混响（RT60）、早期反射、本底噪声和直达声，用直白的话说明问题，每个数字都带有效性标记。
+免费、开源（Apache-2.0），可以配合任何 DAW 使用，也可以单独使用。
 
-**早期测试软件。** 当前尚未通过真实硬件验证，也没有 DAW 兼容性实测报告。
-[公开下载与首次演示](docs/PUBLIC_TESTING.zh-CN.md) ·
-[参与测试](docs/COMMUNITY_TESTING.zh-CN.md) · [路线图](docs/ROADMAP.zh-CN.md)
-
-公开包：**RoomScope v0.5.0b1**（旧名）。`roomscope demo` 使用 Synthetic / Demo 合成数据，不播放声音。
-更名后的 rc2/b3 安装包仍为 Draft。
+**预发布软件，由一名学生开发者独立开发。** 分析核心、桌面工作台和命令行都已完成，并在 Linux、macOS、
+Windows 上通过了自动化测试。**但还没有任何一次测量经过真实音频接口或 DAW**，所以请把所有数值当作
+尚未验证的结果。[参与测试](#参与测试)。
 
 [![最新预发布版](https://img.shields.io/github/v/release/jingyemingyue/ReverbScope?include_prereleases&label=pre-release&color=1a7f8e)](https://github.com/jingyemingyue/ReverbScope/releases)
 [![CI](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml/badge.svg)](https://github.com/jingyemingyue/ReverbScope/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-![ReverbScope 结果页：一个话筒位置的混响、带市电哼声的本底噪声、早期反射和直达声，下方是解读（合成演示数据）](docs/images/gui-results.zh-CN.png)
+![ReverbScope 桌面工作台：一个话筒位置的概览，包含混响、本底噪声、早期反射和直达声，旁边是测量健康度和检查器（合成演示数据）](docs/images/gui-results.zh-CN.png)
 
-<sub>开发源码 GUI（`main`，0.5.0b3）。Synthetic / Demo 合成演示数据，没有测量真实房间；不是公开 beta 或 PR #64 草稿的截图。</sub>
+<sub>桌面工作台（`main`，0.5.0b3），使用内置的模拟房间。合成演示数据，没有测量真实房间。</sub>
 
 > 本文是 [README.md](README.md) 的简体中文版本；两者不一致时，以英文版为准。
 
@@ -26,22 +24,17 @@ ReverbScope 帮助录音专业学生、独立录音师和小型工作室检查�
 
 ### **[→ 从 GitHub Releases 下载](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**截至 2026-10-15 已公开：** [v0.5.0b1](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b1)，
+**截至 2026-10-17 已公开：** [v0.5.0b1](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b1)，
 沿用旧名 **RoomScope**。请下载该版本的 `RoomScope` 文件，使用 `roomscope demo`（不会播放声音）。
-[公开 beta 安装指南](docs/PUBLIC_TESTING.zh-CN.md) 提供各平台准确文件名、校验和与首次启动步骤。
+[公开 beta 安装指南](docs/PUBLIC_TESTING.zh-CN.md) 提供各平台准确的文件名、校验和与首次启动步骤。
 
-**尚未公开：** `release/0.5.0` 的 `v0.5.0rc2` 和 `main` 的 `v0.5.0b3` 都是 Draft，
-未登录访客无法下载。当前没有 0.5.0 稳定版、已签名/公证构建或 PyPI 包。
-
-### 候选构建参考（尚非公开下载）
-
-下列表格和 `reverbscope` 命令对应更名后的候选版/源码构建，只有维护者公开通过验收的预发布包后，
-才成为该包的下载说明。公开 beta 请按上方指南操作，其应用和命令仍是 RoomScope / `roomscope`。
-两个打包版本都不需要 Python。
+**尚未公开：** 更名后的 `v0.5.0rc2` 和 `v0.5.0b3` 都是 Draft，未登录的访客无法下载。目前没有 0.5.0 稳定版、
+已签名或已公证的构建，也没有 PyPI 包。下面的表格对应更名后的构建，等维护者公开一个通过验收的预发布版本后，
+才成为下载说明。
 
 ### 🖥 桌面版（Desktop Edition）
 
-适合绝大多数用户：带窗口和图表的应用程序，同时包含 `reverbscope` 命令行。
+适合绝大多数用户：带工作台窗口和图表的应用程序，同时包含 `reverbscope` 命令行。
 
 | 平台 | 下载 | 架构 | 说明 |
 | --- | --- | --- | --- |
@@ -53,16 +46,14 @@ ReverbScope 帮助录音专业学生、独立录音师和小型工作室检查�
 
 **第一次打开。** 构建尚未签名（没有经过 Apple 公证，也没有 Windows Authenticode 签名），系统会警告一次：
 
-* **macOS：** 点 **完成**，再到 **系统设置 → 隐私与安全性 → 仍要打开**。不需要、也不应该关闭
-  Gatekeeper 或系统完整性保护（SIP）。
+* **macOS：** 点 **完成**，再到 **系统设置 → 隐私与安全性 → 仍要打开**。不需要关闭 Gatekeeper 或系统完整性保护（SIP）。
 * **Windows：** SmartScreen → **更多信息 → 仍要运行**。
 
-不确定是哪种 Mac？苹果菜单 → **关于本机**：显示 *芯片 Apple M…* 的是 Apple 芯片，显示
-*处理器 Intel* 的是 Intel。
+不确定是哪种 Mac？苹果菜单 → **关于本机**：显示 *芯片 Apple M…* 的是 Apple 芯片，显示 *处理器 Intel* 的是 Intel。
 
 ### ⌨️ 终端版（Terminal Edition）
 
-适合命令行、脚本和自动化、服务器以及没有图形桌面的电脑：同样的测量和分析，没有图形界面，体积约为桌面版的一半。
+适合脚本和自动化、服务器以及没有图形桌面的电脑：同样的测量和分析，没有窗口，体积约为桌面版的一半。
 
 | 平台 | 下载 | 架构 | 命令 |
 | --- | --- | --- | --- |
@@ -71,235 +62,184 @@ ReverbScope 帮助录音专业学生、独立录音师和小型工作室检查�
 | **Windows** 10 / 11 | [`ReverbScope-Terminal-Windows-x64.zip`](https://github.com/jingyemingyue/ReverbScope/releases) | x64 | 打开 **`ReverbScope Terminal.cmd`**，再输入 `reverbscope.exe demo` |
 | **Linux**（glibc 2.39+） | [`ReverbScope-Terminal-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64 | `reverbscope-terminal/reverbscope demo` |
 
-先解压（`tar xzf <文件>`；Windows 上用 **全部解压缩…**）。在 macOS 上，如果系统拒绝运行下载来的
-`reverbscope`，请运行一次 `xattr -dr com.apple.quarantine reverbscope-terminal`：它只清除这些文件上的下载标记，不会关闭 Gatekeeper。这是未签名预发布构建的临时办法。
+先解压（`tar xzf <文件>`；Windows 上用 **全部解压缩…**）。在 macOS 上，如果系统拒绝运行下载来的 `reverbscope`，
+请运行一次 `xattr -dr com.apple.quarantine reverbscope-terminal`：它只清除这些文件上的下载标记，不会关闭 Gatekeeper。
 
 ### 该选哪个？
 
 | | 桌面版 | 终端版 |
 | --- | --- | --- |
-| 图形界面（窗口、图表） | ✅ | — |
+| 带图表的工作台窗口 | ✅ | — |
 | 命令行（`reverbscope`） | ✅ | ✅ |
 | 房间分析与对比 | ✅ | ✅ |
 | 独立模式测量（播放并录音） | ✅ | ✅ |
 | English / 简体中文 | ✅ | ✅ |
 | 需要 Python | 不需要 | 不需要 |
-| 适合 | 大多数用户 | 命令行、自动化、轻量或无图形界面的电脑 |
+| 适合 | 大多数用户 | 自动化、轻量或无图形界面的电脑 |
 
 拿不准？选**桌面版**：它也包含命令行。分步安装、校验和（`SHA256SUMS`）、更新和卸载：
 **[安装指南](docs/INSTALLATION.zh-CN.md)**（[English](docs/INSTALLATION.md)）。
 
 ## 30 秒体验
 
-公开 beta：启动 **RoomScope**，或在解压后的终端版运行 `roomscope demo`。
-以下按钮与命令适用于更名后的源码/候选版，公开包的步骤见[公开 beta 指南](docs/PUBLIC_TESTING.zh-CN.md)。
+不需要话筒和音频接口，也不会播放任何声音。在终端中运行：
 
-不需要话筒和音频接口，也不会播放任何声音。
+```bash
+reverbscope config language zh_CN   # 以后一直使用中文界面（只需运行一次）
+reverbscope demo
+```
 
-* **任一版本，在终端中：**
+ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
+保存后不管系统怎么设置都使用中文，`reverbscope config language auto` 改回跟随系统。
 
-  ```bash
-  reverbscope config language zh_CN   # 以后一直使用中文界面（只需运行一次）
-  reverbscope demo
-  ```
-
-  ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
-  保存后不管系统怎么设置都使用中文，`reverbscope config language auto` 改回跟随系统。
-
-  下载的安装包不会把 `reverbscope` 加入 `PATH`：请在它所在的文件夹里打开终端（Windows 安装程序：
-  `%LOCALAPPDATA%\Programs\ReverbScope`），或者写出它的完整路径（macOS 桌面版：
-  `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`），详见[命令行](#命令行)。
+下载的安装包不会把 `reverbscope` 加入 `PATH`：请在它所在的文件夹里打开终端（Windows 安装程序：
+`%LOCALAPPDATA%\Programs\ReverbScope`），或者写出它的完整路径（macOS 桌面版：
+`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`）。
 
 ![终端中的 reverbscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
 
-`reverbscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步
-做什么。桌面版的 **演示** 则是在一个模拟房间里完成一次独立模式测量。两者显示的每个数值都描述的是模拟
-结果，保存的每个会话都标记为合成演示。
+`reverbscope demo` 会模拟一个房间里的两个话筒位置，用真实的分析和对比流程处理它们，并告诉你下一步做什么。
+它显示的每个数值都描述的是模拟结果，保存的每个会话都标记为合成演示。桌面版没有演示按钮：用 **会话…**
+打开保存下来的那个会话，就能在同样的数据上看到工作台。
 
-**然后进行真实测量：** 先把监听音箱音量**调低**（ReverbScope 不会改动系统音量），然后二选一：让
-ReverbScope 通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW
-模式**）。[用户指南](docs/user-guide/zh-CN.md)（[English](docs/user-guide/en.md)）逐页说明各项功能。
+**然后进行真实测量：** 先把监听音箱音量**调低**（ReverbScope 不会改动系统音量），然后二选一：让 ReverbScope
+通过你的音频接口自己播放并录音（**独立模式**），或者在 DAW 中播放它的扫频（**通用 DAW 模式**）。
+[用户指南](docs/user-guide/zh-CN.md)（[English](docs/user-guide/en.md)）逐页说明各项功能。
 
-## 这是什么
+## 它能做什么
 
-ReverbScope 是一个开源、不依赖任何 DAW 的录音环境分析工具。它回答录音师面对一个房间和一个话筒位置
-时会问的实际问题：
+ReverbScope 回答录音师按下录音键之前会问的问题：
 
-* 这个房间能不能用来录音？
-* 这个位置有哪些声学问题（强早期反射、衰减过长、低频堆积、电源哼声、本底噪声过高）？
+* 这个房间能不能用来录音？问题出在哪里（强早期反射、衰减过长、低频堆积、电源哼声、本底噪声过高）？
+* 这个位置适合录人声、鼓的房间话筒，还是合唱？
 * 挪动话筒或演奏者之后，情况有没有改善？
 
-它用指数正弦扫频（ESS）测量房间，通过解卷积得到房间脉冲响应，并报告混响（EDT / T20 /
-T30 / 估算的 RT60）、早期/后期能量（C50、C80、D50、重心时间）、频率响应、本底噪声、早期反射以及可能存在的低频共振。每个数字都带有单位、
-算法来源和有效性标记；数据质量不够时，ReverbScope 会给出 *“衰减范围不足”*（*Insufficient decay
-range*），而不是编造一个数字。ReverbScope 有意不提供任何“房间评分”。录音配置可能在 C50 或 C80
-不适合该类录音时给出一条提示；阈值是工程上的选择，不是评分。界面、命令行和报告都有英文和
-简体中文。
+它用指数正弦扫频测量房间，通过解卷积得到脉冲响应，并报告 EDT / T20 / T30 和估算的 RT60、早期与后期能量
+（C50、C80、D50、重心时间）、频率响应、本底噪声、早期反射以及可能存在的低频共振。
 
-状态：**`main` 是 beta（开发）线，`release/0.5.0` 是候选版线（`0.5.0rc` 系列）**，正在向 1.0 推进
-（[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)，英文版 [RELEASE_PLAN.md](docs/RELEASE_PLAN.md)）。
-DSP 核心、CLI、GUI、对比、回送（loopback）、zh-CN 界面翻译、会话打包和两个版本的程序包都已实现，
-并在 Linux、macOS 和 Windows 上由合成测试覆盖。**尚未完成：** 任何在真实硬件上测得的结果
-（硬件矩阵和验证活动都还是空的）、已签名的程序包、PyPI 包。Beta 版本不满足发布计划里 0.5.0 的退出条件。当前可用功能的概况：
-[docs/STATUS.md](docs/STATUS.md)。
+**桌面工作台**把一切放在一个窗口里：
 
-## 帮助测试候选版
+* **导航栏**列出打开的工程里的各个位置和每一次测量，每项有自己的颜色，勾选即可叠加到图表上。
+* **多个视图**：概览、频率响应、脉冲响应与能量衰减、噪声、声谱图与瀑布图、房间、与基准的对比，以及完整报告。
+* **检查器**显示这次测量的健康度、带可信标记的关键数值和选中的反射。
+* **可交互的图表**：以光标为中心缩放、平移、精确设置坐标轴范围、指针下带单位的读数，可导出为图片或 CSV。
+* 底部的**测量条**：模式、接口、采样率、声道、位置、开始和停止。浅色和深色主题，英文和简体中文。
 
-候选包已准备但仍为 Draft。可以从[公开 beta](docs/PUBLIC_TESTING.zh-CN.md) 开始，或使用维护者明确分享并注明 SHA 的构建，
-报告中写清版本。按[最短测试指南](docs/COMMUNITY_TESTING.zh-CN.md) 操作；失败与通过同样有价值。
+**它不会做什么。** 每个数字都带有单位、算法来源和有效性标记。数据质量不够时，ReverbScope 会给出
+*“衰减范围不足”*（*Insufficient decay range*），而不是编造一个数字。ReverbScope 有意不提供任何“房间评分”。
+一支全向话筒测到的是路程长度而不是方向，所以房间视图只显示一次测量*能约束*什么，从不指认某一面墙。
+录音配置（人声、旁白、民谣吉他、鼓、房间话筒、合唱）可能在 C50 或 C80 不适合该类录音时给出一条提示；
+阈值是工程上的选择，不是评分。
 
-1. 安装一个构建（见[下载](#下载)；Gatekeeper / SmartScreen 警告属于预期情况）。
-2. 在终端里先运行一次 `reverbscope demo`：
-   它不播放任何声音，只展示一份结果是什么样子。
-3. 先把监听音量调低，然后用你的音频接口和一支话筒运行 **独立模式**，或通过你的 DAW 运行
-   **通用 DAW 模式**（[DAW 说明](docs/user-guide/daw-setup.zh-CN.md)）。
-4. 报告实际情况，并附上 **帮助 → 用于问题报告的环境报告 → 探测采样率**（英文界面为
-   **Help → Environment Report for Bug Reports → Probe sample rates**）的内容：
-   * 音频接口测试报告（[中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)
-     / [English form](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml)）：
-     设备列表、44.1 / 48 / 96 kHz 下的完整测量、2 个以上的声道、回送、播放过程中点“停止”、丢帧、
-     测量过程中拔出设备；
-   * DAW 兼容性报告（[中文表单](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)
-     / [English form](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml)）：
-     通过某一个 DAW 录制并导出的同一段扫频。
+与 REW、Open Sound Meter、ARTA、Smaart 等工具的有出处的对比，以及什么时候该用别的工具，见
+[docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md)。
 
-结果会连同报告链接一起记入 [docs/HARDWARE_TESTS.zh-CN.md](docs/HARDWARE_TESTS.zh-CN.md)
-（英文版 [docs/HARDWARE_TESTS.md](docs/HARDWARE_TESTS.md)）。只有在实体音频接口上完成的测试才会记入
-该表。
+## 当前状态
 
-## DAW 工作流程（通用 DAW 模式）
+`main` 上的版本是 **0.5.0b3**；`release/0.5.0` 是候选版线。分析核心、命令行、桌面工作台、对比、回采（loopback）、
+简体中文文案、会话打包以及两个版本的安装包都已存在，并用合成数据在 Linux、macOS、Windows 上测试过。
 
-适用于任何能导入、播放、录制和导出 WAV 文件的 DAW。ReverbScope 从不与 DAW 通信。它读取 DAW 导出的
-文件（Broadcast WAV、RF64、Wave64、AIFF、CAF、FLAC；16/24/32 位 PCM 或 32 位浮点；单声道或多声道）；
-在使用扫频的附属文件（sidecar）时，如果 DAW 以错误的速度播放了扫频，它会指出常见原因（工程采样率
-与扫频不同，或 Warp / Flex / Follow Tempo 造成的伸缩超出了估计值本身的离散范围：默认 10 s 扫频约为
-1.3 %，扫频越短，该范围越大）。
-我们根据各厂商的文档编写了分步说明，涵盖 Pro Tools、Logic Pro / GarageBand、Cubase / Nuendo、
-Fender Studio Pro（Studio One）、Ableton Live、REAPER、FL Studio、Bitwig、Digital Performer 和
-Audacity：[docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.md)
-（英文版 [docs/user-guide/daw-setup.md](docs/user-guide/daw-setup.md)）。
-**这些 DAW 目前都还没有在真实 DAW 中与 ReverbScope 一起实际运行过**
-（[HARDWARE_TESTS.zh-CN.md](docs/HARDWARE_TESTS.zh-CN.md)）；提交一份 DAW 兼容性报告是你能做的最有用的贡献。
+**还没有：** 任何在真实硬件上测得的结果（硬件矩阵和硬件验证都还是空的）、任何 DAW 的实际运行、
+已签名或已公证的安装包、PyPI 包。目前没有任何构建达到[发布计划](docs/RELEASE_PLAN.zh-CN.md)里 0.5.0 的门槛。
+已经做了什么（带日期）：[docs/STATUS.md](docs/STATUS.md)。接下来做什么：[docs/ROADMAP.zh-CN.md](docs/ROADMAP.zh-CN.md)。
 
-1. **生成测试信号** —— ReverbScope 写出一个扫频 WAV（外加一个记录扫频精确参数的小 JSON 附属文件）。
-2. **在 DAW 中录音** —— 把 WAV 导入一条轨道，通过音频接口和监听音箱播放，在另一条轨道上录制测量话筒。
-3. **导入录音** —— 把录好的轨道导出为 WAV（采样率与工程相同；长度不限，无需裁切）。
-4. **分析** —— ReverbScope 自动找到扫频，完成解卷积并生成报告。
+## 参与测试
 
-## 独立工作流程（独立模式）
+现在最有用的事，是在真实的音频接口或真实的 DAW 上跑一遍，然后告诉我发生了什么。失败的检查和通过的一样有用。
 
-ReverbScope 通过你选择的音频接口自己播放扫频并录制话筒（经 `sounddevice` 调用 PortAudio）。开始时请把
-监听音量调低：默认扫频电平比较保守，而且 ReverbScope 不会改动系统音量或音频设置（唯一的例外需要用户
-主动开启：macOS 上一个设置设备采样率的选项，说明见
-[SECURITY.zh-CN.md](SECURITY.zh-CN.md) 中关于独立模式安全性的一节；英文版
-[SECURITY.md](SECURITY.md#safety-of-standalone-mode)）。
+1. 安装一个构建（[下载](#下载)；出现 Gatekeeper 或 SmartScreen 警告是正常的）。先从[公开 beta](docs/PUBLIC_TESTING.zh-CN.md) 开始。
+2. 在终端里运行一次 `reverbscope demo`，看看结果是什么样。
+3. 把音箱音量调低，然后用你的接口和话筒运行**独立模式**，或者通过 DAW 运行**通用 DAW 模式**
+   （[DAW 说明](docs/user-guide/daw-setup.zh-CN.md)）。
+4. 报告发生了什么，并贴上 **帮助 → 用于错误报告的环境信息 → 探测采样率** 的输出：
+   * [音频接口测试报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml)：
+     设备列表、44.1 / 48 / 96 kHz 的完整测量、2 个以上声道、回采、播放中按停止、掉帧、测量中拔线；
+   * [DAW 兼容性报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml)：
+     同一段扫频通过某个 DAW 录制并导出。
 
-两种模式调用的是完全相同的分析流程（`reverbscope.core.pipeline.analyze`）。
+简短的[测试指南](docs/COMMUNITY_TESTING.zh-CN.md)写明了具体要跑什么。结果会连同你的报告链接记录到
+[docs/HARDWARE_TESTS.zh-CN.md](docs/HARDWARE_TESTS.zh-CN.md)，只有在实体接口上跑出来的才算数。
+适合第一次贡献的小任务列在 [docs/COMMUNITY_TASKS.md](docs/COMMUNITY_TASKS.md)。
+
+## 测量是怎么进行的
+
+**通用 DAW 模式**适用于任何能导入、播放、录音并导出 WAV 的 DAW。ReverbScope 从不与 DAW 通信：它读取 DAW 导出的文件
+（Broadcast WAV、RF64、Wave64、AIFF、CAF、FLAC；16/24/32 位 PCM 或 32 位浮点；单声道或多声道），并且在使用扫频
+附带的 sidecar 文件时，指出扫频被以错误速度播放的常见原因。依据各厂商文档写成的分步说明覆盖 Pro Tools、
+Logic Pro / GarageBand、Cubase / Nuendo、Fender Studio Pro（Studio One）、Ableton Live、REAPER、FL Studio、
+Bitwig、Digital Performer 和 Audacity：[docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.md)。
+**这些 DAW 还没有一个真的和 ReverbScope 一起跑过。**
+
+1. **生成测试信号**：一个扫频 WAV，加一个小的 JSON sidecar。
+2. **通过 DAW 录音**：导入这个 WAV，经你的接口和音箱播放，把测量话筒录到另一条轨道上。
+3. **导入录音**：把录好的轨道导出为 WAV。
+4. **分析**：ReverbScope 找到扫频、解卷积并给出报告。
+
+**独立模式**由 ReverbScope 自己通过你选择的接口播放扫频并录下话筒（通过 `sounddevice` 使用 PortAudio）。默认扫频电平
+偏保守，ReverbScope 不会改动系统音量或音频设置（唯一的可选例外，是一个设置设备采样率的 macOS 选项，见
+[SECURITY.zh-CN.md](SECURITY.zh-CN.md)）。
+
+两种模式调用同一条分析管线（`reverbscope.core.pipeline.analyze`）。
 
 ## 命令行
 
-两个版本都包含命令行。在终端版、Windows / Linux 桌面版（与 `reverbscope-gui` 在同一文件夹）和 Python
-安装中，命令是 `reverbscope`；在 macOS 桌面版中是 `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope`。
+两个版本都带命令行：终端版里是 `reverbscope`；Windows 和 Linux 的桌面版里它在 `reverbscope-gui` 旁边；
+Python 安装里也有；macOS 桌面版里是 `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope`。
 
 ```bash
-# 1. 生成测试信号（48 kHz，20 Hz–20 kHz，10 s 扫频，-12 dBFS）
+# 生成测试信号，用 DAW 播放并录音，然后分析
 reverbscope sweep --out sweep_48k.wav
-
-# 2. 在 DAW 中播放它，录制话筒，导出 recording.wav
-
-# 3. 分析
 reverbscope analyze --recording recording.wav --sweep sweep_48k.wav --out results/
 
-# 可选：用卷尺量两个距离，即可得到垂直方向的几何信息
+# 两个卷尺量出的距离可以解锁垂直几何；配置会调整建议的措辞
 reverbscope analyze --recording recording.wav --sweep sweep_48k.wav \
   --speaker-distance 1.65 --mic-height 0.40 --temperature 21
-
-# 可选：按录音类型解读结果（generic | vocal | voiceover |
-# acoustic_guitar | drums | room_mic | choir）
 reverbscope analyze --recording recording.wav --sweep sweep_48k.wav --profile voiceover
 
-# 重新打开已保存的会话（报告相同；--profile 会覆盖保存时的配置）
+# 重新打开已保存的会话，对比两个位置
 reverbscope show results/
-reverbscope show results/ --list
-
-# 对比两个已保存的会话（每个差值都带有效性）
 reverbscope compare results/ position-b/ --same-input-gain
-reverbscope schema result
 
-# 双声道 DAW 导出：话筒 + 电回送
-reverbscope analyze --recording take.wav --sweep sweep_48k.wav --channel 0 --loopback-channel 1
-
-# 独立模式：先列出设备，再测量（可选：在输入 2 上接回送）
+# 独立模式：列出设备，然后测量
 reverbscope devices
 reverbscope measure --out session1/ --input-device 2 --output-device 3 \
   --input-channels 1,2 --loopback-channel 2 --sample-rate 48000
 
-# 在终端里不带命令运行 reverbscope 会打开编号菜单；报告在终端里带边框
-# （reverbscope --style plain 或 config style plain 切换为横线版式）
-reverbscope
-
-# 演示 / CI：不需要音频接口
-reverbscope demo --out demo/
-reverbscope profiles vocal           # 一个录音配置关注什么
-reverbscope --backend fake measure --out fake-take/ --duration 2 --post-silence 1.5
-
-# 语言（保存在 settings.json 中；auto 改回跟随系统）、设置、打包、CSV、项目
-reverbscope config language zh_CN
-reverbscope --lang en analyze --recording take.wav --sweep sweep.wav   # 只对这一条命令
-reverbscope config
-reverbscope session bundle session1/ --no-audio --out report.zip
-reverbscope export session1/ --format csv --out curves/
+# 同一个房间的多个位置
 reverbscope project init --out room/ --name Booth
 reverbscope project add room/ session1/ --position desk
-reverbscope project average room/
-reverbscope project overview room/   # 各位置的健康、契合度、判定与下一步
+reverbscope project overview room/   # 每个位置的健康度、适配度、结论和下一步
 
-# GUI（桌面版，或装了 gui 附加依赖的 Python 环境）
+# 不需要接口
+reverbscope demo --out demo/
+reverbscope profiles vocal           # 某个录音配置关注什么
+
+# 桌面工作台（桌面版，或安装了 gui 额外依赖的 Python 安装）
 reverbscope gui
 ```
 
-`--speaker-distance` 是扬声器到话筒振膜的直线距离；`--mic-height` 是振膜到其下方第一个坚硬水平面的
-高度。两者都给出时，ReverbScope 会报告扬声器高度、设备上方的反射平面以及水平间距。它**不报告坐标、
-不报告房间的长度或宽度，也从不指认是哪一面墙**：单只全指向话筒在单一位置上测到的是路径长度，而不是
-方向；即使提供了距离，几何关系仍然缺少两个约束，无法确定。结果 JSON 中也记录了这一论证。
-
-`--profile` 决定如何把测得的数字转换为建议（默认 `generic`；`vocal`、`voiceover`、`acoustic_guitar`、
-`drums`、`room_mic` 和 `choir` 各有针对该类录音的阈值和措辞）。报告会在 `Interpretation`（解读）旁边
-标出配置名称，以免有人把这些建议误当成与录音用途无关的客观结论。GUI 在两种测量模式中都提供同样的选择。
-
-`results/` 中会生成 `result.json`（全部指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）、
-`session.json`（测量元数据）、扫频的 `sweep.reverbscope-sweep.json`，以及录音的副本 `recording.wav`
-（用 `--no-copy-recording` 或 `reverbscope config copy-recording off` 可以不复制）。你传入的原始录音
-永远不会被修改。`reverbscope show` 以及 GUI 中的
-**打开会话**（**Open Session**）和主页的会话列表都可以重新打开该目录；脉冲响应 WAV 是权威的采样记录
-（`result.json` 保存的是指标，不保存脉冲响应的采样）。最近打开或保存过的会话记录在 `$REVERBSCOPE_HOME`
-下（默认为 `~/.reverbscope`）。
+结果文件夹里有 `result.json`（所有指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）、`session.json`、
+扫频的 sidecar，以及一份录音的副本。你传入的录音永远不会被修改。全部选项、语言和样式设置、CSV 与打包导出见
+[用户指南](docs/user-guide/zh-CN.md)。
 
 ## 文档
 
 | 文档 | 内容 |
 | --- | --- |
-| [docs/INSTALLATION.zh-CN.md](docs/INSTALLATION.zh-CN.md) | 在 macOS、Windows、Linux 上下载安装或用 Python 安装；更新、卸载、未签名构建的警告、故障排查；[English](docs/INSTALLATION.md) |
-| [docs/index.md](docs/index.md) | 文档索引 |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 包结构、数据流、扩展点 |
-| [docs/ARCHITECTURE_V1.md](docs/ARCHITECTURE_V1.md) | 正在执行的 v1.0 设计：API 分层、对比、回送、打包、国际化、验证关卡 |
-| [docs/ARCHITECTURE_V1.zh-CN.md](docs/ARCHITECTURE_V1.zh-CN.md) | v1.0 设计的中文摘要 |
-| [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) | 算法、单位、有效性规则、参考文献 |
-| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | 每一项运行时/开发依赖的许可证和用途 |
-| [docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md) | 对研究过的外部代码仓库的审查 |
-| [docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md) | 任何改编或复制代码的来源记录（目前没有） |
-| [docs/LICENSE_DECISION.md](docs/LICENSE_DECISION.md) | ReverbScope 为什么采用 Apache-2.0 |
-| [docs/STATUS.md](docs/STATUS.md) | 已实现 / 已测试 / 已知限制 / 下一个里程碑 |
-| [docs/RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md) | 发布计划（中文摘要）；[English](docs/RELEASE_PLAN.md) |
-| [docs/HARDWARE_TESTS.zh-CN.md](docs/HARDWARE_TESTS.zh-CN.md) | 硬件与 DAW 测试矩阵；[English](docs/HARDWARE_TESTS.md) |
-| [docs/user-guide/zh-CN.md](docs/user-guide/zh-CN.md) | 用户指南（简体中文）：安装、测量、读结果、对比、打包 |
-| [docs/user-guide/en.md](docs/user-guide/en.md) | User guide (English) |
-| [docs/AUDIO_DEVICES.zh-CN.md](docs/AUDIO_DEVICES.zh-CN.md) | 音频系统（主机 API：WASAPI、WDM-KS、MME、Core Audio、ALSA、JACK 等），各自对测量有什么影响，以及 ReverbScope 如何探测和选择设备，附来源；[English](docs/AUDIO_DEVICES.md) |
-| [docs/COMPATIBILITY.zh-CN.md](docs/COMPATIBILITY.zh-CN.md) | 平台、Python 与依赖的最低版本、DAW 导出格式、音频系统，以及每一项的验证方式；[English](docs/COMPATIBILITY.md) |
-| [docs/EDITIONS.zh-CN.md](docs/EDITIONS.zh-CN.md) | 桌面版与终端版，以及开发者工具；[English](docs/EDITIONS.md) |
-| [docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md) | ReverbScope 与 REW、Open Sound Meter、ARTA、Smaart、SoundID 等工具的区别，以及什么情况下其他工具更合适；[English](docs/COMPARISON.md) |
-| [docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.md) | DAW 分步说明（Pro Tools、Logic、GarageBand、Cubase / Nuendo、Fender Studio Pro（Studio One）、Live、REAPER、FL Studio、Bitwig、Digital Performer、Audacity）；[English](docs/user-guide/daw-setup.md) |
-| [docs/PROJECT_BRIEF.zh-CN.md](docs/PROJECT_BRIEF.zh-CN.md) | 最初的项目简介（中文） |
+| [docs/INSTALLATION.zh-CN.md](docs/INSTALLATION.zh-CN.md) | 在 macOS、Windows、Linux 或用 Python 安装；未签名构建的警告、故障排查；[English](docs/INSTALLATION.md) |
+| [docs/user-guide/zh-CN.md](docs/user-guide/zh-CN.md) | 用户指南：安装、测量、读结果、对比、打包；[English](docs/user-guide/en.md) |
+| [docs/user-guide/daw-setup.zh-CN.md](docs/user-guide/daw-setup.zh-CN.md) | 各 DAW 的分步说明；[English](docs/user-guide/daw-setup.md) |
+| [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) | 算法、单位、有效性规则、参考文献（英文） |
+| [docs/STATUS.md](docs/STATUS.md) | 已实现、已测试、已知限制、下一个里程碑（英文） |
+| [docs/HARDWARE_TESTS.zh-CN.md](docs/HARDWARE_TESTS.zh-CN.md) | 硬件和 DAW 测试矩阵（目前仍是空的）；[English](docs/HARDWARE_TESTS.md) |
+| [docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md) | ReverbScope 与 REW、ARTA、Smaart 等的区别；[English](docs/COMPARISON.md) |
+| [docs/AUDIO_DEVICES.zh-CN.md](docs/AUDIO_DEVICES.zh-CN.md) | 主机 API，以及设备如何被探测和选择；[English](docs/AUDIO_DEVICES.md) |
+| [docs/COMPATIBILITY.zh-CN.md](docs/COMPATIBILITY.zh-CN.md) | 平台、DAW 导出格式、主机 API，以及各项由什么验证；[English](docs/COMPATIBILITY.md) |
+| [docs/EDITIONS.zh-CN.md](docs/EDITIONS.zh-CN.md) | 桌面版与终端版；[English](docs/EDITIONS.md) |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 包结构、数据流、扩展点（英文） |
+| [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | 每个依赖及其许可证和用途（英文） |
+| [docs/LICENSE_DECISION.md](docs/LICENSE_DECISION.md) | 为什么选择 Apache-2.0（英文） |
+| [docs/index.zh-CN.md](docs/index.zh-CN.md) | 完整的文档索引 |
 
 ## 开发安装
 
@@ -308,15 +248,15 @@ reverbscope gui
 ```bash
 git clone https://github.com/jingyemingyue/ReverbScope.git
 cd ReverbScope
-python3.12 -m venv .venv && source .venv/bin/activate   # Windows：.venv\Scripts\activate
+python3.12 -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev,gui]"
 reverbscope --help
 reverbscope gui
 ```
 
-每个发布版本还附带 wheel（`reverbscope-<version>-py3-none-any.whl`）和源码包，见
-[安装指南 → Python](docs/INSTALLATION.zh-CN.md#python-wheel-和源码包)。`scripts/build_release.py`
-可以在本机构建当前平台的两个版本（[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md) §3a）。
+每个发布版本还附带一个 wheel（`reverbscope-<version>-py3-none-any.whl`）和源码归档，见
+[安装 → Python](docs/INSTALLATION.zh-CN.md)。`scripts/build_release.py` 可在本机构建当前平台的两个版本
+（[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)）。
 
 ## 技术架构
 
@@ -328,67 +268,35 @@ from reverbscope.io.wav import read_wav, load_reference
 from reverbscope.core import Reference
 
 recording = read_wav("recording.wav")
-reference = load_reference("sweep_48k.wav")  # 如果存在 JSON 附属文件，则使用它
+reference = load_reference("sweep_48k.wav")  # 有 JSON sidecar 时会使用它
 result = analyze(recording, reference)
 print(result.decay.broadband.rt60_estimate_s, result.decay.broadband.rt60_basis)
 for r in result.reflections.reflections:
     print(f"{r.delay_ms:.1f} ms  {r.relative_db:.1f} dB")
 ```
 
-### ReverbScope 有什么不同
-
-* **它拒绝编造数字。** 每个指标都带有单位、算法来源和有效性标记；衰减太短、不足以计算 T30 时，
-  它给出 *衰减范围不足*，而不是一个数字。它不提供任何单一的“房间评分”。
-* **它在 DAW 旁边工作，而不是在 DAW 里面。** 它只需要一个能播放和录制 WAV 的 DAW；当 DAW 以错误的
-  速度播放扫频时，它会指出常见原因（采样率不匹配，或 Warp / Flex / Follow Tempo）。各 DAW 的操作步骤
-  已写成文档，但尚未在每个 DAW 中实际测试。
-* **它回答录音师真正关心的问题** —— “这个位置适合录人声、做鼓的房间话筒、录合唱吗？” —— 方式是带有
-  明确标签的解读配置；它还能对比两个位置，每个差值都带有有效性。
-* **它会说明一支话筒无法知道什么。** 摆位几何从不指认某一面墙，也不推导测量无法支撑的坐标。
-
-与其他工具的比较（附来源）见 [docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md)
-（英文版 [docs/COMPARISON.md](docs/COMPARISON.md)）。
-
 ### 设计原则
 
-* **不依赖 DAW** —— 永远不使用任何 DAW SDK。输入 WAV，输出 WAV。
-* **核心优先** —— DSP 函数是纯 NumPy/SciPy 函数，不依赖 GUI、设备或文件格式，因此 CLI、桌面程序、
-  插件或 Python API 都可以共用它们。
-* **科学正确性优先于功能** —— 算法来自已发表的论文和标准（Farina 2000、Schroeder 1965、Lundeby 1995、
-  ISO 3382-1/-2 等）；见 [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md)。
-* **诚实的数字** —— 未经校准时一律使用 dBFS，每个指标都有有效性标记，不提供伪科学的房间评分。
-* **每个结果都有测量健康** —— 每个结果都附有对这次录音本身的检查（扫频、播放速度、直达声、电平、失真、采样丢失、衰减范围、本底噪声、录音长度），每项为良好、警告、无效或未知，附原因、受影响的指标和下一步；扫频播放速度不对时会列出各 DAW 设置采样率的位置。
-* **多个位置，一份总览** —— 项目文件夹按话筒位置收集一个房间的多次测量；总览说明每次测量是否契合录音配置、每个位置的多次测量是否可重复、它与第一个位置相比如何，以及接下来该测什么，而不做排名。
-* **净室实现与许可证规范** —— 不内置任何第三方源代码（[docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)）；
-  每一项依赖和每一个参考过的代码仓库都经过审查
-  （[docs/DEPENDENCIES.md](docs/DEPENDENCIES.md)、
-  [docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md)）。
+* **不依赖 DAW**：永远不用 DAW 的 SDK。WAV 进，WAV 出。
+* **核心优先**：DSP 函数是纯 NumPy/SciPy 函数，不依赖图形界面、设备或文件格式，所以命令行、桌面应用、插件
+  或 Python API 都能共用。
+* **科学正确优先于功能多**：算法来自公开发表的论文和标准（Farina 2000、Schroeder 1965、Lundeby 1995、
+  ISO 3382-1/-2）；见 [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md)。
+* **诚实的数字**：未校准时用 dBFS，每个指标都有有效性标记，没有伪科学的房间评分。
+* **每个结果都附测量健康度**：对这次录音本身做的检查（扫频、播放速度、直达声、电平、失真、掉帧、衰减范围、
+  本底噪声、录音长度），每项为良好、警告、无效或未知，并给出原因和下一步该做什么。
+* **多个位置，一张总览**：工程文件夹按话筒位置收集同一个房间的各次测量，按位置说明下一步该测什么，不做排名。
+* **净室实现**：不引入任何第三方源码（[docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md)）；每个依赖和参考仓库
+  都经过审计（[docs/THIRD_PARTY_REVIEW.md](docs/THIRD_PARTY_REVIEW.md)）。
 
 ## 参与贡献
 
-这是面向其他开发者阅读、克隆和审查的版本。请先运行 [CONTRIBUTING.md](CONTRIBUTING.md) 中列出的检查，
-然后欢迎提交 pull request。也请阅读[行为准则](CODE_OF_CONDUCT.md)。
+欢迎提交 Pull Request，前提是你已运行过 [CONTRIBUTING.md](CONTRIBUTING.md) 里的检查。也请阅读
+[行为准则](CODE_OF_CONDUCT.md)。几个入口：
 
-提交 issue 时可以用中文表单，也可以用英文表单：
-
-| 用途 | 中文表单 | 英文表单 |
-| --- | --- | --- |
-| 程序崩溃、报错或行为异常 | [问题报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug-zh-CN.yml) | [Bug report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug.yml) |
-| 某个数字看起来不对，或有效性标记出乎意料 | [测量问题](https://github.com/jingyemingyue/ReverbScope/issues/new?template=measurement-zh-CN.yml) | [Measurement problem](https://github.com/jingyemingyue/ReverbScope/issues/new?template=measurement.yml) |
-| 对测量、CLI、GUI 或文档的改进建议 | [功能建议](https://github.com/jingyemingyue/ReverbScope/issues/new?template=feature-zh-CN.yml) | [Feature request](https://github.com/jingyemingyue/ReverbScope/issues/new?template=feature.yml) |
-| 用真实声卡或音频接口运行过 ReverbScope | [音频接口测试报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware-zh-CN.yml) | [Audio interface test report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=hardware.yml) |
-| 用通用 DAW 模式通过某个 DAW 测量过 | [DAW 兼容性报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw-zh-CN.yml) | [DAW compatibility report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=daw.yml) |
-
-可能被滥用的安全问题请不要公开提交 issue，按 [SECURITY.zh-CN.md](SECURITY.zh-CN.md)
-（英文版 [SECURITY.md](SECURITY.md)）中的方式私下报告。
-
-可以从这些地方入手：
-
-* [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) —— 包结构，以及唯一的分析入口
-  （`reverbscope.core.pipeline.analyze`）
-* [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md) —— 每个指标的算法、单位和有效性规则
-* [docs/STATUS.md](docs/STATUS.md) —— 已实现 / 已测试 / 下一个里程碑
-* `examples/synthetic_measurement.py` —— 不需要硬件的端到端运行示例
+* [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)：包结构和唯一的分析入口
+* [docs/MEASUREMENT_METHODOLOGY.md](docs/MEASUREMENT_METHODOLOGY.md)：每个指标的算法、单位和有效性规则
+* `examples/synthetic_measurement.py`：不需要硬件的端到端示例
 
 ```bash
 pytest
@@ -396,9 +304,9 @@ ruff check . && ruff format --check .
 mypy
 ```
 
-每次 push 和 pull request 都会运行 CI（Ubuntu 上 Python 3.12–3.14 以及 macOS/Windows 上 Python 3.12
-的 pytest、ruff、mypy、sdist/wheel 构建）。
+CI（Ubuntu 3.12–3.14，加上 macOS 和 Windows 3.12 上的 pytest，以及 ruff、mypy、sdist/wheel）在每次推送和每个
+Pull Request 上运行。
 
 ## 许可证
 
-Apache License 2.0 —— 见 [LICENSE](LICENSE) 和 [NOTICE](NOTICE)。
+Apache License 2.0。见 [LICENSE](LICENSE) 和 [NOTICE](NOTICE)。

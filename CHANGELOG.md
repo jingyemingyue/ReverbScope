@@ -154,6 +154,12 @@ All notable changes to ReverbScope are documented here. The format follows
   repository source; refresh labelled screenshots from the current source version.
 - Extend paired issue forms with evidence scope, save/reopen and reproducible
   feature acceptance criteria. No DSP, GUI, schema or license change.
+- Rewrite both READMEs around the desktop workstation and the real state of
+  the project: what it does, what has and has not been validated, and how to
+  help test it. Retake the GUI screenshots on the native macOS platform at
+  Retina resolution. `scripts/render_readme_assets.py` placed the synthetic-
+  data stamp outside the image on a high-DPI display; it now measures in
+  logical pixels.
 
 ## [0.5.0b3] - 2026-10-09
 
