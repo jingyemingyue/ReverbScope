@@ -7,8 +7,131 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
-### Added
+### Changed
+- **Narrow-window controls remain readable.** The measurement settings and
+  transport use two rows when platform font metrics need more width; wide
+  windows keep one row. Device controls expose the complete selection on
+  hover. Menu and keyboard view changes scroll the active tab into view.
+  Frequency and time-frequency views scroll when their plots and notes
+  cannot fit; chart parents retain enough height for the axes.
+  The Apple Silicon workstation checklist combines the two GUI PRs in
+  `docs/MAC_GUI_ACCEPTANCE.zh-CN.md` without claiming hardware passes.
+- **Cursor readouts keep their units.** Coordinates have their own line below
+  the chart toolbar; long measurement names elide in the middle, with the
+  complete readout on hover.
+- **POSIX menu interrupts.** Menu input uses Python streams so Ctrl+C
+  between the prompt and the read does not leave the menu waiting for Enter.
+- **Stable timing checks.** The time-frequency check keeps its one-second budget and uses
+  the median of five runs after warm-up to avoid a single CI scheduling pause.
+- **A compact measurement desk.** Tool buttons now share the same flat
+  chrome as the input controls. Body text uses a consistent 12 logical pixels,
+  with the existing Chinese font fallbacks. Panel switches are visually
+  separate from analysis views. Findings use neutral rows and coloured status
+  text instead of filled cards; the overview puts the band tables before the
+  expandable interpretation. Conditions in the inspector are expandable.
+  Project and measurement paths occupy one line with the full path on hover.
+  The empty desk shows session operations; the first-measurement guide opens
+  on demand and keeps the existing dismissal preference.
+- **Exact chart ranges.** Axes opens lower and upper limits in the axis units,
+  including Hz on logarithmic axes. Mouse zoom, pan and exact ranges survive
+  display processing and measurement redraws; Frame returns to the defaults.
+  The frequency and difference panes keep their horizontal limits linked.
+  Both left axes reserve the same width so the linked plot areas also
+  align when a platform's font gives their tick labels different widths.
+  A redraw clears the previous measurement's cursor readout.
+- **Room parameters no longer occupy the default canvas.** Room parameters
+  opens the existing geometry, scan and reflection controls on demand. When
+  the room view first becomes visible, its camera fits after layout completes;
+  a camera the user moved is preserved when switching views.
+- **Spectrogram and waterfall follow the measurement list.** Hiding the
+  current measurement clears the picture at once. A transform that finishes
+  later is cached only for the impulse response it read, and it is drawn
+  only when that measurement, those parameters and the visibility are still
+  current. The display cache has an 8 MiB budget. Pictures past that budget
+  are dropped oldest first, but one picture larger than the budget is kept.
+  It is not a hard memory cap. A default spectrogram of a short sweep is
+  about 1.9 MiB; a default waterfall about 115 KiB. Stored measurements are
+  not evicted.
+- **Room view opens on the room.** Entered geometry and the selected
+  reflection are shown; predicted paths and the full constraint mesh stay
+  off until **Geometric assumption** or **All constraints** is turned on.
+  The choice is restored from `ui.ini`. **Restore default view** puts it
+  back and frames the camera with room for the front mark and the dimensions.
+  The loudspeaker name, the current microphone name and the length, width
+  and height captions move apart in screen space when the projection would
+  stack them (plan, front, side and the default perspective). Fit keeps the
+  room, the visible measured constraint and those captions inside the canvas
+  with a margin; a resize refits until the user moves the camera.
+- **Overview reads as figures, not a dashboard.** The four headline numbers
+  sit in one strip. Band tables are not wrapped in cards. The long
+  definition of each table is on the heading's tooltip. Level alignment on
+  the frequency chart is labelled display-only. Chart **Frame** restores
+  the axes (R or double-click). The inspector keeps the fault and the chart
+  button; the longer "affects / next" note is on that row's tooltip.
+- **Command line from the #42/#54 line, without replacing the workstation.**
+  Menu answers accept 是的 and 确定, Ctrl+C leaves with status 130, a folder
+  is not replaced before a yes, and the terminal keeps Chinese paths and
+  list punctuation in one piece. Comparison JSON does not gain fields.
+  Baseline/candidate are 基准/对比项 in Simplified Chinese. The desktop
+  window is still the #57 workstation. PR #55's separate workbench is not
+  merged. PR #56's workstation is the one this branch continues.
+- **Workstation readability.** The measure strip says whether a take is
+  ready, playing or being analysed, and the status sits on its own line.
+  Stop looks armed only while the sweep can still be stopped. The room view
+  names the camera, marks the front edge (y = 0) and labels the axes as
+  length, width and up; front and side are pitched so the box reads as a
+  volume. Hints and status chips clear WCAG AA on both themes, and chart
+  titles elide instead of clipping.   A `QKeySequence` shown in the view bar
+  is typed as text, which is what the lint job (no PySide6 installed) needs.
+  Frequency axes from `numpy.fft.rfftfreq` are passed on as `float64`; the
+  current stub types that function as any floating dtype. The values do not
+  change.
+- **The desktop app is one workstation window** (GUI 2.0,
+  `docs/design/GUI_2_ARCHITECTURE.md`). A navigator lists the project's
+  positions and every open measurement, each with its colour. The check box
+  (what is drawn), the selection and the baseline are independent. The view
+  bar groups the analysis: Overview, Frequency, Time, Decay, Spectral
+  (spectrogram, waterfall, noise), Room, Compare and Report; Project is a
+  separate button. Ctrl+1 … Ctrl+9 still open each view (Command on macOS).
+  The inspector shows the current measurement even when its curves are
+  hidden, and a health problem can open the chart it is about. The measure
+  strip carries audio-interface or DAW-recording mode, the input, the rate,
+  the microphone channel and Start / Stop; output and loopback are under
+  Advanced. There is no demo mode in the product window. The list and the
+  inspector can be hidden; sizes, which sides are open, the view and, per
+  project, the selection are restored (`ui.ini`), and a layout that cannot
+  be restored falls back to the default. The room view frames from the plan,
+  the front and the side, and a click names an entered face as entered
+  geometry, not as a surface the measurement found. Open Session adds the
+  session to the list; switching views does not stop a take.
+- **Charts are pyqtgraph** (0.14.0, MIT, in the `gui` extra and the desktop
+  bundles; nothing uses OpenGL). Overlays are drawn in the list's colours,
+  and only when that measurement is visible; the selected curve is thicker
+  and a baseline is named in the legend. A legend chip shows or hides that
+  measurement. Every chart zooms about the cursor, pans, resets, reads out
+  the value under the cursor with its unit, names its display processing,
+  and exports PNG, SVG or the drawn curves as CSV. With a baseline, the
+  Frequency response view adds a difference pane. Decay draws all bands of
+  a measurement with a dash pattern each, and says why a band has no curve.
+- The tape-measure picture beside the placement inputs is the only
+  matplotlib drawing left; `scripts/benchmark.py --gui` times the chart
+  views instead of the 0.5 plots.
 
+### Added
+- **Spectrogram and waterfall** views of the impulse response, computed on a
+  worker thread with a cache per measurement.
+- **Room view.** A three-dimensional drawing of the room box you enter, the
+  loudspeaker and a microphone per position, an example room and optional
+  PLY / OBJ scans (read on a worker thread with size and vertex limits),
+  with three layers: what you entered (solid), what a measurement constrains
+  (dashed: the direct-distance sphere, the selected reflection's ellipsoid,
+  the ring of loudspeaker positions a placement result allows) and what
+  follows only from assuming a rectangular room (dotted: first-order
+  reflection paths, the faces matching the selected reflection
+  highlighted). It says that one microphone cannot locate a wall. The
+  geometry is saved in `room-geometry.json`, apart from the measurements.
+- `docs/design/GUI_REFERENCE_AUDIT.md`: what the workstation borrows from
+  other programs (conventions only, no code or assets).
 - **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.1) is the single
   standard for the open-source application path and the GUI redesign.
   `docs/GUIDELINES.md` is an English summary; the Chinese text wins if they
@@ -26,6 +149,25 @@ All notable changes to ReverbScope are documented here. The format follows
   flat tops now say how far above full scale they peak, in English and
   Simplified Chinese. The warning status and headroom limits are unchanged.
   Peaks that round to 0.0 dBFS retain the existing headroom warning.
+
+### Documentation and tester tooling
+- Separate the public RoomScope beta from renamed Draft releases in both
+  READMEs, installation guides and site copy; label source screenshots.
+- Add an evidence-linked OSS readiness audit, application draft, roadmap,
+  public-beta install guide and bilingual physical-test workflow.
+- Add a report preparer that captures a reviewed environment snapshot, preserves
+  earlier run directories and leaves every hardware/DAW check NOT RUN.
+- Keep JSON evidence links usable in the generated docs site by linking to their
+  repository source; refresh labelled screenshots from the current source version.
+- Extend paired issue forms with evidence scope, save/reopen and reproducible
+  feature acceptance criteria. No DSP, GUI, schema or license change.
+- Rewrite both READMEs around the desktop workstation and the real state of
+  the project: what it does, what has and has not been validated, and how to
+  help test it. Retake the GUI screenshots on the native macOS platform at
+  Retina resolution. `scripts/render_readme_assets.py` placed the synthetic-
+  data stamp outside the image on a high-DPI display; it now measures in
+  logical pixels.
+>>>>>>> origin/main
 
 ## [0.5.0b3] - 2026-10-09
 
