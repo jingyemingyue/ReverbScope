@@ -16,7 +16,7 @@ from typing import Protocol
 import numpy as np
 
 from reverbscope.errors import ConfigurationError
-from reverbscope.i18n import N_, _
+from reverbscope.i18n import N_, _, quoted
 from reverbscope.models.audio import AudioSignal, FloatArray
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES
 
@@ -239,7 +239,7 @@ def get_backend(name: str | None = None) -> AudioBackend:
 
         return PortAudioBackend()
     raise ConfigurationError(
-        _("unknown audio backend {name}; available: portaudio, fake").format(name=repr(chosen))
+        _("unknown audio backend {name}; available: portaudio, fake").format(name=quoted(chosen))
     )
 
 

@@ -460,6 +460,8 @@ def is_previous_site(folder: Path) -> bool:
         relative = path.relative_to(folder)
         if relative.as_posix() == "assets/theme.css":
             continue
+        if relative.parts[0] == "images":
+            continue
         if path.is_symlink() or path.suffix != ".html" or relative.parts[0] == "assets":
             return False
     return True
@@ -515,6 +517,9 @@ def build_site(docs: Path, dest: Path) -> list[Path]:
         )
         target.write_text(page, encoding="utf-8")
         written.append(target)
+    images = sources / "images"
+    if images.is_dir():
+        shutil.copytree(images, dest / "images", dirs_exist_ok=True)
     return written
 
 

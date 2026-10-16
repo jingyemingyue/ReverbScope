@@ -36,11 +36,6 @@ class MeasurementState:
     #: third-party one from an entry point). Shown on the Results page.
     findings_problem: str = ""
     session: MeasurementSession = field(default_factory=MeasurementSession)
-    #: The project the next saved session is added to, under this position
-    #: (set by the Project page's "Measure a new position"). A project
-    #: outlives one session, so reset() keeps them; Home clears them.
-    project_path: Path | None = None
-    project_position: str = ""
     #: A live Standalone take whose recording exists only in memory until the
     #: session is saved; New Measurement, Open Session and closing the window
     #: ask before they drop it. Never set for the demo (nothing is lost) or for
@@ -60,10 +55,6 @@ class MeasurementState:
         self.findings_problem = ""
         self.unsaved_take = False
         self.session = MeasurementSession(mode=self.mode)
-
-    def leave_project(self) -> None:
-        self.project_path = None
-        self.project_position = ""
 
     def claim(self) -> int:
         """A page takes the state for the measurement it starts.

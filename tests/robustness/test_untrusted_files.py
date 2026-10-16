@@ -347,7 +347,7 @@ def test_one_sided_reflection_matches_load(tmp_path: Path) -> None:
         (
             "comparison.json",
             '{"comparable": true, "decay": [{"name": "x", "validity": "bogus"}]}',
-            "未知的有效性 'bogus'",
+            "未知的有效性 “bogus”",
         ),
         (
             "comparison.json",

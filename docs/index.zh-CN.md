@@ -13,6 +13,7 @@
 ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上测量并与参考仪器对照过，安装包没有用于分发的签名，通用 DAW 模式的各 DAW 步骤是按厂商文档编写、尚未在 DAW 中实测的流程。ReverbScope 不给房间打分。
 
 用户文档提供英文和简体中文两种版本，**以英文版为准**；每篇中文文档顶部都有指向英文原文的链接。开发者与内部文档（架构、ADR、研究笔记、依赖与许可证审查、代码来源、项目状态、发布计划）只提供英文版，其中发布计划和 v1.0 架构另有中文摘要。
+执行准则是例外：[GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) 是全项目的执行依据，[GUIDELINES.md](GUIDELINES.md) 是它的英文摘要。
 
 ## 中文用户文档
 
@@ -36,6 +37,8 @@ ReverbScope 目前是预发布版本：还没有任何结果在真实硬件上�
 
 ## 中文摘要（开发者文档）
 
+- [统一执行准则（中文，以此为准）](GUIDELINES.zh-CN.md)（[English summary](GUIDELINES.md)）
+- [项目如何使用 AI](AI_ASSISTANCE.md)（中英双语）
 - [维护手册](MAINTAINING.zh-CN.md)（[English](MAINTAINING.md)）
 - [发布计划（中文摘要）](RELEASE_PLAN.zh-CN.md)
 - [v1.0 架构设计（中文摘要）](ARCHITECTURE_V1.zh-CN.md)

@@ -109,7 +109,6 @@ builds; see [public-beta steps](docs/PUBLIC_TESTING.md).
 
 No microphone and no audio interface needed; nothing is played.
 
-* **Desktop Edition:** open ReverbScope and click **Demo (no interface)**.
 * **Either edition, in a terminal:**
 
   ```bash
@@ -178,8 +177,9 @@ A failed check is as useful as a pass.
 
 1. Install a build ([Download](#download); the Gatekeeper / SmartScreen
    warning is expected).
-2. Open ReverbScope and run **Demo (no interface)** once: it shows what a
-   result looks like without playing anything.
+2. In a terminal, run `reverbscope demo` once: it shows what a result looks
+   like without playing anything. The desktop app has no demo mode; a
+   synthetic session opened in it is marked synthetic.
 3. Turn the monitors down, then run **Standalone Mode** with your interface
    and a microphone, or **Universal DAW Mode** through your DAW
    ([DAW notes](docs/user-guide/daw-setup.md)).

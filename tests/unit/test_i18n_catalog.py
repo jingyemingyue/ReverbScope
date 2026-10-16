@@ -44,6 +44,7 @@ DYNAMIC_CALLS = {
     ("i18n.py", "_(template)"),
     ("interpretation/interpreter.py", "_(template)"),
     ("cli/main.py", "_(SAFETY_MESSAGE)"),
+    ("cli/render.py", "_(SAFETY_MESSAGE)"),
     # argparse's own texts, each extracted with N_() in ARGPARSE_MESSAGES.
     ("cli/main.py", "_(message)"),
     # Root-help command groups (COMMAND_GROUPS) and session modes
@@ -65,6 +66,23 @@ DYNAMIC_CALLS = {
     # The demo's room, microphone and position names, extracted with N_().
     ("demo.py", "_(DEMO_ROOM_NAME)"),
     ("demo.py", "_(DEMO_MICROPHONE)"),
+    # A display error's sentence, extracted with N_() where it is raised.
+    ("display/__init__.py", "_(self.template)"),
+    # GUI 2.0 workspace: notes of a time-frequency result ((template, params)
+    # pairs, each extracted with N_() in display/timefreq.py) and its unit
+    # (the UNIT_* constants there).
+    ("ui/views/timefreq.py", "_(template)"),
+    ("ui/views/timefreq.py", "_(result.unit)"),
+    # Navigator group titles (NO_POSITION, TAKES) and measure-strip modes
+    # (MODES), extracted with N_().
+    ("ui/navigator.py", "_(NO_POSITION)"),
+    ("ui/navigator.py", "_(TAKES)"),
+    ("ui/measure_strip.py", "_(text)"),
+    # Room view layer names (LAYER_NAMES) and the single-microphone sentence
+    # (geometry/paths.py), extracted with N_().
+    ("ui/room/canvas.py", "_(LAYER_NAMES[layer])"),
+    ("ui/room/view.py", "_(LAYER_NAMES[layer])"),
+    ("ui/room/view.py", "_(SINGLE_MICROPHONE_NOTE)"),
 }
 
 #: ASCII tokens a Chinese finding may legitimately contain: units, metric
@@ -184,7 +202,7 @@ def test_safety_warning_and_level_refusal_are_translated() -> None:
 
     activate("zh_CN")
     try:
-        assert _(SAFETY_MESSAGE).startswith("先把监听")
+        assert _(SAFETY_MESSAGE).startswith("请先调低监听")
         refusal = _(
             "Level {level:g} dBFS is above {max_level:g} dBFS. "
             "Set the monitor level low first and pass --acknowledge-level to confirm."

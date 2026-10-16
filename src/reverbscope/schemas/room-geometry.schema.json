@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "ReverbScope room-geometry.json",
+  "description": "What the user entered about the room: metres, origin at a floor corner, x along the length, y along the width, z up. Unknown top-level keys are kept on save.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schema_version", "room", "source", "microphones", "scan", "notes"],
+  "$defs": {
+    "coordinate": { "type": "number", "minimum": -1000, "maximum": 1000 },
+    "point": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["x", "y", "z"],
+      "properties": {
+        "x": { "$ref": "#/$defs/coordinate" },
+        "y": { "$ref": "#/$defs/coordinate" },
+        "z": { "$ref": "#/$defs/coordinate" }
+      }
+    },
+    "dimension": { "type": "number", "exclusiveMinimum": 0, "maximum": 200 }
+  },
+  "properties": {
+    "schema_version": { "type": "integer", "minimum": 1 },
+    "room": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["length_m", "width_m", "height_m"],
+          "properties": {
+            "length_m": { "$ref": "#/$defs/dimension" },
+            "width_m": { "$ref": "#/$defs/dimension" },
+            "height_m": { "$ref": "#/$defs/dimension" }
+          }
+        }
+      ]
+    },
+    "source": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/point" }] },
+    "microphones": {
+      "type": "object",
+      "propertyNames": { "minLength": 1, "pattern": "\\S" },
+      "additionalProperties": { "$ref": "#/$defs/point" }
+    },
+    "scan": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["file", "units", "up_axis", "yaw_deg", "offset", "sha256"],
+          "properties": {
+            "file": { "type": "string", "minLength": 1 },
+            "units": { "enum": ["m", "cm", "mm", "in", "ft"] },
+            "up_axis": { "enum": ["z", "-z", "y", "-y", "x", "-x"] },
+            "yaw_deg": { "type": "number", "minimum": -360, "maximum": 360 },
+            "offset": { "$ref": "#/$defs/point" },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+          }
+        }
+      ]
+    },
+    "notes": { "type": "string" }
+  }
+}
