@@ -168,20 +168,29 @@ def read_json_object(
     path: Path, *, kind: str = "JSON", max_bytes: int = MAX_JSON_BYTES
 ) -> dict[str, Any]:
     """Read a JSON object, refusing oversized, over-deep or non-object files."""
+
+    def check_size(size: int) -> None:
+        if size > max_bytes:
+            raise SessionError(
+                _(
+                    "{name} is {size} bytes; {kind} files larger than {limit} bytes are refused"
+                ).format(name=path.name, size=size, kind=record_name(kind), limit=max_bytes)
+            )
+
     try:
         size = path.stat().st_size
     except OSError as exc:
         raise SessionError(_("cannot read {path}: {error}").format(path=path, error=exc)) from exc
-    if size > max_bytes:
-        raise SessionError(
-            _("{name} is {size} bytes; {kind} files larger than {limit} bytes are refused").format(
-                name=path.name, size=size, kind=record_name(kind), limit=max_bytes
-            )
-        )
+    check_size(size)
     try:
         # utf-8-sig: Notepad's "UTF-8 with BOM" and Windows PowerShell 5's
         # "-Encoding UTF8" start the file with a byte-order mark.
-        text = path.read_text(encoding="utf-8-sig")
+        # A file may grow or be replaced after stat. Bound the actual byte
+        # read before decoding or parsing, not only the earlier metadata.
+        with path.open("rb") as source:
+            raw = source.read(max_bytes + 1)
+        check_size(len(raw))
+        text = raw.decode("utf-8-sig")
     except (OSError, UnicodeDecodeError) as exc:
         raise SessionError(_("cannot read {path}: {error}").format(path=path, error=exc)) from exc
     depth = json_nesting_depth(text)

@@ -7,6 +7,7 @@ import, so ReverbScope can be embedded without side effects.
 
 from __future__ import annotations
 
+import copy
 import logging
 import os
 import sys
@@ -20,6 +21,35 @@ LOG_MAX_BYTES = 1_000_000
 LOG_BACKUPS = 3
 # Windows refuses to rename a file another process has open; POSIX renames it.
 _RENAME_FAILS_WHILE_OPEN = sys.platform == "win32"
+
+
+class _SafeFormatter(logging.Formatter):
+    """Keep file-derived diagnostic text from controlling a terminal or log."""
+
+    @staticmethod
+    def _block(text: str) -> str:
+        from reverbscope.cli.console import printable
+
+        return "\n".join(
+            "    " + printable(line, single_line=True, own_styles=False)
+            for line in text.splitlines()
+        )
+
+    def format(self, record: logging.LogRecord) -> str:
+        from reverbscope.cli.console import printable
+
+        # Other handlers must still see the caller's original record.
+        safe = copy.copy(record)
+        safe.msg = printable(record.getMessage(), single_line=True, own_styles=False)
+        safe.args = ()
+        if safe.exc_info:
+            safe.exc_text = self._block(self.formatException(safe.exc_info))
+            safe.exc_info = None
+        elif safe.exc_text:
+            safe.exc_text = self._block(safe.exc_text)
+        if safe.stack_info:
+            safe.stack_info = self._block(safe.stack_info)
+        return printable(super().format(safe), own_styles=False)
 
 
 def get_logger(name: str | None = None) -> logging.Logger:
@@ -91,7 +121,7 @@ def configure_logging(
             handler.close()
     handler = logging.StreamHandler(stream or sys.stderr)
     handler.setLevel(level)
-    handler.setFormatter(logging.Formatter(fmt))
+    handler.setFormatter(_SafeFormatter(fmt))
     handler._reverbscope_handler = True  # type: ignore[attr-defined]
     logger.addHandler(handler)
     if log_file:
@@ -103,7 +133,7 @@ def configure_logging(
             file_handler = _SharedRotatingFileHandler(
                 path, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUPS, encoding="utf-8"
             )
-            file_handler.setFormatter(logging.Formatter(fmt))
+            file_handler.setFormatter(_SafeFormatter(fmt))
             file_handler._reverbscope_handler = True  # type: ignore[attr-defined]
             logger.addHandler(file_handler)
         except OSError:

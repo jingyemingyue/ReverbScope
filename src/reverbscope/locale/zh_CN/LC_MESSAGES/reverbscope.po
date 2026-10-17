@@ -7328,3 +7328,6 @@ msgstr "视图"
 #. Chart viewport action; distinct from acoustic fit.
 msgid "Fit chart"
 msgstr "适配图表"
+
+msgid "{name} would decode to {size} bytes; audio larger than {limit} decoded bytes is refused. Export only the channels and time range needed."
+msgstr "{name} 解码后将占用 {size} 字节；超过 {limit} 字节的音频不予读取。请仅导出测量所需的声道和时段。"
