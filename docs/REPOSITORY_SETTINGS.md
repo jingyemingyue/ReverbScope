@@ -4,14 +4,6 @@ Audited 2026-10-15. About Description, Topics and Homepage are empty. Pages is
 disabled and `https://jingyemingyue.github.io/ReverbScope/` returned HTTP 404.
 Do not set that URL as Homepage. No website was created or published here.
 
-The existing Pages workflow triggers on a main push that changes site files.
-Because this PR corrects `site/index.html`, merging it while Pages remains
-disabled will make that separate deployment fail (the PR CI itself does not
-deploy). Before merging the site-copy changes, either configure Settings → Pages
-→ Build and deployment → Source: GitHub Actions and review the resulting site,
-or keep the site-copy change pending. Only set Homepage after an anonymous HTTP
-check succeeds. Do not treat the docs/source update as an enabled website.
-
 The connected GitHub account reports repository admin permission, but the
 available connector exposes no repository-metadata/topic write operation.
 The shell has no authenticated `gh` session. This is an operation-access gap,
@@ -25,7 +17,7 @@ gh repo view jingyemingyue/ReverbScope --json description,repositoryTopics,url
 
 Leave Homepage unset. Before setting a future URL, retrieve it anonymously and
 verify it serves the intended project page rather than a 404, sign-in or redirect
-to unrelated content. `site/` copy in this PR is source, not a live website.
+to unrelated content. The standalone website plan was cancelled on 2026-10-17; `site/` and `.github/workflows/pages.yml` were deleted from `main`.
 
 For labels referenced by the issue forms/backlog, check the current labels first:
 

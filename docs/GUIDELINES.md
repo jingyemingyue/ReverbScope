@@ -103,7 +103,7 @@ any box in Appendix F.
 | D17 | Apply after S1–S3, with S4 started. Fallback date 2026-12-15 even if there is still no outside user. Do not apply on the current evidence. | Pending |
 | D18 | The silent replacement of an unsaved measurement (found on #63) is a data-loss bug. Fix it in a small pull request to `main` with a regression test. Cherry-pick onto `release/0.5.0` only if the maintainer says so. | Adopted (cherry-pick pending) |
 | D19 | Evidence rules from #65: an unrun check is written "not run"; official statements and our suggestions stay separate; the maintainer's own activity and an AI session are not "adoption"; downloads of draft assets are not users. | Adopted |
-| D20 | GitHub Pages: configure Pages before merging a `site/index.html`, or split that file out of #65. A 404 home page is worse than no site. | Pending |
+| D20 | GitHub Pages: configure Pages before merging a `site/index.html`, or split that file out of #65. A 404 home page is worse than no site. | Obsolete (website plan cancelled 2026-10-17) |
 
 ## Hard constraints
 
