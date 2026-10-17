@@ -816,9 +816,11 @@ def _curve_from_truncation(
         # Guard: only subtract when the Lundeby estimate is trustworthy
         # (no problem flag) and there is sufficient dynamic range. For a clean
         # synthetic exponential, the "noise floor" from the tail is still
-        # signal, not noise; subtracting it would distort the decay.
+        # signal, not noise; subtracting it would distort the decay. For very
+        # fast decays with poor SNR, the noise estimate is unreliable even
+        # when Lundeby converges — require 40 dB of range.
         dynamic_range_db = trunc.peak_db - trunc.noise_floor_db
-        if trunc.problem is None and dynamic_range_db > 15.0:
+        if trunc.problem is None and dynamic_range_db > 40.0:
             noise_power = 10.0 ** (trunc.noise_floor_db / 10.0)
             segment = np.maximum(segment - noise_power, _EPS)
     compensation = 0.0
