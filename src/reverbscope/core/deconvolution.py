@@ -277,6 +277,74 @@ def _pulse_window(reference_length: int, sample_rate: int, sweep_rate_s: float |
     return round(window_s * sample_rate)
 
 
+def pass_quality_score(
+    magnitude: FloatArray,
+    peak: int,
+    *,
+    sample_rate: int,
+    sweep_rate_s: float | None = None,
+    margin_near_ms: float = 2.0,
+    margin_far_s: float = 0.5,
+) -> float | None:
+    """Quality score for one sweep pass (higher = cleaner), M4 (Prawda et al. 2022).
+
+    Uses the pre-peak margin: the dB between the pass peak and the strongest
+    content before it (excluding harmonic windows). A transient-contaminated
+    pass has a low margin; a clean pass has a high margin. Returns None when
+    there is nothing to compare with.
+    """
+    excluded: tuple[Window, ...] = ()
+    if sweep_rate_s is not None:
+        excluded = tuple(
+            (w.start, w.stop)
+            for w in harmonic_windows(peak, sweep_rate_s=sweep_rate_s, sample_rate=sample_rate)
+        )
+    return pre_peak_margin_db(
+        magnitude,
+        peak,
+        sample_rate=sample_rate,
+        near_ms=margin_near_ms,
+        far_s=margin_far_s,
+        excluded=excluded,
+    )
+
+
+def select_clean_passes(
+    h_full: FloatArray,
+    passes: tuple[int, ...],
+    *,
+    sample_rate: int,
+    sweep_rate_s: float | None = None,
+    quality_margin_db: float = 6.0,
+) -> tuple[int, ...]:
+    """Indices of clean sweep passes, M4 (Prawda et al. 2022).
+
+    Replaces naive averaging (one transient-contaminated repetition corrupts
+    the average) with robust selection: scores each pass by its pre-peak
+    margin and keeps passes within ``quality_margin_db`` of the best score.
+    Passes with no measurable quality (None) are discarded. Returns at least
+    the best-scoring pass.
+    """
+    if not passes:
+        return ()
+    magnitude = np.abs(h_full)
+    scored: list[tuple[int, float]] = []
+    for peak in passes:
+        score = pass_quality_score(
+            magnitude, peak, sample_rate=sample_rate, sweep_rate_s=sweep_rate_s
+        )
+        if score is not None and math.isfinite(score):
+            scored.append((peak, score))
+    if not scored:
+        # No measurable quality; fall back to the loudest pass.
+        loudest = max(passes, key=lambda p: float(magnitude[p]))
+        return (loudest,)
+    best = max(s for _, s in scored)
+    threshold = best - quality_margin_db
+    clean = tuple(p for p, s in scored if s >= threshold)
+    return clean if clean else (max(scored, key=lambda x: x[1])[0],)
+
+
 def find_sweep_passes(
     magnitude: FloatArray,
     peak: int,
@@ -347,6 +415,33 @@ def find_sweep_passes(
     return tuple(sorted(accepted))
 
 
+def suppress_harmonic_distortion(
+    samples: FloatArray,
+    located: LocatedImpulseResponse,
+) -> FloatArray:
+    """Zero out harmonic distortion windows in the located IR (Farina 2000, M3).
+
+    ESS deconvolution maps nth-order harmonic distortion to negative times
+    (``L * ln(n)`` before the linear response). The windows are known from
+    :func:`harmonic_windows`; zeroing them yields a distortion-free linear IR
+    for subsequent decay analysis. ``harmonic_distortion_levels`` must run on
+    the original ``h_full`` (it takes it separately), so measurement is
+    unaffected.
+    """
+    if not located.harmonic_windows:
+        return samples
+    cleaned = np.array(samples, dtype=np.float64, copy=True)
+    # samples[i] == h_full[peak - pre_delay_samples + i]
+    h_start = located.peak_index - located.pre_delay_samples
+    n = cleaned.shape[0]
+    for w in located.harmonic_windows:
+        s_start = max(0, w.start - h_start)
+        s_stop = min(n, w.stop - h_start)
+        if s_stop > s_start:
+            cleaned[s_start:s_stop] = 0.0
+    return cleaned
+
+
 @dataclass(frozen=True)
 class LocatedImpulseResponse:
     samples: FloatArray
@@ -397,6 +492,7 @@ def locate_impulse_response(
     start_tolerance_samples: int = 0,
     margin_near_ms: float = 2.0,
     margin_far_s: float = 0.5,
+    suppress_harmonics: bool = True,
 ) -> LocatedImpulseResponse:
     """Find the direct sound in the deconvolved signal and cut the IR around it.
 
@@ -530,7 +626,7 @@ def locate_impulse_response(
     )
 
     sweep_start = peak - offset
-    return LocatedImpulseResponse(
+    located = LocatedImpulseResponse(
         samples=samples,
         direct_index=peak - start,
         pre_delay_samples=peak - start,
@@ -548,6 +644,31 @@ def locate_impulse_response(
         excluded_windows=tuple(excluded),
         earlier_arrival_db=earlier_arrival_db,
     )
+    if suppress_harmonics and harmonics:
+        # Farina 2000 (M3): zero out harmonic distortion at negative times
+        # for a distortion-free linear IR. The measurement
+        # (harmonic_distortion_levels) runs on the original h_full separately.
+        cleaned = suppress_harmonic_distortion(located.samples, located)
+        # Rebuild with cleaned samples (frozen dataclass).
+        located = LocatedImpulseResponse(
+            samples=cleaned,
+            direct_index=located.direct_index,
+            pre_delay_samples=located.pre_delay_samples,
+            peak_index=located.peak_index,
+            peak_value=located.peak_value,
+            valid_length_samples=located.valid_length_samples,
+            sweep_start_index_in_recording=located.sweep_start_index_in_recording,
+            sweep_start_raw_index=located.sweep_start_raw_index,
+            pre_peak_margin_db=located.pre_peak_margin_db,
+            truncated_by_max_length=located.truncated_by_max_length,
+            pass_peak_indices=located.pass_peak_indices,
+            first_sweep_start_raw_index=located.first_sweep_start_raw_index,
+            truncated_by_next_pass=located.truncated_by_next_pass,
+            harmonic_windows=located.harmonic_windows,
+            excluded_windows=located.excluded_windows,
+            earlier_arrival_db=located.earlier_arrival_db,
+        )
+    return located
 
 
 def confidence_label(margin_db: float | None) -> str:

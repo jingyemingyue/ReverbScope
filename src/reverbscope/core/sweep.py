@@ -169,6 +169,68 @@ def generate_ess(settings: SweepSettings, *, apply_level: bool = True) -> FloatA
     return x
 
 
+def apply_pre_emphasis(
+    sweep: FloatArray,
+    sample_rate: int,
+    start_hz: float,
+    end_hz: float,
+    tilt_db_per_octave: float,
+) -> FloatArray:
+    """Shape the sweep spectrum (M1, Müller & Massarani 2001).
+
+    Applies a spectral tilt of ``tilt_db_per_octave`` dB/octave (positive
+    boosts highs) over ``[start_hz, end_hz]``, keeping the temporal envelope.
+    A standard ESS has a pink (-3 dB/oct) spectrum; +3 dB/oct whitens it for
+    equal energy per Hz, compensating loudspeaker/room roll-off so every band
+    gets adequate excitation. The inverse filter must be built from the
+    shaped sweep (see :func:`generate_pre_emphasized_ess`).
+    """
+    n = sweep.shape[0]
+    if n == 0 or tilt_db_per_octave == 0.0:
+        return np.array(sweep, dtype=np.float64, copy=True)
+    spectrum = np.fft.rfft(sweep)
+    freqs = np.fft.rfftfreq(n, 1.0 / sample_rate)
+    # Tilt relative to the geometric centre of the band.
+    centre = float(np.sqrt(start_hz * end_hz))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        octaves = np.log2(np.maximum(freqs, 1e-12) / centre)
+    # Only shape within the sweep band; leave DC and Nyquist region flat.
+    mask = (freqs >= start_hz * 0.5) & (freqs <= min(end_hz * 2.0, sample_rate / 2.0))
+    gain_db = np.where(mask, tilt_db_per_octave * octaves, 0.0)
+    gain = 10.0 ** (gain_db / 20.0)
+    shaped = np.fft.irfft(spectrum * gain, n)
+    # Re-normalize to the original peak (temporal envelope preserved).
+    peak_orig = float(np.max(np.abs(sweep)))
+    peak_new = float(np.max(np.abs(shaped)))
+    if peak_orig > 0.0 and peak_new > 0.0:
+        shaped *= peak_orig / peak_new
+    return np.asarray(shaped, dtype=np.float64)
+
+
+def generate_pre_emphasized_ess(
+    settings: SweepSettings,
+    tilt_db_per_octave: float,
+    *,
+    apply_level: bool = True,
+) -> FloatArray:
+    """ESS with spectral pre-emphasis (M1).
+
+    Generates the standard sweep via :func:`generate_ess`, shapes its spectrum
+    with :func:`apply_pre_emphasis`, and (if ``apply_level``) scales to
+    ``level_dbfs``. Pair with an inverse filter built from this shaped sweep,
+    not from the unshaped one.
+    """
+    sweep = generate_ess(settings, apply_level=False)
+    shaped = apply_pre_emphasis(
+        sweep, settings.sample_rate, settings.start_hz, settings.end_hz, tilt_db_per_octave
+    )
+    if apply_level:
+        peak = float(np.max(np.abs(shaped)))
+        if peak > 0.0:
+            shaped *= settings.amplitude / peak
+    return shaped
+
+
 def measurement_signal(settings: SweepSettings) -> FloatArray:
     """Pre-silence + sweep + post-silence, the file that is played through the DAW."""
     pre = round(settings.pre_silence_s * settings.sample_rate)
@@ -523,3 +585,51 @@ def reference_pulse(settings: SweepSettings) -> FloatArray:
 def harmonic_pre_response_offsets_s(settings: SweepSettings, max_order: int = 5) -> list[float]:
     """Time (s) by which the k-th harmonic response precedes the linear IR."""
     return [settings.sweep_rate * float(np.log(k)) for k in range(2, max_order + 1)]
+
+
+def synchronized_duration_s(
+    settings: SweepSettings, *, max_order: int = 5
+) -> float:
+    """Sweep duration (s) adjusted for synchronized swept-sine (Novak et al. 2015, M2).
+
+    Multiplying the ESS phase by integer m equals a time shift
+    Δt_m = -L·ln(m). For the harmonic orders to land with correct phase in
+    discrete time, the sweep duration is adjusted (by < 1 sample) so that the
+    harmonic offsets L·ln(k) for k = 2..max_order are as close as possible to
+    integer sample counts. This enables frequency-dependent amplitude *and*
+    phase identification per nonlinear order, vs Farina's amplitude-only method.
+    """
+    rate = settings.sweep_rate  # L in seconds
+    fs = settings.sample_rate
+    # Current offsets in samples (may be fractional).
+    offsets = [rate * math.log(k) * fs for k in range(2, max_order + 1)]
+    # Find the duration adjustment (in samples, |delta| < 1) that minimizes
+    # the total squared fractional error of the harmonic offsets.
+    # L depends on duration: L = T / ln(f2/f1), so dL/dT = 1/ln(f2/f1).
+    log_ratio = math.log(settings.end_hz / settings.start_hz)
+    # For a duration change dT (samples), each offset changes by
+    # dT * ln(k) / log_ratio samples. Minimize sum of squared fractional parts.
+    best_delta = 0.0
+    best_error = float("inf")
+    # Search delta in [-0.5, 0.5) samples at fine resolution.
+    for delta_samples in [i * 0.01 for i in range(-50, 50)]:
+        error = 0.0
+        for k in range(2, max_order + 1):
+            new_offset = offsets[k - 2] + delta_samples * math.log(k) / log_ratio
+            frac = new_offset - round(new_offset)
+            error += frac * frac
+        if error < best_error:
+            best_error = error
+            best_delta = delta_samples
+    new_duration_samples = settings.sweep_samples + best_delta
+    return new_duration_samples / fs
+
+
+def synchronized_settings(
+    settings: SweepSettings, *, max_order: int = 5
+) -> SweepSettings:
+    """Copy of ``settings`` with duration adjusted for synchronized sweep (M2)."""
+    from dataclasses import replace
+
+    new_duration = synchronized_duration_s(settings, max_order=max_order)
+    return replace(settings, duration_s=new_duration)
