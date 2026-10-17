@@ -54,12 +54,11 @@ def _levinson_durbin(autocorr: FloatArray, order: int) -> FloatArray:
         acc = 0.0
         for j in range(1, i):
             acc += a[j] * float(autocorr[i - j])
-        k = (float(autocorr[i]) - acc) / e
+        k = -(float(autocorr[i]) + acc) / e
         # Clamp reflection coefficient for stability.
         k = max(-0.999999, min(0.999999, k))
         a[i] = k
-        for j in range(1, i):
-            a[j] = a[j] - k * a[i - j]
+        a[1:i] += k * a[i - 1 : 0 : -1].copy()
         e *= 1.0 - k * k
         if e <= 0.0:
             break
@@ -101,7 +100,12 @@ def estimate_modal_decays(
     # 3. Remove DC.
     x_w = x_w - np.mean(x_w)
     # 4. Autocorrelation.
-    autocorr = np.correlate(x_w, x_w, mode="full")[n - 1 : n + lp_order]
+    # Only p+1 lags are needed: O(N*p), rather than the full O(N**2)
+    # correlation (which can stall on a multi-second audio-rate response).
+    autocorr = np.array(
+        [np.dot(x_w[: n - lag], x_w[lag:]) for lag in range(lp_order + 1)],
+        dtype=np.float64,
+    )
     if autocorr[0] <= 0.0:
         return ()
     # 5. LP coefficients via Levinson-Durbin.

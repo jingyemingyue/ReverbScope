@@ -8,9 +8,9 @@ sound energy decays in coupled-volume systems," JASA 129, 741–752, 2011.
 
 Fits multi-exponential + noise parametric models directly to the measured
 decay curve, bypassing Schroeder integration + linear regression. Uses BIC
-for objective model-order selection (how many slopes?) and reports parameter
-uncertainty from the fit covariance. Robust at low SNR and for multi-slope
-(coupled-volume) decays where straight-line fits fail.
+for model-order selection (how many slopes?). This experimental estimator
+does not compute a Bayesian posterior or parameter uncertainty; robustness
+on measured multi-slope decays has not been established.
 
 Full MCMC (Xiang et al. 2011) is reserved for difficult cases; this module
 implements the NLS + BIC core which captures most of the benefit at O(N·p²)
@@ -25,6 +25,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from reverbscope.errors import InvalidAudioError
+from reverbscope.i18n import _
 from reverbscope.models.audio import FloatArray
 
 #: Maximum number of exponential slopes to try (1, 2, or 3).
@@ -38,11 +39,11 @@ class DecaySlope:
     """One exponential component: amplitude and decay time."""
 
     amplitude: float  # Linear power at t=0
-    tau_s: float  # Time constant (s); T60 = tau * ln(1000) ≈ 6.908 * tau
+    tau_s: float  # Power time constant (s); T60 = tau * ln(1e6).
 
     @property
     def t60_s(self) -> float:
-        return self.tau_s * 6.907755278982136
+        return self.tau_s * math.log(1e6)
 
 
 @dataclass(frozen=True)
@@ -59,12 +60,10 @@ class BayesianDecayFit:
     residual_db: float
 
 
-def _multi_exp_model(
-    t: FloatArray, amps: FloatArray, taus: FloatArray, noise: float
-) -> FloatArray:
+def _multi_exp_model(t: FloatArray, amps: FloatArray, taus: FloatArray, noise: float) -> FloatArray:
     """p(t) = sum(A_i * exp(-t/tau_i)) + N."""
     result = np.full_like(t, noise, dtype=np.float64)
-    for a, tau in zip(amps, taus):
+    for a, tau in zip(amps, taus, strict=True):
         result += a * np.exp(-t / max(float(tau), 1e-9))
     return result
 
@@ -103,7 +102,7 @@ def _fit_n_slopes_gn(
     params = pack(amps, taus, noise)
     n_params = 2 * n_slopes + 1
 
-    for _ in range(max_iter):
+    for _iteration in range(max_iter):
         a_c, tau_c, n_c = unpack(params)
         tau_c = np.maximum(tau_c, 1e-9)
         # Model and residual.
@@ -161,23 +160,38 @@ def fit_bayesian_decay(
     quality against model complexity, giving an objective answer to "how many
     slopes?" (Xiang et al. 2011).
     """
-    if sample_rate <= 0:
-        raise InvalidAudioError("sample_rate must be positive")
+    if (
+        isinstance(sample_rate, bool)
+        or not isinstance(sample_rate, (int, np.integer))
+        or sample_rate <= 0
+    ):
+        raise InvalidAudioError(_("sample_rate must be a positive integer"))
+    if (
+        isinstance(max_slopes, bool)
+        or not isinstance(max_slopes, int)
+        or not 1 <= max_slopes <= MAX_SLOPES
+    ):
+        raise ValueError(_("max_slopes must be an integer from 1 to 3"))
     p = np.asarray(power, dtype=np.float64)
     if p.ndim != 1 or p.shape[0] < 32:
-        raise InvalidAudioError("power must be a 1-D array with >= 32 samples")
+        raise InvalidAudioError(_("power must be a 1-D array with >= 32 samples"))
     if not np.all(np.isfinite(p)):
-        raise InvalidAudioError("power contains NaN or inf")
+        raise InvalidAudioError(_("power contains NaN or inf"))
+    if np.any(p < 0):
+        raise InvalidAudioError(_("power must be non-negative"))
+    scale = float(np.max(p))
+    if scale == 0.0:
+        return None
 
     n = p.shape[0]
     t = np.arange(n, dtype=np.float64) / sample_rate
     # Decimate for speed.
     step = max(1, n // 2000)
     t_fit = t[::step]
-    p_fit = p[::step]
+    p_fit = p[::step] / scale
     n_fit = len(t_fit)
 
-    results: list[tuple[int, FloatArray, FloatArray, float, float]] = []
+    results: dict[int, tuple[FloatArray, FloatArray, float, float]] = {}
     bic_values: list[float] = []
     for k in range(1, max_slopes + 1):
         fit = _fit_n_slopes_gn(t_fit, p_fit, k)
@@ -187,15 +201,19 @@ def fit_bayesian_decay(
         amps, taus, noise, rss = fit
         # BIC = n*ln(rss/n) + k*ln(n). k = 2*n_slopes + 1 params.
         n_params = 2 * k + 1
-        bic = n_fit * math.log(max(rss / n_fit, 1e-300)) + _BIC_PENALTY * n_params * math.log(n_fit)
+        variance_floor = np.finfo(np.float64).eps ** 2 * float(np.mean(p_fit**2))
+        bic = n_fit * math.log(
+            max(rss / n_fit, variance_floor, 1e-300)
+        ) + _BIC_PENALTY * n_params * math.log(n_fit)
         bic_values.append(bic)
-        results.append((k, amps, taus, noise, rss))
+        results[k] = (amps, taus, noise, rss)
 
     if not results:
         return None
     # Select minimum BIC.
     best_idx = int(np.argmin(bic_values))
-    k_best, amps_best, taus_best, noise_best, rss_best = results[best_idx]
+    k_best = best_idx + 1
+    amps_best, taus_best, noise_best, _rss_best = results[k_best]
     # Residual in dB (RMS of 10*log10(pred/p)).
     pred_best = _multi_exp_model(t_fit, amps_best, taus_best, noise_best)
     with np.errstate(divide="ignore", invalid="ignore"):
@@ -203,12 +221,12 @@ def fit_bayesian_decay(
     residual_db = float(np.sqrt(np.mean(log_ratio[np.isfinite(log_ratio)] ** 2)))
 
     slopes = tuple(
-        DecaySlope(amplitude=float(a), tau_s=float(tau))
-        for a, tau in zip(amps_best, taus_best)
+        DecaySlope(amplitude=float(a) * scale, tau_s=float(tau))
+        for a, tau in zip(amps_best, taus_best, strict=True)
     )
     return BayesianDecayFit(
         slopes=slopes,
-        noise_power=float(noise_best),
+        noise_power=float(noise_best) * scale,
         n_slopes=k_best,
         bic_values=tuple(bic_values),
         residual_db=residual_db,

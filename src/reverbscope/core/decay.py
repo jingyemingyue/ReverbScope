@@ -533,7 +533,11 @@ def model_based_truncation(
     Handles non-exponential decays better than fixed-margin Lundeby.
     """
     sample_rate = _require_sample_rate(sample_rate)
-    power = np.asarray(power, dtype=np.float64)
+    power = _as_decay_signal(power)
+    if np.any(power < 0):
+        raise InvalidAudioError(_("power must be non-negative"))
+    if not math.isfinite(headroom_db) or headroom_db < 0:
+        raise ConfigurationError(_("headroom_db must be finite and non-negative"))
     n = power.shape[0]
     if n < 32:
         return None
@@ -910,11 +914,19 @@ def _curve_from_truncation(
         segment = power[onset : onset + 1]
     if segment.shape[0] == 0:
         segment = np.zeros(1, dtype=np.float64)
-    if subtract_noise and np.isfinite(trunc.noise_floor_db):
+    if (
+        subtract_noise
+        and np.isfinite(trunc.noise_floor_db)
+        and trunc.problem is None
+        and trunc.peak_db - trunc.noise_floor_db > 40.0
+    ):
         # Hirata 1982: subtract the estimated noise power from the squared
         # response before backward integration. Integrating the raw power
         # treats noise as decay and biases the tail upward; subtracting first
-        # removes that bias. Floor at _EPS (not zero) to keep the log defined.
+        # removes that bias. The conservative 40 dB eligibility guard is
+        # ported from #72; an untrusted floor must not hide sensitivity to
+        # truncation. This is a heuristic, not an ISO validity threshold.
+        # Floor at _EPS (not zero) to keep the log defined.
         noise_power = 10.0 ** (trunc.noise_floor_db / 10.0)
         segment = np.maximum(segment - noise_power, _EPS)
     compensation = 0.0

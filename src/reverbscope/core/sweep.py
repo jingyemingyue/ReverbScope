@@ -587,9 +587,7 @@ def harmonic_pre_response_offsets_s(settings: SweepSettings, max_order: int = 5)
     return [settings.sweep_rate * float(np.log(k)) for k in range(2, max_order + 1)]
 
 
-def synchronized_duration_s(
-    settings: SweepSettings, *, max_order: int = 5
-) -> float:
+def synchronized_duration_s(settings: SweepSettings, *, max_order: int = 5) -> float:
     """Sweep duration (s) adjusted for synchronized swept-sine (Novak et al. 2015, M2).
 
     Multiplying the ESS phase by integer m equals a time shift
@@ -625,9 +623,7 @@ def synchronized_duration_s(
     return new_duration_samples / fs
 
 
-def synchronized_settings(
-    settings: SweepSettings, *, max_order: int = 5
-) -> SweepSettings:
+def synchronized_settings(settings: SweepSettings, *, max_order: int = 5) -> SweepSettings:
     """Copy of ``settings`` with duration adjusted for synchronized sweep (M2)."""
     from dataclasses import replace
 

@@ -8,6 +8,7 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Research-method correctness.** Preserve unreliable fast-decay flags; correct power T60 conversion, model-order selection and LP coefficients; add known-answer synthetic checks. See `docs/adr/0002-research-estimator-validity.md`.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on
