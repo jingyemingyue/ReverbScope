@@ -8,6 +8,7 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Optional acoustic metric correctness.** Correct G distance and sample-rate scaling, STI weighting/coverage, and IACC normalization and time windows. Add independent synthetic checks and explicit experimental limits in `docs/adr/0003-optional-acoustic-metric-limits.md`.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on

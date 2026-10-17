@@ -17,12 +17,14 @@ verified against the standard text.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
 from scipy.signal import correlate
 
 from reverbscope.errors import InvalidAudioError
+from reverbscope.i18n import _
 from reverbscope.models.audio import FloatArray
 
 #: Maximum interaural delay for IACC search (s).
@@ -55,17 +57,19 @@ def _normalized_xcorr_max(
     n = min(left.shape[0], right.shape[0])
     if n < 2:
         return None, None
-    l = np.asarray(left[:n], dtype=np.float64)
-    r = np.asarray(right[:n], dtype=np.float64)
-    # Normalized cross-correlation.
-    l = l - np.mean(l)
-    r = r - np.mean(r)
-    denom = float(np.sqrt(np.sum(l * l) * np.sum(r * r)))
+    left_peak = float(np.max(np.abs(left[:n])))
+    right_peak = float(np.max(np.abs(right[:n])))
+    if left_peak == 0 or right_peak == 0:
+        return None, None
+    left_scaled = left[:n] / left_peak
+    right_scaled = right[:n] / right_peak
+    # IACF is an energy-normalized integral, not Pearson correlation.
+    denom = math.sqrt(float(np.sum(left_scaled**2))) * math.sqrt(float(np.sum(right_scaled**2)))
     if denom <= 0.0:
         return None, None
-    xcorr = correlate(l, r, mode="full") / denom
+    xcorr = correlate(left_scaled, right_scaled, mode="full") / denom
     # Lags: -(n-1) .. (n-1); we want |lag| <= max_delay.
-    max_lag = int(round(max_delay_s * sample_rate))
+    max_lag = math.floor(max_delay_s * sample_rate)
     lags = np.arange(-(n - 1), n)
     mask = np.abs(lags) <= max_lag
     if not np.any(mask):
@@ -73,7 +77,7 @@ def _normalized_xcorr_max(
     masked = np.abs(xcorr[mask])
     best_idx = int(np.argmax(masked))
     best_lag = int(lags[mask][best_idx])
-    return float(masked[best_idx]), float(best_lag) / sample_rate
+    return float(np.clip(masked[best_idx], 0.0, 1.0)), float(best_lag) / sample_rate
 
 
 def compute_iacc(
@@ -88,25 +92,30 @@ def compute_iacc(
     Both channels must be the same length (truncated to the shorter).
     Returns None fields when the computation is not possible.
     """
-    if sample_rate <= 0:
-        raise InvalidAudioError("sample_rate must be positive")
-    l = np.asarray(left_ir, dtype=np.float64)
-    r = np.asarray(right_ir, dtype=np.float64)
-    if l.ndim != 1 or r.ndim != 1:
-        raise InvalidAudioError("impulse responses must be one-dimensional")
-    if l.shape[0] == 0 or r.shape[0] == 0:
-        raise InvalidAudioError("impulse responses must be non-empty")
-    if not (np.all(np.isfinite(l)) and np.all(np.isfinite(r))):
-        raise InvalidAudioError("impulse responses contain NaN or inf")
+    if (
+        isinstance(sample_rate, bool)
+        or not isinstance(sample_rate, (int, np.integer))
+        or sample_rate <= 0
+    ):
+        raise InvalidAudioError(_("sample_rate must be a positive integer"))
+    if not math.isfinite(early_split_s) or early_split_s <= 0:
+        raise InvalidAudioError(_("early_split_s must be finite and positive"))
+    left = np.asarray(left_ir, dtype=np.float64)
+    right = np.asarray(right_ir, dtype=np.float64)
+    if left.ndim != 1 or right.ndim != 1:
+        raise InvalidAudioError(_("impulse responses must be one-dimensional"))
+    if left.shape[0] == 0 or right.shape[0] == 0:
+        raise InvalidAudioError(_("impulse responses must be non-empty"))
+    if not (np.all(np.isfinite(left)) and np.all(np.isfinite(right))):
+        raise InvalidAudioError(_("impulse responses contain NaN or inf"))
 
-    n = min(l.shape[0], r.shape[0])
-    l, r = l[:n], r[:n]
-    split = int(round(early_split_s * sample_rate))
-    split = max(1, min(split, n - 1))
+    n = min(left.shape[0], right.shape[0])
+    left, right = left[:n], right[:n]
+    split = n if early_split_s >= n / sample_rate else max(1, round(early_split_s * sample_rate))
 
-    iacc_e, _ = _normalized_xcorr_max(l[:split], r[:split], sample_rate)
-    iacc_l, _ = _normalized_xcorr_max(l[split:], r[split:], sample_rate)
-    iacc_a, delay = _normalized_xcorr_max(l, r, sample_rate)
+    iacc_e, _delay_e = _normalized_xcorr_max(left[:split], right[:split], sample_rate)
+    iacc_l, _delay_l = _normalized_xcorr_max(left[split:], right[split:], sample_rate)
+    iacc_a, delay = _normalized_xcorr_max(left, right, sample_rate)
     return IACCResult(
         iacc_early=iacc_e,
         iacc_late=iacc_l,

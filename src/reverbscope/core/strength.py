@@ -16,15 +16,44 @@ the standard text.
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 import numpy as np
 
 from reverbscope.errors import InvalidAudioError
+from reverbscope.i18n import _
 from reverbscope.models.audio import FloatArray
 
 #: Reference distance for G calibration (m), per ISO 3382-1.
 G_REFERENCE_DISTANCE_M = 10.0
+
+
+def _power_values(power: FloatArray) -> FloatArray:
+    values = np.asarray(power, dtype=np.float64)
+    if values.ndim != 1 or values.size == 0:
+        raise InvalidAudioError(_("power must be a non-empty 1-D array"))
+    if not np.all(np.isfinite(values)) or np.any(values < 0):
+        raise InvalidAudioError(_("power must be finite and non-negative"))
+    return values
+
+
+def _sample_rate(sample_rate: int) -> int:
+    if (
+        isinstance(sample_rate, bool)
+        or not isinstance(sample_rate, (int, np.integer))
+        or sample_rate <= 0
+    ):
+        raise InvalidAudioError(_("sample_rate must be a positive integer"))
+    return int(sample_rate)
+
+
+def _log_energy(power: FloatArray, sample_rate: int) -> float | None:
+    peak = float(np.max(power))
+    if peak == 0:
+        return None
+    # Log integrals keep finite input powers from overflowing their sums.
+    return math.log(peak) + math.log(float(np.sum(power / peak))) - math.log(sample_rate)
 
 
 @dataclass(frozen=True)
@@ -45,45 +74,46 @@ class CalibrationReference:
     note: str = ""
 
     def __post_init__(self) -> None:
-        p = np.asarray(self.power, dtype=np.float64)
-        if p.ndim != 1 or p.shape[0] == 0:
-            raise InvalidAudioError("calibration power must be a non-empty 1-D array")
-        if not np.all(np.isfinite(p)):
-            raise InvalidAudioError("calibration power contains NaN or inf")
-        if self.sample_rate <= 0:
-            raise InvalidAudioError("sample_rate must be positive")
-        if self.distance_m <= 0.0:
-            raise InvalidAudioError("distance_m must be positive")
+        p = _power_values(self.power).copy()
+        _sample_rate(self.sample_rate)
+        if not math.isfinite(self.distance_m) or self.distance_m <= 0.0:
+            raise InvalidAudioError(_("distance_m must be finite and positive"))
+        p.setflags(write=False)
+        object.__setattr__(self, "power", p)
 
 
 def compute_g(
     power: FloatArray,
     calibration: CalibrationReference,
+    *,
+    sample_rate: int | None = None,
 ) -> float | None:
     """Sound strength G (dB) relative to the calibration reference.
 
-    Returns None when the calibration energy is not positive.
+    Returns None when either energy is zero. ``sample_rate`` is the rate of
+    ``power``; omitting it assumes the calibration rate. The ratio uses time
+    integrals, including when the two rates differ.
     """
-    p = np.asarray(power, dtype=np.float64)
-    if p.ndim != 1 or p.shape[0] == 0:
-        raise InvalidAudioError("power must be a non-empty 1-D array")
-    if not np.all(np.isfinite(p)):
-        raise InvalidAudioError("power contains NaN or inf")
-    ref = np.asarray(calibration.power, dtype=np.float64)
-    energy = float(np.sum(p))
-    ref_energy = float(np.sum(ref))
-    if ref_energy <= 0.0 or energy < 0.0:
+    p = _power_values(power)
+    rate = _sample_rate(calibration.sample_rate if sample_rate is None else sample_rate)
+    energy = _log_energy(p, rate)
+    ref_energy = _log_energy(_power_values(calibration.power), calibration.sample_rate)
+    if ref_energy is None or energy is None:
         return None
     # Distance correction if calibration was not at 10 m:
-    # energy scales as 1/d², so G += 20·log10(d_ref / 10).
-    distance_corr_db = 20.0 * np.log10(calibration.distance_m / G_REFERENCE_DISTANCE_M)
-    g = 10.0 * np.log10(max(energy, 1e-300) / ref_energy) + distance_corr_db
+    # E_ref(10 m) = E_ref(d) * (d / 10 m)**2. Correct the denominator.
+    distance_corr_db = 20.0 * (
+        math.log10(calibration.distance_m) - math.log10(G_REFERENCE_DISTANCE_M)
+    )
+    g = 10.0 * (energy - ref_energy) / math.log(10.0) - distance_corr_db
     return float(g)
 
 
 def compute_g_bands(
     band_powers: dict[float, FloatArray],
     calibration_bands: dict[float, CalibrationReference],
+    *,
+    sample_rate: int | None = None,
 ) -> dict[float, float | None]:
     """G per octave band (dB). Bands without a calibration return None."""
     result: dict[float, float | None] = {}
@@ -92,5 +122,5 @@ def compute_g_bands(
         if cal is None:
             result[band_hz] = None
         else:
-            result[band_hz] = compute_g(power, cal)
+            result[band_hz] = compute_g(power, cal, sample_rate=sample_rate)
     return result

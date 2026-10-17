@@ -1,4 +1,4 @@
-"""Speech Transmission Index (STI) per IEC 60268-16.
+"""Experimental, reverberation-only Speech Transmission Index estimate.
 
 STI quantifies speech intelligibility from the room impulse response via the
 Modulation Transfer Function (MTF). For each octave band (125 Hz – 8 kHz) and
@@ -11,8 +11,9 @@ then combined with band weights to the final STI in [0, 1].
 
 Reference: IEC 60268-16:2020, "Sound system equipment – Part 16: Objective
 rating of speech intelligibility by speech transmission index".
-Clause numbers not verified against the standard text; the algorithm follows
-the standard's published method as restated in the literature.
+The band weighting and redundancy formula follows IEC 60268-16. Absolute
+levels, auditory masking, reception thresholds and ambient-noise correction
+are not modeled. This is not a validated IEC-compliant STI measurement.
 """
 
 from __future__ import annotations
@@ -22,21 +23,40 @@ from dataclasses import dataclass
 import numpy as np
 
 from reverbscope.errors import InvalidAudioError
+from reverbscope.i18n import _
 from reverbscope.models.audio import FloatArray
 
 #: Modulation frequencies (Hz) per IEC 60268-16.
 MODULATION_FREQUENCIES_HZ: tuple[float, ...] = (
-    0.63, 0.80, 1.00, 1.25, 1.60, 2.00, 2.50,
-    3.15, 4.00, 5.00, 6.30, 8.00, 10.0, 12.5,
+    0.63,
+    0.80,
+    1.00,
+    1.25,
+    1.60,
+    2.00,
+    2.50,
+    3.15,
+    4.00,
+    5.00,
+    6.30,
+    8.00,
+    10.0,
+    12.5,
 )
 #: Octave bands (Hz) for STI.
 STI_OCTAVE_BANDS_HZ: tuple[float, ...] = (
-    125.0, 250.0, 500.0, 1000.0, 2000.0, 4000.0, 8000.0,
+    125.0,
+    250.0,
+    500.0,
+    1000.0,
+    2000.0,
+    4000.0,
+    8000.0,
 )
 #: Band weights (alpha) per IEC 60268-16, Table 3 (male weighting).
-STI_BAND_WEIGHTS: tuple[float, ...] = (
-    0.13, 0.14, 0.11, 0.12, 0.19, 0.17, 0.14,
-)
+STI_BAND_WEIGHTS: tuple[float, ...] = (0.085, 0.127, 0.230, 0.233, 0.309, 0.224, 0.173)
+#: Adjacent-band redundancy factors (beta), IEC 60268-16 Table A.1.
+STI_REDUNDANCY_FACTORS: tuple[float, ...] = (0.085, 0.078, 0.065, 0.011, 0.047, 0.095)
 #: Effective SNR clipping range (dB).
 SNR_CLIP_DB = 15.0
 
@@ -113,40 +133,48 @@ def compute_sti(
     """Compute STI from per-octave-band squared impulse responses.
 
     ``band_powers`` maps octave band centre frequency (Hz) to the squared
-    (band-filtered) impulse response. Bands missing from STI_OCTAVE_BANDS_HZ
-    are ignored; if none of the 7 bands are present, returns None.
+    (band-filtered) impulse response. All seven bands are required. Missing,
+    empty, or entirely silent data withholds the overall estimate (None);
+    non-finite or negative power is rejected.
 
     Returns the STI in [0, 1] with per-band MTI details.
     """
-    if sample_rate <= 0:
-        raise InvalidAudioError("sample_rate must be positive")
+    if (
+        isinstance(sample_rate, bool)
+        or not isinstance(sample_rate, (int, np.integer))
+        or sample_rate <= 0
+    ):
+        raise InvalidAudioError(_("sample_rate must be a positive integer"))
     bands: list[BandSTI] = []
-    total_weight = 0.0
     weighted_sum = 0.0
-    for band_hz, weight in zip(STI_OCTAVE_BANDS_HZ, STI_BAND_WEIGHTS):
+    signal_present = False
+    for band_hz, weight in zip(STI_OCTAVE_BANDS_HZ, STI_BAND_WEIGHTS, strict=True):
         power = band_powers.get(band_hz)
         if power is None:
-            continue
+            return None
         power = np.asarray(power, dtype=np.float64)
         if power.ndim != 1 or power.shape[0] == 0:
-            continue
-        if not np.all(np.isfinite(power)):
-            continue
+            return None
+        if not np.all(np.isfinite(power)) or np.any(power < 0):
+            raise InvalidAudioError(_("power must be finite and non-negative"))
+        peak = float(np.max(power))
+        if peak > 0:
+            signal_present = True
+            power = power / peak
         # 14 modulation frequencies → 14 transmission indices.
         tis = tuple(
-            _transmission_index(_mtf(power, sample_rate, fm))
-            for fm in MODULATION_FREQUENCIES_HZ
+            _transmission_index(_mtf(power, sample_rate, fm)) for fm in MODULATION_FREQUENCIES_HZ
         )
         mti = float(np.mean(tis))
-        bands.append(
-            BandSTI(band_hz=band_hz, mti=mti, transmission_indices=tis)
-        )
+        bands.append(BandSTI(band_hz=band_hz, mti=mti, transmission_indices=tis))
         weighted_sum += weight * mti
-        total_weight += weight
-    if not bands:
+    if not signal_present:
         return None
-    # Renormalize weights if some bands are missing.
-    sti = weighted_sum / total_weight if total_weight > 0.0 else 0.0
+    redundancy = sum(
+        beta * np.sqrt(bands[k].mti * bands[k + 1].mti)
+        for k, beta in enumerate(STI_REDUNDANCY_FACTORS)
+    )
+    sti = weighted_sum - redundancy
     sti = float(np.clip(sti, 0.0, 1.0))
     return STIResult(
         sti=sti,
