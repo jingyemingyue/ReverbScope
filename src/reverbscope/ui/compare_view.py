@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QFileDialog,
     QHBoxLayout,
+    QFormLayout,
     QHeaderView,
     QLabel,
     QLineEdit,
@@ -104,8 +105,8 @@ class ComparePage(AnalysisView):
         scroll.setWidget(body)
         outer.addWidget(scroll)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(14, 10, 14, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(28, 24, 28, 20)
+        layout.setSpacing(20)
 
         top = QHBoxLayout()
         self.pair = label("", "section")
@@ -165,7 +166,7 @@ class ComparePage(AnalysisView):
         self.browser.list.setMinimumHeight(90)
         self.browser.open_session.connect(self._fill_next_path)
         picker_layout.addWidget(self.browser, 1)
-        paths = QHBoxLayout()
+        paths = QFormLayout()
         self.baseline_path = QLineEdit()
         self.baseline_path.setPlaceholderText(_("Baseline session"))
         self.candidate_path = QLineEdit()
@@ -174,13 +175,17 @@ class ComparePage(AnalysisView):
         pick_b = QPushButton(_("Candidate..."))
         pick_a.clicked.connect(lambda: self._pick_into(self.baseline_path))
         pick_b.clicked.connect(lambda: self._pick_into(self.candidate_path))
-        paths.addWidget(self.baseline_path)
-        paths.addWidget(pick_a)
-        paths.addWidget(self.candidate_path)
-        paths.addWidget(pick_b)
+        baseline_row = QHBoxLayout()
+        baseline_row.addWidget(self.baseline_path, 1)
+        baseline_row.addWidget(pick_a)
+        candidate_row = QHBoxLayout()
+        candidate_row.addWidget(self.candidate_path, 1)
+        candidate_row.addWidget(pick_b)
+        paths.addRow(_("Baseline"), baseline_row)
+        paths.addRow(_("Candidate"), candidate_row)
         self.run_button = primary(QPushButton(_("Compare")))
         self.run_button.clicked.connect(self.run_compare)
-        paths.addWidget(self.run_button)
+        paths.addRow(self.run_button)
         picker_layout.addLayout(paths)
         self.picker.body.addWidget(self.picker_body)
         layout.addWidget(self.picker)

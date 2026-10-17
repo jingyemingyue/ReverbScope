@@ -32,7 +32,7 @@ from reverbscope.ui.health_nav import view_for_check, view_title
 from reverbscope.ui.tables import decay_table_rows, energy_table_rows
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
-from reverbscope.ui.widgets import Chip, FindingCard, PageHeader, StatTile, label
+from reverbscope.ui.widgets import Chip, Disclosure, FindingCard, PageHeader, StatTile, label
 from reverbscope.ui.workspace import WorkspaceModel, entry_label
 
 #: Display word and chip tone of a metric validity.
@@ -79,9 +79,11 @@ class _Overview(QWidget):
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         body = QWidget()
         body.setProperty("page", True)
+        body.setMaximumWidth(1080)
+        scroll.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(8)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(24)
         scroll.setWidget(body)
         outer.addWidget(scroll)
 
@@ -91,7 +93,8 @@ class _Overview(QWidget):
         self.noise = StatTile(_("Background noise"))
         self.reflections = StatTile(_("Early reflections"))
         self.direct = StatTile(_("Direct sound"))
-        for tile in (self.rt60, self.noise, self.reflections, self.direct):
+        self.clarity = StatTile(_("Clarity (C50)"))
+        for tile in (self.rt60, self.clarity, self.noise, self.reflections):
             tiles.addWidget(tile)
         layout.addLayout(tiles)
 
@@ -100,7 +103,7 @@ class _Overview(QWidget):
         health_layout.setContentsMargins(0, 4, 0, 0)
         health_layout.setSpacing(4)
         health_header = QHBoxLayout()
-        health_header.addWidget(label(_("MEASUREMENT HEALTH"), "section"))
+        health_header.addWidget(label(_("Measurement health"), "section"))
         self.health_chip = Chip("", "neutral")
         health_header.addWidget(self.health_chip)
         health_header.addStretch(1)
@@ -109,7 +112,10 @@ class _Overview(QWidget):
         health_layout.addWidget(self.health_summary)
         self.health_rows = QVBoxLayout()
         self.health_rows.setSpacing(4)
-        health_layout.addLayout(self.health_rows)
+        health_details = QWidget()
+        health_details.setLayout(self.health_rows)
+        self.diagnostics = Disclosure(_("Diagnostics and actions"), health_details)
+        health_layout.addWidget(self.diagnostics)
         layout.addWidget(health)
 
         self.findings_title = QToolButton()
@@ -132,7 +138,7 @@ class _Overview(QWidget):
         decay_layout = QVBoxLayout(decay)
         decay_layout.setContentsMargins(0, 4, 0, 0)
         decay_layout.setSpacing(4)
-        decay_heading = label(_("REVERBERATION BY BAND"), "section")
+        decay_heading = label(_("Reverberation by band"), "section")
         decay_note = _(
             "Reverberation (extrapolated to 60 dB). 'insufficient range' means "
             "the decay is not clean enough for that metric."
@@ -149,13 +155,13 @@ class _Overview(QWidget):
         self.table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         decay_layout.addWidget(self.table)
-        layout.addWidget(decay)
+        layout.addWidget(Disclosure(_("All reverberation metrics"), decay))
 
         energy = QWidget()
         energy_layout = QVBoxLayout(energy)
         energy_layout.setContentsMargins(0, 4, 0, 0)
         energy_layout.setSpacing(4)
-        energy_heading = label(_("EARLY AND LATE ENERGY"), "section")
+        energy_heading = label(_("Clarity and early energy"), "section")
         energy_note = _(
             "C50 is early energy over late energy at 50 ms (speech). C80 is the same "
             "at 80 ms (music). D50 is the share of energy in the first 50 ms. Centre "
@@ -177,9 +183,11 @@ class _Overview(QWidget):
         self.energy_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.energy_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         energy_layout.addWidget(self.energy_table)
-        layout.addWidget(energy)
-        layout.addWidget(self.findings_title, 0, Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.findings_body)
+        layout.addWidget(Disclosure(_("Clarity and energy metrics"), energy))
+        layout.insertWidget(2, self.findings_title, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.insertWidget(3, self.findings_body)
+        self.findings_title.setChecked(True)
+        layout.addWidget(Disclosure(_("Direct sound details"), self.direct))
         layout.addStretch(1)
 
     def show_result(
@@ -187,6 +195,14 @@ class _Overview(QWidget):
     ) -> None:
         """``problem`` says why there are no findings (the profile failed)."""
         broadband = result.decay.broadband
+        c50 = broadband.c50
+        validity, tone = _validity_text(c50.validity)
+        self.clarity.show_value(
+            f"{c50.value:+.1f} dB" if c50.value is not None else "—",
+            _("Early to late energy at 50 ms"),
+            validity,
+            tone,
+        )
         if broadband.rt60_estimate_s is not None:
             word, tone = _validity_text(broadband.t30.validity)
             if broadband.rt60_basis and broadband.rt60_basis != "T30":
@@ -286,7 +302,7 @@ class _Overview(QWidget):
             if widget is not None:
                 widget.deleteLater()
         self.findings_title.setText(
-            _("INTERPRETATION ({profile} PROFILE)").format(profile=profile_title(profile).upper())
+            _("Interpretation · {profile}").format(profile=profile_title(profile))
         )
         for finding in findings:
             self.findings.addWidget(
@@ -396,14 +412,12 @@ class OverviewView(AnalysisView):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 6, 8, 4)
+        layout.setContentsMargins(24, 20, 24, 16)
         layout.setSpacing(4)
         self.header = PageHeader(_("Overview"))
         layout.addWidget(self.header)
         self.empty = label(
-            _(
-                "No measurement selected. Open a project or a session, or measure with the strip below."
-            ),
+            _("No measurement selected. Open a project or session, or choose Measure."),
             "hint",
             wrap=True,
         )

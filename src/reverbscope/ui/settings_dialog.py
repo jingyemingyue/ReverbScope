@@ -17,22 +17,20 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMessageBox,
     QPushButton,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from reverbscope.errors import ReverbScopeError
-from reverbscope.i18n import LANGUAGE_NAMES, _, available_locales, localize
+from reverbscope.i18n import LANGUAGE_NAMES, N_, _, available_locales, localize
 from reverbscope.interpretation import available_profiles
 from reverbscope.interpretation.profiles import profile_title
-from reverbscope.settings import load_settings, save_settings
+from reverbscope.settings import load_settings, save_settings, settings_path
 from reverbscope.ui.widgets import label
 
-#: Shown in both languages: the new language is not active until a restart.
-RESTART_FOR_LANGUAGE = (
-    "语言设置将在重新启动 ReverbScope 后完全生效。\n"
-    "The language change takes full effect after ReverbScope restarts."
-)
+#: The open windows retain their language until the next launch.
+RESTART_FOR_LANGUAGE = N_("The language change takes full effect after ReverbScope restarts.")
 
 
 class SettingsDialog(QDialog):
@@ -40,8 +38,23 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(_("Settings"))
         self._settings = load_settings()
+        self.resize(600, 520)
         layout = QVBoxLayout(self)
-        form = QFormLayout()
+        layout.setContentsMargins(24, 24, 24, 20)
+        layout.setSpacing(24)
+        tabs = QTabWidget()
+        interface = QWidget()
+        measurement = QWidget()
+        interface_form = QFormLayout(interface)
+        form = QFormLayout(measurement)
+        for page_form in (interface_form, form):
+            page_form.setContentsMargins(16, 24, 16, 24)
+            page_form.setHorizontalSpacing(24)
+            page_form.setVerticalSpacing(20)
+            page_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        tabs.addTab(interface, _("Interface"))
+        tabs.addTab(measurement, _("Measurement"))
+        layout.addWidget(tabs, 1)
         self.language = QComboBox()
         # Language names are written in their own language, so a user can find
         # theirs whatever the current interface language is.
@@ -57,8 +70,8 @@ class SettingsDialog(QDialog):
         self.profile.setCurrentIndex(max(profile_index, 0))
         self.backend = QComboBox()
         self.backend.addItem(_("Default (PortAudio)"), "")
-        self.backend.addItem("portaudio", "portaudio")
-        self.backend.addItem("fake", "fake")
+        self.backend.addItem("PortAudio", "portaudio")
+        self.backend.addItem(_("Synthetic audio (no hardware)"), "fake")
         backend_index = self.backend.findData(self._settings.audio_backend)
         self.backend.setCurrentIndex(max(backend_index, 0))
         folder_row = QHBoxLayout()
@@ -73,21 +86,25 @@ class SettingsDialog(QDialog):
         self.theme.addItem(_("Follow the system"), "")
         self.theme.addItem(_("Light"), "light")
         self.theme.addItem(_("Dark"), "dark")
-        self.theme.setCurrentIndex(max(self.theme.findData(self._settings.theme), 0))
+        initial_theme = self._settings.theme if settings_path().exists() else "dark"
+        self.theme.setCurrentIndex(max(self.theme.findData(initial_theme), 0))
         self.developer_tools = QCheckBox(
             _("Show developer tools (Developer menu, advanced audio options; after a restart)")
         )
         self.developer_tools.setChecked(self._settings.developer_tools)
-        form.addRow(_("Language"), self.language)
-        self.language_hint = label(RESTART_FOR_LANGUAGE, "hint", wrap=True)
-        form.addRow(self.language_hint)
+        interface_form.addRow(_("Language"), self.language)
+        self.language_hint = label(
+            _("The language change takes full effect after ReverbScope restarts."),
+            "hint",
+            wrap=True,
+        )
+        interface_form.addRow(self.language_hint)
         form.addRow(_("Default profile"), self.profile)
         form.addRow(_("Audio backend"), self.backend)
         form.addRow(_("Default output folder"), folder_row)
         form.addRow(self.copy_recording)
-        form.addRow(_("Theme"), self.theme)
-        form.addRow(self.developer_tools)
-        layout.addLayout(form)
+        interface_form.addRow(_("Theme"), self.theme)
+        interface_form.addRow(self.developer_tools)
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )

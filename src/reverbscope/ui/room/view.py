@@ -30,7 +30,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
-    QSplitter,
     QTableWidget,
     QTableWidgetItem,
     QToolButton,
@@ -72,6 +71,7 @@ from reverbscope.geometry.scan import (
 from reverbscope.i18n import _, localize
 from reverbscope.labels import surface_text, validity_word
 from reverbscope.models.result import AnalysisResult, PlacementResult, Validity
+from reverbscope.ui.components.details_drawer import DetailsDrawer
 from reverbscope.ui.room.canvas import (
     LAYER_ASSUMED,
     LAYER_ENTERED,
@@ -87,7 +87,7 @@ from reverbscope.ui.ui_state import (
     write_room_layers,
 )
 from reverbscope.ui.views.base import AnalysisView
-from reverbscope.ui.widgets import label, set_banner_text
+from reverbscope.ui.widgets import Disclosure, label, set_banner_text
 from reverbscope.ui.workspace import Entry, WorkspaceModel
 
 log = logging.getLogger(__name__)
@@ -285,8 +285,8 @@ class RoomView(AnalysisView):
         self._save_timer.timeout.connect(self.save)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(4)
+        layout.setContentsMargins(24, 16, 24, 16)
+        layout.setSpacing(16)
         tools = QHBoxLayout()
         self.plan_button = QToolButton()
         self.plan_button.setText(_("Plan view"))
@@ -373,10 +373,14 @@ class RoomView(AnalysisView):
         )
         self.example_button.clicked.connect(self.use_example)
         layout.addLayout(tools)
-        layout.addLayout(layers)
+        layer_body = QWidget()
+        layer_body.setLayout(layers)
+        self.layer_controls = Disclosure(_("Layers and constraints"), layer_body)
+        layout.addWidget(self.layer_controls)
 
-        splitter = QSplitter(Qt.Orientation.Horizontal)
-        self.splitter = splitter
+        self.canvas_body = QWidget()
+        canvas_layout = QVBoxLayout(self.canvas_body)
+        canvas_layout.setContentsMargins(0, 0, 0, 0)
         self.canvas = RoomCanvas()
         fit.clicked.connect(self.canvas.fit)
         reset.clicked.connect(self.reset_view)
@@ -387,12 +391,12 @@ class RoomView(AnalysisView):
         self.canvas.face_clicked.connect(self._face_clicked)
         self.canvas.surface_clicked.connect(self._surface_clicked)
         self.canvas.camera_changed.connect(self._sync_camera_buttons)
-        splitter.addWidget(self.canvas)
+        canvas_layout.addWidget(self.canvas)
 
         side = QWidget()
         side_layout = QVBoxLayout(side)
-        side_layout.setContentsMargins(6, 0, 0, 0)
-        side_layout.setSpacing(6)
+        side_layout.setContentsMargins(12, 8, 12, 16)
+        side_layout.setSpacing(20)
         file_row = QHBoxLayout()
         file_row.addWidget(self.import_button)
         file_row.addWidget(self.example_button)
@@ -416,7 +420,7 @@ class RoomView(AnalysisView):
         side_layout.addWidget(self.mic_box)
         self.save_status = label("", "hint", wrap=True)
         side_layout.addWidget(self.save_status)
-        side_layout.addWidget(label(_("Early reflections").upper(), "section"))
+        side_layout.addWidget(label(_("Early reflections"), "section"))
         self.reflections = QTableWidget(0, 3)
         self.reflections.setHorizontalHeaderLabels([_("Delay (ms)"), _("Level (dB)"), _("Match")])
         self.reflections.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -433,7 +437,7 @@ class RoomView(AnalysisView):
         side_layout.addWidget(self.reflections)
         self.notes = label("", "hint", wrap=True)
         side_layout.addWidget(self.notes)
-        side_layout.addWidget(label(_("Placement").upper(), "section"))
+        side_layout.addWidget(label(_("Placement"), "section"))
         self.placement_summary = label("", "hint", wrap=True)
         side_layout.addWidget(self.placement_summary)
         self.placement_table = QTableWidget(0, 3)
@@ -457,15 +461,11 @@ class RoomView(AnalysisView):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        scroll.setMinimumWidth(240)
-        scroll.setMaximumWidth(360)
         self.parameters = scroll
-        splitter.addWidget(scroll)
-        splitter.setStretchFactor(0, 5)
-        splitter.setStretchFactor(1, 2)
-        layout.addWidget(splitter, 1)
-        self.parameters_button.toggled.connect(self.parameters.setVisible)
-        self.parameters.hide()
+        self.parameters_drawer = DetailsDrawer(_("Room parameters"), scroll, self.canvas_body)
+        layout.addWidget(self.canvas_body, 1)
+        self.parameters_button.toggled.connect(self.parameters_drawer.set_open)
+        self.parameters_drawer.dismissed.connect(lambda: self.parameters_button.setChecked(False))
 
         for spin in (self.length_spin, self.width_spin, self.height_spin):
             spin.valueChanged.connect(self._edited)

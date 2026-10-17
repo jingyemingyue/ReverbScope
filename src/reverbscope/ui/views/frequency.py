@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QScrollArea,
-    QSplitter,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -66,8 +66,8 @@ class FrequencyView(AnalysisView):
         self.content_scroll.setWidget(body)
         outer.addWidget(self.content_scroll)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(6, 4, 6, 4)
-        layout.setSpacing(4)
+        layout.setContentsMargins(24, 20, 24, 16)
+        layout.setSpacing(16)
         controls = QHBoxLayout()
         controls.addWidget(QLabel(_("Smoothing")))
         self.smoothing = QComboBox()
@@ -95,10 +95,15 @@ class FrequencyView(AnalysisView):
         self.show_raw.toggled.connect(self.refresh)
         controls.addWidget(self.show_raw)
         controls.addStretch(1)
+        self.presentation = QComboBox()
+        self.presentation.setAccessibleName(_("Frequency display"))
+        self.presentation.addItem(_("Frequency response"))
+        self.presentation.addItem(_("Difference from baseline"))
+        controls.addWidget(self.presentation)
         layout.addLayout(controls)
 
-        self.splitter = QSplitter(Qt.Orientation.Vertical)
-        self.splitter.setChildrenCollapsible(False)
+        self.chart_stack = QStackedWidget()
+        self.presentation.currentIndexChanged.connect(self.chart_stack.setCurrentIndex)
         self.chart = ChartPanel(
             X_FREQUENCY,
             x_label=_("Frequency (Hz)"),
@@ -118,11 +123,9 @@ class FrequencyView(AnalysisView):
         for panel in (self.chart, self.diff):
             panel.plot_item.getAxis("left").setWidth(64)
         self.diff.link_x(self.chart)
-        self.splitter.addWidget(self.chart)
-        self.splitter.addWidget(self.diff)
-        self.splitter.setStretchFactor(0, 3)
-        self.splitter.setStretchFactor(1, 1)
-        layout.addWidget(self.splitter, 1)
+        self.chart_stack.addWidget(self.chart)
+        self.chart_stack.addWidget(self.diff)
+        layout.addWidget(self.chart_stack, 1)
         self.notes = QLabel("")
         self.notes.setProperty("role", "hint")
         self.notes.setWordWrap(True)
@@ -290,8 +293,13 @@ class FrequencyView(AnalysisView):
             and baseline.key != current.key
             and baseline.result is not None
         )
-        self.diff.setVisible(show)
+        self.presentation.setItemData(
+            1,
+            "" if show else _("Choose a different measurement and a baseline."),
+            Qt.ItemDataRole.ToolTipRole,
+        )
         if not show:
+            self.diff.set_message(_("Choose a different measurement and a baseline."))
             return
         assert baseline is not None and current is not None
         base = curves.get(baseline.key)
@@ -324,7 +332,7 @@ class FrequencyView(AnalysisView):
             color=current.color,
             width=1.6,
             readout=True,
-            processing=_("current minus baseline, both as drawn above"),
+            processing=_("current minus baseline, using the selected display processing"),
         )
         self.diff.add_hline(0.0, color=tokens()["muted"])
         finite = np.abs(delta[np.isfinite(delta)])

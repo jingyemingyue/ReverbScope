@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
+    QFormLayout,
     QHBoxLayout,
     QLabel,
     QScrollArea,
@@ -42,7 +43,7 @@ from reverbscope.ui.pg import colormap
 from reverbscope.ui.plotkit import X_FREQUENCY, X_TIME_MS, ChartPanel, format_frequency, pg
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
-from reverbscope.ui.widgets import PlotBody
+from reverbscope.ui.widgets import Disclosure, PlotBody
 from reverbscope.ui.workers import unexpected_error_text
 from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
 
@@ -132,14 +133,22 @@ class _TimeFrequencyView(AnalysisView):
         self.content_scroll.setWidget(body)
         outer.addWidget(self.content_scroll)
         self.root = QVBoxLayout(body)
-        self.root.setContentsMargins(10, 8, 10, 8)
-        self.root.setSpacing(6)
-        self.controls = QHBoxLayout()
-        self.controls.setSpacing(6)
-        self.more = QHBoxLayout()
-        self.more.setSpacing(6)
-        self.root.addLayout(self.controls)
-        self.root.addLayout(self.more)
+        self.root.setContentsMargins(24, 20, 24, 16)
+        self.root.setSpacing(16)
+        self.controls = QFormLayout()
+        self.more = QFormLayout()
+        for form in (self.controls, self.more):
+            form.setHorizontalSpacing(24)
+            form.setVerticalSpacing(12)
+            form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        self.options_body = QWidget()
+        options = QHBoxLayout(self.options_body)
+        options.setSpacing(32)
+        options.setContentsMargins(0, 0, 0, 0)
+        options.addLayout(self.controls)
+        options.addLayout(self.more)
+        self.display_settings = Disclosure(_("Display settings"), self.options_body)
+        self.root.addWidget(self.display_settings)
         self.status = QLabel("")
         self.status.setProperty("role", "hint")
         self.status.setWordWrap(True)
@@ -326,32 +335,25 @@ class SpectrogramView(_TimeFrequencyView):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         c = self.controls
-        c.addWidget(QLabel(_("Window")))
         self.window_ms = self._spin(1.0, 500.0, 20.0, " ms")
-        c.addWidget(self.window_ms)
-        c.addWidget(QLabel(_("Step")))
+        c.addRow(_("Window"), self.window_ms)
         self.hop_ms = self._spin(0.1, 100.0, 2.0, " ms")
-        c.addWidget(self.hop_ms)
-        c.addWidget(QLabel(_("Time")))
+        c.addRow(_("Step"), self.hop_ms)
         self.end_ms = self._spin(10.0, 5000.0, 500.0, " ms", 0)
-        c.addWidget(self.end_ms)
-        c.addStretch(1)
+        c.addRow(_("Time"), self.end_ms)
         m = self.more
-        m.addWidget(QLabel(_("Frequency")))
         self.fmin = self._spin(1.0, 20_000.0, 20.0, " Hz", 0)
         self.fmax = self._spin(100.0, 96_000.0, 20_000.0, " Hz", 0)
-        m.addWidget(self.fmin)
-        m.addWidget(self.fmax)
-        m.addWidget(QLabel(_("Levels")))
+        m.addRow(_("Frequency from"), self.fmin)
+        m.addRow(_("Frequency to"), self.fmax)
         self.normalization = QComboBox()
         self.normalization.addItem(_("re peak"), "peak")
         self.normalization.addItem(_("re direct sound"), "direct")
         self.normalization.addItem(_("re full scale"), "none")
         self.normalization.currentIndexChanged.connect(lambda _i: self._debounce.start())
-        m.addWidget(self.normalization)
+        m.addRow(_("Level reference"), self.normalization)
         self.floor = self._spin(-160.0, -10.0, -80.0, " dB", 0)
-        m.addWidget(self.floor)
-        m.addStretch(1)
+        m.addRow(_("Display floor"), self.floor)
         self.chart = ChartPanel(
             X_TIME_MS,
             x_label=_("Time after direct sound (ms)"),
@@ -440,28 +442,22 @@ class WaterfallView(_TimeFrequencyView):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         c = self.controls
-        c.addWidget(QLabel(_("Window")))
         self.window_ms = self._spin(5.0, 2000.0, 300.0, " ms", 0)
-        c.addWidget(self.window_ms)
-        c.addWidget(QLabel(_("Rise")))
+        c.addRow(_("Window"), self.window_ms)
         self.rise_ms = self._spin(0.0, 50.0, 0.5, " ms")
-        c.addWidget(self.rise_ms)
-        c.addWidget(QLabel(_("Step")))
+        c.addRow(_("Rise"), self.rise_ms)
         self.step_ms = self._spin(0.1, 200.0, 10.0, " ms")
-        c.addWidget(self.step_ms)
-        c.addWidget(QLabel(_("Slices")))
+        c.addRow(_("Step"), self.step_ms)
         self.slices = QSpinBox()
         self.slices.setRange(2, 120)
         self.slices.setValue(30)
         self.slices.valueChanged.connect(lambda _v: self._debounce.start())
-        c.addWidget(self.slices)
-        c.addStretch(1)
+        c.addRow(_("Slices"), self.slices)
         m = self.more
-        m.addWidget(QLabel(_("Frequency")))
         self.fmin = self._spin(1.0, 20_000.0, 20.0, " Hz", 0)
         self.fmax = self._spin(100.0, 96_000.0, 20_000.0, " Hz", 0)
-        m.addWidget(self.fmin)
-        m.addWidget(self.fmax)
+        m.addRow(_("Frequency from"), self.fmin)
+        m.addRow(_("Frequency to"), self.fmax)
         self.smoothing = QComboBox()
         self.smoothing.setToolTip(
             _(
@@ -478,7 +474,7 @@ class WaterfallView(_TimeFrequencyView):
             self.smoothing.addItem(text, fraction)
         self.smoothing.setCurrentIndex(2)
         self.smoothing.currentIndexChanged.connect(lambda _i: self._debounce.start())
-        m.addWidget(self.smoothing)
+        m.addRow(_("Display smoothing"), self.smoothing)
         self.perspective = QCheckBox(_("Perspective"))
         self.perspective.setToolTip(
             _(
@@ -489,8 +485,7 @@ class WaterfallView(_TimeFrequencyView):
         )
         self.perspective.setChecked(True)
         self.perspective.toggled.connect(self.refresh)
-        m.addWidget(self.perspective)
-        m.addStretch(1)
+        m.addRow(self.perspective)
         self.chart = ChartPanel(
             X_FREQUENCY,
             x_label=_("Frequency (Hz)"),

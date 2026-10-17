@@ -9,26 +9,28 @@ nothing here uses OpenGL, so it renders offscreen and in screenshots.
 from __future__ import annotations
 
 import math
+import weakref
 from dataclasses import dataclass, field
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtCore import QEvent, QObject, QPointF, QRectF, Qt, Signal
 from PySide6.QtGui import (
     QColor,
     QMouseEvent,
     QPainter,
-    QPaintEvent,
     QPen,
     QPolygonF,
     QResizeEvent,
     QWheelEvent,
 )
-from PySide6.QtWidgets import QSizePolicy, QWidget
+from PySide6.QtWidgets import QGraphicsWidget, QSizePolicy, QVBoxLayout, QWidget
 
 from reverbscope.geometry.paths import PredictedPath
 from reverbscope.geometry.room import Point, RoomBox
 from reverbscope.i18n import N_, _
+from reverbscope.ui.pg import pyqtgraph
 from reverbscope.ui.room.camera import (
     DEFAULT_PITCH_DEG,
     DEFAULT_YAW_DEG,
@@ -300,6 +302,19 @@ class _LabelField:
         return overlap, outside
 
 
+class _RoomSceneItem(QGraphicsWidget):
+    """A projected 3D scene inside pyqtgraph's non-OpenGL GraphicsView."""
+
+    def __init__(self, canvas: RoomCanvas) -> None:
+        super().__init__()
+        self._canvas = weakref.ref(canvas)
+
+    def paint(self, painter: QPainter, _option: Any, _widget: QWidget | None = None) -> None:
+        owner = self._canvas()
+        if owner is not None:
+            owner._paint_scene(painter)
+
+
 class RoomCanvas(QWidget):
     """Orbit (left drag), pan (right or middle drag), zoom about the cursor (wheel),
     fit (double-click, F). In the plan view, devices are dragged with the left button."""
@@ -337,6 +352,63 @@ class RoomCanvas(QWidget):
         self._pending_names: list[tuple[QPointF, str]] = []
         self.camera.reset(*self.scene.bounds())
         self._sync_tooltip()
+        self._disposed = False
+        self.graphics = pyqtgraph().GraphicsView(self)
+        self.graphics.setBackground(tokens()["canvas"])
+        self._scene_item = _RoomSceneItem(self)
+        self.graphics.setCentralItem(self._scene_item)
+        self.graphics.viewport().installEventFilter(self)
+        self.graphics.installEventFilter(self)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.graphics)
+
+    def update(self, *args: Any) -> None:
+        super().update(*args)
+        if hasattr(self, "_scene_item") and not self._disposed:
+            self._scene_item.update()
+
+    def dispose(self) -> None:
+        if not self._disposed:
+            self._disposed = True
+            # Like PlotItem.close, detach QGraphicsWidgets before the
+            # GraphicsView clears its scene; Python still owns this item.
+            self.graphics.setCentralItem(None)
+            self.graphics.close()
+
+    def closeEvent(self, event: Any) -> None:  # noqa: N802
+        if self.isWindow():
+            self.dispose()
+        super().closeEvent(event)
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        from PySide6.QtGui import QKeyEvent
+
+        if (
+            watched in (self.graphics, self.graphics.viewport())
+            and isinstance(event, QKeyEvent)
+            and event.type() == QEvent.Type.KeyPress
+            and event.key() in (Qt.Key.Key_F, Qt.Key.Key_R)
+            and not event.modifiers()
+        ):
+            self.keyPressEvent(event)
+            return True
+        if watched is self.graphics.viewport():
+            if isinstance(event, QWheelEvent):
+                self.wheelEvent(event)
+                return True
+            if isinstance(event, QMouseEvent):
+                handlers = {
+                    QEvent.Type.MouseButtonPress: self.mousePressEvent,
+                    QEvent.Type.MouseMove: self.mouseMoveEvent,
+                    QEvent.Type.MouseButtonRelease: self.mouseReleaseEvent,
+                    QEvent.Type.MouseButtonDblClick: self.mouseDoubleClickEvent,
+                }
+                handler = handlers.get(event.type())
+                if handler is not None:
+                    handler(event)
+                    return True
+        return super().eventFilter(watched, event)
 
     # --- content ------------------------------------------------------------------------
 
@@ -412,11 +484,10 @@ class RoomCanvas(QWidget):
         if self.width() >= 40 and self.height() >= 40:
             self.fit()
 
-    def paintEvent(self, _event: QPaintEvent) -> None:  # noqa: N802 - Qt override
+    def _paint_scene(self, painter: QPainter) -> None:
         t = tokens()
-        painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.fillRect(self.rect(), QColor(t["surface"]))
+        painter.fillRect(self.rect(), QColor(t["canvas"]))
         self.camera.width, self.camera.height = self.width(), self.height()
         scene = self.scene
         layers = scene.layers
@@ -522,7 +593,6 @@ class RoomCanvas(QWidget):
             )
         field = self._labels
         self.label_rects = tuple(field.placed + field.watched) if field is not None else ()
-        painter.end()
 
     def _draw_polyline(self, painter: QPainter, points: NDArray[np.float64], pen: QPen) -> None:
         screen, visible = self.camera.project(points)
@@ -674,7 +744,11 @@ class RoomCanvas(QWidget):
         label = f"{nice:g} m"
         if not self.camera.plan:
             label = _("{length} at the centre").format(length=label)
-        painter.drawText(QPointF(right - length_px, y - 7), label)
+        painter.drawText(
+            QRectF(max(0.0, right - 260), y - 27, min(right, 260.0), 22),
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter,
+            label,
+        )
 
     def _draw_legend(
         self, painter: QPainter, text: QColor, entered: QColor, measured: QColor, assumed: QColor

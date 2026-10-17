@@ -173,13 +173,15 @@ class ProjectPage(AnalysisView):
         self.sources.valueChanged.connect(lambda _value: self.choose_profile())
         row.addWidget(self.sources)
         row.addStretch(1)
+        actions = QHBoxLayout()
+        actions.addStretch()
         self.copy_button = QPushButton(_("Copy overview"))
         self.copy_button.clicked.connect(self._copy)
-        row.addWidget(self.copy_button)
+        actions.addWidget(self.copy_button)
         self.add_button = QPushButton(_("Add Session..."))
         self.add_button.setToolTip(_("List a saved session under a position of this project."))
         self.add_button.clicked.connect(self._choose_existing)
-        row.addWidget(self.add_button)
+        actions.addWidget(self.add_button)
         self.compare_button = QPushButton(_("Compare with first position"))
         self.compare_button.setToolTip(
             _(
@@ -187,11 +189,12 @@ class ProjectPage(AnalysisView):
             )
         )
         self.compare_button.clicked.connect(self._compare_selected)
-        row.addWidget(self.compare_button)
+        actions.addWidget(self.compare_button)
         self.measure_button = primary(QPushButton(_("Measure a new position...")))
         self.measure_button.clicked.connect(self._choose_position)
-        row.addWidget(self.measure_button)
+        actions.addWidget(self.measure_button)
         tools.body.addLayout(row)
+        tools.body.addLayout(actions)
         self.status = label("", "hint", wrap=True)
         tools.body.addWidget(self.status)
         layout.addWidget(tools)
@@ -207,7 +210,7 @@ class ProjectPage(AnalysisView):
         layout.addWidget(self.empty)
 
         positions = Card()
-        positions.body.addWidget(label(_("POSITIONS"), "section"))
+        positions.body.addWidget(label(_("Positions"), "section"))
         self.positions_hint = label("", "hint", wrap=True)
         positions.body.addWidget(self.positions_hint)
         self.position_rows = QVBoxLayout()
@@ -217,7 +220,7 @@ class ProjectPage(AnalysisView):
         layout.addWidget(positions)
 
         takes = Card()
-        takes.body.addWidget(label(_("TAKES"), "section"))
+        takes.body.addWidget(label(_("Measurements"), "section"))
         self.table = QTableWidget(0, 9)
         self.table.setHorizontalHeaderLabels(
             [
@@ -255,7 +258,7 @@ class ProjectPage(AnalysisView):
         layout.addWidget(takes)
 
         average = Card()
-        average.body.addWidget(label(_("SPATIAL AVERAGE"), "section"))
+        average.body.addWidget(label(_("Spatial average"), "section"))
         self.iso_line = label("", wrap=True)
         average.body.addWidget(self.iso_line)
         self.average_table = QTableWidget(0, 6)
@@ -272,7 +275,7 @@ class ProjectPage(AnalysisView):
         layout.addWidget(average)
 
         nxt = Card()
-        nxt.body.addWidget(label(_("NEXT"), "section"))
+        nxt.body.addWidget(label(_("Next measurement"), "section"))
         self.next_steps = label("", wrap=True)
         self.next_steps.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         nxt.body.addWidget(self.next_steps)
@@ -537,10 +540,11 @@ class ProjectPage(AnalysisView):
             )
             return
         n_sessions = sum(len(p.sessions) for p in overview.positions) + len(overview.unlisted)
+        self.header.subtitle.setToolTip(str(self.path))
         self.header.subtitle.setText(
             _("{name}  ·  {path}  ·  {positions} position(s), {sessions} session(s)").format(
                 name=overview.name or self.path.name,
-                path=self.path,
+                path=self.path.name,
                 positions=len(overview.positions),
                 sessions=n_sessions,
             )

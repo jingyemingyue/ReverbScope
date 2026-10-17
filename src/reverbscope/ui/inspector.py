@@ -83,7 +83,7 @@ class _Section(QWidget):
         self.outer = layout
         layout.setContentsMargins(0, 4, 0, 4)
         layout.setSpacing(4)
-        self.title = label(title.upper(), "section")
+        self.title = label(title, "section")
         layout.addWidget(self.title)
         self.body = QWidget()
         layout.addWidget(self.body)
@@ -181,7 +181,7 @@ class _Section(QWidget):
 
 
 class Inspector(QWidget):
-    """The right column."""
+    """The optional properties drawer for the selected measurement."""
 
     #: Open the compare view (the verdict's "Details" button).
     compare_requested = Signal()
@@ -210,9 +210,8 @@ class Inspector(QWidget):
         scroll.setWidget(body)
         outer.addWidget(scroll)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(6)
-        layout.addWidget(label(_("Inspector"), "panel-title"))
+        layout.setContentsMargins(12, 8, 12, 16)
+        layout.setSpacing(20)
         self.heading = label(_("Nothing selected"), "section")
         self.heading.setWordWrap(True)
         layout.addWidget(self.heading)
