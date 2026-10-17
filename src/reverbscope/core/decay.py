@@ -812,8 +812,15 @@ def _curve_from_truncation(
         # response before backward integration. Integrating the raw power
         # treats noise as decay and biases the tail upward; subtracting first
         # removes that bias. Floor at _EPS (not zero) to keep the log defined.
-        noise_power = 10.0 ** (trunc.noise_floor_db / 10.0)
-        segment = np.maximum(segment - noise_power, _EPS)
+        #
+        # Guard: only subtract when the Lundeby estimate is trustworthy
+        # (no problem flag) and there is sufficient dynamic range. For a clean
+        # synthetic exponential, the "noise floor" from the tail is still
+        # signal, not noise; subtracting it would distort the decay.
+        dynamic_range_db = trunc.peak_db - trunc.noise_floor_db
+        if trunc.problem is None and dynamic_range_db > 15.0:
+            noise_power = 10.0 ** (trunc.noise_floor_db / 10.0)
+            segment = np.maximum(segment - noise_power, _EPS)
     compensation = 0.0
     if (
         compensate
