@@ -743,6 +743,7 @@ class ChartPanel(QWidget):
             if not series.legend:
                 continue
             chip = QToolButton()
+            chip.setProperty("legend", True)
             chip.setCheckable(True)
             chip.setChecked(series.visible)
             chip.setAutoRaise(True)

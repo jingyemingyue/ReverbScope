@@ -8,6 +8,7 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Faithful curve display.** Power smoothing retains quiet regions after strong peaks, viewport decimation keeps endpoints and crossing segments, and frequency/difference framing includes narrow peaks. Plot legends use quiet neutral chrome. Stored measurements remain unchanged.
 - **Focused desktop draft.** A Photoshop-inspired neutral dark shell separates
   Project, Measure, Analysis and Compare. Measurement runs in steps; optional
   measurements/properties drawers leave the canvas full width. Frequency and

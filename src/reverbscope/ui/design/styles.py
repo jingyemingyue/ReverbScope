@@ -35,6 +35,14 @@ QGroupBox QGroupBox {{ background: transparent; border: none; }}
 QFrame[card="true"] {{ border: none; border-radius: 0; background: transparent; }}
 QWidget[options="true"] {{ background: {t["surface"]}; border-bottom: 1px solid {t["border"]}; }}
 QWidget[options="true"] QToolButton {{ padding: 4px 8px; }}
+QToolButton[legend="true"], QToolButton[legend="true"]:checked {{
+    background: transparent; border: 1px solid transparent; padding: 4px 8px;
+    color: {t["text"]}; }}
+QToolButton[legend="true"]:!checked {{ color: {t["muted"]}; }}
+QToolButton[legend="true"]:hover {{ background: {t["surface_alt"]};
+    border-color: {t["border"]}; }}
+QToolButton[legend="true"]:focus {{ background: {t["surface_alt"]};
+    border-color: {t["accent"]}; }}
 QTableWidget, QTableView, QListWidget, QTreeWidget {{ border: none; border-radius: 0; }}
 QHeaderView::section {{ padding: 10px 12px; font-size: 12px; font-weight: 500; }}
 QTreeWidget[measurements="true"]::item {{ min-height: 28px; padding: 6px 4px; }}

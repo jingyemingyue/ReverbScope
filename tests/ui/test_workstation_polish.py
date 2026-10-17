@@ -6,6 +6,7 @@ Offscreen. A passing run here is not a Retina or macOS hardware check.
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -319,6 +320,100 @@ def test_frequency_csv_matches_the_drawn_curve(
     assert xs[0] == pytest.approx(float(stored.frequencies_hz[0]), rel=1e-4)
     assert max(ys) == pytest.approx(float(np.nanmax(view.chart.series[0].y)), rel=1e-4)
     view.close()
+
+
+def test_frequency_frame_includes_a_narrow_resonance_peak(
+    app: QApplication, result: AnalysisResult
+) -> None:
+    from reverbscope.ui.views.frequency import FrequencyView
+    from reverbscope.ui.workspace import WorkspaceModel
+
+    frequencies = result.frequency_response.frequencies_hz
+    levels = np.zeros_like(frequencies)
+    levels[int(np.searchsorted(frequencies, 100.0))] = 40.0
+    response = replace(
+        result.frequency_response,
+        magnitude_db_raw=levels,
+        magnitude_db_smoothed=levels,
+    )
+    model = WorkspaceModel()
+    model.add_take(
+        MeasurementSession(),
+        replace(result, frequency_response=response),
+        [],
+        "",
+        "generic",
+        unsaved=False,
+        synthetic=True,
+    )
+    view = FrequencyView(model)
+    try:
+        view.resize(800, 500)
+        view.show()
+        app.processEvents()
+        view.chart.reset_view()
+        assert view.chart.view_box.viewRange()[1][1] > 40.0
+        assert max(view.chart.series[0].y) == 40.0
+    finally:
+        view.close()
+
+
+@pytest.mark.parametrize("outside_index", [0, -1])
+def test_frequency_frame_ignores_unmeasured_edges_and_keeps_the_baseline(
+    app: QApplication, result: AnalysisResult, outside_index: int
+) -> None:
+    from reverbscope.ui.views.frequency import FrequencyView
+    from reverbscope.ui.workspace import WorkspaceModel
+
+    frequencies = result.frequency_response.frequencies_hz
+    levels = np.zeros_like(frequencies)
+    levels[int(np.searchsorted(frequencies, 100.0))] = 40.0
+    levels[outside_index] = 140.0
+    response = replace(
+        result.frequency_response, magnitude_db_raw=levels, magnitude_db_smoothed=levels
+    )
+    model = WorkspaceModel()
+    model.add_take(
+        MeasurementSession(),
+        replace(result, frequency_response=response),
+        [],
+        "",
+        "generic",
+        unsaved=False,
+        synthetic=True,
+    )
+    view = FrequencyView(model)
+    try:
+        view.resize(800, 500)
+        view.show()
+        app.processEvents()
+        view.chart.reset_view()
+        bottom, top = view.chart.view_box.viewRange()[1]
+        assert bottom < 0 < 40 < top < 100
+    finally:
+        view.close()
+
+
+def test_frequency_difference_waits_for_the_current_measurement_to_load(
+    app: QApplication, result: AnalysisResult, tmp_path: Path
+) -> None:
+    from reverbscope.ui.views.frequency import FrequencyView
+    from reverbscope.ui.workspace import WorkspaceModel
+
+    model = WorkspaceModel()
+    baseline = model.add_session(tmp_path / "baseline", MeasurementSession(), result)
+    current = model.add_session(tmp_path / "current", MeasurementSession(), result)
+    model.set_baseline(baseline.key)
+    current.result = None
+    view = FrequencyView(model)
+    try:
+        view.redraw()
+        assert not view.diff.series
+        current.result = result
+        view.redraw()
+        assert view.diff.series
+    finally:
+        view.close()
 
 
 def test_room_pick_reset_and_presets(

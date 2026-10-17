@@ -183,6 +183,7 @@ class FrequencyView(AnalysisView):
         current = self.model.current()
         notes: list[str] = []
         tops: list[float] = []
+        bottoms: list[float] = []
         curves: dict[str, tuple[np.ndarray, np.ndarray]] = {}
         for entry in self.model.drawn():
             data = self.curve_for(entry)
@@ -209,9 +210,25 @@ class FrequencyView(AnalysisView):
                 readout=is_current,
                 z=10 if is_current else 0,
             )
-            finite = db[np.isfinite(db)]
+            stored = entry.result
+            assert stored is not None
+            shown_high = stored.sample_rate / 2.0
+            if current is not None and current.result is not None:
+                shown_high = min(shown_high, current.result.sample_rate / 2.0)
+            measured_low = 20.0
+            measured_high = shown_high
+            excitation = (
+                stored.frequency_response.excitation_band or stored.impulse_response.excitation_band
+            )
+            if excitation is not None:
+                measured_low = max(measured_low, excitation.low_hz)
+                measured_high = min(measured_high, excitation.high_hz)
+            # Unmeasured DC / edge bins must not set the level scale. Keep
+            # both the baseline and narrow peaks inside the measured range.
+            finite = db[(f >= measured_low) & (f <= measured_high) & np.isfinite(db)]
             if finite.size:
-                tops.append(float(np.percentile(finite, 99.5)))
+                tops.append(float(np.max(finite)))
+                bottoms.append(float(np.min(finite)))
         nyquist = 24_000.0
         low = 20.0
         if current is not None and current.result is not None:
@@ -268,8 +285,9 @@ class FrequencyView(AnalysisView):
                 else _("Window {window:.2f} s.").format(window=fr.window_s)
             )
         top = max(tops) if tops else 0.0
+        bottom = min(bottoms) if bottoms else top
         self._x_default = (low, nyquist)
-        self.chart.set_default_range(self._x_default, (top - 60.0, top + 10.0))
+        self.chart.set_default_range(self._x_default, (min(top - 60.0, bottom - 10.0), top + 10.0))
         self._draw_difference(curves, notes)
         hidden = hidden_selection_note(self.model)
         if hidden:
@@ -292,6 +310,7 @@ class FrequencyView(AnalysisView):
             and current is not None
             and baseline.key != current.key
             and baseline.result is not None
+            and current.result is not None
         )
         self.presentation.setItemData(
             1,
@@ -335,8 +354,20 @@ class FrequencyView(AnalysisView):
             processing=_("current minus baseline, using the selected display processing"),
         )
         self.diff.add_hline(0.0, color=tokens()["muted"])
-        finite = np.abs(delta[np.isfinite(delta)])
-        span = max(6.0, float(np.percentile(finite, 99)) + 2.0) if finite.size else 12.0
+        measured_low, measured_high = self._x_default
+        for entry in (baseline, current):
+            assert entry.result is not None
+            excitation = (
+                entry.result.frequency_response.excitation_band
+                or entry.result.impulse_response.excitation_band
+            )
+            if excitation is not None:
+                measured_low = max(measured_low, excitation.low_hz)
+                measured_high = min(measured_high, excitation.high_hz)
+        finite = np.abs(
+            delta[(grid >= measured_low) & (grid <= measured_high) & np.isfinite(delta)]
+        )
+        span = max(6.0, float(np.max(finite)) + 2.0) if finite.size else 12.0
         # The same x range as the chart above: the two panes are linked.
         self.diff.set_default_range(self._x_default, (-span, span))
 

@@ -127,3 +127,40 @@ comfort still need maintainer testing. Offscreen screenshots and the fake
 backend do not satisfy those checks. Keep the PR draft and require a
 maintainer review before any merge. Public-release README images remain
 on their current release design until the draft is accepted.
+
+## 曲线与加载边界复核
+
+本轮以 GUIDELINES.zh-CN.md §4 C1/C2/C9/C10/C12、§15、§18 为依据，沿用
+现有 Photoshop 风格。没有改变保存的测量数字、测量流程或文件格式。
+
+- 平滑使用正项分层求和，避免强峰之后的低电平区因累计量相减而丢失。
+  已知 -100 dB 平台在旧实现中会被错画成 -300 dB。
+- 显示抽样保留首尾端点；缩放到相邻样本之间时仍保留穿过视口的线段。
+- 默认纵轴保留窄峰和基线，只用当前可见、已扫频的频率区间决定范围；
+  扫频外的 DC / 边缘值不再把有效曲线挤出画面。差值图按共同测量区间取景。
+- 差值图等待当前测量完成加载；数据尚未到达时显示占位，随后可正常恢复。
+- 图例去掉常亮蓝底，保留颜色线样、当前项粗体、显隐开关、悬停和键盘焦点。
+
+**准则差异供审查。** §15.3 的固定默认纵轴范围可裁掉窄峰。本轮保留已有
+手动范围行为，让默认范围在必要时扩大到实际测量数据的极值；未修改准则。
+这个取景策略作为草稿交给维护者审阅。
+
+新增回归均保留先失败后通过的证据；曲线与 GUI 定向检查 **40 passed**。
+131072 点的 1/12 倍频程显示平滑，预热后 5 次中位耗时 **34.584 ms**；
+这是本容器的合成数据测量，不是原生平台性能承诺。结果沿用工作区显示缓存。
+完整检查的命令、结果及 CI 链接记录在 PR #71 的交接说明。
+
+离屏验证生成 **210 张**截图：21 个状态覆盖四种窗口尺寸的 1×/2× 中文深色，
+另补英文深色和中文浅色。PNG 全部可解码；已抽查部分宽/窄窗口、中文、设置
+与测量确认，未声称逐张人工验收。[尺寸、源码指纹及图像校验记录](../evidence/GUI_FOLLOWUP_RENDERS.json)。
+QA 主机使用系统 Noto Sans CJK SC 回退，仓库与分发包没有加入字体文件。
+这些图片均为合成演示；未进行真实声卡、DAW、原生 macOS/Windows、Retina 或旁白验收。
+
+| 调整前（dc82b76） | 本轮曲线取景与图例 |
+| --- | --- |
+| ![合成演示：调整前频率响应](../images/gui-focused/followup-before-frequency.zh-CN.png) | ![合成演示：完整窄峰与中性图例](../images/gui-focused/followup-frequency.zh-CN.png) |
+
+[窄窗口频响](../images/gui-focused/followup-frequency-narrow.zh-CN.png) ·
+[窄窗口总览](../images/gui-focused/followup-overview-narrow.zh-CN.png) ·
+[测量确认](../images/gui-focused/followup-measurement.zh-CN.png) ·
+[浅色设置](../images/gui-focused/followup-settings-light.zh-CN.png)
