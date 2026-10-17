@@ -71,13 +71,23 @@ def test_the_repository_workflows_are_scanned_completely() -> None:
     pins, errors = _script().scan(ROOT / ".github" / "workflows")
     assert errors == []
     expected = 0
-    for path in (ROOT / ".github" / "workflows").glob("*.yml"):
-        for line in path.read_text(encoding="utf-8").splitlines():
+    expected_pins: list[tuple[Path, int, str, str]] = []
+    workflows = ROOT / ".github" / "workflows"
+    for path in sorted([*workflows.glob("*.yml"), *workflows.glob("*.yaml")]):
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
             stripped = line.strip().removeprefix("- ")
-            if stripped.startswith("uses:") and not stripped.split()[1].startswith("./"):
-                expected += 1
+            if not stripped.startswith("uses:"):
+                continue
+            ref = stripped.split()[1].strip("'\"")
+            if ref.startswith(("./", "docker://")):
+                continue
+            expected += 1
+            name, sha = ref.rsplit("@", 1)
+            expected_pins.append((path, number, "/".join(name.split("/")[:2]), sha))
     assert len(pins) == expected > 0
-    assert {"actions/checkout", "actions/deploy-pages"} <= {pin.repo for pin in pins}
+    # Match every current reference, including duplicates, without requiring
+    # an action from a workflow that may have been deliberately removed.
+    assert pins == expected_pins
     assert all(_SHA.match(pin.sha) for pin in pins)
 
 
