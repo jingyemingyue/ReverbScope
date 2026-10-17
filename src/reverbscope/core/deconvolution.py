@@ -347,6 +347,33 @@ def find_sweep_passes(
     return tuple(sorted(accepted))
 
 
+def suppress_harmonic_distortion(
+    samples: FloatArray,
+    located: LocatedImpulseResponse,
+) -> FloatArray:
+    """Zero out harmonic distortion windows in the located IR (Farina 2000, M3).
+
+    ESS deconvolution maps nth-order harmonic distortion to negative times
+    (``L * ln(n)`` before the linear response). The windows are known from
+    :func:`harmonic_windows`; zeroing them yields a distortion-free linear IR
+    for subsequent decay analysis. ``harmonic_distortion_levels`` must run on
+    the original ``h_full`` (it takes it separately), so measurement is
+    unaffected.
+    """
+    if not located.harmonic_windows:
+        return samples
+    cleaned = np.array(samples, dtype=np.float64, copy=True)
+    # samples[i] == h_full[peak - pre_delay_samples + i]
+    h_start = located.peak_index - located.pre_delay_samples
+    n = cleaned.shape[0]
+    for w in located.harmonic_windows:
+        s_start = max(0, w.start - h_start)
+        s_stop = min(n, w.stop - h_start)
+        if s_stop > s_start:
+            cleaned[s_start:s_stop] = 0.0
+    return cleaned
+
+
 @dataclass(frozen=True)
 class LocatedImpulseResponse:
     samples: FloatArray
@@ -397,6 +424,7 @@ def locate_impulse_response(
     start_tolerance_samples: int = 0,
     margin_near_ms: float = 2.0,
     margin_far_s: float = 0.5,
+    suppress_harmonics: bool = True,
 ) -> LocatedImpulseResponse:
     """Find the direct sound in the deconvolved signal and cut the IR around it.
 
@@ -530,7 +558,7 @@ def locate_impulse_response(
     )
 
     sweep_start = peak - offset
-    return LocatedImpulseResponse(
+    located = LocatedImpulseResponse(
         samples=samples,
         direct_index=peak - start,
         pre_delay_samples=peak - start,
@@ -548,6 +576,31 @@ def locate_impulse_response(
         excluded_windows=tuple(excluded),
         earlier_arrival_db=earlier_arrival_db,
     )
+    if suppress_harmonics and harmonics:
+        # Farina 2000 (M3): zero out harmonic distortion at negative times
+        # for a distortion-free linear IR. The measurement
+        # (harmonic_distortion_levels) runs on the original h_full separately.
+        cleaned = suppress_harmonic_distortion(located.samples, located)
+        # Rebuild with cleaned samples (frozen dataclass).
+        located = LocatedImpulseResponse(
+            samples=cleaned,
+            direct_index=located.direct_index,
+            pre_delay_samples=located.pre_delay_samples,
+            peak_index=located.peak_index,
+            peak_value=located.peak_value,
+            valid_length_samples=located.valid_length_samples,
+            sweep_start_index_in_recording=located.sweep_start_index_in_recording,
+            sweep_start_raw_index=located.sweep_start_raw_index,
+            pre_peak_margin_db=located.pre_peak_margin_db,
+            truncated_by_max_length=located.truncated_by_max_length,
+            pass_peak_indices=located.pass_peak_indices,
+            first_sweep_start_raw_index=located.first_sweep_start_raw_index,
+            truncated_by_next_pass=located.truncated_by_next_pass,
+            harmonic_windows=located.harmonic_windows,
+            excluded_windows=located.excluded_windows,
+            earlier_arrival_db=located.earlier_arrival_db,
+        )
+    return located
 
 
 def confidence_label(margin_db: float | None) -> str:
