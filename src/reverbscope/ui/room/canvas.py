@@ -408,7 +408,8 @@ class RoomCanvas(QWidget):
                 if handler is not None:
                     handler(event)
                     return True
-        return super().eventFilter(watched, event)
+        handled: bool = super().eventFilter(watched, event)
+        return handled
 
     # --- content ------------------------------------------------------------------------
 

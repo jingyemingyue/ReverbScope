@@ -53,4 +53,5 @@ class DetailsDrawer(QFrame):
     def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
         if watched is self.parentWidget() and event.type() == QEvent.Type.Resize:
             self._place()
-        return super().eventFilter(watched, event)
+        handled: bool = super().eventFilter(watched, event)
+        return handled
