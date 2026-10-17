@@ -8,6 +8,7 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Bound imported data and diagnostics.** Audio imports preflight decoded float64 size and use a bounded frame read (512 MiB per decoded array). JSON reads enforce their byte budget even if a file grows after the metadata check. Logs escape file-derived controls and keep exception blocks indented.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on

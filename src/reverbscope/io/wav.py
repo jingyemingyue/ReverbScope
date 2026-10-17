@@ -32,6 +32,9 @@ log = logging.getLogger(__name__)
 SIDECAR_SUFFIX = ".reverbscope-sweep.json"
 SIDECAR_KEY = "reverbscope_sweep"
 SIDECAR_SCHEMA_VERSION = 1
+#: Maximum size of one decoded float64 array, not the compressed file size.
+#: This does not bound the memory used by later DSP stages or native codecs.
+MAX_DECODED_AUDIO_BYTES = 512 * 1024 * 1024
 
 
 def _soundfile() -> Any:
@@ -108,13 +111,45 @@ def _shown_name(path: Path) -> str:
 
 
 def read_wav(path: str | Path) -> AudioSignal:
-    """Read an audio file as float64. Multi-channel files keep their channels."""
+    """Read finite-sized audio as float64, retaining all channels.
+
+    Compressed files and edited headers can describe far more decoded data
+    than their encoded byte size suggests. Check metadata before allocating
+    and bound the actual read to the same decoded-array budget.
+    """
     sf = _soundfile()
     file_path = Path(path)
     if not file_path.is_file():
         raise InvalidAudioError(_("audio file not found: {path}").format(path=file_path))
     try:
-        data, sample_rate = sf.read(str(file_path), dtype="float64", always_2d=True)
+        with sf.SoundFile(str(file_path)) as source:
+            sample_rate = source.samplerate
+            frame_bytes = source.channels * np.dtype(np.float64).itemsize
+            max_frames = MAX_DECODED_AUDIO_BYTES // frame_bytes
+            decoded_bytes = source.frames * frame_bytes
+            if decoded_bytes > MAX_DECODED_AUDIO_BYTES:
+                raise InvalidAudioError(
+                    _(
+                        "{name} would decode to {size} bytes; audio larger than {limit} "
+                        "decoded bytes is refused. Export only the channels and time range needed."
+                    ).format(
+                        name=_shown_name(file_path),
+                        size=decoded_bytes,
+                        limit=MAX_DECODED_AUDIO_BYTES,
+                    )
+                )
+            data = source.read(frames=max_frames + 1, dtype="float64", always_2d=True)
+            if data.nbytes > MAX_DECODED_AUDIO_BYTES:
+                raise InvalidAudioError(
+                    _(
+                        "{name} would decode to {size} bytes; audio larger than {limit} "
+                        "decoded bytes is refused. Export only the channels and time range needed."
+                    ).format(
+                        name=_shown_name(file_path), size=data.nbytes, limit=MAX_DECODED_AUDIO_BYTES
+                    )
+                )
+    except InvalidAudioError:
+        raise
     except Exception as exc:  # libsndfile raises RuntimeError / soundfile.LibsndfileError
         try:
             empty = file_path.stat().st_size == 0
