@@ -1,4 +1,4 @@
-"""Screenshots of the GUI 2.0 workstation, offscreen, from the synthetic demo.
+"""Screenshots of the focused desktop, offscreen, from the synthetic demo.
 
     QT_QPA_PLATFORM=offscreen python scripts/render_gui2_screenshots.py [--out docs/images/gui2]
 
@@ -32,17 +32,26 @@ _VIEWS = (
     "fr",
     "etc",
     "decay",
+    "noise",
     "spectrogram",
     "waterfall",
     "room",
     "compare",
     "project",
+    "report",
+    "measure_connection",
+    "measure_signal",
+    "measure_review",
+    "daw_signal",
+    "daw_record",
+    "daw_import",
+    "daw_analyze",
+    "settings",
 )
-SHOTS: tuple[tuple[int, int, str, tuple[str, ...]], ...] = (
-    (1366, 768, "light", _VIEWS),
-    (1366, 768, "dark", _VIEWS),
-    (1920, 1080, "light", _VIEWS),
-    (1920, 1080, "dark", _VIEWS),
+SHOTS: tuple[tuple[int, int, str, tuple[str, ...]], ...] = tuple(
+    (width, height, scheme, _VIEWS)
+    for width, height in ((960, 640), (1280, 800), (1366, 768), (1920, 1080))
+    for scheme in ("dark", "light")
 )
 
 
@@ -64,6 +73,9 @@ def main(argv: list[str] | None = None) -> int:
         "--cameras",
         action="store_true",
         help="also save the room view from the plan, front, side and default perspective",
+    )
+    parser.add_argument(
+        "--panels", action="store_true", help="also capture optional drawers and display settings"
     )
     args = parser.parse_args(argv)
     if args.scale != 1.0:
@@ -94,6 +106,7 @@ def main(argv: list[str] | None = None) -> int:
                 chosen,
                 args.scale,
                 cameras=args.cameras,
+                panels=args.panels,
             )
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -146,6 +159,7 @@ def _render(
     scale: float,
     *,
     cameras: bool = False,
+    panels: bool = False,
 ) -> None:
     os.environ["REVERBSCOPE_COLOR_SCHEME"] = scheme
     from PySide6.QtWidgets import QApplication
@@ -155,6 +169,7 @@ def _render(
     from reverbscope.io.project_store import add_session, save_project
     from reverbscope.models.project import Project
     from reverbscope.ui.main_window import MainWindow
+    from reverbscope.ui.settings_dialog import SettingsDialog
     from reverbscope.ui.theme import apply_application_chrome
 
     activate(lang)
@@ -209,12 +224,59 @@ def _render(
         if view == "start":
             window._show_start()
             pump(0.4)
-        else:
+        elif view.startswith("measure_"):
+            window.show_mode("standalone")
+            window.standalone.flow.set_step(
+                ("measure_connection", "measure_signal", "measure_review").index(view)
+            )
+            pump(0.2)
+        elif view.startswith("daw_"):
+            window.show_mode("universal_daw")
+            window.daw.flow.set_step(
+                ("daw_signal", "daw_record", "daw_import", "daw_analyze").index(view)
+            )
+            pump(0.2)
+        elif view != "settings":
             window.show_view(view)
-            pump(2.5 if view in ("spectrogram", "waterfall") else 0.6)
+            pump(2.5 if view in ("spectrogram", "waterfall") else 0.3)
+            worker = getattr(window.views[view], "_worker", None)
+            if worker is not None:
+                if not worker.wait(15_000):
+                    raise RuntimeError(f"{view} did not finish rendering")
+                pump(0.2)
         name = f"{lang}_{width}x{height}_{scheme}_{view}{suffix}.png"
-        window.grab().save(str(out / name))
-        print(out / name)
+        if view == "settings":
+            dialog = SettingsDialog(window)
+            dialog.show()
+            pump(0.2)
+            saved = dialog.grab().save(str(out / name))
+            dialog.close()
+            dialog.deleteLater()
+        else:
+            saved = window.grab().save(str(out / name))
+        if not saved:
+            raise OSError(f"cannot save {out / name}")
+        print(out / name, flush=True)
+        if panels and view in ("fr", "room", "spectrogram"):
+            if view == "fr":
+                for panel_name, open_panel in (
+                    ("measurements", window.set_navigator_open),
+                    ("properties", window.set_inspector_open),
+                ):
+                    open_panel(True)
+                    pump(0.1)
+                    window.grab().save(str(out / name.replace(".png", f"_{panel_name}.png")))
+                    open_panel(False)
+            elif view == "room":
+                window.views["room"].parameters_button.setChecked(True)
+                pump(0.1)
+                window.grab().save(str(out / name.replace(".png", "_parameters.png")))
+                window.views["room"].parameters_button.setChecked(False)
+            else:
+                window.views["spectrogram"].display_settings.set_open(True)
+                pump(0.1)
+                window.grab().save(str(out / name.replace(".png", "_settings.png")))
+                window.views["spectrogram"].display_settings.set_open(False)
         if view == "room" and cameras:
             _room_cameras(window, out, lang, width, height, scheme, suffix, pump)
     window.views["room"].load(None)  # leave the demo's folder as the demo wrote it

@@ -41,6 +41,7 @@ from PySide6.QtWidgets import (
 
 from reverbscope.display.curves import peak_subset
 from reverbscope.i18n import _
+from reverbscope.ui.design.tokens import MIN_PLOT_HEIGHT
 from reverbscope.ui.pg import (
     close_plot_widget,
     disable_menus,
@@ -226,6 +227,10 @@ def dispose_charts(widget: QWidget) -> None:
     """:meth:`ChartPanel.dispose` every chart inside ``widget`` (it is closing for good)."""
     for chart in widget.findChildren(ChartPanel):
         chart.dispose()
+    from reverbscope.ui.room.canvas import RoomCanvas
+
+    for canvas in widget.findChildren(RoomCanvas):
+        canvas.dispose()
 
 
 class ChartPanel(QWidget):
@@ -305,7 +310,6 @@ class ChartPanel(QWidget):
         layout.addLayout(top)
         # Cursor coordinates need the chart's width, not what the platform's
         # toolbar font leaves over. A long curve name must not hide its units.
-        layout.addWidget(self.readout)
         # The legend scrolls sideways rather than widening the chart: ten
         # bands or eight overlays must not push the window past a laptop screen.
         legend_box = QWidget()
@@ -319,8 +323,7 @@ class ChartPanel(QWidget):
         self.legend_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.legend_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.legend_area.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
-        self.legend_area.setFixedHeight(26)
-        layout.addWidget(self.legend_area)
+        self.legend_area.setFixedHeight(48)
 
         axis_items: dict[str, Any] = {}
         if x_kind == X_FREQUENCY:
@@ -334,9 +337,11 @@ class ChartPanel(QWidget):
         self.plot.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.plot_item = self.plot.getPlotItem()
         disable_menus(self.plot_item)
-        self.plot_item.showGrid(x=True, y=True, alpha=0.28)
-        self.plot.setMinimumHeight(140)
+        self.plot_item.showGrid(x=True, y=True, alpha=0.15)
+        self.plot.setMinimumHeight(MIN_PLOT_HEIGHT)
         layout.addWidget(self.plot, 1)
+        layout.addWidget(self.legend_area)
+        layout.addWidget(self.readout)
         # Why the chart is empty (nothing stored, nothing selected), over the plot.
         self.message = QLabel(self.plot)
         self.message.setProperty("role", "hint")
@@ -389,6 +394,20 @@ class ChartPanel(QWidget):
 
     # --- appearance -------------------------------------------------------------
 
+    def set_interaction(self, tool: str) -> None:
+        """Select a canvas tool without changing data or the saved axis range."""
+        self.view_box.setMouseMode(
+            self.view_box.RectMode if tool == "zoom" else self.view_box.PanMode
+        )
+        self.view_box.setMouseEnabled(x=tool != "cursor", y=tool != "cursor")
+        self.plot.setCursor(
+            Qt.CursorShape.CrossCursor
+            if tool == "cursor"
+            else Qt.CursorShape.SizeAllCursor
+            if tool == "pan"
+            else Qt.CursorShape.CrossCursor
+        )
+
     def set_labels(self, x_label: str, y_label: str) -> None:
         self.x_label = x_label
         self.y_label = y_label
@@ -434,12 +453,12 @@ class ChartPanel(QWidget):
         if self._disposed:
             return
         t = tokens()
-        self.plot.setBackground(QColor(t["surface"]))
+        self.plot.setBackground(QColor(t["canvas"]))
         for name in ("bottom", "left"):
             axis = self.plot_item.getAxis(name)
             axis.setPen(pg.mkPen(QColor(t["grid"])))
             axis.setTextPen(pg.mkPen(QColor(t["text"])))
-        self.plot_item.showGrid(x=True, y=True, alpha=0.28)
+        self.plot_item.showGrid(x=True, y=True, alpha=0.15)
         self.cursor_line.setPen(pg.mkPen(QColor(t["muted"]), width=1, style=Qt.PenStyle.DashLine))
         self.plot_item.setLabel("bottom", self.x_label, color=t["text"])
         self.plot_item.setLabel("left", self.y_label, color=t["text"])
@@ -724,6 +743,7 @@ class ChartPanel(QWidget):
             if not series.legend:
                 continue
             chip = QToolButton()
+            chip.setProperty("legend", True)
             chip.setCheckable(True)
             chip.setChecked(series.visible)
             chip.setAutoRaise(True)

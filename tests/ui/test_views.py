@@ -253,7 +253,7 @@ def test_chart_chrome_follows_the_colour_scheme(
         assert color_scheme() == scheme
         view.restyle()
         background = view.chart.plot.backgroundBrush().color().name()
-        assert background == tokens()["surface"].lower()
+        assert background == tokens()["canvas"].lower()
         backgrounds.append(background)
     assert backgrounds[0] != backgrounds[1]
     view.close()
@@ -411,19 +411,22 @@ def test_waterfall_csv_holds_the_slices_without_the_perspective_shift(
 
 
 def test_the_strip_shows_the_device_the_page_picked_after_a_refill(app: Any) -> None:
-    from PySide6.QtWidgets import QComboBox
+    """The canonical device selector survives navigation; no second model can drift."""
+    from reverbscope.ui.main_window import MainWindow
 
-    from reverbscope.ui.measure_strip import _mirror_combo
-
-    page, strip = QComboBox(), QComboBox()
-    page.addItems(["a", "b"])
-    _mirror_combo(strip, page)
-    page.blockSignals(True)
-    page.clear()
-    page.addItems(["x", "y", "z"])
-    page.setCurrentIndex(2)  # the host API's default device
-    page.blockSignals(False)
+    window = MainWindow()
+    window.show_mode("standalone")
+    page = window.standalone
+    page.input_device.blockSignals(True)
+    page.input_device.clear()
+    page.input_device.addItems(["x", "y", "z"])
+    page.input_device.setCurrentIndex(2)
+    page.input_device.blockSignals(False)
+    window.workspace.task_buttons["analysis"].click()
+    window.workspace.task_buttons["measure"].click()
     app.processEvents()
-    assert strip.currentText() == "z"
-    strip.setCurrentIndex(0)
-    assert page.currentText() == "x"
+    assert page.input_device.currentText() == "z"
+    assert window.stack.currentWidget() is page
+    page.input_device.setCurrentIndex(0)
+    assert page.input_device.currentText() == "x"
+    window.close()

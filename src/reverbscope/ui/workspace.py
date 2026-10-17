@@ -18,6 +18,7 @@ from typing import Any
 
 from PySide6.QtCore import QObject, QThread, Signal
 
+from reverbscope.demo import DEMO_MODE
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
 from reverbscope.interpretation import Finding, available_profiles, interpret
@@ -463,7 +464,7 @@ class WorkspaceModel(QObject):
                 findings=findings,
                 findings_problem=findings_problem,
                 profile=chosen,
-                synthetic=session.mode == "demo",
+                synthetic=session.mode == DEMO_MODE,
             )
         )
         show = make_current if visible is None else visible
@@ -820,7 +821,7 @@ class WorkspaceModel(QObject):
                 findings_problem=loaded.findings_problem,
                 profile=loaded.profile,
                 error=localize(loaded.error) if loaded.error else "",
-                synthetic=loaded.session is not None and loaded.session.mode == "demo",
+                synthetic=loaded.session is not None and loaded.session.mode == DEMO_MODE,
                 in_project=True,
             )
         )

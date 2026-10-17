@@ -198,10 +198,9 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
             series.processing for series in chart.series
         ]
         _check([chart.title.text(), chart.readout.text(), *axes, *legend], "charts")
-    # The two placement pictures beside the tape-measure inputs stay matplotlib.
-    for figure in (window.daw.placement.figure, window.standalone.placement.figure):
-        chart_text = [t.get_text() for t in figure.findobj(lambda o: hasattr(o, "get_text"))]
-        _check([text for text in chart_text if text], "charts")
+    # The tape-measure schematic now shares the pyqtgraph chart and font stack.
+    for placement in (window.daw.placement, window.standalone.placement):
+        _check([placement.scene_hint.text(), placement.preview.title.text()], "charts")
     window.close()
     if any(name for name in _cjk_fonts()):
         assert tofu == [], [str(w.message) for w in tofu[:3]]

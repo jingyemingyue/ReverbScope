@@ -5,11 +5,8 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any, cast
 
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
-from matplotlib.figure import Figure
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -23,7 +20,10 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QSizePolicy,
     QSpinBox,
+    QStackedWidget,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -50,6 +50,7 @@ from reverbscope.models.session import MeasurementSession
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.widgets import (
     Card,
+    Disclosure,
     PageHeader,
     ask_save_path,
     error_box,
@@ -243,6 +244,104 @@ def _profile_row(combo: QComboBox, page: QWidget) -> tuple[QHBoxLayout, QPushBut
     return row, button
 
 
+class _StepStack(QStackedWidget):
+    """A hidden step must not impose its height on the task being read."""
+
+    def sizeHint(self) -> QSize:  # noqa: N802
+        size = super().sizeHint()
+        current = self.currentWidget()
+        if current is not None:
+            size.setHeight(current.sizeHint().height())
+        return size
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802
+        size = super().minimumSizeHint()
+        current = self.currentWidget()
+        if current is not None:
+            size.setHeight(current.minimumSizeHint().height())
+        return size
+
+
+class MeasurementSteps(QWidget):
+    """One measurement task per screen, without owning any audio state."""
+
+    def __init__(self, steps: list[tuple[str, QWidget]], parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        from reverbscope.ui.design.tokens import FORM_WIDTH, SECTION_GAP, SPACE
+
+        self.setMaximumWidth(FORM_WIDTH)
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(SECTION_GAP)
+        nav = QHBoxLayout()
+        nav.setSpacing(SPACE)
+        self.buttons: list[QToolButton] = []
+        self.stack = _StepStack()
+        for index, (title, content) in enumerate(steps):
+            button = QToolButton()
+            button.setText(f"{index + 1}  {title}")
+            button.setAccessibleName(title)
+            button.setCheckable(True)
+            button.setProperty("viewtab", True)
+            button.clicked.connect(lambda _checked=False, step=index: self.set_step(step))
+            nav.addWidget(button)
+            self.buttons.append(button)
+            self.stack.addWidget(content)
+        nav.addStretch()
+        outer.addLayout(nav)
+        outer.addWidget(self.stack, 1)
+        footer = QHBoxLayout()
+        self.previous = QPushButton(_("Previous"))
+        self.previous.clicked.connect(lambda: self.set_step(self.stack.currentIndex() - 1))
+        self.next = primary(QPushButton(_("Continue")))
+        self.next.clicked.connect(lambda: self.set_step(self.stack.currentIndex() + 1))
+        footer.addWidget(self.previous)
+        footer.addStretch()
+        footer.addWidget(self.next)
+        outer.addLayout(footer)
+        self.set_step(0)
+
+    def set_step(self, step: int) -> None:
+        index = max(0, min(step, self.stack.count() - 1))
+        self.stack.setCurrentIndex(index)
+        self.stack.updateGeometry()
+        self.updateGeometry()
+        for number, button in enumerate(self.buttons):
+            button.setChecked(index == number)
+        self.previous.setVisible(index > 0)
+        self.next.setVisible(index < self.stack.count() - 1)
+
+    def set_running(self, running: bool) -> None:
+        if running:
+            self.set_step(self.stack.count() - 1)
+        for button in [*self.buttons, self.previous, self.next]:
+            button.setEnabled(not running)
+        for index in range(self.stack.count() - 1):
+            page = self.stack.widget(index)
+            if page is not None:
+                page.setEnabled(not running)
+
+
+def _step_body(*widgets: QWidget) -> QWidget:
+    from reverbscope.ui.design.tokens import SECTION_GAP
+
+    body = QWidget()
+    layout = QVBoxLayout(body)
+    layout.setContentsMargins(0, 0, 0, 0)
+    layout.setSpacing(SECTION_GAP)
+    for widget in widgets:
+        layout.addWidget(widget)
+    layout.addStretch()
+    return body
+
+
+def _install_steps(layout: QVBoxLayout, flow: MeasurementSteps) -> None:
+    # Build each control hierarchy once. Adding directly to the final
+    # step avoids reparenting populated layouts while their previous
+    # owners are waiting for deferred deletion.
+    layout.addWidget(flow, 1, Qt.AlignmentFlag.AlignHCenter)
+
+
 class PlacementInputs(QGroupBox):
     """Optional tape measurements that raise the placement tier (S5)."""
 
@@ -286,13 +385,28 @@ class PlacementInputs(QGroupBox):
         form.addRow(self.temperature_measured, self.temperature)
         row.addLayout(form, 1)
         scene = QVBoxLayout()
-        self.figure = Figure(figsize=(5.6, 3.3), dpi=100)
-        self.canvas: Any = cast(Any, FigureCanvasQTAgg)(self.figure)
-        self.canvas.setMinimumHeight(240)
+        from reverbscope.ui.plotkit import ChartPanel
+
+        self.preview = ChartPanel(title=_("Placement illustration"))
+        self.canvas = self.preview.plot
+        self.canvas.setMinimumHeight(200)
+        self.canvas.getPlotItem().setAspectLocked(True)
+        self.canvas.getPlotItem().hideAxis("left")
+        self.canvas.getPlotItem().hideAxis("bottom")
+        self.canvas.getPlotItem().setMouseEnabled(x=False, y=False)
+        self.preview.legend_area.hide()
+        self.preview.readout.hide()
+        # This is an input illustration, not an analysis chart or curve export.
+        for tool in (
+            self.preview.reset_button,
+            self.preview.axes_button,
+            self.preview.export_button,
+        ):
+            tool.hide()
         self.scene_hint = QLabel("")
         self.scene_hint.setWordWrap(True)
         self.scene_hint.setProperty("role", "hint")
-        scene.addWidget(self.canvas, 1)
+        scene.addWidget(self.preview, 1)
         scene.addWidget(self.scene_hint)
         row.addLayout(scene, 2)
         self._redraw_scene()
@@ -308,17 +422,37 @@ class PlacementInputs(QGroupBox):
         self._redraw_scene()
 
     def _redraw_scene(self, _value: float | None = None) -> None:
-        from reverbscope.ui.plots import plot_placement_illustration
+        from reverbscope.ui.pg import pyqtgraph
+        from reverbscope.ui.theme import tokens
 
-        distance = self.distance.value()
-        height = self.mic_height.value()
-        hint = plot_placement_illustration(
-            self.figure,
-            distance_m=distance if distance >= 0.20 else None,
-            mic_height_m=height if self.mic_height.isEnabled() and height >= 0.02 else None,
+        pg = pyqtgraph()
+        t = tokens()
+        self.canvas.clear()
+        self.canvas.setBackground(t["canvas"])
+        distance, height = self.distance.value(), self.mic_height.value()
+        shown_distance = distance if distance >= 0.20 else 2.0
+        shown_height = height if self.mic_height.isEnabled() and height >= 0.02 else 0.8
+        self.canvas.plot([0, shown_distance], [0, 0], pen=pg.mkPen(t["muted"], width=1))
+        self.canvas.plot([0, 0], [0, shown_height], pen=pg.mkPen(t["accent"], width=2))
+        self.canvas.plot(
+            [0, shown_distance],
+            [shown_height, shown_height],
+            pen=pg.mkPen(t["muted"], style=Qt.PenStyle.DashLine),
         )
-        self.scene_hint.setText(hint)
-        self.canvas.draw_idle()
+        self.canvas.plot(
+            [shown_distance],
+            [shown_height],
+            pen=None,
+            symbol="o",
+            symbolBrush=t["accent"],
+            symbolSize=10,
+        )
+        self.canvas.setXRange(-0.3, shown_distance + 0.3)
+        self.canvas.setYRange(-0.2, shown_height + 0.5)
+        self.scene_hint.setText(
+            _("Entered dimensions only. This illustration is not a measured room.")
+        )
+        self.canvas.setToolTip(self.scene_hint.text())
 
     def analysis_kwargs(self) -> dict[str, float | None]:
         distance = self.distance.value()
@@ -399,19 +533,17 @@ class DawModePage(QWidget):
         self.sweep_label.setWordWrap(True)
         form1.addRow(self.save_sweep_button)
         form1.addRow(self.sweep_label)
-        layout.addWidget(step1)
 
         # Step 2
-        step2 = QGroupBox(_("Step 2 - Record Through Your DAW"))
+        step2 = QGroupBox(_("DAW recording instructions"))
         v2 = QVBoxLayout(step2)
         instructions = QLabel(_(DAW_INSTRUCTIONS))
         instructions.setWordWrap(True)
         instructions.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         v2.addWidget(instructions)
-        layout.addWidget(step2)
 
         # Step 3
-        step3 = QGroupBox(_("Step 3 - Import Recording"))
+        step3 = QGroupBox(_("Recording files"))
         form3 = QFormLayout(step3)
         self.recording_button = QPushButton(_("Choose Recording..."))
         self.recording_button.clicked.connect(self._choose_recording)
@@ -430,15 +562,13 @@ class DawModePage(QWidget):
         form3.addRow(self.reference_button, self.reference_label)
         form3.addRow(_("Microphone channel"), self.channel)
         form3.addRow(_("Loopback channel"), self.loopback_channel)
-        layout.addWidget(step3)
 
         # Step 4
-        step4 = QGroupBox(_("Step 4 - Analyze"))
+        step4 = QGroupBox(_("Analyze recording"))
         v4 = QVBoxLayout(step4)
         meta, self.room, self.position, self.mic = _metadata_form(state)
-        v4.addWidget(meta)
         self.placement = PlacementInputs()
-        v4.addWidget(self.placement)
+        v4.addWidget(Disclosure(_("Room and placement"), _step_body(meta, self.placement)))
         profile_form = QFormLayout()
         self.profile = _profile_combo(state)
         profile_row, self.profile_help = _profile_row(self.profile, self)
@@ -461,8 +591,17 @@ class DawModePage(QWidget):
         self.status.setWordWrap(True)
         v4.addWidget(self.progress)
         v4.addWidget(self.status)
-        layout.addWidget(step4)
-        layout.addStretch(1)
+
+        self.flow = MeasurementSteps(
+            [
+                (_("Test signal"), step1),
+                (_("Record in DAW"), step2),
+                (_("Import recording"), step3),
+                (_("Analyze"), step4),
+            ]
+        )
+        _install_steps(layout, self.flow)
+        self.busy_changed.connect(self.flow.set_running)
 
     # --- step 1 -----------------------------------------------------------------
     def current_sweep_settings(self) -> SweepSettings:
@@ -729,12 +868,10 @@ class StandalonePage(QWidget):
         self.demo_banner.setWordWrap(True)
         self.demo_banner.setProperty("banner", "info")
         self.demo_banner.hide()
-        layout.addWidget(self.demo_banner)
 
         safety = QLabel(_(SAFETY_MESSAGE))
         safety.setWordWrap(True)
         safety.setProperty("banner", "warn")
-        layout.addWidget(safety)
 
         devices = QGroupBox(_("Audio devices"))
         form = QFormLayout(devices)
@@ -779,7 +916,6 @@ class StandalonePage(QWidget):
         form.addRow(_("Input channel (mic)"), self.input_channel)
         form.addRow(_("Loopback channel (1-based)"), self.loopback_channel)
         form.addRow(_("Output channel (speaker)"), self.output_channel)
-        layout.addWidget(devices)
 
         sweep = QGroupBox(_("Test signal"))
         form2 = QFormLayout(sweep)
@@ -802,7 +938,6 @@ class StandalonePage(QWidget):
         self.profile = _profile_combo(state)
         profile_row, self.profile_help = _profile_row(self.profile, self)
         form2.addRow(_("Recording profile"), profile_row)
-        layout.addWidget(sweep)
 
         from reverbscope.edition import is_developer
 
@@ -822,14 +957,10 @@ class StandalonePage(QWidget):
         adv.addRow(self.wasapi_exclusive)
         adv.addRow(self.coreaudio_set_rate)
         self.advanced.setVisible(is_developer())
-        layout.addWidget(self.advanced)
 
         meta, self.room, self.position, self.mic = _metadata_form(state)
-        layout.addWidget(meta)
         self.placement = PlacementInputs()
-        layout.addWidget(self.placement)
 
-        row = QHBoxLayout()
         self.back_button = QPushButton(_("Back"))
         self.back_button.clicked.connect(self.back.emit)
         self.run_button = primary(QPushButton(_("Run Measurement")))
@@ -838,20 +969,116 @@ class StandalonePage(QWidget):
         self.stop_button.setProperty("danger", True)
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.stop_measurement)
-        row.addWidget(self.back_button)
-        row.addStretch(1)
-        row.addWidget(self.stop_button)
-        row.addWidget(self.run_button)
-        layout.addLayout(row)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.hide()
         self.status = QLabel("")
         self.status.setWordWrap(True)
-        layout.addWidget(self.progress)
-        layout.addWidget(self.status)
-        layout.addStretch(1)
+        self.flow = MeasurementSteps(
+            [
+                (_("Connection"), _step_body(devices, self.advanced)),
+                (
+                    _("Signal and level"),
+                    _step_body(
+                        safety,
+                        sweep,
+                        Disclosure(_("Room and placement"), _step_body(meta, self.placement)),
+                    ),
+                ),
+                (_("Measure"), QWidget()),
+            ]
+        )
+        review = self.flow.stack.widget(2)
+        assert review is not None
+        review_layout = QVBoxLayout(review)
+        review_layout.setContentsMargins(0, 0, 0, 0)
+        review_layout.setSpacing(24)
+        self.review = label(
+            _("Review the input, output and playback level before starting."), "subtitle", wrap=True
+        )
+        summary = QWidget()
+        summary_form = QFormLayout(summary)
+        summary_form.setContentsMargins(0, 16, 0, 24)
+        summary_form.setHorizontalSpacing(32)
+        summary_form.setVerticalSpacing(16)
+        summary_form.setRowWrapPolicy(QFormLayout.RowWrapPolicy.WrapLongRows)
+        self.review_values: dict[str, QLabel] = {}
+        for key, caption in (
+            ("input", _("Input device")),
+            ("output", _("Output device")),
+            ("rate", _("Sample rate")),
+            ("duration", _("Sweep duration")),
+            ("level", _("Playback level")),
+            ("position", _("Position")),
+        ):
+            value = label("", wrap=True)
+            summary_form.addRow(caption, value)
+            self.review_values[key] = value
+        review_layout.addWidget(self.review)
+        review_layout.addWidget(summary)
+        review_layout.addWidget(self.demo_banner)
+        actions = QHBoxLayout()
+        actions.addWidget(self.back_button)
+        actions.addStretch()
+        actions.addWidget(self.stop_button)
+        actions.addWidget(self.run_button)
+        review_layout.addLayout(actions)
+        review_layout.addWidget(self.progress)
+        review_layout.addWidget(self.status)
+        review_layout.addStretch()
+        self.run_button.setShortcut("Ctrl+Return")
+        _install_steps(layout, self.flow)
+        self.busy_changed.connect(self.flow.set_running)
+        self.connection_status = label("", "hint", wrap=True)
+        connection = self.flow.stack.widget(0)
+        assert connection is not None
+        connection_layout = connection.layout()
+        assert isinstance(connection_layout, QVBoxLayout)
+        connection_layout.insertWidget(0, self.connection_status)
+        self.status_changed.connect(
+            lambda text, tone: set_banner_text(self.connection_status, text, tone)
+        )
+        for combo, caption in (
+            (self.input_device, _("Input device")),
+            (self.output_device, _("Output device")),
+        ):
+            combo.setAccessibleName(caption)
+            combo.setMinimumContentsLength(16)
+            combo.setSizeAdjustPolicy(
+                QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
+            )
+            combo.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
+            combo.setMinimumWidth(160)
+            combo.currentTextChanged.connect(lambda text, field=combo: field.setToolTip(text))
+            combo.currentTextChanged.connect(self._update_review)
+        for field in (self.duration, self.level, self.input_channel, self.output_channel):
+            field.valueChanged.connect(self._update_review)
+        self.position.textChanged.connect(self._update_review)
+        self.sample_rate.currentTextChanged.connect(self._update_review)
+        self.flow.stack.currentChanged.connect(self._update_review)
         self.refresh_devices()
+        self._update_review()
+
+    def _update_review(self, *_args: object) -> None:
+        for key, value in (
+            (
+                "input",
+                _("{device} · channel {number}").format(
+                    device=self.input_device.currentText(), number=self.input_channel.value()
+                ),
+            ),
+            (
+                "output",
+                _("{device} · channel {number}").format(
+                    device=self.output_device.currentText(), number=self.output_channel.value()
+                ),
+            ),
+            ("rate", self.sample_rate.currentText()),
+            ("duration", self.duration.text()),
+            ("level", self.level.text()),
+            ("position", self.position.text() or _("not entered")),
+        ):
+            self.review_values[key].setText(value)
 
     def refresh_devices(self) -> None:
         from reverbscope.audio.backend import get_backend
@@ -868,8 +1095,7 @@ class StandalonePage(QWidget):
             self._inventory_backend = None
             self.host_api.clear()
             self._fill_device_lists()
-            set_banner_text(
-                self.status,
+            self._report_status(
                 _("Audio backend unavailable: {error}").format(error=localize(str(exc))),
                 "warn",
             )

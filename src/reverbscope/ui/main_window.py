@@ -1,10 +1,7 @@
-"""Main window: the workstation (docs/design/GUI_2_ARCHITECTURE.md §2).
+"""The focused desktop: one task canvas, contextual controls and optional drawers.
 
-Navigator | view bar and views | inspector, in one splitter, with the
-measure strip under it. The window wires the workspace model to the
-panels, the measurement pages to the model, and owns the actions that
-cross them: open, save, the unsaved-take prompt and closing.
-"""
+The window wires the model and measurement pages to open/save actions,
+unsaved-take protection and worker shutdown. See GUI_2_ARCHITECTURE.md §2."""
 
 from __future__ import annotations
 
@@ -22,13 +19,13 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QMainWindow,
     QMessageBox,
-    QSplitter,
     QStatusBar,
     QVBoxLayout,
     QWidget,
 )
 
 from reverbscope import __version__
+from reverbscope.demo import DEMO_MODE
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _, localize
 from reverbscope.interpretation import available_profiles
@@ -38,6 +35,7 @@ from reverbscope.settings import load_settings
 from reverbscope.ui import ui_state
 from reverbscope.ui.analysis_workspace import NUMBERED_VIEWS, AnalysisWorkspace, default_views
 from reverbscope.ui.compare_view import ComparePage
+from reverbscope.ui.components.details_drawer import DetailsDrawer
 from reverbscope.ui.inspector import Inspector
 from reverbscope.ui.measure_strip import MeasureStrip
 from reverbscope.ui.navigator import Navigator
@@ -125,8 +123,9 @@ class MainWindow(QMainWindow):
         self.workspace = AnalysisWorkspace(views)
         #: The workspace's stack: start panel, set-up pages, every view.
         self.stack = self.workspace.stack
-        for page in (self.home, self.daw, self.standalone):
-            self.workspace.add_page(page)
+        self.workspace.add_page(self.home, "project")
+        for page in (self.daw, self.standalone):
+            self.workspace.add_page(page, "measure")
         self.views = self.workspace.views
         compare = self.views["compare"]
         project = self.views["project"]
@@ -136,27 +135,28 @@ class MainWindow(QMainWindow):
         self.navigator = Navigator(self.model)
         self.inspector = Inspector(self.model)
         self.strip = MeasureStrip(self.model, self.standalone, self.daw)
+        self.workspace.context.measurement_layout.addWidget(self.strip.configuration)
 
-        self.splitter = QSplitter(Qt.Orientation.Horizontal)
-        self.splitter.setChildrenCollapsible(False)
-        self.splitter.setOpaqueResize(True)
-        self.splitter.setHandleWidth(6)
-        self.splitter.addWidget(self.navigator)
-        self.splitter.addWidget(self.workspace)
-        self.splitter.addWidget(self.inspector)
-        self.splitter.setStretchFactor(0, 0)
-        self.splitter.setStretchFactor(1, 1)
-        self.splitter.setStretchFactor(2, 0)
-        self.splitter.setSizes([220, 860, 260])
-        self.navigator.setMinimumWidth(168)
-        self.inspector.setMinimumWidth(200)
+        self.measurements_drawer = DetailsDrawer(
+            _("Measurements"), self.navigator, self.workspace.body, left=True
+        )
+        self.properties_drawer = DetailsDrawer(_("Properties"), self.inspector, self.workspace.body)
+        self.measurements_drawer.dismissed.connect(
+            self._weak(lambda window: window.set_navigator_open(False))
+        )
+        self.properties_drawer.dismissed.connect(
+            self._weak(lambda window: window.set_inspector_open(False))
+        )
         central = QWidget()
         column = QVBoxLayout(central)
         column.setContentsMargins(0, 0, 0, 0)
         column.setSpacing(0)
-        column.addWidget(self.splitter, 1)
+        column.addWidget(self.workspace, 1)
         column.addWidget(self.strip)
         self.setCentralWidget(central)
+        self.workspace.task_chosen.connect(self._show_task)
+        self.workspace.save_button.clicked.connect(self.save_take)
+        self.workspace.settings_button.clicked.connect(self.show_settings)
 
         self.home.choose_mode.connect(self.show_mode)
         self.home.open_session.connect(self.choose_session)
@@ -197,6 +197,7 @@ class MainWindow(QMainWindow):
         self.model.current_changed.connect(self._current_changed)
 
         self._build_menus()
+        self.stack.currentChanged.connect(self._weak(lambda window, _index: window.reset_layout()))
         self._status = QStatusBar()
         self.setStatusBar(self._status)
         self._place = ""
@@ -267,11 +268,11 @@ class MainWindow(QMainWindow):
         view_menu.addSeparator()
         self.navigator_action = QAction(_("Measurement list"), self)
         self.navigator_action.setCheckable(True)
-        self.navigator_action.setChecked(True)
+        self.navigator_action.setChecked(False)
         self.navigator_action.setShortcut(QKeySequence("Ctrl+Shift+Left"))
         self.inspector_action = QAction(_("Inspector"), self)
         self.inspector_action.setCheckable(True)
-        self.inspector_action.setChecked(True)
+        self.inspector_action.setChecked(False)
         self.inspector_action.setShortcut(QKeySequence("Ctrl+Shift+Right"))
         view_menu.addAction(self.navigator_action)
         view_menu.addAction(self.inspector_action)
@@ -368,44 +369,30 @@ class MainWindow(QMainWindow):
     # --- layout state --------------------------------------------------------------------
 
     def set_navigator_open(self, open_: bool) -> None:
-        """Show or hide the measurement list. The chart keeps the freed space."""
-        self.navigator.setVisible(open_)
-        if self.navigator_action.isChecked() != open_:
-            self.navigator_action.setChecked(open_)
-        button = self.workspace.navigator_button
-        if button.isChecked() != open_:
-            button.setChecked(open_)
+        self.measurements_drawer.set_open(open_)
+        if open_:
+            self.set_inspector_open(False)
+        self.navigator_action.setChecked(open_)
+        self.workspace.navigator_button.setChecked(open_)
 
     def set_inspector_open(self, open_: bool) -> None:
-        """Show or hide the inspector. The chart keeps the freed space."""
-        self.inspector.setVisible(open_)
-        if self.inspector_action.isChecked() != open_:
-            self.inspector_action.setChecked(open_)
-        button = self.workspace.inspector_button
-        if button.isChecked() != open_:
-            button.setChecked(open_)
+        self.properties_drawer.set_open(open_)
+        if open_:
+            self.set_navigator_open(False)
+        self.inspector_action.setChecked(open_)
+        self.workspace.inspector_button.setChecked(open_)
 
     def _restore_layout(self) -> None:
-        try:
-            geometry = ui_state.read_bytes("window/geometry")
-            if geometry is not None:
-                self.restoreGeometry(geometry)
-            splitter = ui_state.read_bytes("window/splitter")
-            restored = True
-            if splitter is not None:
-                restored = bool(self.splitter.restoreState(splitter))
-            self.set_navigator_open(ui_state.read_text("window/navigator", "1") != "0")
-            self.set_inspector_open(ui_state.read_text("window/inspector", "1") != "0")
-            if splitter is not None and not restored:
-                self.reset_layout()
-        except Exception:
-            self.reset_layout()
+        geometry = ui_state.read_bytes("window/geometry")
+        if geometry is not None:
+            self.restoreGeometry(geometry)
+        # Old three-column splitter state is deliberately not applied to a
+        # focused canvas. Session/project selection remains independent.
+        self.reset_layout()
 
     def _save_layout(self) -> None:
         ui_state.write("window/geometry", self.saveGeometry())
-        ui_state.write("window/splitter", self.splitter.saveState())
-        ui_state.write("window/navigator", "1" if self.navigator.isVisible() else "0")
-        ui_state.write("window/inspector", "1" if self.inspector.isVisible() else "0")
+        ui_state.write("shell/version", "1")
         view = self.workspace.current_view_id() or self._preferred_view
         ui_state.write("workspace/view", view)
         self._save_selection()
@@ -415,20 +402,26 @@ class MainWindow(QMainWindow):
             ui_state.write_selection(self.model.project_path, self.model.selection_state())
 
     def reset_layout(self) -> None:
-        """The default columns: list, a wide chart, inspector. Both sides open."""
-        self.set_navigator_open(True)
-        self.set_inspector_open(True)
-        side_l, side_r = 220, 260
-        center = max(480, self.width() - side_l - side_r)
-        self.splitter.setSizes([side_l, center, side_r])
+        self.set_navigator_open(False)
+        self.set_inspector_open(False)
 
     def _ensure_chart_space(self) -> None:
-        """A restored layout that crushes the chart falls back to the default."""
-        sizes = self.splitter.sizes()
-        if len(sizes) != 3 or sum(sizes) <= 0:
-            return
-        if sizes[1] < 320:
-            self.reset_layout()
+        # Panels overlay the canvas, so restoring them cannot squeeze it.
+        self.measurements_drawer._place()
+        self.properties_drawer._place()
+
+    def _show_task(self, task: str) -> None:
+        self.reset_layout()
+        if task == "measure":
+            self.show_mode(self.strip.current_mode())
+        elif task == "analysis":
+            self.show_view(self.workspace._analysis_view)
+        elif task == "compare":
+            self.show_compare()
+        elif self.model.project_path is not None:
+            self.show_view("project")
+        else:
+            self._show_start()
 
     def showEvent(self, event: object) -> None:  # noqa: N802 - Qt override
         from PySide6.QtGui import QShowEvent
@@ -719,6 +712,8 @@ class MainWindow(QMainWindow):
     def _strip_mode(self, mode: str) -> None:
         if not self.standalone.is_busy():
             self._apply_mode(mode)
+            if self.workspace.current_task() == "measure":
+                self.show_mode(mode)
 
     def _strip_start(self, mode: str) -> None:
         if mode == "universal_daw":
@@ -749,7 +744,7 @@ class MainWindow(QMainWindow):
             self.state.findings_problem,
             self.state.profile,
             unsaved=self.state.unsaved_take,
-            synthetic=session.mode == "demo",
+            synthetic=session.mode == DEMO_MODE,
             position=position,
         )
         if self.model.project_path is not None and position:
@@ -920,6 +915,7 @@ class MainWindow(QMainWindow):
         self._scheme = color_scheme()
         for view in self.views.values():
             view.restyle()
+        self.workspace.tools.restyle()
         self.navigator.rebuild()
         self.inspector.refresh()
         for page in (self.daw, self.standalone):

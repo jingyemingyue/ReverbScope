@@ -435,12 +435,12 @@ def test_help_licenses_and_report_heading(app: QApplication) -> None:
         for action in menu.actions()
     ]
     assert any("license" in text.lower() or "许可" in text for text in texts)
-    # Diagnostics are shown in the interface language now; the heading names
-    # the CLI command that prints the same report (the Full report view now).
+    # Report chrome describes the measurement content. The shared report
+    # renderer is checked by the end-to-end and copy-report tests.
     from PySide6.QtWidgets import QLabel
 
     headings = [child.text() for child in window.views["report"].findChildren(QLabel)]
-    assert any("reverbscope analyze" in text for text in headings), headings
+    assert any("Full measurement report" in text for text in headings), headings
     window.close()
 
 
@@ -1680,8 +1680,6 @@ def restore_chrome(app: QApplication):  # type: ignore[no-untyped-def]
 
 def _theme_colours(window: MainWindow) -> dict[str, str]:
     """The colours each part of the window was last drawn with."""
-    from matplotlib.colors import to_hex
-
     from reverbscope.ui.widgets import FindingCard
 
     overview = window.views["overview"]
@@ -1691,7 +1689,7 @@ def _theme_colours(window: MainWindow) -> dict[str, str]:
     return {
         "results chart": window.views["etc"].chart.plot.backgroundBrush().color().name(),
         "compare chart": window.compare.diff_chart.plot.backgroundBrush().color().name(),
-        "placement picture": to_hex(window.daw.placement.figure.get_facecolor()),
+        "placement picture": window.daw.placement.canvas.backgroundBrush().color().name(),
         "finding card": cards[-1].styleSheet(),
         "chip": overview.overview.rt60.chip.styleSheet(),
     }
@@ -1742,12 +1740,12 @@ def test_a_new_theme_in_settings_redraws_cards_and_charts(
     verdict = judge_comparison(comparison, "generic", baseline=result, candidate=result)
     window.compare._show(comparison, [], "generic", verdict)
     before = _theme_colours(window)
-    assert before["results chart"] == LIGHT_TOKENS["surface"]
+    assert before["results chart"] == LIGHT_TOKENS["canvas"]
     window.show_settings()
     after = _theme_colours(window)
     assert DARK_TOKENS["bg"] in app.styleSheet()
     for part in ("results chart", "compare chart", "placement picture"):
-        assert after[part] == DARK_TOKENS["surface"], part
+        assert after[part] == DARK_TOKENS["canvas"], part
     assert DARK_TOKENS["surface"] in after["finding card"]
     assert DARK_TOKENS["border"] in after["finding card"]
     assert after["chip"] != before["chip"]
@@ -1796,7 +1794,7 @@ def test_following_the_system_redraws_the_window_when_the_system_turns_dark(
     colours = _theme_colours(window)
     assert DARK_TOKENS["bg"] in app.styleSheet()
     for part in ("results chart", "compare chart", "placement picture"):
-        assert colours[part] == DARK_TOKENS["surface"], part
+        assert colours[part] == DARK_TOKENS["canvas"], part
     window.close()
 
 

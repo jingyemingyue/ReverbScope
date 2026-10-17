@@ -1943,8 +1943,6 @@ msgstr "播放扫频并录音（Ctrl+Return）。"
 msgid "Play the sweep and record it ({shortcut})."
 msgstr "播放扫频并录下来（{shortcut}）。"
 
-msgid "Playback level"
-msgstr "播放电平"
 
 msgid "Playback speed"
 msgstr "播放速度"
@@ -7328,3 +7326,261 @@ msgstr "视图"
 #. Chart viewport action; distinct from acoustic fit.
 msgid "Fit chart"
 msgstr "适配图表"
+
+#. Focused desktop redesign.
+msgid "All reverberation metrics"
+msgstr "全部混响指标"
+
+#. Focused desktop redesign.
+msgid "Analysis"
+msgstr "分析"
+
+#. Focused desktop redesign.
+msgid "Analysis view"
+msgstr "分析视图"
+
+#. Focused desktop redesign.
+msgid "Analyze a DAW recording"
+msgstr "分析 DAW 录音"
+
+#. Focused desktop redesign.
+msgid "Box zoom"
+msgstr "框选缩放"
+
+#. Focused desktop redesign.
+msgid "Clarity (C50)"
+msgstr "清晰度（C50）"
+
+#. Focused desktop redesign.
+msgid "Clarity and early energy"
+msgstr "清晰度与早期能量"
+
+#. Focused desktop redesign.
+msgid "Clarity and energy metrics"
+msgstr "清晰度与能量指标"
+
+#. Focused desktop redesign.
+msgid "Close panel"
+msgstr "关闭面板"
+
+#. Focused desktop redesign.
+msgid "Connection"
+msgstr "连接设备"
+
+#. Focused desktop redesign.
+msgid "Continue"
+msgstr "继续"
+
+#. Focused desktop redesign.
+msgid "Current measurement"
+msgstr "当前测量"
+
+#. Focused desktop redesign.
+msgid "Cursor"
+msgstr "读数光标"
+
+#. Focused desktop redesign.
+msgid "Decay curves"
+msgstr "衰变曲线"
+
+#. Focused desktop redesign.
+msgid "Decay display"
+msgstr "衰变显示方式"
+
+#. Focused desktop redesign.
+msgid "Diagnostics and actions"
+msgstr "诊断与处理建议"
+
+#. Focused desktop redesign.
+msgid "Direct sound details"
+msgstr "直达声详情"
+
+#. Focused desktop redesign.
+msgid "Display settings"
+msgstr "显示设置"
+
+#. Focused desktop redesign.
+msgid "Early to late energy at 50 ms"
+msgstr "以 50 ms 为界的早晚期能量比"
+
+#. Focused desktop redesign.
+msgid "Entered dimensions only. This illustration is not a measured room."
+msgstr "仅示意输入的尺寸，并非测得的房间。"
+
+#. Focused desktop redesign.
+msgid "Full measurement report, including validity, conditions and warnings."
+msgstr "完整测量报告，包含有效性、测量条件和警告。"
+
+#. Focused desktop redesign.
+msgid "Import recording"
+msgstr "导入录音"
+
+#. Focused desktop redesign.
+msgid "Interface"
+msgstr "界面"
+
+#. Focused desktop redesign.
+msgid "Interpretation · {profile}"
+msgstr "解读 · {profile}"
+
+#. Focused desktop redesign.
+msgid "Layers and constraints"
+msgstr "图层与约束"
+
+#. Focused desktop redesign.
+msgid "Measure"
+msgstr "测量"
+
+#. Focused desktop redesign.
+msgid "Measurement method"
+msgstr "测量方式"
+
+#. Focused desktop redesign.
+msgid "Measurement position"
+msgstr "测量位置"
+
+#. Focused desktop redesign.
+msgid "Measurement properties"
+msgstr "测量属性"
+
+#. Focused desktop redesign.
+msgid "New interface measurement"
+msgstr "使用音频接口测量"
+
+#. Focused desktop redesign.
+msgid "Next measurement"
+msgstr "下一次测量"
+
+#. Focused desktop redesign.
+msgid "No measurement selected. Open a project or session, or choose Measure."
+msgstr "尚未选择测量。请打开项目或会话，或切换到“测量”。"
+
+#. Focused desktop redesign.
+msgid "Open a room project or start a new measurement."
+msgstr "打开房间项目，或开始一次新的测量。"
+
+#. Focused desktop redesign.
+msgid "Open measurements"
+msgstr "已打开的测量"
+
+#. Focused desktop redesign.
+msgid "Pan"
+msgstr "平移"
+
+#. Focused desktop redesign.
+msgid "Placement illustration"
+msgstr "摆位示意"
+
+#. Focused desktop redesign.
+msgid "Previous"
+msgstr "上一步"
+
+#. Focused desktop redesign.
+msgid "Projects and measurements"
+msgstr "项目与测量"
+
+#. Focused desktop redesign.
+msgid "Properties"
+msgstr "属性"
+
+#. Focused desktop redesign.
+msgid "Record in DAW"
+msgstr "在 DAW 中录制"
+
+#. Focused desktop redesign.
+msgid "Reflection details"
+msgstr "反射详情"
+
+#. Focused desktop redesign.
+msgid "Review the input, output and playback level before starting."
+msgstr "开始前请核对输入、输出和播放电平。"
+
+#. Focused desktop redesign.
+msgid "Room and placement"
+msgstr "房间与摆位"
+
+#. Focused desktop redesign.
+msgid "Save"
+msgstr "保存"
+
+#. Focused desktop redesign.
+msgid "Show measurement"
+msgstr "查看测量进度"
+
+#. Focused desktop redesign.
+msgid "Show or hide {name}"
+msgstr "展开或收起{name}"
+
+#. Focused desktop redesign.
+msgid "Signal and level"
+msgstr "信号与电平"
+
+#. Focused desktop redesign.
+msgid "Stop measurement"
+msgstr "停止测量"
+
+#. Focused desktop redesign.
+msgid "Synthetic audio (no hardware)"
+msgstr "合成音频（无需硬件）"
+
+#. Focused desktop redesign.
+msgid "Synthetic demo data"
+msgstr "合成演示数据"
+
+#. Focused desktop redesign.
+msgid "The language change takes full effect after ReverbScope restarts."
+msgstr "语言设置将在重新启动 ReverbScope 后完全生效。"
+
+#. Focused desktop redesign.
+msgid "Frequency from"
+msgstr "起始频率"
+
+#. Focused desktop redesign.
+msgid "Frequency to"
+msgstr "截止频率"
+
+#. Focused desktop redesign.
+msgid "Level reference"
+msgstr "电平参考"
+
+#. Focused desktop redesign.
+msgid "Display floor"
+msgstr "显示下限"
+
+#. Focused desktop redesign.
+msgid "Display smoothing"
+msgstr "显示平滑"
+
+#. Focused desktop redesign.
+msgid "Recording files"
+msgstr "录音文件"
+
+#. Focused desktop redesign.
+msgid "Analyze recording"
+msgstr "分析录音"
+
+#. Focused desktop redesign.
+msgid "DAW recording instructions"
+msgstr "DAW 录音说明"
+
+msgid "{device} · channel {number}"
+msgstr "{device} · 声道 {number}"
+
+
+msgid "not entered"
+msgstr "未填写"
+
+msgid "Frequency display"
+msgstr "频响显示方式"
+
+msgid "Difference from baseline"
+msgstr "与基线的差异"
+
+msgid "Choose a different measurement and a baseline."
+msgstr "请选择基线，以及另一条用于对比的测量。"
+
+msgid "current minus baseline, using the selected display processing"
+msgstr "当前测量减去基线，使用所选的显示处理方式"
+
+msgid "Playback level"
+msgstr "播放电平"

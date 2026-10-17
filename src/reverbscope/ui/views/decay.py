@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import numpy as np
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QSplitter, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QStackedWidget, QVBoxLayout, QWidget
 
 from reverbscope.i18n import _
 from reverbscope.interpretation.profiles import band_text
@@ -46,8 +45,8 @@ class DecayView(AnalysisView):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(24, 20, 24, 16)
+        layout.setSpacing(16)
         controls = QHBoxLayout()
         controls.addWidget(QLabel(_("Band")))
         self.band = QComboBox()
@@ -60,9 +59,14 @@ class DecayView(AnalysisView):
         self.metric_combo.setCurrentIndex(2)
         self.metric_combo.currentIndexChanged.connect(self.refresh)
         controls.addWidget(self.metric_combo)
+        self.presentation = QComboBox()
+        self.presentation.setAccessibleName(_("Decay display"))
+        self.presentation.addItem(_("Decay curves"))
+        self.presentation.addItem(_("Reverberation by band"))
         controls.addStretch(1)
+        controls.addWidget(self.presentation)
         layout.addLayout(controls)
-        splitter = QSplitter(Qt.Orientation.Vertical)
+        self.chart_stack = QStackedWidget()
         self.chart = ChartPanel(
             X_TIME_S,
             x_label=_("Time (s)"),
@@ -78,11 +82,10 @@ class DecayView(AnalysisView):
             title=_("Reverberation by band"),
         )
         self.bands_chart.export_name = "decay-bands"
-        splitter.addWidget(self.chart)
-        splitter.addWidget(self.bands_chart)
-        splitter.setStretchFactor(0, 3)
-        splitter.setStretchFactor(1, 2)
-        layout.addWidget(splitter, 1)
+        self.chart_stack.addWidget(self.chart)
+        self.chart_stack.addWidget(self.bands_chart)
+        self.presentation.currentIndexChanged.connect(self.chart_stack.setCurrentIndex)
+        layout.addWidget(self.chart_stack, 1)
         self.notes = QLabel("")
         self.notes.setProperty("role", "hint")
         self.notes.setWordWrap(True)

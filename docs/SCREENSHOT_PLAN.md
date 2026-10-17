@@ -69,3 +69,16 @@ Windows PC:
 * Keep each PNG under ~300 KB and each GIF under 3 MB; the README should load
   fast on a phone.
 * Alt text describes what the image shows, including "synthetic" where it is.
+
+## Focused GUI draft review
+
+The maintainer-requested redesign has its own
+[before/after review](design/GUI_FOCUSED_REVIEW.md), including synthetic
+screenshots. `scripts/render_gui2_screenshots.py` captures all analysis views,
+Noise and Report included, the measurement steps and Settings in English and
+Chinese, dark and light, at 960×640, 1280×800, 1366×768 and 1920×1080.
+`--scale 2 --width 1280 --scheme dark` checks device-pixel scaling.
+`--panels --cameras` adds the optional drawers and room viewpoints.
+These are offscreen captures, not hardware or native Retina acceptance.
+Public release/README images stay on the accepted release design until this
+draft is reviewed.

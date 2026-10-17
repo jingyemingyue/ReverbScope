@@ -51,24 +51,21 @@ def peak_subset(
     keep = np.isfinite(xa) & np.isfinite(ya)
     if log_x:
         keep &= xa > 0.0
-    if x_range is not None:
-        lo, hi = x_range
-        # One stored point beyond each edge, so the curve reaches the border.
-        inside = np.flatnonzero(keep & (xa >= lo) & (xa <= hi))
-        if inside.size:
-            first = max(int(inside[0]) - 1, 0)
-            last = min(int(inside[-1]) + 1, xa.shape[0] - 1)
-            window = np.zeros_like(keep)
-            window[first : last + 1] = True
-            keep &= window
-        else:
-            keep &= (xa >= lo) & (xa <= hi)
     xs = xa[keep]
     ys = ya[keep]
+    if x_range is not None and xs.size:
+        lo, hi = x_range
+        if hi < xs[0] or lo > xs[-1]:
+            return xs[:0].copy(), ys[:0].copy()
+        # Include the segment crossing the viewport even when neither end
+        # lies inside it (a deep zoom between adjacent stored samples).
+        first = max(0, int(np.searchsorted(xs, lo, side="left")) - 1)
+        stop = min(xs.size, int(np.searchsorted(xs, hi, side="right")) + 1)
+        xs, ys = xs[first:stop], ys[first:stop]
     if max_points < 4 or xs.shape[0] <= max_points:
         return xs.copy(), ys.copy()
     position = np.log10(xs) if log_x else xs
-    n_buckets = max_points // 2
+    n_buckets = (max_points - 2) // 2
     span = float(position[-1] - position[0])
     if span <= 0.0:
         return xs[:max_points].copy(), ys[:max_points].copy()
@@ -87,8 +84,34 @@ def peak_subset(
             picked.append(lo_index)
         else:
             picked.extend(sorted((lo_index, hi_index)))
-    index = np.asarray(picked, dtype=np.int64)
+    index = np.unique(np.asarray([0, *picked, xs.size - 1], dtype=np.int64))
     return xs[index].copy(), ys[index].copy()
+
+
+def _window_power_sums(power: FloatArray, lo: np.ndarray, hi: np.ndarray) -> FloatArray:
+    """Sum half-open windows without subtracting near-equal global sums.
+
+    Positive pairwise partial sums avoid losing a quiet window after a loud
+    resonance. Batched segment-tree queries take O(N log N) work and O(N)
+    space, without constructing one array per smoothing window.
+    """
+    left, right = lo.copy(), hi.copy()
+    totals = np.zeros(left.shape, dtype=np.float64)
+    level = power
+    while np.any(left < right):
+        take_left = (left < right) & (left % 2 == 1)
+        totals[take_left] += level[left[take_left]]
+        left[take_left] += 1
+        take_right = (left < right) & (right % 2 == 1)
+        right[take_right] -= 1
+        totals[take_right] += level[right[take_right]]
+        left //= 2
+        right //= 2
+        if np.any(left < right):
+            if level.size % 2:
+                level = np.r_[level, 0.0]
+            level = level[::2] + level[1::2]
+    return totals
 
 
 def smooth_fractional_octave(f: FloatArray, db: FloatArray, fraction: int) -> FloatArray:
@@ -105,18 +128,18 @@ def smooth_fractional_octave(f: FloatArray, db: FloatArray, fraction: int) -> Fl
     out = da.copy()
     if fraction == 0 or fa.shape[0] < 3:
         return out
-    valid = (fa > 0.0) & np.isfinite(da)
+    valid = (fa > 0.0) & np.isfinite(fa) & np.isfinite(da)
     if not np.any(valid):
         return out
     fv = fa[valid]
-    power = 10.0 ** (da[valid] / 10.0)
-    cumulative = np.r_[0.0, np.cumsum(power)]
+    reference_db = float(np.max(da[valid]))
+    power = 10.0 ** ((da[valid] - reference_db) / 10.0)
     half = 2.0 ** (1.0 / (2.0 * fraction))
     lo = np.searchsorted(fv, fv / half, side="left")
     hi = np.searchsorted(fv, fv * half, side="right")
     count = np.maximum(hi - lo, 1)
-    mean = (cumulative[hi] - cumulative[lo]) / count
-    out[valid] = 10.0 * np.log10(np.maximum(mean, 1e-30))
+    mean = _window_power_sums(power, lo, hi) / count
+    out[valid] = reference_db + 10.0 * np.log10(np.maximum(mean, np.finfo(float).tiny))
     return out
 
 

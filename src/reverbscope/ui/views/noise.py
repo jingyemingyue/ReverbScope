@@ -25,8 +25,8 @@ class NoiseView(AnalysisView):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(24, 20, 24, 16)
+        layout.setSpacing(16)
         self.chart = ChartPanel(
             X_FREQUENCY,
             x_label=_("Frequency (Hz)"),
