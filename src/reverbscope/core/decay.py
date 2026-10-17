@@ -331,8 +331,9 @@ SUDDEN_DROP_RATIO = 0.25
 EDT_STRAIGHTNESS_RATIO = 1.5
 
 DECAY_METHOD = (
-    "ISO 3382-1 onset (-20 dB) per band; Schroeder backward integration with Lundeby "
-    "noise truncation (plausibility-checked) and late-decay compensation; EDT/T20/T30 by "
+    "ISO 3382-1 onset (-20 dB) per band; Schroeder backward integration with Hirata "
+    "noise-power subtraction and Lundeby noise truncation (plausibility-checked) "
+    "and late-decay compensation; EDT/T20/T30 by "
     "least-squares fit per ISO 3382-1, fits starting after the direct sound; straightness "
     "check with xi and C (ISO 3382-2 Annex B); C50, C80, D50 and centre time from the "
     "same truncated energy; time-reversed Butterworth IEC 61260-1 base-10 octave-band "
@@ -799,12 +800,20 @@ def _curve_from_truncation(
     *,
     compensate: bool,
     time_origin_index: int,
+    subtract_noise: bool = True,
 ) -> SchroederCurve:
     segment = power[onset : onset + trunc.truncation_index]
     if segment.shape[0] == 0:
         segment = power[onset : onset + 1]
     if segment.shape[0] == 0:
         segment = np.zeros(1, dtype=np.float64)
+    if subtract_noise and np.isfinite(trunc.noise_floor_db):
+        # Hirata 1982: subtract the estimated noise power from the squared
+        # response before backward integration. Integrating the raw power
+        # treats noise as decay and biases the tail upward; subtracting first
+        # removes that bias. Floor at _EPS (not zero) to keep the log defined.
+        noise_power = 10.0 ** (trunc.noise_floor_db / 10.0)
+        segment = np.maximum(segment - noise_power, _EPS)
     compensation = 0.0
     if (
         compensate
@@ -838,12 +847,15 @@ def schroeder_curve(
     compensate: bool = True,
     onset_index: int | None = None,
     time_origin_index: int = 0,
+    subtract_noise: bool = True,
 ) -> SchroederCurve:
     """Energy decay curve (dB, 0 dB at the onset) with noise truncation.
 
     ``band_ir`` is one finite channel. ``onset_index`` defaults to
     :func:`find_onset` over the whole signal; ``time_s`` is measured from
-    ``time_origin_index``.
+    ``time_origin_index``. When ``subtract_noise`` (default), the Lundeby
+    noise floor power is subtracted from the squared response before backward
+    integration (Hirata 1982), removing the upward tail bias.
     """
     sample_rate = _require_sample_rate(sample_rate)
     power = _squared_power(band_ir)
@@ -856,6 +868,7 @@ def schroeder_curve(
         trunc,
         compensate=compensate,
         time_origin_index=time_origin_index,
+        subtract_noise=subtract_noise,
     )
 
 
