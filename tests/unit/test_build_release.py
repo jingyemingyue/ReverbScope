@@ -44,7 +44,7 @@ def _args(**overrides: bool) -> argparse.Namespace:
     [
         (
             ("Linux", "X64", "x86_64"),
-            ("ReverbScope-Desktop-Linux-x86_64.tar.gz", "ReverbScope-Terminal-Linux-x86_64.tar.gz"),
+            ("ReverbScope-Desktop-Linux-x86_64.tar.gz",),
             "SHA256SUMS-Linux-X64",
         ),
         (
@@ -52,18 +52,17 @@ def _args(**overrides: bool) -> argparse.Namespace:
             (
                 "ReverbScope-Desktop-Windows-x64-Setup.exe",
                 "ReverbScope-Desktop-Windows-x64.zip",
-                "ReverbScope-Terminal-Windows-x64.zip",
             ),
             "SHA256SUMS-Windows-X64",
         ),
         (
             ("macOS", "ARM64", "arm64"),
-            ("ReverbScope-Desktop-macOS-arm64.dmg", "ReverbScope-Terminal-macOS-arm64.tar.gz"),
+            ("ReverbScope-Desktop-macOS-arm64.dmg",),
             "SHA256SUMS-macOS-ARM64",
         ),
         (
             ("macOS", "X64", "x86_64"),
-            ("ReverbScope-Desktop-macOS-x86_64.dmg", "ReverbScope-Terminal-macOS-x86_64.tar.gz"),
+            ("ReverbScope-Desktop-macOS-x86_64.dmg",),
             "SHA256SUMS-macOS-X64",
         ),
     ],
@@ -96,10 +95,7 @@ def test_plan_follows_the_workflow_steps(
         "PyInstaller",
         "Copy licenses and remove disallowed modules",
         "Smoke frozen binary (Desktop Edition)",
-        "Terminal Edition (command line only, no Qt)",
-        "Smoke Terminal Edition",
         expected,
-        "Terminal Edition archive",
         "Checksums of distributable files",
     ):
         assert name in names
@@ -109,10 +105,13 @@ def test_plan_follows_the_workflow_steps(
     assert (
         names.index("PyInstaller")
         < names.index("Smoke frozen binary (Desktop Edition)")
-        < names.index("Smoke Terminal Edition")
         < names.index(expected)
     )
     assert names[-1] == "Checksums of distributable files"
+    # The standalone Terminal Edition is no longer built, here or in the workflow.
+    assert not any("Terminal" in name for name in names)
+    assert "REVERBSCOPE_PACKAGE: terminal" not in WORKFLOW
+    assert "dist/ReverbScope-Terminal-" not in WORKFLOW
 
 
 def test_optional_steps_are_skipped_by_default(tmp_path: Path) -> None:
@@ -178,13 +177,14 @@ def test_a_missing_inno_setup_is_refused_before_anything_is_deleted(
     assert all((tmp_path / name).read_bytes() == b"previous build" for name in previous)
 
 
-def test_the_sdist_cleanup_keeps_another_runners_terminal_archive(
+def test_the_sdist_cleanup_keeps_another_runners_desktop_archive(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Windows globs ignore case: ``reverbscope-*.tar.gz`` matched
-    ``ReverbScope-Terminal-Linux-x86_64.tar.gz``."""
+    ``ReverbScope-Terminal-Linux-x86_64.tar.gz`` (and would match
+    ``ReverbScope-Desktop-Linux-x86_64.tar.gz``)."""
     names = (
-        "ReverbScope-Terminal-Linux-x86_64.tar.gz",
+        "ReverbScope-Desktop-Linux-x86_64.tar.gz",
         "reverbscope-0.1.tar.gz",
         "reverbscope-0.1-py3-none-any.whl",
     )
@@ -203,7 +203,7 @@ def test_checksums_are_written_with_lf_and_allow_a_missing_installer(
 ) -> None:
     """A SHA256SUMS with CRLF lines (Windows text mode) fails ``shasum -c``
     once the runners' files are merged."""
-    archives = ("ReverbScope-Desktop-Windows-x64.zip", "ReverbScope-Terminal-Windows-x64.zip")
+    archives = ("ReverbScope-Desktop-Windows-x64.zip",)
     for name in archives:
         (tmp_path / name).write_bytes(name.encode())
     monkeypatch.setattr(MODULE, "DIST", tmp_path)
@@ -215,7 +215,9 @@ def test_checksums_are_written_with_lf_and_allow_a_missing_installer(
     assert [line.split(b"  ")[1] for line in written.splitlines()] == [
         name.encode() for name in archives
     ]
+    # The installer alone is not enough: the ZIP is required.
     (tmp_path / archives[0]).unlink()
+    (tmp_path / "ReverbScope-Desktop-Windows-x64-Setup.exe").write_bytes(b"setup")
     with pytest.raises(SystemExit, match="missing release files"):
         step.run()
 
@@ -270,8 +272,5 @@ def test_the_license_bundle_follows_pyinstaller_and_covers_its_libraries(
     assert (
         "build_license_bundle.py --out THIRD_PARTY_LICENSES --frozen dist/reverbscope" in WORKFLOW
     )
-    terminal = WORKFLOW.split("name: Terminal Edition (command line only, no Qt)", 1)[1]
-    assert terminal.index("pyinstaller") < terminal.index("build_license_bundle.py")
-    assert "--frozen dist/reverbscope-terminal" in terminal
     source = Path("scripts/build_release.py").read_text(encoding="utf-8")
-    assert '"--frozen", bundle' in source and '"--frozen",\n            terminal' in source
+    assert '"--frozen", bundle' in source
