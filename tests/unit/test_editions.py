@@ -1,22 +1,19 @@
-"""Desktop Edition and Terminal Edition (docs/EDITIONS.md).
+"""Editions (docs/EDITIONS.md).
 
-The Terminal Edition is the same program built without Qt, PySide6 and
-matplotlib (``REVERBSCOPE_PACKAGE=terminal`` in packaging/reverbscope.spec). These
-tests cover what that build relies on without building it: the edition
-marker in ``build_info.json``, the command line's behaviour when the GUI is
-absent, the gate that fails a Terminal bundle with GUI files in it, and the
-Terminal license bundle. The frozen builds themselves are checked by
-``scripts/smoke_bundle.py --terminal`` in the release workflow.
+Only the Desktop Edition (GUI + the ``reverbscope`` command line) is built;
+packaging/reverbscope.spec refuses ``REVERBSCOPE_PACKAGE=terminal``. The
+standalone Terminal Edition's packaging, gate and license bundle are gone.
+The run-time code that still recognises a ``"package": "terminal"`` marker
+(``reverbscope.edition``, kept for bundles already downloaded) is covered
+below until a follow-up removes it.
 """
 
 from __future__ import annotations
 
-import importlib.util
 import json
 import sys
 from collections.abc import Iterator
 from pathlib import Path
-from types import ModuleType
 
 import pytest
 
@@ -29,16 +26,6 @@ TERMINAL_SENTENCE = (
     "This is the Terminal Edition of ReverbScope. Install the Desktop Edition to use the GUI."
 )
 TERMINAL_SENTENCE_ZH = "当前安装的是 ReverbScope 终端版。如需图形界面，请安装桌面版。"
-
-
-def _script(name: str) -> ModuleType:
-    path = ROOT / "scripts" / f"{name}.py"
-    spec = importlib.util.spec_from_file_location(f"{name}_for_editions", path)
-    assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
 
 
 @pytest.fixture
@@ -87,18 +74,16 @@ def test_a_source_checkout_is_neither_edition() -> None:
     assert not edition.is_terminal_package()
 
 
-def test_the_spec_builds_both_editions_and_leaves_the_gui_out_of_one() -> None:
+def test_the_spec_builds_only_the_desktop_edition() -> None:
     spec = (ROOT / "packaging" / "reverbscope.spec").read_text(encoding="utf-8")
     assert 'os.environ.get("REVERBSCOPE_PACKAGE", "desktop")' in spec
+    assert 'if PACKAGE != "desktop":' in spec  # REVERBSCOPE_PACKAGE=terminal is refused
     assert '"package": PACKAGE' in spec  # build_info.json records it
-    excludes = spec[
-        spec.index("TERMINAL_EXCLUDES = [") : spec.index("]", spec.index("TERMINAL_EXCLUDES"))
-    ]
-    for module in ("PySide6", "shiboken6", "reverbscope.ui", "pyqtgraph", "matplotlib"):
-        assert f'"{module}"' in excludes, module
-    assert 'name="reverbscope-terminal" if TERMINAL else "reverbscope"' in spec
-    assert 'if sys.platform != "darwin" and not TERMINAL:' in spec  # no windowed launcher
-    assert 'if sys.platform == "darwin" and not TERMINAL:' in spec  # no .app
+    assert "TERMINAL" not in spec
+    assert 'name="reverbscope",' in spec
+    assert 'if sys.platform != "darwin":' in spec  # the windowed launcher
+    assert 'if sys.platform == "darwin":' in spec  # the .app
+    assert not (ROOT / "packaging" / "windows" / "terminal").exists()
 
 
 # --- The command line without a GUI ------------------------------------------------------
@@ -179,86 +164,3 @@ def test_doctor_names_the_edition_and_the_missing_gui_libraries(
     report = json.loads(out)
     assert report["build"]["package"] == "terminal"
     assert report["packages"]["PySide6_Essentials"] is None
-
-
-# --- The Terminal Edition gate and license bundle ------------------------------------------
-
-
-def _tree(root: Path, files: list[str]) -> Path:
-    for name in files:
-        path = root / name
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(b"x")
-    return root
-
-
-def test_the_terminal_gate_finds_every_kind_of_gui_file(tmp_path: Path) -> None:
-    gate = _script("check_bundle_contents")
-    root = _tree(
-        tmp_path / "reverbscope-terminal",
-        [
-            "reverbscope",
-            "_internal/numpy/core/_multiarray_umath.so",
-            "_internal/PySide6/QtCore.abi3.so",
-            "_internal/shiboken6/libshiboken6.abi3.so.6.11",
-            "_internal/libQt6Core.so.6",
-            "_internal/Qt6Gui.dll",
-            "_internal/QtWidgets.framework/Versions/A/QtWidgets",
-            "_internal/matplotlib/mpl-data/matplotlibrc",
-            "_internal/reverbscope/ui/results.pyc",
-            # License texts may name Qt; they are not the library.
-            "THIRD_PARTY_LICENSES/PySide6_Essentials/LICENSE",
-        ],
-    )
-    found = {path.relative_to(root).as_posix() for path, _what in gate.gui_files(root)}
-    assert found == {
-        "_internal/PySide6/QtCore.abi3.so",
-        "_internal/shiboken6/libshiboken6.abi3.so.6.11",
-        "_internal/libQt6Core.so.6",
-        "_internal/Qt6Gui.dll",
-        "_internal/QtWidgets.framework/Versions/A/QtWidgets",
-        "_internal/matplotlib/mpl-data/matplotlibrc",
-        "_internal/reverbscope/ui/results.pyc",
-    }
-    assert gate.check(root, terminal=True)
-    assert gate.main(["--root", str(root), "--terminal"]) == 1
-
-
-def test_a_clean_terminal_tree_passes_with_its_license_bundle(tmp_path: Path) -> None:
-    gate = _script("check_bundle_contents")
-    root = _tree(
-        tmp_path / "reverbscope-terminal",
-        ["reverbscope", "_internal/numpy/__init__.pyc", "_internal/libportaudio.so"],
-    )
-    licenses = root / "THIRD_PARTY_LICENSES"
-    (licenses / "_texts").mkdir(parents=True)
-    (licenses / "_texts" / "PortAudio-LICENSE.txt").write_text("x", encoding="utf-8")
-    (licenses / "_notices").mkdir()
-    for name in ("python.txt", "portaudio.txt"):
-        (licenses / "_notices" / name).write_text("x", encoding="utf-8")
-    (licenses / "NATIVE.txt").write_text("libportaudio.so\t_notices/portaudio.txt\n", "utf-8")
-    (licenses / "INDEX.txt").write_text("unresolved: none\n", encoding="utf-8")
-    assert gate.check(root, require_licenses=True, terminal=True) == []
-    # The Desktop Edition still needs the Qt license texts.
-    assert gate.check(root, require_licenses=True)
-
-
-def test_the_terminal_license_bundle_has_no_qt(tmp_path: Path) -> None:
-    builder = _script("build_license_bundle")
-    out = tmp_path / "THIRD_PARTY_LICENSES"
-    assert builder.build(out, terminal=True) == []
-    names = {path.name for path in out.iterdir()}
-    assert {"numpy", "scipy", "soundfile", "sounddevice", "INDEX.txt"} <= names
-    assert not {"PySide6", "PySide6_Essentials", "shiboken6", "matplotlib"} & names
-    assert sorted(p.name for p in (out / "_texts").iterdir()) == ["PortAudio-LICENSE.txt"]
-    assert not (out / "_notices" / "pyside6.txt").exists()
-    assert not (out / "_notices" / "qt-third-party.txt").exists()
-    assert "PYTHON SOFTWARE FOUNDATION" in (out / "_notices" / "python.txt").read_text("utf-8")
-    assert "qt: not included (Terminal Edition)" in (out / "INDEX.txt").read_text(encoding="utf-8")
-
-
-def test_the_windows_terminal_launcher_opens_a_prompt_in_its_folder() -> None:
-    launcher = ROOT / "packaging" / "windows" / "terminal" / "ReverbScope Terminal.cmd"
-    text = launcher.read_bytes().decode("ascii")
-    assert 'cd /d "%~dp0"' in text and "cmd /k reverbscope.exe" in text
-    assert "*.cmd text eol=crlf" in (ROOT / ".gitattributes").read_text(encoding="utf-8")
