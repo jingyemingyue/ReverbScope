@@ -8,6 +8,9 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Artifact download automation refreshed.** Port the SHA-pinned
+  download-artifact v8.0.1 update from #31 onto the upload-artifact v7
+  candidate, retaining strict digest checks and the exact release file set.
 - **Artifact upload automation refreshed.** Port the SHA-pinned upload-artifact
   v7.0.1 update from #29 onto the current main line, retaining archived
   named artifacts and the existing Qt test teardown and version constraints.
@@ -25,7 +28,9 @@ All notable changes to ReverbScope are documented here. The format follows
 - **POSIX menu interrupts.** Menu input uses Python streams so Ctrl+C
   between the prompt and the read does not leave the menu waiting for Enter.
 - **Stable timing checks.** The time-frequency check keeps its one-second budget and uses
-  the median of five runs after warm-up to avoid a single CI scheduling pause.
+  the median of five runs after warm-up in a fresh process with a fixed
+  single-thread BLAS budget. Failures include wall/CPU times, library versions
+  and thread settings; imports and warm-up remain outside the timed work.
 - **A compact measurement desk.** Tool buttons now share the same flat
   chrome as the input controls. Body text uses a consistent 12 logical pixels,
   with the existing Chinese font fallbacks. Panel switches are visually
