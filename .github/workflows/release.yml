@@ -25,6 +25,7 @@ on:
       - scripts/release_draft.py
       - scripts/inno_chinese_messages.py
       - src/reverbscope/__main__.py
+      - tests/unit/test_pg.py
   pull_request:
     paths:
       - requirements/**
@@ -38,6 +39,7 @@ on:
       - scripts/release_draft.py
       - scripts/inno_chinese_messages.py
       - src/reverbscope/__main__.py
+      - tests/unit/test_pg.py
       - tests/unit/test_desktop_entry.py
       - tests/unit/test_release_draft.py
       - pyproject.toml
