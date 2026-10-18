@@ -72,8 +72,9 @@ For an installed CLI or a release bundle, run
 `python scripts/smoke_bundle.py --no-gui --out /tmp/reverbscope-smoke-session`.
 This also uses fake acquisition and checks the demo and JSON output.
 `--no-gui` skips the offscreen GUI launch and allows the optional Qt packages
-to be absent in a CLI-only source or wheel install; a frozen Terminal Edition uses
-`--terminal` to check its library exclusions and GUI refusal as well.
+to be absent in a CLI-only source or wheel install. (The standalone Terminal
+Edition and its `--terminal` mode are gone; the frozen Desktop Edition is
+smoked with its GUI.)
 Each smoke subprocess has a timeout. A failure names the command and exit
 code, or the timeout/start error, and retains captured stdout and stderr.
 Malformed JSON and malformed doctor metadata fail with a readable reason.
