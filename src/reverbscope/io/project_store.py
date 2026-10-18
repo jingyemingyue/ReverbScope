@@ -100,11 +100,17 @@ def _session_folder(candidate: Path) -> Path | None:
     return None
 
 
-def list_project_sessions(path: str | Path) -> list[tuple[str, Path]]:
+def list_project_sessions(
+    path: str | Path,
+    *,
+    unreadable: list[tuple[Path, str]] | None = None,
+) -> list[tuple[str, Path]]:
     """``(position_label, session_directory)`` in project order, then leftovers.
 
     An entry whose folder is gone is left out; :func:`missing_project_sessions`
-    names those, so a caller can say what the listing does not hold.
+    names those, so a caller can say what the listing does not hold. A
+    ``session.json`` under the project that cannot be read, and is not already
+    one of the returned folders, is appended to ``unreadable`` with the reason.
     """
     base = project_file(path).parent
     project = load_project(base)
@@ -119,9 +125,19 @@ def list_project_sessions(path: str | Path) -> list[tuple[str, Path]]:
                     continue
                 items.append((entry.label, folder))
                 seen.add(folder.resolve())
-    for listing in list_sessions(base):
+    skipped: list[tuple[Path, str]] = []
+    for listing in list_sessions(base, skipped=skipped):
         if listing.path.resolve() not in seen:
             items.append(("", listing.path))
+            seen.add(listing.path.resolve())
+    if unreadable is not None:
+        for folder, reason in skipped:
+            try:
+                resolved = folder.resolve()
+            except OSError:
+                resolved = folder
+            if resolved not in seen:
+                unreadable.append((folder, reason))
     return items
 
 
