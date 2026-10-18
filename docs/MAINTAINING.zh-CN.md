@@ -34,8 +34,6 @@
 
 **Release**（`release.yml`）：当推送到 `main` 或 `release/**` 且触及发布文件（`pyproject.toml`、`packaging/`、打包脚本、工作流本身、`requirements/`）、推送 `v*` tag、pull request 触及这些文件、或手动运行（**Actions → Release → Run workflow**）时运行。它运行质量作业，构建 sdist 与 wheel、四个平台的安装包（Linux、macOS arm64、macOS x86_64、Windows，每个平台桌面版与终端版各一），对每个包做冒烟测试（`scripts/smoke_bundle.py`），安装、冒烟并卸载 Windows 安装程序，构建并检查两个 DMG，生成 SBOM，核对精确的文件集合（`scripts/release_draft.py stage`），并在 `main` 或 `release/**` 上、且 tag `v<版本>` 尚不存在时，打开或刷新**草稿** Release `v<版本>`，恰好 14 个文件。pull request 的运行不会生成草稿；只改文档的推送不会构建任何东西。
 
-**Pages**（`pages.yml`）在仓库设置中启用 Pages 后发布 `site/`。
-
 **Dependabot**（`.github/dependabot.yml`）为固定 SHA 的 GitHub Actions 开 pull request。一次只处理一个：`upload-artifact` / `download-artifact` 的大版本会改变 Release 工作流在作业之间传递文件的方式，所以只有当该 PR 自己的 *Release* 运行全绿（工作流会在改动它的 PR 上运行）、且之后从 `main` 刷新的草稿仍然恰好有 14 个文件时，才合并这类升级。
 
 ## 3. 只有维护者能做的事
