@@ -8,6 +8,9 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Website documentation.** Remove obsolete Pages deployment instructions and
+  surface the unsigned-build notice. Keep the 14-file draft-release gate;
+  the package version remains unchanged.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on

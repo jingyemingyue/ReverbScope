@@ -23,6 +23,15 @@ unvalidated. [Help test it](#help-test-it).
 <sub>The desktop workstation (`main`, 0.5.0b3) on the built-in simulated room.
 Synthetic demo data: no real room was measured.</sub>
 
+> **Unsigned builds.** ReverbScope is not notarized by Apple and carries no
+> Windows Authenticode signature. Your system will warn on first launch.
+> See [Download](#download) for the manual allow steps; you do not need to
+> disable Gatekeeper or SmartScreen.
+>
+> **未签名说明：** 本应用未经过 Apple 公证，也没有 Windows Authenticode
+> 签名，首次启动会出现系统警告。请按 [Download](#download) 中的步骤手动允许，
+> 无需关闭 Gatekeeper 或 SmartScreen。
+
 ## Download
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
