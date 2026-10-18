@@ -11,12 +11,9 @@
 rc2 与 b3 都是 **Draft**。下列文件名与编号步骤适用于维护者明确分享的候选文件，或未来通过验收后
 公开的更名预发布包；旧公开 beta 中没有这些文件。
 
-ReverbScope 有两个版本，
-都不需要 Python 或 Git：
-
-* **桌面版（Desktop Edition）**——带窗口和图表的应用程序，同时包含命令行。适合大多数人。
-* **终端版（Terminal Edition）**——只有命令行，构建时不含图形界面（没有 Qt），体积约为桌面版的一半。适合脚本、
-  自动化、服务器和没有图形桌面的电脑。
+ReverbScope 只提供一个下载版本：**桌面版（Desktop Edition）**，即带窗口和图表的应用程序。它不需要 Python 或 Git，
+并附带供进阶使用的 `reverbscope` 命令行工具（见[命令行（进阶）](#命令行进阶)）。单独的纯命令行“终端版”已停止提供；
+没有图形桌面的电脑请使用不带 `[gui]` 的 [Python wheel](#python-wheel-和源码包)。
 
 ReverbScope 是**供测试用的预发布版本**；`release/0.5.0` 是候选版线，
 `main` 是开发线。这些构建**没有签名**（见
@@ -25,23 +22,12 @@ ReverbScope 是**供测试用的预发布版本**；`release/0.5.0` 是候选版
 
 ## 我该下载哪个文件？
 
-**桌面版**（图形界面 + 命令行）：
-
 | 你的电脑 | 文件 | 章节 |
 | --- | --- | --- |
 | Apple 芯片（M1 及更新）的 Mac，macOS 14 或更新 | `ReverbScope-Desktop-macOS-arm64.dmg` | [macOS](#macos) |
 | Intel 处理器的 Mac，macOS 14 或更新 | `ReverbScope-Desktop-macOS-x86_64.dmg` | [macOS](#macos) |
 | Windows 10 或 11，64 位 | `ReverbScope-Desktop-Windows-x64-Setup.exe`（安装程序）或 `ReverbScope-Desktop-Windows-x64.zip`（免安装） | [Windows](#windows) |
 | Linux x86_64（glibc 2.39 或更新，例如 Ubuntu 24.04+） | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | [Linux](#linux) |
-
-**终端版**（只有命令行）：
-
-| 你的电脑 | 文件 | 章节 |
-| --- | --- | --- |
-| Apple 芯片的 Mac，macOS 14 或更新 | `ReverbScope-Terminal-macOS-arm64.tar.gz` | [终端版](#终端版) |
-| Intel 处理器的 Mac，macOS 14 或更新 | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | [终端版](#终端版) |
-| Windows 10 或 11，64 位 | `ReverbScope-Terminal-Windows-x64.zip` | [终端版](#终端版) |
-| Linux x86_64（glibc 2.39 或更新） | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | [终端版](#终端版) |
 
 **Python 开发者**（任何装有 Python 3.12–3.14 的系统）：`reverbscope-<version>-py3-none-any.whl` 或
 `reverbscope-<version>.tar.gz`，见 [Python](#python-wheel-和源码包)。
@@ -53,16 +39,14 @@ ReverbScope 是**供测试用的预发布版本**；`release/0.5.0` 是候选版
 
 | 系统 | 状态 |
 | --- | --- |
-| macOS 14 Sonoma 或更新，Apple 芯片或 Intel | 支持。DMG 在 GitHub 的 macOS 26（Apple 芯片）和 macOS 15（Intel）运行器上构建、挂载、安装并启动过，终端版也在这两种运行器上构建并运行过。macOS 14 是内置 NumPy / SciPy 的最低要求，但还没有实际运行过。不支持 macOS 13 及更早版本。 |
-| Windows 10 / 11，x64 | 支持。安装程序在 GitHub 的 Windows 运行器上构建、静默安装、启动并卸载过，终端版也在上面构建并运行过。还没有记录过在个人 Windows 电脑上的测试。未测试 ARM 版 Windows 和 32 位 Windows。 |
-| Linux x86_64 | 支持 glibc 2.39 或更新版本。两个版本都在 GitHub 的 Ubuntu 运行器上构建并做过冒烟测试。 |
+| macOS 14 Sonoma 或更新，Apple 芯片或 Intel | 支持。DMG 在 GitHub 的 macOS 26（Apple 芯片）和 macOS 15（Intel）运行器上构建、挂载、安装并启动过。macOS 14 是内置 NumPy / SciPy 的最低要求，但还没有实际运行过。不支持 macOS 13 及更早版本。 |
+| Windows 10 / 11，x64 | 支持。安装程序在 GitHub 的 Windows 运行器上构建、静默安装、启动并卸载过。还没有记录过在个人 Windows 电脑上的测试。未测试 ARM 版 Windows 和 32 位 Windows。 |
+| Linux x86_64 | 支持 glibc 2.39 或更新版本。在 GitHub 的 Ubuntu 运行器上构建并做过冒烟测试。 |
 | Python | 3.12、3.13、3.14（CI 在 Ubuntu 上跑全部三个版本，在 macOS 和 Windows 上跑 3.12）。 |
 
 每一行由什么验证，详见 [COMPATIBILITY.zh-CN.md](COMPATIBILITY.zh-CN.md)。
 
 ## macOS
-
-本节是**桌面版**；只有命令行的下载见[终端版](#终端版)。
 
 ### 安装
 
@@ -110,8 +94,6 @@ ReverbScope 是**供测试用的预发布版本**；`release/0.5.0` 是候选版
 
 ## Windows
 
-本节是**桌面版**；只有命令行的下载见[终端版](#终端版)。
-
 ### 安装程序（推荐）
 
 1. 在[下载页面](https://github.com/jingyemingyue/ReverbScope/releases)下载 `ReverbScope-Desktop-Windows-x64-Setup.exe`。
@@ -148,7 +130,7 @@ ReverbScope 是**供测试用的预发布版本**；`release/0.5.0` 是候选版
 
 ## Linux
 
-**桌面版**（只有命令行的下载见[终端版](#终端版)）：
+桌面版：
 
 ```bash
 tar xzf ReverbScope-Desktop-Linux-x86_64.tar.gz
@@ -166,46 +148,25 @@ sudo apt install fonts-noto-cjk   # 仅在图表里显示中文时需要
 源码里的 `packaging/linux/reverbscope.desktop` 是一个可以按需修改的桌面入口文件。程序包需要 glibc 2.39 或更新
 （Ubuntu 24.04、Debian 13、Fedora 40 或更新）。
 
-## 终端版
+## 命令行（进阶）
 
-不带图形界面的命令行：所有 `reverbscope` 命令（`demo`、`sweep`、`analyze`、`measure`、`compare`、`devices`、
-`doctor`、`project`、`session`、`export` 等），支持英文和中文，分析与桌面版完全相同。它构建时不包含 Qt、PySide6
-和图表库，所以体积约为桌面版的一半；`reverbscope gui` 只会告诉你哪个下载带图形界面。
+每个下载都在应用程序旁边附带 `reverbscope` 命令行工具：所有命令（`demo`、`sweep`、`analyze`、`measure`、`compare`、
+`devices`、`doctor`、`project`、`session`、`export` 等），支持英文和中文，分析与窗口界面完全相同。大多数人用不到它；
+它用于脚本、批量处理和问题报告。下载包不会把它加入 `PATH`：
 
-**macOS**（Apple 芯片用 `ReverbScope-Terminal-macOS-arm64.tar.gz`，Intel 用
-`ReverbScope-Terminal-macOS-x86_64.tar.gz`）和 **Linux**（`ReverbScope-Terminal-Linux-x86_64.tar.gz`）：
+| 系统 | 命令行工具 |
+| --- | --- |
+| macOS | `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope`（见[详细说明](#macos-上的命令行可选)） |
+| Windows 安装程序 | `%LOCALAPPDATA%\Programs\ReverbScope` 里的 `reverbscope.exe` |
+| Windows ZIP | 解压出的文件夹里的 `reverbscope.exe` |
+| Linux | 解压出的文件夹里的 `reverbscope/reverbscope` |
 
-```bash
-tar xzf ReverbScope-Terminal-macOS-arm64.tar.gz      # 或者你下载的那个文件
-cd reverbscope-terminal
-./reverbscope config language zh_CN                   # 以后一直使用中文界面（只需一次）
-./reverbscope demo                                    # 体验一下：合成数据，不播放任何声音
-./reverbscope --help
-```
-
-`_internal` 文件夹要和 `reverbscope` 放在一起。想在任何位置直接输入 `reverbscope`，把该文件夹加入 `PATH`
-（例如在 `~/.zshrc` 或 `~/.bashrc` 中加入 `export PATH="$HOME/reverbscope-terminal:$PATH"`）。
+在该文件夹里打开终端（或写出完整路径），试试 `reverbscope demo`：合成数据，不播放任何声音。
 
 **语言。** 命令行跟随系统语言：Mac 的首选语言（即使“终端”不管首选语言是什么都设置了 `LANG=en_US.UTF-8`）、
 Windows 的显示语言，或 Linux 上的 `LANGUAGE` / `LANG`。想不管系统怎么设置都固定使用中文或英文，运行一次
 `reverbscope config language zh_CN`（英文用 `en`）；`reverbscope config language auto` 改回跟随系统，
 `reverbscope config` 列出所有设置。
-
-在 **macOS** 上，浏览器会给下载的文件加上标记，macOS 会拒绝运行带这个标记的未签名命令行程序
-（*无法打开“reverbscope”，因为无法验证开发者*）。在包含 `reverbscope-terminal` 的文件夹里运行一次下面的命令，
-清除这个文件夹上的标记：
-
-```bash
-xattr -dr com.apple.quarantine reverbscope-terminal
-```
-
-它只改动这些文件，不会关闭 Gatekeeper，也不应该关闭 Gatekeeper。这是未签名预发布构建的临时办法；签名后的构建不需要这一步。用 `curl` 下载的文件没有这个标记。Linux 终端版
-做测量时需要 `libportaudio2`（`sudo apt install libportaudio2`），不需要图形库。
-
-**Windows**（`ReverbScope-Terminal-Windows-x64.zip`）：右键 → **全部解压缩…**，打开解压出的文件夹，双击
-**`ReverbScope Terminal.cmd`**。它会在该文件夹里打开一个命令提示符，可以直接输入 `reverbscope.exe demo` 或
-`reverbscope.exe --help`。（直接双击 `reverbscope.exe` 的话，窗口会在输出后立刻关闭。）在 PowerShell 中，于该文件夹运行
-`.\reverbscope.exe demo` 也一样。
 
 **在 PowerShell 中保存报告。** 输出重定向到文件或交给其他程序时，每条 `reverbscope` 命令都写出 UTF-8。命令提示符的 `>`
 会原样保存。Windows PowerShell 5.1，以及把输出交给 `Select-String`、`Out-File` 等命令时的 PowerShell 7，则按控制台代码页解码，
@@ -268,7 +229,7 @@ pytest
 
 ```bash
 shasum -a 256 ReverbScope-Desktop-macOS-arm64.dmg          # macOS
-sha256sum ReverbScope-Terminal-Linux-x86_64.tar.gz         # Linux
+sha256sum ReverbScope-Desktop-Linux-x86_64.tar.gz          # Linux
 ```
 
 ```powershell
@@ -299,7 +260,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 * **macOS：** 退出 ReverbScope，打开新的 DMG，再把 ReverbScope 拖到“应用程序”上，选 **替换**。新构建可能会再出现一次
   首次打开的警告。
 * **Windows 安装程序：** 运行新的 `ReverbScope-Desktop-Windows-x64-Setup.exe`，它会替换已安装的版本。
-* **Windows ZIP / Linux / 终端版：** 删除旧文件夹，解压新的压缩包。
+* **Windows ZIP / Linux：** 删除旧文件夹，解压新的压缩包。
 * **wheel：** 在同一个虚拟环境里运行 `pip install --upgrade "./reverbscope-<新版本>-py3-none-any.whl[gui]"`。
 * **开发者安装：** `git pull`，然后再运行一次 `pip install -e ".[dev,gui]"`。
 
@@ -309,7 +270,7 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 
 * **macOS：** 退出 ReverbScope，把“应用程序”里的 **ReverbScope** 拖到废纸篓。
 * **Windows 安装程序：** **设置 → 应用 → 已安装的应用 → ReverbScope → 卸载**，或者开始菜单 → *卸载 ReverbScope*。
-* **Windows ZIP / Linux / 终端版：** 删除解压出来的文件夹。
+* **Windows ZIP / Linux：** 删除解压出来的文件夹。
 * **Python：** `pip uninstall reverbscope`，或者直接删除虚拟环境文件夹。
 
 如果还想删除 ReverbScope 的设置、日志、最近会话列表和字体缓存，删除个人文件夹里的 `.reverbscope` 文件夹
@@ -328,10 +289,9 @@ Get-FileHash .\ReverbScope-Desktop-Windows-x64-Setup.exe   # Windows PowerShell�
 | Windows：没有“仍要运行”按钮 | “智能应用控制”或公司策略阻止了未签名应用；见[上面的表格](#未签名构建的警告)。 |
 | Linux：`libEGL.so.1`、`libportaudio` 或 *xcb* 插件报错 | 安装[系统库](#linux)。 |
 | Linux：图表里的中文显示成方框 | `sudo apt install fonts-noto-cjk` |
-| `reverbscope gui` 提示*当前安装的是 ReverbScope 终端版* | 终端版没有图形界面；请下载桌面版（两个版本都有命令行）。 |
-| macOS：*无法打开“reverbscope”，因为无法验证开发者*（终端版） | 清除一次下载标记：`xattr -dr com.apple.quarantine reverbscope-terminal`（见[终端版](#终端版)）。 |
-| Windows PowerShell：重定向到文件或经过管道后中文变成乱码（`> report.txt`、`\| Select-String`） | 先运行 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`（见[在 PowerShell 中保存报告](#终端版)）。 |
-| Windows：`reverbscope.exe` 打开后立刻关闭 | 它是命令行程序：双击只会打开一个命令结束就关闭的窗口。请在它所在的文件夹（桌面版：安装文件夹）里打开**命令提示符**或 **PowerShell**，运行 `reverbscope.exe --help`。只有终端版带有可以双击的 `ReverbScope Terminal.cmd`。 |
+| `reverbscope gui` 提示*当前安装的是 ReverbScope 终端版* | 这是已停止提供的旧版纯命令行下载；请下载桌面版（它包含命令行）。 |
+| Windows PowerShell：重定向到文件或经过管道后中文变成乱码（`> report.txt`、`\| Select-String`） | 先运行 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`（见[在 PowerShell 中保存报告](#命令行进阶)）。 |
+| Windows：`reverbscope.exe` 打开后立刻关闭 | 它是命令行程序：双击只会打开一个命令结束就关闭的窗口。请在它所在的文件夹（安装程序：安装文件夹）里打开**命令提示符**或 **PowerShell**，运行 `reverbscope.exe --help`。 |
 | `reverbscope gui` 提示无法加载 PySide6 | 安装界面组件：`pip install "PySide6_Essentials>=6.6,<6.12"`（或者带 `[gui]` 重新安装 wheel）。 |
 | `pip install reverbscope` 找不到，或者装到了别的东西 | ReverbScope 还没有发布到 PyPI；请使用 [wheel](#用发布页的-wheel-安装)。 |
 | 其他问题 | 提交一个 [问题报告](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug-zh-CN.yml)，并粘贴 **帮助 → 用于问题报告的环境报告**（或 `reverbscope doctor` 的输出）。不会自动发送任何内容。 |
