@@ -15,14 +15,15 @@ open source (Apache-2.0).
 > 所有真实硬件和 DAW 验证。** 功能已冻结；接下来要靠真实声卡、话筒、房间和
 > DAW 上的测试来决定它能否成为 0.5.0。当前构建未签名。
 
-### Choose your edition
+### Download
 
 Download **one** file for your computer from **Assets** at the bottom of this
-page. Neither edition needs Python.
+page. No Python needed.
 
-#### 🖥 Desktop Edition — for most people
+#### 🖥 Desktop Edition
 
-The app with windows, charts and buttons, plus the `reverbscope` command line.
+The app with windows, charts and buttons. It also contains the `reverbscope`
+command line for advanced use; there is no separate Terminal download.
 
 | Your computer | Download | Then |
 | --- | --- | --- |
@@ -32,31 +33,12 @@ The app with windows, charts and buttons, plus the `reverbscope` command line.
 | | or `ReverbScope-Desktop-Windows-x64.zip` (no installer) | **Extract All…**, open the folder, double-click **`reverbscope-gui.exe`** |
 | **Linux** x86_64 (glibc 2.39+) | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | Extract, run `reverbscope/reverbscope-gui` |
 
-#### ⌨️ Terminal Edition — command line only
-
-For the command line, scripts, servers and computers without a desktop. No
-windows or charts, and about half the download size: the same measurement
-and analysis, `reverbscope demo`, English and Chinese.
-
-| Your computer | Download | Then |
-| --- | --- | --- |
-| **macOS** 14+, Apple silicon | `ReverbScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
-| **macOS** 14+, Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | Same as above |
-| **Windows** 10 / 11, 64-bit | `ReverbScope-Terminal-Windows-x64.zip` | **Extract All…**, double-click **`ReverbScope Terminal.cmd`**, type `reverbscope demo` |
-| **Linux** x86_64 (glibc 2.39+) | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
-
-Not sure? Take the **Desktop Edition**: it contains the command line too.
-
 **First launch of an unsigned build**
 
 * **macOS app:** macOS says Apple could not verify ReverbScope. Click **Done**,
   then **System Settings → Privacy & Security → Open Anyway** and confirm.
   Needed once. Do not turn off Gatekeeper or System Integrity Protection; it
   is not necessary.
-* **macOS Terminal Edition:** if macOS refuses to run `reverbscope` from a
-  folder your browser downloaded, run
-  `xattr -dr com.apple.quarantine reverbscope-terminal` once in that folder
-  (it clears the download mark on these files only).
 * **Windows:** if SmartScreen says *Windows protected your PC*, click
   **More info → Run anyway**.
 
