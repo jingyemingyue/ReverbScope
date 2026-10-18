@@ -49,25 +49,15 @@ from typing import Any, Protocol
 
 #: ``SHA256SUMS-<RUNNER_OS>-<RUNNER_ARCH>`` -> the downloads that runner builds
 #: (the bundle matrix of release.yml and ``Target`` in build_release.py): the
-#: Desktop Edition (GUI + command line) and the Terminal Edition (command line
-#: only, no Qt) of each platform. The names say edition, system and CPU.
+#: Desktop Edition (GUI + the reverbscope command line) of each platform. The
+#: names say edition, system and CPU.
 CHECKSUM_FILES: Mapping[str, tuple[str, ...]] = {
-    "SHA256SUMS-Linux-X64": (
-        "ReverbScope-Desktop-Linux-x86_64.tar.gz",
-        "ReverbScope-Terminal-Linux-x86_64.tar.gz",
-    ),
-    "SHA256SUMS-macOS-ARM64": (
-        "ReverbScope-Desktop-macOS-arm64.dmg",
-        "ReverbScope-Terminal-macOS-arm64.tar.gz",
-    ),
-    "SHA256SUMS-macOS-X64": (
-        "ReverbScope-Desktop-macOS-x86_64.dmg",
-        "ReverbScope-Terminal-macOS-x86_64.tar.gz",
-    ),
+    "SHA256SUMS-Linux-X64": ("ReverbScope-Desktop-Linux-x86_64.tar.gz",),
+    "SHA256SUMS-macOS-ARM64": ("ReverbScope-Desktop-macOS-arm64.dmg",),
+    "SHA256SUMS-macOS-X64": ("ReverbScope-Desktop-macOS-x86_64.dmg",),
     "SHA256SUMS-Windows-X64": (
         "ReverbScope-Desktop-Windows-x64-Setup.exe",
         "ReverbScope-Desktop-Windows-x64.zip",
-        "ReverbScope-Terminal-Windows-x64.zip",
     ),
 }
 #: One checksum file on the Release for every download it carries.
@@ -88,6 +78,11 @@ LEGACY_ASSETS = frozenset(
         "ReverbScope-macos-x86_64.dmg",
         "reverbscope-windows-x64.zip",
         "ReverbScope-setup.exe",
+        # The standalone Terminal Edition (discontinued; the CLI ships in Desktop)
+        "ReverbScope-Terminal-macOS-arm64.tar.gz",
+        "ReverbScope-Terminal-macOS-x86_64.tar.gz",
+        "ReverbScope-Terminal-Linux-x86_64.tar.gz",
+        "ReverbScope-Terminal-Windows-x64.zip",
         *CHECKSUM_FILES,
     }
 )
