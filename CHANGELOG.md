@@ -25,6 +25,10 @@ All notable changes to ReverbScope are documented here. The format follows
   download per platform.
 
 ### Changed
+- **Packaging policy checks follow Python syntax.** The desktop extras gate
+  inspects the actual Analysis exclusion expression instead of matching an
+  edition-specific text fragment. Required exclusions remain enforced for
+  both conditional and direct-list specs.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on

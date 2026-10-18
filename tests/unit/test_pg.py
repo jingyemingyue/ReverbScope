@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import os
 import re
 import struct
@@ -69,20 +70,82 @@ def test_the_bundle_keeps_the_colour_maps_pg_offers() -> None:
     assert "a.datas = without_unused_colormaps(a.datas)" in spec_text
 
 
+_REQUIRED_EXTRAS = (
+    "PySide6.QtTest",
+    "pyqtgraph.opengl",
+    "pyqtgraph.examples",
+    "pyqtgraph.jupyter",
+    "OpenGL",
+)
+
+
+def _check_desktop_exclusions(spec: str) -> None:
+    assignments = {
+        target.id: node.value
+        for node in ast.parse(spec).body
+        if isinstance(node, ast.Assign)
+        for target in node.targets
+        if isinstance(target, ast.Name)
+    }
+    excluded_modules = ast.literal_eval(assignments["PYQTGRAPH_EXCLUDES"])
+    assert isinstance(excluded_modules, list)
+    for module in _REQUIRED_EXTRAS:
+        assert module in excluded_modules, module
+    analysis = assignments["a"]
+    assert isinstance(analysis, ast.Call)
+    assert isinstance(analysis.func, ast.Name) and analysis.func.id == "Analysis"
+    values = [keyword.value for keyword in analysis.keywords if keyword.arg == "excludes"]
+    assert len(values) == 1, "Analysis must specify its exclusion policy"
+    desktop = values[0]
+    if isinstance(desktop, ast.IfExp):
+        assert isinstance(desktop.test, ast.Name) and desktop.test.id == "TERMINAL"
+        desktop = desktop.orelse
+    assert isinstance(desktop, ast.List)
+    assert any(
+        isinstance(item, ast.Starred)
+        and isinstance(item.value, ast.Name)
+        and item.value.id == "PYQTGRAPH_EXCLUDES"
+        for item in desktop.elts
+    ), "Desktop Analysis must apply PYQTGRAPH_EXCLUDES"
+
+
 def test_the_desktop_bundle_leaves_pyqtgraph_extras_out() -> None:
     spec = (ROOT / "packaging" / "reverbscope.spec").read_text(encoding="utf-8")
-    excludes = spec[spec.index("PYQTGRAPH_EXCLUDES = [") :]
-    excludes = excludes[: excludes.index("]")]
-    for module in (
-        "PySide6.QtTest",
-        "pyqtgraph.opengl",
-        "pyqtgraph.examples",
-        "pyqtgraph.jupyter",
-        "OpenGL",
-    ):
-        assert f'"{module}"' in excludes, module
-    desktop = spec[spec.index("    else [") :]
-    assert "*PYQTGRAPH_EXCLUDES" in desktop.split("]", 1)[0]
+    _check_desktop_exclusions(spec)
+
+
+@pytest.mark.parametrize(
+    "expression",
+    [
+        "TERMINAL_EXCLUDES if TERMINAL else [*PYQTGRAPH_EXCLUDES]",
+        "[*PYQTGRAPH_EXCLUDES]",
+        "[\n    *DEV_ONLY_EXCLUDES,\n    *PYQTGRAPH_EXCLUDES,  # desktop extras\n]",
+    ],
+)
+def test_desktop_exclusion_check_accepts_equivalent_spec_layouts(expression: str) -> None:
+    spec = (
+        f"PYQTGRAPH_EXCLUDES = {list(_REQUIRED_EXTRAS)!r}\na = Analysis([], excludes={expression})"
+    )
+    _check_desktop_exclusions(spec)
+
+
+@pytest.mark.parametrize("missing", _REQUIRED_EXTRAS)
+def test_desktop_exclusion_check_rejects_a_missing_module(missing: str) -> None:
+    modules = [name for name in _REQUIRED_EXTRAS if name != missing]
+    spec = f"PYQTGRAPH_EXCLUDES = {modules!r}\na = Analysis([], excludes=[*PYQTGRAPH_EXCLUDES])"
+    with pytest.raises(AssertionError, match=re.escape(missing)):
+        _check_desktop_exclusions(spec)
+
+
+@pytest.mark.parametrize("expression", ["[]", "TERMINAL_EXCLUDES if TERMINAL else []"])
+def test_desktop_exclusion_check_rejects_an_unapplied_policy(expression: str) -> None:
+    spec = (
+        f"PYQTGRAPH_EXCLUDES = {list(_REQUIRED_EXTRAS)!r}\n"
+        "unused = TERMINAL_EXCLUDES if TERMINAL else [*PYQTGRAPH_EXCLUDES]\n"
+        f"a = Analysis([], excludes={expression})"
+    )
+    with pytest.raises(AssertionError, match="Desktop Analysis must apply"):
+        _check_desktop_exclusions(spec)
 
 
 # --- With Qt and pyqtgraph ---------------------------------------------------------------
