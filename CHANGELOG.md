@@ -161,6 +161,13 @@ All notable changes to ReverbScope are documented here. The format follows
   data stamp outside the image on a high-DPI display; it now measures in
   logical pixels.
 
+## [0.5.0b4] - 2026-10-18
+
+### Changed
+- Remove obsolete documentation references to the cancelled GitHub Pages site.
+- Make the unsigned-build warning prominent in the README.
+- Synchronize the beta release notes and changelog with version 0.5.0b4.
+
 ## [0.5.0b3] - 2026-10-09
 
 Software beta 3, the development line after the release candidate was cut:
