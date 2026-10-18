@@ -21,10 +21,11 @@ Release lists a `SHA256SUMS` file; compare it with the file you
 downloaded (`shasum -a 256 <file>` on macOS / Linux,
 `Get-FileHash <file>` in PowerShell).
 
-ReverbScope comes in two editions. The **Desktop Edition** is the app this
-guide describes, with the command line included; the **Terminal Edition** is
-the command line only (no windows or charts), for scripts, servers and
-computers without a desktop.
+ReverbScope is downloaded as the **Desktop Edition**: the app this guide
+describes, with the `reverbscope` command line included for advanced use.
+The separate command-line-only Terminal Edition is discontinued; for a
+computer without a desktop, use the
+[Python wheel](../INSTALLATION.md#python-wheel-and-source) without `[gui]`.
 
 | System | Desktop Edition | Start ReverbScope |
 | --- | --- | --- |
@@ -32,13 +33,6 @@ computers without a desktop.
 | macOS 14+, Apple silicon | `ReverbScope-Desktop-macOS-arm64.dmg` | Drag ReverbScope to Applications, then open it |
 | macOS 14+, Intel | `ReverbScope-Desktop-macOS-x86_64.dmg` | Drag ReverbScope to Applications, then open it |
 | Linux x86_64 | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf ReverbScope-Desktop-Linux-x86_64.tar.gz && reverbscope/reverbscope-gui` |
-
-| System | Terminal Edition | Start ReverbScope |
-| --- | --- | --- |
-| Windows 10/11 x64 | `ReverbScope-Terminal-Windows-x64.zip` | Extract, double-click `ReverbScope Terminal.cmd`, type `reverbscope.exe demo` |
-| macOS 14+, Apple silicon | `ReverbScope-Terminal-macOS-arm64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
-| macOS 14+, Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
-| Linux x86_64 | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | `tar xzf` it, then `reverbscope-terminal/reverbscope demo` |
 
 The Windows and Linux Desktop Edition bundles carry two programs: the desktop
 app `reverbscope-gui` and the command-line tool `reverbscope` (run `reverbscope --help`
@@ -496,7 +490,7 @@ ASCII. Diagnostic notes and warnings are stored in English in `result.json`
 and shown translated.
 
 `reverbscope config` lists the other settings the desktop app keeps and
-changes them from the command line, also in the Terminal Edition:
+changes them from the command line:
 `profile` (the default recording profile), `backend` (`portaudio` or
 `fake`), `output-folder`, `copy-recording` and `developer-tools` (`on` or
 `off`), and `theme` (`system`, `light` or `dark`; desktop app only). For
@@ -534,7 +528,7 @@ Piped or redirected output is UTF-8. Windows PowerShell decodes it in the
 console's code page and garbles Chinese (`> report.txt`, `| Select-String`);
 run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`
 once in that window first, or see
-[Saving a report from PowerShell](../INSTALLATION.md#terminal-edition).
+[Saving a report from PowerShell](../INSTALLATION.md#command-line-advanced).
 Command Prompt is not affected.
 
 ## Troubleshooting
