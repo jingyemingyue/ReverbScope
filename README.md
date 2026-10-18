@@ -39,8 +39,9 @@ become download instructions when an accepted pre-release is published.
 
 ### 🖥 Desktop Edition
 
-For most people: the workstation window with charts, plus the `reverbscope`
-command line.
+One download per platform: the workstation window with charts. It also
+contains the `reverbscope` command-line tool for advanced use
+([Command line](#command-line)).
 
 | Platform | Download | Architecture | Notes |
 | --- | --- | --- | --- |
@@ -61,36 +62,6 @@ Authenticode signature), so the system warns once:
 Not sure which Mac you have? Apple menu → **About This Mac**: *Chip: Apple M…*
 means Apple silicon, *Processor: Intel* means Intel.
 
-### ⌨️ Terminal Edition
-
-For scripts, automation, servers and computers without a desktop: the same
-measurement and analysis without the window, about half the size.
-
-| Platform | Download | Architecture | Command |
-| --- | --- | --- | --- |
-| **macOS** 14+ | [`ReverbScope-Terminal-macOS-arm64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | arm64 (Apple silicon) | `reverbscope-terminal/reverbscope demo` |
-| **macOS** 14+ | [`ReverbScope-Terminal-macOS-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64 (Intel) | `reverbscope-terminal/reverbscope demo` |
-| **Windows** 10 / 11 | [`ReverbScope-Terminal-Windows-x64.zip`](https://github.com/jingyemingyue/ReverbScope/releases) | x64 | Open **`ReverbScope Terminal.cmd`**, then `reverbscope.exe demo` |
-| **Linux** (glibc 2.39+) | [`ReverbScope-Terminal-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64 | `reverbscope-terminal/reverbscope demo` |
-
-Extract the archive first (`tar xzf <file>`; on Windows **Extract All…**). On
-macOS, if a downloaded `reverbscope` is refused, run
-`xattr -dr com.apple.quarantine reverbscope-terminal` once: it clears the
-download mark on those files only and does not turn off Gatekeeper.
-
-### Which one?
-
-| | Desktop Edition | Terminal Edition |
-| --- | --- | --- |
-| Workstation window with charts | ✅ | — |
-| Command line (`reverbscope`) | ✅ | ✅ |
-| Room analysis and comparison | ✅ | ✅ |
-| Standalone measurement (plays and records) | ✅ | ✅ |
-| English / 简体中文 | ✅ | ✅ |
-| Python required | No | No |
-| Best for | Most users | Automation, lightweight or headless computers |
-
-Not sure? Take the **Desktop Edition**: it contains the command line too.
 Install, checksums (`SHA256SUMS`), updating and uninstalling:
 **[Installation guide](docs/INSTALLATION.md)** ([简体中文](docs/INSTALLATION.zh-CN.md)).
 
@@ -102,10 +73,10 @@ No microphone and no audio interface needed; nothing is played. In a terminal:
 reverbscope demo
 ```
 
-The downloads do not put `reverbscope` on your `PATH`. Open the terminal in
-the folder that holds it (the Windows installer:
-`%LOCALAPPDATA%\Programs\ReverbScope`) or give its full path (macOS Desktop
-Edition: `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`).
+The desktop app includes the `reverbscope` command, but the downloads do not
+put it on your `PATH`. Open the terminal in the folder that holds it (the
+Windows installer: `%LOCALAPPDATA%\Programs\ReverbScope`) or give its full
+path (macOS: `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`).
 
 ![reverbscope demo in a terminal: at-a-glance results for two simulated positions, their comparison, and numbered next steps (synthetic data)](docs/images/cli-demo.svg)
 
@@ -168,8 +139,8 @@ when another tool is the better choice, is in
 
 The version on `main` is **0.5.0b3**; `release/0.5.0` carries the release
 candidate. The analysis core, command line, desktop workstation, comparison,
-loopback, Simplified Chinese catalog, session bundles and both editions'
-bundles exist and are tested with synthetic data on Linux, macOS and Windows.
+loopback, Simplified Chinese catalog, session bundles and the Desktop
+Edition's bundles exist and are tested with synthetic data on Linux, macOS and Windows.
 
 **Not yet:** any result measured on real hardware (the hardware matrix and the
 validation campaign are empty), any DAW run, signed or notarized bundles, a PyPI
@@ -231,10 +202,14 @@ Both modes call the same analysis pipeline (`reverbscope.core.pipeline.analyze`)
 
 ## Command line
 
-Both editions include the command line: `reverbscope` in the Terminal Edition,
-next to `reverbscope-gui` in the Windows and Linux Desktop Edition and in a
-Python install; in the macOS Desktop Edition it is
-`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope`.
+The desktop app includes the `reverbscope` command-line tool as an advanced
+option: `reverbscope` next to `reverbscope-gui` in the Windows and Linux
+downloads and in a Python install; in the macOS app it is
+`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope`. It runs the same
+analysis as the windows. Most people never need it.
+
+<details>
+<summary>Command-line examples (advanced)</summary>
 
 ```bash
 # Generate the test signal, play it through your DAW, record, then analyze
@@ -264,7 +239,7 @@ reverbscope project overview room/   # health, fit, verdicts, next steps per pos
 reverbscope demo --out demo/
 reverbscope profiles vocal           # what a recording profile watches for
 
-# The desktop workstation (Desktop Edition, or a Python install with the gui extra)
+# The desktop workstation
 reverbscope gui
 ```
 
@@ -273,6 +248,8 @@ A result folder holds `result.json` (all metrics and curves),
 and a copy of the recording. The recording you pass in is never modified.
 Every option, the language and style settings, CSV and bundle export are in the
 [user guide](docs/user-guide/en.md).
+
+</details>
 
 ## Documentation
 
@@ -287,7 +264,7 @@ Every option, the language and style settings, CSV and bundle export are in the
 | [docs/COMPARISON.md](docs/COMPARISON.md) | How ReverbScope differs from REW, ARTA, Smaart and others; [中文](docs/COMPARISON.zh-CN.md) |
 | [docs/AUDIO_DEVICES.md](docs/AUDIO_DEVICES.md) | Host APIs and how devices are probed and chosen; [中文](docs/AUDIO_DEVICES.zh-CN.md) |
 | [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) | Platforms, DAW export formats, host APIs and what verified each; [中文](docs/COMPATIBILITY.zh-CN.md) |
-| [docs/EDITIONS.md](docs/EDITIONS.md) | Desktop vs. Terminal Edition; [中文](docs/EDITIONS.zh-CN.md) |
+| [docs/EDITIONS.md](docs/EDITIONS.md) | The Desktop Edition, its command line and the developer tools; [中文](docs/EDITIONS.zh-CN.md) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Package layout, data flow, extension points |
 | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | Every dependency with license and purpose |
 | [docs/LICENSE_DECISION.md](docs/LICENSE_DECISION.md) | Why ReverbScope is Apache-2.0 |
@@ -309,8 +286,8 @@ reverbscope gui
 
 Each release also carries a wheel (`reverbscope-<version>-py3-none-any.whl`)
 and a source archive; see [Installation → Python](docs/INSTALLATION.md#python-wheel-and-source).
-`scripts/build_release.py` builds both editions of the current platform
-locally ([RELEASE_PLAN.md](docs/RELEASE_PLAN.md) §3a).
+`scripts/build_release.py` builds the Desktop Edition of the current
+platform locally ([RELEASE_PLAN.md](docs/RELEASE_PLAN.md) §3a).
 
 ## Technical architecture
 
