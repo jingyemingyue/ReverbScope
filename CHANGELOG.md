@@ -8,6 +8,9 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Checkout automation refreshed.** Port the SHA-pinned checkout v7.0.1
+  update from #28 onto the current main line, which already checks the
+  actual workflow inventory after GitHub Pages removal.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on
