@@ -686,8 +686,19 @@ def _anchor_copied_files(session: MeasurementSession, directory: Path) -> None:
     session.sweep_path = None if sweep is None else str(sweep)
 
 
-def list_sessions(root: str | Path, *, max_depth: int = 2) -> list[SessionListing]:
-    """Find ``session.json`` files under ``root``, newest ``created_at`` first."""
+def list_sessions(
+    root: str | Path,
+    *,
+    max_depth: int = 2,
+    skipped: list[tuple[Path, str]] | None = None,
+) -> list[SessionListing]:
+    """Find ``session.json`` files under ``root``, newest ``created_at`` first.
+
+    A session that cannot be read is left out. When ``skipped`` is given, each
+    such folder is appended there with the reason, so a caller can say so
+    instead of dropping it without a word. Folders whose names start with
+    ``.`` stay hidden and are not reported.
+    """
     base = Path(root)
     if not base.is_dir():
         raise SessionError(_("not a directory: {path}").format(path=base))
@@ -703,9 +714,11 @@ def list_sessions(root: str | Path, *, max_depth: int = 2) -> list[SessionListin
             continue
         try:
             found.append(SessionListing(path=candidate.parent, session=load_session(candidate)))
-        except ReverbScopeError:
+        except ReverbScopeError as exc:
             # Unreadable, or settings this version refuses (ConfigurationError):
             # one bad folder must not hide the others.
+            if skipped is not None:
+                skipped.append((candidate.parent, str(exc)))
             continue
     found.sort(key=lambda item: item.session.created_at, reverse=True)
     return found

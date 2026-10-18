@@ -3,12 +3,22 @@
 from __future__ import annotations
 
 import csv
+import logging
+import os
 from pathlib import Path
 
 from reverbscope.errors import SessionError
 from reverbscope.i18n import _
-from reverbscope.io.jsonutil import make_folder
+from reverbscope.io.jsonutil import (
+    discard,
+    keep_beside,
+    keep_mode,
+    make_folder,
+    temporary_beside,
+)
 from reverbscope.models.result import AnalysisResult, BandDecay
+
+log = logging.getLogger(__name__)
 
 
 class CsvExporter:
@@ -27,17 +37,21 @@ class CsvExporter:
             "reflections.csv": _write_reflections,
             "resonances.csv": _write_resonances,
         }
-        written: list[Path] = []
-        for name, write in writers.items():
-            path = write(base / name, result)
-            if path is not None:
-                written.append(path)
-            else:
-                # A curve this result does not have: the file of that name
-                # from an earlier export into this folder (another session)
-                # would read as this one's.
-                _remove(base / name)
-        return written
+        # (temporary, final). A missing curve is ``None``: the file of that
+        # name from an earlier export would otherwise read as this one's.
+        # Nothing in the folder changes until every curve has been written.
+        staged: list[tuple[Path | None, Path]] = []
+        try:
+            for name, write in writers.items():
+                final = base / name
+                staged.append((write(final, result), final))
+            _publish(staged)
+        except BaseException:
+            for temporary, _final in staged:
+                if temporary is not None:
+                    discard(temporary)
+            raise
+        return [final for temporary, final in staged if temporary is not None]
 
 
 def export_csv(result: AnalysisResult, directory: str | Path) -> list[Path]:
@@ -45,14 +59,88 @@ def export_csv(result: AnalysisResult, directory: str | Path) -> list[Path]:
 
 
 def _write(path: Path, header: list[str], rows: list[list[object]]) -> Path:
+    """Write ``rows`` beside ``path`` and return that temporary file.
+
+    The caller replaces ``path`` only after every curve has been written, so a
+    full disk part-way through leaves the previous export whole.
+    """
     try:
-        with path.open("w", encoding="utf-8", newline="") as handle:
+        temporary = temporary_beside(path, ".csv")
+    except OSError as exc:
+        raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
+    try:
+        with temporary.open("w", encoding="utf-8", newline="") as handle:
             writer = csv.writer(handle)
             writer.writerow(header)
             writer.writerows(rows)
+            handle.flush()
+            os.fsync(handle.fileno())
     except OSError as exc:
+        discard(temporary)
         raise SessionError(_("cannot write {path}: {error}").format(path=path, error=exc)) from exc
-    return path
+    except BaseException:
+        discard(temporary)
+        raise
+    return temporary
+
+
+def _publish(staged: list[tuple[Path | None, Path]]) -> None:
+    """Put ``staged`` in place, or put back whatever this call already replaced.
+
+    ``None`` means the curve is absent: that file, from an earlier export, is
+    removed. A file this export did not mean to touch is left alone.
+    """
+    # (final, previous contents or None, True when this call created final)
+    backups: list[tuple[Path, Path | None, bool]] = []
+    try:
+        for temporary, final in staged:
+            if temporary is None:
+                if final.is_file():
+                    backups.append((final, keep_beside(final, ".csv"), False))
+                    _remove(final)
+                continue
+            existed = final.is_file()
+            backups.append((final, keep_beside(final, ".csv") if existed else None, not existed))
+            if existed:
+                keep_mode(temporary, final)
+            os.replace(temporary, final)
+    except (OSError, SessionError) as exc:
+        _restore(backups)
+        if isinstance(exc, SessionError):
+            raise
+        where = exc.filename
+        if isinstance(where, bytes):
+            where = os.fsdecode(where)
+        raise SessionError(
+            _("cannot write {path}: {error}").format(path=where or "", error=exc)
+        ) from exc
+    else:
+        # The previous curves survived in these names. Drop them only after
+        # every replacement has landed; a restore that itself fails must keep
+        # the copy, which is then the only whole version left.
+        for _final, backup, _created in backups:
+            if backup is not None:
+                discard(backup)
+    finally:
+        for temporary, _final in staged:
+            if temporary is not None:
+                discard(temporary)
+
+
+def _restore(backups: list[tuple[Path, Path | None, bool]]) -> None:
+    for final, backup, created in reversed(backups):
+        try:
+            if backup is not None:
+                os.replace(backup, final)
+                # A hard link of a file this call never replaced names the same
+                # inode, so replace leaves the second name in place.
+                discard(backup)
+            elif created:
+                final.unlink(missing_ok=True)
+        except OSError:
+            # The copy stays beside the folder. Removing it would leave no
+            # whole version of that curve.
+            log.warning("cannot restore %s after a failed export", final)
 
 
 def _remove(path: Path) -> None:

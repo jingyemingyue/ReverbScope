@@ -101,6 +101,9 @@ msgstr "--sources 至少为 1"
 msgid "... and {n} more positions left out"
 msgstr "……另有 {n} 个位置被略过"
 
+msgid "... and {n} more sessions left out"
+msgstr "……另有 {n} 个会话被略过"
+
 msgid "0-based loopback channel: of --loopback when it is given, otherwise of the recording"
 msgstr "回采声道（从 0 起）：给出 --loopback 时指该文件中的声道，否则指录音中的声道"
 
@@ -7078,6 +7081,9 @@ msgstr "{path} 中已有一个保存的会话。要替换它吗？"
 msgid "{path} already holds {name} and is not a ReverbScope session; the take would replace that file"
 msgstr "{path} 中已有 {name}，且它不是 ReverbScope 会话；这次测量会覆盖该文件"
 
+msgid "{path} could not be read and is left out: {error}"
+msgstr "{path} 无法读取，因此略过：{error}"
+
 msgid "{path} does not exist; try again, or leave empty to go back."
 msgstr "{path} 不存在；请重试，或留空返回。"
 
@@ -7086,6 +7092,9 @@ msgstr "{path} 中没有 project.json。要把它变成项目吗？"
 
 msgid "{path} has no project.json; make a project first with reverbscope project init --out <folder>, or try another folder."
 msgstr "{path} 里没有 project.json；请先用 reverbscope project init --out <文件夹> 建立项目，或换一个文件夹。"
+
+msgid "{path} is a file; --out needs a folder for the curves"
+msgstr "{path} 是一个文件；--out 需要一个用来保存曲线的文件夹"
 
 msgid "{path} is a file; --out needs a folder for the project"
 msgstr "{path} 是一个文件；--out 需要一个用来保存项目的文件夹"

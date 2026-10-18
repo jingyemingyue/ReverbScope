@@ -2106,7 +2106,8 @@ def render_sweep_written(
 def render_saved_next_steps(console: Console, session: object) -> str:
     """After a saved analysis: where the session is and what to do with it."""
     c = console
-    lines = c.status("ok", Verbatim(_("Saved session to {path}").format(path=session)), indent=0)
+    shown = printable(str(session), single_line=True)
+    lines = c.status("ok", Verbatim(_("Saved session to {path}").format(path=shown)), indent=0)
     lines += c.section(_("Next steps"))
     lines += c.steps(
         [

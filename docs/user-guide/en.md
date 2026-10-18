@@ -466,7 +466,18 @@ own count, for example `0.91 s (1)`.
 `reverbscope export session/ --format csv --out curves/` writes every curve.
 Exporting another session into the same folder removes the curve files that
 session does not have (a `--no-curves` session has none), so the folder never
-mixes two sessions.
+mixes two sessions. `--out` has to be a folder. When that path is already a
+file, or the default `<session>/export` is already a file, export refuses it
+before it reads the session. The new curve files replace the previous ones
+only after every file has been written. A write that fails leaves the folder
+as it was, notes and other files included.
+
+`reverbscope show --list <folder>` names, on its error output, each
+`session.json` it cannot read, and still lists the others. `project show`
+and `project average` do the same for a session folder inside the project
+that `project.json` does not name and that cannot be read. `project
+overview` lists that folder with the sessions it could not read. A folder
+whose name starts with `.` stays unlisted.
 
 ReverbScope follows the system's language: on a Mac the preferred languages
 (System Settings → General → Language & Region; Terminal, iTerm and VS Code

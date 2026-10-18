@@ -161,6 +161,18 @@ All notable changes to ReverbScope are documented here. The format follows
   data stamp outside the image on a high-DPI display; it now measures in
   logical pixels.
 
+### Fixed
+- **A failed CSV export no longer mixes two sessions.** Curve files are
+  written beside the destination and replace the previous ones only after
+  every curve has been written. A write that fails leaves the folder as it
+  was. `export --out` that names a file, and an unknown `--format`, are
+  refused before the session is read, in the interface language.
+- **Unreadable sessions are named.** `show --list`, `project show` and
+  `project average` say on stderr which `session.json` they could not read,
+  and still list the others. `project overview` includes that folder with
+  the sessions it could not read. Folders whose names start with `.` stay
+  hidden.
+
 ## [0.5.0b3] - 2026-10-09
 
 Software beta 3, the development line after the release candidate was cut:

@@ -200,7 +200,9 @@ reverbscope-env/bin/reverbscope gui
 
 ## 导出与语言
 
-`reverbscope export session/ --format csv --out curves/` 导出每一条曲线。把另一个会话导出到同一文件夹时，该会话没有的曲线文件会被删除（`--no-curves` 会话没有任何曲线），因此文件夹里不会混有两个会话的数据。
+`reverbscope export session/ --format csv --out curves/` 导出每一条曲线。把另一个会话导出到同一文件夹时，该会话没有的曲线文件会被删除（`--no-curves` 会话没有任何曲线），因此文件夹里不会混有两个会话的数据。`--out` 必须是文件夹。若该路径已经是文件，或默认的 `<session>/export` 已经是文件，导出会在读取会话之前拒绝。新的曲线文件要等每一份都写完，才替换原来的文件。某一次写入失败时，文件夹保持原样，笔记和其他文件也保留。
+
+`reverbscope show --list <folder>` 在错误输出里指出每一份无法读取的 `session.json`，并继续列出其余会话。`project show` 和 `project average` 对项目文件夹内、`project.json` 没有记录且无法读取的会话同样处理。`project overview` 把该文件夹与未能读取的会话列在一起。名称以 `.` 开头的文件夹不列入清单。
 
 ReverbScope 跟随系统语言：Mac 上是首选语言（“系统设置 → 通用 → 语言与地区”；“终端”、iTerm 和 VS Code 不管首选语言是什么都会设置 `LANG=en_US.UTF-8`，所以 `LANG` 排在首选语言之后），Windows 上是显示语言，Linux 上是 `LANGUAGE`、`LC_ALL`、`LC_MESSAGES` 和 `LANG`。和其他程序一样，`LC_ALL=C`（或 `LC_MESSAGES=C`）在任何系统上都给出英文，例如提交错误报告时运行 `LC_ALL=C reverbscope show session/`。想不管系统怎么设置都固定使用一种语言，保存一次即可：
 

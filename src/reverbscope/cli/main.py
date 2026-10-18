@@ -1783,7 +1783,10 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             raise ConfigurationError(
                 _("cannot write the report to {path}: {error}").format(path=out, error=exc)
             ) from exc
-        print(_("Report written to {path}").format(path=out), file=sys.stderr)
+        print(
+            _("Report written to {path}").format(path=printable(str(out), single_line=True)),
+            file=sys.stderr,
+        )
     return 0
 
 
@@ -2137,7 +2140,9 @@ def cmd_show(args: argparse.Namespace) -> int:
 
     if args.list:
         _warn_ignored_json(args, "show --list")
-        listings = list_sessions(args.path)
+        skipped: list[tuple[Path, str]] = []
+        listings = list_sessions(args.path, skipped=skipped)
+        _warn_omitted_sessions(args, skipped)
         if not listings:
             print(_("No session.json files under {root}").format(root=args.path))
             return 0
@@ -2428,9 +2433,27 @@ def cmd_session(args: argparse.Namespace) -> int:
     if args.session_command == "bundle":
         _warn_ignored_json(args, "session bundle")
         path = bundle_session(args.session, args.out, include_audio=not args.no_audio)
-        print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path), keep=True))
+        print(
+            render_status(
+                _console(args),
+                "ok",
+                _("Wrote {path}").format(path=printable(str(path), single_line=True)),
+                keep=True,
+            )
+        )
         return 0
     raise ReverbScopeError(f"unknown session command {args.session_command}")
+
+
+def _refuse_export_file(path: Path) -> None:
+    """Refuse an export folder that is already a file, before the session is read."""
+    if not path.exists() or path.is_dir():
+        return
+    refusal = ConfigurationError(
+        _("{path} is a file; --out needs a folder for the curves").format(path=path)
+    )
+    refusal.cli_hints = [f"reverbscope export --out {_('<new-folder>')}"]  # type: ignore[attr-defined]
+    raise refusal
 
 
 def cmd_export(args: argparse.Namespace) -> int:
@@ -2438,11 +2461,19 @@ def cmd_export(args: argparse.Namespace) -> int:
     from reverbscope.io.session_store import load_measurement
 
     _warn_ignored_json(args, "export")
+    if args.out is not None:
+        _refuse_export_file(Path(args.out))
+    else:
+        session = Path(args.session)
+        if session.is_file():
+            session = session.parent
+        _refuse_export_file(session / "export")
+    exporter = get_exporter(args.export_format)
     loaded = load_measurement(args.session)
     out = args.out if args.out is not None else loaded.directory / "export"
-    written = get_exporter(args.export_format).export(loaded.result, out)
+    written = exporter.export(loaded.result, out)
     for path in written:
-        print(path)
+        print(printable(str(path), single_line=True))
     return 0
 
 
@@ -2475,6 +2506,28 @@ def _warn_missing_positions(args: argparse.Namespace, project: Path) -> None:
         print(render_status(err, "warn", more, keep=True), file=sys.stderr)
 
 
+def _warn_omitted_sessions(args: argparse.Namespace, omitted: Sequence[tuple[Path, str]]) -> None:
+    """Say which ``session.json`` files a listing could not read (stderr).
+
+    ``show --list`` and the project commands leave an unreadable session out
+    so that one bad folder does not hide the others. Without this note the
+    folder disappears from the list, and from a project average, with no word.
+    """
+    if not omitted:
+        return
+    err = _console(args, sys.stderr)
+    for folder, reason in omitted[:MISSING_POSITIONS_SHOW_LIMIT]:
+        text = _("{path} could not be read and is left out: {error}").format(
+            path=printable(str(folder), single_line=True),
+            error=printable(reason, single_line=True),
+        )
+        print(render_status(err, "warn", text, keep=True), file=sys.stderr)
+    extra = len(omitted) - MISSING_POSITIONS_SHOW_LIMIT
+    if extra > 0:
+        more = _("... and {n} more sessions left out").format(n=extra)
+        print(render_status(err, "warn", more, keep=True), file=sys.stderr)
+
+
 def cmd_project(args: argparse.Namespace) -> int:
     from reverbscope.core.averaging import average_decay
     from reverbscope.io.project_store import (
@@ -2504,7 +2557,14 @@ def cmd_project(args: argparse.Namespace) -> int:
             )
         project = Project(name=args.name or args.out.name, notes=args.notes)
         path = save_project(args.out, project)
-        print(render_status(_console(args), "ok", _("Wrote {path}").format(path=path), keep=True))
+        print(
+            render_status(
+                _console(args),
+                "ok",
+                _("Wrote {path}").format(path=printable(str(path), single_line=True)),
+                keep=True,
+            )
+        )
         return 0
     if command == "add":
         project = add_session(args.project, args.session, position=args.position)
@@ -2512,7 +2572,10 @@ def cmd_project(args: argparse.Namespace) -> int:
             render_status(
                 _console(args),
                 "ok",
-                _("{n} position(s) in {path}").format(n=len(project.positions), path=args.project),
+                _("{n} position(s) in {path}").format(
+                    n=len(project.positions),
+                    path=printable(str(args.project), single_line=True),
+                ),
             )
         )
         return 0
@@ -2522,17 +2585,21 @@ def cmd_project(args: argparse.Namespace) -> int:
         project = load_project(args.project)
         # project.json may come from someone else (SECURITY.md).
         print(printable(project.name or str(args.project), single_line=True))
-        for label, path in list_project_sessions(args.project):
+        unreadable: list[tuple[Path, str]] = []
+        for label, path in list_project_sessions(args.project, unreadable=unreadable):
             tag = printable(label, single_line=True) if label else _("(unlisted)")
             print(f"  {tag}\t{printable(str(path), single_line=True)}")
         _warn_missing_positions(args, args.project)
+        _warn_omitted_sessions(args, unreadable)
         return 0
     if command == "average":
         if not is_project(args.project):
             raise ReverbScopeError(_("no project.json in {path}").format(path=args.project))
-        items = list_project_sessions(args.project)
+        unreadable = []
+        items = list_project_sessions(args.project, unreadable=unreadable)
         # Before the "no sessions" error, which would otherwise not say why.
         _warn_missing_positions(args, args.project)
+        _warn_omitted_sessions(args, unreadable)
         if not items:
             raise ReverbScopeError(_("no sessions in {path}").format(path=args.project))
         loaded = [load_measurement(path) for _label, path in items]
@@ -2580,7 +2647,11 @@ def cmd_project(args: argparse.Namespace) -> int:
             skipped.append(
                 (stored, _("position {label}: no session.json there").format(label=label))
             )
-        for label, path in list_project_sessions(args.project):
+        unreadable = []
+        listed = list_project_sessions(args.project, unreadable=unreadable)
+        for folder, reason in unreadable:
+            skipped.append((str(folder), reason))
+        for label, path in listed:
             try:
                 measurement = load_measurement(path)
             except ReverbScopeError as exc:
