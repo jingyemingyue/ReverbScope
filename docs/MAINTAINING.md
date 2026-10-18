@@ -59,7 +59,8 @@ release file (`pyproject.toml`, `packaging/`, the bundle scripts, the
 workflow itself, `requirements/`), on `v*` tags, on pull requests that touch
 those files, and by hand (**Actions → Release → Run workflow**). It runs the
 quality job, builds sdist and wheel, the four platform bundles (Linux,
-macOS arm64, macOS x86_64, Windows; Desktop and Terminal Edition each),
+macOS arm64, macOS x86_64, Windows; Desktop Edition only, the standalone
+Terminal Edition is no longer built),
 smoke-tests every bundle (`scripts/smoke_bundle.py`), installs, smokes and
 uninstalls the Windows installer, builds and checks both DMGs, writes the
 SBOM, checks the exact file set (`scripts/release_draft.py stage`) and, on
