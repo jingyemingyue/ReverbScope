@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import json
 import string
-import time
+import subprocess
+import sys
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -403,18 +405,26 @@ def test_inputs_are_not_mutated(transform: Any) -> None:
 
 
 def test_two_seconds_at_48_khz_is_fast() -> None:
-    ir = decaying_mode(length_s=2.0)
-    # Keep the one-second budget, but measure steady-state work rather than
-    # BLAS/FFT startup or a single scheduling pause on a shared CI runner.
-    spectrogram(ir, SR, PRE)
-    cumulative_spectral_decay(ir, SR, PRE)
-    times = []
-    for _ in range(5):
-        started = time.perf_counter()
-        spectrogram(ir, SR, PRE)
-        cumulative_spectral_decay(ir, SR, PRE)
-        times.append(time.perf_counter() - started)
-    assert float(np.median(times)) < 1.0, times
+    # Benchmark in a fresh process so the BLAS thread budget is applied before
+    # NumPy is loaded. Keep the same workload, warm-up, five samples and budget.
+    root = Path(__file__).resolve().parents[2]
+    completed = subprocess.run(
+        [sys.executable, "-m", "tests.bench_timefreq"],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=True,
+        timeout=60,
+    )
+    report = json.loads(completed.stdout)
+    assert report["sample_rate"] == SR
+    assert report["direct_index"] == PRE
+    assert report["duration_s"] == 2.0
+    assert report["samples"] == 2 * SR + PRE
+    assert len(report["wall_seconds"]) == len(report["cpu_seconds"]) == 5
+    assert set(report["thread_environment"].values()) == {"1"}
+    assert report["median_seconds"] == float(np.median(report["wall_seconds"]))
+    assert report["median_seconds"] < 1.0, report
 
 
 def test_analysis_result_is_unchanged(short_sweep: SweepSettings) -> None:
