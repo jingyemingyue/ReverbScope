@@ -8,6 +8,9 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Artifact upload automation refreshed.** Port the SHA-pinned upload-artifact
+  v7.0.1 update from #29 onto the current main line, retaining archived
+  named artifacts and the existing Qt test teardown and version constraints.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on
