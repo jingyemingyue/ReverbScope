@@ -50,7 +50,7 @@ explicitly unsubtracted builder, and the precise samples affected by M3.
 [Validation record](../research/pr74-default-policy-validation.md) records
 snapshot comparisons and the actual commands/results.
 
-The separate [deferred probes](../research/pr74_deferred_probes.py) are
+The separate [deferred probes](https://github.com/jingyemingyue/ReverbScope/blob/67643f0d5c9324cf59c9848a89da02a2b47b3a88/docs/research/pr74_deferred_probes.py) are
 executable strict acceptance tests outside pytest's existing `tests/`
 testpaths. Run them explicitly; they intentionally fail on the unchanged
 M2/M8 implementation. They are new evidence, not existing tests moved out

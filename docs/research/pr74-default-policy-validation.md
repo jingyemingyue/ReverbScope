@@ -129,8 +129,8 @@ recorded; the nearby averaging file independently passed 20 tests in 17.67 s.
 No implementation, assertion, skip/xfail or 85% coverage-gate change was
 made in response. The first exit's cause remains undetermined.
 
-[Command transcript and failures](pr74-validation.txt) and
-[unmodified incomplete verbose stdout](pr74-local-full-incomplete.txt.gz)
+[Command transcript and failures](https://github.com/jingyemingyue/ReverbScope/blob/67643f0d5c9324cf59c9848a89da02a2b47b3a88/docs/research/pr74-validation.txt) and
+[unmodified incomplete verbose stdout](https://github.com/jingyemingyue/ReverbScope/blob/67643f0d5c9324cf59c9848a89da02a2b47b3a88/docs/research/pr74-local-full-incomplete.txt.gz)
 retain these attempts. Full pytest and >=85% coverage acceptance remain
 pending the exact-head remote CI; they are not inferred from partial runs.
 The branch must stay Draft and unmerged.
