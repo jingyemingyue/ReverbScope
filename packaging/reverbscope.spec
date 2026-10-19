@@ -1,17 +1,9 @@
 # PyInstaller one-directory spec (ARCHITECTURE_V1.md §6.2).
 # Builds are unsigned until the maintainer holds signing identities.
 #
-# Two editions from one spec (docs/EDITIONS.md):
-#
-#   REVERBSCOPE_PACKAGE=desktop (default)  GUI + CLI: dist/reverbscope (and
-#                                        dist/ReverbScope.app on macOS)
-#   REVERBSCOPE_PACKAGE=terminal           CLI only, no Qt / PySide6, no
-#                                        pyqtgraph and no matplotlib:
-#                                        dist/reverbscope-terminal
-#
-# Build the terminal edition with its own work folder so the two builds do
-# not share PyInstaller's cache:
-#   REVERBSCOPE_PACKAGE=terminal pyinstaller --workpath build/terminal packaging/reverbscope.spec
+# The Desktop Edition (docs/EDITIONS.md): GUI + the reverbscope command line in
+# dist/reverbscope (and dist/ReverbScope.app on macOS). The standalone
+# Terminal Edition (REVERBSCOPE_PACKAGE=terminal) is no longer built.
 # -*- mode: python ; coding: utf-8 -*-
 
 import json
@@ -24,9 +16,11 @@ from pathlib import Path
 
 ROOT = Path(SPECPATH).resolve().parent  # noqa: F821
 PACKAGE = os.environ.get("REVERBSCOPE_PACKAGE", "desktop").strip().lower()
-if PACKAGE not in ("desktop", "terminal"):
-    raise SystemExit(f"REVERBSCOPE_PACKAGE must be desktop or terminal, not {PACKAGE!r}")
-TERMINAL = PACKAGE == "terminal"
+if PACKAGE != "desktop":
+    raise SystemExit(
+        f"REVERBSCOPE_PACKAGE must be desktop, not {PACKAGE!r}: the standalone "
+        "Terminal Edition is no longer built (the command line ships in the Desktop Edition)"
+    )
 MACOS_INFO = plistlib.loads((ROOT / "packaging" / "macos" / "Info.plist").read_bytes())
 VERSION = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
 MACOS_INFO["CFBundleShortVersionString"] = VERSION
@@ -59,7 +53,7 @@ BUILD_INFO_FILE = Path(workpath) / "build_info.json"  # noqa: F821
 BUILD_INFO_FILE.parent.mkdir(parents=True, exist_ok=True)
 BUILD_INFO_FILE.write_text(json.dumps(BUILD_INFO, indent=1), encoding="utf-8")
 
-# Both editions. Nothing at run time imports these, but NumPy's and SciPy's
+# Nothing at run time imports these, but NumPy's and SciPy's
 # test helpers (and cffi's distutils shim) pull them into the analysis; they
 # would ship without their licence texts in THIRD_PARTY_LICENSES.
 DEV_ONLY_EXCLUDES = [
@@ -77,25 +71,6 @@ DEV_ONLY_EXCLUDES = [
     "py",
     # Optional for pdb/cmd/code; on Linux it would bring GNU libreadline (GPL).
     "readline",
-]
-
-# The terminal edition: the command line and the analysis only. The GUI
-# package, Qt and the plotting stack (only the GUI draws charts) stay out;
-# ``reverbscope gui`` then says it is the Terminal Edition.
-TERMINAL_EXCLUDES = [
-    "PySide6",
-    "shiboken6",
-    "reverbscope.ui",
-    "pyqtgraph",
-    "colorama",
-    "matplotlib",
-    "PIL",
-    "kiwisolver",
-    "contourpy",
-    "fontTools",
-    "tkinter",
-    "_tkinter",
-    *DEV_ONLY_EXCLUDES,
 ]
 
 # The desktop charts (GUI_2_ARCHITECTURE.md §9): pyqtgraph draws with
@@ -125,13 +100,11 @@ a = Analysis(
         (str(ROOT / "src" / "reverbscope" / "locale"), "reverbscope/locale"),
         (str(BUILD_INFO_FILE), "reverbscope"),
     ],
-    hiddenimports=["reverbscope.cli.main"] if TERMINAL else ["reverbscope.cli.main", "reverbscope.ui.app"],
+    hiddenimports=["reverbscope.cli.main", "reverbscope.ui.app"],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=TERMINAL_EXCLUDES
-    if TERMINAL
-    else [
+    excludes=[
         *DEV_ONLY_EXCLUDES,
         *PYQTGRAPH_EXCLUDES,
         "PySide6.QtCharts",
@@ -193,7 +166,7 @@ exe = EXE(
 # start it without arguments and ``reverbscope.__main__.desktop_args`` opens the
 # GUI; the console ``reverbscope`` keeps the CLI and never flashes a window.
 launchers = [exe]
-if sys.platform != "darwin" and not TERMINAL:
+if sys.platform != "darwin":
     launchers.append(
         EXE(
             pyz,
@@ -214,12 +187,12 @@ coll = COLLECT(
     a.datas,
     strip=False,
     upx=False,
-    name="reverbscope-terminal" if TERMINAL else "reverbscope",
+    name="reverbscope",
 )
 
 # Keep the console executable for CLI users. Finder needs a separate windowed
 # bootloader so the .app opens the GUI and receives normal macOS app events.
-if sys.platform == "darwin" and not TERMINAL:
+if sys.platform == "darwin":
     gui_exe = EXE(
         pyz,
         a.scripts,

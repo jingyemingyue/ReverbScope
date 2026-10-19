@@ -11,14 +11,12 @@ rc2 and b3 remain **Draft**. The filenames and numbered steps below apply to
 candidate files explicitly shared by the maintainer, or to a future accepted
 renamed pre-release; those files are absent from the older public beta.
 
-ReverbScope comes in two editions;
-neither needs Python or Git:
-
-* **Desktop Edition** — the app with windows and charts, plus the command
-  line. For most people.
-* **Terminal Edition** — the command line only, built without the GUI (no
-  Qt), about half the size. For scripts, automation, servers and computers
-  without a desktop.
+ReverbScope is downloaded as one edition, the **Desktop Edition**: the app
+with windows and charts. It needs neither Python nor Git, and it includes
+the `reverbscope` command-line tool for advanced use
+([Command line (advanced)](#command-line-advanced)). The separate
+command-line-only Terminal Edition is discontinued; for a computer without a
+desktop, use the [Python wheel](#python-wheel-and-source) without `[gui]`.
 
 ReverbScope is a **pre-release for testing**; `release/0.5.0` is the candidate
 line and `main` is the development line. The builds are
@@ -28,23 +26,12 @@ line and `main` is the development line. The builds are
 
 ## Which file do I need?
 
-**Desktop Edition** (GUI + command line):
-
 | Your computer | File | Section |
 | --- | --- | --- |
 | Mac with Apple silicon (M1 or later), macOS 14 or later | `ReverbScope-Desktop-macOS-arm64.dmg` | [macOS](#macos) |
 | Mac with an Intel processor, macOS 14 or later | `ReverbScope-Desktop-macOS-x86_64.dmg` | [macOS](#macos) |
 | Windows 10 or 11, 64-bit | `ReverbScope-Desktop-Windows-x64-Setup.exe` (installer) or `ReverbScope-Desktop-Windows-x64.zip` (no installer) | [Windows](#windows) |
 | Linux x86_64 (glibc 2.39 or newer, e.g. Ubuntu 24.04+) | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | [Linux](#linux) |
-
-**Terminal Edition** (command line only):
-
-| Your computer | File | Section |
-| --- | --- | --- |
-| Mac with Apple silicon, macOS 14 or later | `ReverbScope-Terminal-macOS-arm64.tar.gz` | [Terminal Edition](#terminal-edition) |
-| Mac with an Intel processor, macOS 14 or later | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | [Terminal Edition](#terminal-edition) |
-| Windows 10 or 11, 64-bit | `ReverbScope-Terminal-Windows-x64.zip` | [Terminal Edition](#terminal-edition) |
-| Linux x86_64 (glibc 2.39 or newer) | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | [Terminal Edition](#terminal-edition) |
 
 **Python developers** (any system with Python 3.12–3.14):
 `reverbscope-<version>-py3-none-any.whl` or `reverbscope-<version>.tar.gz`, see
@@ -60,17 +47,14 @@ inside the builds).
 
 | System | Status |
 | --- | --- |
-| macOS 14 Sonoma or later, Apple silicon or Intel | Supported. The DMGs are built, mounted, installed and started, and the Terminal Edition built and run, on GitHub's macOS 26 (Apple silicon) and macOS 15 (Intel) runners. macOS 14 is the minimum of the bundled NumPy / SciPy; it has not been run yet. macOS 13 and older are not supported. |
-| Windows 10 / 11, x64 | Supported. The installer is built, installed silently, started and uninstalled, and the Terminal Edition built and run, on GitHub's Windows runner. No test on a personal Windows PC has been recorded yet. Windows on ARM and 32-bit Windows are not tested. |
-| Linux x86_64 | Supported with glibc 2.39 or newer. Both editions built and smoke-tested on GitHub's Ubuntu runner. |
+| macOS 14 Sonoma or later, Apple silicon or Intel | Supported. The DMGs are built, mounted, installed and started on GitHub's macOS 26 (Apple silicon) and macOS 15 (Intel) runners. macOS 14 is the minimum of the bundled NumPy / SciPy; it has not been run yet. macOS 13 and older are not supported. |
+| Windows 10 / 11, x64 | Supported. The installer is built, installed silently, started and uninstalled on GitHub's Windows runner. No test on a personal Windows PC has been recorded yet. Windows on ARM and 32-bit Windows are not tested. |
+| Linux x86_64 | Supported with glibc 2.39 or newer. Built and smoke-tested on GitHub's Ubuntu runner. |
 | Python | 3.12, 3.13, 3.14 (CI runs all three on Ubuntu, 3.12 on macOS and Windows). |
 
 More detail on what verified each row: [COMPATIBILITY.md](COMPATIBILITY.md).
 
 ## macOS
-
-This section is the **Desktop Edition**; the command-line-only download is
-under [Terminal Edition](#terminal-edition).
 
 ### Install
 
@@ -129,9 +113,6 @@ The app's executable is also the command-line tool:
 
 ## Windows
 
-This section is the **Desktop Edition**; the command-line-only download is
-under [Terminal Edition](#terminal-edition).
-
 ### Installer (recommended)
 
 1. On the [download page](https://github.com/jingyemingyue/ReverbScope/releases),
@@ -177,8 +158,7 @@ access your microphone* must be on.
 
 ## Linux
 
-The **Desktop Edition** (the command-line-only download is under
-[Terminal Edition](#terminal-edition)):
+The Desktop Edition:
 
 ```bash
 tar xzf ReverbScope-Desktop-Linux-x86_64.tar.gz
@@ -198,29 +178,24 @@ sudo apt install fonts-noto-cjk   # only for Chinese text in charts
 can adapt. The bundle needs glibc 2.39 or newer (Ubuntu 24.04, Debian 13,
 Fedora 40 or later).
 
-## Terminal Edition
+## Command line (advanced)
 
-The command line without the GUI: every `reverbscope` command (`demo`, `sweep`,
-`analyze`, `measure`, `compare`, `devices`, `doctor`, `project`, `session`,
-`export`, …) in English and Chinese, with the same analysis as the Desktop
-Edition. It is built without Qt, PySide6 and the chart library, so it is
-about half the size, and `reverbscope gui` only says which download has the
-GUI.
+Every download includes the `reverbscope` command-line tool next to the app:
+every command (`demo`, `sweep`, `analyze`, `measure`, `compare`, `devices`,
+`doctor`, `project`, `session`, `export`, …) in English and Chinese, with the
+same analysis as the windows. Most people never need it; it is there for
+scripts, batch work and bug reports. The downloads do not put it on your
+`PATH`:
 
-**macOS** (`ReverbScope-Terminal-macOS-arm64.tar.gz` for Apple silicon,
-`ReverbScope-Terminal-macOS-x86_64.tar.gz` for Intel) and **Linux**
-(`ReverbScope-Terminal-Linux-x86_64.tar.gz`):
+| System | The command-line tool |
+| --- | --- |
+| macOS | `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope` ([details](#command-line-on-macos-optional)) |
+| Windows installer | `reverbscope.exe` in `%LOCALAPPDATA%\Programs\ReverbScope` |
+| Windows ZIP | `reverbscope.exe` in the extracted folder |
+| Linux | `reverbscope/reverbscope` in the extracted folder |
 
-```bash
-tar xzf ReverbScope-Terminal-macOS-arm64.tar.gz      # or the file you downloaded
-cd reverbscope-terminal
-./reverbscope demo                                    # try it: synthetic data, nothing is played
-./reverbscope --help
-```
-
-Keep the `_internal` folder next to `reverbscope`. To type `reverbscope` from
-anywhere, add the folder to your `PATH` (for example
-`export PATH="$HOME/reverbscope-terminal:$PATH"` in `~/.zshrc` or `~/.bashrc`).
+Open a terminal in that folder (or give the full path) and try
+`reverbscope demo`: synthetic data, nothing is played.
 
 **Language.** The command line follows the system's language: the Mac's
 preferred languages (also in Terminal, which sets `LANG=en_US.UTF-8`
@@ -229,28 +204,6 @@ Linux. To keep Chinese or English whatever the system says, run
 `reverbscope config language zh_CN` (or `en`) once;
 `reverbscope config language auto` follows the system again, and
 `reverbscope config` lists every setting.
-
-On **macOS**, a browser marks downloaded files, and macOS refuses to run an
-unsigned command-line program with that mark (*“reverbscope” cannot be opened
-because the developer cannot be verified*). Clear the mark on this folder
-once, in the folder that contains `reverbscope-terminal`:
-
-```bash
-xattr -dr com.apple.quarantine reverbscope-terminal
-```
-
-This changes only these files; it does not turn off Gatekeeper, and you
-should not. It is a stop-gap for these unsigned pre-release builds; signed
-builds will not need it. A file downloaded with `curl` has no such mark. The Linux
-Terminal Edition needs `libportaudio2` for measurements
-(`sudo apt install libportaudio2`), not the graphics libraries.
-
-**Windows** (`ReverbScope-Terminal-Windows-x64.zip`): right-click →
-**Extract All…**, open the extracted folder and double-click
-**`ReverbScope Terminal.cmd`**. It opens a Command Prompt in that folder, ready
-for `reverbscope.exe demo` or `reverbscope.exe --help`. (Double-clicking
-`reverbscope.exe` itself closes its window as soon as it has printed.) From
-PowerShell, `.\reverbscope.exe demo` in the folder does the same.
 
 **Saving a report from PowerShell.** Sent to a file or to another program,
 the output of every `reverbscope` command is UTF-8. Command Prompt's `>`
@@ -324,7 +277,7 @@ that file name:
 
 ```bash
 shasum -a 256 ReverbScope-Desktop-macOS-arm64.dmg          # macOS
-sha256sum ReverbScope-Terminal-Linux-x86_64.tar.gz         # Linux
+sha256sum ReverbScope-Desktop-Linux-x86_64.tar.gz          # Linux
 ```
 
 ```powershell
@@ -363,7 +316,7 @@ Download the new file from the same page and:
   once more for the new build.
 * **Windows installer:** run the new `ReverbScope-Desktop-Windows-x64-Setup.exe`;
   it replaces the installed version.
-* **Windows ZIP / Linux / Terminal Edition:** delete the old folder and
+* **Windows ZIP / Linux:** delete the old folder and
   extract the new archive.
 * **Wheel:** `pip install --upgrade "./reverbscope-<new version>-py3-none-any.whl[gui]"`
   in the same virtual environment.
@@ -378,7 +331,7 @@ and your saved session folders are never touched.
   Trash.
 * **Windows installer:** **Settings → Apps → Installed apps → ReverbScope →
   Uninstall**, or Start menu → *Uninstall ReverbScope*.
-* **Windows ZIP / Linux / Terminal Edition:** delete the extracted folder.
+* **Windows ZIP / Linux:** delete the extracted folder.
 * **Python:** `pip uninstall reverbscope`, or delete the virtual environment
   folder.
 
@@ -400,10 +353,9 @@ saved them.
 | Windows: no *Run anyway* button | Smart App Control or a company policy blocks unsigned apps; see the [table above](#unsigned-build-warnings). |
 | Linux: `libEGL.so.1`, `libportaudio` or *xcb* plugin errors | Install the [system libraries](#linux). |
 | Linux: Chinese chart labels show empty boxes | `sudo apt install fonts-noto-cjk` |
-| `reverbscope gui` says *This is the Terminal Edition* | The Terminal Edition has no GUI; download the Desktop Edition (the command line works in both). |
-| macOS: *“reverbscope” cannot be opened because the developer cannot be verified* (Terminal Edition) | Clear the download mark once: `xattr -dr com.apple.quarantine reverbscope-terminal` ([Terminal Edition](#terminal-edition)). |
-| Windows PowerShell: Chinese text is garbled in a file or after a pipe (`> report.txt`, `\| Select-String`) | Run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()` first ([Saving a report from PowerShell](#terminal-edition)). |
-| Windows: `reverbscope.exe` opens and closes at once | It is a command-line program: a double-click opens a window that closes when the command ends. Open **Command Prompt** or **PowerShell** in the folder that holds it (Desktop Edition: the install folder) and run `reverbscope.exe --help`. Only the Terminal Edition has `ReverbScope Terminal.cmd` for a double-click. |
+| `reverbscope gui` says *This is the Terminal Edition* | That is an older command-line-only download, which is discontinued; download the Desktop Edition (it includes the command line). |
+| Windows PowerShell: Chinese text is garbled in a file or after a pipe (`> report.txt`, `\| Select-String`) | Run `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()` first ([Saving a report from PowerShell](#command-line-advanced)). |
+| Windows: `reverbscope.exe` opens and closes at once | It is a command-line program: a double-click opens a window that closes when the command ends. Open **Command Prompt** or **PowerShell** in the folder that holds it (the installer: the install folder) and run `reverbscope.exe --help`. |
 | `reverbscope gui` says PySide6 could not be loaded | Install the GUI extra: `pip install "PySide6_Essentials>=6.6,<6.12"` (or reinstall the wheel with `[gui]`). |
 | `pip install reverbscope` finds nothing, or something else | ReverbScope is not on PyPI yet; use the [wheel](#wheel-from-a-release). |
 | Anything else | Open a [bug report](https://github.com/jingyemingyue/ReverbScope/issues/new?template=bug.yml) and paste **Help → Environment Report for Bug Reports** (or `reverbscope doctor`). Nothing is sent automatically. |

@@ -10,15 +10,10 @@ hand (``docs/RELEASE_PLAN.md`` §3a):
 * Desktop Edition: PyInstaller -> license bundle (with a notice for every
   native library PyInstaller collected) -> ``--strip`` bundle gate -> smoke
   test (CLI, demo, fake-backend measurement, offscreen GUI, windowed
-  launcher);
-* Terminal Edition: PyInstaller with ``REVERBSCOPE_PACKAGE=terminal`` -> its
-  license bundle -> the ``--terminal`` gate (no Qt, PySide6 or matplotlib)
-  -> smoke test (CLI, demo in English and Chinese, JSON on stdout, ``gui``
-  refused politely);
-* Linux: ``ReverbScope-Desktop-Linux-x86_64.tar.gz`` and
-  ``ReverbScope-Terminal-Linux-x86_64.tar.gz``;
-* Windows: ``ReverbScope-Desktop-Windows-x64.zip``,
-  ``ReverbScope-Terminal-Windows-x64.zip`` and, with Inno Setup installed,
+  launcher). The Desktop Edition carries the ``reverbscope`` command line;
+  the standalone Terminal Edition is no longer built;
+* Linux: ``ReverbScope-Desktop-Linux-x86_64.tar.gz``;
+* Windows: ``ReverbScope-Desktop-Windows-x64.zip`` and, with Inno Setup installed,
   ``ReverbScope-Desktop-Windows-x64-Setup.exe``. The installer is compiled but
   not installed, smoke-tested and uninstalled as the workflow does, because
   that would change this PC; run it by hand (``/VERYSILENT /CURRENTUSER
@@ -26,7 +21,7 @@ hand (``docs/RELEASE_PLAN.md`` §3a):
   /VERYSILENT``) before publishing a locally built installer;
 * macOS: ad-hoc signed ``ReverbScope.app`` in
   ``ReverbScope-Desktop-macOS-<arch>.dmg``, mounted and launched by
-  ``check_macos_dmg.py``, and ``ReverbScope-Terminal-macOS-<arch>.tar.gz``;
+  ``check_macos_dmg.py``;
 * ``SHA256SUMS-<OS>-<ARCH>``; with ``--python-dist`` also the wheel and sdist.
 
 Install the pinned runtime first (the script refuses a different one unless
@@ -56,8 +51,6 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-#: The Windows Terminal Edition's "open a prompt here" launcher.
-TERMINAL_CMD = "ReverbScope Terminal.cmd"
 DIST = ROOT / "dist"
 PYINSTALLER_VERSION = "6.22.3"
 INNO_SETUP_DEFAULT = Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")) / (
@@ -79,22 +72,15 @@ class Target:
 
     @property
     def archives(self) -> tuple[str, ...]:
-        """Desktop Edition file(s), then the Terminal Edition's (release_draft.CHECKSUM_FILES)."""
+        """The Desktop Edition file(s) (release_draft.CHECKSUM_FILES)."""
         if self.system == "Linux":
-            return (
-                "ReverbScope-Desktop-Linux-x86_64.tar.gz",
-                "ReverbScope-Terminal-Linux-x86_64.tar.gz",
-            )
+            return ("ReverbScope-Desktop-Linux-x86_64.tar.gz",)
         if self.system == "Windows":
             return (
                 "ReverbScope-Desktop-Windows-x64-Setup.exe",
                 "ReverbScope-Desktop-Windows-x64.zip",
-                "ReverbScope-Terminal-Windows-x64.zip",
             )
-        return (
-            f"ReverbScope-Desktop-macOS-{self.cpu}.dmg",
-            f"ReverbScope-Terminal-macOS-{self.cpu}.tar.gz",
-        )
+        return (f"ReverbScope-Desktop-macOS-{self.cpu}.dmg",)
 
     @property
     def cpu(self) -> str:
@@ -190,7 +176,7 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
 
     def python_dist() -> None:
         # case_sensitive: Windows globs ignore case by default, and
-        # ReverbScope-Terminal-Linux-*.tar.gz of another runner must survive.
+        # ReverbScope-Desktop-Linux-*.tar.gz of another runner must survive.
         for old in DIST.glob("reverbscope-*.whl", case_sensitive=True):
             old.unlink()
         for old in DIST.glob("reverbscope-*.tar.gz", case_sensitive=True):
@@ -254,59 +240,6 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
 
     steps.append(Step("Smoke frozen binary (Desktop Edition)", smoke))
 
-    terminal = DIST / "reverbscope-terminal"
-    terminal_licenses = work / "THIRD_PARTY_LICENSES-terminal"
-
-    def terminal_build() -> None:
-        shutil.rmtree(terminal, ignore_errors=True)
-        shutil.rmtree(terminal_licenses, ignore_errors=True)
-        _python(
-            "-m",
-            "PyInstaller",
-            "--noconfirm",
-            "--clean",
-            "--workpath",
-            ROOT / "build" / "terminal",
-            "packaging/reverbscope.spec",
-            env={**os.environ, "REVERBSCOPE_PACKAGE": "terminal"},
-        )
-        _python(
-            "scripts/build_license_bundle.py",
-            "--terminal",
-            "--out",
-            terminal_licenses,
-            "--frozen",
-            terminal,
-        )
-        shutil.copytree(terminal_licenses, terminal / "THIRD_PARTY_LICENSES", dirs_exist_ok=True)
-        _python(
-            "scripts/check_bundle_contents.py",
-            "--root",
-            terminal,
-            "--strip",
-            "--require-licenses",
-            "--terminal",
-        )
-        if target.system == "Windows":
-            shutil.copy2(ROOT / "packaging" / "windows" / "terminal" / TERMINAL_CMD, terminal)
-
-    steps.append(Step("Terminal Edition (command line only, no Qt)", terminal_build))
-
-    def terminal_smoke() -> None:
-        _python(
-            "scripts/smoke_bundle.py",
-            "--root",
-            terminal,
-            "--out",
-            work / "terminal-smoke" / "session",
-            "--terminal",
-            "--expect-package",
-            "terminal",
-            "--expect-machine",
-            target.cpu,
-        )
-
-    steps.append(Step("Smoke Terminal Edition", terminal_smoke))
     desktop_name, *_rest = target.archives
 
     if target.system == "Linux":
@@ -364,18 +297,6 @@ def plan(target: Target, args: argparse.Namespace, work: Path) -> list[Step]:
             _python("scripts/check_macos_dmg.py", dmg, env=offscreen)
 
         steps.append(Step("macOS disk image", mac_dmg))
-
-    terminal_archive_name = target.archives[-1]
-
-    def terminal_archive() -> None:
-        if target.system == "Windows":
-            shutil.make_archive(
-                str(DIST / terminal_archive_name.removesuffix(".zip")), "zip", terminal
-            )
-        else:
-            _run("tar", "-C", DIST, "-czf", DIST / terminal_archive_name, "reverbscope-terminal")
-
-    steps.append(Step("Terminal Edition archive", terminal_archive))
 
     def checksums() -> None:
         assets = [DIST / name for name in target.archives if (DIST / name).is_file()]

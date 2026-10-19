@@ -63,22 +63,6 @@ REQUIRED = [
 
 OPTIONAL = ["PySide6_Essentials", "shiboken6", "PySide6"]
 
-#: What the Terminal Edition ships (``REVERBSCOPE_PACKAGE=terminal`` in
-#: packaging/reverbscope.spec): the analysis and audio stack, without Qt and
-#: without matplotlib and its dependencies.
-TERMINAL_REQUIRED = [
-    "numpy",
-    "scipy",
-    "soundfile",
-    "sounddevice",
-    "cffi",
-    "pycparser",
-    "packaging",
-    "typing-extensions",
-]
-#: Notices that concern only the GUI's libraries.
-GUI_NOTICES = ("freetype", "agg", "pyside6", "ttconv")
-
 # Verbatim license texts kept in the repository because the wheels omit them
 # (DEPENDENCIES.md §3-§4). Every bundle ships all of them; the LGPL / GPL
 # texts are additionally *required* whenever PySide6 is installed.
@@ -440,7 +424,6 @@ def build(
     out: Path,
     *,
     texts_dir: Path = TEXTS_DIR,
-    terminal: bool = False,
     frozen: Path | None = None,
 ) -> list[str]:
     """Write the bundle and return the names of unresolved items.
@@ -449,11 +432,10 @@ def build(
     Python licence when it cannot be found, when PySide6 is installed missing
     LGPL / GPL texts and Qt notices (reported as ``text:<name>``) and, with
     ``frozen``, native libraries without a notice (``native:<name>``).
-    ``terminal`` writes the Terminal Edition's bundle: no Qt, no matplotlib.
     """
     out.mkdir(parents=True, exist_ok=True)
     unresolved: list[str] = []
-    for name in TERMINAL_REQUIRED if terminal else REQUIRED:
+    for name in REQUIRED:
         files = _license_files(name)
         if not files:
             unresolved.append(name)
@@ -465,7 +447,7 @@ def build(
         for filename, data in [*files, *extra]:
             (dest / filename).write_bytes(data)
     qt_installed = False
-    for name in () if terminal else OPTIONAL:
+    for name in OPTIONAL:
         files = _license_files(name)
         dest = out / name.replace(" ", "_")
         dest.mkdir(exist_ok=True)
@@ -477,8 +459,6 @@ def build(
     texts = out / "_texts"
     texts.mkdir(exist_ok=True)
     for filename in TEXTS:
-        if terminal and filename in QT_TEXTS:
-            continue
         src = texts_dir / filename
         if src.is_file():
             (texts / filename).write_bytes(src.read_bytes())
@@ -487,15 +467,12 @@ def build(
     extras = out / "_notices"
     extras.mkdir(exist_ok=True)
     for key, text in KNOWN_NOTICES.items():
-        if terminal and key in GUI_NOTICES:
-            continue
         (extras / f"{key}.txt").write_text(text, encoding="utf-8")
-    if not terminal:
-        qt_notice = texts_dir / QT_THIRD_PARTY
-        if qt_notice.is_file():
-            (extras / QT_THIRD_PARTY).write_bytes(qt_notice.read_bytes())
-        elif qt_installed:
-            unresolved.append(f"text:{QT_THIRD_PARTY}")
+    qt_notice = texts_dir / QT_THIRD_PARTY
+    if qt_notice.is_file():
+        (extras / QT_THIRD_PARTY).write_bytes(qt_notice.read_bytes())
+    elif qt_installed:
+        unresolved.append(f"text:{QT_THIRD_PARTY}")
     python = python_license()
     if python is None:
         unresolved.append("text:Python LICENSE.txt")
@@ -521,9 +498,7 @@ def build(
             (out / name).write_bytes(src.read_bytes())
     summary = out / "INDEX.txt"
     qt_line = "PySide6 installed; LGPL-3.0 and GPL-3.0 texts in _texts/"
-    if terminal:
-        qt_line = "not included (Terminal Edition)"
-    elif not qt_installed:
+    if not qt_installed:
         qt_line = "PySide6 not installed"
     lines = [
         "ReverbScope third-party license bundle",
@@ -547,17 +522,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True, help="THIRD_PARTY_LICENSES directory")
     parser.add_argument(
-        "--terminal",
-        action="store_true",
-        help="the Terminal Edition's bundle (no Qt, no matplotlib)",
-    )
-    parser.add_argument(
         "--frozen",
         type=Path,
         help="the PyInstaller output folder: also cover its native libraries",
     )
     args = parser.parse_args(argv)
-    unresolved = build(args.out, terminal=args.terminal, frozen=args.frozen)
+    unresolved = build(args.out, frozen=args.frozen)
     if unresolved:
         print("unresolved packages: " + ", ".join(unresolved), file=sys.stderr)
         return 1

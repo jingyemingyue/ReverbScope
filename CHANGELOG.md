@@ -7,6 +7,23 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Removed
+- **The standalone Terminal Edition.** Releases no longer build or attach
+  `ReverbScope-Terminal-macOS-arm64.tar.gz`,
+  `ReverbScope-Terminal-macOS-x86_64.tar.gz`,
+  `ReverbScope-Terminal-Linux-x86_64.tar.gz` or
+  `ReverbScope-Terminal-Windows-x64.zip`. The release workflow,
+  `packaging/reverbscope.spec` (which now refuses
+  `REVERBSCOPE_PACKAGE=terminal`), the Windows `ReverbScope Terminal.cmd`
+  launcher, the `--terminal` modes of `build_license_bundle.py`,
+  `check_bundle_contents.py` and `smoke_bundle.py`, and
+  `build_release.py` build the Desktop Edition only; a draft refresh deletes
+  the old Terminal files. The `reverbscope` command line is unchanged and
+  ships inside the Desktop Edition as an advanced option; a computer without
+  a desktop can use the wheel without `[gui]`. README, installation guide,
+  user guide, EDITIONS, COMPATIBILITY and the release notes describe one
+  download per platform.
+
 ### Changed
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide

@@ -34,7 +34,7 @@ Windows 上通过了自动化测试。**但还没有任何一次测量经过真�
 
 ### 🖥 桌面版（Desktop Edition）
 
-适合绝大多数用户：带工作台窗口和图表的应用程序，同时包含 `reverbscope` 命令行。
+每个平台一个下载：带工作台窗口和图表的应用程序。它也附带供进阶使用的 `reverbscope` 命令行工具（见[命令行](#命令行)）。
 
 | 平台 | 下载 | 架构 | 说明 |
 | --- | --- | --- | --- |
@@ -51,33 +51,7 @@ Windows 上通过了自动化测试。**但还没有任何一次测量经过真�
 
 不确定是哪种 Mac？苹果菜单 → **关于本机**：显示 *芯片 Apple M…* 的是 Apple 芯片，显示 *处理器 Intel* 的是 Intel。
 
-### ⌨️ 终端版（Terminal Edition）
-
-适合脚本和自动化、服务器以及没有图形桌面的电脑：同样的测量和分析，没有窗口，体积约为桌面版的一半。
-
-| 平台 | 下载 | 架构 | 命令 |
-| --- | --- | --- | --- |
-| **macOS** 14+ | [`ReverbScope-Terminal-macOS-arm64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | arm64（Apple 芯片） | `reverbscope-terminal/reverbscope demo` |
-| **macOS** 14+ | [`ReverbScope-Terminal-macOS-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64（Intel） | `reverbscope-terminal/reverbscope demo` |
-| **Windows** 10 / 11 | [`ReverbScope-Terminal-Windows-x64.zip`](https://github.com/jingyemingyue/ReverbScope/releases) | x64 | 打开 **`ReverbScope Terminal.cmd`**，再输入 `reverbscope.exe demo` |
-| **Linux**（glibc 2.39+） | [`ReverbScope-Terminal-Linux-x86_64.tar.gz`](https://github.com/jingyemingyue/ReverbScope/releases) | x86_64 | `reverbscope-terminal/reverbscope demo` |
-
-先解压（`tar xzf <文件>`；Windows 上用 **全部解压缩…**）。在 macOS 上，如果系统拒绝运行下载来的 `reverbscope`，
-请运行一次 `xattr -dr com.apple.quarantine reverbscope-terminal`：它只清除这些文件上的下载标记，不会关闭 Gatekeeper。
-
-### 该选哪个？
-
-| | 桌面版 | 终端版 |
-| --- | --- | --- |
-| 带图表的工作台窗口 | ✅ | — |
-| 命令行（`reverbscope`） | ✅ | ✅ |
-| 房间分析与对比 | ✅ | ✅ |
-| 独立模式测量（播放并录音） | ✅ | ✅ |
-| English / 简体中文 | ✅ | ✅ |
-| 需要 Python | 不需要 | 不需要 |
-| 适合 | 大多数用户 | 自动化、轻量或无图形界面的电脑 |
-
-拿不准？选**桌面版**：它也包含命令行。分步安装、校验和（`SHA256SUMS`）、更新和卸载：
+分步安装、校验和（`SHA256SUMS`）、更新和卸载：
 **[安装指南](docs/INSTALLATION.zh-CN.md)**（[English](docs/INSTALLATION.md)）。
 
 ## 30 秒体验
@@ -92,8 +66,8 @@ reverbscope demo
 ReverbScope 本来就跟随系统语言（Mac 的首选语言、Windows 的显示语言、Linux 的 `LANGUAGE` / `LANG`）；
 保存后不管系统怎么设置都使用中文，`reverbscope config language auto` 改回跟随系统。
 
-下载的安装包不会把 `reverbscope` 加入 `PATH`：请在它所在的文件夹里打开终端（Windows 安装程序：
-`%LOCALAPPDATA%\Programs\ReverbScope`），或者写出它的完整路径（macOS 桌面版：
+桌面应用附带 `reverbscope` 命令，但下载的安装包不会把它加入 `PATH`：请在它所在的文件夹里打开终端（Windows 安装程序：
+`%LOCALAPPDATA%\Programs\ReverbScope`），或者写出它的完整路径（macOS：
 `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope demo`）。
 
 ![终端中的 reverbscope demo：两个模拟位置的概览、它们的对比和编号的下一步（合成数据）](docs/images/cli-demo.zh-CN.svg)
@@ -137,7 +111,7 @@ ReverbScope 回答录音师按下录音键之前会问的问题：
 ## 当前状态
 
 `main` 上的版本是 **0.5.0b3**；`release/0.5.0` 是候选版线。分析核心、命令行、桌面工作台、对比、回采（loopback）、
-简体中文文案、会话打包以及两个版本的安装包都已存在，并用合成数据在 Linux、macOS、Windows 上测试过。
+简体中文文案、会话打包以及桌面版的安装包都已存在，并用合成数据在 Linux、macOS、Windows 上测试过。
 
 **还没有：** 任何在真实硬件上测得的结果（硬件矩阵和硬件验证都还是空的）、任何 DAW 的实际运行、
 已签名或已公证的安装包、PyPI 包。目前没有任何构建达到[发布计划](docs/RELEASE_PLAN.zh-CN.md)里 0.5.0 的门槛。
@@ -183,8 +157,12 @@ Bitwig、Digital Performer 和 Audacity：[docs/user-guide/daw-setup.zh-CN.md](d
 
 ## 命令行
 
-两个版本都带命令行：终端版里是 `reverbscope`；Windows 和 Linux 的桌面版里它在 `reverbscope-gui` 旁边；
-Python 安装里也有；macOS 桌面版里是 `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope`。
+桌面应用附带 `reverbscope` 命令行工具，作为进阶选项：Windows 和 Linux 的下载包以及 Python 安装里，它在
+`reverbscope-gui` 旁边；macOS 应用里是 `/Applications/ReverbScope.app/Contents/MacOS/ReverbScope`。它运行与窗口界面
+相同的分析。大多数人用不到它。
+
+<details>
+<summary>命令行示例（进阶）</summary>
 
 ```bash
 # 生成测试信号，用 DAW 播放并录音，然后分析
@@ -214,13 +192,15 @@ reverbscope project overview room/   # 每个位置的健康度、适配度、�
 reverbscope demo --out demo/
 reverbscope profiles vocal           # 某个录音配置关注什么
 
-# 桌面工作台（桌面版，或安装了 gui 额外依赖的 Python 安装）
+# 桌面工作台
 reverbscope gui
 ```
 
 结果文件夹里有 `result.json`（所有指标和曲线）、`impulse_response.wav`（原始脉冲响应，float32）、`session.json`、
 扫频的 sidecar，以及一份录音的副本。你传入的录音永远不会被修改。全部选项、语言和样式设置、CSV 与打包导出见
 [用户指南](docs/user-guide/zh-CN.md)。
+
+</details>
 
 ## 文档
 
@@ -235,7 +215,7 @@ reverbscope gui
 | [docs/COMPARISON.zh-CN.md](docs/COMPARISON.zh-CN.md) | ReverbScope 与 REW、ARTA、Smaart 等的区别；[English](docs/COMPARISON.md) |
 | [docs/AUDIO_DEVICES.zh-CN.md](docs/AUDIO_DEVICES.zh-CN.md) | 主机 API，以及设备如何被探测和选择；[English](docs/AUDIO_DEVICES.md) |
 | [docs/COMPATIBILITY.zh-CN.md](docs/COMPATIBILITY.zh-CN.md) | 平台、DAW 导出格式、主机 API，以及各项由什么验证；[English](docs/COMPATIBILITY.md) |
-| [docs/EDITIONS.zh-CN.md](docs/EDITIONS.zh-CN.md) | 桌面版与终端版；[English](docs/EDITIONS.md) |
+| [docs/EDITIONS.zh-CN.md](docs/EDITIONS.zh-CN.md) | 桌面版、其命令行与开发者工具；[English](docs/EDITIONS.md) |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 包结构、数据流、扩展点（英文） |
 | [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) | 每个依赖及其许可证和用途（英文） |
 | [docs/LICENSE_DECISION.md](docs/LICENSE_DECISION.md) | 为什么选择 Apache-2.0（英文） |
@@ -255,7 +235,7 @@ reverbscope gui
 ```
 
 每个发布版本还附带一个 wheel（`reverbscope-<version>-py3-none-any.whl`）和源码归档，见
-[安装 → Python](docs/INSTALLATION.zh-CN.md)。`scripts/build_release.py` 可在本机构建当前平台的两个版本
+[安装 → Python](docs/INSTALLATION.zh-CN.md)。`scripts/build_release.py` 可在本机构建当前平台的桌面版
 （[RELEASE_PLAN.zh-CN.md](docs/RELEASE_PLAN.zh-CN.md)）。
 
 ## 技术架构

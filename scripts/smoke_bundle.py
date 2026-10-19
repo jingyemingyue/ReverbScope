@@ -13,10 +13,6 @@ windowed ``reverbscope-gui`` launcher when the bundle has one (Windows, Linux),
 and that launcher started without arguments, as a double-click does,
 requiring the GUI to stay open.
 
-Terminal Edition (``--terminal``): ``doctor`` must report no Qt, PySide6,
-pyqtgraph or matplotlib, and ``reverbscope gui`` must refuse with the Terminal Edition
-sentence in English and Chinese (exit code 2) instead of a traceback.
-
 Nothing is sent to a loudspeaker.
 """
 
@@ -106,11 +102,6 @@ GUI_PACKAGES = frozenset({"matplotlib", "PySide6_Essentials", "shiboken6", "pyqt
 #: Optional packages (the gui extra) in a source/wheel CLI-only install;
 #: matplotlib is a runtime dependency.
 OPTIONAL_QT_PACKAGES = GUI_PACKAGES - {"matplotlib"}
-#: The sentence ``reverbscope gui`` prints in the Terminal Edition.
-TERMINAL_GUI_TEXT = {
-    "en": "This is the Terminal Edition of ReverbScope. Install the Desktop Edition to use the GUI.",
-    "zh_CN": "当前安装的是 ReverbScope 终端版。如需图形界面，请安装桌面版。",
-}
 
 
 def _cli_env(home: Path) -> dict[str, str]:
@@ -179,16 +170,12 @@ def check_doctor(
     binary: Path,
     expect_commit: str | None = None,
     *,
-    terminal: bool = False,
     expect_package: str | None = None,
     expect_machine: str | None = None,
     env: dict[str, str] | None = None,
     require_gui: bool = True,
 ) -> dict[str, object]:
-    """``doctor --json`` runs, names NumPy's version and, if given, the build commit.
-
-    In the Terminal Edition the GUI's libraries must be absent, not merely unused.
-    """
+    """``doctor --json`` runs, names NumPy's version and, if given, the build commit."""
     done = _run_command(
         [str(binary), "--backend", "fake", "doctor", "--json"],
         env=env,
@@ -199,12 +186,7 @@ def check_doctor(
         raise SystemExit(
             "doctor reports no version for any package: packages must be a non-empty object"
         )
-    if terminal:
-        present = sorted(name for name in GUI_PACKAGES if packages.get(name))
-        if present:
-            raise SystemExit(f"Terminal Edition carries GUI libraries: {', '.join(present)}")
-        packages = {k: v for k, v in packages.items() if k not in GUI_PACKAGES}
-    elif not require_gui:
+    if not require_gui:
         packages = {
             k: v for k, v in packages.items() if k not in OPTIONAL_QT_PACKAGES or v is not None
         }
@@ -265,25 +247,6 @@ def check_first_run(binary: Path, work: Path) -> None:
         raise SystemExit("--format json show wrote escape sequences to stdout")
 
 
-def check_terminal_gui_refusal(binary: Path, work: Path) -> None:
-    """``reverbscope gui`` in the Terminal Edition: a sentence and exit code 2, no traceback."""
-    env = _cli_env(work / "home")
-    for lang, sentence in TERMINAL_GUI_TEXT.items():
-        done = _run_command(
-            [str(binary), "--lang", lang, "gui"],
-            env=env,
-            expected_code=2,
-        )
-        # The sentence is wrapped to the terminal width; compare it unwrapped.
-        flat = "".join(done.stderr.split()) if lang == "zh_CN" else " ".join(done.stderr.split())
-        wanted = "".join(sentence.split()) if lang == "zh_CN" else sentence
-        if wanted not in flat or "Traceback" in done.stderr:
-            raise SystemExit(
-                f"reverbscope --lang {lang} gui in the Terminal Edition ({done.returncode}):\n"
-                f"{done.stderr}"
-            )
-
-
 def smoke(
     binary: Path,
     out: Path,
@@ -291,7 +254,6 @@ def smoke(
     gui: bool = True,
     require_gui_launcher: bool = False,
     expect_commit: str | None = None,
-    terminal: bool = False,
     expect_package: str | None = None,
     expect_machine: str | None = None,
     first_run: bool = True,
@@ -303,7 +265,6 @@ def smoke(
     check_doctor(
         binary,
         expect_commit,
-        terminal=terminal,
         expect_package=expect_package,
         expect_machine=expect_machine,
         env=env,
@@ -311,9 +272,6 @@ def smoke(
     )
     if first_run:
         check_first_run(binary, out.parent / f"{out.name}-first-run")
-    if terminal:
-        check_terminal_gui_refusal(binary, out.parent / f"{out.name}-first-run")
-        gui = False
     measured = _run_command(
         [
             str(binary),
@@ -374,13 +332,8 @@ def main(argv: list[str] | None = None) -> int:
         help="fail unless reverbscope doctor reports this build commit (release builds)",
     )
     parser.add_argument(
-        "--terminal",
-        action="store_true",
-        help="the Terminal Edition: no GUI libraries, and `gui` must refuse politely",
-    )
-    parser.add_argument(
         "--expect-package",
-        choices=("desktop", "terminal"),
+        choices=("desktop",),
         help="fail unless the bundle's build_info names this edition",
     )
     parser.add_argument(
@@ -406,7 +359,6 @@ def main(argv: list[str] | None = None) -> int:
         gui=not args.no_gui,
         require_gui_launcher=args.require_gui_launcher,
         expect_commit=args.expect_commit,
-        terminal=args.terminal,
         expect_package=args.expect_package,
         expect_machine=args.expect_machine,
         first_run=not args.skip_first_run,

@@ -12,8 +12,8 @@ ReverbScope 用来测量录音房间，让你听清房间对近距离拾音的�
 
 从项目的 [Releases 页面](https://github.com/jingyemingyue/ReverbScope/releases)下载。各系统的分步说明、更新、卸载和故障排查见 [INSTALLATION.zh-CN.md](../INSTALLATION.zh-CN.md)，本节是简要版。每个 Release 都附有一个 `SHA256SUMS` 文件，请与下载文件的校验值比对（macOS / Linux：`shasum -a 256 <file>`；PowerShell：`Get-FileHash <file>`）。
 
-ReverbScope 有两个版本。**桌面版**就是本指南介绍的应用程序，同时包含命令行；**终端版**只有命令行（没有窗口和图表），
-适合脚本、服务器和没有图形桌面的电脑。
+ReverbScope 以**桌面版**提供下载：就是本指南介绍的应用程序，并附带供进阶使用的 `reverbscope` 命令行。
+单独的纯命令行终端版已停止提供；没有图形桌面的电脑请使用不带 `[gui]` 的 [Python wheel](../INSTALLATION.zh-CN.md#python-wheel-和源码包)。
 
 | 系统 | 桌面版 | 启动 ReverbScope |
 | --- | --- | --- |
@@ -21,13 +21,6 @@ ReverbScope 有两个版本。**桌面版**就是本指南介绍的应用程序�
 | macOS 14+，Apple 芯片 | `ReverbScope-Desktop-macOS-arm64.dmg` | 把 ReverbScope 拖进“应用程序”文件夹，然后打开 |
 | macOS 14+，Intel | `ReverbScope-Desktop-macOS-x86_64.dmg` | 把 ReverbScope 拖进“应用程序”文件夹，然后打开 |
 | Linux x86_64 | `ReverbScope-Desktop-Linux-x86_64.tar.gz` | `tar xzf ReverbScope-Desktop-Linux-x86_64.tar.gz && reverbscope/reverbscope-gui` |
-
-| 系统 | 终端版 | 启动 ReverbScope |
-| --- | --- | --- |
-| Windows 10/11 x64 | `ReverbScope-Terminal-Windows-x64.zip` | 解压后双击 `ReverbScope Terminal.cmd`，输入 `reverbscope.exe demo` |
-| macOS 14+，Apple 芯片 | `ReverbScope-Terminal-macOS-arm64.tar.gz` | 用 `tar xzf` 解压，然后运行 `reverbscope-terminal/reverbscope demo` |
-| macOS 14+，Intel | `ReverbScope-Terminal-macOS-x86_64.tar.gz` | 用 `tar xzf` 解压，然后运行 `reverbscope-terminal/reverbscope demo` |
-| Linux x86_64 | `ReverbScope-Terminal-Linux-x86_64.tar.gz` | 用 `tar xzf` 解压，然后运行 `reverbscope-terminal/reverbscope demo` |
 
 Windows 和 Linux 的桌面版安装包含两个程序：桌面程序 `reverbscope-gui` 和命令行工具 `reverbscope`（在终端运行 `reverbscope --help`）。在 macOS 上，应用的可执行文件带参数运行时就是命令行工具：`/Applications/ReverbScope.app/Contents/MacOS/ReverbScope --help`。
 
@@ -214,7 +207,7 @@ reverbscope config language auto    # 改回跟随系统
 
 中文界面会翻译解读、文本报告的标签、图形界面和全部命令行帮助（`reverbscope --help` 及每个子命令，包括占位符和 argparse 自己的提示）。单位不翻译；数字保持 ASCII。诊断说明和警告在 `result.json` 中以英文保存，显示时翻译。
 
-`reverbscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们，终端版也一样：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`、`copy-recording` 和 `developer-tools`（`on` 或 `off`），以及 `theme`（`system`、`light` 或 `dark`，只影响桌面版）。例如 `reverbscope config profile vocal`；`auto` 把一项设置恢复为默认值，`reverbscope --format json config` 以 JSON 输出所有设置。
+`reverbscope config` 列出桌面版保存的其他设置，并可以在命令行里修改它们：`profile`（默认录音配置）、`backend`（`portaudio` 或 `fake`）、`output-folder`、`copy-recording` 和 `developer-tools`（`on` 或 `off`），以及 `theme`（`system`、`light` 或 `dark`，只影响桌面版）。例如 `reverbscope config profile vocal`；`auto` 把一项设置恢复为默认值，`reverbscope --format json config` 以 JSON 输出所有设置。
 
 在终端里，命令行使用颜色和 ✓ ! × 符号；输出重定向到文件或其他程序时只写纯文本。`--color never` 或环境变量 `NO_COLOR` 关闭颜色，`--color always` 在管道中也保留颜色。
 
@@ -222,7 +215,7 @@ reverbscope config language auto    # 改回跟随系统
 
 **交互菜单。**在终端里不带命令运行 `reverbscope` 会打开一个编号菜单：演示、测试信号、分析录音、通过音频接口测量、查看和比较会话、项目总览、设置、环境报告和桌面版。每一项会询问所需的信息（拖进终端的路径，带引号或反斜杠都能识别），打印等价的命令行以便下次直接输入，运行后回到菜单。测量在回答 `y` 之前不会播放任何声音。在提问处按 Ctrl+C 回到菜单；`q` 或输入结束则退出。在管道或脚本中，`reverbscope` 仍然打印简短的首页并以用法错误码退出；`REVERBSCOPE_NO_MENU=1` 可在终端里关闭菜单。
 
-重定向或经过管道的输出是 UTF-8。Windows PowerShell 会按控制台代码页解码，中文因此变成乱码（`> report.txt`、`| Select-String`）；请先在该窗口运行一次 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`，详见[在 PowerShell 中保存报告](../INSTALLATION.zh-CN.md#终端版)。命令提示符不受影响。
+重定向或经过管道的输出是 UTF-8。Windows PowerShell 会按控制台代码页解码，中文因此变成乱码（`> report.txt`、`| Select-String`）；请先在该窗口运行一次 `$OutputEncoding = [Console]::OutputEncoding = [Text.UTF8Encoding]::new()`，详见[在 PowerShell 中保存报告](../INSTALLATION.zh-CN.md#命令行进阶)。命令提示符不受影响。
 
 ## 故障排查
 

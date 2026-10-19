@@ -276,11 +276,10 @@ def test_license_bundle_carries_the_bundled_libsndfile_lgpl_text(tmp_path: Path)
 
 
 def test_runtime_imports_of_the_bundles_have_licence_texts() -> None:
-    """soundfile imports typing_extensions at run time; both editions froze it
+    """soundfile imports typing_extensions at run time; the bundles froze it
     without its licence text."""
     module = _load("build_license_bundle")
     assert "typing-extensions" in module.REQUIRED
-    assert "typing-extensions" in module.TERMINAL_REQUIRED
 
 
 def test_the_licence_gate_needs_the_index(tmp_path: Path) -> None:
@@ -293,19 +292,7 @@ def test_the_licence_gate_needs_the_index(tmp_path: Path) -> None:
     assert "THIRD_PARTY_LICENSES/INDEX.txt is missing" in errors
 
 
-def test_a_folder_above_the_bundle_is_not_a_qt_library(tmp_path: Path) -> None:
-    """Parts of the absolute path were tested: a bundle under Qt6Projects/
-    failed the Terminal Edition gate on every file."""
-    gate = _load("check_bundle_contents")
-    root = tmp_path / "Qt6Projects" / "reverbscope-terminal"
-    (root / "_internal").mkdir(parents=True)
-    (root / "_internal" / "_cffi_backend.so").write_bytes(b"\0")
-    assert gate.gui_files(root) == []
-    (root / "_internal" / "libQt6Core.so.6").write_bytes(b"\0")
-    assert [what for _path, what in gate.gui_files(root)] == ["a Qt library"]
-
-
-def test_both_editions_leave_the_developer_tools_out() -> None:
+def test_the_bundle_leaves_the_developer_tools_out() -> None:
     """The desktop excludes named only the GPL Qt modules: pytest, setuptools,
     pygments and yaml were frozen into it."""
     spec = Path("packaging/reverbscope.spec").read_text(encoding="utf-8")
@@ -314,7 +301,7 @@ def test_both_editions_leave_the_developer_tools_out() -> None:
     ]
     for module in ("setuptools", "pytest", "pygments", "yaml", "readline"):
         assert f'"{module}"' in dev, module
-    desktop = spec[spec.index("    else [") :]
+    desktop = spec[spec.index("    excludes=[") :]
     assert desktop.split("]", 1)[0].count("*DEV_ONLY_EXCLUDES") == 1
 
 

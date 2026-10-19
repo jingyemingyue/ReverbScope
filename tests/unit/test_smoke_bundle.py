@@ -162,23 +162,10 @@ def test_doctor_checks_requested_edition_and_machine(
 ) -> None:
     _reply(smoke, monkeypatch, json.dumps(_report()))
     smoke.check_doctor(BINARY, "abc", expect_package="desktop", expect_machine="x86_64")
-    with pytest.raises(SystemExit, match="expected 'terminal'"):
-        smoke.check_doctor(BINARY, expect_package="terminal")
+    with pytest.raises(SystemExit, match="expected 'other'"):
+        smoke.check_doctor(BINARY, expect_package="other")
     with pytest.raises(SystemExit, match="expected 'arm64'"):
         smoke.check_doctor(BINARY, expect_machine="arm64")
-
-
-def test_terminal_smoke_refuses_bundled_gui_libraries(
-    smoke: ModuleType, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    report = _report()
-    report["packages"]["PySide6_Essentials"] = "6.11.2"
-    report["packages"]["pyqtgraph"] = "0.14.0"
-    _reply(smoke, monkeypatch, json.dumps(report))
-    with pytest.raises(
-        SystemExit, match="Terminal Edition carries GUI libraries: PySide6_Essentials, pyqtgraph"
-    ):
-        smoke.check_doctor(BINARY, terminal=True)
 
 
 @pytest.mark.parametrize("json_output", ["{}", "null", "{}\nextra report"])
@@ -222,29 +209,6 @@ def test_first_run_refuses_success_without_the_demo_marker(
     )
     with pytest.raises(SystemExit, match="--lang en demo failed"):
         smoke.check_first_run(BINARY, tmp_path)
-
-
-@pytest.mark.parametrize("code", [0, 2])
-def test_terminal_gui_refusal_requires_exit_two_in_both_languages(
-    smoke: ModuleType, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, code: int
-) -> None:
-    languages: list[str] = []
-
-    def run(argv: list[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
-        lang = argv[2]
-        languages.append(lang)
-        assert argv[3] == "gui"
-        assert kwargs["timeout"] == 120 and kwargs["encoding"] == "utf-8"
-        sentence = smoke.TERMINAL_GUI_TEXT[lang].replace(" ", "\n")
-        return subprocess.CompletedProcess(argv, code, "", sentence)
-
-    monkeypatch.setattr(smoke.subprocess, "run", run)
-    if code == 2:
-        smoke.check_terminal_gui_refusal(BINARY, tmp_path)
-        assert languages == ["en", "zh_CN"]
-    else:
-        with pytest.raises(SystemExit, match="exit 0, expected 2"):
-            smoke.check_terminal_gui_refusal(BINARY, tmp_path)
 
 
 def test_smoke_output_directory_failure_is_readable(smoke: ModuleType, tmp_path: Path) -> None:

@@ -41,7 +41,7 @@ English summary of it.
 | User guide / 用户指南 | [user-guide/en.md](user-guide/en.md) | [user-guide/zh-CN.md](user-guide/zh-CN.md) |
 | Measuring through your DAW / 用 DAW 测量 | [user-guide/daw-setup.md](user-guide/daw-setup.md) | [user-guide/daw-setup.zh-CN.md](user-guide/daw-setup.zh-CN.md) |
 | Compatibility / 兼容性 | [COMPATIBILITY.md](COMPATIBILITY.md) | [COMPATIBILITY.zh-CN.md](COMPATIBILITY.zh-CN.md) |
-| Editions: Desktop, Terminal, developer tools / 桌面版、终端版与开发者工具 | [EDITIONS.md](EDITIONS.md) | [EDITIONS.zh-CN.md](EDITIONS.zh-CN.md) |
+| Editions: Desktop Edition, command line, developer tools / 桌面版、命令行与开发者工具 | [EDITIONS.md](EDITIONS.md) | [EDITIONS.zh-CN.md](EDITIONS.zh-CN.md) |
 | How ReverbScope compares / 与同类工具的比较 | [COMPARISON.md](COMPARISON.md) | [COMPARISON.zh-CN.md](COMPARISON.zh-CN.md) |
 | Audio devices and host APIs / 音频设备与主机 API | [AUDIO_DEVICES.md](AUDIO_DEVICES.md) | [AUDIO_DEVICES.zh-CN.md](AUDIO_DEVICES.zh-CN.md) |
 | Hardware test matrix / 硬件测试矩阵 | [HARDWARE_TESTS.md](HARDWARE_TESTS.md) | [HARDWARE_TESTS.zh-CN.md](HARDWARE_TESTS.zh-CN.md) |
@@ -59,7 +59,7 @@ English summary of it.
 - [Measuring through your DAW](user-guide/daw-setup.md) · [用 DAW 测量](user-guide/daw-setup.zh-CN.md)
 - [How ReverbScope compares](COMPARISON.md) · [与其他工具的比较](COMPARISON.zh-CN.md)
 - [Audio devices and host APIs](AUDIO_DEVICES.md) · [音频设备与主机 API](AUDIO_DEVICES.zh-CN.md)
-- [Desktop and Terminal Editions, developer tools](EDITIONS.md) · [桌面版、终端版与开发者工具](EDITIONS.zh-CN.md)
+- [Desktop Edition, command line, developer tools](EDITIONS.md) · [桌面版、命令行与开发者工具](EDITIONS.zh-CN.md)
 - [Compatibility review](COMPATIBILITY.md) · [兼容性](COMPATIBILITY.zh-CN.md)
 - [Validation campaign protocol](VALIDATION.md)
 - [Hardware test matrix](HARDWARE_TESTS.md) · [硬件测试矩阵](HARDWARE_TESTS.zh-CN.md)

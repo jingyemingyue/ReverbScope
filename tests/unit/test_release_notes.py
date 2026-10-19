@@ -120,9 +120,8 @@ def test_release_notes_name_every_download_that_the_release_carries() -> None:
 
 
 RELEASE_ORDER = (
-    "### Choose your edition",
+    "### Download",
     "#### 🖥 Desktop Edition",
-    "#### ⌨️ Terminal Edition",
     "### Known limitations",
     "### Checksums",
     "### Changes in this version",
@@ -135,11 +134,11 @@ def test_release_notes_put_the_user_choice_first() -> None:
     positions = [notes.index(section) for section in RELEASE_ORDER]
     assert positions == sorted(positions)
     choose, technical = notes.index(RELEASE_ORDER[0]), notes.index(RELEASE_ORDER[-1])
-    # Desktop files in the Desktop table, Terminal files in the Terminal table.
+    # Every download is in the Desktop table; there is no Terminal Edition table.
     desktop = notes[notes.index(RELEASE_ORDER[1]) : notes.index(RELEASE_ORDER[2])]
-    terminal = notes[notes.index(RELEASE_ORDER[2]) : notes.index(RELEASE_ORDER[3])]
     for name in _archives():
-        assert f"`{name}`" in (desktop if "-Desktop-" in name else terminal), name
+        assert f"`{name}`" in desktop, name
+    assert "Terminal Edition" not in HEADER.read_text(encoding="utf-8")
     # Developer files come after the user sections, never before the choice.
     for developer_file in ("cyclonedx.sbom.json", "generated-bundle.lock", ".whl"):
         assert notes.index(developer_file) > technical, developer_file
@@ -217,19 +216,17 @@ def test_the_old_file_names_are_gone_from_user_documents() -> None:
 
 
 @pytest.mark.parametrize("name", ["README.md", "README.zh-CN.md"])
-def test_readme_shows_both_editions_before_anything_else(name: str) -> None:
+def test_readme_shows_the_desktop_download_before_anything_else(name: str) -> None:
     text = (ROOT / name).read_text(encoding="utf-8")
     zh = "zh-CN" in name
     desktop = text.index("### 🖥 ")
-    terminal = text.index("### ⌨️ ")
-    compare = text.index("### 该选哪个？" if zh else "### Which one?")
     demo = text.index("## 30 秒体验" if zh else "## Try it in 30 seconds")
     first_section = text.index("\n## ")
-    assert first_section < desktop < terminal < compare < demo
-    # Every download of each edition is in its own table.
+    assert first_section < desktop < demo
+    # Every download is in the Desktop Edition table; no Terminal Edition section.
     for archive in _archives():
-        table = text[desktop:terminal] if "-Desktop-" in archive else text[terminal:compare]
-        assert archive in table, archive
+        assert archive in text[desktop:demo], archive
+    assert "### ⌨️ " not in text
     # Development, API and architecture come after the user sections.
     for later in ("git clone", "pip install -e", "Python API"):
         assert text.index(later) > demo, later
@@ -324,9 +321,8 @@ def test_rc_notes_keep_the_download_tables_and_order_of_the_beta_notes() -> None
     assert positions == sorted(positions)
     choose, technical = notes.index(RELEASE_ORDER[0]), notes.index(RELEASE_ORDER[-1])
     desktop = notes[notes.index(RELEASE_ORDER[1]) : notes.index(RELEASE_ORDER[2])]
-    terminal = notes[notes.index(RELEASE_ORDER[2]) : notes.index(RELEASE_ORDER[3])]
     for name in _archives():
-        assert f"`{name}`" in (desktop if "-Desktop-" in name else terminal), name
+        assert f"`{name}`" in desktop, name
     for developer_file in ("cyclonedx.sbom.json", "generated-bundle.lock", ".whl"):
         assert notes.index(developer_file) > technical, developer_file
     assert "SBOM" not in notes[:choose] and "wheel" not in notes[:choose]

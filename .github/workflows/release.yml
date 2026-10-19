@@ -1,10 +1,9 @@
 # Build unsigned bundles and prepare a draft Release for the version on main
 # (the beta line) or on a release/* branch (a release-candidate line, for
-# example release/0.5.0 carrying 0.5.0rc1). Every runner builds both editions
-# of its platform in one job (no extra runners): the Desktop Edition (GUI +
-# command line) and the Terminal Edition (command line only, built without
-# Qt; REVERBSCOPE_PACKAGE=terminal). A pull request that changes this workflow
-# runs the same package gates without creating a Release, tag, or PyPI upload.
+# example release/0.5.0 carrying 0.5.0rc1). Every runner builds the Desktop
+# Edition of its platform (GUI + the reverbscope command line) in one job;
+# the standalone Terminal Edition is no longer built. A pull request that
+# changes this workflow runs the same package gates without creating a Release, tag, or PyPI upload.
 # The paths filter keeps a documentation-only push from building four
 # platforms; a release commit changes pyproject.toml and always builds.
 name: Release
@@ -357,37 +356,6 @@ jobs:
       - name: Linux archive (Desktop Edition)
         if: runner.os == 'Linux'
         run: tar -C dist -czf dist/ReverbScope-Desktop-Linux-x86_64.tar.gz reverbscope
-      - name: Terminal Edition (command line only, no Qt)
-        # Same runner, same pinned environment: PyInstaller leaves PySide6,
-        # shiboken6, matplotlib and reverbscope.ui out (packaging/reverbscope.spec)
-        # and the --terminal gate fails the build if any file of them is left.
-        shell: bash
-        env:
-          REVERBSCOPE_PACKAGE: terminal
-        run: |
-          pyinstaller --noconfirm --clean --workpath build/terminal packaging/reverbscope.spec
-          python scripts/build_license_bundle.py --terminal --out THIRD_PARTY_LICENSES-terminal \
-            --frozen dist/reverbscope-terminal
-          cp -R THIRD_PARTY_LICENSES-terminal dist/reverbscope-terminal/THIRD_PARTY_LICENSES
-          python scripts/check_bundle_contents.py --root dist/reverbscope-terminal --strip --require-licenses --terminal
-          if [[ "$RUNNER_OS" == Windows ]]; then
-            cp "packaging/windows/terminal/ReverbScope Terminal.cmd" dist/reverbscope-terminal/
-          fi
-      - name: Smoke Terminal Edition
-        shell: bash
-        run: |
-          cpu=x86_64; [[ "$RUNNER_ARCH" != ARM64 ]] || cpu=arm64
-          python scripts/smoke_bundle.py --root dist/reverbscope-terminal \
-            --out "$RUNNER_TEMP/terminal-smoke/session" --terminal \
-            --expect-commit "$GITHUB_SHA" --expect-package terminal --expect-machine "$cpu"
-      - name: Terminal Edition archive
-        shell: bash
-        run: |
-          case "$RUNNER_OS" in
-            Linux) tar -C dist -czf dist/ReverbScope-Terminal-Linux-x86_64.tar.gz reverbscope-terminal ;;
-            macOS) tar -C dist -czf "dist/ReverbScope-Terminal-macOS-$(uname -m).tar.gz" reverbscope-terminal ;;
-            Windows) python -c "import shutil; shutil.make_archive('dist/ReverbScope-Terminal-Windows-x64', 'zip', 'dist/reverbscope-terminal')" ;;
-          esac
       - name: Edition sizes
         shell: bash
         run: |
@@ -426,7 +394,6 @@ jobs:
           name: bundle-${{ matrix.os }}
           path: |
             dist/ReverbScope-Desktop-*
-            dist/ReverbScope-Terminal-*
             dist/SHA256SUMS-*
           if-no-files-found: error
 

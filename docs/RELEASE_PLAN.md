@@ -277,13 +277,11 @@ step runs, no log). Three ways on, from cheapest:
 1. **Build locally.** `scripts/build_release.py` runs the release workflow's
    bundle job on the machine it is started on and writes the same file names
    to `dist/`. Run it once per platform: on a Mac with Apple silicon
-   (`ReverbScope-Desktop-macOS-arm64.dmg`, `ReverbScope-Terminal-macOS-arm64.tar.gz`),
-   an Intel Mac if available (`ReverbScope-Desktop-macOS-x86_64.dmg`,
-   `ReverbScope-Terminal-macOS-x86_64.tar.gz`), Windows with Inno Setup 6
-   installed (`ReverbScope-Desktop-Windows-x64-Setup.exe`,
-   `ReverbScope-Desktop-Windows-x64.zip`, `ReverbScope-Terminal-Windows-x64.zip`) and
-   Linux x86_64 (`ReverbScope-Desktop-Linux-x86_64.tar.gz`,
-   `ReverbScope-Terminal-Linux-x86_64.tar.gz`); add `--python-dist` on one of them for
+   (`ReverbScope-Desktop-macOS-arm64.dmg`),
+   an Intel Mac if available (`ReverbScope-Desktop-macOS-x86_64.dmg`), Windows
+   with Inno Setup 6 installed (`ReverbScope-Desktop-Windows-x64-Setup.exe`,
+   `ReverbScope-Desktop-Windows-x64.zip`) and Linux x86_64
+   (`ReverbScope-Desktop-Linux-x86_64.tar.gz`); add `--python-dist` on one of them for
    the wheel and sdist. The script installs nothing itself: install
    `requirements/bundle.lock`, the `dev` and `gui` extras, `pyinstaller==6.22.3`
    and `build` as the script's docstring shows; it refuses other versions

@@ -190,11 +190,6 @@ def test_expected_manifest_is_exact() -> None:
         "ReverbScope-Desktop-Windows-x64-Setup.exe",
         "ReverbScope-Desktop-Windows-x64.zip",
         "ReverbScope-Desktop-Linux-x86_64.tar.gz",
-        # Terminal Edition (command line only)
-        "ReverbScope-Terminal-macOS-arm64.tar.gz",
-        "ReverbScope-Terminal-macOS-x86_64.tar.gz",
-        "ReverbScope-Terminal-Windows-x64.zip",
-        "ReverbScope-Terminal-Linux-x86_64.tar.gz",
         # Python, checksums, SBOM
         "reverbscope-0.4.1-py3-none-any.whl",
         "reverbscope-0.4.1.tar.gz",
@@ -207,14 +202,14 @@ def test_expected_manifest_is_exact() -> None:
 
 def test_every_download_name_says_edition_system_and_cpu() -> None:
     pattern = re.compile(
-        r"ReverbScope-(Desktop|Terminal)-(macOS-(arm64|x86_64)|Windows-x64|Linux-x86_64)"
+        r"ReverbScope-Desktop-(macOS-(arm64|x86_64)|Windows-x64|Linux-x86_64)"
         r"(-Setup\.exe|\.dmg|\.zip|\.tar\.gz)"
     )
     archives = [name for names in rd.CHECKSUM_FILES.values() for name in names]
     assert all(pattern.fullmatch(name) for name in archives), archives
     for names in rd.CHECKSUM_FILES.values():
         assert any("-Desktop-" in name for name in names)
-        assert sum("-Terminal-" in name for name in names) == 1
+        assert not any("-Terminal-" in name for name in names)
 
 
 def test_manifest_matches_the_workflow_and_local_builder() -> None:
@@ -225,11 +220,12 @@ def test_manifest_matches_the_workflow_and_local_builder() -> None:
             assert (
                 archive in WORKFLOW
                 or archive.removesuffix(".zip") in WORKFLOW
-                or archive.startswith(("ReverbScope-Desktop-macOS-", "ReverbScope-Terminal-macOS-"))
+                or archive.startswith("ReverbScope-Desktop-macOS-")
             ), archive
     assert "ReverbScope-Desktop-macOS-$(uname -m).dmg" in WORKFLOW
-    assert "ReverbScope-Terminal-macOS-$(uname -m).tar.gz" in WORKFLOW
-    assert "dist/ReverbScope-Desktop-*" in WORKFLOW and "dist/ReverbScope-Terminal-*" in WORKFLOW
+    assert "dist/ReverbScope-Desktop-*" in WORKFLOW
+    # The standalone Terminal Edition is no longer built or uploaded.
+    assert "ReverbScope-Terminal-" not in WORKFLOW
     # The runner's checksum file is written from the manifest, not a copied list.
     assert "rd.CHECKSUM_FILES[sums_name]" in WORKFLOW
     matrix = re.search(r"os: \[(.*?)\]", WORKFLOW)
@@ -300,7 +296,7 @@ def test_stage_rejects_a_wrong_version(tmp_path: Path) -> None:
 
 def test_stage_rejects_the_same_name_from_two_artifacts(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
-    (run / "sbom" / "ReverbScope-Terminal-Windows-x64.zip").write_bytes(b"x")
+    (run / "sbom" / "ReverbScope-Desktop-Windows-x64.zip").write_bytes(b"x")
     with pytest.raises(rd.ReleaseError, match="two artifacts"):
         rd.stage(run, tmp_path / "out", VERSION)
 
@@ -415,15 +411,31 @@ def test_plan_removes_the_names_from_before_the_editions() -> None:
     assert set(plan.replace) == set(names) & rd.expected_assets(VERSION)
 
 
+def test_plan_removes_the_discontinued_terminal_edition_files() -> None:
+    """A draft refreshed before the Terminal Edition was dropped still carries
+    its four archives; the refresh deletes them instead of stopping."""
+    terminal = (
+        "ReverbScope-Terminal-macOS-arm64.tar.gz",
+        "ReverbScope-Terminal-macOS-x86_64.tar.gz",
+        "ReverbScope-Terminal-Linux-x86_64.tar.gz",
+        "ReverbScope-Terminal-Windows-x64.zip",
+    )
+    names = (*sorted(rd.expected_assets(VERSION)), *terminal)
+    draft = _release(1, draft=True, names=names)
+    plan = rd.plan_sync([draft], draft, VERSION)
+    assert set(plan.obsolete) == set(terminal)
+    assert set(plan.replace) == rd.expected_assets(VERSION)
+
+
 def test_stage_writes_one_checksum_file_for_every_download(tmp_path: Path) -> None:
     run = _write_run(tmp_path / "artifacts")
     staged = rd.stage(run, tmp_path / "out", VERSION)
     lines = staged["SHA256SUMS"].read_text(encoding="utf-8").splitlines()
     assert [line.split("  ", 1)[1] for line in lines] == list(rd.downloads(VERSION))
     assert not any(name.startswith("SHA256SUMS-") for name in staged)
-    staged["ReverbScope-Terminal-Linux-x86_64.tar.gz"].write_bytes(b"changed after staging")
+    staged["ReverbScope-Desktop-Linux-x86_64.tar.gz"].write_bytes(b"changed after staging")
     with pytest.raises(
-        rd.ReleaseError, match=re.escape("ReverbScope-Terminal-Linux-x86_64.tar.gz is")
+        rd.ReleaseError, match=re.escape("ReverbScope-Desktop-Linux-x86_64.tar.gz is")
     ):
         rd.load_staged(tmp_path / "out", VERSION)
 
