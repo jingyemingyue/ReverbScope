@@ -920,6 +920,7 @@ class MainWindow(QMainWindow):
         self.inspector.refresh()
         for page in (self.daw, self.standalone):
             page.placement.redraw()
+        self.standalone.live.restyle()
 
     def _follow_system_scheme(self, *_scheme: object) -> None:
         # A theme chosen in Settings (or REVERBSCOPE_COLOR_SCHEME) does not

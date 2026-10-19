@@ -6,7 +6,8 @@ import logging
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt, QTimer, Signal
+from PySide6.QtGui import QHideEvent, QShowEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -47,6 +48,7 @@ from reverbscope.models.audio import AudioSignal
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES, AnalysisSettings, SweepSettings
 from reverbscope.models.result import AnalysisResult
 from reverbscope.models.session import MeasurementSession
+from reverbscope.ui.live_input import InputSource
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.widgets import (
     Card,
@@ -974,6 +976,12 @@ class StandalonePage(QWidget):
         self.progress.hide()
         self.status = QLabel("")
         self.status.setWordWrap(True)
+        from reverbscope.ui.live_monitor import LiveMonitorPanel
+
+        # The live input monitor of "Signal and level": a display while the
+        # level is set, never part of a take (docs/design/LIVE_INPUT_MONITOR.md).
+        self.live = LiveMonitorPanel()
+        self.live.source_factory = self._live_source
         self.flow = MeasurementSteps(
             [
                 (_("Connection"), _step_body(devices, self.advanced)),
@@ -981,6 +989,7 @@ class StandalonePage(QWidget):
                     _("Signal and level"),
                     _step_body(
                         safety,
+                        self.live,
                         sweep,
                         Disclosure(_("Room and placement"), _step_body(meta, self.placement)),
                     ),
@@ -1056,8 +1065,89 @@ class StandalonePage(QWidget):
         self.position.textChanged.connect(self._update_review)
         self.sample_rate.currentTextChanged.connect(self._update_review)
         self.flow.stack.currentChanged.connect(self._update_review)
+        # The monitor listens only while its step is on screen and no take or
+        # analysis runs; a change of device, channel or rate reopens it.
+        self.flow.stack.currentChanged.connect(self._sync_live)
+        self.busy_changed.connect(self._sync_live)
+        for combo in (self.input_device, self.sample_rate, self.host_api):
+            combo.currentIndexChanged.connect(self._restart_live)
+        for spin in (self.input_channel, self.loopback_channel):
+            spin.valueChanged.connect(self._restart_live)
         self.refresh_devices()
         self._update_review()
+
+    # --- live input monitor ------------------------------------------------------
+
+    LIVE_STEP = 1
+
+    def live_should_run(self) -> bool:
+        """The monitor may listen: its step is shown, nothing is measuring, the window is open."""
+        window = self.window()
+        return (
+            self.isVisible()
+            and window is not None
+            and window.isVisible()
+            and self.flow.stack.currentIndex() == self.LIVE_STEP
+            and not self.is_busy()
+        )
+
+    def _sync_live(self, *_args: object) -> None:
+        if self.live_should_run():
+            self.live.start()
+        else:
+            self.live.stop()
+
+    def _restart_live(self, *_args: object) -> None:
+        if self.live.running:
+            self.live.stop()
+            self._sync_live()
+
+    def stop_live_monitor(self) -> None:
+        """Esc: close the input until Resume is pressed."""
+        self.live.pause()
+
+    def live_channels(self) -> list[int]:
+        """1-based inputs the monitor shows: the microphone, then the loopback if set."""
+        channels = [int(self.input_channel.value())]
+        loopback = int(self.loopback_channel.value())
+        if loopback > 0 and loopback not in channels:
+            channels.append(loopback)
+        return channels
+
+    def _live_source(self) -> InputSource:
+        """The input the monitor reads: the chosen device, or synthetic audio on the fake backend."""
+        from reverbscope.audio.backend import get_backend
+        from reverbscope.ui.live_input import (
+            ERROR_UNAVAILABLE,
+            LiveInputError,
+            SoundDeviceInput,
+            SyntheticInput,
+        )
+
+        channels = self.live_channels()
+        names = [_("Mic {number}").format(number=channels[0])]
+        if len(channels) > 1:
+            names.append(_("Loopback {number}").format(number=channels[1]))
+        self.live.meter.set_channels(names)
+        rate = int(self.sample_rate.currentData() or 48000)
+        try:
+            backend = get_backend("fake" if self.demo_mode else None).name
+        except ReverbScopeError as exc:
+            raise LiveInputError(ERROR_UNAVAILABLE, localize(str(exc))) from exc
+        if backend == "fake":
+            return SyntheticInput(rate, len(channels))
+        return SoundDeviceInput(
+            self.input_device.currentData(), channels, rate, self.stream_options()
+        )
+
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802 - Qt override
+        super().showEvent(event)
+        # After the stack has finished switching: the step and window state are final.
+        QTimer.singleShot(0, self._sync_live)
+
+    def hideEvent(self, event: QHideEvent) -> None:  # noqa: N802 - Qt override
+        self.live.stop()
+        super().hideEvent(event)
 
     def _update_review(self, *_args: object) -> None:
         for key, value in (
@@ -1376,6 +1466,7 @@ class StandalonePage(QWidget):
 
     def shutdown_workers(self) -> None:
         """Stop a take (silencing the output) and let both workers finish."""
+        self.live.stop()
         if self._measure_worker is not None:
             self._measure_worker.request_stop()
         for worker in (self._measure_worker, self._analysis_worker):
@@ -1397,6 +1488,9 @@ class StandalonePage(QWidget):
 
         if self.is_busy():
             return
+        # The take opens its own stream: the monitor lets go of the device
+        # before the preflight checks touch it.
+        self.live.stop()
         try:
             settings = self.current_sweep_settings()
         except ReverbScopeError as exc:
