@@ -441,3 +441,120 @@ def test_a_take_esc_and_closing_stop_the_input(
     assert page.live.running
     window.close()
     assert not page.live.running
+
+
+# --- nothing plays by itself -----------------------------------------------------
+
+
+class _FakeSoundDevice:
+    """Records which stream types are opened; no real audio."""
+
+    def __init__(self) -> None:
+        self.opened: list[str] = []
+
+    def InputStream(self, **kwargs: object) -> object:  # noqa: N802 - sounddevice's name
+        self.opened.append("InputStream")
+        assert "callback" in kwargs
+
+        class Stream:
+            active = True
+
+            def start(self) -> None: ...
+
+            def abort(self) -> None: ...
+
+            def close(self) -> None: ...
+
+        return Stream()
+
+    def Stream(self, **_kwargs: object) -> object:  # noqa: N802
+        self.opened.append("Stream")
+        raise AssertionError("the live monitor must not open an output")
+
+    def OutputStream(self, **_kwargs: object) -> object:  # noqa: N802
+        self.opened.append("OutputStream")
+        raise AssertionError("the live monitor must not open an output")
+
+    def play(self, *_args: object, **_kwargs: object) -> None:
+        self.opened.append("play")
+        raise AssertionError("the live monitor must not play")
+
+
+def test_the_device_input_is_input_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    import reverbscope.audio.devices as devices
+    from reverbscope.ui.live_input import SoundDeviceInput
+
+    fake = _FakeSoundDevice()
+    monkeypatch.setattr(devices, "sounddevice_module", lambda: fake)
+    source = SoundDeviceInput(3, [1, 2], 48000)
+    source.start(RingBuffer(48000, 2))
+    source.stop()
+    assert fake.opened == ["InputStream"]
+
+
+def test_entering_the_level_step_plays_nothing(
+    window: object, app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import reverbscope.ui.workers as workers
+    from reverbscope.ui.main_window import MainWindow
+
+    assert isinstance(window, MainWindow)
+    played: list[object] = []
+    monkeypatch.setattr(
+        workers.MeasureWorker, "start", lambda self: played.append(self), raising=True
+    )
+    page = window.standalone
+    for step in (0, 1, 0, 1):
+        page.flow.set_step(step)
+        _settle(app)
+    assert played == []
+    assert not page.is_busy()
+
+
+def test_a_sweep_needs_an_output_the_user_chose(
+    window: object, app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import reverbscope.ui.pages as pages
+    from reverbscope.ui.main_window import MainWindow
+
+    assert isinstance(window, MainWindow)
+    page = window.standalone
+    warnings: list[str] = []
+    monkeypatch.setattr(
+        pages.QMessageBox, "warning", lambda _parent, _title, text: warnings.append(text)
+    )
+    # On a real backend (not the fake one), a preselected or default output is refused.
+    page._explicit_output = None
+    assert page.output_block_reason("portaudio")
+    reached: list[bool] = []
+    monkeypatch.setattr(page, "_preflight", lambda *_a, **_k: reached.append(True))
+    monkeypatch.setattr(
+        pages, "plan_input_channels", pages.plan_input_channels
+    )  # unchanged; the guard comes first
+
+    class RealBackend:
+        name = "portaudio"
+
+    import reverbscope.audio.backend as backend_module
+
+    monkeypatch.setattr(backend_module, "get_backend", lambda _name=None: RealBackend())
+    page.start_measurement()
+    assert warnings and "Choose the output of your audio interface" in warnings[0]
+    assert reached == []  # nothing reached the device checks, nothing played
+    # "System default" is never accepted, even when picked by hand.
+    row = page.output_device.findData(None)
+    if row >= 0:
+        page.output_device.setCurrentIndex(row)
+        page._output_chosen(row)
+        assert "system default output" in page.output_block_reason("portaudio")
+    # An interface output picked by hand is accepted.
+    index = next(
+        page.output_device.itemData(r)
+        for r in range(page.output_device.count())
+        if page.output_device.itemData(r) is not None
+    )
+    assert page.choose_output(int(index))
+    assert page.output_block_reason("portaudio") == ""
+    # The fake backend plays nothing and is not limited.
+    page._explicit_output = None
+    assert page.output_block_reason("fake") == ""

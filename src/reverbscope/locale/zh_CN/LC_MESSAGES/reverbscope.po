@@ -7708,3 +7708,12 @@ msgstr "回采 {number}"
 
 msgid "The input is digitally silent. Check the input channel and the interface's gain; on macOS, also check that ReverbScope may use the microphone."
 msgstr "输入是数字静音。请检查输入声道和音频接口的增益；在 macOS 上，还要检查是否已允许 ReverbScope 使用麦克风。"
+
+msgid "Choose the output of your audio interface in the Connection step. ReverbScope does not play the sweep on the system default output."
+msgstr "请在“连接设备”一步中选择音频接口的输出。ReverbScope 不会在系统默认输出上播放扫频。"
+
+msgid "Choose the output of your audio interface in the Connection step. ReverbScope plays the sweep only on an output you picked yourself, never on one it preselected."
+msgstr "请在“连接设备”一步中选择音频接口的输出。ReverbScope 只在你亲自选定的输出上播放扫频，不会使用它预先选中的输出。"
+
+msgid "No interface output chosen"
+msgstr "尚未选择接口输出"

@@ -889,6 +889,11 @@ class StandalonePage(QWidget):
         self.host_api.currentIndexChanged.connect(self._fill_device_lists)
         self.input_device = QComboBox()
         self.output_device = QComboBox()
+        # The output the user picked by hand, as (index, name). A sweep goes
+        # only there: never to "System default" or to an output the list
+        # merely preselected (the computer's own speakers, often).
+        self._explicit_output: tuple[int, str] | None = None
+        self.output_device.activated.connect(self._output_chosen)
         self.refresh_button = QPushButton(_("Refresh devices"))
         self.refresh_button.clicked.connect(self.refresh_devices)
         self.sample_rate = QComboBox()
@@ -1149,6 +1154,48 @@ class StandalonePage(QWidget):
         self.live.stop()
         super().hideEvent(event)
 
+    # --- the output a sweep may use ------------------------------------------------
+
+    def _output_chosen(self, _row: int = 0) -> None:
+        """The user picked an output in the list (not a preselection)."""
+        chosen = self._chosen_devices()
+        self._explicit_output = chosen[2] if chosen is not None else None
+
+    def choose_output(self, index: int) -> bool:
+        """Pick output device ``index`` as the user would (tests, scripts)."""
+        row = _find_data(self.output_device, index)
+        if row < 0:
+            return False
+        self.output_device.setCurrentIndex(row)
+        self._output_chosen(row)
+        return True
+
+    def output_block_reason(self, backend: str) -> str:
+        """Why a sweep may not play now, or ``""``.
+
+        A sweep plays only on an interface output the user chose in the list:
+        never PortAudio's default output ("System default"), and never an entry
+        the list preselected, because that is usually the computer's own
+        speakers. The fake backend plays nothing and is not limited.
+        """
+        if backend == "fake":
+            return ""
+        chosen = self._chosen_devices()
+        current = chosen[2] if chosen is not None else None
+        if current is None:
+            return _(
+                "Choose the output of your audio interface in the Connection step. "
+                "ReverbScope does not play the sweep on the system default output."
+            )
+        explicit = self._explicit_output
+        if explicit is None or explicit[1] != current[1]:
+            return _(
+                "Choose the output of your audio interface in the Connection step. "
+                "ReverbScope plays the sweep only on an output you picked yourself, "
+                "never on one it preselected."
+            )
+        return ""
+
     def _update_review(self, *_args: object) -> None:
         for key, value in (
             (
@@ -1193,6 +1240,8 @@ class StandalonePage(QWidget):
             return
         if backend.name != self._inventory_backend:
             chosen = None
+            # Device numbers of another backend name other devices.
+            self._explicit_output = None
         self._inventory = inventory
         self._inventory_backend = backend.name
         self._devices = [probe.device for probe in inventory.devices]
@@ -1505,6 +1554,17 @@ class StandalonePage(QWidget):
                     "Set the monitor level low first."
                 ).format(level=SAFE_MAX_LEVEL_DBFS),
             )
+            return
+        try:
+            take_backend = get_backend("fake" if self.demo_mode else None).name
+        except ReverbScopeError as exc:
+            QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
+            return
+        blocked = self.output_block_reason(take_backend)
+        if blocked:
+            # Nothing is played: no fallback to the default output.
+            self._report_status(blocked, "warn")
+            QMessageBox.warning(self, _("No interface output chosen"), blocked)
             return
         if self.before_take is not None and not self.before_take():
             return
