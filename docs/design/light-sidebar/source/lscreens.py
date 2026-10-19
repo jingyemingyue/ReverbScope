@@ -199,7 +199,11 @@ def _measure_frame(cv, step, busy=False, path_sel=0, steps=None, done=(), locked
     return fx, form_w, fx + form_w + gap, chk_w
 
 
-def measure_connect(cv: Canvas):
+def measure_connect_no_output(cv: Canvas):
+    measure_connect(cv, no_output=True)
+
+
+def measure_connect(cv: Canvas, no_output=False):
     fx, fw, cx, cw = _measure_frame(cv, 0)
     y = TB + 84
     cv.text(fx, y, L("连接设备", "Connect devices"), "title1", "text1", h=28)
@@ -207,8 +211,8 @@ def measure_connect(cv: Canvas):
         fx,
         y + 32,
         L(
-            "ReverbScope 通过音频接口播放扫频，同时录下话筒。两端采样率需要一致。",
-            "ReverbScope plays the sweep through your interface and records the mic at the same time.",
+            "这一步不发声。扫频只会从你在下面选的接口输出播放，绝不用系统默认输出或电脑扬声器。",
+            "Silent step. The sweep only goes to the output you pick here, never the system default.",
         ),
         "callout",
         "text2",
@@ -217,10 +221,22 @@ def measure_connect(cv: Canvas):
     )
     y += 72
 
-    def pop(label, w=260):
+    def pop(label, w=260, placeholder=False):
+        if placeholder:
+            return lambda xr, yy, h: (
+                lk.popup(cv, xr - w, yy + (h - 28) / 2, w, label),
+                cv.rect(xr - w, yy + (h - 28) / 2, w, 28, stroke="warn", r=7, sw=1.5),
+            )
         return lambda xr, yy, h: lk.popup(cv, xr - w, yy + (h - 28) / 2, w, label)
 
-    cv.text(fx, y, L("输出 · 播放扫频", "Output · plays the sweep"), "captionm", "text3", h=18)
+    cv.text(
+        fx,
+        y,
+        L("输出 · 只在“开始测量”后播放扫频", "Output · plays the sweep only after Start"),
+        "captionm",
+        "text3",
+        h=18,
+    )
     y += 22
     y += (
         sh.group(
@@ -229,8 +245,18 @@ def measure_connect(cv: Canvas):
             y,
             fw,
             [
-                (lk.tr("Output device"), None, pop("ReverbScope fake interface")),
-                (lk.tr("Output channel (speaker)"), None, pop("1")),
+                (
+                    lk.tr("Output device"),
+                    L(
+                        "必须手动选择；不提供“系统默认”",
+                        "Must be chosen; no “system default” entry",
+                    ),
+                    pop(L("选择音频接口输出…", "Choose an interface output…"), placeholder=True)
+                    if no_output
+                    else pop("ReverbScope fake interface"),
+                    52,
+                ),
+                (lk.tr("Output channel (speaker)"), None, pop("–" if no_output else "1")),
             ],
         )
         + 20
@@ -267,10 +293,22 @@ def measure_connect(cv: Canvas):
         cx,
         cw,
         [
-            ("ok", L("输出设备已选择", "Output chosen"), None, False),
+            ("warn", L("未选择输出：不会发声", "No output chosen: nothing can play"), None, False)
+            if no_output
+            else (
+                "ok",
+                L("输出：所选接口（非系统默认）", "Output: chosen interface (not default)"),
+                None,
+                False,
+            ),
             ("ok", L("输入设备已选择", "Input chosen"), None, False),
-            ("ok", L("同一设备，一个时钟", "One device, one clock"), "48 kHz", False),
-            ("todo", L("电平确认（下一步）", "Level check (next step)"), None, False),
+            (
+                "todo" if no_output else "ok",
+                L("同一设备，一个时钟", "One device, one clock"),
+                None if no_output else "48 kHz",
+                False,
+            ),
+            ("todo", L("电平确认（下一步，不发声）", "Level check (next, silent)"), None, False),
         ],
     )
     sh.action_bar(
@@ -278,10 +316,12 @@ def measure_connect(cv: Canvas):
         fx,
         fx + fw + (cw + 48 if cw else 0),
         (L("上一步", "Back"), True),
-        L("设备就绪，可以继续", "Devices ready"),
-        "good",
+        L("先选择音频接口的输出，才能继续", "Choose an interface output to continue")
+        if no_output
+        else L("设备就绪，可以继续 · 尚未发声", "Devices ready · nothing has played"),
+        "warn" if no_output else "good",
         lambda y: _primary_right(
-            cv, fx + fw + (cw + 48 if cw else 0), y, L("继续", "Continue"), False
+            cv, fx + fw + (cw + 48 if cw else 0), y, L("继续", "Continue"), no_output
         ),
     )
 
@@ -340,8 +380,8 @@ def measure_signal(cv: Canvas):
         fx,
         y + 32,
         L(
-            "先把监听音箱或耳机音量调低。ReverbScope 用保守的数字电平播放扫频。",
-            "Turn your monitors or headphones down first. The sweep plays at a conservative digital level.",
+            "这一步不发声：电平只是设置，也不会试播。扫频只在点“开始测量”后，从所选接口输出 1 播放。",
+            "Silent step: the level is a setting, no test playback. Sweep plays only after Start.",
         ),
         "callout",
         "text2",
@@ -418,7 +458,7 @@ def measure_signal(cv: Canvas):
         cv.hline(cx, cx + cw, y2, "sep")
         cv.text(cx, y2 + 14, L("本次将使用", "This take will use"), "captionm", "text3", h=16)
         rows = [
-            (L("设备", "Device"), "fake interface"),
+            (L("输出", "Output"), L("fake interface · 1", "fake interface · 1")),
             (L("电平", "Level"), "−9.0 dBFS"),
             (L("时长", "Length"), "10 s"),
             (L("配置", "Profile"), L("人声", "Vocals")),
@@ -457,8 +497,8 @@ def measure_running(cv: Canvas):
         fx,
         y + 32,
         L(
-            "请保持安静。按一次 Esc 立即停止并静音——即使有菜单或弹层打开。",
-            "Keep quiet. One Esc stops and mutes at once, even with a menu or popup open.",
+            "只从所选接口 fake interface 输出 1 播放（不是系统默认）。一次 Esc 立即停止。",
+            "Playing only on the chosen fake interface output 1 (not the default). One Esc stops.",
         ),
         "callout",
         "text2",

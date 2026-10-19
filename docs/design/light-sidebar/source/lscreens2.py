@@ -1545,13 +1545,13 @@ def room(cv: Canvas):
     src = t["room_source"]
     mic = t["room_mics"]["A"]
     Lx, Wy, Hz = box["length_m"], box["width_m"], box["height_m"]
-    s = min(cw, ch) / 7.4
+    s = min(cw, ch) / 8.8
     cam = (
         math.radians(-35),
         math.radians(62),
         s,
         x + cw / 2,
-        y + ch / 2 + 20,
+        y + ch / 2 + 6,
         (Lx / 2, Wy / 2, Hz / 2),
     )
     P = lambda q: _proj(cam, q)
@@ -1763,7 +1763,7 @@ def room(cv: Canvas):
     yy += 26
     cv.text(sx, yy, tr("Room checks"), "captionm", "text3", h=16)
     yy += 20
-    for c in t["room_checks"]:
+    for c in t["room_checks"][:6]:
         if yy > H - 40:
             break
         ic, col = {"ok": ("circle-check", "good"), "warn": ("triangle-alert", "warn")}.get(
@@ -1888,7 +1888,7 @@ def project(cv: Canvas):
                 f"{ps['rt60']:.2f} s",
                 f"{mnum(ps['clarity'][1], 1, True)} dB",
                 f"{mnum(ps['noise'], 1)} dBFS",
-                f"{mnum(ps['reflection'][1], 1)} dB @ {ps['reflection'][0]:.1f} ms",
+                f"{mnum(ps['reflection'][1], 1)} dB·{ps['reflection'][0]:.1f}ms",
                 (L("警告", "warnings"), "warn", "callout"),
             ]
         )

@@ -28,6 +28,7 @@ OUT = (
 JOBS = [
     ("01-home", S.home, ["zh-light", "en-light", "zh-dark"], (1280, 800)),
     ("02-measure-1-connect", S.measure_connect, ["zh-light"], (1280, 800)),
+    ("02b-measure-no-output", S.measure_connect_no_output, ["zh-light", "en-light"], (1280, 800)),
     ("03-measure-2-safe", S.measure_signal, ["zh-light", "en-light", "zh-dark"], (1280, 800)),
     ("04-measure-3-running", S.measure_running, ["zh-light", "zh-dark"], (1280, 800)),
     ("05-analysis-fr", S2.frequency, ["zh-light", "en-light", "zh-dark"], (1280, 800)),
