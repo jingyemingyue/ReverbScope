@@ -7590,3 +7590,28 @@ msgstr "当前测量减去基线，使用所选的显示处理方式"
 
 msgid "Playback level"
 msgstr "播放电平"
+
+msgid "Check “I have set the monitor level low” first"
+msgstr "先勾选“我已把监听音量调低”"
+
+msgid "Monitor level confirmed"
+msgstr "监听音量已确认"
+
+msgid "Not required at the current level"
+msgstr "当前电平无需确认"
+
+msgid "Not required"
+msgstr "不需要"
+
+msgid "No — confirm on the signal step"
+msgstr "否 — 请在信号步骤确认"
+
+msgid "Safe ceiling {level:g} dBFS"
+msgstr "安全上限 {level:g} dBFS"
+
+msgid "Start with a low monitor level; confirm before anything above {level:g} dBFS."
+msgstr "先把监听音量调低；超过 {level:g} dBFS 前请确认。"
+
+msgid "Yes"
+msgstr "是"
+

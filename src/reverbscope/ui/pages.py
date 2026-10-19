@@ -873,9 +873,15 @@ class StandalonePage(QWidget):
         self.demo_banner.setProperty("banner", "info")
         self.demo_banner.hide()
 
-        safety = QLabel(_(SAFETY_MESSAGE))
+        # One-line safety hint (SAFE-01); the full SAFETY_MESSAGE stays for the tooltip.
+        safety = QLabel(
+            _(
+                "Start with a low monitor level; confirm before anything above {level:g} dBFS."
+            ).format(level=SAFE_MAX_LEVEL_DBFS)
+        )
         safety.setWordWrap(True)
-        safety.setProperty("banner", "warn")
+        safety.setProperty("role", "hint")
+        safety.setToolTip(_(SAFETY_MESSAGE))
 
         devices = QGroupBox(_("Audio devices"))
         form = QFormLayout(devices)
@@ -929,16 +935,28 @@ class StandalonePage(QWidget):
         self.duration.setSuffix(" s")
         self.level = QDoubleSpinBox()
         self.level.setRange(-40.0, 0.0)
+        self.level.setDecimals(1)
+        self.level.setSingleStep(0.5)
         self.level.setValue(DEFAULT_STANDALONE_LEVEL_DBFS)
         self.level.setSuffix(" dBFS")
-        self.acknowledge = QCheckBox(
-            _("I have set the monitor level low (required above {level:g} dBFS)").format(
-                level=SAFE_MAX_LEVEL_DBFS
-            )
-        )
+        from reverbscope.ui.components.level_slider import LevelSlider
+
+        self.level_slider = LevelSlider(self.level, self)
+        self._ack_required_text = _(
+            "I have set the monitor level low (required above {level:g} dBFS)"
+        ).format(level=SAFE_MAX_LEVEL_DBFS)
+        self._ack_not_needed_text = _("Not required at the current level")
+        self.acknowledge = QCheckBox(self._ack_required_text)
+        self.level_gate_label = QLabel("")
+        self.level_gate_label.setWordWrap(True)
+        self.level_gate_label.setProperty("role", "hint")
         form2.addRow(_("Sweep duration"), self.duration)
-        form2.addRow(_("Playback level"), self.level)
+        form2.addRow(_("Playback level"), self.level_slider)
         form2.addRow(self.acknowledge)
+        form2.addRow(self.level_gate_label)
+        self._level_was_safe = float(self.level.value()) <= SAFE_MAX_LEVEL_DBFS
+        self.level.valueChanged.connect(self._on_level_changed)
+        self.acknowledge.toggled.connect(lambda _checked: self._update_level_gate())
         self.profile = _profile_combo(state)
         profile_row, self.profile_help = _profile_row(self.profile, self)
         form2.addRow(_("Recording profile"), profile_row)
@@ -1013,6 +1031,7 @@ class StandalonePage(QWidget):
             ("rate", _("Sample rate")),
             ("duration", _("Sweep duration")),
             ("level", _("Playback level")),
+            ("acknowledge", _("Monitor level confirmed")),
             ("position", _("Position")),
         ):
             value = label("", wrap=True)
@@ -1060,10 +1079,17 @@ class StandalonePage(QWidget):
         self.position.textChanged.connect(self._update_review)
         self.sample_rate.currentTextChanged.connect(self._update_review)
         self.flow.stack.currentChanged.connect(self._update_review)
+        self.flow.stack.currentChanged.connect(lambda _index: self._update_level_gate())
         self.refresh_devices()
-        self._update_review()
+        self._update_level_gate()
 
     def _update_review(self, *_args: object) -> None:
+        if self.level.value() <= SAFE_MAX_LEVEL_DBFS:
+            ack = _("Not required")
+        elif self.acknowledge.isChecked():
+            ack = _("Yes")
+        else:
+            ack = _("No — confirm on the signal step")
         for key, value in (
             (
                 "input",
@@ -1080,6 +1106,7 @@ class StandalonePage(QWidget):
             ("rate", self.sample_rate.currentText()),
             ("duration", self.duration.text()),
             ("level", self.level.text()),
+            ("acknowledge", ack),
             ("position", self.position.text() or _("not entered")),
         ):
             self.review_values[key].setText(value)
@@ -1103,7 +1130,7 @@ class StandalonePage(QWidget):
                 _("Audio backend unavailable: {error}").format(error=localize(str(exc))),
                 "warn",
             )
-            self.run_button.setEnabled(False)
+            self._update_level_gate()
             return
         if backend.name != self._inventory_backend:
             chosen = None
@@ -1138,7 +1165,7 @@ class StandalonePage(QWidget):
         # must stay off then, or a second take replaces the running thread.
         # With no device at all a take would only end in PortAudio's own
         # English error ("Error querying device -1").
-        self.run_button.setEnabled(not self.is_busy() and bool(self._devices))
+        self._update_level_gate()
         # A refresh while a take is running must not replace "Playing the sweep...".
         if self.is_busy():
             return
@@ -1396,25 +1423,73 @@ class StandalonePage(QWidget):
             and self.stop_button.isEnabled()
         )
 
+    def level_acknowledged(self) -> bool:
+        """True when the playback level is allowed to start (SAFE-01)."""
+        return not self._level_blocks_start()
+
+    def level_gate_reason(self) -> str:
+        """Why Continue / Start is disabled for the level gate, or empty."""
+        if self._level_blocks_start():
+            return _("Check “I have set the monitor level low” first")
+        return ""
+
+    def _level_blocks_start(self) -> bool:
+        return float(self.level.value()) > SAFE_MAX_LEVEL_DBFS and not self.acknowledge.isChecked()
+
+    def _on_level_changed(self, value: float) -> None:
+        is_safe = float(value) <= SAFE_MAX_LEVEL_DBFS
+        if self._level_was_safe and not is_safe:
+            self.acknowledge.setChecked(False)
+        self._level_was_safe = is_safe
+        self._update_level_gate()
+
+    def _reset_level_acknowledgement(self) -> None:
+        self.acknowledge.setChecked(False)
+        self._update_level_gate()
+
+    def _update_level_gate(self) -> None:
+        """Disable Start/Continue when the level needs a fresh acknowledgement."""
+        safe = float(self.level.value()) <= SAFE_MAX_LEVEL_DBFS
+        if safe:
+            self.acknowledge.setText(self._ack_not_needed_text)
+            self.acknowledge.setEnabled(False)
+            self.acknowledge.blockSignals(True)
+            self.acknowledge.setChecked(False)
+            self.acknowledge.blockSignals(False)
+        else:
+            self.acknowledge.setText(self._ack_required_text)
+            self.acknowledge.setEnabled(not self.is_busy())
+        blocks = self._level_blocks_start()
+        reason = self.level_gate_reason()
+        self.level_gate_label.setText(reason)
+        self.run_button.setToolTip(reason)
+        if hasattr(self, "flow"):
+            # Signal step: Continue must not skip an unconfirmed loud level.
+            on_signal = self.flow.stack.currentIndex() == 1
+            if on_signal and not self.is_busy():
+                self.flow.next.setEnabled(not blocks)
+            elif not self.is_busy():
+                self.flow.next.setEnabled(
+                    self.flow.stack.currentIndex() < self.flow.stack.count() - 1
+                )
+        if not self.is_busy():
+            devices_ok = self.demo_mode or bool(getattr(self, "_devices", None))
+            self.run_button.setEnabled(not blocks and devices_ok)
+        self._update_review()
+
     def start_measurement(self) -> None:
         from reverbscope.audio.backend import get_backend
 
         if self.is_busy():
             return
+        if self._level_blocks_start():
+            # SAFE-01: Start stays disabled; never open a warning dialog.
+            self._update_level_gate()
+            return
         try:
             settings = self.current_sweep_settings()
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
-            return
-        if settings.level_dbfs > SAFE_MAX_LEVEL_DBFS and not self.acknowledge.isChecked():
-            QMessageBox.warning(
-                self,
-                _("Level too high"),
-                _(
-                    "Levels above {level:g} dBFS need the acknowledgement checkbox. "
-                    "Set the monitor level low first."
-                ).format(level=SAFE_MAX_LEVEL_DBFS),
-            )
             return
         if self.before_take is not None and not self.before_take():
             return
@@ -1480,6 +1555,7 @@ class StandalonePage(QWidget):
 
     def _on_stopped(self) -> None:
         self._set_busy(False, _("Stopped."))
+        self._reset_level_acknowledgement()
 
     def _stale(self) -> bool:
         """As :meth:`DawModePage._stale`."""
@@ -1530,7 +1606,6 @@ class StandalonePage(QWidget):
         self.busy_changed.emit(True)
 
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
-        self.run_button.setEnabled(not busy)
         if hasattr(self, "stop_button"):
             self.stop_button.setEnabled(busy)
         if hasattr(self, "back_button"):
@@ -1543,6 +1618,7 @@ class StandalonePage(QWidget):
         set_banner_text(self.status, text, tone)
         self.busy_changed.emit(busy)
         self.status_changed.emit(text, tone)
+        self._update_level_gate()
 
     def _on_success(self, result: AnalysisResult) -> None:
         if self._stale():
@@ -1558,11 +1634,13 @@ class StandalonePage(QWidget):
             and self.state.recording_path is None
         )
         self._set_busy(False, _("Done."))
+        self._reset_level_acknowledgement()
         self.analysis_finished.emit()
 
     def _on_failure(self, message: str) -> None:
         self._set_busy(
             False, _("Measurement failed: {message}").format(message=message), tone="warn"
         )
+        self._reset_level_acknowledgement()
         if not self._stale():
             error_box(self, _("Measurement failed"), message)
