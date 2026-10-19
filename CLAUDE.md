@@ -3,7 +3,7 @@
 Follow [AGENTS.md](AGENTS.md).
 
 The execution standard is
-[docs/GUIDELINES.zh-CN.md](docs/GUIDELINES.zh-CN.md) (v2.1.1).
+[docs/GUIDELINES.zh-CN.md](docs/GUIDELINES.zh-CN.md) (v2.1.2).
 [docs/GUIDELINES.md](docs/GUIDELINES.md) is an English summary. If they
 differ, the Chinese text wins. How AI help is used is
 [docs/AI_ASSISTANCE.md](docs/AI_ASSISTANCE.md).

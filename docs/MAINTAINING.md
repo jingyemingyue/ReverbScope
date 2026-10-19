@@ -67,9 +67,6 @@ SBOM, checks the exact file set (`scripts/release_draft.py stage`) and, on
 the **draft** release `v<version>` with exactly 14 files. A pull request run
 drafts nothing. A documentation-only push builds nothing.
 
-**Pages** (`pages.yml`) publishes `site/` once Pages is enabled in the
-repository settings.
-
 **Dependabot** (`.github/dependabot.yml`) opens pull requests for the pinned
 GitHub Actions. Take them one at a time: a major version of
 `upload-artifact` / `download-artifact` changes how the Release workflow

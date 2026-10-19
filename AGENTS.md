@@ -1,7 +1,7 @@
 # Agent instructions
 
 The execution standard is [docs/GUIDELINES.zh-CN.md](docs/GUIDELINES.zh-CN.md)
-(v2.1.1). [docs/GUIDELINES.md](docs/GUIDELINES.md) is an English summary. If
+(v2.1.2). [docs/GUIDELINES.md](docs/GUIDELINES.md) is an English summary. If
 this file and the guidelines disagree, the guidelines win. This file is the
 working copy of Appendix J. How AI help is used is
 [docs/AI_ASSISTANCE.md](docs/AI_ASSISTANCE.md).
