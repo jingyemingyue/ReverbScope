@@ -8,6 +8,8 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Research integration defaults.** Align PR #74 with main: noise-power subtraction remains opt-in; preserve its existing strict 40 dB guard and experimental APIs. ADR 0004 records the remaining harmonic-window default difference and deferred M2/M8 failures.
+- **Research-method correctness.** Preserve unreliable fast-decay flags; correct power T60 conversion, model-order selection and LP coefficients; add known-answer synthetic checks. See `docs/adr/0002-research-estimator-validity.md`.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on

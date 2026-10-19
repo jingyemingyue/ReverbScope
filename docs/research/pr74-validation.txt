@@ -1,0 +1,419 @@
+Transcript presentation trims trailing whitespace; compressed incomplete raw stdout is unmodified.
+PR #74 integration validation transcript
+Base: ab3da19618a066460857f0d8c155e4a7dcc3610f
+LOCAL FULL PYTEST/COVERAGE: INCOMPLETE, NOT PASSED. Remote exact-head CI pending.
+Second incomplete raw stdout: pr74-local-full-incomplete.txt.gz
+The first exit1 cause is unresolved. No OOM recorded. M2/M8 deliberately remain failing.
+
+==== source-audit ====
+main: 84764f58c5b44955dbfe0a35f2c95b6733a4ac74
+source #74: ebc145752e3851c3d11150dc495634992174a79c
+Only source delta from #74: ['src/reverbscope/core/decay.py']
+Inherited 16 policy cases: byte-identical, appended tests only
+Existing #74 builder body including guard: AST-identical
+decay.py changed existing functions: ['_curve_from_truncation']
+sweep.py changed existing functions: []
+deconvolution.py changed existing functions: ['locate_impulse_response']
+EXIT_CODE=0
+
+
+==== full-first-incomplete ====
+........................................................................ [  2%]
+........................................................................ [  4%]
+........................................................................ [  6%]
+........................................................................ [  8%]
+.................................................s...................... [ 10%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+.........
+EXIT_CODE=1
+
+
+==== averaging-diagnostic ====
+DIAGNOSTIC SINGLE FILE: not the full-suite 85% acceptance gate.
+============================= test session starts ==============================
+platform linux -- Python 3.12.14, pytest-9.1.1, pluggy-1.7.0 -- /workspace/scratch/b7bd69d2a058/ReverbScope-algorithm/../algorithm-venv/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/scratch/b7bd69d2a058/ReverbScope-algorithm
+configfile: pyproject.toml
+plugins: cov-7.1.0
+collecting ... collected 20 items
+
+tests/unit/test_averaging.py::test_table_1_values_are_the_standard_s PASSED [  5%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[1-1-None-below_survey] PASSED [ 10%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[1-2-None-survey] PASSED [ 15%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[1-12-None-survey] PASSED [ 20%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[6-1-None-below_survey] PASSED [ 25%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[2-2-None-survey] PASSED [ 30%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[2-3-None-engineering] PASSED [ 35%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[3-2-None-engineering] PASSED [ 40%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[6-2-None-engineering] PASSED [ 45%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[3-4-None-precision] PASSED [ 50%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[4-3-None-precision] PASSED [ 55%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[2-6-None-precision] PASSED [ 60%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[2-3-4-survey] PASSED [ 65%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[3-4-11-engineering] PASSED [ 70%]
+tests/unit/test_averaging.py::test_iso_class_checks_every_row[2-2-99-survey] PASSED [ 75%]
+tests/unit/test_averaging.py::test_average_counts_repeats_as_sessions_not_positions PASSED [ 80%]
+tests/unit/test_averaging.py::test_average_decay_means_valid_t_only PASSED [ 85%]
+tests/unit/test_averaging.py::test_project_average_counts_distinct_positions PASSED [ 90%]
+tests/unit/test_averaging.py::test_averaged_rt60_is_the_mean_of_each_session_s_own PASSED [ 95%]
+tests/unit/test_averaging.py::test_project_average_shows_the_count_of_each_value PASSED [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.14-final-0 _______________
+
+Name                                         Stmts   Miss Branch BrPart  Cover
+------------------------------------------------------------------------------
+src/reverbscope/core/__init__.py                 5      0      0      0   100%
+src/reverbscope/core/averaging.py              126      5     42      7    93%
+src/reverbscope/core/bayesian_decay.py         124    124     30      0     0%
+src/reverbscope/core/compare.py                261    227    106      0     9%
+src/reverbscope/core/decay.py                  684    206    238     77    65%
+src/reverbscope/core/deconvolution.py          374    109    126     34    64%
+src/reverbscope/core/filters.py                126     12     28     10    86%
+src/reverbscope/core/frequency_response.py      50     15     16      6    62%
+src/reverbscope/core/impulse.py                 18      3      2      1    80%
+src/reverbscope/core/linearity.py              227     37     54     19    79%
+src/reverbscope/core/loopback.py               154    110     36      0    23%
+src/reverbscope/core/modal.py                   73     73     30      0     0%
+src/reverbscope/core/noise.py                  238     52     72     31    72%
+src/reverbscope/core/pipeline.py               451    241    160     43    41%
+src/reverbscope/core/placement.py              235    168     86      6    23%
+src/reverbscope/core/playback_speed.py          78     54     20      0    24%
+src/reverbscope/core/reflections.py             55      7      8      4    83%
+src/reverbscope/core/resonance.py              131     67     40      8    42%
+src/reverbscope/core/sweep.py                  276    143     60      8    43%
+src/reverbscope/models/__init__.py               8      0      0      0   100%
+src/reverbscope/models/audio.py                 56     17     22     10    63%
+src/reverbscope/models/calibration.py           17      3      0      0    82%
+src/reverbscope/models/comparison.py           168     71     28      0    49%
+src/reverbscope/models/configuration.py        121      8     10      5    90%
+src/reverbscope/models/loadutil.py              73     39     30      6    39%
+src/reverbscope/models/project.py               47      5     10      5    82%
+src/reverbscope/models/result.py               385     27     24      8    89%
+src/reverbscope/models/result_load.py          161     35     42     20    73%
+src/reverbscope/models/session.py               65      2     10      4    92%
+------------------------------------------------------------------------------
+TOTAL                                         4787   1860   1330    312    55%
+============================= 20 passed in 17.67s ==============================
+
+EXIT_CODE=0
+
+
+==== original74-policy-red ====
+FFFF...FF.......                                                         [100%]
+=================================== FAILURES ===================================
+__________ test_default_curve_preserves_a_noiseless_exponential[45.0] __________
+tests/unit/test_noise_subtraction_policy.py:30: in test_default_curve_preserves_a_noiseless_exponential
+    np.testing.assert_array_equal(default.edc_db, unsubtracted.edc_db)
+E   AssertionError:
+E   Arrays are not equal
+E
+E   Mismatched elements: 4543 / 4544 (100%)
+E   First 5 mismatches are at indices:
+E    [1]: -0.00937958483950612 (ACTUAL), -0.009374994919526522 (DESIRED)
+E    [2]: -0.018759178464379925 (ACTUAL), -0.01874998982807446 (DESIRED)
+E    [3]: -0.02813878089118751 (ACTUAL), -0.028124984725619362 (DESIRED)
+E    [4]: -0.03751839213652629 (ACTUAL), -0.03749997961213837 (DESIRED)
+E    [5]: -0.046898012217023013 (ACTUAL), -0.046874974487606844 (DESIRED)
+E   Max absolute difference among violations: 2.00524189
+E   Max relative difference among violations: 0.05274446
+E    ACTUAL: array([ 0.000000e+00, -9.379585e-03, -1.875918e-02, ..., -4.255507e+01,
+E          -4.255507e+01, -4.255507e+01], shape=(4544,))
+E    DESIRED: array([ 0.000000e+00, -9.374995e-03, -1.874999e-02, ..., -4.252958e+01,
+E          -4.253886e+01, -4.254815e+01], shape=(4544,))
+__________ test_default_curve_preserves_a_noiseless_exponential[50.0] __________
+tests/unit/test_noise_subtraction_policy.py:30: in test_default_curve_preserves_a_noiseless_exponential
+    np.testing.assert_array_equal(default.edc_db, unsubtracted.edc_db)
+E   AssertionError:
+E   Arrays are not equal
+E
+E   Mismatched elements: 5045 / 5046 (100%)
+E   First 5 mismatches are at indices:
+E    [1]: -0.009376741215423793 (ACTUAL), -0.009374998345964173 (DESIRED)
+E    [2]: -0.018753485813147102 (ACTUAL), -0.018749996688353705 (DESIRED)
+E    [3]: -0.028130233799657827 (ACTUAL), -0.028124995027161613 (DESIRED)
+E    [4]: -0.03750698518145723 (ACTUAL), -0.03749999336237966 (DESIRED)
+E    [5]: -0.046883739965057035 (ACTUAL), -0.04687499169399986 (DESIRED)
+E   Max absolute difference among violations: 2.00613306
+E   Max relative difference among violations: 0.04692735
+E    ACTUAL: array([ 0.000000e+00, -9.376741e-03, -1.875349e-02, ..., -4.726439e+01,
+E          -4.726439e+01, -4.726439e+01], shape=(5046,))
+E    DESIRED: array([ 0.000000e+00, -9.374998e-03, -1.875000e-02, ..., -4.723742e+01,
+E          -4.724671e+01, -4.725599e+01], shape=(5046,))
+__________ test_default_curve_preserves_a_noiseless_exponential[55.0] __________
+tests/unit/test_noise_subtraction_policy.py:30: in test_default_curve_preserves_a_noiseless_exponential
+    np.testing.assert_array_equal(default.edc_db, unsubtracted.edc_db)
+E   AssertionError:
+E   Arrays are not equal
+E
+E   Mismatched elements: 5546 / 5547 (100%)
+E   First 5 mismatches are at indices:
+E    [1]: -0.009375654594286542 (ACTUAL), -0.009374999475536721 (DESIRED)
+E    [2]: -0.0187513104740967 (ACTUAL), -0.018749998949939724 (DESIRED)
+E    [3]: -0.028126967641930442 (ACTUAL), -0.028124998423207356 (DESIRED)
+E    [4]: -0.037502626100290745 (ACTUAL), -0.03749999789533627 (DESIRED)
+E    [5]: -0.04687828585168752 (ACTUAL), -0.04687499736632482 (DESIRED)
+E   Max absolute difference among violations: 2.005722
+E   Max relative difference among violations: 0.04225443
+E    ACTUAL: array([ 0.000000e+00, -9.375655e-03, -1.875131e-02, ..., -5.196447e+01,
+E          -5.196447e+01, -5.196447e+01], shape=(5547,))
+E    DESIRED: array([ 0.000000e+00, -9.374999e-03, -1.875000e-02, ..., -5.193692e+01,
+E          -5.194622e+01, -5.195551e+01], shape=(5547,))
+___________ test_default_band_analysis_preserves_valid_noiseless_t30 ___________
+tests/unit/test_noise_subtraction_policy.py:44: in test_default_band_analysis_preserves_valid_noiseless_t30
+    assert band.t30.seconds == pytest.approx(0.8, rel=0.01)
+E   assert 0.7860750153497787 == 0.8 ± 0.008
+E
+E     comparison failed
+E     Obtained: 0.7860750153497787
+E     Expected: 0.8 ± 0.008
+_ test_explicit_subtraction_keeps_the_guard_and_known_energy_sum[None-40.000001] _
+tests/unit/test_noise_subtraction_policy.py:81: in test_explicit_subtraction_keeps_the_guard_and_known_energy_sum
+    np.testing.assert_array_equal(default.edc_db, raw.edc_db)
+E   AssertionError:
+E   Arrays are not equal
+E
+E   Mismatched elements: 4 / 5 (80%)
+E   Mismatch at indices:
+E    [1]: -10.409586077788065 (ACTUAL), -10.399741423281647 (DESIRED)
+E    [2]: -37.40362789494243 (ACTUAL), -34.85232393844741 (DESIRED)
+E    [3]: -37.40362789494243 (ACTUAL), -35.501732007777555 (DESIRED)
+E    [4]: -3000.0 (ACTUAL), -50.41534894612028 (DESIRED)
+E   Max absolute difference among violations: 2949.58465105
+E   Max relative difference among violations: 58.50568751
+E    ACTUAL: array([    0.      ,   -10.409586,   -37.403628,   -37.403628,
+E          -3000.      ])
+E    DESIRED: array([  0.      , -10.399741, -34.852324, -35.501732, -50.415349])
+__ test_explicit_subtraction_keeps_the_guard_and_known_energy_sum[None-60.0] ___
+tests/unit/test_noise_subtraction_policy.py:81: in test_explicit_subtraction_keeps_the_guard_and_known_energy_sum
+    np.testing.assert_array_equal(default.edc_db, raw.edc_db)
+E   AssertionError:
+E   Arrays are not equal
+E
+E   Mismatched elements: 4 / 5 (80%)
+E   Mismatch at indices:
+E    [1]: -10.413883422351207 (ACTUAL), -10.413784721633622 (DESIRED)
+E    [2]: -57.40362689494244 (ACTUAL), -54.85091605716007 (DESIRED)
+E    [3]: -57.40362689494244 (ACTUAL), -55.50032412649021 (DESIRED)
+E    [4]: -3000.0 (ACTUAL), -70.41394106483294 (DESIRED)
+E   Max absolute difference among violations: 2929.58605894
+E   Max relative difference among violations: 41.60519941
+E    ACTUAL: array([    0.      ,   -10.413883,   -57.403627,   -57.403627,
+E          -3000.      ])
+E    DESIRED: array([  0.      , -10.413785, -54.850916, -55.500324, -70.413941])
+=========================== short test summary info ============================
+FAILED tests/unit/test_noise_subtraction_policy.py::test_default_curve_preserves_a_noiseless_exponential[45.0]
+FAILED tests/unit/test_noise_subtraction_policy.py::test_default_curve_preserves_a_noiseless_exponential[50.0]
+FAILED tests/unit/test_noise_subtraction_policy.py::test_default_curve_preserves_a_noiseless_exponential[55.0]
+FAILED tests/unit/test_noise_subtraction_policy.py::test_default_band_analysis_preserves_valid_noiseless_t30
+FAILED tests/unit/test_noise_subtraction_policy.py::test_explicit_subtraction_keeps_the_guard_and_known_energy_sum[None-40.000001]
+FAILED tests/unit/test_noise_subtraction_policy.py::test_explicit_subtraction_keeps_the_guard_and_known_energy_sum[None-60.0]
+6 failed, 10 passed, 3 deselected in 0.23s
+
+EXIT_CODE=1
+
+
+==== related ====
+........................................................................ [ 69%]
+...............................                                          [100%]
+103 passed in 7.85s
+
+EXIT_CODE=0
+
+
+==== latest-related ====
+........................................................................ [ 53%]
+...............................................................          [100%]
+135 passed in 4.89s
+
+EXIT_CODE=0
+
+
+==== latest-public-comparison ====
+Main ab3da19618a066460857f0d8c155e4a7dcc3610f
+Eight common cases identical; M3-only ninth differs in placement/reflections
+Common projection SHA256: 06de2dcf9028376101a4d68432298f302e7765b22130a8b9f0b0984557fa1a80
+EXIT_CODE=0
+
+
+==== deferred-m2-m8 ====
+FFF                                                                      [100%]
+=================================== FAILURES ===================================
+_____________________ test_m2_synchronized_phase_identity ______________________
+docs/research/pr74_deferred_probes.py:24: in test_m2_synchronized_phase_identity
+    assert abs(phase_residual) < 1e-8, f"phase residual: {phase_residual} rad"
+E   AssertionError: phase residual: -1.3156552388058116 rad
+E   assert np.float64(1.3156552388058116) < 1e-08
+E    +  where np.float64(1.3156552388058116) = abs(np.float64(-1.3156552388058116))
+_______________ test_m8_known_modal_decay_with_weighting[0.9995] _______________
+docs/research/pr74_deferred_probes.py:35: in test_m8_known_modal_decay_with_weighting
+    assert closest.frequency_hz == pytest.approx(100, abs=1)
+E   assert 103.31381543868464 == 100 ± 1
+E
+E     comparison failed
+E     Obtained: 103.31381543868464
+E     Expected: 100 ± 1
+________________ test_m8_known_modal_decay_with_weighting[0.99] ________________
+docs/research/pr74_deferred_probes.py:36: in test_m8_known_modal_decay_with_weighting
+    assert closest.t60_s == pytest.approx(0.8, rel=0.05)
+E   assert 1.0169171539940518 == 0.8 ± 0.04
+E
+E     comparison failed
+E     Obtained: 1.0169171539940518
+E     Expected: 0.8 ± 0.04
+=========================== short test summary info ============================
+FAILED docs/research/pr74_deferred_probes.py::test_m2_synchronized_phase_identity
+FAILED docs/research/pr74_deferred_probes.py::test_m8_known_modal_decay_with_weighting[0.9995]
+FAILED docs/research/pr74_deferred_probes.py::test_m8_known_modal_decay_with_weighting[0.99]
+3 failed in 1.11s
+
+EXIT_CODE=1
+
+
+==== ruff ====
+COMMAND: /workspace/scratch/b7bd69d2a058/algorithm-venv/bin/ruff check .
+All checks passed!
+
+EXIT_CODE=0
+
+
+==== format ====
+COMMAND: /workspace/scratch/b7bd69d2a058/algorithm-venv/bin/ruff format --check .
+365 files already formatted
+
+EXIT_CODE=0
+
+
+==== mypy ====
+COMMAND: /workspace/scratch/b7bd69d2a058/algorithm-lint-venv/bin/mypy --platform linux
+Success: no issues found in 123 source files
+
+EXIT_CODE=0
+
+
+==== doc-links ====
+COMMAND: /workspace/scratch/b7bd69d2a058/algorithm-venv/bin/python scripts/check_doc_links.py
+doc links ok under docs and in 9 root documents
+
+EXIT_CODE=0
+
+
+==== cli-docs ====
+COMMAND: /workspace/scratch/b7bd69d2a058/algorithm-venv/bin/python scripts/check_cli_docs.py
+CLI docs ok: 80 commands parsed (syntax only; none executed)
+
+EXIT_CODE=0
+
+
+==== src-safety ====
+COMMAND: /workspace/scratch/b7bd69d2a058/algorithm-venv/bin/python scripts/check_src_safety.py
+src safety ok under src
+
+EXIT_CODE=0
+
+
+==== schemas ====
+COMMAND: /workspace/scratch/b7bd69d2a058/algorithm-venv/bin/python -m pytest tests/unit/test_schemas.py tests/unit/test_public_api.py -o addopts= -q
+..............................                                           [100%]
+30 passed in 11.08s
+
+EXIT_CODE=0
+
+
+==== bundle-gate ====
+COMMAND: /workspace/scratch/b7bd69d2a058/algorithm-venv/bin/python scripts/check_bundle_contents.py --root /workspace/scratch/b7bd69d2a058/algorithm-venv/lib/python3.12/site-packages/PySide6 --installed-essentials
+bundle gate passed for /workspace/scratch/b7bd69d2a058/algorithm-venv/lib/python3.12/site-packages/PySide6 (QtCore, QtGui, QtWidgets, QtDBus (Linux) and other PySide6 Essentials LGPL modules)
+
+EXIT_CODE=0
+
+
+==== docs-site ====
+wrote 63 pages under /tmp/reverbscope-pr74-docs
+
+EXIT_CODE=0
+
+
+==== licenses ====
+wrote /tmp/reverbscope-pr74-licenses (no unresolved packages)
+
+EXIT_CODE=0
+
+
+==== build ====
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - hatchling>=1.27
+* Getting build dependencies for sdist...
+* Installed build dependency versions:
+  - hatchling==1.32.4
+* Building sdist...
+* Building wheel from sdist
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - hatchling>=1.27
+* Getting build dependencies for wheel...
+* Installed build dependency versions:
+  - hatchling==1.32.4
+* Building wheel...
+Successfully built reverbscope-0.5.0b3.tar.gz and reverbscope-0.5.0b3-py3-none-any.whl
+
+EXIT_CODE=0
+
+
+==== latest-build ====
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - hatchling>=1.27
+* Getting build dependencies for sdist...
+* Installed build dependency versions:
+  - hatchling==1.32.4
+* Building sdist...
+* Building wheel from sdist
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - hatchling>=1.27
+* Getting build dependencies for wheel...
+* Installed build dependency versions:
+  - hatchling==1.32.4
+* Building wheel...
+Successfully built reverbscope-0.5.0b4.tar.gz and reverbscope-0.5.0b4-py3-none-any.whl
+
+EXIT_CODE=0
+
+
+==== cjk-skip ====
+s                                                                        [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/ui/test_gui_smoke.py:593: none of ('PingFang SC', 'Hiragino Sans GB', 'Arial Unicode MS', 'Microsoft YaHei', 'SimHei', 'Noto Sans CJK SC', 'Source Han Sans SC', 'WenQuanYi Zen Hei', 'Droid Sans Fallback') is installed on this machine
+1 skipped, 49 deselected in 2.44s
+
+EXIT_CODE=0
+
+
+==== Generated-site resource-link regression ====
+Original assertion unchanged. Non-rendered resource links now target existing immutable GitHub blobs.
+
+---- doc-site-links-red ----
+F                                                                        [100%]
+=================================== FAILURES ===================================
+________________ test_every_link_of_the_generated_site_resolves ________________
+tests/unit/test_docs_site.py:228: in test_every_link_of_the_generated_site_resolves
+    assert dead == []
+E   AssertionError: assert ['research/pr...ed_probes.py'] == []
+E
+E     Left contains 3 more items, first extra item: 'research/pr74-default-policy-validation.html: pr74-validation.txt'
+E     Use -v to get more diff
+=========================== short test summary info ============================
+FAILED tests/unit/test_docs_site.py::test_every_link_of_the_generated_site_resolves
+1 failed in 0.28s
+
+EXIT_CODE=1
+
+---- doc-site-links-green ----
+..........                                                               [100%]
+10 passed in 0.97s
+
+EXIT_CODE=0

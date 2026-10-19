@@ -114,3 +114,33 @@ def test_explicit_subtraction_rejects_a_nonfinite_floor(floor_db: float) -> None
         subtract_noise=True,
     )
     np.testing.assert_array_equal(opted_in.edc_db, raw.edc_db)
+
+
+@pytest.mark.parametrize("name", ["schroeder_curve", "_curve_from_truncation"])
+def test_noise_subtraction_signatures_remain_opt_in(name: str) -> None:
+    import inspect
+
+    from reverbscope.core import decay
+
+    assert inspect.signature(getattr(decay, name)).parameters["subtract_noise"].default is False
+
+
+def test_public_ir_analysis_matches_explicitly_unsubtracted_builder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from functools import partial
+
+    from reverbscope.core import decay
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
+
+    rate = 8000
+    time = np.arange(2 * rate) / rate
+    signal = np.exp(-math.log(1000) * time / 0.8)
+    signal[time >= 0.8 * 50 / 60] = 0
+    audio = AudioSignal(signal, rate)
+    default = analyze_impulse_response(audio).decay.to_dict()
+    monkeypatch.setattr(
+        decay, "_curve_from_truncation", partial(decay._curve_from_truncation, subtract_noise=False)
+    )
+    assert analyze_impulse_response(audio).decay.to_dict() == default
