@@ -3,7 +3,7 @@
 **English summary** | [简体中文（以此为准）](GUIDELINES.zh-CN.md)
 
 This file is a summary of
-[GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) **v2.1.1** (2026-10-15).
+[GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) **v2.1.2** (2026-10-19).
 The Chinese text is the only execution standard for the project. If this
 summary and the Chinese text differ, follow the Chinese text. Do not treat
 this page as a second authority, and do not change the Chinese document's

@@ -64,8 +64,8 @@ smoke-tests every bundle (`scripts/smoke_bundle.py`), installs, smokes and
 uninstalls the Windows installer, builds and checks both DMGs, writes the
 SBOM, checks the exact file set (`scripts/release_draft.py stage`) and, on
 `main` or `release/**` while no tag `v<version>` exists, opens or refreshes
-
-
+the **draft** release `v<version>` with exactly 14 files. A pull request run
+drafts nothing. A documentation-only push builds nothing.
 
 **Dependabot** (`.github/dependabot.yml`) opens pull requests for the pinned
 GitHub Actions. Take them one at a time: a major version of

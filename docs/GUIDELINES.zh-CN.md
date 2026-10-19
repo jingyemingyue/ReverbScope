@@ -2,7 +2,7 @@
 
 | 项目 | 内容 |
 | --- | --- |
-| 版本 | v2.1.1（2026-10-15） |
+| 版本 | v2.1.2（2026-10-19） |
 | 性质 | ReverbScope 的**唯一执行准则**。所有人和所有 AI 会话（Claude、Codex、Cursor、Grok、GPT 等）开工前，必须先读 §0、§2、§3、§4、§6 和附录 J，再读和任务相关的章节。AI 会话按附录 J 的八个步骤工作。 |
 | 合并并取代 | v1.0《ReverbScope 桌面 GUI 重构执行准则》（2026-10-14）；#58 的 `docs/design/GUI_2_ARCHITECTURE.md`；#59 的 Phase 0 准则；#63、#64 的 PR 说明里的设计主张；#65 的 `docs/OSS_READINESS.md`、`docs/OSS_APPLICATION_DRAFT.md` 里的**建议和计划**部分（其中带日期的事实快照仍然作为证据引用）。这些材料从现在起只是“输入”，不再是各自独立的依据。逐条合并结果见附录 H。 |
 | 总目标 | 把 ReverbScope 做成一个**能装、能用、有人在用、由维护者主导**的开源项目，再用真实证据申请 OpenAI 的 **Codex for Open Source** 计划。GUI 重构服务于这个目标，不再是独立目标。 |
@@ -2058,3 +2058,4 @@ Stage: [0.5.0rc3] public pre-release, not yet stable. Done: [Apple Silicon + int
 | v2.0 | 2026-10-15 | 以 OpenAI Codex for Open Source 申请为总目标重写：新增 §1 申请条件与差距、§2 多 AI 意见统一合并规则、§5 申请主线 S0–S6、附录 G（PR 处置）、H（意见合并登记）、I（申请文本模板）；决策新增 D14–D20，硬约束新增 C15–C19；并入 #63、#64、#65 的意见；GUI 规格章节号后移（§1→§8，§2→§9，§4→§10，§6–§14→§11–§19，§16→§20）。v1.0 原文由维护者另行保存 |
 | v2.1 | 2026-10-15 | 新增附录 J（AI 会话执行协议）：八个步骤和三个必停点、必须停下的情形、禁止行为清单、输出模板、提交和 PR 格式；§6 增加第 16 条；配套仓库文件 `AGENTS.md` 与 `.cursor/rules/*.mdc` |
 | v2.1.1 | 2026-10-15 | 附录 D 的示例脚本按 `ruff format` 排版（行为不变），让准则入库后通过 CI；§6 第 8 条改为 `mypy --platform linux` 并说明原因，补充 Markdown 代码块也受 `ruff format` 检查 |
+| v2.1.2 | 2026-10-19 | 网站计划已于 2026-10-17 取消：D20「启用 GitHub Pages」标记为**已作废**，附录 G 中 #65 的 `site/index.html` 处置条款删除，`docs/REPOSITORY_SETTINGS.md` 与 `docs/MAINTAINING*.md` 中已失效的 Pages 说明一并清理；其余规则不变 |

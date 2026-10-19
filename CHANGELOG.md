@@ -132,7 +132,7 @@ All notable changes to ReverbScope are documented here. The format follows
   geometry is saved in `room-geometry.json`, apart from the measurements.
 - `docs/design/GUI_REFERENCE_AUDIT.md`: what the workstation borrows from
   other programs (conventions only, no code or assets).
-- **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.1) is the single
+- **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.2) is the single
   standard for the open-source application path and the GUI redesign.
   `docs/GUIDELINES.md` is an English summary; the Chinese text wins if they
   differ. `docs/AI_ASSISTANCE.md` says what an AI session may prepare and
@@ -167,6 +167,8 @@ All notable changes to ReverbScope are documented here. The format follows
 - Remove obsolete documentation references to the cancelled GitHub Pages site.
 - Make the unsigned-build warning prominent in the README.
 - Synchronize the beta release notes and changelog with version 0.5.0b4.
+- Bump the execution guidelines to v2.1.2: the D20 Pages decision is obsolete
+  and appendix G no longer carries the `site/index.html` clause.
 
 ## [0.5.0b3] - 2026-10-09
 
