@@ -134,7 +134,7 @@ def test_measuring_a_new_position_saves_the_take_into_the_project(
     assert take is not None and take.is_take and take.position == "C"
     assert suggested_folder(project, "C") == "C-1"
     assert window.save_to(project / suggested_folder(project, "C"))
-    assert "listed in project Booth under position C" in window.statusBar().currentMessage()
+    assert "listed in project Booth under position C" in window.status_message()
     listed = {label: path.name for label, path in list_project_sessions(project)}
     assert listed["C"] == "C-1"
     assert suggested_folder(project, "C") == "C-2"

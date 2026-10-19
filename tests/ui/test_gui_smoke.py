@@ -77,7 +77,7 @@ def test_daw_mode_end_to_end(app: QApplication, tmp_path: Path, short_sweep: Swe
     assert window.save_to(out)
     assert (out / "session.json").is_file()
     assert (out / "impulse_response.wav").is_file()
-    assert "saved" in window.statusBar().currentMessage()
+    assert "saved" in window.status_message()
 
     window.show_home()
     assert window.state.result is None
@@ -164,7 +164,7 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
     assert "Ctrl+Shift+3" not in shortcuts
     # The start panel has no mode cards any more (by design), so no shortcut
     # badges to check against the Measure menu: the menu carries the keys.
-    assert "Start" in window.statusBar().currentMessage()
+    assert "Start" in window.status_message()
     assert window.daw.analyze_button.shortcut().toString() == "Ctrl+Return"
     # Esc is dispatched by the main window (ESC-01), ahead of any popup.
     assert callable(window.handle_escape)
@@ -1601,7 +1601,7 @@ def test_back_from_compare_returns_to_the_unsaved_result(
     assert window.state.recording is recording
     current = window.model.current()
     assert current is not None and current.is_take and current.result is result
-    assert window.statusBar().currentMessage().endswith("Overview")
+    assert window.status_message().endswith("Overview")
     assert window.save_to(tmp_path / "take")
     assert (tmp_path / "take" / "recording.wav").is_file()
     window.close()

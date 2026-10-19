@@ -19,6 +19,7 @@ from PySide6.QtGui import (
     QGuiApplication,
     QKeyEvent,
     QKeySequence,
+    QResizeEvent,
 )
 from PySide6.QtWidgets import (
     QApplication,
@@ -26,7 +27,6 @@ from PySide6.QtWidgets import (
     QInputDialog,
     QMainWindow,
     QMessageBox,
-    QStatusBar,
     QVBoxLayout,
     QWidget,
 )
@@ -205,8 +205,9 @@ class MainWindow(QMainWindow):
 
         self._build_menus()
         self.stack.currentChanged.connect(self._weak(lambda window, _index: window.reset_layout()))
-        self._status = QStatusBar()
-        self.setStatusBar(self._status)
+        # LAYOUT-01 (minimal): no status bar — place and notices live in the
+        # window title so the canvas keeps the height at 960×640.
+        self._status_message = ""
         self._place = ""
         #: The view shown when the first measurement opens (ui.ini).
         self._preferred_view = ui_state.read_text("workspace/view", "overview")
@@ -550,9 +551,31 @@ class MainWindow(QMainWindow):
 
     def _set_place(self, place: str) -> None:
         self._place = place
-        self._status.showMessage(
+        self._show_status(
             _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
         )
+
+    def _show_status(self, message: str) -> None:
+        """Transient / place text without a status bar (LAYOUT-01 minimal)."""
+        self._status_message = message
+        title = f"ReverbScope {__version__}"
+        if self._place:
+            title = f"{title} — {self._place}"
+        self.setWindowTitle(title)
+
+    def status_message(self) -> str:
+        """Last place / notice string (replaces ``statusBar().currentMessage()``)."""
+        return self._status_message
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._apply_narrow_chrome()
+
+    def _apply_narrow_chrome(self) -> None:
+        """At narrow widths, drop the tool rail so the plot keeps height (LAYOUT-01)."""
+        from reverbscope.ui.design.tokens import TOOL_RAIL_MIN_WINDOW_WIDTH
+
+        self.workspace.tools.setVisible(self.width() >= TOOL_RAIL_MIN_WINDOW_WIDTH)
 
     # --- the unsaved take ------------------------------------------------------------------
 
@@ -928,7 +951,7 @@ class MainWindow(QMainWindow):
         entry = self.model.entry(key)
         position = entry.position if entry is not None else ""
         self.model.mark_saved(key, directory, position=position)
-        self._status.showMessage(_("Session saved to {path}").format(path=session_path.parent))
+        self._show_status(_("Session saved to {path}").format(path=session_path.parent))
         project = self.model.project_path
         if project is not None:
             self._add_to_project(project, directory, position or "A")
@@ -949,7 +972,7 @@ class MainWindow(QMainWindow):
                 ).format(path=directory, error=localize(str(exc))),
             )
             return
-        self._status.showMessage(
+        self._show_status(
             _(
                 "Session saved to {path} and listed in project {project} under position {label}"
             ).format(path=directory, project=listed.name or project.name, label=position)
