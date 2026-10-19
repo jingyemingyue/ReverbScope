@@ -668,7 +668,8 @@ def test_a_running_take_cannot_be_replaced_and_closing_waits_for_it(
     page.run_button.click()
     first = page._measure_worker
     assert first is not None and first.isRunning()
-    assert not page.back_button.isEnabled()
+    # FLOW-01: wizard Back is gone; Previous / step nav lock while running.
+    assert not page.flow.previous.isEnabled()
     page.refresh_devices()
     assert not page.run_button.isEnabled()
     page.start_measurement()  # the Run shortcut while busy

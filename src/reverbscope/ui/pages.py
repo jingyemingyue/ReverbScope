@@ -263,13 +263,19 @@ class _StepStack(QStackedWidget):
 
 
 class MeasurementSteps(QWidget):
-    """One measurement task per screen, without owning any audio state."""
+    """One measurement task per screen, without owning any audio state.
+
+    The step body scrolls with the page; ``action_bar`` stays pinned below
+    the scroll area (FLOW-01).
+    """
 
     def __init__(self, steps: list[tuple[str, QWidget]], parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        from reverbscope.ui.design.tokens import FORM_WIDTH, SECTION_GAP, SPACE
+        from reverbscope.ui.design.tokens import ACTION_BAR_HEIGHT, FORM_WIDTH, SECTION_GAP, SPACE
 
         self.setMaximumWidth(FORM_WIDTH)
+        self._complete_check: Callable[[int], tuple[bool, str]] | None = None
+        self._titles = [title for title, _content in steps]
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(SECTION_GAP)
@@ -290,36 +296,113 @@ class MeasurementSteps(QWidget):
         nav.addStretch()
         outer.addLayout(nav)
         outer.addWidget(self.stack, 1)
-        footer = QHBoxLayout()
+
+        self.action_bar = QWidget()
+        self.action_bar.setObjectName("measureActionBar")
+        self.action_bar.setFixedHeight(ACTION_BAR_HEIGHT)
+        self.action_bar.setProperty("actionbar", True)
+        bar = QHBoxLayout(self.action_bar)
+        bar.setContentsMargins(0, SPACE // 2, 0, SPACE // 2)
+        bar.setSpacing(SPACE)
         self.previous = QPushButton(_("Previous"))
         self.previous.clicked.connect(lambda: self.set_step(self.stack.currentIndex() - 1))
+        self.status = QLabel("")
+        self.status.setProperty("role", "hint")
+        self.status.setWordWrap(True)
         self.next = primary(QPushButton(_("Continue")))
-        self.next.clicked.connect(lambda: self.set_step(self.stack.currentIndex() + 1))
-        footer.addWidget(self.previous)
-        footer.addStretch()
-        footer.addWidget(self.next)
-        outer.addLayout(footer)
+        self.next.setShortcut("Ctrl+Return")
+        self.next.clicked.connect(self._continue)
+        self.primary_host = QWidget()
+        self.primary_layout = QHBoxLayout(self.primary_host)
+        self.primary_layout.setContentsMargins(0, 0, 0, 0)
+        self.primary_layout.setSpacing(SPACE)
+        bar.addWidget(self.previous)
+        bar.addWidget(self.status, 1)
+        bar.addWidget(self.primary_host)
+        bar.addWidget(self.next)
         self.set_step(0)
 
+    def set_complete_check(self, check: Callable[[int], tuple[bool, str]]) -> None:
+        self._complete_check = check
+        self._refresh_step_buttons()
+
+    def step_complete(self, step: int) -> tuple[bool, str]:
+        if self._complete_check is None:
+            return True, ""
+        return self._complete_check(step)
+
+    def _continue(self) -> None:
+        current = self.stack.currentIndex()
+        ok, reason = self.step_complete(current)
+        if not ok:
+            self.status.setText(reason)
+            self.next.setToolTip(reason)
+            return
+        self.set_step(current + 1)
+
     def set_step(self, step: int) -> None:
-        index = max(0, min(step, self.stack.count() - 1))
-        self.stack.setCurrentIndex(index)
+        target = max(0, min(step, self.stack.count() - 1))
+        current = self.stack.currentIndex()
+        if target > current:
+            for index in range(current, target):
+                ok, reason = self.step_complete(index)
+                if not ok:
+                    self.status.setText(reason)
+                    if 0 <= target < len(self.buttons):
+                        self.buttons[target].setToolTip(reason)
+                    return
+        elif target < current:
+            # Going back is always allowed when not running.
+            pass
+        else:
+            # Same step or jump to an earlier reachable step via the nav.
+            for index in range(target):
+                ok, reason = self.step_complete(index)
+                if not ok:
+                    self.status.setText(reason)
+                    self.buttons[target].setToolTip(reason)
+                    return
+        self.stack.setCurrentIndex(target)
         self.stack.updateGeometry()
         self.updateGeometry()
         for number, button in enumerate(self.buttons):
-            button.setChecked(index == number)
-        self.previous.setVisible(index > 0)
-        self.next.setVisible(index < self.stack.count() - 1)
+            button.setChecked(target == number)
+        self.previous.setVisible(target > 0)
+        self.previous.setEnabled(target > 0)
+        last = target >= self.stack.count() - 1
+        self.next.setVisible(not last)
+        self.primary_host.setVisible(last)
+        self.status.setText("")
+        self.next.setToolTip("")
+        self._refresh_step_buttons()
+
+    def _refresh_step_buttons(self) -> None:
+        for index, button in enumerate(self.buttons):
+            if index == 0:
+                button.setEnabled(True)
+                button.setToolTip("")
+                continue
+            blocked = ""
+            for prior in range(index):
+                ok, reason = self.step_complete(prior)
+                if not ok:
+                    blocked = reason or _("Finish the previous step first")
+                    break
+            button.setEnabled(not blocked)
+            button.setToolTip(blocked)
 
     def set_running(self, running: bool) -> None:
         if running:
             self.set_step(self.stack.count() - 1)
         for button in [*self.buttons, self.previous, self.next]:
             button.setEnabled(not running)
+        self.primary_host.setEnabled(True)  # Stop / Run visibility owned by the page
         for index in range(self.stack.count() - 1):
             page = self.stack.widget(index)
             if page is not None:
                 page.setEnabled(not running)
+        if not running:
+            self._refresh_step_buttons()
 
 
 def _step_body(*widgets: QWidget) -> QWidget:
@@ -335,11 +418,19 @@ def _step_body(*widgets: QWidget) -> QWidget:
     return body
 
 
-def _install_steps(layout: QVBoxLayout, flow: MeasurementSteps) -> None:
+def _install_steps(
+    layout: QVBoxLayout, flow: MeasurementSteps, page: QWidget | None = None
+) -> None:
     # Build each control hierarchy once. Adding directly to the final
     # step avoids reparenting populated layouts while their previous
     # owners are waiting for deferred deletion.
     layout.addWidget(flow, 1, Qt.AlignmentFlag.AlignHCenter)
+    host = page if page is not None else flow.parentWidget()
+    outer = getattr(host, "_scroll_outer", None) if host is not None else None
+    if isinstance(outer, QVBoxLayout):
+        outer.addWidget(flow.action_bar)
+    else:
+        layout.addWidget(flow.action_bar)
 
 
 class PlacementInputs(QGroupBox):
@@ -574,16 +665,9 @@ class DawModePage(QWidget):
         profile_row, self.profile_help = _profile_row(self.profile, self)
         profile_form.addRow(_("Recording profile"), profile_row)
         v4.addLayout(profile_form)
-        row = QHBoxLayout()
         self.analyze_button = primary(QPushButton(_("Analyze")))
         self.analyze_button.setShortcut("Ctrl+Return")
         self.analyze_button.clicked.connect(self.start_analysis)
-        self.back_button = QPushButton(_("Back"))
-        self.back_button.clicked.connect(self.back.emit)
-        row.addWidget(self.back_button)
-        row.addStretch(1)
-        row.addWidget(self.analyze_button)
-        v4.addLayout(row)
         self.progress = QProgressBar()
         self.progress.setRange(0, 0)
         self.progress.hide()
@@ -600,8 +684,12 @@ class DawModePage(QWidget):
                 (_("Analyze"), step4),
             ]
         )
-        _install_steps(layout, self.flow)
+        self.action_bar = self.flow.action_bar
+        self.flow.primary_layout.addWidget(self.analyze_button)
+        self.flow.set_complete_check(self._daw_step_complete)
+        _install_steps(layout, self.flow, self)
         self.busy_changed.connect(self.flow.set_running)
+        self.flow.set_step(0)
 
     # --- step 1 -----------------------------------------------------------------
     def current_sweep_settings(self) -> SweepSettings:
@@ -780,14 +868,25 @@ class DawModePage(QWidget):
         if self._worker is not None:
             self._worker.wait()
 
+    def _daw_step_complete(self, step: int) -> tuple[bool, str]:
+        if step == 0:
+            if self._reference is not None or self._sweep_path is not None:
+                return True, ""
+            return False, _("Export or choose a reference sweep first")
+        if step == 2:
+            if self._recording is not None:
+                return True, ""
+            return False, _("Import a recording first")
+        return True, ""
+
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         self.analyze_button.setEnabled(not busy)
-        # Leaving mid-analysis would let the late result replace another session.
-        self.back_button.setEnabled(not busy)
         self.progress.setVisible(busy)
         set_banner_text(self.status, text, tone)
         self.busy_changed.emit(busy)
         self.status_changed.emit(text, tone)
+        if hasattr(self, "flow"):
+            self.flow._refresh_step_buttons()
 
     def _stale(self) -> bool:
         """The result that arrives now belongs to a session that is gone.
@@ -983,8 +1082,7 @@ class StandalonePage(QWidget):
         meta, self.room, self.position, self.mic = _metadata_form(state)
         self.placement = PlacementInputs()
 
-        self.back_button = QPushButton(_("Back"))
-        self.back_button.clicked.connect(self.back.emit)
+        # FLOW-01: Back left the wizard via Esc / task switch; no duplicate Back.
         self.run_button = primary(QPushButton(_("Run Measurement")))
         self.run_button.clicked.connect(self.start_measurement)
         self.stop_button = QPushButton(_("Stop"))
@@ -1010,6 +1108,10 @@ class StandalonePage(QWidget):
                 (_("Measure"), QWidget()),
             ]
         )
+        self.action_bar = self.flow.action_bar
+        self.flow.primary_layout.addWidget(self.stop_button)
+        self.flow.primary_layout.addWidget(self.run_button)
+        self.flow.set_complete_check(self._standalone_step_complete)
         review = self.flow.stack.widget(2)
         assert review is not None
         review_layout = QVBoxLayout(review)
@@ -1040,18 +1142,13 @@ class StandalonePage(QWidget):
         review_layout.addWidget(self.review)
         review_layout.addWidget(summary)
         review_layout.addWidget(self.demo_banner)
-        actions = QHBoxLayout()
-        actions.addWidget(self.back_button)
-        actions.addStretch()
-        actions.addWidget(self.stop_button)
-        actions.addWidget(self.run_button)
-        review_layout.addLayout(actions)
         review_layout.addWidget(self.progress)
         review_layout.addWidget(self.status)
         review_layout.addStretch()
         self.run_button.setShortcut("Ctrl+Return")
-        _install_steps(layout, self.flow)
+        _install_steps(layout, self.flow, self)
         self.busy_changed.connect(self.flow.set_running)
+        self.flow.set_step(0)
         self.connection_status = label("", "hint", wrap=True)
         connection = self.flow.stack.widget(0)
         assert connection is not None
@@ -1423,6 +1520,18 @@ class StandalonePage(QWidget):
             and self.stop_button.isEnabled()
         )
 
+    def _standalone_step_complete(self, step: int) -> tuple[bool, str]:
+        """Whether the user may leave ``step`` (FLOW-01)."""
+        if step == 0:
+            if self.demo_mode or bool(getattr(self, "_devices", None)):
+                return True, ""
+            return False, _("Connect an audio device first")
+        if step == 1:
+            if self._level_blocks_start():
+                return False, self.level_gate_reason()
+            return True, ""
+        return True, ""
+
     def level_acknowledged(self) -> bool:
         """True when the playback level is allowed to start (SAFE-01)."""
         return not self._level_blocks_start()
@@ -1464,15 +1573,20 @@ class StandalonePage(QWidget):
         self.level_gate_label.setText(reason)
         self.run_button.setToolTip(reason)
         if hasattr(self, "flow"):
-            # Signal step: Continue must not skip an unconfirmed loud level.
             on_signal = self.flow.stack.currentIndex() == 1
             if on_signal and not self.is_busy():
                 self.flow.next.setEnabled(not blocks)
+                self.flow.status.setText(reason)
+                self.flow.next.setToolTip(reason)
             elif not self.is_busy():
-                self.flow.next.setEnabled(
-                    self.flow.stack.currentIndex() < self.flow.stack.count() - 1
-                )
-        if not self.is_busy():
+                last = self.flow.stack.currentIndex() >= self.flow.stack.count() - 1
+                self.flow.next.setEnabled(not last)
+                if not reason:
+                    self.flow.status.setText("")
+            self.flow._refresh_step_buttons()
+        if self.is_busy():
+            self.run_button.setEnabled(False)
+        else:
             devices_ok = self.demo_mode or bool(getattr(self, "_devices", None))
             self.run_button.setEnabled(not blocks and devices_ok)
         self._update_review()
@@ -1608,8 +1722,6 @@ class StandalonePage(QWidget):
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         if hasattr(self, "stop_button"):
             self.stop_button.setEnabled(busy)
-        if hasattr(self, "back_button"):
-            self.back_button.setEnabled(not busy)
         if hasattr(self, "refresh_button"):
             self.refresh_button.setEnabled(not busy)
         self.progress.setVisible(busy)
@@ -1618,7 +1730,12 @@ class StandalonePage(QWidget):
         set_banner_text(self.status, text, tone)
         self.busy_changed.emit(busy)
         self.status_changed.emit(text, tone)
-        self._update_level_gate()
+        # Prefer the ``busy`` flag: ``is_busy()`` is still false before the
+        # worker exists, and must not re-enable Run at the start of a take.
+        if busy:
+            self.run_button.setEnabled(False)
+        else:
+            self._update_level_gate()
 
     def _on_success(self, result: AnalysisResult) -> None:
         if self._stale():

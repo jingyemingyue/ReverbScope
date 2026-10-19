@@ -7615,3 +7615,14 @@ msgstr "先把监听音量调低；超过 {level:g} dBFS 前请确认。"
 msgid "Yes"
 msgstr "是"
 
+msgid "Finish the previous step first"
+msgstr "请先完成上一步"
+
+msgid "Connect an audio device first"
+msgstr "请先连接音频设备"
+
+msgid "Export or choose a reference sweep first"
+msgstr "请先导出或选择参考扫频"
+
+msgid "Import a recording first"
+msgstr "请先导入录音"
