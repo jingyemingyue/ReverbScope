@@ -331,8 +331,8 @@ SUDDEN_DROP_RATIO = 0.25
 EDT_STRAIGHTNESS_RATIO = 1.5
 
 DECAY_METHOD = (
-    "ISO 3382-1 onset (-20 dB) per band; Schroeder backward integration with Hirata "
-    "noise-power subtraction and Lundeby noise truncation (plausibility-checked) "
+    "ISO 3382-1 onset (-20 dB) per band; Schroeder backward integration with "
+    "Lundeby noise truncation (plausibility-checked) "
     "and late-decay compensation; EDT/T20/T30 by "
     "least-squares fit per ISO 3382-1, fits starting after the direct sound; straightness "
     "check with xi and C (ISO 3382-2 Annex B); C50, C80, D50 and centre time from the "
@@ -800,7 +800,7 @@ def _curve_from_truncation(
     *,
     compensate: bool,
     time_origin_index: int,
-    subtract_noise: bool = True,
+    subtract_noise: bool = False,
 ) -> SchroederCurve:
     segment = power[onset : onset + trunc.truncation_index]
     if segment.shape[0] == 0:
@@ -856,15 +856,17 @@ def schroeder_curve(
     compensate: bool = True,
     onset_index: int | None = None,
     time_origin_index: int = 0,
-    subtract_noise: bool = True,
+    subtract_noise: bool = False,
 ) -> SchroederCurve:
     """Energy decay curve (dB, 0 dB at the onset) with noise truncation.
 
     ``band_ir`` is one finite channel. ``onset_index`` defaults to
     :func:`find_onset` over the whole signal; ``time_s`` is measured from
-    ``time_origin_index``. When ``subtract_noise`` (default), the Lundeby
-    noise floor power is subtracted from the squared response before backward
-    integration (Hirata 1982), removing the upward tail bias.
+    ``time_origin_index``. Experimental ``subtract_noise=True`` subtracts the
+    estimated Lundeby noise power before backward integration (Hirata 1982),
+    subject to the eligibility guard. It is disabled by default: even a
+    converged estimate with more than 40 dB of range can mistake a noiseless
+    decay's remaining signal for noise. See ADR 0003 for the default policy.
     """
     sample_rate = _require_sample_rate(sample_rate)
     power = _squared_power(band_ir)
