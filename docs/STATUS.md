@@ -6,6 +6,17 @@ ran. Nothing is marked PASS that was not run, and no snapshot includes a
 measurement through a real interface or a real DAW
 ([HARDWARE_TESTS.md](HARDWARE_TESTS.md)).
 
+Snapshot 42: 2026-10-19 (UTC+8) — **live input monitor draft** on
+`gui/realtime-meter-analyzer` (draft PR #92, base `gui/photoshop-focused`
+@ `e39185c`).
+
+* The Signal and level step shows an input-only peak/RMS meter and live
+  spectrum; a sweep needs an interface output chosen by hand
+  (design/LIVE_INPUT_MONITOR.md).
+* Linux (aarch64), Python 3.12, PySide6 Essentials 6.11.2, offscreen, fake
+  sources only. No sound card, interface, DAW or macOS run. The PR lists the
+  commands and results.
+
 Snapshot 41: 2026-10-14 (UTC+8) — **narrow-window workstation controls and
 an Apple Silicon acceptance checklist**, continuing PR #58 from
 `987d66268888b60d6e9e6b54f379b4ec7c50ceb8`.

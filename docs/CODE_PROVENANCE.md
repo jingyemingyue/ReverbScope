@@ -62,6 +62,12 @@ room-shape-from-echoes / echo sorting (Dokmanić et al., 2013); it is cited in
 MEASUREMENT_METHODOLOGY.md §9 as the published method the project declines,
 and no implementation of it was consulted.
 
+The synthetic input of the desktop's live input monitor
+(`ui/live_input.py`, filter in `display/live.py`) shapes white noise into
+pink noise with the four published coefficients of Paul Kellet's “economy”
+pink-noise filter (music-dsp archive, released to the public domain). Only
+the coefficients are used; no code was copied.
+
 ## How to update this file
 
 When adapting or copying third-party code becomes necessary:
