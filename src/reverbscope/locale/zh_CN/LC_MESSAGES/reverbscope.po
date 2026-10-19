@@ -1505,6 +1505,9 @@ msgstr "测量健康"
 msgid "Measurement list"
 msgstr "测量列表"
 
+msgid "Measurement in progress"
+msgstr "测量进行中"
+
 msgid "Measurement metadata (optional)"
 msgstr "测量元数据（可选）"
 

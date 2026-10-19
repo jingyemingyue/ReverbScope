@@ -771,6 +771,10 @@ class DawModePage(QWidget):
         self.recording_label.setText(_("No recording selected."))
         self._reset_channel_lists()
 
+    def is_busy(self) -> bool:
+        """An analysis started from this page is still running."""
+        return self._worker is not None and self._worker.isRunning()
+
     def shutdown_workers(self) -> None:
         """Let a running analysis finish: a QThread destroyed while it runs aborts."""
         if self._worker is not None:
