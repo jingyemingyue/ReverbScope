@@ -11,8 +11,15 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplication, QKeySequence
+from PySide6.QtCore import QEvent, QObject, Qt, QTimer, QUrl
+from PySide6.QtGui import (
+    QAction,
+    QCloseEvent,
+    QDesktopServices,
+    QGuiApplication,
+    QKeyEvent,
+    QKeySequence,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
@@ -220,6 +227,10 @@ class MainWindow(QMainWindow):
         self._busy_flags = {"standalone": False, "daw": False}
         self.standalone.busy_changed.connect(self._standalone_busy_changed)
         self.daw.busy_changed.connect(self._daw_busy_changed)
+        # ESC-01: see Esc before popups so Stop always wins while sounding.
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
         self._go_home()
 
     # --- menus ---------------------------------------------------------------------------
@@ -395,6 +406,41 @@ class MainWindow(QMainWindow):
         self.workspace.settings_button.setEnabled(not busy)
         self.workspace.settings_button.setToolTip(reason if busy else _("Settings"))
 
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        if (
+            event.type() == QEvent.Type.KeyPress
+            and isinstance(event, QKeyEvent)
+            and event.key() == Qt.Key.Key_Escape
+            and self.handle_escape()
+        ):
+            return True
+        return super().eventFilter(watched, event)
+
+    def handle_escape(self) -> bool:
+        """Dispatch Esc in SPEC §9.2 order. Return True when the key is consumed."""
+        # 1. Sounding (sweep / record): stop and mute before any popup.
+        if self.strip.stop_button.isEnabled() or self.standalone.is_take_running():
+            self.standalone.stop_measurement()
+            return True
+        # 2. Analysis (uncancellable): tip only, do not stop.
+        if self._is_measurement_busy():
+            self.strip.show_analysis_uncancellable()
+            return True
+        # 4. Open popup / menu: leave Esc to Qt's default close.
+        app = QApplication.instance()
+        if app is not None and app.activePopupWidget() is not None:
+            return False
+        # 5. Overlay drawers.
+        for drawer in (self.properties_drawer, self.measurements_drawer):
+            if drawer.is_overlay():
+                drawer.close_overlay()
+                return True
+        # 6. Measurement wizard (inputs kept): leave to the previous view.
+        if self.stack.currentWidget() in (self.daw, self.standalone):
+            self._leave_setup()
+            return True
+        return False
+
     def _show_view_action(self, view_id: str) -> Callable[[], None]:
         window = weakref.ref(self)
 
@@ -480,6 +526,9 @@ class MainWindow(QMainWindow):
         if not self._closed:
             self._save_layout()
         self._closed = True
+        app = QApplication.instance()
+        if app is not None:
+            app.removeEventFilter(self)
         # The colour-scheme signal belongs to the application and outlives this
         # window: a closed window that stays connected still restyles the whole
         # application on every system change (the chrome and every chart are

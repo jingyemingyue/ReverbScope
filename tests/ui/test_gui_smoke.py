@@ -166,8 +166,8 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
     # badges to check against the Measure menu: the menu carries the keys.
     assert "Start" in window.statusBar().currentMessage()
     assert window.daw.analyze_button.shortcut().toString() == "Ctrl+Return"
-    # Stop and Esc live on the measure strip now, not on the Standalone page.
-    assert window.strip.stop_shortcut.key().toString() == "Esc"
+    # Esc is dispatched by the main window (ESC-01), ahead of any popup.
+    assert callable(window.handle_escape)
     # Results' Save button is gone: File > Save Session... carries Ctrl+S.
     assert window.save_action.shortcut().toString() == "Ctrl+S"
     window.close()

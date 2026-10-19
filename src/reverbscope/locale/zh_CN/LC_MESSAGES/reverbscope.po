@@ -284,6 +284,9 @@ msgstr "分析失败"
 msgid "Analysis failed: {message}"
 msgstr "分析失败：{message}"
 
+msgid "Analysis cannot be cancelled"
+msgstr "分析不可取消"
+
 msgid "Analyze"
 msgstr "分析"
 
