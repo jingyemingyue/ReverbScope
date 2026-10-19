@@ -170,7 +170,7 @@ when another tool is the better choice, is in
 
 ## Status
 
-The version on `main` is **0.5.0b3**; `release/0.5.0` carries the release
+The version on `main` is **0.5.0b4**; `release/0.5.0` carries the release
 candidate. The analysis core, command line, desktop workstation, comparison,
 loopback, Simplified Chinese catalog, session bundles and both editions'
 bundles exist and are tested with synthetic data on Linux, macOS and Windows.
@@ -180,6 +180,28 @@ validation campaign are empty), any DAW run, signed or notarized bundles, a PyPI
 package. No build meets the 0.5.0 gate of the [release plan](docs/RELEASE_PLAN.md).
 What works, dated: [docs/STATUS.md](docs/STATUS.md). What comes next:
 [docs/ROADMAP.md](docs/ROADMAP.md).
+
+### Development and research branches
+
+Branch roles as of **2026-10-19**:
+
+| Branch | Role |
+| --- | --- |
+| `main` | Development baseline; includes the #72/#88 noise-policy fixes. Noise subtraction is off by default. |
+| `release/0.5.0` | Release-candidate line; separate from experimental algorithm integration. |
+| `feat/all-algorithm-methods` ([#74](https://github.com/jingyemingyue/ReverbScope/pull/74)) | Original research collection, retained for review. |
+| `fix/codex-pr74-default-policy` ([#90](https://github.com/jingyemingyue/ReverbScope/pull/90)) | Independent Draft integration candidate on current main; aligns #74's noise defaults and method description, preserving the existing strict >40 dB opt-in guard and other experimental methods. |
+
+For #90's tested commit `1f20b10b`, [CI passed all nine jobs](https://github.com/jingyemingyue/ReverbScope/actions/runs/39231013325)
+with 90.88% core/models coverage. The known 0.8 s noiseless decay returns
+0.800040 s, and the default matches explicit `subtract_noise=False`.
+**Research acceptance remains incomplete:** M2 phase and M8 modal weighting
+have three preserved failing acceptance probes; M3's default harmonic
+suppression still differs from main. These results do not approve the
+experimental methods or establish hardware or standards compliance.
+See the [default-policy ADR](docs/adr/0004-research-integration-default-policy.md)
+and [validation evidence](docs/research/pr74-default-policy-validation.md).
+Both research PRs remain Draft; merging requires maintainer review.
 
 ## Help test it
 

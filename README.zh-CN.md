@@ -136,12 +136,30 @@ ReverbScope 回答录音师按下录音键之前会问的问题：
 
 ## 当前状态
 
-`main` 上的版本是 **0.5.0b3**；`release/0.5.0` 是候选版线。分析核心、命令行、桌面工作台、对比、回采（loopback）、
+`main` 上的版本是 **0.5.0b4**；`release/0.5.0` 是候选版线。分析核心、命令行、桌面工作台、对比、回采（loopback）、
 简体中文文案、会话打包以及两个版本的安装包都已存在，并用合成数据在 Linux、macOS、Windows 上测试过。
 
 **还没有：** 任何在真实硬件上测得的结果（硬件矩阵和硬件验证都还是空的）、任何 DAW 的实际运行、
 已签名或已公证的安装包、PyPI 包。目前没有任何构建达到[发布计划](docs/RELEASE_PLAN.zh-CN.md)里 0.5.0 的门槛。
 已经做了什么（带日期）：[docs/STATUS.md](docs/STATUS.md)。接下来做什么：[docs/ROADMAP.zh-CN.md](docs/ROADMAP.zh-CN.md)。
+
+### 开发与算法研究分支
+
+截至 **2026-10-19**，各分支的职责如下：
+
+| 分支 | 用途 |
+| --- | --- |
+| `main` | 开发基线，已包含 #72/#88 噪声策略修复，默认关闭噪声扣除。 |
+| `release/0.5.0` | 候选发布线，与实验算法集成分开。 |
+| `feat/all-algorithm-methods`（[#74](https://github.com/jingyemingyue/ReverbScope/pull/74)） | 原始研究算法合集，保留供审查。 |
+| `fix/codex-pr74-default-policy`（[#90](https://github.com/jingyemingyue/ReverbScope/pull/90)） | 基于当前 main 的独立 Draft 集成候选；对齐 #74 默认噪声策略与方法说明，保留原有显式开启时严格 >40 dB 的保护及其他实验方法。 |
+
+#90 的已测提交 `1f20b10b` [CI 九项全部通过](https://github.com/jingyemingyue/ReverbScope/actions/runs/39231013325)，
+core/models 覆盖率为 90.88%。已知 0.8 s 无噪声衰减得到 0.800040 s，默认行为等同显式 `subtract_noise=False`。
+**研究算法尚未完成验收：** M2 同步相位与 M8 模态加权仍保留三项失败的验收探针；M3 默认谐波抑制与 main 仍有差异。
+这些结果不代表实验算法已获批准，也不代表通过真实硬件或标准合规验收。
+详见[默认策略 ADR](docs/adr/0004-research-integration-default-policy.md)和[验证证据](docs/research/pr74-default-policy-validation.md)。
+两个研究 PR 均保持 Draft，合并须经维护者审阅。
 
 ## 参与测试
 
