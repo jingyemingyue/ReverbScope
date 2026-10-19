@@ -8,6 +8,8 @@ body:
       value: |
         感谢你抽时间报告。如果是某个**测量数值**看起来不对，请改用
         *测量问题* 模板。声卡与 DAW 的测试结果各有专门的模板。
+        从桌面应用打开（**帮助 → 报告问题…**）时，版本和操作系统两栏已经自动填好；
+        在你点 *Submit* 之前，没有发送任何内容。
         使用说明见[简体中文用户指南](https://github.com/jingyemingyue/ReverbScope/blob/main/docs/user-guide/zh-CN.md)。
   - type: input
     id: version

@@ -2183,6 +2183,9 @@ msgstr "用示例替换此处已输入的房间和扬声器？"
 msgid "Report"
 msgstr "报告"
 
+msgid "Report a &Bug..."
+msgstr "报告问题(&B)…"
+
 msgid "Report copied to the clipboard."
 msgstr "报告已复制到剪贴板。"
 
@@ -2419,6 +2422,9 @@ msgstr "选中的反射"
 
 msgid "Self-check"
 msgstr "自检"
+
+msgid "Send &Feedback..."
+msgstr "发送反馈(&F)…"
 
 msgid "Session"
 msgstr "会话"

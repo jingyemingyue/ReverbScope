@@ -1,0 +1,55 @@
+name: Question or feedback (English)
+description: A question about using ReverbScope, or feedback that is not a bug or a feature request.
+title: "[feedback] "
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for writing. A crash or an error has its own *Bug report* form,
+        a number that looks wrong has the *Measurement problem* form, and a
+        test on a real interface or DAW has its own report forms. Opened from
+        the desktop app (**Help → Send Feedback...**), the version and system
+        fields below are already filled in; nothing was sent before you press
+        *Submit*.
+  - type: input
+    id: version
+    attributes:
+      label: ReverbScope version
+      description: Help → About ReverbScope, or `reverbscope --version`.
+      placeholder: "0.5.0b4 (Python 3.12, Qt 6.11)"
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "macOS 15.5 (Apple silicon) / Windows 11 24H2 / Ubuntu 24.04"
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      options:
+        - Installing or starting ReverbScope
+        - Measuring (audio interface or DAW)
+        - Reading a result
+        - The desktop app's layout or wording
+        - The command line
+        - Documentation
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: Your question or feedback
+      description: What you were trying to do, and what you would like to know or see changed.
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else
+      description: |
+        Screenshots, or the text of the environment report (**Help →
+        Environment Report for Bug Reports → Copy**, or `reverbscope doctor`)
+        if it helps. Review it before posting: device names can contain
+        personal names.

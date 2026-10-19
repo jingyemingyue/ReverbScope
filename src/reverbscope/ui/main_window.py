@@ -38,6 +38,7 @@ from reverbscope.settings import load_settings
 from reverbscope.ui import ui_state
 from reverbscope.ui.analysis_workspace import NUMBERED_VIEWS, AnalysisWorkspace, default_views
 from reverbscope.ui.compare_view import ComparePage
+from reverbscope.ui.feedback import issue_form_opener
 from reverbscope.ui.inspector import Inspector
 from reverbscope.ui.measure_strip import MeasureStrip
 from reverbscope.ui.navigator import Navigator
@@ -320,6 +321,12 @@ class MainWindow(QMainWindow):
         self.report_action = QAction(_("&Environment Report for Bug Reports..."), self)
         self.report_action.triggered.connect(self.show_environment_report)
         help_menu.addAction(self.report_action)
+        self.feedback_action = QAction(_("Send &Feedback..."), self)
+        self.feedback_action.triggered.connect(issue_form_opener("feedback"))
+        self.bug_action = QAction(_("Report a &Bug..."), self)
+        self.bug_action.triggered.connect(issue_form_opener("bug"))
+        help_menu.addAction(self.feedback_action)
+        help_menu.addAction(self.bug_action)
         help_menu.addSeparator()
         help_menu.addAction(about_action)
         help_menu.addAction(licenses_action)
