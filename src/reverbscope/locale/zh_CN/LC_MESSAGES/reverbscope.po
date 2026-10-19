@@ -7328,3 +7328,24 @@ msgstr "视图"
 #. Chart viewport action; distinct from acoustic fit.
 msgid "Fit chart"
 msgstr "适配图表"
+
+msgid "power must be a non-empty 1-D array"
+msgstr "功率必须是非空的一维数组"
+
+msgid "power must be finite and non-negative"
+msgstr "功率必须是有限的非负数"
+
+msgid "distance_m must be finite and positive"
+msgstr "distance_m 必须是有限的正数"
+
+msgid "early_split_s must be finite and positive"
+msgstr "early_split_s 必须是有限的正数"
+
+msgid "impulse responses must be one-dimensional"
+msgstr "脉冲响应必须是一维数组"
+
+msgid "impulse responses must be non-empty"
+msgstr "脉冲响应不能为空"
+
+msgid "impulse responses contain NaN or inf"
+msgstr "脉冲响应中含有非数值或无穷大"
