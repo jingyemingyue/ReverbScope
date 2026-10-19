@@ -6,8 +6,7 @@ source of truth for devices and sweep parameters: the measurement pages.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtCore import QTimer, Signal
 from PySide6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QProgressBar, QPushButton, QWidget
 
 from reverbscope.i18n import N_, _
@@ -77,9 +76,9 @@ class MeasureStrip(QWidget):
         row.addWidget(self.status, 1)
         row.addWidget(self.setup_button)
         row.addWidget(self.stop_button)
-        self.stop_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
-        self.stop_shortcut.setContext(Qt.ShortcutContext.WindowShortcut)
-        self.stop_shortcut.activated.connect(self._escape)
+        # Esc is dispatched by MainWindow's application event filter (ESC-01)
+        # so a focused popup cannot consume the stop request first.
+        self._uncancellable_tip: QTimer | None = None
         standalone.busy_changed.connect(self._busy)
         daw.busy_changed.connect(self._busy)
         standalone.progress_changed.connect(self.progress.setValue)
@@ -152,6 +151,15 @@ class MeasureStrip(QWidget):
             set_banner_text(self.status, text, tone)
             self.status.setToolTip(text)
 
-    def _escape(self) -> None:
-        if self.stop_button.isEnabled():
-            self.standalone.stop_measurement()
+    def show_analysis_uncancellable(self) -> None:
+        """Brief tip when Esc is pressed during analysis (cannot cancel)."""
+        message = _("Analysis cannot be cancelled")
+        set_banner_text(self.status, message, "warn")
+        self.status.setToolTip(message)
+        if self._uncancellable_tip is not None:
+            self._uncancellable_tip.stop()
+        tip = QTimer(self)
+        tip.setSingleShot(True)
+        tip.timeout.connect(lambda: set_banner_text(self.status, "", ""))
+        tip.start(2000)
+        self._uncancellable_tip = tip

@@ -44,6 +44,14 @@ class DetailsDrawer(QFrame):
         if open_:
             self.raise_()
 
+    def is_overlay(self) -> bool:
+        """True when this drawer is covering the canvas (Esc should dismiss it)."""
+        return self.isVisible()
+
+    def close_overlay(self) -> None:
+        if self.isVisible():
+            self.dismissed.emit()
+
     def _place(self) -> None:
         parent = self.parentWidget()
         if parent is not None:

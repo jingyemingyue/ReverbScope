@@ -191,7 +191,14 @@ def ask_save_path(parent: QWidget, title: str, name: str, file_filter: str) -> P
 
 
 def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
-    """Give ``page`` a fixed header and a scrolling body; return the body layout."""
+    """Give ``page`` a fixed header and a scrolling body; return the body layout.
+
+    The page keeps ``_scroll_outer`` so callers can pin an action bar below the
+    scroll area (FLOW-01). The scroll area must shrink (not grow with content)
+    so a pinned bar stays on screen at 960×640.
+    """
+    from PySide6.QtWidgets import QSizePolicy
+
     page.setProperty("page", True)
     outer = QVBoxLayout(page)
     outer.setContentsMargins(28, 20, 28, 12)
@@ -201,6 +208,8 @@ def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
     scroll.setWidgetResizable(True)
     scroll.setFrameShape(QScrollArea.Shape.NoFrame)
     scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+    scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+    scroll.setMinimumHeight(0)
     body = QWidget()
     body.setProperty("page", True)
     layout = QVBoxLayout(body)
@@ -208,6 +217,10 @@ def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
     layout.setSpacing(12)
     scroll.setWidget(body)
     outer.addWidget(scroll, 1)
+    # Layout hooks for a pinned action bar (FLOW-01); plain attributes keep
+    # mypy happy without a dedicated page base class.
+    setattr(page, "_scroll_outer", outer)
+    setattr(page, "_scroll_area", scroll)
     return layout
 
 

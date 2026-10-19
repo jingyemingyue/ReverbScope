@@ -11,15 +11,23 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from PySide6.QtCore import Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QCloseEvent, QDesktopServices, QGuiApplication, QKeySequence
+from PySide6.QtCore import QEvent, QObject, Qt, QTimer, QUrl
+from PySide6.QtGui import (
+    QAction,
+    QCloseEvent,
+    QDesktopServices,
+    QGuiApplication,
+    QKeyEvent,
+    QKeySequence,
+    QResizeEvent,
+    QShowEvent,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QFileDialog,
     QInputDialog,
     QMainWindow,
     QMessageBox,
-    QStatusBar,
     QVBoxLayout,
     QWidget,
 )
@@ -198,8 +206,9 @@ class MainWindow(QMainWindow):
 
         self._build_menus()
         self.stack.currentChanged.connect(self._weak(lambda window, _index: window.reset_layout()))
-        self._status = QStatusBar()
-        self.setStatusBar(self._status)
+        # LAYOUT-01 (minimal): no status bar — place and notices live in the
+        # window title so the canvas keeps the height at 960×640.
+        self._status_message = ""
         self._place = ""
         #: The view shown when the first measurement opens (ui.ini).
         self._preferred_view = ui_state.read_text("workspace/view", "overview")
@@ -215,21 +224,30 @@ class MainWindow(QMainWindow):
         QGuiApplication.styleHints().colorSchemeChanged.connect(self._follow_system_scheme)
         self._following_system = True
         self._closed = False
+        # Per-page busy from ``busy_changed`` (covers tests that emit without a
+        # live worker) plus ``is_busy()`` for a real take or analysis.
+        self._busy_flags = {"standalone": False, "daw": False}
+        self.standalone.busy_changed.connect(self._standalone_busy_changed)
+        self.daw.busy_changed.connect(self._daw_busy_changed)
+        # ESC-01: see Esc before popups so Stop always wins while sounding.
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
         self._go_home()
 
     # --- menus ---------------------------------------------------------------------------
 
     def _build_menus(self) -> None:
         file_menu = self.menuBar().addMenu(_("&File"))
-        new_action = QAction(_("&New Measurement"), self)
-        new_action.setShortcut("Ctrl+N")
-        new_action.triggered.connect(self.show_home)
-        open_action = QAction(_("&Open Session..."), self)
-        open_action.setShortcut("Ctrl+O")
-        open_action.triggered.connect(self.choose_session)
-        project_action = QAction(_("Open &Project..."), self)
-        project_action.setShortcut("Ctrl+Shift+O")
-        project_action.triggered.connect(self.choose_project)
+        self.new_action = QAction(_("&New Measurement"), self)
+        self.new_action.setShortcut("Ctrl+N")
+        self.new_action.triggered.connect(self.show_home)
+        self.open_action = QAction(_("&Open Session..."), self)
+        self.open_action.setShortcut("Ctrl+O")
+        self.open_action.triggered.connect(self.choose_session)
+        self.open_project_action = QAction(_("Open &Project..."), self)
+        self.open_project_action.setShortcut("Ctrl+Shift+O")
+        self.open_project_action.triggered.connect(self.choose_project)
         self.close_project_action = QAction(_("Close Project"), self)
         self.close_project_action.triggered.connect(self.close_project)
         self.save_action = QAction(_("&Save Session..."), self)
@@ -238,19 +256,24 @@ class MainWindow(QMainWindow):
         compare_action = QAction(_("&Compare Sessions..."), self)
         compare_action.setShortcut("Ctrl+Shift+C")
         compare_action.triggered.connect(self.show_compare)
-        settings_action = QAction(_("&Settings..."), self)
-        settings_action.setShortcut("Ctrl+,")
-        settings_action.triggered.connect(self.show_settings)
+        self.settings_action = QAction(_("&Settings..."), self)
+        self.settings_action.setShortcut("Ctrl+,")
+        self.settings_action.triggered.connect(self.show_settings)
         quit_action = QAction(_("&Quit"), self)
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.close)
-        for action in (new_action, open_action, project_action, self.close_project_action):
+        for action in (
+            self.new_action,
+            self.open_action,
+            self.open_project_action,
+            self.close_project_action,
+        ):
             file_menu.addAction(action)
         file_menu.addSeparator()
         file_menu.addAction(self.save_action)
         file_menu.addAction(compare_action)
         file_menu.addSeparator()
-        file_menu.addAction(settings_action)
+        file_menu.addAction(self.settings_action)
         file_menu.addSeparator()
         file_menu.addAction(quit_action)
 
@@ -288,14 +311,22 @@ class MainWindow(QMainWindow):
         self.workspace.inspector_button.toggled.connect(self.set_inspector_open)
 
         measure_menu = self.menuBar().addMenu(_("&Measure"))
-        daw_action = QAction(_("Universal DAW Mode"), self)
-        daw_action.setShortcut(QKeySequence("Ctrl+Shift+1"))
-        daw_action.triggered.connect(self._show_mode_action("universal_daw"))
-        standalone_action = QAction(_("Standalone Mode"), self)
-        standalone_action.setShortcut(QKeySequence("Ctrl+Shift+2"))
-        standalone_action.triggered.connect(self._show_mode_action("standalone"))
-        measure_menu.addAction(daw_action)
-        measure_menu.addAction(standalone_action)
+        self.daw_mode_action = QAction(_("Universal DAW Mode"), self)
+        self.daw_mode_action.setShortcut(QKeySequence("Ctrl+Shift+1"))
+        self.daw_mode_action.triggered.connect(self._show_mode_action("universal_daw"))
+        self.standalone_mode_action = QAction(_("Standalone Mode"), self)
+        self.standalone_mode_action.setShortcut(QKeySequence("Ctrl+Shift+2"))
+        self.standalone_mode_action.triggered.connect(self._show_mode_action("standalone"))
+        measure_menu.addAction(self.daw_mode_action)
+        measure_menu.addAction(self.standalone_mode_action)
+        self._busy_locked_actions = (
+            self.new_action,
+            self.open_action,
+            self.open_project_action,
+            self.settings_action,
+            self.daw_mode_action,
+            self.standalone_mode_action,
+        )
 
         from reverbscope.edition import is_developer
 
@@ -355,6 +386,62 @@ class MainWindow(QMainWindow):
                 target.show_mode(mode)
 
         return show
+
+    def _standalone_busy_changed(self, busy: bool) -> None:
+        self._busy_flags["standalone"] = busy
+        self.set_global_busy(self._is_measurement_busy())
+
+    def _daw_busy_changed(self, busy: bool) -> None:
+        self._busy_flags["daw"] = busy
+        self.set_global_busy(self._is_measurement_busy())
+
+    def _is_measurement_busy(self) -> bool:
+        """A take or analysis is running on either measurement page."""
+        return any(self._busy_flags.values()) or self.standalone.is_busy() or self.daw.is_busy()
+
+    def set_global_busy(self, busy: bool) -> None:
+        """Disable global entries that must not open while measuring (BUSY-01)."""
+        reason = _("Measurement in progress") if busy else ""
+        for action in self._busy_locked_actions:
+            action.setEnabled(not busy)
+            action.setToolTip(reason)
+        self.workspace.settings_button.setEnabled(not busy)
+        self.workspace.settings_button.setToolTip(reason if busy else _("Settings"))
+
+    def eventFilter(self, watched: QObject, event: QEvent) -> bool:  # noqa: N802
+        if (
+            event.type() == QEvent.Type.KeyPress
+            and isinstance(event, QKeyEvent)
+            and event.key() == Qt.Key.Key_Escape
+            and self.handle_escape()
+        ):
+            return True
+        return super().eventFilter(watched, event)
+
+    def handle_escape(self) -> bool:
+        """Dispatch Esc in SPEC §9.2 order. Return True when the key is consumed."""
+        # 1. Sounding (sweep / record): stop and mute before any popup.
+        if self.strip.stop_button.isEnabled() or self.standalone.is_take_running():
+            self.standalone.stop_measurement()
+            return True
+        # 2. Analysis (uncancellable): tip only, do not stop.
+        if self._is_measurement_busy():
+            self.strip.show_analysis_uncancellable()
+            return True
+        # 4. Open popup / menu: leave Esc to Qt's default close.
+        app = QApplication.instance()
+        if isinstance(app, QApplication) and app.activePopupWidget() is not None:
+            return False
+        # 5. Overlay drawers.
+        for drawer in (self.properties_drawer, self.measurements_drawer):
+            if drawer.is_overlay():
+                drawer.close_overlay()
+                return True
+        # 6. Measurement wizard (inputs kept): leave to the previous view.
+        if self.stack.currentWidget() in (self.daw, self.standalone):
+            self._leave_setup()
+            return True
+        return False
 
     def _show_view_action(self, view_id: str) -> Callable[[], None]:
         window = weakref.ref(self)
@@ -423,11 +510,9 @@ class MainWindow(QMainWindow):
         else:
             self._show_start()
 
-    def showEvent(self, event: object) -> None:  # noqa: N802 - Qt override
-        from PySide6.QtGui import QShowEvent
-
-        assert isinstance(event, QShowEvent)
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802 - Qt override
         super().showEvent(event)
+        self._apply_narrow_chrome()
         if not self._layout_checked:
             self._layout_checked = True
             QTimer.singleShot(0, self._ensure_chart_space)
@@ -441,6 +526,9 @@ class MainWindow(QMainWindow):
         if not self._closed:
             self._save_layout()
         self._closed = True
+        app = QApplication.instance()
+        if app is not None:
+            app.removeEventFilter(self)
         # The colour-scheme signal belongs to the application and outlives this
         # window: a closed window that stays connected still restyles the whole
         # application on every system change (the chrome and every chart are
@@ -462,9 +550,31 @@ class MainWindow(QMainWindow):
 
     def _set_place(self, place: str) -> None:
         self._place = place
-        self._status.showMessage(
+        self._show_status(
             _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
         )
+
+    def _show_status(self, message: str) -> None:
+        """Transient / place text without a status bar (LAYOUT-01 minimal)."""
+        self._status_message = message
+        title = f"ReverbScope {__version__}"
+        if self._place:
+            title = f"{title} — {self._place}"
+        self.setWindowTitle(title)
+
+    def status_message(self) -> str:
+        """Last place / notice string (replaces ``statusBar().currentMessage()``)."""
+        return self._status_message
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802
+        super().resizeEvent(event)
+        self._apply_narrow_chrome()
+
+    def _apply_narrow_chrome(self) -> None:
+        """At narrow widths, drop the tool rail so the plot keeps height (LAYOUT-01)."""
+        from reverbscope.ui.design.tokens import TOOL_RAIL_MIN_WINDOW_WIDTH
+
+        self.workspace.tools.setVisible(self.width() >= TOOL_RAIL_MIN_WINDOW_WIDTH)
 
     # --- the unsaved take ------------------------------------------------------------------
 
@@ -525,7 +635,12 @@ class MainWindow(QMainWindow):
     # --- starting over -------------------------------------------------------------------
 
     def show_home(self) -> None:
-        """New Measurement: the start panel; asks first when a live take is unsaved."""
+        """New Measurement: the start panel; asks first when a live take is unsaved.
+
+        The menu action is disabled while busy (BUSY-01). If this is still
+        called (tests, or a path that stops first), keep stopping a live take
+        so generation / late-result discard stays intact (C12).
+        """
         if self._leave_take():
             self._go_home()
 
@@ -569,6 +684,8 @@ class MainWindow(QMainWindow):
     # --- opening ---------------------------------------------------------------------------
 
     def choose_session(self) -> None:
+        if self._is_measurement_busy():
+            return
         path, _filter = QFileDialog.getOpenFileName(
             self,
             _("Open session"),
@@ -621,6 +738,8 @@ class MainWindow(QMainWindow):
         self.show_view("compare")
 
     def choose_project(self) -> None:
+        if self._is_measurement_busy():
+            return
         directory = QFileDialog.getExistingDirectory(self, _("Open project folder"))
         if directory:
             self.show_project(Path(directory))
@@ -680,12 +799,16 @@ class MainWindow(QMainWindow):
     # --- measuring -----------------------------------------------------------------------
 
     def show_mode(self, mode: str) -> None:
-        if mode in ("demo", "standalone") and self.standalone.is_busy():
-            # Ctrl+Shift+2 / 3 while a take or its analysis runs: switching the
-            # backend under it would show the demo banner over a real sweep (or
-            # the reverse). The page is shown as it is.
-            self.stack.setCurrentWidget(self.standalone)
-            self._set_place(_("Standalone Mode"))
+        if self._is_measurement_busy():
+            # BUSY-01: do not switch measurement path or open another wizard
+            # while a take or analysis is running (modals / path changes would
+            # cover Stop or swap the backend under a live sweep).
+            if self._busy_flags["daw"] or self.daw.is_busy():
+                self.stack.setCurrentWidget(self.daw)
+                self._set_place(_("Universal DAW Mode"))
+            else:
+                self.stack.setCurrentWidget(self.standalone)
+                self._set_place(_("Standalone Mode"))
             return
         self.strip.set_mode(mode)
         self._apply_mode(mode)
@@ -830,7 +953,7 @@ class MainWindow(QMainWindow):
         entry = self.model.entry(key)
         position = entry.position if entry is not None else ""
         self.model.mark_saved(key, directory, position=position)
-        self._status.showMessage(_("Session saved to {path}").format(path=session_path.parent))
+        self._show_status(_("Session saved to {path}").format(path=session_path.parent))
         project = self.model.project_path
         if project is not None:
             self._add_to_project(project, directory, position or "A")
@@ -851,7 +974,7 @@ class MainWindow(QMainWindow):
                 ).format(path=directory, error=localize(str(exc))),
             )
             return
-        self._status.showMessage(
+        self._show_status(
             _(
                 "Session saved to {path} and listed in project {project} under position {label}"
             ).format(path=directory, project=listed.name or project.name, label=position)
@@ -882,6 +1005,8 @@ class MainWindow(QMainWindow):
     def show_settings(self) -> None:
         from reverbscope.ui.settings_dialog import SettingsDialog
 
+        if self._is_measurement_busy():
+            return
         before = load_settings()
         if not SettingsDialog(self).exec():
             return

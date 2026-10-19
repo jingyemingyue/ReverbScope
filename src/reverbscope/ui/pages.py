@@ -263,13 +263,19 @@ class _StepStack(QStackedWidget):
 
 
 class MeasurementSteps(QWidget):
-    """One measurement task per screen, without owning any audio state."""
+    """One measurement task per screen, without owning any audio state.
+
+    The step body scrolls with the page; ``action_bar`` stays pinned below
+    the scroll area (FLOW-01).
+    """
 
     def __init__(self, steps: list[tuple[str, QWidget]], parent: QWidget | None = None) -> None:
         super().__init__(parent)
-        from reverbscope.ui.design.tokens import FORM_WIDTH, SECTION_GAP, SPACE
+        from reverbscope.ui.design.tokens import ACTION_BAR_HEIGHT, FORM_WIDTH, SECTION_GAP, SPACE
 
         self.setMaximumWidth(FORM_WIDTH)
+        self._complete_check: Callable[[int], tuple[bool, str]] | None = None
+        self._titles = [title for title, _content in steps]
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(SECTION_GAP)
@@ -290,36 +296,113 @@ class MeasurementSteps(QWidget):
         nav.addStretch()
         outer.addLayout(nav)
         outer.addWidget(self.stack, 1)
-        footer = QHBoxLayout()
+
+        self.action_bar = QWidget()
+        self.action_bar.setObjectName("measureActionBar")
+        self.action_bar.setFixedHeight(ACTION_BAR_HEIGHT)
+        self.action_bar.setProperty("actionbar", True)
+        bar = QHBoxLayout(self.action_bar)
+        bar.setContentsMargins(0, SPACE // 2, 0, SPACE // 2)
+        bar.setSpacing(SPACE)
         self.previous = QPushButton(_("Previous"))
         self.previous.clicked.connect(lambda: self.set_step(self.stack.currentIndex() - 1))
+        self.status = QLabel("")
+        self.status.setProperty("role", "hint")
+        self.status.setWordWrap(True)
         self.next = primary(QPushButton(_("Continue")))
-        self.next.clicked.connect(lambda: self.set_step(self.stack.currentIndex() + 1))
-        footer.addWidget(self.previous)
-        footer.addStretch()
-        footer.addWidget(self.next)
-        outer.addLayout(footer)
+        self.next.setShortcut("Ctrl+Return")
+        self.next.clicked.connect(self._continue)
+        self.primary_host = QWidget()
+        self.primary_layout = QHBoxLayout(self.primary_host)
+        self.primary_layout.setContentsMargins(0, 0, 0, 0)
+        self.primary_layout.setSpacing(SPACE)
+        bar.addWidget(self.previous)
+        bar.addWidget(self.status, 1)
+        bar.addWidget(self.primary_host)
+        bar.addWidget(self.next)
         self.set_step(0)
 
+    def set_complete_check(self, check: Callable[[int], tuple[bool, str]]) -> None:
+        self._complete_check = check
+        self._refresh_step_buttons()
+
+    def step_complete(self, step: int) -> tuple[bool, str]:
+        if self._complete_check is None:
+            return True, ""
+        return self._complete_check(step)
+
+    def _continue(self) -> None:
+        current = self.stack.currentIndex()
+        ok, reason = self.step_complete(current)
+        if not ok:
+            self.status.setText(reason)
+            self.next.setToolTip(reason)
+            return
+        self.set_step(current + 1)
+
     def set_step(self, step: int) -> None:
-        index = max(0, min(step, self.stack.count() - 1))
-        self.stack.setCurrentIndex(index)
+        target = max(0, min(step, self.stack.count() - 1))
+        current = self.stack.currentIndex()
+        if target > current:
+            for index in range(current, target):
+                ok, reason = self.step_complete(index)
+                if not ok:
+                    self.status.setText(reason)
+                    if 0 <= target < len(self.buttons):
+                        self.buttons[target].setToolTip(reason)
+                    return
+        elif target < current:
+            # Going back is always allowed when not running.
+            pass
+        else:
+            # Same step or jump to an earlier reachable step via the nav.
+            for index in range(target):
+                ok, reason = self.step_complete(index)
+                if not ok:
+                    self.status.setText(reason)
+                    self.buttons[target].setToolTip(reason)
+                    return
+        self.stack.setCurrentIndex(target)
         self.stack.updateGeometry()
         self.updateGeometry()
         for number, button in enumerate(self.buttons):
-            button.setChecked(index == number)
-        self.previous.setVisible(index > 0)
-        self.next.setVisible(index < self.stack.count() - 1)
+            button.setChecked(target == number)
+        self.previous.setVisible(target > 0)
+        self.previous.setEnabled(target > 0)
+        last = target >= self.stack.count() - 1
+        self.next.setVisible(not last)
+        self.primary_host.setVisible(last)
+        self.status.setText("")
+        self.next.setToolTip("")
+        self._refresh_step_buttons()
+
+    def _refresh_step_buttons(self) -> None:
+        for index, button in enumerate(self.buttons):
+            if index == 0:
+                button.setEnabled(True)
+                button.setToolTip("")
+                continue
+            blocked = ""
+            for prior in range(index):
+                ok, reason = self.step_complete(prior)
+                if not ok:
+                    blocked = reason or _("Finish the previous step first")
+                    break
+            button.setEnabled(not blocked)
+            button.setToolTip(blocked)
 
     def set_running(self, running: bool) -> None:
         if running:
             self.set_step(self.stack.count() - 1)
         for button in [*self.buttons, self.previous, self.next]:
             button.setEnabled(not running)
+        self.primary_host.setEnabled(True)  # Stop / Run visibility owned by the page
         for index in range(self.stack.count() - 1):
             page = self.stack.widget(index)
             if page is not None:
                 page.setEnabled(not running)
+        if not running:
+            self._refresh_step_buttons()
 
 
 def _step_body(*widgets: QWidget) -> QWidget:
@@ -335,11 +418,19 @@ def _step_body(*widgets: QWidget) -> QWidget:
     return body
 
 
-def _install_steps(layout: QVBoxLayout, flow: MeasurementSteps) -> None:
+def _install_steps(
+    layout: QVBoxLayout, flow: MeasurementSteps, page: QWidget | None = None
+) -> None:
     # Build each control hierarchy once. Adding directly to the final
     # step avoids reparenting populated layouts while their previous
     # owners are waiting for deferred deletion.
     layout.addWidget(flow, 1, Qt.AlignmentFlag.AlignHCenter)
+    host = page if page is not None else flow.parentWidget()
+    outer = getattr(host, "_scroll_outer", None) if host is not None else None
+    if isinstance(outer, QVBoxLayout):
+        outer.addWidget(flow.action_bar)
+    else:
+        layout.addWidget(flow.action_bar)
 
 
 class PlacementInputs(QGroupBox):
@@ -574,16 +665,9 @@ class DawModePage(QWidget):
         profile_row, self.profile_help = _profile_row(self.profile, self)
         profile_form.addRow(_("Recording profile"), profile_row)
         v4.addLayout(profile_form)
-        row = QHBoxLayout()
         self.analyze_button = primary(QPushButton(_("Analyze")))
         self.analyze_button.setShortcut("Ctrl+Return")
         self.analyze_button.clicked.connect(self.start_analysis)
-        self.back_button = QPushButton(_("Back"))
-        self.back_button.clicked.connect(self.back.emit)
-        row.addWidget(self.back_button)
-        row.addStretch(1)
-        row.addWidget(self.analyze_button)
-        v4.addLayout(row)
         self.progress = QProgressBar()
         self.progress.setRange(0, 0)
         self.progress.hide()
@@ -600,8 +684,12 @@ class DawModePage(QWidget):
                 (_("Analyze"), step4),
             ]
         )
-        _install_steps(layout, self.flow)
+        self.action_bar = self.flow.action_bar
+        self.flow.primary_layout.addWidget(self.analyze_button)
+        self.flow.set_complete_check(self._daw_step_complete)
+        _install_steps(layout, self.flow, self)
         self.busy_changed.connect(self.flow.set_running)
+        self.flow.set_step(0)
 
     # --- step 1 -----------------------------------------------------------------
     def current_sweep_settings(self) -> SweepSettings:
@@ -771,19 +859,34 @@ class DawModePage(QWidget):
         self.recording_label.setText(_("No recording selected."))
         self._reset_channel_lists()
 
+    def is_busy(self) -> bool:
+        """An analysis started from this page is still running."""
+        return self._worker is not None and self._worker.isRunning()
+
     def shutdown_workers(self) -> None:
         """Let a running analysis finish: a QThread destroyed while it runs aborts."""
         if self._worker is not None:
             self._worker.wait()
 
+    def _daw_step_complete(self, step: int) -> tuple[bool, str]:
+        if step == 0:
+            if self._reference is not None or self._sweep_path is not None:
+                return True, ""
+            return False, _("Export or choose a reference sweep first")
+        if step == 2:
+            if self._recording is not None:
+                return True, ""
+            return False, _("Import a recording first")
+        return True, ""
+
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         self.analyze_button.setEnabled(not busy)
-        # Leaving mid-analysis would let the late result replace another session.
-        self.back_button.setEnabled(not busy)
         self.progress.setVisible(busy)
         set_banner_text(self.status, text, tone)
         self.busy_changed.emit(busy)
         self.status_changed.emit(text, tone)
+        if hasattr(self, "flow"):
+            self.flow._refresh_step_buttons()
 
     def _stale(self) -> bool:
         """The result that arrives now belongs to a session that is gone.
@@ -869,9 +972,15 @@ class StandalonePage(QWidget):
         self.demo_banner.setProperty("banner", "info")
         self.demo_banner.hide()
 
-        safety = QLabel(_(SAFETY_MESSAGE))
+        # One-line safety hint (SAFE-01); the full SAFETY_MESSAGE stays for the tooltip.
+        safety = QLabel(
+            _(
+                "Start with a low monitor level; confirm before anything above {level:g} dBFS."
+            ).format(level=SAFE_MAX_LEVEL_DBFS)
+        )
         safety.setWordWrap(True)
-        safety.setProperty("banner", "warn")
+        safety.setProperty("role", "hint")
+        safety.setToolTip(_(SAFETY_MESSAGE))
 
         devices = QGroupBox(_("Audio devices"))
         form = QFormLayout(devices)
@@ -925,16 +1034,27 @@ class StandalonePage(QWidget):
         self.duration.setSuffix(" s")
         self.level = QDoubleSpinBox()
         self.level.setRange(-40.0, 0.0)
+        self.level.setSingleStep(0.5)
         self.level.setValue(DEFAULT_STANDALONE_LEVEL_DBFS)
         self.level.setSuffix(" dBFS")
-        self.acknowledge = QCheckBox(
-            _("I have set the monitor level low (required above {level:g} dBFS)").format(
-                level=SAFE_MAX_LEVEL_DBFS
-            )
-        )
+        from reverbscope.ui.components.level_slider import LevelSlider
+
+        self.level_slider = LevelSlider(self.level, self)
+        self._ack_required_text = _(
+            "I have set the monitor level low (required above {level:g} dBFS)"
+        ).format(level=SAFE_MAX_LEVEL_DBFS)
+        self._ack_not_needed_text = _("Not required at the current level")
+        self.acknowledge = QCheckBox(self._ack_required_text)
+        self.level_gate_label = QLabel("")
+        self.level_gate_label.setWordWrap(True)
+        self.level_gate_label.setProperty("role", "hint")
         form2.addRow(_("Sweep duration"), self.duration)
-        form2.addRow(_("Playback level"), self.level)
+        form2.addRow(_("Playback level"), self.level_slider)
         form2.addRow(self.acknowledge)
+        form2.addRow(self.level_gate_label)
+        self._level_was_safe = float(self.level.value()) <= SAFE_MAX_LEVEL_DBFS
+        self.level.valueChanged.connect(self._on_level_changed)
+        self.acknowledge.toggled.connect(lambda _checked: self._update_level_gate())
         self.profile = _profile_combo(state)
         profile_row, self.profile_help = _profile_row(self.profile, self)
         form2.addRow(_("Recording profile"), profile_row)
@@ -961,8 +1081,7 @@ class StandalonePage(QWidget):
         meta, self.room, self.position, self.mic = _metadata_form(state)
         self.placement = PlacementInputs()
 
-        self.back_button = QPushButton(_("Back"))
-        self.back_button.clicked.connect(self.back.emit)
+        # FLOW-01: Back left the wizard via Esc / task switch; no duplicate Back.
         self.run_button = primary(QPushButton(_("Run Measurement")))
         self.run_button.clicked.connect(self.start_measurement)
         self.stop_button = QPushButton(_("Stop"))
@@ -988,6 +1107,10 @@ class StandalonePage(QWidget):
                 (_("Measure"), QWidget()),
             ]
         )
+        self.action_bar = self.flow.action_bar
+        self.flow.primary_layout.addWidget(self.stop_button)
+        self.flow.primary_layout.addWidget(self.run_button)
+        self.flow.set_complete_check(self._standalone_step_complete)
         review = self.flow.stack.widget(2)
         assert review is not None
         review_layout = QVBoxLayout(review)
@@ -1009,6 +1132,7 @@ class StandalonePage(QWidget):
             ("rate", _("Sample rate")),
             ("duration", _("Sweep duration")),
             ("level", _("Playback level")),
+            ("acknowledge", _("Monitor level confirmed")),
             ("position", _("Position")),
         ):
             value = label("", wrap=True)
@@ -1017,18 +1141,13 @@ class StandalonePage(QWidget):
         review_layout.addWidget(self.review)
         review_layout.addWidget(summary)
         review_layout.addWidget(self.demo_banner)
-        actions = QHBoxLayout()
-        actions.addWidget(self.back_button)
-        actions.addStretch()
-        actions.addWidget(self.stop_button)
-        actions.addWidget(self.run_button)
-        review_layout.addLayout(actions)
         review_layout.addWidget(self.progress)
         review_layout.addWidget(self.status)
         review_layout.addStretch()
         self.run_button.setShortcut("Ctrl+Return")
-        _install_steps(layout, self.flow)
+        _install_steps(layout, self.flow, self)
         self.busy_changed.connect(self.flow.set_running)
+        self.flow.set_step(0)
         self.connection_status = label("", "hint", wrap=True)
         connection = self.flow.stack.widget(0)
         assert connection is not None
@@ -1056,10 +1175,17 @@ class StandalonePage(QWidget):
         self.position.textChanged.connect(self._update_review)
         self.sample_rate.currentTextChanged.connect(self._update_review)
         self.flow.stack.currentChanged.connect(self._update_review)
+        self.flow.stack.currentChanged.connect(lambda _index: self._update_level_gate())
         self.refresh_devices()
-        self._update_review()
+        self._update_level_gate()
 
     def _update_review(self, *_args: object) -> None:
+        if self.level.value() <= SAFE_MAX_LEVEL_DBFS:
+            ack = _("Not required")
+        elif self.acknowledge.isChecked():
+            ack = _("Yes")
+        else:
+            ack = _("No — confirm on the signal step")
         for key, value in (
             (
                 "input",
@@ -1076,6 +1202,7 @@ class StandalonePage(QWidget):
             ("rate", self.sample_rate.currentText()),
             ("duration", self.duration.text()),
             ("level", self.level.text()),
+            ("acknowledge", ack),
             ("position", self.position.text() or _("not entered")),
         ):
             self.review_values[key].setText(value)
@@ -1099,7 +1226,7 @@ class StandalonePage(QWidget):
                 _("Audio backend unavailable: {error}").format(error=localize(str(exc))),
                 "warn",
             )
-            self.run_button.setEnabled(False)
+            self._update_level_gate()
             return
         if backend.name != self._inventory_backend:
             chosen = None
@@ -1134,7 +1261,7 @@ class StandalonePage(QWidget):
         # must stay off then, or a second take replaces the running thread.
         # With no device at all a take would only end in PortAudio's own
         # English error ("Error querying device -1").
-        self.run_button.setEnabled(not self.is_busy() and bool(self._devices))
+        self._update_level_gate()
         # A refresh while a take is running must not replace "Playing the sweep...".
         if self.is_busy():
             return
@@ -1392,25 +1519,90 @@ class StandalonePage(QWidget):
             and self.stop_button.isEnabled()
         )
 
+    def _standalone_step_complete(self, step: int) -> tuple[bool, str]:
+        """Whether the user may leave ``step`` (FLOW-01)."""
+        if step == 0:
+            if self.demo_mode or bool(getattr(self, "_devices", None)):
+                return True, ""
+            return False, _("Connect an audio device first")
+        if step == 1:
+            if self._level_blocks_start():
+                return False, self.level_gate_reason()
+            return True, ""
+        return True, ""
+
+    def level_acknowledged(self) -> bool:
+        """True when the playback level is allowed to start (SAFE-01)."""
+        return not self._level_blocks_start()
+
+    def level_gate_reason(self) -> str:
+        """Why Continue / Start is disabled for the level gate, or empty."""
+        if self._level_blocks_start():
+            return _("Check “I have set the monitor level low” first")
+        return ""
+
+    def _level_blocks_start(self) -> bool:
+        return float(self.level.value()) > SAFE_MAX_LEVEL_DBFS and not self.acknowledge.isChecked()
+
+    def _on_level_changed(self, value: float) -> None:
+        is_safe = float(value) <= SAFE_MAX_LEVEL_DBFS
+        if self._level_was_safe and not is_safe:
+            self.acknowledge.setChecked(False)
+        self._level_was_safe = is_safe
+        self._update_level_gate()
+
+    def _reset_level_acknowledgement(self) -> None:
+        self.acknowledge.setChecked(False)
+        self._update_level_gate()
+
+    def _update_level_gate(self) -> None:
+        """Disable Start/Continue when the level needs a fresh acknowledgement."""
+        safe = float(self.level.value()) <= SAFE_MAX_LEVEL_DBFS
+        if safe:
+            self.acknowledge.setText(self._ack_not_needed_text)
+            self.acknowledge.setEnabled(False)
+            self.acknowledge.blockSignals(True)
+            self.acknowledge.setChecked(False)
+            self.acknowledge.blockSignals(False)
+        else:
+            self.acknowledge.setText(self._ack_required_text)
+            self.acknowledge.setEnabled(not self.is_busy())
+        blocks = self._level_blocks_start()
+        reason = self.level_gate_reason()
+        self.level_gate_label.setText(reason)
+        self.run_button.setToolTip(reason)
+        if hasattr(self, "flow"):
+            on_signal = self.flow.stack.currentIndex() == 1
+            if on_signal and not self.is_busy():
+                self.flow.next.setEnabled(not blocks)
+                self.flow.status.setText(reason)
+                self.flow.next.setToolTip(reason)
+            elif not self.is_busy():
+                last = self.flow.stack.currentIndex() >= self.flow.stack.count() - 1
+                self.flow.next.setEnabled(not last)
+                if not reason:
+                    self.flow.status.setText("")
+            self.flow._refresh_step_buttons()
+        if self.is_busy():
+            self.run_button.setEnabled(False)
+        else:
+            devices_ok = self.demo_mode or bool(getattr(self, "_devices", None))
+            self.run_button.setEnabled(not blocks and devices_ok)
+        self._update_review()
+
     def start_measurement(self) -> None:
         from reverbscope.audio.backend import get_backend
 
         if self.is_busy():
             return
+        if self._level_blocks_start():
+            # SAFE-01: Start stays disabled; never open a warning dialog.
+            self._update_level_gate()
+            return
         try:
             settings = self.current_sweep_settings()
         except ReverbScopeError as exc:
             QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
-            return
-        if settings.level_dbfs > SAFE_MAX_LEVEL_DBFS and not self.acknowledge.isChecked():
-            QMessageBox.warning(
-                self,
-                _("Level too high"),
-                _(
-                    "Levels above {level:g} dBFS need the acknowledgement checkbox. "
-                    "Set the monitor level low first."
-                ).format(level=SAFE_MAX_LEVEL_DBFS),
-            )
             return
         if self.before_take is not None and not self.before_take():
             return
@@ -1476,6 +1668,7 @@ class StandalonePage(QWidget):
 
     def _on_stopped(self) -> None:
         self._set_busy(False, _("Stopped."))
+        self._reset_level_acknowledgement()
 
     def _stale(self) -> bool:
         """As :meth:`DawModePage._stale`."""
@@ -1526,11 +1719,8 @@ class StandalonePage(QWidget):
         self.busy_changed.emit(True)
 
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
-        self.run_button.setEnabled(not busy)
         if hasattr(self, "stop_button"):
             self.stop_button.setEnabled(busy)
-        if hasattr(self, "back_button"):
-            self.back_button.setEnabled(not busy)
         if hasattr(self, "refresh_button"):
             self.refresh_button.setEnabled(not busy)
         self.progress.setVisible(busy)
@@ -1539,6 +1729,12 @@ class StandalonePage(QWidget):
         set_banner_text(self.status, text, tone)
         self.busy_changed.emit(busy)
         self.status_changed.emit(text, tone)
+        # Prefer the ``busy`` flag: ``is_busy()`` is still false before the
+        # worker exists, and must not re-enable Run at the start of a take.
+        if busy:
+            self.run_button.setEnabled(False)
+        else:
+            self._update_level_gate()
 
     def _on_success(self, result: AnalysisResult) -> None:
         if self._stale():
@@ -1554,11 +1750,13 @@ class StandalonePage(QWidget):
             and self.state.recording_path is None
         )
         self._set_busy(False, _("Done."))
+        self._reset_level_acknowledgement()
         self.analysis_finished.emit()
 
     def _on_failure(self, message: str) -> None:
         self._set_busy(
             False, _("Measurement failed: {message}").format(message=message), tone="warn"
         )
+        self._reset_level_acknowledgement()
         if not self._stale():
             error_box(self, _("Measurement failed"), message)

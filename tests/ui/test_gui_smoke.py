@@ -77,7 +77,7 @@ def test_daw_mode_end_to_end(app: QApplication, tmp_path: Path, short_sweep: Swe
     assert window.save_to(out)
     assert (out / "session.json").is_file()
     assert (out / "impulse_response.wav").is_file()
-    assert "saved" in window.statusBar().currentMessage()
+    assert "saved" in window.status_message()
 
     window.show_home()
     assert window.state.result is None
@@ -164,10 +164,10 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
     assert "Ctrl+Shift+3" not in shortcuts
     # The start panel has no mode cards any more (by design), so no shortcut
     # badges to check against the Measure menu: the menu carries the keys.
-    assert "Start" in window.statusBar().currentMessage()
+    assert "Start" in window.status_message()
     assert window.daw.analyze_button.shortcut().toString() == "Ctrl+Return"
-    # Stop and Esc live on the measure strip now, not on the Standalone page.
-    assert window.strip.stop_shortcut.key().toString() == "Esc"
+    # Esc is dispatched by the main window (ESC-01), ahead of any popup.
+    assert callable(window.handle_escape)
     # Results' Save button is gone: File > Save Session... carries Ctrl+S.
     assert window.save_action.shortcut().toString() == "Ctrl+S"
     window.close()
@@ -668,7 +668,8 @@ def test_a_running_take_cannot_be_replaced_and_closing_waits_for_it(
     page.run_button.click()
     first = page._measure_worker
     assert first is not None and first.isRunning()
-    assert not page.back_button.isEnabled()
+    # FLOW-01: wizard Back is gone; Previous / step nav lock while running.
+    assert not page.flow.previous.isEnabled()
     page.refresh_devices()
     assert not page.run_button.isEnabled()
     page.start_measurement()  # the Run shortcut while busy
@@ -1600,7 +1601,7 @@ def test_back_from_compare_returns_to_the_unsaved_result(
     assert window.state.recording is recording
     current = window.model.current()
     assert current is not None and current.is_take and current.result is result
-    assert window.statusBar().currentMessage().endswith("Overview")
+    assert window.status_message().endswith("Overview")
     assert window.save_to(tmp_path / "take")
     assert (tmp_path / "take" / "recording.wav").is_file()
     window.close()
