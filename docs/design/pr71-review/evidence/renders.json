@@ -1,0 +1,237 @@
+{
+  "source_commit": "e39185ceacbe6c8dc9a15dfffdb9e40be7062796",
+  "branch_reviewed": "gui/photoshop-focused",
+  "before": {
+    "kind": "actual offscreen render of PR #71 at e39185c",
+    "tool": "scripts/render_gui2_screenshots.py",
+    "qt": "PySide6 offscreen, Linux, Noto Sans CJK fallback",
+    "data": "synthetic demo (fake backend)"
+  },
+  "after": {
+    "kind": "DESIGN MOCKUP, not interaction verification",
+    "tool": "prototype/render_v2.py on PR #79 prototype kit"
+  },
+  "compare": {
+    "kind": "side-by-side: left actual render, right design mockup",
+    "tool": "prototype/compose.py"
+  },
+  "files": [
+    {
+      "path": "images/before/en_1280x800_light_fr.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "17fba384f28f9b177c75eb92ab5df3bd5d6e02e274c3d97d0a084efec91d7bc9"
+    },
+    {
+      "path": "images/before/en_960x640_dark_measure_connection.png",
+      "set": "before",
+      "width": 960,
+      "height": 640,
+      "sha256": "d9948309a0f861f471696cc91897b5edeb706b7ef4f6f7437b3def945a42916e"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_dark_decay.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "f6897088a3f0fa9b5fd3204871b1b26bd25de42a4aaee34e8164cc3df3653d2d"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_dark_fr.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "96cb2f81bafb3815f4edd2aec3a6767c49a7568ad14bfa62b2efa0a0b09ce1b9"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_dark_measure_review.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "b16794818e32ab2b8e6172271152b03c229fdbecd428a151d63154bb8e880b77"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_dark_measure_review@2x.png",
+      "set": "before",
+      "width": 2560,
+      "height": 1600,
+      "sha256": "c5c20a4de96c93e0a0aed503f919f8acaad239d7972540a84cf78b0e42aa7efe"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_dark_measure_signal.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "e257e6e116fd81619c61f639d3920b8d0ff96e2c281f3a774f4d19313c1d4241"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_dark_overview.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "8fbdd5c699a579cf40af43598d22ebbb967ba6bff2af78d05ab5cbdd19bc61c4"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_dark_room.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "e47cbe4b644d03fc127509d306557949ce64593c467d3672c962c33a5a514d8b"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_dark_waterfall.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "4699449d4e158ae64a8e93fba1c37870077230926c09b98b987e450ca78b7e22"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_light_compare.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "417e63e346e41db7cba730ccd967708ccaae31f4e14e9ceb891a8870b1994f70"
+    },
+    {
+      "path": "images/before/zh_CN_1280x800_light_decay.png",
+      "set": "before",
+      "width": 1280,
+      "height": 800,
+      "sha256": "d179b9cf86ec105d5643a7889c8efb1b63320c61a4a96ba4fcae917808b5410f"
+    },
+    {
+      "path": "images/before/zh_CN_960x640_dark_fr.png",
+      "set": "before",
+      "width": 960,
+      "height": 640,
+      "sha256": "40347e0838e34930575b31c887439b25a5278fa5cc43f755417d240674f07b8f"
+    },
+    {
+      "path": "images/after/v2-01-measure-level.zh-dark.1440.png",
+      "set": "after",
+      "width": 1440,
+      "height": 900,
+      "sha256": "c9f975a3e68cdc6078b57094296a3d8113e569094571551083892b4027ec7beb"
+    },
+    {
+      "path": "images/after/v2-02-measuring.zh-dark.1440.png",
+      "set": "after",
+      "width": 1440,
+      "height": 900,
+      "sha256": "151a8483642d97ebaf1472a2a411434d97ae972a390ab7a185af5751721b88b1"
+    },
+    {
+      "path": "images/after/v2-03-frequency.zh-dark.1440.png",
+      "set": "after",
+      "width": 1440,
+      "height": 900,
+      "sha256": "f0a2d6397891cc43051aebe51b3a68233ad321d8d63da516cc7f4c1100383ee5"
+    },
+    {
+      "path": "images/after/v2-04-decay.zh-light.1440.png",
+      "set": "after",
+      "width": 1440,
+      "height": 900,
+      "sha256": "4db3c5b3d2fd1134420a3a0a2e9499e015c834048834db572cc1514cca2b4b92"
+    },
+    {
+      "path": "images/after/v2-05-waterfall.zh-dark.1440.png",
+      "set": "after",
+      "width": 1440,
+      "height": 900,
+      "sha256": "14094a1560e4615032406a64cf5987555d5f3af40a4e68fcb87ce0b169fc5c61"
+    },
+    {
+      "path": "images/after/v2-06-compare.zh-light.1440.png",
+      "set": "after",
+      "width": 1440,
+      "height": 900,
+      "sha256": "668bda2f5ace5b68e703477bee5f1fd6d0bc07f796c3b8d50b13fc0bbb55c517"
+    },
+    {
+      "path": "images/after/v2-07-narrow-960.zh-dark.960.png",
+      "set": "after",
+      "width": 960,
+      "height": 640,
+      "sha256": "7954eb459838d8557aef829e6ce1f39b0d864671f741dade19161d34fe3454a3"
+    },
+    {
+      "path": "images/after/v2-08-frequency.en-light.1440.png",
+      "set": "after",
+      "width": 1440,
+      "height": 900,
+      "sha256": "43d5f201ea29bf36fc10bc604f43f9274ffd594a9359049246592aeaaf014001"
+    },
+    {
+      "path": "images/after/v2-09-measure-level-960.en-dark.960.png",
+      "set": "after",
+      "width": 960,
+      "height": 640,
+      "sha256": "bb2875fa67df604a1c35252d21c17457ac9dd39106e073856741758674fb6cc0"
+    },
+    {
+      "path": "images/after/v2-10-measure-level.zh-light.1440.png",
+      "set": "after",
+      "width": 1440,
+      "height": 900,
+      "sha256": "0915c073fc913409d473e5a81130ba75f5ab3c05f5d19f9a364699b956038227"
+    },
+    {
+      "path": "images/compare/ba-01-measure-step.png",
+      "set": "compare",
+      "width": 2504,
+      "height": 946,
+      "sha256": "319ce7fa9349703cc168b40cb38fafeb20f969905eebd36e9cf778bc124f353e"
+    },
+    {
+      "path": "images/compare/ba-02-measuring.png",
+      "set": "compare",
+      "width": 2504,
+      "height": 946,
+      "sha256": "cf5b9b7eb9a3f34c7fcd6ba1328a38f8eec337790fd31721d8ed0a6ab9fee657"
+    },
+    {
+      "path": "images/compare/ba-03-frequency.png",
+      "set": "compare",
+      "width": 2504,
+      "height": 946,
+      "sha256": "03e75786296587d4a2b1baadc3a2cdda4dd54ac93f3b6ab773040abad1dfad36"
+    },
+    {
+      "path": "images/compare/ba-04-decay-light.png",
+      "set": "compare",
+      "width": 2504,
+      "height": 946,
+      "sha256": "59f44f43818dac06b784fc48ee7376378b42bf1b1241f9f9f546812ed54ad385"
+    },
+    {
+      "path": "images/compare/ba-05-waterfall.png",
+      "set": "compare",
+      "width": 2504,
+      "height": 946,
+      "sha256": "fa13352ffbb3bc93052878e52ce7597fa8aef450f137f159ad546e0fafb36e88"
+    },
+    {
+      "path": "images/compare/ba-06-compare-light.png",
+      "set": "compare",
+      "width": 2504,
+      "height": 946,
+      "sha256": "4df6c648079a66b9708b0767c04c07949a142648882784be1a006324cc39384b"
+    },
+    {
+      "path": "images/compare/ba-07-narrow-960.png",
+      "set": "compare",
+      "width": 2352,
+      "height": 946,
+      "sha256": "710753ede5d285f92230eb4a1c03aaea014da7868ac213349c490e15f20bf334"
+    },
+    {
+      "path": "images/compare/ba-08-frequency-en-light.png",
+      "set": "compare",
+      "width": 2504,
+      "height": 946,
+      "sha256": "cce904bb1501fa0c42922721384fb0215c478f7ebe041d9df44ae50cd4524b2c"
+    }
+  ]
+}
