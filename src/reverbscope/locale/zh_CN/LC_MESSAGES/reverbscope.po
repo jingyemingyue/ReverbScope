@@ -7328,3 +7328,18 @@ msgstr "视图"
 #. Chart viewport action; distinct from acoustic fit.
 msgid "Fit chart"
 msgstr "适配图表"
+
+msgid "max_slopes must be an integer from 1 to 3"
+msgstr "max_slopes 必须为 1 到 3 之间的整数"
+
+msgid "power must be a 1-D array with >= 32 samples"
+msgstr "功率必须是一维数组，且至少包含 32 个样本"
+
+msgid "power contains NaN or inf"
+msgstr "功率中含有非数值或无穷大"
+
+msgid "power must be non-negative"
+msgstr "功率不能为负数"
+
+msgid "headroom_db must be finite and non-negative"
+msgstr "headroom_db 必须是有限的非负数"

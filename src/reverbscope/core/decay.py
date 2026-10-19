@@ -165,6 +165,7 @@ Method (see docs/MEASUREMENT_METHODOLOGY.md for the references)
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 
@@ -454,6 +455,112 @@ class TruncationEstimate:
             converged=self.converged,
             iterations=self.iterations,
         )
+
+
+def _exp_noise_model(t: FloatArray, a: float, tau: float, n: float) -> FloatArray:
+    """p(t) = A*exp(-t/tau) + N (Janković et al. 2016, M6)."""
+    return a * np.exp(-t / max(tau, 1e-9)) + n
+
+
+def _fit_exp_noise_gn(
+    t: FloatArray,
+    p: FloatArray,
+    *,
+    max_iter: int = 50,
+    tol: float = 1e-6,
+) -> tuple[float, float, float] | None:
+    """Fit A*exp(-t/tau)+N via Gauss-Newton. Returns (A, tau, N) or None."""
+    # Initialize: A from peak, N from tail, tau from log-slope.
+    a = float(np.max(p))
+    n = float(np.mean(p[int(0.9 * len(p)) :]))
+    n = max(n, 1e-300)
+    a = max(a - n, 1e-300)
+    # Rough tau from linear fit of log(p - n) over the first half.
+    half = len(p) // 2
+    with np.errstate(divide="ignore", invalid="ignore"):
+        logp = np.log(np.maximum(p[:half] - n, 1e-300))
+    valid = np.isfinite(logp)
+    if np.sum(valid) < 2:
+        return None
+    slope, _ = np.polyfit(t[:half][valid], logp[valid], 1)
+    tau = -1.0 / slope if slope < 0 else 1.0
+    tau = float(np.clip(tau, 1e-4, 100.0))
+
+    params = np.array([a, tau, n], dtype=np.float64)
+    for _ in range(max_iter):
+        a_c, tau_c, n_c = params
+        tau_c = max(tau_c, 1e-9)
+        exp_term = np.exp(-t / tau_c)
+        residual = a_c * exp_term + n_c - p
+        # Jacobian: d/dA = exp(-t/tau), d/dtau = A*t*exp(-t/tau)/tau^2, d/dN = 1
+        j_a = exp_term
+        j_tau = a_c * t * exp_term / (tau_c * tau_c)
+        j_n = np.ones_like(t)
+        j = np.column_stack([j_a, j_tau, j_n])
+        # Gauss-Newton step: (J^T J) delta = -J^T r
+        jt_j = j.T @ j
+        jt_r = j.T @ residual
+        try:
+            delta = np.linalg.solve(jt_j + 1e-12 * np.eye(3), -jt_r)
+        except np.linalg.LinAlgError:
+            return None
+        params_new = params + delta
+        # Keep parameters physical.
+        params_new[0] = max(params_new[0], 1e-300)  # A > 0
+        params_new[1] = float(np.clip(params_new[1], 1e-4, 100.0))  # tau
+        params_new[2] = max(params_new[2], 0.0)  # N >= 0
+        if float(np.max(np.abs(delta) / (np.abs(params) + 1e-300))) < tol:
+            params = params_new
+            break
+        params = params_new
+    a_f, tau_f, n_f = (float(v) for v in params)
+    if not (np.isfinite(a_f) and np.isfinite(tau_f) and np.isfinite(n_f)):
+        return None
+    return (a_f, tau_f, n_f)
+
+
+def model_based_truncation(
+    power: FloatArray,
+    sample_rate: int,
+    *,
+    headroom_db: float = 10.0,
+) -> tuple[int, float, float] | None:
+    """Truncation via nonlinear decay-model fit (M6, Janković et al. 2016).
+
+    Fits p(t) = A*exp(-t/tau) + N to the squared response, then truncates
+    where the exponential meets the noise floor plus ``headroom_db``.
+    Returns (truncation_index, noise_floor_db, tau_s) or None if the fit fails.
+    Handles non-exponential decays better than fixed-margin Lundeby.
+    """
+    sample_rate = _require_sample_rate(sample_rate)
+    power = _as_decay_signal(power)
+    if np.any(power < 0):
+        raise InvalidAudioError(_("power must be non-negative"))
+    if not math.isfinite(headroom_db) or headroom_db < 0:
+        raise ConfigurationError(_("headroom_db must be finite and non-negative"))
+    n = power.shape[0]
+    if n < 32:
+        return None
+    t = np.arange(n, dtype=np.float64) / sample_rate
+    # Decimate for speed (fit on ~1000 points max).
+    step = max(1, n // 1000)
+    t_fit = t[::step]
+    p_fit = power[::step]
+    result = _fit_exp_noise_gn(t_fit, p_fit)
+    if result is None:
+        return None
+    a, tau, noise = result
+    if noise <= 0.0 or a <= 0.0:
+        return None
+    # Truncate where A*exp(-t/tau) = noise * 10^(headroom/10).
+    # t_trunc = -tau * ln(noise * 10^(h/10) / A)
+    target = noise * 10.0 ** (headroom_db / 10.0)
+    if target >= a:
+        return None  # No decay above noise+headroom.
+    t_trunc = -tau * math.log(target / a)
+    idx = int(np.clip(round(t_trunc * sample_rate), 1, n))
+    noise_db = float(10.0 * math.log10(noise))
+    return (idx, noise_db, tau)
 
 
 def estimate_truncation(
@@ -807,22 +914,21 @@ def _curve_from_truncation(
         segment = power[onset : onset + 1]
     if segment.shape[0] == 0:
         segment = np.zeros(1, dtype=np.float64)
-    if subtract_noise and np.isfinite(trunc.noise_floor_db):
+    if (
+        subtract_noise
+        and np.isfinite(trunc.noise_floor_db)
+        and trunc.problem is None
+        and trunc.peak_db - trunc.noise_floor_db > 40.0
+    ):
         # Hirata 1982: subtract the estimated noise power from the squared
         # response before backward integration. Integrating the raw power
         # treats noise as decay and biases the tail upward; subtracting first
-        # removes that bias. Floor at _EPS (not zero) to keep the log defined.
-        #
-        # Guard: only subtract when the Lundeby estimate is trustworthy
-        # (no problem flag) and there is sufficient dynamic range. For a clean
-        # synthetic exponential, the "noise floor" from the tail is still
-        # signal, not noise; subtracting it would distort the decay. For very
-        # fast decays with poor SNR, the noise estimate is unreliable even
-        # when Lundeby converges — require 40 dB of range.
-        dynamic_range_db = trunc.peak_db - trunc.noise_floor_db
-        if trunc.problem is None and dynamic_range_db > 40.0:
-            noise_power = 10.0 ** (trunc.noise_floor_db / 10.0)
-            segment = np.maximum(segment - noise_power, _EPS)
+        # removes that bias. The conservative 40 dB eligibility guard is
+        # ported from #72; an untrusted floor must not hide sensitivity to
+        # truncation. This is a heuristic, not an ISO validity threshold.
+        # Floor at _EPS (not zero) to keep the log defined.
+        noise_power = 10.0 ** (trunc.noise_floor_db / 10.0)
+        segment = np.maximum(segment - noise_power, _EPS)
     compensation = 0.0
     if (
         compensate
