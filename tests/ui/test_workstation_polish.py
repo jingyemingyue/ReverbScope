@@ -648,6 +648,8 @@ def test_review_uses_the_device_and_level_that_will_be_measured(app: QApplicatio
     from reverbscope.ui.main_window import MainWindow
 
     window = MainWindow()
+    # FLOW-01 gates later steps until connection is ready; demo satisfies that.
+    window.show_mode("demo")
     page = window.standalone
     page.level.setValue(-24)
     page.duration.setValue(5)

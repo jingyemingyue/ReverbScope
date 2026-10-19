@@ -20,6 +20,7 @@ from PySide6.QtGui import (
     QKeyEvent,
     QKeySequence,
     QResizeEvent,
+    QShowEvent,
 )
 from PySide6.QtWidgets import (
     QApplication,
@@ -509,11 +510,9 @@ class MainWindow(QMainWindow):
         else:
             self._show_start()
 
-    def showEvent(self, event: object) -> None:  # noqa: N802 - Qt override
-        from PySide6.QtGui import QShowEvent
-
-        assert isinstance(event, QShowEvent)
+    def showEvent(self, event: QShowEvent) -> None:  # noqa: N802 - Qt override
         super().showEvent(event)
+        self._apply_narrow_chrome()
         if not self._layout_checked:
             self._layout_checked = True
             QTimer.singleShot(0, self._ensure_chart_space)
@@ -636,9 +635,12 @@ class MainWindow(QMainWindow):
     # --- starting over -------------------------------------------------------------------
 
     def show_home(self) -> None:
-        """New Measurement: the start panel; asks first when a live take is unsaved."""
-        if self._is_measurement_busy():
-            return
+        """New Measurement: the start panel; asks first when a live take is unsaved.
+
+        The menu action is disabled while busy (BUSY-01). If this is still
+        called (tests, or a path that stops first), keep stopping a live take
+        so generation / late-result discard stays intact (C12).
+        """
         if self._leave_take():
             self._go_home()
 

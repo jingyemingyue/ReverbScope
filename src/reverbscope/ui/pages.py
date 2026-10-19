@@ -1034,7 +1034,6 @@ class StandalonePage(QWidget):
         self.duration.setSuffix(" s")
         self.level = QDoubleSpinBox()
         self.level.setRange(-40.0, 0.0)
-        self.level.setDecimals(1)
         self.level.setSingleStep(0.5)
         self.level.setValue(DEFAULT_STANDALONE_LEVEL_DBFS)
         self.level.setSuffix(" dBFS")
