@@ -1,0 +1,103 @@
+# Design-phase mockup renderer (docs only, not product code).
+"""PR #71 review v2 tokens: PR #71 neutral (Photoshop-like) chrome + GUIDELINES §13.2
+accent/status/data colours + PR #79 plot tokens. Applied by patching pk.LIGHT / pk.DARK."""
+
+import pk
+
+V2_DARK = {
+    # chrome: PR #71 neutral greys (maintainer-confirmed direction), slightly re-stepped
+    "bg": "#242424",
+    "toolbar": "#2c2c2c",
+    "surface": "#2c2c2c",
+    "surface_alt": "#363636",
+    "sidebar": "#272727",
+    "panel": "#272727",
+    "hover": "#383838",
+    "pressed": "#414141",
+    "border": "#444444",
+    "border_strong": "#7a7a7a",
+    "text": "#eeeeee",
+    "muted": "#b7b7b7",
+    "faint": "#a6a6a6",
+    "text_disabled": "#6e6e6e",
+    # accent + status: GUIDELINES §13.2 dark column
+    "accent": "#4fb6c3",
+    "accent_hover": "#6cc6d1",
+    "accent_pressed": "#3a9aa6",
+    "accent_text": "#0b1114",
+    "accent_soft": "#1e3a3e",
+    "accent_fg": "#6cc6d1",
+    "selected": "#1e3a3e",
+    "focus": "#4fb6c3",
+    "good": "#6cc070",
+    "good_soft": "#1b2e1e",
+    "warn": "#f0b35a",
+    "warn_soft": "#352915",
+    "bad": "#ef6a6a",
+    "bad_soft": "#3a1d1d",
+    "info": "#7fb2ee",
+    "info_soft": "#1a2a3d",
+    # plot (instrument screen darker than chrome)
+    "plot_bg": "#1b1b1b",
+    "plot_grid_major": "#363636",
+    "plot_grid_minor": "#262626",
+    "plot_axis": "#6e6e6e",
+    "plot_text": "#b7b7b7",
+    "plot_zero": "#5e5e5e",
+    "plot_excluded": "#343434",
+    "cursor": "#eeeeee",
+    "cursor_flag_text": "#1b1b1b",
+    "readout_bg": "#202020",
+    "grid": "#5e5e5e",
+    # viridis ramp: first two steps lightened to keep >= 3:1 on the darker plot_bg
+    "band_1": "#5a68ba",
+    "band_2": "#3a74a0",
+}
+V2_LIGHT = {
+    "bg": "#ededed",
+    "toolbar": "#e4e4e4",
+    "surface": "#fafafa",
+    "surface_alt": "#e3e3e3",
+    "sidebar": "#f0f0f0",
+    "panel": "#f5f5f5",
+    "hover": "#e0e0e0",
+    "pressed": "#d4d4d4",
+    "border": "#cfcfcf",
+    "border_strong": "#8a8a8a",
+    "text": "#1f1f1f",
+    "muted": "#525252",
+    "faint": "#5e5e5e",
+    "text_disabled": "#a0a0a0",
+    "accent": "#177e89",
+    "accent_hover": "#12656e",
+    "accent_pressed": "#0e5158",
+    "accent_text": "#ffffff",
+    "accent_soft": "#e3f1f2",
+    "accent_fg": "#136a73",
+    "selected": "#e3f1f2",
+    "focus": "#177e89",
+    "good": "#2e7d32",
+    "good_soft": "#e8f4e9",
+    "warn": "#9a5b00",
+    "warn_soft": "#fdf1de",
+    "bad": "#c62828",
+    "bad_soft": "#fbe9e9",
+    "info": "#1f5fa8",
+    "info_soft": "#e6eef9",
+    "plot_bg": "#ffffff",
+    "plot_grid_major": "#dcdcdc",
+    "plot_grid_minor": "#f0f0f0",
+    "plot_axis": "#8a8a8a",
+    "plot_text": "#525252",
+    "plot_zero": "#a6a6a6",
+    "plot_excluded": "#d4d4d4",
+    "cursor": "#1f1f1f",
+    "cursor_flag_text": "#ffffff",
+    "readout_bg": "#f4f4f4",
+    "grid": "#a6a6a6",
+}
+
+
+def apply() -> None:
+    pk.DARK.update(V2_DARK)
+    pk.LIGHT.update(V2_LIGHT)
