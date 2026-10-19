@@ -429,7 +429,7 @@ class MainWindow(QMainWindow):
             return True
         # 4. Open popup / menu: leave Esc to Qt's default close.
         app = QApplication.instance()
-        if app is not None and app.activePopupWidget() is not None:
+        if isinstance(app, QApplication) and app.activePopupWidget() is not None:
             return False
         # 5. Overlay drawers.
         for drawer in (self.properties_drawer, self.measurements_drawer):

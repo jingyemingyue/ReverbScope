@@ -217,8 +217,10 @@ def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
     layout.setSpacing(12)
     scroll.setWidget(body)
     outer.addWidget(scroll, 1)
-    page._scroll_outer = outer
-    page._scroll_area = scroll
+    # Layout hooks for a pinned action bar (FLOW-01); plain attributes keep
+    # mypy happy without a dedicated page base class.
+    setattr(page, "_scroll_outer", outer)
+    setattr(page, "_scroll_area", scroll)
     return layout
 
 
