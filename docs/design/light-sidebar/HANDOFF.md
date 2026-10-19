@@ -29,6 +29,13 @@
 - **Stop 唯一**：用同一个 `QAction`，测量页时放操作栏，否则放工具栏；两处不同时可见。
 - **960 高度测试**：不要依赖干净的 ui.ini；测试前显式重置抽屉/工具栏状态或在布局里给图表设最小伸缩比。
 
+## 3b. 第 2 轮实现提示
+
+- 视图分组与快捷键不用改（D-4 建议沿用 `VIEW_GROUPS` / `NUMBERED_VIEWS`）；改的是外观：分段放进合一工具栏，图表行右侧放 `ChartPanel` 已有的复位与导出。
+- 发声安全 OUT-1…5（SPEC §8.4）：`StandalonePage` 输出设备下拉加一个“选择音频接口输出…”空状态、去掉默认预选与“系统默认”项；未选时禁用开始并写原因；`measure` 前断言输出设备 = 用户选择；任何页面进入都不打开输出流。配套测试见 ACCEPTANCE I2。
+- 第 3 步不要加实时波形或电平表，除非另开功能 PR（目前代码没有）。
+- 检查器保持 `ui/inspector.py` 六段；只换材质与排版。
+
 ## 4. 不要做
 
 - 不改 DSP、CLI、数据模型、阈值、有效性判定。
@@ -40,8 +47,9 @@
 
 ```
 cd docs/design/light-sidebar/source
-python prep.py              # 可选：从 `reverbscope demo` 输出重算 demo.npz（需要 RS_DEMO_DIR、PySide6、soundfile）
-QT_QPA_PLATFORM=offscreen RS_FONT_DIR=/path/to/fonts RS_DEMO_DIR=/path/to/demo python render.py
+reverbscope demo --out /tmp/rs-demo
+RS_DEMO_DIR=/tmp/rs-demo PYTHONPATH=../../../../src QT_QPA_PLATFORM=offscreen python prep.py   # 调 src API 写 demo.npz / demo.json
+PYTHONPATH=../../../../src QT_QPA_PLATFORM=offscreen RS_FONT_DIR=/path/to/fonts python render.py
 python contrast.py          # 重算对比度表
 ```
 

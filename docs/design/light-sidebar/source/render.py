@@ -78,9 +78,12 @@ def main():
         print("no text overflow")
     import json
 
-    (lk.HERE / "icons_used.json").write_text(
-        json.dumps({k: sorted(v) for k, v in sorted(lk.USED_ICONS.items())}, indent=1)
-    )
+    p = lk.HERE / "icons_used.json"
+    used = {k: set(v) for k, v in lk.USED_ICONS.items()}
+    if only and p.exists():  # partial run: keep what other screens used
+        for k, v in json.loads(p.read_text()).items():
+            used.setdefault(k, set()).update(v)
+    p.write_text(json.dumps({k: sorted(v) for k, v in sorted(used.items())}, indent=1))
 
 
 if __name__ == "__main__":

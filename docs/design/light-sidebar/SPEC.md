@@ -432,6 +432,8 @@ PR #71 的“项目 / 测量 / 分析 / 对比”四个任务按钮去掉，改�
 | 房间参数 / 专业人士卡 | `sliders-vertical` | 16/20 | 房间、设置 |
 | 合成演示数据 | `flask-conical` | 14 | 页头 |
 | 普通用户卡（提案） | `house` | 20 | 设置 |
+| 首页三步说明（说明性，非按钮） | `cable` / `audio-waveform` / `chart-spline` | 20 | 首页 |
+| 报告文字 | `file-text` | 16 | 报告导出列表 |
 | 下拉 / 进入 / 关闭 / 复选 | `chevron-down` / `chevron-right` / `x` / `check` | 12–16 | 控件 |
 
 - **已删除**（代码里没有对应功能）：`search`（⌘K 搜索）、`message-square`（反馈）、`crosshair`/`move`/`zoom-in`（工具模式）、`file-audio`（GUI 导入 IR）、`refresh-cw`（改用 `arrow-left-right`）。SVG 文件保留在 icons/ 以便对照，但不出现在任何设计稿（`source/icons_used.json` 为准）。
