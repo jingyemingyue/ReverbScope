@@ -1,0 +1,141 @@
+{
+ "activity": [
+  16
+ ],
+ "arrow-left-right": [
+  16
+ ],
+ "arrow-right": [
+  16
+ ],
+ "audio-lines": [
+  16
+ ],
+ "box": [
+  16
+ ],
+ "check": [
+  12,
+  14,
+  16
+ ],
+ "chevron-down": [
+  12,
+  14,
+  16
+ ],
+ "chevron-left": [
+  16
+ ],
+ "chevron-right": [
+  16
+ ],
+ "circle-check": [
+  14,
+  16
+ ],
+ "circle-dashed": [
+  12,
+  14,
+  16
+ ],
+ "circle-help": [
+  16
+ ],
+ "circle-x": [
+  16
+ ],
+ "copy": [
+  16
+ ],
+ "download": [
+  16
+ ],
+ "file-down": [
+  16
+ ],
+ "file-input": [
+  16
+ ],
+ "flask-conical": [
+  14,
+  16
+ ],
+ "folder": [
+  16
+ ],
+ "folder-open": [
+  16
+ ],
+ "git-compare": [
+  16
+ ],
+ "heart-pulse": [
+  16
+ ],
+ "history": [
+  14,
+  16
+ ],
+ "house": [
+  16
+ ],
+ "info": [
+  14,
+  16
+ ],
+ "layers": [
+  16
+ ],
+ "lock": [
+  16
+ ],
+ "maximize": [
+  16
+ ],
+ "mic": [
+  16
+ ],
+ "music": [
+  16
+ ],
+ "panel-left": [
+  16
+ ],
+ "panel-right": [
+  16,
+  18
+ ],
+ "plus": [
+  16
+ ],
+ "rotate-ccw": [
+  16
+ ],
+ "save": [
+  16,
+  18
+ ],
+ "scan": [
+  16
+ ],
+ "settings": [
+  16
+ ],
+ "sliders-vertical": [
+  16
+ ],
+ "square-stop": [
+  16
+ ],
+ "stethoscope": [
+  16
+ ],
+ "triangle-alert": [
+  14,
+  16
+ ],
+ "x": [
+  16
+ ]
+}

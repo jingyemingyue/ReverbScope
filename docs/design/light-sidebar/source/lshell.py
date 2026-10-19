@@ -36,10 +36,7 @@ def sidebar(
     lk.app_icon(cv, 20, 58, 20)
     cv.text(48, 56, "ReverbScope", "headline", "text1", h=24)
     y = 96
-    for icon, lab, key, dis in (
-        (("plus", L("新测量", "New Measurement"), "⌘N", busy)),
-        (("search", L("搜索测量", "Search"), "⌘K", False)),
-    ):
+    for icon, lab, key, dis in ((("plus", lk.tr("New Measurement"), "⌘N", busy)),):
         col = "disabled" if dis else "text1"
         cv.icon(icon, 20, y + 8, 16, "disabled" if dis else "text2")
         cv.text(44, y, lab, "body", col, h=32, w=150)
@@ -50,12 +47,12 @@ def sidebar(
         y += 32
     y += 16
     if empty:
-        cv.text(20, y, L("最近", "Recent"), "captionm", "text3", h=20)
+        cv.text(20, y, lk.tr("Saved sessions"), "captionm", "text3", h=20)
         y += 24
         cv.text(
             20,
             y,
-            L("还没有测量。保存后会出现在这里。", "No measurements yet."),
+            L("还没有保存的会话。保存后会出现在这里。", "No saved sessions yet."),
             "callout",
             "text3",
             w=SB - 40,
@@ -86,7 +83,7 @@ def sidebar(
                     cv.icon("triangle-alert", SB - 36, y + 8, 14, "warn")
             y += h
         y += 16
-        cv.text(20, y, L("最近", "Recent"), "captionm", "text3", h=20)
+        cv.text(20, y, lk.tr("Saved sessions"), "captionm", "text3", h=20)
         y += 24
         for lab in recent or [
             L("B-1 · 合成演示房间", "B-1 · Synthetic demo room"),
@@ -103,9 +100,9 @@ def sidebar(
         col = "disabled" if dis else "text2"
         cv.icon(icon, x, H - 32, 16, col)
         x += 22 + cv.text(x + 22, H - 40, lab, "callout", col, h=32) + 18
-    fb = L("反馈", "Feedback")
+    fb = L("环境报告", "Env. report")
     fw = tw(fb, "callout")
-    cv.icon("message-square", SB - 20 - fw - 22, H - 32, 16, "text2")
+    cv.icon("stethoscope", SB - 20 - fw - 22, H - 32, 16, "text2")
     cv.text(SB - 20 - fw, H - 40, fb, "callout", "text2", h=32)
     if hover_settings_tip:
         tip = L("测量进行中 · 停止或结束后可用", "Measuring · available after Stop or finish")

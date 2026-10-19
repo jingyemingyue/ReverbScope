@@ -2,7 +2,7 @@
 # Design-phase mockup renderer (docs only, not product code).
 """Render the light-sidebar baseline mockups.
 
-QT_QPA_PLATFORM=offscreen python render.py [--only name1,name2] [--out DIR]
+PYTHONPATH=<repo>/src QT_QPA_PLATFORM=offscreen python render.py [--only name1,name2] [--out DIR]
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ import lk  # noqa: E402
 
 lk.load_fonts()
 import lscreens as S  # noqa: E402
+import lscreens2 as S2  # noqa: E402
 
 OUT = (
     Path(sys.argv[sys.argv.index("--out") + 1])
@@ -29,15 +30,28 @@ JOBS = [
     ("02-measure-1-connect", S.measure_connect, ["zh-light"], (1280, 800)),
     ("03-measure-2-safe", S.measure_signal, ["zh-light", "en-light", "zh-dark"], (1280, 800)),
     ("04-measure-3-running", S.measure_running, ["zh-light", "zh-dark"], (1280, 800)),
-    ("05-analysis-fr", S.analysis_fr, ["zh-light", "en-light", "zh-dark"], (1280, 800)),
-    ("05b-analysis-fr-inspector", S.analysis_fr, ["zh-light"], (1440, 900)),
-    ("06-analysis-decay", S.analysis_decay, ["zh-light"], (1280, 800)),
-    ("07-analysis-waterfall", S.analysis_waterfall, ["zh-light"], (1280, 800)),
-    ("08-compare", S.compare, ["zh-light"], (1280, 800)),
-    ("09-settings", S.settings, ["zh-light"], (1280, 800)),
-    ("10-narrow-fr", S.analysis_fr, ["zh-light"], (960, 640)),
+    ("05-analysis-fr", S2.frequency, ["zh-light", "en-light", "zh-dark"], (1280, 800)),
+    ("05b-analysis-fr-inspector", S2.frequency, ["zh-light"], (1440, 900)),
+    ("06-analysis-decay", S2.decay, ["zh-light"], (1280, 800)),
+    ("07-analysis-waterfall", S2.waterfall, ["zh-light"], (1280, 800)),
+    ("08-compare", S2.compare, ["zh-light"], (1280, 800)),
+    ("09-settings", S2.settings, ["zh-light"], (1280, 800)),
+    ("10-narrow-fr", S2.frequency, ["zh-light"], (960, 640)),
     ("10b-narrow-measure-safe", S.measure_signal, ["zh-light"], (960, 640)),
-    ("11-icon-spec", S.icon_sheet, ["zh-light"], (1280, 800)),
+    ("11-icon-spec", S2.icon_sheet, ["zh-light"], (1280, 800)),
+    ("12a-daw-1-signal", S2.daw_signal, ["zh-light"], (1280, 800)),
+    ("12b-daw-2-record", S2.daw_record, ["zh-light"], (1280, 800)),
+    ("12c-daw-3-import", S2.daw_import, ["zh-light", "en-light"], (1280, 800)),
+    ("13-overview", S2.overview, ["zh-light", "en-light", "zh-dark"], (1280, 800)),
+    ("13b-overview-inspector", S2.overview, ["zh-light"], (1440, 900)),
+    ("14-time-etc", S2.time_etc, ["zh-light"], (1280, 800)),
+    ("15-noise", S2.noise, ["zh-light"], (1280, 800)),
+    ("16-spectrogram", S2.spectrogram_view, ["zh-light", "zh-dark"], (1280, 800)),
+    ("17-room", S2.room, ["zh-light"], (1280, 800)),
+    ("18-project", S2.project, ["zh-light"], (1280, 800)),
+    ("19-report-export", S2.report_export, ["zh-light"], (1280, 800)),
+    ("20-health", S2.health_sheet, ["zh-light"], (1280, 800)),
+    ("20b-narrow-health", S2.health_sheet, ["zh-light"], (960, 640)),
 ]
 
 

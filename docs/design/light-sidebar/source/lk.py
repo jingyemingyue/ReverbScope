@@ -185,6 +185,22 @@ def L(zh_s: str, en_s: str) -> str:
     return zh_s if zh() else en_s
 
 
+_TR: dict = {}
+
+
+def tr(msgid: str) -> str:
+    """The product's own translation of ``msgid`` (src/reverbscope/locale, main ab3da19).
+
+    Needs ``PYTHONPATH=<repo>/src``. Used for view, control and section names so the
+    mockups carry the exact words the GUI on main already ships."""
+    lang = "zh_CN" if zh() else "en"
+    if lang not in _TR:
+        from reverbscope.i18n import translator
+
+        _TR[lang] = translator(lang)
+    return _TR[lang](msgid)
+
+
 # ---------------------------------------------------------------- fonts
 _FAM: dict[str, str] = {}
 

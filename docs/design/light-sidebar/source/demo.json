@@ -1,0 +1,3597 @@
+{
+ "source": "reverbscope demo (main ab3da19), computed by src APIs",
+ "lang": {
+  "en": {
+   "health_a": [
+    {
+     "id": "reference",
+     "status": "good",
+     "title": "Reference",
+     "reason": "the sweep definition regenerated the exact reference sweep",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "sweep",
+     "status": "good",
+     "title": "Sweep",
+     "reason": "found 1.00 s into the recording, one pass, the whole swept range recorded",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "playback_speed",
+     "status": "good",
+     "title": "Playback speed",
+     "reason": "the sweep deconvolved as generated; no speed error was found",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "direct_sound",
+     "status": "good",
+     "title": "Direct sound",
+     "reason": "identified with high confidence (pre-peak margin 46.4 dB)",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "level",
+     "status": "warning",
+     "title": "Level",
+     "reason": "the recording peaks at 12.4 dBFS, within 1 dB of full scale: no flat tops were found, but there is no headroom left",
+     "fix": [
+      "Lower the playback level or the input gain by about 6 dB and measure again."
+     ],
+     "affects": []
+    },
+    {
+     "id": "distortion",
+     "status": "good",
+     "title": "Distortion",
+     "reason": "no harmonic response stands out of the noise",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "dropouts",
+     "status": "good",
+     "title": "Dropouts",
+     "reason": "no run of frozen or zero samples in the recorded sweep",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "decay_range",
+     "status": "good",
+     "title": "Decay range",
+     "reason": "96 dB above the noise floor: enough for T30 (needs 45 dB)",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "noise",
+     "status": "good",
+     "title": "Noise floor",
+     "reason": "-69.2 dBFS RMS, measured on the pre-sweep segment",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "length",
+     "status": "good",
+     "title": "Recording length",
+     "reason": "5.00 s of decay after the direct sound",
+     "fix": [],
+     "affects": []
+    }
+   ],
+   "health_a_status_word": "warning",
+   "findings_a_vocal": [
+    {
+     "topic": "early_reflections",
+     "severity": "notice",
+     "message": "A strong early reflection is present approximately 2 ms after the direct sound (-3.1 dB). Close-miked vocals are coloured by reflections this early; move the microphone closer to the singer and farther from the nearest hard surface, or treat that surface, then measure again."
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "The broadband decay is noticeable (estimated RT60 0.70 s from T30). A vocal that is this live picks up room colour between phrases; add absorption or move to a drier position."
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "Low frequencies decay more slowly than the mid range (0.83 s vs 0.44 s), which makes vocals sound boxy at this position. Bass trapping or a different position helps."
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "Mains hum components at multiples of 50 Hz were detected in the quiet part of the recording. Check grounding, cables, dimmers and power supplies before treating the room."
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "Background noise in the pre-sweep segment is -69.2 dBFS RMS (uncalibrated digital level, not dB SPL). Vocal tracks are often compressed, which brings this noise up; compare it with your chain's noise at the same gain."
+    },
+    {
+     "topic": "noise",
+     "severity": "notice",
+     "message": "The direct sound is only 57 dB above the noise floor in the quiet segment. Sources quieter than this will be recorded with audible noise; lower the noise at the source or increase the playback level within the headroom of the chain."
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "Potential low-frequency resonances around 110 Hz: these frequencies stand out in the response and ring longer than their surroundings. Measure one or two other positions to see whether they follow the room or the position."
+    }
+   ],
+   "findings_a_voiceover": [
+    {
+     "topic": "early_reflections",
+     "severity": "notice",
+     "message": "An early reflection is present approximately 2 ms after the direct sound (-3.1 dB). Voice-over is usually close-miked and heavily processed, so even a reflection this weak colours the voice; move the microphone closer to the talent and farther from the nearest hard surface, or treat the surface."
+    },
+    {
+     "topic": "reverberation",
+     "severity": "warning",
+     "message": "The broadband decay is long (estimated RT60 0.70 s from T30). Voice-over needs a dry room; room tone of this length will sit under the narration. Add absorption or move to a drier position."
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "Low frequencies decay more slowly than the mid range (0.83 s vs 0.44 s), which makes voice-over sound muddy. Bass trapping or a different position helps."
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "Mains hum components at multiples of 50 Hz were detected in the quiet part of the recording. Check grounding, cables, dimmers and power supplies before treating the room."
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "Background noise in the pre-sweep segment is -69.2 dBFS RMS (uncalibrated digital level, not dB SPL). Voice-over is usually quiet and close-miked, so this floor will be audible under the narration."
+    },
+    {
+     "topic": "noise",
+     "severity": "notice",
+     "message": "The direct sound is only 57 dB above the noise floor in the quiet segment. Sources quieter than this will be recorded with audible noise; lower the noise at the source or increase the playback level within the headroom of the chain."
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "Potential low-frequency resonances around 110 Hz: these frequencies stand out in the response and ring longer than their surroundings, which colours voice and dialogue. Move the microphone or treat the affected corner, then measure again."
+    }
+   ],
+   "findings_a_generic": [
+    {
+     "topic": "early_reflections",
+     "severity": "notice",
+     "message": "A relatively strong early reflection is present approximately 2 ms after the direct sound (-3.1 dB). For close vocal or instrument recording, try moving the microphone or the performer farther from nearby hard surfaces, or treat that surface, and measure again."
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "The broadband decay is noticeable (estimated RT60 0.70 s from T30). Dry close-miked recordings will pick up audible room sound; consider absorption or a closer microphone position."
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "Low frequencies decay clearly more slowly than the mid range (0.83 s vs 0.44 s), which usually makes bass-heavy sources sound boomy at this position. Bass trapping or a different position helps."
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "Mains hum components at multiples of 50 Hz were detected in the quiet part of the recording. Check grounding, cables, dimmers and power supplies before treating the room."
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "Background noise in the pre-sweep segment is -69.2 dBFS RMS (uncalibrated digital level, not dB SPL). Compare it with the level of the sources you record at the same gain."
+    },
+    {
+     "topic": "noise",
+     "severity": "notice",
+     "message": "The direct sound is only 57 dB above the noise floor in the quiet segment. Sources quieter than this will be recorded with audible noise; lower the noise at the source or increase the playback level within the headroom of the chain."
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "Potential low-frequency resonances around 110 Hz: these frequencies stand out in the response and ring longer than their surroundings. Measure one or two other positions to see whether they follow the room or the position."
+    }
+   ],
+   "health_b": [
+    {
+     "id": "reference",
+     "status": "good",
+     "title": "Reference",
+     "reason": "the sweep definition regenerated the exact reference sweep",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "sweep",
+     "status": "good",
+     "title": "Sweep",
+     "reason": "found 1.00 s into the recording, one pass, the whole swept range recorded",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "playback_speed",
+     "status": "good",
+     "title": "Playback speed",
+     "reason": "the sweep deconvolved as generated; no speed error was found",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "direct_sound",
+     "status": "good",
+     "title": "Direct sound",
+     "reason": "identified with high confidence (pre-peak margin 47.7 dB)",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "level",
+     "status": "warning",
+     "title": "Level",
+     "reason": "the recording peaks at 2.6 dBFS, within 1 dB of full scale: no flat tops were found, but there is no headroom left",
+     "fix": [
+      "Lower the playback level or the input gain by about 6 dB and measure again."
+     ],
+     "affects": []
+    },
+    {
+     "id": "distortion",
+     "status": "good",
+     "title": "Distortion",
+     "reason": "no harmonic response stands out of the noise",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "dropouts",
+     "status": "good",
+     "title": "Dropouts",
+     "reason": "no run of frozen or zero samples in the recorded sweep",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "decay_range",
+     "status": "good",
+     "title": "Decay range",
+     "reason": "96 dB above the noise floor: enough for T30 (needs 45 dB)",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "noise",
+     "status": "good",
+     "title": "Noise floor",
+     "reason": "-87.1 dBFS RMS, measured on the pre-sweep segment",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "length",
+     "status": "good",
+     "title": "Recording length",
+     "reason": "5.00 s of decay after the direct sound",
+     "fix": [],
+     "affects": []
+    }
+   ],
+   "health_b_status_word": "warning",
+   "findings_b_vocal": [
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "The broadband decay is noticeable (estimated RT60 0.51 s from T30). A vocal that is this live picks up room colour between phrases; add absorption or move to a drier position."
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "Low frequencies decay more slowly than the mid range (0.82 s vs 0.45 s), which makes vocals sound boxy at this position. Bass trapping or a different position helps."
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "Mains hum components at multiples of 50 Hz were detected in the quiet part of the recording. Check grounding, cables, dimmers and power supplies before treating the room."
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "Background noise in the pre-sweep segment is -87.1 dBFS RMS (uncalibrated digital level, not dB SPL). Vocal tracks are often compressed, which brings this noise up; compare it with your chain's noise at the same gain."
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "Potential low-frequency resonances around 110 Hz: these frequencies stand out in the response and ring longer than their surroundings. Measure one or two other positions to see whether they follow the room or the position."
+    }
+   ],
+   "findings_b_voiceover": [
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "The broadband decay is noticeable (estimated RT60 0.51 s from T30). Voice-over needs a dry room; room tone of this length will sit under the narration. Add absorption or move to a drier position."
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "Low frequencies decay more slowly than the mid range (0.82 s vs 0.45 s), which makes voice-over sound muddy. Bass trapping or a different position helps."
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "Mains hum components at multiples of 50 Hz were detected in the quiet part of the recording. Check grounding, cables, dimmers and power supplies before treating the room."
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "Background noise in the pre-sweep segment is -87.1 dBFS RMS (uncalibrated digital level, not dB SPL). Voice-over is usually quiet and close-miked, so this floor will be audible under the narration."
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "Potential low-frequency resonances around 110 Hz: these frequencies stand out in the response and ring longer than their surroundings, which colours voice and dialogue. Move the microphone or treat the affected corner, then measure again."
+    }
+   ],
+   "findings_b_generic": [
+    {
+     "topic": "reverberation",
+     "severity": "info",
+     "message": "The broadband decay is short (estimated RT60 0.51 s from T30). This is typical of a treated or small, well-damped room."
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "Low frequencies decay clearly more slowly than the mid range (0.82 s vs 0.45 s), which usually makes bass-heavy sources sound boomy at this position. Bass trapping or a different position helps."
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "Mains hum components at multiples of 50 Hz were detected in the quiet part of the recording. Check grounding, cables, dimmers and power supplies before treating the room."
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "Background noise in the pre-sweep segment is -87.1 dBFS RMS (uncalibrated digital level, not dB SPL). Compare it with the level of the sources you record at the same gain."
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "Potential low-frequency resonances around 110 Hz: these frequencies stand out in the response and ring longer than their surroundings. Measure one or two other positions to see whether they follow the room or the position."
+    }
+   ],
+   "verdicts": [
+    {
+     "aspect": "reverberation",
+     "verdict": "meaningful_improvement",
+     "title": "Reverberation",
+     "reason": "RT60 0.70 s to 0.51 s (-27.3 %): shorter, and still 'noticeable' for this profile"
+    },
+    {
+     "aspect": "clarity",
+     "verdict": "probably_insignificant",
+     "title": "Clarity",
+     "reason": "C50 +9.8 dB to +10.1 dB (+0.3 dB): within the just-noticeable difference of about 1 dB"
+    },
+    {
+     "aspect": "early_reflections",
+     "verdict": "meaningful_improvement",
+     "title": "Early reflections",
+     "reason": "the strongest reflection within 25 ms went from -3.1 dB at 2.4 ms to -14.5 dB at 9.3 ms: 11.4 dB weaker"
+    },
+    {
+     "aspect": "noise",
+     "verdict": "meaningful_improvement",
+     "title": "Noise floor",
+     "reason": "noise floor -69.2 dBFS to -87.1 dBFS (-17.9 dB): quieter"
+    },
+    {
+     "aspect": "low_end",
+     "verdict": "probably_insignificant",
+     "title": "Low end",
+     "reason": "no distinguishable low-frequency resonance appeared or disappeared"
+    }
+   ],
+   "verdict_conditions": [
+    "The baseline measurement has health warnings: Level.",
+    "The candidate measurement has health warnings: Level.",
+    "One pair of positions: a verdict is about these two takes, not about the room in general, and no change is statistically significant on this evidence."
+   ],
+   "profiles": [
+    {
+     "name": "acoustic_guitar",
+     "title": "Acoustic guitar",
+     "description": "Acoustic guitar, single microphone or close pair.",
+     "wants": [
+      "Reverberation: an RT60 up to 0.7 s passes without comment; above it the decay is noticeable, above 1.1 s it is long (a warning).",
+      "Early reflections: a reflection at or above -10 dB relative to the direct sound within 30 ms is strong.",
+      "Clarity: a C80 below +0 dB is not clear enough for this recording.",
+      "Noise: the noise floor matters once the direct sound is less than 60 dB above it (levels are dBFS, not dB SPL).",
+      "Low end: bands up to 250 Hz decaying more than 1.5 times slower than the 500–2000 Hz bands is an imbalance; a resonance is named only when its decay is distinguishable.",
+      "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
+     ]
+    },
+    {
+     "name": "choir",
+     "title": "Choir / ensemble",
+     "description": "Choir or small ensemble, one or more microphones.",
+     "wants": [
+      "Reverberation: an RT60 up to 0.8 s passes without comment; above it the decay is noticeable, above 1.3 s it is long (a warning).",
+      "Early reflections: a reflection at or above -12 dB relative to the direct sound within 30 ms is strong.",
+      "Clarity: a C50 below -2 dB is not clear enough for this recording.",
+      "Noise: the noise floor matters once the direct sound is less than 60 dB above it (levels are dBFS, not dB SPL).",
+      "Low end: bands up to 250 Hz decaying more than 1.5 times slower than the 500–2000 Hz bands is an imbalance; a resonance is named only when its decay is distinguishable.",
+      "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
+     ]
+    },
+    {
+     "name": "drums",
+     "title": "Drums",
+     "description": "Drums, close mics (kick, snare, toms) with or without overheads.",
+     "wants": [
+      "Reverberation: an RT60 up to 0.8 s passes without comment; above it the decay is noticeable, above 1.2 s it is long (a warning).",
+      "Early reflections: a reflection at or above -6 dB relative to the direct sound within 20 ms is strong.",
+      "Low end: bands up to 250 Hz decaying more than 1.5 times slower than the 500–2000 Hz bands is an imbalance; a resonance is named only when its decay is distinguishable.",
+      "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
+     ]
+    },
+    {
+     "name": "generic",
+     "title": "General",
+     "description": "General observations, not tied to a specific instrument or voice.",
+     "wants": [
+      "Reverberation: an RT60 up to 0.6 s passes without comment; above it the decay is noticeable, above 1.0 s it is long (a warning).",
+      "Early reflections: a reflection at or above -10 dB relative to the direct sound within 30 ms is strong.",
+      "Clarity: a C50 below +0 dB is not clear enough for this recording.",
+      "Noise: the noise floor matters once the direct sound is less than 60 dB above it (levels are dBFS, not dB SPL).",
+      "Low end: bands up to 250 Hz decaying more than 1.5 times slower than the 500–2000 Hz bands is an imbalance; a resonance is named only when its decay is distinguishable.",
+      "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
+     ]
+    },
+    {
+     "name": "room_mic",
+     "title": "Room microphone",
+     "description": "Room microphone or ambient pickup: the room is the instrument.",
+     "wants": [
+      "Reverberation: an RT60 up to 0.9 s passes without comment; above it the decay is noticeable, above 1.4 s it is long (a warning).",
+      "Early reflections: a reflection at or above -5 dB relative to the direct sound within 40 ms is strong.",
+      "Clarity: a C80 above +8 dB means the room is too dry for this use.",
+      "Noise: the noise floor matters once the direct sound is less than 60 dB above it (levels are dBFS, not dB SPL).",
+      "Low end: bands up to 250 Hz decaying more than 1.5 times slower than the 500–2000 Hz bands is an imbalance; a resonance is named only when its decay is distinguishable.",
+      "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
+     ]
+    },
+    {
+     "name": "vocal",
+     "title": "Vocals",
+     "description": "Close-miked lead or backing vocals.",
+     "wants": [
+      "Reverberation: an RT60 up to 0.5 s passes without comment; above it the decay is noticeable, above 0.8 s it is long (a warning).",
+      "Early reflections: a reflection at or above -12 dB relative to the direct sound within 25 ms is strong.",
+      "Clarity: a C50 below +2 dB is not clear enough for this recording.",
+      "Noise: the noise floor matters once the direct sound is less than 60 dB above it (levels are dBFS, not dB SPL).",
+      "Low end: bands up to 250 Hz decaying more than 1.5 times slower than the 500–2000 Hz bands is an imbalance; a resonance is named only when its decay is distinguishable.",
+      "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
+     ]
+    },
+    {
+     "name": "voiceover",
+     "title": "Voice-over",
+     "description": "Voice-over, narration and audiobook.",
+     "wants": [
+      "Reverberation: an RT60 up to 0.4 s passes without comment; above it the decay is noticeable, above 0.7 s it is long (a warning).",
+      "Early reflections: a reflection at or above -14 dB relative to the direct sound within 20 ms is strong.",
+      "Clarity: a C50 below +4 dB is not clear enough for this recording.",
+      "Noise: the noise floor matters once the direct sound is less than 60 dB above it (levels are dBFS, not dB SPL).",
+      "Low end: bands up to 250 Hz decaying more than 1.5 times slower than the 500–2000 Hz bands is an imbalance; a resonance is named only when its decay is distinguishable.",
+      "Every profile checks the measurement first: direct-sound confidence, clipping and an insufficient decay range are reported before any advice."
+     ]
+    }
+   ],
+   "overview_positions": [
+    {
+     "label": "A",
+     "verdict_text": "the first position: the others are judged against it",
+     "rt60": 0.7030638701331857,
+     "rt60_basis": "T30",
+     "clarity": [
+      "C50",
+      9.814111793815936
+     ],
+     "noise": -69.21778795242338,
+     "reflection": [
+      2.3958333333333335,
+      -3.0511699630393814
+     ],
+     "fit": "warnings",
+     "fit_reason": "the Vocals profile warns about noise",
+     "health": "warning",
+     "health_problems": [
+      "Level"
+     ],
+     "n_takes": 1
+    },
+    {
+     "label": "B",
+     "verdict_text": "against position A: 2 improved, 0 degraded, 2 probably insignificant, 0 not comparable, 1 with insufficient evidence",
+     "rt60": 0.5111981441510886,
+     "rt60_basis": "T30",
+     "clarity": [
+      "C50",
+      10.146417326543762
+     ],
+     "noise": -87.12789197506963,
+     "reflection": [
+      9.291666666666666,
+      -14.495781342004392
+     ],
+     "fit": "warnings",
+     "fit_reason": "the Vocals profile warns about noise",
+     "health": "warning",
+     "health_problems": [
+      "Level"
+     ],
+     "n_takes": 1
+    }
+   ],
+   "overview_next_steps": [
+    "2 microphone position(s) reach the ISO 3382-2 survey class; engineering needs a second source position: 1 more microphone position(s) (3 in all), each measured with the loudspeaker in both places; pass --sources 2.",
+    "A second take at A, B would show whether the measurement repeats (takes at one position should agree within 5 % in RT60).",
+    "No position fits the Vocals profile yet: each take's findings say what to change (distance, treatment, level)."
+   ],
+   "average": {
+    "iso_class": "survey",
+    "n_mic": 2,
+    "n_src": 1,
+    "bands": [
+     {
+      "band": "broadband",
+      "t30": [
+       0.6071310071421372,
+       0.19186572598209717,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.4410577908916217,
+       0.013026630302359177,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "63 Hz",
+      "t30": [
+       0.7906451976660911,
+       0.0744513389019349,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.7884158187733238,
+       0.0,
+       1,
+       "valid"
+      ]
+     },
+     {
+      "band": "125 Hz",
+      "t30": [
+       0.8246718627073643,
+       0.008557512627390906,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.8478099235562953,
+       0.007130497046997308,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "250 Hz",
+      "t30": [
+       0.5606355498245563,
+       0.12665516119463016,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.4680515883793969,
+       0.0,
+       1,
+       "valid"
+      ]
+     },
+     {
+      "band": "500 Hz",
+      "t30": [
+       0.43425583504774024,
+       0.014713489144788261,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.4595132080343825,
+       0.3692754649201947,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "1 kHz",
+      "t30": [
+       0.4426941981304031,
+       0.022122192530518392,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.4221582419944535,
+       0.14156199150670234,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "2 kHz",
+      "t30": [
+       0.4566718309381706,
+       0.01899699969624924,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.39168795230805664,
+       0.03783223002219721,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "4 kHz",
+      "t30": [
+       0.44802211121711094,
+       0.014133296836070786,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.37902591416951686,
+       0.04791782018423385,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "8 kHz",
+      "t30": [
+       0.44960634686344475,
+       0.0011824978264187713,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.3706656194931928,
+       0.07720333339321062,
+       2,
+       "valid"
+      ]
+     }
+    ]
+   },
+   "room_box": {
+    "length_m": 5.0,
+    "width_m": 4.0,
+    "height_m": 2.7
+   },
+   "room_source": {
+    "x": 1.2,
+    "y": 1.6,
+    "z": 1.25
+   },
+   "room_mics": {
+    "A": {
+     "x": 3.4,
+     "y": 2.1,
+     "z": 1.2
+    }
+   },
+   "room_predicted": [
+    {
+     "face": "z0",
+     "delay_ms": 3.1288983814365006,
+     "path_m": 3.330540496676178,
+     "point": {
+      "x": 2.3224489795918366,
+      "y": 1.8551020408163266,
+      "z": 0.0
+     }
+    },
+    {
+     "face": "z1",
+     "delay_ms": 4.245648656439494,
+     "path_m": 3.7138255209419846,
+     "point": {
+      "x": 2.2813559322033896,
+      "y": 1.8457627118644069,
+      "z": 2.7
+     }
+    },
+    {
+     "face": "y0",
+     "delay_ms": 5.9679339670019615,
+     "path_m": 4.304939023958411,
+     "point": {
+      "x": 2.1513513513513516,
+      "y": 0.0,
+      "z": 1.2283783783783784
+     }
+    },
+    {
+     "face": "x0",
+     "delay_ms": 6.907361413570094,
+     "path_m": 4.627364260569941,
+     "point": {
+      "x": 0.0,
+      "y": 1.7304347826086957,
+      "z": 1.2369565217391305
+     }
+    },
+    {
+     "face": "y1",
+     "delay_ms": 7.4988525169348925,
+     "path_m": 4.830372656431386,
+     "point": {
+      "x": 2.427906976744186,
+      "y": 4.0,
+      "z": 1.222093023255814
+     }
+    },
+    {
+     "face": "x1",
+     "delay_ms": 9.226507867819558,
+     "path_m": 5.423329235810786,
+     "point": {
+      "x": 5.0,
+      "y": 1.951851851851852,
+      "z": 1.2148148148148148
+     }
+    }
+   ],
+   "room_position": "A",
+   "room_checks": [
+    {
+     "name": "speed_of_sound",
+     "status": "unknown",
+     "text": "no temperature was entered for this measurement; 20 °C (343.2 m/s) is assumed"
+    },
+    {
+     "name": "source_inside",
+     "status": "ok",
+     "text": "the loudspeaker is inside the entered room box"
+    },
+    {
+     "name": "microphone_inside",
+     "status": "ok",
+     "text": "the microphone is inside the entered room box"
+    },
+    {
+     "name": "direct_distance",
+     "status": "unknown",
+     "text": "the entered positions are 2.26 m apart; no measured distance was stored with this result to compare it with"
+    },
+    {
+     "name": "microphone_height",
+     "status": "unknown",
+     "text": "the microphone is entered at z = 1.20 m; no microphone height was stored with this result to compare it with"
+    },
+    {
+     "name": "loopback_bound",
+     "status": "unknown",
+     "text": "this result has no loopback distance bound to compare the entered distance with"
+    },
+    {
+     "name": "earliest_reflection",
+     "status": "warn",
+     "text": "the earliest detected reflection (2.40 ms) arrives before the earliest predicted path (3.13 ms): something nearer than the room's faces (a desk, a stand) reflects, or an entered position is off"
+    }
+   ],
+   "room_direct_m": 2.256656819279352,
+   "room_constraints": [
+    {
+     "delay_ms": 2.3958333333333335,
+     "speed_m_s": 343.21462268256795,
+     "excess_path_m": 0.8222850335103191,
+     "direct_distance_m": 2.256656819279352,
+     "total_path_m": 3.0789418527896713,
+     "semi_major_m": 1.5394709263948356,
+     "semi_minor_m": 1.0473040309360855,
+     "distance_from_microphone_m": [
+      0.41114251675515967,
+      2.667799336034512
+     ],
+     "excess_only": false,
+     "text": "reflected path 3.08 m (0.82 m longer than the direct sound): the reflection point lies on an ellipsoid around the loudspeaker and the microphone, 0.41 to 2.67 m from the microphone"
+    },
+    {
+     "delay_ms": 7.104166666666667,
+     "speed_m_s": 343.21462268256795,
+     "excess_path_m": 2.4382538819740764,
+     "direct_distance_m": 2.256656819279352,
+     "total_path_m": 4.694910701253429,
+     "semi_major_m": 2.3474553506267144,
+     "semi_minor_m": 2.0584998477498098,
+     "distance_from_microphone_m": [
+      1.2191269409870384,
+      3.47578376026639
+     ],
+     "excess_only": false,
+     "text": "reflected path 4.69 m (2.44 m longer than the direct sound): the reflection point lies on an ellipsoid around the loudspeaker and the microphone, 1.22 to 3.48 m from the microphone"
+    }
+   ],
+   "overlay_refusal_a": null,
+   "report_b": "ReverbScope analysis\n────────────────────\n\n  Sample rate  48 kHz\n  Created      2026-10-19 10:03 +00:00\n\nAt a glance\n  Reverberation       ! RT60 0.51 s (T30) · EDT 0.43 s\n  Clarity             ✓ C50 +10.1 dB · C80 +14.3 dB · D50 91 %\n  Early reflections   ✓ strongest -14.5 dB at 9.3 ms · 1 above -20 dB\n  Low end             ! potential resonances at 110 Hz (+10.7 dB)\n  Noise floor         ! -87.1 dBFS RMS · mains hum at 50 Hz\n  Data quality        ✓ direct sound: confidence high · no warnings\n\nMeasurement health\n  ! warning: 9 of 10 checks good\n\n  ! Level · warning\n    the recording peaks at 2.6 dBFS, within 1 dB of full scale: no flat tops were found, but\n    there is no headroom left\n    → Lower the playback level or the input gain by about 6 dB and measure again.\n\n  Good: Reference, Sweep, Playback speed, Direct sound, Distortion, Dropouts, Decay range, Noise\n  floor, Recording length\n\nReverberation  extrapolated to 60 dB\n  Band             EDT      T20      T30           RT60   Decay range\n  ─────────   ────────   ──────   ──────   ────────────   ───────────\n  Broadband     0.43 s   0.49 s   0.51 s   0.51 s (T30)       96.1 dB\n  63 Hz       0.69 s ?   0.69 s   0.75 s   0.75 s (T30)      107.2 dB\n  125 Hz        0.84 s   0.82 s   0.82 s   0.82 s (T30)      110.0 dB\n  250 Hz      0.68 s ?   0.49 s   0.50 s   0.50 s (T30)      110.5 dB\n  500 Hz        0.64 s   0.45 s   0.43 s   0.43 s (T30)      107.4 dB\n  1 kHz         0.49 s   0.46 s   0.45 s   0.45 s (T30)      105.4 dB\n  2 kHz         0.41 s   0.47 s   0.47 s   0.47 s (T30)      102.4 dB\n  4 kHz         0.40 s   0.46 s   0.46 s   0.46 s (T30)       99.4 dB\n  8 kHz         0.41 s   0.45 s   0.45 s   0.45 s (T30)       97.1 dB\n\n  ? unreliable\n\nEarly and late energy  ratios from the same truncation as the decay; not a room score\n  C50 is early energy over late energy at 50 ms (speech). C80 is the same at 80 ms (music). D50\n  is the share of energy in the first 50 ms. Centre time is the energy-weighted average time.\n  Time zero is the detected direct sound. A ratio is reported only when the decay range is at\n  least 20 dB, and it is not a room score.\n  Band             C50        C80    D50   Centre time\n  ─────────   ────────   ────────   ────   ───────────\n  Broadband   +10.1 dB   +14.3 dB   91 %         13 ms\n  63 Hz        +9.7 dB   +13.6 dB   90 %         12 ms\n  125 Hz       +3.5 dB    +6.4 dB   69 %         45 ms\n  250 Hz      +10.7 dB   +14.5 dB   92 %         12 ms\n  500 Hz       +8.5 dB   +13.0 dB   88 %         15 ms\n  1 kHz       +11.0 dB   +14.4 dB   93 %         12 ms\n  2 kHz       +10.6 dB   +14.8 dB   92 %         12 ms\n  4 kHz       +10.5 dB   +15.0 dB   92 %         13 ms\n  8 kHz       +10.8 dB   +15.0 dB   92 %         12 ms\n\nBackground noise\n  Level        -87.1 dBFS RMS · peak -77.6 dBFS\n  Segment      pre-sweep · 0.80 s\n  Calibration  uncalibrated: levels are dBFS, not dB SPL\n  ! Potential mains hum at multiples of 50 Hz: 50 Hz (+28 dB), 100 Hz (+23 dB), 150 Hz (+14 dB)\n\nEarly reflections  0.8–80 ms, above -20 dB\n   Delay      Level\n  ──────   ────────\n  9.3 ms   -14.5 dB\n  i candidates are envelope peaks standing above the local diffuse level; in a dense early tail\n    some candidates may be statistical rather than discrete reflections\n\nPlacement  tier 0; no coordinates are derived (see the JSON)\n  Speed of sound  343.2 m/s at 20 °C (assumed)\n  Geometry        – not determined (add --speaker-distance)\n  i no loudspeaker-to-microphone distance was supplied; measure the straight line from the\n    loudspeaker to the microphone capsule with a tape\n  i inherited from the reflection search: candidates are envelope peaks standing above the local\n    diffuse level; in a dense early tail some candidates may be statistical rather than discrete\n    reflections\n  i no air temperature was supplied, so 20 °C (343.2 m/s) was assumed; a 5 °C error moves every\n    distance by about 0.9 %\n\nLow-frequency resonances  candidates below 300 Hz\n  Frequency   Above baseline   20 dB decay   Filter ringing   Distinguishable\n  ─────────   ──────────────   ───────────   ──────────────   ───────────────\n   109.7 Hz         +10.7 dB        278 ms            21 ms   ✓ yes\n  i Candidates only: a peak in the low-frequency response with a long narrow-band decay may be a\n    room resonance; ReverbScope does not identify room modes.\n  i the search is limited to 34-300 Hz, the part of the range whose 1/3-octave band lies inside\n    the excited 31-19726 Hz\n\nDiagnostics\n  Sweep found   1.00 s into the recording\n  Analysed      5.00 s, of which 5.00 s is decay\n  Direct sound  confidence high · pre-peak margin 47.7 dB\n\nInterpretation (Vocals profile)\n  ! Notice · reverberation\n    The broadband decay is noticeable (estimated RT60 0.51 s from T30). A vocal that is this\n    live picks up room colour between phrases; add absorption or move to a drier position.\n\n  ! Notice · reverberation\n    Low frequencies decay more slowly than the mid range (0.82 s vs 0.45 s), which makes vocals\n    sound boxy at this position. Bass trapping or a different position helps.\n\n  ! Warning · noise\n    Mains hum components at multiples of 50 Hz were detected in the quiet part of the recording.\n    Check grounding, cables, dimmers and power supplies before treating the room.\n\n  i Info · noise\n    Background noise in the pre-sweep segment is -87.1 dBFS RMS (uncalibrated digital level, not\n    dB SPL). Vocal tracks are often compressed, which brings this noise up; compare it with your\n    chain's noise at the same gain.\n\n  ! Notice · low frequency\n    Potential low-frequency resonances around 110 Hz: these frequencies stand out in the\n    response and ring longer than their surroundings. Measure one or two other positions to see\n    whether they follow the room or the position.",
+   "daw_instructions": "1. Generate the test signal at your DAW project's sample rate (Step 1).\n2. Import it on a new track. Switch time-stretching off for that clip (Warp, Flex, Follow Tempo, elastic audio) and bypass plug-ins on its track and on the master bus, including room-correction plug-ins.\n3. Route that track to the one loudspeaker you want to test.\n4. Arm a second track with the measurement microphone (input monitoring off) and record while the test signal plays.\n5. Export the recorded track as WAV, AIFF, CAF or FLAC at the project sample rate, without normalising.\n   Do not trim it - ReverbScope finds the sweep automatically.\nStart with a low monitor level; the sweep should be clearly audible but not loud.\nThe user guide has step-by-step notes for Pro Tools, Logic Pro, Cubase, Studio One, Ableton Live, REAPER, FL Studio and Bitwig Studio.",
+   "daw_sample_rate_settings": [
+    [
+     "Pro Tools",
+     "Session Setup shows the session rate; generate the sweep at that rate rather than enabling Apply SRC in File ▸ Import ▸ Audio"
+    ],
+    [
+     "Logic Pro",
+     "File ▸ Project Settings ▸ Audio ▸ Sample Rate"
+    ],
+    [
+     "GarageBand",
+     "no sample-rate setting: generate the sweep at 44.1 kHz"
+    ],
+    [
+     "Cubase / Nuendo",
+     "Project ▸ Project Setup"
+    ],
+    [
+     "Fender Studio Pro",
+     "Session ▸ Session Setup (Song ▸ Song Setup in Studio One before v8)"
+    ],
+    [
+     "Ableton Live",
+     "Settings (Options ▸ Settings on Windows, Live ▸ Settings on macOS) ▸ Audio ▸ In/Out Sample Rate"
+    ],
+    [
+     "REAPER",
+     "File ▸ Project Settings ▸ tick Project sample rate, and in Preferences ▸ Audio ▸ Device tick Request sample rate with the same rate"
+    ],
+    [
+     "FL Studio",
+     "Options ▸ Audio settings (F10) ▸ Sample Rate"
+    ],
+    [
+     "Bitwig Studio",
+     "Dashboard ▸ Settings ▸ Audio"
+    ],
+    [
+     "Digital Performer",
+     "the Sample Rate setting in the Control Panel"
+    ],
+    [
+     "Audacity",
+     "Project Sample Rate in the Quality section of Audio Setup ▸ Audio Settings"
+    ]
+   ],
+   "daw_stretch_settings": [
+    [
+     "Pro Tools",
+     "the track's Elastic Audio selector reads None – Disable Elastic Audio; import with File ▸ Import rather than by dragging from the desktop"
+    ],
+    [
+     "Logic Pro",
+     "Region inspector: untick Flex and set Smart Tempo to Off (Logic 12.2 and earlier: Flex & Follow = Off); File ▸ Project Settings ▸ Smart Tempo ▸ Set Imported Files To = Flex Off"
+    ],
+    [
+     "GarageBand",
+     "audio editor: untick Follow Tempo and Pitch, leave Enable Flex off"
+    ],
+    [
+     "Cubase / Nuendo",
+     "Musical Mode off for the sweep clip (Sample Editor or Pool)"
+    ],
+    [
+     "Fender Studio Pro",
+     "Track Inspector: Tempo mode = Don't Follow; Event Inspector: Speedup 1, Transpose and Tune 0"
+    ],
+    [
+     "Ableton Live",
+     "Clip View: Warp off; Settings ▸ Record, Warp & Launch: Auto-Warp Long Samples off"
+    ],
+    [
+     "REAPER",
+     "Item Properties (F2): Playback rate 1.0 and no stretch markers; do not change the tempo after importing"
+    ],
+    [
+     "FL Studio",
+     "channel settings: Time knob at (none); General settings ▸ Read sample tempo information off"
+    ],
+    [
+     "Bitwig Studio",
+     "Inspector: Stretch ▸ Mode = Raw (there is no Off)"
+    ],
+    [
+     "Digital Performer",
+     "untick Stretch in the Track Settings menu of the sweep track; soundbite Time Compress/Expand = Don't Time Scale"
+    ]
+   ]
+  },
+  "zh": {
+   "health_a": [
+    {
+     "id": "reference",
+     "status": "good",
+     "title": "参考信号",
+     "reason": "扫频定义精确地重新生成了参考扫频",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "sweep",
+     "status": "good",
+     "title": "扫频",
+     "reason": "在录音 1.00 s 处找到，只有一遍，整个扫频范围都已录下",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "playback_speed",
+     "status": "good",
+     "title": "播放速度",
+     "reason": "扫频按生成时的速度完成了反卷积；未发现速度误差",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "direct_sound",
+     "status": "good",
+     "title": "直达声",
+     "reason": "以高置信度识别（峰前余量 46.4 dB）",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "level",
+     "status": "warning",
+     "title": "电平",
+     "reason": "录音峰值为 12.4 dBFS，距满刻度不到 1 dB：没有发现平顶，但已没有余量",
+     "fix": [
+      "把播放电平或输入增益降低约 6 dB，然后重新测量。"
+     ],
+     "affects": []
+    },
+    {
+     "id": "distortion",
+     "status": "good",
+     "title": "失真",
+     "reason": "没有谐波响应从噪声中突显出来",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "dropouts",
+     "status": "good",
+     "title": "采样丢失",
+     "reason": "录下的扫频中没有连续冻结或全零的采样",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "decay_range",
+     "status": "good",
+     "title": "衰减范围",
+     "reason": "高于本底噪声 96 dB：足够评估 T30（需要 45 dB）",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "noise",
+     "status": "good",
+     "title": "本底噪声",
+     "reason": "-69.2 dBFS RMS，在扫频前段上测得",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "length",
+     "status": "good",
+     "title": "录音长度",
+     "reason": "直达声之后有 5.00 s 的衰减",
+     "fix": [],
+     "affects": []
+    }
+   ],
+   "health_a_status_word": "警告",
+   "findings_a_vocal": [
+    {
+     "topic": "early_reflections",
+     "severity": "notice",
+     "message": "直达声后约 2 ms 有一条强早期反射（-3.1 dB）。近距离人声会被这样早的反射染色；把话筒靠近歌手并远离最近的硬表面，或处理该表面，然后重测。"
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "宽带衰减偏长（估计 RT60 0.70 s，来自 T30）。在这样混响偏长的房间里，人声会在乐句之间带上房间染色；请增加吸声或换到更干的位置。"
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "低频比中频衰减更慢（0.83 s 对 0.44 s），在此位置会让人声发闷。低音陷阱或换位置会有帮助。"
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "在录音的安静段检测到 50 Hz 倍频的交流声。处理房间之前先检查接地、线材、调光器和电源。"
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "扫频前段的本底噪声为 -69.2 dBFS RMS（未校准的数字电平，不是 dB SPL）。人声轨道常被压缩，会把这层噪声抬上来；请与同一增益下链路噪声比较。"
+    },
+    {
+     "topic": "noise",
+     "severity": "notice",
+     "message": "直达声只比安静段本底高 57 dB。比这更轻的声源会带上可闻噪声；请从源头降噪，或在链路余量内提高播放电平。"
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "可能的低频共振约在 110 Hz：这些频率在响应中突出，余振也比周围更长。再测一两个位置，看它们跟房间走还是跟位置走。"
+    }
+   ],
+   "findings_a_voiceover": [
+    {
+     "topic": "early_reflections",
+     "severity": "notice",
+     "message": "直达声后约 2 ms 有一条早期反射（-3.1 dB）。旁白通常近距离拾音且处理很重，即使这样弱的反射也会染色；把话筒靠近讲者并远离最近的硬表面，或处理该表面。"
+    },
+    {
+     "topic": "reverberation",
+     "severity": "warning",
+     "message": "宽带衰减很长（估计 RT60 0.70 s，来自 T30）。旁白需要干房间；这么长的房间声会垫在叙述下面。请增加吸声或换到更干的位置。"
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "低频比中频衰减更慢（0.83 s 对 0.44 s），会让旁白发浑。低音陷阱或换位置会有帮助。"
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "在录音的安静段检测到 50 Hz 倍频的交流声。处理房间之前先检查接地、线材、调光器和电源。"
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "扫频前段的本底噪声为 -69.2 dBFS RMS（未校准的数字电平，不是 dB SPL）。旁白通常轻声近麦，这层噪声会在叙述下面可闻。"
+    },
+    {
+     "topic": "noise",
+     "severity": "notice",
+     "message": "直达声只比安静段本底高 57 dB。比这更轻的声源会带上可闻噪声；请从源头降噪，或在链路余量内提高播放电平。"
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "可能的低频共振约在 110 Hz：这些频率在响应中突出，余振也比周围更长，会给人声和对白染色。移动话筒或处理该角落，然后重测。"
+    }
+   ],
+   "findings_a_generic": [
+    {
+     "topic": "early_reflections",
+     "severity": "notice",
+     "message": "直达声后约 2 ms 有一条较强的早期反射（-3.1 dB）。近距离录人声或乐器时，请把话筒或演奏者移离附近硬表面，或处理该表面，然后重测。"
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "宽带衰减偏长（估计 RT60 0.70 s，来自 T30）。干的近距离录音仍会拾到可闻的房间声；可考虑吸声或更近的话筒位置。"
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "低频明显比中频衰减更慢（0.83 s 对 0.44 s），在此位置通常会让偏重低音的声源发轰。低音陷阱或换位置会有帮助。"
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "在录音的安静段检测到 50 Hz 倍频的交流声。处理房间之前先检查接地、线材、调光器和电源。"
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "扫频前段的本底噪声为 -69.2 dBFS RMS（未校准的数字电平，不是 dB SPL）。请与同一增益下要录的声源电平比较。"
+    },
+    {
+     "topic": "noise",
+     "severity": "notice",
+     "message": "直达声只比安静段本底高 57 dB。比这更轻的声源会带上可闻噪声；请从源头降噪，或在链路余量内提高播放电平。"
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "可能的低频共振约在 110 Hz：这些频率在响应中突出，余振也比周围更长。再测一两个位置，看它们跟房间走还是跟位置走。"
+    }
+   ],
+   "health_b": [
+    {
+     "id": "reference",
+     "status": "good",
+     "title": "参考信号",
+     "reason": "扫频定义精确地重新生成了参考扫频",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "sweep",
+     "status": "good",
+     "title": "扫频",
+     "reason": "在录音 1.00 s 处找到，只有一遍，整个扫频范围都已录下",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "playback_speed",
+     "status": "good",
+     "title": "播放速度",
+     "reason": "扫频按生成时的速度完成了反卷积；未发现速度误差",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "direct_sound",
+     "status": "good",
+     "title": "直达声",
+     "reason": "以高置信度识别（峰前余量 47.7 dB）",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "level",
+     "status": "warning",
+     "title": "电平",
+     "reason": "录音峰值为 2.6 dBFS，距满刻度不到 1 dB：没有发现平顶，但已没有余量",
+     "fix": [
+      "把播放电平或输入增益降低约 6 dB，然后重新测量。"
+     ],
+     "affects": []
+    },
+    {
+     "id": "distortion",
+     "status": "good",
+     "title": "失真",
+     "reason": "没有谐波响应从噪声中突显出来",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "dropouts",
+     "status": "good",
+     "title": "采样丢失",
+     "reason": "录下的扫频中没有连续冻结或全零的采样",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "decay_range",
+     "status": "good",
+     "title": "衰减范围",
+     "reason": "高于本底噪声 96 dB：足够评估 T30（需要 45 dB）",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "noise",
+     "status": "good",
+     "title": "本底噪声",
+     "reason": "-87.1 dBFS RMS，在扫频前段上测得",
+     "fix": [],
+     "affects": []
+    },
+    {
+     "id": "length",
+     "status": "good",
+     "title": "录音长度",
+     "reason": "直达声之后有 5.00 s 的衰减",
+     "fix": [],
+     "affects": []
+    }
+   ],
+   "health_b_status_word": "警告",
+   "findings_b_vocal": [
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "宽带衰减偏长（估计 RT60 0.51 s，来自 T30）。在这样混响偏长的房间里，人声会在乐句之间带上房间染色；请增加吸声或换到更干的位置。"
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "低频比中频衰减更慢（0.82 s 对 0.45 s），在此位置会让人声发闷。低音陷阱或换位置会有帮助。"
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "在录音的安静段检测到 50 Hz 倍频的交流声。处理房间之前先检查接地、线材、调光器和电源。"
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "扫频前段的本底噪声为 -87.1 dBFS RMS（未校准的数字电平，不是 dB SPL）。人声轨道常被压缩，会把这层噪声抬上来；请与同一增益下链路噪声比较。"
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "可能的低频共振约在 110 Hz：这些频率在响应中突出，余振也比周围更长。再测一两个位置，看它们跟房间走还是跟位置走。"
+    }
+   ],
+   "findings_b_voiceover": [
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "宽带衰减偏长（估计 RT60 0.51 s，来自 T30）。旁白需要干房间；这么长的房间声会垫在叙述下面。请增加吸声或换到更干的位置。"
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "低频比中频衰减更慢（0.82 s 对 0.45 s），会让旁白发浑。低音陷阱或换位置会有帮助。"
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "在录音的安静段检测到 50 Hz 倍频的交流声。处理房间之前先检查接地、线材、调光器和电源。"
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "扫频前段的本底噪声为 -87.1 dBFS RMS（未校准的数字电平，不是 dB SPL）。旁白通常轻声近麦，这层噪声会在叙述下面可闻。"
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "可能的低频共振约在 110 Hz：这些频率在响应中突出，余振也比周围更长，会给人声和对白染色。移动话筒或处理该角落，然后重测。"
+    }
+   ],
+   "findings_b_generic": [
+    {
+     "topic": "reverberation",
+     "severity": "info",
+     "message": "宽带衰减较短（估计 RT60 0.51 s，来自 T30）。这常见于经过处理或较小、阻尼较好的房间。"
+    },
+    {
+     "topic": "reverberation",
+     "severity": "notice",
+     "message": "低频明显比中频衰减更慢（0.82 s 对 0.45 s），在此位置通常会让偏重低音的声源发轰。低音陷阱或换位置会有帮助。"
+    },
+    {
+     "topic": "noise",
+     "severity": "warning",
+     "message": "在录音的安静段检测到 50 Hz 倍频的交流声。处理房间之前先检查接地、线材、调光器和电源。"
+    },
+    {
+     "topic": "noise",
+     "severity": "info",
+     "message": "扫频前段的本底噪声为 -87.1 dBFS RMS（未校准的数字电平，不是 dB SPL）。请与同一增益下要录的声源电平比较。"
+    },
+    {
+     "topic": "low_frequency",
+     "severity": "notice",
+     "message": "可能的低频共振约在 110 Hz：这些频率在响应中突出，余振也比周围更长。再测一两个位置，看它们跟房间走还是跟位置走。"
+    }
+   ],
+   "verdicts": [
+    {
+     "aspect": "reverberation",
+     "verdict": "meaningful_improvement",
+     "title": "混响",
+     "reason": "RT60 从 0.70 s 变为 0.51 s（-27.3 %）：更短，对此配置而言仍属“偏长”"
+    },
+    {
+     "aspect": "clarity",
+     "verdict": "probably_insignificant",
+     "title": "清晰度",
+     "reason": "C50 从 +9.8 dB 变为 +10.1 dB（+0.3 dB）：在约 1 dB 的最小可觉差之内"
+    },
+    {
+     "aspect": "early_reflections",
+     "verdict": "meaningful_improvement",
+     "title": "早期反射",
+     "reason": "25 ms 内最强的反射从 2.4 ms 处的 -3.1 dB 变为 9.3 ms 处的 -14.5 dB：弱了 11.4 dB"
+    },
+    {
+     "aspect": "noise",
+     "verdict": "meaningful_improvement",
+     "title": "本底噪声",
+     "reason": "本底噪声从 -69.2 dBFS 变为 -87.1 dBFS（-17.9 dB）：更安静"
+    },
+    {
+     "aspect": "low_end",
+     "verdict": "probably_insignificant",
+     "title": "低频",
+     "reason": "没有可分辨的低频共振出现或消失"
+    }
+   ],
+   "verdict_conditions": [
+    "基准测量有健康警告：电平。",
+    "对比项测量有健康警告：电平。",
+    "只有一对位置：判定只针对这两次测量，不代表整个房间，而且仅凭这些证据，任何变化都不具有统计显著性。"
+   ],
+   "profiles": [
+    {
+     "name": "acoustic_guitar",
+     "title": "原声吉他",
+     "description": "原声吉他，单支话筒或近距离一对话筒。",
+     "wants": [
+      "混响：RT60 不超过 0.7 s 不作评论；超过则衰减明显，超过 1.1 s 则过长（警告）。",
+      "早期反射：30 ms 内、相对直达声不低于 -10 dB 的反射算作强反射。",
+      "清晰度：C80 低于 +0 dB 对这类录音来说不够清晰。",
+      "噪声：当直达声高出本底噪声不足 60 dB 时，本底噪声开始影响录音（电平为 dBFS，不是 dB SPL）。",
+      "低频：250 Hz 及以下频带的衰减比 500–2000 Hz 频带慢 1.5 倍以上即为失衡；只有衰减可区分时才会指出共振。",
+      "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
+     ]
+    },
+    {
+     "name": "choir",
+     "title": "合唱 / 小型合奏",
+     "description": "合唱或小型合奏，一支或多支话筒。",
+     "wants": [
+      "混响：RT60 不超过 0.8 s 不作评论；超过则衰减明显，超过 1.3 s 则过长（警告）。",
+      "早期反射：30 ms 内、相对直达声不低于 -12 dB 的反射算作强反射。",
+      "清晰度：C50 低于 -2 dB 对这类录音来说不够清晰。",
+      "噪声：当直达声高出本底噪声不足 60 dB 时，本底噪声开始影响录音（电平为 dBFS，不是 dB SPL）。",
+      "低频：250 Hz 及以下频带的衰减比 500–2000 Hz 频带慢 1.5 倍以上即为失衡；只有衰减可区分时才会指出共振。",
+      "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
+     ]
+    },
+    {
+     "name": "drums",
+     "title": "鼓",
+     "description": "鼓，近距离话筒（底鼓、军鼓、通鼓），有无顶部话筒均可。",
+     "wants": [
+      "混响：RT60 不超过 0.8 s 不作评论；超过则衰减明显，超过 1.2 s 则过长（警告）。",
+      "早期反射：20 ms 内、相对直达声不低于 -6 dB 的反射算作强反射。",
+      "低频：250 Hz 及以下频带的衰减比 500–2000 Hz 频带慢 1.5 倍以上即为失衡；只有衰减可区分时才会指出共振。",
+      "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
+     ]
+    },
+    {
+     "name": "generic",
+     "title": "通用",
+     "description": "一般性观察，不针对特定乐器或人声。",
+     "wants": [
+      "混响：RT60 不超过 0.6 s 不作评论；超过则衰减明显，超过 1.0 s 则过长（警告）。",
+      "早期反射：30 ms 内、相对直达声不低于 -10 dB 的反射算作强反射。",
+      "清晰度：C50 低于 +0 dB 对这类录音来说不够清晰。",
+      "噪声：当直达声高出本底噪声不足 60 dB 时，本底噪声开始影响录音（电平为 dBFS，不是 dB SPL）。",
+      "低频：250 Hz 及以下频带的衰减比 500–2000 Hz 频带慢 1.5 倍以上即为失衡；只有衰减可区分时才会指出共振。",
+      "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
+     ]
+    },
+    {
+     "name": "room_mic",
+     "title": "房间话筒",
+     "description": "房间话筒或环境拾音：房间本身就是乐器。",
+     "wants": [
+      "混响：RT60 不超过 0.9 s 不作评论；超过则衰减明显，超过 1.4 s 则过长（警告）。",
+      "早期反射：40 ms 内、相对直达声不低于 -5 dB 的反射算作强反射。",
+      "清晰度：C80 高于 +8 dB 说明房间对这种用途来说过干。",
+      "噪声：当直达声高出本底噪声不足 60 dB 时，本底噪声开始影响录音（电平为 dBFS，不是 dB SPL）。",
+      "低频：250 Hz 及以下频带的衰减比 500–2000 Hz 频带慢 1.5 倍以上即为失衡；只有衰减可区分时才会指出共振。",
+      "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
+     ]
+    },
+    {
+     "name": "vocal",
+     "title": "人声",
+     "description": "近距离拾音的主唱或和声。",
+     "wants": [
+      "混响：RT60 不超过 0.5 s 不作评论；超过则衰减明显，超过 0.8 s 则过长（警告）。",
+      "早期反射：25 ms 内、相对直达声不低于 -12 dB 的反射算作强反射。",
+      "清晰度：C50 低于 +2 dB 对这类录音来说不够清晰。",
+      "噪声：当直达声高出本底噪声不足 60 dB 时，本底噪声开始影响录音（电平为 dBFS，不是 dB SPL）。",
+      "低频：250 Hz 及以下频带的衰减比 500–2000 Hz 频带慢 1.5 倍以上即为失衡；只有衰减可区分时才会指出共振。",
+      "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
+     ]
+    },
+    {
+     "name": "voiceover",
+     "title": "配音与旁白",
+     "description": "配音、旁白和有声书。",
+     "wants": [
+      "混响：RT60 不超过 0.4 s 不作评论；超过则衰减明显，超过 0.7 s 则过长（警告）。",
+      "早期反射：20 ms 内、相对直达声不低于 -14 dB 的反射算作强反射。",
+      "清晰度：C50 低于 +4 dB 对这类录音来说不够清晰。",
+      "噪声：当直达声高出本底噪声不足 60 dB 时，本底噪声开始影响录音（电平为 dBFS，不是 dB SPL）。",
+      "低频：250 Hz 及以下频带的衰减比 500–2000 Hz 频带慢 1.5 倍以上即为失衡；只有衰减可区分时才会指出共振。",
+      "每个配置都先检查测量本身：直达声置信度、削波和衰减范围不足会先于任何建议报告。"
+     ]
+    }
+   ],
+   "overview_positions": [
+    {
+     "label": "A",
+     "verdict_text": "第一个位置：其他位置都以它为基准判定",
+     "rt60": 0.7030638701331857,
+     "rt60_basis": "T30",
+     "clarity": [
+      "C50",
+      9.814111793815936
+     ],
+     "noise": -69.21778795242338,
+     "reflection": [
+      2.3958333333333335,
+      -3.0511699630393814
+     ],
+     "fit": "warnings",
+     "fit_reason": "人声配置对噪声给出警告",
+     "health": "warning",
+     "health_problems": [
+      "电平"
+     ],
+     "n_takes": 1
+    },
+    {
+     "label": "B",
+     "verdict_text": "相对位置 A：2 项改善，0 项退化，2 项大概率无关紧要，0 项不可对比，1 项证据不足",
+     "rt60": 0.5111981441510886,
+     "rt60_basis": "T30",
+     "clarity": [
+      "C50",
+      10.146417326543762
+     ],
+     "noise": -87.12789197506963,
+     "reflection": [
+      9.291666666666666,
+      -14.495781342004392
+     ],
+     "fit": "warnings",
+     "fit_reason": "人声配置对噪声给出警告",
+     "health": "warning",
+     "health_problems": [
+      "电平"
+     ],
+     "n_takes": 1
+    }
+   ],
+   "overview_next_steps": [
+    "2 个话筒位置达到 ISO 3382-2 的简易级；工程级需要第二个声源位置：再加 1 个话筒位置（共 3 个），每个位置都在扬声器的两个位置各测一次；传入 --sources 2。",
+    "在 A、B 再测一次可以看出测量是否可重复（同一位置的多次测量，RT60 应相差不超过 5 %）。",
+    "还没有位置契合人声配置：每次测量的解读说明了需要改变什么（距离、声学处理、电平）。"
+   ],
+   "average": {
+    "iso_class": "survey",
+    "n_mic": 2,
+    "n_src": 1,
+    "bands": [
+     {
+      "band": "broadband",
+      "t30": [
+       0.6071310071421372,
+       0.19186572598209717,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.4410577908916217,
+       0.013026630302359177,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "63 Hz",
+      "t30": [
+       0.7906451976660911,
+       0.0744513389019349,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.7884158187733238,
+       0.0,
+       1,
+       "valid"
+      ]
+     },
+     {
+      "band": "125 Hz",
+      "t30": [
+       0.8246718627073643,
+       0.008557512627390906,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.8478099235562953,
+       0.007130497046997308,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "250 Hz",
+      "t30": [
+       0.5606355498245563,
+       0.12665516119463016,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.4680515883793969,
+       0.0,
+       1,
+       "valid"
+      ]
+     },
+     {
+      "band": "500 Hz",
+      "t30": [
+       0.43425583504774024,
+       0.014713489144788261,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.4595132080343825,
+       0.3692754649201947,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "1 kHz",
+      "t30": [
+       0.4426941981304031,
+       0.022122192530518392,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.4221582419944535,
+       0.14156199150670234,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "2 kHz",
+      "t30": [
+       0.4566718309381706,
+       0.01899699969624924,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.39168795230805664,
+       0.03783223002219721,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "4 kHz",
+      "t30": [
+       0.44802211121711094,
+       0.014133296836070786,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.37902591416951686,
+       0.04791782018423385,
+       2,
+       "valid"
+      ]
+     },
+     {
+      "band": "8 kHz",
+      "t30": [
+       0.44960634686344475,
+       0.0011824978264187713,
+       2,
+       "valid"
+      ],
+      "edt": [
+       0.3706656194931928,
+       0.07720333339321062,
+       2,
+       "valid"
+      ]
+     }
+    ]
+   },
+   "room_box": {
+    "length_m": 5.0,
+    "width_m": 4.0,
+    "height_m": 2.7
+   },
+   "room_source": {
+    "x": 1.2,
+    "y": 1.6,
+    "z": 1.25
+   },
+   "room_mics": {
+    "A": {
+     "x": 3.4,
+     "y": 2.1,
+     "z": 1.2
+    }
+   },
+   "room_predicted": [
+    {
+     "face": "z0",
+     "delay_ms": 3.1288983814365006,
+     "path_m": 3.330540496676178,
+     "point": {
+      "x": 2.3224489795918366,
+      "y": 1.8551020408163266,
+      "z": 0.0
+     }
+    },
+    {
+     "face": "z1",
+     "delay_ms": 4.245648656439494,
+     "path_m": 3.7138255209419846,
+     "point": {
+      "x": 2.2813559322033896,
+      "y": 1.8457627118644069,
+      "z": 2.7
+     }
+    },
+    {
+     "face": "y0",
+     "delay_ms": 5.9679339670019615,
+     "path_m": 4.304939023958411,
+     "point": {
+      "x": 2.1513513513513516,
+      "y": 0.0,
+      "z": 1.2283783783783784
+     }
+    },
+    {
+     "face": "x0",
+     "delay_ms": 6.907361413570094,
+     "path_m": 4.627364260569941,
+     "point": {
+      "x": 0.0,
+      "y": 1.7304347826086957,
+      "z": 1.2369565217391305
+     }
+    },
+    {
+     "face": "y1",
+     "delay_ms": 7.4988525169348925,
+     "path_m": 4.830372656431386,
+     "point": {
+      "x": 2.427906976744186,
+      "y": 4.0,
+      "z": 1.222093023255814
+     }
+    },
+    {
+     "face": "x1",
+     "delay_ms": 9.226507867819558,
+     "path_m": 5.423329235810786,
+     "point": {
+      "x": 5.0,
+      "y": 1.951851851851852,
+      "z": 1.2148148148148148
+     }
+    }
+   ],
+   "room_position": "A",
+   "room_checks": [
+    {
+     "name": "speed_of_sound",
+     "status": "unknown",
+     "text": "此次测量未输入温度；按 20 °C（343.2 m/s）假定"
+    },
+    {
+     "name": "source_inside",
+     "status": "ok",
+     "text": "扬声器位于输入的房间范围内"
+    },
+    {
+     "name": "microphone_inside",
+     "status": "ok",
+     "text": "话筒位于输入的房间范围内"
+    },
+    {
+     "name": "direct_distance",
+     "status": "unknown",
+     "text": "输入的位置相距 2.26 m；此结果没有保存测得的距离可供核对"
+    },
+    {
+     "name": "microphone_height",
+     "status": "unknown",
+     "text": "输入的话筒位于 z = 1.20 m；此结果没有保存话筒高度可供核对"
+    },
+    {
+     "name": "loopback_bound",
+     "status": "unknown",
+     "text": "此结果没有回采距离上限，无法核对输入的距离"
+    },
+    {
+     "name": "earliest_reflection",
+     "status": "warn",
+     "text": "检测到的最早反射（2.40 ms）早于最早的预测路径（3.13 ms）：比房间各面更近的物体（桌面、支架）产生了反射，或输入的位置有偏差"
+    }
+   ],
+   "room_direct_m": 2.256656819279352,
+   "room_constraints": [
+    {
+     "delay_ms": 2.3958333333333335,
+     "speed_m_s": 343.21462268256795,
+     "excess_path_m": 0.8222850335103191,
+     "direct_distance_m": 2.256656819279352,
+     "total_path_m": 3.0789418527896713,
+     "semi_major_m": 1.5394709263948356,
+     "semi_minor_m": 1.0473040309360855,
+     "distance_from_microphone_m": [
+      0.41114251675515967,
+      2.667799336034512
+     ],
+     "excess_only": false,
+     "text": "反射路径 3.08 m（比直达声长 0.82 m）：反射点位于以扬声器和话筒为焦点的椭球面上，距话筒 0.41 至 2.67 m"
+    },
+    {
+     "delay_ms": 7.104166666666667,
+     "speed_m_s": 343.21462268256795,
+     "excess_path_m": 2.4382538819740764,
+     "direct_distance_m": 2.256656819279352,
+     "total_path_m": 4.694910701253429,
+     "semi_major_m": 2.3474553506267144,
+     "semi_minor_m": 2.0584998477498098,
+     "distance_from_microphone_m": [
+      1.2191269409870384,
+      3.47578376026639
+     ],
+     "excess_only": false,
+     "text": "反射路径 4.69 m（比直达声长 2.44 m）：反射点位于以扬声器和话筒为焦点的椭球面上，距话筒 1.22 至 3.48 m"
+    }
+   ],
+   "overlay_refusal_a": null,
+   "report_b": "ReverbScope 分析\n────────────────\n\n  采样率    48 kHz\n  创建时间  2026-10-19 10:03 +00:00\n\n概览\n  混响      ! RT60 0.51 s（T30） · EDT 0.43 s\n  清晰度    ✓ C50 +10.1 dB · C80 +14.3 dB · D50 91 %\n  早期反射  ✓ 最强 -14.5 dB，位于 9.3 ms · 1 个高于 -20 dB\n  低频      ! 可能的共振：110 Hz（+10.7 dB）\n  本底噪声  ! -87.1 dBFS RMS · 50 Hz 交流声\n  数据质量  ✓ 直达声：置信度 高 · 无警告\n\n测量健康\n  ! 警告：10 项检查中 9 项良好\n\n  ! 电平 · 警告\n    录音峰值为 2.6 dBFS，距满刻度不到 1 dB：没有发现平顶，但已没有余量\n    → 把播放电平或输入增益降低约 6 dB，然后重新测量。\n\n  良好：参考信号、扫频、播放速度、直达声、失真、采样丢失、衰减范围、本底噪声、录音长度\n\n混响  外推到 60 dB\n  频带          EDT      T20      T30            RT60   衰减范围\n  ──────   ────────   ──────   ──────   ─────────────   ────────\n  宽带       0.43 s   0.49 s   0.51 s   0.51 s（T30）    96.1 dB\n  63 Hz    0.69 s ?   0.69 s   0.75 s   0.75 s（T30）   107.2 dB\n  125 Hz     0.84 s   0.82 s   0.82 s   0.82 s（T30）   110.0 dB\n  250 Hz   0.68 s ?   0.49 s   0.50 s   0.50 s（T30）   110.5 dB\n  500 Hz     0.64 s   0.45 s   0.43 s   0.43 s（T30）   107.4 dB\n  1 kHz      0.49 s   0.46 s   0.45 s   0.45 s（T30）   105.4 dB\n  2 kHz      0.41 s   0.47 s   0.47 s   0.47 s（T30）   102.4 dB\n  4 kHz      0.40 s   0.46 s   0.46 s   0.46 s（T30）    99.4 dB\n  8 kHz      0.41 s   0.45 s   0.45 s   0.45 s（T30）    97.1 dB\n\n  ? 不可靠\n\n早期与后期能量  与衰减使用同一次噪声截断的比值；不是房间评分\n  C50 是 50 ms 处的早期能量除以后期能量（语言）。C80 是 80 ms 处的同一比值（音乐）。D50 是前\n  50 ms 能量占总能量的份额。重心时间是按能量加权的平均时间。时间零点是测得的直达声。只有衰减范围\n  至少有 20 dB 时才给出比值，而且它不是房间评分。\n  频带          C50        C80    D50   重心时间\n  ──────   ────────   ────────   ────   ────────\n  宽带     +10.1 dB   +14.3 dB   91 %      13 ms\n  63 Hz     +9.7 dB   +13.6 dB   90 %      12 ms\n  125 Hz    +3.5 dB    +6.4 dB   69 %      45 ms\n  250 Hz   +10.7 dB   +14.5 dB   92 %      12 ms\n  500 Hz    +8.5 dB   +13.0 dB   88 %      15 ms\n  1 kHz    +11.0 dB   +14.4 dB   93 %      12 ms\n  2 kHz    +10.6 dB   +14.8 dB   92 %      12 ms\n  4 kHz    +10.5 dB   +15.0 dB   92 %      13 ms\n  8 kHz    +10.8 dB   +15.0 dB   92 %      12 ms\n\n本底噪声\n  电平  -87.1 dBFS RMS · 峰值 -77.6 dBFS\n  片段  扫频前 · 0.80 s\n  校准  未校准：电平为 dBFS，不是 dB SPL\n  ! 可能的交流声，基频 50 Hz 的倍频：50 Hz（+28 dB）、100 Hz（+23 dB）、150 Hz（+14 dB）\n\n早期反射  0.8–80 ms，高于 -20 dB\n    延迟       电平\n  ──────   ────────\n  9.3 ms   -14.5 dB\n  i 候选是高出局部扩散声级的包络峰；在密集的早期尾部，部分候选可能是统计起伏，而不是离散的反射\n\n摆位  档位 0；不推算坐标（见 JSON）\n  声速  343.2 m/s，气温 20 °C（假定）\n  几何  – 未确定（需添加 --speaker-distance）\n  i 未提供扬声器到话筒的距离；请用卷尺测量扬声器到话筒振膜的直线距离\n  i 沿用自反射搜索：候选是高出局部扩散声级的包络峰；在密集的早期尾部，部分候选可能是统计起伏，而\n    不是离散的反射\n  i 未提供气温，因此假定为 20 °C（声速 343.2 m/s）；气温误差 5 °C 会使每个距离偏差约 0.9 %\n\n低频共振  300 Hz 以下的候选\n      频率   高出基线   20 dB 衰减   滤波器余振   可区分\n  ────────   ────────   ──────────   ──────────   ──────\n  109.7 Hz   +10.7 dB       278 ms        21 ms   ✓ 是\n  i 仅为候选：低频响应中窄带衰减较长的峰可能是房间共振；ReverbScope 不识别房间模式。\n  i 搜索限于 34-300 Hz，即 1/3 倍频程频带落在已激励的 31-19726 Hz 之内的那部分范围\n\n诊断\n  扫频位置  录音中第 1.00 s\n  已分析    5.00 s，其中衰减 5.00 s\n  直达声    置信度 高 · 峰前余量 47.7 dB\n\n解读（人声配置）\n  ! 提示 · 混响\n    宽带衰减偏长（估计 RT60 0.51 s，来自 T30）。在这样混响偏长的房间里，人声会在乐句之间带上房间\n    染色；请增加吸声或换到更干的位置。\n\n  ! 提示 · 混响\n    低频比中频衰减更慢（0.82 s 对 0.45 s），在此位置会让人声发闷。低音陷阱或换位置会有帮助。\n\n  ! 警告 · 噪声\n    在录音的安静段检测到 50 Hz 倍频的交流声。处理房间之前先检查接地、线材、调光器和电源。\n\n  i 信息 · 噪声\n    扫频前段的本底噪声为 -87.1 dBFS RMS（未校准的数字电平，不是 dB SPL）。人声轨道常被压缩，会把\n    这层噪声抬上来；请与同一增益下链路噪声比较。\n\n  ! 提示 · 低频\n    可能的低频共振约在 110 Hz：这些频率在响应中突出，余振也比周围更长。再测一两个位置，看它们跟\n    房间走还是跟位置走。",
+   "daw_instructions": "1. 按 DAW 工程的采样率生成测试信号（步骤 1）。\n2. 把它导入新轨道。关闭该片段的时间伸缩（Warp、Flex、Follow Tempo、Elastic Audio），并旁通该轨道和主输出总线上的插件，包括房间校正插件。\n3. 将该轨道只路由到要测的那一只扬声器。\n4. 用测量话筒武装第二条轨道（关闭输入监听），在测试信号播放时录音。\n5. 按工程采样率把录音轨导出为 WAV、AIFF、CAF 或 FLAC，不要做标准化。\n   不要裁切——ReverbScope 会自动找到扫频。\n先调低监听音量；扫频应清楚可闻，但不要很大声。\n用户指南里有 Pro Tools、Logic Pro、Cubase、Studio One、Ableton Live、REAPER、FL Studio 和 Bitwig Studio 的分步说明。",
+   "daw_sample_rate_settings": [
+    [
+     "Pro Tools",
+     "Session Setup 中可见工程采样率；按该采样率生成扫频，而不要在 File ▸ Import ▸ Audio 中勾选 Apply SRC"
+    ],
+    [
+     "Logic Pro",
+     "File ▸ Project Settings ▸ Audio ▸ Sample Rate"
+    ],
+    [
+     "GarageBand",
+     "没有采样率设置：按 44.1 kHz 生成扫频"
+    ],
+    [
+     "Cubase / Nuendo",
+     "Project ▸ Project Setup"
+    ],
+    [
+     "Fender Studio Pro",
+     "Session ▸ Session Setup（v8 之前的 Studio One 为 Song ▸ Song Setup）"
+    ],
+    [
+     "Ableton Live",
+     "Settings（Windows 上为 Options ▸ Settings，macOS 上为 Live ▸ Settings）▸ Audio ▸ In/Out Sample Rate"
+    ],
+    [
+     "REAPER",
+     "File ▸ Project Settings ▸ 勾选 Project sample rate，并在 Preferences ▸ Audio ▸ Device 中勾选 Request sample rate，设为同一采样率"
+    ],
+    [
+     "FL Studio",
+     "Options ▸ Audio settings (F10) ▸ Sample Rate"
+    ],
+    [
+     "Bitwig Studio",
+     "Dashboard ▸ Settings ▸ Audio"
+    ],
+    [
+     "Digital Performer",
+     "Control Panel 中的 Sample Rate 设置"
+    ],
+    [
+     "Audacity",
+     "Audio Setup ▸ Audio Settings 的 Quality 部分中的 Project Sample Rate"
+    ]
+   ],
+   "daw_stretch_settings": [
+    [
+     "Pro Tools",
+     "轨道的 Elastic Audio 选择器显示 None – Disable Elastic Audio；用 File ▸ Import 导入，不要从桌面拖入"
+    ],
+    [
+     "Logic Pro",
+     "Region inspector：取消勾选 Flex，并把 Smart Tempo 设为 Off（Logic 12.2 及更早：Flex & Follow = Off）；File ▸ Project Settings ▸ Smart Tempo ▸ Set Imported Files To = Flex Off"
+    ],
+    [
+     "GarageBand",
+     "音频编辑器：取消勾选 Follow Tempo and Pitch，保持 Enable Flex 关闭"
+    ],
+    [
+     "Cubase / Nuendo",
+     "扫频片段关闭 Musical Mode（在 Sample Editor 或 Pool 中）"
+    ],
+    [
+     "Fender Studio Pro",
+     "Track Inspector：Tempo 模式 = Don't Follow；Event Inspector：Speedup 为 1，Transpose 和 Tune 为 0"
+    ],
+    [
+     "Ableton Live",
+     "Clip View：关闭 Warp；Settings ▸ Record, Warp & Launch：关闭 Auto-Warp Long Samples"
+    ],
+    [
+     "REAPER",
+     "Item Properties（F2）：Playback rate 为 1.0，没有 stretch marker；导入后不要再改速度"
+    ],
+    [
+     "FL Studio",
+     "通道设置：Time 旋钮置于 (none)；关闭 General settings ▸ Read sample tempo information"
+    ],
+    [
+     "Bitwig Studio",
+     "Inspector：Stretch ▸ Mode = Raw（没有 Off 选项）"
+    ],
+    [
+     "Digital Performer",
+     "在扫频轨道的 Track Settings 菜单中取消勾选 Stretch；soundbite 的 Time Compress/Expand = Don't Time Scale"
+    ]
+   ]
+  }
+ },
+ "num": {
+  "align_offset_a_db": 3.500306461533263,
+  "bands_a": [
+   {
+    "band": "63 Hz",
+    "hz": 63.0,
+    "edt": [
+     0.7884158187733238,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.8272280704840794,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.8278708671170585,
+     "valid",
+     null
+    ],
+    "c50": [
+     6.761122055499293,
+     "valid",
+     null
+    ],
+    "c80": [
+     9.497138930284372,
+     "valid",
+     null
+    ],
+    "d50": [
+     82.5894540493875,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.023941862760400813,
+     "valid",
+     null
+    ],
+    "rt60": 0.8278708671170585,
+    "basis": "T30"
+   },
+   {
+    "band": "125 Hz",
+    "hz": 125.0,
+    "edt": [
+     0.8513751720797939,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.8288682746996756,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.8289506190210597,
+     "valid",
+     null
+    ],
+    "c50": [
+     2.5613873263455416,
+     "valid",
+     null
+    ],
+    "c80": [
+     5.276660823095396,
+     "valid",
+     null
+    ],
+    "d50": [
+     64.3314947550591,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.050009747325476514,
+     "valid",
+     null
+    ],
+    "rt60": 0.8289506190210597,
+    "basis": "T30"
+   },
+   {
+    "band": "250 Hz",
+    "hz": 250.0,
+    "edt": [
+     0.4680515883793969,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.5270802523357959,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.6239631304218713,
+     "valid",
+     null
+    ],
+    "c50": [
+     10.058010688153239,
+     "valid",
+     null
+    ],
+    "c80": [
+     13.930743623391493,
+     "valid",
+     null
+    ],
+    "d50": [
+     91.01888152199112,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.013764900762105091,
+     "valid",
+     null
+    ],
+    "rt60": 0.6239631304218713,
+    "basis": "T30"
+   },
+   {
+    "band": "500 Hz",
+    "hz": 500.0,
+    "edt": [
+     0.27487547557428516,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.4849091057651714,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.44161257962013434,
+     "valid",
+     null
+    ],
+    "c50": [
+     11.626037592440902,
+     "valid",
+     null
+    ],
+    "c80": [
+     15.895938399408895,
+     "valid",
+     null
+    ],
+    "d50": [
+     93.56553911641247,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.008394888901197809,
+     "valid",
+     null
+    ],
+    "rt60": 0.44161257962013434,
+    "basis": "T30"
+   },
+   {
+    "band": "1 kHz",
+    "hz": 1000.0,
+    "edt": [
+     0.35137724624110234,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.4260295881914673,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.4316331018651439,
+     "valid",
+     null
+    ],
+    "c50": [
+     12.962065086982106,
+     "valid",
+     null
+    ],
+    "c80": [
+     16.711352049793874,
+     "valid",
+     null
+    ],
+    "d50": [
+     95.18747184264566,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.009473872602147299,
+     "valid",
+     null
+    ],
+    "rt60": 0.4316331018651439,
+    "basis": "T30"
+   },
+   {
+    "band": "2 kHz",
+    "hz": 2000.0,
+    "edt": [
+     0.372771837296958,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.44254422912633506,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.447173331090046,
+     "valid",
+     null
+    ],
+    "c50": [
+     12.423574129453264,
+     "valid",
+     null
+    ],
+    "c80": [
+     15.895548077127069,
+     "valid",
+     null
+    ],
+    "d50": [
+     94.58657544019951,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.00976850926532431,
+     "valid",
+     null
+    ],
+    "rt60": 0.447173331090046,
+    "basis": "T30"
+   },
+   {
+    "band": "4 kHz",
+    "hz": 4000.0,
+    "edt": [
+     0.35506700407739994,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.4324117945091382,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.44095546279907555,
+     "valid",
+     null
+    ],
+    "c50": [
+     12.24128757287126,
+     "valid",
+     null
+    ],
+    "c80": [
+     16.168837094518825,
+     "valid",
+     null
+    ],
+    "d50": [
+     94.36759188691614,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.010014187359491375,
+     "valid",
+     null
+    ],
+    "rt60": 0.44095546279907555,
+    "basis": "T30"
+   },
+   {
+    "band": "8 kHz",
+    "hz": 8000.0,
+    "edt": [
+     0.3320639527965875,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.4437062855528683,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.44901509795023536,
+     "valid",
+     null
+    ],
+    "c50": [
+     12.18639949320167,
+     "valid",
+     null
+    ],
+    "c80": [
+     16.346868891467395,
+     "valid",
+     null
+    ],
+    "d50": [
+     94.30003851909525,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.009758953979283417,
+     "valid",
+     null
+    ],
+    "rt60": 0.44901509795023536,
+    "basis": "T30"
+   }
+  ],
+  "broadband_a": {
+   "edt": [
+    0.4475711060428013,
+    "valid",
+    [
+     0.0,
+     -10.0
+    ]
+   ],
+   "t20": [
+    0.6393081804601529,
+    "valid",
+    [
+     -5.0,
+     -25.0
+    ]
+   ],
+   "t30": [
+    0.7030638701331857,
+    "valid",
+    [
+     -5.0,
+     -35.0
+    ]
+   ],
+   "c50": [
+    9.814111793815936,
+    "valid"
+   ],
+   "c80": [
+    12.928368942140423,
+    "valid"
+   ],
+   "d50": [
+    90.54910412299736,
+    "valid"
+   ],
+   "centre_time": [
+    0.015065962766518571,
+    "valid"
+   ],
+   "rt60": 0.7030638701331857,
+   "basis": "T30",
+   "curvature_percent": 9.97260658031054,
+   "noise_floor_db": -95.98176748141051,
+   "truncation_time_s": 1.1523125
+  },
+  "reflections_a": [
+   [
+    2.3958333333333335,
+    -3.0511699630393814
+   ],
+   [
+    7.104166666666667,
+    -9.565972750671218
+   ]
+  ],
+  "reflection_window_ms_a": [
+   0.8,
+   80.0
+  ],
+  "reflection_threshold_db_a": -20.0,
+  "direct_confidence_a": "high",
+  "pre_peak_margin_db_a": 46.445079216772676,
+  "noise_a": {
+   "rms_dbfs": -69.21778795242338,
+   "peak_dbfs": -65.75701832388609,
+   "segment": "pre-sweep",
+   "segment_start_s": 0.05,
+   "segment_duration_s": 0.8,
+   "bands": [
+    [
+     63.0,
+     -70.66907447029652
+    ],
+    [
+     125.0,
+     -75.75951403233859
+    ],
+    [
+     250.0,
+     -93.47524793920293
+    ],
+    [
+     500.0,
+     -105.49663907793658
+    ],
+    [
+     1000.0,
+     -102.32799662449501
+    ],
+    [
+     2000.0,
+     -99.63631465538444
+    ],
+    [
+     4000.0,
+     -96.57475534998653
+    ],
+    [
+     8000.0,
+     -93.56675912252634
+    ]
+   ],
+   "hum": [
+    {
+     "base_hz": 50.0,
+     "detected": true,
+     "harmonics": [
+      [
+       50.0,
+       57.28359449804749
+      ],
+      [
+       100.0,
+       48.19568584369051
+      ],
+      [
+       150.0,
+       42.99857696943499
+      ]
+     ]
+    },
+    {
+     "base_hz": 60.0,
+     "detected": false,
+     "harmonics": []
+    }
+   ],
+   "calibration": "uncalibrated: levels are dBFS, not dB SPL"
+  },
+  "resonances_a": [
+   {
+    "frequency_hz": 109.86328125,
+    "level_above_baseline_db": 11.29030134540018,
+    "narrowband_decay_20db_s": 0.2778125,
+    "filter_ringing_20db_s": 0.0205,
+    "decay_distinguishable": true,
+    "surroundings_decay_20db_s": 0.08608333333333333
+   }
+  ],
+  "excitation_a": [
+   30.6,
+   19725.58971262421
+  ],
+  "smoothing_fraction_a": 6,
+  "harmonics_a": [
+   [
+    2,
+    null,
+    -47.07472504571725
+   ],
+   [
+    3,
+    null,
+    -50.163031290720525
+   ],
+   [
+    4,
+    null,
+    -52.39983942487575
+   ],
+   [
+    5,
+    null,
+    -55.13019549119937
+   ]
+  ],
+  "clipping_a": {
+   "peak_dbfs": 12.435782452344355,
+   "clipped": false
+  },
+  "placement_tier_a": 0,
+  "sweep_a": {
+   "sample_rate": 48000,
+   "duration_s": 5.0,
+   "start_hz": 20.0,
+   "end_hz": 20000.0,
+   "fade_in_s": 0.05,
+   "fade_out_s": 0.01,
+   "level_dbfs": -12.0,
+   "pre_silence_s": 1.0,
+   "post_silence_s": 2.5
+  },
+  "align_offset_b_db": 1.8687617452091343,
+  "bands_b": [
+   {
+    "band": "63 Hz",
+    "hz": 63.0,
+    "edt": [
+     0.6885126178465945,
+     "unreliable",
+     "the decay curve drops 5.8 dB across the direct sound (it carries 74 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    ],
+    "t20": [
+     0.6940570730747477,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.7534195282151236,
+     "valid",
+     null
+    ],
+    "c50": [
+     9.655016720514547,
+     "valid",
+     null
+    ],
+    "c80": [
+     13.620376472374751,
+     "valid",
+     null
+    ],
+    "d50": [
+     90.2309190393161,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.012354114621992677,
+     "valid",
+     null
+    ],
+    "rt60": 0.7534195282151236,
+    "basis": "T30"
+   },
+   {
+    "band": "125 Hz",
+    "hz": 125.0,
+    "edt": [
+     0.8442446750327965,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.8161855551602826,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.8203931063936688,
+     "valid",
+     null
+    ],
+    "c50": [
+     3.470490273978518,
+     "valid",
+     null
+    ],
+    "c80": [
+     6.406876425503278,
+     "valid",
+     null
+    ],
+    "d50": [
+     68.97840515606745,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.044668777007791836,
+     "valid",
+     null
+    ],
+    "rt60": 0.8203931063936688,
+    "basis": "T30"
+   },
+   {
+    "band": "250 Hz",
+    "hz": 250.0,
+    "edt": [
+     0.6837106878389927,
+     "unreliable",
+     "the decay curve drops 5.6 dB across the direct sound (it carries 72 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position"
+    ],
+    "t20": [
+     0.494604115803099,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.4973079692272412,
+     "valid",
+     null
+    ],
+    "c50": [
+     10.669173193271273,
+     "valid",
+     null
+    ],
+    "c80": [
+     14.479180502897373,
+     "valid",
+     null
+    ],
+    "d50": [
+     92.10476971737287,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.011713604490253868,
+     "valid",
+     null
+    ],
+    "rt60": 0.4973079692272412,
+    "basis": "T30"
+   },
+   {
+    "band": "500 Hz",
+    "hz": 500.0,
+    "edt": [
+     0.6441509404944799,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.4481628711032269,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.4268990904753461,
+     "valid",
+     null
+    ],
+    "c50": [
+     8.45820256034547,
+     "valid",
+     null
+    ],
+    "c80": [
+     13.0118548555131,
+     "valid",
+     null
+    ],
+    "d50": [
+     87.51817732724625,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.015399145920727067,
+     "valid",
+     null
+    ],
+    "rt60": 0.4268990904753461,
+    "basis": "T30"
+   },
+   {
+    "band": "1 kHz",
+    "hz": 1000.0,
+    "edt": [
+     0.4929392377478047,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.45636790089972795,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.4537552943956623,
+     "valid",
+     null
+    ],
+    "c50": [
+     11.014185150625519,
+     "valid",
+     null
+    ],
+    "c80": [
+     14.430940516015268,
+     "valid",
+     null
+    ],
+    "d50": [
+     92.6634802294137,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.01209717801778542,
+     "valid",
+     null
+    ],
+    "rt60": 0.4537552943956623,
+    "basis": "T30"
+   },
+   {
+    "band": "2 kHz",
+    "hz": 2000.0,
+    "edt": [
+     0.4106040673191552,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.4729071594329689,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.4661703307862952,
+     "valid",
+     null
+    ],
+    "c50": [
+     10.553331211003574,
+     "valid",
+     null
+    ],
+    "c80": [
+     14.79489034450622,
+     "valid",
+     null
+    ],
+    "d50": [
+     91.90861098456422,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.012088357640533258,
+     "valid",
+     null
+    ],
+    "rt60": 0.4661703307862952,
+    "basis": "T30"
+   },
+   {
+    "band": "4 kHz",
+    "hz": 4000.0,
+    "edt": [
+     0.4029848242616338,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.4557590020571424,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.45508875963514633,
+     "valid",
+     null
+    ],
+    "c50": [
+     10.457638058200784,
+     "valid",
+     null
+    ],
+    "c80": [
+     14.995544095880678,
+     "valid",
+     null
+    ],
+    "d50": [
+     91.74322941840336,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.012838035557073533,
+     "valid",
+     null
+    ],
+    "rt60": 0.45508875963514633,
+    "basis": "T30"
+   },
+   {
+    "band": "8 kHz",
+    "hz": 8000.0,
+    "edt": [
+     0.40926728618979813,
+     "valid",
+     null
+    ],
+    "t20": [
+     0.45415715048971445,
+     "valid",
+     null
+    ],
+    "t30": [
+     0.45019759577665414,
+     "valid",
+     null
+    ],
+    "c50": [
+     10.82886441106407,
+     "valid",
+     null
+    ],
+    "c80": [
+     14.970611587575501,
+     "valid",
+     null
+    ],
+    "d50": [
+     92.36805295956567,
+     "valid",
+     null
+    ],
+    "centre_time": [
+     0.011921834785839566,
+     "valid",
+     null
+    ],
+    "rt60": 0.45019759577665414,
+    "basis": "T30"
+   }
+  ],
+  "broadband_b": {
+   "edt": [
+    0.43454447574044214,
+    "valid",
+    [
+     0.0,
+     -10.0
+    ]
+   ],
+   "t20": [
+    0.4876483403064396,
+    "valid",
+    [
+     -5.0,
+     -25.0
+    ]
+   ],
+   "t30": [
+    0.5111981441510886,
+    "valid",
+    [
+     -5.0,
+     -35.0
+    ]
+   ],
+   "c50": [
+    10.146417326543762,
+    "valid"
+   ],
+   "c80": [
+    14.260840391936235,
+    "valid"
+   ],
+   "d50": [
+    91.18390142521115,
+    "valid"
+   ],
+   "centre_time": [
+    0.013443284588016597,
+    "valid"
+   ],
+   "rt60": 0.5111981441510886,
+   "basis": "T30",
+   "curvature_percent": 4.829259508983497,
+   "noise_floor_db": -96.0680251424445,
+   "truncation_time_s": 1.0444166666666668
+  },
+  "reflections_b": [
+   [
+    9.291666666666666,
+    -14.495781342004392
+   ]
+  ],
+  "reflection_window_ms_b": [
+   0.8,
+   80.0
+  ],
+  "reflection_threshold_db_b": -20.0,
+  "direct_confidence_b": "high",
+  "pre_peak_margin_db_b": 47.722120292049446,
+  "noise_b": {
+   "rms_dbfs": -87.12789197506963,
+   "peak_dbfs": -77.55048208145479,
+   "segment": "pre-sweep",
+   "segment_start_s": 0.05,
+   "segment_duration_s": 0.8,
+   "bands": [
+    [
+     63.0,
+     -99.77156320049026
+    ],
+    [
+     125.0,
+     -104.30288160784487
+    ],
+    [
+     250.0,
+     -108.17043075770982
+    ],
+    [
+     500.0,
+     -105.09300218214692
+    ],
+    [
+     1000.0,
+     -102.23038905005217
+    ],
+    [
+     2000.0,
+     -99.58672312303167
+    ],
+    [
+     4000.0,
+     -96.62287130135542
+    ],
+    [
+     8000.0,
+     -93.69101063113948
+    ]
+   ],
+   "hum": [
+    {
+     "base_hz": 50.0,
+     "detected": true,
+     "harmonics": [
+      [
+       50.0,
+       27.971687312678483
+      ],
+      [
+       100.0,
+       22.814759934715823
+      ],
+      [
+       150.0,
+       13.98367465080321
+      ]
+     ]
+    },
+    {
+     "base_hz": 60.0,
+     "detected": false,
+     "harmonics": []
+    }
+   ],
+   "calibration": "uncalibrated: levels are dBFS, not dB SPL"
+  },
+  "resonances_b": [
+   {
+    "frequency_hz": 109.68017578125,
+    "level_above_baseline_db": 10.669496570667349,
+    "narrowband_decay_20db_s": 0.278,
+    "filter_ringing_20db_s": 0.020520833333333332,
+    "decay_distinguishable": true,
+    "surroundings_decay_20db_s": 0.1043125
+   }
+  ],
+  "excitation_b": [
+   30.6,
+   19725.58971262421
+  ],
+  "smoothing_fraction_b": 6,
+  "harmonics_b": [
+   [
+    2,
+    null,
+    -51.3999770836857
+   ],
+   [
+    3,
+    null,
+    -54.481199213716266
+   ],
+   [
+    4,
+    null,
+    -56.69013709460661
+   ],
+   [
+    5,
+    null,
+    -59.40045410242013
+   ]
+  ],
+  "clipping_b": {
+   "peak_dbfs": 2.6113033864005746,
+   "clipped": false
+  },
+  "placement_tier_b": 0,
+  "sweep_b": {
+   "sample_rate": 48000,
+   "duration_s": 5.0,
+   "start_hz": 20.0,
+   "end_hz": 20000.0,
+   "fade_in_s": 0.05,
+   "fade_out_s": 0.01,
+   "level_dbfs": -12.0,
+   "pre_silence_s": 1.0,
+   "post_silence_s": 2.5
+  },
+  "spectrogram_params": {
+   "window_ms": 20.0,
+   "hop_ms": 2.0,
+   "freq_range_hz": [
+    20.0,
+    null
+   ],
+   "time_range_ms": [
+    -5.0,
+    null
+   ],
+   "max_duration_ms": 1000.0,
+   "points_per_octave": 48,
+   "normalization": "peak",
+   "floor_db": -90.0
+  },
+  "waterfall_params": {
+   "window_ms": 300.0,
+   "rise_ms": 0.5,
+   "taper_percent": 25.0,
+   "start_ms": 0.0,
+   "step_ms": 10.0,
+   "slices": 30,
+   "freq_range_hz": [
+    20.0,
+    null
+   ],
+   "points_per_octave": 48,
+   "smoothing": 0,
+   "floor_db": -60.0
+  },
+  "comparison_comparable": true,
+  "comparison_common_band": [
+   30.6,
+   19725.58971262421
+  ],
+  "comparison_deltas": [
+   {
+    "name": "broadband.edt",
+    "baseline": 0.4475711060428013,
+    "candidate": 0.43454447574044214,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.013026630302359177,
+    "delta_percent": -2.9105163685685818,
+    "delta": -0.013026630302359177,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "broadband.t20",
+    "baseline": 0.6393081804601529,
+    "candidate": 0.4876483403064396,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.1516598401537133,
+    "delta_percent": -23.7224932808702,
+    "delta": -0.1516598401537133,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "broadband.t30",
+    "baseline": 0.7030638701331857,
+    "candidate": 0.5111981441510886,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.19186572598209717,
+    "delta_percent": -27.289942512015426,
+    "delta": -0.19186572598209717,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "broadband.rt60_estimate",
+    "baseline": 0.7030638701331857,
+    "candidate": 0.5111981441510886,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.19186572598209717,
+    "delta_percent": -27.289942512015426,
+    "delta": -0.19186572598209717,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "broadband.c50",
+    "baseline": 9.814111793815936,
+    "candidate": 10.146417326543762,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": 0.33230553272782615,
+    "unit": "dB",
+    "group": "decay"
+   },
+   {
+    "name": "broadband.c80",
+    "baseline": 12.928368942140423,
+    "candidate": 14.260840391936235,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": 1.3324714497958112,
+    "unit": "dB",
+    "group": "decay"
+   },
+   {
+    "name": "broadband.d50",
+    "baseline": 90.54910412299736,
+    "candidate": 91.18390142521115,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": 0.6347973022137836,
+    "unit": "%",
+    "group": "decay"
+   },
+   {
+    "name": "broadband.centre_time",
+    "baseline": 0.015065962766518571,
+    "candidate": 0.013443284588016597,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.0016226781785019743,
+    "delta_percent": -10.77049109737672,
+    "delta": -0.0016226781785019743,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.63 Hz.edt",
+    "baseline": 0.7884158187733238,
+    "candidate": 0.6885126178465945,
+    "validity": "not_comparable",
+    "reason": "candidate unreliable (the decay curve drops 5.8 dB across the direct sound (it carries 74 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position)",
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": null,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.63 Hz.t20",
+    "baseline": 0.8272280704840794,
+    "candidate": 0.6940570730747477,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.1331709974093317,
+    "delta_percent": -16.09846210022858,
+    "delta": -0.1331709974093317,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.63 Hz.t30",
+    "baseline": 0.8278708671170585,
+    "candidate": 0.7534195282151236,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.0744513389019349,
+    "delta_percent": -8.99311014061903,
+    "delta": -0.0744513389019349,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.63 Hz.rt60_estimate",
+    "baseline": 0.8278708671170585,
+    "candidate": 0.7534195282151236,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.0744513389019349,
+    "delta_percent": -8.99311014061903,
+    "delta": -0.0744513389019349,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.125 Hz.edt",
+    "baseline": 0.8513751720797939,
+    "candidate": 0.8442446750327965,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.007130497046997308,
+    "delta_percent": -0.8375270128653709,
+    "delta": -0.007130497046997308,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.125 Hz.t20",
+    "baseline": 0.8288682746996756,
+    "candidate": 0.8161855551602826,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.01268271953939304,
+    "delta_percent": -1.5301248613946983,
+    "delta": -0.01268271953939304,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.125 Hz.t30",
+    "baseline": 0.8289506190210597,
+    "candidate": 0.8203931063936688,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.008557512627390906,
+    "delta_percent": -1.032330808498196,
+    "delta": -0.008557512627390906,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.125 Hz.rt60_estimate",
+    "baseline": 0.8289506190210597,
+    "candidate": 0.8203931063936688,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.008557512627390906,
+    "delta_percent": -1.032330808498196,
+    "delta": -0.008557512627390906,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.250 Hz.edt",
+    "baseline": 0.4680515883793969,
+    "candidate": 0.6837106878389927,
+    "validity": "not_comparable",
+    "reason": "candidate unreliable (the decay curve drops 5.6 dB across the direct sound (it carries 72 % of the energy; limit 5 dB): EDT describes the direct sound rather than the room at this position)",
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": null,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.250 Hz.t20",
+    "baseline": 0.5270802523357959,
+    "candidate": 0.494604115803099,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.03247613653269693,
+    "delta_percent": -6.161516465239682,
+    "delta": -0.03247613653269693,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.250 Hz.t30",
+    "baseline": 0.6239631304218713,
+    "candidate": 0.4973079692272412,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.12665516119463016,
+    "delta_percent": -20.298500827924975,
+    "delta": -0.12665516119463016,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.250 Hz.rt60_estimate",
+    "baseline": 0.6239631304218713,
+    "candidate": 0.4973079692272412,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.12665516119463016,
+    "delta_percent": -20.298500827924975,
+    "delta": -0.12665516119463016,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.500 Hz.edt",
+    "baseline": 0.27487547557428516,
+    "candidate": 0.6441509404944799,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.3692754649201947,
+    "delta_percent": 134.34281983457555,
+    "delta": 0.3692754649201947,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.500 Hz.t20",
+    "baseline": 0.4849091057651714,
+    "candidate": 0.4481628711032269,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.03674623466194449,
+    "delta_percent": -7.5779634214045295,
+    "delta": -0.03674623466194449,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.500 Hz.t30",
+    "baseline": 0.44161257962013434,
+    "candidate": 0.4268990904753461,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.014713489144788261,
+    "delta_percent": -3.331764044729996,
+    "delta": -0.014713489144788261,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.500 Hz.rt60_estimate",
+    "baseline": 0.44161257962013434,
+    "candidate": 0.4268990904753461,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": -0.014713489144788261,
+    "delta_percent": -3.331764044729996,
+    "delta": -0.014713489144788261,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.1 kHz.edt",
+    "baseline": 0.35137724624110234,
+    "candidate": 0.4929392377478047,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.14156199150670234,
+    "delta_percent": 40.287751418476205,
+    "delta": 0.14156199150670234,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.1 kHz.t20",
+    "baseline": 0.4260295881914673,
+    "candidate": 0.45636790089972795,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.03033831270826065,
+    "delta_percent": 7.121175042571439,
+    "delta": 0.03033831270826065,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.1 kHz.t30",
+    "baseline": 0.4316331018651439,
+    "candidate": 0.4537552943956623,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.022122192530518392,
+    "delta_percent": 5.125230765417541,
+    "delta": 0.022122192530518392,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.1 kHz.rt60_estimate",
+    "baseline": 0.4316331018651439,
+    "candidate": 0.4537552943956623,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.022122192530518392,
+    "delta_percent": 5.125230765417541,
+    "delta": 0.022122192530518392,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.2 kHz.edt",
+    "baseline": 0.372771837296958,
+    "candidate": 0.4106040673191552,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.03783223002219721,
+    "delta_percent": 10.148897056313631,
+    "delta": 0.03783223002219721,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.2 kHz.t20",
+    "baseline": 0.44254422912633506,
+    "candidate": 0.4729071594329689,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.03036293030663384,
+    "delta_percent": 6.860993389649647,
+    "delta": 0.03036293030663384,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.2 kHz.t30",
+    "baseline": 0.447173331090046,
+    "candidate": 0.4661703307862952,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.01899699969624924,
+    "delta_percent": 4.248240754863771,
+    "delta": 0.01899699969624924,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.2 kHz.rt60_estimate",
+    "baseline": 0.447173331090046,
+    "candidate": 0.4661703307862952,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.01899699969624924,
+    "delta_percent": 4.248240754863771,
+    "delta": 0.01899699969624924,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.4 kHz.edt",
+    "baseline": 0.35506700407739994,
+    "candidate": 0.4029848242616338,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.04791782018423385,
+    "delta_percent": 13.495430336801556,
+    "delta": 0.04791782018423385,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.4 kHz.t20",
+    "baseline": 0.4324117945091382,
+    "candidate": 0.4557590020571424,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.023347207548004234,
+    "delta_percent": 5.399299428108184,
+    "delta": 0.023347207548004234,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.4 kHz.t30",
+    "baseline": 0.44095546279907555,
+    "candidate": 0.45508875963514633,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.014133296836070786,
+    "delta_percent": 3.2051529073607874,
+    "delta": 0.014133296836070786,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.4 kHz.rt60_estimate",
+    "baseline": 0.44095546279907555,
+    "candidate": 0.45508875963514633,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.014133296836070786,
+    "delta_percent": 3.2051529073607874,
+    "delta": 0.014133296836070786,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.8 kHz.edt",
+    "baseline": 0.3320639527965875,
+    "candidate": 0.40926728618979813,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.07720333339321062,
+    "delta_percent": 23.249537549323545,
+    "delta": 0.07720333339321062,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.8 kHz.t20",
+    "baseline": 0.4437062855528683,
+    "candidate": 0.45415715048971445,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.01045086493684616,
+    "delta_percent": 2.3553565223499464,
+    "delta": 0.01045086493684616,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.8 kHz.t30",
+    "baseline": 0.44901509795023536,
+    "candidate": 0.45019759577665414,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.0011824978264187713,
+    "delta_percent": 0.2633536894008469,
+    "delta": 0.0011824978264187713,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "band.8 kHz.rt60_estimate",
+    "baseline": 0.44901509795023536,
+    "candidate": 0.45019759577665414,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": 0.0011824978264187713,
+    "delta_percent": 0.2633536894008469,
+    "delta": 0.0011824978264187713,
+    "unit": "s",
+    "group": "decay"
+   },
+   {
+    "name": "noise.rms_dbfs",
+    "baseline": -69.21778795242338,
+    "candidate": -87.12789197506963,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": -17.91010402264625,
+    "unit": "dBFS",
+    "group": "noise"
+   },
+   {
+    "name": "noise.band.63Hz",
+    "baseline": -70.66907447029652,
+    "candidate": -99.77156320049026,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": -29.10248873019374,
+    "unit": "dBFS",
+    "group": "noise"
+   },
+   {
+    "name": "noise.band.125Hz",
+    "baseline": -75.75951403233859,
+    "candidate": -104.30288160784487,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": -28.54336757550628,
+    "unit": "dBFS",
+    "group": "noise"
+   },
+   {
+    "name": "noise.band.250Hz",
+    "baseline": -93.47524793920293,
+    "candidate": -108.17043075770982,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": -14.695182818506893,
+    "unit": "dBFS",
+    "group": "noise"
+   },
+   {
+    "name": "noise.band.500Hz",
+    "baseline": -105.49663907793658,
+    "candidate": -105.09300218214692,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": 0.4036368957896599,
+    "unit": "dBFS",
+    "group": "noise"
+   },
+   {
+    "name": "noise.band.1000Hz",
+    "baseline": -102.32799662449501,
+    "candidate": -102.23038905005217,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": 0.09760757444284707,
+    "unit": "dBFS",
+    "group": "noise"
+   },
+   {
+    "name": "noise.band.2000Hz",
+    "baseline": -99.63631465538444,
+    "candidate": -99.58672312303167,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": 0.049591532352764034,
+    "unit": "dBFS",
+    "group": "noise"
+   },
+   {
+    "name": "noise.band.4000Hz",
+    "baseline": -96.57475534998653,
+    "candidate": -96.62287130135542,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": -0.048115951368885135,
+    "unit": "dBFS",
+    "group": "noise"
+   },
+   {
+    "name": "noise.band.8000Hz",
+    "baseline": -93.56675912252634,
+    "candidate": -93.69101063113948,
+    "validity": "valid",
+    "reason": null,
+    "delta_s": null,
+    "delta_percent": null,
+    "delta": -0.12425150861314194,
+    "unit": "dBFS",
+    "group": "noise"
+   }
+  ],
+  "comparison_fr": {
+   "frequencies_hz": "[   30.6      31.497    32.419    33.369    34.347    35.353    36.389\n    37.455    38.553    39.682    40.845    42.042    43.273    44.541\n    45.846    47.189    48.572    49.995    51.46     52.968    54.52\n    56.117    57.761    59.453    61.195    62.988    64.834    66.733\n    68.689    70.701    72.773    74.905    77.099    79.358    81.683\n    84.077    86.54     89.076    91.685    94.372    97.137    99.983\n   102.912   105.927   109.031   112.225   115.514   118.898   122.382\n   125.967   129.658   133.457   137.367   141.392   145.534   149.798\n   154.187   158.705   163.355   168.141   173.067   178.138   183.357\n   188.729   194.259   199.951   205.809   211.839   218.046   224.434\n   231.01    237.778   244.745   251.916   259.296   266.894   274.713\n   282.762   291.047   299.574   308.351   317.386   326.685   336.256\n   346.108   356.249   366.687   377.43    388.489   399.871   411.587\n   423.646   436.058   448.834   461.985   475.521   489.453   503.793\n   518.554   533.747   549.385   565.482   582.05    599.103   616.656\n   634.724   653.321   672.462   692.165   712.445   733.318   754.804\n   776.919   799.682   823.112   847.228   872.051   897.601   923.9\n   950.97    978.832  1007.511  1037.03   1067.414  1098.688  1130.878\n  1164.012  1198.117  1233.22   1269.352  1306.543  1344.823  1384.225\n  1424.782  1466.527  1509.494  1553.721  1599.244  1646.1    1694.329\n  1743.971  1795.068  1847.661  1901.796  1957.517  2014.87   2073.904\n  2134.667  2197.211  2261.587  2327.849  2396.053  2466.255  2538.514\n  2612.89   2689.445  2768.243  2849.35   2932.833  3018.762  3107.209\n  3198.247  3291.952  3388.403  3487.68   3589.866  3695.045  3803.306\n  3914.739  4029.437  4147.496  4269.013  4394.091  4522.834  4655.348\n  4791.746  4932.139  5076.646  5225.386  5378.485  5536.069  5698.271\n  5865.224  6037.07   6213.95   6396.013  6583.409  6776.297  6974.836\n  7179.191  7389.535  7606.041  7828.89   8058.269  8294.368  8537.385\n  8787.522  9044.988  9309.997  9582.771  9863.536 10152.528 10449.987\n 10756.162 11071.306 11395.685 11729.567 12073.232 12426.966 12791.063\n 13165.829 13551.575 13948.623 14357.303 14777.958 15210.938 15656.603\n 16115.326 16587.489 17073.486 17573.723 18088.616 18618.594 19164.1\n 19725.59 ]",
+   "difference_db": "[-8.210e+00 -9.690e+00 -1.150e+01 -1.254e+01 -1.261e+01 -1.177e+01\n -1.024e+01 -8.140e+00 -6.190e+00 -4.900e+00 -4.210e+00 -4.120e+00\n -4.510e+00 -4.880e+00 -4.660e+00 -3.910e+00 -3.170e+00 -2.580e+00\n -2.030e+00 -9.900e-01  3.900e-01  1.660e+00  2.600e+00  2.740e+00\n  2.320e+00  2.300e+00  2.660e+00  2.080e+00  3.300e-01 -1.620e+00\n -3.680e+00 -5.900e+00 -7.510e+00 -8.650e+00 -8.220e+00 -6.710e+00\n -5.470e+00 -4.770e+00 -5.050e+00 -5.660e+00 -6.170e+00 -6.850e+00\n -8.060e+00 -8.940e+00 -9.230e+00 -9.480e+00 -9.860e+00 -1.199e+01\n -1.265e+01 -1.178e+01 -1.098e+01 -9.340e+00 -6.090e+00 -2.860e+00\n  3.500e-01  2.640e+00  4.280e+00  4.400e+00  3.320e+00  1.240e+00\n -3.500e-01 -2.380e+00 -2.220e+00 -2.070e+00 -3.020e+00 -1.040e+00\n  8.900e-01  2.690e+00  5.590e+00  7.360e+00  2.390e+00  1.700e-01\n -1.220e+00 -1.880e+00 -1.880e+00 -1.220e+00 -1.340e+00 -9.800e-01\n  3.100e-01  2.200e-01  1.100e-01  3.100e-01 -2.040e+00 -2.560e+00\n -1.990e+00 -4.460e+00 -5.140e+00 -6.360e+00 -5.290e+00 -4.900e+00\n -2.960e+00 -2.770e+00 -2.270e+00 -2.330e+00 -2.850e+00 -9.300e-01\n -1.450e+00 -1.520e+00 -2.770e+00 -4.030e+00 -4.700e+00 -4.340e+00\n -2.930e+00  1.210e+00  4.690e+00  4.000e+00  3.300e+00  1.120e+00\n -8.200e-01 -4.000e-01 -2.120e+00 -2.350e+00 -2.170e+00 -2.840e+00\n -3.620e+00 -3.350e+00 -3.610e+00 -3.740e+00 -1.020e+00 -4.300e-01\n -5.500e-01 -3.000e-02  7.500e-01  5.700e-01  3.200e-01 -4.200e-01\n -1.860e+00 -3.980e+00 -4.650e+00 -3.810e+00 -3.730e+00 -2.860e+00\n -1.000e+00 -3.700e-01  7.200e-01  2.100e-01 -1.000e-02 -3.030e+00\n -3.690e+00 -2.710e+00 -2.470e+00  3.700e-01  1.860e+00  5.100e-01\n -4.000e-01 -2.850e+00 -4.250e+00 -3.140e+00 -2.610e+00 -1.580e+00\n  7.500e-01 -2.600e-01 -1.230e+00 -1.800e-01 -1.900e-01  5.000e-02\n -5.900e-01 -2.590e+00 -2.780e+00 -1.600e+00 -1.580e+00 -8.000e-01\n -1.620e+00 -2.230e+00 -1.750e+00 -2.180e+00 -2.240e+00 -1.770e+00\n -2.110e+00 -1.580e+00 -7.100e-01 -1.820e+00 -1.740e+00 -1.650e+00\n -1.720e+00 -2.300e+00 -2.090e+00 -1.660e+00 -1.920e+00 -3.600e-01\n -1.190e+00 -9.800e-01 -2.700e-01 -9.500e-01 -1.300e-01 -1.540e+00\n -1.370e+00 -1.820e+00 -1.360e+00 -7.200e-01 -9.300e-01 -9.300e-01\n -1.020e+00 -1.250e+00 -2.130e+00 -1.510e+00 -1.510e+00 -7.800e-01\n -1.200e-01 -4.800e-01 -8.000e-01 -7.000e-01 -1.380e+00 -1.340e+00\n -1.320e+00 -1.460e+00 -1.450e+00 -1.370e+00 -1.270e+00 -1.630e+00\n -1.570e+00 -1.130e+00 -1.200e+00 -1.150e+00 -7.500e-01 -1.670e+00\n -1.400e+00 -1.470e+00 -1.710e+00 -1.640e+00 -1.440e+00 -1.070e+00\n -9.100e-01 -3.500e-01 -5.900e-01]",
+   "band_mad_db": [
+    [
+     "31.5 Hz",
+     8.107546361561237
+    ],
+    [
+     "63 Hz",
+     3.622762438326676
+    ],
+    [
+     "125 Hz",
+     6.59015172383665
+    ],
+    [
+     "250 Hz",
+     1.9117822106439337
+    ],
+    [
+     "500 Hz",
+     3.214849859741683
+    ],
+    [
+     "1 kHz",
+     2.09122924476096
+    ],
+    [
+     "2 kHz",
+     1.417605231468893
+    ],
+    [
+     "4 kHz",
+     1.7496551839278418
+    ],
+    [
+     "8 kHz",
+     1.0567600397402588
+    ],
+    [
+     "16 kHz",
+     1.2968491136198677
+    ]
+   ],
+   "smoothing_fraction": 6,
+   "reference": "candidate minus baseline (dB) on a shared log grid inside the common excitation band"
+  },
+  "comparison_reflections": [
+   {
+    "status": "disappeared",
+    "baseline_delay_ms": 2.3958333333333335,
+    "candidate_delay_ms": null,
+    "baseline_relative_db": -3.0511699630393814,
+    "candidate_relative_db": null,
+    "delay_delta_ms": null,
+    "level_delta_db": null
+   },
+   {
+    "status": "disappeared",
+    "baseline_delay_ms": 7.104166666666667,
+    "candidate_delay_ms": null,
+    "baseline_relative_db": -9.565972750671218,
+    "candidate_relative_db": null,
+    "delay_delta_ms": null,
+    "level_delta_db": null
+   },
+   {
+    "status": "appeared",
+    "baseline_delay_ms": null,
+    "candidate_delay_ms": 9.291666666666666,
+    "baseline_relative_db": null,
+    "candidate_relative_db": -14.495781342004392,
+    "delay_delta_ms": null,
+    "level_delta_db": null
+   }
+  ],
+  "comparison_resonances": [
+   {
+    "status": "matched",
+    "baseline_hz": 109.86328125,
+    "candidate_hz": 109.68017578125,
+    "baseline_decay_distinguishable": true,
+    "candidate_decay_distinguishable": true
+   }
+  ]
+ }
+}
