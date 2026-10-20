@@ -78,13 +78,17 @@ class LiveMonitorPanel(Card):
         self._read_upto = 0
         self._last_tick: float | None = None
         self._silent_s = 0.0
+        #: Reused by :meth:`tick` so each frame does one ring copy, not three.
+        self._scratch: np.ndarray | None = None
         #: Wall time of each drawn frame's work (s), for the performance note.
         self.frame_seconds: collections.deque[float] = collections.deque(maxlen=300)
         self.frame_stamps: collections.deque[float] = collections.deque(maxlen=300)
 
         header = QHBoxLayout()
         header.setSpacing(SPACE)
-        header.addWidget(label(_("Live input").upper(), "section"))
+        # Section role already styles the caption; do not force Latin all-caps
+        # (guidelines: no all-caps titles; Chinese must not gain letter-spacing).
+        header.addWidget(label(_("Live input"), "section"))
         self.state_label = label("", "hint")
         header.addWidget(self.state_label)
         header.addStretch(1)
@@ -279,6 +283,18 @@ class LiveMonitorPanel(Card):
 
     # --- frames -----------------------------------------------------------------
 
+    def _ensure_scratch(self, frames: int, channels: int) -> np.ndarray:
+        scratch = self._scratch
+        if (
+            scratch is None
+            or scratch.shape[0] < frames
+            or scratch.shape[1] != channels
+            or scratch.dtype != np.float32
+        ):
+            scratch = np.zeros((max(frames, 1), channels), dtype=np.float32)
+            self._scratch = scratch
+        return scratch
+
     def tick(self, dt_s: float | None = None) -> None:
         """Draw one frame from the newest input (the timer; tests pass ``dt_s``)."""
         source, ring = self.source, self.ring
@@ -298,23 +314,27 @@ class LiveMonitorPanel(Card):
         fresh = min(upto - self._read_upto, ring.capacity)
         self._read_upto = upto
         rate = source.sample_rate
-        if fresh > 0:
-            peaks = block_peak_dbfs(ring.latest(fresh, upto=upto))
+        rms_n = int(RMS_WINDOW_S * rate)
+        fft_n = 0 if self.frozen else self.spectrum.fft_size
+        need = max(fresh, rms_n, fft_n)
+        if need > 0:
+            scratch = self._ensure_scratch(need, ring.channels)
+            block = ring.latest(need, upto=upto, out=scratch[:need])
         else:
-            peaks = [SILENCE_DBFS] * ring.channels
-        rms = block_rms_dbfs(ring.latest(int(RMS_WINDOW_S * rate), upto=upto))
+            block = np.zeros((0, ring.channels), dtype=np.float32)
+        peaks = block_peak_dbfs(block[-fresh:]) if fresh > 0 else [SILENCE_DBFS] * ring.channels
+        rms = block_rms_dbfs(block[-rms_n:] if rms_n else block)
         self.meter.update_levels(peaks, rms, dt_s)
         if fresh > 0:
             silent = max(peaks) <= SILENCE_DBFS
             self._silent_s = self._silent_s + dt_s if silent else 0.0
             self.silence_hint.setVisible(self._silent_s >= SILENT_HINT_S)
-        if not self.frozen and fresh > 0:
+        if not self.frozen and fresh > 0 and fft_n > 0:
             points = self.chart.wanted_points()
             if points != self.spectrum.points:
                 self.spectrum.configure(points=points)
                 self._apply_options()
-            frame = ring.latest(self.spectrum.fft_size, upto=upto)[:, 0]
-            self.spectrum.update(frame, dt_s)
+            self.spectrum.update(block[-fft_n:, 0], dt_s)
             self.chart.draw(self.spectrum)
         self.frame_seconds.append(time.perf_counter() - started)
         self.frame_stamps.append(now)
@@ -376,9 +396,10 @@ class LiveMonitorPanel(Card):
 
     def restyle(self) -> None:
         self.chart.restyle()
-        self.meter.update()
+        self.meter.restyle()
 
     def shutdown(self) -> None:
         """The window is closing: close the input and release the chart."""
         self.stop()
+        self._scratch = None
         self.chart.dispose()

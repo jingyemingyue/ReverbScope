@@ -48,8 +48,12 @@ the Connection step, and the backend's `CALLBACK_BLOCK` (256 frames).
 As in the backend, the audio callback only copies the selected columns into
 a single-producer/single-consumer ring buffer and advances a counter. It
 never touches Qt and takes no lock. A `QTimer` (30 ms, about 33 frames/s) in
-`ui/live_monitor.py` reads the newest frames, updates the meter and the
-spectrum, and draws with pyqtgraph `setData`.
+`ui/live_monitor.py` reads the newest frames **once** into a reused float32
+scratch (two-slice wrap, no index `arange`), slices peak / RMS / FFT from
+that block, updates the meter and the spectrum, and draws with pyqtgraph
+`setData`. The meter caches its theme colours, shows peak and RMS under each
+vertical bar with a dBFS scale label, and refreshes the accessible
+description about four times per second rather than every paint.
 
 When it listens: only while the Standalone page and step 2 are visible, the
 window is open and no take or analysis is running. It closes when the step

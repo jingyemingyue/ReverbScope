@@ -141,17 +141,36 @@ class RingBuffer:
             self._data[: frames - first] = block[first:]
         self.written += frames
 
-    def latest(self, frames: int, *, upto: int | None = None) -> FloatArray:
-        """The newest ``frames`` frames up to ``upto`` (default: all written), zeros before the start."""
+    def latest(
+        self,
+        frames: int,
+        *,
+        upto: int | None = None,
+        out: np.ndarray | None = None,
+    ) -> FloatArray:
+        """The newest ``frames`` frames up to ``upto`` (default: all written).
+
+        Zeros pad the front when fewer frames have been written. Uses the same
+        two-slice copy as :meth:`write` (no ``arange`` of indices). Pass an
+        ``out`` array of shape ``(frames, channels)`` to reuse a buffer; the
+        result is float32 like the ring.
+        """
         end = self.written if upto is None else int(upto)
         frames = max(0, min(int(frames), self.capacity))
-        out = np.zeros((frames, self.channels), dtype=np.float64)
+        if out is None or out.shape != (frames, self.channels) or out.dtype != np.float32:
+            out = np.zeros((frames, self.channels), dtype=np.float32)
         available = min(frames, end)
+        if available < frames:
+            out[: frames - available] = 0.0
         if available <= 0:
             return out
         start = end - available
-        index = np.arange(start, end) % self.capacity
-        out[frames - available :] = self._data[index]
+        dest = frames - available
+        index = start % self.capacity
+        first = min(available, self.capacity - index)
+        out[dest : dest + first] = self._data[index : index + first]
+        if first < available:
+            out[dest + first : dest + available] = self._data[: available - first]
         return out
 
 
