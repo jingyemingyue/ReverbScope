@@ -10,6 +10,7 @@ from typing import Any, cast
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg
 from matplotlib.figure import Figure
 from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QResizeEvent
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -56,6 +57,7 @@ from reverbscope.ui.widgets import (
     Card,
     PageHeader,
     StepIndicator,
+    add_page_footer,
     ask_save_path,
     error_box,
     label,
@@ -934,13 +936,25 @@ class StandalonePage(QWidget):
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.stop_measurement)
         #: Why Start is off, next to it rather than in a tooltip (OUT-4, SAFE-05).
-        self.readiness = label("", "hint", wrap=True)
+        self.readiness = label("", "reason", wrap=True)
         self.readiness.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         row.addWidget(self.back_button)
         row.addWidget(self.readiness, 1)
         row.addWidget(self.stop_button)
         row.addWidget(self.run_button)
-        layout.addLayout(row)
+        self._action_row = row
+        # The action bar is pinned under the scrolling form (SPEC §8.1), so
+        # Run, Stop and the reason are in view at 960 x 640 in Chinese too.
+        # A reason too long for the gap between the buttons moves above them.
+        self.action_bar = QWidget()
+        self.action_bar.setProperty("actionbar", True)
+        self.action_bar.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self._action_layout = QVBoxLayout(self.action_bar)
+        self._action_layout.setContentsMargins(0, 8, 8, 0)
+        self._action_layout.setSpacing(6)
+        self._action_layout.addLayout(row)
+        self._reason_above = False
+        add_page_footer(self, self.action_bar)
         self.progress = QProgressBar()
         self.progress.setRange(0, 100)
         self.progress.hide()
@@ -1004,6 +1018,7 @@ class StandalonePage(QWidget):
             self.run_button.setEnabled(not reason)
         self.readiness.setText("" if busy else reason)
         self.readiness.setVisible(bool(reason) and not busy)
+        self._place_reason()
         connected = bool(self._devices) and self.output_chosen()
         level_ok = not above or self.acknowledge.isChecked()
         if busy:
@@ -1020,10 +1035,42 @@ class StandalonePage(QWidget):
             self._ready = (ready, reason)
             self.readiness_changed.emit(ready, reason)
 
+    def reason_above_buttons(self) -> bool:
+        """Whether the reason Run is off sits on its own line above the buttons."""
+        return self._reason_above
+
+    def _place_reason(self) -> None:
+        """Beside the buttons when it fits in two lines there, else above them."""
+        if not hasattr(self, "_action_row"):
+            return
+        row = self._action_row
+        buttons = (self.back_button, self.stop_button, self.run_button)
+        gap = self.action_bar.width() - sum(b.sizeHint().width() for b in buttons)
+        gap -= 3 * row.spacing() + self._action_layout.contentsMargins().right()
+        text = self.readiness.text()
+        needed = self.readiness.fontMetrics().horizontalAdvance(text) if text else 0
+        above = bool(text) and (gap < 160 or needed > 2 * gap)
+        if above == self._reason_above:
+            return
+        self._reason_above = above
+        if above:
+            row.removeWidget(self.readiness)
+            row.insertStretch(1, 1)
+            self._action_layout.insertWidget(0, self.readiness)
+        else:
+            self._action_layout.removeWidget(self.readiness)
+            stretch = row.takeAt(1)
+            del stretch
+            row.insertWidget(1, self.readiness, 1)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._place_reason()
+
     def _reveal_step(self, index: int) -> None:
         target = (self.devices_box, self.sweep_box, self.run_button)[index]
         scroll = self.findChild(QScrollArea)
-        if scroll is not None:
+        if scroll is not None and scroll.isAncestorOf(target):
             scroll.ensureWidgetVisible(target, 8, 24)
         target.setFocus(Qt.FocusReason.OtherFocusReason)
 

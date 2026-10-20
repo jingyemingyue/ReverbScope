@@ -49,7 +49,7 @@ from reverbscope.ui.pg import (
     pyqtgraph,
     svg_export,
 )
-from reverbscope.ui.theme import tokens
+from reverbscope.ui.theme import apply_mono_font, mono_font, tokens
 
 pg: Any = pyqtgraph()
 
@@ -285,6 +285,9 @@ class ChartPanel(QWidget):
         self.readout.setMinimumWidth(72)
         self.readout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.readout.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        # Cursor values in the monospace face when one is installed (SPEC §3),
+        # so the digits do not jitter as the cursor moves.
+        apply_mono_font(self.readout, 12)
         self._readout_full = ""
         self.reset_button = QToolButton()
         self.reset_button.setText(_("Fit chart"))
@@ -440,6 +443,7 @@ class ChartPanel(QWidget):
         if self._disposed:
             return
         t = tokens()
+        tick_font = mono_font(11)
         self.plot.setBackground(QColor(t["surface"]))
         for name in ("bottom", "left"):
             axis = self.plot_item.getAxis(name)
@@ -447,6 +451,9 @@ class ChartPanel(QWidget):
             # low alpha, so it stays decorative (SPEC §10).
             axis.setPen(pg.mkPen(QColor(t["axis"])))
             axis.setTextPen(pg.mkPen(QColor(t["muted"])))
+            if tick_font is not None:
+                # Tick numbers: mono 11 px when installed (SPEC §3, §10).
+                axis.setStyle(tickFont=tick_font)
         self.plot_item.showGrid(x=True, y=True, alpha=0.22)
         self.cursor_line.setPen(pg.mkPen(QColor(t["text"]), width=1, style=Qt.PenStyle.DotLine))
         self.plot_item.setLabel("bottom", self.x_label, color=t["muted"])

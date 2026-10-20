@@ -509,6 +509,16 @@ class MainWindow(QMainWindow):
         )
         self._update_toolbar_place()
 
+    def notify(self, text: str, tone: str = "good") -> None:
+        """Say what just happened where it is seen even without the status bar.
+
+        The toolbar's subtitle slot carries it for four seconds (SPEC §6), or a
+        notice under the toolbar when the window is too narrow for the title;
+        the status bar keeps a copy. Nothing modal, nothing takes the focus.
+        """
+        self._status.showMessage(text)
+        self.workspace.show_notice(text, tone)
+
     def _update_toolbar_place(self) -> None:
         """The toolbar's title (the place) and subtitle (the current measurement)."""
         place = self._place
@@ -925,7 +935,7 @@ class MainWindow(QMainWindow):
         entry = self.model.entry(key)
         position = entry.position if entry is not None else ""
         self.model.mark_saved(key, directory, position=position)
-        self._status.showMessage(_("Session saved to {path}").format(path=session_path.parent))
+        self.notify(_("Session saved to {path}").format(path=session_path.parent))
         project = self.model.project_path
         if project is not None:
             self._add_to_project(project, directory, position or "A")
@@ -946,7 +956,7 @@ class MainWindow(QMainWindow):
                 ).format(path=directory, error=localize(str(exc))),
             )
             return
-        self._status.showMessage(
+        self.notify(
             _(
                 "Session saved to {path} and listed in project {project} under position {label}"
             ).format(path=directory, project=listed.name or project.name, label=position)

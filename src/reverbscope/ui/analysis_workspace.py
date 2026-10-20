@@ -33,6 +33,7 @@ from PySide6.QtWidgets import (
 
 from reverbscope.i18n import _
 from reverbscope.ui import icons
+from reverbscope.ui.notice import NOTICE_MS, FloatingNotice, notice_tone
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.views.base import AnalysisView
 from reverbscope.ui.widgets import label, native_shortcut
@@ -127,10 +128,17 @@ class ElidingLabel(QLabel):
     """A one-line label that elides its text to its width and keeps the full
     text in the tooltip (the toolbar's title and subtitle)."""
 
-    def __init__(self, role: str, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        role: str,
+        parent: QWidget | None = None,
+        *,
+        mode: Qt.TextElideMode = Qt.TextElideMode.ElideRight,
+    ) -> None:
         super().__init__(parent)
         self.setProperty("role", role)
         self._full = ""
+        self._mode = mode
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
 
     def set_full_text(self, text: str) -> None:
@@ -142,7 +150,7 @@ class ElidingLabel(QLabel):
 
     def _elide(self) -> None:
         width = max(8, self.width() - 2)
-        shown = self.fontMetrics().elidedText(self._full, Qt.TextElideMode.ElideRight, width)
+        shown = self.fontMetrics().elidedText(self._full, self._mode, width)
         self.setText(shown)
         self.setToolTip(self._full if shown != self._full else "")
 
@@ -215,7 +223,10 @@ class AnalysisWorkspace(QWidget):
         titles.setContentsMargins(0, 0, 0, 0)
         titles.setSpacing(0)
         self.title_label = ElidingLabel("toolbar-title")
-        self.subtitle_label = ElidingLabel("toolbar-subtitle")
+        # The measurement name elides in the middle ("B · B-1 · synth…demo
+        # data" would lose the take; "B · B-1 … synthetic demo data" keeps
+        # both ends), and so does a notice's folder path.
+        self.subtitle_label = ElidingLabel("toolbar-subtitle", mode=Qt.TextElideMode.ElideMiddle)
         for widget in (self.title_label, self.subtitle_label):
             widget.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
             titles.addWidget(widget)
@@ -226,6 +237,15 @@ class AnalysisWorkspace(QWidget):
         self.bar_layout.addWidget(self.title_box, 0)
         self._title = ""
         self._subtitle = ""
+        #: Whether the title and subtitle have room on the bar (``_fit_title``).
+        self._title_shown = True
+        #: The notice on show, as ``(text, tone)`` (``show_notice``).
+        self._notice: tuple[str, str] | None = None
+        self._notice_timer = QTimer(self)
+        self._notice_timer.setSingleShot(True)
+        self._notice_timer.timeout.connect(self.clear_notice)
+        self.floating_notice = FloatingNotice(self)
+        self.floating_notice.top = 52
 
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
@@ -361,7 +381,13 @@ class AnalysisWorkspace(QWidget):
             action.triggered.connect(lambda _checked=False: self.view_chosen.emit("project"))
 
     def _fit_title(self, width: int) -> None:
-        """Show the title only where the groups still fit beside it unscrolled."""
+        """Show the title only where the groups still fit beside it unscrolled.
+
+        When the groups do not all fit (960 px, SPEC §13: "4 + ⋯"), the ones
+        at the end go into the "All views" menu, never the group shown. The
+        bar then never scrolls, so no tab is drawn cut in half, whichever
+        view is current (Project included).
+        """
         fixed = sum(
             button.width()
             for button in (self.navigator_button, self.save_button, self.inspector_button)
@@ -371,15 +397,83 @@ class AnalysisWorkspace(QWidget):
         # buttons: guessing short here left the groups a few pixels short of
         # room, so they scrolled and a bar showed under them.
         overhead = margins.left() + margins.right() + 4 * self.bar_layout.spacing()
-        groups = self.segment.sizeHint().width() + self.project_button.sizeHint().width() + 4
+        segment = self.segment_layout.contentsMargins()
+        segment_frame = segment.left() + segment.right()
+        current = self.current_view_id()
+        current_group = group_of(current)
+        hints = {group_id: button.sizeHint().width() for group_id, button in self.buttons.items()}
+        project = self.project_button.sizeHint().width() + 4
+        groups = segment_frame + sum(hints.values()) + project
         room = width - fixed - overhead - groups
-        self.more_button.setVisible(room < 0)
-        # A Project tab cut in half reads as a broken button; when the groups
-        # do not fit it goes (unless it is the view shown), and the overflow
-        # menu and its shortcut keep it.
-        self.project_button.setVisible(room >= 0 or self.current_view_id() == "project")
-        self.title_box.setVisible(room >= 120)
+        overflow = room < 0
+        self.more_button.setVisible(overflow)
+        shown = set(hints)
+        show_project = True
+        if overflow:
+            # A Project tab cut in half reads as a broken button; it goes
+            # first (unless it is the view shown), then the groups from the end.
+            show_project = current == "project"
+            spare = width - fixed - overhead - self.more_button.width() - self.bar_layout.spacing()
+            spare -= segment_frame + (project if show_project else 0)
+            spare -= sum(hints.values())
+            for group_id, _view_ids in reversed(VIEW_GROUPS):
+                if spare >= 0:
+                    break
+                if group_id == current_group:
+                    continue
+                shown.discard(group_id)
+                spare += hints[group_id]
+        for group_id, button in self.buttons.items():
+            button.setVisible(group_id in shown)
+        self.project_button.setVisible(show_project)
+        # Lay the bar out now: a scroll to the current tab queued before the
+        # hidden groups gave back their width would scroll the bar sideways.
+        self.segment_layout.activate()
+        self.group_layout.activate()
+        self._title_shown = room >= 120
+        self.title_box.setVisible(self._title_shown)
         self.title_box.setFixedWidth(max(0, min(220, room)))
+        self._show_notice()
+
+    def hidden_groups(self) -> list[str]:
+        """Groups moved into the "All views" menu because the bar is too narrow."""
+        return [group_id for group_id, button in self.buttons.items() if button.isHidden()]
+
+    # --- notices (SPEC §6) -----------------------------------------------------------
+
+    def show_notice(self, text: str, tone: str = "good", *, timeout_ms: int = NOTICE_MS) -> None:
+        """Say ``text`` in the subtitle slot for ``timeout_ms``, then restore it.
+
+        Without room for the title, the notice floats under the toolbar
+        instead. ``tone`` is ``good``, ``info``, ``warn`` or ``bad``.
+        """
+        self._notice = (text, notice_tone(tone))
+        self._notice_timer.start(timeout_ms)
+        self._show_notice()
+
+    def clear_notice(self) -> None:
+        self._notice = None
+        self._notice_timer.stop()
+        self._show_notice()
+
+    def notice_text(self) -> str:
+        """The notice on show (in either place), or ``""``."""
+        return self._notice[0] if self._notice is not None else ""
+
+    def _show_notice(self) -> None:
+        notice = self._notice
+        in_subtitle = notice is not None and self._title_shown
+        tone = notice[1] if in_subtitle and notice is not None else ""
+        if (self.subtitle_label.property("notice") or "") != tone:
+            self.subtitle_label.setProperty("notice", tone)
+            self.subtitle_label.style().unpolish(self.subtitle_label)
+            self.subtitle_label.style().polish(self.subtitle_label)
+        self._elide_titles()
+        if notice is not None and not self._title_shown:
+            self.floating_notice.top = self.bar.height()
+            self.floating_notice.show_message(*notice)
+        else:
+            self.floating_notice.hide()
 
     def set_place(self, title: str, subtitle: str = "") -> None:
         """The toolbar's title and subtitle (what is shown, and of which measurement)."""
@@ -389,8 +483,10 @@ class AnalysisWorkspace(QWidget):
 
     def _elide_titles(self) -> None:
         self.title_label.set_full_text(self._title)
-        self.subtitle_label.set_full_text(self._subtitle)
-        self.subtitle_label.setVisible(bool(self._subtitle))
+        notice = self._notice if self._title_shown else None
+        subtitle = notice[0] if notice is not None else self._subtitle
+        self.subtitle_label.set_full_text(subtitle)
+        self.subtitle_label.setVisible(bool(subtitle))
 
     def restyle_icons(self) -> None:
         self.more_button.setIcon(icons.icon("chevron-down", 16))
@@ -399,6 +495,7 @@ class AnalysisWorkspace(QWidget):
             if isinstance(name, str):
                 button.setIcon(icons.icon(name, 18))
         self.project_button.setIcon(icons.icon("folder-open", 14))
+        self.floating_notice.restyle_icons()
 
     def _group_tip(self, group_id: str, view_ids: tuple[str, ...]) -> str:
         names = ", ".join(self.views[view_id].title() for view_id in view_ids)

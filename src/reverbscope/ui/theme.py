@@ -338,6 +338,22 @@ QLabel[role="title"] {{ font-size: 20px; font-weight: 600; }}
 QLabel[role="page-title"] {{ font-size: 20px; font-weight: 600; }}
 QLabel[role="toolbar-title"] {{ font-size: 13px; font-weight: 600; }}
 QLabel[role="toolbar-subtitle"] {{ color: {t["text3"]}; font-size: 11px; }}
+QLabel[role="toolbar-subtitle"][notice="good"] {{ color: {t["accent_ink"]}; font-weight: 600; }}
+QLabel[role="toolbar-subtitle"][notice="info"] {{ color: {t["info"]}; font-weight: 600; }}
+QLabel[role="toolbar-subtitle"][notice="warn"] {{ color: {t["warn"]}; font-weight: 600; }}
+QLabel[role="toolbar-subtitle"][notice="bad"] {{ color: {t["bad"]}; font-weight: 600; }}
+QFrame[notice="true"] {{ background: {t["surface"]}; border: 1px solid {t["border"]};
+    border-radius: 8px; }}
+QFrame[notice="true"][tone="good"] {{ border-left: 3px solid {t["accent"]}; }}
+QFrame[notice="true"][tone="info"] {{ border-left: 3px solid {t["info"]}; }}
+QFrame[notice="true"][tone="warn"] {{ border-left: 3px solid {t["warn"]}; }}
+QFrame[notice="true"][tone="bad"] {{ border-left: 3px solid {t["bad"]}; }}
+QFrame[notice="true"] QLabel {{ background: transparent; }}
+QLabel[mono="true"] {{ font-size: 12px; }}
+QLabel[role="reason"] {{ color: {t["warn"]}; font-size: 12px; }}
+QWidget[actionbar="true"] {{ background: {t["bg"]}; border-top: 1px solid {t["sep"]}; }}
+QPlainTextEdit[commands="true"] {{ background: {t["readout"]}; border: 1px solid {t["sep"]};
+    border-radius: 7px; padding: 6px 8px; }}
 QLabel[role="subtitle"] {{ color: {t["muted"]}; font-size: 13px; }}
 QLabel[role="section"] {{ color: {t["text3"]}; font-size: 11px; font-weight: 600; }}
 QLabel[role="sidebar-section"] {{ color: {t["text3"]}; font-size: 11px; font-weight: 600;
@@ -675,6 +691,70 @@ def apply_report_font(widget: Any) -> None:
         font.setFamilies(families)
     font.setPixelSize(13)
     widget.setFont(font)
+
+
+#: Monospace faces for chart readouts, tick numbers and key figures (SPEC §3,
+#: "mono"), in order of preference. ReverbScope bundles none (D-2): the first
+#: one installed is used, and without any the UI face stays.
+MONO_FONTS = (
+    "SF Mono",
+    "IBM Plex Mono",
+    "Menlo",
+    "Consolas",
+    "Cascadia Mono",
+    "DejaVu Sans Mono",
+    "Liberation Mono",
+)
+
+
+def mono_families() -> list[str]:
+    """The installed faces of :data:`MONO_FONTS`, in order (may be empty)."""
+    return list(_installed_mono())
+
+
+@functools.cache
+def _installed_mono() -> tuple[str, ...]:
+    from PySide6.QtGui import QFontDatabase
+
+    installed = set(QFontDatabase.families())
+    return tuple(name for name in MONO_FONTS if name in installed)
+
+
+@functools.cache
+def _installed_cjk() -> tuple[str, ...]:
+    from PySide6.QtGui import QFontDatabase
+
+    installed = set(QFontDatabase.families())
+    return tuple(name for name in CJK_FALLBACK_FONTS if name in installed)
+
+
+def mono_font(pixel_size: int = 12) -> Any:
+    """A :class:`QFont` in the first installed monospace face, or ``None``.
+
+    The Chinese fallbacks follow the Latin face, so a readout with a Chinese
+    word does not draw empty boxes (a single style sheet family would).
+    """
+    from PySide6.QtGui import QFont
+
+    families = mono_families()
+    if not families:
+        return None
+    families += [name for name in _installed_cjk() if name not in families]
+    font = QFont()
+    font.setStyleHint(QFont.StyleHint.Monospace)
+    font.setFamilies(families)
+    font.setPixelSize(pixel_size)
+    return font
+
+
+def apply_mono_font(widget: Any, pixel_size: int = 12) -> bool:
+    """Give ``widget`` the monospace face if one is installed; say whether it did."""
+    font = mono_font(pixel_size)
+    if font is None:
+        return False
+    widget.setFont(font)
+    widget.setProperty("mono", True)
+    return True
 
 
 def apply_application_chrome(app: Any) -> None:

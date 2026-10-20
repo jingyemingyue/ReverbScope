@@ -194,6 +194,23 @@ def ask_save_path(parent: QWidget, title: str, name: str, file_filter: str) -> P
 PAGE_COLUMN_WIDTH = 760
 
 
+#: Object name of the column :func:`scroll_page` builds (header, body, footer).
+PAGE_COLUMN = "pageColumn"
+
+
+def add_page_footer(page: QWidget, footer: QWidget) -> None:
+    """Pin ``footer`` under the scrolling body of a :func:`scroll_page` page.
+
+    SPEC §8.1: the action bar stays outside the scroll area, so its buttons
+    and the reason beside them are in view at 960 x 640 whatever the body holds.
+    """
+    column = page.findChild(QWidget, PAGE_COLUMN, Qt.FindChildOption.FindDirectChildrenOnly)
+    layout = column.layout() if column is not None else None
+    if layout is None:
+        raise ValueError("add_page_footer needs a page built by scroll_page")
+    layout.addWidget(footer)
+
+
 def scroll_page(
     page: QWidget, header: PageHeader, *, max_width: int = PAGE_COLUMN_WIDTH
 ) -> QVBoxLayout:
@@ -207,6 +224,7 @@ def scroll_page(
     row.setContentsMargins(28, 20, 20, 12)
     row.setSpacing(0)
     column = QWidget()
+    column.setObjectName(PAGE_COLUMN)
     column.setProperty("page", True)
     column.setMaximumWidth(max_width)
     column.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)

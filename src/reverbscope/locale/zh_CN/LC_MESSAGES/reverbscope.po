@@ -2138,9 +2138,6 @@ msgstr "混响：RT60 不超过 {long:.1f} s 不作评论；超过则衰减明�
 msgid "Review before posting: device names can contain personal names; paths under your home folder are shown as ~."
 msgstr "发布前请检查：设备名称可能包含人名；主目录下的路径显示为 ~。"
 
-msgid "Right-click a measurement in the list and choose Use as baseline to compare."
-msgstr "在列表中右键一条测量并选择“设为基准”即可对比。"
-
 msgid "Right-click a measurement in the list and choose Use as baseline, then select the measurement to compare with it. Or pick two saved sessions below."
 msgstr "在列表中右键一条测量并选择“设为基准”，再选中要与它对比的测量。也可以在下方选两个已保存的会话。"
 
@@ -6876,3 +6873,33 @@ msgstr "在 DAW 中录制"
 
 msgid "Import"
 msgstr "导入"
+
+msgid "Dismiss"
+msgstr "关闭"
+
+msgid "Compare the next measurement you select against this one."
+msgstr "把接下来选中的测量与这一条对比。"
+
+msgid "Use this measurement as the baseline, then select another one to compare it (also in the list's right-click menu)."
+msgstr "把这条测量设为基准，再选另一条与它对比（列表右键菜单里也有）。"
+
+msgid "Command line only"
+msgstr "仅命令行"
+
+msgid "Copy commands"
+msgstr "复制命令"
+
+msgid "Copy these command lines to the clipboard."
+msgstr "把这些命令行复制到剪贴板。"
+
+msgid "Command-line equivalents"
+msgstr "对应的命令行"
+
+msgid "Not in the desktop yet: CSV export, a zip for a bug report, an impulse response from another tool (set --band to its sweep's band), the demo."
+msgstr "桌面界面还没有这些功能：导出 CSV、把会话打成压缩包用于报告问题、分析其他工具得到的脉冲响应（--band 填它扫频覆盖的频带）、合成演示。"
+
+msgid "Save the session first: {placeholder} stands for its folder."
+msgstr "请先保存会话：{placeholder} 代表会话文件夹。"
+
+msgid "Commands copied to the clipboard."
+msgstr "命令已复制到剪贴板。"
