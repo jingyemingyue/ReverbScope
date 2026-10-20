@@ -355,6 +355,7 @@ class DawModePage(QWidget):
         self.before_take: Callable[[], bool] | None = None
         # The state generation the running analysis belongs to.
         self._generation = -1
+        self._busy_flag = False
         # The recording this page imported. The shared state holds the take
         # of the session on the Results page, which a Standalone or Demo take
         # replaces: analysing that one put a take the page never showed
@@ -479,7 +480,6 @@ class DawModePage(QWidget):
         v4.addWidget(self.status)
         layout.addWidget(step4)
         layout.addStretch(1)
-        self._busy_flag = False
         self.sync_steps()
 
     def sync_steps(self) -> None:
