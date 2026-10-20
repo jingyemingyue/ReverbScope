@@ -2,11 +2,10 @@
 
 # ReverbScope
 
-**Before you record, find out whether this room and this microphone position
-are usable.** ReverbScope plays an exponential sine sweep in your room, derives
-the room impulse response and reports reverberation (RT60), early reflections,
-background noise and direct sound, in plain language and with a validity flag
-on every number. Free, open source (Apache-2.0), next to any DAW or on its own.
+Offline acoustic room-measurement desktop app and command line. Plays a sine
+sweep, derives the room impulse response and reports RT60/EDT/T20/T30,
+C50/C80/D50, early reflections, background noise and frequency response, each
+with a validity flag. English and 简体中文. 离线房间声学测量工具。Pre-release.
 
 **Pre-release software, built by one student developer.** The analysis,
 the desktop workstation and the command line are in place and covered by
@@ -170,7 +169,7 @@ when another tool is the better choice, is in
 
 ## Status
 
-The version on `main` is **0.5.0b3**; `release/0.5.0` carries the release
+The version on `main` is **0.5.0b5**; `release/0.5.0` carries the release
 candidate. The analysis core, command line, desktop workstation, comparison,
 loopback, Simplified Chinese catalog, session bundles and both editions'
 bundles exist and are tested with synthetic data on Linux, macOS and Windows.
