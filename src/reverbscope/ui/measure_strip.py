@@ -31,7 +31,7 @@ from PySide6.QtWidgets import (
 from reverbscope.i18n import N_, _
 from reverbscope.ui import icons
 from reverbscope.ui.pages import DawModePage, StandalonePage
-from reverbscope.ui.widgets import label, native_shortcut, primary, set_banner_text
+from reverbscope.ui.widgets import ElidedComboBox, label, native_shortcut, primary, set_banner_text
 from reverbscope.ui.workspace import WorkspaceModel
 
 #: Strip modes, in the order of the mode list. The product has no demo mode;
@@ -138,8 +138,8 @@ class MeasureStrip(QWidget):
 
         self.device_widgets: list[QWidget] = []
         self.advanced_widgets: list[QWidget] = []
-        self.input_device = QComboBox()
-        self.output_device = QComboBox()
+        self.input_device = ElidedComboBox()
+        self.output_device = ElidedComboBox()
         self.sample_rate = QComboBox()
         for combo, page_combo, tip in (
             (self.input_device, standalone.input_device, _("Input device")),
@@ -177,7 +177,9 @@ class MeasureStrip(QWidget):
                 caption_label = label(caption, "hint")
                 row.addWidget(caption_label)
                 self.device_widgets.append(caption_label)
-            row.addWidget(widget, 1 if widget in (self.input_device, self.output_device) else 0)
+            # The output gets the room first: it is the one Start waits for.
+            stretch = {self.input_device: 1, self.output_device: 2}.get(widget, 0)
+            row.addWidget(widget, stretch)
             self.device_widgets.append(widget)
 
         self.advanced_bar = QWidget()

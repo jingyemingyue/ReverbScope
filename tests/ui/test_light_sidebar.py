@@ -88,9 +88,7 @@ def test_the_lucide_notice_ships_with_the_desktop_bundle() -> None:
     assert "lucide" in module.GUI_NOTICES
 
 
-def test_no_output_is_preselected_and_start_says_why(
-    app: QApplication, interface: None
-) -> None:
+def test_no_output_is_preselected_and_start_says_why(app: QApplication, interface: None) -> None:
     """OUT-2 / OUT-4: the system default output is not offered or chosen,
     Start (page, strip) is off with the reason beside it, and nothing starts."""
     window = MainWindow()

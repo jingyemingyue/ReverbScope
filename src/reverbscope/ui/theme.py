@@ -425,7 +425,12 @@ QLabel[role="panel-title"] {{ font-size: 13px; font-weight: 600; }}
 QTreeWidget[measurements="true"], QListWidget[sidebarlist="true"] {{ border: none;
     border-radius: 0; background: transparent; }}
 QTreeWidget[measurements="true"]::item {{ min-height: 26px; padding: 2px 4px;
-    border-radius: 6px; }}
+    border-radius: 0; }}
+QTreeWidget[measurements="true"]::item:first {{ border-top-left-radius: 6px;
+    border-bottom-left-radius: 6px; }}
+QTreeWidget[measurements="true"]::item:last {{ border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px; }}
+QTreeWidget[measurements="true"]::item:only-one {{ border-radius: 6px; }}
 QTreeWidget[measurements="true"]::item:hover {{ background: {t["hover"]}; }}
 QTreeWidget[measurements="true"]::item:selected {{ background: {t["sel_sidebar"]};
     color: {t["text"]}; }}
@@ -522,7 +527,7 @@ QLabel[step="locked"] {{ color: {t["disabled"]}; }}
 QFrame[stepline="true"] {{ background: {t["sep"]}; border: none; }}
 QFrame[stepline="true"][done="true"] {{ background: {t["accent"]}; }}
 QToolButton[viewtab="true"] {{ background: transparent; color: {t["muted"]}; border: none;
-    border-radius: 6px; padding: 3px 9px; margin: 2px 1px; font-size: 12px;
+    border-radius: 6px; padding: 3px 7px; margin: 2px 1px; font-size: 12px;
     font-weight: 500; }}
 QToolButton[viewtab="true"]:hover {{ color: {t["text"]}; background: {t["hover"]}; }}
 QToolButton[viewtab="true"]:checked {{ color: {t["text"]}; font-weight: 600;
@@ -532,7 +537,8 @@ QToolButton[panelswitch="true"] {{ background: transparent; border: none;
 QToolButton[panelswitch="true"]:hover {{ background: {t["hover"]}; }}
 QToolButton[panelswitch="true"]:checked {{ color: {t["accent_ink"]};
     background: {t["accent_soft"]}; }}
-QToolButton[projecttab="true"] {{ margin-left: 6px; }}
+QToolButton[projecttab="true"] {{ margin-left: 4px; }}
+QToolButton[panelswitch="true"]::menu-indicator {{ image: none; width: 0; }}
 QSplitter::handle {{ background: {t["sep"]}; }}
 QSplitter::handle:horizontal {{ width: 1px; }}
 QSplitter::handle:vertical {{ height: 1px; }}

@@ -193,7 +193,9 @@ class AnalysisWorkspace(QWidget):
         self.group_scroll.setWidget(self.group_bar)
         self.group_scroll.setWidgetResizable(True)
         self.group_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
-        self.group_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        # No scroll bar under the segmented control: the overflow menu lists
+        # the groups that do not fit, and the current one is scrolled into view.
+        self.group_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.group_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.group_scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self.group_scroll.setProperty("viewscroll", True)
@@ -364,8 +366,18 @@ class AnalysisWorkspace(QWidget):
             button.width()
             for button in (self.navigator_button, self.save_button, self.inspector_button)
         )
-        room = width - fixed - 40 - self.group_bar.sizeHint().width()
+        margins = self.bar_layout.contentsMargins()
+        # Margins, and a gap after each of the navigator, title, groups and save
+        # buttons: guessing short here left the groups a few pixels short of
+        # room, so they scrolled and a bar showed under them.
+        overhead = margins.left() + margins.right() + 4 * self.bar_layout.spacing()
+        groups = self.segment.sizeHint().width() + self.project_button.sizeHint().width() + 4
+        room = width - fixed - overhead - groups
         self.more_button.setVisible(room < 0)
+        # A Project tab cut in half reads as a broken button; when the groups
+        # do not fit it goes (unless it is the view shown), and the overflow
+        # menu and its shortcut keep it.
+        self.project_button.setVisible(room >= 0 or self.current_view_id() == "project")
         self.title_box.setVisible(room >= 120)
         self.title_box.setFixedWidth(max(0, min(220, room)))
 
@@ -427,6 +439,7 @@ class AnalysisWorkspace(QWidget):
         view_id = self.current_view_id()
         group_id = group_of(view_id)
         self.project_button.setChecked(view_id == "project")
+        self._fit_title(self.width())
         QTimer.singleShot(0, self, self._reveal_active_view)
         if not group_id:
             self.group.setExclusive(False)

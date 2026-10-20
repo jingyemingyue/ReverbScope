@@ -124,6 +124,7 @@ PACKAGE_LICENSE_FILES = {
 #: Package files that mean a bundled library needs the files above.
 BUNDLED_LIBRARY_MARKERS = {"soundfile": "_soundfile_data/libsndfile"}
 
+
 def _lucide_license() -> str:
     """The ISC + MIT texts of the Lucide icons (``""`` outside a source tree)."""
     path = Path(__file__).resolve().parent.parent / "packaging" / "licenses" / "lucide-LICENSE.txt"

@@ -19,11 +19,13 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPainter,
     QPainterPath,
+    QPaintEvent,
     QPen,
     QPixmap,
     QResizeEvent,
 )
 from PySide6.QtWidgets import (
+    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -31,6 +33,9 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStyle,
+    QStyleOptionComboBox,
+    QStylePainter,
     QVBoxLayout,
     QWidget,
 )
@@ -66,6 +71,30 @@ class PathLabel(QLabel):
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
         self._elide_path()
+
+
+class ElidedComboBox(QComboBox):
+    """A combo box that ends a text too long for it with an ellipsis.
+
+    A narrow strip cuts the current text off mid-word otherwise
+    ("Choose the interfa"); the full text stays in the list and the tooltip.
+    """
+
+    def paintEvent(self, _event: QPaintEvent) -> None:  # noqa: N802 - Qt override
+        painter = QStylePainter(self)
+        option = QStyleOptionComboBox()
+        self.initStyleOption(option)
+        painter.drawComplexControl(QStyle.ComplexControl.CC_ComboBox, option)
+        field = self.style().subControlRect(
+            QStyle.ComplexControl.CC_ComboBox,
+            option,
+            QStyle.SubControl.SC_ComboBoxEditField,
+            self,
+        )
+        option.currentText = self.fontMetrics().elidedText(
+            option.currentText, Qt.TextElideMode.ElideRight, max(field.width() - 4, 0)
+        )
+        painter.drawControl(QStyle.ControlElement.CE_ComboBoxLabel, option)
 
 
 class PlotBody(QWidget):
