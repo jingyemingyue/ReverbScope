@@ -231,6 +231,10 @@ def dispose_charts(widget: QWidget) -> None:
 
     for canvas in widget.findChildren(RoomCanvas):
         canvas.dispose()
+    from reverbscope.ui.components.live_spectrum import LiveSpectrumChart
+
+    for live in widget.findChildren(LiveSpectrumChart):
+        live.dispose()
 
 
 class ChartPanel(QWidget):

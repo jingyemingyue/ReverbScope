@@ -78,6 +78,8 @@ reverbscope-env/bin/reverbscope gui
 
 这次测量的 `sweep.wav` 和 `recording.wav` 只会连同描述它们的会话一起写入该文件夹：中途停止或被拒绝的测量不会改动文件夹。对已有会话的文件夹再次测量会替换该会话。文件夹里已有扫频或录音文件、却没有会话时（例如你用 `reverbscope sweep --out folder/sweep.wav` 生成的扫频），在播放任何声音之前就会被拒绝。
 
+在桌面应用的“信号与电平”一步，实时电平表（峰值和 RMS，单位 dBFS，削波指示点击即可清除）和实时频谱会显示所选输入，方便你调整增益。它们只监听、从不播放任何声音；离开这一步、开始测量或按 Esc 时停止，显示的内容不会保存。扫频只会在你于“连接设备”一步亲自选定的音频接口输出上播放，不会使用系统默认输出（[设计说明](../design/LIVE_INPUT_MONITOR.md)）。
+
 先把监听电平调低。高于 −12 dBFS 的电平每次都需要 `--acknowledge-level` 确认；该确认从不保存。
 
 **合成数据**（`reverbscope demo`，或 `reverbscope --backend fake measure`）在合成房间上运行同一流程，不会向扬声器发送任何信号。桌面应用没有演示模式。这样录下的会话在测量列表中标为合成。

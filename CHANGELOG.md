@@ -7,7 +7,22 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Live input monitor (GUI rebuild draft).** Standalone Mode's “Signal and
+  level” step shows a peak/RMS level meter (−60…0 dBFS, 1.5 s peak hold,
+  20 dB/s release, clip latch, −12 dBFS marker) and a live spectrum
+  (20 Hz–20 kHz, Hann, 2048–16384 points, averaging, optional 1/3–1/12
+  octave display smoothing, peak hold, freeze, cursor readout). It is
+  input-only and never plays sound; it closes when the step is left, a take
+  starts, on Esc and on close. Display only: nothing is stored or analysed.
+  Offscreen and synthetic evidence only; real-interface behaviour is untested
+  (docs/design/LIVE_INPUT_MONITOR.md).
+
 ### Changed
+- **A sweep plays only on an output you picked.** The desktop app refuses a
+  Standalone take when the output is “System default” or was only
+  preselected, instead of falling back to the default output (often the
+  computer's speakers).
 - **Faithful curve display.** Power smoothing retains quiet regions after strong peaks, viewport decimation keeps endpoints and crossing segments, and frequency/difference framing includes narrow peaks. Plot legends use quiet neutral chrome. Stored measurements remain unchanged.
 - **Focused desktop draft.** A Photoshop-inspired neutral dark shell separates
   Project, Measure, Analysis and Compare. Measurement runs in steps; optional

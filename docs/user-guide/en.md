@@ -139,6 +139,14 @@ A folder that holds a sweep or a recording but no session (for example your
 own `reverbscope sweep --out folder/sweep.wav`) is refused before anything is
 played.
 
+In the desktop app's Signal and level step, a live meter (peak and RMS in
+dBFS, with a clip indicator you click to clear) and a live spectrum show the
+chosen input while you set the gain. They only listen, never play anything,
+and stop when you leave the step, start a measurement or press Esc; nothing
+they show is saved. A sweep plays only on an output of your interface that
+you picked in the Connection step, never on the system default output
+([design notes](../design/LIVE_INPUT_MONITOR.md)).
+
 Start at a low monitor level. Levels above −12 dBFS need `--acknowledge-level`
 every time; that confirmation is never saved.
 

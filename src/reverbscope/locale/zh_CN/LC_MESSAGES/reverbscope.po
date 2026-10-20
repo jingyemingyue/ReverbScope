@@ -7584,3 +7584,136 @@ msgstr "当前测量减去基线，使用所选的显示处理方式"
 
 msgid "Playback level"
 msgstr "播放电平"
+
+#. Live input monitor (Signal and level step).
+msgid "Input level meter"
+msgstr "输入电平表"
+
+msgid "Peak (light bar, marker held {hold:g} s) and RMS (solid bar) in dBFS. The line at {safe:g} dBFS is the level from which a sweep needs your acknowledgement; the red box latches when the input reaches full scale. Click to clear it."
+msgstr "峰值（浅色条，标记保持 {hold:g} s）和 RMS（实心条），单位 dBFS。{safe:g} dBFS 处的横线是扫频需要你确认的电平；输入达到满刻度时，红色方块会一直亮着。点击可清除。"
+
+msgid "{name}: peak {peak} dBFS, RMS {rms} dBFS"
+msgstr "{name}：峰值 {peak} dBFS，RMS {rms} dBFS"
+
+msgid "{frequency} · {level} dBFS"
+msgstr "{frequency} · {level} dBFS"
+
+msgid "Live input spectrum"
+msgstr "实时输入频谱"
+
+msgid "Level (dBFS)"
+msgstr "电平（dBFS）"
+
+msgid "No input device is available. Choose one in the Connection step."
+msgstr "没有可用的输入设备。请在“连接设备”一步中选择。"
+
+msgid "ReverbScope may not use the microphone. Allow microphone access for ReverbScope in the system settings, then resume."
+msgstr "ReverbScope 没有使用麦克风的权限。请在系统设置中允许 ReverbScope 访问麦克风，然后点“继续”。"
+
+msgid "The input device is busy: another program or an exclusive-mode stream is using it."
+msgstr "输入设备正忙：另一个程序或独占模式的音频流正在使用它。"
+
+msgid "The audio backend is not available, so the input cannot be shown."
+msgstr "音频后端不可用，无法显示输入。"
+
+msgid "The input could not be opened: {error}"
+msgstr "无法打开输入：{error}"
+
+msgid "the input stream stopped"
+msgstr "输入流已停止"
+
+msgid "Pause"
+msgstr "暂停"
+
+msgid "Resume"
+msgstr "继续"
+
+msgid "Stop listening to the input (Esc)."
+msgstr "停止监听输入（Esc）。"
+
+msgid "Analysis length"
+msgstr "分析长度"
+
+msgid "Longer analysis resolves lower frequencies more finely and reacts more slowly."
+msgstr "分析越长，低频分辨越细，反应也越慢。"
+
+msgid "Averaging"
+msgstr "平均"
+
+msgid "Peak hold"
+msgstr "峰值保持"
+
+msgid "Freeze"
+msgstr "冻结"
+
+msgid "Unfreeze"
+msgstr "解除冻结"
+
+msgid "Hold the spectrum still; the meter keeps running."
+msgstr "让频谱停住；电平表继续工作。"
+
+msgid "uncalibrated dBFS"
+msgstr "未校准的 dBFS"
+
+msgid "No live input."
+msgstr "没有实时输入。"
+
+msgid "Listening · spectrum frozen"
+msgstr "正在监听 · 频谱已冻结"
+
+msgid "Listening"
+msgstr "正在监听"
+
+msgid "Paused"
+msgstr "已暂停"
+
+msgid "Not listening"
+msgstr "未在监听"
+
+msgid "no averaging"
+msgstr "不平均"
+
+msgid "no display smoothing"
+msgstr "无显示平滑"
+
+msgid "No averaging"
+msgstr "不平均"
+
+msgid "No smoothing"
+msgstr "不平滑"
+
+msgid "Hann window, {points} points ({resolution:.1f} Hz)"
+msgstr "Hann 窗，{points} 点（{resolution:.1f} Hz）"
+
+msgid "For setting the level only: nothing here is stored or analysed. {details}."
+msgstr "仅用于调整电平：这里显示的内容不会保存，也不参与分析。{details}。"
+
+msgid "Live input"
+msgstr "实时输入"
+
+msgid "{points} points"
+msgstr "{points} 点"
+
+msgid "averaging {seconds:g} s"
+msgstr "平均 {seconds:g} s"
+
+msgid "Average {seconds:g} s"
+msgstr "平均 {seconds:g} s"
+
+msgid "Mic {number}"
+msgstr "话筒 {number}"
+
+msgid "Loopback {number}"
+msgstr "回采 {number}"
+
+msgid "The input is digitally silent. Check the input channel and the interface's gain; on macOS, also check that ReverbScope may use the microphone."
+msgstr "输入是数字静音。请检查输入声道和音频接口的增益；在 macOS 上，还要检查是否已允许 ReverbScope 使用麦克风。"
+
+msgid "Choose the output of your audio interface in the Connection step. ReverbScope does not play the sweep on the system default output."
+msgstr "请在“连接设备”一步中选择音频接口的输出。ReverbScope 不会在系统默认输出上播放扫频。"
+
+msgid "Choose the output of your audio interface in the Connection step. ReverbScope plays the sweep only on an output you picked yourself, never on one it preselected."
+msgstr "请在“连接设备”一步中选择音频接口的输出。ReverbScope 只在你亲自选定的输出上播放扫频，不会使用它预先选中的输出。"
+
+msgid "No interface output chosen"
+msgstr "尚未选择接口输出"

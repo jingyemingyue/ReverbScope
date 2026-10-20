@@ -155,3 +155,6 @@ class MeasureStrip(QWidget):
     def _escape(self) -> None:
         if self.stop_button.isEnabled():
             self.standalone.stop_measurement()
+        else:
+            # No take to stop: Esc closes the live input monitor instead.
+            self.standalone.stop_live_monitor()
