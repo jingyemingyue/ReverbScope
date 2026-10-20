@@ -152,7 +152,7 @@ class ProjectPage(AnalysisView):
         self.new_button.clicked.connect(self._choose_new)
         header.action_row.addWidget(self.new_button)
         self.header = header
-        layout = scroll_page(self, header)
+        layout = scroll_page(self, header, max_width=1180)
 
         tools = Card()
         row = QHBoxLayout()

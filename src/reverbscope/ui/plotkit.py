@@ -228,6 +228,10 @@ def dispose_charts(widget: QWidget) -> None:
         chart.dispose()
 
 
+#: Smallest plot height in pixels (axes included).
+PLOT_MIN_HEIGHT = 196
+
+
 class ChartPanel(QWidget):
     """A plot, its legend, its readout and its export menu."""
 
@@ -335,7 +339,9 @@ class ChartPanel(QWidget):
         self.plot_item = self.plot.getPlotItem()
         disable_menus(self.plot_item)
         self.plot_item.showGrid(x=True, y=True, alpha=0.28)
-        self.plot.setMinimumHeight(140)
+        # Tall enough that the longest y-axis title ("Magnitude (dB,
+        # relative)") is not cut at 960 x 640; a shorter view scrolls instead.
+        self.plot.setMinimumHeight(PLOT_MIN_HEIGHT)
         layout.addWidget(self.plot, 1)
         # Why the chart is empty (nothing stored, nothing selected), over the plot.
         self.message = QLabel(self.plot)
@@ -437,12 +443,14 @@ class ChartPanel(QWidget):
         self.plot.setBackground(QColor(t["surface"]))
         for name in ("bottom", "left"):
             axis = self.plot_item.getAxis(name)
-            axis.setPen(pg.mkPen(QColor(t["grid"])))
-            axis.setTextPen(pg.mkPen(QColor(t["text"])))
-        self.plot_item.showGrid(x=True, y=True, alpha=0.28)
-        self.cursor_line.setPen(pg.mkPen(QColor(t["muted"]), width=1, style=Qt.PenStyle.DashLine))
-        self.plot_item.setLabel("bottom", self.x_label, color=t["text"])
-        self.plot_item.setLabel("left", self.y_label, color=t["text"])
+            # Axis lines in the 3:1 "axis" colour; the grid is the same pen at a
+            # low alpha, so it stays decorative (SPEC §10).
+            axis.setPen(pg.mkPen(QColor(t["axis"])))
+            axis.setTextPen(pg.mkPen(QColor(t["muted"])))
+        self.plot_item.showGrid(x=True, y=True, alpha=0.22)
+        self.cursor_line.setPen(pg.mkPen(QColor(t["text"]), width=1, style=Qt.PenStyle.DotLine))
+        self.plot_item.setLabel("bottom", self.x_label, color=t["muted"])
+        self.plot_item.setLabel("left", self.y_label, color=t["muted"])
 
     # --- content ----------------------------------------------------------------
 

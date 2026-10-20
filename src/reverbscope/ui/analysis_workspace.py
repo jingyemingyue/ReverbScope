@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
     QLabel,
+    QMenu,
     QScrollArea,
     QSizePolicy,
     QStackedWidget,
@@ -31,9 +32,10 @@ from PySide6.QtWidgets import (
 )
 
 from reverbscope.i18n import _
+from reverbscope.ui import icons
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.views.base import AnalysisView
-from reverbscope.ui.widgets import native_shortcut
+from reverbscope.ui.widgets import label, native_shortcut
 from reverbscope.ui.workspace import WorkspaceModel
 
 #: View ids with a Ctrl+<n> shortcut, in order (Ctrl+1 … Ctrl+8).
@@ -121,11 +123,41 @@ def default_views(model: WorkspaceModel, state: MeasurementState) -> list[Analys
     ]
 
 
+class ElidingLabel(QLabel):
+    """A one-line label that elides its text to its width and keeps the full
+    text in the tooltip (the toolbar's title and subtitle)."""
+
+    def __init__(self, role: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setProperty("role", role)
+        self._full = ""
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+
+    def set_full_text(self, text: str) -> None:
+        self._full = text
+        self._elide()
+
+    def full_text(self) -> str:
+        return self._full
+
+    def _elide(self) -> None:
+        width = max(8, self.width() - 2)
+        shown = self.fontMetrics().elidedText(self._full, Qt.TextElideMode.ElideRight, width)
+        self.setText(shown)
+        self.setToolTip(self._full if shown != self._full else "")
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._elide()
+
+
 class AnalysisWorkspace(QWidget):
     """Grouped view bar over a stack; the stack is the window's ``stack``."""
 
     #: A view button or the secondary selector chose ``view_id``.
     view_chosen = Signal(str)
+    #: The toolbar's Save button.
+    save_requested = Signal()
 
     def __init__(self, views: list[AnalysisView], parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -133,18 +165,30 @@ class AnalysisWorkspace(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
+        # One unified 52 px toolbar (docs/design/light-sidebar/SPEC.md §6):
+        # sidebar switch, title and subtitle, the view groups as a segmented
+        # control, then Save and the inspector switch. No second bar.
         bar = QWidget()
         bar.setProperty("viewbar", True)
+        bar.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        bar.setFixedHeight(52)
+        self.bar = bar
         self.bar_layout = QHBoxLayout(bar)
-        self.bar_layout.setContentsMargins(4, 2, 4, 0)
-        self.bar_layout.setSpacing(0)
+        self.bar_layout.setContentsMargins(10, 0, 10, 0)
+        self.bar_layout.setSpacing(8)
         layout.addWidget(bar)
         # The groups scroll when the window is narrow, so a Chinese label is
-        # not clipped. List and Inspector stay pinned.
+        # not clipped. The side switches stay pinned.
         self.group_bar = QWidget()
         self.group_layout = QHBoxLayout(self.group_bar)
         self.group_layout.setContentsMargins(0, 0, 0, 0)
         self.group_layout.setSpacing(0)
+        self.segment = QWidget()
+        self.segment.setProperty("segmented", True)
+        self.segment.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self.segment_layout = QHBoxLayout(self.segment)
+        self.segment_layout.setContentsMargins(2, 0, 2, 0)
+        self.segment_layout.setSpacing(0)
         self.group_scroll = QScrollArea()
         self.group_scroll.setWidget(self.group_bar)
         self.group_scroll.setWidgetResizable(True)
@@ -156,18 +200,30 @@ class AnalysisWorkspace(QWidget):
         self.stack = QStackedWidget()
         layout.addWidget(self.stack, 1)
 
-        self.navigator_button = QToolButton()
-        self.navigator_button.setCheckable(True)
-        self.navigator_button.setChecked(True)
-        self.navigator_button.setAutoRaise(True)
-        self.navigator_button.setProperty("panelswitch", True)
-        self.navigator_button.setText(_("List"))
-        self.navigator_button.setToolTip(
+        self.navigator_button = self._icon_switch(
+            "panel-left",
+            _("List"),
             _("Show or hide the measurement list ({shortcut}).").format(
                 shortcut=_native("Ctrl+Shift+Left")
-            )
+            ),
         )
         self.bar_layout.addWidget(self.navigator_button)
+
+        titles = QVBoxLayout()
+        titles.setContentsMargins(0, 0, 0, 0)
+        titles.setSpacing(0)
+        self.title_label = ElidingLabel("toolbar-title")
+        self.subtitle_label = ElidingLabel("toolbar-subtitle")
+        for widget in (self.title_label, self.subtitle_label):
+            widget.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+            titles.addWidget(widget)
+        self.title_box = QWidget()
+        self.title_box.setLayout(titles)
+        self.title_box.setMinimumWidth(0)
+        self.title_box.setMaximumWidth(220)
+        self.bar_layout.addWidget(self.title_box, 0)
+        self._title = ""
+        self._subtitle = ""
 
         self.group = QButtonGroup(self)
         self.group.setExclusive(True)
@@ -188,7 +244,7 @@ class AnalysisWorkspace(QWidget):
             button.clicked.connect(lambda _checked=False, g=group_id: self._group_clicked(g))
             self.group.addButton(button)
             self.buttons[group_id] = button
-            self.group_layout.addWidget(button)
+            self.segment_layout.addWidget(button)
         self.subview = QComboBox()
         self.subview.setVisible(False)
         self.subview.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToContents)
@@ -197,15 +253,17 @@ class AnalysisWorkspace(QWidget):
         # Secondary charts get their own row instead of widening the view bar.
         self.subview_bar = QWidget()
         self.subview_bar.setProperty("subviewbar", True)
+        self.subview_bar.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         subview_layout = QHBoxLayout(self.subview_bar)
-        subview_layout.setContentsMargins(8, 3, 8, 3)
-        subview_layout.setSpacing(6)
-        subview_layout.addWidget(QLabel(_("View")))
+        subview_layout.setContentsMargins(16, 6, 16, 6)
+        subview_layout.setSpacing(8)
+        subview_layout.addWidget(label(_("View"), "caption"))
         subview_layout.addWidget(self.subview)
         subview_layout.addStretch(1)
         self.subview_bar.hide()
         layout.insertWidget(1, self.subview_bar)
         self.group_layout.addStretch(1)
+        self.group_layout.addWidget(self.segment)
 
         self.project_button = QToolButton()
         self.project_button.setCheckable(True)
@@ -213,6 +271,9 @@ class AnalysisWorkspace(QWidget):
         self.project_button.setProperty("viewtab", True)
         self.project_button.setProperty("projecttab", True)
         self.project_button.setText(_("Project"))
+        self.project_button.setIcon(icons.icon("folder-open", 14))
+        self.project_button.setIconSize(icons.icon_size(14))
+        self.project_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         project_key = _shortcut_for("project")
         self.project_button.setToolTip(
             _("The open project, apart from the analysis charts ({shortcut}).").format(
@@ -223,23 +284,109 @@ class AnalysisWorkspace(QWidget):
         )
         self.project_button.clicked.connect(lambda _checked=False: self.view_chosen.emit("project"))
         self.group_layout.addWidget(self.project_button)
+        self.group_layout.addStretch(1)
         self.bar_layout.addWidget(self.group_scroll, 1)
+        # When the groups do not fit (960 px, SPEC §13), a menu lists them all.
+        self.more_button = QToolButton()
+        self.more_button.setProperty("panelswitch", True)
+        self.more_button.setIcon(icons.icon("chevron-down", 16))
+        self.more_button.setIconSize(icons.icon_size(16))
+        self.more_button.setFixedSize(26, 30)
+        self.more_button.setToolTip(_("All views"))
+        self.more_button.setAccessibleName(_("All views"))
+        self.more_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.more_menu = QMenu(self.more_button)
+        self.more_button.setMenu(self.more_menu)
+        self.more_menu.aboutToShow.connect(self._fill_more_menu)
+        self.more_button.hide()
+        self.bar_layout.addWidget(self.more_button)
 
-        self.inspector_button = QToolButton()
-        self.inspector_button.setCheckable(True)
-        self.inspector_button.setChecked(True)
-        self.inspector_button.setAutoRaise(True)
-        self.inspector_button.setProperty("panelswitch", True)
-        self.inspector_button.setText(_("Inspector"))
-        self.inspector_button.setToolTip(
+        self.save_button = self._icon_switch(
+            "save",
+            _("Save Session..."),
+            _("Save the measurement made in this window ({shortcut}).").format(
+                shortcut=_native("Ctrl+S")
+            ),
+            checkable=False,
+        )
+        self.save_button.clicked.connect(self.save_requested.emit)
+        self.bar_layout.addWidget(self.save_button)
+        self.inspector_button = self._icon_switch(
+            "panel-right",
+            _("Inspector"),
             _("Show or hide the inspector ({shortcut}).").format(
                 shortcut=_native("Ctrl+Shift+Right")
-            )
+            ),
         )
         self.bar_layout.addWidget(self.inspector_button)
         bar.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.group_scroll.setFixedHeight(self.navigator_button.sizeHint().height() + 10)
+        self.group_scroll.setFixedHeight(40)
         self.stack.currentChanged.connect(self._sync_buttons)
+
+    def _icon_switch(
+        self, icon_name: str, text: str, tip: str, *, checkable: bool = True
+    ) -> QToolButton:
+        """An 18 px icon button with a 30 x 30 hit area; its text is its accessible name."""
+        button = QToolButton()
+        button.setCheckable(checkable)
+        button.setChecked(checkable)
+        button.setAutoRaise(True)
+        button.setProperty("panelswitch", True)
+        button.setProperty("icon_name", icon_name)
+        button.setText(text)
+        button.setAccessibleName(text)
+        button.setToolTip(tip)
+        button.setIcon(icons.icon(icon_name, 18))
+        button.setIconSize(icons.icon_size(18))
+        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+        button.setFixedSize(30, 30)
+        return button
+
+    def _fill_more_menu(self) -> None:
+        self.more_menu.clear()
+        current = self.current_view_id()
+        for group_id, view_ids in VIEW_GROUPS:
+            for view_id in view_ids:
+                action = self.more_menu.addAction(self.views[view_id].title())
+                action.setCheckable(True)
+                action.setChecked(view_id == current)
+                action.triggered.connect(lambda _checked=False, v=view_id: self.view_chosen.emit(v))
+            if group_id == "spectral":
+                self.more_menu.addSeparator()
+        if "project" in self.views:
+            self.more_menu.addSeparator()
+            action = self.more_menu.addAction(self.views["project"].title())
+            action.triggered.connect(lambda _checked=False: self.view_chosen.emit("project"))
+
+    def _fit_title(self, width: int) -> None:
+        """Show the title only where the groups still fit beside it unscrolled."""
+        fixed = sum(
+            button.width()
+            for button in (self.navigator_button, self.save_button, self.inspector_button)
+        )
+        room = width - fixed - 40 - self.group_bar.sizeHint().width()
+        self.more_button.setVisible(room < 0)
+        self.title_box.setVisible(room >= 120)
+        self.title_box.setFixedWidth(max(0, min(220, room)))
+
+    def set_place(self, title: str, subtitle: str = "") -> None:
+        """The toolbar's title and subtitle (what is shown, and of which measurement)."""
+        self._title = title
+        self._subtitle = subtitle
+        self._elide_titles()
+
+    def _elide_titles(self) -> None:
+        self.title_label.set_full_text(self._title)
+        self.subtitle_label.set_full_text(self._subtitle)
+        self.subtitle_label.setVisible(bool(self._subtitle))
+
+    def restyle_icons(self) -> None:
+        self.more_button.setIcon(icons.icon("chevron-down", 16))
+        for button in (self.navigator_button, self.save_button, self.inspector_button):
+            name = button.property("icon_name")
+            if isinstance(name, str):
+                button.setIcon(icons.icon(name, 18))
+        self.project_button.setIcon(icons.icon("folder-open", 14))
 
     def _group_tip(self, group_id: str, view_ids: tuple[str, ...]) -> str:
         names = ", ".join(self.views[view_id].title() for view_id in view_ids)
@@ -316,6 +463,8 @@ class AnalysisWorkspace(QWidget):
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
+        # A narrow centre column gives the toolbar title's room to the groups.
+        self._fit_title(event.size().width())
         # QScrollArea needs the new viewport geometry before it scrolls.
         QTimer.singleShot(0, self, self._reveal_active_view)
 

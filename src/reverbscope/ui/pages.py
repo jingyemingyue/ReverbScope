@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QDoubleSpinBox,
     QFileDialog,
     QFormLayout,
+    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -23,6 +24,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QProgressBar,
     QPushButton,
+    QScrollArea,
+    QSizePolicy,
     QSpinBox,
     QVBoxLayout,
     QWidget,
@@ -47,10 +50,12 @@ from reverbscope.models.audio import AudioSignal
 from reverbscope.models.configuration import SUPPORTED_SAMPLE_RATES, AnalysisSettings, SweepSettings
 from reverbscope.models.result import AnalysisResult
 from reverbscope.models.session import MeasurementSession
+from reverbscope.ui import icons
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.widgets import (
     Card,
     PageHeader,
+    StepIndicator,
     ask_save_path,
     error_box,
     label,
@@ -684,11 +689,15 @@ class StandalonePage(QWidget):
     progress_changed = Signal(int)
     #: The page's status line: ``(text, tone)``.
     status_changed = Signal(str, str)
+    #: Whether a take may start, and why not: ``(ready, reason)`` (OUT-4, SAFE).
+    readiness_changed = Signal(bool, str)
 
     def __init__(self, state: MeasurementState, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.state = state
         self.demo_mode = False
+        self._ready = (False, "")
+        self._busy_flag = False
         self._devices: list[DeviceInfo] = []
         self._measure_worker: MeasureWorker | None = None
         self._analysis_worker: AnalysisWorker | None = None
@@ -723,6 +732,15 @@ class StandalonePage(QWidget):
             ),
         )
 
+        # The stepwise flow of PR #71, as a readiness strip over the one
+        # page: connect the devices, set the signal and level, measure. Each
+        # step says when it is done; Start stays off until the first two are.
+        self.steps = StepIndicator(
+            (_("Connect devices"), _("Signal and level"), _("Measure")), self
+        )
+        self.steps.step_clicked.connect(self._reveal_step)
+        layout.addWidget(self.steps)
+
         self.demo_banner = QLabel(
             _("Demo mode: the fake backend synthesises a room. Nothing is sent to a loudspeaker.")
         )
@@ -737,6 +755,7 @@ class StandalonePage(QWidget):
         layout.addWidget(safety)
 
         devices = QGroupBox(_("Audio devices"))
+        self.devices_box = devices
         form = QFormLayout(devices)
         self.host_api = QComboBox()
         self.host_api.setToolTip(
@@ -750,6 +769,19 @@ class StandalonePage(QWidget):
         self.host_api.currentIndexChanged.connect(self._fill_device_lists)
         self.input_device = QComboBox()
         self.output_device = QComboBox()
+        self.output_device.setToolTip(
+            _(
+                "The interface output the sweep plays on. Nothing plays until you choose "
+                "one; the system default output is never used."
+            )
+        )
+        self.output_device.currentIndexChanged.connect(self._sync_readiness)
+        # A long interface name must not widen the page past a 960 px window.
+        for combo in (self.host_api, self.input_device, self.output_device):
+            combo.setSizeAdjustPolicy(
+                QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
+            )
+            combo.setMinimumContentsLength(12)
         self.refresh_button = QPushButton(_("Refresh devices"))
         self.refresh_button.clicked.connect(self.refresh_devices)
         self.sample_rate = QComboBox()
@@ -782,6 +814,7 @@ class StandalonePage(QWidget):
         layout.addWidget(devices)
 
         sweep = QGroupBox(_("Test signal"))
+        self.sweep_box = sweep
         form2 = QFormLayout(sweep)
         self.duration = QDoubleSpinBox()
         self.duration.setRange(1.0, 60.0)
@@ -796,9 +829,28 @@ class StandalonePage(QWidget):
                 level=SAFE_MAX_LEVEL_DBFS
             )
         )
+        # Setting the level plays nothing (OUT-1). Above the safe level a
+        # warning band asks for the acknowledgement; any change of the level,
+        # Stop, the end of a take and New Measurement clear it (SAFE, D-7).
+        self.safe_band = QFrame()
+        self.safe_band.setProperty("safeband", True)
+        band = QVBoxLayout(self.safe_band)
+        band.setContentsMargins(12, 8, 12, 8)
+        band.setSpacing(4)
+        self.safe_text = label(
+            _(
+                "Above {level:g} dBFS: turn the monitor level down first, then tick the box. "
+                "Changing the level, Stop or a new measurement clears it."
+            ).format(level=SAFE_MAX_LEVEL_DBFS),
+            wrap=True,
+        )
+        band.addWidget(self.safe_text)
+        band.addWidget(self.acknowledge)
+        self.level.valueChanged.connect(self._level_changed)
+        self.acknowledge.toggled.connect(self._sync_readiness)
         form2.addRow(_("Sweep duration"), self.duration)
         form2.addRow(_("Playback level"), self.level)
-        form2.addRow(self.acknowledge)
+        form2.addRow(self.safe_band)
         self.profile = _profile_combo(state)
         profile_row, self.profile_help = _profile_row(self.profile, self)
         form2.addRow(_("Recording profile"), profile_row)
@@ -830,16 +882,22 @@ class StandalonePage(QWidget):
         layout.addWidget(self.placement)
 
         row = QHBoxLayout()
+        row.setSpacing(8)
         self.back_button = QPushButton(_("Back"))
+        self.back_button.setIcon(icons.icon("chevron-left", 16))
         self.back_button.clicked.connect(self.back.emit)
         self.run_button = primary(QPushButton(_("Run Measurement")))
         self.run_button.clicked.connect(self.start_measurement)
         self.stop_button = QPushButton(_("Stop"))
         self.stop_button.setProperty("danger", True)
+        self.stop_button.setIcon(icons.icon("square-stop", 16, tone="on_bad"))
         self.stop_button.setEnabled(False)
         self.stop_button.clicked.connect(self.stop_measurement)
+        #: Why Start is off, next to it rather than in a tooltip (OUT-4, SAFE-05).
+        self.readiness = label("", "hint", wrap=True)
+        self.readiness.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         row.addWidget(self.back_button)
-        row.addStretch(1)
+        row.addWidget(self.readiness, 1)
         row.addWidget(self.stop_button)
         row.addWidget(self.run_button)
         layout.addLayout(row)
@@ -852,6 +910,83 @@ class StandalonePage(QWidget):
         layout.addWidget(self.status)
         layout.addStretch(1)
         self.refresh_devices()
+        self._sync_readiness()
+
+    # --- readiness (OUT-1…5, SAFE) ---------------------------------------------------
+
+    def output_chosen(self) -> bool:
+        """An interface output is chosen. Demo mode plays nothing, so its fake
+        interface counts as chosen."""
+        if self.demo_mode:
+            return True
+        return self.output_device.currentData() is not None
+
+    def readiness_reason(self) -> str:
+        """Why a take cannot start now, or ``""``."""
+        if not self._devices:
+            return _("No audio device found; Universal DAW Mode still works.")
+        if not self.output_chosen():
+            return _("Choose the audio interface output first: nothing plays until you do.")
+        if self.level.value() > SAFE_MAX_LEVEL_DBFS and not self.acknowledge.isChecked():
+            return _("Tick “{checkbox}” to continue.").format(checkbox=self.acknowledge.text())
+        return ""
+
+    def _level_changed(self, _value: float) -> None:
+        # Any change clears the acknowledgement, not only crossing the line.
+        if self.acknowledge.isChecked():
+            self.acknowledge.setChecked(False)
+        self._sync_readiness()
+
+    def clear_acknowledgement(self) -> None:
+        """New Measurement, Stop and the end of a take ask again (SAFE-02)."""
+        if self.acknowledge.isChecked():
+            self.acknowledge.setChecked(False)
+        self._sync_readiness()
+
+    def _sync_readiness(self, *_args: object) -> None:
+        if not hasattr(self, "readiness"):
+            return
+        above = self.level.value() > SAFE_MAX_LEVEL_DBFS
+        self.safe_band.setVisible(above)
+        self.acknowledge.setEnabled(above)
+        missing = not self.output_chosen() and bool(self._devices)
+        if bool(self.output_device.property("missing")) != missing:
+            self.output_device.setProperty("missing", missing)
+            self.output_device.style().unpolish(self.output_device)
+            self.output_device.style().polish(self.output_device)
+        busy = self._busy_flag or self.is_busy()
+        reason = self.readiness_reason()
+        if not busy:
+            self.run_button.setEnabled(not reason)
+        self.readiness.setText("" if busy else reason)
+        self.readiness.setVisible(bool(reason) and not busy)
+        connected = bool(self._devices) and self.output_chosen()
+        level_ok = not above or self.acknowledge.isChecked()
+        if busy:
+            states = ("done", "done", "running")
+        else:
+            states = (
+                "done" if connected else "current",
+                ("done" if level_ok else "current") if connected else "todo",
+                "current" if connected and level_ok else "locked",
+            )
+        self.steps.set_states(states)
+        ready = not reason and not busy
+        if self._ready != (ready, reason):
+            self._ready = (ready, reason)
+            self.readiness_changed.emit(ready, reason)
+
+    def _reveal_step(self, index: int) -> None:
+        target = (self.devices_box, self.sweep_box, self.run_button)[index]
+        scroll = self.findChild(QScrollArea)
+        if scroll is not None:
+            scroll.ensureWidgetVisible(target, 8, 24)
+        target.setFocus(Qt.FocusReason.OtherFocusReason)
+
+    def restyle_icons(self) -> None:
+        self.back_button.setIcon(icons.icon("chevron-left", 16))
+        self.stop_button.setIcon(icons.icon("square-stop", 16, tone="on_bad"))
+        self.steps.restyle()
 
     def refresh_devices(self) -> None:
         from reverbscope.audio.backend import get_backend
@@ -909,6 +1044,7 @@ class StandalonePage(QWidget):
         # With no device at all a take would only end in PortAudio's own
         # English error ("Error querying device -1").
         self.run_button.setEnabled(not self.is_busy() and bool(self._devices))
+        self._sync_readiness()
         # A refresh while a take is running must not replace "Playing the sweep...".
         if self.is_busy():
             return
@@ -972,7 +1108,14 @@ class StandalonePage(QWidget):
             combo.clear()
         if api is None:
             self.input_device.addItem(_("System default"), None)
-            self.output_device.addItem(_("System default"), None)
+        if self.demo_mode:
+            # The fake backend plays nothing; its list keeps the old shape.
+            if api is None:
+                self.output_device.addItem(_("System default"), None)
+        else:
+            # OUT-2: no "System default" output and no preselection. The
+            # sweep goes only to an interface output the user picks.
+            self.output_device.addItem(_("Choose the interface output…"), None)
         for probe in probes:
             d = probe.device
             if api is not None and d.host_api != api:
@@ -998,10 +1141,21 @@ class StandalonePage(QWidget):
             (a for a in (self._inventory.host_apis if self._inventory else ()) if a.name == api),
             None,
         )
-        for combo, default, attr in (
-            (self.input_device, chosen.default_input if chosen else None, "recommended_input"),
-            (self.output_device, chosen.default_output if chosen else None, "recommended_output"),
-        ):
+        preselect: list[tuple[QComboBox, object, str]] = [
+            (self.input_device, chosen.default_input if chosen else None, "recommended_input")
+        ]
+        if self.demo_mode:
+            preselect.append(
+                (
+                    self.output_device,
+                    chosen.default_output if chosen else None,
+                    "recommended_output",
+                )
+            )
+        else:
+            self.output_device.setCurrentIndex(0)
+            self.output_device.blockSignals(False)
+        for combo, default, attr in preselect:
             row = combo.findData(default) if default is not None else -1
             if row < 0 and api is not None:
                 row = next(
@@ -1094,6 +1248,8 @@ class StandalonePage(QWidget):
 
     def _device_for(self, combo: QComboBox, *, kind: str) -> DeviceInfo | None:
         index = combo.currentData()
+        if index is None and kind == "output" and not self.demo_mode:
+            return None  # no output chosen: nothing is ever played on a default
         for device in self._devices:
             if index is None:
                 if kind == "input" and device.is_default_input:
@@ -1171,6 +1327,12 @@ class StandalonePage(QWidget):
 
         if self.is_busy():
             return
+        if not self.output_chosen():
+            # OUT-4: the strip's Start and Ctrl+Return are off too; this is the
+            # last guard, and it plays nothing.
+            self._sync_readiness()
+            self._report_status(self.readiness_reason(), "warn")
+            return
         try:
             settings = self.current_sweep_settings()
         except ReverbScopeError as exc:
@@ -1220,7 +1382,17 @@ class StandalonePage(QWidget):
             placement_temperature_c=place["placement_temperature_c"],
         )
         self._take_profile = str(self.profile.currentData())
-        self._set_busy(True, _("Playing the sweep and recording..."))
+        if self._take_synthetic:
+            playing = _("Playing the sweep and recording...")
+        else:
+            playing = _(
+                "Playing the sweep only through {device}, output {channel} (not the system "
+                "default), and recording..."
+            ).format(
+                device=self.output_device.currentText().lstrip("★ "),
+                channel=self._take_output_channel,
+            )
+        self._set_busy(True, playing)
         self._generation = self.state.generation
         self._measure_worker = MeasureWorker(
             measurement_signal(settings),
@@ -1300,6 +1472,7 @@ class StandalonePage(QWidget):
         self.busy_changed.emit(True)
 
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
+        self._busy_flag = busy
         self.run_button.setEnabled(not busy)
         if hasattr(self, "stop_button"):
             self.stop_button.setEnabled(busy)
@@ -1311,6 +1484,10 @@ class StandalonePage(QWidget):
         if not busy and hasattr(self, "progress") and self.progress.maximum() == 100:
             self.progress.setValue(0)
         set_banner_text(self.status, text, tone)
+        if not busy and hasattr(self, "acknowledge"):
+            # Stop, the end of a take or its failure: the level is confirmed again.
+            self.acknowledge.setChecked(False)
+        self._sync_readiness()
         self.busy_changed.emit(busy)
         self.status_changed.emit(text, tone)
 
