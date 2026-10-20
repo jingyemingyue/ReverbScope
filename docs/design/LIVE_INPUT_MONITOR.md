@@ -104,3 +104,19 @@ and device-busy behaviour must be checked on hardware:
 6. Leave “System default” or the preselected output → Run refuses with the
    reason; pick the interface output → the sweep plays only there.
 7. Compare the meter with the interface's own meter (peak within about 1 dB).
+
+### Screenshots (synthetic input, offscreen)
+
+Rendered with Qt's offscreen platform on the fake backend, fed by the
+synthetic input (pink noise plus tones), with a hover readout at 1 kHz. Not
+a hardware capture. Window = the whole Signal and level step; panel = the
+live input panel alone at that window size.
+
+| Size | Chinese | English |
+| --- | --- | --- |
+| 1280×800 window | ![Signal step, Chinese, dark, 1280×800](../images/gui-focused/live/signal-step-1280x800-dark.zh-CN.png) | ![Signal step, English, light, 1280×800](../images/gui-focused/live/signal-step-1280x800-light.en.png) |
+| 960×640 window | ![Signal step, Chinese, light, 960×640](../images/gui-focused/live/signal-step-960x640-light.zh-CN.png) | ![Signal step, English, dark, 960×640](../images/gui-focused/live/signal-step-960x640-dark.en.png) |
+| 960×640 panel | ![Live panel, Chinese, dark, 960×640](../images/gui-focused/live/panel-960x640-dark.zh-CN.png) | ![Live panel, English, light, 960×640](../images/gui-focused/live/panel-960x640-light.en.png) |
+
+Every language × scheme × size combination is in
+`docs/images/gui-focused/live/` (`signal-step-*` and `panel-*`).
