@@ -8,7 +8,7 @@ content needs, the panel switches drop their text and keep their icons.
 
 from __future__ import annotations
 
-from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtCore import QRect, QSize, Qt, Signal
 from PySide6.QtGui import QPaintEvent, QResizeEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
@@ -33,6 +33,10 @@ from reverbscope.ui.workspace import WorkspaceModel, entry_label
 _GROUP_STARTS = ("fr", "noise", "report")
 
 
+#: Pixels kept free at the end of the measurement name before it elides.
+_ELIDE_MARGIN = 4
+
+
 class ElidingComboBox(QComboBox):
     """A combo box whose current text elides with "…" instead of being cut off.
 
@@ -54,7 +58,7 @@ class ElidingComboBox(QComboBox):
             self,
         )
         option.currentText = self.fontMetrics().elidedText(
-            option.currentText, Qt.TextElideMode.ElideMiddle, max(0, field.width() - 4)
+            option.currentText, Qt.TextElideMode.ElideMiddle, max(0, field.width() - _ELIDE_MARGIN)
         )
         painter.drawControl(QStyle.ControlElement.CE_ComboBoxLabel, option)
 
@@ -312,18 +316,39 @@ class ContextBar(QWidget):
         if self._compact and self._needed_width() > self.width():
             # Narrowest step: the measurement name elides (its tooltip and the
             # list keep it whole); the tabs and the switches stay.
-            self._documents_chars(6)
+            # A short name ("B · B-1") still shows whole if it is at most
+            # two characters wider than the step.
+            self._documents_chars(6, self.documents.currentText())
 
-    def _documents_chars(self, chars: int) -> None:
+    def _documents_chars(self, chars: int, name: str = "") -> None:
         """Width of the measurement chooser in characters; a longer name elides.
 
         Set as a width, not with ``setMinimumContentsLength``: QComboBox keeps
         its first minimum size hint, so a later, shorter length is ignored.
         """
-        metrics = self.documents.fontMetrics()
-        # 60 px: the style sheet's 8 px left and 26 px right padding, the frame
-        # and the arrow the style still reserves inside the padded box.
-        self.documents.setFixedWidth(metrics.horizontalAdvance("0" * chars) + 60)
+        chooser = self.documents
+        chooser.ensurePolished()
+        # What the style keeps around the text (padding, frame, arrow) differs
+        # by platform and font, so it is measured, plus the elision margin.
+        option = QStyleOptionComboBox()
+        chooser.initStyleOption(option)
+        probe = 400
+        option.rect = QRect(0, 0, probe, max(chooser.height(), 24))
+        field = chooser.style().subControlRect(
+            QStyle.ComplexControl.CC_ComboBox,
+            option,
+            QStyle.SubControl.SC_ComboBoxEditField,
+            chooser,
+        )
+        frame = probe - field.width() + _ELIDE_MARGIN
+        metrics = chooser.fontMetrics()
+        text = metrics.horizontalAdvance("0" * chars)
+        if name:
+            text = max(
+                text,
+                min(metrics.horizontalAdvance(name), metrics.horizontalAdvance("0" * (chars + 2))),
+            )
+        chooser.setFixedWidth(text + frame)
 
     def _needed_width(self) -> int:
         """The width every visible item of the bar needs, at the current style."""

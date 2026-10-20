@@ -7,6 +7,7 @@ A passing run here is not a hardware or Retina check.
 from __future__ import annotations
 
 import os
+import sys
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -27,6 +28,14 @@ from tests.conftest import make_rir
 
 pytestmark = pytest.mark.gui
 
+#: Qt's offscreen platform on Windows draws Latin text in a face about twice as
+#: wide as Segoe UI (13 px "ReverbScope" is 154 px there, 80 px on Linux), so a
+#: pixel fit says nothing about the desktop. The fit is checked on Linux and
+#: macOS; every other check here still runs on Windows.
+WIDE_OFFSCREEN_FONT = sys.platform == "win32" and os.environ.get("QT_QPA_PLATFORM") == "offscreen"
+needs_desktop_metrics = pytest.mark.skipif(
+    WIDE_OFFSCREEN_FONT, reason="offscreen Latin font metrics on Windows are not the desktop's"
+)
 SIZES = ((960, 640), (1280, 800))
 #: Analysis views that must be one click away as a visible tab.
 TAB_VIEWS = ("overview", "fr", "etc", "decay", "noise", "spectrogram", "waterfall", "report")
@@ -117,8 +126,10 @@ def test_every_analysis_view_is_a_visible_tab_and_the_bars_do_not_clip(
         assert index >= 0, view_id
         button = tabs.button(index)
         assert button.isVisible() and button.isChecked(), view_id
-        assert _inside(button, window.workspace.context), view_id
         assert button.toolTip(), view_id
+        if WIDE_OFFSCREEN_FONT:
+            continue  # the pixel fit below needs desktop font metrics
+        assert _inside(button, window.workspace.context), view_id
         for bar in (window.workspace.taskbar, window.workspace.context):
             assert _clipped(bar) == [], (view_id, size, lang)
     # The synthetic data is said in words on every view, also when compact.
@@ -131,6 +142,7 @@ def test_every_analysis_view_is_a_visible_tab_and_the_bars_do_not_clip(
     window.close()
 
 
+@needs_desktop_metrics
 @pytest.mark.parametrize("size", SIZES)
 def test_the_measure_context_bar_does_not_clip(
     app: QApplication, lang: str, size: tuple[int, int]
@@ -203,6 +215,7 @@ def test_the_run_reason_sits_above_the_buttons(app: QApplication, lang: str) -> 
     window.close()
 
 
+@needs_desktop_metrics
 @pytest.mark.parametrize("size", SIZES)
 def test_the_measurement_chooser_shows_the_whole_short_name(
     app: QApplication, lang: str, result: AnalysisResult, tmp_path: Path, size: tuple[int, int]
@@ -212,18 +225,22 @@ def test_the_measurement_chooser_shows_the_whole_short_name(
     from reverbscope.demo import DEMO_MODE
 
     window = _window(app, size)
-    entry = window.model.add_session(tmp_path / "a", MeasurementSession(mode=DEMO_MODE), result)
+    entry = window.model.add_session(
+        tmp_path / "B-1", MeasurementSession(mode=DEMO_MODE), result, position="B"
+    )
     window.model.set_current(entry.key)
     window.show_view("fr")
     _settle(app)
     chooser = window.workspace.context.documents
+    assert chooser.currentText() == "B · B-1"
     option = QStyleOptionComboBox()
     chooser.initStyleOption(option)
     field = chooser.style().subControlRect(
         QStyle.ComplexControl.CC_ComboBox, option, QStyle.SubControl.SC_ComboBoxEditField, chooser
     )
-    # A position and take label such as "B · B-1" fits even at the narrowest step.
-    assert chooser.fontMetrics().horizontalAdvance("B · B-1") <= field.width() - 4
+    # A position and take label such as "B · B-1" fits even at the narrowest step,
+    # whatever the platform's font and combo-box frame.
+    assert chooser.fontMetrics().horizontalAdvance(chooser.currentText()) <= field.width() - 4
     window.close()
 
 
