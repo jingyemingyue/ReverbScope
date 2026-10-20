@@ -29,8 +29,9 @@ from PySide6.QtWidgets import (
 )
 
 from reverbscope.i18n import N_, _
+from reverbscope.ui import icons
 from reverbscope.ui.pages import DawModePage, StandalonePage
-from reverbscope.ui.widgets import label, native_shortcut, primary, set_banner_text
+from reverbscope.ui.widgets import ElidedComboBox, label, native_shortcut, primary, set_banner_text
 from reverbscope.ui.workspace import WorkspaceModel
 
 #: Strip modes, in the order of the mode list. The product has no demo mode;
@@ -137,8 +138,8 @@ class MeasureStrip(QWidget):
 
         self.device_widgets: list[QWidget] = []
         self.advanced_widgets: list[QWidget] = []
-        self.input_device = QComboBox()
-        self.output_device = QComboBox()
+        self.input_device = ElidedComboBox()
+        self.output_device = ElidedComboBox()
         self.sample_rate = QComboBox()
         for combo, page_combo, tip in (
             (self.input_device, standalone.input_device, _("Input device")),
@@ -164,8 +165,11 @@ class MeasureStrip(QWidget):
         self.loopback_channel = QSpinBox()
         _mirror_spin(self.loopback_channel, standalone.loopback_channel)
         self.loopback_channel.setToolTip(_("Loopback channel (1-based)"))
+        # The output stays on the main row: the sweep plays only on an output
+        # the user picked here or on the set-up page (OUT-2, OUT-4).
         for caption, widget in (
             (_("In"), self.input_device),
+            (_("Out"), self.output_device),
             (None, self.sample_rate),
             (_("Mic"), self.input_channel),
         ):
@@ -173,20 +177,24 @@ class MeasureStrip(QWidget):
                 caption_label = label(caption, "hint")
                 row.addWidget(caption_label)
                 self.device_widgets.append(caption_label)
-            row.addWidget(widget, 1 if widget is self.input_device else 0)
+            # The output gets the room first: it is the one Start waits for.
+            if widget is self.output_device:
+                stretch = 2
+            elif widget is self.input_device:
+                stretch = 1
+            else:
+                stretch = 0
+            row.addWidget(widget, stretch)
             self.device_widgets.append(widget)
 
         self.advanced_bar = QWidget()
         advanced = QHBoxLayout(self.advanced_bar)
         advanced.setContentsMargins(0, 0, 0, 0)
         advanced.setSpacing(6)
-        for caption, widget in (
-            (_("Out"), self.output_device),
-            (_("Loopback"), self.loopback_channel),
-        ):
+        for caption, widget in ((_("Loopback"), self.loopback_channel),):
             caption_label = label(caption, "hint")
             advanced.addWidget(caption_label)
-            advanced.addWidget(widget, 1 if isinstance(widget, QComboBox) else 0)
+            advanced.addWidget(widget)
             self.device_widgets.append(caption_label)
             self.device_widgets.append(widget)
             self.advanced_widgets.append(caption_label)
@@ -212,17 +220,19 @@ class MeasureStrip(QWidget):
         row = QHBoxLayout(self.transport_bar)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(6)
+        self.transport_layout = row
         row.addStretch(1)
         self.control_layout.addWidget(self.transport_bar)
         self.advanced_button = QToolButton()
         self.advanced_button.setCheckable(True)
         self.advanced_button.setAutoRaise(True)
         self.advanced_button.setText(_("Advanced"))
-        self.advanced_button.setToolTip(_("Output device and loopback channel."))
+        self.advanced_button.setToolTip(_("Loopback channel."))
         self.advanced_button.toggled.connect(self.advanced_bar.setVisible)
         row.addWidget(self.advanced_button)
 
         self.setup_button = QPushButton(_("Set up..."))
+        self.setup_button.setIcon(icons.icon("sliders-vertical", 16))
         self.setup_button.setToolTip(
             _("All settings of this mode: level, sweep, profile, room and placement.")
         )
@@ -238,6 +248,7 @@ class MeasureStrip(QWidget):
         row.addWidget(self.start_button)
         self.stop_button = QPushButton(_("Stop"))
         self.stop_button.setProperty("danger", True)
+        self.stop_button.setIcon(icons.icon("square-stop", 16, tone="on_bad"))
         self.stop_button.setEnabled(False)
         self.stop_button.setToolTip(_("Stop the take and silence the output (Esc)."))
         self.stop_button.clicked.connect(standalone.stop_measurement)
@@ -245,7 +256,8 @@ class MeasureStrip(QWidget):
         self.phase = QLabel(_("Ready"))
         self.phase.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.phase.setMinimumWidth(72)
-        row.addWidget(self.phase)
+        self.phase.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        row.addWidget(self.phase, 0, Qt.AlignmentFlag.AlignVCenter)
         # Esc stops a take from any view; a QShortcut on the strip, which is
         # always visible, so it never competes with a hidden page's button.
         self.stop_shortcut = QShortcut(QKeySequence(Qt.Key.Key_Escape), self)
@@ -268,9 +280,13 @@ class MeasureStrip(QWidget):
         detail.setSpacing(8)
         detail.addWidget(self.progress)
         detail.addWidget(self.status, 1)
+        self.detail_layout = detail
+        self._wrapped = False
         self.detail.hide()
         outer.addWidget(self.detail)
 
+        self._ready, self._reason = standalone._ready
+        standalone.readiness_changed.connect(self._readiness)
         standalone.busy_changed.connect(self._busy)
         standalone.progress_changed.connect(self.progress.setValue)
         standalone.status_changed.connect(
@@ -283,6 +299,30 @@ class MeasureStrip(QWidget):
         self._fill_positions()
         self._mode_selected()
         self._set_phase("idle")
+        self._sync_start()
+
+    def restyle_icons(self) -> None:
+        self.setup_button.setIcon(icons.icon("sliders-vertical", 16))
+        self.stop_button.setIcon(icons.icon("square-stop", 16, tone="on_bad"))
+
+    def _readiness(self, ready: bool, reason: str) -> None:
+        self._ready, self._reason = ready, reason
+        self._sync_start()
+        if self.current_mode() == "standalone" and not self.standalone.is_busy():
+            if reason:
+                self._status(reason, "warn")
+            else:
+                self._show_page_status()
+
+    def _sync_start(self) -> None:
+        """Start is off with the reason beside it while no output is chosen or
+        the level is not acknowledged (OUT-4, SAFE)."""
+        busy = self.standalone.is_busy() or self.stop_button.isEnabled()
+        live = self.current_mode() == "standalone"
+        allowed = not busy and (not live or self._ready)
+        self.start_button.setEnabled(allowed)
+        if live and not busy and self._reason:
+            self.start_button.setToolTip(self._reason)
 
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
@@ -299,11 +339,21 @@ class MeasureStrip(QWidget):
             + margin.left()
             + margin.right()
         )
+        wrapped = width < required
         self.control_layout.setDirection(
-            QBoxLayout.Direction.TopToBottom
-            if width < required
-            else QBoxLayout.Direction.LeftToRight
+            QBoxLayout.Direction.TopToBottom if wrapped else QBoxLayout.Direction.LeftToRight
         )
+        # Wrapped (narrow window): the status line sits left of the buttons
+        # on the transport row instead of taking a third row from the chart.
+        host = self.transport_layout if wrapped else self.detail_layout
+        if self.status.parentWidget() is not (self.transport_bar if wrapped else self.detail):
+            self.status.setParent(None)
+            if wrapped:
+                host.insertWidget(0, self.status, 1)
+            else:
+                host.addWidget(self.status, 1)
+        self._wrapped = wrapped
+        self._sync_detail()
 
     # --- mode -----------------------------------------------------------------------
 
@@ -335,6 +385,10 @@ class MeasureStrip(QWidget):
         )
         self.mode_changed.emit(mode)
         self._show_page_status()
+        if hasattr(self, "_ready"):
+            self._sync_start()
+            if live and self._reason and not self.standalone.is_busy():
+                self._status(self._reason, "warn")
         self._reflow(self.width())
 
     # --- position -------------------------------------------------------------------
@@ -364,7 +418,9 @@ class MeasureStrip(QWidget):
     # --- following a take -----------------------------------------------------------
 
     def _busy(self, busy: bool) -> None:
-        self.start_button.setEnabled(not busy)
+        self.start_button.setEnabled(
+            not busy and (self.current_mode() != "standalone" or self._ready)
+        )
         self.mode.setEnabled(not busy)
         self.position.setEnabled(not busy)
         # The page's Stop is on exactly while the sweep plays (the worker may
@@ -428,7 +484,11 @@ class MeasureStrip(QWidget):
         self._sync_detail()
 
     def _sync_detail(self) -> None:
-        self.detail.setVisible(bool(self.status.text()) or self.progress.isVisible())
+        in_detail = self.status.parentWidget() is self.detail
+        self.detail.setVisible(
+            (in_detail and bool(self.status.text())) or not self.progress.isHidden()
+        )
+        self.status.setVisible(bool(self.status.text()))
 
     def _escape(self) -> None:
         if self.stop_button.isEnabled():

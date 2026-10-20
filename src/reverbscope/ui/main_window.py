@@ -35,7 +35,7 @@ from reverbscope.interpretation import available_profiles
 from reverbscope.io.recent import remember_session
 from reverbscope.io.session_store import SESSION_FILE, load_measurement, save_measurement
 from reverbscope.settings import load_settings
-from reverbscope.ui import ui_state
+from reverbscope.ui import icons, ui_state
 from reverbscope.ui.analysis_workspace import NUMBERED_VIEWS, AnalysisWorkspace, default_views
 from reverbscope.ui.compare_view import ComparePage
 from reverbscope.ui.inspector import Inspector
@@ -48,7 +48,11 @@ from reverbscope.ui.start_panel import StartPanel
 from reverbscope.ui.state import MeasurementState
 from reverbscope.ui.theme import apply_application_chrome, color_scheme
 from reverbscope.ui.widgets import app_icon
-from reverbscope.ui.workspace import WorkspaceModel, folder_key, usable_profile
+from reverbscope.ui.workspace import WorkspaceModel, entry_label, folder_key, usable_profile
+
+#: Default side columns at 1280 px and wider (docs/design/light-sidebar/SPEC.md §4).
+SIDEBAR_WIDTH = 260
+INSPECTOR_WIDTH = 288
 
 
 def about_html() -> str:
@@ -140,14 +144,14 @@ class MainWindow(QMainWindow):
         self.splitter = QSplitter(Qt.Orientation.Horizontal)
         self.splitter.setChildrenCollapsible(False)
         self.splitter.setOpaqueResize(True)
-        self.splitter.setHandleWidth(6)
+        self.splitter.setHandleWidth(1)
         self.splitter.addWidget(self.navigator)
         self.splitter.addWidget(self.workspace)
         self.splitter.addWidget(self.inspector)
         self.splitter.setStretchFactor(0, 0)
         self.splitter.setStretchFactor(1, 1)
         self.splitter.setStretchFactor(2, 0)
-        self.splitter.setSizes([220, 860, 260])
+        self.splitter.setSizes([SIDEBAR_WIDTH, 860, INSPECTOR_WIDTH])
         self.navigator.setMinimumWidth(168)
         self.inspector.setMinimumWidth(200)
         central = QWidget()
@@ -168,6 +172,16 @@ class MainWindow(QMainWindow):
         self.navigator.measure_position_requested.connect(self._measure_at)
         self.navigator.remove_requested.connect(self.remove_entry)
         self.navigator.save_requested.connect(self._weak(lambda window, _key: window.save_take()))
+        self.navigator.new_measurement_requested.connect(self.show_home)
+        self.navigator.open_recent_requested.connect(self.open_session_path)
+        self.navigator.settings_requested.connect(self.show_settings)
+        self.navigator.help_requested.connect(self.show_getting_started)
+        self.navigator.report_requested.connect(self.show_environment_report)
+        self.workspace.save_requested.connect(self.save_take)
+        self._busy_pages: set[str] = set()
+        self.standalone.busy_changed.connect(
+            self._weak(lambda window, busy: window._busy_changed(busy, "standalone"))
+        )
         self.inspector.compare_requested.connect(self.show_compare)
         self.inspector.same_gain.toggled.connect(self.compare.same_gain.setChecked)
         self.compare.same_gain.toggled.connect(self.inspector.same_gain.setChecked)
@@ -227,6 +241,7 @@ class MainWindow(QMainWindow):
         project_action = QAction(_("Open &Project..."), self)
         project_action.setShortcut("Ctrl+Shift+O")
         project_action.triggered.connect(self.choose_project)
+        file_menu.setToolTipsVisible(True)
         self.close_project_action = QAction(_("Close Project"), self)
         self.close_project_action.triggered.connect(self.close_project)
         self.save_action = QAction(_("&Save Session..."), self)
@@ -238,6 +253,14 @@ class MainWindow(QMainWindow):
         settings_action = QAction(_("&Settings..."), self)
         settings_action.setShortcut("Ctrl+,")
         settings_action.triggered.connect(self.show_settings)
+        #: Locked while a sweep sounds or a take is analysed (SPEC §8.3 BUSY).
+        self.busy_actions = (
+            new_action,
+            open_action,
+            project_action,
+            self.save_action,
+            settings_action,
+        )
         quit_action = QAction(_("&Quit"), self)
         quit_action.setShortcut("Ctrl+Q")
         quit_action.triggered.connect(self.close)
@@ -413,12 +436,25 @@ class MainWindow(QMainWindow):
             ui_state.write_selection(self.model.project_path, self.model.selection_state())
 
     def reset_layout(self) -> None:
-        """The default columns: list, a wide chart, inspector. Both sides open."""
+        """The default columns: sidebar, a wide chart, inspector. Both sides open.
+
+        260 / 288 px from 1440 px wide (SPEC §4, §13); narrower windows give
+        the chart the room.
+        """
         self.set_navigator_open(True)
         self.set_inspector_open(True)
-        side_l, side_r = 220, 260
+        wide = self.width() >= 1440
+        side_l = SIDEBAR_WIDTH if wide else (240 if self.width() >= 1100 else 212)
+        side_r = INSPECTOR_WIDTH if wide else (260 if self.width() >= 1100 else 236)
         center = max(480, self.width() - side_l - side_r)
         self.splitter.setSizes([side_l, center, side_r])
+
+    def _first_run_columns(self) -> None:
+        """Below 1100 px the inspector starts closed (SPEC §13: an overlay
+        there), unless the user's own layout says otherwise. The chart keeps
+        the room; View ▸ Inspector or the toolbar switch opens it."""
+        if ui_state.read_text("window/inspector", "") == "" and self.width() < 1100:
+            self.set_inspector_open(False)
 
     def _ensure_chart_space(self) -> None:
         """A restored layout that crushes the chart falls back to the default."""
@@ -436,6 +472,7 @@ class MainWindow(QMainWindow):
         if not self._layout_checked:
             self._layout_checked = True
             QTimer.singleShot(0, self._ensure_chart_space)
+            QTimer.singleShot(0, self._first_run_columns)
 
     # --- closing -------------------------------------------------------------------------
 
@@ -469,6 +506,64 @@ class MainWindow(QMainWindow):
         self._place = place
         self._status.showMessage(
             _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
+        )
+        self._update_toolbar_place()
+
+    def notify(self, text: str, tone: str = "good") -> None:
+        """Say what just happened where it is seen even without the status bar.
+
+        The toolbar's subtitle slot carries it for four seconds (SPEC §6), or a
+        notice under the toolbar when the window is too narrow for the title;
+        the status bar keeps a copy. Nothing modal, nothing takes the focus.
+        """
+        self._status.showMessage(text)
+        self.workspace.show_notice(text, tone)
+
+    def _update_toolbar_place(self) -> None:
+        """The toolbar's title (the place) and subtitle (the current measurement)."""
+        place = self._place
+        current = self.model.current()
+        subtitle = ""
+        if current is not None and self.stack.currentWidget() not in (
+            self.home,
+            self.daw,
+            self.standalone,
+        ):
+            subtitle = entry_label(current)
+            if current.synthetic:
+                subtitle = _("{name} · synthetic demo data").format(name=subtitle)
+        self.workspace.set_place(place, subtitle)
+
+    def _busy_changed(self, busy: bool, page: str = "standalone") -> None:
+        """While a take sounds or is analysed: lock what would interrupt it.
+
+        The locked actions and sidebar rows say why in their tooltips, also
+        inside the menus (SPEC §8.3, BUSY-02/03). Browsing stays possible.
+        """
+        if busy:
+            self._busy_pages.add(page)
+        else:
+            self._busy_pages.discard(page)
+        busy = bool(self._busy_pages)
+        reason = _("Measuring · available after Stop or when it ends")
+        for action in self.busy_actions:
+            action.setEnabled(not busy)
+            action.setToolTip(reason if busy else action.text().replace("&", ""))
+        for button in (
+            self.navigator.new_button,
+            self.navigator.open_project_button,
+            self.navigator.open_session_button,
+            self.navigator.settings_button,
+            self.workspace.save_button,
+        ):
+            button.setEnabled(not busy)
+            if busy:
+                button.setProperty("idle_tip", button.property("idle_tip") or button.toolTip())
+                button.setToolTip(reason)
+            elif button.property("idle_tip"):
+                button.setToolTip(str(button.property("idle_tip")))
+        self.navigator.new_button.setIcon(
+            icons.icon("lock" if busy else "plus", 16, tone="" if busy else "accent")
         )
 
     # --- the unsaved take ------------------------------------------------------------------
@@ -543,11 +638,13 @@ class MainWindow(QMainWindow):
             if entry.is_take:
                 self.model.remove(entry.key)
         self.state.reset()
+        self.standalone.clear_acknowledgement()
         self.daw.clear_recording()
         self._show_start()
 
     def _show_start(self) -> None:
         self.home.refresh_recent()
+        self.navigator.refresh_recent()
         self.home.show_walkthrough(not load_settings().walkthrough_dismissed)
         self.stack.setCurrentWidget(self.home)
         self._set_place(_("Start"))
@@ -566,6 +663,9 @@ class MainWindow(QMainWindow):
         """A measurement became current: leave the start panel for the views."""
         if key and self.stack.currentWidget() is self.home:
             self.show_view(self._preferred_view)
+        elif self._place:
+            # Only the toolbar: the status line may be saying "saved".
+            self._update_toolbar_place()
 
     def show_results(self) -> None:
         """The view the user last read, for the current measurement."""
@@ -601,6 +701,7 @@ class MainWindow(QMainWindow):
             profile=profile,
         )
         remember_session(loaded.directory)
+        self.navigator.refresh_recent()
         self.show_view(
             self._preferred_view
             if self.stack.currentWidget() in (self.home, self.daw, self.standalone)
@@ -829,11 +930,12 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, _("Cannot save session"), localize(str(exc)))
             return False
         remember_session(directory)
+        self.navigator.refresh_recent()
         self.state.unsaved_take = False
         entry = self.model.entry(key)
         position = entry.position if entry is not None else ""
         self.model.mark_saved(key, directory, position=position)
-        self._status.showMessage(_("Session saved to {path}").format(path=session_path.parent))
+        self.notify(_("Session saved to {path}").format(path=session_path.parent))
         project = self.model.project_path
         if project is not None:
             self._add_to_project(project, directory, position or "A")
@@ -854,7 +956,7 @@ class MainWindow(QMainWindow):
                 ).format(path=directory, error=localize(str(exc))),
             )
             return
-        self._status.showMessage(
+        self.notify(
             _(
                 "Session saved to {path} and listed in project {project} under position {label}"
             ).format(path=directory, project=listed.name or project.name, label=position)
@@ -919,6 +1021,11 @@ class MainWindow(QMainWindow):
         for view in self.views.values():
             view.restyle()
         self.navigator.rebuild()
+        self.navigator.restyle_icons()
+        self.workspace.restyle_icons()
+        self.home.restyle_icons()
+        self.standalone.restyle_icons()
+        self.strip.restyle_icons()
         self.inspector.refresh()
         for page in (self.daw, self.standalone):
             page.placement.redraw()

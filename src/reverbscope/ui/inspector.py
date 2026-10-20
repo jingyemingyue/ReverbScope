@@ -41,7 +41,7 @@ from reverbscope.models.result import (
 )
 from reverbscope.ui.comparison import current_comparison
 from reverbscope.ui.health_nav import view_for_check, view_title
-from reverbscope.ui.theme import tone_color
+from reverbscope.ui.theme import apply_mono_font, tone_color
 from reverbscope.ui.views.overview import CONFIDENCE_TONE, HEALTH_TONE, VALIDITY_DISPLAY
 from reverbscope.ui.widgets import PathLabel, label, separator
 from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
@@ -107,6 +107,8 @@ class _Section(QWidget):
         self.extra.setSpacing(4)
         layout.addLayout(self.extra)
         self.rows = 0
+        #: Values in the monospace face (key figures, SPEC §3), when installed.
+        self.mono = False
 
     def make_collapsible(self) -> None:
         """Keep secondary measurement conditions available without filling the inspector."""
@@ -165,6 +167,8 @@ class _Section(QWidget):
             color, _soft = tone_color(tone)
             text += f' <span style="color:{color}; font-weight:600">· {html.escape(chip)}</span>'
         shown.setText(text)
+        if self.mono:
+            apply_mono_font(shown, 12)
         shown.setToolTip(tip or f"{value}  {chip}".strip())
         if tip:
             name.setToolTip(tip)
@@ -226,6 +230,7 @@ class Inspector(QWidget):
         self.health = _Section(_("Measurement health"))
         self.figures = _Section(_("Key figures"))
         self.figures.set_note("")
+        self.figures.mono = True
         self.conditions = _Section(_("Conditions"))
         self.conditions.make_collapsible()
         self.comparison = _Section(_("Comparison"))
@@ -239,6 +244,12 @@ class Inspector(QWidget):
         self.same_gain.toggled.connect(self._draw_comparison)
         self.details_button = QPushButton(_("Open the comparison"))
         self.details_button.clicked.connect(self.compare_requested.emit)
+        # The baseline in view, not only in the list's context menu (#96).
+        self.baseline_button = QPushButton(_("Use as baseline"))
+        self.baseline_button.setToolTip(
+            _("Compare the next measurement you select against this one.")
+        )
+        self.baseline_button.clicked.connect(self._use_as_baseline)
         self.profile_button = QPushButton(_("About this profile..."))
         self.profile_button.clicked.connect(self.show_profile_help)
         self.reflection = _Section(_("Selected reflection"))
@@ -462,19 +473,28 @@ class Inspector(QWidget):
             return None
         return show_profile_help(entry.profile, self)
 
+    def _use_as_baseline(self) -> None:
+        current = self.model.current()
+        if current is not None:
+            self.model.set_baseline(current.key)
+
     def _draw_comparison(self, *_args: object) -> None:
         section = self.comparison
         # The check box and the button are reused; take them out before clearing.
-        for widget in (self.same_gain, self.details_button):
+        for widget in (self.same_gain, self.details_button, self.baseline_button):
             widget.setParent(self._parking)
         section.clear()
         baseline = self.model.baseline()
         current = self.model.current()
-        section.setVisible(baseline is not None and current is not None)
+        section.setVisible(current is not None)
         if baseline is None:
             section.set_note(
-                _("Right-click a measurement in the list and choose Use as baseline to compare.")
+                _(
+                    "Use this measurement as the baseline, then select another one to "
+                    "compare it (also in the list's right-click menu)."
+                )
             )
+            section.add_widget(self.baseline_button)
             return
         if current is None or current.key == baseline.key:
             section.set_note(

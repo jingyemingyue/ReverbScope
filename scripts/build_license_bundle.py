@@ -77,7 +77,7 @@ TERMINAL_REQUIRED = [
     "typing-extensions",
 ]
 #: Notices that concern only the GUI's libraries.
-GUI_NOTICES = ("freetype", "agg", "pyside6", "ttconv")
+GUI_NOTICES = ("freetype", "agg", "pyside6", "ttconv", "lucide")
 
 # Verbatim license texts kept in the repository because the wheels omit them
 # (DEPENDENCIES.md §3-§4). Every bundle ships all of them; the LGPL / GPL
@@ -124,6 +124,18 @@ PACKAGE_LICENSE_FILES = {
 #: Package files that mean a bundled library needs the files above.
 BUNDLED_LIBRARY_MARKERS = {"soundfile": "_soundfile_data/libsndfile"}
 
+
+def _lucide_license() -> str:
+    """The ISC + MIT texts of the Lucide icons (``""`` outside a source tree)."""
+    path = Path(__file__).resolve().parent.parent / "packaging" / "licenses" / "lucide-LICENSE.txt"
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+LUCIDE_LICENSE = _lucide_license()
+
 KNOWN_NOTICES = {
     "portaudio": (
         "PortAudio (http://www.portaudio.com) is used through the sounddevice\n"
@@ -163,6 +175,14 @@ KNOWN_NOTICES = {
         "PySide6 source: https://code.qt.io/cgit/pyside/pyside-setup.git/\n"
         "LGPL-3.0: https://www.gnu.org/licenses/lgpl-3.0.html\n"
         "GPL-3.0: https://www.gnu.org/licenses/gpl-3.0.html\n"
+    ),
+    "lucide": (
+        "ReverbScope's GUI draws line icons from Lucide (https://lucide.dev),\n"
+        "lucide-static 1.59.0, under the ISC License, Copyright (c) 2026 Lucide\n"
+        "Icons and Contributors. The icons Lucide derives from Feather are also\n"
+        "under the MIT License, Copyright (c) 2013-present Cole Bemis. The full\n"
+        "texts are in packaging/licenses/lucide-LICENSE.txt of the source tree.\n\n"
+        + LUCIDE_LICENSE
     ),
     "ttconv": (
         "matplotlib's historical ttconv TrueType converter is not present in\n"

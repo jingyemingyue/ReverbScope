@@ -152,7 +152,7 @@ class ProjectPage(AnalysisView):
         self.new_button.clicked.connect(self._choose_new)
         header.action_row.addWidget(self.new_button)
         self.header = header
-        layout = scroll_page(self, header)
+        layout = scroll_page(self, header, max_width=1180)
 
         tools = Card()
         row = QHBoxLayout()
@@ -179,7 +179,6 @@ class ProjectPage(AnalysisView):
         self.add_button = QPushButton(_("Add Session..."))
         self.add_button.setToolTip(_("List a saved session under a position of this project."))
         self.add_button.clicked.connect(self._choose_existing)
-        row.addWidget(self.add_button)
         self.compare_button = QPushButton(_("Compare with first position"))
         self.compare_button.setToolTip(
             _(
@@ -187,11 +186,18 @@ class ProjectPage(AnalysisView):
             )
         )
         self.compare_button.clicked.connect(self._compare_selected)
-        row.addWidget(self.compare_button)
         self.measure_button = primary(QPushButton(_("Measure a new position...")))
         self.measure_button.clicked.connect(self._choose_position)
-        row.addWidget(self.measure_button)
         tools.body.addLayout(row)
+        # Adding a session and the actions on a take get their own row: in one
+        # row the tools were wider than the centre column beside the inspector
+        # and were cut.
+        actions = QHBoxLayout()
+        actions.addWidget(self.add_button)
+        actions.addStretch(1)
+        actions.addWidget(self.compare_button)
+        actions.addWidget(self.measure_button)
+        tools.body.addLayout(actions)
         self.status = label("", "hint", wrap=True)
         tools.body.addWidget(self.status)
         layout.addWidget(tools)

@@ -2138,9 +2138,6 @@ msgstr "混响：RT60 不超过 {long:.1f} s 不作评论；超过则衰减明�
 msgid "Review before posting: device names can contain personal names; paths under your home folder are shown as ~."
 msgstr "发布前请检查：设备名称可能包含人名；主目录下的路径显示为 ~。"
 
-msgid "Right-click a measurement in the list and choose Use as baseline to compare."
-msgstr "在列表中右键一条测量并选择“设为基准”即可对比。"
-
 msgid "Right-click a measurement in the list and choose Use as baseline, then select the measurement to compare with it. Or pick two saved sessions below."
 msgstr "在列表中右键一条测量并选择“设为基准”，再选中要与它对比的测量。也可以在下方选两个已保存的会话。"
 
@@ -6791,3 +6788,118 @@ msgstr "视图"
 #. Chart viewport action; distinct from acoustic fit.
 msgid "Fit chart"
 msgstr "适配图表"
+
+#. Light sidebar workstation (docs/design/light-sidebar).
+msgid "A recording profile changes only the wording and the thresholds, never the numbers."
+msgstr "录音配置只改变措辞和阈值，从不改变数字。"
+
+msgid "Above {level:g} dBFS: turn the monitor level down first, then tick the box. Changing the level, Stop or a new measurement clears it."
+msgstr "高于 {level:g} dBFS：先调低监听音量，再勾选确认。改电平、停止或新测量都会清除确认。"
+
+msgid "Choose the audio interface output first: nothing plays until you do."
+msgstr "先选择音频接口的输出，才能继续：选好之前不会发出任何声音。"
+
+msgid "Choose the interface output…"
+msgstr "选择音频接口的输出…"
+
+msgid "Connect devices"
+msgstr "连接设备"
+
+msgid "Double-click a saved session to open it."
+msgstr "双击已保存的会话即可打开。"
+
+msgid "Environment Report for Bug Reports..."
+msgstr "用于问题报告的环境报告…"
+
+msgid "Language, theme, default profile and audio ({shortcut})."
+msgstr "语言、主题、默认配置和音频（{shortcut}）。"
+
+msgid "Loopback channel."
+msgstr "回采通道。"
+
+msgid "Measure"
+msgstr "测量"
+
+msgid "Measure how a room sounds: through your audio interface, or from a recording made in your DAW."
+msgstr "测量房间的声音：通过音频接口直接测，或导入在 DAW 中录好的录音。"
+
+msgid "Measuring · available after Stop or when it ends"
+msgstr "测量进行中 · 停止或结束后可用"
+
+msgid "No saved sessions yet."
+msgstr "还没有已保存的会话。"
+
+msgid "Playing the sweep only through {device}, output {channel} (not the system default), and recording..."
+msgstr "只从所选接口 {device} 的输出 {channel} 播放扫频（不是系统默认）并录音…"
+
+msgid "Plays the sweep only on the output you choose, and records the microphone."
+msgstr "只在你选定的输出上播放扫频，并录制话筒。"
+
+msgid "Save the measurement made in this window ({shortcut})."
+msgstr "保存在此窗口中完成的测量（{shortcut}）。"
+
+msgid "Settings..."
+msgstr "设置…"
+
+msgid "Signal and level"
+msgstr "信号与电平"
+
+msgid "Start a new measurement ({shortcut})."
+msgstr "开始新的测量（{shortcut}）。"
+
+msgid "The first-measurement guide and the user guide."
+msgstr "首次测量说明和用户指南。"
+
+msgid "The interface output the sweep plays on. Nothing plays until you choose one; the system default output is never used."
+msgstr "扫频在这个接口输出上播放。选好之前不会发出任何声音；从不使用系统默认输出。"
+
+msgid "Tick “{checkbox}” to continue."
+msgstr "先勾选“{checkbox}”才能继续。"
+
+msgid "Write the test signal, record it in your DAW, then import the recording."
+msgstr "写出测试信号，在 DAW 中录制，再导入录音。"
+
+msgid "{name} · synthetic demo data"
+msgstr "{name} · 合成演示数据"
+
+msgid "{new} new measurement · {open} open · {project} project · {settings} settings"
+msgstr "{new} 新测量 · {open} 打开 · {project} 项目 · {settings} 设置"
+
+msgid "All views"
+msgstr "全部视图"
+
+msgid "Record in the DAW"
+msgstr "在 DAW 中录制"
+
+msgid "Import"
+msgstr "导入"
+
+msgid "Dismiss"
+msgstr "关闭"
+
+msgid "Compare the next measurement you select against this one."
+msgstr "把接下来选中的测量与这一条对比。"
+
+msgid "Use this measurement as the baseline, then select another one to compare it (also in the list's right-click menu)."
+msgstr "把这条测量设为基准，再选另一条与它对比（列表右键菜单里也有）。"
+
+msgid "Command line only"
+msgstr "仅命令行"
+
+msgid "Copy commands"
+msgstr "复制命令"
+
+msgid "Copy these command lines to the clipboard."
+msgstr "把这些命令行复制到剪贴板。"
+
+msgid "Command-line equivalents"
+msgstr "对应的命令行"
+
+msgid "Not in the desktop yet: CSV export, a zip for a bug report, an impulse response from another tool (set --band to its sweep's band), the demo."
+msgstr "桌面界面还没有这些功能：导出 CSV、把会话打成压缩包用于报告问题、分析其他工具得到的脉冲响应（--band 填它扫频覆盖的频带）、合成演示。"
+
+msgid "Save the session first: {placeholder} stands for its folder."
+msgstr "请先保存会话：{placeholder} 代表会话文件夹。"
+
+msgid "Commands copied to the clipboard."
+msgstr "命令已复制到剪贴板。"
