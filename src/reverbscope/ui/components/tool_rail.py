@@ -1,41 +1,24 @@
-"""Original monochrome canvas tools, with translated accessible names."""
+"""Canvas tools (cursor, pan, box zoom, fit) with translated names.
+
+The icons come from :mod:`reverbscope.ui.components.icons`; each tooltip
+names the tool and says what a drag does, so the rail is discoverable
+without reading the manual.
+"""
 
 from __future__ import annotations
 
-from PySide6.QtCore import QPointF, Qt, Signal
-from PySide6.QtGui import QColor, QIcon, QPainter, QPen, QPixmap
-from PySide6.QtWidgets import QButtonGroup, QToolButton, QVBoxLayout, QWidget
+from PySide6.QtCore import QSize, Signal
+from PySide6.QtGui import QIcon
+from PySide6.QtWidgets import QButtonGroup, QFrame, QToolButton, QVBoxLayout, QWidget
 
 from reverbscope.i18n import _
+from reverbscope.ui.components.icons import icon
 from reverbscope.ui.design.tokens import SPACE, TOOL_RAIL_WIDTH
-from reverbscope.ui.theme import tokens
 
 
 def tool_icon(name: str) -> QIcon:
-    pixmap = QPixmap(24, 24)
-    pixmap.fill(Qt.GlobalColor.transparent)
-    painter = QPainter(pixmap)
-    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-    painter.setPen(QPen(QColor(tokens()["muted"]), 1.4))
-    if name == "zoom":
-        painter.drawRect(5, 5, 12, 12)
-        painter.drawLine(17, 17, 21, 21)
-    elif name == "fit":
-        for x, y, dx, dy in ((4, 4, 1, 1), (20, 4, -1, 1), (4, 20, 1, -1), (20, 20, -1, -1)):
-            painter.drawLine(x, y, x + 5 * dx, y)
-            painter.drawLine(x, y, x, y + 5 * dy)
-    elif name == "cursor":
-        painter.drawLine(12, 3, 12, 21)
-        painter.drawLine(3, 12, 21, 12)
-        painter.drawEllipse(QPointF(12, 12), 3, 3)
-    else:
-        painter.drawLine(4, 12, 20, 12)
-        painter.drawLine(12, 4, 12, 20)
-        for x, y, dx, dy in ((4, 12, 1, 0), (20, 12, -1, 0), (12, 4, 0, 1), (12, 20, 0, -1)):
-            painter.drawLine(x, y, x + 3 * dx + 3 * dy, y + 3 * dy + 3 * dx)
-            painter.drawLine(x, y, x + 3 * dx - 3 * dy, y + 3 * dy - 3 * dx)
-    painter.end()
-    return QIcon(pixmap)
+    """The canvas tool ``name`` from the desktop's one icon family."""
+    return icon(name, accent=True)
 
 
 class ToolRail(QWidget):
@@ -51,16 +34,23 @@ class ToolRail(QWidget):
         group = QButtonGroup(self)
         group.setExclusive(True)
         self.buttons: dict[str, QToolButton] = {}
-        for name, title in (
-            ("cursor", _("Cursor")),
-            ("pan", _("Pan")),
-            ("zoom", _("Box zoom")),
-            ("fit", _("Fit chart")),
+        for name, title, hint in (
+            ("cursor", _("Cursor"), _("Read values under the pointer")),
+            ("pan", _("Pan"), _("Drag to move, scroll to zoom")),
+            ("zoom", _("Box zoom"), _("Drag a box to zoom into it")),
+            ("fit", _("Fit chart"), _("Show all data")),
         ):
+            if name == "fit":
+                rule = QFrame()
+                rule.setProperty("rule", True)
+                rule.setFixedHeight(1)
+                layout.addWidget(rule)
             button = QToolButton()
             button.setIcon(tool_icon(name))
-            button.setToolTip(title)
+            button.setIconSize(QSize(20, 20))
+            button.setToolTip(f"<b>{title}</b><br>{hint}")
             button.setAccessibleName(title)
+            button.setProperty("tool", True)
             button.setFixedSize(4 * SPACE, 4 * SPACE)
             button.setCheckable(name != "fit")
             if name != "fit":

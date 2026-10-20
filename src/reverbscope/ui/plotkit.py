@@ -283,6 +283,7 @@ class ChartPanel(QWidget):
         top.addWidget(self.title, 1)
         self.readout = QLabel("")
         self.readout.setProperty("role", "hint")
+        self.readout.setProperty("readout", True)
         self.readout.setMinimumWidth(72)
         self.readout.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self.readout.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
@@ -307,6 +308,7 @@ class ChartPanel(QWidget):
         self.export_menu = menu
         self.export_button.setMenu(menu)
         top.addWidget(self.export_button)
+        self._decorate_actions()
         layout.addLayout(top)
         # Cursor coordinates need the chart's width, not what the platform's
         # toolbar font leaves over. A long curve name must not hide its units.
@@ -449,15 +451,32 @@ class ChartPanel(QWidget):
         label.setText(shown)
         label.setToolTip("" if shown == text else text)
 
+    def _decorate_actions(self) -> None:
+        """The chart's own actions in the desktop's icon family, text kept beside."""
+        from reverbscope.ui.components.icons import icon
+
+        for button, glyph in (
+            (self.reset_button, "fit"),
+            (self.axes_button, "settings"),
+            (self.export_button, "export"),
+        ):
+            button.setIcon(icon(glyph))
+            button.setIconSize(QSize(14, 14))
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            button.setProperty("chartaction", True)
+
     def restyle(self) -> None:
         if self._disposed:
             return
+        self._decorate_actions()
         t = tokens()
         self.plot.setBackground(QColor(t["canvas"]))
         for name in ("bottom", "left"):
             axis = self.plot_item.getAxis(name)
             axis.setPen(pg.mkPen(QColor(t["grid"])))
-            axis.setTextPen(pg.mkPen(QColor(t["text"])))
+            # Tick numbers recede (muted, still AA on the canvas); the axis
+            # titles and the curves keep the full text colour.
+            axis.setTextPen(pg.mkPen(QColor(t["muted"])))
         self.plot_item.showGrid(x=True, y=True, alpha=0.15)
         self.cursor_line.setPen(pg.mkPen(QColor(t["muted"]), width=1, style=Qt.PenStyle.DashLine))
         self.plot_item.setLabel("bottom", self.x_label, color=t["text"])

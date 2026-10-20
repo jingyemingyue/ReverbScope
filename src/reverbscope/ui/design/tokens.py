@@ -14,28 +14,47 @@ DRAWER_WIDTH = 352
 READING_WIDTH = 1080
 FORM_WIDTH = 900
 MIN_PLOT_HEIGHT = 260
+#: Height of the analysis view tabs and the task bar.
+TAB_HEIGHT = 36
+TASKBAR_HEIGHT = 44
+#: Numbers (key figures, readouts, tables) in a monospace face with even
+#: digit widths. Only installed faces are used; ReverbScope bundles none.
+MONO_FAMILIES = (
+    "IBM Plex Mono",
+    "SF Mono",
+    "JetBrains Mono",
+    "Menlo",
+    "Consolas",
+    "DejaVu Sans Mono",
+    "Noto Sans Mono CJK SC",
+    "Source Han Sans CN",
+    "Microsoft YaHei",
+    "PingFang SC",
+)
 
 DARK: dict[str, str] = {
-    "bg": "#242424",
-    "surface": "#2c2c2c",
-    "surface_alt": "#353535",
-    "border": "#494949",
-    "text": "#eeeeee",
-    "muted": "#b7b7b7",
-    "accent": "#82b4ff",
-    "accent_hover": "#a5caff",
-    "accent_text": "#152033",
-    "accent_soft": "#34435a",
-    "good": "#91c9a1",
-    "good_soft": "#283b2e",
-    "warn": "#efc17c",
-    "warn_soft": "#423725",
-    "bad": "#f3a09d",
-    "bad_soft": "#492e2e",
-    "info": "#a4c6f7",
-    "info_soft": "#2d3c52",
-    "grid": "#494949",
-    "canvas": "#202020",
+    # Graphite chrome with a faint cool cast; the chart canvas is the darkest
+    # surface so curves read first (chart-first, as REW / Smaart / RX).
+    "bg": "#1d1f23",
+    "surface": "#24272c",
+    "surface_alt": "#2c3036",
+    "border": "#3a3f47",
+    "text": "#e7e9ec",
+    "muted": "#a4abb6",
+    "accent": "#74a9f7",
+    "accent_hover": "#93bdfa",
+    "accent_text": "#0f1a2b",
+    "accent_soft": "#263750",
+    "good": "#86cf9d",
+    "good_soft": "#1f3127",
+    "warn": "#e9bb6c",
+    "warn_soft": "#382f1f",
+    "bad": "#f2948f",
+    "bad_soft": "#3d2526",
+    "info": "#97bdf3",
+    "info_soft": "#223147",
+    "grid": "#34383f",
+    "canvas": "#17191c",
 }
 
 LIGHT: dict[str, str] = {

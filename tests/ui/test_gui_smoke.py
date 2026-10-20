@@ -1460,6 +1460,14 @@ def test_a_new_audio_backend_in_settings_reaches_the_standalone_page(
     assert "ReverbScope fake interface" in listed()
     window.show_settings()
     assert "Scarlett 2i2" in listed() and "fake" not in listed()
+    # A real backend: no sweep until an interface output is picked by hand.
+    assert not page.run_button.isEnabled()
+    assert "Connection step" in page.run_reason.text()
+    row = next(
+        i for i in range(page.output_device.count()) if "Scarlett" in page.output_device.itemText(i)
+    )
+    assert page.choose_output(page.output_device.itemData(row))
+    assert page.run_button.isEnabled() and not page.run_reason.text()
 
     # Changed while a take ran, the list stays until Run makes it again.
     save_settings(UserSettings(audio_backend="fake"))

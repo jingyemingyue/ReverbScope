@@ -887,6 +887,11 @@ class StandalonePage(QWidget):
         self.host_api.currentIndexChanged.connect(self._fill_device_lists)
         self.input_device = QComboBox()
         self.output_device = QComboBox()
+        # The output the user picked by hand, as (index, name). A sweep goes
+        # only there: never to "System default" or to an output the list
+        # merely preselected (the computer's own speakers, often).
+        self._explicit_output: tuple[int, str] | None = None
+        self.output_device.activated.connect(self._output_chosen)
         self.refresh_button = QPushButton(_("Refresh devices"))
         self.refresh_button.clicked.connect(self.refresh_devices)
         self.sample_rate = QComboBox()
@@ -1017,12 +1022,16 @@ class StandalonePage(QWidget):
         review_layout.addWidget(self.review)
         review_layout.addWidget(summary)
         review_layout.addWidget(self.demo_banner)
+        # Why Run is off, in words next to it (never a silent grey button).
+        self.run_reason = label("", "reason", wrap=True)
+        self.run_reason.hide()
         actions = QHBoxLayout()
         actions.addWidget(self.back_button)
         actions.addStretch()
         actions.addWidget(self.stop_button)
         actions.addWidget(self.run_button)
         review_layout.addLayout(actions)
+        review_layout.addWidget(self.run_reason)
         review_layout.addWidget(self.progress)
         review_layout.addWidget(self.status)
         review_layout.addStretch()
@@ -1056,8 +1065,72 @@ class StandalonePage(QWidget):
         self.position.textChanged.connect(self._update_review)
         self.sample_rate.currentTextChanged.connect(self._update_review)
         self.flow.stack.currentChanged.connect(self._update_review)
+        self.output_device.currentIndexChanged.connect(self._sync_run_button)
+        self.busy_changed.connect(self._sync_run_button)
         self.refresh_devices()
         self._update_review()
+
+    # --- the output a sweep may use ------------------------------------------------
+
+    def _output_chosen(self, _row: int = 0) -> None:
+        """The user picked an output in the list (not a preselection)."""
+        chosen = self._chosen_devices()
+        self._explicit_output = chosen[2] if chosen is not None else None
+        self._sync_run_button()
+
+    def choose_output(self, index: int) -> bool:
+        """Pick output device ``index`` as the user would (tests, scripts)."""
+        row = _find_data(self.output_device, index)
+        if row < 0:
+            return False
+        self.output_device.setCurrentIndex(row)
+        self._output_chosen(row)
+        return True
+
+    def output_block_reason(self, backend: str) -> str:
+        """Why a sweep may not play now, or ``""``.
+
+        A sweep plays only on an interface output the user chose in the list:
+        never PortAudio's default output ("System default"), and never an entry
+        the list preselected, because that is usually the computer's own
+        speakers. The fake backend plays nothing and is not limited.
+        """
+        if backend == "fake":
+            return ""
+        chosen = self._chosen_devices()
+        current = chosen[2] if chosen is not None else None
+        if current is None:
+            return _(
+                "Choose the output of your audio interface in the Connection step. "
+                "ReverbScope does not play the sweep on the system default output."
+            )
+        explicit = self._explicit_output
+        if explicit is None or explicit[1] != current[1]:
+            return _(
+                "Choose the output of your audio interface in the Connection step. "
+                "ReverbScope plays the sweep only on an output you picked yourself, "
+                "never on one it preselected."
+            )
+        return ""
+
+    def run_block_reason(self) -> str:
+        """Why Run Measurement is off now, or ``""`` (shown next to the button)."""
+        if not self._devices:
+            return _("No audio device found; Universal DAW Mode still works.")
+        return self.output_block_reason(self._inventory_backend or "")
+
+    def _sync_run_button(self, busy: object = None) -> None:
+        """Run is on only with a device and a hand-picked output; the reason is shown.
+
+        ``busy`` is the state :attr:`busy_changed` announces (a worker can still
+        be finishing when the page says it is idle); otherwise it is asked.
+        """
+        busy = busy if isinstance(busy, bool) else self.is_busy()
+        reason = "" if busy else self.run_block_reason()
+        self.run_button.setEnabled(not busy and not reason)
+        self.run_button.setToolTip(reason)
+        self.run_reason.setText(reason)
+        self.run_reason.setVisible(bool(reason))
 
     def _update_review(self, *_args: object) -> None:
         for key, value in (
@@ -1099,10 +1172,12 @@ class StandalonePage(QWidget):
                 _("Audio backend unavailable: {error}").format(error=localize(str(exc))),
                 "warn",
             )
-            self.run_button.setEnabled(False)
+            self._sync_run_button()
             return
         if backend.name != self._inventory_backend:
             chosen = None
+            # Device numbers of another backend name other devices.
+            self._explicit_output = None
         self._inventory = inventory
         self._inventory_backend = backend.name
         self._devices = [probe.device for probe in inventory.devices]
@@ -1134,7 +1209,7 @@ class StandalonePage(QWidget):
         # must stay off then, or a second take replaces the running thread.
         # With no device at all a take would only end in PortAudio's own
         # English error ("Error querying device -1").
-        self.run_button.setEnabled(not self.is_busy() and bool(self._devices))
+        self._sync_run_button()
         # A refresh while a take is running must not replace "Playing the sweep...".
         if self.is_busy():
             return
@@ -1411,6 +1486,17 @@ class StandalonePage(QWidget):
                     "Set the monitor level low first."
                 ).format(level=SAFE_MAX_LEVEL_DBFS),
             )
+            return
+        try:
+            take_backend = get_backend("fake" if self.demo_mode else None).name
+        except ReverbScopeError as exc:
+            QMessageBox.critical(self, _("Invalid settings"), localize(str(exc)))
+            return
+        blocked = self.output_block_reason(take_backend)
+        if blocked:
+            # Nothing is played: no fallback to the default output.
+            self._report_status(blocked, "warn")
+            QMessageBox.warning(self, _("No interface output chosen"), blocked)
             return
         if self.before_take is not None and not self.before_take():
             return

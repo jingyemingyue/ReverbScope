@@ -36,6 +36,7 @@ from reverbscope.ui import ui_state
 from reverbscope.ui.analysis_workspace import NUMBERED_VIEWS, AnalysisWorkspace, default_views
 from reverbscope.ui.compare_view import ComparePage
 from reverbscope.ui.components.details_drawer import DetailsDrawer
+from reverbscope.ui.components.notice import Notice
 from reverbscope.ui.inspector import Inspector
 from reverbscope.ui.measure_strip import MeasureStrip
 from reverbscope.ui.navigator import Navigator
@@ -147,6 +148,8 @@ class MainWindow(QMainWindow):
         self.properties_drawer.dismissed.connect(
             self._weak(lambda window: window.set_inspector_open(False))
         )
+        #: Save and project notices, over the canvas (the status bar is easy to miss).
+        self.notice = Notice(self.workspace.body)
         central = QWidget()
         column = QVBoxLayout(central)
         column.setContentsMargins(0, 0, 0, 0)
@@ -465,6 +468,11 @@ class MainWindow(QMainWindow):
         self._status.showMessage(
             _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
         )
+
+    def notify(self, text: str, tone: str = "good") -> None:
+        """Say what just happened: a notice over the canvas, and the status bar."""
+        self._status.showMessage(text)
+        self.notice.show_message(text, tone)
 
     # --- the unsaved take ------------------------------------------------------------------
 
@@ -830,7 +838,7 @@ class MainWindow(QMainWindow):
         entry = self.model.entry(key)
         position = entry.position if entry is not None else ""
         self.model.mark_saved(key, directory, position=position)
-        self._status.showMessage(_("Session saved to {path}").format(path=session_path.parent))
+        self.notify(_("Session saved to {path}").format(path=session_path.parent))
         project = self.model.project_path
         if project is not None:
             self._add_to_project(project, directory, position or "A")
@@ -851,7 +859,7 @@ class MainWindow(QMainWindow):
                 ).format(path=directory, error=localize(str(exc))),
             )
             return
-        self._status.showMessage(
+        self.notify(
             _(
                 "Session saved to {path} and listed in project {project} under position {label}"
             ).format(path=directory, project=listed.name or project.name, label=position)
@@ -915,7 +923,7 @@ class MainWindow(QMainWindow):
         self._scheme = color_scheme()
         for view in self.views.values():
             view.restyle()
-        self.workspace.tools.restyle()
+        self.workspace.restyle()
         self.navigator.rebuild()
         self.inspector.refresh()
         for page in (self.daw, self.standalone):
