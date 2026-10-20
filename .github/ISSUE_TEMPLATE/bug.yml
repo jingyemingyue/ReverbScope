@@ -8,7 +8,9 @@ body:
       value: |
         Thanks for taking the time. If a **measurement number** looks wrong, use
         the *Measurement problem* template instead. Sound-card and DAW test
-        results have their own templates.
+        results have their own templates. Opened from the desktop app
+        (**Help → Report a Bug...**), the version and operating-system fields
+        are already filled in; nothing is sent before you press *Submit*.
   - type: input
     id: version
     attributes:

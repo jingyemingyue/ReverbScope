@@ -1,5 +1,11 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Where to ask and what to include (English)
+    url: https://github.com/jingyemingyue/ReverbScope/blob/main/SUPPORT.md
+    about: Which form fits your question, bug or test result, and what to attach.
+  - name: 在哪里提问、需要附上什么（简体中文）
+    url: https://github.com/jingyemingyue/ReverbScope/blob/main/SUPPORT.zh-CN.md
+    about: 你的问题、缺陷或测试结果该用哪个表单，以及需要附上哪些内容。
   - name: Measurement methodology / 测量方法
     url: https://github.com/jingyemingyue/ReverbScope/blob/main/docs/MEASUREMENT_METHODOLOGY.md
     about: How each metric is computed, which units it uses, and when it is marked invalid. 各项指标如何计算、使用什么单位、何时被标记为无效（英文文档）。
