@@ -14,6 +14,7 @@ import pytest
 pytest.importorskip("PySide6")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QAbstractButton, QApplication, QScrollArea
 
 from reverbscope.audio import backend as backend_module
@@ -21,6 +22,7 @@ from reverbscope.audio import inventory as inventory_module
 from reverbscope.audio.backend import DeviceInfo
 from reverbscope.ui import icons
 from reverbscope.ui.main_window import MainWindow
+from tests.ui._metrics import wide_offscreen_latin
 
 pytestmark = pytest.mark.gui
 
@@ -212,6 +214,15 @@ def test_no_button_text_is_clipped_at_the_acceptance_sizes(
         window = MainWindow()
         window.resize(*size)
         window.show()
+        nav = window.navigator
+        rows = (
+            nav.new_button,
+            nav.open_project_button,
+            nav.open_session_button,
+            nav.settings_button,
+            nav.report_button,
+            nav.help_button,
+        )
         for show in (
             window.show_home,
             lambda: window.show_mode("standalone"),
@@ -220,6 +231,11 @@ def test_no_button_text_is_clipped_at_the_acceptance_sizes(
             show()
             for _ in range(4):
                 app.processEvents()
+            for button in rows:
+                rect = button.rect().translated(button.mapTo(nav, QPoint()))
+                assert button.isVisible() and nav.rect().contains(rect), button.toolTip()
+            if wide_offscreen_latin() and language == "en":
+                continue  # the pixel fit below needs desktop Latin font metrics
             assert _clipped_buttons(window) == []
         window.close()
     finally:
