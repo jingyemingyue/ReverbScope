@@ -82,6 +82,7 @@ class ViewTabs(QWidget):
         button.setText(text)
         button.setCheckable(True)
         button.setProperty("viewtab", True)
+        button.setProperty("compact", False)
         button.setAccessibleName(text)
         button.setToolTip(tooltip or text)
         button.setFocusPolicy(Qt.FocusPolicy.TabFocus)
@@ -118,6 +119,26 @@ class ViewTabs(QWidget):
 
     def currentData(self) -> str | None:  # noqa: N802
         return self.itemData(self._current)
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802 - Qt override
+        width = 0
+        for button in self._buttons:
+            button.ensurePolished()
+            width += button.sizeHint().width()
+        width += sum(rule.width() for rule in self._rules)
+        height = max((button.sizeHint().height() for button in self._buttons), default=0)
+        return QSize(width, height)
+
+    def sizeHint(self) -> QSize:  # noqa: N802 - Qt override
+        return self.minimumSizeHint()
+
+    def set_compact(self, compact: bool) -> None:
+        """Tighter tabs for a narrow window (the text is never cut)."""
+        for button in self._buttons:
+            button.setProperty("compact", compact)
+            button.style().unpolish(button)
+            button.style().polish(button)
+            button.updateGeometry()
 
     def button(self, index: int) -> QToolButton:
         return self._buttons[index]
@@ -171,13 +192,10 @@ class ContextBar(QWidget):
         layout.addWidget(self.synthetic, 0, Qt.AlignmentFlag.AlignVCenter)
         self.documents = QComboBox()
         self.documents.setAccessibleName(_("Current measurement"))
-        self.documents.setToolTip(_("Current measurement"))
-        self.documents.setMinimumContentsLength(10)
-        self.documents.setSizeAdjustPolicy(
-            QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon
-        )
-        self.documents.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.documents.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self._documents_chars(14)
         self.documents.currentIndexChanged.connect(self._selected)
+        self.documents.currentTextChanged.connect(self.documents.setToolTip)
         layout.addWidget(self.documents)
         self.list_button = self._panel_switch(_("Measurements"), _("Measurement list"), "list")
         layout.addWidget(self.list_button)
@@ -253,13 +271,46 @@ class ContextBar(QWidget):
         for button in (self.list_button, self.details_button):
             button.setToolButtonStyle(style)
         self.synthetic.setText(_("Synthetic") if compact else _("Synthetic demo data"))
+        self._documents_chars(10 if compact else 14)
+        self.view.set_compact(compact)
 
     def _fit(self) -> None:
         """Drop the switch labels when the full bar would not fit in the width."""
         if self.width() <= 0:
             return
         self._set_compact(False)
+        self._set_compact(self._needed_width() > self.width())
+        if self._compact and self._needed_width() > self.width():
+            # Narrowest step: the measurement name elides (its tooltip and the
+            # list keep it whole); the tabs and the switches stay.
+            self._documents_chars(6)
+
+    def _documents_chars(self, chars: int) -> None:
+        """Width of the measurement chooser in characters; a longer name elides.
+
+        Set as a width, not with ``setMinimumContentsLength``: QComboBox keeps
+        its first minimum size hint, so a later, shorter length is ignored.
+        """
+        metrics = self.documents.fontMetrics()
+        self.documents.setFixedWidth(metrics.horizontalAdvance("0" * chars) + 44)
+
+    def _needed_width(self) -> int:
+        """The width every visible item of the bar needs, at the current style."""
         layout = self.layout()
         assert layout is not None
-        needed = layout.minimumSize().width()
-        self._set_compact(needed > self.width())
+        margins = layout.contentsMargins()
+        needed = margins.left() + margins.right()
+        shown = 0
+        for index in range(layout.count()):
+            item = layout.itemAt(index)
+            widget = item.widget() if item is not None else None
+            if widget is not None:
+                if widget.isHidden():
+                    continue
+                widget.ensurePolished()
+                needed += widget.minimumWidth() or widget.minimumSizeHint().width()
+                shown += 1
+            elif item is not None and item.spacerItem() is not None:
+                # Fixed spacing counts; a stretch needs nothing.
+                needed += item.minimumSize().width()
+        return needed + layout.spacing() * max(0, shown - 1)

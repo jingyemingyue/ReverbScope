@@ -63,6 +63,7 @@ QWidget[contextbar="true"] {{ background: {t["bg"]}; border-bottom: 1px solid {t
 QToolButton[viewtab="true"] {{ background: transparent; color: {t["muted"]}; border: none;
     border-bottom: 2px solid transparent; border-radius: 0; padding: 0 11px;
     min-height: 34px; max-height: 36px; font-weight: 500; }}
+QToolButton[viewtab="true"][compact="true"] {{ padding: 0 6px; }}
 QToolButton[viewtab="true"]:hover {{ color: {t["text"]}; background: transparent; }}
 QToolButton[viewtab="true"]:checked {{ color: {t["text"]}; font-weight: 600;
     border-bottom: 2px solid {t["accent"]}; background: transparent; }}
