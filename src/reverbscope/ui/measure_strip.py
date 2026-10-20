@@ -178,7 +178,12 @@ class MeasureStrip(QWidget):
                 row.addWidget(caption_label)
                 self.device_widgets.append(caption_label)
             # The output gets the room first: it is the one Start waits for.
-            stretch = {self.input_device: 1, self.output_device: 2}.get(widget, 0)
+            if widget is self.output_device:
+                stretch = 2
+            elif widget is self.input_device:
+                stretch = 1
+            else:
+                stretch = 0
             row.addWidget(widget, stretch)
             self.device_widgets.append(widget)
 
