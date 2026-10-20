@@ -38,6 +38,7 @@ VIEWS = (
     "measure_connection",
     "measure_signal",
     "measure_review",
+    "measure_review_no_output",
     "daw_import",
     "saved_notice",
     "settings",
@@ -121,6 +122,23 @@ def _render(
     window.model.set_overlay(keys[-1], True)
     for view in views:
         if view == "start":
+            continue
+        if view == "measure_review_no_output":
+            # The Run gate as a real interface shows it before an output is
+            # picked by hand. The fake backend itself plays nothing and is
+            # never gated, so the page is told it lists a real backend.
+            page = window.standalone
+            if not hasattr(page, "run_block_reason"):
+                continue
+            window.show_mode("standalone")
+            page.flow.set_step(2)
+            page._inventory_backend = "portaudio"
+            page._explicit_output = None
+            page._sync_run_button()
+            pump(0.3)
+            save(view)
+            page._inventory_backend = "fake"
+            page._sync_run_button()
             continue
         if view.startswith("measure_"):
             window.show_mode("standalone")
