@@ -29,6 +29,28 @@ All notable changes to ReverbScope are documented here. The format follows
   `archive/3d-room-before-removal`.
 
 ### Changed
+- **A light, warm sidebar look; the sweep plays only on an output you pick.**
+  The window follows the light sidebar design (`docs/design/light-sidebar`):
+  warm light colours when the system is not in dark mode (the dark theme
+  stays), a sidebar with New Measurement, Open Project, Open Session, the
+  measurement list, saved sessions, Settings, Getting started and the
+  environment report, one 52 px toolbar with the view groups as a
+  segmented control (Project beside it, Ctrl+8; an overflow menu when a
+  narrow window cannot show them all), a start panel with the two ways to
+  measure, and step bars on the Standalone and DAW pages that show what is
+  done and what is next. Icons are Lucide outlines drawn in code (ISC
+  licence, shipped in the third-party notices); no font is bundled. The
+  Standalone page and the measure strip no longer offer or preselect the
+  system default output: Start stays off until an interface output is
+  chosen, the reason is shown beside it, and starting a take without one
+  is refused. Above −12 dBFS the level acknowledgement is asked again after
+  any level change, New Measurement or Stop. While a sweep sounds or a take
+  is analysed, New, Open, Save and Settings are locked and say why. The
+  synthetic demo and the fake backend are not gated. Every feature and
+  where it now lives is listed in
+  `docs/design/light-sidebar/IMPLEMENTATION.md`; screenshots are in
+  `docs/images/gui-light-sidebar/` (`scripts/render_gui_light_sidebar.py`,
+  offscreen, not a hardware test).
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on
