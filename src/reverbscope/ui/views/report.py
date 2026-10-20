@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import shlex
 import sys
-from pathlib import Path
+from pathlib import Path, PurePath
 
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QHBoxLayout, QPlainTextEdit, QPushButton, QVBoxLayout, QWidget
@@ -36,7 +36,7 @@ def shell_quote(text: str, *, windows: bool | None = None) -> str:
     return shlex.quote(text)
 
 
-def cli_commands(session: Path | None, *, windows: bool | None = None) -> list[str]:
+def cli_commands(session: PurePath | None, *, windows: bool | None = None) -> list[str]:
     """The CLI-only features as command lines, for ``session`` (or a placeholder)."""
     folder = shell_quote(str(session), windows=windows) if session else SESSION_PLACEHOLDER
     return [

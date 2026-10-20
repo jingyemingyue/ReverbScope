@@ -148,6 +148,9 @@ class ElidingLabel(QLabel):
     def full_text(self) -> str:
         return self._full
 
+    def elide_mode(self) -> Qt.TextElideMode:
+        return self._mode
+
     def _elide(self) -> None:
         width = max(8, self.width() - 2)
         shown = self.fontMetrics().elidedText(self._full, self._mode, width)
