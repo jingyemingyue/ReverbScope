@@ -7,6 +7,27 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Removed
+- **The 3D room view, image-source checks and scan import.** ReverbScope is a
+  measurement tool, not a room modeller. Removed: the Room view (orbit
+  camera, entered room box and device positions, measured-constraint and
+  geometric-assumption layers; `ui/room/`), the room geometry file and its
+  schema (`geometry/room.py`, `room-geometry.schema.json`), the first-order
+  image-source predictions and the inspector's "Room checks"
+  (`geometry/paths.py`), and PLY / OBJ scan import (`geometry/scan.py`).
+  About 6,100 lines of code and tests. Nothing in the analysis changed: the
+  early reflections, the vertical placement geometry from two tape
+  measurements (`core/placement.py`), RT60 / EDT / C50 and every other
+  metric, the result and session formats and the command line are as
+  before. The placement figures moved from the Room view's side panel to a
+  Placement section in the inspector (they are still in the full report),
+  and a placement health check now opens the full report. The view bar
+  loses its Room group; Project moves from Ctrl+9 to Ctrl+8. Folders saved
+  with the room view still open: a leftover `room-geometry.json` or scan
+  file is ignored and left untouched, and a saved Room view falls back to
+  Overview. The last tree with the feature is the tag
+  `archive/3d-room-before-removal`.
+
 ### Changed
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide

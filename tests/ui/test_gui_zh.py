@@ -161,9 +161,8 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
         settle()
         _check(_texts(window), page)
 
-    # Both measurements in the list, the first as the baseline, a reflection
-    # selected and the example room entered: every view and the inspector
-    # have something to say.
+    # Both measurements in the list, the first as the baseline and a
+    # reflection selected: every view and the inspector have something to say.
     assert window.open_session_path(saved[0][0])
     assert window.open_session_path(saved[1][0])
     first, second = (entry.key for entry in window.model.entries())
@@ -175,8 +174,6 @@ def test_every_page_is_chinese(zh: None, app: QApplication, tmp_path: Path) -> N
         for view_id in window.views:
             window.show_view(view_id)
             settle()
-        window.views["room"].use_example()
-        settle()
         window.compare.tabs.setCurrentIndex(1)
         settle()
         window.grab()

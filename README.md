@@ -145,10 +145,11 @@ noise, early reflections and possible low-frequency resonances.
 * A **navigator** lists the open project's positions and every open
   measurement, each with a colour and a tick to overlay it on the charts.
 * **Views** for the overview, frequency response, impulse response and energy
-  decay, noise, spectrogram and waterfall, the room, a comparison against a
-  baseline and the full report.
+  decay, noise, spectrogram and waterfall, a comparison against a baseline
+  and the full report.
 * An **inspector** with the measurement's health, key figures with trust
-  chips and the selected reflection.
+  chips, the selected reflection and, with tape measurements, the placement
+  figures.
 * **Interactive charts**: zoom about the cursor, pan, exact axis limits, a
   readout with units under the pointer, export to image or CSV.
 * A **measure strip** at the bottom: mode, interface, rate, channels, position,
@@ -157,9 +158,10 @@ noise, early reflections and possible low-frequency resonances.
 **What it refuses to do.** Every number carries its unit, its algorithm source
 and a validity flag. When the data is not good enough, ReverbScope says
 *"Insufficient decay range"* instead of inventing a figure. There is
-deliberately no room score. One omnidirectional microphone measures path
-lengths, not directions, so the room view shows what a measurement
-*constrains* and never names a wall. A recording profile (vocal, voiceover,
+deliberately no room score and no 3D room model: ReverbScope is a measurement
+tool. One omnidirectional microphone measures path lengths, not directions,
+so the placement figures say only what two tape measurements and the early
+reflections *constrain* and never name a wall. A recording profile (vocal, voiceover,
 acoustic guitar, drums, room mic, choir) may add one notice when C50 or C80 is
 a poor fit; that threshold is an engineering choice, not a grade.
 

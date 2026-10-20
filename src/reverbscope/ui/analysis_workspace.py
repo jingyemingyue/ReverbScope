@@ -1,14 +1,16 @@
 """The centre column: grouped analysis views over the stack.
 
-The bar groups the analysis so eleven views are not one flat row
+The bar groups the analysis so ten views are not one flat row
 (docs/design/GUI_2_ARCHITECTURE.md §4):
 
-Overview · Frequency · Time · Decay · Spectral · Room · Compare · Report
+Overview · Frequency · Time · Decay · Spectral · Compare · Report
 
 Spectral keeps a second selector (spectrogram, waterfall, noise). Project
-sits apart from the analysis groups. ``Ctrl+1`` … ``Ctrl+9`` and ``Ctrl+0``
-still open the same views as before. Switching a view does not clear the
-measurement list and does not stop a take.
+sits apart from the analysis groups. ``Ctrl+1`` … ``Ctrl+8`` open the
+numbered views and ``Ctrl+0`` opens Compare; the 3D room view (formerly
+``Ctrl+8``) was removed, so Project moved from ``Ctrl+9`` to ``Ctrl+8``.
+Switching a view does not clear the measurement list and does not stop a
+take.
 """
 
 from __future__ import annotations
@@ -34,7 +36,7 @@ from reverbscope.ui.views.base import AnalysisView
 from reverbscope.ui.widgets import native_shortcut
 from reverbscope.ui.workspace import WorkspaceModel
 
-#: View ids with a Ctrl+<n> shortcut, in order (Ctrl+1 … Ctrl+9).
+#: View ids with a Ctrl+<n> shortcut, in order (Ctrl+1 … Ctrl+8).
 NUMBERED_VIEWS = (
     "overview",
     "fr",
@@ -43,7 +45,6 @@ NUMBERED_VIEWS = (
     "noise",
     "spectrogram",
     "waterfall",
-    "room",
     "project",
 )
 
@@ -54,7 +55,6 @@ VIEW_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("time", ("etc",)),
     ("decay", ("decay",)),
     ("spectral", ("spectrogram", "waterfall", "noise")),
-    ("room", ("room",)),
     ("compare", ("compare",)),
     ("report", ("report",)),
 )
@@ -68,7 +68,6 @@ def group_label(group_id: str) -> str:
         "time": _("Time"),
         "decay": _("Decay"),
         "spectral": _("Spectral"),
-        "room": _("Room"),
         "compare": _("Compare"),
         "report": _("Report"),
     }
@@ -100,7 +99,6 @@ def default_views(model: WorkspaceModel, state: MeasurementState) -> list[Analys
     """Every analysis view, numbered ones first, then Compare and the report."""
     from reverbscope.ui.compare_view import ComparePage
     from reverbscope.ui.project_view import ProjectPage
-    from reverbscope.ui.room.view import RoomView
     from reverbscope.ui.views.decay import DecayView
     from reverbscope.ui.views.frequency import FrequencyView
     from reverbscope.ui.views.impulse import ImpulseView
@@ -117,7 +115,6 @@ def default_views(model: WorkspaceModel, state: MeasurementState) -> list[Analys
         NoiseView(model),
         SpectrogramView(model),
         WaterfallView(model),
-        RoomView(model),
         ProjectPage(state, model),
         ComparePage(model),
         ReportView(model),

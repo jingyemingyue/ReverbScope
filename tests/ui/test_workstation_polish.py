@@ -15,7 +15,7 @@ import pytest
 pytest.importorskip("PySide6")
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QByteArray, QPoint, QPointF
+from PySide6.QtCore import QByteArray, QPoint
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import QApplication
 
@@ -317,81 +317,6 @@ def test_frequency_csv_matches_the_drawn_curve(
     view.close()
 
 
-def test_room_pick_reset_and_presets(
-    app: QApplication, result: AnalysisResult, tmp_path: Path
-) -> None:
-    from reverbscope.geometry.room import Point
-    from reverbscope.ui.room.camera import DEFAULT_PITCH_DEG, DEFAULT_YAW_DEG, FRONT_PITCH_DEG
-    from reverbscope.ui.room.canvas import view_caption
-    from reverbscope.ui.room.view import RoomView
-    from reverbscope.ui.workspace import WorkspaceModel
-
-    folder = tmp_path / "room"
-    model = WorkspaceModel()
-    model.add_session(folder, MeasurementSession(measurement_position="A"), result, position="A")
-    view = RoomView(model)
-    view.resize(900, 640)
-    view.show()
-    app.processEvents()
-    view.use_example()
-    app.processEvents()
-    view.canvas.resize(800, 500)
-    view.canvas.fit()
-    source = view.canvas.scene.source
-    assert source is not None
-    screen, visible = view.canvas.camera.project(np.array([source.as_tuple()]))
-    assert bool(visible[0])
-    hit = view.canvas.device_at(QPointF(float(screen[0, 0]), float(screen[0, 1])))
-    assert hit is not None and hit[0] == "source"
-    view._device_clicked("source", source)
-    assert view.canvas.scene.selection == "source"
-    assert "1.20" in view.canvas.hud
-
-    predicted = view._predicted
-    view.canvas.camera.orbit(30, -10)
-    assert view._predicted is predicted
-
-    view.look("front")
-    assert view.canvas.camera.plan is False
-    assert view.canvas.camera.yaw_deg == pytest.approx(-90.0)
-    assert view.canvas.camera.pitch_deg == pytest.approx(FRONT_PITCH_DEG)
-    assert view.front_button.isChecked()
-    assert view.canvas.camera.preset_name == "front"
-    centre = np.array([[2.5, 0.0, 1.35]])
-    screen, visible = view.canvas.camera.project(centre)
-    assert bool(visible[0])
-    assert view.canvas.surface_at(QPointF(float(screen[0, 0]), float(screen[0, 1]))) == "y0"
-    view._surface_clicked("y0")
-    assert view.canvas.scene.selection == "face:y0"
-    assert "Entered geometry" in view.canvas.hud
-    assert "not a surface found" in view.canvas.hud.lower() or "Not a surface" in view.canvas.hud
-
-    view.look("side")
-    assert view.canvas.camera.yaw_deg == pytest.approx(180.0)
-    view.reset_view()
-    assert view.canvas.camera.plan is False
-    assert view.canvas.camera.preset_name == ""
-    assert view.canvas.camera.yaw_deg == pytest.approx(DEFAULT_YAW_DEG)
-    assert view.canvas.camera.pitch_deg == pytest.approx(DEFAULT_PITCH_DEG)
-    assert "y = 0" in view_caption("front")
-    assert "lower edge" in view_caption("top")
-    # Orbiting leaves the named view, so the buttons no longer claim it.
-    view.look("side")
-    assert view.side_button.isChecked()
-    view.canvas.camera.orbit(40, 0)
-    view.canvas.camera_changed.emit()
-    assert view.canvas.camera.preset_name == ""
-    assert not view.side_button.isChecked()
-    assert "Microphone at A" in view.mic_box.detail.text()
-    # The plan view still reports the floor of the entered box.
-    view.canvas.set_plan(True)
-    floor = Point(2.5, 2.0, 0.0)
-    screen, _visible = view.canvas.camera.project(np.array([floor.as_tuple()]))
-    assert view.canvas.surface_at(QPointF(float(screen[0, 0]), float(screen[0, 1]))) == "z0"
-    view.shutdown()
-    view.close()
-
-
 def test_native_shortcut_is_text_and_the_strip_names_its_phase(app: QApplication) -> None:
     from reverbscope.ui.main_window import MainWindow
     from reverbscope.ui.widgets import native_shortcut
@@ -416,44 +341,6 @@ def test_native_shortcut_is_text_and_the_strip_names_its_phase(app: QApplication
     window.standalone.busy_changed.emit(False)
     assert window.strip.phase.property("phase") == "idle"
     assert not window.strip.stop_button.isEnabled()
-    window.close()
-
-
-def test_room_opens_framed_and_parameters_do_not_take_the_canvas(
-    app: QApplication, result: AnalysisResult, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
-    from reverbscope.ui.main_window import MainWindow
-
-    window = MainWindow()
-    window.resize(1366, 768)
-    window.show()
-    window.model.add_session(tmp_path / "take", MeasurementSession(), result)
-    room = window.views["room"]
-    room.use_example()
-    window.show_view("fr")
-    app.processEvents()
-    window.show_view("room")
-    app.processEvents()
-    app.processEvents()
-    assert room.parameters.isHidden()
-    assert room.canvas._framed(room.canvas._frame_points(), room.canvas._fit_margins())
-    width = room.canvas.width()
-    room.parameters_button.click()
-    app.processEvents()
-    assert room.parameters.isVisible()
-    assert room.canvas.width() < width
-    room.parameters_button.click()
-    app.processEvents()
-    assert room.canvas.width() == width
-    room.canvas.camera.orbit(30, 10)
-    distance = room.canvas.camera.distance_m
-    yaw = room.canvas.camera.yaw_deg
-    window.show_view("fr")
-    window.show_view("room")
-    app.processEvents()
-    assert room.canvas.camera.distance_m == distance
-    assert room.canvas.camera.yaw_deg == yaw
     window.close()
 
 

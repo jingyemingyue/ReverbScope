@@ -39,7 +39,8 @@ _BY_METRIC = {
     METRIC_ENERGY: "etc",
     METRIC_NOISE: "noise",
     METRIC_REFLECTIONS: "etc",
-    METRIC_PLACEMENT: "room",
+    # The placement figures sit in the full report (and the inspector).
+    METRIC_PLACEMENT: "report",
     METRIC_RESONANCES: "report",
 }
 
@@ -63,7 +64,6 @@ def view_title(view_id: str) -> str:
         "decay": _("Decay"),
         "etc": _("Impulse response"),
         "noise": _("Noise"),
-        "room": _("Room"),
         "report": _("Full report"),
         "overview": _("Overview"),
         "spectrogram": _("Spectrogram"),

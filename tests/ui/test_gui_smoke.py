@@ -157,11 +157,13 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
         if not action.shortcut().isEmpty()
     }
     # Ctrl+Shift+1/2 open the two measurement modes. There is no demo shortcut.
-    # Ctrl+1 ... Ctrl+9 open the views.
-    needed = ("Ctrl+N", "Ctrl+O", "Ctrl+Shift+C", "Ctrl+,", "Ctrl+S", "Ctrl+1", "Ctrl+0")
+    # Ctrl+1 ... Ctrl+8 open the views (Project is Ctrl+8 since the 3D room
+    # view was removed); Ctrl+0 opens Compare.
+    needed = ("Ctrl+N", "Ctrl+O", "Ctrl+Shift+C", "Ctrl+,", "Ctrl+S", "Ctrl+1", "Ctrl+8", "Ctrl+0")
     for sequence in (*needed, "Ctrl+Shift+1", "Ctrl+Shift+2"):
         assert sequence in shortcuts, shortcuts
     assert "Ctrl+Shift+3" not in shortcuts
+    assert "Ctrl+9" not in shortcuts
     # The start panel has no mode cards any more (by design), so no shortcut
     # badges to check against the Measure menu: the menu carries the keys.
     assert "Start" in window.statusBar().currentMessage()
@@ -262,16 +264,14 @@ def test_placement_tab_uses_tape_measurements(
     placement = window.state.result.placement
     assert placement is not None
     assert placement.tier == 2
-    # The Placement tab moved to the Room view's side panel.
-    window.show_view("room")
-    assert window.current_view_id() == "room"
-    room = window.views["room"]
-    summary = room.placement_summary.text()
-    assert "tier 2" in summary.lower()
-    assert room.placement_table.rowCount() == 3
-    height_item = room.placement_table.item(0, 1)
-    assert height_item is not None
-    assert "m" in height_item.text()
+    # The placement figures sit in the inspector (the 3D room view that
+    # carried them is gone) and in the full report.
+    assert "room" not in window.views
+    section = window.inspector.placement
+    assert not section.isHidden()
+    assert "tier 2" in section.note.text().lower()
+    assert section.rows == 3
+    assert "Loudspeaker height" in window.views["report"].report_text()
     assert window.state.analysis_settings.placement_distance_m == pytest.approx(distance, abs=0.01)
     window.close()
 

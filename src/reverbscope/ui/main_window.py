@@ -172,8 +172,6 @@ class MainWindow(QMainWindow):
         self.inspector.same_gain.toggled.connect(self.compare.same_gain.setChecked)
         self.compare.same_gain.toggled.connect(self.inspector.same_gain.setChecked)
         self.compare.open_pair.connect(self._open_pair)
-        room: Any = self.views["room"]  # a RoomView
-        room.checks_changed.connect(self.inspector.set_room_checks)
         self.project.measure_requested.connect(self._measure_position)
         self.project.open_session.connect(self._show_session)
         self.project.compare_requested.connect(self._compare_from_project)

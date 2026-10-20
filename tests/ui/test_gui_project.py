@@ -193,3 +193,37 @@ def test_suggested_labels_skip_the_ones_in_use() -> None:
     assert suggest_label([]) == "A"
     assert suggest_label(["A", "b"]) == "C"
     assert suggest_label([f"{c}" for c in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"]) == "A2"
+
+
+def test_a_project_saved_with_the_removed_room_view_still_opens(
+    app: QApplication, tmp_path: Path, short_sweep: SweepSettings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The 3D room view saved ``room-geometry.json`` beside the project and
+    remembered itself as the last view in ``ui.ini``. Both are ignored now:
+    the project opens, the file is left alone, and the window starts on the
+    overview instead of a view that no longer exists."""
+    import json
+
+    from reverbscope.ui import ui_state
+
+    monkeypatch.setenv("REVERBSCOPE_HOME", str(tmp_path / "home"))
+    project = _booth(tmp_path, short_sweep)
+    geometry = project / "room-geometry.json"
+    geometry.write_text(
+        json.dumps({"schema_version": 1, "room": {"length_m": 5, "width_m": 4, "height_m": 3}}),
+        encoding="utf-8",
+    )
+    (project / "a-1" / "room-geometry.json").write_text("{}", encoding="utf-8")
+    before = geometry.read_bytes()
+    ui_state.write("workspace/view", "room")
+    ui_state.write("room/layers", "entered,measured")
+    window = MainWindow()
+    window.show()
+    assert "room" not in window.views
+    window.show_results()
+    assert window.current_view_id() == "overview"
+    window.show_project(project)
+    assert window.model.wait_until_loaded()
+    assert window.project.table.rowCount() == 3
+    assert geometry.read_bytes() == before
+    window.close()

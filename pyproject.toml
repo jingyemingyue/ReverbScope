@@ -98,7 +98,6 @@ packages = ["src/reverbscope"]
 "src/reverbscope/schemas/comparison.schema.json" = "reverbscope/schemas/comparison.schema.json"
 "src/reverbscope/schemas/project.schema.json" = "reverbscope/schemas/project.schema.json"
 "src/reverbscope/schemas/sweep-sidecar.schema.json" = "reverbscope/schemas/sweep-sidecar.schema.json"
-"src/reverbscope/schemas/room-geometry.schema.json" = "reverbscope/schemas/room-geometry.schema.json"
 "src/reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po" = "reverbscope/locale/zh_CN/LC_MESSAGES/reverbscope.po"
 
 [tool.hatch.build.hooks.custom]
