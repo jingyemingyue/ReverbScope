@@ -344,4 +344,4 @@ class ContextBar(QWidget):
             elif item is not None and item.spacerItem() is not None:
                 # Fixed spacing counts; a stretch needs nothing.
                 needed += item.minimumSize().width()
-        return needed + layout.spacing() * max(0, shown - 1)
+        return int(needed + layout.spacing() * max(0, shown - 1))
