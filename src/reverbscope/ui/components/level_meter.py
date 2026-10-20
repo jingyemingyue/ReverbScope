@@ -119,10 +119,10 @@ class LevelMeter(QWidget):
     # --- geometry ---------------------------------------------------------------
 
     def _scale_width(self) -> int:
-        return QFontMetrics(self.font()).horizontalAdvance("−48") + 4
+        return int(QFontMetrics(self.font()).horizontalAdvance("−48")) + 4
 
     def _readout_width(self) -> int:
-        return QFontMetrics(self.font()).horizontalAdvance("−99.9") + 4
+        return int(QFontMetrics(self.font()).horizontalAdvance("−99.9")) + 4
 
     def _column_width(self) -> int:
         """One vertical channel: its bar, its readout and its name side by side."""
@@ -190,7 +190,7 @@ class LevelMeter(QWidget):
         span = max(1, bottom - top)
 
         def y_of(db: float) -> float:
-            return bottom - meter_fraction(db) * span
+            return float(bottom - meter_fraction(db) * span)
 
         painter.setPen(c["muted"])
         labelled = -1e9
@@ -250,7 +250,7 @@ class LevelMeter(QWidget):
         span = max(1, right - left)
 
         def x_of(db: float) -> float:
-            return left + meter_fraction(db) * span
+            return float(left + meter_fraction(db) * span)
 
         y = SPACE // 2
         for name, channel in zip(self.names, self.channels, strict=True):
