@@ -161,6 +161,16 @@ All notable changes to ReverbScope are documented here. The format follows
   data stamp outside the image on a high-DPI display; it now measures in
   logical pixels.
 
+## [0.5.0b5] - 2026-10-20
+
+### Changed
+- Rewrite the README introduction (English and Simplified Chinese) with the
+  wording used for the repository About description: an offline acoustic
+  room-measurement desktop app and command line reporting RT60/EDT/T20/T30,
+  C50/C80/D50, early reflections, background noise and frequency response,
+  each with a validity flag.
+- Synchronize the beta release notes and changelog with version 0.5.0b5.
+
 ## [0.5.0b4] - 2026-10-18
 
 ### Changed
