@@ -51,6 +51,23 @@ All notable changes to ReverbScope are documented here. The format follows
   `docs/design/light-sidebar/IMPLEMENTATION.md`; screenshots are in
   `docs/images/gui-light-sidebar/` (`scripts/render_gui_light_sidebar.py`,
   offscreen, not a hardware test).
+- **Notices without the status bar, a visible baseline button, the CLI on
+  the report.** Ideas from the dark polish draft, re-done in the light
+  look: "Session saved to …" now shows in the toolbar's subtitle for four
+  seconds (or under the toolbar when a narrow window has no room for the
+  title), besides the status bar. The inspector's Comparison section has a
+  "Use as baseline" button while no baseline is set. The Full report lists
+  what only the command line does (CSV export, the bug-report zip,
+  `analyze-ir` for an impulse response from another tool, `demo`) as
+  literal command lines filled in with the current session's folder, with
+  a Copy commands button. The measurement name in the toolbar elides in
+  the middle. On the Standalone page Back, Stop, Run and the reason Run is
+  off stay pinned under the form, so they are in view at 960 x 640. Chart
+  readouts, tick numbers and the inspector's key figures use an installed
+  monospace face (SF Mono, IBM Plex Mono, Menlo, Consolas, …; none is
+  bundled). When the view groups do not fit, the last ones move into the
+  "All views" menu instead of scrolling the bar, so no tab is drawn cut in
+  half, also when Project is the current view.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on

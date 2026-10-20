@@ -8,7 +8,10 @@ Writes ``<lang>_<scheme>_<width>x<height>_<view>.png``. The audio backend is
 a stub that lists a laptop's speakers (the system default), its microphone
 and a two-channel interface, so the Standalone page shows the real
 no-output state: nothing preselected, Start off and the reason beside it.
-``standalone-ready`` picks the interface output afterwards. The analysis
+``standalone-ready`` picks the interface output afterwards. ``saved-notice``
+shows the save notice in the toolbar's subtitle slot; ``saved-notice-inspector``
+opens the inspector first, so a 960 px toolbar has no room for the title and
+the notice floats under it. The analysis
 views open the synthetic demo's two positions as a project (A as baseline,
 drawn under B, the first early reflection of B selected). No audio is
 played or recorded; the data is a simulated room, not a measurement, and an
@@ -41,11 +44,18 @@ _ALL = (
     "waterfall",
     "compare",
     "project",
+    "report",
+    "saved-notice",
 )
 _KEY = ("start", "standalone", "overview", "fr")
 SHOTS: tuple[tuple[int, int, str, tuple[str, ...]], ...] = (
     (1280, 800, "light", _ALL),
-    (960, 640, "light", _KEY),
+    (
+        960,
+        640,
+        "light",
+        (*_KEY, "project", "report", "saved-notice", "saved-notice-inspector", "project-inspector"),
+    ),
     (1280, 800, "dark", _KEY),
     (960, 640, "dark", _KEY),
 )
@@ -199,9 +209,28 @@ def _render(
         ):
             window.model.select_reflection(current.key, 0)
         for view in analysis:
-            window.show_view(view)
+            if view.startswith("saved-notice"):
+                # The save notice (SPEC §6): in the toolbar's subtitle slot, or
+                # floating under the toolbar when the title has no room.
+                window.show_view("fr")
+                window.set_inspector_open(view.endswith("inspector"))
+                pump(0.5)
+                saved = demo / "B-1"
+                window.notify(_("Session saved to {path}").format(path=saved))
+                pump(0.3)
+                save(view)
+                window.workspace.clear_notice()
+                window.set_inspector_open(False)
+                continue
+            # "<view>-inspector": the same view with the inspector open, so a
+            # 960 px toolbar shows its groups as "4 + ⋯".
+            opened = view.endswith("-inspector")
+            window.set_inspector_open(opened)
+            window.show_view(view.removesuffix("-inspector"))
             pump(2.5 if view in ("spectrogram", "waterfall") else 0.7)
             save(view)
+            if opened:
+                window.set_inspector_open(False)
     window.close()
     pump(0.2)
     return written
