@@ -6,6 +6,7 @@ Offscreen. A passing run here is not a Retina or macOS hardware check.
 from __future__ import annotations
 
 import os
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -122,22 +123,23 @@ def test_hiding_the_inspector_and_resetting_the_layout(
     window = MainWindow()
     window.resize(960, 640)
     window.show()
+    window.show_view("fr")
     app.processEvents()
-    assert window.strip.start_button.isVisible()
-    assert window.strip.stop_button.isVisible()
-    before = window.workspace.width()
-    window.set_inspector_open(False)
+    assert not window.strip.isVisible()
+    assert not window.inspector.isVisible() and not window.navigator.isVisible()
+    before = window.stack.width()
+    window.set_inspector_open(True)
     app.processEvents()
-    assert not window.inspector.isVisible()
-    assert window.workspace.width() >= before
-    window.set_navigator_open(False)
+    assert window.inspector.isVisible()
+    assert window.stack.width() == before
+    window.set_navigator_open(True)
     app.processEvents()
-    assert not window.navigator.isVisible()
-    assert window.workspace.width() > 400
+    assert window.navigator.isVisible() and not window.inspector.isVisible()
+    assert window.stack.width() == before
     window.reset_layout()
     app.processEvents()
-    assert window.navigator.isVisible() and window.inspector.isVisible()
-    assert window.splitter.sizes()[1] >= 320
+    assert not window.navigator.isVisible() and not window.inspector.isVisible()
+    assert window.stack.width() >= 320
     window.close()
 
 
@@ -148,15 +150,20 @@ def test_a_broken_splitter_state_uses_the_default(
     from reverbscope.ui import ui_state
     from reverbscope.ui.main_window import MainWindow
 
+    # Legacy column settings cannot shrink or reopen panels in the new shell.
     ui_state.write("window/splitter", QByteArray(b"not-a-splitter-state"))
+    ui_state.write("window/navigator", True)
+    ui_state.write("window/inspector", True)
     window = MainWindow()
     window.resize(1280, 720)
     window.show()
+    window.show_view("decay")
     app.processEvents()
-    assert window.splitter.sizes()[1] >= 320
-    window.splitter.setSizes([800, 40, 200])
+    assert window.stack.width() >= 320
+    assert not window.navigator.isVisible() and not window.inspector.isVisible()
+    width = window.stack.width()
     window._ensure_chart_space()
-    assert window.splitter.sizes()[1] >= 320
+    assert window.stack.width() == width
     window.close()
 
 
@@ -171,47 +178,49 @@ def test_narrow_strip_keeps_transport_and_rate_readable(app: QApplication, langu
     window = MainWindow()
     window.resize(960, 640)
     window.show()
-    strip = window.strip
-    for _step in range(4):
-        app.processEvents()
-    # Qt's platform style and system fonts may calculate a minimum wider than
-    # the requested 960 px (986 px on Windows); the strip's content must not
-    # widen it further.
+    window.show_mode("standalone")
+    page, strip = window.standalone, window.strip
+    app.processEvents()
     baseline = window.minimumSizeHint().width()
     device = "MOTU UltraLite-mk5 — Core Audio — microphone inputs 1–18"
-    strip.input_device.addItem(device, "test-device")
-    strip.input_device.setCurrentIndex(strip.input_device.count() - 1)
-    strip.advanced_button.setChecked(True)
+    page.input_device.addItem(device, "test-device")
+    page.input_device.setCurrentIndex(page.input_device.count() - 1)
     for _step in range(4):
         app.processEvents()
-    # The requested window can remain narrow; the strip must not force it wider.
     assert window.minimumSizeHint().width() <= max(baseline, window.width())
-    assert strip.mode.width() >= (
-        strip.mode.fontMetrics().horizontalAdvance(strip.mode.currentText()) + 24
+    assert (
+        strip.mode.width()
+        >= strip.mode.fontMetrics().horizontalAdvance(strip.mode.currentText()) + 24
     )
-    assert strip.sample_rate.width() >= (
-        strip.sample_rate.fontMetrics().horizontalAdvance(strip.sample_rate.currentText()) + 24
+    assert (
+        page.sample_rate.width()
+        >= page.sample_rate.fontMetrics().horizontalAdvance(page.sample_rate.currentText()) + 24
     )
-    assert device in strip.input_device.toolTip()
-    assert strip.input_device.accessibleName()
-    for widget in (strip.start_button, strip.stop_button, strip.phase):
+    assert device in page.input_device.toolTip()
+    assert page.input_device.accessibleName()
+    # There is one device control, retained while changing tasks and sizes.
+    page.input_channel.setValue(2)
+    window.show_view("decay")
+    window.resize(1920, 1080)
+    window.show_mode("standalone")
+    assert page.input_channel.value() == 2
+    assert page.input_device.currentText() == device
+    page.stop_button.setEnabled(True)
+    page.busy_changed.emit(True)
+    window.show_view("fr")
+    for _step in range(4):
+        app.processEvents()
+    assert strip.isVisible() and strip.stop_button.isVisible() and strip.stop_button.isEnabled()
+    for widget in (strip.stop_button, strip.phase, strip.setup_button):
         rect = widget.rect().translated(widget.mapTo(strip, QPoint()))
         assert strip.rect().contains(rect)
-        assert not rect.intersects(strip.settings_bar.geometry())
-    # Mirroring is still two-way after the settings have moved to another row.
-    strip.input_channel.setValue(2)
-    assert window.standalone.input_channel.value() == 2
-    window.standalone.input_channel.setValue(1)
-    assert strip.input_channel.value() == 1
-    window.resize(1920, 1080)
-    for _step in range(4):
-        app.processEvents()
-    assert strip.settings_bar.geometry().top() == strip.transport_bar.geometry().top()
+    assert not strip.mode.isEnabled() and not strip.position.isEnabled()
+    page.busy_changed.emit(False)
+    assert not strip.isVisible()
     strip.set_mode("universal_daw")
-    app.processEvents()
-    assert not strip.input_device.isVisible()
-    assert strip.start_button.isVisible()
-    assert strip.start_button.shortcut().isEmpty()
+    window.workspace.task_buttons["measure"].click()
+    assert window.stack.currentWidget() is window.daw
+    assert not page.input_device.isVisible()
     window.close()
 
 
@@ -221,27 +230,21 @@ def test_keyboard_view_choice_stays_visible_in_narrow_tab_bar(app: QApplication)
     window = MainWindow()
     window.resize(960, 640)
     window.show()
-    for view_id, group_id in (
-        ("report", "report"),
-        ("spectrogram", "spectral"),
-        ("fr", "frequency"),
-    ):
-        # Use the QAction path taken by menu/shortcut navigation, not a tab click.
+    for view_id in ("report", "spectrogram", "fr"):
         window.view_actions[view_id].trigger()
         for _step in range(4):
             app.processEvents()
         workspace = window.workspace
-        button = workspace.buttons[group_id]
-        viewport = workspace.group_scroll.viewport()
-        rect = button.rect().translated(button.mapTo(viewport, QPoint()))
-        assert viewport.rect().contains(rect)
-        assert button.isChecked()
+        selector = workspace.context.view
+        assert selector.currentData() == view_id
+        assert selector.isVisible()
+        assert workspace.context.rect().contains(selector.geometry())
+        assert workspace.task_buttons["analysis"].isChecked()
     window.view_actions["project"].trigger()
     for _step in range(4):
         app.processEvents()
-    button = window.workspace.project_button
-    viewport = window.workspace.group_scroll.viewport()
-    assert viewport.rect().contains(button.rect().translated(button.mapTo(viewport, QPoint())))
+    button = window.workspace.task_buttons["project"]
+    assert window.workspace.taskbar.rect().contains(button.geometry())
     assert button.isChecked()
     window.close()
 
@@ -261,7 +264,6 @@ def test_small_window_scrolls_instead_of_clipping_plot_axes(
         window.model.add_session(tmp_path / f"take-{index}", MeasurementSession(), result)
     window.model.set_baseline(window.model.entries()[0].key)
     window.resize(960, 640)
-    window.strip.advanced_button.setChecked(True)
     window.show()
     window.show_view(view_id)
     view = window.views[view_id]
@@ -273,7 +275,10 @@ def test_small_window_scrolls_instead_of_clipping_plot_axes(
     for _step in range(4):
         app.processEvents()
     charts = [view.chart] + ([view.diff] if view_id == "fr" else [])
-    for panel in charts:
+    for index, panel in enumerate(charts):
+        if view_id == "fr":
+            view.presentation.setCurrentIndex(index)
+            app.processEvents()
         # A 140 px PlotWidget was previously assigned outside its smaller
         # panel: the axes existed in the scene but the parent cut them off.
         plot_rect = panel.plot.rect().translated(panel.plot.mapTo(panel, QPoint()))
@@ -315,6 +320,100 @@ def test_frequency_csv_matches_the_drawn_curve(
     assert xs[0] == pytest.approx(float(stored.frequencies_hz[0]), rel=1e-4)
     assert max(ys) == pytest.approx(float(np.nanmax(view.chart.series[0].y)), rel=1e-4)
     view.close()
+
+
+def test_frequency_frame_includes_a_narrow_resonance_peak(
+    app: QApplication, result: AnalysisResult
+) -> None:
+    from reverbscope.ui.views.frequency import FrequencyView
+    from reverbscope.ui.workspace import WorkspaceModel
+
+    frequencies = result.frequency_response.frequencies_hz
+    levels = np.zeros_like(frequencies)
+    levels[int(np.searchsorted(frequencies, 100.0))] = 40.0
+    response = replace(
+        result.frequency_response,
+        magnitude_db_raw=levels,
+        magnitude_db_smoothed=levels,
+    )
+    model = WorkspaceModel()
+    model.add_take(
+        MeasurementSession(),
+        replace(result, frequency_response=response),
+        [],
+        "",
+        "generic",
+        unsaved=False,
+        synthetic=True,
+    )
+    view = FrequencyView(model)
+    try:
+        view.resize(800, 500)
+        view.show()
+        app.processEvents()
+        view.chart.reset_view()
+        assert view.chart.view_box.viewRange()[1][1] > 40.0
+        assert max(view.chart.series[0].y) == 40.0
+    finally:
+        view.close()
+
+
+@pytest.mark.parametrize("outside_index", [0, -1])
+def test_frequency_frame_ignores_unmeasured_edges_and_keeps_the_baseline(
+    app: QApplication, result: AnalysisResult, outside_index: int
+) -> None:
+    from reverbscope.ui.views.frequency import FrequencyView
+    from reverbscope.ui.workspace import WorkspaceModel
+
+    frequencies = result.frequency_response.frequencies_hz
+    levels = np.zeros_like(frequencies)
+    levels[int(np.searchsorted(frequencies, 100.0))] = 40.0
+    levels[outside_index] = 140.0
+    response = replace(
+        result.frequency_response, magnitude_db_raw=levels, magnitude_db_smoothed=levels
+    )
+    model = WorkspaceModel()
+    model.add_take(
+        MeasurementSession(),
+        replace(result, frequency_response=response),
+        [],
+        "",
+        "generic",
+        unsaved=False,
+        synthetic=True,
+    )
+    view = FrequencyView(model)
+    try:
+        view.resize(800, 500)
+        view.show()
+        app.processEvents()
+        view.chart.reset_view()
+        bottom, top = view.chart.view_box.viewRange()[1]
+        assert bottom < 0 < 40 < top < 100
+    finally:
+        view.close()
+
+
+def test_frequency_difference_waits_for_the_current_measurement_to_load(
+    app: QApplication, result: AnalysisResult, tmp_path: Path
+) -> None:
+    from reverbscope.ui.views.frequency import FrequencyView
+    from reverbscope.ui.workspace import WorkspaceModel
+
+    model = WorkspaceModel()
+    baseline = model.add_session(tmp_path / "baseline", MeasurementSession(), result)
+    current = model.add_session(tmp_path / "current", MeasurementSession(), result)
+    model.set_baseline(baseline.key)
+    current.result = None
+    view = FrequencyView(model)
+    try:
+        view.redraw()
+        assert not view.diff.series
+        current.result = result
+        view.redraw()
+        assert view.diff.series
+    finally:
+        view.close()
 
 
 def test_room_pick_reset_and_presets(
@@ -436,13 +535,13 @@ def test_room_opens_framed_and_parameters_do_not_take_the_canvas(
     window.show_view("room")
     app.processEvents()
     app.processEvents()
-    assert room.parameters.isHidden()
+    assert room.parameters_drawer.isHidden()
     assert room.canvas._framed(room.canvas._frame_points(), room.canvas._fit_margins())
     width = room.canvas.width()
     room.parameters_button.click()
     app.processEvents()
     assert room.parameters.isVisible()
-    assert room.canvas.width() < width
+    assert room.canvas.width() == width
     room.parameters_button.click()
     app.processEvents()
     assert room.canvas.width() == width
@@ -488,3 +587,79 @@ def test_a_display_alias_is_kept_without_rewriting_the_session(
     assert entry_label(reopened) == "Desk left"
     if before:
         assert (folder / "session.json").read_bytes() == before
+
+
+def test_task_switches_keep_the_document_and_chart_state(
+    app: QApplication, result: AnalysisResult, tmp_path: Path
+) -> None:
+    from reverbscope.ui.main_window import MainWindow
+
+    window = MainWindow()
+    window.resize(1280, 800)
+    entry = window.model.add_session(tmp_path / "take", MeasurementSession(), result)
+    window.show()
+    window.show_view("fr")
+    app.processEvents()
+    chart = window.views["fr"].chart
+    chart.set_axis_ranges((80, 300), (-20, 15))
+    baseline = result.to_dict()
+    for task in ("measure", "compare", "project", "analysis"):
+        window.workspace.task_buttons[task].click()
+        app.processEvents()
+        assert window.workspace.current_task() == task
+        assert window.model.current_key == entry.key
+        assert window.model.is_visible(entry.key)
+        assert not window.navigator.isVisible() and not window.inspector.isVisible()
+        assert not window.strip.isVisible()
+    assert window.current_view_id() == "fr"
+    assert chart.visible_x_range() == pytest.approx((80, 300))
+    assert chart.view_box.viewRange()[1] == pytest.approx((-20, 15))
+    window.workspace.tools.buttons["cursor"].click()
+    assert not any(chart.view_box.mouseEnabled())
+    window.workspace.tools.buttons["pan"].click()
+    assert all(chart.view_box.mouseEnabled())
+    window.workspace.tools.buttons["zoom"].click()
+    assert chart.view_box.state["mouseMode"] == chart.view_box.RectMode
+    assert chart.visible_x_range() == pytest.approx((80, 300))
+    assert chart.view_box.viewRange()[1] == pytest.approx((-20, 15))
+    assert result.to_dict() == baseline
+    window.close()
+
+
+def test_saved_demo_is_marked_in_every_task(
+    app: QApplication, result: AnalysisResult, tmp_path: Path
+) -> None:
+    from reverbscope.demo import DEMO_MODE
+    from reverbscope.ui.main_window import MainWindow
+
+    window = MainWindow()
+    entry = window.model.add_session(tmp_path / "demo", MeasurementSession(mode=DEMO_MODE), result)
+    assert entry.synthetic
+    window.show()
+    for task in ("analysis", "compare", "project", "measure"):
+        window.workspace.task_buttons[task].click()
+        app.processEvents()
+        assert window.workspace.context.synthetic.isVisible()
+        assert window.workspace.context.synthetic.text() == "Synthetic demo data"
+    window.close()
+
+
+def test_review_uses_the_device_and_level_that_will_be_measured(app: QApplication) -> None:
+    from reverbscope.ui.main_window import MainWindow
+
+    window = MainWindow()
+    page = window.standalone
+    page.level.setValue(-24)
+    page.duration.setValue(5)
+    page.position.setText("B")
+    page.flow.set_step(2)
+    assert page.review_values["level"].text() == "-24.00 dBFS"
+    assert page.review_values["duration"].text() == page.duration.text()
+    assert page.input_device.currentText() in page.review_values["input"].text()
+    assert page.review_values["position"].text() == "B"
+    page.flow.previous.click()
+    assert page.flow.stack.currentIndex() == 1
+    # Navigation never starts recording; the original preflight owns that action.
+    assert not page.is_busy()
+    assert not page.stop_button.isEnabled()
+    window.close()

@@ -25,6 +25,7 @@ from reverbscope.interpretation.profiles import confidence_text
 from reverbscope.ui.plotkit import DASHES, X_TIME_MS, ChartPanel, follow_chart_visibility
 from reverbscope.ui.theme import tokens
 from reverbscope.ui.views.base import AnalysisView
+from reverbscope.ui.widgets import Disclosure
 from reverbscope.ui.workspace import (
     Entry,
     WorkspaceModel,
@@ -47,8 +48,8 @@ class ImpulseView(AnalysisView):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(10, 8, 10, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(24, 20, 24, 16)
+        layout.setSpacing(16)
         controls = QHBoxLayout()
         controls.addWidget(QLabel(_("Show")))
         self.mode = QComboBox()
@@ -85,7 +86,8 @@ class ImpulseView(AnalysisView):
         self.table.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
         self.table.itemSelectionChanged.connect(self._table_selected)
-        splitter.addWidget(self.table)
+        self.reflection_details = Disclosure(_("Reflection details"), self.table)
+        splitter.addWidget(self.reflection_details)
         splitter.setStretchFactor(0, 3)
         splitter.setStretchFactor(1, 1)
         layout.addWidget(splitter, 1)

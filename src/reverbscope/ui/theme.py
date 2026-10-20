@@ -14,65 +14,29 @@ from typing import Any
 
 from matplotlib.figure import Figure
 
+from reverbscope.ui.design.styles import desktop_styles
+from reverbscope.ui.design.tokens import DARK, LIGHT
+
 ENV_COLOR_SCHEME = "REVERBSCOPE_COLOR_SCHEME"
 
-#: Design tokens. One accent (a measured "scope" teal), neutral surfaces, and
+#: Design tokens. One restrained accent, neutral surfaces, and
 #: one tone per validity / severity so a number's trust level reads at a glance.
 #: Both schemes keep body text above WCAG AA contrast on their surfaces.
-LIGHT_TOKENS: dict[str, str] = {
-    "bg": "#f1f1f0",
-    "surface": "#ffffff",
-    "surface_alt": "#e9e9e7",
-    "border": "#cececb",
-    "text": "#242526",
-    "muted": "#545659",
-    "accent": "#177e89",
-    "accent_hover": "#12656e",
-    "accent_text": "#ffffff",
-    "accent_soft": "#e6eeee",
-    "good": "#1e6b24",
-    "good_soft": "#e5f3e7",
-    "warn": "#8a4e00",
-    "warn_soft": "#fdf0dc",
-    "bad": "#c62828",
-    "bad_soft": "#fbe7e7",
-    "info": "#1f5fa8",
-    "info_soft": "#e4eefa",
-    "grid": "#d5dbe2",
-}
-DARK_TOKENS: dict[str, str] = {
-    "bg": "#1b1c1e",
-    "surface": "#222325",
-    "surface_alt": "#2b2c2f",
-    "border": "#404145",
-    "text": "#ededeb",
-    "muted": "#b6b7bb",
-    "accent": "#71b7bc",
-    "accent_hover": "#8dc8cc",
-    "accent_text": "#0d1216",
-    "accent_soft": "#293c3e",
-    "good": "#6cc070",
-    "good_soft": "#1d3322",
-    "warn": "#f0b35a",
-    "warn_soft": "#3a2e1a",
-    "bad": "#f08a8a",
-    "bad_soft": "#3d2020",
-    "info": "#7fb2ee",
-    "info_soft": "#1c2c40",
-    "grid": "#67696d",
-}
+LIGHT_TOKENS = LIGHT
+DARK_TOKENS = DARK
+
 #: Series colours for plots, in drawing order; distinct in both schemes and
 #: paired with line styles so they survive greyscale printing.
 PLOT_SERIES = ("#177e89", "#e07a2e", "#7a5cc7", "#3f9c4a", "#c2437a", "#8a8f98")
 
 _DARK = {
-    "bg": DARK_TOKENS["surface"],
+    "bg": DARK_TOKENS["canvas"],
     "fg": DARK_TOKENS["text"],
     "grid": DARK_TOKENS["grid"],
     "muted": DARK_TOKENS["muted"],
 }
 _LIGHT = {
-    "bg": LIGHT_TOKENS["surface"],
+    "bg": LIGHT_TOKENS["canvas"],
     "fg": LIGHT_TOKENS["text"],
     "grid": LIGHT_TOKENS["grid"],
     "muted": LIGHT_TOKENS["muted"],
@@ -92,6 +56,10 @@ def color_scheme() -> str:
         chosen = ""
     if chosen in {"dark", "light"}:
         return chosen
+    from reverbscope.settings import settings_path
+
+    if not settings_path().exists():
+        return "dark"
     try:
         from PySide6.QtCore import Qt
         from PySide6.QtGui import QGuiApplication
@@ -422,7 +390,7 @@ QSplitter::handle {{ background: {t["bg"]}; }}
 QSplitter::handle:horizontal {{ width: 6px; }}
 QSplitter::handle:vertical {{ height: 6px; }}
 QSplitter::handle:hover {{ background: {t["accent"]}; }}
-"""
+""" + desktop_styles(t)
 
 
 def _arrow_images(color: str) -> tuple[str, str] | None:

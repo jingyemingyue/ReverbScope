@@ -321,3 +321,32 @@ def test_a_test_signal_that_cannot_be_written_is_a_dialog_not_a_bug(
     assert shown and "cannot write" in shown[-1]
     assert "No test signal" in window.daw.sweep_label.text()
     window.close()
+
+
+def test_repeated_task_windows_release_their_native_layouts(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Collection during later widget construction must not corrupt Qt wrappers."""
+    import gc
+    import weakref
+
+    from PySide6.QtCore import QEvent
+    from PySide6.QtWidgets import QHeaderView
+
+    monkeypatch.setenv("REVERBSCOPE_AUDIO_BACKEND", "fake")
+    for _iteration in range(8):
+        window = MainWindow()
+        for mode in ("standalone", "universal_daw"):
+            window.show_mode(mode)
+            page = window.standalone if mode == "standalone" else window.daw
+            for step in range(page.flow.stack.count()):
+                page.flow.set_step(step)
+        header = window.views["overview"].overview.energy_table.verticalHeader()
+        assert isinstance(header, QHeaderView)
+        window.close()
+        freed = weakref.ref(window)
+        del header, page, window
+        gc.collect()
+        app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        app.processEvents()
+        assert freed() is None

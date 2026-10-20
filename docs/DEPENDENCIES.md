@@ -111,7 +111,8 @@ the wheels, and must be checked again at packaging time:
 5. **GPL-only Qt modules must not be imported** (QtCharts, QtDataVisualization,
    QtGraphs, QtLottie, QtQuickTimeline, QtVirtualKeyboard, QtQuick3D,
    QtHttpServer, QtNetworkAuth, QtShaderTools). ReverbScope uses only QtCore,
-   QtGui and QtWidgets; plots are matplotlib.
+   QtGui and QtWidgets; interactive plots use pyqtgraph. The projected room
+   scene uses its QPainter GraphicsView, and matplotlib remains for static helpers.
 
 ## 4. PySide6 / Qt check (project brief §2.8)
 
@@ -213,3 +214,14 @@ and fails on a mixed one.
 
 The license-bundle script still fails if a required package ships no license
 text. None of these affect the source release.
+
+## Focused GUI asset audit (2026-10-17)
+
+The neutral light/dark UI tokens and monochrome tool drawings are original
+ReverbScope code, under this repository's license. Photoshop documentation
+was consulted for interaction patterns; no Adobe code, assets, colours,
+fonts or documentation text are included. See
+[GUI_REFERENCE_AUDIT.md](design/GUI_REFERENCE_AUDIT.md).
+No external asset or new dependency was added, so the existing license bundle
+requires no additional payload. System font fallbacks remain system fonts;
+the QA host's CJK font is not bundled.

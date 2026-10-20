@@ -60,7 +60,8 @@ def test_the_results_page_shows_the_health_card(
     assert overview.health_rows.count() == 0
     window.show_view("report")
     assert "Measurement health" in window.views["report"].text.toPlainText()
-    # The inspector leads with the same overall status.
+    # The optional inspector leads with the same overall status when opened.
+    window.set_inspector_open(True)
     assert window.inspector.health.isVisible()
     window.close()
 

@@ -67,6 +67,44 @@ def test_peak_subset_rejects_mismatched_axes() -> None:
         peak_subset(np.arange(3.0), np.arange(4.0), 10)
 
 
+def test_peak_subset_keeps_both_endpoints_of_a_flat_curve() -> None:
+    x = np.arange(10_000.0)
+    shown_x, shown_y = peak_subset(x, np.zeros_like(x), 400)
+    assert shown_x[0] == x[0]
+    assert shown_x[-1] == x[-1]
+    assert shown_x.size <= 400
+    assert np.all(shown_y == 0)
+
+
+def test_peak_subset_keeps_the_segment_when_zoomed_between_stored_points() -> None:
+    x = np.arange(10_000.0)
+    shown_x, shown_y = peak_subset(x, x * 2, 400, x_range=(10.1, 10.9))
+    assert shown_x.tolist() == [10, 11]
+    assert shown_y.tolist() == [20, 22]
+
+
+def test_smoothing_does_not_erase_a_quiet_region_after_a_strong_peak() -> None:
+    frequencies = np.geomspace(20, 20_000, 1000)
+    levels = np.full(1000, -100.0)
+    levels[20] = 100
+    smoothed = smooth_fractional_octave(frequencies, levels, 6)
+    assert smoothed[500:] == pytest.approx(-100, abs=1e-10)
+    assert levels[20] == 100
+
+
+def test_smoothing_matches_independent_local_power_sums() -> None:
+    frequencies = np.geomspace(20, 20_000, 1001)
+    levels = np.random.default_rng(8).uniform(-150, 80, frequencies.size)
+    actual = smooth_fractional_octave(frequencies, levels, 12)
+    half_window = 2 ** (1 / 24)
+    for index in (0, 20, 200, 500, 1000):
+        inside = (frequencies >= frequencies[index] / half_window) & (
+            frequencies <= frequencies[index] * half_window
+        )
+        expected = 10 * np.log10(np.mean(10 ** (levels[inside] / 10)))
+        assert actual[index] == pytest.approx(expected, abs=1e-10)
+
+
 def test_smoothing_is_a_power_average_and_leaves_flat_curves_flat() -> None:
     f = np.geomspace(20.0, 20_000.0, 2000)
     flat = np.full(f.shape, -6.0)

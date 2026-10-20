@@ -1,11 +1,7 @@
-"""The start panel: what the workspace shows before anything is open.
+"""The project landing page: saved sessions and measurement entry points.
 
-It replaces the 0.5 home page. The marketing pills and the three large mode
-cards are gone (the measure strip under the workspace starts a take); the
-first-measurement card stays until it is dismissed, and Help ▸ Getting
-started brings it back. The saved-session list opens a session into the
-workspace with a double click.
-"""
+The first-measurement guide expands on demand and can be dismissed.
+A double click adds a saved session to the persistent workspace model."""
 
 from __future__ import annotations
 
@@ -26,7 +22,7 @@ from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _
 from reverbscope.ui.browser import SessionBrowser
 from reverbscope.ui.pages import WalkthroughCard
-from reverbscope.ui.widgets import label
+from reverbscope.ui.widgets import PageHeader, label, primary
 
 log = logging.getLogger(__name__)
 
@@ -54,8 +50,22 @@ class StartPanel(QWidget):
         self.scroll_area.setWidget(body)
         outer.addWidget(self.scroll_area)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(40, 28, 40, 24)
+        layout.setSpacing(24)
+        layout.addWidget(
+            PageHeader(
+                _("Projects and measurements"), _("Open a room project or start a new measurement.")
+            )
+        )
+        entry_points = QHBoxLayout()
+        interface = primary(QPushButton(_("New interface measurement")))
+        interface.clicked.connect(lambda: self.choose_mode.emit("standalone"))
+        daw = QPushButton(_("Analyze a DAW recording"))
+        daw.clicked.connect(lambda: self.choose_mode.emit("universal_daw"))
+        entry_points.addWidget(interface)
+        entry_points.addWidget(daw)
+        entry_points.addStretch()
+        layout.addLayout(entry_points)
 
         # Shown until dismissed (a setting); Help ▸ Getting started brings it back.
         self.walkthrough = WalkthroughCard()

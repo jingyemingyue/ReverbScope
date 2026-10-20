@@ -19,11 +19,11 @@ class ReportView(AnalysisView):
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(model, parent)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setContentsMargins(24, 20, 24, 16)
         row = QHBoxLayout()
         row.addWidget(
             label(
-                _("The same report that reverbscope analyze prints; warnings are at the end."),
+                _("Full measurement report, including validity, conditions and warnings."),
                 "hint",
                 wrap=True,
             ),

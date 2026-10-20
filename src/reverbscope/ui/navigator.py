@@ -37,7 +37,7 @@ TAKES = N_("This session's take")
 
 
 class Navigator(QWidget):
-    """The left column: project header, the entry tree, open buttons."""
+    """The optional measurement drawer: project, entry tree and open actions."""
 
     open_session_requested = Signal()
     open_project_requested = Signal()
@@ -55,10 +55,10 @@ class Navigator(QWidget):
         self.setProperty("panel", True)
         self.setMinimumWidth(180)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 4, 6)
-        layout.setSpacing(6)
+        layout.setContentsMargins(8, 8, 8, 12)
+        layout.setSpacing(16)
         heading = QHBoxLayout()
-        heading.addWidget(label(_("Measurements"), "panel-title"))
+        heading.addWidget(label(_("Open measurements"), "hint"))
         heading.addStretch(1)
         self.count = label("0", "count")
         heading.addWidget(self.count)

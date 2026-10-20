@@ -1,9 +1,5 @@
-"""Minimal PySide6 desktop GUI (optional extra ``gui``).
+"""Native PySide6 desktop GUI (optional extra ``gui``).
 
-The GUI is a thin front end: it collects files and settings, runs
-:func:`reverbscope.core.pipeline.analyze` in a worker thread and displays the
-:class:`~reverbscope.models.result.AnalysisResult`. No analysis logic lives here.
-
-Only LGPL-licensed Qt modules (QtCore, QtGui, QtWidgets) are used; plots are
-drawn with matplotlib. See docs/DEPENDENCIES.md for the Qt licensing notes.
-"""
+The GUI collects files and settings, runs analysis in workers, and displays
+stored results. Only LGPL Qt Essentials modules are used. Interactive plots
+and the projected room scene use pyqtgraph; static helpers retain matplotlib."""

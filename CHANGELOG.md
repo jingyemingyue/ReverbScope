@@ -8,6 +8,14 @@ All notable changes to ReverbScope are documented here. The format follows
 ## [Unreleased]
 
 ### Changed
+- **Faithful curve display.** Power smoothing retains quiet regions after strong peaks, viewport decimation keeps endpoints and crossing segments, and frequency/difference framing includes narrow peaks. Plot legends use quiet neutral chrome. Stored measurements remain unchanged.
+- **Focused desktop draft.** A Photoshop-inspired neutral dark shell separates
+  Project, Measure, Analysis and Compare. Measurement runs in steps; optional
+  measurements/properties drawers leave the canvas full width. Frequency and
+  decay use one chart at a time, and spectral settings expand on demand.
+  Existing workflows, validity, bilingual text and analysis data are retained.
+  The placement schematic and projected room scene use pyqtgraph. This is
+  an offscreen-tested review draft; real-device and DAW acceptance remain open.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on

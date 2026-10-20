@@ -31,12 +31,41 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
 
 from reverbscope.i18n import _
 from reverbscope.ui.theme import LIGHT_TOKENS, tokens, tone_color
+
+
+class Disclosure(QWidget):
+    """An optional detail section; its content stays alive while closed."""
+
+    def __init__(self, title: str, content: QWidget, *, open_: bool = False) -> None:
+        super().__init__()
+        from reverbscope.ui.design.tokens import SPACE
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(SPACE)
+        self.toggle = QToolButton()
+        self.toggle.setText(title)
+        self.toggle.setCheckable(True)
+        self.toggle.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.toggle.setAccessibleName(title)
+        self.toggle.setToolTip(_("Show or hide {name}").format(name=title))
+        self.content = content
+        layout.addWidget(self.toggle, 0, Qt.AlignmentFlag.AlignLeft)
+        layout.addWidget(content)
+        self.toggle.toggled.connect(self.set_open)
+        self.set_open(open_)
+
+    def set_open(self, open_: bool) -> None:
+        self.toggle.setChecked(open_)
+        self.toggle.setArrowType(Qt.ArrowType.DownArrow if open_ else Qt.ArrowType.RightArrow)
+        self.content.setVisible(open_)
 
 
 class PathLabel(QLabel):
@@ -345,7 +374,7 @@ class StatTile(QWidget):
         self.value.setText(value)
         self.sub.setText(sub)
         self.chip.setText(chip)
-        self.chip.set_tone(tone)
+        self.chip.set_tone("neutral" if chip == _("valid") else tone)
         self.chip.setVisible(bool(chip))
 
 
@@ -388,9 +417,9 @@ class FindingCard(QFrame):
             f"border: none; border-bottom: 1px solid {tokens()['border']}; }}"
         )
         row = QHBoxLayout(self)
-        row.setContentsMargins(6, 4, 6, 4)
-        row.setSpacing(6)
-        chip = Chip((severity_label or severity).upper(), tone)
+        row.setContentsMargins(12, 16, 12, 16)
+        row.setSpacing(16)
+        chip = Chip(severity_label or severity, tone)
         # A fixed width cut "NOT COMPARABLE" short; the column stays aligned
         # for the usual one-word labels.
         chip.setMinimumWidth(48)

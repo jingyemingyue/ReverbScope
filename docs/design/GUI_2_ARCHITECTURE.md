@@ -1,119 +1,85 @@
-# GUI 2.0 desktop workstation: architecture
+# Focused desktop GUI: architecture
 
-Status: implemented on the `claude/project-thread-fykasp` branch (draft pull
-request). This document is the contract the workstation code follows. Each
-section names the modules that implement it; a change to the behaviour
-described here changes this file in the same commit.
+The execution standard is [GUIDELINES.zh-CN.md](../GUIDELINES.zh-CN.md).
+This document describes the GUI implementation; it does not replace that
+standard. The maintainer explicitly requested a complete GUI redesign,
+Photoshop's design language, a dark default, all existing features including
+the room view, and a draft for review. Those task decisions supersede the
+older workstation's permanently visible columns. No DSP, audio backend,
+measurement schema or dependency changes are part of this redesign.
 
-The workstation rebuilds the desktop app around one window that keeps the
-project, the measurement list, the chart and the measurement controls on
-screen together. It reuses the analysis as it is: nothing in `core/`,
-`models/`, `health.py` or `interpretation/` changes behaviour, and every
-number the window shows is a number those modules computed. What is new is
-display code (how stored data is drawn) and the room geometry the user
-enters, which is stored apart from the measurements.
+[GUI_REFERENCE_AUDIT.md](GUI_REFERENCE_AUDIT.md) records the visual
+references and the provenance of the implementation.
 
-[GUI_REFERENCE_AUDIT.md](GUI_REFERENCE_AUDIT.md) records which other
-programs were looked at, under which licenses, and what was and was not
-taken from them.
+## 1. Goals and boundaries
 
-## 1. Goals and non-goals
+One task occupies the content area. Neutral charcoal chrome, a large canvas,
+quiet typography and optional properties follow the separation of tools,
+document and contextual controls familiar from Photoshop. The task order
+is Project, Measure, Analysis, Compare. This is a native PySide6 Widgets
+application, with pyqtgraph for interactive plots and the room canvas.
+There is no browser, external service or OpenGL requirement.
 
-Goals, in the order resources go to them:
+All measurements, validity words, health diagnoses and interpretations
+continue to come from the existing analysis modules. Display controls
+change the presentation of stored data. They never overwrite a result.
+The reconstruction retains every analysis view, room geometry and scan
+import, comparison, project action, settings field and bilingual string.
 
-1. A workspace that keeps a measurement list, a large chart area, an
-   inspector and a compact measurement strip on screen at once, with
-   resizable regions and a layout that is restored at the next start.
-2. Professional chart interaction: overlays in the list's colours, show and
-   hide, a highlighted current curve, zoom, pan and reset, a cursor readout
-   with units, a difference pane for comparisons, labelled display
-   processing, and export of what is on screen.
-3. A three-dimensional room view that is useful rather than decorative: it
-   separates what the user entered, what a measurement constrains and what
-   follows only from a geometric assumption.
+## 2. Shell and measurement flow
 
-Non-goals: new acoustic metrics, a room score, a new file format for
-measurements, OpenGL rendering, or any change to the command line.
+`ui/analysis_workspace.py`, `ui/main_window.py`, `ui/components/`,
+`ui/design/`, `ui/pages.py`, `ui/measure_strip.py`.
 
-## 2. Window layout
+| Area | Contents | Visibility |
+| --- | --- | --- |
+| Task bar | Project, Measure, Analysis, Compare; Save and Settings | Always |
+| Context bar | Analysis view and current measurement, or measurement method and position | Current task only |
+| Tools | Cursor, pan, box zoom, fit | Curve and time-frequency views |
+| Canvas | One page in the existing persistent `QStackedWidget` | One active page |
+| Measurements / Properties | Existing navigator and inspector inside edge drawers | Closed initially; one at a time |
+| Transport | Phase, progress, status, return to measurement, Stop / Esc | While measuring or analyzing |
 
-`ui/main_window.py`, `ui/analysis_workspace.py`, `ui/navigator.py`,
-`ui/inspector.py`, `ui/measure_strip.py`, `ui/start_panel.py`.
+Drawers cover the canvas edge and can be closed from their header, context
+button or View menu. They do not change chart geometry or axis limits.
+The room has its own optional parameters drawer and camera controls.
+Legacy splitter state cannot restore the old three-column layout.
 
-```
-┌──────────────────────────────────────────────────────────────────────┐
-│ menu bar                                                             │
-├─────────────┬─────────────────────────────────────────┬──────────────┤
-│ Navigator   │ view bar: Overview · Frequency · Impulse │ Inspector    │
-│  project    │  · Decay · Noise · Spectrogram ·         │  health      │
-│  positions  │  Waterfall · Room · Project · Compare    │  key figures │
-│  takes      │ ─────────────────────────────────────── │  validity    │
-│  (overlay,  │ current view (stack)                     │  conditions  │
-│  colour,    │                                          │  properties  │
-│  baseline)  │                                          │              │
-├─────────────┴─────────────────────────────────────────┴──────────────┤
-│ measure strip: mode · device · rate · channels · loopback · Start/Stop │
-└──────────────────────────────────────────────────────────────────────┘
-```
+The same `WorkspaceModel` and `MeasurementState` own selection, overlays,
+baseline and live-take state. Task switches only change the current page;
+they neither clear a measurement nor cancel a worker. Existing shortcuts
+remain: Ctrl+1 through Ctrl+9, Ctrl+0 for Compare, Ctrl+Shift+1/2 for the
+measurement methods, Ctrl+S for saving. Qt displays platform-native keys.
 
-* The three columns are one horizontal `QSplitter`; the measure strip sits
-  under it. `QDockWidget` was considered and not used: floating and tabbed
-  docks cost more to restore and to test, and they do not make the chart
-  any larger than a splitter whose side panels can be hidden. The chart
-  column has the stretch factor. The navigator and the inspector collapse
-  from the view bar and from View (Ctrl+Shift+Left / Ctrl+Shift+Right, which
-  Qt shows as Command on macOS). Splitter sizes, which sides are open, the
-  current view and the window geometry are saved in `ui.ini` (§8). A
-  splitter state that does not restore, or that leaves the chart under
-  320 px, is replaced by the default sizes.
-* `MainWindow.stack` is the workspace's `QStackedWidget`. It holds the start
-  panel, the two measurement set-up pages (Universal DAW Mode and Standalone
-  Mode), every analysis view, the project view and the compare view. The
-  product GUI has no Demo mode. `show_mode("demo")` remains for tests and
-  the fake backend; it is not in the Measure menu, the strip, or the
-  first-measurement card.
-* The start panel replaces the old home page. The marketing pills and the
-  large mode cards are gone; the first-measurement card stays, can be
-  dismissed, and comes back from Help ▸ Getting started.
-* Shortcuts: `Ctrl+1` … `Ctrl+9` select the analysis views in the order of
-  `default_views()`; `Ctrl+0` opens Compare. The view bar groups them
-  (Overview, Frequency, Time, Decay, Spectral, Room, Compare, Report).
-  Spectral has a second selector for the spectrogram, the waterfall and
-  noise. Project is a separate button, not an analysis group. The
-  measurement set-up pages are `Ctrl+Shift+1` (Universal DAW Mode) and
-  `Ctrl+Shift+2` (Standalone Mode). `QKeySequence` is used so macOS shows
-  Command where other systems show Ctrl.
-* Switching views never stops a take. The Standalone page used to stop the
-  take when it was hidden; the measure strip now carries Stop (and `Esc`),
-  so the take keeps running while the user looks at another view.
+### 2.1 Measurement steps
 
-### 2.1 The continuous flow
+| Method | Steps | Existing behavior retained |
+| --- | --- | --- |
+| Audio interface | Connection; Signal and level; Measure | Host API, input/output, channels, rate, loopback, sweep duration, level, profile, optional metadata and tape measurements |
+| DAW recording | Test signal; Record in DAW; Import recording; Analyze | WAV and reference sidecar generation, recording instructions, microphone/loopback channel selection, external reference import, metadata, placement, profile |
 
-Open a project → choose a position → measure or import → read the health →
-analyse the curves → overlay another position → read the comparison verdict
-→ save or export → measure the next position. Every step keeps the project,
-the selection and the chart state: the workspace model (§3) owns them, not
-the views.
+Each step uses the original controls and preflight methods. Device settings
+have one canonical copy on the measurement page; the previous strip's
+mirrors are gone. The final interface step reads the actual chosen devices,
+channels, rate, duration and level. Optional room and placement fields
+expand on demand. Previous and Continue preserve entered values and never
+start audio. Ctrl+Return invokes the existing measurement/analysis action.
 
-The unsaved-take protection of 0.5 is kept and widened: every action that
-would drop an unsaved take (New Measurement, a new take, closing the window,
-removing the take from the list) asks first, with Save, Discard and Cancel.
-Open Session and opening a project no longer replace anything: the session
-is added to the list beside the take, and a project keeps the unsaved take
-(it may be saved into that project). The take is the only live entry; a new
-take replaces the previous one once the previous one is saved or
-discarded.
+During a take, device settings and step navigation are disabled. Stop and
+Esc remain available in the global transport after changing tasks. The
+original per-take playback confirmation, immediate mute, separate-clock
+warning, cancellation and worker lifecycle are unchanged. The transport
+is absent when idle. No product Demo mode was added; the fake backend
+remains an automation tool, and saved synthetic sessions are marked using
+the existing `DEMO_MODE` value.
 
-The measure strip mirrors the active set-up page: its device, rate and
-channel controls share the page's models, so a choice in either place is
-the same choice. **Set up...** opens the page for what the strip does not
-carry (sweep length, level, tape measurements, the DAW files). In DAW mode
-Start reads "Import recording..." and analyses the chosen files. Choosing a
-position in the navigator's menu ("Measure at …") or in the project view
-fills the strip's position and the pages' position and room fields. The
-strip names the phase (ready, measuring, analyzing) and puts the page's
-status on its own line, so a long message is not squeezed out of the
-control row. Stop looks armed only while a sweep can still be stopped.
+### 2.2 Data protection
+
+The original Save / Discard / Cancel protection remains on every action
+that can drop an unsaved take. Opening a session adds it beside the current
+take. Opening a project keeps that take. New Measurement, taking another
+measurement, removing an unsaved entry and closing the window retain the
+existing guards. A task button is navigation, not New Measurement.
 
 ## 3. Workspace model
 
@@ -188,7 +154,7 @@ makes it current.
   report (`report`) follow without a number.
 * The 0.5 Results tabs are gone. Their content moved: the key figures,
   health and findings to Overview and the inspector; each chart to its view;
-  the placement table to the room view's side panel (and, with a VALID
+  the placement table to the room view's parameters drawer (and, with a VALID
   height and separation, the ring of loudspeaker positions in the room's
   measured layer); the text report to the report view. "About this
   profile..." is in the inspector's Conditions section; Save Session is in
@@ -285,8 +251,9 @@ recording, on a frequency grid anchored at 1 kHz (`1000 · 2^(k/n)` for
 
 Charts use pyqtgraph 0.14.0 (MIT). It draws with `QPainter` on the Qt that
 the app already ships, keeps interaction fast on 100k-point curves, and
-needs no OpenGL. matplotlib stays for the command line's scripts and the
-README image renderer.
+needs no OpenGL. The tape-measure schematic is also a pyqtgraph plot,
+explicitly labelled as entered dimensions rather than a measured room.
+matplotlib stays for static helper/export and README rendering functions.
 
 * pyqtgraph is imported in one place only: `ui/pg.py` (`pyqtgraph()`,
   `colormap(name)`, `svg_export(widget, path)`, `png_export(widget, path,
@@ -320,15 +287,18 @@ Every chart (`plotkit.ChartPanel`) offers:
 * Export ▸ chart PNG, chart SVG, curve CSV (with a header that says which
   display processing was applied).
 
-The overview keeps band tables ahead of an expandable interpretation.
-Findings are neutral rows; status text carries validity or severity. The
-inspector's conditions expand on demand. Paths use a single elided line
-with the full path in a tooltip and the accessible name. Tool buttons,
-inputs and table headings share compact dimensions; body text is 12 logical
-pixels with per-glyph Chinese fallbacks.
+The overview puts RT60, C50, noise and reflections before interpretation.
+Diagnostics, complete metric tables and direct-sound details expand on demand.
+Valid numbers retain a neutral validity label; warnings and invalid values
+retain their status. The inspector's conditions also expand on demand.
+Paths use an elided line with the full path available on hover. Body text is
+14 logical pixels; hints are 12, chart and UI fonts share Chinese fallbacks.
+Original neutral light/dark tokens and spacing live in `ui/design/`.
+A new installation starts dark; explicit saved light or system choices remain
+available in the tabbed Settings dialog.
 
 Room parameters starts closed and reveals the existing inputs, scan import
-and reflection selection in a resizable side panel. The room camera fits
+and reflection selection in an overlay drawer. The room camera fits
 after a hidden view's layout becomes visible, unless the user already moved
 it. This does not change geometry, predictions or saved measurement data.
 
@@ -336,14 +306,16 @@ it. This does not change geometry, predictions or saved measurement data.
 
 * **Frequency response**: overlays in the entries' colours, display
   smoothing (none, 1/48 … 1/1 octave), level alignment, the stored curve on
-  demand, shading outside the excitation band, and a difference pane under
-  the chart when a baseline is set (current − baseline).
+  demand and shading outside the excitation band. A display selector switches
+  the full canvas between response and current-minus-baseline difference.
+  Both charts retain their linked x range and export controls.
 * **Impulse response / ETC**: the ETC (or the waveform) of the current entry
   and the overlays; reflection markers are clickable and select the
-  reflection in the model (§3), which the room view follows.
+  reflection in the model (§3), which the room view follows. The complete
+  reflection table is available in an expandable details section.
 * **Decay**: the Schroeder curves by band with the evaluation range of the
-  chosen metric shaded, and a band chart of T values under it; a value that
-  is not VALID is drawn hollow.
+  chosen metric shaded, or a full-canvas band chart of T values, selected
+  with the display control; a value that is not VALID is drawn hollow.
 * **Noise**: the noise spectrum with the detected hum harmonics marked.
 
 ### 6.4 Room geometry and the room view
@@ -397,7 +369,8 @@ direct-distance sphere, the full ellipsoid and every predicted path, still
 dotted and labelled as an assumption. **Restore default view** puts the
 layers and the camera back. The choice is saved in `ui.ini`.
 
-**Rendering.** `ui/room/` draws with `QPainter` only: an orbit camera
+**Rendering.** `ui/room/` puts the existing `QPainter` projected scene in a
+pyqtgraph `GraphicsView`, without OpenGL: an orbit camera
 (rotate, pan, zoom about the cursor, fit, reset), an axis triad labelled
 length / width / up, a metre scale bar, the entered floor filled faintly,
 and a mark on the front edge (the face at y = 0). Fit frames the entered
@@ -436,10 +409,11 @@ screenshotted in CI.
 ## 8. Saved interface state
 
 `ui.ini` in the ReverbScope home folder (`QSettings`, INI format):
-`window/geometry`, `window/splitter`, `window/navigator`, `window/inspector`,
-`workspace/view`, a display alias per measurement key, and per project
+`window/geometry`, `shell/version`, `workspace/view`, a display alias per
+measurement key, and per project
 (`project/<sha1 of the folder>/…`) the current entry, the overlay set and
-the baseline, restored when that project is opened again. Missing or
+the baseline, restored when that project is opened again. Drawers always
+start closed. Old splitter and panel-open keys are ignored. Missing or
 unreadable keys fall back to defaults; nothing in `ui.ini` is needed to
 open a session or a project.
 
@@ -459,8 +433,9 @@ New interface text goes through `_()` (module constants through `N_()`)
 with its zh_CN entry in the same commit, using the established terms:
 基准 / 对比项, 对比, 回采, 话筒, 扬声器, 音频接口, 频带, 延迟, 本底噪声, 余量,
 脉冲响应, 频率响应, 测量健康, 能量时间曲线, 时频谱, 瀑布图. Two measurements
-are 对比-ed, never 比较-d. Strings that already exist on main are not
-reworded here.
+are 对比-ed, never 比较-d. New task, step, control and accessibility strings
+are translated in the existing `reverbscope.po`. The language restart hint
+uses that catalog too; open windows keep their active language until restart.
 
 ## 11. Testing
 
@@ -471,16 +446,20 @@ reworded here.
   audio interface and DAW are separate acceptance steps and are recorded as
   such in the pull request; offscreen tests do not stand in for them.
 
-## 12. Screenshots
+## 12. Screenshots and review
 
-`docs/images/gui2/` holds offscreen screenshots of the workstation in
-Simplified Chinese, at 1366×768 and 1920×1080, light and dark, from the
-synthetic demo opened as a two-position project, named
-`<lang>_<width>x<height>_<scheme>_<view>.png`, including an empty
-workspace. `--scale 2` renders at a device pixel ratio of 2 as a high-DPI
-check; that is not a capture from a Retina display. Regenerate them with
+`render_gui2_screenshots.py` uses the synthetic two-position project,
+marks it as synthetic, and opens all analysis pages including Noise and
+Report, both measurement workflows, and Settings. It covers 960×640,
+1280×800, 1366×768 and 1920×1080, in both dark and the saved light
+preference. `--lang en` and `--lang zh_CN` select the catalog.
+`--scale 2` checks device-pixel scaling; it is not a Retina hardware test.
+The room's plan/front/side cameras remain available through `--cameras`;
+`--panels` also captures optional measurement/properties drawers and settings.
 
-    QT_QPA_PLATFORM=offscreen python scripts/render_gui2_screenshots.py
+    QT_QPA_PLATFORM=offscreen python scripts/render_gui2_screenshots.py --out /tmp/gui-review
 
-`--view room` renders the room only. `--cameras` also writes the plan,
-front, side and default perspective beside that shot.
+Curated before/after images and the validation record are in
+[GUI_FOCUSED_REVIEW.md](GUI_FOCUSED_REVIEW.md). The draft does not replace
+the public-release README images. Hardware audio, a real DAW round trip,
+and native macOS/Windows appearance still require maintainer acceptance.
