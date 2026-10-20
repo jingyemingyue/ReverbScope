@@ -41,6 +41,25 @@ class ReportView(AnalysisView):
         layout.addWidget(self.text, 1)
         self.status = label("", "hint", wrap=True)
         layout.addWidget(self.status)
+        # What only the command line does yet, named here so it can be found:
+        # the commands are literal (not translated), filled with this session.
+        layout.addWidget(
+            label(
+                _(
+                    "From the command line: every curve and table as CSV, the session "
+                    "as a zip for a bug report, and an impulse response from another tool."
+                ),
+                "hint",
+                wrap=True,
+            )
+        )
+        self.commands = QPlainTextEdit()
+        self.commands.setReadOnly(True)
+        self.commands.setProperty("commands", True)
+        self.commands.setAccessibleName(_("Command-line equivalents"))
+        apply_report_font(self.commands)
+        self.commands.setFixedHeight(4 * self.commands.fontMetrics().lineSpacing() + 18)
+        layout.addWidget(self.commands)
         for signal in (model.current_changed, model.entries_changed):
             signal.connect(self.refresh)
 
@@ -53,8 +72,25 @@ class ReportView(AnalysisView):
             return ""
         return render_analysis(REPORT_CONSOLE, entry.result, entry.findings, entry.profile)
 
+    def command_lines(self) -> str:
+        """The CLI commands for what the desktop does not do yet."""
+        entry = self.model.current()
+        folder = entry.directory if entry is not None and entry.directory else None
+        session = str(folder) if folder is not None else "SESSION"
+        if " " in session:
+            # Double quotes work in every shell ReverbScope runs from.
+            session = f'"{session}"'
+        return "\n".join(
+            (
+                f"reverbscope export {session} --format csv",
+                f"reverbscope session bundle {session}",
+                "reverbscope analyze-ir --ir IMPULSE.wav --band 20 20000",
+            )
+        )
+
     def redraw(self) -> None:
         self.text.setPlainText(self.report_text())
+        self.commands.setPlainText(self.command_lines())
         self.status.setText("")
 
     def copy(self) -> None:

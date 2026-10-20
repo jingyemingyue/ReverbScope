@@ -236,6 +236,12 @@ class Inspector(QWidget):
         self.same_gain.toggled.connect(self._draw_comparison)
         self.details_button = QPushButton(_("Open the comparison"))
         self.details_button.clicked.connect(self.compare_requested.emit)
+        # The baseline in view, not only in the list's context menu.
+        self.baseline_button = QPushButton(_("Use as baseline"))
+        self.baseline_button.setToolTip(
+            _("Compare the next measurement you select against this one.")
+        )
+        self.baseline_button.clicked.connect(self._use_as_baseline)
         self.profile_button = QPushButton(_("About this profile..."))
         self.profile_button.clicked.connect(self.show_profile_help)
         self.reflection = _Section(_("Selected reflection"))
@@ -457,19 +463,25 @@ class Inspector(QWidget):
             return None
         return show_profile_help(entry.profile, self)
 
+    def _use_as_baseline(self) -> None:
+        current = self.model.current()
+        if current is not None:
+            self.model.set_baseline(current.key)
+
     def _draw_comparison(self, *_args: object) -> None:
         section = self.comparison
         # The check box and the button are reused; take them out before clearing.
-        for widget in (self.same_gain, self.details_button):
+        for widget in (self.same_gain, self.details_button, self.baseline_button):
             widget.setParent(self._parking)
         section.clear()
         baseline = self.model.baseline()
         current = self.model.current()
-        section.setVisible(baseline is not None and current is not None)
+        section.setVisible(current is not None)
         if baseline is None:
             section.set_note(
                 _("Right-click a measurement in the list and choose Use as baseline to compare.")
             )
+            section.add_widget(self.baseline_button)
             return
         if current is None or current.key == baseline.key:
             section.set_note(

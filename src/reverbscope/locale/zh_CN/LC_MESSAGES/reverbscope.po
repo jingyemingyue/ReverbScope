@@ -7584,3 +7584,64 @@ msgstr "当前测量减去基线，使用所选的显示处理方式"
 
 msgid "Playback level"
 msgstr "播放电平"
+
+#. Dark desktop polish (gui/polish-dark).
+msgid "Read values under the pointer"
+msgstr "读取指针处的数值"
+
+msgid "Drag to move, scroll to zoom"
+msgstr "拖动平移，滚轮缩放"
+
+msgid "Drag a box to zoom into it"
+msgstr "拖出方框放大该区域"
+
+msgid "Show all data"
+msgstr "显示全部数据"
+
+msgid "Synthetic"
+msgstr "合成"
+
+msgid "Simulated by the demo, not measured in a real room."
+msgstr "由演示模拟生成，不是在真实房间中测得。"
+
+msgid "Dismiss"
+msgstr "关闭"
+
+msgid "Done"
+msgstr "完成"
+
+msgid "Check"
+msgstr "请检查"
+
+msgid "Error"
+msgstr "错误"
+
+msgid "Play a sweep through your audio interface and record the microphone."
+msgstr "通过音频接口播放扫频，同时录制话筒。"
+
+msgid "Make the test signal, record it in any DAW, then import the take."
+msgstr "生成测试信号，在任意 DAW 中录制，再导入录音。"
+
+msgid "Before and after a change: every difference with its validity."
+msgstr "改动前后对比：每个差值都附带有效性。"
+
+msgid "Compare selected"
+msgstr "对比所选"
+
+msgid "Choose the output of your audio interface in the Connection step. ReverbScope does not play the sweep on the system default output."
+msgstr "请在“连接设备”一步中选择音频接口的输出。ReverbScope 不会在系统默认输出上播放扫频。"
+
+msgid "Choose the output of your audio interface in the Connection step. ReverbScope plays the sweep only on an output you picked yourself, never on one it preselected."
+msgstr "请在“连接设备”一步中选择音频接口的输出。ReverbScope 只在你亲自选定的输出上播放扫频，不会使用它预先选中的输出。"
+
+msgid "No interface output chosen"
+msgstr "尚未选择接口输出"
+
+msgid "Compare the next measurement you select against this one."
+msgstr "之后选中的测量将与这一条对比。"
+
+msgid "From the command line: every curve and table as CSV, the session as a zip for a bug report, and an impulse response from another tool."
+msgstr "以下功能可在命令行完成：把全部曲线和表格导出为 CSV、把会话打包成压缩文件以便报告问题、分析其他工具生成的脉冲响应。"
+
+msgid "Command-line equivalents"
+msgstr "对应的命令行"

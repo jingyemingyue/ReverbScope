@@ -7,10 +7,11 @@ are retained. See docs/design/GUI_2_ARCHITECTURE.md.
 
 from __future__ import annotations
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QButtonGroup,
     QHBoxLayout,
+    QLabel,
     QStackedWidget,
     QToolButton,
     QVBoxLayout,
@@ -35,6 +36,9 @@ NUMBERED_VIEWS = (
     "room",
     "project",
 )
+
+#: Views that are not analysis tabs: tasks of their own, or not promoted.
+TAB_EXCLUDED = frozenset({"project", "compare", "room"})
 
 #: Analysis groups shown on the bar, in order. Project is not one of them.
 VIEW_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
@@ -126,9 +130,10 @@ class AnalysisWorkspace(QWidget):
     def __init__(self, views: list[AnalysisView], parent: QWidget | None = None) -> None:
         super().__init__(parent)
         from reverbscope.ui.components.context_bar import ContextBar
+        from reverbscope.ui.components.icons import icon
         from reverbscope.ui.components.tool_rail import ToolRail
-        from reverbscope.ui.design.tokens import SPACE
-        from reverbscope.ui.widgets import label
+        from reverbscope.ui.design.tokens import SPACE, TASKBAR_HEIGHT
+        from reverbscope.ui.widgets import app_icon, label
 
         self.views = {view.view_id: view for view in views}
         self.model = views[0].model
@@ -140,11 +145,17 @@ class AnalysisWorkspace(QWidget):
         layout.setSpacing(0)
         self.taskbar = QWidget()
         self.taskbar.setProperty("taskbar", True)
+        self.taskbar.setFixedHeight(TASKBAR_HEIGHT)
         tasks = QHBoxLayout(self.taskbar)
-        tasks.setContentsMargins(2 * SPACE, 0, 2 * SPACE, 0)
+        tasks.setContentsMargins(2 * SPACE, 0, SPACE, 0)
         tasks.setSpacing(0)
+        mark = QLabel()
+        mark.setPixmap(app_icon().pixmap(18, 18))
+        mark.setAccessibleName("ReverbScope")
+        tasks.addWidget(mark)
+        tasks.addSpacing(SPACE)
         tasks.addWidget(label("ReverbScope", "brand"))
-        tasks.addSpacing(4 * SPACE)
+        tasks.addSpacing(3 * SPACE)
         group = QButtonGroup(self)
         group.setExclusive(True)
         self.task_buttons: dict[str, QToolButton] = {}
@@ -156,6 +167,9 @@ class AnalysisWorkspace(QWidget):
         ):
             button = QToolButton()
             button.setText(title)
+            button.setIcon(icon(key, accent=True))
+            button.setIconSize(QSize(16, 16))
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
             button.setAccessibleName(title)
             button.setProperty("task", True)
             button.setCheckable(True)
@@ -167,11 +181,17 @@ class AnalysisWorkspace(QWidget):
         self.save_button = QToolButton()
         self.save_button.setText(_("Save"))
         self.save_button.setAccessibleName(_("Save Session"))
-        tasks.addWidget(self.save_button)
+        self.save_button.setToolTip(_("Save Session") + "  " + _native("Ctrl+S"))
         self.settings_button = QToolButton()
         self.settings_button.setText(_("Settings"))
         self.settings_button.setAccessibleName(_("Settings"))
-        tasks.addWidget(self.settings_button)
+        self.settings_button.setToolTip(_("Settings") + "  " + _native("Ctrl+,"))
+        for button, glyph in ((self.save_button, "save"), (self.settings_button, "settings")):
+            button.setIcon(icon(glyph))
+            button.setIconSize(QSize(16, 16))
+            button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            button.setProperty("taskaction", True)
+            tasks.addWidget(button)
         layout.addWidget(self.taskbar)
         self.context = ContextBar(self.model)
         self.context.entry_chosen.connect(self.model.set_current)
@@ -264,12 +284,30 @@ class AnalysisWorkspace(QWidget):
             assert isinstance(room, RoomView)
             room.canvas.fit()
 
+    def restyle(self) -> None:
+        """Redraw the icons in the colours of the scheme now in force."""
+        from reverbscope.ui.components.icons import icon
+
+        for key, button in self.task_buttons.items():
+            button.setIcon(icon(key, accent=True))
+        self.save_button.setIcon(icon("save"))
+        self.settings_button.setIcon(icon("settings"))
+        self.context.restyle()
+        self.tools.restyle()
+
     def retitle(self) -> None:
+        from reverbscope.ui.components.context_bar import tab_label
+
         self.context.view.blockSignals(True)
         self.context.view.clear()
+        # Every analysis view is a visible tab. The room view stays reachable
+        # from the View menu and its shortcut but is not promoted on the bar:
+        # it is being removed from the product (a separate change).
         for view_id, view in self.views.items():
-            if view_id not in {"project", "compare"}:
-                self.context.view.addItem(view.title(), view_id)
+            if view_id not in TAB_EXCLUDED:
+                shortcut = _shortcut_for(view_id)
+                tip = f"{view.title()}  {shortcut}" if shortcut else view.title()
+                self.context.view.addItem(tab_label(view_id, view.title()), view_id, tip)
         self.context.view.blockSignals(False)
         self._sync_buttons()
 

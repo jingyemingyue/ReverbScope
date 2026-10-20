@@ -174,6 +174,10 @@ CJK_FALLBACK_FONTS = (
 )
 
 
+#: The preferred Latin UI face, used only when it is installed.
+UI_LATIN_FONT = "IBM Plex Sans"
+
+
 def font_families() -> list[str]:
     """DejaVu Sans, then the installed fonts of :data:`CJK_FALLBACK_FONTS`."""
     from matplotlib import font_manager
@@ -451,6 +455,10 @@ def install_cjk_ui_font(app: Any) -> None:
     installed = set(QFontDatabase.families())
     primary = font.family()
     families = [primary] if primary else []
+    # IBM Plex Sans when the user has it installed (ReverbScope bundles no
+    # font): the face of the desktop design; the platform face otherwise.
+    if UI_LATIN_FONT in installed:
+        families.insert(0, UI_LATIN_FONT)
     for name in CJK_FALLBACK_FONTS:
         if name in installed and name not in families:
             families.append(name)

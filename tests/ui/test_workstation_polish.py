@@ -640,7 +640,10 @@ def test_saved_demo_is_marked_in_every_task(
         window.workspace.task_buttons[task].click()
         app.processEvents()
         assert window.workspace.context.synthetic.isVisible()
-        assert window.workspace.context.synthetic.text() == "Synthetic demo data"
+        # In words in every state; a narrow bar shortens it (the tooltip says more).
+        context = window.workspace.context
+        expected = "Synthetic" if context.is_compact() else "Synthetic demo data"
+        assert context.synthetic.text() == expected
     window.close()
 
 
