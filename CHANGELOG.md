@@ -142,6 +142,14 @@ All notable changes to ReverbScope are documented here. The format follows
   Those root files are in the sdist, which already ships every other tracked
   top-level entry the packaging test requires. Appendix F of the guidelines
   is not filled in by this change.
+- **Help → Send Feedback... and Help → Report a Bug...** open the matching
+  GitHub issue form in the system browser, in the interface language, with
+  the version (plus Python and Qt) and the operating system prefilled in the
+  form's URL. The app sends nothing itself; the browser opens only on a
+  click. A bilingual "Question or feedback" issue form joins the bug forms,
+  which now mention the prefilled fields. `SUPPORT.md` and
+  `SUPPORT.zh-CN.md` say where to ask, report a bug or a security issue;
+  the issue chooser links them and the sdist ships them.
 
 ### Documentation and tester tooling
 - Separate the public RoomScope beta from renamed Draft releases in both
@@ -160,6 +168,15 @@ All notable changes to ReverbScope are documented here. The format follows
   Retina resolution. `scripts/render_readme_assets.py` placed the synthetic-
   data stamp outside the image on a high-DPI display; it now measures in
   logical pixels.
+- Rewrite `README.md` and `README.zh-CN.md` again from scratch: a factual
+  opening (what is measured, for whom, offline, desktop app and command
+  line, English and Simplified Chinese), the pre-release status and what is
+  not yet validated, then download, a hardware-free demo, measuring and the
+  docs. The "student developer" wording and the "Try it in 30 seconds" /
+  "30 秒体验" heading are gone; the demo section is now "Try it without
+  hardware" / "不接设备先试用", and the release-notes test follows the new
+  heading. Both READMEs point to Help → Send Feedback... / Report a Bug...,
+  the issue forms and `SUPPORT.md`.
 
 ## [0.5.0b4] - 2026-10-18
 
