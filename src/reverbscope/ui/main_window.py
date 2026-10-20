@@ -507,6 +507,11 @@ class MainWindow(QMainWindow):
         self._status.showMessage(
             _("ReverbScope {version}  ·  {place}").format(version=__version__, place=place)
         )
+        self._update_toolbar_place()
+
+    def _update_toolbar_place(self) -> None:
+        """The toolbar's title (the place) and subtitle (the current measurement)."""
+        place = self._place
         current = self.model.current()
         subtitle = ""
         if current is not None and self.stack.currentWidget() not in (
@@ -649,7 +654,8 @@ class MainWindow(QMainWindow):
         if key and self.stack.currentWidget() is self.home:
             self.show_view(self._preferred_view)
         elif self._place:
-            self._set_place(self._place)
+            # Only the toolbar: the status line may be saying "saved".
+            self._update_toolbar_place()
 
     def show_results(self) -> None:
         """The view the user last read, for the current measurement."""

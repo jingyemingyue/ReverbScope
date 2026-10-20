@@ -26,6 +26,16 @@ an implementation, was taken.
 | Fractional-octave display smoothing | `display/curves.py` | The textbook power average over ±1/(2N) octave |
 | Wheel zoom about the cursor, drag to pan, double-click to fit | `ui/plotkit.py` | The idea only |
 
+## Icons
+
+The light sidebar GUI uses one icon family, Lucide (lucide-static 1.59.0,
+ISC; the Feather-derived icons also MIT). The 43 icons the interface uses
+are copied as SVG elements into `src/reverbscope/ui/icons.py`, each one tied
+to a real action (docs/design/light-sidebar/IMPLEMENTATION.md). The licence
+texts are in `packaging/licenses/lucide-LICENSE.txt` and go into the desktop
+bundle's `THIRD_PARTY_LICENSES`. No icon or image of another measurement
+program was used, and SF Symbols were not used (Apple platforms only).
+
 ## Libraries
 
 The libraries the workstation uses are listed with their licenses in

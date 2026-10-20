@@ -537,7 +537,12 @@ def test_standalone_preselects_the_system_default_devices(
 ) -> None:
     """Review finding: on a Mac every Core Audio device is its own starred
     entry, so the page preselected the lowest index, a virtual BlackHole
-    device, instead of the microphone and speakers the system uses."""
+    device, instead of the microphone and speakers the system uses.
+
+    Since the light sidebar GUI (SPEC §8.4 OUT-2, owner rule 2026-10-19) only
+    the input follows the system: the output is never preselected, so no
+    sweep can reach the laptop speakers without the user choosing them, and
+    Start stays off with the reason shown until an output is chosen."""
     from reverbscope.audio import backend as backend_module
     from reverbscope.audio import inventory as inventory_module
     from reverbscope.audio.backend import DeviceInfo
@@ -570,10 +575,18 @@ def test_standalone_preselects_the_system_default_devices(
     assert page.host_api.currentData() is None
     assert page.input_device.currentData() is None
     assert page.output_device.currentData() is None
-    # Choosing the host API preselects its default devices, not the first star.
+    # Choosing the host API preselects its default input, not the first star;
+    # the output stays unchosen (OUT-2) and Start says why it is off (OUT-4).
     page.host_api.setCurrentIndex(page.host_api.findData("Core Audio"))
     assert page.input_device.currentData() == 1
-    assert page.output_device.currentData() == 2
+    assert page.output_device.currentData() is None
+    assert page.output_device.findData(2) >= 0
+    assert not page.run_button.isEnabled()
+    assert not window.strip.start_button.isEnabled()
+    assert page.readiness.text() == page.readiness_reason() != ""
+    page.output_device.setCurrentIndex(page.output_device.findData(2))
+    assert page.run_button.isEnabled() and window.strip.start_button.isEnabled()
+    assert page.readiness_reason() == ""
     window.close()
 
 
@@ -1393,10 +1406,13 @@ def test_standalone_keeps_the_chosen_devices_when_it_lists_them_again(
     assert chosen() == ("Core Audio", 2, 2)
     page.refresh_button.click()
     assert chosen() == ("Core Audio", 2, 2)
-    # Unplugged, its index taken by another device: the system's defaults.
+    # Unplugged, its index taken by another device: the system's default
+    # input; the output is not replaced by another device but must be chosen
+    # again (OUT-2), so nothing plays on the headset by surprise.
     devices[2] = DeviceInfo(2, "USB Headset", "Core Audio", 1, 2, 48000.0, False, False)
     page.refresh_button.click()
-    assert chosen() == ("Core Audio", 1, 3)
+    assert chosen() == ("Core Audio", 1, None)
+    assert not page.run_button.isEnabled()
     window.close()
 
 
@@ -1461,7 +1477,9 @@ def test_a_new_audio_backend_in_settings_reaches_the_standalone_page(
     window.show_settings()
     assert "Scarlett 2i2" in listed() and "fake" not in listed()
 
-    # Changed while a take ran, the list stays until Run makes it again.
+    # Changed while a take ran, the list stays until Run makes it again. The
+    # interface output is picked first: Run stays off until it is (OUT-4).
+    page.output_device.setCurrentIndex(page.output_device.findData(0))
     save_settings(UserSettings(audio_backend="fake"))
     page.run_button.click()
     assert warned == ["Audio backend changed"]

@@ -377,9 +377,17 @@ class DawModePage(QWidget):
                 ),
             ),
         )
+        # The four steps of PR #71's DAW path. ReverbScope plays nothing here:
+        # it only writes the sweep file (SPEC §8.4).
+        self.steps = StepIndicator(
+            (_("Test signal"), _("Record in the DAW"), _("Import"), _("Analyze")), self
+        )
+        self.steps.step_clicked.connect(self._reveal_step)
+        layout.addWidget(self.steps)
 
         # Step 1
         step1 = QGroupBox(_("Step 1 - Generate Test Signal"))
+        self.step_boxes: list[QWidget] = [step1]
         form1 = QFormLayout(step1)
         self.sample_rate = QComboBox()
         for sr in SUPPORTED_SAMPLE_RATES:
@@ -408,6 +416,7 @@ class DawModePage(QWidget):
 
         # Step 2
         step2 = QGroupBox(_("Step 2 - Record Through Your DAW"))
+        self.step_boxes.append(step2)
         v2 = QVBoxLayout(step2)
         instructions = QLabel(_(DAW_INSTRUCTIONS))
         instructions.setWordWrap(True)
@@ -417,6 +426,7 @@ class DawModePage(QWidget):
 
         # Step 3
         step3 = QGroupBox(_("Step 3 - Import Recording"))
+        self.step_boxes.append(step3)
         form3 = QFormLayout(step3)
         self.recording_button = QPushButton(_("Choose Recording..."))
         self.recording_button.clicked.connect(self._choose_recording)
@@ -439,6 +449,7 @@ class DawModePage(QWidget):
 
         # Step 4
         step4 = QGroupBox(_("Step 4 - Analyze"))
+        self.step_boxes.append(step4)
         v4 = QVBoxLayout(step4)
         meta, self.room, self.position, self.mic = _metadata_form(state)
         v4.addWidget(meta)
@@ -468,6 +479,29 @@ class DawModePage(QWidget):
         v4.addWidget(self.status)
         layout.addWidget(step4)
         layout.addStretch(1)
+        self._busy_flag = False
+        self.sync_steps()
+
+    def sync_steps(self) -> None:
+        """Done, current or still to come, from what the page holds."""
+        signal = self._sweep_path is not None or self._reference is not None
+        recorded = self._recording is not None
+        if self._busy_flag:
+            states = ("done", "done", "done", "running")
+        else:
+            states = (
+                "done" if signal else "current",
+                "done" if recorded else ("current" if signal else "todo"),
+                "done" if recorded else "todo",
+                "current" if recorded else "locked",
+            )
+        self.steps.set_states(states)
+
+    def _reveal_step(self, index: int) -> None:
+        target = self.step_boxes[index]
+        scroll = self.findChild(QScrollArea)
+        if scroll is not None:
+            scroll.ensureWidgetVisible(target, 8, 24)
 
     # --- step 1 -----------------------------------------------------------------
     def current_sweep_settings(self) -> SweepSettings:
@@ -500,6 +534,7 @@ class DawModePage(QWidget):
             )
         )
         self.reference_label.setText(_("Reference: {name}").format(name=wav_path.name))
+        self.sync_steps()
 
     # --- step 3 -----------------------------------------------------------------
     def _choose_recording(self) -> None:
@@ -539,6 +574,7 @@ class DawModePage(QWidget):
                 channels=recording.n_channels,
             )
         )
+        self.sync_steps()
 
     def _choose_reference(self) -> None:
         path, _filter = QFileDialog.getOpenFileName(
@@ -629,6 +665,7 @@ class DawModePage(QWidget):
         self.channel.addItem(_("Auto (highest level)"), None)
         self.loopback_channel.clear()
         self.loopback_channel.addItem(_("None"), None)
+        self.sync_steps()
 
     def clear_recording(self) -> None:
         """Forget the imported take (New Measurement, Open Session)."""
@@ -636,6 +673,7 @@ class DawModePage(QWidget):
         self._recording_path = None
         self.recording_label.setText(_("No recording selected."))
         self._reset_channel_lists()
+        self.sync_steps()
 
     def shutdown_workers(self) -> None:
         """Let a running analysis finish: a QThread destroyed while it runs aborts."""
@@ -643,6 +681,8 @@ class DawModePage(QWidget):
             self._worker.wait()
 
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
+        self._busy_flag = busy
+        self.sync_steps()
         self.analyze_button.setEnabled(not busy)
         # Leaving mid-analysis would let the late result replace another session.
         self.back_button.setEnabled(not busy)
@@ -914,10 +954,14 @@ class StandalonePage(QWidget):
 
     # --- readiness (OUT-1…5, SAFE) ---------------------------------------------------
 
+    def plays_nothing(self) -> bool:
+        """The fake backend (Demo, or chosen in Settings) sends nothing to a
+        loudspeaker, so the output rules have nothing to protect there."""
+        return self.demo_mode or self._inventory_backend == "fake"
+
     def output_chosen(self) -> bool:
-        """An interface output is chosen. Demo mode plays nothing, so its fake
-        interface counts as chosen."""
-        if self.demo_mode:
+        """An interface output is chosen (always true on the fake backend)."""
+        if self.plays_nothing():
             return True
         return self.output_device.currentData() is not None
 
@@ -1108,7 +1152,7 @@ class StandalonePage(QWidget):
             combo.clear()
         if api is None:
             self.input_device.addItem(_("System default"), None)
-        if self.demo_mode:
+        if self.plays_nothing():
             # The fake backend plays nothing; its list keeps the old shape.
             if api is None:
                 self.output_device.addItem(_("System default"), None)
@@ -1144,7 +1188,7 @@ class StandalonePage(QWidget):
         preselect: list[tuple[QComboBox, object, str]] = [
             (self.input_device, chosen.default_input if chosen else None, "recommended_input")
         ]
-        if self.demo_mode:
+        if self.plays_nothing():
             preselect.append(
                 (
                     self.output_device,
@@ -1248,7 +1292,7 @@ class StandalonePage(QWidget):
 
     def _device_for(self, combo: QComboBox, *, kind: str) -> DeviceInfo | None:
         index = combo.currentData()
-        if index is None and kind == "output" and not self.demo_mode:
+        if index is None and kind == "output" and not self.plays_nothing():
             return None  # no output chosen: nothing is ever played on a default
         for device in self._devices:
             if index is None:
