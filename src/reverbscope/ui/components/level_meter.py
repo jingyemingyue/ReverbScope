@@ -31,6 +31,9 @@ from reverbscope.ui.theme import tokens
 #: Bar thickness and the gap between channels (logical px).
 BAR = 12
 GAP = 6
+#: How often the accessible description is refreshed (s). Painting stays at
+#: the display frame rate; screen-reader text does not need 33 Hz updates.
+A11Y_REFRESH_S = 0.25
 
 
 def format_dbfs(value: float) -> str:
@@ -57,6 +60,9 @@ class LevelMeter(QWidget):
         self.orientation = orientation
         self.channels: list[MeterChannel] = []
         self.names: list[str] = []
+        self._colors_cache: dict[str, QColor] | None = None
+        self._a11y_age_s = A11Y_REFRESH_S  # refresh on the first update
+        self._a11y_clipped = False
         self.set_channels(names or [_("Input")])
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setAccessibleName(_("Input level meter"))
@@ -89,17 +95,25 @@ class LevelMeter(QWidget):
         for channel, peak, rms in zip(self.channels, peaks_dbfs, rms_dbfs, strict=False):
             channel.update(peak, rms, dt_s)
         self.update()
-        self.setAccessibleDescription(self.readout_text())
+        clipped = self.clipped
+        self._a11y_age_s += max(0.0, float(dt_s))
+        if self._a11y_age_s >= A11Y_REFRESH_S or clipped != self._a11y_clipped:
+            self._a11y_age_s = 0.0
+            self._a11y_clipped = clipped
+            self.setAccessibleDescription(self.readout_text())
 
     def reset(self) -> None:
         for channel in self.channels:
             channel.reset()
+        self._a11y_age_s = A11Y_REFRESH_S
         self.update()
 
     def reset_clip(self) -> None:
         for channel in self.channels:
             channel.reset_clip()
         self.clip_reset.emit()
+        self._a11y_clipped = False
+        self.setAccessibleDescription(self.readout_text())
         self.update()
 
     @property
@@ -115,6 +129,11 @@ class LevelMeter(QWidget):
             )
             for name, channel in zip(self.names, self.channels, strict=True)
         )
+
+    def restyle(self) -> None:
+        """Drop the cached palette so the next paint picks up the theme tokens."""
+        self._colors_cache = None
+        self.update()
 
     # --- geometry ---------------------------------------------------------------
 
@@ -135,13 +154,15 @@ class LevelMeter(QWidget):
         line = QFontMetrics(self.font()).height()
         if self.orientation == Qt.Orientation.Vertical:
             per = self._column_width()
+            # Scale + channels; height leaves room for peak, RMS and the name.
             return QSize(self._scale_width() + n * per + SPACE, 260)
         return QSize(360, n * (BAR + GAP) + line + 2 * SPACE)
 
     def minimumSizeHint(self) -> QSize:  # noqa: N802 - Qt override
         hint = self.sizeHint()
         if self.orientation == Qt.Orientation.Vertical:
-            return QSize(hint.width(), 160)
+            # Peak + RMS + name under the bar still fit at 960×640.
+            return QSize(hint.width(), 140)
         return QSize(200, hint.height())
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # noqa: N802 - Qt override
@@ -154,10 +175,12 @@ class LevelMeter(QWidget):
     # --- painting ---------------------------------------------------------------
 
     def _colors(self) -> dict[str, QColor]:
+        if self._colors_cache is not None:
+            return self._colors_cache
         t = tokens()
         peak = QColor(t["accent"])
         peak.setAlpha(110)
-        return {
+        self._colors_cache = {
             "track": QColor(t["surface_alt"]),
             "rms": QColor(t["accent"]),
             "peak": peak,
@@ -169,6 +192,7 @@ class LevelMeter(QWidget):
             "safe": QColor(t["warn"]),
             "clip_off": QColor(t["border"]),
         }
+        return self._colors_cache
 
     def paintEvent(self, _event: QPaintEvent) -> None:  # noqa: N802 - Qt override
         painter = QPainter(self)
@@ -186,7 +210,8 @@ class LevelMeter(QWidget):
         scale_w = self._scale_width()
         per = self._column_width()
         top = line // 2 + BAR  # room for the clip box
-        bottom = self.height() - 2 * line - SPACE
+        # Peak hold, RMS and the channel name under the bar.
+        bottom = self.height() - 3 * line - SPACE
         span = max(1, bottom - top)
 
         def y_of(db: float) -> float:
@@ -206,6 +231,12 @@ class LevelMeter(QWidget):
                 int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter),
                 text,
             )
+        # Unit once, under the scale — keeps the channel columns free of "dBFS".
+        painter.drawText(
+            QRectF(0, bottom + 4, scale_w - 4, line),
+            int(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter),
+            _("dBFS"),
+        )
         x = scale_w
         for name, channel in zip(self.names, self.channels, strict=True):
             bar_x = x + (per - BAR) / 2
@@ -228,13 +259,19 @@ class LevelMeter(QWidget):
             clip = QRectF(bar_x, top - BAR + 1, BAR, BAR - 3)
             painter.fillRect(clip, c["hot"] if channel.clipped else c["clip_off"])
             painter.setPen(c["text"])
-            readout = QRectF(x, bottom + 4, per, line)
             painter.drawText(
-                readout, int(Qt.AlignmentFlag.AlignCenter), format_dbfs(channel.peak.hold)
+                QRectF(x, bottom + 4, per, line),
+                int(Qt.AlignmentFlag.AlignCenter),
+                format_dbfs(channel.peak.hold),
             )
             painter.setPen(c["muted"])
             painter.drawText(
                 QRectF(x, bottom + 4 + line, per, line),
+                int(Qt.AlignmentFlag.AlignCenter),
+                format_dbfs(channel.last_rms_dbfs),
+            )
+            painter.drawText(
+                QRectF(x, bottom + 4 + 2 * line, per, line),
                 int(Qt.AlignmentFlag.AlignCenter),
                 name,
             )

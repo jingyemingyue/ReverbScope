@@ -7586,6 +7586,9 @@ msgid "Playback level"
 msgstr "播放电平"
 
 #. Live input monitor (Signal and level step).
+msgid "dBFS"
+msgstr "dBFS"
+
 msgid "Input level meter"
 msgstr "输入电平表"
 

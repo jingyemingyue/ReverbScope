@@ -324,6 +324,84 @@ def test_horizontal_meter_draws(app: QApplication) -> None:
     meter.deleteLater()
 
 
+def test_vertical_meter_shows_peak_and_rms(app: QApplication) -> None:
+    """A: the vertical meter readout exposes both peak hold and RMS (dBFS)."""
+    from reverbscope.ui.components.level_meter import LevelMeter, format_dbfs
+
+    meter = LevelMeter(["Mic"], orientation=Qt.Orientation.Vertical)
+    meter.resize(max(meter.sizeHint().width(), 80), 220)
+    meter.update_levels([-6.0], [-12.0], 0.03)
+    text = meter.readout_text()
+    assert format_dbfs(-6.0) in text
+    assert format_dbfs(-12.0) in text
+    assert "dBFS" in text
+    assert not meter.grab().isNull()
+    # Narrow height used at 960×640 still paints without raising.
+    meter.resize(meter.minimumSizeHint().width(), meter.minimumSizeHint().height())
+    meter.update_levels([-9.5], [-15.5], 0.03)
+    assert not meter.grab().isNull()
+    meter.close()
+    meter.deleteLater()
+
+
+def test_live_panel_title_is_not_all_caps(panel: object) -> None:
+    """A: section caption keeps sentence case (no forced Latin .upper())."""
+    from reverbscope.ui.live_monitor import LiveMonitorPanel
+
+    assert isinstance(panel, LiveMonitorPanel)
+    titles = [
+        child.text()
+        for child in panel.findChildren(type(panel.state_label))
+        if child.property("role") == "section"
+    ]
+    assert "Live input" in titles
+    assert "LIVE INPUT" not in titles
+
+
+def test_ring_latest_reuses_out_and_wraps_without_gaps() -> None:
+    """B: one float32 copy into an out buffer; wrap uses the two-slice path."""
+    ring = RingBuffer(8, 2)
+    ring.write(np.arange(10, dtype=np.float32).reshape(5, 2))
+    ring.write(np.arange(10, 20, dtype=np.float32).reshape(5, 2))
+    out = np.full((4, 2), -1.0, dtype=np.float32)
+    got = ring.latest(4, out=out)
+    assert got is out
+    assert got.dtype == np.float32
+    # Newest frames are 16..19 laid out as two channels.
+    assert got[:, 0].tolist() == [12.0, 14.0, 16.0, 18.0]
+    assert got[:, 1].tolist() == [13.0, 15.0, 17.0, 19.0]
+
+
+def test_tick_uses_one_ring_read_for_meter_and_spectrum(
+    panel: object, app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """B: each display frame copies the ring once, then slices peak / RMS / FFT."""
+    from reverbscope.ui.live_monitor import LiveMonitorPanel
+
+    assert isinstance(panel, LiveMonitorPanel)
+    spy = SpySource()
+    spy.inner.tones = ((1000.0, -6.0),)
+    spy.inner.noise_rms_dbfs = -90.0
+    panel.source_factory = lambda: spy
+    panel.start()
+    assert panel.ring is not None
+    calls: list[int] = []
+    real_latest = panel.ring.latest
+
+    def counted(frames: int, *, upto: int | None = None, out: object = None) -> object:
+        calls.append(frames)
+        return real_latest(frames, upto=upto, out=out)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(panel.ring, "latest", counted)
+    spy.pump(9000)
+    panel.tick(0.03)
+    assert len(calls) == 1
+    assert panel.meter.channels[0].peak.hold == pytest.approx(-6.0, abs=0.2)
+    peak = int(np.argmax(panel.spectrum.level_db))
+    assert panel.spectrum.frequencies[peak] == pytest.approx(1000.0, rel=0.03)
+    panel.stop()
+
+
 # --- on the Standalone page ------------------------------------------------------
 
 

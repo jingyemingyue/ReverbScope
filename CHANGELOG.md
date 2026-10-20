@@ -19,6 +19,11 @@ All notable changes to ReverbScope are documented here. The format follows
   (docs/design/LIVE_INPUT_MONITOR.md).
 
 ### Changed
+- **Live level meter polish and frame cost.** The vertical meter shows peak
+  hold and RMS with a dBFS scale label; the panel title keeps sentence case.
+  Each display frame copies the ring buffer once (float32, two-slice wrap),
+  caches meter colours, throttles accessible text, and reuses the spectrum's
+  coherent-gain scale — display only; stored measurements unchanged.
 - **A sweep plays only on an output you picked.** The desktop app refuses a
   Standalone take when the output is “System default” or was only
   preselected, instead of falling back to the default output (often the

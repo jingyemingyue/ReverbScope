@@ -77,22 +77,25 @@ def power_to_db(power: FloatArray) -> FloatArray:
 
 def block_peak_dbfs(block: FloatArray) -> list[float]:
     """Sample peak of each column of ``block`` (frames x channels) in dBFS."""
-    data = np.asarray(block, dtype=np.float64)
+    data = np.asarray(block)
     if data.ndim == 1:
         data = data[:, None]
     if data.shape[0] == 0:
-        return [SILENCE_DBFS] * data.shape[1]
-    return [amplitude_to_dbfs(v) for v in np.max(np.abs(data), axis=0)]
+        return [SILENCE_DBFS] * int(data.shape[1])
+    # abs().max keeps the dtype of the block (float32 from the ring is enough).
+    return [amplitude_to_dbfs(float(v)) for v in np.max(np.abs(data), axis=0)]
 
 
 def block_rms_dbfs(block: FloatArray) -> list[float]:
     """RMS of each column of ``block`` in dBFS (a full-scale sine reads -3.01)."""
-    data = np.asarray(block, dtype=np.float64)
+    data = np.asarray(block)
     if data.ndim == 1:
         data = data[:, None]
     if data.shape[0] == 0:
-        return [SILENCE_DBFS] * data.shape[1]
-    return [amplitude_to_dbfs(v) for v in np.sqrt(np.mean(data * data, axis=0))]
+        return [SILENCE_DBFS] * int(data.shape[1])
+    # mean of squares in float64 so long windows of float32 do not underflow.
+    power = np.mean(np.asarray(data, dtype=np.float64) ** 2, axis=0)
+    return [amplitude_to_dbfs(float(v)) for v in np.sqrt(power)]
 
 
 def meter_fraction(dbfs: float) -> float:
@@ -237,13 +240,13 @@ def log_resample(
             mean = (cumulative[hi] - cumulative[lo]) / np.maximum(count, 1.0)
         out[wide] = mean[wide]
         return out
-    # Peak per cell: reduceat over the cells that hold at least one bin.
+    # Peak per cell. Adjacent log cells may share a boundary bin, so a plain
+    # reduceat partition is not safe; take the max of each [lo, hi) range.
     starts = lo[wide]
     stops = hi[wide]
-    peaks = np.array(
-        [float(np.max(power[start:stop])) for start, stop in zip(starts, stops, strict=True)],
-        dtype=np.float64,
-    )
+    peaks = np.empty(starts.shape[0], dtype=np.float64)
+    for i, start, stop in zip(range(starts.shape[0]), starts, stops, strict=True):
+        peaks[i] = float(power[start:stop].max())
     out[wide] = np.maximum(peaks, interpolated[wide])
     return out
 
@@ -273,6 +276,7 @@ class LiveSpectrum:
     peak_hold_s: float = SPECTRUM_PEAK_HOLD_S
     peak_decay_db_per_s: float = SPECTRUM_PEAK_DECAY_DB_PER_S
     _window: FloatArray = field(init=False, repr=False)
+    _coherent_scale: float = field(default=1.0, init=False, repr=False)
     _average: FloatArray | None = field(default=None, init=False, repr=False)
     _peak: FloatArray | None = field(default=None, init=False, repr=False)
     _peak_age: FloatArray | None = field(default=None, init=False, repr=False)
@@ -298,6 +302,8 @@ class LiveSpectrum:
         if points is not None:
             self.points = max(16, int(points))
         self._window = periodic_hann(self.fft_size)
+        # Coherent gain of the Hann window: a bin-centred sine reads its peak.
+        self._coherent_scale = 2.0 / float(np.sum(self._window))
         self.frequencies = display_frequencies(self.sample_rate, self.points)
         self.reset()
 
@@ -323,14 +329,22 @@ class LiveSpectrum:
             data = np.concatenate((np.zeros(self.fft_size - data.shape[0]), data))
         else:
             data = data[-self.fft_size :]
-        power = amplitude_spectrum_power(data, self._window)
+        # Inline the one-sided amplitude spectrum with the cached coherent gain
+        # so each frame does not re-sum the Hann window.
+        spectrum = np.fft.rfft(data * self._window)
+        amplitude = np.abs(spectrum) * self._coherent_scale
+        amplitude[0] *= 0.5
+        if data.shape[0] % 2 == 0:
+            amplitude[-1] *= 0.5
+        power = amplitude * amplitude
         if self._average is None or self.averaging_s <= 0.0 or self._average.shape != power.shape:
             self._average = power
         else:
             # Exponential averaging of power with time constant averaging_s,
             # independent of the frame rate.
             keep = math.exp(-max(dt_s, 0.0) / self.averaging_s)
-            self._average = keep * self._average + (1.0 - keep) * power
+            self._average *= keep
+            self._average += (1.0 - keep) * power
         shown = log_resample(self._average, self.sample_rate, self.frequencies, self.smoothing)
         self.level_db = power_to_db(shown)
         if self._peak is None or self._peak_age is None or self._peak.shape != self.level_db.shape:
