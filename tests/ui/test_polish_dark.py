@@ -187,6 +187,46 @@ def test_run_waits_for_a_hand_picked_interface_output(app: QApplication, lang: s
     window.close()
 
 
+def test_the_run_reason_sits_above_the_buttons(app: QApplication, lang: str) -> None:
+    # On a short window the reason must not drop below the fold under Run.
+    window = _window(app, (960, 640))
+    window.show_mode("standalone")
+    page = window.standalone
+    page.flow.set_step(2)
+    page._inventory_backend = "portaudio"
+    page._explicit_output = None
+    page._sync_run_button()
+    _settle(app)
+    reason_y = page.run_reason.mapTo(page, QPoint()).y()
+    run_y = page.run_button.mapTo(page, QPoint()).y()
+    assert reason_y < run_y
+    window.close()
+
+
+@pytest.mark.parametrize("size", SIZES)
+def test_the_measurement_chooser_shows_the_whole_short_name(
+    app: QApplication, lang: str, result: AnalysisResult, tmp_path: Path, size: tuple[int, int]
+) -> None:
+    from PySide6.QtWidgets import QStyle, QStyleOptionComboBox
+
+    from reverbscope.demo import DEMO_MODE
+
+    window = _window(app, size)
+    entry = window.model.add_session(tmp_path / "a", MeasurementSession(mode=DEMO_MODE), result)
+    window.model.set_current(entry.key)
+    window.show_view("fr")
+    _settle(app)
+    chooser = window.workspace.context.documents
+    option = QStyleOptionComboBox()
+    chooser.initStyleOption(option)
+    field = chooser.style().subControlRect(
+        QStyle.ComplexControl.CC_ComboBox, option, QStyle.SubControl.SC_ComboBoxEditField, chooser
+    )
+    # A position and take label such as "B · B-1" fits even at the narrowest step.
+    assert chooser.fontMetrics().horizontalAdvance("B · B-1") <= field.width() - 4
+    window.close()
+
+
 def test_the_inspector_offers_the_baseline_in_view(
     app: QApplication, lang: str, result: AnalysisResult, tmp_path: Path
 ) -> None:
@@ -236,3 +276,19 @@ def test_chart_tick_numbers_stay_readable_on_the_dark_canvas() -> None:
     assert contrast_ratio(DARK_TOKENS["muted"], DARK_TOKENS["canvas"]) >= 4.5
     assert contrast_ratio(DARK_TOKENS["text"], DARK_TOKENS["canvas"]) >= 7.0
     assert contrast_ratio(DARK_TOKENS["accent"], DARK_TOKENS["surface"]) >= 4.5
+
+
+def test_a_checked_step_tab_has_room_for_its_semibold_text(app: QApplication, lang: str) -> None:
+    from PySide6.QtGui import QFont, QFontMetrics
+
+    window = _window(app, (960, 640))
+    for mode, page in (("standalone", window.standalone), ("universal_daw", window.daw)):
+        window.show_mode(mode)
+        for step, button in enumerate(page.flow.buttons):
+            page.flow.set_step(step)
+            _settle(app)
+            bold_font = QFont(button.font())
+            bold_font.setWeight(QFont.Weight.DemiBold)
+            text_width = QFontMetrics(bold_font).horizontalAdvance(button.text())
+            assert button.width() >= text_width, (mode, button.text())
+    window.close()

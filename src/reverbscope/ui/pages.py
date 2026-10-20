@@ -7,6 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import QSize, Qt, Signal
+from PySide6.QtGui import QFont, QFontMetrics
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -262,6 +263,22 @@ class _StepStack(QStackedWidget):
         return size
 
 
+def _reserve_checked_width(button: QToolButton) -> None:
+    """Keep room for the semibold text a checked step tab is drawn in.
+
+    The style sheet makes a checked tab semibold, but the layout keeps the width
+    of the regular text, so the last letter of a long step was cut off ("Import
+    recordin"). The extra width of the bold text is reserved up front.
+    """
+    button.ensurePolished()
+    regular = QFontMetrics(button.font())
+    bold_font = QFont(button.font())
+    bold_font.setWeight(QFont.Weight.DemiBold)
+    bold = QFontMetrics(bold_font)
+    extra = bold.horizontalAdvance(button.text()) - regular.horizontalAdvance(button.text())
+    button.setMinimumWidth(button.sizeHint().width() + max(0, extra) + 2)
+
+
 class MeasurementSteps(QWidget):
     """One measurement task per screen, without owning any audio state."""
 
@@ -283,6 +300,7 @@ class MeasurementSteps(QWidget):
             button.setAccessibleName(title)
             button.setCheckable(True)
             button.setProperty("viewtab", True)
+            _reserve_checked_width(button)
             button.clicked.connect(lambda _checked=False, step=index: self.set_step(step))
             nav.addWidget(button)
             self.buttons.append(button)
@@ -1030,8 +1048,10 @@ class StandalonePage(QWidget):
         actions.addStretch()
         actions.addWidget(self.stop_button)
         actions.addWidget(self.run_button)
-        review_layout.addLayout(actions)
+        # The reason sits above the buttons so it stays in view on short
+        # windows (960x640 zh-CN pushed it below the fold).
         review_layout.addWidget(self.run_reason)
+        review_layout.addLayout(actions)
         review_layout.addWidget(self.progress)
         review_layout.addWidget(self.status)
         review_layout.addStretch()

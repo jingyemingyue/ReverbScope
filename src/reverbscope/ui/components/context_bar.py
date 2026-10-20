@@ -9,7 +9,7 @@ content needs, the panel switches drop their text and keep their icons.
 from __future__ import annotations
 
 from PySide6.QtCore import QSize, Qt, Signal
-from PySide6.QtGui import QResizeEvent
+from PySide6.QtGui import QPaintEvent, QResizeEvent
 from PySide6.QtWidgets import (
     QButtonGroup,
     QComboBox,
@@ -17,6 +17,9 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QSizePolicy,
+    QStyle,
+    QStyleOptionComboBox,
+    QStylePainter,
     QToolButton,
     QWidget,
 )
@@ -28,6 +31,32 @@ from reverbscope.ui.workspace import WorkspaceModel, entry_label
 
 #: Views that open a new group of tabs (a thin rule is drawn before them).
 _GROUP_STARTS = ("fr", "noise", "report")
+
+
+class ElidingComboBox(QComboBox):
+    """A combo box whose current text elides with "…" instead of being cut off.
+
+    Qt's styles clip a label that is wider than the box mid-letter, which reads
+    like a different name ("B · B-" for "B · B-1"). The middle elides, so the
+    position and the take number both stay readable; the list and the tooltip
+    keep the whole name.
+    """
+
+    def paintEvent(self, _event: QPaintEvent) -> None:  # noqa: N802 - Qt override
+        painter = QStylePainter(self)
+        option = QStyleOptionComboBox()
+        self.initStyleOption(option)
+        painter.drawComplexControl(QStyle.ComplexControl.CC_ComboBox, option)
+        field = self.style().subControlRect(
+            QStyle.ComplexControl.CC_ComboBox,
+            option,
+            QStyle.SubControl.SC_ComboBoxEditField,
+            self,
+        )
+        option.currentText = self.fontMetrics().elidedText(
+            option.currentText, Qt.TextElideMode.ElideMiddle, max(0, field.width() - 4)
+        )
+        painter.drawControl(QStyle.ControlElement.CE_ComboBoxLabel, option)
 
 
 def tab_label(view_id: str, title: str) -> str:
@@ -190,7 +219,7 @@ class ContextBar(QWidget):
         self.synthetic.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.synthetic.hide()
         layout.addWidget(self.synthetic, 0, Qt.AlignmentFlag.AlignVCenter)
-        self.documents = QComboBox()
+        self.documents = ElidingComboBox()
         self.documents.setAccessibleName(_("Current measurement"))
         self.documents.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self._documents_chars(14)
@@ -292,7 +321,9 @@ class ContextBar(QWidget):
         its first minimum size hint, so a later, shorter length is ignored.
         """
         metrics = self.documents.fontMetrics()
-        self.documents.setFixedWidth(metrics.horizontalAdvance("0" * chars) + 44)
+        # 60 px: the style sheet's 8 px left and 26 px right padding, the frame
+        # and the arrow the style still reserves inside the padded box.
+        self.documents.setFixedWidth(metrics.horizontalAdvance("0" * chars) + 60)
 
     def _needed_width(self) -> int:
         """The width every visible item of the bar needs, at the current style."""
