@@ -19,9 +19,20 @@ unvalidated. [Help test it](#help-test-it).
 
 ![ReverbScope desktop workstation showing the overview of one microphone position: reverberation, background noise, early reflections and direct sound, with the measurement health and the inspector beside it (synthetic demo data)](docs/images/gui-results.png)
 
-<sub>The desktop workstation (`main`, 0.5.0b3) on the built-in simulated room.
-Synthetic demo data: no real room was measured.</sub>
+<sub>The desktop workstation of 0.5.0b6 (light theme) on the built-in simulated
+room. Synthetic demo data: no real room was measured.</sub>
 
+**New in 0.5.0b6** ([changelog](CHANGELOG.md)):
+
+* **A new look.** A light, warm window with a sidebar (New Measurement, Open
+  Project, Open Session, your measurements and saved sessions). The dark theme
+  stays.
+* **Safer playback.** The sweep plays only on an audio-interface output you
+  choose; Start stays off until you pick one.
+* **A leaner tool.** The 3D room view is gone: ReverbScope is a measurement
+  tool, and the placement figures now sit in the inspector.
+* **A truer level warning.** A recording that peaks above 0 dBFS now says how
+  far above full scale it is, in English and 简体中文, instead of "within 1 dB".
 
 > ⚠️ **Unsigned builds.** ReverbScope is not notarized by Apple and carries no Windows Authenticode signature. Your system will warn on first launch — this is expected. See [Download](#download) for the manual allow steps. You do NOT need to disable Gatekeeper or SmartScreen.
 
@@ -36,8 +47,8 @@ published under the old **RoomScope** name. Use its `RoomScope` assets and
 launch are in the [public-beta guide](docs/PUBLIC_TESTING.md).
 
 **Not public yet:** the renamed `v0.5.0rc2` and `v0.5.0b3` builds are Draft
-releases that visitors cannot download. No stable 0.5.0, signed or notarized
-build, or PyPI package exists. The tables below name the renamed builds; they
+releases that visitors cannot download, and 0.5.0b6 has no Release yet. No
+stable 0.5.0, signed or notarized build, or PyPI package exists. The tables below name the renamed builds; they
 become download instructions when an accepted pre-release is published.
 
 ### 🖥 Desktop Edition
@@ -97,7 +108,7 @@ Not sure? Take the **Desktop Edition**: it contains the command line too.
 Install, checksums (`SHA256SUMS`), updating and uninstalling:
 **[Installation guide](docs/INSTALLATION.md)** ([简体中文](docs/INSTALLATION.zh-CN.md)).
 
-## Try it in 30 seconds
+## Try the demo
 
 No microphone and no audio interface needed; nothing is played. In a terminal:
 
@@ -123,6 +134,35 @@ changes system volume), then let ReverbScope play and record through your
 interface (**Standalone Mode**) or play its sweep in your DAW (**Universal DAW
 Mode**). The [user guide](docs/user-guide/en.md)
 ([简体中文](docs/user-guide/zh-CN.md)) explains every page.
+
+## Using the desktop app
+
+1. **Start.** Open ReverbScope (Desktop Edition, [Download](#download)). On the
+   first start the middle of the window offers three ways in: the demo, the
+   DAW route and the standalone route. **Help ▸ Getting started** brings that
+   card back.
+2. **See a result first.** Run `reverbscope demo` once (above), then choose
+   **Open Session…** in the sidebar and pick `position-a` in the demo folder.
+   Everything you see is the simulated room.
+3. **Measure.** Turn the monitors down, then choose **New Measurement**.
+   * *Audio interface:* pick the input, the output, the sample rate and the
+     microphone channel in the strip at the bottom, then **Start**. The sweep
+     plays only on an interface output you chose; until you do, Start stays
+     off and says why. Above −12 dBFS the level is confirmed again after any
+     level change.
+   * *DAW recording:* generate the test signal at your project's sample rate,
+     play and record it in your DAW, export the recorded track whole, then
+     **Choose Recording…** and **Choose Reference Sweep…** and analyze.
+4. **Read it.** The view bar opens Overview, Frequency, Time, Decay, Spectral
+   and Report. The inspector on the right opens with the measurement health:
+   what was found, what it affects and what to do next. A number marked not
+   valid is shown in brackets and is not to be trusted.
+5. **Compare and keep.** Right-click a measurement in the list to use it as the
+   baseline, then open **Compare**. **Project** collects the positions of one
+   room. A take that is not saved is marked *unsaved*, and ReverbScope asks
+   before it is dropped.
+
+The same steps from a terminal are in [Command line](#command-line).
 
 ## What it does
 
@@ -171,7 +211,7 @@ when another tool is the better choice, is in
 
 ## Status
 
-The version on `main` is **0.5.0b5**; `release/0.5.0` carries the release
+The version on `main` is **0.5.0b6**; `release/0.5.0` carries the release
 candidate. The analysis core, command line, desktop workstation, comparison,
 loopback, Simplified Chinese catalog, session bundles and both editions'
 bundles exist and are tested with synthetic data on Linux, macOS and Windows.

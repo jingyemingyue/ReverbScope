@@ -223,7 +223,7 @@ def test_readme_shows_both_editions_before_anything_else(name: str) -> None:
     desktop = text.index("### 🖥 ")
     terminal = text.index("### ⌨️ ")
     compare = text.index("### 该选哪个？" if zh else "### Which one?")
-    demo = text.index("## 30 秒体验" if zh else "## Try it in 30 seconds")
+    demo = text.index("## 先试试演示" if zh else "## Try the demo")
     first_section = text.index("\n## ")
     assert first_section < desktop < terminal < compare < demo
     # Every download of each edition is in its own table.
