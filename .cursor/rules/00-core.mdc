@@ -38,7 +38,7 @@ alwaysApply: true
 
 ## 5. 绝对禁止（违反任何一条，立刻停止并告诉用户）
 
-- 合并、关闭、重开 PR；发布 Release；创建或推送 tag；修改仓库设置。
+- 合并、关闭、重开 PR；发布 Release；创建或推送 tag；修改仓库设置。（唯一的例外：维护者在会话里明确要求发布小补丁版或常规更新版，见 `AGENTS.md` 的 Releases。）
 - 强推（`--force`、`-f`、`--force-with-lease`）；改写已推送的历史；删除远端分支。
 - 直接提交或推送到 `main`、`release/0.5.0`、`gui/redesign`；向别人的分支（含 `dependabot/*`、其他 AI 的分支）推送。
 - 删除测试、加 `skip`/`xfail`、改测试期望值去迁就代码、降低覆盖率门、关掉 CI 检查。

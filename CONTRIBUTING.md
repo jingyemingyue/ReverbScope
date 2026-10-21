@@ -23,7 +23,7 @@ Local `test-reports/` directories are ignored by Git to protect private evidence
 
 Product direction, the hard constraints, the open-source application path and
 the GUI redesign are governed by
-[docs/GUIDELINES.zh-CN.md](docs/GUIDELINES.zh-CN.md) (v2.1.2).
+[docs/GUIDELINES.zh-CN.md](docs/GUIDELINES.zh-CN.md) (v2.1.3).
 [docs/GUIDELINES.md](docs/GUIDELINES.md) is an English summary. Where the two
 differ, the Chinese text wins. [docs/AI_ASSISTANCE.md](docs/AI_ASSISTANCE.md)
 says what an AI session may prepare and which actions stay with the

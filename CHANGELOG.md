@@ -200,7 +200,7 @@ and every screenshot is synthetic demo data.
   geometry is saved in `room-geometry.json`, apart from the measurements.
 - `docs/design/GUI_REFERENCE_AUDIT.md`: what the workstation borrows from
   other programs (conventions only, no code or assets).
-- **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.2) is the single
+- **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.3) is the single
   standard for the open-source application path and the GUI redesign.
   `docs/GUIDELINES.md` is an English summary; the Chinese text wins if they
   differ. `docs/AI_ASSISTANCE.md` says what an AI session may prepare and
@@ -219,6 +219,23 @@ and every screenshot is synthetic demo data.
   the existing headroom warning.
 
 ### Documentation and tester tooling
+- Refresh both READMEs for 0.5.0b6: the screenshots are retaken from the light
+  sidebar window (`scripts/render_readme_assets.py`, 2x scale, offscreen), the
+  captions name the version, a "New in 0.5.0b6" list opens the page and a
+  "Using the desktop app" section walks through start, demo, measure, read and
+  compare. The status line names 0.5.0b6 and says it has no Release yet. The
+  "Try it in 30 seconds" heading is now "Try the demo": the time was not
+  something the page could promise.
+- Guidelines v2.1.3, at the maintainer's explicit request: §10.1 no longer
+  promises "30 seconds" (the meaning is unchanged: the verdict and the next step
+  are clear without reading instructions), and `AGENTS.md`, `CLAUDE.md`,
+  `docs/AI_ASSISTANCE.md` and appendix J now say that the rule against editing
+  the guidelines does not apply when the maintainer explicitly asks for the
+  edit in the session. The same revision lets the maintainer ask an AI session
+  in the session to build the installers, tag, and publish a small patch
+  release or a regular update release (constraint C18, `AGENTS.md` Releases);
+  the maintainer chooses the version and the moment, and 0.5.0, 1.0.0 and
+  versions whose release-plan gate is unmet are not covered.
 - Separate the public RoomScope beta from renamed Draft releases in both
   READMEs, installation guides and site copy; label source screenshots.
 - Add an evidence-linked OSS readiness audit, application draft, roadmap,
