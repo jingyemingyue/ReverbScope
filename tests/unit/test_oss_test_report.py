@@ -165,23 +165,23 @@ def test_collected_data_omits_paths_settings_and_exception_text(
     assert "Anna's USB microphone" in text  # needs the explicitly documented human review
 
 
-def test_public_install_guide_names_assets_from_a_published_release() -> None:
-    snapshot = json.loads(
-        (ROOT / "docs/evidence/oss-readiness-2026-10-15.json").read_text(encoding="utf-8")
-    )
-    public = [r for r in snapshot["releases"] if not r["draft"]]
+def test_public_install_guide_names_assets_from_the_newest_published_release() -> None:
+    releases = []
+    for path in sorted((ROOT / "docs/evidence").glob("*.json")):
+        releases += json.loads(path.read_text(encoding="utf-8")).get("releases", [])
+    public = [r for r in releases if not r["draft"]]
     latest = max(public, key=lambda r: r["published_at"])
-    assert latest["tag"] == "v0.5.0b1"
+    assert latest["tag"] == "v0.5.0b6"
     assets = {a["name"] for a in latest["assets"]}
-    pattern = r"(?:RoomScope|roomscope)-[\w.-]+\.(?:dmg|zip|exe|tar\.gz|whl)\b"
+    pattern = r"(?i:reverbscope|roomscope)-[\w.-]+\.(?:dmg|zip|exe|tar\.gz|whl)\b"
     for filename in ("PUBLIC_TESTING.md", "PUBLIC_TESTING.zh-CN.md"):
         text = (ROOT / "docs" / filename).read_text(encoding="utf-8")
         # The Windows GUI launcher is inside the ZIP, not a separate asset.
-        mentioned = set(re.findall(pattern, text)) - {"roomscope-gui.exe"}
+        mentioned = set(re.findall(pattern, text)) - {"reverbscope-gui.exe"}
         assert mentioned <= assets, mentioned - assets
-        assert {name for name in assets if name.startswith("RoomScope-")} <= mentioned
+        assert {name for name in assets if name.startswith("ReverbScope-")} <= mentioned
         assert latest["url"] in text
-        assert "roomscope demo" in text
+        assert "reverbscope demo" in text
 
 
 def test_application_answers_fit_the_inspected_form_limits() -> None:

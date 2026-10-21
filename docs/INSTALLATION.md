@@ -4,12 +4,12 @@
 
 **Download page:** <https://github.com/jingyemingyue/ReverbScope/releases>
 
-**Version scope:** this page describes renamed ReverbScope source/candidate builds.
-As of 2026-10-15 the public release is **RoomScope v0.5.0b1**; use the
-[public-beta guide](PUBLIC_TESTING.md) for its exact filenames and commands.
-rc2 and b3 remain **Draft**. The filenames and numbered steps below apply to
-candidate files explicitly shared by the maintainer, or to a future accepted
-renamed pre-release; those files are absent from the older public beta.
+**Version scope:** this page describes ReverbScope builds. As of 2026-10-21 the
+newest public release is the pre-release **v0.5.0b6**, and the filenames and
+numbered steps below match its assets; the
+[public-beta guide](PUBLIC_TESTING.md) is the short version. b2–b5, rc1 and
+rc2 remain **Draft**. The older public v0.5.0b1 and v0.4.1 use RoomScope
+filenames instead; follow the documentation pinned to their tags.
 
 ReverbScope comes in two editions;
 neither needs Python or Git:
