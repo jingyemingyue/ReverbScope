@@ -143,6 +143,12 @@ All notable changes to ReverbScope are documented here. The format follows
   top-level entry the packaging test requires. Appendix F of the guidelines
   is not filled in by this change.
 
+### Fixed
+
+- **Test language.** The suite's language fixture now hides Python's process
+  locale. On a machine whose locale is Chinese, ``LANG=C.UTF-8`` alone left
+  the command-line tests speaking Chinese.
+
 ### Documentation and tester tooling
 - Separate the public RoomScope beta from renamed Draft releases in both
   READMEs, installation guides and site copy; label source screenshots.

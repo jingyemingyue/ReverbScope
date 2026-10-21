@@ -273,25 +273,27 @@ def test_a_usage_error_follows_the_style_that_was_asked_for(
         ["--lang", "zh_CN", "--style", "boxed", "show", "somewhere", "--bogus"], capsys
     )
     assert err.startswith("╭─ ✗ 错误 ─")
-    # A terminal that would frame it, asked not to.
-    monkeypatch.setenv("WT_SESSION", "1")  # Windows Terminal and alike show the symbols
-    tty = Stream(tty=True)
-    monkeypatch.setattr("sys.stderr", tty)
-    monkeypatch.setenv("COLUMNS", "80")
-    with pytest.raises(SystemExit):
-        main(["--style", "plain", "show", "somewhere", "--bogus"])
-    assert strip_ansi(tty.getvalue()).startswith("× error:")
-    # The stored setting decides when the option is not given.
-    assert main(["config", "style", "plain"]) == 0
-    capsys.readouterr()
-    again = Stream(tty=True)
-    monkeypatch.setattr("sys.stderr", again)
-    with pytest.raises(SystemExit):
-        main(["show", "somewhere", "--bogus"])
-    assert strip_ansi(again.getvalue()).startswith("× error:")
-    assert main(["config", "style", "boxed"]) == 0
-    capsys.readouterr()
-    monkeypatch.undo()
+    # A context of its own: monkeypatch.undo() would also undo the autouse
+    # fixtures (the pinned language and the temporary home).
+    with pytest.MonkeyPatch.context() as local:
+        # A terminal that would frame it, asked not to.
+        local.setenv("WT_SESSION", "1")  # Windows Terminal and alike show the symbols
+        tty = Stream(tty=True)
+        local.setattr("sys.stderr", tty)
+        local.setenv("COLUMNS", "80")
+        with pytest.raises(SystemExit):
+            main(["--style", "plain", "show", "somewhere", "--bogus"])
+        assert strip_ansi(tty.getvalue()).startswith("× error:")
+        # The stored setting decides when the option is not given.
+        assert main(["config", "style", "plain"]) == 0
+        capsys.readouterr()
+        again = Stream(tty=True)
+        local.setattr("sys.stderr", again)
+        with pytest.raises(SystemExit):
+            main(["show", "somewhere", "--bogus"])
+        assert strip_ansi(again.getvalue()).startswith("× error:")
+        assert main(["config", "style", "boxed"]) == 0
+        capsys.readouterr()
     monkeypatch.setenv("REVERBSCOPE_HOME", str(home / "home"))
     code, _out, err = invoke(["show", "somewhere", "--bogus"], capsys)
     assert code == 2 and err.startswith("╭─ ✗ Error ─")

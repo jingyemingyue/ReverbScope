@@ -127,8 +127,11 @@ def pin_language(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     ``REVERBSCOPE_LANG``, the POSIX locale variables, the Mac's preferred
     languages and the Windows display language would otherwise pick the CLI
     / GUI language; a test that wants Chinese passes ``--lang`` or calls
-    ``activate("zh_CN")``. English is re-activated afterwards so a failing
-    test cannot leak its catalog into the next one.
+    ``activate("zh_CN")``. ``LANG=C`` is ignored on purpose, so the last step
+    is ``locale.getlocale()``, which still reports the locale the interpreter
+    started with. Pin that too. A test that wants the fallback replaces
+    ``i18n.py_locale.getlocale`` itself. English is re-activated afterwards
+    so a failing test cannot leak its catalog into the next one.
     """
     from reverbscope import i18n
     from reverbscope.i18n import activate
@@ -138,6 +141,7 @@ def pin_language(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.setenv("LANG", "C.UTF-8")
     monkeypatch.setattr(i18n, "MACOS_PREFERENCES", ())
     monkeypatch.setattr(i18n, "_windows_ui_language", lambda: None)
+    monkeypatch.setattr(i18n.py_locale, "getlocale", lambda *_args, **_kwargs: (None, None))
     activate("en")
     yield
     activate("en")
