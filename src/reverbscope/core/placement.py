@@ -71,6 +71,7 @@ from dataclasses import dataclass, replace
 from reverbscope.i18n import diag
 from reverbscope.models.result import (
     SPEED_OF_SOUND_REFERENCE,
+    AnalysisResult,
     BoundaryCandidate,
     PlacementLength,
     PlacementResult,
@@ -131,6 +132,21 @@ def speed_of_sound_m_s(temperature_c: float) -> float:
     if temperature_c <= -273.15:
         raise ValueError("temperature must be above absolute zero")
     return 331.3 * math.sqrt(1.0 + temperature_c / 273.15)
+
+
+def speed_for_result(result: AnalysisResult) -> tuple[float, float, bool]:
+    """``(speed m/s, temperature °C, assumed)`` for an analysed measurement.
+
+    The temperature comes from the placement inputs; without them
+    :data:`DEFAULT_TEMPERATURE_C` is assumed, as :func:`estimate_placement`
+    does, and the caller says so. Used to turn a reflection delay into an
+    excess path length for display; it computes nothing new.
+    """
+    placement = result.placement
+    if placement is not None and math.isfinite(placement.temperature_c):
+        temperature = placement.temperature_c
+        return speed_of_sound_m_s(temperature), temperature, placement.temperature_assumed
+    return speed_of_sound_m_s(DEFAULT_TEMPERATURE_C), DEFAULT_TEMPERATURE_C, True
 
 
 def mirror_path_m(distance_m: float, delay_ms: float, speed_m_s: float) -> float:
@@ -834,5 +850,6 @@ __all__ = [
     "estimate_placement",
     "mirror_path_m",
     "specular_ceiling_db",
+    "speed_for_result",
     "speed_of_sound_m_s",
 ]

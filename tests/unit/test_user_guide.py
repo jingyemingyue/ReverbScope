@@ -38,7 +38,7 @@ def test_the_guides_list_every_workspace_view(guide: Path) -> None:
     """The guides described the 0.5 Results page and its eight tabs; the
     workstation has a view bar, and the guide's table has a row per view."""
     views = _workspace_views()
-    assert "OverviewView" in views and "RoomView" in views
+    assert "OverviewView" in views and "RoomView" not in views
     assert len(_workspace_view_rows(guide.read_text(encoding="utf-8"))) == len(views)
 
 

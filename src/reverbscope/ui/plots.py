@@ -1,10 +1,9 @@
 """The tape-measure picture beside the placement inputs (matplotlib, 3D).
 
 The only matplotlib drawing left in the desktop app: the charts of a result
-are pyqtgraph views (``reverbscope.ui.views``) and the measured room is the
-QPainter room view (``reverbscope.ui.room``). This picture is a schematic of
-where the two tape measures go before a measurement; it is not a room and
-not a result.
+are pyqtgraph views (``reverbscope.ui.views``). This picture is a schematic
+of where the two tape measures go before a measurement; it is not a room and
+not a result, and ReverbScope draws no room model.
 """
 
 from __future__ import annotations

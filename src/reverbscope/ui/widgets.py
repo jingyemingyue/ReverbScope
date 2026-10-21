@@ -11,7 +11,7 @@ import math
 import sys
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
+from PySide6.QtCore import QPointF, QRectF, QSize, Qt, Signal
 from PySide6.QtGui import (
     QColor,
     QIcon,
@@ -19,11 +19,13 @@ from PySide6.QtGui import (
     QMouseEvent,
     QPainter,
     QPainterPath,
+    QPaintEvent,
     QPen,
     QPixmap,
     QResizeEvent,
 )
 from PySide6.QtWidgets import (
+    QComboBox,
     QFrame,
     QHBoxLayout,
     QLabel,
@@ -31,6 +33,9 @@ from PySide6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSizePolicy,
+    QStyle,
+    QStyleOptionComboBox,
+    QStylePainter,
     QVBoxLayout,
     QWidget,
 )
@@ -66,6 +71,30 @@ class PathLabel(QLabel):
     def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
         self._elide_path()
+
+
+class ElidedComboBox(QComboBox):
+    """A combo box that ends a text too long for it with an ellipsis.
+
+    A narrow strip cuts the current text off mid-word otherwise
+    ("Choose the interfa"); the full text stays in the list and the tooltip.
+    """
+
+    def paintEvent(self, _event: QPaintEvent) -> None:  # noqa: N802 - Qt override
+        painter = QStylePainter(self)
+        option = QStyleOptionComboBox()
+        self.initStyleOption(option)
+        painter.drawComplexControl(QStyle.ComplexControl.CC_ComboBox, option)
+        field = self.style().subControlRect(
+            QStyle.ComplexControl.CC_ComboBox,
+            option,
+            QStyle.SubControl.SC_ComboBoxEditField,
+            self,
+        )
+        option.currentText = self.fontMetrics().elidedText(
+            option.currentText, Qt.TextElideMode.ElideRight, max(field.width() - 4, 0)
+        )
+        painter.drawControl(QStyle.ControlElement.CE_ComboBoxLabel, option)
 
 
 class PlotBody(QWidget):
@@ -161,11 +190,49 @@ def ask_save_path(parent: QWidget, title: str, name: str, file_filter: str) -> P
     return path
 
 
-def scroll_page(page: QWidget, header: PageHeader) -> QVBoxLayout:
-    """Give ``page`` a fixed header and a scrolling body; return the body layout."""
+#: Widest a set-up page's column grows (form and readiness side by side).
+PAGE_COLUMN_WIDTH = 760
+
+
+#: Object name of the column :func:`scroll_page` builds (header, body, footer).
+PAGE_COLUMN = "pageColumn"
+
+
+def add_page_footer(page: QWidget, footer: QWidget) -> None:
+    """Pin ``footer`` under the scrolling body of a :func:`scroll_page` page.
+
+    SPEC §8.1: the action bar stays outside the scroll area, so its buttons
+    and the reason beside them are in view at 960 x 640 whatever the body holds.
+    """
+    column = page.findChild(QWidget, PAGE_COLUMN, Qt.FindChildOption.FindDirectChildrenOnly)
+    layout = column.layout() if column is not None else None
+    if layout is None:
+        raise ValueError("add_page_footer needs a page built by scroll_page")
+    layout.addWidget(footer)
+
+
+def scroll_page(
+    page: QWidget, header: PageHeader, *, max_width: int = PAGE_COLUMN_WIDTH
+) -> QVBoxLayout:
+    """Give ``page`` a fixed header and a scrolling body; return the body layout.
+
+    Header and body share one column, centred and at most ``max_width``
+    wide (SPEC R2): the eye does not cross the whole screen.
+    """
     page.setProperty("page", True)
-    outer = QVBoxLayout(page)
-    outer.setContentsMargins(28, 20, 28, 12)
+    row = QHBoxLayout(page)
+    row.setContentsMargins(28, 20, 20, 12)
+    row.setSpacing(0)
+    column = QWidget()
+    column.setObjectName(PAGE_COLUMN)
+    column.setProperty("page", True)
+    column.setMaximumWidth(max_width)
+    column.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+    row.addStretch(1)
+    row.addWidget(column, 100)
+    row.addStretch(1)
+    outer = QVBoxLayout(column)
+    outer.setContentsMargins(0, 0, 0, 0)
     outer.setSpacing(8)
     outer.addWidget(header)
     scroll = QScrollArea()
@@ -216,6 +283,21 @@ def shortcut_badge(sequence: str) -> str:
         if native and "Ctrl" not in native:
             return native
     return f"{mark}{key}"
+
+
+def key_marks(sequence: str) -> str:
+    """Every key of ``sequence`` as a mark: ``⇧⌃O`` (``⇧⌘O`` on macOS).
+
+    For key hints a Chinese interface can show (the word ``Ctrl`` fails its
+    gate); modifiers come first in the Apple order.
+    """
+    parts = sequence.split("+")
+    key = parts[-1]
+    command = "⌘" if sys.platform == "darwin" else "⌃"
+    marks = {"Shift": "⇧", "Alt": "⌥", "Ctrl": command, "Meta": "⌃"}
+    order = ("Meta", "Alt", "Shift", "Ctrl")
+    shown = "".join(marks[name] for name in order if name in parts[:-1])
+    return f"{shown}{'↩' if key == 'Return' else key}"
 
 
 def primary(button: QPushButton) -> QPushButton:
@@ -453,3 +535,130 @@ def _icon_pixmap(size: int) -> QPixmap:
     painter.drawPath(wave)
     painter.end()
     return pixmap
+
+
+def step_mark(state: str, number: int, size: int = 22) -> QPixmap:
+    """The round node of a step: ``done``, ``current``, ``todo``, ``locked``
+    or ``running`` (docs/design/light-sidebar/SPEC.md §8.1)."""
+    from reverbscope.ui import icons
+
+    t = tokens()
+    ratio = 2.0
+    image = QPixmap(round(size * ratio), round(size * ratio))
+    image.setDevicePixelRatio(ratio)
+    image.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(image)
+    painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    box = QRectF(1.0, 1.0, size - 2.0, size - 2.0)
+    fill, ring, ink = {
+        "done": (t["accent"], t["accent"], t["accent_text"]),
+        "current": (t["accent"], t["accent"], t["accent_text"]),
+        "running": (t["accent_soft"], t["accent"], t["accent_ink"]),
+        "locked": (t["surface_alt"], t["sep"], t["disabled"]),
+    }.get(state, (t["surface"], t["control"], t["muted"]))
+    painter.setPen(QPen(QColor(ring), 1.2))
+    painter.setBrush(QColor(fill))
+    painter.drawEllipse(box)
+    glyph = {"done": "check", "locked": "lock", "running": "activity"}.get(state)
+    if glyph:
+        inner = 12 if glyph != "check" else 13
+        mark = icons.pixmap(glyph, ink, inner, ratio)
+        offset = (size - inner) / 2.0
+        painter.drawPixmap(QPointF(offset, offset), mark)
+    else:
+        font = painter.font()
+        font.setPixelSize(11)
+        font.setBold(True)
+        painter.setFont(font)
+        painter.setPen(QColor(ink))
+        painter.drawText(box, Qt.AlignmentFlag.AlignCenter, str(number))
+    painter.end()
+    return image
+
+
+class StepIndicator(QWidget):
+    """A horizontal step bar: numbered nodes joined by lines.
+
+    It shows progress through one page's sections; a click on a step asks
+    the page to reveal that section. Steps that are not reachable yet are
+    drawn locked and say why in their tooltip.
+    """
+
+    step_clicked = Signal(int)
+
+    def __init__(self, titles: tuple[str, ...], parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        from PySide6.QtWidgets import QToolButton
+
+        row = QHBoxLayout(self)
+        row.setContentsMargins(0, 4, 0, 8)
+        row.setSpacing(8)
+        row.addStretch(1)
+        self.nodes: list[QToolButton] = []
+        self.lines: list[QFrame] = []
+        self.states: tuple[str, ...] = tuple("todo" for _title in titles)
+        for index, title in enumerate(titles):
+            if index:
+                line = QFrame()
+                line.setProperty("stepline", True)
+                line.setFixedHeight(2)
+                line.setMinimumWidth(16)
+                line.setMaximumWidth(72)
+                line.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+                row.addWidget(line, 1)
+                self.lines.append(line)
+            node = QToolButton()
+            node.setText(title)
+            node.setAutoRaise(True)
+            node.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            node.setIconSize(QPixmap(22, 22).size())
+            node.clicked.connect(lambda _checked=False, i=index: self.step_clicked.emit(i))
+            row.addWidget(node)
+            self.nodes.append(node)
+        row.addStretch(1)
+        self.set_states(self.states)
+
+    def set_states(self, states: tuple[str, ...]) -> None:
+        self.states = states
+        for index, (node, state) in enumerate(zip(self.nodes, states, strict=False)):
+            node.setIcon(QIcon(step_mark(state, index + 1)))
+            node.setProperty("step", state)
+            weight = "600" if state in ("current", "running", "done") else "400"
+            colour = tokens()["disabled" if state == "locked" else "text"]
+            node.setStyleSheet(f"QToolButton {{ font-weight: {weight}; color: {colour}; }}")
+            node.setAccessibleDescription(state)
+        self._fit(self.width())
+        for index, line in enumerate(self.lines):
+            done = index < len(states) and states[index] == "done"
+            if bool(line.property("done")) != done:
+                line.setProperty("done", done)
+                line.style().unpolish(line)
+                line.style().polish(line)
+
+    def restyle(self) -> None:
+        self.set_states(self.states)
+
+    def minimumSizeHint(self) -> QSize:  # noqa: N802 - Qt override
+        # Narrow pages keep the nodes and drop the other steps' words.
+        return QSize(
+            len(self.nodes) * 34 + len(self.lines) * 16, super().minimumSizeHint().height()
+        )
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        self._fit(event.size().width())
+
+    def _fit(self, width: int) -> None:
+        full = (
+            sum(node.fontMetrics().horizontalAdvance(node.text()) + 40 for node in self.nodes)
+            + len(self.lines) * 40
+        )
+        compact = width < full
+        for node, state in zip(self.nodes, self.states, strict=False):
+            words = not compact or state in ("current", "running")
+            node.setToolButtonStyle(
+                Qt.ToolButtonStyle.ToolButtonTextBesideIcon
+                if words
+                else Qt.ToolButtonStyle.ToolButtonIconOnly
+            )
+            node.setToolTip(node.text())

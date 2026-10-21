@@ -268,15 +268,15 @@ its folder, measure again at its position, or remove it from the list
 session).
 
 In the middle, the view bar groups the views below: Overview, Frequency,
-Time, Decay, Spectral (spectrogram, waterfall and noise), Room, Compare and
-Report. Project is a separate button. The **View** menu and Ctrl+1 to
-Ctrl+9 (Command on macOS) still open each view. On the right, the
+Time, Decay, Spectral (spectrogram, waterfall and noise), Compare and
+Report. Project is a separate button. The **View** menu, Ctrl+1 to
+Ctrl+8 and Ctrl+0 for Compare (Command on macOS) open each view. On the right, the
 **inspector** shows the current measurement even when its curves are
 hidden: its measurement health (what was detected, what it affects, what
 to do next, and a button that opens the related chart), key figures with
 their validity, the recording conditions and profile, the comparison with
-the baseline when one is set, the selected early reflection and the room
-checks. Along the bottom, the **measure strip** holds the mode (audio
+the baseline when one is set, the selected early reflection and, when tape
+measurements were entered, the placement figures. Along the bottom, the **measure strip** holds the mode (audio
 interface or DAW recording), the input, the sample rate, the microphone
 channel, the position, and Start / Stop (Ctrl+Return, Esc). A label says
 Ready, Measuring or Analyzing, and the status line under the controls
@@ -294,18 +294,17 @@ not been saved is marked *unsaved*: starting a new
 take, **New Measurement**, removing it or quitting asks first whether to
 save it (opening a session or a project keeps it in the list).
 
-The workstation has eleven views:
+The workstation has ten views:
 
 | View | What it shows |
 | --- | --- |
 | Overview | Key figures (reverberation, background noise, early reflections, direct sound) with their trust level, the measurement-health card, the findings, and tables of broadband and octave-band EDT / T20 / T30 / RT60 and C50 / C80 / D50 / centre time, each with validity. |
 | Frequency response | The magnitude of every drawn measurement, in its list colour, with the display smoothing named in the legend (the stored curve is unchanged). **Show the stored curve** adds the unsmoothed stored curve (dotted). A dashed curve is the electrical loopback when compensation ran. With a baseline set, a difference pane shows the current measurement minus the baseline. 0 dB is the interface, not “flat in the room”. |
-| Impulse response | The deconvolved IR and its energy-time curve with the early reflections (delay ms, level dB re direct; open markers for candidates). Click a reflection to select it: the inspector and the Room view show the same one. The peak is the direct sound; the waveform is drawn scaled to that peak, and the curve's legend says so. |
+| Impulse response | The deconvolved IR and its energy-time curve with the early reflections (delay ms, level dB re direct; open markers for candidates). Click a reflection to select it: the inspector shows the same one. The peak is the direct sound; the waveform is drawn scaled to that peak, and the curve's legend says so. |
 | Decay | Schroeder / energy-decay curves of the drawn measurements for one band, the evaluation range of the chosen metric shaded, and the T values by band. **All bands of the current measurement** draws Broadband solid and each octave band with its own dash pattern, so colour is not the only cue; a band without a curve or an RT60 says why. |
 | Noise | Quiet-segment spectrum and 50/60 Hz hum candidates. |
 | Spectrogram | Time against frequency of the impulse response, computed in the background. |
 | Waterfall | Cumulative spectral decay of the impulse response, computed in the background. |
-| Room | The room in three dimensions: what you entered (solid), what a measurement constrains (dashed) and what follows only from assuming a rectangular room (dotted). See [The room view](#the-room-view). |
 | Project | The project overview: positions, their takes, the fit under the recording profile, the ISO 3382-2 class and what to measure next. |
 | Compare | The current measurement against the baseline: verdict, decay, noise, early reflections, resonances and a difference chart. |
 | Full report | The same text report that `reverbscope analyze` prints, with the warnings at the end. “Copy report” copies it. |
@@ -334,51 +333,15 @@ it was dismissed.
 Low-frequency resonance candidates are listed in the Full report (and in
 `resonances.csv` after `reverbscope export`). They are not a separate view.
 
-### The room view
-
-**Room parameters** opens the dimensions, device positions, scan import
-and reflection list. The panel starts closed to leave the canvas available
-for reading the room. Opening or closing it reframes an untouched camera;
-a view you rotated, panned or zoomed stays where you left it.
-
-The Room view draws the room box you enter (length, width, height in
-metres; x length, y width, z up), the loudspeaker and a microphone for each
-position. Start from the example room, or import a PLY or OBJ scan (drawn
-as entered geometry; nothing is measured from it). The picture starts with the room you entered, the loudspeaker, the current
-microphone and the selected reflection. **Geometric assumption** and **All
-constraints** are off until you turn them on; a predicted path is not a wall
-the measurement found. **Restore default view** returns to that picture.
-**Plan view**, **Front**
-and **Side** are predictable cameras; **Reset view** returns to the default
-angle. The picture names which one is active. Orbiting leaves that name.
-The axes read as length (x), width (y) and up (z), the entered floor is
-filled, and the front edge (y = 0) is marked; in the plan that edge is the
-lower one. Drag rotates, right-drag pans, the wheel zooms about the cursor, and
-a double-click frames the room. In the plan view you can drag the
-loudspeaker and the microphones. Click a loudspeaker, a microphone, an
-entered face or a predicted reflection point. The face you typed is labelled
-as entered geometry, not as a surface the measurement found. What you enter
-is saved in `room-geometry.json` next to the project (or the session), never
-in a session.
-
-With a measurement, the dashed layer shows what it constrains: the direct
-distance as a sphere around the loudspeaker (with a loopback), the
-selected reflection as an ellipsoid with the loudspeaker and microphone as
-foci, and, with a placement result, the ring of loudspeaker positions it
-allows. The dotted layer shows the first-order reflection paths a
-rectangular room would have; the faces that match the selected reflection
-are highlighted. One microphone cannot locate a wall: a reflection only
-says that its surface touches the ellipsoid, and the match to a face of
-the box holds only if the room is the box you drew. The inspector's room
-checks compare the entered distances with the measured ones.
-
 ## Placement
 
-The placement result is in the Room view's side panel. Without a
+The placement result is in the inspector and the Full report. Without a
 tape-measured loudspeaker distance ReverbScope only reports each arrival's excess path. With the
 distance (and, for the vertical axis, the microphone height) it reports
 loudspeaker height, the plane above both devices and the horizontal
-separation. It never names a wall or gives room length or width.
+separation. It never names a wall or gives room length or width, and
+ReverbScope draws no room model: it is a measurement tool, not a room
+modeller.
 
 Enter the tape numbers in Universal DAW Mode or Standalone Mode before
 Analyze, or pass `--speaker-distance` / `--mic-height` / `--temperature`

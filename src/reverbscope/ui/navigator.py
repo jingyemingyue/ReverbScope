@@ -11,12 +11,17 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QPoint, Qt, QUrl, Signal
-from PySide6.QtGui import QAction, QDesktopServices, QFont
+from PySide6.QtGui import QAction, QDesktopServices, QFont, QResizeEvent
 from PySide6.QtWidgets import (
+    QFrame,
     QHBoxLayout,
     QHeaderView,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
     QMenu,
-    QPushButton,
+    QSizePolicy,
+    QToolButton,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -24,8 +29,9 @@ from PySide6.QtWidgets import (
 )
 
 from reverbscope.i18n import N_, _, pgettext
+from reverbscope.ui import icons
 from reverbscope.ui.plotkit import DASHES, swatch_icon
-from reverbscope.ui.widgets import PathLabel, label
+from reverbscope.ui.widgets import PathLabel, app_icon, label, native_shortcut
 from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
 
 KEY_ROLE = Qt.ItemDataRole.UserRole
@@ -48,48 +54,79 @@ class Navigator(QWidget):
     remove_requested = Signal(str)
     #: Save the take (only offered on an unsaved take's row).
     save_requested = Signal(str)
+    #: Sidebar rows: New Measurement, a saved session, Settings, Help, the report.
+    new_measurement_requested = Signal()
+    open_recent_requested = Signal(str)
+    settings_requested = Signal()
+    help_requested = Signal()
+    report_requested = Signal()
 
     def __init__(self, model: WorkspaceModel, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.model = model
-        self.setProperty("panel", True)
+        # The light sidebar (docs/design/light-sidebar/SPEC.md §5): app name,
+        # New Measurement, open buttons, the project tree, saved sessions and
+        # Settings / Help / Environment report at the bottom. One icon family.
+        self.setProperty("sidebar", True)
+        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self.setMinimumWidth(180)
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(8, 8, 4, 6)
-        layout.setSpacing(6)
+        layout.setContentsMargins(10, 12, 10, 8)
+        layout.setSpacing(4)
+        brand = QHBoxLayout()
+        brand.setContentsMargins(6, 0, 0, 6)
+        brand.setSpacing(8)
+        self.brand_icon = QLabel()
+        self.brand_icon.setPixmap(app_icon().pixmap(20, 20))
+        brand.addWidget(self.brand_icon)
+        brand.addWidget(label("ReverbScope", "toolbar-title"))
+        brand.addStretch(1)
+        layout.addLayout(brand)
+
+        self.new_button = self._row_button(
+            "plus",
+            _("New Measurement"),
+            _("Start a new measurement ({shortcut}).").format(shortcut=native_shortcut("Ctrl+N")),
+        )
+        self.new_button.setProperty("accent", True)
+        self.new_button.clicked.connect(self.new_measurement_requested.emit)
+        layout.addWidget(self.new_button)
+        self.open_project_button = self._row_button(
+            "layers",
+            _("Open Project..."),
+            _("One room, several microphone positions: open or make a project folder."),
+        )
+        self.open_project_button.clicked.connect(self.open_project_requested.emit)
+        layout.addWidget(self.open_project_button)
+        self.open_session_button = self._row_button(
+            "folder",
+            _("Open Session..."),
+            _("Add a saved session to the list (session.json or its folder)."),
+        )
+        self.open_session_button.clicked.connect(self.open_session_requested.emit)
+        layout.addWidget(self.open_session_button)
+
         heading = QHBoxLayout()
-        heading.addWidget(label(_("Measurements"), "panel-title"))
+        heading.setContentsMargins(0, 10, 4, 0)
+        heading.addWidget(label(_("Measurements"), "sidebar-section"))
         heading.addStretch(1)
         self.count = label("0", "count")
         heading.addWidget(self.count)
         layout.addLayout(heading)
         self.project_title = label(_("No project open"), "hint")
         self.project_title.setWordWrap(True)
+        self.project_title.setContentsMargins(8, 0, 0, 0)
         layout.addWidget(self.project_title)
         self.project_hint = PathLabel()
+        self.project_hint.setContentsMargins(8, 0, 0, 0)
         layout.addWidget(self.project_hint)
-
-        buttons = QHBoxLayout()
-        buttons.setSpacing(4)
-        self.open_project_button = QPushButton(_("Project..."))
-        self.open_project_button.setToolTip(
-            _("One room, several microphone positions: open or make a project folder.")
-        )
-        self.open_project_button.clicked.connect(self.open_project_requested.emit)
-        self.open_session_button = QPushButton(_("Session..."))
-        self.open_session_button.setToolTip(
-            _("Add a saved session to the list (session.json or its folder).")
-        )
-        self.open_session_button.clicked.connect(self.open_session_requested.emit)
-        buttons.addWidget(self.open_project_button)
-        buttons.addWidget(self.open_session_button)
 
         self.tree = QTreeWidget()
         self.tree.setProperty("measurements", True)
         self.tree.setColumnCount(2)
         self.tree.setHeaderHidden(True)
         self.tree.setRootIsDecorated(False)
-        self.tree.setIndentation(10)
+        self.tree.setIndentation(14)
         self.tree.setUniformRowHeights(True)
         self.tree.setTextElideMode(Qt.TextElideMode.ElideMiddle)
         self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -106,10 +143,50 @@ class Navigator(QWidget):
         self.tree.currentItemChanged.connect(self._row_selected)
         self.tree.itemChanged.connect(self._item_changed)
         self.tree.customContextMenuRequested.connect(self._context_menu)
-        layout.addWidget(self.tree, 1)
+        layout.addWidget(self.tree, 3)
         self.loading = label("", "hint", wrap=True)
         layout.addWidget(self.loading)
-        layout.addLayout(buttons)
+
+        recent_heading = label(_("Saved sessions"), "sidebar-section")
+        self.recent_heading = recent_heading
+        recent_heading.setContentsMargins(0, 6, 0, 0)
+        layout.addWidget(recent_heading)
+        self.recent = QListWidget()
+        self.recent.setProperty("sidebarlist", True)
+        self.recent.setTextElideMode(Qt.TextElideMode.ElideMiddle)
+        self.recent.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.recent.setToolTip(_("Double-click a saved session to open it."))
+        self.recent.itemActivated.connect(self._recent_activated)
+        layout.addWidget(self.recent, 1)
+
+        rule = QFrame()
+        rule.setProperty("stepline", True)
+        rule.setFixedHeight(1)
+        layout.addWidget(rule)
+        footer = QHBoxLayout()
+        footer.setSpacing(2)
+        self.settings_button = self._row_button(
+            "settings",
+            _("Settings..."),
+            _("Language, theme, default profile and audio ({shortcut}).").format(
+                shortcut=native_shortcut("Ctrl+,")
+            ),
+        )
+        self.settings_button.clicked.connect(self.settings_requested.emit)
+        self.help_button = self._row_button(
+            "circle-help",
+            _("Getting started"),
+            _("The first-measurement guide and the user guide."),
+        )
+        self.help_button.clicked.connect(self.help_requested.emit)
+        self.report_button = self._tool_button(
+            "stethoscope", _("Environment Report for Bug Reports...")
+        )
+        self.report_button.clicked.connect(self.report_requested.emit)
+        footer.addWidget(self.settings_button, 1)
+        footer.addWidget(self.report_button)
+        layout.addLayout(footer)
+        layout.addWidget(self.help_button)
         self._filling = False
         self._items: dict[str, QTreeWidgetItem] = {}
 
@@ -121,6 +198,76 @@ class Navigator(QWidget):
         model.baseline_changed.connect(self._sync_baseline)
         model.loading_changed.connect(self._loading)
         self.rebuild()
+        self.refresh_recent()
+
+    # --- sidebar rows ---------------------------------------------------------------
+
+    def _row_button(self, icon_name: str, text: str, tip: str) -> QToolButton:
+        button = QToolButton()
+        button.setProperty("sidebarrow", True)
+        button.setProperty("icon_name", icon_name)
+        button.setText(text)
+        button.setToolTip(tip)
+        button.setIcon(icons.icon(icon_name, 16))
+        button.setIconSize(icons.icon_size(16))
+        button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        button.setAutoRaise(True)
+        return button
+
+    def _tool_button(self, icon_name: str, tip: str) -> QToolButton:
+        button = QToolButton()
+        button.setProperty("toolicon", True)
+        button.setProperty("icon_name", icon_name)
+        button.setIcon(icons.icon(icon_name, 16))
+        button.setIconSize(icons.icon_size(16))
+        button.setToolTip(tip)
+        button.setAccessibleName(tip)
+        button.setAutoRaise(True)
+        return button
+
+    def restyle_icons(self) -> None:
+        """Draw the row icons again in the colours of the current theme."""
+        for button in self.findChildren(QToolButton):
+            name = button.property("icon_name")
+            if isinstance(name, str) and name:
+                tone = "accent" if button.property("accent") else ""
+                button.setIcon(icons.icon(name, 16, tone=tone))
+
+    def refresh_recent(self) -> None:
+        """The newest saved sessions (the start panel lists all of them)."""
+        from reverbscope.io.recent import recent_session_paths
+
+        self.recent.clear()
+        try:
+            paths = recent_session_paths(limit=6)
+        except OSError:
+            paths = []
+        history = icons.icon("history", 14)
+        for path in paths:
+            folder = path.parent if path.name == "session.json" else path
+            item = QListWidgetItem(history, folder.name or str(folder))
+            item.setToolTip(str(folder))
+            item.setData(KEY_ROLE, str(path))
+            self.recent.addItem(item)
+        if not paths:
+            item = QListWidgetItem(_("No saved sessions yet."))
+            item.setFlags(Qt.ItemFlag.NoItemFlags)
+            self.recent.addItem(item)
+        self.recent.setMaximumHeight(max(1, len(paths)) * 28 + 6)
+
+    def resizeEvent(self, event: QResizeEvent) -> None:  # noqa: N802 - Qt override
+        super().resizeEvent(event)
+        # A short window keeps the room for the measurement tree; the start
+        # panel still lists every saved session.
+        roomy = event.size().height() >= 600
+        self.recent_heading.setVisible(roomy)
+        self.recent.setVisible(roomy)
+
+    def _recent_activated(self, item: QListWidgetItem) -> None:
+        path = item.data(KEY_ROLE)
+        if path:
+            self.open_recent_requested.emit(str(path))
 
     # --- building -----------------------------------------------------------------
 

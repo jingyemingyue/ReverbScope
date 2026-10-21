@@ -78,11 +78,6 @@ DYNAMIC_CALLS = {
     ("ui/navigator.py", "_(NO_POSITION)"),
     ("ui/navigator.py", "_(TAKES)"),
     ("ui/measure_strip.py", "_(text)"),
-    # Room view layer names (LAYER_NAMES) and the single-microphone sentence
-    # (geometry/paths.py), extracted with N_().
-    ("ui/room/canvas.py", "_(LAYER_NAMES[layer])"),
-    ("ui/room/view.py", "_(LAYER_NAMES[layer])"),
-    ("ui/room/view.py", "_(SINGLE_MICROPHONE_NOTE)"),
 }
 
 #: ASCII tokens a Chinese finding may legitimately contain: units, metric
