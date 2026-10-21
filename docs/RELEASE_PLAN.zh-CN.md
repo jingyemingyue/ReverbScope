@@ -1,6 +1,6 @@
 # ReverbScope 发布计划（中文摘要）
 
-> 当前发布状态（2026-10-15）：v0.4.1 / v0.5.0b1 已公开且沿用旧名 RoomScope；rc1、rc2、b2、b3 都是 Draft。下方旧日期章节为历史准备记录。见 [OSS 审计](OSS_READINESS.md)与[公开测试指南](PUBLIC_TESTING.zh-CN.md)。
+> 当前发布状态（2026-10-21）：v0.5.0b6 已以 ReverbScope 名称作为预发布版公开；v0.4.1 / v0.5.0b1 已公开且沿用旧名 RoomScope；rc1、rc2、b2–b5 都是 Draft。下方旧日期章节为历史准备记录。见 [OSS 审计](OSS_READINESS.md)与[公开测试指南](PUBLIC_TESTING.zh-CN.md)。
 
 [English](RELEASE_PLAN.md) | **简体中文**
 

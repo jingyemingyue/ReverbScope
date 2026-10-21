@@ -31,13 +31,14 @@ Windows 上通过了自动化测试。**但还没有任何一次测量经过真�
 
 ### **[→ 从 GitHub Releases 下载](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**截至 2026-10-17 已公开：** [v0.5.0b1](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b1)，
-沿用旧名 **RoomScope**。请下载该版本的 `RoomScope` 文件，使用 `roomscope demo`（不会播放声音）。
-[公开 beta 安装指南](docs/PUBLIC_TESTING.zh-CN.md) 提供各平台准确的文件名、校验和与首次启动步骤。
+**截至 2026-10-21 已公开：**
+[v0.5.0b6](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b6)，
+公开预发布版（beta 6），文件名就是下表的 ReverbScope 名称，另附 `SHA256SUMS`、CycloneDX SBOM、
+wheel 和源码包。各平台准确的文件名、校验和与首次启动步骤见[公开 beta 安装指南](docs/PUBLIC_TESTING.zh-CN.md)。
+更早的 v0.5.0b1 和 v0.4.1 预发布版仍然公开，沿用旧名 **RoomScope**。
 
-**尚未公开：** 更名后的 `v0.5.0rc2` 和 `v0.5.0b3` 都是 Draft，未登录的访客无法下载，0.5.0b6 还没有 Release。
-目前没有 0.5.0 稳定版、已签名或已公证的构建，也没有 PyPI 包。下面的表格对应更名后的构建，等维护者公开一个通过验收的预发布版本后，
-才成为下载说明。
+**还没有：** 0.5.0 稳定版、已签名或已公证的构建、PyPI 包。beta 6 是供测试的软件版本，
+还没有任何真机或 DAW 结果。更名后的 `b2`–`b5`、`rc1`、`rc2` 都是 Draft，访客无法下载。
 
 ### 🖥 桌面版（Desktop Edition）
 
@@ -161,7 +162,7 @@ ReverbScope 回答录音师按下录音键之前会问的问题：
 
 ## 当前状态
 
-`main` 上的版本是 **0.5.0b6**；`release/0.5.0` 是候选版线。分析核心、命令行、桌面工作台、对比、回采（loopback）、
+`main` 上的版本是 **0.5.0b6**，2026-10-21 起已作为[预发布版](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b6)公开；`release/0.5.0` 是候选版线。分析核心、命令行、桌面工作台、对比、回采（loopback）、
 简体中文文案、会话打包以及两个版本的安装包都已存在，并用合成数据在 Linux、macOS、Windows 上测试过。
 
 **还没有：** 任何在真实硬件上测得的结果（硬件矩阵和硬件验证都还是空的）、任何 DAW 的实际运行、

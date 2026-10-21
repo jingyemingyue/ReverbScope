@@ -41,15 +41,18 @@ room. Synthetic demo data: no real room was measured.</sub>
 
 ### **[→ Download from GitHub Releases](https://github.com/jingyemingyue/ReverbScope/releases)**
 
-**What is public today (2026-10-17):** [v0.5.0b1](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b1),
-published under the old **RoomScope** name. Use its `RoomScope` assets and
-`roomscope demo` (nothing is played); exact file names, checksums and first
-launch are in the [public-beta guide](docs/PUBLIC_TESTING.md).
+**What is public today (2026-10-21):**
+[v0.5.0b6](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b6),
+a public pre-release (beta 6) with the ReverbScope names below, a `SHA256SUMS`
+file, a CycloneDX SBOM and the wheel and source archive. Exact file names,
+checksums and first launch are in the [public-beta guide](docs/PUBLIC_TESTING.md).
+The older v0.5.0b1 and v0.4.1 pre-releases stay public under the former
+**RoomScope** name.
 
-**Not public yet:** the renamed `v0.5.0rc2` and `v0.5.0b3` builds are Draft
-releases that visitors cannot download, and 0.5.0b6 has no Release yet. No
-stable 0.5.0, signed or notarized build, or PyPI package exists. The tables below name the renamed builds; they
-become download instructions when an accepted pre-release is published.
+**Not available:** a stable 0.5.0, a signed or notarized build, or a PyPI
+package. Beta 6 is software for testing: no hardware or DAW result has been
+recorded for it. The renamed `b2`–`b5`, `rc1` and `rc2` builds are Draft
+releases that visitors cannot download.
 
 ### 🖥 Desktop Edition
 
@@ -211,8 +214,9 @@ when another tool is the better choice, is in
 
 ## Status
 
-The version on `main` is **0.5.0b6**; `release/0.5.0` carries the release
-candidate. The analysis core, command line, desktop workstation, comparison,
+The version on `main` is **0.5.0b6**, public as a
+[pre-release](https://github.com/jingyemingyue/ReverbScope/releases/tag/v0.5.0b6)
+since 2026-10-21; `release/0.5.0` carries the release candidate. The analysis core, command line, desktop workstation, comparison,
 loopback, Simplified Chinese catalog, session bundles and both editions'
 bundles exist and are tested with synthetic data on Linux, macOS and Windows.
 

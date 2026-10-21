@@ -1,6 +1,6 @@
 # ReverbScope user guide
 
-> Version scope: renamed source/candidate builds. The public download is still RoomScope v0.5.0b1; rc2/b3 are Draft. Use the [public-beta guide](../PUBLIC_TESTING.md) for that release.
+> Version scope: ReverbScope source and the public pre-release v0.5.0b6 (2026-10-21). b2–b5, rc1 and rc2 are Draft. Exact download names and first steps are in the [public-beta guide](../PUBLIC_TESTING.md).
 
 **English** | [简体中文](zh-CN.md)
 
