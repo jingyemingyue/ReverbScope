@@ -43,9 +43,6 @@ ALLOWED = frozenset(
         "JSON",
         "CSV",
         "ZIP",
-        # room scans the desktop room view imports
-        "PLY",
-        "OBJ",
         "UTF",
         # audio systems and platforms
         "API",

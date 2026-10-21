@@ -10,8 +10,12 @@ project, the measurement list, the chart and the measurement controls on
 screen together. It reuses the analysis as it is: nothing in `core/`,
 `models/`, `health.py` or `interpretation/` changes behaviour, and every
 number the window shows is a number those modules computed. What is new is
-display code (how stored data is drawn) and the room geometry the user
-enters, which is stored apart from the measurements.
+display code (how stored data is drawn).
+
+The 3D room view, the entered room geometry (`room-geometry.json`), the
+first-order image-source consistency checks and the PLY/OBJ scan import
+were removed so that ReverbScope stays a pure measurement tool (§6.4). The
+last tree that had them is the tag `archive/3d-room-before-removal`.
 
 [GUI_REFERENCE_AUDIT.md](GUI_REFERENCE_AUDIT.md) records which other
 programs were looked at, under which licenses, and what was and was not
@@ -28,12 +32,10 @@ Goals, in the order resources go to them:
    hide, a highlighted current curve, zoom, pan and reset, a cursor readout
    with units, a difference pane for comparisons, labelled display
    processing, and export of what is on screen.
-3. A three-dimensional room view that is useful rather than decorative: it
-   separates what the user entered, what a measurement constrains and what
-   follows only from a geometric assumption.
 
-Non-goals: new acoustic metrics, a room score, a new file format for
-measurements, OpenGL rendering, or any change to the command line.
+Non-goals: new acoustic metrics, a room score, a 3D room model (removed,
+§6.4), a new file format for measurements, OpenGL rendering, or any change
+to the command line.
 
 ## 2. Window layout
 
@@ -75,9 +77,9 @@ measurements, OpenGL rendering, or any change to the command line.
 * The start panel replaces the old home page. The marketing pills and the
   large mode cards are gone; the first-measurement card stays, can be
   dismissed, and comes back from Help ▸ Getting started.
-* Shortcuts: `Ctrl+1` … `Ctrl+9` select the analysis views in the order of
+* Shortcuts: `Ctrl+1` … `Ctrl+8` select the analysis views in the order of
   `default_views()`; `Ctrl+0` opens Compare. The view bar groups them
-  (Overview, Frequency, Time, Decay, Spectral, Room, Compare, Report).
+  (Overview, Frequency, Time, Decay, Spectral, Compare, Report).
   Spectral has a second selector for the spectrogram, the waterfall and
   noise. Project is a separate button, not an analysis group. The
   measurement set-up pages are `Ctrl+Shift+1` (Universal DAW Mode) and
@@ -147,7 +149,7 @@ or visibility any more reliable.
   that is still there, by key. The list swatch, the curves and the legend
   use the same colour.
 * **Selected reflection**: `(key, index)` of the early reflection selected
-  in the impulse view or the room view; `reflection_changed` tells both.
+  in the impulse view; `reflection_changed` tells it and the inspector.
 * **Background loading**: `ProjectLoader` (a `QThread`) reads the session
   folders of a project and emits one entry at a time; the window stays
   responsive while a large project opens. Every load carries a generation
@@ -184,13 +186,13 @@ makes it current.
 * `default_views()` returns, in shortcut order: Overview (`overview`),
   Frequency response (`fr`), Impulse response / ETC (`etc`), Decay (`decay`),
   Noise (`noise`), Spectrogram (`spectrogram`), Waterfall (`waterfall`),
-  Room (`room`), Project (`project`). Compare (`compare`) and the full text
-  report (`report`) follow without a number.
+  Project (`project`). Compare (`compare`) and the full text report
+  (`report`) follow without a number. A saved `workspace/view` of `room`
+  (from a build with the room view) falls back to Overview.
 * The 0.5 Results tabs are gone. Their content moved: the key figures,
   health and findings to Overview and the inspector; each chart to its view;
-  the placement table to the room view's side panel (and, with a VALID
-  height and separation, the ring of loudspeaker positions in the room's
-  measured layer); the text report to the report view. "About this
+  the placement figures to the inspector's Placement section and the full
+  report; the text report to the report view. "About this
   profile..." is in the inspector's Conditions section; Save Session is in
   the File menu and the navigator's menu.
 * The compare view compares the model's baseline with the current entry.
@@ -201,8 +203,9 @@ makes it current.
   subtitle (room, position, microphone, profile, sample rate, folder),
   measurement health, key figures with validity, conditions, the comparison
   with the baseline (verdict per topic, "Input gain unchanged", "Open the
-  comparison"), the selected reflection, and the room view's consistency
-  checks.
+  comparison"), the selected reflection, and the placement figures
+  (loudspeaker height, plane above the devices, horizontal separation, each
+  with its validity) when the measurement carries a placement result.
 
 ## 5. Display data
 
@@ -327,11 +330,6 @@ with the full path in a tooltip and the accessible name. Tool buttons,
 inputs and table headings share compact dimensions; body text is 12 logical
 pixels with per-glyph Chinese fallbacks.
 
-Room parameters starts closed and reveals the existing inputs, scan import
-and reflection selection in a resizable side panel. The room camera fits
-after a hidden view's layout becomes visible, unless the user already moved
-it. This does not change geometry, predictions or saved measurement data.
-
 ### 6.3 Frequency, impulse, decay and noise
 
 * **Frequency response**: overlays in the entries' colours, display
@@ -340,80 +338,32 @@ it. This does not change geometry, predictions or saved measurement data.
   the chart when a baseline is set (current − baseline).
 * **Impulse response / ETC**: the ETC (or the waveform) of the current entry
   and the overlays; reflection markers are clickable and select the
-  reflection in the model (§3), which the room view follows.
+  reflection in the model (§3), which the inspector follows.
 * **Decay**: the Schroeder curves by band with the evaluation range of the
   chosen metric shaded, and a band chart of T values under it; a value that
   is not VALID is drawn hollow.
 * **Noise**: the noise spectrum with the detected hum harmonics marked.
 
-### 6.4 Room geometry and the room view
+### 6.4 Removed: room geometry and the 3D room view
 
-`geometry/room.py`, `geometry/paths.py`, `geometry/scan.py`,
-`schemas/room-geometry.schema.json`, `ui/room/`.
+The 3D room view (`ui/room/`), the entered room box and device positions
+(`geometry/room.py`, `schemas/room-geometry.schema.json`), the first-order
+image-source predictions and consistency checks (`geometry/paths.py`) and
+the PLY/OBJ scan import (`geometry/scan.py`) were removed. ReverbScope is a
+measurement tool: one omnidirectional microphone fixes path lengths, not a
+room, and the entered model drew more attention than the measurement could
+support. The tag `archive/3d-room-before-removal` keeps the last tree that
+had them.
 
-**Three layers, never mixed.** Everything in the room view belongs to one
-of three layers, each with its own line style, colour and label:
+What stays is measurement: the early reflections (impulse view, inspector)
+and the vertical placement geometry from two tape measurements
+(`core/placement.py`), shown in the inspector and the full report. The one
+helper the inspector needed, the speed of sound for a result, moved to
+`core.placement.speed_for_result`.
 
-1. *Entered* (solid): the room box the user typed (length, width, height),
-   the loudspeaker and the microphone positions, and an imported scan.
-2. *Measured constraint* (dashed): what a measurement supports on its own:
-   the direct distance (a sphere of that radius around the loudspeaker), and
-   for a selected reflection the excess path and the ellipsoid of every
-   point that could have reflected it, with its distance interval.
-3. *Geometric assumption* (dotted): first-order specular paths computed
-   from the entered box. They are an assumption about the room, not a
-   measurement, and are labelled so.
-
-**The geometry file.** `room-geometry.json` sits next to `project.json`
-(or in the session folder when no project is open). It holds only what the
-user entered: the box, the loudspeaker, the microphone of each position, an
-optional scan reference (file name, units, up axis, yaw, offset, SHA-256),
-and free notes. Measurements never write to it, and it never writes to a
-session. Writes are atomic (temporary file, then rename); unknown keys are
-kept; a file with a newer `schema_version` is read but not overwritten.
-Renaming a position renames its microphone entry.
-
-**What can be said.** A single microphone cannot locate a wall: one
-reflection fixes an ellipsoid, not a point. The room view says so. When the
-direct sound's confidence is low the overlays are withheld and
-`overlay_refusal` says why. A selected reflection is matched against the
-predicted first-order arrivals within a tolerance derived from the sample
-period and the entered positions' uncertainty: *no match*, *one match*
-(with the face named by its coordinates, e.g. "the face at x = 0 m") or
-*ambiguous* (all candidates listed), always with the residual in ms.
-`consistency_checks` compares the entered direct distance with the measured
-one and reports each check in the inspector.
-
-**Scans.** PLY (ASCII, binary little and big endian) and OBJ are read on a
-worker thread with a size limit, a vertex limit, cancellation and voxel
-thinning for display. The import dialog asks for the units, the up axis,
-the yaw and the alignment; the choice is stored with the file's SHA-256.
-
-**What is on at first.** Entered geometry and the measured layer are on.
-Predicted paths (the geometric assumption) are off until that layer is
-ticked. **All constraints** is off: the selected reflection is a short
-ellipsoid, and other predicted paths are not drawn. Turning it on draws the
-direct-distance sphere, the full ellipsoid and every predicted path, still
-dotted and labelled as an assumption. **Restore default view** puts the
-layers and the camera back. The choice is saved in `ui.ini`.
-
-**Rendering.** `ui/room/` draws with `QPainter` only: an orbit camera
-(rotate, pan, zoom about the cursor, fit, reset), an axis triad labelled
-length / width / up, a metre scale bar, the entered floor filled faintly,
-and a mark on the front edge (the face at y = 0). Fit frames the entered
-box, the loudspeaker, the current microphone, the dimension captions and
-whatever measured constraint or highlighted assumption is actually drawn.
-It then steps the camera back until those points sit inside a margin, so
-the near corner and the captions are not cut off on the right or the
-bottom. A resize refits until the user orbits, pans or zooms. The canvas names the
-camera: plan (true to scale, front along the lower edge), front, side, or
-a free perspective after the user orbits. Front and side are pitched enough
-that the box reads as a volume; the near face is still the one the preset
-names. Device names and the length, width and height captions are placed
-in screen space so a loudspeaker and the current microphone, or two
-dimension captions, do not cover each other. The plan view allows dragging
-the loudspeaker and the microphone. It runs offscreen, so it is tested and
-screenshotted in CI.
+Old folders still open. A `room-geometry.json` (or a scan file) beside a
+project or in a session folder is ignored: never read, rewritten or
+deleted. The `room/*` keys in `ui.ini` are ignored.
 
 ## 7. Threads and lifetimes
 
@@ -465,8 +415,9 @@ reworded here.
 ## 11. Testing
 
 * Offscreen (`QT_QPA_PLATFORM=offscreen`): the model, every view, the flow
-  of §2.1, thread shutdown, unsaved-take prompts, old sessions and projects,
-  the geometry file, the display transforms and the zh_CN interface.
+  of §2.1, thread shutdown, unsaved-take prompts, old sessions and projects
+  (including ones with a leftover `room-geometry.json`), the display
+  transforms and the zh_CN interface.
 * Ordinary desktop run, real Retina displays and measurements with a real
   audio interface and DAW are separate acceptance steps and are recorded as
   such in the pull request; offscreen tests do not stand in for them.
@@ -482,5 +433,4 @@ check; that is not a capture from a Retina display. Regenerate them with
 
     QT_QPA_PLATFORM=offscreen python scripts/render_gui2_screenshots.py
 
-`--view room` renders the room only. `--cameras` also writes the plan,
-front, side and default perspective beside that shot.
+`--view fr` (repeatable) renders only the named views.

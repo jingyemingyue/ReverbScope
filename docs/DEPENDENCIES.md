@@ -156,6 +156,20 @@ the wheels, and must be checked again at packaging time:
   `qt-third-party.txt` (a test compares its Qt version with
   `requirements/bundle.lock`).
 
+## 4a. Bundled design assets (C7 audit, 2026-10-20)
+
+Not a Python package: shapes copied into the source tree.
+
+| Asset | Version | Source | License (upstream file read) | Where | Obligation |
+| --- | --- | --- | --- | --- | --- |
+| Lucide icons (43 of them) | lucide-static 1.59.0 | https://lucide.dev / https://github.com/lucide-icons/lucide | ISC ("Copyright (c) 2026 Lucide Icons and Contributors"); the icons Lucide derives from Feather are also MIT ("Copyright (c) 2013-present Cole Bemis") | SVG elements in `src/reverbscope/ui/icons.py` (GUI only; no data file) | Keep the notice: full text in `packaging/licenses/lucide-LICENSE.txt`, shipped as `THIRD_PARTY_LICENSES/_notices/lucide.txt` by `scripts/build_license_bundle.py` |
+
+SF Symbols were considered and not used: Apple's licence allows them only in
+the interface of an app that runs on Apple platforms, so they cannot ship in
+the Windows and Linux builds (docs/design/light-sidebar SPEC §16.4 on PR #91).
+No font is bundled: the GUI uses the platform's UI font (SF Pro, Segoe UI)
+and, on Linux, an installed face with Chinese glyphs when there is one.
+
 ## 5. Candidate evaluated and not adopted
 
 | Package | Version | License | Why not |

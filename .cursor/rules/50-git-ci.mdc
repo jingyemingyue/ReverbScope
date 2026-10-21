@@ -31,6 +31,8 @@ alwaysApply: true
 
 如果任务看起来需要以上任何一条：停下，写出你想执行的命令和原因，由用户自己执行。
 
+唯一的例外是发布：维护者在会话里明确要求发布小补丁版或常规更新版时，可以执行 `git tag`、`git push` 该 tag 和 `gh release` 的写操作，范围和限制见 `AGENTS.md` 的 Releases（不含 0.5.0、1.0.0 或门槛未满足的版本）。
+
 ## 提交
 
 - 英文；第一行 ≤ 72 字符，祈使句，说明做了什么（如 `Ask before replacing an unsaved take`）。

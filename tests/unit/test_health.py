@@ -90,6 +90,90 @@ def test_a_clipped_take_is_invalid_and_names_the_metrics_it_spoils(
     assert "decay" in report.affected
 
 
+@pytest.mark.parametrize(
+    ("lang", "expected", "contradiction"),
+    [
+        ("en", "0.5 dB above full scale", "within"),
+        ("zh_CN", "峰值超过满刻度 0.5 dB", "距满刻度不到"),
+    ],
+)
+def test_a_float_take_above_full_scale_reports_the_excess_without_flat_tops(
+    short_sweep: SweepSettings, lang: str, expected: str, contradiction: str
+) -> None:
+    """GUIDELINES §16.4.1: a float export can exceed 0 dBFS without clipping."""
+    from reverbscope.i18n import activate
+
+    clean = _clean(short_sweep)
+    samples = clean.samples * (10.0 ** (0.5 / 20.0) / np.max(np.abs(clean.samples)))
+    recording = AudioSignal(samples=samples, sample_rate=clean.sample_rate, source="daw")
+    result = _analysed(short_sweep, recording)
+    assert result.clipping is not None
+    assert result.clipping.peak_dbfs == pytest.approx(0.5, abs=1e-12)
+    assert not result.clipping.clipped and result.clipping.runs == 0
+    original = json.dumps(result.to_dict(), sort_keys=True)
+    activate(lang)
+    try:
+        level = next(check for check in assess(result).checks if check.id == "level")
+    finally:
+        activate("en")
+    assert json.dumps(result.to_dict(), sort_keys=True) == original
+    assert level.status is HealthStatus.WARNING
+    assert level.evidence == result.clipping.to_dict()
+    assert contradiction not in level.reason
+    assert expected in level.reason
+
+
+def test_a_float_take_rounded_to_zero_keeps_the_headroom_warning(
+    short_sweep: SweepSettings,
+) -> None:
+    clean = _clean(short_sweep)
+    samples = clean.samples * (10.0 ** (0.02 / 20.0) / np.max(np.abs(clean.samples)))
+    recording = AudioSignal(samples=samples, sample_rate=clean.sample_rate, source="daw")
+    result = _analysed(short_sweep, recording)
+    assert result.clipping is not None
+    assert result.clipping.peak_dbfs == pytest.approx(0.02, abs=1e-12)
+    assert not result.clipping.clipped and result.clipping.runs == 0
+    level = next(check for check in assess(result).checks if check.id == "level")
+    assert level.status is HealthStatus.WARNING
+    assert level.evidence == result.clipping.to_dict()
+    assert "peaks at 0.0 dBFS, within 1 dB of full scale" in level.reason
+    assert "above full scale" not in level.reason
+
+
+@pytest.mark.parametrize(
+    ("peak_dbfs", "clipped", "status", "reason"),
+    [
+        (-1.0, False, HealthStatus.GOOD, "peak -1.0 dBFS, no flat-topped peaks"),
+        (-0.5, False, HealthStatus.WARNING, "within 1 dB of full scale"),
+        (0.0, False, HealthStatus.WARNING, "within 1 dB of full scale"),
+        (0.5, True, HealthStatus.INVALID, "8 flat-topped peaks (24 samples) at 0.5 dBFS"),
+    ],
+)
+def test_level_headroom_boundaries_and_flat_top_priority_are_unchanged(
+    short_sweep: SweepSettings, peak_dbfs: float, clipped: bool, status: HealthStatus, reason: str
+) -> None:
+    from dataclasses import replace
+
+    from reverbscope.health import HEADROOM_DB
+
+    result = _analysed(short_sweep, _clean(short_sweep))
+    assert result.clipping is not None
+    clipping = replace(
+        result.clipping,
+        peak_dbfs=peak_dbfs,
+        clipped=clipped,
+        runs=8 if clipped else 0,
+        samples=24 if clipped else 0,
+    )
+    level = next(
+        check for check in assess(replace(result, clipping=clipping)).checks if check.id == "level"
+    )
+    assert HEADROOM_DB == 1.0
+    assert level.status is status
+    assert reason in level.reason
+    assert level.evidence == clipping.to_dict()
+
+
 def test_dropouts_in_the_sweep_are_found_and_placed(short_sweep: SweepSettings) -> None:
     clean = _clean(short_sweep)
     rate = clean.sample_rate

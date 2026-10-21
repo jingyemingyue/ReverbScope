@@ -157,11 +157,13 @@ def test_main_window_actions_have_shortcuts(app: QApplication) -> None:
         if not action.shortcut().isEmpty()
     }
     # Ctrl+Shift+1/2 open the two measurement modes. There is no demo shortcut.
-    # Ctrl+1 ... Ctrl+9 open the views.
-    needed = ("Ctrl+N", "Ctrl+O", "Ctrl+Shift+C", "Ctrl+,", "Ctrl+S", "Ctrl+1", "Ctrl+0")
+    # Ctrl+1 ... Ctrl+8 open the views (Project is Ctrl+8 since the 3D room
+    # view was removed); Ctrl+0 opens Compare.
+    needed = ("Ctrl+N", "Ctrl+O", "Ctrl+Shift+C", "Ctrl+,", "Ctrl+S", "Ctrl+1", "Ctrl+8", "Ctrl+0")
     for sequence in (*needed, "Ctrl+Shift+1", "Ctrl+Shift+2"):
         assert sequence in shortcuts, shortcuts
     assert "Ctrl+Shift+3" not in shortcuts
+    assert "Ctrl+9" not in shortcuts
     # The start panel has no mode cards any more (by design), so no shortcut
     # badges to check against the Measure menu: the menu carries the keys.
     assert "Start" in window.statusBar().currentMessage()
@@ -262,16 +264,14 @@ def test_placement_tab_uses_tape_measurements(
     placement = window.state.result.placement
     assert placement is not None
     assert placement.tier == 2
-    # The Placement tab moved to the Room view's side panel.
-    window.show_view("room")
-    assert window.current_view_id() == "room"
-    room = window.views["room"]
-    summary = room.placement_summary.text()
-    assert "tier 2" in summary.lower()
-    assert room.placement_table.rowCount() == 3
-    height_item = room.placement_table.item(0, 1)
-    assert height_item is not None
-    assert "m" in height_item.text()
+    # The placement figures sit in the inspector (the 3D room view that
+    # carried them is gone) and in the full report.
+    assert "room" not in window.views
+    section = window.inspector.placement
+    assert not section.isHidden()
+    assert "tier 2" in section.note.text().lower()
+    assert section.rows == 3
+    assert "Loudspeaker height" in window.views["report"].report_text()
     assert window.state.analysis_settings.placement_distance_m == pytest.approx(distance, abs=0.01)
     window.close()
 
@@ -537,7 +537,12 @@ def test_standalone_preselects_the_system_default_devices(
 ) -> None:
     """Review finding: on a Mac every Core Audio device is its own starred
     entry, so the page preselected the lowest index, a virtual BlackHole
-    device, instead of the microphone and speakers the system uses."""
+    device, instead of the microphone and speakers the system uses.
+
+    Since the light sidebar GUI (SPEC §8.4 OUT-2, owner rule 2026-10-19) only
+    the input follows the system: the output is never preselected, so no
+    sweep can reach the laptop speakers without the user choosing them, and
+    Start stays off with the reason shown until an output is chosen."""
     from reverbscope.audio import backend as backend_module
     from reverbscope.audio import inventory as inventory_module
     from reverbscope.audio.backend import DeviceInfo
@@ -570,10 +575,18 @@ def test_standalone_preselects_the_system_default_devices(
     assert page.host_api.currentData() is None
     assert page.input_device.currentData() is None
     assert page.output_device.currentData() is None
-    # Choosing the host API preselects its default devices, not the first star.
+    # Choosing the host API preselects its default input, not the first star;
+    # the output stays unchosen (OUT-2) and Start says why it is off (OUT-4).
     page.host_api.setCurrentIndex(page.host_api.findData("Core Audio"))
     assert page.input_device.currentData() == 1
-    assert page.output_device.currentData() == 2
+    assert page.output_device.currentData() is None
+    assert page.output_device.findData(2) >= 0
+    assert not page.run_button.isEnabled()
+    assert not window.strip.start_button.isEnabled()
+    assert page.readiness.text() == page.readiness_reason() != ""
+    page.output_device.setCurrentIndex(page.output_device.findData(2))
+    assert page.run_button.isEnabled() and window.strip.start_button.isEnabled()
+    assert page.readiness_reason() == ""
     window.close()
 
 
@@ -1393,10 +1406,13 @@ def test_standalone_keeps_the_chosen_devices_when_it_lists_them_again(
     assert chosen() == ("Core Audio", 2, 2)
     page.refresh_button.click()
     assert chosen() == ("Core Audio", 2, 2)
-    # Unplugged, its index taken by another device: the system's defaults.
+    # Unplugged, its index taken by another device: the system's default
+    # input; the output is not replaced by another device but must be chosen
+    # again (OUT-2), so nothing plays on the headset by surprise.
     devices[2] = DeviceInfo(2, "USB Headset", "Core Audio", 1, 2, 48000.0, False, False)
     page.refresh_button.click()
-    assert chosen() == ("Core Audio", 1, 3)
+    assert chosen() == ("Core Audio", 1, None)
+    assert not page.run_button.isEnabled()
     window.close()
 
 
@@ -1461,7 +1477,9 @@ def test_a_new_audio_backend_in_settings_reaches_the_standalone_page(
     window.show_settings()
     assert "Scarlett 2i2" in listed() and "fake" not in listed()
 
-    # Changed while a take ran, the list stays until Run makes it again.
+    # Changed while a take ran, the list stays until Run makes it again. The
+    # interface output is picked first: Run stays off until it is (OUT-4).
+    page.output_device.setCurrentIndex(page.output_device.findData(0))
     save_settings(UserSettings(audio_backend="fake"))
     page.run_button.click()
     assert warned == ["Audio backend changed"]

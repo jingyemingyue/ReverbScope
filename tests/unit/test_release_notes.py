@@ -94,7 +94,7 @@ def _known_names() -> set[str]:
 def test_release_notes_open_with_the_version_and_the_pre_release_line() -> None:
     lines = [line for line in _notes().splitlines() if line.strip()]
     assert lines[0] == f"## ReverbScope v{_version()}"
-    assert "Beta 5, for testing." in lines[1]
+    assert "Beta 6, for testing." in lines[1]
 
 
 def test_the_beta_header_names_the_beta_it_ships_with() -> None:
@@ -149,10 +149,10 @@ def test_release_notes_put_the_user_choice_first() -> None:
 def test_release_notes_are_honest_about_signing_and_hardware() -> None:
     notes = _notes()
     for fact in (
-        "This is beta 5 of the software, not the 0.5.0 hardware release.",
+        "This is beta 6 of the software, not the 0.5.0 hardware release.",
         "hardware validation has not started",
         "should not yet be treated as hardware-validated",
-        "This is beta 5",
+        "This is beta 6",
         "not 0.5.0",
         "not notarized",
         "Authenticode",
@@ -223,7 +223,7 @@ def test_readme_shows_both_editions_before_anything_else(name: str) -> None:
     desktop = text.index("### 🖥 ")
     terminal = text.index("### ⌨️ ")
     compare = text.index("### 该选哪个？" if zh else "### Which one?")
-    demo = text.index("## 30 秒体验" if zh else "## Try it in 30 seconds")
+    demo = text.index("## 先试试演示" if zh else "## Try the demo")
     first_section = text.index("\n## ")
     assert first_section < desktop < terminal < compare < demo
     # Every download of each edition is in its own table.

@@ -3,7 +3,7 @@
 **English summary** | [简体中文（以此为准）](GUIDELINES.zh-CN.md)
 
 This file is a summary of
-[GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) **v2.1.2** (2026-10-19).
+[GUIDELINES.zh-CN.md](GUIDELINES.zh-CN.md) **v2.1.3** (2026-10-21).
 The Chinese text is the only execution standard for the project. If this
 summary and the Chinese text differ, follow the Chinese text. Do not treat
 this page as a second authority, and do not change the Chinese document's
@@ -128,7 +128,7 @@ A change that breaks one of these is not merged.
 | C15 | Do not fake a signal of adoption. |
 | C16 | Name the evidence level whenever something is called "tested": hardware or DAW, then automated (CI, fake backend, offscreen screenshot), then synthetic demo. Unrun means "not run". |
 | C17 | Only the maintainer submits the application. No name beyond the public GitHub account, no email, no organization id, and no token in the repo or in an AI session's output. |
-| C18 | AI output is merged only after the maintainer reviews it. No auto-merge. An AI session does not merge, publish, tag, or close a pull request. |
+| C18 | AI output is merged only after the maintainer reviews it. No auto-merge. An AI session does not merge, publish, tag, or close a pull request. Exception: when the maintainer judges it appropriate and asks in the session, an AI session may build the installers, tag, and publish a small patch release or a regular update release. The maintainer chooses the version and the moment; this does not cover 0.5.0, 1.0.0, or a version whose gate is unmet. |
 | C19 | A pull request that conflicts with the guidelines is not merged. Register the disagreement (Appendix H, procedure §2.4) and let the maintainer decide. Change the guidelines only with the maintainer's agreement. |
 
 ## Roadmap
@@ -166,7 +166,7 @@ stay with the maintainer (C18).
 | --- | --- |
 | §8 | What the program is, who it is for, layering, the two release lines |
 | §9 | Why the current GUI feels assembled, including the copy bug in measurement health |
-| §10 | The 30-second goal and the design principles |
+| §10 | The north star and the design principles |
 | §11 | Window structure, words for project / position / measurement, shortcuts |
 | §12 | Page specifications, including the wizard rules taken from #63 |
 | §13 | Tokens, type, spacing, colour semantics |
@@ -194,7 +194,8 @@ section of the guidelines the pull request implements.
 Do not widen a task into DSP, file formats, CLI behaviour, dependencies,
 workflows, or the license. If the guidelines do not cover the case, or they
 conflict with the task, stop and write a guidelines-change proposal. Do not
-edit the guidelines to match the code.
+edit the guidelines to match the code, unless the maintainer explicitly asks
+in the session for that edit.
 
 Local checks are §6 item 8 of the Chinese text. CI runs `mypy` on Linux. On
 macOS, run `mypy --platform linux` to match it. Say which commands ran, and

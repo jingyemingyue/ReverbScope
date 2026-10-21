@@ -26,7 +26,9 @@ These stay human even when an AI session prepared the change (constraint
 C18 and §2.6):
 
 - Merge a pull request. Nothing merges automatically.
-- Publish a release, or push a tag.
+- Publish a release, or push a tag. Exception: a small patch release or a
+  regular update release that the maintainer explicitly asks for in the
+  session (see Releases in `AGENTS.md`).
 - Close a pull request.
 - Accept a result on real hardware or in a DAW.
 - Submit the Codex for Open Source application, after reading the programme
@@ -78,7 +80,8 @@ Review comes before merge.
 - Delete a test, skip it, mark it expected-fail, or lower a coverage gate so
   that a change goes green.
 - Edit the guidelines, including their version number. A disagreement is a
-  guidelines-change proposal in the pull request.
+  guidelines-change proposal in the pull request. Unless the maintainer
+  explicitly asks in the session for that edit (see `AGENTS.md`).
 
 ## 简体中文
 
@@ -100,7 +103,7 @@ AI，不另立产品决定。英文摘要是 [GUIDELINES.md](GUIDELINES.md)。�
 即使 AI 准备了改动，下面这些仍然由人来做（硬约束 C18、§2.6）：
 
 - 合并拉取请求。不开自动合并。
-- 发布，或推送标签。
+- 发布，或推送标签。例外：维护者在会话里明确要求的小补丁版或常规更新版发布（见 `AGENTS.md` 的 Releases）。
 - 关闭拉取请求。
 - 在真机或 DAW 上验收。
 - 阅读条款后，提交 Codex for Open Source 申请。
@@ -137,4 +140,4 @@ AI，不另立产品决定。英文摘要是 [GUIDELINES.md](GUIDELINES.md)。�
 - 在 GUI 或文档任务里顺手改变测量数字、文件格式或命令行输出。
 - 不按硬约束 C7 做许可证审计就新增依赖、图标、字体或色表。
 - 为了让检查变绿而删除测试、跳过测试、标记为预期失败，或调低覆盖率门。
-- 修改准则，包括版本号。分歧写成拉取请求里的“准则变更提案”。
+- 修改准则，包括版本号。分歧写成拉取请求里的“准则变更提案”。维护者在会话里明确要求修改时除外（见 `AGENTS.md`）。

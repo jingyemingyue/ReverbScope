@@ -14,9 +14,12 @@ from pathlib import Path
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
+    QFrame,
     QHBoxLayout,
+    QLabel,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -24,9 +27,11 @@ from PySide6.QtWidgets import (
 
 from reverbscope.errors import ReverbScopeError
 from reverbscope.i18n import _
+from reverbscope.ui import icons
 from reverbscope.ui.browser import SessionBrowser
 from reverbscope.ui.pages import WalkthroughCard
-from reverbscope.ui.widgets import label
+from reverbscope.ui.theme import tokens
+from reverbscope.ui.widgets import app_icon, key_marks, label
 
 log = logging.getLogger(__name__)
 
@@ -54,8 +59,9 @@ class StartPanel(QWidget):
         self.scroll_area.setWidget(body)
         outer.addWidget(self.scroll_area)
         layout = QVBoxLayout(body)
-        layout.setContentsMargins(8, 8, 8, 8)
-        layout.setSpacing(6)
+        layout.setContentsMargins(32, 24, 32, 16)
+        layout.setSpacing(12)
+        layout.addLayout(self._hero(), 0)
 
         # Shown until dismissed (a setting); Help ▸ Getting started brings it back.
         self.walkthrough = WalkthroughCard()
@@ -82,7 +88,7 @@ class StartPanel(QWidget):
         sessions_layout.setContentsMargins(0, 0, 0, 0)
         sessions_layout.setSpacing(6)
         header = QHBoxLayout()
-        header.addWidget(label(_("Saved sessions"), "panel-title"))
+        header.addWidget(label(_("Saved sessions"), "section"))
         header.addStretch(1)
         open_button = QPushButton(_("Open Session..."))
         open_button.setToolTip(_("Open a session.json or a folder that contains one."))
@@ -95,8 +101,12 @@ class StartPanel(QWidget):
         compare_button = QPushButton(_("Compare two sessions..."))
         compare_button.setToolTip(_("Select two rows below, then compare them."))
         compare_button.clicked.connect(self.compare_requested.emit)
-        for button in (open_button, project_button):
+        for button, icon_name in ((open_button, "folder"), (project_button, "layers")):
+            button.setIcon(icons.icon(icon_name, 16))
+            button.setProperty("icon_name", icon_name)
             header.addWidget(button)
+        compare_button.setIcon(icons.icon("git-compare", 16))
+        compare_button.setProperty("icon_name", "git-compare")
         sessions_layout.addLayout(header)
         # Two selected rows go straight into Compare (MainWindow.show_compare).
         self.browser = SessionBrowser(multi_select=True)
@@ -110,6 +120,131 @@ class StartPanel(QWidget):
         footer.addWidget(self.guide_button)
         layout.addLayout(footer)
         layout.addWidget(self.walkthrough)
+
+    def _hero(self) -> QVBoxLayout:
+        """Icon, title, one sentence and the composer with the two real ways in
+        (``measure_strip.MODES``), centred as one group (SPEC §7)."""
+        hero = QVBoxLayout()
+        hero.setSpacing(8)
+        hero.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        mark = QLabel()
+        mark.setPixmap(app_icon().pixmap(44, 44))
+        mark.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        hero.addWidget(mark)
+        title = label("ReverbScope", "display")
+        title.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        hero.addWidget(title)
+        lead = label(
+            _(
+                "Measure how a room sounds: through your audio interface, or from a "
+                "recording made in your DAW."
+            ),
+            "subtitle",
+            wrap=True,
+        )
+        lead.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        hero.addWidget(lead)
+
+        self.composer = QFrame()
+        self.composer.setProperty("composer", True)
+        self.composer.setMaximumWidth(640)
+        self.composer.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        inner = QVBoxLayout(self.composer)
+        inner.setContentsMargins(16, 16, 16, 12)
+        inner.setSpacing(12)
+        paths = QHBoxLayout()
+        paths.setSpacing(12)
+        self.path_buttons: dict[str, QPushButton] = {}
+        for mode, icon_name, title_text, text in (
+            (
+                "standalone",
+                "audio-lines",
+                _("Audio interface"),
+                _("Plays the sweep only on the output you choose, and records the microphone."),
+            ),
+            (
+                "universal_daw",
+                "music",
+                _("DAW recording"),
+                _("Write the test signal, record it in your DAW, then import the recording."),
+            ),
+        ):
+            button = QPushButton()
+            button.setProperty("pathcard", True)
+            button.setProperty("icon_name", icon_name)
+            button.setToolTip(text)
+            button.setAccessibleName(title_text)
+            button.setAccessibleDescription(text)
+            button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+            button.setCursor(Qt.CursorShape.PointingHandCursor)
+            card = QHBoxLayout(button)
+            card.setContentsMargins(14, 10, 14, 10)
+            card.setSpacing(10)
+            mark = QLabel()
+            mark.setProperty("icon_name", icon_name)
+            mark.setPixmap(icons.pixmap(icon_name, tokens()["accent_ink"], 20))
+            mark.setAlignment(Qt.AlignmentFlag.AlignTop)
+            words = QVBoxLayout()
+            words.setSpacing(2)
+            heading = label(title_text, "panel-title")
+            detail = label(text, "caption", wrap=True)
+            words.addWidget(heading)
+            words.addWidget(detail)
+            card.addWidget(mark)
+            card.addLayout(words, 1)
+            for part in (mark, heading, detail):
+                part.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+            button.setMinimumHeight(76)
+            button.clicked.connect(lambda _checked=False, m=mode: self.choose_mode.emit(m))
+            paths.addWidget(button, 1)
+            self.path_buttons[mode] = button
+        inner.addLayout(paths)
+        note = QHBoxLayout()
+        note.setSpacing(6)
+        self.profile_mark = QLabel()
+        self.profile_mark.setPixmap(icons.pixmap("mic", tokens()["text3"], 14))
+        note.addWidget(self.profile_mark)
+        note.addWidget(
+            label(
+                _(
+                    "A recording profile changes only the wording and the thresholds, never the numbers."
+                ),
+                "caption",
+                wrap=True,
+            ),
+            1,
+        )
+        inner.addLayout(note)
+        row = QHBoxLayout()
+        row.addStretch(1)
+        row.addWidget(self.composer, 4)
+        row.addStretch(1)
+        hero.addLayout(row)
+        keys = label(
+            _(
+                "{new} new measurement · {open} open · {project} project · {settings} settings"
+            ).format(
+                new=key_marks("Ctrl+N"),
+                open=key_marks("Ctrl+O"),
+                project=key_marks("Ctrl+Shift+O"),
+                settings=key_marks("Ctrl+,"),
+            ),
+            "caption",
+        )
+        keys.setAlignment(Qt.AlignmentFlag.AlignHCenter)
+        hero.addWidget(keys)
+        return hero
+
+    def restyle_icons(self) -> None:
+        for widget in self.findChildren(QPushButton):
+            name = widget.property("icon_name")
+            if isinstance(name, str) and name and not widget.property("pathcard"):
+                widget.setIcon(icons.icon(name, 16))
+        for mark in self.findChildren(QLabel):
+            name = mark.property("icon_name")
+            if isinstance(name, str) and name:
+                mark.setPixmap(icons.pixmap(name, tokens()["accent_ink"], 20))
+        self.profile_mark.setPixmap(icons.pixmap("mic", tokens()["text3"], 14))
 
     def refresh_recent(self) -> None:
         self.browser.refresh_recent()

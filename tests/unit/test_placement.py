@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import replace
 
 import numpy as np
 import pytest
@@ -13,9 +14,16 @@ from reverbscope.core.placement import (
     estimate_placement,
     mirror_path_m,
     specular_ceiling_db,
+    speed_for_result,
     speed_of_sound_m_s,
 )
-from reverbscope.models.result import PlacementLength, Reflection, ReflectionsResult, Validity
+from reverbscope.models.result import (
+    AnalysisResult,
+    PlacementLength,
+    Reflection,
+    ReflectionsResult,
+    Validity,
+)
 
 C20 = speed_of_sound_m_s(DEFAULT_TEMPERATURE_C)
 
@@ -558,3 +566,25 @@ def test_a_possible_merge_names_the_plane_that_would_merge(
     assert "may therefore be two arrivals merged into one peak" in reason
     assert result.horizontal_separation_m.validity is Validity.UNRELIABLE
     assert result.horizontal_separation_m.reason == reason
+
+
+# --- speed_for_result (moved from the removed geometry/paths.py) -------------------
+
+
+def test_speed_for_result_assumes_20_c_without_placement(analysed_result: AnalysisResult) -> None:
+    speed, temperature, assumed = speed_for_result(replace(analysed_result, placement=None))
+    assert (temperature, assumed) == (DEFAULT_TEMPERATURE_C, True)
+    assert speed == pytest.approx(343.2, abs=0.05)
+
+
+def test_speed_for_result_uses_the_entered_temperature(analysed_result: AnalysisResult) -> None:
+    placement = estimate_placement(
+        _reflections([(3.0, -6.0)]), distance_m=2.0, mic_height_m=1.2, temperature_c=25.0
+    )
+    result = replace(analysed_result, placement=placement)
+    speed, temperature, assumed = speed_for_result(result)
+    assert (temperature, assumed) == (25.0, False)
+    assert speed == pytest.approx(speed_of_sound_m_s(25.0))
+    # A non-finite stored temperature falls back to the assumed one.
+    broken = replace(result, placement=replace(placement, temperature_c=float("nan")))
+    assert speed_for_result(broken)[1:] == (DEFAULT_TEMPERATURE_C, True)

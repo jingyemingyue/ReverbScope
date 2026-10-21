@@ -3,14 +3,14 @@
 The right column of the workstation. For the current entry it shows the
 measurement health, the key figures each with its validity, the conditions
 it was measured under, the comparison verdict against the baseline, the
-selected early reflection and the room view's consistency checks. Every
-number is one the analysis computed; nothing here is a score.
+selected early reflection and the vertical placement figures the tape
+measurements allow. Every number is one the analysis computed; nothing here
+is a score.
 """
 
 from __future__ import annotations
 
 import html
-from collections.abc import Sequence
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -25,23 +25,27 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from reverbscope.core.placement import speed_for_result
 from reverbscope.errors import ReverbScopeError
-from reverbscope.geometry.paths import ConsistencyCheck, speed_for
 from reverbscope.health import affects_text, assess, status_word
 from reverbscope.i18n import _, localize
 from reverbscope.interpretation.profiles import confidence_text, profile_title
 from reverbscope.interpretation.verdicts import verdict_chip
 from reverbscope.labels import validity_word
-from reverbscope.models.result import AnalysisResult, DecayMetric, EnergyMetric, Validity
+from reverbscope.models.result import (
+    AnalysisResult,
+    DecayMetric,
+    EnergyMetric,
+    PlacementResult,
+    Validity,
+)
 from reverbscope.ui.comparison import current_comparison
 from reverbscope.ui.health_nav import view_for_check, view_title
-from reverbscope.ui.theme import tone_color
+from reverbscope.ui.theme import apply_mono_font, tone_color
 from reverbscope.ui.views.overview import CONFIDENCE_TONE, HEALTH_TONE, VALIDITY_DISPLAY
 from reverbscope.ui.widgets import PathLabel, label, separator
 from reverbscope.ui.workspace import Entry, WorkspaceModel, entry_label
 
-#: Chip tone of a room consistency check.
-CHECK_TONE = {"ok": "good", "warn": "warn", "unknown": "neutral"}
 VERDICT_TONE = {
     "meaningful_improvement": "good",
     "meaningful_degradation": "bad",
@@ -103,6 +107,8 @@ class _Section(QWidget):
         self.extra.setSpacing(4)
         layout.addLayout(self.extra)
         self.rows = 0
+        #: Values in the monospace face (key figures, SPEC §3), when installed.
+        self.mono = False
 
     def make_collapsible(self) -> None:
         """Keep secondary measurement conditions available without filling the inspector."""
@@ -161,6 +167,8 @@ class _Section(QWidget):
             color, _soft = tone_color(tone)
             text += f' <span style="color:{color}; font-weight:600">· {html.escape(chip)}</span>'
         shown.setText(text)
+        if self.mono:
+            apply_mono_font(shown, 12)
         shown.setToolTip(tip or f"{value}  {chip}".strip())
         if tip:
             name.setToolTip(tip)
@@ -197,8 +205,6 @@ class Inspector(QWidget):
         # are never parentless (and never outlive the window).
         self._parking = QWidget(self)
         self._parking.hide()
-        self._room_checks: list[ConsistencyCheck] = []
-        self._room_note = ""
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         scroll = QScrollArea()
@@ -224,6 +230,7 @@ class Inspector(QWidget):
         self.health = _Section(_("Measurement health"))
         self.figures = _Section(_("Key figures"))
         self.figures.set_note("")
+        self.figures.mono = True
         self.conditions = _Section(_("Conditions"))
         self.conditions.make_collapsible()
         self.comparison = _Section(_("Comparison"))
@@ -237,17 +244,23 @@ class Inspector(QWidget):
         self.same_gain.toggled.connect(self._draw_comparison)
         self.details_button = QPushButton(_("Open the comparison"))
         self.details_button.clicked.connect(self.compare_requested.emit)
+        # The baseline in view, not only in the list's context menu (#96).
+        self.baseline_button = QPushButton(_("Use as baseline"))
+        self.baseline_button.setToolTip(
+            _("Compare the next measurement you select against this one.")
+        )
+        self.baseline_button.clicked.connect(self._use_as_baseline)
         self.profile_button = QPushButton(_("About this profile..."))
         self.profile_button.clicked.connect(self.show_profile_help)
         self.reflection = _Section(_("Selected reflection"))
-        self.room = _Section(_("Room checks"))
+        self.placement = _Section(_("Placement"))
         for section in (
             self.health,
             self.figures,
             self.conditions,
             self.comparison,
             self.reflection,
-            self.room,
+            self.placement,
         ):
             section.outer.insertWidget(0, separator())
             layout.addWidget(section)
@@ -288,7 +301,9 @@ class Inspector(QWidget):
             self._draw_conditions(entry)
         self._draw_comparison()
         self._draw_reflection()
-        self._draw_room()
+        self._draw_placement(
+            entry.result.placement if entry is not None and entry.result is not None else None
+        )
 
     def _subtitle(self, entry: Entry) -> str:
         """Room, position, microphone, profile and rate, as the old Results header read."""
@@ -458,19 +473,28 @@ class Inspector(QWidget):
             return None
         return show_profile_help(entry.profile, self)
 
+    def _use_as_baseline(self) -> None:
+        current = self.model.current()
+        if current is not None:
+            self.model.set_baseline(current.key)
+
     def _draw_comparison(self, *_args: object) -> None:
         section = self.comparison
         # The check box and the button are reused; take them out before clearing.
-        for widget in (self.same_gain, self.details_button):
+        for widget in (self.same_gain, self.details_button, self.baseline_button):
             widget.setParent(self._parking)
         section.clear()
         baseline = self.model.baseline()
         current = self.model.current()
-        section.setVisible(baseline is not None and current is not None)
+        section.setVisible(current is not None)
         if baseline is None:
             section.set_note(
-                _("Right-click a measurement in the list and choose Use as baseline to compare.")
+                _(
+                    "Use this measurement as the baseline, then select another one to "
+                    "compare it (also in the list's right-click menu)."
+                )
             )
+            section.add_widget(self.baseline_button)
             return
         if current is None or current.key == baseline.key:
             section.set_note(
@@ -515,13 +539,11 @@ class Inspector(QWidget):
             or not 0 <= index < len(entry.result.reflections.reflections)
         ):
             section.hide()
-            section.set_note(
-                _("Click a reflection marker in the impulse response or the room view.")
-            )
+            section.set_note(_("Click a reflection marker in the impulse response."))
             return
         section.show()
         reflection = entry.result.reflections.reflections[index]
-        speed, temperature, assumed = speed_for(entry.result)
+        speed, temperature, assumed = speed_for_result(entry.result)
         excess = reflection.delay_ms / 1000.0 * speed
         section.add_row(_("Delay"), f"{reflection.delay_ms:.2f} ms")
         section.add_row(_("Level"), f"{reflection.relative_db:.1f} dB")
@@ -536,30 +558,48 @@ class Inspector(QWidget):
                 )
             )
 
-    # --- room checks (pushed by the room view) ----------------------------------------
+    # --- placement (vertical geometry from the tape measurements) ---------------------
 
-    def set_room_checks(self, checks: Sequence[ConsistencyCheck], note: str = "") -> None:
-        self._room_checks = list(checks)
-        self._room_note = note
-        self._draw_room()
+    def _draw_placement(self, placement: PlacementResult | None) -> None:
+        """The three lengths the placement analysis reports, each with its validity.
 
-    def _draw_room(self) -> None:
-        section = self.room
+        Shown only when the measurement carries a placement result (a tape
+        distance was entered). No coordinates, room length or named wall:
+        the analysis derives none, and the full report lists the candidates.
+        """
+        section = self.placement
         section.clear()
-        section.setVisible(
-            bool(self._room_checks or self._room_note) and self.model.current() is not None
-        )
-        if not self._room_checks:
-            section.set_note(
-                self._room_note
-                or _("Enter the room and the device positions in the Room view to check them.")
-            )
+        section.setVisible(placement is not None)
+        if placement is None:
             return
-        section.set_note(self._room_note)
-        status_words = {
-            "ok": _("consistent"),
-            "warn": _("check this"),
-            "unknown": _("not checkable"),
-        }
-        for check in self._room_checks:
-            section.add_row(status_words[check.status], check.text, "", CHECK_TONE[check.status])
+        for caption, length in (
+            (_("Loudspeaker height"), placement.source_height_m),
+            (_("Plane above the devices"), placement.ceiling_height_m),
+            (_("Horizontal separation"), placement.horizontal_separation_m),
+        ):
+            if length.metres is None:
+                value = _("not determined")
+            else:
+                value = f"{length.metres:.2f} m"
+                if length.input_uncertainty_m is not None:
+                    value += f" ±{length.input_uncertainty_m:.2f}"
+            section.add_row(
+                caption,
+                value,
+                validity_word(length.validity),
+                _tone(length.validity),
+                tip=localize(length.reason) if length.reason else "",
+            )
+        assumed = _(" (assumed)") if placement.temperature_assumed else ""
+        section.set_note(
+            _(
+                "Placement tier {tier}. No coordinates, room length, room width or "
+                "named wall are derived. Speed of sound {speed:.1f} m/s at "
+                "{temp:.0f} °C{assumed}."
+            ).format(
+                tier=placement.tier,
+                speed=placement.speed_of_sound_m_s,
+                temp=placement.temperature_c,
+                assumed=assumed,
+            )
+        )

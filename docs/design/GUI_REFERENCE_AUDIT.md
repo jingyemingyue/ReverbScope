@@ -9,8 +9,9 @@ the record that keeps it clean.
 No source code, icons, images, colour maps, style sheets or documentation
 text of another room-acoustics or audio-measurement program was read,
 copied or adapted while building the workstation. Every module under
-`src/reverbscope/ui/`, `src/reverbscope/display/` and
-`src/reverbscope/geometry/` was written for ReverbScope.
+`src/reverbscope/ui/` and `src/reverbscope/display/` was written for
+ReverbScope (as was the removed `src/reverbscope/geometry/`, kept under the
+tag `archive/3d-room-before-removal`).
 
 The interaction conventions below are common to measurement software in
 general. They are named here so a reviewer can see that only the idea, not
@@ -23,8 +24,17 @@ an implementation, was taken.
 | Cumulative spectral decay ("waterfall") | `display/timefreq.py`, `ui/views/timefreq.py` | The textbook method (windowed slices with a rise and a taper); parameters are ReverbScope's |
 | Spectrogram of the impulse response | `display/timefreq.py` | The textbook short-time Fourier transform |
 | Fractional-octave display smoothing | `display/curves.py` | The textbook power average over ±1/(2N) octave |
-| Wheel zoom about the cursor, drag to pan, double-click to fit | `ui/plotkit.py`, `ui/room/canvas.py` | The idea only |
-| First-order image sources in a rectangular room | `geometry/paths.py` | The textbook image-source construction |
+| Wheel zoom about the cursor, drag to pan, double-click to fit | `ui/plotkit.py` | The idea only |
+
+## Icons
+
+The light sidebar GUI uses one icon family, Lucide (lucide-static 1.59.0,
+ISC; the Feather-derived icons also MIT). The 43 icons the interface uses
+are copied as SVG elements into `src/reverbscope/ui/icons.py`, each one tied
+to a real action (docs/design/light-sidebar/IMPLEMENTATION.md). The licence
+texts are in `packaging/licenses/lucide-LICENSE.txt` and go into the desktop
+bundle's `THIRD_PARTY_LICENSES`. No icon or image of another measurement
+program was used, and SF Symbols were not used (Apple platforms only).
 
 ## Libraries
 

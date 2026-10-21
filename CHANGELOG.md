@@ -7,7 +7,75 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0b6] - 2026-10-21
+
+Software beta 6, the development line on `main`: the light sidebar desktop
+workstation, the 3D room view removed, a corrected level warning in the
+measurement health, refreshed README pages and screenshots. Still **not**
+0.5.0: no hardware or DAW cell of the release plan's matrix has a dated PASS,
+and every screenshot is synthetic demo data.
+
+### Removed
+- **The 3D room view, image-source checks and scan import.** ReverbScope is a
+  measurement tool, not a room modeller. Removed: the Room view (orbit
+  camera, entered room box and device positions, measured-constraint and
+  geometric-assumption layers; `ui/room/`), the room geometry file and its
+  schema (`geometry/room.py`, `room-geometry.schema.json`), the first-order
+  image-source predictions and the inspector's "Room checks"
+  (`geometry/paths.py`), and PLY / OBJ scan import (`geometry/scan.py`).
+  About 6,100 lines of code and tests. Nothing in the analysis changed: the
+  early reflections, the vertical placement geometry from two tape
+  measurements (`core/placement.py`), RT60 / EDT / C50 and every other
+  metric, the result and session formats and the command line are as
+  before. The placement figures moved from the Room view's side panel to a
+  Placement section in the inspector (they are still in the full report),
+  and a placement health check now opens the full report. The view bar
+  loses its Room group; Project moves from Ctrl+9 to Ctrl+8. Folders saved
+  with the room view still open: a leftover `room-geometry.json` or scan
+  file is ignored and left untouched, and a saved Room view falls back to
+  Overview. The last tree with the feature is the tag
+  `archive/3d-room-before-removal`.
+
 ### Changed
+- **A light, warm sidebar look; the sweep plays only on an output you pick.**
+  The window follows the light sidebar design (`docs/design/light-sidebar`):
+  warm light colours when the system is not in dark mode (the dark theme
+  stays), a sidebar with New Measurement, Open Project, Open Session, the
+  measurement list, saved sessions, Settings, Getting started and the
+  environment report, one 52 px toolbar with the view groups as a
+  segmented control (Project beside it, Ctrl+8; an overflow menu when a
+  narrow window cannot show them all), a start panel with the two ways to
+  measure, and step bars on the Standalone and DAW pages that show what is
+  done and what is next. Icons are Lucide outlines drawn in code (ISC
+  licence, shipped in the third-party notices); no font is bundled. The
+  Standalone page and the measure strip no longer offer or preselect the
+  system default output: Start stays off until an interface output is
+  chosen, the reason is shown beside it, and starting a take without one
+  is refused. Above −12 dBFS the level acknowledgement is asked again after
+  any level change, New Measurement or Stop. While a sweep sounds or a take
+  is analysed, New, Open, Save and Settings are locked and say why. The
+  synthetic demo and the fake backend are not gated. Every feature and
+  where it now lives is listed in
+  `docs/design/light-sidebar/IMPLEMENTATION.md`; screenshots are in
+  `docs/images/gui-light-sidebar/` (`scripts/render_gui_light_sidebar.py`,
+  offscreen, not a hardware test).
+- **Notices without the status bar, a visible baseline button, the CLI on
+  the report.** Ideas from the dark polish draft, re-done in the light
+  look: "Session saved to …" now shows in the toolbar's subtitle for four
+  seconds (or under the toolbar when a narrow window has no room for the
+  title), besides the status bar. The inspector's Comparison section has a
+  "Use as baseline" button while no baseline is set. The Full report lists
+  what only the command line does (CSV export, the bug-report zip,
+  `analyze-ir` for an impulse response from another tool, `demo`) as
+  literal command lines filled in with the current session's folder, with
+  a Copy commands button. The measurement name in the toolbar elides in
+  the middle. On the Standalone page Back, Stop, Run and the reason Run is
+  off stay pinned under the form, so they are in view at 960 x 640. Chart
+  readouts, tick numbers and the inspector's key figures use an installed
+  monospace face (SF Mono, IBM Plex Mono, Menlo, Consolas, …; none is
+  bundled). When the view groups do not fit, the last ones move into the
+  "All views" menu instead of scrolling the bar, so no tab is drawn cut in
+  half, also when Project is the current view.
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
   windows keep one row. Device controls expose the complete selection on
@@ -132,7 +200,7 @@ All notable changes to ReverbScope are documented here. The format follows
   geometry is saved in `room-geometry.json`, apart from the measurements.
 - `docs/design/GUI_REFERENCE_AUDIT.md`: what the workstation borrows from
   other programs (conventions only, no code or assets).
-- **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.2) is the single
+- **Execution guidelines.** `docs/GUIDELINES.zh-CN.md` (v2.1.3) is the single
   standard for the open-source application path and the GUI redesign.
   `docs/GUIDELINES.md` is an English summary; the Chinese text wins if they
   differ. `docs/AI_ASSISTANCE.md` says what an AI session may prepare and
@@ -143,7 +211,31 @@ All notable changes to ReverbScope are documented here. The format follows
   top-level entry the packaging test requires. Appendix F of the guidelines
   is not filled in by this change.
 
+### Fixed
+- **Measurement health.** Float recordings whose peaks exceed 0 dBFS without
+  flat tops now say how far above full scale they peak, in English and
+  Simplified Chinese, instead of "within 1 dB of full scale". The warning
+  status and headroom limits are unchanged. Peaks that round to 0.0 dBFS keep
+  the existing headroom warning.
+
 ### Documentation and tester tooling
+- Refresh both READMEs for 0.5.0b6: the screenshots are retaken from the light
+  sidebar window (`scripts/render_readme_assets.py`, 2x scale, offscreen), the
+  captions name the version, a "New in 0.5.0b6" list opens the page and a
+  "Using the desktop app" section walks through start, demo, measure, read and
+  compare. The status line names 0.5.0b6 and says it has no Release yet. The
+  "Try it in 30 seconds" heading is now "Try the demo": the time was not
+  something the page could promise.
+- Guidelines v2.1.3, at the maintainer's explicit request: §10.1 no longer
+  promises "30 seconds" (the meaning is unchanged: the verdict and the next step
+  are clear without reading instructions), and `AGENTS.md`, `CLAUDE.md`,
+  `docs/AI_ASSISTANCE.md` and appendix J now say that the rule against editing
+  the guidelines does not apply when the maintainer explicitly asks for the
+  edit in the session. The same revision lets the maintainer ask an AI session
+  in the session to build the installers, tag, and publish a small patch
+  release or a regular update release (constraint C18, `AGENTS.md` Releases);
+  the maintainer chooses the version and the moment, and 0.5.0, 1.0.0 and
+  versions whose release-plan gate is unmet are not covered.
 - Separate the public RoomScope beta from renamed Draft releases in both
   READMEs, installation guides and site copy; label source screenshots.
 - Add an evidence-linked OSS readiness audit, application draft, roadmap,
