@@ -7,6 +7,14 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.5.0b6] - 2026-10-21
+
+Software beta 6, the development line on `main`: the GUI 2.0 desktop
+workstation, a corrected level warning in the measurement health, refreshed
+README pages and screenshots. Still **not** 0.5.0: no hardware or DAW cell of
+the release plan's matrix has a dated PASS, and every screenshot is synthetic
+demo data.
+
 ### Changed
 - **Narrow-window controls remain readable.** The measurement settings and
   transport use two rows when platform font metrics need more width; wide
