@@ -203,6 +203,9 @@ class DecayView(AnalysisView):
                     notes.append(
                         _("Noise floor {floor:.0f} dB re peak.").format(floor=band.noise_floor_db)
                     )
+                slope_note = self._draw_slope_fit(current, band)
+                if slope_note:
+                    notes.append(slope_note)
         self.chart.set_default_range((0.0, longest or 1.0), (-70.0, 5.0))
         self.bands_chart.set_default_range((50.0, 16_000.0), None)
         notes.append(
@@ -214,6 +217,87 @@ class DecayView(AnalysisView):
             if not self.model.drawn():
                 self.chart.set_message(hidden)
         self.notes.setText("  ".join(notes))
+
+    def _draw_slope_fit(self, entry: Entry, band: BandDecay) -> str:
+        """Overlay the two-slope model of the current band, when it has one.
+
+        The curves are the fitted model (``core.multislope``) evaluated on the
+        fitted range without its noise term, so they sit on the truncated
+        Schroeder curve; each slope is also drawn alone. Returns the note.
+        """
+        fit = band.multi_slope
+        if fit is None or fit.selected_slopes is None:
+            return ""
+        model = fit.selected
+        if model is None:
+            return ""
+        if model.slope_count == 1:
+            if fit.validity is not Validity.VALID:
+                return ""
+            return _("Slope fit: one slope ({seconds:.2f} s) describes this decay.").format(
+                seconds=model.decay_times_s[0]
+            )
+        if (
+            fit.fit_start_s is None
+            or fit.fit_end_s is None
+            or fit.integration_end_s is None
+            or band.edc_time_s.size == 0
+        ):
+            return ""
+        t = tokens()
+        end = min(fit.fit_end_s, float(band.edc_time_s[-1]))
+        times = np.linspace(fit.fit_start_s, end, 200)
+        total = model.evaluate(times, fit.integration_end_s, include_noise=False)
+        level = 10.0 * np.log10(np.maximum(total, 1e-30))
+        processing = _("two-slope model fitted to the decay curve (noise term not drawn)")
+        self.chart.add_curve(
+            _("Two-slope fit"),
+            times,
+            level,
+            color=t["warn"],
+            width=1.6,
+            dash=(4, 2),
+            key=f"{entry.key}#slopes",
+            processing=processing,
+            z=12,
+        )
+        for index, name in enumerate((_("Fast slope T1"), _("Slow slope T2"))):
+            self.chart.add_curve(
+                name,
+                times,
+                model.component_db(index, times),
+                color=t["muted"],
+                width=1.0,
+                dash=BAND_DASHES[(index + 1) % len(BAND_DASHES)],
+                key=f"{entry.key}#slope{index + 1}",
+                processing=processing,
+                z=11,
+            )
+        if fit.knee_time_s is not None and fit.knee_level_db is not None:
+            self.chart.add_markers(
+                [fit.knee_time_s], [fit.knee_level_db], color=t["warn"], filled=True
+            )
+        t1, t2 = model.decay_times_s
+        text = _(
+            "Two-slope fit: T1 = {t1:.2f} s, T2 = {t2:.2f} s, slow slope {late:+.1f} dB "
+            "re fast; turning point {knee}."
+        ).format(
+            t1=t1,
+            t2=t2,
+            late=model.amplitudes_db[1] - model.amplitudes_db[0],
+            knee=(
+                _("{time:.2f} s at {level:.0f} dB").format(
+                    time=fit.knee_time_s, level=fit.knee_level_db
+                )
+                if fit.knee_time_s is not None and fit.knee_level_db is not None
+                else "–"
+            ),
+        )
+        if fit.validity is not Validity.VALID:
+            text += " " + _("({validity}: shown, not trusted.)").format(
+                validity=validity_word(fit.validity)
+            )
+        return text
 
     def _draw_all_bands(self, entry: Entry | None, notes: list[str]) -> float:
         """Broadband (solid) and every band (its own dash pattern) of ``entry``.

@@ -698,7 +698,59 @@ def _reverberation(c: Console, result: AnalysisResult) -> list[str]:
         lines += _legend(c, legend)
     for note in notes:
         lines += c.status("info", note)
+    lines += _decay_slopes(c, result)
     lines += _energy(c, result)
+    return lines
+
+
+def _decay_slopes(c: Console, result: AnalysisResult) -> list[str]:
+    """Bands whose energy decay has two slopes (shown only when one has)."""
+    rows: list[list[str]] = []
+    for band in (result.decay.broadband, *result.decay.bands):
+        fit = band.multi_slope
+        model = fit.selected if fit is not None else None
+        if (
+            fit is None
+            or model is None
+            or model.slope_count != 2
+            or fit.validity not in (Validity.VALID, Validity.UNRELIABLE)
+        ):
+            continue
+        mark = "" if fit.validity is Validity.VALID else " " + c.symbol("unsure")
+        late_db = model.amplitudes_db[1] - model.amplitudes_db[0]
+        knee = (
+            _("{time:.2f} s at {level:.0f} dB").format(
+                time=fit.knee_time_s, level=fit.knee_level_db
+            )
+            if fit.knee_time_s is not None and fit.knee_level_db is not None
+            else c.dash()
+        )
+        rows.append(
+            [
+                band_text(band.band_label),
+                f"{model.decay_times_s[0]:.2f} s{mark}",
+                f"{model.decay_times_s[1]:.2f} s{mark}",
+                f"{late_db:+.1f} dB",
+                knee,
+            ]
+        )
+    if not rows:
+        return []
+    lines = c.section(_("Double-slope decay"), _("two-exponential fit of the decay curve"))
+    lines += c.paragraph(
+        _(
+            "In these bands the decay curve is better described by two slopes than by "
+            "one (Bayesian information criterion and plausibility checks): T1 is the "
+            "early, faster decay and T2 the later, slower one, both extrapolated to "
+            "60 dB. Late level is the slower slope's start relative to the faster one's. "
+            "T20 and T30 above are unchanged and are marked when the curve is not straight."
+        )
+    )
+    lines += c.table(
+        [_("Band"), "T1", "T2", _("Late level"), _("Turning point")],
+        rows,
+        align="lrrrr",
+    )
     return lines
 
 

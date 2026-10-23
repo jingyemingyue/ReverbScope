@@ -216,3 +216,61 @@ def test_an_export_folder_that_cannot_be_created_is_a_session_error(
     blocker.write_text("x", encoding="utf-8")
     with pytest.raises(SessionError, match="cannot create"):
         export_csv(result, blocker / "csv")
+
+
+def test_csv_export_writes_both_decay_models_of_each_band(tmp_path: Path) -> None:
+    """decay_slopes.csv: one row per fitted model and band, the selected one
+    marked, the knee only on the selected two-slope row."""
+    import csv
+    import math
+    from dataclasses import replace
+
+    import numpy as np
+
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
+    from tests.unit.test_multislope import LEAD, RATE, decay
+
+    signal = decay(0.4, 1.6, -25.0, seed=8)
+    signal[LEAD] = 4.0 * math.sqrt(float(np.sum(signal**2)))
+    result = analyze_impulse_response(AudioSignal(signal, RATE), excitation_band=(20.0, 20_000.0))
+    written = {path.name for path in export_csv(result, tmp_path)}
+    assert "decay_slopes.csv" in written
+    with (tmp_path / "decay_slopes.csv").open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle))
+    assert list(rows[0]) == [
+        "band", "slopes", "validity", "selected", "t1_s", "t2_s", "a1_db", "a2_db",
+        "a1_share_percent", "a2_share_percent", "noise_term", "bic", "delta_bic",
+        "knee_time_s", "knee_level_db",
+    ]  # fmt: skip
+    broadband = result.decay.broadband
+    fit = broadband.multi_slope
+    assert fit is not None and fit.selected_slopes == 2
+    mine = [r for r in rows if r["band"] == broadband.band_label]
+    assert [r["slopes"] for r in mine] == ["1", "2"]
+    one, two = mine
+    assert one["selected"] == "no" and two["selected"] == "yes"
+    assert one["t2_s"] == "" and one["knee_time_s"] == ""
+    model = fit.model(2)
+    assert model is not None
+    assert float(two["t1_s"]) == pytest.approx(model.decay_times_s[0])
+    assert float(two["t2_s"]) == pytest.approx(model.decay_times_s[1])
+    assert float(two["a2_share_percent"]) == pytest.approx(model.energy_shares_percent[1])
+    assert float(two["delta_bic"]) == pytest.approx(fit.delta_bic)
+    assert two["knee_time_s"] != "" and two["knee_level_db"] != ""
+    # Every analysed band has at least one row.
+    labels = {r["band"] for r in rows}
+    assert {b.band_label for b in result.decay.bands if b.multi_slope is not None} <= labels
+
+    # Without any fit (a file written before the fit existed) the export
+    # leaves the file out and removes the one an earlier export wrote.
+    bare = replace(
+        result,
+        decay=replace(
+            result.decay,
+            broadband=replace(broadband, multi_slope=None),
+            bands=tuple(replace(b, multi_slope=None) for b in result.decay.bands),
+        ),
+    )
+    assert "decay_slopes.csv" not in {path.name for path in export_csv(bare, tmp_path)}
+    assert not (tmp_path / "decay_slopes.csv").exists()

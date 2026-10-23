@@ -311,3 +311,90 @@ def test_the_air_temperature_is_shown_in_degrees_celsius(
     assert "20 C" in fallback and "°" not in fallback
     if lang == "en":
         fallback.encode("ascii")
+
+
+def _double_slope_result() -> AnalysisResult:
+    """An imported response whose decay has two slopes (T 0.4 s and 1.6 s,
+    the slow part 25 dB down), with a clear direct sound."""
+    import math
+
+    import numpy as np
+
+    from reverbscope.core.pipeline import analyze_impulse_response
+    from reverbscope.models.audio import AudioSignal
+    from tests.unit.test_multislope import LEAD, RATE, decay
+
+    signal = decay(0.4, 1.6, -25.0, seed=8)
+    signal[LEAD] = 4.0 * math.sqrt(float(np.sum(signal**2)))
+    return analyze_impulse_response(AudioSignal(signal, RATE), excitation_band=(20.0, 20_000.0))
+
+
+def test_a_double_slope_decay_gets_its_own_table() -> None:
+    """The report lists T1, T2, the late level and the turning point of every
+    band whose selected model has two slopes, and nothing for one slope."""
+    from reverbscope.cli.render import _decay_slopes
+
+    result = _double_slope_result()
+    two = [
+        b
+        for b in (result.decay.broadband, *result.decay.bands)
+        if b.multi_slope is not None
+        and b.multi_slope.selected_slopes == 2
+        and b.multi_slope.validity in (Validity.VALID, Validity.UNRELIABLE)
+    ]
+    assert two, "the synthetic decay should select two slopes somewhere"
+    text = WIDE.fit("\n".join(_decay_slopes(WIDE, result)))
+    assert "Double-slope decay" in text
+    assert "Turning point" in text and "Late level" in text
+    for band in two:
+        model = band.multi_slope.selected  # type: ignore[union-attr]
+        assert model is not None
+        assert f"{model.decay_times_s[0]:.2f} s" in text
+        assert f"{model.decay_times_s[1]:.2f} s" in text
+    # The whole report carries the section after the reverberation table.
+    report = render_analysis(WIDE, result)
+    assert report.index("Double-slope decay") > report.index("T30")
+
+    # One slope everywhere: no section at all.
+    single = replace(
+        result,
+        decay=replace(
+            result.decay,
+            broadband=replace(result.decay.broadband, multi_slope=None),
+            bands=tuple(replace(b, multi_slope=None) for b in result.decay.bands),
+        ),
+    )
+    assert _decay_slopes(WIDE, single) == []
+    assert "Double-slope decay" not in render_analysis(WIDE, single)
+
+
+def test_an_unreliable_double_slope_is_marked_and_invalid_ones_are_left_out() -> None:
+    from reverbscope.cli.render import _decay_slopes
+
+    result = _double_slope_result()
+    fit = result.decay.broadband.multi_slope
+    assert fit is not None and fit.selected_slopes == 2
+    unsure = replace(
+        result,
+        decay=replace(
+            result.decay,
+            broadband=replace(result.decay.broadband, multi_slope=fit.marked_unreliable("x")),
+            bands=tuple(replace(b, multi_slope=None) for b in result.decay.bands),
+        ),
+    )
+    lines = _decay_slopes(WIDE, unsure)
+    model = fit.selected
+    assert model is not None
+    row = next(line for line in lines if f"{model.decay_times_s[1]:.2f} s" in line)
+    assert WIDE.symbol("unsure") in row, lines
+    gone = replace(
+        unsure,
+        decay=replace(
+            unsure.decay,
+            broadband=replace(
+                unsure.decay.broadband,
+                multi_slope=replace(fit, validity=Validity.INSUFFICIENT_RANGE),
+            ),
+        ),
+    )
+    assert _decay_slopes(WIDE, gone) == []

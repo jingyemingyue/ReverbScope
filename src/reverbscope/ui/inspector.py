@@ -389,6 +389,21 @@ class Inspector(QWidget):
             section.add_row(
                 name, decay_text(metric), validity_word(metric.validity), _tone(metric.validity)
             )
+        slopes = broadband.multi_slope
+        if slopes is not None and slopes.selected is not None:
+            model = slopes.selected
+            if model.slope_count == 2:
+                text = _("two: {t1:.2f} s and {t2:.2f} s").format(
+                    t1=model.decay_times_s[0], t2=model.decay_times_s[1]
+                )
+            else:
+                text = _("one: {seconds:.2f} s").format(seconds=model.decay_times_s[0])
+            section.add_row(
+                _("Decay slopes"),
+                text,
+                validity_word(slopes.validity),
+                _tone(slopes.validity),
+            )
         for name, energy in (
             ("C50", broadband.c50),
             ("C80", broadband.c80),
