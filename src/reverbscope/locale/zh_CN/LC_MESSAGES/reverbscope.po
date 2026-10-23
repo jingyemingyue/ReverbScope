@@ -3300,6 +3300,10 @@ msgstr "无法把报告写入 {path}：{error}"
 msgid "cannot write {path}: {error}"
 msgstr "无法写入 {path}：{error}"
 
+msgid ""
+"cannot write {path}: {error}; recovery is incomplete and a copy remains at {leftover}"
+msgstr "无法写入 {path}：{error}；恢复未完成，副本仍在 {leftover}"
+
 msgid "change a setting"
 msgstr "修改一项设置"
 
