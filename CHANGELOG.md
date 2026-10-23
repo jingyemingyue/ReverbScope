@@ -7,6 +7,28 @@ All notable changes to ReverbScope are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- **Double-slope decay fit.** Each band's energy decay curve is now also
+  fitted with one and with two exponential slopes plus a noise term (the
+  model of Xiang 1995 and Xiang, Goggans et al. 2011, in the form DecayFitNet
+  uses), and the number of slopes is chosen with the Bayesian information
+  criterion, corrected for the correlation of an integrated curve, and
+  plausibility rules (distinct slopes, a turning point at least 10 dB down
+  and above the noise). Reported per band: T1, T2, their levels and energy
+  shares, the noise term, the turning point, ΔBIC and a validity
+  (`multi_slope` in `result.json`, additive, schema 1 unchanged;
+  `decay_slopes.csv` in `reverbscope export`; a *Double-slope decay* table
+  in the report when a band has two slopes; an overlay of the fit in the
+  desktop Decay view and a "Decay slopes" row in the inspector). EDT, T20,
+  T30, RT60 and every other number are unchanged. Methodology §3c, ADR 0004.
+- **Validation on open measured data.** `scripts/validate_aachen_nikolauskapelle.py`
+  compares ReverbScope with the published St. Nicholas Chapel (Aachen) data
+  set (Zerwas & Kayku, doi:10.5281/zenodo.20428705, CC-BY 4.0): T20 and T30
+  in one-third-octave bands against the authors' ISO 3382-1 values, and the
+  slope fit against their DecayFitNet results. Results in
+  `docs/validation/aachen-nikolauskapelle.md`; the data set is not in the
+  repository.
+
 ## [0.5.0b6] - 2026-10-21
 
 Software beta 6, the development line on `main`: the light sidebar desktop

@@ -202,6 +202,9 @@ def test_json_evidence_links_point_to_source_when_not_copied_into_site() -> None
     assert site.rewrite_md_href("snapshot.json", page="evidence/checks.md") == (
         blob + "evidence/snapshot.json"
     )
+    assert site.rewrite_md_href("table.csv", page="validation/data.md") == (
+        blob + "validation/table.csv"
+    )
 
 
 def test_every_link_of_the_generated_site_resolves(tmp_path: Path) -> None:
