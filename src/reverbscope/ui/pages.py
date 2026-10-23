@@ -743,6 +743,9 @@ class StandalonePage(QWidget):
         self._devices: list[DeviceInfo] = []
         self._measure_worker: MeasureWorker | None = None
         self._analysis_worker: AnalysisWorker | None = None
+        # Esc between enabling Stop and assigning the worker. Applied once,
+        # immediately before the thread starts, so that take never plays.
+        self._stop_before_start = False
         #: As :attr:`DawModePage.before_take`.
         self.before_take: Callable[[], bool] | None = None
         self._channel_plan: ChannelPlan | None = None
@@ -1416,6 +1419,8 @@ class StandalonePage(QWidget):
     def start_measurement(self) -> None:
         from reverbscope.audio.backend import get_backend
 
+        # A new attempt. An Esc from a take that never started must not cancel this one.
+        self._stop_before_start = False
         if self.is_busy():
             return
         if not self.output_chosen():
@@ -1501,11 +1506,20 @@ class StandalonePage(QWidget):
         self._measure_worker.failed.connect(self._on_failure)
         self._measure_worker.progress.connect(self._on_progress)
         self._measure_worker.stopped.connect(self._on_stopped)
+        # Stop was pressed after the button came on and before this assignment.
+        if self._stop_before_start:
+            self._stop_before_start = False
+            self._measure_worker.request_stop()
         self._measure_worker.start()
 
     def stop_measurement(self) -> None:
-        if self._measure_worker is not None:
-            self._measure_worker.request_stop()
+        """Cancel the take, including one whose thread has not started yet."""
+        worker = self._measure_worker
+        if worker is None:
+            # Stop is already enabled. The worker is assigned a few lines later.
+            self._stop_before_start = True
+            return
+        worker.request_stop()
 
     def _on_progress(self, fraction: float) -> None:
         self.progress.setValue(int(fraction * 100.0))
@@ -1564,6 +1578,8 @@ class StandalonePage(QWidget):
 
     def _set_busy(self, busy: bool, text: str = "", *, tone: str = "") -> None:
         self._busy_flag = busy
+        if not busy:
+            self._stop_before_start = False
         self.run_button.setEnabled(not busy)
         if hasattr(self, "stop_button"):
             self.stop_button.setEnabled(busy)

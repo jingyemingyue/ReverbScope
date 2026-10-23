@@ -17,7 +17,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import QPoint, Qt, QThread
 from PySide6.QtTest import QTest
-from PySide6.QtWidgets import QApplication, QDialog, QDialogButtonBox, QMenu
+from PySide6.QtWidgets import QApplication, QDialog, QDialogButtonBox, QMenu, QWidget
 
 from reverbscope.errors import MeasurementCancelledError
 from reverbscope.ui.main_window import MainWindow
@@ -359,3 +359,169 @@ def test_escape_during_analysis_does_not_stop_or_publish(
     finally:
         held_analysis.set()
         window.close()
+
+
+def test_escape_stops_a_worker_that_has_not_started(
+    app: QApplication,
+    held_take: threading.Event,
+    stop_calls: list[MeasureWorker],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Stop is on and the worker exists, but its thread has not started."""
+    window = _window(app)
+    real_start = MeasureWorker.start
+
+    def hold_start(self: MeasureWorker, *args: object, **kwargs: object) -> None:
+        del args, kwargs
+
+    monkeypatch.setattr(MeasureWorker, "start", hold_start)
+    try:
+        page = window.standalone
+        page.duration.setValue(1.0)
+        page.run_button.click()
+        app.processEvents()
+        worker = page._measure_worker
+        assert worker is not None and not worker.isRunning()
+        assert window.strip.stop_button.isEnabled()
+        for _ in range(3):
+            _press_escape(window)
+        assert stop_calls == [worker]
+        assert worker._cancel.is_set()
+        real_start(worker)
+        _settle(app, worker)
+        assert not worker.isRunning()
+        assert window.state.result is None
+        assert "Stopped" in page.status.text()
+    finally:
+        held_take.set()
+        window.close()
+
+
+def test_escape_before_the_worker_exists_cancels_before_playback(
+    app: QApplication,
+    held_take: threading.Event,
+    stop_calls: list[MeasureWorker],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Stop is already on, and the worker object does not exist yet."""
+    from reverbscope.audio.fake import FakeBackend
+
+    window = _window(app)
+    page = window.standalone
+    played: list[int] = []
+    current = FakeBackend.play_and_record
+
+    def track(self: FakeBackend, *args: object, **kwargs: object) -> object:
+        cancel = kwargs.get("cancel")
+        if cancel is not None and getattr(cancel, "is_set", lambda: False)():
+            raise MeasurementCancelledError("stopped")
+        played.append(1)
+        return current(self, *args, **kwargs)
+
+    monkeypatch.setattr(FakeBackend, "play_and_record", track)
+    real_set_busy = page._set_busy
+
+    def busy_then_escape(busy: bool, text: str = "", *, tone: str = "") -> None:
+        real_set_busy(busy, text, tone=tone)
+        if busy and page._measure_worker is None and window.strip.stop_button.isEnabled():
+            for _ in range(3):
+                _press_escape(window)
+
+    monkeypatch.setattr(page, "_set_busy", busy_then_escape)
+    try:
+        page.duration.setValue(1.0)
+        page.run_button.click()
+        worker = page._measure_worker
+        assert worker is not None
+        deadline = time.monotonic() + 2
+        while time.monotonic() < deadline and stop_calls != [worker]:
+            app.processEvents()
+            time.sleep(0.01)
+        assert stop_calls == [worker]
+        assert played == []
+        _settle(app, worker)
+        assert window.state.result is None
+        assert "Stopped" in page.status.text()
+    finally:
+        held_take.set()
+        window.close()
+
+
+def test_closing_the_window_drops_the_escape_filter(
+    app: QApplication, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    window = _window(app)
+    stale: list[int] = []
+    monkeypatch.setattr(window.standalone, "stop_measurement", lambda: stale.append(1))
+    window.close()
+    app.processEvents()
+    window.strip.stop_button.setEnabled(True)
+    probe = QWidget()
+    probe.show()
+    app.processEvents()
+    _press_escape(probe)
+    app.processEvents()
+    assert stale == []
+    probe.close()
+
+
+def test_a_cancelled_close_keeps_one_escape_filter(
+    app: QApplication,
+    held_take: threading.Event,
+    stop_calls: list[MeasureWorker],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    window = _window(app)
+    # Only the close is refused. Starting a take also asks _leave_take, and
+    # that must keep its normal answer or the run button does nothing.
+    allow_leave = window._leave_take
+    monkeypatch.setattr(window, "_leave_take", lambda: False)
+    window.close()
+    app.processEvents()
+    monkeypatch.setattr(window, "_leave_take", allow_leave)
+    assert window.isVisible()
+    try:
+        _start_take(app, window)
+        for _ in range(3):
+            _press_escape(window)
+        worker = window.standalone._measure_worker
+        _settle(app, worker)
+        assert worker is not None
+        assert stop_calls == [worker]
+        assert window.state.result is None
+    finally:
+        held_take.set()
+        window.close()
+
+
+def test_a_new_window_does_not_reuse_a_closed_windows_escape_filter(
+    app: QApplication,
+    held_take: threading.Event,
+    stop_calls: list[MeasureWorker],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first = _window(app)
+    stale: list[int] = []
+    monkeypatch.setattr(first.standalone, "stop_measurement", lambda: stale.append(1))
+    first.close()
+    app.processEvents()
+    first.strip.stop_button.setEnabled(True)
+    second = _window(app)
+    try:
+        _start_take(app, second)
+        _press_escape(second)
+        worker = second.standalone._measure_worker
+        _settle(app, worker)
+        assert stale == []
+        assert worker is not None
+        assert stop_calls == [worker]
+        assert second.state.result is None
+    finally:
+        held_take.set()
+        second.close()
+        probe = QWidget()
+        probe.show()
+        _press_escape(probe)
+        app.processEvents()
+        assert stale == []
+        probe.close()

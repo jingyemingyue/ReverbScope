@@ -512,7 +512,8 @@ class MeasureStrip(QWidget):
             if event.type() == QEvent.Type.KeyPress and not event.isAutoRepeat():
                 self._escape()
             return True
-        return super().eventFilter(watched, event)
+        # bool(): the lint job has no PySide6 stubs, so this override is Any.
+        return bool(super().eventFilter(watched, event))
 
     def _sounding_escape(self, event: QKeyEvent) -> bool:
         if event.type() not in (
@@ -523,13 +524,13 @@ class MeasureStrip(QWidget):
             return False
         if event.modifiers():
             return False
-        return event.key() == Qt.Key.Key_Escape and self.stop_button.isEnabled()
+        # bool(): key() and isEnabled() are Any when PySide6 is not installed.
+        return bool(event.key() == Qt.Key.Key_Escape) and bool(self.stop_button.isEnabled())
 
     def _escape(self) -> None:
-        # Latched until the sweep ends, so a burst of Esc requests one stop
-        # and cannot publish a second result. Analysis leaves the button off,
-        # so it never takes this path.
-        if self._escape_sent or not self.standalone.is_take_running():
+        # One request per sounding take, including the moment Stop is on before
+        # the worker thread is running. Analysis leaves the button off.
+        if self._escape_sent or not self.stop_button.isEnabled():
             return
         self._escape_sent = True
         self.standalone.stop_measurement()
